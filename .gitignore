@@ -1,0 +1,10 @@
+# Build outputs and the fetched SDK jar (see README.md).
+build/
+out/
+sdk/
+*.apk
+*.idsig
+
+# The repo root .gitignore blanket-ignores AndroidManifest.xml (from an old maven setup);
+# this one is a real source file.
+!AndroidManifest.xml
