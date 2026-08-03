@@ -134,6 +134,14 @@ final class GameCore {
     /** Counts down while the flawless-stage gold dumpling is on screen. */
     float perfectBanner;
     float shake, flash, stageBanner;
+    /** Colour of the current full-screen flash. */
+    int flashColor = FLASH_DAMAGE;
+    /**
+     * Sky tinting, 0..1, decaying. A correct press washes the clouds faintly with that
+     * letter's colour; clearing a whole word floods them yellow.
+     */
+    float skyGlow;
+    int skyGlowColor = FLASH_CLEAR;
     /** Highest proximity-to-danger across the field, 0..1. Drives the red screen pulse. */
     float warnLevel;
 
@@ -147,7 +155,6 @@ final class GameCore {
     final float[] keyPress = new float[Glyph.COUNT];
     final float[] keyBad = new float[Glyph.COUNT];
 
-    /** Background starfield, in 0..1 view coordinates. Fixed seed: identical everywhere. */
     /**
      * Parallax cloud layers, back to front. Positions are fixed offsets in 0..1 view
      * coordinates; the drifting is a pure function of {@link #clock}, so no per-frame state
@@ -179,6 +186,15 @@ final class GameCore {
     static final float PERFECT_TIME = 2.1f;
     /** How long a cleared word takes to fly apart before it stops existing. */
     static final float DESTROY_TIME = 0.40f;
+
+    /** Flash and sky-glow colours. Plain data, so the rules stay Android-free. */
+    static final int FLASH_DAMAGE = 0xFFFF7C9E;
+    static final int FLASH_CLEAR = 0xFFFFE07A;
+    /**
+     * How strongly a single correct press tints the sky. Deliberately faint: this fires on
+     * every press, so anything stronger reads as strobing rather than as a glow.
+     */
+    static final float GLOW_HIT = 0.35f;
 
     /** Length of the lunge animation between crossing the line and losing a life. */
     static final float ATTACK_TIME = 0.42f;
@@ -290,6 +306,7 @@ final class GameCore {
         spawnTimer = 0.7f;
         shake = 0;
         flash = 0;
+        skyGlow = 0;
         stageBanner = 1.5f;
     }
 
@@ -365,6 +382,9 @@ final class GameCore {
         }
         e.hitPulse = 1f;
         e.hitIndex = struck;
+        // Faint wash of the struck letter's own colour across the sky.
+        skyGlow = Math.max(skyGlow, GLOW_HIT);
+        skyGlowColor = Glyph.COLOR[g];
         hits++;
         combo++;
         if (combo > maxCombo) maxCombo = combo;
@@ -481,6 +501,7 @@ final class GameCore {
         }
         shake = decay(shake, dt * 2.6f);
         flash = decay(flash, dt * 2.2f);
+        skyGlow = decay(skyGlow, dt * 2.4f);
         stageBanner = decay(stageBanner, dt);
         perfectBanner = decay(perfectBanner, dt);
 
@@ -541,6 +562,7 @@ final class GameCore {
                 e.warn = 1f;
                 warnLevel = 1f;
                 flash = Math.max(flash, 0.35f + 0.5f * (e.attackT / ATTACK_TIME));
+                flashColor = FLASH_DAMAGE;
                 shake = Math.max(shake, 0.35f * (e.attackT / ATTACK_TIME));
                 if (e.attackT >= ATTACK_TIME) {
                     // Unlist first: a fatal breach clears the whole field, which would
@@ -594,6 +616,11 @@ final class GameCore {
                 explode(s.tx, s.ty, L.enemyR, 4, Glyph.COLOR[e.word[i]]);
             }
             shake = Math.max(shake, 0.30f);
+            // Clearing a word flashes the screen and floods the sky yellow.
+            flash = Math.max(flash, 0.60f);
+            flashColor = FLASH_CLEAR;
+            skyGlow = 1f;
+            skyGlowColor = FLASH_CLEAR;
             kills++;
             resolvedThisStage++;
             // Scored per press, so a stacked word is worth what it cost to clear.
@@ -656,6 +683,7 @@ final class GameCore {
         shake = 1f;
         if (sound != null) sound.damage();
         flash = 1f;
+        flashColor = FLASH_DAMAGE;
         explode(enemyCentreX(e), L.dangerY, L.enemyR * 2f, 16, 0xFFFF7A9E);
         if (lives <= 0) {
             state = OVER;

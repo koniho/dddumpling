@@ -851,6 +851,41 @@ final class CoreTest {
         }
         check("the exit margin exceeds the cloud height", marginsCover);
 
+        // Sky glow: a landed press tints with that letter, a cleared word floods yellow.
+        GameCore g = new GameCore(new Mem(), 444L);
+        g.startGame();
+        check("sky starts unglowed", g.skyGlow == 0f);
+        g.enemies.clear();
+        g.target = null;
+        GameCore.Enemy e = add(g, L, new int[] {3, 5}, L.playTop + 200);
+
+        g.tapKey(3, L);
+        check("a landed press glows the sky", g.skyGlow == GameCore.GLOW_HIT);
+        check("the glow takes the struck letter's colour", g.skyGlowColor == Glyph.COLOR[3]);
+        check("a single press is a faint glow", GameCore.GLOW_HIT < 1f);
+        check("no screen flash for a mere press", g.flash == 0f);
+
+        advance(g, L, 1.0f);
+        check("the press glow fades out", g.skyGlow == 0f);
+
+        g.tapKey(5, L);                      // completes the word
+        advance(g, L, 0.2f);                 // let the killing shot land
+        // Already decaying by now, so check it outranks a single press rather than == 1.
+        check("clearing a word floods the sky", g.skyGlow > GameCore.GLOW_HIT);
+        check("the flood is yellow", g.skyGlowColor == GameCore.FLASH_CLEAR);
+        check("clearing a word flashes the screen", g.flash > 0f);
+        check("the clear flash is warm, not red", g.flashColor == GameCore.FLASH_CLEAR);
+        advance(g, L, 1.2f);
+        check("the clear glow is brief", g.skyGlow == 0f && g.flash == 0f);
+
+        // Damage keeps its own colour, and outranks a celebration.
+        GameCore d2 = new GameCore(new Mem(), 445L);
+        d2.startGame();
+        d2.enemies.clear();
+        add(d2, L, new int[] {0}, L.dangerY - L.enemyR + 1);
+        advance(d2, L, GameCore.ATTACK_TIME + 2 * DT);
+        check("damage flashes red", d2.flash > 0f && d2.flashColor == GameCore.FLASH_DAMAGE);
+
         boolean spread = true;
         for (int l = 0; l < GameCore.CLOUD_LAYERS; l++) {
             for (int i = 0; i < GameCore.CLOUDS_PER_LAYER; i++) {

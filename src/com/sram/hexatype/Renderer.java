@@ -58,7 +58,9 @@ final class Renderer {
             hud(p, c, L);
         }
 
-        if (c.flash > 0) p.fillRect(0, 0, L.w, L.h, Glyph.withAlpha(ROSE, (int) (c.flash * 52)));
+        if (c.flash > 0) {
+            p.fillRect(0, 0, L.w, L.h, Glyph.withAlpha(c.flashColor, (int) (c.flash * 52)));
+        }
 
         if (c.state == GameCore.TITLE) title(p, c, L);
         else if (c.state == GameCore.OVER) gameOver(p, c, L);
@@ -217,6 +219,14 @@ final class Renderer {
     private static void clouds(Painter p, GameCore c, Layout L, int layer, float hurt) {
         int tint = Glyph.mix(CLOUD_TINT[layer], BG_HURT, hurt * 0.55f);
         int alpha = CLOUD_ALPHA[layer];
+
+        // A landed press washes the sky with that letter's colour; a cleared word floods it
+        // yellow. Brightening the alpha as well as the hue is what makes it read as a glow
+        // rather than as a recolour.
+        if (c.skyGlow > 0f) {
+            tint = Glyph.mix(tint, c.skyGlowColor, c.skyGlow * 0.60f);
+            alpha += (int) (alpha * c.skyGlow * 0.75f);
+        }
         float scale = cloudScale(layer);
         float h = cloudHeight(L, layer);
 
