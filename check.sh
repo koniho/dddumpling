@@ -9,9 +9,16 @@ src/com/sram/hexatype/Kawaii.java
 src/com/sram/hexatype/Layout.java
 src/com/sram/hexatype/Sfx.java
 src/com/sram/hexatype/Music.java
+src/com/sram/hexatype/Words.java
+src/com/sram/hexatype/Fx.java
+src/com/sram/hexatype/Steamer.java
 src/com/sram/hexatype/GameCore.java
 src/com/sram/hexatype/Painter.java
 src/com/sram/hexatype/SettingsUi.java
+src/com/sram/hexatype/Draw.java
+src/com/sram/hexatype/Sky.java
+src/com/sram/hexatype/Hud.java
+src/com/sram/hexatype/Screens.java
 src/com/sram/hexatype/Renderer.java"
 
 rm -rf build/harness

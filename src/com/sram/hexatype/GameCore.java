@@ -157,25 +157,8 @@ final class GameCore {
     float warnLevel;
 
     // ---- between-stages minigame -------------------------------------------
-    /**
-     * Presses landed on the steamer. Deliberately carried across interludes rather than
-     * reset each time, so the lid is chipped open over several stages.
-     */
-    int steamerHits;
-    /** Times the dumpling has been freed this run. */
-    int steamerOpens;
+    final Steamer steamer = new Steamer();
     float bonusTimer;
-    /** 1 right after a press, decaying: pops the lid up. */
-    float lidPulse;
-    /** 1 right after a press, decaying: flashes and cycles the container colour. */
-    float steamerFlash;
-    /** Counts down while the freed dumpling flies away. */
-    float freedT;
-
-    /** How far the lid has lifted, 0..1. */
-    float lidOpen() {
-        return clamp01((float) steamerHits / STEAMER_HITS);
-    }
 
     /**
      * Smoothed x of the lock indicator, so it slides from letter to letter as you type
@@ -339,12 +322,8 @@ final class GameCore {
         shake = 0;
         flash = 0;
         skyGlow = 0;
-        steamerHits = 0;
-        steamerOpens = 0;
+        steamer.reset();
         bonusTimer = 0;
-        lidPulse = 0;
-        steamerFlash = 0;
-        freedT = 0;
         stageBanner = 1.5f;
     }
 
@@ -548,13 +527,11 @@ final class GameCore {
         // last lunging word set it to, all the way through the game-over screen.
         warnLevel = 0f;
 
-        updateParticles(dt);
-        updateShots(dt, L);
+        Fx.updateParticles(this, dt);
+        Fx.updateShots(this, dt, L);
 
         if (state == BONUS) {
-            lidPulse = decay(lidPulse, dt * 4.5f);
-            steamerFlash = decay(steamerFlash, dt * 3.0f);
-            freedT = decay(freedT, dt);
+            steamer.update(dt);
             bonusTimer -= dt;
             if (bonusTimer <= 0) {
                 // The interlude is what sat between the waves; the stage itself turns over
@@ -639,23 +616,8 @@ final class GameCore {
         }
     }
 
-    private void updateShots(float dt, Layout L) {
-        for (int i = shots.size() - 1; i >= 0; i--) {
-            Shot s = shots.get(i);
-            if (s.target != null && enemies.contains(s.target)) {
-                // Home in: the word keeps drifting while the shot is in the air.
-                s.tx = s.kill ? enemyCentreX(s.target) : tileX(s.target, s.tileIndex, L);
-                s.ty = s.target.y;
-            }
-            s.t += dt / s.dur;
-            if (s.t >= 1f) {
-                impact(s, L);
-                shots.remove(i);
-            }
-        }
-    }
 
-    private void impact(Shot s, Layout L) {
+    void impact(Shot s, Layout L) {
         Enemy e = s.target;
         if (s.kill && e != null && enemies.contains(e) && !e.destroyed) {
             // The word is credited now but stays listed until it has flown apart, so
@@ -665,9 +627,9 @@ final class GameCore {
             e.dying = false;
             computeFlyDirs(e, L);
 
-            explode(enemyCentreX(e), e.y, L.enemyR * 1.5f, e.word.length + 8, 0xFFFFFFFF);
+            Fx.explode(this, rnd, enemyCentreX(e), e.y, L.enemyR * 1.5f, e.word.length + 8, 0xFFFFFFFF);
             for (int i = 0; i < e.word.length; i++) {
-                explode(s.tx, s.ty, L.enemyR, 4, Glyph.COLOR[e.word[i]]);
+                Fx.explode(this, rnd, s.tx, s.ty, L.enemyR, 4, Glyph.COLOR[e.word[i]]);
             }
             shake = Math.max(shake, 0.30f);
             // Clearing a word flashes the screen and floods the sky yellow.
@@ -681,7 +643,7 @@ final class GameCore {
             score += 25 * e.totalPresses();
             if (sound != null) sound.clearWord();
         } else {
-            explode(s.tx, s.ty, L.enemyR * 0.7f, 7, Glyph.COLOR[s.glyph]);
+            Fx.explode(this, rnd, s.tx, s.ty, L.enemyR * 0.7f, 7, Glyph.COLOR[s.glyph]);
         }
     }
 
@@ -718,8 +680,8 @@ final class GameCore {
         state = BONUS;
         time = 0;
         bonusTimer = BONUS_TIME;
-        lidPulse = 0;
-        steamerFlash = 0;
+        steamer.lidPulse = 0;
+        steamer.flash = 0;
         target = null;
         caretOwner = null;
     }
@@ -732,22 +694,14 @@ final class GameCore {
     void tapBonus(int g) {
         if (state != BONUS) return;
         keyPress[g] = 1f;
-        lidPulse = 1f;
-        steamerFlash = 1f;
         if (sound != null) sound.squish(g, 1);
 
-        if (freedT > 0f) return;          // already loose; let the celebration play
-        steamerHits++;
-        if (steamerHits >= STEAMER_HITS) {
-            steamerHits = 0;
-            steamerOpens++;
-            score += FREE_BONUS;
-            if (lives < START_LIVES) lives++;
-            freedT = 1.7f;
-            // Hold the interlude open long enough to watch it escape.
-            bonusTimer = Math.max(bonusTimer, freedT + 0.2f);
-            if (sound != null) sound.achievement();
-        }
+        if (!steamer.strike()) return;
+        score += FREE_BONUS;
+        if (lives < START_LIVES) lives++;
+        // Hold the interlude open long enough to watch it escape.
+        bonusTimer = Math.max(bonusTimer, steamer.freedT + 0.2f);
+        if (sound != null) sound.achievement();
     }
 
     /** Called once a stage's whole wave has been dealt with. */
@@ -775,7 +729,7 @@ final class GameCore {
         if (sound != null) sound.damage();
         flash = 1f;
         flashColor = FLASH_DAMAGE;
-        explode(enemyCentreX(e), L.dangerY, L.enemyR * 2f, 16, 0xFFFF7A9E);
+        Fx.explode(this, rnd, enemyCentreX(e), L.dangerY, L.enemyR * 2f, 16, 0xFFFF7A9E);
         if (lives <= 0) {
             state = OVER;
             time = 0;
@@ -793,24 +747,7 @@ final class GameCore {
     private void spawn(Layout L) {
         Enemy e = new Enemy();
         int len = minWordLen() + rnd.nextInt(maxWordLen() - minWordLen() + 1);
-        e.word = new int[len];
-        e.need = new int[len];
-        for (int i = 0; i < len; i++) {
-            e.word[i] = rnd.nextInt(Glyph.COUNT);
-            e.need[i] = 1;
-        }
-        // Spend a press budget on stacks, so a word never demands more than MAX_PRESSES
-        // in total no matter how the extras land.
-        int budget = MAX_PRESSES - len;
-        float chance = stackChance();
-        for (int i = 0; i < len && budget > 0; i++) {
-            if (rnd.nextFloat() >= chance) continue;
-            int extra = 1 + rnd.nextInt(Math.min(3, budget));
-            e.need[i] += extra;
-            budget -= extra;
-        }
-        e.pos = 0;
-        e.done = 0;
+        Words.fill(e, len, stackChance(), rnd);
 
         float half = L.wordWidth(len) / 2f;
         e.sway = Math.min(0.035f * L.w, Math.max(0f, (L.playRight - L.playLeft) / 2f - half - 4f));
@@ -826,37 +763,7 @@ final class GameCore {
         enemies.add(e);
     }
 
-    private void explode(float x, float y, float spread, int n, int color) {
-        for (int i = 0; i < n; i++) {
-            Particle p = new Particle();
-            double a = rnd.nextFloat() * 6.283f;
-            float v = spread * (2.5f + rnd.nextFloat() * 4f);
-            p.x = x;
-            p.y = y;
-            p.vx = v * (float) Math.cos(a);
-            p.vy = v * (float) Math.sin(a);
-            p.max = 0.28f + rnd.nextFloat() * 0.42f;
-            p.life = p.max;
-            p.size = spread * (0.10f + rnd.nextFloat() * 0.16f);
-            p.color = color;
-            particles.add(p);
-        }
-    }
 
-    private void updateParticles(float dt) {
-        for (int i = particles.size() - 1; i >= 0; i--) {
-            Particle p = particles.get(i);
-            p.life -= dt;
-            if (p.life <= 0) {
-                particles.remove(i);
-                continue;
-            }
-            p.x += p.vx * dt;
-            p.y += p.vy * dt;
-            p.vx *= 0.94f;
-            p.vy = p.vy * 0.94f + 220f * dt;
-        }
-    }
 
     /** 0 at full health, rising to 1 as lives run out. Tints the whole screen red. */
     float harm() {

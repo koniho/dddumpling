@@ -174,14 +174,14 @@ final class Preview {
         for (int i = 0; i < 13; i++) c8.tapBonus(i % Glyph.COUNT);
         step(c8, L, 0.09f);
         System.out.printf("bonus: state=%d hits=%d open=%.2f lidPulse=%.2f flash=%.2f%n",
-                c8.state, c8.steamerHits, c8.lidOpen(), c8.lidPulse, c8.steamerFlash);
+                c8.state, c8.steamer.hits, c8.steamer.lidOpen(), c8.steamer.lidPulse, c8.steamer.flash);
         shot(dir, "14-bonus", c8, L, w, h, ss);
 
         // And the moment it breaks free.
         for (int i = 0; i < 8; i++) c8.tapBonus(i % Glyph.COUNT);
         step(c8, L, 0.5f);
         System.out.printf("bonus freed: opens=%d freedT=%.2f score=%d lives=%d%n",
-                c8.steamerOpens, c8.freedT, c8.score, c8.lives);
+                c8.steamer.opens, c8.steamer.freedT, c8.score, c8.lives);
         shot(dir, "15-bonus-freed", c8, L, w, h, ss);
 
         // Settings panel, opened mid-game.

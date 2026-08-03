@@ -1,0 +1,101 @@
+package com.sram.hexatype;
+
+/**
+ * The in-play readouts: score, stage, lives, the stage banner and the flawless-wave\n * celebration.
+ */
+final class Hud extends Draw {
+
+    private Hud() {}
+
+    // ---- HUD ----------------------------------------------------------------
+
+    static void hud(Painter p, GameCore c, Layout L) {
+        float s = L.unit;
+        p.text("SCORE", L.playLeft, L.hudY - s * 0.95f, s * 0.52f, INK_DIM, Painter.LEFT, false);
+        p.text(String.valueOf(c.score), L.playLeft, L.hudY, s * 1.05f, INK, Painter.LEFT, true);
+
+        p.text("STAGE " + c.stage, L.w / 2f, L.hudY - s * 0.95f, s * 0.58f, INK_DIM,
+                Painter.CENTER, true);
+        // Small hex-and-dot to the right: this readout is the settings button.
+        float gx = L.w / 2f + s * 2.5f, gy = L.hudY - s * 1.15f;
+        p.strokePoly(Glyph.hex(gx, gy, s * 0.34f), Glyph.withAlpha(INK, 95), s * 0.05f);
+        p.fillCircle(gx, gy, s * 0.10f, Glyph.withAlpha(INK, 120));
+        // One pip per word in this stage's wave, filling as each is dealt with.
+        int quota = c.stageQuota();
+        int done = Math.min(quota, c.resolvedThisStage);
+        float span = Math.min(s * 0.46f * (quota - 1), L.w * 0.38f);
+        float gap = quota > 1 ? span / (quota - 1) : 0f;
+        float x0 = L.w / 2f - span / 2f;
+        float pr = Math.min(s * 0.13f, gap * 0.36f);
+        for (int i = 0; i < quota; i++) {
+            p.fillCircle(x0 + i * gap, L.hudY - s * 0.30f, pr,
+                    i < done ? INK : Glyph.withAlpha(INK, 55));
+        }
+
+        float lr = s * 0.44f;
+        float step = lr * 2.25f;
+        for (int i = 0; i < GameCore.START_LIVES; i++) {
+            float cx = L.playRight - lr - (GameCore.START_LIVES - 1 - i) * step;
+            boolean alive = i < c.lives;
+            // The last life throbs, so you feel it without reading the HUD.
+            float rr = alive && c.lives == 1
+                    ? lr * (1f + 0.18f * (0.5f + 0.5f * (float) Math.sin(c.clock * 7f)))
+                    : lr;
+            p.fillPoly(Glyph.hex(cx, L.hudY - s * 0.34f, rr),
+                    alive ? Glyph.withAlpha(ROSE, 220) : Glyph.withAlpha(INK, 38));
+            if (!alive) {
+                p.strokePoly(Glyph.hex(cx, L.hudY - s * 0.34f, lr), Glyph.withAlpha(INK, 70),
+                        lr * 0.11f);
+            }
+        }
+    }
+
+    static void stageBanner(Painter p, GameCore c, Layout L) {
+        float k = Math.min(1f, c.stageBanner / 0.4f);
+        int a = (int) (235 * k);
+        p.text("STAGE " + c.stage, L.w / 2f, L.h * 0.38f, L.unit * 1.7f,
+                Glyph.withAlpha(INK, a), Painter.CENTER, true);
+        p.text("FASTER NOW", L.w / 2f, L.h * 0.38f + L.unit * 1.15f, L.unit * 0.6f,
+                Glyph.withAlpha(ROSE, a), Painter.CENTER, false);
+    }
+
+    /**
+     * Reward for clearing a whole wave without a single wrong press: a gold dumpling that
+     * fades in and bounces.
+     */
+    static void perfectStage(Painter p, GameCore c, Layout L) {
+        float t = 1f - c.perfectBanner / GameCore.PERFECT_TIME;   // 0 at the start
+        float in = Math.min(1f, t / 0.22f);                       // fade/scale in
+        float out = Math.min(1f, c.perfectBanner / 0.35f);        // and back out
+        float a = in * out;
+        if (a <= 0.01f) return;
+
+        float r = L.unit * 1.85f * (0.55f + 0.45f * in);
+        float cx = L.w / 2f;
+        // Bouncy: settles as the celebration plays out.
+        float bounce = (float) Math.abs(Math.sin(t * 9.5f)) * (1f - t) * r * 0.42f;
+        // Sits well above the stage banner at 0.38h, which shows at the same moment.
+        float cy = L.h * 0.205f - bounce;
+        float squash = 1f + 0.14f * (float) Math.sin(t * 19f) * (1f - t);
+
+        // Glowing star behind it: stacked translucent copies, largest and faintest first,
+        // turning slowly so the glow shimmers rather than sitting still.
+        float spin = c.clock * 0.5f;
+        float grow = 1f + 0.06f * (float) Math.sin(c.clock * 3.5f);
+        for (int k = 4; k >= 1; k--) {
+            float rr = r * (1.5f + 0.62f * k) * grow;
+            p.fillPoly(star(cx, cy, rr, rr * 0.40f, 8, spin),
+                    Glyph.withAlpha(GOLD, (int) (a * 26 / k)));
+        }
+        p.fillPoly(star(cx, cy, r * 2.05f * grow, r * 0.72f, 4, spin + 0.4f),
+                Glyph.withAlpha(0xFFFFF3C4, (int) (a * 105)));
+
+        for (int k = 3; k >= 1; k--) {
+            p.strokePoly(Glyph.hex(cx, cy, r * (1.25f + 0.30f * k)),
+                    Glyph.withAlpha(GOLD, (int) (a * 60 / k)), r * 0.05f);
+        }
+        Kawaii.moodDumpling(p, cx, cy, r, Glyph.withAlpha(GOLD, (int) (255 * a)), 1f, squash);
+        p.text("PERFECT WAVE", cx, cy + r * 1.85f, L.unit * 0.86f,
+                Glyph.withAlpha(GOLD, (int) (255 * a)), Painter.CENTER, true);
+    }
+}
