@@ -36,6 +36,7 @@ final class CoreTest {
         settings(L);
         destruction(L);
         indicatorsAndGlow(L);
+        sky(L);
         waves(L);
         entranceAndPersistence(L);
         warningsAndHarm(L);
@@ -763,6 +764,77 @@ final class CoreTest {
         k.update(DT, L);
         check("a fresh lock snaps into place",
                 Math.abs(k.caretXFor(other, L) - k.tileX(other, other.pos, L)) < 1f);
+    }
+
+    private static void sky(Layout L) {
+        group("cloud sky");
+        GameCore c = new GameCore(new Mem(), 111L);
+        c.startGame();
+
+        check("three cloud layers", GameCore.CLOUD_LAYERS == 3);
+        check("one layer in front, two behind", Renderer.CLOUD_FRONT_LAYER == 2);
+
+        boolean speedsRise = true;
+        for (int l = 1; l < GameCore.CLOUD_LAYERS; l++) {
+            if (GameCore.CLOUD_SPEED[l] <= GameCore.CLOUD_SPEED[l - 1]) speedsRise = false;
+        }
+        check("each layer drifts faster than the one behind it", speedsRise);
+        check("all layers actually move", GameCore.CLOUD_SPEED[0] > 0f);
+
+        // Phases must stay in 0..1 and wrap, never run away.
+        boolean inRange = true, moved = true, wrapped = false;
+        float[][] before = new float[GameCore.CLOUD_LAYERS][GameCore.CLOUDS_PER_LAYER];
+        for (int l = 0; l < GameCore.CLOUD_LAYERS; l++) {
+            for (int i = 0; i < GameCore.CLOUDS_PER_LAYER; i++) {
+                before[l][i] = c.cloudPhase(l, i);
+                if (before[l][i] < 0f || before[l][i] >= 1f) inRange = false;
+            }
+        }
+        advance(c, L, 3f);
+        for (int l = 0; l < GameCore.CLOUD_LAYERS; l++) {
+            for (int i = 0; i < GameCore.CLOUDS_PER_LAYER; i++) {
+                float now = c.cloudPhase(l, i);
+                if (now < 0f || now >= 1f) inRange = false;
+                if (now == before[l][i]) moved = false;
+            }
+        }
+        check("cloud phases stay inside 0..1", inRange);
+        check("clouds drift with the clock", moved);
+
+        // Long run: the front layer must wrap many times and stay bounded.
+        advance(c, L, 400f);
+        for (int l = 0; l < GameCore.CLOUD_LAYERS; l++) {
+            for (int i = 0; i < GameCore.CLOUDS_PER_LAYER; i++) {
+                float v = c.cloudPhase(l, i);
+                if (v < 0f || v >= 1f) inRange = false;
+            }
+        }
+        // 400s at the front-layer speed is well over one full traversal.
+        wrapped = 400f * GameCore.CLOUD_SPEED[Renderer.CLOUD_FRONT_LAYER] > 1f;
+        check("phases stay bounded over a long run", inRange);
+        check("the front layer wraps repeatedly", wrapped);
+
+        // Drift is a pure function of the clock, so two cores at the same time agree.
+        GameCore d = new GameCore(new Mem(), 222L);
+        d.clock = c.clock;
+        boolean deterministic = true;
+        for (int l = 0; l < GameCore.CLOUD_LAYERS; l++) {
+            for (int i = 0; i < GameCore.CLOUDS_PER_LAYER; i++) {
+                if (Math.abs(d.cloudPhase(l, i) - c.cloudPhase(l, i)) > 1e-5f) {
+                    deterministic = false;
+                }
+            }
+        }
+        check("cloud drift is identical for any core at the same clock", deterministic);
+
+        boolean spread = true;
+        for (int l = 0; l < GameCore.CLOUD_LAYERS; l++) {
+            for (int i = 0; i < GameCore.CLOUDS_PER_LAYER; i++) {
+                if (c.cloudX[l][i] < 0f || c.cloudX[l][i] > 1f) spread = false;
+                if (c.cloudW[l][i] <= 0f) spread = false;
+            }
+        }
+        check("cloud placement is on screen and sized", spread);
     }
 
     private static void waves(Layout L) {

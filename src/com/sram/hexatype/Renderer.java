@@ -26,7 +26,9 @@ final class Renderer {
         // characters, which have to stay legible at exactly the moment you are panicking.
         p.fillRect(0, 0, L.w, L.h, Glyph.mix(BG, BG_HURT, hurt * 0.45f));
         p.fillRect(0, L.keyTop - 0.02f * L.h, L.w, L.h, Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f));
-        stars(p, c, L);
+
+        // Two cloud layers behind the words...
+        for (int l = 0; l < CLOUD_FRONT_LAYER; l++) clouds(p, c, L, l, hurt);
 
         p.save();
         if (c.shake > 0) {
@@ -39,6 +41,11 @@ final class Renderer {
         for (int i = 0; i < c.enemies.size(); i++) enemy(p, c, L, c.enemies.get(i));
         shots(p, c, L);
         particles(p, c);
+
+        // ...and the nearest one in front of them, so words pass behind it. Kept the most
+        // translucent of the three: it drifts over the play area and must never hide a letter.
+        clouds(p, c, L, CLOUD_FRONT_LAYER, hurt);
+
         keys(p, c, L);
         p.restore();
 
@@ -167,13 +174,69 @@ final class Renderer {
 
     // ---- background ---------------------------------------------------------
 
-    private static void stars(Painter p, GameCore c, Layout L) {
-        for (int i = 0; i < c.starX.length; i++) {
-            float y = c.starY[i] * L.keyTop;
-            float tw = 0.55f + 0.45f * (float) Math.sin(c.clock * 1.4f + i);
-            int a = (int) (26 + 46 * c.starS[i] * tw);
-            p.fillCircle(c.starX[i] * L.w, y, c.starS[i] * 0.004f * L.w, Glyph.withAlpha(INK, a));
+    /** Per-layer cloud tint and opacity, back to front. */
+    private static final int[] CLOUD_TINT = {0xFF5C5490, 0xFF8478BE, 0xFFC3B7EE};
+    // Low, because the soft layers accumulate: the visible density is several times these.
+    private static final int[] CLOUD_ALPHA = {30, 22, 14};
+    /** The one layer drawn over the enemies; the rest go behind. */
+    static final int CLOUD_FRONT_LAYER = GameCore.CLOUD_LAYERS - 1;
+
+    /**
+     * One parallax layer of clouds, drifting downward. Nearer layers move faster, sit
+     * lighter and are drawn wider, which is what sells the depth.
+     */
+    private static void clouds(Painter p, GameCore c, Layout L, int layer, float hurt) {
+        int tint = Glyph.mix(CLOUD_TINT[layer], BG_HURT, hurt * 0.55f);
+        int alpha = CLOUD_ALPHA[layer];
+        // Nearer layers are bigger, so they read as closer to the camera.
+        float scale = 0.62f + 0.30f * layer;
+
+        for (int i = 0; i < GameCore.CLOUDS_PER_LAYER; i++) {
+            // Enters above the top edge and stops short of the key deck, which has to stay
+            // crisp — nothing pops into or out of existence on screen.
+            float y = -0.25f * L.keyTop + c.cloudPhase(layer, i) * 1.20f * L.keyTop;
+            float w = L.w * scale * c.cloudW[layer][i];
+            float h = L.h * 0.055f * scale * 1.15f;
+            cloud(p, c.cloudX[layer][i] * L.w, y, w, h, tint, alpha, c.cloudSeed[layer][i]);
         }
+    }
+
+    /**
+     * A single wide, soft cloud: a flat base with a row of puffs along it.
+     *
+     * Two things make it read as cloud rather than as a row of circles. The puffs are much
+     * wider than the gap between them, so they merge into one mass; and each is drawn as
+     * three nested ellipses with the outermost barely visible, so the accumulated alpha
+     * falls off gradually instead of ending at a hard edge.
+     */
+    private static void cloud(Painter p, float cx, float cy, float w, float h, int tint,
+            int alpha, int seed) {
+        p.fillEllipse(cx, cy, w * 0.5f, h * 0.40f, Glyph.withAlpha(tint, alpha * 40 / 100));
+
+        int puffs = 4;
+        for (int k = 0; k < puffs; k++) {
+            float t = (float) k / (puffs - 1);
+            // Taller through the middle, tapering at both ends.
+            float bump = 0.45f + 0.55f * (float) Math.sin(Math.PI * t);
+            // Spread kept well under the puff width, so neighbours overlap heavily.
+            float px = cx + (t - 0.5f) * w * 0.48f;
+            float ry = h * bump * (0.52f + 0.20f * hash(seed + k * 31));
+            float rx = ry * (2.3f + 0.8f * hash(seed + k * 57));
+            float py = cy - h * 0.12f * bump + h * 0.10f * (hash(seed + k * 91) - 0.5f);
+
+            // Outermost first, faintest: the overlap builds the falloff.
+            p.fillEllipse(px, py, rx * 1.42f, ry * 1.42f, Glyph.withAlpha(tint, alpha / 5));
+            p.fillEllipse(px, py, rx * 1.20f, ry * 1.20f, Glyph.withAlpha(tint, alpha / 3));
+            p.fillEllipse(px, py, rx, ry, Glyph.withAlpha(tint, alpha));
+        }
+    }
+
+    /** Deterministic 0..1 from an int, so cloud shapes are stable across frames. */
+    private static float hash(int seed) {
+        int h = seed * 374761393 + 668265263;
+        h = (h ^ (h >>> 13)) * 1274126177;
+        h ^= h >>> 16;
+        return (h & 0xFFFFFF) / (float) 0xFFFFFF;
     }
 
     /**

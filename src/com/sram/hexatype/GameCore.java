@@ -148,9 +148,26 @@ final class GameCore {
     final float[] keyBad = new float[Glyph.COUNT];
 
     /** Background starfield, in 0..1 view coordinates. Fixed seed: identical everywhere. */
-    final float[] starX = new float[70];
-    final float[] starY = new float[70];
-    final float[] starS = new float[70];
+    /**
+     * Parallax cloud layers, back to front. Positions are fixed offsets in 0..1 view
+     * coordinates; the drifting is a pure function of {@link #clock}, so no per-frame state
+     * is needed and the harness matches the device exactly.
+     */
+    static final int CLOUD_LAYERS = 3;
+    static final int CLOUDS_PER_LAYER = 3;
+    /** Downward drift per layer, in view heights per second. Back layer moves least. */
+    static final float[] CLOUD_SPEED = {0.010f, 0.024f, 0.052f};
+
+    final float[][] cloudX = new float[CLOUD_LAYERS][CLOUDS_PER_LAYER];
+    final float[][] cloudY = new float[CLOUD_LAYERS][CLOUDS_PER_LAYER];
+    final float[][] cloudW = new float[CLOUD_LAYERS][CLOUDS_PER_LAYER];
+    final int[][] cloudSeed = new int[CLOUD_LAYERS][CLOUDS_PER_LAYER];
+
+    /** Vertical position of a cloud right now, as a 0..1 fraction that wraps. */
+    float cloudPhase(int layer, int i) {
+        float v = cloudY[layer][i] + clock * CLOUD_SPEED[layer];
+        return v - (float) Math.floor(v);
+    }
 
     private final Random rnd;
     private final Store store;
@@ -172,10 +189,14 @@ final class GameCore {
         this.store = store;
         this.rnd = new Random(seed);
         Random sr = new Random(20260803L);
-        for (int i = 0; i < starX.length; i++) {
-            starX[i] = sr.nextFloat();
-            starY[i] = sr.nextFloat();
-            starS[i] = 0.35f + sr.nextFloat() * 0.65f;
+        for (int l = 0; l < CLOUD_LAYERS; l++) {
+            for (int i = 0; i < CLOUDS_PER_LAYER; i++) {
+                cloudX[l][i] = 0.1f + sr.nextFloat() * 0.8f;
+                // Spread evenly down the layer, then jitter, so gaps stay irregular.
+                cloudY[l][i] = (i + sr.nextFloat() * 0.7f) / CLOUDS_PER_LAYER;
+                cloudW[l][i] = 0.85f + sr.nextFloat() * 0.5f;
+                cloudSeed[l][i] = sr.nextInt(1 << 20);
+            }
         }
         if (store != null) {
             best = store.loadBest();
