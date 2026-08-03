@@ -18,9 +18,17 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
-        prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
-        goFullscreen();
-        setContentView(new GameView(this, this));
+        Crash.install(this);
+        try {
+            prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+            // setContentView first: it installs the decor view, and
+            // Window.getInsetsController() dereferences that decor view, so going
+            // fullscreen any earlier throws inside the framework.
+            setContentView(new GameView(this, this));
+            goFullscreen();
+        } catch (Throwable t) {
+            Crash.show(this, t);
+        }
     }
 
     @Override public int loadBest() {
@@ -61,6 +69,13 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     @Override public void onWindowFocusChanged(boolean has) {
         super.onWindowFocusChanged(has);
-        if (has) goFullscreen();
+        // Immersive mode is dropped whenever the bars are swiped in; re-assert it.
+        if (has) {
+            try {
+                goFullscreen();
+            } catch (Throwable t) {
+                Crash.show(this, t);
+            }
+        }
     }
 }

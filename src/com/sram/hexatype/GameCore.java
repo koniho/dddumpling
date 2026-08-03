@@ -28,6 +28,12 @@ final class GameCore {
         float deathT;
         /** 1 right after a correct hit, decaying: drives the colour flash and scale pop. */
         float hitPulse;
+        /** Which tile was just struck, so only that one takes the full pop. */
+        int hitIndex = -1;
+        /** 1 right after a wrong key reset this word, decaying. */
+        float failPulse;
+        /** 0..1 as the word slides in from above the top edge. */
+        float enterT;
         /** 0..1 as the word closes on the danger line. */
         float warn;
         /** Final lunge at the player, just before a life is lost. */
@@ -44,6 +50,8 @@ final class GameCore {
         int glyph;
         Enemy target;
         boolean kill;
+        /** Tile this shot is flying at; stored so a word restart cannot invalidate it. */
+        int tileIndex;
     }
 
     static final class Particle {
@@ -175,15 +183,23 @@ final class GameCore {
             }
             target = pick;
         } else if (target.word[target.pos] != g) {
+            // Engaged word, wrong letter: the whole word has to be retyped. The lock is
+            // kept so the retry is immediate rather than needing a re-target.
+            target.pos = 0;
+            target.hitPulse = 0f;
+            target.hitIndex = -1;
+            target.failPulse = 1f;
             miss(g);
             return false;
         }
 
         Enemy e = target;
-        float hx = tileX(e, e.pos, L);
+        int struck = e.pos;
+        float hx = tileX(e, struck, L);
         float hy = e.y;
         e.pos++;
         e.hitPulse = 1f;
+        e.hitIndex = struck;
         combo++;
         if (combo > maxCombo) maxCombo = combo;
         score += 5 + Math.min(combo, 25) / 2;
@@ -203,6 +219,7 @@ final class GameCore {
         s.glyph = g;
         s.target = e;
         s.kill = kill;
+        s.tileIndex = struck;
         s.dur = 0.13f;
         shots.add(s);
         return true;
@@ -226,11 +243,15 @@ final class GameCore {
         return e.baseX + e.sway * (float) Math.sin(clock * 1.1f + e.phase);
     }
 
-    /** Centre x of tile {@code i} of enemy {@code e}, accounting for consumed tiles. */
+    /**
+     * Centre x of tile {@code i} of enemy {@code e}. Indexed from the start of the whole
+     * word: cleared letters stay on screen until the word is finished, so the row never
+     * reflows under the player's thumbs mid-word.
+     */
     float tileX(Enemy e, int i, Layout L) {
-        float rowW = L.wordWidth(e.remaining());
+        float rowW = L.wordWidth(e.word.length);
         float left = enemyCentreX(e) - rowW / 2f + Layout.HEAD_SCALE * L.enemyR;
-        return left + (i - e.pos) * L.enemyStep;
+        return left + i * L.enemyStep;
     }
 
     // ---- simulation ---------------------------------------------------------
@@ -264,6 +285,10 @@ final class GameCore {
         for (int i = enemies.size() - 1; i >= 0; i--) {
             Enemy e = enemies.get(i);
             e.hitPulse = decay(e.hitPulse, dt * 6.5f);
+            e.failPulse = decay(e.failPulse, dt * 2.8f);
+            // Driven by position, not time: a timed ramp would finish while the word was
+            // still above the top edge, so nobody would ever see it.
+            e.enterT = clamp01((e.y + L.enemyR) / (L.enemyR * 3f));
 
             if (e.dying) {
                 e.deathT += dt;
@@ -304,7 +329,7 @@ final class GameCore {
             Shot s = shots.get(i);
             if (s.target != null && enemies.contains(s.target)) {
                 // Home in: the word keeps drifting while the shot is in the air.
-                s.tx = s.kill ? enemyCentreX(s.target) : tileX(s.target, s.target.pos - 1, L);
+                s.tx = s.kill ? enemyCentreX(s.target) : tileX(s.target, s.tileIndex, L);
                 s.ty = s.target.y;
             }
             s.t += dt / s.dur;
@@ -368,7 +393,10 @@ final class GameCore {
         float hi = L.playRight - half - e.sway;
         e.baseX = hi > lo ? lo + rnd.nextFloat() * (hi - lo) : (L.playLeft + L.playRight) / 2f;
         e.phase = rnd.nextFloat() * 6.283f;
-        e.y = L.playTop - L.enemyR;
+        // Start fully above the top edge so words visibly fly in rather than popping
+        // into existence. travelSeconds still measures spawn -> danger line.
+        e.y = -L.enemyR * 2.2f;
+        e.enterT = 0f;
         e.speed = (L.dangerY - e.y) / travelSeconds();
         enemies.add(e);
     }

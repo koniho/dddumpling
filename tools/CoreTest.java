@@ -22,6 +22,7 @@ final class CoreTest {
         scoringAndStages(L);
         breachAndGameOver(L);
         screens(L);
+        entranceAndPersistence(L);
         warningsAndHarm(L);
         perfectPlaySurvives(L);
         fuzz(L);
@@ -48,6 +49,18 @@ final class CoreTest {
         check("danger line above key deck", L.dangerY < L.keyTop);
         check("danger line below play top", L.dangerY > L.playTop);
         check("longest word fits the play area", L.wordWidth(5) < L.playRight - L.playLeft);
+        // Regression: with immersive insets reporting 0, the centred HUD landed at y=24
+        // on a 1080x2400 screen, i.e. underneath the punch-hole camera.
+        Layout zero = new Layout();
+        zero.compute(1080, 2400, 0, 0, 0, 0);
+        float stageTop = zero.hudY - 0.95f * zero.unit - 0.58f * zero.unit;
+        check("HUD clears the top edge even with zero insets", stageTop > 0.045f * 2400);
+        check("HUD sits below the safe top", zero.hudY > zero.topSafe);
+        check("play area starts below the HUD", zero.playTop > zero.hudY - zero.unit);
+        Layout inset = new Layout();
+        inset.compute(1080, 2400, 0, 140, 0, 60);
+        check("a real top inset is still honoured", inset.topSafe >= 140f);
+
         check("tap between clusters hits nothing",
                 L.keyAt((L.keyX[2] + L.keyX[3]) / 2f, L.keyY[0]) == -1);
         check("tap in the play field hits nothing", L.keyAt(L.w / 2f, L.h * 0.4f) == -1);
@@ -75,7 +88,13 @@ final class CoreTest {
         check("wrong key does not steal the lock", c.target == low);
         check("wrong key does not advance another word", high.pos == 0);
         check("wrong key breaks the combo", c.combo == 0 && comboBefore > 0);
+        check("wrong key restarts the engaged word", low.pos == 0);
+        check("restart flags the word for a flash", low.failPulse > 0f);
+        check("restart keeps every letter", low.word.length == 2);
 
+        // Retype it from the top.
+        c.tapKey(0, L);
+        check("retyping the restarted word advances again", low.pos == 1);
         c.tapKey(2, L);
         check("finishing a word releases the lock", c.target == null);
         check("finished word is marked dying", low.dying);
@@ -171,6 +190,45 @@ final class CoreTest {
         check("game over restarts after the grace period", c.state == GameCore.PLAY);
 
         check("keys are inert on non-play screens", !new GameCore(new Mem(), 9L).tapKey(0, L));
+    }
+
+    private static void entranceAndPersistence(Layout L) {
+        group("entrance and letter persistence");
+        GameCore c = new GameCore(new Mem(), 31L);
+        c.startGame();
+
+        // Let the spawner produce one naturally so spawn geometry is what is under test.
+        while (c.enemies.isEmpty()) c.update(DT, L);
+        GameCore.Enemy e = c.enemies.get(0);
+        check("words spawn fully above the top edge", e.y + L.enemyR < 0);
+        check("entrance starts hidden", e.enterT == 0f);
+
+        // Entrance is keyed to position, so it must still be mid-way at the top edge.
+        while (c.enemies.contains(e) && e.y < 0) c.update(DT, L);
+        check("entrance is partway as the word crosses the edge",
+                e.enterT > 0f && e.enterT < 1f);
+        while (c.enemies.contains(e) && e.y < L.enemyR * 2.5f) c.update(DT, L);
+        check("entrance completes once fully on screen", e.enterT == 1f);
+        check("word descends into the play area", e.y > 0);
+
+        // A word's row must not reflow as it is typed.
+        c.enemies.clear();
+        c.target = null;
+        GameCore.Enemy w = add(c, L, new int[] {0, 1, 2}, L.playTop + 100);
+        float x0 = c.tileX(w, 0, L), x1 = c.tileX(w, 1, L), x2 = c.tileX(w, 2, L);
+        c.tapKey(0, L);
+        check("typing a letter leaves it in the word", w.word.length == 3 && w.pos == 1);
+        check("cleared letter holds its position", c.tileX(w, 0, L) == x0);
+        check("remaining letters do not shift", c.tileX(w, 1, L) == x1 && c.tileX(w, 2, L) == x2);
+        c.tapKey(1, L);
+        check("second letter also stays put", c.tileX(w, 1, L) == x1 && w.pos == 2);
+        check("word is still three letters long", w.word.length == 3);
+
+        // Tiles must not overlap at the widest word.
+        check("tile spacing exceeds two head radii",
+                L.enemyStep > 2f * Layout.HEAD_SCALE * L.enemyR * 0.99f);
+        check("widest word still fits the play area",
+                L.wordWidth(5) < L.playRight - L.playLeft);
     }
 
     private static void warningsAndHarm(Layout L) {

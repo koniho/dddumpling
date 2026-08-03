@@ -95,9 +95,17 @@ public class GameView extends View {
         last = now;
         if (dt > 0.05f) dt = 0.05f;   // a backgrounded app must not teleport the wave
 
-        core.update(dt, layout);
-        painter.bind(c);
-        Renderer.draw(painter, core, layout);
+        try {
+            core.update(dt, layout);
+            painter.bind(c);
+            Renderer.draw(painter, core, layout);
+        } catch (Throwable t) {
+            // A throw from inside onDraw would otherwise kill the process with no trace.
+            if (getContext() instanceof android.app.Activity) {
+                Crash.show((android.app.Activity) getContext(), t);
+            }
+            return;
+        }
         postInvalidateOnAnimation();
     }
 }

@@ -45,7 +45,10 @@ final class Renderer {
         vignette(p, L, ROSE, Math.max(hurt, c.warnLevel * (0.45f + 0.55f * hurtPulse)));
 
         // The title and game-over screens carry their own numbers; a second copy is clutter.
-        if (c.state == GameCore.PLAY) hud(p, c, L);
+        if (c.state == GameCore.PLAY) {
+            hudBacking(p, L, Glyph.mix(BG, BG_HURT, hurt * 0.45f));
+            hud(p, c, L);
+        }
 
         if (c.flash > 0) p.fillRect(0, 0, L.w, L.h, Glyph.withAlpha(ROSE, (int) (c.flash * 52)));
 
@@ -87,6 +90,19 @@ final class Renderer {
         }
     }
 
+    /**
+     * Soft band over the strip above the play area. Words now spawn off-screen and slide
+     * down through it, so without this they would track across the score and stage
+     * readouts; with it they read as emerging from behind the HUD.
+     */
+    private static void hudBacking(Painter p, Layout L, int bg) {
+        int layers = 14;
+        int col = Glyph.withAlpha(bg, 26);
+        for (int i = 0; i < layers; i++) {
+            p.fillRect(0, 0, L.w, L.playTop * (1f - (float) i / layers), col);
+        }
+    }
+
     private static void dangerLine(Painter p, GameCore c, Layout L) {
         float alarm = c.warnLevel;
         int bands = 5;
@@ -119,7 +135,7 @@ final class Renderer {
 
         // Agitation as it closes on the line, becoming a full-body lunge on attack.
         float jx = 0, jy = 0;
-        float agitate = Math.max(e.warn, attack);
+        float agitate = Math.max(Math.max(e.warn, attack), e.failPulse * 0.85f);
         if (agitate > 0) {
             float m = agitate * L.enemyR * (0.14f + 0.30f * attack);
             jx = m * (float) Math.sin(c.clock * 47f + e.phase);
@@ -137,33 +153,46 @@ final class Renderer {
         }
 
         boolean locked = c.target == e;
-        float swell = 1f + 0.26f * attack + 0.08f * e.warn;
+        // Entrance: eases in as the word clears the top edge.
+        float enter = 0.62f + 0.38f * e.enterT;
+        float swell = (1f + 0.26f * attack + 0.08f * e.warn) * enter;
+        int fade = (int) (90 + 165 * e.enterT);
 
-        for (int i = e.pos; i < e.word.length; i++) {
+        for (int i = 0; i < e.word.length; i++) {
             int g = e.word[i];
             boolean head = i == e.pos;
+            boolean cleared = i < e.pos;
             float x = c.tileX(e, i, L) + jx;
             float y = e.y + jy;
 
             float wobble = c.clock * 3.1f + e.phase + i * 0.7f;
-            float cellR = L.enemyR * (head ? Layout.HEAD_SCALE : Layout.TILE_SCALE) * swell;
+            float scale = head ? Layout.HEAD_SCALE : cleared ? Layout.TILE_SCALE * 0.84f
+                    : Layout.TILE_SCALE;
+            float cellR = L.enemyR * scale * swell;
 
             int col = Glyph.COLOR[g];
-            if (e.hitPulse > 0) {
-                // Struck letters strobe through the palette and pop in scale. Held under a
-                // full swap so the letter keeps enough of its own hue to stay identifiable.
-                col = Glyph.mix(col, Glyph.cycle(c.clock * 7f + i * 0.17f), e.hitPulse * 0.62f);
+            // Only the tile actually struck takes the full colour strobe and pop.
+            float pop = (e.hitIndex == i) ? e.hitPulse : 0f;
+            if (pop > 0) {
+                col = Glyph.mix(col, Glyph.cycle(c.clock * 7f + i * 0.17f), pop * 0.62f);
             }
+            if (e.failPulse > 0) col = Glyph.mix(col, ROSE, e.failPulse * 0.75f);
             if (attack > 0) col = Glyph.mix(col, ROSE, attack * 0.35f);
 
-            p.fillPoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, head ? 52 : 30));
-            p.strokePoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, head ? 165 : 88),
+            // Cleared letters stay put — the word only leaves once it is fully typed — but
+            // recede so the remaining letters are what the eye lands on.
+            int fillA = cleared ? 26 : head ? 52 : 30;
+            int edgeA = cleared ? 58 : head ? 165 : 88;
+            p.fillPoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, fillA * fade / 255));
+            p.strokePoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, edgeA * fade / 255),
                     cellR * 0.075f);
 
             float charR = cellR * 0.60f * (1f + 0.045f * (float) Math.sin(wobble))
-                    * (1f + 0.34f * e.hitPulse);
-            float squash = 1f + 0.16f * e.hitPulse - 0.05f * (float) Math.sin(wobble);
-            Kawaii.draw(p, g, x, y, charR, col, squash, head ? 0.4f : 0.1f);
+                    * (1f + 0.34f * pop);
+            float squash = 1f + 0.16f * pop - 0.05f * (float) Math.sin(wobble);
+            int charCol = cleared ? Glyph.withAlpha(Glyph.mix(col, INK_DIM, 0.42f), 180) : col;
+            Kawaii.draw(p, g, x, y, charR, charCol, squash,
+                    cleared ? 1f : head ? 0.4f : 0.1f);
 
             if (head && locked) {
                 // Thicker white outline plus a caret: unmistakable without growing the cell.

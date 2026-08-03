@@ -34,6 +34,8 @@ final class Layout {
     static final float TILE_SCALE = 0.94f;
 
     float hudY;
+    /** Top edge that content must stay below, even when insets report zero. */
+    float topSafe;
     /** Base text size; all type is a multiple of this. */
     float unit;
 
@@ -74,8 +76,12 @@ final class Layout {
         dangerY = keyTop - 0.05f * h;
 
         unit = 0.042f * w;
-        hudY = padT + 0.020f * h + unit;
-        playTop = padT + 0.075f * h;
+        // Immersive mode reports no system-bar inset, and some devices report no cutout
+        // inset either, so padT can be 0 — which would put the centred HUD directly under
+        // a punch-hole camera. Keep a floor regardless of what the insets claim.
+        topSafe = Math.max(padT, 0.045f * h);
+        hudY = topSafe + 0.024f * h + unit;
+        playTop = topSafe + 0.058f * h;
         playLeft = padL + 0.02f * w;
         playRight = w - padR - 0.02f * w;
 
@@ -84,9 +90,12 @@ final class Layout {
         enemyStep = (HEAD_SCALE + TILE_SCALE + 0.22f) * enemyR;
     }
 
-    /** Total width of a word of {@code n} tiles, including the enlarged head. */
+    /**
+     * Total width of a word of {@code n} tiles. Sized for a head tile at either end,
+     * because the head advances through the word while the row stays put.
+     */
     float wordWidth(int n) {
-        return (n - 1) * enemyStep + (HEAD_SCALE + TILE_SCALE) * enemyR;
+        return (n - 1) * enemyStep + 2f * HEAD_SCALE * enemyR;
     }
 
     /** Index of the key hex containing x,y, or -1. */
