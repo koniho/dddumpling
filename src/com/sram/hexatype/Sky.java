@@ -1,7 +1,8 @@
 package com.sram.hexatype;
 
 /**
- * Background, parallax clouds, the red edge vignette and the band behind the HUD.\n * Everything that sits behind or over the play field without being part of it.
+ * Background, parallax clouds, the red edge vignette and the band behind the HUD —
+ * everything that sits behind or over the play field without being part of it.
  */
 final class Sky extends Draw {
 
@@ -54,6 +55,15 @@ final class Sky extends Draw {
         if (c.skyGlow > 0f) {
             tint = Glyph.mix(tint, c.skyGlowColor, c.skyGlow * 0.60f);
             alpha += (int) (alpha * c.skyGlow * 0.75f);
+        }
+        // A frenzy pushes the whole sky into cycling colour and thickens it, on top of the
+        // fourfold drift that skyClock is already supplying.
+        if (c.powerActive()) {
+            float bite = Math.min(1f, c.modeLeft / 0.6f);     // eases out at the very end
+            // Colour carries the chaos; density is kept modest because the letters have to
+            // stay readable through it, and the 4x drift already thickens the overlap.
+            tint = Glyph.mix(tint, Glyph.cycle(c.clock * 0.9f + layer * 0.22f), 0.60f * bite);
+            alpha += (int) (alpha * 0.30f * bite);
         }
         float scale = cloudScale(layer);
         float h = cloudHeight(L, layer);

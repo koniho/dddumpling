@@ -48,6 +48,14 @@ final class GameCore {
         void achievement();
         /** Switch the looping background track to {@link Music#NAMES}[choice]. */
         void selectMusic(int choice);
+
+        void gameStart();
+        /** Stage cleared normally. Suppressed when {@link #powerClear()} fires instead. */
+        void stageClear();
+        /** A frenzy ran to its end and took the stage with it. */
+        void powerClear();
+        /** Swap the looping track to the faster driven variant, and back. */
+        void frenzy(boolean on);
     }
 
     /** Optional; null in the harness unless a test is watching for effects. */
@@ -82,7 +90,26 @@ final class GameCore {
         /** Per-tile fly-off direction, -1 left or +1 right. */
         float[] flyDir;
 
+        /**
+         * Tiles removed out of order — flung away by hand, or cleared en masse by MULTI.
+         * Typing still advances {@link #pos} in order; it simply skips anything already gone.
+         */
+        boolean[] gone;
+        /** 0..1 animation of a gone tile leaving, and the direction it left in. */
+        float[] goneT;
+        float[] goneDx, goneDy;
+
         int remaining() { return word.length - pos; }
+
+        /** True when tile {@code i} is dealt with, whether typed in order or removed. */
+        boolean resolved(int i) {
+            return i < pos || gone[i];
+        }
+
+        /** Steps {@link #pos} over any tiles already gone. */
+        void skipGone() {
+            while (pos < word.length && gone[pos]) pos++;
+        }
 
         boolean typeable() {
             return !dying && !attacking && !destroyed && pos < word.length;
@@ -160,6 +187,110 @@ final class GameCore {
     final Steamer steamer = new Steamer();
     float bonusTimer;
 
+    // ---- powerup ------------------------------------------------------------
+    /** At most one glowing letter on screen. */
+    Power power;
+    float powerTimer;
+    /** Active mode, or -1. */
+    int mode = -1;
+    float modeLeft;
+    /** Set when a frenzy ended the stage, so the interlude can run longer. */
+    boolean stageByPower;
+    /**
+     * Drives the clouds. Separate from {@link #clock} because it runs fast during a frenzy;
+     * accumulating it keeps the drift continuous rather than jumping when the frenzy ends.
+     */
+    float skyClock;
+
+    boolean powerActive() { return modeLeft > 0f; }
+
+    boolean flurry() { return powerActive() && mode == Power.FLURRY; }
+
+    boolean flinging() { return powerActive() && mode == Power.FLING; }
+
+    boolean multi() { return powerActive() && mode == Power.MULTI; }
+
+    /** Scratch results from {@link #pickTile}. */
+    Enemy pickedEnemy;
+    int pickedTile = -1;
+
+    /** Ticks the frenzy timer, and the drifting letter that starts one. */
+    private void updatePower(float dt, Layout L) {
+        if (powerActive()) {
+            modeLeft -= dt;
+            if (modeLeft <= 0f) endPower(L);
+        }
+
+        if (power != null) {
+            power.update(dt);
+            if (power.spent() || (power.catchable() && power.offScreen(L, L.enemyR))) {
+                power = null;
+                powerTimer = Power.SPAWN_MIN
+                        + rnd.nextFloat() * (Power.SPAWN_MAX - Power.SPAWN_MIN);
+            }
+            return;
+        }
+
+        // One frenzy at a time, and none while the wave is already over.
+        if (powerActive() || stageGap > 0 || spawnedThisStage >= stageQuota()) return;
+        powerTimer -= dt;
+        if (powerTimer <= 0f) spawnPower(L);
+    }
+
+    /** Releases a powerup letter to drift across the sky. */
+    private void spawnPower(Layout L) {
+        Power w = new Power();
+        w.glyph = rnd.nextInt(Glyph.COUNT);
+        w.effect = rnd.nextInt(Power.COUNT);
+        // Kept in the upper half of the descent, clear of the danger line.
+        w.y = L.playTop + (L.dangerY - L.playTop) * (0.15f + rnd.nextFloat() * 0.30f);
+        boolean toRight = rnd.nextBoolean();
+        float span = L.w + L.enemyR * 5f;
+        w.vx = (toRight ? 1f : -1f) * span / Power.CROSS_TIME;
+        w.x = toRight ? -L.enemyR * 2.5f : L.w + L.enemyR * 2.5f;
+        power = w;
+    }
+
+    /** Caught it: grants the mode and kicks off the frenzy. */
+    private void catchPower(Layout L) {
+        power.hit = true;
+        power.hitT = 0f;
+        mode = power.effect;
+        modeLeft = Power.DURATION;
+        score += Power.SCORE;
+        shake = Math.max(shake, 0.5f);
+        flash = Math.max(flash, 0.8f);
+        flashColor = FLASH_CLEAR;
+        skyGlow = 1f;
+        skyGlowColor = Glyph.cycle(clock);
+        Fx.explode(this, rnd, power.x, power.y, L.enemyR * 2.2f, 26, 0xFFFFFFFF);
+        if (sound != null) {
+            sound.achievement();
+            sound.frenzy(true);
+        }
+    }
+
+    /**
+     * The frenzy ran out. That clears the stage outright: everything still on the field is
+     * destroyed and the wave counts as fully released, so the interlude follows.
+     */
+    private void endPower(Layout L) {
+        mode = -1;
+        modeLeft = 0f;
+        for (int i = enemies.size() - 1; i >= 0; i--) {
+            Enemy e = enemies.get(i);
+            if (!e.destroyed) destroyWord(e, enemyCentreX(e), e.y, L);
+        }
+        spawnedThisStage = stageQuota();
+        stageByPower = true;
+        flash = Math.max(flash, 1f);
+        flashColor = FLASH_CLEAR;
+        skyGlow = 1f;
+        skyGlowColor = FLASH_CLEAR;
+        shake = Math.max(shake, 0.7f);
+        if (sound != null) sound.frenzy(false);
+    }
+
     /**
      * Smoothed x of the lock indicator, so it slides from letter to letter as you type
      * rather than teleporting. Owner is tracked separately: switching to a different word
@@ -187,7 +318,7 @@ final class GameCore {
 
     /** Vertical position of a cloud right now, as a 0..1 fraction that wraps. */
     float cloudPhase(int layer, int i) {
-        float v = cloudY[layer][i] + clock * CLOUD_SPEED[layer];
+        float v = cloudY[layer][i] + skyClock * CLOUD_SPEED[layer];
         return v - (float) Math.floor(v);
     }
 
@@ -324,7 +455,16 @@ final class GameCore {
         skyGlow = 0;
         steamer.reset();
         bonusTimer = 0;
+        power = null;
+        mode = -1;
+        modeLeft = 0;
+        stageByPower = false;
+        powerTimer = Power.SPAWN_MIN;
         stageBanner = 1.5f;
+        if (sound != null) {
+            sound.frenzy(false);
+            sound.gameStart();
+        }
     }
 
     void toTitle() {
@@ -353,14 +493,29 @@ final class GameCore {
 
         if (target != null && (!target.typeable() || !enemies.contains(target))) target = null;
 
+        // The drifting powerup outranks the words — but only when nothing is engaged, so it
+        // can never steal a press out of a word you are part-way through.
+        if (target == null && power != null && power.catchable()
+                && (power.glyph == g || flurry())) {
+            hits++;
+            combo++;
+            if (combo > maxCombo) maxCombo = combo;
+            catchPower(L);
+            return true;
+        }
+
+        // MULTI: one press takes every matching letter on the field, engaged or not.
+        if (multi()) return multiStrike(g, L);
+
         if (target == null) {
             // Engage the most urgent match: the word lowest on screen, i.e. closest to
-            // reaching the player, whose next-needed letter is g.
+            // reaching the player, whose next-needed letter is g. During FLURRY any letter
+            // matches, so this just takes the most urgent word outright.
             Enemy pick = null;
             for (int i = 0; i < enemies.size(); i++) {
                 Enemy e = enemies.get(i);
                 if (!e.typeable()) continue;
-                if (e.word[e.pos] != g) continue;
+                if (!flurry() && e.word[e.pos] != g) continue;
                 if (pick == null || e.y > pick.y) pick = e;
             }
             if (pick == null) {
@@ -368,7 +523,7 @@ final class GameCore {
                 return false;
             }
             target = pick;
-        } else if (target.word[target.pos] != g) {
+        } else if (!flurry() && target.word[target.pos] != g) {
             // Engaged word, wrong letter: the whole word has to be retyped from scratch,
             // which also resets every stack count. The lock is dropped rather than held —
             // re-engaging is a deliberate press, so the next press is free to pick whatever
@@ -389,19 +544,23 @@ final class GameCore {
         int struck = e.pos;
         float hx = tileX(e, struck, L);
         float hy = e.y;
+        // Under FLURRY the pressed key is a wildcard, so the shot and the wash take the
+        // letter actually being hit rather than whatever was pressed.
+        int lit = e.word[struck];
 
         // A stacked tile absorbs several presses of the same letter before it clears.
-        if (sound != null) sound.squish(g, pressesLeft(e, struck));
+        if (sound != null) sound.squish(lit, pressesLeft(e, struck));
         e.done++;
         if (e.done >= e.need[struck]) {
             e.pos++;
+            e.skipGone();
             e.done = 0;
         }
         e.hitPulse = 1f;
         e.hitIndex = struck;
         // Faint wash of the struck letter's own colour across the sky.
         skyGlow = Math.max(skyGlow, GLOW_HIT);
-        skyGlowColor = Glyph.COLOR[g];
+        skyGlowColor = Glyph.COLOR[lit];
         hits++;
         combo++;
         if (combo > maxCombo) maxCombo = combo;
@@ -419,12 +578,42 @@ final class GameCore {
         s.sy = L.keyY[g];
         s.tx = hx;
         s.ty = hy;
-        s.glyph = g;
+        s.glyph = lit;
         s.target = e;
         s.kill = kill;
         s.tileIndex = struck;
         s.dur = 0.13f;
         shots.add(s);
+        return true;
+    }
+
+    /**
+     * MULTI: one press takes every tile of that letter across every word, engaged or not.
+     * Scores per tile and counts as a single hit, so it cannot inflate accuracy.
+     */
+    private boolean multiStrike(int g, Layout L) {
+        int taken = 0;
+        // Downward: removing the last tile of a word destroys it and mutates the list.
+        for (int n = enemies.size() - 1; n >= 0; n--) {
+            Enemy e = enemies.get(n);
+            if (!e.typeable()) continue;
+            for (int i = e.word.length - 1; i >= e.pos; i--) {
+                if (e.gone[i] || e.word[i] != g) continue;
+                removeTile(e, i, 0f, -1f, L);
+                taken++;
+                if (!e.typeable()) break;
+            }
+        }
+        if (taken == 0) {
+            miss(g);
+            return false;
+        }
+        hits++;
+        combo++;
+        if (combo > maxCombo) maxCombo = combo;
+        score += 8 * taken;
+        shake = Math.max(shake, 0.2f + 0.04f * taken);
+        if (sound != null) sound.squish(g, 1);
         return true;
     }
 
@@ -475,9 +664,9 @@ final class GameCore {
         return caretOwner == e ? caretX : tileX(e, e.pos, L);
     }
 
-    /** Presses still owed on tile {@code i}; 0 once it is cleared. */
+    /** Presses still owed on tile {@code i}; 0 once it is resolved, however that happened. */
     int pressesLeft(Enemy e, int i) {
-        if (i < e.pos) return 0;
+        if (e.resolved(i)) return 0;
         return e.need[i] - (i == e.pos ? e.done : 0);
     }
 
@@ -511,6 +700,9 @@ final class GameCore {
         clock += dt;
         if (settingsOpen) return;
         time += dt;
+        // Accumulated, not derived from clock, so the frenzy's faster drift does not make the
+        // sky jump when it starts or stops.
+        skyClock += dt * (powerActive() ? Power.SKY_RATE : 1f);
 
         for (int i = 0; i < Glyph.COUNT; i++) {
             keyPress[i] = decay(keyPress[i], dt * 5.5f);
@@ -545,18 +737,21 @@ final class GameCore {
 
         if (state != PLAY) return;
 
+        updatePower(dt, L);
+
         // Stages are discrete waves: a stage releases exactly stageQuota() words, and the
         // next stage cannot start arriving until the field is completely clear.
         if (stageGap > 0) {
             stageGap -= dt;
-        } else if (spawnedThisStage < stageQuota()) {
+        } else if (powerActive() || spawnedThisStage < stageQuota()) {
             spawnTimer -= dt;
             // Counted against live words only: a word already flying apart is no longer
-            // occupying the field as far as pacing is concerned.
+            // occupying the field as far as pacing is concerned. During a frenzy the quota
+            // is ignored: words keep coming until the timer runs out and ends the stage.
             if (spawnTimer <= 0 && liveEnemies() < maxEnemies()) {
                 spawn(L);
-                spawnedThisStage++;
-                spawnTimer = spawnInterval();
+                if (!powerActive()) spawnedThisStage++;
+                spawnTimer = spawnInterval() / (powerActive() ? Power.SPAWN_RATE : 1f);
             }
         } else if (stageCleared()) {
             enterBonus();
@@ -571,6 +766,9 @@ final class GameCore {
             Enemy e = enemies.get(i);
             e.hitPulse = decay(e.hitPulse, dt * 6.5f);
             e.failPulse = decay(e.failPulse, dt * 2.8f);
+            for (int k = 0; k < e.word.length; k++) {
+                if (e.gone[k] && e.goneT[k] < 1f) e.goneT[k] = Math.min(1f, e.goneT[k] + dt * 3.2f);
+            }
             // Driven by position, not time: a timed ramp would finish while the word was
             // still above the top edge, so nobody would ever see it.
             e.enterT = clamp01((e.y + L.enemyR) / (L.enemyR * 3f));
@@ -620,31 +818,89 @@ final class GameCore {
     void impact(Shot s, Layout L) {
         Enemy e = s.target;
         if (s.kill && e != null && enemies.contains(e) && !e.destroyed) {
-            // The word is credited now but stays listed until it has flown apart, so
-            // anything gated on the field being clear waits for the animation.
-            e.destroyed = true;
-            e.destroyT = 0f;
-            e.dying = false;
-            computeFlyDirs(e, L);
-
-            Fx.explode(this, rnd, enemyCentreX(e), e.y, L.enemyR * 1.5f, e.word.length + 8, 0xFFFFFFFF);
-            for (int i = 0; i < e.word.length; i++) {
-                Fx.explode(this, rnd, s.tx, s.ty, L.enemyR, 4, Glyph.COLOR[e.word[i]]);
-            }
-            shake = Math.max(shake, 0.30f);
-            // Clearing a word flashes the screen and floods the sky yellow.
-            flash = Math.max(flash, 0.60f);
-            flashColor = FLASH_CLEAR;
-            skyGlow = 1f;
-            skyGlowColor = FLASH_CLEAR;
-            kills++;
-            resolvedThisStage++;
-            // Scored per press, so a stacked word is worth what it cost to clear.
-            score += 25 * e.totalPresses();
-            if (sound != null) sound.clearWord();
+            destroyWord(e, s.tx, s.ty, L);
         } else {
             Fx.explode(this, rnd, s.tx, s.ty, L.enemyR * 0.7f, 7, Glyph.COLOR[s.glyph]);
         }
+    }
+
+    /**
+     * Credits a finished word and starts it flying apart. Shared by the ordinary typed kill,
+     * by out-of-order removal (flinging and MULTI), and by the end of a frenzy.
+     *
+     * @param px,py where the burst originates, usually the last tile struck
+     */
+    void destroyWord(Enemy e, float px, float py, Layout L) {
+        // The word is credited now but stays listed until it has flown apart, so anything
+        // gated on the field being clear waits for the animation.
+        e.destroyed = true;
+        e.destroyT = 0f;
+        e.dying = false;
+        if (target == e) target = null;
+        computeFlyDirs(e, L);
+
+        Fx.explode(this, rnd, enemyCentreX(e), e.y, L.enemyR * 1.5f, e.word.length + 8,
+                0xFFFFFFFF);
+        for (int i = 0; i < e.word.length; i++) {
+            Fx.explode(this, rnd, px, py, L.enemyR, 4, Glyph.COLOR[e.word[i]]);
+        }
+        shake = Math.max(shake, 0.30f);
+        // Clearing a word flashes the screen and floods the sky yellow.
+        flash = Math.max(flash, 0.60f);
+        flashColor = FLASH_CLEAR;
+        skyGlow = 1f;
+        skyGlowColor = FLASH_CLEAR;
+        kills++;
+        resolvedThisStage++;
+        // Scored per press, so a stacked word is worth what it cost to clear.
+        score += 25 * e.totalPresses();
+        if (sound != null) sound.clearWord();
+    }
+
+    /**
+     * Removes tile {@code i} out of order, sending it off along dx,dy. Used by flinging and
+     * by MULTI. Finishes the word if that was the last tile left.
+     */
+    void removeTile(Enemy e, int i, float dx, float dy, Layout L) {
+        if (e.gone[i] || i < e.pos || !e.typeable()) return;
+        e.gone[i] = true;
+        e.goneT[i] = 0f;
+        float len = (float) Math.sqrt(dx * dx + dy * dy);
+        e.goneDx[i] = len > 1e-4f ? dx / len : 0f;
+        e.goneDy[i] = len > 1e-4f ? dy / len : -1f;
+        float tx = tileX(e, i, L);
+        Fx.explode(this, rnd, tx, e.y, L.enemyR * 0.9f, 6, Glyph.COLOR[e.word[i]]);
+        skyGlow = Math.max(skyGlow, GLOW_HIT);
+        skyGlowColor = Glyph.COLOR[e.word[i]];
+
+        e.skipGone();
+        if (e.pos >= e.word.length) destroyWord(e, tx, e.y, L);
+    }
+
+    /**
+     * The topmost tile under a point, for flinging. Results land in {@link #pickedEnemy} and
+     * {@link #pickedTile} to avoid allocating on every touch move.
+     */
+    boolean pickTile(float x, float y, Layout L) {
+        pickedEnemy = null;
+        pickedTile = -1;
+        float best = Float.MAX_VALUE;
+        for (int n = 0; n < enemies.size(); n++) {
+            Enemy e = enemies.get(n);
+            if (!e.typeable()) continue;
+            for (int i = e.pos; i < e.word.length; i++) {
+                if (e.gone[i]) continue;
+                float dx = x - tileX(e, i, L), dy = y - e.y;
+                float d = dx * dx + dy * dy;
+                float r = L.enemyR * 1.5f;
+                if (d <= r * r && d < best) {
+                    best = d;
+                    pickedEnemy = e;
+                    pickedTile = i;
+                }
+            }
+        }
+        return pickedEnemy != null;
     }
 
     /**
@@ -679,11 +935,19 @@ final class GameCore {
     private void enterBonus() {
         state = BONUS;
         time = 0;
-        bonusTimer = BONUS_TIME;
+        // A stage ended by a frenzy earns a longer go at the steamer.
+        bonusTimer = BONUS_TIME + (stageByPower ? Power.BONUS_EXTRA : 0f);
         steamer.lidPulse = 0;
         steamer.flash = 0;
         target = null;
         caretOwner = null;
+        power = null;
+        if (sound != null) {
+            // The frenzy tone replaces the ordinary one rather than stacking with it.
+            if (stageByPower) sound.powerClear();
+            else sound.stageClear();
+        }
+        stageByPower = false;
     }
 
     /**

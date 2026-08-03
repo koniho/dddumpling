@@ -25,6 +25,7 @@ final class Audio implements GameCore.Sound {
     private AudioTrack bgmTrack;
     private MediaPlayer bgmPlayer;
     private boolean bgmStarted;
+    private boolean frenzyPlaying;
 
     Audio(Context ctx) {
         this.ctx = ctx;
@@ -54,7 +55,7 @@ final class Audio implements GameCore.Sound {
                 // "MY TRACK" plays res/raw/bgm when present, and falls back to the synth
                 // loop when it is not, so the option is never a dead end.
                 if (style == Music.CUSTOM && playRawMusic()) return;
-                playSynthMusic(Music.isSynth(style) ? style : Music.SWING_STYLE);
+                playSynthMusic(Music.isSynth(style) ? style : Music.SWING_STYLE, frenzyPlaying);
             }
         }, "hexatype-bgm").start();
     }
@@ -91,9 +92,9 @@ final class Audio implements GameCore.Sound {
         }
     }
 
-    private void playSynthMusic(int style) {
+    private void playSynthMusic(int style, boolean frenzy) {
         try {
-            short[] pcm = Music.loop(style);
+            short[] pcm = Music.loop(style, frenzy);
             AudioTrack t = new AudioTrack(
                     new AudioAttributes.Builder()
                             .setUsage(AudioAttributes.USAGE_GAME)
@@ -193,6 +194,36 @@ final class Audio implements GameCore.Sound {
 
     @Override public void achievement() {
         play(Sfx.ACHIEVEMENT, 1f);
+    }
+
+    @Override public void gameStart() {
+        play(Sfx.START, 1f);
+    }
+
+    @Override public void stageClear() {
+        play(Sfx.STAGE_CLEAR, 1f);
+    }
+
+    @Override public void powerClear() {
+        play(Sfx.POWER_CLEAR, 1f);
+    }
+
+    /** Swaps the looping track for the driven variant of whatever the player selected. */
+    @Override public void frenzy(boolean on) {
+        if (frenzyPlaying == on) return;
+        frenzyPlaying = on;
+        if (!bgmStarted || choice == Music.OFF) return;
+        stopMusic();
+        final int style = Music.isSynth(choice) ? choice : Music.SWING_STYLE;
+        final boolean fast = on;
+        new Thread(new Runnable() {
+            @Override public void run() {
+                // A custom track cannot be sped up on API 21, so the frenzy always uses the
+                // synth variant; the player's own track resumes when it ends.
+                if (!fast && choice == Music.CUSTOM && playRawMusic()) return;
+                playSynthMusic(style, fast);
+            }
+        }, "hexatype-bgm").start();
     }
 
     void release() {

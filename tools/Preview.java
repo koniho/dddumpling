@@ -89,6 +89,10 @@ final class Preview {
         GameCore.Enemy near = new GameCore.Enemy();
         near.word = new int[] {2, 5, 0};
         near.need = new int[] {1, 2, 1};
+        near.gone = new boolean[3];
+        near.goneT = new float[3];
+        near.goneDx = new float[3];
+        near.goneDy = new float[3];
         near.baseX = (L.playLeft + L.playRight) / 2f;
         near.y = L.dangerY - (L.dangerY - L.playTop) * 0.06f;
         near.speed = 0;
@@ -152,6 +156,10 @@ final class Preview {
         GameCore.Enemy boom = new GameCore.Enemy();
         boom.word = new int[] {1, 3, 0, 4};
         boom.need = new int[] {1, 1, 1, 1};
+        boom.gone = new boolean[4];
+        boom.goneT = new float[4];
+        boom.goneDx = new float[4];
+        boom.goneDy = new float[4];
         boom.baseX = (L.playLeft + L.playRight) / 2f;
         boom.y = L.playTop + (L.dangerY - L.playTop) * 0.45f;
         boom.enterT = 1f;
@@ -183,6 +191,29 @@ final class Preview {
         System.out.printf("bonus freed: opens=%d freedT=%.2f score=%d lives=%d%n",
                 c8.steamer.opens, c8.steamer.freedT, c8.score, c8.lives);
         shot(dir, "15-bonus-freed", c8, L, w, h, ss);
+
+        // The powerup letter drifting across, before it is caught.
+        GameCore c9 = new GameCore(store, 41L);
+        c9.startGame();
+        c9.score = 1750;
+        step(c9, L, 2.0f);
+        Power drift = new Power();
+        drift.glyph = 3;
+        drift.effect = Power.FLURRY;
+        drift.y = L.playTop + (L.dangerY - L.playTop) * 0.28f;
+        drift.x = L.w * 0.42f;
+        drift.vx = L.w / Power.CROSS_TIME;
+        c9.power = drift;
+        step(c9, L, 0.4f);
+        System.out.printf("powerup adrift: %s at x=%.0f%n", drift.name(), drift.x);
+        shot(dir, "16-powerup", c9, L, w, h, ss);
+
+        // Mid-frenzy: chaotic sky, rainbow letters, mode bar counting down.
+        c9.tapKey(3, L);
+        step(c9, L, 2.5f);
+        System.out.printf("frenzy: mode=%s left=%.1f enemies=%d%n",
+                Power.NAMES[c9.mode], c9.modeLeft, c9.enemies.size());
+        shot(dir, "17-frenzy", c9, L, w, h, ss);
 
         // Settings panel, opened mid-game.
         GameCore c6 = new GameCore(store, 29L);
@@ -253,7 +284,7 @@ final class Preview {
         sfxDir.mkdirs();
         String[] names = {"squish-dumpling", "squish-strawberry", "squish-cat", "squish-grapes",
                 "squish-squishy", "squish-blob", "damage-drip", "clear-word", "wrong",
-                "achievement"};
+                "achievement", "game-start", "stage-clear", "power-clear"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);
@@ -272,6 +303,10 @@ final class Preview {
             System.out.printf("  wrote bgm-%-12s %.2fs peak=%d%n", slug,
                     (float) loop.length / Sfx.RATE, lmax);
         }
+        short[] fren = Music.loop(Music.SWING_STYLE, true);
+        Wav.write(new File(sfxDir, "bgm-frenzy.wav"), fren, Sfx.RATE);
+        System.out.printf("  wrote bgm-frenzy      %.2fs (four on the floor)%n",
+                (float) fren.length / Sfx.RATE);
         System.out.printf("  wrote %d sfx, peak=%d%n", Sfx.COUNT, peak);
     }
 

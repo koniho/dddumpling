@@ -57,23 +57,42 @@ final class Music {
         return 60f / STYLE[style][0];
     }
 
+    /** Tempo multiplier for the powerup variant. */
+    private static final float FRENZY_TEMPO = 1.35f;
+
     /** Total loop length in samples for the given style. */
     static int loopFrames(int style) {
-        return (int) (Sfx.RATE * beat(style) * BEATS);
+        return loopFrames(style, false);
     }
 
-    /** The whole loop as 16-bit mono PCM, peak-normalised then trimmed to sit under the SFX. */
-    static short[] loop(int style) {
+    static int loopFrames(int style, boolean frenzy) {
         if (!isSynth(style)) style = SWING_STYLE;
-        float swing = STYLE[style][1];
+        float spb = beat(style) / (frenzy ? FRENZY_TEMPO : 1f);
+        return (int) (Sfx.RATE * spb * BEATS);
+    }
+
+    static short[] loop(int style) {
+        return loop(style, false);
+    }
+
+    /**
+     * The whole loop as 16-bit mono PCM, peak-normalised then trimmed to sit under the SFX.
+     *
+     * The frenzy variant is the same synth voice and the same progression, but faster,
+     * straightened out of its swing, and driven by a four-on-the-floor kick with offbeat
+     * hats — so it reads as the same music under pressure rather than as a different track.
+     */
+    static short[] loop(int style, boolean frenzy) {
+        if (!isSynth(style)) style = SWING_STYLE;
+        float swing = frenzy ? 0.5f : STYLE[style][1];
         float bright = STYLE[style][2];
         float bassAmp = STYLE[style][3];
         float leadAmp = STYLE[style][4];
         float leadDecay = STYLE[style][5];
 
-        int n = loopFrames(style);
+        int n = loopFrames(style, frenzy);
         float[] v = new float[n];
-        float spb = beat(style);
+        float spb = beat(style) / (frenzy ? FRENZY_TEMPO : 1f);
 
         for (int bar = 0; bar < BARS; bar++) {
             int root = ROOT[bar];
@@ -98,10 +117,17 @@ final class Music {
                             style == DRIFT ? 2.2f : 7.5f, bright * 1.6f);
                 }
 
-                // Percussion: shaker for swing/drift, a crisper tick for the march.
-                addNoise(v, t0, 0.045f, style == MARCH ? 0.09f : 0.05f, bar * 4 + b);
-                if (style != DRIFT) {
-                    addNoise(v, tOff, 0.035f, 0.07f, 64 + bar * 4 + b);
+                if (frenzy) {
+                    // Four on the floor: a kick on every beat, hats on every eighth.
+                    addKick(v, t0, spb * 0.55f);
+                    addNoise(v, t0, 0.030f, 0.06f, bar * 4 + b);
+                    addNoise(v, t0 + spb * 0.5f, 0.026f, 0.10f, 128 + bar * 4 + b);
+                } else {
+                    // Percussion: shaker for swing/drift, a crisper tick for the march.
+                    addNoise(v, t0, 0.045f, style == MARCH ? 0.09f : 0.05f, bar * 4 + b);
+                    if (style != DRIFT) {
+                        addNoise(v, tOff, 0.035f, 0.07f, 64 + bar * 4 + b);
+                    }
                 }
             }
         }
@@ -153,6 +179,23 @@ final class Music {
 
             float env = (t < 0.012f ? t / 0.012f : 1f) * (float) Math.exp(-decay * t);
             v[(i0 + i) % v.length] += lp * env * amp;
+        }
+    }
+
+    /**
+     * Four-on-the-floor kick: a short sine whose pitch drops steeply, which is what gives a
+     * kick its thump rather than a tone.
+     */
+    private static void addKick(float[] v, float start, float dur) {
+        int i0 = (int) (start * Sfx.RATE);
+        int len = (int) (dur * Sfx.RATE);
+        float phase = 0f;
+        for (int i = 0; i < len; i++) {
+            float t = (float) i / len;
+            float f = 120f * (float) Math.exp(-7f * t) + 42f;
+            phase += 2f * (float) Math.PI * f / Sfx.RATE;
+            float env = (t < 0.006f ? t / 0.006f : 1f) * (float) Math.exp(-7.5f * t);
+            v[(i0 + i) % v.length] += (float) Math.sin(phase) * env * 0.85f;
         }
     }
 

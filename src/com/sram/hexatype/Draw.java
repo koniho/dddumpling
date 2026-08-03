@@ -19,6 +19,16 @@ abstract class Draw {
     static final int BAMBOO_DARK = 0xFF8E6B3A;
 
     /**
+     * Rainbow for FLURRY, phased by height so the colour change starts at the bottom of the
+     * screen and travels upward. Everything on one wave, so the keys and the letters above
+     * them read as a single sweep rather than as independent flickering.
+     */
+    static int rainbowAt(float y, Layout L, float clock) {
+        float up = 1f - y / L.h;                 // 0 at the bottom, 1 at the top
+        return Glyph.cycle(clock * 0.85f - up * 0.8f);
+    }
+
+    /**
      * Edge glow from overlapping strips rather than discrete rings: each layer reaches
      * from an edge inward by a shrinking amount, all at the same low alpha, so the
      * build-up is a smooth ramp instead of visible bands. Corners get both a horizontal

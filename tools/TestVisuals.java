@@ -53,7 +53,9 @@ final class TestVisuals extends Check {
 
         // Drift is a pure function of the clock, so two cores at the same time agree.
         GameCore d = new GameCore(new Mem(), 222L);
-        d.clock = c.clock;
+        // skyClock, not clock: the sky runs on its own accumulator so a frenzy can speed it
+        // up without the drift jumping.
+        d.skyClock = c.skyClock;
         boolean deterministic = true;
         for (int l = 0; l < GameCore.CLOUD_LAYERS; l++) {
             for (int i = 0; i < GameCore.CLOUDS_PER_LAYER; i++) {

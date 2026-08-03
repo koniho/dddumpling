@@ -34,6 +34,7 @@ final class Renderer extends Draw {
 
         dangerLine(p, c, L);
         for (int i = 0; i < c.enemies.size(); i++) enemy(p, c, L, c.enemies.get(i));
+        powerup(p, c, L);
         shots(p, c, L);
         particles(p, c);
 
@@ -51,6 +52,7 @@ final class Renderer extends Draw {
         if (c.state == GameCore.PLAY) {
             Sky.hudBacking(p, L, Glyph.mix(BG, BG_HURT, hurt * 0.45f));
             Hud.hud(p, c, L);
+            Hud.modeBar(p, c, L);
         }
 
         if (c.flash > 0) {
@@ -131,6 +133,20 @@ final class Renderer extends Draw {
             float x = c.tileX(e, i, L) + jx;
             float y = e.y + jy;
 
+            // Tiles removed out of order fly off along the direction they were sent.
+            if (e.gone[i] && destroy == 0f) {
+                float t = Math.min(1f, e.goneT[i]);
+                if (t >= 1f) continue;
+                float ease = t * t;
+                x += e.goneDx[i] * ease * L.w * 0.55f;
+                y += e.goneDy[i] * ease * L.h * 0.30f;
+                float r = L.enemyR * Layout.TILE_SCALE * (1f - 0.5f * t);
+                int col = Glyph.withAlpha(Glyph.COLOR[g], (int) (200 * (1f - t)));
+                p.strokePoly(Glyph.hex(x, y, r), col, r * 0.09f);
+                Kawaii.draw(p, g, x, y, r * 0.60f, col, 1f, 0.6f);
+                continue;
+            }
+
             if (destroy > 0f) {
                 // Accelerating away: outer tiles split left and right, the rest take the
                 // nearer edge, and they fan slightly so the row does not stay a straight line.
@@ -144,7 +160,8 @@ final class Renderer extends Draw {
                     : Layout.TILE_SCALE;
             float cellR = L.enemyR * scale * swell;
 
-            int col = Glyph.COLOR[g];
+            // FLURRY recolours every letter on one upward-travelling rainbow wave.
+            int col = c.flurry() ? rainbowAt(y, L, c.clock) : Glyph.COLOR[g];
             // Only the tile actually struck takes the full colour strobe and pop.
             float pop = (e.hitIndex == i) ? e.hitPulse : 0f;
             if (pop > 0) {
@@ -205,6 +222,42 @@ final class Renderer extends Draw {
         }
     }
 
+    /**
+     * The drifting powerup: a single letter with a rotating rainbow halo, labelled with the
+     * mode it carries so you know what you are chasing before you commit a press to it.
+     */
+    static void powerup(Painter p, GameCore c, Layout L) {
+        Power w = c.power;
+        if (w == null) return;
+        float r = L.enemyR * 1.25f;
+        float bob = (float) Math.sin(w.t * 3.2f) * L.enemyR * 0.22f;
+        float y = w.y + bob;
+        int hue = Glyph.cycle(c.clock * 0.7f);
+
+        if (w.hit) {
+            // Caught: the halo blows outward and fades.
+            float t = Math.min(1f, w.hitT / Power.POP_TIME);
+            for (int k = 3; k >= 1; k--) {
+                p.strokePoly(star(w.x, y, r * (1f + t * (2f + k)), r * 0.45f, 8, c.clock),
+                        Glyph.withAlpha(hue, (int) (200 * (1f - t) / k)), r * 0.10f);
+            }
+            return;
+        }
+
+        // Halo: layered stars turning slowly, brightest at the core.
+        for (int k = 4; k >= 1; k--) {
+            p.fillPoly(star(w.x, y, r * (1.1f + 0.42f * k), r * 0.40f, 8, c.clock * 0.55f),
+                    Glyph.withAlpha(hue, 30 / k));
+        }
+        float pulse = 0.85f + 0.15f * (float) Math.sin(w.t * 6f);
+        p.fillPoly(Glyph.hex(w.x, y, r * pulse), Glyph.withAlpha(hue, 90));
+        p.strokePoly(Glyph.hex(w.x, y, r * pulse), Glyph.withAlpha(INK, 235), r * 0.10f);
+        Kawaii.draw(p, w.glyph, w.x, y, r * 0.58f, hue, 1f, 0.8f);
+
+        p.text(w.name(), w.x, y - r * 1.7f, L.unit * 0.56f, Glyph.withAlpha(INK, 240),
+                Painter.CENTER, true);
+    }
+
     static void shots(Painter p, GameCore c, Layout L) {
         for (int i = 0; i < c.shots.size(); i++) {
             GameCore.Shot s = c.shots.get(i);
@@ -240,7 +293,7 @@ final class Renderer extends Draw {
             float cx = L.keyX[g], cy = L.keyY[g];
 
             // Activated keys strobe through the palette rather than merely brightening.
-            int col = Glyph.COLOR[g];
+            int col = c.flurry() ? rainbowAt(cy, L, c.clock) : Glyph.COLOR[g];
             if (press > 0.02f) {
                 col = Glyph.mix(col, Glyph.cycle(c.clock * 9f + g * 0.13f), press * 0.9f);
             }

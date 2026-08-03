@@ -17,6 +17,10 @@ final class Words {
     static void fill(GameCore.Enemy e, int len, float stackChance, Random rnd) {
         e.word = new int[len];
         e.need = new int[len];
+        e.gone = new boolean[len];
+        e.goneT = new float[len];
+        e.goneDx = new float[len];
+        e.goneDy = new float[len];
         for (int i = 0; i < len; i++) {
             e.word[i] = rnd.nextInt(Glyph.COUNT);
             e.need[i] = 1;

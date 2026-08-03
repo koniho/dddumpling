@@ -20,7 +20,8 @@ final class Sfx {
 
     /** Sound ids, one preloaded buffer each. */
     static final int SQUISH_0 = 0, DRIP = 6, CLEAR = 7, WRONG = 8, ACHIEVEMENT = 9;
-    static final int COUNT = 10;
+    static final int START = 10, STAGE_CLEAR = 11, POWER_CLEAR = 12;
+    static final int COUNT = 13;
 
     private Sfx() {}
 
@@ -30,8 +31,62 @@ final class Sfx {
             case DRIP: return drip();
             case CLEAR: return clear();
             case WRONG: return wrong();
+            case START: return start();
+            case STAGE_CLEAR: return stageClear();
+            case POWER_CLEAR: return powerClear();
             default: return achievement();
         }
+    }
+
+    /** Welcoming triad on a new game: soft, unhurried, no shimmer. */
+    static short[] start() {
+        return arp(0.95f, new float[] {392f, 523f, 659f, 784f}, 0.13f, 2.4f, 0.10f, 0.26f);
+    }
+
+    /** Stage cleared: four quick steps up, brisk and matter-of-fact. */
+    static short[] stageClear() {
+        return arp(0.72f, new float[] {523f, 659f, 784f, 1047f}, 0.075f, 3.6f, 0.16f, 0.20f);
+    }
+
+    /**
+     * A frenzy run to its end. The biggest of the three: a longer climb, heavier shimmer and
+     * a sustained root under it, so it plainly outranks the ordinary stage-clear tone that it
+     * replaces.
+     */
+    static short[] powerClear() {
+        return arp(1.25f, new float[] {523f, 659f, 784f, 1047f, 1319f, 1568f, 2093f},
+                0.085f, 2.4f, 0.30f, 0.38f);
+    }
+
+    /**
+     * Rising arpeggio builder shared by the three announcement tones.
+     *
+     * @param step    seconds between note onsets
+     * @param decay   per-note decay rate
+     * @param shimmer level of the octave above each note
+     * @param bass    level of a sustained root underneath
+     */
+    private static short[] arp(float len, float[] notes, float step, float decay, float shimmer,
+            float bass) {
+        int n = (int) (RATE * len);
+        float[] v = new float[n];
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / n;
+            float s = 0f;
+            for (int k = 0; k < notes.length; k++) {
+                float start = k * step;
+                if (t * len < start) continue;
+                float local = t * len - start;
+                s += (float) Math.sin(2 * Math.PI * notes[k] * i / RATE)
+                        * (float) Math.exp(-decay * local) * 0.40f;
+                s += (float) Math.sin(4 * Math.PI * notes[k] * i / RATE)
+                        * (float) Math.exp(-decay * 2f * local) * shimmer;
+            }
+            s += (float) Math.sin(2 * Math.PI * notes[0] * 0.5f * i / RATE) * bass
+                    * (float) Math.exp(-1.4f * t * len);
+            v[i] = s * envelope(t, 0.010f, 0.5f);
+        }
+        return render(v);
     }
 
     /**

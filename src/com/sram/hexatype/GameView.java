@@ -77,6 +77,10 @@ public class GameView extends View {
             return true;
         }
 
+        // FLING: grab a letter and throw it. Handled before the key routing so a drag that
+        // starts on a letter is never mistaken for a key press.
+        if (core.flinging() && handleFling(ev, action)) return true;
+
         if (action != MotionEvent.ACTION_DOWN && action != MotionEvent.ACTION_POINTER_DOWN) {
             return true;
         }
@@ -111,6 +115,59 @@ public class GameView extends View {
             tick();
         }
         return true;
+    }
+
+    private GameCore.Enemy grabbed;
+    private int grabbedTile = -1;
+    private float grabX, grabY;
+
+    /**
+     * A drag that starts on a letter throws it away. Returns true when the event belonged to
+     * the fling gesture, so the caller leaves it alone.
+     *
+     * The letter goes once the drag passes a threshold rather than on release: it makes the
+     * gesture feel like a flick, and it lets one continuous drag clear several letters.
+     */
+    private boolean handleFling(MotionEvent ev, int action) {
+        int i = ev.getActionIndex();
+        float x = ev.getX(i), y = ev.getY(i);
+
+        if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+            if (y > layout.deckTop) return false;          // that is the key deck
+            if (!core.pickTile(x, y, layout)) return false;
+            grabbed = core.pickedEnemy;
+            grabbedTile = core.pickedTile;
+            grabX = x;
+            grabY = y;
+            return true;
+        }
+
+        if (action == MotionEvent.ACTION_MOVE && grabbed != null) {
+            float dx = x - grabX, dy = y - grabY;
+            if (dx * dx + dy * dy > layout.enemyR * layout.enemyR) {
+                core.removeTile(grabbed, grabbedTile, dx, dy, layout);
+                tick();
+                grabbed = null;
+                grabbedTile = -1;
+                // Let the same drag pick up whatever it moves over next.
+                if (core.pickTile(x, y, layout)) {
+                    grabbed = core.pickedEnemy;
+                    grabbedTile = core.pickedTile;
+                    grabX = x;
+                    grabY = y;
+                }
+            }
+            return true;
+        }
+
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
+                || action == MotionEvent.ACTION_POINTER_UP) {
+            boolean had = grabbed != null;
+            grabbed = null;
+            grabbedTile = -1;
+            return had;
+        }
+        return false;
     }
 
     private void handleSettings(float x, float y, boolean dragging) {

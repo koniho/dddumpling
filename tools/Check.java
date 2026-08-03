@@ -30,6 +30,8 @@ abstract class Check {
         int squishes, clears, wrongs, damages, achievements;
         int lastGlyph = -1, lastDepth = -1;
         int music = -1, musicCalls;
+        int starts, stageClears, powerClears, frenzyCalls;
+        boolean frenzyOn;
         public void squish(int glyph, int depth) {
             squishes++;
             lastGlyph = glyph;
@@ -40,6 +42,10 @@ abstract class Check {
         public void damage() { damages++; }
         public void achievement() { achievements++; }
         public void selectMusic(int choice) { music = choice; musicCalls++; }
+        public void gameStart() { starts++; }
+        public void stageClear() { stageClears++; }
+        public void powerClear() { powerClears++; }
+        public void frenzy(boolean on) { frenzyCalls++; frenzyOn = on; }
     }
 
     static GameCore.Enemy urgent(GameCore c) {
@@ -62,6 +68,10 @@ abstract class Check {
         GameCore.Enemy e = new GameCore.Enemy();
         e.word = word;
         e.need = need;
+        e.gone = new boolean[word.length];
+        e.goneT = new float[word.length];
+        e.goneDx = new float[word.length];
+        e.goneDy = new float[word.length];
         e.baseX = (L.playLeft + L.playRight) / 2f;
         e.y = y;
         e.speed = 0f;

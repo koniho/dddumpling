@@ -34,6 +34,14 @@ final class CoreTest {
 
         TestAudio.audio(L);
 
+        TestPower.drifting(L);
+        TestPower.precedence(L);
+        TestPower.frenzy(L);
+        TestPower.flurryMode(L);
+        TestPower.multiMode(L);
+        TestPower.flingMode(L);
+        TestPower.soak(L);
+
         TestSoak.perfectPlaySurvives(L);
         TestSoak.fuzz(L);
 
