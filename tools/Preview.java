@@ -142,6 +142,27 @@ final class Preview {
         System.out.printf("perfect wave: banner=%.2f stage=%d%n", c5.perfectBanner, c5.stage);
         shot(dir, "11-perfect", c5, L, w, h, ss);
 
+        // Mid-destruction: a cleared word flying apart.
+        GameCore c7 = new GameCore(store, 31L);
+        c7.startGame();
+        c7.score = 640;
+        step(c7, L, 1.8f);
+        c7.enemies.clear();
+        c7.target = null;
+        GameCore.Enemy boom = new GameCore.Enemy();
+        boom.word = new int[] {1, 3, 0, 4};
+        boom.need = new int[] {1, 1, 1, 1};
+        boom.baseX = (L.playLeft + L.playRight) / 2f;
+        boom.y = L.playTop + (L.dangerY - L.playTop) * 0.45f;
+        boom.enterT = 1f;
+        c7.enemies.add(boom);
+        for (int i = 0; i < boom.word.length; i++) c7.tapKey(boom.word[i], L);
+        step(c7, L, 0.16f);          // shot has landed, tiles are on their way out
+        step(c7, L, GameCore.DESTROY_TIME * 0.45f);
+        System.out.printf("destruction: destroyed=%s t=%.2f dirs=%s shake=%.2f%n",
+                boom.destroyed, boom.destroyT, java.util.Arrays.toString(boom.flyDir), c7.shake);
+        shot(dir, "13-destroy", c7, L, w, h, ss);
+
         // Settings panel, opened mid-game.
         GameCore c6 = new GameCore(store, 29L);
         c6.startGame();

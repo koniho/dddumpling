@@ -33,6 +33,8 @@ final class CoreTest {
         accuracyTracking(L);
         audio(L);
         settings(L);
+        destruction(L);
+        indicatorsAndGlow(L);
         waves(L);
         entranceAndPersistence(L);
         warningsAndHarm(L);
@@ -581,6 +583,128 @@ final class CoreTest {
         }
         check("the settings region does not cover any key", keysClear);
         check("mid-field taps do not open settings", !L.inStageTap(L.w / 2f, L.h * 0.5f));
+    }
+
+    private static void destruction(Layout L) {
+        group("destruction");
+        GameCore c = new GameCore(new Mem(), 91L);
+        c.startGame();
+        c.enemies.clear();
+        c.target = null;
+
+        GameCore.Enemy e = add(c, L, new int[] {0, 1, 2, 3}, L.playTop + 120);
+        for (int i = 0; i < 4; i++) c.tapKey(e.word[i], L);
+        check("word is fully typed", e.pos == 4 && e.dying);
+        check("not yet destroyed while the shot flies", !e.destroyed);
+        check("still listed", c.enemies.contains(e));
+
+        float shakeBefore = c.shake;
+        int killsBefore = c.kills;
+        advance(c, L, 0.2f);                       // let the killing shot land
+        check("impact starts the destroy animation", e.destroyed && e.destroyT >= 0f);
+        check("the kill is credited at impact", c.kills == killsBefore + 1);
+        check("destruction shakes the screen", c.shake > shakeBefore);
+        check("a destroyed word is not typeable", !e.typeable());
+        check("a destroyed word lingers on the field", c.enemies.contains(e));
+
+        // Fly directions: ends forced outward, middles to the nearer edge.
+        check("fly directions assigned", e.flyDir != null && e.flyDir.length == 4);
+        check("leftmost tile flies left", e.flyDir[0] == -1f);
+        check("rightmost tile flies right", e.flyDir[3] == 1f);
+        boolean middlesByProximity = true;
+        for (int i = 1; i < 3; i++) {
+            float want = c.tileX(e, i, L) < L.w / 2f ? -1f : 1f;
+            if (e.flyDir[i] != want) middlesByProximity = false;
+        }
+        check("middle tiles fly to the nearer edge", middlesByProximity);
+
+        advance(c, L, GameCore.DESTROY_TIME + 2 * DT);
+        check("the destroyed word is gone once the animation ends", !c.enemies.contains(e));
+
+        // A one-letter word has no interior, so it just takes the nearer edge.
+        c.enemies.clear();
+        c.target = null;
+        GameCore.Enemy one = add(c, L, new int[] {4}, L.playTop + 120);
+        one.baseX = L.w * 0.8f;
+        c.tapKey(4, L);
+        advance(c, L, 0.2f);
+        check("a single-letter word flies to its nearer edge",
+                one.flyDir.length == 1 && one.flyDir[0] == 1f);
+
+        // The wave gate must wait for the animation, not just for the kill.
+        GameCore w = new GameCore(new Mem(), 92L);
+        w.startGame();
+        w.enemies.clear();
+        w.target = null;
+        w.spawnedThisStage = w.stageQuota();
+        GameCore.Enemy last = add(w, L, new int[] {5, 5}, L.playTop + 120);
+        w.tapKey(5, L);
+        w.tapKey(5, L);
+        advance(w, L, 0.2f);
+        check("last word of the wave is flying apart", last.destroyed);
+        check("stage does not advance mid-animation", w.stage == 1 && !w.stageCleared());
+        advance(w, L, GameCore.DESTROY_TIME);
+        check("stage advances once the animation completes", w.stage == 2);
+    }
+
+    private static void indicatorsAndGlow(Layout L) {
+        group("indicator and glow");
+
+        // The red edge glow must not survive the run that caused it.
+        GameCore c = new GameCore(new Mem(), 93L);
+        c.startGame();
+        c.lives = 1;
+        c.enemies.clear();
+        add(c, L, new int[] {0}, L.dangerY - L.enemyR + 1);
+        advance(c, L, GameCore.ATTACK_TIME * 0.5f);
+        check("a lunging word lights the edge glow", c.warnLevel > 0f);
+        advance(c, L, GameCore.ATTACK_TIME + 4 * DT);
+        check("reached game over", c.state == GameCore.OVER);
+        check("the edge glow clears on game over", c.warnLevel == 0f);
+        advance(c, L, 1.0f);
+        check("and stays clear", c.warnLevel == 0f);
+
+        // Non-fatal damage must also clear it.
+        GameCore d = new GameCore(new Mem(), 94L);
+        d.startGame();
+        d.enemies.clear();
+        add(d, L, new int[] {0}, L.dangerY - L.enemyR + 1);
+        advance(d, L, GameCore.ATTACK_TIME + 4 * DT);
+        d.enemies.clear();
+        d.update(DT, L);
+        check("the glow clears after surviving a hit", d.warnLevel == 0f);
+
+        // The lock indicator eases between letters rather than jumping.
+        GameCore k = new GameCore(new Mem(), 95L);
+        k.startGame();
+        k.enemies.clear();
+        k.target = null;
+        GameCore.Enemy e = add(k, L, new int[] {0, 1, 2}, L.playTop + 150);
+        k.tapKey(0, L);
+        k.update(DT, L);
+        float atFirst = k.caretXFor(e, L);
+        check("indicator starts on the locked word", k.caretOwner == e);
+        k.tapKey(1, L);
+        k.update(DT, L);
+        float justAfter = k.caretXFor(e, L);
+        float destination = k.tileX(e, e.pos, L);
+        check("indicator has begun moving", justAfter != atFirst);
+        check("indicator has not jumped straight there",
+                Math.abs(justAfter - destination) > 1f);
+        check("indicator is heading the right way",
+                Math.abs(justAfter - destination) < Math.abs(atFirst - destination));
+        advance(k, L, 0.5f);
+        check("indicator arrives", Math.abs(k.caretXFor(e, L) - k.tileX(e, e.pos, L)) < 1f);
+
+        // Switching words snaps instead of gliding across the screen.
+        k.enemies.clear();
+        k.target = null;
+        GameCore.Enemy other = add(k, L, new int[] {3, 4}, L.playTop + 400);
+        other.baseX = L.playLeft + L.enemyR * 3f;
+        k.tapKey(3, L);
+        k.update(DT, L);
+        check("a fresh lock snaps into place",
+                Math.abs(k.caretXFor(other, L) - k.tileX(other, other.pos, L)) < 1f);
     }
 
     private static void waves(Layout L) {

@@ -65,10 +65,17 @@ final class GameCore {
         /** Final lunge at the player, just before a life is lost. */
         boolean attacking;
         float attackT;
+        /** Cleared and flying apart; the enemy stays listed until this finishes. */
+        boolean destroyed;
+        float destroyT;
+        /** Per-tile fly-off direction, -1 left or +1 right. */
+        float[] flyDir;
 
         int remaining() { return word.length - pos; }
 
-        boolean typeable() { return !dying && !attacking && pos < word.length; }
+        boolean typeable() {
+            return !dying && !attacking && !destroyed && pos < word.length;
+        }
 
         /** Presses needed to clear this whole word from scratch. */
         int totalPresses() {
@@ -129,6 +136,14 @@ final class GameCore {
     float shake, flash, stageBanner;
     /** Highest proximity-to-danger across the field, 0..1. Drives the red screen pulse. */
     float warnLevel;
+
+    /**
+     * Smoothed x of the lock indicator, so it slides from letter to letter as you type
+     * rather than teleporting. Owner is tracked separately: switching to a different word
+     * should snap, not glide across the screen.
+     */
+    float caretX;
+    Enemy caretOwner;
     final float[] keyPress = new float[Glyph.COUNT];
     final float[] keyBad = new float[Glyph.COUNT];
 
@@ -145,6 +160,8 @@ final class GameCore {
     static final float STAGE_GAP = 1.3f;
     /** How long the flawless-stage gold dumpling stays on screen. */
     static final float PERFECT_TIME = 2.1f;
+    /** How long a cleared word takes to fly apart before it stops existing. */
+    static final float DESTROY_TIME = 0.40f;
 
     /** Length of the lunge animation between crossing the line and losing a life. */
     static final float ATTACK_TIME = 0.42f;
@@ -375,6 +392,26 @@ final class GameCore {
         return clamp01((accuracyPercent() - 60f) / 30f);
     }
 
+    /** Eases the lock indicator toward the tile the player must press next. */
+    private void updateCaret(float dt, Layout L) {
+        if (target == null || !target.typeable() || !enemies.contains(target)) {
+            caretOwner = null;
+            return;
+        }
+        float tx = tileX(target, target.pos, L);
+        if (caretOwner != target) {
+            caretOwner = target;
+            caretX = tx;          // a fresh lock snaps into place
+        } else {
+            caretX += (tx - caretX) * Math.min(1f, dt * 17f);
+        }
+    }
+
+    /** Where the lock indicator should be drawn for {@code e}, in view coordinates. */
+    float caretXFor(Enemy e, Layout L) {
+        return caretOwner == e ? caretX : tileX(e, e.pos, L);
+    }
+
     /** Presses still owed on tile {@code i}; 0 once it is cleared. */
     int pressesLeft(Enemy e, int i) {
         if (i < e.pos) return 0;
@@ -421,6 +458,11 @@ final class GameCore {
         stageBanner = decay(stageBanner, dt);
         perfectBanner = decay(perfectBanner, dt);
 
+        // Cleared here, above the early return, and raised again by the enemy loop below.
+        // Resetting it after the return left the red edge glow stuck on at whatever the
+        // last lunging word set it to, all the way through the game-over screen.
+        warnLevel = 0f;
+
         updateParticles(dt);
         updateShots(dt, L);
 
@@ -432,7 +474,9 @@ final class GameCore {
             stageGap -= dt;
         } else if (spawnedThisStage < stageQuota()) {
             spawnTimer -= dt;
-            if (spawnTimer <= 0 && enemies.size() < maxEnemies()) {
+            // Counted against live words only: a word already flying apart is no longer
+            // occupying the field as far as pacing is concerned.
+            if (spawnTimer <= 0 && liveEnemies() < maxEnemies()) {
                 spawn(L);
                 spawnedThisStage++;
                 spawnTimer = spawnInterval();
@@ -441,8 +485,9 @@ final class GameCore {
             advanceStage();
         }
 
+        updateCaret(dt, L);
+
         float band = Math.max(1f, (L.dangerY - L.playTop) * WARN_BAND);
-        warnLevel = 0f;
 
         for (int i = enemies.size() - 1; i >= 0; i--) {
             Enemy e = enemies.get(i);
@@ -451,6 +496,12 @@ final class GameCore {
             // Driven by position, not time: a timed ramp would finish while the word was
             // still above the top edge, so nobody would ever see it.
             e.enterT = clamp01((e.y + L.enemyR) / (L.enemyR * 3f));
+
+            if (e.destroyed) {
+                e.destroyT += dt;
+                if (e.destroyT >= DESTROY_TIME) enemies.remove(i);
+                continue;
+            }
 
             if (e.dying) {
                 e.deathT += dt;
@@ -504,11 +555,19 @@ final class GameCore {
 
     private void impact(Shot s, Layout L) {
         Enemy e = s.target;
-        if (s.kill && e != null && enemies.remove(e)) {
+        if (s.kill && e != null && enemies.contains(e) && !e.destroyed) {
+            // The word is credited now but stays listed until it has flown apart, so
+            // anything gated on the field being clear waits for the animation.
+            e.destroyed = true;
+            e.destroyT = 0f;
+            e.dying = false;
+            computeFlyDirs(e, L);
+
             explode(enemyCentreX(e), e.y, L.enemyR * 1.5f, e.word.length + 8, 0xFFFFFFFF);
             for (int i = 0; i < e.word.length; i++) {
                 explode(s.tx, s.ty, L.enemyR, 4, Glyph.COLOR[e.word[i]]);
             }
+            shake = Math.max(shake, 0.30f);
             kills++;
             resolvedThisStage++;
             // Scored per press, so a stacked word is worth what it cost to clear.
@@ -517,6 +576,34 @@ final class GameCore {
         } else {
             explode(s.tx, s.ty, L.enemyR * 0.7f, 7, Glyph.COLOR[s.glyph]);
         }
+    }
+
+    /**
+     * Picks which way each tile of a cleared word flies. Tiles head for whichever screen
+     * edge is nearer, except that the first and last tile always go left and right
+     * respectively, so a word visibly splits apart rather than sliding off as a block.
+     */
+    private void computeFlyDirs(Enemy e, Layout L) {
+        int n = e.word.length;
+        e.flyDir = new float[n];
+        float mid = L.w / 2f;
+        for (int i = 0; i < n; i++) {
+            float dir = tileX(e, i, L) < mid ? -1f : 1f;
+            if (n > 1) {
+                if (i == 0) dir = -1f;
+                else if (i == n - 1) dir = 1f;
+            }
+            e.flyDir[i] = dir;
+        }
+    }
+
+    /** Enemies that are still a threat, i.e. excluding ones already flying apart. */
+    int liveEnemies() {
+        int n = 0;
+        for (int i = 0; i < enemies.size(); i++) {
+            if (!enemies.get(i).destroyed) n++;
+        }
+        return n;
     }
 
     /** Called once a stage's whole wave has been dealt with. */

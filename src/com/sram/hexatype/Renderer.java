@@ -244,12 +244,14 @@ final class Renderer {
     // ---- enemies ------------------------------------------------------------
 
     private static void enemy(Painter p, GameCore c, Layout L, GameCore.Enemy e) {
+        float destroy = e.destroyed
+                ? Math.min(1f, e.destroyT / GameCore.DESTROY_TIME) : 0f;
         if (e.dying) {
+            // Killing shot still in the air: flash a ring, but keep the tiles on screen so
+            // there is something for the fly-apart to act on.
             float t = Math.min(1f, e.deathT / 0.13f);
-            float r = L.enemyR * (1.1f + t * 1.6f);
-            p.strokePoly(Glyph.hex(c.enemyCentreX(e), e.y, r),
-                    Glyph.withAlpha(INK, (int) (235 * (1f - t))), L.enemyR * 0.16f);
-            return;
+            p.strokePoly(Glyph.hex(c.enemyCentreX(e), e.y, L.enemyR * (1.1f + t * 1.6f)),
+                    Glyph.withAlpha(INK, (int) (200 * (1f - t))), L.enemyR * 0.16f);
         }
 
         float attack = e.attacking ? Math.min(1f, e.attackT / GameCore.ATTACK_TIME) : 0f;
@@ -273,18 +275,27 @@ final class Renderer {
             }
         }
 
-        boolean locked = c.target == e;
+        boolean locked = c.target == e && destroy == 0f;
         // Entrance: eases in as the word clears the top edge.
         float enter = 0.62f + 0.38f * e.enterT;
-        float swell = (1f + 0.26f * attack + 0.08f * e.warn) * enter;
-        int fade = (int) (90 + 165 * e.enterT);
+        float swell = (1f + 0.26f * attack + 0.08f * e.warn) * enter
+                * (1f - 0.30f * destroy);
+        int fade = (int) ((90 + 165 * e.enterT) * (1f - destroy));
 
         for (int i = 0; i < e.word.length; i++) {
             int g = e.word[i];
-            boolean head = i == e.pos;
-            boolean cleared = i < e.pos;
+            boolean head = i == e.pos && destroy == 0f;
+            boolean cleared = i < e.pos && destroy == 0f;
             float x = c.tileX(e, i, L) + jx;
             float y = e.y + jy;
+
+            if (destroy > 0f) {
+                // Accelerating away: outer tiles split left and right, the rest take the
+                // nearer edge, and they fan slightly so the row does not stay a straight line.
+                float ease = destroy * destroy;
+                x += e.flyDir[i] * (0.10f + 1.15f * ease) * L.w * 0.60f;
+                y += (i % 2 == 0 ? -1f : 1f) * ease * L.h * 0.045f;
+            }
 
             float wobble = c.clock * 3.1f + e.phase + i * 0.7f;
             float scale = head ? Layout.HEAD_SCALE : cleared ? Layout.TILE_SCALE * 0.84f
@@ -339,12 +350,14 @@ final class Renderer {
             }
 
             if (head && locked) {
-                // Thicker white outline plus a caret: unmistakable without growing the cell.
+                // Thicker white outline plus a caret, drawn at the smoothed position so the
+                // indicator slides between letters instead of teleporting.
+                float ix = c.caretXFor(e, L) + jx;
                 float pulse = 0.6f + 0.4f * (float) Math.sin(c.clock * 7f);
-                p.strokePoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(INK, (int) (215 * pulse)),
+                p.strokePoly(Glyph.hex(ix, y, cellR), Glyph.withAlpha(INK, (int) (215 * pulse)),
                         cellR * 0.13f);
                 float cy = y - cellR * 1.55f, cw = cellR * 0.40f;
-                p.fillPoly(new float[] {x - cw, cy - cw, x + cw, cy - cw, x, cy + cw * 0.75f},
+                p.fillPoly(new float[] {ix - cw, cy - cw, ix + cw, cy - cw, ix, cy + cw * 0.75f},
                         Glyph.withAlpha(INK, 225));
             }
         }
