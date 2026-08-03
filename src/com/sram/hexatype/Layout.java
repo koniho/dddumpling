@@ -19,6 +19,8 @@ final class Layout {
     final float[] keyY = new float[Glyph.COUNT];
     /** Topmost pixel of the key clusters. */
     float keyTop;
+    /** Where the key deck's background band starts, and the bottom edge of the sky. */
+    float deckTop;
 
     /** Enemies that cross this line cost a life. */
     float dangerY;
@@ -73,6 +75,7 @@ final class Layout {
         keyY[5] = yLow;
 
         keyTop = yLow - 2f * SQ3_2 * keyR;
+        deckTop = keyTop - 0.02f * h;
         dangerY = keyTop - 0.05f * h;
 
         unit = 0.042f * w;

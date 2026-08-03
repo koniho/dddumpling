@@ -98,6 +98,10 @@ final class CanvasPainter implements Painter {
         canvas.drawText(s, x, y, type);
     }
 
+    @Override public void clipRect(float l, float t, float r, float b) {
+        canvas.clipRect(l, t, r, b);
+    }
+
     @Override public void save() {
         canvas.save();
     }

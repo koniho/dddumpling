@@ -827,6 +827,30 @@ final class CoreTest {
         }
         check("cloud drift is identical for any core at the same clock", deterministic);
 
+        // A cloud must be entirely out of the sky before its phase wraps, or it pops out
+        // of existence mid-screen.
+        boolean exitsCleanly = true, entersCleanly = true;
+        for (int l = 0; l < GameCore.CLOUD_LAYERS; l++) {
+            float margin = Renderer.cloudMargin(L, l);
+            GameCore z = new GameCore(new Mem(), 333L);
+            z.clock = 0f;
+            for (int i = 0; i < GameCore.CLOUDS_PER_LAYER; i++) {
+                z.cloudY[l][i] = 0f;                 // phase 0: just entering
+                if (Renderer.cloudY(z, L, l, i) + margin > 0.5f) entersCleanly = false;
+                z.cloudY[l][i] = 0.99999f;           // phase ~1: just leaving
+                if (Renderer.cloudY(z, L, l, i) - margin < L.deckTop - 0.5f) {
+                    exitsCleanly = false;
+                }
+            }
+        }
+        check("clouds start fully above the sky", entersCleanly);
+        check("clouds leave fully below the sky before wrapping", exitsCleanly);
+        boolean marginsCover = true;
+        for (int l = 0; l < GameCore.CLOUD_LAYERS; l++) {
+            if (Renderer.cloudMargin(L, l) <= Renderer.cloudHeight(L, l)) marginsCover = false;
+        }
+        check("the exit margin exceeds the cloud height", marginsCover);
+
         boolean spread = true;
         for (int l = 0; l < GameCore.CLOUD_LAYERS; l++) {
             for (int i = 0; i < GameCore.CLOUDS_PER_LAYER; i++) {
@@ -835,6 +859,33 @@ final class CoreTest {
             }
         }
         check("cloud placement is on screen and sized", spread);
+
+        // The clip is what lets clouds run past the sky's edge without touching the key
+        // deck, so it is worth checking directly rather than trusting it.
+        RasterPainter rp = new RasterPainter(40, 40, 1);
+        rp.clear(0xFF000000);
+        rp.save();
+        rp.clipRect(0, 0, 40, 20);
+        rp.fillRect(0, 0, 40, 40, 0xFFFFFFFF);
+        rp.restore();
+        int[] px = rp.resolve();
+        check("clip keeps painting inside the region", (px[5 * 40 + 5] & 0xFF) > 200);
+        check("clip blocks painting outside the region", (px[30 * 40 + 5] & 0xFF) < 40);
+
+        rp.fillRect(0, 0, 40, 40, 0xFFFFFFFF);
+        px = rp.resolve();
+        check("restore lifts the clip again", (px[30 * 40 + 5] & 0xFF) > 200);
+
+        // Clips must intersect, never widen.
+        RasterPainter rq = new RasterPainter(40, 40, 1);
+        rq.clear(0xFF000000);
+        rq.save();
+        rq.clipRect(0, 0, 20, 20);
+        rq.clipRect(0, 0, 40, 40);
+        rq.fillRect(0, 0, 40, 40, 0xFFFFFFFF);
+        rq.restore();
+        px = rq.resolve();
+        check("a second clip cannot widen the first", (px[30 * 40 + 30] & 0xFF) < 40);
     }
 
     private static void waves(Layout L) {

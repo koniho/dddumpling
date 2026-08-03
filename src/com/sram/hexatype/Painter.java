@@ -31,6 +31,12 @@ interface Painter {
     /** Draws {@code s} with its baseline at y, aligned about x. */
     void text(String s, float x, float y, float size, int color, int align, boolean bold);
 
+    /**
+     * Intersects the current clip with this rectangle. Undone by {@link #restore()}, so it
+     * must be paired with a {@link #save()}.
+     */
+    void clipRect(float l, float t, float r, float b);
+
     void save();
 
     void restore();

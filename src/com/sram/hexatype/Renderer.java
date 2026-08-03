@@ -25,10 +25,10 @@ final class Renderer {
         // Kept moderate: the red reads as a pulse at the edges, not a wash over the
         // characters, which have to stay legible at exactly the moment you are panicking.
         p.fillRect(0, 0, L.w, L.h, Glyph.mix(BG, BG_HURT, hurt * 0.45f));
-        p.fillRect(0, L.keyTop - 0.02f * L.h, L.w, L.h, Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f));
+        p.fillRect(0, L.deckTop, L.w, L.h, Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f));
 
         // Two cloud layers behind the words...
-        for (int l = 0; l < CLOUD_FRONT_LAYER; l++) clouds(p, c, L, l, hurt);
+        cloudBand(p, c, L, 0, CLOUD_FRONT_LAYER, hurt);
 
         p.save();
         if (c.shake > 0) {
@@ -44,7 +44,7 @@ final class Renderer {
 
         // ...and the nearest one in front of them, so words pass behind it. Kept the most
         // translucent of the three: it drifts over the play area and must never hide a letter.
-        clouds(p, c, L, CLOUD_FRONT_LAYER, hurt);
+        cloudBand(p, c, L, CLOUD_FRONT_LAYER, GameCore.CLOUD_LAYERS, hurt);
 
         keys(p, c, L);
         p.restore();
@@ -185,20 +185,55 @@ final class Renderer {
      * One parallax layer of clouds, drifting downward. Nearer layers move faster, sit
      * lighter and are drawn wider, which is what sells the depth.
      */
+    /** Depth scale of a cloud layer; nearer layers are bigger. */
+    private static float cloudScale(int layer) {
+        return 0.62f + 0.30f * layer;
+    }
+
+    /** Nominal cloud height for a layer. */
+    static float cloudHeight(Layout L, int layer) {
+        return L.h * 0.055f * cloudScale(layer) * 1.15f;
+    }
+
+    /**
+     * How far past an edge a cloud's centre must be for the whole shape to be out of sight.
+     * The tallest puff reaches about 1.2 heights from the centre once its outer soft ring
+     * and vertical jitter are counted; rounded up.
+     */
+    static float cloudMargin(Layout L, int layer) {
+        return cloudHeight(L, layer) * 1.35f;
+    }
+
+    /**
+     * Vertical centre of a cloud right now. The travel spans a full margin beyond each end
+     * of the sky, so a cloud has completely left the visible area before its phase wraps —
+     * otherwise it vanishes mid-screen.
+     */
+    static float cloudY(GameCore c, Layout L, int layer, int i) {
+        float margin = cloudMargin(L, layer);
+        return -margin + c.cloudPhase(layer, i) * (L.deckTop + 2f * margin);
+    }
+
     private static void clouds(Painter p, GameCore c, Layout L, int layer, float hurt) {
         int tint = Glyph.mix(CLOUD_TINT[layer], BG_HURT, hurt * 0.55f);
         int alpha = CLOUD_ALPHA[layer];
-        // Nearer layers are bigger, so they read as closer to the camera.
-        float scale = 0.62f + 0.30f * layer;
+        float scale = cloudScale(layer);
+        float h = cloudHeight(L, layer);
 
         for (int i = 0; i < GameCore.CLOUDS_PER_LAYER; i++) {
-            // Enters above the top edge and stops short of the key deck, which has to stay
-            // crisp — nothing pops into or out of existence on screen.
-            float y = -0.25f * L.keyTop + c.cloudPhase(layer, i) * 1.20f * L.keyTop;
             float w = L.w * scale * c.cloudW[layer][i];
-            float h = L.h * 0.055f * scale * 1.15f;
-            cloud(p, c.cloudX[layer][i] * L.w, y, w, h, tint, alpha, c.cloudSeed[layer][i]);
+            cloud(p, c.cloudX[layer][i] * L.w, cloudY(c, L, layer, i), w, h, tint, alpha,
+                    c.cloudSeed[layer][i]);
         }
+    }
+
+    /** Draws the given layers clipped to the sky, so they slide away behind the key deck. */
+    private static void cloudBand(Painter p, GameCore c, Layout L, int from, int to,
+            float hurt) {
+        p.save();
+        p.clipRect(0, 0, L.w, L.deckTop);
+        for (int l = from; l < to; l++) clouds(p, c, L, l, hurt);
+        p.restore();
     }
 
     /**
@@ -566,7 +601,7 @@ final class Renderer {
 
     /** Dims everything above the key deck, so the real keys stay lit as the tutorial. */
     private static float scrim(Painter p, Layout L, int a) {
-        float bottom = L.keyTop - 0.02f * L.h;
+        float bottom = L.deckTop;
         p.fillRect(0, 0, L.w, bottom, Glyph.withAlpha(0xFF120E22, a));
         return bottom;
     }

@@ -13,7 +13,10 @@ final class RasterPainter implements Painter {
     private final int[] buf;
 
     private float tx, ty;
-    private final float[] stack = new float[64];
+    /** Clip in buffer pixels, inclusive. */
+    private int clipL, clipT, clipR, clipB;
+    /** Six slots per save(): tx, ty and the four clip edges. */
+    private final float[] stack = new float[6 * 32];
     private int sp;
 
     RasterPainter(int w, int h, int ss) {
@@ -23,6 +26,10 @@ final class RasterPainter implements Painter {
         this.bw = w * ss;
         this.bh = h * ss;
         this.buf = new int[bw * bh];
+        clipL = 0;
+        clipT = 0;
+        clipR = bw - 1;
+        clipB = bh - 1;
     }
 
     int logicalWidth() { return w; }
@@ -58,7 +65,7 @@ final class RasterPainter implements Painter {
     // ---- pixel plumbing -----------------------------------------------------
 
     private void blend(int x, int y, int color, float cov) {
-        if (x < 0 || y < 0 || x >= bw || y >= bh || cov <= 0) return;
+        if (x < clipL || y < clipT || x > clipR || y > clipB || cov <= 0) return;
         float a = ((color >>> 24) / 255f) * (cov > 1 ? 1 : cov);
         if (a <= 0.0015f) return;
         int i = y * bw + x;
@@ -241,12 +248,28 @@ final class RasterPainter implements Painter {
         }
     }
 
+    @Override public void clipRect(float l, float t, float r, float b) {
+        // Intersects, like Canvas.clipRect, and respects the current translate.
+        clipL = Math.max(clipL, (int) Math.floor(sx(l)));
+        clipT = Math.max(clipT, (int) Math.floor(sy(t)));
+        clipR = Math.min(clipR, (int) Math.ceil(sx(r)) - 1);
+        clipB = Math.min(clipB, (int) Math.ceil(sy(b)) - 1);
+    }
+
     @Override public void save() {
         stack[sp++] = tx;
         stack[sp++] = ty;
+        stack[sp++] = clipL;
+        stack[sp++] = clipT;
+        stack[sp++] = clipR;
+        stack[sp++] = clipB;
     }
 
     @Override public void restore() {
+        clipB = (int) stack[--sp];
+        clipR = (int) stack[--sp];
+        clipT = (int) stack[--sp];
+        clipL = (int) stack[--sp];
         ty = stack[--sp];
         tx = stack[--sp];
     }
