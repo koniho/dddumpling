@@ -202,16 +202,19 @@ final class Renderer {
     }
 
     /**
-     * A single wide, soft cloud: a flat base with a row of puffs along it.
+     * A single wide, soft cloud: a fully rounded rectangle base with a row of rounded-
+     * rectangle puffs along it. The flat tops and bottoms give the cloud a banded, drifting
+     * feel that stacked ellipses did not have.
      *
-     * Two things make it read as cloud rather than as a row of circles. The puffs are much
-     * wider than the gap between them, so they merge into one mass; and each is drawn as
-     * three nested ellipses with the outermost barely visible, so the accumulated alpha
-     * falls off gradually instead of ending at a hard edge.
+     * Two things make it read as cloud rather than as a row of separate shapes. The puffs
+     * are much wider than the gap between them, so they merge into one mass; and each is
+     * drawn three times at increasing size with the outermost barely visible, so the
+     * accumulated alpha falls off gradually instead of ending at a hard edge.
      */
     private static void cloud(Painter p, float cx, float cy, float w, float h, int tint,
             int alpha, int seed) {
-        p.fillEllipse(cx, cy, w * 0.5f, h * 0.40f, Glyph.withAlpha(tint, alpha * 40 / 100));
+        p.fillPoly(pill(cx, cy, w * 0.5f, h * 0.40f, 10),
+                Glyph.withAlpha(tint, alpha * 40 / 100));
 
         int puffs = 4;
         for (int k = 0; k < puffs; k++) {
@@ -225,9 +228,11 @@ final class Renderer {
             float py = cy - h * 0.12f * bump + h * 0.10f * (hash(seed + k * 91) - 0.5f);
 
             // Outermost first, faintest: the overlap builds the falloff.
-            p.fillEllipse(px, py, rx * 1.42f, ry * 1.42f, Glyph.withAlpha(tint, alpha / 5));
-            p.fillEllipse(px, py, rx * 1.20f, ry * 1.20f, Glyph.withAlpha(tint, alpha / 3));
-            p.fillEllipse(px, py, rx, ry, Glyph.withAlpha(tint, alpha));
+            p.fillPoly(pill(px, py, rx * 1.42f, ry * 1.42f, 8),
+                    Glyph.withAlpha(tint, alpha / 5));
+            p.fillPoly(pill(px, py, rx * 1.20f, ry * 1.20f, 8),
+                    Glyph.withAlpha(tint, alpha / 3));
+            p.fillPoly(pill(px, py, rx, ry, 8), Glyph.withAlpha(tint, alpha));
         }
     }
 
@@ -245,6 +250,33 @@ final class Renderer {
      * build-up is a smooth ramp instead of visible bands. Corners get both a horizontal
      * and a vertical layer, which is what a vignette wants anyway.
      */
+    /**
+     * Fully rounded rectangle — a stadium: straight top and bottom edges with semicircular
+     * caps, cap radius equal to the half-height. Emitted as one polygon rather than a rect
+     * plus two circles, because translucent fills would double-blend where those overlap.
+     *
+     * @param rx half the total length, caps included
+     * @param ry half the height, which is also the cap radius
+     */
+    private static float[] pill(float cx, float cy, float rx, float ry, int segs) {
+        float straight = Math.max(0f, rx - ry);
+        float[] pts = new float[(segs + 1) * 4];
+        int i = 0;
+        // Right cap: top, round the outside, to bottom.
+        for (int k = 0; k <= segs; k++) {
+            double a = -Math.PI / 2 + Math.PI * k / segs;
+            pts[i++] = cx + straight + ry * (float) Math.cos(a);
+            pts[i++] = cy + ry * (float) Math.sin(a);
+        }
+        // Left cap: bottom, round the outside, back to top.
+        for (int k = 0; k <= segs; k++) {
+            double a = Math.PI / 2 + Math.PI * k / segs;
+            pts[i++] = cx - straight + ry * (float) Math.cos(a);
+            pts[i++] = cy + ry * (float) Math.sin(a);
+        }
+        return pts;
+    }
+
     /** Star polygon with {@code points} spikes, rotated by {@code rot} radians. */
     private static float[] star(float cx, float cy, float outer, float inner, int points,
             float rot) {
