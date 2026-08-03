@@ -26,6 +26,7 @@ final class CoreTest {
 
         layout(L);
         targeting(L);
+        engagement(L);
         scoringAndStages(L);
         breachAndGameOver(L);
         screens(L);
@@ -98,23 +99,77 @@ final class CoreTest {
         check("consumed one glyph", low.pos == 1 && high.pos == 0);
 
         int comboBefore = c.combo;
-        c.tapKey(1, L);   // wrong for `low`, right for `high` — the lock must hold
-        check("wrong key does not steal the lock", c.target == low);
+        c.tapKey(1, L);   // wrong for `low`, and must not jump across to `high` either
+        check("wrong key releases the lock", c.target == null);
         check("wrong key does not advance another word", high.pos == 0);
         check("wrong key breaks the combo", c.combo == 0 && comboBefore > 0);
         check("wrong key restarts the engaged word", low.pos == 0);
         check("restart flags the word for a flash", low.failPulse > 0f);
         check("restart keeps every letter", low.word.length == 2);
+        check("the indicator lets go too", c.caretOwner == null);
 
-        // Retype it from the top.
+        // Re-engaging is a deliberate press, and picks the most urgent match again.
         c.tapKey(0, L);
-        check("retyping the restarted word advances again", low.pos == 1);
+        check("re-engaging locks the lowest matching word", c.target == low);
+        check("re-engaging advances that word", low.pos == 1);
+        check("re-engaging leaves the higher word alone", high.pos == 0);
         c.tapKey(2, L);
         check("finishing a word releases the lock", c.target == null);
         check("finished word is marked dying", low.dying);
 
         c.tapKey(3, L);
         check("key matching nothing is a miss", c.target == null && c.combo == 0);
+    }
+
+    /** Engagement always takes the most urgent match, not the oldest or nearest word. */
+    private static void engagement(Layout L) {
+        group("engagement");
+        GameCore c = new GameCore(new Mem(), 101L);
+        c.startGame();
+        c.enemies.clear();
+        c.target = null;
+
+        // Three words all starting with the same letter, at different heights.
+        GameCore.Enemy top = add(c, L, new int[] {2, 0}, L.playTop + 80);
+        GameCore.Enemy mid = add(c, L, new int[] {2, 1}, L.playTop + 500);
+        GameCore.Enemy low = add(c, L, new int[] {2, 3}, L.playTop + 900);
+
+        c.tapKey(2, L);
+        check("engages the word closest to the player", c.target == low);
+        check("higher words are untouched", top.pos == 0 && mid.pos == 0);
+
+        // Clear the lowest, then the next press must take the next-lowest.
+        c.tapKey(3, L);
+        advance(c, L, GameCore.DESTROY_TIME + 0.3f);
+        c.tapKey(2, L);
+        check("next engagement takes the new lowest", c.target == mid);
+        check("the topmost word is still untouched", top.pos == 0);
+
+        // A partially typed word is matched on its next letter, not its first.
+        c.enemies.clear();
+        c.target = null;
+        GameCore.Enemy partial = add(c, L, new int[] {0, 4}, L.playTop + 700);
+        GameCore.Enemy fresh = add(c, L, new int[] {4, 0}, L.playTop + 300);
+        c.tapKey(0, L);
+        check("engaged the partial word", c.target == partial && partial.pos == 1);
+        c.tapKey(1, L);   // wrong: drops the lock and resets `partial`
+        check("lock released", c.target == null && partial.pos == 0);
+
+        // Now 4 matches `fresh` at its first letter and `partial` at its second, but
+        // `partial` was reset, so only `fresh` matches — and it is higher up.
+        c.tapKey(4, L);
+        check("matching is on the next needed letter", c.target == fresh);
+
+        // A word already flying apart must never be engaged.
+        c.enemies.clear();
+        c.target = null;
+        GameCore.Enemy dead = add(c, L, new int[] {5}, L.playTop + 900);
+        GameCore.Enemy alive = add(c, L, new int[] {5, 5}, L.playTop + 200);
+        c.tapKey(5, L);
+        advance(c, L, 0.2f);
+        check("the cleared word is flying apart", dead.destroyed);
+        c.tapKey(5, L);
+        check("engagement skips a word being destroyed", c.target == alive);
     }
 
     private static void scoringAndStages(Layout L) {
@@ -242,7 +297,10 @@ final class CoreTest {
         check("wrong letter resets the stack count", r.done == 0);
         check("wrong letter also restarts the word", r.pos == 0);
         check("presses owed is back to full", c.pressesLeft(r, 0) == 4);
-        check("the lock is kept for the retry", c.target == r);
+        check("the lock is released, not auto-reengaged", c.target == null);
+        c.tapKey(0, L);
+        check("re-engaging a stack starts from the first press",
+                c.target == r && r.done == 1);
 
         // Generation invariants over many spawns at every stage.
         GameCore g = new GameCore(new Mem(), 52L);

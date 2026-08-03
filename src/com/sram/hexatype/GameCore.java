@@ -299,7 +299,8 @@ final class GameCore {
         if (target != null && (!target.typeable() || !enemies.contains(target))) target = null;
 
         if (target == null) {
-            // Lock onto the most urgent enemy — lowest on screen — that starts with g.
+            // Engage the most urgent match: the word lowest on screen, i.e. closest to
+            // reaching the player, whose next-needed letter is g.
             Enemy pick = null;
             for (int i = 0; i < enemies.size(); i++) {
                 Enemy e = enemies.get(i);
@@ -313,14 +314,18 @@ final class GameCore {
             }
             target = pick;
         } else if (target.word[target.pos] != g) {
-            // Engaged word, wrong letter: the whole word has to be retyped, which also
-            // resets every stack count. The lock is kept so the retry is immediate
-            // rather than needing a re-target.
-            target.pos = 0;
-            target.done = 0;
-            target.hitPulse = 0f;
-            target.hitIndex = -1;
-            target.failPulse = 1f;
+            // Engaged word, wrong letter: the whole word has to be retyped from scratch,
+            // which also resets every stack count. The lock is dropped rather than held —
+            // re-engaging is a deliberate press, so the next press is free to pick whatever
+            // word is now most urgent instead of being stuck on this one.
+            Enemy missed = target;
+            missed.pos = 0;
+            missed.done = 0;
+            missed.hitPulse = 0f;
+            missed.hitIndex = -1;
+            missed.failPulse = 1f;
+            target = null;
+            caretOwner = null;
             miss(g);
             return false;
         }
