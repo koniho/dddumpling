@@ -12,7 +12,18 @@ import java.util.Random;
 final class GameCore {
 
     // ---- states -------------------------------------------------------------
-    static final int TITLE = 0, PLAY = 1, OVER = 2;
+    static final int TITLE = 0, PLAY = 1, OVER = 2, BONUS = 3;
+
+    /** Presses needed to lift the steamer lid clear and free the dumpling. */
+    static final int STEAMER_HITS = 20;
+    /**
+     * Length of the between-stages interlude. Short on purpose: at four seconds even a
+     * moderate masher lands all twenty hits in one go, and the damage would never actually
+     * accumulate across stages. At this length it takes roughly two interludes.
+     */
+    static final float BONUS_TIME = 2.2f;
+    /** Score awarded for freeing the dumpling. */
+    static final int FREE_BONUS = 500;
 
     /** Persistence seam; the Activity backs this with SharedPreferences. */
     interface Store {
@@ -144,6 +155,27 @@ final class GameCore {
     int skyGlowColor = FLASH_CLEAR;
     /** Highest proximity-to-danger across the field, 0..1. Drives the red screen pulse. */
     float warnLevel;
+
+    // ---- between-stages minigame -------------------------------------------
+    /**
+     * Presses landed on the steamer. Deliberately carried across interludes rather than
+     * reset each time, so the lid is chipped open over several stages.
+     */
+    int steamerHits;
+    /** Times the dumpling has been freed this run. */
+    int steamerOpens;
+    float bonusTimer;
+    /** 1 right after a press, decaying: pops the lid up. */
+    float lidPulse;
+    /** 1 right after a press, decaying: flashes and cycles the container colour. */
+    float steamerFlash;
+    /** Counts down while the freed dumpling flies away. */
+    float freedT;
+
+    /** How far the lid has lifted, 0..1. */
+    float lidOpen() {
+        return clamp01((float) steamerHits / STEAMER_HITS);
+    }
 
     /**
      * Smoothed x of the lock indicator, so it slides from letter to letter as you type
@@ -307,6 +339,12 @@ final class GameCore {
         shake = 0;
         flash = 0;
         skyGlow = 0;
+        steamerHits = 0;
+        steamerOpens = 0;
+        bonusTimer = 0;
+        lidPulse = 0;
+        steamerFlash = 0;
+        freedT = 0;
         stageBanner = 1.5f;
     }
 
@@ -513,6 +551,21 @@ final class GameCore {
         updateParticles(dt);
         updateShots(dt, L);
 
+        if (state == BONUS) {
+            lidPulse = decay(lidPulse, dt * 4.5f);
+            steamerFlash = decay(steamerFlash, dt * 3.0f);
+            freedT = decay(freedT, dt);
+            bonusTimer -= dt;
+            if (bonusTimer <= 0) {
+                // The interlude is what sat between the waves; the stage itself turns over
+                // on the way out of it.
+                advanceStage();
+                state = PLAY;
+                time = 0;
+            }
+            return;
+        }
+
         if (state != PLAY) return;
 
         // Stages are discrete waves: a stage releases exactly stageQuota() words, and the
@@ -529,7 +582,8 @@ final class GameCore {
                 spawnTimer = spawnInterval();
             }
         } else if (stageCleared()) {
-            advanceStage();
+            enterBonus();
+            return;
         }
 
         updateCaret(dt, L);
@@ -657,6 +711,43 @@ final class GameCore {
             if (!enemies.get(i).destroyed) n++;
         }
         return n;
+    }
+
+    /** Drops into the between-stages minigame once the wave is clear. */
+    private void enterBonus() {
+        state = BONUS;
+        time = 0;
+        bonusTimer = BONUS_TIME;
+        lidPulse = 0;
+        steamerFlash = 0;
+        target = null;
+        caretOwner = null;
+    }
+
+    /**
+     * A press during the interlude. Any of the six keys counts — this is a mash, not a
+     * typing test — so it deliberately leaves hits, misses and combo alone, otherwise
+     * mashing would inflate the accuracy readout.
+     */
+    void tapBonus(int g) {
+        if (state != BONUS) return;
+        keyPress[g] = 1f;
+        lidPulse = 1f;
+        steamerFlash = 1f;
+        if (sound != null) sound.squish(g, 1);
+
+        if (freedT > 0f) return;          // already loose; let the celebration play
+        steamerHits++;
+        if (steamerHits >= STEAMER_HITS) {
+            steamerHits = 0;
+            steamerOpens++;
+            score += FREE_BONUS;
+            if (lives < START_LIVES) lives++;
+            freedT = 1.7f;
+            // Hold the interlude open long enough to watch it escape.
+            bonusTimer = Math.max(bonusTimer, freedT + 0.2f);
+            if (sound != null) sound.achievement();
+        }
     }
 
     /** Called once a stage's whole wave has been dealt with. */

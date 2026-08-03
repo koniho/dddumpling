@@ -38,6 +38,7 @@ final class CoreTest {
         indicatorsAndGlow(L);
         sky(L);
         waves(L);
+        steamerBonus(L);
         entranceAndPersistence(L);
         warningsAndHarm(L);
         perfectPlaySurvives(L);
@@ -405,6 +406,7 @@ final class CoreTest {
         g.enemies.clear();
         g.shots.clear();
         g.update(DT, L);
+        advance(g, L, GameCore.BONUS_TIME + 0.2f);   // advanceStage fires when the interlude ends
         check("a flawless wave triggers the gold dumpling", g.perfectBanner > 0f);
         check("the celebration expires", g.perfectBanner <= GameCore.PERFECT_TIME);
         advance(g, L, GameCore.PERFECT_TIME + 0.2f);
@@ -419,6 +421,7 @@ final class CoreTest {
         m.enemies.clear();
         m.shots.clear();
         m.update(DT, L);
+        advance(m, L, GameCore.BONUS_TIME + 0.2f);
         check("a wave with a miss earns no gold dumpling", m.perfectBanner == 0f);
         check("stage misses reset for the next wave", m.missesThisStage == 0);
         check("run totals are not reset by the stage", m.misses == 1);
@@ -503,6 +506,7 @@ final class CoreTest {
         g.enemies.clear();
         g.shots.clear();
         g.update(DT, L);
+        advance(g, L, GameCore.BONUS_TIME + 0.2f);
         check("a flawless wave plays the achievement", ear2.achievements == 1);
 
         Ear ear3 = new Ear();
@@ -703,7 +707,10 @@ final class CoreTest {
         check("last word of the wave is flying apart", last.destroyed);
         check("stage does not advance mid-animation", w.stage == 1 && !w.stageCleared());
         advance(w, L, GameCore.DESTROY_TIME);
-        check("stage advances once the animation completes", w.stage == 2);
+        check("the interlude opens once the animation completes",
+                w.state == GameCore.BONUS && w.stage == 1);
+        advance(w, L, GameCore.BONUS_TIME + 0.2f);
+        check("stage advances on the way out of the interlude", w.stage == 2);
     }
 
     private static void indicatorsAndGlow(Layout L) {
@@ -923,6 +930,100 @@ final class CoreTest {
         check("a second clip cannot widen the first", (px[30 * 40 + 30] & 0xFF) < 40);
     }
 
+    private static void steamerBonus(Layout L) {
+        group("between-stages minigame");
+        GameCore c = new GameCore(new Mem(), 121L);
+        c.startGame();
+        check("no steamer damage at the start", c.steamerHits == 0 && c.steamerOpens == 0);
+
+        // Clearing a wave drops into the minigame, not straight into the next stage.
+        c.spawnedThisStage = c.stageQuota();
+        c.enemies.clear();
+        c.shots.clear();
+        c.update(DT, L);
+        check("clearing a wave enters the minigame", c.state == GameCore.BONUS);
+        check("the stage has not turned over yet", c.stage == 1);
+        check("the lid starts shut", c.lidOpen() == 0f);
+
+        int hitsBefore = c.hits, missesBefore = c.misses;
+        for (int g = 0; g < Glyph.COUNT; g++) c.tapBonus(g);
+        check("any of the six keys lands a hit", c.steamerHits == Glyph.COUNT);
+        check("a press pops the lid", c.lidPulse > 0f);
+        check("a press flashes the container", c.steamerFlash > 0f);
+        check("the lid is partway open", c.lidOpen() > 0f && c.lidOpen() < 1f);
+        // Mashing must not pollute the accuracy readout.
+        check("mashing is not counted as typing",
+                c.hits == hitsBefore && c.misses == missesBefore);
+
+        advance(c, L, 1.0f);
+        check("the press animations settle", c.lidPulse == 0f && c.steamerFlash == 0f);
+
+        // Damage carries over: run the interlude out and check the count survives.
+        int carried = c.steamerHits;
+        advance(c, L, GameCore.BONUS_TIME + 0.2f);
+        check("the minigame ends by itself", c.state == GameCore.PLAY);
+        check("the stage turns over on the way out", c.stage == 2);
+        check("steamer damage carries across the interlude", c.steamerHits == carried);
+        check("presses outside the minigame are ignored by it", c.steamerHits == carried);
+        c.tapBonus(0);
+        check("tapBonus does nothing during play", c.steamerHits == carried);
+
+        // Second interlude: finish the job and check the reward. The post-interlude breather
+        // has to run out first, or the wave gate is never reached.
+        advance(c, L, GameCore.STAGE_GAP + 0.1f);
+        c.spawnedThisStage = c.stageQuota();
+        c.enemies.clear();
+        c.shots.clear();
+        c.update(DT, L);
+        check("back in the minigame", c.state == GameCore.BONUS);
+        c.lives = GameCore.START_LIVES - 1;
+        int scoreBefore = c.score;
+        // Bounded: tapBonus is a no-op outside BONUS, so an unbounded loop would hang.
+        for (int i = 0; i <= GameCore.STEAMER_HITS && c.steamerHits > 0; i++) c.tapBonus(2);
+        check("twenty presses free the dumpling", c.steamerOpens == 1);
+        check("the counter resets so it can be earned again", c.steamerHits == 0);
+        check("freeing it scores", c.score == scoreBefore + GameCore.FREE_BONUS);
+        check("freeing it returns a lost life", c.lives == GameCore.START_LIVES);
+        check("the escape animation runs", c.freedT > 0f);
+        check("the interlude is held open for it", c.bonusTimer >= c.freedT);
+
+        int opensNow = c.steamerOpens;
+        c.tapBonus(3);
+        check("presses during the escape do not re-trigger", c.steamerOpens == opensNow);
+
+        advance(c, L, GameCore.BONUS_TIME + 2f);
+        check("play resumes after the celebration", c.state == GameCore.PLAY);
+        check("lives are capped at the starting count", c.lives <= GameCore.START_LIVES);
+
+        // A full run must be able to reach the minigame repeatedly without wedging.
+        GameCore r = new GameCore(new Mem(), 122L);
+        r.startGame();
+        int bonuses = 0, frames = 0;
+        boolean sane = true;
+        while (frames < 60 * 240 && r.state != GameCore.OVER) {
+            int was = r.state;
+            r.update(DT, L);
+            frames++;
+            if (was != GameCore.BONUS && r.state == GameCore.BONUS) bonuses++;
+            if (r.state == GameCore.BONUS) {
+                // Human-ish mash rate, so the reported free count means something.
+                if (frames % 8 == 0) r.tapBonus(frames % Glyph.COUNT);
+                continue;
+            }
+            if (r.state != GameCore.PLAY) continue;
+            if (frames % 2 != 0) continue;
+            GameCore.Enemy e = r.target != null && r.enemies.contains(r.target)
+                    && r.target.typeable() ? r.target : urgent(r);
+            if (e != null && e.pos < e.word.length) r.tapKey(e.word[e.pos], L);
+            if (r.steamerHits < 0 || r.steamerHits >= GameCore.STEAMER_HITS) sane = false;
+        }
+        System.out.printf("    %d interludes in %.0fs, freed %d, stage %d%n",
+                bonuses, frames * DT, r.steamerOpens, r.stage);
+        check("interludes recur across a run", bonuses >= 3);
+        check("steamer damage stays in range", sane);
+        check("the dumpling gets freed during a long run", r.steamerOpens >= 1);
+    }
+
     private static void waves(Layout L) {
         group("stage waves");
         GameCore c = new GameCore(new Mem(), 41L);
@@ -937,7 +1038,9 @@ final class CoreTest {
         boolean overQuota = false, spawnedEarly = false, emptyOnAdvance = true;
 
         // Play perfectly through several waves, watching the wave invariants every frame.
-        while (frames < 60 * 400 && stageChanges < 4 && c.state == GameCore.PLAY) {
+        // The interlude counts as being in the run, so BONUS must not end the loop.
+        while (frames < 60 * 400 && stageChanges < 4
+                && (c.state == GameCore.PLAY || c.state == GameCore.BONUS)) {
             c.update(DT, L);
             frames++;
 
@@ -952,6 +1055,10 @@ final class CoreTest {
             }
 
             if (frames % 2 != 0) continue;
+            if (c.state == GameCore.BONUS) {
+                c.tapBonus(frames % Glyph.COUNT);
+                continue;
+            }
             GameCore.Enemy e =
                     c.target != null && c.enemies.contains(c.target) && c.target.typeable()
                             ? c.target : urgent(c);
@@ -974,8 +1081,10 @@ final class CoreTest {
         check("quota exhausted means the stage is cleared", w.stageCleared());
         int before = w.stage;
         w.update(DT, L);
-        check("clearing the wave advances the stage", w.stage == before + 1);
-        check("a breather follows the wave", w.stageGap > 0f);
+        check("clearing the wave opens the interlude", w.state == GameCore.BONUS);
+        advance(w, L, GameCore.BONUS_TIME + 0.2f);
+        check("the stage advances after the interlude", w.stage == before + 1);
+        check("a breather follows the interlude", w.stageGap > 0f);
         int released = w.spawnedThisStage;
         advance(w, L, GameCore.STAGE_GAP * 0.6f);
         check("nothing spawns during the breather",
@@ -1002,6 +1111,7 @@ final class CoreTest {
         b.enemies.clear();
         b.shots.clear();
         b.update(DT, L);
+        advance(b, L, GameCore.BONUS_TIME + 0.2f);
         check("stage still advances after a breach", b.stage == stageWas + 1);
     }
 
@@ -1091,18 +1201,24 @@ final class CoreTest {
         GameCore c = new GameCore(new Mem(), 8L);
         c.startGame();
         int frames = 0;
-        while (frames < 60 * 120 && c.state == GameCore.PLAY) {
+        while (frames < 60 * 120
+                && (c.state == GameCore.PLAY || c.state == GameCore.BONUS)) {
             c.update(DT, L);
             frames++;
             if (frames % 2 != 0) continue;
-            GameCore.Enemy e = c.target != null && c.enemies.contains(c.target) && !c.target.dying
-                    ? c.target : urgent(c);
+            if (c.state == GameCore.BONUS) {
+                c.tapBonus(frames % Glyph.COUNT);
+                continue;
+            }
+            GameCore.Enemy e = c.target != null && c.enemies.contains(c.target)
+                    && c.target.typeable() ? c.target : urgent(c);
             if (e != null && e.pos < e.word.length) c.tapKey(e.word[e.pos], L);
         }
         System.out.printf("    120s of perfect play: stage=%d score=%d kills=%d lives=%d%n",
                 c.stage, c.score, c.kills, c.lives);
         check("perfect play keeps all lives", c.lives == GameCore.START_LIVES);
-        check("perfect play survives 120s", c.state == GameCore.PLAY);
+        check("perfect play survives 120s",
+                c.state == GameCore.PLAY || c.state == GameCore.BONUS);
         check("perfect play reaches a late stage", c.stage >= 6);
         check("score accumulates", c.score > 1000);
     }

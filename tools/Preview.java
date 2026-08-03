@@ -163,6 +163,27 @@ final class Preview {
                 boom.destroyed, boom.destroyT, java.util.Arrays.toString(boom.flyDir), c7.shake);
         shot(dir, "13-destroy", c7, L, w, h, ss);
 
+        // Between-stages minigame, part-way through prising the lid off.
+        GameCore c8 = new GameCore(store, 37L);
+        c8.startGame();
+        c8.score = 2100;
+        c8.spawnedThisStage = c8.stageQuota();
+        c8.enemies.clear();
+        c8.shots.clear();
+        c8.update(DT, L);
+        for (int i = 0; i < 13; i++) c8.tapBonus(i % Glyph.COUNT);
+        step(c8, L, 0.09f);
+        System.out.printf("bonus: state=%d hits=%d open=%.2f lidPulse=%.2f flash=%.2f%n",
+                c8.state, c8.steamerHits, c8.lidOpen(), c8.lidPulse, c8.steamerFlash);
+        shot(dir, "14-bonus", c8, L, w, h, ss);
+
+        // And the moment it breaks free.
+        for (int i = 0; i < 8; i++) c8.tapBonus(i % Glyph.COUNT);
+        step(c8, L, 0.5f);
+        System.out.printf("bonus freed: opens=%d freedT=%.2f score=%d lives=%d%n",
+                c8.steamerOpens, c8.freedT, c8.score, c8.lives);
+        shot(dir, "15-bonus-freed", c8, L, w, h, ss);
+
         // Settings panel, opened mid-game.
         GameCore c6 = new GameCore(store, 29L);
         c6.startGame();
@@ -198,11 +219,15 @@ final class Preview {
     /** Plays perfectly: always types the next glyph of the most urgent word. */
     private static void autoplay(GameCore c, Layout L, float seconds) {
         float t = 0;
-        while (t < seconds && c.state == GameCore.PLAY) {
+        while (t < seconds && (c.state == GameCore.PLAY || c.state == GameCore.BONUS)) {
             c.update(DT, L);
             t += DT;
             // Human-ish cadence: at most one keypress every other frame.
             if (++autoBudget % 2 != 0) continue;
+            if (c.state == GameCore.BONUS) {
+                c.tapBonus(autoBudget % Glyph.COUNT);
+                continue;
+            }
             GameCore.Enemy e =
                     c.target != null && c.enemies.contains(c.target) && c.target.typeable()
                             ? c.target : lowest(c);

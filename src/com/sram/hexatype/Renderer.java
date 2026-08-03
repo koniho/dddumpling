@@ -64,6 +64,7 @@ final class Renderer {
 
         if (c.state == GameCore.TITLE) title(p, c, L);
         else if (c.state == GameCore.OVER) gameOver(p, c, L);
+        else if (c.state == GameCore.BONUS) bonus(p, c, L);
         else if (c.stageBanner > 0) stageBanner(p, c, L);
 
         if (c.state == GameCore.PLAY && c.perfectBanner > 0) perfectStage(p, c, L);
@@ -699,6 +700,113 @@ final class Renderer {
                 Painter.LEFT, true);
         p.text(c.hits + " HIT   " + c.misses + " MISS", L.w / 2f + s * 1.5f, cy + s * 1.75f,
                 s * 0.5f, INK_DIM, Painter.LEFT, false);
+    }
+
+    private static final int BAMBOO = 0xFFD9AE6E;
+    private static final int BAMBOO_DARK = 0xFF8E6B3A;
+
+    /**
+     * Between-stages minigame: mash any key to lever the lid off a dim sum steamer and free
+     * the rainbow dumpling inside. Progress carries across interludes, so the lid creeps up
+     * over several stages.
+     */
+    private static void bonus(Painter p, GameCore c, Layout L) {
+        float s = L.unit;
+        // Dim only the sky: the keys are the instrument here and must stay lit.
+        scrim(p, L, 195);
+
+        float open = c.lidOpen();
+        boolean freed = c.freedT > 0f;
+
+        float cx = L.w / 2f;
+        float cy = L.h * 0.46f;
+        // Half-extents. A steamer basket is wide but not a bar: roughly 3:1.
+        float bw = Math.min(L.w * 0.30f, s * 7.0f);
+        float bh = s * 3.4f;
+
+        p.text(freed ? "FREE!" : "FREE THE DUMPLING", cx, L.h * 0.235f,
+                s * (freed ? 1.5f : 0.95f), freed ? GOLD : INK, Painter.CENTER, true);
+        if (!freed) {
+            p.text("MASH ANY KEY", cx, L.h * 0.235f + s * 1.2f, s * 0.62f, INK_DIM,
+                    Painter.CENTER, false);
+        }
+
+        // The dumpling: rainbow, and cheerier the closer it is to getting out.
+        float dumpR = bh * 0.72f;
+        float dumpY = cy - bh * 0.10f;
+        if (freed) {
+            // Escaping: rises and grows away as the celebration plays.
+            float t = 1f - c.freedT / 1.7f;
+            dumpY -= t * t * L.h * 0.30f;
+            dumpR *= 1f + 0.35f * t;
+        }
+        int rainbow = Glyph.cycle(c.clock * 0.5f);
+        // Rays only once it is out: behind a closed lid they just show through the gap.
+        if (freed) {
+            for (int k = 3; k >= 1; k--) {
+                p.fillPoly(star(cx, dumpY, dumpR * (1.4f + 0.7f * k), dumpR * 0.5f, 8,
+                        c.clock * 0.6f), Glyph.withAlpha(rainbow, 40 / k));
+            }
+        }
+        Kawaii.moodDumpling(p, cx, dumpY, dumpR, rainbow,
+                freed ? 1f : 0.15f + 0.55f * open, 1f + 0.06f * (float) Math.sin(c.clock * 4f));
+
+        if (!freed) {
+            // Basket body, over the dumpling's lower half so it reads as contained.
+            int body = Glyph.mix(BAMBOO, Glyph.cycle(c.clock * 6f), c.steamerFlash * 0.85f);
+            float bodyCy = cy + bh * 0.42f, bodyH = bh * 0.60f;
+            p.fillPoly(pill(cx, bodyCy, bw, bodyH, 10), body);
+            p.fillPoly(pill(cx, bodyCy, bw, bodyH, 10),
+                    Glyph.withAlpha(0xFF000000, (int) (30 * (1f - c.steamerFlash))));
+            // Woven slats.
+            for (int k = -1; k <= 1; k++) {
+                p.fillPoly(pill(cx, bodyCy + k * bh * 0.28f, bw * 0.92f, bh * 0.045f, 6),
+                        Glyph.withAlpha(BAMBOO_DARK, 120));
+            }
+
+            // Lid: lifts with progress, and kicks up further on each press. Capped so that
+            // at full open it just clears the rim rather than floating away from it.
+            float lift = open * bh * 1.0f + c.lidPulse * bh * 0.28f;
+            float lidY = cy - bh * 0.52f - lift;
+            int lidCol = Glyph.mix(BAMBOO, Glyph.cycle(c.clock * 6f + 0.3f),
+                    c.steamerFlash * 0.85f);
+            p.fillPoly(pill(cx, lidY, bw * 1.05f, bh * 0.26f, 10), lidCol);
+            p.fillPoly(pill(cx, lidY - bh * 0.20f, bw * 0.20f, bh * 0.09f, 8), lidCol);
+            for (int k = -1; k <= 1; k += 2) {
+                p.fillPoly(pill(cx + k * bw * 0.58f, lidY, bw * 0.24f, bh * 0.07f, 6),
+                        Glyph.withAlpha(BAMBOO_DARK, 110));
+            }
+
+            // Steam escaping through the widening gap.
+            if (open > 0.05f) {
+                for (int k = 0; k < 4; k++) {
+                    float wob = (float) Math.sin(c.clock * 2.2f + k * 1.7f);
+                    float sx2 = cx + (k - 1.5f) * bw * 0.34f + wob * s * 0.25f;
+                    float sy2 = lidY - bh * 0.4f - open * s * (0.6f + 0.5f * k);
+                    p.fillPoly(pill(sx2, sy2, s * 0.34f * open, s * 0.11f * open, 6),
+                            Glyph.withAlpha(INK, (int) (70 * open)));
+                }
+            }
+
+            // Progress: one pip per press needed.
+            int cols = 10;
+            float pr = s * 0.14f, gap = s * 0.54f;
+            float x0 = cx - gap * (cols - 1) / 2f;
+            float rowY = L.h * 0.63f;
+            for (int i = 0; i < GameCore.STEAMER_HITS; i++) {
+                float px = x0 + (i % cols) * gap;
+                float py = rowY + (i / cols) * gap * 1.15f;
+                p.fillCircle(px, py, pr,
+                        i < c.steamerHits ? rainbow : Glyph.withAlpha(INK, 45));
+            }
+            p.text(c.steamerHits + " / " + GameCore.STEAMER_HITS, cx,
+                    rowY + gap * 1.15f + s * 1.5f, s * 0.62f, INK_DIM, Painter.CENTER, true);
+        } else {
+            p.text("+" + GameCore.FREE_BONUS, cx, L.h * 0.63f, s * 1.1f, GOLD,
+                    Painter.CENTER, true);
+        }
+
+        handLabels(p, L, L.deckTop - s * 0.45f);
     }
 
     private static void stageBanner(Painter p, GameCore c, Layout L) {

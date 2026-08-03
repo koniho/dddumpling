@@ -84,6 +84,16 @@ public class GameView extends View {
         int idx = ev.getActionIndex();
         float x = ev.getX(idx), y = ev.getY(idx);
 
+        if (core.state == GameCore.BONUS) {
+            // Mash any key to hammer the steamer open.
+            int mash = layout.keyAt(x, y);
+            if (mash >= 0) {
+                core.tapBonus(mash);
+                tick();
+            }
+            return true;
+        }
+
         if (core.state != GameCore.PLAY) {
             core.anyTap();
             tick();
