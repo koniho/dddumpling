@@ -52,8 +52,39 @@ delete it and a new one appears.
 termux-open hexatype.apk
 ```
 
-This hands the APK to Android's package installer via Termux's FileProvider. You will need
-to allow "install unknown apps" for Termux once.
+This hands the APK to Android's package installer via Termux's FileProvider. Two one-time
+prerequisites:
+
+- Allow "install unknown apps" for Termux.
+- Set `allow-external-apps = true` in `~/.termux/termux.properties`, then run
+  `termux-reload-settings`. Without it Termux's content provider refuses to hand the file
+  over and **nothing at all happens** — no dialog, no error. The reason only shows up in
+  `logcat` under Termux's own UID.
+
+## Unattended install
+
+`./deploy.sh` builds, installs and launches in one step. With adb connected it needs no
+taps at all; otherwise it falls back to the installer dialog.
+
+Termux cannot install packages itself — that needs a privileged permission — so the only
+way to skip the dialog is adb. It can talk to the very device it is running on over
+Wireless debugging:
+
+1. Settings → Developer options → enable **Wireless debugging**.
+2. Tap **Pair device with pairing code**. Note the `IP:PORT` and the six-digit code.
+3. `adb pair <ip>:<pair-port>` and enter the code.
+4. `adb connect <ip>:<port>` — the port on the main Wireless debugging screen, which is
+   *different* from the pairing port.
+5. `adb devices` should list one `device`.
+
+Pairing persists, but the port changes when Wireless debugging is toggled or the device
+reboots, so step 4 may need repeating. After that `./deploy.sh` is fully unattended and
+`adb install -r` preserves the best score and settings.
+
+Notifications are optional: `deploy.sh` calls `termux-notification` if the Termux:API app
+is installed, and silently skips it otherwise. Note that Termux add-ons must be installed
+from the same source as Termux itself — mixing F-Droid and GitHub builds fails with a
+signature mismatch.
 
 ## Verify without installing
 
