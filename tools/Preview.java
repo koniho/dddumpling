@@ -13,8 +13,14 @@ final class Preview {
 
     private static final class Mem implements GameCore.Store {
         int best;
+        float speed = 1f;
+        int bgm;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; }
+        public float loadSpeed() { return speed; }
+        public void saveSpeed(float v) { speed = v; }
+        public int loadBgm() { return bgm; }
+        public void saveBgm(int v) { bgm = v; }
     }
 
     public static void main(String[] args) throws Exception {
@@ -30,6 +36,7 @@ final class Preview {
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
         characterSheet(dir, w, h, ss);
+        sounds(dir);
 
         Mem store = new Mem();
         store.best = 1840;
@@ -81,6 +88,7 @@ final class Preview {
         c4.enemies.clear();
         GameCore.Enemy near = new GameCore.Enemy();
         near.word = new int[] {2, 5, 0};
+        near.need = new int[] {1, 2, 1};
         near.baseX = (L.playLeft + L.playRight) / 2f;
         near.y = L.dangerY - (L.dangerY - L.playTop) * 0.06f;
         near.speed = 0;
@@ -107,8 +115,44 @@ final class Preview {
             c3.update(DT, L);
             t += DT;
         }
+        c3.hits = 184;
+        c3.misses = 61;   // 75% -> mid mood
         step(c3, L, 1.0f);
+        System.out.printf("gameover: accuracy=%d%% mood=%.2f%n",
+                c3.accuracyPercent(), c3.accuracyMood());
         shot(dir, "8-gameover", c3, L, w, h, ss);
+
+        // Same screen at both mood extremes.
+        c3.hits = 92;
+        c3.misses = 84;   // 52% -> saddest
+        shot(dir, "9-gameover-sad", c3, L, w, h, ss);
+        c3.hits = 240;
+        c3.misses = 9;    // 96% -> happiest
+        shot(dir, "10-gameover-happy", c3, L, w, h, ss);
+
+        // Flawless wave celebration.
+        GameCore c5 = new GameCore(store, 23L);
+        c5.startGame();
+        c5.score = 980;
+        c5.spawnedThisStage = c5.stageQuota();
+        c5.enemies.clear();
+        c5.shots.clear();
+        c5.update(DT, L);
+        step(c5, L, 0.42f);   // into the bounce, past the fade-in
+        System.out.printf("perfect wave: banner=%.2f stage=%d%n", c5.perfectBanner, c5.stage);
+        shot(dir, "11-perfect", c5, L, w, h, ss);
+
+        // Settings panel, opened mid-game.
+        GameCore c6 = new GameCore(store, 29L);
+        c6.startGame();
+        c6.score = 1420;
+        c6.stage = 3;
+        step(c6, L, 6f);
+        c6.setSpeed(1.2f);
+        c6.setBgm(Music.DRIFT);
+        c6.openSettings();
+        step(c6, L, 0.3f);
+        shot(dir, "12-settings", c6, L, w, h, ss);
     }
 
     // ---- driving ------------------------------------------------------------
@@ -155,6 +199,34 @@ final class Preview {
         System.out.printf("  wrote %-18s state=%d enemies=%d shots=%d particles=%d score=%d%n",
                 f.getName(), c.state, c.enemies.size(), c.shots.size(), c.particles.size(),
                 c.score);
+    }
+
+    /** Writes every effect and the music loop to WAV so they can be auditioned. */
+    private static void sounds(File dir) throws Exception {
+        File sfxDir = new File(dir, "sfx");
+        sfxDir.mkdirs();
+        String[] names = {"squish-dumpling", "squish-strawberry", "squish-cat", "squish-grapes",
+                "squish-squishy", "squish-blob", "damage-drip", "clear-word", "wrong",
+                "achievement"};
+        int peak = 0;
+        for (int id = 0; id < Sfx.COUNT; id++) {
+            short[] pcm = Sfx.build(id);
+            int max = 0;
+            for (int i = 0; i < pcm.length; i++) max = Math.max(max, Math.abs(pcm[i]));
+            peak = Math.max(peak, max);
+            Wav.write(new File(sfxDir, names[id] + ".wav"), pcm, Sfx.RATE);
+        }
+        for (int style = 0; style < Music.NAMES.length; style++) {
+            if (!Music.isSynth(style)) continue;
+            short[] loop = Music.loop(style);
+            String slug = Music.NAMES[style].toLowerCase().replace(' ', '-');
+            Wav.write(new File(sfxDir, "bgm-" + slug + ".wav"), loop, Sfx.RATE);
+            int lmax = 0;
+            for (int i = 0; i < loop.length; i++) lmax = Math.max(lmax, Math.abs(loop[i]));
+            System.out.printf("  wrote bgm-%-12s %.2fs peak=%d%n", slug,
+                    (float) loop.length / Sfx.RATE, lmax);
+        }
+        System.out.printf("  wrote %d sfx, peak=%d%n", Sfx.COUNT, peak);
     }
 
     /** Harness-only sheet: every character large, for checking the faces read clearly. */

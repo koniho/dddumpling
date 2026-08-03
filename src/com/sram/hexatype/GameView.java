@@ -15,13 +15,15 @@ public class GameView extends View {
     private final GameCore core;
     private final Layout layout = new Layout();
     private final CanvasPainter painter = new CanvasPainter();
+    private final SettingsUi settingsUi = new SettingsUi();
 
     private float padL, padT, padR, padB;
     private long last;
 
-    GameView(Context ctx, GameCore.Store store) {
+    GameView(Context ctx, GameCore.Store store, GameCore.Sound sound) {
         super(ctx);
         core = new GameCore(store, SystemClock.elapsedRealtimeNanos());
+        core.sound = sound;
         setKeepScreenOn(true);
         setClickable(true);
     }
@@ -64,6 +66,17 @@ public class GameView extends View {
 
     @Override public boolean onTouchEvent(MotionEvent ev) {
         int action = ev.getActionMasked();
+
+        // The settings panel needs drags, for the speed slider.
+        if (core.settingsOpen) {
+            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN
+                    || action == MotionEvent.ACTION_MOVE) {
+                int i = ev.getActionIndex();
+                handleSettings(ev.getX(i), ev.getY(i), action == MotionEvent.ACTION_MOVE);
+            }
+            return true;
+        }
+
         if (action != MotionEvent.ACTION_DOWN && action != MotionEvent.ACTION_POINTER_DOWN) {
             return true;
         }
@@ -76,12 +89,41 @@ public class GameView extends View {
             tick();
             return true;
         }
+        // The stage readout opens settings, so check it before the keys.
+        if (layout.inStageTap(x, y)) {
+            core.openSettings();
+            tick();
+            return true;
+        }
         int key = layout.keyAt(x, y);
         if (key >= 0) {
             core.tapKey(key, layout);
             tick();
         }
         return true;
+    }
+
+    private void handleSettings(float x, float y, boolean dragging) {
+        settingsUi.compute(layout, Music.NAMES.length);
+        int hit = settingsUi.hit(x, y);
+        if (hit == SettingsUi.HIT_SLIDER) {
+            float v = settingsUi.speedAt(x);
+            if (v != core.speed) {
+                core.setSpeed(v);
+                tick();
+            }
+            return;
+        }
+        // A drag that wandered off the slider must not trip the other controls.
+        if (dragging) return;
+
+        if (hit == SettingsUi.HIT_CLOSE || hit == SettingsUi.HIT_OUTSIDE) {
+            core.closeSettings();
+            tick();
+        } else if (hit >= SettingsUi.HIT_OPTION) {
+            core.setBgm(hit - SettingsUi.HIT_OPTION);
+            tick();
+        }
     }
 
     private void tick() {

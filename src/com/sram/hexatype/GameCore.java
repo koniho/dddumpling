@@ -18,11 +18,37 @@ final class GameCore {
     interface Store {
         int loadBest();
         void saveBest(int best);
+        float loadSpeed();
+        void saveSpeed(float speed);
+        int loadBgm();
+        void saveBgm(int choice);
     }
+
+    /**
+     * Audio seam. Kept as an interface so the rules stay Android-free and the harness can
+     * assert which effect fires on which event.
+     */
+    interface Sound {
+        /** @param depth presses that were still owed on the tile before this press */
+        void squish(int glyph, int depth);
+        void clearWord();
+        void wrong();
+        void damage();
+        void achievement();
+        /** Switch the looping background track to {@link Music#NAMES}[choice]. */
+        void selectMusic(int choice);
+    }
+
+    /** Optional; null in the harness unless a test is watching for effects. */
+    Sound sound;
 
     static final class Enemy {
         int[] word;
+        /** Presses each tile needs: 1 for a plain letter, 2..4 for a stacked one. */
+        int[] need;
         int pos;
+        /** Presses landed on the current tile so far. */
+        int done;
         float baseX, y, speed, phase, sway;
         boolean dying;
         float deathT;
@@ -43,6 +69,15 @@ final class GameCore {
         int remaining() { return word.length - pos; }
 
         boolean typeable() { return !dying && !attacking && pos < word.length; }
+
+        /** Presses needed to clear this whole word from scratch. */
+        int totalPresses() {
+            int n = 0;
+            for (int i = 0; i < need.length; i++) n += need[i];
+            return n;
+        }
+
+        boolean stacked(int i) { return need[i] > 1; }
     }
 
     static final class Shot {
@@ -62,6 +97,22 @@ final class GameCore {
     // ---- persistent-ish state ----------------------------------------------
     int state = TITLE;
     int score, best, lives, kills, stage, combo, maxCombo;
+    /** Words released so far in the current stage; capped at {@link #stageQuota()}. */
+    int spawnedThisStage;
+    /** Words of the current stage that are done with, whether cleared or breached. */
+    int resolvedThisStage;
+    /** Correct and incorrect presses over the whole run, for the accuracy readout. */
+    int hits, misses;
+    /** Incorrect presses in the current stage; zero at stage end earns the gold dumpling. */
+    int missesThisStage;
+
+    // ---- settings (persisted) ----------------------------------------------
+    static final float SPEED_MIN = 0.5f, SPEED_MAX = 1.5f;
+    /** Pacing multiplier: >1 makes words fall and arrive faster. */
+    float speed = 1f;
+    int bgmChoice;
+    /** While true the simulation is frozen and the settings panel is showing. */
+    boolean settingsOpen;
 
     // ---- transient ----------------------------------------------------------
     float time;              // seconds since entering the current state
@@ -71,6 +122,10 @@ final class GameCore {
     final List<Particle> particles = new ArrayList<Particle>();
     Enemy target;
     float spawnTimer;
+    /** Breather between stages; nothing spawns while this is running. */
+    float stageGap;
+    /** Counts down while the flawless-stage gold dumpling is on screen. */
+    float perfectBanner;
     float shake, flash, stageBanner;
     /** Highest proximity-to-danger across the field, 0..1. Drives the red screen pulse. */
     float warnLevel;
@@ -86,7 +141,10 @@ final class GameCore {
     private final Store store;
 
     static final int START_LIVES = 3;
-    private static final int KILLS_PER_STAGE = 8;
+    /** Pause after a stage is cleared, before the next wave starts arriving. */
+    static final float STAGE_GAP = 1.3f;
+    /** How long the flawless-stage gold dumpling stays on screen. */
+    static final float PERFECT_TIME = 2.1f;
 
     /** Length of the lunge animation between crossing the line and losing a life. */
     static final float ATTACK_TIME = 0.42f;
@@ -102,16 +160,50 @@ final class GameCore {
             starY[i] = sr.nextFloat();
             starS[i] = 0.35f + sr.nextFloat() * 0.65f;
         }
-        best = store != null ? store.loadBest() : 0;
+        if (store != null) {
+            best = store.loadBest();
+            speed = clampSpeed(store.loadSpeed());
+            bgmChoice = Math.max(0, Math.min(Music.NAMES.length - 1, store.loadBgm()));
+        }
+    }
+
+    static float clampSpeed(float v) {
+        if (v != v) return 1f;                       // NaN from a corrupt store
+        return v < SPEED_MIN ? SPEED_MIN : v > SPEED_MAX ? SPEED_MAX : v;
+    }
+
+    // ---- settings -----------------------------------------------------------
+
+    void openSettings() {
+        settingsOpen = true;
+    }
+
+    void closeSettings() {
+        settingsOpen = false;
+    }
+
+    void setSpeed(float v) {
+        speed = clampSpeed(v);
+        if (store != null) store.saveSpeed(speed);
+    }
+
+    void setBgm(int choice) {
+        if (choice < 0 || choice >= Music.NAMES.length) return;
+        bgmChoice = choice;
+        if (store != null) store.saveBgm(choice);
+        if (sound != null) sound.selectMusic(choice);
     }
 
     // ---- stage pacing -------------------------------------------------------
     // One knob per dial so new stages are a numbers change, not a rewrite.
 
-    /** Seconds an enemy takes to fall from the play top to the danger line. */
-    float travelSeconds() { return Math.max(4.2f, 15f - (stage - 1) * 1.05f); }
+    /**
+     * Seconds an enemy takes to fall from spawn to the danger line. The player's speed
+     * setting divides this, so 1.5 means everything arrives half again as fast.
+     */
+    float travelSeconds() { return Math.max(4.2f, 15f - (stage - 1) * 1.05f) / speed; }
 
-    float spawnInterval() { return Math.max(0.80f, 2.5f - (stage - 1) * 0.13f); }
+    float spawnInterval() { return Math.max(0.80f, 2.5f - (stage - 1) * 0.13f) / speed; }
 
     int maxEnemies() { return Math.min(7, 3 + stage / 2); }
 
@@ -119,7 +211,21 @@ final class GameCore {
 
     int minWordLen() { return Math.max(2, maxWordLen() - 2); }
 
-    int killsIntoStage() { return kills % KILLS_PER_STAGE; }
+    /** How many words this stage releases in total. */
+    int stageQuota() { return Math.min(10, 5 + stage / 2); }
+
+    /** Hard ceiling on the presses any single word can demand. */
+    static final int MAX_PRESSES = 8;
+
+    /** Odds that a given tile becomes a stack. Stacks stay out of the opening stage. */
+    float stackChance() {
+        return stage < 2 ? 0f : Math.min(0.55f, 0.13f * (stage - 1));
+    }
+
+    /** True once every word of this stage has been released and dealt with. */
+    boolean stageCleared() {
+        return spawnedThisStage >= stageQuota() && enemies.isEmpty() && shots.isEmpty();
+    }
 
     // ---- lifecycle ----------------------------------------------------------
 
@@ -129,6 +235,13 @@ final class GameCore {
         score = 0;
         kills = 0;
         stage = 1;
+        spawnedThisStage = 0;
+        resolvedThisStage = 0;
+        stageGap = 0;
+        perfectBanner = 0;
+        hits = 0;
+        misses = 0;
+        missesThisStage = 0;
         combo = 0;
         maxCombo = 0;
         lives = START_LIVES;
@@ -183,9 +296,11 @@ final class GameCore {
             }
             target = pick;
         } else if (target.word[target.pos] != g) {
-            // Engaged word, wrong letter: the whole word has to be retyped. The lock is
-            // kept so the retry is immediate rather than needing a re-target.
+            // Engaged word, wrong letter: the whole word has to be retyped, which also
+            // resets every stack count. The lock is kept so the retry is immediate
+            // rather than needing a re-target.
             target.pos = 0;
+            target.done = 0;
             target.hitPulse = 0f;
             target.hitIndex = -1;
             target.failPulse = 1f;
@@ -197,9 +312,17 @@ final class GameCore {
         int struck = e.pos;
         float hx = tileX(e, struck, L);
         float hy = e.y;
-        e.pos++;
+
+        // A stacked tile absorbs several presses of the same letter before it clears.
+        if (sound != null) sound.squish(g, pressesLeft(e, struck));
+        e.done++;
+        if (e.done >= e.need[struck]) {
+            e.pos++;
+            e.done = 0;
+        }
         e.hitPulse = 1f;
         e.hitIndex = struck;
+        hits++;
         combo++;
         if (combo > maxCombo) maxCombo = combo;
         score += 5 + Math.min(combo, 25) / 2;
@@ -227,8 +350,35 @@ final class GameCore {
 
     private void miss(int g) {
         keyBad[g] = 1f;
+        misses++;
+        if (sound != null) sound.wrong();
+        missesThisStage++;
         combo = 0;
         shake = Math.max(shake, 0.25f);
+    }
+
+    /** Correct presses as a fraction of all presses; 1 before anything is pressed. */
+    float accuracy() {
+        int total = hits + misses;
+        return total == 0 ? 1f : (float) hits / total;
+    }
+
+    int accuracyPercent() {
+        return Math.round(accuracy() * 100f);
+    }
+
+    /**
+     * Expression for the accuracy dumpling: 0 (saddest) at or below 60%, 1 (happiest) at
+     * or above 90%.
+     */
+    float accuracyMood() {
+        return clamp01((accuracyPercent() - 60f) / 30f);
+    }
+
+    /** Presses still owed on tile {@code i}; 0 once it is cleared. */
+    int pressesLeft(Enemy e, int i) {
+        if (i < e.pos) return 0;
+        return e.need[i] - (i == e.pos ? e.done : 0);
     }
 
     /** The glyph the player must press next, or -1 when nothing is locked. */
@@ -257,7 +407,9 @@ final class GameCore {
     // ---- simulation ---------------------------------------------------------
 
     void update(float dt, Layout L) {
+        // The clock keeps running so the panel itself can animate, but nothing else moves.
         clock += dt;
+        if (settingsOpen) return;
         time += dt;
 
         for (int i = 0; i < Glyph.COUNT; i++) {
@@ -267,16 +419,26 @@ final class GameCore {
         shake = decay(shake, dt * 2.6f);
         flash = decay(flash, dt * 2.2f);
         stageBanner = decay(stageBanner, dt);
+        perfectBanner = decay(perfectBanner, dt);
 
         updateParticles(dt);
         updateShots(dt, L);
 
         if (state != PLAY) return;
 
-        spawnTimer -= dt;
-        if (spawnTimer <= 0 && enemies.size() < maxEnemies()) {
-            spawn(L);
-            spawnTimer = spawnInterval();
+        // Stages are discrete waves: a stage releases exactly stageQuota() words, and the
+        // next stage cannot start arriving until the field is completely clear.
+        if (stageGap > 0) {
+            stageGap -= dt;
+        } else if (spawnedThisStage < stageQuota()) {
+            spawnTimer -= dt;
+            if (spawnTimer <= 0 && enemies.size() < maxEnemies()) {
+                spawn(L);
+                spawnedThisStage++;
+                spawnTimer = spawnInterval();
+            }
+        } else if (stageCleared()) {
+            advanceStage();
         }
 
         float band = Math.max(1f, (L.dangerY - L.playTop) * WARN_BAND);
@@ -348,22 +510,38 @@ final class GameCore {
                 explode(s.tx, s.ty, L.enemyR, 4, Glyph.COLOR[e.word[i]]);
             }
             kills++;
-            score += 25 * e.word.length;
-            int ns = 1 + kills / KILLS_PER_STAGE;
-            if (ns != stage) {
-                stage = ns;
-                stageBanner = 1.6f;
-            }
+            resolvedThisStage++;
+            // Scored per press, so a stacked word is worth what it cost to clear.
+            score += 25 * e.totalPresses();
+            if (sound != null) sound.clearWord();
         } else {
             explode(s.tx, s.ty, L.enemyR * 0.7f, 7, Glyph.COLOR[s.glyph]);
         }
     }
 
+    /** Called once a stage's whole wave has been dealt with. */
+    private void advanceStage() {
+        // A wave cleared without a single wrong press earns the gold dumpling.
+        if (missesThisStage == 0) {
+            perfectBanner = PERFECT_TIME;
+            if (sound != null) sound.achievement();
+        }
+        missesThisStage = 0;
+        stage++;
+        spawnedThisStage = 0;
+        resolvedThisStage = 0;
+        stageBanner = 1.6f;
+        stageGap = STAGE_GAP;
+        spawnTimer = 0.35f;
+    }
+
     private void breach(Enemy e, Layout L) {
         if (target == e) target = null;
+        resolvedThisStage++;
         lives--;
         combo = 0;
         shake = 1f;
+        if (sound != null) sound.damage();
         flash = 1f;
         explode(enemyCentreX(e), L.dangerY, L.enemyR * 2f, 16, 0xFFFF7A9E);
         if (lives <= 0) {
@@ -384,8 +562,23 @@ final class GameCore {
         Enemy e = new Enemy();
         int len = minWordLen() + rnd.nextInt(maxWordLen() - minWordLen() + 1);
         e.word = new int[len];
-        for (int i = 0; i < len; i++) e.word[i] = rnd.nextInt(Glyph.COUNT);
+        e.need = new int[len];
+        for (int i = 0; i < len; i++) {
+            e.word[i] = rnd.nextInt(Glyph.COUNT);
+            e.need[i] = 1;
+        }
+        // Spend a press budget on stacks, so a word never demands more than MAX_PRESSES
+        // in total no matter how the extras land.
+        int budget = MAX_PRESSES - len;
+        float chance = stackChance();
+        for (int i = 0; i < len && budget > 0; i++) {
+            if (rnd.nextFloat() >= chance) continue;
+            int extra = 1 + rnd.nextInt(Math.min(3, budget));
+            e.need[i] += extra;
+            budget -= extra;
+        }
         e.pos = 0;
+        e.done = 0;
 
         float half = L.wordWidth(len) / 2f;
         e.sway = Math.min(0.035f * L.w, Math.max(0f, (L.playRight - L.playLeft) / 2f - half - 4f));

@@ -13,22 +13,44 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     private static final String PREFS = "hexatype";
     private static final String KEY_BEST = "best";
+    private static final String KEY_SPEED = "speed";
+    private static final String KEY_BGM = "bgm";
 
     private SharedPreferences prefs;
+    private Audio audio;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         Crash.install(this);
         try {
             prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+            audio = new Audio(this);
             // setContentView first: it installs the decor view, and
             // Window.getInsetsController() dereferences that decor view, so going
             // fullscreen any earlier throws inside the framework.
-            setContentView(new GameView(this, this));
+            setContentView(new GameView(this, this, audio));
             goFullscreen();
         } catch (Throwable t) {
             Crash.show(this, t);
         }
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (audio != null) {
+            audio.startMusic();
+            audio.resumeMusic();
+        }
+    }
+
+    @Override protected void onPause() {
+        super.onPause();
+        if (audio != null) audio.pauseMusic();
+    }
+
+    @Override protected void onDestroy() {
+        super.onDestroy();
+        if (audio != null) audio.release();
     }
 
     @Override public int loadBest() {
@@ -37,6 +59,22 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     @Override public void saveBest(int best) {
         prefs.edit().putInt(KEY_BEST, best).apply();
+    }
+
+    @Override public float loadSpeed() {
+        return prefs.getFloat(KEY_SPEED, 1f);
+    }
+
+    @Override public void saveSpeed(float speed) {
+        prefs.edit().putFloat(KEY_SPEED, speed).apply();
+    }
+
+    @Override public int loadBgm() {
+        return prefs.getInt(KEY_BGM, 0);
+    }
+
+    @Override public void saveBgm(int choice) {
+        prefs.edit().putInt(KEY_BGM, choice).apply();
     }
 
     private void goFullscreen() {

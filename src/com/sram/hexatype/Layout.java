@@ -98,6 +98,16 @@ final class Layout {
         return (n - 1) * enemyStep + 2f * HEAD_SCALE * enemyR;
     }
 
+    /**
+     * True inside the stage readout in the HUD, which opens settings. Sized generously —
+     * the text itself is small, and a mis-tap here costs nothing.
+     */
+    boolean inStageTap(float x, float y) {
+        return Math.abs(x - w / 2f) <= 0.24f * w
+                && y >= topSafe - 0.01f * h
+                && y <= hudY + 0.6f * unit;
+    }
+
     /** Index of the key hex containing x,y, or -1. */
     int keyAt(float x, float y) {
         int best = -1;

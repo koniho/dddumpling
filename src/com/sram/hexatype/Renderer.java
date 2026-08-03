@@ -12,6 +12,7 @@ final class Renderer {
     static final int INK = 0xFFF6F1FF;
     static final int INK_DIM = 0xFFA79DCC;
     static final int ROSE = 0xFFFF7C9E;
+    static final int GOLD = 0xFFFFCE4A;
 
     private Renderer() {}
 
@@ -55,6 +56,113 @@ final class Renderer {
         if (c.state == GameCore.TITLE) title(p, c, L);
         else if (c.state == GameCore.OVER) gameOver(p, c, L);
         else if (c.stageBanner > 0) stageBanner(p, c, L);
+
+        if (c.state == GameCore.PLAY && c.perfectBanner > 0) perfectStage(p, c, L);
+        if (c.settingsOpen) settings(p, c, L);
+    }
+
+    /** Settings panel: pacing multiplier and music choice. Freezes the game behind it. */
+    private static void settings(Painter p, GameCore c, Layout L) {
+        float s = L.unit;
+        SettingsUi ui = new SettingsUi();
+        ui.compute(L, Music.NAMES.length);
+
+        p.fillRect(0, 0, L.w, L.h, Glyph.withAlpha(0xFF0D0A18, 205));
+        p.fillRect(ui.panelL, ui.panelT, ui.panelR, ui.panelB,
+                Glyph.withAlpha(0xFF2A2348, 250));
+        p.strokePoly(new float[] {ui.panelL, ui.panelT, ui.panelR, ui.panelT, ui.panelR,
+                ui.panelB, ui.panelL, ui.panelB}, Glyph.withAlpha(INK, 60), s * 0.06f);
+
+        p.text("SETTINGS", ui.panelL + s * 1.2f, ui.titleY, s * 0.92f, INK, Painter.LEFT, true);
+        p.text("PAUSED", ui.panelL + s * 1.2f, ui.titleY + s * 0.8f, s * 0.5f, INK_DIM,
+                Painter.LEFT, false);
+
+        // Close button.
+        p.fillCircle(ui.closeCx, ui.closeCy, ui.closeR, Glyph.withAlpha(ROSE, 60));
+        p.strokeCircle(ui.closeCx, ui.closeCy, ui.closeR, Glyph.withAlpha(ROSE, 220),
+                s * 0.06f);
+        float k = ui.closeR * 0.42f;
+        p.line(ui.closeCx - k, ui.closeCy - k, ui.closeCx + k, ui.closeCy + k, INK, s * 0.09f);
+        p.line(ui.closeCx + k, ui.closeCy - k, ui.closeCx - k, ui.closeCy + k, INK, s * 0.09f);
+
+        // Speed slider.
+        p.text("SPEED", ui.sliderL, ui.speedLabelY, s * 0.58f, INK_DIM, Painter.LEFT, true);
+        p.fillRect(ui.sliderL, ui.sliderY - ui.sliderH / 2f, ui.sliderR,
+                ui.sliderY + ui.sliderH / 2f, Glyph.withAlpha(INK, 40));
+        float kx = ui.knobX(c.speed);
+        p.fillRect(ui.sliderL, ui.sliderY - ui.sliderH / 2f, kx,
+                ui.sliderY + ui.sliderH / 2f, Glyph.withAlpha(Glyph.COLOR[4], 210));
+        p.fillPoly(Glyph.hex(kx, ui.sliderY, s * 0.62f), Glyph.withAlpha(Glyph.COLOR[4], 255));
+        p.strokePoly(Glyph.hex(kx, ui.sliderY, s * 0.62f), Glyph.withAlpha(INK, 200),
+                s * 0.055f);
+
+        p.text("0.5X", ui.sliderL, ui.speedValueY, s * 0.48f, INK_DIM, Painter.LEFT, false);
+        p.text("1.5X", ui.sliderR, ui.speedValueY, s * 0.48f, INK_DIM, Painter.RIGHT, false);
+        p.text(fmtSpeed(c.speed) + "X", (ui.sliderL + ui.sliderR) / 2f, ui.speedValueY,
+                s * 0.72f, INK, Painter.CENTER, true);
+
+        // Music options.
+        p.text("MUSIC", ui.sliderL, ui.bgmLabelY, s * 0.58f, INK_DIM, Painter.LEFT, true);
+        for (int i = 0; i < Music.NAMES.length; i++) {
+            float cy = ui.optionCy(i);
+            boolean on = i == c.bgmChoice;
+            int col = on ? Glyph.COLOR[i % Glyph.COUNT] : INK_DIM;
+            if (on) {
+                p.fillRect(ui.optionL(), cy - ui.optionH * 0.40f, ui.optionR(),
+                        cy + ui.optionH * 0.40f, Glyph.withAlpha(col, 40));
+            }
+            float bx = ui.optionL() + s * 0.75f;
+            p.fillPoly(Glyph.hex(bx, cy, s * 0.34f), Glyph.withAlpha(col, on ? 235 : 45));
+            p.strokePoly(Glyph.hex(bx, cy, s * 0.34f), Glyph.withAlpha(col, 190), s * 0.045f);
+            p.text(Music.NAMES[i], bx + s * 0.9f, cy + s * 0.22f, s * 0.6f,
+                    on ? INK : INK_DIM, Painter.LEFT, on);
+        }
+    }
+
+    /** One decimal place without String.format, which is not worth the cost per frame. */
+    private static String fmtSpeed(float v) {
+        int tenths = Math.round(v * 10f);
+        return (tenths / 10) + "." + (tenths % 10);
+    }
+
+    /**
+     * Reward for clearing a whole wave without a single wrong press: a gold dumpling that
+     * fades in and bounces.
+     */
+    private static void perfectStage(Painter p, GameCore c, Layout L) {
+        float t = 1f - c.perfectBanner / GameCore.PERFECT_TIME;   // 0 at the start
+        float in = Math.min(1f, t / 0.22f);                       // fade/scale in
+        float out = Math.min(1f, c.perfectBanner / 0.35f);        // and back out
+        float a = in * out;
+        if (a <= 0.01f) return;
+
+        float r = L.unit * 1.85f * (0.55f + 0.45f * in);
+        float cx = L.w / 2f;
+        // Bouncy: settles as the celebration plays out.
+        float bounce = (float) Math.abs(Math.sin(t * 9.5f)) * (1f - t) * r * 0.42f;
+        // Sits well above the stage banner at 0.38h, which shows at the same moment.
+        float cy = L.h * 0.205f - bounce;
+        float squash = 1f + 0.14f * (float) Math.sin(t * 19f) * (1f - t);
+
+        // Glowing star behind it: stacked translucent copies, largest and faintest first,
+        // turning slowly so the glow shimmers rather than sitting still.
+        float spin = c.clock * 0.5f;
+        float grow = 1f + 0.06f * (float) Math.sin(c.clock * 3.5f);
+        for (int k = 4; k >= 1; k--) {
+            float rr = r * (1.5f + 0.62f * k) * grow;
+            p.fillPoly(star(cx, cy, rr, rr * 0.40f, 8, spin),
+                    Glyph.withAlpha(GOLD, (int) (a * 26 / k)));
+        }
+        p.fillPoly(star(cx, cy, r * 2.05f * grow, r * 0.72f, 4, spin + 0.4f),
+                Glyph.withAlpha(0xFFFFF3C4, (int) (a * 105)));
+
+        for (int k = 3; k >= 1; k--) {
+            p.strokePoly(Glyph.hex(cx, cy, r * (1.25f + 0.30f * k)),
+                    Glyph.withAlpha(GOLD, (int) (a * 60 / k)), r * 0.05f);
+        }
+        Kawaii.moodDumpling(p, cx, cy, r, Glyph.withAlpha(GOLD, (int) (255 * a)), 1f, squash);
+        p.text("PERFECT WAVE", cx, cy + r * 1.85f, L.unit * 0.86f,
+                Glyph.withAlpha(GOLD, (int) (255 * a)), Painter.CENTER, true);
     }
 
     // ---- background ---------------------------------------------------------
@@ -74,6 +182,19 @@ final class Renderer {
      * build-up is a smooth ramp instead of visible bands. Corners get both a horizontal
      * and a vertical layer, which is what a vignette wants anyway.
      */
+    /** Star polygon with {@code points} spikes, rotated by {@code rot} radians. */
+    private static float[] star(float cx, float cy, float outer, float inner, int points,
+            float rot) {
+        float[] pts = new float[points * 4];
+        for (int i = 0; i < points * 2; i++) {
+            double a = rot + Math.PI * i / points;
+            float rr = (i % 2 == 0) ? outer : inner;
+            pts[i * 2] = cx + rr * (float) Math.cos(a);
+            pts[i * 2 + 1] = cy + rr * (float) Math.sin(a);
+        }
+        return pts;
+    }
+
     private static void vignette(Painter p, Layout L, int color, float strength) {
         if (strength <= 0.01f) return;
         // Many thin layers, not few thick ones: the innermost layer's own edge is the only
@@ -183,6 +304,18 @@ final class Renderer {
             // recede so the remaining letters are what the eye lands on.
             int fillA = cleared ? 26 : head ? 52 : 30;
             int edgeA = cleared ? 58 : head ? 165 : 88;
+
+            // Stacked tiles sit on a pile of offset copies, one per press still owed, so the
+            // depth is legible before you even count the pips.
+            int left = c.pressesLeft(e, i);
+            for (int k = left - 1; k >= 1; k--) {
+                float off = cellR * 0.15f * k;
+                p.fillPoly(Glyph.hex(x + off, y - off, cellR),
+                        Glyph.withAlpha(col, (26 - k * 4) * fade / 255));
+                p.strokePoly(Glyph.hex(x + off, y - off, cellR),
+                        Glyph.withAlpha(col, (95 - k * 18) * fade / 255), cellR * 0.055f);
+            }
+
             p.fillPoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, fillA * fade / 255));
             p.strokePoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, edgeA * fade / 255),
                     cellR * 0.075f);
@@ -193,6 +326,17 @@ final class Renderer {
             int charCol = cleared ? Glyph.withAlpha(Glyph.mix(col, INK_DIM, 0.42f), 180) : col;
             Kawaii.draw(p, g, x, y, charR, charCol, squash,
                     cleared ? 1f : head ? 0.4f : 0.1f);
+
+            // Exact count of presses still owed, so a 3-stack is never mistaken for a 4.
+            if (left > 1) {
+                float pr = cellR * 0.085f, gap = cellR * 0.255f;
+                float py = y + cellR * 0.60f;
+                float px = x - gap * (left - 1) / 2f;
+                for (int k = 0; k < left; k++) {
+                    p.fillCircle(px + k * gap, py, pr * 1.7f, Glyph.withAlpha(0xFF000000, 90));
+                    p.fillCircle(px + k * gap, py, pr, Glyph.withAlpha(INK, 240));
+                }
+            }
 
             if (head && locked) {
                 // Thicker white outline plus a caret: unmistakable without growing the cell.
@@ -276,10 +420,18 @@ final class Renderer {
 
         p.text("STAGE " + c.stage, L.w / 2f, L.hudY - s * 0.95f, s * 0.58f, INK_DIM,
                 Painter.CENTER, true);
-        int done = c.killsIntoStage();
-        float pr = s * 0.13f, gap = s * 0.46f;
-        float x0 = L.w / 2f - gap * 3.5f;
-        for (int i = 0; i < 8; i++) {
+        // Small hex-and-dot to the right: this readout is the settings button.
+        float gx = L.w / 2f + s * 2.5f, gy = L.hudY - s * 1.15f;
+        p.strokePoly(Glyph.hex(gx, gy, s * 0.34f), Glyph.withAlpha(INK, 95), s * 0.05f);
+        p.fillCircle(gx, gy, s * 0.10f, Glyph.withAlpha(INK, 120));
+        // One pip per word in this stage's wave, filling as each is dealt with.
+        int quota = c.stageQuota();
+        int done = Math.min(quota, c.resolvedThisStage);
+        float span = Math.min(s * 0.46f * (quota - 1), L.w * 0.38f);
+        float gap = quota > 1 ? span / (quota - 1) : 0f;
+        float x0 = L.w / 2f - span / 2f;
+        float pr = Math.min(s * 0.13f, gap * 0.36f);
+        for (int i = 0; i < quota; i++) {
             p.fillCircle(x0 + i * gap, L.hudY - s * 0.30f, pr,
                     i < done ? INK : Glyph.withAlpha(INK, 55));
         }
@@ -346,24 +498,54 @@ final class Renderer {
         float s = L.unit;
         p.text("GAME OVER", L.w / 2f, L.h * 0.24f, s * 1.85f, ROSE, Painter.CENTER, true);
 
-        p.text("SCORE", L.w / 2f, L.h * 0.36f, s * 0.6f, INK_DIM, Painter.CENTER, false);
-        p.text(String.valueOf(c.score), L.w / 2f, L.h * 0.36f + s * 1.9f, s * 1.9f, INK,
+        p.text("SCORE", L.w / 2f, L.h * 0.325f, s * 0.6f, INK_DIM, Painter.CENTER, false);
+        p.text(String.valueOf(c.score), L.w / 2f, L.h * 0.325f + s * 1.8f, s * 1.8f, INK,
                 Painter.CENTER, true);
 
-        p.text("STAGE " + c.stage + "   KILLS " + c.kills, L.w / 2f, L.h * 0.49f, s * 0.6f,
+        accuracy(p, c, L, L.h * 0.475f);
+
+        p.text("STAGE " + c.stage + "   KILLS " + c.kills, L.w / 2f, L.h * 0.615f, s * 0.6f,
                 INK_DIM, Painter.CENTER, false);
-        p.text("BEST COMBO " + c.maxCombo, L.w / 2f, L.h * 0.49f + s * 0.9f, s * 0.6f, INK_DIM,
-                Painter.CENTER, false);
-        p.text(c.score >= c.best ? "NEW BEST!" : "BEST " + c.best, L.w / 2f, L.h * 0.58f,
-                s * 0.78f, c.score >= c.best ? Glyph.COLOR[0] : INK_DIM, Painter.CENTER, true);
+        p.text("BEST COMBO " + c.maxCombo, L.w / 2f, L.h * 0.615f + s * 0.85f, s * 0.6f,
+                INK_DIM, Painter.CENTER, false);
+        p.text(c.score >= c.best ? "NEW BEST!" : "BEST " + c.best, L.w / 2f, L.h * 0.695f,
+                s * 0.78f, c.score >= c.best ? GOLD : INK_DIM, Painter.CENTER, true);
 
         if (c.time > 0.6f) {
             float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 3.2f);
-            p.text("TAP TO RESTART", L.w / 2f, L.h * 0.67f, s * 0.95f,
+            p.text("TAP TO RESTART", L.w / 2f, L.h * 0.765f, s * 0.95f,
                     Glyph.withAlpha(INK, (int) (255 * pulse)), Painter.CENTER, true);
         }
 
         handLabels(p, L, bottom - s * 0.45f);
+    }
+
+    /**
+     * Accuracy readout: the percentage, and a dumpling whose face carries it — miserable
+     * at 60% or below, delighted at 90% or above. It idles gently when sad and bounces
+     * when pleased, so the mood reads before the number does.
+     */
+    private static void accuracy(Painter p, GameCore c, Layout L, float cy) {
+        float s = L.unit;
+        float mood = c.accuracyMood();
+        int pct = c.accuracyPercent();
+        int tint = mood >= 0.999f ? GOLD : Glyph.mix(Glyph.COLOR[0], ROSE, (1f - mood) * 0.55f);
+
+        // Happier moods bounce faster and higher; a sad dumpling just sways.
+        float r = s * 1.35f;
+        float bob = (float) Math.abs(Math.sin(c.clock * (1.7f + 2.8f * mood)))
+                * r * (0.05f + 0.20f * mood);
+        float squash = 1f + 0.06f * (float) Math.sin(c.clock * (2.2f + 4f * mood));
+        float dx = (1f - mood) * r * 0.12f * (float) Math.sin(c.clock * 1.3f);
+
+        Kawaii.moodDumpling(p, L.w / 2f - s * 3.2f + dx, cy - bob, r, tint, mood, squash);
+
+        p.text("ACCURACY", L.w / 2f + s * 1.5f, cy - s * 0.75f, s * 0.58f, INK_DIM,
+                Painter.LEFT, true);
+        p.text(pct + "%", L.w / 2f + s * 1.5f, cy + s * 0.95f, s * 1.55f, tint,
+                Painter.LEFT, true);
+        p.text(c.hits + " HIT   " + c.misses + " MISS", L.w / 2f + s * 1.5f, cy + s * 1.75f,
+                s * 0.5f, INK_DIM, Painter.LEFT, false);
     }
 
     private static void stageBanner(Painter p, GameCore c, Layout L) {

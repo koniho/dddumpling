@@ -8,3 +8,7 @@ sdk/
 # The repo root .gitignore blanket-ignores AndroidManifest.xml (from an old maven setup);
 # this one is a real source file.
 !AndroidManifest.xml
+
+# A user-supplied music track stays local: res/raw/bgm.* is played if present, but
+# committing it would redistribute someone else's recording.
+res/raw/bgm.*

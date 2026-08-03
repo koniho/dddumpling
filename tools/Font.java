@@ -5,7 +5,7 @@ final class Font {
 
     private Font() {}
 
-    private static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!-";
+    private static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!-%";
 
     // Row-major patterns, 7 rows of 5 columns each, in CHARS order.
     private static final String[][] GLYPHS = {
@@ -50,6 +50,7 @@ final class Font {
         {".....", ".....", ".....", ".....", "..##.", "..#..", ".#..."}, // ,
         {"..#..", "..#..", "..#..", "..#..", "..#..", ".....", "..#.."}, // !
         {".....", ".....", ".....", "#####", ".....", ".....", "....."}, // -
+        {"##..#", "##.#.", "...#.", "..#..", ".#...", ".#.##", "#..##"}, // %
     };
 
     static String[] rows(char ch) {

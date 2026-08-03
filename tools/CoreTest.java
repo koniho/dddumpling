@@ -9,8 +9,15 @@ final class CoreTest {
     private static final class Mem implements GameCore.Store {
         int best;
         int saves;
+        float speed = 1f;
+        int bgm;
+        int speedSaves, bgmSaves;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; saves++; }
+        public float loadSpeed() { return speed; }
+        public void saveSpeed(float v) { speed = v; speedSaves++; }
+        public int loadBgm() { return bgm; }
+        public void saveBgm(int v) { bgm = v; bgmSaves++; }
     }
 
     public static void main(String[] args) {
@@ -22,6 +29,11 @@ final class CoreTest {
         scoringAndStages(L);
         breachAndGameOver(L);
         screens(L);
+        stackedLetters(L);
+        accuracyTracking(L);
+        audio(L);
+        settings(L);
+        waves(L);
         entranceAndPersistence(L);
         warningsAndHarm(L);
         perfectPlaySurvives(L);
@@ -112,10 +124,10 @@ final class CoreTest {
                 c.stage == 1 && c.lives == GameCore.START_LIVES && c.score == 0);
 
         int scored = 0;
-        for (int k = 1; k <= 8; k++) {
+        for (int k = 1; k <= 4; k++) {
             c.enemies.clear();
             c.target = null;
-            GameCore.Enemy e = add(c, L, new int[] {1, 1}, L.playTop + 50);
+            add(c, L, new int[] {1, 1}, L.playTop + 50);
             c.tapKey(1, L);
             c.tapKey(1, L);
             for (int i = 0; i < 12; i++) c.update(DT, L);   // let the killing shot land
@@ -123,10 +135,11 @@ final class CoreTest {
             check("score increased on kill " + k, c.score > scored);
             scored = c.score;
         }
-        check("stage advances after 8 kills", c.stage == 2);
+        check("combo tracked", c.maxCombo >= 4);
+
+        c.stage = 2;
         check("stage 2 is faster than stage 1", c.travelSeconds() < 15f);
         check("stage 2 spawns sooner", c.spawnInterval() < 2.5f);
-        check("combo tracked", c.maxCombo >= 8);
 
         c.stage = 1;
         int w1 = c.maxWordLen();
@@ -190,6 +203,474 @@ final class CoreTest {
         check("game over restarts after the grace period", c.state == GameCore.PLAY);
 
         check("keys are inert on non-play screens", !new GameCore(new Mem(), 9L).tapKey(0, L));
+    }
+
+    private static void stackedLetters(Layout L) {
+        group("stacked letters");
+        GameCore c = new GameCore(new Mem(), 51L);
+        c.startGame();
+
+        // A 3-stack takes exactly three presses, and only the third clears the tile.
+        c.enemies.clear();
+        c.target = null;
+        GameCore.Enemy e = add(c, L, new int[] {2, 4}, new int[] {3, 1}, L.playTop + 80);
+        check("stack reports its depth", e.stacked(0) && !e.stacked(1));
+        check("total presses counted", e.totalPresses() == 4);
+        check("presses owed starts at the full depth", c.pressesLeft(e, 0) == 3);
+
+        c.tapKey(2, L);
+        check("first press does not clear the stack", e.pos == 0 && e.done == 1);
+        check("presses owed drops", c.pressesLeft(e, 0) == 2);
+        c.tapKey(2, L);
+        check("second press does not clear it either", e.pos == 0 && e.done == 2);
+        c.tapKey(2, L);
+        check("third press clears the stack", e.pos == 1 && e.done == 0);
+        check("cleared stack owes nothing", c.pressesLeft(e, 0) == 0);
+        c.tapKey(4, L);
+        check("plain letter after a stack still takes one press", e.pos == 2);
+
+        // A wrong letter mid-stack resets the count along with the word.
+        c.enemies.clear();
+        c.target = null;
+        GameCore.Enemy r = add(c, L, new int[] {0, 1}, new int[] {4, 2}, L.playTop + 80);
+        c.tapKey(0, L);
+        c.tapKey(0, L);
+        check("partway into the stack", r.done == 2);
+        c.tapKey(5, L);   // wrong
+        check("wrong letter resets the stack count", r.done == 0);
+        check("wrong letter also restarts the word", r.pos == 0);
+        check("presses owed is back to full", c.pressesLeft(r, 0) == 4);
+        check("the lock is kept for the retry", c.target == r);
+
+        // Generation invariants over many spawns at every stage.
+        GameCore g = new GameCore(new Mem(), 52L);
+        g.startGame();
+        int worst = 0, maxNeed = 0, stacksSeen = 0, words = 0;
+        boolean overCap = false, badNeed = false;
+        for (int stage = 1; stage <= 14; stage++) {
+            g.stage = stage;
+            for (int n = 0; n < 400; n++) {
+                g.enemies.clear();
+                g.spawnedThisStage = 0;
+                g.stageGap = 0;
+                g.spawnTimer = 0;
+                g.update(DT, L);
+                if (g.enemies.isEmpty()) continue;
+                GameCore.Enemy w = g.enemies.get(0);
+                words++;
+                int total = w.totalPresses();
+                if (total > GameCore.MAX_PRESSES) overCap = true;
+                if (total > worst) worst = total;
+                for (int i = 0; i < w.need.length; i++) {
+                    if (w.need[i] < 1 || w.need[i] > 4) badNeed = true;
+                    if (w.need[i] > maxNeed) maxNeed = w.need[i];
+                    if (w.need[i] > 1) stacksSeen++;
+                }
+            }
+        }
+        System.out.printf("    %d words generated, worst total = %d presses, deepest stack = %d,"
+                + " %d stacked tiles%n", words, worst, maxNeed, stacksSeen);
+        check("no word ever exceeds " + GameCore.MAX_PRESSES + " presses", !overCap);
+        check("every tile needs 1..4 presses", !badNeed);
+        check("stacks do get generated", stacksSeen > 0);
+        check("stacks reach depth 4 somewhere", maxNeed == 4);
+
+        // Stage 1 must stay plain, so the mechanic is introduced rather than sprung.
+        GameCore s1 = new GameCore(new Mem(), 53L);
+        s1.startGame();
+        boolean plainOpening = true;
+        for (int n = 0; n < 300; n++) {
+            s1.enemies.clear();
+            s1.spawnedThisStage = 0;
+            s1.stageGap = 0;
+            s1.spawnTimer = 0;
+            s1.stage = 1;
+            s1.update(DT, L);
+            if (s1.enemies.isEmpty()) continue;
+            for (int need : s1.enemies.get(0).need) if (need != 1) plainOpening = false;
+        }
+        check("stage 1 has no stacks", plainOpening);
+        check("later stages do stack", s1.stackChance() == 0f && chanceAt(s1, 5) > 0f);
+    }
+
+    private static float chanceAt(GameCore c, int stage) {
+        int was = c.stage;
+        c.stage = stage;
+        float v = c.stackChance();
+        c.stage = was;
+        return v;
+    }
+
+    private static void accuracyTracking(Layout L) {
+        group("accuracy");
+        GameCore c = new GameCore(new Mem(), 61L);
+        c.startGame();
+        check("accuracy starts at 100%", c.accuracyPercent() == 100);
+        check("no presses means the happiest face", c.accuracyMood() == 1f);
+
+        c.enemies.clear();
+        c.target = null;
+        add(c, L, new int[] {0, 1, 2, 3}, L.playTop + 90);
+        c.tapKey(0, L);
+        check("a correct press counts as a hit", c.hits == 1 && c.misses == 0);
+        c.tapKey(5, L);
+        check("a wrong press counts as a miss", c.hits == 1 && c.misses == 1);
+        check("accuracy halves at one for one", c.accuracyPercent() == 50);
+        check("50% is the saddest face", c.accuracyMood() == 0f);
+
+        // Push to 75%: three hits, one miss.
+        c.tapKey(0, L);
+        c.tapKey(1, L);
+        check("accuracy climbs with hits", c.accuracyPercent() == 75);
+        check("75% sits between the extremes",
+                c.accuracyMood() > 0f && c.accuracyMood() < 1f);
+
+        // Threshold checks, driven directly.
+        c.hits = 60; c.misses = 40;
+        check("60% is the saddest face", c.accuracyPercent() == 60 && c.accuracyMood() == 0f);
+        c.hits = 59; c.misses = 41;
+        check("below 60% stays saddest", c.accuracyMood() == 0f);
+        c.hits = 90; c.misses = 10;
+        check("90% is the happiest face", c.accuracyPercent() == 90 && c.accuracyMood() == 1f);
+        c.hits = 97; c.misses = 3;
+        check("above 90% stays happiest", c.accuracyMood() == 1f);
+        c.hits = 75; c.misses = 25;
+        check("75% maps to the midpoint", Math.abs(c.accuracyMood() - 0.5f) < 0.001f);
+
+        // A flawless wave earns the gold dumpling; a single miss forfeits it.
+        GameCore g = new GameCore(new Mem(), 62L);
+        g.startGame();
+        g.spawnedThisStage = g.stageQuota();
+        g.enemies.clear();
+        g.shots.clear();
+        g.update(DT, L);
+        check("a flawless wave triggers the gold dumpling", g.perfectBanner > 0f);
+        check("the celebration expires", g.perfectBanner <= GameCore.PERFECT_TIME);
+        advance(g, L, GameCore.PERFECT_TIME + 0.2f);
+        check("the celebration ends", g.perfectBanner == 0f);
+
+        GameCore m = new GameCore(new Mem(), 63L);
+        m.startGame();
+        m.enemies.clear();
+        m.tapKey(0, L);   // nothing to hit: a miss
+        check("the miss is recorded against the stage", m.missesThisStage == 1);
+        m.spawnedThisStage = m.stageQuota();
+        m.enemies.clear();
+        m.shots.clear();
+        m.update(DT, L);
+        check("a wave with a miss earns no gold dumpling", m.perfectBanner == 0f);
+        check("stage misses reset for the next wave", m.missesThisStage == 0);
+        check("run totals are not reset by the stage", m.misses == 1);
+    }
+
+    /** Records which effects fired, so the rules can be checked against the audio events. */
+    private static final class Ear implements GameCore.Sound {
+        int squishes, clears, wrongs, damages, achievements;
+        int lastGlyph = -1, lastDepth = -1;
+        int music = -1, musicCalls;
+        public void squish(int glyph, int depth) {
+            squishes++;
+            lastGlyph = glyph;
+            lastDepth = depth;
+        }
+        public void clearWord() { clears++; }
+        public void wrong() { wrongs++; }
+        public void damage() { damages++; }
+        public void achievement() { achievements++; }
+        public void selectMusic(int choice) { music = choice; musicCalls++; }
+    }
+
+    private static void audio(Layout L) {
+        group("audio");
+        int peak = (int) (Sfx.PEAK * 32767f);
+        boolean allNormalised = true, allClean = true, allSane = true;
+        for (int id = 0; id < Sfx.COUNT; id++) {
+            short[] pcm = Sfx.build(id);
+            int max = 0;
+            for (int i = 0; i < pcm.length; i++) max = Math.max(max, Math.abs(pcm[i]));
+            // Peak-normalised: every effect tops out at the same level.
+            if (Math.abs(max - peak) > 2) allNormalised = false;
+            if (max >= 32767) allClean = false;
+            if (pcm.length < Sfx.RATE / 20 || pcm.length > Sfx.RATE * 2) allSane = false;
+        }
+        check("every effect is normalised to the same peak", allNormalised);
+        check("no effect clips", allClean);
+        check("effect lengths are sane", allSane);
+
+        short[] loop = Music.loop(Music.SWING_STYLE);
+        check("music loop is the expected length", loop.length == Music.loopFrames(Music.SWING_STYLE));
+        check("music loop is several seconds", loop.length > Sfx.RATE * 5);
+        int lmax = 0;
+        for (int i = 0; i < loop.length; i++) lmax = Math.max(lmax, Math.abs(loop[i]));
+        check("music sits below the effects", lmax < peak);
+        check("music is audible", lmax > peak / 4);
+
+        // Effects must fire on the right events.
+        Ear ear = new Ear();
+        GameCore c = new GameCore(new Mem(), 71L);
+        c.sound = ear;
+        c.startGame();
+        c.enemies.clear();
+        c.target = null;
+        GameCore.Enemy e = add(c, L, new int[] {3, 1}, new int[] {2, 1}, L.playTop + 80);
+
+        c.tapKey(3, L);
+        check("a correct press squishes", ear.squishes == 1);
+        check("the squish knows the letter", ear.lastGlyph == 3);
+        check("the squish knows the stack depth", ear.lastDepth == 2);
+        c.tapKey(0, L);
+        check("a wrong press thunks", ear.wrongs == 1);
+        check("a wrong press does not squish", ear.squishes == 1);
+
+        c.tapKey(3, L);
+        c.tapKey(3, L);
+        c.tapKey(1, L);
+        check("no clear sound before the shot lands", ear.clears == 0);
+        advance(c, L, 0.3f);
+        check("clearing a word plays the clear sound", ear.clears == 1);
+
+        c.enemies.clear();
+        add(c, L, new int[] {0}, L.dangerY - L.enemyR + 1);
+        advance(c, L, GameCore.ATTACK_TIME + 2 * DT);
+        check("taking damage plays the drip", ear.damages == 1);
+
+        Ear ear2 = new Ear();
+        GameCore g = new GameCore(new Mem(), 72L);
+        g.sound = ear2;
+        g.startGame();
+        g.spawnedThisStage = g.stageQuota();
+        g.enemies.clear();
+        g.shots.clear();
+        g.update(DT, L);
+        check("a flawless wave plays the achievement", ear2.achievements == 1);
+
+        Ear ear3 = new Ear();
+        GameCore m = new GameCore(new Mem(), 73L);
+        m.sound = ear3;
+        m.startGame();
+        m.enemies.clear();
+        m.tapKey(0, L);                      // a miss forfeits the reward
+        m.spawnedThisStage = m.stageQuota();
+        m.enemies.clear();
+        m.shots.clear();
+        m.update(DT, L);
+        check("a flawed wave plays no achievement", ear3.achievements == 0);
+
+        check("a null sound seam is safe", silentRunSurvives(L));
+    }
+
+    private static boolean silentRunSurvives(Layout L) {
+        GameCore c = new GameCore(new Mem(), 74L);
+        c.sound = null;
+        c.startGame();
+        for (int i = 0; i < 600; i++) {
+            c.update(DT, L);
+            c.tapKey(i % Glyph.COUNT, L);
+        }
+        return true;
+    }
+
+    private static void settings(Layout L) {
+        group("settings");
+        Mem store = new Mem();
+        GameCore c = new GameCore(store, 81L);
+        Ear ear = new Ear();
+        c.sound = ear;
+        c.startGame();
+        check("defaults to normal speed", c.speed == 1f);
+        check("settings start closed", !c.settingsOpen);
+
+        // Opening freezes the simulation.
+        c.enemies.clear();
+        GameCore.Enemy e = add(c, L, new int[] {0, 1}, L.playTop + 100);
+        e.speed = 200f;
+        c.update(DT, L);
+        float movedY = e.y;
+        c.openSettings();
+        check("opening settings pauses", c.settingsOpen);
+        advance(c, L, 1.0f);
+        check("nothing moves while paused", e.y == movedY);
+        check("the clock still runs so the panel animates", c.clock > 0f);
+        c.closeSettings();
+        c.update(DT, L);
+        check("closing resumes the simulation", e.y > movedY);
+
+        // Speed clamps and persists.
+        c.setSpeed(1.3f);
+        check("speed applies", Math.abs(c.speed - 1.3f) < 1e-6f);
+        check("speed persists", Math.abs(store.speed - 1.3f) < 1e-6f && store.speedSaves == 1);
+        c.setSpeed(9f);
+        check("speed clamps at the top", c.speed == GameCore.SPEED_MAX);
+        c.setSpeed(-4f);
+        check("speed clamps at the bottom", c.speed == GameCore.SPEED_MIN);
+        check("a corrupt stored speed falls back", GameCore.clampSpeed(Float.NaN) == 1f);
+
+        GameCore reloaded = new GameCore(store, 82L);
+        check("stored speed is reloaded",
+                Math.abs(reloaded.speed - GameCore.SPEED_MIN) < 1e-6f);
+
+        // Faster speed means less time to react and tighter spawns.
+        c.stage = 3;
+        c.setSpeed(0.5f);
+        float slowTravel = c.travelSeconds(), slowSpawn = c.spawnInterval();
+        c.setSpeed(1.5f);
+        check("higher speed shortens the fall", c.travelSeconds() < slowTravel);
+        check("higher speed tightens spawns", c.spawnInterval() < slowSpawn);
+        check("the fall floor still applies at max speed", c.travelSeconds() > 0f);
+
+        // Music selection persists and notifies the audio layer.
+        c.setBgm(Music.MARCH);
+        check("music choice applies", c.bgmChoice == Music.MARCH);
+        check("music choice persists", store.bgm == Music.MARCH && store.bgmSaves == 1);
+        check("the audio layer is told", ear.music == Music.MARCH && ear.musicCalls == 1);
+        c.setBgm(-1);
+        check("a bogus low choice is ignored", c.bgmChoice == Music.MARCH);
+        c.setBgm(Music.NAMES.length);
+        check("a bogus high choice is ignored", c.bgmChoice == Music.MARCH);
+        c.setBgm(Music.OFF);
+        check("music can be turned off", c.bgmChoice == Music.OFF);
+
+        // Every synth style must produce a clean, correctly sized loop.
+        boolean stylesOk = true;
+        for (int style = 0; style < Music.NAMES.length; style++) {
+            if (!Music.isSynth(style)) continue;
+            short[] loop = Music.loop(style);
+            if (loop.length != Music.loopFrames(style)) stylesOk = false;
+            int max = 0;
+            for (int i = 0; i < loop.length; i++) max = Math.max(max, Math.abs(loop[i]));
+            if (max >= 32767 || max < 2000) stylesOk = false;
+        }
+        check("every music style renders cleanly", stylesOk);
+        check("OFF and MY TRACK are not synth styles",
+                !Music.isSynth(Music.OFF) && !Music.isSynth(Music.CUSTOM));
+        check("an unknown style still returns audio", Music.loop(99).length > 0);
+
+        // Panel hit-testing.
+        SettingsUi ui = new SettingsUi();
+        ui.compute(L, Music.NAMES.length);
+        check("panel fits on screen",
+                ui.panelT >= L.topSafe && ui.panelB <= L.h && ui.panelL > 0);
+        check("a tap outside closes",
+                ui.hit(L.w / 2f, ui.panelB + 20f) == SettingsUi.HIT_OUTSIDE);
+        check("the close button is hit", ui.hit(ui.closeCx, ui.closeCy) == SettingsUi.HIT_CLOSE);
+        check("the slider is hit",
+                ui.hit((ui.sliderL + ui.sliderR) / 2f, ui.sliderY) == SettingsUi.HIT_SLIDER);
+        boolean rowsOk = true;
+        for (int i = 0; i < Music.NAMES.length; i++) {
+            if (ui.hit(ui.optionL() + 5f, ui.optionCy(i)) != SettingsUi.HIT_OPTION + i) {
+                rowsOk = false;
+            }
+        }
+        check("every music row is hittable", rowsOk);
+        check("slider left end reads minimum", ui.speedAt(ui.sliderL) == GameCore.SPEED_MIN);
+        check("slider right end reads maximum", ui.speedAt(ui.sliderR) == GameCore.SPEED_MAX);
+        check("slider clamps past its ends",
+                ui.speedAt(ui.sliderL - 500f) == GameCore.SPEED_MIN
+                        && ui.speedAt(ui.sliderR + 500f) == GameCore.SPEED_MAX);
+        check("slider midpoint is centre speed",
+                Math.abs(ui.speedAt((ui.sliderL + ui.sliderR) / 2f) - 1f) < 0.03f);
+        check("knob tracks the value",
+                Math.abs(ui.knobX(GameCore.SPEED_MIN) - ui.sliderL) < 0.5f
+                        && Math.abs(ui.knobX(GameCore.SPEED_MAX) - ui.sliderR) < 0.5f);
+
+        // The stage readout is the settings button, and must not swallow key taps.
+        check("the stage readout opens settings", L.inStageTap(L.w / 2f, L.hudY));
+        boolean keysClear = true;
+        for (int g = 0; g < Glyph.COUNT; g++) {
+            if (L.inStageTap(L.keyX[g], L.keyY[g])) keysClear = false;
+        }
+        check("the settings region does not cover any key", keysClear);
+        check("mid-field taps do not open settings", !L.inStageTap(L.w / 2f, L.h * 0.5f));
+    }
+
+    private static void waves(Layout L) {
+        group("stage waves");
+        GameCore c = new GameCore(new Mem(), 41L);
+        c.startGame();
+        check("stage starts with nothing released", c.spawnedThisStage == 0);
+        check("quota grows with stage", quotaAt(c, 8) > quotaAt(c, 1));
+        check("quota is capped", quotaAt(c, 99) <= 10);
+        c.stage = 1;
+
+        int frames = 0, stageChanges = 0;
+        int prevStage = c.stage;
+        boolean overQuota = false, spawnedEarly = false, emptyOnAdvance = true;
+
+        // Play perfectly through several waves, watching the wave invariants every frame.
+        while (frames < 60 * 400 && stageChanges < 4 && c.state == GameCore.PLAY) {
+            c.update(DT, L);
+            frames++;
+
+            if (c.spawnedThisStage > c.stageQuota()) overQuota = true;
+            if (c.stage != prevStage) {
+                stageChanges++;
+                // Sampled on the advancing frame itself: the last word of a wave leaves the
+                // field during that same frame, so the previous frame can still hold it.
+                if (!c.enemies.isEmpty()) emptyOnAdvance = false;
+                if (c.spawnedThisStage != 0) spawnedEarly = true;
+                prevStage = c.stage;
+            }
+
+            if (frames % 2 != 0) continue;
+            GameCore.Enemy e =
+                    c.target != null && c.enemies.contains(c.target) && c.target.typeable()
+                            ? c.target : urgent(c);
+            if (e != null && e.pos < e.word.length) c.tapKey(e.word[e.pos], L);
+        }
+
+        System.out.printf("    %d stage transitions in %.0fs, reached stage %d%n",
+                stageChanges, frames * DT, c.stage);
+        check("stages do advance", stageChanges >= 3);
+        check("a stage never releases more than its quota", !overQuota);
+        check("field is empty when a stage advances", emptyOnAdvance);
+        check("next wave starts from zero released", !spawnedEarly);
+
+        // Once the quota is out and the field is clear, the gap must hold off the next wave.
+        GameCore w = new GameCore(new Mem(), 42L);
+        w.startGame();
+        w.spawnedThisStage = w.stageQuota();
+        w.enemies.clear();
+        w.shots.clear();
+        check("quota exhausted means the stage is cleared", w.stageCleared());
+        int before = w.stage;
+        w.update(DT, L);
+        check("clearing the wave advances the stage", w.stage == before + 1);
+        check("a breather follows the wave", w.stageGap > 0f);
+        int released = w.spawnedThisStage;
+        advance(w, L, GameCore.STAGE_GAP * 0.6f);
+        check("nothing spawns during the breather",
+                w.spawnedThisStage == released && w.enemies.isEmpty());
+        advance(w, L, GameCore.STAGE_GAP);
+        check("the next wave starts after the breather", w.spawnedThisStage > 0);
+
+        // A breached word still counts as resolved, so a stage cannot stall on a miss.
+        GameCore b = new GameCore(new Mem(), 43L);
+        b.startGame();
+        b.spawnedThisStage = b.stageQuota();
+        b.enemies.clear();
+        add(b, L, new int[] {0}, L.dangerY - L.enemyR + 1);
+        // A second word keeps the field occupied, so the stage cannot advance and reset the
+        // counter before it can be observed.
+        add(b, L, new int[] {3, 3}, L.playTop + 40);
+        int resolved = b.resolvedThisStage;
+        int stageWas = b.stage;
+        advance(b, L, GameCore.ATTACK_TIME + 2 * DT);
+        check("a breached word counts as resolved", b.resolvedThisStage == resolved + 1);
+        check("a breach alone does not advance the stage", b.stage == stageWas);
+
+        // Clear the survivor: the stage must then advance despite one word being lost.
+        b.enemies.clear();
+        b.shots.clear();
+        b.update(DT, L);
+        check("stage still advances after a breach", b.stage == stageWas + 1);
+    }
+
+    private static int quotaAt(GameCore c, int stage) {
+        int was = c.stage;
+        c.stage = stage;
+        int q = c.stageQuota();
+        c.stage = was;
+        return q;
     }
 
     private static void entranceAndPersistence(Layout L) {
@@ -327,8 +808,15 @@ final class CoreTest {
     }
 
     private static GameCore.Enemy add(GameCore c, Layout L, int[] word, float y) {
+        int[] need = new int[word.length];
+        for (int i = 0; i < need.length; i++) need[i] = 1;
+        return add(c, L, word, need, y);
+    }
+
+    private static GameCore.Enemy add(GameCore c, Layout L, int[] word, int[] need, float y) {
         GameCore.Enemy e = new GameCore.Enemy();
         e.word = word;
+        e.need = need;
         e.baseX = (L.playLeft + L.playRight) / 2f;
         e.y = y;
         e.speed = 0f;

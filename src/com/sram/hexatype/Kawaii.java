@@ -14,6 +14,8 @@ final class Kawaii {
 
     private static final int INK = 0xFF3A2E4F;      // face lines
     private static final int BLUSH = 0x66FF7C9E;
+    /** Dumpling cheeks: distinct red rounds sitting under each eye. */
+    private static final int CHEEK = 0xBFFF4D6B;
     private static final int SHINE = 0x8CFFFFFF;
     private static final int LEAF = 0xFF8FD9A0;
     private static final int SEED = 0xB3FFF3C4;
@@ -43,10 +45,52 @@ final class Kawaii {
 
     // ---- characters ---------------------------------------------------------
 
-    /** Pleated half-moon with sleepy ^^ eyes and a tiny uwu mouth. */
-    private static void dumpling(Painter p, float cx, float cy, float rx, float ry, int body,
-            float happy) {
-        // Body: a half-disc crown closed by a flat bottom, with a belly ellipse under it.
+    /**
+     * A dumpling whose expression runs from miserable to delighted. Used for the accuracy
+     * readout and the flawless-stage celebration, where the face is the message.
+     *
+     * @param mood 0 = saddest (with a tear), 1 = happiest (with sparkles)
+     */
+    static void moodDumpling(Painter p, float cx, float cy, float r, int body, float mood,
+            float squash) {
+        if (mood < 0) mood = 0;
+        if (mood > 1) mood = 1;
+        float rx = r * squash, ry = r / squash;
+        dumplingBody(p, cx, cy, rx, ry, body);
+
+        if (mood < 0.4f) {
+            // Worried: wide round eyes and a tear that fades as things improve.
+            eyesRound(p, cx, cy, rx, ry, 0.34f, 0.02f, 0.19f, 0f);
+            float tear = (0.4f - mood) / 0.4f;
+            int tc = Glyph.withAlpha(0xFF9BD7FF, (int) (235 * tear));
+            float tx = cx - rx * 0.34f, tyy = cy + ry * 0.26f;
+            p.fillEllipse(tx, tyy, rx * 0.075f, ry * 0.115f, tc);
+            p.fillPoly(new float[] {tx - rx * 0.05f, tyy - ry * 0.05f, tx + rx * 0.05f,
+                    tyy - ry * 0.05f, tx, tyy - ry * 0.20f}, tc);
+        } else {
+            eyesArc(p, cx, cy, rx, ry, 0.34f, 0.04f, 0.16f + 0.10f * mood);
+        }
+
+        // One arc for the mouth: middle rises into a frown, drops into a grin.
+        float curve = (mood - 0.5f) * 2f;
+        mouthCurve(p, cx, cy + ry * 0.34f, rx * 0.26f, ry * 0.22f, curve);
+
+        if (mood > 0.8f) {
+            float spark = (mood - 0.8f) / 0.2f;
+            int sc = Glyph.withAlpha(0xFFFFF3C4, (int) (240 * spark));
+            for (int s = -1; s <= 1; s += 2) {
+                float sxp = cx + s * rx * 1.08f, syp = cy - ry * 0.62f;
+                float a = rx * 0.20f;
+                p.polyline(new float[] {sxp - a, syp, sxp + a, syp}, sc, rx * 0.055f);
+                p.polyline(new float[] {sxp, syp - a, sxp, syp + a}, sc, rx * 0.055f);
+            }
+        }
+        cheeks(p, cx, cy, rx, ry);
+    }
+
+    /** Dome, belly and pleated crown, shared by every dumpling expression. */
+    private static void dumplingBody(Painter p, float cx, float cy, float rx, float ry,
+            int body) {
         // The array must hold exactly the arc points — a spare slot would leave a vertex
         // at the origin and spike off-screen.
         final int arc = 17;
@@ -59,7 +103,6 @@ final class Kawaii {
         p.fillPoly(dome, body);
         p.fillEllipse(cx, cy + ry * 0.28f, rx * 0.96f, ry * 0.44f, body);
 
-        // Pleated crown: bumps sitting on the dome edge.
         float crown = cy - ry * 0.56f;
         for (int k = -2; k <= 2; k++) {
             float px = cx + k * rx * 0.38f;
@@ -68,10 +111,26 @@ final class Kawaii {
                     Glyph.withAlpha(INK, 55), r(rx) * 0.05f);
         }
         p.fillEllipse(cx - rx * 0.34f, cy + ry * 0.04f, rx * 0.22f, ry * 0.14f, SHINE);
+    }
 
+    private static void mouthCurve(Painter p, float cx, float cy, float w, float bulge,
+            float curve) {
+        float[] m = new float[2 * 7];
+        for (int k = 0; k < 7; k++) {
+            float t = -1f + 2f * k / 6f;
+            m[k * 2] = cx + w * t;
+            m[k * 2 + 1] = cy + curve * bulge * (1f - t * t);
+        }
+        p.polyline(m, INK, w * 0.26f);
+    }
+
+    /** Pleated half-moon with sleepy ^^ eyes and a tiny uwu mouth. */
+    private static void dumpling(Painter p, float cx, float cy, float rx, float ry, int body,
+            float happy) {
+        dumplingBody(p, cx, cy, rx, ry, body);
         eyesArc(p, cx, cy, rx, ry, 0.34f, 0.06f, 0.20f);
         mouthW(p, cx, cy + ry * 0.34f, rx * 0.18f, happy);
-        blush(p, cx, cy, rx, ry, 0.62f, 0.26f);
+        cheeks(p, cx, cy, rx, ry);
     }
 
     /** Seeded berry with a leafy calyx, wide sparkly eyes and an open grin. */
@@ -257,6 +316,13 @@ final class Kawaii {
         }
         p.fillPoly(m, INK);
         p.fillEllipse(cx, cy + h * 1.05f, w * 0.42f, h * 0.52f, 0xCCFF9EB5);
+    }
+
+    /** Round red cheeks directly below the eyes; the dumpling's signature. */
+    private static void cheeks(Painter p, float cx, float cy, float rx, float ry) {
+        for (int s = -1; s <= 1; s += 2) {
+            p.fillCircle(cx + s * rx * 0.38f, cy + ry * 0.30f, rx * 0.145f, CHEEK);
+        }
     }
 
     private static void blush(Painter p, float cx, float cy, float rx, float ry, float dx,
