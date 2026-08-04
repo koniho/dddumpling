@@ -262,6 +262,18 @@ final class Screens extends Draw {
             p.text(Music.NAMES[i], bx + s * 0.9f, cy + s * 0.22f, s * 0.6f,
                     on ? INK : INK_DIM, Painter.LEFT, on);
         }
+
+        // Playtest: drop straight into a mode instead of waiting for a letter to drift past.
+        p.text("PLAYTEST", ui.sliderL, ui.testLabelY, s * 0.58f, INK_DIM, Painter.LEFT, true);
+        for (int i = 0; i < Power.COUNT; i++) {
+            float l = ui.testChipL(i, Power.COUNT), r = ui.testChipR(i, Power.COUNT);
+            int col = Glyph.cycle(i / (float) Power.COUNT);
+            p.fillRect(l, ui.testY, r, ui.testY + ui.testH, Glyph.withAlpha(col, 46));
+            p.strokePoly(new float[] {l, ui.testY, r, ui.testY, r, ui.testY + ui.testH,
+                    l, ui.testY + ui.testH}, Glyph.withAlpha(col, 190), s * 0.05f);
+            p.text(Power.NAMES[i], (l + r) / 2f, ui.testY + ui.testH * 0.66f, s * 0.56f,
+                    INK, Painter.CENTER, true);
+        }
     }
 
     /** One decimal place without String.format, which is not worth the cost per frame. */

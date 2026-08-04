@@ -301,25 +301,45 @@ final class GameCore {
         power = w;
     }
 
-    /** Caught it: grants the mode and kicks off the frenzy. */
+    /** Caught it: scores, then starts the frenzy the letter was carrying. */
     private void catchPower(Layout L) {
         power.hit = true;
         power.hitT = 0f;
-        mode = power.effect;
+        score += Power.SCORE;
+        Fx.explode(this, rnd, power.x, power.y, L.enemyR * 2.2f, 26, 0xFFFFFFFF);
+        startFrenzy(power.effect, L);
+    }
+
+    /**
+     * Starts a frenzy of the given mode. Shared by catching a powerup and by the playtest
+     * buttons, so a playtest exercises exactly what play does.
+     */
+    void startFrenzy(int effect, Layout L) {
+        if (effect < 0 || effect >= Power.COUNT) return;
+        mode = effect;
         modeLeft = Power.DURATION;
         flingUsed = false;
         fingerDown = false;
-        score += Power.SCORE;
         shake = Math.max(shake, 0.5f);
         flash = Math.max(flash, 0.8f);
         flashColor = FLASH_CLEAR;
         skyGlow = 1f;
         skyGlowColor = Glyph.cycle(clock);
-        Fx.explode(this, rnd, power.x, power.y, L.enemyR * 2.2f, 26, 0xFFFFFFFF);
         if (sound != null) {
             sound.achievement();
             sound.frenzy(true);
         }
+    }
+
+    /**
+     * Playtest hook: drops straight into a mode without waiting for a letter to drift past.
+     * Goes through {@link #startFrenzy} so it is the real thing, not a simulation of it.
+     */
+    void playtestMode(int effect, Layout L) {
+        if (state != PLAY) return;
+        power = null;
+        settingsOpen = false;
+        startFrenzy(effect, L);
     }
 
     /**

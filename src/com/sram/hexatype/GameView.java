@@ -200,6 +200,10 @@ public class GameView extends View {
         if (hit == SettingsUi.HIT_CLOSE || hit == SettingsUi.HIT_OUTSIDE) {
             core.closeSettings();
             tick();
+        } else if (hit >= SettingsUi.HIT_TEST) {
+            // Closes the panel and drops straight into the mode.
+            core.playtestMode(hit - SettingsUi.HIT_TEST, layout);
+            tick();
         } else if (hit >= SettingsUi.HIT_OPTION) {
             core.setBgm(hit - SettingsUi.HIT_OPTION);
             tick();

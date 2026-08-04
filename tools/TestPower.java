@@ -327,6 +327,67 @@ final class TestPower extends Check {
         check("words arrive six times faster during a frenzy", Power.SPAWN_RATE == 6f);
     }
 
+    static void playtest(Layout L) {
+        group("playtest hook");
+        SettingsUi ui = new SettingsUi();
+        ui.compute(L, Music.NAMES.length);
+        check("panel still fits with the playtest row",
+                ui.panelB <= L.h && ui.testY + ui.testH < ui.panelB);
+        check("the playtest row sits below the music rows",
+                ui.testY > ui.optionCy(Music.NAMES.length - 1));
+
+        boolean chipsOk = true, chipsDistinct = true;
+        for (int i = 0; i < Power.COUNT; i++) {
+            float cx = (ui.testChipL(i, Power.COUNT) + ui.testChipR(i, Power.COUNT)) / 2f;
+            if (ui.hit(cx, ui.testY + ui.testH / 2f) != SettingsUi.HIT_TEST + i) chipsOk = false;
+            if (i > 0 && ui.testChipL(i, Power.COUNT)
+                    < ui.testChipR(i - 1, Power.COUNT)) chipsDistinct = false;
+        }
+        check("every playtest chip is hittable", chipsOk);
+        check("the chips do not overlap", chipsDistinct);
+        check("chips stay inside the panel",
+                ui.testChipL(0, Power.COUNT) >= ui.panelL
+                        && ui.testChipR(Power.COUNT - 1, Power.COUNT) <= ui.panelR);
+
+        // Each chip starts the real thing.
+        for (int m = 0; m < Power.COUNT; m++) {
+            GameCore c = new GameCore(new Mem(), 300L + m);
+            Ear ear = new Ear();
+            c.sound = ear;
+            c.startGame();
+            c.openSettings();
+            int fc0 = ear.frenzyCalls;
+            c.playtestMode(m, L);
+            check("playtest " + Power.NAMES[m] + " starts that mode",
+                    c.powerActive() && c.mode == m);
+            check("playtest " + Power.NAMES[m] + " runs the full duration",
+                    c.modeLeft > Power.DURATION - 0.01f);
+            check("playtest " + Power.NAMES[m] + " closes the panel", !c.settingsOpen);
+            check("playtest " + Power.NAMES[m] + " swaps the music",
+                    ear.frenzyCalls == fc0 + 1 && ear.frenzyOn);
+            check("playtest " + Power.NAMES[m] + " awards no score", c.score == 0);
+
+            // And it ends like any other frenzy: stage cleared, interlude follows.
+            advance(c, L, Power.DURATION + 0.1f);
+            check("playtest " + Power.NAMES[m] + " ends the stage",
+                    c.spawnedThisStage >= c.stageQuota());
+        }
+
+        // Only meaningful during play, and only for a real mode.
+        GameCore t = new GameCore(new Mem(), 320L);
+        check("ignored on the title screen", !titleAccepts(t, L));
+        t.startGame();
+        t.playtestMode(-1, L);
+        check("a bogus mode is ignored", !t.powerActive());
+        t.playtestMode(Power.COUNT, L);
+        check("an out-of-range mode is ignored", !t.powerActive());
+    }
+
+    private static boolean titleAccepts(GameCore c, Layout L) {
+        c.playtestMode(Power.FLURRY, L);
+        return c.powerActive();
+    }
+
     static void soak(Layout L) {
         group("powerup soak");
         GameCore c = new GameCore(new Mem(), 209L);

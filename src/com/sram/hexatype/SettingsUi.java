@@ -9,6 +9,8 @@ final class SettingsUi {
     static final int HIT_NONE = 0, HIT_SLIDER = 1, HIT_CLOSE = 2, HIT_OUTSIDE = 3;
     /** Option rows are HIT_OPTION + index. */
     static final int HIT_OPTION = 100;
+    /** Playtest chips are HIT_TEST + mode index. */
+    static final int HIT_TEST = 200;
 
     float panelL, panelT, panelR, panelB;
     float titleY;
@@ -19,6 +21,8 @@ final class SettingsUi {
     float optionH;
     float firstOptionY;
     float closeCx, closeCy, closeR;
+    /** Playtest row: one chip per powerup mode. */
+    float testLabelY, testY, testH;
 
     private int options;
 
@@ -31,7 +35,8 @@ final class SettingsUi {
         panelR = panelL + w;
 
         optionH = s * 1.5f;
-        float bodyH = s * 8.4f + optionH * optionCount;
+        testH = s * 1.6f;
+        float bodyH = s * 8.4f + optionH * optionCount + testH + s * 1.5f;
         panelT = Math.max(L.topSafe + s, (L.h - bodyH) / 2f - s);
         panelB = panelT + bodyH;
 
@@ -47,9 +52,22 @@ final class SettingsUi {
         bgmLabelY = speedValueY + s * 1.5f;
         firstOptionY = bgmLabelY + s * 0.6f;
 
+        testLabelY = firstOptionY + optionH * optionCount + s * 1.0f;
+        testY = testLabelY + s * 0.35f;
+
         closeR = s * 1.05f;
         closeCx = panelR - closeR * 1.2f;
         closeCy = panelT + closeR * 1.2f;
+    }
+
+    /** Left edge of playtest chip {@code i} of {@code n}. */
+    float testChipL(int i, int n) {
+        float w = (optionR() - optionL()) / n;
+        return optionL() + w * i;
+    }
+
+    float testChipR(int i, int n) {
+        return testChipL(i, n) + (optionR() - optionL()) / n - 6f;
     }
 
     /** Centre y of option row {@code i}. */
@@ -95,6 +113,14 @@ final class SettingsUi {
         for (int i = 0; i < options; i++) {
             float cy = optionCy(i);
             if (y >= cy - optionH / 2f && y <= cy + optionH / 2f) return HIT_OPTION + i;
+        }
+
+        if (y >= testY && y <= testY + testH) {
+            for (int i = 0; i < Power.COUNT; i++) {
+                if (x >= testChipL(i, Power.COUNT) && x <= testChipR(i, Power.COUNT)) {
+                    return HIT_TEST + i;
+                }
+            }
         }
         return HIT_NONE;
     }
