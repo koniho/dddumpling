@@ -161,8 +161,8 @@ final class TestWords extends Check {
         check("last word of the wave is flying apart", last.destroyed);
         check("stage does not advance mid-animation", w.stage == 1 && !w.stageCleared());
         advance(w, L, GameCore.DESTROY_TIME);
-        check("the interlude opens once the animation completes",
-                w.state == GameCore.BONUS && w.stage == 1);
+        check("the interlude opens after the celebration",
+                advanceToBonus(w, L) && w.stage == 1);
         advance(w, L, GameCore.BONUS_TIME + 0.2f);
         check("stage advances on the way out of the interlude", w.stage == 2);
     }

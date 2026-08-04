@@ -80,6 +80,15 @@ abstract class Check {
         return e;
     }
 
+    /**
+     * Steps until the interlude opens, sitting through the flawless-wave celebration that
+     * now precedes it. Bounded, so a core that never gets there fails rather than hangs.
+     */
+    static boolean advanceToBonus(GameCore c, Layout L) {
+        for (int i = 0; i < 60 * 30 && c.state != GameCore.BONUS; i++) c.update(DT, L);
+        return c.state == GameCore.BONUS;
+    }
+
     static void advance(GameCore c, Layout L, float seconds) {
         for (float t = 0; t < seconds; t += DT) c.update(DT, L);
     }

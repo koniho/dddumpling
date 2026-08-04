@@ -179,6 +179,8 @@ final class Preview {
         c8.enemies.clear();
         c8.shots.clear();
         c8.update(DT, L);
+        // Wait out the flawless-wave celebration that now precedes the interlude.
+        for (int i = 0; i < 60 * 8 && c8.state != GameCore.BONUS; i++) c8.update(DT, L);
         for (int i = 0; i < 13; i++) c8.tapBonus(i % Glyph.COUNT);
         step(c8, L, 0.09f);
         System.out.printf("bonus: state=%d hits=%d open=%.2f lidPulse=%.2f flash=%.2f%n",
@@ -191,6 +193,19 @@ final class Preview {
         System.out.printf("bonus freed: opens=%d freedT=%.2f score=%d lives=%d%n",
                 c8.steamer.opens, c8.steamer.freedT, c8.score, c8.lives);
         shot(dir, "15-bonus-freed", c8, L, w, h, ss);
+
+        // Mid fade-in, to check the interlude eases in rather than cutting.
+        GameCore c11 = new GameCore(store, 47L);
+        c11.startGame();
+        c11.score = 3100;
+        c11.spawnedThisStage = c11.stageQuota();
+        c11.enemies.clear();
+        c11.shots.clear();
+        for (int i = 0; i < 60 * 8 && c11.state != GameCore.BONUS; i++) c11.update(DT, L);
+        step(c11, L, 0.16f);
+        System.out.printf("bonus fade-in: state=%d time=%.2f timer=%.2f%n",
+                c11.state, c11.time, c11.bonusTimer);
+        shot(dir, "19-bonus-fadein", c11, L, w, h, ss);
 
         // The powerup letter drifting across, before it is caught.
         GameCore c9 = new GameCore(store, 41L);

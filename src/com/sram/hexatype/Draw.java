@@ -18,6 +18,13 @@ abstract class Draw {
     static final int BAMBOO = 0xFFD9AE6E;
     static final int BAMBOO_DARK = 0xFF8E6B3A;
 
+    /** Scales a colour's existing alpha by {@code f}, for fading a whole scene at once. */
+    static int fadeBy(int color, float f) {
+        if (f >= 1f) return color;
+        int a = (color >>> 24) & 0xFF;
+        return Glyph.withAlpha(color, (int) (a * (f < 0f ? 0f : f)));
+    }
+
     /**
      * Rainbow for FLURRY, phased by height so the colour change starts at the bottom of the
      * screen and travels upward. Everything on one wave, so the keys and the letters above

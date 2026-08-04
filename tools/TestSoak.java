@@ -47,7 +47,9 @@ final class TestSoak extends Check {
                 for (int k = 0; k < 45; k++) c.update(DT, L);
                 c.anyTap();
             }
-            if (c.lives < 0 || c.score < 0 || c.enemies.size() > c.maxEnemies() + 1
+            // liveEnemies(), not size(): destroyed words linger while they fly apart, and a
+            // frenzy spawns fast enough for several to be in flight at once.
+            if (c.lives < 0 || c.score < 0 || c.liveEnemies() > c.maxEnemies() + 1
                     || c.combo < 0) {
                 sane = false;
                 break;

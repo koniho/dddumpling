@@ -60,7 +60,7 @@ final class TestStages extends Check {
         check("quota exhausted means the stage is cleared", w.stageCleared());
         int before = w.stage;
         w.update(DT, L);
-        check("clearing the wave opens the interlude", w.state == GameCore.BONUS);
+        check("clearing the wave opens the interlude", advanceToBonus(w, L));
         advance(w, L, GameCore.BONUS_TIME + 0.2f);
         check("the stage advances after the interlude", w.stage == before + 1);
         check("a breather follows the interlude", w.stageGap > 0f);
@@ -90,6 +90,7 @@ final class TestStages extends Check {
         b.enemies.clear();
         b.shots.clear();
         b.update(DT, L);
+        check("the interlude opens after a breach", advanceToBonus(b, L));
         advance(b, L, GameCore.BONUS_TIME + 0.2f);
         check("stage still advances after a breach", b.stage == stageWas + 1);
     }
@@ -100,6 +101,42 @@ final class TestStages extends Check {
         int q = c.stageQuota();
         c.stage = was;
         return q;
+    }
+
+    /** The interlude opens only after the flawless-wave celebration has finished. */
+    static void bonusOrdering(Layout L) {
+        group("interlude ordering");
+        GameCore c = new GameCore(new Mem(), 131L);
+        c.startGame();
+        c.spawnedThisStage = c.stageQuota();
+        c.enemies.clear();
+        c.shots.clear();
+        c.update(DT, L);
+
+        // A flawless wave: the reward shows first and the interlude waits for it.
+        check("the perfect indicator is up", c.perfectBanner > 0f);
+        check("still in play, holding", c.state == GameCore.PLAY && c.pendingBonus);
+        check("the interlude has not opened", c.state != GameCore.BONUS);
+        advance(c, L, GameCore.PERFECT_TIME * 0.5f);
+        check("still holding part-way through the celebration",
+                c.state == GameCore.PLAY && c.perfectBanner > 0f);
+        check("nothing spawns while holding", c.enemies.isEmpty());
+        advance(c, L, GameCore.PERFECT_TIME);
+        check("the interlude opens once it finishes", c.state == GameCore.BONUS);
+        check("the hold is released", !c.pendingBonus);
+
+        // A flawed wave has no celebration to wait for, so it goes straight in.
+        GameCore d = new GameCore(new Mem(), 132L);
+        d.startGame();
+        d.enemies.clear();
+        d.tapKey(0, L);                       // a miss forfeits the reward
+        d.spawnedThisStage = d.stageQuota();
+        d.enemies.clear();
+        d.shots.clear();
+        d.update(DT, L);
+        check("no celebration to wait for", d.perfectBanner == 0f);
+        d.update(DT, L);
+        check("a flawed wave goes straight to the interlude", d.state == GameCore.BONUS);
     }
 
     static void steamerBonus(Layout L) {
@@ -113,7 +150,7 @@ final class TestStages extends Check {
         c.enemies.clear();
         c.shots.clear();
         c.update(DT, L);
-        check("clearing a wave enters the minigame", c.state == GameCore.BONUS);
+        check("clearing a wave enters the minigame", advanceToBonus(c, L));
         check("the stage has not turned over yet", c.stage == 1);
         check("the lid starts shut", c.steamer.lidOpen() == 0f);
 
@@ -147,7 +184,7 @@ final class TestStages extends Check {
         c.enemies.clear();
         c.shots.clear();
         c.update(DT, L);
-        check("back in the minigame", c.state == GameCore.BONUS);
+        check("back in the minigame", advanceToBonus(c, L));
         c.lives = GameCore.START_LIVES - 1;
         int scoreBefore = c.score;
         // Bounded: tapBonus is a no-op outside BONUS, so an unbounded loop would hang.
@@ -239,10 +276,11 @@ final class TestStages extends Check {
         g.enemies.clear();
         g.shots.clear();
         g.update(DT, L);
-        advance(g, L, GameCore.BONUS_TIME + 0.2f);   // advanceStage fires when the interlude ends
+        // The reward now fires the moment the wave clears, ahead of the interlude.
         check("a flawless wave triggers the gold dumpling", g.perfectBanner > 0f);
         check("the celebration expires", g.perfectBanner <= GameCore.PERFECT_TIME);
         advance(g, L, GameCore.PERFECT_TIME + 0.2f);
+        check("the celebration ends", g.perfectBanner == 0f);
         check("the celebration ends", g.perfectBanner == 0f);
 
         GameCore m = new GameCore(new Mem(), 63L);

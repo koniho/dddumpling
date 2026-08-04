@@ -194,6 +194,8 @@ final class GameCore {
     /** Active mode, or -1. */
     int mode = -1;
     float modeLeft;
+    /** True between the wave ending and the interlude opening. */
+    boolean pendingBonus;
     /** Set when a frenzy ended the stage, so the interlude can run longer. */
     boolean stageByPower;
     /**
@@ -542,6 +544,7 @@ final class GameCore {
         modeLeft = 0;
         stageByPower = false;
         powerTimer = Power.SPAWN_MIN;
+        pendingBonus = false;
         stageBanner = 1.5f;
         if (sound != null) {
             sound.frenzy(false);
@@ -819,6 +822,17 @@ final class GameCore {
 
         if (state != PLAY) return;
 
+        // Holding between the wave ending and the interlude opening, so the flawless-wave
+        // dumpling gets the screen to itself. Nothing spawns and nothing falls; the field is
+        // already empty, which is what let the wave end.
+        if (pendingBonus) {
+            if (perfectBanner <= 0f) {
+                pendingBonus = false;
+                enterBonus();
+            }
+            return;
+        }
+
         updatePower(dt, L);
         updateTrail(dt, L);
 
@@ -837,7 +851,7 @@ final class GameCore {
                 spawnTimer = spawnInterval() / (powerActive() ? Power.SPAWN_RATE : 1f);
             }
         } else if (stageCleared()) {
-            enterBonus();
+            beginStageEnd();
             return;
         }
 
@@ -1056,14 +1070,21 @@ final class GameCore {
         if (sound != null) sound.achievement();
     }
 
-    /** Called once a stage's whole wave has been dealt with. */
-    private void advanceStage() {
-        // A wave cleared without a single wrong press earns the gold dumpling.
+    /**
+     * The wave is done. Awards the flawless-wave dumpling and holds here until it has
+     * finished, so the interlude opens after that celebration rather than on top of it.
+     */
+    private void beginStageEnd() {
         if (missesThisStage == 0) {
             perfectBanner = PERFECT_TIME;
             if (sound != null) sound.achievement();
         }
         missesThisStage = 0;
+        pendingBonus = true;
+    }
+
+    /** Called on the way out of the interlude. */
+    private void advanceStage() {
         stage++;
         spawnedThisStage = 0;
         resolvedThisStage = 0;

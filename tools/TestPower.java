@@ -144,7 +144,7 @@ final class TestPower extends Check {
         d.spawnedThisStage = d.stageQuota();
         d.enemies.clear();
         d.shots.clear();
-        d.update(DT, L);
+        advanceToBonus(d, L);
         check("a normal clear plays the stage tone", ear2.stageClears == 1);
         check("and not the frenzy tone", ear2.powerClears == 0);
         check("a normal interlude is the usual length",

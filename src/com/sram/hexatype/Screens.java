@@ -17,8 +17,13 @@ final class Screens extends Draw {
     }
 
     static void handLabels(Painter p, Layout L, float baseline) {
-        p.text("LEFT HAND", L.keyX[1], baseline, L.unit * 0.5f, INK_DIM, Painter.CENTER, true);
-        p.text("RIGHT HAND", L.keyX[4], baseline, L.unit * 0.5f, INK_DIM, Painter.CENTER, true);
+        handLabels(p, L, baseline, 1f);
+    }
+
+    static void handLabels(Painter p, Layout L, float baseline, float fade) {
+        int col = fadeBy(INK_DIM, fade);
+        p.text("LEFT HAND", L.keyX[1], baseline, L.unit * 0.5f, col, Painter.CENTER, true);
+        p.text("RIGHT HAND", L.keyX[4], baseline, L.unit * 0.5f, col, Painter.CENTER, true);
     }
 
     static void title(Painter p, GameCore c, Layout L) {
@@ -109,8 +114,13 @@ final class Screens extends Draw {
      */
     static void bonus(Painter p, GameCore c, Layout L) {
         float s = L.unit;
+        // Eases in on arrival and back out as the timer expires, so neither edge of the
+        // interlude is a hard cut between scenes. Every colour below is scaled by it.
+        float fade = Math.min(1f, c.time / 0.40f) * Math.min(1f, c.bonusTimer / 0.40f);
+        if (fade <= 0.01f) return;
+
         // Dim only the sky: the keys are the instrument here and must stay lit.
-        scrim(p, L, 195);
+        scrim(p, L, (int) (195 * fade));
 
         float open = c.steamer.lidOpen();
         boolean freed = c.steamer.freedT > 0f;
@@ -122,10 +132,10 @@ final class Screens extends Draw {
         float bh = s * 3.4f;
 
         p.text(freed ? "FREE!" : "FREE THE DUMPLING", cx, L.h * 0.235f,
-                s * (freed ? 1.5f : 0.95f), freed ? GOLD : INK, Painter.CENTER, true);
+                s * (freed ? 1.5f : 0.95f), fadeBy(freed ? GOLD : INK, fade), Painter.CENTER, true);
         if (!freed) {
-            p.text("MASH ANY KEY", cx, L.h * 0.235f + s * 1.2f, s * 0.62f, INK_DIM,
-                    Painter.CENTER, false);
+            p.text("MASH ANY KEY", cx, L.h * 0.235f + s * 1.2f, s * 0.62f,
+                    fadeBy(INK_DIM, fade), Painter.CENTER, false);
         }
 
         // The dumpling: rainbow, and cheerier the closer it is to getting out.
@@ -142,23 +152,23 @@ final class Screens extends Draw {
         if (freed) {
             for (int k = 3; k >= 1; k--) {
                 p.fillPoly(star(cx, dumpY, dumpR * (1.4f + 0.7f * k), dumpR * 0.5f, 8,
-                        c.clock * 0.6f), Glyph.withAlpha(rainbow, 40 / k));
+                        c.clock * 0.6f), fadeBy(Glyph.withAlpha(rainbow, 40 / k), fade));
             }
         }
-        Kawaii.moodDumpling(p, cx, dumpY, dumpR, rainbow,
+        Kawaii.moodDumpling(p, cx, dumpY, dumpR, fadeBy(rainbow, fade),
                 freed ? 1f : 0.15f + 0.55f * open, 1f + 0.06f * (float) Math.sin(c.clock * 4f));
 
         if (!freed) {
             // Basket body, over the dumpling's lower half so it reads as contained.
             int body = Glyph.mix(BAMBOO, Glyph.cycle(c.clock * 6f), c.steamer.flash * 0.85f);
             float bodyCy = cy + bh * 0.42f, bodyH = bh * 0.60f;
-            p.fillPoly(pill(cx, bodyCy, bw, bodyH, 10), body);
+            p.fillPoly(pill(cx, bodyCy, bw, bodyH, 10), fadeBy(body, fade));
             p.fillPoly(pill(cx, bodyCy, bw, bodyH, 10),
-                    Glyph.withAlpha(0xFF000000, (int) (30 * (1f - c.steamer.flash))));
+                    fadeBy(Glyph.withAlpha(0xFF000000, (int) (30 * (1f - c.steamer.flash))), fade));
             // Woven slats.
             for (int k = -1; k <= 1; k++) {
                 p.fillPoly(pill(cx, bodyCy + k * bh * 0.28f, bw * 0.92f, bh * 0.045f, 6),
-                        Glyph.withAlpha(BAMBOO_DARK, 120));
+                        fadeBy(Glyph.withAlpha(BAMBOO_DARK, 120), fade));
             }
 
             // Lid: lifts with progress, and kicks up further on each press. Capped so that
@@ -167,11 +177,11 @@ final class Screens extends Draw {
             float lidY = cy - bh * 0.52f - lift;
             int lidCol = Glyph.mix(BAMBOO, Glyph.cycle(c.clock * 6f + 0.3f),
                     c.steamer.flash * 0.85f);
-            p.fillPoly(pill(cx, lidY, bw * 1.05f, bh * 0.26f, 10), lidCol);
-            p.fillPoly(pill(cx, lidY - bh * 0.20f, bw * 0.20f, bh * 0.09f, 8), lidCol);
+            p.fillPoly(pill(cx, lidY, bw * 1.05f, bh * 0.26f, 10), fadeBy(lidCol, fade));
+            p.fillPoly(pill(cx, lidY - bh * 0.20f, bw * 0.20f, bh * 0.09f, 8), fadeBy(lidCol, fade));
             for (int k = -1; k <= 1; k += 2) {
                 p.fillPoly(pill(cx + k * bw * 0.58f, lidY, bw * 0.24f, bh * 0.07f, 6),
-                        Glyph.withAlpha(BAMBOO_DARK, 110));
+                        fadeBy(Glyph.withAlpha(BAMBOO_DARK, 110), fade));
             }
 
             // Steam escaping through the widening gap.
@@ -181,7 +191,7 @@ final class Screens extends Draw {
                     float sx2 = cx + (k - 1.5f) * bw * 0.34f + wob * s * 0.25f;
                     float sy2 = lidY - bh * 0.4f - open * s * (0.6f + 0.5f * k);
                     p.fillPoly(pill(sx2, sy2, s * 0.34f * open, s * 0.11f * open, 6),
-                            Glyph.withAlpha(INK, (int) (70 * open)));
+                            fadeBy(Glyph.withAlpha(INK, (int) (70 * open)), fade));
                 }
             }
 
@@ -194,16 +204,16 @@ final class Screens extends Draw {
                 float px = x0 + (i % cols) * gap;
                 float py = rowY + (i / cols) * gap * 1.15f;
                 p.fillCircle(px, py, pr,
-                        i < c.steamer.hits ? rainbow : Glyph.withAlpha(INK, 45));
+                        fadeBy(i < c.steamer.hits ? rainbow : Glyph.withAlpha(INK, 45), fade));
             }
             p.text(c.steamer.hits + " / " + GameCore.STEAMER_HITS, cx,
-                    rowY + gap * 1.15f + s * 1.5f, s * 0.62f, INK_DIM, Painter.CENTER, true);
+                    rowY + gap * 1.15f + s * 1.5f, s * 0.62f, fadeBy(INK_DIM, fade), Painter.CENTER, true);
         } else {
-            p.text("+" + GameCore.FREE_BONUS, cx, L.h * 0.63f, s * 1.1f, GOLD,
+            p.text("+" + GameCore.FREE_BONUS, cx, L.h * 0.63f, s * 1.1f, fadeBy(GOLD, fade),
                     Painter.CENTER, true);
         }
 
-        handLabels(p, L, L.deckTop - s * 0.45f);
+        handLabels(p, L, L.deckTop - s * 0.45f, fade);
     }
 
     /** Settings panel: pacing multiplier and music choice. Freezes the game behind it. */
