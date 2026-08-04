@@ -72,15 +72,38 @@ geometry; `Kawaii` draws the creature.
 | **stage banner** | the big "STAGE n / FASTER NOW" text | `Hud.stageBanner` |
 | **perfect wave** | a wave cleared with no wrong press; gold dumpling on a glowing star | `Hud.perfectStage` |
 
+## The collection
+
+| Say | Means | Code |
+| --- | --- | --- |
+| **collectible** / **squishy** | one of the thirty things you can win | `Collect` index 0–29 |
+| **display case** | the shelf of collectibles on the title screen | `Showcase`, `GameCore.caseIndex` |
+| **shelf** | the filmstrip row inside the case: one focused entry plus a neighbour each side | `Showcase.WINGS` |
+| **position bar** | the scroll bar under the shelf; ticks mark what is collected | `Showcase.scrollbar` |
+| **silhouette** | how an uncollected entry is drawn — outlined shape, flat fill, question mark | `Trinket.draw` with `known == false` |
+| **family** | which of the three shelves an entry belongs to: mystery dumplings, squishy fruits, squeeze globs | `Collect.FAMILY` |
+| **tier** | rarity: common, uncommon, rare, chase, grail. Sets the frame colour and the odds | `Collect.TIER` |
+| **shape** | one of fifteen bodies (bao, glob, wedge, cone…) | `Collect.SHAPE` |
+| **finish** | one of nine surfaces (matte, glitter, holo, galaxy, metallic, clear, glow, tie-dye, confetti) | `Collect.FINISH` |
+| **banded finish** | a finish drawn as bands, so it only sits on a round shape | `Collect.banded` |
+| **prize** | what the steamer just handed over | `GameCore.prize`, `prizeNew` |
+| **duplicate** | a prize already in the case; pays score instead | `GameCore.DUPE_BONUS` |
+| **clear collection** | the settings button that empties the case, behind a confirming tap | `GameCore.tapClearCase`, `clearArmed` |
+
 ## Interlude (the between-stages minigame)
 
 | Say | Means | Code |
 | --- | --- | --- |
 | **interlude** | the whole between-stages minigame | `BONUS` state ← *mismatch* |
-| **steamer** | the dim sum basket | `Steamer`, `Screens.bonus` |
-| **lid** | the part that lifts as you mash | `steamer.lidOpen()` |
-| **rainbow dumpling** | the one trapped inside | `Screens.bonus` |
+| **steamer** | the dim sum basket, drawn in three-quarter view | `Steamer` (state), `Basket` (drawing) |
+| **back pass** / **front pass** | the far wall and interior, then the near wall over the squishy | `Basket.back`, `Basket.front` |
+| **rim** | the ellipse at the top of the basket, the widest part | `rimY`, `rimRy` in `Screens.bonus` |
+| **near wall** | the front of the basket, drawn over the squishy's lower third | `Basket.front` |
+| **slats** | the woven bands round the wall | `Basket.slat` |
+| **lid** | the flat woven disc that lifts as you mash | `Basket.lid`, `steamer.lidOpen()` |
+| **rainbow dumpling** | the one trapped inside; unidentified until the lid is off | `Screens.bonus` |
 | **steamer damage** | presses landed, carried across interludes | `steamer.hits` |
+| **reveal** | freeing it: the prize climbs out with its name, tier and NEW badge | `Screens.prizeLabel` |
 
 ## Powerup
 
@@ -112,7 +135,9 @@ geometry; `Kawaii` draws the creature.
 
 | Say | Means | Code |
 | --- | --- | --- |
-| **title screen** | the opening screen; the real key deck stays lit as the tutorial | `Screens.title` |
+| **title screen** | the opening screen; the real key deck stays lit as the tutorial, and it holds the display case | `Screens.title` |
+| **start keys** | the inner four keys, which begin a run | `GameCore.startKey` |
+| **browse keys** | the outer two, which scroll the display case | `GameCore.scrollCase` |
 | **game over screen** | score, accuracy dumpling, best | `Screens.gameOver` |
 | **accuracy dumpling** | the face that reflects accuracy: tear below 60%, sparkles above 90% | `Screens.accuracy` |
 | **settings panel** | opened by tapping the stage readout; pauses the game | `Screens.settings` |
@@ -146,3 +171,8 @@ geometry; `Kawaii` draws the creature.
 - **sky glow** vs **screen flash** vs **edge glow** — the clouds tinting, a full-screen wash,
   and the red border respectively. All three fire at different moments.
 - **engaged** vs **locked** — the same thing; either is fine.
+- **letter** vs **collectible** — the six letters are what you type; the thirty collectibles are
+  what you win. They share the kawaii look and nothing else: separate palettes, separate
+  drawing code (`Kawaii` vs `Trinket`), separate counts.
+- **shape** vs **finish** vs **tier** — the body, the surface on it, and how rare it is. A
+  request to "make the holo ones brighter" is a finish; "make the buns rounder" is a shape.

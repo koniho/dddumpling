@@ -113,8 +113,14 @@ public class GameView extends View {
         }
 
         if (core.state != GameCore.PLAY) {
-            core.anyTap();
-            tick();
+            // Only the keys act on the title and game-over screens now: the inner four
+            // start, the outer two work the display case. A tap on the sky does nothing,
+            // which is what stops a stray touch skipping past the collection.
+            int screen = layout.keyAt(x, y);
+            if (screen >= 0) {
+                core.screenKey(screen);
+                tick();
+            }
             return true;
         }
         // The stage readout opens settings, so check it before the keys.
@@ -211,8 +217,15 @@ public class GameView extends View {
         // A drag that wandered off the slider must not trip the other controls.
         if (dragging) return;
 
+        // Any other tap in the panel stands the clear button back down, so an armed erase
+        // cannot sit waiting through a music change for a second tap that meant something else.
+        if (hit != SettingsUi.HIT_CLEAR) core.clearArmed = false;
+
         if (hit == SettingsUi.HIT_CLOSE || hit == SettingsUi.HIT_OUTSIDE) {
             core.closeSettings();
+            tick();
+        } else if (hit == SettingsUi.HIT_CLEAR) {
+            core.tapClearCase();
             tick();
         } else if (hit >= SettingsUi.HIT_TEST) {
             // Closes the panel and drops straight into the mode.

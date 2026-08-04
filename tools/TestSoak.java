@@ -41,11 +41,11 @@ final class TestSoak extends Check {
         for (int i = 0; i < 60 * 600; i++) {
             c.update(DT, L);
             if (r.nextInt(6) == 0) c.tapKey(r.nextInt(Glyph.COUNT), L);
-            if (r.nextInt(4000) == 0) c.anyTap();
+            if (r.nextInt(4000) == 0) c.tapKey(1 + r.nextInt(4), L);
             if (c.state == GameCore.OVER) {
                 overs++;
                 for (int k = 0; k < 45; k++) c.update(DT, L);
-                c.anyTap();
+                c.tapKey(1 + r.nextInt(4), L);
             }
             // liveEnemies(), not size(): destroyed words linger while they fly apart, and a
             // frenzy spawns fast enough for several to be in flight at once.

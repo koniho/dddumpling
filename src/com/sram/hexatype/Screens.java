@@ -29,26 +29,45 @@ final class Screens extends Draw {
     static void title(Painter p, GameCore c, Layout L) {
         float bottom = scrim(p, L, 210);
         float s = L.unit;
-        p.text("HEXATYPE", L.w / 2f, L.h * 0.22f, s * 2.15f, INK, Painter.CENTER, true);
-        p.text("SIX LETTERS. THREE PER THUMB.", L.w / 2f, L.h * 0.22f + s * 1.5f, s * 0.62f,
+        float cx = L.w / 2f;
+        p.text("HEXATYPE", cx, L.h * 0.100f, s * 1.95f, INK, Painter.CENTER, true);
+        p.text("SIX LETTERS. THREE PER THUMB.", cx, L.h * 0.100f + s * 1.30f, s * 0.58f,
                 INK_DIM, Painter.CENTER, false);
 
-        p.text("CUTE WORDS FALL FROM THE SKY.", L.w / 2f, L.h * 0.40f, s * 0.66f, INK,
+        // The three-line explanation the screen used to carry is down to one: the display
+        // case now needs the middle of the screen, and the tutorial keys are lit below it.
+        p.text("TAP THE MATCHING HEX, LEFT TO RIGHT,", cx, L.h * 0.195f, s * 0.60f, INK,
                 Painter.CENTER, false);
-        p.text("TAP THE MATCHING HEX IN ORDER,", L.w / 2f, L.h * 0.40f + s * 1.0f, s * 0.66f,
-                INK, Painter.CENTER, false);
-        p.text("LEFT TO RIGHT, BEFORE THEY LAND.", L.w / 2f, L.h * 0.40f + s * 2.0f, s * 0.66f,
-                INK, Painter.CENTER, false);
-
+        p.text("BEFORE THE WORDS LAND.", cx, L.h * 0.195f + s * 0.92f, s * 0.60f, INK,
+                Painter.CENTER, false);
         if (c.best > 0) {
-            p.text("BEST " + c.best, L.w / 2f, L.h * 0.55f, s * 0.78f, ROSE, Painter.CENTER, true);
+            p.text("BEST " + c.best, cx, L.h * 0.262f, s * 0.74f, ROSE, Painter.CENTER, true);
         }
 
-        float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 3.2f);
-        p.text("TAP TO START", L.w / 2f, L.h * 0.65f, s * 0.95f,
-                Glyph.withAlpha(INK, (int) (255 * pulse)), Painter.CENTER, true);
+        Showcase.draw(p, c, L);
 
-        handLabels(p, L, bottom - s * 0.45f);
+        // Anchored above the danger line rather than off the deck: the dashed line shows
+        // faintly through the scrim, and text sitting on it looks struck through.
+        float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 3.2f);
+        p.text("PRESS THE INNER FOUR TO START", cx, L.dangerY - s * 1.95f, s * 0.86f,
+                Glyph.withAlpha(INK, (int) (255 * pulse)), Painter.CENTER, true);
+        p.text("OUTER TWO BROWSE THE CASE", cx, L.dangerY - s * 0.90f, s * 0.56f, INK_DIM,
+                Painter.CENTER, false);
+
+        keyRoles(p, L, bottom - s * 0.45f);
+    }
+
+    /**
+     * What each key does on the title screen, written over the real deck. This replaces the
+     * hand labels here: which keys start and which browse now matters more than which thumb
+     * they belong to, and the tagline above already carries the three-per-thumb idea.
+     */
+    private static void keyRoles(Painter p, Layout L, float baseline) {
+        float s = L.unit;
+        p.text("BROWSE", L.keyX[0], baseline, s * 0.48f, INK_DIM, Painter.CENTER, true);
+        p.text("BROWSE", L.keyX[Glyph.COUNT - 1], baseline, s * 0.48f, INK_DIM,
+                Painter.CENTER, true);
+        p.text("START", L.w / 2f, baseline, s * 0.52f, INK, Painter.CENTER, true);
     }
 
     static void gameOver(Painter p, GameCore c, Layout L) {
@@ -69,10 +88,12 @@ final class Screens extends Draw {
         p.text(c.score >= c.best ? "NEW BEST!" : "BEST " + c.best, L.w / 2f, L.h * 0.695f,
                 s * 0.78f, c.score >= c.best ? GOLD : INK_DIM, Painter.CENTER, true);
 
-        if (c.time > 0.6f) {
+        if (c.time > GameCore.OVER_GRACE) {
             float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 3.2f);
-            p.text("TAP TO RESTART", L.w / 2f, L.h * 0.765f, s * 0.95f,
+            p.text("INNER FOUR TO PLAY AGAIN", L.w / 2f, L.h * 0.765f, s * 0.88f,
                     Glyph.withAlpha(INK, (int) (255 * pulse)), Painter.CENTER, true);
+            p.text("OUTER TWO FOR THE DISPLAY CASE", L.w / 2f, L.h * 0.765f + s * 0.95f,
+                    s * 0.56f, INK_DIM, Painter.CENTER, false);
         }
 
         handLabels(p, L, bottom - s * 0.45f);
@@ -131,13 +152,20 @@ final class Screens extends Draw {
             report(p, L, "DUMPLINGS FREED", String.valueOf(c.steamer.opens),
                     row + s * 6.0f, fade);
         }
+        report(p, L, "COLLECTION", Collect.owned(c.collected) + " / " + Collect.COUNT,
+                row + s * 7.5f, fade);
 
-        // The rainbow dumpling waves off from the corner of the report.
-        int rainbow = Glyph.cycle(c.clock * 0.5f);
+        // Whatever the steamer gave up this round waves off from the foot of the report;
+        // failing that, the rainbow dumpling does, as it always has.
         float dr = s * 1.3f;
         float bob = (float) Math.abs(Math.sin(c.clock * 4f)) * dr * 0.18f;
-        Kawaii.moodDumpling(p, cx, row + s * 7.9f - bob, dr, fadeBy(rainbow, fade), 1f,
-                1f + 0.06f * (float) Math.sin(c.clock * 5f));
+        float dy = row + s * 9.2f - bob;
+        if (c.prize >= 0) {
+            Trinket.draw(p, c.prize, cx, dy, dr, c.clock, true, fade);
+        } else {
+            Kawaii.moodDumpling(p, cx, dy, dr, fadeBy(Glyph.cycle(c.clock * 0.5f), fade), 1f,
+                    1f + 0.06f * (float) Math.sin(c.clock * 5f));
+        }
     }
 
     /** One label/value line of the end-of-interlude report. */
@@ -239,8 +267,9 @@ final class Screens extends Draw {
 
         float cx = L.w / 2f;
         float cy = L.h * 0.46f;
-        // Half-extents. A steamer basket is wide but not a bar: roughly 3:1.
-        float bw = Math.min(L.w * 0.30f, s * 7.0f);
+        // Half-extents. Narrower than the flat version was: in three-quarter view the basket
+        // gains height from its rim ellipse, and at the old width it dwarfed the squishy.
+        float bw = Math.min(L.w * 0.26f, s * 5.8f);
         float bh = s * 3.4f;
 
         // Heading swells in over the fade, overshooting and settling, so the interlude
@@ -255,9 +284,21 @@ final class Screens extends Draw {
             alternator(p, c, L, cx, L.h * 0.235f + s * 3.1f, fade);
         }
 
+        // Steamer geometry, shared by the back pass, the front pass and the lid so they
+        // cannot drift apart. Seen from slightly above: the rim is an ellipse, and the basket
+        // tapers a little toward its base the way a real bamboo one does.
+        int body = Glyph.mix(BAMBOO, Glyph.cycle(c.clock * 6f), c.steamer.flash * 0.45f);
+        float rimY = cy + bh * 0.22f;
+        float baseY = rimY + bh * 0.78f;
+        float rimRy = bw * 0.30f;
+        float baseRx = bw * 0.90f;
+        Basket.back(p, cx, rimY, baseY, bw, rimRy, baseRx, body, c.steamer.flash, fade);
+
         // The dumpling: rainbow, and cheerier the closer it is to getting out.
-        float dumpR = bh * 0.72f;
-        float dumpY = cy - bh * 0.10f;
+        float dumpR = bh * 0.86f;
+        // Sits so its lower third is behind the near wall: enough to be visibly contained,
+        // not so deep that only a face shows over the rim.
+        float dumpY = rimY - dumpR * 0.50f;
         if (freed) {
             // Escaping: rises and grows away as the celebration plays.
             float t = 1f - c.steamer.freedT / 1.7f;
@@ -267,39 +308,40 @@ final class Screens extends Draw {
         int rainbow = Glyph.cycle(c.clock * 0.5f);
         // Rays only once it is out: behind a closed lid they just show through the gap.
         if (freed) {
+            int rayCol = c.prize >= 0 ? Collect.TIER_COLOR[Collect.TIER[c.prize]] : rainbow;
             for (int k = 3; k >= 1; k--) {
-                p.fillPoly(star(cx, dumpY, dumpR * (1.4f + 0.7f * k), dumpR * 0.5f, 8,
-                        c.clock * 0.6f), fadeBy(Glyph.withAlpha(rainbow, 40 / k), fade));
+                p.fillPoly(star(cx, dumpY, dumpR * (1.2f + 0.42f * k), dumpR * 0.55f, 8,
+                        c.clock * 0.6f), fadeBy(Glyph.withAlpha(rayCol, 30 / k), fade));
             }
         }
-        Kawaii.moodDumpling(p, cx, dumpY, dumpR, fadeBy(rainbow, fade),
-                freed ? 1f : 0.15f + 0.55f * open, 1f + 0.06f * (float) Math.sin(c.clock * 4f));
+        if (freed && c.prize >= 0) {
+            // The prize is what climbs out. Until the lid is off it stays the unidentified
+            // rainbow dumpling, which is the whole conceit of a mystery box.
+            Trinket.draw(p, c.prize, cx, dumpY, dumpR, c.clock, true, fade);
+        } else {
+            Kawaii.moodDumpling(p, cx, dumpY, dumpR, fadeBy(rainbow, fade),
+                    freed ? 1f : 0.15f + 0.55f * open,
+                    1f + 0.06f * (float) Math.sin(c.clock * 4f));
+        }
+
+        // Near wall, over the squishy's lower half: this is what makes it read as sitting
+        // *in* the basket rather than in front of one. Drawn even during the celebration, so
+        // the prize is visibly climbing out of something.
+        Basket.front(p, cx, rimY, baseY, bw, rimRy, baseRx, body, c.steamer.flash, fade);
+
+        // The caption goes after the front pass, and sits under the basket rather than
+        // trailing the prize: drawn before the wall it was hidden behind it, and pinned to a
+        // prize that rises off the top of the screen it would have gone with it.
+        if (freed && c.prize >= 0) prizeLabel(p, c, L, cx, baseY + s * 2.05f, fade);
 
         if (!freed) {
-            // Basket body, over the dumpling's lower half so it reads as contained.
-            int body = Glyph.mix(BAMBOO, Glyph.cycle(c.clock * 6f), c.steamer.flash * 0.85f);
-            float bodyCy = cy + bh * 0.42f, bodyH = bh * 0.60f;
-            p.fillPoly(pill(cx, bodyCy, bw, bodyH, 10), fadeBy(body, fade));
-            p.fillPoly(pill(cx, bodyCy, bw, bodyH, 10),
-                    fadeBy(Glyph.withAlpha(0xFF000000, (int) (30 * (1f - c.steamer.flash))), fade));
-            // Woven slats.
-            for (int k = -1; k <= 1; k++) {
-                p.fillPoly(pill(cx, bodyCy + k * bh * 0.28f, bw * 0.92f, bh * 0.045f, 6),
-                        fadeBy(Glyph.withAlpha(BAMBOO_DARK, 120), fade));
-            }
-
             // Lid: lifts with progress, and kicks up further on each press. Capped so that
             // at full open it just clears the rim rather than floating away from it.
-            float lift = open * bh * 1.0f + c.steamer.lidPulse * bh * 0.28f;
-            float lidY = cy - bh * 0.52f - lift;
+            float lift = open * bh * 0.72f + c.steamer.lidPulse * bh * 0.22f;
+            float lidY = rimY - rimRy * 1.05f - lift;
             int lidCol = Glyph.mix(BAMBOO, Glyph.cycle(c.clock * 6f + 0.3f),
-                    c.steamer.flash * 0.85f);
-            p.fillPoly(pill(cx, lidY, bw * 1.05f, bh * 0.26f, 10), fadeBy(lidCol, fade));
-            p.fillPoly(pill(cx, lidY - bh * 0.20f, bw * 0.20f, bh * 0.09f, 8), fadeBy(lidCol, fade));
-            for (int k = -1; k <= 1; k += 2) {
-                p.fillPoly(pill(cx + k * bw * 0.58f, lidY, bw * 0.24f, bh * 0.07f, 6),
-                        fadeBy(Glyph.withAlpha(BAMBOO_DARK, 110), fade));
-            }
+                    c.steamer.flash * 0.45f);
+            Basket.lid(p, cx, lidY, bw * 1.02f, rimRy * 0.95f, lidCol, fade);
 
             // Steam escaping through the widening gap.
             if (open > 0.05f) {
@@ -326,11 +368,35 @@ final class Screens extends Draw {
             p.text(c.steamer.hits + " / " + GameCore.STEAMER_HITS, cx,
                     rowY + gap * 1.15f + s * 1.5f, s * 0.62f, fadeBy(INK_DIM, fade), Painter.CENTER, true);
         } else {
-            p.text("+" + GameCore.FREE_BONUS, cx, L.h * 0.63f, s * 1.1f, fadeBy(GOLD, fade),
+            p.text("+" + GameCore.FREE_BONUS, cx, L.h * 0.665f, s * 1.1f, fadeBy(GOLD, fade),
                     Painter.CENTER, true);
         }
 
         handLabels(p, L, L.deckTop - s * 0.45f, fade);
+    }
+
+    /**
+     * Name, tier and whether it is new, under the escaping prize. The tier is what tells you
+     * whether to care, so it gets the colour; NEW is what tells you the case grew.
+     */
+    private static void prizeLabel(Painter p, GameCore c, Layout L, float cx, float y,
+            float fade) {
+        float s = L.unit;
+        int tier = Collect.TIER[c.prize];
+        int tint = Collect.TIER_COLOR[tier];
+        p.text(Collect.NAME[c.prize], cx, y, s * 0.92f, fadeBy(INK, fade), Painter.CENTER,
+                true);
+        p.text(Collect.TIER_NAME[tier], cx, y + s * 0.85f, s * 0.58f, fadeBy(tint, fade),
+                Painter.CENTER, true);
+        if (c.prizeNew) {
+            // Pops as it arrives, so a new entry is unmissable next to a duplicate's line.
+            float pop = 1f + 0.16f * (float) Math.abs(Math.sin(c.clock * 7f));
+            p.text("NEW!", cx, y + s * 2.15f, s * 0.92f * pop, fadeBy(GOLD, fade),
+                    Painter.CENTER, true);
+        } else {
+            p.text("ALREADY IN THE CASE   +" + GameCore.DUPE_BONUS, cx, y + s * 2.05f,
+                    s * 0.56f, fadeBy(INK_DIM, fade), Painter.CENTER, false);
+        }
     }
 
     /** Settings panel: pacing multiplier and music choice. Freezes the game behind it. */
@@ -401,6 +467,22 @@ final class Screens extends Draw {
             p.text(Power.NAMES[i], (l + r) / 2f, ui.testY + ui.testH * 0.66f, s * 0.56f,
                     INK, Painter.CENTER, true);
         }
+
+        // Empty the display case. Armed by the first tap and only acted on by the second, so
+        // the label itself is the confirmation prompt — there is no dialog in this game.
+        p.text("DISPLAY CASE", ui.sliderL, ui.clearLabelY, s * 0.58f, INK_DIM, Painter.LEFT,
+                true);
+        p.text(Collect.owned(c.collected) + " / " + Collect.COUNT, ui.optionR(),
+                ui.clearLabelY, s * 0.58f, INK, Painter.RIGHT, true);
+        int col = c.clearArmed ? ROSE : INK_DIM;
+        p.fillRect(ui.optionL(), ui.clearY, ui.optionR(), ui.clearY + ui.clearH,
+                Glyph.withAlpha(col, c.clearArmed ? 62 : 30));
+        p.strokePoly(new float[] {ui.optionL(), ui.clearY, ui.optionR(), ui.clearY,
+                ui.optionR(), ui.clearY + ui.clearH, ui.optionL(), ui.clearY + ui.clearH},
+                Glyph.withAlpha(col, c.clearArmed ? 235 : 150), s * 0.05f);
+        p.text(c.clearArmed ? "TAP AGAIN TO ERASE" : "CLEAR COLLECTION",
+                (ui.optionL() + ui.optionR()) / 2f, ui.clearY + ui.clearH * 0.66f, s * 0.58f,
+                c.clearArmed ? ROSE : INK, Painter.CENTER, true);
     }
 
     /** One decimal place without String.format, which is not worth the cost per frame. */

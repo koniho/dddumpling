@@ -32,6 +32,14 @@ final class CoreTest {
         TestStages.accuracyTracking(L);
         TestStages.warningsAndHarm(L);
 
+        TestCollect.catalogue(L);
+        TestCollect.ownedSet(L);
+        TestCollect.blindBox(L);
+        TestCollect.winning(L);
+        TestCollect.displayCase(L);
+        TestCollect.screenKeys(L);
+        TestCollect.clearing(L);
+
         TestVisuals.sky(L);
         TestVisuals.indicatorsAndGlow(L);
         TestVisuals.settings(L);

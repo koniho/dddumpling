@@ -15,12 +15,15 @@ final class Preview {
         int best;
         float speed = 1f;
         int bgm;
+        long collected;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; }
         public float loadSpeed() { return speed; }
         public void saveSpeed(float v) { speed = v; }
         public int loadBgm() { return bgm; }
         public void saveBgm(int v) { bgm = v; }
+        public long loadCollected() { return collected; }
+        public void saveCollected(long v) { collected = v; }
     }
 
     public static void main(String[] args) throws Exception {
@@ -37,15 +40,28 @@ final class Preview {
 
         characterSheet(dir, w, h, ss);
         skitSheet(dir, L, w, h, ss);
+        collectSheet(dir, w, h, ss);
         sounds(dir);
 
         Mem store = new Mem();
         store.best = 1840;
+        // A part-filled case, so the title screen shows both a collected entry and the
+        // silhouettes either side of it.
+        store.collected = 0b0000_0100_1000_0011_0010_0110_1101L;
 
-        // Title screen.
+        // Title screen, parked on a collected entry.
         GameCore c = new GameCore(store, 7L);
         step(c, L, 0.55f);
+        System.out.printf("title: case=%d of %d collected%n", Collect.owned(c.collected),
+                Collect.COUNT);
         shot(dir, "1-title", c, L, w, h, ss);
+
+        // And on a gap, mid-slide, which is what most of the strip looks like early on.
+        c.scrollCase(1);
+        step(c, L, 0.06f);
+        System.out.printf("title gap: index=%d known=%s slide=%.2f%n", c.caseIndex,
+                Collect.has(c.collected, c.caseIndex), c.caseSlide);
+        shot(dir, "20-title-locked", c, L, w, h, ss);
 
         // A wave in flight, nothing typed yet.
         c.startGame();
@@ -183,17 +199,34 @@ final class Preview {
         // Wait out the flawless-wave celebration that now precedes the interlude.
         for (int i = 0; i < 60 * 8 && c8.state != GameCore.BONUS; i++) c8.update(DT, L);
         for (int i = 0; i < 26; i++) c8.tapBonus(c8.steamer.wanted());
-        step(c8, L, 0.09f);
+        // Past the fade-in before sampling: at 0.09s the whole scene is still at a quarter
+        // opacity, which is what 19-bonus-fadein is for. One more press then keeps the lid
+        // pulse and the flash mid-decay, which is the point of this frame.
+        step(c8, L, 0.45f);
+        c8.tapBonus(c8.steamer.wanted());
+        step(c8, L, 0.05f);
         System.out.printf("bonus: state=%d hits=%d open=%.2f lidPulse=%.2f flash=%.2f%n",
                 c8.state, c8.steamer.hits, c8.steamer.lidOpen(), c8.steamer.lidPulse, c8.steamer.flash);
         shot(dir, "14-bonus", c8, L, w, h, ss);
 
-        // And the moment it breaks free.
+        // And the moment it breaks free, handing over whatever was in the box.
         for (int i = 0; i < 16; i++) c8.tapBonus(c8.steamer.wanted());
         step(c8, L, 0.5f);
-        System.out.printf("bonus freed: opens=%d freedT=%.2f score=%d lives=%d%n",
-                c8.steamer.opens, c8.steamer.freedT, c8.score, c8.lives);
+        System.out.printf("bonus freed: opens=%d freedT=%.2f score=%d lives=%d prize=%s new=%s%n",
+                c8.steamer.opens, c8.steamer.freedT, c8.score, c8.lives,
+                c8.prize >= 0 ? Collect.NAME[c8.prize] : "none", c8.prizeNew);
         shot(dir, "15-bonus-freed", c8, L, w, h, ss);
+
+        // The same reveal for a duplicate, and for the grail — the two ends of the payout.
+        c8.prizeNew = false;
+        shot(dir, "21-prize-dupe", c8, L, w, h, ss);
+        c8.prize = Collect.COUNT - 1;
+        for (int i = 0; i < Collect.COUNT; i++) {
+            if (Collect.TIER[i] == Collect.GRAIL) c8.prize = i;
+        }
+        c8.prizeNew = true;
+        System.out.printf("grail reveal: %s%n", Collect.NAME[c8.prize]);
+        shot(dir, "22-prize-grail", c8, L, w, h, ss);
 
         // Mid fade-in, to check the interlude eases in rather than cutting.
         GameCore c11 = new GameCore(store, 47L);
@@ -256,9 +289,17 @@ final class Preview {
         step(c6, L, 6f);
         c6.setSpeed(1.2f);
         c6.setBgm(Music.DRIFT);
+        c6.collected = 0b0000_0100_1000_0011_0010_0110_1101L;
         c6.openSettings();
         step(c6, L, 0.3f);
         shot(dir, "12-settings", c6, L, w, h, ss);
+
+        // Clear-collection button armed, waiting for the confirming tap.
+        c6.tapClearCase();
+        step(c6, L, 0.2f);
+        System.out.printf("settings: clearArmed=%s case=%d%n", c6.clearArmed,
+                Collect.owned(c6.collected));
+        shot(dir, "23-settings-clear", c6, L, w, h, ss);
     }
 
     // ---- driving ------------------------------------------------------------
@@ -370,6 +411,53 @@ final class Preview {
         File f = new File(dir, "0-skits.png");
         Png.write(f, p.resolve(), w, h);
         System.out.println("  wrote " + f.getName() + " (" + Skits.COUNT + " vignettes)");
+    }
+
+    /**
+     * Harness-only sheets: all thirty collectibles, once as collected and once as the unknown
+     * silhouette. Two pages rather than one, because a single grid of sixty left no room for
+     * the names and the labels landed on top of the row below.
+     */
+    private static void collectSheet(File dir, int w, int h, int ss) throws Exception {
+        grid(dir, w, h, ss, "0-collect", "THE THIRTY COLLECTIBLES",
+                "EVERY ENTRY, COLLECTED", true);
+        grid(dir, w, h, ss, "0-collect-unknown", "NOT YET COLLECTED",
+                "SILHOUETTE AND QUESTION MARK", false);
+    }
+
+    private static void grid(File dir, int w, int h, int ss, String file, String title,
+            String sub, boolean known) throws Exception {
+        final int cols = 5;
+        int rows = (Collect.COUNT + cols - 1) / cols;
+        RasterPainter p = new RasterPainter(w, h, ss);
+        p.clear(0xFF000000);
+        p.fillRect(0, 0, w, h, Renderer.BG);
+        float unit = 0.042f * w;
+        p.text(title, w / 2f, unit * 1.9f, unit * 0.95f, Renderer.INK, Painter.CENTER, true);
+        p.text(sub, w / 2f, unit * 2.9f, unit * 0.52f, Renderer.INK_DIM, Painter.CENTER, false);
+
+        float top = unit * 4.4f;
+        float cellW = w / (float) cols;
+        float cellH = (h - top - unit * 1.5f) / rows;
+        // Leaves room under each hex for two lines of label without reaching the next row.
+        float r = Math.min(cellW * 0.33f, cellH * 0.27f);
+        for (int i = 0; i < Collect.COUNT; i++) {
+            float cx = cellW * (i % cols + 0.5f);
+            float cy = top + cellH * (i / cols) + r * 1.25f;
+            int tint = known ? Collect.TIER_COLOR[Collect.TIER[i]] : Renderer.INK_DIM;
+            p.fillPoly(Glyph.hex(cx, cy, r * 1.14f), Glyph.withAlpha(tint, known ? 34 : 18));
+            p.strokePoly(Glyph.hex(cx, cy, r * 1.14f), Glyph.withAlpha(tint, known ? 190 : 70),
+                    r * 0.06f);
+            Trinket.draw(p, i, cx, cy, r * 0.92f, i * 0.7f, known, 1f);
+            p.text(known ? Collect.NAME[i] : "??????", cx, cy + r * 1.62f, unit * 0.40f,
+                    known ? Renderer.INK : Renderer.INK_DIM, Painter.CENTER, true);
+            p.text(known ? Collect.TIER_NAME[Collect.TIER[i]]
+                    : Collect.FAMILY_NAME[Collect.FAMILY[i]].split(" ")[0],
+                    cx, cy + r * 2.06f, unit * 0.34f, tint, Painter.CENTER, false);
+        }
+        File f = new File(dir, file + ".png");
+        Png.write(f, p.resolve(), w, h);
+        System.out.println("  wrote " + f.getName() + " (" + Collect.COUNT + " entries)");
     }
 
     /** Harness-only sheet: every character large, for checking the faces read clearly. */

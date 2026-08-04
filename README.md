@@ -9,6 +9,12 @@ the matching hexagon in the honeycomb deck at the bottom: three keys under the l
 three under the right. Clear a word before it reaches the danger line, or it lunges and
 costs you a life.
 
+Between stages you mash a dim sum steamer open, and the dumpling inside is a blind box:
+freeing it hands over one of thirty collectible squishies — bao buns, fruits and squeeze
+globs, from commons up to a single gold grail. The collection is kept for good and shown in
+the display case on the title screen, where the outer two keys scroll the shelf and the
+inner four start a run. Anything you have not won yet is a silhouette and a question mark.
+
 ## Requirements
 
 Termux on an `aarch64` Android device:

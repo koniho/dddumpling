@@ -74,6 +74,9 @@ Pure (in the harness and the APK):
 | `Words` | word generation and the press-budget rules |
 | `Fx` | shots and particles |
 | `Steamer` | between-stages minigame state |
+| `Collect` | the thirty collectibles: catalogue, blind-box odds, owned-set bitmask |
+| `Trinket` | draws a collectible — fifteen shapes crossed with nine finishes |
+| `Showcase` | the display case on the title screen |
 | `Power` | the powerup letter and its three modes |
 | `Painter` | the drawing interface |
 | `Draw` | palette + shared geometry (pill, star, hash, rainbow) — renderers extend it |
@@ -122,6 +125,16 @@ nothing. Follow the pattern rather than "fixing" it.
 - **Tune against the real firing rate.** The per-press sky glow looked right in one frame and
   strobed in play; the 4s minigame let a masher finish it in one go, defeating the
   accumulation it was built for.
+- **The harness font is ASCII-only.** `tools/Font` has one bitmap per character it knows; a
+  glyph it does not have simply vanishes from the PNG. Arrows and chevrons are drawn as
+  polygons for that reason, and `?` had to be added to `Font` before the silhouettes could
+  be checked. Anything that only renders on the device is something you cannot see.
+- **`Painter` cannot clip to a shape,** only to a rectangle. That is why a banded finish in
+  `Trinket` is fitted to an ellipse and why `Collect.banded` restricts which shapes may wear
+  one — there is an assertion holding the catalogue to it.
+- **A silhouette must be fully colourless.** The leaf and stem colours were left as
+  themselves at first, so every blacked-out fruit had a bright green leaf on it and gave
+  itself away.
 - Termux's `ecj` hardcodes `-7`; use `javac --release 8`. `aapt2 link` takes compiled
   resources positionally, not via `-R`.
 

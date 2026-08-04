@@ -15,6 +15,7 @@ public class MainActivity extends Activity implements GameCore.Store {
     private static final String KEY_BEST = "best";
     private static final String KEY_SPEED = "speed";
     private static final String KEY_BGM = "bgm";
+    private static final String KEY_COLLECTED = "collected";
 
     private SharedPreferences prefs;
     private Audio audio;
@@ -79,6 +80,14 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     @Override public void saveBgm(int choice) {
         prefs.edit().putInt(KEY_BGM, choice).apply();
+    }
+
+    @Override public long loadCollected() {
+        return prefs.getLong(KEY_COLLECTED, 0L);
+    }
+
+    @Override public void saveCollected(long owned) {
+        prefs.edit().putLong(KEY_COLLECTED, owned).apply();
     }
 
     private void goFullscreen() {

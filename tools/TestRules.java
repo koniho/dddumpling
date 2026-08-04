@@ -198,8 +198,8 @@ final class TestRules extends Check {
         group("screens");
         GameCore c = new GameCore(new Mem(), 6L);
         check("boots to the title screen", c.state == GameCore.TITLE);
-        c.anyTap();
-        check("tap starts the game", c.state == GameCore.PLAY);
+        c.tapKey(2, L);
+        check("an inner key starts the game", c.state == GameCore.PLAY);
 
         c.lives = 1;
         c.enemies.clear();
@@ -208,13 +208,14 @@ final class TestRules extends Check {
         check("reached game over", c.state == GameCore.OVER);
         check("game over clears the field", c.enemies.isEmpty() && c.shots.isEmpty());
 
-        c.anyTap();
-        check("game over ignores taps for the first 0.6s", c.state == GameCore.OVER);
+        c.tapKey(2, L);
+        check("game over ignores keys for the first 0.6s", c.state == GameCore.OVER);
         for (int i = 0; i < 45; i++) c.update(DT, L);
-        c.anyTap();
+        c.tapKey(2, L);
         check("game over restarts after the grace period", c.state == GameCore.PLAY);
 
-        check("keys are inert on non-play screens", !new GameCore(new Mem(), 9L).tapKey(0, L));
+        check("keys never count as a hit off the play screen",
+                !new GameCore(new Mem(), 9L).tapKey(2, L));
     }
 
 }

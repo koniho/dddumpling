@@ -18,12 +18,16 @@ abstract class Check {
         float speed = 1f;
         int bgm;
         int speedSaves, bgmSaves;
+        long collected;
+        int collectedSaves;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; saves++; }
         public float loadSpeed() { return speed; }
         public void saveSpeed(float v) { speed = v; speedSaves++; }
         public int loadBgm() { return bgm; }
         public void saveBgm(int v) { bgm = v; bgmSaves++; }
+        public long loadCollected() { return collected; }
+        public void saveCollected(long v) { collected = v; collectedSaves++; }
     }
 
     static final class Ear implements GameCore.Sound {

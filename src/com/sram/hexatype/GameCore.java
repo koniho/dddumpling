@@ -28,6 +28,13 @@ final class GameCore {
     static final float BONUS_STATUS = 1.5f;
     /** Score awarded for freeing the dumpling. */
     static final int FREE_BONUS = 500;
+    /**
+     * Consolation for freeing a squishy you already own. Well under {@link #FREE_BONUS} so a
+     * duplicate still reads as the lesser outcome.
+     */
+    static final int DUPE_BONUS = 150;
+    /** How long the game-over screen ignores presses, so a death is not skipped by reflex. */
+    static final float OVER_GRACE = 0.6f;
 
     /** Persistence seam; the Activity backs this with SharedPreferences. */
     interface Store {
@@ -37,6 +44,9 @@ final class GameCore {
         void saveSpeed(float speed);
         int loadBgm();
         void saveBgm(int choice);
+        /** The collected-squishy bitmask; see {@link Collect}. */
+        long loadCollected();
+        void saveCollected(long owned);
     }
 
     /**
@@ -190,6 +200,24 @@ final class GameCore {
     // ---- between-stages minigame -------------------------------------------
     final Steamer steamer = new Steamer();
     float bonusTimer;
+
+    // ---- the collection ----------------------------------------------------
+    /**
+     * Which squishies have been collected, one bit per {@link Collect} entry. The only state
+     * that survives a run other than the best score, so it is written through to the store
+     * the moment it changes rather than at the end of a game — a run that is force-quit must
+     * not lose the thing it won.
+     */
+    long collected;
+    /** What the last opened steamer handed over, or -1. Reset when a run starts. */
+    int prize = -1;
+    /** False when {@link #prize} was already in the case. */
+    boolean prizeNew;
+
+    /** Which entry the display case is showing, and the slide left over from the last scroll. */
+    int caseIndex;
+    /** -1..1, decaying to 0: the shelf easing into place after a scroll. */
+    float caseSlide;
 
     // ---- powerup ------------------------------------------------------------
     /** At most one glowing letter on screen. */
@@ -462,6 +490,9 @@ final class GameCore {
             best = store.loadBest();
             speed = clampSpeed(store.loadSpeed());
             bgmChoice = Math.max(0, Math.min(Music.NAMES.length - 1, store.loadBgm()));
+            // Masked: a store that hands back junk in the high bits must not make
+            // Collect.owned() report more than there are entries.
+            collected = store.loadCollected() & Collect.MASK;
         }
     }
 
@@ -474,10 +505,46 @@ final class GameCore {
 
     void openSettings() {
         settingsOpen = true;
+        clearArmed = false;
     }
 
     void closeSettings() {
         settingsOpen = false;
+        clearArmed = false;
+    }
+
+    /**
+     * True once the clear-case button has been tapped and is waiting for a second tap. The
+     * collection is the one thing here that took several runs to build, so wiping it is
+     * behind a confirmation rather than a single stray tap in a panel full of other buttons.
+     */
+    boolean clearArmed;
+
+    /** Tap on the clear-case button: arms it, then on the second tap empties the case. */
+    void tapClearCase() {
+        if (!clearArmed) {
+            clearArmed = true;
+            return;
+        }
+        clearArmed = false;
+        collected = 0L;
+        prize = -1;
+        caseIndex = 0;
+        caseSlide = 0f;
+        if (store != null) store.saveCollected(0L);
+        if (sound != null) sound.wrong();
+    }
+
+    /**
+     * Moves the display case one entry. Wraps, so the strip is a loop and neither outer key
+     * ever does nothing.
+     */
+    void scrollCase(int dir) {
+        if (dir == 0) return;
+        caseIndex = Showcase.wrap(caseIndex + (dir > 0 ? 1 : -1));
+        // Full slide, decaying to zero: the shelf glides in from the side it came from.
+        caseSlide = dir > 0 ? 1f : -1f;
+        if (sound != null) sound.squish(caseIndex % Glyph.COUNT, 1);
     }
 
     void setSpeed(float v) {
@@ -558,6 +625,9 @@ final class GameCore {
         skyGlow = 0;
         steamer.reset();
         bonusTimer = 0;
+        // The collection itself survives; only the "you just won this" banner is per-run.
+        prize = -1;
+        prizeNew = false;
         power = null;
         mode = -1;
         modeLeft = 0;
@@ -577,12 +647,34 @@ final class GameCore {
         enemies.clear();
         shots.clear();
         target = null;
+        // The shelf must not open part-way through a slide left over from the last visit.
+        caseSlide = 0f;
     }
 
-    /** A tap anywhere that is not a key hex. Advances the non-play screens. */
-    void anyTap() {
-        if (state == TITLE) startGame();
-        else if (state == OVER && time > 0.6f) startGame();
+    /**
+     * True for the four inner keys, which are the ones that start a run. The outer two are
+     * reserved for the display case, so browsing the collection can never trip a game.
+     */
+    static boolean startKey(int g) {
+        return g > 0 && g < Glyph.COUNT - 1;
+    }
+
+    /**
+     * A key press on the title or game-over screen. The inner four start; the outer two
+     * scroll the display case on the title, and go back to it from game over — which is the
+     * only way to reach the case again once a run has begun.
+     */
+    void screenKey(int g) {
+        if (g < 0 || g >= Glyph.COUNT) return;
+        if (state == OVER && time <= OVER_GRACE) return;
+        keyPress[g] = 1f;
+        if (startKey(g)) {
+            startGame();
+        } else if (state == OVER) {
+            toTitle();
+        } else {
+            scrollCase(g == 0 ? -1 : 1);
+        }
     }
 
     // ---- input --------------------------------------------------------------
@@ -590,7 +682,7 @@ final class GameCore {
     /** Player pressed key {@code g}. Returns true when it advanced a word. */
     boolean tapKey(int g, Layout L) {
         if (state != PLAY) {
-            anyTap();
+            if (state != BONUS) screenKey(g);
             return false;
         }
         keyPress[g] = 1f;
@@ -821,6 +913,12 @@ final class GameCore {
         skyGlow = decay(skyGlow, dt * 2.4f);
         stageBanner = decay(stageBanner, dt);
         perfectBanner = decay(perfectBanner, dt);
+        // Signed, so it eases back to zero from whichever side the scroll came in on.
+        if (caseSlide != 0f) {
+            float d = dt * Showcase.SLIDE_RATE;
+            caseSlide = caseSlide > 0f ? Math.max(0f, caseSlide - d)
+                    : Math.min(0f, caseSlide + d);
+        }
 
         // Cleared here, above the early return, and raised again by the enemy loop below.
         // Resetting it after the return left the red edge glow stuck on at whatever the
@@ -1108,9 +1206,30 @@ final class GameCore {
 
         score += FREE_BONUS;
         if (lives < START_LIVES) lives++;
+        awardPrize();
         // Hold the interlude open long enough to watch it escape, plus the status beat.
         bonusTimer = Math.max(bonusTimer, steamer.freedT + BONUS_STATUS + 0.2f);
         if (sound != null) sound.achievement();
+    }
+
+    /**
+     * Opens the blind box the freed dumpling was carrying. A new entry goes into the case
+     * and is written through to the store immediately; a duplicate pays out instead.
+     *
+     * The display case is left showing whatever came out, so the next visit to the title
+     * screen opens on the prize rather than wherever the player had scrolled to.
+     */
+    private void awardPrize() {
+        prize = Collect.roll(rnd, collected);
+        prizeNew = !Collect.has(collected, prize);
+        if (prizeNew) {
+            collected = Collect.add(collected, prize);
+            if (store != null) store.saveCollected(collected);
+        } else {
+            score += DUPE_BONUS;
+        }
+        caseIndex = prize;
+        caseSlide = 0f;
     }
 
     /**

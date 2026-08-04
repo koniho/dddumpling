@@ -1,0 +1,335 @@
+package com.sram.hexatype;
+
+/** The collectible catalogue, the blind-box odds, the display case and its persistence. */
+final class TestCollect extends Check {
+
+    /**
+     * Empties the wave so the interlude opens, without having to play a whole stage first.
+     * The interlude only follows a cleared wave, so the quota has to be marked out as well
+     * as the field.
+     */
+    private static boolean toBonus(GameCore c, Layout L) {
+        c.spawnedThisStage = c.stageQuota();
+        c.enemies.clear();
+        c.shots.clear();
+        return advanceToBonus(c, L);
+    }
+
+    /** Alternates the wanted pair enough times to lift the lid clear. */
+    private static void mash(GameCore c) {
+        for (int i = 0; i < GameCore.STEAMER_HITS * 2 + 4; i++) c.tapBonus(c.steamer.wanted());
+    }
+
+    static void catalogue(Layout L) {
+        group("collectible catalogue");
+        check("thirty entries", Collect.COUNT == 30);
+        check("every table is the same length",
+                Collect.NAME.length == Collect.COUNT && Collect.FAMILY.length == Collect.COUNT
+                        && Collect.SHAPE.length == Collect.COUNT
+                        && Collect.FINISH.length == Collect.COUNT
+                        && Collect.TIER.length == Collect.COUNT
+                        && Collect.BODY.length == Collect.COUNT
+                        && Collect.ACCENT.length == Collect.COUNT);
+
+        boolean named = true, unique = true, inRange = true, opaque = true;
+        for (int i = 0; i < Collect.COUNT; i++) {
+            if (Collect.NAME[i] == null || Collect.NAME[i].length() == 0) named = false;
+            for (int k = i + 1; k < Collect.COUNT; k++) {
+                if (Collect.NAME[i].equals(Collect.NAME[k])) unique = false;
+            }
+            if (Collect.SHAPE[i] < 0 || Collect.SHAPE[i] >= Collect.SHAPE_COUNT) inRange = false;
+            if (Collect.FINISH[i] < 0 || Collect.FINISH[i] >= Collect.FINISH_COUNT) {
+                inRange = false;
+            }
+            if (Collect.TIER[i] < 0 || Collect.TIER[i] >= Collect.TIER_NAME.length) {
+                inRange = false;
+            }
+            if (Collect.FAMILY[i] < 0 || Collect.FAMILY[i] >= Collect.FAMILY_NAME.length) {
+                inRange = false;
+            }
+            // Fully opaque, so fadeBy has the whole range to dim a neighbour through.
+            if ((Collect.BODY[i] >>> 24) != 0xFF || (Collect.ACCENT[i] >>> 24) != 0xFF) {
+                opaque = false;
+            }
+        }
+        check("every entry is named", named);
+        check("no two entries share a name", unique);
+        check("every shape, finish, tier and family is a real one", inRange);
+        check("every colour is opaque", opaque);
+
+        // All fifteen shapes and all nine finishes earn their keep; an unused one is either a
+        // catalogue gap or dead drawing code.
+        boolean[] shapeSeen = new boolean[Collect.SHAPE_COUNT];
+        boolean[] finishSeen = new boolean[Collect.FINISH_COUNT];
+        int[] tierCount = new int[Collect.TIER_NAME.length];
+        int[] familyCount = new int[Collect.FAMILY_NAME.length];
+        for (int i = 0; i < Collect.COUNT; i++) {
+            shapeSeen[Collect.SHAPE[i]] = true;
+            finishSeen[Collect.FINISH[i]] = true;
+            tierCount[Collect.TIER[i]]++;
+            familyCount[Collect.FAMILY[i]]++;
+        }
+        boolean allShapes = true, allFinishes = true;
+        for (int i = 0; i < shapeSeen.length; i++) if (!shapeSeen[i]) allShapes = false;
+        for (int i = 0; i < finishSeen.length; i++) if (!finishSeen[i]) allFinishes = false;
+        check("every shape is used", allShapes);
+        check("every finish is used", allFinishes);
+
+        boolean everyTier = true;
+        for (int t = 0; t < tierCount.length; t++) if (tierCount[t] == 0) everyTier = false;
+        check("every tier has entries", everyTier);
+        check("exactly one grail", tierCount[Collect.GRAIL] == 1);
+        check("commons outnumber chases", tierCount[Collect.COMMON] > tierCount[Collect.CHASE]);
+        boolean everyFamily = true;
+        for (int f = 0; f < familyCount.length; f++) {
+            if (familyCount[f] < 5) everyFamily = false;
+        }
+        check("all three families are properly stocked", everyFamily);
+        System.out.printf("    tiers %d/%d/%d/%d/%d, families %d/%d/%d%n",
+                tierCount[0], tierCount[1], tierCount[2], tierCount[3], tierCount[4],
+                familyCount[0], familyCount[1], familyCount[2]);
+
+        // Trinket fits banded finishes to an ellipse, so they only look right on a shape that
+        // fills one. Nothing stops a new row breaking that but this.
+        boolean bandsFit = true;
+        for (int i = 0; i < Collect.COUNT; i++) {
+            if (Collect.banded(Collect.FINISH[i]) && !Collect.roundish(Collect.SHAPE[i])) {
+                bandsFit = false;
+                System.out.println("    banded finish on a non-round shape: " + Collect.NAME[i]);
+            }
+        }
+        check("banded finishes only sit on round shapes", bandsFit);
+
+        boolean weightsFall = true;
+        for (int t = 1; t < Collect.TIER_WEIGHT.length; t++) {
+            if (Collect.TIER_WEIGHT[t] >= Collect.TIER_WEIGHT[t - 1]) weightsFall = false;
+        }
+        check("rarer tiers are strictly rarer", weightsFall);
+    }
+
+    static void ownedSet(Layout L) {
+        group("collected set");
+        check("nothing owned to begin with", Collect.owned(0L) == 0);
+        check("an empty case is not complete", !Collect.complete(0L));
+        check("the full mask is complete", Collect.complete(Collect.MASK));
+        check("the mask covers exactly the entries",
+                Long.bitCount(Collect.MASK) == Collect.COUNT);
+
+        long m = 0L;
+        boolean roundTrip = true;
+        for (int i = 0; i < Collect.COUNT; i++) {
+            if (Collect.has(m, i)) roundTrip = false;
+            m = Collect.add(m, i);
+            if (!Collect.has(m, i)) roundTrip = false;
+            if (Collect.owned(m) != i + 1) roundTrip = false;
+        }
+        check("adding each entry once fills the case", roundTrip && Collect.complete(m));
+        check("adding twice is a no-op", Collect.add(m, 3) == m);
+        check("out-of-range indices are ignored",
+                !Collect.has(m, -1) && !Collect.has(m, Collect.COUNT)
+                        && Collect.add(0L, Collect.COUNT) == 0L);
+        // A corrupt store must not be able to inflate the count past the catalogue.
+        check("junk in the high bits is masked off",
+                Collect.owned(-1L) == Collect.COUNT);
+    }
+
+    static void blindBox(Layout L) {
+        group("blind box odds");
+        java.util.Random rnd = new java.util.Random(77L);
+        int[] tierHits = new int[Collect.TIER_NAME.length];
+        boolean inRange = true;
+        int draws = 60000;
+        for (int i = 0; i < draws; i++) {
+            int pick = Collect.roll(rnd, 0L);
+            if (pick < 0 || pick >= Collect.COUNT) inRange = false;
+            else tierHits[Collect.TIER[pick]]++;
+        }
+        check("every roll is a real entry", inRange);
+        System.out.printf("    %d draws from an empty case: %d common, %d uncommon, %d rare, "
+                + "%d chase, %d grail%n", draws, tierHits[0], tierHits[1], tierHits[2],
+                tierHits[3], tierHits[4]);
+        check("commons dominate", tierHits[Collect.COMMON] > tierHits[Collect.RARE]);
+        check("rares beat chases", tierHits[Collect.RARE] > tierHits[Collect.CHASE]);
+        check("chases beat the grail", tierHits[Collect.CHASE] > tierHits[Collect.GRAIL]);
+        check("the grail is reachable", tierHits[Collect.GRAIL] > 0);
+
+        // The re-roll is what makes early opens feel like progress: with one entry missing,
+        // rolling should land on it far more often than its bare weight would suggest.
+        long allButOne = Collect.MASK & ~(1L << 5);
+        int found = 0;
+        for (int i = 0; i < 2000; i++) {
+            if (Collect.roll(rnd, allButOne) == 5) found++;
+        }
+        System.out.printf("    the one missing entry came up %d times in 2000%n", found);
+        check("rolling favours what is missing", found > 2000 / Collect.COUNT);
+
+        // And a full case must still hand something back rather than spinning or failing.
+        boolean fullOk = true;
+        for (int i = 0; i < 500; i++) {
+            int pick = Collect.roll(rnd, Collect.MASK);
+            if (pick < 0 || pick >= Collect.COUNT) fullOk = false;
+        }
+        check("a full case still rolls a valid entry", fullOk);
+    }
+
+    static void winning(Layout L) {
+        group("winning a collectible");
+        Mem store = new Mem();
+        GameCore c = new GameCore(store, 91L);
+        c.startGame();
+        check("no prize before the steamer opens", c.prize < 0);
+        check("case starts empty", Collect.owned(c.collected) == 0);
+
+        check("reached the interlude", toBonus(c, L));
+        mash(c);
+        check("freeing the dumpling awards a collectible", c.prize >= 0
+                && c.prize < Collect.COUNT);
+        check("the first one is always new", c.prizeNew);
+        check("it lands in the case", Collect.has(c.collected, c.prize));
+        check("the case is written straight to the store",
+                store.collected == c.collected && store.collectedSaves == 1);
+        check("the display case moves to the prize", c.caseIndex == c.prize);
+        if (c.prize >= 0) {
+            System.out.printf("    won %s (%s)%n", Collect.NAME[c.prize],
+                    Collect.TIER_NAME[Collect.TIER[c.prize]]);
+        }
+
+        // With everything already owned, an open has to pay out instead of adding.
+        GameCore d = new GameCore(new Mem(), 93L);
+        d.startGame();
+        d.collected = Collect.MASK;
+        check("reached the interlude with a full case", toBonus(d, L));
+        int before = d.score;
+        mash(d);
+        check("a duplicate is flagged as one", d.prize >= 0 && !d.prizeNew);
+        check("a duplicate pays the consolation",
+                d.score >= before + GameCore.FREE_BONUS + GameCore.DUPE_BONUS);
+        check("a duplicate leaves the case as it was", Collect.complete(d.collected));
+
+        // The collection is the one thing that outlives a run.
+        Mem kept = new Mem();
+        kept.collected = 0b1011L;
+        GameCore e = new GameCore(kept, 95L);
+        check("the case reloads from the store", Collect.owned(e.collected) == 3);
+        e.startGame();
+        check("starting a run keeps the case", Collect.owned(e.collected) == 3);
+        check("starting a run clears the last prize", e.prize < 0);
+    }
+
+    static void displayCase(Layout L) {
+        group("display case");
+        GameCore c = new GameCore(new Mem(), 97L);
+        check("opens on the title screen", c.state == GameCore.TITLE);
+        check("opens on the first entry", c.caseIndex == 0);
+
+        c.scrollCase(1);
+        check("scrolling right advances one", c.caseIndex == 1);
+        check("the shelf slides in from the right", c.caseSlide > 0f);
+        advance(c, L, 1f);
+        check("the slide settles", c.caseSlide == 0f);
+
+        c.scrollCase(-1);
+        check("scrolling left goes back", c.caseIndex == 0);
+        check("the shelf slides in from the left", c.caseSlide < 0f);
+
+        c.scrollCase(-1);
+        check("scrolling off the front wraps to the end",
+                c.caseIndex == Collect.COUNT - 1);
+        c.scrollCase(1);
+        check("and back round to the front", c.caseIndex == 0);
+
+        boolean wrapped = true;
+        for (int i = -3; i < Collect.COUNT + 3; i++) {
+            int w = Showcase.wrap(i);
+            if (w < 0 || w >= Collect.COUNT) wrapped = false;
+        }
+        check("wrap always lands inside the catalogue", wrapped);
+
+        // Walking the whole strip must visit every entry exactly once and return home.
+        boolean[] seen = new boolean[Collect.COUNT];
+        for (int i = 0; i < Collect.COUNT; i++) {
+            seen[c.caseIndex] = true;
+            c.scrollCase(1);
+        }
+        boolean all = true;
+        for (int i = 0; i < seen.length; i++) if (!seen[i]) all = false;
+        check("one lap shows every entry", all && c.caseIndex == 0);
+    }
+
+    static void screenKeys(Layout L) {
+        group("start and browse keys");
+        check("the inner four start", GameCore.startKey(1) && GameCore.startKey(2)
+                && GameCore.startKey(3) && GameCore.startKey(4));
+        check("the outer two do not", !GameCore.startKey(0)
+                && !GameCore.startKey(Glyph.COUNT - 1));
+
+        for (int g = 1; g < Glyph.COUNT - 1; g++) {
+            GameCore c = new GameCore(new Mem(), 100L + g);
+            c.tapKey(g, L);
+            check("key " + g + " starts a run from the title", c.state == GameCore.PLAY);
+        }
+
+        GameCore c = new GameCore(new Mem(), 111L);
+        c.tapKey(0, L);
+        check("the left key browses instead of starting",
+                c.state == GameCore.TITLE && c.caseIndex == Collect.COUNT - 1);
+        c.tapKey(Glyph.COUNT - 1, L);
+        check("the right key browses the other way",
+                c.state == GameCore.TITLE && c.caseIndex == 0);
+        check("browsing does not consume a press as a hit", c.hits == 0 && c.misses == 0);
+
+        // Game over: the inner four replay, the outer two go back to the case — which is the
+        // only route back to it once a run has started.
+        c.startGame();
+        c.lives = 1;
+        c.enemies.clear();
+        add(c, L, new int[] {0}, L.dangerY - L.enemyR + 1);
+        advance(c, L, GameCore.ATTACK_TIME + 2 * DT);
+        check("reached game over", c.state == GameCore.OVER);
+        c.tapKey(2, L);
+        check("game over ignores keys during the grace period", c.state == GameCore.OVER);
+        advance(c, L, GameCore.OVER_GRACE + 0.2f);
+        c.tapKey(0, L);
+        check("the outer key returns to the title", c.state == GameCore.TITLE);
+        c.tapKey(3, L);
+        check("and the inner four replay from there", c.state == GameCore.PLAY);
+
+        // The other route: straight back into a run without visiting the title.
+        GameCore d = new GameCore(new Mem(), 113L);
+        d.startGame();
+        d.lives = 1;
+        d.enemies.clear();
+        add(d, L, new int[] {0}, L.dangerY - L.enemyR + 1);
+        advance(d, L, GameCore.ATTACK_TIME + 2 * DT);
+        advance(d, L, GameCore.OVER_GRACE + 0.2f);
+        d.tapKey(4, L);
+        check("game over restarts on an inner key", d.state == GameCore.PLAY);
+    }
+
+    static void clearing(Layout L) {
+        group("clearing the case");
+        Mem store = new Mem();
+        store.collected = Collect.MASK;
+        GameCore c = new GameCore(store, 121L);
+        c.startGame();
+        c.openSettings();
+        check("the button is not armed when the panel opens", !c.clearArmed);
+
+        c.tapClearCase();
+        check("one tap only arms it", c.clearArmed && Collect.complete(c.collected));
+        c.tapClearCase();
+        check("the second tap empties the case", Collect.owned(c.collected) == 0);
+        check("and persists the empty case", store.collected == 0L);
+        check("the button disarms itself again", !c.clearArmed);
+        check("the case falls back to the first entry", c.caseIndex == 0);
+        check("and the last prize goes with it", c.prize < 0);
+
+        // Closing the panel must not leave a live erase waiting for the next visit.
+        c.collected = Collect.MASK;
+        c.tapClearCase();
+        c.closeSettings();
+        c.openSettings();
+        c.tapClearCase();
+        check("reopening the panel disarms the button", Collect.complete(c.collected));
+    }
+}

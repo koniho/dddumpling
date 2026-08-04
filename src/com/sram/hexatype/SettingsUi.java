@@ -6,7 +6,8 @@ package com.sram.hexatype;
  */
 final class SettingsUi {
 
-    static final int HIT_NONE = 0, HIT_SLIDER = 1, HIT_CLOSE = 2, HIT_OUTSIDE = 3;
+    static final int HIT_NONE = 0, HIT_SLIDER = 1, HIT_CLOSE = 2, HIT_OUTSIDE = 3,
+            HIT_CLEAR = 4;
     /** Option rows are HIT_OPTION + index. */
     static final int HIT_OPTION = 100;
     /** Playtest chips are HIT_TEST + mode index. */
@@ -23,6 +24,8 @@ final class SettingsUi {
     float closeCx, closeCy, closeR;
     /** Playtest row: one chip per powerup mode. */
     float testLabelY, testY, testH;
+    /** Empty-the-display-case button, at the foot of the panel. */
+    float clearLabelY, clearY, clearH;
 
     private int options;
 
@@ -36,7 +39,8 @@ final class SettingsUi {
 
         optionH = s * 1.5f;
         testH = s * 1.6f;
-        float bodyH = s * 8.4f + optionH * optionCount + testH + s * 1.5f;
+        clearH = s * 1.6f;
+        float bodyH = s * 8.4f + optionH * optionCount + testH + clearH + s * 3.4f;
         panelT = Math.max(L.topSafe + s, (L.h - bodyH) / 2f - s);
         panelB = panelT + bodyH;
 
@@ -54,6 +58,9 @@ final class SettingsUi {
 
         testLabelY = firstOptionY + optionH * optionCount + s * 1.0f;
         testY = testLabelY + s * 0.35f;
+
+        clearLabelY = testY + testH + s * 1.15f;
+        clearY = clearLabelY + s * 0.35f;
 
         closeR = s * 1.05f;
         closeCx = panelR - closeR * 1.2f;
@@ -121,6 +128,10 @@ final class SettingsUi {
                     return HIT_TEST + i;
                 }
             }
+        }
+
+        if (y >= clearY && y <= clearY + clearH && x >= optionL() && x <= optionR()) {
+            return HIT_CLEAR;
         }
         return HIT_NONE;
     }
