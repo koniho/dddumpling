@@ -214,6 +214,56 @@ final class GameCore {
     Enemy pickedEnemy;
     int pickedTile = -1;
 
+    // ---- FLING touch trail --------------------------------------------------
+    /** Live finger position while dragging, set by the view. */
+    boolean fingerDown;
+    float fingerX, fingerY;
+    /** Cleared when a frenzy starts; set once the player first touches during FLING. */
+    boolean flingUsed;
+    /** Where the instructional finger currently sits, for the renderer to follow. */
+    float demoX, demoY;
+    private float trailAcc;
+
+    /** True while the "drag a letter" demonstration should be on screen. */
+    boolean showFlingHint() {
+        return flinging() && !flingUsed;
+    }
+
+    /**
+     * Emits the sparkle trail: under the finger once the player is dragging, and along the
+     * demonstration path until they have. One rate for both, so the hint looks like the thing
+     * it is teaching.
+     */
+    private void updateTrail(float dt, Layout L) {
+        if (!flinging()) {
+            fingerDown = false;
+            return;
+        }
+        // Sweeps across the middle of the screen, briskly enough that the sparkles behind it
+        // read as a ribbon rather than piling into a clump.
+        demoX = L.w * 0.5f + (float) Math.sin(clock * 2.2f) * L.w * 0.26f;
+        demoY = L.h * 0.45f + (float) Math.cos(clock * 1.5f) * L.h * 0.04f;
+
+        float sx, sy;
+        if (fingerDown) {
+            sx = fingerX;
+            sy = fingerY;
+        } else if (!flingUsed) {
+            sx = demoX;
+            sy = demoY;
+        } else {
+            trailAcc = 0f;
+            return;
+        }
+
+        trailAcc += dt;
+        float per = 1f / 50f;
+        while (trailAcc >= per) {
+            trailAcc -= per;
+            Fx.sparkle(this, rnd, sx, sy, L.enemyR * 0.85f, Glyph.cycle(clock * 1.6f));
+        }
+    }
+
     /** Ticks the frenzy timer, and the drifting letter that starts one. */
     private void updatePower(float dt, Layout L) {
         if (powerActive()) {
@@ -257,6 +307,8 @@ final class GameCore {
         power.hitT = 0f;
         mode = power.effect;
         modeLeft = Power.DURATION;
+        flingUsed = false;
+        fingerDown = false;
         score += Power.SCORE;
         shake = Math.max(shake, 0.5f);
         flash = Math.max(flash, 0.8f);
@@ -288,6 +340,7 @@ final class GameCore {
         skyGlow = 1f;
         skyGlowColor = FLASH_CLEAR;
         shake = Math.max(shake, 0.7f);
+        fingerDown = false;
         if (sound != null) sound.frenzy(false);
     }
 
@@ -738,6 +791,7 @@ final class GameCore {
         if (state != PLAY) return;
 
         updatePower(dt, L);
+        updateTrail(dt, L);
 
         // Stages are discrete waves: a stage releases exactly stageQuota() words, and the
         // next stage cannot start arriving until the field is completely clear.

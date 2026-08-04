@@ -265,6 +265,68 @@ final class TestPower extends Check {
         check("flinging the last letter destroys the word", f.destroyed);
     }
 
+    static void trail(Layout L) {
+        group("fling trail");
+        GameCore c = new GameCore(new Mem(), 210L);
+        c.startGame();
+        c.enemies.clear();
+        c.particles.clear();
+        place(c, L, Power.FLING, 0);
+        c.tapKey(0, L);
+        check("fling is running", c.flinging());
+        check("the hint shows before any touch", c.showFlingHint());
+
+        // Untouched, the demonstration emits its own trail along a moving path.
+        c.particles.clear();
+        float x0 = c.demoX;
+        advance(c, L, 0.4f);
+        check("the demo path moves", c.demoX != x0);
+        check("the demo lays a trail", c.particles.size() > 5);
+        check("the demo stays on screen",
+                c.demoX > 0f && c.demoX < L.w && c.demoY > 0f && c.demoY < L.deckTop);
+
+        // Touching retires the hint and moves the trail under the finger.
+        c.flingUsed = true;
+        c.fingerDown = true;
+        c.fingerX = L.w * 0.3f;
+        c.fingerY = L.h * 0.3f;
+        c.particles.clear();
+        advance(c, L, 0.2f);
+        check("the hint retires after a touch", !c.showFlingHint());
+        check("the trail follows the finger", c.particles.size() > 3);
+        boolean nearFinger = true;
+        for (int i = 0; i < c.particles.size(); i++) {
+            GameCore.Particle q = c.particles.get(i);
+            if (Math.abs(q.x - c.fingerX) > L.w * 0.25f) nearFinger = false;
+        }
+        check("sparkles appear at the finger", nearFinger);
+
+        // Lifting the finger stops it; so does the frenzy ending.
+        c.fingerDown = false;
+        c.particles.clear();
+        advance(c, L, 0.3f);
+        check("lifting off stops the trail", c.particles.isEmpty());
+
+        c.fingerDown = true;
+        c.modeLeft = 0.001f;
+        advance(c, L, 0.2f);
+        check("the frenzy ending releases the finger", !c.fingerDown);
+        check("no trail once fling is over", !c.flinging());
+
+        // Other modes must not emit a trail or show the hint.
+        GameCore d = new GameCore(new Mem(), 211L);
+        d.startGame();
+        d.enemies.clear();
+        place(d, L, Power.MULTI, 0);
+        d.tapKey(0, L);
+        d.particles.clear();
+        advance(d, L, 0.4f);
+        check("no fling hint in other modes", !d.showFlingHint());
+        check("no trail in other modes", d.particles.isEmpty());
+
+        check("words arrive six times faster during a frenzy", Power.SPAWN_RATE == 6f);
+    }
+
     static void soak(Layout L) {
         group("powerup soak");
         GameCore c = new GameCore(new Mem(), 209L);

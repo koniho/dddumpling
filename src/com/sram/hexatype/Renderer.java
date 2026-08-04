@@ -37,6 +37,7 @@ final class Renderer extends Draw {
         powerup(p, c, L);
         shots(p, c, L);
         particles(p, c);
+        flingHint(p, c, L);
 
         // ...and the nearest one in front of them, so words pass behind it. Kept the most
         // translucent of the three: it drifts over the play area and must never hide a letter.
@@ -256,6 +257,40 @@ final class Renderer extends Draw {
 
         p.text(w.name(), w.x, y - r * 1.7f, L.unit * 0.56f, Glyph.withAlpha(INK, 240),
                 Painter.CENTER, true);
+    }
+
+    /**
+     * Instructional finger for FLING, shown until the player first touches. A hand outline
+     * tracing the same arc the sparkle trail follows, so the hint demonstrates the gesture
+     * rather than describing it.
+     */
+    static void flingHint(Painter p, GameCore c, Layout L) {
+        if (!c.showFlingHint()) return;
+        float x = c.demoX, y = c.demoY;
+        float r = L.enemyR * 0.85f;
+
+        // Ripples spreading from the fingertip. Stroked thick: thin arcs come out looking
+        // dotted, because the rasterizer draws them as round-capped segments.
+        for (int k = 1; k <= 3; k++) {
+            float t = ((c.clock * 0.9f) + k * 0.33f) % 1f;
+            p.strokeCircle(x, y, r * (0.8f + t * 2.0f),
+                    Glyph.withAlpha(INK, (int) (120 * (1f - t))), r * 0.22f);
+        }
+
+        // A hand: tapered finger angled down-right from the tip, into a rounded knuckle.
+        float a = 0.68f;
+        float dx = (float) Math.cos(a), dy = (float) Math.sin(a);
+        p.fillPoly(new float[] {
+                x - dy * r * 0.46f, y + dx * r * 0.46f,
+                x + dy * r * 0.46f, y - dx * r * 0.46f,
+                x + dx * r * 2.0f + dy * r * 0.72f, y + dy * r * 2.0f - dx * r * 0.72f,
+                x + dx * r * 2.0f - dy * r * 0.72f, y + dy * r * 2.0f + dx * r * 0.72f,
+        }, Glyph.withAlpha(INK, 150));
+        p.fillCircle(x + dx * r * 2.1f, y + dy * r * 2.1f, r * 0.80f,
+                Glyph.withAlpha(INK, 150));
+        // Fingertip, bright, sitting on the letters it is about to drag.
+        p.fillCircle(x, y, r * 0.62f, Glyph.withAlpha(INK, 245));
+        p.fillCircle(x, y, r * 0.30f, Glyph.withAlpha(0xFF2A2348, 210));
     }
 
     static void shots(Painter p, GameCore c, Layout L) {

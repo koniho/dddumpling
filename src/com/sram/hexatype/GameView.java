@@ -134,12 +134,24 @@ public class GameView extends View {
 
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
             if (y > layout.deckTop) return false;          // that is the key deck
-            if (!core.pickTile(x, y, layout)) return false;
-            grabbed = core.pickedEnemy;
-            grabbedTile = core.pickedTile;
-            grabX = x;
-            grabY = y;
+            // The trail follows the finger anywhere in the field, whether or not the touch
+            // landed on a letter, and touching once retires the instructional hint.
+            core.fingerDown = true;
+            core.fingerX = x;
+            core.fingerY = y;
+            core.flingUsed = true;
+            if (core.pickTile(x, y, layout)) {
+                grabbed = core.pickedEnemy;
+                grabbedTile = core.pickedTile;
+                grabX = x;
+                grabY = y;
+            }
             return true;
+        }
+
+        if (action == MotionEvent.ACTION_MOVE) {
+            core.fingerX = x;
+            core.fingerY = y;
         }
 
         if (action == MotionEvent.ACTION_MOVE && grabbed != null) {
@@ -162,12 +174,13 @@ public class GameView extends View {
 
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
                 || action == MotionEvent.ACTION_POINTER_UP) {
-            boolean had = grabbed != null;
+            boolean had = grabbed != null || core.fingerDown;
+            core.fingerDown = false;
             grabbed = null;
             grabbedTile = -1;
             return had;
         }
-        return false;
+        return core.fingerDown;
     }
 
     private void handleSettings(float x, float y, boolean dragging) {

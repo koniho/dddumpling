@@ -44,6 +44,23 @@ final class Fx {
         }
     }
 
+    /**
+     * One sparkle, for the trail that follows a finger during FLING. Slower and longer-lived
+     * than an explosion mote, so a drag leaves a readable ribbon rather than a puff.
+     */
+    static void sparkle(GameCore c, Random rnd, float x, float y, float size, int color) {
+        GameCore.Particle p = new GameCore.Particle();
+        p.x = x + (rnd.nextFloat() - 0.5f) * size * 1.6f;
+        p.y = y + (rnd.nextFloat() - 0.5f) * size * 1.6f;
+        p.vx = (rnd.nextFloat() - 0.5f) * size * 2.2f;
+        p.vy = (rnd.nextFloat() - 0.5f) * size * 2.2f;
+        p.max = 0.40f + rnd.nextFloat() * 0.40f;
+        p.life = p.max;
+        p.size = size * (0.22f + rnd.nextFloat() * 0.30f);
+        p.color = color;
+        c.particles.add(p);
+    }
+
     static void updateParticles(GameCore c, float dt) {
         for (int i = c.particles.size() - 1; i >= 0; i--) {
             GameCore.Particle p = c.particles.get(i);

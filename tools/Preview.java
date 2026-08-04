@@ -215,6 +215,23 @@ final class Preview {
                 Power.NAMES[c9.mode], c9.modeLeft, c9.enemies.size());
         shot(dir, "17-frenzy", c9, L, w, h, ss);
 
+        // FLING with the instructional finger and its sparkle trail.
+        GameCore c10 = new GameCore(store, 43L);
+        c10.startGame();
+        c10.score = 2400;
+        step(c10, L, 1.9f);
+        Power fl = new Power();
+        fl.glyph = 5;
+        fl.effect = Power.FLING;
+        fl.y = L.playTop + 100f;
+        fl.x = L.w * 0.5f;
+        c10.power = fl;
+        c10.tapKey(5, L);
+        step(c10, L, 1.6f);
+        System.out.printf("fling hint: showing=%s demo=(%.0f,%.0f) sparkles=%d%n",
+                c10.showFlingHint(), c10.demoX, c10.demoY, c10.particles.size());
+        shot(dir, "18-fling-hint", c10, L, w, h, ss);
+
         // Settings panel, opened mid-game.
         GameCore c6 = new GameCore(store, 29L);
         c6.startGame();
