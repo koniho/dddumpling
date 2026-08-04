@@ -3,6 +3,11 @@
 Read this before touching anything. It exists to save you the discoveries that cost time
 the first time round.
 
+[GLOSSARY.md](GLOSSARY.md) names every game element and maps the plain-English term to the
+code. Use those names back to the user; several differ from the identifiers (a falling word is
+`Enemy`, the frenzy is `mode`, the interlude is `BONUS`), and getting them wrong wastes a round
+trip working out which thing was meant.
+
 ## The one thing that matters most
 
 **You can see and hear this game without building or installing it.** `./check.sh` runs the
