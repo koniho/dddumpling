@@ -139,6 +139,28 @@ final class TestStages extends Check {
         check("a flawed wave goes straight to the interlude", d.state == GameCore.BONUS);
     }
 
+    /** The interlude heading swells into place over the fade-in. */
+    static void bonusIntro(Layout L) {
+        group("interlude intro");
+        check("starts large", Screens.introScale(0f) > 1.5f);
+        check("settles at full size",
+                Math.abs(Screens.introScale(Screens.INTRO_TIME) - 1f) < 0.001f);
+        check("stays settled afterwards", Screens.introScale(5f) == 1f);
+
+        // Shrinks overall, dipping just under the target before springing back — so it is
+        // deliberately not monotone at the tail.
+        float smallest = Float.MAX_VALUE, largest = 0f;
+        for (float t = 0f; t <= Screens.INTRO_TIME; t += Screens.INTRO_TIME / 60f) {
+            float v = Screens.introScale(t);
+            smallest = Math.min(smallest, v);
+            largest = Math.max(largest, v);
+        }
+        check("it shrinks overall", largest == Screens.introScale(0f));
+        check("it dips just past the target", smallest < 1f && smallest > 0.85f);
+        check("never inverted or absurd",
+                Screens.introScale(0f) < 3f && Screens.introScale(0.01f) > 0f);
+    }
+
     static void steamerBonus(Layout L) {
         group("between-stages minigame");
         GameCore c = new GameCore(new Mem(), 121L);

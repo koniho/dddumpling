@@ -25,6 +25,7 @@ aapt2 compile --dir res -o "$OUT/res.zip"
 aapt2 link -o "$OUT/base.apk" -I "$SDK" \
     --manifest AndroidManifest.xml \
     --java "$OUT/gen" --min-sdk-version "$MIN" --target-sdk-version "$TGT" \
+    -A assets \
     "$OUT/res.zip"
 
 echo ">> java"

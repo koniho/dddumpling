@@ -12,12 +12,29 @@ final class CanvasPainter implements Painter {
     private final Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint type = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path path = new Path();
-    private final Typeface regular = Typeface.create("sans-serif-medium", Typeface.NORMAL);
-    private final Typeface heavy = Typeface.create("sans-serif", Typeface.BOLD);
+    private final Typeface regular;
+    private final Typeface heavy;
 
     private Canvas canvas;
 
+    /**
+     * @param face the game face, or null to fall back to the platform sans-serif. Bold is
+     *     synthesised from it rather than loaded separately: the bundled Quicksand is a
+     *     variable font whose named weights need API 26, and a faux-bold is indistinguishable
+     *     at these sizes.
+     */
+    CanvasPainter(Typeface face) {
+        regular = face != null ? face : Typeface.create("sans-serif-medium", Typeface.NORMAL);
+        heavy = face != null ? Typeface.create(face, Typeface.BOLD)
+                : Typeface.create("sans-serif", Typeface.BOLD);
+        init();
+    }
+
     CanvasPainter() {
+        this(null);
+    }
+
+    private void init() {
         fill.setStyle(Paint.Style.FILL);
         stroke.setStyle(Paint.Style.STROKE);
         stroke.setStrokeJoin(Paint.Join.ROUND);

@@ -25,6 +25,7 @@ final class CoreTest {
 
         TestStages.waves(L);
         TestStages.bonusOrdering(L);
+        TestStages.bonusIntro(L);
         TestStages.steamerBonus(L);
         TestStages.accuracyTracking(L);
         TestStages.warningsAndHarm(L);

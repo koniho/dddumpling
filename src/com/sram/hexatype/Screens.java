@@ -107,6 +107,25 @@ final class Screens extends Draw {
     }
 
 
+    /** How long the interlude heading takes to swell into place. */
+    static final float INTRO_TIME = 0.55f;
+
+    /**
+     * Size multiplier for the interlude heading: starts large, overshoots small and settles
+     * at 1. Scaling down into place reads as the text arriving from the front, which suits a
+     * scene that is fading up underneath it.
+     */
+    static float introScale(float time) {
+        if (time >= INTRO_TIME) return 1f;
+        float t = time / INTRO_TIME;
+        // Ease-out-back: carries the progress slightly past 1 before returning, which on a
+        // shrinking size means the text dips just under its final size and springs back.
+        float c1 = 1.70158f, c3 = c1 + 1f;
+        float u = t - 1f;
+        float back = 1f + c3 * u * u * u + c1 * u * u;
+        return 1.9f - 0.9f * back;
+    }
+
     /**
      * Between-stages minigame: mash any key to lever the lid off a dim sum steamer and free
      * the rainbow dumpling inside. Progress carries across interludes, so the lid creeps up
@@ -131,8 +150,12 @@ final class Screens extends Draw {
         float bw = Math.min(L.w * 0.30f, s * 7.0f);
         float bh = s * 3.4f;
 
+        // Heading swells in over the fade, overshooting and settling, so the interlude
+        // announces itself instead of simply appearing.
+        float intro = introScale(c.time);
         p.text(freed ? "FREE!" : "FREE THE DUMPLING", cx, L.h * 0.235f,
-                s * (freed ? 1.5f : 0.95f), fadeBy(freed ? GOLD : INK, fade), Painter.CENTER, true);
+                s * (freed ? 1.5f : 0.95f) * intro,
+                fadeBy(freed ? GOLD : INK, fade), Painter.CENTER, true);
         if (!freed) {
             p.text("MASH ANY KEY", cx, L.h * 0.235f + s * 1.2f, s * 0.62f,
                     fadeBy(INK_DIM, fade), Painter.CENTER, false);

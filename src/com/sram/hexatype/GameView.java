@@ -14,7 +14,7 @@ public class GameView extends View {
 
     private final GameCore core;
     private final Layout layout = new Layout();
-    private final CanvasPainter painter = new CanvasPainter();
+    private final CanvasPainter painter;
     private final SettingsUi settingsUi = new SettingsUi();
 
     private float padL, padT, padR, padB;
@@ -22,10 +22,24 @@ public class GameView extends View {
 
     GameView(Context ctx, GameCore.Store store, GameCore.Sound sound) {
         super(ctx);
+        painter = new CanvasPainter(loadFace(ctx));
         core = new GameCore(store, SystemClock.elapsedRealtimeNanos());
         core.sound = sound;
         setKeepScreenOn(true);
         setClickable(true);
+    }
+
+    /**
+     * The bundled rounded face, or null to let {@link CanvasPainter} fall back to the
+     * platform sans-serif. A missing or unreadable font must never stop the game starting.
+     */
+    private static android.graphics.Typeface loadFace(Context ctx) {
+        try {
+            return android.graphics.Typeface.createFromAsset(ctx.getAssets(),
+                    "fonts/Quicksand.ttf");
+        } catch (Throwable e) {
+            return null;
+        }
     }
 
     private void relayout() {
