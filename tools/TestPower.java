@@ -118,6 +118,9 @@ final class TestPower extends Check {
         c.enemies.clear();
         add(c, L, new int[] {1, 2}, L.playTop + 200);
         add(c, L, new int[] {3, 4}, L.playTop + 400);
+        // Headroom: fifteen idle seconds at 6x spawn and 2x fall would otherwise end the
+        // run, and the frenzy timer is what is under test here, not survival.
+        c.lives = 50;
         advance(c, L, Power.DURATION);
         check("the frenzy ends", !c.powerActive() && c.mode == -1);
         check("the music switches back", !ear.frenzyOn && ear.frenzyCalls == fc0 + 2);
@@ -327,6 +330,68 @@ final class TestPower extends Check {
         check("words arrive six times faster during a frenzy", Power.SPAWN_RATE == 6f);
     }
 
+    static void frenzyFallSpeed(Layout L) {
+        group("frenzy fall speed");
+        GameCore c = new GameCore(new Mem(), 212L);
+        c.startGame();
+        check("normal fall rate outside a frenzy", c.fallRate() == 1f);
+
+        // A word already on screen when the frenzy starts must speed up too.
+        c.enemies.clear();
+        GameCore.Enemy e = add(c, L, new int[] {1, 2}, L.playTop + 100);
+        e.speed = 200f;
+        c.update(DT, L);
+        float slowStep = e.y - (L.playTop + 100f);
+
+        place(c, L, Power.MULTI, 0);
+        c.tapKey(0, L);
+        check("frenzy doubles the fall rate", c.fallRate() == Power.FALL_RATE);
+        float before = e.y;
+        c.update(DT, L);
+        float fastStep = e.y - before;
+        check("an in-flight word speeds up mid-fall",
+                Math.abs(fastStep - slowStep * Power.FALL_RATE) < 0.01f);
+
+        // And slows back down when it lapses.
+        c.modeLeft = 0f;
+        c.mode = -1;
+        before = e.y;
+        c.update(DT, L);
+        check("it slows back down afterwards",
+                Math.abs((e.y - before) - slowStep) < 0.01f);
+        check("fall rate is back to normal", c.fallRate() == 1f);
+
+        // The player's own speed setting still compounds with it.
+        c.setSpeed(GameCore.SPEED_MAX);
+        float fastTravel = c.travelSeconds();
+        c.setSpeed(GameCore.SPEED_MIN);
+        check("the speed setting is independent of the frenzy",
+                c.travelSeconds() > fastTravel);
+
+        // Dying mid-frenzy must end it. updatePower only runs during PLAY, so without an
+        // explicit teardown the mode stayed live and the driven music carried on into the
+        // game-over screen.
+        GameCore d = new GameCore(new Mem(), 213L);
+        Ear ear = new Ear();
+        d.sound = ear;
+        d.startGame();
+        place(d, L, Power.FLURRY, 0);
+        d.tapKey(0, L);
+        check("frenzy is running before the last hit", d.powerActive());
+        int fc = ear.frenzyCalls;
+
+        d.lives = 1;
+        d.enemies.clear();
+        add(d, L, new int[] {0}, L.dangerY - L.enemyR + 1);
+        advance(d, L, GameCore.ATTACK_TIME + 4 * DT);
+        check("the run ended", d.state == GameCore.OVER);
+        check("dying ends the frenzy", !d.powerActive() && d.mode == -1);
+        check("and restores the music", ear.frenzyCalls == fc + 1 && !ear.frenzyOn);
+        check("and drops the powerup letter", d.power == null);
+        advance(d, L, 1.0f);
+        check("it stays ended", !d.powerActive());
+    }
+
     static void playtest(Layout L) {
         group("playtest hook");
         SettingsUi ui = new SettingsUi();
@@ -368,6 +433,7 @@ final class TestPower extends Check {
             check("playtest " + Power.NAMES[m] + " awards no score", c.score == 0);
 
             // And it ends like any other frenzy: stage cleared, interlude follows.
+            c.lives = 50;                    // as above: testing the timer, not survival
             advance(c, L, Power.DURATION + 0.1f);
             check("playtest " + Power.NAMES[m] + " ends the stage",
                     c.spawnedThisStage >= c.stageQuota());

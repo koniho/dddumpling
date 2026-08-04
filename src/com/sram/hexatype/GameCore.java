@@ -210,6 +210,15 @@ final class GameCore {
 
     boolean multi() { return powerActive() && mode == Power.MULTI; }
 
+    /**
+     * Fall-speed multiplier. Applied per frame rather than baked into a word's speed at
+     * spawn, so words already on screen speed up too and slow back down when the frenzy
+     * ends — otherwise a frenzy would only affect whatever arrived during it.
+     */
+    float fallRate() {
+        return powerActive() ? Power.FALL_RATE : 1f;
+    }
+
     /** Scratch results from {@link #pickTile}. */
     Enemy pickedEnemy;
     int pickedTile = -1;
@@ -837,6 +846,9 @@ final class GameCore {
         float band = Math.max(1f, (L.dangerY - L.playTop) * WARN_BAND);
 
         for (int i = enemies.size() - 1; i >= 0; i--) {
+            // A fatal breach clears the whole field from under this loop, and walking
+            // downward is not enough on its own: the lower indices are gone too.
+            if (i >= enemies.size()) continue;
             Enemy e = enemies.get(i);
             e.hitPulse = decay(e.hitPulse, dt * 6.5f);
             e.failPulse = decay(e.failPulse, dt * 2.8f);
@@ -872,11 +884,13 @@ final class GameCore {
                     // invalidate this index.
                     enemies.remove(i);
                     breach(e, L);
+                    // Nothing left to simulate once the run is over.
+                    if (state != PLAY) return;
                 }
                 continue;
             }
 
-            e.y += e.speed * dt;
+            e.y += e.speed * fallRate() * dt;
             e.warn = clamp01((e.y - (L.dangerY - band)) / band);
             if (e.warn > warnLevel) warnLevel = e.warn;
 
@@ -1075,6 +1089,16 @@ final class GameCore {
             enemies.clear();
             shots.clear();
             target = null;
+            // Dying mid-frenzy has to end the frenzy here: updatePower only runs during
+            // PLAY, so otherwise the mode would stay live and the driven music would carry
+            // on into the game-over screen.
+            if (powerActive()) {
+                mode = -1;
+                modeLeft = 0f;
+                fingerDown = false;
+                if (sound != null) sound.frenzy(false);
+            }
+            power = null;
             if (score > best) {
                 best = score;
                 if (store != null) store.saveBest(best);

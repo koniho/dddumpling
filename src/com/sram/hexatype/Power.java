@@ -27,6 +27,8 @@ final class Power {
     static final float DURATION = 15f;
     /** Words arrive this many times faster during the frenzy. */
     static final float SPAWN_RATE = 6f;
+    /** And fall this many times faster. */
+    static final float FALL_RATE = 2f;
     /** Clouds run this many times faster during the frenzy. */
     static final float SKY_RATE = 4f;
     /** Extra interlude time when the stage was ended by a frenzy. */
