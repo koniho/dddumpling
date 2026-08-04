@@ -71,6 +71,7 @@ final class TestRules extends Check {
         c.tapKey(2, L);
         check("finishing a word releases the lock", c.target == null);
         check("finished word is marked dying", low.dying);
+        check("a doomed word stops warning at once", low.warn == 0f);
 
         c.tapKey(3, L);
         check("key matching nothing is a miss", c.target == null && c.combo == 0);

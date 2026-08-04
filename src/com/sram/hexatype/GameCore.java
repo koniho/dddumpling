@@ -674,6 +674,10 @@ final class GameCore {
         if (kill) {
             e.dying = true;
             e.deathT = 0;
+            // Doomed from this press, so it stops reading as a threat now rather than when
+            // the shot lands: the update loop skips dying words, freezing whatever warning
+            // state they held for the shot's whole flight.
+            e.warn = 0f;
             target = null;
         }
 
@@ -957,6 +961,14 @@ final class GameCore {
         e.destroyed = true;
         e.destroyT = 0f;
         e.dying = false;
+        // A destroyed word is no longer a threat, so it must stop looking like one. The
+        // update loop skips destroyed words, so whatever warning state it held would
+        // otherwise stay frozen on it for the whole fly-apart: agitated jitter from warn,
+        // and rose telegraph rings from attacking if a frenzy ended on one mid-lunge.
+        e.warn = 0f;
+        e.attacking = false;
+        e.attackT = 0f;
+        e.failPulse = 0f;
         if (target == e) target = null;
         computeFlyDirs(e, L);
 

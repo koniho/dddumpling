@@ -124,6 +124,13 @@ final class TestWords extends Check {
         check("a destroyed word is not typeable", !e.typeable());
         check("a destroyed word lingers on the field", c.enemies.contains(e));
 
+        // A destroyed word must stop showing its warning state. The update loop skips
+        // destroyed words, so anything left set here stays frozen on it for the whole
+        // fly-apart — visible as jitter and rose telegraph rings on a word already dead.
+        check("destroying clears the word's warning", e.warn == 0f);
+        check("destroying clears any lunge", !e.attacking && e.attackT == 0f);
+        check("destroying clears the fail flash", e.failPulse == 0f);
+
         // Fly directions: ends forced outward, middles to the nearer edge.
         check("fly directions assigned", e.flyDir != null && e.flyDir.length == 4);
         check("leftmost tile flies left", e.flyDir[0] == -1f);
