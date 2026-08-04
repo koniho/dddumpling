@@ -89,6 +89,13 @@ abstract class Check {
         return c.state == GameCore.BONUS;
     }
 
+    /** Steps out the far side of the interlude, whatever its current length. */
+    static boolean advancePastBonus(GameCore c, Layout L) {
+        advanceToBonus(c, L);
+        for (int i = 0; i < 60 * 30 && c.state == GameCore.BONUS; i++) c.update(DT, L);
+        return c.state != GameCore.BONUS;
+    }
+
     static void advance(GameCore c, Layout L, float seconds) {
         for (float t = 0; t < seconds; t += DT) c.update(DT, L);
     }

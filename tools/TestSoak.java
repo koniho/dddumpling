@@ -14,7 +14,7 @@ final class TestSoak extends Check {
             frames++;
             if (frames % 2 != 0) continue;
             if (c.state == GameCore.BONUS) {
-                c.tapBonus(frames % Glyph.COUNT);
+                c.tapBonus(c.steamer.wanted());
                 continue;
             }
             GameCore.Enemy e = c.target != null && c.enemies.contains(c.target)
@@ -49,7 +49,7 @@ final class TestSoak extends Check {
             }
             // liveEnemies(), not size(): destroyed words linger while they fly apart, and a
             // frenzy spawns fast enough for several to be in flight at once.
-            if (c.lives < 0 || c.score < 0 || c.liveEnemies() > c.maxEnemies() + 1
+            if (c.lives < 0 || c.score < 0 || c.liveEnemies() > c.crowdCap() + 1
                     || c.combo < 0) {
                 sane = false;
                 break;

@@ -334,6 +334,15 @@ final class Renderer extends Draw {
             }
             if (bad > 0) col = Glyph.mix(col, ROSE, bad);
 
+            // During the interlude only two keys matter; ring them, and mark the next one.
+            if (c.bonusMashing() && (g == c.steamer.leftKey || g == c.steamer.rightKey)) {
+                boolean wanted = g == c.steamer.wanted();
+                float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 8f);
+                p.strokePoly(Glyph.hex(cx, cy, r * 1.16f),
+                        Glyph.withAlpha(wanted ? INK : col,
+                                wanted ? (int) (110 + 145 * pulse) : 90), r * 0.075f);
+            }
+
             if (hint == g) {
                 float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 6f);
                 p.strokePoly(Glyph.hex(cx, cy, r * 1.12f),

@@ -71,13 +71,20 @@ final class Hud extends Draw {
                 Painter.CENTER, false);
     }
 
+    /**
+     * Stage title, with one of ten character vignettes under it in place of the old
+     * "FASTER NOW" line. They cycle by stage, so a run sees all ten.
+     */
     static void stageBanner(Painter p, GameCore c, Layout L) {
         float k = Math.min(1f, c.stageBanner / 0.4f);
         int a = (int) (235 * k);
-        p.text("STAGE " + c.stage, L.w / 2f, L.h * 0.38f, L.unit * 1.7f,
+        p.text("STAGE " + c.stage, L.w / 2f, L.h * 0.34f, L.unit * 1.7f,
                 Glyph.withAlpha(INK, a), Painter.CENTER, true);
-        p.text("FASTER NOW", L.w / 2f, L.h * 0.38f + L.unit * 1.15f, L.unit * 0.6f,
-                Glyph.withAlpha(ROSE, a), Painter.CENTER, false);
+
+        int skit = Skits.forStage(c.stage);
+        // stageBanner counts down from BANNER_TIME, so invert it into 0..1 progress.
+        float t = 1f - Math.min(1f, Math.max(0f, c.stageBanner / GameCore.BANNER_TIME));
+        Skits.draw(p, L, skit, L.w / 2f, L.h * 0.46f, L.unit * 2.1f, t, a, c.clock);
     }
 
     /**

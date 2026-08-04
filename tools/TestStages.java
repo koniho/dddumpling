@@ -35,7 +35,7 @@ final class TestStages extends Check {
 
             if (frames % 2 != 0) continue;
             if (c.state == GameCore.BONUS) {
-                c.tapBonus(frames % Glyph.COUNT);
+                c.tapBonus(c.steamer.wanted());
                 continue;
             }
             GameCore.Enemy e =
@@ -61,7 +61,7 @@ final class TestStages extends Check {
         int before = w.stage;
         w.update(DT, L);
         check("clearing the wave opens the interlude", advanceToBonus(w, L));
-        advance(w, L, GameCore.BONUS_TIME + 0.2f);
+        advancePastBonus(w, L);
         check("the stage advances after the interlude", w.stage == before + 1);
         check("a breather follows the interlude", w.stageGap > 0f);
         int released = w.spawnedThisStage;
@@ -91,7 +91,7 @@ final class TestStages extends Check {
         b.shots.clear();
         b.update(DT, L);
         check("the interlude opens after a breach", advanceToBonus(b, L));
-        advance(b, L, GameCore.BONUS_TIME + 0.2f);
+        advancePastBonus(b, L);
         check("stage still advances after a breach", b.stage == stageWas + 1);
     }
 
@@ -161,6 +161,108 @@ final class TestStages extends Check {
                 Screens.introScale(0f) < 3f && Screens.introScale(0.01f) > 0f);
     }
 
+    /** The end-of-interlude status hold, and the crowd cap during a frenzy. */
+    static void bonusStatusHold(Layout L) {
+        group("interlude status hold");
+        GameCore c = new GameCore(new Mem(), 141L);
+        c.startGame();
+        c.spawnedThisStage = c.stageQuota();
+        c.enemies.clear();
+        c.shots.clear();
+        check("reaches the interlude", advanceToBonus(c, L));
+        check("the interlude allows for the status hold",
+                c.bonusTimer > GameCore.BONUS_TIME);
+        check("mashing is open at the start", c.bonusMashing() && !c.bonusStatus());
+
+        c.tapBonus(c.steamer.wanted());
+        c.tapBonus(c.steamer.wanted());
+        check("a completed pair lands during the mash phase", c.steamer.hits == 1);
+
+        // Run out the mash phase; the status hold follows and refuses presses.
+        advance(c, L, c.bonusTimer - GameCore.BONUS_STATUS + 2 * DT);
+        check("the status hold starts", c.bonusStatus() && !c.bonusMashing());
+        check("still in the interlude", c.state == GameCore.BONUS);
+        int hits = c.steamer.hits;
+        c.tapBonus(1);
+        check("presses are ignored during the status hold", c.steamer.hits == hits);
+        check("the hold is about a second and a half",
+                Math.abs(GameCore.BONUS_STATUS - 1.5f) < 0.001f);
+
+        advance(c, L, GameCore.BONUS_STATUS + 0.1f);
+        check("play resumes after the hold", c.state == GameCore.PLAY);
+        check("the stage turned over", c.stage == 2);
+
+        // A frenzy allows four times as many words on screen at once.
+        GameCore d = new GameCore(new Mem(), 142L);
+        d.startGame();
+        d.stage = 6;
+        int calm = d.crowdCap();
+        check("the calm cap is the ordinary one", calm == d.maxEnemies());
+        d.startFrenzy(Power.FLURRY, L);
+        check("a frenzy quadruples the cap", d.crowdCap() == (int) (calm * Power.CROWD_RATE));
+        check("that is a real increase", d.crowdCap() > calm);
+        d.mode = -1;
+        d.modeLeft = 0f;
+        check("and it reverts", d.crowdCap() == calm);
+    }
+
+    /** The ten stage vignettes. */
+    static void skits(Layout L) {
+        group("stage vignettes");
+        check("there are ten", Skits.COUNT == 10);
+        check("each is named", Skits.NAMES.length == Skits.COUNT);
+
+        boolean allSeen = true;
+        boolean[] seen = new boolean[Skits.COUNT];
+        for (int stage = 1; stage <= Skits.COUNT; stage++) {
+            int i = Skits.forStage(stage);
+            if (i < 0 || i >= Skits.COUNT) allSeen = false;
+            else seen[i] = true;
+        }
+        for (int i = 0; i < Skits.COUNT; i++) if (!seen[i]) allSeen = false;
+        check("the first ten stages show all ten", allSeen);
+        check("they cycle after that", Skits.forStage(11) == Skits.forStage(1));
+        check("stage 1 is in range", Skits.forStage(1) >= 0);
+
+        // Every skit must draw at any progress without throwing, at any opacity.
+        RasterPainter rp = new RasterPainter(200, 120, 1);
+        rp.clear(0xFF000000);
+        boolean drew = true;
+        try {
+            for (int i = 0; i < Skits.COUNT; i++) {
+                for (float t = 0f; t <= 1f; t += 0.05f) {
+                    Skits.draw(rp, L, i, 100f, 60f, 40f, t, 235, t * 3f);
+                }
+                Skits.draw(rp, L, i, 100f, 60f, 40f, 0f, 0, 0f);
+            }
+            // Out-of-range indices fall back rather than crash.
+            Skits.draw(rp, L, 99, 100f, 60f, 40f, 0.5f, 235, 0f);
+            Skits.draw(rp, L, -1, 100f, 60f, 40f, 0.5f, 235, 0f);
+        } catch (Throwable e) {
+            drew = false;
+            System.out.println("    skit draw threw: " + e);
+        }
+        check("every skit draws at every progress", drew);
+
+        // And each actually puts ink on the canvas somewhere in its run.
+        boolean allDraw = true;
+        for (int i = 0; i < Skits.COUNT; i++) {
+            RasterPainter one = new RasterPainter(200, 120, 1);
+            one.clear(0xFF000000);
+            for (float t = 0f; t <= 1f; t += 0.1f) {
+                Skits.draw(one, L, i, 100f, 60f, 40f, t, 235, t * 3f);
+            }
+            int[] px = one.resolve();
+            boolean any = false;
+            for (int k = 0; k < px.length; k++) if ((px[k] & 0xFFFFFF) != 0) any = true;
+            if (!any) {
+                allDraw = false;
+                System.out.println("    skit " + Skits.NAMES[i] + " drew nothing");
+            }
+        }
+        check("every skit is visible", allDraw);
+    }
+
     static void steamerBonus(Layout L) {
         group("between-stages minigame");
         GameCore c = new GameCore(new Mem(), 121L);
@@ -177,8 +279,35 @@ final class TestStages extends Check {
         check("the lid starts shut", c.steamer.lidOpen() == 0f);
 
         int hitsBefore = c.hits, missesBefore = c.misses;
+
+        // Only the chosen pair counts, and only in alternation.
+        int lk = c.steamer.leftKey, rk = c.steamer.rightKey;
+        check("the pair is one key per thumb",
+                lk < Glyph.COUNT / 2 && rk >= Glyph.COUNT / 2);
+        check("it wants the left one first", c.steamer.expectLeft && c.steamer.wanted() == lk);
+
+        c.tapBonus(rk);
+        check("the right key out of turn scores nothing", c.steamer.hits == 0);
+        check("and restarts the pair", c.steamer.expectLeft);
+        c.tapBonus(lk);
+        check("the left key alone scores nothing yet", c.steamer.hits == 0);
+        check("but it now wants the right one", !c.steamer.expectLeft);
+        c.tapBonus(rk);
+        check("a completed pair scores one", c.steamer.hits == 1);
+        check("and it wants the left one again", c.steamer.expectLeft);
+
+        int other = (lk + 1) % (Glyph.COUNT / 2);
+        c.tapBonus(other);
+        check("a key outside the pair scores nothing", c.steamer.hits == 1);
+        for (int i = 0; i < 3; i++) { c.tapBonus(lk); c.tapBonus(rk); }
+        check("three more pairs score three", c.steamer.hits == 4);
+        check("a press pops the lid", c.steamer.lidPulse > 0f);
+        check("a press flashes the container", c.steamer.flash > 0f);
+        check("the lid is partway open", c.steamer.lidOpen() > 0f && c.steamer.lidOpen() < 1f);
+        // The minigame must not pollute the accuracy readout.
+        check("the minigame is not counted as typing",
+                c.hits == hitsBefore && c.misses == missesBefore);
         for (int g = 0; g < Glyph.COUNT; g++) c.tapBonus(g);
-        check("any of the six keys lands a hit", c.steamer.hits == Glyph.COUNT);
         check("a press pops the lid", c.steamer.lidPulse > 0f);
         check("a press flashes the container", c.steamer.flash > 0f);
         check("the lid is partway open", c.steamer.lidOpen() > 0f && c.steamer.lidOpen() < 1f);
@@ -191,7 +320,7 @@ final class TestStages extends Check {
 
         // Damage carries over: run the interlude out and check the count survives.
         int carried = c.steamer.hits;
-        advance(c, L, GameCore.BONUS_TIME + 0.2f);
+        advancePastBonus(c, L);
         check("the minigame ends by itself", c.state == GameCore.PLAY);
         check("the stage turns over on the way out", c.stage == 2);
         check("steamer damage carries across the interlude", c.steamer.hits == carried);
@@ -210,7 +339,10 @@ final class TestStages extends Check {
         c.lives = GameCore.START_LIVES - 1;
         int scoreBefore = c.score;
         // Bounded: tapBonus is a no-op outside BONUS, so an unbounded loop would hang.
-        for (int i = 0; i <= GameCore.STEAMER_HITS && c.steamer.hits > 0; i++) c.tapBonus(2);
+        // Two presses per point, so twice the pairs, and bounded in case it stalls.
+        for (int i = 0; i <= GameCore.STEAMER_HITS * 3 && c.steamer.hits > 0; i++) {
+            c.tapBonus(c.steamer.wanted());
+        }
         check("twenty presses free the dumpling", c.steamer.opens == 1);
         check("the counter resets so it can be earned again", c.steamer.hits == 0);
         check("freeing it scores", c.score == scoreBefore + GameCore.FREE_BONUS);
@@ -238,7 +370,7 @@ final class TestStages extends Check {
             if (was != GameCore.BONUS && r.state == GameCore.BONUS) bonuses++;
             if (r.state == GameCore.BONUS) {
                 // Human-ish mash rate, so the reported free count means something.
-                if (frames % 8 == 0) r.tapBonus(frames % Glyph.COUNT);
+                if (frames % 8 == 0) r.tapBonus(r.steamer.wanted());
                 continue;
             }
             if (r.state != GameCore.PLAY) continue;
@@ -314,7 +446,7 @@ final class TestStages extends Check {
         m.enemies.clear();
         m.shots.clear();
         m.update(DT, L);
-        advance(m, L, GameCore.BONUS_TIME + 0.2f);
+        advancePastBonus(m, L);
         check("a wave with a miss earns no gold dumpling", m.perfectBanner == 0f);
         check("stage misses reset for the next wave", m.missesThisStage == 0);
         check("run totals are not reset by the stage", m.misses == 1);

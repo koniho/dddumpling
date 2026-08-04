@@ -18,6 +18,7 @@ src/com/sram/hexatype/Painter.java
 src/com/sram/hexatype/SettingsUi.java
 src/com/sram/hexatype/Draw.java
 src/com/sram/hexatype/Sky.java
+src/com/sram/hexatype/Skits.java
 src/com/sram/hexatype/Hud.java
 src/com/sram/hexatype/Screens.java
 src/com/sram/hexatype/Renderer.java"

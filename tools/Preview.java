@@ -36,6 +36,7 @@ final class Preview {
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
         characterSheet(dir, w, h, ss);
+        skitSheet(dir, L, w, h, ss);
         sounds(dir);
 
         Mem store = new Mem();
@@ -181,14 +182,14 @@ final class Preview {
         c8.update(DT, L);
         // Wait out the flawless-wave celebration that now precedes the interlude.
         for (int i = 0; i < 60 * 8 && c8.state != GameCore.BONUS; i++) c8.update(DT, L);
-        for (int i = 0; i < 13; i++) c8.tapBonus(i % Glyph.COUNT);
+        for (int i = 0; i < 26; i++) c8.tapBonus(c8.steamer.wanted());
         step(c8, L, 0.09f);
         System.out.printf("bonus: state=%d hits=%d open=%.2f lidPulse=%.2f flash=%.2f%n",
                 c8.state, c8.steamer.hits, c8.steamer.lidOpen(), c8.steamer.lidPulse, c8.steamer.flash);
         shot(dir, "14-bonus", c8, L, w, h, ss);
 
         // And the moment it breaks free.
-        for (int i = 0; i < 8; i++) c8.tapBonus(i % Glyph.COUNT);
+        for (int i = 0; i < 16; i++) c8.tapBonus(c8.steamer.wanted());
         step(c8, L, 0.5f);
         System.out.printf("bonus freed: opens=%d freedT=%.2f score=%d lives=%d%n",
                 c8.steamer.opens, c8.steamer.freedT, c8.score, c8.lives);
@@ -288,7 +289,7 @@ final class Preview {
             // Human-ish cadence: at most one keypress every other frame.
             if (++autoBudget % 2 != 0) continue;
             if (c.state == GameCore.BONUS) {
-                c.tapBonus(autoBudget % Glyph.COUNT);
+                c.tapBonus(c.steamer.wanted());
                 continue;
             }
             GameCore.Enemy e =
@@ -340,6 +341,35 @@ final class Preview {
         System.out.printf("  wrote bgm-frenzy      %.2fs (four on the floor)%n",
                 (float) fren.length / Sfx.RATE);
         System.out.printf("  wrote %d sfx, peak=%d%n", Sfx.COUNT, peak);
+    }
+
+    /**
+     * Harness-only sheet: all ten stage vignettes, each sampled at four points through its
+     * run, so the whole set can be reviewed in one look.
+     */
+    private static void skitSheet(File dir, Layout L, int w, int h, int ss) throws Exception {
+        RasterPainter p = new RasterPainter(w, h, ss);
+        p.clear(0xFF000000);
+        p.fillRect(0, 0, w, h, Renderer.BG);
+        float unit = 0.042f * w;
+        p.text("STAGE VIGNETTES", w / 2f, unit * 2.2f, unit * 1.0f, Renderer.INK,
+                Painter.CENTER, true);
+
+        float[] samples = {0.15f, 0.45f, 0.7f, 0.95f};
+        float rowH = (h - unit * 4f) / Skits.COUNT;
+        float r = Math.min(rowH * 0.32f, w / (samples.length * 4.6f));
+        for (int i = 0; i < Skits.COUNT; i++) {
+            float cy = unit * 3.6f + rowH * (i + 0.55f);
+            p.text(Skits.NAMES[i], unit * 0.6f, cy - rowH * 0.30f, unit * 0.50f,
+                    Renderer.INK_DIM, Painter.LEFT, true);
+            for (int k = 0; k < samples.length; k++) {
+                float cx = w * (0.30f + 0.205f * k);
+                Skits.draw(p, L, i, cx, cy, r, samples[k], 235, samples[k] * 4f);
+            }
+        }
+        File f = new File(dir, "0-skits.png");
+        Png.write(f, p.resolve(), w, h);
+        System.out.println("  wrote " + f.getName() + " (" + Skits.COUNT + " vignettes)");
     }
 
     /** Harness-only sheet: every character large, for checking the faces read clearly. */

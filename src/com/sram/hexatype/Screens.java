@@ -107,6 +107,93 @@ final class Screens extends Draw {
     }
 
 
+    /**
+     * End of the interlude: a beat to read where the run stands before it fades out and the
+     * next stage starts, so the transition is not straight from mashing back into play.
+     */
+    static void bonusReport(Painter p, GameCore c, Layout L, float fade) {
+        float s = L.unit;
+        float cx = L.w / 2f;
+        // Slides up a touch as it settles.
+        float rise = Math.min(1f, (GameCore.BONUS_STATUS - c.bonusTimer) / 0.35f);
+        float top = L.h * 0.30f + (1f - rise) * s * 1.2f;
+
+        p.text("STAGE " + c.stage + " CLEAR", cx, top, s * 1.25f * introScale(
+                GameCore.BONUS_STATUS - c.bonusTimer), fadeBy(GOLD, fade), Painter.CENTER, true);
+
+        float row = top + s * 2.4f;
+        report(p, L, "SCORE", String.valueOf(c.score), row, fade);
+        report(p, L, "ACCURACY", c.accuracyPercent() + "%", row + s * 1.5f, fade);
+        report(p, L, "LIVES", c.lives + " / " + GameCore.START_LIVES, row + s * 3.0f, fade);
+        report(p, L, "STEAMER", c.steamer.hits + " / " + GameCore.STEAMER_HITS,
+                row + s * 4.5f, fade);
+        if (c.steamer.opens > 0) {
+            report(p, L, "DUMPLINGS FREED", String.valueOf(c.steamer.opens),
+                    row + s * 6.0f, fade);
+        }
+
+        // The rainbow dumpling waves off from the corner of the report.
+        int rainbow = Glyph.cycle(c.clock * 0.5f);
+        float dr = s * 1.3f;
+        float bob = (float) Math.abs(Math.sin(c.clock * 4f)) * dr * 0.18f;
+        Kawaii.moodDumpling(p, cx, row + s * 7.9f - bob, dr, fadeBy(rainbow, fade), 1f,
+                1f + 0.06f * (float) Math.sin(c.clock * 5f));
+    }
+
+    /** One label/value line of the end-of-interlude report. */
+    private static void report(Painter p, Layout L, String label, String value, float y,
+            float fade) {
+        float s = L.unit;
+        p.text(label, L.w * 0.5f - s * 0.4f, y, s * 0.62f, fadeBy(INK_DIM, fade),
+                Painter.RIGHT, false);
+        p.text(value, L.w * 0.5f + s * 0.4f, y, s * 0.72f, fadeBy(INK, fade),
+                Painter.LEFT, true);
+    }
+
+    /**
+     * The two keys to alternate, shown side by side with the one that is wanted next lit and
+     * pulsing. The arrow between them carries the "then" so no wording is needed.
+     */
+    private static void alternator(Painter p, GameCore c, Layout L, float cx, float cy,
+            float fade) {
+        float s = L.unit;
+        float r = s * 1.15f;
+        // Centres 1.7r either side: enough clear space between them for the arrow.
+        float gap = r * 3.4f;
+        int[] keys = {c.steamer.leftKey, c.steamer.rightKey};
+        boolean[] next = {c.steamer.expectLeft, !c.steamer.expectLeft};
+
+        for (int i = 0; i < 2; i++) {
+            float x = cx + (i == 0 ? -gap : gap) / 2f;
+            int col = Glyph.COLOR[keys[i]];
+            float pulse = next[i] ? 1f + 0.10f * (float) Math.sin(c.clock * 8f) : 1f;
+            float rr = r * pulse;
+
+            if (next[i]) {
+                // The one it wants: a bright ring so the eye lands on it without reading.
+                p.strokePoly(Glyph.hex(x, cy, rr * 1.22f),
+                        fadeBy(Glyph.withAlpha(INK, 200), fade), rr * 0.09f);
+            }
+            p.fillPoly(Glyph.hex(x, cy, rr),
+                    fadeBy(Glyph.withAlpha(col, next[i] ? 95 : 34), fade));
+            p.strokePoly(Glyph.hex(x, cy, rr),
+                    fadeBy(Glyph.withAlpha(col, next[i] ? 250 : 120), fade), rr * 0.085f);
+            Kawaii.draw(p, keys[i], x, cy, rr * 0.58f,
+                    fadeBy(Glyph.withAlpha(col, next[i] ? 255 : 130), fade), 1f,
+                    next[i] ? 0.9f : 0.2f);
+        }
+
+        // Arrow between them, leaning whichever way the sequence is going.
+        float dir = c.steamer.expectLeft ? -1f : 1f;
+        int arrow = fadeBy(Glyph.withAlpha(INK_DIM, 200), fade);
+        float ax = cx + dir * s * 0.18f;
+        p.fillPoly(new float[] {ax - dir * s * 0.36f, cy - s * 0.26f,
+                ax + dir * s * 0.36f, cy, ax - dir * s * 0.36f, cy + s * 0.26f}, arrow);
+
+        p.text("+1 PER PAIR", cx, cy + r * 1.9f, s * 0.5f, fadeBy(INK_DIM, fade),
+                Painter.CENTER, false);
+    }
+
     /** How long the interlude heading takes to swell into place. */
     static final float INTRO_TIME = 0.55f;
 
@@ -141,6 +228,12 @@ final class Screens extends Draw {
         // Dim only the sky: the keys are the instrument here and must stay lit.
         scrim(p, L, (int) (195 * fade));
 
+        // The tail of the interlude reports the round instead of showing the steamer.
+        if (c.bonusStatus()) {
+            bonusReport(p, c, L, fade);
+            return;
+        }
+
         float open = c.steamer.lidOpen();
         boolean freed = c.steamer.freedT > 0f;
 
@@ -157,8 +250,9 @@ final class Screens extends Draw {
                 s * (freed ? 1.5f : 0.95f) * intro,
                 fadeBy(freed ? GOLD : INK, fade), Painter.CENTER, true);
         if (!freed) {
-            p.text("MASH ANY KEY", cx, L.h * 0.235f + s * 1.2f, s * 0.62f,
+            p.text("ALTERNATE THESE TWO", cx, L.h * 0.235f + s * 1.2f, s * 0.62f,
                     fadeBy(INK_DIM, fade), Painter.CENTER, false);
+            alternator(p, c, L, cx, L.h * 0.235f + s * 3.1f, fade);
         }
 
         // The dumpling: rainbow, and cheerier the closer it is to getting out.

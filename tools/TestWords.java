@@ -163,7 +163,7 @@ final class TestWords extends Check {
         advance(w, L, GameCore.DESTROY_TIME);
         check("the interlude opens after the celebration",
                 advanceToBonus(w, L) && w.stage == 1);
-        advance(w, L, GameCore.BONUS_TIME + 0.2f);
+        advancePastBonus(w, L);
         check("stage advances on the way out of the interlude", w.stage == 2);
     }
 

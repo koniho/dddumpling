@@ -65,7 +65,7 @@ final class TestAudio extends Check {
         g.enemies.clear();
         g.shots.clear();
         g.update(DT, L);
-        advance(g, L, GameCore.BONUS_TIME + 0.2f);
+        advancePastBonus(g, L);
         check("a flawless wave plays the achievement", ear2.achievements == 1);
 
         Ear ear3 = new Ear();

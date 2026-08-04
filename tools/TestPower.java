@@ -133,7 +133,8 @@ final class TestPower extends Check {
         check("the interlude follows", c.state == GameCore.BONUS);
         check("the frenzy tone plays", ear.powerClears == 1);
         check("the ordinary stage tone is suppressed", ear.stageClears == 0);
-        check("the interlude runs longer", c.bonusTimer > GameCore.BONUS_TIME);
+        check("the interlude runs longer",
+                c.bonusTimer > GameCore.BONUS_TIME + GameCore.BONUS_STATUS);
         check("the powerup is cleared away", c.power == null);
 
         // A stage cleared normally plays the ordinary tone instead.
@@ -148,7 +149,7 @@ final class TestPower extends Check {
         check("a normal clear plays the stage tone", ear2.stageClears == 1);
         check("and not the frenzy tone", ear2.powerClears == 0);
         check("a normal interlude is the usual length",
-                d.bonusTimer < GameCore.BONUS_TIME + 0.1f);
+                d.bonusTimer < GameCore.BONUS_TIME + GameCore.BONUS_STATUS + 0.1f);
     }
 
     private static boolean allDestroyed(GameCore c) {
@@ -476,7 +477,7 @@ final class TestPower extends Check {
 
             if (frames % 2 != 0) continue;
             if (c.state == GameCore.BONUS) {
-                c.tapBonus(frames % Glyph.COUNT);
+                c.tapBonus(c.steamer.wanted());
                 continue;
             }
             if (c.state != GameCore.PLAY) continue;

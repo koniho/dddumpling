@@ -22,6 +22,10 @@ final class GameCore {
      * accumulate across stages. At this length it takes roughly two interludes.
      */
     static final float BONUS_TIME = 2.2f;
+    /** How long a stage title and its vignette stay on screen. */
+    static final float BANNER_TIME = 1.9f;
+    /** Tail of the interlude spent showing the run status before it fades out. */
+    static final float BONUS_STATUS = 1.5f;
     /** Score awarded for freeing the dumpling. */
     static final int FREE_BONUS = 500;
 
@@ -234,6 +238,16 @@ final class GameCore {
     /** Where the instructional finger currently sits, for the renderer to follow. */
     float demoX, demoY;
     private float trailAcc;
+
+    /** True while the interlude still accepts presses, before the status hold. */
+    boolean bonusMashing() {
+        return state == BONUS && bonusTimer > BONUS_STATUS;
+    }
+
+    /** True while the interlude is showing its end-of-round status. */
+    boolean bonusStatus() {
+        return state == BONUS && bonusTimer <= BONUS_STATUS;
+    }
 
     /** True while the "drag a letter" demonstration should be on screen. */
     boolean showFlingHint() {
@@ -491,6 +505,11 @@ final class GameCore {
 
     int maxEnemies() { return Math.min(7, 3 + stage / 2); }
 
+    /** Concurrent words allowed right now; a frenzy lets four times as many pile up. */
+    int crowdCap() {
+        return powerActive() ? (int) (maxEnemies() * Power.CROWD_RATE) : maxEnemies();
+    }
+
     int maxWordLen() { return Math.min(5, 2 + stage / 2); }
 
     int minWordLen() { return Math.max(2, maxWordLen() - 2); }
@@ -545,7 +564,7 @@ final class GameCore {
         stageByPower = false;
         powerTimer = Power.SPAWN_MIN;
         pendingBonus = false;
-        stageBanner = 1.5f;
+        stageBanner = BANNER_TIME;
         if (sound != null) {
             sound.frenzy(false);
             sound.gameStart();
@@ -845,7 +864,7 @@ final class GameCore {
             // Counted against live words only: a word already flying apart is no longer
             // occupying the field as far as pacing is concerned. During a frenzy the quota
             // is ignored: words keep coming until the timer runs out and ends the stage.
-            if (spawnTimer <= 0 && liveEnemies() < maxEnemies()) {
+            if (spawnTimer <= 0 && liveEnemies() < crowdCap()) {
                 spawn(L);
                 if (!powerActive()) spawnedThisStage++;
                 spawnTimer = spawnInterval() / (powerActive() ? Power.SPAWN_RATE : 1f);
@@ -1038,9 +1057,12 @@ final class GameCore {
         state = BONUS;
         time = 0;
         // A stage ended by a frenzy earns a longer go at the steamer.
-        bonusTimer = BONUS_TIME + (stageByPower ? Power.BONUS_EXTRA : 0f);
+        // One timer for both phases: mashing while it is above BONUS_STATUS, then the status
+        // hold below that. Keeping it single means the fade-out has one thing to read.
+        bonusTimer = BONUS_TIME + BONUS_STATUS + (stageByPower ? Power.BONUS_EXTRA : 0f);
         steamer.lidPulse = 0;
         steamer.flash = 0;
+        steamer.pick(rnd);
         target = null;
         caretOwner = null;
         power = null;
@@ -1058,15 +1080,24 @@ final class GameCore {
      * mashing would inflate the accuracy readout.
      */
     void tapBonus(int g) {
-        if (state != BONUS) return;
+        if (!bonusMashing()) return;
         keyPress[g] = 1f;
-        if (sound != null) sound.squish(g, 1);
 
-        if (!steamer.strike()) return;
+        int r = steamer.press(g);
+        if (r == Steamer.WRONG) {
+            // Sounds wrong but is not counted as a miss: this is not a typing test, and it
+            // must not reach the accuracy readout.
+            keyBad[g] = 1f;
+            if (sound != null) sound.wrong();
+            return;
+        }
+        if (sound != null) sound.squish(g, 1);
+        if (r != Steamer.FREED) return;
+
         score += FREE_BONUS;
         if (lives < START_LIVES) lives++;
-        // Hold the interlude open long enough to watch it escape.
-        bonusTimer = Math.max(bonusTimer, steamer.freedT + 0.2f);
+        // Hold the interlude open long enough to watch it escape, plus the status beat.
+        bonusTimer = Math.max(bonusTimer, steamer.freedT + BONUS_STATUS + 0.2f);
         if (sound != null) sound.achievement();
     }
 
@@ -1088,7 +1119,7 @@ final class GameCore {
         stage++;
         spawnedThisStage = 0;
         resolvedThisStage = 0;
-        stageBanner = 1.6f;
+        stageBanner = BANNER_TIME;
         stageGap = STAGE_GAP;
         spawnTimer = 0.35f;
     }
