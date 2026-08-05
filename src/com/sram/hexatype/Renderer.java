@@ -34,7 +34,9 @@ final class Renderer extends Draw {
 
         dangerLine(p, c, L);
         for (int i = 0; i < c.enemies.size(); i++) enemy(p, c, L, c.enemies.get(i));
+        buddy(p, c, L);
         powerup(p, c, L);
+        chain(p, c, L);
         shots(p, c, L);
         particles(p, c);
         flingHint(p, c, L);
@@ -61,6 +63,7 @@ final class Renderer extends Draw {
             Hud.hud(p, c, L);
             Hud.modeBar(p, c, L);
             Hud.sliceCall(p, c, L);
+            Hud.chainCall(p, c, L);
         }
 
         if (c.flash > 0) {
@@ -101,8 +104,8 @@ final class Renderer extends Draw {
         float destroy = e.destroyed
                 ? Math.min(1f, e.destroyT / GameCore.DESTROY_TIME) : 0f;
         if (e.dying) {
-            // Killing shot still in the air: flash a ring, but keep the tiles on screen so
-            // there is something for the fly-apart to act on.
+            // The finishing shot is still in the air: flash a ring, but keep the tiles on
+            // screen so there is something for the fly-apart to act on.
             float t = Math.min(1f, e.deathT / 0.13f);
             p.strokePoly(Glyph.hex(c.enemyCentreX(e), e.y, L.enemyR * (1.1f + t * 1.6f)),
                     Glyph.withAlpha(INK, (int) (200 * (1f - t))), L.enemyR * 0.16f);
@@ -233,6 +236,54 @@ final class Renderer extends Draw {
     }
 
     /**
+     * The TEAM SQUISH squishy: one of the collection in a glowing bubble, drawn with exactly the
+     * graphic the display case and the interlude use, so it is recognisably the one you won.
+     *
+     * The bubble brightens and the whole thing grows with every word taken, which is the only
+     * running score the mode shows.
+     */
+    static void buddy(Painter p, GameCore c, Layout L) {
+        if (c.buddy.out()) return;
+        Buddy b = c.buddy;
+        float r = b.radius(L);
+        float glow = b.glow();
+        int tint = Collect.BODY[b.who];
+
+        // A charge leaves a streak behind it, so a fast one is legible as a direction.
+        if (b.chase != null) {
+            float sp = (float) Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+            if (sp > 1f) {
+                float back = r * 2.4f;
+                p.line(b.x - b.vx / sp * back, b.y - b.vy / sp * back, b.x, b.y,
+                        Glyph.withAlpha(tint, 90), r * 0.5f);
+            }
+        }
+
+        // The bubble: layered halos, brightest at the skin, plus a rotating ring of spikes that
+        // spins up as it grows. Mixed toward white rather than left as the body colour, or it
+        // reads as a purple object against the frenzy sky instead of as something lit.
+        int lit = Glyph.mix(tint, 0xFFFFFFFF, 0.30f + 0.45f * glow);
+        int spikes = 6 + b.squishes / 2;
+        p.fillPoly(star(b.x, b.y, r * (1.34f + 0.26f * glow), r * 0.94f,
+                Math.min(14, spikes), c.clock * (1.1f + 2.2f * glow)),
+                Glyph.withAlpha(lit, (int) (55 + 110 * glow)));
+        for (int k = 4; k >= 1; k--) {
+            p.fillCircle(b.x, b.y, r * (1f + 0.17f * k),
+                    Glyph.withAlpha(lit, (int) ((26 + 52 * glow) / k)));
+        }
+        p.fillCircle(b.x, b.y, r, Glyph.withAlpha(lit, (int) (60 + 90 * glow)));
+        p.strokeCircle(b.x, b.y, r, Glyph.withAlpha(INK, (int) (170 + 85 * glow)), r * 0.075f);
+        // A darker core behind the squishy. Without it a pale collectible sits on a pale
+        // bubble and vanishes into it, whichever one of the thirty turns up.
+        p.fillCircle(b.x, b.y, r * 0.82f, Glyph.withAlpha(BG, 130));
+        // A highlight on the skin, so it reads as a bubble rather than as a flat disc.
+        p.fillEllipse(b.x - r * 0.36f, b.y - r * 0.40f, r * 0.26f, r * 0.16f,
+                Glyph.withAlpha(0xFFFFFFFF, (int) (90 + 90 * glow)));
+
+        Trinket.draw(p, b.who, b.x, b.y, r * 0.74f, c.clock, true, 1f);
+    }
+
+    /**
      * The drifting powerup: a single letter with a rotating rainbow halo, labelled with the
      * mode it carries so you know what you are chasing before you commit a press to it.
      */
@@ -322,6 +373,52 @@ final class Renderer extends Draw {
         }
         p.fillCircle(c.fingerX, c.fingerY, r * 0.60f, Glyph.withAlpha(hue, 110));
         p.fillCircle(c.fingerX, c.fingerY, r * 0.26f, Glyph.withAlpha(INK, 250));
+    }
+
+    /**
+     * The MULTI chain: a jagged bolt from each hop to the next, revealed in order, with a flare
+     * at every point it struck.
+     *
+     * Jagged rather than straight, and drawn from stored positions rather than from the tiles —
+     * the tiles are already gone by the time this runs, which is the whole reason the positions
+     * are kept. The kinks are hashed off the hop index so they hold still instead of crawling.
+     */
+    static void chain(Painter p, GameCore c, Layout L) {
+        if (c.chainT <= 0f || c.chainLen < 1) return;
+        // Full strength while it is being revealed, then out over the tail.
+        float fade = Math.min(1f, c.chainT / (GameCore.CHAIN_TIME * (1f - GameCore.CHAIN_REVEAL)));
+        int col = Glyph.COLOR[c.chainGlyph];
+        float w = L.enemyR * 0.16f;
+
+        for (int i = 1; i < c.chainShown; i++) {
+            float ax = c.chainX[i - 1], ay = c.chainY[i - 1];
+            float bx = c.chainX[i], by = c.chainY[i];
+            // Three kinks, offset perpendicular to the link by a fixed fraction of its length.
+            float dx = bx - ax, dy = by - ay;
+            float len = (float) Math.sqrt(dx * dx + dy * dy);
+            if (len < 1f) continue;
+            float nx = -dy / len, ny = dx / len;
+            float[] bolt = new float[5 * 2];
+            for (int k = 0; k < 5; k++) {
+                float t = k / 4f;
+                float off = (k == 0 || k == 4) ? 0f
+                        : (hash(i * 71 + k) - 0.5f) * len * 0.22f;
+                bolt[k * 2] = ax + dx * t + nx * off;
+                bolt[k * 2 + 1] = ay + dy * t + ny * off;
+            }
+            p.polyline(bolt, fadeBy(Glyph.withAlpha(col, 90), fade), w * 2.2f);
+            p.polyline(bolt, fadeBy(Glyph.withAlpha(INK, 235), fade), w);
+        }
+
+        for (int i = 0; i < c.chainShown; i++) {
+            // Newest hop flares brightest, so the eye follows the head of the chain.
+            float age = c.chainShown <= 1 ? 1f : (float) i / (c.chainShown - 1);
+            float r = L.enemyR * (0.34f + 0.30f * age);
+            p.fillPoly(star(c.chainX[i], c.chainY[i], r, r * 0.42f, 6, c.clock * 1.4f + i),
+                    fadeBy(Glyph.withAlpha(col, 150), fade));
+            p.fillCircle(c.chainX[i], c.chainY[i], r * 0.36f,
+                    fadeBy(Glyph.withAlpha(INK, 240), fade));
+        }
     }
 
     static void shots(Painter p, GameCore c, Layout L) {

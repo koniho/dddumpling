@@ -11,7 +11,7 @@ trip working out which thing was meant.
 ## The one thing that matters most
 
 **You can see and hear this game without building or installing it.** `./check.sh` runs the
-whole thing headlessly: ~700 rule assertions, then it renders real frames to `out/*.png` and
+whole thing headlessly: ~770 rule assertions, then it renders real frames to `out/*.png` and
 every sound to `out/sfx/*.wav`. Read the PNGs with the Read tool — the `0-*.png` sheets each
 show a whole set at once (the six letters, the thirty collectibles, both vignette casts). That loop is seconds, not
 minutes, and it needs no device.
@@ -137,6 +137,14 @@ nothing. Follow the pattern rather than "fixing" it.
 - **`Painter` cannot clip to a shape,** only to a rectangle. That is why a banded finish in
   `Trinket` is fitted to an ellipse and why `Collect.banded` restricts which shapes may wear
   one — there is an assertion holding the catalogue to it.
+- **A mode gated on game state has to be the last index.** TEAM SQUISH stars a collectible, so
+  it cannot be offered with an empty case. It is excluded by rolling `nextInt(COUNT - 1)`, which
+  only works while it is the highest index in `Power` — there is an assertion pinning that.
+- **Resolve, then play back.** The MULTI chain takes every tile on the press and only *reveals*
+  the hops over the following moment, from stored positions. Animating the removals would mean
+  holding references to tiles that a fall, a word finishing or the frenzy ending could invalidate
+  underneath the chain — the failure mode this file has hit most. Prefer this shape for anything
+  that wants to look sequential.
 - **Two copies of a duration is one too many.** The freed-prize escape had its length in
   `Steamer` and the number inlined again in `Screens` to drive the climb, so lengthening it in
   one place broke the animation in the other. `Steamer.FREE_TIME` is the only copy now. Worth a

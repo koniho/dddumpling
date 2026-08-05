@@ -42,7 +42,7 @@ the conventions and, more usefully, the traps that have already cost time.
 
 It does two things:
 
-1. **Rule assertions** (`tools/CoreTest.java`) — 700 of them across eleven suites: layout
+1. **Rule assertions** (`tools/CoreTest.java`) — 767 of them across eleven suites: layout
    geometry, hit-testing, targeting, scoring, stage pacing, the interlude's phases and both paths through it, the
    collectible catalogue and its odds, the stories, plus a two-minute perfect-play run and a
    ten-minute random-input fuzz.
@@ -165,7 +165,8 @@ file has to be added there. `build.sh` globs `src/`, so it needs no updating.
 | `GameCore` | all rules: state machine, waves, targeting, scoring, powerup, collection |
 | `Words` | word generation and the press-budget rules |
 | `Fx` | shots and particles |
-| `Power` | the powerup letter and its three frenzy modes |
+| `Power` | the powerup letter and its four frenzy modes |
+| `Buddy` | the squishy that fights during TEAM SQUISH |
 | `Steamer` | interlude state, and the spinner that picks its key pair |
 | `Collect` | the thirty collectibles: catalogue, blind-box odds, owned-set bitmask |
 | `Lore` | a story per collectible, and who is cast in its vignette |
@@ -228,6 +229,8 @@ than a rewrite. All of them take the player's speed setting into account where i
 | `Steamer.FREE_TIME`, `PARADE_TIME` | the two segments of a win: the escape, then the parade |
 | `Parade.IN_END`, `JOIN_END` | how the parade splits into marching in, joining, marching off |
 | `BLADE`, `SLOW_KILLS`, `SLOW_TIME`, `SLOW_RATE` | how wide FLING cuts, and the slow-motion beat |
+| `CHAIN_STEP`, `CHAIN_TIME`, `CHAIN_REVEAL` | what a MULTI hop pays, and how the chain plays back |
+| `Buddy.SPEED`, `GROW`, `CHARGE_RATE` | how the TEAM SQUISH squishy moves and grows |
 | `Collect.TIER_WEIGHT` | blind-box rarity odds |
 
 Several constants are at their value because the obvious value was wrong, and the comment says

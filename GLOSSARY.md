@@ -48,6 +48,7 @@ geometry; `Kawaii` draws the creature.
 | **closing in** | a word entering the warning band; it agitates and the sky reddens | `e.warn`, `warnLevel` |
 | **lunge** / **attack** | the final dive a word makes on crossing the line | `e.attacking` |
 | **breach** | a word landing and costing a life | `GameCore.breach` |
+| **squish** (a word) | clearing a word; the game-over screen counts them | `GameCore.squishes` |
 | **harm** | how far health has fallen; drives the red tint and pulse | `GameCore.harm()` |
 | **edge glow** / **vignette** | the red glow at the screen edges | `Sky.vignette` |
 
@@ -130,7 +131,14 @@ geometry; `Kawaii` draws the creature.
 | **stroke** | one touch-down to touch-up of the blade | `GameCore.beginStroke`, `sliceTo`, `endStroke` |
 | **slow-motion beat** | the brief slowdown a stroke earns by taking two or more words | `GameCore.slowdown`, `SLOW_RATE` |
 | **slice call** | the "N IN ONE!" readout during that beat | `Hud.sliceCall` |
-| **MULTI** | one press clears every matching letter everywhere | `Power.MULTI` |
+| **MULTI** | one press chains through every matching letter, hop by hop | `Power.MULTI` |
+| **TEAM SQUISH** | one of your collectibles bounces round the field squishing words | `Power.TEAM` |
+| **squishy** / **buddy** | the collectible fighting for you during it | `Buddy`, `GameCore.buddy` |
+| **bubble** | the glowing shell round it, brighter and bigger with every word it takes | `Buddy.radius`, `glow` |
+| **charge** | the squishy accelerating at the word a press aimed it at | `Buddy.charge`, `GameCore.teamStrike` |
+| **chain** | that run of hops: a bolt drawn between them, each hop worth more than the last | `GameCore.multiStrike`, `Renderer.chain` |
+| **hop** | one link of a chain, and one strike point | `GameCore.chainX`, `chainShown` |
+| **call-out** | the big "N IN ONE!" / "N CHAINED!" payoff text | `Hud.sliceCall`, `Hud.chainCall` |
 | **sparkle trail** | the rainbow ribbon following the blade during FLING | `Fx.sparkle`, `GameCore.TRAIL_RATE` |
 | **fling hint** | the instructional finger shown until you first touch | `Renderer.flingHint` |
 | **playtest chips** | the FLURRY/FLING/MULTI buttons in settings | `SettingsUi.HIT_TEST` |

@@ -14,6 +14,7 @@ src/com/sram/hexatype/Fx.java
 src/com/sram/hexatype/Steamer.java
 src/com/sram/hexatype/Collect.java
 src/com/sram/hexatype/Power.java
+src/com/sram/hexatype/Buddy.java
 src/com/sram/hexatype/GameCore.java
 src/com/sram/hexatype/Painter.java
 src/com/sram/hexatype/SettingsUi.java

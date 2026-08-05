@@ -177,7 +177,9 @@ final class GameCore {
 
     // ---- persistent-ish state ----------------------------------------------
     int state = TITLE;
-    int score, best, lives, kills, stage, combo, maxCombo;
+    int score, best, lives, stage, combo, maxCombo;
+    /** Words squished this run. The game-over screen calls them squishes, so this does too. */
+    int squishes;
     /** Words released so far in the current stage; capped at {@link #stageQuota()}. */
     int spawnedThisStage;
     /** Words of the current stage that are done with, whether cleared or breached. */
@@ -299,6 +301,11 @@ final class GameCore {
 
     boolean multi() { return powerActive() && mode == Power.MULTI; }
 
+    boolean team() { return powerActive() && mode == Power.TEAM; }
+
+    /** The squishy that fights during TEAM SQUISH. */
+    final Buddy buddy = new Buddy();
+
     /**
      * Fall-speed multiplier. Applied per frame rather than baked into a word's speed at
      * spawn, so words already on screen speed up too and slow back down when the frenzy
@@ -307,6 +314,29 @@ final class GameCore {
     float fallRate() {
         return powerActive() ? Power.FALL_RATE : 1f;
     }
+
+    // ---- MULTI chain --------------------------------------------------------
+    /**
+     * Most hops one chain can have. The field can hold a few dozen tiles at frenzy crowd
+     * levels, of which roughly a sixth match any one letter.
+     */
+    static final int CHAIN_MAX = 32;
+    /** What the first hop is worth. The nth hop is worth n times this, so a cluster compounds. */
+    static final int CHAIN_STEP = 8;
+    /** How long a chain stays on screen. */
+    static final float CHAIN_TIME = 0.6f;
+    /** Fraction of that spent revealing hops; the rest is the fade. */
+    static final float CHAIN_REVEAL = 0.55f;
+
+    /** Where each hop of the last chain struck, in hop order. */
+    final float[] chainX = new float[CHAIN_MAX];
+    final float[] chainY = new float[CHAIN_MAX];
+    /** Hops in the last chain, the letter it ran on, and what it paid. */
+    int chainLen, chainGlyph, chainScore;
+    /** Hops revealed so far; drives both the drawing and the sound. */
+    int chainShown;
+    /** Counts down while the chain is on screen. */
+    float chainT;
 
     // ---- FLING blade --------------------------------------------------------
     /** Live finger position while dragging, set by the view. */
@@ -511,6 +541,24 @@ final class GameCore {
     /** Sparkles a second, along the blade. */
     static final float TRAIL_RATE = 100f;
 
+    /**
+     * Plays back the last chain, one hop at a time, sounding each as it lands.
+     *
+     * The hops were all resolved on the press; this is presentation. Pitch climbs toward normal
+     * rather than above it, because {@link Sound#squish} only ever pitches a sound <em>down</em>
+     * from its recorded rate — so a chain charges up to full instead of running away.
+     */
+    private void updateChain(float dt) {
+        if (chainT <= 0f) return;
+        chainT = Math.max(0f, chainT - dt);
+        float done = 1f - chainT / CHAIN_TIME;
+        int want = (int) Math.ceil(chainLen * Math.min(1f, done / CHAIN_REVEAL));
+        while (chainShown < want) {
+            chainShown++;
+            if (sound != null) sound.squish(chainGlyph, Math.max(1, 6 - chainShown));
+        }
+    }
+
     /** Ticks the frenzy timer, and the drifting letter that starts one. */
     private void updatePower(float dt, Layout L) {
         if (powerActive()) {
@@ -538,7 +586,7 @@ final class GameCore {
     private void spawnPower(Layout L) {
         Power w = new Power();
         w.glyph = rnd.nextInt(Glyph.COUNT);
-        w.effect = rnd.nextInt(Power.COUNT);
+        w.effect = rollEffect();
         // Kept in the upper half of the descent, clear of the danger line.
         w.y = L.playTop + (L.dangerY - L.playTop) * (0.15f + rnd.nextFloat() * 0.30f);
         boolean toRight = rnd.nextBoolean();
@@ -546,6 +594,29 @@ final class GameCore {
         w.vx = (toRight ? 1f : -1f) * span / Power.CROSS_TIME;
         w.x = toRight ? -L.enemyR * 2.5f : L.w + L.enemyR * 2.5f;
         power = w;
+    }
+
+    /**
+     * Which frenzy a drifting letter carries.
+     *
+     * TEAM SQUISH stars one of your own collectibles, so it cannot turn up before there is one.
+     * Excluded by rolling over one fewer mode, which works because it is the last index — see
+     * {@link Power#TEAM}.
+     */
+    private int rollEffect() {
+        return rnd.nextInt(Collect.owned(collected) > 0 ? Power.COUNT : Power.COUNT - 1);
+    }
+
+    /** A random entry from the display case, or -1 when it is empty. */
+    int anyCollected() {
+        int have = Collect.owned(collected);
+        if (have == 0) return -1;
+        int nth = rnd.nextInt(have);
+        for (int i = 0; i < Collect.COUNT; i++) {
+            if (!Collect.has(collected, i)) continue;
+            if (nth-- == 0) return i;
+        }
+        return -1;
     }
 
     /** Caught it: scores, then starts the frenzy the letter was carrying. */
@@ -563,12 +634,19 @@ final class GameCore {
      */
     void startFrenzy(int effect, Layout L) {
         if (effect < 0 || effect >= Power.COUNT) return;
+        // TEAM SQUISH has nobody to field with an empty case. The drifting letter never rolls it
+        // then, so only the playtest chips can ask for it, and refusing is clearer than quietly
+        // substituting a different mode.
+        int entry = effect == Power.TEAM ? anyCollected() : -1;
+        if (effect == Power.TEAM && entry < 0) return;
         mode = effect;
         modeLeft = Power.DURATION;
         flingUsed = false;
         fingerDown = false;
         strokeKills = 0;
         strokeCuts = 0;
+        if (entry >= 0) buddy.enter(entry, L, rnd);
+        else buddy.leave();
         shake = Math.max(shake, 0.5f);
         flash = Math.max(flash, 0.8f);
         flashColor = FLASH_CLEAR;
@@ -598,6 +676,7 @@ final class GameCore {
     private void endPower(Layout L) {
         mode = -1;
         modeLeft = 0f;
+        buddy.leave();
         for (int i = enemies.size() - 1; i >= 0; i--) {
             Enemy e = enemies.get(i);
             if (!e.destroyed) destroyWord(e, enemyCentreX(e), e.y, L);
@@ -813,7 +892,7 @@ final class GameCore {
         state = PLAY;
         time = 0;
         score = 0;
-        kills = 0;
+        squishes = 0;
         stage = 1;
         spawnedThisStage = 0;
         resolvedThisStage = 0;
@@ -843,6 +922,7 @@ final class GameCore {
         power = null;
         mode = -1;
         modeLeft = 0;
+        buddy.leave();
         stageByPower = false;
         powerTimer = Power.SPAWN_MIN;
         pendingBonus = false;
@@ -919,8 +999,11 @@ final class GameCore {
             return true;
         }
 
-        // MULTI: one press takes every matching letter on the field, engaged or not.
+        // MULTI: one press chains through every matching letter on the field.
         if (multi()) return multiStrike(g, L);
+
+        // TEAM SQUISH: the press does not type, it aims the squishy.
+        if (team()) return teamStrike(g, L);
 
         if (target == null) {
             // Engage the most urgent match: the word lowest on screen, i.e. closest to
@@ -1007,33 +1090,141 @@ final class GameCore {
     }
 
     /**
-     * MULTI: one press takes every tile of that letter across every word, engaged or not.
-     * Scores per tile and counts as a single hit, so it cannot inflate accuracy.
+     * MULTI: a chain through every tile of that letter on the field, hop by hop, each hop worth
+     * more than the last. It counts as one hit, so it cannot inflate accuracy.
+     *
+     * Everything is resolved here on the press and then played back by {@link #updateChain}.
+     * Animating the removals themselves would mean holding references to tiles that a fall, a
+     * word finishing or the frenzy ending could invalidate underneath the chain — which is the
+     * one class of bug this file has been bitten by most. This way nothing is left pending.
+     *
+     * The escalating value is what gives the mode a decision it did not have: every key used to
+     * be equally good, and the answer now depends on which letter has the biggest cluster.
      */
     private boolean multiStrike(int g, Layout L) {
-        int taken = 0;
-        // Downward: removing the last tile of a word destroys it and mutates the list.
-        for (int n = enemies.size() - 1; n >= 0; n--) {
-            Enemy e = enemies.get(n);
+        Enemy[] who = new Enemy[CHAIN_MAX];
+        int[] tile = new int[CHAIN_MAX];
+        float[] tx = new float[CHAIN_MAX];
+        float[] ty = new float[CHAIN_MAX];
+        int n = 0;
+        for (int k = 0; k < enemies.size() && n < CHAIN_MAX; k++) {
+            Enemy e = enemies.get(k);
             if (!e.typeable()) continue;
-            for (int i = e.word.length - 1; i >= e.pos; i--) {
+            for (int i = e.pos; i < e.word.length && n < CHAIN_MAX; i++) {
                 if (e.gone[i] || e.word[i] != g) continue;
-                removeTile(e, i, 0f, -1f, L);
-                taken++;
-                if (!e.typeable()) break;
+                who[n] = e;
+                tile[n] = i;
+                tx[n] = tileX(e, i, L);
+                ty[n] = e.y;
+                n++;
             }
         }
-        if (taken == 0) {
+        if (n == 0) {
             miss(g);
             return false;
         }
+
+        // Hop order: start at the most urgent match, the lowest on screen, then always take the
+        // nearest one not yet visited. A chain that criss-crosses the field is unreadable, and
+        // this is the cheapest walk that never does.
+        int[] order = new int[n];
+        boolean[] used = new boolean[n];
+        int at = 0;
+        for (int i = 1; i < n; i++) if (ty[i] > ty[at]) at = i;
+        order[0] = at;
+        used[at] = true;
+        for (int h = 1; h < n; h++) {
+            int best = -1;
+            float bestD = Float.MAX_VALUE;
+            for (int i = 0; i < n; i++) {
+                if (used[i]) continue;
+                float dx = tx[i] - tx[at], dy = ty[i] - ty[at];
+                float d = dx * dx + dy * dy;
+                if (d < bestD) {
+                    bestD = d;
+                    best = i;
+                }
+            }
+            order[h] = best;
+            used[best] = true;
+            at = best;
+        }
+
+        chainGlyph = g;
+        chainLen = 0;
+        chainScore = 0;
+        for (int h = 0; h < n; h++) {
+            int j = order[h];
+            Enemy e = who[j];
+            // An earlier hop may have finished this word, which takes the rest of it with it.
+            if (!e.typeable() || e.gone[tile[j]] || tile[j] < e.pos) continue;
+            chainX[chainLen] = tx[j];
+            chainY[chainLen] = ty[j];
+            chainLen++;
+            chainScore += CHAIN_STEP * chainLen;
+            removeTile(e, tile[j], 0f, -1f, L);
+        }
+        score += chainScore;
+        chainT = CHAIN_TIME;
+        chainShown = 0;
+
         hits++;
         combo++;
         if (combo > maxCombo) maxCombo = combo;
-        score += 8 * taken;
-        shake = Math.max(shake, 0.2f + 0.04f * taken);
-        if (sound != null) sound.squish(g, 1);
+        shake = Math.max(shake, 0.18f + 0.05f * chainLen);
+        skyGlow = Math.max(skyGlow, GLOW_HIT);
+        skyGlowColor = Glyph.COLOR[g];
+        // No sound here: updateChain fires one per hop as it is revealed, which is what makes
+        // the length audible. A single squish for nine tiles was half of why this felt flat.
         return true;
+    }
+
+    /**
+     * TEAM SQUISH: sends the squishy at the word this press would have attacked, and it takes
+     * the whole word rather than one letter.
+     *
+     * The pressed key still means something — it picks the most urgent word wanting that letter
+     * — but any key works, falling back to whatever is most urgent, so the mode never punishes
+     * a press for being the wrong one.
+     */
+    private boolean teamStrike(int g, Layout L) {
+        Enemy pick = null;
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy e = enemies.get(i);
+            if (!e.typeable() || e.word[e.pos] != g) continue;
+            if (pick == null || e.y > pick.y) pick = e;
+        }
+        if (pick == null) {
+            for (int i = 0; i < enemies.size(); i++) {
+                Enemy e = enemies.get(i);
+                if (!e.typeable()) continue;
+                if (pick == null || e.y > pick.y) pick = e;
+            }
+        }
+        if (pick == null || buddy.out()) {
+            miss(g);
+            return false;
+        }
+        buddy.charge(pick);
+        // A hit, but no score of its own: the squish it is on its way to pays that.
+        hits++;
+        combo++;
+        if (combo > maxCombo) maxCombo = combo;
+        skyGlow = Math.max(skyGlow, GLOW_HIT);
+        skyGlowColor = Glyph.COLOR[g];
+        return true;
+    }
+
+    /**
+     * The squishy landed on a word. Squishes it whole, from where the bubble met it, and shakes
+     * the screen a little harder each time as the squishy grows.
+     */
+    void buddySquish(Enemy e, Layout L) {
+        destroyWord(e, buddy.x, buddy.y, L);
+        Fx.explode(this, rnd, buddy.x, buddy.y, L.enemyR * 1.6f, 14,
+                Collect.BODY[buddy.who]);
+        shake = Math.max(shake, 0.30f + 0.03f * buddy.squishes);
+        if (sound != null) sound.achievement();
     }
 
     private void miss(int g) {
@@ -1151,6 +1342,7 @@ final class GameCore {
         // last lunging word set it to, all the way through the game-over screen.
         warnLevel = 0f;
 
+        updateChain(dt);
         Fx.updateParticles(this, dt);
         Fx.updateShots(this, dt, L);
 
@@ -1198,6 +1390,8 @@ final class GameCore {
 
         updatePower(dt, L);
         updateTrail(dt, L);
+        if (team()) buddy.update(this, dt, L);
+        else if (!buddy.out()) buddy.leave();
 
         // Stages are discrete waves: a stage releases exactly stageQuota() words, and the
         // next stage cannot start arriving until the field is completely clear.
@@ -1290,7 +1484,7 @@ final class GameCore {
     }
 
     /**
-     * Credits a finished word and starts it flying apart. Shared by the ordinary typed kill,
+     * Credits a finished word and starts it flying apart. Shared by the ordinary typed squish,
      * by out-of-order removal (flinging and MULTI), and by the end of a frenzy.
      *
      * @param px,py where the burst originates, usually the last tile struck
@@ -1323,7 +1517,7 @@ final class GameCore {
         flashColor = FLASH_CLEAR;
         skyGlow = 1f;
         skyGlowColor = FLASH_CLEAR;
-        kills++;
+        squishes++;
         resolvedThisStage++;
         // Scored per press, so a stacked word is worth what it cost to clear.
         score += 25 * e.totalPresses();

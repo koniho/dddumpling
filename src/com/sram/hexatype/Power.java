@@ -2,9 +2,9 @@ package com.sram.hexatype;
 
 /**
  * The powerup: a single glowing letter that drifts horizontally across the sky, carrying one
- * of three modes. Destroying it costs one press of its letter.
+ * of four modes. Destroying it costs one press of its letter.
  *
- * Only ever one at a time, and it is not a word — it never touches the stage quota, the kill
+ * Only ever one at a time, and it is not a word — it never touches the stage quota, the squish
  * count or the accuracy tally.
  */
 final class Power {
@@ -13,12 +13,21 @@ final class Power {
     static final int FLURRY = 0;
     /** Letters can be dragged bodily off the screen. */
     static final int FLING = 1;
-    /** A press clears every matching letter in every word, engaged or not. */
+    /** A press chains through every matching letter in every word, engaged or not. */
     static final int MULTI = 2;
-    static final int COUNT = 3;
+    /**
+     * One of your own collectibles bounces around the field squishing words.
+     *
+     * Last on purpose: it stars something out of the display case, so it can only turn up once
+     * the case has something in it, and {@link GameCore} gates it by rolling over one fewer
+     * mode. That trick only works while this is the highest index.
+     */
+    static final int TEAM = 3;
+    static final int COUNT = 4;
 
-    static final String[] NAMES = {"FLURRY", "FLING", "MULTI"};
-    static final String[] BLURB = {"ANY KEY HITS", "SWIPE TO SLICE", "CLEARS EVERY MATCH"};
+    static final String[] NAMES = {"FLURRY", "FLING", "MULTI", "TEAM SQUISH"};
+    static final String[] BLURB = {"ANY KEY HITS", "SWIPE TO SLICE", "CHAINS EVERY MATCH",
+            "YOUR SQUISHY FIGHTS"};
 
     /**
      * How long the frenzy lasts. Ending it clears the stage outright, so this doubles as the

@@ -81,16 +81,38 @@ final class Hud extends Draw {
      */
     static void sliceCall(Painter p, GameCore c, Layout L) {
         if (c.sliceCall <= 0f || c.strokeKills < GameCore.SLOW_KILLS) return;
+        callOut(p, L, c.sliceCall / GameCore.SLICE_CALL_TIME, c.strokeKills + " IN ONE!",
+                c.strokeCuts + " LETTERS", GOLD);
+    }
+
+    /** The same payoff for a long MULTI chain, which is the other thing worth shouting about. */
+    static void chainCall(Painter p, GameCore c, Layout L) {
+        if (c.chainT <= 0f || c.chainLen < CHAIN_CALL) return;
+        callOut(p, L, c.chainT / GameCore.CHAIN_TIME, c.chainShown + " CHAINED!",
+                "+" + c.chainScore, Glyph.COLOR[c.chainGlyph]);
+    }
+
+    /** Hops a chain needs before it is worth announcing. Two is just a pair. */
+    static final int CHAIN_CALL = 3;
+
+    /**
+     * One shared readout for both, so the two payoffs land in the same place at the same size
+     * and read as the same kind of event.
+     *
+     * @param t 0..1 of its own remaining time; it swells as it arrives and fades as it goes
+     */
+    private static void callOut(Painter p, Layout L, float t, String big, String small,
+            int tint) {
         float s = L.unit;
-        // Swells as it lands and settles, off its own remaining time rather than the beat's:
-        // the beat is over well before this is, by design.
-        float t = c.sliceCall / GameCore.SLICE_CALL_TIME;
         float pop = 1f + 0.35f * t * t;
         int a = (int) (255 * Math.min(1f, t * 2.2f));
-        p.text(c.strokeKills + " IN ONE!", L.w / 2f, L.h * 0.30f, s * 1.6f * pop,
-                Glyph.withAlpha(GOLD, a), Painter.CENTER, true);
-        p.text(c.strokeCuts + " LETTERS", L.w / 2f, L.h * 0.30f + s * 1.15f, s * 0.70f,
-                Glyph.withAlpha(INK, a), Painter.CENTER, true);
+        // High, just under the mode bar. It used to sit at mid-height, which was fine for the
+        // blade — that happens under your finger — but a chain threads down the whole field and
+        // the readout landed straight on top of it.
+        float y = L.h * 0.205f;
+        p.text(big, L.w / 2f, y, s * 1.6f * pop, Glyph.withAlpha(tint, a), Painter.CENTER, true);
+        p.text(small, L.w / 2f, y + s * 1.15f, s * 0.70f, Glyph.withAlpha(INK, a),
+                Painter.CENTER, true);
     }
 
     static void stageBanner(Painter p, GameCore c, Layout L) {

@@ -143,7 +143,7 @@ final class TestRules extends Check {
             c.tapKey(1, L);
             c.tapKey(1, L);
             for (int i = 0; i < 12; i++) c.update(DT, L);   // let the killing shot land
-            check("kill " + k + " registered", c.kills == k);
+            check("squish " + k + " registered", c.squishes == k);
             check("score increased on kill " + k, c.score > scored);
             scored = c.score;
         }

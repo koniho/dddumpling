@@ -116,10 +116,10 @@ final class TestWords extends Check {
         check("still listed", c.enemies.contains(e));
 
         float shakeBefore = c.shake;
-        int killsBefore = c.kills;
+        int squishesBefore = c.squishes;
         advance(c, L, 0.2f);                       // let the killing shot land
         check("impact starts the destroy animation", e.destroyed && e.destroyT >= 0f);
-        check("the kill is credited at impact", c.kills == killsBefore + 1);
+        check("the squish is credited at impact", c.squishes == squishesBefore + 1);
         check("destruction shakes the screen", c.shake > shakeBefore);
         check("a destroyed word is not typeable", !e.typeable());
         check("a destroyed word lingers on the field", c.enemies.contains(e));

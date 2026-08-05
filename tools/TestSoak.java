@@ -21,15 +21,15 @@ final class TestSoak extends Check {
                     && c.target.typeable() ? c.target : urgent(c);
             if (e != null && e.pos < e.word.length) c.tapKey(e.word[e.pos], L);
         }
-        System.out.printf("    120s of perfect play: stage=%d score=%d kills=%d lives=%d%n",
-                c.stage, c.score, c.kills, c.lives);
+        System.out.printf("    120s of perfect play: stage=%d score=%d squishes=%d lives=%d%n",
+                c.stage, c.score, c.squishes, c.lives);
         check("perfect play keeps all lives", c.lives == GameCore.START_LIVES);
         check("perfect play survives 120s",
                 c.state == GameCore.PLAY || c.state == GameCore.BONUS);
-        // Was 6. The spinner and the beat on zero added three seconds to every interlude, so
-        // a fixed two minutes now covers one stage fewer — the pacing of play itself is
-        // unchanged, and the frame count here is what moved, not the difficulty curve.
-        check("perfect play reaches a late stage", c.stage >= 5);
+        // Was 6, then 5. Every interlude got longer — the spinner, the beat on zero, and the
+        // parade after a win — so a fixed two minutes covers fewer stages. What moved is the
+        // frame budget, not the difficulty curve: the stage dials are untouched.
+        check("perfect play reaches a late stage", c.stage >= 4);
         check("score accumulates", c.score > 1000);
     }
 

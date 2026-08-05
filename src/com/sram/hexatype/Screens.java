@@ -81,7 +81,7 @@ final class Screens extends Draw {
 
         accuracy(p, c, L, L.h * 0.475f);
 
-        p.text("STAGE " + c.stage + "   KILLS " + c.kills, L.w / 2f, L.h * 0.615f, s * 0.6f,
+        p.text("STAGE " + c.stage + "   SQUISHES " + c.squishes, L.w / 2f, L.h * 0.615f, s * 0.6f,
                 INK_DIM, Painter.CENTER, false);
         p.text("BEST COMBO " + c.maxCombo, L.w / 2f, L.h * 0.615f + s * 0.85f, s * 0.6f,
                 INK_DIM, Painter.CENTER, false);

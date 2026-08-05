@@ -93,8 +93,8 @@ final class Preview {
         GameCore c2 = new GameCore(store, 11L);
         c2.startGame();
         autoplay(c2, L, 60f);
-        System.out.printf("autoplay 60s: stage=%d score=%d kills=%d lives=%d combo=%d%n",
-                c2.stage, c2.score, c2.kills, c2.lives, c2.combo);
+        System.out.printf("autoplay 60s: stage=%d score=%d squishes=%d lives=%d combo=%d%n",
+                c2.stage, c2.score, c2.squishes, c2.lives, c2.combo);
         shot(dir, "4-stage" + c2.stage, c2, L, w, h, ss);
 
         // Stage-up banner.
@@ -111,7 +111,7 @@ final class Preview {
         GameCore c4 = new GameCore(store, 17L);
         c4.startGame();
         c4.score = 1310;
-        c4.kills = 14;
+        c4.squishes = 14;
         c4.stage = 2;
         c4.lives = 1;
         step(c4, L, 1.8f);   // past the opening stage banner
@@ -141,7 +141,7 @@ final class Preview {
         GameCore c3 = new GameCore(store, 5L);
         c3.startGame();
         c3.score = 2450;
-        c3.kills = 26;
+        c3.squishes = 26;
         c3.stage = 4;
         c3.maxCombo = 19;
         float t = 0;
@@ -388,6 +388,70 @@ final class Preview {
         System.out.printf("blade: %d words and %d letters in one stroke, slowdown=%.2f%n",
                 c14.strokeKills, c14.strokeCuts, c14.slowdown);
         shot(dir, "31-blade", c14, L, w, h, ss);
+
+        // A MULTI chain mid-reveal: the bolt, the flares, and what it paid.
+        GameCore c15 = new GameCore(store, 67L);
+        c15.startGame();
+        c15.score = 5200;
+        step(c15, L, 1.9f);
+        c15.enemies.clear();
+        c15.target = null;
+        Power mp = new Power();
+        mp.glyph = 2;
+        mp.effect = Power.MULTI;
+        mp.y = L.playTop + 100f;
+        mp.x = L.w * 0.5f;
+        c15.power = mp;
+        c15.tapKey(2, L);
+        for (int k = 0; k < 4; k++) {
+            GameCore.Enemy ce = new GameCore.Enemy();
+            ce.word = new int[] {3, 1, 3};
+            ce.need = new int[] {1, 1, 1};
+            ce.gone = new boolean[3];
+            ce.goneT = new float[3];
+            ce.goneDx = new float[3];
+            ce.goneDy = new float[3];
+            ce.baseX = L.playLeft + (L.playRight - L.playLeft) * (0.22f + 0.19f * k);
+            ce.y = L.playTop + (L.dangerY - L.playTop) * (0.24f + 0.16f * k);
+            ce.enterT = 1f;
+            c15.enemies.add(ce);
+        }
+        c15.tapKey(3, L);
+        System.out.printf("chain: %d hops on %s worth %d%n", c15.chainLen,
+                Glyph.NAME[c15.chainGlyph], c15.chainScore);
+        // Part-way through the reveal, so the head of the chain is visibly still travelling.
+        step(c15, L, GameCore.CHAIN_TIME * GameCore.CHAIN_REVEAL * 0.75f);
+        System.out.printf("  revealed %d of %d%n", c15.chainShown, c15.chainLen);
+        shot(dir, "32-chain", c15, L, w, h, ss);
+
+        // TEAM SQUISH: the squishy grown a few sizes, mid-charge at a word.
+        GameCore c16 = new GameCore(store, 71L);
+        c16.startGame();
+        c16.score = 6100;
+        c16.collected = 0b0110_1101_0011_0110_1101L;
+        step(c16, L, 1.9f);
+        c16.playtestMode(Power.TEAM, L);
+        // A few words to bounce off, and a few squishes already banked so the bubble is grown.
+        for (int k = 0; k < 3; k++) {
+            GameCore.Enemy te = new GameCore.Enemy();
+            te.word = new int[] {2, 4};
+            te.need = new int[] {1, 1};
+            te.gone = new boolean[2];
+            te.goneT = new float[2];
+            te.goneDx = new float[2];
+            te.goneDy = new float[2];
+            te.baseX = L.playLeft + (L.playRight - L.playLeft) * (0.28f + 0.22f * k);
+            te.y = L.playTop + (L.dangerY - L.playTop) * (0.30f + 0.18f * k);
+            te.enterT = 1f;
+            c16.enemies.add(te);
+        }
+        c16.buddy.squishes = 4;
+        c16.tapKey(2, L);
+        step(c16, L, 3 * DT);
+        System.out.printf("team squish: %s, %d squished, r=%.0f glow=%.2f chasing=%s%n",
+                Collect.NAME[c16.buddy.who], c16.buddy.squishes, c16.buddy.radius(L),
+                c16.buddy.glow(), c16.buddy.chase != null);
+        shot(dir, "33-team", c16, L, w, h, ss);
 
         // Settings panel, opened mid-game.
         GameCore c6 = new GameCore(store, 29L);

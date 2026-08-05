@@ -233,9 +233,10 @@ final class TestPower extends Check {
      */
     static void modeSpread(Layout L) {
         group("frenzy mode spread");
-        check("three modes, three names",
-                Power.COUNT == 3 && Power.NAMES.length == Power.COUNT
-                        && Power.BLURB.length == Power.COUNT);
+        check("a name and a blurb for every mode",
+                Power.NAMES.length == Power.COUNT && Power.BLURB.length == Power.COUNT);
+        check("TEAM SQUISH is the last mode, which is how it gets gated",
+                Power.TEAM == Power.COUNT - 1);
 
         // The draw itself, made in the same order spawnPower makes it.
         java.util.Random r = new java.util.Random(4242L);
@@ -249,12 +250,17 @@ final class TestPower extends Check {
             lo = Math.min(lo, raw[i]);
             hi = Math.max(hi, raw[i]);
         }
-        System.out.printf("    30000 draws: %d / %d / %d%n", raw[0], raw[1], raw[2]);
+        System.out.print("    30000 draws:");
+        for (int i = 0; i < raw.length; i++) System.out.printf(" %d", raw[i]);
+        System.out.println();
         check("no mode is favoured in the draw", hi - lo < 30000 / 20);
 
         // And through the real spawn path, which is the part that got doubted. The wave is held
-        // open every frame so the run never ends and the letters keep coming.
-        GameCore c = new GameCore(new Mem(), 4243L);
+        // open every frame so the run never ends and the letters keep coming. The case is
+        // stocked, or TEAM SQUISH would rightly never appear.
+        Mem full = new Mem();
+        full.collected = Collect.MASK;
+        GameCore c = new GameCore(full, 4243L);
         c.startGame();
         int[] seen = new int[Power.COUNT];
         int last = -1;
@@ -266,11 +272,250 @@ final class TestPower extends Check {
             last = c.mode;
             if (c.power != null && c.power.catchable()) c.tapKey(c.power.glyph, L);
         }
-        System.out.printf("    15 minutes of play: %d %s, %d %s, %d %s%n",
-                seen[0], Power.NAMES[0], seen[1], Power.NAMES[1], seen[2], Power.NAMES[2]);
+        System.out.print("    15 minutes of play:");
+        for (int i = 0; i < seen.length; i++) {
+            System.out.printf("  %s=%d", Power.NAMES[i], seen[i]);
+        }
+        System.out.println();
         boolean all = true;
         for (int i = 0; i < seen.length; i++) if (seen[i] == 0) all = false;
         check("every mode turns up in play", all);
+
+        // And with an empty case, TEAM SQUISH must never be offered — it has nobody to field.
+        GameCore e = new GameCore(new Mem(), 4245L);
+        e.startGame();
+        boolean offered = false;
+        for (int i = 0; i < 60 * 900; i++) {
+            e.enemies.clear();
+            e.spawnedThisStage = 0;
+            e.update(DT, L);
+            if (e.power != null && e.power.effect == Power.TEAM) offered = true;
+            if (e.mode == Power.TEAM) offered = true;
+            if (e.power != null && e.power.catchable()) e.tapKey(e.power.glyph, L);
+        }
+        check("an empty case is never offered TEAM SQUISH", !offered);
+        check("but the other modes still come", e.score > 0);
+    }
+
+    /** TEAM SQUISH: who turns up, how it moves, and what it takes. */
+    static void teamMode(Layout L) {
+        group("TEAM SQUISH");
+        // The gate: nobody collected, nobody to field.
+        GameCore empty = new GameCore(new Mem(), 271L);
+        empty.startGame();
+        empty.playtestMode(Power.TEAM, L);
+        check("an empty case cannot start the mode",
+                !empty.powerActive() && empty.buddy.out());
+        check("and it does not half-start", empty.mode == -1);
+
+        Mem store = new Mem();
+        store.collected = (1L << 4) | (1L << 11) | (1L << 23);
+        GameCore c = new GameCore(store, 273L);
+        c.startGame();
+        c.enemies.clear();
+        c.target = null;
+        c.playtestMode(Power.TEAM, L);
+        check("the mode starts with a stocked case", c.team() && !c.buddy.out());
+        check("the squishy is one of yours", Collect.has(c.collected, c.buddy.who));
+        check("it starts inside the field",
+                c.buddy.x > L.playLeft && c.buddy.x < L.playRight
+                        && c.buddy.y > L.playTop && c.buddy.y < L.dangerY);
+        check("it starts moving in both axes", c.buddy.vx != 0f && c.buddy.vy != 0f);
+        check("it starts with nothing squished and no target",
+                c.buddy.squishes == 0 && c.buddy.chase == null);
+        float small = c.buddy.radius(L), dim = c.buddy.glow();
+
+        // It stays inside the field, however long it bounces around in there.
+        boolean inside = true, moved = false;
+        float x0 = c.buddy.x, y0 = c.buddy.y;
+        for (int i = 0; i < 60 * 30; i++) {
+            c.enemies.clear();                    // nothing to hit: pure bouncing
+            c.modeLeft = Power.DURATION;           // hold the mode open
+            c.update(DT, L);
+            float r = c.buddy.radius(L);
+            if (c.buddy.x - r < L.playLeft - 1f || c.buddy.x + r > L.playRight + 1f
+                    || c.buddy.y - r < L.playTop - 1f || c.buddy.y + r > L.dangerY + 1f) {
+                inside = false;
+            }
+            if (Math.abs(c.buddy.x - x0) > L.enemyR || Math.abs(c.buddy.y - y0) > L.enemyR) {
+                moved = true;
+            }
+        }
+        check("it never leaves the play area", inside);
+        check("it does move around in there", moved);
+
+        // Bouncing off a word squishes the whole word, and leaves it bigger and brighter.
+        GameCore d = new GameCore(store, 275L);
+        d.startGame();
+        d.enemies.clear();
+        d.target = null;
+        d.playtestMode(Power.TEAM, L);
+        GameCore.Enemy prey = add(d, L, new int[] {1, 2, 3}, d.buddy.y);
+        prey.baseX = d.buddy.x;
+        int squishesBefore = d.squishes;
+        float wasR = d.buddy.radius(L), wasGlow = d.buddy.glow();
+        d.update(DT, L);
+        check("running into a word squishes the whole word", prey.destroyed);
+        check("it is credited as a squish", d.squishes == squishesBefore + 1);
+        check("the squishy counts it", d.buddy.squishes == 1);
+        check("it gets bigger", d.buddy.radius(L) > wasR);
+        check("and brighter", d.buddy.glow() > wasGlow);
+        check("growth is the same rule as the readout", small == wasR && dim == wasGlow);
+
+        // Growth is capped, or it would fill the field.
+        d.buddy.squishes = 500;
+        float huge = d.buddy.radius(L);
+        d.buddy.squishes = 501;
+        check("growth is capped", d.buddy.radius(L) == huge);
+        check("and the cap leaves room to move",
+                huge * 2f < (L.playRight - L.playLeft) * 0.6f);
+        check("glow is capped too", d.buddy.glow() <= 1f);
+        d.buddy.squishes = 1;
+
+        // A press aims it. The word it picks is the one that press would have attacked.
+        GameCore e = new GameCore(store, 277L);
+        e.startGame();
+        e.enemies.clear();
+        e.target = null;
+        e.playtestMode(Power.TEAM, L);
+        GameCore.Enemy high = add(e, L, new int[] {1, 1}, L.playTop + 120f);
+        GameCore.Enemy low = add(e, L, new int[] {2, 2}, L.playTop + 400f);
+        check("the press lands", e.tapKey(1, L));
+        check("it targets the word wanting that letter", e.buddy.chase == high);
+        check("a press is a hit, not a miss", e.misses == 0 && e.hits > 0);
+        check("but pays nothing by itself", e.squishes == 0);
+        check("and does not type", high.pos == 0);
+
+        // Any key works: with no match it falls back to the most urgent word.
+        e.buddy.chase = null;
+        check("a letter nobody wants still lands", e.tapKey(5, L));
+        check("and takes the most urgent word instead", e.buddy.chase == low);
+
+        // The charge arrives, and takes the whole word.
+        boolean arrived = false;
+        for (int i = 0; i < 60 * 10 && !arrived; i++) {
+            e.modeLeft = Power.DURATION;
+            e.update(DT, L);
+            arrived = low.destroyed;
+        }
+        check("the charge reaches its target", arrived);
+        check("and the target is forgotten once taken", e.buddy.chase != low);
+
+        // A target squished by something else must not be chased into nothing.
+        e.buddy.chase = high;
+        e.enemies.remove(high);
+        e.update(DT, L);
+        check("a target that is gone is dropped", e.buddy.chase == null);
+
+        // The squishy leaves with the frenzy, and never lingers into play.
+        e.modeLeft = 0.01f;
+        advance(e, L, 0.2f);
+        check("the frenzy ended", !e.powerActive());
+        check("the squishy has gone with it", e.buddy.out());
+        advance(e, L, 1f);
+        check("and stays gone", e.buddy.out());
+    }
+
+    /** The MULTI chain: what one press takes, in what order, and what it pays. */
+    static void chain(Layout L) {
+        group("MULTI chain");
+        GameCore c = new GameCore(new Mem(), 251L);
+        c.startGame();
+        c.enemies.clear();
+        c.target = null;
+        place(c, L, Power.MULTI, 0);
+        c.tapKey(0, L);
+        check("multi is running", c.multi());
+        check("no chain on screen yet", c.chainT == 0f && c.chainLen == 0);
+
+        // Three words of nothing but that letter, so one press takes all six and finishes each
+        // of them. A word with a different letter in it would only be part-cleared, which is
+        // correct but tests less.
+        GameCore.Enemy[] row = new GameCore.Enemy[3];
+        for (int k = 0; k < 3; k++) {
+            row[k] = add(c, L, new int[] {1, 1}, L.playTop + 200f + k * 120f);
+        }
+        int before = c.score;
+        check("the press lands", c.tapKey(1, L));
+        check("every match went", c.chainLen == 6);
+        check("all three words are finished",
+                row[0].destroyed && row[1].destroyed && row[2].destroyed);
+        check("it counts as one hit", c.hits == 2);   // the powerup catch, then this
+
+        // Escalating: the nth hop is worth n steps, so six hops pay 8+16+...+48.
+        int expect = 0;
+        for (int h = 1; h <= 6; h++) expect += GameCore.CHAIN_STEP * h;
+        check("the chain pays an escalating total", c.chainScore == expect);
+        check("a long chain beats a flat rate",
+                c.chainScore > GameCore.CHAIN_STEP * c.chainLen * 2);
+        check("the score went up by at least that", c.score - before >= expect);
+
+        // The path: it starts at the most urgent match and never criss-crosses, so each hop is
+        // the nearest one that was left.
+        boolean startedLow = true;
+        for (int i = 1; i < c.chainLen; i++) {
+            if (c.chainY[i] > c.chainY[0] + 0.5f) startedLow = false;
+        }
+        check("it starts at the lowest match", startedLow);
+
+        // A word with other letters in it is only part-cleared, and keeps its typing position.
+        GameCore m = new GameCore(new Mem(), 252L);
+        m.startGame();
+        m.enemies.clear();
+        m.target = null;
+        place(m, L, Power.MULTI, 0);
+        m.tapKey(0, L);
+        GameCore.Enemy mixed = add(m, L, new int[] {1, 2, 1}, L.playTop + 200f);
+        m.tapKey(1, L);
+        check("both matches in a mixed word go", mixed.gone[0] && mixed.gone[2]);
+        check("the letter between them stays", !mixed.gone[1]);
+        check("the word is not finished", !mixed.destroyed && mixed.typeable());
+        check("typing resumes at the survivor", mixed.pos == 1);
+
+        // Played back, not instant: the hops reveal over time and each one sounds.
+        Ear ear = new Ear();
+        c.sound = ear;
+        check("nothing revealed on the press itself", c.chainShown == 0);
+        int quiet = ear.squishes;
+        advance(c, L, GameCore.CHAIN_TIME * GameCore.CHAIN_REVEAL + 2 * DT);
+        check("every hop is revealed", c.chainShown == c.chainLen);
+        check("and every hop sounded", ear.squishes - quiet == c.chainLen);
+        check("the chain is still on screen while it fades", c.chainT > 0f);
+        advance(c, L, GameCore.CHAIN_TIME);
+        check("then it goes", c.chainT == 0f);
+
+        // A press with nothing to chain is still a miss.
+        GameCore d = new GameCore(new Mem(), 253L);
+        d.startGame();
+        d.enemies.clear();
+        d.target = null;
+        place(d, L, Power.MULTI, 0);
+        d.tapKey(0, L);
+        add(d, L, new int[] {1}, L.playTop + 200f);
+        int missed = d.misses;
+        check("a letter that is not there does not land", !d.tapKey(4, L));
+        check("and counts as a miss", d.misses == missed + 1);
+        check("with no chain drawn", d.chainLen == 0);
+
+        // A single match is a chain of one, worth exactly one step, and not worth announcing.
+        check("one match lands", d.tapKey(1, L));
+        check("a chain of one", d.chainLen == 1);
+        check("worth one step", d.chainScore == GameCore.CHAIN_STEP);
+        check("too short to shout about", d.chainLen < Hud.CHAIN_CALL);
+
+        // The gathering is bounded, so a frenzy-sized field cannot overrun the arrays.
+        GameCore e = new GameCore(new Mem(), 255L);
+        e.startGame();
+        e.enemies.clear();
+        e.target = null;
+        place(e, L, Power.MULTI, 0);
+        e.tapKey(0, L);
+        for (int k = 0; k < 20; k++) {
+            add(e, L, new int[] {1, 1, 1, 1, 1}, L.playTop + 60f + k * 30f);
+        }
+        e.tapKey(1, L);
+        check("the chain is capped, not overrun", e.chainLen <= GameCore.CHAIN_MAX);
+        check("and it took what it could", e.chainLen == GameCore.CHAIN_MAX);
     }
 
     /** The blade: what one stroke cuts, and the beat a multi-word stroke earns. */
@@ -561,9 +806,12 @@ final class TestPower extends Check {
                 ui.testChipL(0, Power.COUNT) >= ui.panelL
                         && ui.testChipR(Power.COUNT - 1, Power.COUNT) <= ui.panelR);
 
-        // Each chip starts the real thing.
+        // Each chip starts the real thing. The case needs something in it, because TEAM SQUISH
+        // fields one of the collection and refuses to start without one.
         for (int m = 0; m < Power.COUNT; m++) {
-            GameCore c = new GameCore(new Mem(), 300L + m);
+            Mem store = new Mem();
+            store.collected = 0b1001L;
+            GameCore c = new GameCore(store, 300L + m);
             Ear ear = new Ear();
             c.sound = ear;
             c.startGame();
