@@ -144,6 +144,7 @@ geometry; `Kawaii` draws the creature.
 | **squishy** / **buddy** | the collectible fighting for you during it | `Buddy`, `GameCore.buddy` |
 | **bubble** | the glowing shell round it, brighter and bigger with every word it takes | `Buddy.radius`, `glow` |
 | **charge** | the squishy accelerating at the word a press aimed it at | `Buddy.charge`, `GameCore.teamStrike` |
+| **turn rate** | how fast the squishy can swing its heading: a full lap in 0.7s. Steering only — bounces are instant | `Buddy.TURN_TIME`, `TURN_RATE` |
 | **chain** | that run of hops: a bolt drawn between them, each hop worth more than the last | `GameCore.multiStrike`, `Renderer.chain` |
 | **hop** | one link of a chain, and one strike point | `GameCore.chainX`, `chainShown` |
 | **call-out** | the big "N IN ONE!" / "N CHAINED!" payoff text | `Hud.sliceCall`, `Hud.chainCall` |

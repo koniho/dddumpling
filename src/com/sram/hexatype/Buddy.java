@@ -35,6 +35,19 @@ final class Buddy {
     /** How much faster it travels while charging at something. */
     private static final float CHARGE_RATE = 2.9f;
 
+    /**
+     * How long a full turn takes. A charge used to snap the heading straight at its target the
+     * frame it was called, which read as a teleport of direction: the bubble was travelling one
+     * way and then simply was not. Swinging it round at a fixed rate makes the charge a turn you
+     * can watch, and gives a word an instant of grace to be typed out from under it.
+     *
+     * The largest turn it ever actually needs is half of this — a reversal, at 0.35s — since any
+     * heading is at most 180 degrees from any other.
+     */
+    static final float TURN_TIME = 0.7f;
+    /** Radians per second, from the above. */
+    static final float TURN_RATE = 6.28319f / TURN_TIME;
+
     /** Sends a fresh squishy in, moving diagonally so it starts crossing the field at once. */
     void enter(int entry, Layout L, java.util.Random rnd) {
         who = entry;
@@ -94,8 +107,19 @@ final class Buddy {
             float dx = c.enemyCentreX(chase) - x, dy = chase.y - y;
             float d = (float) Math.sqrt(dx * dx + dy * dy);
             if (d > 1f) {
-                vx = dx / d * sp * CHARGE_RATE;
-                vy = dy / d * sp * CHARGE_RATE;
+                // Steered, not pointed: the heading swings toward the target at TURN_RATE and
+                // arrives when it arrives. Only the direction is rate-limited — the speed goes
+                // to charge speed at once, so a turn reads as a hard bank rather than a coast.
+                float want = (float) Math.atan2(dy, dx);
+                float have = (float) Math.atan2(vy, vx);
+                float turn = wrapPi(want - have);
+                float most = TURN_RATE * dt;
+                if (turn > most) turn = most;
+                else if (turn < -most) turn = -most;
+                float a = have + turn;
+                float charge = sp * CHARGE_RATE;
+                vx = (float) Math.cos(a) * charge;
+                vy = (float) Math.sin(a) * charge;
             }
         }
 
@@ -104,6 +128,9 @@ final class Buddy {
 
         float r = radius(L);
         // Walls. Reflected and pushed clear, so a fast charge into a corner cannot stick.
+        // Bounces are deliberately exempt from the turn limit: a reflection eased over a third of
+        // a second is a bubble travelling through the wall while it comes about. The limit is on
+        // steering, which is a continuous input; a bounce is an impulse.
         if (x - r < L.playLeft) {
             x = L.playLeft + r;
             vx = Math.abs(vx);
@@ -120,6 +147,19 @@ final class Buddy {
         }
 
         return strike(c, L, r);
+    }
+
+    /**
+     * An angle folded into -PI..PI, so a turn always takes the short way round. Without this a
+     * steer across the -PI/PI seam goes the long way, which looks like a panic spin.
+     *
+     * A loop rather than a modulo: the input is the difference of two atan2 results, so it is
+     * inside -2PI..2PI and one pass is always enough.
+     */
+    private static float wrapPi(float a) {
+        while (a > 3.14159f) a -= 6.28319f;
+        while (a < -3.14159f) a += 6.28319f;
+        return a;
     }
 
     /**

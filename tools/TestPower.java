@@ -401,6 +401,59 @@ final class TestPower extends Check {
         check("the charge reaches its target", arrived);
         check("and the target is forgotten once taken", e.buddy.chase != low);
 
+        // The charge is a steer, not a snap: the heading swings round at a fixed rate. Set up the
+        // worst case — a target dead behind it — and watch it come about.
+        GameCore t = new GameCore(store, 279L);
+        t.startGame();
+        t.enemies.clear();
+        t.target = null;
+        t.playtestMode(Power.TEAM, L);
+        check("a full turn takes about 0.7s", Math.abs(Buddy.TURN_TIME - 0.7f) < 0.001f);
+        check("the rate follows from it",
+                Math.abs(Buddy.TURN_RATE * Buddy.TURN_TIME - 6.28319f) < 0.01f);
+
+        // Parked in the middle heading right, with a word directly to its left.
+        t.buddy.x = (L.playLeft + L.playRight) / 2f;
+        t.buddy.y = (L.playTop + L.dangerY) / 2f;
+        t.buddy.vx = 1f;
+        t.buddy.vy = 0f;
+        GameCore.Enemy behind = add(t, L, new int[] {1}, t.buddy.y);
+        behind.baseX = L.playLeft + L.enemyR * 3f;
+        t.buddy.charge(behind);
+        check("it is still pointing the wrong way", t.buddy.vx > 0f);
+
+        // Measured over a short window rather than by timing the whole turn: the bubble travels
+        // while it comes about, so the angle it still needs keeps shifting and a wall bounce can
+        // take the heading over before it arrives. Sweep rate over a window where it is certainly
+        // still turning is the honest measurement — a reversal needs half a full turn, so 0.1s in
+        // it is nowhere near aligned.
+        float last = (float) Math.atan2(t.buddy.vy, t.buddy.vx);
+        float swept = 0f;
+        boolean paced = true;
+        int frames = 0;
+        while (frames < 6) {
+            t.modeLeft = Power.DURATION;
+            t.update(DT, L);
+            frames++;
+            float now = (float) Math.atan2(t.buddy.vy, t.buddy.vx);
+            float step = Math.abs(now - last);
+            if (step > 3.14159f) step = 6.28319f - step;      // across the seam
+            // A frame's turn can never exceed the rate. Rounding gets a little slack.
+            if (step > Buddy.TURN_RATE * DT + 0.001f) paced = false;
+            swept += step;
+            last = now;
+        }
+        check("no frame turns further than the rate allows", paced);
+        check("it did turn while it was pointing away", swept > 0.1f);
+        check("it is still mid-turn, not arrived", t.buddy.chase == behind);
+
+        // The point of the whole exercise: at the rate it actually swings, how long is a lap?
+        float elapsed = frames * DT;
+        float lap = 6.28319f / (swept / elapsed);
+        check("at that rate a full turn takes 0.7s", Math.abs(lap - 0.7f) < 0.02f);
+        System.out.printf("    buddy turn: %.2f rad in %.2fs, so a lap in %.2fs%n",
+                swept, elapsed, lap);
+
         // A target squished by something else must not be chased into nothing.
         e.buddy.chase = high;
         e.enemies.remove(high);

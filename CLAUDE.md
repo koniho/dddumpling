@@ -11,7 +11,7 @@ trip working out which thing was meant.
 ## The one thing that matters most
 
 **You can see and hear this game without building or installing it.** `./check.sh` runs the
-whole thing headlessly: ~915 rule assertions, then it renders real frames to `out/*.png` and
+whole thing headlessly: ~960 rule assertions, then it renders real frames to `out/*.png` and
 every sound to `out/sfx/*.wav`. Read the PNGs with the Read tool — the `0-*.png` sheets each
 show a whole set at once (the six letters, the thirty collectibles, both vignette casts). That loop is seconds, not
 minutes, and it needs no device.
