@@ -71,11 +71,15 @@ public class MainActivity extends Activity implements GameCore.Store {
     }
 
     @Override public int loadBgm() {
-        // If a personal track was dropped into res/raw, default to it on first run rather
-        // than making the player go and find the option.
-        int fallback = getResources().getIdentifier("bgm", "raw", getPackageName()) != 0
-                ? Music.CUSTOM : Music.SWING_STYLE;
-        return prefs.getInt(KEY_BGM, fallback);
+        return prefs.getInt(KEY_BGM, Music.defaultChoice(haveCustomTrack()));
+    }
+
+    /**
+     * True when a personal track was dropped into {@code res/raw}. Resolved by name so the
+     * build does not depend on the file existing — it is gitignored and usually absent.
+     */
+    private boolean haveCustomTrack() {
+        return getResources().getIdentifier("bgm", "raw", getPackageName()) != 0;
     }
 
     @Override public void saveBgm(int choice) {

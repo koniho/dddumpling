@@ -40,7 +40,7 @@ the conventions and, more usefully, the traps that have already cost time.
 
 It does two things:
 
-1. **Rule assertions** (`tools/CoreTest.java`) — 629 of them across ten suites: layout
+1. **Rule assertions** (`tools/CoreTest.java`) — 641 of them across ten suites: layout
    geometry, hit-testing, targeting, scoring, stage pacing, the interlude's four phases, the
    collectible catalogue and its odds, the stories, plus a two-minute perfect-play run and a
    ten-minute random-input fuzz.
@@ -242,4 +242,5 @@ text ships alongside it in `assets/fonts/OFL.txt`.
 
 `res/raw/bgm.*` is gitignored on purpose: a user-supplied track stays on that device and must
 never be committed, since this repo is shared. Drop one in and it becomes the MY TRACK option
-in settings, selected by default on first run.
+in settings — and the default, since `Music.defaultChoice` prefers it whenever the file is
+present. Pick something else in settings and that choice sticks.

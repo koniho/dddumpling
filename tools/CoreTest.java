@@ -50,6 +50,7 @@ final class CoreTest {
         TestVisuals.settings(L);
 
         TestAudio.audio(L);
+        TestAudio.musicChoice(L);
 
         TestPower.drifting(L);
         TestPower.precedence(L);

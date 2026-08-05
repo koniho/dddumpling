@@ -649,6 +649,19 @@ final class GameCore {
         if (store != null) store.saveSpeed(speed);
     }
 
+    /**
+     * Announces the loaded music choice to the audio backend.
+     *
+     * Separate from the constructor because {@link #sound} is attached afterwards, and separate
+     * from {@link #setBgm} because nothing here changes — this only tells the backend what was
+     * already loaded. Without it the choice was never announced at all: the backend fell back
+     * to the first synth track on every launch, so the stored preference and the first-run
+     * default both did nothing until the player opened settings and picked something.
+     */
+    void startMusic() {
+        if (sound != null) sound.selectMusic(bgmChoice);
+    }
+
     void setBgm(int choice) {
         if (choice < 0 || choice >= Music.NAMES.length) return;
         bgmChoice = choice;

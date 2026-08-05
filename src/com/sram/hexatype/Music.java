@@ -48,6 +48,15 @@ final class Music {
     private Music() {}
 
     /** True when the style index names a synthesised track rather than OFF or a file. */
+    /**
+     * What a fresh install starts on: the player's own track when there is one, because
+     * somebody who went to the trouble of adding it did not do so in order to then go and find
+     * the option.
+     */
+    static int defaultChoice(boolean haveCustom) {
+        return haveCustom ? CUSTOM : SWING_STYLE;
+    }
+
     static boolean isSynth(int style) {
         return style >= 0 && style < STYLE.length;
     }

@@ -3,6 +3,45 @@ package com.sram.hexatype;
 /** Effect normalisation and which sound fires on which event. */
 final class TestAudio extends Check {
 
+    /** Which track the game starts on, and that the loaded choice actually gets announced. */
+    static void musicChoice(Layout L) {
+        group("music choice");
+        check("a personal track is the default when there is one",
+                Music.defaultChoice(true) == Music.CUSTOM);
+        check("otherwise the first synth track is",
+                Music.defaultChoice(false) == Music.SWING_STYLE);
+        check("every name has a constant and vice versa",
+                Music.NAMES.length == Music.CUSTOM + 1);
+        check("the custom slot is not a synth style", !Music.isSynth(Music.CUSTOM));
+        check("and neither is off", !Music.isSynth(Music.OFF));
+
+        // The regression this exists for: the loaded preference was read into bgmChoice and
+        // then never announced, so the backend fell back to its own first track on every
+        // launch and both the stored choice and the first-run default did nothing.
+        Mem store = new Mem();
+        store.bgm = Music.CUSTOM;
+        GameCore c = new GameCore(store, 301L);
+        Ear ear = new Ear();
+        c.sound = ear;
+        check("the stored choice is loaded", c.bgmChoice == Music.CUSTOM);
+        check("nothing is announced before it is asked for", ear.musicCalls == 0);
+        c.startMusic();
+        check("starting announces the loaded choice",
+                ear.musicCalls == 1 && ear.music == Music.CUSTOM);
+
+        // And with no sound attached it must not throw: the harness runs that way throughout.
+        GameCore d = new GameCore(new Mem(), 302L);
+        d.startMusic();
+        check("announcing without a backend is harmless", d.bgmChoice == 0);
+
+        // A deliberate later choice still wins, and is persisted.
+        c.setBgm(Music.DRIFT);
+        check("a later choice is announced", ear.music == Music.DRIFT && ear.musicCalls == 2);
+        check("and saved", store.bgm == Music.DRIFT && store.bgmSaves == 1);
+        c.setBgm(99);
+        check("an out-of-range choice is refused", c.bgmChoice == Music.DRIFT);
+    }
+
     static void audio(Layout L) {
         group("audio");
         int peak = (int) (Sfx.PEAK * 32767f);

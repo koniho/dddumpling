@@ -25,6 +25,9 @@ public class GameView extends View {
         painter = new CanvasPainter(loadFace(ctx));
         core = new GameCore(store, SystemClock.elapsedRealtimeNanos());
         core.sound = sound;
+        // Has to be after the sound is attached, and before the Activity resumes: the loaded
+        // choice is otherwise never announced and the backend picks its own fallback.
+        core.startMusic();
         setKeepScreenOn(true);
         setClickable(true);
     }

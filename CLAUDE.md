@@ -11,7 +11,7 @@ trip working out which thing was meant.
 ## The one thing that matters most
 
 **You can see and hear this game without building or installing it.** `./check.sh` runs the
-whole thing headlessly: ~630 rule assertions, then it renders real frames to `out/*.png` and
+whole thing headlessly: ~640 rule assertions, then it renders real frames to `out/*.png` and
 every sound to `out/sfx/*.wav`. Read the PNGs with the Read tool — the `0-*.png` sheets each
 show a whole set at once (the six letters, the thirty collectibles, both vignette casts). That loop is seconds, not
 minutes, and it needs no device.
@@ -136,6 +136,12 @@ nothing. Follow the pattern rather than "fixing" it.
 - **`Painter` cannot clip to a shape,** only to a rectangle. That is why a banded finish in
   `Trinket` is fitted to an ellipse and why `Collect.banded` restricts which shapes may wear
   one — there is an assertion holding the catalogue to it.
+- **Loading a preference is not the same as applying it.** `GameCore` read the music choice out
+  of the store into `bgmChoice` and never told the audio backend, which fell back to its own
+  first track on every launch — so both the stored choice and the first-run default did nothing
+  until the player opened settings and picked something. `startMusic()` announces it, and
+  `GameView` calls that once the sound is attached. Any future setting that a backend has to
+  act on needs the same push; the store round-trip alone proves nothing.
 - **Do not derive a cast list from another cast list.** The third figure in a story vignette
   was `PARTNER[PARTNER[i]]` at first, which looks clever and is wrong: most pairings here are
   mutual, so it handed back the entry itself and the scene drew one character twice. It read as
