@@ -26,6 +26,7 @@ final class CoreTest {
         TestStages.waves(L);
         TestStages.bonusOrdering(L);
         TestStages.bonusIntro(L);
+        TestStages.spinner(L);
         TestStages.bonusStatusHold(L);
         TestStages.skits(L);
         TestStages.steamerBonus(L);

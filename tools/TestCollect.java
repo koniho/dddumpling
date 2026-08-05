@@ -4,15 +4,15 @@ package com.sram.hexatype;
 final class TestCollect extends Check {
 
     /**
-     * Empties the wave so the interlude opens, without having to play a whole stage first.
-     * The interlude only follows a cleared wave, so the quota has to be marked out as well
-     * as the field.
+     * Empties the wave so the interlude opens and the spinner has landed, without having to
+     * play a whole stage first. The interlude only follows a cleared wave, so the quota has to
+     * be marked out as well as the field.
      */
     private static boolean toBonus(GameCore c, Layout L) {
         c.spawnedThisStage = c.stageQuota();
         c.enemies.clear();
         c.shots.clear();
-        return advanceToBonus(c, L);
+        return advanceToMash(c, L);
     }
 
     /** Alternates the wanted pair enough times to lift the lid clear. */

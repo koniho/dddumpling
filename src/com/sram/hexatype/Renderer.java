@@ -335,8 +335,11 @@ final class Renderer extends Draw {
             if (bad > 0) col = Glyph.mix(col, ROSE, bad);
 
             // During the interlude only two keys matter; ring them, and mark the next one.
-            if (c.bonusMashing() && (g == c.steamer.leftKey || g == c.steamer.rightKey)) {
-                boolean wanted = g == c.steamer.wanted();
+            // The spinner rings too, off the same pair the alternator is showing, so the deck
+            // visibly runs through the candidates with it. Nothing is wanted until it lands.
+            if ((c.bonusMashing() || c.bonusRolling())
+                    && (g == c.bonusLeftKey() || g == c.bonusRightKey())) {
+                boolean wanted = !c.bonusRolling() && g == c.steamer.wanted();
                 float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 8f);
                 p.strokePoly(Glyph.hex(cx, cy, r * 1.16f),
                         Glyph.withAlpha(wanted ? INK : col,

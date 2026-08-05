@@ -188,8 +188,12 @@ final class Screens extends Draw {
         float r = s * 1.15f;
         // Centres 1.7r either side: enough clear space between them for the arrow.
         float gap = r * 3.4f;
-        int[] keys = {c.steamer.leftKey, c.steamer.rightKey};
-        boolean[] next = {c.steamer.expectLeft, !c.steamer.expectLeft};
+        boolean rolling = c.bonusRolling();
+        int[] keys = {c.bonusLeftKey(), c.bonusRightKey()};
+        // Both slots are lit while spinning: neither is wanted yet, and dimming one would
+        // imply an order the round has not settled on.
+        boolean[] next = rolling ? new boolean[] {true, true}
+                : new boolean[] {c.steamer.expectLeft, !c.steamer.expectLeft};
 
         for (int i = 0; i < 2; i++) {
             float x = cx + (i == 0 ? -gap : gap) / 2f;
@@ -211,15 +215,18 @@ final class Screens extends Draw {
                     next[i] ? 0.9f : 0.2f);
         }
 
-        // Arrow between them, leaning whichever way the sequence is going.
-        float dir = c.steamer.expectLeft ? -1f : 1f;
-        int arrow = fadeBy(Glyph.withAlpha(INK_DIM, 200), fade);
-        float ax = cx + dir * s * 0.18f;
-        p.fillPoly(new float[] {ax - dir * s * 0.36f, cy - s * 0.26f,
-                ax + dir * s * 0.36f, cy, ax - dir * s * 0.36f, cy + s * 0.26f}, arrow);
+        // Arrow between them, leaning whichever way the sequence is going. Suppressed while
+        // spinning: there is no order to point out yet.
+        if (!rolling) {
+            float dir = c.steamer.expectLeft ? -1f : 1f;
+            int arrow = fadeBy(Glyph.withAlpha(INK_DIM, 200), fade);
+            float ax = cx + dir * s * 0.18f;
+            p.fillPoly(new float[] {ax - dir * s * 0.36f, cy - s * 0.26f,
+                    ax + dir * s * 0.36f, cy, ax - dir * s * 0.36f, cy + s * 0.26f}, arrow);
+        }
 
-        p.text("+1 PER PAIR", cx, cy + r * 1.9f, s * 0.5f, fadeBy(INK_DIM, fade),
-                Painter.CENTER, false);
+        p.text(rolling ? "PICKING YOUR PAIR" : "+1 PER PAIR", cx, cy + r * 1.9f, s * 0.5f,
+                fadeBy(INK_DIM, fade), Painter.CENTER, false);
     }
 
     /** How long the interlude heading takes to swell into place. */
@@ -296,9 +303,13 @@ final class Screens extends Draw {
 
         // The dumpling: rainbow, and cheerier the closer it is to getting out.
         float dumpR = bh * 0.86f;
-        // Sits so its lower third is behind the near wall: enough to be visibly contained,
-        // not so deep that only a face shows over the rim.
-        float dumpY = rimY - dumpR * 0.50f;
+        // Sits low enough to be completely hidden under a shut lid, and climbs toward the gap
+        // as the lid rises — so you see more of the reward the closer you are to it. At a
+        // fixed height its crown poked out over a lid that had not moved yet.
+        // Freeing it resets the hit count, so `open` falls back to zero on the very frame the
+        // escape starts; treat a freed one as fully open or it drops back into the basket.
+        float risen = freed ? 1f : open;
+        float dumpY = rimY + dumpR * 0.30f - risen * dumpR * 0.80f;
         if (freed) {
             // Escaping: rises and grows away as the celebration plays.
             float t = 1f - c.steamer.freedT / 1.7f;
@@ -333,6 +344,7 @@ final class Screens extends Draw {
         // trailing the prize: drawn before the wall it was hidden behind it, and pinned to a
         // prize that rises off the top of the screen it would have gone with it.
         if (freed && c.prize >= 0) prizeLabel(p, c, L, cx, baseY + s * 2.05f, fade);
+        if (!freed) countdown(p, c, L, cx, fade);
 
         if (!freed) {
             // Lid: lifts with progress, and kicks up further on each press. Capped so that
@@ -354,11 +366,12 @@ final class Screens extends Draw {
                 }
             }
 
-            // Progress: one pip per press needed.
+            // Progress: one pip per press needed. Below the countdown, which now owns the
+            // band directly under the steamer.
             int cols = 10;
             float pr = s * 0.14f, gap = s * 0.54f;
             float x0 = cx - gap * (cols - 1) / 2f;
-            float rowY = L.h * 0.63f;
+            float rowY = L.h * 0.695f;
             for (int i = 0; i < GameCore.STEAMER_HITS; i++) {
                 float px = x0 + (i % cols) * gap;
                 float py = rowY + (i / cols) * gap * 1.15f;
@@ -373,6 +386,25 @@ final class Screens extends Draw {
         }
 
         handLabels(p, L, L.deckTop - s * 0.45f, fade);
+    }
+
+    /**
+     * The clock, large, in the band under the steamer. Seconds remaining while the mash runs,
+     * then TIME! through the beat on zero.
+     *
+     * Ceiling rather than rounding, so it only reads 0 when the round is actually over — and
+     * it swells on each tick, which is the part that makes the last second land.
+     */
+    private static void countdown(Painter p, GameCore c, Layout L, float cx, float fade) {
+        float s = L.unit;
+        float left = c.bonusLeft();
+        boolean out = c.bonusHolding();
+        int col = out || left <= 1f ? ROSE : INK;
+        // The fraction runs 1 down to 0 within each second, so this is biggest just after a
+        // tick and settled by the time the next one comes.
+        float pop = out ? 1f : 1f + 0.16f * (left - (float) Math.floor(left));
+        p.text(out ? "TIME!" : String.valueOf((int) Math.ceil(left)), cx, L.h * 0.625f,
+                s * (out ? 1.7f : 2.6f) * pop, fadeBy(col, fade), Painter.CENTER, true);
     }
 
     /**

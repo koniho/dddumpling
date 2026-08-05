@@ -196,13 +196,13 @@ final class Preview {
         c8.enemies.clear();
         c8.shots.clear();
         c8.update(DT, L);
-        // Wait out the flawless-wave celebration that now precedes the interlude.
+        // Wait out the flawless-wave celebration that precedes the interlude, then the
+        // spinner: presses are refused for the whole of it.
         for (int i = 0; i < 60 * 8 && c8.state != GameCore.BONUS; i++) c8.update(DT, L);
+        for (int i = 0; i < 60 * 8 && c8.bonusRolling(); i++) c8.update(DT, L);
         for (int i = 0; i < 26; i++) c8.tapBonus(c8.steamer.wanted());
-        // Past the fade-in before sampling: at 0.09s the whole scene is still at a quarter
-        // opacity, which is what 19-bonus-fadein is for. One more press then keeps the lid
-        // pulse and the flash mid-decay, which is the point of this frame.
-        step(c8, L, 0.45f);
+        // One more press keeps the lid pulse and the flash mid-decay, which is the point of
+        // this frame. The fade-in is long over by now: the spinner ran first.
         c8.tapBonus(c8.steamer.wanted());
         step(c8, L, 0.05f);
         System.out.printf("bonus: state=%d hits=%d open=%.2f lidPulse=%.2f flash=%.2f%n",
@@ -237,9 +237,33 @@ final class Preview {
         c11.shots.clear();
         for (int i = 0; i < 60 * 8 && c11.state != GameCore.BONUS; i++) c11.update(DT, L);
         step(c11, L, 0.16f);
-        System.out.printf("bonus fade-in: state=%d time=%.2f timer=%.2f%n",
-                c11.state, c11.time, c11.bonusTimer);
+        System.out.printf("bonus fade-in: state=%d time=%.2f timer=%.2f roll=%.2f%n",
+                c11.state, c11.time, c11.bonusTimer, c11.rollProgress());
         shot(dir, "19-bonus-fadein", c11, L, w, h, ss);
+
+        // Mid-spinner, past the fade-in: the pair is being drawn for and nothing is wanted yet.
+        step(c11, L, 1.0f);
+        System.out.printf("spinner: roll=%.2f showing %s/%s, will land on %s/%s%n",
+                c11.rollProgress(), Glyph.NAME[c11.bonusLeftKey()],
+                Glyph.NAME[c11.bonusRightKey()], Glyph.NAME[c11.steamer.leftKey],
+                Glyph.NAME[c11.steamer.rightKey]);
+        shot(dir, "24-bonus-spinner", c11, L, w, h, ss);
+
+        // And the beat on zero, after the clock runs out and before anything fades.
+        GameCore c12 = new GameCore(store, 53L);
+        c12.startGame();
+        c12.score = 2750;
+        c12.spawnedThisStage = c12.stageQuota();
+        c12.enemies.clear();
+        c12.shots.clear();
+        for (int i = 0; i < 60 * 8 && c12.state != GameCore.BONUS; i++) c12.update(DT, L);
+        for (int i = 0; i < 60 * 8 && c12.bonusRolling(); i++) c12.update(DT, L);
+        for (int i = 0; i < 9; i++) c12.tapBonus(c12.steamer.wanted());
+        for (int i = 0; i < 60 * 8 && !c12.bonusHolding(); i++) c12.update(DT, L);
+        step(c12, L, 0.25f);
+        System.out.printf("time up: holding=%s left=%.2f hits=%d%n", c12.bonusHolding(),
+                c12.bonusLeft(), c12.steamer.hits);
+        shot(dir, "25-bonus-timeup", c12, L, w, h, ss);
 
         // The powerup letter drifting across, before it is caught.
         GameCore c9 = new GameCore(store, 41L);
@@ -330,7 +354,7 @@ final class Preview {
             // Human-ish cadence: at most one keypress every other frame.
             if (++autoBudget % 2 != 0) continue;
             if (c.state == GameCore.BONUS) {
-                c.tapBonus(c.steamer.wanted());
+                c.tapBonus(c.steamer.wanted());   // ignored while the spinner runs
                 continue;
             }
             GameCore.Enemy e =

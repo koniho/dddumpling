@@ -132,6 +132,10 @@ nothing. Follow the pattern rather than "fixing" it.
 - **`Painter` cannot clip to a shape,** only to a rectangle. That is why a banded finish in
   `Trinket` is fitted to an ellipse and why `Collect.banded` restricts which shapes may wear
   one — there is an assertion holding the catalogue to it.
+- **A new interlude phase silently zeroes every test that taps.** Adding the spinner made
+  `tapBonus` a no-op for the first two seconds of BONUS, so suites that pressed straight after
+  `advanceToBonus` scored nothing and still passed their own weaker checks. `advanceToMash`
+  exists for that; prefer it whenever a test means to press.
 - **A silhouette must be fully colourless.** The leaf and stem colours were left as
   themselves at first, so every blacked-out fruit had a bright green leaf on it and gave
   itself away.

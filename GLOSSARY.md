@@ -102,6 +102,9 @@ geometry; `Kawaii` draws the creature.
 | **slats** | the woven bands round the wall | `Basket.slat` |
 | **lid** | the flat woven disc that lifts as you mash | `Basket.lid`, `steamer.lidOpen()` |
 | **rainbow dumpling** | the one trapped inside; unidentified until the lid is off | `Screens.bonus` |
+| **spinner** | the two-second draw for this round's pair at the start of the interlude | `Steamer.rolled`, `GameCore.bonusRolling` |
+| **countdown** | the large clock under the steamer | `Screens.countdown`, `GameCore.bonusLeft` |
+| **beat on zero** | the second after the clock runs out, before anything fades | `GameCore.bonusHolding`, `BONUS_HOLD` |
 | **steamer damage** | presses landed, carried across interludes | `steamer.hits` |
 | **reveal** | freeing it: the prize climbs out with its name, tier and NEW badge | `Screens.prizeLabel` |
 
@@ -168,6 +171,10 @@ geometry; `Kawaii` draws the creature.
   stage; a stage is the difficulty step.
 - **frenzy** vs **interlude** — frenzy is the 15 s powerup period *during* play; the interlude
   is the steamer minigame *between* stages.
+- The interlude runs four phases off one countdown, in this order: **spinner** (2 s, no
+  presses), **mash** (the minigame proper), **beat on zero** (1 s), **status hold** (1.5 s,
+  whose tail is the fade-out). `GameCore.bonusRolling/bonusMashing/bonusHolding/bonusStatus`
+  are the four, and exactly one is true at a time.
 - **sky glow** vs **screen flash** vs **edge glow** — the clouds tinting, a full-screen wash,
   and the red border respectively. All three fire at different moments.
 - **engaged** vs **locked** — the same thing; either is fine.

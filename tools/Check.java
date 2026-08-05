@@ -100,6 +100,17 @@ abstract class Check {
         return c.state != GameCore.BONUS;
     }
 
+    /**
+     * Steps to the interlude and then through the spinner, so the caller can press. Presses
+     * are refused for the whole of the spin, which silently zeroes any test that taps the
+     * moment BONUS begins.
+     */
+    static boolean advanceToMash(GameCore c, Layout L) {
+        if (!advanceToBonus(c, L)) return false;
+        for (int i = 0; i < 60 * 10 && c.bonusRolling(); i++) c.update(DT, L);
+        return c.bonusMashing();
+    }
+
     static void advance(GameCore c, Layout L, float seconds) {
         for (float t = 0; t < seconds; t += DT) c.update(DT, L);
     }

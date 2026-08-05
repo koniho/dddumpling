@@ -161,26 +161,124 @@ final class TestStages extends Check {
                 Screens.introScale(0f) < 3f && Screens.introScale(0.01f) > 0f);
     }
 
-    /** The end-of-interlude status hold, and the crowd cap during a frenzy. */
+    /** The spinner as a pure function: it must land on its answer, from any pair. */
+    static void spinner(Layout L) {
+        group("interlude spinner");
+        int half = Glyph.COUNT / 2;
+        boolean lands = true, startsElsewhere = false, staysInCluster = true, decelerates = true;
+        for (int key = 0; key < half; key++) {
+            if (Steamer.rolled(key, 0, half, 1f) != key) lands = false;
+            // Overshooting the end must still hold the answer, since a frame can land past 1.
+            if (Steamer.rolled(key, 0, half, 1.4f) != key) lands = false;
+            if (Steamer.rolled(key, 0, half, 0f) != key) startsElsewhere = true;
+
+            int changes = 0, firstHalf = 0, lastHalf = 0, prev = -1;
+            for (int i = 0; i <= 240; i++) {
+                float t = i / 240f;
+                int g = Steamer.rolled(key, 0, half, t);
+                if (g < 0 || g >= half) staysInCluster = false;
+                if (g != prev) {
+                    if (prev >= 0) {
+                        changes++;
+                        if (t < 0.5f) firstHalf++;
+                        else lastHalf++;
+                    }
+                    prev = g;
+                }
+            }
+            // The whole point of the easing: most of the stepping happens up front.
+            if (firstHalf <= lastHalf) decelerates = false;
+            if (changes < 4) decelerates = false;
+        }
+        check("the spinner lands on its answer", lands);
+        check("and holds it past the end", lands);
+        check("it starts somewhere else, so there is a spin to watch", startsElsewhere);
+        check("it only ever offers that thumb's own keys", staysInCluster);
+        check("it slows down: more steps in the first half than the second", decelerates);
+
+        // The right-hand cluster is offset, and must never offer a left-hand key.
+        boolean rightSide = true;
+        for (int key = half; key < Glyph.COUNT; key++) {
+            for (int i = 0; i <= 60; i++) {
+                int g = Steamer.rolled(key, half, Glyph.COUNT - half, i / 60f);
+                if (g < half || g >= Glyph.COUNT) rightSide = false;
+            }
+            if (Steamer.rolled(key, half, Glyph.COUNT - half, 1f) != key) rightSide = false;
+        }
+        check("the right slot stays on the right thumb", rightSide);
+
+        // And through the object, which is how the renderer reads it.
+        Steamer st = new Steamer();
+        st.reset();
+        st.leftKey = 1;
+        st.rightKey = Glyph.COUNT - 1;
+        check("shownLeft settles on the left key", st.shownLeft(1f) == 1);
+        check("shownRight settles on the right key",
+                st.shownRight(1f) == Glyph.COUNT - 1);
+        check("the spinner takes enough steps to read as one", Steamer.ROLL_STEPS >= 8);
+    }
+
+    /** The four interlude phases in order, and the crowd cap during a frenzy. */
     static void bonusStatusHold(Layout L) {
-        group("interlude status hold");
+        group("interlude phases");
         GameCore c = new GameCore(new Mem(), 141L);
         c.startGame();
         c.spawnedThisStage = c.stageQuota();
         c.enemies.clear();
         c.shots.clear();
         check("reaches the interlude", advanceToBonus(c, L));
-        check("the interlude allows for the status hold",
-                c.bonusTimer > GameCore.BONUS_TIME);
-        check("mashing is open at the start", c.bonusMashing() && !c.bonusStatus());
 
+        // 1. Spinner. Presses are refused, and the pair is already decided behind it.
+        check("opens on the spinner",
+                c.bonusRolling() && !c.bonusMashing() && !c.bonusHolding() && !c.bonusStatus());
+        check("the timer covers all four phases",
+                c.bonusTimer > GameCore.bonusLength() - 0.01f);
+        int picked = c.steamer.wanted();
+        c.tapBonus(picked);
+        c.tapBonus(picked);
+        check("presses are refused while it spins", c.steamer.hits == 0);
+        check("the clock reads the full mash length through the spin",
+                Math.abs(c.bonusLeft() - GameCore.BONUS_TIME) < 0.01f);
+
+        // The spinner has to land on the pair the round then asks for, every frame of it.
+        boolean landed = true, moved = false;
+        int seenLeft = c.bonusLeftKey();
+        for (int i = 0; i < 60 * 10 && c.bonusRolling(); i++) {
+            c.update(DT, L);
+            if (c.bonusLeftKey() != seenLeft) {
+                moved = true;
+                seenLeft = c.bonusLeftKey();
+            }
+        }
+        if (c.bonusLeftKey() != c.steamer.leftKey
+                || c.bonusRightKey() != c.steamer.rightKey) landed = false;
+        check("the spinner does step through characters", moved);
+        check("it settles on exactly the pair the round uses", landed);
+        check("the pair survived the spin", c.steamer.wanted() == picked);
+
+        // 2. Mash.
+        check("mashing opens once it lands",
+                c.bonusMashing() && !c.bonusRolling() && !c.bonusStatus());
         c.tapBonus(c.steamer.wanted());
         c.tapBonus(c.steamer.wanted());
         check("a completed pair lands during the mash phase", c.steamer.hits == 1);
+        float wasLeft = c.bonusLeft();
+        advance(c, L, 0.3f);
+        check("the clock runs down during the mash", c.bonusLeft() < wasLeft);
 
-        // Run out the mash phase; the status hold follows and refuses presses.
-        advance(c, L, c.bonusTimer - GameCore.BONUS_STATUS + 2 * DT);
-        check("the status hold starts", c.bonusStatus() && !c.bonusMashing());
+        // 3. The beat on zero: still on screen, still not fading, no longer taking presses.
+        advance(c, L, c.bonusTimer - (GameCore.BONUS_HOLD + GameCore.BONUS_STATUS) + 2 * DT);
+        check("the beat on zero starts", c.bonusHolding() && !c.bonusMashing());
+        check("the clock has run out", c.bonusLeft() == 0f);
+        int held = c.steamer.hits;
+        c.tapBonus(c.steamer.wanted());
+        check("presses are ignored on zero", c.steamer.hits == held);
+        check("the beat is a full second before anything fades",
+                Math.abs(GameCore.BONUS_HOLD - 1f) < 0.001f);
+
+        // 4. Status hold.
+        advance(c, L, GameCore.BONUS_HOLD + 2 * DT);
+        check("the status hold follows the beat", c.bonusStatus() && !c.bonusHolding());
         check("still in the interlude", c.state == GameCore.BONUS);
         int hits = c.steamer.hits;
         c.tapBonus(1);
@@ -274,7 +372,7 @@ final class TestStages extends Check {
         c.enemies.clear();
         c.shots.clear();
         c.update(DT, L);
-        check("clearing a wave enters the minigame", advanceToBonus(c, L));
+        check("clearing a wave enters the minigame", advanceToMash(c, L));
         check("the stage has not turned over yet", c.stage == 1);
         check("the lid starts shut", c.steamer.lidOpen() == 0f);
 
@@ -335,7 +433,7 @@ final class TestStages extends Check {
         c.enemies.clear();
         c.shots.clear();
         c.update(DT, L);
-        check("back in the minigame", advanceToBonus(c, L));
+        check("back in the minigame", advanceToMash(c, L));
         c.lives = GameCore.START_LIVES - 1;
         int scoreBefore = c.score;
         // Bounded: tapBonus is a no-op outside BONUS, so an unbounded loop would hang.
@@ -354,7 +452,7 @@ final class TestStages extends Check {
         c.tapBonus(3);
         check("presses during the escape do not re-trigger", c.steamer.opens == opensNow);
 
-        advance(c, L, GameCore.BONUS_TIME + 2f);
+        advance(c, L, GameCore.bonusLength() + 2f);
         check("play resumes after the celebration", c.state == GameCore.PLAY);
         check("lives are capped at the starting count", c.lives <= GameCore.START_LIVES);
 

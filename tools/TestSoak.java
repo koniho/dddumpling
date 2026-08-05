@@ -26,7 +26,10 @@ final class TestSoak extends Check {
         check("perfect play keeps all lives", c.lives == GameCore.START_LIVES);
         check("perfect play survives 120s",
                 c.state == GameCore.PLAY || c.state == GameCore.BONUS);
-        check("perfect play reaches a late stage", c.stage >= 6);
+        // Was 6. The spinner and the beat on zero added three seconds to every interlude, so
+        // a fixed two minutes now covers one stage fewer — the pacing of play itself is
+        // unchanged, and the frame count here is what moved, not the difficulty curve.
+        check("perfect play reaches a late stage", c.stage >= 5);
         check("score accumulates", c.score > 1000);
     }
 

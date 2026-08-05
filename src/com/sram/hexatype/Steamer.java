@@ -51,6 +51,48 @@ final class Steamer {
         return expectLeft ? leftKey : rightKey;
     }
 
+    // ---- the spinner --------------------------------------------------------
+
+    /**
+     * Characters the spinner steps through before it settles. Enough that it reads as a spin
+     * rather than a shuffle, given a thumb only has three keys to offer.
+     */
+    static final int ROLL_STEPS = 17;
+
+    /**
+     * Which character a slot shows part-way through the spinner.
+     *
+     * Counted <em>backwards</em> from the answer rather than forwards from a start: that way
+     * t == 1 lands on {@code finalKey} exactly, whatever the easing does in between. Getting
+     * this the other way round leaves the spinner stopping one short of the pair the game then
+     * asks for, which is unplayable and not obviously a bug.
+     *
+     * @param base  first key of this thumb's cluster
+     * @param count keys in the cluster
+     * @param t     0..1 progress through the spin
+     */
+    static int rolled(int finalKey, int base, int count, float t) {
+        if (t >= 1f) return finalKey;
+        if (t < 0f) t = 0f;
+        // Ease-out cubic: steps come fast at first and crawl into place at the end, which is
+        // what makes it read as slowing to a choice rather than simply stopping.
+        float e = 1f - (1f - t) * (1f - t) * (1f - t);
+        int togo = ROLL_STEPS - (int) (ROLL_STEPS * e);
+        int rel = ((finalKey - base - togo) % count + count) % count;
+        return base + rel;
+    }
+
+    /** Left slot of the spinner; the settled key once {@code t} reaches 1. */
+    int shownLeft(float t) {
+        return rolled(leftKey, 0, Glyph.COUNT / 2, t);
+    }
+
+    /** Right slot of the spinner; the settled key once {@code t} reaches 1. */
+    int shownRight(float t) {
+        int half = Glyph.COUNT / 2;
+        return rolled(rightKey, half, Glyph.COUNT - half, t);
+    }
+
     /**
      * A press during the interlude. Only the two chosen keys count, and only in alternation:
      * a completed left-then-right pair is worth one hit. Anything else restarts the pair.

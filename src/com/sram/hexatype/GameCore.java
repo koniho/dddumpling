@@ -22,6 +22,18 @@ final class GameCore {
      * accumulate across stages. At this length it takes roughly two interludes.
      */
     static final float BONUS_TIME = 2.2f;
+    /**
+     * Opening of the interlude, spent spinning to the pair of keys this round will use. The
+     * pair is already chosen when the spinner starts; this is presentation, and mashing is
+     * closed for the whole of it.
+     */
+    static final float BONUS_ROLL = 2.0f;
+    /**
+     * Beat between the mash timer expiring and anything starting to fade. Without it the
+     * scene begins dissolving on the same frame the clock hits zero, and there is nowhere to
+     * register that time is what ended the round.
+     */
+    static final float BONUS_HOLD = 1.0f;
     /** How long a stage title and its vignette stay on screen. */
     static final float BANNER_TIME = 1.9f;
     /** Tail of the interlude spent showing the run status before it fades out. */
@@ -200,6 +212,8 @@ final class GameCore {
     // ---- between-stages minigame -------------------------------------------
     final Steamer steamer = new Steamer();
     float bonusTimer;
+    /** Last character the spinner ticked on, so each step sounds exactly once. */
+    private int rollTick = -1;
 
     // ---- the collection ----------------------------------------------------
     /**
@@ -267,14 +281,71 @@ final class GameCore {
     float demoX, demoY;
     private float trailAcc;
 
-    /** True while the interlude still accepts presses, before the status hold. */
+    /**
+     * The interlude runs four phases off the one countdown, in this order: the spinner, the
+     * mash, a beat on zero, then the status report whose tail fades out.
+     *
+     * One timer rather than four, because the fade-out only has one value to read and because
+     * every boundary is then a comparison rather than a state transition that could be missed.
+     * Only the first boundary varies — a frenzy buys a longer mash — so it is stored.
+     */
+    float bonusRollEnd;
+
+    /** Timer value at which the mash gives way to the beat on zero. */
+    private static final float MASH_END = BONUS_HOLD + BONUS_STATUS;
+
+    /** Total length of an ordinary interlude: all four phases, without a frenzy's extra. */
+    static float bonusLength() {
+        return BONUS_ROLL + BONUS_TIME + BONUS_HOLD + BONUS_STATUS;
+    }
+
+    /** True while the spinner is still settling on this round's pair. */
+    boolean bonusRolling() {
+        return state == BONUS && bonusTimer > bonusRollEnd;
+    }
+
+    /** True while the interlude accepts presses. */
     boolean bonusMashing() {
-        return state == BONUS && bonusTimer > BONUS_STATUS;
+        return state == BONUS && bonusTimer <= bonusRollEnd && bonusTimer > MASH_END;
+    }
+
+    /** True during the beat after the clock runs out, before anything fades. */
+    boolean bonusHolding() {
+        return state == BONUS && bonusTimer <= MASH_END && bonusTimer > BONUS_STATUS;
     }
 
     /** True while the interlude is showing its end-of-round status. */
     boolean bonusStatus() {
         return state == BONUS && bonusTimer <= BONUS_STATUS;
+    }
+
+    /** 0..1 through the spinner, reaching 1 the moment it lands. */
+    float rollProgress() {
+        if (state != BONUS || bonusTimer <= bonusRollEnd) return 1f;
+        return 1f - (bonusTimer - bonusRollEnd) / BONUS_ROLL;
+    }
+
+    /**
+     * Seconds of mashing left, for the countdown. Held at the full length through the spinner
+     * so the clock shows what you are about to get rather than counting down behind it.
+     */
+    float bonusLeft() {
+        float mash = bonusRollEnd - MASH_END;
+        float left = bonusTimer - MASH_END;
+        return left < 0f ? 0f : left > mash ? mash : left;
+    }
+
+    /**
+     * The pair the interlude is showing right now: spinning while the spinner runs, settled
+     * afterwards. The renderer and the key deck both read these, so the deck rings whichever
+     * keys the spinner is on and cannot disagree with it.
+     */
+    int bonusLeftKey() {
+        return steamer.shownLeft(rollProgress());
+    }
+
+    int bonusRightKey() {
+        return steamer.shownRight(rollProgress());
     }
 
     /** True while the "drag a letter" demonstration should be on screen. */
@@ -931,6 +1002,15 @@ final class GameCore {
         if (state == BONUS) {
             steamer.update(dt);
             bonusTimer -= dt;
+            // One tick per character the spinner steps past, so it sounds like a spin. Only
+            // the left slot fires: both would double up on almost every step.
+            if (bonusRolling()) {
+                int shown = bonusLeftKey();
+                if (shown != rollTick) {
+                    rollTick = shown;
+                    if (sound != null) sound.squish(shown, 1);
+                }
+            }
             if (bonusTimer <= 0) {
                 // The interlude is what sat between the waves; the stage itself turns over
                 // on the way out of it.
@@ -1166,13 +1246,16 @@ final class GameCore {
     private void enterBonus() {
         state = BONUS;
         time = 0;
-        // A stage ended by a frenzy earns a longer go at the steamer.
-        // One timer for both phases: mashing while it is above BONUS_STATUS, then the status
-        // hold below that. Keeping it single means the fade-out has one thing to read.
-        bonusTimer = BONUS_TIME + BONUS_STATUS + (stageByPower ? Power.BONUS_EXTRA : 0f);
+        // A stage ended by a frenzy earns a longer go at the steamer. See bonusRollEnd for
+        // how the one timer carries all four phases.
+        bonusRollEnd = BONUS_TIME + (stageByPower ? Power.BONUS_EXTRA : 0f) + MASH_END;
+        bonusTimer = BONUS_ROLL + bonusRollEnd;
         steamer.lidPulse = 0;
         steamer.flash = 0;
+        // Chosen up front, before the spinner has shown anything: the spinner animates toward
+        // an answer that already exists rather than deciding when it stops.
         steamer.pick(rnd);
+        rollTick = -1;
         target = null;
         caretOwner = null;
         power = null;
@@ -1207,8 +1290,11 @@ final class GameCore {
         score += FREE_BONUS;
         if (lives < START_LIVES) lives++;
         awardPrize();
-        // Hold the interlude open long enough to watch it escape, plus the status beat.
-        bonusTimer = Math.max(bonusTimer, steamer.freedT + BONUS_STATUS + 0.2f);
+        // Hold the interlude open long enough to watch it escape, plus the beat and the
+        // status. Capped at the mash boundary: raising the timer past that would put the
+        // spinner back on screen and re-open a round that has just been won.
+        bonusTimer = Math.max(bonusTimer,
+                Math.min(steamer.freedT + MASH_END + 0.2f, bonusRollEnd));
         if (sound != null) sound.achievement();
     }
 
