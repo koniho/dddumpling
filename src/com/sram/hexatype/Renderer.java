@@ -38,6 +38,7 @@ final class Renderer extends Draw {
         shots(p, c, L);
         particles(p, c);
         flingHint(p, c, L);
+        blade(p, c, L);
 
         // ...and the nearest one in front of them, so words pass behind it. Kept the most
         // translucent of the three: it drifts over the play area and must never hide a letter.
@@ -48,12 +49,18 @@ final class Renderer extends Draw {
 
         // Red closing-in glow: from low health, and from a word about to land.
         Sky.vignette(p, L, ROSE, Math.max(hurt, c.warnLevel * (0.45f + 0.55f * hurtPulse)));
+        // Gold rim while the slow-motion beat runs, so the drop in speed reads as deliberate
+        // rather than as the game stuttering.
+        if (c.slowdown > 0f) {
+            Sky.vignette(p, L, GOLD, 0.22f * (c.slowdown / GameCore.SLOW_TIME));
+        }
 
         // The title and game-over screens carry their own numbers; a second copy is clutter.
         if (c.state == GameCore.PLAY) {
             Sky.hudBacking(p, L, Glyph.mix(BG, BG_HURT, hurt * 0.45f));
             Hud.hud(p, c, L);
             Hud.modeBar(p, c, L);
+            Hud.sliceCall(p, c, L);
         }
 
         if (c.flash > 0) {
@@ -264,7 +271,8 @@ final class Renderer extends Draw {
     /**
      * Instructional finger for FLING, shown until the player first touches. A hand outline
      * tracing the same arc the sparkle trail follows, so the hint demonstrates the gesture
-     * rather than describing it.
+     * rather than describing it — and the gesture is a swipe through the letters, not a grab
+     * of one, which is why the trail matters more than the hand.
      */
     static void flingHint(Painter p, GameCore c, Layout L) {
         if (!c.showFlingHint()) return;
@@ -293,6 +301,27 @@ final class Renderer extends Draw {
         // Fingertip, bright, sitting on the letters it is about to drag.
         p.fillCircle(x, y, r * 0.62f, Glyph.withAlpha(INK, 245));
         p.fillCircle(x, y, r * 0.30f, Glyph.withAlpha(0xFF2A2348, 210));
+    }
+
+    /**
+     * The blade, while a stroke is in progress: a bright streak along the last stretch of the
+     * stroke and a hot tip at the finger. The sparkle ribbon behind it does the length of the
+     * trail; this is the edge, and it is what makes the swipe read as a cut rather than as a
+     * finger with glitter on it.
+     */
+    static void blade(Painter p, GameCore c, Layout L) {
+        if (!c.flinging() || !c.fingerDown) return;
+        float r = L.enemyR * GameCore.BLADE;
+        int hue = Glyph.cycle(c.clock * 1.6f);
+
+        // Three passes, widest and faintest first, so the edge has a glow around it.
+        for (int k = 3; k >= 1; k--) {
+            p.line(c.bladeFromX, c.bladeFromY, c.fingerX, c.fingerY,
+                    Glyph.withAlpha(k == 1 ? INK : hue, k == 1 ? 235 : 70 / k),
+                    r * (k == 1 ? 0.20f : 0.34f * k));
+        }
+        p.fillCircle(c.fingerX, c.fingerY, r * 0.60f, Glyph.withAlpha(hue, 110));
+        p.fillCircle(c.fingerX, c.fingerY, r * 0.26f, Glyph.withAlpha(INK, 250));
     }
 
     static void shots(Painter p, GameCore c, Layout L) {

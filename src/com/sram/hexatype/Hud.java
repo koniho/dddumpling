@@ -75,6 +75,23 @@ final class Hud extends Draw {
      * Stage title, with one of ten character vignettes under it in place of the old
      * "FASTER NOW" line. They cycle by stage, so a run sees all ten.
      */
+    /**
+     * The payoff for a stroke that took several words at once, held for as long as the
+     * slow-motion beat it earned.
+     */
+    static void sliceCall(Painter p, GameCore c, Layout L) {
+        if (c.slowdown <= 0f || c.strokeKills < GameCore.SLOW_KILLS) return;
+        float s = L.unit;
+        // Swells as it lands and settles, off the beat's own remaining time.
+        float t = c.slowdown / GameCore.SLOW_TIME;
+        float pop = 1f + 0.35f * t * t;
+        int a = (int) (255 * Math.min(1f, t * 2.2f));
+        p.text(c.strokeKills + " IN ONE!", L.w / 2f, L.h * 0.30f, s * 1.6f * pop,
+                Glyph.withAlpha(GOLD, a), Painter.CENTER, true);
+        p.text(c.strokeCuts + " LETTERS", L.w / 2f, L.h * 0.30f + s * 1.15f, s * 0.70f,
+                Glyph.withAlpha(INK, a), Painter.CENTER, true);
+    }
+
     static void stageBanner(Painter p, GameCore c, Layout L) {
         float k = Math.min(1f, c.stageBanner / 0.4f);
         int a = (int) (235 * k);

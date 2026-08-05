@@ -59,6 +59,7 @@ final class CoreTest {
         TestPower.flurryMode(L);
         TestPower.multiMode(L);
         TestPower.flingMode(L);
+        TestPower.blade(L);
         TestPower.trail(L);
         TestPower.frenzyFallSpeed(L);
         TestPower.playtest(L);

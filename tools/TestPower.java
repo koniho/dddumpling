@@ -226,6 +226,101 @@ final class TestPower extends Check {
         check("a press matching nothing misses", c.misses == missesBefore + 1);
     }
 
+    /** The blade: what one stroke cuts, and the beat a multi-word stroke earns. */
+    static void blade(Layout L) {
+        group("FLING blade");
+        // Distance from a point to a segment, which is what decides every cut.
+        check("a point on the segment is at no distance",
+                GameCore.segDist2(5f, 0f, 0f, 0f, 10f, 0f) < 0.001f);
+        check("perpendicular offset is measured square",
+                Math.abs(GameCore.segDist2(5f, 3f, 0f, 0f, 10f, 0f) - 9f) < 0.001f);
+        check("past an end clamps to that end",
+                Math.abs(GameCore.segDist2(-4f, 0f, 0f, 0f, 10f, 0f) - 16f) < 0.001f);
+        check("a stationary finger degenerates to a point",
+                Math.abs(GameCore.segDist2(3f, 4f, 0f, 0f, 0f, 0f) - 25f) < 0.001f);
+        check("the blade is wider than a tile", GameCore.BLADE > 1f);
+
+        GameCore c = new GameCore(new Mem(), 231L);
+        c.startGame();
+        c.enemies.clear();
+        c.target = null;
+        place(c, L, Power.FLING, 0);
+        c.tapKey(0, L);
+        check("fling is running", c.flinging());
+
+        // One stroke straight across a whole word takes every letter in it. The old model cut
+        // one tile per gesture, and only if the gesture began on one.
+        GameCore.Enemy e = add(c, L, new int[] {1, 2, 3, 4}, L.playTop + 300f);
+        float y = e.y;
+        c.beginStroke(c.tileX(e, 0, L) - L.enemyR * 2f, y);
+        check("nothing is cut before it travels", c.strokeCuts == 0);
+        int cut = c.sliceTo(c.tileX(e, 3, L) + L.enemyR * 2f, y, L);
+        check("one sweep cuts the whole word", cut == 4 && c.strokeCuts == 4);
+        check("and that finished it", e.destroyed);
+        check("one word is not enough for the beat",
+                c.strokeKills == 1 && c.slowdown == 0f);
+        c.endStroke();
+
+        // A tap that does not move cuts nothing, so the mode stays a swipe.
+        c.enemies.clear();
+        GameCore.Enemy p2 = add(c, L, new int[] {1, 1}, L.playTop + 260f);
+        c.beginStroke(c.tileX(p2, 0, L), p2.y);
+        check("a tap on a letter cuts nothing on its own", c.strokeCuts == 0);
+        c.endStroke();
+        check("the letter survived it", !p2.gone[0]);
+
+        // Two words on one stroke earns the slow-motion beat.
+        GameCore d = new GameCore(new Mem(), 233L);
+        d.startGame();
+        d.enemies.clear();
+        d.target = null;
+        place(d, L, Power.FLING, 0);
+        d.tapKey(0, L);
+        float row = L.playTop + 320f;
+        GameCore.Enemy a = add(d, L, new int[] {1}, row);
+        GameCore.Enemy b = add(d, L, new int[] {2}, row);
+        a.baseX = L.playLeft + L.enemyR * 2f;
+        b.baseX = L.playRight - L.enemyR * 2f;
+        check("no slow motion to begin with", d.slowdown == 0f && d.timeScale() == 1f);
+        d.beginStroke(L.playLeft, row);
+        d.sliceTo(L.playRight, row, L);
+        check("both words went in one stroke",
+                a.destroyed && b.destroyed && d.strokeKills == 2);
+        check("that earns the beat", d.slowdown > 0f);
+        check("and the world actually slows",
+                Math.abs(d.timeScale() - GameCore.SLOW_RATE) < 0.001f);
+        check("the beat is brief", GameCore.SLOW_TIME <= 1f);
+        d.endStroke();
+
+        // It runs on real time: slowing the world must not slow its own expiry.
+        float was = d.slowdown;
+        d.update(DT, L);
+        check("it ticks down by real time, not scaled time",
+                Math.abs((was - d.slowdown) - DT) < 0.0005f);
+        advance(d, L, GameCore.SLOW_TIME + 0.1f);
+        check("it ends by itself", d.slowdown == 0f && d.timeScale() == 1f);
+
+        // A word falls slower while it lasts, which is the whole point.
+        GameCore f = new GameCore(new Mem(), 235L);
+        f.startGame();
+        f.enemies.clear();
+        GameCore.Enemy slow = add(f, L, new int[] {1}, L.playTop + 100f);
+        slow.speed = 200f;
+        f.update(DT, L);
+        float normal = slow.y - (L.playTop + 100f);
+        slow.y = L.playTop + 100f;
+        f.slowdown = GameCore.SLOW_TIME;
+        f.update(DT, L);
+        float slowed = slow.y - (L.playTop + 100f);
+        check("a word falls slower during the beat", slowed < normal * 0.5f);
+
+        // The counts survive the stroke that made them, for the readout, and reset on the next.
+        check("the counts outlive the stroke", d.strokeKills == 2);
+        d.beginStroke(0f, row);
+        check("a new stroke starts them over", d.strokeKills == 0 && d.strokeCuts == 0);
+        check("the trail is twice what it was", GameCore.TRAIL_RATE == 100f);
+    }
+
     static void flingMode(Layout L) {
         group("FLING");
         GameCore c = new GameCore(new Mem(), 208L);
@@ -238,11 +333,11 @@ final class TestPower extends Check {
 
         GameCore.Enemy e = add(c, L, new int[] {1, 2, 3}, L.playTop + 300);
 
-        // A tile can be picked out from under a point, and thrown out of order.
-        check("a tile is found under its own centre",
-                c.pickTile(c.tileX(e, 1, L), e.y, L) && c.pickedEnemy == e
-                        && c.pickedTile == 1);
-        check("empty space finds nothing", !c.pickTile(L.w * 0.5f, L.playTop + 10f, L));
+        // The blade cuts what a stroke sweeps past, and nothing when it sweeps past nothing.
+        c.beginStroke(c.tileX(e, 1, L) - L.enemyR * 4f, e.y);
+        check("empty air cuts nothing",
+                c.sliceTo(c.tileX(e, 1, L) - L.enemyR * 3f, L.playTop + 10f, L) == 0);
+        c.endStroke();
 
         c.removeTile(e, 1, 1f, -1f, L);
         check("the middle letter is gone out of order", e.gone[1]);

@@ -150,16 +150,12 @@ public class GameView extends View {
         return true;
     }
 
-    private GameCore.Enemy grabbed;
-    private int grabbedTile = -1;
-    private float grabX, grabY;
-
     /**
-     * A drag that starts on a letter throws it away. Returns true when the event belonged to
-     * the fling gesture, so the caller leaves it alone.
+     * FLING is a blade: a stroke cuts every letter it sweeps past. Returns true when the event
+     * belonged to the gesture, so the caller leaves it alone.
      *
-     * The letter goes once the drag passes a threshold rather than on release: it makes the
-     * gesture feel like a flick, and it lets one continuous drag clear several letters.
+     * This used to grab a letter and drag it, which is why the mode felt weak — one letter per
+     * gesture, and only if the gesture happened to start on one.
      */
     private boolean handleFling(MotionEvent ev, int action) {
         int i = ev.getActionIndex();
@@ -167,50 +163,26 @@ public class GameView extends View {
 
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
             if (y > layout.deckTop) return false;          // that is the key deck
-            // The trail follows the finger anywhere in the field, whether or not the touch
-            // landed on a letter, and touching once retires the instructional hint.
-            core.fingerDown = true;
-            core.fingerX = x;
-            core.fingerY = y;
-            core.flingUsed = true;
-            if (core.pickTile(x, y, layout)) {
-                grabbed = core.pickedEnemy;
-                grabbedTile = core.pickedTile;
-                grabX = x;
-                grabY = y;
-            }
+            core.beginStroke(x, y);
             return true;
         }
 
         if (action == MotionEvent.ACTION_MOVE) {
-            core.fingerX = x;
-            core.fingerY = y;
-        }
-
-        if (action == MotionEvent.ACTION_MOVE && grabbed != null) {
-            float dx = x - grabX, dy = y - grabY;
-            if (dx * dx + dy * dy > layout.enemyR * layout.enemyR) {
-                core.removeTile(grabbed, grabbedTile, dx, dy, layout);
-                tick();
-                grabbed = null;
-                grabbedTile = -1;
-                // Let the same drag pick up whatever it moves over next.
-                if (core.pickTile(x, y, layout)) {
-                    grabbed = core.pickedEnemy;
-                    grabbedTile = core.pickedTile;
-                    grabX = x;
-                    grabY = y;
+            // Every sample in the batch, not just the newest. A fast swipe arrives as one event
+            // carrying several positions, and slicing only the last one leaves gaps in the cut.
+            for (int h = 0; h < ev.getHistorySize(); h++) {
+                if (core.sliceTo(ev.getHistoricalX(i, h), ev.getHistoricalY(i, h), layout) > 0) {
+                    tick();
                 }
             }
+            if (core.sliceTo(x, y, layout) > 0) tick();
             return true;
         }
 
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
                 || action == MotionEvent.ACTION_POINTER_UP) {
-            boolean had = grabbed != null || core.fingerDown;
-            core.fingerDown = false;
-            grabbed = null;
-            grabbedTile = -1;
+            boolean had = core.fingerDown;
+            core.endStroke();
             return had;
         }
         return core.fingerDown;

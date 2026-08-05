@@ -18,7 +18,7 @@ final class Power {
     static final int COUNT = 3;
 
     static final String[] NAMES = {"FLURRY", "FLING", "MULTI"};
-    static final String[] BLURB = {"ANY KEY HITS", "DRAG LETTERS AWAY", "CLEARS EVERY MATCH"};
+    static final String[] BLURB = {"ANY KEY HITS", "SWIPE TO SLICE", "CLEARS EVERY MATCH"};
 
     /**
      * How long the frenzy lasts. Ending it clears the stage outright, so this doubles as the

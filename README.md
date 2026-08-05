@@ -42,7 +42,7 @@ the conventions and, more usefully, the traps that have already cost time.
 
 It does two things:
 
-1. **Rule assertions** (`tools/CoreTest.java`) — 665 of them across eleven suites: layout
+1. **Rule assertions** (`tools/CoreTest.java`) — 687 of them across eleven suites: layout
    geometry, hit-testing, targeting, scoring, stage pacing, the interlude's four phases, the
    collectible catalogue and its odds, the stories, plus a two-minute perfect-play run and a
    ten-minute random-input fuzz.
@@ -226,6 +226,7 @@ than a rewrite. All of them take the player's speed setting into account where i
 | `START_LIVES`, `STEAMER_HITS` | lives, and presses needed to free the dumpling |
 | `BONUS_ROLL`, `BONUS_TIME`, `BONUS_HOLD`, `BONUS_STATUS` | the interlude's four phases |
 | `PARADE_TIME` | how long the parade takes after a win |
+| `BLADE`, `SLOW_KILLS`, `SLOW_TIME`, `SLOW_RATE` | how wide FLING cuts, and the slow-motion beat |
 | `Collect.TIER_WEIGHT` | blind-box rarity odds |
 
 Several constants are at their value because the obvious value was wrong, and the comment says

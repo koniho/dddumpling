@@ -345,6 +345,50 @@ final class Preview {
                 c10.showFlingHint(), c10.demoX, c10.demoY, c10.particles.size());
         shot(dir, "18-fling-hint", c10, L, w, h, ss);
 
+        // The blade mid-stroke, having just taken two words at once: the streak, the doubled
+        // sparkle ribbon, the gold rim and the payoff readout.
+        GameCore c14 = new GameCore(store, 61L);
+        c14.startGame();
+        c14.score = 4100;
+        step(c14, L, 1.9f);
+        c14.enemies.clear();
+        c14.target = null;
+        Power blade = new Power();
+        blade.glyph = 4;
+        blade.effect = Power.FLING;
+        blade.y = L.playTop + 100f;
+        blade.x = L.w * 0.5f;
+        c14.power = blade;
+        c14.tapKey(4, L);
+        float row = L.playTop + (L.dangerY - L.playTop) * 0.42f;
+        GameCore.Enemy g1 = new GameCore.Enemy();
+        GameCore.Enemy g2 = new GameCore.Enemy();
+        for (GameCore.Enemy g : new GameCore.Enemy[] {g1, g2}) {
+            g.word = new int[] {1, 3};
+            g.need = new int[] {1, 1};
+            g.gone = new boolean[2];
+            g.goneT = new float[2];
+            g.goneDx = new float[2];
+            g.goneDy = new float[2];
+            g.y = row;
+            g.enterT = 1f;
+            c14.enemies.add(g);
+        }
+        g1.baseX = L.playLeft + L.enemyR * 3.2f;
+        g2.baseX = L.playRight - L.enemyR * 3.2f;
+        // Sweep across both, in samples, the way a real swipe arrives.
+        c14.beginStroke(L.playLeft - L.enemyR, row);
+        for (int i = 1; i <= 11; i++) {
+            c14.sliceTo(L.playLeft - L.enemyR + (L.playRight - L.playLeft) * i / 12f, row, L);
+            step(c14, L, DT);
+        }
+        // One more sample without a frame between, so the edge is caught mid-swing rather than
+        // at the instant the trail has just been brought up to the finger.
+        c14.sliceTo(L.playRight, row, L);
+        System.out.printf("blade: %d words and %d letters in one stroke, slowdown=%.2f%n",
+                c14.strokeKills, c14.strokeCuts, c14.slowdown);
+        shot(dir, "31-blade", c14, L, w, h, ss);
+
         // Settings panel, opened mid-game.
         GameCore c6 = new GameCore(store, 29L);
         c6.startGame();

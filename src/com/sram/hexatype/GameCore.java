@@ -304,11 +304,7 @@ final class GameCore {
         return powerActive() ? Power.FALL_RATE : 1f;
     }
 
-    /** Scratch results from {@link #pickTile}. */
-    Enemy pickedEnemy;
-    int pickedTile = -1;
-
-    // ---- FLING touch trail --------------------------------------------------
+    // ---- FLING blade --------------------------------------------------------
     /** Live finger position while dragging, set by the view. */
     boolean fingerDown;
     float fingerX, fingerY;
@@ -317,6 +313,37 @@ final class GameCore {
     /** Where the instructional finger currently sits, for the renderer to follow. */
     float demoX, demoY;
     private float trailAcc;
+    /** Where the trail was emitted from last frame, so a fast swipe still leaves a ribbon. */
+    private float trailPrevX, trailPrevY;
+    /**
+     * The stretch the blade covered over the last frame, for the renderer to draw the edge
+     * along. Kept separately from {@link #trailPrevX} because that one is brought up to the
+     * finger before the frame is drawn, which would leave the edge with no length at all.
+     */
+    float bladeFromX, bladeFromY;
+
+    /**
+     * How wide the blade cuts, in tile radii. Generous: this is a swipe through a moving field
+     * of small targets, and the whole point of the mode is that it feels powerful.
+     */
+    static final float BLADE = 1.15f;
+    /** Words a single stroke has destroyed, held until the next stroke begins. */
+    int strokeKills;
+    /** Tiles a single stroke has cut, same lifetime. */
+    int strokeCuts;
+    /** Words in one stroke that earn the slow-motion beat. */
+    static final int SLOW_KILLS = 2;
+    /** How long that beat lasts, in real seconds. */
+    static final float SLOW_TIME = 0.5f;
+    /** Fraction of normal speed the world runs at during it. */
+    static final float SLOW_RATE = 0.32f;
+    /** Seconds of slow motion left. */
+    float slowdown;
+
+    /** How much of normal speed the simulation is running at. */
+    float timeScale() {
+        return slowdown > 0f ? SLOW_RATE : 1f;
+    }
 
     /**
      * The interlude runs four phases off the one countdown, in this order: the spinner, the
@@ -433,13 +460,31 @@ final class GameCore {
             return;
         }
 
+        // Captured before the emission below advances trailPrev to the finger.
+        bladeFromX = trailPrevX;
+        bladeFromY = trailPrevY;
+
         trailAcc += dt;
-        float per = 1f / 50f;
+        float per = 1f / TRAIL_RATE;
+        int emit = 0;
         while (trailAcc >= per) {
             trailAcc -= per;
-            Fx.sparkle(this, rnd, sx, sy, L.enemyR * 0.85f, Glyph.cycle(clock * 1.6f));
+            emit++;
         }
+        // Spread along the path swept since the last frame rather than all dropped at the
+        // current point: a quick swipe otherwise leaves a dotted line instead of a blade trail.
+        for (int k = 0; k < emit; k++) {
+            float f = emit == 1 ? 1f : (float) k / (emit - 1);
+            Fx.sparkle(this, rnd, trailPrevX + (sx - trailPrevX) * f,
+                    trailPrevY + (sy - trailPrevY) * f, L.enemyR * 0.85f,
+                    Glyph.cycle(clock * 1.6f));
+        }
+        trailPrevX = sx;
+        trailPrevY = sy;
     }
+
+    /** Sparkles a second, along the blade. */
+    static final float TRAIL_RATE = 100f;
 
     /** Ticks the frenzy timer, and the drifting letter that starts one. */
     private void updatePower(float dt, Layout L) {
@@ -497,6 +542,8 @@ final class GameCore {
         modeLeft = Power.DURATION;
         flingUsed = false;
         fingerDown = false;
+        strokeKills = 0;
+        strokeCuts = 0;
         shake = Math.max(shake, 0.5f);
         flash = Math.max(flash, 0.8f);
         flashColor = FLASH_CLEAR;
@@ -1043,6 +1090,10 @@ final class GameCore {
     // ---- simulation ---------------------------------------------------------
 
     void update(float dt, Layout L) {
+        // Slow motion from a multi-word fling stroke. Ticked on real time and before the
+        // scaling below, so the beat is not slowed down by the thing it is slowing.
+        if (slowdown > 0f) slowdown = Math.max(0f, slowdown - dt);
+        dt *= timeScale();
         // The clock keeps running so the panel itself can animate, but nothing else moves.
         clock += dt;
         if (settingsOpen) return;
@@ -1272,30 +1323,95 @@ final class GameCore {
         if (e.pos >= e.word.length) destroyWord(e, tx, e.y, L);
     }
 
+    // ---- the blade ----------------------------------------------------------
+
     /**
-     * The topmost tile under a point, for flinging. Results land in {@link #pickedEnemy} and
-     * {@link #pickedTile} to avoid allocating on every touch move.
+     * Starts a blade stroke. Nothing is cut yet: a tap that does not travel cuts nothing, which
+     * is what keeps the mode a swipe rather than a poke.
      */
-    boolean pickTile(float x, float y, Layout L) {
-        pickedEnemy = null;
-        pickedTile = -1;
-        float best = Float.MAX_VALUE;
-        for (int n = 0; n < enemies.size(); n++) {
+    void beginStroke(float x, float y) {
+        fingerDown = true;
+        fingerX = x;
+        fingerY = y;
+        trailPrevX = x;
+        trailPrevY = y;
+        bladeFromX = x;
+        bladeFromY = y;
+        flingUsed = true;
+        strokeKills = 0;
+        strokeCuts = 0;
+    }
+
+    /**
+     * Extends the stroke to x,y and cuts every tile the blade swept past on the way — not just
+     * the ones under the end point, so a fast swipe cuts the whole line it crossed instead of
+     * whatever happened to be under the last touch sample.
+     *
+     * Grabbing a tile and dragging it was the old model, and it was the reason the mode felt
+     * weak: it cut one tile per gesture, only if the gesture started exactly on one.
+     *
+     * @return tiles cut by this segment
+     */
+    int sliceTo(float x, float y, Layout L) {
+        float x0 = fingerX, y0 = fingerY;
+        fingerX = x;
+        fingerY = y;
+        if (!flinging() || !fingerDown) return 0;
+
+        int cut = 0;
+        float r = L.enemyR * BLADE;
+        // Downward, because destroying a word mutates the list from under the loop.
+        for (int n = enemies.size() - 1; n >= 0; n--) {
+            if (n >= enemies.size()) continue;
             Enemy e = enemies.get(n);
             if (!e.typeable()) continue;
-            for (int i = e.pos; i < e.word.length; i++) {
+            for (int i = e.word.length - 1; i >= e.pos; i--) {
                 if (e.gone[i]) continue;
-                float dx = x - tileX(e, i, L), dy = y - e.y;
-                float d = dx * dx + dy * dy;
-                float r = L.enemyR * 1.5f;
-                if (d <= r * r && d < best) {
-                    best = d;
-                    pickedEnemy = e;
-                    pickedTile = i;
+                if (segDist2(tileX(e, i, L), e.y, x0, y0, x, y) > r * r) continue;
+                boolean alive = !e.destroyed;
+                // Sent along the stroke, so the cut piece flies the way the blade went.
+                removeTile(e, i, x - x0, y - y0, L);
+                cut++;
+                strokeCuts++;
+                if (alive && e.destroyed) {
+                    strokeKills++;
+                    // Second word and every one after refreshes the beat, so a long sweep
+                    // through four words stays slow for the whole of it.
+                    if (strokeKills >= SLOW_KILLS) startSlowdown();
                 }
+                if (!e.typeable()) break;
             }
         }
-        return pickedEnemy != null;
+        return cut;
+    }
+
+    /** Ends the stroke. The kill and cut counts survive it, for the readout. */
+    void endStroke() {
+        fingerDown = false;
+    }
+
+    /** The slow-motion beat that lands when one stroke takes several words. */
+    private void startSlowdown() {
+        slowdown = SLOW_TIME;
+        // Restrained on purpose: destroying the words has already fired a screen flash and
+        // flooded the sky for each of them, and piling a third wash on top of that whited out
+        // the whole field at exactly the moment there was something worth looking at.
+        shake = Math.max(shake, 0.35f);
+        flash = Math.max(flash, 0.45f);
+        flashColor = FLASH_CLEAR;
+        if (sound != null) sound.achievement();
+    }
+
+    /** Squared distance from a point to the segment a-b. */
+    static float segDist2(float px, float py, float ax, float ay, float bx, float by) {
+        float dx = bx - ax, dy = by - ay;
+        float len2 = dx * dx + dy * dy;
+        // A stationary finger degenerates to a point, which is still a legitimate test.
+        float t = len2 <= 1e-6f ? 0f : ((px - ax) * dx + (py - ay) * dy) / len2;
+        if (t < 0f) t = 0f;
+        else if (t > 1f) t = 1f;
+        float qx = ax + dx * t - px, qy = ay + dy * t - py;
+        return qx * qx + qy * qy;
     }
 
     /**

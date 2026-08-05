@@ -124,9 +124,13 @@ geometry; `Kawaii` draws the creature.
 | **frenzy** | the 15-second period after catching one | `mode`, `modeLeft` ← *mismatch* |
 | **mode bar** | the name, blurb and countdown at the top during a frenzy | `Hud.modeBar` |
 | **FLURRY** | every key is a wildcard; letters and keys go rainbow | `Power.FLURRY` |
-| **FLING** | drag letters bodily off the screen | `Power.FLING` |
+| **FLING** | the blade: a swipe cuts every letter it sweeps past | `Power.FLING` |
+| **blade** | the cutting edge itself, drawn along the last stretch of the stroke | `Renderer.blade`, `GameCore.BLADE` |
+| **stroke** | one touch-down to touch-up of the blade | `GameCore.beginStroke`, `sliceTo`, `endStroke` |
+| **slow-motion beat** | the brief slowdown a stroke earns by taking two or more words | `GameCore.slowdown`, `SLOW_RATE` |
+| **slice call** | the "N IN ONE!" readout during that beat | `Hud.sliceCall` |
 | **MULTI** | one press clears every matching letter everywhere | `Power.MULTI` |
-| **sparkle trail** | the rainbow ribbon following your finger during FLING | `Fx.sparkle` |
+| **sparkle trail** | the rainbow ribbon following the blade during FLING | `Fx.sparkle`, `GameCore.TRAIL_RATE` |
 | **fling hint** | the instructional finger shown until you first touch | `Renderer.flingHint` |
 | **playtest chips** | the FLURRY/FLING/MULTI buttons in settings | `SettingsUi.HIT_TEST` |
 

@@ -11,7 +11,7 @@ trip working out which thing was meant.
 ## The one thing that matters most
 
 **You can see and hear this game without building or installing it.** `./check.sh` runs the
-whole thing headlessly: ~665 rule assertions, then it renders real frames to `out/*.png` and
+whole thing headlessly: ~690 rule assertions, then it renders real frames to `out/*.png` and
 every sound to `out/sfx/*.wav`. Read the PNGs with the Read tool — the `0-*.png` sheets each
 show a whole set at once (the six letters, the thirty collectibles, both vignette casts). That loop is seconds, not
 minutes, and it needs no device.
@@ -137,6 +137,10 @@ nothing. Follow the pattern rather than "fixing" it.
 - **`Painter` cannot clip to a shape,** only to a rectangle. That is why a banded finish in
   `Trinket` is fitted to an ellipse and why `Collect.banded` restricts which shapes may wear
   one — there is an assertion holding the catalogue to it.
+- **A per-frame "previous position" is already the current one by draw time.** The blade edge
+  is drawn between where the finger was last frame and where it is now, and reusing the trail's
+  own `trailPrev` for that gave a zero-length line every time — `updateTrail` brings it up to
+  the finger before the frame is drawn. `bladeFromX/Y` is captured before that happens.
 - **Loading a preference is not the same as applying it.** `GameCore` read the music choice out
   of the store into `bgmChoice` and never told the audio backend, which fell back to its own
   first track on every launch — so both the stored choice and the first-run default did nothing
