@@ -207,6 +207,107 @@ final class TestStages extends Check {
         return advanceToMash(c, L);
     }
 
+    /** The push-back: when it is offered, what it moves, and that it is once a stage. */
+    static void pushBack(Layout L) {
+        group("push-back");
+        GameCore c = new GameCore(new Mem(), 161L);
+        c.startGame();
+        c.enemies.clear();
+        advance(c, L, 2f);
+        c.enemies.clear();
+        check("not offered with an empty field", !c.pushReady());
+
+        // A word high up is not a threat, so the swipe stays unavailable.
+        GameCore.Enemy high = add(c, L, new int[] {1, 2}, L.playTop + 40f);
+        c.update(DT, L);
+        check("a word far from the line does not arm it", !c.pushReady());
+        check("nothing to warn about", c.warnLevel == 0f);
+
+        // One inside the warning band does.
+        GameCore.Enemy low = add(c, L, new int[] {3, 4}, L.dangerY - L.enemyR * 1.2f);
+        c.update(DT, L);
+        check("something closing in arms it", c.warnLevel > 0f && c.pushReady());
+
+        float highWas = high.y, lowWas = low.y;
+        check("the swipe fires", c.pushBack(L));
+        check("the near word is shoved back", low.y < lowWas - L.enemyR);
+        check("the far word is left alone", high.y == highWas);
+        check("it counted what it moved", c.pushCount == 1);
+        check("the alarm is cleared", c.warnLevel == 0f);
+        check("and it shows a shockwave", c.pushT > 0f);
+
+        // Spent for the stage.
+        check("no longer offered", !c.pushReady());
+        check("and it will not fire again", !c.pushBack(L));
+        low.y = L.dangerY - L.enemyR * 1.2f;
+        c.update(DT, L);
+        check("still spent with a fresh threat", c.warnLevel > 0f && !c.pushReady());
+
+        // A committed lunge is called off — the moment the button exists for.
+        GameCore d = new GameCore(new Mem(), 163L);
+        d.startGame();
+        d.enemies.clear();
+        advance(d, L, 2f);
+        d.enemies.clear();
+        GameCore.Enemy diving = add(d, L, new int[] {0}, L.dangerY - L.enemyR + 1f);
+        advance(d, L, GameCore.ATTACK_TIME * 0.4f);
+        check("it is lunging", diving.attacking && d.lives == GameCore.START_LIVES);
+        check("the swipe is available", d.pushReady());
+        check("and it fires", d.pushBack(L));
+        check("the lunge is called off", !diving.attacking && diving.attackT == 0f);
+        check("no life was lost", d.lives == GameCore.START_LIVES);
+        advance(d, L, GameCore.ATTACK_TIME + 0.2f);
+        check("and none is lost afterwards", d.lives == GameCore.START_LIVES);
+
+        // Never pushed above the top of the field.
+        GameCore e = new GameCore(new Mem(), 165L);
+        e.startGame();
+        e.enemies.clear();
+        advance(e, L, 2f);
+        e.enemies.clear();
+        GameCore.Enemy near = add(e, L, new int[] {1}, L.dangerY - L.enemyR);
+        e.update(DT, L);
+        e.pushBack(L);
+        check("it stays inside the field", near.y >= L.playTop);
+
+        // A new stage hands the swipe back.
+        GameCore f = new GameCore(new Mem(), 167L);
+        f.startGame();
+        f.enemies.clear();
+        advance(f, L, 2f);
+        f.enemies.clear();
+        add(f, L, new int[] {1}, L.dangerY - L.enemyR * 1.2f);
+        f.update(DT, L);
+        f.pushBack(L);
+        check("spent this stage", f.pushUsed);
+        f.enemies.clear();
+        f.shots.clear();
+        f.spawnedThisStage = f.stageQuota();
+        check("through the interlude", advancePastBonus(f, L));
+        check("the next stage hands it back", !f.pushUsed);
+        // And so does a fresh run.
+        f.pushUsed = true;
+        f.startGame();
+        check("so does a new game", !f.pushUsed && f.pushT == 0f);
+
+        // Not offered outside play, or behind the settings panel.
+        GameCore g = new GameCore(new Mem(), 169L);
+        g.startGame();
+        g.enemies.clear();
+        advance(g, L, 2f);
+        g.enemies.clear();
+        add(g, L, new int[] {1}, L.dangerY - L.enemyR * 1.2f);
+        g.update(DT, L);
+        check("offered in play", g.pushReady());
+        g.openSettings();
+        check("not behind the settings panel", !g.pushReady());
+        g.closeSettings();
+        g.update(DT, L);
+        check("offered again once it closes", g.pushReady());
+        g.toTitle();
+        check("not on the title screen", !g.pushReady() && !g.pushBack(L));
+    }
+
     /** The spinner as a pure function: it must land on its answer, from any pair. */
     static void spinner(Layout L) {
         group("interlude spinner");

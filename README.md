@@ -10,7 +10,9 @@ Android Studio, no PC.
 Cute words fall from the sky. Each "letter" is one of six characters — dumpling, strawberry,
 cat, grapes, squishy, blob — with its own colour and face. You type by tapping the matching
 hexagon in the honeycomb deck at the bottom: three keys under the left thumb, three under the
-right. Clear a word before it reaches the danger line, or it lunges and costs you a life.
+right. Clear a word before it reaches the danger line, or it lunges and costs you a life. Once a stage, when something is bearing down on the line, you can swipe up out
+of the strip just below it to shove the whole bottom half of the field back — a lunge already
+committed included.
 
 Between stages a dim sum steamer arrives and spins for two of your six keys; alternate them to
 prise the lid off. The dumpling inside is a blind box — freeing it hands over one of thirty
@@ -46,7 +48,7 @@ the conventions and, more usefully, the traps that have already cost time.
 
 It does two things:
 
-1. **Rule assertions** (`tools/CoreTest.java`) — 831 of them across eleven suites: layout
+1. **Rule assertions** (`tools/CoreTest.java`) — 859 of them across eleven suites: layout
    geometry, hit-testing, targeting, scoring, stage pacing, the interlude's phases and both paths through it, the
    collectible catalogue and its odds, the stories, plus a two-minute perfect-play run and a
    ten-minute random-input fuzz.
@@ -230,6 +232,7 @@ than a rewrite. All of them take the player's speed setting into account where i
 | `stackChance()` | odds a tile needs more than one press |
 | `START_LIVES`, `STEAMER_HITS` | lives, and presses needed to free the dumpling |
 | `BONUS_ROLL`, `BONUS_TIME`, `BONUS_HOLD`, `BONUS_STATUS` | the interlude's four phases |
+| `PUSH_LIFT`, `PUSH_TIME` | how far the panic swipe shoves, and how long its wave shows |
 | `Steamer.FREE_TIME`, `PARADE_TIME` | the two segments of a win: the escape, then the parade |
 | `Parade.IN_END`, `JOIN_END` | how the parade splits into marching in, joining, marching off |
 | `BLADE`, `SLOW_KILLS`, `SLOW_TIME`, `SLOW_RATE` | how wide FLING cuts, and the slow-motion beat |

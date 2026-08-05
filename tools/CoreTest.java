@@ -32,6 +32,7 @@ final class CoreTest {
         TestStages.steamerBonus(L);
         TestStages.accuracyTracking(L);
         TestStages.warningsAndHarm(L);
+        TestStages.pushBack(L);
 
         TestCollect.catalogue(L);
         TestCollect.ownedSet(L);

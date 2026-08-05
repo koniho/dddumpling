@@ -33,7 +33,9 @@ final class Renderer extends Draw {
         }
 
         dangerLine(p, c, L);
+        pushHint(p, c, L);
         for (int i = 0; i < c.enemies.size(); i++) enemy(p, c, L, c.enemies.get(i));
+        pushWave(p, c, L);
         buddy(p, c, L);
         powerup(p, c, L);
         chain(p, c, L);
@@ -64,6 +66,7 @@ final class Renderer extends Draw {
             Hud.modeBar(p, c, L);
             Hud.sliceCall(p, c, L);
             Hud.chainCall(p, c, L);
+            Hud.pushCall(p, c, L);
         }
 
         if (c.flash > 0) {
@@ -232,6 +235,51 @@ final class Renderer extends Draw {
                 p.fillPoly(new float[] {ix - cw, cy - cw, ix + cw, cy - cw, ix, cy + cw * 0.75f},
                         Glyph.withAlpha(INK, 225));
             }
+        }
+    }
+
+    /**
+     * The push-back affordance: an upward chevron band in the strip between the danger line and
+     * the key deck, shown only while the swipe is available and something is closing in.
+     *
+     * Drawn exactly where the finger has to start, because that strip is narrow and nothing else
+     * would tell you it is a target. It disappears the moment the swipe is spent, which is also
+     * how you know it is gone for the rest of the stage.
+     */
+    static void pushHint(Painter p, GameCore c, Layout L) {
+        if (!c.pushReady()) return;
+        float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 6.5f);
+        float top = L.dangerY, bot = L.deckTop, h = bot - top;
+        int a = (int) (80 + 100 * pulse);
+        p.fillRect(L.playLeft, top, L.playRight, bot, Glyph.withAlpha(GOLD, a / 5));
+
+        // Chevrons out at the edges, marching up with the pulse; the label owns the middle.
+        float rise = h * (0.26f + 0.30f * pulse);
+        for (int side = -1; side <= 1; side += 2) {
+            for (int k = 1; k <= 2; k++) {
+                float cx = L.w / 2f + side * (L.playRight - L.playLeft) * (0.16f + 0.11f * k);
+                float y = bot - rise;
+                p.polyline(new float[] {cx - h * 0.30f, y + h * 0.26f, cx, y,
+                        cx + h * 0.30f, y + h * 0.26f}, Glyph.withAlpha(GOLD, a), h * 0.11f);
+            }
+        }
+        p.text("SWIPE UP", L.w / 2f, bot - h * 0.22f, h * 0.52f, Glyph.withAlpha(GOLD, a),
+                Painter.CENTER, true);
+    }
+
+    /** The push-back landing: bands sweeping up off the line, fading as they climb. */
+    static void pushWave(Painter p, GameCore c, Layout L) {
+        if (c.pushT <= 0f) return;
+        float t = 1f - c.pushT / GameCore.PUSH_TIME;
+        float half = (L.playRight - L.playLeft) / 2f;
+        for (int k = 0; k < 3; k++) {
+            // Staggered, so it reads as a wave rather than one thick bar.
+            float own = t - k * 0.13f;
+            if (own <= 0f) continue;
+            float y = L.dangerY - own * (L.dangerY - L.playTop) * 1.05f;
+            int a = (int) (200 * (1f - own) * (1f - own));
+            p.fillPoly(pill(L.w / 2f, y, half * (0.72f + 0.28f * own), L.unit * 0.15f, 8),
+                    Glyph.withAlpha(GOLD, a));
         }
     }
 

@@ -92,6 +92,13 @@ final class Hud extends Draw {
                 "+" + c.chainScore, Glyph.COLOR[c.chainGlyph]);
     }
 
+    /** The push-back payoff, in the same place as the other two so they read alike. */
+    static void pushCall(Painter p, GameCore c, Layout L) {
+        if (c.pushT <= 0f) return;
+        callOut(p, L, c.pushT / GameCore.PUSH_TIME, "PUSHED BACK!",
+                c.pushCount + (c.pushCount == 1 ? " WORD" : " WORDS"), GOLD);
+    }
+
     /** Hops a chain needs before it is worth announcing. Two is just a pair. */
     static final int CHAIN_CALL = 3;
 

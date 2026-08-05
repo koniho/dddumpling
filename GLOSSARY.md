@@ -51,6 +51,9 @@ geometry; `Kawaii` draws the creature.
 | **squish** (a word) | clearing a word; the game-over screen counts them | `GameCore.squishes` |
 | **harm** | how far health has fallen; drives the red tint and pulse. Squared, so it bites on the last life rather than the first | `GameCore.harm()` |
 | **edge glow** / **vignette** | the red glow at the screen edges | `Sky.vignette` |
+| **push-back** | the panic swipe: shoves the bottom half of the field back, once a stage | `GameCore.pushBack`, `pushReady` |
+| **swipe strip** | the band between the danger line and the deck the gesture starts in | `Renderer.pushHint` |
+| **shockwave** | the gold bands sweeping up when it lands | `Renderer.pushWave` |
 
 ## Player input
 

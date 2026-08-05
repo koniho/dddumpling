@@ -98,6 +98,11 @@ public class GameView extends View {
         // starts on a letter is never mistaken for a key press.
         if (core.flinging() && handleFling(ev, action)) return true;
 
+        // Panic swipe: an upward drag out of the strip between the danger line and the deck.
+        // Needs MOVE events, so it is handled before the down-only filter. After the blade,
+        // because during a FLING frenzy a stroke through that strip is a cut and should stay one.
+        if (handlePush(ev, action)) return true;
+
         if (action != MotionEvent.ACTION_DOWN && action != MotionEvent.ACTION_POINTER_DOWN) {
             return true;
         }
@@ -146,6 +151,46 @@ public class GameView extends View {
         if (key >= 0) {
             core.tapKey(key, layout);
             tick();
+        }
+        return true;
+    }
+
+    private boolean pushArmed;
+    private float pushStartY;
+
+    /**
+     * The push-back gesture: start in the strip below the danger line and above the keys, then
+     * drag up.
+     *
+     * That strip is the target on purpose. Starting anywhere lower would mean a swipe beginning
+     * on a key, and telling a swipe from a tap needs the tap held back until the drag is ruled
+     * out — latency this game cannot spend, since every press is a keystroke.
+     */
+    private boolean handlePush(MotionEvent ev, int action) {
+        int i = ev.getActionIndex();
+        float y = ev.getY(i);
+
+        if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+            if (core.state != GameCore.PLAY || y < layout.dangerY || y > layout.deckTop) {
+                return false;
+            }
+            pushArmed = true;
+            pushStartY = y;
+            return true;
+        }
+        if (!pushArmed) return false;
+
+        if (action == MotionEvent.ACTION_MOVE) {
+            // A clear upward flick, not a twitch.
+            if (pushStartY - y >= layout.enemyR * 1.6f) {
+                if (core.pushBack(layout)) tick();
+                pushArmed = false;
+            }
+            return true;
+        }
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
+                || action == MotionEvent.ACTION_POINTER_UP) {
+            pushArmed = false;
         }
         return true;
     }

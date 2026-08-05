@@ -140,6 +140,24 @@ final class Preview {
         System.out.printf("danger frame: warn=%.2f harm=%.2f%n", c4.warnLevel, c4.harm());
         shot(dir, "6-danger", c4, L, w, h, ss);
 
+        // The push-back offered: a word inside the warning band and the swipe strip lit.
+        System.out.printf("push offered: ready=%s warn=%.2f%n", c4.pushReady(), c4.warnLevel);
+        shot(dir, "36-push-ready", c4, L, w, h, ss);
+
+        // And the moment it lands: the shockwave climbing, the word thrown back.
+        float wasY = near.y;
+        c4.pushBack(L);
+        step(c4, L, GameCore.PUSH_TIME * 0.42f);
+        System.out.printf("push fired: moved %d, %.0fpx back, wave=%.2f%n", c4.pushCount,
+                wasY - near.y, c4.pushT);
+        shot(dir, "37-push-wave", c4, L, w, h, ss);
+        // Put it back on the line for the lunge frame below, and hand the swipe back so the
+        // frames after this are not quietly missing the strip.
+        near.y = L.dangerY - (L.dangerY - L.playTop) * 0.06f;
+        c4.pushUsed = false;
+        c4.pushT = 0f;
+        step(c4, L, 2 * DT);
+
         // Mid-lunge attack.
         near.y = L.dangerY - L.enemyR + 1;
         step(c4, L, GameCore.ATTACK_TIME * 0.55f);

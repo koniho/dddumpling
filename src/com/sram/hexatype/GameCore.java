@@ -231,6 +231,22 @@ final class GameCore {
     /** Highest proximity-to-danger across the field, 0..1. Drives the red screen pulse. */
     float warnLevel;
 
+    /** Spent for this stage once the push-back has been used. */
+    boolean pushUsed;
+    /** Counts down while the push-back shockwave is on screen. */
+    float pushT;
+    /** Words the last push-back shoved back, for the readout. */
+    int pushCount;
+
+    /**
+     * True when the push-back is available: once a stage, and only with something already
+     * closing on the line. Gating it on the threat is what keeps it a panic button rather than a
+     * free tempo reset to be spent the moment a wave starts.
+     */
+    boolean pushReady() {
+        return state == PLAY && !pushUsed && !settingsOpen && !pendingBonus && warnLevel > 0f;
+    }
+
     // ---- between-stages minigame -------------------------------------------
     final Steamer steamer = new Steamer();
     float bonusTimer;
@@ -761,6 +777,14 @@ final class GameCore {
      */
     static final float GLOW_HIT = 0.35f;
 
+    /**
+     * How far up a push-back shoves a word, as a fraction of the whole descent. Enough to be a
+     * real reprieve rather than a stutter — you spent the stage's only one on it.
+     */
+    static final float PUSH_LIFT = 0.45f;
+    /** How long the push-back shockwave stays on screen. */
+    static final float PUSH_TIME = 0.5f;
+
     /** Length of the lunge animation between crossing the line and losing a life. */
     static final float ATTACK_TIME = 0.42f;
     /** Fraction of the descent over which a word counts as "closing in". */
@@ -945,6 +969,9 @@ final class GameCore {
         steamer.reset();
         bonusTimer = 0;
         closeStory();
+        pushUsed = false;
+        pushT = 0f;
+        pushCount = 0;
         // The collection itself survives; only the "you just won this" banner is per-run.
         prize = -1;
         prizeNew = false;
@@ -1267,6 +1294,52 @@ final class GameCore {
         }
     }
 
+    /**
+     * The push-back: shoves every word in the bottom half of the field back up, calls off any
+     * lunge already committed, and is then spent for the stage.
+     *
+     * A lunge is cancellable on purpose. The gesture exists for exactly the moment a word has
+     * crossed the line and is coming for you; a panic button that cannot save you then is not
+     * worth the once-a-stage it costs.
+     *
+     * @return true when it fired, so the view can leave the gesture alone
+     */
+    boolean pushBack(Layout L) {
+        if (!pushReady()) return false;
+        float mid = (L.playTop + L.dangerY) / 2f;
+        float lift = (L.dangerY - L.playTop) * PUSH_LIFT;
+        int moved = 0;
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy e = enemies.get(i);
+            if (e.destroyed || e.dying || e.y < mid) continue;
+            e.attacking = false;
+            e.attackT = 0f;
+            e.warn = 0f;
+            e.y = Math.max(L.playTop, e.y - lift);
+            Fx.explode(this, rnd, enemyCentreX(e), e.y + L.enemyR * 1.4f, L.enemyR * 1.2f, 8,
+                    Glyph.COLOR[e.word[e.pos]]);
+            moved++;
+        }
+        // pushReady needs warnLevel above zero, which needs a word inside the warning band,
+        // which is inside the bottom half — so this cannot happen. It is here so that if the
+        // bands are ever retuned apart, the stage's one use is not silently eaten.
+        if (moved == 0) return false;
+
+        pushUsed = true;
+        pushCount = moved;
+        pushT = PUSH_TIME;
+        // Cleared here as well as by the loop: the edge glow reads it, and it would otherwise
+        // hold last frame's alarm for a field that is no longer in danger.
+        warnLevel = 0f;
+        shake = Math.max(shake, 0.55f);
+        flash = Math.max(flash, 0.5f);
+        flashColor = FLASH_CLEAR;
+        skyGlow = 1f;
+        skyGlowColor = FLASH_CLEAR;
+        if (sound != null) sound.achievement();
+        return true;
+    }
+
     private void miss(int g) {
         keyBad[g] = 1f;
         misses++;
@@ -1369,6 +1442,7 @@ final class GameCore {
         skyGlow = decay(skyGlow, dt * 2.4f);
         stageBanner = decay(stageBanner, dt);
         perfectBanner = decay(perfectBanner, dt);
+        pushT = decay(pushT, dt);
         if (storyOpen()) storyT += dt;
         // The title screen dissolving. Play begins the frame it finishes, not on the press.
         if (state == TITLE && startFade > 0f) {
@@ -1823,6 +1897,8 @@ final class GameCore {
     /** Called on the way out of the interlude. */
     private void advanceStage() {
         stage++;
+        // One per stage, and this is where a stage begins.
+        pushUsed = false;
         spawnedThisStage = 0;
         resolvedThisStage = 0;
         stageBanner = BANNER_TIME;
