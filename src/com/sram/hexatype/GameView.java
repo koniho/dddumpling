@@ -94,6 +94,13 @@ public class GameView extends View {
             return true;
         }
 
+        // The display case browses by touch. Needs MOVE events, so it comes before the down-only
+        // filter, and it holds on to a gesture that outlives the case being closed.
+        if (core.state == GameCore.TITLE && (core.caseOpen || caseGesture != CASE_IDLE)
+                && handleCase(ev, action)) {
+            return true;
+        }
+
         // FLING: grab a letter and throw it. Handled before the key routing so a drag that
         // starts on a letter is never mistaken for a key press.
         if (core.flinging() && handleFling(ev, action)) return true;
@@ -128,15 +135,15 @@ public class GameView extends View {
                 tick();
                 return true;
             }
-            // Otherwise the keys act — the inner four start, the outer two work the display
-            // case — and a tap on the focused entry opens its story. A tap anywhere else does
-            // nothing, which is what stops a stray touch skipping past the collection.
+            // Otherwise the keys act, and on the title a tap on the badge opens the display
+            // case. A tap anywhere else does nothing.
             int screen = layout.keyAt(x, y);
             if (screen >= 0) {
                 core.screenKey(screen);
                 tick();
-            } else if (core.state == GameCore.TITLE && Showcase.inFocus(layout, x, y)) {
-                core.openStory();
+            } else if (core.state == GameCore.TITLE && !core.caseOpen
+                    && Showcase.inIcon(layout, core.clock, x, y)) {
+                core.openCase();
                 tick();
             }
             return true;
@@ -153,6 +160,85 @@ public class GameView extends View {
             tick();
         }
         return true;
+    }
+
+    private static final int CASE_IDLE = 0, CASE_TAP = 1, CASE_SHELF = 2, CASE_BAR = 3;
+    private int caseGesture;
+    private float caseDownX, caseDownY;
+    private int caseHit;
+
+    /**
+     * The display case: taps step the shelf, a sideways drag scrolls it, and the position bar
+     * drags straight to an entry.
+     *
+     * Which one it is only becomes clear as the finger moves, so the tap is held until it lifts.
+     * That is affordable here and nowhere else in this game: on the title screen a touch is
+     * browsing, not a keystroke. Key taps are handed straight back to the caller instead of
+     * being swallowed as "outside" — a key still lights up and still puts the case away, so the
+     * deck behaves the same whether the case is up or not.
+     */
+    private boolean handleCase(MotionEvent ev, int action) {
+        int i = ev.getActionIndex();
+        float x = ev.getX(i), y = ev.getY(i);
+
+        if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+            // A story is modal: the caller dismisses it and nothing else acts on that touch.
+            if (core.storyOpen() || layout.keyAt(x, y) >= 0) return false;
+            caseHit = Showcase.hit(layout, x, y);
+            caseDownX = x;
+            caseDownY = y;
+            if (caseHit == Showcase.HIT_BAR) {
+                caseGesture = CASE_BAR;
+                core.caseTo(Showcase.barIndexAt(layout, x));
+                tick();
+            } else {
+                caseGesture = CASE_TAP;
+            }
+            return true;
+        }
+        if (caseGesture == CASE_IDLE) return false;
+
+        if (action == MotionEvent.ACTION_MOVE) {
+            if (caseGesture == CASE_BAR) {
+                // Tracked past the ends of the bar on purpose: a thumb sliding along a bar this
+                // thin drifts off it, and stopping dead there feels like a fault.
+                core.caseTo(Showcase.barIndexAt(layout, x));
+                return true;
+            }
+            // A tap becomes a scroll once the finger has clearly gone sideways. Nothing on this
+            // screen scrolls vertically, so a drag that is mostly up or down is not one.
+            float dx = x - caseDownX;
+            if (caseGesture == CASE_TAP && Math.abs(dx) > layout.unit * 0.7f
+                    && Math.abs(dx) > Math.abs(y - caseDownY)) {
+                caseGesture = CASE_SHELF;
+                core.beginCaseDrag(caseDownX);
+            }
+            if (caseGesture == CASE_SHELF) core.caseDragTo(x, layout);
+            return true;
+        }
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
+                || action == MotionEvent.ACTION_POINTER_UP) {
+            if (caseGesture == CASE_TAP && action != MotionEvent.ACTION_CANCEL) tapCase(caseHit);
+            core.endCaseDrag();
+            caseGesture = CASE_IDLE;
+        }
+        return true;
+    }
+
+    /** A touch that lifted without becoming a drag. */
+    private void tapCase(int hit) {
+        if (hit == Showcase.HIT_FOCUS) {
+            core.openStory();
+        } else if (hit == Showcase.HIT_PREV) {
+            core.scrollCase(-1);
+        } else if (hit == Showcase.HIT_NEXT) {
+            core.scrollCase(1);
+        } else if (hit == Showcase.HIT_CLOSE || hit == Showcase.HIT_OUTSIDE) {
+            core.closeCase();
+        } else {
+            return;
+        }
+        tick();
     }
 
     private boolean pushArmed;

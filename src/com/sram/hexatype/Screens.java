@@ -29,7 +29,9 @@ final class Screens extends Draw {
     static void title(Painter p, GameCore c, Layout L) {
         // Dissolves once a start key is pressed, revealing the field it was sitting over. Every
         // element takes the same factor, so the screen leaves as one thing rather than in parts.
-        float fade = c.startFade > 0f ? c.startFade / GameCore.START_FADE : 1f;
+        // Gated on starting() rather than on the timer: the send-off holds the title state open
+        // after the fade is spent, and reading the timer alone snapped the screen back to full.
+        float fade = c.starting() ? c.startFade / GameCore.START_FADE : 1f;
         float bottom = scrim(p, L, (int) (210 * fade));
         float s = L.unit;
         float cx = L.w / 2f;
@@ -38,8 +40,6 @@ final class Screens extends Draw {
         p.text("SIX LETTERS. THREE PER THUMB.", cx, L.h * 0.100f + s * 1.30f, s * 0.58f,
                 fadeBy(INK_DIM, fade), Painter.CENTER, false);
 
-        // The three-line explanation the screen used to carry is down to one: the display
-        // case now needs the middle of the screen, and the tutorial keys are lit below it.
         p.text("TAP THE MATCHING HEX, LEFT TO RIGHT,", cx, L.h * 0.195f, s * 0.60f,
                 fadeBy(INK, fade), Painter.CENTER, false);
         p.text("BEFORE THE WORDS LAND.", cx, L.h * 0.195f + s * 0.92f, s * 0.60f,
@@ -49,31 +49,38 @@ final class Screens extends Draw {
                     Painter.CENTER, true);
         }
 
-        Showcase.draw(p, c, L, fade);
+        // The badge and the case swap in the same place, and in series rather than on top of
+        // each other: crossing them over on the raw fade drew both at half strength for a
+        // moment, and two labelled panels through each other is illegible, not a dissolve.
+        float shut = fade * caseOut(c);
+        float open = fade * caseIn(c);
+        Showcase.icon(p, c, L, shut);
+        Showcase.draw(p, c, L, open);
 
         // Anchored above the danger line rather than off the deck: the dashed line shows
-        // faintly through the scrim, and text sitting on it looks struck through.
+        // faintly through the scrim, and text sitting on it looks struck through. The lines swap
+        // with the case, because with it open every key only puts it away again. Nothing here
+        // points at the badge — it carries its own TAP TO OPEN, and saying it twice on one screen
+        // made the case look like the thing to do rather than something off to the side.
         float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 3.2f);
-        p.text("PRESS THE INNER FOUR TO START", cx, L.dangerY - s * 1.95f, s * 0.86f,
-                fadeBy(Glyph.withAlpha(INK, (int) (255 * pulse)), fade), Painter.CENTER, true);
-        p.text("OUTER TWO BROWSE - TAP ONE FOR A STORY", cx, L.dangerY - s * 0.90f, s * 0.56f,
-                fadeBy(INK_DIM, fade), Painter.CENTER, false);
+        p.text("PRESS ANY KEY TO START", cx, L.dangerY - s * 1.95f, s * 0.86f,
+                fadeBy(Glyph.withAlpha(INK, (int) (255 * pulse)), shut), Painter.CENTER, true);
+        p.text("SWIPE OR TAP EITHER SIDE TO BROWSE", cx, L.dangerY - s * 1.95f, s * 0.62f,
+                fadeBy(INK, open), Painter.CENTER, false);
+        p.text("TAP AN ENTRY FOR ITS STORY - ANY KEY CLOSES", cx, L.dangerY - s * 0.90f,
+                s * 0.56f, fadeBy(INK_DIM, open), Painter.CENTER, false);
 
-        keyRoles(p, L, bottom - s * 0.45f, fade);
+        handLabels(p, L, bottom - s * 0.45f, fade);
     }
 
-    /**
-     * What each key does on the title screen, written over the real deck. This replaces the
-     * hand labels here: which keys start and which browse now matters more than which thumb
-     * they belong to, and the tagline above already carries the three-per-thumb idea.
-     */
-    private static void keyRoles(Painter p, Layout L, float baseline, float fade) {
-        float s = L.unit;
-        int dim = fadeBy(INK_DIM, fade);
-        p.text("BROWSE", L.keyX[0], baseline, s * 0.48f, dim, Painter.CENTER, true);
-        p.text("BROWSE", L.keyX[Glyph.COUNT - 1], baseline, s * 0.48f, dim,
-                Painter.CENTER, true);
-        p.text("START", L.w / 2f, baseline, s * 0.52f, fadeBy(INK, fade), Painter.CENTER, true);
+    /** Opacity of everything the shut case owns: gone by the time the case is half faded in. */
+    private static float caseOut(GameCore c) {
+        return Math.max(0f, 1f - c.caseFade * 2f);
+    }
+
+    /** And of everything the open case owns, which starts from there. */
+    private static float caseIn(GameCore c) {
+        return Math.max(0f, c.caseFade * 2f - 1f);
     }
 
     static void gameOver(Painter p, GameCore c, Layout L) {
@@ -96,10 +103,10 @@ final class Screens extends Draw {
 
         if (c.time > GameCore.OVER_GRACE) {
             float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 3.2f);
-            p.text("INNER FOUR TO PLAY AGAIN", L.w / 2f, L.h * 0.765f, s * 0.88f,
+            // One line only. Where the keys go next is the title screen's business, and it says
+            // so the moment you arrive.
+            p.text("ANY KEY FOR THE TITLE SCREEN", L.w / 2f, L.h * 0.765f, s * 0.88f,
                     Glyph.withAlpha(INK, (int) (255 * pulse)), Painter.CENTER, true);
-            p.text("OUTER TWO FOR THE DISPLAY CASE", L.w / 2f, L.h * 0.765f + s * 0.95f,
-                    s * 0.56f, INK_DIM, Painter.CENTER, false);
         }
 
         handLabels(p, L, bottom - s * 0.45f);

@@ -312,6 +312,24 @@ final class TestCollect extends Check {
         GameCore c = new GameCore(new Mem(), 97L);
         check("opens on the title screen", c.state == GameCore.TITLE);
         check("opens on the first entry", c.caseIndex == 0);
+        check("with the case itself shut", !c.caseOpen && c.caseFade == 0f && !c.caseShown());
+
+        // Shut, nothing browses it. The badge is the only way in, which is what keeps the
+        // collection out of the way of somebody who came to play.
+        c.scrollCase(1);
+        check("a shut case does not step", c.caseIndex == 0);
+        c.caseTo(7);
+        check("nor jump", c.caseIndex == 0);
+        c.beginCaseDrag(L.w / 2f);
+        c.caseDragTo(L.w, L);
+        check("nor drag", c.caseIndex == 0 && !c.caseDragging);
+
+        c.openCase();
+        check("the badge opens it", c.caseOpen);
+        check("and it fades in rather than appearing", c.caseFade == 0f);
+        advance(c, L, 0.5f);
+        check("the fade reaches full", c.caseFade == 1f && c.caseShown());
+        check("the fade is brief", 1f / GameCore.CASE_FADE_RATE < 0.4f);
 
         c.scrollCase(1);
         check("scrolling right advances one", c.caseIndex == 1);
@@ -345,32 +363,157 @@ final class TestCollect extends Check {
         boolean all = true;
         for (int i = 0; i < seen.length; i++) if (!seen[i]) all = false;
         check("one lap shows every entry", all && c.caseIndex == 0);
+
+        c.closeCase();
+        check("closing starts the fade out", !c.caseOpen && c.caseFade > 0f);
+        advance(c, L, 0.5f);
+        check("and it goes away", c.caseFade == 0f && !c.caseShown());
+        c.scrollCase(1);
+        check("and stops browsing with it", c.caseIndex == 0);
+    }
+
+    /** Browsing by touch: what the tap targets are, and what a drag does. */
+    static void caseTouch(Layout L) {
+        group("browsing by touch");
+        Mem store = new Mem();
+        store.collected = Collect.MASK;
+        GameCore c = new GameCore(store, 99L);
+        float cx = L.w / 2f, cy = Showcase.focusCy(L);
+
+        // At rest the badge is dead centre, where the shelf appears.
+        check("the badge is where the case will open", Showcase.inIcon(L, 0f, cx, cy));
+        check("the sky above it is not", !Showcase.inIcon(L, 0f, cx, L.topSafe + 1f));
+
+        // It drifts, so everything about it has to hold all the way round the arc.
+        float lo = L.w, hi = 0f, lowest = 0f;
+        boolean clearOfKeys = true, onScreen = true;
+        for (float t = 0; t < Showcase.ARC_TIME; t += Showcase.ARC_TIME / 240f) {
+            float ix = Showcase.iconCx(L, t);
+            lo = Math.min(lo, ix);
+            hi = Math.max(hi, ix);
+            lowest = Math.max(lowest, Showcase.iconCy(L, t));
+            if (ix - Showcase.iconHalfW(L) < 0 || ix + Showcase.iconHalfW(L) > L.w) {
+                onScreen = false;
+            }
+            for (int g = 0; g < Glyph.COUNT; g++) {
+                if (Showcase.inIcon(L, t, L.keyX[g], L.keyY[g])) clearOfKeys = false;
+            }
+        }
+        check("the arc spans 30% of the width",
+                Math.abs((hi - lo) - L.w * Showcase.ARC_SPAN) < L.w * 0.005f);
+        check("and keeps the whole case on screen", onScreen);
+        check("no key sits inside it, wherever it has drifted", clearOfKeys);
+        check("it dips as it swings out, being an arc", lowest > cy);
+        check("and the turn flips end to end",
+                Showcase.iconTurn(L, Showcase.ARC_TIME * 0.25f) > 0.99f
+                        && Showcase.iconTurn(L, Showcase.ARC_TIME * 0.75f) < -0.99f);
+
+        c.openCase();
+        advance(c, L, 0.5f);
+
+        // Tap targets. The shelf's two halves are the step buttons, because the neighbour tiles
+        // are half-size and a thumb aimed at one of those would miss.
+        check("the left half steps back",
+                Showcase.hit(L, cx - Showcase.padX(L) * 0.8f, cy) == Showcase.HIT_PREV);
+        check("the right half steps on",
+                Showcase.hit(L, cx + Showcase.padX(L) * 0.8f, cy) == Showcase.HIT_NEXT);
+        check("the middle is the entry itself",
+                Showcase.hit(L, cx, cy) == Showcase.HIT_FOCUS);
+        check("the position bar is its own target",
+                Showcase.hit(L, cx + L.unit, Showcase.barY(L)) == Showcase.HIT_BAR);
+        check("the X closes",
+                Showcase.hit(L, Showcase.closeCx(L), Showcase.closeCy(L)) == Showcase.HIT_CLOSE);
+        check("the sky is outside", Showcase.hit(L, cx, L.topSafe + 1f) == Showcase.HIT_OUTSIDE);
+        check("and so is the deck", Showcase.hit(L, cx, L.deckTop + 1f) == Showcase.HIT_OUTSIDE);
+        // The caption belongs to the panel: a tap on it must not shut the case under the finger.
+        check("the caption is neither",
+                Showcase.hit(L, cx, Showcase.plaqueBot(L) + L.unit * 0.6f) == Showcase.HIT_NONE);
+
+        // A drag carries the shelf with the finger and turns the page as it passes the middle,
+        // so the caption is always naming whatever is nearest the centre of the case.
+        float step = Showcase.step(L);
+        c.caseIndex = 10;
+        c.beginCaseDrag(cx);
+        c.caseDragTo(cx + step * 0.3f, L);
+        check("a short drag moves the shelf without turning the page",
+                c.caseIndex == 10 && Math.abs(c.caseSlide - 0.3f) < 0.01f);
+        check("and the shelf is held rather than easing back", c.caseDragging);
+        advance(c, L, 0.25f);
+        check("it stays exactly where the finger left it",
+                Math.abs(c.caseSlide - 0.3f) < 0.01f);
+        c.caseDragTo(cx + step * 0.7f, L);
+        check("dragging right goes back an entry", c.caseIndex == 9);
+        check("carrying the leftover offset with it", Math.abs(c.caseSlide + 0.3f) < 0.01f);
+        c.caseDragTo(cx - step * 2.2f, L);
+        check("and a long drag crosses several", c.caseIndex == 12);
+        c.endCaseDrag();
+        check("letting go releases it", !c.caseDragging);
+        advance(c, L, 1f);
+        check("and the last of the offset eases out",
+                c.caseSlide == 0f && c.caseIndex == 12);
+
+        // The position bar is a handle as well as a readout, and the only way across the
+        // catalogue in one gesture.
+        float half = Showcase.barHalf(L);
+        check("the bar spans the whole catalogue",
+                Showcase.barIndexAt(L, cx - half + 1f) == 0
+                        && Showcase.barIndexAt(L, cx + half - 1f) == Collect.COUNT - 1);
+        check("a finger past either end clamps", Showcase.barIndexAt(L, -1000f) == 0
+                && Showcase.barIndexAt(L, L.w * 4f) == Collect.COUNT - 1);
+        boolean monotone = true;
+        int prev = -1;
+        for (float x = cx - half; x <= cx + half; x += 1f) {
+            int at = Showcase.barIndexAt(L, x);
+            if (at < prev) monotone = false;
+            prev = at;
+        }
+        check("and never runs backwards along the track", monotone);
+        c.caseTo(Showcase.barIndexAt(L, cx));
+        check("the middle of the bar is the middle of the strip",
+                Math.abs(c.caseIndex - Collect.COUNT / 2) <= 1);
+        check("a bar jump does not slide in behind the finger", c.caseSlide == 0f);
+
+        // Stories still come off the shelf, and only while it is out.
+        GameCore d = new GameCore(store, 101L);
+        d.openStory();
+        check("no story from a shut case", !d.storyOpen());
+        d.openCase();
+        d.openStory();
+        check("and one from an open one", d.storyOpen());
+        d.closeCase();
+        check("closing the case takes the story with it", !d.storyOpen());
     }
 
     static void screenKeys(Layout L) {
-        group("start and browse keys");
-        check("the inner four start", GameCore.startKey(1) && GameCore.startKey(2)
-                && GameCore.startKey(3) && GameCore.startKey(4));
-        check("the outer two do not", !GameCore.startKey(0)
-                && !GameCore.startKey(Glyph.COUNT - 1));
+        group("screen keys");
+        // Every key does the same thing on each screen: start from the title, back to the title
+        // from game over. No key on either has a role of its own any more.
 
-        for (int g = 1; g < Glyph.COUNT - 1; g++) {
+        // On the title every key starts, now that none of them browses.
+        for (int g = 0; g < Glyph.COUNT; g++) {
             GameCore c = new GameCore(new Mem(), 100L + g);
             check("key " + g + " starts a run from the title", startFromTitle(c, L, g));
         }
 
         GameCore c = new GameCore(new Mem(), 111L);
         c.tapKey(0, L);
-        check("the left key browses instead of starting",
-                c.state == GameCore.TITLE && c.caseIndex == Collect.COUNT - 1);
-        c.tapKey(Glyph.COUNT - 1, L);
-        check("the right key browses the other way",
-                c.state == GameCore.TITLE && c.caseIndex == 0);
-        check("browsing does not consume a press as a hit", c.hits == 0 && c.misses == 0);
+        check("no key browses the case", c.caseIndex == 0 && !c.caseOpen);
+        check("and the outer key starts like the rest", c.starting());
+        check("starting does not consume a press as a hit", c.hits == 0 && c.misses == 0);
 
-        // Game over: the inner four replay, the outer two go back to the case — which is the
-        // only route back to it once a run has started.
+        // With the case up every key puts it away first, rather than starting a run out from
+        // under somebody reading it.
+        GameCore b = new GameCore(new Mem(), 112L);
+        b.openCase();
+        b.tapKey(0, L);
+        check("a key closes the case instead of starting", !b.caseOpen && !b.starting());
+        b.tapKey(0, L);
+        check("and the next one starts", b.starting());
+
+        // Game over: every key goes back to the title, which is also the only route back to the
+        // display case once a run has started. A replay is two presses of anything.
         c.startGame();
+        check("starting a run puts the case away", !c.caseOpen && c.caseFade == 0f);
         c.lives = 1;
         c.enemies.clear();
         add(c, L, new int[] {0}, L.dangerY - L.enemyR + 1);
@@ -380,19 +523,25 @@ final class TestCollect extends Check {
         check("game over ignores keys during the grace period", c.state == GameCore.OVER);
         advance(c, L, GameCore.OVER_GRACE + 0.2f);
         c.tapKey(0, L);
-        check("the outer key returns to the title", c.state == GameCore.TITLE);
-        check("and the inner four replay from there", startFromTitle(c, L, 3));
+        check("an outer key returns to the title", c.state == GameCore.TITLE);
+        check("and a run starts again from there", startFromTitle(c, L, 3));
 
-        // The other route: straight back into a run without visiting the title.
-        GameCore d = new GameCore(new Mem(), 113L);
-        d.startGame();
-        d.lives = 1;
-        d.enemies.clear();
-        add(d, L, new int[] {0}, L.dangerY - L.enemyR + 1);
-        advance(d, L, GameCore.ATTACK_TIME + 2 * DT);
-        advance(d, L, GameCore.OVER_GRACE + 0.2f);
-        d.tapKey(4, L);
-        check("game over restarts on an inner key", d.state == GameCore.PLAY);
+        // And an inner one does the same: no key drops straight back into a run any more.
+        boolean allToTitle = true, noneToPlay = true;
+        for (int g = 0; g < Glyph.COUNT; g++) {
+            GameCore d = new GameCore(new Mem(), 113L + g);
+            d.startGame();
+            d.lives = 1;
+            d.enemies.clear();
+            add(d, L, new int[] {0}, L.dangerY - L.enemyR + 1);
+            advance(d, L, GameCore.ATTACK_TIME + 2 * DT);
+            advance(d, L, GameCore.OVER_GRACE + 0.2f);
+            d.tapKey(g, L);
+            if (d.state != GameCore.TITLE) allToTitle = false;
+            if (d.state == GameCore.PLAY) noneToPlay = false;
+        }
+        check("every key returns to the title from game over", allToTitle);
+        check("and none of them skips straight into a run", noneToPlay);
     }
 
     /** The title screen dissolving on a start press, rather than cutting to play. */
@@ -438,10 +587,14 @@ final class TestCollect extends Check {
         d.tapKey(3, L);
         check("a second press is ignored", d.startFade == mid && ear2.starts == 1);
         d.tapKey(0, L);
-        check("and so is a browse key", d.caseIndex == 0);
+        check("and so is an outer one", d.caseIndex == 0 && !d.caseOpen);
+        // Nor can the case be opened over a screen that is already leaving.
+        d.openCase();
+        check("the case cannot open mid-fade", !d.caseOpen);
 
-        // A story on screen goes with it, or it would hang over the fade.
+        // A story and the case both go before a run does: each press unstacks one of them.
         GameCore e = new GameCore(store, 145L);
+        e.openCase();
         e.caseIndex = 0;
         e.openStory();
         check("a story is open", e.storyOpen());
@@ -449,10 +602,13 @@ final class TestCollect extends Check {
         check("the first press dismisses the story instead of starting",
                 !e.storyOpen() && !e.starting());
         e.tapKey(2, L);
-        check("the next one starts the fade", e.starting());
+        check("the next one puts the case away", !e.caseOpen && !e.starting());
+        e.tapKey(2, L);
+        check("and the one after that starts the fade", e.starting());
         check("with no story hanging over it", !e.storyOpen());
 
-        // Restarting from game over is still immediate: the fade is the title screen's.
+        // Leaving game over is a cut, not a fade: the fade belongs to the title screen, and one
+        // is now on the way in rather than out.
         GameCore f = new GameCore(store, 147L);
         f.startGame();
         f.lives = 1;
@@ -461,8 +617,76 @@ final class TestCollect extends Check {
         advance(f, L, GameCore.ATTACK_TIME + 2 * DT);
         advance(f, L, GameCore.OVER_GRACE + 0.2f);
         f.tapKey(3, L);
-        check("game over replays without a fade",
-                f.state == GameCore.PLAY && f.startFade == 0f);
+        check("game over cuts to the title with nothing fading",
+                f.state == GameCore.TITLE && f.startFade == 0f);
+        check("and the case is shut on arrival", !f.caseOpen && f.caseFade == 0f);
+        f.tapKey(3, L);
+        check("the press after that fades into a run", f.starting());
+    }
+
+    /** The send-off: the case's squishy bouncing out of the screen as a run starts. */
+    static void sendOff(Layout L) {
+        group("start send-off");
+        Mem store = new Mem();
+        store.collected = 0b101L;               // entries 0 and 2
+        GameCore c = new GameCore(store, 151L);
+        Ear ear = new Ear();
+        c.sound = ear;
+        check("nothing being sent off to begin with", c.launchWho < 0 && c.launchT == 0f);
+        check("the send-off outlasts the title fade", Launch.TIME > GameCore.START_FADE);
+        check("its phases are in order", Launch.POP < Launch.LAND
+                && Launch.LAND < Launch.TOP && Launch.TOP < 1f);
+
+        // Let the badge drift off centre first: the send-off has to leave from where it is.
+        advance(c, L, 1.4f);
+        float pressed = c.clock;
+        c.caseIndex = 0;
+        c.tapKey(2, L);
+        check("the case entry is the one sent off", c.launchWho == 0);
+        check("with the whole send-off ahead of it", c.launchT == Launch.TIME);
+        check("and the badge's drift frozen at the press", c.launchClock == pressed);
+
+        // Play waits for it: the title screen is long gone by the time it lands.
+        advance(c, L, GameCore.START_FADE + 2 * DT);
+        check("the fade is spent", c.startFade == 0f);
+        check("but play has not begun", c.state == GameCore.TITLE && c.starting());
+        float u = Launch.progress(c);
+        check("the send-off is part way through", u > 0.4f && u < 1f);
+        advance(c, L, Launch.TIME);
+        check("play begins once it is done", c.state == GameCore.PLAY);
+        check("and nothing is left of it", c.launchWho < 0 && c.launchT == 0f);
+        check("both bounces sounded", ear.squishes == 2);
+        check("the start tone still led the whole thing", ear.starts == 1);
+
+        // An uncollected entry has nothing to send off, so that press starts as it always did.
+        GameCore d = new GameCore(store, 153L);
+        d.caseIndex = 1;
+        d.tapKey(2, L);
+        check("an uncollected entry is not sent off", d.launchWho < 0 && d.launchT == 0f);
+        check("and the fade is the whole wait", d.starting() && d.startFade > 0f);
+        advance(d, L, GameCore.START_FADE + 2 * DT);
+        check("play begins on the fade alone", d.state == GameCore.PLAY);
+
+        // Progress only ever runs forward, whatever the frame rate.
+        GameCore e = new GameCore(store, 155L);
+        e.caseIndex = 2;
+        e.tapKey(2, L);
+        boolean forward = true;
+        float last = -1f;
+        for (int i = 0; i < 60 * 5 && e.state == GameCore.TITLE; i++) {
+            float now = e.launchT > 0f ? Launch.progress(e) : 1f;
+            if (now < last) forward = false;
+            last = now;
+            e.update(DT, L);
+        }
+        check("progress only runs forward", forward && e.state == GameCore.PLAY);
+
+        // And going back to the title cancels one mid-flight.
+        GameCore f = new GameCore(store, 157L);
+        f.caseIndex = 0;
+        f.tapKey(2, L);
+        f.toTitle();
+        check("returning to the title cancels it", f.launchWho < 0 && f.launchT == 0f);
     }
 
     static void clearing(Layout L) {

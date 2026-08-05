@@ -54,6 +54,7 @@ geometry; `Kawaii` draws the creature.
 | **push-back** | the panic swipe: shoves the bottom half of the field back, once a stage | `GameCore.pushBack`, `pushReady` |
 | **swipe strip** | the band between the danger line and the deck the gesture starts in | `Renderer.pushHint` |
 | **shockwave** | the gold bands sweeping up when it lands | `Renderer.pushWave` |
+| **slide** | a shoved word travelling back up over 0.4s instead of jumping | `e.slideT`, `GameCore.PUSH_SLIDE` |
 
 ## Player input
 
@@ -64,6 +65,7 @@ geometry; `Kawaii` draws the creature.
 | **chevron** / **cluster** | the three-key group under one thumb | left = keys 0,1,2; right = 3,4,5 |
 | **hint pulse** | the ring on the key you need next | `Renderer.keys` |
 | **press ripple** | the ring expanding off a key as its press decays | same |
+| **case gestures** | the only drag targets outside play: tap either side of the shelf, swipe it, or drag the position bar | `GameView.handleCase`, `GameCore.caseDragTo` |
 
 ## Stages
 
@@ -81,9 +83,11 @@ geometry; `Kawaii` draws the creature.
 | Say | Means | Code |
 | --- | --- | --- |
 | **collectible** / **squishy** | one of the thirty things you can win | `Collect` index 0–29 |
-| **display case** | the shelf of collectibles on the title screen | `Showcase`, `GameCore.caseIndex` |
+| **display case** | the glass cabinet of collectibles, opened from the title screen | `Showcase`, `GameCore.caseOpen`, `caseIndex` |
+| **case badge** | the small case in the middle of the title screen that opens it | `Showcase.icon`, `inIcon` |
+| **cabinet** | how the case is drawn: a box three-quarters on, shimmering wireframes over translucent panes | `Showcase.caseBox` |
 | **shelf** | the filmstrip row inside the case: one focused entry plus a neighbour each side | `Showcase.WINGS` |
-| **position bar** | the scroll bar under the shelf; ticks mark what is collected | `Showcase.scrollbar` |
+| **position bar** | the scroll bar under the shelf, and a handle: drag it to jump. Ticks mark what is collected | `Showcase.scrollbar`, `barIndexAt` |
 | **silhouette** | how an uncollected entry is drawn — outlined shape, flat fill, question mark | `Trinket.draw` with `known == false` |
 | **family** | which of the three shelves an entry belongs to: mystery dumplings, squishy fruits, squeeze globs | `Collect.FAMILY` |
 | **tier** | rarity: common, uncommon, rare, chase, grail. Sets the frame colour and the odds | `Collect.TIER` |
@@ -163,10 +167,9 @@ geometry; `Kawaii` draws the creature.
 
 | Say | Means | Code |
 | --- | --- | --- |
-| **title screen** | the opening screen; the real key deck stays lit as the tutorial, and it holds the display case | `Screens.title` |
+| **title screen** | the opening screen; the real key deck stays lit as the tutorial, and the case badge sits in the middle | `Screens.title` |
 | **title fade** | the title screen dissolving on a start press, before play begins | `GameCore.startFade`, `starting()` |
-| **start keys** | the inner four keys, which begin a run | `GameCore.startKey` |
-| **browse keys** | the outer two, which scroll the display case | `GameCore.scrollCase` |
+| **screen keys** | all six do the same thing on the full-screen states: start from the title, back to the title from game over | `GameCore.screenKey` |
 | **game over screen** | score, accuracy dumpling, best | `Screens.gameOver` |
 | **accuracy dumpling** | the face that reflects accuracy: tear below 60%, sparkles above 90% | `Screens.accuracy` |
 | **settings panel** | opened by tapping the stage readout; pauses the game | `Screens.settings` |

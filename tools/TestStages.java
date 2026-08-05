@@ -230,11 +230,42 @@ final class TestStages extends Check {
 
         float highWas = high.y, lowWas = low.y;
         check("the swipe fires", c.pushBack(L));
-        check("the near word is shoved back", low.y < lowWas - L.enemyR);
-        check("the far word is left alone", high.y == highWas);
         check("it counted what it moved", c.pushCount == 1);
         check("the alarm is cleared", c.warnLevel == 0f);
         check("and it shows a shockwave", c.pushT > 0f);
+        // Resolved now, travelled afterwards. The word has not moved yet; it has been given
+        // somewhere to be and PUSH_SLIDE to get there.
+        check("the near word does not teleport", low.y == lowWas);
+        check("it is aimed well back up the field", low.slideTo < lowWas - L.enemyR);
+        check("and given the slide to get there", low.slideT == GameCore.PUSH_SLIDE);
+        check("the far word is left alone", high.y == highWas && high.slideT == 0f);
+
+        // It climbs, a frame at a time, and lands on its mark.
+        float prev = low.y, first = -1;
+        boolean rose = true, quiet = true;
+        int frames = 0;
+        while (low.slideT > 0f && frames < 200) {
+            c.update(DT, L);
+            frames++;
+            if (frames == 1) first = low.y;
+            if (low.y > prev) rose = false;
+            // Still below the line for these frames: it must not sound the alarm on the way up,
+            // nor rearm the lunge the swipe just called off.
+            if (low.warn > 0f || low.attacking) quiet = false;
+            prev = low.y;
+        }
+        check("it moves the first frame without arriving", first > low.slideTo && first < lowWas);
+        check("it climbs every frame of the slide", rose);
+        check("without warning or lunging on the way", quiet);
+        check("the slide takes its own time", Math.abs(frames * DT - GameCore.PUSH_SLIDE) <= DT);
+        check("landing where it was aimed", Math.abs(low.y - low.slideTo) < 0.01f);
+        // The descent has to come back on its own. Test words are parked with no speed, so it
+        // needs one to have anywhere to fall.
+        float landed = low.y;
+        low.speed = L.enemyR * 4f;
+        c.update(DT, L);
+        check("and falling again once it lands", low.y > landed);
+        low.speed = 0f;
 
         // Spent for the stage.
         check("no longer offered", !c.pushReady());
@@ -256,6 +287,11 @@ final class TestStages extends Check {
         check("and it fires", d.pushBack(L));
         check("the lunge is called off", !diving.attacking && diving.attackT == 0f);
         check("no life was lost", d.lives == GameCore.START_LIVES);
+        // The called-off word starts the slide from below the line, so the frames before it
+        // clears the line are exactly where a rearmed lunge would have cost the life anyway.
+        advance(d, L, GameCore.PUSH_SLIDE * 0.5f);
+        check("it is still climbing out", diving.slideT > 0f && !diving.attacking);
+        check("and has not been charged for it", d.lives == GameCore.START_LIVES);
         advance(d, L, GameCore.ATTACK_TIME + 0.2f);
         check("and none is lost afterwards", d.lives == GameCore.START_LIVES);
 
@@ -268,6 +304,8 @@ final class TestStages extends Check {
         GameCore.Enemy near = add(e, L, new int[] {1}, L.dangerY - L.enemyR);
         e.update(DT, L);
         e.pushBack(L);
+        check("it is not aimed out of the field", near.slideTo >= L.playTop);
+        advance(e, L, GameCore.PUSH_SLIDE + DT);
         check("it stays inside the field", near.y >= L.playTop);
 
         // A new stage hands the swipe back.

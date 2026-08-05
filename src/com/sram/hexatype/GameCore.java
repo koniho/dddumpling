@@ -137,6 +137,13 @@ final class GameCore {
         float[] flyDir;
 
         /**
+         * The push-back slide: where the shove found the word, where it lands, and the time left
+         * to get there. The whole trip is on {@link #y}, not on a draw-time offset, so targeting
+         * and the blade agree with what is on screen while it is moving.
+         */
+        float slideFrom, slideTo, slideT;
+
+        /**
          * Tiles removed out of order — flung away by hand, or cleared en masse by MULTI.
          * Typing still advances {@link #pos} in order; it simply skips anything already gone.
          */
@@ -274,14 +281,46 @@ final class GameCore {
 
     /** Which entry the display case is showing, and the slide left over from the last scroll. */
     int caseIndex;
-    /** -1..1, decaying to 0: the shelf easing into place after a scroll. */
+    /** -1..1, decaying to 0: the shelf easing into place after a scroll, or held by a drag. */
     float caseSlide;
+    /**
+     * True while the case is up. Closed by default: the title screen offers a badge in the
+     * middle and this is what a tap on it sets.
+     */
+    boolean caseOpen;
+    /** 0..1 opacity, easing in on the tap and out again on close. */
+    float caseFade;
+    /** True while a finger is dragging the shelf; the slide is its offset, not a decay. */
+    boolean caseDragging;
+    /** Where the shelf's current entry was grabbed, in view pixels. */
+    private float caseDragX;
+
+    /** How quickly the case fades in and out, in screens per second. */
+    static final float CASE_FADE_RATE = 4.2f;
+
+    /** True when the case is on screen at all, fades included. */
+    boolean caseShown() {
+        return state == TITLE && caseFade > 0f;
+    }
 
     /** Seconds left of the title screen fading out. */
     float startFade;
+
+    /** Which squishy is being sent off as the run starts, or -1 for none. */
+    int launchWho = -1;
+    /** Seconds left of that send-off. Play waits for it. */
+    float launchT;
+    /**
+     * The clock as the start press landed. The badge is always drifting, and this is what lets
+     * the send-off leave from exactly where it was rather than from wherever it has got to.
+     */
+    float launchClock;
+    /** How many of the send-off's impacts have sounded, so each one ticks once. */
+    private int launchPips;
+
     /** True while the title screen is on its way out and play has not begun. */
     boolean starting() {
-        return state == TITLE && startFade > 0f;
+        return state == TITLE && (startFade > 0f || launchT > 0f);
     }
     /** Set when the start tone has already played, so {@link #startGame} does not repeat it. */
     private boolean startAnnounced;
@@ -300,7 +339,10 @@ final class GameCore {
      * withholds its name on the shelf, so telling you about its family would give it away.
      */
     void openStory() {
-        if (state != TITLE || storyOpen() || !Collect.has(collected, caseIndex)) return;
+        if (state != TITLE || !caseOpen || storyOpen()
+                || !Collect.has(collected, caseIndex)) {
+            return;
+        }
         story = caseIndex;
         storyT = 0f;
         if (sound != null) sound.achievement();
@@ -784,6 +826,13 @@ final class GameCore {
     static final float PUSH_LIFT = 0.45f;
     /** How long the push-back shockwave stays on screen. */
     static final float PUSH_TIME = 0.5f;
+    /**
+     * How long a shoved word takes to travel back. It slides; it does not teleport. A jump reads
+     * as a glitch — you cannot see that the swipe moved *these* words and not the ones above the
+     * halfway mark unless you watch them go. Slightly under {@link #PUSH_TIME} so the shockwave
+     * is still climbing as the last word settles.
+     */
+    static final float PUSH_SLIDE = 0.4f;
 
     /** Length of the lunge animation between crossing the line and losing a life. */
     static final float ATTACK_TIME = 0.42f;
@@ -854,15 +903,88 @@ final class GameCore {
     }
 
     /**
-     * Moves the display case one entry. Wraps, so the strip is a loop and neither outer key
-     * ever does nothing.
+     * Opens the display case. Only from the title screen, and not once a start press has begun
+     * the dissolve — the case would be fading in over a screen that is fading out.
+     */
+    void openCase() {
+        if (state != TITLE || starting() || caseOpen) return;
+        caseOpen = true;
+        caseSlide = 0f;
+        if (sound != null) sound.squish(caseIndex % Glyph.COUNT, 1);
+    }
+
+    /** One bounce of the send-off landing, pitched off the squishy that is doing the bouncing. */
+    private void bounceTick() {
+        if (sound != null) sound.squish(launchWho % Glyph.COUNT, 1);
+    }
+
+    /** Puts it away. The fade runs itself down from wherever it had got to. */
+    void closeCase() {
+        if (!caseOpen) return;
+        caseOpen = false;
+        caseDragging = false;
+        closeStory();
+    }
+
+    /**
+     * Moves the display case one entry, for a tap on one side of the shelf. Wraps, so the strip
+     * is a loop and neither side ever does nothing.
      */
     void scrollCase(int dir) {
-        if (dir == 0 || storyOpen()) return;
+        if (dir == 0 || !caseOpen || storyOpen()) return;
         caseIndex = Showcase.wrap(caseIndex + (dir > 0 ? 1 : -1));
         // Full slide, decaying to zero: the shelf glides in from the side it came from.
         caseSlide = dir > 0 ? 1f : -1f;
         if (sound != null) sound.squish(caseIndex % Glyph.COUNT, 1);
+    }
+
+    /**
+     * Jumps straight to an entry, for the position bar being dragged along. No slide: the
+     * finger is already the animation, and easing in behind it would only lag it.
+     */
+    void caseTo(int i) {
+        if (!caseOpen || storyOpen()) return;
+        int n = Showcase.wrap(i);
+        if (n == caseIndex) return;
+        caseIndex = n;
+        caseSlide = 0f;
+        if (sound != null) sound.squish(caseIndex % Glyph.COUNT, 1);
+    }
+
+    /** Grabs the shelf at x. */
+    void beginCaseDrag(float x) {
+        if (!caseOpen || storyOpen()) return;
+        caseDragging = true;
+        caseDragX = x;
+    }
+
+    /**
+     * The shelf following a finger. The offset is carried in {@link #caseSlide}, which is what
+     * the drawing and the position bar already read, so a drag needs no second channel.
+     *
+     * Whole steps are committed as the shelf passes the halfway mark rather than on release, so
+     * the caption, the position bar and the story target are always the entry nearest the middle
+     * of the case — the one being looked at.
+     */
+    void caseDragTo(float x, Layout L) {
+        if (!caseDragging) return;
+        float step = Showcase.step(L);
+        float o = (x - caseDragX) / step;
+        int whole = Math.round(o);
+        if (whole != 0) {
+            caseIndex = Showcase.wrap(caseIndex - whole);
+            caseDragX += whole * step;
+            o -= whole;
+            // One tick per entry passed, so a long drag ratchets. Bounded by the finger having
+            // to travel a whole step for each one.
+            if (sound != null) sound.squish(caseIndex % Glyph.COUNT, 1);
+        }
+        caseSlide = o;
+    }
+
+    /** Lets go. Whatever offset is left eases out through the usual slide decay. */
+    void endCaseDrag() {
+        caseDragging = false;
     }
 
     void setSpeed(float v) {
@@ -937,6 +1059,14 @@ final class GameCore {
     void beginStart() {
         if (state != TITLE || starting()) return;
         startFade = START_FADE;
+        // The entry the case was showing comes along, if it is one you own. Set before the
+        // fade is under way so the send-off leaves from the badge rather than from a screen
+        // that has already gone.
+        launchWho = Collect.has(collected, caseIndex) ? caseIndex : -1;
+        launchT = launchWho >= 0 ? Launch.TIME : 0f;
+        launchClock = clock;
+        launchPips = 0;
+        closeCase();
         closeStory();
         startAnnounced = true;
         if (sound != null) sound.gameStart();
@@ -969,6 +1099,13 @@ final class GameCore {
         steamer.reset();
         bonusTimer = 0;
         closeStory();
+        // The case is a title-screen thing, and it must not be found still up on the way back.
+        caseOpen = false;
+        caseFade = 0f;
+        caseDragging = false;
+        // The send-off has done its job by the time the first word falls.
+        launchWho = -1;
+        launchT = 0f;
         pushUsed = false;
         pushT = 0f;
         pushCount = 0;
@@ -998,23 +1135,25 @@ final class GameCore {
         enemies.clear();
         shots.clear();
         target = null;
-        // The shelf must not open part-way through a slide left over from the last visit.
+        // The case starts closed on every visit, and must not open part-way through a slide left
+        // over from the last one.
+        caseOpen = false;
+        caseFade = 0f;
+        caseDragging = false;
         caseSlide = 0f;
+        launchWho = -1;
+        launchT = 0f;
         closeStory();
     }
 
     /**
-     * True for the four inner keys, which are the ones that start a run. The outer two are
-     * reserved for the display case, so browsing the collection can never trip a game.
-     */
-    static boolean startKey(int g) {
-        return g > 0 && g < Glyph.COUNT - 1;
-    }
-
-    /**
-     * A key press on the title or game-over screen. The inner four start; the outer two
-     * scroll the display case on the title, and go back to it from game over — which is the
-     * only way to reach the case again once a run has begun.
+     * A key press on the title or game-over screen.
+     *
+     * Every key does the same thing on each: start a run from the title, go back to the title
+     * from game over. Splitting the deck by role — inner four to start, outer two for the case
+     * or a replay — meant the same six letters meant one thing on one screen and something else
+     * on the next, and a key that does nothing where it sits looks broken. A replay is two
+     * presses of anything now, which also puts the display case back on the way past.
      */
     void screenKey(int g) {
         if (g < 0 || g >= Glyph.COUNT) return;
@@ -1028,13 +1167,16 @@ final class GameCore {
             closeStory();
             return;
         }
-        if (startKey(g)) {
-            if (state == TITLE) beginStart();
-            else startGame();
-        } else if (state == OVER) {
-            toTitle();
+        // So does the case. It is somebody reading their collection, and a run starting out from
+        // under them is worse than a press that only put the case away.
+        if (caseOpen) {
+            closeCase();
+            return;
+        }
+        if (state == TITLE) {
+            beginStart();
         } else {
-            scrollCase(g == 0 ? -1 : 1);
+            toTitle();
         }
     }
 
@@ -1302,6 +1444,10 @@ final class GameCore {
      * crossed the line and is coming for you; a panic button that cannot save you then is not
      * worth the once-a-stage it costs.
      *
+     * Resolved here, played back over {@link #PUSH_SLIDE}: the threat is settled the instant the
+     * swipe lands — warning cleared, lunge called off, the stage's use spent — and only the
+     * travel is spread over the following moment by the update loop.
+     *
      * @return true when it fired, so the view can leave the gesture alone
      */
     boolean pushBack(Layout L) {
@@ -1315,7 +1461,10 @@ final class GameCore {
             e.attacking = false;
             e.attackT = 0f;
             e.warn = 0f;
-            e.y = Math.max(L.playTop, e.y - lift);
+            e.slideFrom = e.y;
+            e.slideTo = Math.max(L.playTop, e.y - lift);
+            e.slideT = PUSH_SLIDE;
+            // At its feet where it stands, not where it is going: this is the shove landing.
             Fx.explode(this, rnd, enemyCentreX(e), e.y + L.enemyR * 1.4f, L.enemyR * 1.2f, 8,
                     Glyph.COLOR[e.word[e.pos]]);
             moved++;
@@ -1444,16 +1593,34 @@ final class GameCore {
         perfectBanner = decay(perfectBanner, dt);
         pushT = decay(pushT, dt);
         if (storyOpen()) storyT += dt;
-        // The title screen dissolving. Play begins the frame it finishes, not on the press.
-        if (state == TITLE && startFade > 0f) {
+        // The title screen dissolving, and the squishy's send-off over the top of it. Play begins
+        // the frame the last of them finishes, not on the press.
+        if (state == TITLE && starting()) {
             startFade = Math.max(0f, startFade - dt);
-            if (startFade == 0f) {
+            if (launchT > 0f) {
+                launchT = Math.max(0f, launchT - dt);
+                float u = Launch.progress(this);
+                // One tick per bounce, as it happens. The impacts are what the sound is for.
+                if (launchPips == 0 && u >= Launch.LAND) {
+                    launchPips = 1;
+                    bounceTick();
+                } else if (launchPips == 1 && u >= Launch.TOP) {
+                    launchPips = 2;
+                    bounceTick();
+                }
+            }
+            if (startFade == 0f && launchT == 0f) {
                 startGame();
                 return;
             }
         }
-        // Signed, so it eases back to zero from whichever side the scroll came in on.
-        if (caseSlide != 0f) {
+        // The case easing in on a tap and out again on close. Above the PLAY return, since the
+        // title screen never reaches it.
+        float cf = dt * CASE_FADE_RATE;
+        caseFade = caseOpen ? Math.min(1f, caseFade + cf) : Math.max(0f, caseFade - cf);
+        // Signed, so it eases back to zero from whichever side the scroll came in on. Left alone
+        // under a finger: there the offset is the drag, not a leftover.
+        if (caseSlide != 0f && !caseDragging) {
             float d = dt * Showcase.SLIDE_RATE;
             caseSlide = caseSlide > 0f ? Math.max(0f, caseSlide - d)
                     : Math.min(0f, caseSlide + d);
@@ -1580,6 +1747,23 @@ final class GameCore {
                     // Nothing left to simulate once the run is over.
                     if (state != PLAY) return;
                 }
+                continue;
+            }
+
+            if (e.slideT > 0f) {
+                // Travelling back under the push. This replaces the descent rather than fighting
+                // it: a word being thrown back is not also falling.
+                e.slideT = Math.max(0f, e.slideT - dt);
+                float k = 1f - e.slideT / PUSH_SLIDE;
+                // Eased out — shoved hard, settling. Quadratic and not cubic: cubic spends most
+                // of the distance in the first few frames, which is the teleport again with a
+                // tail on it.
+                k = 1f - (1f - k) * (1f - k);
+                e.y = e.slideFrom + (e.slideTo - e.slideFrom) * k;
+                // No warn recompute and no breach check while it travels, both on purpose. The
+                // word is still below the line for these frames, and rearming a lunge on the way
+                // up would undo the swipe that just called it off. The threat was resolved when
+                // the swipe landed; this is only the playback.
                 continue;
             }
 

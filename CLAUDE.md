@@ -11,7 +11,7 @@ trip working out which thing was meant.
 ## The one thing that matters most
 
 **You can see and hear this game without building or installing it.** `./check.sh` runs the
-whole thing headlessly: ~860 rule assertions, then it renders real frames to `out/*.png` and
+whole thing headlessly: ~915 rule assertions, then it renders real frames to `out/*.png` and
 every sound to `out/sfx/*.wav`. Read the PNGs with the Read tool — the `0-*.png` sheets each
 show a whole set at once (the six letters, the thirty collectibles, both vignette casts). That loop is seconds, not
 minutes, and it needs no device.
@@ -77,7 +77,8 @@ Pure (in the harness and the APK):
 | `Steamer` | between-stages minigame state |
 | `Collect` | the thirty collectibles: catalogue, blind-box odds, owned-set bitmask |
 | `Trinket` | draws a collectible — fifteen shapes crossed with nine finishes |
-| `Showcase` | the display case on the title screen |
+| `Cabinet` | the glass case itself: a wireframe box three-quarters on |
+| `Showcase` | the display case: badge, shelf, position bar, and every touch target on it |
 | `Lore` | a story per collectible, plus who is cast in its vignette |
 | `Parade` | the collection marching in, the new one joining, the line marching off |
 | `Storybook` | the story popup and its ten looping vignettes |
@@ -141,7 +142,19 @@ nothing. Follow the pattern rather than "fixing" it.
   the drag is ruled out, and every tap here is a keystroke — that latency is unaffordable. The
   push-back gesture therefore starts in the strip between `dangerY` and `deckTop`, which is
   outside every key hex, and `Renderer.pushHint` lights that strip so the target is findable.
-  Any future gesture has the same constraint.
+  Any future gesture in play has the same constraint. Outside play it does not apply — the
+  display case holds its tap until the finger lifts, because a touch on the title screen is
+  browsing rather than a keystroke. `GameView.handleCase` still hands key taps straight back to
+  the caller instead of swallowing them, so the deck behaves the same with the case up or down.
+- **"Random" motion cannot be random.** The display case's wireframes shimmer, which wants noise
+  and cannot have it: preview output is a pure function of state and every frame is hash-compared
+  against the last run, so an RNG or a random walk there would make every check differ for no
+  reason. `Cabinet.shimmer` is two sines off `clock` at hashed rates and phases, which reads as
+  shimmer and still hashes stable. Anything that wants to look unpredictable needs this shape.
+- **A cross-fade between two labelled things is not a dissolve.** Fading the case badge out and
+  the case in on the same `caseFade` drew both at half strength through each other, captions and
+  all, and read as a rendering fault. They run in series now — badge gone by the halfway point,
+  case in from there — via `Screens.caseOut`/`caseIn`. Overlap only what has no text on it.
 - **Sharing an animation channel makes two events look identical.** A wrong press in the
   interlude set `lidPulse` and `flash` before the wrong-key check, so it pulsed the lid and
   flashed the basket exactly like a landed press — the only thing distinguishing them was the
@@ -165,7 +178,10 @@ nothing. Follow the pattern rather than "fixing" it.
   the hops over the following moment, from stored positions. Animating the removals would mean
   holding references to tiles that a fall, a word finishing or the frenzy ending could invalidate
   underneath the chain — the failure mode this file has hit most. Prefer this shape for anything
-  that wants to look sequential.
+  that wants to look sequential. The push-back is the same shape: the swipe settles the threat on
+  the frame it lands and only the travel is spread over `PUSH_SLIDE`. Note which half owns what —
+  the slide moves the real `e.y`, since targeting and the blade have to agree with what is on
+  screen, but it skips the warn recompute and the breach check while a word is on its way up.
 - **Two copies of a duration is one too many.** The freed-prize escape had its length in
   `Steamer` and the number inlined again in `Screens` to drive the climb, so lengthening it in
   one place broke the animation in the other. `Steamer.FREE_TIME` is the only copy now. Worth a

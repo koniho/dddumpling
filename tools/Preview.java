@@ -49,19 +49,46 @@ final class Preview {
         // silhouettes either side of it.
         store.collected = 0b0000_0100_1000_0011_0010_0110_1101L;
 
-        // Title screen, parked on a collected entry.
+        // Title screen with the case shut, which is how it is arrived at: the badge in the
+        // middle is the whole of the collection's footprint until it is tapped.
         GameCore c = new GameCore(store, 7L);
         step(c, L, 0.55f);
-        System.out.printf("title: case=%d of %d collected%n", Collect.owned(c.collected),
-                Collect.COUNT);
+        System.out.printf("title: case=%d of %d collected, shut=%s%n",
+                Collect.owned(c.collected), Collect.COUNT, !c.caseOpen);
         shot(dir, "1-title", c, L, w, h, ss);
 
-        // And on a gap, mid-slide, which is what most of the strip looks like early on.
+        // Part-way through fading in on that tap.
+        c.openCase();
+        step(c, L, 0.78f / GameCore.CASE_FADE_RATE);
+        System.out.printf("case opening: fade=%.2f%n", c.caseFade);
+        shot(dir, "39-case-opening", c, L, w, h, ss);
+        step(c, L, 1f);
+
+        // Open and parked on a gap, mid-slide, which is what most of the strip looks like early
+        // on. Rendered at 0.06s in so the shelf is caught between two entries.
         c.scrollCase(1);
         step(c, L, 0.06f);
         System.out.printf("title gap: index=%d known=%s slide=%.2f%n", c.caseIndex,
                 Collect.has(c.collected, c.caseIndex), c.caseSlide);
         shot(dir, "20-title-locked", c, L, w, h, ss);
+
+        // Mid-drag: the shelf carried off centre by a finger, and the bar thumb lit to say it
+        // is the finger doing it.
+        c.beginCaseDrag(w / 2f);
+        c.caseDragTo(w / 2f + Showcase.step(L) * 0.42f, L);
+        step(c, L, 2 * DT);
+        System.out.printf("case drag: index=%d slide=%.2f dragging=%s%n", c.caseIndex,
+                c.caseSlide, c.caseDragging);
+        shot(dir, "40-case-drag", c, L, w, h, ss);
+        c.endCaseDrag();
+        step(c, L, 0.5f);
+
+        // The badge out at one end of its arc, where the box is turned hardest.
+        GameCore c20 = new GameCore(store, 83L);
+        step(c20, L, Showcase.ARC_TIME * 0.25f);
+        System.out.printf("badge drift: x=%.0f of %.0f, turn=%.2f%n",
+                Showcase.iconCx(L, c20.clock), (float) w, Showcase.iconTurn(L, c20.clock));
+        shot(dir, "41-badge-turned", c20, L, w, h, ss);
 
         // The title screen part-way through dissolving on a start press.
         GameCore c18 = new GameCore(store, 79L);
@@ -71,6 +98,20 @@ final class Preview {
         System.out.printf("title fade: %.2f left of %.2f, state=%d%n", c18.startFade,
                 GameCore.START_FADE, c18.state);
         shot(dir, "35-title-fading", c18, L, w, h, ss);
+
+        // The send-off: the squishy swelling out of the badge in a pip of stars, and again as it
+        // bounces off the top of the screen with the title long gone.
+        GameCore c19 = new GameCore(store, 81L);
+        step(c19, L, 1.4f);
+        c19.tapKey(2, L);
+        step(c19, L, Launch.TIME * Launch.POP * 0.75f);
+        System.out.printf("send-off pop: who=%d left=%.2f progress=%.2f%n", c19.launchWho,
+                c19.launchT, Launch.progress(c19));
+        shot(dir, "42-sendoff-pop", c19, L, w, h, ss);
+        step(c19, L, Launch.TIME * (Launch.TOP - Launch.POP * 0.75f));
+        System.out.printf("send-off roof: progress=%.2f state=%d%n", Launch.progress(c19),
+                c19.state);
+        shot(dir, "43-sendoff-roof", c19, L, w, h, ss);
 
         // Story popup, mid-panel-spring and again settled with the scene playing.
         c.caseIndex = 0;
@@ -144,16 +185,23 @@ final class Preview {
         System.out.printf("push offered: ready=%s warn=%.2f%n", c4.pushReady(), c4.warnLevel);
         shot(dir, "36-push-ready", c4, L, w, h, ss);
 
-        // And the moment it lands: the shockwave climbing, the word thrown back.
+        // Mid-slide: the shockwave climbing and the word travelling back with it, caught partway
+        // so the frame shows the trip rather than the destination.
         float wasY = near.y;
         c4.pushBack(L);
-        step(c4, L, GameCore.PUSH_TIME * 0.42f);
-        System.out.printf("push fired: moved %d, %.0fpx back, wave=%.2f%n", c4.pushCount,
-                wasY - near.y, c4.pushT);
+        step(c4, L, GameCore.PUSH_SLIDE * 0.45f);
+        System.out.printf("push fired: moved %d, %.0f of %.0fpx so far, wave=%.2f%n", c4.pushCount,
+                wasY - near.y, wasY - near.slideTo, c4.pushT);
         shot(dir, "37-push-wave", c4, L, w, h, ss);
+        // And settled, once the slide has run out: the word up the field, the strip dark.
+        step(c4, L, GameCore.PUSH_SLIDE);
+        System.out.printf("push settled: %.0fpx back, slide=%.2f ready=%s%n", wasY - near.y,
+                near.slideT, c4.pushReady());
+        shot(dir, "38-push-settled", c4, L, w, h, ss);
         // Put it back on the line for the lunge frame below, and hand the swipe back so the
         // frames after this are not quietly missing the strip.
         near.y = L.dangerY - (L.dangerY - L.playTop) * 0.06f;
+        near.slideT = 0f;
         c4.pushUsed = false;
         c4.pushT = 0f;
         step(c4, L, 2 * DT);

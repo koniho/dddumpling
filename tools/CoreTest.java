@@ -40,8 +40,10 @@ final class CoreTest {
         TestCollect.winning(L);
         TestCollect.parade(L);
         TestCollect.displayCase(L);
+        TestCollect.caseTouch(L);
         TestCollect.screenKeys(L);
         TestCollect.startFade(L);
+        TestCollect.sendOff(L);
         TestCollect.clearing(L);
 
         TestLore.stories(L);

@@ -132,6 +132,8 @@ final class TestLore extends Check {
         store.collected = 0b101L;          // entries 0 and 2
         GameCore c = new GameCore(store, 61L);
         check("no story on screen to begin with", !c.storyOpen() && c.story < 0);
+        // Stories come off the shelf, so the case has to be out for any of this.
+        c.openCase();
 
         // Uncollected: nothing opens, because the shelf will not even name it.
         c.caseIndex = 1;
@@ -158,7 +160,7 @@ final class TestLore extends Check {
                 !c.storyOpen() && c.state == GameCore.TITLE);
         c.openStory();
         c.tapKey(0, L);
-        check("an outer key dismisses instead of scrolling",
+        check("any key dismisses instead of stepping the shelf",
                 !c.storyOpen() && c.caseIndex == 0);
         check("the clock resets on close", c.storyT == 0f);
 
@@ -167,11 +169,13 @@ final class TestLore extends Check {
         c.startGame();
         check("starting a run closes it", !c.storyOpen());
         c.toTitle();
+        c.openCase();
         c.openStory();
         c.toTitle();
         check("returning to the title closes it", !c.storyOpen());
 
         // Emptying the case has to take the story with it: it describes something now unowned.
+        c.openCase();
         c.openStory();
         check("open again for the clear test", c.storyOpen());
         c.openSettings();

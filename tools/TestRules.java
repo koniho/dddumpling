@@ -215,7 +215,7 @@ final class TestRules extends Check {
         check("game over ignores keys for the first 0.6s", c.state == GameCore.OVER);
         for (int i = 0; i < 45; i++) c.update(DT, L);
         c.tapKey(2, L);
-        check("game over restarts after the grace period", c.state == GameCore.PLAY);
+        check("game over accepts a key after the grace period", c.state == GameCore.TITLE);
 
         check("keys never count as a hit off the play screen",
                 !new GameCore(new Mem(), 9L).tapKey(2, L));

@@ -17,8 +17,10 @@ committed included.
 Between stages a dim sum steamer arrives and spins for two of your six keys; alternate them to
 prise the lid off. The dumpling inside is a blind box — freeing it hands over one of thirty
 collectible squishies, from commons up to a single gold grail. The collection is kept for good
-and shown in the display case on the title screen, where the outer two keys scroll the shelf
-and the inner four start a run. Anything you have not won yet is a silhouette behind a question
+and shown in the display case: a glass cabinet that fades up when you tap the small case in the
+middle of the title screen. Swipe it, tap either side of it or drag its position bar to browse;
+every key starts a run instead, and puts the case away first if it is open. Anything you have not
+won yet is a silhouette behind a question
 mark; tap one you have and it tells you where it lives and what its family gets up to. Win one
 and the collection parades: they march in from the left, the newcomer drops into the end of the
 line, and the next stage waits until they have all marched off to the right.
@@ -48,7 +50,7 @@ the conventions and, more usefully, the traps that have already cost time.
 
 It does two things:
 
-1. **Rule assertions** (`tools/CoreTest.java`) — 859 of them across eleven suites: layout
+1. **Rule assertions** (`tools/CoreTest.java`) — 916 of them across eleven suites: layout
    geometry, hit-testing, targeting, scoring, stage pacing, the interlude's phases and both paths through it, the
    collectible catalogue and its odds, the stories, plus a two-minute perfect-play run and a
    ten-minute random-input fuzz.
@@ -186,7 +188,8 @@ file has to be added there. `build.sh` globs `src/`, so it needs no updating.
 | `Basket` | the steamer, drawn in three-quarter view |
 | `Parade` | the collection marching in, the new one joining, the line marching off |
 | `Trinket` / `Shape` / `Finish` | a collectible: face, one of fifteen bodies, one of nine surfaces |
-| `Showcase` | the display case on the title screen |
+| `Cabinet` | the glass case itself: a wireframe box three-quarters on |
+| `Showcase` | the display case: badge, shelf, position bar, and every touch target on it |
 | `Storybook` | the story popup and its ten looping vignettes |
 | `SettingsUi` | settings-panel geometry and hit-testing |
 | `Sfx` / `Music` | procedurally synthesised effects and looping tracks |
