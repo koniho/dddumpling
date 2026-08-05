@@ -102,6 +102,14 @@ final class GameCore {
         void powerClear();
         /** Swap the looping track to the faster driven variant, and back. */
         void frenzy(boolean on);
+
+        /**
+         * Read collectible {@code entry}'s story aloud, as its popup opens. What is said and how
+         * is {@link Narration}'s business; a backend only has to speak it.
+         */
+        void narrate(int entry);
+        /** Stop talking mid-sentence: the panel has gone. */
+        void hush();
     }
 
     /** Optional; null in the harness unless a test is watching for effects. */
@@ -345,12 +353,20 @@ final class GameCore {
         }
         story = caseIndex;
         storyT = 0f;
-        if (sound != null) sound.achievement();
+        if (sound != null) {
+            sound.achievement();
+            sound.narrate(story);
+        }
     }
 
     void closeStory() {
+        // Only hushes a reading that was actually under way. This is called on the way into and
+        // out of half a dozen states where no story is open, and a backend should not have to
+        // work out which of those it is.
+        boolean reading = storyOpen();
         story = -1;
         storyT = 0f;
+        if (reading && sound != null) sound.hush();
     }
 
     // ---- powerup ------------------------------------------------------------

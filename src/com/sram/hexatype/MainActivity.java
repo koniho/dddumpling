@@ -46,7 +46,12 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     @Override protected void onPause() {
         super.onPause();
-        if (audio != null) audio.pauseMusic();
+        if (audio != null) {
+            audio.pauseMusic();
+            // A story left open stays open, but it stops being read to an empty room. It does
+            // not pick up again on resume: half a sentence from nowhere is worse than silence.
+            audio.hush();
+        }
     }
 
     @Override protected void onDestroy() {

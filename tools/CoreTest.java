@@ -49,6 +49,7 @@ final class CoreTest {
         TestLore.stories(L);
         TestLore.casting(L);
         TestLore.popup(L);
+        TestLore.narration(L);
 
         TestVisuals.sky(L);
         TestVisuals.indicatorsAndGlow(L);

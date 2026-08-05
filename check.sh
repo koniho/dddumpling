@@ -29,6 +29,7 @@ src/com/sram/hexatype/Trinket.java
 src/com/sram/hexatype/Cabinet.java
 src/com/sram/hexatype/Launch.java
 src/com/sram/hexatype/Lore.java
+src/com/sram/hexatype/Narration.java
 src/com/sram/hexatype/Showcase.java
 src/com/sram/hexatype/Storybook.java
 src/com/sram/hexatype/Hud.java

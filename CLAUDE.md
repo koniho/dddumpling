@@ -90,6 +90,7 @@ Pure (in the harness and the APK):
 | `Hud` | score/stage/lives, frenzy bar, banners |
 | `Screens` | title, game over, minigame, settings |
 | `Sfx` / `Music` | procedurally synthesised effects and looping tracks |
+| `Narration` | what the story popup says out loud, and the pitch and pace of each line |
 | `SettingsUi` | settings panel geometry and hit-testing |
 
 Android-only: `MainActivity`, `GameView` (input + frame loop), `CanvasPainter`, `Audio`,

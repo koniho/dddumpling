@@ -37,6 +37,8 @@ abstract class Check {
         int music = -1, musicCalls;
         int starts, stageClears, powerClears, frenzyCalls;
         boolean frenzyOn;
+        int narrations, hushes;
+        int narrated = -1;
         public void squish(int glyph, int depth) {
             squishes++;
             lastGlyph = glyph;
@@ -53,6 +55,8 @@ abstract class Check {
         public void stageClear() { stageClears++; }
         public void powerClear() { powerClears++; }
         public void frenzy(boolean on) { frenzyCalls++; frenzyOn = on; }
+        public void narrate(int entry) { narrations++; narrated = entry; }
+        public void hush() { hushes++; }
     }
 
     static GameCore.Enemy urgent(GameCore c) {

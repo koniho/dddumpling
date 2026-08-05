@@ -203,4 +203,79 @@ final class TestLore extends Check {
         }
         check("no key sits inside the story target", clearOfKeys);
     }
+
+    /** The story read aloud: the words, the delivery, and when it starts and stops. */
+    static void narration(Layout L) {
+        group("story narration");
+        Mem store = new Mem();
+        store.collected = Collect.MASK;
+        GameCore c = new GameCore(store, 71L);
+        Ear ear = new Ear();
+        c.sound = ear;
+        c.openCase();
+        c.caseIndex = 4;
+        c.openStory();
+        check("opening a story starts the reading",
+                ear.narrations == 1 && ear.narrated == 4);
+        c.closeStory();
+        check("and dismissing it stops mid-sentence", ear.hushes == 1);
+        // Called on the way into and out of half the states in the game, and must stay quiet
+        // about it when there was nothing being read.
+        c.closeStory();
+        c.startGame();
+        c.toTitle();
+        check("nothing to hush when no story is open", ear.hushes == 1);
+
+        // Every entry has to be sayable. The panel's text is upper case, which a speech engine
+        // reads as an initialism, and its lines break mid-sentence.
+        boolean lowered = true, punctuated = true, named = true, full = true;
+        boolean noDanglingAnd = true, paced = true, cute = true, gapped = true;
+        for (int i = 0; i < Collect.COUNT; i++) {
+            String[] said = Narration.lines(i);
+            if (said.length < Narration.PREAMBLE + 1) full = false;
+            if (!said[0].equals(Collect.NAME[i].toLowerCase() + "!")) named = false;
+            for (int k = 0; k < said.length; k++) {
+                String s = said[k];
+                if (!s.equals(s.toLowerCase())) lowered = false;
+                if (s.length() == 0 || !s.equals(s.trim())) full = false;
+                char last = s.charAt(s.length() - 1);
+                if (last != '.' && last != '!' && last != '?') punctuated = false;
+                // The giveaway that a typographic line has been read as a sentence.
+                if (s.endsWith(" and.") || s.endsWith(" and")) noDanglingAnd = false;
+                float pitch = Narration.pitch(said, k), rate = Narration.rate(said, k);
+                if (pitch <= 1.05f || pitch > 1.75f) cute = false;
+                if (rate < 0.75f || rate > 1f) paced = false;
+                int gap = Narration.gapMs(said, k);
+                if (k == said.length - 1 ? gap != 0 : gap <= 0) gapped = false;
+            }
+        }
+        check("every entry is spoken in lower case", lowered);
+        check("every chunk is a trimmed, non-empty line", full);
+        check("the name leads the reading", named);
+        check("every chunk ends on punctuation the engine can hear", punctuated);
+        check("no chunk breaks where a written line does", noDanglingAnd);
+        check("the whole reading is pitched up", cute);
+        check("and paced at or under the engine's own speed", paced);
+        check("a beat between chunks and none after the last", gapped);
+
+        // The shape of the delivery: an announced name, then the story, ending on its punchline.
+        String[] said = Narration.lines(0);
+        check("the name is the brightest and slowest of it",
+                Narration.pitch(said, 0) > Narration.pitch(said, 2)
+                        && Narration.rate(said, 0) < Narration.rate(said, 2));
+        check("the setting drops back under it",
+                Narration.pitch(said, 1) < Narration.pitch(said, 0));
+        check("and the last line slows to land",
+                Narration.rate(said, said.length - 1) < Narration.rate(said, 2));
+        check("the longest beat follows the name",
+                Narration.gapMs(said, 0) > Narration.gapMs(said, 1));
+
+        // Printed because this is the one thing in the game the PNGs cannot show. Reading it
+        // back is how the phrasing gets checked without a device that can talk.
+        for (int k = 0; k < said.length; k++) {
+            System.out.printf("    say  pitch %.2f  rate %.2f  then %3dms  \"%s\"%n",
+                    Narration.pitch(said, k), Narration.rate(said, k), Narration.gapMs(said, k),
+                    said[k]);
+        }
+    }
 }

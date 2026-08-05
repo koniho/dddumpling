@@ -193,6 +193,7 @@ file has to be added there. `build.sh` globs `src/`, so it needs no updating.
 | `Storybook` | the story popup and its ten looping vignettes |
 | `SettingsUi` | settings-panel geometry and hit-testing |
 | `Sfx` / `Music` | procedurally synthesised effects and looping tracks |
+| `Narration` | what the story popup says out loud, and the pitch and pace of each line |
 
 | Android-only | Holds |
 | --- | --- |

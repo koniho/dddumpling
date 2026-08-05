@@ -237,8 +237,108 @@ final class Audio implements GameCore.Sound {
         }, "hexatype-bgm").start();
     }
 
+    // ---- narration ----------------------------------------------------------
+
+    private android.speech.tts.TextToSpeech tts;
+    private boolean ttsReady, ttsBroken;
+    /** Queued while the engine is still waking up, or -1 for nothing waiting. */
+    private int ttsPending = -1;
+
+    /**
+     * The story popup, read aloud. The engine is built on first use and takes a moment to come
+     * up, so the entry is parked until it does.
+     *
+     * Guarded throughout and switched off for good on any failure: plenty of devices have no
+     * speech engine at all, and a missing voice must never be more than a missing voice.
+     */
+    @Override public void narrate(int entry) {
+        if (ttsBroken) return;
+        ttsPending = entry;
+        if (tts != null) {
+            if (ttsReady) read(entry);
+            return;
+        }
+        try {
+            tts = new android.speech.tts.TextToSpeech(ctx,
+                    new android.speech.tts.TextToSpeech.OnInitListener() {
+                        @Override public void onInit(int status) {
+                            if (status != android.speech.tts.TextToSpeech.SUCCESS) {
+                                ttsBroken = true;
+                                return;
+                            }
+                            setVoice();
+                            ttsReady = true;
+                            // The panel may well have been dismissed while it started up.
+                            if (ttsPending >= 0) read(ttsPending);
+                        }
+                    });
+        } catch (Throwable t) {
+            ttsBroken = true;
+        }
+    }
+
+    @Override public void hush() {
+        ttsPending = -1;
+        try {
+            if (tts != null && ttsReady) tts.stop();
+        } catch (Throwable ignored) {
+            // Nothing to salvage; the panel is gone either way.
+        }
+    }
+
+    /** English if the engine has it, its own default if not — never a refusal to speak. */
+    private void setVoice() {
+        try {
+            int got = tts.setLanguage(java.util.Locale.US);
+            if (got == android.speech.tts.TextToSpeech.LANG_MISSING_DATA
+                    || got == android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED) {
+                tts.setLanguage(java.util.Locale.getDefault());
+            }
+        } catch (Throwable ignored) {
+            // Leave it on whatever it starts with.
+        }
+    }
+
+    /**
+     * Queues the whole reading at once, a sentence per utterance with a beat of silence between.
+     *
+     * The pitch and rate are set before each one because the engine captures them as an
+     * utterance is queued — that is the only handle it gives on delivery, and setting them once
+     * up front would read all thirty stories in the same flat voice.
+     */
+    private void read(int entry) {
+        ttsPending = -1;
+        try {
+            String[] lines = Narration.lines(entry);
+            for (int i = 0; i < lines.length; i++) {
+                tts.setPitch(Narration.pitch(lines, i));
+                tts.setSpeechRate(Narration.rate(lines, i));
+                tts.speak(lines[i], i == 0
+                        ? android.speech.tts.TextToSpeech.QUEUE_FLUSH
+                        : android.speech.tts.TextToSpeech.QUEUE_ADD, null, "story-" + entry
+                        + "-" + i);
+                int gap = Narration.gapMs(lines, i);
+                if (gap > 0) {
+                    tts.playSilentUtterance(gap,
+                            android.speech.tts.TextToSpeech.QUEUE_ADD, "gap-" + entry + "-" + i);
+                }
+            }
+        } catch (Throwable t) {
+            ttsBroken = true;
+        }
+    }
+
     void release() {
         stopMusic();
+        try {
+            if (tts != null) {
+                tts.stop();
+                tts.shutdown();
+                tts = null;
+            }
+        } catch (Throwable ignored) {
+            // Going away regardless.
+        }
         for (int i = 0; i < tracks.length; i++) {
             if (tracks[i] == null) continue;
             try {

@@ -6,6 +6,17 @@
 
     <uses-feature android:name="android.hardware.touchscreen" android:required="true" />
 
+    <!--
+        Without this the story narration is silent on Android 11 and up: package visibility hides
+        every installed speech engine from an app targeting 30+, so TextToSpeech comes back with
+        an init error and nothing else to say about it.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="true"
         android:hardwareAccelerated="true"
