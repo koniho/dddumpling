@@ -3,6 +3,72 @@ package com.sram.hexatype;
 /** Effect normalisation and which sound fires on which event. */
 final class TestAudio extends Check {
 
+    /** What the two frenzy squish sounds are, and that they are the right shape for the job. */
+    static void frenzySounds(Layout L) {
+        group("frenzy sounds");
+        // The chop fires several times per swipe, so anything with a tail would smear.
+        short[] chop = Sfx.build(Sfx.CHOP);
+        float chopLen = (float) chop.length / Sfx.RATE;
+        System.out.printf("    chop is %.0fms, squish is %.0fms%n", chopLen * 1000f,
+                1000f * Sfx.build(Sfx.SQUISH_0).length / Sfx.RATE);
+        check("the chop is short enough to repeat", chopLen < 0.09f);
+        check("and shorter than a squish",
+                chop.length < Sfx.build(Sfx.SQUISH_0).length);
+        // It has to actually decay, or a run of them builds into a wash.
+        int head = 0, tail = 0;
+        for (int i = 0; i < chop.length / 4; i++) head = Math.max(head, Math.abs(chop[i]));
+        for (int i = chop.length * 3 / 4; i < chop.length; i++) {
+            tail = Math.max(tail, Math.abs(chop[i]));
+        }
+        check("the chop dies away", tail < head / 4);
+
+        // FLING: one chop per letter the blade cuts, and no fanfare.
+        GameCore c = new GameCore(new Mem(), 411L);
+        Ear ear = new Ear();
+        c.sound = ear;
+        c.startGame();
+        c.enemies.clear();
+        c.target = null;
+        c.startFrenzy(Power.FLING, L);
+        GameCore.Enemy e = add(c, L, new int[] {1, 2, 3, 4}, L.playTop + 300f);
+        int chops = ear.chops, cheers = ear.achievements;
+        c.beginStroke(c.tileX(e, 0, L) - L.enemyR * 2f, e.y);
+        int cut = c.sliceTo(c.tileX(e, 3, L) + L.enemyR * 2f, e.y, L);
+        check("the blade cut the word", cut == 4);
+        check("one chop per letter cut", ear.chops - chops == 4);
+        check("and no fanfare for a single word", ear.achievements == cheers);
+        c.endStroke();
+
+        // TEAM SQUISH: a squish per word, not the achievement flourish — it fires far too often
+        // for that, which is what it used to do.
+        Mem store = new Mem();
+        store.collected = (1L << 7) | (1L << 18);
+        GameCore d = new GameCore(store, 413L);
+        Ear ear2 = new Ear();
+        d.sound = ear2;
+        d.startGame();
+        d.enemies.clear();
+        d.target = null;
+        d.playtestMode(Power.TEAM, L);
+        GameCore.Enemy prey = add(d, L, new int[] {2, 2}, d.buddy.y);
+        prey.baseX = d.buddy.x;
+        int sq = ear2.squishes, fan = ear2.achievements;
+        d.update(DT, L);
+        check("the squishy took the word", prey.destroyed);
+        check("it squishes", ear2.squishes == sq + 1);
+        check("and does not blow the achievement fanfare", ear2.achievements == fan);
+        check("the squish is pitched by its size", ear2.lastDepth >= 1);
+        check("on a letter of the word it took", ear2.lastGlyph == 2);
+
+        // Bigger squishy, deeper squish: depth climbs, and depth is what lowers the pitch.
+        d.buddy.squishes = 8;
+        GameCore.Enemy again = add(d, L, new int[] {5, 5}, d.buddy.y);
+        again.baseX = d.buddy.x;
+        int wasDepth = ear2.lastDepth;
+        d.update(DT, L);
+        check("a grown squishy sounds deeper", ear2.lastDepth > wasDepth);
+    }
+
     /** Which track the game starts on, and that the loaded choice actually gets announced. */
     static void musicChoice(Layout L) {
         group("music choice");

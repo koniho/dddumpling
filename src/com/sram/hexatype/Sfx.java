@@ -20,8 +20,8 @@ final class Sfx {
 
     /** Sound ids, one preloaded buffer each. */
     static final int SQUISH_0 = 0, DRIP = 6, CLEAR = 7, WRONG = 8, ACHIEVEMENT = 9;
-    static final int START = 10, STAGE_CLEAR = 11, POWER_CLEAR = 12;
-    static final int COUNT = 13;
+    static final int START = 10, STAGE_CLEAR = 11, POWER_CLEAR = 12, CHOP = 13;
+    static final int COUNT = 14;
 
     private Sfx() {}
 
@@ -34,6 +34,7 @@ final class Sfx {
             case START: return start();
             case STAGE_CLEAR: return stageClear();
             case POWER_CLEAR: return powerClear();
+            case CHOP: return chop();
             default: return achievement();
         }
     }
@@ -178,6 +179,37 @@ final class Sfx {
             phase += 2f * (float) Math.PI * (190f - 90f * t) / RATE;
             v[i] = ((float) Math.sin(phase) + 0.35f * (float) Math.sin(phase * 1.5f))
                     * envelope(t, 0.005f, 5.5f);
+        }
+        return render(v);
+    }
+
+    /**
+     * A light chop, for a letter cut by the FLING blade.
+     *
+     * Short and dry: this fires several times per swipe, so anything with a tail on it would
+     * smear into a wash. Bandpassed noise with a fast downward sweep on the filter — the sweep
+     * is what makes it read as a blade passing through rather than as a click.
+     */
+    static short[] chop() {
+        int n = (int) (RATE * 0.055f);
+        float[] v = new float[n];
+        int seed = 987654321;
+        float lo = 0f, hi = 0f;
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / n;
+            seed = seed * 1103515245 + 12345;
+            float white = ((seed >> 16) & 0x7FFF) / 16383.5f - 1f;
+
+            // Two one-pole filters in series make a cheap bandpass: lowpass the noise, then
+            // subtract a slower lowpass to take the bottom out of it.
+            float cut = 0.62f - 0.42f * t;                 // the sweep, bright to dull
+            lo += (white - lo) * cut;
+            hi += (lo - hi) * 0.06f;
+            float band = lo - hi;
+
+            // A touch of tone under it, dropping fast, so it has a body and not just air.
+            float tone = (float) Math.sin(2f * Math.PI * (1400f - 900f * t) * i / RATE) * 0.20f;
+            v[i] = (band + tone * (float) Math.exp(-16f * t)) * envelope(t, 0.002f, 11f);
         }
         return render(v);
     }

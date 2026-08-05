@@ -173,6 +173,7 @@ geometry; `Kawaii` draws the creature.
 | Say | Means | Code |
 | --- | --- | --- |
 | **squish** | the per-letter press sound, pitched per letter | `Sfx.SQUISH_0 + n` |
+| **chop** | the light cut of the FLING blade, one per letter | `Sfx.CHOP` |
 | **drip** | taking damage | `Sfx.DRIP` |
 | **word clear** | finishing a word | `Sfx.CLEAR` |
 | **thunk** | a wrong press | `Sfx.WRONG` |

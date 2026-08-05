@@ -31,7 +31,7 @@ abstract class Check {
     }
 
     static final class Ear implements GameCore.Sound {
-        int squishes, clears, wrongs, damages, achievements;
+        int squishes, clears, wrongs, damages, achievements, chops;
         int lastGlyph = -1, lastDepth = -1;
         int music = -1, musicCalls;
         int starts, stageClears, powerClears, frenzyCalls;
@@ -45,6 +45,7 @@ abstract class Check {
         public void wrong() { wrongs++; }
         public void damage() { damages++; }
         public void achievement() { achievements++; }
+        public void chop() { chops++; }
         public void selectMusic(int choice) { music = choice; musicCalls++; }
         public void gameStart() { starts++; }
         public void stageClear() { stageClears++; }

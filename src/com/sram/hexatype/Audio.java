@@ -12,7 +12,7 @@ import android.media.MediaPlayer;
  *
  * One static-mode track per sound, built lazily on first use and replayed with
  * stop/reload/play. Stack depth is handled by nudging the playback rate rather than
- * synthesising a variant per depth, which keeps the track count to ten.
+ * synthesising a variant per depth, which keeps the track count down.
  *
  * Every call is guarded: audio is a garnish, and must never be able to take the game down.
  */
@@ -178,6 +178,10 @@ final class Audio implements GameCore.Sound {
     @Override public void squish(int glyph, int depth) {
         // Deeper remaining stacks sound lower and rounder, so a stack audibly counts down.
         play(Sfx.SQUISH_0 + glyph, (float) Math.pow(0.92, Math.max(0, depth - 1)));
+    }
+
+    @Override public void chop() {
+        play(Sfx.CHOP, 1f);
     }
 
     @Override public void clearWord() {

@@ -52,6 +52,7 @@ final class CoreTest {
 
         TestAudio.audio(L);
         TestAudio.musicChoice(L);
+        TestAudio.frenzySounds(L);
 
         TestPower.drifting(L);
         TestPower.precedence(L);

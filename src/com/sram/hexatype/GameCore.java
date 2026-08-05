@@ -82,6 +82,8 @@ final class GameCore {
         void wrong();
         void damage();
         void achievement();
+        /** A letter cut by the FLING blade. Fires several times per swipe, so it is short. */
+        void chop();
         /** Switch the looping background track to {@link Music#NAMES}[choice]. */
         void selectMusic(int choice);
 
@@ -1224,7 +1226,12 @@ final class GameCore {
         Fx.explode(this, rnd, buddy.x, buddy.y, L.enemyR * 1.6f, 14,
                 Collect.BODY[buddy.who]);
         shake = Math.max(shake, 0.30f + 0.03f * buddy.squishes);
-        if (sound != null) sound.achievement();
+        // A squish, pitched by how big the squishy has grown — depth sounds lower and rounder,
+        // so it deepens as it fills out. The achievement fanfare was here first and was far too
+        // much for something that fires every couple of seconds.
+        if (sound != null) {
+            sound.squish(e.word[0], Math.min(4, 1 + buddy.squishes / 2));
+        }
     }
 
     private void miss(int g) {
@@ -1594,6 +1601,7 @@ final class GameCore {
                 removeTile(e, i, x - x0, y - y0, L);
                 cut++;
                 strokeCuts++;
+                if (sound != null) sound.chop();
                 if (alive && e.destroyed) {
                     strokeKills++;
                     // Second word and every one after refreshes the beat, so a long sweep
