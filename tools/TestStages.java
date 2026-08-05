@@ -199,6 +199,14 @@ final class TestStages extends Check {
         return ok && (!win || sawWin);
     }
 
+    /** Opens the interlude and steps past the spinner, so presses count. */
+    private static boolean toMash(GameCore c, Layout L) {
+        c.spawnedThisStage = c.stageQuota();
+        c.enemies.clear();
+        c.shots.clear();
+        return advanceToMash(c, L);
+    }
+
     /** The spinner as a pure function: it must land on its answer, from any pair. */
     static void spinner(Layout L) {
         group("interlude spinner");
@@ -458,6 +466,47 @@ final class TestStages extends Check {
 
         advance(c, L, 1.0f);
         check("the press animations settle", c.steamer.lidPulse == 0f && c.steamer.flash == 0f);
+
+        // A wrong press must look and sound nothing like a landed one, and above all must not
+        // move the lid — the two used to share every channel except the sound.
+        GameCore wp = new GameCore(new Mem(), 127L);
+        Ear wear = new Ear();
+        wp.sound = wear;
+        wp.startGame();
+        check("in the minigame", toMash(wp, L));
+        int wrongKey = -1;
+        for (int g = 0; g < Glyph.COUNT; g++) {
+            if (g != wp.steamer.leftKey && g != wp.steamer.rightKey) wrongKey = g;
+        }
+        advance(wp, L, 0.6f);                        // let any opening pulse settle
+        check("nothing pulsing to start with",
+                wp.steamer.lidPulse == 0f && wp.steamer.flash == 0f
+                        && wp.steamer.badPulse == 0f);
+        int hitsWas = wp.steamer.hits;
+        float openWas = wp.steamer.lidOpen();
+        int squishWas = wear.squishes, wrongWas = wear.wrongs;
+
+        wp.tapBonus(wrongKey);
+        check("a wrong press does not budge the lid",
+                wp.steamer.lidPulse == 0f && wp.steamer.lidOpen() == openWas);
+        check("and does not flash the basket", wp.steamer.flash == 0f);
+        check("it rebuffs instead", wp.steamer.badPulse == 1f);
+        check("no progress from it", wp.steamer.hits == hitsWas);
+        check("it sounds wrong", wear.wrongs == wrongWas + 1);
+        check("and not like a press", wear.squishes == squishWas);
+        check("the key itself reddens", wp.keyBad[wrongKey] > 0f);
+        check("but it is not a typing miss", wp.misses == 0);
+
+        // The rebuff fades on its own.
+        advance(wp, L, 0.5f);
+        check("the rebuff fades", wp.steamer.badPulse == 0f);
+
+        // And a right press still does all the things a right press did.
+        wp.tapBonus(wp.steamer.wanted());
+        check("a right press pulses the lid", wp.steamer.lidPulse == 1f);
+        check("and flashes the basket", wp.steamer.flash == 1f);
+        check("with no rebuff", wp.steamer.badPulse == 0f);
+        check("and sounds like a press", wear.squishes == squishWas + 1);
 
         // Damage carries over: run the interlude out and check the count survives.
         int carried = c.steamer.hits;

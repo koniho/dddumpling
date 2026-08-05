@@ -63,6 +63,15 @@ final class Preview {
                 Collect.has(c.collected, c.caseIndex), c.caseSlide);
         shot(dir, "20-title-locked", c, L, w, h, ss);
 
+        // The title screen part-way through dissolving on a start press.
+        GameCore c18 = new GameCore(store, 79L);
+        step(c18, L, 0.55f);
+        c18.tapKey(2, L);
+        step(c18, L, GameCore.START_FADE * 0.45f);
+        System.out.printf("title fade: %.2f left of %.2f, state=%d%n", c18.startFade,
+                GameCore.START_FADE, c18.state);
+        shot(dir, "35-title-fading", c18, L, w, h, ss);
+
         // Story popup, mid-panel-spring and again settled with the scene playing.
         c.caseIndex = 0;
         c.openStory();
@@ -221,6 +230,28 @@ final class Preview {
         System.out.printf("bonus: state=%d hits=%d open=%.2f lidPulse=%.2f flash=%.2f%n",
                 c8.state, c8.steamer.hits, c8.steamer.lidOpen(), c8.steamer.lidPulse, c8.steamer.flash);
         shot(dir, "14-bonus", c8, L, w, h, ss);
+
+        // A wrong press: the basket jolts rose and the lid stays exactly where it was.
+        GameCore c17 = new GameCore(store, 73L);
+        c17.startGame();
+        c17.score = 1800;
+        c17.spawnedThisStage = c17.stageQuota();
+        c17.enemies.clear();
+        c17.shots.clear();
+        for (int i = 0; i < 60 * 8 && c17.state != GameCore.BONUS; i++) c17.update(DT, L);
+        for (int i = 0; i < 60 * 8 && c17.bonusRolling(); i++) c17.update(DT, L);
+        for (int i = 0; i < 14; i++) c17.tapBonus(c17.steamer.wanted());
+        step(c17, L, 0.5f);
+        int badKey = 0;
+        for (int g = 0; g < Glyph.COUNT; g++) {
+            if (g != c17.steamer.leftKey && g != c17.steamer.rightKey) badKey = g;
+        }
+        c17.tapBonus(badKey);
+        step(c17, L, 2 * DT);
+        System.out.printf("wrong press: bad=%.2f lidPulse=%.2f flash=%.2f hits=%d%n",
+                c17.steamer.badPulse, c17.steamer.lidPulse, c17.steamer.flash,
+                c17.steamer.hits);
+        shot(dir, "34-bonus-wrong", c17, L, w, h, ss);
 
         // And the moment it breaks free, handing over whatever was in the box.
         for (int i = 0; i < 16; i++) c8.tapBonus(c8.steamer.wanted());

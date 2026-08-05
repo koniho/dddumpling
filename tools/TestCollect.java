@@ -356,8 +356,7 @@ final class TestCollect extends Check {
 
         for (int g = 1; g < Glyph.COUNT - 1; g++) {
             GameCore c = new GameCore(new Mem(), 100L + g);
-            c.tapKey(g, L);
-            check("key " + g + " starts a run from the title", c.state == GameCore.PLAY);
+            check("key " + g + " starts a run from the title", startFromTitle(c, L, g));
         }
 
         GameCore c = new GameCore(new Mem(), 111L);
@@ -382,8 +381,7 @@ final class TestCollect extends Check {
         advance(c, L, GameCore.OVER_GRACE + 0.2f);
         c.tapKey(0, L);
         check("the outer key returns to the title", c.state == GameCore.TITLE);
-        c.tapKey(3, L);
-        check("and the inner four replay from there", c.state == GameCore.PLAY);
+        check("and the inner four replay from there", startFromTitle(c, L, 3));
 
         // The other route: straight back into a run without visiting the title.
         GameCore d = new GameCore(new Mem(), 113L);
@@ -395,6 +393,76 @@ final class TestCollect extends Check {
         advance(d, L, GameCore.OVER_GRACE + 0.2f);
         d.tapKey(4, L);
         check("game over restarts on an inner key", d.state == GameCore.PLAY);
+    }
+
+    /** The title screen dissolving on a start press, rather than cutting to play. */
+    static void startFade(Layout L) {
+        group("title fade-out");
+        Mem store = new Mem();
+        store.collected = 0b1101L;
+        GameCore c = new GameCore(store, 141L);
+        Ear ear = new Ear();
+        c.sound = ear;
+        check("nothing fading to begin with", !c.starting() && c.startFade == 0f);
+
+        c.tapKey(2, L);
+        check("a start key begins the fade", c.starting() && c.startFade > 0f);
+        check("and play has not begun", c.state == GameCore.TITLE);
+        check("the tone leads it rather than following", ear.starts == 1);
+
+        // It runs down, and the game is still the title screen for all of it.
+        boolean heldTitle = true, ranDown = true;
+        float last = c.startFade;
+        for (int i = 0; i < 60 * 5 && c.state == GameCore.TITLE; i++) {
+            c.update(DT, L);
+            if (c.state == GameCore.TITLE) {
+                if (c.startFade > last) ranDown = false;
+                last = c.startFade;
+                if (!c.starting() && c.state == GameCore.TITLE) heldTitle = false;
+            }
+        }
+        check("the fade only ever runs down", ranDown);
+        check("the title holds for the whole of it", heldTitle);
+        check("play begins when it is spent", c.state == GameCore.PLAY);
+        check("and the tone did not play twice", ear.starts == 1);
+        check("nothing left fading in play", c.startFade == 0f);
+        check("the fade is brief", GameCore.START_FADE < 1f);
+
+        // A second press during the fade must not restart it or double the tone.
+        GameCore d = new GameCore(store, 143L);
+        Ear ear2 = new Ear();
+        d.sound = ear2;
+        d.tapKey(2, L);
+        advance(d, L, GameCore.START_FADE * 0.4f);
+        float mid = d.startFade;
+        d.tapKey(3, L);
+        check("a second press is ignored", d.startFade == mid && ear2.starts == 1);
+        d.tapKey(0, L);
+        check("and so is a browse key", d.caseIndex == 0);
+
+        // A story on screen goes with it, or it would hang over the fade.
+        GameCore e = new GameCore(store, 145L);
+        e.caseIndex = 0;
+        e.openStory();
+        check("a story is open", e.storyOpen());
+        e.tapKey(2, L);
+        check("the first press dismisses the story instead of starting",
+                !e.storyOpen() && !e.starting());
+        e.tapKey(2, L);
+        check("the next one starts the fade", e.starting());
+        check("with no story hanging over it", !e.storyOpen());
+
+        // Restarting from game over is still immediate: the fade is the title screen's.
+        GameCore f = new GameCore(store, 147L);
+        f.startGame();
+        f.lives = 1;
+        f.enemies.clear();
+        add(f, L, new int[] {0}, L.dangerY - L.enemyR + 1);
+        advance(f, L, GameCore.ATTACK_TIME + 2 * DT);
+        advance(f, L, GameCore.OVER_GRACE + 0.2f);
+        f.tapKey(3, L);
+        check("game over replays without a fade",
+                f.state == GameCore.PLAY && f.startFade == 0f);
     }
 
     static void clearing(Layout L) {

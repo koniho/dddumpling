@@ -1,7 +1,11 @@
-# Hexatype
+# DDDUMPLING
 
 A kawaii typing-attack game for Android, built entirely on-device in Termux — no Gradle, no
 Android Studio, no PC.
+
+> The game is called DDDUMPLING on screen and in the launcher. The package, the directory and
+> every identifier are still `hexatype` — renaming those would change the package name, which
+> Android treats as a different app, so an install would not upgrade an existing one.
 
 Cute words fall from the sky. Each "letter" is one of six characters — dumpling, strawberry,
 cat, grapes, squishy, blob — with its own colour and face. You type by tapping the matching
@@ -42,7 +46,7 @@ the conventions and, more usefully, the traps that have already cost time.
 
 It does two things:
 
-1. **Rule assertions** (`tools/CoreTest.java`) — 798 of them across eleven suites: layout
+1. **Rule assertions** (`tools/CoreTest.java`) — 831 of them across eleven suites: layout
    geometry, hit-testing, targeting, scoring, stage pacing, the interlude's phases and both paths through it, the
    collectible catalogue and its odds, the stories, plus a two-minute perfect-play run and a
    ten-minute random-input fuzz.

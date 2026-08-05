@@ -199,7 +199,10 @@ final class TestRules extends Check {
         GameCore c = new GameCore(new Mem(), 6L);
         check("boots to the title screen", c.state == GameCore.TITLE);
         c.tapKey(2, L);
-        check("an inner key starts the game", c.state == GameCore.PLAY);
+        check("an inner key begins the fade, not the game",
+                c.starting() && c.state == GameCore.TITLE);
+        advance(c, L, GameCore.START_FADE + 0.1f);
+        check("and play begins once the title has gone", c.state == GameCore.PLAY);
 
         c.lives = 1;
         c.enemies.clear();

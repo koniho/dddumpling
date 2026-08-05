@@ -11,7 +11,7 @@ trip working out which thing was meant.
 ## The one thing that matters most
 
 **You can see and hear this game without building or installing it.** `./check.sh` runs the
-whole thing headlessly: ~800 rule assertions, then it renders real frames to `out/*.png` and
+whole thing headlessly: ~830 rule assertions, then it renders real frames to `out/*.png` and
 every sound to `out/sfx/*.wav`. Read the PNGs with the Read tool — the `0-*.png` sheets each
 show a whole set at once (the six letters, the thirty collectibles, both vignette casts). That loop is seconds, not
 minutes, and it needs no device.
@@ -137,6 +137,11 @@ nothing. Follow the pattern rather than "fixing" it.
 - **`Painter` cannot clip to a shape,** only to a rectangle. That is why a banded finish in
   `Trinket` is fitted to an ellipse and why `Collect.banded` restricts which shapes may wear
   one — there is an assertion holding the catalogue to it.
+- **Sharing an animation channel makes two events look identical.** A wrong press in the
+  interlude set `lidPulse` and `flash` before the wrong-key check, so it pulsed the lid and
+  flashed the basket exactly like a landed press — the only thing distinguishing them was the
+  sound. `badPulse` is its own channel now. If two outcomes should look different, they need
+  different state, not different timing on the same state.
 - **A permanent warning is not a warning.** `harm()` was linear, so losing one life of three put
   a third-strength pulsing red border round the screen for the rest of the run — reported twice as
   a "stuck vignette" and it was not stuck, it was working as written. It is squared now: one life

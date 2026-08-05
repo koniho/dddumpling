@@ -27,34 +27,39 @@ final class Screens extends Draw {
     }
 
     static void title(Painter p, GameCore c, Layout L) {
-        float bottom = scrim(p, L, 210);
+        // Dissolves once a start key is pressed, revealing the field it was sitting over. Every
+        // element takes the same factor, so the screen leaves as one thing rather than in parts.
+        float fade = c.startFade > 0f ? c.startFade / GameCore.START_FADE : 1f;
+        float bottom = scrim(p, L, (int) (210 * fade));
         float s = L.unit;
         float cx = L.w / 2f;
-        p.text("HEXATYPE", cx, L.h * 0.100f, s * 1.95f, INK, Painter.CENTER, true);
+        p.text("DDDUMPLING", cx, L.h * 0.100f, s * 1.95f, fadeBy(INK, fade),
+                Painter.CENTER, true);
         p.text("SIX LETTERS. THREE PER THUMB.", cx, L.h * 0.100f + s * 1.30f, s * 0.58f,
-                INK_DIM, Painter.CENTER, false);
+                fadeBy(INK_DIM, fade), Painter.CENTER, false);
 
         // The three-line explanation the screen used to carry is down to one: the display
         // case now needs the middle of the screen, and the tutorial keys are lit below it.
-        p.text("TAP THE MATCHING HEX, LEFT TO RIGHT,", cx, L.h * 0.195f, s * 0.60f, INK,
-                Painter.CENTER, false);
-        p.text("BEFORE THE WORDS LAND.", cx, L.h * 0.195f + s * 0.92f, s * 0.60f, INK,
-                Painter.CENTER, false);
+        p.text("TAP THE MATCHING HEX, LEFT TO RIGHT,", cx, L.h * 0.195f, s * 0.60f,
+                fadeBy(INK, fade), Painter.CENTER, false);
+        p.text("BEFORE THE WORDS LAND.", cx, L.h * 0.195f + s * 0.92f, s * 0.60f,
+                fadeBy(INK, fade), Painter.CENTER, false);
         if (c.best > 0) {
-            p.text("BEST " + c.best, cx, L.h * 0.262f, s * 0.74f, ROSE, Painter.CENTER, true);
+            p.text("BEST " + c.best, cx, L.h * 0.262f, s * 0.74f, fadeBy(ROSE, fade),
+                    Painter.CENTER, true);
         }
 
-        Showcase.draw(p, c, L);
+        Showcase.draw(p, c, L, fade);
 
         // Anchored above the danger line rather than off the deck: the dashed line shows
         // faintly through the scrim, and text sitting on it looks struck through.
         float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 3.2f);
         p.text("PRESS THE INNER FOUR TO START", cx, L.dangerY - s * 1.95f, s * 0.86f,
-                Glyph.withAlpha(INK, (int) (255 * pulse)), Painter.CENTER, true);
+                fadeBy(Glyph.withAlpha(INK, (int) (255 * pulse)), fade), Painter.CENTER, true);
         p.text("OUTER TWO BROWSE - TAP ONE FOR A STORY", cx, L.dangerY - s * 0.90f, s * 0.56f,
-                INK_DIM, Painter.CENTER, false);
+                fadeBy(INK_DIM, fade), Painter.CENTER, false);
 
-        keyRoles(p, L, bottom - s * 0.45f);
+        keyRoles(p, L, bottom - s * 0.45f, fade);
     }
 
     /**
@@ -62,12 +67,13 @@ final class Screens extends Draw {
      * hand labels here: which keys start and which browse now matters more than which thumb
      * they belong to, and the tagline above already carries the three-per-thumb idea.
      */
-    private static void keyRoles(Painter p, Layout L, float baseline) {
+    private static void keyRoles(Painter p, Layout L, float baseline, float fade) {
         float s = L.unit;
-        p.text("BROWSE", L.keyX[0], baseline, s * 0.48f, INK_DIM, Painter.CENTER, true);
-        p.text("BROWSE", L.keyX[Glyph.COUNT - 1], baseline, s * 0.48f, INK_DIM,
+        int dim = fadeBy(INK_DIM, fade);
+        p.text("BROWSE", L.keyX[0], baseline, s * 0.48f, dim, Painter.CENTER, true);
+        p.text("BROWSE", L.keyX[Glyph.COUNT - 1], baseline, s * 0.48f, dim,
                 Painter.CENTER, true);
-        p.text("START", L.w / 2f, baseline, s * 0.52f, INK, Painter.CENTER, true);
+        p.text("START", L.w / 2f, baseline, s * 0.52f, fadeBy(INK, fade), Painter.CENTER, true);
     }
 
     static void gameOver(Painter p, GameCore c, Layout L) {
@@ -305,7 +311,12 @@ final class Screens extends Draw {
         // Steamer geometry, shared by the back pass, the front pass and the lid so they
         // cannot drift apart. Seen from slightly above: the rim is an ellipse, and the basket
         // tapers a little toward its base the way a real bamboo one does.
+        // A wrong press jolts the whole basket sideways and turns it rose. The jolt is what
+        // reads as "no" without a word of text; the colour is what reads at a glance.
+        float bad = c.steamer.badPulse;
+        cx += (float) Math.sin(c.clock * 52f) * bw * 0.075f * bad;
         int body = Glyph.mix(BAMBOO, Glyph.cycle(c.clock * 6f), c.steamer.flash * 0.45f);
+        if (bad > 0f) body = Glyph.mix(body, ROSE, bad * 0.75f);
         float rimY = cy + bh * 0.22f;
         float baseY = rimY + bh * 0.78f;
         float rimRy = bw * 0.30f;
@@ -356,6 +367,12 @@ final class Screens extends Draw {
         // prize that rises off the top of the screen it would have gone with it.
         if (freed && c.prize >= 0) prizeLabel(p, c, L, cx, baseY + s * 2.05f, fade);
         if (!freed && !c.bonusPrizeWon()) countdown(p, c, L, cx, fade);
+        // Rings expanding off the rim, so the rebuff carries even at a glance away from it.
+        for (int k = 1; k <= 2 && bad > 0.02f; k++) {
+            float rr = bw * (1f + (1f - bad) * 0.30f * k);
+            p.fillPoly(pill(cx, rimY, rr, rimRy * 0.10f, 8),
+                    fadeBy(Glyph.withAlpha(ROSE, (int) (150 * bad / k)), fade));
+        }
 
         if (!freed) {
             // Lid: lifts with progress, and kicks up further on each press. Capped so that
@@ -364,6 +381,7 @@ final class Screens extends Draw {
             float lidY = rimY - rimRy * 1.05f - lift;
             int lidCol = Glyph.mix(BAMBOO, Glyph.cycle(c.clock * 6f + 0.3f),
                     c.steamer.flash * 0.45f);
+            if (bad > 0f) lidCol = Glyph.mix(lidCol, ROSE, bad * 0.75f);
             Basket.lid(p, cx, lidY, bw * 1.02f, rimRy * 0.95f, lidCol, fade);
 
             // Steam escaping through the widening gap.

@@ -17,6 +17,11 @@ final class Steamer {
     /** 1 right after a press, decaying: flashes and cycles the container colour. */
     float flash;
     /**
+     * 1 right after a <em>wrong</em> press, decaying. Its own channel, so a rebuff can look
+     * nothing like a landed press — which is the whole point of it.
+     */
+    float badPulse;
+    /**
      * How long the freed prize takes to climb out. Named, because the renderer needs it to
      * drive the escape animation and had a second copy of the number inlined — changing one
      * without the other silently breaks the climb.
@@ -39,6 +44,7 @@ final class Steamer {
         lidPulse = 0;
         flash = 0;
         freedT = 0;
+        badPulse = 0;
         leftKey = 0;
         rightKey = Glyph.COUNT / 2;
         expectLeft = true;
@@ -104,13 +110,22 @@ final class Steamer {
      * a completed left-then-right pair is worth one hit. Anything else restarts the pair.
      */
     int press(int g) {
-        lidPulse = 1f;
-        flash = 1f;
-        if (freedT > 0f) return OK;          // already loose; let the celebration play
+        if (freedT > 0f) {
+            // Already loose; let the celebration play and treat anything as harmless.
+            lidPulse = 1f;
+            flash = 1f;
+            return OK;
+        }
         if (g != wanted()) {
+            // Rebuffed. The lid does not budge and the basket does not flash: those two used to
+            // fire before this check, so a wrong press looked exactly like a landed one and the
+            // only thing telling you otherwise was the sound.
             expectLeft = true;
+            badPulse = 1f;
             return WRONG;
         }
+        lidPulse = 1f;
+        flash = 1f;
         if (expectLeft) {
             expectLeft = false;
             return OK;                       // half of a pair
@@ -134,6 +149,7 @@ final class Steamer {
     void update(float dt) {
         lidPulse = decay(lidPulse, dt * 4.5f);
         flash = decay(flash, dt * 3.0f);
+        badPulse = decay(badPulse, dt * 3.4f);
         freedT = decay(freedT, dt);
     }
 

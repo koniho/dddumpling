@@ -110,6 +110,7 @@ geometry; `Kawaii` draws the creature.
 | **spinner** | the two-second draw for this round's pair at the start of the interlude | `Steamer.rolled`, `GameCore.bonusRolling` |
 | **countdown** | the large clock under the steamer | `Screens.countdown`, `GameCore.bonusLeft` |
 | **beat on zero** | the second after the clock runs out, before anything fades | `GameCore.bonusHolding`, `BONUS_HOLD` |
+| **rebuff** | what a wrong press gets: the basket jolts rose, the lid does not budge | `Steamer.badPulse` |
 | **steamer damage** | presses landed, carried across interludes | `steamer.hits` |
 | **reveal** | freeing it: the prize climbs out with its name, tier and NEW badge | `Screens.prizeLabel` |
 | **escape** | the won prize climbing out of the basket; all that is left of a won round | `GameCore.bonusEscape`, `Steamer.FREE_TIME` |
@@ -160,6 +161,7 @@ geometry; `Kawaii` draws the creature.
 | Say | Means | Code |
 | --- | --- | --- |
 | **title screen** | the opening screen; the real key deck stays lit as the tutorial, and it holds the display case | `Screens.title` |
+| **title fade** | the title screen dissolving on a start press, before play begins | `GameCore.startFade`, `starting()` |
 | **start keys** | the inner four keys, which begin a run | `GameCore.startKey` |
 | **browse keys** | the outer two, which scroll the display case | `GameCore.scrollCase` |
 | **game over screen** | score, accuracy dumpling, best | `Screens.gameOver` |

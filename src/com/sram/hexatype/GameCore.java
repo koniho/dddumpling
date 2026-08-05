@@ -48,6 +48,12 @@ final class GameCore {
     /** How long the game-over screen ignores presses, so a death is not skipped by reflex. */
     static final float OVER_GRACE = 0.6f;
     /**
+     * How long the title screen takes to fade out once a start key is pressed. Play does not
+     * begin until it has gone, so the first wave is never already falling behind a screenful of
+     * text — which is what a hard cut looked like.
+     */
+    static final float START_FADE = 0.55f;
+    /**
      * The parade that closes an interlude something was won in: the collection marches in from
      * the left, the new one joins the end of the line, and they all march off to the right.
      * Play resumes when they are gone, not before.
@@ -254,6 +260,15 @@ final class GameCore {
     int caseIndex;
     /** -1..1, decaying to 0: the shelf easing into place after a scroll. */
     float caseSlide;
+
+    /** Seconds left of the title screen fading out. */
+    float startFade;
+    /** True while the title screen is on its way out and play has not begun. */
+    boolean starting() {
+        return state == TITLE && startFade > 0f;
+    }
+    /** Set when the start tone has already played, so {@link #startGame} does not repeat it. */
+    private boolean startAnnounced;
 
     /** Which entry's story is on screen, or -1. Title screen only. */
     int story = -1;
@@ -891,6 +906,18 @@ final class GameCore {
 
     // ---- lifecycle ----------------------------------------------------------
 
+    /**
+     * Begins the title screen's fade out. The tone leads it rather than following, so the press
+     * is acknowledged immediately and the triad carries over into the first wave.
+     */
+    void beginStart() {
+        if (state != TITLE || starting()) return;
+        startFade = START_FADE;
+        closeStory();
+        startAnnounced = true;
+        if (sound != null) sound.gameStart();
+    }
+
     void startGame() {
         state = PLAY;
         time = 0;
@@ -930,10 +957,12 @@ final class GameCore {
         powerTimer = Power.SPAWN_MIN;
         pendingBonus = false;
         stageBanner = BANNER_TIME;
+        startFade = 0f;
         if (sound != null) {
             sound.frenzy(false);
-            sound.gameStart();
+            if (!startAnnounced) sound.gameStart();
         }
+        startAnnounced = false;
     }
 
     void toTitle() {
@@ -963,6 +992,8 @@ final class GameCore {
     void screenKey(int g) {
         if (g < 0 || g >= Glyph.COUNT) return;
         if (state == OVER && time <= OVER_GRACE) return;
+        // Already on the way out: further presses would restart the fade or double the tone.
+        if (starting()) return;
         keyPress[g] = 1f;
         // A story on screen swallows the first press. Without this an inner key would start a
         // run from behind the panel, which is the one thing a modal must not allow.
@@ -971,7 +1002,8 @@ final class GameCore {
             return;
         }
         if (startKey(g)) {
-            startGame();
+            if (state == TITLE) beginStart();
+            else startGame();
         } else if (state == OVER) {
             toTitle();
         } else {
@@ -1338,6 +1370,14 @@ final class GameCore {
         stageBanner = decay(stageBanner, dt);
         perfectBanner = decay(perfectBanner, dt);
         if (storyOpen()) storyT += dt;
+        // The title screen dissolving. Play begins the frame it finishes, not on the press.
+        if (state == TITLE && startFade > 0f) {
+            startFade = Math.max(0f, startFade - dt);
+            if (startFade == 0f) {
+                startGame();
+                return;
+            }
+        }
         // Signed, so it eases back to zero from whichever side the scroll came in on.
         if (caseSlide != 0f) {
             float d = dt * Showcase.SLIDE_RATE;

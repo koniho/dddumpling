@@ -53,6 +53,11 @@ final class Showcase extends Draw {
     }
 
     static void draw(Painter p, GameCore c, Layout L) {
+        draw(p, c, L, 1f);
+    }
+
+    /** @param fade 0..1 master opacity, for the title screen dissolving on a start press */
+    static void draw(Painter p, GameCore c, Layout L, float fade) {
         float s = L.unit;
         float cx = L.w / 2f;
         float cy = focusCy(L);
@@ -67,14 +72,16 @@ final class Showcase extends Draw {
         // thing standing on it.
         float padX = step * (WINGS + 0.52f);
         float top = cy - r * 1.5f, bot = cy + r * 2.55f;
-        p.fillRect(cx - padX, top, cx + padX, bot, Glyph.withAlpha(0xFF2A2348, 190));
+        p.fillRect(cx - padX, top, cx + padX, bot,
+                fadeBy(Glyph.withAlpha(0xFF2A2348, 190), fade));
         p.strokePoly(new float[] {cx - padX, top, cx + padX, top, cx + padX, bot,
-                cx - padX, bot}, Glyph.withAlpha(INK, 40), s * 0.05f);
+                cx - padX, bot}, fadeBy(Glyph.withAlpha(INK, 40), fade), s * 0.05f);
 
-        p.text("DISPLAY CASE", cx, top - s * 1.30f, s * 0.62f, INK_DIM, Painter.CENTER, true);
+        p.text("DISPLAY CASE", cx, top - s * 1.30f, s * 0.62f, fadeBy(INK_DIM, fade),
+                Painter.CENTER, true);
         int have = Collect.owned(c.collected);
         p.text(have + " OF " + Collect.COUNT + " COLLECTED", cx, top - s * 0.45f, s * 0.58f,
-                have >= Collect.COUNT ? GOLD : INK, Painter.CENTER, true);
+                fadeBy(have >= Collect.COUNT ? GOLD : INK, fade), Painter.CENTER, true);
 
         // Everything on the shelf is clipped to the plaque. Mid-slide the whole row is offset
         // by up to a full step, which without this put a neighbour past the plaque edge and
@@ -90,7 +97,7 @@ final class Showcase extends Draw {
             int idx = wrap(i + k);
             float x = cx + k * step + slide;
             Trinket.draw(p, idx, x, cy + r * 0.10f, r * 0.56f, c.clock,
-                    Collect.has(c.collected, idx), 0.50f);
+                    Collect.has(c.collected, idx), 0.50f * fade);
         }
 
         // Focused entry, on a hex plinth tinted by its tier.
@@ -98,35 +105,37 @@ final class Showcase extends Draw {
         int tint = known ? Collect.TIER_COLOR[tier] : INK_DIM;
         float bob = (float) Math.abs(Math.sin(c.clock * 1.9f)) * r * 0.06f;
         float fr = r * 1.06f;
-        p.fillPoly(Glyph.hex(cx + slide, cy, fr), Glyph.withAlpha(tint, known ? 40 : 22));
+        p.fillPoly(Glyph.hex(cx + slide, cy, fr),
+                fadeBy(Glyph.withAlpha(tint, known ? 40 : 22), fade));
         // A collected plinth breathes, which is the only cue that it can be tapped for a
         // story. An uncollected one holds still, because it cannot.
         int edge = known ? (int) (185 + 70 * (0.5f + 0.5f * (float) Math.sin(c.clock * 2.6f)))
                 : 90;
-        p.strokePoly(Glyph.hex(cx + slide, cy, fr), Glyph.withAlpha(tint, edge), fr * 0.06f);
+        p.strokePoly(Glyph.hex(cx + slide, cy, fr), fadeBy(Glyph.withAlpha(tint, edge), fade),
+                fr * 0.06f);
         if (known && tier >= Collect.CHASE) {
             // Chase and grail entries get rays, so a full case still has standouts in it.
             for (int k = 3; k >= 1; k--) {
                 p.fillPoly(star(cx + slide, cy, fr * (1.15f + 0.35f * k), fr * 0.42f, 8,
-                        c.clock * 0.4f), Glyph.withAlpha(tint, 26 / k));
+                        c.clock * 0.4f), fadeBy(Glyph.withAlpha(tint, 26 / k), fade));
             }
         }
-        Trinket.draw(p, i, cx + slide, cy - bob, r * 0.86f, c.clock, known, 1f);
+        Trinket.draw(p, i, cx + slide, cy - bob, r * 0.86f, c.clock, known, fade);
         p.restore();
 
         // Caption. The name is withheld until the entry is collected; the family is not,
         // because knowing which shelf a gap belongs to is half of what makes it a gap.
         p.text(known ? Collect.NAME[i] : "??????", cx, cy + r * 1.90f, s * 0.86f,
-                known ? INK : INK_DIM, Painter.CENTER, true);
+                fadeBy(known ? INK : INK_DIM, fade), Painter.CENTER, true);
         p.text(known ? Collect.TIER_NAME[tier] : "NOT COLLECTED", cx, cy + r * 2.32f,
-                s * 0.56f, known ? tint : INK_DIM, Painter.CENTER, true);
+                s * 0.56f, fadeBy(known ? tint : INK_DIM, fade), Painter.CENTER, true);
         p.text(Collect.FAMILY_NAME[Collect.FAMILY[i]], cx, bot + s * 0.95f, s * 0.54f,
-                INK_DIM, Painter.CENTER, false);
-        scrollbar(p, c, L, cx, bot + s * 1.85f, padX * 0.94f);
-        p.text((i + 1) + " / " + Collect.COUNT, cx, bot + s * 2.80f, s * 0.54f, INK_DIM,
-                Painter.CENTER, true);
+                fadeBy(INK_DIM, fade), Painter.CENTER, false);
+        scrollbar(p, c, L, cx, bot + s * 1.85f, padX * 0.94f, fade);
+        p.text((i + 1) + " / " + Collect.COUNT, cx, bot + s * 2.80f, s * 0.54f,
+                fadeBy(INK_DIM, fade), Painter.CENTER, true);
 
-        arrows(p, L, cy, padX);
+        arrows(p, L, cy, padX, fade);
     }
 
     /**
@@ -136,11 +145,11 @@ final class Showcase extends Draw {
      * tick, because {@link #WINGS} neighbours really are on screen either side.
      */
     private static void scrollbar(Painter p, GameCore c, Layout L, float cx, float y,
-            float half) {
+            float half, float fade) {
         float s = L.unit;
         float h = s * 0.16f;
         int span = 2 * WINGS + 1;
-        p.fillPoly(pill(cx, y, half, h, 6), Glyph.withAlpha(INK, 34));
+        p.fillPoly(pill(cx, y, half, h, 6), fadeBy(Glyph.withAlpha(INK, 34), fade));
 
         // Thumb width is the visible slice of the strip; its centre tracks the focused entry,
         // slid by the same fraction the shelf is sliding so bar and shelf move as one.
@@ -148,14 +157,14 @@ final class Showcase extends Draw {
         float thumbHalf = Math.max(h, trackW * span / (2f * Collect.COUNT));
         float pos = (c.caseIndex - c.caseSlide + 0.5f) / Collect.COUNT;
         float tx = cx - half + h + trackW * pos;
-        p.fillPoly(pill(tx, y, thumbHalf + h, h, 6), Glyph.withAlpha(INK_DIM, 210));
+        p.fillPoly(pill(tx, y, thumbHalf + h, h, 6), fadeBy(Glyph.withAlpha(INK_DIM, 210), fade));
 
         // Ticks for what is already collected, so the bar doubles as a map of the gaps.
         for (int k = 0; k < Collect.COUNT; k++) {
             if (!Collect.has(c.collected, k)) continue;
             float kx = cx - half + h + trackW * (k + 0.5f) / Collect.COUNT;
             p.fillCircle(kx, y, h * 0.42f,
-                    Glyph.withAlpha(Collect.TIER_COLOR[Collect.TIER[k]], 235));
+                    fadeBy(Glyph.withAlpha(Collect.TIER_COLOR[Collect.TIER[k]], 235), fade));
         }
     }
 
@@ -164,14 +173,14 @@ final class Showcase extends Draw {
      * polygons rather than typed as characters because the harness font is ASCII-only, and
      * an arrow that only appears on the device is an arrow that never gets checked.
      */
-    private static void arrows(Painter p, Layout L, float cy, float padX) {
+    private static void arrows(Painter p, Layout L, float cy, float padX, float fade) {
         float s = L.unit;
         float d = s * 0.42f;
         for (int side = -1; side <= 1; side += 2) {
             float x = L.w / 2f + side * (padX + s * 0.62f);
             float tip = x + side * d;
             p.fillPoly(new float[] {tip, cy, x - side * d, cy - d, x - side * d, cy + d},
-                    Glyph.withAlpha(INK, 150));
+                    fadeBy(Glyph.withAlpha(INK, 150), fade));
         }
     }
 

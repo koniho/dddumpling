@@ -114,6 +114,16 @@ abstract class Check {
         return c.bonusMashing();
     }
 
+    /**
+     * Presses a start key on the title screen and steps through the fade-out, so the caller
+     * lands in play. A bare press only begins the dissolve — play starts when it finishes.
+     */
+    static boolean startFromTitle(GameCore c, Layout L, int key) {
+        c.tapKey(key, L);
+        for (int i = 0; i < 60 * 5 && c.state == GameCore.TITLE; i++) c.update(DT, L);
+        return c.state == GameCore.PLAY;
+    }
+
     static void advance(GameCore c, Layout L, float seconds) {
         for (float t = 0; t < seconds; t += DT) c.update(DT, L);
     }
