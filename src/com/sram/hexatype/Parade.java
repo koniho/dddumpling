@@ -13,8 +13,13 @@ final class Parade extends Draw {
     /** Figures in the line, the new one included. More than this will not fit legibly. */
     static final int LINE = 7;
 
-    /** Movement boundaries, as fractions of the parade. In, join, then off. */
-    static final float IN_END = 0.38f, JOIN_END = 0.60f;
+    /**
+     * Movement boundaries, as fractions of the parade. In, join, then off.
+     *
+     * The join gets a slightly larger share than an even split would give it, because it is the
+     * beat the whole sequence exists for — the other two are just travel.
+     */
+    static final float IN_END = 0.34f, JOIN_END = 0.62f;
 
     private Parade() {}
 

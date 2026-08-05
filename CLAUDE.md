@@ -11,7 +11,7 @@ trip working out which thing was meant.
 ## The one thing that matters most
 
 **You can see and hear this game without building or installing it.** `./check.sh` runs the
-whole thing headlessly: ~695 rule assertions, then it renders real frames to `out/*.png` and
+whole thing headlessly: ~700 rule assertions, then it renders real frames to `out/*.png` and
 every sound to `out/sfx/*.wav`. Read the PNGs with the Read tool — the `0-*.png` sheets each
 show a whole set at once (the six letters, the thirty collectibles, both vignette casts). That loop is seconds, not
 minutes, and it needs no device.
@@ -137,6 +137,10 @@ nothing. Follow the pattern rather than "fixing" it.
 - **`Painter` cannot clip to a shape,** only to a rectangle. That is why a banded finish in
   `Trinket` is fitted to an ellipse and why `Collect.banded` restricts which shapes may wear
   one — there is an assertion holding the catalogue to it.
+- **Two copies of a duration is one too many.** The freed-prize escape had its length in
+  `Steamer` and the number inlined again in `Screens` to drive the climb, so lengthening it in
+  one place broke the animation in the other. `Steamer.FREE_TIME` is the only copy now. Worth a
+  grep for a bare float before tuning any timing.
 - **A phase nobody named is a screen that draws nothing.** Cutting the status report out of a
   winning interlude left `bonusTimer` running through a window where none of the phase
   predicates were true. It happened to work, because the renderer fell through to the

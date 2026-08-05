@@ -323,7 +323,7 @@ final class Screens extends Draw {
         float dumpY = rimY + dumpR * 0.30f - risen * dumpR * 0.80f;
         if (freed) {
             // Escaping: rises and grows away as the celebration plays.
-            float t = 1f - c.steamer.freedT / 1.7f;
+            float t = 1f - c.steamer.freedT / Steamer.FREE_TIME;
             dumpY -= t * t * L.h * 0.30f;
             dumpR *= 1f + 0.35f * t;
         }

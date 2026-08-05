@@ -16,6 +16,12 @@ final class Steamer {
     float lidPulse;
     /** 1 right after a press, decaying: flashes and cycles the container colour. */
     float flash;
+    /**
+     * How long the freed prize takes to climb out. Named, because the renderer needs it to
+     * drive the escape animation and had a second copy of the number inlined — changing one
+     * without the other silently breaks the climb.
+     */
+    static final float FREE_TIME = 2.55f;
     /** Counts down while the freed dumpling flies away. */
     float freedT;
 
@@ -114,7 +120,7 @@ final class Steamer {
         if (hits < GameCore.STEAMER_HITS) return SCORED;
         hits = 0;
         opens++;
-        freedT = 1.7f;
+        freedT = FREE_TIME;
         return FREED;
     }
 

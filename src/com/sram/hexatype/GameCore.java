@@ -51,8 +51,12 @@ final class GameCore {
      * The parade that closes an interlude something was won in: the collection marches in from
      * the left, the new one joins the end of the line, and they all march off to the right.
      * Play resumes when they are gone, not before.
+     *
+     * Half again as long as it first was, along with the escape before it: at the original
+     * length the whole win read as rushed, and the moment the newcomer actually joins the line
+     * is the one thing in the sequence worth lingering on.
      */
-    static final float PARADE_TIME = 3.0f;
+    static final float PARADE_TIME = 4.5f;
 
     /** Persistence seam; the Activity backs this with SharedPreferences. */
     interface Store {

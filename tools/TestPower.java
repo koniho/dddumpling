@@ -226,6 +226,53 @@ final class TestPower extends Check {
         check("a press matching nothing misses", c.misses == missesBefore + 1);
     }
 
+    /**
+     * Every frenzy mode has to keep turning up. A skew here is close to invisible in play —
+     * you only see a handful of frenzies in a run, so three of the same in a row feels like a
+     * bug and three different ones proves nothing. Measured rather than eyeballed.
+     */
+    static void modeSpread(Layout L) {
+        group("frenzy mode spread");
+        check("three modes, three names",
+                Power.COUNT == 3 && Power.NAMES.length == Power.COUNT
+                        && Power.BLURB.length == Power.COUNT);
+
+        // The draw itself, made in the same order spawnPower makes it.
+        java.util.Random r = new java.util.Random(4242L);
+        int[] raw = new int[Power.COUNT];
+        for (int i = 0; i < 30000; i++) {
+            r.nextInt(Glyph.COUNT);
+            raw[r.nextInt(Power.COUNT)]++;
+        }
+        int lo = Integer.MAX_VALUE, hi = 0;
+        for (int i = 0; i < raw.length; i++) {
+            lo = Math.min(lo, raw[i]);
+            hi = Math.max(hi, raw[i]);
+        }
+        System.out.printf("    30000 draws: %d / %d / %d%n", raw[0], raw[1], raw[2]);
+        check("no mode is favoured in the draw", hi - lo < 30000 / 20);
+
+        // And through the real spawn path, which is the part that got doubted. The wave is held
+        // open every frame so the run never ends and the letters keep coming.
+        GameCore c = new GameCore(new Mem(), 4243L);
+        c.startGame();
+        int[] seen = new int[Power.COUNT];
+        int last = -1;
+        for (int i = 0; i < 60 * 900; i++) {
+            c.enemies.clear();
+            c.spawnedThisStage = 0;
+            c.update(DT, L);
+            if (c.mode >= 0 && c.mode != last) seen[c.mode]++;
+            last = c.mode;
+            if (c.power != null && c.power.catchable()) c.tapKey(c.power.glyph, L);
+        }
+        System.out.printf("    15 minutes of play: %d %s, %d %s, %d %s%n",
+                seen[0], Power.NAMES[0], seen[1], Power.NAMES[1], seen[2], Power.NAMES[2]);
+        boolean all = true;
+        for (int i = 0; i < seen.length; i++) if (seen[i] == 0) all = false;
+        check("every mode turns up in play", all);
+    }
+
     /** The blade: what one stroke cuts, and the beat a multi-word stroke earns. */
     static void blade(Layout L) {
         group("FLING blade");
