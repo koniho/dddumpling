@@ -530,7 +530,7 @@ final class Preview {
         sfxDir.mkdirs();
         String[] names = {"squish-dumpling", "squish-strawberry", "squish-cat", "squish-grapes",
                 "squish-squishy", "squish-blob", "damage-drip", "clear-word", "wrong",
-                "achievement", "game-start", "stage-clear", "power-clear", "chop"};
+                "achievement", "game-start", "stage-clear", "power-clear", "chop", "zap"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

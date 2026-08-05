@@ -184,6 +184,13 @@ final class Audio implements GameCore.Sound {
         play(Sfx.CHOP, 1f);
     }
 
+    @Override public void zap(int hop) {
+        // Climbs with the chain, capped so a long one stays a crack rather than turning into a
+        // chirp — and well inside what setPlaybackRate will take.
+        int step = hop < 1 ? 0 : hop > 9 ? 8 : hop - 1;
+        play(Sfx.ZAP, 1f + 0.055f * step);
+    }
+
     @Override public void clearWord() {
         play(Sfx.CLEAR, 1f);
     }

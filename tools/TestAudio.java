@@ -32,6 +32,46 @@ final class TestAudio extends Check {
         check("but is still brighter than a squish",
                 crossRate(chop) > crossRate(Sfx.build(Sfx.SQUISH_0)));
 
+        // The chain crack: it has to hit hard and immediately, which is the whole difference
+        // between a bolt and a fizz.
+        short[] zap = Sfx.build(Sfx.ZAP);
+        int peakAt = 0, peak = 0;
+        for (int i = 0; i < zap.length; i++) {
+            if (Math.abs(zap[i]) > peak) {
+                peak = Math.abs(zap[i]);
+                peakAt = i;
+            }
+        }
+        float toPeak = 1000f * peakAt / Sfx.RATE;
+        System.out.printf("    zap is %.0fms, peaks at %.1fms, %.0f crossings/s%n",
+                1000f * zap.length / Sfx.RATE, toPeak, crossRate(zap));
+        check("the zap hits immediately", toPeak < 12f);
+        check("it is the bigger event of the two", zap.length > chop.length);
+        check("it has low-end punch, not just crackle", crossRate(zap) < 3000f);
+        int zTail = 0;
+        for (int i = zap.length * 3 / 4; i < zap.length; i++) {
+            zTail = Math.max(zTail, Math.abs(zap[i]));
+        }
+        check("and it decays", zTail < peak / 6);
+
+        // MULTI: one crack per hop, climbing, and never a squish.
+        GameCore m = new GameCore(new Mem(), 417L);
+        Ear earM = new Ear();
+        m.sound = earM;
+        m.startGame();
+        m.enemies.clear();
+        m.target = null;
+        m.startFrenzy(Power.MULTI, L);
+        add(m, L, new int[] {1, 1}, L.playTop + 200f);
+        add(m, L, new int[] {1, 1}, L.playTop + 320f);
+        m.tapKey(1, L);
+        check("the chain took four", m.chainLen == 4);
+        check("silent until it plays back", earM.zaps == 0);
+        advance(m, L, GameCore.CHAIN_TIME);
+        check("one crack per hop", earM.zaps == 4);
+        check("the last one is the highest", earM.lastZapHop == 4);
+        check("no squishes in a chain", earM.squishes == 0);
+
         // FLING: one chop per letter the blade cuts, and no fanfare.
         GameCore c = new GameCore(new Mem(), 411L);
         Ear ear = new Ear();

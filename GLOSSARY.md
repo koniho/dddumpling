@@ -49,7 +49,7 @@ geometry; `Kawaii` draws the creature.
 | **lunge** / **attack** | the final dive a word makes on crossing the line | `e.attacking` |
 | **breach** | a word landing and costing a life | `GameCore.breach` |
 | **squish** (a word) | clearing a word; the game-over screen counts them | `GameCore.squishes` |
-| **harm** | how far health has fallen; drives the red tint and pulse | `GameCore.harm()` |
+| **harm** | how far health has fallen; drives the red tint and pulse. Squared, so it bites on the last life rather than the first | `GameCore.harm()` |
 | **edge glow** / **vignette** | the red glow at the screen edges | `Sky.vignette` |
 
 ## Player input
@@ -174,6 +174,7 @@ geometry; `Kawaii` draws the creature.
 | --- | --- | --- |
 | **squish** | the per-letter press sound, pitched per letter | `Sfx.SQUISH_0 + n` |
 | **chop** | the cut of the FLING blade, one per letter. Replaces the word-clear tone on a cut word | `Sfx.CHOP` |
+| **zap** | the lightning crack of one MULTI chain hop, climbing in pitch along the chain | `Sfx.ZAP` |
 | **drip** | taking damage | `Sfx.DRIP` |
 | **word clear** | finishing a word by typing it. A word the blade cut rings no clear tone — its chops are its sound | `Sfx.CLEAR` |
 | **thunk** | a wrong press | `Sfx.WRONG` |

@@ -476,10 +476,11 @@ final class TestPower extends Check {
         Ear ear = new Ear();
         c.sound = ear;
         check("nothing revealed on the press itself", c.chainShown == 0);
-        int quiet = ear.squishes;
         advance(c, L, GameCore.CHAIN_TIME * GameCore.CHAIN_REVEAL + 2 * DT);
         check("every hop is revealed", c.chainShown == c.chainLen);
-        check("and every hop sounded", ear.squishes - quiet == c.chainLen);
+        check("and every hop cracked", ear.zaps == c.chainLen);
+        check("with none of them a squish", ear.squishes == 0);
+        check("the crack climbs with the chain", ear.lastZapHop == c.chainLen);
         check("the chain is still on screen while it fades", c.chainT > 0f);
         advance(c, L, GameCore.CHAIN_TIME);
         check("then it goes", c.chainT == 0f);

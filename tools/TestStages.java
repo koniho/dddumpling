@@ -617,6 +617,13 @@ final class TestStages extends Check {
         c.lives = 1;
         check("harm rises as lives fall", c.harm() > h2 && h2 > 0f);
         check("harm peaks below or at 1", c.harm() <= 1f);
+        // It has to bite late. One life lost out of three is the ordinary state of a run in
+        // progress, and at linear strength it painted a permanent red border for the rest of it.
+        check("one life lost is barely visible", h2 < 0.15f);
+        check("the last life is unmistakable", c.harm() > 0.35f);
+        c.lives = 0;
+        check("and empty is full strength", Math.abs(c.harm() - 1f) < 0.001f);
+        c.lives = 1;
         c.lives = 0;
         c.state = GameCore.OVER;
         check("no tint outside play", c.harm() == 0f);

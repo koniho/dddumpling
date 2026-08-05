@@ -84,6 +84,8 @@ final class GameCore {
         void achievement();
         /** A letter cut by the FLING blade. Fires several times per swipe, so it is short. */
         void chop();
+        /** One hop of a MULTI chain. @param hop 1-based, so the crack can climb with the chain */
+        void zap(int hop);
         /** Switch the looping background track to {@link Music#NAMES}[choice]. */
         void selectMusic(int choice);
 
@@ -546,9 +548,8 @@ final class GameCore {
     /**
      * Plays back the last chain, one hop at a time, sounding each as it lands.
      *
-     * The hops were all resolved on the press; this is presentation. Pitch climbs toward normal
-     * rather than above it, because {@link Sound#squish} only ever pitches a sound <em>down</em>
-     * from its recorded rate — so a chain charges up to full instead of running away.
+     * The hops were all resolved on the press; this is presentation. Each one cracks, and the
+     * crack climbs in pitch as the chain runs on.
      */
     private void updateChain(float dt) {
         if (chainT <= 0f) return;
@@ -557,7 +558,7 @@ final class GameCore {
         int want = (int) Math.ceil(chainLen * Math.min(1f, done / CHAIN_REVEAL));
         while (chainShown < want) {
             chainShown++;
-            if (sound != null) sound.squish(chainGlyph, Math.max(1, 6 - chainShown));
+            if (sound != null) sound.zap(chainShown);
         }
     }
 
@@ -1844,10 +1845,20 @@ final class GameCore {
 
 
 
-    /** 0 at full health, rising to 1 as lives run out. Tints the whole screen red. */
+    /**
+     * 0 at full health, rising to 1 as lives run out. Tints the whole screen red and drives the
+     * edge glow.
+     *
+     * Squared, so it bites late. Linear meant losing one of three lives put a permanent pulsing
+     * red border round the screen for the rest of the run: a third of full strength, for the
+     * ordinary state of having been hit once. A warning that never goes away stops being a
+     * warning. This says "nearly dead", not "not perfect" — one life lost is barely visible, the
+     * last life is unmistakable.
+     */
     float harm() {
         if (state != PLAY) return 0f;
-        return clamp01(1f - (float) lives / START_LIVES);
+        float lost = clamp01(1f - (float) lives / START_LIVES);
+        return lost * lost;
     }
 
     private static float decay(float v, float amount) {

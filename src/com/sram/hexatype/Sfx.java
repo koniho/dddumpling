@@ -20,8 +20,8 @@ final class Sfx {
 
     /** Sound ids, one preloaded buffer each. */
     static final int SQUISH_0 = 0, DRIP = 6, CLEAR = 7, WRONG = 8, ACHIEVEMENT = 9;
-    static final int START = 10, STAGE_CLEAR = 11, POWER_CLEAR = 12, CHOP = 13;
-    static final int COUNT = 14;
+    static final int START = 10, STAGE_CLEAR = 11, POWER_CLEAR = 12, CHOP = 13, ZAP = 14;
+    static final int COUNT = 15;
 
     private Sfx() {}
 
@@ -35,6 +35,7 @@ final class Sfx {
             case STAGE_CLEAR: return stageClear();
             case POWER_CLEAR: return powerClear();
             case CHOP: return chop();
+            case ZAP: return zap();
             default: return achievement();
         }
     }
@@ -216,6 +217,50 @@ final class Sfx {
                     + (float) Math.sin(deep) * 0.64f * (float) Math.exp(-3.5f * t);
 
             v[i] = (air + body) * envelope(t, 0.002f, 8.5f);
+        }
+        return render(v);
+    }
+
+    /**
+     * A lightning crack, for one hop of a MULTI chain.
+     *
+     * Three parts, and it needs all three. A bright noise crack with essentially no attack, so it
+     * arrives rather than fades in. A hard-edged oscillator swept down two octaves in a few
+     * milliseconds for the electric zap — a plain sine there reads as a musical note, and the odd
+     * harmonics are what give it an edge. And a low thump underneath, which is the part that makes
+     * a hop land instead of fizz.
+     *
+     * Longer than the chop it sits beside, because {@link Audio} gives each effect one track and
+     * restarts it: the hops of a chain arrive close enough together that each truncates the last,
+     * so only the final hop rings out in full. That is the intended shape — a rattle of cracks,
+     * then a tail.
+     */
+    static short[] zap() {
+        int n = (int) (RATE * 0.13f);
+        float[] v = new float[n];
+        int seed = 24681357;
+        float lo = 0f, hi = 0f, phase = 0f, thump = 0f;
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / n;
+            seed = seed * 1103515245 + 12345;
+            float white = ((seed >> 16) & 0x7FFF) / 16383.5f - 1f;
+
+            lo += (white - lo) * (0.92f - 0.55f * t);
+            hi += (lo - hi) * 0.10f;
+            float crack = (lo - hi) * 1.05f * (float) Math.exp(-13f * t);
+
+            phase += 2f * (float) Math.PI * (1750f * (float) Math.exp(-7f * t) + 120f) / RATE;
+            float edge = (float) Math.sin(phase) + 0.45f * (float) Math.sin(phase * 3f)
+                    + 0.22f * (float) Math.sin(phase * 5f);
+            // Amplitude buzz at a rate that is no neat multiple of the sweep, so it stays
+            // electrical instead of settling into a pitch.
+            float buzz = 0.78f + 0.22f * (float) Math.sin(2f * (float) Math.PI * 63f * i / RATE);
+            float zap = edge * 0.42f * buzz * (float) Math.exp(-9f * t);
+
+            thump += 2f * (float) Math.PI * (95f - 35f * t) / RATE;
+            float low = (float) Math.sin(thump) * 0.90f * (float) Math.exp(-11f * t);
+
+            v[i] = (crack + zap + low) * envelope(t, 0.0008f, 5.5f);
         }
         return render(v);
     }
