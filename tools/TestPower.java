@@ -289,7 +289,9 @@ final class TestPower extends Check {
         check("that earns the beat", d.slowdown > 0f);
         check("and the world actually slows",
                 Math.abs(d.timeScale() - GameCore.SLOW_RATE) < 0.001f);
-        check("the beat is brief", GameCore.SLOW_TIME <= 1f);
+        check("the beat is brief", GameCore.SLOW_TIME <= 0.35f);
+        check("the readout outlives it",
+                GameCore.SLICE_CALL_TIME > GameCore.SLOW_TIME && d.sliceCall > 0f);
         d.endStroke();
 
         // It runs on real time: slowing the world must not slow its own expiry.
@@ -299,6 +301,9 @@ final class TestPower extends Check {
                 Math.abs((was - d.slowdown) - DT) < 0.0005f);
         advance(d, L, GameCore.SLOW_TIME + 0.1f);
         check("it ends by itself", d.slowdown == 0f && d.timeScale() == 1f);
+        check("the readout is still up at normal speed", d.sliceCall > 0f);
+        advance(d, L, GameCore.SLICE_CALL_TIME);
+        check("and it clears in its own time", d.sliceCall == 0f);
 
         // A word falls slower while it lasts, which is the whole point.
         GameCore f = new GameCore(new Mem(), 235L);

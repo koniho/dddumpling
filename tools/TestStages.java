@@ -161,6 +161,44 @@ final class TestStages extends Check {
                 Screens.introScale(0f) < 3f && Screens.introScale(0.01f) > 0f);
     }
 
+    /**
+     * Plays a whole interlude and checks that exactly one phase predicate is true on every
+     * frame of it. Two of them true at once is a contradiction; none is a phase nobody named,
+     * which is how a screen that draws nothing gets shipped.
+     */
+    private static boolean onePhaseThroughout(long seed, boolean win, Layout L) {
+        GameCore c = new GameCore(new Mem(), seed);
+        c.startGame();
+        c.spawnedThisStage = c.stageQuota();
+        c.enemies.clear();
+        c.shots.clear();
+        if (!advanceToBonus(c, L)) return false;
+        boolean ok = true, sawWin = false;
+        for (int i = 0; i < 60 * 30 && c.state == GameCore.BONUS; i++) {
+            if (win && c.bonusMashing() && !sawWin) {
+                for (int k = 0; k < GameCore.STEAMER_HITS * 2 + 4; k++) {
+                    c.tapBonus(c.steamer.wanted());
+                }
+                sawWin = c.prize >= 0;
+            }
+            int on = 0;
+            if (c.bonusRolling()) on++;
+            if (c.bonusMashing()) on++;
+            if (c.bonusHolding()) on++;
+            if (c.bonusStatus()) on++;
+            if (c.bonusEscape()) on++;
+            if (c.bonusParading()) on++;
+            if (on != 1) {
+                System.out.printf("    %d phases at once, timer=%.2f parade=%.2f%n", on,
+                        c.bonusTimer, c.paradeTimer);
+                ok = false;
+                break;
+            }
+            c.update(DT, L);
+        }
+        return ok && (!win || sawWin);
+    }
+
     /** The spinner as a pure function: it must land on its answer, from any pair. */
     static void spinner(Layout L) {
         group("interlude spinner");
@@ -289,6 +327,11 @@ final class TestStages extends Check {
         advance(c, L, GameCore.BONUS_STATUS + 0.1f);
         check("play resumes after the hold", c.state == GameCore.PLAY);
         check("the stage turned over", c.stage == 2);
+
+        // Exactly one phase at a time, over both paths through an interlude — a lost round and
+        // a won one. An unnamed gap here is what a phase that draws nothing looks like.
+        check("a lost round is always in exactly one phase", onePhaseThroughout(151L, false, L));
+        check("and so is a won one", onePhaseThroughout(153L, true, L));
 
         // A frenzy allows four times as many words on screen at once.
         GameCore d = new GameCore(new Mem(), 142L);

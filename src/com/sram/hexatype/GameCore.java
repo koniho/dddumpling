@@ -333,12 +333,19 @@ final class GameCore {
     int strokeCuts;
     /** Words in one stroke that earn the slow-motion beat. */
     static final int SLOW_KILLS = 2;
-    /** How long that beat lasts, in real seconds. */
-    static final float SLOW_TIME = 0.5f;
+    /** How long that beat lasts, in real seconds. Short: it is an impact, not an interlude. */
+    static final float SLOW_TIME = 0.28f;
     /** Fraction of normal speed the world runs at during it. */
     static final float SLOW_RATE = 0.32f;
     /** Seconds of slow motion left. */
     float slowdown;
+    /**
+     * How long the multi-word readout stays up. Deliberately longer than the beat: the
+     * slowdown wants to be brief or it drags, and the number wants long enough to read.
+     */
+    static final float SLICE_CALL_TIME = 1.1f;
+    /** Seconds the slice readout has left. */
+    float sliceCall;
 
     /** How much of normal speed the simulation is running at. */
     float timeScale() {
@@ -346,12 +353,13 @@ final class GameCore {
     }
 
     /**
-     * The interlude runs four phases off the one countdown, in this order: the spinner, the
-     * mash, a beat on zero, then the status report whose tail fades out.
+     * The interlude has two paths and exactly one phase is true at any moment.
      *
-     * One timer rather than four, because the fade-out only has one value to read and because
-     * every boundary is then a comparison rather than a state transition that could be missed.
-     * Only the first boundary varies — a frenzy buys a longer mash — so it is stored.
+     * Lost round: spinner, mash, a beat on zero, then the status report whose tail fades out.
+     * Won round: the mash is over the instant it is won, so it is the escape animation and then
+     * the parade. The first four run off the one countdown — the fade-out then has one value to
+     * read, and every boundary is a comparison rather than a transition that could be missed.
+     * Only the first boundary varies, since a frenzy buys a longer mash, so it is stored.
      */
     float bonusRollEnd;
 
@@ -370,17 +378,30 @@ final class GameCore {
 
     /** True while the interlude accepts presses. */
     boolean bonusMashing() {
-        return state == BONUS && bonusTimer <= bonusRollEnd && bonusTimer > MASH_END;
+        return state == BONUS && !bonusPrizeWon()
+                && bonusTimer <= bonusRollEnd && bonusTimer > MASH_END;
     }
 
     /** True during the beat after the clock runs out, before anything fades. */
     boolean bonusHolding() {
-        return state == BONUS && bonusTimer <= MASH_END && bonusTimer > BONUS_STATUS;
+        return state == BONUS && !bonusPrizeWon()
+                && bonusTimer <= MASH_END && bonusTimer > BONUS_STATUS;
     }
 
-    /** True while the interlude is showing its end-of-round status. */
+    /** True while a won prize is climbing out, which is all that is left of a won round. */
+    boolean bonusEscape() {
+        return state == BONUS && bonusPrizeWon() && bonusTimer > 0f;
+    }
+
+    /**
+     * True while the interlude is showing its end-of-round status.
+     *
+     * Never on a winning round: the parade closes those, and it announces the stage itself. The
+     * report used to run in between and put a page of numbers between winning something and
+     * watching it join the line.
+     */
     boolean bonusStatus() {
-        return state == BONUS && bonusTimer <= BONUS_STATUS;
+        return state == BONUS && !bonusPrizeWon() && bonusTimer <= BONUS_STATUS;
     }
 
     /** True once something has been won this interlude, for the whole rest of it. */
@@ -1090,9 +1111,11 @@ final class GameCore {
     // ---- simulation ---------------------------------------------------------
 
     void update(float dt, Layout L) {
-        // Slow motion from a multi-word fling stroke. Ticked on real time and before the
-        // scaling below, so the beat is not slowed down by the thing it is slowing.
+        // Slow motion from a multi-word fling stroke, and the readout it earned. Both ticked
+        // on real time and before the scaling below, so neither is slowed by the thing the
+        // beat is slowing.
         if (slowdown > 0f) slowdown = Math.max(0f, slowdown - dt);
+        if (sliceCall > 0f) sliceCall = Math.max(0f, sliceCall - dt);
         dt *= timeScale();
         // The clock keeps running so the panel itself can animate, but nothing else moves.
         clock += dt;
@@ -1393,6 +1416,7 @@ final class GameCore {
     /** The slow-motion beat that lands when one stroke takes several words. */
     private void startSlowdown() {
         slowdown = SLOW_TIME;
+        sliceCall = SLICE_CALL_TIME;
         // Restrained on purpose: destroying the words has already fired a screen flash and
         // flooded the sky for each of them, and piling a third wash on top of that whited out
         // the whole field at exactly the moment there was something worth looking at.
@@ -1491,11 +1515,11 @@ final class GameCore {
         score += FREE_BONUS;
         if (lives < START_LIVES) lives++;
         awardPrize();
-        // Hold the interlude open long enough to watch it escape, plus the beat and the
-        // status. Capped at the mash boundary: raising the timer past that would put the
-        // spinner back on screen and re-open a round that has just been won.
-        bonusTimer = Math.max(bonusTimer,
-                Math.min(steamer.freedT + MASH_END + 0.2f, bonusRollEnd));
+        // Set, not extended: the round is over the moment it is won, and what is left of it is
+        // exactly the escape animation. Then the parade, immediately. Holding the full beat and
+        // status first put nearly five seconds and a page of numbers between the win and the
+        // parade, which made the parade look like it was not happening at all.
+        bonusTimer = steamer.freedT;
         if (sound != null) sound.achievement();
     }
 

@@ -235,15 +235,23 @@ final class TestCollect extends Check {
         check("and it counts as won for the rest of the interlude", c.bonusPrizeWon());
         check("but it has not started yet", !c.bonusParading());
 
-        // The interlude's own phases still have to play out first.
+        // Winning ends the round then and there: what is left is the escape, and no status
+        // report, so the parade follows the win closely instead of minutes later.
+        check("the round is down to the escape", c.bonusEscape() && !c.bonusMashing());
+        check("no status report on a won round", !c.bonusStatus());
+        check("the escape is all that is left",
+                Math.abs(c.bonusTimer - c.steamer.freedT) < 0.001f);
         float before = c.paradeTimer;
         advance(c, L, 0.5f);
-        check("the parade does not tick during the interlude", c.paradeTimer == before);
+        check("the parade does not tick during the escape", c.paradeTimer == before);
 
         // Run the interlude out. The state must stay in BONUS for the parade rather than
         // dropping into play the moment the countdown hits zero.
-        for (int i = 0; i < 60 * 30 && !c.bonusParading(); i++) c.update(DT, L);
-        check("the parade starts when the countdown runs out", c.bonusParading());
+        int wait = 0;
+        for (; wait < 60 * 30 && !c.bonusParading(); wait++) c.update(DT, L);
+        check("the parade starts when the escape ends", c.bonusParading());
+        System.out.printf("    parade begins %.2fs after the win%n", (wait + 30) * DT);
+        check("and that is promptly, not seconds later", wait * DT < 2.5f);
         check("play has not resumed", c.state == GameCore.BONUS);
         check("the stage has not turned over", c.stage == 1);
         check("progress starts at the beginning", c.paradeProgress() < 0.1f);

@@ -90,6 +90,11 @@ final class Parade extends Draw {
         float s = L.unit;
         int tint = Collect.TIER_COLOR[Collect.TIER[c.prize]];
 
+        // The parade closes a winning round, so it carries the stage announcement the status
+        // report would otherwise have made.
+        p.text("STAGE " + c.stage + " CLEAR", cx, L.h * 0.23f, s * 0.86f, fadeBy(GOLD, fade),
+                Painter.CENTER, true);
+
         // The name arrives with the figure, not before: until it has landed there is nothing
         // to announce.
         if (t > IN_END) {

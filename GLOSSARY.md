@@ -111,6 +111,7 @@ geometry; `Kawaii` draws the creature.
 | **beat on zero** | the second after the clock runs out, before anything fades | `GameCore.bonusHolding`, `BONUS_HOLD` |
 | **steamer damage** | presses landed, carried across interludes | `steamer.hits` |
 | **reveal** | freeing it: the prize climbs out with its name, tier and NEW badge | `Screens.prizeLabel` |
+| **escape** | the won prize climbing out of the basket; all that is left of a won round | `GameCore.bonusEscape` |
 | **parade** | what closes a winning interlude: the collection marches in, the new one joins the line, they march off | `Parade`, `GameCore.bonusParading` |
 | **line** | the row of collectibles in the parade, capped at what fits | `Parade.LINE` |
 | **companions** | the already-collected ones that turn out for the parade | `Parade.companions` |
@@ -183,11 +184,14 @@ geometry; `Kawaii` draws the creature.
   stage; a stage is the difficulty step.
 - **frenzy** vs **interlude** — frenzy is the 15 s powerup period *during* play; the interlude
   is the steamer minigame *between* stages.
-- The interlude runs four phases off one countdown, in this order: **spinner** (2 s, no
-  presses), **mash** (the minigame proper), **beat on zero** (1 s), **status hold** (1.5 s,
-  whose tail is the fade-out). `GameCore.bonusRolling/bonusMashing/bonusHolding/bonusStatus`
-  are the four, and exactly one is true at a time. A fifth, the **parade**, follows all of them
-  on its own timer and only when something was won — see `bonusParading`.
+- The interlude has **two paths**, and exactly one phase is true at any moment:
+  - **lost** — spinner (2 s, no presses) → mash → beat on zero (1 s) → status hold (1.5 s,
+    whose tail is the fade-out) → play.
+  - **won** — spinner → mash → **escape** (the prize climbing out) → **parade** → play. Winning
+    ends the round on the spot, so there is no beat on zero and no status report; the parade
+    announces the stage instead.
+  - `bonusRolling`, `bonusMashing`, `bonusHolding`, `bonusStatus`, `bonusEscape`,
+    `bonusParading`. There is an assertion that exactly one holds on every frame of both paths.
 - **sky glow** vs **screen flash** vs **edge glow** — the clouds tinting, a full-screen wash,
   and the red border respectively. All three fire at different moments.
 - **engaged** vs **locked** — the same thing; either is fine.
