@@ -145,6 +145,8 @@ geometry; `Kawaii` draws the creature.
 | **bubble** | the glowing shell round it, brighter and bigger with every word it takes | `Buddy.radius`, `glow` |
 | **charge** | the squishy accelerating at the word a press aimed it at | `Buddy.charge`, `GameCore.teamStrike` |
 | **turn rate** | how fast the squishy can swing its heading: a full lap in 0.7s. Steering only — bounces are instant | `Buddy.TURN_TIME`, `TURN_RATE` |
+| **wind-up** | speed easing between drift and charge instead of stepping; 0.35s either way | `Buddy.SPIN_UP` |
+| **cornering** | the speed a turn gives up — a hard one aims at about half drift speed, and winds back up coming out | `Buddy.CORNER` |
 | **chain** | that run of hops: a bolt drawn between them, each hop worth more than the last | `GameCore.multiStrike`, `Renderer.chain` |
 | **hop** | one link of a chain, and one strike point | `GameCore.chainX`, `chainShown` |
 | **call-out** | the big "N IN ONE!" / "N CHAINED!" payoff text | `Hud.sliceCall`, `Hud.chainCall` |

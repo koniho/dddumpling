@@ -454,6 +454,84 @@ final class TestPower extends Check {
         System.out.printf("    buddy turn: %.2f rad in %.2fs, so a lap in %.2fs%n",
                 swept, elapsed, lap);
 
+        // Speed is driven too. Nothing about it is allowed to step: not the wind-up into a
+        // charge, not the wind-down out of one, and a hard turn has to cost speed on the way in.
+        float drift = Buddy.SPEED * L.w;
+        float charge = drift * Buddy.CHARGE_RATE;
+        float accel = drift * (Buddy.CHARGE_RATE - 1f) / Buddy.SPIN_UP;
+
+        GameCore s = new GameCore(store, 281L);
+        s.startGame();
+        s.enemies.clear();
+        s.target = null;
+        s.playtestMode(Power.TEAM, L);
+        s.buddy.x = (L.playLeft + L.playRight) / 2f;
+        s.buddy.y = (L.playTop + L.dangerY) / 2f;
+        s.buddy.vx = drift;                       // pointing right, at drift speed
+        s.buddy.vy = 0f;
+        GameCore.Enemy away = add(s, L, new int[] {1}, s.buddy.y);
+        away.baseX = L.playLeft + L.enemyR * 3f;  // dead behind it: the worst turn there is
+        s.buddy.charge(away);
+
+        float was = speedOf(s.buddy);
+        float slowest = was, fastest = was;
+        boolean smooth = true;
+        for (int i = 0; i < 6; i++) {
+            s.modeLeft = Power.DURATION;
+            s.update(DT, L);
+            float now = speedOf(s.buddy);
+            if (Math.abs(now - was) > accel * DT + 1f) smooth = false;
+            slowest = Math.min(slowest, now);
+            fastest = Math.max(fastest, now);
+            was = now;
+        }
+        check("speed never steps, it accelerates", smooth);
+        check("a hard turn costs speed rather than gaining it", slowest < drift);
+        check("and does not stall in the corner", slowest > drift * 0.4f);
+        check("nowhere near charge speed while still turning", fastest < charge * 0.5f);
+        System.out.printf("    buddy corner: drift %.0f, slowest %.0f, charge %.0f px/s%n",
+                drift, slowest, charge);
+
+        // Pointed straight at it, it winds up. Measured as a rate rather than by waiting to hit
+        // charge speed: the field is not wide enough to cross in the wind-up time, so it squishes
+        // the word first and the wait never completes — timing the arrival tests the geometry, not
+        // the acceleration.
+        s.buddy.x = L.playLeft + L.enemyR * 2f;
+        s.buddy.vx = drift;
+        s.buddy.vy = 0f;
+        away.baseX = L.playRight - L.enemyR * 3f;   // now dead ahead
+        float from = speedOf(s.buddy);
+        boolean climbing = true;
+        int gained = 0;
+        while (gained < 4) {
+            s.modeLeft = Power.DURATION;
+            s.update(DT, L);
+            gained++;
+            if (speedOf(s.buddy) <= from) climbing = false;
+        }
+        float rate = (speedOf(s.buddy) - from) / (gained * DT);
+        float windUp = (charge - drift) / rate;
+        check("it climbs toward charge speed", climbing);
+        check("one frame is nowhere near it", rate * DT < (charge - drift) * 0.2f);
+        check("at that rate the wind-up takes SPIN_UP",
+                Math.abs(windUp - Buddy.SPIN_UP) < 0.02f);
+        System.out.printf("    buddy wind-up: %.0f px/s per s, so drift to charge in %.2fs%n",
+                rate, windUp);
+
+        // And it winds back down once there is nothing to chase. Set at charge speed directly:
+        // getting there under its own power is what the rate check above already covers.
+        s.buddy.chase = null;
+        s.enemies.clear();
+        s.buddy.vx = charge;
+        s.buddy.vy = 0f;
+        s.modeLeft = Power.DURATION;
+        s.update(DT, L);
+        check("dropping the charge eases off rather than cutting",
+                speedOf(s.buddy) < charge && speedOf(s.buddy) > drift);
+        advance(s, L, Buddy.SPIN_UP * 2f);
+        check("and settles back to drift speed",
+                Math.abs(speedOf(s.buddy) - drift) < drift * 0.05f);
+
         // A target squished by something else must not be chased into nothing.
         e.buddy.chase = high;
         e.enemies.remove(high);

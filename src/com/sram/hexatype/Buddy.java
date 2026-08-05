@@ -31,9 +31,27 @@ final class Buddy {
     /** Squishes for the glow to reach full. */
     private static final float GLOW_FULL = 6f;
     /** Drift speed, in view widths per second. */
-    private static final float SPEED = 0.42f;
+    static final float SPEED = 0.42f;
     /** How much faster it travels while charging at something. */
-    private static final float CHARGE_RATE = 2.9f;
+    static final float CHARGE_RATE = 2.9f;
+
+    /**
+     * How long it takes to wind from drift speed up to charge speed, and to wind back down.
+     * Speed used to change the instant a charge was called or dropped, which read as the bubble
+     * being yanked rather than driven.
+     */
+    static final float SPIN_UP = 0.35f;
+    /**
+     * How much of the charge speed a hard turn gives up: it slows into the corner and winds back
+     * up on the way out, which is what makes the turn look like weight rather than a rotation.
+     *
+     * Set so the worst case aims at about half the drift speed. The first value only came down to
+     * just above drift, which meant a bubble already drifting gave up nothing at all to turn —
+     * the slowdown was invisible in exactly the case it matters most. Turns past about 140
+     * degrees now aim below drift speed. Not to zero, though: a bubble that stalls mid-corner
+     * reads as a hitch rather than as weight.
+     */
+    static final float CORNER = 0.83f;
 
     /**
      * How long a full turn takes. A charge used to snap the heading straight at its target the
@@ -102,26 +120,42 @@ final class Buddy {
         // Forget a target that something else has already dealt with.
         if (chase != null && (!chase.typeable() || !c.enemies.contains(chase))) chase = null;
 
-        float sp = SPEED * L.w;
+        // Heading and speed are both driven rather than assigned: the direction swings at
+        // TURN_RATE, the speed accelerates toward whatever it is currently aiming for, and a turn
+        // lowers that aim so it slows through the corner and winds back up coming out of it.
+        //
+        // Read back off the velocity each frame rather than kept as its own field: every bounce
+        // reflects the velocity, and a stored copy of the speed would have to be talked out of
+        // drifting away from it.
+        float drift = SPEED * L.w;
+        float head = (float) Math.atan2(vy, vx);
+        float have = (float) Math.sqrt(vx * vx + vy * vy);
+        float aim = drift;
+
         if (chase != null) {
             float dx = c.enemyCentreX(chase) - x, dy = chase.y - y;
             float d = (float) Math.sqrt(dx * dx + dy * dy);
             if (d > 1f) {
-                // Steered, not pointed: the heading swings toward the target at TURN_RATE and
-                // arrives when it arrives. Only the direction is rate-limited — the speed goes
-                // to charge speed at once, so a turn reads as a hard bank rather than a coast.
-                float want = (float) Math.atan2(dy, dx);
-                float have = (float) Math.atan2(vy, vx);
-                float turn = wrapPi(want - have);
-                float most = TURN_RATE * dt;
-                if (turn > most) turn = most;
-                else if (turn < -most) turn = -most;
-                float a = have + turn;
-                float charge = sp * CHARGE_RATE;
-                vx = (float) Math.cos(a) * charge;
-                vy = (float) Math.sin(a) * charge;
+                float turn = wrapPi((float) Math.atan2(dy, dx) - head);
+                // How far off the target it is pointing, 0 dead on to 1 dead behind. The aim is
+                // scaled by it before the turn is clamped, so the slowdown reflects the whole
+                // turn still to come rather than this frame's slice of it.
+                float off = Math.abs(turn) / 3.14159f;
+                aim = drift * CHARGE_RATE * (1f - CORNER * off);
+                float mostTurn = TURN_RATE * dt;
+                if (turn > mostTurn) turn = mostTurn;
+                else if (turn < -mostTurn) turn = -mostTurn;
+                head += turn;
             }
         }
+
+        // Same rate up and down, measured over the whole drift-to-charge range, so SPIN_UP means
+        // the same thing whichever way the speed is going.
+        float mostSpeed = drift * (CHARGE_RATE - 1f) / SPIN_UP * dt;
+        if (have < aim) have = Math.min(aim, have + mostSpeed);
+        else have = Math.max(aim, have - mostSpeed);
+        vx = (float) Math.cos(head) * have;
+        vy = (float) Math.sin(head) * have;
 
         x += vx * dt;
         y += vy * dt;

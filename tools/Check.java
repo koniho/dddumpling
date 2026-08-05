@@ -69,6 +69,11 @@ abstract class Check {
         return best;
     }
 
+    /** How fast the TEAM SQUISH buddy is going, in px/s. */
+    static float speedOf(Buddy b) {
+        return (float) Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+    }
+
     static GameCore.Enemy add(GameCore c, Layout L, int[] word, float y) {
         int[] need = new int[word.length];
         for (int i = 0; i < need.length; i++) need[i] = 1;
