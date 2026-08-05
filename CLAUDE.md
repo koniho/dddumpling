@@ -11,8 +11,9 @@ trip working out which thing was meant.
 ## The one thing that matters most
 
 **You can see and hear this game without building or installing it.** `./check.sh` runs the
-whole thing headlessly: ~390 rule assertions, then it renders real frames to `out/*.png` and
-every sound to `out/sfx/*.wav`. Read the PNGs with the Read tool. That loop is seconds, not
+whole thing headlessly: ~630 rule assertions, then it renders real frames to `out/*.png` and
+every sound to `out/sfx/*.wav`. Read the PNGs with the Read tool — the `0-*.png` sheets each
+show a whole set at once (the six letters, the thirty collectibles, both vignette casts). That loop is seconds, not
 minutes, and it needs no device.
 
 This works because *all* logic and *all* drawing are pure Java behind the
@@ -127,10 +128,11 @@ nothing. Follow the pattern rather than "fixing" it.
 - **Tune against the real firing rate.** The per-press sky glow looked right in one frame and
   strobed in play; the 4s minigame let a masher finish it in one go, defeating the
   accumulation it was built for.
-- **The harness font is ASCII-only.** `tools/Font` has one bitmap per character it knows; a
-  glyph it does not have simply vanishes from the PNG. Arrows and chevrons are drawn as
-  polygons for that reason, and `?` had to be added to `Font` before the silhouettes could
-  be checked. Anything that only renders on the device is something you cannot see.
+- **The harness font is an ASCII subset.** `tools/Font` has one bitmap per character it knows;
+  a glyph it does not have simply vanishes from the PNG, so text using one looks right on the
+  device and is missing a letter in every frame you check. `?` and `'` were both added to it
+  before they could be used. Add the glyph rather than writing around it — but do check, since
+  the set is still small. Arrows and chevrons are drawn as polygons for the same reason.
 - **`Painter` cannot clip to a shape,** only to a rectangle. That is why a banded finish in
   `Trinket` is fitted to an ellipse and why `Collect.banded` restricts which shapes may wear
   one — there is an assertion holding the catalogue to it.
