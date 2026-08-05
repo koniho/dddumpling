@@ -1497,6 +1497,14 @@ final class GameCore {
      * @param px,py where the burst originates, usually the last tile struck
      */
     void destroyWord(Enemy e, float px, float py, Layout L) {
+        destroyWord(e, px, py, L, true);
+    }
+
+    /**
+     * @param chime false to leave the word-clear tone off. The blade has already chopped every
+     *     letter of the word on the way through, and the tone on top of that crowds them.
+     */
+    void destroyWord(Enemy e, float px, float py, Layout L, boolean chime) {
         // The word is credited now but stays listed until it has flown apart, so anything
         // gated on the field being clear waits for the animation.
         e.destroyed = true;
@@ -1528,7 +1536,7 @@ final class GameCore {
         resolvedThisStage++;
         // Scored per press, so a stacked word is worth what it cost to clear.
         score += 25 * e.totalPresses();
-        if (sound != null) sound.clearWord();
+        if (chime && sound != null) sound.clearWord();
     }
 
     /**
@@ -1536,6 +1544,11 @@ final class GameCore {
      * by MULTI. Finishes the word if that was the last tile left.
      */
     void removeTile(Enemy e, int i, float dx, float dy, Layout L) {
+        removeTile(e, i, dx, dy, L, true);
+    }
+
+    /** @param chime see {@link #destroyWord(Enemy, float, float, Layout, boolean)} */
+    void removeTile(Enemy e, int i, float dx, float dy, Layout L, boolean chime) {
         if (e.gone[i] || i < e.pos || !e.typeable()) return;
         e.gone[i] = true;
         e.goneT[i] = 0f;
@@ -1548,7 +1561,7 @@ final class GameCore {
         skyGlowColor = Glyph.COLOR[e.word[i]];
 
         e.skipGone();
-        if (e.pos >= e.word.length) destroyWord(e, tx, e.y, L);
+        if (e.pos >= e.word.length) destroyWord(e, tx, e.y, L, chime);
     }
 
     // ---- the blade ----------------------------------------------------------
@@ -1598,7 +1611,9 @@ final class GameCore {
                 if (segDist2(tileX(e, i, L), e.y, x0, y0, x, y) > r * r) continue;
                 boolean alive = !e.destroyed;
                 // Sent along the stroke, so the cut piece flies the way the blade went.
-                removeTile(e, i, x - x0, y - y0, L);
+                // No clear tone: the chop below is this letter's sound, and a word finished by
+                // the blade would otherwise land a chime on top of its own last chop.
+                removeTile(e, i, x - x0, y - y0, L, false);
                 cut++;
                 strokeCuts++;
                 if (sound != null) sound.chop();

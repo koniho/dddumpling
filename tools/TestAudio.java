@@ -22,6 +22,16 @@ final class TestAudio extends Check {
         }
         check("the chop dies away", tail < head / 4);
 
+        // Body, not hiss. A noise burst crosses zero constantly; a sound with a tone under it
+        // does not, so the crossing rate is the cheapest measure that tells them apart. The
+        // first chop was noise alone and audibly a hiss.
+        System.out.printf("    zero-crossings per second: chop %.0f, squish %.0f, wrong %.0f%n",
+                crossRate(chop), crossRate(Sfx.build(Sfx.SQUISH_0)),
+                crossRate(Sfx.build(Sfx.WRONG)));
+        check("the chop has body under the air", crossRate(chop) < 3500f);
+        check("but is still brighter than a squish",
+                crossRate(chop) > crossRate(Sfx.build(Sfx.SQUISH_0)));
+
         // FLING: one chop per letter the blade cuts, and no fanfare.
         GameCore c = new GameCore(new Mem(), 411L);
         Ear ear = new Ear();
@@ -37,7 +47,23 @@ final class TestAudio extends Check {
         check("the blade cut the word", cut == 4);
         check("one chop per letter cut", ear.chops - chops == 4);
         check("and no fanfare for a single word", ear.achievements == cheers);
+        // The chops are the word's sound. A clear tone on top lands on the last one.
+        check("a word cut by the blade rings no clear tone", ear.clears == 0);
         c.endStroke();
+
+        // Typed, it still does — the tone is what tells you a word is finished when there is no
+        // chop to say so.
+        GameCore t2 = new GameCore(new Mem(), 415L);
+        Ear ear3 = new Ear();
+        t2.sound = ear3;
+        t2.startGame();
+        t2.enemies.clear();
+        GameCore.Enemy typed = add(t2, L, new int[] {1, 2}, L.playTop + 200f);
+        t2.tapKey(1, L);
+        t2.tapKey(2, L);
+        advance(t2, L, 0.4f);
+        check("a typed word still rings", typed.destroyed && ear3.clears == 1);
+        check("and rang no chop", ear3.chops == 0);
 
         // TEAM SQUISH: a squish per word, not the achievement flourish — it fires far too often
         // for that, which is what it used to do.
@@ -67,6 +93,15 @@ final class TestAudio extends Check {
         int wasDepth = ear2.lastDepth;
         d.update(DT, L);
         check("a grown squishy sounds deeper", ear2.lastDepth > wasDepth);
+    }
+
+    /** Zero crossings per second, as a rough stand-in for how tonal a buffer is. */
+    private static float crossRate(short[] pcm) {
+        int crossings = 0;
+        for (int i = 1; i < pcm.length; i++) {
+            if ((pcm[i - 1] < 0) != (pcm[i] < 0)) crossings++;
+        }
+        return crossings * (float) Sfx.RATE / pcm.length;
     }
 
     /** Which track the game starts on, and that the loaded choice actually gets announced. */

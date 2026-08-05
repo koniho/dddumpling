@@ -42,7 +42,7 @@ the conventions and, more usefully, the traps that have already cost time.
 
 It does two things:
 
-1. **Rule assertions** (`tools/CoreTest.java`) — 779 of them across eleven suites: layout
+1. **Rule assertions** (`tools/CoreTest.java`) — 784 of them across eleven suites: layout
    geometry, hit-testing, targeting, scoring, stage pacing, the interlude's phases and both paths through it, the
    collectible catalogue and its odds, the stories, plus a two-minute perfect-play run and a
    ten-minute random-input fuzz.

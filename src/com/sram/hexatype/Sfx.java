@@ -191,25 +191,31 @@ final class Sfx {
      * is what makes it read as a blade passing through rather than as a click.
      */
     static short[] chop() {
-        int n = (int) (RATE * 0.055f);
+        int n = (int) (RATE * 0.072f);
         float[] v = new float[n];
         int seed = 987654321;
-        float lo = 0f, hi = 0f;
+        float lo = 0f, hi = 0f, phase = 0f, deep = 0f;
         for (int i = 0; i < n; i++) {
             float t = (float) i / n;
             seed = seed * 1103515245 + 12345;
             float white = ((seed >> 16) & 0x7FFF) / 16383.5f - 1f;
 
             // Two one-pole filters in series make a cheap bandpass: lowpass the noise, then
-            // subtract a slower lowpass to take the bottom out of it.
-            float cut = 0.62f - 0.42f * t;                 // the sweep, bright to dull
+            // subtract a slower lowpass to take the bottom out of it. The sweep on the first is
+            // what makes it read as a blade passing through rather than as a click.
+            float cut = 0.52f - 0.34f * t;
             lo += (white - lo) * cut;
-            hi += (lo - hi) * 0.06f;
-            float band = lo - hi;
+            hi += (lo - hi) * 0.05f;
+            float air = (lo - hi) * 0.34f;
 
-            // A touch of tone under it, dropping fast, so it has a body and not just air.
-            float tone = (float) Math.sin(2f * Math.PI * (1400f - 900f * t) * i / RATE) * 0.20f;
-            v[i] = (band + tone * (float) Math.exp(-16f * t)) * envelope(t, 0.002f, 11f);
+            // The body: a mid tone dropping fast with a softer one an octave and a half under
+            // it. Without this the chop was air and nothing else — audibly a hiss, not a cut.
+            phase += 2f * (float) Math.PI * (620f - 420f * t) / RATE;
+            deep += 2f * (float) Math.PI * (250f - 130f * t) / RATE;
+            float body = (float) Math.sin(phase) * 0.78f * (float) Math.exp(-6f * t)
+                    + (float) Math.sin(deep) * 0.64f * (float) Math.exp(-3.5f * t);
+
+            v[i] = (air + body) * envelope(t, 0.002f, 8.5f);
         }
         return render(v);
     }

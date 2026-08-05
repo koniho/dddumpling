@@ -173,9 +173,9 @@ geometry; `Kawaii` draws the creature.
 | Say | Means | Code |
 | --- | --- | --- |
 | **squish** | the per-letter press sound, pitched per letter | `Sfx.SQUISH_0 + n` |
-| **chop** | the light cut of the FLING blade, one per letter | `Sfx.CHOP` |
+| **chop** | the cut of the FLING blade, one per letter. Replaces the word-clear tone on a cut word | `Sfx.CHOP` |
 | **drip** | taking damage | `Sfx.DRIP` |
-| **word clear** | finishing a word | `Sfx.CLEAR` |
+| **word clear** | finishing a word by typing it. A word the blade cut rings no clear tone — its chops are its sound | `Sfx.CLEAR` |
 | **thunk** | a wrong press | `Sfx.WRONG` |
 | **achievement** | catching a powerup, freeing the dumpling | `Sfx.ACHIEVEMENT` |
 | **start tone** | new game | `Sfx.START` |
