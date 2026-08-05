@@ -77,6 +77,8 @@ Pure (in the harness and the APK):
 | `Collect` | the thirty collectibles: catalogue, blind-box odds, owned-set bitmask |
 | `Trinket` | draws a collectible — fifteen shapes crossed with nine finishes |
 | `Showcase` | the display case on the title screen |
+| `Lore` | a story per collectible, plus who is cast in its vignette |
+| `Storybook` | the story popup and its ten looping vignettes |
 | `Power` | the powerup letter and its three modes |
 | `Painter` | the drawing interface |
 | `Draw` | palette + shared geometry (pill, star, hash, rainbow) — renderers extend it |
@@ -132,6 +134,11 @@ nothing. Follow the pattern rather than "fixing" it.
 - **`Painter` cannot clip to a shape,** only to a rectangle. That is why a banded finish in
   `Trinket` is fitted to an ellipse and why `Collect.banded` restricts which shapes may wear
   one — there is an assertion holding the catalogue to it.
+- **Do not derive a cast list from another cast list.** The third figure in a story vignette
+  was `PARTNER[PARTNER[i]]` at first, which looks clever and is wrong: most pairings here are
+  mutual, so it handed back the entry itself and the scene drew one character twice. It read as
+  a drawing bug. `Lore.THIRD` is an explicit table now, with an assertion that all three slots
+  differ.
 - **A new interlude phase silently zeroes every test that taps.** Adding the spinner made
   `tapBonus` a no-op for the first two seconds of BONUS, so suites that pressed straight after
   `advanceToBonus` scored nothing and still passed their own weaker checks. `advanceToMash`

@@ -115,6 +115,18 @@ abstract class Check {
         for (float t = 0; t < seconds; t += DT) c.update(DT, L);
     }
 
+    /**
+     * True when every character has a bitmap in the harness font. A character it does not know
+     * silently vanishes from the PNGs, so text that only renders on the device is text nobody
+     * ever checks.
+     */
+    static boolean printable(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            if (Font.rows(s.charAt(i)) == null) return false;
+        }
+        return true;
+    }
+
     static void group(String name) {
         System.out.println("\n[" + name + "]");
     }

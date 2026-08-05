@@ -41,6 +41,10 @@ final class CoreTest {
         TestCollect.screenKeys(L);
         TestCollect.clearing(L);
 
+        TestLore.stories(L);
+        TestLore.casting(L);
+        TestLore.popup(L);
+
         TestVisuals.sky(L);
         TestVisuals.indicatorsAndGlow(L);
         TestVisuals.settings(L);

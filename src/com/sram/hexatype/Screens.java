@@ -51,8 +51,8 @@ final class Screens extends Draw {
         float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 3.2f);
         p.text("PRESS THE INNER FOUR TO START", cx, L.dangerY - s * 1.95f, s * 0.86f,
                 Glyph.withAlpha(INK, (int) (255 * pulse)), Painter.CENTER, true);
-        p.text("OUTER TWO BROWSE THE CASE", cx, L.dangerY - s * 0.90f, s * 0.56f, INK_DIM,
-                Painter.CENTER, false);
+        p.text("OUTER TWO BROWSE - TAP ONE FOR A STORY", cx, L.dangerY - s * 0.90f, s * 0.56f,
+                INK_DIM, Painter.CENTER, false);
 
         keyRoles(p, L, bottom - s * 0.45f);
     }

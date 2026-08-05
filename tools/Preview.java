@@ -63,6 +63,19 @@ final class Preview {
                 Collect.has(c.collected, c.caseIndex), c.caseSlide);
         shot(dir, "20-title-locked", c, L, w, h, ss);
 
+        // Story popup, mid-panel-spring and again settled with the scene playing.
+        c.caseIndex = 0;
+        c.openStory();
+        step(c, L, 0.12f);
+        System.out.printf("story opening: entry=%s t=%.2f%n", Collect.NAME[c.story], c.storyT);
+        shot(dir, "26-story-opening", c, L, w, h, ss);
+        step(c, L, 0.9f);
+        shot(dir, "27-story", c, L, w, h, ss);
+        c.closeStory();
+
+        // Sheet of every beat, so all ten vignettes can be reviewed at once.
+        beatSheet(dir, L, w, h, ss);
+
         // A wave in flight, nothing typed yet.
         c.startGame();
         step(c, L, 7.0f);
@@ -435,6 +448,47 @@ final class Preview {
         File f = new File(dir, "0-skits.png");
         Png.write(f, p.resolve(), w, h);
         System.out.println("  wrote " + f.getName() + " (" + Skits.COUNT + " vignettes)");
+    }
+
+    /**
+     * Harness-only sheet: every story beat, sampled four times through its loop. Ten rows so
+     * the whole cast of vignettes can be checked without opening thirty popups.
+     */
+    private static void beatSheet(File dir, Layout L, int w, int h, int ss) throws Exception {
+        RasterPainter p = new RasterPainter(w, h, ss);
+        p.clear(0xFF000000);
+        p.fillRect(0, 0, w, h, Renderer.BG);
+        float unit = 0.042f * w;
+        p.text("STORY BEATS", w / 2f, unit * 2.0f, unit * 1.0f, Renderer.INK,
+                Painter.CENTER, true);
+        p.text("EACH SAMPLED THREE TIMES THROUGH ITS LOOP", w / 2f, unit * 3.0f, unit * 0.46f,
+                Renderer.INK_DIM, Painter.CENTER, false);
+
+        // One entry per beat, picked as the first collectible cast in it.
+        int[] cast = new int[Lore.BEATS];
+        for (int b = 0; b < Lore.BEATS; b++) cast[b] = -1;
+        for (int i = Collect.COUNT - 1; i >= 0; i--) cast[Lore.BEAT[i]] = i;
+
+        String[] names = {"HANDOFF", "STACK", "PUSH", "PEEK", "TUMBLE", "BOUNCE", "PICNIC",
+                "CARRY", "CHEER", "SEEK"};
+        float[] samples = {0.08f, 0.38f, 0.68f};
+        float top = unit * 4.4f;
+        float rowH = (h - top - unit) / Lore.BEATS;
+        float r = Math.min(rowH * 0.28f, w / (samples.length * 7.4f));
+        for (int b = 0; b < Lore.BEATS; b++) {
+            float cy = top + rowH * (b + 0.5f);
+            p.text(names[b], unit * 0.5f, cy, unit * 0.44f, Renderer.INK_DIM,
+                    Painter.LEFT, true);
+            p.text(Collect.NAME[cast[b]], unit * 0.5f, cy + unit * 0.62f, unit * 0.34f,
+                    Glyph.withAlpha(Renderer.INK_DIM, 170), Painter.LEFT, false);
+            for (int k = 0; k < samples.length; k++) {
+                float cx = w * (0.30f + 0.26f * k);
+                Storybook.beat(p, cast[b], cx, cy, r, samples[k], samples[k] * 5f);
+            }
+        }
+        File f = new File(dir, "0-beats.png");
+        Png.write(f, p.resolve(), w, h);
+        System.out.println("  wrote " + f.getName() + " (" + Lore.BEATS + " beats)");
     }
 
     /**

@@ -66,6 +66,8 @@ final class Renderer extends Draw {
         else if (c.stageBanner > 0) Hud.stageBanner(p, c, L);
 
         if (c.state == GameCore.PLAY && c.perfectBanner > 0) Hud.perfectStage(p, c, L);
+        // Over the title screen and its display case, under nothing: the story is modal.
+        if (c.storyOpen()) Storybook.draw(p, c, L);
         if (c.settingsOpen) Screens.settings(p, c, L);
     }
 

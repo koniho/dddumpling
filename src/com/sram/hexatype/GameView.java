@@ -113,12 +113,22 @@ public class GameView extends View {
         }
 
         if (core.state != GameCore.PLAY) {
-            // Only the keys act on the title and game-over screens now: the inner four
-            // start, the outer two work the display case. A tap on the sky does nothing,
-            // which is what stops a stray touch skipping past the collection.
+            // A story on screen is modal: any touch anywhere dismisses it and nothing else
+            // acts on that touch.
+            if (core.storyOpen()) {
+                core.closeStory();
+                tick();
+                return true;
+            }
+            // Otherwise the keys act — the inner four start, the outer two work the display
+            // case — and a tap on the focused entry opens its story. A tap anywhere else does
+            // nothing, which is what stops a stray touch skipping past the collection.
             int screen = layout.keyAt(x, y);
             if (screen >= 0) {
                 core.screenKey(screen);
+                tick();
+            } else if (core.state == GameCore.TITLE && Showcase.inFocus(layout, x, y)) {
+                core.openStory();
                 tick();
             }
             return true;

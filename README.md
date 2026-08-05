@@ -15,6 +15,9 @@ globs, from commons up to a single gold grail. The collection is kept for good a
 the display case on the title screen, where the outer two keys scroll the shelf and the
 inner four start a run. Anything you have not won yet is a silhouette and a question mark.
 
+Tap one you have collected and it tells you its story — where it lives, who its family is and
+what they all get up to — over a small looping scene starring two of its relatives.
+
 ## Requirements
 
 Termux on an `aarch64` Android device:

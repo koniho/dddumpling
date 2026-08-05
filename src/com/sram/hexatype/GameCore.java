@@ -233,6 +233,31 @@ final class GameCore {
     /** -1..1, decaying to 0: the shelf easing into place after a scroll. */
     float caseSlide;
 
+    /** Which entry's story is on screen, or -1. Title screen only. */
+    int story = -1;
+    /** Seconds the story has been open; drives the panel opening and its looping scene. */
+    float storyT;
+
+    boolean storyOpen() {
+        return story >= 0;
+    }
+
+    /**
+     * Opens the focused entry's story. Only for something collected: an uncollected entry
+     * withholds its name on the shelf, so telling you about its family would give it away.
+     */
+    void openStory() {
+        if (state != TITLE || storyOpen() || !Collect.has(collected, caseIndex)) return;
+        story = caseIndex;
+        storyT = 0f;
+        if (sound != null) sound.achievement();
+    }
+
+    void closeStory() {
+        story = -1;
+        storyT = 0f;
+    }
+
     // ---- powerup ------------------------------------------------------------
     /** At most one glowing letter on screen. */
     Power power;
@@ -600,6 +625,7 @@ final class GameCore {
         clearArmed = false;
         collected = 0L;
         prize = -1;
+        closeStory();
         caseIndex = 0;
         caseSlide = 0f;
         if (store != null) store.saveCollected(0L);
@@ -611,7 +637,7 @@ final class GameCore {
      * ever does nothing.
      */
     void scrollCase(int dir) {
-        if (dir == 0) return;
+        if (dir == 0 || storyOpen()) return;
         caseIndex = Showcase.wrap(caseIndex + (dir > 0 ? 1 : -1));
         // Full slide, decaying to zero: the shelf glides in from the side it came from.
         caseSlide = dir > 0 ? 1f : -1f;
@@ -696,6 +722,7 @@ final class GameCore {
         skyGlow = 0;
         steamer.reset();
         bonusTimer = 0;
+        closeStory();
         // The collection itself survives; only the "you just won this" banner is per-run.
         prize = -1;
         prizeNew = false;
@@ -720,6 +747,7 @@ final class GameCore {
         target = null;
         // The shelf must not open part-way through a slide left over from the last visit.
         caseSlide = 0f;
+        closeStory();
     }
 
     /**
@@ -739,6 +767,12 @@ final class GameCore {
         if (g < 0 || g >= Glyph.COUNT) return;
         if (state == OVER && time <= OVER_GRACE) return;
         keyPress[g] = 1f;
+        // A story on screen swallows the first press. Without this an inner key would start a
+        // run from behind the panel, which is the one thing a modal must not allow.
+        if (storyOpen()) {
+            closeStory();
+            return;
+        }
         if (startKey(g)) {
             startGame();
         } else if (state == OVER) {
@@ -984,6 +1018,7 @@ final class GameCore {
         skyGlow = decay(skyGlow, dt * 2.4f);
         stageBanner = decay(stageBanner, dt);
         perfectBanner = decay(perfectBanner, dt);
+        if (storyOpen()) storyT += dt;
         // Signed, so it eases back to zero from whichever side the scroll came in on.
         if (caseSlide != 0f) {
             float d = dt * Showcase.SLIDE_RATE;

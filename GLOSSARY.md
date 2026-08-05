@@ -89,6 +89,10 @@ geometry; `Kawaii` draws the creature.
 | **prize** | what the steamer just handed over | `GameCore.prize`, `prizeNew` |
 | **duplicate** | a prize already in the case; pays score instead | `GameCore.DUPE_BONUS` |
 | **clear collection** | the settings button that empties the case, behind a confirming tap | `GameCore.tapClearCase`, `clearArmed` |
+| **story** | the popup a collected entry opens: where it lives, its family, and the joke | `Lore`, `Storybook` |
+| **setting** | the one-line "where it lives" under the name | `Lore.WHERE` |
+| **beat** | the looping vignette over a story — one of ten, cast from the family | `Lore.BEAT`, `Storybook.beat` |
+| **partner** / **third** | the other two characters in a beat, always from the same family | `Lore.PARTNER`, `Lore.THIRD` |
 
 ## Interlude (the between-stages minigame)
 
@@ -183,3 +187,6 @@ geometry; `Kawaii` draws the creature.
   drawing code (`Kawaii` vs `Trinket`), separate counts.
 - **shape** vs **finish** vs **tier** — the body, the surface on it, and how rare it is. A
   request to "make the holo ones brighter" is a finish; "make the buns rounder" is a shape.
+- **skit** vs **beat** — both are little vignettes of characters interacting, and they are
+  different things. A **skit** plays under a stage banner, runs once, and uses the six letters
+  (`Skits`). A **beat** loops inside a story popup and uses the collectibles (`Storybook`).

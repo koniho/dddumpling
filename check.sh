@@ -24,7 +24,9 @@ src/com/sram/hexatype/Shape.java
 src/com/sram/hexatype/Basket.java
 src/com/sram/hexatype/Finish.java
 src/com/sram/hexatype/Trinket.java
+src/com/sram/hexatype/Lore.java
 src/com/sram/hexatype/Showcase.java
+src/com/sram/hexatype/Storybook.java
 src/com/sram/hexatype/Hud.java
 src/com/sram/hexatype/Screens.java
 src/com/sram/hexatype/Renderer.java"

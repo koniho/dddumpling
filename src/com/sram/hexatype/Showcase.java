@@ -22,13 +22,41 @@ final class Showcase extends Draw {
     /** How quickly a scroll's slide settles, in slides per second. */
     static final float SLIDE_RATE = 5.5f;
 
+    /**
+     * Radius of the focused entry's plinth. A method rather than a local so the hit test and
+     * the drawing cannot disagree about where the tap target is.
+     *
+     * Both caps matter: the width one keeps the plaque and its arrows on screen on a narrow
+     * device, the height one stops the shelf swallowing a tall one.
+     */
+    static float focusR(Layout L) {
+        return Math.min(L.w * 0.145f, L.h * 0.075f);
+    }
+
+    static float focusCy(Layout L) {
+        return L.h * SHELF_Y;
+    }
+
+    /**
+     * True inside the focused entry, which opens its story.
+     *
+     * Tested against where the entry settles, not where it currently is: mid-scroll the shelf
+     * is offset by up to a step, and a target that slid out from under a thumb would feel
+     * broken. The slide lasts a fifth of a second.
+     */
+    static boolean inFocus(Layout L, float x, float y) {
+        float r = focusR(L) * 1.06f;
+        float dx = x - L.w / 2f, dy = y - focusCy(L);
+        // Circumscribed circle of the hex plinth, a touch generous: a mis-tap here costs
+        // nothing but a panel you did not want.
+        return dx * dx + dy * dy <= r * r * 1.20f;
+    }
+
     static void draw(Painter p, GameCore c, Layout L) {
         float s = L.unit;
         float cx = L.w / 2f;
-        float cy = L.h * SHELF_Y;
-        // Both caps matter: the width one keeps the plaque and its arrows on screen on a
-        // narrow device, the height one stops the shelf swallowing a tall one.
-        float r = Math.min(L.w * 0.145f, L.h * 0.075f);
+        float cy = focusCy(L);
+        float r = focusR(L);
         // Under 2r, so the neighbours tuck in close enough to read as the same shelf.
         float step = r * 1.95f;
 
@@ -71,8 +99,11 @@ final class Showcase extends Draw {
         float bob = (float) Math.abs(Math.sin(c.clock * 1.9f)) * r * 0.06f;
         float fr = r * 1.06f;
         p.fillPoly(Glyph.hex(cx + slide, cy, fr), Glyph.withAlpha(tint, known ? 40 : 22));
-        p.strokePoly(Glyph.hex(cx + slide, cy, fr), Glyph.withAlpha(tint, known ? 215 : 90),
-                fr * 0.06f);
+        // A collected plinth breathes, which is the only cue that it can be tapped for a
+        // story. An uncollected one holds still, because it cannot.
+        int edge = known ? (int) (185 + 70 * (0.5f + 0.5f * (float) Math.sin(c.clock * 2.6f)))
+                : 90;
+        p.strokePoly(Glyph.hex(cx + slide, cy, fr), Glyph.withAlpha(tint, edge), fr * 0.06f);
         if (known && tier >= Collect.CHASE) {
             // Chase and grail entries get rays, so a full case still has standouts in it.
             for (int k = 3; k >= 1; k--) {
