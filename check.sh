@@ -22,6 +22,7 @@ src/com/sram/hexatype/Sky.java
 src/com/sram/hexatype/Skits.java
 src/com/sram/hexatype/Shape.java
 src/com/sram/hexatype/Basket.java
+src/com/sram/hexatype/Parade.java
 src/com/sram/hexatype/Finish.java
 src/com/sram/hexatype/Trinket.java
 src/com/sram/hexatype/Lore.java

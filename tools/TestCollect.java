@@ -216,6 +216,89 @@ final class TestCollect extends Check {
         check("starting a run clears the last prize", e.prize < 0);
     }
 
+    /** The parade that closes a winning interlude, and that play waits for it. */
+    static void parade(Layout L) {
+        group("collection parade");
+        Mem store = new Mem();
+        // A few already in the case, so the new one has companions to line up with.
+        store.collected = 0b1011011L;
+        GameCore c = new GameCore(store, 131L);
+        c.startGame();
+        check("no parade scheduled at the start",
+                c.paradeTimer == 0f && !c.bonusParading() && !c.bonusPrizeWon());
+
+        check("reached the mash", toBonus(c, L));
+        check("still no parade while mashing", !c.bonusPrizeWon());
+        mash(c);
+        check("winning schedules one", c.prize >= 0
+                && Math.abs(c.paradeTimer - GameCore.PARADE_TIME) < 0.001f);
+        check("and it counts as won for the rest of the interlude", c.bonusPrizeWon());
+        check("but it has not started yet", !c.bonusParading());
+
+        // The interlude's own phases still have to play out first.
+        float before = c.paradeTimer;
+        advance(c, L, 0.5f);
+        check("the parade does not tick during the interlude", c.paradeTimer == before);
+
+        // Run the interlude out. The state must stay in BONUS for the parade rather than
+        // dropping into play the moment the countdown hits zero.
+        for (int i = 0; i < 60 * 30 && !c.bonusParading(); i++) c.update(DT, L);
+        check("the parade starts when the countdown runs out", c.bonusParading());
+        check("play has not resumed", c.state == GameCore.BONUS);
+        check("the stage has not turned over", c.stage == 1);
+        check("progress starts at the beginning", c.paradeProgress() < 0.1f);
+
+        // It runs through its three movements and only then hands over.
+        boolean sawIn = false, sawJoin = false, sawOff = false, monotonic = true;
+        float last = -1f;
+        for (int i = 0; i < 60 * 30 && c.bonusParading(); i++) {
+            float t = c.paradeProgress();
+            if (t < last) monotonic = false;
+            last = t;
+            if (t < Parade.IN_END) sawIn = true;
+            else if (t < Parade.JOIN_END) sawJoin = true;
+            else sawOff = true;
+            c.update(DT, L);
+        }
+        check("progress only ever moves forward", monotonic);
+        check("all three movements are seen", sawIn && sawJoin && sawOff);
+        check("play resumes once they have gone", c.state == GameCore.PLAY);
+        check("and the stage turned over then", c.stage == 2);
+        check("the parade timer is spent", c.paradeTimer == 0f);
+        check("progress reads zero outside a parade", c.paradeProgress() == 0f);
+
+        // An interlude that ran out of time gets no parade and no delay.
+        GameCore d = new GameCore(new Mem(), 133L);
+        d.startGame();
+        toBonus(d, L);
+        check("nothing won", d.prize < 0 && !d.bonusPrizeWon());
+        int frames = 0;
+        for (; frames < 60 * 30 && d.state == GameCore.BONUS; frames++) d.update(DT, L);
+        check("a lost round goes straight back to play", d.state == GameCore.PLAY);
+        check("with no parade at all", d.paradeTimer == 0f);
+
+        // The line: companions come from the collection, never include the prize, and are
+        // capped at what fits.
+        GameCore e = new GameCore(new Mem(), 135L);
+        e.collected = Collect.MASK;
+        e.prize = 5;
+        int[] out = new int[Parade.LINE - 1];
+        int n = Parade.companions(e, out);
+        check("a full case fills the line", n == out.length);
+        boolean clean = true;
+        for (int i = 0; i < n; i++) {
+            if (out[i] == e.prize) clean = false;
+            if (!Collect.has(e.collected, out[i])) clean = false;
+            for (int k = i + 1; k < n; k++) if (out[i] == out[k]) clean = false;
+        }
+        check("no duplicates, no prize, nothing uncollected", clean);
+        check("the line starts next to the prize in the catalogue", n > 0 && out[0] == 6);
+
+        // The very first win has nobody to line up with, which must not break the line.
+        e.collected = 1L << 5;
+        check("a first win parades alone", Parade.companions(e, out) == 0);
+    }
+
     static void displayCase(Layout L) {
         group("display case");
         GameCore c = new GameCore(new Mem(), 97L);

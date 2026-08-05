@@ -452,8 +452,8 @@ final class TestStages extends Check {
         c.tapBonus(3);
         check("presses during the escape do not re-trigger", c.steamer.opens == opensNow);
 
-        advance(c, L, GameCore.bonusLength() + 2f);
-        check("play resumes after the celebration", c.state == GameCore.PLAY);
+        advance(c, L, GameCore.bonusLength() + GameCore.PARADE_TIME + 2f);
+        check("play resumes after the celebration and the parade", c.state == GameCore.PLAY);
         check("lives are capped at the starting count", c.lives <= GameCore.START_LIVES);
 
         // A full run must be able to reach the minigame repeatedly without wedging.

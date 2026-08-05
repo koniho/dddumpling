@@ -111,6 +111,10 @@ geometry; `Kawaii` draws the creature.
 | **beat on zero** | the second after the clock runs out, before anything fades | `GameCore.bonusHolding`, `BONUS_HOLD` |
 | **steamer damage** | presses landed, carried across interludes | `steamer.hits` |
 | **reveal** | freeing it: the prize climbs out with its name, tier and NEW badge | `Screens.prizeLabel` |
+| **parade** | what closes a winning interlude: the collection marches in, the new one joins the line, they march off | `Parade`, `GameCore.bonusParading` |
+| **line** | the row of collectibles in the parade, capped at what fits | `Parade.LINE` |
+| **companions** | the already-collected ones that turn out for the parade | `Parade.companions` |
+| **movements** | the parade's three parts: in from the left, the join, off to the right | `Parade.IN_END`, `JOIN_END` |
 
 ## Powerup
 
@@ -178,7 +182,8 @@ geometry; `Kawaii` draws the creature.
 - The interlude runs four phases off one countdown, in this order: **spinner** (2 s, no
   presses), **mash** (the minigame proper), **beat on zero** (1 s), **status hold** (1.5 s,
   whose tail is the fade-out). `GameCore.bonusRolling/bonusMashing/bonusHolding/bonusStatus`
-  are the four, and exactly one is true at a time.
+  are the four, and exactly one is true at a time. A fifth, the **parade**, follows all of them
+  on its own timer and only when something was won — see `bonusParading`.
 - **sky glow** vs **screen flash** vs **edge glow** — the clouds tinting, a full-screen wash,
   and the red border respectively. All three fire at different moments.
 - **engaged** vs **locked** — the same thing; either is fine.

@@ -255,6 +255,17 @@ final class Screens extends Draw {
      */
     static void bonus(Painter p, GameCore c, Layout L) {
         float s = L.unit;
+
+        // The parade closes out a winning interlude and owns the screen for it. Handled before
+        // the fade below, which reads the interlude's own countdown — already spent by now, so
+        // it would render the whole parade invisible.
+        if (c.bonusParading()) {
+            float pf = Math.min(1f, c.paradeTimer / 0.35f);
+            scrim(p, L, (int) (195 * pf));
+            Parade.draw(p, c, L, pf);
+            handLabels(p, L, L.deckTop - s * 0.45f, pf);
+            return;
+        }
         // Eases in on arrival and back out as the timer expires, so neither edge of the
         // interlude is a hard cut between scenes. Every colour below is scaled by it.
         float fade = Math.min(1f, c.time / 0.40f) * Math.min(1f, c.bonusTimer / 0.40f);
@@ -344,7 +355,7 @@ final class Screens extends Draw {
         // trailing the prize: drawn before the wall it was hidden behind it, and pinned to a
         // prize that rises off the top of the screen it would have gone with it.
         if (freed && c.prize >= 0) prizeLabel(p, c, L, cx, baseY + s * 2.05f, fade);
-        if (!freed) countdown(p, c, L, cx, fade);
+        if (!freed && !c.bonusPrizeWon()) countdown(p, c, L, cx, fade);
 
         if (!freed) {
             // Lid: lifts with progress, and kicks up further on each press. Capped so that

@@ -230,6 +230,33 @@ final class Preview {
                 c8.prize >= 0 ? Collect.NAME[c8.prize] : "none", c8.prizeNew);
         shot(dir, "15-bonus-freed", c8, L, w, h, ss);
 
+        // The parade that closes a winning interlude: marching in, the new one joining, and
+        // the line on its way off to the right.
+        GameCore c13 = new GameCore(store, 59L);
+        c13.startGame();
+        c13.score = 3400;
+        c13.collected = 0b0110_1101_0011_0110_1101L;
+        c13.spawnedThisStage = c13.stageQuota();
+        c13.enemies.clear();
+        c13.shots.clear();
+        for (int i = 0; i < 60 * 8 && c13.state != GameCore.BONUS; i++) c13.update(DT, L);
+        for (int i = 0; i < 60 * 8 && c13.bonusRolling(); i++) c13.update(DT, L);
+        for (int i = 0; i < GameCore.STEAMER_HITS * 2 + 4; i++) {
+            c13.tapBonus(c13.steamer.wanted());
+        }
+        for (int i = 0; i < 60 * 30 && !c13.bonusParading(); i++) c13.update(DT, L);
+        System.out.printf("parade: won %s, %d collected%n", Collect.NAME[c13.prize],
+                Collect.owned(c13.collected));
+        step(c13, L, GameCore.PARADE_TIME * 0.22f);
+        System.out.printf("  marching in at t=%.2f%n", c13.paradeProgress());
+        shot(dir, "28-parade-in", c13, L, w, h, ss);
+        step(c13, L, GameCore.PARADE_TIME * 0.28f);
+        System.out.printf("  joining at t=%.2f%n", c13.paradeProgress());
+        shot(dir, "29-parade-join", c13, L, w, h, ss);
+        step(c13, L, GameCore.PARADE_TIME * 0.22f);
+        System.out.printf("  marching off at t=%.2f%n", c13.paradeProgress());
+        shot(dir, "30-parade-off", c13, L, w, h, ss);
+
         // The same reveal for a duplicate, and for the grail — the two ends of the payout.
         c8.prizeNew = false;
         shot(dir, "21-prize-dupe", c8, L, w, h, ss);

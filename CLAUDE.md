@@ -11,7 +11,7 @@ trip working out which thing was meant.
 ## The one thing that matters most
 
 **You can see and hear this game without building or installing it.** `./check.sh` runs the
-whole thing headlessly: ~640 rule assertions, then it renders real frames to `out/*.png` and
+whole thing headlessly: ~665 rule assertions, then it renders real frames to `out/*.png` and
 every sound to `out/sfx/*.wav`. Read the PNGs with the Read tool — the `0-*.png` sheets each
 show a whole set at once (the six letters, the thirty collectibles, both vignette casts). That loop is seconds, not
 minutes, and it needs no device.
@@ -79,6 +79,7 @@ Pure (in the harness and the APK):
 | `Trinket` | draws a collectible — fifteen shapes crossed with nine finishes |
 | `Showcase` | the display case on the title screen |
 | `Lore` | a story per collectible, plus who is cast in its vignette |
+| `Parade` | the collection marching in, the new one joining, the line marching off |
 | `Storybook` | the story popup and its ten looping vignettes |
 | `Power` | the powerup letter and its three modes |
 | `Painter` | the drawing interface |

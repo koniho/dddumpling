@@ -13,7 +13,9 @@ prise the lid off. The dumpling inside is a blind box — freeing it hands over 
 collectible squishies, from commons up to a single gold grail. The collection is kept for good
 and shown in the display case on the title screen, where the outer two keys scroll the shelf
 and the inner four start a run. Anything you have not won yet is a silhouette behind a question
-mark; tap one you have and it tells you where it lives and what its family gets up to.
+mark; tap one you have and it tells you where it lives and what its family gets up to. Win one
+and the collection parades: they march in from the left, the newcomer drops into the end of the
+line, and the next stage waits until they have all marched off to the right.
 
 ## Where to look
 
@@ -40,7 +42,7 @@ the conventions and, more usefully, the traps that have already cost time.
 
 It does two things:
 
-1. **Rule assertions** (`tools/CoreTest.java`) — 641 of them across ten suites: layout
+1. **Rule assertions** (`tools/CoreTest.java`) — 665 of them across eleven suites: layout
    geometry, hit-testing, targeting, scoring, stage pacing, the interlude's four phases, the
    collectible catalogue and its odds, the stories, plus a two-minute perfect-play run and a
    ten-minute random-input fuzz.
@@ -175,6 +177,7 @@ file has to be added there. `build.sh` globs `src/`, so it needs no updating.
 | `Screens` | title, game over, interlude, settings |
 | `Skits` | the ten stage-banner vignettes |
 | `Basket` | the steamer, drawn in three-quarter view |
+| `Parade` | the collection marching in, the new one joining, the line marching off |
 | `Trinket` / `Shape` / `Finish` | a collectible: face, one of fifteen bodies, one of nine surfaces |
 | `Showcase` | the display case on the title screen |
 | `Storybook` | the story popup and its ten looping vignettes |
@@ -222,6 +225,7 @@ than a rewrite. All of them take the player's speed setting into account where i
 | `stackChance()` | odds a tile needs more than one press |
 | `START_LIVES`, `STEAMER_HITS` | lives, and presses needed to free the dumpling |
 | `BONUS_ROLL`, `BONUS_TIME`, `BONUS_HOLD`, `BONUS_STATUS` | the interlude's four phases |
+| `PARADE_TIME` | how long the parade takes after a win |
 | `Collect.TIER_WEIGHT` | blind-box rarity odds |
 
 Several constants are at their value because the obvious value was wrong, and the comment says

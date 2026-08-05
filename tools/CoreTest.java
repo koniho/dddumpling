@@ -37,6 +37,7 @@ final class CoreTest {
         TestCollect.ownedSet(L);
         TestCollect.blindBox(L);
         TestCollect.winning(L);
+        TestCollect.parade(L);
         TestCollect.displayCase(L);
         TestCollect.screenKeys(L);
         TestCollect.clearing(L);

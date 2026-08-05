@@ -47,6 +47,12 @@ final class GameCore {
     static final int DUPE_BONUS = 150;
     /** How long the game-over screen ignores presses, so a death is not skipped by reflex. */
     static final float OVER_GRACE = 0.6f;
+    /**
+     * The parade that closes an interlude something was won in: the collection marches in from
+     * the left, the new one joins the end of the line, and they all march off to the right.
+     * Play resumes when they are gone, not before.
+     */
+    static final float PARADE_TIME = 3.0f;
 
     /** Persistence seam; the Activity backs this with SharedPreferences. */
     interface Store {
@@ -214,6 +220,12 @@ final class GameCore {
     float bonusTimer;
     /** Last character the spinner ticked on, so each step sounds exactly once. */
     private int rollTick = -1;
+    /**
+     * Seconds of parade left. Set the moment a prize is won but deliberately not ticked until
+     * the interlude's own countdown has run out, which is what lets it be both "something was
+     * won this round" and "the parade still has to happen" without a second flag.
+     */
+    float paradeTimer;
 
     // ---- the collection ----------------------------------------------------
     /**
@@ -342,6 +354,22 @@ final class GameCore {
     /** True while the interlude is showing its end-of-round status. */
     boolean bonusStatus() {
         return state == BONUS && bonusTimer <= BONUS_STATUS;
+    }
+
+    /** True once something has been won this interlude, for the whole rest of it. */
+    boolean bonusPrizeWon() {
+        return state == BONUS && paradeTimer > 0f;
+    }
+
+    /** True while the collection is parading, after every other phase and before play. */
+    boolean bonusParading() {
+        return state == BONUS && bonusTimer <= 0f && paradeTimer > 0f;
+    }
+
+    /** 0..1 through the parade. */
+    float paradeProgress() {
+        if (!bonusParading()) return 0f;
+        return 1f - paradeTimer / PARADE_TIME;
     }
 
     /** 0..1 through the spinner, reaching 1 the moment it lands. */
@@ -739,6 +767,7 @@ final class GameCore {
         // The collection itself survives; only the "you just won this" banner is per-run.
         prize = -1;
         prizeNew = false;
+        paradeTimer = 0f;
         power = null;
         mode = -1;
         modeLeft = 0;
@@ -1049,6 +1078,20 @@ final class GameCore {
 
         if (state == BONUS) {
             steamer.update(dt);
+            // Once the interlude's own countdown is spent, a won prize gets its parade before
+            // play resumes. Handled before bonusTimer is touched again so none of the four
+            // phases tick underneath it.
+            if (bonusTimer <= 0f) {
+                if (paradeTimer > 0f) {
+                    paradeTimer -= dt;
+                    if (paradeTimer > 0f) return;
+                    paradeTimer = 0f;
+                }
+                advanceStage();
+                state = PLAY;
+                time = 0;
+                return;
+            }
             bonusTimer -= dt;
             // One tick per character the spinner steps past, so it sounds like a spin. Only
             // the left slot fires: both would double up on almost every step.
@@ -1058,13 +1101,6 @@ final class GameCore {
                     rollTick = shown;
                     if (sound != null) sound.squish(shown, 1);
                 }
-            }
-            if (bonusTimer <= 0) {
-                // The interlude is what sat between the waves; the stage itself turns over
-                // on the way out of it.
-                advanceStage();
-                state = PLAY;
-                time = 0;
             }
             return;
         }
@@ -1298,6 +1334,7 @@ final class GameCore {
         // how the one timer carries all four phases.
         bonusRollEnd = BONUS_TIME + (stageByPower ? Power.BONUS_EXTRA : 0f) + MASH_END;
         bonusTimer = BONUS_ROLL + bonusRollEnd;
+        paradeTimer = 0f;
         steamer.lidPulse = 0;
         steamer.flash = 0;
         // Chosen up front, before the spinner has shown anything: the spinner animates toward
@@ -1364,6 +1401,8 @@ final class GameCore {
         }
         caseIndex = prize;
         caseSlide = 0f;
+        // Scheduled, not started: it runs after the rest of the interlude has played out.
+        paradeTimer = PARADE_TIME;
     }
 
     /**
