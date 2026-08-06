@@ -97,7 +97,7 @@ final class Parade extends Draw {
 
         // The parade closes a winning round, so it carries the stage announcement the status
         // report would otherwise have made.
-        p.text("STAGE " + c.stage + " CLEAR", cx, L.h * 0.23f, s * 0.86f, fadeBy(GOLD, fade),
+        p.text("STAGE " + c.stage + " CLEAR", cx, L.h * 0.23f, type(s * 0.86f), fadeBy(GOLD, fade),
                 Painter.CENTER, true);
 
         // The name arrives with the figure, not before: until it has landed there is nothing
@@ -105,23 +105,23 @@ final class Parade extends Draw {
         if (t > IN_END) {
             float j = Math.min(1f, (t - IN_END) / (JOIN_END - IN_END));
             float pop = 1f + 0.30f * (1f - j) * (1f - j);
-            p.text(Collect.NAME[c.prize], cx, L.h * 0.325f, s * 1.15f * pop,
+            p.text(Collect.NAME[c.prize], cx, L.h * 0.325f, type(s * 1.15f * pop),
                     fadeBy(INK, fade * j), Painter.CENTER, true);
             p.text(c.prizeNew ? "JOINS THE COLLECTION" : "BACK IN THE LINE", cx,
-                    L.h * 0.325f + s * 1.05f, s * 0.62f, fadeBy(tint, fade * j),
+                    L.h * 0.325f + s * 1.05f, type(s * 0.62f), fadeBy(tint, fade * j),
                     Painter.CENTER, true);
         } else {
-            p.text("THE COLLECTION", cx, L.h * 0.325f, s * 0.92f, fadeBy(INK_DIM, fade),
+            p.text("THE COLLECTION", cx, L.h * 0.325f, type(s * 0.92f), fadeBy(INK_DIM, fade),
                     Painter.CENTER, true);
         }
 
         int have = Collect.owned(c.collected);
-        p.text(have + " OF " + Collect.COUNT + " COLLECTED", cx, cy + r * 2.45f, s * 0.60f,
+        p.text(have + " OF " + Collect.COUNT + " COLLECTED", cx, cy + r * 2.45f, type(s * 0.60f),
                 fadeBy(have >= Collect.COUNT ? GOLD : INK, fade), Painter.CENTER, true);
         // Only worth saying when the line is a sample rather than the whole thing.
         if (have > LINE) {
             p.text("AND " + (have - (n + 1)) + " MORE", cx, cy + r * 2.45f + s * 0.85f,
-                    s * 0.52f, fadeBy(INK_DIM, fade), Painter.CENTER, false);
+                    type(s * 0.52f), fadeBy(INK_DIM, fade), Painter.CENTER, false);
         }
     }
 

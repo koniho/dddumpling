@@ -31,11 +31,11 @@ geometry; `Kawaii` draws the creature.
 | **tile** | one letter cell of a word: hexagon plus character | drawn in `Renderer.enemy` |
 | **head tile** | the next letter you must press — bigger and brighter | `i == e.pos` |
 | **cleared letter** | already typed; stays in place but recedes | `i < e.pos` |
-| **stacked letter** | needs 2–4 presses; drawn as a pile of offset copies | `e.need[i] > 1` |
+| **stacked letter** | needs 2–4 presses; drawn as a pile of offset copies. Never sits next to its own letter — there would be nothing to show where it ended | `e.need[i] > 1`, `Words.fill` |
 | **press pips** | the dots under a stacked tile showing presses still owed | `Renderer.enemy` |
 | **engaged** / **locked** word | the word you are currently typing | `GameCore.target` |
 | **lock ring** | the thick white outline on an engaged head tile | `Renderer.enemy` |
-| **caret** | the triangle above an engaged head tile | same |
+| **caret** | the triangle above an engaged head tile | `Draw.caret` |
 | **entrance** | words sliding in from above the top edge | `e.enterT` |
 | **fly-apart** | a cleared word's letters splitting outward off screen | `e.destroyed`, `e.flyDir` |
 | **flung letter** | a letter removed out of order, by FLING or MULTI | `e.gone[i]` |
@@ -65,6 +65,9 @@ geometry; `Kawaii` draws the creature.
 | **chevron** / **cluster** | the three-key group under one thumb | left = keys 0,1,2; right = 3,4,5 |
 | **hint pulse** | the ring on the key you need next | `Renderer.keys` |
 | **press ripple** | the ring expanding off a key as its press decays | same |
+| **key invite** | the glowing rings sweeping across the deck on the title and settled game-over screens, in place of a "press any key" line | `Renderer.keys` |
+| **demo** | the title screen typing a word to itself, in place of the two lines that explained it | `Demo` |
+| **caret** | the triangle over the thing to press next — the field's head tile and the interlude's wanted letter draw the same one | `Draw.caret` |
 | **case gestures** | the only drag targets outside play: tap either side of the shelf, swipe it, or drag the position bar | `GameView.handleCase`, `GameCore.caseDragTo` |
 
 ## Stages
@@ -75,6 +78,7 @@ geometry; `Kawaii` draws the creature.
 | **wave** | the fixed set of words a stage releases | `stageQuota()` |
 | **stage pips** | the dots in the HUD, one per word in the wave | `Hud.hud` |
 | **breather** | the pause after a wave before the next arrives | `stageGap`, `STAGE_GAP` |
+| **difficulty ramp** | how far up the curve a stage sits. A stage is worth 5/9 of a step, so what used to land at stage 6 lands at 10 | `GameCore.RAMP`, `ramp()` |
 | **stage banner** | the big "STAGE n / FASTER NOW" text | `Hud.stageBanner` |
 | **perfect wave** | a wave cleared with no wrong press; gold dumpling on a glowing star | `Hud.perfectStage` |
 
@@ -165,6 +169,7 @@ geometry; `Kawaii` draws the creature.
 | **screen shake** | the whole-field jolt | `shake` |
 | **HUD band** | the soft strip that words emerge from behind | `Sky.hudBacking` |
 | **scrim** | the dimming over the sky on the full-screen states | `Screens.scrim` |
+| **text scale** | one multiplier on every text size on screen; the settings panel opts out | `Draw.TEXT`, `Draw.type` |
 
 ## Screens
 
@@ -173,7 +178,12 @@ geometry; `Kawaii` draws the creature.
 | **title screen** | the opening screen; the real key deck stays lit as the tutorial, and the case badge sits in the middle | `Screens.title` |
 | **title fade** | the title screen dissolving on a start press, before play begins | `GameCore.startFade`, `starting()` |
 | **screen keys** | all six do the same thing on the full-screen states: start from the title, back to the title from game over | `GameCore.screenKey` |
-| **game over screen** | score, accuracy dumpling, best | `Screens.gameOver` |
+| **death hold** | the beat after the last life: the world stays up and drains before the summary | `GameCore.DEATH_TIME`, `dying()`, `drained()` |
+| **swirl** | the words still on the field spiralling away with trails through the hold | `RoundEnd.swirl` |
+| **haul** | the dumplings one run freed, as against the whole case | `GameCore.roundPrizes` |
+| **haul dance** | the haul bouncing in the middle of the summary once it has faded up | `RoundEnd.dance` |
+| **flight home** | the haul carrying itself to the case with star trails, on the way to the title | `RoundEnd.homeward`, `GameCore.HOME_TIME` |
+| **game over screen** | score, accuracy dumpling, best. Fades up after the hold; GAME OVER is yellow, not rose | `Screens.gameOver` |
 | **accuracy dumpling** | the face that reflects accuracy: tear below 60%, sparkles above 90% | `Screens.accuracy` |
 | **settings panel** | opened by tapping the stage readout; pauses the game | `Screens.settings` |
 | **stage readout** | the "STAGE n" text — also the settings button | `Layout.inStageTap` |

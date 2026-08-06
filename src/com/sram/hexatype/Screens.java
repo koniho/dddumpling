@@ -22,8 +22,8 @@ final class Screens extends Draw {
 
     static void handLabels(Painter p, Layout L, float baseline, float fade) {
         int col = fadeBy(INK_DIM, fade);
-        p.text("LEFT HAND", L.keyX[1], baseline, L.unit * 0.5f, col, Painter.CENTER, true);
-        p.text("RIGHT HAND", L.keyX[4], baseline, L.unit * 0.5f, col, Painter.CENTER, true);
+        p.text("LEFT HAND", L.keyX[1], baseline, type(L.unit * 0.5f), col, Painter.CENTER, true);
+        p.text("RIGHT HAND", L.keyX[4], baseline, type(L.unit * 0.5f), col, Painter.CENTER, true);
     }
 
     static void title(Painter p, GameCore c, Layout L) {
@@ -35,19 +35,20 @@ final class Screens extends Draw {
         float bottom = scrim(p, L, (int) (210 * fade));
         float s = L.unit;
         float cx = L.w / 2f;
-        p.text("DDDUMPLING", cx, L.h * 0.100f, s * 1.95f, fadeBy(INK, fade),
+        p.text("DDDUMPLING", cx, L.h * 0.100f, type(s * 1.95f), fadeBy(INK, fade),
                 Painter.CENTER, true);
-        p.text("SIX LETTERS. THREE PER THUMB.", cx, L.h * 0.100f + s * 1.30f, s * 0.58f,
+        p.text("SIX LETTERS. THREE PER THUMB.", cx, L.h * 0.100f + s * 1.30f, type(s * 0.58f),
                 fadeBy(INK_DIM, fade), Painter.CENTER, false);
 
-        p.text("TAP THE MATCHING HEX, LEFT TO RIGHT,", cx, L.h * 0.195f, s * 0.60f,
-                fadeBy(INK, fade), Painter.CENTER, false);
-        p.text("BEFORE THE WORDS LAND.", cx, L.h * 0.195f + s * 0.92f, s * 0.60f,
-                fadeBy(INK, fade), Painter.CENTER, false);
         if (c.best > 0) {
-            p.text("BEST " + c.best, cx, L.h * 0.262f, s * 0.74f, fadeBy(ROSE, fade),
+            p.text("BEST " + c.best, cx, L.h * 0.170f, type(s * 0.74f), fadeBy(ROSE, fade),
                     Painter.CENTER, true);
         }
+
+        // Where the two lines explaining the game used to be: the game, played. A word falls and
+        // types itself while the matching keys light under it. Suppressed with the case open —
+        // there is one lesson on screen at a time.
+        Demo.draw(p, c, L, fade * caseOut(c));
 
         // The badge and the case swap in the same place, and in series rather than on top of
         // each other: crossing them over on the raw fade drew both at half strength for a
@@ -62,19 +63,17 @@ final class Screens extends Draw {
         // with the case, because with it open every key only puts it away again. Nothing here
         // points at the badge — it carries its own TAP TO OPEN, and saying it twice on one screen
         // made the case look like the thing to do rather than something off to the side.
-        float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 3.2f);
-        p.text("PRESS ANY KEY TO START", cx, L.dangerY - s * 1.95f, s * 0.86f,
-                fadeBy(Glyph.withAlpha(INK, (int) (255 * pulse)), shut), Painter.CENTER, true);
-        p.text("SWIPE OR TAP EITHER SIDE TO BROWSE", cx, L.dangerY - s * 1.95f, s * 0.62f,
-                fadeBy(INK, open), Painter.CENTER, false);
-        p.text("TAP AN ENTRY FOR ITS STORY - ANY KEY CLOSES", cx, L.dangerY - s * 0.90f,
-                s * 0.56f, fadeBy(INK_DIM, open), Painter.CENTER, false);
+        // Nothing says "press a key to start" any more. The deck says it: on the title screen every
+        // key wears a glowing border that sweeps across the six, which is a stronger invitation
+        // than a sentence and points at the thing you actually have to touch. See Renderer.keys.
+        // The case explains itself: arrows either side of the shelf, and the focused entry throbs
+        // when it first comes up if there is a story behind it. See Showcase.
 
         handLabels(p, L, bottom - s * 0.45f, fade);
     }
 
     /** Opacity of everything the shut case owns: gone by the time the case is half faded in. */
-    private static float caseOut(GameCore c) {
+    static float caseOut(GameCore c) {
         return Math.max(0f, 1f - c.caseFade * 2f);
     }
 
@@ -83,33 +82,38 @@ final class Screens extends Draw {
         return Math.max(0f, c.caseFade * 2f - 1f);
     }
 
+    /**
+     * The summary. Fades up once the death hold is spent rather than replacing the field on the
+     * frame the last life went — the world drains first, and this arrives on top of it.
+     */
     static void gameOver(Painter p, GameCore c, Layout L) {
-        float bottom = scrim(p, L, 220);
+        float fade = c.overFade();
+        if (fade <= 0.004f) return;
+        float bottom = scrim(p, L, (int) (220 * fade));
         float s = L.unit;
-        p.text("GAME OVER", L.w / 2f, L.h * 0.24f, s * 1.85f, ROSE, Painter.CENTER, true);
-
-        p.text("SCORE", L.w / 2f, L.h * 0.325f, s * 0.6f, INK_DIM, Painter.CENTER, false);
-        p.text(String.valueOf(c.score), L.w / 2f, L.h * 0.325f + s * 1.8f, s * 1.8f, INK,
+        // Yellow rather than the rose it was: rose is the colour of every warning and every hit
+        // in this game, so a rose GAME OVER read as one more of them.
+        p.text("GAME OVER", L.w / 2f, L.h * 0.24f, type(s * 1.85f), fadeBy(YELLOW, fade),
                 Painter.CENTER, true);
 
-        accuracy(p, c, L, L.h * 0.475f);
+        p.text("SCORE", L.w / 2f, L.h * 0.325f, type(s * 0.6f), fadeBy(INK_DIM, fade),
+                Painter.CENTER, false);
+        p.text(String.valueOf(c.score), L.w / 2f, L.h * 0.325f + type(s * 1.8f), type(s * 1.8f),
+                fadeBy(INK, fade), Painter.CENTER, true);
 
-        p.text("STAGE " + c.stage + "   SQUISHES " + c.squishes, L.w / 2f, L.h * 0.615f, s * 0.6f,
-                INK_DIM, Painter.CENTER, false);
-        p.text("BEST COMBO " + c.maxCombo, L.w / 2f, L.h * 0.615f + s * 0.85f, s * 0.6f,
-                INK_DIM, Painter.CENTER, false);
+        accuracy(p, c, L, L.h * 0.475f, fade);
+
+        p.text("STAGE " + c.stage + "   SQUISHES " + c.squishes, L.w / 2f, L.h * 0.615f, type(s * 0.6f),
+                fadeBy(INK_DIM, fade), Painter.CENTER, false);
+        p.text("BEST COMBO " + c.maxCombo, L.w / 2f, L.h * 0.615f + type(s * 0.85f), type(s * 0.6f),
+                fadeBy(INK_DIM, fade), Painter.CENTER, false);
         p.text(c.score >= c.best ? "NEW BEST!" : "BEST " + c.best, L.w / 2f, L.h * 0.695f,
-                s * 0.78f, c.score >= c.best ? GOLD : INK_DIM, Painter.CENTER, true);
+                type(s * 0.78f), fadeBy(c.score >= c.best ? GOLD : INK_DIM, fade), Painter.CENTER, true);
 
-        if (c.time > GameCore.OVER_GRACE) {
-            float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 3.2f);
-            // One line only. Where the keys go next is the title screen's business, and it says
-            // so the moment you arrive.
-            p.text("ANY KEY FOR THE TITLE SCREEN", L.w / 2f, L.h * 0.765f, s * 0.88f,
-                    Glyph.withAlpha(INK, (int) (255 * pulse)), Painter.CENTER, true);
-        }
+        // Nothing asks for a press here either: once the summary has settled the deck picks up the
+        // same glow the title screen uses. See Renderer.keys.
 
-        handLabels(p, L, bottom - s * 0.45f);
+        handLabels(p, L, bottom - s * 0.45f, fade);
     }
 
     /**
@@ -118,6 +122,11 @@ final class Screens extends Draw {
      * when pleased, so the mood reads before the number does.
      */
     static void accuracy(Painter p, GameCore c, Layout L, float cy) {
+        accuracy(p, c, L, cy, 1f);
+    }
+
+    /** @param fade 0..1, for the summary screen fading up after a death */
+    static void accuracy(Painter p, GameCore c, Layout L, float cy, float fade) {
         float s = L.unit;
         float mood = c.accuracyMood();
         int pct = c.accuracyPercent();
@@ -130,14 +139,15 @@ final class Screens extends Draw {
         float squash = 1f + 0.06f * (float) Math.sin(c.clock * (2.2f + 4f * mood));
         float dx = (1f - mood) * r * 0.12f * (float) Math.sin(c.clock * 1.3f);
 
-        Kawaii.moodDumpling(p, L.w / 2f - s * 3.2f + dx, cy - bob, r, tint, mood, squash);
+        Kawaii.moodDumpling(p, L.w / 2f - s * 3.2f + dx, cy - bob, r, fadeBy(tint, fade), mood,
+                squash);
 
-        p.text("ACCURACY", L.w / 2f + s * 1.5f, cy - s * 0.75f, s * 0.58f, INK_DIM,
+        p.text("ACCURACY", L.w / 2f + s * 1.5f, cy - type(s * 0.75f), type(s * 0.58f),
+                fadeBy(INK_DIM, fade), Painter.LEFT, true);
+        p.text(pct + "%", L.w / 2f + s * 1.5f, cy + type(s * 0.95f), type(s * 1.55f), fadeBy(tint, fade),
                 Painter.LEFT, true);
-        p.text(pct + "%", L.w / 2f + s * 1.5f, cy + s * 0.95f, s * 1.55f, tint,
-                Painter.LEFT, true);
-        p.text(c.hits + " HIT   " + c.misses + " MISS", L.w / 2f + s * 1.5f, cy + s * 1.75f,
-                s * 0.5f, INK_DIM, Painter.LEFT, false);
+        p.text(c.hits + " HIT   " + c.misses + " MISS", L.w / 2f + s * 1.5f, cy + type(s * 1.75f),
+                type(s * 0.5f), fadeBy(INK_DIM, fade), Painter.LEFT, false);
     }
 
 
@@ -152,8 +162,8 @@ final class Screens extends Draw {
         float rise = Math.min(1f, (GameCore.BONUS_STATUS - c.bonusTimer) / 0.35f);
         float top = L.h * 0.30f + (1f - rise) * s * 1.2f;
 
-        p.text("STAGE " + c.stage + " CLEAR", cx, top, s * 1.25f * introScale(
-                GameCore.BONUS_STATUS - c.bonusTimer), fadeBy(GOLD, fade), Painter.CENTER, true);
+        p.text("STAGE " + c.stage + " CLEAR", cx, top, type(s * 1.25f * introScale(
+                GameCore.BONUS_STATUS - c.bonusTimer)), fadeBy(GOLD, fade), Painter.CENTER, true);
 
         float row = top + s * 2.4f;
         report(p, L, "SCORE", String.valueOf(c.score), row, fade);
@@ -185,9 +195,9 @@ final class Screens extends Draw {
     private static void report(Painter p, Layout L, String label, String value, float y,
             float fade) {
         float s = L.unit;
-        p.text(label, L.w * 0.5f - s * 0.4f, y, s * 0.62f, fadeBy(INK_DIM, fade),
+        p.text(label, L.w * 0.5f - s * 0.4f, y, type(s * 0.62f), fadeBy(INK_DIM, fade),
                 Painter.RIGHT, false);
-        p.text(value, L.w * 0.5f + s * 0.4f, y, s * 0.72f, fadeBy(INK, fade),
+        p.text(value, L.w * 0.5f + s * 0.4f, y, type(s * 0.72f), fadeBy(INK, fade),
                 Painter.LEFT, true);
     }
 
@@ -215,9 +225,11 @@ final class Screens extends Draw {
             float rr = r * pulse;
 
             if (next[i]) {
-                // The one it wants: a bright ring so the eye lands on it without reading.
+                // The one it wants: a bright ring so the eye lands on it without reading, and the
+                // field's own caret above it, which is the mark the player already knows.
                 p.strokePoly(Glyph.hex(x, cy, rr * 1.22f),
                         fadeBy(Glyph.withAlpha(INK, 200), fade), rr * 0.09f);
+                caret(p, x, cy, rr, fadeBy(Glyph.withAlpha(INK, 225), fade));
             }
             p.fillPoly(Glyph.hex(x, cy, rr),
                     fadeBy(Glyph.withAlpha(col, next[i] ? 95 : 34), fade));
@@ -238,7 +250,7 @@ final class Screens extends Draw {
                     ax + dir * s * 0.36f, cy, ax - dir * s * 0.36f, cy + s * 0.26f}, arrow);
         }
 
-        p.text(rolling ? "PICKING YOUR PAIR" : "+1 PER PAIR", cx, cy + r * 1.9f, s * 0.5f,
+        p.text(rolling ? "PICKING YOUR PAIR" : "+1 PER PAIR", cx, cy + r * 1.9f, type(s * 0.5f),
                 fadeBy(INK_DIM, fade), Painter.CENTER, false);
     }
 
@@ -307,12 +319,12 @@ final class Screens extends Draw {
         // announces itself instead of simply appearing.
         float intro = introScale(c.time);
         p.text(freed ? "FREE!" : "FREE THE DUMPLING", cx, L.h * 0.235f,
-                s * (freed ? 1.5f : 0.95f) * intro,
+                type(s * (freed ? 1.5f : 0.95f) * intro),
                 fadeBy(freed ? GOLD : INK, fade), Painter.CENTER, true);
         if (!freed) {
-            p.text("ALTERNATE THESE TWO", cx, L.h * 0.235f + s * 1.2f, s * 0.62f,
-                    fadeBy(INK_DIM, fade), Painter.CENTER, false);
-            alternator(p, c, L, cx, L.h * 0.235f + s * 3.1f, fade);
+            // No label: the wanted letter wears the same caret the field puts over a head tile,
+            // and the arrow between the pair already says which way the sequence is going.
+            alternator(p, c, L, cx, L.h * 0.235f + s * 3.0f, fade);
         }
 
         // Steamer geometry, shared by the back pass, the front pass and the lid so they
@@ -415,9 +427,9 @@ final class Screens extends Draw {
                         fadeBy(i < c.steamer.hits ? rainbow : Glyph.withAlpha(INK, 45), fade));
             }
             p.text(c.steamer.hits + " / " + GameCore.STEAMER_HITS, cx,
-                    rowY + gap * 1.15f + s * 1.5f, s * 0.62f, fadeBy(INK_DIM, fade), Painter.CENTER, true);
+                    rowY + gap * 1.15f + s * 1.5f, type(s * 0.62f), fadeBy(INK_DIM, fade), Painter.CENTER, true);
         } else {
-            p.text("+" + GameCore.FREE_BONUS, cx, L.h * 0.665f, s * 1.1f, fadeBy(GOLD, fade),
+            p.text("+" + GameCore.FREE_BONUS, cx, L.h * 0.665f, type(s * 1.1f), fadeBy(GOLD, fade),
                     Painter.CENTER, true);
         }
 
@@ -440,7 +452,7 @@ final class Screens extends Draw {
         // tick and settled by the time the next one comes.
         float pop = out ? 1f : 1f + 0.16f * (left - (float) Math.floor(left));
         p.text(out ? "TIME!" : String.valueOf((int) Math.ceil(left)), cx, L.h * 0.625f,
-                s * (out ? 1.7f : 2.6f) * pop, fadeBy(col, fade), Painter.CENTER, true);
+                type(s * (out ? 1.7f : 2.6f) * pop), fadeBy(col, fade), Painter.CENTER, true);
     }
 
     /**
@@ -452,22 +464,28 @@ final class Screens extends Draw {
         float s = L.unit;
         int tier = Collect.TIER[c.prize];
         int tint = Collect.TIER_COLOR[tier];
-        p.text(Collect.NAME[c.prize], cx, y, s * 0.92f, fadeBy(INK, fade), Painter.CENTER,
+        p.text(Collect.NAME[c.prize], cx, y, type(s * 0.92f), fadeBy(INK, fade), Painter.CENTER,
                 true);
-        p.text(Collect.TIER_NAME[tier], cx, y + s * 0.85f, s * 0.58f, fadeBy(tint, fade),
+        p.text(Collect.TIER_NAME[tier], cx, y + s * 0.85f, type(s * 0.58f), fadeBy(tint, fade),
                 Painter.CENTER, true);
         if (c.prizeNew) {
             // Pops as it arrives, so a new entry is unmissable next to a duplicate's line.
             float pop = 1f + 0.16f * (float) Math.abs(Math.sin(c.clock * 7f));
-            p.text("NEW!", cx, y + s * 2.15f, s * 0.92f * pop, fadeBy(GOLD, fade),
+            p.text("NEW!", cx, y + s * 2.15f, type(s * 0.92f * pop), fadeBy(GOLD, fade),
                     Painter.CENTER, true);
         } else {
             p.text("ALREADY IN THE CASE   +" + GameCore.DUPE_BONUS, cx, y + s * 2.05f,
-                    s * 0.56f, fadeBy(INK_DIM, fade), Painter.CENTER, false);
+                    type(s * 0.56f), fadeBy(INK_DIM, fade), Painter.CENTER, false);
         }
     }
 
     /** Settings panel: pacing multiplier and music choice. Freezes the game behind it. */
+    /**
+     * The settings panel, and the one screen whose text is <em>not</em> run through
+     * {@link Draw#type}. Its rows, chips and slider are all sized from {@code unit} and packed
+     * tight; scaled up, the playtest chip labels ran straight out of their boxes and off the
+     * panel. It is also the one screen nobody reads at arm's length mid-play.
+     */
     static void settings(Painter p, GameCore c, Layout L) {
         float s = L.unit;
         SettingsUi ui = new SettingsUi();

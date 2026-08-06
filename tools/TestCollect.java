@@ -521,7 +521,7 @@ final class TestCollect extends Check {
         check("reached game over", c.state == GameCore.OVER);
         c.tapKey(2, L);
         check("game over ignores keys during the grace period", c.state == GameCore.OVER);
-        advance(c, L, GameCore.OVER_GRACE + 0.2f);
+        advancePastDeath(c, L);
         c.tapKey(0, L);
         check("an outer key returns to the title", c.state == GameCore.TITLE);
         check("and a run starts again from there", startFromTitle(c, L, 3));
@@ -535,7 +535,7 @@ final class TestCollect extends Check {
             d.enemies.clear();
             add(d, L, new int[] {0}, L.dangerY - L.enemyR + 1);
             advance(d, L, GameCore.ATTACK_TIME + 2 * DT);
-            advance(d, L, GameCore.OVER_GRACE + 0.2f);
+            advancePastDeath(d, L);
             d.tapKey(g, L);
             if (d.state != GameCore.TITLE) allToTitle = false;
             if (d.state == GameCore.PLAY) noneToPlay = false;
@@ -615,7 +615,7 @@ final class TestCollect extends Check {
         f.enemies.clear();
         add(f, L, new int[] {0}, L.dangerY - L.enemyR + 1);
         advance(f, L, GameCore.ATTACK_TIME + 2 * DT);
-        advance(f, L, GameCore.OVER_GRACE + 0.2f);
+        advancePastDeath(f, L);
         f.tapKey(3, L);
         check("game over cuts to the title with nothing fading",
                 f.state == GameCore.TITLE && f.startFade == 0f);

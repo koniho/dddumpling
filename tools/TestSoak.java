@@ -52,8 +52,13 @@ final class TestSoak extends Check {
             }
             // liveEnemies(), not size(): destroyed words linger while they fly apart, and a
             // frenzy spawns fast enough for several to be in flight at once.
-            if (c.lives < 0 || c.score < 0 || c.liveEnemies() > c.crowdCap() + 1
-                    || c.combo < 0) {
+            //
+            // The crowd cap is a rule about spawning, so it is only checked during play. Dying
+            // inside a frenzy ends the frenzy, which drops the cap fourfold, while the words the
+            // frenzy spawned stay standing through the death hold to be swirled away — a held
+            // field legitimately holds more than the cap would now allow.
+            boolean crowded = c.state == GameCore.PLAY && c.liveEnemies() > c.crowdCap() + 1;
+            if (c.lives < 0 || c.score < 0 || crowded || c.combo < 0) {
                 sane = false;
                 break;
             }

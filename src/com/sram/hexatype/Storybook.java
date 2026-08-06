@@ -58,18 +58,18 @@ final class Storybook extends Draw {
         p.restore();
 
         float y = stageCy + stageH + s * 1.05f;
-        p.text(Collect.NAME[i], cx, y, s * 0.98f, INK, Painter.CENTER, true);
-        p.text(Lore.WHERE[i], cx, y + s * 0.80f, s * 0.52f, fadeBy(tint, 0.85f),
+        p.text(Collect.NAME[i], cx, y, type(s * 0.98f), INK, Painter.CENTER, true);
+        p.text(Lore.WHERE[i], cx, y + s * 0.80f, type(s * 0.52f), fadeBy(tint, 0.85f),
                 Painter.CENTER, false);
 
         float line = y + s * 1.95f;
         for (int k = 0; k < Lore.LINES; k++) {
-            p.text(Lore.STORY[i][k], cx, line + k * s * 0.92f, s * 0.60f, INK,
+            p.text(Lore.STORY[i][k], cx, line + k * s * 0.92f, type(s * 0.60f), INK,
                     Painter.CENTER, false);
         }
 
         float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 3.2f);
-        p.text("TAP TO CLOSE", cx, cy + hh - s * 0.55f, s * 0.54f,
+        p.text("TAP TO CLOSE", cx, cy + hh - s * 0.55f, type(s * 0.54f),
                 Glyph.withAlpha(INK_DIM, (int) (255 * pulse)), Painter.CENTER, true);
     }
 

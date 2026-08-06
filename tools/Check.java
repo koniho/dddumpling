@@ -69,6 +69,15 @@ abstract class Check {
         return best;
     }
 
+    /**
+     * Steps through the whole death sequence: the hold, the summary fading up, and the grace
+     * after it. A press before this lands is ignored by design, so every test that means to
+     * dismiss the game-over screen has to get past it.
+     */
+    static void advancePastDeath(GameCore c, Layout L) {
+        advance(c, L, GameCore.DEATH_TIME + GameCore.OVER_FADE + GameCore.OVER_GRACE + 0.2f);
+    }
+
     /** How fast the TEAM SQUISH buddy is going, in px/s. */
     static float speedOf(Buddy b) {
         return (float) Math.sqrt(b.vx * b.vx + b.vy * b.vy);

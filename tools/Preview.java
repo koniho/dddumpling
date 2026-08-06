@@ -11,6 +11,9 @@ final class Preview {
 
     private static final float DT = 1f / 60f;
 
+    /** Lines that ran off the screen across every frame rendered, for the summary at the end. */
+    private static int unfitFrames;
+
     private static final class Mem implements GameCore.Store {
         int best;
         float speed = 1f;
@@ -56,6 +59,14 @@ final class Preview {
         System.out.printf("title: case=%d of %d collected, shut=%s%n",
                 Collect.owned(c.collected), Collect.COUNT, !c.caseOpen);
         shot(dir, "1-title", c, L, w, h, ss);
+
+        // The title screen's demo, caught just after its second letter is struck: two cleared,
+        // one to go, and the key for it lit under the word.
+        GameCore c21 = new GameCore(store, 87L);
+        step(c21, L, Demo.LOOP * 0.57f);
+        System.out.printf("title demo: lit key=%d amount=%.2f%n", Demo.litKey(c21),
+                Demo.litAmount(c21));
+        shot(dir, "49-title-demo", c21, L, w, h, ss);
 
         // Part-way through fading in on that tap.
         c.openCase();
@@ -226,6 +237,24 @@ final class Preview {
         }
         c3.hits = 184;
         c3.misses = 61;   // 75% -> mid mood
+
+        // The death hold, caught twice: the words that were on the field swirling away, the deck
+        // gone red and sad, the sky draining green. The summary is not up yet. Not at zero — that
+        // frame is the field exactly as it was, with none of the sequence started.
+        step(c3, L, GameCore.DEATH_TIME * 0.15f);
+        System.out.printf("death hold: %.0f%% through, words=%d, summary=%.2f%n",
+                c3.deathProgress() * 100f, c3.enemies.size(), c3.overFade());
+        shot(dir, "44-death", c3, L, w, h, ss);
+        step(c3, L, GameCore.DEATH_TIME * 0.35f);
+        System.out.printf("death hold: %.0f%% through, words=%d, summary=%.2f%n",
+                c3.deathProgress() * 100f, c3.enemies.size(), c3.overFade());
+        shot(dir, "45-death-late", c3, L, w, h, ss);
+
+        // And the summary halfway up, over the drained field.
+        step(c3, L, GameCore.DEATH_TIME * 0.5f + GameCore.OVER_FADE * 0.5f);
+        System.out.printf("summary fading: %.2f, dying=%s%n", c3.overFade(), c3.dying());
+        shot(dir, "46-summary-fading", c3, L, w, h, ss);
+
         step(c3, L, 1.0f);
         System.out.printf("gameover: accuracy=%d%% mood=%.2f%n",
                 c3.accuracyPercent(), c3.accuracyMood());
@@ -238,6 +267,21 @@ final class Preview {
         c3.hits = 240;
         c3.misses = 9;    // 96% -> happiest
         shot(dir, "10-gameover-happy", c3, L, w, h, ss);
+
+        // The run's haul dancing on the summary, then carrying itself to the case. The prizes are
+        // set by hand: playing far enough to win three of them takes longer than a preview should.
+        c3.roundPrizes = Collect.add(Collect.add(Collect.add(0L, 0), 13), 24);
+        step(c3, L, 0.4f);
+        System.out.printf("haul dance: %d dumplings, summary=%.2f%n",
+                Collect.owned(c3.roundPrizes), c3.overFade());
+        shot(dir, "47-haul-dance", c3, L, w, h, ss);
+
+        // Any key sends them home. Caught mid-flight, with the star trails strung out behind.
+        c3.tapKey(2, L);
+        step(c3, L, GameCore.HOME_TIME * 0.45f);
+        System.out.printf("haul homeward: %.0f%% of the way, state=%d%n",
+                c3.homeProgress() * 100f, c3.state);
+        shot(dir, "48-haul-homeward", c3, L, w, h, ss);
 
         // Flawless wave celebration.
         GameCore c5 = new GameCore(store, 23L);
@@ -613,12 +657,19 @@ final class Preview {
             throws Exception {
         RasterPainter p = new RasterPainter(w, h, ss);
         p.clear(0xFF000000);
+        RasterPainter.clearFit();
         Renderer.draw(p, c, L);
         File f = new File(dir, name + ".png");
         Png.write(f, p.resolve(), w, h);
         System.out.printf("  wrote %-18s state=%d enemies=%d shots=%d particles=%d score=%d%n",
                 f.getName(), c.state, c.enemies.size(), c.shots.size(), c.particles.size(),
                 c.score);
+        // Any line that ran off the screen on this frame. A clipped word is invisible in a PNG
+        // unless you go looking, so the frame says so itself.
+        for (String bad : RasterPainter.unfit) {
+            System.out.println("    DOES NOT FIT  " + bad);
+            unfitFrames++;
+        }
     }
 
     /** Writes every effect and the music loop to WAV so they can be auditioned. */

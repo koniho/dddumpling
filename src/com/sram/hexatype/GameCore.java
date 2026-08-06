@@ -47,6 +47,73 @@ final class GameCore {
     static final int DUPE_BONUS = 150;
     /** How long the game-over screen ignores presses, so a death is not skipped by reflex. */
     static final float OVER_GRACE = 0.6f;
+
+    /**
+     * How long the world holds after the last life goes, before the summary arrives. Death used to
+     * be a single frame: the field was cleared and the game-over screen was simply there, with no
+     * beat between playing and reading your score. The words that killed you swirl away over this,
+     * the deck goes red, and the sky drains — then the summary fades up.
+     */
+    static final float DEATH_TIME = 1.6f;
+    /** How long the summary takes to fade in once the hold is over. */
+    static final float OVER_FADE = 0.45f;
+
+    /** Counts down through the death sequence. Only ever non-zero in {@link #OVER}. */
+    float deathT;
+
+    /**
+     * How long the run's dumplings take to carry themselves from the game-over screen to the
+     * display case, on the way to the title.
+     */
+    static final float HOME_TIME = 1.15f;
+    /** Counts down through that flight. Only ever non-zero in {@link #TITLE}. */
+    float homeT;
+
+    /** True while the run's haul is still on its way to the case. */
+    boolean homing() {
+        return homeT > 0f && roundPrizes != 0L;
+    }
+
+    /** 0..1 through the flight home. */
+    float homeProgress() {
+        return homing() ? 1f - homeT / HOME_TIME : 1f;
+    }
+
+    /** True while the world is still on screen after the last life. */
+    boolean dying() {
+        return deathT > 0f;
+    }
+
+    /** 0..1 through the death sequence, and 1 once it is over. */
+    float deathProgress() {
+        return dying() ? 1f - deathT / DEATH_TIME : 1f;
+    }
+
+    /**
+     * 0..1 how far the world has drained: it rises through the death hold and then stays up for the
+     * whole summary. Gating this on dying() instead snapped the deck and the sky back to their
+     * playing colours on the frame the hold ended, which is exactly when the summary starts fading
+     * in — the pop was more noticeable than the drain.
+     */
+    float drained() {
+        return state == OVER ? deathProgress() : 0f;
+    }
+
+    /** 0..1 fade of the summary screen, which starts once the hold is spent. */
+    float overFade() {
+        if (state != OVER) return 0f;
+        if (dying()) return 0f;
+        return Math.min(1f, (time - DEATH_TIME) / OVER_FADE);
+    }
+
+    /**
+     * True once the summary is up and settled, so a press means "done reading" rather than
+     * landing on a screen that arrived under the thumb. Covers the whole death sequence, its
+     * fade, and then the usual grace.
+     */
+    boolean overReady() {
+        return state == OVER && time > DEATH_TIME + OVER_FADE + OVER_GRACE;
+    }
     /**
      * How long the title screen takes to fade out once a start key is pressed. Play does not
      * begin until it has gone, so the first wave is never already falling behind a screenful of
@@ -284,6 +351,12 @@ final class GameCore {
     long collected;
     /** What the last opened steamer handed over, or -1. Reset when a run starts. */
     int prize = -1;
+    /**
+     * Every dumpling freed this run, as a {@link Collect} mask. The run's own haul rather than the
+     * whole case: it is what dances on the game-over screen and what flies home to the case on the
+     * way to the title.
+     */
+    long roundPrizes;
     /** False when {@link #prize} was already in the case. */
     boolean prizeNew;
 
@@ -300,6 +373,11 @@ final class GameCore {
     float caseFade;
     /** True while a finger is dragging the shelf; the slide is its offset, not a decay. */
     boolean caseDragging;
+    /**
+     * Seconds the case has been open. Only the first moment of it is used: the focused entry throbs
+     * as the case comes up, which is what tells you it can be tapped now that no line says so.
+     */
+    float caseT;
     /** Where the shelf's current entry was grabbed, in view pixels. */
     private float caseDragX;
 
@@ -911,6 +989,9 @@ final class GameCore {
         clearArmed = false;
         collected = 0L;
         prize = -1;
+        // The haul describes entries that are no longer owned, so it cannot outlive them.
+        roundPrizes = 0L;
+        homeT = 0f;
         closeStory();
         caseIndex = 0;
         caseSlide = 0f;
@@ -926,6 +1007,7 @@ final class GameCore {
         if (state != TITLE || starting() || caseOpen) return;
         caseOpen = true;
         caseSlide = 0f;
+        caseT = 0f;
         if (sound != null) sound.squish(caseIndex % Glyph.COUNT, 1);
     }
 
@@ -1029,36 +1111,58 @@ final class GameCore {
     }
 
     // ---- stage pacing -------------------------------------------------------
-    // One knob per dial so new stages are a numbers change, not a rewrite.
+    // One knob per dial so new stages are a numbers change, not a rewrite. Every dial reads its
+    // position off ramp() rather than off stage directly, so the whole curve stretches or steepens
+    // from one constant.
+
+    /**
+     * How far a stage advances up the difficulty ramp. Every dial used to step once per stage;
+     * this is how much of a step a stage is worth now.
+     *
+     * Five ninths, because the game reached the wall at stage 6 — every dial arrived at once and
+     * the once-a-stage panic swipe could not carry it. What used to land at 6 now lands at 10, so
+     * there are four more stages of room to learn in before the field gets that dense. Stage 1 is
+     * untouched either way: the ramp starts from zero there.
+     */
+    static final float RAMP = 5f / 9f;
+
+    /** Ramp position: 0 on the opening stage, and a full step per stage before it was toned down. */
+    float ramp() { return (stage - 1) * RAMP; }
+
+    /**
+     * The old dials stepped on integer division of the stage, which this reproduces off the ramp:
+     * at a whole ramp position it gives exactly what {@code stage / 2} used to.
+     */
+    private int rampStep() { return (int) ((ramp() + 1f) / 2f); }
 
     /**
      * Seconds an enemy takes to fall from spawn to the danger line. The player's speed
      * setting divides this, so 1.5 means everything arrives half again as fast.
      */
-    float travelSeconds() { return Math.max(4.2f, 15f - (stage - 1) * 1.05f) / speed; }
+    float travelSeconds() { return Math.max(4.2f, 15f - ramp() * 1.05f) / speed; }
 
-    float spawnInterval() { return Math.max(0.80f, 2.5f - (stage - 1) * 0.13f) / speed; }
+    float spawnInterval() { return Math.max(0.80f, 2.5f - ramp() * 0.13f) / speed; }
 
-    int maxEnemies() { return Math.min(7, 3 + stage / 2); }
+    int maxEnemies() { return Math.min(7, 3 + rampStep()); }
 
     /** Concurrent words allowed right now; a frenzy lets four times as many pile up. */
     int crowdCap() {
         return powerActive() ? (int) (maxEnemies() * Power.CROWD_RATE) : maxEnemies();
     }
 
-    int maxWordLen() { return Math.min(5, 2 + stage / 2); }
+    int maxWordLen() { return Math.min(5, 2 + rampStep()); }
 
     int minWordLen() { return Math.max(2, maxWordLen() - 2); }
 
     /** How many words this stage releases in total. */
-    int stageQuota() { return Math.min(10, 5 + stage / 2); }
+    int stageQuota() { return Math.min(10, 5 + rampStep()); }
 
     /** Hard ceiling on the presses any single word can demand. */
     static final int MAX_PRESSES = 8;
 
     /** Odds that a given tile becomes a stack. Stacks stay out of the opening stage. */
     float stackChance() {
-        return stage < 2 ? 0f : Math.min(0.55f, 0.13f * (stage - 1));
+        return stage < 2 ? 0f : Math.min(0.55f, 0.13f * ramp());
     }
 
     /** True once every word of this stage has been released and dealt with. */
@@ -1128,6 +1232,10 @@ final class GameCore {
         // The collection itself survives; only the "you just won this" banner is per-run.
         prize = -1;
         prizeNew = false;
+        // This run's haul starts empty, and no death or flight can be left running into it.
+        roundPrizes = 0L;
+        deathT = 0f;
+        homeT = 0f;
         paradeTimer = 0f;
         power = null;
         mode = -1;
@@ -1146,8 +1254,14 @@ final class GameCore {
     }
 
     void toTitle() {
+        boolean hadHaul = state == OVER && roundPrizes != 0L;
         state = TITLE;
         time = 0;
+        deathT = 0f;
+        // The run's haul carries itself to the case rather than simply being in it next time the
+        // case is opened. Only off the game-over screen: arriving from anywhere else there is no
+        // dance for them to be leaving.
+        homeT = hadHaul ? HOME_TIME : 0f;
         enemies.clear();
         shots.clear();
         target = null;
@@ -1173,7 +1287,10 @@ final class GameCore {
      */
     void screenKey(int g) {
         if (g < 0 || g >= Glyph.COUNT) return;
-        if (state == OVER && time <= OVER_GRACE) return;
+        // Nothing is dismissable until the summary is up and settled — the death sequence is not
+        // something to be pressed through, and a screen that arrives under a thumb reads as a
+        // misfire rather than as an answer.
+        if (state == OVER && !overReady()) return;
         // Already on the way out: further presses would restart the fade or double the tone.
         if (starting()) return;
         keyPress[g] = 1f;
@@ -1608,6 +1725,18 @@ final class GameCore {
         stageBanner = decay(stageBanner, dt);
         perfectBanner = decay(perfectBanner, dt);
         pushT = decay(pushT, dt);
+        // The death hold, and the flight home that follows it a screen later. Both above the PLAY
+        // return: neither runs during play, and the states they do run in never reach it.
+        if (deathT > 0f) {
+            deathT = Math.max(0f, deathT - dt);
+            if (deathT == 0f) {
+                // The swirl is over, so the words go. Held until now because they are what the
+                // swirl is made of; the summary is drawn over an empty field from here.
+                enemies.clear();
+                target = null;
+            }
+        }
+        homeT = decay(homeT, dt);
         if (storyOpen()) storyT += dt;
         // The title screen dissolving, and the squishy's send-off over the top of it. Play begins
         // the frame the last of them finishes, not on the press.
@@ -1634,6 +1763,7 @@ final class GameCore {
         // title screen never reaches it.
         float cf = dt * CASE_FADE_RATE;
         caseFade = caseOpen ? Math.min(1f, caseFade + cf) : Math.max(0f, caseFade - cf);
+        if (caseOpen) caseT += dt;
         // Signed, so it eases back to zero from whichever side the scroll came in on. Left alone
         // under a finger: there the offset is the drag, not a leftover.
         if (caseSlide != 0f && !caseDragging) {
@@ -2069,6 +2199,10 @@ final class GameCore {
     private void awardPrize() {
         prize = Collect.roll(rnd, collected);
         prizeNew = !Collect.has(collected, prize);
+        // Every dumpling this run freed, new or duplicate. They dance on the game-over screen and
+        // then carry themselves off to the case, so what matters is that you won it today — a
+        // duplicate came out of a basket you opened just the same.
+        roundPrizes = Collect.add(roundPrizes, prize);
         if (prizeNew) {
             collected = Collect.add(collected, prize);
             if (store != null) store.saveCollected(collected);
@@ -2119,8 +2253,10 @@ final class GameCore {
         if (lives <= 0) {
             state = OVER;
             time = 0;
-            // Clear the field so the summary screen is readable; particles stay for the bang.
-            enemies.clear();
+            deathT = DEATH_TIME;
+            // The words are deliberately left standing: they swirl away over the death hold, and
+            // the field is cleared when it ends, before the summary is drawn over it. Only the
+            // shots go now — a kill landing after the run is over would credit a squish.
             shots.clear();
             target = null;
             // Dying mid-frenzy has to end the frenzy here: updatePower only runs during

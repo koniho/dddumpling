@@ -28,6 +28,8 @@ src/com/sram/hexatype/Finish.java
 src/com/sram/hexatype/Trinket.java
 src/com/sram/hexatype/Cabinet.java
 src/com/sram/hexatype/Launch.java
+src/com/sram/hexatype/RoundEnd.java
+src/com/sram/hexatype/Demo.java
 src/com/sram/hexatype/Lore.java
 src/com/sram/hexatype/Narration.java
 src/com/sram/hexatype/Showcase.java

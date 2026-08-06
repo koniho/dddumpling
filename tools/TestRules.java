@@ -161,6 +161,29 @@ final class TestRules extends Check {
         c.stage = 40;
         check("pacing floors out", c.travelSeconds() >= 4.2f && c.spawnInterval() >= 0.80f);
         check("enemy count is capped", c.maxEnemies() <= 7);
+
+        // The ramp was stretched, because the game hit a wall at stage 6: every dial arrived at
+        // once and the once-a-stage panic swipe could not carry it. What landed at 6 lands at 10.
+        check("a stage is worth less than a full step", GameCore.RAMP < 1f);
+        c.stage = 1;
+        check("the opening stage is untouched", c.ramp() == 0f && c.travelSeconds() == 15f);
+        c.stage = 10;
+        check("stage 10 now sits where stage 6 used to", Math.abs(c.ramp() - 5f) < 0.001f);
+        // The old curve was 15 - (stage - 1) * 1.05, so stage 6 fell in 9.75s.
+        check("with the fall stage 6 used to have",
+                Math.abs(c.travelSeconds() - 9.75f) < 0.01f);
+        c.stage = 6;
+        check("and stage 6 has more room than it did", c.travelSeconds() > 9.75f);
+        check("fewer stacks there too", c.stackChance() < 0.55f);
+
+        // Printed because tuning a curve means reading it, and the numbers are the whole story.
+        System.out.println("    stage  fall  spawn  len  crowd  quota  stack");
+        for (int s : new int[] {1, 2, 4, 6, 8, 10, 14, 20}) {
+            c.stage = s;
+            System.out.printf("    %5d %5.1f %6.2f %4d %6d %6d %6.0f%%%n", s, c.travelSeconds(),
+                    c.spawnInterval(), c.maxWordLen(), c.maxEnemies(), c.stageQuota(),
+                    c.stackChance() * 100f);
+        }
     }
 
     static void breachAndGameOver(Layout L) {
@@ -207,15 +230,31 @@ final class TestRules extends Check {
         c.lives = 1;
         c.enemies.clear();
         add(c, L, new int[] {0}, L.dangerY - L.enemyR + 1);
+        // A bystander well up the field. The word that lands is unlisted before it breaches, so
+        // without one of these there is nothing left to hold and the swirl has nothing to swirl.
+        GameCore.Enemy bystander = add(c, L, new int[] {1, 2}, L.playTop + 80f);
         advance(c, L, GameCore.ATTACK_TIME + 2 * DT);
         check("reached game over", c.state == GameCore.OVER);
-        check("game over clears the field", c.enemies.isEmpty() && c.shots.isEmpty());
+        check("the death sequence starts", c.dying() && c.deathT > GameCore.DEATH_TIME - 0.1f);
+        // The field is deliberately still standing: those words are what the swirl is made of.
+        // Shots go at once, though — a kill landing after the run would credit a squish.
+        check("the words are held for the swirl", c.enemies.contains(bystander));
+        check("but shots are dropped", c.shots.isEmpty());
+        check("and the summary is not up yet", c.overFade() == 0f);
 
         c.tapKey(2, L);
-        check("game over ignores keys for the first 0.6s", c.state == GameCore.OVER);
-        for (int i = 0; i < 45; i++) c.update(DT, L);
+        check("a key cannot skip the death sequence", c.state == GameCore.OVER);
+        advance(c, L, GameCore.DEATH_TIME + 2 * DT);
+        check("the hold ends on its own", !c.dying());
+        check("and clears the field then", c.enemies.isEmpty());
+        check("the summary is fading up", c.overFade() > 0f && c.overFade() < 1f);
         c.tapKey(2, L);
-        check("game over accepts a key after the grace period", c.state == GameCore.TITLE);
+        check("still not dismissable mid-fade", c.state == GameCore.OVER);
+
+        advance(c, L, GameCore.OVER_FADE + GameCore.OVER_GRACE + 2 * DT);
+        check("the summary settles", c.overFade() == 1f && c.overReady());
+        c.tapKey(2, L);
+        check("game over accepts a key once it has settled", c.state == GameCore.TITLE);
 
         check("keys never count as a hit off the play screen",
                 !new GameCore(new Mem(), 9L).tapKey(2, L));

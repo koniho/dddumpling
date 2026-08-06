@@ -12,10 +12,10 @@ final class Hud extends Draw {
 
     static void hud(Painter p, GameCore c, Layout L) {
         float s = L.unit;
-        p.text("SCORE", L.playLeft, L.hudY - s * 0.95f, s * 0.52f, INK_DIM, Painter.LEFT, false);
-        p.text(String.valueOf(c.score), L.playLeft, L.hudY, s * 1.05f, INK, Painter.LEFT, true);
+        p.text("SCORE", L.playLeft, L.hudY - s * 0.95f, type(s * 0.52f), INK_DIM, Painter.LEFT, false);
+        p.text(String.valueOf(c.score), L.playLeft, L.hudY, type(s * 1.05f), INK, Painter.LEFT, true);
 
-        p.text("STAGE " + c.stage, L.w / 2f, L.hudY - s * 0.95f, s * 0.58f, INK_DIM,
+        p.text("STAGE " + c.stage, L.w / 2f, L.hudY - s * 0.95f, type(s * 0.58f), INK_DIM,
                 Painter.CENTER, true);
         // Small hex-and-dot to the right: this readout is the settings button.
         float gx = L.w / 2f + s * 2.5f, gy = L.hudY - s * 1.15f;
@@ -65,9 +65,9 @@ final class Hud extends Draw {
         p.fillRect(left, y, left + (right - left) * frac, y + s * 0.22f,
                 Glyph.withAlpha(hue, 235));
 
-        p.text(Power.NAMES[c.mode], L.w / 2f, y - s * 0.35f, s * 0.86f, hue,
+        p.text(Power.NAMES[c.mode], L.w / 2f, y - s * 0.35f, type(s * 0.86f), hue,
                 Painter.CENTER, true);
-        p.text(Power.BLURB[c.mode], L.w / 2f, y + s * 1.05f, s * 0.5f, INK_DIM,
+        p.text(Power.BLURB[c.mode], L.w / 2f, y + s * 1.05f, type(s * 0.5f), INK_DIM,
                 Painter.CENTER, false);
     }
 
@@ -117,15 +117,15 @@ final class Hud extends Draw {
         // blade — that happens under your finger — but a chain threads down the whole field and
         // the readout landed straight on top of it.
         float y = L.h * 0.205f;
-        p.text(big, L.w / 2f, y, s * 1.6f * pop, Glyph.withAlpha(tint, a), Painter.CENTER, true);
-        p.text(small, L.w / 2f, y + s * 1.15f, s * 0.70f, Glyph.withAlpha(INK, a),
+        p.text(big, L.w / 2f, y, type(s * 1.6f * pop), Glyph.withAlpha(tint, a), Painter.CENTER, true);
+        p.text(small, L.w / 2f, y + s * 1.15f, type(s * 0.70f), Glyph.withAlpha(INK, a),
                 Painter.CENTER, true);
     }
 
     static void stageBanner(Painter p, GameCore c, Layout L) {
         float k = Math.min(1f, c.stageBanner / 0.4f);
         int a = (int) (235 * k);
-        p.text("STAGE " + c.stage, L.w / 2f, L.h * 0.34f, L.unit * 1.7f,
+        p.text("STAGE " + c.stage, L.w / 2f, L.h * 0.34f, type(L.unit * 1.7f),
                 Glyph.withAlpha(INK, a), Painter.CENTER, true);
 
         int skit = Skits.forStage(c.stage);
@@ -170,7 +170,7 @@ final class Hud extends Draw {
                     Glyph.withAlpha(GOLD, (int) (a * 60 / k)), r * 0.05f);
         }
         Kawaii.moodDumpling(p, cx, cy, r, Glyph.withAlpha(GOLD, (int) (255 * a)), 1f, squash);
-        p.text("PERFECT WAVE", cx, cy + r * 1.85f, L.unit * 0.86f,
+        p.text("PERFECT WAVE", cx, cy + r * 1.85f, type(L.unit * 0.86f),
                 Glyph.withAlpha(GOLD, (int) (255 * a)), Painter.CENTER, true);
     }
 }

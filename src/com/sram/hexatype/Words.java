@@ -11,8 +11,12 @@ final class Words {
     private Words() {}
 
     /**
-     * Builds a fresh word for the given stage: a random glyph per tile, then a press budget
-     * spent on stacks so the total can never exceed {@link GameCore#MAX_PRESSES}.
+     * Builds a fresh word for the given stage: a press budget spent on stacks so the total can
+     * never exceed {@link GameCore#MAX_PRESSES}, then a glyph per tile.
+     *
+     * Stacks are chosen before letters, which is the opposite of the order this used to run in. A
+     * letter cannot be picked until it is known whether it or its neighbour is a stack, because a
+     * stack is not allowed to sit next to its own letter.
      */
     static void fill(GameCore.Enemy e, int len, float stackChance, Random rnd) {
         e.word = new int[len];
@@ -21,10 +25,8 @@ final class Words {
         e.goneT = new float[len];
         e.goneDx = new float[len];
         e.goneDy = new float[len];
-        for (int i = 0; i < len; i++) {
-            e.word[i] = rnd.nextInt(Glyph.COUNT);
-            e.need[i] = 1;
-        }
+
+        for (int i = 0; i < len; i++) e.need[i] = 1;
         int budget = GameCore.MAX_PRESSES - len;
         for (int i = 0; i < len && budget > 0; i++) {
             if (rnd.nextFloat() >= stackChance) continue;
@@ -32,6 +34,24 @@ final class Words {
             e.need[i] += extra;
             budget -= extra;
         }
+
+        for (int i = 0; i < len; i++) {
+            // A stack beside its own letter is unreadable: it is the same key either way, so
+            // nothing on screen tells you where the stack ended and the next tile began, and a
+            // miscount stays invisible until the word fails. Either side of a stack has to differ
+            // from it — checked in both directions here, since the tile before this one may be the
+            // stack rather than this one.
+            int avoid = i > 0 && (e.need[i] > 1 || e.need[i - 1] > 1) ? e.word[i - 1] : -1;
+            if (avoid < 0) {
+                e.word[i] = rnd.nextInt(Glyph.COUNT);
+            } else {
+                // One draw over the other five, so the letter stays uniform and the RNG is
+                // consumed at exactly one call per tile either way.
+                int pick = rnd.nextInt(Glyph.COUNT - 1);
+                e.word[i] = pick >= avoid ? pick + 1 : pick;
+            }
+        }
+
         e.pos = 0;
         e.done = 0;
     }

@@ -11,7 +11,7 @@ trip working out which thing was meant.
 ## The one thing that matters most
 
 **You can see and hear this game without building or installing it.** `./check.sh` runs the
-whole thing headlessly: ~970 rule assertions, then it renders real frames to `out/*.png` and
+whole thing headlessly: ~985 rule assertions, then it renders real frames to `out/*.png` and
 every sound to `out/sfx/*.wav`. Read the PNGs with the Read tool — the `0-*.png` sheets each
 show a whole set at once (the six letters, the thirty collectibles, both vignette casts). That loop is seconds, not
 minutes, and it needs no device.
@@ -89,6 +89,8 @@ Pure (in the harness and the APK):
 | `Renderer` | frame orchestration + the play field |
 | `Hud` | score/stage/lives, frenzy bar, banners |
 | `Screens` | title, game over, minigame, settings |
+| `RoundEnd` | how a run ends: the swirl, the haul dancing, and its flight to the case |
+| `Demo` | the title screen playing itself, in place of two lines explaining how |
 | `Sfx` / `Music` | procedurally synthesised effects and looping tracks |
 | `Narration` | what the story popup says out loud, and the pitch and pace of each line |
 | `SettingsUi` | settings panel geometry and hit-testing |
@@ -119,7 +121,10 @@ nothing. Follow the pattern rather than "fixing" it.
   a centred HUD lands under the punch-hole camera. `Layout.topSafe` keeps its own floor.
   There is a regression assertion at 1080x2400.
 - **RNG call order is load-bearing.** `Words.fill` consumes the RNG in a fixed order; change
-  it and every generated word shifts. The hash comparison catches this.
+  it and every generated word shifts. The hash comparison catches this. The order is also
+  load-bearing for a rule: stacks are chosen *before* letters, because a letter cannot be
+  picked until it is known whether it or its neighbour is a stack — a stack may not sit beside
+  its own letter. Swapping those two loops back would silently drop that guarantee.
 - **Reset state above early returns in `update()`.** `warnLevel` was reset *after* the
   `state != PLAY` return, so a fatal breach left the red edge glow stuck on forever.
 - **Removing from a list you are iterating.** A fatal breach clears the whole enemy list, so
@@ -136,6 +141,12 @@ nothing. Follow the pattern rather than "fixing" it.
   device and is missing a letter in every frame you check. `?` and `'` were both added to it
   before they could be used. Add the glyph rather than writing around it — but do check, since
   the set is still small. Arrows and chevrons are drawn as polygons for the same reason.
+- **Text that does not fit is reported, not eyeballed.** `RasterPainter.text` records any line
+  drawn off the screen edge and `Preview` prints `DOES NOT FIT` under the frame that did it, with
+  the width and the x range. It respects the current clip, because the display case deliberately
+  draws a wing tile past the plaque for the clip to cut off. Since the harness font is wider than
+  Quicksand, a line that fits in a PNG fits on the device — so this is the whole check. Run
+  `./check.sh | grep -B1 'DOES NOT FIT'` after any text or layout change.
 - **`Painter` cannot clip to a shape,** only to a rectangle. That is why a banded finish in
   `Trinket` is fitted to an ellipse and why `Collect.banded` restricts which shapes may wear
   one — there is an assertion holding the catalogue to it.
@@ -156,6 +167,14 @@ nothing. Follow the pattern rather than "fixing" it.
   the case in on the same `caseFade` drew both at half strength through each other, captions and
   all, and read as a rendering fault. They run in series now — badge gone by the halfway point,
   case in from there — via `Screens.caseOut`/`caseIn`. Overlap only what has no text on it.
+- **A global text scale needs the leading scaled with it.** Every text size goes through
+  `Draw.type()`, one knob (`TEXT`, currently 1.34). Sizes scale; the *gaps* between stacked lines
+  are still plain `unit` multiples, so the first pass had SCORE sitting on its own number and
+  ACCURACY on its percentage. Where lines stack, wrap the offset in `type()` too. Two other things
+  that fell out of it: long strings stop fitting (28-character prompts ran off both edges — the fix
+  was shorter copy, not a smaller size), and `Screens.settings` is deliberately *excluded*, because
+  its chips and rows are packed tight enough that scaled labels left their boxes. The harness font
+  is wider than Quicksand, so a line that fits in a PNG fits on the device.
 - **Sharing an animation channel makes two events look identical.** A wrong press in the
   interlude set `lidPulse` and `flash` before the wrong-key check, so it pulsed the lid and
   flashed the basket exactly like a landed press — the only thing distinguishing them was the

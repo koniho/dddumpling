@@ -214,6 +214,20 @@ final class RasterPainter implements Painter {
         fillCircle(x2, y2, hw, color);
     }
 
+    /**
+     * Every line drawn wider than the screen, or off either edge, since the last {@link #clearFit}.
+     *
+     * Text that does not fit is not a rendering bug you can see in a PNG — it is a clipped word, or
+     * a line that reads fine here and wraps off a narrower device. Recorded rather than eyeballed
+     * because there are dozens of lines across twenty screens, and because the harness font is
+     * wider than the one the device uses: a line that fits here fits there.
+     */
+    static final java.util.List<String> unfit = new java.util.ArrayList<>();
+
+    static void clearFit() {
+        unfit.clear();
+    }
+
     @Override public void text(String s, float x, float y, float size, int color, int align,
             boolean bold) {
         if (s == null || s.isEmpty() || (color >>> 24) == 0) return;
@@ -223,6 +237,16 @@ final class RasterPainter implements Painter {
         float total = s.length() * advance - size * 0.09f;
         float left = align == LEFT ? x : align == RIGHT ? x - total : x - total / 2f;
         float top = y - cell;
+        // Logical coordinates: the supersampling happens further down, in fillRect. Text outside
+        // the current clip is not reported — the display case deliberately draws a wing tile past
+        // the plaque edge for the clip to cut off, and its question mark is off screen by design.
+        float clipLo = clipL / (float) ss - tx;
+        float clipHi = (clipR + 1) / (float) ss - tx;
+        boolean visible = left < clipHi && left + total > clipLo;
+        if (visible && (left < 0f || left + total > w)) {
+            unfit.add(String.format("%-46s %5.0fpx wide, x %.0f..%.0f of %d",
+                    '"' + s + '"', total, left, left + total, w));
+        }
         for (int i = 0; i < s.length(); i++) {
             drawChar(s.charAt(i), left + i * advance, top, px, color, bold);
         }

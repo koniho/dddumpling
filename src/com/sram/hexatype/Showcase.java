@@ -267,6 +267,11 @@ final class Showcase extends Draw {
         // eye down at the bottom of the screen. Downward, too, because that eye is below it —
         // this is the underside of a case being looked up at, where the open case is a cabinet
         // seen squarely from in front.
+        // And breathing, which is what replaced TAP TO OPEN: a box that swells and settles reads
+        // as a button, where a still one with a caption under it only read as a caption.
+        float breathe = 1f + 0.045f * pulse;
+        hw *= breathe;
+        hh *= breathe;
         float turn = iconTurn(L, c.clock);
         Cabinet.draw(p, c.clock, cx - hw, cy - hh, cx + hw, cy + hh,
                 -turn * s * 0.50f, s * 0.26f, 0.94f, s * 0.16f, fade);
@@ -281,13 +286,10 @@ final class Showcase extends Draw {
         }
 
         int have = Collect.owned(c.collected);
-        p.text("DISPLAY CASE", cx, cy - hh - s * 1.00f, s * 0.62f, fadeBy(INK_DIM, fade),
+        p.text("DISPLAY CASE", cx, cy - hh - s * 1.00f, type(s * 0.62f), fadeBy(INK_DIM, fade),
                 Painter.CENTER, true);
-        p.text(have + " OF " + Collect.COUNT, cx, cy + hh + s * 1.15f, s * 0.70f,
+        p.text(have + " OF " + Collect.COUNT, cx, cy + hh + s * 1.15f, type(s * 0.70f),
                 fadeBy(have >= Collect.COUNT ? GOLD : INK, fade), Painter.CENTER, true);
-        p.text("TAP TO OPEN", cx, cy + hh + s * 2.05f, s * 0.52f,
-                fadeBy(Glyph.withAlpha(INK_DIM, (int) (140 + 115 * pulse)), fade),
-                Painter.CENTER, false);
     }
 
     static void draw(Painter p, GameCore c, Layout L) {
@@ -314,10 +316,10 @@ final class Showcase extends Draw {
         float top = plaqueTop(L), bot = plaqueBot(L);
         Cabinet.draw(p, c.clock, cx - padX, top, cx + padX, bot, s * 1.35f, s * 0.32f, fade);
 
-        p.text("DISPLAY CASE", cx, top - s * 2.05f, s * 0.62f, fadeBy(INK_DIM, fade),
+        p.text("DISPLAY CASE", cx, top - s * 2.05f, type(s * 0.62f), fadeBy(INK_DIM, fade),
                 Painter.CENTER, true);
         int have = Collect.owned(c.collected);
-        p.text(have + " OF " + Collect.COUNT + " COLLECTED", cx, top - s * 1.20f, s * 0.58f,
+        p.text(have + " OF " + Collect.COUNT + " COLLECTED", cx, top - s * 1.20f, type(s * 0.58f),
                 fadeBy(have >= Collect.COUNT ? GOLD : INK, fade), Painter.CENTER, true);
         closeButton(p, L, fade);
 
@@ -350,6 +352,17 @@ final class Showcase extends Draw {
         // story. An uncollected one holds still, because it cannot.
         int edge = known ? (int) (185 + 70 * (0.5f + 0.5f * (float) Math.sin(c.clock * 2.6f)))
                 : 90;
+        // The focused entry throbs for the first moment the case is up, which is what replaced the
+        // line telling you to tap it for a story. Only at the start: a permanent throb is
+        // wallpaper, and the plinth's own slow breathe carries it from there.
+        if (known) {
+            float woo = Math.max(0f, 1f - c.caseT / 1.6f);
+            if (woo > 0f) {
+                float beat = 0.5f + 0.5f * (float) Math.sin(c.caseT * 12f);
+                p.strokePoly(Glyph.hex(cx + slide, cy, fr * (1.12f + 0.10f * beat)),
+                        fadeBy(Glyph.withAlpha(INK, (int) (200 * woo * beat)), fade), fr * 0.05f);
+            }
+        }
         p.strokePoly(Glyph.hex(cx + slide, cy, fr), fadeBy(Glyph.withAlpha(tint, edge), fade),
                 fr * 0.06f);
         if (known && tier >= Collect.CHASE) {
@@ -364,14 +377,14 @@ final class Showcase extends Draw {
 
         // Caption. The name is withheld until the entry is collected; the family is not,
         // because knowing which shelf a gap belongs to is half of what makes it a gap.
-        p.text(known ? Collect.NAME[i] : "??????", cx, cy + r * 1.90f, s * 0.86f,
+        p.text(known ? Collect.NAME[i] : "??????", cx, cy + r * 1.90f, type(s * 0.86f),
                 fadeBy(known ? INK : INK_DIM, fade), Painter.CENTER, true);
         p.text(known ? Collect.TIER_NAME[tier] : "NOT COLLECTED", cx, cy + r * 2.32f,
-                s * 0.56f, fadeBy(known ? tint : INK_DIM, fade), Painter.CENTER, true);
-        p.text(Collect.FAMILY_NAME[Collect.FAMILY[i]], cx, bot + s * 0.95f, s * 0.54f,
+                type(s * 0.56f), fadeBy(known ? tint : INK_DIM, fade), Painter.CENTER, true);
+        p.text(Collect.FAMILY_NAME[Collect.FAMILY[i]], cx, bot + s * 0.95f, type(s * 0.54f),
                 fadeBy(INK_DIM, fade), Painter.CENTER, false);
         scrollbar(p, c, L, fade);
-        p.text((i + 1) + " / " + Collect.COUNT, cx, bot + s * 2.80f, s * 0.54f,
+        p.text((i + 1) + " / " + Collect.COUNT, cx, bot + s * 2.80f, type(s * 0.54f),
                 fadeBy(INK_DIM, fade), Painter.CENTER, true);
 
         arrows(p, c, L, fade);

@@ -53,7 +53,7 @@ final class Trinket {
             // Kept small enough to leave the outline visible around it — the shape is the
             // clue, and a mark that fills the frame throws that away.
             float fr = r * FACE_R[shape];
-            p.text("?", cx, cy + r * FACE_DY[shape] + fr * 0.52f, fr * 1.55f,
+            p.text("?", cx, cy + r * FACE_DY[shape] + fr * 0.52f, Draw.type(fr * 1.55f),
                     Draw.fadeBy(Glyph.withAlpha(Draw.INK, 210), fade), Painter.CENTER, true);
             return;
         }

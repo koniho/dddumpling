@@ -17,10 +17,16 @@ final class Renderer extends Draw {
         float hurtPulse = 0.5f + 0.5f * (float) Math.sin(c.clock * (2.6f + 5.5f * harm));
         float hurt = harm * (0.55f + 0.45f * hurtPulse);
 
+        // The sky drains to a dark green as a run ends. Mixed in after the hurt red rather than
+        // instead of it, so the last moments of a run go from panic red to something colder.
+        float gone = c.drained();
+
         // Kept moderate: the red reads as a pulse at the edges, not a wash over the
         // characters, which have to stay legible at exactly the moment you are panicking.
-        p.fillRect(0, 0, L.w, L.h, Glyph.mix(BG, BG_HURT, hurt * 0.45f));
-        p.fillRect(0, L.deckTop, L.w, L.h, Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f));
+        p.fillRect(0, 0, L.w, L.h,
+                Glyph.mix(Glyph.mix(BG, BG_HURT, hurt * 0.45f), BG_DEATH, gone));
+        p.fillRect(0, L.deckTop, L.w, L.h,
+                Glyph.mix(Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f), BG_DEATH, gone * 0.85f));
 
         // Two cloud layers behind the words...
         Sky.cloudBand(p, c, L, 0, Sky.CLOUD_FRONT_LAYER, hurt);
@@ -34,7 +40,12 @@ final class Renderer extends Draw {
 
         dangerLine(p, c, L);
         pushHint(p, c, L);
-        for (int i = 0; i < c.enemies.size(); i++) enemy(p, c, L, c.enemies.get(i));
+        // Dying, the words are the swirl instead of standing where they were.
+        if (c.dying()) {
+            RoundEnd.swirl(p, c, L);
+        } else {
+            for (int i = 0; i < c.enemies.size(); i++) enemy(p, c, L, c.enemies.get(i));
+        }
         pushWave(p, c, L);
         buddy(p, c, L);
         powerup(p, c, L);
@@ -77,6 +88,12 @@ final class Renderer extends Draw {
         else if (c.state == GameCore.OVER) Screens.gameOver(p, c, L);
         else if (c.state == GameCore.BONUS) Screens.bonus(p, c, L);
         else if (c.stageBanner > 0) Hud.stageBanner(p, c, L);
+
+        // The run's haul: dancing on the summary once it has settled, then carrying itself to the
+        // display case over the first moment of the title screen. Both over their screen rather
+        // than inside it — the flight starts on one and lands on the other.
+        RoundEnd.dance(p, c, L);
+        RoundEnd.homeward(p, c, L);
 
         // The send-off, over the dissolving title screen and the field it is uncovering. Last
         // thing before play: it is the only part of the title screen that outlives the fade.
@@ -235,9 +252,7 @@ final class Renderer extends Draw {
                 float pulse = 0.6f + 0.4f * (float) Math.sin(c.clock * 7f);
                 p.strokePoly(Glyph.hex(ix, y, cellR), Glyph.withAlpha(INK, (int) (215 * pulse)),
                         cellR * 0.13f);
-                float cy = y - cellR * 1.55f, cw = cellR * 0.40f;
-                p.fillPoly(new float[] {ix - cw, cy - cw, ix + cw, cy - cw, ix, cy + cw * 0.75f},
-                        Glyph.withAlpha(INK, 225));
+                caret(p, ix, y, cellR, Glyph.withAlpha(INK, 225));
             }
         }
     }
@@ -257,18 +272,19 @@ final class Renderer extends Draw {
         int a = (int) (80 + 100 * pulse);
         p.fillRect(L.playLeft, top, L.playRight, bot, Glyph.withAlpha(GOLD, a / 5));
 
-        // Chevrons out at the edges, marching up with the pulse; the label owns the middle.
+        // Chevrons marching up with the pulse. Three a side and larger than they were, spread
+        // across the middle the SWIPE UP label used to own: with the words gone these are the whole
+        // affordance, and two small ones per corner were not enough to be one.
         float rise = h * (0.26f + 0.30f * pulse);
         for (int side = -1; side <= 1; side += 2) {
-            for (int k = 1; k <= 2; k++) {
-                float cx = L.w / 2f + side * (L.playRight - L.playLeft) * (0.16f + 0.11f * k);
+            for (int k = 0; k < 3; k++) {
+                float cx = L.w / 2f + side * (L.playRight - L.playLeft) * (0.09f + 0.13f * k);
                 float y = bot - rise;
-                p.polyline(new float[] {cx - h * 0.30f, y + h * 0.26f, cx, y,
-                        cx + h * 0.30f, y + h * 0.26f}, Glyph.withAlpha(GOLD, a), h * 0.11f);
+                p.polyline(new float[] {cx - h * 0.38f, y + h * 0.32f, cx, y,
+                        cx + h * 0.38f, y + h * 0.32f}, Glyph.withAlpha(GOLD, a), h * 0.13f);
             }
         }
-        p.text("SWIPE UP", L.w / 2f, bot - h * 0.22f, h * 0.52f, Glyph.withAlpha(GOLD, a),
-                Painter.CENTER, true);
+
     }
 
     /** The push-back landing: bands sweeping up off the line, fading as they climb. */
@@ -367,7 +383,7 @@ final class Renderer extends Draw {
         p.strokePoly(Glyph.hex(w.x, y, r * pulse), Glyph.withAlpha(INK, 235), r * 0.10f);
         Kawaii.draw(p, w.glyph, w.x, y, r * 0.58f, hue, 1f, 0.8f);
 
-        p.text(w.name(), w.x, y - r * 1.7f, L.unit * 0.56f, Glyph.withAlpha(INK, 240),
+        p.text(w.name(), w.x, y - r * 1.7f, type(L.unit * 0.56f), Glyph.withAlpha(INK, 240),
                 Painter.CENTER, true);
     }
 
@@ -502,6 +518,24 @@ final class Renderer extends Draw {
 
     static void keys(Painter p, GameCore c, Layout L) {
         int hint = c.hintGlyph();
+        // The deck mourns as one: every key goes red and pulls a sad face over the death hold.
+        // Every key wears the same face on purpose — the mood dumpling is already this game's
+        // "how are we doing", and six of them at once reads as the deck giving up rather than as
+        // six separate characters each having a bad moment.
+        float gone = Math.min(1f, c.drained() * 1.6f);
+
+        // On the title screen every key starts a run, and nothing says so in words any more — the
+        // deck says it by glowing. Fades on the same crossfade the badge uses, so opening the case
+        // puts the invitation away with it: while the case is up a key only closes it again.
+        float invite = 0f;
+        if (c.state == GameCore.TITLE) {
+            invite = Screens.caseOut(c)
+                    * (c.starting() ? c.startFade / GameCore.START_FADE : 1f);
+        } else if (c.overReady()) {
+            // The same invitation on the settled summary, where a line used to ask for a press.
+            invite = 1f;
+        }
+
         for (int g = 0; g < Glyph.COUNT; g++) {
             float press = c.keyPress[g], bad = c.keyBad[g];
             float r = L.keyR * (1f - 0.05f * press);
@@ -513,6 +547,7 @@ final class Renderer extends Draw {
                 col = Glyph.mix(col, Glyph.cycle(c.clock * 9f + g * 0.13f), press * 0.9f);
             }
             if (bad > 0) col = Glyph.mix(col, ROSE, bad);
+            if (gone > 0f) col = Glyph.mix(col, RED, gone);
 
             // During the interlude only two keys matter; ring them, and mark the next one.
             // The spinner rings too, off the same pair the alternator is showing, so the deck
@@ -537,12 +572,39 @@ final class Renderer extends Draw {
                         Glyph.withAlpha(col, (int) (210 * press)), r * 0.07f);
             }
 
-            p.fillPoly(Glyph.hex(cx, cy, r), Glyph.withAlpha(col, (int) (36 + 150 * press)));
-            p.strokePoly(Glyph.hex(cx, cy, r), Glyph.withAlpha(col, (int) (190 + 65 * press)),
-                    r * 0.085f);
+            // The demo's own press, so the deck answers the falling word. Treated like a real
+            // press rather than a glow: it is the same event, and it should look like one.
+            if (invite > 0.004f && c.state == GameCore.TITLE && Demo.litKey(c) == g) {
+                press = Math.max(press, Demo.litAmount(c) * invite);
+                r = L.keyR * (1f - 0.05f * press);
+            }
 
-            Kawaii.draw(p, g, cx, cy, r * 0.60f * (1f + 0.12f * press), col,
-                    1f + 0.20f * press, 0.25f + 0.6f * press);
+            if (invite > 0.004f) {
+                // A wave rather than six keys blinking together: the phase walks along the deck,
+                // which reads as an invitation travelling across it rather than an alarm.
+                float sweep = 0.5f + 0.5f * (float) Math.sin(c.clock * 3.1f - g * 0.62f);
+                // Three rings falling off outward, which is as close to a glow as strokes get.
+                for (int ring = 0; ring < 3; ring++) {
+                    float rr = r * (1.10f + ring * 0.12f + 0.05f * sweep);
+                    int a = (int) (200 / (ring + 1) * (0.35f + 0.65f * sweep) * invite);
+                    p.strokePoly(Glyph.hex(cx, cy, rr), Glyph.withAlpha(col, a),
+                            r * (0.11f - ring * 0.025f));
+                }
+            }
+
+            p.fillPoly(Glyph.hex(cx, cy, r),
+                    Glyph.withAlpha(col, (int) (36 + 150 * press + 40 * invite)));
+            p.strokePoly(Glyph.hex(cx, cy, r), Glyph.withAlpha(col, (int) (190 + 65 * press)),
+                    r * (0.085f + 0.035f * invite));
+
+            if (gone > 0.02f) {
+                // Sagging a little as it goes, so the deck slumps rather than simply recolouring.
+                float sag = r * 0.06f * gone;
+                Kawaii.moodDumpling(p, cx, cy + sag, r * 0.60f, col, 0f, 1f + 0.10f * gone);
+            } else {
+                Kawaii.draw(p, g, cx, cy, r * 0.60f * (1f + 0.12f * press), col,
+                        1f + 0.20f * press, 0.25f + 0.6f * press);
+            }
         }
     }
 }

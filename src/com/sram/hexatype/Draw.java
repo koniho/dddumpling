@@ -15,8 +15,35 @@ abstract class Draw {
     static final int INK_DIM = 0xFFA79DCC;
     static final int ROSE = 0xFFFF7C9E;
     static final int GOLD = 0xFFFFCE4A;
+    /** Brighter and purer than GOLD, which shares the game-over screen with it. */
+    static final int YELLOW = 0xFFFFE536;
+    /** The deck goes this colour as a run ends. */
+    static final int RED = 0xFFE33B4B;
+    /** What the sky drains to as a run ends. */
+    static final int BG_DEATH = 0xFF0B2A1C;
     static final int BAMBOO = 0xFFD9AE6E;
     static final int BAMBOO_DARK = 0xFF8E6B3A;
+
+    /**
+     * Every text size on screen goes through {@link #type}, which multiplies by this. One knob for
+     * legibility on a phone held at arm's length, rather than a hundred hand-tuned multiples.
+     *
+     * Not 2, which was the first ask: at 2 the long lines — the title screen's two-line
+     * explanation, ANY KEY FOR THE TITLE SCREEN, the story panel's 36-character lines — run off
+     * their panels or off the screen, and several panels are sized from the text they hold. This
+     * is as far as it goes with everything still inside its box.
+     */
+    static final float TEXT = 1.34f;
+
+    /**
+     * A text size, scaled. Wrapped round the size argument of every text call so the scale is
+     * visible at the point of use — a multiplier hidden inside the two Painter backends would
+     * make {@code size} stop meaning pixels, which is the sort of thing that costs an afternoon
+     * later.
+     */
+    static float type(float size) {
+        return size * TEXT;
+    }
 
     /** Scales a colour's existing alpha by {@code f}, for fading a whole scene at once. */
     static int fadeBy(int color, float f) {
@@ -66,6 +93,20 @@ abstract class Draw {
             pts[i++] = cy + ry * (float) Math.sin(a);
         }
         return pts;
+    }
+
+    /**
+     * The caret over the thing you have to press next: a small triangle pointing down at it.
+     *
+     * Shared so the interlude marks its wanted letter exactly the way the field marks a head tile.
+     * Two hand-rolled triangles would drift apart the first time either was tuned, and the whole
+     * point of it is that the player recognises the same mark in both places.
+     *
+     * @param r radius of the thing it points at
+     */
+    static void caret(Painter p, float cx, float cy, float r, int color) {
+        float y = cy - r * 1.55f, w = r * 0.40f;
+        p.fillPoly(new float[] {cx - w, y - w, cx + w, y - w, cx, y + w * 0.75f}, color);
     }
 
     /** Star polygon with {@code points} spikes, rotated by {@code rot} radians. */

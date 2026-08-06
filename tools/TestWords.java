@@ -46,8 +46,8 @@ final class TestWords extends Check {
         // Generation invariants over many spawns at every stage.
         GameCore g = new GameCore(new Mem(), 52L);
         g.startGame();
-        int worst = 0, maxNeed = 0, stacksSeen = 0, words = 0;
-        boolean overCap = false, badNeed = false;
+        int worst = 0, maxNeed = 0, stacksSeen = 0, words = 0, plainTwins = 0;
+        boolean overCap = false, badNeed = false, stackBesideTwin = false;
         for (int stage = 1; stage <= 14; stage++) {
             g.stage = stage;
             for (int n = 0; n < 400; n++) {
@@ -66,15 +66,29 @@ final class TestWords extends Check {
                     if (w.need[i] < 1 || w.need[i] > 4) badNeed = true;
                     if (w.need[i] > maxNeed) maxNeed = w.need[i];
                     if (w.need[i] > 1) stacksSeen++;
+
+                    // A stack must differ from both its neighbours: it is the same key several
+                    // times, so an identical letter beside it hides where one ends and the next
+                    // begins. Plain letters may still pair up — that is readable, and forbidding
+                    // it would thin the alphabet for no reason, so it is counted to prove the
+                    // rule is narrow rather than a blanket no-repeats.
+                    boolean stack = w.need[i] > 1;
+                    if (i > 0 && w.word[i - 1] == w.word[i]) {
+                        if (stack || w.need[i - 1] > 1) stackBesideTwin = true;
+                        else plainTwins++;
+                    }
                 }
             }
         }
         System.out.printf("    %d words generated, worst total = %d presses, deepest stack = %d,"
-                + " %d stacked tiles%n", words, worst, maxNeed, stacksSeen);
+                + " %d stacked tiles, %d plain twin pairs%n", words, worst, maxNeed, stacksSeen,
+                plainTwins);
         check("no word ever exceeds " + GameCore.MAX_PRESSES + " presses", !overCap);
         check("every tile needs 1..4 presses", !badNeed);
         check("stacks do get generated", stacksSeen > 0);
         check("stacks reach depth 4 somewhere", maxNeed == 4);
+        check("no stack ever sits beside its own letter", !stackBesideTwin);
+        check("plain letters still pair up", plainTwins > 0);
 
         // Stage 1 must stay plain, so the mechanic is introduced rather than sprung.
         GameCore s1 = new GameCore(new Mem(), 53L);
