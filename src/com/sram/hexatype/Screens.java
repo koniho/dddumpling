@@ -16,30 +16,17 @@ final class Screens extends Draw {
         return bottom;
     }
 
-    static void handLabels(Painter p, Layout L, float baseline) {
-        handLabels(p, L, baseline, 1f);
-    }
-
-    static void handLabels(Painter p, Layout L, float baseline, float fade) {
-        int col = fadeBy(INK_DIM, fade);
-        p.text("LEFT HAND", L.keyX[1], baseline, type(L.unit * 0.5f), col, Painter.CENTER, true);
-        p.text("RIGHT HAND", L.keyX[4], baseline, type(L.unit * 0.5f), col, Painter.CENTER, true);
-    }
-
     static void title(Painter p, GameCore c, Layout L) {
         // Dissolves once a start key is pressed, revealing the field it was sitting over. Every
         // element takes the same factor, so the screen leaves as one thing rather than in parts.
         // Gated on starting() rather than on the timer: the send-off holds the title state open
         // after the fade is spent, and reading the timer alone snapped the screen back to full.
         float fade = c.starting() ? c.startFade / GameCore.START_FADE : 1f;
-        float bottom = scrim(p, L, (int) (210 * fade));
+        scrim(p, L, (int) (210 * fade));
         float s = L.unit;
         float cx = L.w / 2f;
         p.text("DDDUMPLING", cx, L.h * 0.100f, type(s * 1.95f), fadeBy(INK, fade),
                 Painter.CENTER, true);
-        p.text("SIX LETTERS. THREE PER THUMB.", cx, L.h * 0.100f + s * 1.30f, type(s * 0.58f),
-                fadeBy(INK_DIM, fade), Painter.CENTER, false);
-
         if (c.best > 0) {
             p.text("BEST " + c.best, cx, L.h * 0.170f, type(s * 0.74f), fadeBy(ROSE, fade),
                     Painter.CENTER, true);
@@ -69,7 +56,6 @@ final class Screens extends Draw {
         // The case explains itself: arrows either side of the shelf, and the focused entry throbs
         // when it first comes up if there is a story behind it. See Showcase.
 
-        handLabels(p, L, bottom - s * 0.45f, fade);
     }
 
     /** Opacity of everything the shut case owns: gone by the time the case is half faded in. */
@@ -89,7 +75,7 @@ final class Screens extends Draw {
     static void gameOver(Painter p, GameCore c, Layout L) {
         float fade = c.overFade();
         if (fade <= 0.004f) return;
-        float bottom = scrim(p, L, (int) (220 * fade));
+        scrim(p, L, (int) (220 * fade));
         float s = L.unit;
         // Yellow rather than the rose it was: rose is the colour of every warning and every hit
         // in this game, so a rose GAME OVER read as one more of them.
@@ -113,7 +99,6 @@ final class Screens extends Draw {
         // Nothing asks for a press here either: once the summary has settled the deck picks up the
         // same glow the title screen uses. See Renderer.keys.
 
-        handLabels(p, L, bottom - s * 0.45f, fade);
     }
 
     /**
@@ -288,7 +273,6 @@ final class Screens extends Draw {
             float pf = Math.min(1f, c.paradeTimer / 0.35f);
             scrim(p, L, (int) (195 * pf));
             Parade.draw(p, c, L, pf);
-            handLabels(p, L, L.deckTop - s * 0.45f, pf);
             return;
         }
         // Eases in on arrival and back out as the timer expires, so neither edge of the
@@ -433,7 +417,6 @@ final class Screens extends Draw {
                     Painter.CENTER, true);
         }
 
-        handLabels(p, L, L.deckTop - s * 0.45f, fade);
     }
 
     /**
