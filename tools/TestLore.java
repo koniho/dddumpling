@@ -229,53 +229,61 @@ final class TestLore extends Check {
         // Every entry has to be sayable. The panel's text is upper case, which a speech engine
         // reads as an initialism, and its lines break mid-sentence.
         boolean lowered = true, punctuated = true, named = true, full = true;
-        boolean noDanglingAnd = true, paced = true, cute = true, gapped = true;
+        boolean noDanglingAnd = true, whole = true;
         for (int i = 0; i < Collect.COUNT; i++) {
             String[] said = Narration.lines(i);
-            if (said.length < Narration.PREAMBLE + 1) full = false;
+            if (said.length != Narration.CHUNKS) full = false;
             if (!said[0].equals(Collect.NAME[i].toLowerCase() + "!")) named = false;
             for (int k = 0; k < said.length; k++) {
-                String s = said[k];
-                if (!s.equals(s.toLowerCase())) lowered = false;
-                if (s.length() == 0 || !s.equals(s.trim())) full = false;
-                char last = s.charAt(s.length() - 1);
+                String t = said[k];
+                if (!t.equals(t.toLowerCase())) lowered = false;
+                if (t.length() == 0 || !t.equals(t.trim())) full = false;
+                char last = t.charAt(t.length() - 1);
                 if (last != '.' && last != '!' && last != '?') punctuated = false;
-                // The giveaway that a typographic line has been read as a sentence.
-                if (s.endsWith(" and.") || s.endsWith(" and")) noDanglingAnd = false;
-                float pitch = Narration.pitch(said, k), rate = Narration.rate(said, k);
-                if (pitch <= 1.05f || pitch > 1.75f) cute = false;
-                if (rate < 0.75f || rate > 1f) paced = false;
-                int gap = Narration.gapMs(said, k);
-                if (k == said.length - 1 ? gap != 0 : gap <= 0) gapped = false;
+                // The giveaway that a typographic line was handed over as if it were a sentence.
+                if (t.endsWith(" and.") || t.endsWith(" and")) noDanglingAnd = false;
             }
+            // The story goes over whole, punctuation and all, because that is what the engine
+            // works its intonation out from. Every one of these is more than one sentence, so a
+            // chunk that had been split would not contain a full stop before its last character.
+            String story = said[Narration.PREAMBLE];
+            if (story.indexOf('.') == story.length() - 1) whole = false;
         }
         check("every entry is spoken in lower case", lowered);
         check("every chunk is a trimmed, non-empty line", full);
         check("the name leads the reading", named);
         check("every chunk ends on punctuation the engine can hear", punctuated);
         check("no chunk breaks where a written line does", noDanglingAnd);
-        check("the whole reading is pitched up", cute);
-        check("and paced at or under the engine's own speed", paced);
-        check("a beat between chunks and none after the last", gapped);
+        check("the story is handed over in one piece", whole);
 
-        // The shape of the delivery: an announced name, then the story, ending on its punchline.
+        // The delivery: one pitch for the whole reading, high, and never faster than the engine's
+        // own speed. The pitch used to step between utterances and that is exactly what made the
+        // inflection lurch — an engine intones a whole utterance, so stepping between short ones
+        // reads as flat fragments at arbitrary heights.
+        check("the voice is pitched right up", Narration.PITCH > 1.6f && Narration.PITCH <= 2f);
+        check("and not sped up with it", Narration.RATE <= 1f);
         String[] said = Narration.lines(0);
-        check("the name is the brightest and slowest of it",
-                Narration.pitch(said, 0) > Narration.pitch(said, 2)
-                        && Narration.rate(said, 0) < Narration.rate(said, 2));
-        check("the setting drops back under it",
-                Narration.pitch(said, 1) < Narration.pitch(said, 0));
-        check("and the last line slows to land",
-                Narration.rate(said, said.length - 1) < Narration.rate(said, 2));
+        boolean paced = true;
+        for (int k = 0; k < said.length; k++) {
+            if (Narration.rate(k) < 0.85f || Narration.rate(k) > 1f) paced = false;
+        }
+        check("every chunk is paced for following word by word", paced);
+        check("the name is announced a little slower", Narration.rate(0) < Narration.rate(1));
+        boolean gapped = true;
+        for (int k = 0; k < said.length; k++) {
+            int gap = Narration.gapMs(said, k);
+            if (k == said.length - 1 ? gap != 0 : gap <= 0) gapped = false;
+        }
+        check("a beat between chunks and none after the last", gapped);
         check("the longest beat follows the name",
                 Narration.gapMs(said, 0) > Narration.gapMs(said, 1));
 
         // Printed because this is the one thing in the game the PNGs cannot show. Reading it
         // back is how the phrasing gets checked without a device that can talk.
+        System.out.printf("    voice: pitch %.2f%n", Narration.PITCH);
         for (int k = 0; k < said.length; k++) {
-            System.out.printf("    say  pitch %.2f  rate %.2f  then %3dms  \"%s\"%n",
-                    Narration.pitch(said, k), Narration.rate(said, k), Narration.gapMs(said, k),
-                    said[k]);
+            System.out.printf("    say  rate %.2f  then %3dms  \"%s\"%n",
+                    Narration.rate(k), Narration.gapMs(said, k), said[k]);
         }
     }
 }

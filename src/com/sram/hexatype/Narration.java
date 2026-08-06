@@ -10,9 +10,14 @@ package com.sram.hexatype;
  * Two things it has to fix up. The text on the panel is upper case, and a speech engine reads a
  * short all-capitals word as an initialism — "MUM" comes out M-U-M — so everything is lowered
  * before it goes out. And the four story lines are typographic rather than grammatical: one of
- * them ends on "AND". Reading a line per utterance therefore put a pause in the middle of a
- * sentence, which is exactly what makes a voice sound like it is reading a list. They are joined
- * and re-split on full stops instead.
+ * them ends on "AND", so they are joined back into prose before anything else happens.
+ *
+ * The story then goes out as <em>one</em> utterance, punctuation intact. An earlier version cut it
+ * into sentences and gave each one its own pitch, on the theory that the arc would carry the
+ * feeling. It did the opposite: an engine works out its intonation from the whole sentence it is
+ * handed, so short fragments came out flat, and stepping the pitch between them turned the flatness
+ * into something that lurched. Handing over the punctuation and letting the engine do the
+ * inflection is both simpler and better, and it is the only lever that actually reaches prosody.
  */
 final class Narration {
 
@@ -20,53 +25,44 @@ final class Narration {
 
     /** Fixed chunks before the story itself: the name, then where it lives. */
     static final int PREAMBLE = 2;
+    /** And the story, whole. Three utterances in total, always. */
+    static final int CHUNKS = PREAMBLE + 1;
 
     /**
-     * What to say, in order: the name, where it lives, then one chunk per sentence of the story.
-     * Each is its own utterance so it can have its own delivery.
+     * How high the voice sits. 1 is the engine's own; this is nearly the top of the range every
+     * engine supports, which is the chipmunk that was asked for. One value for the whole reading —
+     * see the class comment on why the pitch does not move any more.
+     */
+    static final float PITCH = 1.9f;
+    /**
+     * And how fast. Left at the engine's own speed rather than sped up with the pitch: high and
+     * fast together stops being a voice and starts being a noise, and this still has to be followed
+     * word for word.
+     */
+    static final float RATE = 1.0f;
+
+    /**
+     * What to say, in order: the name, where it lives, and the story in one piece.
+     *
+     * Three utterances rather than one because the first two are not prose — a name and a place are
+     * announced, and each wants a beat after it. The story is not cut up at all.
      */
     static String[] lines(int i) {
-        String[] sentences = split(join(Lore.STORY[i]));
-        String[] out = new String[PREAMBLE + sentences.length];
+        String[] out = new String[CHUNKS];
         // The name is the title of the piece, so it is announced rather than read.
         out[0] = say(Collect.NAME[i] + "!");
         out[1] = say(Lore.WHERE[i] + ".");
-        for (int k = 0; k < sentences.length; k++) out[PREAMBLE + k] = say(sentences[k]);
+        out[PREAMBLE] = say(join(Lore.STORY[i]));
         return out;
     }
 
     /**
-     * Cute is high, and this is high throughout: 1 is the engine's own voice and everything here
-     * sits well above it. The name is the brightest thing in the reading, the setting drops back
-     * like an aside, and the story settles line by line and lifts again on a question or an
-     * exclamation — that arc is what carries the feeling, since the engine gives no other handle
-     * on it.
+     * Speed for chunk {@code k}. The only thing that still varies, and only across utterance
+     * boundaries, where it cannot disturb the engine's own intonation: the name is announced a
+     * little slower than the rest is read.
      */
-    static float pitch(String[] lines, int k) {
-        if (k == 0) return 1.50f;
-        if (k == 1) return 1.22f;
-        int nth = k - PREAMBLE;
-        float p = 1.38f - 0.05f * nth;
-        String s = lines[k];
-        if (s.endsWith("!")) p += 0.12f;
-        else if (s.endsWith("?")) p += 0.18f;
-        // The last sentence is the punchline of every one of these, so it comes back up.
-        if (k == lines.length - 1) p += 0.06f;
-        return p < 1.12f ? 1.12f : p;
-    }
-
-    /**
-     * Words per second, near enough: 1 is the engine's default and this reads a little under it
-     * throughout, which is what "clearly" costs. The name is slower still, and the last sentence
-     * slows again to land.
-     */
-    static float rate(String[] lines, int k) {
-        if (k == 0) return 0.82f;
-        if (k == 1) return 0.94f;
-        float r = 0.92f;
-        if (lines[k].endsWith("!")) r += 0.05f;
-        if (k == lines.length - 1) r -= 0.05f;
-        return r;
+    static float rate(int k) {
+        return k == 0 ? 0.90f : RATE;
     }
 
     /**
@@ -94,36 +90,4 @@ final class Narration {
         return b.toString();
     }
 
-    /**
-     * Splits on sentence ends, keeping the punctuation — the engine needs it to know whether to
-     * fall or rise. Anything left over at the end comes back as a chunk of its own, so a story
-     * that forgets its final full stop is still read rather than dropped.
-     */
-    private static String[] split(String text) {
-        int count = 0;
-        for (int pass = 0; pass < 2; pass++) {
-            String[] out = pass == 0 ? null : new String[count];
-            count = 0;
-            int start = 0;
-            for (int i = 0; i < text.length(); i++) {
-                char ch = text.charAt(i);
-                if (ch != '.' && ch != '!' && ch != '?') continue;
-                // Run on through "?!" and the like, so it is one end and not two.
-                while (i + 1 < text.length() && isEnd(text.charAt(i + 1))) i++;
-                if (out != null) out[count] = text.substring(start, i + 1).trim();
-                count++;
-                start = i + 1;
-            }
-            if (text.substring(start).trim().length() > 0) {
-                if (out != null) out[count] = text.substring(start).trim();
-                count++;
-            }
-            if (out != null) return out;
-        }
-        return new String[0];
-    }
-
-    private static boolean isEnd(char ch) {
-        return ch == '.' || ch == '!' || ch == '?';
-    }
 }

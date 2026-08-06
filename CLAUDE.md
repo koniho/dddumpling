@@ -185,6 +185,16 @@ nothing. Follow the pattern rather than "fixing" it.
   a "stuck vignette" and it was not stuck, it was working as written. It is squared now: one life
   lost is barely visible, the last life is unmistakable. Before hunting a stuck effect, check
   whether something is simply *meant* to stay on and mistuned.
+- **A speech engine intones a whole utterance, so chopping text up destroys prosody.** The first
+  narration cut each story into sentences and gave every one its own pitch, expecting an arc. What
+  it produced was flat fragments at arbitrary heights — the engine could not see a sentence, so it
+  had nothing to intone, and the stepping between them read as lurching. The story now goes over as
+  one utterance with its punctuation intact and a single pitch. The levers that genuinely reach
+  prosody are the *voice* (quality varies enormously; `getVoices()` and pick) and the punctuation
+  you hand over. Note also that the engine's volume parameter is a fraction of the stream, not a
+  gain — the only way to make the voice louder is `Audio.duck()` holding the music down, released by
+  an `UtteranceProgressListener` on the last queued utterance since there is no queue-drained
+  callback.
 - **A sound that repeats has to be short and has to decay.** The blade chops several times a
   swipe and the TEAM squishy squishes every couple of seconds; anything with a tail smears into a
   wash, and the achievement fanfare was doing exactly that. There are assertions on the chop's

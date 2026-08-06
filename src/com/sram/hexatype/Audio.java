@@ -267,6 +267,7 @@ final class Audio implements GameCore.Sound {
                                 return;
                             }
                             setVoice();
+                            listen();
                             ttsReady = true;
                             // The panel may well have been dismissed while it started up.
                             if (ttsPending >= 0) read(ttsPending);
@@ -284,9 +285,48 @@ final class Audio implements GameCore.Sound {
         } catch (Throwable ignored) {
             // Nothing to salvage; the panel is gone either way.
         }
+        duck(false);
     }
 
-    /** English if the engine has it, its own default if not — never a refusal to speak. */
+    /**
+     * Watches for the end of the reading so the music can come back up.
+     *
+     * On the last utterance only, and on any error or stop: there is no queue-drained callback, so
+     * the id of the last thing queued is what stands in for one. Without this the music would stay
+     * ducked for the rest of the session the first time a story was opened.
+     */
+    private void listen() {
+        try {
+            tts.setOnUtteranceProgressListener(
+                    new android.speech.tts.UtteranceProgressListener() {
+                        @Override public void onStart(String id) { }
+
+                        @Override public void onDone(String id) {
+                            if (id != null && id.equals(lastUtterance)) duck(false);
+                        }
+
+                        @Override public void onStop(String id, boolean interrupted) {
+                            duck(false);
+                        }
+
+                        @SuppressWarnings("deprecation")
+                        @Override public void onError(String id) {
+                            duck(false);
+                        }
+                    });
+        } catch (Throwable ignored) {
+            // No listener means the music simply comes back up on the next hush().
+        }
+    }
+
+    /**
+     * English if the engine has it, its own default if not — never a refusal to speak. Then the
+     * best voice the engine will admit to having.
+     *
+     * Voice choice matters more to how this sounds than pitch and rate together: prosody is built
+     * into a voice, and a higher-quality one has more of it. Network voices are skipped — a story
+     * popup must read the same on a train as at home.
+     */
     private void setVoice() {
         try {
             int got = tts.setLanguage(java.util.Locale.US);
@@ -297,26 +337,45 @@ final class Audio implements GameCore.Sound {
         } catch (Throwable ignored) {
             // Leave it on whatever it starts with.
         }
+        try {
+            android.speech.tts.Voice best = null;
+            java.util.Set<android.speech.tts.Voice> all = tts.getVoices();
+            if (all != null) {
+                for (android.speech.tts.Voice v : all) {
+                    if (v == null || v.isNetworkConnectionRequired()) continue;
+                    if (!"en".equals(v.getLocale().getLanguage())) continue;
+                    if (best == null || v.getQuality() > best.getQuality()) best = v;
+                }
+            }
+            if (best != null) tts.setVoice(best);
+        } catch (Throwable ignored) {
+            // Any engine that will not enumerate its voices keeps the one it chose.
+        }
     }
 
     /**
-     * Queues the whole reading at once, a sentence per utterance with a beat of silence between.
+     * Queues the whole reading at once: the name, the place, then the story in one piece, with a
+     * beat of silence between them.
      *
-     * The pitch and rate are set before each one because the engine captures them as an
-     * utterance is queued — that is the only handle it gives on delivery, and setting them once
-     * up front would read all thirty stories in the same flat voice.
+     * Volume is set explicitly to full. It is a scale of the music stream rather than a gain, so
+     * full is as loud as this can be made from here — the rest of "louder" is the music getting out
+     * of the way, which is what {@link #duck} does.
      */
     private void read(int entry) {
         ttsPending = -1;
         try {
             String[] lines = Narration.lines(entry);
+            android.os.Bundle params = new android.os.Bundle();
+            params.putFloat(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_VOLUME, 1f);
+            // One pitch for the whole reading, set once. See Narration for why it stopped moving.
+            tts.setPitch(Narration.PITCH);
+            duck(true);
             for (int i = 0; i < lines.length; i++) {
-                tts.setPitch(Narration.pitch(lines, i));
-                tts.setSpeechRate(Narration.rate(lines, i));
+                tts.setSpeechRate(Narration.rate(i));
+                lastUtterance = "story-" + entry + "-" + i;
                 tts.speak(lines[i], i == 0
                         ? android.speech.tts.TextToSpeech.QUEUE_FLUSH
-                        : android.speech.tts.TextToSpeech.QUEUE_ADD, null, "story-" + entry
-                        + "-" + i);
+                        : android.speech.tts.TextToSpeech.QUEUE_ADD, params, lastUtterance);
                 int gap = Narration.gapMs(lines, i);
                 if (gap > 0) {
                     tts.playSilentUtterance(gap,
@@ -325,6 +384,34 @@ final class Audio implements GameCore.Sound {
             }
         } catch (Throwable t) {
             ttsBroken = true;
+            duck(false);
+        }
+    }
+
+    /** The last utterance queued, so the listener knows when the reading is over. */
+    private String lastUtterance;
+    /** True while the music is held down for the voice. */
+    private boolean ducked;
+
+    /**
+     * Holds the music down while the voice is speaking, and lets it back up after.
+     *
+     * This is the real volume control. A speech engine's own volume parameter is a fraction of the
+     * stream it plays on, so it cannot be pushed past what the music is already using — the way to
+     * make a voice louder is to make everything else quieter.
+     */
+    private void duck(boolean on) {
+        if (ducked == on) return;
+        ducked = on;
+        try {
+            // The custom track is mixed at 0.55 to begin with; the synth loop at unity.
+            if (bgmPlayer != null) {
+                float v = on ? 0.55f * 0.25f : 0.55f;
+                bgmPlayer.setVolume(v, v);
+            }
+            if (bgmTrack != null) bgmTrack.setVolume(on ? 0.22f : 1f);
+        } catch (Throwable ignored) {
+            // Ducking is a courtesy; failing at it must not stop the voice.
         }
     }
 
