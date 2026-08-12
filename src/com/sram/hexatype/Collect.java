@@ -18,12 +18,12 @@ import java.util.Random;
  */
 final class Collect {
 
-    static final int COUNT = 30;
+    static final int BLIND_COUNT = 30, STAR_FIRST = 30, STAR_COUNT = 5, COUNT = 35;
 
     // ---- families -----------------------------------------------------------
-    static final int DUMPLINGS = 0, FRUITS = 1, GLOBS = 2;
+    static final int DUMPLINGS = 0, FRUITS = 1, GLOBS = 2, STARLINGS = 3;
     static final String[] FAMILY_NAME = {"MYSTERY DUMPLINGS", "SQUISHY FRUITS",
-            "SQUEEZE GLOBS"};
+            "SQUEEZE GLOBS", "STARLINGS"};
 
     // ---- rarity tiers -------------------------------------------------------
     static final int COMMON = 0, UNCOMMON = 1, RARE = 2, CHASE = 3, GRAIL = 4;
@@ -45,8 +45,8 @@ final class Collect {
     // ---- shapes -------------------------------------------------------------
     static final int BAO = 0, BUN = 1, SHELL = 2, FIN = 3, CRESCENT = 4, WEDGE = 5,
             CLUSTER = 6, POME = 7, CITRUS = 8, GLOB = 9, CUBE = 10, GUM = 11, RING = 12,
-            CONE = 13, DROP = 14;
-    static final int SHAPE_COUNT = 15;
+            CONE = 13, DROP = 14, STAR = 15;
+    static final int SHAPE_COUNT = 16;
 
     // ---- finishes -----------------------------------------------------------
     static final int MATTE = 0, GLITTER = 1, HOLO = 2, GALAXY = 3, METALLIC = 4, CLEAR = 5,
@@ -64,18 +64,21 @@ final class Collect {
         // Squeeze globs.
         "GROOVY GLOB", "NICE CUBE", "GUMDROP", "DOHNUT", "NICE CREAM",
         "MARBLE GLOB", "DREAM DROP", "GLOW GLOB",
+        "NOVA NIBBLE", "COMET CUB", "MOONSPARK", "AURORA STAR", "WISHKEEPER",
     };
 
     static final int[] FAMILY = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         1, 1, 1, 1, 1, 1, 1, 1, 1,
         2, 2, 2, 2, 2, 2, 2, 2,
+        3, 3, 3, 3, 3,
     };
 
     static final int[] SHAPE = {
         BAO, BUN, BAO, BAO, BUN, BUN, BAO, BUN, BAO, SHELL, FIN, BAO, BAO,
         CRESCENT, WEDGE, CLUSTER, POME, POME, CITRUS, CLUSTER, CITRUS, WEDGE,
         GLOB, CUBE, GUM, RING, CONE, GLOB, DROP, GLOB,
+        STAR, STAR, STAR, STAR, STAR,
     };
 
     static final int[] FINISH = {
@@ -83,6 +86,7 @@ final class Collect {
         MATTE, GALAXY, METALLIC,
         MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, GLITTER, METALLIC, CONFETTI,
         MATTE, MATTE, MATTE, MATTE, MATTE, TIEDYE, GLITTER, GLOW,
+        MATTE, GLITTER, HOLO, GALAXY, METALLIC,
     };
 
     static final int[] TIER = {
@@ -90,6 +94,7 @@ final class Collect {
         CHASE, CHASE, GRAIL,
         COMMON, COMMON, COMMON, COMMON, UNCOMMON, UNCOMMON, RARE, RARE, CHASE,
         COMMON, COMMON, COMMON, UNCOMMON, UNCOMMON, RARE, RARE, RARE,
+        COMMON, UNCOMMON, RARE, CHASE, CHASE,
     };
 
     /** Body fill. */
@@ -101,6 +106,7 @@ final class Collect {
         0xFFFFA53A, 0xFFA88AE8, 0xFFF7E24A, 0xFFFFC0D8,
         0xFF9AE9C0, 0xFF93D6F7, 0xFFFF9EB5, 0xFFE0B07A, 0xFFFFF0D0,
         0xFFC3A8F5, 0xFF8FD0F7, 0xFFC8F79A,
+        0xFFFFE36E, 0xFFFFA8D8, 0xFF8FE7FF, 0xFFBBA3FF, 0xFFFFCF4A,
     };
 
     /**
@@ -115,6 +121,7 @@ final class Collect {
         0xFFFFD9A0, 0xFFE8DCFF, 0xFFFFFBD0, 0xFF9AE9C0,
         0xFFD8FFE8, 0xFFD8F2FF, 0xFFFFD8E2, 0xFFFF9EC4, 0xFFD9A86E,
         0xFF9AE9C0, 0xFFE8F8FF, 0xFFF0FFD8,
+        0xFFFFF4B0, 0xFFFFE5F4, 0xFFE5FAFF, 0xFF34245E, 0xFFFFFFFF,
     };
 
     private Collect() {}
@@ -157,24 +164,31 @@ final class Collect {
 
     private static int totalWeight() {
         int n = 0;
-        for (int i = 0; i < COUNT; i++) n += TIER_WEIGHT[TIER[i]];
+        for (int i = 0; i < BLIND_COUNT; i++) n += TIER_WEIGHT[TIER[i]];
         return n;
     }
 
     /** One draw at the raw tier odds, ignoring what is already owned. */
     private static int weighted(Random rnd) {
         int r = rnd.nextInt(TOTAL_WEIGHT);
-        for (int i = 0; i < COUNT; i++) {
+        for (int i = 0; i < BLIND_COUNT; i++) {
             r -= TIER_WEIGHT[TIER[i]];
             if (r < 0) return i;
         }
-        return COUNT - 1;   // unreachable while the weights are positive
+        return BLIND_COUNT - 1;   // unreachable while the weights are positive
     }
 
     /** Opens a box: what the player just won, new or duplicate. */
     static int roll(Random rnd, long owned) {
         int pick = weighted(rnd);
         for (int t = 0; t < REROLLS && has(owned, pick); t++) pick = weighted(rnd);
+        return pick;
+    }
+
+    static int rollStar(Random rnd, long owned) {
+        int pick = STAR_FIRST + rnd.nextInt(STAR_COUNT);
+        for (int t = 0; t < REROLLS && has(owned, pick); t++)
+            pick = STAR_FIRST + rnd.nextInt(STAR_COUNT);
         return pick;
     }
 
@@ -194,6 +208,6 @@ final class Collect {
     /** True for shapes that fill enough of their radius for a banded finish to look right. */
     static boolean roundish(int shape) {
         return shape == BAO || shape == BUN || shape == SHELL || shape == CITRUS
-                || shape == GLOB || shape == CUBE;
+                || shape == GLOB || shape == CUBE || shape == STAR;
     }
 }

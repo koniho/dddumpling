@@ -22,7 +22,8 @@ final class TestCollect extends Check {
 
     static void catalogue(Layout L) {
         group("collectible catalogue");
-        check("thirty entries", Collect.COUNT == 30);
+        check("thirty blind-box and five star-path entries", Collect.BLIND_COUNT == 30
+                && Collect.STAR_COUNT == 5 && Collect.COUNT == 35);
         check("every table is the same length",
                 Collect.NAME.length == Collect.COUNT && Collect.FAMILY.length == Collect.COUNT
                         && Collect.SHAPE.length == Collect.COUNT
@@ -84,7 +85,7 @@ final class TestCollect extends Check {
         for (int f = 0; f < familyCount.length; f++) {
             if (familyCount[f] < 5) everyFamily = false;
         }
-        check("all three families are properly stocked", everyFamily);
+        check("all four families are properly stocked", everyFamily);
         System.out.printf("    tiers %d/%d/%d/%d/%d, families %d/%d/%d%n",
                 tierCount[0], tierCount[1], tierCount[2], tierCount[3], tierCount[4],
                 familyCount[0], familyCount[1], familyCount[2]);

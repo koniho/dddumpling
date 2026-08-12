@@ -312,7 +312,6 @@ final class GameCore {
     int skyGlowColor = FLASH_CLEAR;
     /** Highest proximity-to-danger across the field, 0..1. Drives the red screen pulse. */
     float warnLevel;
-
     /** Spent for this stage once the push-back has been used. */
     boolean pushUsed;
     /** Counts down while the push-back shockwave is on screen. */
@@ -331,6 +330,9 @@ final class GameCore {
 
     // ---- between-stages minigame -------------------------------------------
     final Steamer steamer = new Steamer();
+    final StarPath stars = new StarPath();
+    /** Successful games alternate; failures leave the same game queued. */
+    boolean starNext, starBonus;
     float bonusTimer;
     /** Last character the spinner ticked on, so each step sounds exactly once. */
     private int rollTick = -1;
@@ -578,12 +580,12 @@ final class GameCore {
 
     /** True while the spinner is still settling on this round's pair. */
     boolean bonusRolling() {
-        return state == BONUS && bonusTimer > bonusRollEnd;
+        return state == BONUS && !starBonus && bonusTimer > bonusRollEnd;
     }
 
     /** True while the interlude accepts presses. */
     boolean bonusMashing() {
-        return state == BONUS && !bonusPrizeWon()
+        return state == BONUS && !starBonus && !bonusPrizeWon()
                 && bonusTimer <= bonusRollEnd && bonusTimer > MASH_END;
     }
 
@@ -1782,6 +1784,24 @@ final class GameCore {
         Fx.updateShots(this, dt, L);
 
         if (state == BONUS) {
+            if (starBonus) {
+                stars.update(dt, L);
+                bonusTimer = stars.timer;
+                if (stars.timer <= 0f) {
+                    stars.finishAttempt();
+                    if (stars.won) {
+                        score += FREE_BONUS;
+                        if (lives < START_LIVES) lives++;
+                        awardStarPrize();
+                        starNext = false;
+                        stars.make(rnd);
+                    }
+                    advanceStage();
+                    state = PLAY;
+                    time = 0f;
+                }
+                return;
+            }
             steamer.update(dt);
             // Once the interlude's own countdown is spent, a won prize gets its parade before
             // play resumes. Handled before bonusTimer is touched again so none of the four
@@ -1818,7 +1838,7 @@ final class GameCore {
         if (pendingBonus) {
             if (perfectBanner <= 0f) {
                 pendingBonus = false;
-                enterBonus();
+                enterBonus(L);
             }
             return;
         }
@@ -2133,9 +2153,22 @@ final class GameCore {
     }
 
     /** Drops into the between-stages minigame once the wave is clear. */
-    private void enterBonus() {
+    private void enterBonus(Layout L) {
         state = BONUS;
         time = 0;
+        starBonus = starNext;
+        if (starBonus) {
+            if (stars.sx[0] == 0f) stars.make(rnd);
+            stars.begin(prize, L);
+            bonusTimer = stars.timer;
+            paradeTimer = 0f;
+            target = null;
+            caretOwner = null;
+            power = null;
+            if (sound != null) sound.stageClear();
+            stageByPower = false;
+            return;
+        }
         // A stage ended by a frenzy earns a longer go at the steamer. See bonusRollEnd for
         // how the one timer carries all four phases.
         bonusRollEnd = BONUS_TIME + (stageByPower ? Power.BONUS_EXTRA : 0f) + MASH_END;
@@ -2181,6 +2214,7 @@ final class GameCore {
         score += FREE_BONUS;
         if (lives < START_LIVES) lives++;
         awardPrize();
+        starNext = true;
         // Set, not extended: the round is over the moment it is won, and what is left of it is
         // exactly the escape animation. Then the parade, immediately. Holding the full beat and
         // status first put nearly five seconds and a page of numbers between the win and the
@@ -2213,6 +2247,24 @@ final class GameCore {
         caseSlide = 0f;
         // Scheduled, not started: it runs after the rest of the interlude has played out.
         paradeTimer = PARADE_TIME;
+    }
+
+    /** Star-path prizes are the five catalogue entries reserved for that game. */
+    private void awardStarPrize() {
+        prize = Collect.rollStar(rnd, collected);
+        prizeNew = !Collect.has(collected, prize);
+        roundPrizes = Collect.add(roundPrizes, prize);
+        if (prizeNew) {
+            collected = Collect.add(collected, prize);
+            if (store != null) store.saveCollected(collected);
+        } else score += DUPE_BONUS;
+        caseIndex = prize;
+        caseSlide = 0f;
+        if (sound != null) sound.achievement();
+    }
+
+    void holdBonusKey(int g, boolean down) {
+        if (state == BONUS && starBonus) stars.hold(g, down);
     }
 
     /**

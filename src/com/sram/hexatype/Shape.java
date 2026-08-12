@@ -54,8 +54,23 @@ final class Shape {
             case Collect.GUM: gum(p, cx, cy, r, fill, trim, gloss); break;
             case Collect.RING: ring(p, cx, cy, r, fill, trim, gloss); break;
             case Collect.CONE: cone(p, cx, cy, r, fill, trim, gloss); break;
+            case Collect.STAR: starling(p, cx, cy, r, fill, trim, gloss); break;
             default: drop(p, cx, cy, r, fill, gloss); break;
         }
+    }
+
+    private static void starling(Painter p, float cx, float cy, float r, int fill, int trim,
+            float fade) {
+        float[] pts = new float[20];
+        for (int i = 0; i < 10; i++) {
+            double a = -Math.PI / 2 + i * Math.PI / 5;
+            float rr = r * (i % 2 == 0 ? 0.98f : 0.48f);
+            pts[i * 2] = cx + rr * (float) Math.cos(a);
+            pts[i * 2 + 1] = cy + rr * (float) Math.sin(a);
+        }
+        p.fillPoly(pts, fill);
+        p.strokePoly(pts, Glyph.withAlpha(trim, (int) (150 * fade)), r * 0.055f);
+        shine(p, cx - r * 0.25f, cy - r * 0.20f, r * 0.17f, r * 0.11f, fade);
     }
 
     /** Pleated bun: dome, belly, and a crown of five pinches. */

@@ -43,6 +43,35 @@ final class Kawaii {
         }
     }
 
+    /** Draws the original character with a trembling frown and two looping falling tears. */
+    static void crying(Painter p, int g, float cx, float cy, float r, int body, float squash,
+            float phase, float amount) {
+        draw(p, g, cx, cy, r, body, squash, 0f);
+        if (amount <= 0f) return;
+
+        float rx = r * squash, ry = r / squash;
+        // Grapes carry their face on the front berry; the other five use the body centre.
+        float faceY = cy + (g == GRAPES ? ry * 0.24f : 0f);
+        float eyeDx = g == GRAPES ? 0.16f : (g == SQUISHY ? 0.36f : 0.34f);
+        int water = Glyph.withAlpha(0xFF9BD7FF, (int) (235 * amount));
+
+        for (int s = -1; s <= 1; s += 2) {
+            float loop = phase * 0.34f + (s > 0 ? 0.48f : 0f);
+            loop -= (float) Math.floor(loop);
+            float tx = cx + s * rx * eyeDx;
+            float ty = faceY + ry * (0.13f + loop * 0.55f);
+            float swell = 0.75f + 0.35f * loop;
+            p.fillEllipse(tx, ty, rx * 0.075f * swell, ry * 0.12f * swell, water);
+            p.fillPoly(new float[] {tx - rx * 0.055f, ty - ry * 0.035f,
+                    tx + rx * 0.055f, ty - ry * 0.035f, tx, ty - ry * 0.19f}, water);
+        }
+
+        // A small animated frown laid clearly over each character's usual mouth.
+        float mouthY = faceY + ry * (g == GRAPES ? 0.19f : 0.36f);
+        float wobble = (float) Math.sin(phase * 1.7f) * ry * 0.025f;
+        mouthCurve(p, cx, mouthY + wobble, rx * 0.20f, ry * 0.16f, -1f);
+    }
+
     // ---- characters ---------------------------------------------------------
 
     /**
@@ -88,29 +117,53 @@ final class Kawaii {
         cheeks(p, cx, cy, rx, ry);
     }
 
-    /** Dome, belly and pleated crown, shared by every dumpling expression. */
+    /** Round steamed-bun body with the pinched, folded crown of a mystery dumpling. */
     private static void dumplingBody(Painter p, float cx, float cy, float rx, float ry,
             int body) {
-        // The array must hold exactly the arc points — a spare slot would leave a vertex
-        // at the origin and spike off-screen.
-        final int arc = 17;
-        float[] dome = new float[arc * 2];
-        for (int k = 0; k < arc; k++) {
-            double a = Math.PI + Math.PI * k / (arc - 1.0);
-            dome[k * 2] = cx + rx * 0.96f * (float) Math.cos(a);
-            dome[k * 2 + 1] = cy + ry * 0.70f * (float) Math.sin(a);
-        }
-        p.fillPoly(dome, body);
-        p.fillEllipse(cx, cy + ry * 0.28f, rx * 0.96f, ry * 0.44f, body);
+        // Trace one continuous bao silhouette: a tiny pinched tip opens into folded shoulders,
+        // then a broad, nearly round belly. Extra points keep it smooth on both painters.
+        float[] bun = {
+                cx, cy - ry * 1.02f,
+                cx + rx * 0.10f, cy - ry * 0.97f,
+                cx + rx * 0.15f, cy - ry * 0.84f,
+                cx + rx * 0.30f, cy - ry * 0.73f,
+                cx + rx * 0.52f, cy - ry * 0.62f,
+                cx + rx * 0.72f, cy - ry * 0.46f,
+                cx + rx * 0.88f, cy - ry * 0.22f,
+                cx + rx * 0.96f, cy + ry * 0.06f,
+                cx + rx * 0.94f, cy + ry * 0.35f,
+                cx + rx * 0.82f, cy + ry * 0.62f,
+                cx + rx * 0.58f, cy + ry * 0.80f,
+                cx + rx * 0.30f, cy + ry * 0.89f,
+                cx, cy + ry * 0.92f,
+                cx - rx * 0.30f, cy + ry * 0.89f,
+                cx - rx * 0.58f, cy + ry * 0.80f,
+                cx - rx * 0.82f, cy + ry * 0.62f,
+                cx - rx * 0.94f, cy + ry * 0.35f,
+                cx - rx * 0.96f, cy + ry * 0.06f,
+                cx - rx * 0.88f, cy - ry * 0.22f,
+                cx - rx * 0.72f, cy - ry * 0.46f,
+                cx - rx * 0.52f, cy - ry * 0.62f,
+                cx - rx * 0.30f, cy - ry * 0.73f,
+                cx - rx * 0.15f, cy - ry * 0.84f,
+                cx - rx * 0.10f, cy - ry * 0.97f
+        };
+        p.fillPoly(bun, body);
 
-        float crown = cy - ry * 0.56f;
-        for (int k = -2; k <= 2; k++) {
-            float px = cx + k * rx * 0.38f;
-            p.fillEllipse(px, crown, rx * 0.21f, ry * 0.19f, body);
-            p.polyline(new float[] {px, crown - ry * 0.14f, px, crown + ry * 0.16f},
-                    Glyph.withAlpha(INK, 55), r(rx) * 0.05f);
-        }
-        p.fillEllipse(cx - rx * 0.34f, cy + ry * 0.04f, rx * 0.22f, ry * 0.14f, SHINE);
+        // Three overlapping folds make the crown look gathered rather than pointed like an ear.
+        int fold = Glyph.withAlpha(INK, 48);
+        p.polyline(new float[] {cx - rx * 0.10f, cy - ry * 0.96f,
+                cx - rx * 0.30f, cy - ry * 0.72f,
+                cx - rx * 0.36f, cy - ry * 0.56f}, fold, r(rx) * 0.045f);
+        p.polyline(new float[] {cx + rx * 0.02f, cy - ry * 0.98f,
+                cx + rx * 0.05f, cy - ry * 0.74f,
+                cx - rx * 0.03f, cy - ry * 0.58f}, fold, r(rx) * 0.045f);
+        p.polyline(new float[] {cx + rx * 0.11f, cy - ry * 0.94f,
+                cx + rx * 0.28f, cy - ry * 0.73f,
+                cx + rx * 0.32f, cy - ry * 0.58f}, fold, r(rx) * 0.045f);
+
+        // Broad soft highlight, echoing the warm steamed surface in the reference.
+        p.fillEllipse(cx - rx * 0.34f, cy - ry * 0.12f, rx * 0.20f, ry * 0.28f, SHINE);
     }
 
     private static void mouthCurve(Painter p, float cx, float cy, float w, float bulge,

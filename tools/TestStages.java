@@ -816,6 +816,11 @@ final class TestStages extends Check {
         c.state = GameCore.OVER;
         check("no tint outside play", c.harm() == 0f);
 
+        c.deathT = 0f;
+        check("death tint fills the settled game-over screen", c.drained() == 1f);
+        c.toTitle();
+        check("death tint clears on the title after game over", c.drained() == 0f);
+
         for (int i = 0; i < 6; i++) {
             check("cycle colour " + i + " is opaque", (Glyph.cycle(i / 6f) >>> 24) == 0xFF);
         }

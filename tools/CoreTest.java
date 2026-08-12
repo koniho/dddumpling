@@ -30,6 +30,7 @@ final class CoreTest {
         TestStages.bonusStatusHold(L);
         TestStages.skits(L);
         TestStages.steamerBonus(L);
+        TestStars.game(L);
         TestStages.accuracyTracking(L);
         TestStages.warningsAndHarm(L);
         TestStages.pushBack(L);

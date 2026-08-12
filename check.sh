@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/usr/bin/env bash
 # Runs the game headlessly: rule assertions, then PNG frame renders into out/.
 # Needs no Android SDK and no install — only the pure-Java half of the codebase.
 set -euo pipefail
@@ -12,6 +12,7 @@ src/com/sram/hexatype/Music.java
 src/com/sram/hexatype/Words.java
 src/com/sram/hexatype/Fx.java
 src/com/sram/hexatype/Steamer.java
+src/com/sram/hexatype/StarPath.java
 src/com/sram/hexatype/Collect.java
 src/com/sram/hexatype/Power.java
 src/com/sram/hexatype/Buddy.java

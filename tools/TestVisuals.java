@@ -179,6 +179,26 @@ final class TestVisuals extends Check {
         advance(c, L, 1.0f);
         check("and stays clear", c.warnLevel == 0f);
 
+        // Every member of the key cast has its own crying render; none is replaced by the
+        // generic mood dumpling used by the accuracy readout.
+        RasterPainter cries = new RasterPainter(360, 80, 1);
+        cries.clear(0xFF000000);
+        for (int g = 0; g < Glyph.COUNT; g++) {
+            Kawaii.crying(cries, g, 30 + g * 60, 40, 22, Glyph.COLOR[g], 1f, g * 0.7f, 1f);
+        }
+        int[] cryingPixels = cries.resolve();
+        boolean everyCryVisible = true;
+        for (int g = 0; g < Glyph.COUNT; g++) {
+            boolean visible = false;
+            for (int y = 8; y < 72 && !visible; y++) {
+                for (int x = g * 60 + 5; x < g * 60 + 55; x++) {
+                    if (cryingPixels[y * 360 + x] != 0xFF000000) visible = true;
+                }
+            }
+            if (!visible) everyCryVisible = false;
+        }
+        check("every key character has a crying render", everyCryVisible);
+
         // Non-fatal damage must also clear it.
         GameCore d = new GameCore(new Mem(), 94L);
         d.startGame();

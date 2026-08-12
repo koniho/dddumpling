@@ -371,6 +371,23 @@ final class Preview {
                 c8.prize >= 0 ? Collect.NAME[c8.prize] : "none", c8.prizeNew);
         shot(dir, "15-bonus-freed", c8, L, w, h, ss);
 
+        // Star-path ready lesson and a mid-flight course with earlier pickups ghosted.
+        GameCore cs = new GameCore(store, 83L);
+        cs.startGame();
+        cs.state = GameCore.BONUS;
+        cs.starBonus = true;
+        cs.stars.make(new java.util.Random(83L));
+        cs.stars.begin(c8.prize, L);
+        cs.bonusTimer = cs.stars.timer;
+        step(cs, L, 0.45f);
+        shot(dir, "50-stars-ready", cs, L, w, h, ss);
+        cs.stars.collected = 0b11111 | (1 << 10);
+        cs.stars.burst[10] = 0.82f;
+        cs.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 2.6f;
+        cs.stars.x = cs.stars.starX(10, L);
+        cs.bonusTimer = cs.stars.timer;
+        shot(dir, "51-stars-flight", cs, L, w, h, ss);
+
         // The parade that closes a winning interlude: marching in, the new one joining, and
         // the line on its way off to the right.
         GameCore c13 = new GameCore(store, 59L);
