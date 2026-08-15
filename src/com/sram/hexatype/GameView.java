@@ -84,6 +84,19 @@ public class GameView extends View {
     @Override public boolean onTouchEvent(MotionEvent ev) {
         int action = ev.getActionMasked();
 
+        if (core.state == GameCore.BONUS && core.starBonus) {
+            if (action == MotionEvent.ACTION_CANCEL) {
+                for (int g = 0; g < Glyph.COUNT; g++) core.holdBonusKey(g, false);
+            } else if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN
+                    || action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
+                int i = ev.getActionIndex();
+                int key = layout.keyAt(ev.getX(i), ev.getY(i));
+                if (key >= 0) core.holdBonusKey(key,
+                        action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN);
+            }
+            return true;
+        }
+
         // The settings panel needs drags, for the speed slider.
         if (core.settingsOpen) {
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN

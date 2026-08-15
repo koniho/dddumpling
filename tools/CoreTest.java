@@ -31,6 +31,7 @@ final class CoreTest {
         TestStages.skits(L);
         TestStages.mashEarned(L);
         TestStages.steamerBonus(L);
+        TestStars.game(L);
         TestStages.accuracyTracking(L);
         TestStages.warningsAndHarm(L);
         TestStages.pushBack(L);
@@ -56,6 +57,7 @@ final class CoreTest {
         TestVisuals.sky(L);
         TestVisuals.indicatorsAndGlow(L);
         TestVisuals.hudStacking(L);
+        TestVisuals.starStacking(L);
         TestVisuals.settings(L);
 
         TestAudio.audio(L);

@@ -179,6 +179,26 @@ final class TestVisuals extends Check {
         advance(c, L, 1.0f);
         check("and stays clear", c.warnLevel == 0f);
 
+        // Every member of the key cast has its own crying render; none is replaced by the
+        // generic mood dumpling used by the accuracy readout.
+        RasterPainter cries = new RasterPainter(360, 80, 1);
+        cries.clear(0xFF000000);
+        for (int g = 0; g < Glyph.COUNT; g++) {
+            Kawaii.crying(cries, g, 30 + g * 60, 40, 22, Glyph.COLOR[g], 1f, g * 0.7f, 1f);
+        }
+        int[] cryingPixels = cries.resolve();
+        boolean everyCryVisible = true;
+        for (int g = 0; g < Glyph.COUNT; g++) {
+            boolean visible = false;
+            for (int y = 8; y < 72 && !visible; y++) {
+                for (int x = g * 60 + 5; x < g * 60 + 55; x++) {
+                    if (cryingPixels[y * 360 + x] != 0xFF000000) visible = true;
+                }
+            }
+            if (!visible) everyCryVisible = false;
+        }
+        check("every key character has a crying render", everyCryVisible);
+
         // Non-fatal damage must also clear it.
         GameCore d = new GameCore(new Mem(), 94L);
         d.startGame();
@@ -253,6 +273,33 @@ final class TestVisuals extends Check {
             if (t.hudY - RasterPainter.CAP * Hud.scoreSize(t) <= Hud.labelY(t)) holds = false;
         }
         check("at every screen width too", holds);
+    }
+
+    /**
+     * The star screen stacks READY under the checkpoint counter, so it needs the same clearance
+     * check the HUD does — and for the same reason. The counter and the prompt arrived with a
+     * plain unit gap between them and READY's caps sat on the counter's baseline at TEXT 1.34.
+     */
+    static void starStacking(Layout L) {
+        group("star screen stacking");
+        float clear = Screens.starReadyY(L) - RasterPainter.CAP * Screens.starReadySize(L)
+                - Screens.starCountY(L);
+        System.out.printf("    READY clears the counter by %.1fpx at TEXT=%.2f%n",
+                clear, Draw.TEXT);
+        check("READY clears the counter above it", clear > 0f);
+        check("with room to spare, not by a pixel", clear > L.unit * 0.1f);
+
+        boolean holds = true;
+        for (int px = 640; px <= 1600; px += 240) {
+            Layout t = new Layout();
+            t.compute(px, px * 20 / 9, 0, 0, 0, 0);
+            if (Screens.starReadyY(t) - RasterPainter.CAP * Screens.starReadySize(t)
+                    <= Screens.starCountY(t)) holds = false;
+        }
+        check("at every screen width too", holds);
+
+        // Both lines live in the play field, above the deck: the prompt must not reach the keys.
+        check("and READY stays clear of the deck", Screens.starReadyY(L) < L.deckTop);
     }
 
     static void settings(Layout L) {

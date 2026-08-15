@@ -1,6 +1,12 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/bin/sh
 # Runs the game headlessly: rule assertions, then PNG frame renders into out/.
 # Needs no Android SDK and no install — only the pure-Java half of the codebase.
+#
+# /bin/sh is the only interpreter path that exists both in Termux and on a desktop Linux
+# box: Termux has no /usr/bin/env and no /bin/bash, a desktop has no
+# /data/data/com.termux/... — so the shebang finds sh and sh finds bash on PATH.
+# shellcheck shell=bash
+if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -12,6 +18,7 @@ src/com/sram/hexatype/Music.java
 src/com/sram/hexatype/Words.java
 src/com/sram/hexatype/Fx.java
 src/com/sram/hexatype/Steamer.java
+src/com/sram/hexatype/StarPath.java
 src/com/sram/hexatype/Collect.java
 src/com/sram/hexatype/Power.java
 src/com/sram/hexatype/Buddy.java

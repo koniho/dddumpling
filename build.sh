@@ -1,10 +1,16 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/bin/sh
 # Builds a signed, installable APK entirely on-device in Termux. No Gradle, no PC.
 #   aapt2 compile/link -> ecj -> d8 -> zip -> apksigner
+# See check.sh for why the shebang is /bin/sh with a re-exec rather than a path to bash.
+# shellcheck shell=bash
+if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi
 set -euo pipefail
 cd "$(dirname "$0")"
 
 SDK=sdk/android.jar
+if [ ! -f "$SDK" ] && [ -n "${ANDROID_HOME:-}" ]; then
+    SDK="$ANDROID_HOME/platforms/android-35/android.jar"
+fi
 OUT=build
 APK=hexatype.apk
 MIN=21
@@ -14,7 +20,7 @@ KS=$OUT/debug.keystore
 [ -f "$SDK" ] || { echo "missing $SDK - see README.md"; exit 1; }
 
 echo ">> rules + frame renders"
-./check.sh >"$OUT/check.log" 2>&1 || { tail -30 "$OUT/check.log"; exit 1; }
+bash ./check.sh >"$OUT/check.log" 2>&1 || { tail -30 "$OUT/check.log"; exit 1; }
 grep -E '^[0-9]+ passed' "$OUT/check.log"
 
 rm -rf "$OUT/classes" "$OUT/gen" "$OUT/res.zip" "$OUT/base.apk" "$OUT/classes.dex"

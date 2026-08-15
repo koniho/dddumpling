@@ -534,10 +534,7 @@ final class Renderer extends Draw {
 
     static void keys(Painter p, GameCore c, Layout L) {
         int hint = c.hintGlyph();
-        // The deck mourns as one: every key goes red and pulls a sad face over the death hold.
-        // Every key wears the same face on purpose — the mood dumpling is already this game's
-        // "how are we doing", and six of them at once reads as the deck giving up rather than as
-        // six separate characters each having a bad moment.
+        // The whole cast mourns over the death hold, each character crying on its own key.
         float gone = Math.min(1f, c.drained() * 1.6f);
 
         // The title screen's demo presses the deck for you. Nothing else lights it outside play:
@@ -571,7 +568,6 @@ final class Renderer extends Draw {
                 col = Glyph.mix(col, Glyph.cycle(c.clock * 9f + g * 0.13f), press * 0.9f);
             }
             if (bad > 0) col = Glyph.mix(col, ROSE, bad);
-            if (gone > 0f) col = Glyph.mix(col, RED, gone);
 
             // During the interlude only two keys matter; ring them, and mark the next one.
             // The spinner rings too, off the same pair the alternator is showing, so the deck
@@ -601,9 +597,12 @@ final class Renderer extends Draw {
                     r * 0.085f);
 
             if (gone > 0.02f) {
-                // Sagging a little as it goes, so the deck slumps rather than simply recolouring.
-                float sag = r * 0.06f * gone;
-                Kawaii.moodDumpling(p, cx, cy + sag, r * 0.60f, col, 0f, 1f + 0.10f * gone);
+                // Stagger the sobs so the deck feels alive rather than moving as one stamp.
+                float sob = c.clock * 4.8f + g * 1.37f;
+                float tremble = (float) Math.sin(sob * 2.3f) * r * 0.025f * gone;
+                float sag = r * (0.05f + 0.025f * (float) Math.sin(sob)) * gone;
+                Kawaii.crying(p, g, cx + tremble, cy + sag, r * 0.60f, col,
+                        1f + 0.10f * gone, sob, gone);
             } else {
                 Kawaii.draw(p, g, cx, cy, r * 0.60f * (1f + 0.12f * press), col,
                         1f + 0.20f * press, 0.25f + 0.6f * press);

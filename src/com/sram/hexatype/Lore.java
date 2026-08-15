@@ -65,6 +65,11 @@ final class Lore {
         "THE POCKET, WITH THE FLUFF",
         "THE BEDSIDE TABLE, LIGHT ON",
         "UNDER THE BLANKET FORT",
+        "THE FIRST TURN IN THE MILKY WAY",
+        "THE TAIL OF A TINY COMET",
+        "THE QUIET SIDE OF THE MOON",
+        "BETWEEN TWO NORTHERN LIGHTS",
+        "THE LAST STAR BEFORE MORNING",
     };
 
     static final String[][] STORY = {
@@ -251,6 +256,16 @@ final class Lore {
             "HE'S JUST EASY TO FIND.",
             "THEY'RE RIGHT BEHIND HIM.",
         },
+        {"HE COUNTS EACH STAR AS IT PASSES,", "THEN STARTS AGAIN AT DAWN.",
+            "HIS FAMILY KNOWS HE CAN'T STOP.", "THEY COUNT ALONG ANYWAY."},
+        {"SHE RIDES BEHIND EVERY COMET,", "HOLDING ON WITH BOTH LITTLE ARMS.",
+            "HER COUSINS WAVE FROM BELOW.", "SHE ALWAYS WAVES BACK."},
+        {"THE MOON SAVED HER A SILVER SEAT.", "SHE BRINGS ENOUGH SNACKS FOR FIVE.",
+            "HER FOUR COUSINS ARRIVE LATE.", "SHE SAVES THEIR FAVOURITES."},
+        {"HE PAINTS THE SKY WHILE IT SLEEPS,", "ONE GREEN RIBBON AT A TIME.",
+            "HIS SISTERS ADD THE PURPLE.", "NOBODY SIGNS THEIR WORK."},
+        {"SHE KEEPS EVERY FAMILY WISH,", "POLISHED IN A LITTLE POCKET.",
+            "WHEN ONE COMES TRUE SHE CHEERS.", "SHE NEVER SAYS WHICH ONE."},
     };
 
     /** Which vignette plays over each story. */
@@ -259,6 +274,7 @@ final class Lore {
         SEEK, STACK, CARRY,
         STACK, PICNIC, TUMBLE, STACK, CARRY, PEEK, SEEK, PICNIC, CHEER,
         PUSH, PUSH, PICNIC, CARRY, STACK, CARRY, BOUNCE, SEEK,
+        SEEK, CARRY, PICNIC, CHEER, HANDOFF,
     };
 
     /**
@@ -270,6 +286,7 @@ final class Lore {
         0, 12, 11,
         14, 13, 16, 13, 15, 20, 15, 18, 14,
         23, 22, 26, 24, 25, 29, 29, 28,
+        31, 30, 34, 32, 33,
     };
 
     /**
@@ -284,6 +301,7 @@ final class Lore {
         1, 8, 8,
         15, 15, 17, 14, 16, 19, 21, 21, 13,
         24, 24, 22, 22, 24, 22, 27, 27,
+        32, 33, 30, 34, 31,
     };
 
     static int third(int i) {

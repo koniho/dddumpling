@@ -267,6 +267,11 @@ final class Screens extends Draw {
     static void bonus(Painter p, GameCore c, Layout L) {
         float s = L.unit;
 
+        if (c.starBonus) {
+            starPath(p, c, L);
+            return;
+        }
+
         // The parade closes out a winning interlude and owns the screen for it. Handled before
         // the fade below, which reads the interlude's own countdown — already spent by now, so
         // it would render the whole parade invisible.
@@ -418,6 +423,168 @@ final class Screens extends Draw {
                     Painter.CENTER, true);
         }
 
+    }
+
+    /** Five-second scrolling star course, plus its wordless ready demonstration and exit. */
+    /** Baseline of the star screen's checkpoint counter. */
+    static float starCountY(Layout L) {
+        return L.playTop + L.unit * 1.2f;
+    }
+
+    /** Type size of the READY prompt, whose caps have to clear {@link #starCountY}. */
+    static float starReadySize(Layout L) {
+        return type(L.unit * 1.1f);
+    }
+
+    /**
+     * Baseline of the READY prompt. The gap below the counter goes through {@code type()} like
+     * the sizes do: as a plain unit multiple it was 1.2 units, and at TEXT 1.34 READY's caps
+     * came up through the counter's baseline. See the note on the global text scale in CLAUDE.md.
+     */
+    static float starReadyY(Layout L) {
+        return starCountY(L) + type(L.unit * 1.35f);
+    }
+
+    private static void starPath(Painter p, GameCore c, Layout L) {
+        StarPath q = c.stars;
+        float fade = Math.min(1f, c.time / 0.35f)
+                * (q.reporting() ? Math.min(1f, q.timer / 0.35f) : 1f);
+        scrim(p, L, (int) (175 * fade));
+        float s = L.unit;
+
+        // Catmull-Rom samples turn the checkpoints into one soft flight trail. Three strokes
+        // supply depth: a broad shadow, a coloured atmosphere, and a bright central filament.
+        float[] route = starSpline(q, L);
+        // The bright route is as wide as a star's centre pearl (2 * 1.56 * 0.23 units).
+        // The two broader passes sit behind it like a soft raised ribbon.
+        float pearl = s * 1.56f * 0.23f * 2f;
+        p.polyline(route, fadeBy(Glyph.withAlpha(0xFF241B50, 145), fade), pearl * 1.55f);
+        p.polyline(route, fadeBy(Glyph.withAlpha(0xFF6E72C8, 105), fade), pearl * 1.25f);
+        p.polyline(route, fadeBy(Glyph.withAlpha(0xFFBDEBFF, 115), fade), pearl);
+        for (int i = 0; i < StarPath.COUNT; i++) {
+            float y = q.starY(i, L);
+            if (y < L.playTop - s * 2f || y > L.dangerY + s * 2f) continue;
+            boolean got = (q.collected & (1 << i)) != 0;
+            float pulse = 1f + 0.11f * (float) Math.sin(c.clock * 5.5f + i * 1.31f);
+            float turn = c.clock * (i % 2 == 0 ? 0.55f : -0.45f) + i * 0.37f;
+            float outer = s * 1.56f * pulse; // exactly three times the original 0.52 unit star
+            float inner = s * 0.69f * pulse;
+            int col = got ? Glyph.withAlpha(INK_DIM, 62)
+                    : Glyph.withAlpha(GOLD, (int) (210 + 45 * Math.sin(c.clock * 6f + i)));
+            float xStar = q.starX(i, L);
+            p.fillPoly(cuteStar(xStar, y, outer * 1.16f, inner * 1.12f, turn),
+                    fadeBy(Glyph.withAlpha(got ? INK_DIM : 0xFFFFA93A, got ? 22 : 45), fade));
+            p.fillPoly(cuteStar(xStar, y, outer, inner, turn), fadeBy(col, fade));
+            // A pearl-like heart makes each checkpoint feel like a little creature rather than
+            // a navigation marker. Two translucent discs give it depth without a gradient API.
+            int orb = got ? Glyph.withAlpha(INK_DIM, 70) : Glyph.withAlpha(0xFFFFF6C7, 245);
+            p.fillCircle(xStar, y, outer * 0.30f, fadeBy(Glyph.withAlpha(0xFFFFA93A,
+                    got ? 18 : 95), fade));
+            p.fillCircle(xStar, y, outer * 0.23f, fadeBy(orb, fade));
+            p.fillCircle(xStar - outer * 0.065f, y - outer * 0.075f, outer * 0.065f,
+                    fadeBy(Glyph.withAlpha(0xFFFFFFFF, got ? 45 : 210), fade));
+
+            float b = q.burst[i];
+            if (b > 0f) {
+                float out = (1f - b) * s * 2.4f;
+                int shine = fadeBy(Glyph.withAlpha(0xFFFFFFFF, (int) (255 * b)), fade);
+                // A white glint crosses the star while eight sparks burst away from it.
+                p.line(xStar - outer * 0.75f, y, xStar + outer * 0.75f, y, shine,
+                        s * 0.12f * b);
+                p.line(xStar, y - outer * 0.75f, xStar, y + outer * 0.75f, shine,
+                        s * 0.12f * b);
+                for (int k = 0; k < 8; k++) {
+                    double a = k * Math.PI / 4 + i * 0.19f;
+                    float ux = (float) Math.cos(a), uy = (float) Math.sin(a);
+                    float x0 = xStar + ux * outer * 0.65f;
+                    float y0 = y + uy * outer * 0.65f;
+                    p.line(x0, y0, x0 + ux * out, y0 + uy * out, shine, s * 0.09f * b);
+                }
+            }
+        }
+
+        float x = q.x, y = q.characterY(L);
+        if (q.ready()) {
+            // Wordless lesson: the three left keys glow and the flyer leans left, then the
+            // three right keys and a lean right. The real deck supplies the controls.
+            float wave = (float) Math.sin(c.clock * 3.4f);
+            x += wave * L.w * 0.12f;
+            int side = wave < 0 ? 0 : 1;
+            for (int g = side * 3; g < side * 3 + 3; g++) {
+                float pulse = 1f + 0.08f * (float) Math.sin(c.clock * 8f + g);
+                p.strokePoly(Glyph.hex(L.keyX[g], L.keyY[g], L.keyR * 1.18f * pulse),
+                        fadeBy(Glyph.withAlpha(GOLD, 210), fade), L.keyR * 0.08f);
+            }
+        }
+
+        float rr = L.enemyR * 1.05f;
+        p.fillCircle(x, y, rr * 1.18f, fadeBy(Glyph.withAlpha(0xFF93D6F7, 55), fade));
+        p.strokePoly(Glyph.hex(x, y, rr * 1.15f), fadeBy(Glyph.withAlpha(0xFF93D6F7, 150), fade),
+                rr * 0.07f);
+        if (q.who >= 0 && q.who < Collect.COUNT) {
+            Trinket.draw(p, q.who, x, y, rr, c.clock, true, fade);
+        } else {
+            p.fillCircle(x, y, rr * 0.75f, fadeBy(Glyph.withAlpha(INK_DIM, 210), fade));
+        }
+
+        String count = q.count() + " / " + StarPath.COUNT;
+        p.text(count, L.w / 2f, starCountY(L), type(s * 0.78f), fadeBy(INK, fade),
+                Painter.CENTER, true);
+        if (q.ready()) {
+            p.text("READY", L.w / 2f, starReadyY(L), starReadySize(L),
+                    fadeBy(GOLD, fade), Painter.CENTER, true);
+        } else if (q.reporting()) {
+            p.text(q.won ? "ALL STARS!" : count + " STARS", L.w / 2f, L.h * 0.38f,
+                    type(s * 1.15f), fadeBy(q.won ? GOLD : INK, fade), Painter.CENTER, true);
+        }
+    }
+
+    /** Smooth samples through the scrolling checkpoints, padded at both ends for tangents. */
+    private static float[] starSpline(StarPath q, Layout L) {
+        final int steps = 7;
+        float[] pts = new float[(StarPath.COUNT - 1) * steps * 2 + 2];
+        int at = 0;
+        for (int i = 0; i < StarPath.COUNT - 1; i++) {
+            int a = Math.max(0, i - 1), b = i, cc = i + 1,
+                    d = Math.min(StarPath.COUNT - 1, i + 2);
+            for (int k = 0; k < steps; k++) {
+                float t = k / (float) steps;
+                pts[at++] = catmull(q.starX(a, L), q.starX(b, L), q.starX(cc, L),
+                        q.starX(d, L), t);
+                pts[at++] = catmull(q.starY(a, L), q.starY(b, L), q.starY(cc, L),
+                        q.starY(d, L), t);
+            }
+        }
+        pts[at++] = q.starX(StarPath.COUNT - 1, L);
+        pts[at] = q.starY(StarPath.COUNT - 1, L);
+        return pts;
+    }
+
+    private static float catmull(float p0, float p1, float p2, float p3, float t) {
+        float t2 = t * t, t3 = t2 * t;
+        return 0.5f * ((2f * p1) + (-p0 + p2) * t
+                + (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2
+                + (-p0 + 3f * p1 - 3f * p2 + p3) * t3);
+    }
+
+    /** Five broad padded points, with paired shoulder vertices instead of needle-like tips. */
+    private static float[] cuteStar(float cx, float cy, float outer, float inner, float turn) {
+        float[] pts = new float[40];
+        int at = 0;
+        for (int i = 0; i < 5; i++) {
+            float tip = turn + i * 6.283185f / 5f;
+            float before = tip - 3.141593f / 5f;
+            // Wide valley, two shoulders across a blunt tip, then the next wide valley.
+            pts[at++] = cx + inner * (float) Math.cos(before + 0.20f);
+            pts[at++] = cy + inner * (float) Math.sin(before + 0.20f);
+            pts[at++] = cx + outer * 0.91f * (float) Math.cos(tip - 0.105f);
+            pts[at++] = cy + outer * 0.91f * (float) Math.sin(tip - 0.105f);
+            pts[at++] = cx + outer * 0.91f * (float) Math.cos(tip + 0.105f);
+            pts[at++] = cy + outer * 0.91f * (float) Math.sin(tip + 0.105f);
+            pts[at++] = cx + inner * (float) Math.cos(tip + 3.141593f / 5f - 0.20f);
+            pts[at++] = cy + inner * (float) Math.sin(tip + 3.141593f / 5f - 0.20f);
+        }
+        return pts;
     }
 
     /**

@@ -25,11 +25,11 @@ final class Trinket {
      */
     private static final float[] FACE_DY = {
         0.04f, 0.06f, 0.18f, 0.06f, 0.40f, 0.16f, 0.34f, 0.12f,
-        0.02f, 0.02f, 0.06f, 0.14f, 0.62f, -0.34f, 0.22f,
+        0.02f, 0.02f, 0.06f, 0.14f, 0.62f, -0.34f, 0.22f, 0.04f,
     };
     private static final float[] FACE_R = {
         0.64f, 0.66f, 0.58f, 0.62f, 0.38f, 0.60f, 0.48f, 0.60f,
-        0.64f, 0.70f, 0.64f, 0.60f, 0.38f, 0.52f, 0.62f,
+        0.64f, 0.70f, 0.64f, 0.60f, 0.38f, 0.52f, 0.62f, 0.52f,
     };
 
     private Trinket() {}
