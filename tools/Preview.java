@@ -19,6 +19,7 @@ final class Preview {
         float speed = 1f;
         int bgm;
         long collected;
+        int collectTotal;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; }
         public float loadSpeed() { return speed; }
@@ -27,6 +28,8 @@ final class Preview {
         public void saveBgm(int v) { bgm = v; }
         public long loadCollected() { return collected; }
         public void saveCollected(long v) { collected = v; }
+        public int loadCollectTotal() { return collectTotal; }
+        public void saveCollectTotal(int v) { collectTotal = v; }
     }
 
     public static void main(String[] args) throws Exception {
@@ -51,6 +54,9 @@ final class Preview {
         // A part-filled case, so the title screen shows both a collected entry and the
         // silhouettes either side of it.
         store.collected = 0b0000_0100_1000_0011_0010_0110_1101L;
+        // More baskets opened than entries owned, which is the normal case and the whole reason the
+        // tally exists: seven of these seventeen were duplicates.
+        store.collectTotal = 17;
 
         // Title screen with the case shut, which is how it is arrived at: the badge in the
         // middle is the whole of the collection's footprint until it is tapped.
@@ -67,6 +73,27 @@ final class Preview {
         System.out.printf("title demo: lit key=%d amount=%.2f%n", Demo.litKey(c21),
                 Demo.litAmount(c21));
         shot(dir, "49-title-demo", c21, L, w, h, ss);
+
+        // Just after the third press: typed out, the finishing bullet still in the air, the ring
+        // flashing over the dimmed tiles. Exactly the state a real word is in between the last
+        // press and its shot landing.
+        GameCore c22 = new GameCore(store, 87L);
+        step(c22, L, Demo.LOOP * 0.715f);
+        System.out.printf("title last shot: lit key=%d amount=%.2f%n", Demo.litKey(c22),
+                Demo.litAmount(c22));
+        shot(dir, "50-title-shot", c22, L, w, h, ss);
+
+        // The demo word arriving. It fades and swells up on enterT, the same field a real word's
+        // entrance rides, rather than appearing whole.
+        GameCore c23 = new GameCore(store, 87L);
+        step(c23, L, Demo.LOOP * 0.055f);
+        shot(dir, "51-title-arriving", c23, L, w, h, ss);
+
+        // And coming apart once that bullet lands: the field's own fly-apart, outer tiles splitting
+        // left and right off Renderer.enemy's destroy path.
+        GameCore c24 = new GameCore(store, 87L);
+        step(c24, L, Demo.LOOP * 0.80f);
+        shot(dir, "52-title-destroyed", c24, L, w, h, ss);
 
         // Part-way through fading in on that tap.
         c.openCase();
@@ -678,7 +705,8 @@ final class Preview {
         sfxDir.mkdirs();
         String[] names = {"squish-dumpling", "squish-strawberry", "squish-cat", "squish-grapes",
                 "squish-squishy", "squish-blob", "damage-drip", "clear-word", "wrong",
-                "achievement", "game-start", "stage-clear", "power-clear", "chop", "zap"};
+                "achievement", "game-start", "stage-clear", "power-clear", "chop", "zap",
+                "collect"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

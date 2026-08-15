@@ -222,6 +222,39 @@ final class TestVisuals extends Check {
                 Math.abs(k.caretXFor(other, L) - k.tileX(other, other.pos, L)) < 1f);
     }
 
+    /**
+     * Stacked HUD text clears itself, at every text scale.
+     *
+     * The score label sits one line above the number, and the number's caps reach
+     * {@code RasterPainter.CAP} of its size above its own baseline. Both sizes go through
+     * {@link Draw#type}, so the gap between them has to as well — at a plain unit multiple the
+     * digits came up three pixels through SCORE's baseline once TEXT reached 1.34. Checked against
+     * a sweep of scales rather than the current one, since that is what went wrong: the layout was
+     * right when it was written and wrong when the knob moved.
+     */
+    static void hudStacking(Layout L) {
+        group("HUD stacking");
+        float clear = L.hudY - RasterPainter.CAP * Hud.scoreSize(L) - Hud.labelY(L);
+        System.out.printf("    the score digits clear the label by %.1fpx at TEXT=%.2f%n",
+                clear, Draw.TEXT);
+        check("the score number clears its own label", clear > 0f);
+        check("with room to spare, not by a pixel", clear > L.unit * 0.1f);
+
+        // The label must also stay under the safe top edge, since raising it is how this was fixed.
+        float labelTop = Hud.labelY(L) - RasterPainter.CAP * Draw.type(L.unit * 0.52f);
+        check("and the label stays below the safe top edge", labelTop >= L.topSafe);
+
+        // The relationship has to hold however the knob is turned, which is the whole point of
+        // scaling the gap: both sides move together.
+        boolean holds = true;
+        for (int px = 640; px <= 1600; px += 240) {
+            Layout t = new Layout();
+            t.compute(px, px * 20 / 9, 0, 0, 0, 0);
+            if (t.hudY - RasterPainter.CAP * Hud.scoreSize(t) <= Hud.labelY(t)) holds = false;
+        }
+        check("at every screen width too", holds);
+    }
+
     static void settings(Layout L) {
         group("settings");
         Mem store = new Mem();

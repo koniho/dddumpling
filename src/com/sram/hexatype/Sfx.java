@@ -21,7 +21,8 @@ final class Sfx {
     /** Sound ids, one preloaded buffer each. */
     static final int SQUISH_0 = 0, DRIP = 6, CLEAR = 7, WRONG = 8, ACHIEVEMENT = 9;
     static final int START = 10, STAGE_CLEAR = 11, POWER_CLEAR = 12, CHOP = 13, ZAP = 14;
-    static final int COUNT = 15;
+    static final int COLLECT = 15;
+    static final int COUNT = 16;
 
     private Sfx() {}
 
@@ -36,6 +37,7 @@ final class Sfx {
             case POWER_CLEAR: return powerClear();
             case CHOP: return chop();
             case ZAP: return zap();
+            case COLLECT: return collect();
             default: return achievement();
         }
     }
@@ -261,6 +263,40 @@ final class Sfx {
             float low = (float) Math.sin(thump) * 0.90f * (float) Math.exp(-11f * t);
 
             v[i] = (crack + zap + low) * envelope(t, 0.0008f, 5.5f);
+        }
+        return render(v);
+    }
+
+    /**
+     * One of the run's dumplings being set down in the display case.
+     *
+     * A little glass chime with a knock under the front of it: the knock is the thing arriving on
+     * a shelf, the chime is the glass it arrived in. Two partials a fifth apart rather than one,
+     * because a single sine here is a beep and the interval is what reads as glass.
+     *
+     * Short, and it decays fast. A good run shelves several of these a tenth of a second apart,
+     * and {@link Audio} gives each effect one track and restarts it — so a tail would be cut off
+     * by the next landing anyway, and the part that got through would smear into the one after.
+     * The same shape as the chain's crack, for the same reason.
+     */
+    static short[] collect() {
+        int n = (int) (RATE * 0.15f);
+        float[] v = new float[n];
+        float phase = 0f, fifth = 0f, knock = 0f;
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / n;
+            // Both partials sag slightly as they ring, which is what a struck object does. Held
+            // perfectly steady they sounded like a synth against the rest of the deck.
+            phase += 2f * (float) Math.PI * (1180f - 90f * t) / RATE;
+            fifth += 2f * (float) Math.PI * (1770f - 150f * t) / RATE;
+            float ring = (float) Math.sin(phase) * (float) Math.exp(-7f * t)
+                    + (float) Math.sin(fifth) * 0.45f * (float) Math.exp(-11f * t);
+
+            // Gone almost before it is there: any longer and it is a drum, not a placement.
+            knock += 2f * (float) Math.PI * (300f - 120f * t) / RATE;
+            float tap = (float) Math.sin(knock) * 0.60f * (float) Math.exp(-38f * t);
+
+            v[i] = (ring + tap) * envelope(t, 0.0015f, 4.5f);
         }
         return render(v);
     }

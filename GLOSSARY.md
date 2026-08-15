@@ -51,8 +51,8 @@ geometry; `Kawaii` draws the creature.
 | **squish** (a word) | clearing a word; the game-over screen counts them | `GameCore.squishes` |
 | **harm** | how far health has fallen; drives the red tint and pulse. Squared, so it bites on the last life rather than the first | `GameCore.harm()` |
 | **edge glow** / **vignette** | the red glow at the screen edges | `Sky.vignette` |
-| **push-back** | the panic swipe: shoves the bottom half of the field back, once a stage | `GameCore.pushBack`, `pushReady` |
-| **swipe strip** | the band between the danger line and the deck the gesture starts in | `Renderer.pushHint` |
+| **push-back** | the panic swipe: shoves the bottom half of the field back and everything it would land on, once a stage | `GameCore.pushBack`, `pushReady` |
+| **swipe strip** | the lit band between the danger line and the deck that advertises the gesture. Not the catchment — see **swipe catchment** | `Renderer.pushHint` |
 | **shockwave** | the gold bands sweeping up when it lands | `Renderer.pushWave` |
 | **slide** | a shoved word travelling back up over 0.4s instead of jumping | `e.slideT`, `GameCore.PUSH_SLIDE` |
 
@@ -65,8 +65,8 @@ geometry; `Kawaii` draws the creature.
 | **chevron** / **cluster** | the three-key group under one thumb | left = keys 0,1,2; right = 3,4,5 |
 | **hint pulse** | the ring on the key you need next | `Renderer.keys` |
 | **press ripple** | the ring expanding off a key as its press decays | same |
-| **key invite** | the glowing rings sweeping across the deck on the title and settled game-over screens, in place of a "press any key" line | `Renderer.keys` |
-| **demo** | the title screen typing a word to itself, in place of the two lines that explained it | `Demo` |
+| **demo** | the title screen typing a word to itself, in place of the two lines that explained it: a key lights, a bullet leaves it, a letter goes | `Demo` |
+| **bullet** / **shot** | what a press fires from a key at the tile it struck. The demo fires the same one | `Renderer.bullet` |
 | **caret** | the triangle over the thing to press next — the field's head tile and the interlude's wanted letter draw the same one | `Draw.caret` |
 | **case gestures** | the only drag targets outside play: tap either side of the shelf, swipe it, or drag the position bar | `GameView.handleCase`, `GameCore.caseDragTo` |
 
@@ -80,7 +80,7 @@ geometry; `Kawaii` draws the creature.
 | **breather** | the pause after a wave before the next arrives | `stageGap`, `STAGE_GAP` |
 | **difficulty ramp** | how far up the curve a stage sits. A stage is worth 5/9 of a step, so what used to land at stage 6 lands at 10 | `GameCore.RAMP`, `ramp()` |
 | **stage banner** | the big "STAGE n / FASTER NOW" text | `Hud.stageBanner` |
-| **perfect wave** | a wave cleared with no wrong press; gold dumpling on a glowing star | `Hud.perfectStage` |
+| **perfect wave** / **perfect round** | a wave cleared with no wrong press *and* no life lost; gold dumpling on a glowing star, and the top of the earned-mash ladder. One definition, both readers | `GameCore.perfectRound`, `Hud.perfectStage` |
 
 ## The collection
 
@@ -137,6 +137,8 @@ geometry; `Kawaii` draws the creature.
 | **powerup letter** | the single glowing letter drifting horizontally | `Power`, `GameCore.power` |
 | **frenzy** | the 15-second period after catching one | `mode`, `modeLeft` ← *mismatch* |
 | **mode bar** | the name, blurb and countdown at the top during a frenzy | `Hud.modeBar` |
+| **frenzy taper** | how much of a frenzy's extra pace survives at this point on the ramp: all of it on stage 1, down to twice the stage's own by stage 11 | `Power.taper`, `LATE_RATIO` |
+| **bounded player** | a bot with stated hands — presses a second, reaction, miss rate — that the difficulty curve is asserted against | `Bot`, `TestSoak.boundedPlay` |
 | **FLURRY** | every key is a wildcard; letters and keys go rainbow | `Power.FLURRY` |
 | **FLING** | the blade: a swipe cuts every letter it sweeps past | `Power.FLING` |
 | **blade** | the cutting edge itself, drawn along the last stretch of the stroke | `Renderer.blade`, `GameCore.BLADE` |
@@ -183,6 +185,11 @@ geometry; `Kawaii` draws the creature.
 | **haul** | the dumplings one run freed, as against the whole case | `GameCore.roundPrizes` |
 | **haul dance** | the haul bouncing in the middle of the summary once it has faded up | `RoundEnd.dance` |
 | **flight home** | the haul carrying itself to the case with star trails, on the way to the title | `RoundEnd.homeward`, `GameCore.HOME_TIME` |
+| **lifetime collections** | every basket ever opened, duplicates counted — the number under the position bar that keeps climbing after the case is full | `GameCore.collectTotal` |
+| **earned mash** | how long the round bought at the steamer, and the only thing that sets it: 5s perfect, 4s unhurt, 3s hurt, 1s if the panic swipe was used | `GameCore.mashEarned`, `MASH_*` |
+| **winded** | the field at a quarter fall speed for three seconds after a panic swipe, ramping back up | `GameCore.PUSH_SLOW`, `pushSlowT` |
+| **swipe catchment** | where a panic swipe may start: the lower half of the field, much wider than the strip that advertises it | `Layout.inPushZone` |
+| **shelving** | one of the haul reaching the case at the end of its trip, and the chime that says so | `RoundEnd.arrival`, `Sound.collect`, `Sfx.collect` |
 | **game over screen** | score, accuracy dumpling, best. Fades up after the hold; GAME OVER is yellow, not rose | `Screens.gameOver` |
 | **accuracy dumpling** | the face that reflects accuracy: tear below 60%, sparkles above 90% | `Screens.accuracy` |
 | **settings panel** | opened by tapping the stage readout; pauses the game | `Screens.settings` |

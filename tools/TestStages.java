@@ -166,9 +166,18 @@ final class TestStages extends Check {
      * frame of it. Two of them true at once is a contradiction; none is a phase nobody named,
      * which is how a screen that draws nothing gets shipped.
      */
-    private static boolean onePhaseThroughout(long seed, boolean win, Layout L) {
+    private static boolean onePhaseThroughout(long seed, boolean win, boolean panic, Layout L) {
         GameCore c = new GameCore(new Mem(), seed);
         c.startGame();
+        // A panic round earns the shortest mash there is, which makes it the narrowest phase window
+        // the interlude ever runs — exactly where a boundary that no longer lines up would hide.
+        if (panic) {
+            c.enemies.clear();
+            add(c, L, new int[] {0, 1}, L.dangerY - L.enemyR * 1.2f);
+            c.update(DT, L);
+            if (!c.pushBack(L)) return false;
+            c.enemies.clear();
+        }
         c.spawnedThisStage = c.stageQuota();
         c.enemies.clear();
         c.shots.clear();
@@ -417,13 +426,13 @@ final class TestStages extends Check {
         check("opens on the spinner",
                 c.bonusRolling() && !c.bonusMashing() && !c.bonusHolding() && !c.bonusStatus());
         check("the timer covers all four phases",
-                c.bonusTimer > GameCore.bonusLength() - 0.01f);
+                c.bonusTimer > GameCore.bonusLength(c.earnedMash) - 0.01f);
         int picked = c.steamer.wanted();
         c.tapBonus(picked);
         c.tapBonus(picked);
         check("presses are refused while it spins", c.steamer.hits == 0);
-        check("the clock reads the full mash length through the spin",
-                Math.abs(c.bonusLeft() - GameCore.BONUS_TIME) < 0.01f);
+        check("the clock reads the full earned mash through the spin",
+                Math.abs(c.bonusLeft() - c.earnedMash) < 0.01f);
 
         // The spinner has to land on the pair the round then asks for, every frame of it.
         boolean landed = true, moved = false;
@@ -477,18 +486,27 @@ final class TestStages extends Check {
 
         // Exactly one phase at a time, over both paths through an interlude — a lost round and
         // a won one. An unnamed gap here is what a phase that draws nothing looks like.
-        check("a lost round is always in exactly one phase", onePhaseThroughout(151L, false, L));
-        check("and so is a won one", onePhaseThroughout(153L, true, L));
+        check("a lost round is always in exactly one phase",
+                onePhaseThroughout(151L, false, false, L));
+        check("and so is a won one", onePhaseThroughout(153L, true, false, L));
+        // And the same over the one-second mash a panic round earns, which is the shortest window
+        // any of these phases has to hold open.
+        check("a panic round holds its phases too", onePhaseThroughout(155L, false, true, L));
+        check("even when it is won inside that second", onePhaseThroughout(157L, true, true, L));
 
-        // A frenzy allows four times as many words on screen at once.
+        // A frenzy allows more words on screen at once — four times as many on the opening stage,
+        // tapering with the ramp, since the cap multiplies a maxEnemies that is itself climbing.
         GameCore d = new GameCore(new Mem(), 142L);
         d.startGame();
         d.stage = 6;
         int calm = d.crowdCap();
         check("the calm cap is the ordinary one", calm == d.maxEnemies());
         d.startFrenzy(Power.FLURRY, L);
-        check("a frenzy quadruples the cap", d.crowdCap() == (int) (calm * Power.CROWD_RATE));
+        check("a frenzy raises the cap by the tapered rate",
+                d.crowdCap() == (int) (calm * Power.crowdRate(d.ramp())));
         check("that is a real increase", d.crowdCap() > calm);
+        check("and less than the opening stage would have got",
+                Power.crowdRate(d.ramp()) < Power.CROWD_RATE);
         d.mode = -1;
         d.modeLeft = 0f;
         check("and it reverts", d.crowdCap() == calm);
@@ -549,6 +567,251 @@ final class TestStages extends Check {
             }
         }
         check("every skit is visible", allDraw);
+    }
+
+    /**
+     * What the round earns at the steamer. The interlude used to be a flat length whatever you did
+     * to get there; it is the round's pay packet now, so how it is earned is a rule and gets held.
+     *
+     * Each case is built by making the one thing true that the tier turns on and then clearing the
+     * wave, so what is being asserted is the ladder and not the arithmetic of {@code mashEarned}.
+     */
+    /**
+     * What the panic swipe is worth, and where it can be started from.
+     *
+     * It was ineffective and hard to trigger, and those were two separate faults. Hard to trigger:
+     * the only place a finger could start it was the sliver between the danger line and the deck,
+     * about a thirtieth of the screen, which a thumb coming up off a key overshoots. Ineffective:
+     * distance alone bought about a second, because the words came straight back down at full speed
+     * and anything above the halfway mark was left standing in the way.
+     */
+    static void pushBackRelief(Layout L) {
+        group("panic swipe relief");
+
+        // 1. Where it can start. The lit strip is the target; the catchment is much bigger.
+        float insideStrip = (L.dangerY + L.deckTop) / 2f;
+        check("the lit strip still starts it", L.inPushZone(L.w / 2f, insideStrip));
+        check("so does the middle of the screen", L.inPushZone(L.w / 2f, L.h / 2f));
+        check("and everything between", L.inPushZone(L.w / 2f, (L.h / 2f + L.dangerY) / 2f));
+        check("but never on a key", !L.inPushZone(L.keyX[1], L.keyY[1])
+                && !L.inPushZone(L.keyX[4], L.keyY[4]));
+        check("nor above the middle", !L.inPushZone(L.w / 2f, L.h / 2f - 1f));
+        check("nor in the HUD, which has its own tap",
+                !L.inPushZone(L.w / 2f, L.hudY) && L.inStageTap(L.w / 2f, L.hudY));
+        float wasStrip = L.deckTop - L.dangerY;
+        System.out.printf("    swipe catchment is %.0fx the lit strip (%.0fpx of %.0f high)%n",
+                (L.deckTop - L.h / 2f) / wasStrip, L.deckTop - L.h / 2f, L.h);
+        check("it is a much bigger target than the strip",
+                L.deckTop - L.h / 2f > wasStrip * 4f);
+
+        // 2. The drag it leaves on the field.
+        GameCore c = new GameCore(new Mem(), 171L);
+        c.startGame();
+        c.enemies.clear();
+        check("no drag before it", c.fallRate() == 1f && c.pushSlowT == 0f);
+        GameCore.Enemy e = add(c, L, new int[] {0, 1}, L.dangerY - L.enemyR * 1.2f);
+        c.update(DT, L);
+        check("the swipe fires", c.pushBack(L));
+        check("the field is winded to a quarter speed",
+                Math.abs(c.fallRate() - GameCore.PUSH_SLOW_RATE) < 0.02f);
+
+        // Winding back up, every frame, and arriving at exactly full speed.
+        boolean rising = true, capped = true;
+        float prev = c.fallRate();
+        for (float t = 0f; t < GameCore.PUSH_SLOW + 0.2f; t += DT) {
+            c.update(DT, L);
+            float now = c.fallRate();
+            if (now < prev - 1e-4f) rising = false;
+            if (now > 1.0001f) capped = false;
+            prev = now;
+        }
+        check("it winds back up rather than snapping", rising);
+        check("and never overshoots full speed", capped);
+        check("full speed once it has worn off", c.fallRate() == 1f && c.pushSlowT == 0f);
+
+        // A word really does fall slower for it, which is the whole point.
+        GameCore f = new GameCore(new Mem(), 172L);
+        f.startGame();
+        f.enemies.clear();
+        GameCore.Enemy fast = add(f, L, new int[] {0}, L.playTop + L.enemyR);
+        fast.speed = L.enemyR * 6f;
+        float y0 = fast.y;
+        f.update(DT, L);
+        float fullStep = fast.y - y0;
+        // A threat low down to arm the swipe, then the same measurement while winded.
+        GameCore.Enemy threat = add(f, L, new int[] {1}, L.dangerY - L.enemyR * 1.2f);
+        f.update(DT, L);
+        check("armed by the threat", f.pushReady() && threat != null);
+        check("the swipe fires", f.pushBack(L));
+        // The shoved word is sliding; a fresh one measures the fall rate cleanly.
+        f.enemies.clear();
+        GameCore.Enemy after = add(f, L, new int[] {2}, L.playTop + L.enemyR);
+        after.speed = L.enemyR * 6f;
+        float y1 = after.y;
+        f.update(DT, L);
+        float slowStep = after.y - y1;
+        System.out.printf("    a word falls %.0f%% as far per frame right after the swipe%n",
+                slowStep / fullStep * 100f);
+        check("a word falls a quarter as far while winded",
+                Math.abs(slowStep - fullStep * GameCore.PUSH_SLOW_RATE) < fullStep * 0.05f);
+
+        // A run ending mid-drag must not leave the next one crawling.
+        f.lives = 1;
+        f.enemies.clear();
+        add(f, L, new int[] {0, 0}, L.dangerY - L.enemyR + 1f);
+        advance(f, L, GameCore.ATTACK_TIME + 2 * DT);
+        check("the run ended", f.state == GameCore.OVER);
+        f.startGame();
+        check("a fresh run starts at full speed", f.fallRate() == 1f && f.pushSlowT == 0f);
+
+        // 3. The cascade: a shove takes whatever it would otherwise land on top of.
+        GameCore g = new GameCore(new Mem(), 173L);
+        g.startGame();
+        g.enemies.clear();
+        float mid = (L.playTop + L.dangerY) / 2f;
+        float lift = (L.dangerY - L.playTop) * GameCore.PUSH_LIFT;
+        GameCore.Enemy low = add(g, L, new int[] {0}, L.dangerY - L.enemyR * 1.2f);
+        // Close enough to where the low one lands to be landed on, and above the halfway mark, so
+        // nothing but the cascade can account for it moving. Both conditions matter and the first
+        // draft only had one: at exactly the landing point it sits a hair *below* the mark and is
+        // shoved directly, which proves nothing about cascading.
+        GameCore.Enemy inTheWay = add(g, L, new int[] {1},
+                Math.min(mid, low.y - lift) - L.enemyR * 0.4f);
+        // Clear of every destination the shove will claim.
+        GameCore.Enemy bystander = add(g, L, new int[] {2}, mid - L.enemyR * 3f);
+        check("the one in the way is above the halfway mark", inTheWay.y < mid);
+        g.update(DT, L);
+        check("the swipe fires", g.pushBack(L));
+        check("the threat went up", low.slideT > 0f && low.slideTo < low.slideFrom);
+        check("and so did the one it would have landed on", inTheWay.slideT > 0f);
+        check("which is no longer in the way",
+                Math.abs(inTheWay.slideTo - low.slideTo) >= 2f * L.enemyR);
+        check("a word clear of all of them is left alone", bystander.slideT == 0f);
+        System.out.printf("    cascade moved %d of 3%n", g.pushCount);
+        check("the count reflects the cascade", g.pushCount == 2);
+
+        // A ladder packed the whole way up goes as one board.
+        GameCore h = new GameCore(new Mem(), 174L);
+        h.startGame();
+        h.enemies.clear();
+        int rungs = 10;
+        for (int k = 0; k < rungs; k++) {
+            add(h, L, new int[] {k % Glyph.COUNT}, L.dangerY - L.enemyR * (1.2f + 2f * k));
+        }
+        h.update(DT, L);
+        check("the swipe fires on a packed field", h.pushBack(L));
+        boolean allMoved = true;
+        for (int k = 0; k < h.enemies.size(); k++) {
+            if (h.enemies.get(k).slideT <= 0f) allMoved = false;
+        }
+        check("a packed field goes up as one", allMoved && h.pushCount == rungs);
+    }
+
+    static void mashEarned(Layout L) {
+        group("earning the mash");
+
+        check("a perfect round earns the most", GameCore.MASH_PERFECT > GameCore.MASH_UNHURT);
+        check("damage costs more than a stray press", GameCore.MASH_UNHURT > GameCore.MASH_HURT);
+        check("and the panic swipe costs the most of all",
+                GameCore.MASH_PANIC < GameCore.MASH_HURT);
+
+        // Perfect: nothing pressed wrongly, nothing lost, no swipe.
+        GameCore p = clearedRound(151L, L);
+        check("a clean round earns the full mash", p.earnedMash == GameCore.MASH_PERFECT);
+        check("and the clock shows it", Math.abs(p.bonusLeft() - GameCore.MASH_PERFECT) < 0.01f);
+
+        // A stray press, but nothing lost.
+        GameCore u = new GameCore(new Mem(), 152L);
+        u.startGame();
+        u.enemies.clear();
+        u.tapKey(0, L);                        // nothing on the field: a miss
+        check("that was a miss", u.missesThisStage == 1 && u.hurtThisStage == 0);
+        u.spawnedThisStage = u.stageQuota();
+        u.enemies.clear();
+        u.shots.clear();
+        check("reached the interlude", advanceToBonus(u, L));
+        check("a stray press costs a second", u.earnedMash == GameCore.MASH_UNHURT);
+
+        // A life lost outranks a stray press: it is the same round, one tier down.
+        GameCore h = new GameCore(new Mem(), 153L);
+        h.startGame();
+        h.enemies.clear();
+        add(h, L, new int[] {0}, L.dangerY - L.enemyR + 1);
+        advance(h, L, GameCore.ATTACK_TIME + 2 * DT);
+        check("a life went", h.hurtThisStage == 1 && h.missesThisStage == 0);
+        // Read before the wave is cleared: beginStageEnd zeroes both counters on its way out, so by
+        // the time the interlude is open every round looks perfect again.
+        check("a round that lost a life is not perfect", !h.perfectRound());
+        h.spawnedThisStage = h.stageQuota();
+        h.enemies.clear();
+        h.shots.clear();
+        check("reached the interlude", advanceToBonus(h, L));
+        check("losing a life costs two", h.earnedMash == GameCore.MASH_HURT);
+        // And the same round is not perfect for the dumpling either. There is one definition of
+        // perfect: this used to award the gold dumpling on a round that lost a life, because no
+        // *press* had been wrong.
+        check("and it earned no gold dumpling either", h.perfectBanner == 0f);
+
+        // The panic swipe overrides an otherwise perfect round.
+        GameCore k = new GameCore(new Mem(), 154L);
+        k.startGame();
+        k.enemies.clear();
+        GameCore.Enemy threat = add(k, L, new int[] {0, 1}, L.dangerY - L.enemyR * 1.2f);
+        k.update(DT, L);
+        check("the swipe is offered", k.pushReady());
+        check("the swipe fires", k.pushBack(L));
+        check("it was used", k.pushUsed && threat != null);
+        check("and nothing was lost by it",
+                k.hurtThisStage == 0 && k.missesThisStage == 0);
+        k.enemies.clear();
+        k.spawnedThisStage = k.stageQuota();
+        k.shots.clear();
+        check("reached the interlude", advanceToBonus(k, L));
+        check("the panic swipe drops it to the floor", k.earnedMash == GameCore.MASH_PANIC);
+
+        // Every tier has to be spendable: a mash shorter than a pair of presses would be a phase
+        // the player cannot act in at all.
+        check("even the floor is long enough to press in", GameCore.MASH_PANIC >= 0.5f);
+        // The clock can only ever show a number the ladder has a tier for. Swept over real play
+        // rather than reasoned about, because the last thing to break this was a modifier added
+        // somewhere else entirely — the frenzy's 2.6s, which opened the countdown on "8".
+        GameCore w = new GameCore(new Mem(), 159L);
+        w.startGame();
+        int highest = 0;
+        for (int i = 0; i < 60 * 400 && w.state != GameCore.OVER; i++) {
+            if (w.state == GameCore.BONUS) {
+                highest = Math.max(highest, (int) Math.ceil(w.bonusLeft()));
+                if (i % 12 == 0) w.tapBonus(w.steamer.wanted());
+            } else if (w.state == GameCore.PLAY && i % 10 == 0) {
+                GameCore.Enemy e = urgent(w);
+                if (e != null && e.typeable()) w.tapKey(e.word[e.pos], L);
+            }
+            w.update(DT, L);
+        }
+        System.out.printf("    over a whole run the clock never read above %d%n", highest);
+        check("the clock never shows a number the ladder has no tier for",
+                highest <= (int) Math.ceil(GameCore.MASH_PERFECT));
+        check("and it does reach the top tier", highest == (int) GameCore.MASH_PERFECT);
+
+        // Nothing adds to the ladder any more: a frenzy used to buy 2.6s on top, which was more
+        // than the whole spread and made the tiers unreadable.
+        GameCore z = clearedRound(158L, L);
+        check("a perfect round's interlude is exactly the ladder",
+                Math.abs(z.bonusTimer - GameCore.bonusLength(GameCore.MASH_PERFECT)) < 0.01f);
+        System.out.printf("    mash earned: perfect %.0fs, unhurt %.0fs, hurt %.0fs, panic %.0fs%n",
+                GameCore.MASH_PERFECT, GameCore.MASH_UNHURT, GameCore.MASH_HURT,
+                GameCore.MASH_PANIC);
+    }
+
+    /** A wave cleared with nothing pressed wrongly, nothing lost and no swipe used. */
+    private static GameCore clearedRound(long seed, Layout L) {
+        GameCore c = new GameCore(new Mem(), seed);
+        c.startGame();
+        c.spawnedThisStage = c.stageQuota();
+        c.enemies.clear();
+        c.shots.clear();
+        advanceToBonus(c, L);
+        return c;
     }
 
     static void steamerBonus(Layout L) {
@@ -683,7 +946,8 @@ final class TestStages extends Check {
         c.tapBonus(3);
         check("presses during the escape do not re-trigger", c.steamer.opens == opensNow);
 
-        advance(c, L, GameCore.bonusLength() + GameCore.PARADE_TIME + 2f);
+        advance(c, L, GameCore.bonusLength(GameCore.MASH_PERFECT)
+                + GameCore.PARADE_TIME + 2f);
         check("play resumes after the celebration and the parade", c.state == GameCore.PLAY);
         check("lives are capped at the starting count", c.lives <= GameCore.START_LIVES);
 

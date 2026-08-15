@@ -20,6 +20,8 @@ abstract class Check {
         int speedSaves, bgmSaves;
         long collected;
         int collectedSaves;
+        int collectTotal;
+        int collectTotalSaves;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; saves++; }
         public float loadSpeed() { return speed; }
@@ -28,10 +30,15 @@ abstract class Check {
         public void saveBgm(int v) { bgm = v; bgmSaves++; }
         public long loadCollected() { return collected; }
         public void saveCollected(long v) { collected = v; collectedSaves++; }
+        public int loadCollectTotal() { return collectTotal; }
+        public void saveCollectTotal(int v) { collectTotal = v; collectTotalSaves++; }
     }
 
     static final class Ear implements GameCore.Sound {
         int squishes, clears, wrongs, damages, achievements, chops, zaps;
+        int collects;
+        /** Every haul position announced, in the order it was announced. */
+        final java.util.List<Integer> shelved = new java.util.ArrayList<Integer>();
         int lastZapHop = -1;
         int lastGlyph = -1, lastDepth = -1;
         int music = -1, musicCalls;
@@ -50,6 +57,7 @@ abstract class Check {
         public void achievement() { achievements++; }
         public void chop() { chops++; }
         public void zap(int hop) { zaps++; lastZapHop = hop; }
+        public void collect(int nth) { collects++; shelved.add(nth); }
         public void selectMusic(int choice) { music = choice; musicCalls++; }
         public void gameStart() { starts++; }
         public void stageClear() { stageClears++; }
@@ -76,6 +84,24 @@ abstract class Check {
      */
     static void advancePastDeath(GameCore c, Layout L) {
         advance(c, L, GameCore.DEATH_TIME + GameCore.OVER_FADE + GameCore.OVER_GRACE + 0.2f);
+    }
+
+    /**
+     * Presses one word of the current stage costs, averaged over the real generator rather than
+     * estimated: word length and stack depth both move with the ramp, and the press budget caps the
+     * total, so this is not a formula anybody should be writing out by hand.
+     */
+    static float pressesPerWord(GameCore c, long seed) {
+        java.util.Random rnd = new java.util.Random(seed);
+        int lo = c.minWordLen(), hi = c.maxWordLen();
+        int n = 20000;
+        float total = 0f;
+        for (int i = 0; i < n; i++) {
+            GameCore.Enemy e = new GameCore.Enemy();
+            Words.fill(e, lo + rnd.nextInt(hi - lo + 1), c.stackChance(), rnd);
+            total += e.totalPresses();
+        }
+        return total / n;
     }
 
     /** How fast the TEAM SQUISH buddy is going, in px/s. */

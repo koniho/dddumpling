@@ -13,6 +13,13 @@ final class RasterPainter implements Painter {
     private final int[] buf;
 
     private float tx, ty;
+    /**
+     * Cap height as a fraction of the type size — how far a line of text reaches above its
+     * baseline. Named because it is the number any check on stacked text has to agree with: a gap
+     * smaller than this times the lower line's size means the two collide.
+     */
+    static final float CAP = 0.72f;
+
     /** Clip in buffer pixels, inclusive. */
     private int clipL, clipT, clipR, clipB;
     /** Six slots per save(): tx, ty and the four clip edges. */
@@ -231,7 +238,7 @@ final class RasterPainter implements Painter {
     @Override public void text(String s, float x, float y, float size, int color, int align,
             boolean bold) {
         if (s == null || s.isEmpty() || (color >>> 24) == 0) return;
-        float cell = size * 0.72f;          // cap height
+        float cell = size * CAP;
         float px = cell / 7f;
         float advance = px * 6f + size * 0.09f;
         float total = s.length() * advance - size * 0.09f;

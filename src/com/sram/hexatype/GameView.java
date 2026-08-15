@@ -105,7 +105,7 @@ public class GameView extends View {
         // starts on a letter is never mistaken for a key press.
         if (core.flinging() && handleFling(ev, action)) return true;
 
-        // Panic swipe: an upward drag out of the strip between the danger line and the deck.
+        // Panic swipe: an upward drag starting anywhere in the lower half of the field.
         // Needs MOVE events, so it is handled before the down-only filter. After the blade,
         // because during a FLING frenzy a stroke through that strip is a cut and should stay one.
         if (handlePush(ev, action)) return true;
@@ -245,19 +245,21 @@ public class GameView extends View {
     private float pushStartY;
 
     /**
-     * The push-back gesture: start in the strip below the danger line and above the keys, then
+     * The push-back gesture: start anywhere in the lower half of the field above the keys, then
      * drag up.
      *
-     * That strip is the target on purpose. Starting anywhere lower would mean a swipe beginning
-     * on a key, and telling a swipe from a tap needs the tap held back until the drag is ruled
-     * out — latency this game cannot spend, since every press is a keystroke.
+     * The catchment is {@link Layout#inPushZone}, which is much wider than the strip the renderer
+     * lights — see that method for why. What has not changed is the floor: it stops at
+     * {@link Layout#deckTop}, because a swipe starting on a key would mean holding every tap back
+     * until a drag is ruled out, and that is latency this game cannot spend when every press is a
+     * keystroke.
      */
     private boolean handlePush(MotionEvent ev, int action) {
         int i = ev.getActionIndex();
         float y = ev.getY(i);
 
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
-            if (core.state != GameCore.PLAY || y < layout.dangerY || y > layout.deckTop) {
+            if (core.state != GameCore.PLAY || !layout.inPushZone(ev.getX(i), y)) {
                 return false;
             }
             pushArmed = true;

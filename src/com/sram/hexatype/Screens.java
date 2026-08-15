@@ -50,9 +50,10 @@ final class Screens extends Draw {
         // with the case, because with it open every key only puts it away again. Nothing here
         // points at the badge — it carries its own TAP TO OPEN, and saying it twice on one screen
         // made the case look like the thing to do rather than something off to the side.
-        // Nothing says "press a key to start" any more. The deck says it: on the title screen every
-        // key wears a glowing border that sweeps across the six, which is a stronger invitation
-        // than a sentence and points at the thing you actually have to touch. See Renderer.keys.
+        // Nothing says "press a key to start" any more. The demo says it, by pressing one: a key
+        // lights, a bullet leaves it, and a letter goes — which points at the thing you have to
+        // touch and shows what touching it does. Six keys glowing at once said the same thing
+        // louder and read as an alarm. See Renderer.keys and Demo.
         // The case explains itself: arrows either side of the shelf, and the focused entry throbs
         // when it first comes up if there is a story behind it. See Showcase.
 

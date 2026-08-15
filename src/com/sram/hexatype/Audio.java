@@ -191,6 +191,13 @@ final class Audio implements GameCore.Sound {
         play(Sfx.ZAP, 1f + 0.055f * step);
     }
 
+    @Override public void collect(int nth) {
+        // Climbs as the case fills, so a haul of four sounds like a run up the shelf rather than
+        // the same chime four times. Capped well inside what setPlaybackRate will take.
+        int step = nth < 0 ? 0 : nth > 7 ? 7 : nth;
+        play(Sfx.COLLECT, 1f + 0.05f * step);
+    }
+
     @Override public void clearWord() {
         play(Sfx.CLEAR, 1f);
     }

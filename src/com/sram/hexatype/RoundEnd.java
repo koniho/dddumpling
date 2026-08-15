@@ -154,6 +154,40 @@ final class RoundEnd extends Draw {
     private static final float TRAIL_STEP = 0.045f;
 
     /**
+     * How much of the flight separates one departure from the next, and the shortest a single
+     * trip may be squeezed to.
+     *
+     * They leave in a line and land in a line: each one arriving in its own moment is what lets a
+     * chime be played per landing instead of one chord for the lot. The whole haul used to leave
+     * staggered and then converge on the same instant, which looked fine and sounded like a single
+     * event.
+     */
+    private static final float LEAD = 0.09f, MIN_SPAN = 0.30f;
+
+    /** Flight progress at which flyer {@code n} of {@code count} sets off. */
+    static float lead(int n, int count) {
+        // A big haul packs its departures tighter rather than leaving the last one no flight at
+        // all — the alternative is a dumpling that starts and lands on the same frame.
+        float gap = Math.min(LEAD, (1f - MIN_SPAN) / Math.max(1, count - 1));
+        return n * gap;
+    }
+
+    /** How much of the flight one trip lasts. The same for all of them, so they fly in step. */
+    static float span(int count) {
+        return 1f - lead(count - 1, count);
+    }
+
+    /** Flight progress at which flyer {@code n} is taken into the case. The last lands at 1. */
+    static float arrival(int n, int count) {
+        return lead(n, count) + span(count);
+    }
+
+    /** 0..1 along flyer {@code n}'s own trip, at flight progress {@code u}. */
+    static float trip(float u, int n, int count) {
+        return clamp01((u - lead(n, count)) / span(count));
+    }
+
+    /**
      * The haul carrying itself from where it was dancing to the display case, over the first
      * moment of the title screen.
      *
@@ -172,10 +206,7 @@ final class RoundEnd extends Draw {
         for (int i = 0; i < Collect.COUNT; i++) {
             if (!Collect.has(c.roundPrizes, i)) continue;
             float x0 = rowX(L, n, count);
-            // Staggered so they leave in a line rather than as a clump, and the last one still
-            // lands before the flight is over.
-            float lead = n * 0.06f;
-            float t = clamp01((u - lead) / Math.max(0.2f, 1f - lead));
+            float t = trip(u, n, count);
 
             for (int k = TRAIL; k >= 0; k--) {
                 float ts = t - k * TRAIL_STEP;

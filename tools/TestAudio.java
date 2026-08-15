@@ -263,6 +263,89 @@ final class TestAudio extends Check {
         check("a null sound seam is safe", silentRunSurvives(L));
     }
 
+    /**
+     * The haul's flight home: one chime per dumpling, as it is taken into the case.
+     *
+     * The flight is drawn from {@link RoundEnd#arrival}, and the sounds are fired off the same
+     * function, so this suite is really asserting that the two halves cannot drift: every landing
+     * announced exactly once, in order, and all of them inside the flight.
+     */
+    static void haulLanding(Layout L) {
+        group("shelving the haul");
+
+        // Arrivals have to be spread out, or the chimes stack into one chord. They used to.
+        for (int count = 1; count <= 8; count++) {
+            boolean rising = true, inside = true;
+            for (int n = 0; n < count; n++) {
+                float a = RoundEnd.arrival(n, count);
+                if (n > 0 && a <= RoundEnd.arrival(n - 1, count)) rising = false;
+                if (a <= 0f || a > 1.0001f) inside = false;
+                if (RoundEnd.trip(a, n, count) < 0.999f) inside = false;
+            }
+            check("a haul of " + count + " lands one at a time", rising);
+            check("a haul of " + count + " lands inside the flight", inside);
+        }
+        check("the last one lands as the flight ends",
+                Math.abs(RoundEnd.arrival(4, 5) - 1f) < 1e-4f);
+        System.out.printf("    a haul of 5 lands at %.0f, %.0f, %.0f, %.0f, %.0fms%n",
+                RoundEnd.arrival(0, 5) * GameCore.HOME_TIME * 1000f,
+                RoundEnd.arrival(1, 5) * GameCore.HOME_TIME * 1000f,
+                RoundEnd.arrival(2, 5) * GameCore.HOME_TIME * 1000f,
+                RoundEnd.arrival(3, 5) * GameCore.HOME_TIME * 1000f,
+                RoundEnd.arrival(4, 5) * GameCore.HOME_TIME * 1000f);
+
+        // A run that ended with three freed dumplings, sent to the title screen.
+        Mem store = new Mem();
+        GameCore c = new GameCore(store, 811L);
+        Ear ear = new Ear();
+        c.sound = ear;
+        c.startGame();
+        c.state = GameCore.OVER;
+        c.roundPrizes = Collect.add(Collect.add(Collect.add(0L, 2), 9), 21);
+        c.toTitle();
+        check("the flight is on", c.homing() && RoundEnd.hauled(c) == 3);
+        check("and nothing has been shelved yet", ear.collects == 0 && c.homeLanded == 0);
+
+        // Nothing may land early, and the first one must land before the flight is over.
+        advance(c, L, GameCore.HOME_TIME * RoundEnd.lead(0, 3) + DT);
+        check("no chime while they are still in the air", ear.collects == 0);
+        advance(c, L, GameCore.HOME_TIME);
+        check("every one of them is announced", ear.collects == 3);
+        check("once each, in the order they fly",
+                ear.shelved.equals(java.util.Arrays.asList(0, 1, 2)));
+        check("and the flight is over", !c.homing());
+        advance(c, L, 2f);
+        check("nothing chimes again afterwards", ear.collects == 3);
+
+        // An empty-handed run has nothing to shelve and no flight to do it in.
+        Ear quiet = new Ear();
+        GameCore d = new GameCore(store, 813L);
+        d.sound = quiet;
+        d.startGame();
+        d.state = GameCore.OVER;
+        d.toTitle();
+        advance(d, L, GameCore.HOME_TIME + 0.5f);
+        check("an empty-handed run shelves nothing", quiet.collects == 0 && !d.homing());
+
+        // Short and decaying, like the chop and the crack: several land a tenth of a second apart
+        // and Audio gives every effect one track, so a tail would smear into the next landing.
+        short[] chime = Sfx.build(Sfx.COLLECT);
+        float len = (float) chime.length / Sfx.RATE;
+        int head = 0, tail = 0;
+        for (int i = 0; i < chime.length / 4; i++) head = Math.max(head, Math.abs(chime[i]));
+        for (int i = chime.length * 3 / 4; i < chime.length; i++) {
+            tail = Math.max(tail, Math.abs(chime[i]));
+        }
+        System.out.printf("    collect is %.0fms, crossings %.0f/s, tail %d%% of head%n",
+                len * 1000f, crossRate(chime), tail * 100 / Math.max(1, head));
+        check("the chime is short enough to repeat", len < 0.20f);
+        check("and shorter than the gap between two landings",
+                len < GameCore.HOME_TIME * (RoundEnd.arrival(1, 5) - RoundEnd.arrival(0, 5)) * 2f);
+        check("the chime dies away", tail < head / 4);
+        // Tone, not noise: it must ring like glass rather than tick like a click.
+        check("it has a tone in it", crossRate(chime) > 1200f && crossRate(chime) < 6000f);
+    }
+
     static boolean silentRunSurvives(Layout L) {
         GameCore c = new GameCore(new Mem(), 74L);
         c.sound = null;

@@ -29,10 +29,12 @@ final class CoreTest {
         TestStages.spinner(L);
         TestStages.bonusStatusHold(L);
         TestStages.skits(L);
+        TestStages.mashEarned(L);
         TestStages.steamerBonus(L);
         TestStages.accuracyTracking(L);
         TestStages.warningsAndHarm(L);
         TestStages.pushBack(L);
+        TestStages.pushBackRelief(L);
 
         TestCollect.catalogue(L);
         TestCollect.ownedSet(L);
@@ -53,11 +55,13 @@ final class CoreTest {
 
         TestVisuals.sky(L);
         TestVisuals.indicatorsAndGlow(L);
+        TestVisuals.hudStacking(L);
         TestVisuals.settings(L);
 
         TestAudio.audio(L);
         TestAudio.musicChoice(L);
         TestAudio.frenzySounds(L);
+        TestAudio.haulLanding(L);
 
         TestPower.drifting(L);
         TestPower.precedence(L);
@@ -71,10 +75,12 @@ final class CoreTest {
         TestPower.modeSpread(L);
         TestPower.trail(L);
         TestPower.frenzyFallSpeed(L);
+        TestPower.frenzyTaper(L);
         TestPower.playtest(L);
         TestPower.soak(L);
 
         TestSoak.perfectPlaySurvives(L);
+        TestSoak.boundedPlay(L);
         TestSoak.fuzz(L);
 
         System.out.printf("%n%d passed, %d failed%n", Check.pass, Check.fail);

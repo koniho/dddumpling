@@ -111,6 +111,25 @@ final class Layout {
                 && y <= hudY + 0.6f * unit;
     }
 
+    /**
+     * True in the band an upward panic swipe may start in: from the middle of the screen down to
+     * the top of the key deck.
+     *
+     * Far larger than the lit strip that advertises it, deliberately. The strip alone — the sliver
+     * between the danger line and the deck — was about a thirtieth of the screen and a thumb coming
+     * up off a key overshot it constantly, so a gesture meant for the worst moment in the game was
+     * the hardest one to land. The strip stays where it is as the *target*; this is the catchment
+     * around it. See {@code Renderer.pushHint}, which is not widened to match: a hint the size of
+     * half the screen is not a hint.
+     *
+     * Nothing else in play claims a touch in here — the keys are all below {@link #deckTop} and the
+     * settings tap is up at the HUD — so widening it takes nothing away. The one gesture it shares
+     * the field with is the FLING blade, and {@code GameView} runs the blade first for that reason.
+     */
+    boolean inPushZone(float x, float y) {
+        return y >= h / 2f && y <= deckTop;
+    }
+
     /** Index of the key hex containing x,y, or -1. */
     int keyAt(float x, float y) {
         int best = -1;

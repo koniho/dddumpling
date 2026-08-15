@@ -99,10 +99,10 @@ final class TestPower extends Check {
         check("catching it scores", c.score >= Power.SCORE);
         check("the music switches", ear.frenzyCalls == fc0 + 1 && ear.frenzyOn);
 
-        // Words arrive four times faster, and the sky runs four times faster.
+        // Words arrive faster, and the sky runs four times faster.
         c.stage = 3;
-        float fast = c.spawnInterval() / Power.SPAWN_RATE;
-        check("the spawn interval is quartered", fast < c.spawnInterval());
+        float fast = c.spawnInterval() / Power.spawnRate(c.ramp());
+        check("the spawn interval shortens", fast < c.spawnInterval());
         advance(c, L, 1.0f);
         check("the sky runs fast", c.skyClock - sky0 > Power.SKY_RATE - 1f);
 
@@ -133,7 +133,18 @@ final class TestPower extends Check {
         check("the interlude follows", c.state == GameCore.BONUS);
         check("the frenzy tone plays", ear.powerClears == 1);
         check("the ordinary stage tone is suppressed", ear.stageClears == 0);
-        check("the interlude runs longer", c.bonusTimer > GameCore.bonusLength());
+        // A frenzy no longer buys extra interlude: its 2.6s was larger than the whole spread of the
+        // earned-mash ladder, so a hurt frenzy round out-paid a perfect calm one. Asserted on
+        // bonusRollEnd, which is set once when the interlude opens — bonusTimer has already been
+        // counting for as long as it took the loop above to notice, so it cannot be compared to a
+        // full length.
+        check("a frenzy buys no extra interlude", Math.abs(c.bonusRollEnd
+                - (GameCore.bonusLength(c.earnedMash) - GameCore.BONUS_ROLL)) < 0.001f);
+        // And the clock says so. This is the assertion the old behaviour failed out loud: a
+        // frenzy-cleared perfect round read 5.0 earned plus 2.6 bought, so the countdown opened on
+        // "8" — a number the ladder has no tier for, on a clock whose highest tier is 5.
+        check("the clock cannot read higher than the top tier",
+                c.bonusLeft() <= GameCore.MASH_PERFECT + 0.001f);
         check("the powerup is cleared away", c.power == null);
 
         // A stage cleared normally plays the ordinary tone instead.
@@ -147,8 +158,8 @@ final class TestPower extends Check {
         advanceToBonus(d, L);
         check("a normal clear plays the stage tone", ear2.stageClears == 1);
         check("and not the frenzy tone", ear2.powerClears == 0);
-        check("a normal interlude is the usual length",
-                d.bonusTimer < GameCore.bonusLength() + 0.1f);
+        check("a normal interlude is exactly what the round earned",
+                d.bonusTimer < GameCore.bonusLength(d.earnedMash) + 0.01f);
     }
 
     private static boolean allDestroyed(GameCore c) {
@@ -545,6 +556,24 @@ final class TestPower extends Check {
         check("the squishy has gone with it", e.buddy.out());
         advance(e, L, 1f);
         check("and stays gone", e.buddy.out());
+
+        // Dying mid-mode has to take it too. It is only ever sent home from the PLAY half of
+        // update(), which a death puts out of reach — so the bubble used to carry on bouncing
+        // through the swirl, the summary and the title screen behind them.
+        GameCore k = new GameCore(store, 277L);
+        k.startGame();
+        k.enemies.clear();
+        k.target = null;
+        k.playtestMode(Power.TEAM, L);
+        check("the mode is running before the death", k.team() && !k.buddy.out());
+        k.lives = 1;
+        add(k, L, new int[] {0, 0}, L.dangerY - L.enemyR + 1f);
+        advance(k, L, GameCore.ATTACK_TIME + 2 * DT);
+        check("the last life went", k.state == GameCore.OVER);
+        check("the frenzy died with the player", !k.powerActive());
+        check("and so did the squishy", k.buddy.out());
+        advancePastDeath(k, L);
+        check("it is not back on the summary", k.buddy.out());
     }
 
     /** The MULTI chain: what one press takes, in what order, and what it pays. */
@@ -851,7 +880,87 @@ final class TestPower extends Check {
         check("no fling hint in other modes", !d.showFlingHint());
         check("no trail in other modes", d.particles.isEmpty());
 
-        check("words arrive six times faster during a frenzy", Power.SPAWN_RATE == 6f);
+        check("words arrive six times faster during an opening-stage frenzy",
+                Power.SPAWN_RATE == 6f && Power.spawnRate(0f) == 6f);
+    }
+
+    /**
+     * The frenzy taper: what a frenzy is allowed to ask of the player, stage by stage.
+     *
+     * The thing being pinned is a *ratio*. A frenzy's press demand is exactly its spawn multiplier
+     * times the stage's own demand — words cost the same to clear either way, they just turn up
+     * more often — so holding the multiplier down is the whole of holding the demand down. Flat
+     * multipliers compounded with the ramp: stage 10 asked 23 presses a second and stage 22 asked
+     * 43, against a human ceiling of maybe 8.
+     */
+    static void frenzyTaper(Layout L) {
+        group("frenzy taper");
+
+        check("an opening-stage frenzy is untapered", Power.taper(0f) == 1f);
+        float floor = (Power.LATE_RATIO - 1f) / (Power.SPAWN_RATE - 1f);
+        check("it bottoms out at the ratio the target implies",
+                Math.abs(Power.taper(99f) - floor) < 1e-6f);
+        check("and a late frenzy asks exactly the target",
+                Math.abs(Power.spawnRate(99f) - Power.LATE_RATIO) < 1e-4f);
+
+        // Monotonic, and never slower than the stage it interrupts.
+        boolean falling = true, aboveOne = true;
+        float last = Power.spawnRate(0f);
+        for (float ramp = 0f; ramp <= 20f; ramp += 0.25f) {
+            float now = Power.spawnRate(ramp);
+            if (now > last + 1e-6f) falling = false;
+            if (Power.spawnRate(ramp) < 1f || Power.crowdRate(ramp) < 1f
+                    || Power.fallRate(ramp) < 1f) {
+                aboveOne = false;
+            }
+            last = now;
+        }
+        check("the taper never turns back up", falling);
+        check("and a frenzy is never slower than its own stage", aboveOne);
+
+        // The demand itself, measured the way the player feels it: presses a second needed to clear
+        // words as fast as a frenzy sends them, off the real word generator rather than an estimate.
+        //
+        // Two separate things are being held here, and it matters which is which. The taper owns the
+        // *ratio* — what a frenzy adds to its own stage. It cannot own the absolute number, because
+        // that is the ramp's, and by stage 25 ordinary play already wants 8.8 presses a second all
+        // by itself. So the absolute cap is asserted over the stretch where the ramp is still sane,
+        // and past that the assertion is only that a frenzy is no worse than twice its stage.
+        GameCore c = new GameCore(new Mem(), 941L);
+        c.startGame();
+        float worst = 0f, worstFlat = 0f, worstEarly = 0f;
+        int worstStage = 0;
+        boolean withinTarget = true;
+        float floorAt = (Power.LATE_RATIO - 1f) / (Power.SPAWN_RATE - 1f) + 1e-6f;
+        for (int stage = 1; stage <= 25; stage++) {
+            c.stage = stage;
+            float calm = pressesPerWord(c, 719L + stage) / c.spawnInterval();
+            float demand = calm * Power.spawnRate(c.ramp());
+            float flat = calm * Power.SPAWN_RATE;
+            // Past the point the taper bottoms out, a frenzy may only ask the target multiple.
+            if (Power.taper(c.ramp()) <= floorAt && demand > calm * Power.LATE_RATIO + 1e-3f) {
+                withinTarget = false;
+            }
+            if (demand > worst) {
+                worst = demand;
+                worstStage = stage;
+                worstFlat = flat;
+            }
+            if (stage <= 19 && demand > worstEarly) worstEarly = demand;
+            if (stage % 6 == 1) {
+                System.out.printf("    stage %-2d  spawn x%.2f  %5.1f presses/s "
+                        + "(flat rates: %.1f, calm stage: %.1f)%n",
+                        stage, Power.spawnRate(c.ramp()), demand, flat, calm);
+            }
+        }
+        check("a bottomed-out frenzy asks only the target multiple of its stage", withinTarget);
+        System.out.printf("    worst is %.1f presses/s at stage %d, where flat rates asked %.1f%n",
+                worst, worstStage, worstFlat);
+        // A frenzy is still meant to be a scramble, so this is not comfortable — but it is inside
+        // what two thumbs can do in bursts, which 23 and 43 were not.
+        check("no frenzy up to stage 19 asks more than 12 presses a second", worstEarly < 12f);
+        check("and the worst stage of all is a real improvement on flat rates",
+                worst < worstFlat * 0.4f);
     }
 
     static void frenzyFallSpeed(Layout L) {

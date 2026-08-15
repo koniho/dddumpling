@@ -16,6 +16,30 @@ every sound to `out/sfx/*.wav`. Read the PNGs with the Read tool — the `0-*.pn
 show a whole set at once (the six letters, the thirty collectibles, both vignette casts). That loop is seconds, not
 minutes, and it needs no device.
 
+### And you can have it played for you
+
+`tools/Bot.java` is a player with stated limits — presses a second, a beat to find the next word,
+a miss rate — and `TestSoak.boundedPlay` runs three tiers of it and asserts where the curve stops
+them. Use it for any tuning change. The perfect-play soak beside it presses thirty times a second
+and never misses, so it can only tell you the game is winnable by a god; every difficulty question
+that has actually gone wrong here went wrong for hands. The frenzy wall survived several rounds of
+tuning because nothing in the harness had a ceiling.
+
+Its output is the curve, in one line per tier:
+
+```
+casual  4/s react 0.30s miss 8%  ->  stage 8.5 after 206s, 4 of 4 died
+steady  6/s react 0.20s miss 4%  ->  stage 19.3 after 523s, 4 of 4 died
+quick   9/s react 0.13s miss 2%  ->  stage 21.3 after 569s, 4 of 4 died
+```
+
+Two things to know before trusting it. It cannot swipe, so a FLING frenzy reaches it as a plain
+typing frenzy at full strength and the push-back is never used — the pessimistic reading, which is
+the useful one for a floor. And a bot that "declines" powerups is not available to write: with
+nothing engaged, any press matching the drifting letter catches it, so avoidance is not a strategy
+a player can have either. Frenzy fairness is therefore measured as frenzies survived per run, not
+by comparison with abstinence.
+
 This works because *all* logic and *all* drawing are pure Java behind the
 [`Painter`](src/com/sram/hexatype/Painter.java) interface. The APK implements it with
 `android.graphics.Canvas`; `tools/RasterPainter` implements it with a software rasterizer.
@@ -99,7 +123,8 @@ Android-only: `MainActivity`, `GameView` (input + frame loop), `CanvasPainter`, 
 `Crash`.
 
 Harness-only in `tools/`: `Check` (base class with the tally, assertion helpers, drivers and
-the Store/Sound stubs), `Test*` suites, `Preview`, `RasterPainter`, `Font`, `Png`, `Wav`.
+the Store/Sound stubs), `Test*` suites, `Bot` (a player with stated limits), `Preview`,
+`RasterPainter`, `Font`, `Png`, `Wav`.
 
 The `Test*` classes extend `Check` and the renderers extend `Draw` **so that helpers and
 colours resolve unqualified**. That is deliberate: prefixing several hundred call sites buys
@@ -126,7 +151,11 @@ nothing. Follow the pattern rather than "fixing" it.
   picked until it is known whether it or its neighbour is a stack — a stack may not sit beside
   its own letter. Swapping those two loops back would silently drop that guarantee.
 - **Reset state above early returns in `update()`.** `warnLevel` was reset *after* the
-  `state != PLAY` return, so a fatal breach left the red edge glow stuck on forever.
+  `state != PLAY` return, so a fatal breach left the red edge glow stuck on forever. This has now
+  bitten twice: the TEAM SQUISH squishy was only ever sent home from the PLAY half of `update()`,
+  so dying mid-frenzy left it bouncing around the swirl, the summary and the title screen behind
+  them. `breach()` clears it where the death happens. Anything a frenzy owns has two exits — the
+  frenzy ending and the player dying — and the second one does not run the loop.
 - **Removing from a list you are iterating.** A fatal breach clears the whole enemy list, so
   unlist before calling `breach()`.
 - **Position-driven animation, not time-driven,** for anything tied to where a thing is. A
@@ -139,8 +168,8 @@ nothing. Follow the pattern rather than "fixing" it.
 - **The harness font is an ASCII subset.** `tools/Font` has one bitmap per character it knows;
   a glyph it does not have simply vanishes from the PNG, so text using one looks right on the
   device and is missing a letter in every frame you check. `?` and `'` were both added to it
-  before they could be used. Add the glyph rather than writing around it — but do check, since
-  the set is still small. Arrows and chevrons are drawn as polygons for the same reason.
+  before they could be used, and `:` for COLLECTIONS. Add the glyph rather than writing around it —
+  but do check, since the set is still small. Arrows and chevrons are drawn as polygons for the same reason.
 - **Text that does not fit is reported, not eyeballed.** `RasterPainter.text` records any line
   drawn off the screen edge and `Preview` prints `DOES NOT FIT` under the frame that did it, with
   the width and the x range. It respects the current clip, because the display case deliberately
@@ -173,13 +202,38 @@ nothing. Follow the pattern rather than "fixing" it.
   ACCURACY on its percentage. Where lines stack, wrap the offset in `type()` too. Two other things
   that fell out of it: long strings stop fitting (28-character prompts ran off both edges — the fix
   was shorter copy, not a smaller size), and `Screens.settings` is deliberately *excluded*, because
-  its chips and rows are packed tight enough that scaled labels left their boxes. The harness font
+  its chips and rows are packed tight enough that scaled labels left their boxes. It bit again later
+  anyway: `Hud.hud` kept a plain `s * 0.95f` between SCORE and its number, and at TEXT 1.34 the
+  digits' caps came up three pixels through the label's baseline. Reported from a screenshot, not by
+  the harness — text-on-text collision is the one thing `DOES NOT FIT` does not look for.
+  `Hud.labelY`/`scoreSize` and `RasterPainter.CAP` exist so `TestVisuals.hudStacking` can assert the
+  clearance across a sweep of widths instead of it being eyeballed at one value of the knob. The harness font
   is wider than Quicksand, so a line that fits in a PNG fits on the device.
 - **Sharing an animation channel makes two events look identical.** A wrong press in the
   interlude set `lidPulse` and `flash` before the wrong-key check, so it pulsed the lid and
   flashed the basket exactly like a landed press — the only thing distinguishing them was the
   sound. `badPulse` is its own channel now. If two outcomes should look different, they need
   different state, not different timing on the same state.
+- **Two difficulty sources must never multiply.** The frenzy's pace was flat multipliers — 6x the
+  spawn rate, 4x the crowd, 2x the fall — sitting on top of a ramp that had already halved the spawn
+  interval, so they compounded with it. By stage 10 a frenzy asked 23 presses a second and by stage
+  22 it asked 43, against maybe 8 from two thumbs. It read as the game breaking, and it was felt
+  worst in FLURRY, which is the one mode buying accuracy rather than throughput. `Power.taper` now
+  scales all three down along the ramp toward `LATE_RATIO`, and `SKY_RATE` is deliberately left flat:
+  taper what costs the player, leave what only looks exciting, or the reward stops reading as one.
+  Anywhere a difficulty path multiplies two dials, check what their product does at the far end.
+- **A touch target is not the same object as the thing that advertises it.** The panic swipe could
+  only be started in the sliver `Renderer.pushHint` lights, about a thirtieth of the screen, and a
+  thumb coming up off a key overshot it constantly — so the gesture for the worst moment in the game
+  was the hardest one to land. `Layout.inPushZone` is now the lower half of the field and the lit
+  strip is unchanged: a hint the size of half the screen is not a hint. Nothing else claims a touch
+  in there (keys are below `deckTop`, the settings tap is up at the HUD, and `GameView` runs the
+  FLING blade first), which is what makes the catchment free to be generous.
+- **A gap you open has to stay open.** The panic swipe used to shove only the words below the
+  halfway mark, straight through whatever was above them, leaving two rows of letters on the same
+  line — unreadable, and it read as a drawing fault rather than a rule. `pushBack` walks the field
+  lowest-first and takes anything a shoved word would land on, which cascades, so a packed board goes
+  up as one. Any rule that *moves* something has to answer for what is already where it is going.
 - **A permanent warning is not a warning.** `harm()` was linear, so losing one life of three put
   a third-strength pulsing red border round the screen for the rest of the run — reported twice as
   a "stuck vignette" and it was not stuck, it was working as written. It is squared now: one life
@@ -200,7 +254,14 @@ nothing. Follow the pattern rather than "fixing" it.
   wash, and the achievement fanfare was doing exactly that. There are assertions on the chop's
   length, on its tail being a quarter of its head, and on its zero-crossing rate — that last one
   is a cheap stand-in for "has a tone under it rather than being a hiss", and it is the one that
-  caught the first attempt at giving it body being no better than the original.
+  caught the first attempt at giving it body being no better than the original. The shelving chime
+  is held to the same three, plus one more: it must be shorter than the gap between two landings,
+  since a haul shelves several a tenth of a second apart.
+- **Several things landing at once is one event, however many things there are.** The haul's flight
+  home staggered its departures and then had every flyer converge on the same instant, which looked
+  deliberate and was — until it needed a sound per landing, at which point a haul of four played one
+  chord. Arrivals are staggered too now. If you are about to attach a sound to the end of an
+  animation, check that the ends are actually distinct before writing the sound.
 - **A mode gated on game state has to be the last index.** TEAM SQUISH stars a collectible, so
   it cannot be offered with an empty case. It is excluded by rolling `nextInt(COUNT - 1)`, which
   only works while it is the highest index in `Power` — there is an assertion pinning that.
@@ -212,6 +273,17 @@ nothing. Follow the pattern rather than "fixing" it.
   the frame it lands and only the travel is spread over `PUSH_SLIDE`. Note which half owns what —
   the slide moves the real `e.y`, since targeting and the blade have to agree with what is on
   screen, but it skips the warn recompute and the breach check while a word is on its way up.
+- **One word, one meaning.** "Perfect" was asked two different questions by two different pieces of
+  code: the gold dumpling wanted no wrong presses, and the earned mash wanted no wrong presses *and*
+  no damage. So a word that fell past untouched cost a life and still won the flawless-wave
+  celebration — no press had been wrong, so by that reading nothing was. `GameCore.perfectRound` is
+  the single definition now and both read it. If two features share a word, they have to share the
+  predicate as well, or the word is doing no work.
+- **A bonus larger than the scale it sits on erases the scale.** A frenzy used to add 2.6s of
+  interlude on top of whatever the round earned — more than the whole 4s spread of the earned-mash
+  ladder — so a hurt frenzy round out-paid a perfect calm one and the ladder communicated nothing.
+  Gone. Before adding a modifier to a scored thing, check it against the *spread* of the thing it is
+  modifying, not against zero.
 - **Two copies of a duration is one too many.** The freed-prize escape had its length in
   `Steamer` and the number inlined again in `Screens` to drive the climb, so lengthening it in
   one place broke the animation in the other. `Steamer.FREE_TIME` is the only copy now. Worth a

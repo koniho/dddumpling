@@ -17,11 +17,25 @@ final class GameCore {
     /** Presses needed to lift the steamer lid clear and free the dumpling. */
     static final int STEAMER_HITS = 20;
     /**
-     * Length of the between-stages interlude. Short on purpose: at four seconds even a
-     * moderate masher lands all twenty hits in one go, and the damage would never actually
-     * accumulate across stages. At this length it takes roughly two interludes.
+     * Seconds of mashing a round earns, by how it went. The whole point of the spread is that the
+     * interlude stops being a thing that happens to you and becomes the round's pay packet.
+     *
+     * It used to be a flat 2.2s. Short on purpose, that: at four seconds a moderate masher lands
+     * all twenty hits in one go and the lid never accumulates across stages. So note what the top
+     * of this ladder gives away — a perfect round can now open the steamer in one visit, which is
+     * the intended reward and also the reason the tiers below it are worth playing for.
+     *
+     * <ul>
+     *   <li>{@link #MASH_PERFECT} — no damage and no wrong presses.
+     *   <li>{@link #MASH_UNHURT} — no damage, but some presses went astray.
+     *   <li>{@link #MASH_HURT} — a life went.
+     *   <li>{@link #MASH_PANIC} — the push-back was used, which overrides all of the above.
+     * </ul>
      */
-    static final float BONUS_TIME = 2.2f;
+    static final float MASH_PERFECT = 5f;
+    static final float MASH_UNHURT = 4f;
+    static final float MASH_HURT = 3f;
+    static final float MASH_PANIC = 1f;
     /**
      * Opening of the interlude, spent spinning to the pair of keys this round will use. The
      * pair is already chosen when the spinner starts; this is presentation, and mashing is
@@ -68,6 +82,11 @@ final class GameCore {
     static final float HOME_TIME = 1.15f;
     /** Counts down through that flight. Only ever non-zero in {@link #TITLE}. */
     float homeT;
+    /**
+     * How many of the haul have already been shelved, so each one is announced exactly once.
+     * Counted in the order {@link RoundEnd} flies them, which is catalogue order.
+     */
+    int homeLanded;
 
     /** True while the run's haul is still on its way to the case. */
     boolean homing() {
@@ -142,6 +161,12 @@ final class GameCore {
         /** The collected-squishy bitmask; see {@link Collect}. */
         long loadCollected();
         void saveCollected(long owned);
+        /**
+         * Every basket ever opened, duplicates and all — so it keeps climbing after the case is
+         * full, which the bitmask cannot. See {@link GameCore#collectTotal}.
+         */
+        int loadCollectTotal();
+        void saveCollectTotal(int total);
     }
 
     /**
@@ -159,6 +184,13 @@ final class GameCore {
         void chop();
         /** One hop of a MULTI chain. @param hop 1-based, so the crack can climb with the chain */
         void zap(int hop);
+        /**
+         * One of the run's dumplings being taken into the display case, at the end of its flight
+         * home.
+         *
+         * @param nth 0-based position in the haul, so the chime can climb as the shelf fills
+         */
+        void collect(int nth);
         /** Switch the looping background track to {@link Music#NAMES}[choice]. */
         void selectMusic(int choice);
 
@@ -262,6 +294,13 @@ final class GameCore {
         int tileIndex;
     }
 
+    /**
+     * How long a shot is in the air, from the key to the tile it was fired at. Named because the
+     * title screen's demo fires the same bullet on the same schedule, and a second copy of the
+     * number would drift.
+     */
+    static final float SHOT_TIME = 0.13f;
+
     static final class Particle {
         float x, y, vx, vy, life, max, size;
         int color;
@@ -280,6 +319,14 @@ final class GameCore {
     int hits, misses;
     /** Incorrect presses in the current stage; zero at stage end earns the gold dumpling. */
     int missesThisStage;
+    /** Lives lost in the current stage. Zero is what "no damage" means to the interlude's verdict. */
+    int hurtThisStage;
+    /**
+     * Mash seconds the finished round earned, settled by {@link #beginStageEnd} rather than read
+     * when the interlude opens — by then {@link #missesThisStage} has already been zeroed, and the
+     * verdict has to be taken while the evidence is still there.
+     */
+    float earnedMash = MASH_HURT;
 
     // ---- settings (persisted) ----------------------------------------------
     static final float SPEED_MIN = 0.5f, SPEED_MAX = 1.5f;
@@ -349,6 +396,15 @@ final class GameCore {
      * not lose the thing it won.
      */
     long collected;
+    /**
+     * Baskets opened over every run ever, duplicates counted.
+     *
+     * The bitmask beside it cannot say this: it stops at thirty and then never moves again, so a
+     * player with a full case has nothing left that counts up. This does, and it is the honest
+     * measure of how much has actually been won — a duplicate came out of a basket you opened just
+     * the same. Written through on every award, for the same reason the bitmask is.
+     */
+    int collectTotal;
     /** What the last opened steamer handed over, or -1. Reset when a run starts. */
     int prize = -1;
     /**
@@ -483,7 +539,22 @@ final class GameCore {
      * ends — otherwise a frenzy would only affect whatever arrived during it.
      */
     float fallRate() {
-        return powerActive() ? Power.FALL_RATE : 1f;
+        float rate = powerActive() ? Power.fallRate(ramp()) : 1f;
+        // The shove's drag, winding back up. Multiplied into whatever the frenzy is asking for
+        // rather than replacing it: a swipe during a frenzy has to be worth the same relief.
+        if (pushSlowT > 0f) {
+            float back = 1f - pushSlowT / PUSH_SLOW;
+            rate *= PUSH_SLOW_RATE + (1f - PUSH_SLOW_RATE) * back;
+        }
+        return rate;
+    }
+
+    /** Counts down through the drag a shove leaves on the field. */
+    float pushSlowT;
+
+    /** 0..1 through that drag, for anything that wants to show it. */
+    float pushSlowProgress() {
+        return pushSlowT > 0f ? 1f - pushSlowT / PUSH_SLOW : 1f;
     }
 
     // ---- MULTI chain --------------------------------------------------------
@@ -564,16 +635,46 @@ final class GameCore {
      * Won round: the mash is over the instant it is won, so it is the escape animation and then
      * the parade. The first four run off the one countdown — the fade-out then has one value to
      * read, and every boundary is a comparison rather than a transition that could be missed.
-     * Only the first boundary varies, since a frenzy buys a longer mash, so it is stored.
+     * Only the first boundary varies, since the mash is earned per round, so it is stored.
      */
     float bonusRollEnd;
 
     /** Timer value at which the mash gives way to the beat on zero. */
     private static final float MASH_END = BONUS_HOLD + BONUS_STATUS;
 
-    /** Total length of an ordinary interlude: all four phases, without a frenzy's extra. */
-    static float bonusLength() {
-        return BONUS_ROLL + BONUS_TIME + BONUS_HOLD + BONUS_STATUS;
+    /**
+     * Total length of an interlude whose round earned {@code mash} seconds: all four phases, without
+     * a frenzy's extra. Takes the mash rather than assuming one, since how long it is is the round's
+     * business now.
+     */
+    static float bonusLength(float mash) {
+        return BONUS_ROLL + mash + BONUS_HOLD + BONUS_STATUS;
+    }
+
+    /**
+     * A perfect round: nothing pressed wrongly and nothing lost.
+     *
+     * The one definition, read by both things that care — the flawless-wave dumpling in
+     * {@link #beginStageEnd} and {@link #mashEarned}. It used to ask only about wrong presses, which
+     * meant a word that fell past untouched cost a life and still earned the gold dumpling: no
+     * *press* had been wrong, so by that reading nothing was. Two things called perfect in one game
+     * had better mean the same thing, so this is it.
+     */
+    boolean perfectRound() {
+        return missesThisStage == 0 && hurtThisStage == 0;
+    }
+
+    /**
+     * What the round just finished has earned at the steamer.
+     *
+     * The push-back overrides everything, including an otherwise perfect round: it is a life bought
+     * back, and this is the price. Note that it does not cost the dumpling, only the mash — the
+     * swipe is not damage, it is what you spent to avoid damage.
+     */
+    float mashEarned() {
+        if (pushUsed) return MASH_PANIC;
+        if (hurtThisStage > 0) return MASH_HURT;
+        return perfectRound() ? MASH_PERFECT : MASH_UNHURT;
     }
 
     /** True while the spinner is still settling on this round's pair. */
@@ -927,6 +1028,19 @@ final class GameCore {
      * is still climbing as the last word settles.
      */
     static final float PUSH_SLIDE = 0.4f;
+    /**
+     * How long the field stays winded after a shove, and how slowly it falls at the start of that.
+     *
+     * The distance the swipe buys is not the save on its own — the words simply come back down at
+     * full speed, and against a late wave that was worth about a second. This is: everything crawls
+     * and then winds back up, which is time to actually type rather than time to watch.
+     *
+     * Ramped rather than switched off at the end, because a field that snaps from a quarter speed to
+     * full is the "position-driven animation" trap wearing a different hat — the recovery has to be
+     * something you can see coming, or the wave appears to accelerate out of nowhere.
+     */
+    static final float PUSH_SLOW = 3f;
+    static final float PUSH_SLOW_RATE = 0.25f;
 
     /** Length of the lunge animation between crossing the line and losing a life. */
     static final float ATTACK_TIME = 0.42f;
@@ -953,6 +1067,11 @@ final class GameCore {
             // Masked: a store that hands back junk in the high bits must not make
             // Collect.owned() report more than there are entries.
             collected = store.loadCollected() & Collect.MASK;
+            // Floored at what the case holds: a store from before this counter existed has nothing
+            // to hand back, and reading zero next to a part-full case would tell the player they
+            // had won nothing. Their collection is the floor on how many baskets they opened.
+            collectTotal = Math.max(Collect.owned(collected),
+                    Math.max(0, store.loadCollectTotal()));
         }
     }
 
@@ -988,14 +1107,22 @@ final class GameCore {
         }
         clearArmed = false;
         collected = 0L;
+        // The tally goes with them. It counts baskets opened for entries that no longer exist, so
+        // leaving it standing would put "COLLECTIONS: 40" over an empty case — the same reason the
+        // run's haul cannot outlive them either.
+        collectTotal = 0;
         prize = -1;
         // The haul describes entries that are no longer owned, so it cannot outlive them.
         roundPrizes = 0L;
         homeT = 0f;
+        homeLanded = 0;
         closeStory();
         caseIndex = 0;
         caseSlide = 0f;
-        if (store != null) store.saveCollected(0L);
+        if (store != null) {
+            store.saveCollected(0L);
+            store.saveCollectTotal(0);
+        }
         if (sound != null) sound.wrong();
     }
 
@@ -1145,9 +1272,13 @@ final class GameCore {
 
     int maxEnemies() { return Math.min(7, 3 + rampStep()); }
 
-    /** Concurrent words allowed right now; a frenzy lets four times as many pile up. */
+    /**
+     * Concurrent words allowed right now. A frenzy lets more pile up — four times as many on the
+     * opening stage, tapering with the ramp, since the cap multiplied a {@code maxEnemies} that was
+     * already climbing.
+     */
     int crowdCap() {
-        return powerActive() ? (int) (maxEnemies() * Power.CROWD_RATE) : maxEnemies();
+        return powerActive() ? (int) (maxEnemies() * Power.crowdRate(ramp())) : maxEnemies();
     }
 
     int maxWordLen() { return Math.min(5, 2 + rampStep()); }
@@ -1205,6 +1336,8 @@ final class GameCore {
         hits = 0;
         misses = 0;
         missesThisStage = 0;
+        hurtThisStage = 0;
+        earnedMash = MASH_HURT;
         combo = 0;
         maxCombo = 0;
         lives = START_LIVES;
@@ -1228,6 +1361,7 @@ final class GameCore {
         launchT = 0f;
         pushUsed = false;
         pushT = 0f;
+        pushSlowT = 0f;
         pushCount = 0;
         // The collection itself survives; only the "you just won this" banner is per-run.
         prize = -1;
@@ -1236,6 +1370,7 @@ final class GameCore {
         roundPrizes = 0L;
         deathT = 0f;
         homeT = 0f;
+        homeLanded = 0;
         paradeTimer = 0f;
         power = null;
         mode = -1;
@@ -1262,6 +1397,7 @@ final class GameCore {
         // case is opened. Only off the game-over screen: arriving from anywhere else there is no
         // dance for them to be leaving.
         homeT = hadHaul ? HOME_TIME : 0f;
+        homeLanded = 0;
         enemies.clear();
         shots.clear();
         target = null;
@@ -1421,7 +1557,7 @@ final class GameCore {
         s.target = e;
         s.kill = kill;
         s.tileIndex = struck;
-        s.dur = 0.13f;
+        s.dur = SHOT_TIME;
         shots.add(s);
         return true;
     }
@@ -1587,16 +1723,48 @@ final class GameCore {
         if (!pushReady()) return false;
         float mid = (L.playTop + L.dangerY) / 2f;
         float lift = (L.dangerY - L.playTop) * PUSH_LIFT;
-        int moved = 0;
+
+        // Shoved words are found lowest-first so the shove can propagate upward in one pass: a word
+        // is taken if it is in the bottom half, or if a word already taken would land on top of it.
+        // Without that, a shove drove the threat straight through whatever was above it and left two
+        // rows of letters occupying the same line — unreadable, and it looked like a drawing fault
+        // rather than a rule. A full field can therefore go up as one, which is the right answer:
+        // the swipe is a shove against everything on the board, not against the nearest thing.
+        java.util.List<Enemy> order = new java.util.ArrayList<Enemy>();
         for (int i = 0; i < enemies.size(); i++) {
             Enemy e = enemies.get(i);
-            if (e.destroyed || e.dying || e.y < mid) continue;
+            if (!e.destroyed && !e.dying) order.add(e);
+        }
+        java.util.Collections.sort(order, new java.util.Comparator<Enemy>() {
+            public int compare(Enemy a, Enemy b) {
+                return Float.compare(b.y, a.y);
+            }
+        });
+
+        // A row is two tile radii tall, so that is the distance at which two of them collide.
+        float clash = 2f * L.enemyR;
+        java.util.List<Float> taken = new java.util.ArrayList<Float>();
+        int moved = 0;
+        for (int i = 0; i < order.size(); i++) {
+            Enemy e = order.get(i);
+            boolean shove = e.y >= mid;
+            // Checked against every destination already claimed, not just the last one: a long lift
+            // can carry a word clean over the one above it and come to rest higher again, so the
+            // thing it now collides with need not be its own neighbour.
+            for (int k = 0; !shove && k < taken.size(); k++) {
+                if (Math.abs(e.y - taken.get(k)) < clash) shove = true;
+            }
+            if (!shove) continue;
             e.attacking = false;
             e.attackT = 0f;
             e.warn = 0f;
             e.slideFrom = e.y;
+            // Clamped at the top edge, so a field full enough to need the whole board moved can
+            // still end with a couple of rows piled against the ceiling. Better than a word shoved
+            // off the screen it has to be typed on.
             e.slideTo = Math.max(L.playTop, e.y - lift);
             e.slideT = PUSH_SLIDE;
+            taken.add(e.slideTo);
             // At its feet where it stands, not where it is going: this is the shove landing.
             Fx.explode(this, rnd, enemyCentreX(e), e.y + L.enemyR * 1.4f, L.enemyR * 1.2f, 8,
                     Glyph.COLOR[e.word[e.pos]]);
@@ -1610,6 +1778,10 @@ final class GameCore {
         pushUsed = true;
         pushCount = moved;
         pushT = PUSH_TIME;
+        // The field is winded by it. Distance alone was not much of a save: the words came straight
+        // back down at full speed, and against a late wave the swipe bought about a second. The drag
+        // is where the recovery actually lives.
+        pushSlowT = PUSH_SLOW;
         // Cleared here as well as by the loop: the edge glow reads it, and it would otherwise
         // hold last frame's alarm for a field that is no longer in danger.
         warnLevel = 0f;
@@ -1725,6 +1897,9 @@ final class GameCore {
         stageBanner = decay(stageBanner, dt);
         perfectBanner = decay(perfectBanner, dt);
         pushT = decay(pushT, dt);
+        // Above the PLAY return with the rest of them: a run that ends mid-drag must not leave the
+        // next one starting at a quarter speed.
+        pushSlowT = decay(pushSlowT, dt);
         // The death hold, and the flight home that follows it a screen later. Both above the PLAY
         // return: neither runs during play, and the states they do run in never reach it.
         if (deathT > 0f) {
@@ -1736,7 +1911,19 @@ final class GameCore {
                 target = null;
             }
         }
-        homeT = decay(homeT, dt);
+        if (homeT > 0f) {
+            homeT = decay(homeT, dt);
+            // A chime as each one is taken in. Fired from here rather than from the drawing so it
+            // lands on the frame the flyer does and exactly once, and read off the same arrival
+            // times the flight is drawn from — the flight owns when they land, and one copy of
+            // that is one more than the two it had before.
+            int haul = RoundEnd.hauled(this);
+            float u = homeT > 0f ? 1f - homeT / HOME_TIME : 1f;
+            while (homeLanded < haul && RoundEnd.arrival(homeLanded, haul) <= u) {
+                if (sound != null) sound.collect(homeLanded);
+                homeLanded++;
+            }
+        }
         if (storyOpen()) storyT += dt;
         // The title screen dissolving, and the squishy's send-off over the top of it. Play begins
         // the frame the last of them finishes, not on the press.
@@ -1840,7 +2027,7 @@ final class GameCore {
             if (spawnTimer <= 0 && liveEnemies() < crowdCap()) {
                 spawn(L);
                 if (!powerActive()) spawnedThisStage++;
-                spawnTimer = spawnInterval() / (powerActive() ? Power.SPAWN_RATE : 1f);
+                spawnTimer = spawnInterval() / (powerActive() ? Power.spawnRate(ramp()) : 1f);
             }
         } else if (stageCleared()) {
             beginStageEnd();
@@ -2109,7 +2296,8 @@ final class GameCore {
      * edge is nearer, except that the first and last tile always go left and right
      * respectively, so a word visibly splits apart rather than sliding off as a block.
      */
-    private void computeFlyDirs(Enemy e, Layout L) {
+    /** Not private: the title screen's demo fans its word out the same way when it is cleared. */
+    void computeFlyDirs(Enemy e, Layout L) {
         int n = e.word.length;
         e.flyDir = new float[n];
         float mid = L.w / 2f;
@@ -2136,9 +2324,9 @@ final class GameCore {
     private void enterBonus() {
         state = BONUS;
         time = 0;
-        // A stage ended by a frenzy earns a longer go at the steamer. See bonusRollEnd for
-        // how the one timer carries all four phases.
-        bonusRollEnd = BONUS_TIME + (stageByPower ? Power.BONUS_EXTRA : 0f) + MASH_END;
+        // The mash is exactly what the round earned, and nothing else adds to it. See bonusRollEnd
+        // for how the one timer carries all four phases.
+        bonusRollEnd = earnedMash + MASH_END;
         bonusTimer = BONUS_ROLL + bonusRollEnd;
         paradeTimer = 0f;
         steamer.lidPulse = 0;
@@ -2203,6 +2391,10 @@ final class GameCore {
         // then carry themselves off to the case, so what matters is that you won it today — a
         // duplicate came out of a basket you opened just the same.
         roundPrizes = Collect.add(roundPrizes, prize);
+        // Counted whether or not it was new, and written through at once for the same reason the
+        // case is: a run that is force-quit must not lose what it opened.
+        collectTotal++;
+        if (store != null) store.saveCollectTotal(collectTotal);
         if (prizeNew) {
             collected = Collect.add(collected, prize);
             if (store != null) store.saveCollected(collected);
@@ -2220,11 +2412,15 @@ final class GameCore {
      * finished, so the interlude opens after that celebration rather than on top of it.
      */
     private void beginStageEnd() {
-        if (missesThisStage == 0) {
+        if (perfectRound()) {
             perfectBanner = PERFECT_TIME;
             if (sound != null) sound.achievement();
         }
+        // Taken here, before the counters go: this is the last frame on which how the round went is
+        // still knowable. The interlude only spends it.
+        earnedMash = mashEarned();
         missesThisStage = 0;
+        hurtThisStage = 0;
         pendingBonus = true;
     }
 
@@ -2244,6 +2440,7 @@ final class GameCore {
         if (target == e) target = null;
         resolvedThisStage++;
         lives--;
+        hurtThisStage++;
         combo = 0;
         shake = 1f;
         if (sound != null) sound.damage();
@@ -2268,6 +2465,11 @@ final class GameCore {
                 fingerDown = false;
                 if (sound != null) sound.frenzy(false);
             }
+            // And the squishy goes with it. It is only ever sent home from the PLAY half of
+            // update(), which this death has just put out of reach — so dying mid-TEAM SQUISH
+            // left it bouncing around the swirl and on over the summary. Reset state above the
+            // early return, or clear it where the early return is taken; there is no third way.
+            buddy.leave();
             power = null;
             if (score > best) {
                 best = score;

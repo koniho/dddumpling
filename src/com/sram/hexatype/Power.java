@@ -34,16 +34,82 @@ final class Power {
      * length of the last stretch of a stage once a powerup is caught.
      */
     static final float DURATION = 15f;
-    /** Words arrive this many times faster during the frenzy. */
+    /**
+     * How much faster words arrive during a frenzy on the opening stage, how many more of them are
+     * allowed on screen, and how much faster they fall.
+     *
+     * These are the *first-stage* figures. Every one of them is tapered by {@link #taper} as the
+     * difficulty ramp climbs, because they used to be flat multipliers on top of a ramp that had
+     * already halved the spawn interval — so they compounded with it. See below for what that cost.
+     */
     static final float SPAWN_RATE = 6f;
-    /** And this many times more of them on screen at once. */
     static final float CROWD_RATE = 4f;
-    /** And fall this many times faster. */
     static final float FALL_RATE = 2f;
-    /** Clouds run this many times faster during the frenzy. */
+
+    /**
+     * What a late frenzy is allowed to ask, as a multiple of what its own stage already asks.
+     *
+     * Note that a frenzy's press demand is *exactly* its spawn multiplier times the stage's own:
+     * words cost the same to clear either way, they simply turn up N times as often. So this
+     * number is the whole balance statement, and the taper below is just the curve that reaches it.
+     *
+     * It used to be a flat 6. That reads fine on the opening stages, where six times almost nothing
+     * is still almost nothing — but by stage 10 a frenzy wanted 23 presses a second sustained, and
+     * by stage 22 it wanted 43. Nobody has 23 presses a second. FLURRY is where this was felt worst,
+     * because it is the one mode that buys accuracy rather than throughput: MULTI takes every
+     * matching tile on the field with one press and so gets *better* the more crowded it is, TEAM
+     * SQUISH fields a second killer, FLING cuts several tiles a stroke, and FLURRY does exactly one
+     * press worth of work per press, same as ordinary play.
+     */
+    static final float LATE_RATIO = 2f;
+
+    /**
+     * Ramp position at which a frenzy would have no extra pace left at all, were it not floored —
+     * so with the floor it is the distance over which the taper does its work. 7 puts the floor at
+     * about stage 11, which is where the wall was being hit.
+     */
+    private static final float TAPER_SPAN = 7f;
+
+    /**
+     * How much of a frenzy's extra pace survives at ramp position {@code ramp}: 1 on the opening
+     * stage, falling to the floor that {@link #LATE_RATIO} implies.
+     *
+     * Derived rather than written down, so the two numbers cannot drift apart: at the floor the
+     * spawn multiplier has to come out at exactly {@code LATE_RATIO}, and every rate is
+     * {@code 1 + (rate - 1) * taper}, so the floor is fixed by the spawn rate alone.
+     */
+    static float taper(float ramp) {
+        float floor = (LATE_RATIO - 1f) / (SPAWN_RATE - 1f);
+        float t = 1f - ramp / TAPER_SPAN;
+        return t < floor ? floor : t;
+    }
+
+    /**
+     * A first-stage rate tapered to where the ramp has got to. Never below 1: a frenzy may run out
+     * of *extra* pace, but it can never run slower than the stage it interrupts.
+     */
+    private static float tapered(float rate, float ramp) {
+        return 1f + (rate - 1f) * taper(ramp);
+    }
+
+    static float spawnRate(float ramp) { return tapered(SPAWN_RATE, ramp); }
+
+    static float crowdRate(float ramp) { return tapered(CROWD_RATE, ramp); }
+
+    static float fallRate(float ramp) { return tapered(FALL_RATE, ramp); }
+
+    /**
+     * Clouds run this many times faster during the frenzy, at every stage.
+     *
+     * Deliberately not tapered. The rule is to taper what costs the player and leave what only
+     * looks exciting: a late frenzy is a calmer thing to play than an early one now, and it must
+     * not also *look* like a calmer thing, or the reward stops reading as a reward.
+     */
     static final float SKY_RATE = 4f;
-    /** Extra interlude time when the stage was ended by a frenzy. */
-    static final float BONUS_EXTRA = 2.6f;
+    // A frenzy used to buy 2.6s of extra interlude on top of whatever the round earned. Gone: it was
+    // larger than the whole spread of GameCore's earned-mash ladder, so a hurt frenzy round out-paid
+    // a perfect calm one and the ladder said nothing. The frenzy still announces itself with its own
+    // tone and still clears the stage outright, which is payment enough.
     /** Seconds to cross the screen. */
     static final float CROSS_TIME = 7.5f;
     /** Score for catching one. */

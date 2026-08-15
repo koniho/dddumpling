@@ -129,8 +129,9 @@ final class Renderer extends Draw {
                 ? Math.min(1f, e.destroyT / GameCore.DESTROY_TIME) : 0f;
         if (e.dying) {
             // The finishing shot is still in the air: flash a ring, but keep the tiles on
-            // screen so there is something for the fly-apart to act on.
-            float t = Math.min(1f, e.deathT / 0.13f);
+            // screen so there is something for the fly-apart to act on. Timed to the flight,
+            // because that is what the ring is waiting for.
+            float t = Math.min(1f, e.deathT / GameCore.SHOT_TIME);
             p.strokePoly(Glyph.hex(c.enemyCentreX(e), e.y, L.enemyR * (1.1f + t * 1.6f)),
                     Glyph.withAlpha(INK, (int) (200 * (1f - t))), L.enemyR * 0.16f);
         }
@@ -492,17 +493,32 @@ final class Renderer extends Draw {
     static void shots(Painter p, GameCore c, Layout L) {
         for (int i = 0; i < c.shots.size(); i++) {
             GameCore.Shot s = c.shots.get(i);
-            float t = Math.min(1f, s.t);
-            float x = s.sx + (s.tx - s.sx) * t;
-            float y = s.sy + (s.ty - s.sy) * t;
-            float t0 = Math.max(0f, t - 0.30f);
-            float x0 = s.sx + (s.tx - s.sx) * t0;
-            float y0 = s.sy + (s.ty - s.sy) * t0;
-            int col = Glyph.cycle(c.clock * 8f + s.glyph * 0.15f);
-            p.line(x0, y0, x, y, Glyph.withAlpha(col, 130), L.enemyR * 0.26f);
-            p.fillCircle(x, y, L.enemyR * 0.46f, Glyph.withAlpha(col, 80));
-            p.fillCircle(x, y, L.enemyR * 0.21f, Glyph.withAlpha(INK, 245));
+            bullet(p, c, L, s.sx, s.sy, s.tx, s.ty, s.t, s.glyph, 1f);
         }
+    }
+
+    /**
+     * One bullet in flight, from the key it was fired from to the tile it is going to hit.
+     *
+     * Its own method because the title screen's demo fires the same bullet at the word it is
+     * pretending to type, and a second shot-drawer would be the thing that eventually disagreed
+     * with this one — the same reason the demo hands its word to {@link #enemy}.
+     *
+     * @param t    0..1 along the flight
+     * @param fade multiplies every alpha, so the demo's shots leave with the title screen
+     */
+    static void bullet(Painter p, GameCore c, Layout L, float sx, float sy, float tx, float ty,
+            float t, int glyph, float fade) {
+        if (t > 1f) t = 1f;
+        float x = sx + (tx - sx) * t;
+        float y = sy + (ty - sy) * t;
+        float t0 = Math.max(0f, t - 0.30f);
+        float x0 = sx + (tx - sx) * t0;
+        float y0 = sy + (ty - sy) * t0;
+        int col = Glyph.cycle(c.clock * 8f + glyph * 0.15f);
+        p.line(x0, y0, x, y, Glyph.withAlpha(col, (int) (130 * fade)), L.enemyR * 0.26f);
+        p.fillCircle(x, y, L.enemyR * 0.46f, Glyph.withAlpha(col, (int) (80 * fade)));
+        p.fillCircle(x, y, L.enemyR * 0.21f, Glyph.withAlpha(INK, (int) (245 * fade)));
     }
 
     static void particles(Painter p, GameCore c) {
@@ -524,20 +540,28 @@ final class Renderer extends Draw {
         // six separate characters each having a bad moment.
         float gone = Math.min(1f, c.drained() * 1.6f);
 
-        // On the title screen every key starts a run, and nothing says so in words any more — the
-        // deck says it by glowing. Fades on the same crossfade the badge uses, so opening the case
-        // puts the invitation away with it: while the case is up a key only closes it again.
-        float invite = 0f;
+        // The title screen's demo presses the deck for you. Nothing else lights it outside play:
+        // six keys glowing and sweeping to say "press anything" read as an alarm rather than an
+        // invitation, and the demo already says it by pressing one key at a time. A key answers a
+        // press and is otherwise plain, on every screen.
+        //
+        // Faded on the same crossfade the badge uses, so opening the case puts the demo away with
+        // it: while the case is up a key only closes it again.
+        float demoLit = 0f;
         if (c.state == GameCore.TITLE) {
-            invite = Screens.caseOut(c)
+            demoLit = Screens.caseOut(c)
                     * (c.starting() ? c.startFade / GameCore.START_FADE : 1f);
-        } else if (c.overReady()) {
-            // The same invitation on the settled summary, where a line used to ask for a press.
-            invite = 1f;
         }
 
         for (int g = 0; g < Glyph.COUNT; g++) {
             float press = c.keyPress[g], bad = c.keyBad[g];
+            // The demo's own press, so the deck answers the falling word. Folded into the press
+            // itself rather than drawn as a glow beside it: it is the same event, so it should
+            // get everything a press gets — the colour strobe, the outward ripple, the pop on
+            // the face. Before the radius, because a press squashes the hex a little.
+            if (demoLit > 0.004f && Demo.litKey(c) == g) {
+                press = Math.max(press, Demo.litAmount(c) * demoLit);
+            }
             float r = L.keyR * (1f - 0.05f * press);
             float cx = L.keyX[g], cy = L.keyY[g];
 
@@ -572,30 +596,9 @@ final class Renderer extends Draw {
                         Glyph.withAlpha(col, (int) (210 * press)), r * 0.07f);
             }
 
-            // The demo's own press, so the deck answers the falling word. Treated like a real
-            // press rather than a glow: it is the same event, and it should look like one.
-            if (invite > 0.004f && c.state == GameCore.TITLE && Demo.litKey(c) == g) {
-                press = Math.max(press, Demo.litAmount(c) * invite);
-                r = L.keyR * (1f - 0.05f * press);
-            }
-
-            if (invite > 0.004f) {
-                // A wave rather than six keys blinking together: the phase walks along the deck,
-                // which reads as an invitation travelling across it rather than an alarm.
-                float sweep = 0.5f + 0.5f * (float) Math.sin(c.clock * 3.1f - g * 0.62f);
-                // Three rings falling off outward, which is as close to a glow as strokes get.
-                for (int ring = 0; ring < 3; ring++) {
-                    float rr = r * (1.10f + ring * 0.12f + 0.05f * sweep);
-                    int a = (int) (200 / (ring + 1) * (0.35f + 0.65f * sweep) * invite);
-                    p.strokePoly(Glyph.hex(cx, cy, rr), Glyph.withAlpha(col, a),
-                            r * (0.11f - ring * 0.025f));
-                }
-            }
-
-            p.fillPoly(Glyph.hex(cx, cy, r),
-                    Glyph.withAlpha(col, (int) (36 + 150 * press + 40 * invite)));
+            p.fillPoly(Glyph.hex(cx, cy, r), Glyph.withAlpha(col, (int) (36 + 150 * press)));
             p.strokePoly(Glyph.hex(cx, cy, r), Glyph.withAlpha(col, (int) (190 + 65 * press)),
-                    r * (0.085f + 0.035f * invite));
+                    r * 0.085f);
 
             if (gone > 0.02f) {
                 // Sagging a little as it goes, so the deck slumps rather than simply recolouring.

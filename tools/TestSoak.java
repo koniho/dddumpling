@@ -69,7 +69,106 @@ final class TestSoak extends Check {
                 overs, c.particles.size(), c.shots.size());
     }
 
+    /**
+     * The difficulty curve, measured against hands rather than against a god.
+     *
+     * {@link #perfectPlaySurvives} presses thirty times a second and never has to look for anything,
+     * so it can only tell us the game is winnable in principle. These runs put {@link Bot}'s stated
+     * ceilings against the same curve, which turns "is this fair?" into a number. Four properties
+     * are held, and the last is the one that matters most.
+     */
+    static void boundedPlay(Layout L) {
+        group("bounded play");
+
+        // Somewhere around what two thumbs actually manage. Every figure here is a claim about
+        // people, not about the game, which is why they are named rather than inlined.
+        Result casual = tier("casual", 4f, 0.30f, 0.08f, L);
+        Result steady = tier("steady", 6f, 0.20f, 0.04f, L);
+        Result quick = tier("quick", 9f, 0.13f, 0.02f, L);
+
+        // 1. The curve is not brutal early. A steady pair of hands has to get a real way in, or the
+        //    game is only for the people who already play it.
+        check("steady hands reach at least stage 12", steady.stage >= 12f);
+        check("even casual hands get well past the opening stages", casual.stage >= 6f);
+
+        // 2. And it does bite, at every capability. A curve nobody ever loses to is not a curve.
+        check("every pair of hands eventually loses",
+                casual.deaths == casual.runs && steady.deaths == steady.runs
+                        && quick.deaths == quick.runs);
+
+        // 3. Monotonic in capability. Faster hands must not do *worse* — if they do, something in
+        //    here punishes engagement, and that is a bug rather than a difficulty setting.
+        check("better hands get at least as far", quick.stage >= steady.stage - 0.5f
+                && steady.stage >= casual.stage - 0.5f);
+
+        // 4. A frenzy must be survivable, repeatedly. This is the property the frenzy wall broke and
+        //    the reason this bot exists: with flat multipliers a late frenzy ran at six times the
+        //    pace of its own stage and asked 23 presses a second, so catching a powerup past about
+        //    stage 8 was a way to die — and a reward indistinguishable from a punishment reads as
+        //    the game being unfair rather than hard.
+        //
+        //    Stated as frenzies entered before the run ended, because the run ends when one finally
+        //    gets you. Comparing against a bot that "declines" powerups is not available: with
+        //    nothing engaged, any press matching the drifting letter catches it, so avoidance is not
+        //    a strategy a player can actually have.
+        System.out.printf("    steady hands: %.1f frenzies a run, %.0f%% of the time in one, "
+                + "%.0f%% of lives lost in one%n", steady.frenzies, steady.frenzyShare * 100f,
+                steady.frenzyDeathShare * 100f);
+        check("steady hands live through several frenzies before one gets them",
+                steady.frenzies >= 5f);
+        check("and casual hands through more than one", casual.frenzies >= 2f);
+    }
+
     // ---- helpers ------------------------------------------------------------
 
+    /** Averaged outcome of one capability tier over several seeds. */
+    private static final class Result {
+        float stage, seconds, frenzies;
+        /** Share of the run spent in a frenzy, and share of lives that went during one. */
+        float frenzyShare, frenzyDeathShare;
+        int deaths, runs;
+    }
 
+    /**
+     * How long a run is given to finish. Generous: steady hands take seven to ten minutes of game
+     * time to reach their wall, and the point of the exercise is where the wall is, not whether one
+     * turns up inside an arbitrary window. Cheap even so — the whole tier is a fraction of a second,
+     * because nothing is being drawn.
+     */
+    private static final float RUN_CAP = 900f;
+
+    /**
+     * Runs one tier over a spread of seeds and averages it.
+     *
+     * Several seeds because one run is noisy: which letters a word draws and when a powerup drifts
+     * past both move the outcome by a stage or more, and a monotonicity check over single runs would
+     * be failing on noise rather than on difficulty.
+     */
+    private static Result tier(String name, float pps, float reaction, float miss, Layout L) {
+        Result r = new Result();
+        float lives = 0f, frenzyLives = 0f;
+        for (long seed = 1L; seed <= 4L; seed++) {
+            GameCore c = new GameCore(new Mem(), 400L + seed);
+            c.startGame();
+            Bot bot = new Bot(pps, reaction, miss, true, 900L + seed);
+            Bot.Result one = bot.play(c, L, RUN_CAP);
+            r.stage += one.stage;
+            r.seconds += one.seconds;
+            r.frenzies += one.frenzies;
+            r.frenzyShare += one.frenzySeconds / Math.max(1e-3f, one.seconds);
+            lives += one.livesLost;
+            frenzyLives += one.frenzyLivesLost;
+            if (one.died) r.deaths++;
+            r.runs++;
+        }
+        r.stage /= r.runs;
+        r.seconds /= r.runs;
+        r.frenzies /= r.runs;
+        r.frenzyShare /= r.runs;
+        r.frenzyDeathShare = lives > 0f ? frenzyLives / lives : 0f;
+        System.out.printf("    %-7s %.0f/s react %.2fs miss %.0f%%  ->  stage %.1f after %.0fs, "
+                + "%d of %d died%n", name, pps, reaction, miss * 100f, r.stage, r.seconds,
+                r.deaths, r.runs);
+        return r;
+    }
 }

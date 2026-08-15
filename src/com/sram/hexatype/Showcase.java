@@ -386,6 +386,13 @@ final class Showcase extends Draw {
         scrollbar(p, c, L, fade);
         p.text((i + 1) + " / " + Collect.COUNT, cx, bot + s * 2.80f, type(s * 0.54f),
                 fadeBy(INK_DIM, fade), Painter.CENTER, true);
+        // Baskets opened over every run, duplicates and all. Below the position bar rather than up
+        // with the header: the count above is about the case in front of you and how much of it is
+        // filled, this one is about the whole history behind it, and it is the only number here
+        // that keeps climbing once the case is full. The gap goes through type() because the line
+        // above it is type-scaled — a plain unit multiple here rides up onto it as TEXT grows.
+        p.text("COLLECTIONS: " + c.collectTotal, cx, bot + s * 2.80f + type(s * 1.05f),
+                type(s * 0.54f), fadeBy(INK_DIM, fade), Painter.CENTER, true);
 
         arrows(p, c, L, fade);
     }

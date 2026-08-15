@@ -10,15 +10,35 @@ final class Hud extends Draw {
 
     // ---- HUD ----------------------------------------------------------------
 
+    /**
+     * Baseline of the HUD's small labels, one line above the readouts they title. Exposed so the
+     * clearance below the number can be asserted rather than eyeballed.
+     */
+    static float labelY(Layout L) {
+        return L.hudY - type(L.unit * 0.95f);
+    }
+
+    /** Type size of the score readout, whose caps have to clear {@link #labelY}. */
+    static float scoreSize(Layout L) {
+        return type(L.unit * 1.05f);
+    }
+
     static void hud(Painter p, GameCore c, Layout L) {
         float s = L.unit;
-        p.text("SCORE", L.playLeft, L.hudY - s * 0.95f, type(s * 0.52f), INK_DIM, Painter.LEFT, false);
-        p.text(String.valueOf(c.score), L.playLeft, L.hudY, type(s * 1.05f), INK, Painter.LEFT, true);
+        // The labels sit one line above the number, so the gap between them has to be scaled by
+        // type() along with the sizes it separates. At a plain 0.95 units the score's digits stood
+        // 1.01 units tall once TEXT reached 1.34 and their caps came up through SCORE's baseline —
+        // three pixels of collision at 1080 wide, and the exact trap CLAUDE.md records for stacked
+        // text. Screens was fixed for it at the time; this line was missed.
+        float labelY = labelY(L);
+        p.text("SCORE", L.playLeft, labelY, type(s * 0.52f), INK_DIM, Painter.LEFT, false);
+        p.text(String.valueOf(c.score), L.playLeft, L.hudY, scoreSize(L), INK, Painter.LEFT, true);
 
-        p.text("STAGE " + c.stage, L.w / 2f, L.hudY - s * 0.95f, type(s * 0.58f), INK_DIM,
+        p.text("STAGE " + c.stage, L.w / 2f, labelY, type(s * 0.58f), INK_DIM,
                 Painter.CENTER, true);
-        // Small hex-and-dot to the right: this readout is the settings button.
-        float gx = L.w / 2f + s * 2.5f, gy = L.hudY - s * 1.15f;
+        // Small hex-and-dot to the right: this readout is the settings button. Hung off the label's
+        // own baseline rather than the HUD line, so it travels with the text it belongs to.
+        float gx = L.w / 2f + s * 2.5f, gy = labelY - type(s * 0.20f);
         p.strokePoly(Glyph.hex(gx, gy, s * 0.34f), Glyph.withAlpha(INK, 95), s * 0.05f);
         p.fillCircle(gx, gy, s * 0.10f, Glyph.withAlpha(INK, 120));
         // One pip per word in this stage's wave, filling as each is dealt with.
