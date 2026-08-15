@@ -21,6 +21,12 @@ abstract class Draw {
     static final int RED = 0xFFE33B4B;
     /** What the sky drains to as a run ends. */
     static final int BG_DEATH = 0xFF0B2A1C;
+    /**
+     * The scrim the game-over summary lays over that drained sky: the same green, a shade deeper so
+     * the summary's own text still reads against it. See {@link Screens#scrim(Painter, Layout, int,
+     * int)} for why the colour has to travel with the screen.
+     */
+    static final int DEATH_SCRIM = 0xFF08211A;
     static final int BAMBOO = 0xFFD9AE6E;
     static final int BAMBOO_DARK = 0xFF8E6B3A;
 

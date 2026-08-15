@@ -9,10 +9,26 @@ final class Screens extends Draw {
 
     // ---- screens ------------------------------------------------------------
 
+    /** What a scrim is made of: near-black, faintly violet, to sit under the ink. */
+    static final int SCRIM = 0xFF120E22;
+
     /** Dims everything above the key deck, so the real keys stay lit as the tutorial. */
     static float scrim(Painter p, Layout L, int a) {
+        return scrim(p, L, a, SCRIM);
+    }
+
+    /**
+     * The same, in another colour.
+     *
+     * A scrim covers the sky down to the deck, so whatever the sky is painted is <em>its</em>
+     * business, not the field's. The game-over screen learned that the hard way: the world drains
+     * green as a run ends, and the ordinary violet scrim went over the top of it and left the green
+     * showing only on the key deck below, which read as the deck being tinted rather than the
+     * world dying.
+     */
+    static float scrim(Painter p, Layout L, int a, int color) {
         float bottom = L.deckTop;
-        p.fillRect(0, 0, L.w, bottom, Glyph.withAlpha(0xFF120E22, a));
+        p.fillRect(0, 0, L.w, bottom, Glyph.withAlpha(color, a));
         return bottom;
     }
 
@@ -76,7 +92,9 @@ final class Screens extends Draw {
     static void gameOver(Painter p, GameCore c, Layout L) {
         float fade = c.overFade();
         if (fade <= 0.004f) return;
-        scrim(p, L, (int) (220 * fade));
+        // Drained, so the green the world died into holds for the whole summary instead of being
+        // painted over by the violet one. It stays until the title screen takes the screen back.
+        scrim(p, L, (int) (220 * fade), Glyph.mix(SCRIM, DEATH_SCRIM, c.drained()));
         float s = L.unit;
         // Yellow rather than the rose it was: rose is the colour of every warning and every hit
         // in this game, so a rose GAME OVER read as one more of them.

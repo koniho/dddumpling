@@ -302,6 +302,56 @@ final class TestVisuals extends Check {
         check("and READY stays clear of the deck", StarScreen.readyY(L) < L.deckTop);
     }
 
+    /**
+     * That a run really does end on a green screen, sampled off a rendered frame rather than
+     * reasoned about.
+     *
+     * The world drains green as the last life goes, and it is meant to stay that way until the title
+     * screen takes the screen back. It did not: the summary laid the ordinary violet scrim over the
+     * sky, so the green survived only on the key deck below the scrim's reach, which read as the
+     * deck being tinted rather than the world dying. Nothing in the geometry could catch that — only
+     * the pixels can, so this asserts on them.
+     */
+    static void deathIsGreen(Layout L) {
+        group("the screen a run ends on");
+
+        GameCore c = new GameCore(new Mem(), 63L);
+        c.startGame();
+        c.lives = 0;
+        c.state = GameCore.OVER;
+        c.deathT = 0f;
+        // Past the hold and the fade, which is the settled summary.
+        c.time = GameCore.DEATH_TIME + GameCore.OVER_FADE + 0.5f;
+        check("the world is fully drained", c.drained() == 1f && c.overFade() >= 1f);
+
+        int[] sky = sample(c, L, 0.5f, 0.16f);
+        int[] deck = sample(c, L, 0.5f, 0.965f);
+        System.out.printf("    summary sky rgb %d,%d,%d and deck rgb %d,%d,%d%n",
+                sky[0], sky[1], sky[2], deck[0], deck[1], deck[2]);
+        // Green has to be the strongest channel, and by a margin: the violet scrim it replaced was
+        // blue-dominant, so this is exactly the swap that went wrong.
+        check("the summary's sky is green", sky[1] > sky[0] + 6 && sky[1] > sky[2] + 6);
+        check("and so is the deck under it", deck[1] > deck[0] + 6 && deck[1] > deck[2] + 6);
+        check("the sky is dark enough to read text off",
+                sky[0] + sky[1] + sky[2] < 3 * 70);
+
+        // And it lets go the moment the title arrives, which is what "until the title screen" means.
+        c.toTitle();
+        int[] title = sample(c, L, 0.5f, 0.16f);
+        System.out.printf("    title sky rgb %d,%d,%d%n", title[0], title[1], title[2]);
+        check("the title screen is not green", title[2] > title[1]);
+    }
+
+    /** Red, green and blue at a fraction of the way across and down a rendered frame. */
+    private static int[] sample(GameCore c, Layout L, float fx, float fy) {
+        int w = (int) L.w, h = (int) L.h;
+        RasterPainter p = new RasterPainter(w, h, 1);
+        p.clear(0xFF000000);
+        Renderer.draw(p, c, L);
+        int px = p.resolve()[(int) (h * fy) * w + (int) (w * fx)];
+        return new int[] {(px >> 16) & 0xFF, (px >> 8) & 0xFF, px & 0xFF};
+    }
+
     static void settings(Layout L) {
         group("settings");
         Mem store = new Mem();

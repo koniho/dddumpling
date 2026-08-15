@@ -58,6 +58,7 @@ final class CoreTest {
         TestVisuals.indicatorsAndGlow(L);
         TestVisuals.hudStacking(L);
         TestVisuals.starStacking(L);
+        TestVisuals.deathIsGreen(L);
         TestVisuals.settings(L);
 
         TestAudio.audio(L);
