@@ -384,8 +384,19 @@ final class Renderer extends Draw {
         p.strokePoly(Glyph.hex(w.x, y, r * pulse), Glyph.withAlpha(INK, 235), r * 0.10f);
         Kawaii.draw(p, w.glyph, w.x, y, r * 0.58f, hue, 1f, 0.8f);
 
-        p.text(w.name(), w.x, y - r * 1.7f, type(L.unit * 0.56f), Glyph.withAlpha(INK, 240),
-                Painter.CENTER, true);
+        // The name is far wider than the letter it labels, and the letter drifts on from beyond one
+        // edge and off past the other — so it is faded in only once the whole name is inside the
+        // play area. A name sliced in half by the screen edge reads as a fault, and it is what the
+        // harness reports as DOES NOT FIT. The half-width is estimated from the harness font, which
+        // is wider than Quicksand, so on the device it appears a shade later than it needs to.
+        float size = type(L.unit * 0.56f);
+        float half = size * 0.36f * w.name().length();
+        float inside = Math.min(w.x - half - L.playLeft, L.playRight - half - w.x);
+        if (inside > 0f) {
+            int a = (int) (240 * Math.min(1f, inside / (L.unit * 1.5f)));
+            p.text(w.name(), w.x, y - r * 1.7f, size, Glyph.withAlpha(INK, a),
+                    Painter.CENTER, true);
+        }
     }
 
     /**
@@ -428,20 +439,27 @@ final class Renderer extends Draw {
      * stroke and a hot tip at the finger. The sparkle ribbon behind it does the length of the
      * trail; this is the edge, and it is what makes the swipe read as a cut rather than as a
      * finger with glitter on it.
+     *
+     * A stroke that has ended — lifted, or stopped moving for the dwell — leaves the edge behind
+     * for a moment, dying away where it stopped. That is the whole visible answer to "why did my
+     * combo reset": the blade goes out under the finger, so the next move plainly starts a new
+     * swipe rather than the readout mysteriously counting from one again.
      */
     static void blade(Painter p, GameCore c, Layout L) {
-        if (!c.flinging() || !c.fingerDown) return;
+        if (!c.flinging()) return;
+        float fade = c.fingerDown ? 1f : c.strokeFade / GameCore.STROKE_FADE;
+        if (fade <= 0f) return;
         float r = L.enemyR * GameCore.BLADE;
         int hue = Glyph.cycle(c.clock * 1.6f);
 
         // Three passes, widest and faintest first, so the edge has a glow around it.
         for (int k = 3; k >= 1; k--) {
             p.line(c.bladeFromX, c.bladeFromY, c.fingerX, c.fingerY,
-                    Glyph.withAlpha(k == 1 ? INK : hue, k == 1 ? 235 : 70 / k),
+                    fadeBy(Glyph.withAlpha(k == 1 ? INK : hue, k == 1 ? 235 : 70 / k), fade),
                     r * (k == 1 ? 0.20f : 0.34f * k));
         }
-        p.fillCircle(c.fingerX, c.fingerY, r * 0.60f, Glyph.withAlpha(hue, 110));
-        p.fillCircle(c.fingerX, c.fingerY, r * 0.26f, Glyph.withAlpha(INK, 250));
+        p.fillCircle(c.fingerX, c.fingerY, r * 0.60f, fadeBy(Glyph.withAlpha(hue, 110), fade));
+        p.fillCircle(c.fingerX, c.fingerY, r * 0.26f, fadeBy(Glyph.withAlpha(INK, 250), fade));
     }
 
     /**

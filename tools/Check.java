@@ -37,6 +37,9 @@ abstract class Check {
     static final class Ear implements GameCore.Sound {
         int squishes, clears, wrongs, damages, achievements, chops, zaps;
         int collects;
+        /** Stars taken, and the count the last one announced. */
+        int stars;
+        int lastStar = -1;
         /** Every haul position announced, in the order it was announced. */
         final java.util.List<Integer> shelved = new java.util.ArrayList<Integer>();
         int lastZapHop = -1;
@@ -58,6 +61,7 @@ abstract class Check {
         public void chop() { chops++; }
         public void zap(int hop) { zaps++; lastZapHop = hop; }
         public void collect(int nth) { collects++; shelved.add(nth); }
+        public void star(int nth) { stars++; lastStar = nth; }
         public void selectMusic(int choice) { music = choice; musicCalls++; }
         public void gameStart() { starts++; }
         public void stageClear() { stageClears++; }

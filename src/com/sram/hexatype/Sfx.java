@@ -21,8 +21,8 @@ final class Sfx {
     /** Sound ids, one preloaded buffer each. */
     static final int SQUISH_0 = 0, DRIP = 6, CLEAR = 7, WRONG = 8, ACHIEVEMENT = 9;
     static final int START = 10, STAGE_CLEAR = 11, POWER_CLEAR = 12, CHOP = 13, ZAP = 14;
-    static final int COLLECT = 15;
-    static final int COUNT = 16;
+    static final int COLLECT = 15, STAR = 16;
+    static final int COUNT = 17;
 
     private Sfx() {}
 
@@ -38,6 +38,7 @@ final class Sfx {
             case CHOP: return chop();
             case ZAP: return zap();
             case COLLECT: return collect();
+            case STAR: return star();
             default: return achievement();
         }
     }
@@ -297,6 +298,44 @@ final class Sfx {
             float tap = (float) Math.sin(knock) * 0.60f * (float) Math.exp(-38f * t);
 
             v[i] = (ring + tap) * envelope(t, 0.0015f, 4.5f);
+        }
+        return render(v);
+    }
+
+    /**
+     * Taking a star: a bright two-note flick upward, over almost before it is there.
+     *
+     * The most repeated effect in the game — twenty of them inside five seconds, and the last few
+     * less than a fifth of a second apart — so it is shorter than the shelving chime and decays
+     * harder than anything except the chop. {@link Audio} pitches it up with the count, so what the
+     * player hears over a course is one long ladder rather than the same note twenty times; the
+     * buffer is therefore written at the bottom of that ladder.
+     *
+     * Two partials a fifth apart and a grace note a whole tone under the first, sounded for the
+     * opening third only. That is what makes it read as a flick <em>up</em> to the note rather than
+     * a plain ping, and it survives being resampled to a higher pitch, which a percussive tap does
+     * not — it just turns into a tick.
+     */
+    static short[] star() {
+        // Trimmed to what actually rings. At 115ms the last third was dead air, which costs nothing
+        // to play but drags the buffer's zero-crossing rate down — and that rate is the harness's
+        // stand-in for "is there a tone in here", so a sound padded with silence measures as a click.
+        int n = (int) (RATE * 0.082f);
+        float[] v = new float[n];
+        float grace = 0f, note = 0f, fifth = 0f;
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / n;
+            grace += 2f * (float) Math.PI * 1245f / RATE;
+            note += 2f * (float) Math.PI * 1480f / RATE;
+            fifth += 2f * (float) Math.PI * 2217f / RATE;
+            // The grace note is gone by a third of the way in; the note it flicks up to rings on.
+            float lead = (float) Math.sin(grace) * 0.55f * (float) Math.exp(-18f * t);
+            // Slow enough that the note rings through most of the buffer. The decays here are in
+            // buffer-fractions, not seconds, so at -13 over 82ms the last third fell to nothing and
+            // the whole thing measured as a click however short the buffer was made.
+            float body = (float) Math.sin(note) * (float) Math.exp(-6.5f * t)
+                    + (float) Math.sin(fifth) * 0.38f * (float) Math.exp(-10f * t);
+            v[i] = (lead + body) * envelope(t, 0.0012f, 2.2f);
         }
         return render(v);
     }

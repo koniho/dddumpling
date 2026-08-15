@@ -282,8 +282,8 @@ final class TestVisuals extends Check {
      */
     static void starStacking(Layout L) {
         group("star screen stacking");
-        float clear = Screens.starReadyY(L) - RasterPainter.CAP * Screens.starReadySize(L)
-                - Screens.starCountY(L);
+        float clear = StarScreen.readyY(L) - RasterPainter.CAP * StarScreen.readySize(L)
+                - StarScreen.countY(L);
         System.out.printf("    READY clears the counter by %.1fpx at TEXT=%.2f%n",
                 clear, Draw.TEXT);
         check("READY clears the counter above it", clear > 0f);
@@ -293,13 +293,13 @@ final class TestVisuals extends Check {
         for (int px = 640; px <= 1600; px += 240) {
             Layout t = new Layout();
             t.compute(px, px * 20 / 9, 0, 0, 0, 0);
-            if (Screens.starReadyY(t) - RasterPainter.CAP * Screens.starReadySize(t)
-                    <= Screens.starCountY(t)) holds = false;
+            if (StarScreen.readyY(t) - RasterPainter.CAP * StarScreen.readySize(t)
+                    <= StarScreen.countY(t)) holds = false;
         }
         check("at every screen width too", holds);
 
         // Both lines live in the play field, above the deck: the prompt must not reach the keys.
-        check("and READY stays clear of the deck", Screens.starReadyY(L) < L.deckTop);
+        check("and READY stays clear of the deck", StarScreen.readyY(L) < L.deckTop);
     }
 
     static void settings(Layout L) {

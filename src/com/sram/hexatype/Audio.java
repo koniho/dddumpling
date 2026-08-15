@@ -198,6 +198,15 @@ final class Audio implements GameCore.Sound {
         play(Sfx.COLLECT, 1f + 0.05f * step);
     }
 
+    @Override public void star(int nth) {
+        // Climbs the whole way up a course, so twenty stars are a ladder rather than one note
+        // twenty times — that ladder is most of what tells you how the course is going without
+        // looking at the counter. Smaller steps than the shelving chime because there are twenty of
+        // them and not four: at the chime's 0.05 the last few came out as chirps.
+        int step = nth < 1 ? 0 : nth > 16 ? 16 : nth - 1;
+        play(Sfx.STAR, 1f + 0.032f * step);
+    }
+
     @Override public void clearWord() {
         play(Sfx.CLEAR, 1f);
     }

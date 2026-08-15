@@ -191,6 +191,13 @@ final class GameCore {
          * @param nth 0-based position in the haul, so the chime can climb as the shelf fills
          */
         void collect(int nth);
+        /**
+         * A star taken on the course. Fires up to twenty times in five seconds, so it is the
+         * shortest effect there is.
+         *
+         * @param nth 1-based count of stars held, so the note can climb as the course fills
+         */
+        void star(int nth);
         /** Switch the looping background track to {@link Music#NAMES}[choice]. */
         void selectMusic(int choice);
 
@@ -583,8 +590,19 @@ final class GameCore {
     float chainT;
 
     // ---- FLING blade --------------------------------------------------------
-    /** Live finger position while dragging, set by the view. */
+    /**
+     * True while a stroke is live — that is, while the finger is both down *and* moving.
+     * Everything that draws or emits the blade reads this one.
+     */
     boolean fingerDown;
+    /**
+     * True while the finger is on the glass at all, whether or not it is currently cutting.
+     * Split from {@link #fingerDown} because a stroke is a motion rather than a touch: the dwell
+     * below rests the stroke under a finger that has stopped, and the next move wakes a new one
+     * without the view seeing a fresh ACTION_DOWN.
+     */
+    boolean touchDown;
+    /** Live finger position, set by the view. */
     float fingerX, fingerY;
     /** Cleared when a frenzy starts; set once the player first touches during FLING. */
     boolean flingUsed;
@@ -609,10 +627,33 @@ final class GameCore {
     int strokeKills;
     /** Tiles a single stroke has cut, same lifetime. */
     int strokeCuts;
+    /**
+     * What the readout is announcing: the counts of the stroke that earned it, frozen as that
+     * stroke ended.
+     *
+     * Separate from {@link #strokeKills} because the readout outlives the stroke by design and
+     * strokes now end on their own. Without this, resting a four-word stroke and starting a
+     * fresh one inside the 1.1s window rewrote "4 IN ONE!" down to the new stroke's tally and
+     * then blanked it, which looked like a rendering fault. Refreshed on every cut for as long
+     * as this stroke is the one on the readout, so a sweep that keeps taking words keeps
+     * counting up.
+     */
+    int callKills, callCuts;
     /** Words in one stroke that earn the slow-motion beat. */
     static final int SLOW_KILLS = 2;
     /** How long that beat lasts, in real seconds. Short: it is an impact, not an interlude. */
     static final float SLOW_TIME = 0.28f;
+    /**
+     * The same beat for taking a star, at a quarter of the length.
+     *
+     * A fling stroke happens once; a course hands out twenty of these, the last few less than a
+     * fifth of a second apart, so at the fling's own length the end of a good course would be in
+     * slow motion continuously rather than punctuated by it — and every beat stretches the flight
+     * in real time, since the course clock is scaled by it too. At this length a course taken clean
+     * runs about a second long, which is a stutter per star rather than a change of pace.
+     * {@code TestStars} holds that total.
+     */
+    static final float STAR_BEAT = 0.075f;
     /** Fraction of normal speed the world runs at during it. */
     static final float SLOW_RATE = 0.32f;
     /** Seconds of slow motion left. */
@@ -625,19 +666,68 @@ final class GameCore {
     /** Seconds the slice readout has left. */
     float sliceCall;
 
+    /**
+     * What a "definite move" is, in tile radii, and how long without one ends the stroke.
+     *
+     * A stroke used to run from touch-down to touch-up, so a finger parked on the glass held one
+     * combo open for the whole frenzy and "N IN ONE!" was a number you waited for rather than
+     * earned. A swipe is a motion, so this is what ends one: stop moving for a beat and the blade
+     * dies where it stopped, exactly as it does when the finger lifts.
+     *
+     * Measured as displacement from an anchor, not as path length: a finger resting on a screen
+     * still reports a pixel or two of jitter every frame, and summing that would have kept a
+     * combo alive by trembling. 0.35 of a tile radius is about 20px on a 1080-wide screen — far
+     * more than jitter, far less than any real swipe covers in a frame (the preview's sweep moves
+     * 1.5 radii a frame).
+     *
+     * The dwell is what protects the thing the mode exists for. To stay awake a finger only has
+     * to average 0.35 radii per 0.22s, about 90px a second; a slice worth calling travels ten
+     * times that, so nothing fast is ever cut off mid-motion. It is also the reason the dwell is
+     * not shorter — a zigzag pauses for a frame or two at each corner, and one motion is one
+     * stroke.
+     */
+    static final float STROKE_MOVE = 0.35f;
+    /** Seconds without a definite move that end the stroke. */
+    static final float STROKE_DWELL = 0.22f;
+    /**
+     * The longest one stroke may run, in real seconds.
+     *
+     * The dwell alone leaves one hole: a finger creeping just fast enough to keep resetting the
+     * anchor is technically always moving, and could hold a combo open indefinitely by circling.
+     * This is the backstop, and it is set well past any genuine slice — a full-width sweep at a
+     * plausible 2000px/s is half a second, a long zigzag through five rows around 1.2s — so the
+     * only stroke it ever ends is one that was not really a swipe.
+     */
+    static final float STROKE_MAX = 1.6f;
+    /**
+     * How long the edge lingers once a stroke ends, so the end of a swipe is something seen
+     * rather than inferred from the readout stopping.
+     */
+    static final float STROKE_FADE = 0.18f;
+
+    /** Seconds since the last definite move, and how long this stroke has been live. */
+    float strokeIdle, strokeAge;
+    /** Where the last definite move landed; a stroke sleeps when the finger stays near it. */
+    private float strokeAnchorX, strokeAnchorY;
+    /** Seconds of dying blade left after a stroke ends. */
+    float strokeFade;
+
     /** How much of normal speed the simulation is running at. */
     float timeScale() {
         return slowdown > 0f ? SLOW_RATE : 1f;
     }
 
     /**
-     * The interlude has two paths and exactly one phase is true at any moment.
+     * The interlude has three paths and exactly one phase is true at any moment.
      *
      * Lost round: spinner, mash, a beat on zero, then the status report whose tail fades out.
      * Won round: the mash is over the instant it is won, so it is the escape animation and then
      * the parade. The first four run off the one countdown — the fade-out then has one value to
      * read, and every boundary is a comparison rather than a transition that could be missed.
      * Only the first boundary varies, since the mash is earned per round, so it is stored.
+     *
+     * Star course: {@link #starFlight} covers all of it — lesson, flight and victory tableau — and
+     * then the same parade. None of the steamer's phases may hold during one; see starFlight.
      */
     float bonusRollEnd;
 
@@ -692,13 +782,25 @@ final class GameCore {
 
     /** True during the beat after the clock runs out, before anything fades. */
     boolean bonusHolding() {
-        return state == BONUS && !bonusPrizeWon()
+        return state == BONUS && !starBonus && !bonusPrizeWon()
                 && bonusTimer <= MASH_END && bonusTimer > BONUS_STATUS;
     }
 
     /** True while a won prize is climbing out, which is all that is left of a won round. */
     boolean bonusEscape() {
-        return state == BONUS && bonusPrizeWon() && bonusTimer > 0f;
+        return state == BONUS && !starBonus && bonusPrizeWon() && bonusTimer > 0f;
+    }
+
+    /**
+     * True for the whole of a star course — the ready lesson, the flight, and the victory tableau
+     * a completed one ends on — up to the parade, which closes both games the same way.
+     *
+     * The steamer's phases all exclude {@code starBonus} so that this is the one that holds here.
+     * They read off the same {@code bonusTimer} and used to come true underneath a star course as
+     * it counted down, which drew nothing only because the star branch returns before them.
+     */
+    boolean starFlight() {
+        return state == BONUS && starBonus && !bonusParading();
     }
 
     /**
@@ -709,7 +811,7 @@ final class GameCore {
      * watching it join the line.
      */
     boolean bonusStatus() {
-        return state == BONUS && !bonusPrizeWon() && bonusTimer <= BONUS_STATUS;
+        return state == BONUS && !starBonus && !bonusPrizeWon() && bonusTimer <= BONUS_STATUS;
     }
 
     /** True once something has been won this interlude, for the whole rest of it. */
@@ -768,10 +870,9 @@ final class GameCore {
      * it is teaching.
      */
     private void updateTrail(float dt, Layout L) {
-        if (!flinging()) {
-            fingerDown = false;
-            return;
-        }
+        // The finger is released by updateStroke, not here: this runs below the PLAY return and a
+        // frenzy can end on a frame that never reaches it.
+        if (!flinging()) return;
         // Sweeps across the middle of the screen, briskly enough that the sparkles behind it
         // read as a ribbon rather than piling into a clump.
         demoX = L.w * 0.5f + (float) Math.sin(clock * 2.2f) * L.w * 0.26f;
@@ -787,6 +888,20 @@ final class GameCore {
         } else {
             trailAcc = 0f;
             return;
+        }
+
+        // A parked finger lays nothing. The ribbon follows the *motion*, and it stops following at
+        // exactly the speed that stops keeping a stroke awake, so one number governs both. Two
+        // reasons: 100 sparkles a second landing on one spot read as a glowing blob rather than a
+        // trail, and leaving the edge alone here freezes it along the last stretch actually swept,
+        // which is what the fade then takes away.
+        if (fingerDown) {
+            float mx = sx - trailPrevX, my = sy - trailPrevY;
+            float still = L.enemyR * (STROKE_MOVE / STROKE_DWELL) * dt;
+            if (mx * mx + my * my < still * still) {
+                trailAcc = 0f;
+                return;
+            }
         }
 
         // Captured before the emission below advances trailPrev to the finger.
@@ -915,9 +1030,15 @@ final class GameCore {
         mode = effect;
         modeLeft = Power.DURATION;
         flingUsed = false;
+        // A finger already resting on the field does not get a free stroke: it has to lift and
+        // land again, the same as it would to start a second swipe.
         fingerDown = false;
+        touchDown = false;
+        strokeFade = 0f;
         strokeKills = 0;
         strokeCuts = 0;
+        callKills = 0;
+        callCuts = 0;
         if (entry >= 0) buddy.enter(entry, L, rnd);
         else buddy.leave();
         shake = Math.max(shake, 0.5f);
@@ -1880,6 +2001,8 @@ final class GameCore {
         // beat is slowing.
         if (slowdown > 0f) slowdown = Math.max(0f, slowdown - dt);
         if (sliceCall > 0f) sliceCall = Math.max(0f, sliceCall - dt);
+        // What ends a blade stroke by itself, on real time and above every early return below.
+        updateStroke(dt, L);
         dt *= timeScale();
         // The clock keeps running so the panel itself can animate, but nothing else moves.
         clock += dt;
@@ -1974,12 +2097,32 @@ final class GameCore {
             if (starBonus) {
                 stars.update(dt, L);
                 bonusTimer = stars.timer;
+                if (stars.grabbed) {
+                    // The fling stroke's beat, briefly: a taken star lands with the same stutter and
+                    // the same gold vignette, so the two read as the same kind of moment.
+                    stars.grabbed = false;
+                    slowdown = STAR_BEAT;
+                    // Announced with the count, so the note climbs as the course fills.
+                    if (sound != null) sound.star(stars.count());
+                }
+                if (stars.awardPending) {
+                    // Paid the moment the last star lands, not when the interlude ends: the victory
+                    // tableau shows what was won, so the prize has to exist before it is drawn.
+                    stars.awardPending = false;
+                    score += FREE_BONUS;
+                    if (lives < START_LIVES) lives++;
+                    awardStarPrize();
+                }
                 if (stars.timer <= 0f) {
                     stars.finishAttempt();
+                    // The parade closes a won course exactly as it closes a won steamer, and for
+                    // the same reason: the collection is the point of winning one.
+                    if (paradeTimer > 0f) {
+                        paradeTimer -= dt;
+                        if (paradeTimer > 0f) return;
+                        paradeTimer = 0f;
+                    }
                     if (stars.won) {
-                        score += FREE_BONUS;
-                        if (lives < START_LIVES) lives++;
-                        awardStarPrize();
                         starNext = false;
                         stars.make(rnd);
                     }
@@ -2219,10 +2362,21 @@ final class GameCore {
     // ---- the blade ----------------------------------------------------------
 
     /**
-     * Starts a blade stroke. Nothing is cut yet: a tap that does not travel cuts nothing, which
+     * The finger has landed. Nothing is cut yet: a tap that does not travel cuts nothing, which
      * is what keeps the mode a swipe rather than a poke.
      */
     void beginStroke(float x, float y) {
+        touchDown = true;
+        wakeStroke(x, y);
+    }
+
+    /**
+     * Starts a fresh stroke at x,y with the combo back at nothing.
+     *
+     * Called both by the finger landing and by it moving again after a rest, which is the point:
+     * one touch can hold several swipes, and each one counts for itself.
+     */
+    private void wakeStroke(float x, float y) {
         fingerDown = true;
         fingerX = x;
         fingerY = y;
@@ -2230,9 +2384,52 @@ final class GameCore {
         trailPrevY = y;
         bladeFromX = x;
         bladeFromY = y;
+        strokeAnchorX = x;
+        strokeAnchorY = y;
+        strokeIdle = 0f;
+        strokeAge = 0f;
+        strokeFade = 0f;
         flingUsed = true;
         strokeKills = 0;
         strokeCuts = 0;
+    }
+
+    /**
+     * Ends the stroke while the finger is still on the glass: the blade dies away where it
+     * stopped and the counts freeze for the readout.
+     *
+     * The anchor is left under the finger rather than where the last move landed, so waking again
+     * costs a whole {@link #STROKE_MOVE} from *here* — otherwise a finger that had crept to just
+     * inside the threshold would restart on a twitch.
+     */
+    private void restStroke() {
+        if (!fingerDown) return;
+        fingerDown = false;
+        strokeFade = STROKE_FADE;
+        strokeAnchorX = fingerX;
+        strokeAnchorY = fingerY;
+    }
+
+    /**
+     * Ticks what ends a stroke by itself: the dwell, and the cap behind it.
+     *
+     * On real time and above every early return in {@link #update}, for two reasons. A gesture is
+     * not part of the simulation, so the slow-motion beat a stroke just earned must not hand it
+     * three times the grace to stand still in. And a stroke has two exits — this one and the
+     * player dying mid-swipe — and the second one never reaches the PLAY half of the loop, so a
+     * fatal breach with a finger down would otherwise leave a blade lit over the summary.
+     */
+    private void updateStroke(float dt, Layout L) {
+        strokeFade = Math.max(0f, strokeFade - dt);
+        if (!flinging() || state != PLAY) {
+            touchDown = false;
+            fingerDown = false;
+            return;
+        }
+        if (!fingerDown) return;
+        strokeIdle += dt;
+        strokeAge += dt;
+        if (strokeIdle >= STROKE_DWELL || strokeAge >= STROKE_MAX) restStroke();
     }
 
     /**
@@ -2249,7 +2446,24 @@ final class GameCore {
         float x0 = fingerX, y0 = fingerY;
         fingerX = x;
         fingerY = y;
-        if (!flinging() || !fingerDown) return 0;
+        if (!flinging() || !touchDown) return 0;
+
+        // Has the finger definitely moved? From the anchor, not along the path — see STROKE_MOVE.
+        float ax = x - strokeAnchorX, ay = y - strokeAnchorY;
+        float move = L.enemyR * STROKE_MOVE;
+        boolean moved = ax * ax + ay * ay >= move * move;
+        if (!fingerDown) {
+            // The last stroke has already been rested out from under this finger. Moving again is
+            // a new swipe, and it starts here: the stretch that woke it cuts nothing, the same way
+            // the first touch of a stroke cuts nothing until it travels.
+            if (moved) wakeStroke(x, y);
+            return 0;
+        }
+        if (moved) {
+            strokeAnchorX = x;
+            strokeAnchorY = y;
+            strokeIdle = 0f;
+        }
 
         int cut = 0;
         float r = L.enemyR * BLADE;
@@ -2275,21 +2489,30 @@ final class GameCore {
                     // through four words stays slow for the whole of it.
                     if (strokeKills >= SLOW_KILLS) startSlowdown();
                 }
+                // Trailing cuts of a word this stroke has not finished still belong on its
+                // readout, but only while this stroke is the one being announced.
+                if (strokeKills >= SLOW_KILLS) callCuts = strokeCuts;
                 if (!e.typeable()) break;
             }
         }
         return cut;
     }
 
-    /** Ends the stroke. The kill and cut counts survive it, for the readout. */
+    /** The finger has lifted. The kill and cut counts survive it, for the readout. */
     void endStroke() {
-        fingerDown = false;
+        restStroke();
+        touchDown = false;
     }
 
     /** The slow-motion beat that lands when one stroke takes several words. */
     private void startSlowdown() {
         slowdown = SLOW_TIME;
         sliceCall = SLICE_CALL_TIME;
+        // What the readout will say, taken here rather than read live off the stroke: this fires
+        // again on every further word, so a sweep still counts up, and it stops when the stroke
+        // does instead of being reset by the next one.
+        callKills = strokeKills;
+        callCuts = strokeCuts;
         // Restrained on purpose: destroying the words has already fired a screen flash and
         // flooded the sky for each of them, and piling a third wash on top of that whited out
         // the whole field at exactly the moment there was something worth looking at.
@@ -2453,6 +2676,9 @@ final class GameCore {
         } else score += DUPE_BONUS;
         caseIndex = prize;
         caseSlide = 0f;
+        // Scheduled, not started, exactly as the steamer does it: the victory tableau plays first
+        // and the parade runs off what is left of the interlude.
+        paradeTimer = PARADE_TIME;
         if (sound != null) sound.achievement();
     }
 

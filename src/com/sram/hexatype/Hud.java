@@ -100,9 +100,11 @@ final class Hud extends Draw {
      * it arrived with, so the number is still readable once normal speed is back.
      */
     static void sliceCall(Painter p, GameCore c, Layout L) {
-        if (c.sliceCall <= 0f || c.strokeKills < GameCore.SLOW_KILLS) return;
-        callOut(p, L, c.sliceCall / GameCore.SLICE_CALL_TIME, c.strokeKills + " IN ONE!",
-                c.strokeCuts + " LETTERS", GOLD);
+        // The stroke's own counts are reset by the next stroke, which can start under the same
+        // finger now; these are the frozen ones the announcement was made with.
+        if (c.sliceCall <= 0f || c.callKills < GameCore.SLOW_KILLS) return;
+        callOut(p, L, c.sliceCall / GameCore.SLICE_CALL_TIME, c.callKills + " IN ONE!",
+                c.callCuts + " LETTERS", GOLD);
     }
 
     /** The same payoff for a long MULTI chain, which is the other thing worth shouting about. */

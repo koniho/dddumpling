@@ -130,6 +130,24 @@ geometry; `Kawaii` draws the creature.
 | **companions** | the already-collected ones that turn out for the parade | `Parade.companions` |
 | **movements** | the parade's three parts: in from the left, the join, off to the right | `Parade.IN_END`, `JOIN_END` |
 
+## Star course
+
+The other interlude, offered after a steamer has been opened. Two thumbs steer, three keys a side.
+
+| Say | Means | Code |
+| --- | --- | --- |
+| **star course** / **course** | the whole star-path interlude: ready lesson, flight, then a win or a report | `StarPath` (state), `StarScreen` (drawing), `GameCore.starFlight` |
+| **flyer** | the collectible piloting it — whatever the last steamer handed over | `StarPath.who`, `StarScreen.flyer` |
+| **checkpoint** / **star** | one of the twenty to collect. They carry over between attempts | `StarPath.COUNT`, `collected` |
+| **pearl** | the lit centre of a checkpoint, and the thing the pickup actually aims at — the petals are decoration | `StarPath.HEART`, `pickupR` |
+| **sweep** | the long swoop across the play area that a course is made of; shaped in seconds, not per star | `StarPath.SWEEP`, `SWEEP_TIME`, `make` |
+| **ripple** | the small wobble riding on the sweep, so a course is not one bare sine | `StarPath.RIPPLE` |
+| **ready lesson** | the wordless beat before the flight: the keys glow a side at a time and the flyer leans | `StarPath.ready()` |
+| **grab beat** | the flick of slow motion each taken star lands with, the fling stroke's beat at a quarter length | `GameCore.STAR_BEAT`, `StarPath.grabbed` |
+| **ting** | the pickup note, pitched up with the count so a course is a rising ladder | `Sfx.star()`, `Audio.star` |
+| **victory tableau** | what a completed course ends on: everything stops, the prize climbs out of the last star, then the parade | `StarPath.WIN_HOLD`, `winning()`, `StarScreen.victory` |
+| **passenger** | a flyer nobody is steering. It must never be able to finish a course | `TestStars.flown` with steering off |
+
 ## Powerup
 
 | Say | Means | Code |
@@ -142,9 +160,12 @@ geometry; `Kawaii` draws the creature.
 | **FLURRY** | every key is a wildcard; letters and keys go rainbow | `Power.FLURRY` |
 | **FLING** | the blade: a swipe cuts every letter it sweeps past | `Power.FLING` |
 | **blade** | the cutting edge itself, drawn along the last stretch of the stroke | `Renderer.blade`, `GameCore.BLADE` |
-| **stroke** | one touch-down to touch-up of the blade | `GameCore.beginStroke`, `sliceTo`, `endStroke` |
+| **stroke** | one blade *motion*, not one touch: it starts where the finger starts moving and ends when it stops. One touch can hold several | `GameCore.beginStroke`, `sliceTo`, `endStroke` |
+| **dwell** | the beat of stillness that ends a stroke, so holding a finger down cannot hold a combo open | `GameCore.STROKE_DWELL`, `STROKE_MOVE`, `strokeIdle` |
+| **stroke cap** | the backstop behind the dwell: the longest one stroke may run, for a finger that wiggles rather than stops | `GameCore.STROKE_MAX`, `strokeAge` |
+| **dying blade** | the edge left behind for a moment where a stroke ended, so the end of a swipe is seen and not inferred | `GameCore.STROKE_FADE`, `strokeFade` |
 | **slow-motion beat** | the brief slowdown a stroke earns by taking two or more words | `GameCore.slowdown`, `SLOW_RATE` |
-| **slice call** | the "N IN ONE!" readout during that beat | `Hud.sliceCall` |
+| **slice call** | the "N IN ONE!" readout during that beat. Shows the counts frozen when the stroke that earned it ended, not the live ones | `Hud.sliceCall`, `GameCore.callKills` |
 | **MULTI** | one press chains through every matching letter, hop by hop | `Power.MULTI` |
 | **TEAM SQUISH** | one of your collectibles bounces round the field squishing words | `Power.TEAM` |
 | **squishy** / **buddy** | the collectible fighting for you during it | `Buddy`, `GameCore.buddy` |

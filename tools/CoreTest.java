@@ -64,6 +64,7 @@ final class CoreTest {
         TestAudio.musicChoice(L);
         TestAudio.frenzySounds(L);
         TestAudio.haulLanding(L);
+        TestAudio.starPickup(L);
 
         TestPower.drifting(L);
         TestPower.precedence(L);
@@ -74,6 +75,7 @@ final class CoreTest {
         TestPower.teamMode(L);
         TestPower.flingMode(L);
         TestPower.blade(L);
+        TestPower.strokeEnd(L);
         TestPower.modeSpread(L);
         TestPower.trail(L);
         TestPower.frenzyFallSpeed(L);

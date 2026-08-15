@@ -302,6 +302,11 @@ public class GameView extends View {
      *
      * This used to grab a letter and drag it, which is why the mode felt weak — one letter per
      * gesture, and only if the gesture happened to start on one.
+     *
+     * One touch may hold several strokes: the core rests a stroke that stops moving and wakes a
+     * new one on the next move, so there is nothing to send from here for that — every MOVE sample
+     * already goes to {@link GameCore#sliceTo}, which is where both decisions are made. What this
+     * tracks is only whether the finger is on the glass at all, hence {@code touchDown}.
      */
     private boolean handleFling(MotionEvent ev, int action) {
         int i = ev.getActionIndex();
@@ -327,11 +332,11 @@ public class GameView extends View {
 
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
                 || action == MotionEvent.ACTION_POINTER_UP) {
-            boolean had = core.fingerDown;
+            boolean had = core.touchDown;
             core.endStroke();
             return had;
         }
-        return core.fingerDown;
+        return core.touchDown;
     }
 
     private void handleSettings(float x, float y, boolean dragging) {

@@ -99,6 +99,8 @@ Pure (in the harness and the APK):
 | `Words` | word generation and the press-budget rules |
 | `Fx` | shots and particles |
 | `Steamer` | between-stages minigame state |
+| `StarPath` | the star course: how one is generated, flown, and won |
+| `StarScreen` | the star course on screen, including its victory tableau |
 | `Collect` | the thirty collectibles: catalogue, blind-box odds, owned-set bitmask |
 | `Trinket` | draws a collectible — fifteen shapes crossed with nine finishes |
 | `Cabinet` | the glass case itself: a wireframe box three-quarters on |
@@ -234,6 +236,23 @@ nothing. Follow the pattern rather than "fixing" it.
   line — unreadable, and it read as a drawing fault rather than a rule. `pushBack` walks the field
   lowest-first and takes anything a shoved word would land on, which cascades, so a packed board goes
   up as one. Any rule that *moves* something has to answer for what is already where it is going.
+- **A gesture delimited by the hardware is not a gesture.** A FLING stroke used to run from
+  touch-down to touch-up, so a finger parked on the glass held one combo open for the whole frenzy
+  and "N IN ONE!" was a number you waited for rather than earned. A swipe is a *motion*: the stroke
+  now ends after `STROKE_DWELL` without a definite move, and the next move under the same finger
+  wakes a fresh one. Three things fell out of it worth knowing. The stillness test has to be a
+  displacement from an anchor, not a sum of per-frame travel — a finger resting on a screen reports
+  a pixel or two a frame and summing that lets a tremble hold a combo open. It has to run on *real*
+  time and above the early returns in `update()`, or the slow-motion beat the stroke just earned
+  hands it three times the grace to stand still in, and dying mid-swipe leaves a blade lit over the
+  summary. And the dwell alone still leaves a finger that wiggles instead of stopping, which is what
+  `STROKE_MAX` is for. Note also what the end of a stroke has to *look* like: the edge dies away
+  where it stopped (`STROKE_FADE`) and the ribbon stops growing, because a combo that resets with no
+  visible cause reads as a fault.
+- **A readout that outlives what it reports needs its own copy of the numbers.** `Hud.sliceCall`
+  read `strokeKills` live, which was fine while a stroke could only end by lifting; once strokes end
+  on their own, a fresh one starting inside the readout's 1.1s rewrote "4 IN ONE!" down to the new
+  tally and then blanked it. `callKills`/`callCuts` are frozen when the announcing stroke ends.
 - **A permanent warning is not a warning.** `harm()` was linear, so losing one life of three put
   a third-strength pulsing red border round the screen for the rest of the run — reported twice as
   a "stuck vignette" and it was not stuck, it was working as written. It is squared now: one life
@@ -265,6 +284,47 @@ nothing. Follow the pattern rather than "fixing" it.
 - **A mode gated on game state has to be the last index.** TEAM SQUISH stars a collectible, so
   it cannot be offered with an empty case. It is excluded by rolling `nextInt(COUNT - 1)`, which
   only works while it is the highest index in `Power` — there is an assertion pinning that.
+- **Making a target bigger is a difficulty change, not a cosmetic one.** The star course's flyer and
+  checkpoints went up by half, and the pickup test was two flyer radii — so the catch band went from
+  a ninth of the screen width to a sixth, which is wider than the course's own wander. A flyer left
+  dead centre with nobody touching the keys then completed courses by itself, collecting a free
+  collectible and a free life; the stars carry over between attempts, so anything it can reach it
+  eventually finishes. The soak bot found it, having no way to steer at all — it turned up as the
+  monotonicity check failing, because a skill-independent bonus had been added to every tier.
+  `StarPath.pickupR` aims at the star's drawn *heart* instead, which keeps the old number. Resize a
+  target and re-derive the rule, or state deliberately that the rule is unchanged.
+- **A generator tuned per step is tuned against the wrong clock.** The course used to be a random
+  walk with a bounded step per checkpoint. But the scroll accelerates, so the last stars arrive three
+  times as fast as the first: one bound per step meant a demand three times higher at the end than at
+  the start, and it had to be small enough for the end — which is why the course could only wiggle
+  down the middle. `StarPath.make` is a sine in *seconds* now, so it asks the same sideways speed
+  everywhere and can span the whole play area. `TestStars` asserts the peak demand against
+  `MAX_VX`; the two are meant to be read together.
+- **Asking for more speed than the player has is a cliff, not a dial.** The course deliberately
+  demands about 1.2× `MAX_VX`, so the line has to be anticipated and cut across rather than followed
+  — below that, *every* pilot the harness can write collects all twenty whatever its reaction time,
+  because following a smooth line is not a skill. But at 1.5× it collapses to a third of a course:
+  a flyer that can never catch up stops being late and ends up somewhere else entirely, and which
+  stars it gets turns to luck. The usable band is narrow and there is an assertion at 1.25.
+- **A pilot with perfect knowledge measures reachability, not difficulty.** `TestStars.flown` knows
+  exactly where every checkpoint is and is limited only by a reaction quantum, so inside the
+  trackable band it scores 20/20 at every setting and cannot tell you whether a course is *hard*.
+  Use it for the two questions it can answer — can this course be completed at all, and can it be
+  completed by nobody-at-the-controls — and take feel to the device.
+- **Half a fifth of a curve is a straight line.** However swoopy a scrolling course is over its five
+  seconds, what reads is how much of it fits on screen: at six checkpoints it looked like a diagonal
+  whatever the generator did. `COURSE_SCREENS` is what that knob is, and it is bounded below by the
+  checkpoints touching each other.
+- **The soak bot cannot steer, so it cannot tell you a course is playable.** `TestStars.flown` is a
+  pilot with stated limits — it re-decides every *reaction* seconds and holds one thumb — and the
+  same routine with steering off is the passenger the soak bot is. Three numbers come out: what quick
+  thumbs take, what slow thumbs take, and what nobody-at-the-controls takes. The last one is the
+  guard; see the pickup entry above for what it caught.
+- **A beat that fires once can be too long to fire twenty times.** The fling stroke's slow-motion is
+  0.28s, and reusing it for a star pickup would have put the end of a good course in continuous slow
+  motion — and every beat lengthens the course in real time, since the course clock is scaled too.
+  `GameCore.STAR_BEAT` is a quarter of it, and there is an assertion on what a clean run costs in
+  real seconds. Before reusing an effect, count how often the new caller fires it.
 - **Resolve, then play back.** The MULTI chain takes every tile on the press and only *reveals*
   the hops over the following moment, from stored positions. Animating the removals would mean
   holding references to tiles that a fall, a word finishing or the frenzy ending could invalidate

@@ -779,6 +779,173 @@ final class TestPower extends Check {
         check("the trail is twice what it was", GameCore.TRAIL_RATE == 100f);
     }
 
+    /**
+     * A core mid-FLING with an empty, quiet field.
+     *
+     * Spawning is held off for the length of the test: these are timing tests, and a word arriving
+     * of its own accord would wander into a slice and make the counts a matter of luck.
+     */
+    private static GameCore flingCore(Layout L, long seed) {
+        GameCore c = new GameCore(new Mem(), seed);
+        c.startGame();
+        c.enemies.clear();
+        c.target = null;
+        place(c, L, Power.FLING, 0);
+        c.tapKey(0, L);
+        c.stageGap = 30f;
+        return c;
+    }
+
+    /**
+     * What ends a stroke: the dwell, the cap, and what a new one starts with.
+     *
+     * The rule under test is that a stroke is a *motion*, not a touch. Before this, a finger parked
+     * on the glass held one combo open for the whole frenzy, so "N IN ONE!" was a number you waited
+     * for rather than earned.
+     */
+    static void strokeEnd(Layout L) {
+        group("what ends a fling stroke");
+        check("a dwell is a beat, not a pause",
+                GameCore.STROKE_DWELL >= 0.15f && GameCore.STROKE_DWELL <= 0.3f);
+        check("a definite move is more than jitter and less than a tile",
+                GameCore.STROKE_MOVE > 0.2f && GameCore.STROKE_MOVE < 1f);
+        check("the cap is past any real slice", GameCore.STROKE_MAX >= 1.5f);
+        check("the blade dies faster than the dwell that killed it",
+                GameCore.STROKE_FADE < GameCore.STROKE_DWELL);
+        // The speed a finger has to hold to stay awake. A slice worth calling travels ten times
+        // this, which is the margin that keeps a real swipe from ever being cut off mid-motion.
+        float keepAwake = L.enemyR * GameCore.STROKE_MOVE / GameCore.STROKE_DWELL;
+        check("staying awake asks for a crawl, not a sprint", keepAwake < L.w * 0.12f);
+
+        // Holding still ends the stroke without the finger going anywhere.
+        GameCore c = flingCore(L, 241L);
+        float row = L.playTop + 300f;
+        GameCore.Enemy e = add(c, L, new int[] {1, 2, 3, 4}, row);
+        c.beginStroke(c.tileX(e, 0, L) - L.enemyR * 2f, row);
+        c.sliceTo(c.tileX(e, 3, L) + L.enemyR * 2f, row, L);
+        check("the sweep took the word", c.strokeKills == 1 && c.fingerDown && c.touchDown);
+        advance(c, L, GameCore.STROKE_DWELL + 2 * DT);
+        check("holding still ends the stroke", !c.fingerDown);
+        check("but the finger is still on the glass", c.touchDown);
+        check("and the edge is left dying where it stopped", c.strokeFade > 0f);
+        check("the counts stand for the readout", c.strokeKills == 1);
+        advance(c, L, GameCore.STROKE_FADE + 2 * DT);
+        check("the edge goes out in its own time", c.strokeFade == 0f);
+
+        // A beat shorter than the dwell is not a stop.
+        GameCore b = flingCore(L, 242L);
+        b.beginStroke(L.w * 0.5f, row);
+        advance(b, L, GameCore.STROKE_DWELL - 0.06f);
+        check("a shorter hesitation leaves the stroke alone", b.fingerDown);
+
+        // A finger resting on a screen still reports a pixel or two a frame. Summing the path
+        // would let a tremble hold a combo open, which is why the test is from an anchor.
+        GameCore j = flingCore(L, 243L);
+        float jx = L.w * 0.5f;
+        j.beginStroke(jx, row);
+        for (int i = 0; i < 30; i++) {
+            j.sliceTo(jx + (i % 2 == 0 ? 1f : -1f) * L.enemyR * GameCore.STROKE_MOVE * 0.4f,
+                    row, L);
+            j.update(DT, L);
+        }
+        check("a trembling finger does not hold the stroke open", !j.fingerDown);
+
+        // The thing the mode exists for: a fast sweep through four words, in per-frame samples the
+        // way a real swipe arrives, must run to the end of the motion as one stroke.
+        GameCore f = flingCore(L, 244L);
+        float span = L.playRight - L.playLeft;
+        for (int i = 0; i < 4; i++) {
+            GameCore.Enemy one = add(f, L, new int[] {i + 1}, row);
+            one.baseX = L.playLeft + span * (i + 0.5f) / 4f;
+        }
+        f.beginStroke(L.playLeft - L.enemyR, row);
+        boolean live = true;
+        for (int i = 1; i <= 12; i++) {
+            f.sliceTo(L.playLeft - L.enemyR + (span + L.enemyR * 2f) * i / 12f, row, L);
+            f.update(DT, L);
+            if (!f.fingerDown) live = false;
+        }
+        check("a fast multi-word slice is never cut short", live);
+        check("all four went on the one stroke", f.strokeKills == 4);
+        check("and the readout says so", f.callKills == 4 && f.sliceCall > 0f);
+
+        // The loophole the cap closes: a finger swinging clear of the anchor every frame is
+        // technically always moving, so the dwell alone would let it hold a combo open for ever.
+        // It takes a wide, fast wiggle — anything smaller than a definite move reads as the
+        // tremble above and rests — which is why this is a backstop and not the main mechanism.
+        GameCore g = flingCore(L, 245L);
+        float gx = L.w * 0.5f, amp = L.enemyR * GameCore.STROKE_MOVE * 1.2f;
+        g.beginStroke(gx, row);
+        int frames = 0;
+        while (g.fingerDown && frames < 60 * 4) {
+            g.sliceTo(gx + (frames % 2 == 0 ? amp : -amp), row, L);
+            g.update(DT, L);
+            frames++;
+        }
+        float lived = frames * DT;
+        check("wobbling in place does keep the dwell at bay", lived > GameCore.STROKE_DWELL * 2f);
+        check("but the cap ends it anyway", !g.fingerDown);
+        check("and only well after any real slice would have finished",
+                lived >= GameCore.STROKE_MAX - 0.05f);
+
+        // Waking: one touch may hold several strokes, and each counts for itself.
+        GameCore h = flingCore(L, 246L);
+        GameCore.Enemy w1 = add(h, L, new int[] {1, 2}, row);
+        h.beginStroke(h.tileX(w1, 0, L) - L.enemyR * 2f, row);
+        h.sliceTo(h.tileX(w1, 1, L) + L.enemyR * 2f, row, L);
+        check("the first stroke took its word", h.strokeKills == 1);
+        advance(h, L, GameCore.STROKE_DWELL + 2 * DT);
+        check("it rested under the finger", !h.fingerDown && h.touchDown);
+        int nudge = h.sliceTo(h.fingerX + L.enemyR * GameCore.STROKE_MOVE * 0.5f, row, L);
+        check("a nudge does not wake it", !h.fingerDown && nudge == 0);
+        float far = L.playLeft;
+        h.sliceTo(far, row, L);
+        check("a definite move starts a new stroke", h.fingerDown);
+        check("with the combo back at nothing", h.strokeKills == 0 && h.strokeCuts == 0);
+        check("and the blade lit again", h.strokeFade == 0f);
+        check("the finger never lifted for any of that", h.touchDown);
+
+        // The readout belongs to the stroke that earned it. It outlives that stroke on purpose,
+        // and a fresh stroke starting inside its 1.1s must not rewrite the number it is showing.
+        GameCore k = flingCore(L, 247L);
+        GameCore.Enemy k1 = add(k, L, new int[] {1}, row);
+        GameCore.Enemy k2 = add(k, L, new int[] {2}, row);
+        k1.baseX = L.playLeft + L.enemyR * 2f;
+        k2.baseX = L.playRight - L.enemyR * 2f;
+        float low = row + L.enemyR * 6f;
+        GameCore.Enemy k3 = add(k, L, new int[] {3}, low);
+        k.beginStroke(L.playLeft, row);
+        k.sliceTo(L.playRight, row, L);
+        check("two words in one stroke earned the call", k.callKills == 2 && k.sliceCall > 0f);
+        advance(k, L, GameCore.STROKE_DWELL + 2 * DT);
+        k.sliceTo(L.playLeft, low, L);              // wakes a second stroke on the lower row
+        k.sliceTo(L.playRight, low, L);
+        check("the second stroke took the third word", k3.destroyed && k.strokeKills == 1);
+        check("the readout still belongs to the stroke that earned it",
+                k.callKills == 2 && k.sliceCall > 0f);
+
+        // A stroke has two exits, and dying mid-swipe is the one that never reaches the PLAY half
+        // of the loop. The finger has to be let go there too, or a blade hangs over the summary.
+        GameCore m = flingCore(L, 248L);
+        m.beginStroke(L.w * 0.5f, row);
+        m.lives = 1;
+        m.enemies.clear();
+        m.stageGap = 0f;
+        add(m, L, new int[] {0}, L.dangerY - L.enemyR + 1);
+        advance(m, L, GameCore.ATTACK_TIME + 2 * DT);
+        check("dying ends the run", m.state == GameCore.OVER);
+        check("and lets go of the finger", !m.fingerDown && !m.touchDown);
+
+        // A rested stroke stops laying the ribbon too: that dying trail is how the end of a swipe
+        // is seen rather than inferred from the readout.
+        GameCore t = flingCore(L, 249L);
+        t.beginStroke(L.w * 0.4f, L.h * 0.4f);
+        advance(t, L, GameCore.STROKE_DWELL + 2 * DT);
+        t.particles.clear();
+        advance(t, L, 0.3f);
+        check("a rested stroke lays no trail", t.particles.isEmpty());
+    }
+
     static void flingMode(Layout L) {
         group("FLING");
         GameCore c = new GameCore(new Mem(), 208L);
@@ -841,13 +1008,16 @@ final class TestPower extends Check {
         check("the demo stays on screen",
                 c.demoX > 0f && c.demoX < L.w && c.demoY > 0f && c.demoY < L.deckTop);
 
-        // Touching retires the hint and moves the trail under the finger.
-        c.flingUsed = true;
-        c.fingerDown = true;
-        c.fingerX = L.w * 0.3f;
-        c.fingerY = L.h * 0.3f;
+        // Touching retires the hint and moves the trail under the finger. The finger is kept
+        // creeping along: the trail follows a motion now, and a stroke that stops moving is rested
+        // out from under it by the dwell.
+        c.beginStroke(L.w * 0.3f, L.h * 0.3f);
         c.particles.clear();
-        advance(c, L, 0.2f);
+        for (int i = 1; i <= 12; i++) {
+            c.sliceTo(L.w * 0.3f + i * L.enemyR * 0.15f, L.h * 0.3f, L);
+            c.update(DT, L);
+        }
+        check("the stroke is still going", c.fingerDown);
         check("the hint retires after a touch", !c.showFlingHint());
         check("the trail follows the finger", c.particles.size() > 3);
         boolean nearFinger = true;
@@ -858,15 +1028,16 @@ final class TestPower extends Check {
         check("sparkles appear at the finger", nearFinger);
 
         // Lifting the finger stops it; so does the frenzy ending.
-        c.fingerDown = false;
+        c.endStroke();
         c.particles.clear();
         advance(c, L, 0.3f);
         check("lifting off stops the trail", c.particles.isEmpty());
+        check("and lets go of the glass", !c.touchDown);
 
-        c.fingerDown = true;
+        c.beginStroke(L.w * 0.3f, L.h * 0.3f);
         c.modeLeft = 0.001f;
         advance(c, L, 0.2f);
-        check("the frenzy ending releases the finger", !c.fingerDown);
+        check("the frenzy ending releases the finger", !c.fingerDown && !c.touchDown);
         check("no trail once fling is over", !c.flinging());
 
         // Other modes must not emit a trail or show the hint.

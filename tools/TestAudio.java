@@ -346,6 +346,73 @@ final class TestAudio extends Check {
         check("it has a tone in it", crossRate(chime) > 1200f && crossRate(chime) < 6000f);
     }
 
+    /**
+     * The star pickup: the most repeated effect in the game, and one note of a ladder.
+     *
+     * Held to the same three properties as the chop and the shelving chime — short, decaying, and
+     * tonal — plus the one that is specific to it: twenty of these go off inside a five-second
+     * course, the last of them a fifth of a second apart, so it has to be shorter than that gap.
+     */
+    static void starPickup(Layout L) {
+        group("star pickup sound");
+
+        short[] ting = Sfx.build(Sfx.STAR);
+        float len = (float) ting.length / Sfx.RATE;
+        int head = 0, tail = 0;
+        for (int i = 0; i < ting.length / 4; i++) head = Math.max(head, Math.abs(ting[i]));
+        for (int i = ting.length * 3 / 4; i < ting.length; i++) {
+            tail = Math.max(tail, Math.abs(ting[i]));
+        }
+        System.out.printf("    star is %.0fms, crossings %.0f/s, tail %d%% of head%n",
+                len * 1000f, crossRate(ting), tail * 100 / Math.max(1, head));
+        check("the ting is short enough to repeat", len < 0.13f);
+        check("and shorter than the shelving chime", ting.length < Sfx.build(Sfx.COLLECT).length);
+        // The gap between the last two stars of a course, which is the tightest it ever has to fit.
+        float gap = StarPath.encounterTime(StarPath.COUNT - 1)
+                - StarPath.encounterTime(StarPath.COUNT - 2);
+        System.out.printf("    the last two stars are %.0fms apart%n", gap * 1000f);
+        check("and shorter than the gap between the last two stars", len < gap);
+        check("the ting dies away", tail < head / 4);
+        check("it is a note, not a click", crossRate(ting) > 1800f && crossRate(ting) < 7000f);
+
+        // One note per star, climbing, and the twentieth deliberately silent: the tableau's fanfare
+        // is what that one sounds like, and a note under it would be lost anyway.
+        GameCore c = new GameCore(new Mem(), 331L);
+        Ear ear = new Ear();
+        c.sound = ear;
+        c.startGame();
+        c.state = GameCore.BONUS;
+        c.starBonus = true;
+        c.stars.make(new java.util.Random(331L));
+        c.stars.begin(-1, L);
+        int last = StarPath.COUNT - 1;
+        c.stars.collected = (1 << last) - 1;
+        c.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 0.5f;
+        check("nineteen already taken makes no sound", ear.stars == 0);
+        for (int i = 0; i < 60 * 6 && !c.stars.won; i++) {
+            c.stars.x = c.stars.starX(last, L);
+            c.update(DT, L);
+        }
+        check("the course completed", c.stars.won);
+        check("the last star rings the fanfare instead of a note",
+                ear.stars == 0 && ear.achievements == 1);
+
+        // And a course flown from the start announces every star it takes, with the count.
+        GameCore d = new GameCore(new Mem(), 332L);
+        Ear ear2 = new Ear();
+        d.sound = ear2;
+        d.startGame();
+        d.state = GameCore.BONUS;
+        d.starBonus = true;
+        d.stars.make(new java.util.Random(332L));
+        d.stars.begin(-1, L);
+        for (int i = 0; i < 60 * 12 && d.state == GameCore.BONUS; i++) d.update(DT, L);
+        System.out.printf("    a drifting course took %d and announced %d%n",
+                d.stars.count(), ear2.stars);
+        check("every star taken is announced once", ear2.stars == d.stars.count());
+        check("and the note climbs with the count", ear2.lastStar == d.stars.count());
+    }
+
     static boolean silentRunSurvives(Layout L) {
         GameCore c = new GameCore(new Mem(), 74L);
         c.sound = null;

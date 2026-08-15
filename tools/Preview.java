@@ -414,6 +414,41 @@ final class Preview {
         cs.stars.x = cs.stars.starX(10, L);
         cs.bonusTimer = cs.stars.timer;
         shot(dir, "54-stars-flight", cs, L, w, h, ss);
+        // And the top of the sweep, where the course turns back on itself: the two moments say
+        // between them whether a course reads as a swoop or as a diagonal.
+        cs.stars.collected = 0b111;
+        cs.stars.burst[10] = 0f;
+        cs.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 1.35f;
+        cs.stars.x = cs.stars.starX(6, L);
+        cs.bonusTimer = cs.stars.timer;
+        shot(dir, "54b-stars-turn", cs, L, w, h, ss);
+
+        // Taking the last star: the course stops dead and the prize climbs out of the checkpoint
+        // that ended it, early in the tableau and again once it is standing in place.
+        GameCore cw = new GameCore(store, 91L);
+        cw.startGame();
+        cw.state = GameCore.BONUS;
+        cw.starBonus = true;
+        cw.stars.make(new java.util.Random(91L));
+        cw.stars.begin(c8.prize, L);
+        cw.stars.collected = (1 << (StarPath.COUNT - 1)) - 1;
+        cw.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 3.4f;
+        // Steered onto the last star frame by frame: where the course has scrolled to is the only
+        // thing that knows where that star is.
+        for (int i = 0; i < 60 * 6 && !cw.stars.won; i++) {
+            cw.stars.x = cw.stars.starX(StarPath.COUNT - 1, L);
+            cw.update(DT, L);
+        }
+        System.out.printf("stars won: star=%d prize=%s new=%s parade=%.2f%n", cw.stars.winStar,
+                cw.prize >= 0 ? Collect.NAME[cw.prize] : "none", cw.prizeNew, cw.paradeTimer);
+        step(cw, L, 0.28f);
+        shot(dir, "55-stars-won", cw, L, w, h, ss);
+        step(cw, L, 1.1f);
+        shot(dir, "56-stars-victory", cw, L, w, h, ss);
+        // And the handover: the same parade a won steamer ends on.
+        for (int i = 0; i < 60 * 10 && !cw.bonusParading(); i++) cw.update(DT, L);
+        step(cw, L, GameCore.PARADE_TIME * 0.45f);
+        shot(dir, "57-stars-parade", cw, L, w, h, ss);
 
         // The parade that closes a winning interlude: marching in, the new one joining, and
         // the line on its way off to the right.
@@ -574,6 +609,16 @@ final class Preview {
                 c14.strokeKills, c14.strokeCuts, c14.slowdown);
         shot(dir, "31-blade", c14, L, w, h, ss);
 
+        // The same stroke a moment later with the finger stopped but never lifted: the dwell has
+        // ended it, so the edge is dying away along the last stretch it swept and the ribbon has
+        // stopped growing. The readout stands on the count it froze at. That fade is the whole
+        // visible answer to "why did my combo start over" — the next move is a new swipe.
+        step(c14, L, GameCore.STROKE_DWELL + DT);
+        step(c14, L, GameCore.STROKE_FADE * 0.45f);
+        System.out.printf("blade rest: live=%s fade=%.2f, readout still says %d in one%n",
+                c14.fingerDown, c14.strokeFade, c14.callKills);
+        shot(dir, "58-blade-rest", c14, L, w, h, ss);
+
         // A MULTI chain mid-reveal: the bolt, the flares, and what it paid.
         GameCore c15 = new GameCore(store, 67L);
         c15.startGame();
@@ -723,7 +768,7 @@ final class Preview {
         String[] names = {"squish-dumpling", "squish-strawberry", "squish-cat", "squish-grapes",
                 "squish-squishy", "squish-blob", "damage-drip", "clear-word", "wrong",
                 "achievement", "game-start", "stage-clear", "power-clear", "chop", "zap",
-                "collect"};
+                "collect", "star"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);
