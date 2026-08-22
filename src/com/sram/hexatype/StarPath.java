@@ -6,10 +6,11 @@ import java.util.Random;
 final class StarPath {
     static final int COUNT = 20;
     /**
-     * The flight is down from five seconds to four: the same twenty checkpoints arrive in a fifth
-     * less time, which together with the wider spacing below puts the scroll up by half.
+     * The flight is down from five seconds to four and now to 3.6: the same twenty checkpoints
+     * arrive in ever less time, which together with the wider spacing below puts the scroll up
+     * by nearly half again on where it started.
      */
-    static final float READY = 1.5f, FLY = 4f, EXIT = 0.75f, REPORT = 1.5f;
+    static final float READY = 1.5f, FLY = 3.6f, EXIT = 0.75f, REPORT = 1.5f;
     /**
      * Course lengths visible at once; larger means wider gaps between its stars.
      *
@@ -17,14 +18,48 @@ final class StarPath {
      * {@code span * COURSE_SCREENS / COUNT}, and since the whole course still passes in {@link #FLY}
      * seconds, raising it spreads them out <em>and</em> speeds the scroll up in the same move.
      *
+     * Note what it does <em>not</em> change: when each checkpoint arrives. The gaps between arrivals
+     * come out of {@link #FLY} and {@link #RUSH} through {@link #encounterTime}, which touches this
+     * only through a half-screen lead term — so spacing them out and speeding the scroll up by the
+     * same factor leaves the rhythm of a course exactly where it was. That is the knob being asked
+     * for whenever the stars want to be further apart without the course getting busier.
+     *
      * It went 3.2 down to 2.8 to get more of a sweep on screen — at six checkpoints the course read
-     * as a straight diagonal however swoopy it was over its five seconds — and then back up to 3.4
-     * because the stars wanted to be further apart, with the sweep period shortened to keep the
-     * curve. Below about 2.4 the checkpoints touch each other at {@link #STAR_OUT} wide.
+     * as a straight diagonal however swoopy it was over its five seconds — then back up to 3.4 and
+     * 4.2 because the stars wanted to be further apart, and now two and a half times that again.
+     * At 10.5 the gap is half a screen and there are about two checkpoints in shot, so a course is
+     * read one star ahead: it is a reaction now rather than a plan, which is the direction every
+     * change here has been going. Below about 2.4 the checkpoints touch each other at
+     * {@link #STAR_OUT} wide, and the practical ceiling is one checkpoint on screen at a time.
+     *
+     * One thing has to move with it and is handled by not being a distance at all: the catch's
+     * vertical tolerance, which is stated in seconds for exactly this reason — see {@link #GRACE}.
+     * The trail's pulse is in screen space for the same kind of reason; see {@code StarScreen}.
      */
-    static final float COURSE_SCREENS = 3.4f;
-    /** How sharply the scroll accelerates over the flight. 1 would be a constant crawl. */
-    static final float RUSH = 1.45f;
+    static final float COURSE_SCREENS = 10.5f;
+    /**
+     * How sharply the scroll accelerates over the flight. 1 would be a constant crawl.
+     *
+     * Nearly flat now, down from 1.45, because {@link #EASE_IN} took over the job it was really
+     * doing. A course used to crawl at the off and make its pace up later, and that curve was the
+     * only thing keeping the opening gentle — but it also meant the last stars arrived three times
+     * as fast as the first, and it is the closing speed that decides how long a checkpoint is level
+     * with the flyer. At 1.45, with the stars spaced further apart and the flight shortened, the
+     * end of a course went past faster than a hand can be in place for: the naive harness pilot went
+     * from taking nineteen to taking ten, and every one of the ten it lost was in the last half.
+     * Held a little above 1 so a course still gathers itself rather than running at one flat pace.
+     */
+    static final float RUSH = 1.15f;
+    /**
+     * Seconds of soft start: the course leaves from a standstill and reaches its nominal pace over
+     * this long, rather than being at speed on the first frame of the flight.
+     *
+     * Applied through {@link #launch}, which is normalised so the course still passes in exactly
+     * {@link #FLY} — the seconds given away at the off are taken back over the rest of the flight.
+     * {@link #encounterTime} inverts it, so the generator and the scroll agree about when a star
+     * arrives; there is a round-trip assertion on that pair.
+     */
+    static final float EASE_IN = 1f;
     static final float TAU = 6.2831853f;
 
     /**
@@ -44,26 +79,31 @@ final class StarPath {
      * come back. {@code 0.40} spans the play area — the flyer's own clamp keeps its centre a little
      * inside the edges, and {@link #EDGE} is set to exactly what it can reach.
      *
-     * The period is deliberately shorter than the sweep can be <em>tracked</em> at: it asks about
-     * 1.2 times {@link #MAX_VX}, so following the line is not possible and the course has to be
-     * anticipated and cut across instead. That is the difficulty in this game — at a trackable
-     * period every pilot the harness can write collects all twenty however slow its thumbs are.
+     * The period is shorter than the sweep can be <em>tracked</em> at, so following the line is not
+     * enough and the course has to be anticipated and cut across instead. How much shorter is not
+     * usefully measured as a ratio of peak speeds, which is how it was stated for a long time: a
+     * sine only exceeds {@link #MAX_VX} over a short arc either side of its steepest point, so the
+     * old "asks 1.2 times the steering" course cost a tracker one hundredth of a width — a twelfth
+     * of the catch band — and every pilot the harness can write collected all twenty at any reaction
+     * time. What the player feels is the <em>lag</em> that overspeed integrates to, against the width
+     * of the band; {@code TestStars} measures both, and the peak ratio is only printed now.
      *
-     * It is not a dial past that, though: it is a cliff. Measured against the harness pilot, 1.2
-     * times still completes a course and 1.5 times collapses to a third of it, because a flyer that
-     * can never catch up stops being late and starts being somewhere else entirely. Anything past
-     * about 1.25 makes the game worse rather than harder; there is an assertion on it.
+     * The period is therefore shorter than it was, and no longer scaled to leave the peak ratio
+     * near 1.2. The far bound is still a cliff rather than a preference — a flyer that can never
+     * catch up stops being late and ends up somewhere else entirely, and which stars it gets turns
+     * to luck — but the thing to hold it by is the feasible window at each checkpoint, which is what
+     * that suite now asserts.
      */
-    static final float SWEEP = 0.40f, SWEEP_TIME = 3.8f;
+    static final float SWEEP = 0.40f, SWEEP_TIME = 3.42f;
     /**
-     * The ripple on top, so a course is not one bare sine to be read at a glance.
+     * The ripple on top: what makes a course ask for direction changes rather than one long lean.
      *
-     * Kept small because it spends the same budget as the sweep: the two demands add, and the sweep
-     * is what the player asked to be able to see. A course is encountered over about four and a
-     * quarter of the five seconds, so at this period it gets most of the way round its sweep: out to
-     * one edge of the play area, back through the middle, and out to the other.
+     * Twice what it was, at two thirds the period, and this is the reactive half of the difficulty —
+     * the sweep alone is a line to be read once at the start of a course, while the ripple has to be
+     * answered as it arrives. It spends the same budget as the sweep, so it is still the smaller of
+     * the two: the sweep is the shape a player is meant to be able to see coming.
      */
-    static final float RIPPLE = 0.02f, RIPPLE_TIME = 2.2f;
+    static final float RIPPLE = 0.04f, RIPPLE_TIME = 1.6f;
     /** Closest a checkpoint comes to the edge of the play area. */
     static final float EDGE = 0.5f - SWEEP;
     /**
@@ -107,6 +147,55 @@ final class StarPath {
      */
     static float pickupR(Layout L) { return flyerR(L) + starOuter(L) * HEART; }
 
+    /**
+     * How late, in seconds, a flyer may still be and take the checkpoint. The catch is an ellipse
+     * rather than a circle, and this is its half-height — stated in <em>time</em> rather than in
+     * radii, which is the whole point of it.
+     *
+     * Because only one of the two axes is a skill. The flyer's height and the course's scroll are
+     * both functions of the clock and no key touches either: whether a star is level is not
+     * something a player can be good at. What a vertical tolerance actually buys is forgiveness for
+     * arriving *late*, which is a real human error and is measured in milliseconds — so a distance
+     * is the wrong unit for it, and the bug that unit causes is silent. As a distance it was 1.7
+     * pickup radii, which was 117ms of grace at one scroll speed and 47ms at two and a half times
+     * that; the course would have got harder in the way that feels like the game cheating, with the
+     * sideways demand unchanged. Held in seconds it survives any future change to spacing or pace,
+     * which is exactly the sort of arithmetic this file keeps getting wrong.
+     *
+     * 0.065 gives a window of about 130ms — a little over a hand's own reaction quantum, which is
+     * what it is for. {@code TestStars} measures the window and holds it against this.
+     */
+    static final float GRACE = 0.065f;
+
+    /**
+     * Vertical half-height of the catch: {@link #GRACE} seconds of whatever the course is closing on
+     * the flyer at, with a floor so the launch — where the scroll is barely moving and a star is
+     * level for the best part of a second anyway — still has a sensible shape.
+     */
+    float pickupY(Layout L) {
+        return Math.max(pickupR(L) * 0.5f, closingSpeed(L) * GRACE);
+    }
+
+    /**
+     * How fast the gap between the flyer and a checkpoint is closing, in pixels a second.
+     *
+     * Every checkpoint closes at the same rate — they all ride one scroll — so this is the scroll
+     * plus the climb, and it is taken as a difference over one frame rather than differentiated by
+     * hand. Two curves feed it ({@link #RUSH} and {@link #launch}) and a third would not announce
+     * itself; a finite difference is right whatever they are.
+     */
+    float closingSpeed(Layout L) {
+        float held = timer;
+        float now = starY(0, L) - characterY(L);
+        timer = held - DT;
+        float next = starY(0, L) - characterY(L);
+        timer = held;
+        return Math.abs(next - now) / DT;
+    }
+
+    /** One frame, for the finite difference in {@link #closingSpeed}. */
+    private static final float DT = 1f / 60f;
+
     final float[] sx = new float[COUNT];
     /** 1 on pickup, decaying to zero; drives the shine and burst without spawning objects. */
     final float[] burst = new float[COUNT];
@@ -130,6 +219,12 @@ final class StarPath {
      * star sounds like. The note ladder therefore runs to nineteen and the fanfare takes the last.
      */
     boolean grabbed;
+    /**
+     * Set on the frame the ready lesson hands over to the flight, and on the frame a course that
+     * was not won starts reading its count out. Both are for the caller to turn into a sound; both
+     * are cleared by it, as {@link #grabbed} is.
+     */
+    boolean launched, reported;
     /**
      * Set on the frame the course is completed and cleared by {@link GameCore} once it has paid
      * out. The tableau draws what was won, so the prize has to be picked before it is drawn —
@@ -181,17 +276,69 @@ final class StarPath {
     }
 
     /**
+     * A fresh line for the next attempt, keeping the checkpoints already in hand.
+     *
+     * Because a failed attempt used to be handed the identical course back, and once the course got
+     * hard enough to fail that turned the carry-over promise inside out. The harness pilot with
+     * quarter-second thumbs takes fifteen or so of a course, and on the same line it takes the same
+     * fifteen every time: three of eight courses stalled at seventeen or nineteen for as many
+     * attempts as it was given, so the prize was not a matter of persistence but simply unreachable.
+     * A player is better than that — they learn a corner they keep losing — but the shape of the
+     * thing is wrong either way, and re-rolling makes the stars in hand mean what they say: each
+     * attempt asks a different question and what has been answered stays answered.
+     */
+    void reroll(Random rnd) {
+        int held = collected;
+        make(rnd);
+        collected = held;
+    }
+
+    /**
      * Roughly how many seconds into the flight star {@code i} comes level with the flyer.
      *
      * Deliberately approximate: it exists to shape the course against the steering, and a frame
      * either way changes nothing. It takes the flyer's mid-flight height, which is where it spends
      * all but the opening moment, so the first few stars come out at zero — they are already
      * level with it when the course starts, and that keeps the opening stars in the middle.
+     *
+     * Exact in one respect, though: it inverts {@link #launch} as well as the {@link #RUSH} curve,
+     * so the soft start does not slide the whole course out from under the sweep it was shaped
+     * against. {@code TestStars} round-trips the pair.
      */
     static float encounterTime(int i) {
         float ahead = (i + 0.5f) / COUNT - 0.5f / COURSE_SCREENS;
         if (ahead <= 0f) return 0f;
-        return FLY * (float) Math.pow(ahead, 1f / RUSH);
+        return FLY * unlaunch((float) Math.pow(ahead, 1f / RUSH));
+    }
+
+    /** Where the soft start's ramp meets the nominal pace, as a fraction of the flight. */
+    private static final float RAMP = EASE_IN / FLY;
+    /** What the ramp gives away at the off, and so what the rest of the flight takes back. */
+    private static final float LOST = RAMP * 0.5f;
+
+    /**
+     * Flight progress with the soft start applied: a rate of zero on the first frame, climbing
+     * linearly to the nominal pace at {@link #EASE_IN} and holding it after that.
+     *
+     * A quadratic ramp rather than a smoothstep because it has to be invertible in closed form —
+     * see {@link #unlaunch} — and because the pace either side of the knee is what is felt, not
+     * the third derivative at it. Normalised by {@code 1 - LOST} so {@code launch(1) == 1}: the
+     * course still finishes exactly when the flight does, having spent the seconds it gave away at
+     * the start slightly faster over the rest.
+     */
+    static float launch(float p) {
+        if (p <= 0f) return 0f;
+        if (p >= 1f) return 1f;
+        return (p < RAMP ? p * p / (2f * RAMP) : p - LOST) / (1f - LOST);
+    }
+
+    /** The inverse of {@link #launch}, for turning a place in the course back into a time. */
+    static float unlaunch(float z) {
+        if (z <= 0f) return 0f;
+        if (z >= 1f) return 1f;
+        float knee = LOST / (1f - LOST);
+        return z <= knee ? (float) Math.sqrt(2f * RAMP * z * (1f - LOST))
+                : z * (1f - LOST) + LOST;
     }
 
     void begin(int entry, Layout L) {
@@ -200,6 +347,7 @@ final class StarPath {
         x = L.w * 0.5f;
         vx = 0f;
         left = right = won = false;
+        launched = reported = false;
         winT = 0f;
         winStar = -1;
         awardPending = false;
@@ -223,9 +371,12 @@ final class StarPath {
         return p < 0 ? 0 : p > 1 ? 1 : p;
     }
 
-    /** Scroll starts gently and accelerates continuously toward the end of the five seconds. */
+    /**
+     * Scroll leaves from a standstill, reaches its nominal pace over {@link #EASE_IN}, and keeps
+     * accelerating gently from there to the end of the flight.
+     */
     float traversalProgress() {
-        return (float) Math.pow(flightProgress(), RUSH);
+        return (float) Math.pow(launch(flightProgress()), RUSH);
     }
     int count() { return Integer.bitCount(collected); }
 
@@ -253,7 +404,16 @@ final class StarPath {
             }
             return;
         }
+        // Both edges are taken as a phase *change* over this frame, which is the only way to catch
+        // them: nothing else here knows that the lesson has just ended or that the flight has, and
+        // a caller comparing predicates itself would be comparing them one frame late. Cleared by
+        // the caller like {@link #grabbed}, and for the same reason.
+        boolean wasReady = ready(), wasReporting = reporting();
         timer -= dt;
+        launched = wasReady && !ready();
+        // Not on a won course: that ends on the tableau's fanfare, and the tally is the sound of
+        // a number arriving without a prize behind it.
+        reported = !won && !wasReporting && reporting();
         grabbed = false;
         for (int i = 0; i < COUNT; i++) burst[i] = Math.max(0f, burst[i] - dt * 1.8f);
         if (!flying()) return;
@@ -270,11 +430,11 @@ final class StarPath {
         if (x > L.playRight - r) { x = L.playRight - r; vx = Math.min(0, vx); }
 
         float cy = characterY(L);
-        float pickup = pickupR(L);
+        float rx = pickupR(L), ry = pickupY(L);
         for (int i = 0; i < COUNT; i++) {
             if ((collected & (1 << i)) != 0) continue;
-            float dx = x - starX(i, L), dy = cy - starY(i, L);
-            if (dx * dx + dy * dy <= pickup * pickup) {
+            float dx = (x - starX(i, L)) / rx, dy = (cy - starY(i, L)) / ry;
+            if (dx * dx + dy * dy <= 1f) {
                 collected |= 1 << i;
                 burst[i] = 1f;
                 if (count() == COUNT) {
@@ -295,8 +455,47 @@ final class StarPath {
         }
     }
 
+    /**
+     * The ready lesson's demo lean, as a fraction of the view width, and how lit the keys under it
+     * are. Both die away over the last {@link #SETTLE} of the ready beat.
+     *
+     * It lives here rather than in the renderer because it is the flyer's position, not a decoration
+     * on it: the drawn x used to be {@code q.x} plus a bare sine of the clock, which meant the flight
+     * began by teleporting the flyer from wherever in that swing the beat happened to end back to
+     * the middle of the screen. Nothing was wrong with the state — it had never left the middle —
+     * and it still read as the character jumping the moment the course started. Settling to a stop
+     * on the spot it will fly from costs half a second of the ready beat and removes the jump at
+     * source, and it also makes the lesson end on something: the keys dim, the flyer holds still,
+     * and then the course moves.
+     */
+    static final float LESSON_SWING = 0.12f, LESSON_RATE = 3.4f, SETTLE = 0.55f;
+
+    /** 1 through the lesson, easing to 0 by the moment the flight starts. */
+    float lessonFade() {
+        if (!ready()) return 0f;
+        float left = timer - (FLY + EXIT + REPORT);
+        if (left <= 0f) return 0f;
+        if (left >= SETTLE) return 1f;
+        float f = left / SETTLE;
+        return f * f;
+    }
+
+    /** Sideways offset of the flyer during the lesson, in view widths. */
+    float lessonLean(float clock) {
+        return (float) Math.sin(clock * LESSON_RATE) * LESSON_SWING * lessonFade();
+    }
+
+    /**
+     * Which way the lesson is leaning and how hard, in -1..1 — the lean's own rate, normalised.
+     * The wake trails the steering, and during the lesson there is no steering to read: the swing
+     * is drawn onto the position rather than driven through {@code vx}.
+     */
+    float lessonSway(float clock) {
+        return (float) Math.cos(clock * LESSON_RATE) * lessonFade();
+    }
+
     float characterY(Layout L) {
-        float p = flightProgress();
+        float p = launch(flightProgress());
         float bottom = L.dangerY - L.enemyR * 1.3f;
         float middle = L.playTop + (L.dangerY - L.playTop) * 0.50f;
         if (exiting()) {

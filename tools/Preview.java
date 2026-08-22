@@ -408,9 +408,15 @@ final class Preview {
         cs.bonusTimer = cs.stars.timer;
         step(cs, L, 0.45f);
         shot(dir, "53-stars-ready", cs, L, w, h, ss);
+        // The end of the lesson, where the lean has settled and the flyer is standing still on the
+        // spot the course leaves from. The frame it used to jump from.
+        cs.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT + 0.10f;
+        cs.bonusTimer = cs.stars.timer;
+        shot(dir, "53b-stars-settled", cs, L, w, h, ss);
         cs.stars.collected = 0b11111 | (1 << 10);
         cs.stars.burst[10] = 0.82f;
-        cs.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 2.6f;
+        // Offsets into the flight, kept where they were as fractions of it now that FLY is 3.6.
+        cs.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 2.35f;
         cs.stars.x = cs.stars.starX(10, L);
         cs.bonusTimer = cs.stars.timer;
         shot(dir, "54-stars-flight", cs, L, w, h, ss);
@@ -418,10 +424,17 @@ final class Preview {
         // between them whether a course reads as a swoop or as a diagonal.
         cs.stars.collected = 0b111;
         cs.stars.burst[10] = 0f;
-        cs.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 1.35f;
+        cs.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 1.20f;
         cs.stars.x = cs.stars.starX(6, L);
         cs.bonusTimer = cs.stars.timer;
         shot(dir, "54b-stars-turn", cs, L, w, h, ss);
+        // The wake at full strength: nineteen in hand, which is what the last stretch of a course
+        // that is nearly won looks like. It is the only thing on screen that says how far along a
+        // playthrough is without a number on it.
+        cs.stars.collected = (1 << (StarPath.COUNT - 1)) - 1;
+        cs.stars.x = cs.stars.starX(6, L);
+        cs.stars.vx = L.w * StarPath.MAX_VX * 0.7f;
+        shot(dir, "54c-stars-wake", cs, L, w, h, ss);
 
         // Taking the last star: the course stops dead and the prize climbs out of the checkpoint
         // that ended it, early in the tableau and again once it is standing in place.
@@ -432,7 +445,7 @@ final class Preview {
         cw.stars.make(new java.util.Random(91L));
         cw.stars.begin(c8.prize, L);
         cw.stars.collected = (1 << (StarPath.COUNT - 1)) - 1;
-        cw.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 3.4f;
+        cw.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 3.05f;
         // Steered onto the last star frame by frame: where the course has scrolled to is the only
         // thing that knows where that star is.
         for (int i = 0; i < 60 * 6 && !cw.stars.won; i++) {
@@ -768,7 +781,7 @@ final class Preview {
         String[] names = {"squish-dumpling", "squish-strawberry", "squish-cat", "squish-grapes",
                 "squish-squishy", "squish-blob", "damage-drip", "clear-word", "wrong",
                 "achievement", "game-start", "stage-clear", "power-clear", "chop", "zap",
-                "collect", "star"};
+                "collect", "star", "course-start", "tally", "parade-join", "game-over"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

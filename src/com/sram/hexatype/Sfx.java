@@ -22,7 +22,8 @@ final class Sfx {
     static final int SQUISH_0 = 0, DRIP = 6, CLEAR = 7, WRONG = 8, ACHIEVEMENT = 9;
     static final int START = 10, STAGE_CLEAR = 11, POWER_CLEAR = 12, CHOP = 13, ZAP = 14;
     static final int COLLECT = 15, STAR = 16;
-    static final int COUNT = 17;
+    static final int COURSE = 17, TALLY = 18, JOIN = 19, OVER = 20;
+    static final int COUNT = 21;
 
     private Sfx() {}
 
@@ -39,6 +40,10 @@ final class Sfx {
             case ZAP: return zap();
             case COLLECT: return collect();
             case STAR: return star();
+            case COURSE: return course();
+            case TALLY: return tally();
+            case JOIN: return join();
+            case OVER: return over();
             default: return achievement();
         }
     }
@@ -155,6 +160,113 @@ final class Sfx {
             v[i] = (plink + sub + splash) * envelope(t, 0.004f, 1.6f);
         }
         return render(v);
+    }
+
+    /**
+     * The star course leaving: a rising whoosh under a swept tone, for the frame the ready lesson
+     * ends and the checkpoints start coming.
+     *
+     * The one effect here that has to <em>grow</em> rather than decay, because it announces a
+     * standstill turning into motion — see {@code StarPath.EASE_IN}, which is the second of
+     * acceleration this is the sound of. So the envelope is deliberately back-heavy: the peak
+     * lands about two thirds through, where the course is up to pace, and what precedes it is
+     * mostly air. A decaying whoosh reads as something stopping.
+     */
+    static short[] course() {
+        int n = (int) (RATE * 0.52f);
+        float[] v = new float[n];
+        int seed = 77345621;
+        float lo = 0f, hi = 0f, phase = 0f, sub = 0f;
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / n;
+            seed = seed * 1103515245 + 12345;
+            float white = ((seed >> 16) & 0x7FFF) / 16383.5f - 1f;
+
+            // Bandpass opening upward: the air going by. Both poles climb, so the band travels
+            // rather than merely brightening, which is what makes it a rush past rather than a hiss
+            // getting louder.
+            lo += (white - lo) * (0.06f + 0.40f * t * t);
+            hi += (lo - hi) * (0.01f + 0.10f * t);
+            float air = (lo - hi) * 1.5f;
+
+            // A fifth swept up under it, so there is a pitch to follow and not only noise.
+            phase += 2f * (float) Math.PI * (240f + 520f * t * t) / RATE;
+            sub += 2f * (float) Math.PI * (160f + 300f * t * t) / RATE;
+            float tone = ((float) Math.sin(phase) * 0.5f + (float) Math.sin(sub) * 0.34f)
+                    * (0.25f + 0.75f * t);
+
+            // Back-heavy envelope with the tail cut short: a long fade out would still be sounding
+            // once the first checkpoints are arriving, and those have their own note.
+            float swell = t < 0.72f ? t / 0.72f : Math.max(0f, (1f - t) / 0.28f);
+            v[i] = (air + tone) * swell * swell;
+        }
+        return render(v);
+    }
+
+    /**
+     * The tally at the end of an interlude nobody won: a soft two-note chime, the sound of a number
+     * being read out rather than a prize.
+     *
+     * Deliberately unexciting and deliberately not the fanfare — both interludes end on a count, and
+     * before this the count arrived in silence, which read as the game having lost interest. A fourth
+     * apart and both partials sagging, so it is plainly related to the shelving chime and plainly
+     * smaller. {@link Audio} pitches it with what was actually collected, so a near miss sounds
+     * closer to a win than a poor attempt does.
+     */
+    static short[] tally() {
+        int n = (int) (RATE * 0.30f);
+        float[] v = new float[n];
+        float phase = 0f, fourth = 0f;
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / n;
+            phase += 2f * (float) Math.PI * (620f - 40f * t) / RATE;
+            fourth += 2f * (float) Math.PI * (830f - 60f * t) / RATE;
+            // The upper partial comes in a third of the way through, which is what makes it read
+            // as two notes said in order rather than one chord.
+            float second = t < 0.30f ? 0f : (float) Math.exp(-5.5f * (t - 0.30f));
+            float ring = (float) Math.sin(phase) * (float) Math.exp(-4.5f * t)
+                    + (float) Math.sin(fourth) * 0.55f * second;
+            v[i] = ring * envelope(t, 0.008f, 1.6f);
+        }
+        return render(v);
+    }
+
+    /**
+     * The new dumpling taking its place in the parade line: a warm major chord, all three notes
+     * together, with a soft attack.
+     *
+     * Struck together rather than rolled, unlike every other announcement here — the parade already
+     * has an arpeggio's worth of movement in it, and one chord under the moment it lands is the
+     * punctuation it was missing. The slow attack is what keeps it from sounding like the fanfare
+     * a second time.
+     */
+    static short[] join() {
+        int n = (int) (RATE * 0.62f);
+        float[] v = new float[n];
+        float[] notes = {392f, 494f, 587f, 784f};
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / n;
+            float s = 0f;
+            for (int k = 0; k < notes.length; k++) {
+                s += (float) Math.sin(2f * Math.PI * notes[k] * i / RATE)
+                        * (float) Math.exp(-2.2f * t) * (k == 3 ? 0.22f : 0.44f);
+            }
+            v[i] = s * envelope(t, 0.055f, 0.9f);
+        }
+        return render(v);
+    }
+
+    /**
+     * The end of a run: three notes down, and the only descending figure in the game.
+     *
+     * Which is the whole design of it. Every other announcement here climbs, so a fall is instantly
+     * legible as the opposite without being harsh — this plays over the swirl clearing and the
+     * summary coming up, and a run that reached stage twenty deserves a sigh rather than a buzzer.
+     * The sustained root underneath is what keeps it warm; without it the three notes were a
+     * doorbell running backwards.
+     */
+    static short[] over() {
+        return arp(1.35f, new float[] {587f, 494f, 392f}, 0.20f, 1.7f, 0.05f, 0.34f);
     }
 
     /** Bright rising arpeggio for clearing a word. */

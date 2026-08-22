@@ -66,6 +66,7 @@ final class CoreTest {
         TestAudio.frenzySounds(L);
         TestAudio.haulLanding(L);
         TestAudio.starPickup(L);
+        TestAudio.interludeSounds(L);
 
         TestPower.drifting(L);
         TestPower.precedence(L);

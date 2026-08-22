@@ -207,6 +207,26 @@ final class Audio implements GameCore.Sound {
         play(Sfx.STAR, 1f + 0.032f * step);
     }
 
+    @Override public void courseStart() {
+        play(Sfx.COURSE, 1f);
+    }
+
+    @Override public void tally(int nth) {
+        // Rises with the count, so how the attempt went is audible before the number is read. A
+        // wider step than the pickup ladder and over a longer count: this fires once, so there is
+        // nothing for it to blend with, and the two ends want to be plainly different tones.
+        int step = nth < 0 ? 0 : nth > 20 ? 20 : nth;
+        play(Sfx.TALLY, 0.94f + 0.018f * step);
+    }
+
+    @Override public void paradeJoin() {
+        play(Sfx.JOIN, 1f);
+    }
+
+    @Override public void gameOver() {
+        play(Sfx.OVER, 1f);
+    }
+
     @Override public void clearWord() {
         play(Sfx.CLEAR, 1f);
     }

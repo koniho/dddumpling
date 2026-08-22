@@ -46,6 +46,9 @@ abstract class Check {
         int lastGlyph = -1, lastDepth = -1;
         int music = -1, musicCalls;
         int starts, stageClears, powerClears, frenzyCalls;
+        /** Interlude punctuation: course launches, tallies read out, parade joins, runs ended. */
+        int courseStarts, tallies, joins, gameOvers;
+        int lastTally = -1;
         boolean frenzyOn;
         int narrations, hushes;
         int narrated = -1;
@@ -62,6 +65,10 @@ abstract class Check {
         public void zap(int hop) { zaps++; lastZapHop = hop; }
         public void collect(int nth) { collects++; shelved.add(nth); }
         public void star(int nth) { stars++; lastStar = nth; }
+        public void courseStart() { courseStarts++; }
+        public void tally(int nth) { tallies++; lastTally = nth; }
+        public void paradeJoin() { joins++; }
+        public void gameOver() { gameOvers++; }
         public void selectMusic(int choice) { music = choice; musicCalls++; }
         public void gameStart() { starts++; }
         public void stageClear() { stageClears++; }

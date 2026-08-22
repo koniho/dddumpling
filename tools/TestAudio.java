@@ -413,6 +413,125 @@ final class TestAudio extends Check {
         check("and the note climbs with the count", ear2.lastStar == d.stars.count());
     }
 
+    /**
+     * The four effects added for the moments that used to pass in silence: a course leaving, a
+     * count being read out at the end of one nobody won, the new collectible joining the parade,
+     * and the end of a run.
+     */
+    static void interludeSounds(Layout L) {
+        group("interlude and cut-scene sounds");
+
+        short[] go = Sfx.build(Sfx.COURSE);
+        int firstQuarter = 0, back = 0;
+        for (int i = 0; i < go.length / 4; i++) firstQuarter = Math.max(firstQuarter,
+                Math.abs(go[i]));
+        for (int i = go.length / 2; i < go.length; i++) back = Math.max(back, Math.abs(go[i]));
+        System.out.printf("    the course whoosh is %.0fms, opening quarter %d%% of the back half%n",
+                1000f * go.length / Sfx.RATE, firstQuarter * 100 / Math.max(1, back));
+        // The one effect here that grows. Everything else in this file decays, and a whoosh that
+        // decays reads as something stopping rather than as something leaving.
+        check("the course whoosh swells rather than decaying", firstQuarter < back / 2);
+        // And it is over before the first checkpoints arrive, or it plays under their notes.
+        check("and is done before the course is up to pace",
+                (float) go.length / Sfx.RATE <= StarPath.EASE_IN * 0.75f);
+
+        short[] tally = Sfx.build(Sfx.TALLY);
+        short[] fanfare = Sfx.build(Sfx.ACHIEVEMENT);
+        System.out.printf("    the tally is %.0fms against the fanfare's %.0fms, crossings %.0f/s%n",
+                1000f * tally.length / Sfx.RATE, 1000f * fanfare.length / Sfx.RATE,
+                crossRate(tally));
+        // Plainly the smaller of the two: this is a number arriving, not a prize.
+        check("the tally is smaller than the fanfare it is not", tally.length < fanfare.length / 2);
+        check("and it is a note, not a click",
+                crossRate(tally) > 900f && crossRate(tally) < 4000f);
+        // It has to fit inside the report it announces, both games' worth.
+        check("and fits inside the report window",
+                (float) tally.length / Sfx.RATE < Math.min(StarPath.REPORT, GameCore.BONUS_STATUS));
+
+        short[] join = Sfx.build(Sfx.JOIN);
+        // Long enough to be a chord and short enough to be inside the beat it marks: the join runs
+        // from Parade.IN_END to JOIN_END of a PARADE_TIME parade.
+        float joinBeat = GameCore.PARADE_TIME * (Parade.JOIN_END - Parade.IN_END);
+        System.out.printf("    the join chord is %.0fms inside a %.0fms beat%n",
+                1000f * join.length / Sfx.RATE, joinBeat * 1000f);
+        check("the join chord fits the beat it lands on",
+                (float) join.length / Sfx.RATE < joinBeat);
+
+        short[] over = Sfx.build(Sfx.OVER);
+        // Descending, which nothing else here is: the first note's pitch has to be above the last.
+        float head = crossRate(java.util.Arrays.copyOfRange(over, 0, over.length / 4));
+        float tail = crossRate(java.util.Arrays.copyOfRange(over,
+                over.length / 2, over.length * 3 / 4));
+        System.out.printf("    the game-over sting is %.0fms, %.0f/s falling to %.0f/s%n",
+                1000f * over.length / Sfx.RATE, head, tail);
+        check("the game-over sting falls", tail < head * 0.85f);
+        check("and it is the longest thing here, but not longer than the swirl and the summary",
+                over.length > join.length
+                        && (float) over.length / Sfx.RATE < GameCore.DEATH_TIME + 1f);
+
+        // Every one of them fires exactly once, where it should. A star course flown by nobody:
+        // it launches, it reports, and it never rings the fanfare.
+        GameCore c = new GameCore(new Mem(), 515L);
+        Ear ear = new Ear();
+        c.sound = ear;
+        c.startGame();
+        c.state = GameCore.BONUS;
+        c.starBonus = true;
+        c.stars.make(new java.util.Random(515L));
+        c.stars.begin(-1, L);
+        c.bonusTimer = c.stars.timer;
+        int launchesInLesson = 0;
+        for (int i = 0; i < 60 * 12 && c.state == GameCore.BONUS; i++) {
+            if (c.stars.ready()) launchesInLesson = ear.courseStarts;
+            c.update(DT, L);
+        }
+        System.out.printf("    a lost course: %d launches, %d tallies at %d stars, %d fanfares%n",
+                ear.courseStarts, ear.tallies, ear.lastTally, ear.achievements);
+        check("a course announces its launch once", ear.courseStarts == 1);
+        check("and not before the lesson is over", launchesInLesson == 0);
+        check("a lost course reads its count out once", ear.tallies == 1);
+        check("with the count it actually took", ear.lastTally == c.stars.count());
+        check("and it does not ring the prize fanfare", ear.achievements == 0);
+
+        // And a won one: the fanfare, no tally, and one join chord in the parade after it.
+        GameCore w = new GameCore(new Mem(), 517L);
+        Ear won = new Ear();
+        w.sound = won;
+        w.startGame();
+        w.state = GameCore.BONUS;
+        w.starBonus = true;
+        w.starNext = true;
+        w.stars.begin(-1, L);
+        w.stars.collected = (1 << (StarPath.COUNT - 1)) - 1;
+        w.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 0.5f;
+        int last = StarPath.COUNT - 1;
+        for (int i = 0; i < 60 * 25 && w.state == GameCore.BONUS; i++) {
+            if (!w.stars.won) w.stars.x = w.stars.starX(last, L);
+            w.update(DT, L);
+        }
+        System.out.printf("    a won course: %d fanfares, %d tallies, %d join chords%n",
+                won.achievements, won.tallies, won.joins);
+        check("a won course rings the fanfare and no tally",
+                won.achievements >= 1 && won.tallies == 0);
+        check("and the parade's new arrival is announced once", won.joins == 1);
+
+        // The run's full stop, at the end of the swirl rather than on the fatal breach.
+        GameCore d = new GameCore(new Mem(), 519L);
+        Ear died = new Ear();
+        d.sound = died;
+        d.startGame();
+        d.lives = 1;
+        d.state = GameCore.PLAY;
+        int guard = 0;
+        for (; guard < 60 * 200 && d.state != GameCore.OVER; guard++) d.update(DT, L);
+        boolean quietAtDeath = died.gameOvers == 0;
+        for (int i = 0; i < 60 * 4; i++) d.update(DT, L);
+        System.out.printf("    the run ended: %d stings, held for %.1fs first%n",
+                died.gameOvers, GameCore.DEATH_TIME);
+        check("a run gets one full stop", died.gameOvers == 1);
+        check("and it waits for the swirl rather than landing on the drip", quietAtDeath);
+    }
+
     static boolean silentRunSurvives(Layout L) {
         GameCore c = new GameCore(new Mem(), 74L);
         c.sound = null;

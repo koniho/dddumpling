@@ -58,9 +58,16 @@ final class StarScreen extends Draw {
         // The bright route is as wide as a star's centre pearl (2 * 0.23 of its outer radius).
         // The two broader passes sit behind it like a soft raised ribbon.
         float pearl = StarPath.starOuter(L) * 0.23f * 2f;
-        p.polyline(route, fadeBy(Glyph.withAlpha(0xFF241B50, 145), cf), pearl * 1.55f);
-        p.polyline(route, fadeBy(Glyph.withAlpha(0xFF6E72C8, 105), cf), pearl * 1.25f);
-        p.polyline(route, fadeBy(Glyph.withAlpha(0xFFBDEBFF, 115), cf), pearl);
+        // And it breathes while the flight is on: the same width and brightness held perfectly
+        // still read as a painted line the course happened to be laid along, rather than as the
+        // thing carrying the flyer. Only during the flight — the lesson and the tally are meant to
+        // be moments where nothing moves, and a pulse under them undoes that.
+        float beat = q.flying() ? 1f + 0.16f * (float) Math.sin(c.clock * 4.4f) : 1f;
+        p.polyline(route, fadeBy(Glyph.withAlpha(0xFF241B50, 145), cf), pearl * 1.55f * beat);
+        p.polyline(route, fadeBy(Glyph.withAlpha(0xFF6E72C8, 105), cf), pearl * 1.25f * beat);
+        p.polyline(route, fadeBy(Glyph.withAlpha(0xFFBDEBFF,
+                (int) (115 * (q.flying() ? beat : 1f))), cf), pearl * beat);
+        if (q.flying()) pulse(p, q, route, L, c.clock, cf, pearl);
         for (int i = 0; i < StarPath.COUNT; i++) {
             float y = q.starY(i, L);
             if (y < L.playTop - s * 2f || y > L.dangerY + s * 2f) continue;
@@ -113,21 +120,33 @@ final class StarScreen extends Draw {
             return;
         }
 
-        float x = q.x, y = q.characterY(L);
+        float lean = q.lessonLean(c.clock);
+        float x = q.x + lean * L.w, y = q.characterY(L);
         if (q.ready()) {
             // Wordless lesson: the three left keys glow and the flyer leans left, then the
-            // three right keys and a lean right. The real deck supplies the controls.
-            float wave = (float) Math.sin(c.clock * 3.4f);
-            x += wave * L.w * 0.12f;
-            int side = wave < 0 ? 0 : 1;
+            // three right keys and a lean right. The real deck supplies the controls. Both the
+            // lean and the glow fade out together over the last of the ready beat, so the flight
+            // starts from a flyer standing still where it is about to fly from.
+            float say = q.lessonFade();
+            int side = lean < 0f ? 0 : 1;
             for (int g = side * 3; g < side * 3 + 3; g++) {
                 float pulse = 1f + 0.08f * (float) Math.sin(c.clock * 8f + g);
                 p.strokePoly(Glyph.hex(L.keyX[g], L.keyY[g], L.keyR * 1.18f * pulse),
-                        fadeBy(Glyph.withAlpha(GOLD, 210), fade), L.keyR * 0.08f);
+                        fadeBy(Glyph.withAlpha(GOLD, 210), fade * say), L.keyR * 0.08f);
             }
         }
 
         float rr = StarPath.flyerR(L);
+        // The wake belongs to the course, so it goes with the course: while the lesson is up and
+        // while the flight is on, and not once the flyer is climbing off the top or standing over a
+        // tally. Those are the transition out — the sparks there were trailing a character that had
+        // stopped playing, which read as the effect being stuck rather than as a wake.
+        if (q.ready() || q.flying()) {
+            // The lesson's lean is drawn onto the position rather than steered, so its sway has to
+            // be asked for separately; in flight the steering itself is the answer.
+            float sway = q.ready() ? q.lessonSway(c.clock) : q.vx / (L.w * StarPath.MAX_VX);
+            wake(p, q, L, x, y, sway, c.clock, fade);
+        }
         flyer(p, q, rr, x, y, c.clock, fade);
 
         String count = q.count() + " / " + StarPath.COUNT;
@@ -140,6 +159,110 @@ final class StarScreen extends Draw {
             p.text(q.won ? "ALL STARS!" : count + " STARS", L.w / 2f, L.h * 0.38f,
                     type(s * 1.15f), fadeBy(q.won ? GOLD : INK, fade), Painter.CENTER, true);
         }
+    }
+
+    /**
+     * Beads of light running up the course while it is being flown.
+     *
+     * Placed in screen space rather than along the route array, which matters more than it sounds:
+     * the course is ten screens long and only about a fifth of one is in shot, so beads spread
+     * evenly along the *route* would put nearly all of them off-screen and the one on it would
+     * appear and vanish at odd intervals. Given a height, the route's own geometry supplies the x —
+     * see {@link #routeX} — so a bead follows every bend of the visible stretch, and the period is
+     * a screen-crossing in seconds, which stays put when the spacing knob moves.
+     *
+     * Upward, against the scroll, because that is the direction the flyer is travelling: the course
+     * comes down past it, and a pulse running the other way reads as the path pulling the flyer on.
+     */
+    private static void pulse(Painter p, StarPath q, float[] route, Layout L, float clock,
+            float cf, float pearl) {
+        final int beads = 3;
+        final float cross = 1.15f;
+        for (int k = 0; k < beads; k++) {
+            float u = frac(clock / cross + k / (float) beads);
+            float y = L.dangerY + (L.playTop - L.dangerY) * u;
+            float x = routeX(route, y);
+            if (Float.isNaN(x)) continue;
+            // Both ends of the run are fades: a bead switched on at the danger line and off at the
+            // top of the field flickers exactly where the eye is following it.
+            float lum = Math.min(1f, Math.min(u, 1f - u) / 0.16f);
+            p.fillCircle(x, y, pearl * 1.45f,
+                    fadeBy(Glyph.withAlpha(0xFFBDEBFF, (int) (70 * lum)), cf));
+            p.fillCircle(x, y, pearl * 0.78f,
+                    fadeBy(Glyph.withAlpha(0xFFFFFFFF, (int) (150 * lum)), cf));
+        }
+    }
+
+    /**
+     * Where the route is at height {@code y}, or NaN if it is not on the route at all.
+     *
+     * The samples run bottom to top and the course is a function of height, so this is one walk and
+     * a lerp. Off either end returns NaN rather than clamping, so a bead is drawn nowhere instead
+     * of being pinned to the last checkpoint.
+     */
+    private static float routeX(float[] route, float y) {
+        for (int i = 0; i + 3 < route.length; i += 2) {
+            float y0 = route[i + 1], y1 = route[i + 3];
+            if ((y <= y0 && y >= y1) || (y >= y0 && y <= y1)) {
+                float span = y1 - y0;
+                float t = Math.abs(span) < 1e-4f ? 0f : (y - y0) / span;
+                return route[i] + (route[i + 2] - route[i]) * t;
+            }
+        }
+        return Float.NaN;
+    }
+
+    /**
+     * The wake: mini stars in the six letter colours streaming off behind the flyer, thicker and
+     * brighter the fuller the course is.
+     *
+     * The strength is {@code count()}, so it counts the stars carried over from a failed attempt as
+     * well as the ones taken on this one — a course resumed at fifteen opens with the wake of a
+     * flyer that has fifteen, which is the whole point of it. That also makes it the one thing on
+     * screen that says how far along a playthrough is without a number.
+     *
+     * Stateless on purpose, and shaped like {@code Cabinet.shimmer}: preview output is a pure
+     * function of state and hash-compared between runs, so there is no RNG and no stored particle
+     * list here. Each spark's phase and rate come out of its index, and its position out of the
+     * flyer's — which is also what keeps it working in a harness frame that jumped straight to the
+     * middle of a flight instead of stepping there.
+     */
+    private static void wake(Painter p, StarPath q, Layout L, float x, float y, float sway,
+            float clock, float fade) {
+        float rr = StarPath.flyerR(L);
+        float str = q.count() / (float) StarPath.COUNT;
+        int n = 4 + q.count();
+        float len = rr * (1.2f + 1.7f * str);
+        // Behind is mostly *sideways*, opposite whichever way the flyer is being steered, with a
+        // downward bias under it. Straight down is the honest direction for something climbing a
+        // course, and it does not fit: the flyer spends nearly all of a flight within a tile or two
+        // of the danger line, so a wake pointing at it is a wake in the last second of the last
+        // attempt. Cutting it off there is worse — the course line already crosses into the deck and
+        // a spray of colour doing the same would be the loudest thing on the screen. Trailing the
+        // steering has the room, and it draws what the keys are doing, which is the whole verb here.
+        float drop = Math.min(len * 1.5f, Math.max(rr * 0.5f, L.dangerY - y - rr * 0.2f));
+        for (int k = 0; k < n; k++) {
+            float h1 = frac(k * 0.6180339f), h2 = frac(k * 0.7548777f), h3 = frac(k * 0.4501f);
+            float age = frac(clock * (0.85f + 0.55f * h2) + h1);
+            // Started clear of the flyer's own aura, or half the wake is behind the character it is
+            // coming off and the count that drives it cannot be read.
+            float out = rr * (0.40f - 0.20f * age) * (0.7f + 0.45f * str);
+            float from = rr * 1.05f;
+            float cx = x - sway * (from + len * 1.4f * age)
+                    + rr * (0.55f + 0.5f * h3) * age
+                            * (float) Math.sin(StarPath.TAU * (h2 + age * 0.55f));
+            float cy = y + (from * 0.35f + drop * age) * (0.4f + 0.6f * (1f - Math.abs(sway)));
+            float dim = 1f - age * age * 0.85f;
+            int col = Glyph.withAlpha(Glyph.COLOR[k % Glyph.COUNT],
+                    (int) ((125f + 130f * str) * dim));
+            p.fillPoly(star(cx, cy, out, out * 0.42f, 5,
+                    clock * (0.7f + h3) + h1 * StarPath.TAU), fadeBy(col, fade));
+        }
+    }
+
+    /** Fractional part, for hashing an index into a phase. */
+    private static float frac(float v) {
+        return v - (float) Math.floor(v);
     }
 
     /** The climber: a soft aura, a rimmed hex, and whichever collectible is piloting it. */
@@ -223,7 +346,10 @@ final class StarScreen extends Draw {
                     fadeBy(Glyph.withAlpha(0xFFFFF6C7, (int) (14 * e / k)), fade));
         }
 
-        // The flyer goes on first, so the prize it is looking up at is never behind it.
+        // The flyer goes on first, so the prize it is looking up at is never behind it. No wake
+        // here, though it is the one moment a full-strength one could be shown: the tableau is a
+        // full stop, with the flyer standing still, and the prize's name sits directly under it —
+        // twenty sparks at full brightness fell straight down through the label.
         flyer(p, q, rr, fx, fy - hop, c.clock, fade);
         if (c.prize >= 0) Trinket.draw(p, c.prize, px, py, pr, c.clock, true, fade);
 
@@ -258,11 +384,26 @@ final class StarScreen extends Draw {
         return 1f - u * u * u;
     }
 
-    /** Smooth samples through the scrolling checkpoints, padded at both ends for tangents. */
+    /**
+     * Smooth samples through the scrolling checkpoints, padded at both ends for tangents, with a
+     * runway under the first one.
+     *
+     * The runway is a straight drop from the opening checkpoint to the danger line, and it is there
+     * because of the spacing: at ten screens of course the first star waits a quarter of the field
+     * above where the flyer sits for the ready lesson, so without it the flyer spends that whole
+     * beat hanging under a line it is not on, with nothing between them. Dropped once the course has
+     * scrolled far enough that the first checkpoint is past the line — after that there is no
+     * "before the start" left to draw.
+     */
     private static float[] spline(StarPath q, Layout L) {
         final int steps = 7;
-        float[] pts = new float[(StarPath.COUNT - 1) * steps * 2 + 2];
+        boolean runway = q.starY(0, L) < L.dangerY;
+        float[] pts = new float[(StarPath.COUNT - 1) * steps * 2 + 2 + (runway ? 2 : 0)];
         int at = 0;
+        if (runway) {
+            pts[at++] = q.starX(0, L);
+            pts[at++] = L.dangerY;
+        }
         for (int i = 0; i < StarPath.COUNT - 1; i++) {
             int a = Math.max(0, i - 1), b = i, cc = i + 1,
                     d = Math.min(StarPath.COUNT - 1, i + 2);

@@ -298,23 +298,92 @@ nothing. Follow the pattern rather than "fixing" it.
   times as fast as the first: one bound per step meant a demand three times higher at the end than at
   the start, and it had to be small enough for the end — which is why the course could only wiggle
   down the middle. `StarPath.make` is a sine in *seconds* now, so it asks the same sideways speed
-  everywhere and can span the whole play area. `TestStars` asserts the peak demand against
-  `MAX_VX`; the two are meant to be read together.
-- **Asking for more speed than the player has is a cliff, not a dial.** The course deliberately
-  demands about 1.2× `MAX_VX`, so the line has to be anticipated and cut across rather than followed
-  — below that, *every* pilot the harness can write collects all twenty whatever its reaction time,
-  because following a smooth line is not a skill. But at 1.5× it collapses to a third of a course:
-  a flyer that can never catch up stops being late and ends up somewhere else entirely, and which
-  stars it gets turns to luck. The usable band is narrow and there is an assertion at 1.25.
+  everywhere and can span the whole play area. `TestStars` prints the peak demand against `MAX_VX`;
+  the two are meant to be read together, but see the next entry for why that ratio is only printed.
+- **A peak is not a demand: integrate it.** For a long time the course was held to "asks about 1.2×
+  `MAX_VX`, which is the near side of uncatchable", and that number turned out to measure almost
+  nothing. A sine only exceeds the steering speed over a short arc either side of its steepest point,
+  so 1.2× cost a perfect tracker one hundredth of a play width — a twelfth of the catch band — and
+  every pilot the harness could write collected all twenty at *every* reaction time from 0.05s to
+  0.30s. The course was fully trackable and the assertion said it was at the edge of possible. What
+  the player feels is the *lag* that overspeed integrates to, measured against the tolerance it has
+  to fit inside; `TestStars.trackerLag` is that, held between 45% and 110% of the band, with
+  `tightestWindow` — the propagated set of positions from which every remaining checkpoint is still
+  reachable — as the far bound. The cliff is real, it was just being located with the wrong ruler.
+- **Put the difficulty on the axis the player controls.** The pickup was a circle, so spacing the
+  stars out and shortening the flight cut the time a checkpoint is level with the flyer from 117ms to
+  83ms — and nothing a player does moves that number, since the climb and the scroll are both
+  functions of the clock. It is not difficulty, it is how much of the difficulty is luck: the naive
+  pilot went from nineteen stars a course to ten with the sideways demand unchanged. `pickupY` makes
+  the catch an ellipse and `TestStars` measures the window, so the vertical stays generous and the
+  demand lives where the keys are.
+- **A tolerance for being late is measured in milliseconds, so store it in milliseconds.** That
+  ellipse was first written as 1.7 pickup radii, which is 117ms of grace at one scroll speed and
+  47ms at two and a half times it — and the next spacing change duly ate it, silently, because a
+  distance says nothing about the thing it is actually buying. `StarPath.GRACE` is 0.065s and
+  `pickupY` is that times `closingSpeed`, a one-frame finite difference of the gap the course is
+  closing. It now survives any change to spacing, flight length or the rush curve, and the failure
+  it prevents is the sort this file keeps recording: an arithmetic coupling nobody restated.
+- **Spacing, timing and lookahead are one equation with two degrees of freedom.** Stars 2.5× further
+  apart with the arrival rhythm unchanged means a scroll 2.5× faster, and therefore 2.5× *less*
+  course on screen ahead of the flyer: 162ms of visible warning where there had been 400. There is
+  no third dial — pick two. Note also which of these the harness cannot see: every pilot in
+  `TestStars` knows the whole course in advance and scores exactly the same at any lookahead, so
+  `TestStars.lookahead` prints the number for a human to judge and only guards the floor.
+- **Two knobs on the same speed multiply into a third nobody tuned.** The scroll here is
+  `COURSE_SCREENS / FLY`, times the tail of the `RUSH` curve, times what a normalised ease-in
+  borrows and pays back. Each of those was a defensible move; together they put the closing speed up
+  by 60% and the timing window down by a third. Before turning the second dial, write down what the
+  product does at the far end — the same trap the frenzy's flat multipliers were.
+- **A retry that hands back the identical problem is a wall, not a retry.** The stars carry over
+  between attempts, which is meant to mean a slower player gets there over a few stages. On the same
+  line they do not: the harness pilot with quarter-second thumbs takes the same fifteen every time,
+  and three of eight courses stalled at seventeen or nineteen for as many attempts as it was given.
+  `StarPath.reroll` gives each attempt a fresh line and keeps the hand, which is what makes the
+  carry-over a promise instead of a consolation. Note it also costs three RNG draws per interlude, so
+  every generated word after the first one moves — expected, and the frame hashes show it.
+- **A demo drawn onto a position snaps when the demo stops.** The ready lesson's lean was a sine
+  added to the flyer's drawn x, so the first frame of the flight put it back at the middle from
+  wherever the swing had got to — up to a tenth of the screen, instantly, and reported as the
+  character jumping. Nothing was wrong with the state; the state had never moved. Anything animating
+  a position for show has to be brought home before the thing owning that position takes over:
+  `lessonFade` eases both the lean and the key glow out over the last half-second of the beat, so
+  the lesson ends on a flyer standing still where it is about to fly from.
 - **A pilot with perfect knowledge measures reachability, not difficulty.** `TestStars.flown` knows
   exactly where every checkpoint is and is limited only by a reaction quantum, so inside the
   trackable band it scores 20/20 at every setting and cannot tell you whether a course is *hard*.
   Use it for the two questions it can answer — can this course be completed at all, and can it be
-  completed by nobody-at-the-controls — and take feel to the device.
-- **Half a fifth of a curve is a straight line.** However swoopy a scrolling course is over its five
+  completed by nobody-at-the-controls — and take feel to the device. Since it does not brake and
+  looks one checkpoint ahead, treat what it takes as a floor, and prefer *attempts to finish* over
+  stars-per-attempt: the second is a six-sample coin flip and the first is the actual promise.
+- **A four-sample binary is a coin flip, not an assertion.** `TestSoak` required all four runs of
+  every tier to end in a death, and the quick tier — nine presses a second, one miss in fifty —
+  reaches the cap alive on about one seed in twelve. Shortening the star flight by four tenths of a
+  second was enough to turn that over, because it moves every RNG draw after the first interlude. It
+  allows one survivor now. If a check is a yes/no over a handful of noisy runs, either state the
+  tolerance or assert on the average instead.
+- **Half a fifth of a curve is a straight line.** However swoopy a scrolling course is over its
   seconds, what reads is how much of it fits on screen: at six checkpoints it looked like a diagonal
-  whatever the generator did. `COURSE_SCREENS` is what that knob is, and it is bounded below by the
-  checkpoints touching each other.
+  whatever the generator did. `COURSE_SCREENS` is what that knob is — 4.2 now, so just under five
+  checkpoints are in shot — bounded below by the checkpoints touching each other and above by there
+  being too few of them on screen to read a line from.
+- **An effect wants the direction with room, not the honest one.** The flyer's wake should trail
+  straight down: it is climbing a course that comes down at it. But it spends nearly all of a flight
+  within a tile or two of the danger line, so a downward wake is a wake in the last second of the
+  last attempt, and letting it spill over that line puts a spray of colour across the keys.
+  `StarScreen.wake` trails the *steering* instead, which has the whole width to play with and draws
+  what the thumbs are doing. Two more things fell out of it: it has to start clear of the flyer's own
+  aura or half of it is hidden behind the character it comes off, and it is left out of the victory
+  tableau entirely, because at full strength it fell straight down through the prize's name.
+- **A scene with no sound reads as a scene the game stopped caring about.** Four moments used to
+  pass in silence: a course leaving the line, the count at the end of one nobody won, the new
+  collectible joining the parade, and the end of a run. Each is a *transition*, which is exactly
+  where sound is easiest to forget and most missed. Two things to know if you add more. The moment
+  matters as much as the effect — the run's full stop plays when the swirl clears, not on the fatal
+  breach, because that frame already has the damage drip on it and two effects on one frame is one
+  of them wasted. And a phase change has to be caught as a change: `StarPath.launched` and
+  `reported` are set by comparing the phase predicates either side of the frame's own countdown,
+  since nothing downstream can tell that the lesson has *just* ended.
 - **The soak bot cannot steer, so it cannot tell you a course is playable.** `TestStars.flown` is a
   pilot with stated limits — it re-decides every *reaction* seconds and holds one thumb — and the
   same routine with steering off is the passenger the soak bot is. Three numbers come out: what quick

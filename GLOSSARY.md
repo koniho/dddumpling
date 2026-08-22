@@ -140,13 +140,25 @@ The other interlude, offered after a steamer has been opened. Two thumbs steer, 
 | **flyer** | the collectible piloting it — whatever the last steamer handed over | `StarPath.who`, `StarScreen.flyer` |
 | **checkpoint** / **star** | one of the twenty to collect. They carry over between attempts | `StarPath.COUNT`, `collected` |
 | **pearl** | the lit centre of a checkpoint, and the thing the pickup actually aims at — the petals are decoration | `StarPath.HEART`, `pickupR` |
+| **catch band** | how close counts as a catch: tight side to side, where the skill is, and a stated *number of milliseconds* tall, where the clock is | `StarPath.pickupR`, `pickupY`, `GRACE` |
+| **grace** | how late a flyer may be and still take a checkpoint, in seconds — not in pixels, so it survives the spacing being changed | `StarPath.GRACE`, `closingSpeed` |
+| **lookahead** | how many milliseconds of course are on screen ahead of the flyer. The spacing knob moves this faster than anything else | `TestStars.lookahead` |
 | **sweep** | the long swoop across the play area that a course is made of; shaped in seconds, not per star | `StarPath.SWEEP`, `SWEEP_TIME`, `make` |
 | **ripple** | the small wobble riding on the sweep, so a course is not one bare sine | `StarPath.RIPPLE` |
-| **ready lesson** | the wordless beat before the flight: the keys glow a side at a time and the flyer leans | `StarPath.ready()` |
+| **ready lesson** | the wordless beat before the flight: the keys glow a side at a time and the flyer leans, then settles to a stop on the spot it will fly from | `StarPath.ready()`, `lessonLean`, `lessonFade` |
+| **launch** | the soft start: the course leaves from a standstill and takes a second to reach its pace | `StarPath.EASE_IN`, `launch`, `unlaunch` |
+| **wake** | mini stars in the six letter colours trailing the flyer's steering, thicker the fuller the course — the only thing that says how far along a playthrough is without a number. Off once the flight is over | `StarScreen.wake`, `StarPath.lessonSway` |
+| **pulse** | the trail breathing while a course is flown, and beads of light running up it | `StarScreen.pulse`, `routeX` |
+| **whoosh** | the course leaving: the one effect in the game that swells instead of decaying | `Sfx.course`, `Sound.courseStart` |
+| **tally** | the count read out at the end of an interlude nobody won — a star report or a steamer status page, pitched by how it went | `Sfx.tally`, `Sound.tally` |
+| **join chord** | the new collectible taking its place in the parade line | `Sfx.join`, `Sound.paradeJoin` |
+| **full stop** | the end of a run, played when the swirl clears rather than on the fatal breach. The only descending figure in the game | `Sfx.over`, `Sound.gameOver` |
 | **grab beat** | the flick of slow motion each taken star lands with, the fling stroke's beat at a quarter length | `GameCore.STAR_BEAT`, `StarPath.grabbed` |
 | **ting** | the pickup note, pitched up with the count so a course is a rising ladder | `Sfx.star()`, `Audio.star` |
 | **victory tableau** | what a completed course ends on: everything stops, the prize climbs out of the last star, then the parade | `StarPath.WIN_HOLD`, `winning()`, `StarScreen.victory` |
 | **passenger** | a flyer nobody is steering. It must never be able to finish a course | `TestStars.flown` with steering off |
+| **tracker lag** | what following the line costs, against the catch band — the measure of how hard a course is, in place of the peak speed ratio it asks for | `TestStars.trackerLag` |
+| **re-roll** | a failed attempt gets a fresh line, keeping the stars already in hand | `StarPath.reroll` |
 
 ## Powerup
 

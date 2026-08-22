@@ -198,6 +198,19 @@ final class GameCore {
          * @param nth 1-based count of stars held, so the note can climb as the course fills
          */
         void star(int nth);
+        /** The ready lesson ending and the course starting to move. Once per attempt. */
+        void courseStart();
+        /**
+         * The count read out at the end of an interlude nobody won — a star course's report or a
+         * steamer's status page. Both used to arrive in silence.
+         *
+         * @param nth how well it went (stars taken, baskets opened), so the tone can rise with it
+         */
+        void tally(int nth);
+        /** The new collectible taking its place in the parade line. */
+        void paradeJoin();
+        /** The run is over: the swirl has cleared and the summary is coming up. */
+        void gameOver();
         /** Switch the looping background track to {@link Music#NAMES}[choice]. */
         void selectMusic(int choice);
 
@@ -396,6 +409,12 @@ final class GameCore {
      * won this round" and "the parade still has to happen" without a second flag.
      */
     float paradeTimer;
+    /**
+     * One-shot guards for the two interlude sounds that mark a moment rather than a press: the
+     * parade's join chord and the steamer's status tally. Both are cleared where their scene starts,
+     * not where it ends, so an interrupted one can announce itself again next time.
+     */
+    private boolean joinRung, statusRung;
 
     // ---- the collection ----------------------------------------------------
     /**
@@ -2034,6 +2053,10 @@ final class GameCore {
                 // swirl is made of; the summary is drawn over an empty field from here.
                 enemies.clear();
                 target = null;
+                // And the run gets its full stop here rather than on the fatal breach, which
+                // already has the damage drip on it — two effects on one frame is one of them
+                // wasted, and this belongs to the summary coming up, not to the last word.
+                if (sound != null) sound.gameOver();
             }
         }
         if (homeT > 0f) {
@@ -2105,6 +2128,18 @@ final class GameCore {
                     // Announced with the count, so the note climbs as the course fills.
                     if (sound != null) sound.star(stars.count());
                 }
+                if (stars.launched) {
+                    // The lesson is over and the course is moving. One per attempt, and the sound
+                    // of the ease-in rather than of a starting gun: see Sfx.course.
+                    stars.launched = false;
+                    if (sound != null) sound.courseStart();
+                }
+                if (stars.reported) {
+                    // A course that ran out. The count is about to be read on screen and used to
+                    // be read in silence; a won course rings the fanfare instead.
+                    stars.reported = false;
+                    if (sound != null) sound.tally(stars.count());
+                }
                 if (stars.awardPending) {
                     // Paid the moment the last star lands, not when the interlude ends: the victory
                     // tableau shows what was won, so the prize has to exist before it is drawn.
@@ -2119,6 +2154,7 @@ final class GameCore {
                     // the same reason: the collection is the point of winning one.
                     if (paradeTimer > 0f) {
                         paradeTimer -= dt;
+                        joinChord();
                         if (paradeTimer > 0f) return;
                         paradeTimer = 0f;
                     }
@@ -2139,6 +2175,7 @@ final class GameCore {
             if (bonusTimer <= 0f) {
                 if (paradeTimer > 0f) {
                     paradeTimer -= dt;
+                    joinChord();
                     if (paradeTimer > 0f) return;
                     paradeTimer = 0f;
                 }
@@ -2156,6 +2193,13 @@ final class GameCore {
                     rollTick = shown;
                     if (sound != null) sound.squish(shown, 1);
                 }
+            }
+            // The status page, which is this game's version of the star course's report: the count
+            // it opened is read out. The same tally tone as the course's, pitched by what it got —
+            // the two interludes end the same way and now sound like it.
+            if (!statusRung && bonusStatus()) {
+                statusRung = true;
+                if (sound != null) sound.tally(steamer.opens);
             }
             return;
         }
@@ -2563,13 +2607,31 @@ final class GameCore {
         return n;
     }
 
+    /**
+     * The chord for the new collectible taking its place in the line, once per parade.
+     *
+     * Fired from the countdown rather than from {@link Parade}, which only draws: the join is a
+     * moment in the parade's progress, so it is read off the same number the drawing is. Guarded by
+     * a flag rather than by an edge test on the progress, because a parade that is interrupted and
+     * restarted has to be able to say it again.
+     */
+    private void joinChord() {
+        if (joinRung || paradeProgress() < Parade.JOIN_END) return;
+        joinRung = true;
+        if (sound != null) sound.paradeJoin();
+    }
+
     /** Drops into the between-stages minigame once the wave is clear. */
     private void enterBonus(Layout L) {
         state = BONUS;
         time = 0;
+        joinRung = false;
+        statusRung = false;
         starBonus = starNext;
         if (starBonus) {
-            if (stars.sx[0] == 0f) stars.make(rnd);
+            // A fresh line every attempt, with whatever is already in hand kept — see
+            // StarPath.reroll for why a repeated attempt must not be a repeated course.
+            stars.reroll(rnd);
             stars.begin(prize, L);
             bonusTimer = stars.timer;
             paradeTimer = 0f;
