@@ -26,17 +26,23 @@ final class StarPath {
      *
      * It went 3.2 down to 2.8 to get more of a sweep on screen — at six checkpoints the course read
      * as a straight diagonal however swoopy it was over its five seconds — then back up to 3.4 and
-     * 4.2 because the stars wanted to be further apart, and now two and a half times that again.
-     * At 10.5 the gap is half a screen and there are about two checkpoints in shot, so a course is
-     * read one star ahead: it is a reaction now rather than a plan, which is the direction every
-     * change here has been going. Below about 2.4 the checkpoints touch each other at
-     * {@link #STAR_OUT} wide, and the practical ceiling is one checkpoint on screen at a time.
+     * 4.2 because the stars wanted to be further apart, then to 10.5, and back to here.
      *
-     * One thing has to move with it and is handled by not being a distance at all: the catch's
-     * vertical tolerance, which is stated in seconds for exactly this reason — see {@link #GRACE}.
-     * The trail's pulse is in screen space for the same kind of reason; see {@code StarScreen}.
+     * 10.5 is where the ceiling was found, and it is not the checkpoints touching or the line
+     * looking straight: it is the <em>lookahead</em>. Spacing them out at a fixed rhythm speeds the
+     * scroll up by the same factor, so it divides the seconds of course visible ahead of the flyer
+     * by that factor too — 162ms at 10.5, which is inside a hand's own reaction time, so the line
+     * arrives already too close and the course reads as unfair rather than fast. At 5.6 it is 295ms,
+     * comfortably the far side of a reaction, with the gap a quarter of a screen and three or four
+     * checkpoints in shot. That is the number to dial this against; {@code TestStars} prints it.
+     *
+     * Nothing else has to move when it does, and that took two goes to arrange. The catch's vertical
+     * tolerance is stated in seconds rather than pixels ({@link #GRACE}), the trail's pulse is in
+     * screen space ({@code StarScreen}), and the course's own shape is held still by freezing the
+     * lead term this used to feed — see {@link #LEAD}, which is the one that made this a difficulty
+     * knob in disguise.
      */
-    static final float COURSE_SCREENS = 10.5f;
+    static final float COURSE_SCREENS = 5.6f;
     /**
      * How sharply the scroll accelerates over the flight. 1 would be a constant crawl.
      *
@@ -306,10 +312,25 @@ final class StarPath {
      * against. {@code TestStars} round-trips the pair.
      */
     static float encounterTime(int i) {
-        float ahead = (i + 0.5f) / COUNT - 0.5f / COURSE_SCREENS;
+        float ahead = (i + 0.5f) / COUNT - LEAD;
         if (ahead <= 0f) return 0f;
         return FLY * unlaunch((float) Math.pow(ahead, 1f / RUSH));
     }
+
+    /**
+     * How much of the course sits between a checkpoint appearing and it being level with the flyer,
+     * as a fraction of the whole course. Half a screen of it, at the spacing this was tuned at.
+     *
+     * A constant, and that is the point. It was {@code 0.5 / COURSE_SCREENS} — geometrically honest,
+     * since half a screen is exactly what a star has to travel to reach a flyer sitting mid-field —
+     * and it made {@link #COURSE_SCREENS} secretly a difficulty knob. Every arrival time is measured
+     * from it, so moving the spacing re-sampled the sweep at different moments and handed back a
+     * <em>different course</em>: the same dial that was documented as purely cosmetic took the naive
+     * pilot from nineteen stars to thirteen when the spacing was dialled back, with nothing else
+     * touched. Frozen here, the spacing changes what a course looks like and how fast it comes at
+     * you, and nothing about what it asks — which is what it was always claimed to do.
+     */
+    static final float LEAD = 0.05f;
 
     /** Where the soft start's ramp meets the nominal pace, as a fraction of the flight. */
     private static final float RAMP = EASE_IN / FLY;

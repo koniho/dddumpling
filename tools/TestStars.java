@@ -249,7 +249,11 @@ final class TestStars extends Check {
                 + "%.0fms after the one before it%n", look * 1000f,
                 1000f * (StarPath.encounterTime(StarPath.COUNT - 1)
                         - StarPath.encounterTime(StarPath.COUNT - 2)));
-        check("a player can see the course coming", look >= 0.12f);
+        // A floor with a reason: at 162ms — which is what two and a half times the old spacing came
+        // to — the line arrives inside a hand's own reaction time and the course reads as unfair
+        // rather than fast. Reported from the device, not from here; every pilot in this file knows
+        // the whole course in advance and scores the same at any lookahead at all.
+        check("a player can see the course coming", look >= 0.25f);
 
         int sharp = 0, laggy = 0, drift = 0;
         float longest = 0f;

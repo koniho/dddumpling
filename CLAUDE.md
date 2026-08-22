@@ -327,9 +327,20 @@ nothing. Follow the pattern rather than "fixing" it.
 - **Spacing, timing and lookahead are one equation with two degrees of freedom.** Stars 2.5× further
   apart with the arrival rhythm unchanged means a scroll 2.5× faster, and therefore 2.5× *less*
   course on screen ahead of the flyer: 162ms of visible warning where there had been 400. There is
-  no third dial — pick two. Note also which of these the harness cannot see: every pilot in
-  `TestStars` knows the whole course in advance and scores exactly the same at any lookahead, so
-  `TestStars.lookahead` prints the number for a human to judge and only guards the floor.
+  no third dial — pick two. That is what set the ceiling on `COURSE_SCREENS`: at 162ms the line
+  arrives inside a hand's own reaction time, so it reads as unfair rather than fast, and 5.6 (295ms)
+  is where it settled. Note which side of this the harness cannot see: every pilot in `TestStars`
+  knows the whole course in advance and scores exactly the same at any lookahead at all, so
+  `TestStars.lookahead` prints the number for a human to judge and guards a floor that was set from
+  the device.
+- **A knob documented as cosmetic has to be checked, not asserted.** `COURSE_SCREENS` was described
+  in its own comment as leaving the rhythm of a course alone, and it did — but `encounterTime` took
+  its lead term as `0.5 / COURSE_SCREENS`, so every arrival *time* moved with it, the sweep got
+  sampled at different moments, and what came back was a different course. Dialling the spacing back
+  with nothing else touched took the naive pilot from nineteen stars to thirteen, and the first
+  instinct was to go hunting in the catch tolerance, which had nothing to do with it. `StarPath.LEAD`
+  is frozen at 0.05 now. If a knob is meant to be cosmetic, find every expression it appears in
+  before believing the comment; the ones that matter are the ones feeding a *time*.
 - **Two knobs on the same speed multiply into a third nobody tuned.** The scroll here is
   `COURSE_SCREENS / FLY`, times the tail of the `RUSH` curve, times what a normalised ease-in
   borrows and pays back. Each of those was a defensible move; together they put the closing speed up
