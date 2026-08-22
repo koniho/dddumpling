@@ -72,7 +72,7 @@ final class Renderer extends Draw {
         // Gold rim while the slow-motion beat runs, so the drop in speed reads as deliberate
         // rather than as the game stuttering.
         if (c.slowdown > 0f) {
-            Sky.vignette(p, L, GOLD, 0.22f * (c.slowdown / GameCore.SLOW_TIME));
+            Sky.vignette(p, L, GOLD, 0.22f * (c.slowdown / Blade.SLOW_TIME));
         }
 
         // The title and game-over screens carry their own numbers; a second copy is clutter.
@@ -467,9 +467,9 @@ final class Renderer extends Draw {
      */
     static void blade(Painter p, GameCore c, Layout L) {
         if (!c.flinging()) return;
-        float fade = c.fingerDown ? 1f : c.strokeFade / GameCore.STROKE_FADE;
+        float fade = c.fingerDown ? 1f : c.strokeFade / Blade.STROKE_FADE;
         if (fade <= 0f) return;
-        float r = L.enemyR * GameCore.BLADE;
+        float r = L.enemyR * Blade.BLADE;
         int hue = Glyph.cycle(c.clock * 1.6f);
 
         // Three passes, widest and faintest first, so the edge has a glow around it.

@@ -771,14 +771,14 @@ final class TestPower extends Check {
         group("FLING blade");
         // Distance from a point to a segment, which is what decides every cut.
         check("a point on the segment is at no distance",
-                GameCore.segDist2(5f, 0f, 0f, 0f, 10f, 0f) < 0.001f);
+                Blade.segDist2(5f, 0f, 0f, 0f, 10f, 0f) < 0.001f);
         check("perpendicular offset is measured square",
-                Math.abs(GameCore.segDist2(5f, 3f, 0f, 0f, 10f, 0f) - 9f) < 0.001f);
+                Math.abs(Blade.segDist2(5f, 3f, 0f, 0f, 10f, 0f) - 9f) < 0.001f);
         check("past an end clamps to that end",
-                Math.abs(GameCore.segDist2(-4f, 0f, 0f, 0f, 10f, 0f) - 16f) < 0.001f);
+                Math.abs(Blade.segDist2(-4f, 0f, 0f, 0f, 10f, 0f) - 16f) < 0.001f);
         check("a stationary finger degenerates to a point",
-                Math.abs(GameCore.segDist2(3f, 4f, 0f, 0f, 0f, 0f) - 25f) < 0.001f);
-        check("the blade is wider than a tile", GameCore.BLADE > 1f);
+                Math.abs(Blade.segDist2(3f, 4f, 0f, 0f, 0f, 0f) - 25f) < 0.001f);
+        check("the blade is wider than a tile", Blade.BLADE > 1f);
 
         GameCore c = new GameCore(new Mem(), 231L);
         c.startGame();
@@ -828,10 +828,10 @@ final class TestPower extends Check {
                 a.destroyed && b.destroyed && d.strokeKills == 2);
         check("that earns the beat", d.slowdown > 0f);
         check("and the world actually slows",
-                Math.abs(d.timeScale() - GameCore.SLOW_RATE) < 0.001f);
-        check("the beat is brief", GameCore.SLOW_TIME <= 0.35f);
+                Math.abs(d.timeScale() - Blade.SLOW_RATE) < 0.001f);
+        check("the beat is brief", Blade.SLOW_TIME <= 0.35f);
         check("the readout outlives it",
-                GameCore.SLICE_CALL_TIME > GameCore.SLOW_TIME && d.sliceCall > 0f);
+                Blade.SLICE_CALL_TIME > Blade.SLOW_TIME && d.sliceCall > 0f);
         d.endStroke();
 
         // It runs on real time: slowing the world must not slow its own expiry.
@@ -839,10 +839,10 @@ final class TestPower extends Check {
         d.update(DT, L);
         check("it ticks down by real time, not scaled time",
                 Math.abs((was - d.slowdown) - DT) < 0.0005f);
-        advance(d, L, GameCore.SLOW_TIME + 0.1f);
+        advance(d, L, Blade.SLOW_TIME + 0.1f);
         check("it ends by itself", d.slowdown == 0f && d.timeScale() == 1f);
         check("the readout is still up at normal speed", d.sliceCall > 0f);
-        advance(d, L, GameCore.SLICE_CALL_TIME);
+        advance(d, L, Blade.SLICE_CALL_TIME);
         check("and it clears in its own time", d.sliceCall == 0f);
 
         // A word falls slower while it lasts, which is the whole point.
@@ -854,7 +854,7 @@ final class TestPower extends Check {
         f.update(DT, L);
         float normal = slow.y - (L.playTop + 100f);
         slow.y = L.playTop + 100f;
-        f.slowdown = GameCore.SLOW_TIME;
+        f.slowdown = Blade.SLOW_TIME;
         f.update(DT, L);
         float slowed = slow.y - (L.playTop + 100f);
         check("a word falls slower during the beat", slowed < normal * 0.5f);
@@ -863,7 +863,7 @@ final class TestPower extends Check {
         check("the counts outlive the stroke", d.strokeKills == 2);
         d.beginStroke(0f, row);
         check("a new stroke starts them over", d.strokeKills == 0 && d.strokeCuts == 0);
-        check("the trail is twice what it was", GameCore.TRAIL_RATE == 100f);
+        check("the trail is twice what it was", Blade.TRAIL_RATE == 100f);
     }
 
     /**
@@ -893,15 +893,15 @@ final class TestPower extends Check {
     static void strokeEnd(Layout L) {
         group("what ends a fling stroke");
         check("a dwell is a beat, not a pause",
-                GameCore.STROKE_DWELL >= 0.15f && GameCore.STROKE_DWELL <= 0.3f);
+                Blade.STROKE_DWELL >= 0.15f && Blade.STROKE_DWELL <= 0.3f);
         check("a definite move is more than jitter and less than a tile",
-                GameCore.STROKE_MOVE > 0.2f && GameCore.STROKE_MOVE < 1f);
-        check("the cap is past any real slice", GameCore.STROKE_MAX >= 1.5f);
+                Blade.STROKE_MOVE > 0.2f && Blade.STROKE_MOVE < 1f);
+        check("the cap is past any real slice", Blade.STROKE_MAX >= 1.5f);
         check("the blade dies faster than the dwell that killed it",
-                GameCore.STROKE_FADE < GameCore.STROKE_DWELL);
+                Blade.STROKE_FADE < Blade.STROKE_DWELL);
         // The speed a finger has to hold to stay awake. A slice worth calling travels ten times
         // this, which is the margin that keeps a real swipe from ever being cut off mid-motion.
-        float keepAwake = L.enemyR * GameCore.STROKE_MOVE / GameCore.STROKE_DWELL;
+        float keepAwake = L.enemyR * Blade.STROKE_MOVE / Blade.STROKE_DWELL;
         check("staying awake asks for a crawl, not a sprint", keepAwake < L.w * 0.12f);
 
         // Holding still ends the stroke without the finger going anywhere.
@@ -911,18 +911,18 @@ final class TestPower extends Check {
         c.beginStroke(c.tileX(e, 0, L) - L.enemyR * 2f, row);
         c.sliceTo(c.tileX(e, 3, L) + L.enemyR * 2f, row, L);
         check("the sweep took the word", c.strokeKills == 1 && c.fingerDown && c.touchDown);
-        advance(c, L, GameCore.STROKE_DWELL + 2 * DT);
+        advance(c, L, Blade.STROKE_DWELL + 2 * DT);
         check("holding still ends the stroke", !c.fingerDown);
         check("but the finger is still on the glass", c.touchDown);
         check("and the edge is left dying where it stopped", c.strokeFade > 0f);
         check("the counts stand for the readout", c.strokeKills == 1);
-        advance(c, L, GameCore.STROKE_FADE + 2 * DT);
+        advance(c, L, Blade.STROKE_FADE + 2 * DT);
         check("the edge goes out in its own time", c.strokeFade == 0f);
 
         // A beat shorter than the dwell is not a stop.
         GameCore b = flingCore(L, 242L);
         b.beginStroke(L.w * 0.5f, row);
-        advance(b, L, GameCore.STROKE_DWELL - 0.06f);
+        advance(b, L, Blade.STROKE_DWELL - 0.06f);
         check("a shorter hesitation leaves the stroke alone", b.fingerDown);
 
         // A finger resting on a screen still reports a pixel or two a frame. Summing the path
@@ -931,7 +931,7 @@ final class TestPower extends Check {
         float jx = L.w * 0.5f;
         j.beginStroke(jx, row);
         for (int i = 0; i < 30; i++) {
-            j.sliceTo(jx + (i % 2 == 0 ? 1f : -1f) * L.enemyR * GameCore.STROKE_MOVE * 0.4f,
+            j.sliceTo(jx + (i % 2 == 0 ? 1f : -1f) * L.enemyR * Blade.STROKE_MOVE * 0.4f,
                     row, L);
             j.update(DT, L);
         }
@@ -961,7 +961,7 @@ final class TestPower extends Check {
         // It takes a wide, fast wiggle — anything smaller than a definite move reads as the
         // tremble above and rests — which is why this is a backstop and not the main mechanism.
         GameCore g = flingCore(L, 245L);
-        float gx = L.w * 0.5f, amp = L.enemyR * GameCore.STROKE_MOVE * 1.2f;
+        float gx = L.w * 0.5f, amp = L.enemyR * Blade.STROKE_MOVE * 1.2f;
         g.beginStroke(gx, row);
         int frames = 0;
         while (g.fingerDown && frames < 60 * 4) {
@@ -970,10 +970,10 @@ final class TestPower extends Check {
             frames++;
         }
         float lived = frames * DT;
-        check("wobbling in place does keep the dwell at bay", lived > GameCore.STROKE_DWELL * 2f);
+        check("wobbling in place does keep the dwell at bay", lived > Blade.STROKE_DWELL * 2f);
         check("but the cap ends it anyway", !g.fingerDown);
         check("and only well after any real slice would have finished",
-                lived >= GameCore.STROKE_MAX - 0.05f);
+                lived >= Blade.STROKE_MAX - 0.05f);
 
         // Waking: one touch may hold several strokes, and each counts for itself.
         GameCore h = flingCore(L, 246L);
@@ -981,9 +981,9 @@ final class TestPower extends Check {
         h.beginStroke(h.tileX(w1, 0, L) - L.enemyR * 2f, row);
         h.sliceTo(h.tileX(w1, 1, L) + L.enemyR * 2f, row, L);
         check("the first stroke took its word", h.strokeKills == 1);
-        advance(h, L, GameCore.STROKE_DWELL + 2 * DT);
+        advance(h, L, Blade.STROKE_DWELL + 2 * DT);
         check("it rested under the finger", !h.fingerDown && h.touchDown);
-        int nudge = h.sliceTo(h.fingerX + L.enemyR * GameCore.STROKE_MOVE * 0.5f, row, L);
+        int nudge = h.sliceTo(h.fingerX + L.enemyR * Blade.STROKE_MOVE * 0.5f, row, L);
         check("a nudge does not wake it", !h.fingerDown && nudge == 0);
         float far = L.playLeft;
         h.sliceTo(far, row, L);
@@ -1004,7 +1004,7 @@ final class TestPower extends Check {
         k.beginStroke(L.playLeft, row);
         k.sliceTo(L.playRight, row, L);
         check("two words in one stroke earned the call", k.callKills == 2 && k.sliceCall > 0f);
-        advance(k, L, GameCore.STROKE_DWELL + 2 * DT);
+        advance(k, L, Blade.STROKE_DWELL + 2 * DT);
         k.sliceTo(L.playLeft, low, L);              // wakes a second stroke on the lower row
         k.sliceTo(L.playRight, low, L);
         check("the second stroke took the third word", k3.destroyed && k.strokeKills == 1);
@@ -1027,7 +1027,7 @@ final class TestPower extends Check {
         // is seen rather than inferred from the readout.
         GameCore t = flingCore(L, 249L);
         t.beginStroke(L.w * 0.4f, L.h * 0.4f);
-        advance(t, L, GameCore.STROKE_DWELL + 2 * DT);
+        advance(t, L, Blade.STROKE_DWELL + 2 * DT);
         t.particles.clear();
         advance(t, L, 0.3f);
         check("a rested stroke lays no trail", t.particles.isEmpty());

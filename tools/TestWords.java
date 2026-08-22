@@ -60,7 +60,7 @@ final class TestWords extends Check {
                 GameCore.Enemy w = g.enemies.get(0);
                 words++;
                 int total = w.totalPresses();
-                if (total > GameCore.MAX_PRESSES) overCap = true;
+                if (total > Pacing.MAX_PRESSES) overCap = true;
                 if (total > worst) worst = total;
                 for (int i = 0; i < w.need.length; i++) {
                     if (w.need[i] < 1 || w.need[i] > 4) badNeed = true;
@@ -83,7 +83,7 @@ final class TestWords extends Check {
         System.out.printf("    %d words generated, worst total = %d presses, deepest stack = %d,"
                 + " %d stacked tiles, %d plain twin pairs%n", words, worst, maxNeed, stacksSeen,
                 plainTwins);
-        check("no word ever exceeds " + GameCore.MAX_PRESSES + " presses", !overCap);
+        check("no word ever exceeds " + Pacing.MAX_PRESSES + " presses", !overCap);
         check("every tile needs 1..4 presses", !badNeed);
         check("stacks do get generated", stacksSeen > 0);
         check("stacks reach depth 4 somewhere", maxNeed == 4);

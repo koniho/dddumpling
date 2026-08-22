@@ -43,7 +43,7 @@ final class StarScreen extends Draw {
         // this interlude can still be running, and it is three times as long.
         if (c.slowdown > 0f) {
             Sky.vignette(p, L, GOLD,
-                    0.18f * fade * Math.min(1f, c.slowdown / GameCore.STAR_BEAT));
+                    0.18f * fade * Math.min(1f, c.slowdown / Blade.STAR_BEAT));
         }
         float s = L.unit;
 

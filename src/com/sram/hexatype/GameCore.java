@@ -419,7 +419,7 @@ final class GameCore {
     boolean starNext, starBonus;
     float bonusTimer;
     /** Last character the spinner ticked on, so each step sounds exactly once. */
-    private int rollTick = -1;
+    int rollTick = -1;
     /**
      * Seconds of parade left. Set the moment a prize is won but deliberately not ticked until
      * the interlude's own countdown has run out, which is what lets it be both "something was
@@ -431,7 +431,7 @@ final class GameCore {
      * parade's join chord and the steamer's status tally. Both are cleared where their scene starts,
      * not where it ends, so an interrupted one can announce itself again next time.
      */
-    private boolean joinRung, statusRung;
+    boolean joinRung, statusRung;
 
     // ---- the collection ----------------------------------------------------
     /**
@@ -480,7 +480,7 @@ final class GameCore {
      */
     float caseT;
     /** Where the shelf's current entry was grabbed, in view pixels. */
-    private float caseDragX;
+    float caseDragX;
 
     /** How quickly the case fades in and out, in screens per second. */
     static final float CASE_FADE_RATE = 4.2f;
@@ -646,131 +646,53 @@ final class GameCore {
     float chainT;
 
     // ---- FLING blade --------------------------------------------------------
-    /**
-     * True while a stroke is live — that is, while the finger is both down *and* moving.
-     * Everything that draws or emits the blade reads this one.
-     */
+    // The gesture itself is in Blade; these are the fields it works on, kept here because the
+    // renderer, the view and the trail all read them.
+
+    /** True while a stroke is live: finger down *and* moving. Everything that draws the blade reads this. */
     boolean fingerDown;
     /**
-     * True while the finger is on the glass at all, whether or not it is currently cutting.
-     * Split from {@link #fingerDown} because a stroke is a motion rather than a touch: the dwell
-     * below rests the stroke under a finger that has stopped, and the next move wakes a new one
-     * without the view seeing a fresh ACTION_DOWN.
+     * True while the finger is on the glass at all, cutting or not. Split from {@link #fingerDown}
+     * because a stroke is a motion, not a touch: the dwell rests a stroke under a stopped finger and
+     * the next move wakes a new one with no fresh ACTION_DOWN.
      */
     boolean touchDown;
     /** Live finger position, set by the view. */
     float fingerX, fingerY;
     /** Cleared when a frenzy starts; set once the player first touches during FLING. */
     boolean flingUsed;
-    /** Where the instructional finger currently sits, for the renderer to follow. */
+    /** Where the instructional finger sits, for the renderer to follow. */
     float demoX, demoY;
-    private float trailAcc;
+    float trailAcc;
     /** Where the trail was emitted from last frame, so a fast swipe still leaves a ribbon. */
-    private float trailPrevX, trailPrevY;
+    float trailPrevX, trailPrevY;
     /**
-     * The stretch the blade covered over the last frame, for the renderer to draw the edge
-     * along. Kept separately from {@link #trailPrevX} because that one is brought up to the
-     * finger before the frame is drawn, which would leave the edge with no length at all.
+     * The stretch the blade covered last frame, for the renderer's edge. Separate from
+     * {@link #trailPrevX}, which is brought up to the finger before the frame is drawn and would
+     * leave the edge with no length.
      */
     float bladeFromX, bladeFromY;
-
+    /** Words and tiles this stroke has taken, held until the next stroke begins. */
+    int strokeKills, strokeCuts;
     /**
-     * How wide the blade cuts, in tile radii. Generous: this is a swipe through a moving field
-     * of small targets, and the whole point of the mode is that it feels powerful.
-     */
-    static final float BLADE = 1.15f;
-    /** Words a single stroke has destroyed, held until the next stroke begins. */
-    int strokeKills;
-    /** Tiles a single stroke has cut, same lifetime. */
-    int strokeCuts;
-    /**
-     * What the readout is announcing: the counts of the stroke that earned it, frozen as that
-     * stroke ended.
-     *
-     * Separate from {@link #strokeKills} because the readout outlives the stroke by design and
-     * strokes now end on their own. Without this, resting a four-word stroke and starting a
-     * fresh one inside the 1.1s window rewrote "4 IN ONE!" down to the new stroke's tally and
-     * then blanked it, which looked like a rendering fault. Refreshed on every cut for as long
-     * as this stroke is the one on the readout, so a sweep that keeps taking words keeps
-     * counting up.
+     * What the readout is announcing: the counts of the stroke that earned it, frozen as it ended.
+     * Separate from {@link #strokeKills} because the readout outlives the stroke and strokes end on
+     * their own — without it, starting a fresh stroke inside the window rewrote "4 IN ONE!" down to
+     * the new tally and then blanked it. Refreshed on every cut while this stroke owns the readout.
      */
     int callKills, callCuts;
-    /** Words in one stroke that earn the slow-motion beat. */
-    static final int SLOW_KILLS = 2;
-    /** How long that beat lasts, in real seconds. Short: it is an impact, not an interlude. */
-    static final float SLOW_TIME = 0.28f;
-    /**
-     * The same beat for taking a star, at a quarter of the length.
-     *
-     * A fling stroke happens once; a course hands out twenty of these, the last few less than a
-     * fifth of a second apart, so at the fling's own length the end of a good course would be in
-     * slow motion continuously rather than punctuated by it — and every beat stretches the flight
-     * in real time, since the course clock is scaled by it too. At this length a course taken clean
-     * runs about a second long, which is a stutter per star rather than a change of pace.
-     * {@code TestStars} holds that total.
-     */
-    static final float STAR_BEAT = 0.075f;
-    /** Fraction of normal speed the world runs at during it. */
-    static final float SLOW_RATE = 0.32f;
-    /** Seconds of slow motion left. */
-    float slowdown;
-    /**
-     * How long the multi-word readout stays up. Deliberately longer than the beat: the
-     * slowdown wants to be brief or it drags, and the number wants long enough to read.
-     */
-    static final float SLICE_CALL_TIME = 1.1f;
-    /** Seconds the slice readout has left. */
-    float sliceCall;
-
-    /**
-     * What a "definite move" is, in tile radii, and how long without one ends the stroke.
-     *
-     * A stroke used to run from touch-down to touch-up, so a finger parked on the glass held one
-     * combo open for the whole frenzy and "N IN ONE!" was a number you waited for rather than
-     * earned. A swipe is a motion, so this is what ends one: stop moving for a beat and the blade
-     * dies where it stopped, exactly as it does when the finger lifts.
-     *
-     * Measured as displacement from an anchor, not as path length: a finger resting on a screen
-     * still reports a pixel or two of jitter every frame, and summing that would have kept a
-     * combo alive by trembling. 0.35 of a tile radius is about 20px on a 1080-wide screen — far
-     * more than jitter, far less than any real swipe covers in a frame (the preview's sweep moves
-     * 1.5 radii a frame).
-     *
-     * The dwell is what protects the thing the mode exists for. To stay awake a finger only has
-     * to average 0.35 radii per 0.22s, about 90px a second; a slice worth calling travels ten
-     * times that, so nothing fast is ever cut off mid-motion. It is also the reason the dwell is
-     * not shorter — a zigzag pauses for a frame or two at each corner, and one motion is one
-     * stroke.
-     */
-    static final float STROKE_MOVE = 0.35f;
-    /** Seconds without a definite move that end the stroke. */
-    static final float STROKE_DWELL = 0.22f;
-    /**
-     * The longest one stroke may run, in real seconds.
-     *
-     * The dwell alone leaves one hole: a finger creeping just fast enough to keep resetting the
-     * anchor is technically always moving, and could hold a combo open indefinitely by circling.
-     * This is the backstop, and it is set well past any genuine slice — a full-width sweep at a
-     * plausible 2000px/s is half a second, a long zigzag through five rows around 1.2s — so the
-     * only stroke it ever ends is one that was not really a swipe.
-     */
-    static final float STROKE_MAX = 1.6f;
-    /**
-     * How long the edge lingers once a stroke ends, so the end of a swipe is something seen
-     * rather than inferred from the readout stopping.
-     */
-    static final float STROKE_FADE = 0.18f;
-
+    /** Seconds of slow motion left, and seconds the slice readout has left. */
+    float slowdown, sliceCall;
     /** Seconds since the last definite move, and how long this stroke has been live. */
     float strokeIdle, strokeAge;
-    /** Where the last definite move landed; a stroke sleeps when the finger stays near it. */
-    private float strokeAnchorX, strokeAnchorY;
+    /** Where the last definite move landed; a stroke sleeps while the finger stays near it. */
+    float strokeAnchorX, strokeAnchorY;
     /** Seconds of dying blade left after a stroke ends. */
     float strokeFade;
 
     /** How much of normal speed the simulation is running at. */
     float timeScale() {
-        return slowdown > 0f ? SLOW_RATE : 1f;
+        return slowdown > 0f ? Blade.SLOW_RATE : 1f;
     }
 
     /**
@@ -788,7 +710,7 @@ final class GameCore {
     float bonusRollEnd;
 
     /** Timer value at which the mash gives way to the beat on zero. */
-    private static final float MASH_END = BONUS_HOLD + BONUS_STATUS;
+    static final float MASH_END = BONUS_HOLD + BONUS_STATUS;
 
     /**
      * Total length of an interlude whose round earned {@code mash} seconds: all four phases, without
@@ -924,72 +846,6 @@ final class GameCore {
     boolean showFlingHint() {
         return flinging() && !flingUsed;
     }
-
-    /**
-     * Emits the sparkle trail: under the finger once the player is dragging, and along the
-     * demonstration path until they have. One rate for both, so the hint looks like the thing
-     * it is teaching.
-     */
-    private void updateTrail(float dt, Layout L) {
-        // The finger is released by updateStroke, not here: this runs below the PLAY return and a
-        // frenzy can end on a frame that never reaches it.
-        if (!flinging()) return;
-        // Sweeps across the middle of the screen, briskly enough that the sparkles behind it
-        // read as a ribbon rather than piling into a clump.
-        demoX = L.w * 0.5f + (float) Math.sin(clock * 2.2f) * L.w * 0.26f;
-        demoY = L.h * 0.45f + (float) Math.cos(clock * 1.5f) * L.h * 0.04f;
-
-        float sx, sy;
-        if (fingerDown) {
-            sx = fingerX;
-            sy = fingerY;
-        } else if (!flingUsed) {
-            sx = demoX;
-            sy = demoY;
-        } else {
-            trailAcc = 0f;
-            return;
-        }
-
-        // A parked finger lays nothing. The ribbon follows the *motion*, and it stops following at
-        // exactly the speed that stops keeping a stroke awake, so one number governs both. Two
-        // reasons: 100 sparkles a second landing on one spot read as a glowing blob rather than a
-        // trail, and leaving the edge alone here freezes it along the last stretch actually swept,
-        // which is what the fade then takes away.
-        if (fingerDown) {
-            float mx = sx - trailPrevX, my = sy - trailPrevY;
-            float still = L.enemyR * (STROKE_MOVE / STROKE_DWELL) * dt;
-            if (mx * mx + my * my < still * still) {
-                trailAcc = 0f;
-                return;
-            }
-        }
-
-        // Captured before the emission below advances trailPrev to the finger.
-        bladeFromX = trailPrevX;
-        bladeFromY = trailPrevY;
-
-        trailAcc += dt;
-        float per = 1f / TRAIL_RATE;
-        int emit = 0;
-        while (trailAcc >= per) {
-            trailAcc -= per;
-            emit++;
-        }
-        // Spread along the path swept since the last frame rather than all dropped at the
-        // current point: a quick swipe otherwise leaves a dotted line instead of a blade trail.
-        for (int k = 0; k < emit; k++) {
-            float f = emit == 1 ? 1f : (float) k / (emit - 1);
-            Fx.sparkle(this, rnd, trailPrevX + (sx - trailPrevX) * f,
-                    trailPrevY + (sy - trailPrevY) * f, L.enemyR * 0.85f,
-                    Glyph.cycle(clock * 1.6f));
-        }
-        trailPrevX = sx;
-        trailPrevY = sy;
-    }
-
-    /** Sparkles a second, along the blade. */
-    static final float TRAIL_RATE = 100f;
 
     /**
      * Plays back the last chain, one hop at a time, sounding each as it lands.
@@ -1157,7 +1013,7 @@ final class GameCore {
         // Whoever the case last showed pilots it, so the flyer is not the blank placeholder.
         if (prize < 0) prize = caseIndex;
         starNext = true;
-        enterBonus(L);
+        Interlude.enterBonus(this, L);
     }
 
     /** Drops straight into a full-length steamer round from the playtest panel. */
@@ -1200,210 +1056,29 @@ final class GameCore {
     }
 
     // ---- the boss fight -----------------------------------------------------
-
-    /**
-     * The boss is beaten and its burst is spent: pay out and let the stage end.
-     *
-     * The stage is satisfied by filling the quota it never spawned, which is the same trick
-     * {@link #endPower} uses — {@link #stageCleared} then fires on the next frame through the
-     * ordinary path, so a boss stage ends by exactly the route every other stage ends by.
-     */
-    private void endBoss(Layout L) {
-        boolean won = boss.beaten;
-        // Everything still on the field goes with it. A boss dying to a field of three words and
-        // then handing you a mopping-up job is an anticlimax, and the interlude is the payoff.
-        for (int i = enemies.size() - 1; i >= 0; i--) {
-            Enemy e = enemies.get(i);
-            if (!e.destroyed) destroyWord(e, enemyCentreX(e), e.y, L);
-        }
-        if (won) {
-            score += BOSS_BONUS;
-            // A life back, capped as the steamer's is. A boss costs lives to learn, and a run that
-            // beats one should not arrive at the next stage on its last one.
-            if (lives < START_LIVES) lives++;
-            flash = Math.max(flash, 1f);
-            flashColor = FLASH_CLEAR;
-            skyGlow = 1f;
-            skyGlowColor = FLASH_CLEAR;
-            shake = Math.max(shake, 0.8f);
-            if (sound != null) sound.achievement();
-        }
-        // Sent home before the quota is filled, so nothing that reads bossActive() can see a beaten
-        // boss and a satisfied stage at the same time.
-        boss.leave();
-        spawnedThisStage = stageQuota();
-    }
-
-    /**
-     * {@link Boss#SUMO} reached the danger line. Costs a life exactly as a word landing does, and
-     * for the same reason: it crossed the line.
-     */
-    private void bossSlam(Layout L) {
-        shake = Math.max(shake, 1f);
-        takeHit(boss.bodyX(L), L);
-    }
-
-    /**
-     * A press the boss claimed. Turns its verdict into score, sound and accuracy.
-     *
-     * Note what a rebuff does <em>not</em> do: it is not counted as a miss. The interlude set that
-     * precedent — a refused input is not a typing mistake, and letting it reach the accuracy readout
-     * would mean the dumpling on the game-over screen scolded the player for engaging with the
-     * mechanic. The cost of a rebuff is paid where the mechanic lives instead: the drum's beat
-     * resets, and the combo goes.
-     *
-     * @return true when the press did something, for the view's haptic tick
-     */
-    private boolean bossPress(int g, int verdict, Layout L) {
-        if (verdict == Boss.REBUFF) {
-            keyBad[g] = 1f;
-            combo = 0;
-            shake = Math.max(shake, 0.22f);
-            if (sound != null) sound.wrong();
-            return false;
-        }
-        hits++;
-        combo++;
-        if (combo > maxCombo) maxCombo = combo;
-        skyGlow = Math.max(skyGlow, GLOW_HIT);
-        skyGlowColor = Glyph.COLOR[g];
-        // A bullet, from the key that was pressed to the part of the boss it landed on — the same
-        // shot a press at a word fires, so a press means the same thing wherever it is aimed. The
-        // damage is already done: this is playback, exactly as a word's own destruction waits for
-        // its shot while the tile pops on the press.
-        bossShot(g, L);
-        if (verdict == Boss.HIT) {
-            score += BOSS_HIT;
-            shake = Math.max(shake, 0.30f);
-            flash = Math.max(flash, 0.4f);
-            flashColor = FLASH_CLEAR;
-            Fx.explode(this, rnd, boss.bodyX(L), boss.bodyY(L), L.enemyR * 1.4f, 12,
-                    Glyph.COLOR[g]);
-        }
-        // Pitched by how much of the boss is left, so a fight is audibly a countdown.
-        if (sound != null) sound.squish(g, 1 + (int) (3f * (1f - boss.health())));
-        return true;
-    }
-
-    /**
-     * Fires the bullet a boss press earns, from key {@code g} to wherever that press landed.
-     *
-     * Held as an offset from the body's centre rather than as a point, so it homes as the boss drifts
-     * — see {@link Shot#atBoss}. No {@code target} and no {@code kill}, so {@link #impact} does the
-     * one thing wanted at the far end: a burst of that letter's colour where it struck.
-     *
-     * Only fired for a press that landed. A rebuff fires nothing, the same way a wrong press at a
-     * word fires nothing — a bullet that flies out and achieves nothing reads as the shot having
-     * missed, when what happened is that it was refused.
-     */
-    private void bossShot(int g, Layout L) {
-        if (boss.body == null) return;
-        Shot s = new Shot();
-        s.sx = L.keyX[g];
-        s.sy = L.keyY[g];
-        s.tx = boss.hitX;
-        s.ty = boss.hitY;
-        s.atBoss = true;
-        s.bossDx = boss.hitX - boss.body.centreX();
-        s.bossDy = boss.hitY - boss.body.centreY();
-        s.glyph = g;
-        s.dur = SHOT_TIME;
-        shots.add(s);
-    }
-
-    /**
-     * A tap on one of the boss's elements. Returns true when the boss took it, so the view knows
-     * not to hand the same touch to anything else.
-     */
-    boolean tapBoss(float x, float y, Layout L) {
-        if (state != PLAY || !boss.fighting() || settingsOpen) return false;
-        int i = boss.elemAt(x, y);
-        if (i < 0) return false;
-        int r = boss.tap(i, rnd);
-        if (r == Boss.NONE) {
-            // Its element, but nothing to do with it. Still swallowed: a tap that lands on the boss
-            // must never fall through and be read as something else.
-            return true;
-        }
-        if (r == Boss.REBUFF) {
-            combo = 0;
-            shake = Math.max(shake, 0.22f);
-            if (sound != null) sound.wrong();
-            return true;
-        }
-        hits++;
-        combo++;
-        if (combo > maxCombo) maxCombo = combo;
-        if (r == Boss.HIT) {
-            score += BOSS_HIT;
-            shake = Math.max(shake, 0.30f);
-            Fx.explode(this, rnd, x, y, L.enemyR * 1.4f, 12, INK_SPARK);
-        }
-        if (sound != null) sound.squish(i % Glyph.COUNT, 1);
-        return true;
-    }
+    // Delegations; the fight lives in BossPlay. Boss itself owns the rules — this is the wiring to
+    // score, sound, shots and lives.
 
     /** Colour of the burst a tap or a completed drag throws off, which has no letter of its own. */
     static final int INK_SPARK = 0xFFFFF3C4;
 
-    /** A finger landing on a draggable boss element. True when the boss has taken the gesture. */
-    boolean grabBoss(float x, float y) {
-        if (state != PLAY || !boss.fighting() || settingsOpen) return false;
-        int i = boss.elemAt(x, y);
-        if (!boss.draggable(i)) return false;
-        return boss.grab(i);
-    }
+    boolean tapBoss(float x, float y, Layout L) { return BossPlay.tap(this, x, y, L); }
 
-    /** That finger moving. True when the drag finished the job. */
-    boolean dragBoss(float x, float y, Layout L) {
-        if (boss.held < 0) return false;
-        int r = boss.dragTo(x, y, L);
-        if (r != Boss.HIT) return false;
-        score += BOSS_HIT;
-        hits++;
-        combo++;
-        if (combo > maxCombo) maxCombo = combo;
-        shake = Math.max(shake, 0.28f);
-        Fx.explode(this, rnd, x, y, L.enemyR * 1.5f, 14, INK_SPARK);
-        if (sound != null) sound.achievement();
-        return true;
-    }
+    boolean grabBoss(float x, float y) { return BossPlay.grab(this, x, y); }
 
-    void releaseBoss() {
-        boss.release();
-    }
+    boolean dragBoss(float x, float y, Layout L) { return BossPlay.dragTo(this, x, y, L); }
+
+    void releaseBoss() { boss.release(); }
+
+    boolean shoveReady() { return BossPlay.shoveReady(this); }
 
     /**
-     * An upward swipe in the field. A shove at {@link Boss#SUMO} where one is available, and the
-     * ordinary panic swipe everywhere else.
-     *
-     * One entry point rather than two, because the gesture is the same gesture: the view should not
-     * have to know which boss is on the field to decide what a swipe up means. Priority to the
-     * shove, since during that fight it is the thing the player is trying to do — and the panic
-     * swipe is still reachable on any frame no shove is available.
+     * An upward swipe in the field: a shove at SUMO where one is available, otherwise the panic
+     * swipe. One entry point, because the view cannot know which boss is on the field.
      */
     boolean swipeUp(Layout L) {
-        if (bossShove(L)) return true;
+        if (BossPlay.shove(this, L)) return true;
         return pushBack(L);
-    }
-
-    /** True when a swipe up would shove the boss, for the renderer's hint. */
-    boolean shoveReady() {
-        return state == PLAY && !settingsOpen && boss.shovable();
-    }
-
-    private boolean bossShove(Layout L) {
-        if (!shoveReady() || !boss.shove()) return false;
-        pushT = PUSH_TIME;
-        pushCount = 0;
-        shake = Math.max(shake, 0.6f);
-        flash = Math.max(flash, 0.55f);
-        flashColor = FLASH_CLEAR;
-        skyGlow = 1f;
-        skyGlowColor = FLASH_CLEAR;
-        Fx.explode(this, rnd, boss.bodyX(L), boss.bodyY(L), L.enemyR * 2.2f, 20, INK_SPARK);
-        if (sound != null) sound.achievement();
-        return true;
     }
 
     /**
@@ -1437,8 +1112,8 @@ final class GameCore {
         return v - (float) Math.floor(v);
     }
 
-    private final Random rnd;
-    private final Store store;
+    final Random rnd;
+    final Store store;
 
     static final int START_LIVES = 3;
     /** Pause after a stage is cleared, before the next wave starts arriving. */
@@ -1535,124 +1210,31 @@ final class GameCore {
         clearArmed = false;
     }
 
-    /**
-     * True once the clear-case button has been tapped and is waiting for a second tap. The
-     * collection is the one thing here that took several runs to build, so wiping it is
-     * behind a confirmation rather than a single stray tap in a panel full of other buttons.
-     */
+    /** True once the clear-case button has been tapped and is waiting for a second. */
     boolean clearArmed;
 
-    /** Tap on the clear-case button: arms it, then on the second tap empties the case. */
-    void tapClearCase() {
-        if (!clearArmed) {
-            clearArmed = true;
-            return;
-        }
-        clearArmed = false;
-        collected = 0L;
-        // The tally goes with them. It counts baskets opened for entries that no longer exist, so
-        // leaving it standing would put "COLLECTIONS: 40" over an empty case — the same reason the
-        // run's haul cannot outlive them either.
-        collectTotal = 0;
-        prize = -1;
-        // The haul describes entries that are no longer owned, so it cannot outlive them.
-        roundPrizes = 0L;
-        homeT = 0f;
-        homeLanded = 0;
-        closeStory();
-        caseIndex = 0;
-        caseSlide = 0f;
-        if (store != null) {
-            store.saveCollected(0L);
-            store.saveCollectTotal(0);
-        }
-        if (sound != null) sound.wrong();
-    }
+    // ---- display case -------------------------------------------------------
+    // Delegations; the browsing lives in CaseUi.
 
-    /**
-     * Opens the display case. Only from the title screen, and not once a start press has begun
-     * the dissolve — the case would be fading in over a screen that is fading out.
-     */
-    void openCase() {
-        if (state != TITLE || starting() || caseOpen) return;
-        caseOpen = true;
-        caseSlide = 0f;
-        caseT = 0f;
-        if (sound != null) sound.squish(caseIndex % Glyph.COUNT, 1);
-    }
+    void tapClearCase() { CaseUi.tapClear(this); }
 
-    /** One bounce of the send-off landing, pitched off the squishy that is doing the bouncing. */
+    void openCase() { CaseUi.open(this); }
+
+    void closeCase() { CaseUi.close(this); }
+
+    void scrollCase(int dir) { CaseUi.scroll(this, dir); }
+
+    void caseTo(int i) { CaseUi.to(this, i); }
+
+    void beginCaseDrag(float x) { CaseUi.beginDrag(this, x); }
+
+    void caseDragTo(float x, Layout L) { CaseUi.dragTo(this, x, L); }
+
+    void endCaseDrag() { CaseUi.endDrag(this); }
+
+    /** One bounce of the send-off landing, pitched off the squishy doing the bouncing. */
     private void bounceTick() {
         if (sound != null) sound.squish(launchWho % Glyph.COUNT, 1);
-    }
-
-    /** Puts it away. The fade runs itself down from wherever it had got to. */
-    void closeCase() {
-        if (!caseOpen) return;
-        caseOpen = false;
-        caseDragging = false;
-        closeStory();
-    }
-
-    /**
-     * Moves the display case one entry, for a tap on one side of the shelf. Wraps, so the strip
-     * is a loop and neither side ever does nothing.
-     */
-    void scrollCase(int dir) {
-        if (dir == 0 || !caseOpen || storyOpen()) return;
-        caseIndex = Showcase.wrap(caseIndex + (dir > 0 ? 1 : -1));
-        // Full slide, decaying to zero: the shelf glides in from the side it came from.
-        caseSlide = dir > 0 ? 1f : -1f;
-        if (sound != null) sound.squish(caseIndex % Glyph.COUNT, 1);
-    }
-
-    /**
-     * Jumps straight to an entry, for the position bar being dragged along. No slide: the
-     * finger is already the animation, and easing in behind it would only lag it.
-     */
-    void caseTo(int i) {
-        if (!caseOpen || storyOpen()) return;
-        int n = Showcase.wrap(i);
-        if (n == caseIndex) return;
-        caseIndex = n;
-        caseSlide = 0f;
-        if (sound != null) sound.squish(caseIndex % Glyph.COUNT, 1);
-    }
-
-    /** Grabs the shelf at x. */
-    void beginCaseDrag(float x) {
-        if (!caseOpen || storyOpen()) return;
-        caseDragging = true;
-        caseDragX = x;
-    }
-
-    /**
-     * The shelf following a finger. The offset is carried in {@link #caseSlide}, which is what
-     * the drawing and the position bar already read, so a drag needs no second channel.
-     *
-     * Whole steps are committed as the shelf passes the halfway mark rather than on release, so
-     * the caption, the position bar and the story target are always the entry nearest the middle
-     * of the case — the one being looked at.
-     */
-    void caseDragTo(float x, Layout L) {
-        if (!caseDragging) return;
-        float step = Showcase.step(L);
-        float o = (x - caseDragX) / step;
-        int whole = Math.round(o);
-        if (whole != 0) {
-            caseIndex = Showcase.wrap(caseIndex - whole);
-            caseDragX += whole * step;
-            o -= whole;
-            // One tick per entry passed, so a long drag ratchets. Bounded by the finger having
-            // to travel a whole step for each one.
-            if (sound != null) sound.squish(caseIndex % Glyph.COUNT, 1);
-        }
-        caseSlide = o;
-    }
-
-    /** Lets go. Whatever offset is left eases out through the usual slide decay. */
-    void endCaseDrag() {
-        caseDragging = false;
     }
 
     void setSpeed(float v) {
@@ -1681,71 +1263,41 @@ final class GameCore {
     }
 
     // ---- stage pacing -------------------------------------------------------
-    // One knob per dial so new stages are a numbers change, not a rewrite. Every dial reads its
-    // position off ramp() rather than off stage directly, so the whole curve stretches or steepens
-    // from one constant.
+    // The dials themselves are in Pacing, which is pure. These are the delegations, plus the two
+    // that are not pure: they read the boss and the frenzy.
 
-    /**
-     * How far a stage advances up the difficulty ramp. Every dial used to step once per stage;
-     * this is how much of a step a stage is worth now.
-     *
-     * Five ninths, because the game reached the wall at stage 6 — every dial arrived at once and
-     * the once-a-stage panic swipe could not carry it. What used to land at 6 now lands at 10, so
-     * there are four more stages of room to learn in before the field gets that dense. Stage 1 is
-     * untouched either way: the ramp starts from zero there.
-     */
-    static final float RAMP = 5f / 9f;
+    static final float RAMP = Pacing.RAMP;
+    static final int MAX_PRESSES = Pacing.MAX_PRESSES;
 
-    /** Ramp position: 0 on the opening stage, and a full step per stage before it was toned down. */
-    float ramp() { return (stage - 1) * RAMP; }
+    float ramp() { return Pacing.ramp(stage); }
 
-    /**
-     * The old dials stepped on integer division of the stage, which this reproduces off the ramp:
-     * at a whole ramp position it gives exactly what {@code stage / 2} used to.
-     */
-    private int rampStep() { return (int) ((ramp() + 1f) / 2f); }
+    float travelSeconds() { return Pacing.travelSeconds(stage, speed); }
 
-    /**
-     * Seconds an enemy takes to fall from spawn to the danger line. The player's speed
-     * setting divides this, so 1.5 means everything arrives half again as fast.
-     */
-    float travelSeconds() { return Math.max(4.2f, 15f - ramp() * 1.05f) / speed; }
+    float spawnInterval() { return Pacing.spawnInterval(stage, speed); }
 
-    float spawnInterval() { return Math.max(0.80f, 2.5f - ramp() * 0.13f) / speed; }
+    int maxEnemies() { return Pacing.maxEnemies(stage); }
 
-    int maxEnemies() { return Math.min(7, 3 + rampStep()); }
+    int maxWordLen() { return Pacing.maxWordLen(stage); }
 
-    /**
-     * Concurrent words allowed right now. A frenzy lets more pile up — four times as many on the
-     * opening stage, tapering with the ramp, since the cap multiplied a {@code maxEnemies} that was
-     * already climbing.
-     */
+    int minWordLen() { return Pacing.minWordLen(stage); }
+
+    int stageQuota() { return Pacing.stageQuota(stage); }
+
+    float stackChance() { return Pacing.stackChance(stage); }
+
+    /** Concurrent words allowed now. A frenzy lets more pile up, tapering with the ramp. */
     int crowdCap() {
         if (powerActive()) return (int) (maxEnemies() * Power.crowdRate(ramp()));
-        // Nothing to cap on a boss stage: it releases no words at all.
+        // A boss stage releases no words at all.
         if (boss.active()) return 0;
         return maxEnemies();
     }
 
-    int maxWordLen() { return Math.min(5, 2 + rampStep()); }
-
-    int minWordLen() { return Math.max(2, maxWordLen() - 2); }
-
-    /** How many words this stage releases in total. */
-    int stageQuota() { return Math.min(10, 5 + rampStep()); }
-
-    /** Hard ceiling on the presses any single word can demand. */
-    static final int MAX_PRESSES = 8;
-
-    /** Odds that a given tile becomes a stack. Stacks stay out of the opening stage. */
-    float stackChance() {
-        return stage < 2 ? 0f : Math.min(0.55f, 0.13f * ramp());
-    }
-
-    /** True once every word of this stage has been released and dealt with. */
+    /**
+     * True once every word of this stage has been released and dealt with. A boss stage is never
+     * clear while the boss is on it — only beating it satisfies the quota, see BossPlay.endBoss.
+     */
     boolean stageCleared() {
-        // A boss stage is not clear while the boss is on it, whatever the field looks like. The
-        // quota is only satisfied by beating it — see endBoss.
         return !boss.active() && spawnedThisStage >= stageQuota()
                 && enemies.isEmpty() && shots.isEmpty();
     }
@@ -1928,9 +1480,9 @@ final class GameCore {
         // letters it is asking for, and never steals a press out of a word already part-typed. The
         // one exception is a key it is holding — that is refused wherever it is pressed, including
         // into an engaged word, because the player does not have that key at all.
-        if (boss.fighting()) {
-            int verdict = (target == null || boss.denies(g)) ? boss.press(g, rnd) : Boss.NONE;
-            if (verdict != Boss.NONE) return bossPress(g, verdict, L);
+        if (boss.fighting() && BossPlay.claims(this, g)) {
+            int verdict = boss.press(g, rnd);
+            if (verdict != Boss.NONE) return BossPlay.press(this, g, verdict, L);
         }
 
         // MULTI: one press chains through every matching letter on the field.
@@ -2352,7 +1904,7 @@ final class GameCore {
         if (slowdown > 0f) slowdown = Math.max(0f, slowdown - dt);
         if (sliceCall > 0f) sliceCall = Math.max(0f, sliceCall - dt);
         // What ends a blade stroke by itself, on real time and above every early return below.
-        updateStroke(dt, L);
+        Blade.updateStroke(this, dt);
         dt *= timeScale();
         // The clock keeps running so the panel itself can animate, but nothing else moves.
         clock += dt;
@@ -2457,7 +2009,7 @@ final class GameCore {
                     // The fling stroke's beat, briefly: a taken star lands with the same stutter and
                     // the same gold vignette, so the two read as the same kind of moment.
                     stars.grabbed = false;
-                    slowdown = STAR_BEAT;
+                    slowdown = Blade.STAR_BEAT;
                     // Announced with the count, so the note climbs as the course fills.
                     if (sound != null) sound.star(stars.count());
                 }
@@ -2479,7 +2031,7 @@ final class GameCore {
                     stars.awardPending = false;
                     score += FREE_BONUS;
                     if (lives < START_LIVES) lives++;
-                    awardStarPrize();
+                    Interlude.awardStarPrize(this);
                 }
                 if (stars.timer <= 0f) {
                     stars.finishAttempt();
@@ -2487,7 +2039,7 @@ final class GameCore {
                     // the same reason: the collection is the point of winning one.
                     if (paradeTimer > 0f) {
                         paradeTimer -= dt;
-                        joinChord();
+                        Interlude.joinChord(this);
                         if (paradeTimer > 0f) return;
                         paradeTimer = 0f;
                     }
@@ -2508,7 +2060,7 @@ final class GameCore {
             if (bonusTimer <= 0f) {
                 if (paradeTimer > 0f) {
                     paradeTimer -= dt;
-                    joinChord();
+                    Interlude.joinChord(this);
                     if (paradeTimer > 0f) return;
                     paradeTimer = 0f;
                 }
@@ -2546,24 +2098,24 @@ final class GameCore {
         if (pendingBonus) {
             if (perfectBanner <= 0f) {
                 pendingBonus = false;
-                enterBonus(L);
+                Interlude.enterBonus(this, L);
             }
             return;
         }
 
         updatePower(dt, L);
-        updateTrail(dt, L);
+        Blade.updateTrail(this, dt, L);
         if (team()) buddy.update(this, dt, L);
         else if (!buddy.out()) buddy.leave();
 
         if (boss.active()) {
             // True on the frame the boss lands a hit: SUMO reaching the line, or any boss striking
             // once it has enraged. Either costs a life, exactly as a word landing does.
-            if (boss.update(dt, L, rnd)) bossSlam(L);
+            if (boss.update(dt, L, rnd)) BossPlay.slam(this, L);
             // That may have been the last life, and nothing below here runs after a run ends.
             if (state != PLAY) return;
             if (boss.gone()) {
-                endBoss(L);
+                BossPlay.endBoss(this, L);
                 return;
             }
         }
@@ -2587,7 +2139,7 @@ final class GameCore {
                 spawnTimer = spawnInterval() / (powerActive() ? Power.spawnRate(ramp()) : 1f);
             }
         } else if (stageCleared()) {
-            beginStageEnd();
+            Interlude.beginStageEnd(this);
             return;
         }
 
@@ -2756,179 +2308,13 @@ final class GameCore {
     }
 
     // ---- the blade ----------------------------------------------------------
+    // Delegations; the gesture lives in Blade.
 
-    /**
-     * The finger has landed. Nothing is cut yet: a tap that does not travel cuts nothing, which
-     * is what keeps the mode a swipe rather than a poke.
-     */
-    void beginStroke(float x, float y) {
-        touchDown = true;
-        wakeStroke(x, y);
-    }
+    void beginStroke(float x, float y) { Blade.begin(this, x, y); }
 
-    /**
-     * Starts a fresh stroke at x,y with the combo back at nothing.
-     *
-     * Called both by the finger landing and by it moving again after a rest, which is the point:
-     * one touch can hold several swipes, and each one counts for itself.
-     */
-    private void wakeStroke(float x, float y) {
-        fingerDown = true;
-        fingerX = x;
-        fingerY = y;
-        trailPrevX = x;
-        trailPrevY = y;
-        bladeFromX = x;
-        bladeFromY = y;
-        strokeAnchorX = x;
-        strokeAnchorY = y;
-        strokeIdle = 0f;
-        strokeAge = 0f;
-        strokeFade = 0f;
-        flingUsed = true;
-        strokeKills = 0;
-        strokeCuts = 0;
-    }
+    int sliceTo(float x, float y, Layout L) { return Blade.sliceTo(this, x, y, L); }
 
-    /**
-     * Ends the stroke while the finger is still on the glass: the blade dies away where it
-     * stopped and the counts freeze for the readout.
-     *
-     * The anchor is left under the finger rather than where the last move landed, so waking again
-     * costs a whole {@link #STROKE_MOVE} from *here* — otherwise a finger that had crept to just
-     * inside the threshold would restart on a twitch.
-     */
-    private void restStroke() {
-        if (!fingerDown) return;
-        fingerDown = false;
-        strokeFade = STROKE_FADE;
-        strokeAnchorX = fingerX;
-        strokeAnchorY = fingerY;
-    }
-
-    /**
-     * Ticks what ends a stroke by itself: the dwell, and the cap behind it.
-     *
-     * On real time and above every early return in {@link #update}, for two reasons. A gesture is
-     * not part of the simulation, so the slow-motion beat a stroke just earned must not hand it
-     * three times the grace to stand still in. And a stroke has two exits — this one and the
-     * player dying mid-swipe — and the second one never reaches the PLAY half of the loop, so a
-     * fatal breach with a finger down would otherwise leave a blade lit over the summary.
-     */
-    private void updateStroke(float dt, Layout L) {
-        strokeFade = Math.max(0f, strokeFade - dt);
-        if (!flinging() || state != PLAY) {
-            touchDown = false;
-            fingerDown = false;
-            return;
-        }
-        if (!fingerDown) return;
-        strokeIdle += dt;
-        strokeAge += dt;
-        if (strokeIdle >= STROKE_DWELL || strokeAge >= STROKE_MAX) restStroke();
-    }
-
-    /**
-     * Extends the stroke to x,y and cuts every tile the blade swept past on the way — not just
-     * the ones under the end point, so a fast swipe cuts the whole line it crossed instead of
-     * whatever happened to be under the last touch sample.
-     *
-     * Grabbing a tile and dragging it was the old model, and it was the reason the mode felt
-     * weak: it cut one tile per gesture, only if the gesture started exactly on one.
-     *
-     * @return tiles cut by this segment
-     */
-    int sliceTo(float x, float y, Layout L) {
-        float x0 = fingerX, y0 = fingerY;
-        fingerX = x;
-        fingerY = y;
-        if (!flinging() || !touchDown) return 0;
-
-        // Has the finger definitely moved? From the anchor, not along the path — see STROKE_MOVE.
-        float ax = x - strokeAnchorX, ay = y - strokeAnchorY;
-        float move = L.enemyR * STROKE_MOVE;
-        boolean moved = ax * ax + ay * ay >= move * move;
-        if (!fingerDown) {
-            // The last stroke has already been rested out from under this finger. Moving again is
-            // a new swipe, and it starts here: the stretch that woke it cuts nothing, the same way
-            // the first touch of a stroke cuts nothing until it travels.
-            if (moved) wakeStroke(x, y);
-            return 0;
-        }
-        if (moved) {
-            strokeAnchorX = x;
-            strokeAnchorY = y;
-            strokeIdle = 0f;
-        }
-
-        int cut = 0;
-        float r = L.enemyR * BLADE;
-        // Downward, because destroying a word mutates the list from under the loop.
-        for (int n = enemies.size() - 1; n >= 0; n--) {
-            if (n >= enemies.size()) continue;
-            Enemy e = enemies.get(n);
-            if (!e.typeable()) continue;
-            for (int i = e.word.length - 1; i >= e.pos; i--) {
-                if (e.gone[i]) continue;
-                if (segDist2(tileX(e, i, L), e.y, x0, y0, x, y) > r * r) continue;
-                boolean alive = !e.destroyed;
-                // Sent along the stroke, so the cut piece flies the way the blade went.
-                // No clear tone: the chop below is this letter's sound, and a word finished by
-                // the blade would otherwise land a chime on top of its own last chop.
-                removeTile(e, i, x - x0, y - y0, L, false);
-                cut++;
-                strokeCuts++;
-                if (sound != null) sound.chop();
-                if (alive && e.destroyed) {
-                    strokeKills++;
-                    // Second word and every one after refreshes the beat, so a long sweep
-                    // through four words stays slow for the whole of it.
-                    if (strokeKills >= SLOW_KILLS) startSlowdown();
-                }
-                // Trailing cuts of a word this stroke has not finished still belong on its
-                // readout, but only while this stroke is the one being announced.
-                if (strokeKills >= SLOW_KILLS) callCuts = strokeCuts;
-                if (!e.typeable()) break;
-            }
-        }
-        return cut;
-    }
-
-    /** The finger has lifted. The kill and cut counts survive it, for the readout. */
-    void endStroke() {
-        restStroke();
-        touchDown = false;
-    }
-
-    /** The slow-motion beat that lands when one stroke takes several words. */
-    private void startSlowdown() {
-        slowdown = SLOW_TIME;
-        sliceCall = SLICE_CALL_TIME;
-        // What the readout will say, taken here rather than read live off the stroke: this fires
-        // again on every further word, so a sweep still counts up, and it stops when the stroke
-        // does instead of being reset by the next one.
-        callKills = strokeKills;
-        callCuts = strokeCuts;
-        // Restrained on purpose: destroying the words has already fired a screen flash and
-        // flooded the sky for each of them, and piling a third wash on top of that whited out
-        // the whole field at exactly the moment there was something worth looking at.
-        shake = Math.max(shake, 0.35f);
-        flash = Math.max(flash, 0.45f);
-        flashColor = FLASH_CLEAR;
-        if (sound != null) sound.achievement();
-    }
-
-    /** Squared distance from a point to the segment a-b. */
-    static float segDist2(float px, float py, float ax, float ay, float bx, float by) {
-        float dx = bx - ax, dy = by - ay;
-        float len2 = dx * dx + dy * dy;
-        // A stationary finger degenerates to a point, which is still a legitimate test.
-        float t = len2 <= 1e-6f ? 0f : ((px - ax) * dx + (py - ay) * dy) / len2;
-        if (t < 0f) t = 0f;
-        else if (t > 1f) t = 1f;
-        float qx = ax + dx * t - px, qy = ay + dy * t - py;
-        return qx * qx + qy * qy;
-    }
+    void endStroke() { Blade.end(this); }
 
     /**
      * Picks which way each tile of a cleared word flies. Tiles head for whichever screen
@@ -2990,167 +2376,16 @@ final class GameCore {
      * a flag rather than by an edge test on the progress, because a parade that is interrupted and
      * restarted has to be able to say it again.
      */
-    private void joinChord() {
-        if (joinRung || paradeProgress() < Parade.JOIN_END) return;
-        joinRung = true;
-        if (sound != null) sound.paradeJoin();
-    }
+    // ---- interlude ----------------------------------------------------------
+    // Delegations; the between-stages round lives in Interlude.
 
-    /** Drops into the between-stages minigame once the wave is clear. */
-    private void enterBonus(Layout L) {
-        state = BONUS;
-        time = 0;
-        joinRung = false;
-        statusRung = false;
-        starBonus = starNext;
-        if (starBonus) {
-            // A fresh line every attempt, with whatever is already in hand kept — see
-            // StarPath.reroll for why a repeated attempt must not be a repeated course.
-            stars.reroll(rnd);
-            stars.begin(prize, L);
-            bonusTimer = stars.timer;
-            paradeTimer = 0f;
-            target = null;
-            caretOwner = null;
-            power = null;
-            if (sound != null) sound.stageClear();
-            stageByPower = false;
-            return;
-        }
-        // The mash is exactly what the round earned, and nothing else adds to it — a frenzy no
-        // longer buys extra time here, because that bonus was wider than the whole earned ladder
-        // and erased it. See bonusRollEnd for how the one timer carries all four phases.
-        bonusRollEnd = earnedMash + MASH_END;
-        bonusTimer = BONUS_ROLL + bonusRollEnd;
-        paradeTimer = 0f;
-        steamer.lidPulse = 0;
-        steamer.flash = 0;
-        // Chosen up front, before the spinner has shown anything: the spinner animates toward
-        // an answer that already exists rather than deciding when it stops.
-        steamer.pick(rnd);
-        rollTick = -1;
-        target = null;
-        caretOwner = null;
-        power = null;
-        if (sound != null) {
-            // The frenzy tone replaces the ordinary one rather than stacking with it.
-            if (stageByPower) sound.powerClear();
-            else sound.stageClear();
-        }
-        stageByPower = false;
-    }
-
-    /**
-     * A press during the interlude. Any of the six keys counts — this is a mash, not a
-     * typing test — so it deliberately leaves hits, misses and combo alone, otherwise
-     * mashing would inflate the accuracy readout.
-     */
-    void tapBonus(int g) {
-        if (!bonusMashing()) return;
-        keyPress[g] = 1f;
-
-        int r = steamer.press(g);
-        if (r == Steamer.WRONG) {
-            // Sounds wrong but is not counted as a miss: this is not a typing test, and it
-            // must not reach the accuracy readout.
-            keyBad[g] = 1f;
-            if (sound != null) sound.wrong();
-            return;
-        }
-        if (sound != null) sound.squish(g, 1);
-        if (r == Steamer.READY) return;
-    }
-
+    void tapBonus(int g) { Interlude.tapBonus(this, g); }
     /** Claims an armed steamer lid after an upward swipe over it. */
-    void swipeBonus() {
-        if (!bonusSwipeReady() || steamer.swipe() != Steamer.FREED) return;
-        winSteamer();
-    }
+    void swipeBonus() { Interlude.swipeBonus(this); }
 
-    void dragBonusLid(float lift) {
-        steamer.lidDrag = bonusSwipeReady() ? Math.max(0f, lift) : 0f;
-    }
+    void dragBonusLid(float lift) { Interlude.dragBonusLid(this, lift); }
 
-    private void winSteamer() {
-        score += FREE_BONUS;
-        if (lives < START_LIVES) lives++;
-        awardPrize();
-        starNext = true;
-        // Set, not extended: the round is over the moment it is won, and what is left of it is
-        // exactly the escape animation. Then the parade, immediately. Holding the full beat and
-        // status first put nearly five seconds and a page of numbers between the win and the
-        // parade, which made the parade look like it was not happening at all.
-        bonusTimer = steamer.freedT;
-        if (sound != null) sound.achievement();
-    }
-
-    /**
-     * Opens the blind box the freed dumpling was carrying. A new entry goes into the case
-     * and is written through to the store immediately; a duplicate pays out instead.
-     *
-     * The display case is left showing whatever came out, so the next visit to the title
-     * screen opens on the prize rather than wherever the player had scrolled to.
-     */
-    private void awardPrize() {
-        prize = Collect.roll(rnd, collected);
-        prizeNew = !Collect.has(collected, prize);
-        // Every dumpling this run freed, new or duplicate. They dance on the game-over screen and
-        // then carry themselves off to the case, so what matters is that you won it today — a
-        // duplicate came out of a basket you opened just the same.
-        roundPrizes = Collect.add(roundPrizes, prize);
-        // Counted whether or not it was new, and written through at once for the same reason the
-        // case is: a run that is force-quit must not lose what it opened.
-        collectTotal++;
-        if (store != null) store.saveCollectTotal(collectTotal);
-        if (prizeNew) {
-            collected = Collect.add(collected, prize);
-            if (store != null) store.saveCollected(collected);
-        } else {
-            score += DUPE_BONUS;
-        }
-        caseIndex = prize;
-        caseSlide = 0f;
-        // Scheduled, not started: it runs after the rest of the interlude has played out.
-        paradeTimer = PARADE_TIME;
-    }
-
-    /** Star-path prizes are the five catalogue entries reserved for that game. */
-    private void awardStarPrize() {
-        prize = Collect.rollStar(rnd, collected);
-        prizeNew = !Collect.has(collected, prize);
-        roundPrizes = Collect.add(roundPrizes, prize);
-        if (prizeNew) {
-            collected = Collect.add(collected, prize);
-            if (store != null) store.saveCollected(collected);
-        } else score += DUPE_BONUS;
-        caseIndex = prize;
-        caseSlide = 0f;
-        // Scheduled, not started, exactly as the steamer does it: the victory tableau plays first
-        // and the parade runs off what is left of the interlude.
-        paradeTimer = PARADE_TIME;
-        if (sound != null) sound.achievement();
-    }
-
-    void holdBonusKey(int g, boolean down) {
-        if (state == BONUS && starBonus) stars.hold(g, down);
-    }
-
-    /**
-     * The wave is done. Awards the flawless-wave dumpling and holds here until it has
-     * finished, so the interlude opens after that celebration rather than on top of it.
-     */
-    private void beginStageEnd() {
-        if (perfectRound()) {
-            perfectBanner = PERFECT_TIME;
-            if (sound != null) sound.achievement();
-        }
-        // Taken here, before the counters go: this is the last frame on which how the round went is
-        // still knowable. The interlude only spends it.
-        earnedMash = mashEarned();
-        missesThisStage = 0;
-        hurtThisStage = 0;
-        pendingBonus = true;
-    }
+    void holdBonusKey(int g, boolean down) { Interlude.holdKey(this, g, down); }
 
     /** Called on the way out of the interlude. */
     private void advanceStage() {
@@ -3240,7 +2475,7 @@ final class GameCore {
      *
      * @param px where the burst comes from, in view coordinates
      */
-    private void takeHit(float px, Layout L) {
+    void takeHit(float px, Layout L) {
         lives--;
         hurtThisStage++;
         combo = 0;

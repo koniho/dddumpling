@@ -108,8 +108,8 @@ final class Hud extends Draw {
     static void sliceCall(Painter p, GameCore c, Layout L) {
         // The stroke's own counts are reset by the next stroke, which can start under the same
         // finger now; these are the frozen ones the announcement was made with.
-        if (c.sliceCall <= 0f || c.callKills < GameCore.SLOW_KILLS) return;
-        callOut(p, L, c.sliceCall / GameCore.SLICE_CALL_TIME, c.callKills + " IN ONE!",
+        if (c.sliceCall <= 0f || c.callKills < Blade.SLOW_KILLS) return;
+        callOut(p, L, c.sliceCall / Blade.SLICE_CALL_TIME, c.callKills + " IN ONE!",
                 c.callCuts + " LETTERS", GOLD);
     }
 

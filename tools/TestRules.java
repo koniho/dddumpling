@@ -164,7 +164,7 @@ final class TestRules extends Check {
 
         // The ramp was stretched, because the game hit a wall at stage 6: every dial arrived at
         // once and the once-a-stage panic swipe could not carry it. What landed at 6 lands at 10.
-        check("a stage is worth less than a full step", GameCore.RAMP < 1f);
+        check("a stage is worth less than a full step", Pacing.RAMP < 1f);
         c.stage = 1;
         check("the opening stage is untouched", c.ramp() == 0f && c.travelSeconds() == 15f);
         c.stage = 10;

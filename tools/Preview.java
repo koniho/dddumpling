@@ -44,10 +44,11 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
-        characterSheet(dir, w, h, ss);
-        skitSheet(dir, L, w, h, ss);
-        collectSheet(dir, w, h, ss);
-        sounds(dir);
+        // Named, so a frame filter skips them along with everything else it did not ask for.
+        if (wanted("chars")) characterSheet(dir, w, h, ss);
+        if (wanted("skits")) skitSheet(dir, L, w, h, ss);
+        if (wanted("collect")) collectSheet(dir, w, h, ss);
+        if (wanted("sfx")) sounds(dir);
 
         Mem store = new Mem();
         store.best = 1840;
@@ -634,8 +635,8 @@ final class Preview {
         // ended it, so the edge is dying away along the last stretch it swept and the ribbon has
         // stopped growing. The readout stands on the count it froze at. That fade is the whole
         // visible answer to "why did my combo start over" — the next move is a new swipe.
-        step(c14, L, GameCore.STROKE_DWELL + DT);
-        step(c14, L, GameCore.STROKE_FADE * 0.45f);
+        step(c14, L, Blade.STROKE_DWELL + DT);
+        step(c14, L, Blade.STROKE_FADE * 0.45f);
         System.out.printf("blade rest: live=%s fade=%.2f, readout still says %d in one%n",
                 c14.fingerDown, c14.strokeFade, c14.callKills);
         shot(dir, "58-blade-rest", c14, L, w, h, ss);
@@ -930,14 +931,63 @@ final class Preview {
         }
     }
 
+    /**
+     * Frame names to render, from the FRAMES env var, or null for all. Prefix match, so "65" takes
+     * 65b and 65c with it.
+     */
+    private static final String[] only = pick();
+    /** Crop box as 0..1 fractions from the CROP env var, or null for the whole frame. */
+    private static final float[] crop = box();
+
+    private static String[] pick() {
+        String v = System.getenv("FRAMES");
+        return v == null || v.isEmpty() ? null : v.split(",");
+    }
+
+    private static float[] box() {
+        String v = System.getenv("CROP");
+        if (v == null || v.isEmpty()) return null;
+        String[] p = v.split(",");
+        if (p.length != 4) return null;
+        float[] b = new float[4];
+        for (int i = 0; i < 4; i++) b[i] = Float.parseFloat(p[i]);
+        return b;
+    }
+
+    /** True when this frame is wanted. Checked before rendering, since that is the cost. */
+    static boolean wanted(String name) {
+        if (only == null) return true;
+        for (String o : only) {
+            if (name.startsWith(o.trim())) return true;
+        }
+        return false;
+    }
+
     private static void shot(File dir, String name, GameCore c, Layout L, int w, int h, int ss)
             throws Exception {
+        if (!wanted(name)) return;
         RasterPainter p = new RasterPainter(w, h, ss);
         p.clear(0xFF000000);
         RasterPainter.clearFit();
         Renderer.draw(p, c, L);
         File f = new File(dir, name + ".png");
-        Png.write(f, p.resolve(), w, h);
+        int[] px = p.resolve();
+        if (crop != null) {
+            int x0 = (int) (crop[0] * w), y0 = (int) (crop[1] * h);
+            int x1 = (int) (crop[2] * w), y1 = (int) (crop[3] * h);
+            x0 = Math.max(0, Math.min(w - 1, x0));
+            y0 = Math.max(0, Math.min(h - 1, y0));
+            x1 = Math.max(x0 + 1, Math.min(w, x1));
+            y1 = Math.max(y0 + 1, Math.min(h, y1));
+            int cw = x1 - x0, ch = y1 - y0;
+            int[] sub = new int[cw * ch];
+            for (int y = 0; y < ch; y++) {
+                System.arraycopy(px, (y0 + y) * w + x0, sub, y * cw, cw);
+            }
+            Png.write(f, sub, cw, ch);
+        } else {
+            Png.write(f, px, w, h);
+        }
         System.out.printf("  wrote %-18s state=%d enemies=%d shots=%d particles=%d score=%d%n",
                 f.getName(), c.state, c.enemies.size(), c.shots.size(), c.particles.size(),
                 c.score);

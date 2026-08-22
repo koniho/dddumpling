@@ -12,7 +12,7 @@ final class Words {
 
     /**
      * Builds a fresh word for the given stage: a press budget spent on stacks so the total can
-     * never exceed {@link GameCore#MAX_PRESSES}, then a glyph per tile.
+     * never exceed {@link Pacing#MAX_PRESSES}, then a glyph per tile.
      *
      * Stacks are chosen before letters, which is the opposite of the order this used to run in. A
      * letter cannot be picked until it is known whether it or its neighbour is a stack, because a
@@ -27,7 +27,7 @@ final class Words {
         e.goneDy = new float[len];
 
         for (int i = 0; i < len; i++) e.need[i] = 1;
-        int budget = GameCore.MAX_PRESSES - len;
+        int budget = Pacing.MAX_PRESSES - len;
         for (int i = 0; i < len && budget > 0; i++) {
             if (rnd.nextFloat() >= stackChance) continue;
             int extra = 1 + rnd.nextInt(Math.min(3, budget));
