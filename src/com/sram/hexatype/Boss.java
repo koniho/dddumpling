@@ -199,6 +199,8 @@ final class Boss {
     static final int PART = 2;
     /** The boss took the input and refused it: right thing, wrong moment, or a held key. */
     static final int REBUFF = 3;
+    /** A bolt the boss threw was swatted out of the air. Scores; does not hurt the boss. */
+    static final int PARRY = 4;
 
     /** The most swipes {@link #SUMO} will bank. Earned by pressing its belt. */
     static final int CHARGE_MAX = 3;
@@ -399,6 +401,7 @@ final class Boss {
         chainAt = 0;
         split = 0;
         followX = followY = 0f;
+        clearBolts();
         // Seeded off the kind, so the five bosses do not all breathe on the same phase. Placed on
         // the first update, which is the first time there is a Layout to place it in.
         body = new Softbody(Softbody.NODES, which + 1);
@@ -447,6 +450,7 @@ final class Boss {
         chainAt = 0;
         split = 0;
         followX = followY = 0f;
+        clearBolts();
         // The body goes too. It is the largest thing a boss puts on the screen, and the renderer
         // reads exactly this to decide whether there is anything to draw at all.
         body = null;
@@ -654,6 +658,9 @@ final class Boss {
      * again. Ten chords started and ten lost in one fight, none of them for want of skill.
      */
     boolean wants(int g) {
+        // Whether or not the window is open: a bolt is in the air and the press that clears it has
+        // to be advertised, or the key hint tells the player to ignore the only threat on the field.
+        if (boltWants(g)) return true;
         if (!open()) return false;
         if (kind == TRIPLETS) return headIndex(g) >= 0;
         return asksFor(g);
@@ -717,6 +724,10 @@ final class Boss {
      * the boss, and it wants the rebuff rather than falling through to a word. A head that is still
      * asleep asks for nothing, which is what makes the tap the first half of that mechanic.
      */
+    boolean claims(int g) {
+        return boltWants(g) || asksFor(g);
+    }
+
     private boolean asksFor(int g) {
         switch (kind) {
             case SLIME: return g == chainLetter();
@@ -744,7 +755,14 @@ final class Boss {
      * and it claims that letter whether or not the window is open, because refusing it early is how
      * the beat teaches itself. Everything else is somebody else's press.
      */
-    int press(int g, Random rnd) {
+    int press(int g, Random rnd, Layout L) {
+        // Ahead of everything else: a bolt is the only thing on a boss stage that costs a life, so
+        // the press that clears one is never spent on the chain instead. Above the fighting() guard
+        // too — a volley outlives the frame the boss is beaten on.
+        if (kind >= 0 && L != null) {
+            int swatted = swat(g, L);
+            if (swatted != NONE) return swatted;
+        }
         if (!fighting()) return NONE;
         if (denies(g)) {
             // It has that key. Nothing happens with it anywhere — this is the refusal, and it is the
@@ -1028,6 +1046,9 @@ final class Boss {
             stolen = -1;
             held = -1;
             for (int i = 0; i < ELEMS; i++) clearElem(i);
+            // Anything still in the air goes too: a bolt landing after the burst takes a life for a
+            // fight that is already over.
+            clearBolts();
         }
         return HIT;
     }
@@ -1048,10 +1069,7 @@ final class Boss {
         return -1;
     }
 
-    /**
-     * {@link #SLIME} sheds a glob on every hit. Left alone it crawls back and gives the press back,
-     * so the chain is not the whole fight: the damage has to be carried off as well as landed.
-     */
+    /** {@link #SLIME} tears a glob loose every {@link #SPLIT_HITS} presses. Left alone it fades. */
     private void shedGlob(Random rnd) {
         int i = freeElem();
         if (i < 0) return;
@@ -1064,6 +1082,9 @@ final class Boss {
         globLift[i] = 0.35f + rnd.nextFloat() * 0.5f;
         moved[i] = false;
         seed(i);
+        // And it throws what came off it at you. Splitting the boss is not free: the volley is the
+        // price of the glob, and it arrives while your hands are busy dragging.
+        volley(rnd);
     }
 
     /**
@@ -1173,6 +1194,120 @@ final class Boss {
     /** Which key a dropped-key element is carrying. */
     final int[] keyOf = new int[ELEMS];
 
+    // ---- bolts --------------------------------------------------------------
+    /**
+     * Letter bolts, thrown at the deck when {@link #SLIME} sheds a glob.
+     *
+     * Not {@code Enemy}: a boss stage releases no words, and these are not words — they carry one
+     * letter, fly at the key that clears them, and cost a life at the deck. Press the letter to swat
+     * one; there is nothing to engage and no order to type them in.
+     */
+    static final int BOLTS = 3;
+    /** Seconds one takes to reach the deck. Long enough to read three letters and find three keys. */
+    static final float BOLT_TIME = 2.4f;
+    /**
+     * Head start between bolts, in progress. They are launched together, so without this all three
+     * land on the same frame and one volley takes three lives at once. 0.18 spaces them 0.43s apart
+     * — long enough to press three keys in sequence.
+     */
+    static final float BOLT_STAGGER = 0.18f;
+    /** Live flag, letter, launch point and 0..1 of the way down, per bolt. */
+    final boolean[] blive = new boolean[BOLTS];
+    final int[] bglyph = new int[BOLTS];
+    final float[] bsx = new float[BOLTS];
+    final float[] bsy = new float[BOLTS];
+    final float[] bt = new float[BOLTS];
+
+    /** Where bolt {@code i} is now: launch point to its own key, straight. */
+    float boltX(int i, Layout L) {
+        return bsx[i] + (L.keyX[bglyph[i]] - bsx[i]) * boltAt(i);
+    }
+
+    float boltY(int i, Layout L) {
+        return bsy[i] + (L.keyY[bglyph[i]] - bsy[i]) * boltAt(i);
+    }
+
+    /** 0..1 of the way down, with the negative head start clamped off. */
+    float boltAt(int i) {
+        return bt[i] < 0f ? 0f : bt[i];
+    }
+
+    /** Live bolts on the field. */
+    int boltCount() {
+        int n = 0;
+        for (int i = 0; i < BOLTS; i++) {
+            if (blive[i]) n++;
+        }
+        return n;
+    }
+
+    /** True when a bolt is carrying {@code g}, so pressing it would swat one. */
+    boolean boltWants(int g) {
+        return boltNearest(g) >= 0;
+    }
+
+    /** The live bolt carrying {@code g} that is closest to landing, or -1. */
+    private int boltNearest(int g) {
+        int best = -1;
+        for (int i = 0; i < BOLTS; i++) {
+            if (blive[i] && bglyph[i] == g && (best < 0 || bt[i] > bt[best])) best = i;
+        }
+        return best;
+    }
+
+    /**
+     * Throws a volley at the deck. Three distinct letters, so three different keys: two bolts on one
+     * key would be cleared by one press, which is a volley of two.
+     */
+    private void volley(Random rnd) {
+        int first = rnd.nextInt(Glyph.COUNT);
+        for (int i = 0; i < BOLTS; i++) {
+            blive[i] = true;
+            // Spread round the six rather than drawn independently — a repeat would collapse the
+            // volley, and the spacing keeps the three keys apart on the deck.
+            bglyph[i] = (first + i * 2) % Glyph.COUNT;
+            bt[i] = -BOLT_STAGGER * i;
+            // Fanned across the body it came out of, so they plainly come from the boss.
+            bsx[i] = lastBX + (i - 1) * lastBR * 0.55f;
+            bsy[i] = lastBY;
+        }
+    }
+
+    /**
+     * A press swatting a bolt. Sets {@link #hitX} to where it was, so the bullet the caller fires
+     * plays back at the right spot.
+     *
+     * @return {@link #PARRY} when one was taken, {@link #NONE} otherwise
+     */
+    private int swat(int g, Layout L) {
+        int i = boltNearest(g);
+        if (i < 0) return NONE;
+        hitX = boltX(i, L);
+        hitY = boltY(i, L);
+        blive[i] = false;
+        return PARRY;
+    }
+
+    /** Ticks the volley. Returns the number that reached the deck this frame, each costing a life. */
+    private int ageBolts(float dt) {
+        int landed = 0;
+        for (int i = 0; i < BOLTS; i++) {
+            if (!blive[i]) continue;
+            bt[i] += dt / BOLT_TIME;
+            if (bt[i] < 1f) continue;
+            blive[i] = false;
+            landed++;
+        }
+        return landed;
+    }
+
+    private void clearBolts() {
+        for (int i = 0; i < BOLTS; i++) {
+            blive[i] = false;
+            bt[i] = 0f;
+        }
+    }
+
     /**
      * The body, as a soft body: a ring of sprung nodes under pressure, so a boss is a squishy thing
      * that wobbles when it moves and dents when it is hit rather than a hexagon that changes colour.
@@ -1200,11 +1335,12 @@ final class Boss {
     }
 
     /**
-     * @return true on the frame {@link #SUMO} reaches the bottom, for the caller to charge a life
-     *     for. It is put straight back at the top, so the fight carries on.
+     * @return how many hits the player takes this frame, for the caller to charge lives for. A count
+     *     rather than a flag because a volley of bolts can land on consecutive frames and an enraged
+     *     strike can coincide with one.
      */
-    boolean update(float dt, Layout L, Random rnd) {
-        if (kind < 0) return false;
+    int update(float dt, Layout L, Random rnd) {
+        if (kind < 0) return 0;
         hurt = Math.max(0f, hurt - dt * 2.6f);
         rage = Math.max(0f, rage - dt * 2.2f);
 
@@ -1243,13 +1379,17 @@ final class Boss {
             body.update(dt);
         }
 
+        // Above both early returns: a volley already in the air still arrives. Cleared on the frame
+        // the boss is beaten, so nothing lands after the burst.
+        int hits = ageBolts(dt);
+
         if (beaten) {
             leaveT = Math.max(0f, leaveT - dt);
-            return false;
+            return hits;
         }
         if (intro > 0f) {
             intro = Math.max(0f, intro - dt);
-            return false;
+            return hits;
         }
 
         age += dt;
@@ -1278,7 +1418,7 @@ final class Boss {
             if (rageT <= 0f) {
                 rageT = RAGE_HIT;
                 if (body != null) body.squash(0.6f);
-                return true;
+                hits++;
             }
         } else {
             // Held at a full interval so the first strike lands a whole RAGE_HIT after it turns,
@@ -1292,9 +1432,9 @@ final class Boss {
                 depth = 0f;
                 // It landed on the line with its whole weight, so it squashes flat and rebounds.
                 if (body != null) body.squash(1f);
-                return true;
+                hits++;
             }
-            return false;
+            return hits;
         }
 
         float cycle = CYCLE[kind];
@@ -1312,7 +1452,7 @@ final class Boss {
             // compounding punishment on a boss with no way past it is how a stage becomes a wall.
             chord = 0;
         }
-        return false;
+        return hits;
     }
 
     /** Where every live element is this frame. Read by both the hit-test and the renderer. */

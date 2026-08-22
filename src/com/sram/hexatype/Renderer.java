@@ -57,6 +57,8 @@ final class Renderer extends Draw {
         chain(p, c, L);
         shots(p, c, L);
         particles(p, c);
+        // In front: a bolt is the one thing on a boss stage that costs a life.
+        BossScreen.bolts(p, c, L);
         flingHint(p, c, L);
         blade(p, c, L);
 

@@ -542,6 +542,43 @@ final class BossScreen extends Draw {
                 Glyph.withAlpha(INK, (int) (225 * a)), Painter.CENTER, false);
     }
 
+    /**
+     * The letter bolts a slime throws, drawn in front of everything.
+     *
+     * In front because they are the only thing on a boss stage that costs a life — the inverse of the
+     * body, which is the backdrop. Each is the letter's own hexagon, the same mark the deck and the
+     * word tiles use, so what to press needs no explaining.
+     */
+    static void bolts(Painter p, GameCore c, Layout L) {
+        Boss b = c.boss;
+        if (!b.active()) return;
+        for (int i = 0; i < Boss.BOLTS; i++) {
+            if (!b.blive[i]) continue;
+            int g = b.bglyph[i];
+            float x = b.boltX(i, L), y = b.boltY(i, L);
+            float at = b.boltAt(i);
+            // Grows as it comes: a thing getting closer, and it makes the last half second the
+            // loudest part of the flight.
+            float rr = L.keyR * (0.42f + 0.30f * at);
+            int col = Glyph.COLOR[g];
+
+            // A tail back toward the launch point, so the direction reads in one frame.
+            float tx = b.bsx[i], ty = b.bsy[i];
+            for (int k = 1; k <= 3; k++) {
+                float f = 1f - 0.10f * k;
+                p.fillCircle(tx + (x - tx) * f, ty + (y - ty) * f,
+                        rr * (0.55f - 0.12f * k), Glyph.withAlpha(col, 60 / k));
+            }
+            // Halo, then the hexagon and its face.
+            for (int k = 2; k >= 1; k--) {
+                p.fillCircle(x, y, rr * (1.15f + 0.28f * k), Glyph.withAlpha(col, 40 / k));
+            }
+            p.fillPoly(Glyph.hex(x, y, rr), Glyph.withAlpha(col, 96));
+            p.strokePoly(Glyph.hex(x, y, rr), Glyph.withAlpha(col, 255), rr * 0.13f);
+            Kawaii.draw(p, g, x, y, rr * 0.58f, Glyph.withAlpha(col, 255), 1f, 0.1f);
+        }
+    }
+
     /** The burst a beaten boss goes out on. */
     static void burst(Painter p, GameCore c, Layout L) {
         Boss b = c.boss;

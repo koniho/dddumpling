@@ -290,6 +290,13 @@ final class Bot {
     /** The key this player would press next, or -1 with nothing worth pressing. */
     private int pick(GameCore c) {
         boolean engaged = c.target != null && c.enemies.contains(c.target) && c.target.typeable();
+        // A bolt in the air, ahead of everything including the field: it is aimed at the deck and
+        // already committed, and no word is closer to costing a life than that.
+        if (c.bossFighting()) {
+            for (int g = 0; g < Glyph.COUNT; g++) {
+                if (c.boss.boltWants(g)) return g;
+            }
+        }
         // The boss, when it is asking for something and no word is part-way through. Ahead of the
         // words on purpose: its window is a few seconds long and a word is not going anywhere.
         if (!engaged && c.bossFighting() && c.warnLevel < PANIC_WARN) {

@@ -78,6 +78,9 @@ final class BossPlay {
      * is nothing else the press could have meant.
      */
     static boolean claims(GameCore c, int g) {
+        // A bolt in the air outranks everything, engaged word included: it is the only thing here
+        // that costs a life.
+        if (c.boss.boltWants(g)) return true;
         if (c.boss.denies(g)) return true;
         if (c.target != null) return false;
         if (c.boss.wants(g)) return true;
@@ -121,7 +124,15 @@ final class BossPlay {
         // shot a press at a word fires, so a press means the same thing wherever it is aimed. The
         // damage is already done: this is playback, exactly as a word's own destruction waits for
         // its shot while the tile pops on the press.
-        shot(c, g, L);
+        shot(c, g, L, verdict);
+        if (verdict == Boss.PARRY) {
+            // Swatted, not landed on the boss: the score is the same as a hit but the boss is
+            // untouched, so no shake and no flash — those read as damage.
+            c.score += GameCore.BOSS_HIT;
+            Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR * 1.2f, 10, Glyph.COLOR[g]);
+            if (c.sound != null) c.sound.chop();
+            return true;
+        }
         if (verdict == Boss.HIT) {
             c.score += GameCore.BOSS_HIT;
             c.shake = Math.max(c.shake, 0.30f);
@@ -146,14 +157,16 @@ final class BossPlay {
      * word fires nothing — a bullet that flies out and achieves nothing reads as the shot having
      * missed, when what happened is that it was refused.
      */
-    private static void shot(GameCore c, int g, Layout L) {
+    private static void shot(GameCore c, int g, Layout L, int verdict) {
         if (c.boss.body == null) return;
         GameCore.Shot s = new GameCore.Shot();
         s.sx = L.keyX[g];
         s.sy = L.keyY[g];
         s.tx = c.boss.hitX;
         s.ty = c.boss.hitY;
-        s.atBoss = true;
+        // A parry is aimed at where a bolt was, not at the boss, so it must not home: the bolt is
+        // already gone and the body's centre is somewhere else entirely.
+        s.atBoss = verdict != Boss.PARRY;
         s.bossDx = c.boss.hitX - c.boss.body.centreX();
         s.bossDy = c.boss.hitY - c.boss.body.centreY();
         s.glyph = g;

@@ -1029,7 +1029,7 @@ final class GameCore {
         resolvedThisStage = stageQuota();
         earnedMash = MASH_PERFECT;
         starNext = false;
-        enterBonus(L);
+        Interlude.enterBonus(this, L);
     }
 
     /**
@@ -1481,7 +1481,7 @@ final class GameCore {
         // one exception is a key it is holding — that is refused wherever it is pressed, including
         // into an engaged word, because the player does not have that key at all.
         if (boss.fighting() && BossPlay.claims(this, g)) {
-            int verdict = boss.press(g, rnd);
+            int verdict = boss.press(g, rnd, L);
             if (verdict != Boss.NONE) return BossPlay.press(this, g, verdict, L);
         }
 
@@ -2111,7 +2111,8 @@ final class GameCore {
         if (boss.active()) {
             // True on the frame the boss lands a hit: SUMO reaching the line, or any boss striking
             // once it has enraged. Either costs a life, exactly as a word landing does.
-            if (boss.update(dt, L, rnd)) BossPlay.slam(this, L);
+            int bossHits = boss.update(dt, L, rnd);
+            for (int k = 0; k < bossHits && state == PLAY; k++) BossPlay.slam(this, L);
             // That may have been the last life, and nothing below here runs after a run ends.
             if (state != PLAY) return;
             if (boss.gone()) {

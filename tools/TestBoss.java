@@ -673,10 +673,118 @@ final class TestBoss extends Check {
         for (int i = 0; i < 60 * (int) (Boss.GLOB_TIME + 2); i++) {
             c.enemies.clear();
             c.target = null;
+            // Topped up: this measures the boss's health, not the player's. Splitting a glob throws a
+            // volley of bolts, and left unswatted for a glob's lifetime they end the run — which
+            // would make both sides of the comparison read zero.
+            c.lives = GameCore.START_LIVES;
             c.update(DT, L);
             if (!c.boss.active()) break;
         }
         return c.boss.active() ? c.boss.hp : 0f;
+    }
+
+    // ---- the volley ---------------------------------------------------------
+
+    static void bolts(Layout L) {
+        group("boss: bolts");
+
+        GameCore c = enterBoss(L, Boss.SLIME, 46L);
+        toOpen(c, L);
+        c.enemies.clear();
+        c.target = null;
+        check("nothing is in the air to start", c.boss.boltCount() == 0);
+
+        // Four presses work at the skin and throw nothing; the fifth splits a glob and the volley
+        // comes with it.
+        for (int k = 0; k < Boss.SPLIT_HITS - 1; k++) c.tapKey(c.boss.chainLetter(), L);
+        check("the presses before the split throw nothing", c.boss.boltCount() == 0);
+        c.tapKey(c.boss.chainLetter(), L);
+        check("splitting a glob throws a volley", c.boss.boltCount() == Boss.BOLTS);
+
+        // One letter each, all different, so three presses are needed and not one.
+        boolean distinct = true;
+        for (int i = 0; i < Boss.BOLTS; i++) {
+            for (int j = i + 1; j < Boss.BOLTS; j++) {
+                if (c.boss.bglyph[i] == c.boss.bglyph[j]) distinct = false;
+            }
+            if (c.boss.bglyph[i] < 0 || c.boss.bglyph[i] >= Glyph.COUNT) distinct = false;
+        }
+        check("each carries a different one of the six letters", distinct);
+
+        // They start on the boss and head for the key that clears them.
+        c.update(DT, L);
+        boolean fromBoss = true, atKeys = true;
+        for (int i = 0; i < Boss.BOLTS; i++) {
+            float y = c.boss.boltY(i, L);
+            if (y > c.boss.bodyY(L) + Boss.bodyR(L) * 2f) fromBoss = false;
+            if (Math.abs(c.boss.bsy[i] - c.boss.bodyY(L)) > Boss.bodyR(L) * 2f) fromBoss = false;
+            if (L.keyY[c.boss.bglyph[i]] < L.deckTop) atKeys = false;
+        }
+        check("they launch from the body", fromBoss);
+        check("and fly at the deck", atKeys);
+
+        // Staggered, or one volley takes three lives on one frame.
+        boolean spread = c.boss.bt[0] > c.boss.bt[1] && c.boss.bt[1] > c.boss.bt[2];
+        check("they are staggered rather than abreast", spread);
+
+        // Pressing a bolt's letter swats it, and the press is not spent on the chain.
+        int g = -1;
+        for (int i = 0; i < Glyph.COUNT; i++) {
+            if (c.boss.boltWants(i)) g = i;
+        }
+        check("a bolt's letter is advertised as wanted", g >= 0 && c.boss.wants(g));
+        int chainWas = c.boss.chainAt;
+        int splitWas = c.boss.split;
+        int liveWas = c.boss.boltCount();
+        int scoreWas = c.score;
+        c.shots.clear();
+        c.tapKey(g, L);
+        check("pressing it swats one", c.boss.boltCount() == liveWas - 1);
+        check("and it scores", c.score > scoreWas);
+        check("without being spent on the chain",
+                c.boss.chainAt == chainWas && c.boss.split == splitWas);
+        check("and it fires a bullet that does not home on the boss",
+                c.shots.size() == 1 && !c.shots.get(0).atBoss);
+
+        // A bolt reaching the deck costs a life, one per bolt and no more.
+        GameCore d = enterBoss(L, Boss.SLIME, 47L);
+        toOpen(d, L);
+        d.enemies.clear();
+        d.target = null;
+        splitOne(d, L);
+        check("a volley is up", d.boss.boltCount() == Boss.BOLTS);
+        int livesWas = d.lives;
+        d.lives = 9;
+        int frames = 0;
+        for (int i = 0; i < 60 * (int) (Boss.BOLT_TIME + 2); i++) {
+            d.enemies.clear();
+            d.update(DT, L);
+            if (d.boss.boltCount() == 0) break;
+            frames++;
+        }
+        check("left alone they all land", d.boss.boltCount() == 0);
+        check("costing one life each", d.lives == 9 - Boss.BOLTS);
+        check("over about the flight time", frames > 60 && frames < 60 * (Boss.BOLT_TIME + 2));
+        check("and the boss is no healthier for it", d.boss.hp <= d.boss.hpMax);
+        // The volley is not the only threat before the enrage, but it is the first one.
+        check("which is the first thing on a boss stage that can hurt you",
+                livesWas == GameCore.START_LIVES);
+
+        // Beating the boss takes the volley with it: a bolt landing after the burst charges a life
+        // for a fight that is over.
+        GameCore w = enterBoss(L, Boss.SLIME, 48L);
+        for (int i = 0; i < 60 * 60 && !w.boss.beaten; i++) {
+            w.enemies.clear();
+            w.target = null;
+            w.lives = GameCore.START_LIVES;
+            bossPlay(w, L);
+            w.update(DT, L);
+        }
+        check("the boss can still be beaten with a volley in the air", w.boss.beaten);
+        check("and nothing is left in the air", w.boss.boltCount() == 0);
+        int after = w.lives;
+        for (int i = 0; i < 60 * 5 && w.state == GameCore.PLAY; i++) w.update(DT, L);
+        check("so nothing lands after the burst", w.lives >= after);
     }
 
     static void triplets(Layout L) {

@@ -623,6 +623,11 @@ nothing. Follow the pattern rather than "fixing" it.
   was handed to the follow while the glob was still deep inside the goo — the body walked the whole
   way and the skin had nothing left to do, which is the one thing the mechanic exists to show.
   `Softbody.restToward` gives the rest radius along the drag, and the reach is a multiple of that.
+- **A frame-per-hit flag stops working the moment two can land together.** `Boss.update` returned
+  a boolean meaning "the player takes a hit". A volley of three bolts launched on one frame arrives on
+  one frame, so that flag would have charged one life for three. It returns a count now, and the
+  bolts carry a stagger so they are spaced in the first place — the count is the correctness fix, the
+  stagger is the design one.
 - **Feedback has to exist wherever the health bar does not move.** Four presses out of every five at
   the slime take no health off it — they work a glob loose — so without the pip row under the body a
   correct run of presses looks like a run of presses that did nothing. Any mechanic with hidden
@@ -632,6 +637,10 @@ nothing. Follow the pattern rather than "fixing" it.
   *resting* height. A body can be stretched taller than it rests — drag a glob at the ceiling and the
   goo follows it up — so an uncapped badge rides that straight through the blurb it is asserted to
   clear. `min(live, resting)` upward; free to follow a squash downward, since that only opens the gap.
+- **A test that measures one thing has to defend the others.** `settleSlime` compares the boss's
+  health with and without a drag. Adding a volley to the split made both runs end in death, so both
+  returned zero and the comparison passed for the wrong reason — it was measuring survival, not
+  health. It tops lives up every frame now. Any A/B on a long run wants the same treatment.
 - **A preview that looks for state has to create it.** `Preview.bossFrames` looked for a draggable
   glob before pressing anything, which was fine while every press shed one. Five presses per glob and
   it silently found nothing, skipped three frames, and left the three stale PNGs from the last run

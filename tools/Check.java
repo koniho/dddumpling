@@ -102,6 +102,10 @@ abstract class Check {
     static boolean bossPlay(GameCore c, Layout L) {
         if (!c.bossFighting()) return false;
         Boss b = c.boss;
+        // Bolts first: the only thing on a boss stage that costs a life.
+        for (int g = 0; g < Glyph.COUNT; g++) {
+            if (b.boltWants(g)) return c.tapKey(g, L);
+        }
         // Carry anything held straight to where it goes. One frame, since this is not a hand.
         if (b.held >= 0) {
             int i = b.held;

@@ -54,6 +54,7 @@ final class CoreTest {
             TestBoss.winning(L);
             TestBoss.precedence(L);
             TestBoss.slime(L);
+            TestBoss.bolts(L);
             TestBoss.triplets(L);
             TestBoss.drum(L);
             TestBoss.magpie(L);

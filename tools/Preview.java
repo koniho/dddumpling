@@ -819,6 +819,16 @@ final class Preview {
                     }
                 }
 
+                // The volley the split threw, caught mid-flight with the three letters spread
+                // between the boss and the deck.
+                if (c.boss.boltCount() > 0) {
+                    step(c, L, Boss.BOLT_TIME * 0.45f);
+                    System.out.printf("boss volley: %d in the air, at %.2f/%.2f/%.2f%n",
+                            c.boss.boltCount(), c.boss.boltAt(0), c.boss.boltAt(1),
+                            c.boss.boltAt(2));
+                    shot(dir, "69-boss-volley", c, L, w, h, ss);
+                }
+
                 if (glob >= 0) {
                     System.out.printf("boss split inside: at %.0f,%.0f, body at %.0f,%.0f r=%.0f%n",
                             c.boss.ex[glob], c.boss.ey[glob], c.boss.body.centreX(),

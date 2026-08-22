@@ -27,8 +27,8 @@ line, and the next stage waits until they have all marched off to the right.
 
 Every fifth stage is a boss instead of a wave, and it has to be beaten to get past it. There are
 five, cycling in order, and none of them can be beaten by typing alone — each wants at least two of
-pressing a key, tapping something and dragging something. A slime you whittle down while carrying
-off the globs it sheds; three heads to tap awake and strike as one chord; a drum that alternates a
+pressing a key, tapping something and dragging something. A wide, wobbling slime that only bleeds when you drag a glob off the
+screen — and throws three letters at your deck every time one splits off; three heads to tap awake and strike as one chord; a drum that alternates a
 key and a tap on a fixed beat; a magpie holding one of your six keys hostage; and a sumo sinking
 onto the danger line that has to be swiped back, paid for with words cleared. They are all soft
 bodies, so they wobble as they move and dent where you hit them.
