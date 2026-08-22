@@ -235,13 +235,25 @@ final class RasterPainter implements Painter {
         unfit.clear();
     }
 
+    /**
+     * How wide a line comes out in the harness font, for assertions about text fitting inside
+     * something that is not the screen edge — {@code DOES NOT FIT} only reports the edge, and a
+     * label leaving its box has now been drawn twice without anything catching it. The harness font
+     * is wider than Quicksand, so fitting here means fitting on the device.
+     */
+    static float textWidth(String s, float size) {
+        if (s == null || s.isEmpty()) return 0f;
+        float advance = size * CAP / 7f * 6f + size * 0.09f;
+        return s.length() * advance - size * 0.09f;
+    }
+
     @Override public void text(String s, float x, float y, float size, int color, int align,
             boolean bold) {
         if (s == null || s.isEmpty() || (color >>> 24) == 0) return;
         float cell = size * CAP;
         float px = cell / 7f;
         float advance = px * 6f + size * 0.09f;
-        float total = s.length() * advance - size * 0.09f;
+        float total = textWidth(s, size);
         float left = align == LEFT ? x : align == RIGHT ? x - total : x - total / 2f;
         float top = y - cell;
         // Logical coordinates: the supersampling happens further down, in fillRect. Text outside

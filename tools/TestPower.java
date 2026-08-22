@@ -1205,13 +1205,36 @@ final class TestPower extends Check {
         check("the playtest row sits below the music rows",
                 ui.testY > ui.optionCy(Music.NAMES.length - 1));
 
+        // Every chip in the row, which is one wider than the frenzy modes: the last one opens a
+        // star course. Written against TEST_CHIPS rather than Power.COUNT so adding another
+        // playtest shortcut cannot quietly leave the new chip untestable.
         boolean chipsOk = true, chipsDistinct = true;
-        for (int i = 0; i < Power.COUNT; i++) {
-            float cx = (ui.testChipL(i, Power.COUNT) + ui.testChipR(i, Power.COUNT)) / 2f;
+        int chips = SettingsUi.TEST_CHIPS;
+        for (int i = 0; i < chips; i++) {
+            float cx = (ui.testChipL(i, chips) + ui.testChipR(i, chips)) / 2f;
             if (ui.hit(cx, ui.testY + ui.testH / 2f) != SettingsUi.HIT_TEST + i) chipsOk = false;
-            if (i > 0 && ui.testChipL(i, Power.COUNT)
-                    < ui.testChipR(i - 1, Power.COUNT)) chipsDistinct = false;
+            if (i > 0 && ui.testChipL(i, chips)
+                    < ui.testChipR(i - 1, chips)) chipsDistinct = false;
         }
+        check("the row has a chip for the star course past the frenzy modes",
+                SettingsUi.TEST_STARS == Power.COUNT && chips == Power.COUNT + 1);
+        // Labels inside their boxes, which nothing was checking: adding the fifth chip put TEAM
+        // SQUISH's label across two of its neighbours, and DOES NOT FIT only watches the screen
+        // edge. Measured in the harness font, which is wider than the device's.
+        float chipType = Draw.type(L.unit * 0.56f);
+        boolean labelsFit = true;
+        String widest = "";
+        float worst = 0f;
+        for (int i = 0; i < chips; i++) {
+            String label = i == SettingsUi.TEST_STARS ? "PATH" : Power.CHIP[i];
+            float box = ui.testChipR(i, chips) - ui.testChipL(i, chips);
+            float wide = RasterPainter.textWidth(label, chipType);
+            if (wide / box > worst) { worst = wide / box; widest = label; }
+            if (wide > box * 0.94f) labelsFit = false;
+        }
+        System.out.printf("    the widest chip label is %s at %.0f%% of its box%n",
+                widest, worst * 100f);
+        check("every chip label fits inside its chip", labelsFit);
         check("every playtest chip is hittable", chipsOk);
         check("the chips do not overlap", chipsDistinct);
         check("chips stay inside the panel",

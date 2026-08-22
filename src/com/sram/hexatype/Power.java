@@ -26,6 +26,12 @@ final class Power {
     static final int COUNT = 4;
 
     static final String[] NAMES = {"FLURRY", "FLING", "MULTI", "TEAM SQUISH"};
+    /**
+     * The same four for the settings panel's playtest chips, where the space is a fifth of the
+     * panel each and TEAM SQUISH ran straight out of its box the moment a fifth chip was added.
+     * A separate table rather than a truncation, because which word to keep is a judgement.
+     */
+    static final String[] CHIP = {"FLURRY", "FLING", "MULTI", "TEAM"};
     static final String[] BLURB = {"ANY KEY HITS", "SWIPE TO SLICE", "CHAINS EVERY MATCH",
             "YOUR SQUISHY FIGHTS"};
 

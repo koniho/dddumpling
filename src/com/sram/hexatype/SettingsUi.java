@@ -10,8 +10,18 @@ final class SettingsUi {
             HIT_CLEAR = 4;
     /** Option rows are HIT_OPTION + index. */
     static final int HIT_OPTION = 100;
-    /** Playtest chips are HIT_TEST + mode index. */
+    /**
+     * Playtest chips are HIT_TEST + index: one per frenzy mode, then one for a star course.
+     *
+     * The course is the last chip rather than a row of its own because it is the same kind of
+     * thing the others are — a scene that normally has to be waited for, reachable in one tap.
+     * Waiting for it meant clearing a wave, winning a steamer and then clearing another.
+     */
     static final int HIT_TEST = 200;
+    /** Chips in the playtest row: the frenzy modes, plus the star course. */
+    static final int TEST_CHIPS = Power.COUNT + 1;
+    /** The star-course chip's index within that row. */
+    static final int TEST_STARS = Power.COUNT;
 
     float panelL, panelT, panelR, panelB;
     float titleY;
@@ -123,8 +133,8 @@ final class SettingsUi {
         }
 
         if (y >= testY && y <= testY + testH) {
-            for (int i = 0; i < Power.COUNT; i++) {
-                if (x >= testChipL(i, Power.COUNT) && x <= testChipR(i, Power.COUNT)) {
+            for (int i = 0; i < TEST_CHIPS; i++) {
+                if (x >= testChipL(i, TEST_CHIPS) && x <= testChipR(i, TEST_CHIPS)) {
                     return HIT_TEST + i;
                 }
             }

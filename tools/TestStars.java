@@ -153,6 +153,27 @@ final class TestStars extends Check {
         }
         check("one phase holds on every frame of a course", single);
 
+        // The playtest chip: one tap from play into a course, which is how this game gets tuned.
+        GameCore t = new GameCore(new Mem(), 29L);
+        t.startGame();
+        for (int i = 0; i < 60 * 6 && t.enemies.isEmpty(); i++) t.update(DT, L);
+        boolean hadWords = !t.enemies.isEmpty();
+        t.playtestStars(L);
+        check("the playtest chip opens a course from play",
+                t.state == GameCore.BONUS && t.starBonus && t.stars.ready());
+        check("and retires the wave rather than leaving it falling",
+                hadWords && t.enemies.isEmpty() && t.target == null);
+        check("with a real collectible flying it", t.stars.who >= 0);
+        // And it plays out into the next stage like any other interlude.
+        int wasStage = t.stage;
+        for (int i = 0; i < 60 * 30 && t.state == GameCore.BONUS; i++) t.update(DT, L);
+        check("and hands back to play on the next stage",
+                t.state == GameCore.PLAY && t.stage == wasStage + 1);
+        // A course that was not finished stays queued, so the chip keeps handing them out.
+        check("a lost course leaves the next interlude a course too", t.starNext);
+        check("only from play, never over a screen that owns the keys",
+                new GameCore(new Mem(), 31L).state == GameCore.TITLE);
+
         courseIsFlyable(L);
     }
 

@@ -1083,6 +1083,33 @@ final class GameCore {
     }
 
     /**
+     * Drops straight into a star course, for the same reason the frenzy chips exist: the scene is
+     * otherwise several minutes away. Reaching one in play means clearing a wave, winning a steamer
+     * to be handed the flyer, and then clearing another wave — and a course that is not won leaves
+     * {@code starNext} set, so from here the chip keeps handing out courses until one is finished,
+     * which is what tuning it needs.
+     *
+     * The wave is retired rather than abandoned: the field is emptied and the stage's quota marked
+     * released, so the interlude opens on a cleared board and the stage after it advances normally.
+     * Anything less and the interlude plays over words that are still falling behind the scrim.
+     */
+    void playtestStars(Layout L) {
+        if (state != PLAY) return;
+        power = null;
+        settingsOpen = false;
+        pendingBonus = false;
+        enemies.clear();
+        target = null;
+        caretOwner = null;
+        spawnedThisStage = stageQuota();
+        resolvedThisStage = stageQuota();
+        // Whoever the case last showed pilots it, so the flyer is not the blank placeholder.
+        if (prize < 0) prize = caseIndex;
+        starNext = true;
+        enterBonus(L);
+    }
+
+    /**
      * The frenzy ran out. That clears the stage outright: everything still on the field is
      * destroyed and the wave counts as fully released, so the interlude follows.
      */

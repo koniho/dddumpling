@@ -554,13 +554,18 @@ final class Screens extends Draw {
 
         // Playtest: drop straight into a mode instead of waiting for a letter to drift past.
         p.text("PLAYTEST", ui.sliderL, ui.testLabelY, s * 0.58f, INK_DIM, Painter.LEFT, true);
-        for (int i = 0; i < Power.COUNT; i++) {
-            float l = ui.testChipL(i, Power.COUNT), r = ui.testChipR(i, Power.COUNT);
-            int col = Glyph.cycle(i / (float) Power.COUNT);
+        for (int i = 0; i < SettingsUi.TEST_CHIPS; i++) {
+            float l = ui.testChipL(i, SettingsUi.TEST_CHIPS);
+            float r = ui.testChipR(i, SettingsUi.TEST_CHIPS);
+            int col = i == SettingsUi.TEST_STARS ? GOLD
+                    : Glyph.cycle(i / (float) SettingsUi.TEST_CHIPS);
             p.fillRect(l, ui.testY, r, ui.testY + ui.testH, Glyph.withAlpha(col, 46));
             p.strokePoly(new float[] {l, ui.testY, r, ui.testY, r, ui.testY + ui.testH,
                     l, ui.testY + ui.testH}, Glyph.withAlpha(col, 190), s * 0.05f);
-            p.text(Power.NAMES[i], (l + r) / 2f, ui.testY + ui.testH * 0.66f, s * 0.56f,
+            // Four letters, like the mode names either side of it: five chips across this row
+            // leaves about that much, and see the note above about labels leaving their boxes.
+            p.text(i == SettingsUi.TEST_STARS ? "PATH" : Power.CHIP[i],
+                    (l + r) / 2f, ui.testY + ui.testH * 0.66f, s * 0.56f,
                     INK, Painter.CENTER, true);
         }
 

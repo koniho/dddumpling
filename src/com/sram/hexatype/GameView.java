@@ -365,7 +365,9 @@ public class GameView extends View {
             tick();
         } else if (hit >= SettingsUi.HIT_TEST) {
             // Closes the panel and drops straight into the mode.
-            core.playtestMode(hit - SettingsUi.HIT_TEST, layout);
+            int chip = hit - SettingsUi.HIT_TEST;
+            if (chip == SettingsUi.TEST_STARS) core.playtestStars(layout);
+            else core.playtestMode(chip, layout);
             tick();
         } else if (hit >= SettingsUi.HIT_OPTION) {
             core.setBgm(hit - SettingsUi.HIT_OPTION);
