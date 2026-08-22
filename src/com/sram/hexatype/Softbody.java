@@ -153,10 +153,45 @@ final class Softbody {
     /** Breath rates and phases, hashed off the caller's seed so two bosses do not breathe in step. */
     private final float wr1, wp1, wr2, wp2;
 
-    /** Where the body is being carried to, and the radius it was settled at. */
+    /**
+     * Where the body is being carried to, and the <em>vertical</em> radius it was settled at.
+     *
+     * {@link #rest} stayed the vertical half-height when the rest shape gained a width — see
+     * {@link #wide} — because it is the scale every force here is written against, and a body that
+     * is wider than it is tall should not also be a stiffer or a faster-breathing one.
+     */
     float homeX, homeY, rest;
     /** Area of the settled ring. The pressure term measures against this, not against pi r². */
-    private float restArea, restLen;
+    private float restArea;
+    /**
+     * The rest shape, per node and per edge: how far from the centre node {@code i} belongs, and how
+     * long the edge leaving it is.
+     *
+     * Arrays rather than the two scalars this had, and that is what lets the rest shape be an
+     * ellipse. Both are read straight out of the rest polygon rather than derived, so a wide body is
+     * a body whose skin and roundness both agree it is wide — which is the difference between a
+     * genuinely wide creature and a round one being held stretched by something.
+     */
+    private final float[] rrest, rlen;
+    /**
+     * Rest width over rest height. 1 is round.
+     *
+     * Kept because two things have to divide it back out: {@link #squashAspect}, so a permanently
+     * wide body does not read as a permanently squashed one, and the {@link #FAR} guard rail, which
+     * is a bound on a radius and would otherwise sit inside a wide body's own resting silhouette.
+     */
+    private float wide = 1f;
+    /**
+     * How far everything springy is scaled up, 1 for ordinary.
+     *
+     * Deliberately only the <em>amplitudes</em> and the whole-body damping: a hit lands harder, the
+     * breath is deeper, and what is set going rings for longer. Not the stiffnesses — softening
+     * {@link #KS} makes the ring go noisy rather than floppy, and softening {@link #KR} is what the
+     * class note on the pull-toward-round warns about, since it is the only restoring force the low
+     * modes have and a body that never quite comes back is not jiggly, it is broken. So this stays a
+     * change to how much a body moves and how long for, not to what shape it believes in.
+     */
+    float jiggle = 1f;
     /** Accumulated from {@code dt}, never from a clock. Drives the idle breath. */
     private float clock;
 
@@ -169,6 +204,8 @@ final class Softbody {
 
     /** Where the skin is being tugged to, and how hard. Zero strength means nothing is pulling. */
     private float pullX, pullY, pullK;
+    /** Radius of the thing the tug has to keep wrapped, or 0 to just tug. See {@link #enclose()}. */
+    private float encloseR;
     /** The tug target after clamping, which is where it is actually applied. See {@link #PULL_SPAN}. */
     private float pullTX, pullTY;
 
@@ -191,6 +228,14 @@ final class Softbody {
      * as the finger holds, and everything past that is the drag having plainly won.
      */
     private static final float PULL_SPAN = 1.4f;
+    /**
+     * How far out the shoulders of an enclosing tongue reach, as a fraction of its tip.
+     *
+     * Low enough that the tip is plainly a tip — at 0.8 the whole side of the body comes out and it
+     * reads as the boss leaning rather than as goo being stretched off it. High enough that the
+     * shoulders are not a crease: at 0.3 the two edges into the tip fold back on themselves.
+     */
+    private static final float NECK = 0.55f;
 
     // Measured once per update, so the getters are free.
     private float cx, cy, sarea, meanR, wobble, minX, maxX, minY, maxY, motion;
@@ -213,6 +258,8 @@ final class Softbody {
         fx = new float[n];
         fy = new float[n];
         theta = new float[n];
+        rrest = new float[n];
+        rlen = new float[n];
         out = new float[n * SMOOTH * 2];
         for (int i = 0; i < n; i++) theta[i] = TAU * i / n;
         wr1 = 0.9f + 0.7f * Draw.hash(seed * 7 + 11);
@@ -222,28 +269,48 @@ final class Softbody {
         reset(0f, 0f, 1f);
     }
 
-    /**
-     * Settles the body into a circle at {@code cx,cy} of radius {@code r}, at rest.
-     *
-     * The rest length and rest area are both taken from the regular {@code n}-gon rather than from
-     * the circle it stands in for, and that is the difference between a body that sits still and
-     * one that hums: with {@code pi r²} as the target, pressure is never zero at rest, so the blob
-     * inflates until the springs stop it and then oscillates about wherever that was.
-     */
+    /** Settles the body into a circle at {@code cx,cy} of radius {@code r}, at rest. */
     void reset(float cx, float cy, float r) {
+        reset(cx, cy, r, 1f);
+    }
+
+    /**
+     * Settles the body into an ellipse at {@code cx,cy}, {@code r} tall and {@code wide} times that
+     * across, at rest.
+     *
+     * The rest lengths and the rest area are both taken from the {@code n}-gon inscribed in that
+     * ellipse rather than from the ellipse it stands in for, and that is the difference between a
+     * body that sits still and one that hums: with the true area as the target, pressure is never
+     * zero at rest, so the blob inflates until the springs stop it and then oscillates about
+     * wherever that was.
+     *
+     * @param wide rest width over rest height. 1 is round; 2 is twice as wide as it is tall.
+     */
+    void reset(float cx, float cy, float r, float wide) {
         homeX = cx;
         homeY = cy;
         pullK = 0f;
+        encloseR = 0f;
         rest = Math.max(1e-3f, r);
-        restLen = 2f * rest * (float) Math.sin(Math.PI / n);
-        restArea = 0.5f * n * rest * rest * (float) Math.sin(TAU / n);
+        this.wide = wide < 0.2f ? 0.2f : wide > 5f ? 5f : wide;
+        float rx = rest * this.wide, ry = rest;
+        // The inscribed n-gon's area in closed form: every triangle off the centre contributes
+        // rx*ry*sin(dtheta)/2, because the ellipse is the unit circle scaled on each axis.
+        restArea = 0.5f * n * rx * ry * (float) Math.sin(TAU / n);
         clock = 0f;
         for (int i = 0; i < n; i++) {
-            double a = TAU * i / n;
-            x[i] = cx + rest * (float) Math.cos(a);
-            y[i] = cy + rest * (float) Math.sin(a);
+            float px = rx * (float) Math.cos(theta[i]);
+            float py = ry * (float) Math.sin(theta[i]);
+            rrest[i] = (float) Math.sqrt(px * px + py * py);
+            x[i] = cx + px;
+            y[i] = cy + py;
             vx[i] = 0f;
             vy[i] = 0f;
+        }
+        for (int i = 0; i < n; i++) {
+            int j = i + 1 == n ? 0 : i + 1;
+            float dx = x[j] - x[i], dy = y[j] - y[i];
+            rlen[i] = (float) Math.sqrt(dx * dx + dy * dy);
         }
         measure();
     }
@@ -268,7 +335,7 @@ final class Softbody {
         measure();
         // Belt and braces. A sim that has reached NaN draws nothing, forever, and gives no clue
         // why; a body that snaps back to a circle is one bad frame and then it is playable again.
-        if (!finite()) reset(homeX, homeY, rest);
+        if (!finite()) reset(homeX, homeY, rest, wide);
     }
 
     private void step(float h) {
@@ -307,7 +374,7 @@ final class Softbody {
             if (len < 1e-5f) continue;
             float ux = dx / len, uy = dy / len;
             float rel = (vx[j] - vx[i]) * ux + (vy[j] - vy[i]) * uy;
-            float f = KS * (len - restLen) + SPRING_DAMP * rel;
+            float f = KS * (len - rlen[i]) + SPRING_DAMP * rel;
             fx[i] += f * ux;
             fy[i] += f * uy;
             fx[j] -= f * ux;
@@ -329,11 +396,16 @@ final class Softbody {
         // Where the tug actually acts: the target, held to PULL_SPAN of the centroid. Computed once
         // per substep rather than per node, and from the centroid rather than from home, so a body
         // that has already been shoved off centre stretches from where it is.
+        //
+        // Not clamped at all when there is something to enclose: the caller has undertaken to keep
+        // the target within reach itself (Boss walks the body after a drag it cannot cover), and a
+        // clamp here would fight the containment pass below — the skin would be held short of the
+        // thing it is meant to be wrapped around and the two would argue every substep.
         if (pullK > 0f) {
             float ddx = pullX - cx, ddy = pullY - cy;
             float dd = (float) Math.sqrt(ddx * ddx + ddy * ddy);
             float cap = rest * PULL_SPAN;
-            if (dd > cap && dd > 1e-4f) {
+            if (encloseR <= 0f && dd > cap && dd > 1e-4f) {
                 pullTX = cx + ddx / dd * cap;
                 pullTY = cy + ddy / dd * cap;
             } else {
@@ -342,9 +414,10 @@ final class Softbody {
             }
         }
 
+        float damp = DAMP / (jiggle <= 0.1f ? 0.1f : jiggle);
         for (int i = 0; i < n; i++) {
-            float ax = fx[i] + hx - DAMP * vx[i];
-            float ay = fy[i] + hy - DAMP * vy[i];
+            float ax = fx[i] + hx - damp * vx[i];
+            float ay = fy[i] + hy - damp * vy[i];
             if (pullK > 0f) {
                 // Toward the tug point, not outward from the centre: what is wanted is the skin
                 // following the finger, which is a direction the body cannot supply on its own.
@@ -365,10 +438,10 @@ final class Softbody {
             float dx = x[i] - cx, dy = y[i] - cy;
             float d = (float) Math.sqrt(dx * dx + dy * dy);
             if (d > 1e-4f) {
-                // Round, and the breath that rides on it. Both are radial, so they share the one
-                // normalisation.
-                float radial = KR * (rest - d);
-                if (idle > 0f) radial += idle * WOBBLE * rest * breath(i);
+                // Toward its own place in the rest shape, and the breath that rides on it. Both are
+                // radial, so they share the one normalisation.
+                float radial = KR * (rrest[i] - d);
+                if (idle > 0f) radial += idle * WOBBLE * jiggle * rest * breath(i);
                 ax += radial * dx / d;
                 ay += radial * dy / d;
             }
@@ -378,6 +451,67 @@ final class Softbody {
             y[i] += vy[i] * h;
         }
         constrain();
+        enclose();
+    }
+
+    /**
+     * Holds the skin out far enough that whatever is being pulled stays <em>inside</em> the body.
+     *
+     * A constraint rather than another force, and it has to be: the tug is a spring against the
+     * pressure and the pull toward round, so where it settles is whatever those three happen to
+     * balance at — which is a stretch that looks right most of the time and lets go of the thing it
+     * is wrapped around exactly when the drag is going well. "Always encapsulated" is a promise about
+     * geometry, and only geometry can keep it.
+     *
+     * Five nodes, in two tiers. The three nearest the pull direction are pushed out past the far side
+     * of what is being enclosed; the next one out on each side goes to {@link #NECK} of that, which
+     * is what turns a spike into a tongue of goo with the thing held in its tip. Three at full reach
+     * rather than one, because the ring's own vertices are 360/n apart and the outline leaves along
+     * the pull direction <em>between</em> two of them: with a single node projected, the crossing
+     * falls short by up to the cosine of half that gap, and the thing squeezes out through the gap.
+     *
+     * Only ever outward — a node already further out than the tongue needs is left alone — and the
+     * inward part of the velocity is dropped as the position is corrected. Without that the stretched
+     * skin springs in against the constraint every substep and the two grind, storing energy that
+     * comes out as an explosion on release. Dropped, the skin holds a steady stretch and the rebound
+     * is the one the springs have honestly got in them the moment the finger lifts.
+     */
+    private void enclose() {
+        if (pullK <= 0f || encloseR <= 0f) return;
+        float dx = pullX - cx, dy = pullY - cy;
+        float d = (float) Math.sqrt(dx * dx + dy * dy);
+        if (d < 1e-4f) return;
+        float ux = dx / d, uy = dy / d;
+        // Past the far side of it, so the whole thing is in rather than its centre.
+        float need = d + encloseR;
+        // The node pointing most nearly along the pull. Compared by projection, which is the same
+        // ordering as by angle for anything star-shaped about its centroid.
+        int best = 0;
+        float bestP = -Float.MAX_VALUE;
+        for (int i = 0; i < n; i++) {
+            float ndx = x[i] - cx, ndy = y[i] - cy;
+            float nd = (float) Math.sqrt(ndx * ndx + ndy * ndy);
+            if (nd < 1e-4f) continue;
+            float p = (ndx * ux + ndy * uy) / nd;
+            if (p > bestP) {
+                bestP = p;
+                best = i;
+            }
+        }
+        for (int k = -2; k <= 2; k++) {
+            int i = ((best + k) % n + n) % n;
+            float want = need * (k >= -1 && k <= 1 ? 1f : NECK);
+            float proj = (x[i] - cx) * ux + (y[i] - cy) * uy;
+            if (proj >= want) continue;
+            float add = want - proj;
+            x[i] += ux * add;
+            y[i] += uy * add;
+            float rv = vx[i] * ux + vy[i] * uy;
+            if (rv < 0f) {
+                vx[i] -= rv * ux;
+                vy[i] -= rv * uy;
+            }
+        }
     }
 
     /**
@@ -390,7 +524,17 @@ final class Softbody {
     }
 
     private void constrain() {
-        float inner = rest * INNER, far = rest * FAR;
+        float inner = rest * INNER;
+        // Scaled by the rest width, or the outer rail on a body twice as wide as it is tall would sit
+        // only half a body's width outside its own resting silhouette — a guard rail that clips the
+        // shape it is meant to be guarding. And opened up further while something is being enclosed,
+        // since the whole point of that is to reach past where an unstretched body ends.
+        float far = rest * FAR * (wide > 1f ? wide : 1f);
+        if (pullK > 0f && encloseR > 0f) {
+            float px = pullX - homeX, py = pullY - homeY;
+            float need = (float) Math.sqrt(px * px + py * py) + encloseR + rest;
+            if (need > far) far = need;
+        }
         for (int i = 0; i < n; i++) {
             float dx = x[i] - cx, dy = y[i] - cy;
             float d = (float) Math.sqrt(dx * dx + dy * dy);
@@ -449,13 +593,24 @@ final class Softbody {
         }
         meanR = sum / n;
         motion = mv / n;
-        float v = 0f;
+        // Against the rest shape, node by node, rather than against the current mean radius.
+        //
+        // The mean was the same thing while every body was a circle and it stopped being so the
+        // moment one could be an ellipse: a settled body twice as wide as it is tall has node radii
+        // spread from r to 2r about their own mean, so measured that way it read 0.24 of deform
+        // standing perfectly still — five times what a solid hit is meant to be, which had the slime
+        // permanently drawn at full brightness with its rim at full weight. Against the rest radii it
+        // is 0 for anything settled, whatever shape it settled into, which is what every caller
+        // already believed it meant.
+        float v = 0f, rr = 0f;
         for (int i = 0; i < n; i++) {
             float dx = x[i] - cx, dy = y[i] - cy;
-            float e = (float) Math.sqrt(dx * dx + dy * dy) - meanR;
+            float e = (float) Math.sqrt(dx * dx + dy * dy) - rrest[i];
             v += e * e;
+            rr += rrest[i];
         }
-        wobble = meanR > 1e-4f ? (float) Math.sqrt(v / n) / meanR : 0f;
+        rr /= n;
+        wobble = rr > 1e-4f ? (float) Math.sqrt(v / n) / rr : 0f;
     }
 
     /**
@@ -479,7 +634,7 @@ final class Softbody {
             float ox = cx - x[i], oy = cy - y[i];
             float d = (float) Math.sqrt(ox * ox + oy * oy);
             if (d < 1e-4f) continue;
-            float v = strength * PUNCH * rest * f;
+            float v = strength * PUNCH * jiggle * rest * f;
             vx[i] += v * ox / d;
             vy[i] += v * oy / d;
         }
@@ -503,14 +658,45 @@ final class Softbody {
      * a spot on it, and the centring force would then simply fight it.
      */
     void pull(float px, float py, float strength) {
+        pull(px, py, strength, 0f);
+    }
+
+    /**
+     * The same tug, with a promise: the skin will be held out far enough that a disc of radius
+     * {@code enclose} centred on {@code px,py} stays inside the body. See {@link #enclose()}.
+     *
+     * The caller keeps its side of it by not asking for the impossible — the tongue reaches as far as
+     * it is told to, so something dragged half a screen away would be a spike rather than a body.
+     * {@code Boss} walks the whole body after a drag that gets away from it for exactly that reason.
+     */
+    void pull(float px, float py, float strength, float enclose) {
         pullX = px;
         pullY = py;
         pullK = strength < 0f ? 0f : strength > 3f ? 3f : strength;
+        encloseR = enclose < 0f ? 0f : enclose;
     }
 
     /** Lets the skin go. The spring back is the solver's, not an animation. */
     void letGo() {
         pullK = 0f;
+        encloseR = 0f;
+    }
+
+    /**
+     * True when {@code px,py} is inside the current outline. For the assertion that the containment
+     * promise above is actually being kept.
+     *
+     * A ray cast against the drawn outline rather than a radius test against the nodes, because the
+     * outline is a spline through them and "inside the body" has to mean inside the thing on screen.
+     */
+    boolean contains(float px, float py) {
+        float[] ring = outline();
+        boolean in = false;
+        for (int i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2) {
+            float ax = ring[i], ay = ring[i + 1], bx = ring[j], by = ring[j + 1];
+            if (ay > py != by > py && px < (bx - ax) * (py - ay) / (by - ay) + ax) in = !in;
+        }
+        return in;
     }
 
     /** True while something is stretching the skin. */
@@ -537,9 +723,14 @@ final class Softbody {
      * body. See {@link #SQUASH_V} for why this is a velocity and not a displacement.
      */
     void squash(float amount) {
+        // Capped after the jiggle scaling: a landing on a body twice as jiggly should hit twice as
+        // hard, but past about this it folds rather than flattens.
+        float a = amount * jiggle;
+        if (a > 2f) a = 2f;
+        if (a < -2f) a = -2f;
         for (int i = 0; i < n; i++) {
-            vy[i] -= amount * SQUASH_V * (y[i] - cy);
-            vx[i] += amount * SQUASH_V * SPREAD * (x[i] - cx);
+            vy[i] -= a * SQUASH_V * (y[i] - cy);
+            vx[i] += a * SQUASH_V * SPREAD * (x[i] - cx);
         }
     }
 
@@ -611,11 +802,27 @@ final class Softbody {
     /** Mean distance from the centroid to a node: the body's current radius. */
     float radius() { return meanR; }
     /**
-     * The spread of the node radii about their mean, as a fraction of that mean: 0 for a settled
-     * circle, 0.19 for a full hit. For driving a rim brightness or a wetness, which is all it is
-     * meant for — a look, not a measurement.
+     * How far the skin is from the shape it wants to be, as a fraction of its mean rest radius: 0 for
+     * anything settled, 0.19 for a full hit. For driving a rim brightness or a wetness, which is all
+     * it is meant for — a look, not a measurement.
      */
     float deform() { return wobble; }
+    /**
+     * The rest radius in the direction of {@code dx,dy}: how far this body reaches that way before
+     * anything stretches it.
+     *
+     * The closed form for an ellipse, which is what any caller sizing a reach against a body that can
+     * be wider than it is tall needs — a bound in units of the vertical radius is half a body short
+     * sideways, and that shortfall is invisible except as an effect that never quite happens.
+     */
+    float restToward(float dx, float dy) {
+        float d = (float) Math.sqrt(dx * dx + dy * dy);
+        if (d < 1e-4f) return rest;
+        float ux = dx / d, uy = dy / d;
+        float a = rest * wide, b = rest;
+        float den = (float) Math.sqrt(b * b * ux * ux + a * a * uy * uy);
+        return den < 1e-4f ? rest : a * b / den;
+    }
     /** Mean node speed, in px/s. Zero when the body has settled. */
     float motion() { return motion; }
     float area() { return Math.abs(sarea); }
@@ -623,8 +830,20 @@ final class Softbody {
     float restArea() { return restArea; }
     float spanX() { return maxX - minX; }
     float spanY() { return maxY - minY; }
+    /** Half the bounding box, per axis: what to lay anything out against, since a body can be wide. */
+    float radiusX() { return spanX() * 0.5f; }
+    float radiusY() { return spanY() * 0.5f; }
     /** Width over height. Above 1 it is squashed flat, below 1 it is stretched tall. */
     float aspect() { return spanY() > 1e-4f ? spanX() / spanY() : 1f; }
+    /** Rest width over rest height: what this body is shaped like before anything happens to it. */
+    float wide() { return wide; }
+    /**
+     * {@link #aspect} with the rest shape divided out, so 1 means "however wide this body is, it is
+     * that wide right now". What anything reading the squash wants — a permanently wide creature is
+     * not a permanently squashed one, and a face scaled by the raw aspect would be squeezed flat for
+     * the whole fight.
+     */
+    float squashAspect() { return wide > 1e-4f ? aspect() / wide : aspect(); }
 
     /** True while every coordinate and velocity is a real number. */
     boolean finite() {

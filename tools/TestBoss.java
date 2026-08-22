@@ -258,6 +258,42 @@ final class TestBoss extends Check {
             }
             check(Boss.NAMES[k] + " can be beaten", !g.boss.active());
         }
+
+        // And beaten by a hand with limits, inside the fuse. The loop above proves reachability with
+        // Check.bossPlay, which has no reaction and no miss rate and finishes a slime in a second —
+        // useful for "is this possible", useless for "is this tuned". This is the figure every boss's
+        // health is actually set against, so it is measured with the steady soak hand.
+        //
+        // Printed per boss and asserted as a band: what matters is that no one of them is wildly out
+        // of step with the others, since that is the sign of a mechanic whose cost changed without its
+        // health following it.
+        for (int k = 0; k < Boss.COUNT; k++) {
+            float took = fightSeconds(L, k, 800L + k);
+            System.out.printf("    %-10s takes a steady hand %.0fs of its %.0fs fuse%n",
+                    Boss.NAMES[k], took, Boss.ENRAGE_AT);
+            check(Boss.NAMES[k] + " falls to a hand with limits", took >= 0f);
+            check("well inside the fuse", took >= 0f && took < Boss.ENRAGE_AT);
+        }
+    }
+
+    /**
+     * Seconds the steady soak hand takes to beat boss {@code kind} on its own stage, or -1 if it
+     * never did.
+     *
+     * Lives are topped up every frame: this measures the length of the fight, not whether the enrage
+     * would have got there first, and a run that ended would report the cap either way.
+     */
+    private static float fightSeconds(Layout L, int kind, long seed) {
+        GameCore c = enterBoss(L, kind, seed);
+        Bot bot = new Bot(6f, 0.20f, 0.04f, false, seed);
+        float age = 0f;
+        for (int i = 0; i < 60 * 90 && c.boss.active(); i++) {
+            c.lives = GameCore.START_LIVES;
+            age = c.boss.age;
+            c.update(DT, L);
+            bot.step(c, L, DT);
+        }
+        return c.boss.active() ? -1f : age;
     }
 
     // ---- precedence ---------------------------------------------------------
@@ -271,23 +307,28 @@ final class TestBoss extends Check {
         check("an open boss is asking for a letter", g >= 0);
 
         // An engaged word outranks it, exactly as it outranks the drifting powerup.
-        float hpWas = c.boss.hp;
+        //
+        // Measured on the slime's chain rather than on its health, because a press at a slime no
+        // longer takes health off it at all — five of them work a glob loose and it is carrying that
+        // off the screen that hurts it. The chain counter is what a press moves, so it is what
+        // "the boss took the press" means here.
+        int chainWas = c.boss.chainAt;
         int other = (g + 1) % Glyph.COUNT;
         GameCore.Enemy e = add(c, L, new int[] {other, g}, L.playTop + 10f);
         c.tapKey(other, L);
         check("engaging a word takes the press", c.target == e && e.pos == 1);
         c.tapKey(g, L);
         check("and the engaged word keeps it, even for the boss's own letter",
-                c.boss.hp == hpWas);
+                c.boss.chainAt == chainWas);
 
         // Nothing engaged: the boss takes it.
         c.enemies.clear();
         c.target = null;
         toOpen(c, L);
         g = wanted(c.boss);
-        hpWas = c.boss.hp;
+        chainWas = c.boss.chainAt;
         c.tapKey(g, L);
-        check("with nothing engaged the boss takes the press", c.boss.hp < hpWas);
+        check("with nothing engaged the boss takes the press", c.boss.chainAt > chainWas);
 
         // A letter it is not asking for still reaches the words.
         GameCore d = enterBoss(L, Boss.SLIME, 32L);
@@ -298,10 +339,10 @@ final class TestBoss extends Check {
         d.enemies.clear();
         d.target = null;
         GameCore.Enemy word = add(d, L, new int[] {spare, spare}, L.playTop + 10f);
-        float bossHp = d.boss.hp;
+        int bossChain = d.boss.chainAt;
         d.tapKey(spare, L);
         check("a letter the boss does not want falls through to the words",
-                word.pos == 1 && d.boss.hp == bossHp);
+                word.pos == 1 && d.boss.chainAt == bossChain);
 
         // A landed press fires a bullet at the boss, the same as a press at a word does.
         GameCore sh = enterBoss(L, Boss.SLIME, 35L);
@@ -320,11 +361,17 @@ final class TestBoss extends Check {
                 Math.abs(bullet.tx - sh.boss.body.centreX()) < sh.boss.body.radius()
                         && Math.abs(bullet.ty - sh.boss.body.centreY()) < sh.boss.body.radius());
         // It homes, because the body drifts the whole time it is in the air.
+        //
+        // Held to one frame of body movement rather than to a fixed pixel: the aim is re-taken from
+        // the body's centre and the body then moves on within the same frame, so the offset is always
+        // one frame stale and a fixed tolerance is really a bet on how fast the boss is wobbling. The
+        // slime wobbles twice as hard as anything else here, which is what collected that bet.
         float wasDx = bullet.tx - sh.boss.body.centreX();
         for (int i = 0; i < 4; i++) sh.update(DT, L);
         boolean landed = sh.shots.isEmpty();
+        float lag = sh.boss.body.motion() * DT + 1f;
         check("it keeps its offset as the body moves",
-                landed || Math.abs((bullet.tx - sh.boss.body.centreX()) - wasDx) < 1f);
+                landed || Math.abs((bullet.tx - sh.boss.body.centreX()) - wasDx) < lag);
         for (int i = 0; i < 30; i++) sh.update(DT, L);
         check("and it is gone once it lands", sh.shots.isEmpty());
 
@@ -359,49 +406,144 @@ final class TestBoss extends Check {
         group("boss: slime");
 
         GameCore c = enterBoss(L, Boss.SLIME, 41L);
-        check("the chain is long enough for the toughest one",
-                c.boss.hpMax <= 32f);
+        // Twice as wide as it is tall, in the physics and not only in the drawing — the hit-test, the
+        // element placement and the outline all read the same body.
+        check("it is twice as wide as it is tall", c.boss.body.wide() == 2f
+                && c.boss.body.radiusX() > c.boss.body.radiusY() * 1.8f
+                && c.boss.body.radiusY() < Boss.bodyR(L) * 1.05f);
+        check("and it does not read as permanently squashed",
+                Math.abs(c.boss.body.squashAspect() - 1f) < 0.12f);
+        // Twice as springy: the same hit on the same shape dents it twice as far.
+        Softbody lively = new Softbody(Softbody.NODES, 1);
+        Softbody calm = new Softbody(Softbody.NODES, 1);
+        lively.idle = calm.idle = 0f;
+        lively.reset(0f, 0f, 100f, 2f);
+        calm.reset(0f, 0f, 100f, 2f);
+        lively.jiggle = 2f;
+        lively.impulse(0f, -100f, 0.5f);
+        calm.impulse(0f, -100f, 0.5f);
+        float lp = 0f, cp = 0f;
+        for (int i = 0; i < 30; i++) {
+            lively.update(DT);
+            calm.update(DT);
+            lp = Math.max(lp, lively.deform());
+            cp = Math.max(cp, calm.deform());
+        }
+        System.out.printf("    the same hit dents a jiggly body to %.3f and an ordinary one"
+                + " to %.3f%n", lp, cp);
+        check("it is twice as jiggly", lp > cp * 1.7f);
+        // And it rings for longer, which is the other half of jiggly — an amplitude that decays just
+        // as fast is a harder hit, not a wobblier creature.
+        for (int i = 0; i < 60; i++) {
+            lively.update(DT);
+            calm.update(DT);
+        }
+        check("and holds the wobble for longer", lively.deform() > calm.deform() * 1.5f);
         toOpen(c, L);
         int first = c.boss.chainLetter();
         check("it shows the next letter of its chain", first >= 0);
         c.enemies.clear();
         c.target = null;
-        float hpWas = c.boss.hp;
-        c.tapKey(first, L);
-        check("pressing it lands", c.boss.hp == hpWas - 1f);
-        check("and the chain moves on", c.boss.chainLetter() >= 0);
 
-        // Every hit sheds a glob, and it comes out of the body rather than appearing beside it.
+        // The press does not hurt it. This is the whole shape of this boss now: the chain works a
+        // glob loose and the drag is the only thing that scores, so a health bar that moved on a
+        // press would be describing a fight that is not happening.
+        float hpWas = c.boss.hp;
+        int letters = 0;
+        for (int k = 0; k < Boss.SPLIT_HITS - 1; k++) {
+            if (!c.boss.open()) break;
+            int g = c.boss.chainLetter();
+            c.tapKey(g, L);
+            letters++;
+            if (c.boss.chainLetter() != g) continue;
+            // The chain may legitimately repeat a letter; what must not happen is it standing still.
+            check("the chain moves on", c.boss.chainAt == letters);
+        }
+        check("a run of presses does not take any health off it", c.boss.hp == hpWas);
+        check("but it does work the skin loose", c.boss.split == letters && letters > 0);
+        boolean early = true;
+        for (int i = 0; i < Boss.ELEMS; i++) if (c.boss.etype[i] == Boss.E_GLOB) early = false;
+        check("and nothing has split off yet", early);
+
+        // The last press of the five is the one that tears a glob out.
+        c.tapKey(c.boss.chainLetter(), L);
         int globs = 0;
         for (int i = 0; i < Boss.ELEMS; i++) {
             if (c.boss.etype[i] == Boss.E_GLOB) globs++;
         }
-        check("a hit sheds a glob", globs == 1);
+        check("the fifth press sheds a glob", globs == 1);
+        check("and the split gauge starts again", c.boss.split == 0);
+        check("still without hurting it", c.boss.hp == hpWas);
 
         // Contained by the body it split off from: the drag is meant to be hauling something out of
         // the goo, which needs it to start inside the goo.
         int inside = -1;
         for (int i = 0; i < Boss.ELEMS; i++) if (c.boss.etype[i] == Boss.E_GLOB) inside = i;
-        float gdx = c.boss.ex[inside] - c.boss.body.centreX();
-        float gdy = c.boss.ey[inside] - c.boss.body.centreY();
-        float gd = (float) Math.sqrt(gdx * gdx + gdy * gdy);
-        check("and it is shed inside the body", gd + c.boss.er[inside] < c.boss.body.radius());
+        c.update(DT, L);
+        check("and it is shed inside the body",
+                c.boss.body.contains(c.boss.ex[inside], c.boss.ey[inside]));
 
         // Hauling it stretches the skin after it, and letting go stops the tug — the spring back is
         // the solver's, so there is nothing else to check for the rebound but that the pull ended.
         check("nothing is tugging the skin yet", !c.boss.body.pulled());
-        c.grabBoss(c.boss.ex[inside], c.boss.ey[inside]);
-        c.dragBoss(c.boss.body.centreX() - c.boss.body.radius() * 1.5f,
-                c.boss.body.centreY(), L);
-        c.update(DT, L);
-        check("dragging one stretches the body", c.boss.body.pulled());
-        float stretched = c.boss.body.deform();
-        for (int i = 0; i < 20; i++) {
-            c.dragBoss(c.boss.body.centreX() - c.boss.body.radius() * 1.5f,
-                    c.boss.body.centreY(), L);
+        // Let the punch of the split ring itself out first. Measuring "settled" on the frame after a
+        // hit is measuring the hit, and the stretch would then be compared against a body that was
+        // already halfway to being deformed.
+        for (int i = 0; i < 90; i++) {
+            c.enemies.clear();
             c.update(DT, L);
         }
-        check("and the stretch builds while it is held", c.boss.body.deform() > stretched);
+        float settled = c.boss.body.deform();
+        c.grabBoss(c.boss.ex[inside], c.boss.ey[inside]);
+        // A fixed point, taken once. Re-deriving the target from the body's own centre every frame is
+        // a target that runs away from the body chasing it, and the glob walks off the screen while
+        // the assertion is trying to measure a steady stretch.
+        //
+        // Held out past the resting silhouette, which is where there is anything to stretch: nearer
+        // in than that the glob is still deep inside a body twice as wide as it is tall, and the skin
+        // has nothing to do but pucker.
+        float holdX = c.boss.body.centreX() - c.boss.bodyW(L) * 1.45f;
+        float holdY = c.boss.body.centreY();
+        c.dragBoss(holdX, holdY, L);
+        c.update(DT, L);
+        check("dragging one stretches the body", c.boss.body.pulled());
+        // Held, not twitched: the weakest frame of the hold is what is measured, because a constraint
+        // that fires once and is then argued back by the springs would pass on the peak alone.
+        float least = Float.MAX_VALUE, widest = 0f;
+        boolean held = true;
+        for (int i = 0; i < 30; i++) {
+            c.dragBoss(holdX, holdY, L);
+            c.update(DT, L);
+            least = Math.min(least, c.boss.body.deform());
+            widest = Math.max(widest, c.boss.body.radiusX());
+            if (!c.boss.body.contains(holdX, holdY)) held = false;
+        }
+        System.out.printf("    a held glob stretches the slime to %.2f of deform against %.2f"
+                + " settled, and %.0f%% of its resting width%n",
+                least, settled, 100f * widest / c.boss.bodyW(L));
+        check("and holds the stretch for as long as it is held", least > settled * 2f
+                && least > 0.06f);
+        check("reaching out past its own resting width", widest > c.boss.bodyW(L));
+        check("with the glob inside it the whole time", held);
+
+        // The promise: however far the glob is hauled, it is still inside the body. Walked out in
+        // steps all the way to the edge, checking every one — a hold that only ever samples the two
+        // ends would miss the distance at which the stretch alone stops covering it, which is exactly
+        // where the body has to start walking after it.
+        boolean wrapped = true, walked = false;
+        float startX = c.boss.body.centreX();
+        float endX = L.playLeft + c.boss.er[inside] * 1.4f;
+        for (int step = 1; step <= 40 && c.boss.held >= 0; step++) {
+            c.dragBoss(startX + (endX - startX) * step / 40f, holdY, L);
+            c.update(DT, L);
+            if (c.boss.held < 0) break;
+            if (!c.boss.body.contains(c.boss.ex[inside], c.boss.ey[inside])) wrapped = false;
+            if (c.boss.body.centreX() < startX - Boss.bodyR(L) * 0.2f) walked = true;
+        }
+        check("the body stays wrapped around the glob the whole way", wrapped);
+        check("which takes the boss with it once the stretch runs out", walked);
+        check("and the drag is still live at the end of it", c.boss.held == inside);
+
         float hpBefore = c.boss.hp;
         // Landed well inside the physical screen edge: the catch is the glob's own edge touching the
         // play edge, because a finger has to reach the very rim otherwise and Android's own edge
@@ -409,8 +551,15 @@ final class TestBoss extends Check {
         c.dragBoss(L.playLeft + c.boss.er[inside] * 0.5f, c.boss.body.centreY(), L);
         check("carrying it to the edge lands before the screen edge does",
                 c.boss.held < 0);
-        check("which hurts the boss again", c.boss.hp < hpBefore);
+        check("which is the only thing that hurts a slime", c.boss.hp < hpBefore);
         check("and the skin is let go, so it springs back", !c.boss.body.pulled());
+        // And the boss comes home, rather than being left standing where the drag dragged it.
+        for (int i = 0; i < 90; i++) {
+            c.enemies.clear();
+            c.update(DT, L);
+        }
+        check("then walks back to its own drift",
+                Math.abs(c.boss.bodyX(L) - c.boss.baseX(L)) < Boss.bodyR(L) * 0.05f);
 
         float healedFrom = c.boss.hp;
         for (int i = 0; i < 60 * (int) (Boss.GLOB_TIME + 2); i++) {
@@ -429,7 +578,7 @@ final class TestBoss extends Check {
         toOpen(d, L);
         d.enemies.clear();
         d.target = null;
-        d.tapKey(d.boss.chainLetter(), L);
+        splitOne(d, L);
         int glob = -1;
         for (int i = 0; i < Boss.ELEMS; i++) if (d.boss.etype[i] == Boss.E_GLOB) glob = i;
         check("there is a glob to drag", glob >= 0);
@@ -442,49 +591,78 @@ final class TestBoss extends Check {
         for (int i = 0; i < Boss.ELEMS; i++) if (d.boss.etype[i] == Boss.E_GLOB) cleared = false;
         check("and the glob is gone", cleared);
 
-        // Whether carrying it off actually kept the damage has to be an A/B against leaving it,
-        // because the window shutting heals a press too — so comparing one run against its own
-        // earlier health measures the wrong thing and passes for the wrong reason. Same seed, same
-        // number of frames, the only difference being the drag.
+        // Straight up, which is the other axis and the one the header sits on. A tongue stretched
+        // toward the ceiling makes the body taller than it rests, and everything stacked above it is
+        // laid out against the resting height — so this is the case that would push the wanted-letter
+        // badge through the blurb if the offset were not capped.
+        GameCore u = enterBoss(L, Boss.SLIME, 45L);
+        toOpen(u, L);
+        u.enemies.clear();
+        u.target = null;
+        splitOne(u, L);
+        int up = -1;
+        for (int i = 0; i < Boss.ELEMS; i++) if (u.boss.etype[i] == Boss.E_GLOB) up = i;
+        u.update(DT, L);
+        u.grabBoss(u.boss.ex[up], u.boss.ey[up]);
+        boolean sane = true, upWrapped = true;
+        float top = u.boss.body.centreY();
+        for (int step = 1; step <= 40 && u.boss.held >= 0; step++) {
+            float gy = top + (L.playTop + u.boss.er[up] * 1.5f - top) * step / 40f;
+            u.dragBoss(u.boss.body.centreX(), gy, L);
+            u.update(DT, L);
+            if (u.boss.held < 0) break;
+            if (!u.boss.body.finite()) sane = false;
+            if (!u.boss.body.contains(u.boss.ex[up], u.boss.ey[up])) upWrapped = false;
+            // The badge is pinned a fixed multiple of the body's height above the ornament row, both
+            // of them capped at resting — so however tall the stretch gets and however far up the
+            // body walks, it cannot climb into the blurb.
+            float badge = BossScreen.ornamentY(L, u.boss)
+                    - Math.min(u.boss.body.radiusY(), Boss.bodyR(L)) * 1.28f;
+            if (BossScreen.badgeTop(L, badge) <= BossScreen.blurbY(L)) sane = false;
+        }
+        check("a glob hauled at the ceiling stays wrapped too", upWrapped);
+        check("without the stretch pushing the badge into the header", sane);
+
+        // Carrying it off against leaving it, from the same seed and over the same number of frames,
+        // with the drag as the only difference. This is now the whole mechanic in one comparison.
+        float full = enterBoss(L, Boss.SLIME, 44L).boss.hpMax;
         float dragged = settleSlime(L, 44L, true);
         float ignored = settleSlime(L, 44L, false);
-        check("carrying a glob off keeps the damage that a left glob gives back",
-                dragged < ignored);
+        check("carrying a glob off is what costs it health", dragged < ignored);
+        check("and leaving it costs nothing at all", ignored == full);
 
-        // The window shutting on an unfinished chain is what heals it otherwise.
+        // A window shutting mid-chain does not undo the presses that landed in it. Losing five
+        // presses to a clock is a punishment that compounds, on a boss there is no way past.
         GameCore s = enterBoss(L, Boss.SLIME, 43L);
         toOpen(s, L);
         s.enemies.clear();
         s.target = null;
         s.tapKey(s.boss.chainLetter(), L);
-        // Carry the glob off so it is not the thing doing the healing.
-        for (int i = 0; i < Boss.ELEMS; i++) {
-            if (s.boss.etype[i] == Boss.E_GLOB) {
-                s.grabBoss(s.boss.ex[i], s.boss.ey[i]);
-                s.dragBoss(L.playRight + 1f, s.boss.ey[i], L);
-            }
-        }
-        float before = s.boss.hp;
+        s.tapKey(s.boss.chainLetter(), L);
+        int splitWas = s.boss.split;
+        check("two presses in", splitWas == 2);
         toShut(s, L);
-        check("and a window shutting on the chain takes nothing back either", s.boss.hp <= before);
+        check("a window shutting on the chain does not undo it", s.boss.split == splitWas);
+    }
+
+    /** Works one glob loose: {@link Boss#SPLIT_HITS} presses of the chain, window permitting. */
+    private static void splitOne(GameCore c, Layout L) {
+        for (int k = 0; k < Boss.SPLIT_HITS; k++) {
+            if (!c.boss.open()) toOpen(c, L);
+            c.tapKey(c.boss.chainLetter(), L);
+        }
     }
 
     /**
-     * One slime, hit three times, then left for a glob's lifetime — either having carried the globs
-     * off the field or not. Returns the health it settles at, for the two to be compared.
-     *
-     * Three hits rather than one because health is capped at full: after a single hit both runs heal
-     * back to the cap and the comparison reads equal whatever the globs did. Headroom is what makes
-     * the difference visible.
+     * One slime, worked over until a glob comes off, then left for a glob's lifetime — either having
+     * carried that glob off the field or not. Returns the health it settles at.
      */
     private static float settleSlime(Layout L, long seed, boolean carryOff) {
         GameCore c = enterBoss(L, Boss.SLIME, seed);
         toOpen(c, L);
         c.enemies.clear();
         c.target = null;
-        for (int k = 0; k < 3 && c.boss.open(); k++) {
-            c.tapKey(c.boss.chainLetter(), L);
-        }
+        splitOne(c, L);
         if (carryOff) {
             for (int i = 0; i < Boss.ELEMS; i++) {
                 if (c.boss.etype[i] != Boss.E_GLOB) continue;
@@ -812,6 +990,29 @@ final class TestBoss extends Check {
                         > Boss.restY(L) + Boss.bodyR(L) * 0.5f);
         check("and stays above the danger line", beaten < L.dangerY);
 
+        // The slime's split gauge hangs below the body, so it is one more row in the same column.
+        float gauge = Boss.restY(L) + Boss.bodyR(L) * 1.30f;
+        check("the split gauge clears the body it hangs off", gauge > Boss.restY(L)
+                + Boss.bodyR(L) * 1.05f);
+        check("and stays above the danger line", gauge + L.unit * 0.3f < L.dangerY);
+
+        // The wide boss has to fit the play area at its widest wander, which is why the drift
+        // amplitude is derived from what is left over rather than picked.
+        boolean fits = true;
+        for (int k = 0; k < Boss.COUNT; k++) {
+            GameCore g = enterBoss(L, k, 700L + k);
+            for (int i = 0; i < 60 * 12; i++) {
+                g.enemies.clear();
+                g.update(DT, L);
+                if (!g.boss.active()) break;
+                float half = g.boss.bodyW(L);
+                if (g.boss.baseX(L) - half < L.playLeft || g.boss.baseX(L) + half > L.playRight) {
+                    fits = false;
+                }
+            }
+        }
+        check("no boss drifts off the side of the play area", fits);
+
         // The whole column has to hold at every size, which is the point of deriving the body's drop
         // rather than picking it: a body radius is a fixed number of text units, so both sides of
         // every gap above scale together.
@@ -828,6 +1029,9 @@ final class TestBoss extends Check {
                 if (BossScreen.badgeTop(t, bc) <= BossScreen.blurbY(t)) holds = false;
                 if (Boss.restY(t) - Boss.bodyR(t) <= bc) holds = false;
                 if (Boss.restY(t) + Boss.bodyR(t) >= t.dangerY) holds = false;
+                if (Boss.restY(t) + Boss.bodyR(t) * 1.30f + t.unit * 0.3f >= t.dangerY) {
+                    holds = false;
+                }
             }
         }
         check("at every screen size too", holds);

@@ -95,7 +95,7 @@ final class Boss {
 
     static final String[] NAMES = {"SLIME", "TRIPLETS", "MOCHI DRUM", "MAGPIE", "SUMO BUN"};
     /** One line each, in the mode bar. Held to the width of the longest frenzy blurb. */
-    static final String[] BLURB = {"DRAG THE GLOBS OFF", "TAP THEM AWAKE FIRST",
+    static final String[] BLURB = {"SPLIT IT, DRAG IT OFF", "TAP THEM AWAKE FIRST",
             "KEY, THEN TAP, ON BEAT", "DRAG YOUR KEY BACK", "SWIPE IT BACK"};
     /**
      * Which of the six characters each boss is a giant version of.
@@ -142,7 +142,7 @@ final class Boss {
      * different question for it.
      */
     private static final float[] CYCLE = {5.0f, 3.6f, 1.20f, 3.2f, 0f};
-    private static final float[] SHOW = {3.5f, 3.6f, 0.40f, 2.0f, 0f};
+    private static final float[] SHOW = {4.0f, 3.6f, 0.40f, 2.0f, 0f};
 
     /**
      * How long a {@link #TRIPLETS} chord may take from its first head to its last.
@@ -163,8 +163,8 @@ final class Boss {
     /**
      * Hits needed to beat each boss on its first visit.
      *
-     * Not comparable between bosses: a SLIME hit is one press of a chain and a SUMO hit is a whole
-     * swipe paid for with cleared words, so these are counted in each boss's own currency and
+     * Not comparable between bosses: a SLIME hit is a whole glob carried off the screen and a SUMO
+     * hit is a swipe paid for with presses, so these are counted in each boss's own currency and
      * balanced against how long its window is and how often one comes round.
      *
      * <p>Every one of them is set against one figure: a competent player should finish the fight
@@ -172,8 +172,15 @@ final class Boss {
      * these numbers are, and the first draft of them ignored it — {@code TRIPLETS} wanted six chords
      * at one window per 4.5s, which is 27 seconds of flawless play against a 22-second fuse, so even
      * a perfect run lost it. Health times cycle length is the figure to check, never health alone.
+     *
+     * <p>{@link #SLIME} is counted in globs carried off, and that is the whole reason its number is
+     * the smallest here: one point of its health is {@link #SPLIT_HITS} presses of its chain
+     * <em>and</em> a drag to the edge of the screen, where every other boss's is a press or a swipe.
+     * Four of those is twenty presses with four drags threaded through them, which the steady soak
+     * hand finishes in about eight seconds — see the per-boss timings {@code TestBoss.winning} prints,
+     * which are the figures to read this table against.
      */
-    private static final float[] HP = {8f, 4f, 7f, 5f, 3f};
+    private static final float[] HP = {4f, 4f, 7f, 5f, 3f};
     /**
      * Extra health per later visit, capped by {@link #TOUGH_MAX}. A boss met at stage 30 should be
      * more than the same boss at stage 5 — but the cap matters far more than the slope now that
@@ -232,6 +239,15 @@ final class Boss {
     /** How long a shed glob survives untouched, and a dropped key. */
     static final float GLOB_TIME = 5f, KEY_TIME = 4.5f;
     /**
+     * Presses of {@link #SLIME}'s chain that split one glob off it.
+     *
+     * The chain used to shed a glob per press, which made the press the interesting half and the drag
+     * a chore repeated every second or so — five globs in the air at once with three slots to hold
+     * them. Five presses to work one loose makes the chain something to run and the drag the payoff at
+     * the end of it, and it is the only thing that scores: see {@link #press}.
+     */
+    static final int SPLIT_HITS = 5;
+    /**
      * How hard a dragged glob stretches the skin it is being hauled out of, and how hard the skin
      * snaps back when it comes free.
      *
@@ -262,10 +278,19 @@ final class Boss {
     boolean beaten;
 
     /**
-     * The chain {@link #SLIME} wants, in order. Indexed by how much health it has left, so it is at
-     * least as long as the toughest slime — {@code TestBoss} holds the length against that.
+     * The chain {@link #SLIME} wants, in order. Indexed by {@link #chainAt}, wrapping, so its length
+     * is how long the pattern is rather than a bound on how long the fight can run.
      */
     private final int[] chain = new int[32];
+    /**
+     * Presses of {@link #SLIME}'s chain that have landed: where in the chain it is, and how far
+     * through working the current glob loose.
+     *
+     * Counted rather than derived from health, which is what it used to be. Health no longer moves on
+     * a press at all — the only thing that hurts a slime is a glob carried off the screen — so a chain
+     * indexed by damage taken would have sat on the same letter for five presses running.
+     */
+    int chainAt, split;
     /** The three letters {@link #TRIPLETS} is showing, which are awake, and which this window took. */
     private final int[] head = new int[3];
     private int awake, chord;
@@ -371,6 +396,9 @@ final class Boss {
         stolen = -1;
         held = -1;
         chordT = 0f;
+        chainAt = 0;
+        split = 0;
+        followX = followY = 0f;
         // Seeded off the kind, so the five bosses do not all breathe on the same phase. Placed on
         // the first update, which is the first time there is a Layout to place it in.
         body = new Softbody(Softbody.NODES, which + 1);
@@ -416,6 +444,9 @@ final class Boss {
         tapBeat = false;
         held = -1;
         chordT = 0f;
+        chainAt = 0;
+        split = 0;
+        followX = followY = 0f;
         // The body goes too. It is the largest thing a boss puts on the screen, and the renderer
         // reads exactly this to decide whether there is anything to draw at all.
         body = null;
@@ -438,16 +469,59 @@ final class Boss {
     }
 
     /**
-     * Body centre x. Drifts, so it is plainly alive and so its elements are not always in the same
-     * place.
+     * How much wider than tall each boss is at rest.
+     *
+     * Only the slime, and it is its whole silhouette: a wide low mass of goo sprawled across the top
+     * of the field rather than another ball. The vertical radius is {@link #bodyR} for every boss,
+     * which is what keeps the header column above it — see {@link #BODY_DROP} — a single derivation
+     * instead of one per boss.
+     */
+    private static final float[] WIDE = {2f, 1f, 1f, 1f, 1f};
+
+    /**
+     * How springy each boss is; see {@link Softbody#jiggle}.
+     *
+     * The slime is twice everything: a hit dents it twice as deep, it breathes twice as far, and what
+     * is set going in it rings for twice as long. It can afford that where the others could not,
+     * because its own mechanic no longer hits it every second — five presses work a glob loose and
+     * only the drag scores, so the body has time to actually finish a wobble.
+     */
+    private static final float[] JIGGLE = {2f, 1f, 1f, 1f, 1f};
+
+    /** Rest width over rest height for this boss. */
+    float wide() {
+        return kind < 0 ? 1f : WIDE[kind];
+    }
+
+    /** Half the body's resting width. */
+    float bodyW(Layout L) {
+        return bodyR(L) * wide();
+    }
+
+    /**
+     * Body centre x, before the drag follow. Drifts, so it is plainly alive and so its elements are
+     * not always in the same place.
      *
      * Driven by {@link #age} rather than by {@code GameCore.clock}, and an instance method rather
      * than a static one taking a clock, so that there is exactly one answer to where the body is.
      * A renderer passing a different clock than the layout pass used would put every element a
      * little to one side of the thing it belongs to — and it would only show up as taps missing.
+     *
+     * The amplitude is what fits rather than a fixed fraction: a body twice as wide as the others has
+     * half as much room to wander in, and a slime that drifted the same distance would put a third of
+     * itself off the side of the play area. The {@code min} means nothing changed for the four that
+     * are round, which have room to spare.
      */
+    float baseX(Layout L) {
+        float span = L.playRight - L.playLeft;
+        float room = Math.max(0f, span * 0.5f - bodyW(L));
+        float amp = Math.min(span * 0.16f, room);
+        return L.w * 0.5f + (float) Math.sin(age * 0.55f) * amp;
+    }
+
+    /** Body centre x, drag follow included. What everything reads. */
     float bodyX(Layout L) {
-        return L.w * 0.5f + (float) Math.sin(age * 0.55f) * (L.playRight - L.playLeft) * 0.16f;
+        return baseX(L) + followX;
     }
 
     /**
@@ -468,10 +542,74 @@ final class Boss {
      * threat and {@link #depth} owns it.
      */
     float bodyY(Layout L) {
+        return baseY(L) + followY;
+    }
+
+    /** Body centre y, before the drag follow. */
+    float baseY(Layout L) {
         float top = L.playTop + L.unit * BODY_DROP + bodyR(L);
         if (kind != SUMO) return top;
         float bottom = L.dangerY - bodyR(L) * 0.7f;
         return top + (bottom - top) * depth;
+    }
+
+    /**
+     * How far the body has been walked toward a glob being dragged out of it, and how far it will go.
+     *
+     * The stretch alone cannot keep a glob inside the body all the way to the edge of the screen —
+     * that is a spike two-thirds of the way across the field, not a creature. So the two share the
+     * work: the body comes a quarter of the way to the glob for free, and further than that only as
+     * much as it has to for the stretch to still reach, which is what {@link #DRAG_REACH} bounds.
+     * Dragged to the far wall, the whole slime is hauled along after its own glob and squashed against
+     * it — which is a better read of what the mechanic is than a boss that sits still while a piece of
+     * it is stolen.
+     *
+     * Capped short of 1, or the body would simply follow the finger and the drag would be a
+     * repositioning rather than a tug of war.
+     */
+    private float followX, followY;
+    private static final float DRAG_FOLLOW = 0.25f, DRAG_REACH = 1.55f, DRAG_FOLLOW_MAX = 0.8f;
+    /** How fast the follow decays once nothing is held. Roughly a sixth of a second. */
+    private static final float FOLLOW_HOME = 6f;
+
+    /**
+     * Where the body has to be for the skin to still be wrapped around whatever is held, worked out
+     * before {@link #layoutElems} so that everything reading {@link #bodyX} this frame — the renderer,
+     * the hit-test, the other elements — agrees with the physics.
+     */
+    private void updateFollow(float dt, Layout L) {
+        if (held < 0 || etype[held] != E_GLOB) {
+            // Walks home rather than snapping back to it. The body is carried by
+            // {@code Softbody.moveTo}, which is a rigid translation, so a follow that went straight
+            // to zero would teleport the whole slime back to its drift and the rebound would be over
+            // before a frame of it was drawn. Decayed, the walk home and the skin's own spring back
+            // are one motion — which is the whole read of the glob coming free.
+            float k = 1f - dt * FOLLOW_HOME;
+            if (k < 0f) k = 0f;
+            followX *= k;
+            followY *= k;
+            return;
+        }
+        float bx = baseX(L), by = baseY(L);
+        float dx = ex[held] - bx, dy = ey[held] - by;
+        float d = (float) Math.sqrt(dx * dx + dy * dy);
+        float f = DRAG_FOLLOW;
+        if (d > 1e-3f) {
+            // What is left over once the body has walked f of the way must be inside the tongue's
+            // reach, so f is at least 1 - reach/d. Below that distance the quarter covers it.
+            //
+            // The reach is measured along the drag through the body's own rest shape, not in units of
+            // its height. A slime is twice as wide as it is tall, so a bound in heights let go of a
+            // sideways drag while the glob was still deep inside the goo — the body walked the whole
+            // way and there was nothing left for the skin to do, which is the one thing this was
+            // built to show.
+            float reach = DRAG_REACH * (body != null ? body.restToward(dx, dy) : bodyR(L));
+            float need = 1f - reach / d;
+            if (need > f) f = need;
+            if (f > DRAG_FOLLOW_MAX) f = DRAG_FOLLOW_MAX;
+        }
+        followX = dx * f;
+        followY = dy * f;
     }
 
     /** The body's resting height, for anything that has to lay out around it. */
@@ -529,13 +667,15 @@ final class Boss {
         return fighting() && kind == MAGPIE && g == stolen;
     }
 
-    /** The next letter of {@link #SLIME}'s chain, indexed by damage done so far. */
+    /** The next letter of {@link #SLIME}'s chain. */
     int chainLetter() {
         if (kind != SLIME) return -1;
-        int at = (int) (hpMax - hp);
-        if (at < 0) at = 0;
-        if (at >= chain.length) at = chain.length - 1;
-        return chain[at];
+        return chain[((chainAt % chain.length) + chain.length) % chain.length];
+    }
+
+    /** 0..1 of the way to working the next glob loose off {@link #SLIME}. */
+    float splitProgress() {
+        return kind != SLIME ? 0f : (float) split / SPLIT_HITS;
     }
 
     /** The letter on head {@code i} of {@link #TRIPLETS}. */
@@ -634,15 +774,28 @@ final class Boss {
 
         switch (kind) {
             case SLIME: {
-                // Only ever its own next letter, since asksFor has turned the rest away. The chain
-                // therefore never breaks on a press meant for a word — it only gives ground when the
-                // window shuts on it, or when a shed glob crawls back.
-                int r = damage(1f);
-                // Only if that press did not finish it. A boss that is already bursting must not
-                // shed anything: damage() has just cleared the field of its litter, and adding to it
-                // afterwards leaves a glob with nothing to crawl back into.
-                if (!beaten) shedGlob(rnd);
-                return r;
+                // Only ever its own next letter, since asksFor has turned the rest away.
+                //
+                // A press does not hurt it. It works at the skin: SPLIT_HITS of them tear a glob
+                // loose, and it is carrying that glob off the screen that costs the slime health.
+                // So the chain is not the fight, it is what earns you something to fight with —
+                // which is why every press here is a PART and only dragTo returns a HIT.
+                chainAt++;
+                split++;
+                // Felt where the chain is being worked, even though nothing is being taken off the
+                // bar yet. A press with no answer at all reads as a press that missed.
+                hurt = Math.max(hurt, 0.55f);
+                if (body != null) {
+                    // On the top of the goo rather than in the middle of it, so the dent and the
+                    // bullet that plays the press back agree about where the press landed. An
+                    // impulse at the centroid has no direction to dent in and just shrinks it.
+                    hitY = body.centreY() - body.radiusY() * 0.6f;
+                    body.impulse(hitX, hitY, HIT_PUNCH * 0.7f);
+                }
+                if (split < SPLIT_HITS) return PART;
+                split = 0;
+                shedGlob(rnd);
+                return PART;
             }
             case TRIPLETS: {
                 int i = headIndex(g);
@@ -863,7 +1016,7 @@ final class Boss {
         // full-strength punch, which is what makes the burst look earned.
         if (body != null) {
             float k = hp <= 0f ? 1f : HIT_PUNCH * n;
-            body.impulse(body.centreX(), body.centreY() - body.radius() * 0.65f, k);
+            body.impulse(body.centreX(), body.centreY() - body.radiusY() * 0.65f, k);
         }
         if (hp <= 0f) {
             hp = 0f;
@@ -931,7 +1084,11 @@ final class Boss {
             // the boss — it sits in the goo it split off from, glowing through it, until a finger
             // hauls it out. That is also what makes the stretch read: the skin has to be dragged out
             // around something that started within it.
-            ex[i] = bx + globSide[i] * br * 0.34f;
+            //
+            // Spread across the width, so a wide boss sheds them out along itself instead of
+            // stacking them all down its middle. Vertically it is the plain radius: the body is only
+            // ever wide, never tall, so that axis has no room to spare.
+            ex[i] = bx + globSide[i] * br * 0.34f * wide();
             ey[i] = by + br * (globLift[i] - 0.6f) * 0.5f;
         } else if (etype[i] == E_KEY) {
             er[i] = L == null ? br * 0.30f : L.keyR * 0.78f;
@@ -1056,13 +1213,16 @@ final class Boss {
         // arrival card ended — the first frame a tap is accepted — every element was still sitting at
         // the origin, and a tap on one hit nothing. It also lets the card draw them, which is how the
         // heads and the drum skin arrive with the body instead of appearing after it.
+        // Before the layout, because the layout reads bodyX/bodyY and those include the follow.
+        updateFollow(dt, L);
         layoutElems(L);
 
         // The body follows wherever the layout put the boss, and keeps wobbling on the way out — a
         // burst that starts from a frozen shape reads as two separate animations.
         if (body != null) {
             if (!bodyPlaced) {
-                body.reset(bodyX(L), bodyY(L), bodyR(L));
+                body.reset(bodyX(L), bodyY(L), bodyR(L), wide());
+                body.jiggle = JIGGLE[kind];
                 bodyPlaced = true;
             } else {
                 body.moveTo(bodyX(L), bodyY(L));
@@ -1070,8 +1230,13 @@ final class Boss {
             // A glob being hauled out stretches the skin after it, like pulling at something in
             // treacle. Re-aimed every frame at wherever the finger has got to, and let go the
             // instant nothing is held — the spring back is the solver's own and needs no schedule.
+            //
+            // With the glob's own radius handed over, so the promise the solver keeps is that the
+            // whole glob stays inside the body rather than that its centre does. Between that and
+            // updateFollow above, a glob never leaves the goo it came out of until it is off the
+            // screen.
             if (held >= 0 && etype[held] == E_GLOB) {
-                body.pull(ex[held], ey[held], PULL_K);
+                body.pull(ex[held], ey[held], PULL_K, er[held]);
             } else {
                 body.letGo();
             }

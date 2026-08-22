@@ -201,7 +201,15 @@ final class TestSoftbody extends Check {
         jump.idle = 0f;
         jump.reset(cx, cy, r);
         jump.moveTo(cx + L.w, cy + L.h);
-        check("a reposition of half a screen carries it whole", jump.deform() < 0.10f
+        // The bound is the lean cap, not a round number: the lean displaces a node by at most 0.30 of
+        // the radius along the travel, so anything at or under that is the cap doing its job and
+        // anything much over it is the ring coming apart. Deform reads the lean honestly now that it
+        // is measured against the rest shape rather than against the current mean radius — under the
+        // old measure a uniform shear was nearly invisible to it, which is a poor thing for the
+        // assertion guarding against shear to rely on.
+        System.out.printf("    a half-screen reposition leans it to %.2f of deform, cap 0.30%n",
+                jump.deform());
+        check("a reposition of half a screen carries it whole", jump.deform() < 0.30f
                 && near(jump.centreX(), cx + L.w, r * 0.05f));
 
         // Drifted a frame at a time, the body has to keep up with the thing it belongs to rather

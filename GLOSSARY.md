@@ -184,9 +184,14 @@ fight nobody is winning from going on forever.
 | **boss bullet** | the shot a landed key press fires at the boss, the same one a press at a word fires. Homes as the boss drifts, and aims at the head that was struck on the triplets | `GameCore.bossShot`, `Shot.atBoss`, `Boss.hitX` |
 | **enrage** | what a dragging fight gets instead of an escape: it reddens and starts striking for a life on its own clock | `Boss.ENRAGE_AT`, `RAGE_HIT` |
 | **strike** | one of those hits. Costs a life exactly as a word landing does | `GameCore.bossSlam` |
-| **slime** | boss 1. A chain of letters to type; every hit sheds a glob | `Boss.SLIME` |
-| **glob** / **split** | what the slime sheds on every hit. Starts *inside* the body, glowing red; drag it to the play edge for another hit. Left alone it just fades — nothing heals | `Boss.E_GLOB`, `GLOB_TIME` |
-| **stretch** | the skin trailing after a dragged glob, and snapping back when it comes free | `Softbody.pull`, `letGo`, `Boss.PULL_K` |
+| **slime** | boss 1. A wide, twice-as-jiggly mass of goo. A chain of letters to type, and the only thing that hurts it is a glob carried off the screen | `Boss.SLIME`, `WIDE`, `JIGGLE` |
+| **split** | working a glob loose: five presses of the chain, tracked by the pip row under the body. The presses themselves take no health off it | `Boss.SPLIT_HITS`, `split`, `splitProgress`, `BossScreen.splitGauge` |
+| **glob** | what the fifth press tears off. Starts *inside* the body, glowing red; drag it to the play edge for the slime's only point of damage. Left alone it just fades — nothing heals | `Boss.E_GLOB`, `GLOB_TIME` |
+| **stretch** | the skin hauled out after a dragged glob, holding it inside the body however far it goes, and snapping back when it comes free | `Softbody.pull`, `enclose`, `letGo`, `Boss.PULL_K` |
+| **tongue** | the shape that stretch makes: five nodes projected past the glob, with shoulders behind them | `Softbody.NECK` |
+| **drag follow** | the body walking after its own glob — a quarter of the way for free, further only as far as it must for the stretch to still reach | `Boss.DRAG_FOLLOW`, `DRAG_REACH`, `followX` |
+| **rest shape** | what a body believes it is: a circle for four of the five, an ellipse twice as wide as it is tall for the slime. Deform is measured against this, so a settled body reads zero whatever shape it settled into | `Softbody.reset(.., wide)`, `wide()`, `squashAspect` |
+| **jiggle** | how springy one body is: amplitudes up and whole-body damping down, never the stiffnesses | `Softbody.jiggle` |
 | **mesh** | the soft body's own nodes and spokes, drawn faintly inside it so the wobble reads as physics | `Slime.mesh` |
 | **triplets** | boss 2. Three heads, tapped awake then struck as one chord | `Boss.TRIPLETS` |
 | **head** | one of its three. Asleep until tapped, and it withholds its letter until then | `Boss.E_HEAD`, `headAwake` |

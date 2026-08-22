@@ -115,7 +115,7 @@ Pure (in the harness and the APK):
 | `Power` | the powerup letter and its three modes |
 | `Boss` | the every-fifth-stage boss: five mechanics, its elements, and what a press/tap/drag does |
 | `BossScreen` | the boss on screen: body, health header, ornaments and its elements |
-| `Softbody` | a pressurised 2D soft body — the ring of sprung nodes every boss is built on |
+| `Softbody` | a pressurised 2D soft body — the ring of sprung nodes every boss is built on. Rests as a circle or an ellipse, with per-body springiness |
 | `Slime` | draws a soft body as gooey translucent slime with a face |
 | `Painter` | the drawing interface |
 | `Draw` | palette + shared geometry (pill, star, hash, rainbow) — renderers extend it |
@@ -487,8 +487,14 @@ nothing. Follow the pattern rather than "fixing" it.
   full-size boss and flings a thumbnail.
 - **A health bar that goes up reads as cheating, not as difficulty.** The slime's globs used to crawl
   back and heal it. Watching the bar climb while playing correctly is not a hard fight, it is an
-  unfair one — and it punished the player for having only so many fingers. They are a bonus now:
-  ignore them and the fight is merely slower.
+  unfair one — and it punished the player for having only so many fingers. Nothing heals now, and a
+  window shutting mid-chain does not undo the presses that landed in it either.
+- **When only one action scores, the other one is the fight.** A slime shed a glob per press, which
+  made the chain the interesting half and the drag a chore repeated every second — five globs in the
+  air with three slots to hold them. Five presses to work one loose, and the drag as the only thing
+  that takes health off it, moves the whole fight into the drag and leaves the chain as what earns you
+  something to fight with. Health is counted in globs carried off now, which is why the number looks
+  so much smaller than the others: read `Boss.HP` against what one point of it actually costs.
 - **A penalty for a mistimed press must not tax ordinary play.** The boss claimed its own letter
   whenever nothing was engaged, so starting a word that happened to begin with the drum's letter was
   read as a fumbled beat — and a landed rebuff resets that beat, so typing normally pushed the window
@@ -548,7 +554,49 @@ nothing. Follow the pattern rather than "fixing" it.
   frames *after* the death, since that is where the old versions of this bug were visible.
 - **`strokePoly` double-blends at every vertex.** A translucent stroke round a 72-point soft-body
   outline comes out as a dotted line. Every other stroke in this game is a handful of points, so
-  nothing met it before; `Slime`'s rim is opaque for that reason.
+  nothing met it before; `Slime`'s rim is opaque for that reason. The boss's open-window star met it
+  too, at twenty vertices — layered *fills*, widest and faintest first, is how every halo in this
+  game is built, and the burst had already learnt it.
+- **"Always" is a promise about geometry, so only geometry can keep it.** The glob has to stay inside
+  the slime however far it is dragged. The tug that stretches the skin is a spring balanced against
+  the pressure and the pull toward round, so where it settles is wherever those three happen to
+  agree — which looks right most of the time and lets go of the glob exactly when the drag is going
+  well. `Softbody.enclose` projects five nodes past the glob every substep instead, and drops the
+  inward part of their velocity as it does: without that, the stretched skin springs in against the
+  constraint every substep and the two grind, storing energy that comes out as an explosion on
+  release. If an effect has to hold *always*, a force will not do it.
+- **Bound what a constraint has to cover, or it stops being a body.** Containment alone would make a
+  glob dragged to the far wall a spike two-thirds of the way across the field. `Boss.updateFollow`
+  walks the whole body after its own glob — a quarter of the way for free, and further only as far as
+  it must for the stretch to still reach — so the constraint is never asked for more than a body's
+  worth of tongue. Which is also the better read: the slime is hauled along after the piece being
+  stolen, rather than standing still while it goes.
+- **A measure that means one thing for a circle can mean nothing for an ellipse.** `Softbody.deform`
+  was the spread of the node radii about their *mean*. The moment a body could rest as an ellipse, a
+  settled slime read 0.24 of deform standing perfectly still — five times what a solid hit is — so it
+  was drawn permanently whited-out at full rim weight, and the assertion that a hit deforms it was
+  measuring the shape rather than the hit. It is measured against the rest radii now, so it is zero
+  for anything settled whatever shape it settled into. When you generalise a shape, re-read every
+  quantity derived from it.
+- **A bound in units of the wrong axis is an effect that never happens.** The drag follow's reach was
+  a multiple of the body radius, which on a body twice as wide as it is tall meant a sideways drag
+  was handed to the follow while the glob was still deep inside the goo — the body walked the whole
+  way and the skin had nothing left to do, which is the one thing the mechanic exists to show.
+  `Softbody.restToward` gives the rest radius along the drag, and the reach is a multiple of that.
+- **Feedback has to exist wherever the health bar does not move.** Four presses out of every five at
+  the slime take no health off it — they work a glob loose — so without the pip row under the body a
+  correct run of presses looks like a run of presses that did nothing. Any mechanic with hidden
+  progress needs somewhere to show it.
+- **A layout offset read off a live body can be pushed anywhere.** The wanted-letter badge sits a
+  fixed multiple of the body's height above it, and the whole header column is derived against the
+  *resting* height. A body can be stretched taller than it rests — drag a glob at the ceiling and the
+  goo follows it up — so an uncapped badge rides that straight through the blurb it is asserted to
+  clear. `min(live, resting)` upward; free to follow a squash downward, since that only opens the gap.
+- **A preview that looks for state has to create it.** `Preview.bossFrames` looked for a draggable
+  glob before pressing anything, which was fine while every press shed one. Five presses per glob and
+  it silently found nothing, skipped three frames, and left the three stale PNGs from the last run
+  sitting in `out/` — a green tick and yesterday's picture. Check the timestamps in the `out/` listing
+  when a frame looks unchanged.
 - Termux's `ecj` hardcodes `-7`; use `javac --release 8`. `aapt2 link` takes compiled
   resources positionally, not via `-R`.
 

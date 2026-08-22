@@ -788,10 +788,6 @@ final class Preview {
             // The slime gets three more: a split still sitting inside it, the skin stretched out
             // after a drag, and the rebound the moment the glob comes free.
             if (k == Boss.SLIME) {
-                int glob = -1;
-                for (int i = 0; i < Boss.ELEMS; i++) {
-                    if (c.boss.draggable(i)) glob = i;
-                }
                 // A bullet in flight at the boss, caught half way. Presses at the boss fire the
                 // same shot presses at a word do, so this is the frame that proves it.
                 for (int i = 0; i < 60 * 8 && !c.boss.open(); i++) c.update(DT, L);
@@ -807,6 +803,20 @@ final class Preview {
                 System.out.printf("boss bullet: %d in flight, at %.0f%% of the way%n",
                         c.shots.size(), c.shots.isEmpty() ? 0f : c.shots.get(0).t * 100f);
                 shot(dir, "68-boss-bullet", c, L, w, h, ss);
+
+                // Work one loose. Five presses of the chain split a glob off, so unlike every other
+                // boss here there is nothing draggable on the field until the chain has been run —
+                // which is what this used to look for before it had happened.
+                int glob = -1;
+                for (int q = 0; q < Boss.SPLIT_HITS * 4 && glob < 0; q++) {
+                    for (int i = 0; i < 60 * 8 && !c.boss.open(); i++) c.update(DT, L);
+                    c.target = null;
+                    c.tapKey(c.boss.chainLetter(), L);
+                    step(c, L, 0.10f);
+                    for (int i = 0; i < Boss.ELEMS; i++) {
+                        if (c.boss.draggable(i)) glob = i;
+                    }
+                }
 
                 if (glob >= 0) {
                     System.out.printf("boss split inside: at %.0f,%.0f, body at %.0f,%.0f r=%.0f%n",

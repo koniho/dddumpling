@@ -258,8 +258,11 @@ than a rewrite. All of them take the player's speed setting into account where i
 | `Collect.TIER_WEIGHT` | blind-box rarity odds |
 | `Boss.EVERY` | how often a boss stage comes round |
 | `Boss.CYCLE` / `SHOW` | each boss's open/shut rhythm — read together with its health, never alone |
-| `Boss.ENRAGE_AT` / `ENRAGE_RATE` | how long a fight may drag before it turns nasty, and by how much |
-| `GameCore.BOSS_CROWD` / `BOSS_GAP` | how many minions a boss stage runs underneath the fight |
+| `Boss.HP` | health per boss, counted in that boss's own currency. Health × cycle length is the figure to check |
+| `Boss.ENRAGE_AT` / `ENRAGE_RAMP` / `RAGE_HIT` | how long a fight may drag before it turns nasty, how fast it winds up, and how often it then strikes |
+| `Boss.SPLIT_HITS` | presses of the slime's chain that tear one glob loose |
+| `Boss.WIDE` / `JIGGLE` | each boss's rest shape and springiness — only the slime is anything but 1 |
+| `Boss.DRAG_FOLLOW` / `DRAG_REACH` | how the body and the skin split the work of staying wrapped around a dragged glob |
 
 Several constants are at their value because the obvious value was wrong, and the comment says
 so. Read it before changing one.

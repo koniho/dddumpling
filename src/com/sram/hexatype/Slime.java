@@ -54,6 +54,14 @@ final class Slime extends Draw {
         float[] ring = b.outline();
         float cx = b.centreX(), cy = b.centreY(), r = b.radius();
         if (r <= 0f) return;
+        // The half-extents, and the smaller of them. A body can be wider than it is tall, and the
+        // mean radius of a wide one is bigger than either of the things that have to fit inside it
+        // vertically — so a face or a sheen sized off `r` would hang out of the top and bottom of the
+        // very body it is meant to be inside. Everything that has to stay in the silhouette is sized
+        // off `core`; `r` is kept for the things that are proportions of the goo itself, like how
+        // thick the rim is.
+        float rx = Math.max(1e-3f, b.radiusX()), ry = Math.max(1e-3f, b.radiusY());
+        float core = Math.min(rx, ry);
         // A struck body is briefly brighter and wetter. Deform is a look rather than a measurement,
         // so this is clamped hard: a solid hit would otherwise white the whole thing out.
         float hit = Math.min(1f, b.deform() * 4.5f);
@@ -65,17 +73,19 @@ final class Slime extends Draw {
         if (face >= 0) {
             // Squashes with the body, out of the real bounding box rather than out of a timer, so it
             // is flattened on exactly the frames the body is. Square-rooted because Kawaii
-            // multiplies one axis by it and divides the other.
-            float sq = (float) Math.sqrt(Math.max(0.6f, Math.min(1.7f, b.aspect())));
+            // multiplies one axis by it and divides the other. The body's own resting width is
+            // divided out first — see Softbody.squashAspect — or a boss that is wide by design would
+            // wear a permanently squashed face.
+            float sq = (float) Math.sqrt(Math.max(0.6f, Math.min(1.7f, b.squashAspect())));
             int inner = Glyph.withAlpha(Glyph.mix(tint, 0xFF241B50, 0.34f), (int) (104 * fade));
-            Kawaii.draw(p, face, cx, cy + r * 0.05f, r * FACE_R, inner, sq, happy);
+            Kawaii.draw(p, face, cx, cy + core * 0.05f, core * FACE_R, inner, sq, happy);
         }
 
         // The pooled underside: goo is thickest where it is sitting. Sunk well inside the outline so
         // it never touches the rim, and white rather than a darker tint so nothing about it can read
         // as a seam.
-        float low = underside(ring, cx, r);
-        p.fillEllipse(cx, low - r * 0.22f, r * 0.50f, r * 0.20f,
+        float low = underside(ring, cx, core);
+        p.fillEllipse(cx, low - core * 0.22f, rx * 0.50f, core * 0.20f,
                 fadeBy(Glyph.withAlpha(0xFFFFFFFF, 40), fade));
 
         // Rim: the surface tension. It brightens where the body is deformed, which is what sells the
@@ -98,9 +108,9 @@ final class Slime extends Draw {
         float sw = 1f + 0.12f * (float) Math.sin(clock * 1.9f + hash(3) * Softbody.TAU);
         float sh = 1f + 0.14f * (float) Math.sin(clock * 2.7f + hash(11) * Softbody.TAU);
         float gx = cx - b.spanX() * 0.21f, gy = cy - b.spanY() * 0.28f;
-        p.fillEllipse(gx, gy, r * 0.26f * sw, r * 0.155f * sh,
+        p.fillEllipse(gx, gy, core * 0.26f * sw, core * 0.155f * sh,
                 fadeBy(Glyph.withAlpha(0xFFFFFFFF, 74 + (int) (54 * hit)), fade));
-        p.fillEllipse(gx - r * 0.06f, gy - r * 0.045f, r * 0.095f * sh, r * 0.065f * sw,
+        p.fillEllipse(gx - core * 0.06f, gy - core * 0.045f, core * 0.095f * sh, core * 0.065f * sw,
                 fadeBy(Glyph.withAlpha(0xFFFFFFFF, 185), fade));
     }
 

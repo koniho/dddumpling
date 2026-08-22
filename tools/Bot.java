@@ -149,7 +149,14 @@ final class Bot {
 
     private int presses;
 
-    private void step(GameCore c, Layout L, float dt) {
+    /**
+     * One frame of this player's attention. Called by {@link #play} after the world has stepped.
+     *
+     * Visible so a suite can drive a bounded hand over a stretch it owns the loop for — timing a boss
+     * fight, for one, which {@code play} cannot answer because it measures a whole run. Callers step
+     * the world themselves and must not also let {@code play} do it: this does not update the core.
+     */
+    void step(GameCore c, Layout L, float dt) {
         // The interlude is a mash, and a bounded player mashes no faster than they type. Failing it
         // for want of hands is a legitimate outcome — it costs the prize, not the run.
         if (c.state == GameCore.BONUS) {
