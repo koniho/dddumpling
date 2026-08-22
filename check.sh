@@ -21,12 +21,15 @@ src/com/sram/hexatype/Steamer.java
 src/com/sram/hexatype/StarPath.java
 src/com/sram/hexatype/Collect.java
 src/com/sram/hexatype/Power.java
+src/com/sram/hexatype/Boss.java
+src/com/sram/hexatype/Softbody.java
 src/com/sram/hexatype/Buddy.java
 src/com/sram/hexatype/GameCore.java
 src/com/sram/hexatype/Painter.java
 src/com/sram/hexatype/SettingsUi.java
 src/com/sram/hexatype/Draw.java
 src/com/sram/hexatype/Sky.java
+src/com/sram/hexatype/Slime.java
 src/com/sram/hexatype/Skits.java
 src/com/sram/hexatype/Shape.java
 src/com/sram/hexatype/Basket.java
@@ -44,6 +47,7 @@ src/com/sram/hexatype/Storybook.java
 src/com/sram/hexatype/Hud.java
 src/com/sram/hexatype/Screens.java
 src/com/sram/hexatype/StarScreen.java
+src/com/sram/hexatype/BossScreen.java
 src/com/sram/hexatype/Renderer.java"
 
 rm -rf build/harness

@@ -723,6 +723,115 @@ final class Preview {
         System.out.printf("settings: clearArmed=%s case=%d%n", c6.clearArmed,
                 Collect.owned(c6.collected));
         shot(dir, "23-settings-clear", c6, L, w, h, ss);
+
+        bossFrames(dir, L, w, h, ss);
+    }
+
+    /**
+     * One frame per boss, plus the arrival card and the burst.
+     *
+     * Every boss gets one because every boss draws something different — the whole point of five of
+     * them — and a mechanic nobody has looked at is a mechanic nobody has checked.
+     */
+    private static void bossFrames(File dir, Layout L, int w, int h, int ss) throws Exception {
+        // The arrival card, part way in.
+        GameCore ci = toBoss(L, Boss.SLIME, 501L, false);
+        step(ci, L, Boss.INTRO * 0.45f);
+        System.out.printf("boss intro: %s, %.2f through%n", ci.boss.name(),
+                ci.boss.introProgress());
+        shot(dir, "59-boss-intro", ci, L, w, h, ss);
+
+        // Each of the five, mid-fight, with its window open so the ornament is showing the thing it
+        // is asking for.
+        String[] tag = {"60-boss-slime", "61-boss-triplets", "62-boss-drum", "63-boss-magpie",
+                "64-boss-sumo"};
+        for (int k = 0; k < Boss.COUNT; k++) {
+            GameCore c = toBoss(L, k, 510L + k, true);
+            // Land a couple of hits so the health bar is part-spent and the body is dented, and so
+            // the bosses that shed things have shed them.
+            for (int n = 0; n < 3; n++) {
+                for (int i = 0; i < 60 * 8 && !c.boss.open(); i++) c.update(DT, L);
+                if (k == Boss.TRIPLETS) {
+                    for (int i = 0; i < 3; i++) c.tapBoss(c.boss.ex[i], c.boss.ey[i], L);
+                }
+                if (k == Boss.SUMO) {
+                    // Bank a couple of swipes and spend one, so the charge pips are part-full and
+                    // the health bar is part-spent — this boss takes no ordinary presses, so
+                    // without this its frame shows an untouched bar.
+                    for (int q = 0; q < 2; q++) {
+                        GameCore.Enemy e = null;
+                        for (int m = 0; m < c.enemies.size(); m++) {
+                            if (!c.enemies.get(m).destroyed) e = c.enemies.get(m);
+                        }
+                        if (e != null) c.destroyWord(e, 0f, 0f, L);
+                    }
+                    for (int i = 0; i < 60 * 12 && !c.boss.shovable(); i++) c.update(DT, L);
+                    c.swipeUp(L);
+                }
+                c.target = null;
+                for (int g = 0; g < Glyph.COUNT; g++) {
+                    if (c.boss.wants(g)) {
+                        c.tapKey(g, L);
+                        break;
+                    }
+                }
+                step(c, L, 0.12f);
+            }
+            // Held part way through the window, so the open glow and the caret are both up.
+            for (int i = 0; i < 60 * 8 && !c.boss.open(); i++) c.update(DT, L);
+            step(c, L, 0.10f);
+            System.out.printf("boss %s: hp %.0f/%.0f, open=%s, elements=%d%n", c.boss.name(),
+                    c.boss.hp, c.boss.hpMax, c.boss.open(), liveElems(c.boss));
+            shot(dir, tag[k], c, L, w, h, ss);
+
+            // The one with things to drag gets a second frame with one in hand.
+            if (k == Boss.SLIME) {
+                for (int i = 0; i < Boss.ELEMS; i++) {
+                    if (c.boss.draggable(i)) {
+                        c.grabBoss(c.boss.ex[i], c.boss.ey[i]);
+                        c.dragBoss(L.w * 0.30f, L.h * 0.42f, L);
+                        break;
+                    }
+                }
+                step(c, L, 2 * DT);
+                System.out.printf("boss glob held: %s%n", c.boss.held >= 0);
+                shot(dir, "65-boss-glob-held", c, L, w, h, ss);
+            }
+        }
+
+        // Beaten, mid-burst.
+        GameCore cb = toBoss(L, Boss.SLIME, 530L, true);
+        for (int i = 0; i < 60 * 60 && !cb.boss.beaten; i++) {
+            cb.enemies.clear();
+            cb.target = null;
+            cb.lives = GameCore.START_LIVES;
+            Check.bossPlay(cb, L);
+            cb.update(DT, L);
+        }
+        step(cb, L, Boss.LEAVE * 0.4f);
+        System.out.printf("boss beaten: %.2f through the burst%n", cb.boss.leaveProgress());
+        shot(dir, "66-boss-beaten", cb, L, w, h, ss);
+    }
+
+    private static int liveElems(Boss b) {
+        int n = 0;
+        for (int i = 0; i < Boss.ELEMS; i++) if (b.etype[i] != Boss.E_OFF) n++;
+        return n;
+    }
+
+    /** A run parked on the boss stage of the given kind, optionally past the arrival card. */
+    private static GameCore toBoss(Layout L, int kind, long seed, boolean fighting) {
+        Mem store = new Mem();
+        GameCore c = new GameCore(store, seed);
+        c.startGame();
+        c.stage = Boss.EVERY * (kind + 1) - 1;
+        c.enemies.clear();
+        c.spawnedThisStage = c.stageQuota();
+        for (int i = 0; i < 60 * 60 && !c.boss.active(); i++) c.update(DT, L);
+        if (fighting) {
+            for (int i = 0; i < 60 * 10 && !c.boss.fighting(); i++) c.update(DT, L);
+        }
+        return c;
     }
 
     // ---- driving ------------------------------------------------------------

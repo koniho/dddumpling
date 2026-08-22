@@ -25,12 +25,21 @@ mark; tap one you have and it tells you where it lives and what its family gets 
 and the collection parades: they march in from the left, the newcomer drops into the end of the
 line, and the next stage waits until they have all marched off to the right.
 
+Every fifth stage is a boss instead of a wave, and it has to be beaten to get past it. There are
+five, cycling in order, and none of them can be beaten by typing alone — each wants at least two of
+pressing a key, tapping something and dragging something. A slime you whittle down while carrying
+off the globs it sheds; three heads to tap awake and strike as one chord; a drum that alternates a
+key and a tap on a fixed beat; a magpie holding one of your six keys hostage; and a sumo sinking
+onto the danger line that has to be swiped back, paid for with words cleared. They are all soft
+bodies, so they wobble as they move and dent where you hit them.
+
 ## Where to look
 
-Three documents, and they do not overlap. Read the one that answers your question:
+Four documents, and they do not overlap. Read the one that answers your question:
 
 | Question | Document |
 | --- | --- |
+| I am new here, what do I do first? | [ONBOARDING.md](ONBOARDING.md) |
 | What is this thing called in the code? | [GLOSSARY.md](GLOSSARY.md) |
 | How do I work on it without breaking it? | [CLAUDE.md](CLAUDE.md) |
 | How do I build, run or check it? | this file |
@@ -174,6 +183,10 @@ file has to be added there. `build.sh` globs `src/`, so it needs no updating.
 | `Words` | word generation and the press-budget rules |
 | `Fx` | shots and particles |
 | `Power` | the powerup letter and its four frenzy modes |
+| `Boss` | the every-fifth-stage boss: five mechanics, its touch elements, and its rules |
+| `BossScreen` | the boss on screen: body, health header, ornaments and elements |
+| `Softbody` | a pressurised 2D soft body — the sprung node ring every boss is built on |
+| `Slime` | draws a soft body as gooey translucent slime with a face |
 | `Buddy` | the squishy that fights during TEAM SQUISH |
 | `Steamer` | interlude state, and the spinner that picks its key pair |
 | `Collect` | the thirty collectibles: catalogue, blind-box odds, owned-set bitmask |
@@ -243,6 +256,10 @@ than a rewrite. All of them take the player's speed setting into account where i
 | `CHAIN_STEP`, `CHAIN_TIME`, `CHAIN_REVEAL` | what a MULTI hop pays, and how the chain plays back |
 | `Buddy.SPEED`, `GROW`, `CHARGE_RATE` | how the TEAM SQUISH squishy moves and grows |
 | `Collect.TIER_WEIGHT` | blind-box rarity odds |
+| `Boss.EVERY` | how often a boss stage comes round |
+| `Boss.CYCLE` / `SHOW` | each boss's open/shut rhythm — read together with its health, never alone |
+| `Boss.ENRAGE_AT` / `ENRAGE_RATE` | how long a fight may drag before it turns nasty, and by how much |
+| `GameCore.BOSS_CROWD` / `BOSS_GAP` | how many minions a boss stage runs underneath the fight |
 
 Several constants are at their value because the obvious value was wrong, and the comment says
 so. Read it before changing one.

@@ -117,6 +117,11 @@ public class GameView extends View {
             return true;
         }
 
+        // The boss's own elements: taps and drags on the things it puts on the field. Needs MOVE
+        // events, so it comes before the down-only filter, and before both the blade and the panic
+        // swipe — a finger that landed on a glob is carrying that glob, not slicing or shoving.
+        if (handleBoss(ev, action)) return true;
+
         // FLING: grab a letter and throw it. Handled before the key routing so a drag that
         // starts on a letter is never mistaken for a key press.
         if (core.flinging() && handleFling(ev, action)) return true;
@@ -328,6 +333,67 @@ public class GameView extends View {
         tick();
     }
 
+    /** True while a finger is carrying one of the boss's elements. */
+    private boolean bossDragging;
+
+    /**
+     * The boss's elements: a tap on one acts at once, a drag on one carries it.
+     *
+     * Which of the two it is needs no waiting, and that is the whole reason this can exist in play at
+     * all. A drag may not start on a key, because telling a drag from a tap means holding the tap
+     * back and every tap here is a keystroke — but a boss element is not a key and nothing else
+     * claims a touch on one, so the element itself does the disambiguating. A touch that lands on a
+     * draggable element is a drag from that frame; a touch on a tappable one is a tap on that frame.
+     * The display case's position bar works the same way and for the same reason.
+     *
+     * Elements sit in the upper field, clear of the panic swipe's catchment in the lower half, so the
+     * two gestures cannot be confused either.
+     */
+    private boolean handleBoss(MotionEvent ev, int action) {
+        if (core.state != GameCore.PLAY) return false;
+        int i = ev.getActionIndex();
+        float x = ev.getX(i), y = ev.getY(i);
+
+        if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+            if (y > layout.deckTop) return false;          // that is the key deck
+            if (core.grabBoss(x, y)) {
+                bossDragging = true;
+                tick();
+                return true;
+            }
+            if (core.tapBoss(x, y, layout)) {
+                tick();
+                return true;
+            }
+            return false;
+        }
+        if (!bossDragging) return false;
+
+        if (action == MotionEvent.ACTION_MOVE) {
+            // Every sample in the batch, so a quick carry off the edge is not missed between frames.
+            for (int h = 0; h < ev.getHistorySize(); h++) {
+                if (core.dragBoss(ev.getHistoricalX(i, h), ev.getHistoricalY(i, h), layout)) {
+                    bossDragging = false;
+                    tick();
+                    return true;
+                }
+            }
+            if (core.dragBoss(x, y, layout)) {
+                bossDragging = false;
+                tick();
+            }
+            return true;
+        }
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
+                || action == MotionEvent.ACTION_POINTER_UP) {
+            // Let go part-way: whatever was held stays where it was dropped and carries on
+            // counting down. Giving up on a drag is a decision, not a mistake.
+            core.releaseBoss();
+            bossDragging = false;
+        }
+        return true;
+    }
+
     private boolean pushArmed;
     private float pushStartY;
 
@@ -358,7 +424,9 @@ public class GameView extends View {
         if (action == MotionEvent.ACTION_MOVE) {
             // A clear upward flick, not a twitch.
             if (pushStartY - y >= layout.enemyR * 1.6f) {
-                if (core.pushBack(layout)) tick();
+                // swipeUp, not pushBack: the same flick shoves a SUMO boss where one is in reach and
+                // is the ordinary panic swipe everywhere else. The view does not need to know which.
+                if (core.swipeUp(layout)) tick();
                 pushArmed = false;
             }
             return true;

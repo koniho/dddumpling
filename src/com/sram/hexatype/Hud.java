@@ -42,15 +42,21 @@ final class Hud extends Draw {
         p.strokePoly(Glyph.hex(gx, gy, s * 0.34f), Glyph.withAlpha(INK, 95), s * 0.05f);
         p.fillCircle(gx, gy, s * 0.10f, Glyph.withAlpha(INK, 120));
         // One pip per word in this stage's wave, filling as each is dealt with.
-        int quota = c.stageQuota();
-        int done = Math.min(quota, c.resolvedThisStage);
-        float span = Math.min(s * 0.46f * (quota - 1), L.w * 0.38f);
-        float gap = quota > 1 ? span / (quota - 1) : 0f;
-        float x0 = L.w / 2f - span / 2f;
-        float pr = Math.min(s * 0.13f, gap * 0.36f);
-        for (int i = 0; i < quota; i++) {
-            p.fillCircle(x0 + i * gap, L.hudY - s * 0.30f, pr,
-                    i < done ? INK : Glyph.withAlpha(INK, 55));
+        //
+        // Left out entirely on a boss stage: there is no wave there, so the quota is never counted
+        // up and the row would sit empty for the whole fight — which reads as broken rather than as
+        // "not applicable". The boss's own health bar is that stage's progress readout.
+        if (!c.bossActive()) {
+            int quota = c.stageQuota();
+            int done = Math.min(quota, c.resolvedThisStage);
+            float span = Math.min(s * 0.46f * (quota - 1), L.w * 0.38f);
+            float gap = quota > 1 ? span / (quota - 1) : 0f;
+            float x0 = L.w / 2f - span / 2f;
+            float pr = Math.min(s * 0.13f, gap * 0.36f);
+            for (int i = 0; i < quota; i++) {
+                p.fillCircle(x0 + i * gap, L.hudY - s * 0.30f, pr,
+                        i < done ? INK : Glyph.withAlpha(INK, 55));
+            }
         }
 
         float lr = s * 0.44f;

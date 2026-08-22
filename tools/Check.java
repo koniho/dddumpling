@@ -87,6 +87,48 @@ abstract class Check {
         public void hush() { hushes++; }
     }
 
+    /**
+     * One frame of competent boss play, for the drivers that are not measuring bosses but now have
+     * to get past them.
+     *
+     * A boss has to be beaten for its stage to end, so any long-running driver that only types will
+     * sit on stage 5 until its clock runs out — which silently turns "frenzies happen over a long
+     * run" and "every mode turns up" into tests of the first four stages. This is the smallest thing
+     * that keeps them measuring what they were written to measure: no reaction limit and no miss
+     * rate, because it is not pretending to be a player. {@link Bot} is the one with hands.
+     *
+     * @return true when it did something with the boss this frame
+     */
+    static boolean bossPlay(GameCore c, Layout L) {
+        if (!c.bossFighting()) return false;
+        Boss b = c.boss;
+        // Carry anything held straight to where it goes. One frame, since this is not a hand.
+        if (b.held >= 0) {
+            int i = b.held;
+            boolean key = b.etype[i] == Boss.E_KEY && b.keyOf[i] >= 0;
+            if (key) c.dragBoss(L.keyX[b.keyOf[i]], L.deckTop + 1f, L);
+            else c.dragBoss(L.playRight + 1f, b.ey[i], L);
+            if (b.held >= 0) c.releaseBoss();
+            return true;
+        }
+        if (b.shovable()) return c.swipeUp(L);
+        for (int i = 0; i < Boss.ELEMS; i++) {
+            if (b.draggable(i)) return c.grabBoss(b.ex[i], b.ey[i]);
+        }
+        for (int i = 0; i < Boss.ELEMS; i++) {
+            boolean worth = (b.etype[i] == Boss.E_HEAD && !b.headAwake(i))
+                    || (b.etype[i] == Boss.E_SKIN && b.tapBeat && b.open());
+            if (worth) return c.tapBoss(b.ex[i], b.ey[i], L);
+        }
+        // Nothing engaged is the boss's precedence condition, so a press only reaches it then.
+        boolean engaged = c.target != null && c.enemies.contains(c.target) && c.target.typeable();
+        if (engaged) return false;
+        for (int g = 0; g < Glyph.COUNT; g++) {
+            if (b.wants(g)) return c.tapKey(g, L);
+        }
+        return false;
+    }
+
     static GameCore.Enemy urgent(GameCore c) {
         GameCore.Enemy best = null;
         for (int i = 0; i < c.enemies.size(); i++) {

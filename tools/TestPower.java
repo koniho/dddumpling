@@ -278,6 +278,11 @@ final class TestPower extends Check {
         for (int i = 0; i < 60 * 900; i++) {
             c.enemies.clear();
             c.spawnedThisStage = 0;
+            // Bosses are kept out of this one on purpose. It is a measurement of the powerup draw,
+            // and a boss deliberately suppresses powerups for the whole of its stage — so leaving
+            // them in would not make this a harder test, it would make it a test of the four stages
+            // before the first boss, silently. The fight is measured in TestBoss and in the soak.
+            if (c.boss.active()) c.boss.leave();
             c.update(DT, L);
             if (c.mode >= 0 && c.mode != last) seen[c.mode]++;
             last = c.mode;
@@ -1404,6 +1409,10 @@ final class TestPower extends Check {
                 continue;
             }
             if (c.state != GameCore.PLAY) continue;
+            // A boss stage has to be fought or the run stops here, and a run that stops at stage 5
+            // sees no frenzies at all — this is real play, so it plays the boss rather than
+            // wishing it away the way modeSpread does.
+            if (bossPlay(c, L)) continue;
             GameCore.Enemy e = c.target != null && c.enemies.contains(c.target)
                     && c.target.typeable() ? c.target : urgent(c);
             if (e != null && e.pos < e.word.length) c.tapKey(e.word[e.pos], L);

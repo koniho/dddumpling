@@ -40,6 +40,9 @@ final class Renderer extends Draw {
 
         dangerLine(p, c, L);
         pushHint(p, c, L);
+        // The boss, behind the words: it is the backdrop of its stage and they are what is about to
+        // hurt you, so they win every overlap.
+        BossScreen.body(p, c, L);
         // Dying, the words are the swirl instead of standing where they were.
         if (c.dying()) {
             RoundEnd.swirl(p, c, L);
@@ -47,6 +50,8 @@ final class Renderer extends Draw {
             for (int i = 0; i < c.enemies.size(); i++) enemy(p, c, L, c.enemies.get(i));
         }
         pushWave(p, c, L);
+        // Over the words: the burst is the payoff and nothing should be in front of it.
+        BossScreen.burst(p, c, L);
         buddy(p, c, L);
         powerup(p, c, L);
         chain(p, c, L);
@@ -75,6 +80,9 @@ final class Renderer extends Draw {
             Sky.hudBacking(p, L, Glyph.mix(BG, BG_HURT, hurt * 0.45f));
             Hud.hud(p, c, L);
             Hud.modeBar(p, c, L);
+            // Shares the mode bar's slot, and cannot collide with it: powerups are suppressed for
+            // the whole of a boss stage, so exactly one of the two is ever up.
+            BossScreen.bar(p, c, L);
             Hud.sliceCall(p, c, L);
             Hud.chainCall(p, c, L);
             Hud.pushCall(p, c, L);
@@ -88,6 +96,9 @@ final class Renderer extends Draw {
         else if (c.state == GameCore.OVER) Screens.gameOver(p, c, L);
         else if (c.state == GameCore.BONUS) Screens.bonus(p, c, L);
         else if (c.stageBanner > 0) Hud.stageBanner(p, c, L);
+        // The boss's arrival card, over whatever the stage banner is doing: both are up at once,
+        // since a boss starts as its stage begins, and the card sits lower than the banner.
+        BossScreen.intro(p, c, L);
 
         // The run's haul: dancing on the summary once it has settled, then carrying itself to the
         // display case over the first moment of the title screen. Both over their screen rather
@@ -273,7 +284,10 @@ final class Renderer extends Draw {
      * how you know it is gone for the rest of the stage.
      */
     static void pushHint(Painter p, GameCore c, Layout L) {
-        if (!c.pushReady()) return;
+        // Lit for the panic swipe, and for a boss shove, because they are the same gesture in the
+        // same place — GameCore.swipeUp decides which one it is, so the affordance must not claim
+        // there is nothing to swipe at just because the reason has changed.
+        if (!c.pushReady() && !c.shoveReady()) return;
         float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 6.5f);
         float top = L.dangerY, bot = L.deckTop, h = bot - top;
         int a = (int) (80 + 100 * pulse);

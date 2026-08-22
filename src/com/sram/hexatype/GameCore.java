@@ -554,6 +554,26 @@ final class GameCore {
      */
     float skyClock;
 
+    // ---- boss ---------------------------------------------------------------
+    /**
+     * The set piece on every fifth stage. Owns its own rules; see {@link Boss}.
+     *
+     * Note what it shares with the frenzy: both replace the stage's ordinary pacing, both end the
+     * stage when they finish, and both have two exits — their own end, and the player dying. The
+     * second one never reaches the PLAY half of {@link #update}, which is why {@link #die} sends the
+     * boss home alongside the squishy.
+     */
+    final Boss boss = new Boss();
+
+    /** True from the boss's arrival card to the end of its exit, defeat or retreat. */
+    boolean bossActive() { return boss.active(); }
+
+    /** True while the fight is live: past the card, not yet over. */
+    boolean bossFighting() { return state == PLAY && boss.fighting(); }
+
+    /** Score for beating one, and for one landed hit on the way there. */
+    static final int BOSS_BONUS = 900, BOSS_HIT = 40;
+
     boolean powerActive() { return modeLeft > 0f; }
 
     boolean flurry() { return powerActive() && mode == Power.FLURRY; }
@@ -995,7 +1015,16 @@ final class GameCore {
         }
 
         // One frenzy at a time, and none while the wave is already over.
-        if (powerActive() || stageGap > 0 || spawnedThisStage >= stageQuota()) return;
+        //
+        // And none at all during a boss. Three of the four modes act on words rather than on the
+        // boss, so catching one mid-fight would be a reward that does nothing about the thing
+        // actually threatening you; FLURRY, the fourth, wildcards every key and would hand over
+        // every boss window for free. One set piece at a time is both the simpler rule and the
+        // better one, and it keeps the frenzy taper's arithmetic about what a stage asks intact.
+        if (powerActive() || boss.active() || stageGap > 0
+                || spawnedThisStage >= stageQuota()) {
+            return;
+        }
         powerTimer -= dt;
         if (powerTimer <= 0f) spawnPower(L);
     }
@@ -1157,6 +1186,182 @@ final class GameCore {
         shake = Math.max(shake, 0.7f);
         fingerDown = false;
         if (sound != null) sound.frenzy(false);
+    }
+
+    // ---- the boss fight -----------------------------------------------------
+
+    /**
+     * The boss is beaten and its burst is spent: pay out and let the stage end.
+     *
+     * The stage is satisfied by filling the quota it never spawned, which is the same trick
+     * {@link #endPower} uses — {@link #stageCleared} then fires on the next frame through the
+     * ordinary path, so a boss stage ends by exactly the route every other stage ends by.
+     */
+    private void endBoss(Layout L) {
+        boolean won = boss.beaten;
+        // Everything still on the field goes with it. A boss dying to a field of three words and
+        // then handing you a mopping-up job is an anticlimax, and the interlude is the payoff.
+        for (int i = enemies.size() - 1; i >= 0; i--) {
+            Enemy e = enemies.get(i);
+            if (!e.destroyed) destroyWord(e, enemyCentreX(e), e.y, L);
+        }
+        if (won) {
+            score += BOSS_BONUS;
+            // A life back, capped as the steamer's is. A boss costs lives to learn, and a run that
+            // beats one should not arrive at the next stage on its last one.
+            if (lives < START_LIVES) lives++;
+            flash = Math.max(flash, 1f);
+            flashColor = FLASH_CLEAR;
+            skyGlow = 1f;
+            skyGlowColor = FLASH_CLEAR;
+            shake = Math.max(shake, 0.8f);
+            if (sound != null) sound.achievement();
+        }
+        // Sent home before the quota is filled, so nothing that reads bossActive() can see a beaten
+        // boss and a satisfied stage at the same time.
+        boss.leave();
+        spawnedThisStage = stageQuota();
+    }
+
+    /**
+     * {@link Boss#SUMO} reached the danger line. Costs a life exactly as a word landing does, and
+     * for the same reason: it crossed the line.
+     */
+    private void bossSlam(Layout L) {
+        shake = Math.max(shake, 1f);
+        takeHit(boss.bodyX(L), L);
+    }
+
+    /**
+     * A press the boss claimed. Turns its verdict into score, sound and accuracy.
+     *
+     * Note what a rebuff does <em>not</em> do: it is not counted as a miss. The interlude set that
+     * precedent — a refused input is not a typing mistake, and letting it reach the accuracy readout
+     * would mean the dumpling on the game-over screen scolded the player for engaging with the
+     * mechanic. The cost of a rebuff is paid where the mechanic lives instead: the drum's beat
+     * resets, and the combo goes.
+     *
+     * @return true when the press did something, for the view's haptic tick
+     */
+    private boolean bossPress(int g, int verdict, Layout L) {
+        if (verdict == Boss.REBUFF) {
+            keyBad[g] = 1f;
+            combo = 0;
+            shake = Math.max(shake, 0.22f);
+            if (sound != null) sound.wrong();
+            return false;
+        }
+        hits++;
+        combo++;
+        if (combo > maxCombo) maxCombo = combo;
+        skyGlow = Math.max(skyGlow, GLOW_HIT);
+        skyGlowColor = Glyph.COLOR[g];
+        if (verdict == Boss.HIT) {
+            score += BOSS_HIT;
+            shake = Math.max(shake, 0.30f);
+            flash = Math.max(flash, 0.4f);
+            flashColor = FLASH_CLEAR;
+            Fx.explode(this, rnd, boss.bodyX(L), boss.bodyY(L), L.enemyR * 1.4f, 12,
+                    Glyph.COLOR[g]);
+        }
+        // Pitched by how much of the boss is left, so a fight is audibly a countdown.
+        if (sound != null) sound.squish(g, 1 + (int) (3f * (1f - boss.health())));
+        return true;
+    }
+
+    /**
+     * A tap on one of the boss's elements. Returns true when the boss took it, so the view knows
+     * not to hand the same touch to anything else.
+     */
+    boolean tapBoss(float x, float y, Layout L) {
+        if (state != PLAY || !boss.fighting() || settingsOpen) return false;
+        int i = boss.elemAt(x, y);
+        if (i < 0) return false;
+        int r = boss.tap(i, rnd);
+        if (r == Boss.NONE) {
+            // Its element, but nothing to do with it. Still swallowed: a tap that lands on the boss
+            // must never fall through and be read as something else.
+            return true;
+        }
+        if (r == Boss.REBUFF) {
+            combo = 0;
+            shake = Math.max(shake, 0.22f);
+            if (sound != null) sound.wrong();
+            return true;
+        }
+        hits++;
+        combo++;
+        if (combo > maxCombo) maxCombo = combo;
+        if (r == Boss.HIT) {
+            score += BOSS_HIT;
+            shake = Math.max(shake, 0.30f);
+            Fx.explode(this, rnd, x, y, L.enemyR * 1.4f, 12, INK_SPARK);
+        }
+        if (sound != null) sound.squish(i % Glyph.COUNT, 1);
+        return true;
+    }
+
+    /** Colour of the burst a tap or a completed drag throws off, which has no letter of its own. */
+    static final int INK_SPARK = 0xFFFFF3C4;
+
+    /** A finger landing on a draggable boss element. True when the boss has taken the gesture. */
+    boolean grabBoss(float x, float y) {
+        if (state != PLAY || !boss.fighting() || settingsOpen) return false;
+        int i = boss.elemAt(x, y);
+        if (!boss.draggable(i)) return false;
+        return boss.grab(i);
+    }
+
+    /** That finger moving. True when the drag finished the job. */
+    boolean dragBoss(float x, float y, Layout L) {
+        if (boss.held < 0) return false;
+        int r = boss.dragTo(x, y, L);
+        if (r != Boss.HIT) return false;
+        score += BOSS_HIT;
+        hits++;
+        combo++;
+        if (combo > maxCombo) maxCombo = combo;
+        shake = Math.max(shake, 0.28f);
+        Fx.explode(this, rnd, x, y, L.enemyR * 1.5f, 14, INK_SPARK);
+        if (sound != null) sound.achievement();
+        return true;
+    }
+
+    void releaseBoss() {
+        boss.release();
+    }
+
+    /**
+     * An upward swipe in the field. A shove at {@link Boss#SUMO} where one is available, and the
+     * ordinary panic swipe everywhere else.
+     *
+     * One entry point rather than two, because the gesture is the same gesture: the view should not
+     * have to know which boss is on the field to decide what a swipe up means. Priority to the
+     * shove, since during that fight it is the thing the player is trying to do — and the panic
+     * swipe is still reachable on any frame no shove is available.
+     */
+    boolean swipeUp(Layout L) {
+        if (bossShove(L)) return true;
+        return pushBack(L);
+    }
+
+    /** True when a swipe up would shove the boss, for the renderer's hint. */
+    boolean shoveReady() {
+        return state == PLAY && !settingsOpen && boss.shovable();
+    }
+
+    private boolean bossShove(Layout L) {
+        if (!shoveReady() || !boss.shove()) return false;
+        pushT = PUSH_TIME;
+        pushCount = 0;
+        shake = Math.max(shake, 0.6f);
+        flash = Math.max(flash, 0.55f);
+        flashColor = FLASH_CLEAR;
+        skyGlow = 1f;
+        skyGlowColor = FLASH_CLEAR;
+        Fx.explode(this, rnd, boss.bodyX(L), boss.bodyY(L), L.enemyR * 2.2f, 20, INK_SPARK);
+        if (sound != null) sound.achievement();
+        return true;
     }
 
     /**
@@ -1474,8 +1679,18 @@ final class GameCore {
      * already climbing.
      */
     int crowdCap() {
-        return powerActive() ? (int) (maxEnemies() * Power.crowdRate(ramp())) : maxEnemies();
+        if (powerActive()) return (int) (maxEnemies() * Power.crowdRate(ramp()));
+        // A boss holds the crowd down. The fight is the thing being asked of the player, and a
+        // boss stage that also runs a full wave underneath it is two stages at once — which is the
+        // "two difficulty sources multiply" trap with a new hat on. The minions are there to make
+        // ignoring the field expensive, not to be the stage.
+        if (bossFighting()) return Math.min(maxEnemies(), BOSS_CROWD);
+        return maxEnemies();
     }
+
+    /** Words a boss stage lets pile up, and how much longer it waits between them. */
+    static final int BOSS_CROWD = 3;
+    static final float BOSS_GAP = 1.35f;
 
     int maxWordLen() { return Math.min(5, 2 + rampStep()); }
 
@@ -1494,7 +1709,10 @@ final class GameCore {
 
     /** True once every word of this stage has been released and dealt with. */
     boolean stageCleared() {
-        return spawnedThisStage >= stageQuota() && enemies.isEmpty() && shots.isEmpty();
+        // A boss stage is not clear while the boss is on it, whatever the field looks like. The
+        // quota is only satisfied by beating it — see endBoss.
+        return !boss.active() && spawnedThisStage >= stageQuota()
+                && enemies.isEmpty() && shots.isEmpty();
     }
 
     // ---- lifecycle ----------------------------------------------------------
@@ -1572,6 +1790,9 @@ final class GameCore {
         mode = -1;
         modeLeft = 0;
         buddy.leave();
+        // Stage 1 is never a boss stage, so this is only ever clearing one a previous run left
+        // standing — but a run must not begin with the last one's boss still on the field.
+        boss.leave();
         stageByPower = false;
         powerTimer = Power.SPAWN_MIN;
         pendingBonus = false;
@@ -1666,6 +1887,15 @@ final class GameCore {
             if (combo > maxCombo) maxCombo = combo;
             catchPower(L);
             return true;
+        }
+
+        // The boss, on the same terms the powerup gets: it outranks an *unengaged* word for the
+        // letters it is asking for, and never steals a press out of a word already part-typed. The
+        // one exception is a key it is holding — that is refused wherever it is pressed, including
+        // into an engaged word, because the player does not have that key at all.
+        if (boss.fighting()) {
+            int verdict = (target == null || boss.denies(g)) ? boss.press(g, rnd) : Boss.NONE;
+            if (verdict != Boss.NONE) return bossPress(g, verdict, L);
         }
 
         // MULTI: one press chains through every matching letter on the field.
@@ -2291,19 +2521,40 @@ final class GameCore {
         if (team()) buddy.update(this, dt, L);
         else if (!buddy.out()) buddy.leave();
 
+        if (boss.active()) {
+            // True on the frame SUMO reaches the line, which costs a life like any other landing.
+            if (boss.update(dt, L, rnd)) bossSlam(L);
+            // That may have been the last life, and nothing below here runs after a run ends.
+            if (state != PLAY) return;
+            if (boss.gone()) {
+                endBoss(L);
+                return;
+            }
+        }
+
         // Stages are discrete waves: a stage releases exactly stageQuota() words, and the
         // next stage cannot start arriving until the field is completely clear.
         if (stageGap > 0) {
             stageGap -= dt;
-        } else if (powerActive() || spawnedThisStage < stageQuota()) {
+        } else if (powerActive() || bossFighting()
+                || (!boss.active() && spawnedThisStage < stageQuota())) {
             spawnTimer -= dt;
             // Counted against live words only: a word already flying apart is no longer
             // occupying the field as far as pacing is concerned. During a frenzy the quota
-            // is ignored: words keep coming until the timer runs out and ends the stage.
+            // is ignored: words keep coming until the timer runs out and ends the stage. A boss
+            // ignores it for the same reason, and its stage is only satisfied by beating it — so
+            // the quota must not be counted up during the fight or the stage would try to end
+            // underneath the boss.
             if (spawnTimer <= 0 && liveEnemies() < crowdCap()) {
                 spawn(L);
-                if (!powerActive()) spawnedThisStage++;
-                spawnTimer = spawnInterval() / (powerActive() ? Power.spawnRate(ramp()) : 1f);
+                if (!powerActive() && !bossFighting()) spawnedThisStage++;
+                if (bossFighting()) {
+                    // Slower than an ordinary wave, and speeding up as the boss enrages: stalling
+                    // the fight is what enraging punishes, and this is how it does the punishing.
+                    spawnTimer = spawnInterval() * BOSS_GAP / boss.minionRate();
+                } else {
+                    spawnTimer = spawnInterval() / (powerActive() ? Power.spawnRate(ramp()) : 1f);
+                }
             }
         } else if (stageCleared()) {
             beginStageEnd();
@@ -2446,6 +2697,9 @@ final class GameCore {
         resolvedThisStage++;
         // Scored per press, so a stacked word is worth what it cost to clear.
         score += 25 * e.totalPresses();
+        // The boss may be keeping score of these: SUMO's shoves are paid for with cleared words,
+        // which is what stops the swipe being free and makes the minions worth typing.
+        boss.wordCleared();
         if (chime && sound != null) sound.clearWord();
     }
 
@@ -2881,11 +3135,27 @@ final class GameCore {
         stageBanner = BANNER_TIME;
         stageGap = STAGE_GAP;
         spawnTimer = 0.35f;
+        // Every fifth stage is a boss instead of a wave. Started here rather than on the first frame
+        // of play so its arrival card runs over the stage breather it already had.
+        int bk = Boss.kindFor(stage);
+        if (bk >= 0) boss.begin(bk, stage, rnd);
     }
 
     private void breach(Enemy e, Layout L) {
         if (target == e) target = null;
         resolvedThisStage++;
+        takeHit(enemyCentreX(e), L);
+    }
+
+    /**
+     * One life gone, from wherever. Split out of {@link #breach} because a word landing is no longer
+     * the only thing that can cost one — {@link Boss#SUMO} reaching the line does too, and it is not
+     * an {@link Enemy}, has no place in the stage's resolved count, and must not be able to
+     * accumulate its own subtly different version of the death sequence.
+     *
+     * @param px where the burst comes from, in view coordinates
+     */
+    private void takeHit(float px, Layout L) {
         lives--;
         hurtThisStage++;
         combo = 0;
@@ -2893,35 +3163,48 @@ final class GameCore {
         if (sound != null) sound.damage();
         flash = 1f;
         flashColor = FLASH_DAMAGE;
-        Fx.explode(this, rnd, enemyCentreX(e), L.dangerY, L.enemyR * 2f, 16, 0xFFFF7A9E);
-        if (lives <= 0) {
-            state = OVER;
-            time = 0;
-            deathT = DEATH_TIME;
-            // The words are deliberately left standing: they swirl away over the death hold, and
-            // the field is cleared when it ends, before the summary is drawn over it. Only the
-            // shots go now — a kill landing after the run is over would credit a squish.
-            shots.clear();
-            target = null;
-            // Dying mid-frenzy has to end the frenzy here: updatePower only runs during
-            // PLAY, so otherwise the mode would stay live and the driven music would carry
-            // on into the game-over screen.
-            if (powerActive()) {
-                mode = -1;
-                modeLeft = 0f;
-                fingerDown = false;
-                if (sound != null) sound.frenzy(false);
-            }
-            // And the squishy goes with it. It is only ever sent home from the PLAY half of
-            // update(), which this death has just put out of reach — so dying mid-TEAM SQUISH
-            // left it bouncing around the swirl and on over the summary. Reset state above the
-            // early return, or clear it where the early return is taken; there is no third way.
-            buddy.leave();
-            power = null;
-            if (score > best) {
-                best = score;
-                if (store != null) store.saveBest(best);
-            }
+        Fx.explode(this, rnd, px, L.dangerY, L.enemyR * 2f, 16, 0xFFFF7A9E);
+        if (lives <= 0) die();
+    }
+
+    /**
+     * The last life is gone.
+     *
+     * Everything a set piece owns has to be sent home from here, and this is the reason: a death
+     * never reaches the PLAY half of {@link #update}, so anything that is only ever cleared down
+     * there stays live through the swirl, the summary and the title screen behind them. That has
+     * bitten this file three times now — the stuck edge glow, the TEAM SQUISH squishy bouncing over
+     * the game-over screen, and a lit blade left over a summary. The rule is: reset state above the
+     * early returns, or clear it where the early return is taken. There is no third way.
+     */
+    private void die() {
+        state = OVER;
+        time = 0;
+        deathT = DEATH_TIME;
+        // The words are deliberately left standing: they swirl away over the death hold, and
+        // the field is cleared when it ends, before the summary is drawn over it. Only the
+        // shots go now — a kill landing after the run is over would credit a squish.
+        shots.clear();
+        target = null;
+        // Dying mid-frenzy has to end the frenzy here: updatePower only runs during
+        // PLAY, so otherwise the mode would stay live and the driven music would carry
+        // on into the game-over screen.
+        if (powerActive()) {
+            mode = -1;
+            modeLeft = 0f;
+            fingerDown = false;
+            if (sound != null) sound.frenzy(false);
+        }
+        // And the squishy goes with it.
+        buddy.leave();
+        // So does the boss, and everything it had put on the field: its body, its health bar, the
+        // globs it had shed, a key it was holding — a held key especially, since the deck it was
+        // taken from is drawn on the game-over screen and on the title screen after it.
+        boss.leave();
+        power = null;
+        if (score > best) {
+            best = score;
+            if (store != null) store.saveBest(best);
         }
     }
 

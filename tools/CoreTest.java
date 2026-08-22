@@ -32,6 +32,20 @@ final class CoreTest {
         TestStages.mashEarned(L);
         TestStages.steamerBonus(L);
         TestStars.game(L);
+
+        TestBoss.cadence(L);
+        TestBoss.frame(L);
+        TestBoss.winning(L);
+        TestBoss.precedence(L);
+        TestBoss.slime(L);
+        TestBoss.triplets(L);
+        TestBoss.drum(L);
+        TestBoss.magpie(L);
+        TestBoss.sumo(L);
+        TestBoss.stacking(L);
+        TestBoss.cleanup(L);
+
+        TestSoftbody.physics(L);
         TestStages.accuracyTracking(L);
         TestStages.warningsAndHarm(L);
         TestStages.pushBack(L);

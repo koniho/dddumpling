@@ -3,6 +3,10 @@
 Read this before touching anything. It exists to save you the discoveries that cost time
 the first time round.
 
+If you have never worked on this repo before, read [ONBOARDING.md](ONBOARDING.md) first — it is the
+ten-minute path from nothing to a verified change, and it tells you which parts of this file matter
+most.
+
 [GLOSSARY.md](GLOSSARY.md) names every game element and maps the plain-English term to the
 code. Use those names back to the user; several differ from the identifiers (a falling word is
 `Enemy`, the frenzy is `mode`, the interlude is `BONUS`), and getting them wrong wastes a round
@@ -109,6 +113,10 @@ Pure (in the harness and the APK):
 | `Parade` | the collection marching in, the new one joining, the line marching off |
 | `Storybook` | the story popup and its ten looping vignettes |
 | `Power` | the powerup letter and its three modes |
+| `Boss` | the every-fifth-stage boss: five mechanics, its elements, and what a press/tap/drag does |
+| `BossScreen` | the boss on screen: body, health header, ornaments and its elements |
+| `Softbody` | a pressurised 2D soft body — the ring of sprung nodes every boss is built on |
+| `Slime` | draws a soft body as gooey translucent slime with a face |
 | `Painter` | the drawing interface |
 | `Draw` | palette + shared geometry (pill, star, hash, rainbow) — renderers extend it |
 | `Sky` | background, clouds, vignette, HUD band |
@@ -455,6 +463,47 @@ nothing. Follow the pattern rather than "fixing" it.
 - **A silhouette must be fully colourless.** The leaf and stem colours were left as
   themselves at first, so every blacked-out fruit had a bright green leaf on it and gave
   itself away.
+- **A set piece with no way past it needs the bot to be able to play it.** The boss on every fifth
+  stage has to be beaten for the stage to end — there is deliberately no retreat. The soak bot could
+  only type, and no boss can be beaten by typing alone, so all three tiers sat on stage 5 for the
+  full fifteen minutes and *nobody died*: not a wall, a stalemate, and every difficulty assertion
+  past stage 5 silently became a test of the first four stages. `Bot` taps, drags and shoves now,
+  with its own stated limits for each (`DRAG_SPEED`, `PANIC_WARN`). It still never uses the blade or
+  the panic swipe, which keeps those pessimistic. Before adding anything mandatory, ask what the
+  harness's player does when it meets it.
+- **Health times cycle length, never health.** The first pass at boss tuning set each one's hit count
+  and its window rhythm separately, and `TRIPLETS` came out wanting six chords at one window per
+  4.5s — 27 seconds of flawless play against a 22-second fuse, so a *perfect* run lost. Every boss's
+  health is now set against one figure: a competent player finishes inside about fifteen of the
+  `ENRAGE_AT` seconds before it turns nasty.
+- **Two rules that each look right can deadlock.** An engaged word outranks the boss (the same rule
+  the powerup has), and `TRIPLETS` wanted its chord inside one window. Together: whenever a window
+  opened while a minion was part-typed, the chord could not be *started*, and the bot got eight
+  windows and two chords out of a whole fight. The chord is timed from its own first press now
+  (`CHORD_TIME`) and that boss is permanently open. When a mechanic will not fire, check whether two
+  correct rules are excluding each other.
+- **A predicate used for a hint must mean "this will work", not "this is mine".** `Boss.wants` was
+  `open() && asksFor()`, and `asksFor` includes a triplets head that is awake but already struck —
+  because pressing one is plainly aimed at the boss and should earn a rebuff rather than fall through
+  to a word. But `wants` is what rings the key hint, so it advertised a key that could only be
+  refused: the bot pressed it, was rebuffed, and pressed it again, losing ten chords out of ten. The
+  claim and the invitation are two questions and need two methods.
+- **Anything that lays out per frame must run above the early returns too.** `Boss.layoutElems`
+  sat below the arrival-card return, so on the very frame the card ended — the first frame a tap is
+  accepted — every element was still at the origin and a tap on one hit nothing. Same shape as the
+  `warnLevel` bug, in a different method.
+- **Resolve the kill before the side effects.** A `MAGPIE` killed by the final press still ran its
+  "drop the key" step afterwards, putting an element on the field carrying key `-1` — an array index
+  waiting to happen, and it happened on the first run of the assertions. Anything a hit triggers has
+  to ask whether that hit was the last one.
+- **A boss owns more than any other set piece, so its cleanup is bigger.** A body, a health bar, up
+  to three draggable elements, a finger mid-drag, and one of the player's own keys held hostage.
+  `Boss.leave()` clears every field it writes, not just the ones drawn today, and `TestBoss.cleanup`
+  walks all five bosses through both exits — beaten, and the player dying mid-fight — then checks the
+  frames *after* the death, since that is where the old versions of this bug were visible.
+- **`strokePoly` double-blends at every vertex.** A translucent stroke round a 72-point soft-body
+  outline comes out as a dotted line. Every other stroke in this game is a handful of points, so
+  nothing met it before; `Slime`'s rim is opaque for that reason.
 - Termux's `ecj` hardcodes `-7`; use `javac --release 8`. `aapt2 link` takes compiled
   resources positionally, not via `-R`.
 

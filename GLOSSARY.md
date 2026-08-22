@@ -160,6 +160,43 @@ The other interlude, offered after a steamer has been opened. Two thumbs steer, 
 | **tracker lag** | what following the line costs, against the catch band — the measure of how hard a course is, in place of the peak speed ratio it asks for | `TestStars.trackerLag` |
 | **re-roll** | a failed attempt gets a fresh line, keeping the stars already in hand | `StarPath.reroll` |
 
+## Boss
+
+Every fifth stage is a boss instead of a wave. It has to be beaten for the stage to end — there is
+no way past one. No boss can be beaten by typing alone: each asks for at least two of the three
+things a player can do, which are pressing a key, tapping something and dragging something.
+
+| Say | Means | Code |
+| --- | --- | --- |
+| **boss** | the set piece on stages 5, 10, 15, 20, 25… | `Boss`, `GameCore.boss` |
+| **boss stage** | a stage that has one | `Boss.isBossStage`, `EVERY` |
+| **arrival card** | the name over the field before the fight starts | `Boss.INTRO`, `BossScreen.intro` |
+| **window** | the stretch during which a boss can be hurt. Shut, it can only be rebuffed | `Boss.open()` |
+| **breather** | the shut half of the cycle between windows | `Boss.CYCLE`, `SHOW` |
+| **boss header** | the health bar, name and blurb at the top. Shares the frenzy's slot, since a boss suppresses powerups | `BossScreen.bar` |
+| **blurb** | the one-line instruction under the name; it retires after five seconds | `Boss.BLURB` |
+| **element** | a hit-testable thing a boss puts on the field to be tapped or dragged. Always in the upper field, because a drag may not start on a key | `Boss.ELEMS`, `elemAt`, `etype` |
+| **rebuff** | the right thing at the wrong moment, or a held key. Sounds wrong, never counted as a miss | `Boss.REBUFF` |
+| **enrage** | what a dragging fight gets instead of an escape: minions come faster and it reddens | `Boss.ENRAGE_AT`, `enrage()` |
+| **slime** | boss 1. A chain of letters to type; every hit sheds a glob | `Boss.SLIME` |
+| **glob** | what the slime sheds. Drag it off the play area or it crawls back and heals it | `Boss.E_GLOB`, `GLOB_TIME` |
+| **triplets** | boss 2. Three heads, tapped awake then struck as one chord | `Boss.TRIPLETS` |
+| **head** | one of its three. Asleep until tapped, and it withholds its letter until then | `Boss.E_HEAD`, `headAwake` |
+| **chord** | all three heads struck inside `CHORD_TIME`. This boss is always open; the chord is its clock | `Boss.chordT`, `CHORD_TIME` |
+| **mochi drum** | boss 3. A short window on a fixed beat, alternately wanting a key and a tap | `Boss.DRUM` |
+| **tap beat** | a beat that wants the skin tapped rather than a key pressed | `Boss.tapBeat`, `E_SKIN` |
+| **beat ring** | the ring closing on the drum as its window comes round | `BossScreen.beatRing` |
+| **magpie** | boss 4. It holds one of your keys hostage | `Boss.MAGPIE` |
+| **held** / **stolen key** | the key it has. Refused everywhere, including into a word that needs it | `Boss.stolen`, `denies` |
+| **dropped key** | the key a hit knocks loose. Drag it down to the deck or it is snatched again | `Boss.E_KEY`, `KEY_TIME` |
+| **sumo bun** | boss 5. It sinks toward the line and must be swiped back | `Boss.SUMO` |
+| **shove** | the swipe that damages it. Paid for with a charge | `Boss.shove`, `GameCore.swipeUp` |
+| **charge** | a banked swipe, earned by clearing a word | `Boss.charges`, `CHARGE_MAX` |
+| **stagger** | what a press on its belt buys: the next shove hits twice as hard | `Boss.stagger`, `STAGGER_BONUS` |
+| **slam** | it reaching the danger line, which costs a life and puts it back at the top | `GameCore.bossSlam` |
+| **soft body** | how every boss's body is built: a ring of sprung nodes under pressure, so it dents where you hit it | `Softbody`, `Boss.body` |
+| **burst** | what a beaten boss goes out on | `BossScreen.burst`, `Boss.LEAVE` |
+
 ## Powerup
 
 | Say | Means | Code |
@@ -253,8 +290,13 @@ The other interlude, offered after a steamer has been opened. Two thumbs steer, 
   changes the falling words only.
 - **word** vs **wave** vs **stage** — a word is one falling row; a wave is all the words in a
   stage; a stage is the difficulty step.
-- **frenzy** vs **interlude** — frenzy is the 15 s powerup period *during* play; the interlude
-  is the steamer minigame *between* stages.
+- **frenzy** vs **interlude** vs **boss** — the frenzy is the 15 s powerup period *during* play; the
+  interlude is the minigame *between* stages; a boss *replaces* a stage's wave every fifth stage.
+  Only one set piece runs at a time: a boss stage releases no powerups at all.
+- **window** vs **breather** — a boss's window is when it can be hurt; the breather is the shut half
+  between windows. Not to be confused with the stage **breather**, which is the pause between waves.
+- **element** vs **tile** vs **key** — an element is a boss's own touch target; a tile is a cell of a
+  falling word; a key is one of the six hexagons. Only elements are dragged in play.
 - The interlude has **two paths**, and exactly one phase is true at any moment:
   - **lost** — spinner (2 s, no presses) → mash → beat on zero (1 s) → status hold (1.5 s,
     whose tail is the fade-out) → play.

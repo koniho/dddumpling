@@ -19,13 +19,21 @@ package com.sram.hexatype;
  *       the whole word.
  * </ul>
  *
- * It cannot swipe. That is a real limit, not an omission: it means a FLING frenzy reaches this bot
- * as a plain typing frenzy at full wave strength, and the once-a-stage push-back never gets used.
- * Both are the pessimistic reading, which is the useful one for a floor.
+ * It does not use the FLING blade and never spends the once-a-stage push-back. Those are real
+ * limits, not omissions: a FLING frenzy reaches this bot as a plain typing frenzy at full wave
+ * strength, and no panic swipe ever saves it. Both are the pessimistic reading, which is the useful
+ * one for a floor.
  *
- * Its strategy is the obvious human one — take the lowest word on the field and type it out, grab a
- * powerup when one drifts past and nothing is engaged — not an optimal solver. A bot that plays
- * better than a person can would tell us as little as the perfect one does.
+ * It <em>does</em> tap, drag and shove a boss, and that is not a contradiction of the above — it is
+ * the difference between an ability the game offers and one the game requires. A boss has to be
+ * beaten for the stage to end, and no boss can be beaten by typing alone, so a bot that could only
+ * type would not measure a hard fight: it would measure a stalemate, sitting on stage 5 until the
+ * clock ran out. The three touch limits below are stated in the same terms as the typing ones so
+ * that what the bot can do with a finger is as bounded as what it can do with a thumb.
+ *
+ * Its strategy is the obvious human one — clear whatever is closest to the line, otherwise work on
+ * the boss, take a powerup when one drifts past and nothing is engaged — not an optimal solver. A
+ * bot that plays better than a person can would tell us as little as the perfect one does.
  *
  * Deterministic on its seed, like everything else here.
  */
@@ -52,6 +60,27 @@ final class Bot {
      * which flattered exactly the crowded moments this exists to measure.
      */
     private static final float BURST = 2f;
+
+    /**
+     * How fast a finger drags a boss element, in view widths a second.
+     *
+     * A real thumb crosses a phone in something like a third of a second, so this is deliberately on
+     * the slow side of that: a drag is the slowest thing a player can be asked for, and a glob being
+     * carried off the field is time not spent typing. That cost is the whole reason the drag is a
+     * mechanic rather than a formality, so the bot must actually pay it.
+     */
+    private static final float DRAG_SPEED = 2.0f;
+
+    /**
+     * How close to the danger line something has to be before the bot drops what it is doing and
+     * deals with the field instead of the boss.
+     *
+     * A boss fight is a divided-attention problem and this is the bot's half of that division. Set
+     * low enough that it is not suicidal and high enough that it still loses runs: at 1.0 it would
+     * ignore the boss entirely whenever anything was closing, which on a boss stage is most of the
+     * time.
+     */
+    private static final float PANIC_WARN = 0.55f;
 
     Bot(float pps, float reaction, float missRate, boolean takesPowerups, long seed) {
         this.pps = pps;
@@ -136,6 +165,13 @@ final class Bot {
 
         budget = Math.min(BURST, budget + dt * pps);
 
+        // A drag already under way is a finger that is busy, so it runs before anything else and
+        // costs the frame. Nothing else this player can do happens while carrying something.
+        if (c.boss.held >= 0 && dragOn(c, L, dt)) return;
+
+        // Otherwise the boss gets whatever attention the field is not demanding.
+        if (c.bossFighting() && c.warnLevel < PANIC_WARN && bossTouch(c, L)) return;
+
         // Mid-word, the next key is already known and under a thumb. Otherwise there is a word to
         // find first — unless FLURRY has made every key the right one, which is the whole of what
         // that mode does for you.
@@ -162,9 +198,98 @@ final class Bot {
         }
     }
 
+    /**
+     * Carries whatever is held toward where it has to go, at {@link #DRAG_SPEED}.
+     *
+     * @return true while the finger is still busy with it
+     */
+    private boolean dragOn(GameCore c, Layout L, float dt) {
+        int i = c.boss.held;
+        if (i < 0) return false;
+        float gx = goalX(c, L, i), gy = goalY(c, L, i);
+        float x = c.boss.ex[i], y = c.boss.ey[i];
+        float dx = gx - x, dy = gy - y;
+        float d = (float) Math.sqrt(dx * dx + dy * dy);
+        float step = L.w * DRAG_SPEED * dt;
+        if (d <= step) {
+            // Arrived. Whether that finished the job is the core's call, not the bot's.
+            c.dragBoss(gx, gy, L);
+            if (c.boss.held >= 0) c.releaseBoss();
+            return true;
+        }
+        c.dragBoss(x + dx / d * step, y + dy / d * step, L);
+        return true;
+    }
+
+    /** Where element {@code i} has to be taken. Mirrors what {@code Boss.dragTo} accepts. */
+    private float goalX(GameCore c, Layout L, int i) {
+        if (c.boss.etype[i] == Boss.E_KEY) return L.keyX[c.boss.keyOf[i]];
+        // Whichever edge is nearer, so the drag is the short one.
+        return c.boss.ex[i] < L.w / 2f ? L.playLeft - 1f : L.playRight + 1f;
+    }
+
+    private float goalY(GameCore c, Layout L, int i) {
+        return c.boss.etype[i] == Boss.E_KEY ? L.deckTop + 1f : c.boss.ey[i];
+    }
+
+    /**
+     * One touch at the boss: a shove, a grab, or a tap. Costs a press from the budget and a
+     * reaction, exactly as a keystroke does — a finger is not free.
+     *
+     * @return true when it used the frame
+     */
+    private boolean bossTouch(GameCore c, Layout L) {
+        if (think > 0f || budget < 1f) return false;
+        Boss b = c.boss;
+
+        // A shove first: SUMO's sink is the only boss threat that costs a life by itself.
+        if (b.shovable()) {
+            budget -= 1f;
+            presses++;
+            think = reaction;
+            c.swipeUp(L);
+            return true;
+        }
+        // Then anything worth carrying off, oldest first — a glob about to crawl back is the one
+        // that matters, and picking the one with least life left is what a player watching them
+        // would do.
+        int drag = -1;
+        for (int i = 0; i < Boss.ELEMS; i++) {
+            if (!b.draggable(i)) continue;
+            if (drag < 0 || b.elife[i] < b.elife[drag]) drag = i;
+        }
+        if (drag >= 0) {
+            budget -= 1f;
+            presses++;
+            think = reaction;
+            c.grabBoss(b.ex[drag], b.ey[drag]);
+            return true;
+        }
+        // Then a tap: a sleeping head to wake, or a drum skin on a beat that wants one.
+        for (int i = 0; i < Boss.ELEMS; i++) {
+            int t = b.etype[i];
+            boolean worth = (t == Boss.E_HEAD && !b.headAwake(i))
+                    || (t == Boss.E_SKIN && b.tapBeat && b.open());
+            if (!worth) continue;
+            budget -= 1f;
+            presses++;
+            think = reaction;
+            c.tapBoss(b.ex[i], b.ey[i], L);
+            return true;
+        }
+        return false;
+    }
+
     /** The key this player would press next, or -1 with nothing worth pressing. */
     private int pick(GameCore c) {
         boolean engaged = c.target != null && c.enemies.contains(c.target) && c.target.typeable();
+        // The boss, when it is asking for something and no word is part-way through. Ahead of the
+        // words on purpose: its window is a few seconds long and a word is not going anywhere.
+        if (!engaged && c.bossFighting() && c.warnLevel < PANIC_WARN) {
+            for (int g = 0; g < Glyph.COUNT; g++) {
+                if (c.boss.wants(g)) return g;
+            }
+        }
         // A drifting powerup is only worth a press when no word is part-way through — engaging one
         // mid-word would throw the word away, and the core would refuse the catch anyway.
         if (!engaged && takesPowerups && c.power != null && c.power.catchable()) {
