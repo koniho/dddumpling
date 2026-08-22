@@ -166,6 +166,10 @@ Every fifth stage is a boss instead of a wave. It has to be beaten for the stage
 no way past one. No boss can be beaten by typing alone: each asks for at least two of the three
 things a player can do, which are pressing a key, tapping something and dragging something.
 
+A boss stage releases **no falling words at all** — the fight is the stage. The threat is the boss's
+own: past `ENRAGE_AT` it starts striking for a life every `RAGE_HIT` seconds, which is what stops a
+fight nobody is winning from going on forever.
+
 | Say | Means | Code |
 | --- | --- | --- |
 | **boss** | the set piece on stages 5, 10, 15, 20, 25… | `Boss`, `GameCore.boss` |
@@ -177,9 +181,12 @@ things a player can do, which are pressing a key, tapping something and dragging
 | **blurb** | the one-line instruction under the name; it retires after five seconds | `Boss.BLURB` |
 | **element** | a hit-testable thing a boss puts on the field to be tapped or dragged. Always in the upper field, because a drag may not start on a key | `Boss.ELEMS`, `elemAt`, `etype` |
 | **rebuff** | the right thing at the wrong moment, or a held key. Sounds wrong, never counted as a miss | `Boss.REBUFF` |
-| **enrage** | what a dragging fight gets instead of an escape: minions come faster and it reddens | `Boss.ENRAGE_AT`, `enrage()` |
+| **enrage** | what a dragging fight gets instead of an escape: it reddens and starts striking for a life on its own clock | `Boss.ENRAGE_AT`, `RAGE_HIT` |
+| **strike** | one of those hits. Costs a life exactly as a word landing does | `GameCore.bossSlam` |
 | **slime** | boss 1. A chain of letters to type; every hit sheds a glob | `Boss.SLIME` |
-| **glob** | what the slime sheds. Drag it off the play area or it crawls back and heals it | `Boss.E_GLOB`, `GLOB_TIME` |
+| **glob** / **split** | what the slime sheds on every hit. Starts *inside* the body, glowing red; drag it to the play edge for another hit. Left alone it just fades — nothing heals | `Boss.E_GLOB`, `GLOB_TIME` |
+| **stretch** | the skin trailing after a dragged glob, and snapping back when it comes free | `Softbody.pull`, `letGo`, `Boss.PULL_K` |
+| **mesh** | the soft body's own nodes and spokes, drawn faintly inside it so the wobble reads as physics | `Slime.mesh` |
 | **triplets** | boss 2. Three heads, tapped awake then struck as one chord | `Boss.TRIPLETS` |
 | **head** | one of its three. Asleep until tapped, and it withholds its letter until then | `Boss.E_HEAD`, `headAwake` |
 | **chord** | all three heads struck inside `CHORD_TIME`. This boss is always open; the chord is its clock | `Boss.chordT`, `CHORD_TIME` |
@@ -191,7 +198,7 @@ things a player can do, which are pressing a key, tapping something and dragging
 | **dropped key** | the key a hit knocks loose. Drag it down to the deck or it is snatched again | `Boss.E_KEY`, `KEY_TIME` |
 | **sumo bun** | boss 5. It sinks toward the line and must be swiped back | `Boss.SUMO` |
 | **shove** | the swipe that damages it. Paid for with a charge | `Boss.shove`, `GameCore.swipeUp` |
-| **charge** | a banked swipe, earned by clearing a word | `Boss.charges`, `CHARGE_MAX` |
+| **charge** | a banked swipe, earned by pressing its belt while it is in reach | `Boss.charges`, `CHARGE_MAX` |
 | **stagger** | what a press on its belt buys: the next shove hits twice as hard | `Boss.stagger`, `STAGGER_BONUS` |
 | **slam** | it reaching the danger line, which costs a life and puts it back at the top | `GameCore.bossSlam` |
 | **soft body** | how every boss's body is built: a ring of sprung nodes under pressure, so it dents where you hit it | `Softbody`, `Boss.body` |

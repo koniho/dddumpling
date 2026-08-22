@@ -167,6 +167,31 @@ final class Softbody {
      */
     float idle = 1f;
 
+    /** Where the skin is being tugged to, and how hard. Zero strength means nothing is pulling. */
+    private float pullX, pullY, pullK;
+    /** The tug target after clamping, which is where it is actually applied. See {@link #PULL_SPAN}. */
+    private float pullTX, pullTY;
+
+    /**
+     * How hard a full-strength {@link #pull} tugs, as an acceleration per unit of radius.
+     *
+     * Well under {@link #KR}'s pull toward round times the reach, so a tug stretches the skin into a
+     * teardrop and cannot turn the body inside out however long it is held. That bound is what makes
+     * it safe to call every frame for as long as a finger is down.
+     */
+    private static final float TUG = 90f;
+    /**
+     * How far from the centroid a tug target is allowed to be, in units of {@link #rest}.
+     *
+     * The target is clamped to this rather than the pull being switched off out of range, and that
+     * distinction is the whole effect. Testing the raw target against {@link #REACH} meant the tug
+     * stopped applying the moment the thing being dragged got further than a radius away — so the
+     * skin gave a small twitch at the start of a drag and then let go, which is the opposite of the
+     * intended read. Clamped, the skin stretches out to about two radii and stays there for as long
+     * as the finger holds, and everything past that is the drag having plainly won.
+     */
+    private static final float PULL_SPAN = 1.4f;
+
     // Measured once per update, so the getters are free.
     private float cx, cy, sarea, meanR, wobble, minX, maxX, minY, maxY, motion;
 
@@ -208,6 +233,7 @@ final class Softbody {
     void reset(float cx, float cy, float r) {
         homeX = cx;
         homeY = cy;
+        pullK = 0f;
         rest = Math.max(1e-3f, r);
         restLen = 2f * rest * (float) Math.sin(Math.PI / n);
         restArea = 0.5f * n * rest * rest * (float) Math.sin(TAU / n);
@@ -300,9 +326,42 @@ final class Softbody {
         float hx = KC * (homeX - cx) - CENTRE_DAMP * mvx;
         float hy = KC * (homeY - cy) - CENTRE_DAMP * mvy;
 
+        // Where the tug actually acts: the target, held to PULL_SPAN of the centroid. Computed once
+        // per substep rather than per node, and from the centroid rather than from home, so a body
+        // that has already been shoved off centre stretches from where it is.
+        if (pullK > 0f) {
+            float ddx = pullX - cx, ddy = pullY - cy;
+            float dd = (float) Math.sqrt(ddx * ddx + ddy * ddy);
+            float cap = rest * PULL_SPAN;
+            if (dd > cap && dd > 1e-4f) {
+                pullTX = cx + ddx / dd * cap;
+                pullTY = cy + ddy / dd * cap;
+            } else {
+                pullTX = pullX;
+                pullTY = pullY;
+            }
+        }
+
         for (int i = 0; i < n; i++) {
             float ax = fx[i] + hx - DAMP * vx[i];
             float ay = fy[i] + hy - DAMP * vy[i];
+            if (pullK > 0f) {
+                // Toward the tug point, not outward from the centre: what is wanted is the skin
+                // following the finger, which is a direction the body cannot supply on its own.
+                float tx = pullTX - x[i], ty = pullTY - y[i];
+                float td = (float) Math.sqrt(tx * tx + ty * ty);
+                float reach = rest * REACH;
+                if (td < reach && td > 1e-4f) {
+                    float f = 1f - td / reach;
+                    f *= f;
+                    // Times rest, like every other force here: the sim is scale-invariant by
+                    // construction and a bare px/s² would tug a thumbnail across the screen and
+                    // barely dimple a full-size boss.
+                    float a = pullK * TUG * rest * f;
+                    ax += a * tx / td;
+                    ay += a * ty / td;
+                }
+            }
             float dx = x[i] - cx, dy = y[i] - cy;
             float d = (float) Math.sqrt(dx * dx + dy * dy);
             if (d > 1e-4f) {
@@ -424,6 +483,52 @@ final class Softbody {
             vx[i] += v * ox / d;
             vy[i] += v * oy / d;
         }
+    }
+
+    /**
+     * A sustained tug on the nearest part of the ring, toward {@code px,py}.
+     *
+     * Unlike {@link #impulse}, which is one kick, this is meant to be called every frame for as long
+     * as something is pulling — a glob being dragged out of the body — and it stretches the skin
+     * toward the finger until the springs and the pressure balance it. Stop calling it and the body
+     * springs back and rings on its own, which is exactly the rebound wanted when the glob comes
+     * free, so there is nothing to schedule for that.
+     *
+     * Held as a target and applied inside the solver rather than added to velocity here, because a
+     * per-frame velocity kick is a force whose strength depends on the frame rate: at 120fps it would
+     * pull twice as hard. {@link #letGo} clears it.
+     *
+     * The reach is deliberately the same {@link #REACH} the punch uses, and the falloff is squared
+     * for the same reason — a tug that grabs half the ring moves the whole body instead of stretching
+     * a spot on it, and the centring force would then simply fight it.
+     */
+    void pull(float px, float py, float strength) {
+        pullX = px;
+        pullY = py;
+        pullK = strength < 0f ? 0f : strength > 3f ? 3f : strength;
+    }
+
+    /** Lets the skin go. The spring back is the solver's, not an animation. */
+    void letGo() {
+        pullK = 0f;
+    }
+
+    /** True while something is stretching the skin. */
+    boolean pulled() {
+        return pullK > 0f;
+    }
+
+    /** Nodes in this body's ring, and where node {@code i} currently is. */
+    int nodes() {
+        return n;
+    }
+
+    float nodeX(int i) {
+        return x[((i % n) + n) % n];
+    }
+
+    float nodeY(int i) {
+        return y[((i % n) + n) % n];
     }
 
     /**

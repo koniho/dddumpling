@@ -162,21 +162,28 @@ final class TestBoss extends Check {
         }
         check("a boss left alone never lets the stage end",
                 w.stage == stageWas && (w.boss.active() || w.state != GameCore.PLAY));
-        check("and it does not quietly beat itself", w.boss.health() > 0f);
+        // Either it is still standing there, or the run ended — what must never happen is the stage
+        // moving on. Ninety idle seconds is well past the enrage, so the run ending is the expected
+        // outcome now; the boss beating itself is the thing being ruled out.
+        check("and it does not quietly beat itself",
+                w.state == GameCore.OVER || w.boss.health() > 0f);
 
-        // Enrage, which is what replaced the retreat.
+        // Enrage, which is what replaced the retreat — and which is now the only threat on the
+        // field for four of the five, since a boss stage spawns nothing.
         GameCore r = enterBoss(L, Boss.SLIME, 14L);
         check("it does not start enraged", r.boss.enrage() == 0f);
-        float calm = r.boss.minionRate();
-        for (int i = 0; i < 60 * 40; i++) {
-            r.enemies.clear();
+        int livesWas = r.lives;
+        boolean calmAndHarmless = true;
+        for (int i = 0; i < (int) (60 * (Boss.ENRAGE_AT - 1f)); i++) {
             r.update(DT, L);
-            if (!r.boss.active()) break;
+            if (r.lives < livesWas) calmAndHarmless = false;
         }
-        boolean enraged = !r.boss.active() || r.boss.enrage() > 0f;
-        check("it enrages if the fight drags", enraged);
-        check("the calm rate is the ordinary one", calm == 1f);
-        check("and the enraged rate is capped", Boss.ENRAGE_RATE <= 2f);
+        check("a calm boss cannot hurt you", calmAndHarmless);
+        for (int i = 0; i < (int) (60 * (Boss.ENRAGE_RAMP + Boss.RAGE_HIT + 4f)); i++) {
+            r.update(DT, L);
+        }
+        check("it enrages if the fight drags", r.boss.enrage() > 0f);
+        check("and an enraged one starts taking lives", r.lives < livesWas);
 
         // Powerups are suppressed for the whole of a boss stage.
         GameCore q = enterBoss(L, Boss.SLIME, 15L);
@@ -188,16 +195,17 @@ final class TestBoss extends Check {
         }
         check("no powerup drifts past during a boss", noPower);
 
-        // Minions, but fewer of them than a wave.
-        check("a boss holds the crowd down", GameCore.BOSS_CROWD < 7);
+        // And no words either. A boss stage is the fight and nothing else: the wave underneath it
+        // was dividing attention away from the thing the stage is about, and taking up the screen
+        // the boss needs.
         GameCore m = enterBoss(L, Boss.SLIME, 16L);
         int most = 0;
         for (int i = 0; i < 60 * 25 && m.boss.active(); i++) {
             m.update(DT, L);
-            if (m.liveEnemies() > most) most = m.liveEnemies();
+            if (m.enemies.size() > most) most = m.enemies.size();
         }
-        check("it still summons words", most > 0);
-        check("but never more than the boss cap", most <= GameCore.BOSS_CROWD + 1);
+        check("a boss stage releases no words at all", most == 0);
+        check("so there is no crowd to cap", m.crowdCap() == 0 || !m.boss.active());
     }
 
     // ---- winning ------------------------------------------------------------
@@ -328,19 +336,58 @@ final class TestBoss extends Check {
         check("pressing it lands", c.boss.hp == hpWas - 1f);
         check("and the chain moves on", c.boss.chainLetter() >= 0);
 
-        // Every hit sheds a glob, and a glob left alone crawls back and gives the press back.
+        // Every hit sheds a glob, and it comes out of the body rather than appearing beside it.
         int globs = 0;
         for (int i = 0; i < Boss.ELEMS; i++) {
             if (c.boss.etype[i] == Boss.E_GLOB) globs++;
         }
         check("a hit sheds a glob", globs == 1);
 
+        // Contained by the body it split off from: the drag is meant to be hauling something out of
+        // the goo, which needs it to start inside the goo.
+        int inside = -1;
+        for (int i = 0; i < Boss.ELEMS; i++) if (c.boss.etype[i] == Boss.E_GLOB) inside = i;
+        float gdx = c.boss.ex[inside] - c.boss.body.centreX();
+        float gdy = c.boss.ey[inside] - c.boss.body.centreY();
+        float gd = (float) Math.sqrt(gdx * gdx + gdy * gdy);
+        check("and it is shed inside the body", gd + c.boss.er[inside] < c.boss.body.radius());
+
+        // Hauling it stretches the skin after it, and letting go stops the tug — the spring back is
+        // the solver's, so there is nothing else to check for the rebound but that the pull ended.
+        check("nothing is tugging the skin yet", !c.boss.body.pulled());
+        c.grabBoss(c.boss.ex[inside], c.boss.ey[inside]);
+        c.dragBoss(c.boss.body.centreX() - c.boss.body.radius() * 1.5f,
+                c.boss.body.centreY(), L);
+        c.update(DT, L);
+        check("dragging one stretches the body", c.boss.body.pulled());
+        float stretched = c.boss.body.deform();
+        for (int i = 0; i < 20; i++) {
+            c.dragBoss(c.boss.body.centreX() - c.boss.body.radius() * 1.5f,
+                    c.boss.body.centreY(), L);
+            c.update(DT, L);
+        }
+        check("and the stretch builds while it is held", c.boss.body.deform() > stretched);
+        float hpBefore = c.boss.hp;
+        // Landed well inside the physical screen edge: the catch is the glob's own edge touching the
+        // play edge, because a finger has to reach the very rim otherwise and Android's own edge
+        // gestures start stealing the touch there.
+        c.dragBoss(L.playLeft + c.boss.er[inside] * 0.5f, c.boss.body.centreY(), L);
+        check("carrying it to the edge lands before the screen edge does",
+                c.boss.held < 0);
+        check("which hurts the boss again", c.boss.hp < hpBefore);
+        check("and the skin is let go, so it springs back", !c.boss.body.pulled());
+
         float healedFrom = c.boss.hp;
         for (int i = 0; i < 60 * (int) (Boss.GLOB_TIME + 2); i++) {
             c.enemies.clear();
             c.update(DT, L);
         }
-        check("a glob left alone crawls back and heals it", c.boss.hp > healedFrom);
+        // A glob left alone simply goes. It used to crawl back and give the press back, and a health
+        // bar that climbs while you watch reads as being cheated rather than as being hard.
+        check("a glob left alone does not heal it", c.boss.hp <= healedFrom);
+        boolean noGlob = true;
+        for (int i = 0; i < Boss.ELEMS; i++) if (c.boss.etype[i] == Boss.E_GLOB) noGlob = false;
+        check("it just fades away", noGlob);
 
         // Dragged off the field, it does not.
         GameCore d = enterBoss(L, Boss.SLIME, 42L);
@@ -384,7 +431,7 @@ final class TestBoss extends Check {
         }
         float before = s.boss.hp;
         toShut(s, L);
-        check("a window shutting on the chain gives a press back", s.boss.hp > before);
+        check("and a window shutting on the chain takes nothing back either", s.boss.hp <= before);
     }
 
     /**
@@ -624,23 +671,27 @@ final class TestBoss extends Check {
         check("it starts out of reach", !c.boss.shovable());
         check("with no charges", c.boss.charges == 0);
 
-        // Charges come from cleared words.
+        // Out of reach, its belt cannot be pressed either: the whole loop is that it has to come
+        // close before anything can be done about it.
         c.enemies.clear();
-        GameCore.Enemy e = add(c, L, new int[] {0}, L.playTop + 10f);
-        c.destroyWord(e, 0f, 0f, L);
-        check("clearing a word banks a charge", c.boss.charges == 1);
+        c.target = null;
+        check("still out of reach until it sinks", c.boss.depth < Boss.SHOVE_REACH);
+        c.tapKey(c.boss.want(), L);
+        check("a belt press out of reach banks nothing", c.boss.charges == 0);
+
+        // Sink it in, and now the belt pays.
+        for (int i = 0; i < 60 * 30 && c.boss.depth < Boss.SHOVE_REACH; i++) c.update(DT, L);
+        c.target = null;
+        c.tapKey(c.boss.want(), L);
+        // Charges used to come from words cleared during the fight, which stopped being possible the
+        // moment a boss stage stopped spawning any — this boss then had no way to earn a swipe at all
+        // and could not be beaten.
+        check("pressing its belt in reach banks a charge", c.boss.charges == 1);
         for (int i = 0; i < 10; i++) {
-            GameCore.Enemy w = add(c, L, new int[] {0}, L.playTop + 10f);
-            c.destroyWord(w, 0f, 0f, L);
+            c.target = null;
+            c.tapKey(c.boss.want(), L);
         }
         check("and they are capped", c.boss.charges == Boss.CHARGE_MAX);
-
-        // It has to have sunk far enough before a swipe reaches it.
-        check("still out of reach until it sinks", c.boss.depth < Boss.SHOVE_REACH);
-        for (int i = 0; i < 60 * 30 && !c.boss.shovable(); i++) {
-            c.enemies.clear();
-            c.update(DT, L);
-        }
         check("once it is low enough a swipe lands", c.boss.shovable());
         float hpWas = c.boss.hp;
         int chargeWas = c.boss.charges;
@@ -651,21 +702,16 @@ final class TestBoss extends Check {
 
         // A press staggers rather than damages, and a stagger doubles the next shove.
         GameCore s = enterBoss(L, Boss.SUMO, 82L);
-        for (int i = 0; i < 20; i++) {
-            GameCore.Enemy w = add(s, L, new int[] {0}, L.playTop + 10f);
-            s.destroyWord(w, 0f, 0f, L);
-        }
         s.enemies.clear();
         s.target = null;
-        for (int i = 0; i < 60 * 30 && !s.boss.shovable(); i++) {
-            s.enemies.clear();
-            s.update(DT, L);
-        }
+        // Sink it into reach first; the belt press below is the one that banks the swipe.
+        for (int i = 0; i < 60 * 30 && s.boss.depth < Boss.SHOVE_REACH; i++) s.update(DT, L);
         float hp0 = s.boss.hp;
         int belt = s.boss.want();
         s.tapKey(belt, L);
         check("a press on its belt does not hurt it", s.boss.hp == hp0);
         check("it staggers it", s.boss.stagger > 0f);
+        check("and banks the swipe that stagger is for", s.boss.charges > 0);
         s.swipeUp(L);
         check("and a staggered shove hits twice as hard",
                 hp0 - s.boss.hp == Boss.STAGGER_BONUS);
@@ -681,7 +727,8 @@ final class TestBoss extends Check {
         check("letting it reach the line costs a life", k.lives < livesWas);
         check("and it starts sinking again", k.boss.active() && k.boss.depth < 0.5f);
 
-        // The swipe falls through to the ordinary panic swipe when no shove is available.
+        // The swipe falls through to the ordinary panic swipe when no shove is available. A boss
+        // stage spawns nothing, so the word here is placed by hand purely to arm pushReady.
         GameCore p = enterBoss(L, Boss.SUMO, 84L);
         p.enemies.clear();
         add(p, L, new int[] {0, 1}, L.dangerY - L.enemyR * 1.5f);

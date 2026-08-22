@@ -755,18 +755,19 @@ final class Preview {
                     for (int i = 0; i < 3; i++) c.tapBoss(c.boss.ex[i], c.boss.ey[i], L);
                 }
                 if (k == Boss.SUMO) {
-                    // Bank a couple of swipes and spend one, so the charge pips are part-full and
-                    // the health bar is part-spent — this boss takes no ordinary presses, so
-                    // without this its frame shows an untouched bar.
-                    for (int q = 0; q < 2; q++) {
-                        GameCore.Enemy e = null;
-                        for (int m = 0; m < c.enemies.size(); m++) {
-                            if (!c.enemies.get(m).destroyed) e = c.enemies.get(m);
+                    // Sink it into reach, press its belt to bank the swipe, and spend one — so the
+                    // frame shows a part-spent bar and a part-full charge row. Only on the first
+                    // round: at five health a staggered shove every round beats it before the shot,
+                    // and the frame then had no boss in it at all.
+                    if (n == 0) {
+                        for (int i = 0; i < 60 * 12 && c.boss.depth < Boss.SHOVE_REACH; i++) {
+                            c.update(DT, L);
                         }
-                        if (e != null) c.destroyWord(e, 0f, 0f, L);
+                        c.target = null;
+                        c.tapKey(c.boss.want(), L);
+                        c.swipeUp(L);
                     }
-                    for (int i = 0; i < 60 * 12 && !c.boss.shovable(); i++) c.update(DT, L);
-                    c.swipeUp(L);
+                    continue;
                 }
                 c.target = null;
                 for (int g = 0; g < Glyph.COUNT; g++) {
@@ -784,18 +785,40 @@ final class Preview {
                     c.boss.hp, c.boss.hpMax, c.boss.open(), liveElems(c.boss));
             shot(dir, tag[k], c, L, w, h, ss);
 
-            // The one with things to drag gets a second frame with one in hand.
+            // The slime gets three more: a split still sitting inside it, the skin stretched out
+            // after a drag, and the rebound the moment the glob comes free.
             if (k == Boss.SLIME) {
+                int glob = -1;
                 for (int i = 0; i < Boss.ELEMS; i++) {
-                    if (c.boss.draggable(i)) {
-                        c.grabBoss(c.boss.ex[i], c.boss.ey[i]);
-                        c.dragBoss(L.w * 0.30f, L.h * 0.42f, L);
-                        break;
-                    }
+                    if (c.boss.draggable(i)) glob = i;
                 }
-                step(c, L, 2 * DT);
-                System.out.printf("boss glob held: %s%n", c.boss.held >= 0);
-                shot(dir, "65-boss-glob-held", c, L, w, h, ss);
+                if (glob >= 0) {
+                    System.out.printf("boss split inside: at %.0f,%.0f, body at %.0f,%.0f r=%.0f%n",
+                            c.boss.ex[glob], c.boss.ey[glob], c.boss.body.centreX(),
+                            c.boss.body.centreY(), c.boss.body.radius());
+                    shot(dir, "65-boss-split-inside", c, L, w, h, ss);
+
+                    // Hauled most of the way to the edge, so the skin is stretched after it. Walked
+                    // there over several frames: the tug is a force, so it needs time to act.
+                    c.grabBoss(c.boss.ex[glob], c.boss.ey[glob]);
+                    float fromX = c.boss.ex[glob], fromY = c.boss.ey[glob];
+                    float toX = L.playLeft + c.boss.er[glob] * 2.6f, toY = L.h * 0.30f;
+                    for (int q = 1; q <= 22; q++) {
+                        float t = q / 22f;
+                        c.dragBoss(fromX + (toX - fromX) * t, fromY + (toY - fromY) * t, L);
+                        c.update(DT, L);
+                    }
+                    System.out.printf("boss stretched: pulled=%s deform=%.3f held=%s%n",
+                            c.boss.body.pulled(), c.boss.body.deform(), c.boss.held >= 0);
+                    shot(dir, "65b-boss-stretched", c, L, w, h, ss);
+
+                    // And free: the skin snaps back and rings.
+                    c.dragBoss(L.playLeft - 4f, toY, L);
+                    step(c, L, 0.10f);
+                    System.out.printf("boss rebound: deform=%.3f held=%s%n",
+                            c.boss.body.deform(), c.boss.held >= 0);
+                    shot(dir, "65c-boss-rebound", c, L, w, h, ss);
+                }
             }
         }
 

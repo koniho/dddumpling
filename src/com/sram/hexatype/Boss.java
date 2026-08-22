@@ -13,9 +13,22 @@ import java.util.Random;
  *   <li>A boss <em>arrives</em> ({@link #INTRO}), announcing itself over an empty field.
  *   <li>It then alternates a shut phase with an <em>open</em> one. It can only be hurt while open,
  *       and while open it claims the letters it is asking for — see {@link #wants}.
- *   <li>It summons words the whole time, so ordinary play carries on underneath the fight.
+ *   <li>Nothing else is on the field. A boss stage releases no words at all: the fight is the
+ *       stage, and it gets the screen to itself.
  *   <li>The stage does not end until it is beaten. There is no way past it.
  * </ul>
+ *
+ * <h2>Where the threat comes from</h2>
+ *
+ * A boss stage used to run a thin wave underneath the fight, and that wave was quietly carrying two
+ * jobs nobody had written down: it was the only thing that could hurt you, and — since enraging
+ * worked by speeding the spawns up — it was the only reason to hurry. Taking the words away left
+ * every boss but {@link #SUMO} completely harmless, which turns "must be beaten" into "may be poked
+ * at indefinitely".
+ *
+ * So the pressure is the boss's own now. Past {@link #ENRAGE_AT} it starts striking on its own clock
+ * ({@link #RAGE_HIT}) and each strike costs a life — the same punishment the faster spawns added up
+ * to, and legible as coming from the thing you are actually fighting.
  *
  * <h2>Three ways in</h2>
  *
@@ -49,8 +62,13 @@ final class Boss {
     static final int EVERY = 5;
 
     /**
-     * A soft-body slime. Keys whittle its chain down; every hit sheds a glob that has to be
-     * <em>dragged</em> off the play area before it crawls back and heals it.
+     * A soft-body slime. Keys whittle its chain down, and every hit sheds a glob that is worth
+     * another hit again if it is <em>dragged</em> off the play area.
+     *
+     * The globs used to crawl back and <em>heal</em> it, which was the wrong shape of pressure: a
+     * fight where the bar goes back up reads as being cheated rather than as being hard, and it
+     * punished a player for having two thumbs and one spare finger. They are a bonus now, not a
+     * tax — ignore them and the fight is simply slower.
      */
     static final int SLIME = 0;
     /**
@@ -69,8 +87,8 @@ final class Boss {
      */
     static final int MAGPIE = 3;
     /**
-     * It sinks toward the danger line and has to be <em>swiped</em> back, and swipes are paid for
-     * with words cleared. A press on its belt staggers it, and a stagger doubles the next shove.
+     * It sinks toward the danger line and has to be <em>swiped</em> back. A press on its belt banks
+     * the swipe and staggers it, and a staggered shove hits twice as hard.
      */
     static final int SUMO = 4;
     static final int COUNT = 5;
@@ -104,17 +122,16 @@ final class Boss {
      * past, which is what enraging is: the fight gets harder to survive and no easier to leave.
      */
     static final float ENRAGE_AT = 26f;
-    /**
-     * What enraging multiplies the minion spawn rate by, once it has fully wound up over
-     * {@link #ENRAGE_RAMP} seconds.
-     *
-     * Deliberately small, and this is the CLAUDE.md rule about two difficulty sources multiplying:
-     * this sits on top of a ramp that has already halved the spawn interval by the late stages, so
-     * at stage 30 the product is what the player actually meets. 1.5 is a fight that is visibly
-     * getting away from you; 4 would be the frenzy wall again, wearing a boss costume.
-     */
-    static final float ENRAGE_RATE = 1.5f;
     static final float ENRAGE_RAMP = 8f;
+    /**
+     * Seconds between an enraged boss's strikes, each of which costs a life.
+     *
+     * This is what enraging actually does now. It used to multiply a minion spawn rate, which stopped
+     * meaning anything the moment boss stages stopped spawning words. Six seconds against three lives
+     * puts the floor on a fight nobody is winning at somewhere under a minute — long enough to keep
+     * trying, short enough that stalling is not a strategy.
+     */
+    static final float RAGE_HIT = 6f;
 
     /**
      * Seconds of one open/shut cycle, and how many of those seconds the window is open for.
@@ -176,7 +193,7 @@ final class Boss {
     /** The boss took the input and refused it: right thing, wrong moment, or a held key. */
     static final int REBUFF = 3;
 
-    /** Words cleared per swipe charge, and the most charges {@link #SUMO} will bank. */
+    /** The most swipes {@link #SUMO} will bank. Earned by pressing its belt. */
     static final int CHARGE_MAX = 3;
     /**
      * How far down {@link #SUMO} has to have sunk before a swipe can reach it, and how long it takes
@@ -214,6 +231,22 @@ final class Boss {
 
     /** How long a shed glob survives untouched, and a dropped key. */
     static final float GLOB_TIME = 5f, KEY_TIME = 4.5f;
+    /**
+     * How hard a dragged glob stretches the skin it is being hauled out of, and how hard the skin
+     * snaps back when it comes free.
+     *
+     * The tug is well short of full strength on purpose: the skin should trail the glob and lose,
+     * which is what makes the glob feel like it is being torn out rather than towed. The snap is the
+     * emphatic one — it is the payoff frame of the whole mechanic.
+     */
+    private static final float PULL_K = 0.85f, SNAP_BACK = 0.9f;
+    /**
+     * What one landed press does to the body.
+     *
+     * Up from 0.3, which was a polite little dent on a boss being hit once every few seconds. The
+     * body is the health bar as far as the eye is concerned, so a hit wants to be felt in it.
+     */
+    private static final float HIT_PUNCH = 0.65f;
     /** The breather with a whole deck that fetching a key back buys, before another is taken. */
     static final float STEAL_GAP = 2.5f;
 
@@ -287,10 +320,8 @@ final class Boss {
         return t > 1f ? 1f : t;
     }
 
-    /** What the minion spawn interval is divided by right now. */
-    float minionRate() {
-        return 1f + (ENRAGE_RATE - 1f) * enrage();
-    }
+    /** Seconds until the next strike, once it is enraged. Only ever running while it is. */
+    float rageT;
 
     /** 0..1 through the arrival card. */
     float introProgress() {
@@ -324,6 +355,7 @@ final class Boss {
         depth = 0f;
         stagger = 0f;
         stealT = 0f;
+        rageT = RAGE_HIT;
         tapBeat = false;
         want = -1;
         stolen = -1;
@@ -370,6 +402,7 @@ final class Boss {
         depth = 0f;
         stagger = 0f;
         stealT = 0f;
+        rageT = 0f;
         tapBeat = false;
         held = -1;
         chordT = 0f;
@@ -642,9 +675,16 @@ final class Boss {
                 return r;
             }
             case SUMO: {
-                // Does not hurt it — it staggers it, and a stagger doubles the next shove. So the
-                // keys matter here without being the damage.
+                // Does not hurt it. It staggers it — which doubles the next shove — and banks the
+                // swipe that shove will be spent on. So the keys pay for the gesture, and the two
+                // halves of this fight need each other.
+                //
+                // Charges used to come from words cleared during the fight, which was a fine rule
+                // until boss stages stopped spawning words: this boss then had no way to earn a
+                // swipe at all and could not be beaten. If a mechanic is paid for in some other
+                // system's currency, it dies when that system does.
                 stagger = STAGGER_TIME;
+                if (charges < CHARGE_MAX) charges++;
                 want = rnd.nextInt(Glyph.COUNT);
                 return PART;
             }
@@ -729,12 +769,31 @@ final class Boss {
         ey[held] = y;
         int t = etype[held];
         if (t == E_GLOB) {
-            // Off the side or off the top of the play area and it cannot crawl back. Deliberately
-            // not "anywhere near the edge": the drag has to be a decision, and a glob shed at the
-            // body is most of the way across the field from either edge.
-            if (x <= L.playLeft || x >= L.playRight || y <= L.playTop) {
+            // Carried to the edge of the play area, which is worth another hit on the boss.
+            //
+            // The test is the glob's own edge touching the play edge, not its centre reaching it.
+            // Centre-on-the-line meant the finger had to arrive within a couple of percent of the
+            // physical screen edge, where Android's own edge gestures start stealing the touch — so
+            // the drag kept ending in a lifted finger instead of a landed hit, and it read as only
+            // counting on release. There is a whole glob's width of slack now, and the glob is
+            // visibly against the wall when it lands.
+            float slack = er[held];
+            if (x <= L.playLeft + slack || x >= L.playRight - slack || y <= L.playTop + slack) {
+                // Free. The skin lets go and snaps back: a dent inward exactly where it had been
+                // stretched out to, plus a whole-body wobble, on top of the release the solver gives
+                // for nothing. This is the moment the mechanic is built around, so it is the one
+                // place the body gets a full-strength answer.
+                if (body != null) {
+                    body.letGo();
+                    body.impulse(ex[held], ey[held], SNAP_BACK);
+                    body.squash(0.4f);
+                }
                 clearElem(held);
                 held = -1;
+                // Worth a hit of its own, which is what makes carrying one off a decision rather
+                // than tidying up. A glob is only ever shed by a press, so this cannot feed itself:
+                // damage taken here sheds nothing further.
+                damage(1f);
                 return HIT;
             }
         } else if (t == E_KEY) {
@@ -775,12 +834,6 @@ final class Boss {
         return true;
     }
 
-    /** A word was cleared during the fight. {@link #SUMO} banks it as a swipe. */
-    void wordCleared() {
-        if (!fighting() || kind != SUMO) return;
-        if (charges < CHARGE_MAX) charges++;
-    }
-
     // ---- internals ----------------------------------------------------------
 
     private int damage(float n) {
@@ -789,7 +842,7 @@ final class Boss {
         // Dented where it was struck, from above, and harder for a bigger hit. The last blow gets a
         // full-strength punch, which is what makes the burst look earned.
         if (body != null) {
-            float k = hp <= 0f ? 1f : 0.30f * n;
+            float k = hp <= 0f ? 1f : HIT_PUNCH * n;
             body.impulse(body.centreX(), body.centreY() - body.radius() * 0.65f, k);
         }
         if (hp <= 0f) {
@@ -804,11 +857,6 @@ final class Boss {
             for (int i = 0; i < ELEMS; i++) clearElem(i);
         }
         return HIT;
-    }
-
-    private void heal(float n) {
-        if (beaten) return;
-        hp = Math.min(hpMax, hp + n);
     }
 
     private void clearElem(int i) {
@@ -842,7 +890,60 @@ final class Boss {
         globSide[i] = rnd.nextBoolean() ? -1f : 1f;
         globLift[i] = 0.35f + rnd.nextFloat() * 0.5f;
         moved[i] = false;
+        seed(i);
     }
+
+    /**
+     * Puts element {@code i} where it belongs relative to a body at {@code bx,by} of radius
+     * {@code br}. Leaves a held or already-moved element where the finger left it.
+     *
+     * The one copy of this arithmetic, called by the per-frame layout pass and by {@link #seed} on
+     * the frame an element is created. Two copies is the trap this file has been bitten by before —
+     * and the symptom here would have been a glob that jumped a few pixels on its second frame.
+     */
+    private void place(int i, float bx, float by, float br, Layout L) {
+        if (etype[i] == E_GLOB) {
+            // Small enough that two of them inside the body do not become its eyes — at 0.30 a pair
+            // sat exactly where a face goes and the creature stopped having one.
+            er[i] = br * 0.23f;
+            if (held == i || moved[i]) return;
+            // Inside the body. A glob is a piece that has come loose, not a thing standing next to
+            // the boss — it sits in the goo it split off from, glowing through it, until a finger
+            // hauls it out. That is also what makes the stretch read: the skin has to be dragged out
+            // around something that started within it.
+            ex[i] = bx + globSide[i] * br * 0.34f;
+            ey[i] = by + br * (globLift[i] - 0.6f) * 0.5f;
+        } else if (etype[i] == E_KEY) {
+            er[i] = L == null ? br * 0.30f : L.keyR * 0.78f;
+            if (held == i || moved[i]) return;
+            // Below the body: the magpie drops it, so it is out in the open from the start.
+            ex[i] = bx + globSide[i] * br * 0.85f;
+            ey[i] = by + br * (1.25f + globLift[i] * 0.35f);
+        }
+    }
+
+    /**
+     * Puts a just-created element where the layout pass would, from the body's last known placement
+     * — so it is never briefly at the origin. See {@link #lastBX}.
+     *
+     * No {@link Layout} here: an element is created by a press, which does not have one. Only the
+     * dropped key's radius wants it, and one frame at an approximate radius is invisible where a
+     * frame at the origin was not.
+     */
+    private void seed(int i) {
+        if (lastBR > 0f) place(i, lastBX, lastBY, lastBR, null);
+    }
+
+    /**
+     * Where the layout pass last put the body.
+     *
+     * Kept because an element is created by a press, which has no {@link Layout} to hand, and the
+     * layout pass does not run again until the next frame — so a glob shed this frame had no position
+     * at all until then, and both the renderer and the hit-test read it as sitting at the origin. On
+     * screen that was a red blob appearing in the top-left corner for a frame every time the boss was
+     * hit. Seeding from here means an element is somewhere sensible from the instant it exists.
+     */
+    private float lastBX, lastBY, lastBR;
 
     /** Where a shed glob sits relative to the body, until a finger moves it. */
     private final float[] globSide = new float[ELEMS];
@@ -876,6 +977,7 @@ final class Boss {
         globSide[i] = rnd.nextBoolean() ? -1f : 1f;
         globLift[i] = 0.5f;
         moved[i] = false;
+        seed(i);
         // It is on the field now, not in its pocket — but it is not yours again until it is home, and
         // the deck stays short until then. Which is exactly why the new letter still has to avoid the
         // key being denied: a bare reroll here could land on it, and then the only press that could
@@ -945,6 +1047,14 @@ final class Boss {
             } else {
                 body.moveTo(bodyX(L), bodyY(L));
             }
+            // A glob being hauled out stretches the skin after it, like pulling at something in
+            // treacle. Re-aimed every frame at wherever the finger has got to, and let go the
+            // instant nothing is held — the spring back is the solver's own and needs no schedule.
+            if (held >= 0 && etype[held] == E_GLOB) {
+                body.pull(ex[held], ey[held], PULL_K);
+            } else {
+                body.letGo();
+            }
             body.update(dt);
         }
 
@@ -976,6 +1086,21 @@ final class Boss {
         }
         ageElems(dt);
 
+        // Enraged: it starts hitting back on its own clock. This is the whole of what enraging does
+        // now, and it is the only threat on the field for four of the five.
+        if (enrage() > 0f) {
+            rageT -= dt;
+            if (rageT <= 0f) {
+                rageT = RAGE_HIT;
+                if (body != null) body.squash(0.6f);
+                return true;
+            }
+        } else {
+            // Held at a full interval so the first strike lands a whole RAGE_HIT after it turns,
+            // rather than on the frame the temper goes.
+            rageT = RAGE_HIT;
+        }
+
         if (kind == SUMO) {
             depth += dt / SINK_TIME;
             if (depth >= 1f) {
@@ -992,31 +1117,25 @@ final class Boss {
         phase += dt;
         if (phase >= cycle) phase -= cycle;
         if (wasOpen && !open()) {
-            // The window shut. What that costs is the boss's own business: the chain gives a press
-            // back, and a part-finished chord is simply lost.
+            // The window shut. A part-finished chord is lost, and that is the only thing a shut
+            // window costs anybody.
             //
-            // The wakes deliberately survive it. Losing them as well meant a fumbled chord cost six
-            // actions to get back to where it already was, which is a punishment that compounds — and
+            // Nothing heals. The chain used to give a press back here, which meant the health bar
+            // went up while you watched — and a bar that goes up reads as being cheated rather than
+            // as being hard. The wakes survive too, for the same reason: a fumbled chord costing six
+            // actions to get back to where it already was is a punishment that compounds, and
             // compounding punishment on a boss with no way past it is how a stage becomes a wall.
-            if (kind == SLIME) heal(HEAL_SHUT);
             chord = 0;
         }
         return false;
     }
 
-    /**
-     * How much of {@link #SLIME}'s chain it recovers when a window shuts on it.
-     *
-     * An earlier version also gave a press back for any wrong letter pressed during the window,
-     * which sounds right for an endurance boss and is not: with words falling underneath it, most
-     * "wrong" letters are somebody typing a minion, so it punished ordinary play for happening at
-     * the same time as the fight.
-     */
-    private static final float HEAL_SHUT = 1f;
-
     /** Where every live element is this frame. Read by both the hit-test and the renderer. */
     private void layoutElems(Layout L) {
         float bx = bodyX(L), by = bodyY(L), br = bodyR(L);
+        lastBX = bx;
+        lastBY = by;
+        lastBR = br;
         for (int i = 0; i < ELEMS; i++) {
             switch (etype[i]) {
                 case E_HEAD:
@@ -1034,14 +1153,7 @@ final class Boss {
                     break;
                 case E_GLOB:
                 case E_KEY:
-                    er[i] = etype[i] == E_KEY ? L.keyR * 0.78f : br * 0.34f;
-                    if (held == i || moved[i]) break;   // a finger owns it now
-                    // Below the body, not beside it. Beside it put them half on top of the boss —
-                    // a glob and the thing that shed it drawn over each other, which reads as one
-                    // muddled object rather than as a thing to pick up. There is nothing under the
-                    // body but empty field, so that is where the litter goes.
-                    ex[i] = bx + globSide[i] * br * 0.85f;
-                    ey[i] = by + br * (1.25f + globLift[i] * 0.35f);
+                    place(i, bx, by, br, L);
                     break;
                 default:
                     break;
@@ -1060,10 +1172,7 @@ final class Boss {
             if (held == i) continue;
             elife[i] -= dt;
             if (elife[i] > 0f) continue;
-            if (etype[i] == E_GLOB) {
-                // Crawled back in. The press it cost comes back with it.
-                heal(1f);
-            } else if (etype[i] == E_KEY) {
+            if (etype[i] == E_KEY) {
                 // Snatched again, and it is the same key: losing the drag has to cost the thing the
                 // drag was for, or the theft would be a formality.
                 stolen = keyOf[i];

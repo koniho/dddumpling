@@ -463,6 +463,40 @@ nothing. Follow the pattern rather than "fixing" it.
 - **A silhouette must be fully colourless.** The leaf and stem colours were left as
   themselves at first, so every blacked-out fruit had a bright green leaf on it and gave
   itself away.
+- **A rule can be quietly carrying a job nobody wrote down.** Boss stages used to run a thin wave
+  under the fight. Taking it away on request removed two things that were never stated: the only
+  thing that could hurt you on four of the five bosses, and — since enraging worked by speeding the
+  spawns up — the only reason to hurry. `Boss.RAGE_HIT` and the belt-press charge replace them. Before
+  deleting a subsystem, ask what else is leaning on it; the compiler cannot tell you that a mechanic
+  was the load-bearing threat.
+- **A mechanic paid for in another system's currency dies when that system does.** SUMO's swipes cost
+  a charge earned by clearing words, so the moment boss stages stopped spawning words it could not be
+  beaten at all. Charges come off its own belt now. Anything that spends a resource should earn it
+  from inside the same fight.
+- **An object created between layout passes has no position.** A glob is shed by a press, which has no
+  `Layout`; the layout pass does not run until the next frame, so for one frame both the renderer and
+  the hit-test read it at the origin — a red blob in the top-left corner every time the boss was hit.
+  `Boss.seed` places it from the body's last known spot, and `place` is the single copy of that
+  arithmetic so the two cannot disagree by a few pixels on the second frame.
+- **A sustained force is not a repeated impulse.** Stretching the skin toward a dragged glob has to be
+  a force inside the solver's substeps, not a velocity kick per frame — a per-frame kick pulls twice
+  as hard at 120fps as at 60. And it has to be a *clamped target* rather than a range check: testing
+  the raw target against the reach meant the tug switched off as soon as the glob got further than a
+  radius away, so the skin twitched at the start of a drag and then let go, which is the opposite of
+  the intended read. Scale it by the body radius like every other force there, or it dents a
+  full-size boss and flings a thumbnail.
+- **A health bar that goes up reads as cheating, not as difficulty.** The slime's globs used to crawl
+  back and heal it. Watching the bar climb while playing correctly is not a hard fight, it is an
+  unfair one — and it punished the player for having only so many fingers. They are a bonus now:
+  ignore them and the fight is merely slower.
+- **A penalty for a mistimed press must not tax ordinary play.** The boss claimed its own letter
+  whenever nothing was engaged, so starting a word that happened to begin with the drum's letter was
+  read as a fumbled beat — and a landed rebuff resets that beat, so typing normally pushed the window
+  away. It surfaced as the soak curve *inverting*: the quick tier finished below the steady one,
+  because faster hands start more words and trip over that letter more often. `GameCore.bossClaims`
+  now only hands a shut boss its letter when no word on the field wants it either; a deliberate early
+  press is still punished, because then there is nothing else the press could have meant. If speed
+  ever makes a tier do worse, look for a rule that is charging for a keystroke's *side effect*.
 - **A dispatch on `hit >= CONSTANT` breaks the moment you add a higher constant.**
   `SettingsUi`'s hit codes are ranges, and `GameView` tested them in ascending order — so adding
   `HIT_STAGE = 300` above `HIT_TEST = 200` meant every stage chip was read as a playtest chip and

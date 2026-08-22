@@ -122,6 +122,10 @@ final class BossScreen extends Draw {
         // as a blob wearing heads rather than as a creature with three of them.
         int face = b.kind == Boss.TRIPLETS ? -1 : Boss.FACE[b.kind];
         Slime.draw(p, b.body, c.clock, col, face, b.open() ? 0.15f : 0.5f, fade);
+        // Its own structure, faintly, so the wobble reads as physics rather than as a wandering
+        // outline. Brightest just after a hit and while the skin is being stretched — the two
+        // moments there is something to see.
+        Slime.mesh(p, b.body, col, Math.max(b.hurt, b.body.pulled() ? 0.8f : 0f), fade);
 
         ornament(p, c, L, b, fade);
         elements(p, c, L, b, fade);
@@ -309,21 +313,33 @@ final class BossScreen extends Draw {
         }
     }
 
-    /** A shed glob: a small soft blob with a countdown ring, to be dragged off the field. */
+    /**
+     * A shed glob: the piece that came loose, to be hauled out of the body it split off from.
+     *
+     * Drawn rose and lit from within rather than in the body's own colour. It starts *inside* the
+     * boss, so it has to be the one thing in there that is plainly not the boss — in the slime's own
+     * mint it was a slightly different shade of the thing it was sitting in, and invisible.
+     */
     private static void glob(Painter p, GameCore c, Boss b, int i, float x, float y, float rr,
             float life, boolean held, float fade) {
-        int col = Glyph.COLOR[Boss.FACE[Boss.SLIME]];
+        int col = ROSE;
         float k = Math.min(1f, life / Boss.GLOB_TIME);
         // Wobbles on its own sines rather than an RNG, so preview frames still hash the same.
         float wx = 1f + 0.10f * (float) Math.sin(c.clock * 3.1f + hash(i * 17) * 6.283f);
         float wy = 1f + 0.10f * (float) Math.sin(c.clock * 3.7f + hash(i * 29) * 6.283f);
+        // A red glow through the goo, pulsing, so it shows while it is still inside the body.
+        float beat = 0.72f + 0.28f * (float) Math.sin(c.clock * 5.5f + i);
+        for (int q = 3; q >= 1; q--) {
+            p.fillCircle(x, y, rr * (1.15f + 0.30f * q),
+                    Glyph.withAlpha(col, (int) (46 * beat * fade / q)));
+        }
         if (held) {
             for (int q = 2; q >= 1; q--) {
                 p.fillCircle(x, y, rr * (1.1f + 0.2f * q), Glyph.withAlpha(GOLD,
                         (int) (40 * fade / q)));
             }
         }
-        p.fillEllipse(x, y, rr * wx, rr * wy, Glyph.withAlpha(col, (int) (190 * fade)));
+        p.fillEllipse(x, y, rr * wx, rr * wy, Glyph.withAlpha(col, (int) (215 * fade)));
         p.strokeCircle(x, y, rr, Glyph.withAlpha(Glyph.mix(col, 0xFFFFFFFF, 0.4f),
                 (int) (235 * fade)), rr * 0.11f);
         p.fillEllipse(x - rr * 0.3f, y - rr * 0.34f, rr * 0.22f, rr * 0.14f,

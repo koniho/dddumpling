@@ -105,6 +105,50 @@ final class Slime extends Draw {
     }
 
     /**
+     * The soft body's own structure, drawn faintly inside it: the node ring and the spokes out to it.
+     *
+     * This is what makes the jiggle legible. A smooth silhouette wobbling is surprisingly hard to
+     * read as physics — the eye needs something interior to compare the edge against, and the mesh is
+     * already there in the sim, so drawing it costs nothing but the lines. It deforms with the body
+     * because it *is* the body: every point here is a node, not a scaled copy of the outline.
+     *
+     * Faint, and inside the rim rather than on it. At full strength it reads as a wireframe and the
+     * creature stops being a creature.
+     *
+     * @param heat 0..1 extra brightness, for a body that has just been hit or is being stretched
+     */
+    static void mesh(Painter p, Softbody b, int tint, float heat, float fade) {
+        int n = b.nodes();
+        if (n < 3) return;
+        float cx = b.centreX(), cy = b.centreY();
+        int col = Glyph.mix(tint, 0xFFFFFFFF, 0.55f);
+        int a = (int) ((26 + 44 * heat) * fade);
+        if (a <= 1) return;
+        float w = b.radius() * 0.018f;
+
+        // Spokes, every other node so the middle does not fill in with lines.
+        for (int i = 0; i < n; i += 2) {
+            float nx = b.nodeX(i), ny = b.nodeY(i);
+            p.line(cx + (nx - cx) * 0.18f, cy + (ny - cy) * 0.18f,
+                    cx + (nx - cx) * 0.86f, cy + (ny - cy) * 0.86f,
+                    Glyph.withAlpha(col, a), w);
+        }
+        // And one ring inside the skin, on the same nodes, so the spokes have something to meet.
+        float[] ring = new float[n * 2];
+        for (int i = 0; i < n; i++) {
+            ring[i * 2] = cx + (b.nodeX(i) - cx) * 0.62f;
+            ring[i * 2 + 1] = cy + (b.nodeY(i) - cy) * 0.62f;
+        }
+        // Closed by hand: polyline leaves an open path, and a missing segment on a ring is the one
+        // thing the eye does notice.
+        float[] closed = new float[ring.length + 2];
+        System.arraycopy(ring, 0, closed, 0, ring.length);
+        closed[ring.length] = ring[0];
+        closed[ring.length + 1] = ring[1];
+        p.polyline(closed, Glyph.withAlpha(col, a), w);
+    }
+
+    /**
      * Lowest point of the outline near {@code atX}, or the bottom of it if nothing is near.
      *
      * Read off the outline rather than derived from the centre, so the sheen rides with the body:

@@ -1680,17 +1680,10 @@ final class GameCore {
      */
     int crowdCap() {
         if (powerActive()) return (int) (maxEnemies() * Power.crowdRate(ramp()));
-        // A boss holds the crowd down. The fight is the thing being asked of the player, and a
-        // boss stage that also runs a full wave underneath it is two stages at once — which is the
-        // "two difficulty sources multiply" trap with a new hat on. The minions are there to make
-        // ignoring the field expensive, not to be the stage.
-        if (bossFighting()) return Math.min(maxEnemies(), BOSS_CROWD);
+        // Nothing to cap on a boss stage: it releases no words at all.
+        if (boss.active()) return 0;
         return maxEnemies();
     }
-
-    /** Words a boss stage lets pile up, and how much longer it waits between them. */
-    static final int BOSS_CROWD = 3;
-    static final float BOSS_GAP = 1.35f;
 
     int maxWordLen() { return Math.min(5, 2 + rampStep()); }
 
@@ -2522,7 +2515,8 @@ final class GameCore {
         else if (!buddy.out()) buddy.leave();
 
         if (boss.active()) {
-            // True on the frame SUMO reaches the line, which costs a life like any other landing.
+            // True on the frame the boss lands a hit: SUMO reaching the line, or any boss striking
+            // once it has enraged. Either costs a life, exactly as a word landing does.
             if (boss.update(dt, L, rnd)) bossSlam(L);
             // That may have been the last life, and nothing below here runs after a run ends.
             if (state != PLAY) return;
@@ -2536,25 +2530,19 @@ final class GameCore {
         // next stage cannot start arriving until the field is completely clear.
         if (stageGap > 0) {
             stageGap -= dt;
-        } else if (powerActive() || bossFighting()
-                || (!boss.active() && spawnedThisStage < stageQuota())) {
+        } else if (powerActive() || (!boss.active() && spawnedThisStage < stageQuota())) {
             spawnTimer -= dt;
             // Counted against live words only: a word already flying apart is no longer
             // occupying the field as far as pacing is concerned. During a frenzy the quota
-            // is ignored: words keep coming until the timer runs out and ends the stage. A boss
-            // ignores it for the same reason, and its stage is only satisfied by beating it — so
-            // the quota must not be counted up during the fight or the stage would try to end
-            // underneath the boss.
+            // is ignored: words keep coming until the timer runs out and ends the stage.
+            //
+            // A boss stage spawns nothing at all. It used to run a thin wave underneath the fight,
+            // and the fight is the stage — the words were dividing attention away from the thing
+            // the stage is actually about, and they took the screen the boss needs.
             if (spawnTimer <= 0 && liveEnemies() < crowdCap()) {
                 spawn(L);
-                if (!powerActive() && !bossFighting()) spawnedThisStage++;
-                if (bossFighting()) {
-                    // Slower than an ordinary wave, and speeding up as the boss enrages: stalling
-                    // the fight is what enraging punishes, and this is how it does the punishing.
-                    spawnTimer = spawnInterval() * BOSS_GAP / boss.minionRate();
-                } else {
-                    spawnTimer = spawnInterval() / (powerActive() ? Power.spawnRate(ramp()) : 1f);
-                }
+                if (!powerActive()) spawnedThisStage++;
+                spawnTimer = spawnInterval() / (powerActive() ? Power.spawnRate(ramp()) : 1f);
             }
         } else if (stageCleared()) {
             beginStageEnd();
@@ -2697,9 +2685,6 @@ final class GameCore {
         resolvedThisStage++;
         // Scored per press, so a stacked word is worth what it cost to clear.
         score += 25 * e.totalPresses();
-        // The boss may be keeping score of these: SUMO's shoves are paid for with cleared words,
-        // which is what stops the swipe being free and makes the minions worth typing.
-        boss.wordCleared();
         if (chime && sound != null) sound.clearWord();
     }
 
