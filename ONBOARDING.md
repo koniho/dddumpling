@@ -104,12 +104,16 @@ would measure a stalemate rather than a difficulty curve.
 
 - **Every rule change gets an assertion** in the matching `Test*` suite. Every new visual state gets
   a frame in `tools/Preview.java` so it can be looked at.
-- **Comments explain *why*,** especially where a value was tuned against a failure. Many constants
-  are at their value because the obvious value was wrong, and the comment says so. Match that voice:
-  dense prose javadoc that argues for the number, not a restatement of the code.
+- **Comments are terse and explain *why*.** One or two lines. Many constants are at their value
+  because the obvious value was wrong, and the comment says so — but as a clause, not a paragraph.
+  Keep the fact, drop the essay: no restating the code, no narrating the debugging. Every comment
+  line is one every future reader pays for, and reading is what costs on this repo.
 - The `Test*` classes extend `Check` and the renderers extend `Draw` **so helpers and colours resolve
   unqualified.** That is deliberate. Follow the pattern rather than "fixing" it.
-- Files over ~350 lines want splitting. `GameCore` is the outlier at ~3,000 and is not a licence.
+- Files over ~350 lines want splitting, and the seam is `Fx`'s: statics taking `GameCore c` that
+  work on its fields rather than owning them. `Pacing`, `Blade`, `CaseUi`, `Interlude` and `BossPlay`
+  all came out of `GameCore` that way. What must *not* be split is `GameCore.update` and `tapKey` —
+  their ordering is load-bearing.
 - Prefer the plain-English names from `GLOSSARY.md` when talking to the user.
 
 ## The five traps that catch people first
@@ -168,6 +172,10 @@ Any new gesture in play has to answer this question before anything else.
 
 ```sh
 ./check.sh              # rules + frames, no SDK needed
+./check.sh -q           # failures, diagnostics and the tally only — use this by default
+./check.sh -q -r        # rules only, no frames. Seconds.
+./check.sh -q -s Boss   # one suite
+./check.sh -q -f 60 -c 0,.1,1,.45   # one frame, cropped. Cheaper to look at than a whole screen.
 ./check.sh 1080 2400 2  # render at real device size; use when checking layout
 ./build.sh              # gated on check.sh; produces a signed hexatype.apk
 ./deploy.sh             # build + install + launch

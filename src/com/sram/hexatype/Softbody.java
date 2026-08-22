@@ -1,49 +1,29 @@
 package com.sram.hexatype;
 
 /**
- * A pressurised soft body: a ring of mass points held out by an internal pressure, which is what
- * a boss slime is made of.
+ * A pressurised soft body: a ring of mass points held out from inside. What a boss is made of.
  *
- * Four forces, one of each per node. Skin springs between neighbours hold the perimeter;
- * <b>pressure</b> along each edge's outward normal holds the area, and is the term that makes a
- * dent on one side come out as a bulge on the other — which is the whole reading of "squishy", and
- * the reason this is not simply a mesh of springs. Springs alone have no opinion about the space
- * inside themselves and fold flat the first time anything pushes them.
+ * Four forces per node. <b>Skin springs</b> between neighbours hold the perimeter. <b>Pressure</b>
+ * along each edge's outward normal holds the area — the term that turns a dent on one side into a
+ * bulge on the other, and why this is not just a mesh of springs, which fold flat. <b>Pull toward
+ * the rest shape</b>, weak: stiff makes it a wheel that answers a dent by rotating, absent leaves
+ * no bending stiffness at all (a squash was still 6% flat twenty seconds later, decaying like one
+ * over root t). <b>Centring pull</b> on the centroid toward home, applied uniformly, so it moves
+ * the centre of mass without touching the wobble.
  *
- * The third force is a <b>weak pull toward being round</b>, each node toward {@link #rest} from the
- * centroid, and it has to be both there and weak. Stiff, it is a hub and spokes, and a
- * hub-and-spokes blob is a wheel: it answers a dent by rotating rather than by bulging elsewhere.
- * Missing, the body has no <em>bending</em> stiffness at all — a node pushed straight out along its
- * own radius barely stretches its two nearly-tangential neighbours, so an area-preserving
- * flattening costs almost nothing and relaxes only at third order. Measured: without it a single
- * squash was still 6% flat twenty seconds later, decaying like one over root t rather than
- * exponentially, so a boss taking hits for thirty seconds went quietly lopsided and stayed that
- * way. The fourth is a <b>centring pull</b> on the centroid toward {@link #homeX}/{@link #homeY},
- * applied equally to every node — a uniform body force can only move the centre of mass, so it
- * cannot touch the wobble, which is what lets a hit shove the whole blob and still have it come
- * home.
+ * <p><b>Deterministic.</b> The harness hash-compares frames, so no RNG and no wall clock: the idle
+ * breath is two ring harmonics at hashed rates, off a clock accumulated from {@code dt}.
  *
- * <p><b>Deterministic, and it has to be.</b> The preview harness hash-compares every rendered
- * frame between runs, so an RNG or a wall clock in here would make every check differ for no
- * reason. There is none: the idle breath is two harmonics of the ring at rates and phases hashed
- * off a seed the caller names, run off a clock accumulated from the {@code dt} it is handed — the
- * {@code Cabinet.shimmer} shape. See the note on "random" motion in CLAUDE.md.
- *
- * <p><b>Stability.</b> Semi-implicit Euler, substepped: {@link #update} clamps {@code dt} to
- * {@link #MAX_DT} and splits what is left into steps of at most {@link #STEP}. Both guards are
- * load-bearing and they do different jobs — the clamp makes a long frame (a collection, a resumed
- * app, a test handing it a minute) a <em>slow</em> frame rather than an exploded one; the substep
- * is what keeps the stiffness usable. Every stiffness here is an acceleration per unit of
- * displacement, i.e. an angular frequency squared, which makes the sim scale-invariant: the same
- * constants wobble at the same rate whether the blob is a thumbnail or half the screen.
+ * <p><b>Stability.</b> Semi-implicit Euler. {@link #update} clamps {@code dt} to {@link #MAX_DT} —
+ * a long frame is a slow frame, not an exploded one — and substeps at {@link #STEP}, which keeps
+ * the stiffness usable. Every stiffness is an acceleration per unit displacement, i.e. a frequency
+ * squared, so the sim is scale-invariant: same wobble rate at any size.
  */
 final class Softbody {
 
     /**
-     * Nodes in the ring. Eighteen because of both ends: below about twelve the silhouette reads as
-     * a polygon however hard {@link #outline} smooths it, and a dent from {@link #impulse} lands on
-     * two nodes and looks like a corner rather than a press. Above about twenty-four nothing
-     * changes on screen and it is all cost — this runs every frame under a whole field of words.
+     * Ring nodes. Under ~12 the silhouette reads as a polygon and a dent as a corner; over ~24 is
+     * all cost, and this runs every frame.
      */
     static final int NODES = 18;
     /** Spline samples per node gap in {@link #outline}. Eighteen at four is 72 points. */
@@ -58,90 +38,64 @@ final class Softbody {
     private static final int MAX_STEPS = 8;
 
     /**
-     * Skin spring: acceleration per pixel of extension, so 1/s², and its square root is the
-     * frequency. 1600 is 40 rad/s for one spring and twice that for the shortest wavelength the
-     * ring can carry, against the 240 rad/s an explicit step of {@link #STEP} can hold — a factor
-     * of three of headroom, which is what a phone dropping frames needs.
+     * Skin spring, in 1/s². 1600 = 40 rad/s, 80 for the shortest ring mode, against the 240 an
+     * explicit {@link #STEP} holds — 3x headroom, which a phone dropping frames needs.
      */
     private static final float KS = 1600f;
     /**
-     * Damping along a spring, on the neighbours' relative speed. Separate from {@link #DAMP}
-     * because they kill different things: this takes out the shortest-wavelength ring modes, which
-     * are the ones that look like noise rather than wobble, without slowing the whole-body sloshing
-     * that is the point of the thing.
+     * Spring damping, on relative speed. Separate from {@link #DAMP}: this kills the short
+     * wavelength modes that look like noise, without slowing the whole-body slosh.
      */
     private static final float SPRING_DAMP = 7f;
-    /**
-     * Pressure. Scaled by {@code n/TAU} where it is used, which is what makes it independent of the
-     * node count: an edge is {@code TAU*r/n} long and the force on it is proportional to its length,
-     * so without that factor a blob with more nodes would be a stiffer blob.
-     */
+    /** Pressure. Scaled by {@code n/TAU} at use, so node count does not change stiffness. */
     private static final float KP = 900f;
     /**
-     * The pull toward being round; see the class note for why it exists. 7.8 rad/s against the
-     * skin's 40, so it is the only restoring force the low floppy modes have and nowhere near
-     * enough to stiffen the body against a hit. With {@link #DAMP} it is underdamped, so a squash
-     * rings about twice before it settles — that ringing is the jiggle, and it is why this is a
-     * spring rather than a decay applied to the shape.
+     * Pull toward the rest shape. 7.8 rad/s against the skin's 40: the only restoring force the
+     * floppy modes have, and underdamped, so a squash rings twice. That ringing is the jiggle.
      */
     private static final float KR = 60f;
     /** Centring pull on the centroid, and its damping. About 8 rad/s — a lazy half second home. */
     private static final float KC = 70f, CENTRE_DAMP = 6f;
     /**
-     * Whole-body velocity damping. Tuned against the ringing: at 2 a hit is still visibly swinging
-     * three seconds later, which on a boss being hit several times a second is a body that never
-     * has a shape. At 4.2 a hit is spent in about three quarters of a second, roughly one press.
+     * Whole-body damping. At 2 a hit still swings three seconds later — a body that never has a
+     * shape; at 4.2 it is spent in about one press.
      */
     private static final float DAMP = 4.2f;
 
     /**
-     * Idle breath, as an acceleration per unit of {@link #rest}. Divided by {@link #KR} — not by
-     * the skin's much higher frequency, since the harmonics it drives are exactly the floppy modes
-     * {@link #KR} is the only restoring force for — it comes out at 2.7% of the radius, a third of
-     * the lightest hit worth drawing.
-     *
-     * Worth stating, because reading it against the spring frequency instead is how this was first
-     * mistuned: the number then looked ten times too small, and the first value tried breathed at a
-     * third of the radius — three times what a full hit does, on a body that was standing still.
+     * Idle breath, as acceleration per unit {@link #rest}. Read against {@link #KR}, not the skin
+     * frequency — the harmonics it drives are the floppy modes KR alone restores — giving 2.7% of
+     * the radius. Read against the springs it looks 10x too small, which is how the first value
+     * breathed at a third of the radius.
      */
     private static final float WOBBLE = 2.4f;
     /**
-     * Which harmonics of the ring the breath drives, and their mix. Not per-node noise, which was
-     * the first attempt: a force with an independent phase per node drives the shortest wavelength
-     * the ring can carry, and that looks like a crinkled outline rather than a breath. Two low
-     * harmonics travelling opposite ways give the slow lopsided undulation of something alive.
+     * Breath harmonics and mix. Per-node noise drives the shortest ring mode and looks crinkled;
+     * two low harmonics travelling opposite ways undulate.
      */
     private static final float BREATH_M1 = 2f, BREATH_M2 = 3f, BREATH_MIX = 0.62f;
     /** How far a hit reaches, as a multiple of {@link #rest}. */
     private static final float REACH = 1.1f;
     /**
-     * Speed a full-strength hit gives the nodes it lands on, per unit of {@link #rest}. A strength
-     * of 1 lands at 0.19 of deform and is spent in about a second; 0.3 lands at 0.07. Callers are
-     * expected to pass a fraction for an ordinary press and save 1 for something that matters.
+     * Hit speed per unit {@link #rest}. Strength 1 lands at 0.19 deform, 0.3 at 0.07. Pass a
+     * fraction for an ordinary press; save 1 for something that matters.
      */
     private static final float PUNCH = 14f;
     /**
-     * Vertical squash speed per unit of offset, and how much of it goes sideways. A strength of 1
-     * flattens the body to half again as wide as it is tall a sixth of a second in, and the rebound
-     * overshoots to 12% <em>taller</em> than round before it settles. That overshoot is not
-     * scripted, which is the point of giving this as a velocity rather than a displacement: the
-     * springs and the pressure answer it, so two squashes in quick succession add up.
+     * Squash speed per unit offset, and how much goes sideways. Strength 1 flattens to 1.5x wide
+     * and rebounds 12% taller. A velocity, not a displacement, so squashes add up.
      */
     private static final float SQUASH_V = 2.4f, SPREAD = 0.5f;
     /**
-     * How much further the leading side travels than the trailing side during a {@link #moveTo} —
-     * the only thing that makes a carried blob look carried rather than repositioned. The smear is
-     * a steady state, not a one-off, since the lean is injected every frame the body moves and
-     * {@link #KR} pulls it back the whole time: a boss drifting at a radius a second sits about a
-     * tenth wider than tall for as long as it moves, and is round again a second after stopping.
+     * Lean during {@link #moveTo}: how much further the leading side travels, which is what makes a
+     * carried blob look carried. A steady state, not a one-off — injected every moving frame while
+     * KR pulls back, so a drifting boss sits ~10% wider than tall and is round a second after.
      */
     private static final float LEAN = 0.30f;
     /**
-     * Closest a node may come to the centroid, and furthest from home, as multiples of
-     * {@link #rest}. Neither is physics — they are the guard rails. The inner one stops a hard hit
-     * pushing a node through the middle and out the far side, which tangles the ring and inverts its
-     * winding, at which point pressure pulls instead of pushing and the body is inside out for
-     * good. The outer one bounds the coordinates whatever a caller feeds in.
+     * Guard rails, not physics: closest a node may come to the centroid, furthest from home, in
+     * multiples of {@link #rest}. The inner one stops a hard hit pushing a node through the middle
+     * and inverting the winding, after which pressure pulls and the body is inside out for good.
      */
     private static final float INNER = 0.22f, FAR = 3f;
 

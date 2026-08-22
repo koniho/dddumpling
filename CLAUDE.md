@@ -15,7 +15,7 @@ trip working out which thing was meant.
 ## The one thing that matters most
 
 **You can see and hear this game without building or installing it.** `./check.sh` runs the
-whole thing headlessly: ~985 rule assertions, then it renders real frames to `out/*.png` and
+whole thing headlessly: ~1480 rule assertions, then it renders real frames to `out/*.png` and
 every sound to `out/sfx/*.wav`. Read the PNGs with the Read tool — the `0-*.png` sheets each
 show a whole set at once (the six letters, the thirty collectibles, both vignette casts). That loop is seconds, not
 minutes, and it needs no device.
@@ -72,11 +72,20 @@ you are doing.
 ## Build and deploy
 
 ```sh
-./check.sh              # rules + frames, no SDK needed
-./check.sh 1080 2400 2  # render at real device size (slower, use when checking layout)
-./build.sh              # gated on check.sh; produces a signed hexatype.apk
-./deploy.sh             # build + install + launch
+./check.sh                      # rules + frames, no SDK needed
+./check.sh -q                   # failures, diagnostics and the tally only — use this by default
+./check.sh -q -r                # rules only, no frames. Seconds.
+./check.sh -q -s Boss           # one suite (Rules Words Stages Stars Boss Softbody Collect Lore
+                                #   Visuals Audio Power Soak)
+./check.sh -q -f 60,65          # render only these frames, skipping the sheets and the WAVs
+./check.sh -q -f 60 -c 0,.1,1,.45   # ...cropped to that box of the screen, in 0..1 fractions
+./check.sh 1080 2400 2          # real device size (slower, for layout checks)
+./build.sh                      # gated on check.sh; produces a signed hexatype.apk
+./deploy.sh                     # build + install + launch
 ```
+
+`-q -r` while iterating on rules, `-f` plus `-c` when you need to *look* at something: a cropped
+frame is a quarter the size of a full one and shows more of what you were checking.
 
 `build.sh` refuses to package if any assertion fails. `sdk/android.jar` is not committed; see
 README.md for the one-time fetch.
@@ -90,6 +99,23 @@ under Termux's own UID.
 adb or dumpsys here. That is why [`Crash.java`](src/com/sram/hexatype/Crash.java) renders the
 stack trace on screen instead. If the user reports a crash, ask them to read that screen.
 
+## Working cheaply
+
+Reading this repo is what costs, not writing it. The comment style is dense on purpose, so a
+"quick look" at `GameCore` or `Boss` is expensive. Habits that matter:
+
+- **`./check.sh -q` by default.** Full output is ~2000 lines; quiet is ~40. Add `-r` while working
+  on rules, `-s Boss` to run one suite.
+- **Prefer a printed number to a rendered frame.** An image costs roughly a hundred times what a
+  `printf` line does. `Preview` already prints per-frame diagnostics — add one rather than looking,
+  and when you must look, use `-f` with `-c` so it is a crop rather than a whole screen.
+- **Grep, then read a window.** `grep -n symbol file` then `sed -n 'a,bp'`. Whole-file reads of
+  `GameCore` (2500 lines) or `Boss` (1400) are rarely what the question needed.
+- **One task per session.** A compacted session pays for its summary on every later turn, so two
+  sessions beat one long one.
+- **Say what verification you want.** Frames, the soak run, doc updates and new assertions are all
+  on by default here. Any of them can be skipped on request, and that is the largest single lever.
+
 ## Layout of the code
 
 Pure (in the harness and the APK):
@@ -99,7 +125,12 @@ Pure (in the harness and the APK):
 | `Glyph` | the six-letter palette, hexagon geometry, hue cycling |
 | `Kawaii` | the six characters and their faces, plus the mood dumpling |
 | `Layout` | every screen coordinate, derived from view size + insets |
-| `GameCore` | all rules: state machine, waves, targeting, scoring, powerup |
+| `GameCore` | the spine: state machine, the frame loop, the press router, and the state everything else works on |
+| `Pacing` | the stage difficulty dials. Pure functions of stage — the one file to read when tuning |
+| `Blade` | the FLING swipe: what a stroke is, when it ends, what one sweep cuts |
+| `CaseUi` | browsing the display case: scroll, jump, drag, two-tap wipe |
+| `Interlude` | the between-stages round: mash, course, blind box, parade |
+| `BossPlay` | the boss fight's wiring — a press or drag turned into score, sound, shots and lives |
 | `Words` | word generation and the press-budget rules |
 | `Fx` | shots and particles |
 | `Steamer` | between-stages minigame state |
@@ -144,11 +175,20 @@ nothing. Follow the pattern rather than "fixing" it.
 
 - Every rule change gets an assertion in the matching `Test*` suite, and every new visual
   state gets a frame in `Preview` so it can be looked at.
-- Comments explain *why*, especially where a value was tuned against a failure. Several
-  constants exist at their value because the obvious value was wrong; the comment says so.
-- `GameCore` must stay free of `android.*`. Audio and persistence reach it through the
-  `Sound` and `Store` interfaces, which is also how tests assert which effect fires when.
-- Files over ~350 lines want splitting. `GameCore` is the current outlier at ~1050.
+- **Comments are terse.** One or two lines, and only for what the code cannot say: why a value is
+  what it is, what broke at the obvious value, which ordering is load-bearing. Keep the fact, drop
+  the essay — no restating the code, no narrating the debugging, no paragraph where a clause will do.
+  Every line of comment is a line every future reader pays for.
+- Keep the *why*, especially where a value was tuned against a failure. Several constants exist at
+  their value because the obvious value was wrong. Compress that to a clause: "0.35 radii — 20px at
+  1080 wide, above finger jitter, below any real swipe."
+- `GameCore` must stay free of `android.*`. Audio and persistence reach it through the `Sound` and
+  `Store` interfaces, which is also how tests assert which effect fires when.
+- Files over ~350 lines want splitting, and the seam is `Fx`'s: statics taking `GameCore c`, working
+  on its fields rather than owning them. `Pacing`, `Blade`, `CaseUi`, `Interlude` and `BossPlay` all
+  came out of `GameCore` that way, and no call site outside had to change.
+- What must *not* be split: `GameCore.update` and `tapKey`. Their ordering is load-bearing — see the
+  traps below — and scattering them hides exactly the faults this file has produced before.
 
 ## Traps that have already bitten
 

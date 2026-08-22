@@ -53,13 +53,18 @@ the conventions and, more usefully, the traps that have already cost time.
 **You can see and hear this game without building or installing it.** No SDK, no device:
 
 ```sh
-./check.sh              # rule assertions, then frame renders at 640x1400
-./check.sh 1080 2400 2  # a specific screen size and supersampling factor
+./check.sh                    # rule assertions, then frame renders at 640x1400
+./check.sh -q                 # failures, diagnostics and the tally only
+./check.sh -q -r              # rules only, no frames. Seconds.
+./check.sh -q -s Boss         # one suite
+./check.sh -q -f 60,65        # only these frames, skipping the sheets and the WAVs
+./check.sh -q -f 60 -c 0,.1,1,.45   # ...cropped to that box, in 0..1 fractions
+./check.sh 1080 2400 2        # a specific screen size and supersampling factor
 ```
 
 It does two things:
 
-1. **Rule assertions** (`tools/CoreTest.java`) — 985 of them across eleven suites: layout
+1. **Rule assertions** (`tools/CoreTest.java`) — ~1480 across thirteen suites: layout
    geometry, hit-testing, targeting, scoring, stage pacing, the interlude's phases and both paths through it, the
    collectible catalogue and its odds, the stories, plus a two-minute perfect-play run and a
    ten-minute random-input fuzz.
@@ -180,6 +185,11 @@ file has to be added there. `build.sh` globs `src/`, so it needs no updating.
 | `Kawaii` | the six characters and their faces, plus the mood dumpling |
 | `Layout` | every screen coordinate, derived from view size and insets |
 | `GameCore` | all rules: state machine, waves, targeting, scoring, powerup, collection |
+| `Pacing` | the stage difficulty dials, as pure functions of stage |
+| `Blade` | the FLING swipe: what a stroke is and what one sweep cuts |
+| `CaseUi` | browsing the display case |
+| `Interlude` | the between-stages round |
+| `BossPlay` | the boss fight wired to score, sound, shots and lives |
 | `Words` | word generation and the press-budget rules |
 | `Fx` | shots and particles |
 | `Power` | the powerup letter and its four frenzy modes |
