@@ -611,6 +611,39 @@ final class Screens extends Draw {
                     INK, Painter.CENTER, true);
         }
 
+        // Stage jump. The steppers act at once and leave the panel open, so the number can be walked
+        // to wherever it is wanted; the game is paused behind it either way.
+        p.text("STAGE", ui.sliderL, ui.stageLabelY, s * 0.58f, INK_DIM, Painter.LEFT, true);
+        // What it will be, and whether that is a boss stage — which is the whole reason for the
+        // jump, so it is worth saying rather than leaving to be counted in fives.
+        int bk = Boss.kindFor(c.stage);
+        String at = String.valueOf(c.stage);
+        p.text(at, ui.optionR(), ui.stageLabelY, s * 0.58f, INK, Painter.RIGHT, true);
+        if (bk >= 0) {
+            p.text(Boss.NAMES[bk], ui.optionR() - s * 1.6f, ui.stageLabelY, s * 0.52f,
+                    Glyph.COLOR[Boss.FACE[bk]], Painter.RIGHT, true);
+        }
+        for (int i = 0; i < SettingsUi.STAGE_STEP.length; i++) {
+            int n = SettingsUi.STAGE_STEP.length;
+            float l = ui.testChipL(i, n), r = ui.testChipR(i, n);
+            int step = SettingsUi.STAGE_STEP[i];
+            // Down is rose and up is mint, so the two halves of the row are told apart by colour
+            // before the sign is read.
+            int col = step < 0 ? ROSE : Glyph.COLOR[4];
+            p.fillRect(l, ui.stageY, r, ui.stageY + ui.stageH, Glyph.withAlpha(col, 46));
+            p.strokePoly(new float[] {l, ui.stageY, r, ui.stageY, r, ui.stageY + ui.stageH,
+                    l, ui.stageY + ui.stageH}, Glyph.withAlpha(col, 190), s * 0.05f);
+            // Drawn, not typed: the harness font has no minus or plus, and a glyph it lacks simply
+            // vanishes from every frame anybody checks.
+            // The sign and the digit are two draws, so the pair has to be centred by hand: half a
+            // unit either side of the chip's middle, rather than the sign at the middle and the
+            // digit hung off it, which leans the whole label right.
+            float mid = (l + r) / 2f;
+            sign(p, mid - s * 0.42f, ui.stageY + ui.stageH * 0.42f, s, step, col);
+            p.text(String.valueOf(Math.abs(step)), mid + s * 0.34f,
+                    ui.stageY + ui.stageH * 0.66f, s * 0.62f, INK, Painter.CENTER, true);
+        }
+
         // Empty the display case. Armed by the first tap and only acted on by the second, so
         // the label itself is the confirmation prompt — there is no dialog in this game.
         p.text("DISPLAY CASE", ui.sliderL, ui.clearLabelY, s * 0.58f, INK_DIM, Painter.LEFT,
@@ -626,6 +659,19 @@ final class Screens extends Draw {
         p.text(c.clearArmed ? "TAP AGAIN TO ERASE" : "CLEAR COLLECTION",
                 (ui.optionL() + ui.optionR()) / 2f, ui.clearY + ui.clearH * 0.66f, s * 0.58f,
                 c.clearArmed ? ROSE : INK, Painter.CENTER, true);
+    }
+
+    /**
+     * A minus or a plus, as bars rather than as text.
+     *
+     * The harness font is an ASCII subset and has neither, and a character it does not know is
+     * silently drawn as nothing — so a typed "+5" would read correctly on the device and be a bare
+     * "5" in every preview frame. Same reason every arrow and chevron in this game is a polygon.
+     */
+    private static void sign(Painter p, float cx, float cy, float s, int step, int col) {
+        float w = s * 0.30f, t = s * 0.10f;
+        p.fillRect(cx - w, cy - t / 2f, cx + w, cy + t / 2f, col);
+        if (step > 0) p.fillRect(cx - t / 2f, cy - w, cx + t / 2f, cy + w, col);
     }
 
     /** One decimal place without String.format, which is not worth the cost per frame. */

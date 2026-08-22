@@ -24,6 +24,17 @@ final class SettingsUi {
     static final int TEST_STARS = Power.COUNT;
     /** The steamer-game chip's index within that row. */
     static final int TEST_STEAMER = Power.COUNT + 1;
+    /** Stage-jump steppers are HIT_STAGE + index into {@link #STAGE_STEP}. */
+    static final int HIT_STAGE = 300;
+
+    /**
+     * What each stage-jump chip moves by.
+     *
+     * Five as well as one because a boss lands on every fifth stage, so a jump of five is a jump to
+     * the next boss of the next kind — which is the reason anybody wants this control. The chips are
+     * labelled with these numbers, so the array is the label too and the two cannot disagree.
+     */
+    static final int[] STAGE_STEP = {-5, -1, 1, 5};
 
     float panelL, panelT, panelR, panelB;
     float titleY;
@@ -36,6 +47,8 @@ final class SettingsUi {
     float closeCx, closeCy, closeR;
     /** Playtest row: one chip per powerup mode. */
     float testLabelY, testY, testH;
+    /** Stage-jump row: one chip per {@link #STAGE_STEP}. */
+    float stageLabelY, stageY, stageH;
     /** Empty-the-display-case button, at the foot of the panel. */
     float clearLabelY, clearY, clearH;
 
@@ -51,8 +64,9 @@ final class SettingsUi {
 
         optionH = s * 1.5f;
         testH = s * 1.6f;
+        stageH = s * 1.6f;
         clearH = s * 1.6f;
-        float bodyH = s * 8.4f + optionH * optionCount + testH + clearH + s * 3.4f;
+        float bodyH = s * 8.4f + optionH * optionCount + testH + stageH + clearH + s * 4.9f;
         panelT = Math.max(L.topSafe + s, (L.h - bodyH) / 2f - s);
         panelB = panelT + bodyH;
 
@@ -71,7 +85,10 @@ final class SettingsUi {
         testLabelY = firstOptionY + optionH * optionCount + s * 1.0f;
         testY = testLabelY + s * 0.35f;
 
-        clearLabelY = testY + testH + s * 1.15f;
+        stageLabelY = testY + testH + s * 1.15f;
+        stageY = stageLabelY + s * 0.35f;
+
+        clearLabelY = stageY + stageH + s * 1.15f;
         clearY = clearLabelY + s * 0.35f;
 
         closeR = s * 1.05f;
@@ -139,6 +156,13 @@ final class SettingsUi {
                 if (x >= testChipL(i, TEST_CHIPS) && x <= testChipR(i, TEST_CHIPS)) {
                     return HIT_TEST + i;
                 }
+            }
+        }
+
+        if (y >= stageY && y <= stageY + stageH) {
+            int n = STAGE_STEP.length;
+            for (int i = 0; i < n; i++) {
+                if (x >= testChipL(i, n) && x <= testChipR(i, n)) return HIT_STAGE + i;
             }
         }
 

@@ -463,6 +463,17 @@ nothing. Follow the pattern rather than "fixing" it.
 - **A silhouette must be fully colourless.** The leaf and stem colours were left as
   themselves at first, so every blacked-out fruit had a bright green leaf on it and gave
   itself away.
+- **A dispatch on `hit >= CONSTANT` breaks the moment you add a higher constant.**
+  `SettingsUi`'s hit codes are ranges, and `GameView` tested them in ascending order — so adding
+  `HIT_STAGE = 300` above `HIT_TEST = 200` meant every stage chip was read as a playtest chip and
+  dropped the player into a frenzy instead. It has to be checked highest-first, and there is now an
+  assertion that a stage chip does not resolve to the playtest row.
+- **A debug jump must arrive the way play arrives.** `GameCore.enterStage` is shared by
+  `advanceStage` and the settings panel's stage jump, deliberately: a jump that sets a stage up a
+  little differently from the way the game sets one up is a tool that hides the bug you are using it
+  to hunt. The jump adds only the clearing-up — field, frenzy, boss, in-flight gestures — because it
+  can be taken mid-stage, and it leaves the score and lives alone on purpose, since looking at a
+  late stage on two lives is the thing it is for.
 - **A set piece with no way past it needs the bot to be able to play it.** The boss on every fifth
   stage has to be beaten for the stage to end — there is deliberately no retreat. The soak bot could
   only type, and no boss can be beaten by typing alone, so all three tiers sat on stage 5 for the

@@ -799,6 +799,15 @@ final class Preview {
             }
         }
 
+        // The settings panel's stage jump, parked on a boss stage so the row names the boss it is
+        // sitting on — which is the state the control exists for.
+        GameCore cj = toBoss(L, Boss.MAGPIE, 520L, true);
+        cj.openSettings();
+        step(cj, L, 0.3f);
+        System.out.printf("stage jump: on stage %d, boss %s%n", cj.stage,
+                Boss.NAMES[Boss.kindFor(cj.stage)]);
+        shot(dir, "67-settings-stage-jump", cj, L, w, h, ss);
+
         // Beaten, mid-burst.
         GameCore cb = toBoss(L, Boss.SLIME, 530L, true);
         for (int i = 0; i < 60 * 60 && !cb.boss.beaten; i++) {

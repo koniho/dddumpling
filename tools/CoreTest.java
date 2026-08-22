@@ -43,6 +43,7 @@ final class CoreTest {
         TestBoss.magpie(L);
         TestBoss.sumo(L);
         TestBoss.stacking(L);
+        TestBoss.stageJump(L);
         TestBoss.cleanup(L);
 
         TestSoftbody.physics(L);

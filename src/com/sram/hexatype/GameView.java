@@ -505,6 +505,15 @@ public class GameView extends View {
         } else if (hit == SettingsUi.HIT_CLEAR) {
             core.tapClearCase();
             tick();
+        } else if (hit >= SettingsUi.HIT_STAGE) {
+            // Before the playtest branch, not after: HIT_STAGE is the higher number, so a
+            // `hit >= HIT_TEST` test would swallow every stage chip.
+            //
+            // The panel deliberately stays open, so the steppers can be tapped several times while
+            // watching the number. Play resumes at whatever stage it is left on.
+            core.jumpToStage(core.stage + SettingsUi.STAGE_STEP[hit - SettingsUi.HIT_STAGE],
+                    layout);
+            tick();
         } else if (hit >= SettingsUi.HIT_TEST) {
             // Closes the panel and drops straight into the mode.
             int chip = hit - SettingsUi.HIT_TEST;

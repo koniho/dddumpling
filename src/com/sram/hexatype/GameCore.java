@@ -3127,7 +3127,19 @@ final class GameCore {
 
     /** Called on the way out of the interlude. */
     private void advanceStage() {
-        stage++;
+        enterStage(stage + 1);
+    }
+
+    /**
+     * Begins stage {@code n}: the counters that are per-stage, the banner, the breather, and a boss
+     * if that stage has one.
+     *
+     * Split out of {@link #advanceStage} so the settings panel's stage jump goes through exactly this
+     * path rather than a second, slightly different one. A debug jump that sets up a stage a little
+     * differently from the way play sets one up is a debug tool that hides the bug you are hunting.
+     */
+    private void enterStage(int n) {
+        stage = Math.max(1, n);
         // One per stage, and this is where a stage begins.
         pushUsed = false;
         spawnedThisStage = 0;
@@ -3139,6 +3151,52 @@ final class GameCore {
         // of play so its arrival card runs over the stage breather it already had.
         int bk = Boss.kindFor(stage);
         if (bk >= 0) boss.begin(bk, stage, rnd);
+        else boss.leave();
+    }
+
+    /**
+     * Playtest hook: jumps straight to a stage, from the settings panel.
+     *
+     * Clears the field and every set piece on the way, because arriving at a stage is supposed to
+     * mean arriving at a clean one — jumping out from under a live frenzy or a half-fought boss
+     * leaves the thing you jumped away from still on the screen, which is the same shape of bug as
+     * dying with one running.
+     *
+     * Deliberately does not touch the score, the lives or the run's haul. The point of the control is
+     * to reach a stage and see it; a jump that also reset the run would make it useless for looking
+     * at how a late stage plays with two lives left.
+     */
+    void jumpToStage(int n, Layout L) {
+        if (state != PLAY) return;
+        enemies.clear();
+        shots.clear();
+        particles.clear();
+        target = null;
+        caretOwner = null;
+        pendingBonus = false;
+        perfectBanner = 0f;
+        // Both set pieces go. enterStage starts the boss for the stage being jumped to, so this has
+        // to happen first or it would clear the one it just made.
+        power = null;
+        mode = -1;
+        modeLeft = 0f;
+        buddy.leave();
+        boss.leave();
+        fingerDown = false;
+        touchDown = false;
+        strokeFade = 0f;
+        pushT = 0f;
+        pushSlowT = 0f;
+        chainT = 0f;
+        slowdown = 0f;
+        sliceCall = 0f;
+        warnLevel = 0f;
+        // A fresh stage has a fresh verdict: the interlude reads these, and carrying the old stage's
+        // damage across would misreport a stage nobody played.
+        missesThisStage = 0;
+        hurtThisStage = 0;
+        enterStage(n);
+        if (sound != null) sound.frenzy(false);
     }
 
     private void breach(Enemy e, Layout L) {

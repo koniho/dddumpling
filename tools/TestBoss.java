@@ -751,6 +751,98 @@ final class TestBoss extends Check {
         check("at every screen size too", holds);
     }
 
+    // ---- the stage jump -----------------------------------------------------
+
+    /**
+     * The settings panel's stage jump. It exists to reach a boss without playing twenty stages, so
+     * what it mostly has to get right is arriving at a stage in the same state play would arrive in.
+     */
+    static void stageJump(Layout L) {
+        group("stage jump");
+
+        // The chips are laid out and hit-tested where they are drawn.
+        SettingsUi ui = new SettingsUi();
+        ui.compute(L, Music.NAMES.length);
+        int n = SettingsUi.STAGE_STEP.length;
+        boolean hits = true;
+        for (int i = 0; i < n; i++) {
+            float cx = (ui.testChipL(i, n) + ui.testChipR(i, n)) / 2f;
+            if (ui.hit(cx, ui.stageY + ui.stageH / 2f) != SettingsUi.HIT_STAGE + i) hits = false;
+        }
+        check("every stage chip hit-tests to itself", hits);
+        check("and none of them collides with the playtest row",
+                ui.hit((ui.testChipL(0, n) + ui.testChipR(0, n)) / 2f,
+                        ui.testY + ui.testH / 2f) < SettingsUi.HIT_STAGE);
+        check("the steps cover one and a boss's worth",
+                n == 4 && SettingsUi.STAGE_STEP[0] == -Boss.EVERY
+                        && SettingsUi.STAGE_STEP[n - 1] == Boss.EVERY);
+
+        // The panel has to stay on the screen at every size, now that it has another row in it.
+        boolean fits = true;
+        for (int px = 480; px <= 1600; px += 160) {
+            for (int num = 16; num <= 21; num++) {
+                Layout t = new Layout();
+                t.compute(px, px * num / 9, 0, 0, 0, 0);
+                SettingsUi u = new SettingsUi();
+                u.compute(t, Music.NAMES.length);
+                if (u.panelT < 0f || u.panelB > t.h) fits = false;
+                // And the rows have to stay in order, in the panel, and clear of each other.
+                if (u.stageY < u.testY + u.testH) fits = false;
+                if (u.clearY < u.stageY + u.stageH) fits = false;
+                if (u.clearY + u.clearH > u.panelB) fits = false;
+            }
+        }
+        check("the panel still fits at every screen size", fits);
+
+        // Jumping lands on the stage asked for, and sets it up as arriving there would.
+        GameCore c = new GameCore(new Mem(), 601L);
+        c.startGame();
+        c.jumpToStage(5, L);
+        check("it lands on the stage asked for", c.stage == 5);
+        check("and a boss stage brings its boss", c.boss.active()
+                && c.boss.kind == Boss.SLIME);
+        check("with a fresh wave", c.spawnedThisStage == 0 && c.resolvedThisStage == 0);
+        check("a banner", c.stageBanner > 0f);
+        check("and the stage's own panic swipe back", !c.pushUsed);
+
+        // Off a boss stage, the boss goes.
+        c.jumpToStage(6, L);
+        check("jumping off a boss stage takes the boss with it",
+                c.stage == 6 && !c.boss.active());
+
+        // It clears the field and both set pieces, rather than leaving them over the new stage.
+        GameCore d = new GameCore(new Mem(), 602L);
+        d.startGame();
+        d.startFrenzy(Power.FLURRY, L);
+        add(d, L, new int[] {0, 1}, L.playTop + 40f);
+        check("something to leave behind", d.powerActive() && !d.enemies.isEmpty());
+        d.jumpToStage(10, L);
+        check("the field is cleared", d.enemies.isEmpty() && d.target == null);
+        check("the frenzy is over", !d.powerActive() && d.mode < 0);
+        check("the squishy is gone", d.buddy.out());
+        check("and the new stage's boss is up", d.boss.kind == Boss.TRIPLETS);
+
+        // It refuses to go below stage 1 rather than wrapping into nonsense.
+        d.jumpToStage(-40, L);
+        check("it cannot go below the first stage", d.stage == 1);
+        check("and stage 1 has no boss", !d.boss.active());
+
+        // Deliberately not a reset: the point is to look at a late stage as the run left it.
+        GameCore k = new GameCore(new Mem(), 603L);
+        k.startGame();
+        k.score = 4321;
+        k.lives = 2;
+        k.jumpToStage(15, L);
+        check("the score is left alone", k.score == 4321);
+        check("and so are the lives", k.lives == 2);
+
+        // Only in play. The panel cannot be opened anywhere else, but the guard is what makes that
+        // true rather than merely likely.
+        GameCore t = new GameCore(new Mem(), 604L);
+        t.jumpToStage(9, L);
+        check("it does nothing off the play screen", t.stage != 9);
+    }
+
     // ---- cleanup ------------------------------------------------------------
 
     /**

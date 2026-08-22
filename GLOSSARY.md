@@ -265,6 +265,7 @@ things a player can do, which are pressing a key, tapping something and dragging
 | **settings panel** | opened by tapping the stage readout; pauses the game | `Screens.settings` |
 | **stage readout** | the "STAGE n" text — also the settings button | `Layout.inStageTap` |
 | **speed slider** | the 0.5×–1.5× pacing control | `SettingsUi` |
+| **stage jump** | the ±1 / ±5 steppers in the settings panel that jump straight to a stage, so a boss can be reached without playing twenty stages. Steps of five because bosses land on every fifth | `SettingsUi.STAGE_STEP`, `GameCore.jumpToStage` |
 
 ## Sound
 
