@@ -792,6 +792,22 @@ final class Preview {
                 for (int i = 0; i < Boss.ELEMS; i++) {
                     if (c.boss.draggable(i)) glob = i;
                 }
+                // A bullet in flight at the boss, caught half way. Presses at the boss fire the
+                // same shot presses at a word do, so this is the frame that proves it.
+                for (int i = 0; i < 60 * 8 && !c.boss.open(); i++) c.update(DT, L);
+                c.target = null;
+                c.shots.clear();
+                for (int g2 = 0; g2 < Glyph.COUNT; g2++) {
+                    if (c.boss.wants(g2)) {
+                        c.tapKey(g2, L);
+                        break;
+                    }
+                }
+                step(c, L, GameCore.SHOT_TIME * 0.5f);
+                System.out.printf("boss bullet: %d in flight, at %.0f%% of the way%n",
+                        c.shots.size(), c.shots.isEmpty() ? 0f : c.shots.get(0).t * 100f);
+                shot(dir, "68-boss-bullet", c, L, w, h, ss);
+
                 if (glob >= 0) {
                     System.out.printf("boss split inside: at %.0f,%.0f, body at %.0f,%.0f r=%.0f%n",
                             c.boss.ex[glob], c.boss.ey[glob], c.boss.body.centreX(),

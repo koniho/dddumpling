@@ -323,6 +323,16 @@ final class Boss {
     /** Seconds until the next strike, once it is enraged. Only ever running while it is. */
     float rageT;
 
+    /**
+     * Where the last accepted press landed on the boss, in view coordinates.
+     *
+     * Recorded rather than worked out afterwards, because by the time the caller wants it the thing
+     * that was struck may have moved on — a chord's third head is rerolled the instant it completes,
+     * so asking "which head shows that letter" a moment later gets a different answer or none. Same
+     * shape as the MULTI chain keeping its hop positions.
+     */
+    float hitX, hitY;
+
     /** 0..1 through the arrival card. */
     float introProgress() {
         return intro <= 0f ? 1f : 1f - intro / INTRO;
@@ -604,6 +614,13 @@ final class Boss {
         }
         if (!asksFor(g)) return NONE;
 
+        // Where a bullet fired at this press should land. The body by default; overridden below by
+        // the one boss whose presses land somewhere more specific than "it".
+        if (body != null) {
+            hitX = body.centreX();
+            hitY = body.centreY();
+        }
+
         if (!open()) {
             // Its letter, at the wrong moment.
             rage = 1f;
@@ -637,6 +654,9 @@ final class Boss {
                 }
                 // The first head of a chord starts its clock; the rest have to beat it.
                 if (chord == 0) chordT = CHORD_TIME;
+                // The head actually struck, before the reroll below can move it.
+                hitX = ex[i];
+                hitY = ey[i];
                 chord |= 1 << i;
                 if (chord != (1 << head.length) - 1) return PART;
                 chordT = 0f;

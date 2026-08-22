@@ -303,6 +303,41 @@ final class TestBoss extends Check {
         check("a letter the boss does not want falls through to the words",
                 word.pos == 1 && d.boss.hp == bossHp);
 
+        // A landed press fires a bullet at the boss, the same as a press at a word does.
+        GameCore sh = enterBoss(L, Boss.SLIME, 35L);
+        toOpen(sh, L);
+        sh.enemies.clear();
+        sh.target = null;
+        sh.shots.clear();
+        int chain = sh.boss.chainLetter();
+        sh.tapKey(chain, L);
+        check("a landed boss press fires a bullet", sh.shots.size() == 1);
+        GameCore.Shot bullet = sh.shots.get(0);
+        check("from the key that was pressed",
+                bullet.sx == L.keyX[chain] && bullet.sy == L.keyY[chain]);
+        check("aimed at the boss", bullet.atBoss && bullet.target == null);
+        check("and it lands on the boss, not through it",
+                Math.abs(bullet.tx - sh.boss.body.centreX()) < sh.boss.body.radius()
+                        && Math.abs(bullet.ty - sh.boss.body.centreY()) < sh.boss.body.radius());
+        // It homes, because the body drifts the whole time it is in the air.
+        float wasDx = bullet.tx - sh.boss.body.centreX();
+        for (int i = 0; i < 4; i++) sh.update(DT, L);
+        boolean landed = sh.shots.isEmpty();
+        check("it keeps its offset as the body moves",
+                landed || Math.abs((bullet.tx - sh.boss.body.centreX()) - wasDx) < 1f);
+        for (int i = 0; i < 30; i++) sh.update(DT, L);
+        check("and it is gone once it lands", sh.shots.isEmpty());
+
+        // A rebuff fires nothing: a bullet that flies out and does nothing reads as a miss, when
+        // what actually happened is that the press was refused.
+        GameCore nb = enterBoss(L, Boss.DRUM, 36L);
+        toShut(nb, L);
+        nb.enemies.clear();
+        nb.target = null;
+        nb.shots.clear();
+        nb.tapKey(nb.boss.want(), L);
+        check("a rebuffed press fires no bullet", nb.shots.isEmpty());
+
         // A rebuff is not a miss. The interlude set that precedent and the accuracy dumpling
         // should not be scolding anybody for engaging with a mechanic.
         GameCore r = enterBoss(L, Boss.DRUM, 33L);

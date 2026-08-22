@@ -17,6 +17,10 @@ final class Fx {
                 // Home in: the word keeps drifting while the shot is in the air.
                 s.tx = s.kill ? c.enemyCentreX(s.target) : c.tileX(s.target, s.tileIndex, L);
                 s.ty = s.target.y;
+            } else if (s.atBoss && c.boss.body != null) {
+                // The same homing for a shot at the boss, which drifts and wobbles just as much.
+                s.tx = c.boss.body.centreX() + s.bossDx;
+                s.ty = c.boss.body.centreY() + s.bossDy;
             }
             s.t += dt / s.dur;
             if (s.t >= 1f) {

@@ -180,7 +180,8 @@ fight nobody is winning from going on forever.
 | **boss header** | the health bar, name and blurb at the top. Shares the frenzy's slot, since a boss suppresses powerups | `BossScreen.bar` |
 | **blurb** | the one-line instruction under the name; it retires after five seconds | `Boss.BLURB` |
 | **element** | a hit-testable thing a boss puts on the field to be tapped or dragged. Always in the upper field, because a drag may not start on a key | `Boss.ELEMS`, `elemAt`, `etype` |
-| **rebuff** | the right thing at the wrong moment, or a held key. Sounds wrong, never counted as a miss | `Boss.REBUFF` |
+| **rebuff** | the right thing at the wrong moment, or a held key. Sounds wrong, never counted as a miss, and fires no bullet | `Boss.REBUFF` |
+| **boss bullet** | the shot a landed key press fires at the boss, the same one a press at a word fires. Homes as the boss drifts, and aims at the head that was struck on the triplets | `GameCore.bossShot`, `Shot.atBoss`, `Boss.hitX` |
 | **enrage** | what a dragging fight gets instead of an escape: it reddens and starts striking for a life on its own clock | `Boss.ENRAGE_AT`, `RAGE_HIT` |
 | **strike** | one of those hits. Costs a life exactly as a word landing does | `GameCore.bossSlam` |
 | **slime** | boss 1. A chain of letters to type; every hit sheds a glob | `Boss.SLIME` |

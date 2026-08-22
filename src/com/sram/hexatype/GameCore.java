@@ -318,6 +318,17 @@ final class GameCore {
         boolean kill;
         /** Tile this shot is flying at; stored so a word restart cannot invalidate it. */
         int tileIndex;
+        /**
+         * Fired at the boss rather than at a word, and where on it — as an offset from the body's
+         * centre, not as a point.
+         *
+         * An offset because the body drifts and wobbles the whole time the shot is in the air, so a
+         * fixed point would visibly miss. It is the same homing a word's shot gets, expressed the
+         * only way it can be here: keeping the offset means a bullet aimed at one of the triplets'
+         * heads still arrives at that head rather than at the middle of the boss.
+         */
+        boolean atBoss;
+        float bossDx, bossDy;
     }
 
     /**
@@ -1256,6 +1267,11 @@ final class GameCore {
         if (combo > maxCombo) maxCombo = combo;
         skyGlow = Math.max(skyGlow, GLOW_HIT);
         skyGlowColor = Glyph.COLOR[g];
+        // A bullet, from the key that was pressed to the part of the boss it landed on — the same
+        // shot a press at a word fires, so a press means the same thing wherever it is aimed. The
+        // damage is already done: this is playback, exactly as a word's own destruction waits for
+        // its shot while the tile pops on the press.
+        bossShot(g, L);
         if (verdict == Boss.HIT) {
             score += BOSS_HIT;
             shake = Math.max(shake, 0.30f);
@@ -1267,6 +1283,32 @@ final class GameCore {
         // Pitched by how much of the boss is left, so a fight is audibly a countdown.
         if (sound != null) sound.squish(g, 1 + (int) (3f * (1f - boss.health())));
         return true;
+    }
+
+    /**
+     * Fires the bullet a boss press earns, from key {@code g} to wherever that press landed.
+     *
+     * Held as an offset from the body's centre rather than as a point, so it homes as the boss drifts
+     * — see {@link Shot#atBoss}. No {@code target} and no {@code kill}, so {@link #impact} does the
+     * one thing wanted at the far end: a burst of that letter's colour where it struck.
+     *
+     * Only fired for a press that landed. A rebuff fires nothing, the same way a wrong press at a
+     * word fires nothing — a bullet that flies out and achieves nothing reads as the shot having
+     * missed, when what happened is that it was refused.
+     */
+    private void bossShot(int g, Layout L) {
+        if (boss.body == null) return;
+        Shot s = new Shot();
+        s.sx = L.keyX[g];
+        s.sy = L.keyY[g];
+        s.tx = boss.hitX;
+        s.ty = boss.hitY;
+        s.atBoss = true;
+        s.bossDx = boss.hitX - boss.body.centreX();
+        s.bossDy = boss.hitY - boss.body.centreY();
+        s.glyph = g;
+        s.dur = SHOT_TIME;
+        shots.add(s);
     }
 
     /**

@@ -1383,9 +1383,38 @@ final class TestPower extends Check {
         return c.powerActive();
     }
 
+    /**
+     * A long run per seed, checking that nothing goes insane and that frenzies keep happening.
+     *
+     * Three seeds, and the count is averaged, because one seed is not a measurement. It used to be a
+     * single run asserting {@code frenzies >= 2} and it passed with four — until boss stages, which
+     * release no powerups at all, shifted the RNG enough that the same assertion saw one. Nothing was
+     * broken either time: the metric is simply noisy over one run, which is the trap CLAUDE.md
+     * records about small-sample yes/no checks.
+     */
     static void soak(Layout L) {
         group("powerup soak");
-        GameCore c = new GameCore(new Mem(), 209L);
+        int totalFrenzies = 0;
+        boolean sane = true;
+        int seeds = 0;
+        for (long seed : new long[] {209L, 977L, 4111L}) {
+            seeds++;
+            if (!soakRun(L, seed)) sane = false;
+            totalFrenzies += lastFrenzies;
+            System.out.printf("    seed %-5d %d frenzies in %.0fs, stage %d%n", seed,
+                    lastFrenzies, lastFrames * DT, lastStage);
+        }
+        float mean = totalFrenzies / (float) seeds;
+        System.out.printf("    %.1f frenzies a run on average%n", mean);
+        check("frenzies happen over a long run", mean >= 2f);
+        check("state stays consistent throughout", sane);
+    }
+
+    private static int lastFrenzies, lastFrames, lastStage;
+
+    /** One run. Returns false if anything went out of range on the way. */
+    private static boolean soakRun(Layout L, long seed) {
+        GameCore c = new GameCore(new Mem(), seed);
         c.sound = new Ear();
         c.startGame();
         int frenzies = 0, frames = 0;
@@ -1418,9 +1447,9 @@ final class TestPower extends Check {
             if (e != null && e.pos < e.word.length) c.tapKey(e.word[e.pos], L);
             else c.tapKey(frames % Glyph.COUNT, L);
         }
-        System.out.printf("    %d frenzies in %.0fs, stage %d, score %d%n",
-                frenzies, frames * DT, c.stage, c.score);
-        check("frenzies happen over a long run", frenzies >= 2);
-        check("state stays consistent throughout", sane);
+        lastFrenzies = frenzies;
+        lastFrames = frames;
+        lastStage = c.stage;
+        return sane;
     }
 }
