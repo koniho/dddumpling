@@ -390,8 +390,15 @@ final class Preview {
                 c17.steamer.hits);
         shot(dir, "34-bonus-wrong", c17, L, w, h, ss);
 
-        // And the moment it breaks free, handing over whatever was in the box.
+        // The final point arms the lid and replaces the key prompt with the bouncing arrow.
         for (int i = 0; i < 16; i++) c8.tapBonus(c8.steamer.wanted());
+        step(c8, L, 0.10f);
+        System.out.printf("bonus swipe: ready=%s hits=%d%n",
+                c8.bonusSwipeReady(), c8.steamer.hits);
+        shot(dir, "59-bonus-swipe", c8, L, w, h, ss);
+
+        // And the moment the upward swipe breaks it free.
+        c8.swipeBonus();
         step(c8, L, 0.5f);
         System.out.printf("bonus freed: opens=%d freedT=%.2f score=%d lives=%d prize=%s new=%s%n",
                 c8.steamer.opens, c8.steamer.freedT, c8.score, c8.lives,
@@ -477,6 +484,7 @@ final class Preview {
         for (int i = 0; i < GameCore.STEAMER_HITS * 2 + 4; i++) {
             c13.tapBonus(c13.steamer.wanted());
         }
+        c13.swipeBonus();
         for (int i = 0; i < 60 * 30 && !c13.bonusParading(); i++) c13.update(DT, L);
         System.out.printf("parade: won %s, %d collected%n", Collect.NAME[c13.prize],
                 Collect.owned(c13.collected));

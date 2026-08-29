@@ -282,6 +282,19 @@ final class Screens extends Draw {
      * the rainbow dumpling inside. Progress carries across interludes, so the lid creeps up
      * over several stages.
      */
+    /** Generous touch target around the visible lid while its swipe is armed. */
+    static boolean inSteamerLid(GameCore c, Layout L, float x, float y) {
+        if (!c.bonusSwipeReady()) return false;
+        float s = L.unit, cx = L.w / 2f;
+        float bw = Math.min(L.w * 0.26f, s * 5.8f), bh = s * 3.4f;
+        cx += (float) Math.sin(c.clock * 52f) * bw * 0.075f * c.steamer.badPulse;
+        float rimY = L.h * 0.46f + bh * 0.22f;
+        float rimRy = bw * 0.30f;
+        float lift = c.steamer.lidOpen() * bh * 0.72f + c.steamer.lidPulse * bh * 0.22f;
+        float lidY = rimY - rimRy * 1.05f - lift;
+        return Math.abs(x - cx) <= bw * 1.30f && Math.abs(y - lidY) <= Math.max(s, rimRy * 1.5f);
+    }
+
     static void bonus(Painter p, GameCore c, Layout L) {
         float s = L.unit;
 
@@ -329,7 +342,7 @@ final class Screens extends Draw {
         p.text(freed ? "FREE!" : "FREE THE DUMPLING", cx, L.h * 0.235f,
                 type(s * (freed ? 1.5f : 0.95f) * intro),
                 fadeBy(freed ? GOLD : INK, fade), Painter.CENTER, true);
-        if (!freed) {
+        if (!freed && !c.steamer.swipeReady) {
             // No label: the wanted letter wears the same caret the field puts over a head tile,
             // and the arrow between the pair already says which way the sequence is going.
             alternator(p, c, L, cx, L.h * 0.235f + s * 3.0f, fade);
@@ -410,6 +423,21 @@ final class Screens extends Draw {
                     c.steamer.flash * 0.45f);
             if (bad > 0f) lidCol = Glyph.mix(lidCol, ROSE, bad * 0.75f);
             Basket.lid(p, cx, lidY, bw * 1.02f, rimRy * 0.95f, lidCol, fade);
+
+            if (c.bonusSwipeReady()) {
+                // A broad luminous arrow bounces over the armed lid. Geometry, not text, so it
+                // reads instantly and remains legible in the harness font.
+                float bounce = (0.5f + 0.5f * (float) Math.sin(c.clock * 7f)) * s * 0.48f;
+                float ay = lidY - s * 1.05f - bounce;
+                float aw = Math.min(bw * 0.82f, s * 4.6f), ah = s * 2.0f;
+                float[] arrow = {cx, ay - ah, cx + aw * 0.50f, ay - ah * 0.48f,
+                        cx + aw * 0.22f, ay - ah * 0.48f, cx + aw * 0.22f, ay,
+                        cx - aw * 0.22f, ay, cx - aw * 0.22f, ay - ah * 0.48f,
+                        cx - aw * 0.50f, ay - ah * 0.48f};
+                p.strokePoly(arrow, fadeBy(Glyph.withAlpha(GOLD, 55), fade), s * 0.48f);
+                p.strokePoly(arrow, fadeBy(Glyph.withAlpha(0xFFFFFFFF, 150), fade), s * 0.20f);
+                p.fillPoly(arrow, fadeBy(Glyph.withAlpha(GOLD, 220), fade));
+            }
 
             // Steam escaping through the widening gap.
             if (open > 0.05f) {

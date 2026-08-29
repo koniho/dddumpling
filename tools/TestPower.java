@@ -334,6 +334,70 @@ final class TestPower extends Check {
         check("it starts moving in both axes", c.buddy.vx != 0f && c.buddy.vy != 0f);
         check("it starts with nothing squished and no target",
                 c.buddy.squishes == 0 && c.buddy.chase == null);
+
+        // Frenzy spawns are a mixture: the ordinary top entrance remains, while side entries
+        // begin wholly beyond either edge and bend across to a safe landing on the far side.
+        GameCore paths = new GameCore(store, 274L);
+        paths.startGame();
+        paths.enemies.clear();
+        paths.playtestMode(Power.TEAM, L);
+        int tops = 0, sides = 0, lefts = 0, rights = 0;
+        boolean outside = true, crosses = true, curved = true, lands = true;
+        for (int i = 0; i < 80; i++) {
+            paths.enemies.clear();
+            paths.spawnTimer = 0f;
+            paths.modeLeft = Power.DURATION;
+            paths.update(DT, L);
+            GameCore.Enemy word = paths.enemies.get(0);
+            if (!word.sideEntry) {
+                tops++;
+                continue;
+            }
+            sides++;
+            boolean left = word.pathStartX < L.playLeft;
+            if (left) lefts++; else rights++;
+            outside &= left ? word.pathStartX < L.playLeft : word.pathStartX > L.playRight;
+            crosses &= left ? word.pathEndX > L.w / 2f : word.pathEndX < L.w / 2f;
+            float linearMid = (word.pathStartX + word.pathEndX) / 2f;
+            word.y = (word.pathStartY + L.dangerY - L.enemyR) / 2f;
+            paths.updateSidePath(word, L);
+            curved &= Math.abs(word.baseX - linearMid) > L.enemyR;
+            word.y = L.dangerY - L.enemyR;
+            paths.updateSidePath(word, L);
+            lands &= Math.abs(word.baseX - word.pathEndX) < 0.01f
+                    && word.baseX >= L.playLeft && word.baseX <= L.playRight;
+        }
+        check("TEAM SQUISH mixes top and side entrances", tops > 0 && sides > 0);
+        check("side entrances use both edges", lefts > 0 && rights > 0);
+        check("side words begin beyond the play area", outside);
+        check("they cross toward the opposite side", crosses);
+        check("their crossing is an arc, not a straight diagonal", curved);
+        check("they reach the damage line inside the opposite edge", lands);
+
+        // FLING shares the same mixed entrance pool. Its blade benefits from targets crossing
+        // the field, but top-down words remain so the frenzy does not become one repeated motion.
+        GameCore flingPaths = new GameCore(new Mem(), 276L);
+        flingPaths.startGame();
+        flingPaths.enemies.clear();
+        flingPaths.playtestMode(Power.FLING, L);
+        int flingTops = 0, flingSides = 0;
+        boolean flingCrosses = true;
+        for (int i = 0; i < 80; i++) {
+            flingPaths.enemies.clear();
+            flingPaths.spawnTimer = 0f;
+            flingPaths.modeLeft = Power.DURATION;
+            flingPaths.update(DT, L);
+            GameCore.Enemy word = flingPaths.enemies.get(0);
+            if (!word.sideEntry) {
+                flingTops++;
+            } else {
+                flingSides++;
+                flingCrosses &= word.pathStartX < L.playLeft
+                        ? word.pathEndX > L.w / 2f : word.pathEndX < L.w / 2f;
+            }
+        }
+        check("FLING mixes top and side entrances", flingTops > 0 && flingSides > 0);
+        check("FLING side words cross toward the opposite edge", flingCrosses);
         float small = c.buddy.radius(L), dim = c.buddy.glow();
 
         // It stays inside the field, however long it bounces around in there.
@@ -372,6 +436,24 @@ final class TestPower extends Check {
         check("it gets bigger", d.buddy.radius(L) > wasR);
         check("and brighter", d.buddy.glow() > wasGlow);
         check("growth is the same rule as the readout", small == wasR && dim == wasGlow);
+        check("TEAM SQUISH marks the death as impact-driven", prey.radialFly);
+
+        // Pin the vector rule independently of the moving buddy: every tile must have a
+        // positive dot product away from the collision, including a real vertical component.
+        GameCore.Enemy burst = add(d, L, new int[] {0, 1, 2}, L.playTop + 240f);
+        burst.baseX = L.w * 0.55f;
+        float impactX = d.enemyCentreX(burst) - L.enemyR;
+        float impactY = burst.y + L.enemyR * 2f;
+        d.computeImpactFlyDirs(burst, impactX, impactY, L);
+        boolean impactAway = true, vertical = true;
+        for (int i = 0; i < burst.word.length; i++) {
+            float dx = d.tileX(burst, i, L) - impactX;
+            float dy = burst.y - impactY;
+            impactAway &= dx * burst.flyDir[i] + dy * burst.flyY[i] > 0f;
+            vertical &= burst.flyY[i] < -0.1f;
+        }
+        check("every tile flies away from the TEAM SQUISH impact", impactAway);
+        check("impact deaths move vertically as well as sideways", vertical);
 
         // Growth is capped, or it would fill the field.
         d.buddy.squishes = 500;

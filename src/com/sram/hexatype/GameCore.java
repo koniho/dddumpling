@@ -242,6 +242,9 @@ final class GameCore {
         /** Presses landed on the current tile so far. */
         int done;
         float baseX, y, speed, phase, sway;
+        /** Frenzy side entrance: a curved crossing from one edge to the other. */
+        boolean sideEntry;
+        float pathStartX, pathControlX, pathEndX, pathStartY;
         boolean dying;
         float deathT;
         /** 1 right after a correct hit, decaying: drives the colour flash and scale pop. */
@@ -261,7 +264,8 @@ final class GameCore {
         boolean destroyed;
         float destroyT;
         /** Per-tile fly-off direction, -1 left or +1 right. */
-        float[] flyDir;
+        float[] flyDir, flyY;
+        boolean radialFly;
 
         /**
          * The push-back slide: where the shove found the word, where it lands, and the time left
@@ -797,6 +801,11 @@ final class GameCore {
     boolean bonusMashing() {
         return state == BONUS && !starBonus && !bonusPrizeWon()
                 && bonusTimer <= bonusRollEnd && bonusTimer > MASH_END;
+    }
+
+    /** The final steamer point is in and an upward lid swipe may claim it. */
+    boolean bonusSwipeReady() {
+        return bonusMashing() && steamer.swipeReady;
     }
 
     /** True during the beat after the clock runs out, before anything fades. */
@@ -1863,6 +1872,7 @@ final class GameCore {
      */
     void buddySquish(Enemy e, Layout L) {
         destroyWord(e, buddy.x, buddy.y, L);
+        computeImpactFlyDirs(e, buddy.x, buddy.y, L);
         Fx.explode(this, rnd, buddy.x, buddy.y, L.enemyR * 1.6f, 14,
                 Collect.BODY[buddy.who]);
         shake = Math.max(shake, 0.30f + 0.03f * buddy.squishes);
@@ -2026,6 +2036,17 @@ final class GameCore {
 
     float enemyCentreX(Enemy e) {
         return e.baseX + e.sway * (float) Math.sin(clock * 1.1f + e.phase);
+    }
+
+    /** Keep a side-entering word on its quadratic crossing as its fall position advances. */
+    void updateSidePath(Enemy e, Layout L) {
+        if (!e.sideEntry) return;
+        float span = Math.max(1f, L.dangerY - L.enemyR - e.pathStartY);
+        float t = clamp01((e.y - e.pathStartY) / span);
+        float u = 1f - t;
+        e.baseX = u * u * e.pathStartX + 2f * u * t * e.pathControlX
+                + t * t * e.pathEndX;
+        e.enterT = clamp01(t * 5f);
     }
 
     /**
@@ -2212,6 +2233,7 @@ final class GameCore {
                 return;
             }
             bonusTimer -= dt;
+            if (bonusTimer <= MASH_END && steamer.swipeReady) steamer.missSwipe();
             // One tick per character the spinner steps past, so it sounds like a spin. Only
             // the left slot fires: both would double up on almost every step.
             if (bonusRolling()) {
@@ -2327,6 +2349,7 @@ final class GameCore {
                 // tail on it.
                 k = 1f - (1f - k) * (1f - k);
                 e.y = e.slideFrom + (e.slideTo - e.slideFrom) * k;
+                updateSidePath(e, L);
                 // No warn recompute and no breach check while it travels, both on purpose. The
                 // word is still below the line for these frames, and rearming a lunge on the way
                 // up would undo the swipe that just called it off. The threat was resolved when
@@ -2335,6 +2358,7 @@ final class GameCore {
             }
 
             e.y += e.speed * fallRate() * dt;
+            updateSidePath(e, L);
             e.warn = clamp01((e.y - (L.dangerY - band)) / band);
             if (e.warn > warnLevel) warnLevel = e.warn;
 
@@ -2612,8 +2636,10 @@ final class GameCore {
      */
     /** Not private: the title screen's demo fans its word out the same way when it is cleared. */
     void computeFlyDirs(Enemy e, Layout L) {
+        e.radialFly = false;
         int n = e.word.length;
         e.flyDir = new float[n];
+        e.flyY = new float[n];
         float mid = L.w / 2f;
         for (int i = 0; i < n; i++) {
             float dir = tileX(e, i, L) < mid ? -1f : 1f;
@@ -2622,6 +2648,27 @@ final class GameCore {
                 else if (i == n - 1) dir = 1f;
             }
             e.flyDir[i] = dir;
+            e.flyY[i] = i % 2 == 0 ? -0.15f : 0.15f;
+        }
+    }
+
+    /** TEAM SQUISH sends every tile directly away from the buddy collision. */
+    void computeImpactFlyDirs(Enemy e, float px, float py, Layout L) {
+        int n = e.word.length;
+        e.flyDir = new float[n];
+        e.flyY = new float[n];
+        e.radialFly = true;
+        for (int i = 0; i < n; i++) {
+            float dx = tileX(e, i, L) - px;
+            float dy = e.y - py;
+            float len = (float) Math.sqrt(dx * dx + dy * dy);
+            if (len < 1e-4f) {
+                dx = i < n / 2f ? -1f : 1f;
+                dy = -0.35f;
+                len = (float) Math.sqrt(dx * dx + dy * dy);
+            }
+            e.flyDir[i] = dx / len;
+            e.flyY[i] = dy / len;
         }
     }
 
@@ -2710,8 +2757,16 @@ final class GameCore {
             return;
         }
         if (sound != null) sound.squish(g, 1);
-        if (r != Steamer.FREED) return;
+        if (r == Steamer.READY) return;
+    }
 
+    /** Claims an armed steamer lid after an upward swipe over it. */
+    void swipeBonus() {
+        if (!bonusSwipeReady() || steamer.swipe() != Steamer.FREED) return;
+        winSteamer();
+    }
+
+    private void winSteamer() {
         score += FREE_BONUS;
         if (lives < START_LIVES) lives++;
         awardPrize();
@@ -2857,9 +2912,27 @@ final class GameCore {
         float hi = L.playRight - half - e.sway;
         e.baseX = hi > lo ? lo + rnd.nextFloat() * (hi - lo) : (L.playLeft + L.playRight) / 2f;
         e.phase = rnd.nextFloat() * 6.283f;
-        // Start fully above the top edge so words visibly fly in rather than popping
-        // into existence. travelSeconds still measures spawn -> danger line.
-        e.y = -L.enemyR * 2.2f;
+        // FLING and TEAM SQUISH mix the ordinary rain with words sweeping in from both sides. Their
+        // quadratic crossing bends toward the far edge and finishes inside it at the damage
+        // line, so the unusual entrance never changes when the threat actually lands.
+        if (powerActive() && (mode == Power.FLING || mode == Power.TEAM)
+                && rnd.nextBoolean() && hi > lo) {
+            e.sideEntry = true;
+            boolean fromLeft = rnd.nextBoolean();
+            e.pathStartX = fromLeft ? L.playLeft - half - L.enemyR
+                    : L.playRight + half + L.enemyR;
+            e.pathEndX = fromLeft ? hi : lo;
+            e.pathControlX = e.pathStartX + (e.pathEndX - e.pathStartX) * 0.22f;
+            e.pathStartY = L.playTop + (L.dangerY - L.playTop) *
+                    (0.08f + rnd.nextFloat() * 0.24f);
+            e.y = e.pathStartY;
+            e.baseX = e.pathStartX;
+            e.sway *= 0.45f;
+        } else {
+            // Start fully above the top edge so words visibly fly in rather than popping
+            // into existence. travelSeconds still measures spawn -> danger line.
+            e.y = -L.enemyR * 2.2f;
+        }
         e.enterT = 0f;
         e.speed = (L.dangerY - e.y) / travelSeconds();
         enemies.add(e);

@@ -186,11 +186,17 @@ final class Renderer extends Draw {
             }
 
             if (destroy > 0f) {
-                // Accelerating away: outer tiles split left and right, the rest take the
-                // nearer edge, and they fan slightly so the row does not stay a straight line.
                 float ease = destroy * destroy;
-                x += e.flyDir[i] * (0.10f + 1.15f * ease) * L.w * 0.60f;
-                y += (i % 2 == 0 ? -1f : 1f) * ease * L.h * 0.045f;
+                if (e.radialFly) {
+                    // TEAM SQUISH radiates from the actual collision, including vertically.
+                    float travel = (0.10f + 1.15f * ease) * L.w * 0.60f;
+                    x += e.flyDir[i] * travel;
+                    y += e.flyY[i] * travel;
+                } else {
+                    // Ordinary clears retain their broad side split and slight decorative fan.
+                    x += e.flyDir[i] * (0.10f + 1.15f * ease) * L.w * 0.60f;
+                    y += e.flyY[i] * ease * L.h * 0.30f;
+                }
             }
 
             float wobble = c.clock * 3.1f + e.phase + i * 0.7f;

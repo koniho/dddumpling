@@ -188,6 +188,7 @@ final class TestStages extends Check {
                 for (int k = 0; k < GameCore.STEAMER_HITS * 2 + 4; k++) {
                     c.tapBonus(c.steamer.wanted());
                 }
+                c.swipeBonus();
                 sawWin = c.prize >= 0;
             }
             int on = 0;
@@ -935,7 +936,10 @@ final class TestStages extends Check {
         for (int i = 0; i <= GameCore.STEAMER_HITS * 3 && c.steamer.hits > 0; i++) {
             c.tapBonus(c.steamer.wanted());
         }
-        check("twenty presses free the dumpling", c.steamer.opens == 1);
+        check("the final point arms the lid swipe", c.bonusSwipeReady()
+                && c.steamer.hits == GameCore.STEAMER_HITS && c.steamer.opens == 0);
+        c.swipeBonus();
+        check("swiping the armed lid frees the dumpling", c.steamer.opens == 1);
         check("the counter resets so it can be earned again", c.steamer.hits == 0);
         check("freeing it scores", c.score == scoreBefore + GameCore.FREE_BONUS);
         check("freeing it returns a lost life", c.lives == GameCore.START_LIVES);
@@ -951,6 +955,41 @@ final class TestStages extends Check {
         check("play resumes after the celebration and the parade", c.state == GameCore.PLAY);
         check("lives are capped at the starting count", c.lives <= GameCore.START_LIVES);
 
+        // Missing the physical finish does not bank a permanently open lid. It returns one
+        // point short, then exactly one fresh pair rearms the swipe on the next visit.
+        GameCore miss = new GameCore(new Mem(), 129L);
+        miss.startGame();
+        check("reached a steamer visit for the missed-swipe case", toMash(miss, L));
+        miss.steamer.hits = GameCore.STEAMER_HITS - 1;
+        miss.tapBonus(miss.steamer.wanted());
+        miss.tapBonus(miss.steamer.wanted());
+        check("the last point waits for a swipe instead of awarding", miss.bonusSwipeReady()
+                && miss.steamer.opens == 0 && miss.prize < 0);
+        boolean lidTarget = false;
+        for (float y = L.playTop; y < L.dangerY; y += L.unit * 0.25f) {
+            if (Screens.inSteamerLid(miss, L, L.w / 2f, y)) lidTarget = true;
+        }
+        check("the armed lid exposes a wide swipe target", lidTarget
+                && !Screens.inSteamerLid(miss, L, L.playLeft, L.dangerY));
+        advance(miss, L, miss.bonusTimer - (GameCore.BONUS_HOLD + GameCore.BONUS_STATUS)
+                + 2f * DT);
+        check("time expiring relocks the missed swipe one point short",
+                !miss.steamer.swipeReady && miss.steamer.hits == GameCore.STEAMER_HITS - 1
+                        && miss.steamer.opens == 0);
+        advancePastBonus(miss, L);
+        advance(miss, L, GameCore.STAGE_GAP + 0.1f);
+        miss.spawnedThisStage = miss.stageQuota();
+        miss.enemies.clear();
+        miss.shots.clear();
+        check("the next steamer visit opens", advanceToMash(miss, L));
+        check("the missed lid still needs one point",
+                miss.steamer.hits == GameCore.STEAMER_HITS - 1 && !miss.bonusSwipeReady());
+        miss.tapBonus(miss.steamer.wanted());
+        miss.tapBonus(miss.steamer.wanted());
+        check("one point rearms the swipe on the next visit", miss.bonusSwipeReady());
+        miss.swipeBonus();
+        check("that swipe frees the dumpling", miss.steamer.opens == 1);
+
         // A full run must be able to reach the minigame repeatedly without wedging.
         GameCore r = new GameCore(new Mem(), 122L);
         r.startGame();
@@ -964,6 +1003,7 @@ final class TestStages extends Check {
             if (r.state == GameCore.BONUS) {
                 // Human-ish mash rate, so the reported free count means something.
                 if (frames % 8 == 0) r.tapBonus(r.steamer.wanted());
+                if (r.bonusSwipeReady()) r.swipeBonus();
                 continue;
             }
             if (r.state != GameCore.PLAY) continue;

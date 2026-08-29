@@ -12,6 +12,8 @@ final class Steamer {
     int hits;
     /** Times the dumpling has been freed this run. */
     int opens;
+    /** Final point earned; the lid now waits for an upward swipe. */
+    boolean swipeReady;
     /** 1 right after a press, decaying: pops the lid up. */
     float lidPulse;
     /** 1 right after a press, decaying: flashes and cycles the container colour. */
@@ -31,7 +33,7 @@ final class Steamer {
     float freedT;
 
     /** Outcome of a press. */
-    static final int WRONG = 0, OK = 1, SCORED = 2, FREED = 3;
+    static final int WRONG = 0, OK = 1, SCORED = 2, READY = 3, FREED = 4;
 
     /** The two keys that have to be alternated, one per thumb. */
     int leftKey, rightKey;
@@ -41,6 +43,7 @@ final class Steamer {
     void reset() {
         hits = 0;
         opens = 0;
+        swipeReady = false;
         lidPulse = 0;
         flash = 0;
         freedT = 0;
@@ -116,6 +119,7 @@ final class Steamer {
             flash = 1f;
             return OK;
         }
+        if (swipeReady) return READY;
         if (g != wanted()) {
             // Rebuffed. The lid does not budge and the basket does not flash: those two used to
             // fire before this check, so a wrong press looked exactly like a landed one and the
@@ -133,10 +137,27 @@ final class Steamer {
         expectLeft = true;
         hits++;
         if (hits < GameCore.STEAMER_HITS) return SCORED;
+        hits = GameCore.STEAMER_HITS;
+        swipeReady = true;
+        return READY;
+    }
+
+    /** Swipe an armed lid away. */
+    int swipe() {
+        if (!swipeReady || freedT > 0f) return WRONG;
+        swipeReady = false;
         hits = 0;
         opens++;
         freedT = FREE_TIME;
         return FREED;
+    }
+
+    /** Missing an armed lid relocks it one point short for the next interlude. */
+    void missSwipe() {
+        if (!swipeReady) return;
+        swipeReady = false;
+        hits = GameCore.STEAMER_HITS - 1;
+        expectLeft = true;
     }
 
     /** How far the lid has lifted, 0..1. */

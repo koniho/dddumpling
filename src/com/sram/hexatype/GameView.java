@@ -97,6 +97,8 @@ public class GameView extends View {
             return true;
         }
 
+        if (handleBonusSwipe(ev, action)) return true;
+
         // The settings panel needs drags, for the speed slider.
         if (core.settingsOpen) {
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN
@@ -171,6 +173,36 @@ public class GameView extends View {
         if (key >= 0) {
             core.tapKey(key, layout);
             tick();
+        }
+        return true;
+    }
+
+    private boolean bonusSwipeArmed;
+    private float bonusSwipeStartY;
+
+    /** Upward drag beginning on the armed steamer lid. */
+    private boolean handleBonusSwipe(MotionEvent ev, int action) {
+        int i = ev.getActionIndex();
+        float x = ev.getX(i), y = ev.getY(i);
+        if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+            if (!core.bonusSwipeReady() || !Screens.inSteamerLid(core, layout, x, y)) return false;
+            bonusSwipeArmed = true;
+            bonusSwipeStartY = y;
+            return true;
+        }
+        if (!bonusSwipeArmed) return false;
+        if (action == MotionEvent.ACTION_MOVE) {
+            if (bonusSwipeStartY - y > layout.unit * 1.15f) {
+                core.swipeBonus();
+                bonusSwipeArmed = false;
+                tick();
+            }
+            return true;
+        }
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP
+                || action == MotionEvent.ACTION_CANCEL) {
+            bonusSwipeArmed = false;
+            return true;
         }
         return true;
     }
