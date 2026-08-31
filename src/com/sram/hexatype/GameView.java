@@ -85,6 +85,7 @@ public class GameView extends View {
         int action = ev.getActionMasked();
 
         if (core.state == GameCore.BONUS && core.starBonus) {
+            if (handleStarDrag(ev, action)) return true;
             if (action == MotionEvent.ACTION_CANCEL) {
                 for (int g = 0; g < Glyph.COUNT; g++) core.holdBonusKey(g, false);
             } else if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN
@@ -175,6 +176,36 @@ public class GameView extends View {
             tick();
         }
         return true;
+    }
+
+    private int starDragPointer = -1;
+    private float starDragOffsetX;
+
+    /** Grab the Starpath flyer and move it directly left or right. */
+    private boolean handleStarDrag(MotionEvent ev, int action) {
+        if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+            int i = ev.getActionIndex();
+            float dx = ev.getX(i) - core.stars.x;
+            float dy = ev.getY(i) - core.stars.characterY(layout);
+            float grab = StarPath.flyerR(layout) * 1.45f;
+            if (core.stars.flying() && dx * dx + dy * dy <= grab * grab) {
+                starDragPointer = ev.getPointerId(i);
+                starDragOffsetX = core.stars.x - ev.getX(i);
+                return true;
+            }
+        } else if (action == MotionEvent.ACTION_MOVE && starDragPointer >= 0) {
+            int i = ev.findPointerIndex(starDragPointer);
+            if (i >= 0) core.stars.dragTo(ev.getX(i) + starDragOffsetX, layout);
+            return true;
+        } else if (action == MotionEvent.ACTION_CANCEL) {
+            // Let the caller also release every held arrow key.
+            starDragPointer = -1;
+        } else if ((action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP)
+                && ev.getPointerId(ev.getActionIndex()) == starDragPointer) {
+            starDragPointer = -1;
+            return true;
+        }
+        return false;
     }
 
     private boolean bonusSwipeArmed;

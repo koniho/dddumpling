@@ -627,10 +627,31 @@ final class Renderer extends Draw {
                 float sag = r * (0.05f + 0.025f * (float) Math.sin(sob)) * gone;
                 Kawaii.crying(p, g, cx + tremble, cy + sag, r * 0.60f, col,
                         1f + 0.10f * gone, sob, gone);
+            } else if (c.state == GameCore.BONUS && c.starBonus) {
+                starArrow(p, cx, cy, r, g < Glyph.COUNT / 2 ? -1f : 1f, col, press);
             } else {
                 Kawaii.draw(p, g, cx, cy, r * 0.60f * (1f + 0.12f * press), col,
                         1f + 0.20f * press, 0.25f + 0.6f * press);
             }
         }
+    }
+
+    /** Bold directional face used by every key while the Starpath steering lesson is active. */
+    private static void starArrow(Painter p, float cx, float cy, float r, float dir, int color,
+            float press) {
+        float size = r * (0.48f + 0.05f * press);
+        float tip = cx + dir * size;
+        float back = cx - dir * size * 0.82f;
+        float neck = cx - dir * size * 0.12f;
+        float half = size * 0.55f;
+        p.fillPoly(new float[] {
+                tip, cy,
+                neck, cy - half,
+                neck, cy - half * 0.34f,
+                back, cy - half * 0.34f,
+                back, cy + half * 0.34f,
+                neck, cy + half * 0.34f,
+                neck, cy + half
+        }, Glyph.withAlpha(color, (int) (205 + 50 * press)));
     }
 }

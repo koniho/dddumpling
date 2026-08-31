@@ -407,6 +407,16 @@ final class StarPath {
         else right = down;
     }
 
+    /** Places the flyer under a dragging finger while leaving the key steering available. */
+    void dragTo(float targetX, Layout L) {
+        if (!flying() || winning()) return;
+        float r = flyerR(L);
+        x = Math.max(L.playLeft + r, Math.min(L.playRight - r, targetX));
+        // Direct manipulation owns the position for this frame. Without clearing this, momentum
+        // from a key pressed before the grab makes the flyer slide out from under the finger.
+        vx = 0f;
+    }
+
     void update(float dt, Layout L) {
         if (winning()) {
             // The course stops: no scroll, no steering, no further pickups. The tableau is drawn
