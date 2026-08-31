@@ -971,6 +971,11 @@ final class TestStages extends Check {
         }
         check("the armed lid exposes a wide swipe target", lidTarget
                 && !Screens.inSteamerLid(miss, L, L.playLeft, L.dangerY));
+        miss.dragBonusLid(L.unit * 0.8f);
+        check("the armed lid follows an upward drag",
+                Math.abs(miss.steamer.lidDrag - L.unit * 0.8f) < 0.01f);
+        miss.dragBonusLid(-L.unit);
+        check("a downward drag does not push the lid into the basket", miss.steamer.lidDrag == 0f);
         advance(miss, L, miss.bonusTimer - (GameCore.BONUS_HOLD + GameCore.BONUS_STATUS)
                 + 2f * DT);
         check("time expiring relocks the missed swipe one point short",

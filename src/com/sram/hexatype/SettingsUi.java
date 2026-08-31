@@ -18,10 +18,12 @@ final class SettingsUi {
      * Waiting for it meant clearing a wave, winning a steamer and then clearing another.
      */
     static final int HIT_TEST = 200;
-    /** Chips in the playtest row: the frenzy modes, plus the star course. */
-    static final int TEST_CHIPS = Power.COUNT + 1;
+    /** Chips in the playtest row: the frenzy modes, Starpath, and Steamer. */
+    static final int TEST_CHIPS = Power.COUNT + 2;
     /** The star-course chip's index within that row. */
     static final int TEST_STARS = Power.COUNT;
+    /** The steamer-game chip's index within that row. */
+    static final int TEST_STEAMER = Power.COUNT + 1;
 
     float panelL, panelT, panelR, panelB;
     float titleY;

@@ -1118,6 +1118,22 @@ final class GameCore {
         enterBonus(L);
     }
 
+    /** Drops straight into a full-length steamer round from the playtest panel. */
+    void playtestSteamer(Layout L) {
+        if (state != PLAY) return;
+        power = null;
+        settingsOpen = false;
+        pendingBonus = false;
+        enemies.clear();
+        target = null;
+        caretOwner = null;
+        spawnedThisStage = stageQuota();
+        resolvedThisStage = stageQuota();
+        earnedMash = MASH_PERFECT;
+        starNext = false;
+        enterBonus(L);
+    }
+
     /**
      * The frenzy ran out. That clears the stage outright: everything still on the field is
      * destroyed and the wave counts as fully released, so the interlude follows.
@@ -2764,6 +2780,10 @@ final class GameCore {
     void swipeBonus() {
         if (!bonusSwipeReady() || steamer.swipe() != Steamer.FREED) return;
         winSteamer();
+    }
+
+    void dragBonusLid(float lift) {
+        steamer.lidDrag = bonusSwipeReady() ? Math.max(0f, lift) : 0f;
     }
 
     private void winSteamer() {

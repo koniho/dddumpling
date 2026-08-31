@@ -208,7 +208,7 @@ public class GameView extends View {
         return false;
     }
 
-    private boolean bonusSwipeArmed;
+    private int bonusSwipePointer = -1;
     private float bonusSwipeStartY;
 
     /** Upward drag beginning on the armed steamer lid. */
@@ -217,22 +217,29 @@ public class GameView extends View {
         float x = ev.getX(i), y = ev.getY(i);
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
             if (!core.bonusSwipeReady() || !Screens.inSteamerLid(core, layout, x, y)) return false;
-            bonusSwipeArmed = true;
+            bonusSwipePointer = ev.getPointerId(i);
             bonusSwipeStartY = y;
             return true;
         }
-        if (!bonusSwipeArmed) return false;
+        if (bonusSwipePointer < 0) return false;
         if (action == MotionEvent.ACTION_MOVE) {
+            i = ev.findPointerIndex(bonusSwipePointer);
+            if (i < 0) return true;
+            y = ev.getY(i);
+            core.dragBonusLid(bonusSwipeStartY - y);
             if (bonusSwipeStartY - y > layout.unit * 1.15f) {
                 core.swipeBonus();
-                bonusSwipeArmed = false;
+                bonusSwipePointer = -1;
                 tick();
             }
             return true;
         }
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP
                 || action == MotionEvent.ACTION_CANCEL) {
-            bonusSwipeArmed = false;
+            if (action != MotionEvent.ACTION_CANCEL
+                    && ev.getPointerId(ev.getActionIndex()) != bonusSwipePointer) return true;
+            bonusSwipePointer = -1;
+            core.dragBonusLid(0f);
             return true;
         }
         return true;
@@ -430,6 +437,7 @@ public class GameView extends View {
             // Closes the panel and drops straight into the mode.
             int chip = hit - SettingsUi.HIT_TEST;
             if (chip == SettingsUi.TEST_STARS) core.playtestStars(layout);
+            else if (chip == SettingsUi.TEST_STEAMER) core.playtestSteamer(layout);
             else core.playtestMode(chip, layout);
             tick();
         } else if (hit >= SettingsUi.HIT_OPTION) {

@@ -291,8 +291,9 @@ final class Screens extends Draw {
         float rimY = L.h * 0.46f + bh * 0.22f;
         float rimRy = bw * 0.30f;
         float lift = c.steamer.lidOpen() * bh * 0.72f + c.steamer.lidPulse * bh * 0.22f;
-        float lidY = rimY - rimRy * 1.05f - lift;
-        return Math.abs(x - cx) <= bw * 1.30f && Math.abs(y - lidY) <= Math.max(s, rimRy * 1.5f);
+        float lidY = rimY - rimRy * 1.05f - lift - c.steamer.lidDrag;
+        return Math.abs(x - cx) <= bw * 1.55f
+                && Math.abs(y - lidY) <= Math.max(s * 1.8f, rimRy * 1.9f);
     }
 
     static void bonus(Painter p, GameCore c, Layout L) {
@@ -418,7 +419,7 @@ final class Screens extends Draw {
             // Lid: lifts with progress, and kicks up further on each press. Capped so that
             // at full open it just clears the rim rather than floating away from it.
             float lift = open * bh * 0.72f + c.steamer.lidPulse * bh * 0.22f;
-            float lidY = rimY - rimRy * 1.05f - lift;
+            float lidY = rimY - rimRy * 1.05f - lift - c.steamer.lidDrag;
             int lidCol = Glyph.mix(BAMBOO, Glyph.cycle(c.clock * 6f + 0.3f),
                     c.steamer.flash * 0.45f);
             if (bad > 0f) lidCol = Glyph.mix(lidCol, ROSE, bad * 0.75f);
@@ -585,15 +586,16 @@ final class Screens extends Draw {
         for (int i = 0; i < SettingsUi.TEST_CHIPS; i++) {
             float l = ui.testChipL(i, SettingsUi.TEST_CHIPS);
             float r = ui.testChipR(i, SettingsUi.TEST_CHIPS);
-            int col = i == SettingsUi.TEST_STARS ? GOLD
+            int col = i == SettingsUi.TEST_STARS || i == SettingsUi.TEST_STEAMER ? GOLD
                     : Glyph.cycle(i / (float) SettingsUi.TEST_CHIPS);
             p.fillRect(l, ui.testY, r, ui.testY + ui.testH, Glyph.withAlpha(col, 46));
             p.strokePoly(new float[] {l, ui.testY, r, ui.testY, r, ui.testY + ui.testH,
                     l, ui.testY + ui.testH}, Glyph.withAlpha(col, 190), s * 0.05f);
-            // Four letters, like the mode names either side of it: five chips across this row
-            // leaves about that much, and see the note above about labels leaving their boxes.
-            p.text(i == SettingsUi.TEST_STARS ? "PATH" : Power.CHIP[i],
-                    (l + r) / 2f, ui.testY + ui.testH * 0.66f, s * 0.56f,
+            // Compact labels keep all six shortcuts legible in one row.
+            String label = i == SettingsUi.TEST_STARS ? "PATH"
+                    : i == SettingsUi.TEST_STEAMER ? "STEAM" : Power.CHIP[i];
+            p.text(label,
+                    (l + r) / 2f, ui.testY + ui.testH * 0.66f, s * 0.46f,
                     INK, Painter.CENTER, true);
         }
 

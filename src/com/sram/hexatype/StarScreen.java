@@ -233,14 +233,9 @@ final class StarScreen extends Draw {
         float str = q.count() / (float) StarPath.COUNT;
         int n = 4 + q.count();
         float len = rr * (1.2f + 1.7f * str);
-        // Behind is mostly *sideways*, opposite whichever way the flyer is being steered, with a
-        // downward bias under it. Straight down is the honest direction for something climbing a
-        // course, and it does not fit: the flyer spends nearly all of a flight within a tile or two
-        // of the danger line, so a wake pointing at it is a wake in the last second of the last
-        // attempt. Cutting it off there is worse — the course line already crosses into the deck and
-        // a spray of colour doing the same would be the loudest thing on the screen. Trailing the
-        // steering has the room, and it draws what the keys are doing, which is the whole verb here.
-        float drop = Math.min(len * 1.5f, Math.max(rr * 0.5f, L.dangerY - y - rr * 0.2f));
+        // The flyer is climbing, so its shed stars shoot downward. Steering gives the stream a
+        // small opposing lean, but vertical travel remains the dominant motion.
+        float drop = Math.min(len * 1.55f, Math.max(rr * 0.85f, L.deckTop - y - rr * 0.2f));
         for (int k = 0; k < n; k++) {
             float h1 = frac(k * 0.6180339f), h2 = frac(k * 0.7548777f), h3 = frac(k * 0.4501f);
             float age = frac(clock * (0.85f + 0.55f * h2) + h1);
@@ -248,10 +243,10 @@ final class StarScreen extends Draw {
             // coming off and the count that drives it cannot be read.
             float out = rr * (0.40f - 0.20f * age) * (0.7f + 0.45f * str);
             float from = rr * 1.05f;
-            float cx = x - sway * (from + len * 1.4f * age)
-                    + rr * (0.55f + 0.5f * h3) * age
+            float cx = x - sway * (from * 0.25f + len * 0.38f * age)
+                    + rr * (0.28f + 0.24f * h3) * age
                             * (float) Math.sin(StarPath.TAU * (h2 + age * 0.55f));
-            float cy = y + (from * 0.35f + drop * age) * (0.4f + 0.6f * (1f - Math.abs(sway)));
+            float cy = y + from * 0.40f + drop * age;
             float dim = 1f - age * age * 0.85f;
             int col = Glyph.withAlpha(Glyph.COLOR[k % Glyph.COUNT],
                     (int) ((125f + 130f * str) * dim));

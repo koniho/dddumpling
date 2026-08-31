@@ -1287,8 +1287,7 @@ final class TestPower extends Check {
         check("the playtest row sits below the music rows",
                 ui.testY > ui.optionCy(Music.NAMES.length - 1));
 
-        // Every chip in the row, which is one wider than the frenzy modes: the last one opens a
-        // star course. Written against TEST_CHIPS rather than Power.COUNT so adding another
+        // Every chip in the row, with shortcuts for both between-stage games after the modes. Written against TEST_CHIPS rather than Power.COUNT so adding another
         // playtest shortcut cannot quietly leave the new chip untestable.
         boolean chipsOk = true, chipsDistinct = true;
         int chips = SettingsUi.TEST_CHIPS;
@@ -1298,17 +1297,20 @@ final class TestPower extends Check {
             if (i > 0 && ui.testChipL(i, chips)
                     < ui.testChipR(i - 1, chips)) chipsDistinct = false;
         }
-        check("the row has a chip for the star course past the frenzy modes",
-                SettingsUi.TEST_STARS == Power.COUNT && chips == Power.COUNT + 1);
+        check("the row has chips for both between-stage games",
+                SettingsUi.TEST_STARS == Power.COUNT
+                        && SettingsUi.TEST_STEAMER == Power.COUNT + 1
+                        && chips == Power.COUNT + 2);
         // Labels inside their boxes, which nothing was checking: adding the fifth chip put TEAM
         // SQUISH's label across two of its neighbours, and DOES NOT FIT only watches the screen
         // edge. Measured in the harness font, which is wider than the device's.
-        float chipType = Draw.type(L.unit * 0.56f);
+        float chipType = Draw.type(L.unit * 0.46f);
         boolean labelsFit = true;
         String widest = "";
         float worst = 0f;
         for (int i = 0; i < chips; i++) {
-            String label = i == SettingsUi.TEST_STARS ? "PATH" : Power.CHIP[i];
+            String label = i == SettingsUi.TEST_STARS ? "PATH"
+                    : i == SettingsUi.TEST_STEAMER ? "STEAM" : Power.CHIP[i];
             float box = ui.testChipR(i, chips) - ui.testChipL(i, chips);
             float wide = RasterPainter.textWidth(label, chipType);
             if (wide / box > worst) { worst = wide / box; widest = label; }
@@ -1320,8 +1322,8 @@ final class TestPower extends Check {
         check("every playtest chip is hittable", chipsOk);
         check("the chips do not overlap", chipsDistinct);
         check("chips stay inside the panel",
-                ui.testChipL(0, Power.COUNT) >= ui.panelL
-                        && ui.testChipR(Power.COUNT - 1, Power.COUNT) <= ui.panelR);
+                ui.testChipL(0, chips) >= ui.panelL
+                        && ui.testChipR(chips - 1, chips) <= ui.panelR);
 
         // Each chip starts the real thing. The case needs something in it, because TEAM SQUISH
         // fields one of the collection and refuses to start without one.
@@ -1350,6 +1352,16 @@ final class TestPower extends Check {
             check("playtest " + Power.NAMES[m] + " ends the stage",
                     c.spawnedThisStage >= c.stageQuota());
         }
+
+        GameCore steam = new GameCore(new Mem(), 319L);
+        steam.startGame();
+        steam.openSettings();
+        steam.playtestSteamer(L);
+        check("playtest STEAM starts the steamer game",
+                steam.state == GameCore.BONUS && !steam.starBonus);
+        check("playtest STEAM closes the panel", !steam.settingsOpen);
+        check("playtest STEAM gives a full mash window",
+                steam.bonusTimer == GameCore.bonusLength(GameCore.MASH_PERFECT));
 
         // Only meaningful during play, and only for a real mode.
         GameCore t = new GameCore(new Mem(), 320L);

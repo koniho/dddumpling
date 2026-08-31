@@ -16,6 +16,8 @@ final class Steamer {
     boolean swipeReady;
     /** 1 right after a press, decaying: pops the lid up. */
     float lidPulse;
+    /** Live upward distance of the armed lid drag, in pixels. */
+    float lidDrag;
     /** 1 right after a press, decaying: flashes and cycles the container colour. */
     float flash;
     /**
@@ -45,6 +47,7 @@ final class Steamer {
         opens = 0;
         swipeReady = false;
         lidPulse = 0;
+        lidDrag = 0;
         flash = 0;
         freedT = 0;
         badPulse = 0;
@@ -146,6 +149,7 @@ final class Steamer {
     int swipe() {
         if (!swipeReady || freedT > 0f) return WRONG;
         swipeReady = false;
+        lidDrag = 0f;
         hits = 0;
         opens++;
         freedT = FREE_TIME;
@@ -156,6 +160,7 @@ final class Steamer {
     void missSwipe() {
         if (!swipeReady) return;
         swipeReady = false;
+        lidDrag = 0f;
         hits = GameCore.STEAMER_HITS - 1;
         expectLeft = true;
     }
