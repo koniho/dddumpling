@@ -79,6 +79,8 @@ final class StarPath {
      * side of that trade the player feels as the thing answering the key rather than lagging it.
      */
     static final float MAX_VX = 0.60f, ACCEL = 2.6f;
+    /** Maximum rocket vibration, as a fraction of the text unit. */
+    static final float FLIGHT_SHAKE = 0.16f;
 
     /**
      * The sweep: how far either side of the middle a course reaches, and the seconds it takes to
@@ -208,7 +210,7 @@ final class StarPath {
     int collected;
     int who = -1;
     float timer, x, vx;
-    boolean left, right, won;
+    boolean left, right, won, dragging;
     /**
      * Seconds of victory tableau left. While this is running every other kind of motion here is
      * frozen — the scroll, the steering and the pickup shines all hold where the win found them.
@@ -367,7 +369,7 @@ final class StarPath {
         timer = READY + FLY + EXIT + REPORT;
         x = L.w * 0.5f;
         vx = 0f;
-        left = right = won = false;
+        left = right = won = dragging = false;
         launched = reported = false;
         winT = 0f;
         winStar = -1;
@@ -378,6 +380,11 @@ final class StarPath {
     boolean ready() { return timer > FLY + EXIT + REPORT; }
     boolean flying() { return timer <= FLY + EXIT + REPORT && timer > EXIT + REPORT; }
     boolean exiting() { return timer <= EXIT + REPORT && timer > REPORT; }
+    float exitProgress() {
+        if (!exiting()) return 0f;
+        float p = (EXIT + REPORT - timer) / EXIT;
+        return p < 0f ? 0f : p > 1f ? 1f : p;
+    }
     boolean reporting() { return timer <= REPORT; }
     /** True while the victory tableau owns the screen, which is the end of a completed course. */
     boolean winning() { return winT > 0f; }
@@ -391,6 +398,24 @@ final class StarPath {
         float p = (FLY + EXIT + REPORT - timer) / FLY;
         return p < 0 ? 0 : p > 1 ? 1 : p;
     }
+
+    /** Increasing vibration shared by the flyer drawing and its pickup hitbox. */
+    float flightShakeX(Layout L) {
+        if (!flying()) return 0f;
+        float p = flightProgress();
+        return L.unit * FLIGHT_SHAKE * p * p
+                * ((float) Math.sin(timer * 47f) * 0.68f + (float) Math.sin(timer * 83f) * 0.32f);
+    }
+
+    float flightShakeY(Layout L) {
+        if (!flying()) return 0f;
+        float p = flightProgress();
+        return L.unit * FLIGHT_SHAKE * p * p * 0.62f
+                * ((float) Math.cos(timer * 53f) * 0.72f + (float) Math.sin(timer * 91f) * 0.28f);
+    }
+
+    float flyerX(Layout L) { return x + flightShakeX(L); }
+    float flyerY(Layout L) { return characterY(L) + flightShakeY(L); }
 
     /**
      * Scroll leaves from a standstill, reaches its nominal pace over {@link #EASE_IN}, and keeps
@@ -407,9 +432,12 @@ final class StarPath {
         else right = down;
     }
 
+    void beginDrag() { dragging = true; }
+    void endDrag() { dragging = false; }
+
     /** Places the flyer under a dragging finger while leaving the key steering available. */
     void dragTo(float targetX, Layout L) {
-        if (!flying() || winning()) return;
+        if ((!ready() && !flying()) || winning()) return;
         float r = flyerR(L);
         x = Math.max(L.playLeft + r, Math.min(L.playRight - r, targetX));
         // Direct manipulation owns the position for this frame. Without clearing this, momentum
@@ -460,11 +488,11 @@ final class StarPath {
         if (x < L.playLeft + r) { x = L.playLeft + r; vx = Math.max(0, vx); }
         if (x > L.playRight - r) { x = L.playRight - r; vx = Math.min(0, vx); }
 
-        float cy = characterY(L);
+        float cx = flyerX(L), cy = flyerY(L);
         float rx = pickupR(L), ry = pickupY(L);
         for (int i = 0; i < COUNT; i++) {
             if ((collected & (1 << i)) != 0) continue;
-            float dx = (x - starX(i, L)) / rx, dy = (cy - starY(i, L)) / ry;
+            float dx = (cx - starX(i, L)) / rx, dy = (cy - starY(i, L)) / ry;
             if (dx * dx + dy * dy <= 1f) {
                 collected |= 1 << i;
                 burst[i] = 1f;

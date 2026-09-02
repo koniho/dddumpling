@@ -282,16 +282,28 @@ final class Screens extends Draw {
      * the rainbow dumpling inside. Progress carries across interludes, so the lid creeps up
      * over several stages.
      */
+    /** Vertical centre of the visible lid, including a live drag. */
+    static float steamerLidY(GameCore c, Layout L) {
+        float bw = Math.min(L.w * 0.26f, L.unit * 5.8f), bh = L.unit * 3.4f;
+        float rimY = L.h * 0.46f + bh * 0.22f;
+        float rimRy = bw * 0.30f;
+        float lift = c.steamer.lidOpen() * bh * 0.72f + c.steamer.lidPulse * bh * 0.22f;
+        return rimY - rimRy * 1.05f - lift - c.steamer.lidDrag;
+    }
+
+    /** The line the lid must be dragged above to release, 90% of the way up the screen. */
+    static float steamerReleaseY(Layout L) {
+        return L.h * 0.10f;
+    }
+
     /** Generous touch target around the visible lid while its swipe is armed. */
     static boolean inSteamerLid(GameCore c, Layout L, float x, float y) {
         if (!c.bonusSwipeReady()) return false;
         float s = L.unit, cx = L.w / 2f;
         float bw = Math.min(L.w * 0.26f, s * 5.8f), bh = s * 3.4f;
         cx += (float) Math.sin(c.clock * 52f) * bw * 0.075f * c.steamer.badPulse;
-        float rimY = L.h * 0.46f + bh * 0.22f;
         float rimRy = bw * 0.30f;
-        float lift = c.steamer.lidOpen() * bh * 0.72f + c.steamer.lidPulse * bh * 0.22f;
-        float lidY = rimY - rimRy * 1.05f - lift - c.steamer.lidDrag;
+        float lidY = steamerLidY(c, L);
         return Math.abs(x - cx) <= bw * 1.55f
                 && Math.abs(y - lidY) <= Math.max(s * 1.8f, rimRy * 1.9f);
     }

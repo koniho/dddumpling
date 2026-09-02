@@ -976,6 +976,14 @@ final class TestStages extends Check {
                 Math.abs(miss.steamer.lidDrag - L.unit * 0.8f) < 0.01f);
         miss.dragBonusLid(-L.unit);
         check("a downward drag does not push the lid into the basket", miss.steamer.lidDrag == 0f);
+        float lidRestY = Screens.steamerLidY(miss, L);
+        miss.dragBonusLid(lidRestY - Screens.steamerReleaseY(L) - L.unit * 0.1f);
+        check("the lid must reach the top ten percent to release",
+                Screens.steamerLidY(miss, L) > Screens.steamerReleaseY(L));
+        miss.dragBonusLid(lidRestY - Screens.steamerReleaseY(L) + L.unit * 0.1f);
+        check("the release line is ninety percent up the screen",
+                Screens.steamerLidY(miss, L) < Screens.steamerReleaseY(L));
+        miss.dragBonusLid(0f);
         advance(miss, L, miss.bonusTimer - (GameCore.BONUS_HOLD + GameCore.BONUS_STATUS)
                 + 2f * DT);
         check("time expiring relocks the missed swipe one point short",

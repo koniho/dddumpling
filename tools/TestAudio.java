@@ -492,6 +492,10 @@ final class TestAudio extends Check {
         check("a lost course reads its count out once", ear.tallies == 1);
         check("with the count it actually took", ear.lastTally == c.stars.count());
         check("and it does not ring the prize fanfare", ear.achievements == 0);
+        check("the light rocket runs through the flight",
+                ear.rocketCalls > 0 && ear.firstRocket > 0f);
+        check("rocket thrust rises with course progress", ear.maxRocket > ear.firstRocket * 2f);
+        check("the rocket stops outside the flight", ear.rocketStops > 0 && ear.rocketThrust == 0f);
 
         // And a won one: the fanfare, no tally, and one join chord in the parade after it.
         GameCore w = new GameCore(new Mem(), 517L);

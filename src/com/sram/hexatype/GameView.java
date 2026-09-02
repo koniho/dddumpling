@@ -188,8 +188,10 @@ public class GameView extends View {
             float dx = ev.getX(i) - core.stars.x;
             float dy = ev.getY(i) - core.stars.characterY(layout);
             float grab = StarPath.flyerR(layout) * 1.45f;
-            if (core.stars.flying() && dx * dx + dy * dy <= grab * grab) {
+            if ((core.stars.ready() || core.stars.flying())
+                    && dx * dx + dy * dy <= grab * grab) {
                 starDragPointer = ev.getPointerId(i);
+                core.stars.beginDrag();
                 starDragOffsetX = core.stars.x - ev.getX(i);
                 return true;
             }
@@ -200,9 +202,11 @@ public class GameView extends View {
         } else if (action == MotionEvent.ACTION_CANCEL) {
             // Let the caller also release every held arrow key.
             starDragPointer = -1;
+            core.stars.endDrag();
         } else if ((action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP)
                 && ev.getPointerId(ev.getActionIndex()) == starDragPointer) {
             starDragPointer = -1;
+            core.stars.endDrag();
             return true;
         }
         return false;
@@ -227,7 +231,7 @@ public class GameView extends View {
             if (i < 0) return true;
             y = ev.getY(i);
             core.dragBonusLid(bonusSwipeStartY - y);
-            if (bonusSwipeStartY - y > layout.unit * 1.15f) {
+            if (Screens.steamerLidY(core, layout) <= Screens.steamerReleaseY(layout)) {
                 core.swipeBonus();
                 bonusSwipePointer = -1;
                 tick();

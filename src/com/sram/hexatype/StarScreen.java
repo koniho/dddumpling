@@ -121,7 +121,7 @@ final class StarScreen extends Draw {
         }
 
         float lean = q.lessonLean(c.clock);
-        float x = q.x + lean * L.w, y = q.characterY(L);
+        float x = q.flyerX(L) + lean * L.w, y = q.flyerY(L);
         if (q.ready()) {
             // Wordless lesson: the three left keys glow and the flyer leans left, then the
             // three right keys and a lean right. The real deck supplies the controls. Both the
@@ -137,11 +137,9 @@ final class StarScreen extends Draw {
         }
 
         float rr = StarPath.flyerR(L);
-        // The wake belongs to the course, so it goes with the course: while the lesson is up and
-        // while the flight is on, and not once the flyer is climbing off the top or standing over a
-        // tally. Those are the transition out — the sparks there were trailing a character that had
-        // stopped playing, which read as the effect being stuck rather than as a wake.
-        if (q.ready() || q.flying()) {
+        // Keep the rocket exhaust through the climb-out. Its long exit plume leaves live stars
+        // on screen after the flyer itself has cleared the top, making the departure a blast-off.
+        if (q.ready() || q.flying() || q.exiting()) {
             // The lesson's lean is drawn onto the position rather than steered, so its sway has to
             // be asked for separately; in flight the steering itself is the answer.
             float sway = q.ready() ? q.lessonSway(c.clock) : q.vx / (L.w * StarPath.MAX_VX);
@@ -231,25 +229,36 @@ final class StarScreen extends Draw {
             float clock, float fade) {
         float rr = StarPath.flyerR(L);
         float str = q.count() / (float) StarPath.COUNT;
-        int n = 4 + q.count();
-        float len = rr * (1.2f + 1.7f * str);
-        // The flyer is climbing, so its shed stars shoot downward. Steering gives the stream a
-        // small opposing lean, but vertical travel remains the dominant motion.
-        float drop = Math.min(len * 1.55f, Math.max(rr * 0.85f, L.deckTop - y - rr * 0.2f));
+        float exit = q.exitProgress();
+        int n = 10 + q.count() + (int) (18f * exit);
+        float len = rr * (1.35f + 1.85f * str + 1.4f * exit);
+        // A widening rocket plume: every spark falls, while its hashed side and wobble spray the
+        // exhaust around the downward axis. Steering only leans the whole cone a little.
+        float drop = exit > 0f
+                ? Math.max(len * 1.7f, (L.dangerY - L.playTop) * (0.35f + 0.45f * exit))
+                : Math.min(len * 1.65f, Math.max(rr * 0.85f, L.deckTop - y - rr * 0.2f));
         for (int k = 0; k < n; k++) {
             float h1 = frac(k * 0.6180339f), h2 = frac(k * 0.7548777f), h3 = frac(k * 0.4501f);
-            float age = frac(clock * (0.85f + 0.55f * h2) + h1);
+            float rate = 2.4f + 1.8f * h2 + 1.4f * exit;
+            float age = frac(clock * rate + h1);
             // Started clear of the flyer's own aura, or half the wake is behind the character it is
             // coming off and the count that drives it cannot be read.
-            float out = rr * (0.40f - 0.20f * age) * (0.7f + 0.45f * str);
+            float out = rr * (0.44f - 0.20f * age)
+                    * (0.72f + 0.45f * str + 0.22f * exit);
             float from = rr * 1.05f;
-            float cx = x - sway * (from * 0.25f + len * 0.38f * age)
-                    + rr * (0.28f + 0.24f * h3) * age
-                            * (float) Math.sin(StarPath.TAU * (h2 + age * 0.55f));
-            float cy = y + from * 0.40f + drop * age;
+            float side = h2 * 2f - 1f;
+            float spread = side * len * (0.16f + 0.58f * age) * age;
+            float wobble = rr * (0.18f + 0.28f * h3) * age
+                    * (float) Math.sin(StarPath.TAU * (h1 + age * (0.8f + h3)));
+            float cx = x - sway * (from * 0.18f + len * 0.30f * age) + spread + wobble;
+            float cy = y + from * 0.40f + drop * age * (0.82f + 0.30f * h3);
             float dim = 1f - age * age * 0.85f;
             int col = Glyph.withAlpha(Glyph.COLOR[k % Glyph.COUNT],
                     (int) ((125f + 130f * str) * dim));
+            float streak = rr * (0.35f + 0.55f * age + 0.45f * exit);
+            p.line(cx, cy - streak, cx, cy,
+                    fadeBy(Glyph.withAlpha(Glyph.COLOR[k % Glyph.COUNT],
+                            (int) (95f * dim)), fade), Math.max(1f, out * 0.24f));
             p.fillPoly(star(cx, cy, out, out * 0.42f, 5,
                     clock * (0.7f + h3) + h1 * StarPath.TAU), fadeBy(col, fade));
         }
@@ -263,7 +272,15 @@ final class StarScreen extends Draw {
     /** The climber: a soft aura, a rimmed hex, and whichever collectible is piloting it. */
     private static void flyer(Painter p, StarPath q, float rr, float x, float y, float clock,
             float fade) {
-        p.fillCircle(x, y, rr * 1.18f, fadeBy(Glyph.withAlpha(0xFF93D6F7, 55), fade));
+        if (q.dragging) {
+            float pulse = 1f + 0.10f * (float) Math.sin(clock * 9f);
+            p.fillCircle(x, y, rr * 1.62f * pulse,
+                    fadeBy(Glyph.withAlpha(0xFF93D6F7, 48), fade));
+            p.strokePoly(Glyph.hex(x, y, rr * 1.38f * pulse),
+                    fadeBy(Glyph.withAlpha(0xFFFFFFFF, 190), fade), rr * 0.10f);
+        }
+        p.fillCircle(x, y, rr * 1.18f, fadeBy(Glyph.withAlpha(0xFF93D6F7,
+                q.dragging ? 125 : 55), fade));
         p.strokePoly(Glyph.hex(x, y, rr * 1.15f), fadeBy(Glyph.withAlpha(0xFF93D6F7, 150), fade),
                 rr * 0.07f);
         if (q.who >= 0 && q.who < Collect.COUNT) {

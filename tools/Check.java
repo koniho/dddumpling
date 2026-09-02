@@ -47,7 +47,9 @@ abstract class Check {
         int music = -1, musicCalls;
         int starts, stageClears, powerClears, frenzyCalls;
         /** Interlude punctuation: course launches, tallies read out, parade joins, runs ended. */
-        int courseStarts, tallies, joins, gameOvers;
+        int courseStarts, rocketCalls, tallies, joins, gameOvers;
+        float rocketThrust, firstRocket = -1f, maxRocket;
+        int rocketStops;
         int lastTally = -1;
         boolean frenzyOn;
         int narrations, hushes;
@@ -66,6 +68,13 @@ abstract class Check {
         public void collect(int nth) { collects++; shelved.add(nth); }
         public void star(int nth) { stars++; lastStar = nth; }
         public void courseStart() { courseStarts++; }
+        public void rocket(float thrust) {
+            rocketCalls++;
+            rocketThrust = thrust;
+            if (thrust > 0f && firstRocket < 0f) firstRocket = thrust;
+            if (thrust > maxRocket) maxRocket = thrust;
+            if (thrust == 0f) rocketStops++;
+        }
         public void tally(int nth) { tallies++; lastTally = nth; }
         public void paradeJoin() { joins++; }
         public void gameOver() { gameOvers++; }

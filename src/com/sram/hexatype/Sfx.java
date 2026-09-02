@@ -452,6 +452,28 @@ final class Sfx {
         return render(v);
     }
 
+    /**
+     * Seamless, light rocket bed. Every component completes a whole number of cycles in this
+     * one-second loop, so raising its playback rate during flight does not introduce a seam.
+     */
+    static short[] rocket() {
+        int n = RATE;
+        float[] v = new float[n];
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / RATE;
+            float rumble = (float) Math.sin(TAU * 86f * t) * 0.38f
+                    + (float) Math.sin(TAU * 127f * t) * 0.28f;
+            float air = (float) Math.sin(TAU * 191f * t + 0.7f) * 0.21f
+                    + (float) Math.sin(TAU * 283f * t + 1.9f) * 0.15f
+                    + (float) Math.sin(TAU * 421f * t + 0.2f) * 0.09f;
+            float flutter = 0.78f + 0.22f * (float) Math.sin(TAU * 7f * t);
+            v[i] = (rumble + air) * flutter;
+        }
+        return render(v);
+    }
+
+    private static final float TAU = 6.2831853f;
+
     /** Achievement flourish for a flawless wave: a rising shimmer over a held fifth. */
     static short[] achievement() {
         int n = (int) (RATE * 0.85f);

@@ -23,6 +23,8 @@ final class Audio implements GameCore.Sound {
 
     private final Context ctx;
     private AudioTrack bgmTrack;
+    private AudioTrack rocketTrack;
+    private boolean rocketActive;
     private MediaPlayer bgmPlayer;
     private boolean bgmStarted;
     private boolean frenzyPlaying;
@@ -121,6 +123,7 @@ final class Audio implements GameCore.Sound {
         try {
             if (bgmPlayer != null) bgmPlayer.pause();
             if (bgmTrack != null) bgmTrack.pause();
+            if (rocketTrack != null) rocketTrack.pause();
         } catch (Throwable ignored) {
             // Nothing to pause.
         }
@@ -130,6 +133,7 @@ final class Audio implements GameCore.Sound {
         try {
             if (bgmPlayer != null) bgmPlayer.start();
             if (bgmTrack != null) bgmTrack.play();
+            if (rocketTrack != null && rocketActive) rocketTrack.play();
         } catch (Throwable ignored) {
             // Nothing to resume.
         }
@@ -209,6 +213,57 @@ final class Audio implements GameCore.Sound {
 
     @Override public void courseStart() {
         play(Sfx.COURSE, 1f);
+    }
+
+    @Override public void rocket(float thrust) {
+        try {
+            if (thrust <= 0f) {
+                if (rocketActive) mixRocket(false);
+                rocketActive = false;
+                if (rocketTrack != null) rocketTrack.pause();
+                return;
+            }
+            if (rocketTrack == null) {
+                short[] pcm = Sfx.rocket();
+                rocketTrack = new AudioTrack(
+                        new AudioAttributes.Builder()
+                                .setUsage(AudioAttributes.USAGE_GAME)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                                .build(),
+                        new AudioFormat.Builder()
+                                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                                .setSampleRate(Sfx.RATE)
+                                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                                .build(),
+                        pcm.length * 2, AudioTrack.MODE_STATIC,
+                        AudioManager.AUDIO_SESSION_ID_GENERATE);
+                rocketTrack.write(pcm, 0, pcm.length);
+                rocketTrack.setLoopPoints(0, pcm.length, -1);
+            }
+            float p = Math.max(0f, Math.min(1f, thrust));
+            rocketTrack.setVolume(0.16f + 0.28f * p);
+            rocketTrack.setPlaybackRate((int) (Sfx.RATE * (0.82f + 0.43f * p)));
+            if (!rocketActive) {
+                mixRocket(true);
+                rocketTrack.play();
+                rocketActive = true;
+            }
+        } catch (Throwable ignored) {
+            rocketActive = false;
+        }
+    }
+
+    /** Leaves a little headroom for the engine without muting the selected music. */
+    private void mixRocket(boolean on) {
+        try {
+            if (bgmPlayer != null) {
+                float v = on ? 0.38f : 0.55f;
+                bgmPlayer.setVolume(v, v);
+            }
+            if (bgmTrack != null) bgmTrack.setVolume(on ? 0.68f : 1f);
+        } catch (Throwable ignored) {
+            // The engine still plays if music volume cannot be changed.
+        }
     }
 
     @Override public void tally(int nth) {
@@ -453,6 +508,13 @@ final class Audio implements GameCore.Sound {
 
     void release() {
         stopMusic();
+        try {
+            if (rocketTrack != null) rocketTrack.release();
+            rocketTrack = null;
+            rocketActive = false;
+        } catch (Throwable ignored) {
+            // Already gone.
+        }
         try {
             if (tts != null) {
                 tts.stop();

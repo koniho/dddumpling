@@ -56,6 +56,10 @@ final class TestStars extends Check {
         q.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 0.02f;
         check("with nothing left of it once the flight starts",
                 q.lessonLean(0.46f) == 0f && q.lessonFade() == 0f);
+        float shakeX = q.flightShakeX(L), shakeY = q.flightShakeY(L);
+        check("flight vibration moves the drawn flyer and its hitbox together",
+                q.flyerX(L) == q.x + shakeX
+                        && q.flyerY(L) == q.characterY(L) + shakeY);
 
         q.begin(3, L);
         q.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 0.1f;
@@ -69,6 +73,22 @@ final class TestStars extends Check {
         check("opposite hands cancel and ease", Math.abs(q.vx) < before);
 
         q.collected = 0b10101;
+        q.begin(3, L);
+        float readyTarget = L.playRight - StarPath.flyerR(L);
+        q.beginDrag();
+        q.dragTo(readyTarget, L);
+        check("a drag begun during READY positions the flyer for launch",
+                q.dragging && Math.abs(q.x - readyTarget) < 0.01f);
+        q.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 0.01f;
+        q.dragTo(L.playLeft, L);
+        check("the same drag continues once flight begins",
+                q.dragging && q.x == L.playLeft + StarPath.flyerR(L));
+        q.endDrag();
+        check("the drag glow state ends on release", !q.dragging);
+        q.timer = StarPath.REPORT + StarPath.EXIT * 0.5f;
+        check("the blast-off phase exposes increasing exit progress",
+                q.exiting() && q.exitProgress() > 0.49f && q.exitProgress() < 0.51f);
+
         q.begin(3, L);
         check("failed-run stars persist when the course restarts", q.count() == 3);
         float wasAt = q.sx[7];

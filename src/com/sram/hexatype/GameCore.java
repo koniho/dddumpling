@@ -200,6 +200,8 @@ final class GameCore {
         void star(int nth);
         /** The ready lesson ending and the course starting to move. Once per attempt. */
         void courseStart();
+        /** Continuous light rocket layer; zero stops it, 0..1 raises its thrust. */
+        void rocket(float thrust);
         /**
          * The count read out at the end of an interlude nobody won — a star course's report or a
          * steamer's status page. Both used to arrive in silence.
@@ -2183,6 +2185,8 @@ final class GameCore {
         if (state == BONUS) {
             if (starBonus) {
                 stars.update(dt, L);
+                if (sound != null) sound.rocket(stars.exiting() ? 1f : stars.flying()
+                        ? 0.15f + 0.85f * stars.flightProgress() : 0f);
                 bonusTimer = stars.timer;
                 if (stars.grabbed) {
                     // The fling stroke's beat, briefly: a taken star lands with the same stutter and
