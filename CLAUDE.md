@@ -506,8 +506,8 @@ nothing. Follow the pattern rather than "fixing" it.
 - **A rule can be quietly carrying a job nobody wrote down.** Boss stages used to run a thin wave
   under the fight. Taking it away on request removed two things that were never stated: the only
   thing that could hurt you on four of the five bosses, and — since enraging worked by speeding the
-  spawns up — the only reason to hurry. `Boss.RAGE_HIT` and the belt-press charge replace them. Before
-  deleting a subsystem, ask what else is leaning on it; the compiler cannot tell you that a mechanic
+  spawns up — the only reason to hurry. Boss-local mechanics and the belt-press charge replace them.
+  Before deleting a subsystem, ask what else is leaning on it; the compiler cannot tell you that a mechanic
   was the load-bearing threat.
 - **A mechanic paid for in another system's currency dies when that system does.** SUMO's swipes cost
   a charge earned by clearing words, so the moment boss stages stopped spawning words it could not be

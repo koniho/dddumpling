@@ -2109,8 +2109,8 @@ final class GameCore {
         else if (!buddy.out()) buddy.leave();
 
         if (boss.active()) {
-            // True on the frame the boss lands a hit: SUMO reaching the line, or any boss striking
-            // once it has enraged. Either costs a life, exactly as a word landing does.
+            // True when a visible boss threat reaches the deck. SUMO's body crossing the line is
+            // handled by the same count; elapsed fight time alone never costs a life.
             int bossHits = boss.update(dt, L, rnd);
             for (int k = 0; k < bossHits && state == PLAY; k++) BossPlay.slam(this, L);
             // That may have been the last life, and nothing below here runs after a run ends.

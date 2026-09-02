@@ -166,9 +166,8 @@ Every fifth stage is a boss instead of a wave. It has to be beaten for the stage
 no way past one. No boss can be beaten by typing alone: each asks for at least two of the three
 things a player can do, which are pressing a key, tapping something and dragging something.
 
-A boss stage releases **no falling words at all** — the fight is the stage. The threat is the boss's
-own: past `ENRAGE_AT` it starts striking for a life every `RAGE_HIT` seconds, which is what stops a
-fight nobody is winning from going on forever.
+A boss stage releases **no falling words at all** — the fight is the stage. A dragging fight reddens
+past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss's visible mechanics.
 
 | Say | Means | Code |
 | --- | --- | --- |
@@ -182,8 +181,7 @@ fight nobody is winning from going on forever.
 | **element** | a hit-testable thing a boss puts on the field to be tapped or dragged. Always in the upper field, because a drag may not start on a key | `Boss.ELEMS`, `elemAt`, `etype` |
 | **rebuff** | the right thing at the wrong moment, or a held key. Sounds wrong, never counted as a miss, and fires no bullet | `Boss.REBUFF` |
 | **boss bullet** | the shot a landed key press fires at the boss, the same one a press at a word fires. Homes as the boss drifts, and aims at the head that was struck on the triplets | `GameCore.bossShot`, `Shot.atBoss`, `Boss.hitX` |
-| **enrage** | what a dragging fight gets instead of an escape: it reddens and starts striking for a life on its own clock | `Boss.ENRAGE_AT`, `RAGE_HIT` |
-| **strike** | one of those hits. Costs a life exactly as a word landing does | `GameCore.bossSlam` |
+| **enrage** | the visual warning on a dragging fight: it reddens, but does no damage by itself | `Boss.ENRAGE_AT`, `ENRAGE_RAMP` |
 | **slime** | boss 1. A wide, twice-as-jiggly mass of goo. A chain of letters to type, and the only thing that hurts it is a glob carried off the screen | `Boss.SLIME`, `WIDE`, `JIGGLE` |
 | **split** | working a glob loose: five presses of the chain, tracked by the pip row under the body. The presses themselves take no health off it | `Boss.SPLIT_HITS`, `split`, `splitProgress`, `BossScreen.splitGauge` |
 | **volley** / **bolt** | the three single-letter projectiles a split throws at the deck, one per key. Press a bolt's letter to swat it; one that lands costs a life | `Boss.BOLTS`, `blive`, `boltWants`, `PARRY` |

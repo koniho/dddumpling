@@ -26,9 +26,8 @@ import java.util.Random;
  * every boss but {@link #SUMO} completely harmless, which turns "must be beaten" into "may be poked
  * at indefinitely".
  *
- * So the pressure is the boss's own now. Past {@link #ENRAGE_AT} it starts striking on its own clock
- * ({@link #RAGE_HIT}) and each strike costs a life — the same punishment the faster spawns added up
- * to, and legible as coming from the thing you are actually fighting.
+ * Each boss's own mechanic now supplies its pressure. A dragging fight still reddens after
+ * {@link #ENRAGE_AT}, but elapsed time alone never costs a life.
  *
  * <h2>Three ways in</h2>
  *
@@ -118,20 +117,10 @@ final class Boss {
      * There used to be a retreat here: the encounter timed out, the boss left, and the stage carried
      * on without its reward. That was a safety net for exactly one thing — a player who cannot work
      * a boss out never hitting a wall — and it was removed deliberately, so a boss now has to be
-     * beaten to advance. What is left in its place has to punish stalling without offering a way
-     * past, which is what enraging is: the fight gets harder to survive and no easier to leave.
+     * beaten to advance. Enrage is now visual urgency only; it does not damage the player.
      */
     static final float ENRAGE_AT = 26f;
     static final float ENRAGE_RAMP = 8f;
-    /**
-     * Seconds between an enraged boss's strikes, each of which costs a life.
-     *
-     * This is what enraging actually does now. It used to multiply a minion spawn rate, which stopped
-     * meaning anything the moment boss stages stopped spawning words. Six seconds against three lives
-     * puts the floor on a fight nobody is winning at somewhere under a minute — long enough to keep
-     * trying, short enough that stalling is not a strategy.
-     */
-    static final float RAGE_HIT = 6f;
 
     /**
      * Seconds of one open/shut cycle, and how many of those seconds the window is open for.
@@ -347,8 +336,6 @@ final class Boss {
         return t > 1f ? 1f : t;
     }
 
-    /** Seconds until the next strike, once it is enraged. Only ever running while it is. */
-    float rageT;
 
     /**
      * Where the last accepted press landed on the boss, in view coordinates.
@@ -392,7 +379,6 @@ final class Boss {
         depth = 0f;
         stagger = 0f;
         stealT = 0f;
-        rageT = RAGE_HIT;
         tapBeat = false;
         want = -1;
         stolen = -1;
@@ -443,7 +429,6 @@ final class Boss {
         depth = 0f;
         stagger = 0f;
         stealT = 0f;
-        rageT = 0f;
         tapBeat = false;
         held = -1;
         chordT = 0f;
@@ -1334,11 +1319,7 @@ final class Boss {
         want = rnd.nextInt(Glyph.COUNT);
     }
 
-    /**
-     * @return how many hits the player takes this frame, for the caller to charge lives for. A count
-     *     rather than a flag because a volley of bolts can land on consecutive frames and an enraged
-     *     strike can coincide with one.
-     */
+    /** Returns how many visible boss threats reached the deck this frame. */
     int update(float dt, Layout L, Random rnd) {
         if (kind < 0) return 0;
         hurt = Math.max(0f, hurt - dt * 2.6f);
@@ -1410,21 +1391,6 @@ final class Boss {
             }
         }
         ageElems(dt);
-
-        // Enraged: it starts hitting back on its own clock. This is the whole of what enraging does
-        // now, and it is the only threat on the field for four of the five.
-        if (enrage() > 0f) {
-            rageT -= dt;
-            if (rageT <= 0f) {
-                rageT = RAGE_HIT;
-                if (body != null) body.squash(0.6f);
-                hits++;
-            }
-        } else {
-            // Held at a full interval so the first strike lands a whole RAGE_HIT after it turns,
-            // rather than on the frame the temper goes.
-            rageT = RAGE_HIT;
-        }
 
         if (kind == SUMO) {
             depth += dt / SINK_TIME;

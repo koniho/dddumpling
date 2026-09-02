@@ -162,14 +162,9 @@ final class TestBoss extends Check {
         }
         check("a boss left alone never lets the stage end",
                 w.stage == stageWas && (w.boss.active() || w.state != GameCore.PLAY));
-        // Either it is still standing there, or the run ended — what must never happen is the stage
-        // moving on. Ninety idle seconds is well past the enrage, so the run ending is the expected
-        // outcome now; the boss beating itself is the thing being ruled out.
-        check("and it does not quietly beat itself",
-                w.state == GameCore.OVER || w.boss.health() > 0f);
+        check("and it does not quietly beat itself", w.boss.health() > 0f);
 
-        // Enrage, which is what replaced the retreat — and which is now the only threat on the
-        // field for four of the five, since a boss stage spawns nothing.
+        // Enrage is visual urgency only. Time by itself must never take a life.
         GameCore r = enterBoss(L, Boss.SLIME, 14L);
         check("it does not start enraged", r.boss.enrage() == 0f);
         int livesWas = r.lives;
@@ -179,11 +174,11 @@ final class TestBoss extends Check {
             if (r.lives < livesWas) calmAndHarmless = false;
         }
         check("a calm boss cannot hurt you", calmAndHarmless);
-        for (int i = 0; i < (int) (60 * (Boss.ENRAGE_RAMP + Boss.RAGE_HIT + 4f)); i++) {
+        for (int i = 0; i < (int) (60 * (Boss.ENRAGE_RAMP + 10f)); i++) {
             r.update(DT, L);
         }
         check("it enrages if the fight drags", r.boss.enrage() > 0f);
-        check("and an enraged one starts taking lives", r.lives < livesWas);
+        check("and an enraged one remains harmless", r.lives == livesWas);
 
         // Powerups are suppressed for the whole of a boss stage.
         GameCore q = enterBoss(L, Boss.SLIME, 15L);
@@ -259,7 +254,8 @@ final class TestBoss extends Check {
             check(Boss.NAMES[k] + " can be beaten", !g.boss.active());
         }
 
-        // And beaten by a hand with limits, inside the fuse. The loop above proves reachability with
+        // And beaten by a hand with limits, inside the enrage warning. The loop above proves
+        // reachability with
         // Check.bossPlay, which has no reaction and no miss rate and finishes a slime in a second —
         // useful for "is this possible", useless for "is this tuned". This is the figure every boss's
         // health is actually set against, so it is measured with the steady soak hand.
@@ -269,10 +265,10 @@ final class TestBoss extends Check {
         // health following it.
         for (int k = 0; k < Boss.COUNT; k++) {
             float took = fightSeconds(L, k, 800L + k);
-            System.out.printf("    %-10s takes a steady hand %.0fs of its %.0fs fuse%n",
+            System.out.printf("    %-10s takes a steady hand %.0fs of its %.0fs enrage warning%n",
                     Boss.NAMES[k], took, Boss.ENRAGE_AT);
             check(Boss.NAMES[k] + " falls to a hand with limits", took >= 0f);
-            check("well inside the fuse", took >= 0f && took < Boss.ENRAGE_AT);
+            check("well inside the enrage warning", took >= 0f && took < Boss.ENRAGE_AT);
         }
     }
 

@@ -269,7 +269,7 @@ than a rewrite. All of them take the player's speed setting into account where i
 | `Boss.EVERY` | how often a boss stage comes round |
 | `Boss.CYCLE` / `SHOW` | each boss's open/shut rhythm — read together with its health, never alone |
 | `Boss.HP` | health per boss, counted in that boss's own currency. Health × cycle length is the figure to check |
-| `Boss.ENRAGE_AT` / `ENRAGE_RAMP` / `RAGE_HIT` | how long a fight may drag before it turns nasty, how fast it winds up, and how often it then strikes |
+| `Boss.ENRAGE_AT` / `ENRAGE_RAMP` | when a dragging fight starts looking urgent, and how fast the warning winds up; it does no damage |
 | `Boss.SPLIT_HITS` | presses of the slime's chain that tear one glob loose |
 | `Boss.WIDE` / `JIGGLE` | each boss's rest shape and springiness — only the slime is anything but 1 |
 | `Boss.DRAG_FOLLOW` / `DRAG_REACH` | how the body and the skin split the work of staying wrapped around a dragged glob |
