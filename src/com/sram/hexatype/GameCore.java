@@ -186,6 +186,10 @@ final class GameCore {
         void bossCharge(float charge);
         /** A damaging blow landed on a boss: a single large, wet bubble burst. */
         void bossDamage();
+        /** The slime chain tore a glob free: a taut, wet pop distinct from damage. */
+        void bossSplit();
+        /** A charged or flying slime bolt was destroyed: one short, low bloop. */
+        void boltPop();
         /** A letter cut by the FLING blade. Fires several times per swipe, so it is short. */
         void chop();
         /** One hop of a MULTI chain. @param hop 1-based, so the crack can climb with the chain */
@@ -221,6 +225,8 @@ final class GameCore {
         void gameOver();
         /** Switch the looping background track to {@link Music#NAMES}[choice]. */
         void selectMusic(int choice);
+        /** Switches the selected instruments into or out of their faster boss arrangement. */
+        void bossMusic(boolean active);
 
         void gameStart();
         /** Stage cleared normally. Suppressed when {@link #powerClear()} fires instead. */
@@ -1258,14 +1264,20 @@ final class GameCore {
      * default both did nothing until the player opened settings and picked something.
      */
     void startMusic() {
-        if (sound != null) sound.selectMusic(bgmChoice);
+        if (sound != null) {
+            if (boss.active()) sound.bossMusic(true);
+            else sound.selectMusic(bgmChoice);
+        }
     }
 
     void setBgm(int choice) {
         if (choice < 0 || choice >= Music.NAMES.length) return;
         bgmChoice = choice;
         if (store != null) store.saveBgm(choice);
-        if (sound != null) sound.selectMusic(choice);
+        if (sound != null) {
+            if (boss.active()) sound.bossMusic(true);
+            else sound.selectMusic(choice);
+        }
     }
 
     // ---- stage pacing -------------------------------------------------------
@@ -2126,6 +2138,7 @@ final class GameCore {
                         ? 0.08f + boss.promptProgress() * 0.92f : 0f;
                 sound.bossCharge(brew);
                 if (boss.launched) sound.bossLaugh();
+                if (boss.defeatChime) sound.squish(Boss.FACE[boss.kind], boss.defeatBeat);
             }
             for (int k = 0; k < bossHits && state == PLAY; k++) BossPlay.slam(this, L);
             // That may have been the last life, and nothing below here runs after a run ends.
@@ -2417,6 +2430,7 @@ final class GameCore {
      * differently from the way play sets one up is a debug tool that hides the bug you are hunting.
      */
     private void enterStage(int n) {
+        boolean hadBoss = boss.active();
         stage = Math.max(1, n);
         // One per stage, and this is where a stage begins.
         pushUsed = false;
@@ -2430,6 +2444,7 @@ final class GameCore {
         int bk = Boss.kindFor(stage);
         if (bk >= 0) boss.begin(bk, stage, rnd);
         else boss.leave();
+        if (sound != null && hadBoss != (bk >= 0)) sound.bossMusic(bk >= 0);
     }
 
     /**
@@ -2459,7 +2474,9 @@ final class GameCore {
         mode = -1;
         modeLeft = 0f;
         buddy.leave();
+        boolean leftBoss = boss.active();
         boss.leave();
+        if (leftBoss && sound != null) sound.bossMusic(false);
         fingerDown = false;
         touchDown = false;
         strokeFade = 0f;

@@ -23,11 +23,20 @@ final class Sfx {
     static final int START = 10, STAGE_CLEAR = 11, POWER_CLEAR = 12, CHOP = 13, ZAP = 14;
     static final int COLLECT = 15, STAR = 16;
     static final int COURSE = 17, TALLY = 18, JOIN = 19, OVER = 20, BOSS_LAUGH = 21;
-    static final int BOSS_DAMAGE = 22, COUNT = 23;
+    static final int BOSS_DAMAGE = 22, BOSS_SPLIT = 23, BOLT_POP = 24, COUNT = 25;
+
+    private static final short[][] CACHE = new short[COUNT][];
+    private static short[] rocketCache, bubbleCache;
 
     private Sfx() {}
 
-    static short[] build(int id) {
+    static synchronized short[] build(int id) {
+        if (id < 0 || id >= COUNT) id = ACHIEVEMENT;
+        if (CACHE[id] == null) CACHE[id] = renderEffect(id);
+        return CACHE[id];
+    }
+
+    private static short[] renderEffect(int id) {
         if (id >= SQUISH_0 && id < SQUISH_0 + Glyph.COUNT) return squish(id - SQUISH_0);
         switch (id) {
             case DRIP: return drip();
@@ -46,6 +55,8 @@ final class Sfx {
             case OVER: return over();
             case BOSS_LAUGH: return bossLaugh();
             case BOSS_DAMAGE: return bossDamage();
+            case BOSS_SPLIT: return bossSplit();
+            case BOLT_POP: return boltPop();
             default: return achievement();
         }
     }
@@ -458,7 +469,12 @@ final class Sfx {
      * Seamless, light rocket bed. Every component completes a whole number of cycles in this
      * one-second loop, so raising its playback rate during flight does not introduce a seam.
      */
-    static short[] rocket() {
+    static synchronized short[] rocket() {
+        if (rocketCache == null) rocketCache = renderRocket();
+        return rocketCache;
+    }
+
+    private static short[] renderRocket() {
         int n = RATE;
         float[] v = new float[n];
         for (int i = 0; i < n; i++) {
@@ -477,8 +493,13 @@ final class Sfx {
     private static final float TAU = 6.2831853f;
 
     /** Seamless wet bubble bed; playback rate and volume supply the charging build. */
-    static short[] bubble() {
-        int n = (int) (RATE * 0.84f);
+    static synchronized short[] bubble() {
+        if (bubbleCache == null) bubbleCache = renderBubble();
+        return bubbleCache;
+    }
+
+    private static short[] renderBubble() {
+        int n = (int) (RATE * 0.98f);
         float[] v = new float[n];
         float[] start = {0.03f, 0.28f, 0.54f, 0.76f};
         for (int i = 0; i < n; i++) {
@@ -524,19 +545,58 @@ final class Sfx {
         return render(v);
     }
 
-    /** One oversized, low bubble collapsing after a damaging boss hit. */
+    /** Three round descending bloops for a damaging boss hit. */
     static short[] bossDamage() {
-        int n = (int) (RATE * 0.48f);
+        int n = (int) (RATE * 0.52f);
+        float[] v = new float[n];
+        float[] start = {0f, 0.105f, 0.215f};
+        float[] pitch = {255f, 195f, 142f};
+        for (int k = 0; k < start.length; k++) {
+            int at = (int) (start[k] * RATE);
+            int len = (int) (RATE * 0.24f);
+            float phase = 0f;
+            for (int j = 0; j < len && at + j < n; j++) {
+                float u = (float) j / len;
+                float f = pitch[k] * (1f - 0.34f * u);
+                phase += TAU * f / RATE;
+                float round = (float) Math.sin(phase)
+                        + 0.24f * (float) Math.sin(phase * 2.01f);
+                float env = (float) Math.sin(Math.PI * u) * (1f - u * 0.28f);
+                v[at + j] += round * env * (0.82f - k * 0.10f);
+            }
+        }
+        return render(v);
+    }
+
+    /** A destroyed slime bolt: one short, low, rounded bloop. */
+    static short[] boltPop() {
+        int n = (int) (RATE * 0.17f);
+        float[] v = new float[n];
+        float phase = 0f;
+        for (int i = 0; i < n; i++) {
+            float u = (float) i / n;
+            float f = 165f - 72f * u;
+            phase += TAU * f / RATE;
+            float round = (float) Math.sin(phase) + 0.20f * (float) Math.sin(phase * 2.01f);
+            v[i] = round * (float) Math.sin(Math.PI * u) * (1f - u * 0.42f);
+        }
+        return render(v);
+    }
+
+    /** A taut skin tear followed by the wet, springy pop of a glob coming free. */
+    static short[] bossSplit() {
+        int n = (int) (RATE * 0.40f);
         float[] v = new float[n];
         for (int i = 0; i < n; i++) {
             float t = (float) i / RATE, u = (float) i / n;
-            float phase = TAU * (118f * t - 52f * t * t);
-            float body = (float) Math.sin(phase) + 0.48f * (float) Math.sin(phase * 2.01f)
-                    + 0.20f * (float) Math.sin(phase * 3.04f);
-            float lip = i < RATE / 45 ? (float) Math.sin(i * 2.37f)
-                    * (1f - i * 45f / RATE) : 0f;
-            v[i] = (body * 0.88f + lip * 0.42f) * (float) Math.sin(Math.PI * u)
-                    * (1f - u * 0.38f);
+            float snap = i < RATE / 32 ? (float) Math.sin(i * 2.71f)
+                    * (1f - i * 32f / RATE) : 0f;
+            float phase = TAU * (235f * t - 165f * t * t);
+            float pop = (float) Math.sin(phase) + 0.36f * (float) Math.sin(phase * 2.03f);
+            float bounce = (float) Math.sin(TAU * (390f * t + 85f * t * t))
+                    * (float) Math.exp(-9f * u);
+            v[i] = (snap * 0.50f + pop * 0.82f + bounce * 0.28f)
+                    * envelope(u, 0.006f, 1.8f);
         }
         return render(v);
     }

@@ -1019,7 +1019,7 @@ final class Preview {
         String[] names = {"squish-dumpling", "squish-strawberry", "squish-cat", "squish-grapes",
                 "squish-squishy", "squish-blob", "damage-drip", "clear-word", "wrong",
                 "achievement", "game-start", "stage-clear", "power-clear", "chop", "zap",
-                "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage"};
+                "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);
@@ -1039,7 +1039,9 @@ final class Preview {
                     (float) loop.length / Sfx.RATE, lmax);
         }
         short[] fren = Music.loop(Music.SWING_STYLE, true);
+        short[] boss = Music.bossLoop(Music.SWING_STYLE);
         Wav.write(new File(sfxDir, "bgm-frenzy.wav"), fren, Sfx.RATE);
+        Wav.write(new File(sfxDir, "bgm-boss.wav"), boss, Sfx.RATE);
         System.out.printf("  wrote bgm-frenzy      %.2fs (four on the floor)%n",
                 (float) fren.length / Sfx.RATE);
         System.out.printf("  wrote %d sfx, peak=%d%n", Sfx.COUNT, peak);

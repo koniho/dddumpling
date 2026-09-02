@@ -104,7 +104,7 @@ final class BossScreen extends Draw {
 
         // In on the arrival card, out on the burst.
         float fade = b.intro > 0f ? Math.min(1f, b.introProgress() * 1.6f)
-                : b.beaten ? Math.max(0f, 1f - b.leaveProgress() * b.leaveProgress()) : 1f;
+                : b.beaten ? Math.max(0f, 1f - b.defeatMelt() * b.defeatMelt()) : 1f;
         if (fade <= 0.01f) return;
 
         int col = tint(b);
@@ -116,7 +116,6 @@ final class BossScreen extends Draw {
         float throb = 0.72f + 0.28f * (float) Math.sin(c.clock * (7f + damageHeat * 9f));
         col = Glyph.mix(col, ROSE, Math.max(Math.max(b.rage * 0.55f,
                 b.enrage() * 0.45f), damageHeat * 0.62f * throb));
-        if (wounded) col = Glyph.mix(col, 0xFF5C315B, 0.42f);
         col = Glyph.mix(col, 0xFFFFFFFF, launch * 0.35f);
         // A hit whitens it for a moment on top of the dent the body is already taking.
         col = Glyph.mix(col, 0xFFFFFFFF, b.hurt * 0.35f);
@@ -168,7 +167,7 @@ final class BossScreen extends Draw {
         // giving the body one of its own put a fourth face behind the three and the whole thing read
         // as a blob wearing heads rather than as a creature with three of them.
         int face = b.kind == Boss.TRIPLETS ? -1 : Boss.FACE[b.kind];
-        float mood = wounded ? 0f : b.open() ? 0.15f : 0.5f;
+        float mood = b.beaten ? 1f : wounded ? 0f : b.open() ? 0.15f : 0.5f;
         Slime.draw(p, b.body, c.clock, col, face, mood, fade);
         // Its own structure, faintly, so the wobble reads as physics rather than as a wandering
         // outline. Brightest just after a hit and while the skin is being stretched — the two
@@ -176,7 +175,7 @@ final class BossScreen extends Draw {
         Slime.mesh(p, b.body, col, Math.max(b.hurt, b.body.pulled() ? 0.8f : 0f), fade);
 
         ornament(p, c, L, b, fade);
-        elements(p, c, L, b, fade);
+        elements(p, c, L, b, fade, col);
     }
 
     /** Whatever this boss is asking for, drawn on or around the body. */
@@ -204,14 +203,14 @@ final class BossScreen extends Draw {
                 float pop = 1f + urgency * 0.32f
                         + 0.08f * urgency * (float) Math.sin(
                                 c.clock * (8f + urgency * 10f));
-                letterBadge(p, c, L, b.chainLetter(), cx, cy, L.unit * 1.08f * pop, fade,
+                letterBadge(p, c, L, b.chainLetter(), cx, slimeBadgeY(L, b), L.unit * 1.08f * pop, fade,
                         b.open());
             }
             // And how far the chain has got: the press does not move the health bar, so without
             // this a run of four presses looks like four presses that did nothing. Hung off the
             // resting height rather than the live one so it does not get swallowed by the body every
             // time a squash flattens it.
-            splitGauge(p, c, L, b, cx, pin + Boss.bodyR(L) * 1.30f, fade);
+            splitGauge(p, c, L, b, cx, slimeBadgeY(L, b) + badgeR(L) * 1.65f, fade);
         } else if (b.kind == Boss.TRIPLETS) {
             // The heads are elements, so they are drawn with them.
             return;
@@ -231,6 +230,12 @@ final class BossScreen extends Draw {
             charges(p, c, L, b, cx, pin + ry * 1.30f, fade);
             if (b.stagger > 0f) staggerRing(p, c, b, cx, cy, r, fade);
         }
+    }
+
+    /** Centre of the slime's charged bolt character, below its live underside. */
+    static float slimeBadgeY(Layout L, Boss b) {
+        float ry = b.body == null ? Boss.bodyR(L) : Math.min(b.body.radiusY(), Boss.bodyR(L));
+        return ornamentY(L, b) + ry * 1.28f + badgeR(L);
     }
 
     /**
@@ -363,7 +368,7 @@ final class BossScreen extends Draw {
     }
 
     /** The tappable and draggable things a boss has put on the field. */
-    private static void elements(Painter p, GameCore c, Layout L, Boss b, float fade) {
+    private static void elements(Painter p, GameCore c, Layout L, Boss b, float fade, int bodyCol) {
         for (int i = 0; i < Boss.ELEMS; i++) {
             int t = b.etype[i];
             if (t == Boss.E_OFF) continue;
@@ -380,7 +385,7 @@ final class BossScreen extends Draw {
                 // second outline nobody asked for.
                 continue;
             } else if (t == Boss.E_GLOB) {
-                glob(p, c, b, i, x, y, rr, life, held, fade);
+                glob(p, c, b, i, x, y, rr, life, held, fade, bodyCol);
             } else if (t == Boss.E_KEY) {
                 loose(p, c, L, b, i, x, y, rr, life, held, fade);
             }
@@ -423,49 +428,29 @@ final class BossScreen extends Draw {
     }
 
     /**
-     * A shed glob: the piece that came loose, to be hauled out of the body it split off from.
+     * The loose place in the slime skin: a local colour change, not a separate object.
      *
-     * Drawn rose and lit from within rather than in the body's own colour. It starts *inside* the
-     * boss, so it has to be the one thing in there that is plainly not the boss — in the slime's own
-     * mint it was a slightly different shade of the thing it was sitting in, and invisible.
+     * Its outer edge is a literal arc copied from the live soft-body outline. The inward copy closes
+     * the colour region, so it is one marked piece of skin rather than a shape laid over the body.
      */
     private static void glob(Painter p, GameCore c, Boss b, int i, float x, float y, float rr,
-            float life, boolean held, float fade) {
-        int col = ROSE;
-        float k = Math.min(1f, life / Boss.GLOB_TIME);
-        float born = Math.min(1f, (Boss.GLOB_TIME - life) / 0.42f);
-        float grow = born * (1.12f - 0.12f * born);
+            float life, boolean held, float fade, int bodyCol) {
+        float born = Math.min(1f, (Boss.GLOB_TIME - life) / 0.30f);
+        float dying = Math.min(1f, life / 0.65f);
+        float grow = born * (1.08f - 0.08f * born);
         rr *= grow;
         if (rr <= 0.1f) return;
         float side = x < b.body.centreX() ? -1f : 1f;
-        // A broad red neck overlaps the silhouette: this is a wart growing out of the goo,
-        // not a token floating on top of it. The soft body takes over that connection on drag.
-        if (!held) {
-            p.fillEllipse(x - side * rr * 0.62f, y, rr * 1.18f, rr * 0.70f,
-                    Glyph.withAlpha(col, (int) (190 * fade)));
-        }
-        // Wobbles on its own sines rather than an RNG, so preview frames still hash the same.
-        float wx = 1f + 0.10f * (float) Math.sin(c.clock * 3.1f + hash(i * 17) * 6.283f);
-        float wy = 1f + 0.10f * (float) Math.sin(c.clock * 3.7f + hash(i * 29) * 6.283f);
-        // A red glow through the goo, pulsing, so it shows while it is still inside the body.
-        float beat = 0.72f + 0.28f * (float) Math.sin(c.clock * 5.5f + i);
-        for (int q = 3; q >= 1; q--) {
-            p.fillCircle(x, y, rr * (1.15f + 0.30f * q),
-                    Glyph.withAlpha(col, (int) (46 * beat * fade / q)));
-        }
-        if (held) {
-            for (int q = 2; q >= 1; q--) {
-                p.fillCircle(x, y, rr * (1.1f + 0.2f * q), Glyph.withAlpha(GOLD,
-                        (int) (40 * fade / q)));
-            }
-        }
-        p.fillEllipse(x, y, rr * wx, rr * wy, Glyph.withAlpha(col, (int) (215 * fade)));
-        p.strokeCircle(x, y, rr, Glyph.withAlpha(Glyph.mix(col, 0xFFFFFFFF, 0.4f),
-                (int) (235 * fade)), rr * 0.11f);
-        p.fillEllipse(x - rr * 0.3f, y - rr * 0.34f, rr * 0.22f, rr * 0.14f,
-                Glyph.withAlpha(0xFFFFFFFF, (int) (140 * fade)));
-        // How long it remains available: an arc of pips, emptying.
-        ring(p, x, y, rr * 1.35f, k, ROSE, fade);
+        float[] patch = globPath(b, x, y, grow);
+        fillGlobGradient(p, patch, bodyCol, dying * fade);
+        // No closed outline through the body: only restore the shared exterior rim that the patch
+        // fill covers. The inward closing edge remains colour against colour with no border.
+        float[] outer = new float[patch.length / 2];
+        System.arraycopy(patch, 0, outer, 0, outer.length);
+        float hit = Math.min(1f, b.body.deform() * 4.5f);
+        int rim = Glyph.mix(bodyCol, 0xFFFFFFFF, 0.42f + 0.38f * hit);
+        p.polyline(outer, Glyph.withAlpha(rim, (int) (255 * dying * fade)),
+                b.body.radius() * (0.055f + 0.025f * hit));
         if (!held && born >= 0.55f) {
             float drag = (c.clock * 0.65f) % 1f;
             float tipX = x + side * rr * (0.15f + drag * 2.4f);
@@ -474,6 +459,60 @@ final class BossScreen extends Draw {
             Renderer.fingerHint(p, tipX, tipY, rr * 0.58f, handAngle,
                     fade * (1f - drag * 0.35f), c.clock);
         }
+    }
+
+    /** Colour bands from the untouched inner skin to rose at the protruding body arc. */
+    private static void fillGlobGradient(Painter p, float[] patch, int bodyCol, float fade) {
+        int arc = patch.length / 4;
+        final int bands = 9;
+        for (int band = 0; band < bands; band++) {
+            float t0 = (float) band / bands, t1 = (float) (band + 1) / bands;
+            float mid = (t0 + t1) * 0.5f;
+            int col = Glyph.mix(bodyCol, ROSE, mid);
+            // The inner edge starts as the body already underneath it; opacity rises outward so the
+            // first band cannot leave a second translucent seam in otherwise continuous goo.
+            int a = (int) (168 * t1 * fade);
+            for (int q = 0; q < arc - 1; q++) {
+                int in0 = arc * 2 + (arc - 1 - q) * 2;
+                int in1 = arc * 2 + (arc - 2 - q) * 2;
+                float ix0 = patch[in0], iy0 = patch[in0 + 1];
+                float ix1 = patch[in1], iy1 = patch[in1 + 1];
+                float ox0 = patch[q * 2], oy0 = patch[q * 2 + 1];
+                float ox1 = patch[(q + 1) * 2], oy1 = patch[(q + 1) * 2 + 1];
+                p.fillPoly(new float[] {
+                        ix0 + (ox0 - ix0) * t0, iy0 + (oy0 - iy0) * t0,
+                        ix1 + (ox1 - ix1) * t0, iy1 + (oy1 - iy1) * t0,
+                        ix1 + (ox1 - ix1) * t1, iy1 + (oy1 - iy1) * t1,
+                        ix0 + (ox0 - ix0) * t1, iy0 + (oy0 - iy0) * t1},
+                        Glyph.withAlpha(col, a));
+            }
+        }
+    }
+
+    /** A closed skin region whose outside edge is copied directly from the slime outline. */
+    static float[] globPath(Boss b, float x, float y, float grow) {
+        float[] body = b.body.outline();
+        int n = body.length / 2, nearest = 0;
+        float best = Float.MAX_VALUE;
+        for (int q = 0; q < n; q++) {
+            float dx = body[q * 2] - x, dy = body[q * 2 + 1] - y;
+            float d = dx * dx + dy * dy;
+            if (d < best) { best = d; nearest = q; }
+        }
+        int span = Math.max(1, Math.round(5f * grow));
+        int arc = span * 2 + 1;
+        float[] patch = new float[arc * 4];
+        float cx = b.body.centreX(), cy = b.body.centreY();
+        for (int q = 0; q < arc; q++) {
+            int at = (nearest - span + q + n) % n;
+            float px = body[at * 2], py = body[at * 2 + 1];
+            patch[q * 2] = px;
+            patch[q * 2 + 1] = py;
+            int back = arc * 2 + (arc - 1 - q) * 2;
+            patch[back] = px + (cx - px) * 0.28f;
+            patch[back + 1] = py + (cy - py) * 0.28f;
+        }
+        return patch;
     }
 
     /** A key the magpie dropped, to be dragged home to the deck. */
@@ -632,16 +671,31 @@ final class BossScreen extends Draw {
         float t = b.leaveProgress();
         float cx = b.body.centreX(), cy = b.body.centreY();
         float r = b.body.radius();
+        float melt = b.defeatMelt();
+        float cute = Math.min(1f, t / 0.38f);
         // Filled, not stroked. A stroked nine-point star is eighteen vertices of translucent line
         // that double-blends at every one of them, and it came out as a spidery dotted scribble
         // rather than a burst — the same trap Slime's opaque rim exists for. Layered fills, widest
         // and faintest first, is how every other halo in this game is built.
         for (int k = 4; k >= 1; k--) {
-            float rr = r * (1f + t * (1.6f + k * 0.8f));
+            float rr = r * (1f + melt * (1.6f + k * 0.8f));
             p.fillPoly(star(cx, cy, rr, rr * 0.42f, 9, c.clock * 0.9f + k),
                     Glyph.withAlpha(k % 2 == 0 ? GOLD : tint(b),
-                            (int) (90 * (1f - t) / k)));
+                            (int) (90 * (1f - melt) / k)));
         }
+        // Hearts hop out on the three squishy sound beats before gravity takes the boss.
+        if (cute < 1f) {
+            for (int k = 0; k < 5; k++) {
+                float u = cute * 1.45f - k * 0.13f;
+                if (u <= 0f || u >= 1f) continue;
+                float hx = cx + (k - 2) * r * 0.42f;
+                float hy = cy - r * (0.45f + u * 1.15f);
+                heart(p, hx, hy, r * 0.14f * (1f - u * 0.35f),
+                        Glyph.withAlpha(k % 2 == 0 ? ROSE : GOLD,
+                                (int) (230 * (1f - u) * (1f - u))));
+            }
+        }
+
         // Below the body, not above it. Above put it straight through the name and the blurb, which
         // are still fading out at that moment — and a payoff drawn over its own header reads as a
         // rendering fault rather than as a reward.
@@ -650,6 +704,13 @@ final class BossScreen extends Draw {
         p.text("BEATEN!", L.w / 2f, beatenY(L, cy, Boss.bodyR(L)),
                 type(L.unit * 1.3f * (1f + 0.3f * t)),
                 Glyph.withAlpha(GOLD, (int) (255 * (1f - t) * (1f - t))), Painter.CENTER, true);
+    }
+
+    private static void heart(Painter p, float cx, float cy, float r, int col) {
+        p.fillCircle(cx - r * 0.45f, cy - r * 0.28f, r * 0.55f, col);
+        p.fillCircle(cx + r * 0.45f, cy - r * 0.28f, r * 0.55f, col);
+        p.fillPoly(new float[] {cx - r * 0.95f, cy - r * 0.10f,
+                cx + r * 0.95f, cy - r * 0.10f, cx, cy + r * 1.05f}, col);
     }
 
     /** Baseline of the BEATEN! payoff, under the body it just came off. */

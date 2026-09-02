@@ -21,6 +21,7 @@ final class BossPlay {
      */
     static void endBoss(GameCore c, Layout L) {
         boolean won = c.boss.beaten;
+        if (c.sound != null) c.sound.bossMusic(false);
         // Everything still on the field goes with it. A boss dying to a field of three words and
         // then handing you a mopping-up job is an anticlimax, and the interlude is the payoff.
         for (int i = c.enemies.size() - 1; i >= 0; i--) {
@@ -37,7 +38,6 @@ final class BossPlay {
             c.skyGlow = 1f;
             c.skyGlowColor = GameCore.FLASH_CLEAR;
             c.shake = Math.max(c.shake, 0.8f);
-            if (c.sound != null) c.sound.achievement();
         }
         // Sent home before the quota is filled, so nothing that reads bossActive() can see a beaten
         // boss and a satisfied stage at the same time.
@@ -130,7 +130,7 @@ final class BossPlay {
             // untouched, so no shake and no flash — those read as damage.
             c.score += GameCore.BOSS_HIT;
             Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR * 1.2f, 10, Glyph.COLOR[g]);
-            if (c.sound != null) c.sound.chop();
+            if (verdict != Boss.SPLIT && c.sound != null) c.sound.boltPop();
             return true;
         }
         if (verdict == Boss.HIT) {
@@ -142,8 +142,18 @@ final class BossPlay {
                     Glyph.COLOR[g]);
             if (c.sound != null) c.sound.bossDamage();
         }
-        // Pitched by how much of the boss is left, so a fight is audibly a countdown.
-        if (c.sound != null) c.sound.squish(g, 1 + (int) (3f * (1f - c.boss.health())));
+        boolean slimePrompt = c.boss.kind == Boss.SLIME
+                && (verdict == Boss.PART || verdict == Boss.SPLIT);
+        if (slimePrompt) {
+            // Killing the charged character bruises the slime without claiming real boss health.
+            c.shake = Math.max(c.shake, 0.12f);
+            Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR * 0.72f, 6, Glyph.COLOR[g]);
+            if (verdict != Boss.SPLIT && c.sound != null) c.sound.boltPop();
+        }
+        if (verdict == Boss.SPLIT && c.sound != null) c.sound.bossSplit();
+        // Pitched by how much of the boss is left, except the charged bolt which owns its bloop.
+        if (!slimePrompt && c.sound != null)
+            c.sound.squish(g, 1 + (int) (3f * (1f - c.boss.health())));
         return true;
     }
 
@@ -228,7 +238,6 @@ final class BossPlay {
         c.shake = Math.max(c.shake, 0.28f);
         Fx.explode(c, c.rnd, x, y, L.enemyR * 1.5f, 14, GameCore.INK_SPARK);
         if (c.sound != null) c.sound.bossDamage();
-        if (c.sound != null) c.sound.achievement();
         return true;
     }
 
@@ -252,7 +261,6 @@ final class BossPlay {
         c.skyGlowColor = GameCore.FLASH_CLEAR;
         Fx.explode(c, c.rnd, c.boss.bodyX(L), c.boss.bodyY(L), L.enemyR * 2.2f, 20, GameCore.INK_SPARK);
         if (c.sound != null) c.sound.bossDamage();
-        if (c.sound != null) c.sound.achievement();
         return true;
     }
 

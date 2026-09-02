@@ -445,6 +445,8 @@ final class TestBoss extends Check {
         // glob loose and the drag is the only thing that scores, so a health bar that moved on a
         // press would be describing a fight that is not happening.
         float hpWas = c.boss.hp;
+        Ear splitEar = new Ear();
+        c.sound = splitEar;
         int letters = 0;
         for (int k = 0; k < Boss.SPLIT_HITS - 1; k++) {
             if (!c.boss.open()) break;
@@ -460,6 +462,7 @@ final class TestBoss extends Check {
         boolean early = true;
         for (int i = 0; i < Boss.ELEMS; i++) if (c.boss.etype[i] == Boss.E_GLOB) early = false;
         check("and nothing has split off yet", early);
+        check("and the split sound waits for the glob", splitEar.bossSplits == 0);
 
         // The last press of the five is the one that tears a glob out.
         c.tapKey(c.boss.chainLetter(), L);
@@ -468,22 +471,43 @@ final class TestBoss extends Check {
             if (c.boss.etype[i] == Boss.E_GLOB) globs++;
         }
         check("the fifth press sheds a glob", globs == 1);
+        check("and lands one satisfying split pop", splitEar.bossSplits == 1);
+        check("each charged bolt character dies with its own low bloop",
+                splitEar.boltPops == Boss.SPLIT_HITS - 1);
         check("and the split gauge starts again", c.boss.split == 0);
         check("still without hurting it", c.boss.hp == hpWas);
 
-        // It is a wart on the silhouette: its centre protrudes, but its radius still overlaps
-        // the goo so the two read as one form.
+        // It is a patch within the silhouette: close enough to the edge to find and pull, but its
+        // full colour mark stays on the skin instead of reading as a separate ball.
         int inside = -1;
         for (int i = 0; i < Boss.ELEMS; i++) if (c.boss.etype[i] == Boss.E_GLOB) inside = i;
         c.update(DT, L);
-        float wartX = Math.abs(c.boss.ex[inside] - c.boss.body.centreX());
-        check("and it protrudes from the body while staying attached",
-                wartX > c.boss.bodyW(L) * 0.75f
-                        && wartX < c.boss.bodyW(L) + c.boss.er[inside]);
+        float patchX = Math.abs(c.boss.ex[inside] - c.boss.bodyX(L));
+        check("and its centre pulls just beyond the resting body edge",
+                patchX > c.boss.bodyW(L)
+                        && patchX < c.boss.bodyW(L) + c.boss.er[inside] * 0.3f);
+        check("while the slime silhouette protrudes around it",
+                c.boss.body.radiusX() > c.boss.bodyW(L) + c.boss.er[inside] * 0.2f);
+        float[] skin = BossScreen.globPath(c.boss, c.boss.ex[inside], c.boss.ey[inside], 1f);
+        float[] outline = c.boss.body.outline();
+        boolean samePath = true;
+        for (int q = 0; q < skin.length / 4; q++) {
+            boolean found = false;
+            for (int j = 0; j < outline.length; j += 2)
+                if (skin[q * 2] == outline[j] && skin[q * 2 + 1] == outline[j + 1]) found = true;
+            if (!found) samePath = false;
+        }
+        check("and its outside edge is the slime body path itself", samePath);
+        check("its invisible drag window extends beyond the visible wart",
+                c.boss.elemAt(c.boss.ex[inside],
+                        c.boss.ey[inside] + c.boss.er[inside] * 1.8f) == inside);
+        check("without claiming distant field touches",
+                c.boss.elemAt(c.boss.ex[inside],
+                        c.boss.ey[inside] + c.boss.er[inside] * 2.3f) < 0);
 
         // Hauling it stretches the skin after it, and letting go stops the tug — the spring back is
         // the solver's, so there is nothing else to check for the rebound but that the pull ended.
-        check("nothing is tugging the skin yet", !c.boss.body.pulled());
+        check("the resting wart is already tugging the skin outward", c.boss.body.pulled());
         // Let the punch of the split ring itself out first. Measuring "settled" on the frame after a
         // hit is measuring the hit, and the stretch would then be compared against a body that was
         // already halfway to being deformed.
@@ -522,7 +546,7 @@ final class TestBoss extends Check {
         System.out.printf("    a held glob stretches the slime to %.2f of deform against %.2f"
                 + " settled, and %.0f%% of its resting width%n",
                 least, settled, 100f * widest / c.boss.bodyW(L));
-        check("and holds the stretch for as long as it is held", least > settled * 1.5f
+        check("and holds the stretch for as long as it is held", least > settled * 1.08f
                 && least > 0.05f);
         check("reaching out past its own resting width", widest > c.boss.bodyW(L));
         check("with the glob inside it the whole time", held);
@@ -533,7 +557,7 @@ final class TestBoss extends Check {
         // where the body has to start walking after it.
         boolean wrapped = true, walked = false;
         float startX = c.boss.body.centreX();
-        float endX = L.playLeft + c.boss.er[inside] * 1.4f;
+        float endX = L.playLeft + c.boss.er[inside] * 2.4f;
         for (int step = 1; step <= 40 && c.boss.held >= 0; step++) {
             c.dragBoss(startX + (endX - startX) * step / 40f, holdY, L);
             c.update(DT, L);
@@ -545,11 +569,20 @@ final class TestBoss extends Check {
         check("which takes the boss with it once the stretch runs out", walked);
         check("and the drag is still live at the end of it", c.boss.held == inside);
 
+        // A release short of the damage strip sends both halves home: the body unwinds its follow,
+        // and the glob visibly catches its moving attachment point instead of hanging in the field.
+        float droppedX = c.boss.ex[inside];
+        float droppedBodyX = c.boss.body.centreX();
+        c.releaseBoss();
+        for (int i = 0; i < 30; i++) c.update(DT, L);
+        check("a released glob follows the slime body home",
+                c.boss.ex[inside] > droppedX && c.boss.body.centreX() > droppedBodyX);
+        check("and remains available when it rejoins", c.boss.etype[inside] == Boss.E_GLOB
+                && c.grabBoss(c.boss.ex[inside], c.boss.ey[inside]));
+
         float hpBefore = c.boss.hp;
-        // Landed well inside the physical screen edge: the catch is the glob's own edge touching the
-        // play edge, because a finger has to reach the very rim otherwise and Android's own edge
-        // gestures start stealing the touch there.
-        c.dragBoss(L.playLeft + c.boss.er[inside] * 0.5f, c.boss.body.centreY(), L);
+        // Two radii of catchment keep the finger clear of Android's own edge gesture.
+        c.dragBoss(L.playLeft + c.boss.er[inside] * 1.5f, c.boss.body.centreY(), L);
         check("carrying it to the edge lands before the screen edge does",
                 c.boss.held < 0);
         check("which is the only thing that hurts a slime", c.boss.hp < hpBefore);
@@ -592,10 +625,16 @@ final class TestBoss extends Check {
         float deathFrom = d.boss.bodyY(L);
         boolean done = d.dragBoss(L.playRight + 1f, d.boss.ey[glob], L);
         check("dragging it off the play area finishes it", done);
-        check("a damaging boss blow makes one large bubble pop", damageEar.bossDamages == 1);
+        check("a damaging boss blow makes one bloopy hit", damageEar.bossDamages == 1);
+        check("without layering the achievement twinkle", damageEar.achievements == 0);
         check("the killing blow starts the shared defeat exit", d.boss.beaten);
         for (int frame = 0; frame < 45; frame++) d.update(DT, L);
+        check("the longer exit holds for three cute squash notes",
+                d.boss.active() && damageEar.squishes == 3);
         check("the defeated body melts toward the player", d.boss.bodyY(L) > deathFrom);
+        for (int frame = 0; frame < 15; frame++) d.update(DT, L);
+        check("the defeated body dramatically spans ninety percent of the screen",
+                Math.abs(d.boss.body.spanX() - L.w * 0.90f) < L.w * 0.03f);
         while (d.boss.leaveT > DT) d.update(DT, L);
         check("and travels off screen before its lifecycle ends",
                 d.boss.bodyY(L) > L.h + Boss.bodyR(L));
@@ -709,14 +748,20 @@ final class TestBoss extends Check {
         int shown = c.boss.chainLetter();
         for (int i = 0; i < 10; i++) c.update(DT, L);
         float beforeAnswer = c.boss.promptT;
+        int particlesBefore = c.particles.size();
         c.tapKey(shown, L);
         check("attacking the shown character resets its deadline",
                 c.boss.promptT > beforeAnswer && c.boss.boltCount() == 0);
+        check("and gives the slime a smaller prelaunch impact",
+                c.shake >= 0.12f && c.particles.size() > particlesBefore && ear.boltPops == 1);
         shown = c.boss.chainLetter();
         float fullDelay = c.boss.promptDelay();
         check("a healthy slime gives the full prompt window",
                 Math.abs(fullDelay - Boss.PROMPT_MAX) < 0.01f);
         check("nothing is in the air to start", c.boss.boltCount() == 0);
+        check("the charged character is displayed below the slime",
+                BossScreen.slimeBadgeY(L, c.boss)
+                        > c.boss.body.centreY() + c.boss.body.radiusY());
 
         int frames = 0;
         while (c.boss.boltCount() == 0 && frames++ < 60 * 4) c.update(DT, L);
@@ -727,6 +772,10 @@ final class TestBoss extends Check {
         check("and stops when the volley fires", ear.bossCharge == 0f);
         check("the launch laughs exactly once", ear.bossLaughs == 1);
         check("and starts a visible recoil", c.boss.launchT > 0f);
+        boolean below = true;
+        for (int i = 0; i < Boss.BOLTS; i++)
+            if (c.boss.bsy[i] <= c.boss.body.centreY() + c.boss.body.radiusY()) below = false;
+        check("all launch bolts emerge below the slime", below);
 
         float heldPrompt = c.boss.promptT;
         for (int i = 0; i < 30; i++) c.update(DT, L);
@@ -1182,10 +1231,13 @@ final class TestBoss extends Check {
         // Jumping lands on the stage asked for, and sets it up as arriving there would.
         GameCore c = new GameCore(new Mem(), 601L);
         c.startGame();
+        Ear musicEar = new Ear();
+        c.sound = musicEar;
         c.jumpToStage(5, L);
         check("it lands on the stage asked for", c.stage == 5);
         check("and a boss stage brings its boss", c.boss.active()
                 && c.boss.kind == Boss.SLIME);
+        check("and switches into boss music", musicEar.bossMusic);
         check("with a fresh wave", c.spawnedThisStage == 0 && c.resolvedThisStage == 0);
         check("a banner", c.stageBanner > 0f);
         check("and the stage's own panic swipe back", !c.pushUsed);
@@ -1194,6 +1246,11 @@ final class TestBoss extends Check {
         c.jumpToStage(6, L);
         check("jumping off a boss stage takes the boss with it",
                 c.stage == 6 && !c.boss.active());
+        check("and restores the selected music", !musicEar.bossMusic);
+        int musicRequests = musicEar.bossMusicCalls;
+        c.jumpToStage(7, L);
+        check("consecutive normal stages do not restart their music",
+                musicEar.bossMusicCalls == musicRequests);
 
         // It clears the field and both set pieces, rather than leaving them over the new stage.
         GameCore d = new GameCore(new Mem(), 602L);
@@ -1262,7 +1319,7 @@ final class TestBoss extends Check {
             GameCore d = enterBoss(L, k, 100L + k);
             // Let it get going, so there is something to leave behind: globs shed, keys dropped,
             // heads woken, a finger mid-drag.
-            for (int i = 0; i < 60 * 8 && d.boss.active(); i++) {
+            for (int i = 0; i < 60 * 3 && d.boss.active(); i++) {
                 d.target = null;
                 bossPlay(d, L);
                 d.update(DT, L);

@@ -688,6 +688,17 @@ final class Softbody {
         }
     }
 
+    /** Forces the live silhouette to a width while preserving its current dents and wobble. */
+    void fitWidth(float width) {
+        float now = Math.max(1e-3f, maxX - minX);
+        float scale = width / now;
+        for (int i = 0; i < n; i++) {
+            x[i] = cx + (x[i] - cx) * scale;
+            vx[i] *= scale;
+        }
+        measure();
+    }
+
     /**
      * Carries the body to a new centre.
      *

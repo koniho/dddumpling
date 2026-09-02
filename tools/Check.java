@@ -35,8 +35,8 @@ abstract class Check {
     }
 
     static final class Ear implements GameCore.Sound {
-        int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages,
-                bossChargeCalls, chops, zaps;
+        int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, bossSplits,
+                bossChargeCalls, boltPops, chops, zaps;
         float bossCharge, maxBossCharge;
         int collects;
         /** Stars taken, and the count the last one announced. */
@@ -54,6 +54,8 @@ abstract class Check {
         int rocketStops;
         int lastTally = -1;
         boolean frenzyOn;
+        boolean bossMusic;
+        int bossMusicCalls;
         int narrations, hushes;
         int narrated = -1;
         public void squish(int glyph, int depth) {
@@ -67,6 +69,8 @@ abstract class Check {
         public void achievement() { achievements++; }
         public void bossLaugh() { bossLaughs++; }
         public void bossDamage() { bossDamages++; }
+        public void bossSplit() { bossSplits++; }
+        public void boltPop() { boltPops++; }
         public void bossCharge(float charge) {
             bossChargeCalls++;
             bossCharge = charge;
@@ -88,6 +92,7 @@ abstract class Check {
         public void paradeJoin() { joins++; }
         public void gameOver() { gameOvers++; }
         public void selectMusic(int choice) { music = choice; musicCalls++; }
+        public void bossMusic(boolean active) { bossMusic = active; bossMusicCalls++; }
         public void gameStart() { starts++; }
         public void stageClear() { stageClears++; }
         public void powerClear() { powerClears++; }

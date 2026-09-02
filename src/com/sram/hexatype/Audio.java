@@ -27,12 +27,25 @@ final class Audio implements GameCore.Sound {
     private AudioTrack bubbleTrack;
     private boolean rocketActive;
     private boolean bubbleActive;
+    private float bubbleVolume;
     private MediaPlayer bgmPlayer;
     private boolean bgmStarted;
     private boolean frenzyPlaying;
+    private boolean bossPlaying;
+    private long boltPopUntil;
+    /** -1 none, 0 selected track, 1 boss arrangement. Prevents same-track restarts. */
+    private int musicMode = -1, playingStyle = -1;
 
     Audio(Context ctx) {
         this.ctx = ctx;
+        new Thread(new Runnable() {
+             public void run() {
+                for (int id = 0; id < Sfx.COUNT; id++) Sfx.build(id);
+                Sfx.rocket();
+                Sfx.bubble();
+                Music.preRender(Music.SWING_STYLE);
+            }
+        }, "hexatype-audio-prerender").start();
     }
 
     /**
@@ -42,7 +55,7 @@ final class Audio implements GameCore.Sound {
      */
     private int choice = -1;
 
-    /** Starts (or restarts) the loop for the current choice, off the calling thread. */
+    /** Starts the loop for the current choice if it is not already playing, off the calling thread. */
     void startMusic() {
         if (bgmStarted || broken) return;
         bgmStarted = true;
@@ -52,6 +65,10 @@ final class Audio implements GameCore.Sound {
     @Override public void selectMusic(final int style) {
         choice = style;
         bgmStarted = true;
+        if (musicMode == 0 && playingStyle == style) return;
+        musicMode = 0;
+        playingStyle = style;
+        bossPlaying = false;
         stopMusic();
         if (style == Music.OFF) return;
         new Thread(new Runnable() {
@@ -62,6 +79,48 @@ final class Audio implements GameCore.Sound {
                 playSynthMusic(Music.isSynth(style) ? style : Music.SWING_STYLE, frenzyPlaying);
             }
         }, "hexatype-bgm").start();
+    }
+
+    @Override public void bossMusic(final boolean active) {
+        if (!active) {
+            if (musicMode == 0 && playingStyle == choice) return;
+            bossPlaying = false;
+            musicMode = -1;
+            selectMusic(choice);
+            return;
+        }
+        if (musicMode == 1 && playingStyle == choice) return;
+        bossPlaying = true;
+        musicMode = 1;
+        playingStyle = choice;
+        stopMusic();
+        if (choice == Music.OFF) return;
+        bgmStarted = true;
+        new Thread(new Runnable() {
+             public void run() {
+                int style = Music.isSynth(choice) ? choice : Music.SWING_STYLE;
+                try {
+                    short[] pcm = Music.bossLoop(style);
+                    AudioTrack t = musicTrack(pcm);
+                    t.setVolume(Music.BOSS_GAIN);
+                    if (!bossPlaying) { t.release(); return; }
+                    t.play();
+                    bgmTrack = t;
+                } catch (Throwable ignored) {}
+            }
+        }, "hexatype-boss-bgm").start();
+    }
+
+    private AudioTrack musicTrack(short[] pcm) {
+        AudioTrack t = new AudioTrack(
+                new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build(),
+                new AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .setSampleRate(Sfx.RATE).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build(),
+                pcm.length * 2, AudioTrack.MODE_STATIC, AudioManager.AUDIO_SESSION_ID_GENERATE);
+        t.write(pcm, 0, pcm.length);
+        t.setLoopPoints(0, pcm.length, -1);
+        return t;
     }
 
     private void stopMusic() {
@@ -168,13 +227,16 @@ final class Audio implements GameCore.Sound {
         }
     }
 
-    private void play(int id, float rate) {
+    private void play(int id, float rate) { play(id, rate, 1f); }
+
+    private void play(int id, float rate, float gain) {
         AudioTrack t = track(id);
         if (t == null) return;
         try {
             t.stop();
             t.reloadStaticData();
             t.setPlaybackRate((int) (Sfx.RATE * rate));
+            t.setVolume(gain);
             t.play();
         } catch (Throwable ignored) {
             // Mid-playback state races are not worth crashing over.
@@ -305,16 +367,24 @@ final class Audio implements GameCore.Sound {
     }
 
     @Override public void bossDamage() {
-        play(Sfx.BOSS_DAMAGE, 0.92f);
+        play(Sfx.BOSS_DAMAGE, 0.92f, 0.72f);
+    }
+
+    @Override public void bossSplit() {
+        play(Sfx.BOSS_SPLIT, 1.08f, 0.68f);
+    }
+
+    @Override public void boltPop() {
+        // Let the 170ms envelope reach zero; stopping it mid-wave is an audible click.
+        long now = System.nanoTime();
+        if (now < boltPopUntil) return;
+        boltPopUntil = now + 165000000L;
+        play(Sfx.BOLT_POP, 1f, 0.68f);
     }
 
     @Override public void bossCharge(float charge) {
         try {
-            if (charge <= 0f) {
-                bubbleActive = false;
-                if (bubbleTrack != null) bubbleTrack.pause();
-                return;
-            }
+            if (bubbleTrack == null && charge <= 0f) return;
             if (bubbleTrack == null) {
                 short[] pcm = Sfx.bubble();
                 bubbleTrack = new AudioTrack(
@@ -328,10 +398,13 @@ final class Audio implements GameCore.Sound {
                 bubbleTrack.setLoopPoints(0, pcm.length, -1);
             }
             float p = Math.max(0f, Math.min(1f, charge));
-            bubbleTrack.setVolume(0.06f + p * 0.25f);
-            // Lower and slower is thicker; the deadline sinks into heavy bloops.
-            bubbleTrack.setPlaybackRate((int) (Sfx.RATE * (1.08f - p * 0.30f)));
+            float target = p * 0.10f;
+            bubbleVolume += (target - bubbleVolume) * 0.18f;
+            bubbleTrack.setVolume(bubbleVolume);
+            // Fixed-rate playback avoids resampler zipper noise. Once created, the zero-ended loop
+            // keeps running silently between charges so no waveform is ever paused mid-cycle.
             if (!bubbleActive) {
+                bubbleTrack.setPlaybackRate(Sfx.RATE);
                 bubbleTrack.play();
                 bubbleActive = true;
             }

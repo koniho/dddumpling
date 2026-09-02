@@ -109,7 +109,7 @@ final class Boss {
     /** How long the arrival card holds the field before the fight starts. */
     static final float INTRO = 1.6f;
     /** How long the burst takes once it is beaten, before the stage may end. */
-    static final float LEAVE = 1.1f;
+    static final float LEAVE = 2.4f;
 
     /**
      * Seconds before it enrages.
@@ -190,6 +190,8 @@ final class Boss {
     static final int REBUFF = 3;
     /** A bolt the boss threw was swatted out of the air. Scores; does not hurt the boss. */
     static final int PARRY = 4;
+    /** The slime chain completed and tore a glob free. */
+    static final int SPLIT = 5;
 
     /** The most swipes {@link #SUMO} will bank. Earned by pressing its belt. */
     static final int CHARGE_MAX = 3;
@@ -251,6 +253,14 @@ final class Boss {
      * emphatic one — it is the payoff frame of the whole mechanic.
      */
     private static final float PULL_K = 0.85f, SNAP_BACK = 0.9f;
+    /** How wide the forgiving damage strip is, in glob radii. */
+    private static final float GLOB_EDGE = 2f;
+    /** Invisible pickup radius around the body-path patch, in logical glob radii. */
+    static final float GLOB_TOUCH = 2.2f;
+    /** How quickly a released glob catches the slime as its body walks home. */
+    private static final float GLOB_HOME = 8f;
+    /** Resting wart centre and skin reach beyond the plain silhouette, in glob radii. */
+    private static final float WART_OUT = 0.15f, WART_SKIN = 0.65f, WART_PULL = 0.35f;
     /**
      * What one landed press does to the body.
      *
@@ -266,6 +276,9 @@ final class Boss {
     float hp, hpMax;
     /** Seconds the fight has been running, and of the arrival card and the exit. */
     float age, intro, leaveT;
+    int defeatBeat;
+    boolean defeatChime;
+    private float defeatStartW;
     /** Counts up through the open/shut cycle, wrapping at {@link #CYCLE}. */
     float phase;
     /** Decaying flashes: hurt on damage, rage on a rebuff. Separate channels, on purpose. */
@@ -562,12 +575,31 @@ final class Boss {
         return baseY(L) + followY;
     }
 
-    /** Shared defeated-boss route: soften, then melt down toward the player and off screen. */
+    /** 0..1 through the dramatic widening that precedes the fall. */
+    float defeatStretch() {
+        float t = leaveProgress() / 0.38f;
+        if (t <= 0f) return 0f;
+        if (t >= 1f) return 1f;
+        return 1f - (float) Math.pow(1f - t, 3);
+    }
+
+    /** Slow at first and continuously accelerating until it clears the bottom. */
+    float defeatMelt() {
+        float t = (leaveProgress() - 0.38f) / 0.62f;
+        if (t <= 0f) return 0f;
+        if (t >= 1f) return 1f;
+        return t * t * t;
+    }
+
+    /** Shared defeated-boss route: three soft bounces, then melt toward the player. */
     float defeatY(Layout L) {
         float t = leaveProgress();
-        float melt = t * t * (3f - 2f * t);
+        float bounceT = Math.min(1f, t / 0.38f);
+        float bounce = (float) Math.pow(Math.sin(bounceT * Math.PI * 3f), 2)
+                * bodyR(L) * 0.10f * (1f - bounceT);
+        float melt = defeatMelt();
         float from = baseY(L) + followY;
-        return from + (L.h + bodyR(L) * 2.2f - from) * melt;
+        return from + bounce + (L.h + bodyR(L) * 2.2f - from) * melt;
     }
 
     /** Body centre y, before the drag follow. */
@@ -635,6 +667,26 @@ final class Boss {
         }
         followX = dx * f;
         followY = dy * f;
+    }
+
+    /** Pulls released globs back into the attachment point on the body as it walks home. */
+    private void updateReturning(float dt, Layout L) {
+        float bx = bodyX(L), by = bodyY(L), br = bodyR(L);
+        float k = Math.min(1f, dt * GLOB_HOME);
+        for (int i = 0; i < ELEMS; i++) {
+            if (!returning[i] || etype[i] != E_GLOB) continue;
+            float tx = bx + globSide[i] * (br * wide() + er[i] * WART_OUT);
+            float ty = by + br * (globLift[i] - 0.6f) * 0.5f;
+            ex[i] += (tx - ex[i]) * k;
+            ey[i] += (ty - ey[i]) * k;
+            float dx = tx - ex[i], dy = ty - ey[i];
+            if (dx * dx + dy * dy < br * br * 0.0009f) {
+                ex[i] = tx;
+                ey[i] = ty;
+                moved[i] = false;
+                returning[i] = false;
+            }
+        }
     }
 
     /** The body's resting height, for anything that has to lay out around it. */
@@ -835,7 +887,7 @@ final class Boss {
                 if (split < SPLIT_HITS) return PART;
                 split = 0;
                 shedGlob(rnd);
-                return PART;
+                return SPLIT;
             }
             case TRIPLETS: {
                 int i = headIndex(g);
@@ -914,7 +966,7 @@ final class Boss {
             float dx = x - ex[i], dy = y - ey[i];
             float d = dx * dx + dy * dy;
             // Generous, like the key hit-test: these are small targets on a moving field.
-            float r = er[i] * 1.35f;
+            float r = er[i] * (etype[i] == E_GLOB ? GLOB_TOUCH : 1.35f);
             if (d <= r * r && d < bestD) {
                 bestD = d;
                 best = i;
@@ -988,9 +1040,9 @@ final class Boss {
             // Centre-on-the-line meant the finger had to arrive within a couple of percent of the
             // physical screen edge, where Android's own edge gestures start stealing the touch — so
             // the drag kept ending in a lifted finger instead of a landed hit, and it read as only
-            // counting on release. There is a whole glob's width of slack now, and the glob is
+            // counting on release. There are two glob radii of slack now, and the glob is
             // visibly against the wall when it lands.
-            float slack = er[held];
+            float slack = er[held] * GLOB_EDGE;
             if (x <= L.playLeft + slack || x >= L.playRight - slack || y <= L.playTop + slack) {
                 // Free. The skin lets go and snaps back: a dent inward exactly where it had been
                 // stretched out to, plus a whole-body wobble, on top of the release the solver gives
@@ -1026,8 +1078,9 @@ final class Boss {
         return PART;
     }
 
-    /** The finger lifted without finishing. Whatever was held stays where it was dropped. */
+    /** The finger lifted without finishing. A glob flows back; a stolen key stays dropped. */
     void release() {
+        if (held >= 0 && etype[held] == E_GLOB) returning[held] = true;
         held = -1;
     }
 
@@ -1063,6 +1116,8 @@ final class Boss {
             hp = 0f;
             beaten = true;
             leaveT = LEAVE;
+            defeatBeat = 0;
+            defeatStartW = body == null ? 0f : body.spanX();
             // Beaten, so it gives the key back and takes its litter with it. Cleared here as well as
             // in leave(): the exit animation still draws the body, and it must not still be holding
             // a key hostage while it bursts.
@@ -1081,6 +1136,7 @@ final class Boss {
         etype[i] = E_OFF;
         elife[i] = 0f;
         moved[i] = false;
+        returning[i] = false;
         if (held == i) held = -1;
     }
 
@@ -1104,8 +1160,9 @@ final class Boss {
         globSide[i] = rnd.nextBoolean() ? -1f : 1f;
         globLift[i] = 0.35f + rnd.nextFloat() * 0.5f;
         moved[i] = false;
+        returning[i] = false;
         seed(i);
-        // The hit tears the silhouette outward before the wart settles onto it.
+        // The hit tears the silhouette outward before the loose patch settles into it.
         hurt = 1f;
         if (body != null) {
             float woundX = lastBX + globSide[i] * lastBR * wide();
@@ -1128,16 +1185,16 @@ final class Boss {
             // sat exactly where a face goes and the creature stopped having one.
             er[i] = br * 0.23f;
             if (held == i || moved[i]) return;
-            // Inside the body. A glob is a piece that has come loose, not a thing standing next to
-            // the boss — it sits in the goo it split off from, glowing through it, until a finger
+            // Ahead of the resting edge. The soft-body constraint grows the skin around
+            // the boss — it sits as a colour change in the goo it split off from, until a finger
             // hauls it out. That is also what makes the stretch read: the skin has to be dragged out
             // around something that started within it.
             //
             // Spread across the width, so a wide boss sheds them out along itself instead of
             // stacking them all down its middle. Vertically it is the plain radius: the body is only
             // ever wide, never tall, so that axis has no room to spare.
-            // A wart on the silhouette, overlapping it enough to read as one continuous form.
-            ex[i] = bx + globSide[i] * (br * wide() - er[i] * 0.55f);
+            // Its centre sits just outside rest; the live outline protrudes around it as one shape.
+            ex[i] = bx + globSide[i] * (br * wide() + er[i] * WART_OUT);
             ey[i] = by + br * (globLift[i] - 0.6f) * 0.5f;
         } else if (etype[i] == E_KEY) {
             er[i] = L == null ? br * 0.30f : L.keyR * 0.78f;
@@ -1174,6 +1231,8 @@ final class Boss {
     /** Where a shed glob sits relative to the body, until a finger moves it. */
     private final float[] globSide = new float[ELEMS];
     private final float[] globLift = new float[ELEMS];
+    /** A released glob easing back to its attachment point on the moving body. */
+    private final boolean[] returning = new boolean[ELEMS];
     /** True once a finger has moved this element, so the layout pass stops placing it. */
     private final boolean[] moved = new boolean[ELEMS];
 
@@ -1262,11 +1321,13 @@ final class Boss {
         return bt[i] < 0f ? 0f : bt[i];
     }
 
-    boolean hasGlob() {
-        if (kind != SLIME) return false;
-        for (int i = 0; i < ELEMS; i++) if (etype[i] == E_GLOB) return true;
-        return false;
+    private int globIndex() {
+        if (kind != SLIME) return -1;
+        for (int i = 0; i < ELEMS; i++) if (etype[i] == E_GLOB) return i;
+        return -1;
     }
+
+    boolean hasGlob() { return globIndex() >= 0; }
 
     /** Live bolts on the field. */
     int boltCount() {
@@ -1310,9 +1371,11 @@ final class Boss {
             bglyph[i] = (first + i * 2) % Glyph.COUNT;
             bhp[i] = bhpMax[i] = hits;
             bt[i] = -BOLT_STAGGER * i;
-            // Fanned across the body it came out of, so they plainly come from the boss.
+            // Fanned below the live underside, like drops expelled from the slime rather than
+            // projectiles appearing in its face.
             bsx[i] = lastBX + (i - 1) * lastBR * 0.55f;
-            bsy[i] = lastBY;
+            bsy[i] = body == null ? lastBY + lastBR
+                    : body.centreY() + body.radiusY() * 1.12f;
         }
     }
 
@@ -1386,6 +1449,7 @@ final class Boss {
         launchT = Math.max(0f, launchT - dt);
         launched = false;
         rage = Math.max(0f, rage - dt * 2.2f);
+        defeatChime = false;
 
         // Above both early returns below, and that is not tidiness. An element has no position until
         // this has run, so laying out after the intro return meant that on the very frame the
@@ -1394,6 +1458,7 @@ final class Boss {
         // heads and the drum skin arrive with the body instead of appearing after it.
         // Before the layout, because the layout reads bodyX/bodyY and those include the follow.
         updateFollow(dt, L);
+        updateReturning(dt, L);
         layoutElems(L);
 
         // The body follows wherever the layout put the boss, and keeps wobbling on the way out — a
@@ -1407,8 +1472,8 @@ final class Boss {
                 body.moveTo(bodyX(L), bodyY(L));
             }
             // A glob being hauled out stretches the skin after it, like pulling at something in
-            // treacle. Re-aimed every frame at wherever the finger has got to, and let go the
-            // instant nothing is held — the spring back is the solver's own and needs no schedule.
+            // treacle. Re-aimed every frame at wherever the finger has got to. At rest, the wart keeps a smaller
+            // outward constraint so it remains a real protrusion; release only drops the long stretch.
             //
             // With the glob's own radius handed over, so the promise the solver keeps is that the
             // whole glob stays inside the body rather than that its centre does. Between that and
@@ -1417,18 +1482,25 @@ final class Boss {
             if (beaten) {
                 // Shared death morph: gravity wins while the body is carried toward the player.
                 // Pulling below its travelling centre makes the silhouette neck, sag and melt.
-                float melt = leaveProgress();
-                body.pull(body.centreX(), L.h + bodyR(L) * 2.5f,
+                float melt = defeatMelt();
+                if (melt > 0f) body.pull(body.centreX(), L.h + bodyR(L) * 2.5f,
                         0.22f + melt * 0.58f);
-                body.jiggle = JIGGLE[kind] * (1f + melt * 2.6f);
+                body.jiggle = kind == SLIME ? 0.72f + melt * 0.32f
+                        : JIGGLE[kind] * (1f + melt * 2.6f);
             } else if (held >= 0 && etype[held] == E_GLOB) {
                 body.pull(ex[held], ey[held], PULL_K, er[held]);
             } else {
-                body.letGo();
+                int wart = globIndex();
+                if (wart >= 0) body.pull(ex[wart], ey[wart], WART_PULL, er[wart] * WART_SKIN);
+                else body.letGo();
             }
             if (kind == SLIME && !beaten)
                 body.jiggle = JIGGLE[kind] * (1f + (1f - health()) * 1.25f);
             body.update(dt);
+            if (beaten) {
+                float from = defeatStartW > 0f ? defeatStartW : body.spanX();
+                body.fitWidth(from + (L.w * 0.90f - from) * defeatStretch());
+            }
         }
 
         // Above both early returns: a volley already in the air still arrives. Cleared on the frame
@@ -1437,6 +1509,16 @@ final class Boss {
 
         if (beaten) {
             leaveT = Math.max(0f, leaveT - dt);
+            float p = leaveProgress();
+            int wantBeat = p >= 0.28f ? 3 : p >= 0.16f ? 2 : p >= 0.05f ? 1 : 0;
+            if (defeatBeat < wantBeat) {
+                defeatBeat++;
+                defeatChime = true;
+                if (body != null) {
+                    float kick = defeatBeat % 2 == 0 ? -0.42f : 0.58f;
+                    body.squash(kind == SLIME ? kick * 0.38f : kick);
+                }
+            }
             return hits;
         }
         if (intro > 0f) {

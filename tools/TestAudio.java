@@ -208,6 +208,19 @@ final class TestAudio extends Check {
         check("music sits below the effects", lmax < peak);
         check("music is audible", lmax > peak / 4);
 
+        short[] bossLoop = Music.bossLoop(Music.SWING_STYLE);
+        int bossMax = 0;
+        for (int i = 0; i < bossLoop.length; i++)
+            bossMax = Math.max(bossMax, Math.abs(bossLoop[i]));
+        check("boss progression spans thirty-two bars", Music.bossBars() == 32);
+        check("boss loop is at least eight old four-bar loops",
+                bossLoop.length > Sfx.RATE * 37);
+        check("and keeps the same audible instrument bed", bossMax > peak / 4);
+        check("boss music leaves mix headroom for a peak effect",
+                bossMax * Music.BOSS_GAIN + peak * 0.72f < 32767f);
+        check("the boss loop joins without a click",
+                Math.abs(bossLoop[0] - bossLoop[bossLoop.length - 1]) < peak / 5);
+
         // Effects must fire on the right events.
         Ear ear = new Ear();
         GameCore c = new GameCore(new Mem(), 71L);
