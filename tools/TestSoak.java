@@ -17,6 +17,7 @@ final class TestSoak extends Check {
                 c.tapBonus(c.steamer.wanted());
                 continue;
             }
+            if (bossPlay(c, L)) continue;
             GameCore.Enemy e = c.target != null && c.enemies.contains(c.target)
                     && c.target.typeable() ? c.target : urgent(c);
             if (e != null && e.pos < e.word.length) c.tapKey(e.word[e.pos], L);

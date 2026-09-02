@@ -22,8 +22,8 @@ final class Sfx {
     static final int SQUISH_0 = 0, DRIP = 6, CLEAR = 7, WRONG = 8, ACHIEVEMENT = 9;
     static final int START = 10, STAGE_CLEAR = 11, POWER_CLEAR = 12, CHOP = 13, ZAP = 14;
     static final int COLLECT = 15, STAR = 16;
-    static final int COURSE = 17, TALLY = 18, JOIN = 19, OVER = 20;
-    static final int COUNT = 21;
+    static final int COURSE = 17, TALLY = 18, JOIN = 19, OVER = 20, BOSS_LAUGH = 21;
+    static final int BOSS_DAMAGE = 22, COUNT = 23;
 
     private Sfx() {}
 
@@ -44,6 +44,8 @@ final class Sfx {
             case TALLY: return tally();
             case JOIN: return join();
             case OVER: return over();
+            case BOSS_LAUGH: return bossLaugh();
+            case BOSS_DAMAGE: return bossDamage();
             default: return achievement();
         }
     }
@@ -473,6 +475,71 @@ final class Sfx {
     }
 
     private static final float TAU = 6.2831853f;
+
+    /** Seamless wet bubble bed; playback rate and volume supply the charging build. */
+    static short[] bubble() {
+        int n = (int) (RATE * 0.84f);
+        float[] v = new float[n];
+        float[] start = {0.03f, 0.28f, 0.54f, 0.76f};
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / RATE;
+            float s = 0f;
+            for (int k = 0; k < start.length; k++) {
+                float q = t - start[k];
+                if (q < 0f || q > 0.18f) continue;
+                float u = q / 0.18f;
+                float phase = TAU * (92f * q + 48f * q * q);
+                float wet = (float) Math.sin(phase) + 0.34f * (float) Math.sin(phase * 2.03f);
+                s += wet * (float) Math.sin(Math.PI * u) * (1f - u * 0.35f);
+            }
+            v[i] = s * 0.62f;
+        }
+        return render(v);
+    }
+
+    /** A low, wobbling three-beat cackle for the slime launching a volley. */
+    static short[] bossLaugh() {
+        int n = (int) (RATE * 0.72f);
+        float[] v = new float[n];
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / n;
+            float beat = t * 3f - (int) (t * 3f);
+            float gate = (float) Math.exp(-5f * beat);
+            float f = 145f - 35f * t + 18f * (float) Math.sin(TAU * t * 3f);
+            float ph = TAU * f * i / RATE;
+            float voice = (float) Math.sin(ph) + 0.42f * (float) Math.sin(ph * 2.02f)
+                    + 0.18f * (float) Math.sin(ph * 3.07f);
+            float bloops = 0f;
+            for (int k = 0; k < 3; k++) {
+                float q = t * 0.72f - 0.10f - k * 0.17f;
+                if (q < 0f || q > 0.16f) continue;
+                float u = q / 0.16f;
+                float bp = TAU * (105f * q - 42f * q * q);
+                bloops += ((float) Math.sin(bp) + 0.5f * (float) Math.sin(bp * 2f))
+                        * (float) Math.sin(Math.PI * u);
+            }
+            v[i] = (voice * gate * 0.58f + bloops * 0.82f)
+                    * envelope(t, 0.008f, 1.4f);
+        }
+        return render(v);
+    }
+
+    /** One oversized, low bubble collapsing after a damaging boss hit. */
+    static short[] bossDamage() {
+        int n = (int) (RATE * 0.48f);
+        float[] v = new float[n];
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / RATE, u = (float) i / n;
+            float phase = TAU * (118f * t - 52f * t * t);
+            float body = (float) Math.sin(phase) + 0.48f * (float) Math.sin(phase * 2.01f)
+                    + 0.20f * (float) Math.sin(phase * 3.04f);
+            float lip = i < RATE / 45 ? (float) Math.sin(i * 2.37f)
+                    * (1f - i * 45f / RATE) : 0f;
+            v[i] = (body * 0.88f + lip * 0.42f) * (float) Math.sin(Math.PI * u)
+                    * (1f - u * 0.38f);
+        }
+        return render(v);
+    }
 
     /** Achievement flourish for a flawless wave: a rising shimmer over a held fifth. */
     static short[] achievement() {

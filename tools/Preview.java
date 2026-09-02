@@ -805,6 +805,18 @@ final class Preview {
                         c.shots.size(), c.shots.isEmpty() ? 0f : c.shots.get(0).t * 100f);
                 shot(dir, "68-boss-bullet", c, L, w, h, ss);
 
+                // A missed prompt launching, caught during the laugh and recoil. Kept on its own
+                // slime so the wart recovery state below correctly suppresses this attack.
+                GameCore volley = toBoss(L, Boss.SLIME, 519L, true);
+                for (int i = 0; i < 60 * 8 && !volley.boss.open(); i++) volley.update(DT, L);
+                volley.boss.promptT = 0f;
+                volley.update(DT, L);
+                step(volley, L, 0.16f);
+                System.out.printf("boss volley: %d in the air, at %.2f/%.2f/%.2f%n",
+                        volley.boss.boltCount(), volley.boss.boltAt(0), volley.boss.boltAt(1),
+                        volley.boss.boltAt(2));
+                shot(dir, "69-boss-volley", volley, L, w, h, ss);
+
                 // Work one loose. Five presses of the chain split a glob off, so unlike every other
                 // boss here there is nothing draggable on the field until the chain has been run —
                 // which is what this used to look for before it had happened.
@@ -819,17 +831,8 @@ final class Preview {
                     }
                 }
 
-                // The volley the split threw, caught mid-flight with the three letters spread
-                // between the boss and the deck.
-                if (c.boss.boltCount() > 0) {
-                    step(c, L, Boss.BOLT_TIME * 0.45f);
-                    System.out.printf("boss volley: %d in the air, at %.2f/%.2f/%.2f%n",
-                            c.boss.boltCount(), c.boss.boltAt(0), c.boss.boltAt(1),
-                            c.boss.boltAt(2));
-                    shot(dir, "69-boss-volley", c, L, w, h, ss);
-                }
-
                 if (glob >= 0) {
+                    step(c, L, 0.18f);
                     System.out.printf("boss split inside: at %.0f,%.0f, body at %.0f,%.0f r=%.0f%n",
                             c.boss.ex[glob], c.boss.ey[glob], c.boss.body.centreX(),
                             c.boss.body.centreY(), c.boss.body.radius());
@@ -1016,7 +1019,7 @@ final class Preview {
         String[] names = {"squish-dumpling", "squish-strawberry", "squish-cat", "squish-grapes",
                 "squish-squishy", "squish-blob", "damage-drip", "clear-word", "wrong",
                 "achievement", "game-start", "stage-clear", "power-clear", "chop", "zap",
-                "collect", "star", "course-start", "tally", "parade-join", "game-over"};
+                "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

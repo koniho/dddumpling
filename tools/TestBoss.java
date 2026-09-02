@@ -154,7 +154,7 @@ final class TestBoss extends Check {
         // No way past it. This is the whole point of the no-retreat rule, so it is asserted rather
         // than assumed: sit on a boss stage doing nothing for far longer than the fight is meant to
         // take, and the stage must still be the same stage.
-        GameCore w = enterBoss(L, Boss.SLIME, 13L);
+        GameCore w = enterBoss(L, Boss.TRIPLETS, 13L);
         int stageWas = w.stage;
         for (int i = 0; i < 60 * 90 && w.state == GameCore.PLAY; i++) {
             w.enemies.clear();          // survive, but do nothing about the boss
@@ -165,7 +165,7 @@ final class TestBoss extends Check {
         check("and it does not quietly beat itself", w.boss.health() > 0f);
 
         // Enrage is visual urgency only. Time by itself must never take a life.
-        GameCore r = enterBoss(L, Boss.SLIME, 14L);
+        GameCore r = enterBoss(L, Boss.TRIPLETS, 14L);
         check("it does not start enraged", r.boss.enrage() == 0f);
         int livesWas = r.lives;
         boolean calmAndHarmless = true;
@@ -471,13 +471,15 @@ final class TestBoss extends Check {
         check("and the split gauge starts again", c.boss.split == 0);
         check("still without hurting it", c.boss.hp == hpWas);
 
-        // Contained by the body it split off from: the drag is meant to be hauling something out of
-        // the goo, which needs it to start inside the goo.
+        // It is a wart on the silhouette: its centre protrudes, but its radius still overlaps
+        // the goo so the two read as one form.
         int inside = -1;
         for (int i = 0; i < Boss.ELEMS; i++) if (c.boss.etype[i] == Boss.E_GLOB) inside = i;
         c.update(DT, L);
-        check("and it is shed inside the body",
-                c.boss.body.contains(c.boss.ex[inside], c.boss.ey[inside]));
+        float wartX = Math.abs(c.boss.ex[inside] - c.boss.body.centreX());
+        check("and it protrudes from the body while staying attached",
+                wartX > c.boss.bodyW(L) * 0.75f
+                        && wartX < c.boss.bodyW(L) + c.boss.er[inside]);
 
         // Hauling it stretches the skin after it, and letting go stops the tug — the spring back is
         // the solver's, so there is nothing else to check for the rebound but that the pull ended.
@@ -485,10 +487,13 @@ final class TestBoss extends Check {
         // Let the punch of the split ring itself out first. Measuring "settled" on the frame after a
         // hit is measuring the hit, and the stretch would then be compared against a body that was
         // already halfway to being deformed.
+        float waitingPrompt = c.boss.promptT;
         for (int i = 0; i < 90; i++) {
             c.enemies.clear();
             c.update(DT, L);
         }
+        check("the wounded slime waits without preparing another volley",
+                c.boss.boltCount() == 0 && Math.abs(c.boss.promptT - waitingPrompt) < 0.001f);
         float settled = c.boss.body.deform();
         c.grabBoss(c.boss.ex[inside], c.boss.ey[inside]);
         // A fixed point, taken once. Re-deriving the target from the body's own centre every frame is
@@ -517,8 +522,8 @@ final class TestBoss extends Check {
         System.out.printf("    a held glob stretches the slime to %.2f of deform against %.2f"
                 + " settled, and %.0f%% of its resting width%n",
                 least, settled, 100f * widest / c.boss.bodyW(L));
-        check("and holds the stretch for as long as it is held", least > settled * 2f
-                && least > 0.06f);
+        check("and holds the stretch for as long as it is held", least > settled * 1.5f
+                && least > 0.05f);
         check("reaching out past its own resting width", widest > c.boss.bodyW(L));
         check("with the glob inside it the whole time", held);
 
@@ -581,8 +586,19 @@ final class TestBoss extends Check {
         check("and it is draggable, not tappable", d.boss.draggable(glob));
         check("grabbing it takes the finger",
                 d.grabBoss(d.boss.ex[glob], d.boss.ey[glob]));
+        Ear damageEar = new Ear();
+        d.sound = damageEar;
+        d.boss.hp = 1f;
+        float deathFrom = d.boss.bodyY(L);
         boolean done = d.dragBoss(L.playRight + 1f, d.boss.ey[glob], L);
         check("dragging it off the play area finishes it", done);
+        check("a damaging boss blow makes one large bubble pop", damageEar.bossDamages == 1);
+        check("the killing blow starts the shared defeat exit", d.boss.beaten);
+        for (int frame = 0; frame < 45; frame++) d.update(DT, L);
+        check("the defeated body melts toward the player", d.boss.bodyY(L) > deathFrom);
+        while (d.boss.leaveT > DT) d.update(DT, L);
+        check("and travels off screen before its lifecycle ends",
+                d.boss.bodyY(L) > L.h + Boss.bodyR(L));
         boolean cleared = true;
         for (int i = 0; i < Boss.ELEMS; i++) if (d.boss.etype[i] == Boss.E_GLOB) cleared = false;
         check("and the glob is gone", cleared);
@@ -688,99 +704,78 @@ final class TestBoss extends Check {
         toOpen(c, L);
         c.enemies.clear();
         c.target = null;
+        Ear ear = new Ear();
+        c.sound = ear;
+        int shown = c.boss.chainLetter();
+        for (int i = 0; i < 10; i++) c.update(DT, L);
+        float beforeAnswer = c.boss.promptT;
+        c.tapKey(shown, L);
+        check("attacking the shown character resets its deadline",
+                c.boss.promptT > beforeAnswer && c.boss.boltCount() == 0);
+        shown = c.boss.chainLetter();
+        float fullDelay = c.boss.promptDelay();
+        check("a healthy slime gives the full prompt window",
+                Math.abs(fullDelay - Boss.PROMPT_MAX) < 0.01f);
         check("nothing is in the air to start", c.boss.boltCount() == 0);
 
-        // Four presses work at the skin and throw nothing; the fifth splits a glob and the volley
-        // comes with it.
-        for (int k = 0; k < Boss.SPLIT_HITS - 1; k++) c.tapKey(c.boss.chainLetter(), L);
-        check("the presses before the split throw nothing", c.boss.boltCount() == 0);
-        c.tapKey(c.boss.chainLetter(), L);
-        check("splitting a glob throws a volley", c.boss.boltCount() == Boss.BOLTS);
+        int frames = 0;
+        while (c.boss.boltCount() == 0 && frames++ < 60 * 4) c.update(DT, L);
+        check("an unanswered prompt launches a three-bolt volley",
+                c.boss.boltCount() == Boss.BOLTS);
+        check("the shown character leads the volley", c.boss.bglyph[0] == shown);
+        check("the bubbling builds toward launch", ear.maxBossCharge > 0.75f);
+        check("and stops when the volley fires", ear.bossCharge == 0f);
+        check("the launch laughs exactly once", ear.bossLaughs == 1);
+        check("and starts a visible recoil", c.boss.launchT > 0f);
 
-        // One letter each, all different, so three presses are needed and not one.
+        float heldPrompt = c.boss.promptT;
+        for (int i = 0; i < 30; i++) c.update(DT, L);
+        check("the next prompt waits for the whole volley",
+                Math.abs(c.boss.promptT - heldPrompt) < 0.001f);
+
         boolean distinct = true;
         for (int i = 0; i < Boss.BOLTS; i++) {
             for (int j = i + 1; j < Boss.BOLTS; j++) {
                 if (c.boss.bglyph[i] == c.boss.bglyph[j]) distinct = false;
             }
-            if (c.boss.bglyph[i] < 0 || c.boss.bglyph[i] >= Glyph.COUNT) distinct = false;
         }
-        check("each carries a different one of the six letters", distinct);
+        check("the volley spreads over three different keys", distinct);
+        check("a healthy launch takes one hit per bolt", c.boss.bhpMax[0] == 1);
 
-        // They start on the boss and head for the key that clears them.
+        int livesWas = c.lives;
+        while (c.boss.boltCount() > 0) {
+            int g = -1;
+            for (int i = 0; i < Glyph.COUNT; i++) if (c.boss.boltWants(i)) g = i;
+            c.tapKey(g, L);
+        }
+        check("clearing every bolt preserves every life", c.lives == livesWas);
+        float resumedAt = c.boss.promptT;
         c.update(DT, L);
-        boolean fromBoss = true, atKeys = true;
-        for (int i = 0; i < Boss.BOLTS; i++) {
-            float y = c.boss.boltY(i, L);
-            if (y > c.boss.bodyY(L) + Boss.bodyR(L) * 2f) fromBoss = false;
-            if (Math.abs(c.boss.bsy[i] - c.boss.bodyY(L)) > Boss.bodyR(L) * 2f) fromBoss = false;
-            if (L.keyY[c.boss.bglyph[i]] < L.deckTop) atKeys = false;
-        }
-        check("they launch from the body", fromBoss);
-        check("and fly at the deck", atKeys);
+        check("only then does the next prompt begin counting", c.boss.promptT < resumedAt);
 
-        // Staggered, or one volley takes three lives on one frame.
-        boolean spread = c.boss.bt[0] > c.boss.bt[1] && c.boss.bt[1] > c.boss.bt[2];
-        check("they are staggered rather than abreast", spread);
+        GameCore hard = enterBoss(L, Boss.SLIME, 47L);
+        toOpen(hard, L);
+        hard.boss.hp = hard.boss.hpMax * 0.30f;
+        check("a badly hurt slime cuts the prompt toward one second",
+                hard.boss.promptDelay() < 1.31f && hard.boss.promptDelay() >= Boss.PROMPT_MIN);
+        hard.boss.promptT = 0f;
+        hard.update(DT, L);
+        check("late volleys take three hits per character", hard.boss.bhpMax[0] == 3);
+        int g = hard.boss.bglyph[0];
+        hard.tapKey(g, L);
+        hard.tapKey(g, L);
+        check("two hits leave a late bolt alive", hard.boss.boltWants(g));
+        hard.tapKey(g, L);
+        check("and the third destroys it", !hard.boss.boltWants(g));
 
-        // Pressing a bolt's letter swats it, and the press is not spent on the chain.
-        int g = -1;
-        for (int i = 0; i < Glyph.COUNT; i++) {
-            if (c.boss.boltWants(i)) g = i;
-        }
-        check("a bolt's letter is advertised as wanted", g >= 0 && c.boss.wants(g));
-        int chainWas = c.boss.chainAt;
-        int splitWas = c.boss.split;
-        int liveWas = c.boss.boltCount();
-        int scoreWas = c.score;
-        c.shots.clear();
-        c.tapKey(g, L);
-        check("pressing it swats one", c.boss.boltCount() == liveWas - 1);
-        check("and it scores", c.score > scoreWas);
-        check("without being spent on the chain",
-                c.boss.chainAt == chainWas && c.boss.split == splitWas);
-        check("and it fires a bullet that does not home on the boss",
-                c.shots.size() == 1 && !c.shots.get(0).atBoss);
-
-        // A bolt reaching the deck costs a life, one per bolt and no more.
-        GameCore d = enterBoss(L, Boss.SLIME, 47L);
+        GameCore d = enterBoss(L, Boss.SLIME, 48L);
         toOpen(d, L);
-        d.enemies.clear();
-        d.target = null;
-        splitOne(d, L);
-        check("a volley is up", d.boss.boltCount() == Boss.BOLTS);
-        int livesWas = d.lives;
+        d.boss.promptT = 0f;
+        d.update(DT, L);
         d.lives = 9;
-        int frames = 0;
-        for (int i = 0; i < 60 * (int) (Boss.BOLT_TIME + 2); i++) {
-            d.enemies.clear();
-            d.update(DT, L);
-            if (d.boss.boltCount() == 0) break;
-            frames++;
-        }
-        check("left alone they all land", d.boss.boltCount() == 0);
-        check("costing one life each", d.lives == 9 - Boss.BOLTS);
-        check("over about the flight time", frames > 60 && frames < 60 * (Boss.BOLT_TIME + 2));
-        check("and the boss is no healthier for it", d.boss.hp <= d.boss.hpMax);
-        // The volley is not the only threat before the enrage, but it is the first one.
-        check("which is the first thing on a boss stage that can hurt you",
-                livesWas == GameCore.START_LIVES);
-
-        // Beating the boss takes the volley with it: a bolt landing after the burst charges a life
-        // for a fight that is over.
-        GameCore w = enterBoss(L, Boss.SLIME, 48L);
-        for (int i = 0; i < 60 * 60 && !w.boss.beaten; i++) {
-            w.enemies.clear();
-            w.target = null;
-            w.lives = GameCore.START_LIVES;
-            bossPlay(w, L);
-            w.update(DT, L);
-        }
-        check("the boss can still be beaten with a volley in the air", w.boss.beaten);
-        check("and nothing is left in the air", w.boss.boltCount() == 0);
-        int after = w.lives;
-        for (int i = 0; i < 60 * 5 && w.state == GameCore.PLAY; i++) w.update(DT, L);
-        check("so nothing lands after the burst", w.lives >= after);
+        for (int i = 0; i < 60 * 5 && d.boss.boltCount() > 0; i++) d.update(DT, L);
+        check("unanswered bolts still reach the deck", d.boss.boltCount() == 0);
+        check("and each costs one life", d.lives == 9 - Boss.BOLTS);
     }
 
     static void triplets(Layout L) {

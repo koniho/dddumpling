@@ -184,9 +184,10 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **enrage** | the visual warning on a dragging fight: it reddens, but does no damage by itself | `Boss.ENRAGE_AT`, `ENRAGE_RAMP` |
 | **slime** | boss 1. A wide, twice-as-jiggly mass of goo. A chain of letters to type, and the only thing that hurts it is a glob carried off the screen | `Boss.SLIME`, `WIDE`, `JIGGLE` |
 | **split** | working a glob loose: five presses of the chain, tracked by the pip row under the body. The presses themselves take no health off it | `Boss.SPLIT_HITS`, `split`, `splitProgress`, `BossScreen.splitGauge` |
-| **volley** / **bolt** | the three single-letter projectiles a split throws at the deck, one per key. Press a bolt's letter to swat it; one that lands costs a life | `Boss.BOLTS`, `blive`, `boltWants`, `PARRY` |
+| **prompt** | the character on the slime. Answer it before its two-to-one-second deadline or it leads a volley | `promptT`, `promptDelay` |
+| **volley** / **bolt** | three projectiles launched by a missed prompt. They take one to three presses as the slime weakens; the next prompt waits until all three are gone | `Boss.BOLTS`, `bhp`, `boltWants`, `PARRY` |
 | **parry** | swatting a bolt. Scores like a hit and does not touch the boss | `Boss.PARRY`, `BossPlay.press` |
-| **glob** | what the fifth press tears off. Starts *inside* the body, glowing red; drag it to the play edge for the slime's only point of damage. Left alone it just fades — nothing heals | `Boss.E_GLOB`, `GLOB_TIME` |
+| **glob** / **wart** | what the fifth press grows from the silhouette, red and visibly joined to the slime. The boss waits wounded with no prompt or volley clock until it is dragged to the edge or fades | `Boss.E_GLOB`, `GLOB_TIME` |
 | **stretch** | the skin hauled out after a dragged glob, holding it inside the body however far it goes, and snapping back when it comes free | `Softbody.pull`, `enclose`, `letGo`, `Boss.PULL_K` |
 | **tongue** | the shape that stretch makes: five nodes projected past the glob, with shoulders behind them | `Softbody.NECK` |
 | **drag follow** | the body walking after its own glob — a quarter of the way for free, further only as far as it must for the stretch to still reach | `Boss.DRAG_FOLLOW`, `DRAG_REACH`, `followX` |

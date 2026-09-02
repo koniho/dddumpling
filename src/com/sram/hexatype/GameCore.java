@@ -180,6 +180,12 @@ final class GameCore {
         void wrong();
         void damage();
         void achievement();
+        /** The slime has turned an unanswered prompt into a volley. */
+        void bossLaugh();
+        /** 0 stops the slime bubble bed; 0..1 thickens it toward launch. */
+        void bossCharge(float charge);
+        /** A damaging blow landed on a boss: a single large, wet bubble burst. */
+        void bossDamage();
         /** A letter cut by the FLING blade. Fires several times per swipe, so it is short. */
         void chop();
         /** One hop of a MULTI chain. @param hop 1-based, so the crack can climb with the chain */
@@ -1908,6 +1914,8 @@ final class GameCore {
         dt *= timeScale();
         // The clock keeps running so the panel itself can animate, but nothing else moves.
         clock += dt;
+        if (sound != null && (settingsOpen || !boss.fighting() || boss.kind != Boss.SLIME
+                || boss.hasGlob() || boss.boltCount() > 0)) sound.bossCharge(0f);
         if (settingsOpen) return;
         time += dt;
         // Accumulated, not derived from clock, so the frenzy's faster drift does not make the
@@ -2112,6 +2120,13 @@ final class GameCore {
             // True when a visible boss threat reaches the deck. SUMO's body crossing the line is
             // handled by the same count; elapsed fight time alone never costs a life.
             int bossHits = boss.update(dt, L, rnd);
+            if (sound != null) {
+                float brew = boss.kind == Boss.SLIME && !boss.hasGlob()
+                        && boss.boltCount() == 0 && boss.open()
+                        ? 0.08f + boss.promptProgress() * 0.92f : 0f;
+                sound.bossCharge(brew);
+                if (boss.launched) sound.bossLaugh();
+            }
             for (int k = 0; k < bossHits && state == PLAY; k++) BossPlay.slam(this, L);
             // That may have been the last life, and nothing below here runs after a run ends.
             if (state != PLAY) return;

@@ -335,6 +335,8 @@ public class GameView extends View {
 
     /** True while a finger is carrying one of the boss's elements. */
     private boolean bossDragging;
+    private long lastBossDragHaptic;
+    private boolean bossWasBeaten;
 
     /**
      * The boss's elements: a tap on one acts at once, a drag on one carries it.
@@ -381,6 +383,8 @@ public class GameView extends View {
             if (core.dragBoss(x, y, layout)) {
                 bossDragging = false;
                 tick();
+            } else {
+                dragHaptic();
             }
             return true;
         }
@@ -527,6 +531,19 @@ public class GameView extends View {
         }
     }
 
+    private void dragHaptic() {
+        long now = SystemClock.uptimeMillis();
+        if (now - lastBossDragHaptic < 55) return;
+        lastBossDragHaptic = now;
+        performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK,
+                HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+    }
+
+    private void bossDeathHaptic() {
+        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
+                HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+    }
+
     private void tick() {
         performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP,
                 HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
@@ -540,6 +557,9 @@ public class GameView extends View {
 
         try {
             core.update(dt, layout);
+            boolean beaten = core.boss.active() && core.boss.beaten;
+            if (beaten && !bossWasBeaten) bossDeathHaptic();
+            bossWasBeaten = beaten;
             painter.bind(c);
             Renderer.draw(painter, core, layout);
         } catch (Throwable t) {

@@ -104,13 +104,20 @@ final class BossScreen extends Draw {
 
         // In on the arrival card, out on the burst.
         float fade = b.intro > 0f ? Math.min(1f, b.introProgress() * 1.6f)
-                : b.beaten ? Math.max(0f, 1f - b.leaveProgress() * 1.3f) : 1f;
+                : b.beaten ? Math.max(0f, 1f - b.leaveProgress() * b.leaveProgress()) : 1f;
         if (fade <= 0.01f) return;
 
         int col = tint(b);
         // Rage reddens it; the enrage reddens it further and permanently, so a fight going badly
         // looks like one.
-        col = Glyph.mix(col, ROSE, Math.max(b.rage * 0.55f, b.enrage() * 0.45f));
+        boolean wounded = b.kind == Boss.SLIME && b.hasGlob();
+        float damageHeat = b.kind == Boss.SLIME ? 1f - b.health() : 0f;
+        float launch = b.launchT / Boss.LAUNCH_TIME;
+        float throb = 0.72f + 0.28f * (float) Math.sin(c.clock * (7f + damageHeat * 9f));
+        col = Glyph.mix(col, ROSE, Math.max(Math.max(b.rage * 0.55f,
+                b.enrage() * 0.45f), damageHeat * 0.62f * throb));
+        if (wounded) col = Glyph.mix(col, 0xFF5C315B, 0.42f);
+        col = Glyph.mix(col, 0xFFFFFFFF, launch * 0.35f);
         // A hit whitens it for a moment on top of the dent the body is already taking.
         col = Glyph.mix(col, 0xFFFFFFFF, b.hurt * 0.35f);
 
@@ -137,6 +144,15 @@ final class BossScreen extends Draw {
         // radius made that worse the moment a body could be stretched, since a glob hauled halfway
         // across the field doubles the radius and the scribble grew to fill the upper field with it.
         // The window is a property of the fight, not of what the skin happens to be doing.
+        if (launch > 0f) {
+            float kick = 1f - launch;
+            float rr = Boss.bodyR(L) * (1.1f + kick * 0.9f);
+            p.strokeCircle(cx, cy, rr, Glyph.withAlpha(ROSE, (int) (220 * launch * fade)),
+                    L.unit * (0.16f + 0.18f * launch));
+            p.strokeCircle(cx, cy, rr * 0.72f,
+                    Glyph.withAlpha(GOLD, (int) (180 * launch * fade)), L.unit * 0.12f);
+        }
+
         if (b.open()) {
             float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 7f);
             float sx = b.bodyW(L), sy = Boss.bodyR(L);
@@ -152,7 +168,8 @@ final class BossScreen extends Draw {
         // giving the body one of its own put a fourth face behind the three and the whole thing read
         // as a blob wearing heads rather than as a creature with three of them.
         int face = b.kind == Boss.TRIPLETS ? -1 : Boss.FACE[b.kind];
-        Slime.draw(p, b.body, c.clock, col, face, b.open() ? 0.15f : 0.5f, fade);
+        float mood = wounded ? 0f : b.open() ? 0.15f : 0.5f;
+        Slime.draw(p, b.body, c.clock, col, face, mood, fade);
         // Its own structure, faintly, so the wobble reads as physics rather than as a wandering
         // outline. Brightest just after a hit and while the skin is being stretched — the two
         // moments there is something to see.
@@ -181,10 +198,15 @@ final class BossScreen extends Draw {
         float pin = ornamentY(L, b);
 
         if (b.kind == Boss.SLIME) {
-            // The next letter of the chain, held above it, with a caret so it reads as "press this"
-            // in the same language the field's head tile uses.
-            letterBadge(p, c, L, b.chainLetter(), cx, pin - ry * 1.28f, L.unit * 0.95f, fade,
-                    b.open());
+            // The next prompt does not appear until the whole launched volley is gone.
+            if (b.boltCount() == 0 && !b.hasGlob()) {
+                float urgency = b.promptProgress();
+                float pop = 1f + urgency * 0.32f
+                        + 0.08f * urgency * (float) Math.sin(
+                                c.clock * (8f + urgency * 10f));
+                letterBadge(p, c, L, b.chainLetter(), cx, cy, L.unit * 1.08f * pop, fade,
+                        b.open());
+            }
             // And how far the chain has got: the press does not move the health bar, so without
             // this a run of four presses looks like four presses that did nothing. Hung off the
             // resting height rather than the live one so it does not get swallowed by the body every
@@ -411,6 +433,17 @@ final class BossScreen extends Draw {
             float life, boolean held, float fade) {
         int col = ROSE;
         float k = Math.min(1f, life / Boss.GLOB_TIME);
+        float born = Math.min(1f, (Boss.GLOB_TIME - life) / 0.42f);
+        float grow = born * (1.12f - 0.12f * born);
+        rr *= grow;
+        if (rr <= 0.1f) return;
+        float side = x < b.body.centreX() ? -1f : 1f;
+        // A broad red neck overlaps the silhouette: this is a wart growing out of the goo,
+        // not a token floating on top of it. The soft body takes over that connection on drag.
+        if (!held) {
+            p.fillEllipse(x - side * rr * 0.62f, y, rr * 1.18f, rr * 0.70f,
+                    Glyph.withAlpha(col, (int) (190 * fade)));
+        }
         // Wobbles on its own sines rather than an RNG, so preview frames still hash the same.
         float wx = 1f + 0.10f * (float) Math.sin(c.clock * 3.1f + hash(i * 17) * 6.283f);
         float wy = 1f + 0.10f * (float) Math.sin(c.clock * 3.7f + hash(i * 29) * 6.283f);
@@ -431,8 +464,16 @@ final class BossScreen extends Draw {
                 (int) (235 * fade)), rr * 0.11f);
         p.fillEllipse(x - rr * 0.3f, y - rr * 0.34f, rr * 0.22f, rr * 0.14f,
                 Glyph.withAlpha(0xFFFFFFFF, (int) (140 * fade)));
-        // How long before it crawls back: an arc of pips, emptying.
+        // How long it remains available: an arc of pips, emptying.
         ring(p, x, y, rr * 1.35f, k, ROSE, fade);
+        if (!held && born >= 0.55f) {
+            float drag = (c.clock * 0.65f) % 1f;
+            float tipX = x + side * rr * (0.15f + drag * 2.4f);
+            float tipY = y - rr * 0.10f * (float) Math.sin(drag * Math.PI);
+            float handAngle = side > 0f ? 2.45f : 0.69f;
+            Renderer.fingerHint(p, tipX, tipY, rr * 0.58f, handAngle,
+                    fade * (1f - drag * 0.35f), c.clock);
+        }
     }
 
     /** A key the magpie dropped, to be dragged home to the deck. */
@@ -576,6 +617,11 @@ final class BossScreen extends Draw {
             p.fillPoly(Glyph.hex(x, y, rr), Glyph.withAlpha(col, 96));
             p.strokePoly(Glyph.hex(x, y, rr), Glyph.withAlpha(col, 255), rr * 0.13f);
             Kawaii.draw(p, g, x, y, rr * 0.58f, Glyph.withAlpha(col, 255), 1f, 0.1f);
+            for (int h = 0; h < b.bhp[i]; h++) {
+                float pip = rr * 0.13f;
+                float px = x + (h - (b.bhp[i] - 1) * 0.5f) * pip * 2.6f;
+                p.fillCircle(px, y + rr * 0.82f, pip, Glyph.withAlpha(INK, 235));
+            }
         }
     }
 

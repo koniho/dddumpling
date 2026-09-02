@@ -94,7 +94,7 @@ final class Boss {
 
     static final String[] NAMES = {"SLIME", "TRIPLETS", "MOCHI DRUM", "MAGPIE", "SUMO BUN"};
     /** One line each, in the mode bar. Held to the width of the longest frenzy blurb. */
-    static final String[] BLURB = {"SPLIT IT, DRAG IT OFF", "TAP THEM AWAKE FIRST",
+    static final String[] BLURB = {"HIT THE MARK, DRAG GLOBS", "TAP THEM AWAKE FIRST",
             "KEY, THEN TAP, ON BEAT", "DRAG YOUR KEY BACK", "SWIPE IT BACK"};
     /**
      * Which of the six characters each boss is a giant version of.
@@ -238,6 +238,10 @@ final class Boss {
      * the end of it, and it is the only thing that scores: see {@link #press}.
      */
     static final int SPLIT_HITS = 5;
+    /** Deadline for the slime's shown letter, from full to empty health. */
+    static final float PROMPT_MAX = 2f, PROMPT_MIN = 1f;
+    /** Visible recoil left after launching a volley. */
+    static final float LAUNCH_TIME = 0.8f;
     /**
      * How hard a dragged glob stretches the skin it is being hauled out of, and how hard the skin
      * snaps back when it comes free.
@@ -282,6 +286,8 @@ final class Boss {
      * indexed by damage taken would have sat on the same letter for five presses running.
      */
     int chainAt, split;
+    float promptT, launchT;
+    boolean launched;
     /** The three letters {@link #TRIPLETS} is showing, which are awake, and which this window took. */
     private final int[] head = new int[3];
     private int awake, chord;
@@ -327,6 +333,21 @@ final class Boss {
     /** 0..1 health remaining, for the bar. */
     float health() {
         return hpMax <= 0f ? 0f : hp / hpMax;
+    }
+
+    float promptDelay() {
+        if (kind != SLIME) return PROMPT_MAX;
+        return PROMPT_MIN + (PROMPT_MAX - PROMPT_MIN) * health();
+    }
+
+    float promptProgress() {
+        float d = promptDelay();
+        return kind != SLIME || d <= 0f ? 0f : Math.max(0f, Math.min(1f, 1f - promptT / d));
+    }
+
+    int boltHits() {
+        int n = 1 + (int) ((1f - health()) * 3f);
+        return n > 3 ? 3 : n;
     }
 
     /** 0..1 of how wound up the enrage is; 0 until {@link #ENRAGE_AT}. */
@@ -386,6 +407,9 @@ final class Boss {
         chordT = 0f;
         chainAt = 0;
         split = 0;
+        promptT = PROMPT_MAX;
+        launchT = 0f;
+        launched = false;
         followX = followY = 0f;
         clearBolts();
         // Seeded off the kind, so the five bosses do not all breathe on the same phase. Placed on
@@ -434,6 +458,9 @@ final class Boss {
         chordT = 0f;
         chainAt = 0;
         split = 0;
+        promptT = PROMPT_MAX;
+        launchT = 0f;
+        launched = false;
         followX = followY = 0f;
         clearBolts();
         // The body goes too. It is the largest thing a boss puts on the screen, and the renderer
@@ -531,7 +558,16 @@ final class Boss {
      * threat and {@link #depth} owns it.
      */
     float bodyY(Layout L) {
+        if (beaten) return defeatY(L);
         return baseY(L) + followY;
+    }
+
+    /** Shared defeated-boss route: soften, then melt down toward the player and off screen. */
+    float defeatY(Layout L) {
+        float t = leaveProgress();
+        float melt = t * t * (3f - 2f * t);
+        float from = baseY(L) + followY;
+        return from + (L.h + bodyR(L) * 2.2f - from) * melt;
     }
 
     /** Body centre y, before the drag follow. */
@@ -785,6 +821,7 @@ final class Boss {
                 // which is why every press here is a PART and only dragTo returns a HIT.
                 chainAt++;
                 split++;
+                promptT = promptDelay();
                 // Felt where the chain is being worked, even though nothing is being taken off the
                 // bar yet. A press with no answer at all reads as a press that missed.
                 hurt = Math.max(hurt, 0.55f);
@@ -1015,6 +1052,7 @@ final class Boss {
     private int damage(float n) {
         hp -= n;
         hurt = 1f;
+        if (kind == SLIME) promptT = Math.min(promptT, promptDelay());
         // Dented where it was struck, from above, and harder for a bigger hit. The last blow gets a
         // full-strength punch, which is what makes the burst look earned.
         if (body != null) {
@@ -1067,9 +1105,13 @@ final class Boss {
         globLift[i] = 0.35f + rnd.nextFloat() * 0.5f;
         moved[i] = false;
         seed(i);
-        // And it throws what came off it at you. Splitting the boss is not free: the volley is the
-        // price of the glob, and it arrives while your hands are busy dragging.
-        volley(rnd);
+        // The hit tears the silhouette outward before the wart settles onto it.
+        hurt = 1f;
+        if (body != null) {
+            float woundX = lastBX + globSide[i] * lastBR * wide();
+            body.impulse(woundX, lastBY, HIT_PUNCH * 1.25f);
+            body.squash(0.82f);
+        }
     }
 
     /**
@@ -1094,7 +1136,8 @@ final class Boss {
             // Spread across the width, so a wide boss sheds them out along itself instead of
             // stacking them all down its middle. Vertically it is the plain radius: the body is only
             // ever wide, never tall, so that axis has no room to spare.
-            ex[i] = bx + globSide[i] * br * 0.34f * wide();
+            // A wart on the silhouette, overlapping it enough to read as one continuous form.
+            ex[i] = bx + globSide[i] * (br * wide() - er[i] * 0.55f);
             ey[i] = by + br * (globLift[i] - 0.6f) * 0.5f;
         } else if (etype[i] == E_KEY) {
             er[i] = L == null ? br * 0.30f : L.keyR * 0.78f;
@@ -1181,7 +1224,7 @@ final class Boss {
 
     // ---- bolts --------------------------------------------------------------
     /**
-     * Letter bolts, thrown at the deck when {@link #SLIME} sheds a glob.
+     * Letter bolts, thrown at the deck when the slime prompt expires.
      *
      * Not {@code Enemy}: a boss stage releases no words, and these are not words — they carry one
      * letter, fly at the key that clears them, and cost a life at the deck. Press the letter to swat
@@ -1202,6 +1245,8 @@ final class Boss {
     final float[] bsx = new float[BOLTS];
     final float[] bsy = new float[BOLTS];
     final float[] bt = new float[BOLTS];
+    final int[] bhp = new int[BOLTS];
+    final int[] bhpMax = new int[BOLTS];
 
     /** Where bolt {@code i} is now: launch point to its own key, straight. */
     float boltX(int i, Layout L) {
@@ -1215,6 +1260,12 @@ final class Boss {
     /** 0..1 of the way down, with the negative head start clamped off. */
     float boltAt(int i) {
         return bt[i] < 0f ? 0f : bt[i];
+    }
+
+    boolean hasGlob() {
+        if (kind != SLIME) return false;
+        for (int i = 0; i < ELEMS; i++) if (etype[i] == E_GLOB) return true;
+        return false;
     }
 
     /** Live bolts on the field. */
@@ -1245,12 +1296,19 @@ final class Boss {
      * key would be cleared by one press, which is a volley of two.
      */
     private void volley(Random rnd) {
-        int first = rnd.nextInt(Glyph.COUNT);
+        int first = chainLetter();
+        int hits = boltHits();
+        chainAt++;
+        launchT = LAUNCH_TIME;
+        launched = true;
+        if (body != null) body.squash(0.75f);
+        promptT = promptDelay();
         for (int i = 0; i < BOLTS; i++) {
             blive[i] = true;
             // Spread round the six rather than drawn independently — a repeat would collapse the
             // volley, and the spacing keeps the three keys apart on the deck.
             bglyph[i] = (first + i * 2) % Glyph.COUNT;
+            bhp[i] = bhpMax[i] = hits;
             bt[i] = -BOLT_STAGGER * i;
             // Fanned across the body it came out of, so they plainly come from the boss.
             bsx[i] = lastBX + (i - 1) * lastBR * 0.55f;
@@ -1269,7 +1327,8 @@ final class Boss {
         if (i < 0) return NONE;
         hitX = boltX(i, L);
         hitY = boltY(i, L);
-        blive[i] = false;
+        bhp[i]--;
+        if (bhp[i] <= 0) blive[i] = false;
         return PARRY;
     }
 
@@ -1290,6 +1349,7 @@ final class Boss {
         for (int i = 0; i < BOLTS; i++) {
             blive[i] = false;
             bt[i] = 0f;
+            bhp[i] = bhpMax[i] = 0;
         }
     }
 
@@ -1323,6 +1383,8 @@ final class Boss {
     int update(float dt, Layout L, Random rnd) {
         if (kind < 0) return 0;
         hurt = Math.max(0f, hurt - dt * 2.6f);
+        launchT = Math.max(0f, launchT - dt);
+        launched = false;
         rage = Math.max(0f, rage - dt * 2.2f);
 
         // Above both early returns below, and that is not tidiness. An element has no position until
@@ -1352,11 +1414,20 @@ final class Boss {
             // whole glob stays inside the body rather than that its centre does. Between that and
             // updateFollow above, a glob never leaves the goo it came out of until it is off the
             // screen.
-            if (held >= 0 && etype[held] == E_GLOB) {
+            if (beaten) {
+                // Shared death morph: gravity wins while the body is carried toward the player.
+                // Pulling below its travelling centre makes the silhouette neck, sag and melt.
+                float melt = leaveProgress();
+                body.pull(body.centreX(), L.h + bodyR(L) * 2.5f,
+                        0.22f + melt * 0.58f);
+                body.jiggle = JIGGLE[kind] * (1f + melt * 2.6f);
+            } else if (held >= 0 && etype[held] == E_GLOB) {
                 body.pull(ex[held], ey[held], PULL_K, er[held]);
             } else {
                 body.letGo();
             }
+            if (kind == SLIME && !beaten)
+                body.jiggle = JIGGLE[kind] * (1f + (1f - health()) * 1.25f);
             body.update(dt);
         }
 
@@ -1391,6 +1462,11 @@ final class Boss {
             }
         }
         ageElems(dt);
+
+        if (kind == SLIME && boltCount() == 0 && !hasGlob() && open()) {
+            promptT -= dt;
+            if (promptT <= 0f) volley(rnd);
+        }
 
         if (kind == SUMO) {
             depth += dt / SINK_TIME;

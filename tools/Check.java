@@ -35,7 +35,9 @@ abstract class Check {
     }
 
     static final class Ear implements GameCore.Sound {
-        int squishes, clears, wrongs, damages, achievements, chops, zaps;
+        int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages,
+                bossChargeCalls, chops, zaps;
+        float bossCharge, maxBossCharge;
         int collects;
         /** Stars taken, and the count the last one announced. */
         int stars;
@@ -63,6 +65,13 @@ abstract class Check {
         public void wrong() { wrongs++; }
         public void damage() { damages++; }
         public void achievement() { achievements++; }
+        public void bossLaugh() { bossLaughs++; }
+        public void bossDamage() { bossDamages++; }
+        public void bossCharge(float charge) {
+            bossChargeCalls++;
+            bossCharge = charge;
+            maxBossCharge = Math.max(maxBossCharge, charge);
+        }
         public void chop() { chops++; }
         public void zap(int hop) { zaps++; lastZapHop = hop; }
         public void collect(int nth) { collects++; shelved.add(nth); }

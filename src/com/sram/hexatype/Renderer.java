@@ -429,31 +429,28 @@ final class Renderer extends Draw {
      */
     static void flingHint(Painter p, GameCore c, Layout L) {
         if (!c.showFlingHint()) return;
-        float x = c.demoX, y = c.demoY;
-        float r = L.enemyR * 0.85f;
+        fingerHint(p, c.demoX, c.demoY, L.enemyR * 0.85f, 0.68f, 1f, c.clock);
+    }
 
-        // Ripples spreading from the fingertip. Stroked thick: thin arcs come out looking
-        // dotted, because the rasterizer draws them as round-capped segments.
+    /** Shared gesture hand: FLING teaching and draggable boss ornaments use one visual language. */
+    static void fingerHint(Painter p, float x, float y, float r, float a, float fade,
+            float clock) {
         for (int k = 1; k <= 3; k++) {
-            float t = ((c.clock * 0.9f) + k * 0.33f) % 1f;
+            float t = ((clock * 0.9f) + k * 0.33f) % 1f;
             p.strokeCircle(x, y, r * (0.8f + t * 2.0f),
-                    Glyph.withAlpha(INK, (int) (120 * (1f - t))), r * 0.22f);
+                    Glyph.withAlpha(INK, (int) (120 * (1f - t) * fade)), r * 0.22f);
         }
-
-        // A hand: tapered finger angled down-right from the tip, into a rounded knuckle.
-        float a = 0.68f;
         float dx = (float) Math.cos(a), dy = (float) Math.sin(a);
         p.fillPoly(new float[] {
                 x - dy * r * 0.46f, y + dx * r * 0.46f,
                 x + dy * r * 0.46f, y - dx * r * 0.46f,
                 x + dx * r * 2.0f + dy * r * 0.72f, y + dy * r * 2.0f - dx * r * 0.72f,
                 x + dx * r * 2.0f - dy * r * 0.72f, y + dy * r * 2.0f + dx * r * 0.72f,
-        }, Glyph.withAlpha(INK, 150));
+        }, Glyph.withAlpha(INK, (int) (150 * fade)));
         p.fillCircle(x + dx * r * 2.1f, y + dy * r * 2.1f, r * 0.80f,
-                Glyph.withAlpha(INK, 150));
-        // Fingertip, bright, sitting on the letters it is about to drag.
-        p.fillCircle(x, y, r * 0.62f, Glyph.withAlpha(INK, 245));
-        p.fillCircle(x, y, r * 0.30f, Glyph.withAlpha(0xFF2A2348, 210));
+                Glyph.withAlpha(INK, (int) (150 * fade)));
+        p.fillCircle(x, y, r * 0.62f, Glyph.withAlpha(INK, (int) (245 * fade)));
+        p.fillCircle(x, y, r * 0.30f, Glyph.withAlpha(0xFF2A2348, (int) (210 * fade)));
     }
 
     /**

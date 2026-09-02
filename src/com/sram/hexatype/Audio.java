@@ -24,7 +24,9 @@ final class Audio implements GameCore.Sound {
     private final Context ctx;
     private AudioTrack bgmTrack;
     private AudioTrack rocketTrack;
+    private AudioTrack bubbleTrack;
     private boolean rocketActive;
+    private boolean bubbleActive;
     private MediaPlayer bgmPlayer;
     private boolean bgmStarted;
     private boolean frenzyPlaying;
@@ -298,6 +300,46 @@ final class Audio implements GameCore.Sound {
         play(Sfx.ACHIEVEMENT, 1f);
     }
 
+    @Override public void bossLaugh() {
+        play(Sfx.BOSS_LAUGH, 1f);
+    }
+
+    @Override public void bossDamage() {
+        play(Sfx.BOSS_DAMAGE, 0.92f);
+    }
+
+    @Override public void bossCharge(float charge) {
+        try {
+            if (charge <= 0f) {
+                bubbleActive = false;
+                if (bubbleTrack != null) bubbleTrack.pause();
+                return;
+            }
+            if (bubbleTrack == null) {
+                short[] pcm = Sfx.bubble();
+                bubbleTrack = new AudioTrack(
+                        new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build(),
+                        new AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                                .setSampleRate(Sfx.RATE)
+                                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build(),
+                        pcm.length * 2, AudioTrack.MODE_STATIC, AudioManager.AUDIO_SESSION_ID_GENERATE);
+                bubbleTrack.write(pcm, 0, pcm.length);
+                bubbleTrack.setLoopPoints(0, pcm.length, -1);
+            }
+            float p = Math.max(0f, Math.min(1f, charge));
+            bubbleTrack.setVolume(0.06f + p * 0.25f);
+            // Lower and slower is thicker; the deadline sinks into heavy bloops.
+            bubbleTrack.setPlaybackRate((int) (Sfx.RATE * (1.08f - p * 0.30f)));
+            if (!bubbleActive) {
+                bubbleTrack.play();
+                bubbleActive = true;
+            }
+        } catch (Throwable ignored) {
+            bubbleActive = false;
+        }
+    }
+
     @Override public void gameStart() {
         play(Sfx.START, 1f);
     }
@@ -512,6 +554,9 @@ final class Audio implements GameCore.Sound {
             if (rocketTrack != null) rocketTrack.release();
             rocketTrack = null;
             rocketActive = false;
+            if (bubbleTrack != null) bubbleTrack.release();
+            bubbleTrack = null;
+            bubbleActive = false;
         } catch (Throwable ignored) {
             // Already gone.
         }

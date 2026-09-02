@@ -140,6 +140,7 @@ final class BossPlay {
             c.flashColor = GameCore.FLASH_CLEAR;
             Fx.explode(c, c.rnd, c.boss.bodyX(L), c.boss.bodyY(L), L.enemyR * 1.4f, 12,
                     Glyph.COLOR[g]);
+            if (c.sound != null) c.sound.bossDamage();
         }
         // Pitched by how much of the boss is left, so a fight is audibly a countdown.
         if (c.sound != null) c.sound.squish(g, 1 + (int) (3f * (1f - c.boss.health())));
@@ -201,6 +202,7 @@ final class BossPlay {
             c.score += GameCore.BOSS_HIT;
             c.shake = Math.max(c.shake, 0.30f);
             Fx.explode(c, c.rnd, x, y, L.enemyR * 1.4f, 12, GameCore.INK_SPARK);
+            if (c.sound != null) c.sound.bossDamage();
         }
         if (c.sound != null) c.sound.squish(i % Glyph.COUNT, 1);
         return true;
@@ -225,6 +227,7 @@ final class BossPlay {
         if (c.combo > c.maxCombo) c.maxCombo = c.combo;
         c.shake = Math.max(c.shake, 0.28f);
         Fx.explode(c, c.rnd, x, y, L.enemyR * 1.5f, 14, GameCore.INK_SPARK);
+        if (c.sound != null) c.sound.bossDamage();
         if (c.sound != null) c.sound.achievement();
         return true;
     }
@@ -248,6 +251,7 @@ final class BossPlay {
         c.skyGlow = 1f;
         c.skyGlowColor = GameCore.FLASH_CLEAR;
         Fx.explode(c, c.rnd, c.boss.bodyX(L), c.boss.bodyY(L), L.enemyR * 2.2f, 20, GameCore.INK_SPARK);
+        if (c.sound != null) c.sound.bossDamage();
         if (c.sound != null) c.sound.achievement();
         return true;
     }
