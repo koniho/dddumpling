@@ -868,7 +868,7 @@ final class Preview {
         cj.openSettings();
         step(cj, L, 0.3f);
         System.out.printf("stage jump: on stage %d, boss %s%n", cj.stage,
-                Boss.NAMES[Boss.kindFor(cj.stage)]);
+                Boss.NAMES[cj.boss.kind]);
         shot(dir, "67-settings-stage-jump", cj, L, w, h, ss);
 
         // Beaten, mid-burst.
@@ -896,10 +896,9 @@ final class Preview {
         Mem store = new Mem();
         GameCore c = new GameCore(store, seed);
         c.startGame();
-        c.stage = Boss.EVERY * (kind + 1) - 1;
+        c.stage = Boss.EVERY;
         c.enemies.clear();
-        c.spawnedThisStage = c.stageQuota();
-        for (int i = 0; i < 60 * 60 && !c.boss.active(); i++) c.update(DT, L);
+        c.boss.begin(kind, c.stage, c.rnd);
         if (fighting) {
             for (int i = 0; i < 60 * 10 && !c.boss.fighting(); i++) c.update(DT, L);
         }
@@ -1123,7 +1122,7 @@ final class Preview {
      * the names and the labels landed on top of the row below.
      */
     private static void collectSheet(File dir, int w, int h, int ss) throws Exception {
-        grid(dir, w, h, ss, "0-collect", "THE THIRTY COLLECTIBLES",
+        grid(dir, w, h, ss, "0-collect", "THE FORTY-FIVE COLLECTIBLES",
                 "EVERY ENTRY, COLLECTED", true);
         grid(dir, w, h, ss, "0-collect-unknown", "NOT YET COLLECTED",
                 "SILHOUETTE AND QUESTION MARK", false);

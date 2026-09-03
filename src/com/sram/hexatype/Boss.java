@@ -318,10 +318,9 @@ final class Boss {
     /** {@link #MAGPIE}: seconds until it takes another key, while it is empty-handed. */
     float stealT;
 
-    /** Which boss stage {@code stage} is, or -1 if it is an ordinary one. */
+    /** Only stage 5 currently hosts a boss; the remaining designs stay dormant. */
     static int kindFor(int stage) {
-        if (stage <= 0 || stage % EVERY != 0) return -1;
-        return (stage / EVERY - 1) % COUNT;
+        return stage == EVERY ? SLIME : -1;
     }
 
     static boolean isBossStage(int stage) {

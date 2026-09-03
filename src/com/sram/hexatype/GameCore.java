@@ -429,6 +429,8 @@ final class GameCore {
     final StarPath stars = new StarPath();
     /** Successful games alternate; failures leave the same game queued. */
     boolean starNext, starBonus;
+    /** Unlocked for this run after defeating the stage-5 slime. */
+    boolean cubeUnlocked;
     float bonusTimer;
     /** Last character the spinner ticked on, so each step sounds exactly once. */
     int rollTick = -1;
@@ -1387,6 +1389,7 @@ final class GameCore {
         prizeNew = false;
         // This run's haul starts empty, and no death or flight can be left running into it.
         roundPrizes = 0L;
+        cubeUnlocked = false;
         deathT = 0f;
         homeT = 0f;
         homeLanded = 0;

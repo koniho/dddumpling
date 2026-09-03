@@ -23,8 +23,8 @@ final class TestCollect extends Check {
 
     static void catalogue(Layout L) {
         group("collectible catalogue");
-        check("thirty blind-box and five star-path entries", Collect.BLIND_COUNT == 30
-                && Collect.STAR_COUNT == 5 && Collect.COUNT == 35);
+        check("thirty blind, five star and ten cube entries", Collect.BLIND_COUNT == 30
+                && Collect.STAR_COUNT == 5 && Collect.CUBE_COUNT == 10 && Collect.COUNT == 45);
         check("every table is the same length",
                 Collect.NAME.length == Collect.COUNT && Collect.FAMILY.length == Collect.COUNT
                         && Collect.SHAPE.length == Collect.COUNT
@@ -86,7 +86,7 @@ final class TestCollect extends Check {
         for (int f = 0; f < familyCount.length; f++) {
             if (familyCount[f] < 5) everyFamily = false;
         }
-        check("all four families are properly stocked", everyFamily);
+        check("all five families are properly stocked", everyFamily);
         System.out.printf("    tiers %d/%d/%d/%d/%d, families %d/%d/%d%n",
                 tierCount[0], tierCount[1], tierCount[2], tierCount[3], tierCount[4],
                 familyCount[0], familyCount[1], familyCount[2]);
@@ -195,6 +195,28 @@ final class TestCollect extends Check {
             System.out.printf("    won %s (%s)%n", Collect.NAME[c.prize],
                     Collect.TIER_NAME[Collect.TIER[c.prize]]);
         }
+
+        GameCore pools = new GameCore(new Mem(), 92L);
+        pools.startGame();
+        pools.stage = 4;
+        Interlude.awardPrize(pools);
+        check("before stage 5 the steamer keeps its original pool", pools.prize < Collect.BLIND_COUNT);
+        Interlude.awardStarPrize(pools);
+        check("before stage 5 the star path keeps its original pool",
+                pools.prize >= Collect.STAR_FIRST && pools.prize < Collect.CUBE_FIRST);
+        pools.stage = 5;
+        pools.cubeUnlocked = true;
+        boolean cubeOnly = true;
+        for (int i = 0; i < 100; i++) {
+            Interlude.awardPrize(pools);
+            if (pools.prize < Collect.CUBE_FIRST || pools.prize >= Collect.COUNT) cubeOnly = false;
+            Interlude.awardStarPrize(pools);
+            if (pools.prize < Collect.CUBE_FIRST || pools.prize >= Collect.COUNT) cubeOnly = false;
+        }
+        check("both post-slime minigames award only gelatinous cubes", cubeOnly);
+        pools.startGame();
+        Interlude.awardPrize(pools);
+        check("the next playthrough returns to the original pool", pools.prize < Collect.BLIND_COUNT);
 
         // With everything already owned, an open has to pay out instead of adding.
         GameCore d = new GameCore(new Mem(), 93L);

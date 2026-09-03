@@ -19,10 +19,9 @@ final class TestBoss extends Check {
     private static GameCore enterBoss(Layout L, int kind, long seed) {
         GameCore c = new GameCore(new Mem(), seed);
         c.startGame();
-        c.stage = Boss.EVERY * (kind + 1) - 1;
+        c.stage = Boss.EVERY;
         c.enemies.clear();
-        c.spawnedThisStage = c.stageQuota();
-        for (int i = 0; i < 60 * 60 && !c.boss.active(); i++) c.update(DT, L);
+        c.boss.begin(kind, c.stage, c.rnd);
         for (int i = 0; i < 60 * 10 && !c.boss.fighting(); i++) c.update(DT, L);
         return c;
     }
@@ -80,22 +79,21 @@ final class TestBoss extends Check {
         for (int s = 1; s <= 4; s++) if (Boss.isBossStage(s)) between = false;
         for (int s = 6; s <= 9; s++) if (Boss.isBossStage(s)) between = false;
         check("the stages either side of it are not", between);
-        check("and every fifth one after it is",
-                Boss.isBossStage(10) && Boss.isBossStage(15) && Boss.isBossStage(20)
-                        && Boss.isBossStage(25));
+        boolean laterClear = true;
+        for (int s = 6; s <= 500; s++) if (Boss.isBossStage(s)) laterClear = false;
+        check("it is the only enabled boss stage", laterClear);
         check("stage 0 is not a boss stage", !Boss.isBossStage(0));
 
-        check("they arrive in order", Boss.kindFor(5) == Boss.SLIME
-                && Boss.kindFor(10) == Boss.TRIPLETS && Boss.kindFor(15) == Boss.DRUM
-                && Boss.kindFor(20) == Boss.MAGPIE && Boss.kindFor(25) == Boss.SUMO);
-        check("and then cycle round", Boss.kindFor(30) == Boss.SLIME
-                && Boss.kindFor(35) == Boss.TRIPLETS);
-        boolean inRange = true;
-        for (int s = 5; s <= 500; s += 5) {
-            int k = Boss.kindFor(s);
-            if (k < 0 || k >= Boss.COUNT) inRange = false;
-        }
-        check("no stage ever names a boss that does not exist", inRange);
+        check("the enabled boss is the slime", Boss.kindFor(5) == Boss.SLIME);
+
+        GameCore unlock = enterBoss(L, Boss.SLIME, 9L);
+        unlock.boss.beaten = true;
+        BossPlay.endBoss(unlock, L);
+        check("beating the stage-5 slime unlocks cubes for this run", unlock.cubeUnlocked);
+        unlock.startGame();
+        check("a new playthrough locks the cube pool again", !unlock.cubeUnlocked);
+        check("later boss designs remain disabled", Boss.kindFor(10) == -1
+                && Boss.kindFor(25) == -1 && Boss.kindFor(500) == -1);
 
         // The harness font is an ASCII subset and silently draws nothing for a character it lacks,
         // so a name using one would look right on the device and be missing a letter in every frame
@@ -1262,7 +1260,7 @@ final class TestBoss extends Check {
         check("the field is cleared", d.enemies.isEmpty() && d.target == null);
         check("the frenzy is over", !d.powerActive() && d.mode < 0);
         check("the squishy is gone", d.buddy.out());
-        check("and the new stage's boss is up", d.boss.kind == Boss.TRIPLETS);
+        check("and later stages have no boss", !d.boss.active());
 
         // It refuses to go below stage 1 rather than wrapping into nonsense.
         d.jumpToStage(-40, L);

@@ -29,6 +29,7 @@ final class BossPlay {
             if (!e.destroyed) c.destroyWord(e, c.enemyCentreX(e), e.y, L);
         }
         if (won) {
+            if (c.boss.kind == Boss.SLIME && c.stage == Boss.EVERY) c.cubeUnlocked = true;
             c.score += GameCore.BOSS_BONUS;
             // A life back, capped as the steamer's is. A boss costs lives to learn, and a run that
             // beats one should not arrive at the next stage on its last one.

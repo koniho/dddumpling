@@ -107,7 +107,8 @@ final class Interlude {
     }
 
     static void awardPrize(GameCore c) {
-        c.prize = Collect.roll(c.rnd, c.collected);
+        c.prize = c.cubeUnlocked && c.stage >= Boss.EVERY
+                ? Collect.rollCube(c.rnd, c.collected) : Collect.roll(c.rnd, c.collected);
         c.prizeNew = !Collect.has(c.collected, c.prize);
         // Every dumpling this run freed, new or duplicate. They dance on the game-over screen and
         // then carry themselves off to the case, so what matters is that you won it today — a
@@ -131,7 +132,8 @@ final class Interlude {
 
     /** Star-path prizes are the five catalogue entries reserved for that game. */
     static void awardStarPrize(GameCore c) {
-        c.prize = Collect.rollStar(c.rnd, c.collected);
+        c.prize = c.cubeUnlocked && c.stage >= Boss.EVERY
+                ? Collect.rollCube(c.rnd, c.collected) : Collect.rollStar(c.rnd, c.collected);
         c.prizeNew = !Collect.has(c.collected, c.prize);
         c.roundPrizes = Collect.add(c.roundPrizes, c.prize);
         if (c.prizeNew) {

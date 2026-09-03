@@ -51,6 +51,7 @@ final class Shape {
             case Collect.CITRUS: citrus(p, cx, cy, r, fill, trim, leaf, gloss); break;
             case Collect.GLOB: glob(p, cx, cy, r, fill, gloss, seed); break;
             case Collect.CUBE: cube(p, cx, cy, r, fill, trim, gloss); break;
+            case Collect.GEL_CUBE: gelCube(p, cx, cy, r, fill, trim, gloss, seed, known); break;
             case Collect.GUM: gum(p, cx, cy, r, fill, trim, gloss); break;
             case Collect.RING: ring(p, cx, cy, r, fill, trim, gloss); break;
             case Collect.CONE: cone(p, cx, cy, r, fill, trim, gloss); break;
@@ -256,6 +257,28 @@ final class Shape {
                 cy - r * 0.58f, cx + hw, cy - r * 0.30f, cx - hw * 0.36f, cy - r * 0.30f},
                 Glyph.withAlpha(trim, 200));
         shine(p, cx - r * 0.30f, cy + r * 0.02f, r * 0.18f, r * 0.12f, fade);
+    }
+
+    /** A soft, translucent cube with bowed sides and bubbles suspended in its body. */
+    private static void gelCube(Painter p, float cx, float cy, float r, int fill, int trim,
+            float fade, float seed, boolean known) {
+        float w = r * 0.82f, h = r * 0.76f;
+        float wob = r * 0.045f * (float) Math.sin(seed);
+        float[] skin = {
+            cx - w * 0.72f, cy - h, cx + w * 0.58f, cy - h + wob,
+            cx + w, cy - h * 0.55f, cx + w * 0.96f, cy + h * 0.62f,
+            cx + w * 0.62f, cy + h, cx - w * 0.66f, cy + h - wob,
+            cx - w, cy + h * 0.55f, cx - w * 0.96f, cy - h * 0.58f
+        };
+        p.fillPoly(skin, fill);
+        p.strokePoly(skin, Glyph.withAlpha(trim, (int) (145 * fade)), r * 0.055f);
+        if (known) {
+            p.fillCircle(cx + r * 0.42f, cy - r * 0.32f, r * 0.10f,
+                    Glyph.withAlpha(trim, (int) (105 * fade)));
+            p.fillCircle(cx - r * 0.48f, cy + r * 0.38f, r * 0.07f,
+                    Glyph.withAlpha(trim, (int) (90 * fade)));
+        }
+        shine(p, cx - r * 0.34f, cy - r * 0.28f, r * 0.20f, r * 0.13f, fade);
     }
 
     /** Rectangle with the corners cut off — a cube face, not a stadium. */
