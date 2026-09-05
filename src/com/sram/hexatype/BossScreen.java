@@ -165,7 +165,7 @@ final class BossScreen extends Draw {
                     Glyph.withAlpha(GOLD, (int) (180 * launch * fade)), L.unit * 0.12f);
         }
 
-        if (b.open()) {
+        if (b.open() && b.kind != Boss.SPLITTER) {
             float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 7f);
             float sx = b.bodyW(L), sy = Boss.bodyR(L);
             for (int k = 2; k >= 1; k--) {
@@ -432,7 +432,7 @@ final class BossScreen extends Draw {
     /** The drum's beat: a ring that closes in on the body as the window comes round. */
     private static void beatRing(Painter p, GameCore c, Boss b, float cx, float cy, float r,
             float fade) {
-        if (b.open()) {
+        if (b.open() && b.kind != Boss.SPLITTER) {
             // Landed on the beat: a bright flare at the body's own size.
             p.strokeCircle(cx, cy, r * 1.15f, Glyph.withAlpha(GOLD, (int) (235 * fade)),
                     r * 0.09f);

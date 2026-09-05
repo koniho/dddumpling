@@ -1320,6 +1320,8 @@ final class TestBoss extends Check {
 
         check("it begins as one large slime", c.boss.pieceCount() == 1
                 && c.boss.pieceDepth(0) == 0);
+        check("Dark Divide does not use the generic persistent open aura",
+                !(c.boss.open() && c.boss.kind != Boss.SPLITTER));
         check("it cannot be pinched before it is charged", !c.beginBossPinch(100f));
         int wrong = (c.boss.pieceWant(0) + 1) % Glyph.COUNT;
         c.tapKey(wrong, L);
