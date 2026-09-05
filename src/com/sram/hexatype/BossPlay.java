@@ -267,12 +267,16 @@ final class BossPlay {
     static boolean pinch(GameCore c, float distance, float x1, float y1, float x2, float y2,
             Layout L) {
         if (!c.boss.pinch(distance, x1, y1, x2, y2, c.rnd)) return false;
-        c.shake = Math.max(c.shake, 0.85f);
-        c.flash = Math.max(c.flash, 0.75f);
+        boolean deactivate = c.boss.divideDeactivated;
+        c.shake = Math.max(c.shake, deactivate ? 1.2f : 0.85f);
+        c.flashColor = deactivate ? 0xFFFFFFFF : 0xFF7D45D6;
         c.flashColor = 0xFF7D45D6;
-        Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR * 2.8f, 28,
+        Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR * (deactivate ? 3.5f : 2.8f), deactivate ? 38 : 28,
                 0xFF9B62FF);
-        if (c.sound != null) c.sound.divideSplit();
+        if (c.sound != null) {
+            if (deactivate) c.sound.divideDeactivate();
+            else c.sound.divideSplit();
+        }
         return true;
     }
 

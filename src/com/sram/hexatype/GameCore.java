@@ -195,6 +195,8 @@ final class GameCore {
         void divideDamage();
         /** The charged Dark Divide was pulled into two bodies. */
         void divideSplit();
+        /** A terminal Dark Divide fragment was pulled apart and deactivated. */
+        void divideDeactivate();
         /** Two Dark Divide bodies, or one body and a wall, rebounded. 1 is largest/heaviest. */
         void divideBoing(float weight);
         /** A charged or flying slime bolt was destroyed: one short, low bloop. */

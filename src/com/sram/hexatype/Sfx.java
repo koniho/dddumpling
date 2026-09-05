@@ -26,7 +26,7 @@ final class Sfx {
     static final int BOSS_DAMAGE = 22, BOSS_SPLIT = 23, BOLT_POP = 24;
     static final int DIVIDE_DAMAGE = 25, DIVIDE_SPLIT = 26;
     static final int DIVIDE_BOING_HEAVY = 27, DIVIDE_BOING_MEDIUM = 28,
-            DIVIDE_BOING_LIGHT = 29, ROSTER_JOIN = 30, COUNT = 31;
+            DIVIDE_BOING_LIGHT = 29, ROSTER_JOIN = 30, DIVIDE_DEACTIVATE = 31, COUNT = 32;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -66,6 +66,7 @@ final class Sfx {
             case DIVIDE_BOING_MEDIUM: return divideBoing(1);
             case DIVIDE_BOING_LIGHT: return divideBoing(2);
             case ROSTER_JOIN: return rosterJoin();
+            case DIVIDE_DEACTIVATE: return divideDeactivate();
             default: return achievement();
         }
     }
@@ -646,6 +647,28 @@ final class Sfx {
                     + (u > 0.16f ? 0.75f * (float) Math.exp(-55f * (u - 0.16f)) : 0f));
             float sub = (float) Math.sin(TAU * (145f * t - 62f * t * t));
             v[i] = (cracks * 0.48f + sub * 0.86f) * envelope(u, 0.003f, 1.7f);
+        }
+        return render(v);
+    }
+
+    /** A terminal fragment shutting down: three weighty notes descending into a low thump. */
+    static short[] divideDeactivate() {
+        int n = (int) (RATE * 0.72f);
+        float[] v = new float[n];
+        float[] note = {523f, 392f, 262f};
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / RATE, s = 0f;
+            for (int k = 0; k < note.length; k++) {
+                float local = t - k * 0.13f;
+                if (local < 0f) continue;
+                s += ((float) Math.sin(TAU * note[k] * local)
+                        + 0.24f * (float) Math.sin(TAU * note[k] * 2f * local))
+                        * (float) Math.exp(-7f * local) * 0.55f;
+            }
+            float thumpAt = t - 0.39f;
+            if (thumpAt >= 0f) s += (float) Math.sin(TAU * (105f - 48f * thumpAt) * thumpAt)
+                    * (float) Math.exp(-12f * thumpAt) * 0.85f;
+            v[i] = s * envelope((float) i / n, 0.004f, 0.9f);
         }
         return render(v);
     }

@@ -330,6 +330,7 @@ final class Boss {
     static final float DIVIDE_SCALE = 1.55f, DIVIDE_BOLT_TIME = 3f;
     int divideHits, divideLevel, divideAlive;
     boolean divided;
+    boolean divideDeactivated;
     final int[] halfWant = new int[DIVIDE_NODES];
     final float[] halfIdle = new float[DIVIDE_NODES];
     /** Short, visual-only memories: the split flare, and which body was just struck. */
@@ -457,7 +458,7 @@ final class Boss {
         divideHits = divideLevel = 0;
         divideAlive = divideActive = 1;
         divideDead = 0;
-        divided = dividePlaced = false;
+        divided = dividePlaced = divideDeactivated = false;
         pinchNode = -1;
         pinchX1 = pinchY1 = pinchX2 = pinchY2 = Float.NaN;
         boingWeight = -1f;
@@ -522,7 +523,7 @@ final class Boss {
         launchT = 0f;
         launched = false;
         divideHits = divideLevel = divideAlive = divideActive = divideDead = 0;
-        divided = dividePlaced = false;
+        divided = dividePlaced = divideDeactivated = false;
         pinchNode = -1;
         pinchX1 = pinchY1 = pinchX2 = pinchY2 = Float.NaN;
         boingWeight = -1f;
@@ -898,7 +899,7 @@ final class Boss {
     int pieceNodeIndex(int ordinal) { return pieceNode(ordinal); }
     int vulnerablePiece() {
         for (int i = 0; i < pieceCount(); i++)
-            if (pieceDepth(i) < DIVIDE_LEVELS && pieceCharge(i) >= DIVIDE_HITS) return i;
+            if (pieceCharge(i) >= DIVIDE_HITS) return i;
         return -1;
     }
     float pieceHurt(int ordinal) { int n = pieceNode(ordinal); return n < 0 ? 0f : halfHurt[n]; }
@@ -922,7 +923,7 @@ final class Boss {
     private int dividePieceFor(int g) {
         int best = -1;
         for (int n = 0; n < DIVIDE_NODES; n++) {
-            if (nodeActive(n) && !(nodeDepth(n) < DIVIDE_LEVELS && pieceHits[n] >= DIVIDE_HITS)
+            if (nodeActive(n) && pieceHits[n] < DIVIDE_HITS
                     && halfWant[n] == g
                     && (best < 0 || halfIdle[n] > halfIdle[best])) best = n;
         }
@@ -1077,14 +1078,7 @@ final class Boss {
                     rerollPiece(part, rnd);
                     return PART;
                 }
-                if (nodeDepth(part) < DIVIDE_LEVELS) return PART;
-                divideActive &= ~(1 << part);
-                divideDead |= 1 << part;
-                divideAlive = divideActive;
-                halfWant[part] = -1;
-                int r = damage(1f);
-                if (divideActive == 0 && !beaten) r = damage(hp);
-                return r;
+                return PART;
             }
             case DRUM: {
                 int r = damage(1f);
@@ -1573,7 +1567,7 @@ final class Boss {
         int best = -1;
         float bestD = Float.MAX_VALUE;
         for (int n = 0; n < DIVIDE_NODES; n++) {
-            if (!nodeActive(n) || pieceHits[n] < DIVIDE_HITS || nodeDepth(n) >= DIVIDE_LEVELS) continue;
+            if (!nodeActive(n) || pieceHits[n] < DIVIDE_HITS ) continue;
             float dx = Float.isNaN(mx) ? 0f : divideX[n] - mx;
             float dy = Float.isNaN(my) ? 0f : divideY[n] - my;
             float d = dx * dx + dy * dy;
@@ -1607,6 +1601,19 @@ final class Boss {
         if (distance / pinchStart < DIVIDE_SCALE) return false;
         int parent = pinchNode, left = parent * 2 + 1, right = left + 1;
         hitX = divideX[parent]; hitY = divideY[parent];
+        divideDeactivated = false;
+        if (nodeDepth(parent) >= DIVIDE_LEVELS) {
+            divideActive &= ~(1 << parent);
+            divideDead |= 1 << parent;
+            divideAlive = divideActive;
+            halfWant[parent] = -1;
+            halfHurt[parent] = 1f;
+            divideDeactivated = true;
+            int result = damage(1f);
+            if (divideActive == 0 && !beaten) result = damage(hp);
+            pinchNode = -1; pinchStart = 0f;
+            return true;
+        }
         if (right >= DIVIDE_NODES) return false;
         float px = divideX[parent], py = divideY[parent], speed = 95f + 35f * (DIVIDE_LEVELS - nodeDepth(parent));
         float ux = 1f, uy = 0f;

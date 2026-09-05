@@ -1387,18 +1387,26 @@ final class TestBoss extends Check {
         check("a terminal fragment survives five hits", c.boss.pieceCount() == before);
         int doomedNode = c.boss.pieceNodeIndex(0);
         c.tapKey(c.boss.pieceWant(0), L);
-        check("its sixth hit destroys only that fragment", c.boss.pieceCount() == before - 1);
-        check("a destroyed fragment remains as a visible remnant",
+        check("its sixth hit makes the terminal fragment vulnerable",
+                c.boss.pieceCount() == before && c.boss.vulnerablePiece() == 0);
+        int deactivateSounds = ear.divideDeactivates;
+        check("the terminal fragment accepts a final pull", c.beginBossPinch(100f));
+        check("the final pull deactivates only that fragment",
+                c.pinchBoss(100f * (Boss.DIVIDE_SCALE + 0.01f), L)
+                        && c.boss.pieceCount() == before - 1);
+        check("deactivation has its own descending sound",
+                ear.divideDeactivates == deactivateSounds + 1);
+        check("a deactivated fragment remains as a visible remnant",
                 c.boss.nodeVisible(doomedNode) && !c.boss.nodeActive(doomedNode)
                         && c.boss.divideBody[doomedNode] != null);
         float remnantX = c.boss.divideX[doomedNode], remnantY = c.boss.divideY[doomedNode];
         for (int i = 0; i < 12; i++) c.boss.update(DT, L, c.rnd);
-        check("the destroyed remnant keeps bouncing around the arena",
+        check("the deactivated remnant keeps bouncing around the arena",
                 c.boss.divideX[doomedNode] != remnantX || c.boss.divideY[doomedNode] != remnantY);
         while (c.boss.pieceCount() > 0 && !c.boss.beaten) {
-            int count = c.boss.pieceCount();
-            for (int i = 0; i < Boss.DIVIDE_HITS && c.boss.pieceCount() == count; i++)
-                c.tapKey(c.boss.pieceWant(0), L);
+            chargeDivide(c, 0, L);
+            c.boss.beginPinch(100f);
+            c.boss.pinch(100f * (Boss.DIVIDE_SCALE + 0.01f));
         }
         check("all eight must be destroyed to beat it", c.boss.beaten && c.boss.pieceCount() == 0);
         check("all destroyed fragments remain for the death animation",
