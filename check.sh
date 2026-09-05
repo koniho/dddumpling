@@ -34,6 +34,7 @@ done
 # Every pure-Java file, by hand. A new pure file has to be added here or the harness fails to
 # compile while the APK builds fine.
 PURE="src/com/sram/hexatype/Glyph.java
+src/com/sram/hexatype/Roster.java
 src/com/sram/hexatype/Kawaii.java
 src/com/sram/hexatype/Layout.java
 src/com/sram/hexatype/Sfx.java

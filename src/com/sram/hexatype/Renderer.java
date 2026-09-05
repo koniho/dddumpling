@@ -588,6 +588,9 @@ final class Renderer extends Draw {
         }
 
         for (int g = 0; g < Glyph.COUNT; g++) {
+            float rosterMix = c.rosterMix();
+            boolean newcomer = g == 2 || g == 3;
+            if (newcomer && rosterMix <= 0.004f) continue;
             float press = c.keyPress[g], bad = c.keyBad[g];
             // The demo's own press, so the deck answers the falling word. Folded into the press
             // itself rather than drawn as a glow beside it: it is the same event, so it should
@@ -596,8 +599,17 @@ final class Renderer extends Draw {
             if (demoLit > 0.004f && Demo.litKey(c) == g) {
                 press = Math.max(press, Demo.litAmount(c) * demoLit);
             }
-            float r = L.keyR * (1f - 0.05f * press);
-            float cx = L.keyX[g], cy = L.keyY[g];
+            float appear = newcomer ? rosterMix : 1f;
+            float r = L.keyR * c.keyScale() * (1f - 0.05f * press)
+                    * (newcomer ? 0.72f + 0.28f * appear : 1f);
+            float cx = L.keyX[g];
+            float cy = L.keyY[g];
+            if (newcomer && c.rosterScene != 0) {
+                float arc = (float) Math.sin(appear * Math.PI);
+                cy += (1f - appear) * L.keyR * (c.rosterScene == GameCore.ROSTER_JOIN ? 3.2f : -3.2f)
+                        - arc * L.keyR * 0.75f;
+                cx += (g == 2 ? -1f : 1f) * (1f - appear) * L.keyR * 0.9f;
+            }
 
             // Activated keys strobe through the palette rather than merely brightening.
             int col = c.flurry() ? rainbowAt(cy, L, c.clock) : Glyph.COLOR[g];
@@ -629,11 +641,13 @@ final class Renderer extends Draw {
                         Glyph.withAlpha(col, (int) (210 * press)), r * 0.07f);
             }
 
-            p.fillPoly(Glyph.hex(cx, cy, r), Glyph.withAlpha(col, (int) (36 + 150 * press)));
-            p.strokePoly(Glyph.hex(cx, cy, r), Glyph.withAlpha(col, (int) (190 + 65 * press)),
+            p.fillPoly(Glyph.hex(cx, cy, r), Glyph.withAlpha(col, (int) ((36 + 150 * press) * appear)));
+            p.strokePoly(Glyph.hex(cx, cy, r), Glyph.withAlpha(col, (int) ((190 + 65 * press) * appear)),
                     r * 0.085f);
 
-            if (gone > 0.02f) {
+            if (newcomer && c.rosterScene == GameCore.ROSTER_LEAVE) {
+                Kawaii.crying(p, g, cx, cy, r * 0.60f, col, 1f, c.clock * 5f + g, 1f);
+            } else if (gone > 0.02f) {
                 // Stagger the sobs so the deck feels alive rather than moving as one stamp.
                 float sob = c.clock * 4.8f + g * 1.37f;
                 float tremble = (float) Math.sin(sob * 2.3f) * r * 0.025f * gone;

@@ -167,6 +167,9 @@ final class GameCore {
          */
         int loadCollectTotal();
         void saveCollectTotal(int total);
+        /** Packed adaptive-roster state; zero is the first-run four-key default. */
+        int loadRosterState();
+        void saveRosterState(int state);
     }
 
     /**
@@ -437,6 +440,14 @@ final class GameCore {
     boolean starNext, starBonus;
     /** Unlocked for this run after defeating the stage-5 slime. */
     boolean cubeUnlocked;
+    /** Cat and Grapes stay until three consecutive runs end before stage 6. */
+    boolean fullRoster;
+    int earlyLosses;
+    boolean rosterLeavePending;
+    static final int ROSTER_JOIN = 1, ROSTER_LEAVE = -1;
+    static final float ROSTER_SCENE_TIME = 2.8f;
+    int rosterScene;
+    float rosterSceneT;
     float bonusTimer;
     /** Last character the spinner ticked on, so each step sounds exactly once. */
     int rollTick = -1;
@@ -919,7 +930,7 @@ final class GameCore {
     /** Releases a powerup letter to drift across the sky. */
     private void spawnPower(Layout L) {
         Power w = new Power();
-        w.glyph = rnd.nextInt(Glyph.COUNT);
+        w.glyph = randomGlyph();
         w.effect = rollEffect();
         // Kept in the upper half of the descent, clear of the danger line.
         w.y = L.playTop + (L.dangerY - L.playTop) * (0.15f + rnd.nextFloat() * 0.30f);
@@ -1224,7 +1235,46 @@ final class GameCore {
             // had won nothing. Their collection is the floor on how many baskets they opened.
             collectTotal = Math.max(Collect.owned(collected),
                     Math.max(0, store.loadCollectTotal()));
+            int roster = store.loadRosterState();
+            fullRoster = (roster & 1) != 0;
+            earlyLosses = Math.min(2, (roster >> 1) & 3);
+            rosterLeavePending = (roster & 8) != 0;
+            if (rosterLeavePending) beginRosterLeave();
         }
+    }
+
+    boolean keyActive(int glyph) { return Roster.active(fullRoster, glyph); }
+    int randomGlyph() { return Roster.random(fullRoster, rnd); }
+    float rosterMix() {
+        if (rosterScene == ROSTER_JOIN) return 1f - rosterSceneT / ROSTER_SCENE_TIME;
+        if (rosterScene == ROSTER_LEAVE) return rosterSceneT / ROSTER_SCENE_TIME;
+        if (rosterLeavePending) return 1f;
+        return fullRoster ? 1f : 0f;
+    }
+    float keyScale() { return 1.14f - 0.14f * rosterMix(); }
+    int keyAt(float x, float y, Layout L) {
+        int best = -1;
+        float bestD = Float.MAX_VALUE, rr = L.keyR * keyScale();
+        for (int g = 0; g < Glyph.COUNT; g++) {
+            if (!keyActive(g)) continue;
+            float dx = x - L.keyX[g], dy = y - L.keyY[g], d = dx * dx + dy * dy;
+            if (d <= rr * rr * 1.10f && d < bestD) { best = g; bestD = d; }
+        }
+        return best;
+    }
+    private void saveRoster() {
+        if (store != null) store.saveRosterState((fullRoster ? 1 : 0)
+                | (Math.min(2, earlyLosses) << 1) | (rosterLeavePending ? 8 : 0));
+    }
+    void unlockRoster() {
+        if (fullRoster) return;
+        fullRoster = true; earlyLosses = 0; rosterLeavePending = false;
+        rosterScene = ROSTER_JOIN; rosterSceneT = ROSTER_SCENE_TIME;
+        saveRoster();
+    }
+    private void beginRosterLeave() {
+        rosterScene = ROSTER_LEAVE;
+        rosterSceneT = ROSTER_SCENE_TIME; saveRoster();
     }
 
     static float clampSpeed(float v) {
@@ -1349,7 +1399,7 @@ final class GameCore {
      * is acknowledged immediately and the triad carries over into the first wave.
      */
     void beginStart() {
-        if (state != TITLE || starting()) return;
+        if (state != TITLE || starting() || rosterSceneT > 0f) return;
         startFade = START_FADE;
         // The entry the case was showing comes along, if it is one you own. Set before the
         // fade is under way so the send-off leaves from the badge rather than from a screen
@@ -1455,6 +1505,7 @@ final class GameCore {
         launchWho = -1;
         launchT = 0f;
         closeStory();
+        if (rosterLeavePending) beginRosterLeave();
     }
 
     /**
@@ -1467,7 +1518,7 @@ final class GameCore {
      * presses of anything now, which also puts the display case back on the way past.
      */
     void screenKey(int g) {
-        if (g < 0 || g >= Glyph.COUNT) return;
+        if (!keyActive(g) || rosterSceneT > 0f) return;
         // Nothing is dismissable until the summary is up and settled — the death sequence is not
         // something to be pressed through, and a screen that arrives under a thumb reads as a
         // misfire rather than as an answer.
@@ -1498,6 +1549,7 @@ final class GameCore {
 
     /** Player pressed key {@code g}. Returns true when it advanced a word. */
     boolean tapKey(int g, Layout L) {
+        if (!keyActive(g) || rosterSceneT > 0f) return false;
         if (state != PLAY) {
             if (state != BONUS) screenKey(g);
             return false;
@@ -1949,6 +2001,13 @@ final class GameCore {
         dt *= timeScale();
         // The clock keeps running so the panel itself can animate, but nothing else moves.
         clock += dt;
+        if (rosterSceneT > 0f) {
+            rosterSceneT = Math.max(0f, rosterSceneT - dt);
+            if (rosterSceneT == 0f) {
+                if (rosterScene == ROSTER_LEAVE) { rosterLeavePending = false; saveRoster(); }
+                rosterScene = 0;
+            }
+        }
         if (sound != null && (settingsOpen || !boss.fighting() || boss.kind != Boss.SLIME
                 || boss.hasGlob() || boss.boltCount() > 0)) sound.bossCharge(0f);
         if (settingsOpen) return;
@@ -2134,6 +2193,7 @@ final class GameCore {
         }
 
         if (state != PLAY) return;
+        if (rosterScene == ROSTER_JOIN) return;
 
         // Holding between the wave ending and the interlude opening, so the flawless-wave
         // dumpling gets the screen to itself. Nothing spawns and nothing falls; the field is
@@ -2456,6 +2516,9 @@ final class GameCore {
     private void enterStage(int n) {
         boolean hadBoss = boss.active();
         stage = Math.max(1, n);
+        if (fullRoster && stage >= 6 && earlyLosses != 0) {
+            earlyLosses = 0; saveRoster();
+        }
         // One per stage, and this is where a stage begins.
         pushUsed = false;
         spawnedThisStage = 0;
@@ -2466,7 +2529,7 @@ final class GameCore {
         // Every fifth stage is a boss instead of a wave. Started here rather than on the first frame
         // of play so its arrival card runs over the stage breather it already had.
         int bk = Boss.kindFor(stage);
-        if (bk >= 0) boss.begin(bk, stage, rnd);
+        if (bk >= 0) boss.begin(bk, stage, rnd, fullRoster);
         else boss.leave();
         if (sound != null && hadBoss != (bk >= 0)) sound.bossMusic(bk >= 0);
     }
@@ -2555,6 +2618,13 @@ final class GameCore {
      * early returns, or clear it where the early return is taken. There is no third way.
      */
     private void die() {
+        if (fullRoster) {
+            if (stage >= 6) earlyLosses = 0;
+            else if (++earlyLosses >= 3) {
+                fullRoster = false; earlyLosses = 0; rosterLeavePending = true;
+            }
+            saveRoster();
+        }
         state = OVER;
         time = 0;
         deathT = DEATH_TIME;
@@ -2588,7 +2658,7 @@ final class GameCore {
     private void spawn(Layout L) {
         Enemy e = new Enemy();
         int len = minWordLen() + rnd.nextInt(maxWordLen() - minWordLen() + 1);
-        Words.fill(e, len, stackChance(), rnd);
+        Words.fill(e, len, stackChance(), rnd, fullRoster);
 
         float half = L.wordWidth(len) / 2f;
         e.sway = Math.min(0.035f * L.w, Math.max(0f, (L.playRight - L.playLeft) / 2f - half - 4f));

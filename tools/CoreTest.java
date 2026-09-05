@@ -30,6 +30,7 @@ final class CoreTest {
             TestRules.breachAndGameOver(L);
             TestRules.screens(L);
         });
+        group("Roster", () -> TestRoster.adaptive(L));
         group("Words", () -> {
             TestWords.stackedLetters(L);
             TestWords.destruction(L);

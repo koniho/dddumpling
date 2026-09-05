@@ -278,6 +278,7 @@ final class Boss {
 
     /** -1 when there is no boss. Also the index into every table above. */
     int kind = -1;
+    private boolean rosterFull = true;
     float hp, hpMax;
     /** Seconds the fight has been running, and of the arrival card and the exit. */
     float age, intro, leaveT;
@@ -421,7 +422,10 @@ final class Boss {
         return kind < 0 ? "" : NAMES[kind];
     }
 
-    void begin(int which, int stage, Random rnd) {
+    void begin(int which, int stage, Random rnd) { begin(which, stage, rnd, true); }
+
+    void begin(int which, int stage, Random rnd, boolean fullRoster) {
+        rosterFull = fullRoster;
         kind = which;
         int visit = Math.max(0, Math.min(TOUGH_MAX, stage / EVERY - 1));
         hpMax = HP[which] + TOUGH * visit;
@@ -459,7 +463,7 @@ final class Boss {
         boingWeight = -1f;
         pinchStart = divideBurst = 0f;
         resetDividePieces(rnd);
-        if (which != SPLITTER) { rnd.nextInt(Glyph.COUNT); rnd.nextInt(Glyph.COUNT - 1); }
+        if (which != SPLITTER) { randomGlyph(rnd); randomGlyph(rnd); }
         followX = followY = 0f;
         clearBolts();
         // Seeded off the kind, so the six bosses do not all breathe on the same phase. Placed on
@@ -470,14 +474,19 @@ final class Boss {
             etype[i] = E_OFF;
             elife[i] = 0f;
         }
-        for (int i = 0; i < chain.length; i++) chain[i] = rnd.nextInt(Glyph.COUNT);
-        for (int i = 0; i < head.length; i++) head[i] = rnd.nextInt(Glyph.COUNT);
-        if (which == DRUM || which == SUMO) want = rnd.nextInt(Glyph.COUNT);
+        for (int i = 0; i < chain.length; i++) chain[i] = randomGlyph(rnd);
+        for (int i = 0; i < head.length; i++) head[i] = randomGlyph(rnd);
+        if (which == DRUM || which == SUMO) want = randomGlyph(rnd);
         if (which == MAGPIE) steal(rnd);
         if (which == TRIPLETS) {
             for (int i = 0; i < head.length; i++) etype[i] = E_HEAD;
         }
         if (which == DRUM) etype[0] = E_SKIN;
+    }
+
+    private int randomGlyph(Random rnd) { return Roster.random(rosterFull, rnd); }
+    private int randomExcept(int avoid, Random rnd) {
+        return Roster.randomExcept(rosterFull, avoid, rnd);
     }
 
     /**
@@ -921,13 +930,13 @@ final class Boss {
     }
 
     private void rerollPiece(int node, Random rnd) {
-        int next = rnd.nextInt(Glyph.COUNT);
+        int next = randomGlyph(rnd);
         for (int guard = 0; guard < Glyph.COUNT; guard++) {
             boolean used = false;
             for (int n = 0; n < DIVIDE_NODES; n++)
                 if (n != node && nodeActive(n) && halfWant[n] == next) used = true;
             if (!used) break;
-            next = (next + 1) % Glyph.COUNT;
+            do { next = (next + 1) % Glyph.COUNT; } while (!Roster.active(rosterFull, next));
         }
         halfWant[node] = next;
     }
@@ -1045,7 +1054,7 @@ final class Boss {
                 // keep on top of, not a gate in front of every hit.
                 chord = 0;
                 awake &= ~(1 << rnd.nextInt(head.length));
-                for (int k = 0; k < head.length; k++) head[k] = rnd.nextInt(Glyph.COUNT);
+                for (int k = 0; k < head.length; k++) head[k] = randomGlyph(rnd);
                 return damage(1f);
             }
             case SPLITTER: {
@@ -1104,7 +1113,7 @@ final class Boss {
                 // system's currency, it dies when that system does.
                 stagger = STAGGER_TIME;
                 if (charges < CHARGE_MAX) charges++;
-                want = rnd.nextInt(Glyph.COUNT);
+                want = randomGlyph(rnd);
                 return PART;
             }
             default: return NONE;
@@ -1443,9 +1452,7 @@ final class Boss {
 
     /** A wanted letter that is not {@code avoid}, drawn uniformly over the five that qualify. */
     private int pickWant(int avoid, Random rnd) {
-        if (avoid < 0 || avoid >= Glyph.COUNT) return rnd.nextInt(Glyph.COUNT);
-        int pick = rnd.nextInt(Glyph.COUNT - 1);
-        return pick < avoid ? pick : pick + 1;
+        return Roster.active(rosterFull, avoid) ? randomExcept(avoid, rnd) : randomGlyph(rnd);
     }
 
     /** Which key a dropped-key element is carrying. */
@@ -1538,7 +1545,9 @@ final class Boss {
             blive[i] = true;
             // Spread round the six rather than drawn independently — a repeat would collapse the
             // volley, and the spacing keeps the three keys apart on the deck.
-            bglyph[i] = (first + i * 2) % Glyph.COUNT;
+            int offset = rosterFull ? i * 2 : (i == 2 ? 1 : i * 2);
+            bglyph[i] = Roster.at(rosterFull,
+                    (Roster.ordinal(rosterFull, first) + offset) % Roster.count(rosterFull));
             bhp[i] = bhpMax[i] = hits;
             bt[i] = -BOLT_STAGGER * i;
             // Fanned below the live underside, like drops expelled from the slime rather than
@@ -1651,7 +1660,7 @@ final class Boss {
         for (int i = 0; i < BOLTS; i++) if (!blive[i]) { slot = i; break; }
         if (slot < 0) return false;
         blive[slot] = true;
-        bglyph[slot] = rnd.nextInt(Glyph.COUNT);
+        bglyph[slot] = randomGlyph(rnd);
         bhp[slot] = bhpMax[slot] = 1;
         bt[slot] = 0f;
         bsx[slot] = x;
@@ -1714,14 +1723,14 @@ final class Boss {
 
     /** Takes a key, never the one it is showing — that pairing would be a deadlock. */
     private void steal(Random rnd) {
-        want = rnd.nextInt(Glyph.COUNT);
+        want = randomGlyph(rnd);
         stolen = pickWant(want, rnd);
     }
 
     /** Alternates the drum between wanting a key and wanting a tap, and rerolls its letter. */
     private void nextBeat(Random rnd) {
         tapBeat = !tapBeat;
-        want = rnd.nextInt(Glyph.COUNT);
+        want = randomGlyph(rnd);
     }
 
     private void updateDivide(float dt, Layout L) {

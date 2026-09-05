@@ -19,6 +19,10 @@ final class Words {
      * stack is not allowed to sit next to its own letter.
      */
     static void fill(GameCore.Enemy e, int len, float stackChance, Random rnd) {
+        fill(e, len, stackChance, rnd, true);
+    }
+
+    static void fill(GameCore.Enemy e, int len, float stackChance, Random rnd, boolean fullRoster) {
         e.word = new int[len];
         e.need = new int[len];
         e.gone = new boolean[len];
@@ -43,12 +47,11 @@ final class Words {
             // stack rather than this one.
             int avoid = i > 0 && (e.need[i] > 1 || e.need[i - 1] > 1) ? e.word[i - 1] : -1;
             if (avoid < 0) {
-                e.word[i] = rnd.nextInt(Glyph.COUNT);
+                e.word[i] = Roster.random(fullRoster, rnd);
             } else {
                 // One draw over the other five, so the letter stays uniform and the RNG is
                 // consumed at exactly one call per tile either way.
-                int pick = rnd.nextInt(Glyph.COUNT - 1);
-                e.word[i] = pick >= avoid ? pick + 1 : pick;
+                e.word[i] = Roster.randomExcept(fullRoster, avoid, rnd);
             }
         }
 

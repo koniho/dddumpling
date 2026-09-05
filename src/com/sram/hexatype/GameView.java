@@ -91,7 +91,7 @@ public class GameView extends View {
             } else if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN
                     || action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
                 int i = ev.getActionIndex();
-                int key = layout.keyAt(ev.getX(i), ev.getY(i));
+                int key = core.keyAt(ev.getX(i), ev.getY(i), layout);
                 if (key >= 0) core.holdBonusKey(key,
                         action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN);
             }
@@ -140,7 +140,7 @@ public class GameView extends View {
 
         if (core.state == GameCore.BONUS) {
             // Mash any key to hammer the steamer open.
-            int mash = layout.keyAt(x, y);
+            int mash = core.keyAt(x, y, layout);
             if (mash >= 0) {
                 core.tapBonus(mash);
                 tick();
@@ -158,7 +158,7 @@ public class GameView extends View {
             }
             // Otherwise the keys act, and on the title a tap on the badge opens the display
             // case. A tap anywhere else does nothing.
-            int screen = layout.keyAt(x, y);
+            int screen = core.keyAt(x, y, layout);
             if (screen >= 0) {
                 core.screenKey(screen);
                 tick();
@@ -175,7 +175,7 @@ public class GameView extends View {
             tick();
             return true;
         }
-        int key = layout.keyAt(x, y);
+        int key = core.keyAt(x, y, layout);
         if (key >= 0) {
             core.tapKey(key, layout);
             tick();
@@ -275,7 +275,7 @@ public class GameView extends View {
 
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
             // A story is modal: the caller dismisses it and nothing else acts on that touch.
-            if (core.storyOpen() || layout.keyAt(x, y) >= 0) return false;
+            if (core.storyOpen() || core.keyAt(x, y, layout) >= 0) return false;
             caseHit = Showcase.hit(layout, x, y);
             caseDownX = x;
             caseDownY = y;

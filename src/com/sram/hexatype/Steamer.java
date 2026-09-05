@@ -43,6 +43,7 @@ final class Steamer {
     int leftKey, rightKey;
     /** Which side the sequence wants next. */
     boolean expectLeft = true;
+    boolean fullRoster = true;
 
     void reset() {
         hits = 0;
@@ -60,10 +61,13 @@ final class Steamer {
     }
 
     /** Chooses a fresh pair — one key from each thumb's cluster — for this interlude. */
-    void pick(java.util.Random rnd) {
+    void pick(java.util.Random rnd) { pick(rnd, true); }
+
+    void pick(java.util.Random rnd, boolean fullRoster) {
+        this.fullRoster = fullRoster;
         int half = Glyph.COUNT / 2;
-        leftKey = rnd.nextInt(half);
-        rightKey = half + rnd.nextInt(Glyph.COUNT - half);
+        leftKey = fullRoster ? rnd.nextInt(half) : rnd.nextInt(2);
+        rightKey = fullRoster ? half + rnd.nextInt(Glyph.COUNT - half) : 4 + rnd.nextInt(2);
         expectLeft = true;
     }
 
@@ -105,13 +109,13 @@ final class Steamer {
 
     /** Left slot of the spinner; the settled key once {@code t} reaches 1. */
     int shownLeft(float t) {
-        return rolled(leftKey, 0, Glyph.COUNT / 2, t);
+        return rolled(leftKey, 0, fullRoster ? Glyph.COUNT / 2 : 2, t);
     }
 
     /** Right slot of the spinner; the settled key once {@code t} reaches 1. */
     int shownRight(float t) {
-        int half = Glyph.COUNT / 2;
-        return rolled(rightKey, half, Glyph.COUNT - half, t);
+        int half = fullRoster ? Glyph.COUNT / 2 : 4;
+        return rolled(rightKey, half, fullRoster ? Glyph.COUNT - half : 2, t);
     }
 
     /**

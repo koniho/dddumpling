@@ -22,6 +22,7 @@ abstract class Check {
         int collectedSaves;
         int collectTotal;
         int collectTotalSaves;
+        int rosterState = 1, rosterSaves;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; saves++; }
         public float loadSpeed() { return speed; }
@@ -32,6 +33,8 @@ abstract class Check {
         public void saveCollected(long v) { collected = v; collectedSaves++; }
         public int loadCollectTotal() { return collectTotal; }
         public void saveCollectTotal(int v) { collectTotal = v; collectTotalSaves++; }
+        public int loadRosterState() { return rosterState; }
+        public void saveRosterState(int v) { rosterState = v; rosterSaves++; }
     }
 
     static final class Ear implements GameCore.Sound {

@@ -17,6 +17,7 @@ public class MainActivity extends Activity implements GameCore.Store {
     private static final String KEY_BGM = "bgm";
     private static final String KEY_COLLECTED = "collected";
     private static final String KEY_COLLECT_TOTAL = "collectTotal";
+    private static final String KEY_ROSTER = "roster";
 
     private SharedPreferences prefs;
     private Audio audio;
@@ -106,6 +107,18 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     @Override public void saveCollectTotal(int total) {
         prefs.edit().putInt(KEY_COLLECT_TOTAL, total).apply();
+    }
+
+     public int loadRosterState() {
+        if (prefs.contains(KEY_ROSTER)) return prefs.getInt(KEY_ROSTER, 0);
+        // Existing players keep the deck they already learned; only a genuinely fresh save
+        // begins with the four-key teaching roster.
+        return prefs.contains(KEY_BEST) || prefs.contains(KEY_COLLECTED)
+                || prefs.contains(KEY_COLLECT_TOTAL) ? 1 : 0;
+    }
+
+     public void saveRosterState(int state) {
+        prefs.edit().putInt(KEY_ROSTER, state).apply();
     }
 
     private void goFullscreen() {

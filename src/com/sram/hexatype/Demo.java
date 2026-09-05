@@ -79,8 +79,10 @@ final class Demo extends Draw {
      * The demo word's letters. Walked off the round number rather than drawn from the RNG: the
      * title screen must not consume the generator that the first wave's words come out of.
      */
-    private static int letter(GameCore c, int i) {
-        return (int) (hash(round(c) * 31 + i * 7) * Glyph.COUNT) % Glyph.COUNT;
+    static int letter(GameCore c, int i) {
+        int ordinal = (int) (hash(round(c) * 31 + i * 7) * Roster.count(c.fullRoster))
+                % Roster.count(c.fullRoster);
+        return Roster.at(c.fullRoster, ordinal);
     }
 
     /** How many of its letters have been struck by now. */

@@ -20,6 +20,7 @@ final class Preview {
         int bgm;
         long collected;
         int collectTotal;
+        int rosterState = 1;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; }
         public float loadSpeed() { return speed; }
@@ -30,6 +31,8 @@ final class Preview {
         public void saveCollected(long v) { collected = v; }
         public int loadCollectTotal() { return collectTotal; }
         public void saveCollectTotal(int v) { collectTotal = v; }
+        public int loadRosterState() { return rosterState; }
+        public void saveRosterState(int v) { rosterState = v; }
     }
 
     public static void main(String[] args) throws Exception {
@@ -52,6 +55,7 @@ final class Preview {
 
         Mem store = new Mem();
         store.best = 1840;
+        store.rosterState = 0;
         // A part-filled case, so the title screen shows both a collected entry and the
         // silhouettes either side of it.
         store.collected = 0b0000_0100_1000_0011_0010_0110_1101L;
@@ -95,6 +99,18 @@ final class Preview {
         GameCore c24 = new GameCore(store, 87L);
         step(c24, L, Demo.LOOP * 0.80f);
         shot(dir, "52-title-destroyed", c24, L, w, h, ss);
+
+        // Adaptive roster: the first-run deck, friends bouncing in, and their sad farewell.
+        Mem joinStore = new Mem(); joinStore.rosterState = 0;
+        GameCore cJoin = new GameCore(joinStore, 88L);
+        cJoin.unlockRoster();
+        step(cJoin, L, GameCore.ROSTER_SCENE_TIME * 0.52f);
+        shot(dir, "58-roster-join", cJoin, L, w, h, ss);
+        Mem leaveStore = new Mem(); leaveStore.rosterState = 8;
+        GameCore cLeave = new GameCore(leaveStore, 89L);
+        step(cLeave, L, GameCore.ROSTER_SCENE_TIME * 0.52f);
+        shot(dir, "59-roster-leave", cLeave, L, w, h, ss);
+        store.rosterState = 1;
 
         // Part-way through fading in on that tap.
         c.openCase();

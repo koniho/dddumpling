@@ -48,7 +48,7 @@ final class Interlude {
         c.steamer.flash = 0;
         // Chosen up front, before the spinner has shown anything: the spinner animates toward
         // an answer that already exists rather than deciding when it stops.
-        c.steamer.pick(c.rnd);
+        c.steamer.pick(c.rnd, c.fullRoster);
         c.rollTick = -1;
         c.target = null;
         c.caretOwner = null;
