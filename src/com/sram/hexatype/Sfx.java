@@ -577,17 +577,24 @@ final class Sfx {
         return render(v);
     }
 
-    /** A destroyed slime bolt: one short, low, rounded bloop. */
+    /** A destroyed boss bolt: a compact space explosion, punch then sparkling debris. */
     static short[] boltPop() {
-        int n = (int) (RATE * 0.17f);
+        int n = (int) (RATE * 0.22f);
         float[] v = new float[n];
+        int seed = 0x51A7B00;
         float phase = 0f;
         for (int i = 0; i < n; i++) {
             float u = (float) i / n;
-            float f = 165f - 72f * u;
-            phase += TAU * f / RATE;
-            float round = (float) Math.sin(phase) + 0.20f * (float) Math.sin(phase * 2.01f);
-            v[i] = round * (float) Math.sin(Math.PI * u) * (1f - u * 0.42f);
+            seed = seed * 1664525 + 1013904223;
+            float noise = ((seed >>> 9) & 0x7fffff) / 4194303.5f - 1f;
+            float hz = 230f - 155f * u;
+            phase += TAU * hz / RATE;
+            float core = ((float) Math.sin(phase) + 0.32f * (float) Math.sin(phase * 1.97f))
+                    * (float) Math.exp(-5.8f * u);
+            float blast = noise * (float) Math.exp(-15f * u);
+            float debris = noise * (0.18f + 0.16f * (float) Math.sin(TAU * 17f * u))
+                    * (float) Math.exp(-4.5f * u);
+            v[i] = (core * 0.78f + blast * 0.88f + debris) * envelope(u, 0.0015f, 1.2f);
         }
         return render(v);
     }

@@ -32,6 +32,12 @@ final class TestAudio extends Check {
         check("but is still brighter than a squish",
                 crossRate(chop) > crossRate(Sfx.build(Sfx.SQUISH_0)));
 
+        short[] bolt = Sfx.build(Sfx.BOLT_POP);
+        check("the bolt explosion stays compact",
+                bolt.length >= Sfx.RATE * 0.18f && bolt.length <= Sfx.RATE * 0.25f);
+        check("the bolt explosion has brighter debris than a rounded squish",
+                crossRate(bolt) > crossRate(Sfx.build(Sfx.SQUISH_0)));
+
         // The chain crack: it has to hit hard and immediately, which is the whole difference
         // between a bolt and a fizz.
         short[] zap = Sfx.build(Sfx.ZAP);
