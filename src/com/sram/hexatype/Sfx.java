@@ -26,7 +26,7 @@ final class Sfx {
     static final int BOSS_DAMAGE = 22, BOSS_SPLIT = 23, BOLT_POP = 24;
     static final int DIVIDE_DAMAGE = 25, DIVIDE_SPLIT = 26;
     static final int DIVIDE_BOING_HEAVY = 27, DIVIDE_BOING_MEDIUM = 28,
-            DIVIDE_BOING_LIGHT = 29, COUNT = 30;
+            DIVIDE_BOING_LIGHT = 29, ROSTER_JOIN = 30, COUNT = 31;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -65,6 +65,7 @@ final class Sfx {
             case DIVIDE_BOING_HEAVY: return divideBoing(0);
             case DIVIDE_BOING_MEDIUM: return divideBoing(1);
             case DIVIDE_BOING_LIGHT: return divideBoing(2);
+            case ROSTER_JOIN: return rosterJoin();
             default: return achievement();
         }
     }
@@ -664,6 +665,29 @@ final class Sfx {
             float twang = (float) Math.sin(phase * 2.01f) * 0.20f
                     * (float) Math.exp(-18f * u);
             v[i] = (rubber + hollow + twang) * envelope(u, 0.006f, 2.6f + tier * 0.6f);
+        }
+        return render(v);
+    }
+
+    /** Achievement flourish for a flawless wave: a rising shimmer over a held fifth. */
+    static short[] rosterJoin() {
+        int n = (int) (RATE * 1.05f);
+        float[] v = new float[n];
+        float[] notes = {392f, 523f, 659f, 784f, 1047f};
+        float[] starts = {0f, 0f, 0f, 0.28f, 0.50f};
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / RATE;
+            float s = 0f;
+            for (int k = 0; k < notes.length; k++) {
+                float local = t - starts[k];
+                if (local < 0f) continue;
+                float brass = (float) Math.sin(TAU * notes[k] * t)
+                        + 0.28f * (float) Math.sin(TAU * notes[k] * 2f * t);
+                s += brass * (float) Math.exp(-3.1f * local) * (k < 3 ? 0.32f : 0.52f);
+            }
+            float drum = t < 0.075f ? (float) Math.sin(TAU * (105f - 540f * t) * t)
+                    * (float) Math.exp(-42f * t) : 0f;
+            v[i] = (s + drum * 0.75f) * envelope((float) i / n, 0.006f, 0.55f);
         }
         return render(v);
     }

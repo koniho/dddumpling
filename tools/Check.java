@@ -100,6 +100,7 @@ abstract class Check {
         }
         public void tally(int nth) { tallies++; lastTally = nth; }
         public void paradeJoin() { joins++; }
+        public void rosterJoin() { achievements++; }
         public void gameOver() { gameOvers++; }
         public void selectMusic(int choice) { music = choice; musicCalls++; }
         public void bossMusic(boolean active) { bossMusic = active; bossMusicCalls++; }

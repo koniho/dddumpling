@@ -342,6 +342,10 @@ final class Audio implements GameCore.Sound {
         play(Sfx.JOIN, 1f);
     }
 
+@Override public void rosterJoin() {
+        play(Sfx.ROSTER_JOIN, 1f);
+    }
+
     @Override public void gameOver() {
         play(Sfx.OVER, 1f);
     }

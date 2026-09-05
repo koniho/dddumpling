@@ -1486,11 +1486,11 @@ final class Boss {
 
     /** Where bolt {@code i} is now: launch point to its own key, straight. */
     float boltX(int i, Layout L) {
-        return bsx[i] + (L.keyX[bglyph[i]] - bsx[i]) * boltAt(i);
+        return bsx[i] + (Roster.keyX(L, bglyph[i], rosterFull ? 1f : 0f) - bsx[i]) * boltAt(i);
     }
 
     float boltY(int i, Layout L) {
-        return bsy[i] + (L.keyY[bglyph[i]] - bsy[i]) * boltAt(i);
+        return bsy[i] + (Roster.keyY(L, bglyph[i], rosterFull ? 1f : 0f) - bsy[i]) * boltAt(i);
     }
 
     /** 0..1 of the way down, with the negative head start clamped off. */

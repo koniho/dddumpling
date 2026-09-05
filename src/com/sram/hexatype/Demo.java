@@ -191,7 +191,7 @@ final class Demo extends Draw {
             float since = (u - PRESS[i]) * LOOP;
             if (since < 0f || since > SHOT) continue;
             int g = letter(c, i);
-            Renderer.bullet(p, c, L, L.keyX[g], L.keyY[g], c.tileX(e, i, L), e.y,
+            Renderer.bullet(p, c, L, c.keyX(L, g), c.keyY(L, g), c.tileX(e, i, L), e.y,
                     since / SHOT, g, fade);
         }
     }

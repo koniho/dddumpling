@@ -131,7 +131,7 @@ final class StarScreen extends Draw {
             int side = lean < 0f ? 0 : 1;
             for (int g = side * 3; g < side * 3 + 3; g++) {
                 float pulse = 1f + 0.08f * (float) Math.sin(c.clock * 8f + g);
-                p.strokePoly(Glyph.hex(L.keyX[g], L.keyY[g], L.keyR * 1.18f * pulse),
+                p.strokePoly(Glyph.hex(c.keyX(L, g), c.keyY(L, g), L.keyR * 1.18f * pulse),
                         fadeBy(Glyph.withAlpha(GOLD, 210), fade * say), L.keyR * 0.08f);
             }
         }

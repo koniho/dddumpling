@@ -230,6 +230,8 @@ final class GameCore {
         void tally(int nth);
         /** The new collectible taking its place in the parade line. */
         void paradeJoin();
+        /** Cat and Grapes joining the keyboard: a bright, triumphant fanfare. */
+        void rosterJoin();
         /** The run is over: the swirl has cleared and the summary is coming up. */
         void gameOver();
         /** Switch the looping background track to {@link Music#NAMES}[choice]. */
@@ -1254,13 +1256,15 @@ final class GameCore {
         if (rosterLeavePending) return 1f;
         return playRosterFull() ? 1f : 0f;
     }
-    float keyScale() { return 1.14f - 0.14f * rosterMix(); }
+    float keyScale() { return Roster.STARTER_SCALE + (1f - Roster.STARTER_SCALE) * rosterMix(); }
+    float keyX(Layout L, int glyph) { return Roster.keyX(L, glyph, rosterMix()); }
+    float keyY(Layout L, int glyph) { return Roster.keyY(L, glyph, rosterMix()); }
     int keyAt(float x, float y, Layout L) {
         int best = -1;
         float bestD = Float.MAX_VALUE, rr = L.keyR * keyScale();
         for (int g = 0; g < Glyph.COUNT; g++) {
             if (!keyActive(g)) continue;
-            float dx = x - L.keyX[g], dy = y - L.keyY[g], d = dx * dx + dy * dy;
+            float dx = x - keyX(L, g), dy = y - keyY(L, g), d = dx * dx + dy * dy;
             if (d <= rr * rr * 1.10f && d < bestD) { best = g; bestD = d; }
         }
         return best;
@@ -1273,6 +1277,7 @@ final class GameCore {
         if (fullRoster) return;
         fullRoster = runFullRoster = true; earlyLosses = 0; rosterLeavePending = false;
         rosterScene = ROSTER_JOIN; rosterSceneT = ROSTER_SCENE_TIME;
+        if (sound != null) sound.rosterJoin();
         saveRoster();
     }
     private void beginRosterLeave() {
@@ -1673,8 +1678,8 @@ final class GameCore {
         }
 
         Shot s = new Shot();
-        s.sx = L.keyX[g];
-        s.sy = L.keyY[g];
+        s.sx = keyX(L, g);
+        s.sy = keyY(L, g);
         s.tx = hx;
         s.ty = hy;
         s.glyph = lit;

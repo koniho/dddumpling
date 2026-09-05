@@ -186,8 +186,8 @@ final class BossPlay {
     private static void shot(GameCore c, int g, Layout L, int verdict) {
         if (c.boss.body == null) return;
         GameCore.Shot s = new GameCore.Shot();
-        s.sx = L.keyX[g];
-        s.sy = L.keyY[g];
+        s.sx = c.keyX(L, g);
+        s.sy = c.keyY(L, g);
         s.tx = c.boss.hitX;
         s.ty = c.boss.hitY;
         // A parry is aimed at where a bolt was, not at the boss, so it must not home: the bolt is

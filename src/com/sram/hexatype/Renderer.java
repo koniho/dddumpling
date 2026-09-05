@@ -602,8 +602,8 @@ final class Renderer extends Draw {
             float appear = newcomer ? rosterMix : 1f;
             float r = L.keyR * c.keyScale() * (1f - 0.05f * press)
                     * (newcomer ? 0.72f + 0.28f * appear : 1f);
-            float cx = L.keyX[g];
-            float cy = L.keyY[g];
+            float cx = c.keyX(L, g);
+            float cy = c.keyY(L, g);
             if (newcomer && c.rosterScene != 0) {
                 float arc = (float) Math.sin(appear * Math.PI);
                 cy += (1f - appear) * L.keyR * (c.rosterScene == GameCore.ROSTER_JOIN ? 3.2f : -3.2f)
