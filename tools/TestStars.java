@@ -9,6 +9,11 @@ final class TestStars extends Check {
         q.begin(3, L);
         check("starts with a visual ready beat", q.ready());
         check("course has twenty stars", q.sx.length == 20);
+        check("the Starpath slider spans the deck and is directly hittable",
+                StarScreen.sliderLeft(L) < L.w * 0.25f
+                        && StarScreen.sliderRight(L) > L.w * 0.75f
+                        && StarScreen.inSlider(L, L.w * 0.5f, StarScreen.sliderY(L))
+                        && !StarScreen.inSlider(L, L.w * 0.5f, L.dangerY));
         q.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - StarPath.FLY * 0.25f;
         float early = q.traversalProgress();
         q.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - StarPath.FLY * 0.75f;

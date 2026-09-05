@@ -66,7 +66,7 @@ final class Renderer extends Draw {
         // translucent of the three: it drifts over the play area and must never hide a letter.
         Sky.cloudBand(p, c, L, Sky.CLOUD_FRONT_LAYER, GameCore.CLOUD_LAYERS, hurt);
 
-        keys(p, c, L);
+        if (!(c.state == GameCore.BONUS && c.starBonus)) keys(p, c, L);
         p.restore();
 
         // Red closing-in glow: from low health, and from a word about to land.

@@ -80,7 +80,7 @@ final class StarPath {
      */
     static final float MAX_VX = 0.60f, ACCEL = 2.6f;
     /** Maximum rocket vibration, as a fraction of the text unit. */
-    static final float FLIGHT_SHAKE = 0.16f;
+    static final float FLIGHT_SHAKE = 0.22f;
 
     /**
      * The sweep: how far either side of the middle a course reaches, and the seconds it takes to

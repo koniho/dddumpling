@@ -85,16 +85,7 @@ public class GameView extends View {
         int action = ev.getActionMasked();
 
         if (core.state == GameCore.BONUS && core.starBonus) {
-            if (handleStarDrag(ev, action)) return true;
-            if (action == MotionEvent.ACTION_CANCEL) {
-                for (int g = 0; g < Glyph.COUNT; g++) core.holdBonusKey(g, false);
-            } else if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN
-                    || action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
-                int i = ev.getActionIndex();
-                int key = core.keyAt(ev.getX(i), ev.getY(i), layout);
-                if (key >= 0) core.holdBonusKey(key,
-                        action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN);
-            }
+            handleStarDrag(ev, action);
             return true;
         }
 
@@ -200,11 +191,13 @@ public class GameView extends View {
             float dx = ev.getX(i) - core.stars.x;
             float dy = ev.getY(i) - core.stars.characterY(layout);
             float grab = StarPath.flyerR(layout) * 1.45f;
-            if ((core.stars.ready() || core.stars.flying())
-                    && dx * dx + dy * dy <= grab * grab) {
+            boolean flyer = dx * dx + dy * dy <= grab * grab;
+            boolean slider = StarScreen.inSlider(layout, ev.getX(i), ev.getY(i));
+            if ((core.stars.ready() || core.stars.flying()) && (flyer || slider)) {
                 starDragPointer = ev.getPointerId(i);
                 core.stars.beginDrag();
-                starDragOffsetX = core.stars.x - ev.getX(i);
+                starDragOffsetX = flyer ? core.stars.x - ev.getX(i) : 0f;
+                core.stars.dragTo(ev.getX(i) + starDragOffsetX, layout);
                 return true;
             }
         } else if (action == MotionEvent.ACTION_MOVE && starDragPointer >= 0) {

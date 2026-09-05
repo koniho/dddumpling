@@ -31,6 +31,14 @@ final class StarScreen extends Draw {
         return countY(L) + type(L.unit * 1.35f);
     }
 
+    static float sliderY(Layout L) { return (L.deckTop + L.h - L.padB) * 0.5f; }
+    static float sliderLeft(Layout L) { return L.playLeft + L.unit * 1.8f; }
+    static float sliderRight(Layout L) { return L.playRight - L.unit * 1.8f; }
+    static boolean inSlider(Layout L, float x, float y) {
+        return x >= sliderLeft(L) - L.unit && x <= sliderRight(L) + L.unit
+                && Math.abs(y - sliderY(L)) <= L.unit * 1.6f;
+    }
+
     static void draw(Painter p, GameCore c, Layout L) {
         StarPath q = c.stars;
         float fade = Math.min(1f, c.time / 0.35f)
@@ -146,6 +154,7 @@ final class StarScreen extends Draw {
             wake(p, q, L, x, y, sway, c.clock, fade);
         }
         flyer(p, q, rr, x, y, c.clock, fade);
+        if (q.ready() || q.flying()) slider(p, q, L, fade, c.clock);
 
         String count = q.count() + " / " + StarPath.COUNT;
         p.text(count, L.w / 2f, countY(L), type(s * 0.78f), fadeBy(INK, fade),
@@ -157,6 +166,23 @@ final class StarScreen extends Draw {
             p.text(q.won ? "ALL STARS!" : count + " STARS", L.w / 2f, L.h * 0.38f,
                     type(s * 1.15f), fadeBy(q.won ? GOLD : INK, fade), Painter.CENTER, true);
         }
+    }
+
+    /** Dedicated direct-control track replacing the six keyboard arrows during Starpath. */
+    private static void slider(Painter p, StarPath q, Layout L, float fade, float clock) {
+        float l = sliderLeft(L), r = sliderRight(L), y = sliderY(L);
+        float pulse = 0.72f + 0.28f * (float) Math.sin(clock * 7f);
+        p.line(l, y, r, y, Glyph.withAlpha(0xFF312A62, (int) (220 * fade)), L.unit * 0.52f);
+        p.line(l, y, r, y, Glyph.withAlpha(0xFFBDEBFF, (int) (150 * fade * pulse)),
+                L.unit * 0.16f);
+        p.fillCircle(q.x, y, L.unit * 0.78f, Glyph.withAlpha(0xFF6E72C8, (int) (210 * fade)));
+        p.strokeCircle(q.x, y, L.unit * (0.92f + 0.08f * pulse),
+                Glyph.withAlpha(0xFFFFFFFF, (int) (235 * fade)), L.unit * 0.12f);
+        float a = L.unit * 0.34f;
+        p.fillPoly(new float[] {l - a, y, l + a, y - a, l + a, y + a},
+                Glyph.withAlpha(GOLD, (int) (190 * fade)));
+        p.fillPoly(new float[] {r + a, y, r - a, y - a, r - a, y + a},
+                Glyph.withAlpha(GOLD, (int) (190 * fade)));
     }
 
     /**
@@ -174,8 +200,8 @@ final class StarScreen extends Draw {
      */
     private static void pulse(Painter p, StarPath q, float[] route, Layout L, float clock,
             float cf, float pearl) {
-        final int beads = 3;
-        final float cross = 1.15f;
+        final int beads = 5;
+        final float cross = 0.78f;
         for (int k = 0; k < beads; k++) {
             float u = frac(clock / cross + k / (float) beads);
             float y = L.dangerY + (L.playTop - L.dangerY) * u;
