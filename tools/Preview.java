@@ -580,7 +580,7 @@ final class Preview {
         shot(dir, "16-powerup", c9, L, w, h, ss);
 
         // Mid-frenzy: chaotic sky, rainbow letters, mode bar counting down.
-        c9.tapKey(3, L);
+        c9.tapPower(c9.power.x, c9.power.y, L);
         step(c9, L, 2.5f);
         System.out.printf("frenzy: mode=%s left=%.1f enemies=%d%n",
                 Power.NAMES[c9.mode], c9.modeLeft, c9.enemies.size());
@@ -597,7 +597,7 @@ final class Preview {
         fl.y = L.playTop + 100f;
         fl.x = L.w * 0.5f;
         c10.power = fl;
-        c10.tapKey(5, L);
+        c10.tapPower(c10.power.x, c10.power.y, L);
         step(c10, L, 1.6f);
         System.out.printf("fling hint: showing=%s demo=(%.0f,%.0f) sparkles=%d%n",
                 c10.showFlingHint(), c10.demoX, c10.demoY, c10.particles.size());
@@ -617,7 +617,7 @@ final class Preview {
         blade.y = L.playTop + 100f;
         blade.x = L.w * 0.5f;
         c14.power = blade;
-        c14.tapKey(4, L);
+        c14.tapPower(c14.power.x, c14.power.y, L);
         float row = L.playTop + (L.dangerY - L.playTop) * 0.42f;
         GameCore.Enemy g1 = new GameCore.Enemy();
         GameCore.Enemy g2 = new GameCore.Enemy();
@@ -656,41 +656,6 @@ final class Preview {
         System.out.printf("blade rest: live=%s fade=%.2f, readout still says %d in one%n",
                 c14.fingerDown, c14.strokeFade, c14.callKills);
         shot(dir, "58-blade-rest", c14, L, w, h, ss);
-
-        // A MULTI chain mid-reveal: the bolt, the flares, and what it paid.
-        GameCore c15 = new GameCore(store, 67L);
-        c15.startGame();
-        c15.score = 5200;
-        step(c15, L, 1.9f);
-        c15.enemies.clear();
-        c15.target = null;
-        Power mp = new Power();
-        mp.glyph = 2;
-        mp.effect = Power.MULTI;
-        mp.y = L.playTop + 100f;
-        mp.x = L.w * 0.5f;
-        c15.power = mp;
-        c15.tapKey(2, L);
-        for (int k = 0; k < 4; k++) {
-            GameCore.Enemy ce = new GameCore.Enemy();
-            ce.word = new int[] {3, 1, 3};
-            ce.need = new int[] {1, 1, 1};
-            ce.gone = new boolean[3];
-            ce.goneT = new float[3];
-            ce.goneDx = new float[3];
-            ce.goneDy = new float[3];
-            ce.baseX = L.playLeft + (L.playRight - L.playLeft) * (0.22f + 0.19f * k);
-            ce.y = L.playTop + (L.dangerY - L.playTop) * (0.24f + 0.16f * k);
-            ce.enterT = 1f;
-            c15.enemies.add(ce);
-        }
-        c15.tapKey(3, L);
-        System.out.printf("chain: %d hops on %s worth %d%n", c15.chainLen,
-                Glyph.NAME[c15.chainGlyph], c15.chainScore);
-        // Part-way through the reveal, so the head of the chain is visibly still travelling.
-        step(c15, L, GameCore.CHAIN_TIME * GameCore.CHAIN_REVEAL * 0.75f);
-        System.out.printf("  revealed %d of %d%n", c15.chainShown, c15.chainLen);
-        shot(dir, "32-chain", c15, L, w, h, ss);
 
         // TEAM SQUISH: the squishy grown a few sizes, mid-charge at a word.
         GameCore c16 = new GameCore(store, 71L);

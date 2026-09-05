@@ -25,6 +25,11 @@ final class Power {
     static final int TEAM = 3;
     static final int COUNT = 4;
 
+    /** Player-facing pool. MULTI is retired but retains its id for compatibility. */
+    static final int[] OFFERED = {FLURRY, FLING, TEAM};
+    static int offeredCount(boolean teamAvailable) { return teamAvailable ? 3 : 2; }
+    static int offeredAt(int chip) { return OFFERED[chip]; }
+
     static final String[] NAMES = {"FLURRY", "FLING", "MULTI", "TEAM SQUISH"};
     /**
      * The same four for the settings panel's playtest chips, where the space is a fifth of the

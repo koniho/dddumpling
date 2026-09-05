@@ -19,11 +19,11 @@ final class SettingsUi {
      */
     static final int HIT_TEST = 200;
     /** Chips in the playtest row: the frenzy modes, Starpath, and Steamer. */
-    static final int TEST_CHIPS = Power.COUNT + 2;
+    static final int TEST_CHIPS = Power.OFFERED.length + 2;
     /** The star-course chip's index within that row. */
-    static final int TEST_STARS = Power.COUNT;
+    static final int TEST_STARS = Power.OFFERED.length;
     /** The steamer-game chip's index within that row. */
-    static final int TEST_STEAMER = Power.COUNT + 1;
+    static final int TEST_STEAMER = Power.OFFERED.length + 1;
     /** Stage-jump steppers are HIT_STAGE + index into {@link #STAGE_STEP}. */
     static final int HIT_STAGE = 300;
 

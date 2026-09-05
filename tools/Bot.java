@@ -189,6 +189,14 @@ final class Bot {
         // Otherwise the boss gets whatever attention the field is not demanding.
         if (c.bossFighting() && c.warnLevel < PANIC_WARN && bossTouch(c, L)) return;
 
+        if (takesPowerups && c.power != null && c.power.catchable() && budget >= 1f) {
+            budget -= 1f;
+            presses++;
+            think = reaction;
+            c.tapPower(c.power.x, c.power.y, L);
+            return;
+        }
+
         // Mid-word, the next key is already known and under a thumb. Otherwise there is a word to
         // find first — unless FLURRY has made every key the right one, which is the whole of what
         // that mode does for you.
@@ -312,11 +320,6 @@ final class Bot {
             for (int g = 0; g < Glyph.COUNT; g++) {
                 if (c.boss.wants(g)) return g;
             }
-        }
-        // A drifting powerup is only worth a press when no word is part-way through — engaging one
-        // mid-word would throw the word away, and the core would refuse the catch anyway.
-        if (!engaged && takesPowerups && c.power != null && c.power.catchable()) {
-            return c.power.glyph;
         }
         // FLURRY: any key hits, so there is nothing to work out.
         if (c.flurry()) return rnd.nextInt(Glyph.COUNT);

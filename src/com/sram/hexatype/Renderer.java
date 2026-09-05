@@ -404,7 +404,7 @@ final class Renderer extends Draw {
         float pulse = 0.85f + 0.15f * (float) Math.sin(w.t * 6f);
         p.fillPoly(Glyph.hex(w.x, y, r * pulse), Glyph.withAlpha(hue, 90));
         p.strokePoly(Glyph.hex(w.x, y, r * pulse), Glyph.withAlpha(INK, 235), r * 0.10f);
-        Kawaii.draw(p, w.glyph, w.x, y, r * 0.58f, hue, 1f, 0.8f);
+        powerIcon(p, w.effect, w.x, y, r * 0.72f, hue);
 
         // The name is far wider than the letter it labels, and the letter drifts on from beyond one
         // edge and off past the other — so it is faded in only once the whole name is inside the
@@ -418,6 +418,29 @@ final class Renderer extends Draw {
             int a = (int) (240 * Math.min(1f, inside / (L.unit * 1.5f)));
             p.text(w.name(), w.x, y - r * 1.7f, size, Glyph.withAlpha(INK, a),
                     Painter.CENTER, true);
+        }
+    }
+
+    /** Distinct, letter-free marks for the three player-facing powerups. */
+    private static void powerIcon(Painter p, int effect, float x, float y, float r, int hue) {
+        int ink = Glyph.withAlpha(INK, 245);
+        if (effect == Power.FLURRY) {
+            p.fillPoly(star(x, y, r * 0.78f, r * 0.30f, 6, 0f), ink);
+            p.fillPoly(star(x - r * 0.62f, y + r * 0.45f, r * 0.28f, r * 0.11f, 5, 0.3f),
+                    Glyph.withAlpha(0xFFFFFFFF, 230));
+            p.fillPoly(star(x + r * 0.66f, y - r * 0.42f, r * 0.24f, r * 0.09f, 5, -0.2f),
+                    Glyph.withAlpha(0xFFFFFFFF, 230));
+        } else if (effect == Power.FLING) {
+            p.polyline(new float[] {x - r * 0.78f, y + r * 0.38f, x - r * 0.20f, y - r * 0.28f,
+                    x + r * 0.55f, y - r * 0.18f}, ink, r * 0.22f);
+            p.fillPoly(new float[] {x + r * 0.92f, y - r * 0.10f, x + r * 0.42f, y - r * 0.52f,
+                    x + r * 0.48f, y + r * 0.18f}, ink);
+        } else {
+            p.fillCircle(x - r * 0.34f, y, r * 0.48f, ink);
+            p.fillCircle(x + r * 0.34f, y, r * 0.48f, Glyph.withAlpha(0xFFFFFFFF, 235));
+            p.fillCircle(x - r * 0.45f, y - r * 0.06f, r * 0.07f, hue);
+            p.fillCircle(x + r * 0.23f, y - r * 0.06f, r * 0.07f, hue);
+            p.strokePoly(star(x, y + r * 0.62f, r * 0.22f, r * 0.10f, 5, 0f), ink, r * 0.08f);
         }
     }
 

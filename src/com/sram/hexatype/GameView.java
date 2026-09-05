@@ -117,7 +117,14 @@ public class GameView extends View {
             return true;
         }
 
-        // The boss's own elements: taps and drags on the things it puts on the field. Needs MOVE
+        // A visible powerup owns a direct down on its icon before field gestures.
+        if ((action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN)
+                && core.tapPower(ev.getX(ev.getActionIndex()), ev.getY(ev.getActionIndex()), layout)) {
+            tick();
+            return true;
+        }
+
+        // The boss.s own elements: taps and drags on the things it puts on the field. Needs MOVE
         // events, so it comes before the down-only filter, and before both the blade and the panic
         // swipe — a finger that landed on a glob is carrying that glob, not slicing or shoving.
         if (handleBoss(ev, action)) return true;
@@ -553,7 +560,7 @@ public class GameView extends View {
             int chip = hit - SettingsUi.HIT_TEST;
             if (chip == SettingsUi.TEST_STARS) core.playtestStars(layout);
             else if (chip == SettingsUi.TEST_STEAMER) core.playtestSteamer(layout);
-            else core.playtestMode(chip, layout);
+            else core.playtestMode(Power.offeredAt(chip), layout);
             tick();
         } else if (hit >= SettingsUi.HIT_OPTION) {
             core.setBgm(hit - SettingsUi.HIT_OPTION);

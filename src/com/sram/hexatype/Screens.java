@@ -612,7 +612,7 @@ final class Screens extends Draw {
                     l, ui.testY + ui.testH}, Glyph.withAlpha(col, 190), s * 0.05f);
             // Compact labels keep all six shortcuts legible in one row.
             String label = i == SettingsUi.TEST_STARS ? "PATH"
-                    : i == SettingsUi.TEST_STEAMER ? "STEAM" : Power.CHIP[i];
+                    : i == SettingsUi.TEST_STEAMER ? "STEAM" : Power.CHIP[Power.offeredAt(i)];
             p.text(label,
                     (l + r) / 2f, ui.testY + ui.testH * 0.66f, s * 0.46f,
                     INK, Painter.CENTER, true);

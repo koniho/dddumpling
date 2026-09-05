@@ -953,7 +953,8 @@ final class GameCore {
      * {@link Power#TEAM}.
      */
     private int rollEffect() {
-        return rnd.nextInt(Collect.owned(collected) > 0 ? Power.COUNT : Power.COUNT - 1);
+        int count = Power.offeredCount(Collect.owned(collected) > 0);
+        return Power.offeredAt(rnd.nextInt(count));
     }
 
     /** A random entry from the display case, or -1 when it is empty. */
@@ -969,6 +970,19 @@ final class GameCore {
     }
 
     /** Caught it: scores, then starts the frenzy the letter was carrying. */
+    boolean tapPower(float x, float y, Layout L) {
+        if (state != PLAY || power == null || !power.catchable()) return false;
+        float bobY = power.y + (float) Math.sin(power.t * 3.2f) * L.enemyR * 0.22f;
+        float dx = x - power.x, dy = y - bobY;
+        float grab = L.enemyR * 2.05f;
+        if (dx * dx + dy * dy > grab * grab) return false;
+        hits++;
+        combo++;
+        if (combo > maxCombo) maxCombo = combo;
+        catchPower(L);
+        return true;
+    }
+
     private void catchPower(Layout L) {
         power.hit = true;
         power.hitT = 0f;
@@ -1581,16 +1595,6 @@ final class GameCore {
 
         if (target != null && (!target.typeable() || !enemies.contains(target))) target = null;
 
-        // The drifting powerup outranks the words — but only when nothing is engaged, so it
-        // can never steal a press out of a word you are part-way through.
-        if (target == null && power != null && power.catchable()
-                && (power.glyph == g || flurry())) {
-            hits++;
-            combo++;
-            if (combo > maxCombo) maxCombo = combo;
-            catchPower(L);
-            return true;
-        }
 
         // The boss, on the same terms the powerup gets: it outranks an *unengaged* word for the
         // letters it is asking for, and never steals a press out of a word already part-typed. The
@@ -2689,10 +2693,10 @@ final class GameCore {
         float hi = L.playRight - half - e.sway;
         e.baseX = hi > lo ? lo + rnd.nextFloat() * (hi - lo) : (L.playLeft + L.playRight) / 2f;
         e.phase = rnd.nextFloat() * 6.283f;
-        // FLING and TEAM SQUISH mix the ordinary rain with words sweeping in from both sides. Their
+        // Every frenzy mixes the ordinary rain with words sweeping in from both sides. Their
         // quadratic crossing bends toward the far edge and finishes inside it at the damage
         // line, so the unusual entrance never changes when the threat actually lands.
-        if (powerActive() && (mode == Power.FLING || mode == Power.TEAM)
+        if (powerActive()
                 && rnd.nextBoolean() && hi > lo) {
             e.sideEntry = true;
             boolean fromLeft = rnd.nextBoolean();

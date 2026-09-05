@@ -59,24 +59,23 @@ final class TestPower extends Check {
         GameCore.Enemy word = add(c, L, new int[] {3, 4}, L.playTop + 600);
         place(c, L, Power.MULTI, 3);
 
-        // Nothing engaged: the powerup wins even though a word matches the same letter.
+        // Keyboard presses no longer collect the pickup, even when its old glyph matches.
         c.tapKey(3, L);
-        check("the powerup outranks a matching word", c.powerActive());
-        check("the word was left alone", word.pos == 0);
-        check("it is no longer catchable", !c.power.catchable());
+        check("a matching key types the word", word.pos == 1);
+        check("the powerup waits for a direct tap", !c.powerActive() && c.power.catchable());
+        c.tapPower(c.power.x, c.power.y, L);
+        check("tapping the icon starts its mode", c.powerActive() && !c.power.catchable());
 
-        // Already engaged: the word keeps the press.
+        // A direct pickup tap remains unambiguous while a word is engaged.
         GameCore d = new GameCore(new Mem(), 203L);
         d.startGame();
         d.enemies.clear();
-        d.target = null;
         GameCore.Enemy w2 = add(d, L, new int[] {2, 2}, L.playTop + 600);
         d.tapKey(2, L);
-        check("engaged the word first", d.target == w2 && w2.pos == 1);
-        place(d, L, Power.MULTI, 2);
-        d.tapKey(2, L);
-        check("an engaged word keeps the press", w2.pos == 2);
-        check("the powerup was not taken", !d.powerActive() && d.power.catchable());
+        place(d, L, Power.FLURRY, 2);
+        d.tapPower(d.power.x, d.power.y, L);
+        check("an engaged word stays where it was", w2.pos == 1);
+        check("the directly tapped powerup is taken", d.powerActive() && !d.power.catchable());
     }
 
     static void frenzy(Layout L) {
@@ -93,7 +92,7 @@ final class TestPower extends Check {
         float sky0 = c.skyClock;
         // startGame already asserts frenzy(false), so count from there rather than from zero.
         int fc0 = ear.frenzyCalls;
-        c.tapKey(1, L);
+        c.tapPower(c.power.x, c.power.y, L);
         check("catching it starts a frenzy", c.powerActive() && c.mode == Power.FLURRY);
         check("it runs for the full duration", c.modeLeft > Power.DURATION - 0.01f);
         check("catching it scores", c.score >= Power.SCORE);
@@ -176,7 +175,7 @@ final class TestPower extends Check {
         c.enemies.clear();
         c.target = null;
         place(c, L, Power.FLURRY, 0);
-        c.tapKey(0, L);
+        c.tapPower(c.power.x, c.power.y, L);
         check("flurry is running", c.flurry() && !c.flinging() && !c.multi());
 
         GameCore.Enemy e = add(c, L, new int[] {2, 5}, L.playTop + 300);
@@ -207,7 +206,7 @@ final class TestPower extends Check {
         c.enemies.clear();
         c.target = null;
         place(c, L, Power.MULTI, 0);
-        c.tapKey(0, L);
+        c.tapPower(c.power.x, c.power.y, L);
         check("multi is running", c.multi());
 
         // Three words, all containing letter 4 at various positions.
@@ -246,15 +245,16 @@ final class TestPower extends Check {
         group("frenzy mode spread");
         check("a name and a blurb for every mode",
                 Power.NAMES.length == Power.COUNT && Power.BLURB.length == Power.COUNT);
-        check("TEAM SQUISH is the last mode, which is how it gets gated",
-                Power.TEAM == Power.COUNT - 1);
+        check("MULTI is absent from the offered pool",
+                Power.OFFERED.length == 3 && Power.OFFERED[0] == Power.FLURRY
+                        && Power.OFFERED[1] == Power.FLING && Power.OFFERED[2] == Power.TEAM);
 
         // The draw itself, made in the same order spawnPower makes it.
         java.util.Random r = new java.util.Random(4242L);
-        int[] raw = new int[Power.COUNT];
+        int[] raw = new int[Power.OFFERED.length];
         for (int i = 0; i < 30000; i++) {
             r.nextInt(Glyph.COUNT);
-            raw[r.nextInt(Power.COUNT)]++;
+            raw[r.nextInt(Power.OFFERED.length)]++;
         }
         int lo = Integer.MAX_VALUE, hi = 0;
         for (int i = 0; i < raw.length; i++) {
@@ -286,16 +286,18 @@ final class TestPower extends Check {
             c.update(DT, L);
             if (c.mode >= 0 && c.mode != last) seen[c.mode]++;
             last = c.mode;
-            if (c.power != null && c.power.catchable()) c.tapKey(c.power.glyph, L);
+            if (c.power != null && c.power.catchable()) c.tapPower(c.power.x, c.power.y, L);
         }
         System.out.print("    15 minutes of play:");
-        for (int i = 0; i < seen.length; i++) {
-            System.out.printf("  %s=%d", Power.NAMES[i], seen[i]);
+        for (int i = 0; i < Power.OFFERED.length; i++) {
+            int effect = Power.offeredAt(i);
+            System.out.printf("  %s=%d", Power.NAMES[effect], seen[effect]);
         }
         System.out.println();
-        boolean all = true;
-        for (int i = 0; i < seen.length; i++) if (seen[i] == 0) all = false;
-        check("every mode turns up in play", all);
+        boolean all = seen[Power.MULTI] == 0;
+        for (int i = 0; i < Power.OFFERED.length; i++)
+            if (seen[Power.offeredAt(i)] == 0) all = false;
+        check("every offered mode turns up and MULTI does not", all);
 
         // And with an empty case, TEAM SQUISH must never be offered — it has nobody to field.
         GameCore e = new GameCore(new Mem(), 4245L);
@@ -307,7 +309,7 @@ final class TestPower extends Check {
             e.update(DT, L);
             if (e.power != null && e.power.effect == Power.TEAM) offered = true;
             if (e.mode == Power.TEAM) offered = true;
-            if (e.power != null && e.power.catchable()) e.tapKey(e.power.glyph, L);
+            if (e.power != null && e.power.catchable()) e.tapPower(e.power.x, e.power.y, L);
         }
         check("an empty case is never offered TEAM SQUISH", !offered);
         check("but the other modes still come", e.score > 0);
@@ -671,7 +673,7 @@ final class TestPower extends Check {
         c.enemies.clear();
         c.target = null;
         place(c, L, Power.MULTI, 0);
-        c.tapKey(0, L);
+        c.tapPower(c.power.x, c.power.y, L);
         check("multi is running", c.multi());
         check("no chain on screen yet", c.chainT == 0f && c.chainLen == 0);
 
@@ -711,7 +713,7 @@ final class TestPower extends Check {
         m.enemies.clear();
         m.target = null;
         place(m, L, Power.MULTI, 0);
-        m.tapKey(0, L);
+        m.tapPower(m.power.x, m.power.y, L);
         GameCore.Enemy mixed = add(m, L, new int[] {1, 2, 1}, L.playTop + 200f);
         m.tapKey(1, L);
         check("both matches in a mixed word go", mixed.gone[0] && mixed.gone[2]);
@@ -738,7 +740,7 @@ final class TestPower extends Check {
         d.enemies.clear();
         d.target = null;
         place(d, L, Power.MULTI, 0);
-        d.tapKey(0, L);
+        d.tapPower(d.power.x, d.power.y, L);
         add(d, L, new int[] {1}, L.playTop + 200f);
         int missed = d.misses;
         check("a letter that is not there does not land", !d.tapKey(4, L));
@@ -757,7 +759,7 @@ final class TestPower extends Check {
         e.enemies.clear();
         e.target = null;
         place(e, L, Power.MULTI, 0);
-        e.tapKey(0, L);
+        e.tapPower(e.power.x, e.power.y, L);
         for (int k = 0; k < 20; k++) {
             add(e, L, new int[] {1, 1, 1, 1, 1}, L.playTop + 60f + k * 30f);
         }
@@ -785,7 +787,7 @@ final class TestPower extends Check {
         c.enemies.clear();
         c.target = null;
         place(c, L, Power.FLING, 0);
-        c.tapKey(0, L);
+        c.tapPower(c.power.x, c.power.y, L);
         check("fling is running", c.flinging());
 
         // One stroke straight across a whole word takes every letter in it. The old model cut
@@ -815,7 +817,7 @@ final class TestPower extends Check {
         d.enemies.clear();
         d.target = null;
         place(d, L, Power.FLING, 0);
-        d.tapKey(0, L);
+        d.tapPower(d.power.x, d.power.y, L);
         float row = L.playTop + 320f;
         GameCore.Enemy a = add(d, L, new int[] {1}, row);
         GameCore.Enemy b = add(d, L, new int[] {2}, row);
@@ -878,7 +880,7 @@ final class TestPower extends Check {
         c.enemies.clear();
         c.target = null;
         place(c, L, Power.FLING, 0);
-        c.tapKey(0, L);
+        c.tapPower(c.power.x, c.power.y, L);
         c.stageGap = 30f;
         return c;
     }
@@ -1040,7 +1042,7 @@ final class TestPower extends Check {
         c.enemies.clear();
         c.target = null;
         place(c, L, Power.FLING, 0);
-        c.tapKey(0, L);
+        c.tapPower(c.power.x, c.power.y, L);
         check("fling is running", c.flinging());
 
         GameCore.Enemy e = add(c, L, new int[] {1, 2, 3}, L.playTop + 300);
@@ -1082,7 +1084,7 @@ final class TestPower extends Check {
         c.enemies.clear();
         c.particles.clear();
         place(c, L, Power.FLING, 0);
-        c.tapKey(0, L);
+        c.tapPower(c.power.x, c.power.y, L);
         check("fling is running", c.flinging());
         check("the hint shows before any touch", c.showFlingHint());
 
@@ -1132,7 +1134,7 @@ final class TestPower extends Check {
         d.startGame();
         d.enemies.clear();
         place(d, L, Power.MULTI, 0);
-        d.tapKey(0, L);
+        d.tapPower(d.power.x, d.power.y, L);
         d.particles.clear();
         advance(d, L, 0.4f);
         check("no fling hint in other modes", !d.showFlingHint());
@@ -1235,7 +1237,7 @@ final class TestPower extends Check {
         float slowStep = e.y - (L.playTop + 100f);
 
         place(c, L, Power.MULTI, 0);
-        c.tapKey(0, L);
+        c.tapPower(c.power.x, c.power.y, L);
         check("frenzy doubles the fall rate", c.fallRate() == Power.FALL_RATE);
         float before = e.y;
         c.update(DT, L);
@@ -1267,7 +1269,7 @@ final class TestPower extends Check {
         d.sound = ear;
         d.startGame();
         place(d, L, Power.FLURRY, 0);
-        d.tapKey(0, L);
+        d.tapPower(d.power.x, d.power.y, L);
         check("frenzy is running before the last hit", d.powerActive());
         int fc = ear.frenzyCalls;
 
@@ -1303,9 +1305,9 @@ final class TestPower extends Check {
                     < ui.testChipR(i - 1, chips)) chipsDistinct = false;
         }
         check("the row has chips for both between-stage games",
-                SettingsUi.TEST_STARS == Power.COUNT
-                        && SettingsUi.TEST_STEAMER == Power.COUNT + 1
-                        && chips == Power.COUNT + 2);
+                SettingsUi.TEST_STARS == Power.OFFERED.length
+                        && SettingsUi.TEST_STEAMER == Power.OFFERED.length + 1
+                        && chips == Power.OFFERED.length + 2);
         // Labels inside their boxes, which nothing was checking: adding the fifth chip put TEAM
         // SQUISH's label across two of its neighbours, and DOES NOT FIT only watches the screen
         // edge. Measured in the harness font, which is wider than the device's.
@@ -1315,7 +1317,7 @@ final class TestPower extends Check {
         float worst = 0f;
         for (int i = 0; i < chips; i++) {
             String label = i == SettingsUi.TEST_STARS ? "PATH"
-                    : i == SettingsUi.TEST_STEAMER ? "STEAM" : Power.CHIP[i];
+                    : i == SettingsUi.TEST_STEAMER ? "STEAM" : Power.CHIP[Power.offeredAt(i)];
             float box = ui.testChipR(i, chips) - ui.testChipL(i, chips);
             float wide = RasterPainter.textWidth(label, chipType);
             if (wide / box > worst) { worst = wide / box; widest = label; }
@@ -1332,7 +1334,8 @@ final class TestPower extends Check {
 
         // Each chip starts the real thing. The case needs something in it, because TEAM SQUISH
         // fields one of the collection and refuses to start without one.
-        for (int m = 0; m < Power.COUNT; m++) {
+        for (int chip = 0; chip < Power.OFFERED.length; chip++) {
+            int m = Power.offeredAt(chip);
             Mem store = new Mem();
             store.collected = 0b1001L;
             GameCore c = new GameCore(store, 300L + m);
@@ -1438,6 +1441,10 @@ final class TestPower extends Check {
                 continue;
             }
             if (c.state != GameCore.PLAY) continue;
+            if (c.power != null && c.power.catchable()) {
+                c.tapPower(c.power.x, c.power.y, L);
+                continue;
+            }
             // A boss stage has to be fought or the run stops here, and a run that stops at stage 5
             // sees no frenzies at all — this is real play, so it plays the boss rather than
             // wishing it away the way modeSpread does.
