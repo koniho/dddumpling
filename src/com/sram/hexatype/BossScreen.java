@@ -15,6 +15,9 @@ package com.sram.hexatype;
  */
 final class BossScreen extends Draw {
 
+    static final float DIVIDE_REMNANT_ALPHA = 0.38f;
+    static final int DIVIDE_SHARDS_PER_PIECE = 12;
+
     /** Deep plum through hot mulberry: every generation of Divide is angrier than its parent. */
     private static final int[] DIVIDE_COLOR = {
         0xFF46265F, 0xFF60306F, 0xFF823A78, 0xFFAC3F76
@@ -198,6 +201,10 @@ final class BossScreen extends Draw {
         elements(p, c, L, b, fade, col);
     }
 
+    static boolean divideVulnerable(Boss b, int piece) {
+        return b.pieceCharge(piece) >= Boss.DIVIDE_HITS;
+    }
+
     private static void drawDividePieces(Painter p, GameCore c, Layout L, Boss b, float fade) {
         for (int i = 0; i < b.pieceCount(); i++) {
             Softbody piece = b.pieceBody(i);
@@ -208,8 +215,7 @@ final class BossScreen extends Draw {
             float hurt = b.pieceHurt(i);
             int depth = Math.max(0, Math.min(DIVIDE_COLOR.length - 1, b.pieceDepth(i)));
             int halfCol = Glyph.mix(DIVIDE_COLOR[depth], ROSE, heat * 0.45f);
-            boolean vulnerable = b.pieceCharge(i) >= Boss.DIVIDE_HITS
-                    && b.pieceDepth(i) < Boss.DIVIDE_LEVELS;
+            boolean vulnerable = divideVulnerable(b, i);
             if (vulnerable)
                 halfCol = Glyph.mix(halfCol, YELLOW, vulnerabilityPulse(c.clock) * 0.78f);
             halfCol = Glyph.mix(halfCol, 0xFFFFFFFF, hurt * 0.65f);
@@ -237,10 +243,12 @@ final class BossScreen extends Draw {
             Softbody remnant = b.divideBody[n];
             if (remnant == null) continue;
             int depth = Math.max(0, Math.min(DIVIDE_COLOR.length - 1, b.nodeDepth(n)));
-            int remnantCol = Glyph.mix(DIVIDE_COLOR[depth], BG, 0.18f);
+            int remnantCol = Glyph.mix(DIVIDE_COLOR[depth], BG, 0.36f);
             Slime.draw(p, remnant, c.clock + n * 0.31f, remnantCol,
-                    Boss.FACE[b.kind], 1f, fade);
+                    Boss.FACE[b.kind], 1f, fade * DIVIDE_REMNANT_ALPHA);
         }
+
+        if (b.beaten) divideBreakup(p, c, L, b, fade);
 
         if (b.divideBurst > 0f) {
             float burst = b.divideBurst;
@@ -251,6 +259,43 @@ final class BossScreen extends Draw {
                     Glyph.withAlpha(0xFFFFFFFF, (int) (210 * burst * fade)));
             p.strokeCircle(cx, cy, rr * (0.45f + (1f - burst) * 1.25f),
                     Glyph.withAlpha(GOLD, (int) (235 * burst * fade)), rr * 0.12f);
+        }
+    }
+
+    /** Tiny same-colour droplets shed as the defeated fragments break apart and fall. */
+    private static void divideBreakup(Painter p, GameCore c, Layout L, Boss b, float fade) {
+        float progress = b.leaveProgress();
+        if (progress < 0.50f) return;
+        float fall = Math.min(1f, (progress - 0.50f) / 0.50f);
+        int visible = b.divideActive | b.divideDead;
+        int count = Math.max(1, Integer.bitCount(visible));
+        float centreX = (L.playLeft + L.playRight) * 0.5f;
+        float centreY = (L.playTop + L.dangerY) * 0.5f;
+        float orbit = Boss.bodyR(L) * 0.72f;
+        for (int n = 0; n < Boss.DIVIDE_NODES; n++) {
+            if (!b.nodeVisible(n)) continue;
+            int ordinal = Integer.bitCount(visible & ((1 << n) - 1));
+            float ring = -Softbody.TAU * 0.25f + Softbody.TAU * ordinal / count;
+            float ox = centreX + (float) Math.cos(ring) * orbit;
+            float oy = centreY + (float) Math.sin(ring) * orbit;
+            int depth = Math.max(0, Math.min(DIVIDE_COLOR.length - 1, b.nodeDepth(n)));
+            int col = DIVIDE_COLOR[depth];
+            float sourceR = b.divideBody[n] == null ? L.enemyR : b.divideBody[n].radius();
+            for (int k = 0; k < DIVIDE_SHARDS_PER_PIECE; k++) {
+                int hash = n * 1103515245 + k * 12345 + 0x51A7;
+                float jitter = ((hash >>> 8) & 1023) / 1023f;
+                float angle = ring + (k / (float) DIVIDE_SHARDS_PER_PIECE - 0.5f) * 2.8f
+                        + jitter * 0.55f;
+                float speed = sourceR * (1.4f + 2.2f * (((hash >>> 18) & 255) / 255f));
+                float x = ox + (float) Math.cos(angle) * speed * fall;
+                float y = oy + (float) Math.sin(angle) * speed * fall
+                        + fall * fall * L.h * (0.72f + 0.28f * jitter);
+                float r = sourceR * (0.075f + 0.075f * (((hash >>> 4) & 15) / 15f));
+                int alpha = (int) (220f * Math.min(1f, fall * 5f) * (1f - fall * 0.58f) * fade);
+                p.fillEllipse(x, y, r, r * (0.72f + 0.20f * jitter), Glyph.withAlpha(col, alpha));
+                p.fillCircle(x - r * 0.22f, y - r * 0.20f, r * 0.22f,
+                        Glyph.withAlpha(0xFFFFFFFF, alpha / 3));
+            }
         }
     }
 

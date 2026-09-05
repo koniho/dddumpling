@@ -1389,6 +1389,8 @@ final class TestBoss extends Check {
         c.tapKey(c.boss.pieceWant(0), L);
         check("its sixth hit makes the terminal fragment vulnerable",
                 c.boss.pieceCount() == before && c.boss.vulnerablePiece() == 0);
+        check("the renderer marks terminal vulnerability too",
+                BossScreen.divideVulnerable(c.boss, 0));
         int deactivateSounds = ear.divideDeactivates;
         check("the terminal fragment accepts a final pull", c.beginBossPinch(100f));
         check("the final pull deactivates only that fragment",
@@ -1396,6 +1398,9 @@ final class TestBoss extends Check {
                         && c.boss.pieceCount() == before - 1);
         check("deactivation has its own descending sound",
                 ear.divideDeactivates == deactivateSounds + 1);
+        check("deactivated fragments render at a clearly ghosted opacity",
+                BossScreen.DIVIDE_REMNANT_ALPHA >= 0.30f
+                        && BossScreen.DIVIDE_REMNANT_ALPHA <= 0.45f);
         check("a deactivated fragment remains as a visible remnant",
                 c.boss.nodeVisible(doomedNode) && !c.boss.nodeActive(doomedNode)
                         && c.boss.divideBody[doomedNode] != null);
@@ -1436,6 +1441,8 @@ final class TestBoss extends Check {
         for (int n = 0; n < Boss.DIVIDE_NODES; n++) if (c.boss.nodeVisible(n))
             droppedY += c.boss.divideY[n];
         check("the gathered circle then drops toward the bottom", droppedY > ringY);
+        check("the final drop breaks into many tiny slime fragments",
+                BossScreen.DIVIDE_SHARDS_PER_PIECE * Boss.DIVIDE_PIECES >= 90);
 
         GameCore timers = enterBoss(L, Boss.SPLITTER, 82L);
         int node = timers.boss.pieceNodeIndex(0);
