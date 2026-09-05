@@ -442,6 +442,8 @@ final class GameCore {
     boolean cubeUnlocked;
     /** Cat and Grapes stay until three consecutive runs end before stage 6. */
     boolean fullRoster;
+    /** Snapshot used by the current run; settings only changes the next one. */
+    boolean runFullRoster;
     int earlyLosses;
     boolean rosterLeavePending;
     static final int ROSTER_JOIN = 1, ROSTER_LEAVE = -1;
@@ -1243,13 +1245,14 @@ final class GameCore {
         }
     }
 
-    boolean keyActive(int glyph) { return Roster.active(fullRoster, glyph); }
-    int randomGlyph() { return Roster.random(fullRoster, rnd); }
+    boolean playRosterFull() { return state == TITLE ? fullRoster : runFullRoster; }
+    boolean keyActive(int glyph) { return Roster.active(playRosterFull(), glyph); }
+    int randomGlyph() { return Roster.random(playRosterFull(), rnd); }
     float rosterMix() {
         if (rosterScene == ROSTER_JOIN) return 1f - rosterSceneT / ROSTER_SCENE_TIME;
         if (rosterScene == ROSTER_LEAVE) return rosterSceneT / ROSTER_SCENE_TIME;
         if (rosterLeavePending) return 1f;
-        return fullRoster ? 1f : 0f;
+        return playRosterFull() ? 1f : 0f;
     }
     float keyScale() { return 1.14f - 0.14f * rosterMix(); }
     int keyAt(float x, float y, Layout L) {
@@ -1268,7 +1271,7 @@ final class GameCore {
     }
     void unlockRoster() {
         if (fullRoster) return;
-        fullRoster = true; earlyLosses = 0; rosterLeavePending = false;
+        fullRoster = runFullRoster = true; earlyLosses = 0; rosterLeavePending = false;
         rosterScene = ROSTER_JOIN; rosterSceneT = ROSTER_SCENE_TIME;
         saveRoster();
     }
@@ -1319,6 +1322,20 @@ final class GameCore {
     /** One bounce of the send-off landing, pitched off the squishy doing the bouncing. */
     private void bounceTick() {
         if (sound != null) sound.squish(launchWho % Glyph.COUNT, 1);
+    }
+
+    void setNextRoster(boolean six) {
+        fullRoster = six;
+        earlyLosses = 0;
+        rosterLeavePending = false;
+        saveRoster();
+    }
+
+    void endCurrentRun() {
+        if (state != PLAY) return;
+        closeSettings();
+        lives = 0;
+        die();
     }
 
     void setSpeed(float v) {
@@ -1416,6 +1433,7 @@ final class GameCore {
 
     void startGame() {
         state = PLAY;
+        runFullRoster = fullRoster;
         time = 0;
         score = 0;
         squishes = 0;
@@ -2529,7 +2547,7 @@ final class GameCore {
         // Every fifth stage is a boss instead of a wave. Started here rather than on the first frame
         // of play so its arrival card runs over the stage breather it already had.
         int bk = Boss.kindFor(stage);
-        if (bk >= 0) boss.begin(bk, stage, rnd, fullRoster);
+        if (bk >= 0) boss.begin(bk, stage, rnd, playRosterFull());
         else boss.leave();
         if (sound != null && hadBoss != (bk >= 0)) sound.bossMusic(bk >= 0);
     }
@@ -2618,7 +2636,7 @@ final class GameCore {
      * early returns, or clear it where the early return is taken. There is no third way.
      */
     private void die() {
-        if (fullRoster) {
+        if (runFullRoster && fullRoster) {
             if (stage >= 6) earlyLosses = 0;
             else if (++earlyLosses >= 3) {
                 fullRoster = false; earlyLosses = 0; rosterLeavePending = true;
@@ -2658,7 +2676,7 @@ final class GameCore {
     private void spawn(Layout L) {
         Enemy e = new Enemy();
         int len = minWordLen() + rnd.nextInt(maxWordLen() - minWordLen() + 1);
-        Words.fill(e, len, stackChance(), rnd, fullRoster);
+        Words.fill(e, len, stackChance(), rnd, playRosterFull());
 
         float half = L.wordWidth(len) / 2f;
         e.sway = Math.min(0.035f * L.w, Math.max(0f, (L.playRight - L.playLeft) / 2f - half - 4f));

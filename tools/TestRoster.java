@@ -42,5 +42,24 @@ final class TestRoster extends Check {
         GameCore reached = new GameCore(safe, 100); reached.startGame(); reached.jumpToStage(6, L);
         check("reaching stage six resets early losses", reached.earlyLosses == 0);
         for (int i = 0; i < 24; i++) check("title demo follows next roster", Roster.active(false, Demo.letter(farewell, i)));
+
+        GameCore choice = new GameCore(new Mem(), 101); choice.startGame();
+        boolean current = choice.runFullRoster;
+        choice.setNextRoster(!current);
+        check("settings choice changes only the next run", choice.runFullRoster == current
+                && choice.fullRoster != current);
+        choice.toTitle(); choice.startGame();
+        check("next run adopts the chosen roster", choice.runFullRoster == choice.fullRoster);
+
+        SettingsUi ui = new SettingsUi(); ui.compute(L, Music.NAMES.length);
+        float mid = (ui.optionL() + ui.optionR()) / 2f;
+        float left = (ui.optionL() + mid) / 2f, right = (mid + ui.optionR()) / 2f;
+        check("next-roster chip is hittable", ui.hit(left, ui.runY + ui.runH / 2f)
+                == SettingsUi.HIT_ROSTER);
+        check("end-run button is hittable", ui.hit(right, ui.runY + ui.runH / 2f)
+                == SettingsUi.HIT_GAMEOVER);
+        choice.openSettings(); choice.endCurrentRun();
+        check("end-run uses game over and closes settings", choice.state == GameCore.OVER
+                && !choice.settingsOpen && choice.deathT == GameCore.DEATH_TIME);
     }
 }

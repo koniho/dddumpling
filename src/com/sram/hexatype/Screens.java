@@ -651,6 +651,28 @@ final class Screens extends Draw {
                     ui.stageY + ui.stageH * 0.66f, s * 0.62f, INK, Painter.CENTER, true);
         }
 
+        // Run controls. The roster chip changes the title and the following run only; ending
+        // the current run deliberately follows the ordinary death path.
+        p.text("NEXT PLAYTHROUGH", ui.sliderL, ui.runLabelY, s * 0.58f, INK_DIM,
+                Painter.LEFT, true);
+        float runMid = (ui.optionL() + ui.optionR()) / 2f;
+        float rosterR = runMid - 3f, overL = runMid + 3f;
+        int rosterCol = c.fullRoster ? Glyph.COLOR[2] : Glyph.COLOR[4];
+        p.fillRect(ui.optionL(), ui.runY, rosterR, ui.runY + ui.runH,
+                Glyph.withAlpha(rosterCol, 52));
+        p.strokePoly(new float[] {ui.optionL(), ui.runY, rosterR, ui.runY, rosterR,
+                ui.runY + ui.runH, ui.optionL(), ui.runY + ui.runH},
+                Glyph.withAlpha(rosterCol, 205), s * 0.05f);
+        p.text(c.fullRoster ? "KEYS 6" : "KEYS 4", (ui.optionL() + rosterR) / 2f,
+                ui.runY + ui.runH * 0.66f, s * 0.56f, INK, Painter.CENTER, true);
+        p.fillRect(overL, ui.runY, ui.optionR(), ui.runY + ui.runH,
+                Glyph.withAlpha(ROSE, 44));
+        p.strokePoly(new float[] {overL, ui.runY, ui.optionR(), ui.runY, ui.optionR(),
+                ui.runY + ui.runH, overL, ui.runY + ui.runH},
+                Glyph.withAlpha(ROSE, 205), s * 0.05f);
+        p.text("END RUN", (overL + ui.optionR()) / 2f, ui.runY + ui.runH * 0.66f,
+                s * 0.56f, INK, Painter.CENTER, true);
+
         // Empty the display case. Armed by the first tap and only acted on by the second, so
         // the label itself is the confirmation prompt — there is no dialog in this game.
         p.text("DISPLAY CASE", ui.sliderL, ui.clearLabelY, s * 0.58f, INK_DIM, Painter.LEFT,

@@ -533,6 +533,12 @@ public class GameView extends View {
         } else if (hit == SettingsUi.HIT_CLEAR) {
             core.tapClearCase();
             tick();
+        } else if (hit == SettingsUi.HIT_ROSTER) {
+            core.setNextRoster(!core.fullRoster);
+            tick();
+        } else if (hit == SettingsUi.HIT_GAMEOVER) {
+            core.endCurrentRun();
+            tick();
         } else if (hit >= SettingsUi.HIT_STAGE) {
             // Before the playtest branch, not after: HIT_STAGE is the higher number, so a
             // `hit >= HIT_TEST` test would swallow every stage chip.

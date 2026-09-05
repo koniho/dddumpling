@@ -7,7 +7,7 @@ package com.sram.hexatype;
 final class SettingsUi {
 
     static final int HIT_NONE = 0, HIT_SLIDER = 1, HIT_CLOSE = 2, HIT_OUTSIDE = 3,
-            HIT_CLEAR = 4;
+            HIT_CLEAR = 4, HIT_ROSTER = 5, HIT_GAMEOVER = 6;
     /** Option rows are HIT_OPTION + index. */
     static final int HIT_OPTION = 100;
     /**
@@ -49,6 +49,8 @@ final class SettingsUi {
     float testLabelY, testY, testH;
     /** Stage-jump row: one chip per {@link #STAGE_STEP}. */
     float stageLabelY, stageY, stageH;
+    /** Next-run roster toggle and end-current-run button. */
+    float runLabelY, runY, runH;
     /** Empty-the-display-case button, at the foot of the panel. */
     float clearLabelY, clearY, clearH;
 
@@ -66,7 +68,8 @@ final class SettingsUi {
         testH = s * 1.6f;
         stageH = s * 1.6f;
         clearH = s * 1.6f;
-        float bodyH = s * 8.4f + optionH * optionCount + testH + stageH + clearH + s * 4.9f;
+        runH = s * 1.6f;
+        float bodyH = s * 8.4f + optionH * optionCount + testH + stageH + runH + clearH + s * 5.4f;
         panelT = Math.max(L.topSafe + s, (L.h - bodyH) / 2f - s);
         panelB = panelT + bodyH;
 
@@ -88,7 +91,10 @@ final class SettingsUi {
         stageLabelY = testY + testH + s * 1.15f;
         stageY = stageLabelY + s * 0.35f;
 
-        clearLabelY = stageY + stageH + s * 1.15f;
+        runLabelY = stageY + stageH + s * 1.05f;
+        runY = runLabelY + s * 0.35f;
+
+        clearLabelY = runY + runH + s * 1.05f;
         clearY = clearLabelY + s * 0.35f;
 
         closeR = s * 1.05f;
@@ -164,6 +170,12 @@ final class SettingsUi {
             for (int i = 0; i < n; i++) {
                 if (x >= testChipL(i, n) && x <= testChipR(i, n)) return HIT_STAGE + i;
             }
+        }
+
+        if (y >= runY && y <= runY + runH) {
+            float mid = (optionL() + optionR()) / 2f;
+            if (x >= optionL() && x < mid - 3f) return HIT_ROSTER;
+            if (x > mid + 3f && x <= optionR()) return HIT_GAMEOVER;
         }
 
         if (y >= clearY && y <= clearY + clearH && x >= optionL() && x <= optionR()) {
