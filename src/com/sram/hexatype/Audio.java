@@ -374,6 +374,15 @@ final class Audio implements GameCore.Sound {
         play(Sfx.BOSS_SPLIT, 1.08f, 0.68f);
     }
 
+    @Override public void divideDamage() { play(Sfx.DIVIDE_DAMAGE, 1f, 0.76f); }
+    @Override public void divideSplit() { play(Sfx.DIVIDE_SPLIT, 1f, 0.78f); }
+    @Override public void divideBoing(float weight) {
+        float w = Math.max(0f, Math.min(1f, weight));
+        int id = w >= 0.67f ? Sfx.DIVIDE_BOING_HEAVY
+                : w >= 0.34f ? Sfx.DIVIDE_BOING_MEDIUM : Sfx.DIVIDE_BOING_LIGHT;
+        play(id, 1f, 0.58f + 0.16f * w);
+    }
+
     @Override public void boltPop() {
         // Let the 170ms envelope reach zero; stopping it mid-wave is an audible click.
         long now = System.nanoTime();

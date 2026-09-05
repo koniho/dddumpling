@@ -236,7 +236,7 @@ public class GameView extends View {
             if (i < 0) return true;
             y = ev.getY(i);
             core.dragBonusLid(bonusSwipeStartY - y);
-            if (Screens.steamerLidY(core, layout) <= Screens.steamerReleaseY(layout)) {
+            if (Screens.steamerLidY(core, layout) <= Screens.steamerReleaseY(core, layout)) {
                 core.swipeBonus();
                 bonusSwipePointer = -1;
                 tick();
@@ -335,6 +335,7 @@ public class GameView extends View {
 
     /** True while a finger is carrying one of the boss's elements. */
     private boolean bossDragging;
+    private boolean bossPinching;
     private long lastBossDragHaptic;
     private boolean bossWasBeaten;
 
@@ -353,6 +354,29 @@ public class GameView extends View {
      */
     private boolean handleBoss(MotionEvent ev, int action) {
         if (core.state != GameCore.PLAY) return false;
+        if (action == MotionEvent.ACTION_POINTER_DOWN && ev.getPointerCount() == 2) {
+            float dx = ev.getX(0) - ev.getX(1), dy = ev.getY(0) - ev.getY(1);
+            if (core.beginBossPinch((float) Math.sqrt(dx * dx + dy * dy),
+                    ev.getX(0), ev.getY(0), ev.getX(1), ev.getY(1))) {
+                bossPinching = true;
+                bossDragging = false;
+                return true;
+            }
+        }
+        if (bossPinching) {
+            if (action == MotionEvent.ACTION_MOVE && ev.getPointerCount() >= 2) {
+                float dx = ev.getX(0) - ev.getX(1), dy = ev.getY(0) - ev.getY(1);
+                if (core.pinchBoss((float) Math.sqrt(dx * dx + dy * dy),
+                        ev.getX(0), ev.getY(0), ev.getX(1), ev.getY(1), layout)) tick();
+                return true;
+            }
+            if (action == MotionEvent.ACTION_POINTER_UP || action == MotionEvent.ACTION_UP
+                    || action == MotionEvent.ACTION_CANCEL) {
+                core.endBossPinch();
+                bossPinching = false;
+                return true;
+            }
+        }
         int i = ev.getActionIndex();
         float x = ev.getX(i), y = ev.getY(i);
 

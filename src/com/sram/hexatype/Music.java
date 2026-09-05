@@ -74,10 +74,12 @@ final class Music {
 
     /** Tempo multiplier for the powerup variant. */
     private static final float FRENZY_TEMPO = 1.35f;
-    /** Faster but still swung: urgency without losing the game's bounce. */
-    private static final float BOSS_TEMPO = 1.52f;
+    /** Driving pulse detected from the recorded guide melody. */
+    private static final float BOSS_BPM = 203f;
     /** Playback gain leaves room for one full-level effect without clipping the output mix. */
     static final float BOSS_GAIN = 0.52f;
+    /** Sanitized stem of the voice memo used for this boss arrangement. */
+    static final String BOSS_SOURCE = "sep-4-at-6-47-pm";
     /** One 32-bar cadence in A harmonic minor: i, iv and VI continually pull toward V. */
     private static final int[] BOSS_ROOT = {
         0, 0, 8, 7,   0, 3, 5, 7,   8, 5, 0, 7,   0, 11, 7, 7,
@@ -91,14 +93,19 @@ final class Music {
     private static final int[][] BOSS_VOICING = {
         {0, 3, 7}, {0, 4, 7}, {0, 4, 7, 10}, {0, 3, 6}, {0, 4, 8}
     };
-    /** Eight contrasting rhythmic phrases: long calls, pickups, answers and breathing room. */
-    private static final float[][] BOSS_ONSET = {
-        {0f, 2.75f}, {0f, 1.5f, 2.25f}, {0f}, {0f, 2f, 3.25f},
-        {0f, 0.75f, 1.5f}, {0f, 2.5f}, {0f, 1f, 3f}, {0f}
-    };
-    private static final float[][] BOSS_HELD = {
-        {2.50f, 1.10f}, {1.30f, 0.55f, 1.55f}, {3.78f}, {1.75f, 1.05f, 0.62f},
-        {0.52f, 0.52f, 2.28f}, {2.25f, 1.30f}, {0.78f, 1.75f, 0.82f}, {3.82f}
+    /**
+     * Eight-bar melody transcribed from the Sep 4 6:47 recording: beat, semitones above
+     * A2, and duration. Four passes fill the boss loop at the detected 203 BPM pulse.
+     */
+    private static final float[][] BOSS_MELODY = {
+        {0f, 12, 1.5f}, {1.5f, 12, 1.5f}, {3f, 12, 1.5f},
+        {6.5f, 18, .5f}, {7f, 16, .5f}, {7.5f, 18, .5f},
+        {8.5f, 12, 2.5f}, {11f, 12, 3f},
+        {14.5f, 15, .5f}, {15f, 18, .5f}, {15.5f, 16, .5f}, {16f, 18, .5f},
+        {18f, 20, .5f}, {19f, 20, .5f}, {20f, 19, 1f}, {21.5f, 19, 1f},
+        {23f, 18, .5f}, {24f, 18, .5f}, {25f, 17, 1f},
+        {26f, 17, .5f}, {27f, 17, .5f}, {28f, 15, 1f},
+        {29.5f, 15, .5f}, {30.5f, 11, 1.5f}
     };
 
     /** Total loop length in samples for the given style. */
@@ -112,8 +119,8 @@ final class Music {
 
     private static int loopFrames(int style, boolean frenzy, boolean boss) {
         if (!isSynth(style)) style = SWING_STYLE;
-        float rate = boss ? BOSS_TEMPO : frenzy ? FRENZY_TEMPO : 1f;
-        float spb = beat(style) / rate;
+        float spb = boss ? 60f / BOSS_BPM
+                : beat(style) / (frenzy ? FRENZY_TEMPO : 1f);
         return (int) (Sfx.RATE * spb * (boss ? BOSS_BEATS : BEATS));
     }
 
@@ -152,6 +159,16 @@ final class Music {
 
     static int bossBars() { return BOSS_BARS; }
 
+    static boolean bossMelodyOnEighths() {
+        for (float[] note : BOSS_MELODY) {
+            if (Math.abs(note[0] * 2f - Math.round(note[0] * 2f)) > 0.0001f
+                    || Math.abs(note[2] * 2f - Math.round(note[2] * 2f)) > 0.0001f) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static short[] renderLoop(int style, boolean frenzy, boolean boss) {
         if (!isSynth(style)) style = SWING_STYLE;
         float swing = frenzy ? 0.5f : boss ? 0.56f : STYLE[style][1];
@@ -162,7 +179,8 @@ final class Music {
 
         int n = loopFrames(style, frenzy, boss);
         float[] v = new float[n];
-        float spb = beat(style) / (boss ? BOSS_TEMPO : frenzy ? FRENZY_TEMPO : 1f);
+        float spb = boss ? 60f / BOSS_BPM
+                : beat(style) / (frenzy ? FRENZY_TEMPO : 1f);
 
         int bars = boss ? BOSS_BARS : BARS;
         for (int bar = 0; bar < bars; bar++) {
@@ -189,8 +207,19 @@ final class Music {
                             style == DRIFT ? 2.2f : 7.5f, bright * 1.6f);
                 }
 
-                if (frenzy || boss) {
-                    // Driving four on the floor: a kick on every beat, hats on every eighth.
+                if (boss) {
+                    // Two kicks and two snares per bar: K-S-K-S on beats one through four.
+                    if ((b & 1) == 0) addKick(v, t0, spb * 0.62f);
+                    else addSnare(v, t0, spb * 0.42f, bar * 4 + b);
+                    addNoise(v, t0, 0.025f, 0.045f, bar * 4 + b);
+                    addNoise(v, t0 + spb * 0.5f, 0.030f, 0.11f, 128 + bar * 4 + b);
+                    if ((bar & 7) == 7 && b == 3) {
+                        addKick(v, t0 + spb * 0.5f, spb * 0.45f);
+                        addSnare(v, t0 + spb * 0.5f, spb * 0.28f, 500 + bar);
+                        addSnare(v, t0 + spb * 0.75f, spb * 0.22f, 700 + bar);
+                        addNoise(v, t0, spb * 0.85f, 0.18f, 900 + bar);
+                    }
+                } else if (frenzy) {
                     addKick(v, t0, spb * 0.55f);
                     addNoise(v, t0, 0.030f, 0.06f, bar * 4 + b);
                     addNoise(v, t0 + spb * 0.5f, 0.026f, 0.10f, 128 + bar * 4 + b);
@@ -205,31 +234,15 @@ final class Music {
         }
 
         if (boss) {
-            // A through-composed lead spans every bar, landing on the current chord.
-            for (int bar = 0; bar < BOSS_BARS; bar++) {
-                int root = BOSS_ROOT[bar];
-                int[] chord = BOSS_VOICING[BOSS_KIND[bar]];
-                int arc = bar / 8;
-                int phrase = bar & 7;
-                int third = chord[1], crown = chord[chord.length - 1];
-                int[] contour = phrase == 0 ? new int[] {0, crown}
-                        : phrase == 1 ? new int[] {third, crown, 12}
-                        : phrase == 2 ? new int[] {crown}
-                        : phrase == 3 ? new int[] {12, crown, third}
-                        : phrase == 4 ? new int[] {third, crown, 12}
-                        : phrase == 5 ? new int[] {crown, 12}
-                        : phrase == 6 ? new int[] {0, third, crown}
-                        : new int[] {12};
-                float[] onset = BOSS_ONSET[phrase];
-                float[] held = BOSS_HELD[phrase];
-                for (int m = 0; m < onset.length; m++) {
-                    int semis = root + contour[m] + 24 + (arc == 2 ? 12 : 0);
-                    float start = (bar * 4 + onset[m]) * spb;
-                    float dur = held[m] * spb;
-                    addVoice(v, start, dur, note(semis), leadAmp * 1.06f,
-                            leadDecay * 0.58f, Math.min(1f, bright * 1.18f));
-                    addVoice(v, start, dur * 1.08f, note(semis - 12), leadAmp * 0.21f,
-                            leadDecay * 0.42f, bright * 0.72f);
+            for (int pass = 0; pass < 4; pass++) {
+                for (float[] m : BOSS_MELODY) {
+                    int semis = (int) m[1] + 12 + (pass == 2 ? 12 : 0);
+                    float start = (pass * 32 + m[0]) * spb;
+                    float dur = m[2] * spb;
+                    addVoice(v, start, dur, note(semis), leadAmp * 1.12f,
+                            leadDecay * 0.56f, Math.min(1f, bright * 1.25f));
+                    addVoice(v, start, dur * 1.06f, note(semis - 12), leadAmp * 0.19f,
+                            leadDecay * 0.40f, bright * 0.68f);
                 }
             }
         }
@@ -299,6 +312,24 @@ final class Music {
             phase += 2f * (float) Math.PI * f / Sfx.RATE;
             float env = (t < 0.006f ? t / 0.006f : 1f) * (float) Math.exp(-7.5f * t);
             v[(i0 + i) % v.length] += (float) Math.sin(phase) * env * 0.85f;
+        }
+    }
+
+    /** Snare body plus a short, bright wire-noise crack. */
+    private static void addSnare(float[] v, float start, float dur, int seed) {
+        int i0 = (int) (start * Sfx.RATE);
+        int len = (int) (dur * Sfx.RATE);
+        int s = 9137 + seed * 3571;
+        float phase = 0f;
+        for (int i = 0; i < len; i++) {
+            float t = (float) i / len;
+            s = s * 1103515245 + 12345;
+            float noise = ((s >> 16) & 0x7FFF) / 16383.5f - 1f;
+            phase += 2f * (float) Math.PI * 185f / Sfx.RATE;
+            float env = (float) Math.exp(-10.5f * t);
+            float crack = noise * (0.72f - 0.28f * t);
+            float body = (float) Math.sin(phase) * 0.28f;
+            v[(i0 + i) % v.length] += (crack + body) * env * 0.48f;
         }
     }
 

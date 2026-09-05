@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hummed BGM"
+  short_description: "Turn a hummed melody into arranged game music"
+  default_prompt: "Analyze this hummed recording and build looping game BGM around its melody."

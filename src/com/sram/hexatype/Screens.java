@@ -291,9 +291,12 @@ final class Screens extends Draw {
         return rimY - rimRy * 1.05f - lift - c.steamer.lidDrag;
     }
 
-    /** The line the lid must be dragged above to release, 90% of the way up the screen. */
-    static float steamerReleaseY(Layout L) {
-        return L.h * 0.10f;
+    /**
+     * The line the armed lid must cross to release. Kept relative to its undragged position so the
+     * gesture is equally short on every screen and while the last press pulse is settling.
+     */
+    static float steamerReleaseY(GameCore c, Layout L) {
+        return steamerLidY(c, L) + c.steamer.lidDrag - L.unit * 1.25f;
     }
 
     /** Generous touch target around the visible lid while its swipe is armed. */
@@ -434,8 +437,12 @@ final class Screens extends Draw {
             float lidY = rimY - rimRy * 1.05f - lift - c.steamer.lidDrag;
             int lidCol = Glyph.mix(BAMBOO, Glyph.cycle(c.clock * 6f + 0.3f),
                     c.steamer.flash * 0.45f);
+            lidCol = Glyph.mix(lidCol, Glyph.cycle(c.clock * 11f + 0.12f),
+                    c.steamer.lidFlash * 0.88f);
             if (bad > 0f) lidCol = Glyph.mix(lidCol, ROSE, bad * 0.75f);
-            Basket.lid(p, cx, lidY, bw * 1.02f, rimRy * 0.95f, lidCol, fade);
+            float lidScale = c.steamer.lidKeyScale();
+            Basket.lid(p, cx, lidY, bw * 1.02f * lidScale, rimRy * 0.95f * lidScale,
+                    lidCol, fade);
 
             if (c.bonusSwipeReady()) {
                 // A broad luminous arrow bounces over the armed lid. Geometry, not text, so it

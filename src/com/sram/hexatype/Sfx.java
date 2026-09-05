@@ -23,7 +23,10 @@ final class Sfx {
     static final int START = 10, STAGE_CLEAR = 11, POWER_CLEAR = 12, CHOP = 13, ZAP = 14;
     static final int COLLECT = 15, STAR = 16;
     static final int COURSE = 17, TALLY = 18, JOIN = 19, OVER = 20, BOSS_LAUGH = 21;
-    static final int BOSS_DAMAGE = 22, BOSS_SPLIT = 23, BOLT_POP = 24, COUNT = 25;
+    static final int BOSS_DAMAGE = 22, BOSS_SPLIT = 23, BOLT_POP = 24;
+    static final int DIVIDE_DAMAGE = 25, DIVIDE_SPLIT = 26;
+    static final int DIVIDE_BOING_HEAVY = 27, DIVIDE_BOING_MEDIUM = 28,
+            DIVIDE_BOING_LIGHT = 29, COUNT = 30;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -57,6 +60,11 @@ final class Sfx {
             case BOSS_DAMAGE: return bossDamage();
             case BOSS_SPLIT: return bossSplit();
             case BOLT_POP: return boltPop();
+            case DIVIDE_DAMAGE: return divideDamage();
+            case DIVIDE_SPLIT: return divideSplit();
+            case DIVIDE_BOING_HEAVY: return divideBoing(0);
+            case DIVIDE_BOING_MEDIUM: return divideBoing(1);
+            case DIVIDE_BOING_LIGHT: return divideBoing(2);
             default: return achievement();
         }
     }
@@ -597,6 +605,65 @@ final class Sfx {
                     * (float) Math.exp(-9f * u);
             v[i] = (snap * 0.50f + pop * 0.82f + bounce * 0.28f)
                     * envelope(u, 0.006f, 1.8f);
+        }
+        return render(v);
+    }
+
+    /** Low brittle crack over a wet body, unique to Dark Divide damage. */
+    static short[] divideDamage() {
+        int n = (int) (RATE * 0.30f);
+        float[] v = new float[n];
+        int seed = 0x51d3;
+        for (int i = 0; i < n; i++) {
+            float u = (float) i / n;
+            seed = seed * 1103515245 + 12345;
+            float grit = ((seed >>> 16) & 0x7fff) / 16383.5f - 1f;
+            float bass = (float) Math.sin(TAU * (118f - 46f * u) * i / RATE);
+            float crack = grit * (float) Math.exp(-35f * u);
+            v[i] = (bass * 0.82f + crack * 0.55f) * envelope(u, 0.004f, 2.8f);
+        }
+        return render(v);
+    }
+
+    /** Two opposed cracks and a falling sub tone for the permanent divide. */
+    static short[] divideSplit() {
+        int n = (int) (RATE * 0.62f);
+        float[] v = new float[n];
+        int seed = 0x2f17;
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / RATE, u = (float) i / n;
+            seed = seed * 1103515245 + 12345;
+            float grit = ((seed >>> 16) & 0x7fff) / 16383.5f - 1f;
+            float cracks = grit * ((float) Math.exp(-48f * u)
+                    + (u > 0.16f ? 0.75f * (float) Math.exp(-55f * (u - 0.16f)) : 0f));
+            float sub = (float) Math.sin(TAU * (145f * t - 62f * t * t));
+            v[i] = (cracks * 0.48f + sub * 0.86f) * envelope(u, 0.003f, 1.7f);
+        }
+        return render(v);
+    }
+
+    /**
+     * A rubbery collision voice for Dark Divide pieces. Successive sizes lose body and gain
+     * spring: the large glob lands with a slow 112 Hz belly wobble, while the smallest rings at
+     * 260 Hz. A rapid downward pitch bend gives all three the unmistakable cartoon "boing".
+     */
+    static short[] divideBoing(int size) {
+        int tier = Math.max(0, Math.min(2, size));
+        float[] base = {112f, 174f, 260f};
+        float[] length = {0.34f, 0.28f, 0.23f};
+        float[] bend = {82f, 116f, 168f};
+        int n = (int) (RATE * length[tier]);
+        float[] v = new float[n];
+        float phase = 0f;
+        for (int i = 0; i < n; i++) {
+            float u = (float) i / n;
+            float hz = base[tier] + bend[tier] * (float) Math.exp(-12f * u);
+            phase += TAU * hz / RATE;
+            float rubber = (float) Math.sin(phase);
+            float hollow = (float) Math.sin(phase * 0.503f) * (0.42f - 0.08f * tier);
+            float twang = (float) Math.sin(phase * 2.01f) * 0.20f
+                    * (float) Math.exp(-18f * u);
+            v[i] = (rubber + hollow + twang) * envelope(u, 0.006f, 2.6f + tier * 0.6f);
         }
         return render(v);
     }

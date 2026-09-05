@@ -731,7 +731,7 @@ final class Preview {
     /**
      * One frame per boss, plus the arrival card and the burst.
      *
-     * Every boss gets one because every boss draws something different — the whole point of five of
+     * Every boss gets one because every boss draws something different — the whole point of six of
      * them — and a mechanic nobody has looked at is a mechanic nobody has checked.
      */
     private static void bossFrames(File dir, Layout L, int w, int h, int ss) throws Exception {
@@ -742,10 +742,10 @@ final class Preview {
                 ci.boss.introProgress());
         shot(dir, "59-boss-intro", ci, L, w, h, ss);
 
-        // Each of the five, mid-fight, with its window open so the ornament is showing the thing it
+        // Each of the six, mid-fight, with its window open so the ornament is showing the thing it
         // is asking for.
         String[] tag = {"60-boss-slime", "61-boss-triplets", "62-boss-drum", "63-boss-magpie",
-                "64-boss-sumo"};
+                "64-boss-sumo", "70-boss-dark-divide"};
         for (int k = 0; k < Boss.COUNT; k++) {
             GameCore c = toBoss(L, k, 510L + k, true);
             // Land a couple of hits so the health bar is part-spent and the body is dented, and so
@@ -861,6 +861,44 @@ final class Preview {
                 }
             }
         }
+
+        // Dark Divide gets a short visual sequence of its own: impact, charged gesture, split,
+        // then two independent bodies with one hurt and its neglected twin about to fire.
+        GameCore ddHit = toBoss(L, Boss.SPLITTER, 540L, true);
+        ddHit.boss.pieceHits[0] = 3;
+        ddHit.boss.hurt = 0.92f;
+        shot(dir, "71-divide-damage", ddHit, L, w, h, ss);
+
+        GameCore ddReady = toBoss(L, Boss.SPLITTER, 541L, true);
+        ddReady.boss.pieceHits[0] = Boss.DIVIDE_HITS;
+        ddReady.boss.hurt = 0f;
+        shot(dir, "72-divide-vulnerable", ddReady, L, w, h, ss);
+        float readyX = ddReady.boss.pieceX(0, L), readyY = ddReady.boss.pieceY(0, L);
+        ddReady.boss.beginPinch(300f, readyX, readyY - 150f, readyX, readyY + 150f);
+        ddReady.boss.pinch(345f, readyX, readyY - 172.5f, readyX, readyY + 172.5f, ddReady.rnd);
+        shot(dir, "72b-divide-finger-morph", ddReady, L, w, h, ss);
+
+        GameCore ddSplit = toBoss(L, Boss.SPLITTER, 542L, true);
+        ddSplit.boss.pieceHits[0] = Boss.DIVIDE_HITS;
+        float ddx = ddSplit.boss.pieceX(0, L), ddy = ddSplit.boss.pieceY(0, L);
+        ddSplit.boss.beginPinch(100f, ddx - 50f, ddy, ddx + 50f, ddy);
+        ddSplit.boss.pinch(100f * Boss.DIVIDE_SCALE, ddx - 85f, ddy, ddx + 85f, ddy, ddSplit.rnd);
+        step(ddSplit, L, 0.08f);
+        shot(dir, "73-divide-split", ddSplit, L, w, h, ss);
+
+        GameCore ddDanger = toBoss(L, Boss.SPLITTER, 543L, true);
+        ddDanger.boss.pieceHits[0] = Boss.DIVIDE_HITS;
+        float ddx2 = ddDanger.boss.pieceX(0, L), ddy2 = ddDanger.boss.pieceY(0, L);
+        ddDanger.boss.beginPinch(100f, ddx2 - 50f, ddy2, ddx2 + 50f, ddy2);
+        ddDanger.boss.pinch(100f * Boss.DIVIDE_SCALE, ddx2 - 85f, ddy2, ddx2 + 85f, ddy2, ddDanger.rnd);
+        ddDanger.boss.divideBurst = 0f;
+        ddDanger.boss.halfHurt[1] = 0.90f;
+        ddDanger.boss.halfIdle[1] = 0.10f;
+        ddDanger.boss.halfIdle[2] = Boss.DIVIDE_BOLT_TIME * 0.91f;
+        shot(dir, "74-divide-half-danger", ddDanger, L, w, h, ss);
+        ddDanger.boss.halfIdle[2] = Boss.DIVIDE_BOLT_TIME - DT * 0.5f;
+        step(ddDanger, L, DT);
+        shot(dir, "75-divide-bolt", ddDanger, L, w, h, ss);
 
         // The settings panel's stage jump, parked on a boss stage so the row names the boss it is
         // sitting on — which is the state the control exists for.
@@ -1018,7 +1056,8 @@ final class Preview {
         String[] names = {"squish-dumpling", "squish-strawberry", "squish-cat", "squish-grapes",
                 "squish-squishy", "squish-blob", "damage-drip", "clear-word", "wrong",
                 "achievement", "game-start", "stage-clear", "power-clear", "chop", "zap",
-                "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop"};
+                "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
+                "divide-boing-heavy", "divide-boing-medium", "divide-boing-light"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);
@@ -1040,7 +1079,7 @@ final class Preview {
         short[] fren = Music.loop(Music.SWING_STYLE, true);
         short[] boss = Music.bossLoop(Music.SWING_STYLE);
         Wav.write(new File(sfxDir, "bgm-frenzy.wav"), fren, Sfx.RATE);
-        Wav.write(new File(sfxDir, "bgm-boss.wav"), boss, Sfx.RATE);
+        Wav.write(new File(sfxDir, "bgm-boss-from-" + Music.BOSS_SOURCE + ".wav"), boss, Sfx.RATE);
         System.out.printf("  wrote bgm-frenzy      %.2fs (four on the floor)%n",
                 (float) fren.length / Sfx.RATE);
         System.out.printf("  wrote %d sfx, peak=%d%n", Sfx.COUNT, peak);

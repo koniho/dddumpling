@@ -965,6 +965,14 @@ final class TestStages extends Check {
         miss.tapBonus(miss.steamer.wanted());
         check("the last point waits for a swipe instead of awarding", miss.bonusSwipeReady()
                 && miss.steamer.opens == 0 && miss.prize < 0);
+        int armedHits = miss.steamer.hits;
+        miss.steamer.flash = miss.steamer.lidFlash = 0f;
+        miss.tapBonus(0);
+        check("key presses while a drag is wanted flash only the lid",
+                miss.steamer.lidFlash == 1f && miss.steamer.flash == 0f
+                        && miss.steamer.hits == armedHits && miss.bonusSwipeReady());
+        check("the reminder also gives the lid a small scale pop",
+                miss.steamer.lidKeyScale() > 1.05f && miss.steamer.lidKeyScale() < 1.08f);
         boolean lidTarget = false;
         for (float y = L.playTop; y < L.dangerY; y += L.unit * 0.25f) {
             if (Screens.inSteamerLid(miss, L, L.w / 2f, y)) lidTarget = true;
@@ -977,12 +985,12 @@ final class TestStages extends Check {
         miss.dragBonusLid(-L.unit);
         check("a downward drag does not push the lid into the basket", miss.steamer.lidDrag == 0f);
         float lidRestY = Screens.steamerLidY(miss, L);
-        miss.dragBonusLid(lidRestY - Screens.steamerReleaseY(L) - L.unit * 0.1f);
-        check("the lid must reach the top ten percent to release",
-                Screens.steamerLidY(miss, L) > Screens.steamerReleaseY(L));
-        miss.dragBonusLid(lidRestY - Screens.steamerReleaseY(L) + L.unit * 0.1f);
-        check("the release line is ninety percent up the screen",
-                Screens.steamerLidY(miss, L) < Screens.steamerReleaseY(L));
+        miss.dragBonusLid(lidRestY - Screens.steamerReleaseY(miss, L) - L.unit * 0.1f);
+        check("a short drag does not release just below the threshold",
+                Screens.steamerLidY(miss, L) > Screens.steamerReleaseY(miss, L));
+        miss.dragBonusLid(lidRestY - Screens.steamerReleaseY(miss, L) + L.unit * 0.1f);
+        check("the much shorter lid-relative threshold releases it",
+                Screens.steamerLidY(miss, L) < Screens.steamerReleaseY(miss, L));
         miss.dragBonusLid(0f);
         advance(miss, L, miss.bonusTimer - (GameCore.BONUS_HOLD + GameCore.BONUS_STATUS)
                 + 2f * DT);

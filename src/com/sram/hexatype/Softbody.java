@@ -630,6 +630,33 @@ final class Softbody {
         encloseR = enclose < 0f ? 0f : enclose;
     }
 
+    /**
+     * Conforms the live ring to two gesture fingers without replacing its perpendicular wobble.
+     * Position is constrained as touch coordinates arrive and once per simulation frame; axial velocity is damped so the springs
+     * cannot store an explosive amount of energy while the fingers hold the body stretched.
+     */
+    void encompass(float x1, float y1, float x2, float y2) {
+        float mx = (x1 + x2) * 0.5f, my = (y1 + y2) * 0.5f;
+        float dx = x2 - x1, dy = y2 - y1;
+        float d = (float) Math.sqrt(dx * dx + dy * dy);
+        if (d < 1e-3f) return;
+        float ux = dx / d, uy = dy / d, extent = 0f;
+        for (int i = 0; i < n; i++)
+            extent = Math.max(extent, Math.abs((x[i] - mx) * ux + (y[i] - my) * uy));
+        if (extent < 1e-3f) return;
+        float wanted = Math.max(rest * 0.35f, Math.min(rest * 2.2f, d * 0.5f));
+        float scale = wanted / extent;
+        for (int i = 0; i < n; i++) {
+            float along = (x[i] - mx) * ux + (y[i] - my) * uy;
+            x[i] += ux * along * (scale - 1f);
+            y[i] += uy * along * (scale - 1f);
+            float axialV = vx[i] * ux + vy[i] * uy;
+            vx[i] -= ux * axialV * 0.82f;
+            vy[i] -= uy * axialV * 0.82f;
+        }
+        measure();
+    }
+
     /** Lets the skin go. The spring back is the solver's, not an animation. */
     void letGo() {
         pullK = 0f;

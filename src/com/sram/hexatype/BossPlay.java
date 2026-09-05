@@ -138,10 +138,23 @@ final class BossPlay {
             c.score += GameCore.BOSS_HIT;
             c.shake = Math.max(c.shake, 0.30f);
             c.flash = Math.max(c.flash, 0.4f);
-            c.flashColor = GameCore.FLASH_CLEAR;
-            Fx.explode(c, c.rnd, c.boss.bodyX(L), c.boss.bodyY(L), L.enemyR * 1.4f, 12,
+            boolean divide = c.boss.kind == Boss.SPLITTER;
+            c.flashColor = divide ? 0xFF7D45D6 : GameCore.FLASH_CLEAR;
+            Fx.explode(c, c.rnd, divide ? c.boss.hitX : c.boss.bodyX(L),
+                    divide ? c.boss.hitY : c.boss.bodyY(L), L.enemyR * 1.4f, 12,
                     Glyph.COLOR[g]);
-            if (c.sound != null) c.sound.bossDamage();
+            if (c.sound != null) {
+                if (divide) c.sound.divideDamage();
+                else c.sound.bossDamage();
+            }
+        }
+        boolean dividePrompt = c.boss.kind == Boss.SPLITTER && verdict == Boss.PART;
+        if (dividePrompt) {
+            c.shake = Math.max(c.shake, 0.18f);
+            c.flash = Math.max(c.flash, 0.28f);
+            c.flashColor = 0xFF7D45D6;
+            Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR, 9, 0xFF9B62FF);
+            if (c.sound != null) c.sound.divideDamage();
         }
         boolean slimePrompt = c.boss.kind == Boss.SLIME
                 && (verdict == Boss.PART || verdict == Boss.SPLIT);
@@ -153,7 +166,7 @@ final class BossPlay {
         }
         if (verdict == Boss.SPLIT && c.sound != null) c.sound.bossSplit();
         // Pitched by how much of the boss is left, except the charged bolt which owns its bloop.
-        if (!slimePrompt && c.sound != null)
+        if (!slimePrompt && c.boss.kind != Boss.SPLITTER && c.sound != null)
             c.sound.squish(g, 1 + (int) (3f * (1f - c.boss.health())));
         return true;
     }
@@ -244,6 +257,22 @@ final class BossPlay {
 
     static void release(GameCore c) {
         c.boss.release();
+    }
+
+    static boolean pinch(GameCore c, float distance, Layout L) {
+        return pinch(c, distance, Float.NaN, Float.NaN, Float.NaN, Float.NaN, L);
+    }
+
+    static boolean pinch(GameCore c, float distance, float x1, float y1, float x2, float y2,
+            Layout L) {
+        if (!c.boss.pinch(distance, x1, y1, x2, y2, c.rnd)) return false;
+        c.shake = Math.max(c.shake, 0.85f);
+        c.flash = Math.max(c.flash, 0.75f);
+        c.flashColor = 0xFF7D45D6;
+        Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR * 2.8f, 28,
+                0xFF9B62FF);
+        if (c.sound != null) c.sound.divideSplit();
+        return true;
     }
 
     /** True when a swipe up would shove SUMO, for the renderer's hint. */

@@ -36,8 +36,9 @@ abstract class Check {
 
     static final class Ear implements GameCore.Sound {
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, bossSplits,
-                bossChargeCalls, boltPops, chops, zaps;
+                bossChargeCalls, boltPops, divideDamages, divideSplits, divideBoings, chops, zaps;
         float bossCharge, maxBossCharge;
+        float lastDivideBoingWeight = -1f;
         int collects;
         /** Stars taken, and the count the last one announced. */
         int stars;
@@ -70,6 +71,12 @@ abstract class Check {
         public void bossLaugh() { bossLaughs++; }
         public void bossDamage() { bossDamages++; }
         public void bossSplit() { bossSplits++; }
+        public void divideDamage() { divideDamages++; }
+        public void divideSplit() { divideSplits++; }
+        public void divideBoing(float weight) {
+            divideBoings++;
+            lastDivideBoingWeight = weight;
+        }
         public void boltPop() { boltPops++; }
         public void bossCharge(float charge) {
             bossChargeCalls++;
@@ -116,6 +123,10 @@ abstract class Check {
     static boolean bossPlay(GameCore c, Layout L) {
         if (!c.bossFighting()) return false;
         Boss b = c.boss;
+        if (b.kind == Boss.SPLITTER && b.vulnerablePiece() >= 0) {
+            b.beginPinch(100f);
+            return b.pinch(100f * (Boss.DIVIDE_SCALE + 0.01f));
+        }
         // Bolts first: the only thing on a boss stage that costs a life.
         for (int g = 0; g < Glyph.COUNT; g++) {
             if (b.boltWants(g)) return c.tapKey(g, L);

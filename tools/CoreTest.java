@@ -59,6 +59,7 @@ final class CoreTest {
             TestBoss.drum(L);
             TestBoss.magpie(L);
             TestBoss.sumo(L);
+            TestBoss.divider(L);
             TestBoss.stacking(L);
             TestBoss.stageJump(L);
             TestBoss.cleanup(L);

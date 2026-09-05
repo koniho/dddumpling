@@ -81,7 +81,7 @@ final class TestBoss extends Check {
         check("the stages either side of it are not", between);
         boolean laterClear = true;
         for (int s = 6; s <= 500; s++) if (Boss.isBossStage(s)) laterClear = false;
-        check("it is the only enabled boss stage", laterClear);
+        check("only stages 5 and 10 are enabled", !laterClear && Boss.isBossStage(10));
         check("stage 0 is not a boss stage", !Boss.isBossStage(0));
 
         check("the enabled boss is the slime", Boss.kindFor(5) == Boss.SLIME);
@@ -92,8 +92,9 @@ final class TestBoss extends Check {
         check("beating the stage-5 slime unlocks cubes for this run", unlock.cubeUnlocked);
         unlock.startGame();
         check("a new playthrough locks the cube pool again", !unlock.cubeUnlocked);
-        check("later boss designs remain disabled", Boss.kindFor(10) == -1
-                && Boss.kindFor(25) == -1 && Boss.kindFor(500) == -1);
+        check("stage 10 is the split slime", Boss.kindFor(10) == Boss.SPLITTER);
+        check("later boss designs remain disabled", Boss.kindFor(25) == -1
+                && Boss.kindFor(500) == -1);
 
         // The harness font is an ASCII subset and silently draws nothing for a character it lacks,
         // so a name using one would look right on the device and be missing a letter in every frame
@@ -469,6 +470,9 @@ final class TestBoss extends Check {
             if (c.boss.etype[i] == Boss.E_GLOB) globs++;
         }
         check("the fifth press sheds a glob", globs == 1);
+        check("the vulnerable slime color pulse reaches both ends of its cycle",
+                BossScreen.vulnerabilityPulse((float) (-Math.PI / 2 / 6.4)) < 0.001f
+                        && BossScreen.vulnerabilityPulse((float) (Math.PI / 2 / 6.4)) > 0.999f);
         check("and lands one satisfying split pop", splitEar.bossSplits == 1);
         check("each charged bolt character dies with its own low bloop",
                 splitEar.boltPops == Boss.SPLIT_HITS - 1);
@@ -604,6 +608,26 @@ final class TestBoss extends Check {
         boolean noGlob = true;
         for (int i = 0; i < Boss.ELEMS; i++) if (c.boss.etype[i] == Boss.E_GLOB) noGlob = false;
         check("it just fades away", noGlob);
+
+        // A wart may already overlap the generous damage strip when the finger first lands. That
+        // pickup must leave the strip once before a fresh crossing is allowed to score.
+        GameCore edgeStart = enterBoss(L, Boss.SLIME, 43L);
+        toOpen(edgeStart, L);
+        edgeStart.enemies.clear(); edgeStart.target = null;
+        splitOne(edgeStart, L);
+        int edgeGlob = -1;
+        for (int i = 0; i < Boss.ELEMS; i++)
+            if (edgeStart.boss.etype[i] == Boss.E_GLOB) edgeGlob = i;
+        edgeStart.boss.ex[edgeGlob] = L.playLeft + edgeStart.boss.er[edgeGlob] * 0.5f;
+        float edgeY = edgeStart.boss.ey[edgeGlob], edgeHp = edgeStart.boss.hp;
+        edgeStart.grabBoss(edgeStart.boss.ex[edgeGlob], edgeY);
+        check("a glob drag beginning in the damage zone cannot score there",
+                !edgeStart.dragBoss(L.playLeft, edgeY, L) && edgeStart.boss.hp == edgeHp
+                        && edgeStart.boss.held == edgeGlob);
+        check("leaving the damage zone only arms the drag",
+                !edgeStart.dragBoss(L.w * 0.5f, edgeY, L) && edgeStart.boss.hp == edgeHp);
+        check("a fresh edge crossing after that can damage",
+                edgeStart.dragBoss(L.playLeft, edgeY, L) && edgeStart.boss.hp < edgeHp);
 
         // Dragged off the field, it does not.
         GameCore d = enterBoss(L, Boss.SLIME, 42L);
@@ -1260,7 +1284,7 @@ final class TestBoss extends Check {
         check("the field is cleared", d.enemies.isEmpty() && d.target == null);
         check("the frenzy is over", !d.powerActive() && d.mode < 0);
         check("the squishy is gone", d.buddy.out());
-        check("and later stages have no boss", !d.boss.active());
+        check("and stage 10 starts its boss", d.boss.active() && d.boss.kind == Boss.SPLITTER);
 
         // It refuses to go below stage 1 rather than wrapping into nonsense.
         d.jumpToStage(-40, L);
@@ -1281,6 +1305,135 @@ final class TestBoss extends Check {
         GameCore t = new GameCore(new Mem(), 604L);
         t.jumpToStage(9, L);
         check("it does nothing off the play screen", t.stage != 9);
+    }
+
+    private static void chargeDivide(GameCore c, int ordinal, Layout L) {
+        while (c.boss.pieceCharge(ordinal) < Boss.DIVIDE_HITS)
+            c.tapKey(c.boss.pieceWant(ordinal), L);
+    }
+
+    static void divider(Layout L) {
+        group("boss: dark divide");
+        GameCore c = enterBoss(L, Boss.SPLITTER, 81L);
+        Ear ear = new Ear();
+        c.sound = ear;
+
+        check("it begins as one large slime", c.boss.pieceCount() == 1
+                && c.boss.pieceDepth(0) == 0);
+        check("it cannot be pinched before it is charged", !c.beginBossPinch(100f));
+        int wrong = (c.boss.pieceWant(0) + 1) % Glyph.COUNT;
+        c.tapKey(wrong, L);
+        check("only a marked character charges it", c.boss.pieceCharge(0) == 0);
+        chargeDivide(c, 0, L);
+        check("six marked hits make it vulnerable", c.boss.pieceCharge(0) == Boss.DIVIDE_HITS);
+        check("charge hits have their own damage sound", ear.divideDamages == Boss.DIVIDE_HITS);
+        check("a pinch can begin once vulnerable", c.beginBossPinch(100f));
+        float beforeSpan = c.boss.pieceBody(0).spanY();
+        check("less than the required spread does not split it",
+                !c.pinchBoss(100f * (Boss.DIVIDE_SCALE - 0.01f), L));
+        c.endBossPinch();
+        float px = c.boss.pieceX(0, L), py = c.boss.pieceY(0, L);
+        check("a charged body accepts a pinch over itself",
+                c.beginBossPinch(300f, px, py - 150f, px, py + 150f));
+        check("the live body stretches around the gesture fingers",
+                !c.pinchBoss(345f, px, py - 172.5f, px, py + 172.5f, L)
+                        && c.boss.pieceBody(0).spanY() > beforeSpan);
+        for (int i = 0; i < 30; i++) c.boss.update(DT, L, c.rnd);
+        float heldSpan = c.boss.pieceBody(0).spanY();
+        check("a held pinch remains bounded and conforms to both fingers",
+                Math.abs(heldSpan - 345f) < 8f
+                        && Math.abs(c.boss.pieceBody(0).centreX() - px) < 2f
+                        && Math.abs(c.boss.pieceBody(0).centreY() - py) < 2f);
+        check("the constrained body keeps its soft jiggle", c.boss.pieceBody(0).motion() > 0f);
+        c.pinchBoss(315f, px, py - 157.5f, px, py + 157.5f, L);
+        check("moving the fingers inward contracts the live shape",
+                c.boss.pieceBody(0).spanY() < heldSpan - 20f);
+        check("the required pinch makes two",
+                c.pinchBoss(300f * (Boss.DIVIDE_SCALE + 0.01f), px, py - 190f, px, py + 190f, L)
+                        && c.boss.pieceCount() == 2);
+        check("both children are smaller than their unsplit parent",
+                c.boss.pieceBody(0).radiusY() < beforeSpan * 0.5f
+                        && c.boss.pieceBody(1).radiusY() < beforeSpan * 0.5f);
+
+        int splitEvents = 1;
+        for (int depth = 1; depth < Boss.DIVIDE_LEVELS; depth++) {
+            boolean more = true;
+            while (more) {
+                more = false;
+                for (int i = 0; i < c.boss.pieceCount(); i++) {
+                    if (c.boss.pieceDepth(i) != depth) continue;
+                    chargeDivide(c, i, L);
+                    c.boss.beginPinch(100f);
+                    c.boss.pinch(100f * (Boss.DIVIDE_SCALE + 0.01f));
+                    splitEvents++;
+                    more = true;
+                    break;
+                }
+            }
+        }
+        check("three generations produce eight fragments", c.boss.pieceCount() == 8);
+        check("the binary tree needed seven split events", splitEvents == 7);
+        boolean terminal = true;
+        for (int i = 0; i < c.boss.pieceCount(); i++)
+            if (c.boss.pieceDepth(i) != Boss.DIVIDE_LEVELS) terminal = false;
+        check("only third-generation fragments are destructible", terminal);
+
+        int before = c.boss.pieceCount();
+        for (int i = 0; i < Boss.DIVIDE_HITS - 1; i++) c.tapKey(c.boss.pieceWant(0), L);
+        check("a terminal fragment survives five hits", c.boss.pieceCount() == before);
+        int doomedNode = c.boss.pieceNodeIndex(0);
+        c.tapKey(c.boss.pieceWant(0), L);
+        check("its sixth hit destroys only that fragment", c.boss.pieceCount() == before - 1);
+        check("a destroyed fragment remains as a visible remnant",
+                c.boss.nodeVisible(doomedNode) && !c.boss.nodeActive(doomedNode)
+                        && c.boss.divideBody[doomedNode] != null);
+        float remnantX = c.boss.divideX[doomedNode], remnantY = c.boss.divideY[doomedNode];
+        for (int i = 0; i < 12; i++) c.boss.update(DT, L, c.rnd);
+        check("the destroyed remnant keeps bouncing around the arena",
+                c.boss.divideX[doomedNode] != remnantX || c.boss.divideY[doomedNode] != remnantY);
+        while (c.boss.pieceCount() > 0 && !c.boss.beaten) {
+            int count = c.boss.pieceCount();
+            for (int i = 0; i < Boss.DIVIDE_HITS && c.boss.pieceCount() == count; i++)
+                c.tapKey(c.boss.pieceWant(0), L);
+        }
+        check("all eight must be destroyed to beat it", c.boss.beaten && c.boss.pieceCount() == 0);
+        check("all destroyed fragments remain for the death animation",
+                Integer.bitCount(c.boss.divideDead) == Boss.DIVIDE_PIECES);
+        float speedBefore = 0f;
+        for (int n = 0; n < Boss.DIVIDE_NODES; n++) if (c.boss.nodeVisible(n))
+            speedBefore += Math.abs(c.boss.divideVX[n]) + Math.abs(c.boss.divideVY[n]);
+        for (int i = 0; i < 30; i++) c.boss.update(DT, L, c.rnd);
+        float speedAfter = 0f;
+        for (int n = 0; n < Boss.DIVIDE_NODES; n++) if (c.boss.nodeVisible(n))
+            speedAfter += Math.abs(c.boss.divideVX[n]) + Math.abs(c.boss.divideVY[n]);
+        check("the fragments slow before they drop", speedAfter < speedBefore * 0.35f);
+        while (c.boss.leaveProgress() < 0.55f) c.boss.update(DT, L, c.rnd);
+        float ringY = 0f, minOrbit = Float.MAX_VALUE, maxOrbit = 0f;
+        float deathCX = (L.playLeft + L.playRight) * 0.5f;
+        float deathCY = (L.playTop + L.dangerY) * 0.5f;
+        for (int n = 0; n < Boss.DIVIDE_NODES; n++) if (c.boss.nodeVisible(n)) {
+            ringY += c.boss.divideY[n];
+            float dx = c.boss.divideX[n] - deathCX, dy = c.boss.divideY[n] - deathCY;
+            float orbit = (float) Math.sqrt(dx * dx + dy * dy);
+            minOrbit = Math.min(minOrbit, orbit); maxOrbit = Math.max(maxOrbit, orbit);
+        }
+        check("the remnants coalesce around a circle at screen center",
+                maxOrbit - minOrbit < Boss.bodyR(L) * 0.08f);
+        for (int i = 0; i < 24; i++) c.boss.update(DT, L, c.rnd);
+        float droppedY = 0f;
+        for (int n = 0; n < Boss.DIVIDE_NODES; n++) if (c.boss.nodeVisible(n))
+            droppedY += c.boss.divideY[n];
+        check("the gathered circle then drops toward the bottom", droppedY > ringY);
+
+        GameCore timers = enterBoss(L, Boss.SPLITTER, 82L);
+        int node = timers.boss.pieceNodeIndex(0);
+        timers.boss.halfIdle[node] = Boss.DIVIDE_BOLT_TIME - 0.1f;
+        timers.tapKey(timers.boss.pieceWant(0), L);
+        timers.update(0.2f, L);
+        check("attacking a slime resets its own three-second clock", timers.boss.boltCount() == 0);
+        timers.boss.halfIdle[node] = Boss.DIVIDE_BOLT_TIME - 0.1f;
+        timers.update(0.2f, L);
+        check("a neglected slime launches from its own body", timers.boss.boltCount() == 1);
     }
 
     // ---- cleanup ------------------------------------------------------------

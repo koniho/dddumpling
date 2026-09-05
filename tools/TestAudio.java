@@ -200,6 +200,27 @@ final class TestAudio extends Check {
         check("no effect clips", allClean);
         check("effect lengths are sane", allSane);
 
+        short[] divideHit = Sfx.build(Sfx.DIVIDE_DAMAGE);
+        short[] divideSplit = Sfx.build(Sfx.DIVIDE_SPLIT);
+        check("Dark Divide damage is shorter than an ordinary boss hit",
+                divideHit.length < Sfx.build(Sfx.BOSS_DAMAGE).length);
+        check("its split is the larger, lingering event",
+                divideSplit.length > Sfx.build(Sfx.BOSS_SPLIT).length
+                        && divideSplit.length > divideHit.length * 2);
+        check("its damage cue starts with an immediate crack",
+                peakAt(divideHit) < Sfx.RATE / 100);
+
+        short[] heavyBoing = Sfx.build(Sfx.DIVIDE_BOING_HEAVY);
+        short[] mediumBoing = Sfx.build(Sfx.DIVIDE_BOING_MEDIUM);
+        short[] lightBoing = Sfx.build(Sfx.DIVIDE_BOING_LIGHT);
+        check("Dark Divide has three collision voices",
+                heavyBoing != mediumBoing && mediumBoing != lightBoing);
+        check("large pieces have a longer, heavier boing",
+                heavyBoing.length > mediumBoing.length && mediumBoing.length > lightBoing.length);
+        check("small pieces have the springiest, highest boing",
+                crossings(lightBoing) > crossings(mediumBoing)
+                        && crossings(mediumBoing) > crossings(heavyBoing));
+
         short[] loop = Music.loop(Music.SWING_STYLE);
         check("music loop is the expected length", loop.length == Music.loopFrames(Music.SWING_STYLE));
         check("music loop is several seconds", loop.length > Sfx.RATE * 5);
@@ -213,6 +234,7 @@ final class TestAudio extends Check {
         for (int i = 0; i < bossLoop.length; i++)
             bossMax = Math.max(bossMax, Math.abs(bossLoop[i]));
         check("boss progression spans thirty-two bars", Music.bossBars() == 32);
+        check("boss melody is quantized to eighth notes", Music.bossMelodyOnEighths());
         check("boss loop is at least eight old four-bar loops",
                 bossLoop.length > Sfx.RATE * 37);
         check("and keeps the same audible instrument bed", bossMax > peak / 4);
@@ -547,6 +569,22 @@ final class TestAudio extends Check {
                 died.gameOvers, GameCore.DEATH_TIME);
         check("a run gets one full stop", died.gameOvers == 1);
         check("and it waits for the swirl rather than landing on the drip", quietAtDeath);
+    }
+
+    private static int peakAt(short[] pcm) {
+        int at = 0, peak = 0;
+        for (int i = 0; i < pcm.length; i++) {
+            int v = Math.abs(pcm[i]);
+            if (v > peak) { peak = v; at = i; }
+        }
+        return at;
+    }
+
+    /** Positive-going zero crossings in the shared opening window: a robust pitch ordering test. */
+    private static int crossings(short[] pcm) {
+        int n = Math.min(pcm.length, Sfx.RATE / 8), count = 0;
+        for (int i = 1; i < n; i++) if (pcm[i - 1] <= 0 && pcm[i] > 0) count++;
+        return count;
     }
 
     static boolean silentRunSurvives(Layout L) {

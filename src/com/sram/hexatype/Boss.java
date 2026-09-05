@@ -90,12 +90,15 @@ final class Boss {
      * the swipe and staggers it, and a staggered shove hits twice as hard.
      */
     static final int SUMO = 4;
-    static final int COUNT = 5;
+    static final int SPLITTER = 5;
+    static final int COUNT = 6;
 
-    static final String[] NAMES = {"SLIME", "TRIPLETS", "MOCHI DRUM", "MAGPIE", "SUMO BUN"};
+    static final String[] NAMES = {"SLIME", "TRIPLETS", "MOCHI DRUM", "MAGPIE", "SUMO BUN",
+            "DARK DIVIDE"};
     /** One line each, in the mode bar. Held to the width of the longest frenzy blurb. */
     static final String[] BLURB = {"HIT THE MARK, DRAG GLOBS", "TAP THEM AWAKE FIRST",
-            "KEY, THEN TAP, ON BEAT", "DRAG YOUR KEY BACK", "SWIPE IT BACK"};
+            "KEY, THEN TAP, ON BEAT", "DRAG YOUR KEY BACK", "SWIPE IT BACK",
+            "HIT THE MARK, THEN PINCH OUT"};
     /**
      * Which of the six characters each boss is a giant version of.
      *
@@ -104,7 +107,7 @@ final class Boss {
      * arrives already legible.
      */
     static final int[] FACE = {Kawaii.SQUISHY, Kawaii.GRAPES, Kawaii.DUMPLING, Kawaii.CAT,
-            Kawaii.BLOB};
+            Kawaii.BLOB, Kawaii.SQUISHY};
 
     /** How long the arrival card holds the field before the fight starts. */
     static final float INTRO = 1.6f;
@@ -130,8 +133,8 @@ final class Boss {
      * <em>is</em> the window. SUMO has no press window — see {@link #open()}, which answers a
      * different question for it.
      */
-    private static final float[] CYCLE = {5.0f, 3.6f, 1.20f, 3.2f, 0f};
-    private static final float[] SHOW = {4.0f, 3.6f, 0.40f, 2.0f, 0f};
+    private static final float[] CYCLE = {5.0f, 3.6f, 1.20f, 3.2f, 0f, 1f};
+    private static final float[] SHOW = {4.0f, 3.6f, 0.40f, 2.0f, 0f, 1f};
 
     /**
      * How long a {@link #TRIPLETS} chord may take from its first head to its last.
@@ -169,7 +172,7 @@ final class Boss {
      * hand finishes in about eight seconds — see the per-boss timings {@code TestBoss.winning} prints,
      * which are the figures to read this table against.
      */
-    private static final float[] HP = {4f, 4f, 7f, 5f, 3f};
+    private static final float[] HP = {4f, 4f, 7f, 5f, 3f, 8f};
     /**
      * Extra health per later visit, capped by {@link #TOUGH_MAX}. A boss met at stage 30 should be
      * more than the same boss at stage 5 — but the cap matters far more than the slope now that
@@ -228,6 +231,8 @@ final class Boss {
     final float[] elife = new float[ELEMS];
     /** Which element a finger is currently holding, or -1. */
     int held = -1;
+    /** Edge-started glob drags must visit the safe interior before an edge crossing can damage. */
+    boolean globDragStarted, globDragCanDamage;
 
     /** How long a shed glob survives untouched, and a dropped key. */
     static final float GLOB_TIME = 5f, KEY_TIME = 4.5f;
@@ -318,9 +323,31 @@ final class Boss {
     /** {@link #MAGPIE}: seconds until it takes another key, while it is empty-handed. */
     float stealT;
 
-    /** Only stage 5 currently hosts a boss; the remaining designs stay dormant. */
+    /** Stage-10 split slime: charge, pinch state, per-body prompts and neglect clocks. */
+    static final int DIVIDE_HITS = 6, DIVIDE_LEVELS = 3, DIVIDE_PIECES = 1 << DIVIDE_LEVELS;
+    static final int DIVIDE_NODES = (DIVIDE_PIECES << 1) - 1;
+    static final float DIVIDE_SCALE = 1.55f, DIVIDE_BOLT_TIME = 3f;
+    int divideHits, divideLevel, divideAlive;
+    boolean divided;
+    final int[] halfWant = new int[DIVIDE_NODES];
+    final float[] halfIdle = new float[DIVIDE_NODES];
+    /** Short, visual-only memories: the split flare, and which body was just struck. */
+    final float[] halfHurt = new float[DIVIDE_NODES];
+    final int[] pieceHits = new int[DIVIDE_NODES];
+    final float[] divideX = new float[DIVIDE_NODES], divideY = new float[DIVIDE_NODES];
+    final float[] divideVX = new float[DIVIDE_NODES], divideVY = new float[DIVIDE_NODES];
+    final Softbody[] divideBody = new Softbody[DIVIDE_NODES];
+    int divideActive, divideDead, pinchNode = -1;
+    boolean dividePlaced;
+    float boingWeight = -1f;
+    float pinchX1, pinchY1, pinchX2, pinchY2;
+    float pinchStart, divideBurst;
+
+    /** Stage 5 teaches boss play; stage 10 adds the first two-finger fight. */
     static int kindFor(int stage) {
-        return stage == EVERY ? SLIME : -1;
+        if (stage == EVERY) return SLIME;
+        if (stage == EVERY * 2) return SPLITTER;
+        return -1;
     }
 
     static boolean isBossStage(int stage) {
@@ -416,15 +443,26 @@ final class Boss {
         want = -1;
         stolen = -1;
         held = -1;
+        globDragStarted = globDragCanDamage = false;
         chordT = 0f;
         chainAt = 0;
         split = 0;
         promptT = PROMPT_MAX;
         launchT = 0f;
         launched = false;
+        divideHits = divideLevel = 0;
+        divideAlive = divideActive = 1;
+        divideDead = 0;
+        divided = dividePlaced = false;
+        pinchNode = -1;
+        pinchX1 = pinchY1 = pinchX2 = pinchY2 = Float.NaN;
+        boingWeight = -1f;
+        pinchStart = divideBurst = 0f;
+        resetDividePieces(rnd);
+        if (which != SPLITTER) { rnd.nextInt(Glyph.COUNT); rnd.nextInt(Glyph.COUNT - 1); }
         followX = followY = 0f;
         clearBolts();
-        // Seeded off the kind, so the five bosses do not all breathe on the same phase. Placed on
+        // Seeded off the kind, so the six bosses do not all breathe on the same phase. Placed on
         // the first update, which is the first time there is a Layout to place it in.
         body = new Softbody(Softbody.NODES, which + 1);
         bodyPlaced = false;
@@ -467,12 +505,26 @@ final class Boss {
         stealT = 0f;
         tapBeat = false;
         held = -1;
+        globDragStarted = globDragCanDamage = false;
         chordT = 0f;
         chainAt = 0;
         split = 0;
         promptT = PROMPT_MAX;
         launchT = 0f;
         launched = false;
+        divideHits = divideLevel = divideAlive = divideActive = divideDead = 0;
+        divided = dividePlaced = false;
+        pinchNode = -1;
+        pinchX1 = pinchY1 = pinchX2 = pinchY2 = Float.NaN;
+        boingWeight = -1f;
+        pinchStart = divideBurst = 0f;
+        for (int i = 0; i < DIVIDE_NODES; i++) {
+            halfWant[i] = -1;
+            halfIdle[i] = halfHurt[i] = 0f;
+            pieceHits[i] = 0;
+            divideBody[i] = null;
+            divideX[i] = divideY[i] = divideVX[i] = divideVY[i] = 0f;
+        }
         followX = followY = 0f;
         clearBolts();
         // The body goes too. It is the largest thing a boss puts on the screen, and the renderer
@@ -504,7 +556,7 @@ final class Boss {
      * which is what keeps the header column above it — see {@link #BODY_DROP} — a single derivation
      * instead of one per boss.
      */
-    private static final float[] WIDE = {2f, 1f, 1f, 1f, 1f};
+    private static final float[] WIDE = {2f, 1f, 1f, 1f, 1f, 1.65f};
 
     /**
      * How springy each boss is; see {@link Softbody#jiggle}.
@@ -514,7 +566,7 @@ final class Boss {
      * because its own mechanic no longer hits it every second — five presses work a glob loose and
      * only the drag scores, so the body has time to actually finish a wobble.
      */
-    private static final float[] JIGGLE = {2f, 1f, 1f, 1f, 1f};
+    private static final float[] JIGGLE = {2f, 1f, 1f, 1f, 1f, 1.7f};
 
     /** Rest width over rest height for this boss. */
     float wide() {
@@ -705,6 +757,7 @@ final class Boss {
      */
     boolean open() {
         if (!fighting()) return false;
+        if (kind == SPLITTER) return true;
         if (kind == SUMO) return depth >= SHOVE_REACH;
         return phase >= CYCLE[kind] - SHOW[kind];
     }
@@ -811,8 +864,85 @@ final class Boss {
             case DRUM: return !tapBeat && g == want;
             case MAGPIE:
             case SUMO: return g == want;
+            case SPLITTER:
+                return dividePieceFor(g) >= 0;
             default: return false;
         }
+    }
+
+    int pieceCount() {
+        return Integer.bitCount(divideActive);
+    }
+
+    private int pieceNode(int ordinal) {
+        for (int n = 0; n < DIVIDE_NODES; n++) {
+            if ((divideActive & (1 << n)) == 0) continue;
+            if (ordinal-- == 0) return n;
+        }
+        return -1;
+    }
+
+    boolean pieceAlive(int ordinal) { return pieceNode(ordinal) >= 0; }
+    int pieceWant(int ordinal) { int n = pieceNode(ordinal); return n < 0 ? -1 : halfWant[n]; }
+    int pieceCharge(int ordinal) { int n = pieceNode(ordinal); return n < 0 ? 0 : pieceHits[n]; }
+    int pieceDepth(int ordinal) { int n = pieceNode(ordinal); return n < 0 ? -1 : nodeDepth(n); }
+    int pieceNodeIndex(int ordinal) { return pieceNode(ordinal); }
+    int vulnerablePiece() {
+        for (int i = 0; i < pieceCount(); i++)
+            if (pieceDepth(i) < DIVIDE_LEVELS && pieceCharge(i) >= DIVIDE_HITS) return i;
+        return -1;
+    }
+    float pieceHurt(int ordinal) { int n = pieceNode(ordinal); return n < 0 ? 0f : halfHurt[n]; }
+    float pieceIdle(int ordinal) { int n = pieceNode(ordinal); return n < 0 ? 0f : halfIdle[n]; }
+    Softbody pieceBody(int ordinal) { int n = pieceNode(ordinal); return n < 0 ? null : divideBody[n]; }
+
+    boolean nodeActive(int n) {
+        return n >= 0 && n < DIVIDE_NODES && (divideActive & (1 << n)) != 0;
+    }
+
+    boolean nodeVisible(int n) {
+        return n >= 0 && n < DIVIDE_NODES && ((divideActive | divideDead) & (1 << n)) != 0;
+    }
+
+    int nodeDepth(int n) {
+        int d = 0;
+        while (n > 0) { n = (n - 1) >> 1; d++; }
+        return d;
+    }
+
+    private int dividePieceFor(int g) {
+        int best = -1;
+        for (int n = 0; n < DIVIDE_NODES; n++) {
+            if (nodeActive(n) && !(nodeDepth(n) < DIVIDE_LEVELS && pieceHits[n] >= DIVIDE_HITS)
+                    && halfWant[n] == g
+                    && (best < 0 || halfIdle[n] > halfIdle[best])) best = n;
+        }
+        return best;
+    }
+
+    private void rerollPiece(int node, Random rnd) {
+        int next = rnd.nextInt(Glyph.COUNT);
+        for (int guard = 0; guard < Glyph.COUNT; guard++) {
+            boolean used = false;
+            for (int n = 0; n < DIVIDE_NODES; n++)
+                if (n != node && nodeActive(n) && halfWant[n] == next) used = true;
+            if (!used) break;
+            next = (next + 1) % Glyph.COUNT;
+        }
+        halfWant[node] = next;
+    }
+
+    private void resetDividePieces(Random rnd) {
+        divideActive = divideAlive = 1;
+        divideDead = 0;
+        for (int i = 0; i < DIVIDE_NODES; i++) {
+            halfWant[i] = -1;
+            halfIdle[i] = halfHurt[i] = 0f;
+            pieceHits[i] = 0;
+            divideBody[i] = null;
+            divideX[i] = divideY[i] = divideVX[i] = divideVY[i] = 0f;
+        }
+        rerollPiece(0, rnd);
     }
 
     // ---- input --------------------------------------------------------------
@@ -846,7 +976,7 @@ final class Boss {
 
         // Where a bullet fired at this press should land. The body by default; overridden below by
         // the one boss whose presses land somewhere more specific than "it".
-        if (body != null) {
+        if (body != null && kind != SPLITTER) {
             hitX = body.centreX();
             hitY = body.centreY();
         }
@@ -917,6 +1047,31 @@ final class Boss {
                 awake &= ~(1 << rnd.nextInt(head.length));
                 for (int k = 0; k < head.length; k++) head[k] = rnd.nextInt(Glyph.COUNT);
                 return damage(1f);
+            }
+            case SPLITTER: {
+                int part = dividePieceFor(g);
+                if (part < 0) return NONE;
+                hitX = divideX[part];
+                hitY = divideY[part];
+                halfIdle[part] = 0f;
+                halfHurt[part] = 1f;
+                pieceHits[part] = Math.min(DIVIDE_HITS, pieceHits[part] + 1);
+                divideHits = pieceHits[part];
+                hurt = Math.max(hurt, 0.55f);
+                Softbody pb = divideBody[part];
+                if (pb != null) pb.impulse(hitX, hitY - pb.radiusY() * 0.45f, HIT_PUNCH * 0.7f);
+                if (pieceHits[part] < DIVIDE_HITS) {
+                    rerollPiece(part, rnd);
+                    return PART;
+                }
+                if (nodeDepth(part) < DIVIDE_LEVELS) return PART;
+                divideActive &= ~(1 << part);
+                divideDead |= 1 << part;
+                divideAlive = divideActive;
+                halfWant[part] = -1;
+                int r = damage(1f);
+                if (divideActive == 0 && !beaten) r = damage(hp);
+                return r;
             }
             case DRUM: {
                 int r = damage(1f);
@@ -1018,6 +1173,7 @@ final class Boss {
     boolean grab(int i) {
         if (!fighting() || !draggable(i)) return false;
         held = i;
+        globDragStarted = globDragCanDamage = false;
         return true;
     }
 
@@ -1029,9 +1185,13 @@ final class Boss {
      */
     int dragTo(float x, float y, Layout L) {
         if (!fighting() || held < 0 || etype[held] == E_OFF) return NONE;
+        int t = etype[held];
+        if (t == E_GLOB && !globDragStarted) {
+            globDragCanDamage = !globDamageZone(ex[held], ey[held], held, L);
+            globDragStarted = true;
+        }
         ex[held] = x;
         ey[held] = y;
-        int t = etype[held];
         if (t == E_GLOB) {
             // Carried to the edge of the play area, which is worth another hit on the boss.
             //
@@ -1041,8 +1201,12 @@ final class Boss {
             // the drag kept ending in a lifted finger instead of a landed hit, and it read as only
             // counting on release. There are two glob radii of slack now, and the glob is
             // visibly against the wall when it lands.
-            float slack = er[held] * GLOB_EDGE;
-            if (x <= L.playLeft + slack || x >= L.playRight - slack || y <= L.playTop + slack) {
+            boolean inDamageZone = globDamageZone(x, y, held, L);
+            if (!globDragCanDamage) {
+                if (!inDamageZone) globDragCanDamage = true;
+                return PART;
+            }
+            if (inDamageZone) {
                 // Free. The skin lets go and snaps back: a dent inward exactly where it had been
                 // stretched out to, plus a whole-body wobble, on top of the release the solver gives
                 // for nothing. This is the moment the mechanic is built around, so it is the one
@@ -1077,10 +1241,17 @@ final class Boss {
         return PART;
     }
 
+    private boolean globDamageZone(float x, float y, int element, Layout L) {
+        float slack = er[element] * GLOB_EDGE;
+        return x <= L.playLeft + slack || x >= L.playRight - slack
+                || y <= L.playTop + slack;
+    }
+
     /** The finger lifted without finishing. A glob flows back; a stolen key stays dropped. */
     void release() {
         if (held >= 0 && etype[held] == E_GLOB) returning[held] = true;
         held = -1;
+        globDragStarted = globDragCanDamage = false;
     }
 
     /**
@@ -1180,9 +1351,9 @@ final class Boss {
      */
     private void place(int i, float bx, float by, float br, Layout L) {
         if (etype[i] == E_GLOB) {
-            // Small enough that two of them inside the body do not become its eyes — at 0.30 a pair
-            // sat exactly where a face goes and the creature stopped having one.
-            er[i] = br * 0.23f;
+            // Large enough to read as the fight target at phone scale. It stays on the outside edge,
+            // so the stronger mark cannot be mistaken for another eye or part of the face.
+            er[i] = br * 0.30f;
             if (held == i || moved[i]) return;
             // Ahead of the resting edge. The soft-body constraint grows the skin around
             // the boss — it sits as a colour change in the goo it split off from, until a finger
@@ -1378,6 +1549,118 @@ final class Boss {
         }
     }
 
+    boolean beginPinch(float distance) {
+        return beginPinch(distance, Float.NaN, Float.NaN, Float.NaN, Float.NaN);
+    }
+
+    boolean beginPinch(float distance, float x1, float y1, float x2, float y2) {
+        if (!fighting() || kind != SPLITTER || distance <= 0f) return false;
+        float mx = Float.isNaN(x1) ? Float.NaN : (x1 + x2) * 0.5f;
+        float my = Float.isNaN(y1) ? Float.NaN : (y1 + y2) * 0.5f;
+        int best = -1;
+        float bestD = Float.MAX_VALUE;
+        for (int n = 0; n < DIVIDE_NODES; n++) {
+            if (!nodeActive(n) || pieceHits[n] < DIVIDE_HITS || nodeDepth(n) >= DIVIDE_LEVELS) continue;
+            float dx = Float.isNaN(mx) ? 0f : divideX[n] - mx;
+            float dy = Float.isNaN(my) ? 0f : divideY[n] - my;
+            float d = dx * dx + dy * dy;
+            float reach = pieceRadiusNode(n, null) * 1.45f;
+            if (!Float.isNaN(mx) && d > reach * reach) continue;
+            if (d < bestD) { bestD = d; best = n; }
+        }
+        if (best < 0) return false;
+        pinchNode = best;
+        pinchStart = distance;
+        pinchX1 = x1; pinchY1 = y1; pinchX2 = x2; pinchY2 = y2;
+        return true;
+    }
+
+    boolean pinch(float distance) {
+        return pinch(distance, Float.NaN, Float.NaN, Float.NaN, Float.NaN, null);
+    }
+
+    boolean pinch(float distance, float x1, float y1, float x2, float y2, Random rnd) {
+        if (pinchNode < 0 || pinchStart <= 0f || !nodeActive(pinchNode)) return false;
+        Softbody pb = divideBody[pinchNode];
+        if (!Float.isNaN(x1)) {
+            pinchX1 = x1; pinchY1 = y1; pinchX2 = x2; pinchY2 = y2;
+            if (pb != null) {
+                divideX[pinchNode] = (x1 + x2) * 0.5f;
+                divideY[pinchNode] = (y1 + y2) * 0.5f;
+                pb.moveTo(divideX[pinchNode], divideY[pinchNode]);
+                pb.encompass(x1, y1, x2, y2);
+            }
+        }
+        if (distance / pinchStart < DIVIDE_SCALE) return false;
+        int parent = pinchNode, left = parent * 2 + 1, right = left + 1;
+        hitX = divideX[parent]; hitY = divideY[parent];
+        if (right >= DIVIDE_NODES) return false;
+        float px = divideX[parent], py = divideY[parent], speed = 95f + 35f * (DIVIDE_LEVELS - nodeDepth(parent));
+        float ux = 1f, uy = 0f;
+        if (!Float.isNaN(x1)) {
+            float dx = x2 - x1, dy = y2 - y1, len = (float) Math.sqrt(dx * dx + dy * dy);
+            if (len > 1e-3f) { ux = dx / len; uy = dy / len; }
+        }
+        divideActive &= ~(1 << parent);
+        divideActive |= (1 << left) | (1 << right);
+        divideAlive = divideActive;
+        divideX[left] = px - ux * pieceRadiusNode(parent, null) * 0.35f;
+        divideY[left] = py - uy * pieceRadiusNode(parent, null) * 0.35f;
+        divideX[right] = px + ux * pieceRadiusNode(parent, null) * 0.35f;
+        divideY[right] = py + uy * pieceRadiusNode(parent, null) * 0.35f;
+        divideVX[left] = divideVX[parent] - ux * speed; divideVY[left] = divideVY[parent] - uy * speed;
+        divideVX[right] = divideVX[parent] + ux * speed; divideVY[right] = divideVY[parent] + uy * speed;
+        Softbody source = divideBody[parent];
+        divideBody[left] = new Softbody(Softbody.NODES, left + 37);
+        divideBody[right] = new Softbody(Softbody.NODES, right + 37);
+        float rr = pieceRadiusNode(left, null);
+        divideBody[left].reset(divideX[left], divideY[left], rr, 1.35f);
+        divideBody[right].reset(divideX[right], divideY[right], rr, 1.35f);
+        divideBody[left].jiggle = divideBody[right].jiggle = JIGGLE[SPLITTER] * 1.8f;
+        divideBody[left].squash(-0.8f); divideBody[right].squash(-0.8f);
+        divideBody[parent] = null; halfWant[parent] = -1;
+        pieceHits[left] = pieceHits[right] = 0; halfIdle[left] = halfIdle[right] = 0f;
+        if (rnd != null) { rerollPiece(left, rnd); rerollPiece(right, rnd); }
+        else { halfWant[left] = (parent + 1) % Glyph.COUNT; halfWant[right] = (parent + 4) % Glyph.COUNT; }
+        divideLevel = Math.max(divideLevel, nodeDepth(left));
+        halfHurt[left] = halfHurt[right] = 1f;
+        divided = true; divideHits = 0; divideBurst = hurt = 1f;
+        pinchNode = -1; pinchStart = 0f;
+        return true;
+    }
+
+    void endPinch() {
+        pinchStart = 0f; pinchNode = -1;
+        pinchX1 = pinchY1 = pinchX2 = pinchY2 = Float.NaN;
+    }
+
+    float pieceX(int ordinal, Layout L) { int n = pieceNode(ordinal); return n < 0 ? bodyX(L) : divideX[n]; }
+    float pieceY(int ordinal, Layout L) { int n = pieceNode(ordinal); return n < 0 ? bodyY(L) : divideY[n]; }
+    float pieceR(int ordinal, Layout L) { int n = pieceNode(ordinal); return n < 0 ? 0f : pieceRadiusNode(n, L); }
+    float halfX(int i, Layout L) { return pieceX(i, L); }
+    float halfY(Layout L) { return bodyY(L); }
+    float halfR(Layout L) { return bodyR(L) * 0.72f; }
+
+    private float pieceRadiusNode(int n, Layout L) {
+        float root = L == null ? (lastBR > 0f ? lastBR : body == null ? 1f : body.radiusY()) : bodyR(L);
+        return root * (float) Math.pow(0.72f, nodeDepth(n));
+    }
+
+    private boolean singleBolt(Random rnd, float x, float y) {
+        int slot = -1;
+        for (int i = 0; i < BOLTS; i++) if (!blive[i]) { slot = i; break; }
+        if (slot < 0) return false;
+        blive[slot] = true;
+        bglyph[slot] = rnd.nextInt(Glyph.COUNT);
+        bhp[slot] = bhpMax[slot] = 1;
+        bt[slot] = 0f;
+        bsx[slot] = x;
+        bsy[slot] = y;
+        launchT = LAUNCH_TIME;
+        launched = true;
+        return true;
+    }
+
     /**
      * A press swatting a bolt. Sets {@link #hitX} to where it was, so the bullet the caller fires
      * plays back at the right spot.
@@ -1441,10 +1724,108 @@ final class Boss {
         want = rnd.nextInt(Glyph.COUNT);
     }
 
+    private void updateDivide(float dt, Layout L) {
+        boingWeight = -1f;
+        if (!dividePlaced) {
+            float x = bodyX(L), y = bodyY(L), r = bodyR(L);
+            body.reset(x, y, r, wide());
+            body.jiggle = JIGGLE[SPLITTER];
+            divideBody[0] = body;
+            divideX[0] = x; divideY[0] = y;
+            divideVX[0] = r * 0.72f; divideVY[0] = r * 0.38f;
+            dividePlaced = bodyPlaced = true;
+        }
+        float step = Math.min(dt, 0.05f);
+        float top = Boss.restY(L), bottom = L.dangerY;
+        int visible = divideActive | divideDead;
+        int visibleCount = Integer.bitCount(visible);
+        for (int n = 0; n < DIVIDE_NODES; n++) {
+            if (!nodeVisible(n)) continue;
+            Softbody pb = divideBody[n];
+            if (pb == null) continue;
+            float r = pieceRadiusNode(n, L);
+            if (beaten) {
+                float p = leaveProgress();
+                int ordinal = Integer.bitCount(visible & ((1 << n) - 1));
+                float angle = -Softbody.TAU * 0.25f + Softbody.TAU * ordinal / Math.max(1, visibleCount);
+                float orbit = bodyR(L) * 0.72f;
+                float tx = (L.playLeft + L.playRight) * 0.5f + (float) Math.cos(angle) * orbit;
+                float ty = (L.playTop + L.dangerY) * 0.5f + (float) Math.sin(angle) * orbit;
+                if (p < 0.55f) {
+                    // Brake first, then gather. The remnants visibly lose their bounce before the fall.
+                    float brake = Math.max(0f, 1f - dt * (3f + p * 12f));
+                    divideVX[n] *= brake; divideVY[n] *= brake;
+                    float gather = Math.min(1f, dt * (2.5f + p * 14f));
+                    divideX[n] += (tx - divideX[n]) * gather;
+                    divideY[n] += (ty - divideY[n]) * gather;
+                } else {
+                    float drop = Math.min(1f, (p - 0.55f) / 0.45f);
+                    divideVX[n] = divideVY[n] = 0f;
+                    divideX[n] = tx;
+                    divideY[n] = ty + drop * drop * (L.h + r * 2f - ty);
+                }
+                continue;
+            }
+            if (n != pinchNode) {
+                divideX[n] += divideVX[n] * step;
+                divideY[n] += divideVY[n] * step;
+                boolean bounced = false;
+                if (divideX[n] < L.playLeft + r) { divideX[n] = L.playLeft + r; divideVX[n] = Math.abs(divideVX[n]); bounced = true; }
+                if (divideX[n] > L.playRight - r) { divideX[n] = L.playRight - r; divideVX[n] = -Math.abs(divideVX[n]); bounced = true; }
+                if (divideY[n] < top) { divideY[n] = top; divideVY[n] = Math.abs(divideVY[n]); bounced = true; }
+                if (divideY[n] > bottom - r) { divideY[n] = bottom - r; divideVY[n] = -Math.abs(divideVY[n]); bounced = true; }
+                if (bounced) {
+                    pb.squash(0.34f);
+                    boingWeight = Math.max(boingWeight, 1f - nodeDepth(n) / (float) DIVIDE_LEVELS);
+                }
+            }
+        }
+        for (int a = 0; a < DIVIDE_NODES; a++) {
+            if (beaten || !nodeVisible(a)) continue;
+            for (int b = a + 1; b < DIVIDE_NODES; b++) {
+                if (!nodeVisible(b)) continue;
+                float dx = divideX[b] - divideX[a], dy = divideY[b] - divideY[a];
+                float d2 = dx * dx + dy * dy;
+                float reach = pieceRadiusNode(a, L) + pieceRadiusNode(b, L);
+                if (d2 >= reach * reach) continue;
+                float d = (float) Math.sqrt(Math.max(1f, d2));
+                float ux = dx / d, uy = dy / d, overlap = reach - d;
+                divideX[a] -= ux * overlap * 0.5f; divideY[a] -= uy * overlap * 0.5f;
+                divideX[b] += ux * overlap * 0.5f; divideY[b] += uy * overlap * 0.5f;
+                float va = divideVX[a] * ux + divideVY[a] * uy;
+                float vb = divideVX[b] * ux + divideVY[b] * uy;
+                if (vb < va) {
+                    float kick = (va - vb) * 0.88f + overlap * 4f;
+                    divideVX[a] -= ux * kick; divideVY[a] -= uy * kick;
+                    divideVX[b] += ux * kick; divideVY[b] += uy * kick;
+                    divideBody[a].impulse(divideX[a] + ux * pieceRadiusNode(a, L), divideY[a], 0.45f);
+                    divideBody[b].impulse(divideX[b] - ux * pieceRadiusNode(b, L), divideY[b], 0.45f);
+                    boingWeight = Math.max(boingWeight, 1f - Math.min(nodeDepth(a), nodeDepth(b)) / (float) DIVIDE_LEVELS);
+                }
+            }
+        }
+        for (int n = 0; n < DIVIDE_NODES; n++) {
+            if (!nodeVisible(n) || divideBody[n] == null) continue;
+            Softbody pb = divideBody[n];
+            pb.jiggle = JIGGLE[SPLITTER] * (1f + halfHurt[n] * 0.8f);
+            if (n == pinchNode && !Float.isNaN(pinchX1)) {
+                divideX[n] = (pinchX1 + pinchX2) * 0.5f;
+                divideY[n] = (pinchY1 + pinchY2) * 0.5f;
+            }
+            pb.moveTo(divideX[n], divideY[n]);
+            pb.update(dt);
+            if (n == pinchNode && !Float.isNaN(pinchX1))
+                pb.encompass(pinchX1, pinchY1, pinchX2, pinchY2);
+        }
+    }
+
     /** Returns how many visible boss threats reached the deck this frame. */
     int update(float dt, Layout L, Random rnd) {
         if (kind < 0) return 0;
         hurt = Math.max(0f, hurt - dt * 2.6f);
+        divideBurst = Math.max(0f, divideBurst - dt * 1.35f);
+        for (int i = 0; i < halfHurt.length; i++)
+            halfHurt[i] = Math.max(0f, halfHurt[i] - dt * 3.4f);
         launchT = Math.max(0f, launchT - dt);
         launched = false;
         rage = Math.max(0f, rage - dt * 2.2f);
@@ -1462,7 +1843,8 @@ final class Boss {
 
         // The body follows wherever the layout put the boss, and keeps wobbling on the way out — a
         // burst that starts from a frozen shape reads as two separate animations.
-        if (body != null) {
+        if (kind == SPLITTER) updateDivide(dt, L);
+        if (body != null && kind != SPLITTER) {
             if (!bodyPlaced) {
                 body.reset(bodyX(L), bodyY(L), bodyR(L), wide());
                 body.jiggle = JIGGLE[kind];
@@ -1547,6 +1929,17 @@ final class Boss {
         if (kind == SLIME && boltCount() == 0 && !hasGlob() && open()) {
             promptT -= dt;
             if (promptT <= 0f) volley(rnd);
+        }
+
+        if (kind == SPLITTER) {
+            for (int n = 0; n < DIVIDE_NODES; n++) {
+                if (!nodeActive(n)) continue;
+                halfIdle[n] += dt;
+                if (halfIdle[n] >= DIVIDE_BOLT_TIME) {
+                    if (singleBolt(rnd, divideX[n], divideY[n] + pieceRadiusNode(n, L)))
+                        halfIdle[n] -= DIVIDE_BOLT_TIME;
+                }
+            }
         }
 
         if (kind == SUMO) {

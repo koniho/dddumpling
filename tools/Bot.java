@@ -161,6 +161,7 @@ final class Bot {
         // for want of hands is a legitimate outcome — it costs the prize, not the run.
         if (c.state == GameCore.BONUS) {
             budget = Math.min(BURST, budget + dt * pps);
+
             if (budget >= 1f) {
                 budget -= 1f;
                 presses++;
@@ -171,6 +172,15 @@ final class Bot {
         if (c.state != GameCore.PLAY) return;
 
         budget = Math.min(BURST, budget + dt * pps);
+        if (c.bossFighting() && c.boss.kind == Boss.SPLITTER
+                && c.boss.vulnerablePiece() >= 0 && budget >= 1f) {
+            budget -= 1f;
+            presses++;
+            think = reaction;
+            c.boss.beginPinch(100f);
+            c.boss.pinch(100f * (Boss.DIVIDE_SCALE + 0.01f));
+            return;
+        }
 
         // A drag already under way is a finger that is busy, so it runs before anything else and
         // costs the frame. Nothing else this player can do happens while carrying something.
@@ -248,7 +258,6 @@ final class Bot {
     private boolean bossTouch(GameCore c, Layout L) {
         if (think > 0f || budget < 1f) return false;
         Boss b = c.boss;
-
         // A shove first: SUMO's sink is the only boss threat that costs a life by itself.
         if (b.shovable()) {
             budget -= 1f;

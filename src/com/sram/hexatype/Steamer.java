@@ -16,6 +16,8 @@ final class Steamer {
     boolean swipeReady;
     /** 1 right after a press, decaying: pops the lid up. */
     float lidPulse;
+    /** Key presses while the armed lid awaits a drag: lid-only animated colour flash. */
+    float lidFlash;
     /** Live upward distance of the armed lid drag, in pixels. */
     float lidDrag;
     /** 1 right after a press, decaying: flashes and cycles the container colour. */
@@ -47,6 +49,7 @@ final class Steamer {
         opens = 0;
         swipeReady = false;
         lidPulse = 0;
+        lidFlash = 0;
         lidDrag = 0;
         flash = 0;
         freedT = 0;
@@ -122,7 +125,10 @@ final class Steamer {
             flash = 1f;
             return OK;
         }
-        if (swipeReady) return READY;
+        if (swipeReady) {
+            lidFlash = 1f;
+            return READY;
+        }
         if (g != wanted()) {
             // Rebuffed. The lid does not budge and the basket does not flash: those two used to
             // fire before this check, so a wrong press looked exactly like a landed one and the
@@ -171,9 +177,15 @@ final class Steamer {
         return v < 0 ? 0 : v > 1 ? 1 : v;
     }
 
+    /** Small visual scale-up when a key reminds the player to drag the armed lid. */
+    float lidKeyScale() {
+        return 1f + lidFlash * 0.065f;
+    }
+
     /** True once the lid is off; the caller awards the prize. */
     void update(float dt) {
         lidPulse = decay(lidPulse, dt * 4.5f);
+        lidFlash = decay(lidFlash, dt * 4.8f);
         flash = decay(flash, dt * 3.0f);
         badPulse = decay(badPulse, dt * 3.4f);
         freedT = decay(freedT, dt);

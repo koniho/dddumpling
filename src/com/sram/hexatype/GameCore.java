@@ -188,6 +188,12 @@ final class GameCore {
         void bossDamage();
         /** The slime chain tore a glob free: a taut, wet pop distinct from damage. */
         void bossSplit();
+        /** Dark Divide was struck: a low crack-squelch distinct from every other boss. */
+        void divideDamage();
+        /** The charged Dark Divide was pulled into two bodies. */
+        void divideSplit();
+        /** Two Dark Divide bodies, or one body and a wall, rebounded. 1 is largest/heaviest. */
+        void divideBoing(float weight);
         /** A charged or flying slime bolt was destroyed: one short, low bloop. */
         void boltPop();
         /** A letter cut by the FLING blade. Fires several times per swipe, so it is short. */
@@ -1083,6 +1089,20 @@ final class GameCore {
     boolean dragBoss(float x, float y, Layout L) { return BossPlay.dragTo(this, x, y, L); }
 
     void releaseBoss() { boss.release(); }
+
+    boolean beginBossPinch(float distance) { return boss.beginPinch(distance); }
+
+    boolean beginBossPinch(float distance, float x1, float y1, float x2, float y2) {
+        return boss.beginPinch(distance, x1, y1, x2, y2);
+    }
+
+    boolean pinchBoss(float distance, Layout L) { return BossPlay.pinch(this, distance, L); }
+
+    boolean pinchBoss(float distance, float x1, float y1, float x2, float y2, Layout L) {
+        return BossPlay.pinch(this, distance, x1, y1, x2, y2, L);
+    }
+
+    void endBossPinch() { boss.endPinch(); }
 
     boolean shoveReady() { return BossPlay.shoveReady(this); }
 
@@ -2141,6 +2161,7 @@ final class GameCore {
                         ? 0.08f + boss.promptProgress() * 0.92f : 0f;
                 sound.bossCharge(brew);
                 if (boss.launched) sound.bossLaugh();
+                if (boss.boingWeight >= 0f) sound.divideBoing(boss.boingWeight);
                 if (boss.defeatChime) sound.squish(Boss.FACE[boss.kind], boss.defeatBeat);
             }
             for (int k = 0; k < bossHits && state == PLAY; k++) BossPlay.slam(this, L);
