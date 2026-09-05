@@ -262,27 +262,35 @@ final class BossScreen extends Draw {
         float pulse = 0.72f + 0.28f * (float) Math.sin(c.clock * (7f + 5f * charge));
         int seam = charge >= 1f ? GOLD : Glyph.mix(INK, GOLD, charge * 0.65f);
         float crack = ry * (0.20f + charge * 0.62f);
-        p.polyline(new float[] {cx, cy - crack, cx - rx * 0.09f, cy - ry * 0.24f,
-                cx + rx * 0.07f, cy, cx - rx * 0.08f, cy + ry * 0.27f, cx, cy + crack},
-                Glyph.withAlpha(seam, (int) ((105 + 125 * charge * pulse) * fade)),
-                L.unit * (0.05f + 0.05f * charge));
+        if (charge < 1f) {
+            p.polyline(new float[] {cx, cy - crack, cx - rx * 0.09f, cy - ry * 0.24f,
+                    cx + rx * 0.07f, cy, cx - rx * 0.08f, cy + ry * 0.27f, cx, cy + crack},
+                    Glyph.withAlpha(seam, (int) ((105 + 125 * charge * pulse) * fade)),
+                    L.unit * (0.05f + 0.05f * charge));
+        }
         if (b.hurt > 0f) {
             float kick = b.hurt;
             p.strokeCircle(cx, cy, ry * (0.55f + (1f - kick) * 0.75f),
                     Glyph.withAlpha(0xFFFFFFFF, (int) (210 * kick * fade)), L.unit * 0.13f);
         }
         if (charge < 1f) return;
-        float finger = rx * 0.72f;
         float rr = ry * (0.27f + 0.035f * pulse);
         divideBlob(p, body, cx - rx, cy, bodyCol, fade * pulse);
         divideBlob(p, body, cx + rx, cy, bodyCol, fade * pulse);
-        float reach = rx * (0.74f + 0.05f * pulse);
-        p.polyline(new float[] {cx - finger - rr, cy, cx - reach, cy,
-                cx - reach + rr * 1.4f, cy - rr * 1.1f},
-                Glyph.withAlpha(GOLD, (int) (235 * fade)), L.unit * 0.10f);
-        p.polyline(new float[] {cx + finger + rr, cy, cx + reach, cy,
-                cx + reach - rr * 1.4f, cy - rr * 1.1f},
-                Glyph.withAlpha(GOLD, (int) (235 * fade)), L.unit * 0.10f);
+        if (b.pieceDepth(piece) == 0) {
+            float travel = (c.clock * 0.85f) % 1f;
+            float arrowX = rx * (0.62f + 0.72f * travel);
+            float shaft = rx * 0.34f;
+            float head = ry * 0.20f;
+            int arrow = Glyph.withAlpha(GOLD, (int) (240f * (1f - travel) * fade));
+            for (int side = -1; side <= 1; side += 2) {
+                float tip = cx + side * arrowX;
+                float tail = tip - side * shaft;
+                p.line(tail, cy, tip, cy, arrow, L.unit * 0.13f);
+                p.fillPoly(new float[] {tip, cy, tip - side * head, cy - head * 0.72f,
+                        tip - side * head, cy + head * 0.72f}, arrow);
+            }
+        }
     }
 
     /** A mirrored vulnerable marker using the slime glob skin treatment, not a floating badge. */
