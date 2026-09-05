@@ -47,7 +47,7 @@ jobs:
         run: cp hexatype.apk "DDDUMPLING-${GITHUB_REF_NAME}.apk"
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: DDDUMPLING-${{ github.ref_name }}
           path: DDDUMPLING-${{ github.ref_name }}.apk
