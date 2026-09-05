@@ -20,6 +20,8 @@ final class Steamer {
     float lidFlash;
     /** Live upward distance of the armed lid drag, in pixels. */
     float lidDrag;
+    /** Upward distance retained when the released lid begins moving away. */
+    float freedLidLift;
     /** 1 right after a press, decaying: flashes and cycles the container colour. */
     float flash;
     /**
@@ -51,7 +53,7 @@ final class Steamer {
         swipeReady = false;
         lidPulse = 0;
         lidFlash = 0;
-        lidDrag = 0;
+        lidDrag = freedLidLift = 0;
         flash = 0;
         freedT = 0;
         badPulse = 0;
@@ -159,6 +161,7 @@ final class Steamer {
     int swipe() {
         if (!swipeReady || freedT > 0f) return WRONG;
         swipeReady = false;
+        freedLidLift = lidDrag;
         lidDrag = 0f;
         hits = 0;
         opens++;

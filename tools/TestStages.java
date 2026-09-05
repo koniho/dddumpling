@@ -989,7 +989,7 @@ final class TestStages extends Check {
         check("a short drag does not release just below the threshold",
                 Screens.steamerLidY(miss, L) > Screens.steamerReleaseY(miss, L));
         miss.dragBonusLid(lidRestY - Screens.steamerReleaseY(miss, L) + L.unit * 0.1f);
-        check("the much shorter lid-relative threshold releases it",
+        check("the longer lid-relative threshold releases it",
                 Screens.steamerLidY(miss, L) < Screens.steamerReleaseY(miss, L));
         miss.dragBonusLid(0f);
         advance(miss, L, miss.bonusTimer - (GameCore.BONUS_HOLD + GameCore.BONUS_STATUS)
@@ -1008,8 +1008,14 @@ final class TestStages extends Check {
         miss.tapBonus(miss.steamer.wanted());
         miss.tapBonus(miss.steamer.wanted());
         check("one point rearms the swipe on the next visit", miss.bonusSwipeReady());
+        miss.dragBonusLid(L.unit * 1.8f);
         miss.swipeBonus();
         check("that swipe frees the dumpling", miss.steamer.opens == 1);
+        check("the released lid retains the completed drag", miss.steamer.freedLidLift > L.unit * 1.7f);
+        float releasedY = Screens.freedLidY(miss, L);
+        miss.steamer.update(Steamer.FREE_TIME * 0.98f);
+        check("the released lid accelerates fully off screen",
+                Screens.freedLidY(miss, L) < 0f && Screens.freedLidY(miss, L) < releasedY);
 
         // A full run must be able to reach the minigame repeatedly without wedging.
         GameCore r = new GameCore(new Mem(), 122L);

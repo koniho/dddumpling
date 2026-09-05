@@ -296,7 +296,15 @@ final class Screens extends Draw {
      * gesture is equally short on every screen and while the last press pulse is settling.
      */
     static float steamerReleaseY(GameCore c, Layout L) {
-        return steamerLidY(c, L) + c.steamer.lidDrag - L.unit * 1.25f;
+        return steamerLidY(c, L) + c.steamer.lidDrag - L.unit * 1.65f;
+    }
+
+    static float freedLidY(GameCore c, Layout L) {
+        float bw = Math.min(L.w * 0.26f, L.unit * 5.8f), bh = L.unit * 3.4f;
+        float rimY = L.h * 0.46f + bh * 0.22f, rimRy = bw * 0.30f;
+        float start = rimY - rimRy * 1.05f - bh * 0.72f - c.steamer.freedLidLift;
+        float t = 1f - c.steamer.freedT / Steamer.FREE_TIME;
+        return start - t * t * (start + rimRy * 2.2f);
     }
 
     /** Generous touch target around the visible lid while its swipe is armed. */
@@ -485,6 +493,12 @@ final class Screens extends Draw {
             p.text(c.steamer.hits + " / " + GameCore.STEAMER_HITS, cx,
                     rowY + gap * 1.15f + s * 1.5f, type(s * 0.62f), fadeBy(INK_DIM, fade), Painter.CENTER, true);
         } else {
+            float fly = 1f - c.steamer.freedT / Steamer.FREE_TIME;
+            float lidX = cx + (float) Math.sin(fly * Math.PI) * bw * 0.70f;
+            float lidY = freedLidY(c, L);
+            float lidFade = Math.min(1f, c.steamer.freedT / 0.28f);
+            Basket.lid(p, lidX, lidY, bw * (1.02f - 0.16f * fly),
+                    rimRy * (0.95f - 0.12f * fly), BAMBOO, fade * lidFade);
             p.text("+" + GameCore.FREE_BONUS, cx, L.h * 0.665f, type(s * 1.1f), fadeBy(GOLD, fade),
                     Painter.CENTER, true);
         }
