@@ -15,7 +15,10 @@ OUT=build
 APK=hexatype.apk
 MIN=21
 TGT=35
-KS=$OUT/debug.keystore
+KS=${HEXATYPE_KEYSTORE:-$OUT/debug.keystore}
+KS_ALIAS=${HEXATYPE_KEY_ALIAS:-hexatype}
+KS_STORE_PASS=${HEXATYPE_KEYSTORE_PASSWORD:-android}
+KS_KEY_PASS=${HEXATYPE_KEY_PASSWORD:-$KS_STORE_PASS}
 
 [ -f "$SDK" ] || { echo "missing $SDK - see README.md"; exit 1; }
 
@@ -46,10 +49,11 @@ d8 --lib "$SDK" --min-api "$MIN" --output "$OUT" @"$OUT/classes.txt"
 
 echo ">> package + sign"
 (cd "$OUT" && zip -q -j base.apk classes.dex)
-[ -f "$KS" ] || keytool -genkeypair -keystore "$KS" -storepass android -keypass android \
-    -alias hexatype -keyalg RSA -keysize 2048 -validity 10000 \
+[ -f "$KS" ] || keytool -genkeypair -keystore "$KS" -storepass "$KS_STORE_PASS" \
+    -keypass "$KS_KEY_PASS" -alias "$KS_ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
     -dname "CN=Hexatype Debug, O=Local, C=US" 2>/dev/null
-apksigner sign --ks "$KS" --ks-pass pass:android --key-pass pass:android \
+apksigner sign --ks "$KS" --ks-key-alias "$KS_ALIAS" \
+    --ks-pass "pass:$KS_STORE_PASS" --key-pass "pass:$KS_KEY_PASS" \
     --out "$APK" "$OUT/base.apk"
 apksigner verify "$APK" && echo ">> signature ok"
 

@@ -294,3 +294,20 @@ text ships alongside it in `assets/fonts/OFL.txt`.
 never be committed, since this repo is shared. Drop one in and it becomes the MY TRACK option
 in settings — and the default, since `Music.defaultChoice` prefers it whenever the file is
 present. Pick something else in settings and that choice sticks.
+
+
+## GitHub releases
+
+GitHub Actions builds an APK on demand and whenever a version tag beginning with `v` is pushed. A
+manual run leaves a downloadable workflow artifact; a tag run also creates a GitHub Release and
+attaches a source-labelled APK.
+
+```sh
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+The workflow runs the complete test and render harness through `build.sh`, installs Android API 35
+build tools, and signs with the project keystore stored as encrypted GitHub repository secrets. Keep
+that keystore backed up: Android will not install an update signed with a different key over an
+existing installation.
