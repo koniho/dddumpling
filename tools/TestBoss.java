@@ -904,6 +904,8 @@ final class TestBoss extends Check {
         hpWas = t.boss.hp;
         t.tapKey(t.boss.head(0), L);
         check("one head starts the chord clock", t.boss.chordT > 0f);
+        check("a partial head hit visibly reacts on the boss body",
+                t.boss.hurt >= 0.49f && t.boss.body.motion() > 0f);
         for (int i = 0; i < 60 * (int) (Boss.CHORD_TIME + 1); i++) {
             t.enemies.clear();
             t.update(DT, L);

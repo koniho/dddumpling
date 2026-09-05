@@ -1041,7 +1041,11 @@ final class Boss {
                 hitX = ex[i];
                 hitY = ey[i];
                 chord |= 1 << i;
-                if (chord != (1 << head.length) - 1) return PART;
+                if (chord != (1 << head.length) - 1) {
+                    hurt = Math.max(hurt, 0.5f);
+                    if (body != null) body.impulse(hitX, hitY, HIT_PUNCH * 0.55f);
+                    return PART;
+                }
                 chordT = 0f;
                 // All three, awake and struck inside one window. New letters, and exactly one head
                 // nods off again.
