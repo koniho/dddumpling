@@ -46,6 +46,7 @@ final class Renderer extends Draw {
         // Dying, the words are the swirl instead of standing where they were.
         if (c.dying()) {
             RoundEnd.swirl(p, c, L);
+            BossVictory.draw(p, c, L);
         } else {
             for (int i = 0; i < c.enemies.size(); i++) enemy(p, c, L, c.enemies.get(i));
         }
@@ -553,7 +554,14 @@ final class Renderer extends Draw {
     static void shots(Painter p, GameCore c, Layout L) {
         for (int i = 0; i < c.shots.size(); i++) {
             GameCore.Shot s = c.shots.get(i);
-            bullet(p, c, L, s.sx, s.sy, s.tx, s.ty, s.t, s.glyph, 1f);
+            if (s.shieldBounce) {
+                float hit = 0.46f;
+                if (s.t <= hit) bullet(p, c, L, s.sx, s.sy, s.tx, s.ty, s.t / hit, s.glyph, 1f);
+                else bullet(p, c, L, s.tx, s.ty, s.sx, s.sy,
+                        (s.t - hit) / (1f - hit), s.glyph, 1f - (s.t - hit) * 0.55f);
+            } else {
+                bullet(p, c, L, s.sx, s.sy, s.tx, s.ty, s.t, s.glyph, 1f);
+            }
         }
     }
 
@@ -635,7 +643,9 @@ final class Renderer extends Draw {
             }
 
             // Activated keys strobe through the palette rather than merely brightening.
+            boolean bossDisabled = c.boss.keyDisabled(g) || c.boss.playerLocked();
             int col = c.flurry() ? rainbowAt(cy, L, c.clock) : Glyph.COLOR[g];
+            if (bossDisabled) col = Glyph.mix(col, BG, 0.72f);
             if (press > 0.02f) {
                 col = Glyph.mix(col, Glyph.cycle(c.clock * 9f + g * 0.13f), press * 0.9f);
             }
@@ -653,6 +663,12 @@ final class Renderer extends Draw {
                                 wanted ? (int) (110 + 145 * pulse) : 90), r * 0.075f);
             }
 
+            if (c.boss.kind == Boss.OCTOPUS && c.boss.octoTarget == g) {
+                float approach = Math.max(0f, c.boss.octoReach);
+                p.strokePoly(Glyph.hex(cx, cy, r * (1.85f - 0.72f * approach)),
+                        Glyph.withAlpha(GOLD, (int) (105 + 150 * approach)), r * 0.10f);
+            }
+
             if (hint == g) {
                 float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 6f);
                 p.strokePoly(Glyph.hex(cx, cy, r * 1.12f),
@@ -664,7 +680,7 @@ final class Renderer extends Draw {
                         Glyph.withAlpha(col, (int) (210 * press)), r * 0.07f);
             }
 
-            p.fillPoly(Glyph.hex(cx, cy, r), Glyph.withAlpha(col, (int) ((36 + 150 * press) * appear)));
+            p.fillPoly(Glyph.hex(cx, cy, r), Glyph.withAlpha(col, (int) ((bossDisabled ? 18 : 36 + 150 * press) * appear)));
             p.strokePoly(Glyph.hex(cx, cy, r), Glyph.withAlpha(col, (int) ((190 + 65 * press) * appear)),
                     r * 0.085f);
 

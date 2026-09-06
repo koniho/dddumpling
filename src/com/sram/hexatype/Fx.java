@@ -24,7 +24,7 @@ final class Fx {
             }
             s.t += dt / s.dur;
             if (s.t >= 1f) {
-                c.impact(s, L);
+                if (!s.shieldBounce) c.impact(s, L);
                 c.shots.remove(i);
             }
         }

@@ -81,7 +81,7 @@ final class TestBoss extends Check {
         check("the stages either side of it are not", between);
         boolean laterClear = true;
         for (int s = 6; s <= 500; s++) if (Boss.isBossStage(s)) laterClear = false;
-        check("only stages 5 and 10 are enabled", !laterClear && Boss.isBossStage(10));
+        check("stages 5, 10 and 15 are enabled", !laterClear && Boss.isBossStage(10) && Boss.isBossStage(15));
         check("stage 0 is not a boss stage", !Boss.isBossStage(0));
 
         check("the enabled boss is the slime", Boss.kindFor(5) == Boss.SLIME);
@@ -93,7 +93,7 @@ final class TestBoss extends Check {
         unlock.startGame();
         check("a new playthrough locks the cube pool again", !unlock.cubeUnlocked);
         check("stage 10 is the split slime", Boss.kindFor(10) == Boss.SPLITTER);
-        check("later boss designs remain disabled", Boss.kindFor(25) == -1
+        check("stage 15 is the octopus and later designs remain disabled", Boss.kindFor(15) == Boss.OCTOPUS && Boss.kindFor(25) == -1
                 && Boss.kindFor(500) == -1);
 
         // The harness font is an ASCII subset and silently draws nothing for a character it lacks,
@@ -380,6 +380,20 @@ final class TestBoss extends Check {
         nb.tapKey(nb.boss.want(), L);
         check("a rebuffed press fires no bullet", nb.shots.isEmpty());
 
+        GameCore shielded = enterBoss(L, Boss.SLIME, 361L);
+        toShut(shielded, L);
+        shielded.enemies.clear();
+        shielded.shots.clear();
+        Ear shieldEar = new Ear();
+        shielded.sound = shieldEar;
+        shielded.tapKey(shielded.boss.chainLetter(), L);
+        check("a closed slime fires a ricochet shot", shielded.shots.size() == 1
+                && shielded.shots.get(0).shieldBounce);
+        check("the shield lights and sounds on rejection", shielded.boss.rage > 0f
+                && shieldEar.shieldBounces == 1);
+        for (int i = 0; i < 40; i++) shielded.update(DT, L);
+        check("the ricochet leaves without an impact burst", shielded.shots.isEmpty());
+
         // A rebuff is not a miss. The interlude set that precedent and the accuracy dumpling
         // should not be scolding anybody for engaging with a mechanic.
         GameCore r = enterBoss(L, Boss.DRUM, 33L);
@@ -647,7 +661,8 @@ final class TestBoss extends Check {
         float deathFrom = d.boss.bodyY(L);
         boolean done = d.dragBoss(L.playRight + 1f, d.boss.ey[glob], L);
         check("dragging it off the play area finishes it", done);
-        check("a damaging boss blow makes one bloopy hit", damageEar.bossDamages == 1);
+        check("a damaging slime blow makes one bubbly hit", damageEar.slimeDamages == 1
+                && damageEar.bossDamages == 0);
         check("without layering the achievement twinkle", damageEar.achievements == 0);
         check("the killing blow starts the shared defeat exit", d.boss.beaten);
         for (int frame = 0; frame < 45; frame++) d.update(DT, L);
@@ -1133,6 +1148,79 @@ final class TestBoss extends Check {
      * Every one of these failed at the value it was first eyeballed at: the name sat on STAGE 5 and
      * the blurb sat on the badge.
      */
+    static void octopus(Layout L) {
+        group("boss: octopulse");
+        GameCore c = enterBoss(L, Boss.OCTOPUS, 151L);
+        c.enemies.clear(); c.target = null;
+        for (int i = 0; i < 240 && c.boss.octoTarget < 0; i++) c.update(DT, L);
+        check("stage 15 octopus begins a key reach", c.boss.octoTarget >= 0
+                && c.boss.octoAttackArm >= 0);
+        for (int i = 0; i < 120 && c.boss.octoReach < 0f; i++) c.update(DT, L);
+        int armCount = Integer.bitCount(c.boss.octoArms);
+        float hp = c.boss.hp; int target = c.boss.octoTarget;
+        c.tapKey(target, L);
+        check("defending in time removes exactly one arm", Integer.bitCount(c.boss.octoArms) == armCount - 1);
+        check("a defended reach damages the octopus", c.boss.hp == hp - 1f);
+        check("the severed arm becomes unavailable", c.boss.octoTarget < 0);
+        check("a severed arm remains visible for its dramatic collapse",
+                c.boss.octoDyingArm >= 0 && c.boss.octoDeath > 0f);
+        for (int i = 0; i < 45; i++) c.update(DT, L);
+        check("the severed arm death lasts longer than a quick hit flash",
+                c.boss.octoDyingArm >= 0);
+
+        GameCore wrong = enterBoss(L, Boss.OCTOPUS, 153L);
+        wrong.enemies.clear(); wrong.target = null;
+        for (int i = 0; i < 300 && wrong.boss.octoTarget < 0; i++) wrong.update(DT, L);
+        for (int i = 0; i < 120 && wrong.boss.octoReach < 0f; i++) wrong.update(DT, L);
+        int wanted = wrong.boss.octoTarget;
+        int wrongKey = (wanted + 1) % Glyph.COUNT;
+        int lives = wrong.lives;
+        wrong.tapKey(wrongKey, L);
+        check("wrong-key damage waits for the animated contact", wrong.lives == lives);
+        check("the wrong-key lash is visible", wrong.boss.octoLash > 0f);
+        check("the retaliation disables every player key", !wrong.keyActive(wanted));
+        float blockedPress = wrong.keyPress[wanted];
+        check("input cannot slip through during the retaliation",
+                !wrong.tapKey(wanted, L) && wrong.keyPress[wanted] == blockedPress);
+        boolean impactSeen = false;
+        for (int i = 0; i < 60 && wrong.lives == lives; i++) {
+            wrong.update(DT, L);
+            impactSeen |= wrong.boss.octoImpact;
+        }
+        check("the whip contact costs one life", wrong.lives == lives - 1);
+        check("the whip emits an impact for haptics and shake", impactSeen && wrong.shake > 0f);
+        for (int i = 0; i < 60 && wrong.boss.playerLocked(); i++) wrong.update(DT, L);
+        check("player keys return when the retaliation ends", wrong.keyActive(wanted));
+        check("the lash cancels the reach without stealing a key",
+                wrong.boss.octoTarget < 0 && !wrong.boss.keyDisabled(wanted));
+
+        GameCore miss = enterBoss(L, Boss.OCTOPUS, 152L);
+        miss.enemies.clear(); miss.target = null;
+        for (int i = 0; i < 300 && miss.boss.octoTarget < 0; i++) miss.update(DT, L);
+        int missed = miss.boss.octoTarget;
+        for (int i = 0; i < 300 && !miss.boss.keyDisabled(missed); i++) miss.update(DT, L);
+        check("a tentacle reaching its key disables it", missed >= 0 && miss.boss.keyDisabled(missed));
+        check("a disabled key no longer accepts touches", !miss.keyActive(missed));
+        for (int i = 0; i < 60 * 20; i++) miss.update(DT, L);
+        check("it disables no more than two keys per side",
+                Integer.bitCount(miss.boss.disabledKeys & 0x07) <= 2
+                        && Integer.bitCount(miss.boss.disabledKeys & 0x38) <= 2);
+
+        GameCore lastTwo = enterBoss(L, Boss.OCTOPUS, 154L);
+        lastTwo.enemies.clear(); lastTwo.target = null;
+        lastTwo.boss.disabledKeys = (1 << 0) | (1 << 1) | (1 << 3) | (1 << 4);
+        lastTwo.boss.octoTarget = lastTwo.boss.octoAttackArm = -1;
+        lastTwo.boss.octoPause = 0f;
+        for (int i = 0; i < 30 && lastTwo.boss.octoTarget < 0; i++) lastTwo.update(DT, L);
+        check("Octopulse still attacks when only two keys remain",
+                lastTwo.boss.octoTarget == 2 || lastTwo.boss.octoTarget == 5);
+        int finalMask = lastTwo.boss.disabledKeys;
+        int finalLives = lastTwo.lives;
+        for (int i = 0; i < 180 && lastTwo.lives == finalLives; i++) lastTwo.update(DT, L);
+        check("a missed final-two reach damages instead of stealing",
+                lastTwo.lives == finalLives - 1 && lastTwo.boss.disabledKeys == finalMask);
+    }
+
     static void stacking(Layout L) {
         group("boss header stacking");
 
@@ -1486,6 +1574,12 @@ final class TestBoss extends Check {
 
         // Exit two: the player dies mid-fight, which is the one that never runs the loop.
         for (int k = 0; k < Boss.COUNT; k++) {
+            GameCore victory = enterBoss(L, k, 700L + k);
+            victory.lives = 1;
+            victory.takeHit(victory.boss.bodyX(L), L);
+            check(Boss.NAMES[k] + ": leaves its victory performance for the green transition",
+                    victory.dying() && victory.bossVictoryKind == k && !victory.boss.active());
+
             GameCore d = enterBoss(L, k, 100L + k);
             // Let it get going, so there is something to leave behind: globs shed, keys dropped,
             // heads woken, a finger mid-drag.

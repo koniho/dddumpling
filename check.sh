@@ -77,6 +77,7 @@ src/com/sram/hexatype/Hud.java
 src/com/sram/hexatype/Screens.java
 src/com/sram/hexatype/StarScreen.java
 src/com/sram/hexatype/BossScreen.java
+src/com/sram/hexatype/BossVictory.java
 src/com/sram/hexatype/Renderer.java"
 
 rm -rf build/harness

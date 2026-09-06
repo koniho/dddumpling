@@ -74,6 +74,8 @@ final class GameCore {
 
     /** Counts down through the death sequence. Only ever non-zero in {@link #OVER}. */
     float deathT;
+    /** Boss celebrating during the death-to-green transition; no live fight state is retained. */
+    int bossVictoryKind = -1;
 
     /**
      * How long the run's dumplings take to carry themselves from the game-over screen to the
@@ -189,6 +191,8 @@ final class GameCore {
         void bossCharge(float charge);
         /** A damaging blow landed on a boss: a single large, wet bubble burst. */
         void bossDamage();
+        /** A Slime glob carried free: bright, cute bubbles instead of a heavy body hit. */
+        void slimeDamage();
         /** The slime chain tore a glob free: a taut, wet pop distinct from damage. */
         void bossSplit();
         /** Dark Divide was struck: a low crack-squelch distinct from every other boss. */
@@ -201,6 +205,10 @@ final class GameCore {
         void divideBoing(float weight);
         /** A charged or flying slime bolt was destroyed: one short, low bloop. */
         void boltPop();
+        /** A player projectile ricocheted from the Slime boss shield. */
+        void shieldBounce();
+        void octoCue();
+        void octoLock();
         /** A letter cut by the FLING blade. Fires several times per swipe, so it is short. */
         void chop();
         /** One hop of a MULTI chain. @param hop 1-based, so the crack can climb with the chain */
@@ -353,6 +361,8 @@ final class GameCore {
          * heads still arrives at that head rather than at the middle of the boss.
          */
         boolean atBoss;
+        /** Rejected by the Slime shield: reaches the body, then ricochets back out. */
+        boolean shieldBounce;
         float bossDx, bossDy;
     }
 
@@ -370,6 +380,9 @@ final class GameCore {
 
     // ---- persistent-ish state ----------------------------------------------
     int state = TITLE;
+    /** Live title-screen touch, used only to make the logo letters react under a finger. */
+    boolean titleTouchDown;
+    float titleTouchX, titleTouchY;
     int score, best, lives, stage, combo, maxCombo;
     /** Words squished this run. The game-over screen calls them squishes, so this does too. */
     int squishes;
@@ -1264,7 +1277,10 @@ final class GameCore {
     }
 
     boolean playRosterFull() { return state == TITLE ? fullRoster : runFullRoster; }
-    boolean keyActive(int glyph) { return Roster.active(playRosterFull(), glyph); }
+    boolean keyActive(int glyph) {
+        return Roster.active(playRosterFull(), glyph)
+                && !boss.keyDisabled(glyph) && !boss.playerLocked();
+    }
     int randomGlyph() { return Roster.random(playRosterFull(), rnd); }
     float rosterMix() {
         if (rosterScene == ROSTER_JOIN) return 1f - rosterSceneT / ROSTER_SCENE_TIME;
@@ -1500,6 +1516,7 @@ final class GameCore {
         roundPrizes = 0L;
         cubeUnlocked = false;
         deathT = 0f;
+        bossVictoryKind = -1;
         homeT = 0f;
         homeLanded = 0;
         paradeTimer = 0f;
@@ -1527,6 +1544,7 @@ final class GameCore {
         state = TITLE;
         time = 0;
         deathT = 0f;
+        bossVictoryKind = -1;
         // The run's haul carries itself to the case rather than simply being in it next time the
         // case is opened. Only off the game-over screen: arriving from anywhere else there is no
         // dance for them to be leaving.
@@ -2244,6 +2262,8 @@ final class GameCore {
             // True when a visible boss threat reaches the deck. SUMO's body crossing the line is
             // handled by the same count; elapsed fight time alone never costs a life.
             int bossHits = boss.update(dt, L, rnd);
+            if (boss.octoPlayerHit && state == PLAY) BossPlay.octoWhipHit(this, L);
+            if (boss.octoImpact) shake = Math.max(shake, 0.92f);
             if (sound != null) {
                 float brew = boss.kind == Boss.SLIME && !boss.hasGlob()
                         && boss.boltCount() == 0 && boss.open()
@@ -2251,6 +2271,8 @@ final class GameCore {
                 sound.bossCharge(brew);
                 if (boss.launched) sound.bossLaugh();
                 if (boss.boingWeight >= 0f) sound.divideBoing(boss.boingWeight);
+                if (boss.octoCue) sound.octoCue();
+                if (boss.octoLock) sound.octoLock();
                 if (boss.defeatChime) sound.squish(Boss.FACE[boss.kind], boss.defeatBeat);
             }
             for (int k = 0; k < bossHits && state == PLAY; k++) BossPlay.slam(this, L);
@@ -2654,6 +2676,7 @@ final class GameCore {
             }
             saveRoster();
         }
+        bossVictoryKind = boss.fighting() ? boss.kind : -1;
         state = OVER;
         time = 0;
         deathT = DEATH_TIME;

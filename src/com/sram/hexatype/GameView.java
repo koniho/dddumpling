@@ -84,6 +84,18 @@ public class GameView extends View {
     @Override public boolean onTouchEvent(MotionEvent ev) {
         int action = ev.getActionMasked();
 
+        if (core.state == GameCore.TITLE) {
+            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN
+                    || action == MotionEvent.ACTION_MOVE) {
+                int titlePointer = action == MotionEvent.ACTION_MOVE ? 0 : ev.getActionIndex();
+                core.titleTouchDown = true;
+                core.titleTouchX = ev.getX(titlePointer);
+                core.titleTouchY = ev.getY(titlePointer);
+            } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                core.titleTouchDown = false;
+            }
+        }
+
         if (core.state == GameCore.BONUS && core.starBonus) {
             handleStarDrag(ev, action);
             return true;
@@ -574,6 +586,11 @@ public class GameView extends View {
                 HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
     }
 
+    private void bossImpactHaptic() {
+        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
+                HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+    }
+
     private void tick() {
         performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP,
                 HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
@@ -586,7 +603,9 @@ public class GameView extends View {
         if (dt > 0.05f) dt = 0.05f;   // a backgrounded app must not teleport the wave
 
         try {
+            boolean playingBeforeUpdate = core.state == GameCore.PLAY;
             core.update(dt, layout);
+            if (playingBeforeUpdate && core.boss.octoImpact) bossImpactHaptic();
             boolean beaten = core.boss.active() && core.boss.beaten;
             if (beaten && !bossWasBeaten) bossDeathHaptic();
             bossWasBeaten = beaten;

@@ -3,6 +3,7 @@ package com.sram.hexatype;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 
 /** {@link Painter} backed by an Android {@link Canvas}. */
@@ -77,6 +78,13 @@ final class CanvasPainter implements Painter {
         stroke.setColor(color);
         stroke.setStrokeWidth(width);
         canvas.drawCircle(cx, cy, r, stroke);
+    }
+
+    @Override public void arc(float cx, float cy, float rx, float ry, float start, float sweep,
+            int color, float width) {
+        stroke.setColor(color);
+        stroke.setStrokeWidth(width);
+        canvas.drawArc(new RectF(cx - rx, cy - ry, cx + rx, cy + ry), start, sweep, false, stroke);
     }
 
     @Override public void fillEllipse(float cx, float cy, float rx, float ry, int color) {

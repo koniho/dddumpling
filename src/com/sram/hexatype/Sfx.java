@@ -26,7 +26,8 @@ final class Sfx {
     static final int BOSS_DAMAGE = 22, BOSS_SPLIT = 23, BOLT_POP = 24;
     static final int DIVIDE_DAMAGE = 25, DIVIDE_SPLIT = 26;
     static final int DIVIDE_BOING_HEAVY = 27, DIVIDE_BOING_MEDIUM = 28,
-            DIVIDE_BOING_LIGHT = 29, ROSTER_JOIN = 30, DIVIDE_DEACTIVATE = 31, COUNT = 32;
+            DIVIDE_BOING_LIGHT = 29, ROSTER_JOIN = 30, DIVIDE_DEACTIVATE = 31,
+            SHIELD_BOUNCE = 32, SLIME_DAMAGE = 33, OCTO_CUE = 34, OCTO_LOCK = 35, COUNT = 36;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -67,6 +68,10 @@ final class Sfx {
             case DIVIDE_BOING_LIGHT: return divideBoing(2);
             case ROSTER_JOIN: return rosterJoin();
             case DIVIDE_DEACTIVATE: return divideDeactivate();
+            case SHIELD_BOUNCE: return shieldBounce();
+            case SLIME_DAMAGE: return slimeDamage();
+            case OCTO_CUE: return octoCue();
+            case OCTO_LOCK: return octoLock();
             default: return achievement();
         }
     }
@@ -596,6 +601,52 @@ final class Sfx {
             float debris = noise * (0.18f + 0.16f * (float) Math.sin(TAU * 17f * u))
                     * (float) Math.exp(-4.5f * u);
             v[i] = (core * 0.78f + blast * 0.88f + debris) * envelope(u, 0.0015f, 1.2f);
+        }
+        return render(v);
+    }
+
+    /** A handful of tiny rising bubbles for a glob successfully carried free. */
+    static short[] octoCue() { return sweepTone(0.16f, 720f, 980f, 0.72f); }
+    static short[] octoLock() { return sweepTone(0.28f, 330f, 125f, 0.88f); }
+
+    private static short[] sweepTone(float seconds, float from, float to, float gain) {
+        int n = (int) (RATE * seconds); float[] v = new float[n]; float phase = 0f;
+        for (int i = 0; i < n; i++) { float u = i / (float) n; phase += TAU * (from + (to - from) * u) / RATE; v[i] = (float) Math.sin(phase) * gain * envelope(u, 0.008f, 1.8f); }
+        return render(v);
+    }
+
+    static short[] slimeDamage() {
+        int n = (int) (RATE * 0.38f);
+        float[] v = new float[n];
+        float[] start = {0f, 0.070f, 0.145f, 0.225f};
+        float[] pitch = {510f, 630f, 755f, 910f};
+        for (int k = 0; k < start.length; k++) {
+            int at = (int) (start[k] * RATE);
+            int len = (int) (RATE * 0.115f);
+            float phase = 0f;
+            for (int j = 0; j < len && at + j < n; j++) {
+                float u = (float) j / len;
+                float f = pitch[k] * (1f + 0.30f * u);
+                phase += TAU * f / RATE;
+                float bubble = (float) Math.sin(phase)
+                        + 0.16f * (float) Math.sin(phase * 2.01f);
+                float env = (float) Math.sin(Math.PI * u) * (1f - 0.35f * u);
+                v[at + j] += bubble * env * (0.72f - k * 0.055f);
+            }
+        }
+        return render(v);
+    }
+
+    /** Bright elastic ricochet: a hard shield ping followed by a quick falling boing. */
+    static short[] shieldBounce() {
+        int n = (int) (RATE * 0.24f);
+        float[] v = new float[n];
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / RATE, u = (float) i / n;
+            float ping = (float) Math.sin(TAU * 1180f * t) * (float) Math.exp(-18f * u);
+            float boing = (float) Math.sin(TAU * (430f * t - 170f * t * t))
+                    * (float) Math.exp(-6f * u);
+            v[i] = (ping * 0.72f + boing * 0.66f) * envelope(u, 0.002f, 1.7f);
         }
         return render(v);
     }

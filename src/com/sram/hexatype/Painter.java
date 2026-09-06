@@ -19,6 +19,9 @@ interface Painter {
 
     void strokeCircle(float cx, float cy, float r, int color, float width);
 
+    /** Strokes an elliptical arc in screen-space degrees, clockwise from the right edge. */
+    void arc(float cx, float cy, float rx, float ry, float start, float sweep, int color, float width);
+
     void fillEllipse(float cx, float cy, float rx, float ry, int color);
 
     /** Strokes an open path through the points (x0,y0,x1,y1,...). */

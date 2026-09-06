@@ -148,6 +148,18 @@ final class RasterPainter implements Painter {
         }
     }
 
+    @Override public void arc(float cx, float cy, float rx, float ry, float start, float sweep,
+            int color, float width) {
+        int steps = Math.max(8, (int) (Math.abs(sweep) / 8f));
+        float[] pts = new float[(steps + 1) * 2];
+        for (int i = 0; i <= steps; i++) {
+            double a = Math.toRadians(start + sweep * i / steps);
+            pts[i * 2] = cx + rx * (float) Math.cos(a);
+            pts[i * 2 + 1] = cy + ry * (float) Math.sin(a);
+        }
+        polyline(pts, color, width);
+    }
+
     @Override public void fillCircle(float cx, float cy, float r, int color) {
         if ((color >>> 24) == 0 || r <= 0) return;
         float bx = sx(cx), by = sy(cy), br = r * ss;

@@ -91,14 +91,15 @@ final class Boss {
      */
     static final int SUMO = 4;
     static final int SPLITTER = 5;
-    static final int COUNT = 6;
+    static final int OCTOPUS = 6;
+    static final int COUNT = 7;
 
     static final String[] NAMES = {"SLIME", "TRIPLETS", "MOCHI DRUM", "MAGPIE", "SUMO BUN",
-            "DARK DIVIDE"};
+            "DARK DIVIDE", "OCTOPULSE"};
     /** One line each, in the mode bar. Held to the width of the longest frenzy blurb. */
     static final String[] BLURB = {"HIT THE MARK, DRAG GLOBS", "TAP THEM AWAKE FIRST",
             "KEY, THEN TAP, ON BEAT", "DRAG YOUR KEY BACK", "SWIPE IT BACK",
-            "HIT THE MARK, THEN PINCH OUT"};
+            "HIT THE MARK, THEN PINCH OUT", "BEAT THE REACH"};
     /**
      * Which of the six characters each boss is a giant version of.
      *
@@ -107,7 +108,7 @@ final class Boss {
      * arrives already legible.
      */
     static final int[] FACE = {Kawaii.SQUISHY, Kawaii.GRAPES, Kawaii.DUMPLING, Kawaii.CAT,
-            Kawaii.BLOB, Kawaii.SQUISHY};
+            Kawaii.BLOB, Kawaii.SQUISHY, Kawaii.BLOB};
 
     /** How long the arrival card holds the field before the fight starts. */
     static final float INTRO = 1.6f;
@@ -133,8 +134,8 @@ final class Boss {
      * <em>is</em> the window. SUMO has no press window — see {@link #open()}, which answers a
      * different question for it.
      */
-    private static final float[] CYCLE = {5.0f, 3.6f, 1.20f, 3.2f, 0f, 1f};
-    private static final float[] SHOW = {4.0f, 3.6f, 0.40f, 2.0f, 0f, 1f};
+    private static final float[] CYCLE = {5.0f, 3.6f, 1.20f, 3.2f, 0f, 1f, 1f};
+    private static final float[] SHOW = {4.0f, 3.6f, 0.40f, 2.0f, 0f, 1f, 1f};
 
     /**
      * How long a {@link #TRIPLETS} chord may take from its first head to its last.
@@ -172,7 +173,7 @@ final class Boss {
      * hand finishes in about eight seconds — see the per-boss timings {@code TestBoss.winning} prints,
      * which are the figures to read this table against.
      */
-    private static final float[] HP = {4f, 4f, 7f, 5f, 3f, 8f};
+    private static final float[] HP = {4f, 4f, 7f, 5f, 3f, 8f, 8f};
     /**
      * Extra health per later visit, capped by {@link #TOUGH_MAX}. A boss met at stage 30 should be
      * more than the same boss at stage 5 — but the cap matters far more than the slope now that
@@ -195,6 +196,8 @@ final class Boss {
     static final int PARRY = 4;
     /** The slime chain completed and tore a glob free. */
     static final int SPLIT = 5;
+    /** An Octopulse reach was answered with the wrong key and lashed the player. */
+    static final int PLAYER_HIT = 6;
 
     /** The most swipes {@link #SUMO} will bank. Earned by pressing its belt. */
     static final int CHARGE_MAX = 3;
@@ -345,10 +348,22 @@ final class Boss {
     float pinchX1, pinchY1, pinchX2, pinchY2;
     float pinchStart, divideBurst;
 
+    static final int OCTO_ARMS = 8, OCTO_NODES = 7;
+    final float[][] octoX = new float[OCTO_ARMS][OCTO_NODES];
+    final float[][] octoY = new float[OCTO_ARMS][OCTO_NODES];
+    final float[][] octoVX = new float[OCTO_ARMS][OCTO_NODES];
+    final float[][] octoVY = new float[OCTO_ARMS][OCTO_NODES];
+    int octoArms, octoTarget = -1, octoAttackArm = -1, octoCaptured = -1, disabledKeys;
+    int octoLashArm = -1, octoDyingArm = -1;
+    float octoReach, octoReturn, octoPause, octoLash, octoDeath;
+    float octoLashX, octoLashY;
+    boolean octoPlaced, octoCue, octoLock, octoImpact, octoPlayerHit, octoLashLanded;
+
     /** Stage 5 teaches boss play; stage 10 adds the first two-finger fight. */
     static int kindFor(int stage) {
         if (stage == EVERY) return SLIME;
         if (stage == EVERY * 2) return SPLITTER;
+        if (stage == EVERY * 3) return OCTOPUS;
         return -1;
     }
 
@@ -429,7 +444,7 @@ final class Boss {
         rosterFull = fullRoster;
         kind = which;
         int visit = Math.max(0, Math.min(TOUGH_MAX, stage / EVERY - 1));
-        hpMax = HP[which] + TOUGH * visit;
+        hpMax = HP[which] + (which == OCTOPUS ? 0f : TOUGH * visit);
         hp = hpMax;
         age = 0f;
         intro = INTRO;
@@ -463,6 +478,12 @@ final class Boss {
         pinchX1 = pinchY1 = pinchX2 = pinchY2 = Float.NaN;
         boingWeight = -1f;
         pinchStart = divideBurst = 0f;
+        octoArms = (1 << OCTO_ARMS) - 1;
+        octoTarget = octoAttackArm = octoCaptured = -1;
+        octoLashArm = octoDyingArm = -1;
+        disabledKeys = 0;
+        octoReach = octoReturn = octoLash = octoDeath = 0f; octoPause = 0.75f;
+        octoPlaced = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = false;
         resetDividePieces(rnd);
         if (which != SPLITTER) { randomGlyph(rnd); randomGlyph(rnd); }
         followX = followY = 0f;
@@ -528,6 +549,9 @@ final class Boss {
         pinchX1 = pinchY1 = pinchX2 = pinchY2 = Float.NaN;
         boingWeight = -1f;
         pinchStart = divideBurst = 0f;
+        octoArms = disabledKeys = 0; octoTarget = octoAttackArm = octoCaptured = -1;
+        octoLashArm = octoDyingArm = -1;
+        octoReach = octoReturn = octoPause = octoLash = octoDeath = 0f; octoPlaced = false;
         for (int i = 0; i < DIVIDE_NODES; i++) {
             halfWant[i] = -1;
             halfIdle[i] = halfHurt[i] = 0f;
@@ -566,7 +590,7 @@ final class Boss {
      * which is what keeps the header column above it — see {@link #BODY_DROP} — a single derivation
      * instead of one per boss.
      */
-    private static final float[] WIDE = {2f, 1f, 1f, 1f, 1f, 1.65f};
+    private static final float[] WIDE = {2f, 1f, 1f, 1f, 1f, 1.65f, 1.35f};
 
     /**
      * How springy each boss is; see {@link Softbody#jiggle}.
@@ -576,7 +600,7 @@ final class Boss {
      * because its own mechanic no longer hits it every second — five presses work a glob loose and
      * only the drag scores, so the body has time to actually finish a wobble.
      */
-    private static final float[] JIGGLE = {2f, 1f, 1f, 1f, 1f, 1.7f};
+    private static final float[] JIGGLE = {2f, 1f, 1f, 1f, 1f, 1.7f, 2.2f};
 
     /** Rest width over rest height for this boss. */
     float wide() {
@@ -866,6 +890,7 @@ final class Boss {
     private boolean asksFor(int g) {
         switch (kind) {
             case SLIME: return g == chainLetter();
+            case OCTOPUS: return octoReach >= 0f && g == octoTarget;
             case TRIPLETS:
                 for (int i = 0; i < head.length; i++) {
                     if (head[i] == g && headAwake(i)) return true;
@@ -976,6 +1001,22 @@ final class Boss {
             if (swatted != NONE) return swatted;
         }
         if (!fighting()) return NONE;
+        if (kind == OCTOPUS && octoTarget >= 0 && octoReach >= 0f && g != octoTarget) {
+            int arm = octoAttackArm;
+            if (arm < 0) return NONE;
+            hitX = octoX[arm][OCTO_NODES - 1];
+            hitY = octoY[arm][OCTO_NODES - 1];
+            octoLashX = Roster.keyX(L, g, rosterFull ? 1f : 0f);
+            octoLashY = Roster.keyY(L, g, rosterFull ? 1f : 0f);
+            octoLash = 0.001f;
+            octoLashArm = arm;
+            octoLashLanded = false;
+            octoTarget = octoAttackArm = -1;
+            octoReach = 0f;
+            octoPause = 0.48f;
+            rage = 1f;
+            return PLAYER_HIT;
+        }
         if (denies(g)) {
             // It has that key. Nothing happens with it anywhere — this is the refusal, and it is the
             // reason the stolen key is never the letter the boss itself wants.
@@ -989,6 +1030,21 @@ final class Boss {
         if (body != null && kind != SPLITTER) {
             hitX = body.centreX();
             hitY = body.centreY();
+        }
+
+        if (kind == OCTOPUS) {
+            if (g != octoTarget || octoAttackArm < 0) return NONE;
+            int arm = octoAttackArm;
+            hitX = octoX[arm][OCTO_NODES - 1];
+            hitY = octoY[arm][OCTO_NODES - 1];
+            octoArms &= ~(1 << arm);
+            octoDyingArm = arm;
+            octoDeath = 0.001f;
+            octoTarget = octoAttackArm = -1;
+            octoReach = 0f; octoPause = 0.95f;
+            hurt = 1f;
+            if (body != null) body.squash(0.65f);
+            return damage(1f);
         }
 
         if (!open()) {
@@ -1456,6 +1512,181 @@ final class Boss {
     /** Which key a dropped-key element is carrying. */
     final int[] keyOf = new int[ELEMS];
 
+    boolean keyDisabled(int g) { return kind == OCTOPUS && (disabledKeys & (1 << g)) != 0; }
+
+    /** All player input is locked while a wrong-key retaliation whip is in flight. */
+    boolean playerLocked() { return kind == OCTOPUS && octoLash > 0f; }
+
+    private void updateOctopus(float dt, Layout L, Random rnd) {
+        octoImpact = octoPlayerHit = false;
+        if (!octoPlaced) {
+            float cx = bodyX(L), cy = bodyY(L);
+            for (int a = 0; a < OCTO_ARMS; a++) {
+                for (int n = 0; n < OCTO_NODES; n++) {
+                    octoX[a][n] = cx;
+                    octoY[a][n] = cy;
+                    octoVX[a][n] = octoVY[a][n] = 0f;
+                }
+            }
+            octoPlaced = true;
+        }
+
+        if (octoLash > 0f) {
+            octoLash += dt / 0.46f;
+            if (!octoLashLanded && octoLash >= 0.64f) {
+                octoLashLanded = true;
+                octoImpact = octoPlayerHit = true;
+            }
+            if (octoLash >= 1f) {
+                octoLash = 0f;
+                octoLashArm = -1;
+                octoPause = 0.42f;
+            }
+        }
+        if (octoDeath > 0f) {
+            octoDeath += dt / 1.05f;
+            if (octoDeath >= 1f) {
+                octoDeath = 0f;
+                octoDyingArm = -1;
+            }
+        }
+
+        if (octoLash <= 0f) {
+            if (octoCaptured >= 0) {
+                octoReturn += dt / 0.68f;
+                if (octoReturn >= 1f) {
+                    octoCaptured = octoAttackArm = -1;
+                    octoReturn = 0f;
+                    octoPause = 0.38f;
+                }
+            } else if (octoTarget < 0) {
+                octoPause -= dt;
+                if (octoPause <= 0f && octoArms != 0) startOctoReach(rnd);
+            } else {
+                float duration = Math.max(0.36f,
+                        0.925f - Integer.bitCount(disabledKeys) * 0.125f);
+                octoReach += dt / duration;
+                if (octoReach >= 1f) {
+                    if (octoKeysLeft() <= 2) {
+                        // With only two controls left, the reach becomes direct damage. It
+                        // retracts empty through the same whip state, so neither key can disappear.
+                        octoLashX = Roster.keyX(L, octoTarget, rosterFull ? 1f : 0f);
+                        octoLashY = Roster.keyY(L, octoTarget, rosterFull ? 1f : 0f);
+                        octoLashArm = octoAttackArm;
+                        octoLash = 0.64f;
+                        octoLashLanded = true;
+                        octoTarget = octoAttackArm = -1;
+                        octoReach = 0f;
+                        octoImpact = octoPlayerHit = true;
+                        rage = 1f;
+                    } else {
+                        octoCaptured = octoTarget;
+                        disabledKeys |= 1 << octoTarget;
+                        octoTarget = -1;
+                        octoReach = octoReturn = 0f;
+                        rage = 1f;
+                        octoLock = octoImpact = true;
+                    }
+                }
+            }
+        }
+
+        float cx = bodyX(L), cy = bodyY(L);
+        for (int a = 0; a < OCTO_ARMS; a++) {
+            for (int n = 0; n < OCTO_NODES; n++) {
+                float u = n / (float) (OCTO_NODES - 1);
+                float angle = -1.18f + 2.36f * a / (OCTO_ARMS - 1);
+                float breathe = 1f + 0.045f
+                        * (float) Math.sin(age * 0.62f + a * 1.73f);
+                float length = bodyR(L) * (0.28f + u * (2.84f + 0.15f * (a % 3)))
+                        * breathe;
+                float tx = cx + (float) Math.sin(angle) * length;
+                float ty = cy + (float) Math.cos(angle) * length;
+                float wave = (float) Math.sin(age * 0.78f + a * 1.37f + u * 3.4f)
+                        * bodyR(L) * 0.18f * u;
+                tx += (float) Math.cos(angle) * wave;
+                ty -= (float) Math.sin(angle) * wave;
+                float hook = Math.max(0f, u - 0.80f);
+                float curl = hook * hook * bodyR(L) * (2.6f + 0.12f * (a % 3));
+                float curlSide = a < 4 ? -1f : 1f;
+                tx += (float) Math.cos(angle) * curl * curlSide;
+                ty -= (float) Math.sin(angle) * curl * curlSide;
+
+                if (a == octoAttackArm) {
+                    int key = octoTarget >= 0 ? octoTarget : octoCaptured;
+                    float q = octoTarget >= 0 ? Math.max(0f, octoReach) : 1f - octoReturn;
+                    float reach = q * q * (3f - 2f * q) * u;
+                    tx += (Roster.keyX(L, key, rosterFull ? 1f : 0f) - tx) * reach;
+                    ty += (Roster.keyY(L, key, rosterFull ? 1f : 0f) - ty) * reach;
+                }
+                if (a == octoLashArm && octoLash > 0f) {
+                    float p = octoLash;
+                    float phase = p < 0.64f ? p / 0.64f : (1f - p) / 0.36f;
+                    phase = Math.max(0f, Math.min(1f, phase));
+                    float snap = phase * phase * (3f - 2f * phase);
+                    float reach = snap * u * u;
+                    tx += (octoLashX - tx) * reach;
+                    ty += (octoLashY - ty) * reach;
+                    float whip = (float) Math.sin(u * Math.PI * 1.35f - p * 8.5f)
+                            * bodyR(L) * 0.48f * phase * u;
+                    tx += (float) Math.cos(angle) * whip;
+                    ty -= (float) Math.sin(angle) * whip;
+                }
+                if (a == octoDyingArm && octoDeath > 0f) {
+                    float death = Math.min(1f, octoDeath);
+                    float contract = 1f - death * 0.84f;
+                    tx = cx + (tx - cx) * contract;
+                    ty = cy + (ty - cy) * contract;
+                    float thrash = (float) Math.sin(death * Math.PI * 4f + u * 5.5f)
+                            * bodyR(L) * 0.62f * (1f - death) * u;
+                    tx += (float) Math.cos(angle) * thrash;
+                    ty -= (float) Math.sin(angle) * thrash;
+                    ty += death * death * bodyR(L) * 0.45f * u;
+                }
+
+                tx += (float) Math.sin(age * 0.43f + a * 2.1f + u * 5.2f)
+                        * bodyR(L) * 0.018f * u;
+                octoVX[a][n] = (octoVX[a][n] + (tx - octoX[a][n]) * dt * 26f) * 0.94f;
+                octoVY[a][n] = (octoVY[a][n] + (ty - octoY[a][n]) * dt * 26f) * 0.94f;
+                octoX[a][n] += octoVX[a][n] * dt;
+                octoY[a][n] += octoVY[a][n] * dt;
+            }
+        }
+    }
+
+    private int octoKeysLeft() {
+        int count = 0;
+        for (int g = 0; g < Glyph.COUNT; g++)
+            if (Roster.active(rosterFull, g) && !keyDisabled(g)) count++;
+        return count;
+    }
+
+    private void startOctoReach(Random rnd) {
+        int[] choice = new int[Glyph.COUNT];
+        int count = 0;
+        for (int g = 0; g < Glyph.COUNT; g++) {
+            if (!Roster.active(rosterFull, g) || keyDisabled(g)) continue;
+            int side = g < 3 ? 0x07 : 0x38;
+            if (Integer.bitCount(disabledKeys & side) < 2) choice[count++] = g;
+        }
+        // Both sides have lost their quota: keep attacking either survivor, now for damage.
+        if (count == 0 && octoKeysLeft() <= 2) {
+            for (int g = 0; g < Glyph.COUNT; g++)
+                if (Roster.active(rosterFull, g) && !keyDisabled(g)) choice[count++] = g;
+        }
+        if (count == 0) return;
+        octoTarget = choice[rnd.nextInt(count)];
+        int pick = rnd.nextInt(Integer.bitCount(octoArms));
+        for (int a = 0; a < OCTO_ARMS; a++) {
+            if ((octoArms & (1 << a)) != 0 && pick-- == 0) {
+                octoAttackArm = a;
+                break;
+            }
+        }
+        octoReach = -0.28f;
+        octoCue = true;
+    }
+
     // ---- bolts --------------------------------------------------------------
     /**
      * Letter bolts, thrown at the deck when the slime prompt expires.
@@ -1843,6 +2074,7 @@ final class Boss {
     int update(float dt, Layout L, Random rnd) {
         if (kind < 0) return 0;
         hurt = Math.max(0f, hurt - dt * 2.6f);
+        octoCue = octoLock = false;
         divideBurst = Math.max(0f, divideBurst - dt * 1.35f);
         for (int i = 0; i < halfHurt.length; i++)
             halfHurt[i] = Math.max(0f, halfHurt[i] - dt * 3.4f);
@@ -1945,6 +2177,7 @@ final class Boss {
             }
         }
         ageElems(dt);
+        if (kind == OCTOPUS) updateOctopus(dt, L, rnd);
 
         if (kind == SLIME && boltCount() == 0 && !hasGlob() && open()) {
             promptT -= dt;

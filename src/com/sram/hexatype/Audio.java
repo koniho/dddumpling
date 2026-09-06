@@ -388,6 +388,11 @@ final class Audio implements GameCore.Sound {
         play(id, 1f, 0.58f + 0.16f * w);
     }
 
+    @Override public void shieldBounce() { play(Sfx.SHIELD_BOUNCE, 1f, 0.72f); }
+    @Override public void slimeDamage() { play(Sfx.SLIME_DAMAGE, 1f, 0.76f); }
+    @Override public void octoCue() { play(Sfx.OCTO_CUE, 1f, 0.74f); }
+    @Override public void octoLock() { play(Sfx.OCTO_LOCK, 1f, 0.70f); }
+
     @Override public void boltPop() {
         // Let the 170ms envelope reach zero; stopping it mid-wave is an audible click.
         long now = System.nanoTime();

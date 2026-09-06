@@ -41,17 +41,19 @@ final class Screens extends Draw {
         scrim(p, L, (int) (210 * fade));
         float s = L.unit;
         float cx = L.w / 2f;
-        p.text("DDDUMPLING", cx, L.h * 0.100f, type(s * 1.95f), fadeBy(INK, fade),
-                Painter.CENTER, true);
+        bubblyTitle(p, c, L, cx, L.h * 0.100f, fade);
         if (c.best > 0) {
-            p.text("BEST " + c.best, cx, L.h * 0.170f, type(s * 0.74f), fadeBy(ROSE, fade),
+            p.text("BEST " + c.best, cx, L.h * 0.275f, type(s * 0.74f), fadeBy(ROSE, fade),
                     Painter.CENTER, true);
         }
 
         // Where the two lines explaining the game used to be: the game, played. A word falls and
         // types itself while the matching keys light under it. Suppressed with the case open —
         // there is one lesson on screen at a time.
+        p.save();
+        p.translate(0f, L.h * 0.105f);
         Demo.draw(p, c, L, fade * caseOut(c));
+        p.restore();
 
         // The badge and the case swap in the same place, and in series rather than on top of
         // each other: crossing them over on the raw fade drew both at half strength for a
@@ -73,6 +75,122 @@ final class Screens extends Draw {
         // The case explains itself: arrows either side of the shelf, and the focused entry throbs
         // when it first comes up if there is a story behind it. See Showcase.
 
+    }
+
+    /** The title logo: candy-coloured letters with a soft cream rim and individual bounce. */
+    private static final float[] TITLE_X = {-0.85f, 0.34f, -0.42f, 0.92f, -0.58f,
+            0.68f, -0.95f, 0.52f, -0.44f, 0.88f};
+    private static final float[] TITLE_Y = {-1.05f, 0.72f, -0.38f, 1.02f, -0.82f,
+            0.88f, -0.70f, 1.05f, -0.92f, 0.48f};
+    private static final float[] TITLE_SCALE = {1.04f, 0.95f, 1.01f, 0.93f, 1.06f,
+            0.97f, 1.05f, 0.92f, 1.02f, 0.96f};
+
+    private static void bubblyTitle(Painter p, GameCore c, Layout L, float cx, float baseline,
+            float fade) {
+        float size = type(L.unit * 5.7f);
+        bubbleTitleRow(p, c, L, "DDDUM", cx, L.h * 0.140f, size, fade, 0);
+        bubbleTitleRow(p, c, L, "PLING", cx, L.h * 0.235f, size, fade, 5);
+    }
+
+    private static void bubbleTitleRow(Painter p, GameCore c, Layout L, String text, float cx,
+            float baseline, float size, float fade, int colorOffset) {
+        float step = L.w * 0.176f;
+        float left = cx - step * (text.length() - 1) * 0.5f;
+        for (int i = 0; i < text.length(); i++) {
+            int letterIndex = colorOffset + i;
+            float x = left + i * step + TITLE_X[letterIndex] * L.unit;
+            float phase = c.clock * 0.72f + letterIndex * 0.91f;
+            float bob = ((float) Math.sin(phase) * 0.38f +
+                    (float) Math.sin(phase * 1.73f + 1.4f) * 0.16f) * L.unit
+                    + TITLE_Y[letterIndex] * L.unit;
+            float touch = 0f, pushX = 0f;
+            if (c.titleTouchDown) {
+                float dx = x - c.titleTouchX, dy = baseline + bob - c.titleTouchY;
+                float reach = L.unit * 6.8f;
+                float distance = (float) Math.sqrt(dx * dx + dy * dy);
+                touch = Math.max(0f, 1f - distance / reach);
+                if (distance > 1f) pushX = dx / distance * touch * L.unit * 0.75f;
+            }
+            float y = baseline + bob - touch * L.unit * 1.30f;
+            float liveSize = size * TITLE_SCALE[letterIndex]
+                    * (1f + 0.030f * (float) Math.sin(phase * 1.31f + 0.9f)
+                    + touch * 0.13f);
+            int goo = Glyph.COLOR[letterIndex % Glyph.COUNT];
+            bubbleGlyph(p, text.charAt(i), x + pushX, y, liveSize, goo, fade,
+                    c.clock + letterIndex * 0.37f);
+        }
+    }
+
+    /** A single continuous inflated letter, with rounded tube ends and curved bowls. */
+    private static void bubbleGlyph(Painter p, char ch, float cx, float baseline, float height,
+            int goo, float fade, float phase) {
+        float width = height * 0.205f;
+        // A low/right body gives the same soft volume cue as the shadowed side of the reference.
+        bubbleGlyphLayer(p, ch, cx + width * 0.18f, baseline + width * 0.22f, height,
+                fadeBy(Glyph.withAlpha(Glyph.mix(goo, BG, 0.58f), 150), fade), width * 1.17f, phase);
+        bubbleGlyphLayer(p, ch, cx, baseline, height,
+                fadeBy(Glyph.withAlpha(goo, 222), fade), width, phase);
+        // A narrow upper-left sheen rides the whole inflated stroke, then a bright oval catches light.
+        bubbleGlyphLayer(p, ch, cx - width * 0.12f, baseline - width * 0.14f, height,
+                fadeBy(Glyph.withAlpha(0xFFFFFFFF, 44), fade), width * 0.22f, phase);
+        float glint = (float) Math.sin(phase * 1.7f) * width * 0.12f;
+        p.fillEllipse(cx - height * 0.18f + glint, baseline - height * 0.73f,
+                width * 0.25f, width * 0.075f,
+                fadeBy(Glyph.withAlpha(0xFFFFFFFF, 175), fade));
+    }
+
+    private static void bubbleGlyphLayer(Painter p, char ch, float x, float y, float h, int color,
+            float w, float phase) {
+        float top = y - h * (0.82f + spring(phase, 0) * 0.018f);
+        float bottom = y - h * (0.08f + spring(phase, 1) * 0.016f);
+        float middle = (top + bottom) * 0.5f + h * spring(phase, 2) * 0.012f;
+        float left = x - h * (0.25f + spring(phase, 3) * 0.018f);
+        float right = x + h * (0.25f + spring(phase, 4) * 0.018f);
+        x += h * spring(phase, 5) * 0.010f;
+        switch (ch) {
+            case 'D':
+                p.line(left, top, left, bottom, color, w);
+                p.arc(left, middle, h * 0.43f, (bottom - top) * 0.5f, -90f, 180f, color, w);
+                break;
+            case 'U':
+                p.line(left, top, left, middle + h * 0.10f, color, w);
+                p.line(right, top, right, middle + h * 0.10f, color, w);
+                p.arc(x, middle + h * 0.10f, h * 0.25f, h * 0.28f, 0f, 180f, color, w);
+                break;
+            case 'P':
+                p.line(left, top, left, bottom, color, w);
+                p.arc(left, top + h * 0.21f, h * 0.36f, h * 0.21f, -90f, 180f, color, w);
+                break;
+            case 'G':
+                p.arc(x, middle, h * 0.31f, h * 0.37f, 38f, 286f, color, w);
+                p.arc(x + h * 0.10f, middle + h * 0.10f, h * 0.16f, h * 0.12f, 275f, 88f, color, w);
+                break;
+            case 'M':
+                p.line(left, bottom, left, top, color, w);
+                p.arc(x - h * 0.125f, top + h * 0.20f, h * 0.125f, h * 0.20f, 180f, 180f, color, w);
+                p.arc(x + h * 0.125f, top + h * 0.20f, h * 0.125f, h * 0.20f, 180f, 180f, color, w);
+                p.line(right, top + h * 0.20f, right, bottom, color, w);
+                break;
+            case 'L':
+                p.arc(left + h * 0.13f, bottom - h * 0.13f, h * 0.13f, h * 0.13f, 90f, 90f, color, w);
+                p.line(left, top, left, bottom - h * 0.13f, color, w);
+                p.line(left + h * 0.13f, bottom, right, bottom, color, w);
+                break;
+            case 'I':
+                p.arc(x, top + h * 0.08f, h * 0.08f, h * 0.08f, 180f, 180f, color, w);
+                p.line(x, top + h * 0.08f, x, bottom - h * 0.08f, color, w);
+                p.arc(x, bottom - h * 0.08f, h * 0.08f, h * 0.08f, 0f, 180f, color, w);
+                break;
+            default: // N: two rounded uprights joined by one soft diagonal.
+                p.line(left, bottom, left, top, color, w);
+                p.arc(x, middle, h * 0.27f, h * 0.37f, 160f, 200f, color, w);
+                p.line(right, top, right, bottom, color, w);
+                break;
+        }
+    }
+
+    private static float spring(float phase, int node) {
+        return (float) Math.sin(phase * (0.82f + node * 0.067f) + node * 1.71f);
     }
 
     /** Opacity of everything the shut case owns: gone by the time the case is half faded in. */

@@ -34,6 +34,7 @@ final class BossScreen extends Draw {
     /** Tint per boss, taken from the letter each one is a giant version of. */
     private static int tint(Boss b) {
         if (b.kind == Boss.SPLITTER) return DIVIDE_COLOR[0];
+        if (b.kind == Boss.OCTOPUS) return 0xFF861735;
         return Glyph.COLOR[Boss.FACE[b.kind]];
     }
 
@@ -141,6 +142,8 @@ final class BossScreen extends Draw {
         // Per axis, because a boss can be wider than it is tall — see Softbody.reset(.., wide).
         float rx = b.body.radiusX(), ry = b.body.radiusY();
 
+        if (b.kind == Boss.OCTOPUS) drawOctopusArms(p, c, L, b, col, fade);
+
         // An aura, so the body reads as lit rather than as a flat shape on the sky. Widest and
         // faintest first, and only three layers: this sits behind a soft outline that is already
         // translucent, and more than that greys the whole upper field. Elliptical, so it hugs the
@@ -187,11 +190,24 @@ final class BossScreen extends Draw {
         if (b.kind == Boss.SPLITTER) {
             drawDividePieces(p, c, L, b, fade);
         } else {
-            Slime.draw(p, b.body, c.clock, col, face, mood, fade);
+            if (b.kind == Boss.OCTOPUS) drawOctopusHead(p, c, b, col, mood, fade);
+            else Slime.draw(p, b.body, c.clock, col, face, mood, fade);
+            if (b.kind == Boss.SLIME && !b.open() && b.rage > 0f) {
+                float[] skin = b.body.outline();
+                float[] shield = new float[skin.length];
+                float shieldPulse = 1.08f + 0.035f * (float) Math.sin(c.clock * 15f);
+                for (int i = 0; i < skin.length; i += 2) {
+                    shield[i] = cx + (skin[i] - cx) * shieldPulse;
+                    shield[i + 1] = cy + (skin[i + 1] - cy) * shieldPulse;
+                }
+                int shieldCol = Glyph.cycle(c.clock * 5.5f);
+                p.strokePoly(shield, Glyph.withAlpha(shieldCol,
+                        (int) (245f * b.rage * fade)), r * (0.055f + 0.025f * b.rage));
+            }
             // The original slime is a wide, amorphous silhouette. The inset node mesh reconstructs
             // a regular ring over it, making an obsolete circular body appear on top of the skin.
             // Other bosses keep the mesh because it helps their rounder bodies read as soft physics.
-            if (b.kind != Boss.SLIME) {
+            if (b.kind != Boss.SLIME && b.kind != Boss.OCTOPUS) {
                 Slime.mesh(p, b.body, col,
                         Math.max(b.hurt, b.body.pulled() ? 0.8f : 0f), fade);
             }
@@ -199,6 +215,189 @@ final class BossScreen extends Draw {
 
         ornament(p, c, L, b, fade);
         elements(p, c, L, b, fade, col);
+    }
+
+    private static void drawOctopusHead(Painter p, GameCore c, Boss b, int col, float mood, float fade) {
+        float[] raw = b.body.outline();
+        float cx = b.body.centreX(), cy = b.body.centreY();
+        float rx = Math.max(1f, b.body.radiusX()), ry = Math.max(1f, b.body.radiusY());
+        float[] mantle = new float[raw.length];
+        for (int i = 0; i < raw.length; i += 2) {
+            float dx = raw[i] - cx, dy = raw[i + 1] - cy;
+            float angle = (float) Math.atan2(dy / ry, dx / rx);
+            float cs = (float) Math.cos(angle), sn = (float) Math.sin(angle);
+            float expected = (float) Math.sqrt((rx * cs) * (rx * cs) + (ry * sn) * (ry * sn));
+            float live = (float) Math.sqrt(dx * dx + dy * dy);
+            float elastic = Math.max(0.88f, Math.min(1.12f, live / Math.max(1f, expected)));
+            // Broad crown and cheeks, then a shallow tucked skirt instead of a circular belly.
+            float width = sn > 0.15f ? 0.98f - (sn - 0.15f) * 0.20f : 1.00f;
+            float height = sn < 0f ? 1.42f : 0.86f;
+            mantle[i] = cx + cs * rx * width * elastic;
+            mantle[i + 1] = cy + sn * ry * height * elastic - ry * 0.11f;
+        }
+        p.fillPoly(mantle, Glyph.withAlpha(col, (int) (224 * fade)));
+        p.strokePoly(mantle, Glyph.withAlpha(Glyph.mix(col, 0xFFFFFFFF, 0.46f),
+                (int) (255 * fade)), b.body.radius() * 0.06f);
+
+        // Wet sticker-like highlight from the reference, kept translucent to match the slime family.
+        p.fillEllipse(cx - rx * 0.35f, cy - ry * 0.43f, rx * 0.17f, ry * 0.27f,
+                Glyph.withAlpha(0xFFFFFFFF, (int) (108 * fade)));
+        p.fillCircle(cx - rx * 0.18f, cy - ry * 0.64f, rx * 0.085f,
+                Glyph.withAlpha(0xFFFFFFFF, (int) (178 * fade)));
+
+        float eyeY = cy - ry * 0.06f;
+        float eyeR = rx * 0.145f;
+        float eyeDx = rx * 0.34f;
+        int ink = Glyph.withAlpha(0xFF160B18, (int) (255 * fade));
+        for (int side = -1; side <= 1; side += 2) {
+            float ex = cx + side * eyeDx;
+            p.fillEllipse(ex, eyeY, eyeR, eyeR * 1.08f, ink);
+            p.fillCircle(ex - eyeR * 0.27f, eyeY - eyeR * 0.34f, eyeR * 0.25f,
+                    Glyph.withAlpha(0xFFFFFFFF, (int) (245 * fade)));
+            p.fillCircle(ex + eyeR * 0.22f, eyeY + eyeR * 0.25f, eyeR * 0.11f,
+                    Glyph.withAlpha(0xFFFFFFFF, (int) (210 * fade)));
+        }
+        float mouthY = cy + ry * 0.24f;
+        float[] smile = new float[14];
+        for (int k = 0; k < 7; k++) {
+            float u = -1f + 2f * k / 6f;
+            smile[k * 2] = cx + rx * 0.18f * u;
+            smile[k * 2 + 1] = mouthY + ry * 0.10f * (1f - u * u);
+        }
+        p.polyline(smile, ink, rx * 0.055f);
+    }
+
+    private static float[] smoothTentacle(float[] src) {
+        int segments = (src.length / 2 - 1) * 4;
+        float[] out = new float[(segments + 1) * 2];
+        int count = src.length / 2;
+        for (int s = 0; s <= segments; s++) {
+            float at = s / 4f;
+            int i = Math.min(count - 2, (int) at);
+            float t = at - i;
+            if (s == segments) { i = count - 2; t = 1f; }
+            int i0 = Math.max(0, i - 1), i1 = i, i2 = i + 1, i3 = Math.min(count - 1, i + 2);
+            float t2 = t * t, t3 = t2 * t;
+            for (int axis = 0; axis < 2; axis++) {
+                float p0 = src[i0 * 2 + axis], p1 = src[i1 * 2 + axis];
+                float p2 = src[i2 * 2 + axis], p3 = src[i3 * 2 + axis];
+                out[s * 2 + axis] = 0.5f * ((2f * p1) + (-p0 + p2) * t
+                        + (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2
+                        + (-p0 + 3f * p1 - 3f * p2 + p3) * t3);
+            }
+        }
+        return out;
+    }
+
+    private static void orientedEllipse(Painter p, float cx, float cy, float tx, float ty,
+            float along, float across, int color) {
+        final int points = 14;
+        float[] oval = new float[points * 2];
+        float nx = -ty, ny = tx;
+        for (int i = 0; i < points; i++) {
+            float angle = Softbody.TAU * i / points;
+            float ca = (float) Math.cos(angle), sa = (float) Math.sin(angle);
+            oval[i * 2] = cx + tx * ca * along + nx * sa * across;
+            oval[i * 2 + 1] = cy + ty * ca * along + ny * sa * across;
+        }
+        p.fillPoly(oval, color);
+    }
+
+    private static void drawOctopusArms(Painter p, GameCore c, Layout L, Boss b, int col, float fade) {
+        float thick = Boss.bodyR(L) * 0.52f;
+        for (int a = 0; a < Boss.OCTO_ARMS; a++) {
+            float[] pts = new float[Boss.OCTO_NODES * 2];
+            for (int n = 0; n < Boss.OCTO_NODES; n++) { pts[n * 2] = b.octoX[a][n]; pts[n * 2 + 1] = b.octoY[a][n]; }
+            boolean dying = a == b.octoDyingArm && b.octoDeath > 0f;
+            if ((b.octoArms & (1 << a)) != 0 || dying) {
+                float death = dying ? Math.min(1f, b.octoDeath) : 0f;
+                boolean warning = a == b.octoAttackArm && b.octoTarget >= 0 && b.octoReach < 0f;
+                float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 13f);
+                int armCol = dying
+                        ? Glyph.mix(col, death < 0.38f ? 0xFFFFFF8A : 0xFFFF6A86,
+                                0.82f - death * 0.30f)
+                        : warning ? Glyph.mix(0xFF861735, 0xFFFF355F,
+                                0.35f + 0.65f * pulse) : col;
+                float[] curve = smoothTentacle(pts);
+                float variety = 0.88f + 0.16f * (float) Math.sin(a * 2.17f);
+                int steps = curve.length / 2 - 1;
+                for (int s = 0; s < steps; s++) {
+                    float u = s / (float) steps;
+                    float width = thick * variety * (1.18f - 0.76f * u)
+                            * (dying ? 1f - death * 0.72f : 1f);
+                    float x1 = curve[s * 2], y1 = curve[s * 2 + 1];
+                    float x2 = curve[s * 2 + 2], y2 = curve[s * 2 + 3];
+                    p.line(x1, y1, x2, y2,
+                            Glyph.withAlpha(Glyph.mix(armCol, BG, 0.48f), (int) (170 * fade)),
+                            width * 1.22f);
+                    p.line(x1, y1, x2, y2, Glyph.withAlpha(armCol, (int) (230 * fade)), width);
+                    p.line(x1 - width * 0.10f, y1 - width * 0.10f,
+                            x2 - width * 0.10f, y2 - width * 0.10f,
+                            Glyph.withAlpha(0xFFFFFFFF, (int) (38 * fade)), width * 0.14f);
+                }
+                // A row of soft pink suckers follows the lower side of each curl.
+                for (int s = steps * 5 / 9; s < steps; s += 3) {
+                    float x1 = curve[s * 2], y1 = curve[s * 2 + 1];
+                    float x2 = curve[s * 2 + 2], y2 = curve[s * 2 + 3];
+                    float dx = x2 - x1, dy = y2 - y1;
+                    float len = Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
+                    float nx = -dy / len, ny = dx / len;
+                    if (ny < 0f) { nx = -nx; ny = -ny; }
+                    float suckerR = thick * (0.13f - 0.045f * s / steps);
+                    float suckerX = x1 + nx * thick * 0.27f;
+                    float suckerY = y1 + ny * thick * 0.27f;
+                    // Twice the old footprint, stretched along the local tentacle direction.
+                    orientedEllipse(p, suckerX, suckerY, dx / len, dy / len,
+                            suckerR * 2.0f, suckerR * 1.12f,
+                            Glyph.withAlpha(0xFFB83F68, (int) (245 * fade)));
+                    // A smaller inset cup gives every sucker a visible recessed centre.
+                    orientedEllipse(p, suckerX - nx * suckerR * 0.10f,
+                            suckerY - ny * suckerR * 0.10f, dx / len, dy / len,
+                            suckerR * 1.18f, suckerR * 0.56f,
+                            Glyph.withAlpha(0xFFFFC1CF, (int) (238 * fade)));
+                }
+                float tipX = curve[curve.length - 2], tipY = curve[curve.length - 1];
+                if (dying) {
+                    for (int bit = 0; bit < 7; bit++) {
+                        float burst = death * (1.1f + bit * 0.055f);
+                        float px = tipX + (float) Math.cos(bit * 2.4f) * thick * burst;
+                        float py = tipY + (float) Math.sin(bit * 1.9f) * thick * burst
+                                + thick * death * death;
+                        p.fillCircle(px, py, thick * (0.12f - bit * 0.008f)
+                                * (1f - death * 0.65f),
+                                Glyph.withAlpha(bit % 2 == 0 ? 0xFFFFD38A : armCol,
+                                        (int) (220f * (1f - death) * fade)));
+                    }
+                }
+                p.fillCircle(tipX, tipY, thick * variety * 0.22f
+                                * (dying ? 1f - death * 0.72f : 1f),
+                        Glyph.withAlpha(armCol, (int) (230 * fade)));
+                if (a == b.octoAttackArm && b.octoCaptured >= 0) {
+                    int g = b.octoCaptured; int keyCol = Glyph.COLOR[g];
+                    p.fillPoly(Glyph.hex(tipX, tipY, L.keyR), Glyph.withAlpha(keyCol, (int) (110 * fade)));
+                    p.strokePoly(Glyph.hex(tipX, tipY, L.keyR), Glyph.withAlpha(keyCol, (int) (255 * fade)), L.keyR * 0.10f);
+                    Kawaii.draw(p, g, tipX, tipY, L.keyR * 0.60f, Glyph.withAlpha(keyCol, (int) (255 * fade)), 1f, 0.1f);
+                }
+            } else {
+                float gx = pts[2], gy = pts[3];
+                p.fillEllipse(gx, gy, thick * 0.58f, thick * 0.43f, Glyph.withAlpha(col, (int) (190 * fade)));
+                p.fillCircle(gx - thick * 0.14f, gy - thick * 0.13f, thick * 0.12f, Glyph.withAlpha(0xFFFFFFFF, (int) (120 * fade)));
+            }
+        }
+        if (b.octoLash > 0f) {
+            float t = b.octoLash;
+            float bend = (float) Math.sin(t * Math.PI) * L.enemyR * 1.8f;
+            float[] lash = {
+                    b.hitX, b.hitY,
+                    (b.hitX + b.octoLashX) * 0.5f + bend,
+                    (b.hitY + b.octoLashY) * 0.5f,
+                    b.octoLashX, b.octoLashY
+            };
+            float alpha = fade * (float) Math.sin(Math.PI * b.octoLash);
+            p.polyline(lash, Glyph.withAlpha(0xFF310817, (int) (190 * alpha)), thick * 0.82f);
+            p.polyline(lash, Glyph.withAlpha(0xFFFF355F, (int) (245 * alpha)), thick * 0.48f);
+            p.polyline(lash, Glyph.withAlpha(0xFFFFB0C0, (int) (150 * alpha)), thick * 0.10f);
+        }
     }
 
     static boolean divideVulnerable(Boss b, int piece) {
@@ -391,7 +590,7 @@ final class BossScreen extends Draw {
                 int charge = b.pieceCharge(i);
                 if (charge < Boss.DIVIDE_HITS) {
                     letterBadge(p, c, L, b.pieceWant(i), x, y - pr * 1.35f,
-                            L.unit * 0.62f, fade, true);
+                            L.keyR, fade, true);
                 } else if (b.pieceDepth(i) < Boss.DIVIDE_LEVELS) {
                     float spread = pr * (0.75f + 0.08f * (float) Math.sin(c.clock * 6f));
                     p.line(x - pr * 0.18f, y, x - spread, y,
@@ -400,6 +599,8 @@ final class BossScreen extends Draw {
                             Glyph.withAlpha(GOLD, (int) (235 * fade)), L.unit * 0.10f);
                 }
             }
+        } else if (b.kind == Boss.OCTOPUS) {
+            return;
         } else if (b.kind == Boss.DRUM) {
             // The beat: a ring that closes as the window approaches, and the thing it wants inside.
             beatRing(p, c, b, cx, cy, r, fade);
@@ -827,9 +1028,11 @@ final class BossScreen extends Draw {
             int g = b.bglyph[i];
             float x = b.boltX(i, L), y = b.boltY(i, L);
             float at = b.boltAt(i);
-            // Grows as it comes: a thing getting closer, and it makes the last half second the
-            // loudest part of the flight.
-            float rr = L.keyR * (0.42f + 0.30f * at);
+            // Slime bolts match the deck keys throughout their flight; other boss projectiles
+            // grow as they approach to make their final half-second read more loudly.
+            float rr = b.kind == Boss.SLIME
+                    ? L.keyR
+                    : L.keyR * (0.42f + 0.30f * at);
             int col = Glyph.COLOR[g];
 
             // A tail back toward the launch point, so the direction reads in one frame.

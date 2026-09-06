@@ -56,6 +56,14 @@ final class BossPlay {
         c.takeHit(c.boss.bodyX(L), L);
     }
 
+    /** The delayed contact frame of an Octopulse wrong-key whip. */
+    static void octoWhipHit(GameCore c, Layout L) {
+        c.takeHit(c.boss.octoLashX, L);
+        c.shake = Math.max(c.shake, 1.25f);
+        Fx.explode(c, c.rnd, c.boss.octoLashX, c.boss.octoLashY,
+                L.keyR * 1.8f, 18, 0xFFFF355F);
+    }
+
     /**
      * Whether the boss gets first refusal on a press of {@code g}.
      *
@@ -84,6 +92,9 @@ final class BossPlay {
         // that costs a life.
         if (c.boss.boltWants(g)) return true;
         if (c.boss.denies(g)) return true;
+        // Once an Octopulse arm is moving, every available key answers its reaction prompt.
+        if (c.boss.kind == Boss.OCTOPUS && c.boss.octoTarget >= 0
+                && c.boss.octoReach >= 0f) return true;
         if (c.target != null) return false;
         if (c.boss.wants(g)) return true;
         return c.boss.claims(g) && !anyWordWants(c, g);
@@ -110,11 +121,23 @@ final class BossPlay {
      * @return true when the press did something, for the view's haptic tick
      */
     static boolean press(GameCore c, int g, int verdict, Layout L) {
+        if (verdict == Boss.PLAYER_HIT) {
+            c.keyBad[g] = 1f;
+            c.misses++;
+            c.combo = 0;
+            // Damage waits for the visible whip to reach the key.
+            return true;
+        }
         if (verdict == Boss.REBUFF) {
+            boolean slimeShield = c.boss.kind == Boss.SLIME && !c.boss.open();
+            if (slimeShield) {
+                shot(c, g, L, verdict);
+                if (c.sound != null) c.sound.shieldBounce();
+            }
             c.keyBad[g] = 1f;
             c.combo = 0;
             c.shake = Math.max(c.shake, 0.22f);
-            if (c.sound != null) c.sound.wrong();
+            if (!slimeShield && c.sound != null) c.sound.wrong();
             return false;
         }
         c.hits++;
@@ -179,9 +202,8 @@ final class BossPlay {
      * — see {@link GameCore.Shot#atBoss}. No {@code target} and no {@code kill}, so {@link #impact} does the
      * one thing wanted at the far end: a burst of that letter's colour where it struck.
      *
-     * Only fired for a press that landed. A rebuff fires nothing, the same way a wrong press at a
-     * word fires nothing — a bullet that flies out and achieves nothing reads as the shot having
-     * missed, when what happened is that it was refused.
+     * A normal rebuff fires nothing, just like a wrong word press. The Slime is the exception:
+     * its closed-state shield physically returns the shot, making the refusal visible.
      */
     private static void shot(GameCore c, int g, Layout L, int verdict) {
         if (c.boss.body == null) return;
@@ -193,10 +215,11 @@ final class BossPlay {
         // A parry is aimed at where a bolt was, not at the boss, so it must not home: the bolt is
         // already gone and the body's centre is somewhere else entirely.
         s.atBoss = verdict != Boss.PARRY;
+        s.shieldBounce = verdict == Boss.REBUFF;
         s.bossDx = c.boss.hitX - c.boss.body.centreX();
         s.bossDy = c.boss.hitY - c.boss.body.centreY();
         s.glyph = g;
-        s.dur = GameCore.SHOT_TIME;
+        s.dur = s.shieldBounce ? GameCore.SHOT_TIME * 3f : GameCore.SHOT_TIME;
         c.shots.add(s);
     }
 
@@ -252,7 +275,10 @@ final class BossPlay {
         if (c.combo > c.maxCombo) c.maxCombo = c.combo;
         c.shake = Math.max(c.shake, 0.28f);
         Fx.explode(c, c.rnd, x, y, L.enemyR * 1.5f, 14, GameCore.INK_SPARK);
-        if (c.sound != null) c.sound.bossDamage();
+        if (c.sound != null) {
+            if (c.boss.kind == Boss.SLIME) c.sound.slimeDamage();
+            else c.sound.bossDamage();
+        }
         return true;
     }
 
