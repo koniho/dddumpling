@@ -211,6 +211,8 @@ final class GameCore {
         void divideBoing(float weight);
         /** A charged or flying slime bolt was destroyed: one short, low bloop. */
         void boltPop();
+        /** A launched boss bolt breaks apart completely. */
+        void boltDeath();
         /** A player projectile ricocheted from the Slime boss shield. */
         void shieldBounce();
         void octoCue();

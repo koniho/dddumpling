@@ -39,7 +39,7 @@ abstract class Check {
 
     static final class Ear implements GameCore.Sound {
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeDamages, bossSplits,
-                bossChargeCalls, boltPops, shieldBounces, octoCues, octoLocks, divideDamages, divideSplits, divideDeactivates, divideBoings, chops, zaps;
+                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoCues, octoLocks, divideDamages, divideSplits, divideDeactivates, divideBoings, chops, zaps;
         float bossCharge, maxBossCharge;
         float lastDivideBoingWeight = -1f;
         int collects;
@@ -84,6 +84,7 @@ abstract class Check {
             lastDivideBoingWeight = weight;
         }
         public void boltPop() { boltPops++; }
+        public void boltDeath() { boltDeaths++; }
         public void shieldBounce() { shieldBounces++; }
         public void octoCue() { octoCues++; }
         public void octoLock() { octoLocks++; }

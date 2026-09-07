@@ -605,6 +605,8 @@ final class TestBoss extends Check {
                 c.boss.held < 0);
         check("which is the only thing that hurts a slime", c.boss.hp < hpBefore);
         check("and the skin is let go, so it springs back", !c.boss.body.pulled());
+        check("the wounded slime stays damageable while returning",
+                c.boss.slimeRetaliating && c.boss.open());
         // And the boss comes home, rather than being left standing where the drag dragged it.
         for (int i = 0; i < 90; i++) {
             c.enemies.clear();
@@ -612,6 +614,8 @@ final class TestBoss extends Check {
         }
         check("then walks back to its own drift",
                 Math.abs(c.boss.bodyX(L) - c.boss.baseX(L)) < Boss.bodyR(L) * 0.05f);
+        check("and retaliates from center with three bolts",
+                !c.boss.slimeRetaliating && c.boss.boltCount() == Boss.BOLTS);
 
         float healedFrom = c.boss.hp;
         for (int i = 0; i < 60 * (int) (Boss.GLOB_TIME + 2); i++) {
@@ -848,6 +852,8 @@ final class TestBoss extends Check {
         check("only then does the next prompt begin counting", c.boss.promptT < resumedAt);
 
         GameCore hard = enterBoss(L, Boss.SLIME, 47L);
+        Ear hardEar = new Ear();
+        hard.sound = hardEar;
         toOpen(hard, L);
         hard.boss.hp = hard.boss.hpMax * 0.30f;
         check("a badly hurt slime cuts the prompt toward one second",
@@ -860,7 +866,8 @@ final class TestBoss extends Check {
         hard.tapKey(g, L);
         check("two hits leave a late bolt alive", hard.boss.boltWants(g));
         hard.tapKey(g, L);
-        check("and the third destroys it", !hard.boss.boltWants(g));
+        check("and the third destroys it with its own death sound",
+                !hard.boss.boltWants(g) && hardEar.boltDeaths == 1);
 
         GameCore d = enterBoss(L, Boss.SLIME, 48L);
         toOpen(d, L);

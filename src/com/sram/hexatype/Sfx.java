@@ -28,7 +28,8 @@ final class Sfx {
     static final int DIVIDE_BOING_HEAVY = 27, DIVIDE_BOING_MEDIUM = 28,
             DIVIDE_BOING_LIGHT = 29, ROSTER_JOIN = 30, DIVIDE_DEACTIVATE = 31,
             SHIELD_BOUNCE = 32, SLIME_DAMAGE = 33, OCTO_CUE = 34, OCTO_LOCK = 35;
-    static final int BOSS_TAUNT_0 = 36, COUNT = BOSS_TAUNT_0 + Boss.COUNT;
+    static final int BOSS_TAUNT_0 = 36, BOLT_DEATH = BOSS_TAUNT_0 + Boss.COUNT,
+            COUNT = BOLT_DEATH + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -64,6 +65,7 @@ final class Sfx {
             case BOSS_DAMAGE: return bossDamage();
             case BOSS_SPLIT: return bossSplit();
             case BOLT_POP: return boltPop();
+            case BOLT_DEATH: return boltDeath();
             case DIVIDE_DAMAGE: return divideDamage();
             case DIVIDE_SPLIT: return divideSplit();
             case DIVIDE_BOING_HEAVY: return divideBoing(0);
@@ -644,6 +646,28 @@ final class Sfx {
             float debris = noise * (0.18f + 0.16f * (float) Math.sin(TAU * 17f * u))
                     * (float) Math.exp(-4.5f * u);
             v[i] = (core * 0.78f + blast * 0.88f + debris) * envelope(u, 0.0015f, 1.2f);
+        }
+        return render(v);
+    }
+
+    /** A launched bolt's unmistakable final break: hard shell snap, falling core and debris. */
+    static short[] boltDeath() {
+        int n = (int) (RATE * 0.34f);
+        float[] v = new float[n];
+        int seed = 0xB017D1E;
+        float phase = 0f;
+        for (int i = 0; i < n; i++) {
+            float u = i / (float) n;
+            seed = seed * 1664525 + 1013904223;
+            float noise = ((seed >>> 9) & 0x7fffff) / 4194303.5f - 1f;
+            float hz = 410f * (1f - 0.72f * u);
+            phase += TAU * hz / RATE;
+            float snap = noise * (float) Math.exp(-42f * u);
+            float core = ((float) Math.sin(phase) + 0.30f * (float) Math.sin(phase * 2.03f))
+                    * (float) Math.exp(-5.2f * u);
+            float shards = noise * (float) Math.exp(-8f * u)
+                    * (0.18f + 0.12f * (float) Math.sin(TAU * 23f * u));
+            v[i] = (snap * 1.05f + core * 0.80f + shards) * envelope(u, 0.0015f, 1.2f);
         }
         return render(v);
     }

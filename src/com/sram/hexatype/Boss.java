@@ -297,6 +297,10 @@ final class Boss {
     /** Decaying flashes: hurt on damage, rage on a rebuff. Separate channels, on purpose. */
     float hurt, rage;
     boolean beaten;
+    /** A damaged slime stays open while returning home, then answers with a three-bolt volley. */
+    boolean slimeRetaliating;
+    /** Set by swat() for the press frame so audio can distinguish a hit from a destroyed bolt. */
+    boolean boltDestroyed;
 
     /**
      * The chain {@link #SLIME} wants, in order. Indexed by {@link #chainAt}, wrapping, so its length
@@ -464,6 +468,7 @@ final class Boss {
         phase = 0f;
         hurt = rage = 0f;
         beaten = false;
+        slimeRetaliating = boltDestroyed = false;
         awake = chord = 0;
         charges = 0;
         depth = 0f;
@@ -537,6 +542,7 @@ final class Boss {
         phase = 0f;
         hurt = rage = 0f;
         beaten = false;
+        slimeRetaliating = boltDestroyed = false;
         awake = chord = 0;
         want = -1;
         stolen = -1;
@@ -802,6 +808,7 @@ final class Boss {
      */
     boolean open() {
         if (!fighting()) return false;
+        if (kind == SLIME && slimeRetaliating) return true;
         if (kind == SPLITTER) return true;
         if (kind == SUMO) return depth >= SHOVE_REACH;
         return phase >= CYCLE[kind] - SHOW[kind];
@@ -1295,8 +1302,9 @@ final class Boss {
                 // Worth a hit of its own, which is what makes carrying one off a decision rather
                 // than tidying up. A glob is only ever shed by a press, so this cannot feed itself:
                 // damage taken here sheds nothing further.
-                damage(1f);
-                return HIT;
+                int result = damage(1f);
+                if (!beaten) slimeRetaliating = true;
+                return result;
             }
         } else if (t == E_KEY) {
             // Home is the deck. A drag ending on a key is fine — it is a drag *starting* on one
@@ -1779,6 +1787,7 @@ final class Boss {
         chainAt++;
         launchT = LAUNCH_TIME;
         launched = true;
+        slimeRetaliating = false;
         if (body != null) body.squash(0.75f);
         promptT = promptDelay();
         for (int i = 0; i < BOLTS; i++) {
@@ -1935,7 +1944,8 @@ final class Boss {
         hitX = boltX(i, L);
         hitY = boltY(i, L);
         bhp[i]--;
-        if (bhp[i] <= 0) blive[i] = false;
+        boltDestroyed = bhp[i] <= 0;
+        if (boltDestroyed) blive[i] = false;
         return PARRY;
     }
 
@@ -2190,7 +2200,10 @@ final class Boss {
         ageElems(dt);
         if (kind == OCTOPUS) updateOctopus(dt, L, rnd);
 
-        if (kind == SLIME && boltCount() == 0 && !hasGlob() && open()) {
+        if (kind == SLIME && slimeRetaliating && boltCount() == 0) {
+            float home = bodyR(L) * 0.02f;
+            if (followX * followX + followY * followY <= home * home) volley(rnd);
+        } else if (kind == SLIME && boltCount() == 0 && !hasGlob() && open()) {
             promptT -= dt;
             if (promptT <= 0f) volley(rnd);
         }

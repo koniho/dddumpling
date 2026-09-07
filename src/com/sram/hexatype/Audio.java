@@ -405,6 +405,8 @@ final class Audio implements GameCore.Sound {
         play(Sfx.BOLT_POP, 1f, 0.68f);
     }
 
+    @Override public void boltDeath() { play(Sfx.BOLT_DEATH, 1f, 0.82f); }
+
     @Override public void bossCharge(float charge) {
         try {
             if (bubbleTrack == null && charge <= 0f) return;
