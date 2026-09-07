@@ -112,8 +112,10 @@ final class Boss {
 
     /** How long the arrival card holds the field before the fight starts. */
     static final float INTRO = 1.6f;
+    /** Original burst length, retained as the readable basis of the extended victory sequence. */
+    static final float LEAVE_BASE = 2.4f;
     /** How long the burst takes once it is beaten, before the stage may end. */
-    static final float LEAVE = 2.4f;
+    static final float LEAVE = LEAVE_BASE * 3f;
 
     /**
      * Seconds before it enrages.

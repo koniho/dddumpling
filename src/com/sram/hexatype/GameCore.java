@@ -69,6 +69,8 @@ final class GameCore {
      * the deck goes red, and the sky drains — then the summary fades up.
      */
     static final float DEATH_TIME = 1.6f;
+    /** Boss celebrations get room to play; ordinary deaths keep the short transition above. */
+    static final float BOSS_DEATH_TIME = DEATH_TIME * 3f;
     /** How long the summary takes to fade in once the hold is over. */
     static final float OVER_FADE = 0.45f;
 
@@ -107,7 +109,11 @@ final class GameCore {
 
     /** 0..1 through the death sequence, and 1 once it is over. */
     float deathProgress() {
-        return dying() ? 1f - deathT / DEATH_TIME : 1f;
+        return dying() ? 1f - deathT / deathDuration() : 1f;
+    }
+
+    float deathDuration() {
+        return bossVictoryKind >= 0 ? BOSS_DEATH_TIME : DEATH_TIME;
     }
 
     /**
@@ -124,7 +130,7 @@ final class GameCore {
     float overFade() {
         if (state != OVER) return 0f;
         if (dying()) return 0f;
-        return Math.min(1f, (time - DEATH_TIME) / OVER_FADE);
+        return Math.min(1f, (time - deathDuration()) / OVER_FADE);
     }
 
     /**
@@ -133,7 +139,7 @@ final class GameCore {
      * fade, and then the usual grace.
      */
     boolean overReady() {
-        return state == OVER && time > DEATH_TIME + OVER_FADE + OVER_GRACE;
+        return state == OVER && time > deathDuration() + OVER_FADE + OVER_GRACE;
     }
     /**
      * How long the title screen takes to fade out once a start key is pressed. Play does not
@@ -2088,7 +2094,10 @@ final class GameCore {
                 // And the run gets its full stop here rather than on the fatal breach, which
                 // already has the damage drip on it — two effects on one frame is one of them
                 // wasted, and this belongs to the summary coming up, not to the last word.
-                if (sound != null) sound.gameOver();
+                if (sound != null) {
+                    if (bossVictoryKind >= 0) sound.bossMusic(false);
+                    sound.gameOver();
+                }
             }
         }
         if (homeT > 0f) {
@@ -2679,7 +2688,7 @@ final class GameCore {
         bossVictoryKind = boss.fighting() ? boss.kind : -1;
         state = OVER;
         time = 0;
-        deathT = DEATH_TIME;
+        deathT = deathDuration();
         // The words are deliberately left standing: they swirl away over the death hold, and
         // the field is cleared when it ends, before the summary is drawn over it. Only the
         // shots go now — a kill landing after the run is over would credit a squish.

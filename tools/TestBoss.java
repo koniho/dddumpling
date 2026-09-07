@@ -206,6 +206,8 @@ final class TestBoss extends Check {
 
     static void winning(Layout L) {
         group("beating a boss");
+        check("the boss defeat performance is three times its original length",
+                Boss.LEAVE == Boss.LEAVE_BASE * 3f);
 
         GameCore c = enterBoss(L, Boss.SLIME, 21L);
         c.lives = 1;
@@ -665,11 +667,11 @@ final class TestBoss extends Check {
                 && damageEar.bossDamages == 0);
         check("without layering the achievement twinkle", damageEar.achievements == 0);
         check("the killing blow starts the shared defeat exit", d.boss.beaten);
-        for (int frame = 0; frame < 45; frame++) d.update(DT, L);
+        advance(d, L, Boss.LEAVE * 0.29f);
         check("the longer exit holds for three cute squash notes",
                 d.boss.active() && damageEar.squishes == 3);
         check("the defeated body melts toward the player", d.boss.bodyY(L) > deathFrom);
-        for (int frame = 0; frame < 15; frame++) d.update(DT, L);
+        advance(d, L, Boss.LEAVE * 0.11f);
         check("the defeated body dramatically spans ninety percent of the screen",
                 Math.abs(d.boss.body.spanX() - L.w * 0.90f) < L.w * 0.03f);
         while (d.boss.leaveT > DT) d.update(DT, L);
@@ -1575,10 +1577,18 @@ final class TestBoss extends Check {
         // Exit two: the player dies mid-fight, which is the one that never runs the loop.
         for (int k = 0; k < Boss.COUNT; k++) {
             GameCore victory = enterBoss(L, k, 700L + k);
+            Ear victoryEar = new Ear();
+            victory.sound = victoryEar;
             victory.lives = 1;
             victory.takeHit(victory.boss.bodyX(L), L);
             check(Boss.NAMES[k] + ": leaves its victory performance for the green transition",
                     victory.dying() && victory.bossVictoryKind == k && !victory.boss.active());
+            check(Boss.NAMES[k] + ": its victory performance is three times the usual death hold",
+                    victory.deathT == GameCore.BOSS_DEATH_TIME
+                            && GameCore.BOSS_DEATH_TIME == GameCore.DEATH_TIME * 3f);
+            advance(victory, L, GameCore.BOSS_DEATH_TIME + DT);
+            check(Boss.NAMES[k] + ": restores normal music when game over appears",
+                    !victoryEar.bossMusic && victoryEar.bossMusicCalls == 1);
 
             GameCore d = enterBoss(L, k, 100L + k);
             // Let it get going, so there is something to leave behind: globs shed, keys dropped,
