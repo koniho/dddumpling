@@ -635,6 +635,11 @@ final class Renderer extends Draw {
                     * (newcomer ? 0.72f + 0.28f * appear : 1f);
             float cx = c.keyX(L, g);
             float cy = c.keyY(L, g);
+            if (demoLit > 0.004f && Demo.hintKey(c) == g) {
+                float demoHint = Demo.hintAmount(c) * demoLit;
+                p.strokePoly(Glyph.hex(cx, cy, L.keyR * (1.16f + 0.08f * demoHint)),
+                        Glyph.withAlpha(GOLD, (int) (210 * demoHint)), L.unit * 0.10f);
+            }
             if (newcomer && c.rosterScene != 0) {
                 float arc = (float) Math.sin(appear * Math.PI);
                 cy += (1f - appear) * L.keyR * (c.rosterScene == GameCore.ROSTER_JOIN ? 3.2f : -3.2f)

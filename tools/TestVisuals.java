@@ -3,6 +3,54 @@ package com.sram.hexatype;
 /** Sky and clouds, the lock indicator, the edge glow and the settings panel. */
 final class TestVisuals extends Check {
 
+    static void titleScreen(Layout L) {
+        group("title choreography");
+        boolean ordered = true;
+        for (int i = 0; i < Demo.LEN; i++) {
+            ordered &= Demo.ACQUIRE[i] < Demo.PRESS[i]
+                    && Demo.PRESS[i] < Demo.fireAt(i)
+                    && Demo.fireAt(i) < Demo.impactAt(i);
+            if (i + 1 < Demo.LEN) ordered &= Demo.impactAt(i) < Demo.ACQUIRE[i + 1];
+        }
+        check("each lesson separates acquire, press, fire, impact and advance", ordered);
+        check("the loop leaves a readable rest after the final impact",
+                Demo.LOOP - Demo.impactAt(Demo.LEN - 1) > GameCore.DESTROY_TIME + 0.8f);
+        check("the open case keeps its margin above the play-field floor",
+                Showcase.panelBot(L) <= L.dangerY - Showcase.FIELD_MARGIN * L.unit + 0.5f);
+
+        GameCore c = new GameCore(new Mem(), 73L);
+        GameCore.Enemy demo = new GameCore.Enemy();
+        demo.word = new int[Demo.LEN];
+        demo.baseX = (L.playLeft + L.playRight) / 2f;
+        demo.sway = 0f;
+        c.clock = Demo.impactAt(0);
+        float from = Demo.caretX(c, demo, L);
+        c.clock += 0.08f;
+        float moving = Demo.caretX(c, demo, L);
+        float to = c.tileX(demo, 1, L);
+        check("the demo chevron eases toward the next letter after impact",
+                from < moving && moving < to);
+
+        float ax = Screens.titleAnchorX(2, L), ay = Screens.titleAnchorY(2, L);
+        c.titleTouchDown = true;
+        c.titleTouchX = ax;
+        c.titleTouchY = ay;
+        advance(c, L, 0.18f);
+        float kicked = Math.abs(c.titleSpringX[2]) + Math.abs(c.titleSpringY[2]);
+        check("touching the logo kicks a spring body", kicked > L.unit * 0.12f);
+        c.titleTouchDown = false;
+        advance(c, L, 6f);
+        boolean bounded = true, shaped = true;
+        for (int i = 0; i < GameCore.TITLE_LETTERS; i++) {
+            bounded &= Math.abs(c.titleSpringX[i]) <= L.unit * 2.41f
+                    && Math.abs(c.titleSpringY[i]) <= L.unit * 2.41f;
+            float shape = c.titleSpringShape(i, L);
+            shaped &= shape >= 0.84f && shape <= 1.18f;
+        }
+        check("title springs stay tethered", bounded);
+        check("spring squash and stretch stays drawable", shaped);
+    }
+
     static void sky(Layout L) {
         group("cloud sky");
         GameCore c = new GameCore(new Mem(), 111L);

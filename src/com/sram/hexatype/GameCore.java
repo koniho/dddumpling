@@ -393,6 +393,11 @@ final class GameCore {
     /** Live title-screen touch, used only to make the logo letters react under a finger. */
     boolean titleTouchDown;
     float titleTouchX, titleTouchY;
+    static final int TITLE_LETTERS = 10;
+    final float[] titleSpringX = new float[TITLE_LETTERS];
+    final float[] titleSpringY = new float[TITLE_LETTERS];
+    private final float[] titleSpringVX = new float[TITLE_LETTERS];
+    private final float[] titleSpringVY = new float[TITLE_LETTERS];
     int score, best, lives, stage, combo, maxCombo;
     /** Words squished this run. The game-over screen calls them squishes, so this does too. */
     int squishes;
@@ -1576,7 +1581,67 @@ final class GameCore {
         launchWho = -1;
         launchT = 0f;
         closeStory();
+        resetTitleSprings();
         if (rosterLeavePending) beginRosterLeave();
+    }
+
+    private void resetTitleSprings() {
+        for (int i = 0; i < TITLE_LETTERS; i++) {
+            titleSpringX[i] = titleSpringY[i] = 0f;
+            titleSpringVX[i] = titleSpringVY[i] = 0f;
+        }
+    }
+
+    /** Ten lightly coupled damped bodies: always alive, but never wandering from the logo. */
+    private void updateTitleSprings(float dt, Layout L) {
+        if (state != TITLE || dt <= 0f) return;
+        dt = Math.min(dt, 1f / 20f);
+        for (int i = 0; i < TITLE_LETTERS; i++) {
+            float phase = clock * 0.75f + i * 0.91f;
+            float restX = (float) Math.sin(phase * 0.73f + 1.1f) * L.unit * 0.07f;
+            float restY = ((float) Math.sin(phase) * 0.31f
+                    + (float) Math.sin(phase * 1.71f + 1.4f) * 0.11f) * L.unit;
+            float ax = (restX - titleSpringX[i]) * 24f - titleSpringVX[i] * 6.8f;
+            float ay = (restY - titleSpringY[i]) * 24f - titleSpringVY[i] * 6.8f;
+
+            // A loose elastic thread through each row lets one poked letter tug its neighbours.
+            int left = i % 5 == 0 ? -1 : i - 1;
+            int right = i % 5 == 4 ? -1 : i + 1;
+            if (left >= 0) {
+                ax += (titleSpringX[left] - titleSpringX[i]) * 2.2f;
+                ay += (titleSpringY[left] - titleSpringY[i]) * 2.2f;
+            }
+            if (right >= 0) {
+                ax += (titleSpringX[right] - titleSpringX[i]) * 2.2f;
+                ay += (titleSpringY[right] - titleSpringY[i]) * 2.2f;
+            }
+
+            if (titleTouchDown) {
+                float x = Screens.titleAnchorX(i, L) + titleSpringX[i];
+                float y = Screens.titleAnchorY(i, L) + titleSpringY[i];
+                float dx = x - titleTouchX, dy = y - titleTouchY;
+                float distance = (float) Math.sqrt(dx * dx + dy * dy);
+                float reach = L.unit * 7.2f;
+                if (distance < reach) {
+                    float force = (1f - distance / reach) * L.unit * 105f;
+                    if (distance < 1f) { dx = (i & 1) == 0 ? -1f : 1f; dy = -1f; distance = 1.414f; }
+                    ax += dx / distance * force;
+                    ay += dy / distance * force - L.unit * 18f;
+                }
+            }
+            titleSpringVX[i] += ax * dt;
+            titleSpringVY[i] += ay * dt;
+            titleSpringX[i] += titleSpringVX[i] * dt;
+            titleSpringY[i] += titleSpringVY[i] * dt;
+            float limit = L.unit * 2.4f;
+            titleSpringX[i] = Math.max(-limit, Math.min(limit, titleSpringX[i]));
+            titleSpringY[i] = Math.max(-limit, Math.min(limit, titleSpringY[i]));
+        }
+    }
+
+    float titleSpringShape(int i, Layout L) {
+        float shape = 1f + titleSpringVY[i] / Math.max(1f, L.unit * 28f);
+        return Math.max(0.84f, Math.min(1.18f, shape));
     }
 
     /**
@@ -2062,6 +2127,7 @@ final class GameCore {
         dt *= timeScale();
         // The clock keeps running so the panel itself can animate, but nothing else moves.
         clock += dt;
+        updateTitleSprings(dt, L);
         if (rosterSceneT > 0f) {
             rosterSceneT = Math.max(0f, rosterSceneT - dt);
             if (rosterSceneT == 0f) {

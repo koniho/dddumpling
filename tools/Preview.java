@@ -71,19 +71,16 @@ final class Preview {
                 Collect.owned(c.collected), Collect.COUNT, !c.caseOpen);
         shot(dir, "1-title", c, L, w, h, ss);
 
-        // The title screen's demo, caught just after its second letter is struck: two cleared,
-        // one to go, and the key for it lit under the word.
+        // The title lesson identifying its second target and matching key before pressing it.
         GameCore c21 = new GameCore(store, 87L);
-        step(c21, L, Demo.LOOP * 0.57f);
+        step(c21, L, Demo.ACQUIRE[1] + 0.28f);
         System.out.printf("title demo: lit key=%d amount=%.2f%n", Demo.litKey(c21),
                 Demo.litAmount(c21));
         shot(dir, "49-title-demo", c21, L, w, h, ss);
 
-        // Just after the third press: typed out, the finishing bullet still in the air, the ring
-        // flashing over the dimmed tiles. Exactly the state a real word is in between the last
-        // press and its shot landing.
+        // After the third press: the finishing bullet visibly travelling from its actual key.
         GameCore c22 = new GameCore(store, 87L);
-        step(c22, L, Demo.LOOP * 0.715f);
+        step(c22, L, Demo.fireAt(2) + Demo.SHOT * 0.48f);
         System.out.printf("title last shot: lit key=%d amount=%.2f%n", Demo.litKey(c22),
                 Demo.litAmount(c22));
         shot(dir, "50-title-shot", c22, L, w, h, ss);
@@ -91,13 +88,13 @@ final class Preview {
         // The demo word arriving. It fades and swells up on enterT, the same field a real word's
         // entrance rides, rather than appearing whole.
         GameCore c23 = new GameCore(store, 87L);
-        step(c23, L, Demo.LOOP * 0.055f);
+        step(c23, L, 0.48f);
         shot(dir, "51-title-arriving", c23, L, w, h, ss);
 
         // And coming apart once that bullet lands: the field's own fly-apart, outer tiles splitting
         // left and right off Renderer.enemy's destroy path.
         GameCore c24 = new GameCore(store, 87L);
-        step(c24, L, Demo.LOOP * 0.80f);
+        step(c24, L, Demo.impactAt(2) + GameCore.DESTROY_TIME * 0.55f);
         shot(dir, "52-title-destroyed", c24, L, w, h, ss);
 
         // Adaptive roster: the first-run deck, friends bouncing in, and their sad farewell.

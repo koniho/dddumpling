@@ -25,19 +25,21 @@ final class Demo extends Draw {
      * bullet and the fly-apart after it — {@link #SHOT} plus {@link GameCore#DESTROY_TIME} — have
      * the remaining 1.26s to play out in, and leave a beat over.
      */
-    static final float LOOP = 4.2f;
+    static final float LOOP = 10.5f;
 
     /** Letters in the demo word. Three is enough to show "left to right" and fits the band. */
     static final int LEN = 3;
 
-    /** When each letter is struck, as a fraction of the loop. */
-    private static final float[] PRESS = {0.42f, 0.56f, 0.70f};
+    /** Absolute seconds for acquire, press and projectile launch in each deliberately separate turn. */
+    static final float[] ACQUIRE = {1.25f, 4.05f, 6.85f};
+    static final float[] PRESS = {1.95f, 4.75f, 7.55f};
+    static final float FIRE_DELAY = 0.32f;
     /**
      * How long a key stays lit after its letter is struck. Longer than {@link #SHOT}, so the key is
      * still lit when its bullet lands — in play {@code keyPress} decays slower than a shot flies,
      * and a key that goes dark mid-flight breaks the very link the demo exists to draw.
      */
-    private static final float LIT = 0.30f;
+    private static final float LIT = 0.42f;
 
     /**
      * How long the demo's bullet is in the air: twice as long as a real one.
@@ -47,7 +49,7 @@ final class Demo extends Draw {
      * the real speed the bullet is a flicker between a key lighting and a letter going. Slowed
      * down, the deck and the word are visibly connected, which is the whole point of the demo.
      */
-    private static final float SHOT = GameCore.SHOT_TIME * 2f;
+    static final float SHOT = 0.78f;
 
     /**
      * How long the word takes to arrive.
@@ -59,16 +61,18 @@ final class Demo extends Draw {
      * follows from {@code enterT} exactly as it does in play. Time-driven here is not the trap it
      * would be on the field: the demo's position is itself a function of this same clock.
      */
-    private static final float ENTER = 0.55f;
+    private static final float ENTER = 0.85f;
 
     /** Where the word falls between, as fractions of view height. */
-    private static final float FROM = 0.215f, TO = 0.335f;
+    private static final float FROM = 0.320f, TO = 0.440f;
 
     /** 0..1 through the current loop. */
     private static float phase(GameCore c) {
         float t = c.clock % LOOP;
         return t / LOOP;
     }
+
+    static float loopTime(GameCore c) { return c.clock % LOOP; }
 
     /** Which turn of the loop this is, so successive words differ. */
     private static int round(GameCore c) {
@@ -87,10 +91,48 @@ final class Demo extends Draw {
 
     /** How many of its letters have been struck by now. */
     private static int struck(GameCore c) {
-        float u = phase(c);
+        float t = loopTime(c);
         int n = 0;
-        for (int i = 0; i < LEN; i++) if (u >= PRESS[i]) n++;
+        for (int i = 0; i < LEN; i++) if (t >= impactAt(i)) n++;
         return n;
+    }
+
+    static float fireAt(int i) { return PRESS[i] + FIRE_DELAY; }
+    static float impactAt(int i) { return fireAt(i) + SHOT; }
+
+    /**
+     * The field caret normally keeps state in {@link GameCore}. The demo enemy is deliberately
+     * throwaway, so reproduce that same 17/s easing from the destroyed tile to the next one as a
+     * pure clock function. That keeps frozen preview frames deterministic without making the
+     * chevron snap whenever a new temporary Enemy object is built.
+     */
+    static float caretX(GameCore c, GameCore.Enemy e, Layout L) {
+        int done = struck(c);
+        if (done <= 0) return c.tileX(e, 0, L);
+        if (done >= LEN) return c.tileX(e, LEN - 1, L);
+        float since = Math.max(0f, loopTime(c) - impactAt(done - 1));
+        float ease = 1f - (float) Math.exp(-17f * since);
+        ease = Math.max(0f, Math.min(1f, ease));
+        return c.tileX(e, done - 1, L)
+                + (c.tileX(e, done, L) - c.tileX(e, done - 1, L)) * ease;
+    }
+
+    /** The key being deliberately identified before the visibly separate press. */
+    static int hintKey(GameCore c) {
+        float t = loopTime(c);
+        for (int i = 0; i < LEN; i++)
+            if (t >= ACQUIRE[i] && t < PRESS[i]) return letter(c, i);
+        return -1;
+    }
+
+    static float hintAmount(GameCore c) {
+        float t = loopTime(c);
+        for (int i = 0; i < LEN; i++) {
+            if (t < ACQUIRE[i] || t >= PRESS[i]) continue;
+            float u = (t - ACQUIRE[i]) / (PRESS[i] - ACQUIRE[i]);
+            return 0.55f + 0.20f * (float) Math.sin(u * Math.PI * 3f);
+        }
+        return 0f;
     }
 
     /**
@@ -98,19 +140,19 @@ final class Demo extends Draw {
      * half of the lesson that says the deck is what you touch.
      */
     static int litKey(GameCore c) {
-        float u = phase(c);
+        float t = loopTime(c);
         for (int i = LEN - 1; i >= 0; i--) {
-            if (u >= PRESS[i] && u < PRESS[i] + LIT / LOOP) return letter(c, i);
+            if (t >= PRESS[i] && t < PRESS[i] + LIT) return letter(c, i);
         }
         return -1;
     }
 
     /** 1 right as that key is struck, decaying, so it flashes rather than switching on. */
     static float litAmount(GameCore c) {
-        float u = phase(c);
+        float t = loopTime(c);
         for (int i = LEN - 1; i >= 0; i--) {
-            float since = u - PRESS[i];
-            if (since >= 0f && since < LIT / LOOP) return 1f - since * LOOP / LIT;
+            float since = t - PRESS[i];
+            if (since >= 0f && since < LIT) return 1f - since / LIT;
         }
         return 0f;
     }
@@ -121,7 +163,7 @@ final class Demo extends Draw {
      * it triggers when it lands, and the empty beat after.
      */
     private static float sinceLast(GameCore c) {
-        return (phase(c) - PRESS[LEN - 1]) * LOOP;
+        return loopTime(c) - impactAt(LEN - 1);
     }
 
     /**
@@ -138,12 +180,13 @@ final class Demo extends Draw {
      */
     static void draw(Painter p, GameCore c, Layout L, float fade) {
         if (fade <= 0.004f) return;
-        float u = phase(c);
+        float t = loopTime(c);
+        float u = t / LOOP;
         int done = struck(c);
         float last = sinceLast(c);
         // Gone for the last part of the loop: the band sits empty for a beat, which is what makes
         // it read as a round rather than a treadmill.
-        if (last > SHOT + GameCore.DESTROY_TIME) return;
+        if (last > GameCore.DESTROY_TIME + 0.85f) return;
 
         GameCore.Enemy e = new GameCore.Enemy();
         e.word = new int[LEN];
@@ -161,34 +204,36 @@ final class Demo extends Draw {
         e.sway = 0f;
         // Falls over the whole loop rather than stopping when the last letter lands, so the word
         // is still drifting down as it is cleared — which is what really happens.
-        e.y = L.h * (FROM + (TO - FROM) * Math.min(1f, u / PRESS[LEN - 1]));
+        e.y = L.h * (FROM + (TO - FROM) * Math.min(1f, t / impactAt(LEN - 1)));
         e.enterT = Math.min(1f, u * LOOP / ENTER);
 
         if (last >= 0f) {
-            if (last < SHOT) {
-                // Typed out, with the finishing bullet still in the air: the tiles stand there
-                // dimmed and the ring flashes over them, exactly as they do in play.
-                e.dying = true;
-                e.deathT = last;
-            } else {
-                e.destroyed = true;
-                e.destroyT = last - SHOT;
-                c.computeFlyDirs(e, L);
-            }
+            e.destroyed = true;
+            e.destroyT = last;
+            c.computeFlyDirs(e, L);
         }
 
-        // Renderer.enemy reads target for the lock ring and the caret; the demo is always
-        // locked on, because a word being typed is the thing being demonstrated.
+        // Renderer.enemy reads target and the stateful field caret. Give its temporary enemy an
+        // analytical caret position so it visibly glides onward when each projectile lands.
         GameCore.Enemy was = c.target;
-        c.target = e;
+        GameCore.Enemy wasCaretOwner = c.caretOwner;
+        float wasCaretX = c.caretX;
+        boolean lessonActive = t >= ACQUIRE[0] && t < impactAt(LEN - 1);
+        c.target = lessonActive ? e : null;
+        if (lessonActive) {
+            c.caretOwner = e;
+            c.caretX = caretX(c, e, L);
+        }
         Renderer.enemy(p, c, L, e);
         c.target = was;
+        c.caretOwner = wasCaretOwner;
+        c.caretX = wasCaretX;
 
         // The bullet each press put in the air, drawn over the deck it came off. Aimed at the tile
         // rather than at where the tile was when the key was struck: a real shot homes in on a word
         // that is still falling, and the demo borrows the same drawing to do the same thing.
         for (int i = 0; i < LEN; i++) {
-            float since = (u - PRESS[i]) * LOOP;
+            float since = t - fireAt(i);
             if (since < 0f || since > SHOT) continue;
             int g = letter(c, i);
             Renderer.bullet(p, c, L, c.keyX(L, g), c.keyY(L, g), c.tileX(e, i, L), e.y,

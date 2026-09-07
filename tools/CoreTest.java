@@ -96,6 +96,7 @@ final class CoreTest {
         });
         group("Visuals", () -> {
             TestVisuals.sky(L);
+            TestVisuals.titleScreen(L);
             TestVisuals.indicatorsAndGlow(L);
             TestVisuals.hudStacking(L);
             TestVisuals.starStacking(L);

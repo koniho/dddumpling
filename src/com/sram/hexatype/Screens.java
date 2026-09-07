@@ -43,17 +43,14 @@ final class Screens extends Draw {
         float cx = L.w / 2f;
         bubblyTitle(p, c, L, cx, L.h * 0.100f, fade);
         if (c.best > 0) {
-            p.text("BEST " + c.best, cx, L.h * 0.275f, type(s * 0.74f), fadeBy(ROSE, fade),
+            p.text("BEST " + c.best, cx, L.h * 0.292f, type(s * 0.74f), fadeBy(ROSE, fade),
                     Painter.CENTER, true);
         }
 
         // Where the two lines explaining the game used to be: the game, played. A word falls and
         // types itself while the matching keys light under it. Suppressed with the case open —
         // there is one lesson on screen at a time.
-        p.save();
-        p.translate(0f, L.h * 0.105f);
         Demo.draw(p, c, L, fade * caseOut(c));
-        p.restore();
 
         // The badge and the case swap in the same place, and in series rather than on top of
         // each other: crossing them over on the raw fade drew both at half strength for a
@@ -85,6 +82,16 @@ final class Screens extends Draw {
     private static final float[] TITLE_SCALE = {1.04f, 0.95f, 1.01f, 0.93f, 1.06f,
             0.97f, 1.05f, 0.92f, 1.02f, 0.96f};
 
+    /** Resting centre of one title body. Shared with the spring simulation. */
+    static float titleAnchorX(int letter, Layout L) {
+        int column = letter % 5;
+        return L.w / 2f + (column - 2) * L.w * 0.176f + TITLE_X[letter] * L.unit;
+    }
+
+    static float titleAnchorY(int letter, Layout L) {
+        return L.h * (letter < 5 ? 0.140f : 0.235f) + TITLE_Y[letter] * L.unit;
+    }
+
     private static void bubblyTitle(Painter p, GameCore c, Layout L, float cx, float baseline,
             float fade) {
         float size = type(L.unit * 5.7f);
@@ -94,37 +101,21 @@ final class Screens extends Draw {
 
     private static void bubbleTitleRow(Painter p, GameCore c, Layout L, String text, float cx,
             float baseline, float size, float fade, int colorOffset) {
-        float step = L.w * 0.176f;
-        float left = cx - step * (text.length() - 1) * 0.5f;
         for (int i = 0; i < text.length(); i++) {
             int letterIndex = colorOffset + i;
-            float x = left + i * step + TITLE_X[letterIndex] * L.unit;
-            float phase = c.clock * 0.72f + letterIndex * 0.91f;
-            float bob = ((float) Math.sin(phase) * 0.38f +
-                    (float) Math.sin(phase * 1.73f + 1.4f) * 0.16f) * L.unit
-                    + TITLE_Y[letterIndex] * L.unit;
-            float touch = 0f, pushX = 0f;
-            if (c.titleTouchDown) {
-                float dx = x - c.titleTouchX, dy = baseline + bob - c.titleTouchY;
-                float reach = L.unit * 6.8f;
-                float distance = (float) Math.sqrt(dx * dx + dy * dy);
-                touch = Math.max(0f, 1f - distance / reach);
-                if (distance > 1f) pushX = dx / distance * touch * L.unit * 0.75f;
-            }
-            float y = baseline + bob - touch * L.unit * 1.30f;
-            float liveSize = size * TITLE_SCALE[letterIndex]
-                    * (1f + 0.030f * (float) Math.sin(phase * 1.31f + 0.9f)
-                    + touch * 0.13f);
+            float x = titleAnchorX(letterIndex, L) + c.titleSpringX[letterIndex];
+            float y = titleAnchorY(letterIndex, L) + c.titleSpringY[letterIndex];
+            float liveSize = size * TITLE_SCALE[letterIndex];
             int goo = Glyph.COLOR[letterIndex % Glyph.COUNT];
-            bubbleGlyph(p, text.charAt(i), x + pushX, y, liveSize, goo, fade,
-                    c.clock + letterIndex * 0.37f);
+            bubbleGlyph(p, text.charAt(i), x, y, liveSize, goo, fade,
+                    c.clock + letterIndex * 0.37f, c.titleSpringShape(letterIndex, L));
         }
     }
 
     /** One translucent vector-font glyph with shadow, outline, body and specular layers. */
     private static void bubbleGlyph(Painter p, char ch, float cx, float baseline, float height,
-            int goo, float fade, float phase) {
-        TitleBubbleFont.draw(p, ch, cx, baseline, height, goo, fade, phase);
+            int goo, float fade, float phase, float shape) {
+        TitleBubbleFont.draw(p, ch, cx, baseline, height, goo, fade, phase, shape);
     }
 
     /** Opacity of everything the shut case owns: gone by the time the case is half faded in. */

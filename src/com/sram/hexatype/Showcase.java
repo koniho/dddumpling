@@ -21,8 +21,8 @@ final class Showcase extends Draw {
 
     private Showcase() {}
 
-    /** Vertical centre of the shelf, as a fraction of view height. */
-    static final float SHELF_Y = 0.47f;
+    /** Clear space between the open case panel and the bottom of the playable field. */
+    static final float FIELD_MARGIN = 1.15f;
 
     /** How quickly a scroll's slide settles, in slides per second. */
     static final float SLIDE_RATE = 5.5f;
@@ -42,7 +42,7 @@ final class Showcase extends Draw {
     }
 
     static float focusCy(Layout L) {
-        return L.h * SHELF_Y;
+        return L.dangerY - focusR(L) * 2.55f - L.unit * (3.35f + FIELD_MARGIN);
     }
 
     /** Centre-to-centre spacing along the shelf. Under 2r, so the neighbours tuck in close. */

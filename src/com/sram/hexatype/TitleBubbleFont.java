@@ -89,24 +89,28 @@ final class TitleBubbleFont extends Draw {
         return out;
     }
 
-    private static float[][] place(float[][] source, float cx, float baseline, float h, float scale,
-            float dx, float dy) {
+    private static float[][] place(float[][] source, float cx, float baseline, float h,
+            float scaleX, float scaleY, float dx, float dy) {
         float[][] out = new float[source.length][];
         for (int c = 0; c < source.length; c++) {
             out[c] = new float[source[c].length];
             for (int i = 0; i < source[c].length; i += 2) {
-                out[c][i] = cx + source[c][i] * h * scale + dx;
-                out[c][i + 1] = baseline + source[c][i + 1] * h * scale + dy;
+                out[c][i] = cx + source[c][i] * h * scaleX + dx;
+                out[c][i + 1] = baseline + source[c][i + 1] * h * scaleY + dy;
             }
         }
         return out;
     }
 
     static void draw(Painter p, char ch, float cx, float baseline, float h, int goo, float fade,
-            float phase) {
+            float phase, float springShape) {
         float[][] g = glyph(ch);
         float breathe = 1f + 0.014f * (float) Math.sin(phase * 1.9f);
-        float[][] body = place(g, cx, baseline, h, breathe, 0f, 0f);
+        // Preserve approximate volume: a body stretched vertically narrows, and a compressed one
+        // bulges. This is the same squash/stretch illusion used by the soft slime bosses.
+        float sy = breathe * springShape;
+        float sx = breathe / (float) Math.sqrt(springShape);
+        float[][] body = place(g, cx, baseline, h, sx, sy, 0f, 0f);
 
         // The slime recipe: one translucent goo silhouette, so its own layers never double-blend.
         p.fillContours(body, Glyph.withAlpha(goo, (int) (214 * fade)));
@@ -118,12 +122,12 @@ final class TitleBubbleFont extends Draw {
             p.strokePoly(contour, Glyph.withAlpha(rim, (int) (255 * fade)), h * 0.026f);
 
         // A pale pooled underside and a paired wet highlight, both white-only just like the bosses.
-        p.fillEllipse(cx, baseline - h * 0.105f, h * 0.19f, h * 0.038f,
+        p.fillEllipse(cx, baseline - h * 0.105f * sy, h * 0.19f * sx, h * 0.038f * sy,
                 fadeBy(Glyph.withAlpha(0xFFFFFFFF, 34), fade));
         float glint = (float) Math.sin(phase * 1.7f) * h * 0.012f;
-        p.fillEllipse(cx - h * 0.17f + glint, baseline - h * 0.64f,
-                h * 0.105f, h * 0.060f, fadeBy(Glyph.withAlpha(0xFFFFFFFF, 76), fade));
-        p.fillEllipse(cx - h * 0.205f + glint, baseline - h * 0.67f,
-                h * 0.038f, h * 0.024f, fadeBy(Glyph.withAlpha(0xFFFFFFFF, 185), fade));
+        p.fillEllipse(cx - h * 0.17f * sx + glint, baseline - h * 0.64f * sy,
+                h * 0.105f * sx, h * 0.060f * sy, fadeBy(Glyph.withAlpha(0xFFFFFFFF, 76), fade));
+        p.fillEllipse(cx - h * 0.205f * sx + glint, baseline - h * 0.67f * sy,
+                h * 0.038f * sx, h * 0.024f * sy, fadeBy(Glyph.withAlpha(0xFFFFFFFF, 185), fade));
     }
 }
