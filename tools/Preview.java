@@ -726,7 +726,8 @@ final class Preview {
         // Each of the six, mid-fight, with its window open so the ornament is showing the thing it
         // is asking for.
         String[] tag = {"60-boss-slime", "61-boss-triplets", "62-boss-drum", "63-boss-magpie",
-                "64-boss-sumo", "70-boss-dark-divide", "76-boss-octopulse"};
+                "64-boss-sumo", "70-boss-dark-divide", "76-boss-octopulse",
+                "77-boss-fly-agaric"};
         for (int k = 0; k < Boss.COUNT; k++) {
             GameCore c = toBoss(L, k, 510L + k, true);
             // Land a couple of hits so the health bar is part-spent and the body is dented, and so
@@ -1040,7 +1041,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-triplets", "taunt-drum", "taunt-magpie", "taunt-sumo",
-                "taunt-divide", "taunt-octopus", "bolt-death"};
+                "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

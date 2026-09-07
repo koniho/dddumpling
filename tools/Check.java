@@ -138,6 +138,17 @@ abstract class Check {
     static boolean bossPlay(GameCore c, Layout L) {
         if (!c.bossFighting()) return false;
         Boss b = c.boss;
+        if (b.kind == Boss.MUSHROOM) {
+            if (b.held != -2) return b.grabBody(b.body.centreX(), b.body.centreY());
+            if (b.mushroomMeterAlpha == 0f) {
+                c.dragBoss(b.mushroomLastX + L.w * 0.02f, b.body.centreY(), L);
+                return true;
+            }
+            if (Math.abs(b.mushroomGuideX - b.mushroomGuideTarget) > 0.06f) return true;
+            float x = b.mushroomLastX + b.mushroomGuideTarget * L.w * 0.51f;
+            c.dragBoss(x, b.body.centreY(), L);
+            return true;
+        }
         if (b.kind == Boss.SPLITTER && b.vulnerablePiece() >= 0) {
             b.beginPinch(100f);
             return b.pinch(100f * (Boss.DIVIDE_SCALE + 0.01f));

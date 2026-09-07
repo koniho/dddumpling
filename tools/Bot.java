@@ -266,6 +266,20 @@ final class Bot {
     private boolean bossTouch(GameCore c, Layout L) {
         if (think > 0f || budget < 1f) return false;
         Boss b = c.boss;
+        if (b.kind == Boss.MUSHROOM) {
+            budget -= 1f;
+            presses++;
+            think = reaction;
+            if (b.held != -2) b.grabBody(b.body.centreX(), b.body.centreY());
+            if (b.mushroomMeterAlpha == 0f) {
+                c.dragBoss(b.mushroomLastX + L.w * 0.02f, b.body.centreY(), L);
+                return true;
+            }
+            if (Math.abs(b.mushroomGuideX - b.mushroomGuideTarget) <= 0.06f)
+                c.dragBoss(b.mushroomLastX + b.mushroomGuideTarget * L.w * 0.51f,
+                        b.body.centreY(), L);
+            return true;
+        }
         // A shove first: SUMO's sink is the only boss threat that costs a life by itself.
         if (b.shovable()) {
             budget -= 1f;

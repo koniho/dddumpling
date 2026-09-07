@@ -306,7 +306,7 @@ final class Sfx {
 
     /** Seven short victory voices: the same taunting gesture, spoken by seven different bodies. */
     static short[] bossTaunt(int kind) {
-        float[] base = {330f, 440f, 185f, 610f, 128f, 275f, 150f};
+        float[] base = {330f, 440f, 185f, 610f, 128f, 275f, 150f, 205f};
         float[][] shape = {
                 {1f, 1.26f, 0.92f, 1.38f},       // slime: bubbly cackle
                 {1f, 1.25f, 1.50f, 1.25f},       // triplets: three-part jeer
@@ -314,7 +314,8 @@ final class Sfx {
                 {1f, 1.50f, 1.19f, 1.78f},       // magpie: sharp crow
                 {1f, 0.84f, 0.67f, 0.50f},       // sumo: heavy descending laugh
                 {1f, 0.71f, 1.41f, 0.59f},       // divide: split, opposed pitches
-                {1f, 1.06f, 0.89f, 1.12f}        // octopus: close writhing warble
+                {1f, 1.06f, 0.89f, 1.12f},       // octopus: close writhing warble
+                {1f, 0.76f, 1.34f, 0.63f}        // mushroom: hollow spore cough
         };
         kind = Math.max(0, Math.min(Boss.COUNT - 1, kind));
         int n = (int) (RATE * 0.82f);

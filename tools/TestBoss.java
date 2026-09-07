@@ -81,7 +81,8 @@ final class TestBoss extends Check {
         check("the stages either side of it are not", between);
         boolean laterClear = true;
         for (int s = 6; s <= 500; s++) if (Boss.isBossStage(s)) laterClear = false;
-        check("stages 5, 10 and 15 are enabled", !laterClear && Boss.isBossStage(10) && Boss.isBossStage(15));
+        check("stages 5, 10, 15 and 20 are enabled", !laterClear && Boss.isBossStage(10)
+                && Boss.isBossStage(15) && Boss.isBossStage(20));
         check("stage 0 is not a boss stage", !Boss.isBossStage(0));
 
         check("the enabled boss is the slime", Boss.kindFor(5) == Boss.SLIME);
@@ -93,7 +94,9 @@ final class TestBoss extends Check {
         unlock.startGame();
         check("a new playthrough locks the cube pool again", !unlock.cubeUnlocked);
         check("stage 10 is the split slime", Boss.kindFor(10) == Boss.SPLITTER);
-        check("stage 15 is the octopus and later designs remain disabled", Boss.kindFor(15) == Boss.OCTOPUS && Boss.kindFor(25) == -1
+        check("stage 15 is the octopus and stage 20 is the mushroom",
+                Boss.kindFor(15) == Boss.OCTOPUS && Boss.kindFor(20) == Boss.MUSHROOM
+                        && Boss.kindFor(25) == -1
                 && Boss.kindFor(500) == -1);
 
         // The harness font is an ASCII subset and silently draws nothing for a character it lacks,
@@ -832,7 +835,7 @@ final class TestBoss extends Check {
                 Math.abs(c.boss.promptT - heldPrompt) < 0.001f);
 
         boolean distinct = true;
-        for (int i = 0; i < Boss.BOLTS; i++) {
+        for (int i = 0; i < Boss.MAX_BOLTS; i++) {
             for (int j = i + 1; j < Boss.BOLTS; j++) {
                 if (c.boss.bglyph[i] == c.boss.bglyph[j]) distinct = false;
             }
@@ -1234,6 +1237,63 @@ final class TestBoss extends Check {
         for (int i = 0; i < 180 && lastTwo.lives == finalLives; i++) lastTwo.update(DT, L);
         check("a missed final-two reach damages instead of stealing",
                 lastTwo.lives == finalLives - 1 && lastTwo.boss.disabledKeys == finalMask);
+    }
+
+    static void mushroom(Layout L) {
+        group("boss: fly agaric");
+        GameCore c = enterBoss(L, Boss.MUSHROOM, 166L);
+        float hp = c.boss.hp;
+        check("the stalk is not a draggable target",
+                !c.grabBoss(c.boss.body.centreX(),
+                        c.boss.body.centreY() + c.boss.body.radiusY() * 1.05f));
+        check("the cap is the draggable target",
+                c.grabBoss(c.boss.body.centreX(), c.boss.body.centreY()));
+        c.dragBoss(c.boss.body.centreX() + L.w * 0.24f, c.boss.body.centreY(), L);
+        c.dragBoss(c.boss.body.centreX() - L.w * 0.24f, c.boss.body.centreY(), L);
+        check("a pass narrower than half the screen is ignored", c.boss.mushroomShakes == 0);
+        c.boss.release();
+        float mushroomX = c.boss.body.centreX();
+        c.grabBoss(mushroomX + c.boss.mushroomCapDX,
+                c.boss.body.centreY() + c.boss.mushroomCapDY);
+        c.dragBoss(c.boss.mushroomLastX + L.w * 0.02f, c.boss.body.centreY(), L);
+        for (int i = 0; i < Boss.MUSHROOM_SHAKES; i++) {
+            advance(c, L, 0.68f);
+            float x = c.boss.mushroomLastX + c.boss.mushroomGuideTarget * L.w * 0.51f;
+            c.dragBoss(x, c.boss.body.centreY(), L);
+        }
+        check("an incomplete shake does not deal damage", c.boss.hp == hp);
+        for (int i = 0; i < 3 && c.boss.hp == hp; i++) {
+            advance(c, L, 0.68f);
+            float x = c.boss.mushroomLastX + c.boss.mushroomGuideTarget * L.w * 0.51f;
+            c.dragBoss(x, c.boss.body.centreY(), L);
+        }
+        check("six reversals damage the mushroom", c.boss.hp == hp - 1f);
+        check("damage starts an angry colour reaction",
+                c.boss.mushroomAngry > 0f && c.boss.mushroomReaction);
+        advance(c, L, Boss.MUSHROOM_ANGER_TIME + 2 * DT);
+        check("the angry reaction launches a short three-spore flurry",
+                c.boss.boltCount() == 3);
+
+        GameCore rushed = enterBoss(L, Boss.MUSHROOM, 168L);
+        rushed.grabBoss(rushed.boss.body.centreX(), rushed.boss.body.centreY());
+        rushed.dragBoss(rushed.boss.mushroomLastX + L.w * 0.51f,
+                rushed.boss.body.centreY(), L);
+        check("outrunning the guide cancels the drag and starts the flex taunt",
+                rushed.boss.held == -1 && rushed.boss.mushroomReject > 0f
+                        && rushed.boss.mushroomShakes == 0);
+
+        GameCore idle = enterBoss(L, Boss.MUSHROOM, 167L);
+        idle.boss.mushroomAttackT = 0.01f;
+        idle.update(0.02f, L);
+        check("five idle seconds begin a visible charge", idle.boss.mushroomCharge > 0f);
+        advance(idle, L, Boss.MUSHROOM_CHARGE_TIME + 2 * DT);
+        check("the charged cap and stem spread four spores", idle.boss.boltCount() == 4);
+        boolean sporesStartAtBody = true;
+        for (int i = 0; i < Boss.BOLTS; i++) {
+            if (!idle.boss.blive[i]) continue;
+            if (idle.boss.bsy[i] < idle.boss.body.centreY()) sporesStartAtBody = false;
+        }
+        check("spores drop from beneath the mushroom cap", sporesStartAtBody);
     }
 
     static void stacking(Layout L) {

@@ -92,14 +92,15 @@ final class Boss {
     static final int SUMO = 4;
     static final int SPLITTER = 5;
     static final int OCTOPUS = 6;
-    static final int COUNT = 7;
+    static final int MUSHROOM = 7;
+    static final int COUNT = 8;
 
     static final String[] NAMES = {"SLIME", "TRIPLETS", "MOCHI DRUM", "MAGPIE", "SUMO BUN",
-            "DARK DIVIDE", "OCTOPULSE"};
+            "DARK DIVIDE", "OCTOPULSE", "FLY AGARIC"};
     /** One line each, in the mode bar. Held to the width of the longest frenzy blurb. */
     static final String[] BLURB = {"HIT THE MARK, DRAG GLOBS", "TAP THEM AWAKE FIRST",
             "KEY, THEN TAP, ON BEAT", "DRAG YOUR KEY BACK", "SWIPE IT BACK",
-            "HIT THE MARK, THEN PINCH OUT", "BEAT THE REACH"};
+            "HIT THE MARK, THEN PINCH OUT", "BEAT THE REACH", "DRAG BACK AND FORTH"};
     /**
      * Which of the six characters each boss is a giant version of.
      *
@@ -108,7 +109,7 @@ final class Boss {
      * arrives already legible.
      */
     static final int[] FACE = {Kawaii.SQUISHY, Kawaii.GRAPES, Kawaii.DUMPLING, Kawaii.CAT,
-            Kawaii.BLOB, Kawaii.SQUISHY, Kawaii.BLOB};
+            Kawaii.BLOB, Kawaii.SQUISHY, Kawaii.BLOB, Kawaii.DUMPLING};
 
     /** How long the arrival card holds the field before the fight starts. */
     static final float INTRO = 1.6f;
@@ -138,8 +139,8 @@ final class Boss {
      * <em>is</em> the window. SUMO has no press window — see {@link #open()}, which answers a
      * different question for it.
      */
-    private static final float[] CYCLE = {5.0f, 3.6f, 1.20f, 3.2f, 0f, 1f, 1f};
-    private static final float[] SHOW = {4.0f, 3.6f, 0.40f, 2.0f, 0f, 1f, 1f};
+    private static final float[] CYCLE = {5.0f, 3.6f, 1.20f, 3.2f, 0f, 1f, 1f, 1f};
+    private static final float[] SHOW = {4.0f, 3.6f, 0.40f, 2.0f, 0f, 1f, 1f, 1f};
 
     /**
      * How long a {@link #TRIPLETS} chord may take from its first head to its last.
@@ -177,7 +178,7 @@ final class Boss {
      * hand finishes in about eight seconds — see the per-boss timings {@code TestBoss.winning} prints,
      * which are the figures to read this table against.
      */
-    private static final float[] HP = {4f, 4f, 7f, 5f, 3f, 8f, 8f};
+    private static final float[] HP = {4f, 4f, 7f, 5f, 3f, 8f, 8f, 3f};
     /**
      * Extra health per later visit, capped by {@link #TOUGH_MAX}. A boss met at stage 30 should be
      * more than the same boss at stage 5 — but the cap matters far more than the slope now that
@@ -302,6 +303,18 @@ final class Boss {
     /** Set by swat() for the press frame so audio can distinguish a hit from a destroyed bolt. */
     boolean boltDestroyed;
 
+    static final int MUSHROOM_SHAKES = 6;
+    static final float MUSHROOM_ATTACK_GAP = 5f, MUSHROOM_CHARGE_TIME = 0.72f,
+            MUSHROOM_ANGER_TIME = 0.48f;
+    int mushroomShakes, mushroomDirection;
+    float mushroomLastX, mushroomShakeWindow, mushroomAttackT, mushroomCharge, mushroomAngry;
+    float mushroomSweepFlash;
+    float mushroomMeterAlpha, mushroomGuideX, mushroomReject;
+    int mushroomGuideTarget;
+    /** Visual offset of the separately dragged cap; it springs home after release. */
+    float mushroomCapDX, mushroomCapDY;
+    boolean mushroomReaction;
+
     /**
      * The chain {@link #SLIME} wants, in order. Indexed by {@link #chainAt}, wrapping, so its length
      * is how long the pattern is rather than a bound on how long the fight can run.
@@ -372,6 +385,7 @@ final class Boss {
         if (stage == EVERY) return SLIME;
         if (stage == EVERY * 2) return SPLITTER;
         if (stage == EVERY * 3) return OCTOPUS;
+        if (stage == EVERY * 4) return MUSHROOM;
         return -1;
     }
 
@@ -469,6 +483,13 @@ final class Boss {
         hurt = rage = 0f;
         beaten = false;
         slimeRetaliating = boltDestroyed = false;
+        mushroomShakes = mushroomDirection = 0;
+        mushroomLastX = mushroomShakeWindow = mushroomCharge = mushroomAngry = mushroomSweepFlash = 0f;
+        mushroomMeterAlpha = mushroomGuideX = mushroomReject = 0f;
+        mushroomGuideTarget = 1;
+        mushroomCapDX = mushroomCapDY = 0f;
+        mushroomAttackT = MUSHROOM_ATTACK_GAP;
+        mushroomReaction = false;
         awake = chord = 0;
         charges = 0;
         depth = 0f;
@@ -506,6 +527,8 @@ final class Boss {
         // Seeded off the kind, so the six bosses do not all breathe on the same phase. Placed on
         // the first update, which is the first time there is a Layout to place it in.
         body = new Softbody(Softbody.NODES, which + 1);
+        mushroomStem = which == MUSHROOM ? new Softbody(Softbody.NODES, 91) : null;
+        mushroomStemPlaced = false;
         bodyPlaced = false;
         for (int i = 0; i < ELEMS; i++) {
             etype[i] = E_OFF;
@@ -543,6 +566,12 @@ final class Boss {
         hurt = rage = 0f;
         beaten = false;
         slimeRetaliating = boltDestroyed = false;
+        mushroomShakes = mushroomDirection = 0;
+        mushroomLastX = mushroomShakeWindow = mushroomAttackT = mushroomCharge = mushroomAngry = mushroomSweepFlash = 0f;
+        mushroomMeterAlpha = mushroomGuideX = mushroomReject = 0f;
+        mushroomGuideTarget = 1;
+        mushroomCapDX = mushroomCapDY = 0f;
+        mushroomReaction = false;
         awake = chord = 0;
         want = -1;
         stolen = -1;
@@ -581,6 +610,8 @@ final class Boss {
         // The body goes too. It is the largest thing a boss puts on the screen, and the renderer
         // reads exactly this to decide whether there is anything to draw at all.
         body = null;
+        mushroomStem = null;
+        mushroomStemPlaced = false;
         bodyPlaced = false;
         for (int i = 0; i < ELEMS; i++) {
             etype[i] = E_OFF;
@@ -607,7 +638,7 @@ final class Boss {
      * which is what keeps the header column above it — see {@link #BODY_DROP} — a single derivation
      * instead of one per boss.
      */
-    private static final float[] WIDE = {2f, 1f, 1f, 1f, 1f, 1.65f, 1.35f};
+    private static final float[] WIDE = {2f, 1f, 1f, 1f, 1f, 1.65f, 1.35f, 1.45f};
 
     /**
      * How springy each boss is; see {@link Softbody#jiggle}.
@@ -617,7 +648,7 @@ final class Boss {
      * because its own mechanic no longer hits it every second — five presses work a glob loose and
      * only the drag scores, so the body has time to actually finish a wobble.
      */
-    private static final float[] JIGGLE = {2f, 1f, 1f, 1f, 1f, 1.7f, 2.2f};
+    private static final float[] JIGGLE = {2f, 1f, 1f, 1f, 1f, 1.7f, 2.2f, 1.9f};
 
     /** Rest width over rest height for this boss. */
     float wide() {
@@ -1258,6 +1289,24 @@ final class Boss {
         return true;
     }
 
+    /** Only the broad cap is draggable; the stalk remains rooted and bends after it. */
+    boolean grabBody(float x, float y) {
+        if (!fighting() || kind != MUSHROOM || body == null) return false;
+        float capX = body.centreX() + mushroomCapDX;
+        float capY = body.centreY() + mushroomCapDY - body.radiusY() * 0.12f;
+        float dx = (x - capX) / Math.max(1f, body.radiusX() * 1.92f);
+        float dy = (y - capY) / Math.max(1f, body.radiusY() * 0.94f);
+        if (dx * dx + dy * dy > 1f) return false;
+        held = -2;
+        mushroomLastX = x;
+        mushroomDirection = mushroomShakes = 0;
+        mushroomGuideX = 0f;
+        mushroomGuideTarget = 1;
+        mushroomMeterAlpha = 0f;
+        mushroomShakeWindow = 1.25f;
+        return true;
+    }
+
     /**
      * A held element following a finger.
      *
@@ -1265,7 +1314,55 @@ final class Boss {
      *     way, {@link #NONE} when nothing is held
      */
     int dragTo(float x, float y, Layout L) {
-        if (!fighting() || held < 0 || etype[held] == E_OFF) return NONE;
+        if (!fighting()) return NONE;
+        if (held == -2 && kind == MUSHROOM) {
+            float cx = body == null ? x : body.centreX();
+            float cy = body == null ? y : body.centreY();
+            mushroomCapDX = x - cx;
+            mushroomCapDY = Math.max(-bodyR(L) * 0.55f,
+                    Math.min(bodyR(L) * 0.55f, y - cy));
+            float dx = x - mushroomLastX;
+            if (Math.abs(dx) > L.w * 0.015f) mushroomMeterAlpha = Math.max(mushroomMeterAlpha, 0.01f);
+            // A twitch is not a shake: every accepted pass must cover half the physical screen.
+            float threshold = L.w * 0.50f;
+            if (Math.abs(dx) < threshold) {
+                return PART;
+            }
+            int direction = dx < 0f ? -1 : 1;
+            boolean guideReady = Math.abs(mushroomGuideX - mushroomGuideTarget) < 0.06f;
+            if (!guideReady || direction != mushroomGuideTarget) {
+                held = -1;
+                mushroomShakes = mushroomDirection = 0;
+                mushroomMeterAlpha = 0f;
+                mushroomReject = 1f;
+                if (body != null) { body.squash(-0.78f); body.letGo(); }
+                if (mushroomStem != null) mushroomStem.squash(-0.65f);
+                return PART;
+            }
+            mushroomLastX = x;
+            mushroomSweepFlash = 0.28f;
+            if (mushroomDirection != 0 && direction != mushroomDirection) mushroomShakes++;
+            mushroomDirection = direction;
+            mushroomGuideTarget = -direction;
+            mushroomShakeWindow = 1.25f;
+            if (body != null) {
+                body.letGo();
+                body.impulse(body.centreX() - direction * body.radiusX() * 0.62f,
+                        body.centreY(), 0.44f);
+                body.squash(-0.28f);
+            }
+            if (mushroomShakes < MUSHROOM_SHAKES) return PART;
+            hitX = body == null ? x : body.centreX();
+            hitY = body == null ? y : body.centreY();
+            held = -1;
+            int result = damage(1f);
+            if (!beaten) {
+                mushroomAngry = MUSHROOM_ANGER_TIME;
+                mushroomReaction = true;
+            }
+            return result;
+        }
+        if (held < 0 || etype[held] == E_OFF) return NONE;
         int t = etype[held];
         if (t == E_GLOB && !globDragStarted) {
             globDragCanDamage = !globDamageZone(ex[held], ey[held], held, L);
@@ -1333,6 +1430,7 @@ final class Boss {
     void release() {
         if (held >= 0 && etype[held] == E_GLOB) returning[held] = true;
         held = -1;
+        mushroomShakes = mushroomDirection = 0;
         globDragStarted = globDragCanDamage = false;
     }
 
@@ -1714,7 +1812,7 @@ final class Boss {
      * letter, fly at the key that clears them, and cost a life at the deck. Press the letter to swat
      * one; there is nothing to engage and no order to type them in.
      */
-    static final int BOLTS = 3;
+    static final int BOLTS = 3, MAX_BOLTS = 8;
     /** Seconds one takes to reach the deck. Long enough to read three letters and find three keys. */
     static final float BOLT_TIME = 2.4f;
     /**
@@ -1724,13 +1822,13 @@ final class Boss {
      */
     static final float BOLT_STAGGER = 0.18f;
     /** Live flag, letter, launch point and 0..1 of the way down, per bolt. */
-    final boolean[] blive = new boolean[BOLTS];
-    final int[] bglyph = new int[BOLTS];
-    final float[] bsx = new float[BOLTS];
-    final float[] bsy = new float[BOLTS];
-    final float[] bt = new float[BOLTS];
-    final int[] bhp = new int[BOLTS];
-    final int[] bhpMax = new int[BOLTS];
+    final boolean[] blive = new boolean[MAX_BOLTS];
+    final int[] bglyph = new int[MAX_BOLTS];
+    final float[] bsx = new float[MAX_BOLTS];
+    final float[] bsy = new float[MAX_BOLTS];
+    final float[] bt = new float[MAX_BOLTS];
+    final int[] bhp = new int[MAX_BOLTS];
+    final int[] bhpMax = new int[MAX_BOLTS];
 
     /** Where bolt {@code i} is now: launch point to its own key, straight. */
     float boltX(int i, Layout L) {
@@ -1757,7 +1855,7 @@ final class Boss {
     /** Live bolts on the field. */
     int boltCount() {
         int n = 0;
-        for (int i = 0; i < BOLTS; i++) {
+        for (int i = 0; i < MAX_BOLTS; i++) {
             if (blive[i]) n++;
         }
         return n;
@@ -1771,7 +1869,7 @@ final class Boss {
     /** The live bolt carrying {@code g} that is closest to landing, or -1. */
     private int boltNearest(int g) {
         int best = -1;
-        for (int i = 0; i < BOLTS; i++) {
+        for (int i = 0; i < MAX_BOLTS; i++) {
             if (blive[i] && bglyph[i] == g && (best < 0 || bt[i] > bt[best])) best = i;
         }
         return best;
@@ -1805,6 +1903,27 @@ final class Boss {
             bsy[i] = body == null ? lastBY + lastBR
                     : body.centreY() + body.radiusY() * 1.12f;
         }
+    }
+
+    /** Drops pale spores which become ordinary readable letter projectiles as they descend. */
+    private void sporeVolley(int count, Random rnd) {
+        int first = randomGlyph(rnd);
+        int made = 0;
+        for (int slot = 0; slot < MAX_BOLTS && made < count; slot++) {
+            if (blive[slot]) continue;
+            blive[slot] = true;
+            bglyph[slot] = Roster.at(rosterFull,
+                    (Roster.ordinal(rosterFull, first) + made) % Roster.count(rosterFull));
+            bhp[slot] = bhpMax[slot] = 1;
+            bt[slot] = -BOLT_STAGGER * made;
+            float spread = count <= 1 ? 0f : (made - (count - 1) * 0.5f) / (count - 1);
+            bsx[slot] = lastBX + spread * lastBR * 1.55f;
+            bsy[slot] = body == null ? lastBY : body.centreY() + body.radiusY() * 0.72f;
+            made++;
+        }
+        launchT = LAUNCH_TIME;
+        launched = made > 0;
+        if (body != null) body.squash(0.92f);
     }
 
     boolean beginPinch(float distance) {
@@ -1919,7 +2038,7 @@ final class Boss {
 
     private boolean singleBolt(Random rnd, float x, float y) {
         int slot = -1;
-        for (int i = 0; i < BOLTS; i++) if (!blive[i]) { slot = i; break; }
+        for (int i = 0; i < MAX_BOLTS; i++) if (!blive[i]) { slot = i; break; }
         if (slot < 0) return false;
         blive[slot] = true;
         bglyph[slot] = randomGlyph(rnd);
@@ -1952,7 +2071,7 @@ final class Boss {
     /** Ticks the volley. Returns the number that reached the deck this frame, each costing a life. */
     private int ageBolts(float dt) {
         int landed = 0;
-        for (int i = 0; i < BOLTS; i++) {
+        for (int i = 0; i < MAX_BOLTS; i++) {
             if (!blive[i]) continue;
             bt[i] += dt / BOLT_TIME;
             if (bt[i] < 1f) continue;
@@ -1963,7 +2082,7 @@ final class Boss {
     }
 
     private void clearBolts() {
-        for (int i = 0; i < BOLTS; i++) {
+        for (int i = 0; i < MAX_BOLTS; i++) {
             blive[i] = false;
             bt[i] = 0f;
             bhp[i] = bhpMax[i] = 0;
@@ -1981,6 +2100,9 @@ final class Boss {
      * Null when there is no boss, which is also how the renderer knows there is nothing to draw.
      */
     Softbody body;
+    /** Independent sprung stalk for the fly agaric; the cap remains {@link #body}. */
+    Softbody mushroomStem;
+    private boolean mushroomStemPlaced;
     /** False until the body has been placed, which cannot happen until a {@link Layout} is in hand. */
     private boolean bodyPlaced;
 
@@ -2151,6 +2273,19 @@ final class Boss {
             if (kind == SLIME && !beaten)
                 body.jiggle = JIGGLE[kind] * (1f + (1f - health()) * 1.25f);
             body.update(dt);
+            if (kind == MUSHROOM && mushroomStem != null) {
+                float sr = bodyR(L) * 1.08f;
+                float sx = bodyX(L), sy = bodyY(L) + bodyR(L) * 0.92f;
+                if (!mushroomStemPlaced) {
+                    mushroomStem.reset(sx, sy, sr, 0.46f);
+                    mushroomStem.jiggle = JIGGLE[kind] * 0.72f;
+                    mushroomStemPlaced = true;
+                } else mushroomStem.moveTo(sx, sy);
+                float capX = body.centreX() + mushroomCapDX;
+                float capY = body.centreY() + mushroomCapDY + body.radiusY() * 0.24f;
+                mushroomStem.pull(capX, capY, held == -2 ? 0.72f : 0.34f);
+                mushroomStem.update(dt);
+            }
             if (beaten) {
                 float from = defeatStartW > 0f ? defeatStartW : body.spanX();
                 body.fitWidth(from + (L.w * 0.90f - from) * defeatStretch());
@@ -2181,6 +2316,48 @@ final class Boss {
         }
 
         age += dt;
+        if (kind == MUSHROOM) {
+            mushroomSweepFlash = Math.max(0f, mushroomSweepFlash - dt);
+            mushroomReject = Math.max(0f, mushroomReject - dt * 1.15f);
+            if (held == -2 && mushroomMeterAlpha > 0f) {
+                mushroomMeterAlpha = Math.min(1f, mushroomMeterAlpha + dt * 5f);
+                float step = dt * 3.2f;
+                if (mushroomGuideX < mushroomGuideTarget)
+                    mushroomGuideX = Math.min(mushroomGuideTarget, mushroomGuideX + step);
+                else mushroomGuideX = Math.max(mushroomGuideTarget, mushroomGuideX - step);
+            } else if (held != -2) mushroomMeterAlpha = Math.max(0f, mushroomMeterAlpha - dt * 7f);
+            if (held != -2) {
+                float settle = Math.max(0f, 1f - dt * 8f);
+                mushroomCapDX *= settle;
+                mushroomCapDY *= settle;
+            }
+            if (mushroomShakeWindow > 0f) {
+                mushroomShakeWindow = Math.max(0f, mushroomShakeWindow - dt);
+                if (mushroomShakeWindow == 0f) {
+                    mushroomShakes = mushroomDirection = 0;
+                    if (held == -2) mushroomLastX = body == null ? 0f : body.centreX();
+                }
+            }
+            if (mushroomAngry > 0f) {
+                mushroomAngry = Math.max(0f, mushroomAngry - dt);
+                if (mushroomAngry == 0f && mushroomReaction) {
+                    mushroomReaction = false;
+                    sporeVolley(3, rnd);
+                }
+            } else if (mushroomCharge > 0f) {
+                mushroomCharge = Math.max(0f, mushroomCharge - dt);
+                if (mushroomCharge == 0f) {
+                    sporeVolley(4, rnd);
+                    mushroomAttackT = MUSHROOM_ATTACK_GAP;
+                }
+            } else {
+                mushroomAttackT -= dt;
+                if (mushroomAttackT <= 0f) {
+                    mushroomCharge = MUSHROOM_CHARGE_TIME;
+                    if (body != null) body.squash(1f);
+                }
+            }
+        }
         if (stagger > 0f) stagger = Math.max(0f, stagger - dt);
         if (stealT > 0f) {
             stealT = Math.max(0f, stealT - dt);

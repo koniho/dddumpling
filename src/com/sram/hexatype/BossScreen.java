@@ -139,6 +139,12 @@ final class BossScreen extends Draw {
                 b.enrage() * 0.45f), damageHeat * 0.62f * throb));
         if (wounded) col = Glyph.mix(col, YELLOW, vulnerabilityPulse(c.clock) * 0.78f);
         col = Glyph.mix(col, 0xFFFFFFFF, launch * 0.35f);
+        if (b.kind == Boss.MUSHROOM && b.mushroomAngry > 0f) {
+            float angry = b.mushroomAngry / Boss.MUSHROOM_ANGER_TIME;
+            int flare = Glyph.mix(ROSE, Glyph.cycle(c.clock * 9f), 0.48f);
+            col = Glyph.mix(col, flare, angry * (0.72f + 0.20f
+                    * (float) Math.sin(c.clock * 26f)));
+        }
         // A hit whitens it for a moment on top of the dent the body is already taking.
         col = Glyph.mix(col, 0xFFFFFFFF, b.hurt * 0.35f);
 
@@ -195,7 +201,8 @@ final class BossScreen extends Draw {
         if (b.kind == Boss.SPLITTER) {
             drawDividePieces(p, c, L, b, fade);
         } else {
-            if (b.kind == Boss.OCTOPUS) drawOctopusHead(p, c, b, col, mood, fade);
+            if (b.kind == Boss.MUSHROOM) drawMushroom(p, c, L, b, col, fade);
+            else if (b.kind == Boss.OCTOPUS) drawOctopusHead(p, c, b, col, mood, fade);
             else Slime.draw(p, b.body, c.clock, col, face, mood, fade);
             if (b.kind == Boss.SLIME && !b.open() && b.rage > 0f) {
                 float[] skin = b.body.outline();
@@ -212,7 +219,7 @@ final class BossScreen extends Draw {
             // The original slime is a wide, amorphous silhouette. The inset node mesh reconstructs
             // a regular ring over it, making an obsolete circular body appear on top of the skin.
             // Other bosses keep the mesh because it helps their rounder bodies read as soft physics.
-            if (b.kind != Boss.SLIME && b.kind != Boss.OCTOPUS) {
+            if (b.kind != Boss.SLIME && b.kind != Boss.OCTOPUS && b.kind != Boss.MUSHROOM) {
                 Slime.mesh(p, b.body, col,
                         Math.max(b.hurt, b.body.pulled() ? 0.8f : 0f), fade);
             }
@@ -220,6 +227,185 @@ final class BossScreen extends Draw {
 
         ornament(p, c, L, b, fade * b.defeatPromptFade());
         elements(p, c, L, b, fade, col);
+    }
+
+    /** A fly-agaric silhouette built around the same live soft-body ring as every other boss. */
+    private static void drawMushroom(Painter p, GameCore c, Layout L, Boss b, int col, float fade) {
+        float rootX = b.body.centreX(), cy = b.body.centreY();
+        float rx = b.body.radiusX(), ry = b.body.radiusY();
+        float charge = b.mushroomCharge <= 0f ? 0f
+                : 1f - b.mushroomCharge / Boss.MUSHROOM_CHARGE_TIME;
+        float squeeze = (float) Math.sin(charge * Math.PI * 0.5f);
+        float sy = 1f - squeeze * 0.30f, sx = 1f + squeeze * 0.16f;
+
+        float capX = rootX + b.mushroomCapDX;
+        float capY = cy + b.mushroomCapDY;
+        float stemBottom = cy + ry * (2.05f - squeeze * 0.20f);
+        float attachX = capX, attachY = capY + ry * 0.36f * sy;
+        float stemHalf = rx * (0.20f + squeeze * 0.035f);
+        int cream = Glyph.mix(0xFFFFE9C7, col, 0.10f);
+        int stemEdge = Glyph.withAlpha(Glyph.mix(cream, 0xFF7D382E, 0.42f),
+                (int) (220 * fade));
+        int stemFill = Glyph.withAlpha(cream, (int) (235 * fade));
+
+        // Warp the stalk's own live pressure-ring along a planted quadratic spine. Its noisy edge,
+        // breathing and impact deformation now come from a second Softbody rather than stamped
+        // circles; the warp only tapers it and guarantees the top remains sewn to the cap.
+        float controlX = rootX + (attachX - rootX) * 0.27f;
+        float controlY = (stemBottom + attachY) * 0.5f;
+        // A dense fan of living mycelium sits under everything else. Damage wakes it up: pulses
+        // race farther down the roots, brighten, and shift from moonlit cream to hostile coral.
+        float damage = 1f - b.health();
+        float rootPulse = 0.42f + 0.58f * (0.5f + 0.5f
+                * (float) Math.sin(c.clock * (3.2f + damage * 10f)));
+        int mycelium = Glyph.mix(0xFFDDFBEF, 0xFFFF416C, damage * 0.82f);
+        float rootSpan = Math.min(L.w * 0.47f, rx * 3.45f);
+        for (int branch = 0; branch < 19; branch++) {
+            float n = branch / 18f * 2f - 1f;
+            float bend = (Draw.hash(branch * 47 + 901) - 0.5f) * ry * 0.42f;
+            float endX = rootX + n * rootSpan;
+            float endY = stemBottom + ry * (0.24f + 0.30f * Draw.hash(branch * 61 + 17));
+            float midX = rootX + n * rootSpan * 0.48f + bend;
+            float midY = stemBottom + ry * (0.10f + 0.10f * Draw.hash(branch * 31 + 7));
+            int glowA = (int) ((35f + damage * 85f) * rootPulse * fade);
+            int coreA = (int) ((105f + damage * 125f) * fade);
+            p.line(rootX, stemBottom, midX, midY, Glyph.withAlpha(mycelium, glowA),
+                    ry * (0.085f + damage * 0.045f));
+            p.line(midX, midY, endX, endY, Glyph.withAlpha(mycelium, glowA),
+                    ry * (0.060f + damage * 0.035f));
+            p.line(rootX, stemBottom, midX, midY, Glyph.withAlpha(0xFFFFF8DB, coreA),
+                    ry * 0.018f);
+            p.line(midX, midY, endX, endY, Glyph.withAlpha(0xFFFFF8DB, coreA),
+                    ry * 0.013f);
+            // Fine forked hyphae turn the radial fan into a tangled underground network.
+            float fork = branch % 2 == 0 ? 1f : -1f;
+            float forkX = midX + fork * rootSpan * (0.09f + 0.04f * damage);
+            float forkY = endY + ry * (0.08f + 0.05f * Draw.hash(branch * 73 + 5));
+            p.line(midX, midY, forkX, forkY, Glyph.withAlpha(mycelium, glowA),
+                    ry * 0.040f);
+            p.line(midX, midY, forkX, forkY, Glyph.withAlpha(0xFFFFF8DB, coreA),
+                    ry * 0.010f);
+            float wave = (c.clock * (0.65f + damage * 1.25f)
+                    + branch * 0.113f) % 1f;
+            float px = midX + (endX - midX) * wave;
+            float py = midY + (endY - midY) * wave;
+            p.fillCircle(px, py, ry * (0.025f + damage * 0.035f) * rootPulse,
+                    Glyph.withAlpha(mycelium, (int) ((125f + damage * 120f) * fade)));
+        }
+        // The foot is behind the stalk, like a bulb emerging from the ground rather than a badge
+        // pasted over its front.
+        p.fillCircle(rootX, stemBottom, stemHalf * 1.48f, stemEdge);
+        p.fillCircle(rootX, stemBottom - ry * 0.025f, stemHalf * 1.24f, stemFill);
+        p.line(rootX - stemHalf, stemBottom, rootX + stemHalf, stemBottom,
+                Glyph.withAlpha(0xFFC99576, (int) (150 * fade)), ry * 0.035f);
+        float[] stemRaw = b.mushroomStem == null ? null : b.mushroomStem.outline();
+        if (stemRaw != null) {
+            float scx = b.mushroomStem.centreX(), scy = b.mushroomStem.centreY();
+            float sry = Math.max(1f, b.mushroomStem.radiusY());
+            float[] stem = new float[stemRaw.length];
+            for (int i = 0; i < stem.length; i += 2) {
+                float t = Math.max(0f, Math.min(1f, (stemBottom - stemRaw[i + 1]) / (sry * 2f)));
+                float u = 1f - t;
+                float spineX = u * u * rootX + 2f * u * t * controlX + t * t * attachX;
+                float spineY = stemBottom + (attachY - stemBottom) * t;
+                float taper = 1.34f - t * 0.69f;
+                stem[i] = spineX + (stemRaw[i] - scx) * taper;
+                stem[i + 1] = spineY + (stemRaw[i + 1] - scy) * 0.15f;
+            }
+            p.strokePoly(stem, stemEdge, ry * 0.12f);
+            p.fillPoly(stem, stemFill);
+            float[] glow = new float[stem.length];
+            for (int i = 0; i < stem.length; i += 2) {
+                glow[i] = rootX + (stem[i] - rootX) * 0.72f - stemHalf * 0.16f;
+                glow[i + 1] = stem[i + 1];
+            }
+            p.fillPoly(glow, Glyph.withAlpha(0xFFFFF7DE, (int) (100 * fade)));
+        }
+        float angle = Math.max(-0.62f, Math.min(0.62f,
+                (float) Math.atan2(attachX - rootX, Math.max(ry * 0.55f, stemBottom - attachY))));
+        float ca = (float) Math.cos(angle), sa = (float) Math.sin(angle);
+
+        float[] raw = b.body.outline();
+        float[] cap = new float[raw.length];
+        for (int i = 0; i < raw.length; i += 2) {
+            float rawDy = raw[i + 1] - cy;
+            float lowerFlare = rawDy > 0f ? 1.28f : 1f;
+            float dx = (raw[i] - rootX) * sx * 1.72f * lowerFlare;
+            // Flatten the underside more than the crown for the umbrella-like cap.
+            float dy = rawDy * sy * 1.62f * (rawDy > 0f ? 0.52f : 0.82f);
+            cap[i] = capX + dx * ca - dy * sa;
+            cap[i + 1] = capY + dx * sa + dy * ca;
+        }
+        int red = Glyph.mix(0xFFD92738, col, 0.22f);
+        p.strokePoly(cap, Glyph.withAlpha(0xFF641F35, (int) (190 * fade)), ry * 0.15f);
+        p.fillPoly(cap, Glyph.withAlpha(red, (int) (232 * fade)));
+        p.strokePoly(cap, Glyph.withAlpha(0xFFFFD9B0, (int) (235 * fade)), ry * 0.055f);
+        float[] capGlow = new float[cap.length];
+        for (int i = 0; i < cap.length; i += 2) {
+            capGlow[i] = capX + (cap[i] - capX) * 0.82f;
+            capGlow[i + 1] = capY + (cap[i + 1] - capY) * 0.78f - ry * 0.10f;
+        }
+        p.strokePoly(capGlow, Glyph.withAlpha(0xFFFF7180, (int) (105 * fade)), ry * 0.11f);
+
+        // Fly-agaric spots ride the cap, widening with its charged spread.
+        float[][] spots = {{-0.55f,-0.20f,0.12f},{-0.18f,-0.48f,0.15f},
+                {0.23f,-0.35f,0.11f},{0.58f,-0.12f,0.14f},{0.02f,-0.08f,0.09f}};
+        for (float[] spot : spots) {
+            float dx = spot[0] * rx * sx * 1.72f, dy = spot[1] * ry * sy * 1.62f;
+            p.fillCircle(capX + dx * ca - dy * sa, capY + dx * sa + dy * ca,
+                    spot[2] * ry, Glyph.withAlpha(0xFFFFF4DA, (int) (225 * fade)));
+        }
+
+        // Face on the stem keeps the boss alive without disguising the mushroom silhouette.
+        float faceT = 0.38f, faceU = 1f - faceT;
+        float faceX = faceU * faceU * rootX + 2f * faceU * faceT * controlX
+                + faceT * faceT * attachX;
+        float faceY = faceU * faceU * stemBottom + 2f * faceU * faceT * controlY
+                + faceT * faceT * attachY;
+        p.fillCircle(faceX - stemHalf * 0.38f, faceY, ry * 0.055f,
+                Glyph.withAlpha(0xFF4A2631, (int) (245 * fade)));
+        p.fillCircle(faceX + stemHalf * 0.38f, faceY, ry * 0.055f,
+                Glyph.withAlpha(0xFF4A2631, (int) (245 * fade)));
+        p.line(faceX - stemHalf * 0.24f, faceY + ry * 0.16f,
+                faceX + stemHalf * 0.24f, faceY + ry * 0.16f,
+                Glyph.withAlpha(0xFF4A2631, (int) (220 * fade)), ry * 0.035f);
+
+        if (b.mushroomReject > 0f) {
+            float taunt = b.mushroomReject;
+            float flex = ry * (0.72f + 0.12f * (float) Math.sin(c.clock * 24f));
+            int tauntCol = Glyph.withAlpha(0xFFFF4668, (int) (235 * taunt * fade));
+            p.line(capX - rx * 1.35f, capY + ry * 0.25f,
+                    capX - rx * 1.75f, capY - flex, tauntCol, ry * 0.11f);
+            p.line(capX + rx * 1.35f, capY + ry * 0.25f,
+                    capX + rx * 1.75f, capY - flex, tauntCol, ry * 0.11f);
+            p.line(faceX - stemHalf * 0.55f, faceY - ry * 0.10f,
+                    faceX - stemHalf * 0.08f, faceY, tauntCol, ry * 0.055f);
+            p.line(faceX + stemHalf * 0.55f, faceY - ry * 0.10f,
+                    faceX + stemHalf * 0.08f, faceY, tauntCol, ry * 0.055f);
+        }
+
+        if (b.mushroomMeterAlpha > 0f) {
+            float meterFade = fade * b.mushroomMeterAlpha;
+            float meterW = L.w * 0.56f, meterH = Math.max(7f, L.unit * 0.13f);
+            float meterX = L.w * 0.5f;
+            float meterY = L.playTop + L.unit * 2.35f;
+            int white = Glyph.withAlpha(0xFFFFFFFF, (int) (235 * meterFade));
+            p.strokePoly(pill(meterX, meterY, meterW * 0.5f, meterH * 1.15f, 16),
+                    white, Math.max(3f, L.unit * 0.055f));
+            p.line(meterX, meterY - meterH * 1.15f, meterX, meterY + meterH * 1.15f,
+                    Glyph.withAlpha(0xFFFFFFFF, (int) (145 * meterFade)),
+                    Math.max(2f, L.unit * 0.035f));
+            float targetX = meterX + b.mushroomGuideX * (meterW * 0.5f - meterH * 1.7f);
+            float pulse = 1f + 0.16f * (float) Math.sin(c.clock * 13f);
+            p.fillCircle(targetX, meterY, meterH * 0.72f * pulse, white);
+            float pipY = meterY + meterH + L.unit * 0.30f;
+            float gap = L.unit * 0.34f;
+            float first = L.w * 0.5f - gap * (Boss.MUSHROOM_SHAKES - 1) * 0.5f;
+            for (int i = 0; i < Boss.MUSHROOM_SHAKES; i++)
+                p.fillCircle(first + i * gap, pipY, L.unit * (i < b.mushroomShakes ? 0.105f : 0.072f),
+                        Glyph.withAlpha(i < b.mushroomShakes ? 0xFFFFFFFF : 0xFF76596D,
+                                (int) (225 * meterFade)));
+        }
     }
 
     private static void drawOctopusHead(Painter p, GameCore c, Boss b, int col, float mood, float fade) {
@@ -1034,7 +1220,7 @@ final class BossScreen extends Draw {
     static void bolts(Painter p, GameCore c, Layout L) {
         Boss b = c.boss;
         if (!b.active()) return;
-        for (int i = 0; i < Boss.BOLTS; i++) {
+        for (int i = 0; i < Boss.MAX_BOLTS; i++) {
             if (!b.blive[i]) continue;
             int g = b.bglyph[i];
             float x = b.boltX(i, L), y = b.boltY(i, L);
@@ -1045,6 +1231,20 @@ final class BossScreen extends Draw {
                     ? slimeBoltR(c, L, 1f)
                     : L.keyR * (0.42f + 0.30f * at);
             int col = Glyph.COLOR[g];
+            float sporeMorph = b.kind == Boss.MUSHROOM ? Math.min(1f, at / 0.30f) : 1f;
+            if (b.kind == Boss.MUSHROOM) {
+                float sporeR = rr * (0.34f + 0.66f * sporeMorph);
+                int spore = Glyph.mix(0xFFFFF1C8, col, sporeMorph);
+                p.fillCircle(x, y, sporeR, Glyph.withAlpha(spore, 220));
+                for (int k = 0; k < 3; k++) {
+                    float a = c.clock * 4f + k * Softbody.TAU / 3f;
+                    p.fillCircle(x + (float) Math.cos(a) * rr * 0.28f * (1f - sporeMorph),
+                            y + (float) Math.sin(a) * rr * 0.28f * (1f - sporeMorph),
+                            rr * 0.11f, Glyph.withAlpha(0xFFFFF8DF,
+                                    (int) (170 * (1f - sporeMorph))));
+                }
+                col = spore;
+            }
 
             // A tail back toward the launch point, so the direction reads in one frame.
             float tx = b.bsx[i], ty = b.bsy[i];
@@ -1057,9 +1257,11 @@ final class BossScreen extends Draw {
             for (int k = 2; k >= 1; k--) {
                 p.fillCircle(x, y, rr * (1.15f + 0.28f * k), Glyph.withAlpha(col, 40 / k));
             }
-            p.fillPoly(Glyph.hex(x, y, rr), Glyph.withAlpha(col, 96));
-            p.strokePoly(Glyph.hex(x, y, rr), Glyph.withAlpha(col, 255), rr * 0.13f);
-            Kawaii.draw(p, g, x, y, rr * 0.58f, Glyph.withAlpha(col, 255), 1f, 0.1f);
+            p.fillPoly(Glyph.hex(x, y, rr), Glyph.withAlpha(col, (int) (96 * sporeMorph)));
+            p.strokePoly(Glyph.hex(x, y, rr), Glyph.withAlpha(col, (int) (255 * sporeMorph)),
+                    rr * 0.13f);
+            Kawaii.draw(p, g, x, y, rr * 0.58f,
+                    Glyph.withAlpha(col, (int) (255 * sporeMorph)), sporeMorph, 0.1f);
             for (int h = 0; h < b.bhp[i]; h++) {
                 float pip = rr * 0.13f;
                 float px = x + (h - (b.bhp[i] - 1) * 0.5f) * pip * 2.6f;

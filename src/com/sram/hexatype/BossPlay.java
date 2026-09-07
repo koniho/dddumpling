@@ -263,13 +263,13 @@ final class BossPlay {
     static boolean grab(GameCore c, float x, float y) {
         if (c.state != GameCore.PLAY || !c.boss.fighting() || c.settingsOpen) return false;
         int i = c.boss.elemAt(x, y);
-        if (!c.boss.draggable(i)) return false;
-        return c.boss.grab(i);
+        if (c.boss.draggable(i)) return c.boss.grab(i);
+        return c.boss.grabBody(x, y);
     }
 
     /** That finger moving. True when the drag finished the job. */
     static boolean dragTo(GameCore c, float x, float y, Layout L) {
-        if (c.boss.held < 0) return false;
+        if (c.boss.held < 0 && c.boss.held != -2) return false;
         int r = c.boss.dragTo(x, y, L);
         if (r != Boss.HIT) return false;
         c.score += GameCore.BOSS_HIT;

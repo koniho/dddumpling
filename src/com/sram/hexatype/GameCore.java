@@ -2360,7 +2360,9 @@ final class GameCore {
             if (sound != null) {
                 float brew = boss.kind == Boss.SLIME && !boss.hasGlob()
                         && boss.boltCount() == 0 && boss.open()
-                        ? 0.08f + boss.promptProgress() * 0.92f : 0f;
+                        ? 0.08f + boss.promptProgress() * 0.92f
+                        : boss.kind == Boss.MUSHROOM && boss.mushroomCharge > 0f
+                        ? 1f - boss.mushroomCharge / Boss.MUSHROOM_CHARGE_TIME : 0f;
                 sound.bossCharge(brew);
                 if (boss.launched) sound.bossLaugh();
                 if (boss.boingWeight >= 0f) sound.divideBoing(boss.boingWeight);
