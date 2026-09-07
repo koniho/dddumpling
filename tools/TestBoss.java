@@ -206,8 +206,8 @@ final class TestBoss extends Check {
 
     static void winning(Layout L) {
         group("beating a boss");
-        check("the boss defeat performance is three times its original length",
-                Boss.LEAVE == Boss.LEAVE_BASE * 3f);
+        check("the boss defeat performance is half its former extended length",
+                Boss.LEAVE == Boss.LEAVE_BASE * 1.5f);
 
         GameCore c = enterBoss(L, Boss.SLIME, 21L);
         c.lives = 1;
@@ -667,7 +667,11 @@ final class TestBoss extends Check {
                 && damageEar.bossDamages == 0);
         check("without layering the achievement twinkle", damageEar.achievements == 0);
         check("the killing blow starts the shared defeat exit", d.boss.beaten);
+        check("its prompts begin their quick defeat fade", d.boss.defeatPromptFade() == 1f);
         advance(d, L, Boss.LEAVE * 0.29f);
+        check("its prompts are gone near the start of that exit",
+                d.boss.defeatPromptFade() == 0f
+                        && Boss.DEFEAT_PROMPT_FADE < Boss.LEAVE * 0.10f);
         check("the longer exit holds for three cute squash notes",
                 d.boss.active() && damageEar.squishes == 3);
         check("the defeated body melts toward the player", d.boss.bodyY(L) > deathFrom);
@@ -801,6 +805,8 @@ final class TestBoss extends Check {
         check("the charged character is displayed below the slime",
                 BossScreen.slimeBadgeY(L, c.boss)
                         > c.boss.body.centreY() + c.boss.body.radiusY());
+        check("a fully charged slime bolt uses the grown charging-state size",
+                BossScreen.slimeBoltR(c, L, 1f) > BossScreen.slimeBoltR(c, L, 0f));
 
         int frames = 0;
         while (c.boss.boltCount() == 0 && frames++ < 60 * 4) c.update(DT, L);
@@ -1580,12 +1586,42 @@ final class TestBoss extends Check {
             Ear victoryEar = new Ear();
             victory.sound = victoryEar;
             victory.lives = 1;
+            // These edge-triggered cues can be live on the exact frame Octopulse lands the fatal
+            // hit. If leave() retains them, GameView repeats its long impact haptic every frame of
+            // the next run.
+            if (k == Boss.OCTOPUS) {
+                victory.boss.octoCue = victory.boss.octoLock = true;
+                victory.boss.octoImpact = victory.boss.octoPlayerHit = true;
+                victory.boss.octoLashLanded = true;
+            }
             victory.takeHit(victory.boss.bodyX(L), L);
+            check(Boss.NAMES[k] + ": announces one boss-specific taunt",
+                    victoryEar.bossTaunts == 1 && victoryEar.lastBossTaunt == k);
             check(Boss.NAMES[k] + ": leaves its victory performance for the green transition",
                     victory.dying() && victory.bossVictoryKind == k && !victory.boss.active());
-            check(Boss.NAMES[k] + ": its victory performance is three times the usual death hold",
+            check(Boss.NAMES[k] + ": retains its exact combat body for that performance",
+                    victory.bossVictory != null && victory.bossVictory.kind == k
+                            && victory.bossVictory.body != null);
+            float vr = Boss.bodyR(L);
+            float minX = Float.MAX_VALUE, maxX = -Float.MAX_VALUE;
+            float minY = Float.MAX_VALUE, maxY = -Float.MAX_VALUE;
+            for (int f = 0; f < 32; f++) {
+                float tx = BossVictory.tauntX(k, f * 0.17f, vr);
+                float ty = BossVictory.tauntY(k, f * 0.17f, vr);
+                minX = Math.min(minX, tx); maxX = Math.max(maxX, tx);
+                minY = Math.min(minY, ty); maxY = Math.max(maxY, ty);
+            }
+            check(Boss.NAMES[k] + ": visibly moves while taunting",
+                    maxX - minX + maxY - minY > vr * 0.12f);
+            if (k == Boss.OCTOPUS) {
+                check("OCTOPULSE: dying clears every transient haptic cue",
+                        !victory.boss.octoCue && !victory.boss.octoLock
+                                && !victory.boss.octoImpact && !victory.boss.octoPlayerHit
+                                && !victory.boss.octoLashLanded);
+            }
+            check(Boss.NAMES[k] + ": its victory performance is the extended death hold",
                     victory.deathT == GameCore.BOSS_DEATH_TIME
-                            && GameCore.BOSS_DEATH_TIME == GameCore.DEATH_TIME * 3f);
+                            && GameCore.BOSS_DEATH_TIME == GameCore.DEATH_TIME * 3f - 2f);
             advance(victory, L, GameCore.BOSS_DEATH_TIME + DT);
             check(Boss.NAMES[k] + ": restores normal music when game over appears",
                     !victoryEar.bossMusic && victoryEar.bossMusicCalls == 1);
@@ -1628,7 +1664,8 @@ final class TestBoss extends Check {
             d.toTitle();
             d.startGame();
             check(who + ": a new run starts clean",
-                    !d.boss.active() && d.boss.stolen < 0 && noElems(d.boss));
+                    !d.boss.active() && d.bossVictory == null
+                            && d.boss.stolen < 0 && noElems(d.boss));
         }
     }
 

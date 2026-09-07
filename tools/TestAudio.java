@@ -506,6 +506,15 @@ final class TestAudio extends Check {
         System.out.printf("    the game-over sting is %.0fms, %.0f/s falling to %.0f/s%n",
                 1000f * over.length / Sfx.RATE, head, tail);
         check("the game-over sting falls", tail < head * 0.85f);
+        boolean descending = true;
+        int chromaticSteps = 0;
+        for (int i = 1; i < Sfx.OVER_NOTES.length; i++) {
+            float ratio = Sfx.OVER_NOTES[i - 1] / Sfx.OVER_NOTES[i];
+            if (ratio <= 1f) descending = false;
+            if (ratio < 1.07f) chromaticSteps++;
+        }
+        check("its melody descends on every note", descending);
+        check("most of that melody falls by chromatic-sized steps", chromaticSteps >= 6);
         check("and it is the longest thing here, but not longer than the swirl and the summary",
                 over.length > join.length
                         && (float) over.length / Sfx.RATE < GameCore.DEATH_TIME + 1f);

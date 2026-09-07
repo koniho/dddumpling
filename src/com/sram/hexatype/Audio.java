@@ -370,6 +370,10 @@ final class Audio implements GameCore.Sound {
         play(Sfx.BOSS_LAUGH, 1f);
     }
 
+    @Override public void bossTaunt(int kind) {
+        if (kind >= 0 && kind < Boss.COUNT) play(Sfx.BOSS_TAUNT_0 + kind, 1f, 0.78f);
+    }
+
     @Override public void bossDamage() {
         play(Sfx.BOSS_DAMAGE, 0.92f, 0.72f);
     }

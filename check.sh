@@ -74,6 +74,7 @@ src/com/sram/hexatype/Narration.java
 src/com/sram/hexatype/Showcase.java
 src/com/sram/hexatype/Storybook.java
 src/com/sram/hexatype/Hud.java
+src/com/sram/hexatype/TitleBubbleFont.java
 src/com/sram/hexatype/Screens.java
 src/com/sram/hexatype/StarScreen.java
 src/com/sram/hexatype/BossScreen.java

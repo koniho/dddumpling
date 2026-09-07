@@ -148,6 +148,45 @@ final class RasterPainter implements Painter {
         }
     }
 
+    @Override public void fillContours(float[][] contours, int color) {
+        if (contours == null || (color >>> 24) == 0) return;
+        int edges = 0;
+        float ymin = Float.MAX_VALUE, ymax = -Float.MAX_VALUE;
+        for (float[] pts : contours) {
+            if (pts == null) continue;
+            edges += pts.length / 2;
+            for (int i = 1; i < pts.length; i += 2) {
+                float y = sy(pts[i]); ymin = Math.min(ymin, y); ymax = Math.max(ymax, y);
+            }
+        }
+        if (edges < 3) return;
+        float[] xs = new float[edges];
+        int y0 = Math.max(0, (int) Math.floor(ymin));
+        int y1 = Math.min(bh - 1, (int) Math.ceil(ymax));
+        for (int y = y0; y <= y1; y++) {
+            float yc = y + 0.5f; int cnt = 0;
+            for (float[] pts : contours) {
+                if (pts == null || pts.length < 6) continue;
+                int n = pts.length / 2;
+                for (int i = 0; i < n; i++) {
+                    int j = (i + 1) % n;
+                    float ya = sy(pts[i * 2 + 1]), yb = sy(pts[j * 2 + 1]);
+                    if ((yc >= ya && yc < yb) || (yc >= yb && yc < ya)) {
+                        float t = (yc - ya) / (yb - ya);
+                        xs[cnt++] = sx(pts[i * 2]) + t * (sx(pts[j * 2]) - sx(pts[i * 2]));
+                    }
+                }
+            }
+            for (int a = 1; a < cnt; a++) {
+                float v = xs[a]; int b = a - 1;
+                while (b >= 0 && xs[b] > v) { xs[b + 1] = xs[b]; b--; }
+                xs[b + 1] = v;
+            }
+            for (int k = 0; k + 1 < cnt; k += 2)
+                span(y, Math.round(xs[k]), Math.round(xs[k + 1]) - 1, color);
+        }
+    }
+
     @Override public void arc(float cx, float cy, float rx, float ry, float start, float sweep,
             int color, float width) {
         int steps = Math.max(8, (int) (Math.abs(sweep) / 8f));

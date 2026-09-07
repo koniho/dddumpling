@@ -69,8 +69,8 @@ final class GameCore {
      * the deck goes red, and the sky drains — then the summary fades up.
      */
     static final float DEATH_TIME = 1.6f;
-    /** Boss celebrations get room to play; ordinary deaths keep the short transition above. */
-    static final float BOSS_DEATH_TIME = DEATH_TIME * 3f;
+    /** Boss celebrations get extra room to play; ordinary deaths keep the short transition above. */
+    static final float BOSS_DEATH_TIME = DEATH_TIME * 3f - 2f;
     /** How long the summary takes to fade in once the hold is over. */
     static final float OVER_FADE = 0.45f;
 
@@ -250,6 +250,8 @@ final class GameCore {
         void rosterJoin();
         /** The run is over: the swirl has cleared and the summary is coming up. */
         void gameOver();
+        /** The boss that ended the run begins its boss-specific victory taunt. */
+        void bossTaunt(int kind);
         /** Switch the looping background track to {@link Music#NAMES}[choice]. */
         void selectMusic(int choice);
         /** Switches the selected instruments into or out of their faster boss arrangement. */
@@ -630,7 +632,9 @@ final class GameCore {
      * second one never reaches the PLAY half of {@link #update}, which is why {@link #die} sends the
      * boss home alongside the squishy.
      */
-    final Boss boss = new Boss();
+    Boss boss = new Boss();
+    /** The exact live boss retained only as a visual snapshot while it celebrates a won fight. */
+    Boss bossVictory;
 
     /** True from the boss's arrival card to the end of its exit, defeat or retreat. */
     boolean bossActive() { return boss.active(); }
@@ -1523,6 +1527,7 @@ final class GameCore {
         cubeUnlocked = false;
         deathT = 0f;
         bossVictoryKind = -1;
+        bossVictory = null;
         homeT = 0f;
         homeLanded = 0;
         paradeTimer = 0f;
@@ -1551,6 +1556,7 @@ final class GameCore {
         time = 0;
         deathT = 0f;
         bossVictoryKind = -1;
+        bossVictory = null;
         // The run's haul carries itself to the case rather than simply being in it next time the
         // case is opened. Only off the game-over screen: arriving from anywhere else there is no
         // dance for them to be leaving.
@@ -2686,6 +2692,8 @@ final class GameCore {
             saveRoster();
         }
         bossVictoryKind = boss.fighting() ? boss.kind : -1;
+        bossVictory = bossVictoryKind >= 0 ? boss : null;
+        if (bossVictoryKind >= 0 && sound != null) sound.bossTaunt(bossVictoryKind);
         state = OVER;
         time = 0;
         deathT = deathDuration();
@@ -2705,10 +2713,11 @@ final class GameCore {
         }
         // And the squishy goes with it.
         buddy.leave();
-        // So does the boss, and everything it had put on the field: its body, its health bar, the
-        // globs it had shed, a key it was holding — a held key especially, since the deck it was
-        // taken from is drawn on the game-over screen and on the title screen after it.
-        boss.leave();
+        // Gameplay gets a clean boss immediately. After a boss-won fight the old object survives
+        // only as a frozen visual snapshot, so the victory sequence can retain its exact combat
+        // silhouette, scale and attachments without allowing any mechanic to keep updating.
+        if (bossVictory != null) boss = new Boss();
+        else boss.leave();
         power = null;
         if (score > best) {
             best = score;

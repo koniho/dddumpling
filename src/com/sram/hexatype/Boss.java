@@ -115,7 +115,9 @@ final class Boss {
     /** Original burst length, retained as the readable basis of the extended victory sequence. */
     static final float LEAVE_BASE = 2.4f;
     /** How long the burst takes once it is beaten, before the stage may end. */
-    static final float LEAVE = LEAVE_BASE * 3f;
+    static final float LEAVE = LEAVE_BASE * 1.5f;
+    /** Boss instructions vanish promptly once they are no longer actionable. */
+    static final float DEFEAT_PROMPT_FADE = 0.25f;
 
     /**
      * Seconds before it enrages.
@@ -436,6 +438,12 @@ final class Boss {
         return leaveT <= 0f ? 1f : 1f - leaveT / LEAVE;
     }
 
+    /** 1 at the killing blow, reaching 0 after the short prompt-dismissal interval. */
+    float defeatPromptFade() {
+        if (!beaten) return 1f;
+        return Math.max(0f, 1f - leaveProgress() * LEAVE / DEFEAT_PROMPT_FADE);
+    }
+
     String name() {
         return kind < 0 ? "" : NAMES[kind];
     }
@@ -553,7 +561,8 @@ final class Boss {
         pinchStart = divideBurst = 0f;
         octoArms = disabledKeys = 0; octoTarget = octoAttackArm = octoCaptured = -1;
         octoLashArm = octoDyingArm = -1;
-        octoReach = octoReturn = octoPause = octoLash = octoDeath = 0f; octoPlaced = false;
+        octoReach = octoReturn = octoPause = octoLash = octoDeath = 0f;
+        octoPlaced = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = false;
         for (int i = 0; i < DIVIDE_NODES; i++) {
             halfWant[i] = -1;
             halfIdle[i] = halfHurt[i] = 0f;

@@ -53,7 +53,8 @@ abstract class Check {
         int music = -1, musicCalls;
         int starts, stageClears, powerClears, frenzyCalls;
         /** Interlude punctuation: course launches, tallies read out, parade joins, runs ended. */
-        int courseStarts, rocketCalls, tallies, joins, gameOvers;
+        int courseStarts, rocketCalls, tallies, joins, gameOvers, bossTaunts;
+        int lastBossTaunt = -1;
         float rocketThrust, firstRocket = -1f, maxRocket;
         int rocketStops;
         int lastTally = -1;
@@ -107,6 +108,7 @@ abstract class Check {
         public void paradeJoin() { joins++; }
         public void rosterJoin() { achievements++; }
         public void gameOver() { gameOvers++; }
+        public void bossTaunt(int kind) { bossTaunts++; lastBossTaunt = kind; }
         public void selectMusic(int choice) { music = choice; musicCalls++; }
         public void bossMusic(boolean active) { bossMusic = active; bossMusicCalls++; }
         public void gameStart() { starts++; }

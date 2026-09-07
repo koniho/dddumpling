@@ -27,7 +27,8 @@ final class Sfx {
     static final int DIVIDE_DAMAGE = 25, DIVIDE_SPLIT = 26;
     static final int DIVIDE_BOING_HEAVY = 27, DIVIDE_BOING_MEDIUM = 28,
             DIVIDE_BOING_LIGHT = 29, ROSTER_JOIN = 30, DIVIDE_DEACTIVATE = 31,
-            SHIELD_BOUNCE = 32, SLIME_DAMAGE = 33, OCTO_CUE = 34, OCTO_LOCK = 35, COUNT = 36;
+            SHIELD_BOUNCE = 32, SLIME_DAMAGE = 33, OCTO_CUE = 34, OCTO_LOCK = 35;
+    static final int BOSS_TAUNT_0 = 36, COUNT = BOSS_TAUNT_0 + Boss.COUNT;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -42,6 +43,8 @@ final class Sfx {
 
     private static short[] renderEffect(int id) {
         if (id >= SQUISH_0 && id < SQUISH_0 + Glyph.COUNT) return squish(id - SQUISH_0);
+        if (id >= BOSS_TAUNT_0 && id < BOSS_TAUNT_0 + Boss.COUNT)
+            return bossTaunt(id - BOSS_TAUNT_0);
         switch (id) {
             case DRIP: return drip();
             case CLEAR: return clear();
@@ -284,17 +287,57 @@ final class Sfx {
         return render(v);
     }
 
+    /** E5 down chromatically to B-flat, then a final defeated drop to G. */
+    static final float[] OVER_NOTES = {659.25f, 622.25f, 587.33f, 554.37f,
+            523.25f, 493.88f, 466.16f, 392.00f};
+
     /**
-     * The end of a run: three notes down, and the only descending figure in the game.
+     * The end of a run: a chromatic-ish falling melody, and the only descending figure in the game.
      *
-     * Which is the whole design of it. Every other announcement here climbs, so a fall is instantly
-     * legible as the opposite without being harsh — this plays over the swirl clearing and the
-     * summary coming up, and a run that reached stage twenty deserves a sigh rather than a buzzer.
-     * The sustained root underneath is what keeps it warm; without it the three notes were a
-     * doorbell running backwards.
+     * Every other announcement climbs, so the close semitone steps read immediately as the
+     * opposite. The last minor-third drop gives the phrase a destination instead of sounding like a
+     * scale exercise, while the quiet pedal underneath keeps it warm rather than buzzer-like.
      */
     static short[] over() {
-        return arp(1.35f, new float[] {587f, 494f, 392f}, 0.20f, 1.7f, 0.05f, 0.34f);
+        return arp(1.55f, OVER_NOTES, 0.16f, 2.4f, 0.07f, 0.14f);
+    }
+
+    /** Seven short victory voices: the same taunting gesture, spoken by seven different bodies. */
+    static short[] bossTaunt(int kind) {
+        float[] base = {330f, 440f, 185f, 610f, 128f, 275f, 150f};
+        float[][] shape = {
+                {1f, 1.26f, 0.92f, 1.38f},       // slime: bubbly cackle
+                {1f, 1.25f, 1.50f, 1.25f},       // triplets: three-part jeer
+                {1f, 0.75f, 1f, 0.67f},          // drum: answering booms
+                {1f, 1.50f, 1.19f, 1.78f},       // magpie: sharp crow
+                {1f, 0.84f, 0.67f, 0.50f},       // sumo: heavy descending laugh
+                {1f, 0.71f, 1.41f, 0.59f},       // divide: split, opposed pitches
+                {1f, 1.06f, 0.89f, 1.12f}        // octopus: close writhing warble
+        };
+        kind = Math.max(0, Math.min(Boss.COUNT - 1, kind));
+        int n = (int) (RATE * 0.82f);
+        float[] v = new float[n];
+        int seed = 0x7a17 + kind * 7919;
+        for (int k = 0; k < shape[kind].length; k++) {
+            int at = (int) (RATE * (0.035f + k * (kind == Boss.TRIPLETS ? 0.105f : 0.14f)));
+            int len = (int) (RATE * (kind == Boss.DRUM || kind == Boss.SUMO ? 0.28f : 0.22f));
+            float phase = 0f;
+            for (int j = 0; j < len && at + j < n; j++) {
+                float u = j / (float) len;
+                float wobble = kind == Boss.OCTOPUS ? 1f + 0.08f * (float) Math.sin(u * 8f * Math.PI)
+                        : kind == Boss.SLIME ? 1f + 0.12f * u : 1f - 0.04f * u;
+                phase += TAU * base[kind] * shape[kind][k] * wobble / RATE;
+                seed = seed * 1103515245 + 12345;
+                float noise = ((seed >>> 16) & 0x7fff) / 16383.5f - 1f;
+                float tone = (float) Math.sin(phase)
+                        + (kind == Boss.MAGPIE ? 0.32f : 0.18f) * (float) Math.sin(phase * 2.01f);
+                float grit = (kind == Boss.SPLITTER ? 0.24f : kind == Boss.DRUM ? 0.10f : 0.04f)
+                        * noise;
+                v[at + j] += (tone + grit) * (float) Math.sin(Math.PI * u)
+                        * (0.72f - k * 0.07f);
+            }
+        }
+        return render(v);
     }
 
     /** Bright rising arpeggio for clearing a word. */

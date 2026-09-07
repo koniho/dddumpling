@@ -61,6 +61,21 @@ final class CanvasPainter implements Painter {
         canvas.drawPath(path, fill);
     }
 
+    @Override public void fillContours(float[][] contours, int color) {
+        if (contours == null) return;
+        path.reset();
+        path.setFillType(Path.FillType.EVEN_ODD);
+        for (float[] pts : contours) {
+            if (pts == null || pts.length < 6) continue;
+            path.moveTo(pts[0], pts[1]);
+            for (int i = 2; i < pts.length; i += 2) path.lineTo(pts[i], pts[i + 1]);
+            path.close();
+        }
+        fill.setColor(color);
+        canvas.drawPath(path, fill);
+        path.setFillType(Path.FillType.WINDING);
+    }
+
     @Override public void strokePoly(float[] pts, int color, float width) {
         if (pts == null) return;
         build(pts);

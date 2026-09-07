@@ -115,12 +115,17 @@ final class BossScreen extends Draw {
      * about to hurt you, so the words win every overlap.
      */
     static void body(Painter p, GameCore c, Layout L) {
-        Boss b = c.boss;
+        body(p, c, L, c.boss, 1f);
+    }
+
+    /** Draws either the live boss or a retained victory snapshot through the identical renderer. */
+    static void body(Painter p, GameCore c, Layout L, Boss b, float alpha) {
         if (!b.active() || b.body == null) return;
 
         // In on the arrival card, out on the burst.
         float fade = b.intro > 0f ? Math.min(1f, b.introProgress() * 1.6f)
                 : b.beaten ? Math.max(0f, 1f - b.defeatMelt() * b.defeatMelt()) : 1f;
+        fade *= alpha;
         if (fade <= 0.01f) return;
 
         int col = tint(b);
@@ -213,7 +218,7 @@ final class BossScreen extends Draw {
             }
         }
 
-        ornament(p, c, L, b, fade);
+        ornament(p, c, L, b, fade * b.defeatPromptFade());
         elements(p, c, L, b, fade, col);
     }
 
@@ -570,10 +575,8 @@ final class BossScreen extends Draw {
             // The next prompt does not appear until the whole launched volley is gone.
             if (b.boltCount() == 0 && !b.hasGlob()) {
                 float urgency = b.promptProgress();
-                float pop = 1f + urgency * 0.32f
-                        + 0.08f * urgency * (float) Math.sin(
-                                c.clock * (8f + urgency * 10f));
-                letterBadge(p, c, L, b.chainLetter(), cx, slimeBadgeY(L, b), L.unit * 1.08f * pop, fade,
+                letterBadge(p, c, L, b.chainLetter(), cx, slimeBadgeY(L, b),
+                        slimeBoltR(c, L, urgency), fade,
                         b.open());
             }
             // And how far the chain has got: the press does not move the health bar, so without
@@ -623,6 +626,14 @@ final class BossScreen extends Draw {
     static float slimeBadgeY(Layout L, Boss b) {
         float ry = b.body == null ? Boss.bodyR(L) : Math.min(b.body.radiusY(), Boss.bodyR(L));
         return ornamentY(L, b) + ry * 1.28f + badgeR(L);
+    }
+
+    /** Radius of the slime's charging glob, carried unchanged into its launched bolts. */
+    static float slimeBoltR(GameCore c, Layout L, float urgency) {
+        urgency = Math.max(0f, Math.min(1f, urgency));
+        float pop = 1f + urgency * 0.32f
+                + 0.08f * urgency * (float) Math.sin(c.clock * (8f + urgency * 10f));
+        return L.unit * 1.08f * pop;
     }
 
     /**
@@ -952,7 +963,7 @@ final class BossScreen extends Draw {
         Boss b = c.boss;
         if (!b.active()) return;
         float fade = b.intro > 0f ? Math.min(1f, b.introProgress() * 2f)
-                : b.beaten ? Math.max(0f, 1f - b.leaveProgress()) : 1f;
+                : b.beaten ? b.defeatPromptFade() : 1f;
         if (fade <= 0.01f) return;
 
         float y = barY(L), bh = barH(L);
@@ -1028,10 +1039,10 @@ final class BossScreen extends Draw {
             int g = b.bglyph[i];
             float x = b.boltX(i, L), y = b.boltY(i, L);
             float at = b.boltAt(i);
-            // Slime bolts match the deck keys throughout their flight; other boss projectiles
+            // A slime bolt keeps the fully charged glob's size after launch. Other boss projectiles
             // grow as they approach to make their final half-second read more loudly.
             float rr = b.kind == Boss.SLIME
-                    ? L.keyR
+                    ? slimeBoltR(c, L, 1f)
                     : L.keyR * (0.42f + 0.30f * at);
             int col = Glyph.COLOR[g];
 

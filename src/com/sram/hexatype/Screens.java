@@ -121,76 +121,10 @@ final class Screens extends Draw {
         }
     }
 
-    /** A single continuous inflated letter, with rounded tube ends and curved bowls. */
+    /** One translucent vector-font glyph with shadow, outline, body and specular layers. */
     private static void bubbleGlyph(Painter p, char ch, float cx, float baseline, float height,
             int goo, float fade, float phase) {
-        float width = height * 0.205f;
-        // A low/right body gives the same soft volume cue as the shadowed side of the reference.
-        bubbleGlyphLayer(p, ch, cx + width * 0.18f, baseline + width * 0.22f, height,
-                fadeBy(Glyph.withAlpha(Glyph.mix(goo, BG, 0.58f), 150), fade), width * 1.17f, phase);
-        bubbleGlyphLayer(p, ch, cx, baseline, height,
-                fadeBy(Glyph.withAlpha(goo, 222), fade), width, phase);
-        // A narrow upper-left sheen rides the whole inflated stroke, then a bright oval catches light.
-        bubbleGlyphLayer(p, ch, cx - width * 0.12f, baseline - width * 0.14f, height,
-                fadeBy(Glyph.withAlpha(0xFFFFFFFF, 44), fade), width * 0.22f, phase);
-        float glint = (float) Math.sin(phase * 1.7f) * width * 0.12f;
-        p.fillEllipse(cx - height * 0.18f + glint, baseline - height * 0.73f,
-                width * 0.25f, width * 0.075f,
-                fadeBy(Glyph.withAlpha(0xFFFFFFFF, 175), fade));
-    }
-
-    private static void bubbleGlyphLayer(Painter p, char ch, float x, float y, float h, int color,
-            float w, float phase) {
-        float top = y - h * (0.82f + spring(phase, 0) * 0.018f);
-        float bottom = y - h * (0.08f + spring(phase, 1) * 0.016f);
-        float middle = (top + bottom) * 0.5f + h * spring(phase, 2) * 0.012f;
-        float left = x - h * (0.25f + spring(phase, 3) * 0.018f);
-        float right = x + h * (0.25f + spring(phase, 4) * 0.018f);
-        x += h * spring(phase, 5) * 0.010f;
-        switch (ch) {
-            case 'D':
-                p.line(left, top, left, bottom, color, w);
-                p.arc(left, middle, h * 0.43f, (bottom - top) * 0.5f, -90f, 180f, color, w);
-                break;
-            case 'U':
-                p.line(left, top, left, middle + h * 0.10f, color, w);
-                p.line(right, top, right, middle + h * 0.10f, color, w);
-                p.arc(x, middle + h * 0.10f, h * 0.25f, h * 0.28f, 0f, 180f, color, w);
-                break;
-            case 'P':
-                p.line(left, top, left, bottom, color, w);
-                p.arc(left, top + h * 0.21f, h * 0.36f, h * 0.21f, -90f, 180f, color, w);
-                break;
-            case 'G':
-                p.arc(x, middle, h * 0.31f, h * 0.37f, 38f, 286f, color, w);
-                p.arc(x + h * 0.10f, middle + h * 0.10f, h * 0.16f, h * 0.12f, 275f, 88f, color, w);
-                break;
-            case 'M':
-                p.line(left, bottom, left, top, color, w);
-                p.arc(x - h * 0.125f, top + h * 0.20f, h * 0.125f, h * 0.20f, 180f, 180f, color, w);
-                p.arc(x + h * 0.125f, top + h * 0.20f, h * 0.125f, h * 0.20f, 180f, 180f, color, w);
-                p.line(right, top + h * 0.20f, right, bottom, color, w);
-                break;
-            case 'L':
-                p.arc(left + h * 0.13f, bottom - h * 0.13f, h * 0.13f, h * 0.13f, 90f, 90f, color, w);
-                p.line(left, top, left, bottom - h * 0.13f, color, w);
-                p.line(left + h * 0.13f, bottom, right, bottom, color, w);
-                break;
-            case 'I':
-                p.arc(x, top + h * 0.08f, h * 0.08f, h * 0.08f, 180f, 180f, color, w);
-                p.line(x, top + h * 0.08f, x, bottom - h * 0.08f, color, w);
-                p.arc(x, bottom - h * 0.08f, h * 0.08f, h * 0.08f, 0f, 180f, color, w);
-                break;
-            default: // N: two rounded uprights joined by one soft diagonal.
-                p.line(left, bottom, left, top, color, w);
-                p.arc(x, middle, h * 0.27f, h * 0.37f, 160f, 200f, color, w);
-                p.line(right, top, right, bottom, color, w);
-                break;
-        }
-    }
-
-    private static float spring(float phase, int node) {
-        return (float) Math.sin(phase * (0.82f + node * 0.067f) + node * 1.71f);
+        TitleBubbleFont.draw(p, ch, cx, baseline, height, goo, fade, phase);
     }
 
     /** Opacity of everything the shut case owns: gone by the time the case is half faded in. */

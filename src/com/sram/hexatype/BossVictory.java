@@ -1,33 +1,44 @@
 package com.sram.hexatype;
 
 /**
- * Short, state-free boss celebrations during the player's death transition. The live Boss is
- * deliberately cleared by GameCore.die(); this renderer needs only the defeated boss kind.
+ * Boss celebrations during the player's death transition. Gameplay receives a clean Boss when the
+ * run ends, while this renderer draws the retained combat object as a visual-only snapshot.
  */
 final class BossVictory extends Draw {
     private BossVictory() {}
 
     static void draw(Painter p, GameCore c, Layout L) {
         int kind = c.bossVictoryKind;
-        if (kind < 0 || !c.dying()) return;
+        if (kind < 0 || c.bossVictory == null || !c.dying()) return;
         float at = c.deathProgress();
         float fade = Math.min(1f, at * 7f) * Math.min(1f, (1f - at) * 6f);
-        float r = Boss.bodyR(L) * 0.82f;
-        float cx = (L.playLeft + L.playRight) * 0.5f;
-        float cy = Boss.restY(L) + r * 0.45f;
+        Boss b = c.bossVictory;
+        float r = Boss.bodyR(L);
+        float cx = b.body.centreX();
+        float cy = b.body.centreY();
         float beat = c.clock * 7f;
 
         confetti(p, cx, cy, r, beat, fade, kind);
-        switch (kind) {
-            case Boss.SLIME: slime(p, cx, cy, r, beat, fade); break;
-            case Boss.TRIPLETS: triplets(p, cx, cy, r, beat, fade); break;
-            case Boss.DRUM: drum(p, cx, cy, r, beat, fade); break;
-            case Boss.MAGPIE: magpie(p, cx, cy, r, beat, fade); break;
-            case Boss.SUMO: sumo(p, cx, cy, r, beat, fade); break;
-            case Boss.SPLITTER: divide(p, cx, cy, r, beat, fade); break;
-            case Boss.OCTOPUS: octopus(p, cx, cy, r, beat, fade); break;
-            default: break;
-        }
+        p.save();
+        p.translate(tauntX(kind, beat, r), tauntY(kind, beat, r));
+        BossScreen.body(p, c, L, b, fade);
+        p.restore();
+    }
+
+    /** Side-to-side swagger; each silhouette gets a slightly different taunting rhythm. */
+    static float tauntX(int kind, float beat, float r) {
+        float rate = kind == Boss.MAGPIE ? 1.30f : kind == Boss.OCTOPUS ? 0.82f
+                : kind == Boss.SUMO ? 0.66f : 0.94f;
+        float reach = kind == Boss.OCTOPUS ? 0.24f : kind == Boss.MAGPIE ? 0.20f
+                : kind == Boss.SUMO ? 0.15f : 0.10f;
+        return (float) Math.sin(beat * rate + kind * 0.73f) * r * reach;
+    }
+
+    /** A cocky hop/stomp layered with the swagger, without resizing the retained combat body. */
+    static float tauntY(int kind, float beat, float r) {
+        float rate = kind == Boss.DRUM ? 1.45f : kind == Boss.SLIME ? 0.72f : 1.05f;
+        float lift = kind == Boss.SLIME ? 0.24f : kind == Boss.DRUM ? 0.16f : 0.11f;
+        return -Math.abs((float) Math.sin(beat * rate + kind * 0.41f)) * r * lift;
     }
 
     private static void slime(Painter p, float x, float y, float r, float t, float fade) {
@@ -155,7 +166,7 @@ final class BossVictory extends Draw {
             float fall = (t * 0.10f + i * 0.137f) % 1f;
             float yy = y - r * 1.15f + fall * r * 2.25f;
             int color = i % 3 == 0 ? GOLD : i % 3 == 1 ? ROSE : 0xFF8FD9A0;
-            p.fillPoly(Glyph.hex(xx, yy, r * 0.045f),
+            p.fillPoly(Glyph.hex(xx, yy, r * 0.09f),
                     Glyph.withAlpha(color, (int) (205 * fade)));
         }
     }

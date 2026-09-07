@@ -337,9 +337,10 @@ final class TestVisuals extends Check {
 
         // And it lets go the moment the title arrives, which is what "until the title screen" means.
         c.toTitle();
-        int[] title = sample(c, L, 0.5f, 0.16f);
+        // Sample clear sky, not the large translucent title lettering itself.
+        int[] title = sample(c, L, 0.05f, 0.05f);
         System.out.printf("    title sky rgb %d,%d,%d%n", title[0], title[1], title[2]);
-        check("the title screen is not green", title[2] > title[1]);
+        check("the title screen is not death green", title[0] > title[1]);
     }
 
     /** Red, green and blue at a fraction of the way across and down a rendered frame. */

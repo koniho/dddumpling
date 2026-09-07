@@ -13,6 +13,9 @@ interface Painter {
 
     void fillPoly(float[] pts, int color);
 
+    /** Fills a compound even-odd vector shape; inner contours cut transparent counters. */
+    void fillContours(float[][] contours, int color);
+
     void strokePoly(float[] pts, int color, float width);
 
     void fillCircle(float cx, float cy, float r, int color);
