@@ -7,7 +7,7 @@ package com.sram.hexatype;
 final class SettingsUi {
 
     static final int HIT_NONE = 0, HIT_SLIDER = 1, HIT_CLOSE = 2, HIT_OUTSIDE = 3,
-            HIT_CLEAR = 4, HIT_ROSTER = 5, HIT_GAMEOVER = 6;
+            HIT_CLEAR = 4, HIT_ROSTER = 5, HIT_GAMEOVER = 6, HIT_RESET_DIFFICULTY = 7;
     /** Option rows are HIT_OPTION + index. */
     static final int HIT_OPTION = 100;
     /**
@@ -51,6 +51,8 @@ final class SettingsUi {
     float stageLabelY, stageY, stageH;
     /** Next-run roster toggle and end-current-run button. */
     float runLabelY, runY, runH;
+    /** Reset for persistent difficulty progression. */
+    float difficultyLabelY, difficultyY, difficultyH;
     /** Empty-the-display-case button, at the foot of the panel. */
     float clearLabelY, clearY, clearH;
 
@@ -69,7 +71,9 @@ final class SettingsUi {
         stageH = s * 1.6f;
         clearH = s * 1.6f;
         runH = s * 1.6f;
-        float bodyH = s * 8.4f + optionH * optionCount + testH + stageH + runH + clearH + s * 5.4f;
+        difficultyH = s * 1.6f;
+        float bodyH = s * 8.4f + optionH * optionCount + testH + stageH + runH + clearH
+                + s * 5.4f;
         panelT = Math.max(L.topSafe + s, (L.h - bodyH) / 2f - s);
         panelB = panelT + bodyH;
 
@@ -94,8 +98,10 @@ final class SettingsUi {
         runLabelY = stageY + stageH + s * 1.05f;
         runY = runLabelY + s * 0.35f;
 
-        clearLabelY = runY + runH + s * 1.05f;
-        clearY = clearLabelY + s * 0.35f;
+        difficultyLabelY = runY + runH + s * 1.05f;
+        difficultyY = difficultyLabelY + s * 0.35f;
+        clearLabelY = difficultyLabelY;
+        clearY = difficultyY;
 
         closeR = s * 1.05f;
         closeCx = panelR - closeR * 1.2f;
@@ -178,8 +184,10 @@ final class SettingsUi {
             if (x > mid + 3f && x <= optionR()) return HIT_GAMEOVER;
         }
 
-        if (y >= clearY && y <= clearY + clearH && x >= optionL() && x <= optionR()) {
-            return HIT_CLEAR;
+        if (y >= clearY && y <= clearY + clearH) {
+            float mid = (optionL() + optionR()) / 2f;
+            if (x >= optionL() && x < mid - 3f) return HIT_RESET_DIFFICULTY;
+            if (x > mid + 3f && x <= optionR()) return HIT_CLEAR;
         }
         return HIT_NONE;
     }

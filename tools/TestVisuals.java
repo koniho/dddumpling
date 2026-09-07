@@ -486,6 +486,13 @@ final class TestVisuals extends Check {
         check("the close button is hit", ui.hit(ui.closeCx, ui.closeCy) == SettingsUi.HIT_CLOSE);
         check("the slider is hit",
                 ui.hit((ui.sliderL + ui.sliderR) / 2f, ui.sliderY) == SettingsUi.HIT_SLIDER);
+        check("the difficulty-reset chip is hit",
+                ui.hit((ui.optionL() * 3f + ui.optionR()) / 4f,
+                        ui.difficultyY + ui.difficultyH / 2f)
+                        == SettingsUi.HIT_RESET_DIFFICULTY);
+        check("the collection-reset chip remains hit",
+                ui.hit((ui.optionL() + ui.optionR() * 3f) / 4f,
+                        ui.clearY + ui.clearH / 2f) == SettingsUi.HIT_CLEAR);
         boolean rowsOk = true;
         for (int i = 0; i < Music.NAMES.length; i++) {
             if (ui.hit(ui.optionL() + 5f, ui.optionCy(i)) != SettingsUi.HIT_OPTION + i) {

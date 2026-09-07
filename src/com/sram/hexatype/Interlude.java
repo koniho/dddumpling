@@ -94,6 +94,7 @@ final class Interlude {
     /** Claims an armed steamer lid after an upward swipe over it. */
     static void swipeBonus(GameCore c) {
         if (!c.bonusSwipeReady() || c.steamer.swipe() != Steamer.FREED) return;
+        if (c.store != null) c.store.saveSteamerOpens(c.steamer.opens);
         c.score += GameCore.FREE_BONUS;
         if (c.lives < GameCore.START_LIVES) c.lives++;
         awardPrize(c);

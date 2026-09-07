@@ -17,7 +17,7 @@ final class TestCollect extends Check {
 
     /** Alternates the wanted pair enough times to lift the lid clear. */
     private static void mash(GameCore c) {
-        for (int i = 0; i < GameCore.STEAMER_HITS * 2 + 4; i++) c.tapBonus(c.steamer.wanted());
+        for (int i = 0; i < c.steamer.goal() * 2 + 4; i++) c.tapBonus(c.steamer.wanted());
         c.swipeBonus();
     }
 

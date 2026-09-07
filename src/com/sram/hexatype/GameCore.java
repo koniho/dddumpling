@@ -14,8 +14,8 @@ final class GameCore {
     // ---- states -------------------------------------------------------------
     static final int TITLE = 0, PLAY = 1, OVER = 2, BONUS = 3;
 
-    /** Presses needed to lift the steamer lid clear and free the dumpling. */
-    static final int STEAMER_HITS = 20;
+    /** First steamer target; every successful opening adds {@link Steamer#GOAL_STEP}. */
+    static final int STEAMER_START = 10;
     /**
      * Seconds of mashing a round earns, by how it went. The whole point of the spread is that the
      * interlude stops being a thing that happens to you and becomes the round's pay packet.
@@ -175,6 +175,9 @@ final class GameCore {
          */
         int loadCollectTotal();
         void saveCollectTotal(int total);
+        /** Lifetime steamer successes, used to retain its rising target across playthroughs. */
+        int loadSteamerOpens();
+        void saveSteamerOpens(int opens);
         /** Packed adaptive-roster state; zero is the first-run four-key default. */
         int loadRosterState();
         void saveRosterState(int state);
@@ -1285,6 +1288,7 @@ final class GameCore {
             // had won nothing. Their collection is the floor on how many baskets they opened.
             collectTotal = Math.max(Collect.owned(collected),
                     Math.max(0, store.loadCollectTotal()));
+            steamer.opens = Math.max(0, store.loadSteamerOpens());
             int roster = store.loadRosterState();
             fullRoster = (roster & 1) != 0;
             earlyLosses = Math.min(2, (roster >> 1) & 3);
@@ -1395,6 +1399,12 @@ final class GameCore {
     void setSpeed(float v) {
         speed = clampSpeed(v);
         if (store != null) store.saveSpeed(speed);
+    }
+
+    /** Restores every persistent difficulty ladder to its first-play values. */
+    void resetDifficultyScaling() {
+        steamer.resetDifficulty();
+        if (store != null) store.saveSteamerOpens(0);
     }
 
     /**

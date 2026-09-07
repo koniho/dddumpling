@@ -216,7 +216,7 @@ final class Screens extends Draw {
         report(p, L, "SCORE", String.valueOf(c.score), row, fade);
         report(p, L, "ACCURACY", c.accuracyPercent() + "%", row + s * 1.5f, fade);
         report(p, L, "LIVES", c.lives + " / " + GameCore.START_LIVES, row + s * 3.0f, fade);
-        report(p, L, "STEAMER", c.steamer.hits + " / " + GameCore.STEAMER_HITS,
+        report(p, L, "STEAMER", c.steamer.hits + " / " + c.steamer.goal(),
                 row + s * 4.5f, fade);
         if (c.steamer.opens > 0) {
             report(p, L, "DUMPLINGS FREED", String.valueOf(c.steamer.opens),
@@ -523,18 +523,21 @@ final class Screens extends Draw {
 
             // Progress: one pip per press needed. Below the countdown, which now owns the
             // band directly under the steamer.
-            int cols = 10;
+            int goal = c.steamer.goal();
+            int cols = Math.min(10, goal);
             float pr = s * 0.14f, gap = s * 0.54f;
             float x0 = cx - gap * (cols - 1) / 2f;
             float rowY = L.h * 0.695f;
-            for (int i = 0; i < GameCore.STEAMER_HITS; i++) {
+            for (int i = 0; i < goal; i++) {
                 float px = x0 + (i % cols) * gap;
                 float py = rowY + (i / cols) * gap * 1.15f;
                 p.fillCircle(px, py, pr,
                         fadeBy(i < c.steamer.hits ? rainbow : Glyph.withAlpha(INK, 45), fade));
             }
-            p.text(c.steamer.hits + " / " + GameCore.STEAMER_HITS, cx,
-                    rowY + gap * 1.15f + s * 1.5f, type(s * 0.62f), fadeBy(INK_DIM, fade), Painter.CENTER, true);
+            int rows = (goal + cols - 1) / cols;
+            p.text(c.steamer.hits + " / " + goal, cx,
+                    rowY + (rows - 1) * gap * 1.15f + s * 1.5f, type(s * 0.62f),
+                    fadeBy(INK_DIM, fade), Painter.CENTER, true);
         } else {
             float fly = 1f - c.steamer.freedT / Steamer.FREE_TIME;
             float lidX = cx + (float) Math.sin(fly * Math.PI) * bw * 0.70f;
@@ -730,20 +733,35 @@ final class Screens extends Draw {
         p.text("END RUN", (overL + ui.optionR()) / 2f, ui.runY + ui.runH * 0.66f,
                 s * 0.56f, INK, Painter.CENTER, true);
 
+        // Persistent resets share one row so both retain a full-height touch target on short phones.
+        p.text("RESET", ui.sliderL, ui.difficultyLabelY, s * 0.58f, INK_DIM,
+                Painter.LEFT, true);
+        p.text("STEAMER " + c.steamer.goal() + "   CASE "
+                        + Collect.owned(c.collected) + "/" + Collect.COUNT,
+                ui.optionR(), ui.difficultyLabelY, s * 0.52f, INK, Painter.RIGHT, true);
+        float resetMid = (ui.optionL() + ui.optionR()) / 2f;
+        float difficultyR = resetMid - 3f, clearL = resetMid + 3f;
+        int difficultyCol = c.steamer.opens > 0 ? GOLD : INK_DIM;
+        p.fillRect(ui.optionL(), ui.difficultyY, difficultyR,
+                ui.difficultyY + ui.difficultyH, Glyph.withAlpha(difficultyCol, 42));
+        p.strokePoly(new float[] {ui.optionL(), ui.difficultyY, difficultyR, ui.difficultyY,
+                difficultyR, ui.difficultyY + ui.difficultyH, ui.optionL(),
+                ui.difficultyY + ui.difficultyH}, Glyph.withAlpha(difficultyCol, 185),
+                s * 0.05f);
+        p.text("DIFFICULTY 10", (ui.optionL() + difficultyR) / 2f,
+                ui.difficultyY + ui.difficultyH * 0.66f, s * 0.50f, INK,
+                Painter.CENTER, true);
+
         // Empty the display case. Armed by the first tap and only acted on by the second, so
         // the label itself is the confirmation prompt — there is no dialog in this game.
-        p.text("DISPLAY CASE", ui.sliderL, ui.clearLabelY, s * 0.58f, INK_DIM, Painter.LEFT,
-                true);
-        p.text(Collect.owned(c.collected) + " / " + Collect.COUNT, ui.optionR(),
-                ui.clearLabelY, s * 0.58f, INK, Painter.RIGHT, true);
         int col = c.clearArmed ? ROSE : INK_DIM;
-        p.fillRect(ui.optionL(), ui.clearY, ui.optionR(), ui.clearY + ui.clearH,
+        p.fillRect(clearL, ui.clearY, ui.optionR(), ui.clearY + ui.clearH,
                 Glyph.withAlpha(col, c.clearArmed ? 62 : 30));
-        p.strokePoly(new float[] {ui.optionL(), ui.clearY, ui.optionR(), ui.clearY,
-                ui.optionR(), ui.clearY + ui.clearH, ui.optionL(), ui.clearY + ui.clearH},
+        p.strokePoly(new float[] {clearL, ui.clearY, ui.optionR(), ui.clearY,
+                ui.optionR(), ui.clearY + ui.clearH, clearL, ui.clearY + ui.clearH},
                 Glyph.withAlpha(col, c.clearArmed ? 235 : 150), s * 0.05f);
-        p.text(c.clearArmed ? "TAP AGAIN TO ERASE" : "CLEAR COLLECTION",
-                (ui.optionL() + ui.optionR()) / 2f, ui.clearY + ui.clearH * 0.66f, s * 0.58f,
+        p.text(c.clearArmed ? "TAP AGAIN" : "COLLECTION",
+                (clearL + ui.optionR()) / 2f, ui.clearY + ui.clearH * 0.66f, s * 0.50f,
                 c.clearArmed ? ROSE : INK, Painter.CENTER, true);
     }
 

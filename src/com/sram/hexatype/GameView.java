@@ -551,6 +551,9 @@ public class GameView extends View {
         } else if (hit == SettingsUi.HIT_GAMEOVER) {
             core.endCurrentRun();
             tick();
+        } else if (hit == SettingsUi.HIT_RESET_DIFFICULTY) {
+            core.resetDifficultyScaling();
+            tick();
         } else if (hit >= SettingsUi.HIT_STAGE) {
             // Before the playtest branch, not after: HIT_STAGE is the higher number, so a
             // `hit >= HIT_TEST` test would swallow every stage chip.

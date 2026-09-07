@@ -20,6 +20,7 @@ final class Preview {
         int bgm;
         long collected;
         int collectTotal;
+        int steamerOpens;
         int rosterState = 1;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; }
@@ -31,6 +32,8 @@ final class Preview {
         public void saveCollected(long v) { collected = v; }
         public int loadCollectTotal() { return collectTotal; }
         public void saveCollectTotal(int v) { collectTotal = v; }
+        public int loadSteamerOpens() { return steamerOpens; }
+        public void saveSteamerOpens(int v) { steamerOpens = v; }
         public int loadRosterState() { return rosterState; }
         public void saveRosterState(int v) { rosterState = v; }
     }
@@ -495,7 +498,7 @@ final class Preview {
         c13.shots.clear();
         for (int i = 0; i < 60 * 8 && c13.state != GameCore.BONUS; i++) c13.update(DT, L);
         for (int i = 0; i < 60 * 8 && c13.bonusRolling(); i++) c13.update(DT, L);
-        for (int i = 0; i < GameCore.STEAMER_HITS * 2 + 4; i++) {
+        for (int i = 0; i < c13.steamer.goal() * 2 + 4; i++) {
             c13.tapBonus(c13.steamer.wanted());
         }
         c13.swipeBonus();

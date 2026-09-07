@@ -17,6 +17,7 @@ public class MainActivity extends Activity implements GameCore.Store {
     private static final String KEY_BGM = "bgm";
     private static final String KEY_COLLECTED = "collected";
     private static final String KEY_COLLECT_TOTAL = "collectTotal";
+    private static final String KEY_STEAMER_OPENS = "steamerOpens";
     private static final String KEY_ROSTER = "roster";
 
     private SharedPreferences prefs;
@@ -107,6 +108,14 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     @Override public void saveCollectTotal(int total) {
         prefs.edit().putInt(KEY_COLLECT_TOTAL, total).apply();
+    }
+
+    @Override public int loadSteamerOpens() {
+        return prefs.getInt(KEY_STEAMER_OPENS, 0);
+    }
+
+    @Override public void saveSteamerOpens(int opens) {
+        prefs.edit().putInt(KEY_STEAMER_OPENS, opens).apply();
     }
 
      public int loadRosterState() {

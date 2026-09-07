@@ -185,7 +185,7 @@ final class TestStages extends Check {
         boolean ok = true, sawWin = false;
         for (int i = 0; i < 60 * 30 && c.state == GameCore.BONUS; i++) {
             if (win && c.bonusMashing() && !sawWin) {
-                for (int k = 0; k < GameCore.STEAMER_HITS * 2 + 4; k++) {
+                for (int k = 0; k < c.steamer.goal() * 2 + 4; k++) {
                     c.tapBonus(c.steamer.wanted());
                 }
                 c.swipeBonus();
@@ -817,9 +817,11 @@ final class TestStages extends Check {
 
     static void steamerBonus(Layout L) {
         group("between-stages minigame");
-        GameCore c = new GameCore(new Mem(), 121L);
+        Mem persistent = new Mem();
+        GameCore c = new GameCore(persistent, 121L);
         c.startGame();
         check("no steamer damage at the start", c.steamer.hits == 0 && c.steamer.opens == 0);
+        check("the first steamer target is ten", c.steamer.goal() == 10);
 
         // Clearing a wave drops into the minigame, not straight into the next stage.
         c.spawnedThisStage = c.stageQuota();
@@ -933,13 +935,28 @@ final class TestStages extends Check {
         int scoreBefore = c.score;
         // Bounded: tapBonus is a no-op outside BONUS, so an unbounded loop would hang.
         // Two presses per point, so twice the pairs, and bounded in case it stalls.
-        for (int i = 0; i <= GameCore.STEAMER_HITS * 3 && c.steamer.hits > 0; i++) {
+        for (int i = 0; i <= c.steamer.goal() * 3 && c.steamer.hits > 0; i++) {
             c.tapBonus(c.steamer.wanted());
         }
         check("the final point arms the lid swipe", c.bonusSwipeReady()
-                && c.steamer.hits == GameCore.STEAMER_HITS && c.steamer.opens == 0);
+                && c.steamer.hits == c.steamer.goal() && c.steamer.opens == 0);
         c.swipeBonus();
         check("swiping the armed lid frees the dumpling", c.steamer.opens == 1);
+        check("a success raises the next target by two", c.steamer.goal() == 12);
+        check("the higher target is saved immediately",
+                persistent.steamerOpens == 1 && persistent.steamerOpenSaves == 1);
+        GameCore reloaded = new GameCore(persistent, 121L);
+        reloaded.startGame();
+        check("steamer difficulty survives a new playthrough and reload",
+                reloaded.steamer.opens == 1 && reloaded.steamer.goal() == 12);
+        reloaded.steamer.hits = 5;
+        reloaded.resetDifficultyScaling();
+        check("settings restore the initial steamer difficulty and progress",
+                reloaded.steamer.opens == 0 && reloaded.steamer.hits == 0
+                        && reloaded.steamer.goal() == 10);
+        check("the difficulty reset is persistent",
+                persistent.steamerOpens == 0 && persistent.steamerOpenSaves == 2
+                        && new GameCore(persistent, 122L).steamer.goal() == 10);
         check("the counter resets so it can be earned again", c.steamer.hits == 0);
         check("freeing it scores", c.score == scoreBefore + GameCore.FREE_BONUS);
         check("freeing it returns a lost life", c.lives == GameCore.START_LIVES);
@@ -960,7 +977,7 @@ final class TestStages extends Check {
         GameCore miss = new GameCore(new Mem(), 129L);
         miss.startGame();
         check("reached a steamer visit for the missed-swipe case", toMash(miss, L));
-        miss.steamer.hits = GameCore.STEAMER_HITS - 1;
+        miss.steamer.hits = miss.steamer.goal() - 1;
         miss.tapBonus(miss.steamer.wanted());
         miss.tapBonus(miss.steamer.wanted());
         check("the last point waits for a swipe instead of awarding", miss.bonusSwipeReady()
@@ -995,7 +1012,7 @@ final class TestStages extends Check {
         advance(miss, L, miss.bonusTimer - (GameCore.BONUS_HOLD + GameCore.BONUS_STATUS)
                 + 2f * DT);
         check("time expiring relocks the missed swipe one point short",
-                !miss.steamer.swipeReady && miss.steamer.hits == GameCore.STEAMER_HITS - 1
+                !miss.steamer.swipeReady && miss.steamer.hits == miss.steamer.goal() - 1
                         && miss.steamer.opens == 0);
         advancePastBonus(miss, L);
         advance(miss, L, GameCore.STAGE_GAP + 0.1f);
@@ -1004,7 +1021,7 @@ final class TestStages extends Check {
         miss.shots.clear();
         check("the next steamer visit opens", advanceToMash(miss, L));
         check("the missed lid still needs one point",
-                miss.steamer.hits == GameCore.STEAMER_HITS - 1 && !miss.bonusSwipeReady());
+                miss.steamer.hits == miss.steamer.goal() - 1 && !miss.bonusSwipeReady());
         miss.tapBonus(miss.steamer.wanted());
         miss.tapBonus(miss.steamer.wanted());
         check("one point rearms the swipe on the next visit", miss.bonusSwipeReady());
@@ -1038,7 +1055,7 @@ final class TestStages extends Check {
             GameCore.Enemy e = r.target != null && r.enemies.contains(r.target)
                     && r.target.typeable() ? r.target : urgent(r);
             if (e != null && e.pos < e.word.length) r.tapKey(e.word[e.pos], L);
-            if (r.steamer.hits < 0 || r.steamer.hits >= GameCore.STEAMER_HITS) sane = false;
+            if (r.steamer.hits < 0 || r.steamer.hits > r.steamer.goal()) sane = false;
         }
         System.out.printf("    %d interludes in %.0fs, freed %d, stage %d%n",
                 bonuses, frames * DT, r.steamer.opens, r.stage);

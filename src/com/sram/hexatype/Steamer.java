@@ -7,6 +7,8 @@ package com.sram.hexatype;
  * one piece of run state that is neither per-stage nor per-word.
  */
 final class Steamer {
+    /** Extra points required after every dumpling freed during the current run. */
+    static final int GOAL_STEP = 2;
 
     /** Presses landed, carried across interludes so the lid is chipped open over stages. */
     int hits;
@@ -49,7 +51,7 @@ final class Steamer {
 
     void reset() {
         hits = 0;
-        opens = 0;
+        // opens is lifetime difficulty state and deliberately survives new playthroughs.
         swipeReady = false;
         lidPulse = 0;
         lidFlash = 0;
@@ -60,6 +62,12 @@ final class Steamer {
         leftKey = 0;
         rightKey = Glyph.COUNT / 2;
         expectLeft = true;
+    }
+
+    /** Full settings reset, unlike {@link #reset()}, which retains lifetime difficulty. */
+    void resetDifficulty() {
+        opens = 0;
+        reset();
     }
 
     /** Chooses a fresh pair — one key from each thumb's cluster — for this interlude. */
@@ -76,6 +84,11 @@ final class Steamer {
     /** The key the sequence is waiting for. */
     int wanted() {
         return expectLeft ? leftKey : rightKey;
+    }
+
+    /** Current target: approachable first, then steadily harder after every success. */
+    int goal() {
+        return GameCore.STEAMER_START + opens * GOAL_STEP;
     }
 
     // ---- the spinner --------------------------------------------------------
@@ -151,8 +164,8 @@ final class Steamer {
         }
         expectLeft = true;
         hits++;
-        if (hits < GameCore.STEAMER_HITS) return SCORED;
-        hits = GameCore.STEAMER_HITS;
+        if (hits < goal()) return SCORED;
+        hits = goal();
         swipeReady = true;
         return READY;
     }
@@ -174,13 +187,13 @@ final class Steamer {
         if (!swipeReady) return;
         swipeReady = false;
         lidDrag = 0f;
-        hits = GameCore.STEAMER_HITS - 1;
+        hits = goal() - 1;
         expectLeft = true;
     }
 
     /** How far the lid has lifted, 0..1. */
     float lidOpen() {
-        float v = (float) hits / GameCore.STEAMER_HITS;
+        float v = (float) hits / goal();
         return v < 0 ? 0 : v > 1 ? 1 : v;
     }
 
