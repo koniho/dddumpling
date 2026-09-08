@@ -826,7 +826,7 @@ final class BossScreen extends Draw {
                 int charge = b.pieceCharge(i);
                 if (charge < Boss.DIVIDE_HITS) {
                     letterBadge(p, c, L, b.pieceWant(i), x, y - pr * 1.35f,
-                            L.keyR, fade, true);
+                            standardBoltR(L, 1f), fade, true);
                 } else if (b.pieceDepth(i) < Boss.DIVIDE_LEVELS) {
                     float spread = pr * (0.75f + 0.08f * (float) Math.sin(c.clock * 6f));
                     p.line(x - pr * 0.18f, y, x - spread, y,
@@ -862,6 +862,11 @@ final class BossScreen extends Draw {
     }
 
     /** Radius of the slime's charging glob, carried unchanged into its launched bolts. */
+    static float standardBoltR(Layout L, float progress) {
+        progress = Math.max(0f, Math.min(1f, progress));
+        return L.keyR * (0.42f + 0.30f * progress);
+    }
+
     static float slimeBoltR(GameCore c, Layout L, float urgency) {
         urgency = Math.max(0f, Math.min(1f, urgency));
         float pop = 1f + urgency * 0.32f
@@ -1276,7 +1281,7 @@ final class BossScreen extends Draw {
             // grow as they approach to make their final half-second read more loudly.
             float rr = b.kind == Boss.SLIME
                     ? slimeBoltR(c, L, 1f)
-                    : L.keyR * (0.42f + 0.30f * at);
+                    : standardBoltR(L, at);
             int col = Glyph.COLOR[g];
             float sporeMorph = b.kind == Boss.MUSHROOM ? Math.min(1f, at / 0.30f) : 1f;
             if (b.kind == Boss.MUSHROOM) {

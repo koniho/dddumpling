@@ -1487,6 +1487,8 @@ final class TestBoss extends Check {
 
     static void divider(Layout L) {
         group("boss: dark divide");
+        check("prompts match a fully launched standard bolt",
+                Math.abs(BossScreen.standardBoltR(L, 1f) - L.keyR * 0.72f) < 0.001f);
         GameCore c = enterBoss(L, Boss.SPLITTER, 81L);
         Ear ear = new Ear();
         c.sound = ear;
