@@ -1242,15 +1242,18 @@ final class TestBoss extends Check {
     static void mushroom(Layout L) {
         group("boss: fly agaric");
         GameCore c = enterBoss(L, Boss.MUSHROOM, 166L);
+        Ear mushroomEar = new Ear();
+        c.sound = mushroomEar;
         float hp = c.boss.hp;
         check("the stalk is not a draggable target",
                 !c.grabBoss(c.boss.body.centreX(),
                         c.boss.body.centreY() + c.boss.body.radiusY() * 1.05f));
         check("the cap is the draggable target",
                 c.grabBoss(c.boss.body.centreX(), c.boss.body.centreY()));
-        c.dragBoss(c.boss.body.centreX() + L.w * 0.24f, c.boss.body.centreY(), L);
-        c.dragBoss(c.boss.body.centreX() - L.w * 0.24f, c.boss.body.centreY(), L);
-        check("a pass narrower than half the screen is ignored", c.boss.mushroomShakes == 0);
+        c.dragBoss(c.boss.body.centreX() + L.w * 0.17f, c.boss.body.centreY(), L);
+        c.dragBoss(c.boss.body.centreX() - L.w * 0.17f, c.boss.body.centreY(), L);
+        check("a pass narrower than 35 percent of the screen is ignored",
+                c.boss.mushroomShakes == 0);
         c.boss.release();
         float mushroomX = c.boss.body.centreX();
         c.grabBoss(mushroomX + c.boss.mushroomCapDX,
@@ -1258,13 +1261,16 @@ final class TestBoss extends Check {
         c.dragBoss(c.boss.mushroomLastX + L.w * 0.02f, c.boss.body.centreY(), L);
         for (int i = 0; i < Boss.MUSHROOM_SHAKES; i++) {
             advance(c, L, 0.68f);
-            float x = c.boss.mushroomLastX + c.boss.mushroomGuideTarget * L.w * 0.51f;
+            float x = c.boss.mushroomLastX + c.boss.mushroomGuideTarget * L.w * 0.36f;
             c.dragBoss(x, c.boss.body.centreY(), L);
         }
+        check("each accepted endpoint has its own sound",
+                mushroomEar.mushroomShakeSounds == Boss.MUSHROOM_SHAKES);
+        check("an accepted endpoint flashes the boss", c.boss.mushroomSweepFlash > 0f);
         check("an incomplete shake does not deal damage", c.boss.hp == hp);
         for (int i = 0; i < 3 && c.boss.hp == hp; i++) {
             advance(c, L, 0.68f);
-            float x = c.boss.mushroomLastX + c.boss.mushroomGuideTarget * L.w * 0.51f;
+            float x = c.boss.mushroomLastX + c.boss.mushroomGuideTarget * L.w * 0.36f;
             c.dragBoss(x, c.boss.body.centreY(), L);
         }
         check("six reversals damage the mushroom", c.boss.hp == hp - 1f);
@@ -1273,10 +1279,12 @@ final class TestBoss extends Check {
         advance(c, L, Boss.MUSHROOM_ANGER_TIME + 2 * DT);
         check("the angry reaction launches a short three-spore flurry",
                 c.boss.boltCount() == 3);
+        check("the spore volley has its own sprinkle sound",
+                mushroomEar.mushroomSporeSounds == 1);
 
         GameCore rushed = enterBoss(L, Boss.MUSHROOM, 168L);
         rushed.grabBoss(rushed.boss.body.centreX(), rushed.boss.body.centreY());
-        rushed.dragBoss(rushed.boss.mushroomLastX + L.w * 0.51f,
+        rushed.dragBoss(rushed.boss.mushroomLastX + L.w * 0.36f,
                 rushed.boss.body.centreY(), L);
         check("outrunning the guide cancels the drag and starts the flex taunt",
                 rushed.boss.held == -1 && rushed.boss.mushroomReject > 0f

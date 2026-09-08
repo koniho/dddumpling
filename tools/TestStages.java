@@ -665,33 +665,28 @@ final class TestStages extends Check {
         f.startGame();
         check("a fresh run starts at full speed", f.fallRate() == 1f && f.pushSlowT == 0f);
 
-        // 3. The cascade: a shove takes whatever it would otherwise land on top of.
+        // 3. The collision: a shoved lower word smashes whatever it lands on.
         GameCore g = new GameCore(new Mem(), 173L);
         g.startGame();
         g.enemies.clear();
         float mid = (L.playTop + L.dangerY) / 2f;
         float lift = (L.dangerY - L.playTop) * GameCore.PUSH_LIFT;
         GameCore.Enemy low = add(g, L, new int[] {0}, L.dangerY - L.enemyR * 1.2f);
-        // Close enough to where the low one lands to be landed on, and above the halfway mark, so
-        // nothing but the cascade can account for it moving. Both conditions matter and the first
-        // draft only had one: at exactly the landing point it sits a hair *below* the mark and is
-        // shoved directly, which proves nothing about cascading.
         GameCore.Enemy inTheWay = add(g, L, new int[] {1},
                 Math.min(mid, low.y - lift) - L.enemyR * 0.4f);
-        // Clear of every destination the shove will claim.
         GameCore.Enemy bystander = add(g, L, new int[] {2}, mid - L.enemyR * 3f);
         check("the one in the way is above the halfway mark", inTheWay.y < mid);
         g.update(DT, L);
         check("the swipe fires", g.pushBack(L));
         check("the threat went up", low.slideT > 0f && low.slideTo < low.slideFrom);
-        check("and so did the one it would have landed on", inTheWay.slideT > 0f);
-        check("which is no longer in the way",
-                Math.abs(inTheWay.slideTo - low.slideTo) >= 2f * L.enemyR);
+        check("the word it would have landed on was smashed", inTheWay.destroyed);
+        check("its pieces fly upward", inTheWay.radialFly && inTheWay.flyY[0] < -0.8f);
+        check("the collision has a distinct impact animation", !g.pushImpacts.isEmpty());
         check("a word clear of all of them is left alone", bystander.slideT == 0f);
-        System.out.printf("    cascade moved %d of 3%n", g.pushCount);
-        check("the count reflects the cascade", g.pushCount == 2);
+        System.out.printf("    shove moved %d and smashed one of 3%n", g.pushCount);
+        check("the count reflects the surviving shove", g.pushCount == 1);
 
-        // A ladder packed the whole way up goes as one board.
+        // A packed ladder becomes a chain of visible break impacts.
         GameCore h = new GameCore(new Mem(), 174L);
         h.startGame();
         h.enemies.clear();
@@ -701,11 +696,13 @@ final class TestStages extends Check {
         }
         h.update(DT, L);
         check("the swipe fires on a packed field", h.pushBack(L));
-        boolean allMoved = true;
+        int moved = 0, smashed = 0;
         for (int k = 0; k < h.enemies.size(); k++) {
-            if (h.enemies.get(k).slideT <= 0f) allMoved = false;
+            if (h.enemies.get(k).slideT > 0f) moved++;
+            if (h.enemies.get(k).destroyed) smashed++;
         }
-        check("a packed field goes up as one", allMoved && h.pushCount == rungs);
+        check("a packed field produces upward breakage",
+                moved > 0 && smashed > 0 && h.pushImpacts.size() == smashed);
     }
 
     static void mashEarned(Layout L) {

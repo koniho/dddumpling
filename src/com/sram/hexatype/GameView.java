@@ -347,6 +347,8 @@ public class GameView extends View {
 
     /** True while a finger is carrying one of the boss's elements. */
     private boolean bossDragging;
+    /** Android pointer that owns the drag; other fingers remain free to tap the key deck. */
+    private int bossDragPointer = -1;
     private boolean bossPinching;
     private long lastBossDragHaptic;
     private boolean bossWasBeaten;
@@ -366,12 +368,16 @@ public class GameView extends View {
      */
     private boolean handleBoss(MotionEvent ev, int action) {
         if (core.state != GameCore.PLAY) return false;
+        // A second finger during a carry is not a new boss gesture. In particular, let a pointer
+        // landing on the deck fall through to ordinary key routing without replacing the cap owner.
+        if (bossDragging && action == MotionEvent.ACTION_POINTER_DOWN) return false;
         if (action == MotionEvent.ACTION_POINTER_DOWN && ev.getPointerCount() == 2) {
             float dx = ev.getX(0) - ev.getX(1), dy = ev.getY(0) - ev.getY(1);
             if (core.beginBossPinch((float) Math.sqrt(dx * dx + dy * dy),
                     ev.getX(0), ev.getY(0), ev.getX(1), ev.getY(1))) {
                 bossPinching = true;
                 bossDragging = false;
+                bossDragPointer = -1;
                 return true;
             }
         }
@@ -396,6 +402,7 @@ public class GameView extends View {
             if (y > layout.deckTop) return false;          // that is the key deck
             if (core.grabBoss(x, y)) {
                 bossDragging = true;
+                bossDragPointer = ev.getPointerId(i);
                 tick();
                 return true;
             }
@@ -408,30 +415,46 @@ public class GameView extends View {
         if (!bossDragging) return false;
 
         if (action == MotionEvent.ACTION_MOVE) {
+            i = ev.findPointerIndex(bossDragPointer);
+            if (i < 0) return true;
+            x = ev.getX(i);
+            y = ev.getY(i);
             // Every sample in the batch, so a quick carry off the edge is not missed between frames.
             for (int h = 0; h < ev.getHistorySize(); h++) {
                 if (core.dragBoss(ev.getHistoricalX(i, h), ev.getHistoricalY(i, h), layout)) {
                     bossDragging = false;
+                    bossDragPointer = -1;
                     tick();
                     return true;
                 }
             }
             if (core.dragBoss(x, y, layout)) {
                 bossDragging = false;
+                bossDragPointer = -1;
                 tick();
             } else {
+                // A rejected mushroom sweep cancels ownership inside Boss.dragTo().
+                if (core.boss.held < 0 && core.boss.held != -2) {
+                    bossDragging = false;
+                    bossDragPointer = -1;
+                }
                 dragHaptic();
             }
             return true;
         }
-        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
-                || action == MotionEvent.ACTION_POINTER_UP) {
+        boolean ownerUp = action == MotionEvent.ACTION_UP
+                || action == MotionEvent.ACTION_POINTER_UP
+                && ev.getPointerId(ev.getActionIndex()) == bossDragPointer;
+        if (ownerUp || action == MotionEvent.ACTION_CANCEL) {
             // Let go part-way: whatever was held stays where it was dropped and carries on
             // counting down. Giving up on a drag is a decision, not a mistake.
             core.releaseBoss();
             bossDragging = false;
+            bossDragPointer = -1;
+            return true;
         }
-        return true;
+        // A non-owner POINTER_UP belongs to its own key tap, not to this continuing drag.
+        return action != MotionEvent.ACTION_POINTER_UP;
     }
 
     private boolean pushArmed;

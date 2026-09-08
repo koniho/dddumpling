@@ -37,11 +37,19 @@ final class Pacing {
     }
 
     static float spawnInterval(int stage, float speed) {
-        return Math.max(0.80f, 2.5f - ramp(stage) * 0.13f) / speed;
+        float r = ramp(stage);
+        // Past stage 10, fall speed, stacks and longer words already supply the pressure. Ease
+        // releases apart instead of filling the screen faster: stage 16 now has roughly a
+        // 2.40-second interval, up from 1.72, and the relief caps at 2.50 seconds.
+        float seconds = r <= 5f ? 2.5f - r * 0.13f
+                : 1.85f + Math.min(0.65f, (r - 5f) * 0.165f);
+        return Math.max(1.35f, seconds) / speed;
     }
 
     static int maxEnemies(int stage) {
-        return Math.min(7, 3 + step(stage));
+        // Five is still a full field on a phone. The old curve rose to six at stage 10 and seven
+        // shortly afterward, making concurrencynot word speedthe late-game wall.
+        return Math.min(5, 3 + step(stage));
     }
 
     static int maxWordLen(int stage) {

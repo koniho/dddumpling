@@ -220,6 +220,10 @@ final class GameCore {
         void shieldBounce();
         void octoCue();
         void octoLock();
+        /** One accepted Fly Agaric shake endpoint. */
+        void mushroomShake();
+        /** Fly Agaric released a sprinkling volley. */
+        void mushroomSpore();
         /** A letter cut by the FLING blade. Fires several times per swipe, so it is short. */
         void chop();
         /** One hop of a MULTI chain. @param hop 1-based, so the crack can climb with the chain */
@@ -391,6 +395,11 @@ final class GameCore {
         int color;
     }
 
+    static final class PushImpact {
+        float x, y, life = 0.62f;
+        int color;
+    }
+
     // ---- persistent-ish state ----------------------------------------------
     int state = TITLE;
     /** Live title-screen touch, used only to make the logo letters react under a finger. */
@@ -435,6 +444,7 @@ final class GameCore {
     final List<Enemy> enemies = new ArrayList<Enemy>();
     final List<Shot> shots = new ArrayList<Shot>();
     final List<Particle> particles = new ArrayList<Particle>();
+    final List<PushImpact> pushImpacts = new ArrayList<PushImpact>();
     Enemy target;
     float spawnTimer;
     /** Breather between stages; nothing spawns while this is running. */
@@ -1967,12 +1977,8 @@ final class GameCore {
         float mid = (L.playTop + L.dangerY) / 2f;
         float lift = (L.dangerY - L.playTop) * PUSH_LIFT;
 
-        // Shoved words are found lowest-first so the shove can propagate upward in one pass: a word
-        // is taken if it is in the bottom half, or if a word already taken would land on top of it.
-        // Without that, a shove drove the threat straight through whatever was above it and left two
-        // rows of letters occupying the same line — unreadable, and it looked like a drawing fault
-        // rather than a rule. A full field can therefore go up as one, which is the right answer:
-        // the swipe is a shove against everything on the board, not against the nearest thing.
+        // Shoved words are found lowest-first. If one would land on a higher word, that higher
+        // word is smashed instead of joining a tidy cascade: this is a desperation move.
         java.util.List<Enemy> order = new java.util.ArrayList<Enemy>();
         for (int i = 0; i < enemies.size(); i++) {
             Enemy e = enemies.get(i);
@@ -1991,12 +1997,23 @@ final class GameCore {
         for (int i = 0; i < order.size(); i++) {
             Enemy e = order.get(i);
             boolean shove = e.y >= mid;
-            // Checked against every destination already claimed, not just the last one: a long lift
-            // can carry a word clean over the one above it and come to rest higher again, so the
-            // thing it now collides with need not be its own neighbour.
-            for (int k = 0; !shove && k < taken.size(); k++) {
-                if (Math.abs(e.y - taken.get(k)) < clash) shove = true;
+            boolean crushed = false;
+            for (int k = 0; k < taken.size(); k++) {
+                if (Math.abs(e.y - taken.get(k)) < clash) {
+                    float ix = enemyCentreX(e), iy = e.y;
+                    destroyWord(e, ix, iy, L, false);
+                    computeUpwardFlyDirs(e, L);
+                    PushImpact hit = new PushImpact();
+                    hit.x = ix;
+                    hit.y = iy;
+                    hit.color = Glyph.COLOR[e.word[Math.min(e.pos, e.word.length - 1)]];
+                    pushImpacts.add(hit);
+                    Fx.explodeUp(this, rnd, ix, iy, L.enemyR * 1.8f, 24, hit.color);
+                    crushed = true;
+                    break;
+                }
             }
+            if (crushed) continue;
             if (!shove) continue;
             e.attacking = false;
             e.attackT = 0f;
@@ -2163,6 +2180,11 @@ final class GameCore {
         stageBanner = decay(stageBanner, dt);
         perfectBanner = decay(perfectBanner, dt);
         pushT = decay(pushT, dt);
+        for (int i = pushImpacts.size() - 1; i >= 0; i--) {
+            PushImpact hit = pushImpacts.get(i);
+            hit.life -= dt;
+            if (hit.life <= 0f) pushImpacts.remove(i);
+        }
         // Above the PLAY return with the rest of them: a run that ends mid-drag must not leave the
         // next one starting at a quarter speed.
         pushSlowT = decay(pushSlowT, dt);
@@ -2364,7 +2386,8 @@ final class GameCore {
                         : boss.kind == Boss.MUSHROOM && boss.mushroomCharge > 0f
                         ? 1f - boss.mushroomCharge / Boss.MUSHROOM_CHARGE_TIME : 0f;
                 sound.bossCharge(brew);
-                if (boss.launched) sound.bossLaugh();
+                if (boss.launched && boss.kind != Boss.MUSHROOM) sound.bossLaugh();
+                if (boss.mushroomSporeCue) sound.mushroomSpore();
                 if (boss.boingWeight >= 0f) sound.divideBoing(boss.boingWeight);
                 if (boss.octoCue) sound.octoCue();
                 if (boss.octoLock) sound.octoLock();
@@ -2615,6 +2638,19 @@ final class GameCore {
             }
             e.flyDir[i] = dx / len;
             e.flyY[i] = dy / len;
+        }
+    }
+
+    /** Desperation impacts launch every broken tile upward in a broad celebratory fan. */
+    void computeUpwardFlyDirs(Enemy e, Layout L) {
+        int n = e.word.length;
+        e.flyDir = new float[n];
+        e.flyY = new float[n];
+        e.radialFly = true;
+        for (int i = 0; i < n; i++) {
+            float spread = n <= 1 ? 0f : (i / (float) (n - 1) - 0.5f) * 0.9f;
+            e.flyDir[i] = spread;
+            e.flyY[i] = -1f + 0.18f * Math.abs(spread);
         }
     }
 

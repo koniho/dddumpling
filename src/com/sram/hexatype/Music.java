@@ -77,7 +77,7 @@ final class Music {
     /** Driving pulse detected from the recorded guide melody. */
     private static final float BOSS_BPM = 203f;
     /** Playback gain leaves room for one full-level effect without clipping the output mix. */
-    static final float BOSS_GAIN = 0.52f;
+    static final float BOSS_GAIN = 0.60f;
     /** Sanitized stem of the voice memo used for this boss arrangement. */
     static final String BOSS_SOURCE = "sep-4-at-6-47-pm";
     /** One 32-bar cadence in A harmonic minor: i, iv and VI continually pull toward V. */
@@ -196,7 +196,8 @@ final class Music {
                 boolean playBass = style != DRIFT || b % 2 == 0;
                 if (playBass) {
                     addVoice(v, t0, spb * (style == DRIFT ? 1.7f : 0.92f),
-                            note(root + walk[b] - 12), bassAmp, 2.6f, bright * 0.9f);
+                            note(root + walk[b] - 12), bassAmp * (boss ? 1.38f : 1f),
+                            2.6f, bright * 0.9f);
                 }
 
                 // Comping stabs on the (optionally swung) off-beat.
@@ -209,12 +210,12 @@ final class Music {
 
                 if (boss) {
                     // Two kicks and two snares per bar: K-S-K-S on beats one through four.
-                    if ((b & 1) == 0) addKick(v, t0, spb * 0.62f);
+                    if ((b & 1) == 0) addBossKick(v, t0, spb * 0.72f);
                     else addSnare(v, t0, spb * 0.42f, bar * 4 + b);
                     addNoise(v, t0, 0.025f, 0.045f, bar * 4 + b);
                     addNoise(v, t0 + spb * 0.5f, 0.030f, 0.11f, 128 + bar * 4 + b);
                     if ((bar & 7) == 7 && b == 3) {
-                        addKick(v, t0 + spb * 0.5f, spb * 0.45f);
+                        addBossKick(v, t0 + spb * 0.5f, spb * 0.52f);
                         addSnare(v, t0 + spb * 0.5f, spb * 0.28f, 500 + bar);
                         addSnare(v, t0 + spb * 0.75f, spb * 0.22f, 700 + bar);
                         addNoise(v, t0, spb * 0.85f, 0.18f, 900 + bar);
@@ -312,6 +313,24 @@ final class Music {
             phase += 2f * (float) Math.PI * f / Sfx.RATE;
             float env = (t < 0.006f ? t / 0.006f : 1f) * (float) Math.exp(-7.5f * t);
             v[(i0 + i) % v.length] += (float) Math.sin(phase) * env * 0.85f;
+        }
+    }
+
+    /** Boss-only kick: harder beater, deeper pitch dive and a longer sub tail. */
+    private static void addBossKick(float[] v, float start, float dur) {
+        int i0 = (int) (start * Sfx.RATE);
+        int len = (int) (dur * Sfx.RATE);
+        float phase = 0f, subPhase = 0f;
+        for (int i = 0; i < len; i++) {
+            float t = (float) i / len;
+            float f = 175f * (float) Math.exp(-9.5f * t) + 43f;
+            phase += 2f * (float) Math.PI * f / Sfx.RATE;
+            subPhase += 2f * (float) Math.PI * (49f - 7f * t) / Sfx.RATE;
+            float attack = t < 0.0035f ? t / 0.0035f : 1f;
+            float body = (float) Math.sin(phase) * (float) Math.exp(-6.2f * t);
+            float sub = (float) Math.sin(subPhase) * (float) Math.exp(-4.8f * t);
+            float beater = (float) Math.sin(phase * 5.4f) * (float) Math.exp(-38f * t);
+            v[(i0 + i) % v.length] += attack * (body * 1.15f + sub * 0.55f + beater * 0.42f);
         }
     }
 

@@ -159,8 +159,16 @@ final class TestRules extends Check {
         check("later stages use longer words", c.maxWordLen() > w1);
         check("word length is capped at 5", c.maxWordLen() <= 5);
         c.stage = 40;
-        check("pacing floors out", c.travelSeconds() >= 4.2f && c.spawnInterval() >= 0.80f);
-        check("enemy count is capped", c.maxEnemies() <= 7);
+        check("pacing floors out", c.travelSeconds() >= 4.2f && c.spawnInterval() >= 1.35f);
+        check("enemy count is capped at a readable five", c.maxEnemies() <= 5);
+        c.stage = 10;
+        check("late stages stop adding simultaneous words", c.maxEnemies() == 5);
+        float spawn10 = c.spawnInterval();
+        c.stage = 16;
+        check("stage 16 releases are eased below the old pressure",
+                c.spawnInterval() >= 2.39f && c.spawnInterval() > spawn10);
+        c.stage = 40;
+        check("late release relief is capped", c.spawnInterval() <= 2.501f);
 
         // The ramp was stretched, because the game hit a wall at stage 6: every dial arrived at
         // once and the once-a-stage panic swipe could not carry it. What landed at 6 lands at 10.

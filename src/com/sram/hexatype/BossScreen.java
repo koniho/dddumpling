@@ -233,17 +233,23 @@ final class BossScreen extends Draw {
     private static void drawMushroom(Painter p, GameCore c, Layout L, Boss b, int col, float fade) {
         float rootX = b.body.centreX(), cy = b.body.centreY();
         float rx = b.body.radiusX(), ry = b.body.radiusY();
+        // The cap may squash violently at every endpoint. The stalk must not inherit that
+        // transient height or repeated shakes progressively shorten its resting frame.
+        float stemR = Boss.bodyR(L);
         float charge = b.mushroomCharge <= 0f ? 0f
                 : 1f - b.mushroomCharge / Boss.MUSHROOM_CHARGE_TIME;
         float squeeze = (float) Math.sin(charge * Math.PI * 0.5f);
+        float shakeFlash = Math.max(0f, Math.min(1f,
+                b.mushroomSweepFlash / 0.28f));
         float sy = 1f - squeeze * 0.30f, sx = 1f + squeeze * 0.16f;
 
         float capX = rootX + b.mushroomCapDX;
         float capY = cy + b.mushroomCapDY;
-        float stemBottom = cy + ry * (2.05f - squeeze * 0.20f);
-        float attachX = capX, attachY = capY + ry * 0.36f * sy;
-        float stemHalf = rx * (0.20f + squeeze * 0.035f);
-        int cream = Glyph.mix(0xFFFFE9C7, col, 0.10f);
+        float stemBottom = cy + stemR * (2.05f - squeeze * 0.20f);
+        float attachX = capX, attachY = capY + stemR * 0.36f * sy;
+        float stemHalf = Boss.bodyR(L) * b.wide() * (0.20f + squeeze * 0.035f);
+        int cream = Glyph.mix(Glyph.mix(0xFFFFE9C7, col, 0.10f), 0xFFFFFFFF,
+                shakeFlash * 0.72f);
         int stemEdge = Glyph.withAlpha(Glyph.mix(cream, 0xFF7D382E, 0.42f),
                 (int) (220 * fade));
         int stemFill = Glyph.withAlpha(cream, (int) (235 * fade));
@@ -258,15 +264,26 @@ final class BossScreen extends Draw {
         float damage = 1f - b.health();
         float rootPulse = 0.42f + 0.58f * (0.5f + 0.5f
                 * (float) Math.sin(c.clock * (3.2f + damage * 10f)));
-        int mycelium = Glyph.mix(0xFFDDFBEF, 0xFFFF416C, damage * 0.82f);
+        int mycelium = Glyph.mix(Glyph.mix(0xFFDDFBEF, 0xFFFF416C, damage * 0.82f),
+                0xFFFFFFFF, shakeFlash * 0.62f);
         float rootSpan = Math.min(L.w * 0.47f, rx * 3.45f);
+        // The body's centroid and measured radius breathe and recoil. Do not derive the buried tips
+        // from either: homeY/rest are the planted pose, so only the inner roots flex with the stalk.
+        float plantedY = b.body.homeY + b.body.rest * 2.05f;
         for (int branch = 0; branch < 19; branch++) {
             float n = branch / 18f * 2f - 1f;
             float bend = (Draw.hash(branch * 47 + 901) - 0.5f) * ry * 0.42f;
             float endX = rootX + n * rootSpan;
-            float endY = stemBottom + ry * (0.24f + 0.30f * Draw.hash(branch * 61 + 17));
+            // Keep the established width, but plant the tips on one broad downward arc. The
+            // centre hangs deepest and the small hash variation keeps it alive rather than ruled.
+            float arc = 1f - n * n;
+            float endY = plantedY + b.body.rest
+                    * (0.62f + 0.42f * arc + 0.10f * Draw.hash(branch * 61 + 17));
             float midX = rootX + n * rootSpan * 0.48f + bend;
-            float midY = stemBottom + ry * (0.10f + 0.10f * Draw.hash(branch * 31 + 7));
+            float plantedMidY = plantedY + b.body.rest
+                    * (0.10f + 0.10f * Draw.hash(branch * 31 + 7));
+            // A small share of the stalk motion reaches the junction; none reaches the tips.
+            float midY = plantedMidY + (stemBottom - plantedY) * 0.18f;
             int glowA = (int) ((35f + damage * 85f) * rootPulse * fade);
             int coreA = (int) ((105f + damage * 125f) * fade);
             p.line(rootX, stemBottom, midX, midY, Glyph.withAlpha(mycelium, glowA),
@@ -280,7 +297,8 @@ final class BossScreen extends Draw {
             // Fine forked hyphae turn the radial fan into a tangled underground network.
             float fork = branch % 2 == 0 ? 1f : -1f;
             float forkX = midX + fork * rootSpan * (0.09f + 0.04f * damage);
-            float forkY = endY + ry * (0.08f + 0.05f * Draw.hash(branch * 73 + 5));
+            float forkY = endY + b.body.rest
+                    * (0.08f + 0.05f * Draw.hash(branch * 73 + 5));
             p.line(midX, midY, forkX, forkY, Glyph.withAlpha(mycelium, glowA),
                     ry * 0.040f);
             p.line(midX, midY, forkX, forkY, Glyph.withAlpha(0xFFFFF8DB, coreA),
@@ -329,14 +347,20 @@ final class BossScreen extends Draw {
         float[] cap = new float[raw.length];
         for (int i = 0; i < raw.length; i += 2) {
             float rawDy = raw[i + 1] - cy;
-            float lowerFlare = rawDy > 0f ? 1.28f : 1f;
+            // Ease across the crown-to-underside seam. The old sign switch changed width and
+            // height instantly at rawDy == 0, pinching both cap edges into sharp corners.
+            float lower = Math.max(0f, Math.min(1f, rawDy / Math.max(1f, ry * 0.48f)));
+            lower = lower * lower * (3f - 2f * lower);
+            float lowerFlare = 1f + 0.28f * lower;
+            float vertical = 0.82f - 0.30f * lower;
             float dx = (raw[i] - rootX) * sx * 1.72f * lowerFlare;
-            // Flatten the underside more than the crown for the umbrella-like cap.
-            float dy = rawDy * sy * 1.62f * (rawDy > 0f ? 0.52f : 0.82f);
+            // The crown rolls continuously into a flatter, softly flared underside.
+            float dy = rawDy * sy * 1.62f * vertical;
             cap[i] = capX + dx * ca - dy * sa;
             cap[i + 1] = capY + dx * sa + dy * ca;
         }
-        int red = Glyph.mix(0xFFD92738, col, 0.22f);
+        int red = Glyph.mix(Glyph.mix(0xFFD92738, col, 0.22f), 0xFFFFFFFF,
+                shakeFlash * 0.78f);
         p.strokePoly(cap, Glyph.withAlpha(0xFF641F35, (int) (190 * fade)), ry * 0.15f);
         p.fillPoly(cap, Glyph.withAlpha(red, (int) (232 * fade)));
         p.strokePoly(cap, Glyph.withAlpha(0xFFFFD9B0, (int) (235 * fade)), ry * 0.055f);
@@ -386,25 +410,48 @@ final class BossScreen extends Draw {
 
         if (b.mushroomMeterAlpha > 0f) {
             float meterFade = fade * b.mushroomMeterAlpha;
-            float meterW = L.w * 0.56f, meterH = Math.max(7f, L.unit * 0.13f);
+            float meterW = L.w * 0.68f, meterH = Math.max(20f, L.unit * 0.42f);
             float meterX = L.w * 0.5f;
-            float meterY = L.playTop + L.unit * 2.35f;
-            int white = Glyph.withAlpha(0xFFFFFFFF, (int) (235 * meterFade));
-            p.strokePoly(pill(meterX, meterY, meterW * 0.5f, meterH * 1.15f, 16),
-                    white, Math.max(3f, L.unit * 0.055f));
-            p.line(meterX, meterY - meterH * 1.15f, meterX, meterY + meterH * 1.15f,
-                    Glyph.withAlpha(0xFFFFFFFF, (int) (145 * meterFade)),
-                    Math.max(2f, L.unit * 0.035f));
-            float targetX = meterX + b.mushroomGuideX * (meterW * 0.5f - meterH * 1.7f);
-            float pulse = 1f + 0.16f * (float) Math.sin(c.clock * 13f);
-            p.fillCircle(targetX, meterY, meterH * 0.72f * pulse, white);
-            float pipY = meterY + meterH + L.unit * 0.30f;
-            float gap = L.unit * 0.34f;
+            float meterY = L.playTop + L.unit * 2.55f;
+            int white = Glyph.withAlpha(0xFFFFFFFF, (int) (250 * meterFade));
+            int shadow = Glyph.withAlpha(0xFF27152F, (int) (185 * meterFade));
+            p.fillPoly(pill(meterX, meterY, meterW * 0.5f, meterH * 1.28f, 16), shadow);
+            p.strokePoly(pill(meterX, meterY, meterW * 0.5f, meterH * 1.28f, 16),
+                    white, Math.max(4f, L.unit * 0.085f));
+            p.line(meterX, meterY - meterH * 1.02f, meterX, meterY + meterH * 1.02f,
+                    Glyph.withAlpha(0xFFFFFFFF, (int) (175 * meterFade)),
+                    Math.max(3f, L.unit * 0.055f));
+            float travel = meterW * 0.5f - meterH * 1.65f;
+            float targetX = meterX + b.mushroomGuideX * travel;
+            float pulse = 1f + 0.10f * (float) Math.sin(c.clock * 13f);
+            float playerX = meterX + b.mushroomPlayerX * travel;
+            boolean aligned = Math.abs(b.mushroomPlayerX - b.mushroomGuideX) < 0.09f
+                    && Math.abs(b.mushroomGuideX - b.mushroomGuideTarget) < Boss.MUSHROOM_GUIDE_WINDOW;
+            int player = Glyph.withAlpha(aligned ? 0xFF8CFF79 : 0xFF65F5E3,
+                    (int) (255 * meterFade));
+            p.fillCircle(playerX, meterY, meterH * 1.18f, player);
+            p.fillCircle(playerX, meterY, meterH * 0.62f,
+                    Glyph.withAlpha(0xFF17333A, (int) (250 * meterFade)));
+            p.line(playerX, meterY - meterH * 1.32f, playerX, meterY + meterH * 1.32f,
+                    player, Math.max(3f, L.unit * 0.060f));
+            float targetHalfW = meterH * 2.34f * pulse;
+            float targetHalfH = meterH * 0.70f * pulse;
+            p.fillRect(targetX - targetHalfW, meterY - targetHalfH,
+                    targetX + targetHalfW, meterY + targetHalfH,
+                    Glyph.withAlpha(0xFFFF477E, (int) (245 * meterFade)));
+            float pipY = meterY + meterH + L.unit * 0.38f;
+            float gap = L.unit * 0.46f;
             float first = L.w * 0.5f - gap * (Boss.MUSHROOM_SHAKES - 1) * 0.5f;
-            for (int i = 0; i < Boss.MUSHROOM_SHAKES; i++)
-                p.fillCircle(first + i * gap, pipY, L.unit * (i < b.mushroomShakes ? 0.105f : 0.072f),
+            for (int i = 0; i < Boss.MUSHROOM_SHAKES; i++) {
+                float pipR = L.unit * (i < b.mushroomShakes ? 0.155f : 0.112f);
+                p.fillCircle(first + i * gap, pipY, pipR,
                         Glyph.withAlpha(i < b.mushroomShakes ? 0xFFFFFFFF : 0xFF76596D,
-                                (int) (225 * meterFade)));
+                                (int) (245 * meterFade)));
+                if (i < b.mushroomShakes)
+                    p.strokeCircle(first + i * gap, pipY, pipR * 1.28f,
+                            Glyph.withAlpha(0xFFFF477E, (int) (210 * meterFade)),
+                            Math.max(2f, L.unit * 0.035f));
+            }
         }
     }
 
@@ -1243,15 +1290,32 @@ final class BossScreen extends Draw {
                             rr * 0.11f, Glyph.withAlpha(0xFFFFF8DF,
                                     (int) (170 * (1f - sporeMorph))));
                 }
+                // Twenty-five fine motes travel as a loose cloud around the letter itself.
+                // Stable per-particle radii prevent the cloud from collapsing into a regular ring.
+                for (int k = 0; k < 25; k++) {
+                    float seed = Draw.hash(i * 97 + k * 43 + 1701);
+                    float orbit = rr * (0.58f + seed * 1.08f);
+                    float a = c.clock * (0.75f + Draw.hash(k * 71 + 9) * 0.72f)
+                            + k * Softbody.TAU / 25f + i * 0.63f;
+                    float dustX = x + (float) Math.cos(a) * orbit;
+                    float dustY = y + (float) Math.sin(a) * orbit * 0.72f
+                            + (float) Math.sin(c.clock * 2.1f + k) * rr * 0.10f;
+                    float dustR = rr * (0.035f + Draw.hash(k * 59 + i * 13) * 0.026f);
+                    int dustA = (int) ((105f + seed * 80f) * Math.min(1f, at * 12f));
+                    p.fillCircle(dustX, dustY, dustR,
+                            Glyph.withAlpha(k % 3 == 0 ? 0xFFFFDCA5 : 0xFFFFF5D8, dustA));
+                }
                 col = spore;
             }
 
             // A tail back toward the launch point, so the direction reads in one frame.
             float tx = b.bsx[i], ty = b.bsy[i];
-            for (int k = 1; k <= 3; k++) {
-                float f = 1f - 0.10f * k;
-                p.fillCircle(tx + (x - tx) * f, ty + (y - ty) * f,
-                        rr * (0.55f - 0.12f * k), Glyph.withAlpha(col, 60 / k));
+            if (b.kind != Boss.MUSHROOM) {
+                for (int k = 1; k <= 3; k++) {
+                    float f = 1f - 0.10f * k;
+                    p.fillCircle(tx + (x - tx) * f, ty + (y - ty) * f,
+                            rr * (0.55f - 0.12f * k), Glyph.withAlpha(col, 60 / k));
+                }
             }
             // Halo, then the hexagon and its face.
             for (int k = 2; k >= 1; k--) {

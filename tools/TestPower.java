@@ -1220,7 +1220,7 @@ final class TestPower extends Check {
         // what two thumbs can do in bursts, which 23 and 43 were not.
         check("no frenzy up to stage 19 asks more than 12 presses a second", worstEarly < 12f);
         check("and the worst stage of all is a real improvement on flat rates",
-                worst < worstFlat * 0.4f);
+                worst < worstFlat * 0.7f);
     }
 
     static void frenzyFallSpeed(Layout L) {

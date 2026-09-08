@@ -304,16 +304,21 @@ final class Boss {
     boolean boltDestroyed;
 
     static final int MUSHROOM_SHAKES = 6;
+    static final float MUSHROOM_SHAKE_WIDTH = 0.35f;
+    /** Three times the old endpoint tolerance, giving fast reversals a readable grace window. */
+    static final float MUSHROOM_GUIDE_WINDOW = 0.18f;
     static final float MUSHROOM_ATTACK_GAP = 5f, MUSHROOM_CHARGE_TIME = 0.72f,
             MUSHROOM_ANGER_TIME = 0.48f;
     int mushroomShakes, mushroomDirection;
     float mushroomLastX, mushroomShakeWindow, mushroomAttackT, mushroomCharge, mushroomAngry;
     float mushroomSweepFlash;
-    float mushroomMeterAlpha, mushroomGuideX, mushroomReject;
+    float mushroomMeterAlpha, mushroomGuideX, mushroomPlayerX, mushroomReject;
     int mushroomGuideTarget;
     /** Visual offset of the separately dragged cap; it springs home after release. */
     float mushroomCapDX, mushroomCapDY;
     boolean mushroomReaction;
+    /** One-frame event consumed by GameCore audio after an accepted shake endpoint. */
+    boolean mushroomShakeCue, mushroomSporeCue;
 
     /**
      * The chain {@link #SLIME} wants, in order. Indexed by {@link #chainAt}, wrapping, so its length
@@ -485,11 +490,11 @@ final class Boss {
         slimeRetaliating = boltDestroyed = false;
         mushroomShakes = mushroomDirection = 0;
         mushroomLastX = mushroomShakeWindow = mushroomCharge = mushroomAngry = mushroomSweepFlash = 0f;
-        mushroomMeterAlpha = mushroomGuideX = mushroomReject = 0f;
+        mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
         mushroomGuideTarget = 1;
         mushroomCapDX = mushroomCapDY = 0f;
         mushroomAttackT = MUSHROOM_ATTACK_GAP;
-        mushroomReaction = false;
+        mushroomReaction = mushroomShakeCue = mushroomSporeCue = false;
         awake = chord = 0;
         charges = 0;
         depth = 0f;
@@ -568,10 +573,10 @@ final class Boss {
         slimeRetaliating = boltDestroyed = false;
         mushroomShakes = mushroomDirection = 0;
         mushroomLastX = mushroomShakeWindow = mushroomAttackT = mushroomCharge = mushroomAngry = mushroomSweepFlash = 0f;
-        mushroomMeterAlpha = mushroomGuideX = mushroomReject = 0f;
+        mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
         mushroomGuideTarget = 1;
         mushroomCapDX = mushroomCapDY = 0f;
-        mushroomReaction = false;
+        mushroomReaction = mushroomShakeCue = mushroomSporeCue = false;
         awake = chord = 0;
         want = -1;
         stolen = -1;
@@ -1301,6 +1306,7 @@ final class Boss {
         mushroomLastX = x;
         mushroomDirection = mushroomShakes = 0;
         mushroomGuideX = 0f;
+        mushroomPlayerX = 0f;
         mushroomGuideTarget = 1;
         mushroomMeterAlpha = 0f;
         mushroomShakeWindow = 1.25f;
@@ -1323,13 +1329,16 @@ final class Boss {
                     Math.min(bodyR(L) * 0.55f, y - cy));
             float dx = x - mushroomLastX;
             if (Math.abs(dx) > L.w * 0.015f) mushroomMeterAlpha = Math.max(mushroomMeterAlpha, 0.01f);
-            // A twitch is not a shake: every accepted pass must cover half the physical screen.
-            float threshold = L.w * 0.50f;
+            // A twitch is not a shake: every accepted pass must cover 35% of the physical screen.
+            float threshold = L.w * MUSHROOM_SHAKE_WIDTH;
+            float playerScale = mushroomDirection == 0 ? 1f : 2f;
+            mushroomPlayerX = Math.max(-1f, Math.min(1f,
+                    mushroomDirection + dx / threshold * playerScale));
             if (Math.abs(dx) < threshold) {
                 return PART;
             }
             int direction = dx < 0f ? -1 : 1;
-            boolean guideReady = Math.abs(mushroomGuideX - mushroomGuideTarget) < 0.06f;
+            boolean guideReady = Math.abs(mushroomGuideX - mushroomGuideTarget) < MUSHROOM_GUIDE_WINDOW;
             if (!guideReady || direction != mushroomGuideTarget) {
                 held = -1;
                 mushroomShakes = mushroomDirection = 0;
@@ -1341,8 +1350,10 @@ final class Boss {
             }
             mushroomLastX = x;
             mushroomSweepFlash = 0.28f;
+            mushroomShakeCue = true;
             if (mushroomDirection != 0 && direction != mushroomDirection) mushroomShakes++;
             mushroomDirection = direction;
+            mushroomPlayerX = direction;
             mushroomGuideTarget = -direction;
             mushroomShakeWindow = 1.25f;
             if (body != null) {
@@ -1431,6 +1442,7 @@ final class Boss {
         if (held >= 0 && etype[held] == E_GLOB) returning[held] = true;
         held = -1;
         mushroomShakes = mushroomDirection = 0;
+        if (mushroomStem != null) mushroomStem.letGo();
         globDragStarted = globDragCanDamage = false;
     }
 
@@ -1923,6 +1935,7 @@ final class Boss {
         }
         launchT = LAUNCH_TIME;
         launched = made > 0;
+        mushroomSporeCue = made > 0;
         if (body != null) body.squash(0.92f);
     }
 
@@ -2217,7 +2230,7 @@ final class Boss {
     int update(float dt, Layout L, Random rnd) {
         if (kind < 0) return 0;
         hurt = Math.max(0f, hurt - dt * 2.6f);
-        octoCue = octoLock = false;
+        octoCue = octoLock = mushroomShakeCue = mushroomSporeCue = false;
         divideBurst = Math.max(0f, divideBurst - dt * 1.35f);
         for (int i = 0; i < halfHurt.length; i++)
             halfHurt[i] = Math.max(0f, halfHurt[i] - dt * 3.4f);
@@ -2283,7 +2296,8 @@ final class Boss {
                 } else mushroomStem.moveTo(sx, sy);
                 float capX = body.centreX() + mushroomCapDX;
                 float capY = body.centreY() + mushroomCapDY + body.radiusY() * 0.24f;
-                mushroomStem.pull(capX, capY, held == -2 ? 0.72f : 0.34f);
+                if (held == -2) mushroomStem.pull(capX, capY, 0.72f);
+                else mushroomStem.letGo();
                 mushroomStem.update(dt);
             }
             if (beaten) {
@@ -2341,7 +2355,7 @@ final class Boss {
             if (mushroomAngry > 0f) {
                 mushroomAngry = Math.max(0f, mushroomAngry - dt);
                 if (mushroomAngry == 0f && mushroomReaction) {
-                    mushroomReaction = false;
+                    mushroomReaction = mushroomShakeCue = mushroomSporeCue = false;
                     sporeVolley(3, rnd);
                 }
             } else if (mushroomCharge > 0f) {

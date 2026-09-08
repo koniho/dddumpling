@@ -51,6 +51,7 @@ final class Renderer extends Draw {
             for (int i = 0; i < c.enemies.size(); i++) enemy(p, c, L, c.enemies.get(i));
         }
         pushWave(p, c, L);
+        pushImpacts(p, c, L);
         // Over the words: the burst is the payoff and nothing should be in front of it.
         BossScreen.burst(p, c, L);
         buddy(p, c, L);
@@ -324,6 +325,33 @@ final class Renderer extends Draw {
             int a = (int) (200 * (1f - own) * (1f - own));
             p.fillPoly(pill(L.w / 2f, y, half * (0.72f + 0.28f * own), L.unit * 0.15f, 8),
                     Glyph.withAlpha(GOLD, a));
+        }
+    }
+
+    /** Expanding rings and rays mark a word-on-word desperation collision. */
+    static void pushImpacts(Painter p, GameCore c, Layout L) {
+        for (int i = 0; i < c.pushImpacts.size(); i++) {
+            GameCore.PushImpact hit = c.pushImpacts.get(i);
+            float t = 1f - hit.life / 0.62f;
+            float fade = (1f - t) * (1f - t);
+            for (int k = 0; k < 3; k++) {
+                float own = Math.max(0f, t - k * 0.09f);
+                float r = L.enemyR * (0.7f + own * (3.6f + k * 0.7f));
+                int col = Glyph.withAlpha(k == 0 ? 0xFFFFFFFF : hit.color,
+                        (int) (230f * fade / (k + 1)));
+                p.strokePoly(Glyph.hex(hit.x, hit.y, r), col,
+                        L.enemyR * (0.18f - k * 0.025f));
+            }
+            float ray = L.enemyR * (1.1f + t * 4.2f);
+            int rayColor = Glyph.withAlpha(0xFFFFFFFF, (int) (210f * fade));
+            for (int k = 0; k < 8; k++) {
+                double a = k * Math.PI / 4.0;
+                float x0 = hit.x + (float) Math.cos(a) * ray * 0.45f;
+                float y0 = hit.y + (float) Math.sin(a) * ray * 0.45f;
+                float x1 = hit.x + (float) Math.cos(a) * ray;
+                float y1 = hit.y + (float) Math.sin(a) * ray;
+                p.line(x0, y0, x1, y1, rayColor, L.enemyR * 0.12f);
+            }
         }
     }
 

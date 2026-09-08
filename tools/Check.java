@@ -42,7 +42,7 @@ abstract class Check {
 
     static final class Ear implements GameCore.Sound {
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeDamages, bossSplits,
-                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoCues, octoLocks, divideDamages, divideSplits, divideDeactivates, divideBoings, chops, zaps;
+                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideBoings, chops, zaps;
         float bossCharge, maxBossCharge;
         float lastDivideBoingWeight = -1f;
         int collects;
@@ -91,6 +91,8 @@ abstract class Check {
         public void shieldBounce() { shieldBounces++; }
         public void octoCue() { octoCues++; }
         public void octoLock() { octoLocks++; }
+        public void mushroomShake() { mushroomShakeSounds++; }
+        public void mushroomSpore() { mushroomSporeSounds++; }
         public void bossCharge(float charge) {
             bossChargeCalls++;
             bossCharge = charge;
@@ -144,8 +146,8 @@ abstract class Check {
                 c.dragBoss(b.mushroomLastX + L.w * 0.02f, b.body.centreY(), L);
                 return true;
             }
-            if (Math.abs(b.mushroomGuideX - b.mushroomGuideTarget) > 0.06f) return true;
-            float x = b.mushroomLastX + b.mushroomGuideTarget * L.w * 0.51f;
+            if (Math.abs(b.mushroomGuideX - b.mushroomGuideTarget) > Boss.MUSHROOM_GUIDE_WINDOW) return true;
+            float x = b.mushroomLastX + b.mushroomGuideTarget * L.w * 0.36f;
             c.dragBoss(x, b.body.centreY(), L);
             return true;
         }

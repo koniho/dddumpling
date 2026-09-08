@@ -29,7 +29,8 @@ final class Sfx {
             DIVIDE_BOING_LIGHT = 29, ROSTER_JOIN = 30, DIVIDE_DEACTIVATE = 31,
             SHIELD_BOUNCE = 32, SLIME_DAMAGE = 33, OCTO_CUE = 34, OCTO_LOCK = 35;
     static final int BOSS_TAUNT_0 = 36, BOLT_DEATH = BOSS_TAUNT_0 + Boss.COUNT,
-            COUNT = BOLT_DEATH + 1;
+            MUSHROOM_SHAKE = BOLT_DEATH + 1, MUSHROOM_SPORE = MUSHROOM_SHAKE + 1,
+            COUNT = MUSHROOM_SPORE + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -66,6 +67,8 @@ final class Sfx {
             case BOSS_SPLIT: return bossSplit();
             case BOLT_POP: return boltPop();
             case BOLT_DEATH: return boltDeath();
+            case MUSHROOM_SHAKE: return mushroomShake();
+            case MUSHROOM_SPORE: return mushroomSpore();
             case DIVIDE_DAMAGE: return divideDamage();
             case DIVIDE_SPLIT: return divideSplit();
             case DIVIDE_BOING_HEAVY: return divideBoing(0);
@@ -674,6 +677,44 @@ final class Sfx {
     }
 
     /** A handful of tiny rising bubbles for a glob successfully carried free. */
+    static short[] mushroomShake() {
+        int n = (int) (RATE * 0.13f);
+        float[] v = new float[n];
+        int seed = 0x5A4CE;
+        float phase = 0f;
+        for (int i = 0; i < n; i++) {
+            float u = i / (float) n;
+            seed = seed * 1664525 + 1013904223;
+            float noise = ((seed >>> 9) & 0x7fffff) / 4194303.5f - 1f;
+            phase += TAU * (760f - 230f * u) / RATE;
+            float woody = (float) Math.sin(phase) * (float) Math.exp(-7f * u);
+            float spores = noise * (float) Math.exp(-18f * u);
+            v[i] = (woody * 0.76f + spores * 0.48f) * envelope(u, 0.003f, 1.4f);
+        }
+        return render(v);
+    }
+
+    /** A dry, airy seed-shaker sweep for Fly Agaric releasing a volley. */
+    static short[] mushroomSpore() {
+        int n = (int) (RATE * 0.46f);
+        float[] v = new float[n];
+        int seed = 0x5F0AE;
+        for (int i = 0; i < n; i++) {
+            float u = i / (float) n;
+            seed = seed * 1664525 + 1013904223;
+            float white = ((seed >>> 9) & 0x7fffff) / 4194303.5f - 1f;
+            float grains = 0f;
+            for (int k = 0; k < 7; k++) {
+                float centre = 0.045f + k * 0.052f;
+                float d = (u * 0.46f - centre) / 0.012f;
+                grains += (float) Math.exp(-d * d) * (0.72f + 0.28f * (k % 2));
+            }
+            float airy = white * (0.18f + grains) * (1f - 0.55f * u);
+            v[i] = airy * envelope(u, 0.006f, 1.7f);
+        }
+        return render(v);
+    }
+
     static short[] octoCue() { return sweepTone(0.16f, 720f, 980f, 0.72f); }
     static short[] octoLock() { return sweepTone(0.28f, 330f, 125f, 0.88f); }
 

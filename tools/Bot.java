@@ -275,8 +275,8 @@ final class Bot {
                 c.dragBoss(b.mushroomLastX + L.w * 0.02f, b.body.centreY(), L);
                 return true;
             }
-            if (Math.abs(b.mushroomGuideX - b.mushroomGuideTarget) <= 0.06f)
-                c.dragBoss(b.mushroomLastX + b.mushroomGuideTarget * L.w * 0.51f,
+            if (Math.abs(b.mushroomGuideX - b.mushroomGuideTarget) <= Boss.MUSHROOM_GUIDE_WINDOW)
+                c.dragBoss(b.mushroomLastX + b.mushroomGuideTarget * L.w * 0.36f,
                         b.body.centreY(), L);
             return true;
         }

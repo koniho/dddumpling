@@ -270,7 +270,10 @@ final class BossPlay {
     /** That finger moving. True when the drag finished the job. */
     static boolean dragTo(GameCore c, float x, float y, Layout L) {
         if (c.boss.held < 0 && c.boss.held != -2) return false;
+        c.boss.mushroomShakeCue = false;
         int r = c.boss.dragTo(x, y, L);
+        if (c.boss.mushroomShakeCue && c.sound != null) c.sound.mushroomShake();
+        c.boss.mushroomShakeCue = false;
         if (r != Boss.HIT) return false;
         c.score += GameCore.BOSS_HIT;
         c.hits++;
