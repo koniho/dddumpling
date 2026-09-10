@@ -291,7 +291,7 @@ final class Renderer extends Draw {
         // Lit for the panic swipe, and for a boss shove, because they are the same gesture in the
         // same place — GameCore.swipeUp decides which one it is, so the affordance must not claim
         // there is nothing to swipe at just because the reason has changed.
-        if (!c.pushReady() && !c.shoveReady()) return;
+        if (!c.pushReady()) return;
         float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 6.5f);
         float top = L.dangerY, bot = L.deckTop, h = bot - top;
         int a = (int) (80 + 100 * pulse);

@@ -364,6 +364,11 @@ final class Screens extends Draw {
 
     static void bonus(Painter p, GameCore c, Layout L) {
         float s = L.unit;
+        if (c.bossReward) {
+            scrim(p, L, 190);
+            BossCollect.celebration(p, c, L);
+            return;
+        }
 
         // The parade closes out a winning interlude and owns the screen for it, whichever game
         // won it. Handled before the fade below, which reads the interlude's own countdown —

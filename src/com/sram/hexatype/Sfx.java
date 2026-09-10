@@ -307,15 +307,11 @@ final class Sfx {
         return arp(1.55f, OVER_NOTES, 0.16f, 2.4f, 0.07f, 0.14f);
     }
 
-    /** Seven short victory voices: the same taunting gesture, spoken by seven different bodies. */
+    /** Four short victory voices, one for each active boss. */
     static short[] bossTaunt(int kind) {
-        float[] base = {330f, 440f, 185f, 610f, 128f, 275f, 150f, 205f};
+        float[] base = {330f, 275f, 150f, 205f};
         float[][] shape = {
                 {1f, 1.26f, 0.92f, 1.38f},       // slime: bubbly cackle
-                {1f, 1.25f, 1.50f, 1.25f},       // triplets: three-part jeer
-                {1f, 0.75f, 1f, 0.67f},          // drum: answering booms
-                {1f, 1.50f, 1.19f, 1.78f},       // magpie: sharp crow
-                {1f, 0.84f, 0.67f, 0.50f},       // sumo: heavy descending laugh
                 {1f, 0.71f, 1.41f, 0.59f},       // divide: split, opposed pitches
                 {1f, 1.06f, 0.89f, 1.12f},       // octopus: close writhing warble
                 {1f, 0.76f, 1.34f, 0.63f}        // mushroom: hollow spore cough
@@ -325,8 +321,8 @@ final class Sfx {
         float[] v = new float[n];
         int seed = 0x7a17 + kind * 7919;
         for (int k = 0; k < shape[kind].length; k++) {
-            int at = (int) (RATE * (0.035f + k * (kind == Boss.TRIPLETS ? 0.105f : 0.14f)));
-            int len = (int) (RATE * (kind == Boss.DRUM || kind == Boss.SUMO ? 0.28f : 0.22f));
+            int at = (int) (RATE * (0.035f + k * (0.14f)));
+            int len = (int) (RATE * (0.22f));
             float phase = 0f;
             for (int j = 0; j < len && at + j < n; j++) {
                 float u = j / (float) len;
@@ -336,8 +332,8 @@ final class Sfx {
                 seed = seed * 1103515245 + 12345;
                 float noise = ((seed >>> 16) & 0x7fff) / 16383.5f - 1f;
                 float tone = (float) Math.sin(phase)
-                        + (kind == Boss.MAGPIE ? 0.32f : 0.18f) * (float) Math.sin(phase * 2.01f);
-                float grit = (kind == Boss.SPLITTER ? 0.24f : kind == Boss.DRUM ? 0.10f : 0.04f)
+                        + (0.18f) * (float) Math.sin(phase * 2.01f);
+                float grit = (kind == Boss.SPLITTER ? 0.24f : 0.04f)
                         * noise;
                 v[at + j] += (tone + grit) * (float) Math.sin(Math.PI * u)
                         * (0.72f - k * 0.07f);

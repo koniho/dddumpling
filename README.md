@@ -19,7 +19,9 @@ prise the lid off. The dumpling inside is a blind box — freeing it hands over 
 collectible squishies, from commons up to a single gold grail. The collection is kept for good
 and shown in the display case: a shimmering glass cabinet that opens from the small case on the title screen.
 Pan freely in any direction through the animated collectibles, without snapping to cells.
-Fruits share one row, and candies share another. The glass catches the light as you move.
+Fruits share one row, candies share another, and defeated bosses join their own row.
+Each boss victory awards its matching miniature character and replaces the next minigame with
+a confetti-filled welcome scene; repeated victories pay a duplicate bonus. The glass catches the light as you move.
 Tap a visible tile to pan it into the center, then tap it again for its story;
 every key starts a run instead, and puts the case away first if it is open. Anything you have not
 won yet is a silhouette behind a question
@@ -27,13 +29,10 @@ mark; tap one you have and it tells you where it lives and what its family gets 
 and the collection parades: they march in from the left, the newcomer drops into the end of the
 line, and the next stage waits until they have all marched off to the right.
 
-Every fifth stage is a boss instead of a wave, and it has to be beaten to get past it. There are
-five, cycling in order, and none of them can be beaten by typing alone — each wants at least two of
-pressing a key, tapping something and dragging something. A wide, wobbling slime that only bleeds when you drag a glob off the
-screen — and throws three letters at your deck every time one splits off; three heads to tap awake and strike as one chord; a drum that alternates a
-key and a tap on a fixed beat; a magpie holding one of your six keys hostage; and a sumo sinking
-onto the danger line that has to be swiped back, paid for with words cleared. They are all soft
-bodies, so they wobble as they move and dent where you hit them.
+Boss fights appear at stages 5, 10, 15, and 20: Slime, Dark Divide, Octopulse, and Fly Agaric.
+Each combines key defense with a physical gesture, using soft bodies that wobble and deform.
+A victory unlocks that boss's miniature friend in the display case and celebrates the new
+character before moving straight to the next stage.
 
 ## Where to look
 

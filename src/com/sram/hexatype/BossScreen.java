@@ -98,19 +98,6 @@ final class BossScreen extends Draw {
         return badgeCy - r * 1.55f - r * 0.4f;
     }
 
-    /**
-     * The row a boss's ornaments hang off: the body's own centre, but never higher than its resting
-     * one.
-     *
-     * Two things can lift a body above where it rests, and both are the slime's: a glob dragged at
-     * the ceiling walks the whole creature up after it, and the stretch that goes with it makes the
-     * body taller besides. Either one carries the wanted-letter badge into the blurb it is asserted to
-     * clear. Downward is left alone on purpose — that is SUMO sinking, and its badge has to sink with
-     * it or the thing it is asking for is no longer on the thing asking.
-     *
-     * Named and exported so {@code TestBoss} can hold the header stacking against the number the
-     * drawing actually uses, rather than against its own second copy of it.
-     */
     static float ornamentY(Layout L, Boss b) {
         return b.body == null ? Boss.restY(L) : Math.max(b.body.centreY(), Boss.restY(L));
     }
@@ -206,10 +193,10 @@ final class BossScreen extends Draw {
             }
         }
 
-        // The triplets are drawn faceless: their three heads sit on the body and are its face, so
+        // The active boss supplies its face.
         // giving the body one of its own put a fourth face behind the three and the whole thing read
         // as a blob wearing heads rather than as a creature with three of them.
-        int face = b.kind == Boss.TRIPLETS ? -1 : Boss.FACE[b.kind];
+        int face = Boss.FACE[b.kind];
         float mood = b.beaten ? 1f : wounded ? 0f : b.open() ? 0.15f : 0.5f;
         if (b.kind == Boss.SPLITTER) {
             drawDividePieces(p, c, L, b, fade);
@@ -1244,9 +1231,6 @@ final class BossScreen extends Draw {
             // resting height rather than the live one so it does not get swallowed by the body every
             // time a squash flattens it.
             splitGauge(p, c, L, b, cx, slimeBadgeY(L, b) + badgeR(L) * 1.65f, fade);
-        } else if (b.kind == Boss.TRIPLETS) {
-            // The heads are elements, so they are drawn with them.
-            return;
         } else if (b.kind == Boss.SPLITTER) {
             for (int i = 0; i < b.pieceCount(); i++) {
                 float x = b.pieceX(i, L), y = b.pieceY(i, L), pr = b.pieceR(i, L);
@@ -1264,21 +1248,6 @@ final class BossScreen extends Draw {
             }
         } else if (b.kind == Boss.OCTOPUS) {
             return;
-        } else if (b.kind == Boss.DRUM) {
-            // The beat: a ring that closes as the window approaches, and the thing it wants inside.
-            beatRing(p, c, b, cx, cy, r, fade);
-            if (b.tapBeat) tapMark(p, c, cx, cy, r * 0.5f, fade, b.open());
-            else letterBadge(p, c, L, b.want(), cx, pin - ry * 1.28f, L.unit * 0.95f, fade, b.open());
-        } else if (b.kind == Boss.MAGPIE) {
-            letterBadge(p, c, L, b.want(), cx, pin - ry * 1.28f, L.unit * 0.95f, fade, b.open());
-            // The key it is holding, clear of the body's outline rather than over it — a struck-out
-            // key drawn across the boss's own face read as damage to the boss instead of as
-            // something it had taken. Upper left, away from the wanted letter above it.
-            if (b.stolen >= 0) heldKey(p, c, L, b, cx - rx * 1.20f, pin - ry * 0.85f, fade);
-        } else if (b.kind == Boss.SUMO) {
-            letterBadge(p, c, L, b.want(), cx, pin - ry * 1.28f, L.unit * 0.95f, fade, true);
-            charges(p, c, L, b, cx, pin + ry * 1.30f, fade);
-            if (b.stagger > 0f) staggerRing(p, c, b, cx, cy, r, fade);
         }
     }
 
@@ -1364,77 +1333,6 @@ final class BossScreen extends Draw {
         if (live) caret(p, x, y, rr, Glyph.withAlpha(INK, (int) (225 * fade)));
     }
 
-    /** The drum's beat: a ring that closes in on the body as the window comes round. */
-    private static void beatRing(Painter p, GameCore c, Boss b, float cx, float cy, float r,
-            float fade) {
-        if (b.open() && b.kind != Boss.SPLITTER) {
-            // Landed on the beat: a bright flare at the body's own size.
-            p.strokeCircle(cx, cy, r * 1.15f, Glyph.withAlpha(GOLD, (int) (235 * fade)),
-                    r * 0.09f);
-            return;
-        }
-        // Shrinking toward the body, so the moment to act is when it arrives — the same read as a
-        // rhythm game's approach ring, and it needs no explaining.
-        float t = b.phaseProgress();
-        float rr = r * (2.6f - 1.45f * t);
-        p.strokeCircle(cx, cy, rr, Glyph.withAlpha(INK, (int) (40 + 150 * t * fade)), r * 0.05f);
-    }
-
-    /** The "tap here" mark: concentric rings and a fingertip dot, on the beats that want a tap. */
-    private static void tapMark(Painter p, GameCore c, float x, float y, float rr, float fade,
-            boolean live) {
-        int a = (int) (fade * (live ? 255 : 120));
-        for (int k = 1; k <= 2; k++) {
-            float t = ((c.clock * 1.6f) + k * 0.5f) % 1f;
-            p.strokeCircle(x, y, rr * (0.5f + t * 0.9f),
-                    Glyph.withAlpha(INK, (int) (a * (1f - t) * 0.7f)), rr * 0.13f);
-        }
-        p.fillCircle(x, y, rr * 0.34f, Glyph.withAlpha(INK, a));
-        p.fillCircle(x, y, rr * 0.16f, Glyph.withAlpha(0xFF2A2348, a));
-    }
-
-    /** The key the magpie is holding: drawn as a key hexagon with a bar across it. */
-    private static void heldKey(Painter p, GameCore c, Layout L, Boss b, float x, float y,
-            float fade) {
-        int g = b.stolen;
-        float rr = L.keyR * 0.62f;
-        int col = Glyph.COLOR[g];
-        int a = (int) (255 * fade);
-        p.fillPoly(Glyph.hex(x, y, rr), Glyph.withAlpha(col, a * 55 / 255));
-        p.strokePoly(Glyph.hex(x, y, rr), Glyph.withAlpha(col, a), rr * 0.11f);
-        Kawaii.draw(p, g, x, y, rr * 0.58f, Glyph.withAlpha(col, a), 1f, 0f);
-        // Struck through, so it reads as denied rather than as a decoration. A polygon, not a
-        // character: the harness font has no such glyph and it would vanish from every frame.
-        float k = rr * 0.95f;
-        p.line(x - k, y - k * 0.75f, x + k, y + k * 0.75f,
-                Glyph.withAlpha(ROSE, a), rr * 0.16f);
-    }
-
-    /** The sumo's banked swipes, as pips under it. */
-    private static void charges(Painter p, GameCore c, Layout L, Boss b, float cx, float y,
-            float fade) {
-        float rr = L.unit * 0.26f, gap = rr * 2.6f;
-        float x0 = cx - gap * (Boss.CHARGE_MAX - 1) / 2f;
-        for (int i = 0; i < Boss.CHARGE_MAX; i++) {
-            boolean have = i < b.charges;
-            float pulse = have && b.open() ? 1f + 0.16f * (float) Math.sin(c.clock * 8f) : 1f;
-            p.fillPoly(star(x0 + i * gap, y, rr * pulse, rr * 0.42f, 5, c.clock * 0.5f),
-                    Glyph.withAlpha(have ? GOLD : INK, (int) ((have ? 235 : 45) * fade)));
-        }
-    }
-
-    /** A staggered sumo, ringed so the doubled shove is visibly available. */
-    private static void staggerRing(Painter p, GameCore c, Boss b, float cx, float cy, float r,
-            float fade) {
-        float k = Math.min(1f, b.stagger / Boss.STAGGER_TIME);
-        for (int i = 0; i < 3; i++) {
-            float a = c.clock * 3.2f + i * 2.09f;
-            p.fillCircle(cx + (float) Math.cos(a) * r * 1.25f,
-                    cy + (float) Math.sin(a) * r * 0.7f, r * 0.13f,
-                    Glyph.withAlpha(GOLD, (int) (200 * k * fade)));
-        }
-    }
-
     /** The tappable and draggable things a boss has put on the field. */
     private static void elements(Painter p, GameCore c, Layout L, Boss b, float fade, int bodyCol) {
         for (int i = 0; i < Boss.ELEMS; i++) {
@@ -1446,52 +1344,9 @@ final class BossScreen extends Draw {
             // whether there is time to deal with it.
             float life = b.elife[i] > 0f ? b.elife[i] : 0f;
 
-            if (t == Boss.E_HEAD) {
-                head(p, c, L, b, i, x, y, rr, fade);
-            } else if (t == Boss.E_SKIN) {
-                // Drawn by beatRing/tapMark on the body; nothing extra here, or the body gets a
-                // second outline nobody asked for.
-                continue;
-            } else if (t == Boss.E_GLOB) {
+            if (t == Boss.E_GLOB) {
                 glob(p, c, L, b, i, x, y, rr, life, held, fade, bodyCol);
-            } else if (t == Boss.E_KEY) {
-                loose(p, c, L, b, i, x, y, rr, life, held, fade);
             }
-        }
-    }
-
-    /** One of the triplets' heads: asleep, awake, or already struck this chord. */
-    private static void head(Painter p, GameCore c, Layout L, Boss b, int i, float x, float y,
-            float rr, float fade) {
-        int g = b.head(i);
-        boolean awake = b.headAwake(i);
-        boolean struck = b.headStruck(i);
-        int col = g >= 0 ? Glyph.COLOR[g] : INK;
-        int a = (int) (fade * (awake ? 255 : 150));
-
-        if (!awake) {
-            // Asleep: a dim closed shape with the tap mark over it, and no letter — the letter is
-            // what tapping it reveals, so showing it would give the tap nothing to do.
-            p.fillCircle(x, y, rr, Glyph.withAlpha(INK, (int) (26 * fade)));
-            p.strokeCircle(x, y, rr, Glyph.withAlpha(INK, (int) (90 * fade)), rr * 0.09f);
-            tapMark(p, c, x, y, rr * 0.55f, fade, true);
-            return;
-        }
-        float pulse = struck ? 1f : 1f + 0.06f * (float) Math.sin(c.clock * 7f + i);
-        // A dark core first. A head sits on the body it belongs to, and a pale character on a pale
-        // body disappears into it — the same reason the TEAM SQUISH bubble has one behind its
-        // squishy. Without it the middle head was barely findable, which matters when the whole
-        // mechanic is reading three letters off them.
-        p.fillCircle(x, y, rr * pulse, Glyph.withAlpha(BG, (int) (215 * fade)));
-        p.fillCircle(x, y, rr * pulse, Glyph.withAlpha(col, a * 90 / 255));
-        p.strokeCircle(x, y, rr * pulse, Glyph.withAlpha(struck ? GOLD : col, a), rr * 0.11f);
-        Kawaii.draw(p, g, x, y, rr * 0.66f, Glyph.withAlpha(col, a), 1f, struck ? 1f : 0.4f);
-        if (struck) {
-            // Already taken: ringed gold and no caret, because pressing it again does nothing.
-            p.strokeCircle(x, y, rr * 1.22f, Glyph.withAlpha(GOLD, (int) (150 * fade)),
-                    rr * 0.06f);
-        } else {
-            caret(p, x, y, rr, Glyph.withAlpha(INK, (int) (225 * fade)));
         }
     }
 
@@ -1593,39 +1448,7 @@ final class BossScreen extends Draw {
         return patch;
     }
 
-    /** A key the magpie dropped, to be dragged home to the deck. */
-    private static void loose(Painter p, GameCore c, Layout L, Boss b, int i, float x, float y,
-            float rr, float life, boolean held, float fade) {
-        int g = b.keyOf[i];
-        if (g < 0) return;
-        int col = Glyph.COLOR[g];
-        float k = Math.min(1f, life / Boss.KEY_TIME);
-        if (held) {
-            for (int q = 2; q >= 1; q--) {
-                p.fillCircle(x, y, rr * (1.2f + 0.25f * q),
-                        Glyph.withAlpha(GOLD, (int) (46 * fade / q)));
-            }
-        }
-        float bob = held ? 0f : (float) Math.sin(c.clock * 3.4f) * rr * 0.10f;
-        p.fillPoly(Glyph.hex(x, y + bob, rr), Glyph.withAlpha(col, (int) (80 * fade)));
-        p.strokePoly(Glyph.hex(x, y + bob, rr), Glyph.withAlpha(col, (int) (250 * fade)),
-                rr * 0.11f);
-        Kawaii.draw(p, g, x, y + bob, rr * 0.60f, Glyph.withAlpha(col, (int) (255 * fade)), 1f,
-                0.5f);
-        ring(p, x, y + bob, rr * 1.35f, k, GOLD, fade);
-    }
-
     /** A countdown as pips round a circle, emptying clockwise. */
-    private static void ring(Painter p, float x, float y, float rr, float k, int col, float fade) {
-        int pips = 10;
-        int lit = (int) Math.ceil(pips * k);
-        for (int i = 0; i < pips; i++) {
-            double a = -Math.PI / 2 + Math.PI * 2 * i / pips;
-            float px = x + rr * (float) Math.cos(a), py = y + rr * (float) Math.sin(a);
-            p.fillCircle(px, py, rr * 0.10f,
-                    Glyph.withAlpha(i < lit ? col : INK, (int) ((i < lit ? 220 : 40) * fade)));
-        }
-    }
 
     // ---- readouts -----------------------------------------------------------
 

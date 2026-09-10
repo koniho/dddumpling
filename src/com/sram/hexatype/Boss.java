@@ -2,59 +2,6 @@ package com.sram.hexatype;
 
 import java.util.Random;
 
-/**
- * The boss encounter: every fifth stage, in place of that stage's wave.
- *
- * Five of them, one mechanic each, cycling in order so a run meets them in the same sequence it met
- * them last time — the first is the one that teaches the frame, and the frame is what all five
- * share:
- *
- * <ul>
- *   <li>A boss <em>arrives</em> ({@link #INTRO}), announcing itself over an empty field.
- *   <li>It then alternates a shut phase with an <em>open</em> one. It can only be hurt while open,
- *       and while open it claims the letters it is asking for — see {@link #wants}.
- *   <li>Nothing else is on the field. A boss stage releases no words at all: the fight is the
- *       stage, and it gets the screen to itself.
- *   <li>The stage does not end until it is beaten. There is no way past it.
- * </ul>
- *
- * <h2>Where the threat comes from</h2>
- *
- * A boss stage used to run a thin wave underneath the fight, and that wave was quietly carrying two
- * jobs nobody had written down: it was the only thing that could hurt you, and — since enraging
- * worked by speeding the spawns up — it was the only reason to hurry. Taking the words away left
- * every boss but {@link #SUMO} completely harmless, which turns "must be beaten" into "may be poked
- * at indefinitely".
- *
- * Each boss's own mechanic now supplies its pressure. A dragging fight still reddens after
- * {@link #ENRAGE_AT}, but elapsed time alone never costs a life.
- *
- * <h2>Three ways in</h2>
- *
- * No boss can be beaten by typing alone. Each one asks for at least two of the three things a
- * player can do here — press a key, tap something, drag something — because the six keys on their
- * own cannot express five different fights, and because a set piece that is only the ordinary verb
- * at a higher rate is a wave, not a boss.
- *
- * Taps and drags land on {@link #elems} <em>elements</em>: hit-testable things the boss puts on the
- * field, whose positions are computed once per frame in {@link #update} and read by both the
- * hit-test and the renderer, so the two cannot disagree about where they are.
- *
- * Elements live in the <em>upper</em> field, and that is a hard constraint rather than a
- * preference. A drag may not start on a key (see CLAUDE.md: telling a drag from a tap means
- * holding the tap back, and every tap here is a keystroke), and the panic swipe already owns the
- * lower half. The upper field is the one part of the screen where a touch is unambiguous, which is
- * what lets a boss element commit to a drag on the frame the finger lands — exactly as the display
- * case's position bar does, and for the same reason.
- *
- * <h2>Why the window exists</h2>
- *
- * The window is what makes press precedence tractable. Six keys have to address both the boss and
- * the words underneath it, and the answer is that an engaged word always outranks the boss (exactly
- * as it outranks the drifting powerup) while an open boss outranks an <em>unengaged</em> word for
- * the letters it is asking for. Without the window that denial would be permanent and a stage could
- * be unwinnable; with it, it is a couple of seconds of the boss demanding attention.
- */
 final class Boss {
 
     /** Stages between bosses. Stage 5, 10, 15... */
@@ -70,37 +17,14 @@ final class Boss {
      * tax — ignore them and the fight is simply slower.
      */
     static final int SLIME = 0;
-    /**
-     * Three heads, asleep until <em>tapped</em> awake, then struck as one chord inside a window.
-     * Two thumbs and a spare finger.
-     */
-    static final int TRIPLETS = 1;
-    /**
-     * A drum on a fixed beat, alternately wanting a key press and a <em>tap</em> on its skin.
-     * Pressing early does not merely miss — it resets the beat, so the beat cannot be mashed.
-     */
-    static final int DRUM = 2;
-    /**
-     * It holds one of your six keys hostage. A press on its belly makes it drop the key, which then
-     * has to be <em>dragged</em> back down to the deck before it is snatched again.
-     */
-    static final int MAGPIE = 3;
-    /**
-     * It sinks toward the danger line and has to be <em>swiped</em> back. A press on its belt banks
-     * the swipe and staggers it, and a staggered shove hits twice as hard.
-     */
-    static final int SUMO = 4;
-    static final int SPLITTER = 5;
-    static final int OCTOPUS = 6;
-    static final int MUSHROOM = 7;
-    static final int COUNT = 8;
+    static final int SPLITTER = 1;
+    static final int OCTOPUS = 2;
+    static final int MUSHROOM = 3;
+    static final int COUNT = 4;
 
-    static final String[] NAMES = {"SLIME", "TRIPLETS", "MOCHI DRUM", "MAGPIE", "SUMO BUN",
-            "DARK DIVIDE", "OCTOPULSE", "FLY AGARIC"};
+    static final String[] NAMES = {"SLIME", "DARK DIVIDE", "OCTOPULSE", "FLY AGARIC"};
     /** One line each, in the mode bar. Held to the width of the longest frenzy blurb. */
-    static final String[] BLURB = {"HIT THE MARK, DRAG GLOBS", "TAP THEM AWAKE FIRST",
-            "KEY, THEN TAP, ON BEAT", "DRAG YOUR KEY BACK", "SWIPE IT BACK",
-            "HIT THE MARK, THEN PINCH OUT", "BEAT THE REACH", "DRAG BACK AND FORTH"};
+    static final String[] BLURB = {"HIT THE MARK, DRAG GLOBS", "HIT THE MARK, THEN PINCH OUT", "BEAT THE REACH", "DRAG BACK AND FORTH"};
     /**
      * Which of the six characters each boss is a giant version of.
      *
@@ -108,8 +32,7 @@ final class Boss {
      * is plainly an enormous one of the things you have been typing all game is funnier, and it
      * arrives already legible.
      */
-    static final int[] FACE = {Kawaii.SQUISHY, Kawaii.GRAPES, Kawaii.DUMPLING, Kawaii.CAT,
-            Kawaii.BLOB, Kawaii.SQUISHY, Kawaii.BLOB, Kawaii.DUMPLING};
+    static final int[] FACE = {Kawaii.SQUISHY, Kawaii.SQUISHY, Kawaii.BLOB, Kawaii.DUMPLING};
 
     /** How long the arrival card holds the field before the fight starts. */
     static final float INTRO = 1.6f;
@@ -131,54 +54,10 @@ final class Boss {
     static final float ENRAGE_AT = 26f;
     static final float ENRAGE_RAMP = 8f;
 
-    /**
-     * Seconds of one open/shut cycle, and how many of those seconds the window is open for.
-     *
-     * The ratio is the boss's whole character. SLIME is open most of the time because its mechanic
-     * is a long chain that needs room to run; DRUM is barely open at all because its mechanic
-     * <em>is</em> the window. SUMO has no press window — see {@link #open()}, which answers a
-     * different question for it.
-     */
-    private static final float[] CYCLE = {5.0f, 3.6f, 1.20f, 3.2f, 0f, 1f, 1f, 1f};
-    private static final float[] SHOW = {4.0f, 3.6f, 0.40f, 2.0f, 0f, 1f, 1f, 1f};
+    private static final float[] CYCLE = {5.0f, 1f, 1f, 1f};
+    private static final float[] SHOW = {4.0f, 1f, 1f, 1f};
 
-    /**
-     * How long a {@link #TRIPLETS} chord may take from its first head to its last.
-     *
-     * This boss is the one exception to the open/shut rhythm: its window above is its whole cycle,
-     * so it is permanently open, and this is what stands in for the window instead.
-     *
-     * That is not a shortcut, it is the fix for the two rules fighting. A chord had to land inside
-     * one window, and an engaged word outranks the boss — so whenever a window opened while a minion
-     * was part-typed, the chord could not be started at all, and the player watched the window go by.
-     * The soak bot got eight windows and two chords out of a whole fight. Timing the chord from its
-     * own first press instead means a chord can straddle whatever else is going on, and "all three at
-     * once" becomes a rule about the three presses rather than a rule about the clock they happen to
-     * fall under.
-     */
-    static final float CHORD_TIME = 2.0f;
-
-    /**
-     * Hits needed to beat each boss on its first visit.
-     *
-     * Not comparable between bosses: a SLIME hit is a whole glob carried off the screen and a SUMO
-     * hit is a swipe paid for with presses, so these are counted in each boss's own currency and
-     * balanced against how long its window is and how often one comes round.
-     *
-     * <p>Every one of them is set against one figure: a competent player should finish the fight
-     * inside about fifteen of the {@link #ENRAGE_AT} seconds before it turns nasty. That is what
-     * these numbers are, and the first draft of them ignored it — {@code TRIPLETS} wanted six chords
-     * at one window per 4.5s, which is 27 seconds of flawless play against a 22-second fuse, so even
-     * a perfect run lost it. Health times cycle length is the figure to check, never health alone.
-     *
-     * <p>{@link #SLIME} is counted in globs carried off, and that is the whole reason its number is
-     * the smallest here: one point of its health is {@link #SPLIT_HITS} presses of its chain
-     * <em>and</em> a drag to the edge of the screen, where every other boss's is a press or a swipe.
-     * Four of those is twenty presses with four drags threaded through them, which the steady soak
-     * hand finishes in about eight seconds — see the per-boss timings {@code TestBoss.winning} prints,
-     * which are the figures to read this table against.
-     */
-    private static final float[] HP = {4f, 4f, 7f, 5f, 3f, 8f, 8f, 3f};
+    private static final float[] HP = {4f, 8f, 8f, 3f};
     /**
      * Extra health per later visit, capped by {@link #TOUGH_MAX}. A boss met at stage 30 should be
      * more than the same boss at stage 5 — but the cap matters far more than the slope now that
@@ -193,7 +72,7 @@ final class Boss {
     static final int NONE = 0;
     /** Damage landed. */
     static final int HIT = 1;
-    /** Accepted, but the boss is not hurt yet — one head of a chord, or a glob picked up. */
+
     static final int PART = 2;
     /** The boss took the input and refused it: right thing, wrong moment, or a held key. */
     static final int REBUFF = 3;
@@ -204,17 +83,6 @@ final class Boss {
     /** An Octopulse reach was answered with the wrong key and lashed the player. */
     static final int PLAYER_HIT = 6;
 
-    /** The most swipes {@link #SUMO} will bank. Earned by pressing its belt. */
-    static final int CHARGE_MAX = 3;
-    /**
-     * How far down {@link #SUMO} has to have sunk before a swipe can reach it, and how long it takes
-     * to sink the whole way. Reaching the bottom costs a life and puts it back at the top.
-     */
-    static final float SHOVE_REACH = 0.35f, SINK_TIME = 5.5f;
-    /** How long a staggered {@link #SUMO} stays staggered, and what a shove is worth then. */
-    static final float STAGGER_TIME = 3f;
-    static final float STAGGER_BONUS = 2f;
-
     // ---- elements -----------------------------------------------------------
     /** Most touch elements one boss puts on the field at once. */
     static final int ELEMS = 3;
@@ -222,12 +90,6 @@ final class Boss {
     static final int E_OFF = 0;
     /** A {@link #SLIME} glob: drag it off the play area or it crawls back. */
     static final int E_GLOB = 1;
-    /** A {@link #TRIPLETS} head: tap it awake, then press its letter. */
-    static final int E_HEAD = 2;
-    /** The {@link #DRUM} skin: tap it on the beats that want a tap. */
-    static final int E_SKIN = 3;
-    /** A key {@link #MAGPIE} dropped: drag it down to the deck to get it back. */
-    static final int E_KEY = 4;
 
     /** Element type per slot, {@link #E_OFF} when empty. */
     final int[] etype = new int[ELEMS];
@@ -235,15 +97,14 @@ final class Boss {
     final float[] ex = new float[ELEMS];
     final float[] ey = new float[ELEMS];
     final float[] er = new float[ELEMS];
-    /** Per-element life: what a glob has left before it re-merges, or a dropped key before it goes. */
+
     final float[] elife = new float[ELEMS];
     /** Which element a finger is currently holding, or -1. */
     int held = -1;
     /** Edge-started glob drags must visit the safe interior before an edge crossing can damage. */
     boolean globDragStarted, globDragCanDamage;
 
-    /** How long a shed glob survives untouched, and a dropped key. */
-    static final float GLOB_TIME = 5f, KEY_TIME = 4.5f;
+    static final float GLOB_TIME = 5f;
     /**
      * Presses of {@link #SLIME}'s chain that split one glob off it.
      *
@@ -344,22 +205,6 @@ final class Boss {
     int chainAt, split;
     float promptT, launchT;
     boolean launched;
-    /** The three letters {@link #TRIPLETS} is showing, which are awake, and which this window took. */
-    private final int[] head = new int[3];
-    private int awake, chord;
-    /** Seconds left to finish the chord in progress, or 0 with none started. */
-    float chordT;
-    /** The single letter {@link #DRUM}, {@link #MAGPIE} and {@link #SUMO} want. */
-    private int want = -1;
-    /** {@link #DRUM}: true when this beat wants a tap on the skin rather than a key press. */
-    boolean tapBeat;
-    /** The key {@link #MAGPIE} is holding, or -1. Never equal to {@link #want}. */
-    int stolen = -1;
-    /** {@link #SUMO}: swipe charges banked, how far it has sunk, and how long it stays staggered. */
-    int charges;
-    float depth, stagger;
-    /** {@link #MAGPIE}: seconds until it takes another key, while it is empty-handed. */
-    float stealT;
 
     /** Stage-10 split slime: charge, pinch state, per-body prompts and neglect clocks. */
     static final int DIVIDE_HITS = 6, DIVIDE_LEVELS = 3, DIVIDE_PIECES = 1 << DIVIDE_LEVELS;
@@ -452,15 +297,6 @@ final class Boss {
         return t > 1f ? 1f : t;
     }
 
-
-    /**
-     * Where the last accepted press landed on the boss, in view coordinates.
-     *
-     * Recorded rather than worked out afterwards, because by the time the caller wants it the thing
-     * that was struck may have moved on — a chord's third head is rerolled the instant it completes,
-     * so asking "which head shows that letter" a moment later gets a different answer or none. Same
-     * shape as the MULTI chain keeping its hop positions.
-     */
     float hitX, hitY;
 
     /** 0..1 through the arrival card. */
@@ -511,17 +347,10 @@ final class Boss {
         java.util.Arrays.fill(mushroomDustLife, 0f);
         mushroomAttackT = MUSHROOM_ATTACK_GAP;
         mushroomReaction = mushroomShakeCue = mushroomSporeCue = false;
-        awake = chord = 0;
-        charges = 0;
-        depth = 0f;
-        stagger = 0f;
-        stealT = 0f;
-        tapBeat = false;
-        want = -1;
-        stolen = -1;
+
         held = -1;
         globDragStarted = globDragCanDamage = false;
-        chordT = 0f;
+
         chainAt = 0;
         split = 0;
         promptT = PROMPT_MAX;
@@ -559,13 +388,7 @@ final class Boss {
             elife[i] = 0f;
         }
         for (int i = 0; i < chain.length; i++) chain[i] = randomGlyph(rnd);
-        for (int i = 0; i < head.length; i++) head[i] = randomGlyph(rnd);
-        if (which == DRUM || which == SUMO) want = randomGlyph(rnd);
-        if (which == MAGPIE) steal(rnd);
-        if (which == TRIPLETS) {
-            for (int i = 0; i < head.length; i++) etype[i] = E_HEAD;
-        }
-        if (which == DRUM) etype[0] = E_SKIN;
+
     }
 
     private int randomGlyph(Random rnd) { return Roster.random(rosterFull, rnd); }
@@ -600,17 +423,10 @@ final class Boss {
         mushroomDustTravel = 0f;
         java.util.Arrays.fill(mushroomDustLife, 0f);
         mushroomReaction = mushroomShakeCue = mushroomSporeCue = false;
-        awake = chord = 0;
-        want = -1;
-        stolen = -1;
-        charges = 0;
-        depth = 0f;
-        stagger = 0f;
-        stealT = 0f;
-        tapBeat = false;
+
         held = -1;
         globDragStarted = globDragCanDamage = false;
-        chordT = 0f;
+
         chainAt = 0;
         split = 0;
         promptT = PROMPT_MAX;
@@ -669,7 +485,7 @@ final class Boss {
      * which is what keeps the header column above it — see {@link #BODY_DROP} — a single derivation
      * instead of one per boss.
      */
-    private static final float[] WIDE = {2f, 1f, 1f, 1f, 1f, 1.65f, 1.35f, 1.45f};
+    private static final float[] WIDE = {2f, 1.65f, 1.35f, 1.45f};
 
     /**
      * How springy each boss is; see {@link Softbody#jiggle}.
@@ -679,7 +495,7 @@ final class Boss {
      * because its own mechanic no longer hits it every second — five presses work a glob loose and
      * only the drag scores, so the body has time to actually finish a wobble.
      */
-    private static final float[] JIGGLE = {2f, 1f, 1f, 1f, 1f, 1.7f, 2.2f, 1.9f};
+    private static final float[] JIGGLE = {2f, 1.7f, 2.2f, 1.9f};
 
     /** Rest width over rest height for this boss. */
     float wide() {
@@ -730,10 +546,6 @@ final class Boss {
      */
     private static final float BODY_DROP = 6.5f;
 
-    /**
-     * Body centre. {@link #SUMO} is the exception: it sinks down the field, so its height is its
-     * threat and {@link #depth} owns it.
-     */
     float bodyY(Layout L) {
         if (beaten) return defeatY(L);
         return baseY(L) + followY;
@@ -770,9 +582,8 @@ final class Boss {
     /** Body centre y, before the drag follow. */
     float baseY(Layout L) {
         float top = L.playTop + L.unit * BODY_DROP + bodyR(L);
-        if (kind != SUMO) return top;
-        float bottom = L.dangerY - bodyR(L) * 0.7f;
-        return top + (bottom - top) * depth;
+        return top;
+
     }
 
     /**
@@ -861,57 +672,29 @@ final class Boss {
 
     // ---- the window ---------------------------------------------------------
 
-    /**
-     * The window: true while the boss can be hurt.
-     *
-     * {@link #SUMO} answers a different question here — it has no press window at all, and what
-     * makes it vulnerable is having sunk far enough down the field for a swipe to reach it. One
-     * predicate either way, because everything that reads this only wants to know whether hurting it
-     * is possible right now.
-     */
     boolean open() {
         if (!fighting()) return false;
         if (kind == SLIME && slimeRetaliating) return true;
         if (kind == SPLITTER) return true;
-        if (kind == SUMO) return depth >= SHOVE_REACH;
+
         return phase >= CYCLE[kind] - SHOW[kind];
     }
 
     /** 0..1 through the current window, or through the breather when it is shut. */
     float phaseProgress() {
-        if (kind < 0 || kind == SUMO) return 0f;
+        if (kind < 0) return 0f;
         float show = SHOW[kind], cycle = CYCLE[kind];
         if (phase >= cycle - show) return show <= 0f ? 1f : (phase - (cycle - show)) / show;
         return cycle - show <= 0f ? 1f : phase / (cycle - show);
     }
 
-    /**
-     * True when pressing {@code g} right now would actually be <em>accepted</em> — so this is what
-     * the key hint rings, and what any player, human or bot, should read as "press this".
-     *
-     * Deliberately narrower than {@link #asksFor}, which is about whether the boss <em>claims</em>
-     * the press at all. The two differ for exactly one case and it matters: a {@link #TRIPLETS} head
-     * that is awake but already struck in this chord is still claimed — pressing it is plainly aimed
-     * at the boss and earns a rebuff rather than falling through to a word — but it is no longer
-     * being asked for. Conflating them made this method lie, and the lie was expensive: the soak bot
-     * read the struck head's letter as the thing to press, pressed it, was rebuffed, and pressed it
-     * again. Ten chords started and ten lost in one fight, none of them for want of skill.
-     */
     boolean wants(int g) {
         // Whether or not the window is open: a bolt is in the air and the press that clears it has
         // to be advertised, or the key hint tells the player to ignore the only threat on the field.
         if (boltWants(g)) return true;
         if (!open()) return false;
-        if (kind == TRIPLETS) return headIndex(g) >= 0;
-        return asksFor(g);
-    }
 
-    /**
-     * True when {@code g} is the key {@link #MAGPIE} is holding. Refused wherever it is pressed,
-     * including into a word that needs it — that denial is the mechanic.
-     */
-    boolean denies(int g) {
-        return fighting() && kind == MAGPIE && g == stolen;
+        return asksFor(g);
     }
 
     /** The next letter of {@link #SLIME}'s chain. */
@@ -925,45 +708,10 @@ final class Boss {
         return kind != SLIME ? 0f : (float) split / SPLIT_HITS;
     }
 
-    /** The letter on head {@code i} of {@link #TRIPLETS}. */
-    int head(int i) {
-        return kind == TRIPLETS && i >= 0 && i < head.length ? head[i] : -1;
-    }
-
-    boolean headAwake(int i) {
-        return (awake & (1 << i)) != 0;
-    }
-
-    boolean headStruck(int i) {
-        return (chord & (1 << i)) != 0;
-    }
-
-    /** The one letter {@link #DRUM}, {@link #MAGPIE} or {@link #SUMO} is showing, or -1. */
-    int want() {
-        return kind == DRUM || kind == MAGPIE || kind == SUMO ? want : -1;
-    }
-
     /** True when a shove would land right now, for the renderer's hint and the view's gesture. */
-    boolean shovable() {
-        return fighting() && kind == SUMO && charges > 0 && open();
-    }
 
     /** First awake, unstruck head showing {@code g}, or -1. */
-    private int headIndex(int g) {
-        for (int i = 0; i < head.length; i++) {
-            if (head[i] == g && headAwake(i) && !headStruck(i)) return i;
-        }
-        return -1;
-    }
 
-    /**
-     * True when {@code g} is a letter this boss would want if its window were open.
-     *
-     * {@link #TRIPLETS} asks about awake heads only, and deliberately does not care whether one has
-     * already been struck this window: a press on a head that is up but spent is plainly a press at
-     * the boss, and it wants the rebuff rather than falling through to a word. A head that is still
-     * asleep asks for nothing, which is what makes the tap the first half of that mechanic.
-     */
     boolean claims(int g) {
         return boltWants(g) || asksFor(g);
     }
@@ -972,14 +720,7 @@ final class Boss {
         switch (kind) {
             case SLIME: return g == chainLetter();
             case OCTOPUS: return octoReach >= 0f && g == octoTarget;
-            case TRIPLETS:
-                for (int i = 0; i < head.length; i++) {
-                    if (head[i] == g && headAwake(i)) return true;
-                }
-                return false;
-            case DRUM: return !tapBeat && g == want;
-            case MAGPIE:
-            case SUMO: return g == want;
+
             case SPLITTER:
                 return dividePieceFor(g) >= 0;
             default: return false;
@@ -1110,12 +851,7 @@ final class Boss {
             rage = 1f;
             return PLAYER_HIT;
         }
-        if (denies(g)) {
-            // It has that key. Nothing happens with it anywhere — this is the refusal, and it is the
-            // reason the stolen key is never the letter the boss itself wants.
-            rage = 1f;
-            return REBUFF;
-        }
+
         if (!asksFor(g)) return NONE;
 
         // Where a bullet fired at this press should land. The body by default; overridden below by
@@ -1146,11 +882,7 @@ final class Boss {
         if (!open()) {
             // Its letter, at the wrong moment.
             rage = 1f;
-            if (kind == DRUM) {
-                // The beat resets, which is what stops the window being brute-forced: mashing its
-                // letter pushes the window further away instead of catching its opening frame.
-                phase = 0f;
-            }
+
             return REBUFF;
         }
 
@@ -1181,40 +913,7 @@ final class Boss {
                 shedGlob(rnd);
                 return SPLIT;
             }
-            case TRIPLETS: {
-                int i = headIndex(g);
-                if (i < 0) {
-                    // An awake head showing this letter has already been taken this window. Refused
-                    // rather than passed on: it is plainly a press at the boss, just a wasted one.
-                    rage = 1f;
-                    return REBUFF;
-                }
-                // The first head of a chord starts its clock; the rest have to beat it.
-                if (chord == 0) chordT = CHORD_TIME;
-                // The head actually struck, before the reroll below can move it.
-                hitX = ex[i];
-                hitY = ey[i];
-                chord |= 1 << i;
-                if (chord != (1 << head.length) - 1) {
-                    hurt = Math.max(hurt, 0.5f);
-                    if (body != null) body.impulse(hitX, hitY, HIT_PUNCH * 0.55f);
-                    return PART;
-                }
-                chordT = 0f;
-                // All three, awake and struck inside one window. New letters, and exactly one head
-                // nods off again.
-                //
-                // One, not all three. Sending them all back to sleep made every single hit cost
-                // three taps plus three presses inside one window, which is six actions in 2.4s
-                // before a thumb has touched a minion — the soak bot died on this boss at every tier
-                // above casual, and it was not close. One sleeper keeps the tap in the loop as a
-                // trickle rather than a toll, which is what the mechanic wanted to be: something to
-                // keep on top of, not a gate in front of every hit.
-                chord = 0;
-                awake &= ~(1 << rnd.nextInt(head.length));
-                for (int k = 0; k < head.length; k++) head[k] = randomGlyph(rnd);
-                return damage(1f);
-            }
+
             case SPLITTER: {
                 int part = dividePieceFor(g);
                 if (part < 0) return NONE;
@@ -1233,40 +932,7 @@ final class Boss {
                 }
                 return PART;
             }
-            case DRUM: {
-                int r = damage(1f);
-                // A landed beat closes the window at once, so one window is worth exactly one hit
-                // and the beat stays something played rather than something mashed through.
-                phase = 0f;
-                nextBeat(rnd);
-                return r;
-            }
-            case MAGPIE: {
-                int r = damage(1f);
-                // Hit, so it drops what it was holding: the key falls onto the field as an element
-                // and has to be dragged home. Losing the drag is how it gets stolen again.
-                //
-                // Unless that was the last hit, in which case damage() has already handed the key
-                // straight back and there is nothing to drop. Dropping anyway put an element on the
-                // field carrying key -1, which is an array index waiting to happen — and it was, in
-                // the first run of these assertions.
-                if (!beaten) dropKey(rnd);
-                return r;
-            }
-            case SUMO: {
-                // Does not hurt it. It staggers it — which doubles the next shove — and banks the
-                // swipe that shove will be spent on. So the keys pay for the gesture, and the two
-                // halves of this fight need each other.
-                //
-                // Charges used to come from words cleared during the fight, which was a fine rule
-                // until boss stages stopped spawning words: this boss then had no way to earn a
-                // swipe at all and could not be beaten. If a mechanic is paid for in some other
-                // system's currency, it dies when that system does.
-                stagger = STAGGER_TIME;
-                if (charges < CHARGE_MAX) charges++;
-                want = randomGlyph(rnd);
-                return PART;
-            }
+
             default: return NONE;
         }
     }
@@ -1292,41 +958,7 @@ final class Boss {
     /** True when element {@code i} is dragged rather than tapped. */
     boolean draggable(int i) {
         if (i < 0 || i >= ELEMS) return false;
-        return etype[i] == E_GLOB || etype[i] == E_KEY;
-    }
-
-    /**
-     * A tap on element {@code i}. Only the tapped elements answer this; a draggable one returns
-     * {@link #NONE} so a stray tap on a glob is not silently eaten.
-     */
-    int tap(int i, Random rnd) {
-        if (!fighting() || i < 0 || i >= ELEMS || etype[i] == E_OFF) return NONE;
-        if (etype[i] == E_HEAD) {
-            if (headAwake(i)) {
-                // Already up. Not a rebuff — tapping a head twice is a natural thing to do and must
-                // not sound like a mistake.
-                return NONE;
-            }
-            awake |= 1 << i;
-            return PART;
-        }
-        if (etype[i] == E_SKIN) {
-            if (!tapBeat) {
-                // This beat wants a key, not a tap.
-                rage = 1f;
-                return REBUFF;
-            }
-            if (!open()) {
-                rage = 1f;
-                phase = 0f;
-                return REBUFF;
-            }
-            int r = damage(1f);
-            phase = 0f;
-            nextBeat(rnd);
-            return r;
-        }
-        return NONE;
+        return etype[i] == E_GLOB;
     }
 
     /** Picks element {@code i} up. Returns true when the boss took the finger. */
@@ -1523,19 +1155,6 @@ final class Boss {
                 if (!beaten) slimeRetaliating = true;
                 return result;
             }
-        } else if (t == E_KEY) {
-            // Home is the deck. A drag ending on a key is fine — it is a drag *starting* on one
-            // that this game cannot afford.
-            if (y >= L.deckTop) {
-                stolen = -1;
-                // Empty-handed for a moment, which is the reward for the fetch: a whole deck to type
-                // with. Then it takes another. Timed rather than immediate, because a thief that has
-                // stolen the next key before you have straightened up makes the drag feel pointless.
-                stealT = STEAL_GAP;
-                clearElem(held);
-                held = -1;
-                return HIT;
-            }
         }
         return PART;
     }
@@ -1554,22 +1173,6 @@ final class Boss {
         if (mushroomStem != null) mushroomStem.letGo();
         globDragStarted = globDragCanDamage = false;
         octoDragStarted = octoDragCanDamage = false;
-    }
-
-    /**
-     * A swipe at {@link #SUMO}. Spends a charge, shoves it back to the top and hurts it — twice as
-     * hard if a press has staggered it.
-     *
-     * @return true when it landed, so the caller knows the gesture was consumed
-     */
-    boolean shove() {
-        if (!shovable()) return false;
-        charges--;
-        depth = 0f;
-        float n = stagger > 0f ? STAGGER_BONUS : 1f;
-        stagger = 0f;
-        damage(n);
-        return true;
     }
 
     // ---- internals ----------------------------------------------------------
@@ -1593,7 +1196,7 @@ final class Boss {
             // Beaten, so it gives the key back and takes its litter with it. Cleared here as well as
             // in leave(): the exit animation still draws the body, and it must not still be holding
             // a key hostage while it bursts.
-            stolen = -1;
+
             held = -1;
             for (int i = 0; i < ELEMS; i++) clearElem(i);
             // Anything still in the air goes too: a bolt landing after the burst takes a life for a
@@ -1668,23 +1271,9 @@ final class Boss {
             // Its centre sits just outside rest; the live outline protrudes around it as one shape.
             ex[i] = bx + globSide[i] * (br * wide() + er[i] * WART_OUT);
             ey[i] = by + br * (globLift[i] - 0.6f) * 0.5f;
-        } else if (etype[i] == E_KEY) {
-            er[i] = L == null ? br * 0.30f : L.keyR * 0.78f;
-            if (held == i || moved[i]) return;
-            // Below the body: the magpie drops it, so it is out in the open from the start.
-            ex[i] = bx + globSide[i] * br * 0.85f;
-            ey[i] = by + br * (1.25f + globLift[i] * 0.35f);
         }
     }
 
-    /**
-     * Puts a just-created element where the layout pass would, from the body's last known placement
-     * — so it is never briefly at the origin. See {@link #lastBX}.
-     *
-     * No {@link Layout} here: an element is created by a press, which does not have one. Only the
-     * dropped key's radius wants it, and one frame at an approximate radius is invisible where a
-     * frame at the origin was not.
-     */
     private void seed(int i) {
         if (lastBR > 0f) place(i, lastBX, lastBY, lastBR, null);
     }
@@ -1708,48 +1297,9 @@ final class Boss {
     /** True once a finger has moved this element, so the layout pass stops placing it. */
     private final boolean[] moved = new boolean[ELEMS];
 
-    /**
-     * {@link #MAGPIE} drops the key it was holding onto the field.
-     *
-     * Does nothing if it is not holding one, or if the one it dropped is still lying there. Without
-     * that second guard a second hit dropped the same key again — two elements carrying the same
-     * letter, one of which could not possibly be returned, since returning either one frees it. It
-     * showed up as two identical dumplings under the boss in a preview frame.
-     */
-    private void dropKey(Random rnd) {
-        if (stolen < 0) return;
-        for (int i = 0; i < ELEMS; i++) {
-            if (etype[i] == E_KEY) return;
-        }
-        int i = freeElem();
-        if (i < 0) {
-            // Nowhere to put it, so it simply keeps hold of it and takes a different one. Cannot
-            // happen with the slots it has, and silently losing a key would be worse than this.
-            steal(rnd);
-            return;
-        }
-        etype[i] = E_KEY;
-        elife[i] = KEY_TIME;
-        keyOf[i] = stolen;
-        globSide[i] = rnd.nextBoolean() ? -1f : 1f;
-        globLift[i] = 0.5f;
-        moved[i] = false;
-        seed(i);
-        // It is on the field now, not in its pocket — but it is not yours again until it is home, and
-        // the deck stays short until then. Which is exactly why the new letter still has to avoid the
-        // key being denied: a bare reroll here could land on it, and then the only press that could
-        // hurt the thief would be the one press it was refusing. That is a stage nobody can leave,
-        // and with no retreat to fall back on it is a run ended by a coin flip.
-        want = pickWant(stolen, rnd);
-    }
-
     /** A wanted letter that is not {@code avoid}, drawn uniformly over the five that qualify. */
-    private int pickWant(int avoid, Random rnd) {
-        return Roster.active(rosterFull, avoid) ? randomExcept(avoid, rnd) : randomGlyph(rnd);
-    }
 
     /** Which key a dropped-key element is carrying. */
-    final int[] keyOf = new int[ELEMS];
 
     boolean keyDisabled(int g) { return kind == OCTOPUS && (disabledKeys & (1 << g)) != 0; }
 
@@ -2503,16 +2053,6 @@ final class Boss {
     private boolean bodyPlaced;
 
     /** Takes a key, never the one it is showing — that pairing would be a deadlock. */
-    private void steal(Random rnd) {
-        want = randomGlyph(rnd);
-        stolen = pickWant(want, rnd);
-    }
-
-    /** Alternates the drum between wanting a key and wanting a tap, and rerolls its letter. */
-    private void nextBeat(Random rnd) {
-        tapBeat = !tapBeat;
-        want = randomGlyph(rnd);
-    }
 
     private void updateDivide(float dt, Layout L) {
         boingWeight = -1f;
@@ -2774,22 +2314,7 @@ final class Boss {
                 }
             }
         }
-        if (stagger > 0f) stagger = Math.max(0f, stagger - dt);
-        if (stealT > 0f) {
-            stealT = Math.max(0f, stealT - dt);
-            // The breather is up: it takes another key. Only ever reached with an empty hand, since
-            // this clock is only started by a key being fetched home.
-            if (stealT <= 0f && kind == MAGPIE && stolen < 0) steal(rnd);
-        }
-        if (chordT > 0f) {
-            chordT = Math.max(0f, chordT - dt);
-            // Ran out of time: the part-finished chord is lost, and it is lost visibly, since a
-            // combo that resets with no cause reads as a fault.
-            if (chordT <= 0f && chord != 0) {
-                chord = 0;
-                rage = 1f;
-            }
-        }
+
         ageElems(dt);
         if (kind == OCTOPUS) updateOctopus(dt, L, rnd);
 
@@ -2812,32 +2337,10 @@ final class Boss {
             }
         }
 
-        if (kind == SUMO) {
-            depth += dt / SINK_TIME;
-            if (depth >= 1f) {
-                depth = 0f;
-                // It landed on the line with its whole weight, so it squashes flat and rebounds.
-                if (body != null) body.squash(1f);
-                hits++;
-            }
-            return hits;
-        }
-
         float cycle = CYCLE[kind];
-        boolean wasOpen = open();
         phase += dt;
         if (phase >= cycle) phase -= cycle;
-        if (wasOpen && !open()) {
-            // The window shut. A part-finished chord is lost, and that is the only thing a shut
-            // window costs anybody.
-            //
-            // Nothing heals. The chain used to give a press back here, which meant the health bar
-            // went up while you watched — and a bar that goes up reads as being cheated rather than
-            // as being hard. The wakes survive too, for the same reason: a fumbled chord costing six
-            // actions to get back to where it already was is a punishment that compounds, and
-            // compounding punishment on a boss with no way past it is how a stage becomes a wall.
-            chord = 0;
-        }
+
         return hits;
     }
 
@@ -2848,27 +2351,7 @@ final class Boss {
         lastBY = by;
         lastBR = br;
         for (int i = 0; i < ELEMS; i++) {
-            switch (etype[i]) {
-                case E_HEAD:
-                    // Three heads across the body, evenly spread and a touch above its middle.
-                    // Fixed to it: they are the boss, which is also why it is drawn without a face
-                    // of its own — see BossScreen.
-                    ex[i] = bx + (i - 1) * br * 1.05f;
-                    ey[i] = by - br * 0.06f;
-                    er[i] = br * 0.40f;
-                    break;
-                case E_SKIN:
-                    ex[i] = bx;
-                    ey[i] = by;
-                    er[i] = br * 0.72f;
-                    break;
-                case E_GLOB:
-                case E_KEY:
-                    place(i, bx, by, br, L);
-                    break;
-                default:
-                    break;
-            }
+            if (etype[i] == E_GLOB) place(i, bx, by, br, L);
         }
         // Anything a finger has moved stays moved, so the layout pass does not drag it home again.
         if (held >= 0) moved[held] = true;
@@ -2883,11 +2366,7 @@ final class Boss {
             if (held == i) continue;
             elife[i] -= dt;
             if (elife[i] > 0f) continue;
-            if (etype[i] == E_KEY) {
-                // Snatched again, and it is the same key: losing the drag has to cost the thing the
-                // drag was for, or the theft would be a formality.
-                stolen = keyOf[i];
-            }
+
             clearElem(i);
         }
     }

@@ -23,6 +23,19 @@ final class Interlude {
         c.time = 0;
         c.joinRung = false;
         c.statusRung = false;
+        c.bossReward = c.bossPrizePending;
+        c.bossPrizePending = false;
+        if (c.bossReward) {
+            c.starBonus = false;
+            c.bonusTimer = BossCollect.REVEAL_TIME;
+            c.paradeTimer = 0f;
+            c.target = null;
+            c.caretOwner = null;
+            c.power = null;
+            c.stageByPower = false;
+            if (c.sound != null) c.sound.achievement();
+            return;
+        }
         c.starBonus = c.starNext;
         if (c.starBonus) {
             // A fresh line every attempt, with whatever is already in hand kept — see
@@ -129,6 +142,23 @@ final class Interlude {
         c.caseSlide = 0f;
         // Scheduled, not started: it runs after the rest of the interlude has played out.
         c.paradeTimer = GameCore.PARADE_TIME;
+    }
+
+    /** Boss portraits are deterministic trophies, never random minigame drops. */
+    static void awardBossPrize(GameCore c, int kind) {
+        c.prize = Collect.BOSS_FIRST + kind;
+        c.prizeNew = !Collect.has(c.collected, c.prize);
+        c.roundPrizes = Collect.add(c.roundPrizes, c.prize);
+        if (c.prizeNew) {
+            c.collected = Collect.add(c.collected, c.prize);
+            if (c.store != null) c.store.saveCollected(c.collected);
+        } else c.score += GameCore.DUPE_BONUS;
+        c.collectTotal++;
+        if (c.store != null) c.store.saveCollectTotal(c.collectTotal);
+        c.caseIndex = c.prize;
+        c.caseSlide = c.caseSlideY = 0f;
+        c.paradeTimer = 0f;
+        c.bossPrizePending = true;
     }
 
     /** Star-path prizes are the five catalogue entries reserved for that game. */

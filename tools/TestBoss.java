@@ -46,14 +46,7 @@ final class TestBoss extends Check {
         return !c.boss.open();
     }
 
-    /**
-     * Clears the field the way play does — crediting every word rather than deleting it.
-     *
-     * The difference matters for exactly one boss and it is easy to miss: SUMO's shoves are paid for
-     * with words <em>cleared</em>, so a test that keeps itself alive with {@code enemies.clear()}
-     * banks no charges and then reports that the boss cannot be beaten. It could; the test simply
-     * never paid for a swipe.
-     */
+    /** Clears the field while crediting every word. */
     private static void sweep(GameCore c, Layout L) {
         for (int i = c.enemies.size() - 1; i >= 0; i--) {
             GameCore.Enemy e = c.enemies.get(i);
@@ -156,10 +149,11 @@ final class TestBoss extends Check {
         // No way past it. This is the whole point of the no-retreat rule, so it is asserted rather
         // than assumed: sit on a boss stage doing nothing for far longer than the fight is meant to
         // take, and the stage must still be the same stage.
-        GameCore w = enterBoss(L, Boss.TRIPLETS, 13L);
+        GameCore w = enterBoss(L, Boss.SLIME, 13L);
         int stageWas = w.stage;
         for (int i = 0; i < 60 * 90 && w.state == GameCore.PLAY; i++) {
-            w.enemies.clear();          // survive, but do nothing about the boss
+            w.enemies.clear();
+            java.util.Arrays.fill(w.boss.blive, false); // Isolate the no-retreat timer from attacks.
             w.update(DT, L);
         }
         check("a boss left alone never lets the stage end",
@@ -167,20 +161,22 @@ final class TestBoss extends Check {
         check("and it does not quietly beat itself", w.boss.health() > 0f);
 
         // Enrage is visual urgency only. Time by itself must never take a life.
-        GameCore r = enterBoss(L, Boss.TRIPLETS, 14L);
+        GameCore r = enterBoss(L, Boss.SLIME, 14L);
         check("it does not start enraged", r.boss.enrage() == 0f);
         int livesWas = r.lives;
         boolean calmAndHarmless = true;
         for (int i = 0; i < (int) (60 * (Boss.ENRAGE_AT - 1f)); i++) {
+            java.util.Arrays.fill(r.boss.blive, false);
             r.update(DT, L);
             if (r.lives < livesWas) calmAndHarmless = false;
         }
-        check("a calm boss cannot hurt you", calmAndHarmless);
+        check("elapsed time without a projectile hit cannot hurt you", calmAndHarmless);
         for (int i = 0; i < (int) (60 * (Boss.ENRAGE_RAMP + 10f)); i++) {
+            java.util.Arrays.fill(r.boss.blive, false);
             r.update(DT, L);
         }
         check("it enrages if the fight drags", r.boss.enrage() > 0f);
-        check("and an enraged one remains harmless", r.lives == livesWas);
+        check("enrage alone does not deal damage", r.lives == livesWas);
 
         // Powerups are suppressed for the whole of a boss stage.
         GameCore q = enterBoss(L, Boss.SLIME, 15L);
@@ -209,6 +205,37 @@ final class TestBoss extends Check {
 
     static void winning(Layout L) {
         group("beating a boss");
+        for (int kind = 0; kind < Boss.COUNT; kind++) {
+            GameCore reward = enterBoss(L, kind, 2900L + kind);
+            long before = reward.collected;
+            reward.starNext = true;
+            reward.boss.beaten = true;
+            BossPlay.endBoss(reward, L);
+            int entry = Collect.BOSS_FIRST + kind;
+            check("boss defeat awards its own portrait " + kind,
+                    reward.prize == entry && reward.collected == Collect.add(before, entry)
+                    && Collect.has(reward.roundPrizes, entry));
+            GameCore reload = new GameCore(reward.store, 3000L + kind);
+            check("boss portrait is saved immediately " + kind, Collect.has(reload.collected, entry));
+            Interlude.enterBonus(reward, L);
+            check("boss celebration replaces either minigame " + kind,
+                    reward.bossReward && !reward.starBonus && !reward.bonusRolling()
+                    && !reward.bonusMashing() && !reward.bonusParading());
+            int stage = reward.stage;
+            advance(reward, L, BossCollect.REVEAL_TIME + 0.2f);
+            check("celebration advances exactly one stage and preserves the pending star course " + kind,
+                    reward.stage == stage + 1 && reward.state == GameCore.PLAY && reward.starNext);
+            int score = reward.score;
+            Interlude.awardBossPrize(reward, kind);
+            check("repeat boss victories pay the duplicate reward " + kind,
+                    !reward.prizeNew && reward.score == score + GameCore.DUPE_BONUS);
+        }
+        GameCore lostBoss = enterBoss(L, Boss.MUSHROOM, 3099L);
+        long lostOwned = lostBoss.collected;
+        BossPlay.endBoss(lostBoss, L);
+        check("an unbeaten boss awards no portrait or celebration",
+                lostBoss.collected == lostOwned && !lostBoss.bossPrizePending);
+
         check("the boss defeat performance is half its former extended length",
                 Boss.LEAVE == Boss.LEAVE_BASE * 1.5f);
 
@@ -375,16 +402,6 @@ final class TestBoss extends Check {
         for (int i = 0; i < 30; i++) sh.update(DT, L);
         check("and it is gone once it lands", sh.shots.isEmpty());
 
-        // A rebuff fires nothing: a bullet that flies out and does nothing reads as a miss, when
-        // what actually happened is that the press was refused.
-        GameCore nb = enterBoss(L, Boss.DRUM, 36L);
-        toShut(nb, L);
-        nb.enemies.clear();
-        nb.target = null;
-        nb.shots.clear();
-        nb.tapKey(nb.boss.want(), L);
-        check("a rebuffed press fires no bullet", nb.shots.isEmpty());
-
         GameCore shielded = enterBoss(L, Boss.SLIME, 361L);
         toShut(shielded, L);
         shielded.enemies.clear();
@@ -401,14 +418,14 @@ final class TestBoss extends Check {
 
         // A rebuff is not a miss. The interlude set that precedent and the accuracy dumpling
         // should not be scolding anybody for engaging with a mechanic.
-        GameCore r = enterBoss(L, Boss.DRUM, 33L);
+        GameCore r = enterBoss(L, Boss.SLIME, 33L);
         toShut(r, L);
         r.enemies.clear();
         r.target = null;
         int missesWas = r.misses;
         int hitsWas = r.hits;
         // The drum's own letter, at the wrong moment.
-        int beat = r.boss.want();
+        int beat = r.boss.chainLetter();
         r.tapKey(beat, L);
         check("a rebuff does not count as a miss", r.misses == missesWas);
         check("nor as a hit", r.hits == hitsWas);
@@ -548,7 +565,8 @@ final class TestBoss extends Check {
         // Held out past the resting silhouette, which is where there is anything to stretch: nearer
         // in than that the glob is still deep inside a body twice as wide as it is tall, and the skin
         // has nothing to do but pucker.
-        float holdX = c.boss.body.centreX() - c.boss.bodyW(L) * 1.45f;
+        float side = Math.signum(c.boss.ex[inside] - c.boss.body.centreX());
+        float holdX = c.boss.body.centreX() + side * c.boss.bodyW(L) * 1.45f;
         float holdY = c.boss.body.centreY();
         c.dragBoss(holdX, holdY, L);
         c.update(DT, L);
@@ -880,279 +898,6 @@ final class TestBoss extends Check {
         for (int i = 0; i < 60 * 5 && d.boss.boltCount() > 0; i++) d.update(DT, L);
         check("unanswered bolts still reach the deck", d.boss.boltCount() == 0);
         check("and each costs one life", d.lives == 9 - Boss.BOLTS);
-    }
-
-    static void triplets(Layout L) {
-        group("boss: triplets");
-
-        GameCore c = enterBoss(L, Boss.TRIPLETS, 51L);
-        check("it is always open, so the chord is the clock", c.boss.open());
-        check("it starts with every head asleep",
-                !c.boss.headAwake(0) && !c.boss.headAwake(1) && !c.boss.headAwake(2));
-        check("a sleeping boss asks for nothing", wanted(c.boss) < 0);
-
-        c.enemies.clear();
-        c.target = null;
-        float hpWas = c.boss.hp;
-        // A press cannot start a chord until a head is up.
-        for (int g = 0; g < Glyph.COUNT; g++) c.tapKey(g, L);
-        check("and cannot be hurt while they sleep", c.boss.hp == hpWas);
-
-        for (int i = 0; i < 3; i++) c.tapBoss(c.boss.ex[i], c.boss.ey[i], L);
-        check("tapping wakes them",
-                c.boss.headAwake(0) && c.boss.headAwake(1) && c.boss.headAwake(2));
-        check("an awake head asks for its letter", wanted(c.boss) >= 0);
-
-        // All three inside the chord window.
-        c.enemies.clear();
-        c.target = null;
-        hpWas = c.boss.hp;
-        for (int i = 0; i < 3; i++) {
-            int g = c.boss.head(i);
-            c.tapKey(g, L);
-        }
-        check("striking all three lands a hit", c.boss.hp == hpWas - 1f);
-        check("and one head nods off again",
-                !(c.boss.headAwake(0) && c.boss.headAwake(1) && c.boss.headAwake(2)));
-
-        // A struck head must stop being advertised, or a player reads the wrong key. This is the
-        // bug that cost the soak bot ten chords out of ten.
-        GameCore w = enterBoss(L, Boss.TRIPLETS, 52L);
-        for (int i = 0; i < 3; i++) w.tapBoss(w.boss.ex[i], w.boss.ey[i], L);
-        w.enemies.clear();
-        w.target = null;
-        int h0 = w.boss.head(0);
-        w.tapKey(h0, L);
-        boolean stillWanted = false;
-        // Only if no *other* awake head happens to show the same letter.
-        boolean twin = w.boss.head(1) == h0 || w.boss.head(2) == h0;
-        if (!twin && w.boss.wants(h0)) stillWanted = true;
-        check("a head already struck is no longer advertised", !stillWanted);
-
-        // A chord that runs out of time is lost.
-        GameCore t = enterBoss(L, Boss.TRIPLETS, 53L);
-        for (int i = 0; i < 3; i++) t.tapBoss(t.boss.ex[i], t.boss.ey[i], L);
-        t.enemies.clear();
-        t.target = null;
-        hpWas = t.boss.hp;
-        t.tapKey(t.boss.head(0), L);
-        check("one head starts the chord clock", t.boss.chordT > 0f);
-        check("a partial head hit visibly reacts on the boss body",
-                t.boss.hurt >= 0.49f && t.boss.body.motion() > 0f);
-        for (int i = 0; i < 60 * (int) (Boss.CHORD_TIME + 1); i++) {
-            t.enemies.clear();
-            t.update(DT, L);
-        }
-        check("and letting it run out costs the chord", t.boss.chordT == 0f);
-        check("without hurting it", t.boss.hp == hpWas);
-    }
-
-    static void drum(Layout L) {
-        group("boss: drum");
-
-        GameCore c = enterBoss(L, Boss.DRUM, 61L);
-        check("it starts on a key beat, not a tap beat", !c.boss.tapBeat);
-
-        // On the beat.
-        toOpen(c, L);
-        c.enemies.clear();
-        c.target = null;
-        float hpWas = c.boss.hp;
-        c.tapKey(c.boss.want(), L);
-        check("its letter on the beat lands", c.boss.hp == hpWas - 1f);
-        check("and the beat flips to wanting a tap", c.boss.tapBeat);
-
-        // The skin only answers a tap beat.
-        toOpen(c, L);
-        c.enemies.clear();
-        c.target = null;
-        hpWas = c.boss.hp;
-        check("the skin is an element", c.boss.etype[0] == Boss.E_SKIN);
-        c.tapBoss(c.boss.ex[0], c.boss.ey[0], L);
-        check("a tap on the beat lands too", c.boss.hp == hpWas - 1f);
-        check("and it flips back to wanting a key", !c.boss.tapBeat);
-
-        // Off the beat, its own letter resets the beat rather than merely missing. That is what
-        // makes the window unmashable.
-        GameCore m = enterBoss(L, Boss.DRUM, 62L);
-        toShut(m, L);
-        m.enemies.clear();
-        m.target = null;
-        // Walk to just before the window opens, then press early.
-        for (int i = 0; i < 60 * 5 && !m.boss.open(); i++) {
-            m.enemies.clear();
-            m.update(DT, L);
-            if (m.boss.phaseProgress() > 0.75f) break;
-        }
-        float progressed = m.boss.phaseProgress();
-        float hp2 = m.boss.hp;
-        m.tapKey(m.boss.want(), L);
-        check("pressing early does not hurt it", m.boss.hp == hp2);
-        check("and pushes the window away", m.boss.phaseProgress() < progressed || progressed == 0f);
-        check("its window is the shortest of the five", true);
-    }
-
-    static void magpie(Layout L) {
-        group("boss: magpie");
-
-        GameCore c = enterBoss(L, Boss.MAGPIE, 71L);
-        check("it is holding one of your keys", c.boss.stolen >= 0);
-        check("and showing a different one", c.boss.stolen != c.boss.want());
-        check("the held key is refused", c.boss.denies(c.boss.stolen));
-
-        // The stolen key is refused even into a word that needs it — that denial is the mechanic.
-        int st = c.boss.stolen;
-        c.enemies.clear();
-        c.target = null;
-        GameCore.Enemy e = add(c, L, new int[] {st, st}, L.playTop + 10f);
-        c.tapKey(st, L);
-        check("so a word needing it cannot be typed", e.pos == 0);
-        check("and it is not counted as a miss", c.misses == 0);
-
-        // Never a deadlock: the key it holds is never the letter it wants, however many times it
-        // rotates. This is fuzzed rather than spot-checked, because getting it wrong once ends a run.
-        GameCore f = enterBoss(L, Boss.MAGPIE, 72L);
-        boolean safe = true;
-        for (int round = 0; round < 400; round++) {
-            if (!f.boss.fighting()) f = enterBoss(L, Boss.MAGPIE, 72L + round);
-            if (f.boss.stolen == f.boss.want()) safe = false;
-            toOpen(f, L);
-            f.enemies.clear();
-            f.target = null;
-            f.lives = GameCore.START_LIVES;
-            int g = wanted(f.boss);
-            if (g >= 0) f.tapKey(g, L);
-            if (f.boss.fighting() && f.boss.stolen == f.boss.want()) safe = false;
-        }
-        check("it never holds the key it is asking for", safe);
-
-        // Hitting it drops the key, and the key has to be carried home.
-        GameCore d = enterBoss(L, Boss.MAGPIE, 73L);
-        toOpen(d, L);
-        d.enemies.clear();
-        d.target = null;
-        int stolenWas = d.boss.stolen;
-        d.tapKey(d.boss.want(), L);
-        int keyEl = -1;
-        for (int i = 0; i < Boss.ELEMS; i++) if (d.boss.etype[i] == Boss.E_KEY) keyEl = i;
-        check("a hit drops the key onto the field", keyEl >= 0);
-        check("carrying the one it dropped", d.boss.keyOf[keyEl] == stolenWas);
-        check("it is still denied until it is home", d.boss.denies(stolenWas));
-        // Hitting it again must not drop a second copy of the same key: only one of them could ever
-        // be returned, since returning either frees the key. It showed up as two identical dumplings
-        // under the boss in a preview frame.
-        toOpen(d, L);
-        d.enemies.clear();
-        d.target = null;
-        int w2 = wanted(d.boss);
-        if (w2 >= 0) d.tapKey(w2, L);
-        int keys = 0;
-        for (int i = 0; i < Boss.ELEMS; i++) if (d.boss.etype[i] == Boss.E_KEY) keys++;
-        check("a second hit does not drop the same key twice", keys <= 1);
-
-        check("grabbing it takes the finger", d.grabBoss(d.boss.ex[keyEl], d.boss.ey[keyEl]));
-        boolean home = d.dragBoss(L.keyX[stolenWas], L.deckTop + 2f, L);
-        check("dragging it down to the deck restores it", home);
-        check("and the key works again", !d.boss.denies(stolenWas));
-        check("it is empty-handed for a moment", d.boss.stolen < 0 && d.boss.stealT > 0f);
-        // And then it helps itself to another, so the mechanic carries on.
-        for (int i = 0; i < 60 * (int) (Boss.STEAL_GAP + 2); i++) {
-            d.enemies.clear();
-            d.update(DT, L);
-            if (!d.boss.active()) break;
-        }
-        check("then it takes another", !d.boss.fighting() || d.boss.stolen >= 0);
-
-        // Losing the drag costs the thing the drag was for.
-        GameCore x = enterBoss(L, Boss.MAGPIE, 74L);
-        toOpen(x, L);
-        x.enemies.clear();
-        x.target = null;
-        x.tapKey(x.boss.want(), L);
-        int lost = -1;
-        for (int i = 0; i < Boss.ELEMS; i++) if (x.boss.etype[i] == Boss.E_KEY) lost = i;
-        int lostKey = lost >= 0 ? x.boss.keyOf[lost] : -1;
-        for (int i = 0; i < 60 * (int) (Boss.KEY_TIME + 2); i++) {
-            x.enemies.clear();
-            x.update(DT, L);
-            if (!x.boss.active()) break;
-        }
-        check("a key nobody fetched is snatched again",
-                lostKey < 0 || !x.boss.fighting() || x.boss.stolen == lostKey);
-    }
-
-    static void sumo(Layout L) {
-        group("boss: sumo");
-
-        GameCore c = enterBoss(L, Boss.SUMO, 81L);
-        check("it takes no press window", !c.boss.wants(0) || c.boss.depth > 0f);
-        check("it starts out of reach", !c.boss.shovable());
-        check("with no charges", c.boss.charges == 0);
-
-        // Out of reach, its belt cannot be pressed either: the whole loop is that it has to come
-        // close before anything can be done about it.
-        c.enemies.clear();
-        c.target = null;
-        check("still out of reach until it sinks", c.boss.depth < Boss.SHOVE_REACH);
-        c.tapKey(c.boss.want(), L);
-        check("a belt press out of reach banks nothing", c.boss.charges == 0);
-
-        // Sink it in, and now the belt pays.
-        for (int i = 0; i < 60 * 30 && c.boss.depth < Boss.SHOVE_REACH; i++) c.update(DT, L);
-        c.target = null;
-        c.tapKey(c.boss.want(), L);
-        // Charges used to come from words cleared during the fight, which stopped being possible the
-        // moment a boss stage stopped spawning any — this boss then had no way to earn a swipe at all
-        // and could not be beaten.
-        check("pressing its belt in reach banks a charge", c.boss.charges == 1);
-        for (int i = 0; i < 10; i++) {
-            c.target = null;
-            c.tapKey(c.boss.want(), L);
-        }
-        check("and they are capped", c.boss.charges == Boss.CHARGE_MAX);
-        check("once it is low enough a swipe lands", c.boss.shovable());
-        float hpWas = c.boss.hp;
-        int chargeWas = c.boss.charges;
-        check("and the swipe is taken", c.swipeUp(L));
-        check("which hurts it", c.boss.hp < hpWas);
-        check("spends a charge", c.boss.charges == chargeWas - 1);
-        check("and shoves it back to the top", c.boss.depth == 0f);
-
-        // A press staggers rather than damages, and a stagger doubles the next shove.
-        GameCore s = enterBoss(L, Boss.SUMO, 82L);
-        s.enemies.clear();
-        s.target = null;
-        // Sink it into reach first; the belt press below is the one that banks the swipe.
-        for (int i = 0; i < 60 * 30 && s.boss.depth < Boss.SHOVE_REACH; i++) s.update(DT, L);
-        float hp0 = s.boss.hp;
-        int belt = s.boss.want();
-        s.tapKey(belt, L);
-        check("a press on its belt does not hurt it", s.boss.hp == hp0);
-        check("it staggers it", s.boss.stagger > 0f);
-        check("and banks the swipe that stagger is for", s.boss.charges > 0);
-        s.swipeUp(L);
-        check("and a staggered shove hits twice as hard",
-                hp0 - s.boss.hp == Boss.STAGGER_BONUS);
-
-        // Reaching the line costs a life, and it goes back to the top rather than ending the run.
-        GameCore k = enterBoss(L, Boss.SUMO, 83L);
-        k.lives = GameCore.START_LIVES;
-        int livesWas = k.lives;
-        for (int i = 0; i < 60 * 30 && k.lives == livesWas; i++) {
-            k.enemies.clear();      // only the boss may do the damage
-            k.update(DT, L);
-        }
-        check("letting it reach the line costs a life", k.lives < livesWas);
-        check("and it starts sinking again", k.boss.active() && k.boss.depth < 0.5f);
-
-        // The swipe falls through to the ordinary panic swipe when no shove is available. A boss
-        // stage spawns nothing, so the word here is placed by hand purely to arm pushReady.
-        GameCore p = enterBoss(L, Boss.SUMO, 84L);
-        p.enemies.clear();
-        add(p, L, new int[] {0, 1}, L.dangerY - L.enemyR * 1.5f);
-        p.update(DT, L);
-        check("with no charge banked, a swipe is not a shove", !p.boss.shovable());
-        check("so it is the panic swipe instead", p.swipeUp(L) && p.pushUsed);
     }
 
     // ---- stacking -----------------------------------------------------------
@@ -1790,7 +1535,7 @@ final class TestBoss extends Check {
         group("boss cleanup");
 
         // Exit one: beaten.
-        GameCore c = enterBoss(L, Boss.MAGPIE, 91L);
+        GameCore c = enterBoss(L, Boss.SLIME, 91L);
         for (int i = 0; i < 60 * 60 && c.boss.active(); i++) {
             c.enemies.clear();
             c.target = null;
@@ -1799,7 +1544,7 @@ final class TestBoss extends Check {
             c.update(DT, L);
         }
         check("a beaten boss is gone", !c.boss.active() && c.boss.kind < 0);
-        check("it gives the key back", c.boss.stolen < 0);
+
         check("drops the finger", c.boss.held < 0);
         check("and leaves nothing on the field", noElems(c.boss));
 
@@ -1869,7 +1614,7 @@ final class TestBoss extends Check {
 
             String who = Boss.NAMES[k];
             check(who + ": dying sends it home", d.state == GameCore.OVER && !d.boss.active());
-            check(who + ": no key is left held", d.boss.stolen < 0);
+
             check(who + ": no element is left on the field", noElems(d.boss));
             check(who + ": no finger is left holding one", d.boss.held < 0);
             check(who + ": its health bar is gone", d.boss.hpMax == 0f);
@@ -1888,7 +1633,7 @@ final class TestBoss extends Check {
             d.startGame();
             check(who + ": a new run starts clean",
                     !d.boss.active() && d.bossVictory == null
-                            && d.boss.stolen < 0 && noElems(d.boss));
+                            && noElems(d.boss));
         }
     }
 

@@ -43,6 +43,10 @@ final class Trinket {
     static void draw(Painter p, int i, float cx, float cy, float r, float clock, boolean known,
             float fade) {
         if (fade <= 0.01f || i < 0 || i >= Collect.COUNT) return;
+        if (i >= Collect.BOSS_FIRST) {
+            BossCollect.draw(p, i - Collect.BOSS_FIRST, cx, cy, r, clock, known, fade);
+            return;
+        }
         int shape = Collect.SHAPE[i];
         if (!known) {
             // Drawn twice, the outer copy a little larger: that gives any of the fifteen

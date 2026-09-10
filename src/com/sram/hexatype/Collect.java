@@ -19,16 +19,16 @@ import java.util.Random;
 final class Collect {
 
     static final int BLIND_COUNT = 30, STAR_FIRST = 30, STAR_COUNT = 5,
-            CUBE_FIRST = 35, CUBE_COUNT = 10, COUNT = 45;
+            CUBE_FIRST = 35, CUBE_COUNT = 10, BOSS_FIRST = 45, BOSS_COUNT = 4, COUNT = 49;
 
     // ---- families -----------------------------------------------------------
-    static final int DUMPLINGS = 0, FRUITS = 1, GLOBS = 2, STARLINGS = 3, GEL_CUBES = 4;
+    static final int DUMPLINGS = 0, FRUITS = 1, GLOBS = 2, STARLINGS = 3, GEL_CUBES = 4, BOSSES = 5;
     static final String[] FAMILY_NAME = {"MYSTERY DUMPLINGS", "SQUISHY FRUITS",
-            "SQUEEZE GLOBS", "STARLINGS", "GELATINOUS CUBES"};
+            "SQUEEZE GLOBS", "STARLINGS", "GELATINOUS CUBES", "BOSS FRIENDS"};
 
     // ---- rarity tiers -------------------------------------------------------
-    static final int COMMON = 0, UNCOMMON = 1, RARE = 2, CHASE = 3, GRAIL = 4, CUBE_TIER = 5;
-    static final String[] TIER_NAME = {"COMMON", "UNCOMMON", "RARE", "CHASE", "GRAIL", "CUBE"};
+    static final int COMMON = 0, UNCOMMON = 1, RARE = 2, CHASE = 3, GRAIL = 4, CUBE_TIER = 5, BOSS_TIER = 6;
+    static final String[] TIER_NAME = {"COMMON", "UNCOMMON", "RARE", "CHASE", "GRAIL", "CUBE", "BOSS FRIEND"};
     /** Frame and label colour per tier, climbing from plain to gold. */
     static final int[] TIER_COLOR = {
         0xFFA79DCC,   // common   - the dim ink
@@ -37,12 +37,13 @@ final class Collect {
         0xFFC3A8F5,   // chase    - grape
         0xFFFFCE4A,   // grail    - gold
         0xFF75E6B1,   // cube     - slime mint
+        0xFFFFD477,   // boss friend - victory gold
     };
     /**
      * Relative odds of one entry of that tier. Steep on purpose: a grail is forty times
      * less likely than any single common, which is what makes the case worth filling.
      */
-    static final int[] TIER_WEIGHT = {40, 16, 6, 2, 1, 0};
+    static final int[] TIER_WEIGHT = {40, 16, 6, 2, 1, 0, 0};
 
     // ---- shapes -------------------------------------------------------------
     static final int BAO = 0, BUN = 1, SHELL = 2, FIN = 3, CRESCENT = 4, WEDGE = 5,
@@ -69,6 +70,7 @@ final class Collect {
         "NOVA NIBBLE", "COMET CUB", "MOONSPARK", "AURORA STAR", "WISHKEEPER",
         "LIME LIMBO", "BERRY BLOCK", "MINT MATRIX", "PEACH PRISM", "COLA CUBIE",
         "GRAPE GLITCH", "AQUA WOBBLE", "SUNSET SLAB", "ROYAL GEL", "JELLO JULEP",
+        "SLIME BUD", "DIVIDE CUB", "OCTO PIP", "AGARIC BUD",
     };
 
     static final int[] FAMILY = {
@@ -77,6 +79,7 @@ final class Collect {
         2, 2, 2, 2, 2, 2, 2, 2,
         3, 3, 3, 3, 3,
         4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+        5, 5, 5, 5,
     };
 
     static final int[] SHAPE = {
@@ -86,6 +89,7 @@ final class Collect {
         STAR, STAR, STAR, STAR, STAR,
         GEL_CUBE, GEL_CUBE, GEL_CUBE, GEL_CUBE, GEL_CUBE,
         GEL_CUBE, GEL_CUBE, GEL_CUBE, GEL_CUBE, GEL_CUBE,
+        GLOB, GEL_CUBE, GLOB, BAO,
     };
 
     static final int[] FINISH = {
@@ -95,6 +99,7 @@ final class Collect {
         MATTE, MATTE, MATTE, MATTE, MATTE, TIEDYE, GLITTER, GLOW,
         MATTE, GLITTER, HOLO, GALAXY, METALLIC,
         CLEAR, GLITTER, MATTE, HOLO, CLEAR, GALAXY, GLOW, TIEDYE, METALLIC, CONFETTI,
+        MATTE, MATTE, MATTE, MATTE,
     };
 
     static final int[] TIER = {
@@ -105,6 +110,7 @@ final class Collect {
         COMMON, UNCOMMON, RARE, CHASE, CHASE,
         CUBE_TIER, CUBE_TIER, CUBE_TIER, CUBE_TIER, CUBE_TIER,
         CUBE_TIER, CUBE_TIER, CUBE_TIER, CUBE_TIER, CUBE_TIER,
+        BOSS_TIER, BOSS_TIER, BOSS_TIER, BOSS_TIER,
     };
 
     /** Body fill. */
@@ -119,6 +125,7 @@ final class Collect {
         0xFFFFE36E, 0xFFFFA8D8, 0xFF8FE7FF, 0xFFBBA3FF, 0xFFFFCF4A,
         0xFF9EF27B, 0xFFFF7FB3, 0xFF86E8C4, 0xFFFFB07C, 0xFFB87952,
         0xFFA98AF3, 0xFF79DDF2, 0xFFFF8D72, 0xFFE9D45B, 0xFFFFD36E,
+        0xFF96E6A2, 0xFF84D6A0, 0xFFD967DC, 0xFFEE2928,
     };
 
     /**
@@ -136,6 +143,7 @@ final class Collect {
         0xFFFFF4B0, 0xFFFFE5F4, 0xFFE5FAFF, 0xFF34245E, 0xFFFFFFFF,
         0xFFDFFFF0, 0xFFFFD8EA, 0xFFCFFFF0, 0xFFFFE1CC, 0xFFF1C7A8,
         0xFFE1D8FF, 0xFFD8F8FF, 0xFFFFD65C, 0xFFFFF1A8, 0xFFFFF3C4,
+        0xFFD8FFE3, 0xFF458D70, 0xFFFFC7AB, 0xFFFFF0D5,
     };
 
     private Collect() {}

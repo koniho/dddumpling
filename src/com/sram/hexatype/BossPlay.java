@@ -29,6 +29,7 @@ final class BossPlay {
             if (!e.destroyed) c.destroyWord(e, c.enemyCentreX(e), e.y, L);
         }
         if (won) {
+            Interlude.awardBossPrize(c, c.boss.kind);
             if (c.boss.kind == Boss.SLIME && c.stage == Boss.EVERY) c.cubeUnlocked = true;
             if (c.stage == Boss.EVERY) c.unlockRoster();
             c.score += GameCore.BOSS_BONUS;
@@ -47,10 +48,6 @@ final class BossPlay {
         c.spawnedThisStage = c.stageQuota();
     }
 
-    /**
-     * {@link Boss#SUMO} reached the danger line. Costs a life exactly as a word landing does, and
-     * for the same reason: it crossed the line.
-     */
     static void slam(GameCore c, Layout L) {
         c.shake = Math.max(c.shake, 1f);
         c.takeHit(c.boss.bodyX(L), L);
@@ -64,34 +61,11 @@ final class BossPlay {
                 L.keyR * 1.8f, 18, 0xFFFF355F);
     }
 
-    /**
-     * Whether the boss gets first refusal on a press of {@code g}.
-     *
-     * Three cases, and the third one is the subtle one:
-     *
-     * <ul>
-     *   <li>A key it is holding — always, even mid-word, because the player does not have that key.
-     *   <li>Its own letter while its window is open, with nothing engaged. This is the boss
-     *       outranking an unengaged word, on the same terms the drifting powerup gets.
-     *   <li>Its own letter while the window is <em>shut</em>, with nothing engaged <em>and</em>
-     *       nothing on the field wanting that letter either.
-     * </ul>
-     *
-     * That last clause is what stops a mistimed-press penalty from taxing ordinary play. Without it
-     * the boss claimed its letter whenever nothing was engaged, so starting a word that happened to
-     * begin with the drum's letter was read as a fumbled beat — and since a landed rebuff resets the
-     * drum's beat, typing normally pushed its window away. It showed up as the soak curve inverting:
-     * the quick tier finished <em>below</em> the steady one, because faster hands start more words and
-     * so trip over the drum's letter more often. Speed should not be a penalty.
-     *
-     * A deliberate early press is still punished, because with nothing on the field wanting it there
-     * is nothing else the press could have meant.
-     */
     static boolean claims(GameCore c, int g) {
         // A bolt in the air outranks everything, engaged word included: it is the only thing here
         // that costs a life.
         if (c.boss.boltWants(g)) return true;
-        if (c.boss.denies(g)) return true;
+
         // A shielded Slime rejects every press, including one made during a word. While open it
         // only owns genuinely stray presses, so starting a valid enemy word still works.
         if (c.boss.kind == Boss.SLIME && !c.boss.open()) return true;
@@ -113,17 +87,6 @@ final class BossPlay {
         return false;
     }
 
-    /**
-     * A press the boss claimed. Turns its verdict into score, sound and accuracy.
-     *
-     * Note what a rebuff does <em>not</em> do: it is not counted as a miss. The interlude set that
-     * precedent — a refused input is not a typing mistake, and letting it reach the accuracy readout
-     * would mean the dumpling on the game-over screen scolded the player for engaging with the
-     * mechanic. The cost of a rebuff is paid where the mechanic lives instead: the drum's beat
-     * resets, and the combo goes.
-     *
-     * @return true when the press did something, for the view's haptic tick
-     */
     static boolean press(GameCore c, int g, int verdict, Layout L) {
         if (verdict == Boss.PLAYER_HIT) {
             c.keyBad[g] = 1f;
@@ -236,31 +199,8 @@ final class BossPlay {
      */
     static boolean tap(GameCore c, float x, float y, Layout L) {
         if (c.state != GameCore.PLAY || !c.boss.fighting() || c.settingsOpen) return false;
-        int i = c.boss.elemAt(x, y);
-        if (i < 0) return false;
-        int r = c.boss.tap(i, c.rnd);
-        if (r == Boss.NONE) {
-            // Its element, but nothing to do with it. Still swallowed: a tap that lands on the boss
-            // must never fall through and be read as something else.
-            return true;
-        }
-        if (r == Boss.REBUFF) {
-            c.combo = 0;
-            c.shake = Math.max(c.shake, 0.22f);
-            if (c.sound != null) c.sound.wrong();
-            return true;
-        }
-        c.hits++;
-        c.combo++;
-        if (c.combo > c.maxCombo) c.maxCombo = c.combo;
-        if (r == Boss.HIT) {
-            c.score += GameCore.BOSS_HIT;
-            c.shake = Math.max(c.shake, 0.30f);
-            Fx.explode(c, c.rnd, x, y, L.enemyR * 1.4f, 12, GameCore.INK_SPARK);
-            if (c.sound != null) c.sound.bossDamage();
-        }
-        if (c.sound != null) c.sound.squish(i % Glyph.COUNT, 1);
-        return true;
+        // A tap on a glob stays on the boss, but only a drag can collect it.
+        return c.boss.elemAt(x, y) >= 0;
     }
 
     /** A finger landing on a draggable c.boss element. True when the c.boss has taken the gesture. */
@@ -313,25 +253,6 @@ final class BossPlay {
             if (deactivate) c.sound.divideDeactivate();
             else c.sound.divideSplit();
         }
-        return true;
-    }
-
-    /** True when a swipe up would shove SUMO, for the renderer's hint. */
-    static boolean shoveReady(GameCore c) {
-        return c.state == GameCore.PLAY && !c.settingsOpen && c.boss.shovable();
-    }
-
-    static boolean shove(GameCore c, Layout L) {
-        if (!shoveReady(c) || !c.boss.shove()) return false;
-        c.pushT = GameCore.PUSH_TIME;
-        c.pushCount = 0;
-        c.shake = Math.max(c.shake, 0.6f);
-        c.flash = Math.max(c.flash, 0.55f);
-        c.flashColor = GameCore.FLASH_CLEAR;
-        c.skyGlow = 1f;
-        c.skyGlowColor = GameCore.FLASH_CLEAR;
-        Fx.explode(c, c.rnd, c.boss.bodyX(L), c.boss.bodyY(L), L.enemyR * 2.2f, 20, GameCore.INK_SPARK);
-        if (c.sound != null) c.sound.bossDamage();
         return true;
     }
 

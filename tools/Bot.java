@@ -248,13 +248,13 @@ final class Bot {
 
     /** Where element {@code i} has to be taken. Mirrors what {@code Boss.dragTo} accepts. */
     private float goalX(GameCore c, Layout L, int i) {
-        if (c.boss.etype[i] == Boss.E_KEY) return L.keyX[c.boss.keyOf[i]];
+
         // Whichever edge is nearer, so the drag is the short one.
         return c.boss.ex[i] < L.w / 2f ? L.playLeft - 1f : L.playRight + 1f;
     }
 
     private float goalY(GameCore c, Layout L, int i) {
-        return c.boss.etype[i] == Boss.E_KEY ? L.deckTop + 1f : c.boss.ey[i];
+        return c.boss.ey[i];
     }
 
     /**
@@ -296,14 +296,6 @@ final class Bot {
                         b.body.centreY(), L);
             return true;
         }
-        // A shove first: SUMO's sink is the only boss threat that costs a life by itself.
-        if (b.shovable()) {
-            budget -= 1f;
-            presses++;
-            think = reaction;
-            c.swipeUp(L);
-            return true;
-        }
         // Then anything worth carrying off, oldest first — a glob about to crawl back is the one
         // that matters, and picking the one with least life left is what a player watching them
         // would do.
@@ -317,18 +309,6 @@ final class Bot {
             presses++;
             think = reaction;
             c.grabBoss(b.ex[drag], b.ey[drag]);
-            return true;
-        }
-        // Then a tap: a sleeping head to wake, or a drum skin on a beat that wants one.
-        for (int i = 0; i < Boss.ELEMS; i++) {
-            int t = b.etype[i];
-            boolean worth = (t == Boss.E_HEAD && !b.headAwake(i))
-                    || (t == Boss.E_SKIN && b.tapBeat && b.open());
-            if (!worth) continue;
-            budget -= 1f;
-            presses++;
-            think = reaction;
-            c.tapBoss(b.ex[i], b.ey[i], L);
             return true;
         }
         return false;

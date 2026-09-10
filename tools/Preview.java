@@ -173,6 +173,16 @@ final class Preview {
         shot(dir, "40i-case-centering", grid, L, w, h, ss);
         step(grid, L, 0.6f);
         shot(dir, "40j-case-centered", grid, L, w, h, ss);
+        grid.caseTo(Collect.BOSS_FIRST + 2);
+        shot(dir, "40k-case-bosses", grid, L, w, h, ss);
+        for (int boss = 0; boss < Boss.COUNT; boss++) {
+            GameCore welcome = new GameCore(store, 199L + boss);
+            welcome.stage = Boss.EVERY;
+            Interlude.awardBossPrize(welcome, boss);
+            Interlude.enterBonus(welcome, L);
+            welcome.bonusTimer = BossCollect.REVEAL_TIME - 2.2f;
+            shot(dir, "95-boss-friend-" + boss, welcome, L, w, h, ss);
+        }
         c.endCaseDrag();
         step(c, L, 0.5f);
 
@@ -769,8 +779,7 @@ final class Preview {
 
         // Each of the six, mid-fight, with its window open so the ornament is showing the thing it
         // is asking for.
-        String[] tag = {"60-boss-slime", "61-boss-triplets", "62-boss-drum", "63-boss-magpie",
-                "64-boss-sumo", "70-boss-dark-divide", "76-boss-octopulse",
+        String[] tag = {"60-boss-slime", "70-boss-dark-divide", "76-boss-octopulse",
                 "77-boss-fly-agaric"};
         for (int k = 0; k < Boss.COUNT; k++) {
             GameCore c = toBoss(L, k, 510L + k, true);
@@ -778,24 +787,7 @@ final class Preview {
             // the bosses that shed things have shed them.
             for (int n = 0; n < 3; n++) {
                 for (int i = 0; i < 60 * 8 && !c.boss.open(); i++) c.update(DT, L);
-                if (k == Boss.TRIPLETS) {
-                    for (int i = 0; i < 3; i++) c.tapBoss(c.boss.ex[i], c.boss.ey[i], L);
-                }
-                if (k == Boss.SUMO) {
-                    // Sink it into reach, press its belt to bank the swipe, and spend one — so the
-                    // frame shows a part-spent bar and a part-full charge row. Only on the first
-                    // round: at five health a staggered shove every round beats it before the shot,
-                    // and the frame then had no boss in it at all.
-                    if (n == 0) {
-                        for (int i = 0; i < 60 * 12 && c.boss.depth < Boss.SHOVE_REACH; i++) {
-                            c.update(DT, L);
-                        }
-                        c.target = null;
-                        c.tapKey(c.boss.want(), L);
-                        c.swipeUp(L);
-                    }
-                    continue;
-                }
+
                 c.target = null;
                 for (int g = 0; g < Glyph.COUNT; g++) {
                     if (c.boss.wants(g)) {
@@ -969,7 +961,7 @@ final class Preview {
 
         // The settings panel's stage jump, parked on a boss stage so the row names the boss it is
         // sitting on — which is the state the control exists for.
-        GameCore cj = toBoss(L, Boss.MAGPIE, 520L, true);
+        GameCore cj = toBoss(L, Boss.SLIME, 520L, true);
         cj.openSettings();
         step(cj, L, 0.3f);
         System.out.printf("stage jump: on stage %d, boss %s%n", cj.stage,
@@ -1125,8 +1117,7 @@ final class Preview {
                 "achievement", "game-start", "stage-clear", "power-clear", "chop", "zap",
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
-                "taunt-slime", "taunt-triplets", "taunt-drum", "taunt-magpie", "taunt-sumo",
-                "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
+                "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
                 "mushroom-shake", "mushroom-spore"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {

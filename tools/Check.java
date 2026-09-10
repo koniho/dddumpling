@@ -177,20 +177,13 @@ abstract class Check {
         // Carry anything held straight to where it goes. One frame, since this is not a hand.
         if (b.held >= 0) {
             int i = b.held;
-            boolean key = b.etype[i] == Boss.E_KEY && b.keyOf[i] >= 0;
-            if (key) c.dragBoss(L.keyX[b.keyOf[i]], L.deckTop + 1f, L);
-            else c.dragBoss(L.playRight + 1f, b.ey[i], L);
+            c.dragBoss(L.playRight + 1f, b.ey[i], L);
             if (b.held >= 0) c.releaseBoss();
             return true;
         }
-        if (b.shovable()) return c.swipeUp(L);
+
         for (int i = 0; i < Boss.ELEMS; i++) {
             if (b.draggable(i)) return c.grabBoss(b.ex[i], b.ey[i]);
-        }
-        for (int i = 0; i < Boss.ELEMS; i++) {
-            boolean worth = (b.etype[i] == Boss.E_HEAD && !b.headAwake(i))
-                    || (b.etype[i] == Boss.E_SKIN && b.tapBeat && b.open());
-            if (worth) return c.tapBoss(b.ex[i], b.ey[i], L);
         }
         // Nothing engaged is the boss's precedence condition, so a press only reaches it then.
         boolean engaged = c.target != null && c.enemies.contains(c.target) && c.target.typeable();

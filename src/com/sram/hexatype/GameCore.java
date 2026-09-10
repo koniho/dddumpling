@@ -376,7 +376,7 @@ final class GameCore {
          *
          * An offset because the body drifts and wobbles the whole time the shot is in the air, so a
          * fixed point would visibly miss. It is the same homing a word's shot gets, expressed the
-         * only way it can be here: keeping the offset means a bullet aimed at one of the triplets'
+         * only way it can be here: keeping the offset means a bullet aimed at a boss surface
          * heads still arrives at that head rather than at the middle of the boss.
          */
         boolean atBoss;
@@ -506,6 +506,7 @@ final class GameCore {
      * won this round" and "the parade still has to happen" without a second flag.
      */
     float paradeTimer;
+    boolean bossPrizePending, bossReward;
     /**
      * One-shot guards for the two interlude sounds that mark a moment rather than a press: the
      * parade's join chord and the steamer's status tally. Both are cleared where their scene starts,
@@ -833,12 +834,12 @@ final class GameCore {
 
     /** True while the spinner is still settling on this round's pair. */
     boolean bonusRolling() {
-        return state == BONUS && !starBonus && bonusTimer > bonusRollEnd;
+        return state == BONUS && !starBonus && !bossReward && bonusTimer > bonusRollEnd;
     }
 
     /** True while the interlude accepts presses. */
     boolean bonusMashing() {
-        return state == BONUS && !starBonus && !bonusPrizeWon()
+        return state == BONUS && !starBonus && !bossReward && !bonusPrizeWon()
                 && bonusTimer <= bonusRollEnd && bonusTimer > MASH_END;
     }
 
@@ -849,13 +850,13 @@ final class GameCore {
 
     /** True during the beat after the clock runs out, before anything fades. */
     boolean bonusHolding() {
-        return state == BONUS && !starBonus && !bonusPrizeWon()
+        return state == BONUS && !starBonus && !bossReward && !bonusPrizeWon()
                 && bonusTimer <= MASH_END && bonusTimer > BONUS_STATUS;
     }
 
     /** True while a won prize is climbing out, which is all that is left of a won round. */
     boolean bonusEscape() {
-        return state == BONUS && !starBonus && bonusPrizeWon() && bonusTimer > 0f;
+        return state == BONUS && !starBonus && !bossReward && bonusPrizeWon() && bonusTimer > 0f;
     }
 
     /**
@@ -878,7 +879,7 @@ final class GameCore {
      * watching it join the line.
      */
     boolean bonusStatus() {
-        return state == BONUS && !starBonus && !bonusPrizeWon() && bonusTimer <= BONUS_STATUS;
+        return state == BONUS && !starBonus && !bossReward && !bonusPrizeWon() && bonusTimer <= BONUS_STATUS;
     }
 
     /** True once something has been won this interlude, for the whole rest of it. */
@@ -1182,14 +1183,8 @@ final class GameCore {
 
     void endBossPinch() { boss.endPinch(); }
 
-    boolean shoveReady() { return BossPlay.shoveReady(this); }
-
-    /**
-     * An upward swipe in the field: a shove at SUMO where one is available, otherwise the panic
-     * swipe. One entry point, because the view cannot know which boss is on the field.
-     */
     boolean swipeUp(Layout L) {
-        if (BossPlay.shove(this, L)) return true;
+
         return pushBack(L);
     }
 
@@ -1573,6 +1568,7 @@ final class GameCore {
         homeT = 0f;
         homeLanded = 0;
         paradeTimer = 0f;
+        bossPrizePending = bossReward = false;
         power = null;
         mode = -1;
         modeLeft = 0;
@@ -1734,7 +1730,6 @@ final class GameCore {
         keyPress[g] = 1f;
 
         if (target != null && (!target.typeable() || !enemies.contains(target))) target = null;
-
 
         // The boss, on the same terms the powerup gets: it outranks an *unengaged* word for the
         // letters it is asking for, and never steals a press out of a word already part-typed. The
@@ -2293,6 +2288,20 @@ final class GameCore {
         Fx.updateShots(this, dt, L);
 
         if (state == BONUS) {
+            if (bossReward) {
+                bonusTimer = Math.max(0f, bonusTimer - dt);
+                if (!joinRung && bonusTimer < BossCollect.REVEAL_TIME - 0.9f) {
+                    joinRung = true;
+                    if (sound != null) sound.paradeJoin();
+                }
+                if (bonusTimer == 0f) {
+                    bossReward = false;
+                    advanceStage();
+                    state = PLAY;
+                    time = 0f;
+                }
+                return;
+            }
             if (starBonus) {
                 stars.update(dt, L);
                 if (sound != null) sound.rocket(stars.exiting() ? 1f : stars.flying()
@@ -2405,8 +2414,7 @@ final class GameCore {
         else if (!buddy.out()) buddy.leave();
 
         if (boss.active()) {
-            // True when a visible boss threat reaches the deck. SUMO's body crossing the line is
-            // handled by the same count; elapsed fight time alone never costs a life.
+            // Visible projectiles reaching the deck cost lives; elapsed fight time alone does not.
             int bossHits = boss.update(dt, L, rnd);
             if (boss.octoPlayerHit && state == PLAY) BossPlay.octoWhipHit(this, L);
             if (boss.octoImpact) {
@@ -2539,7 +2547,6 @@ final class GameCore {
             }
         }
     }
-
 
     void impact(Shot s, Layout L) {
         Enemy e = s.target;
@@ -2804,14 +2811,6 @@ final class GameCore {
         takeHit(enemyCentreX(e), L);
     }
 
-    /**
-     * One life gone, from wherever. Split out of {@link #breach} because a word landing is no longer
-     * the only thing that can cost one — {@link Boss#SUMO} reaching the line does too, and it is not
-     * an {@link Enemy}, has no place in the stage's resolved count, and must not be able to
-     * accumulate its own subtly different version of the death sequence.
-     *
-     * @param px where the burst comes from, in view coordinates
-     */
     void takeHit(float px, Layout L) {
         lives--;
         hurtThisStage++;
@@ -2912,8 +2911,6 @@ final class GameCore {
         e.speed = (L.dangerY - e.y) / travelSeconds();
         enemies.add(e);
     }
-
-
 
     /**
      * 0 at full health, rising to 1 as lives run out. Tints the whole screen red and drives the

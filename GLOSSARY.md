@@ -181,7 +181,7 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **blurb** | the one-line instruction under the name; it retires after five seconds | `Boss.BLURB` |
 | **element** | a hit-testable thing a boss puts on the field to be tapped or dragged. Always in the upper field, because a drag may not start on a key | `Boss.ELEMS`, `elemAt`, `etype` |
 | **rebuff** | the right thing at the wrong moment, or a held key. Sounds wrong, never counted as a miss, and fires no bullet | `Boss.REBUFF` |
-| **boss bullet** | the shot a landed key press fires at the boss, the same one a press at a word fires. Homes as the boss drifts, and aims at the head that was struck on the triplets | `GameCore.bossShot`, `Shot.atBoss`, `Boss.hitX` |
+| **boss bullet** | the shot a landed key press fires at the boss, the same one a press at a word fires. Homes toward the boss as it drifts | `GameCore.bossShot`, `Shot.atBoss`, `Boss.hitX` |
 | **enrage** | the visual warning on a dragging fight: it reddens, but does no damage by itself | `Boss.ENRAGE_AT`, `ENRAGE_RAMP` |
 | **slime** | boss 1. A wide, twice-as-jiggly mass of goo. A chain of letters to type, and the only thing that hurts it is a glob carried off the screen | `Boss.SLIME`, `WIDE`, `JIGGLE` |
 | **split** | working a glob loose: five presses of the chain, tracked by the pip row under the body. The presses themselves take no health off it | `Boss.SPLIT_HITS`, `split`, `splitProgress`, `BossScreen.splitGauge` |
@@ -195,20 +195,10 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **rest shape** | what a body believes it is: a circle for four of the five, an ellipse twice as wide as it is tall for the slime. Deform is measured against this, so a settled body reads zero whatever shape it settled into | `Softbody.reset(.., wide)`, `wide()`, `squashAspect` |
 | **jiggle** | how springy one body is: amplitudes up and whole-body damping down, never the stiffnesses | `Softbody.jiggle` |
 | **mesh** | the soft body's own nodes and spokes, drawn faintly inside it so the wobble reads as physics | `Slime.mesh` |
-| **triplets** | boss 2. Three heads, tapped awake then struck as one chord | `Boss.TRIPLETS` |
-| **head** | one of its three. Asleep until tapped, and it withholds its letter until then | `Boss.E_HEAD`, `headAwake` |
-| **chord** | all three heads struck inside `CHORD_TIME`. This boss is always open; the chord is its clock | `Boss.chordT`, `CHORD_TIME` |
-| **mochi drum** | boss 3. A short window on a fixed beat, alternately wanting a key and a tap | `Boss.DRUM` |
-| **tap beat** | a beat that wants the skin tapped rather than a key pressed | `Boss.tapBeat`, `E_SKIN` |
-| **beat ring** | the ring closing on the drum as its window comes round | `BossScreen.beatRing` |
-| **magpie** | boss 4. It holds one of your keys hostage | `Boss.MAGPIE` |
-| **held** / **stolen key** | the key it has. Refused everywhere, including into a word that needs it | `Boss.stolen`, `denies` |
-| **dropped key** | the key a hit knocks loose. Drag it down to the deck or it is snatched again | `Boss.E_KEY`, `KEY_TIME` |
-| **sumo bun** | boss 5. It sinks toward the line and must be swiped back | `Boss.SUMO` |
-| **shove** | the swipe that damages it. Paid for with a charge | `Boss.shove`, `GameCore.swipeUp` |
-| **charge** | a banked swipe, earned by pressing its belt while it is in reach | `Boss.charges`, `CHARGE_MAX` |
-| **stagger** | what a press on its belt buys: the next shove hits twice as hard | `Boss.stagger`, `STAGGER_BONUS` |
-| **slam** | it reaching the danger line, which costs a life and puts it back at the top | `GameCore.bossSlam` |
+| **dark divide** | stage 10. Split the gelatinous cube with a two-finger pinch | `Boss.SPLITTER` |
+| **octopulse** | stage 15. Defend keys and drag exposed arm tips away | `Boss.OCTOPUS` |
+| **fly agaric** | stage 20. Shake the cap to defeat the spore-throwing mushroom | `Boss.MUSHROOM` |
+| **boss friends** | four collectible boss portraits, awarded only by defeating their matching bosses | `BossCollect`, `Interlude.awardBossPrize` |
 | **soft body** | how every boss's body is built: a ring of sprung nodes under pressure, so it dents where you hit it | `Softbody`, `Boss.body` |
 | **burst** | what a beaten boss goes out on | `BossScreen.burst`, `Boss.LEAVE` |
 

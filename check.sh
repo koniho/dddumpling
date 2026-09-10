@@ -52,6 +52,7 @@ src/com/sram/hexatype/GameCore.java
 src/com/sram/hexatype/Pacing.java
 src/com/sram/hexatype/Blade.java
 src/com/sram/hexatype/CaseUi.java
+src/com/sram/hexatype/BossCollect.java
 src/com/sram/hexatype/Interlude.java
 src/com/sram/hexatype/BossPlay.java
 src/com/sram/hexatype/Painter.java

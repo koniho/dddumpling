@@ -479,8 +479,7 @@ public class GameView extends View {
         if (action == MotionEvent.ACTION_MOVE) {
             // A clear upward flick, not a twitch.
             if (pushStartY - y >= layout.enemyR * 1.6f) {
-                // swipeUp, not pushBack: the same flick shoves a SUMO boss where one is in reach and
-                // is the ordinary panic swipe everywhere else. The view does not need to know which.
+                // One entry point for the upward panic swipe.
                 if (core.swipeUp(layout)) tick();
                 pushArmed = false;
             }

@@ -23,8 +23,8 @@ final class TestCollect extends Check {
 
     static void catalogue(Layout L) {
         group("collectible catalogue");
-        check("thirty blind, five star and ten cube entries", Collect.BLIND_COUNT == 30
-                && Collect.STAR_COUNT == 5 && Collect.CUBE_COUNT == 10 && Collect.COUNT == 45);
+        check("thirty blind, five star, ten cube and four boss entries", Collect.BLIND_COUNT == 30
+                && Collect.STAR_COUNT == 5 && Collect.CUBE_COUNT == 10 && Collect.BOSS_COUNT == Boss.COUNT && Collect.COUNT == 49);
         check("every table is the same length",
                 Collect.NAME.length == Collect.COUNT && Collect.FAMILY.length == Collect.COUNT
                         && Collect.SHAPE.length == Collect.COUNT
@@ -84,9 +84,9 @@ final class TestCollect extends Check {
         check("commons outnumber chases", tierCount[Collect.COMMON] > tierCount[Collect.CHASE]);
         boolean everyFamily = true;
         for (int f = 0; f < familyCount.length; f++) {
-            if (familyCount[f] < 5) everyFamily = false;
+            if (familyCount[f] < (f == Collect.BOSSES ? 4 : 5)) everyFamily = false;
         }
-        check("all five families are properly stocked", everyFamily);
+        check("all collectible families are properly stocked", everyFamily);
         System.out.printf("    tiers %d/%d/%d/%d/%d, families %d/%d/%d%n",
                 tierCount[0], tierCount[1], tierCount[2], tierCount[3], tierCount[4],
                 familyCount[0], familyCount[1], familyCount[2]);
@@ -103,7 +103,7 @@ final class TestCollect extends Check {
         check("banded finishes only sit on round shapes", bandsFit);
 
         boolean weightsFall = true;
-        for (int t = 1; t < Collect.TIER_WEIGHT.length; t++) {
+        for (int t = 1; t <= Collect.GRAIL; t++) {
             if (Collect.TIER_WEIGHT[t] >= Collect.TIER_WEIGHT[t - 1]) weightsFall = false;
         }
         check("rarer tiers are strictly rarer", weightsFall);
@@ -378,10 +378,10 @@ final class TestCollect extends Check {
         }
         check("wrap always lands inside the catalogue", wrapped);
 
-        boolean balanced = Showcase.ROW_NAME.length == 6;
+        boolean balanced = Showcase.ROW_NAME.length == 7;
         for (int row = 0; row < Showcase.ROW_NAME.length; row++)
-            balanced &= Showcase.columns(row) >= 5 && Showcase.columns(row) <= 10;
-        check("six categories hold between five and ten collectibles each", balanced);
+            balanced &= Showcase.columns(row) >= (row == 6 ? 4 : 5) && Showcase.columns(row) <= 10;
+        check("seven categories hold between four and ten collectibles each", balanced);
         boolean fruitRow = true, candyRow = true;
         for (int i = 0; i < Collect.COUNT; i++) {
             if (Collect.FAMILY[i] == Collect.FRUITS && Showcase.row(i) != Showcase.FRUIT_ROW) fruitRow = false;
