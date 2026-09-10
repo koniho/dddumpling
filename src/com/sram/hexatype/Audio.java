@@ -441,7 +441,7 @@ final class Audio implements GameCore.Sound {
     }
 
     @Override public void gameStart() {
-        play(Sfx.START, 0.72f);
+        play(Sfx.START, 1f, 0.72f);
     }
 
     @Override public void stageClear() {
