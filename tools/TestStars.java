@@ -103,7 +103,8 @@ final class TestStars extends Check {
         check("pickup animation resets between attempts", q.burst[0] == 0f);
         check("the steamer prize pilots the course", q.who == 3);
 
-        GameCore c = new GameCore(new Mem(), 19L);
+        Mem progress = new Mem();
+        GameCore c = new GameCore(progress, 19L);
         c.startGame();
         c.state = GameCore.BONUS;
         c.starBonus = true;
@@ -125,6 +126,8 @@ final class TestStars extends Check {
             took = c.stars.won;
         }
         check("taking the last star completes the course", took && c.stars.count() == StarPath.COUNT);
+        check("success immediately saves one difficulty step",
+                c.stars.wins == 1 && progress.starWins == 1 && progress.starWinSaves == 1);
         check("the victory tableau takes the screen", c.stars.winning() && c.starFlight());
         check("it knows which star finished the course", c.stars.winStar == last);
         check("completion pays like the steamer", c.score >= score + GameCore.FREE_BONUS);
@@ -149,6 +152,17 @@ final class TestStars extends Check {
         for (guard = 0; guard < 60 * 20 && c.state == GameCore.BONUS; guard++) c.update(DT, L);
         check("twenty stars complete the game", !c.starNext && c.state == GameCore.PLAY);
         check("a successful course resets its persistent stars", c.stars.count() == 0);
+        check("the tableau and parade do not count a win twice", progress.starWinSaves == 1);
+        c.startGame();
+        GameCore restored = new GameCore(progress, 20L);
+        check("Starpath difficulty survives new playthroughs and reloads",
+                c.stars.wins == 1 && restored.stars.wins == 1);
+        restored.stars.collected = 7;
+        restored.resetDifficultyScaling();
+        check("settings reset the stored Starpath ladder while keeping earned stars",
+                restored.stars.wins == 0 && restored.stars.collected == 7
+                        && new GameCore(progress, 21L).stars.wins == 0);
+
 
         // Exactly one phase names the screen on every frame of a star course, the same guarantee
         // the steamer path has: none of the steamer's phases may come true underneath one.
@@ -200,6 +214,64 @@ final class TestStars extends Check {
                 new GameCore(new Mem(), 31L).state == GameCore.TITLE);
 
         courseIsFlyable(L);
+        difficulty(L);
+    }
+
+    private static void difficulty(Layout L) {
+        group("star path difficulty");
+        StarPath baseline = new StarPath(), harder = new StarPath();
+        for (int i = 0; i < 100; i++) harder.recordWin();
+        check("difficulty stops after five successes", harder.wins == StarPath.MAX_DIFFICULTY
+                && Math.abs(harder.bendRate() - 1.2f) < 0.0001f);
+        baseline.make(new java.util.Random(77L));
+        harder.make(new java.util.Random(77L));
+        boolean changed = false;
+        for (int i = 0; i < StarPath.COUNT; i++)
+            changed |= Math.abs(baseline.sx[i] - harder.sx[i]) > 0.01f;
+        check("wins change the actual course bends", changed);
+        baseline.begin(-1, L);
+        harder.begin(-1, L);
+        baseline.collected = harder.collected = (1 << StarPath.COUNT) - 1;
+        boolean sameTiming = true;
+        for (int i = 0; i < 360; i++) {
+            baseline.update(DT, L);
+            harder.update(DT, L);
+            sameTiming &= baseline.timer == harder.timer
+                    && baseline.starY(10, L) == harder.starY(10, L);
+        }
+        check("harder curvature preserves flight and phase timing", sameTiming);
+        Mem failedSave = new Mem();
+        failedSave.starWins = 2;
+        GameCore failed = new GameCore(failedSave, 78L);
+        failed.startGame();
+        failed.state = GameCore.BONUS;
+        failed.starBonus = true;
+        failed.stars.make(failed.rnd);
+        failed.stars.begin(-1, L);
+        failed.stars.collected = 7;
+        failed.stars.timer = 0.001f;
+        failed.update(DT, L);
+        check("failure preserves progress without increasing difficulty",
+                failed.stars.wins == 2 && failedSave.starWinSaves == 0
+                        && failed.stars.collected == 7);
+
+        float baseQuick = 0f, cappedQuick = 0f, cappedSlow = 0f, tries = 0f;
+        for (long seed = 1; seed <= SEEDS; seed++) {
+            baseQuick += Integer.bitCount(flown(seed, 0.05f, L, true, 0, seed, 0));
+            cappedQuick += Integer.bitCount(flown(seed, 0.05f, L, true, 0, seed, StarPath.MAX_DIFFICULTY));
+            cappedSlow += Integer.bitCount(flown(seed, 0.25f, L, true, 0, seed, StarPath.MAX_DIFFICULTY));
+            tries += attemptsToFinish(seed, 0.25f, L, StarPath.MAX_DIFFICULTY);
+        }
+        System.out.printf("    base quick %.1f, capped quick %.1f, capped slow %.1f stars; slow prize %.1f attempts%n",
+                baseQuick / SEEDS, cappedQuick / SEEDS, cappedSlow / SEEDS, tries / SEEDS);
+        check("the capped bends demand more steering", cappedQuick < baseQuick);
+        check("the capped course still rewards responsive thumbs", cappedQuick > cappedSlow);
+        check("slow thumbs can finish the capped course across attempts", tries / SEEDS <= 4.5f);
+        for (int level = 0; level <= StarPath.MAX_DIFFICULTY; level++) {
+            float window = tightestWindow(L, level);
+            System.out.printf("    bend level %d: feasible window %.3f widths%n", level, window);
+            check("every difficulty keeps the course reachable at level " + level, window > 0f);
+        }
     }
 
     /**
@@ -368,11 +440,14 @@ final class TestStars extends Check {
      * the exact reachability statement: if it ever closes, no line completes the course. Stars level
      * with the flyer at the off are skipped — the course begins under it, so they are free.
      */
-    private static float tightestWindow(Layout L) {
+    private static float tightestWindow(Layout L) { return tightestWindow(L, 0); }
+
+    private static float tightestWindow(Layout L, int wins) {
         float band = StarPath.pickupR(L) / (L.playRight - L.playLeft);
         float tightest = 9f;
-        for (long seed = 1L; seed <= SEEDS; seed++) {
+        for (long seed = 1L; seed <= 256; seed++) {
             StarPath q = new StarPath();
+            q.wins = wins;
             q.make(new java.util.Random(seed));
             float lo = 0.5f, hi = 0.5f, prev = 0f;
             for (int i = 0; i < StarPath.COUNT; i++) {
@@ -467,11 +542,15 @@ final class TestStars extends Check {
      * over between them exactly as they do in play.
      */
     private static int attemptsToFinish(long seed, float reaction, Layout L) {
+        return attemptsToFinish(seed, reaction, L, 0);
+    }
+
+    private static int attemptsToFinish(long seed, float reaction, Layout L, int wins) {
         int held = 0;
         for (int attempt = 1; attempt <= 6; attempt++) {
             // A different line each attempt, which is what the game hands out — see
             // StarPath.reroll. On one repeated line this pilot stalls forever partway up.
-            held = flown(seed, reaction, L, true, held, seed * 31L + attempt);
+            held = flown(seed, reaction, L, true, held, seed * 31L + attempt, wins);
             if (Integer.bitCount(held) == StarPath.COUNT) return attempt;
         }
         return 7;
@@ -480,10 +559,16 @@ final class TestStars extends Check {
     /** @return the checkpoints in hand at the end of the attempt, {@code carried} included */
     private static int flown(long seed, float reaction, Layout L, boolean steer, int carried,
             long courseSeed) {
+        return flown(seed, reaction, L, steer, carried, courseSeed, 0);
+    }
+
+    private static int flown(long seed, float reaction, Layout L, boolean steer, int carried,
+            long courseSeed, int wins) {
         GameCore c = new GameCore(new Mem(), seed);
         c.startGame();
         c.state = GameCore.BONUS;
         c.starBonus = true;
+        c.stars.wins = wins;
         c.stars.make(new java.util.Random(courseSeed));
         c.stars.begin(-1, L);
         c.stars.collected = carried;

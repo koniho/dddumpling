@@ -178,6 +178,8 @@ final class GameCore {
         /** Lifetime steamer successes, used to retain its rising target across playthroughs. */
         int loadSteamerOpens();
         void saveSteamerOpens(int opens);
+        int loadStarWins();
+        void saveStarWins(int wins);
         /** Packed adaptive-roster state; zero is the first-run four-key default. */
         int loadRosterState();
         void saveRosterState(int state);
@@ -1299,6 +1301,7 @@ final class GameCore {
             collectTotal = Math.max(Collect.owned(collected),
                     Math.max(0, store.loadCollectTotal()));
             steamer.opens = Math.max(0, store.loadSteamerOpens());
+            stars.wins = Math.max(0, Math.min(StarPath.MAX_DIFFICULTY, store.loadStarWins()));
             int roster = store.loadRosterState();
             fullRoster = (roster & 1) != 0;
             earlyLosses = Math.min(2, (roster >> 1) & 3);
@@ -1414,7 +1417,11 @@ final class GameCore {
     /** Restores every persistent difficulty ladder to its first-play values. */
     void resetDifficultyScaling() {
         steamer.resetDifficulty();
-        if (store != null) store.saveSteamerOpens(0);
+        stars.resetDifficulty();
+        if (store != null) {
+            store.saveSteamerOpens(0);
+            store.saveStarWins(0);
+        }
     }
 
     /**
@@ -2299,6 +2306,8 @@ final class GameCore {
                     // Paid the moment the last star lands, not when the interlude ends: the victory
                     // tableau shows what was won, so the prize has to exist before it is drawn.
                     stars.awardPending = false;
+                    stars.recordWin();
+                    if (store != null) store.saveStarWins(stars.wins);
                     score += FREE_BONUS;
                     if (lives < START_LIVES) lives++;
                     Interlude.awardStarPrize(this);

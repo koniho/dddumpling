@@ -159,6 +159,7 @@ The other interlude, offered after a steamer has been opened. Two thumbs steer, 
 | **passenger** | a flyer nobody is steering. It must never be able to finish a course | `TestStars.flown` with steering off |
 | **tracker lag** | what following the line costs, against the catch band — the measure of how hard a course is, in place of the peak speed ratio it asks for | `TestStars.trackerLag` |
 | **re-roll** | a failed attempt gets a fresh line, keeping the stars already in hand | `StarPath.reroll` |
+| **star-path difficulty** | each successful course makes bends cycle 4% more often, capped at 20% after five wins; saved across playthroughs and cleared by Reset Difficulty | `StarPath.bendRate`, `GameCore.resetDifficultyScaling` |
 
 ## Boss
 

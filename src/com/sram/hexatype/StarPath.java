@@ -5,6 +5,17 @@ import java.util.Random;
 /** Persistent course and flight state for the alternating star-path interlude. */
 final class StarPath {
     static final int COUNT = 20;
+    static final int MAX_DIFFICULTY = 5;
+    static final float BEND_STEP = 0.04f;
+    /** Persistent successful courses, capped at the tightest path curvature. */
+    int wins;
+
+    float bendRate() { return 1f + Math.max(0, Math.min(MAX_DIFFICULTY, wins)) * BEND_STEP; }
+
+    void recordWin() { wins = Math.min(MAX_DIFFICULTY, Math.max(0, wins) + 1); }
+
+    void resetDifficulty() { wins = 0; }
+
     /**
      * The flight is down from five seconds to four and now to 3.6: the same twenty checkpoints
      * arrive in ever less time, which together with the wider spacing below puts the scroll up
@@ -252,20 +263,17 @@ final class StarPath {
      * width. A sine in seconds asks the same speed of you everywhere, so the sweep can span the
      * whole play area and still sit inside what the steering can deliver.
      *
-     * {@code TestStars} holds the arithmetic: peak demand is {@code SWEEP * 2pi / SWEEP_TIME} plus
-     * the ripple's, and it has to stay under {@link #MAX_VX}. Widen the sweep and the period has to
-     * grow with it, or the course stops being coverable at the fast end.
+     * Wins shorten both bend periods without changing the flight clock or catch tolerance.
+     * {@code TestStars} checks reachability at every level and flies the capped course with
+     * reaction-limited pilots.
      */
     void make(Random rnd) {
-        // How far round the sweep gets before the flight ends, and which way it goes first. Only
-        // ever stretched, never squeezed: a shorter period is a faster demand, and the period here
-        // is already sized to the steering.
-        //
         // The side is taken from the second draw, not the first. Java's generator gives nearby
         // seeds the same leading bit, so a coin flipped first sent every course in a freshly
         // seeded harness the same way — the game shares one long-lived generator and would never
         // have shown it.
-        float period = SWEEP_TIME * (1f + 0.20f * rnd.nextFloat());
+        float bends = bendRate();
+        float period = SWEEP_TIME * (1f + 0.20f * rnd.nextFloat()) / bends;
         float dir = rnd.nextFloat() < 0.5f ? 1f : -1f;
         float ripplePhase = rnd.nextFloat() * TAU;
         for (int i = 0; i < COUNT; i++) {
@@ -274,7 +282,7 @@ final class StarPath {
             // A random phase put the first star out at an edge and opened with a dash nobody could
             // have known was coming.
             float at = 0.5f + dir * SWEEP * (float) Math.sin(TAU * t / period)
-                    + RIPPLE * (float) Math.sin(ripplePhase + TAU * t / RIPPLE_TIME);
+                    + RIPPLE * (float) Math.sin(ripplePhase + TAU * t * bends / RIPPLE_TIME);
             if (at < EDGE) at = EDGE;
             if (at > 1f - EDGE) at = 1f - EDGE;
             sx[i] = at;

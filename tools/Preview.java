@@ -21,6 +21,7 @@ final class Preview {
         long collected;
         int collectTotal;
         int steamerOpens;
+        int starWins, starWinSaves;
         int rosterState = 1;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; }
@@ -32,6 +33,8 @@ final class Preview {
         public void saveCollected(long v) { collected = v; }
         public int loadCollectTotal() { return collectTotal; }
         public void saveCollectTotal(int v) { collectTotal = v; }
+        public int loadStarWins() { return starWins; }
+        public void saveStarWins(int v) { starWins = v; starWinSaves++; }
         public int loadSteamerOpens() { return steamerOpens; }
         public void saveSteamerOpens(int v) { steamerOpens = v; }
         public int loadRosterState() { return rosterState; }
@@ -459,6 +462,12 @@ final class Preview {
         cs.stars.x = cs.stars.starX(6, L);
         cs.stars.vx = L.w * StarPath.MAX_VX * 0.7f;
         shot(dir, "54c-stars-wake", cs, L, w, h, ss);
+        cs.stars.wins = StarPath.MAX_DIFFICULTY;
+        cs.stars.make(new java.util.Random(83L));
+        cs.stars.collected = 0b111;
+        cs.stars.vx = 0f;
+        cs.stars.x = cs.stars.starX(6, L);
+        shot(dir, "54d-stars-max-bends", cs, L, w, h, ss);
 
         // Taking the last star: the course stops dead and the prize climbs out of the checkpoint
         // that ended it, early in the tableau and again once it is standing in place.

@@ -23,6 +23,7 @@ abstract class Check {
         int collectTotal;
         int collectTotalSaves;
         int steamerOpens, steamerOpenSaves;
+        int starWins, starWinSaves;
         int rosterState = 1, rosterSaves;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; saves++; }
@@ -34,6 +35,8 @@ abstract class Check {
         public void saveCollected(long v) { collected = v; collectedSaves++; }
         public int loadCollectTotal() { return collectTotal; }
         public void saveCollectTotal(int v) { collectTotal = v; collectTotalSaves++; }
+        public int loadStarWins() { return starWins; }
+        public void saveStarWins(int v) { starWins = v; starWinSaves++; }
         public int loadSteamerOpens() { return steamerOpens; }
         public void saveSteamerOpens(int v) { steamerOpens = v; steamerOpenSaves++; }
         public int loadRosterState() { return rosterState; }
