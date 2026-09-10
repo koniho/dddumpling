@@ -1333,6 +1333,47 @@ final class TestBoss extends Check {
                 highlight[4] >= -20f && highlight[4] <= 20f
                         && highlight[8] >= -20f && highlight[8] <= 20f);
 
+        GameCore pace = enterBoss(L, Boss.MUSHROOM, 170L);
+        Boss mb = pace.boss;
+        check("healthy agaric keeps baseline rhythm", mb.mushroomRate() == 1f);
+        mb.hp = mb.hpMax * 0.5f;
+        check("half damage raises rhythm by 17.5 percent", Math.abs(mb.mushroomRate() - 1.175f) < 0.0001f);
+        mb.hp = 0f;
+        check("agaric rhythm caps at 35 percent faster", Math.abs(mb.mushroomRate() - 1.35f) < 0.0001f);
+        mb.hp = -10f;
+        check("overkill cannot exceed the rhythm cap", Math.abs(mb.mushroomRate() - 1.35f) < 0.0001f);
+        mb.hp = mb.hpMax * 0.1f;
+        pace.grabBoss(mb.body.centreX(), mb.body.centreY());
+        check("damaged agaric shortens the shake deadline", mb.mushroomShakeWindow < 1f);
+        pace.dragBoss(mb.mushroomLastX + L.w * 0.02f, mb.body.centreY(), L);
+        float rate = mb.mushroomRate();
+        float attackT = mb.mushroomAttackT;
+        pace.update(0.1f, L);
+        check("damage accelerates the visible shake guide", Math.abs(mb.mushroomGuideX - 0.32f * rate) < 0.0001f);
+        check("damage accelerates the spore countdown", Math.abs(mb.mushroomAttackT - (attackT - 0.1f * rate)) < 0.0001f);
+        mb.mushroomAttackT = 0.12f;
+        pace.update(0.1f, L);
+        check("damaged agaric charges sooner", mb.mushroomCharge == Boss.MUSHROOM_CHARGE_TIME);
+        mb.release();
+        float dustHP = mb.hp;
+        int bolts = mb.boltCount();
+        mb.shedMushroomDust(L.w * 0.2f, L);
+        int dustSlot = (mb.mushroomDustNext + Boss.MUSHROOM_DUST - 1) % Boss.MUSHROOM_DUST;
+        float dustY = mb.mushroomDustY[dustSlot];
+        check("cap movement sheds cosmetic gill dust", mb.mushroomDustLife[dustSlot] > 0f);
+        pace.update(0.1f, L);
+        check("gill dust falls independently of the cap", mb.mushroomDustY[dustSlot] > dustY);
+        check("gill dust cannot damage the boss or create attacks", mb.hp == dustHP && mb.boltCount() == bolts);
+        mb.mushroomAttackT = 100f;
+        mb.mushroomCharge = 0f;
+        advance(pace, L, 1f);
+        check("gill dust expires", mb.mushroomDustLife[dustSlot] == 0f);
+        mb.shedMushroomDust(L.w * 0.2f, L);
+        mb.leave();
+        boolean dustCleared = true;
+        for (float life : mb.mushroomDustLife) if (life > 0f) dustCleared = false;
+        check("leaving the boss clears gill dust", dustCleared);
+
         GameCore capProbe = enterBoss(L, Boss.MUSHROOM, 169L);
         check("the taller mushroom crown accepts a drag",
                 capProbe.boss.grabBody(capProbe.boss.body.centreX(),

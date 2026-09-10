@@ -311,6 +311,12 @@ final class Boss {
     static final float MUSHROOM_GUIDE_WINDOW = 0.18f;
     static final float MUSHROOM_ATTACK_GAP = 5f, MUSHROOM_CHARGE_TIME = 0.72f,
             MUSHROOM_ANGER_TIME = 0.48f;
+    static final int MUSHROOM_DUST = 64;
+    final float[] mushroomDustX = new float[MUSHROOM_DUST], mushroomDustY = new float[MUSHROOM_DUST],
+            mushroomDustVX = new float[MUSHROOM_DUST], mushroomDustVY = new float[MUSHROOM_DUST],
+            mushroomDustLife = new float[MUSHROOM_DUST];
+    int mushroomDustNext;
+    float mushroomDustTravel;
     int mushroomShakes, mushroomDirection;
     float mushroomLastX, mushroomShakeWindow, mushroomAttackT, mushroomCharge, mushroomAngry;
     float mushroomSweepFlash;
@@ -500,6 +506,9 @@ final class Boss {
         mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
         mushroomGuideTarget = 1;
         mushroomCapDX = mushroomCapDY = 0f;
+        mushroomDustNext = 0;
+        mushroomDustTravel = 0f;
+        java.util.Arrays.fill(mushroomDustLife, 0f);
         mushroomAttackT = MUSHROOM_ATTACK_GAP;
         mushroomReaction = mushroomShakeCue = mushroomSporeCue = false;
         awake = chord = 0;
@@ -587,6 +596,9 @@ final class Boss {
         mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
         mushroomGuideTarget = 1;
         mushroomCapDX = mushroomCapDY = 0f;
+        mushroomDustNext = 0;
+        mushroomDustTravel = 0f;
+        java.util.Arrays.fill(mushroomDustLife, 0f);
         mushroomReaction = mushroomShakeCue = mushroomSporeCue = false;
         awake = chord = 0;
         want = -1;
@@ -1362,7 +1374,7 @@ final class Boss {
         mushroomPlayerX = 0f;
         mushroomGuideTarget = 1;
         mushroomMeterAlpha = 0f;
-        mushroomShakeWindow = 1.25f;
+        mushroomShakeWindow = 1.25f / mushroomRate();
         return true;
     }
 
@@ -1418,9 +1430,11 @@ final class Boss {
         if (held == -2 && kind == MUSHROOM) {
             float cx = body == null ? x : body.centreX();
             float cy = body == null ? y : body.centreY();
+            float capMovement = x - cx - mushroomCapDX;
             mushroomCapDX = x - cx;
             mushroomCapDY = Math.max(-bodyR(L) * 0.55f,
                     Math.min(bodyR(L) * 0.55f, y - cy));
+            shedMushroomDust(capMovement, L);
             float dx = x - mushroomLastX;
             if (Math.abs(dx) > L.w * 0.015f) mushroomMeterAlpha = Math.max(mushroomMeterAlpha, 0.01f);
             // A twitch is not a shake: every accepted pass must cover 35% of the physical screen.
@@ -1449,7 +1463,7 @@ final class Boss {
             mushroomDirection = direction;
             mushroomPlayerX = direction;
             mushroomGuideTarget = -direction;
-            mushroomShakeWindow = 1.25f;
+            mushroomShakeWindow = 1.25f / mushroomRate();
             if (body != null) {
                 body.letGo();
                 body.impulse(body.centreX() - direction * body.radiusX() * 0.62f,
@@ -2248,6 +2262,43 @@ final class Boss {
         }
     }
 
+    /** Damage speeds the rhythm without changing swipe width or the attack warning. */
+    float mushroomRate() {
+        return 1f + 0.35f * Math.max(0f, Math.min(1f, 1f - health()));
+    }
+
+    // Cosmetic dust has its own fixed pool and sequence: it cannot consume attack slots or RNG.
+    void shedMushroomDust(float movement, Layout L) {
+        if (body == null || Math.abs(movement) < L.w * 0.001f) return;
+        float r = bodyR(L);
+        mushroomDustTravel += Math.abs(movement);
+        int count = Math.min(16, (int) (mushroomDustTravel / (r * 0.09f)));
+        if (count == 0) return;
+        mushroomDustTravel %= r * 0.09f;
+        float charge = mushroomCharge <= 0f ? 0f : 1f - mushroomCharge / MUSHROOM_CHARGE_TIME;
+        float squeeze = (float) Math.sin(charge * Math.PI * 0.5f);
+        float sx = 1f + squeeze * 0.16f, sy = 1f - squeeze * 0.30f;
+        float ry = body.radiusY(), rx = body.radiusX();
+        float capX = body.centreX() + mushroomCapDX;
+        float capY = body.centreY() + ry * 0.65f + mushroomCapDY;
+        float bottom = body.centreY() + r * (3.55f - squeeze * 0.20f);
+        float angle = Math.max(-0.62f, Math.min(0.62f, (float) Math.atan2(mushroomCapDX,
+                Math.max(ry * 0.55f, bottom - capY - r * 0.36f * sy))));
+        float ca = (float) Math.cos(angle), sa = (float) Math.sin(angle);
+        for (int n = 0; n < count; n++) {
+            int i = mushroomDustNext;
+            mushroomDustNext = (i + 1) % MUSHROOM_DUST;
+            float u = ((i * 23) % 61) / 60f * 1.8f - 0.9f;
+            float dx = u * rx * sx * 1.72f;
+            float dy = ry * sy * (0.22f + 0.29f * (float) Math.sqrt(1f - u * u));
+            mushroomDustX[i] = capX + dx * ca - dy * sa;
+            mushroomDustY[i] = capY + dx * sa + dy * ca;
+            mushroomDustVX[i] = r * (Math.signum(movement) * 0.28f + u * 0.18f);
+            mushroomDustVY[i] = r * (0.22f + (i % 5) * 0.06f);
+            mushroomDustLife[i] = 0.95f;
+        }
+    }
+
     /** Drops pale spores which become ordinary readable letter projectiles as they descend. */
     private void sporeVolley(int count, Random rnd) {
         int first = randomGlyph(rnd);
@@ -2675,11 +2726,18 @@ final class Boss {
 
         age += dt;
         if (kind == MUSHROOM) {
+            for (int i = 0; i < MUSHROOM_DUST; i++) {
+                if (mushroomDustLife[i] <= 0f) continue;
+                mushroomDustLife[i] = Math.max(0f, mushroomDustLife[i] - dt);
+                mushroomDustX[i] += mushroomDustVX[i] * dt;
+                mushroomDustY[i] += mushroomDustVY[i] * dt;
+                mushroomDustVY[i] += bodyR(L) * 1.8f * dt;
+            }
             mushroomSweepFlash = Math.max(0f, mushroomSweepFlash - dt);
             mushroomReject = Math.max(0f, mushroomReject - dt * 1.15f);
             if (held == -2 && mushroomMeterAlpha > 0f) {
                 mushroomMeterAlpha = Math.min(1f, mushroomMeterAlpha + dt * 5f);
-                float step = dt * 3.2f;
+                float step = dt * 3.2f * mushroomRate();
                 if (mushroomGuideX < mushroomGuideTarget)
                     mushroomGuideX = Math.min(mushroomGuideTarget, mushroomGuideX + step);
                 else mushroomGuideX = Math.max(mushroomGuideTarget, mushroomGuideX - step);
@@ -2709,7 +2767,7 @@ final class Boss {
                     mushroomAttackT = MUSHROOM_ATTACK_GAP;
                 }
             } else {
-                mushroomAttackT -= dt;
+                mushroomAttackT -= dt * mushroomRate();
                 if (mushroomAttackT <= 0f) {
                     mushroomCharge = MUSHROOM_CHARGE_TIME;
                     if (body != null) body.squash(1f);

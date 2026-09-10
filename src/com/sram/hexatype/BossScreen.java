@@ -637,6 +637,17 @@ final class BossScreen extends Draw {
                     Glyph.withAlpha(0xFFF4F0F6, (int) (255 * fade)));
         }
 
+        for (int i = 0; i < Boss.MUSHROOM_DUST; i++) {
+            float life = b.mushroomDustLife[i];
+            if (life <= 0f) continue;
+            float size = ry * (0.019f + (i % 3) * 0.006f);
+            int alpha = (int) (225f * fade * Math.min(1f, life / 0.35f));
+            p.fillCircle(b.mushroomDustX[i], b.mushroomDustY[i], size * 1.8f,
+                    Glyph.withAlpha(0xFFEBC99C, alpha / 4));
+            p.fillCircle(b.mushroomDustX[i], b.mushroomDustY[i], size,
+                    Glyph.withAlpha(0xFFFFE9BC, alpha));
+        }
+
         // Ruffled skirt collar bends with the spine beneath the gills.
         float collarT = 0.73f, collarU = 1f - collarT;
         float collarX = collarU * collarU * rootX + 2f * collarU * collarT * controlX

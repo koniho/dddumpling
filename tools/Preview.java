@@ -869,6 +869,13 @@ final class Preview {
         shot(dir, "77d-agaric-hard-right", agaric, L, w, h, ss);
         agaric.boss.mushroomCapDX = -Boss.bodyR(L) * 2.2f;
         shot(dir, "77e-agaric-hard-left", agaric, L, w, h, ss);
+        agaric.boss.mushroomCapDX = Boss.bodyR(L) * 0.75f;
+        agaric.boss.held = -2;
+        agaric.boss.hp = agaric.boss.hpMax * 0.25f;
+        agaric.boss.shedMushroomDust(L.w * 0.3f, L);
+        for (int i = 0; i < 18; i++) agaric.update(DT, L);
+        agaric.boss.shedMushroomDust(L.w * 0.3f, L);
+        shot(dir, "77f-agaric-shaken-dust", agaric, L, w, h, ss);
 
         GameCore pulseDemo = toBoss(L, Boss.OCTOPUS, 538L, true);
         pulseDemo.stageBanner = pulseDemo.rosterSceneT = 0f;
