@@ -1010,6 +1010,26 @@ final class TestBoss extends Check {
         check("an escaped arm retaliates with three staggered projectiles",
                 escape.boss.boltCount() == 3 && escape.boss.octoFlurryLeft == 0);
 
+        boolean flurryPlayable = true, flurryComplete = true;
+        for (int mask = 0; mask < (1 << Glyph.COUNT); mask++) {
+            if (Integer.bitCount(mask & 0x07) > 2 || Integer.bitCount(mask & 0x38) > 2) continue;
+            GameCore volley = enterBoss(L, Boss.OCTOPUS, 800L + mask);
+            volley.boss.disabledKeys = mask;
+            volley.boss.octoTarget = volley.boss.octoAttackArm = -1;
+            volley.boss.octoPause = 10f;
+            volley.boss.octoFlurryLeft = 3;
+            volley.boss.octoFlurryT = 0f;
+            for (int frame = 0; frame < 32; frame++) volley.update(DT, L);
+            flurryComplete &= volley.boss.boltCount() == 3 && volley.boss.octoFlurryLeft == 0;
+            for (int bolt = 0; bolt < Boss.MAX_BOLTS; bolt++) {
+                if (!volley.boss.blive[bolt]) continue;
+                flurryPlayable &= volley.keyActive(volley.boss.bglyph[bolt]);
+            }
+        }
+        check("Octopulse flurries only fire unstolen keys for every reachable stolen-key mask",
+                flurryPlayable);
+        check("Octopulse keeps all three flurry shots even with only two keys left", flurryComplete);
+
         GameCore wrong = enterBoss(L, Boss.OCTOPUS, 153L);
         wrong.enemies.clear(); wrong.target = null;
         for (int i = 0; i < 300 && wrong.boss.octoTarget < 0; i++) wrong.update(DT, L);

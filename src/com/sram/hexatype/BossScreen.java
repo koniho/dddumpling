@@ -739,9 +739,10 @@ final class BossScreen extends Draw {
             float expected = (float) Math.sqrt((rx * cs) * (rx * cs) + (ry * sn) * (ry * sn));
             float live = (float) Math.sqrt(dx * dx + dy * dy);
             float elastic = Math.max(0.88f, Math.min(1.12f, live / Math.max(1f, expected)));
-            // Two vertical lobes joined by a soft waist, deformed by the same live mantle.
-            float width = (0.58f + 0.95f * sn * sn) * (sn > 0f ? 0.94f : 1f);
-            float height = sn < 0f ? 1.70f : 1.16f;
+            // Round crown over a shallow lower lobe, with the live mantle's elastic motion.
+            float width = sn < 0f ? 0.74f - 0.38f * sn + 0.05f * sn * sn
+                    : 0.74f + 0.20f * sn;
+            float height = sn < 0f ? 1.45f : 0.82f;
             mantle[i] = cx + cs * rx * width * elastic;
             mantle[i + 1] = cy + sn * ry * height * elastic - ry * 0.11f;
         }
@@ -876,7 +877,9 @@ final class BossScreen extends Draw {
 
     private static void drawOctopusArms(Painter p, GameCore c, Layout L, Boss b, int col, float fade) {
         float thick = Boss.bodyR(L) * 0.52f;
-        for (int a = 0; a < Boss.OCTO_ARMS; a++) {
+        // Paint outside-in so the central arms sit in front at every crossing.
+        for (int layer = 0; layer < Boss.OCTO_ARMS; layer++) {
+            int a = layer % 2 == 0 ? layer / 2 : Boss.OCTO_ARMS - 1 - layer / 2;
             float[] pts = new float[Boss.OCTO_NODES * 2];
             for (int n = 0; n < Boss.OCTO_NODES; n++) { pts[n * 2] = b.octoX[a][n]; pts[n * 2 + 1] = b.octoY[a][n]; }
             boolean dying = a == b.octoDyingArm && b.octoDeath > 0f;

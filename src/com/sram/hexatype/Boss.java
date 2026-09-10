@@ -1986,8 +1986,21 @@ final class Boss {
         int slot = -1;
         for (int i = 0; i < MAX_BOLTS; i++) if (!blive[i]) { slot = i; break; }
         if (slot < 0) return false;
+        int glyph;
+        if (kind == OCTOPUS) {
+            int available = octoKeysLeft();
+            if (available == 0) return false;
+            int pick = rnd.nextInt(available);
+            glyph = -1;
+            for (int g = 0; g < Glyph.COUNT; g++) {
+                if (Roster.active(rosterFull, g) && !keyDisabled(g) && pick-- == 0) {
+                    glyph = g;
+                    break;
+                }
+            }
+        } else glyph = randomGlyph(rnd);
         blive[slot] = true;
-        bglyph[slot] = randomGlyph(rnd);
+        bglyph[slot] = glyph;
         bhp[slot] = bhpMax[slot] = 1;
         bt[slot] = 0f;
         bsx[slot] = x;

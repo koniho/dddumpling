@@ -14,7 +14,8 @@ final class BossCollect extends Draw {
         int ink = fadeBy(0xFF382841, fade);
         float faceY = y, faceR = r * 0.6f;
         if (boss == Boss.OCTOPUS) {
-            for (int arm = 0; arm < 8; arm++) {
+            for (int layer = 0; layer < Boss.OCTO_ARMS; layer++) {
+                int arm = layer % 2 == 0 ? layer / 2 : Boss.OCTO_ARMS - 1 - layer / 2;
                 float endX = x + (arm - 3.5f) * r * 0.28f;
                 float endY = y + r * (0.64f + 0.14f * (float) Math.sin(clock * 2f + arm));
                 float startX = x + (arm - 3.5f) * r * 0.10f;
