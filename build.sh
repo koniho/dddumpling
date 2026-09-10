@@ -7,14 +7,23 @@ if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi
 set -euo pipefail
 cd "$(dirname "$0")"
 
+DEVELOPER=false
+case "${1:---production}" in
+    --developer) DEVELOPER=true ;;
+    --production) ;;
+    *) echo 'usage: ./build.sh [--production|--developer]' >&2; exit 1 ;;
+esac
+[ "$#" -le 1 ] || { echo 'Only one build mode is allowed' >&2; exit 1; }
+echo ">> developer controls: $DEVELOPER"
+
 SDK=sdk/android.jar
 if [ ! -f "$SDK" ] && [ -n "${ANDROID_HOME:-}" ]; then
-    SDK="$ANDROID_HOME/platforms/android-35/android.jar"
+    SDK="$ANDROID_HOME/platforms/android-36/android.jar"
 fi
 OUT=build
 APK=hexatype.apk
 MIN=21
-TGT=35
+TGT=36
 KS=${HEXATYPE_KEYSTORE:-$OUT/debug.keystore}
 KS_ALIAS=${HEXATYPE_KEY_ALIAS:-hexatype}
 KS_STORE_PASS=${HEXATYPE_KEYSTORE_PASSWORD:-android}
@@ -22,33 +31,61 @@ KS_KEY_PASS=${HEXATYPE_KEY_PASSWORD:-$KS_STORE_PASS}
 
 [ -f "$SDK" ] || { echo "missing $SDK - see README.md"; exit 1; }
 
+mkdir -p "$OUT"
 echo ">> rules + frame renders"
 bash ./check.sh >"$OUT/check.log" 2>&1 || { tail -30 "$OUT/check.log"; exit 1; }
 grep -E '^[0-9]+ passed' "$OUT/check.log"
+bash ./check.sh --production -q >"$OUT/production-check.log" 2>&1 || { tail -30 "$OUT/production-check.log"; exit 1; }
+grep -E '^[0-9]+ passed' "$OUT/production-check.log"
 
 rm -rf "$OUT/classes" "$OUT/gen" "$OUT/res.zip" "$OUT/base.apk" "$OUT/classes.dex"
 mkdir -p "$OUT/classes" "$OUT/gen"
+sh tools/build-flags.sh "$OUT/gen" "$DEVELOPER"
+
+PLAY_CONFIG=${DDDUMPLING_PLAY_CONFIG:-}
+PLAY_JARS=()
+PLAY_RES=()
+PLAY_LINK=()
+PLATFORM_SRC=local-src
+MANIFEST=AndroidManifest.xml
+if [ "$DEVELOPER" = false ] && [ -n "$PLAY_CONFIG" ]; then
+    python tools/prepare-play.py --config "$PLAY_CONFIG"
+    PLATFORM_SRC=play-src
+    MANIFEST="$OUT/play/AndroidManifest.xml"
+    mapfile -t PLAY_JARS < "$OUT/play/jars.txt"
+    mapfile -t PLAY_RES < "$OUT/play/resources.txt"
+    PLAY_LINK=(--extra-packages "$(cat "$OUT/play/packages.txt")" --auto-add-overlay)
+    if [ -d "$OUT/play/assets" ]; then PLAY_LINK+=(-A "$OUT/play/assets"); fi
+fi
 
 echo ">> resources"
 aapt2 compile --dir res -o "$OUT/res.zip"
 aapt2 link -o "$OUT/base.apk" -I "$SDK" \
-    --manifest AndroidManifest.xml \
+    --manifest "$MANIFEST" \
     --java "$OUT/gen" --min-sdk-version "$MIN" --target-sdk-version "$TGT" \
     -A assets \
-    "$OUT/res.zip"
+    "${PLAY_LINK[@]}" "${PLAY_RES[@]}" "$OUT/res.zip"
+
+TASK_CP="$SDK"
+for PLAY_JAR in "${PLAY_JARS[@]}"; do TASK_CP="$TASK_CP:$PLAY_JAR"; done
 
 echo ">> java"
-find src "$OUT/gen" -name '*.java' >"$OUT/sources.txt"
+find src "$PLATFORM_SRC" "$OUT/gen" -name '*.java' >"$OUT/sources.txt"
 # Note: Termux's `ecj` wrapper hardcodes -7 and a bogus -cp, so javac is the sane choice.
 javac -nowarn -Xlint:none -encoding UTF-8 --release 8 \
-    -cp "$SDK" -d "$OUT/classes" @"$OUT/sources.txt" 2>&1 | grep -v 'source value 8' || true
+    -cp "$TASK_CP" -d "$OUT/classes" @"$OUT/sources.txt"
 
 echo ">> dex"
 find "$OUT/classes" -name '*.class' >"$OUT/classes.txt"
-d8 --lib "$SDK" --min-api "$MIN" --output "$OUT" @"$OUT/classes.txt"
+# A fresh directory avoids carrying extra dex files over from an SDK-enabled build.
+mkdir -p "$OUT/dex"
+find "$OUT/dex" -name 'classes*.dex' -delete
+d8 --lib "$SDK" --min-api "$MIN" --output "$OUT/dex" @"$OUT/classes.txt" "${PLAY_JARS[@]}"
+find "$OUT" -maxdepth 1 -name 'classes*.dex' -delete
+cp "$OUT"/dex/classes*.dex "$OUT/"
 
 echo ">> package + sign"
-(cd "$OUT" && zip -q -j base.apk classes.dex)
+(cd "$OUT" && zip -q -j base.apk classes*.dex)
 [ -f "$KS" ] || keytool -genkeypair -keystore "$KS" -storepass "$KS_STORE_PASS" \
     -keypass "$KS_KEY_PASS" -alias "$KS_ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
     -dname "CN=Hexatype Debug, O=Local, C=US" 2>/dev/null

@@ -610,6 +610,7 @@ final class Screens extends Draw {
      * panel. It is also the one screen nobody reads at arm's length mid-play.
      */
     static void settings(Painter p, GameCore c, Layout L) {
+        if (!BuildFlags.DEVELOPER) return;
         float s = L.unit;
         SettingsUi ui = new SettingsUi();
         ui.compute(L, Music.NAMES.length);

@@ -149,6 +149,7 @@ final class SettingsUi {
     }
 
     int hit(float x, float y) {
+        if (!BuildFlags.DEVELOPER) return HIT_NONE;
         if (x < panelL || x > panelR || y < panelT || y > panelB) return HIT_OUTSIDE;
 
         float dx = x - closeCx, dy = y - closeCy;

@@ -22,6 +22,8 @@ final class CoreTest {
         L.compute(1080, 2340, 0, 60, 0, 90);
         only = args.length > 0 && !args[0].isEmpty() ? args[0].toLowerCase() : null;
 
+        group("Progress", () -> TestProgress.all(L));
+
         group("Rules", () -> {
             TestRules.layout(L);
             TestRules.targeting(L);

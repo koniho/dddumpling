@@ -19,6 +19,9 @@ public class GameView extends View {
 
     private float padL, padT, padR, padB;
     private long last;
+    private boolean foreground;
+
+    void foreground(boolean active) { foreground = active; last = 0; }
 
     GameView(Context ctx, GameCore.Store store, GameCore.Sound sound) {
         super(ctx);
@@ -44,6 +47,8 @@ public class GameView extends View {
             return null;
         }
     }
+
+    GameCore core() { return core; }
 
     private void relayout() {
         if (getWidth() > 0 && getHeight() > 0) {
@@ -104,7 +109,7 @@ public class GameView extends View {
         if (handleBonusSwipe(ev, action)) return true;
 
         // The settings panel needs drags, for the speed slider.
-        if (core.settingsOpen) {
+        if (BuildFlags.DEVELOPER && core.settingsOpen) {
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN
                     || action == MotionEvent.ACTION_MOVE) {
                 int i = ev.getActionIndex();
@@ -180,7 +185,7 @@ public class GameView extends View {
             return true;
         }
         // The stage readout opens settings, so check it before the keys.
-        if (layout.inStageTap(x, y)) {
+        if (BuildFlags.DEVELOPER && layout.inStageTap(x, y)) {
             core.openSettings();
             tick();
             return true;
@@ -303,7 +308,12 @@ public class GameView extends View {
                 caseGesture = CASE_SHELF;
                 core.beginCaseDrag(caseDownX, caseDownY);
             }
-            if (caseGesture == CASE_SHELF) core.caseDragTo(x, y, layout);
+            if (caseGesture == CASE_SHELF) {
+                int before = core.caseIndex;
+                core.caseDragTo(x, y, layout);
+                if (core.caseIndex != before)
+                    performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+            }
             return true;
         }
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
@@ -536,6 +546,7 @@ public class GameView extends View {
     }
 
     private void handleSettings(float x, float y, boolean dragging) {
+        if (!BuildFlags.DEVELOPER) return;
         settingsUi.compute(layout, Music.NAMES.length);
         int hit = settingsUi.hit(x, y);
         if (hit == SettingsUi.HIT_SLIDER) {
@@ -629,11 +640,12 @@ public class GameView extends View {
         long now = SystemClock.uptimeMillis();
         float dt = last == 0 ? 1f / 60f : (now - last) / 1000f;
         last = now;
+        float elapsed = foreground ? dt : 0f;
         if (dt > 0.05f) dt = 0.05f;   // a backgrounded app must not teleport the wave
 
         try {
             boolean playingBeforeUpdate = core.state == GameCore.PLAY;
-            core.update(dt, layout);
+            core.update(dt, elapsed, layout);
             if (playingBeforeUpdate && core.boss.octoImpact) bossImpactHaptic();
             boolean beaten = core.boss.active() && core.boss.beaten;
             if (beaten && !bossWasBeaten) bossDeathHaptic();

@@ -25,7 +25,7 @@ jobs:
       - name: Install Android build tools
         run: |
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "platforms;android-35" "build-tools;35.0.0"
+            "platforms;android-36" "build-tools;35.0.0"
           echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
 
       - name: Restore signing key
@@ -41,7 +41,7 @@ jobs:
           HEXATYPE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           HEXATYPE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           HEXATYPE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./build.sh
+        run: ./build.sh --production
 
       - name: Name release APK
         run: cp hexatype.apk "DDDUMPLING-${GITHUB_REF_NAME}.apk"

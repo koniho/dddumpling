@@ -372,11 +372,28 @@ final class Showcase extends Draw {
                 p.strokePoly(Glyph.hex(xx, yy, tileR),
                         fadeBy(Glyph.withAlpha(tint, focus ? 210 : 65), opacity), s * (focus ? 0.09f : 0.04f));
                 float phase = c.clock * (1.7f + hash(idx + 71) * 1.2f) + idx * 2.37f;
-                float bob = (float) Math.sin(phase) * tileR * 0.065f;
+                float welcome = focus ? (float) Math.sin(Math.min(1f, c.caseHighlightAge / 0.65f)
+                        * Math.PI) : 0f;
+                float bob = (float) Math.sin(phase) * tileR * (focus ? 0.10f : 0.065f)
+                        - welcome * tileR * 0.14f;
                 float sway = (float) Math.sin(phase * 0.73f) * tileR * 0.035f;
                 float breathe = 1f + (float) Math.sin(phase * 1.13f) * 0.035f;
-                Trinket.draw(p, idx, xx + sway, yy + bob, tileR * 0.82f * breathe,
+                float grow = focus ? 1.16f + welcome * 0.16f : 1f;
+                Trinket.draw(p, idx, xx + sway, yy + bob, tileR * 0.82f * breathe * grow,
                         c.clock, owned, opacity);
+                if (focus) {
+                    for (int spark = 0; spark < 4; spark++) {
+                        float a = -0.7f + spark * Softbody.TAU / 4f + c.caseHighlightAge * 0.32f;
+                        float shimmer = 0.5f + 0.5f * (float) Math.sin(c.clock * 3.2f + spark * 1.7f);
+                        float reach = tileR * (1.10f + welcome * 0.15f);
+                        float sr = tileR * (0.035f + welcome * 0.065f + shimmer * 0.02f);
+                        p.fillPoly(star(xx + (float) Math.cos(a) * reach,
+                                yy + bob + (float) Math.sin(a) * reach * 0.76f,
+                                sr, sr * 0.32f, 4, a),
+                                fadeBy(Glyph.withAlpha(owned ? GOLD : INK_DIM,
+                                        (int) (100 + 130 * Math.max(welcome, shimmer))), opacity));
+                    }
+                }
             }
         }
         p.restore();
@@ -390,6 +407,9 @@ final class Showcase extends Draw {
                 type(s * 0.52f), fadeBy(tint, fade), Painter.CENTER, true);
         p.text(ROW_NAME[selectedRow] + "  " + (selectedCol+1) + " / " + columns(selectedRow),
                 cx, bot + s * 0.95f, type(s * 0.54f), fadeBy(INK_DIM, fade), Painter.CENTER, true);
+        int times = known ? Math.max(1, c.collectionCounts[i]) : 0;
+        p.text("COLLECTED " + times + (times == 1 ? " TIME" : " TIMES"),
+                cx, bot + s * 1.88f, type(s * 0.48f), fadeBy(INK, fade), Painter.CENTER, true);
         p.text("COLLECTIONS: " + c.collectTotal,
                 cx, bot + s * 2.80f, type(s * 0.48f), fadeBy(INK_DIM, fade), Painter.CENTER, true);
 

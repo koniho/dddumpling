@@ -37,6 +37,7 @@ final class Interlude {
             return;
         }
         c.starBonus = c.starNext;
+        c.progress.startMinigame(c.starBonus);
         if (c.starBonus) {
             // A fresh line every attempt, with whatever is already in hand kept — see
             // StarPath.reroll for why a repeated attempt must not be a repeated course.
@@ -107,6 +108,7 @@ final class Interlude {
     /** Claims an armed steamer lid after an upward swipe over it. */
     static void swipeBonus(GameCore c) {
         if (!c.bonusSwipeReady() || c.steamer.swipe() != Steamer.FREED) return;
+        c.progress.finishMinigame(true);
         if (c.store != null) c.store.saveSteamerOpens(c.steamer.opens);
         c.score += GameCore.FREE_BONUS;
         if (c.lives < GameCore.START_LIVES) c.lives++;
@@ -120,26 +122,31 @@ final class Interlude {
         c.steamer.lidDrag = c.bonusSwipeReady() ? Math.max(0f, lift) : 0f;
     }
 
-    static void awardPrize(GameCore c) {
-        c.prize = c.cubeUnlocked && c.stage >= Boss.EVERY
-                ? Collect.rollCube(c.rnd, c.collected) : Collect.roll(c.rnd, c.collected);
+    /** Every award source records duplicates immediately, before its celebration starts. */
+    private static void recordPrize(GameCore c, String source) {
+        c.caseIndex = c.prize;
+        c.caseSlide = c.caseSlideY = c.caseHighlightAge = 0f;
+        c.caseFreePan = false;
         c.prizeNew = !Collect.has(c.collected, c.prize);
-        // Every dumpling this run freed, new or duplicate. They dance on the game-over screen and
-        // then carry themselves off to the case, so what matters is that you won it today — a
-        // duplicate came out of a basket you opened just the same.
         c.roundPrizes = Collect.add(c.roundPrizes, c.prize);
-        // Counted whether or not it was new, and written through at once for the same reason the
-        // case is: a run that is force-quit must not lose what it opened.
-        c.collectTotal++;
-        if (c.store != null) c.store.saveCollectTotal(c.collectTotal);
+        int previous = Math.max(c.collectionCounts[c.prize], c.prizeNew ? 0 : 1);
+        c.collectionCounts[c.prize] = previous == Integer.MAX_VALUE ? previous : previous + 1;
+        if (c.collectTotal < Integer.MAX_VALUE) c.collectTotal++;
         if (c.prizeNew) {
             c.collected = Collect.add(c.collected, c.prize);
             if (c.store != null) c.store.saveCollected(c.collected);
-        } else {
-            c.score += GameCore.DUPE_BONUS;
+        } else c.score += GameCore.DUPE_BONUS;
+        c.progress.reward(c.prize, c.prizeNew, source, c.score);
+        if (c.store != null) {
+            c.store.saveCollectionCounts(c.collectionCounts);
+            c.store.saveCollectTotal(c.collectTotal);
         }
-        c.caseIndex = c.prize;
-        c.caseSlide = 0f;
+    }
+
+    static void awardPrize(GameCore c) {
+        c.prize = c.cubeUnlocked && c.stage >= Boss.EVERY
+                ? Collect.rollCube(c.rnd, c.collected) : Collect.roll(c.rnd, c.collected);
+        recordPrize(c, "steamer");
         // Scheduled, not started: it runs after the rest of the interlude has played out.
         c.paradeTimer = GameCore.PARADE_TIME;
     }
@@ -147,16 +154,7 @@ final class Interlude {
     /** Boss portraits are deterministic trophies, never random minigame drops. */
     static void awardBossPrize(GameCore c, int kind) {
         c.prize = Collect.BOSS_FIRST + kind;
-        c.prizeNew = !Collect.has(c.collected, c.prize);
-        c.roundPrizes = Collect.add(c.roundPrizes, c.prize);
-        if (c.prizeNew) {
-            c.collected = Collect.add(c.collected, c.prize);
-            if (c.store != null) c.store.saveCollected(c.collected);
-        } else c.score += GameCore.DUPE_BONUS;
-        c.collectTotal++;
-        if (c.store != null) c.store.saveCollectTotal(c.collectTotal);
-        c.caseIndex = c.prize;
-        c.caseSlide = c.caseSlideY = 0f;
+        recordPrize(c, "boss");
         c.paradeTimer = 0f;
         c.bossPrizePending = true;
     }
@@ -165,14 +163,7 @@ final class Interlude {
     static void awardStarPrize(GameCore c) {
         c.prize = c.cubeUnlocked && c.stage >= Boss.EVERY
                 ? Collect.rollCube(c.rnd, c.collected) : Collect.rollStar(c.rnd, c.collected);
-        c.prizeNew = !Collect.has(c.collected, c.prize);
-        c.roundPrizes = Collect.add(c.roundPrizes, c.prize);
-        if (c.prizeNew) {
-            c.collected = Collect.add(c.collected, c.prize);
-            if (c.store != null) c.store.saveCollected(c.collected);
-        } else c.score += GameCore.DUPE_BONUS;
-        c.caseIndex = c.prize;
-        c.caseSlide = 0f;
+        recordPrize(c, "starpath");
         // Scheduled, not started, exactly as the steamer does it: the victory tableau plays first
         // and the parade runs off what is left of the interlude.
         c.paradeTimer = GameCore.PARADE_TIME;
@@ -188,6 +179,7 @@ final class Interlude {
      * finished, so the interlude opens after that celebration rather than on top of it.
      */
     static void beginStageEnd(GameCore c) {
+        c.progress.completeStage(c.score);
         if (c.perfectRound()) {
             c.perfectBanner = GameCore.PERFECT_TIME;
             if (c.sound != null) c.sound.achievement();

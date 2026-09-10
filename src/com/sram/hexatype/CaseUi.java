@@ -10,6 +10,11 @@ final class CaseUi {
 
     private CaseUi() {}
 
+    private static void highlight(GameCore c, int index) {
+        if (c.caseIndex != index) c.caseHighlightAge = 0f;
+        c.caseIndex = index;
+    }
+
     /**
      * Opens the case. Title screen only, and not once a start press has begun the dissolve — the
      * case would be fading in over a screen fading out.
@@ -20,7 +25,7 @@ final class CaseUi {
         c.caseSlide = c.caseSlideY = 0f;
         c.caseFreePan = false;
         c.casePanMotionX = c.casePanMotionY = 0f;
-        c.caseT = 0f;
+        c.caseT = c.caseHighlightAge = 0f;
         if (c.sound != null) c.sound.squish(c.caseIndex % Glyph.COUNT, 1);
     }
 
@@ -35,7 +40,7 @@ final class CaseUi {
     /** One entry along, for a tap beside the shelf. Wraps, so neither side ever does nothing. */
     static void scroll(GameCore c, int dir) {
         if (dir == 0 || !c.caseOpen || c.storyOpen()) return;
-        c.caseIndex = Showcase.across(c.caseIndex, dir > 0 ? 1 : -1);
+        highlight(c, Showcase.across(c.caseIndex, dir > 0 ? 1 : -1));
         // Full slide, decaying to zero: the shelf glides in from the side it came from.
         c.caseFreePan = false;
         c.caseSlide = dir > 0 ? 1f : -1f;
@@ -51,7 +56,7 @@ final class CaseUi {
         if (!c.caseOpen || c.storyOpen()) return;
         int n = Showcase.wrap(i);
         if (n == c.caseIndex) return;
-        c.caseIndex = n;
+        highlight(c, n);
         c.caseSlide = c.caseSlideY = 0f;
         c.caseFreePan = false;
         c.casePanMotionX = c.casePanMotionY = 0f;
@@ -60,7 +65,7 @@ final class CaseUi {
 
     static void row(GameCore c, int dir) {
         if (dir == 0 || !c.caseOpen || c.storyOpen()) return;
-        c.caseIndex = Showcase.down(c.caseIndex, dir > 0 ? 1 : -1);
+        highlight(c, Showcase.down(c.caseIndex, dir > 0 ? 1 : -1));
         c.caseFreePan = false;
         c.caseSlideY = dir > 0 ? 1f : -1f;
         c.caseSlide = 0f;
@@ -72,7 +77,8 @@ final class CaseUi {
         if (!c.caseOpen || c.storyOpen()) return;
         float panX = Showcase.column(c.caseIndex) - c.caseSlide;
         float panY = Showcase.row(c.caseIndex) - c.caseSlideY;
-        c.caseIndex = Showcase.wrap(index);
+        highlight(c, Showcase.wrap(index));
+        c.caseHighlightAge = 0f;
         c.caseSlide = Showcase.column(c.caseIndex) - panX;
         c.caseSlideY = Showcase.row(c.caseIndex) - panY;
         c.caseFreePan = false;
@@ -103,7 +109,7 @@ final class CaseUi {
         panX = Math.max(-0.35f, Math.min(maxColumns - 0.65f, panX));
         panY = Math.max(-0.35f, Math.min(Showcase.ROW_NAME.length - 0.65f, panY));
         int row = Math.max(0, Math.min(Showcase.ROW_NAME.length - 1, Math.round(panY)));
-        c.caseIndex = Showcase.entry(row, Math.round(panX));
+        highlight(c, Showcase.entry(row, Math.round(panX)));
         c.caseSlide = Showcase.column(c.caseIndex) - panX;
         c.caseSlideY = Showcase.row(c.caseIndex) - panY;
         c.casePanMotionX = Math.max(-1f, Math.min(1f, dx * 5f));
@@ -120,6 +126,7 @@ final class CaseUi {
      * thing here that took several runs to build, so it is behind a confirmation.
      */
     static void tapClear(GameCore c) {
+        if (!BuildFlags.DEVELOPER) return;
         if (!c.clearArmed) {
             c.clearArmed = true;
             return;
@@ -129,6 +136,7 @@ final class CaseUi {
         // The tally goes too: it counts baskets opened for entries that no longer exist, and leaving
         // it would put "COLLECTIONS: 40" over an empty case. Same for the run's haul.
         c.collectTotal = 0;
+        java.util.Arrays.fill(c.collectionCounts, 0);
         c.prize = -1;
         c.roundPrizes = 0L;
         c.homeT = 0f;
@@ -141,6 +149,7 @@ final class CaseUi {
         if (c.store != null) {
             c.store.saveCollected(0L);
             c.store.saveCollectTotal(0);
+            c.store.saveCollectionCounts(c.collectionCounts);
         }
         if (c.sound != null) c.sound.wrong();
     }

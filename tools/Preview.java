@@ -15,11 +15,16 @@ final class Preview {
     private static int unfitFrames;
 
     private static final class Mem implements GameCore.Store {
+        byte[] progress;
+        public byte[] loadProgress() { return progress == null ? null : progress.clone(); }
+        public void saveProgress(byte[] data) { progress = data.clone(); }
+        public String progressReplica() { return "test"; }
         int best;
         float speed = 1f;
         int bgm;
         long collected;
         int collectTotal;
+        int[] collectionCounts = new int[Collect.COUNT];
         int steamerOpens;
         int starWins, starWinSaves;
         int rosterState = 1;
@@ -31,6 +36,8 @@ final class Preview {
         public void saveBgm(int v) { bgm = v; }
         public long loadCollected() { return collected; }
         public void saveCollected(long v) { collected = v; }
+        public int[] loadCollectionCounts() { return collectionCounts.clone(); }
+        public void saveCollectionCounts(int[] v) { collectionCounts = v.clone(); }
         public int loadCollectTotal() { return collectTotal; }
         public void saveCollectTotal(int v) { collectTotal = v; }
         public int loadStarWins() { return starWins; }
@@ -175,6 +182,15 @@ final class Preview {
         shot(dir, "40j-case-centered", grid, L, w, h, ss);
         grid.caseTo(Collect.BOSS_FIRST + 2);
         shot(dir, "40k-case-bosses", grid, L, w, h, ss);
+        CaseUi.select(grid, Collect.BOSS_FIRST + Boss.OCTOPUS);
+        step(grid, L, 0.26f);
+        grid.collectionCounts[grid.caseIndex] = 12;
+        shot(dir, "40l-case-highlight-tap", grid, L, w, h, ss);
+        grid.beginCaseDrag(w / 2f, Showcase.focusCy(L));
+        grid.caseDragTo(w / 2f - Showcase.step(L) * 0.7f, Showcase.focusCy(L), L);
+        step(grid, L, 0.22f);
+        shot(dir, "40m-case-highlight-pan", grid, L, w, h, ss);
+        grid.endCaseDrag();
         for (int boss = 0; boss < Boss.COUNT; boss++) {
             GameCore welcome = new GameCore(store, 199L + boss);
             welcome.stage = Boss.EVERY;

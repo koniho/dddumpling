@@ -23,6 +23,8 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     private SharedPreferences prefs;
     private Audio audio;
+    private GameView game;
+    private PlayBridge play;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -33,7 +35,9 @@ public class MainActivity extends Activity implements GameCore.Store {
             // setContentView first: it installs the decor view, and
             // Window.getInsetsController() dereferences that decor view, so going
             // fullscreen any earlier throws inside the framework.
-            setContentView(new GameView(this, this, audio));
+            game = new GameView(this, this, audio);
+            setContentView(game);
+            play = new PlayBridge(this, game.core());
             goFullscreen();
         } catch (Throwable t) {
             Crash.show(this, t);
@@ -42,6 +46,8 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     @Override protected void onResume() {
         super.onResume();
+        if (game != null) game.foreground(true);
+        if (play != null) play.resume();
         if (audio != null) {
             audio.startMusic();
             audio.resumeMusic();
@@ -49,6 +55,11 @@ public class MainActivity extends Activity implements GameCore.Store {
     }
 
     @Override protected void onPause() {
+        if (game != null) {
+            game.foreground(false);
+            game.core().progress.checkpoint(game.core().score);
+        }
+        if (play != null) play.pause();
         super.onPause();
         if (audio != null) {
             audio.pauseMusic();
@@ -59,8 +70,49 @@ public class MainActivity extends Activity implements GameCore.Store {
     }
 
     @Override protected void onDestroy() {
+        if (play != null) play.close();
         super.onDestroy();
         if (audio != null) audio.release();
+    }
+
+    @Override public byte[] loadProgress() {
+        String saved = prefs.getString("progress_v1", "");
+        return android.util.Base64.decode(saved, android.util.Base64.NO_WRAP);
+    }
+
+    @Override public void saveProgress(byte[] data) {
+        prefs.edit().putString("progress_v1", android.util.Base64.encodeToString(data,
+                android.util.Base64.NO_WRAP)).apply();
+    }
+
+    @Override public String progressReplica() {
+        // Backup restores must receive a new writer ID, otherwise offline increments collide.
+        android.util.AtomicFile file = new android.util.AtomicFile(
+                new java.io.File(getNoBackupFilesDir(), "progress-writer"));
+        try (java.io.DataInputStream in = new java.io.DataInputStream(file.openRead())) {
+            String id = in.readUTF();
+            if (!id.matches("[a-zA-Z0-9_-]{1,64}")) throw new java.io.IOException("Invalid writer ID");
+            return id;
+        } catch (java.io.FileNotFoundException missing) {
+            String id = java.util.UUID.randomUUID().toString();
+            java.io.FileOutputStream out = null;
+            try {
+                out = file.startWrite();
+                java.io.DataOutputStream data = new java.io.DataOutputStream(out);
+                data.writeUTF(id); data.flush(); file.finishWrite(out);
+                return id;
+            } catch (java.io.IOException e) {
+                if (out != null) file.failWrite(out);
+                throw new IllegalStateException("Cannot save progress writer", e);
+            }
+        } catch (java.io.IOException e) { throw new IllegalStateException("Cannot read progress writer", e); }
+    }
+
+    String progressOwner() { return prefs.getString("progress_owner", ""); }
+    boolean bindProgressOwner(String player) {
+        String owner = progressOwner();
+        if (!owner.isEmpty()) return owner.equals(player);
+        return prefs.edit().putString("progress_owner", player).commit();
     }
 
     @Override public int loadBest() {
@@ -105,6 +157,18 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     @Override public int loadCollectTotal() {
         return prefs.getInt(KEY_COLLECT_TOTAL, 0);
+    }
+
+    @Override public int[] loadCollectionCounts() {
+        int[] counts = new int[Collect.COUNT];
+        for (int i = 0; i < counts.length; i++) counts[i] = prefs.getInt("collectedCount_" + i, 0);
+        return counts;
+    }
+
+    @Override public void saveCollectionCounts(int[] counts) {
+        SharedPreferences.Editor edit = prefs.edit();
+        for (int i = 0; i < counts.length; i++) edit.putInt("collectedCount_" + i, counts[i]);
+        edit.apply();
     }
 
     @Override public void saveCollectTotal(int total) {

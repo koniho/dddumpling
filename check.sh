@@ -5,6 +5,7 @@
 # shellcheck shell=bash
 #
 # Usage: check.sh [-q] [-s SUITE] [-f TAGS] [-c BOX] [-r] [W H SS]
+#   --production  compile developer controls out and verify the production restrictions
 #   -q        only failures, printed diagnostics and the tally
 #   -s SUITE  run only suites whose name contains SUITE (Boss, Power, Soak, ...)
 #   -f TAGS   render only frames whose name starts with one of TAGS (comma-separated); also
@@ -20,8 +21,10 @@ SUITE=
 FRAMES=
 CROP=
 RULES_ONLY=0
+PRODUCTION=0
 while [ $# -gt 0 ]; do
     case "$1" in
+        --production) PRODUCTION=1; shift ;;
         -q|--quiet)  QUIET=1; shift ;;
         -s|--suite)  SUITE="$2"; shift 2 ;;
         -f|--frames) FRAMES="$2"; shift 2 ;;
@@ -33,7 +36,9 @@ done
 
 # Every pure-Java file, by hand. A new pure file has to be added here or the harness fails to
 # compile while the APK builds fine.
-PURE="src/com/sram/hexatype/Glyph.java
+PURE="src/com/sram/hexatype/ProgressData.java
+src/com/sram/hexatype/Progress.java
+src/com/sram/hexatype/Glyph.java
 src/com/sram/hexatype/Roster.java
 src/com/sram/hexatype/Kawaii.java
 src/com/sram/hexatype/Layout.java
@@ -85,7 +90,10 @@ src/com/sram/hexatype/Renderer.java"
 rm -rf build/harness
 mkdir -p build/harness out
 # shellcheck disable=SC2086
-javac -nowarn -d build/harness $PURE tools/*.java
+DEVELOPER=true
+[ "$PRODUCTION" -eq 0 ] || DEVELOPER=false
+sh tools/build-flags.sh build/harness-flags "$DEVELOPER"
+javac -nowarn -d build/harness $PURE tools/*.java build/harness-flags/com/sram/hexatype/BuildFlags.java
 
 # Quiet drops the per-assertion ok lines and the per-frame wrote lines, keeping failures, the
 # indented printf diagnostics, DOES NOT FIT and the tally.
@@ -94,6 +102,10 @@ filter() {
 }
 
 [ "$QUIET" = 1 ] || echo "=== rules ==="
+if [ "$PRODUCTION" -eq 1 ]; then
+    java -cp build/harness com.sram.hexatype.TestProduction | filter
+    exit 0
+fi
 java -cp build/harness com.sram.hexatype.CoreTest "$SUITE" | filter
 
 if [ "$RULES_ONLY" = 1 ]; then exit 0; fi

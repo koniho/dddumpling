@@ -1,0 +1,17 @@
+plugins { id 'base' }
+repositories {
+    google { metadataSources { mavenPom(); artifact(); ignoreGradleMetadataRedirection() } }
+    mavenCentral { metadataSources { mavenPom(); artifact(); ignoreGradleMetadataRedirection() } }
+}
+configurations { play; merger }
+dependencies {
+    play 'com.google.android.gms:play-services-games-v2:21.0.0'
+    merger 'com.android.tools.build:manifest-merger:31.13.2'
+}
+tasks.register('resolve', Sync) {
+    into layout.buildDirectory.dir('resolved')
+    from(configurations.play) { into 'play' }
+    from(configurations.merger) { into 'merger' }
+}
+
+dependencyLocking { lockAllConfigurations() }

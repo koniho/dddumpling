@@ -29,6 +29,7 @@ final class BossPlay {
             if (!e.destroyed) c.destroyWord(e, c.enemyCentreX(e), e.y, L);
         }
         if (won) {
+            c.progress.beatBoss(c.boss.kind);
             Interlude.awardBossPrize(c, c.boss.kind);
             if (c.boss.kind == Boss.SLIME && c.stage == Boss.EVERY) c.cubeUnlocked = true;
             if (c.stage == Boss.EVERY) c.unlockRoster();
@@ -215,7 +216,9 @@ final class BossPlay {
     static boolean dragTo(GameCore c, float x, float y, Layout L) {
         if (c.boss.held < 0 && c.boss.held != -2 && c.boss.held != -3) return false;
         c.boss.mushroomShakeCue = false;
+        float beforeHp = c.boss.hp;
         int r = c.boss.dragTo(x, y, L);
+        c.progress.bossDamage(c.boss.kind, beforeHp, c.boss.hp);
         if (c.boss.mushroomShakeCue && c.sound != null) c.sound.mushroomShake();
         c.boss.mushroomShakeCue = false;
         if (r != Boss.HIT) return false;
@@ -242,7 +245,10 @@ final class BossPlay {
 
     static boolean pinch(GameCore c, float distance, float x1, float y1, float x2, float y2,
             Layout L) {
-        if (!c.boss.pinch(distance, x1, y1, x2, y2, c.rnd)) return false;
+        float beforeHp = c.boss.hp;
+        boolean changed = c.boss.pinch(distance, x1, y1, x2, y2, c.rnd);
+        c.progress.bossDamage(c.boss.kind, beforeHp, c.boss.hp);
+        if (!changed) return false;
         boolean deactivate = c.boss.divideDeactivated;
         c.shake = Math.max(c.shake, deactivate ? 1.2f : 0.85f);
         c.flashColor = deactivate ? 0xFFFFFFFF : 0xFF7D45D6;

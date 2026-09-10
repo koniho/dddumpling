@@ -22,6 +22,10 @@ Pan freely in any direction through the animated collectibles, without snapping 
 Fruits share one row, candies share another, and defeated bosses join their own row.
 Each boss victory awards its matching miniature character and replaces the next minigame with
 a confetti-filled welcome scene; repeated victories pay a duplicate bonus. The glass catches the light as you move.
+Navigation ticks as the highlighted tile changes; its character grows, bounces, and sparkles.
+The highlighted character shows how many times it has been collected, including duplicates.
+Counts persist across runs for every reward source. Older saves begin at one per owned character,
+since past duplicates cannot be reconstructed. Clearing the collection also clears these counts.
 Tap a visible tile to pan it into the center, then tap it again for its story;
 every key starts a run instead, and puts the case away first if it is open. Anything you have not
 won yet is a silhouette behind a question
@@ -308,7 +312,38 @@ git tag v0.2.0
 git push origin v0.2.0
 ```
 
-The workflow runs the complete test and render harness through `build.sh`, installs Android API 35
+The workflow runs the complete test and render harness through `build.sh`, installs Android API 36
 build tools, and signs with the project keystore stored as encrypted GitHub repository secrets. Keep
 that keystore backed up: Android will not install an update signed with a different key over an
 existing installation.
+
+## Google Play submission
+
+See [store/README.md](store/README.md) for the bundle build, signing, draft listing and remaining Console steps.
+
+### Production and developer builds
+
+Settings exist only in developer builds. The generated `BuildFlags.DEVELOPER` is a Java compile-time
+constant, with no saved preference or in-app switch. Production removes the settings icon, panel,
+tap targets and settings actions, including playtest hooks and collection clearing. Production uses
+default speed/music while preserving normal progression and collection data.
+
+| Command | Build |
+| --- | --- |
+| `./build.sh` or `./build.sh --production` | Production APK, no settings |
+| `./build.sh --developer` | Developer APK, full settings |
+| `./deploy.sh` | Build and install the developer APK |
+| `./deploy.sh --production` | Build and install the production APK |
+| `./build-bundle.sh` | Signed production Play bundle; developer mode cannot be selected |
+| `./check.sh --production -q` | Compile with developer mode off and test production restrictions |
+
+Every APK/bundle build runs the normal developer harness and the separately compiled production
+checks. GitHub release builds explicitly select production. Both APK modes currently share the
+same package and app data; changing modes updates the existing installation.
+
+### Optional Play Games integration
+
+Ordinary production builds remain local-only. On the `feature/play-games-progress` branch,
+production gameplay records local event/progress counters. To include Google Play Games events
+and cross-device saves, configure the project/event IDs and build with `DDDUMPLING_PLAY_CONFIG`.
+Developer builds never include the SDK or report events. See [Play Games setup and save semantics](store/play-games.md).

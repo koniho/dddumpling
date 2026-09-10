@@ -238,6 +238,64 @@ final class TestCollect extends Check {
         e.startGame();
         check("starting a run keeps the case", Collect.owned(e.collected) == 3);
         check("starting a run clears the last prize", e.prize < 0);
+        check("legacy owned characters start at one without inventing duplicates",
+                e.collectionCounts[0] == 1 && e.collectionCounts[1] == 1
+                        && e.collectionCounts[2] == 0 && e.collectionCounts[3] == 1);
+        Mem legacy = new Mem();
+        legacy.collected = 3L;
+        legacy.collectTotal = 17;
+        GameCore migrated = new GameCore(legacy, 96L);
+        check("migration keeps the old total without assigning its unknown duplicates",
+                migrated.collectTotal == 17 && migrated.collectionCounts[0] == 1
+                        && migrated.collectionCounts[1] == 1);
+        Interlude.awardBossPrize(migrated, Boss.SLIME);
+        GameCore migratedReload = new GameCore(legacy, 97L);
+        check("the first award persists migrated counts with the new prize",
+                migratedReload.collectionCounts[0] == 1 && migratedReload.collectionCounts[1] == 1
+                        && migratedReload.collectionCounts[Collect.BOSS_FIRST] == 1);
+
+        Mem countsStore = new Mem();
+        GameCore counted = new GameCore(countsStore, 918L);
+        int[] expectedCounts = new int[Collect.COUNT];
+        boolean exactCounts = true, immediateCounts = true, sharedAwards = true;
+        for (int award = 0; award < 180; award++) {
+            long beforeOwned = counted.collected;
+            int beforeScore = counted.score;
+            counted.caseSlide = counted.caseSlideY = 0.4f;
+            counted.caseFreePan = true;
+            counted.cubeUnlocked = award >= 120;
+            counted.stage = Boss.EVERY;
+            if (award % 3 == 0) Interlude.awardPrize(counted);
+            else if (award % 3 == 1) Interlude.awardStarPrize(counted);
+            else Interlude.awardBossPrize(counted, award % Boss.COUNT);
+            sharedAwards &= counted.prizeNew == !Collect.has(beforeOwned, counted.prize)
+                    && counted.score == beforeScore + (counted.prizeNew ? 0 : GameCore.DUPE_BONUS)
+                    && counted.caseIndex == counted.prize && !counted.caseFreePan
+                    && counted.caseSlide == 0f && counted.caseSlideY == 0f
+                    && Collect.has(counted.roundPrizes, counted.prize);
+            expectedCounts[counted.prize]++;
+            exactCounts &= java.util.Arrays.equals(expectedCounts, counted.collectionCounts);
+            immediateCounts &= java.util.Arrays.equals(expectedCounts, countsStore.collectionCounts);
+        }
+        check("every steamer, star, cube and boss award increments only its own count", exactCounts);
+        check("duplicates and first discoveries persist their counts immediately", immediateCounts);
+        check("all reward sources share duplicate bonuses, run tracking and display focus", sharedAwards);
+        check("all award sources increment the overall collection total", counted.collectTotal == 180);
+        GameCore restoredCounts = new GameCore(countsStore, 919L);
+        check("per-character counts survive app recreation",
+                java.util.Arrays.equals(expectedCounts, restoredCounts.collectionCounts));
+        restoredCounts.startGame();
+        check("starting a run preserves every collection count",
+                java.util.Arrays.equals(expectedCounts, restoredCounts.collectionCounts));
+        CaseUi.tapClear(restoredCounts);
+        check("arming the clear button preserves counts",
+                java.util.Arrays.equals(expectedCounts, restoredCounts.collectionCounts));
+        CaseUi.tapClear(restoredCounts);
+        GameCore clearedCounts = new GameCore(countsStore, 920L);
+        check("confirmed clearing removes counts from memory and persistence",
+                java.util.Arrays.equals(new int[Collect.COUNT], restoredCounts.collectionCounts)
+                        && java.util.Arrays.equals(new int[Collect.COUNT], clearedCounts.collectionCounts)
+                        && clearedCounts.collectTotal == 0 && clearedCounts.collected == 0L);
     }
 
     /** The parade that closes a winning interlude, and that play waits for it. */
@@ -471,6 +529,28 @@ final class TestCollect extends Check {
                 Showcase.hit(L, cx, cy + Showcase.focusR(L) * 3.63f) == Showcase.HIT_NONE);
         check("the caption is neither",
                 Showcase.hit(L, cx, Showcase.plaqueBot(L) + L.unit * 0.6f) == Showcase.HIT_NONE);
+
+        GameCore highlight = new GameCore(new Mem(), 917L);
+        highlight.openCase();
+        advance(highlight, L, 1f);
+        highlight.beginCaseDrag(cx, cy);
+        highlight.caseDragTo(cx - Showcase.step(L) * 0.2f, cy, L);
+        check("panning within a tile leaves its flourish running", highlight.caseHighlightAge >= 1f);
+        int previous = highlight.caseIndex;
+        highlight.caseDragTo(cx - Showcase.step(L) * 0.7f, cy, L);
+        check("crossing a tile changes the highlight and restarts its flourish",
+                highlight.caseIndex != previous && highlight.caseHighlightAge == 0f);
+        advance(highlight, L, 0.2f);
+        highlight.caseDragTo(cx - Showcase.step(L) * 0.75f, cy, L);
+        check("small motion does not repeatedly restart the flourish", highlight.caseHighlightAge >= 0.19f);
+        highlight.endCaseDrag();
+        CaseUi.select(highlight, 0);
+        check("tapping a character restarts the same highlight flourish", highlight.caseHighlightAge == 0f);
+        advance(highlight, L, 0.3f);
+        highlight.closeCase();
+        float stoppedAge = highlight.caseHighlightAge;
+        advance(highlight, L, 0.3f);
+        check("closed cases stop the highlight animation clock", highlight.caseHighlightAge == stoppedAge);
 
         float step = Showcase.step(L), rowStep = Showcase.rowStep(L);
         c.caseTo(3);

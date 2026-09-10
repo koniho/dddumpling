@@ -159,7 +159,7 @@ final class GameCore {
     static final float PARADE_TIME = 4.5f;
 
     /** Persistence seam; the Activity backs this with SharedPreferences. */
-    interface Store {
+    interface Store extends Progress.Store {
         int loadBest();
         void saveBest(int best);
         float loadSpeed();
@@ -169,10 +169,9 @@ final class GameCore {
         /** The collected-squishy bitmask; see {@link Collect}. */
         long loadCollected();
         void saveCollected(long owned);
-        /**
-         * Every basket ever opened, duplicates and all — so it keeps climbing after the case is
-         * full, which the bitmask cannot. See {@link GameCore#collectTotal}.
-         */
+        int[] loadCollectionCounts();
+        void saveCollectionCounts(int[] counts);
+        /** All collection rewards, including duplicate minigame and boss prizes. */
         int loadCollectTotal();
         void saveCollectTotal(int total);
         /** Lifetime steamer successes, used to retain its rising target across playthroughs. */
@@ -522,15 +521,9 @@ final class GameCore {
      * not lose the thing it won.
      */
     long collected;
-    /**
-     * Baskets opened over every run ever, duplicates counted.
-     *
-     * The bitmask beside it cannot say this: it stops at thirty and then never moves again, so a
-     * player with a full case has nothing left that counts up. This does, and it is the honest
-     * measure of how much has actually been won — a duplicate came out of a basket you opened just
-     * the same. Written through on every award, for the same reason the bitmask is.
-     */
+    /** Lifetime collection rewards, including duplicates and the unattributed legacy total. */
     int collectTotal;
+    final int[] collectionCounts = new int[Collect.COUNT];
     /** What the last opened steamer handed over, or -1. Reset when a run starts. */
     int prize = -1;
     /**
@@ -560,6 +553,8 @@ final class GameCore {
      * as the case comes up, which is what tells you it can be tapped now that no line says so.
      */
     float caseT;
+    /** Time since this tile became highlighted; drives its welcome bounce and sparkles. */
+    float caseHighlightAge;
     /** Where the shelf's current entry was grabbed, in view pixels. */
     float caseDragX, caseDragY;
     boolean caseFreePan;
@@ -1082,6 +1077,7 @@ final class GameCore {
      * Goes through {@link #startFrenzy} so it is the real thing, not a simulation of it.
      */
     void playtestMode(int effect, Layout L) {
+        if (!BuildFlags.DEVELOPER) return;
         if (state != PLAY) return;
         power = null;
         settingsOpen = false;
@@ -1100,6 +1096,7 @@ final class GameCore {
      * Anything less and the interlude plays over words that are still falling behind the scrim.
      */
     void playtestStars(Layout L) {
+        if (!BuildFlags.DEVELOPER) return;
         if (state != PLAY) return;
         power = null;
         settingsOpen = false;
@@ -1117,6 +1114,7 @@ final class GameCore {
 
     /** Drops straight into a full-length steamer round from the playtest panel. */
     void playtestSteamer(Layout L) {
+        if (!BuildFlags.DEVELOPER) return;
         if (state != PLAY) return;
         power = null;
         settingsOpen = false;
@@ -1221,6 +1219,7 @@ final class GameCore {
 
     final Random rnd;
     final Store store;
+    final Progress progress;
 
     static final int START_LIVES = 3;
     /** Pause after a stage is cleared, before the next wave starts arriving. */
@@ -1274,6 +1273,7 @@ final class GameCore {
 
     GameCore(Store store, long seed) {
         this.store = store;
+        this.progress = new Progress(store, !BuildFlags.DEVELOPER);
         this.rnd = new Random(seed);
         Random sr = new Random(20260803L);
         for (int l = 0; l < CLOUD_LAYERS; l++) {
@@ -1287,8 +1287,10 @@ final class GameCore {
         }
         if (store != null) {
             best = store.loadBest();
-            speed = clampSpeed(store.loadSpeed());
-            bgmChoice = Math.max(0, Math.min(Music.NAMES.length - 1, store.loadBgm()));
+            speed = BuildFlags.DEVELOPER ? clampSpeed(store.loadSpeed()) : 1f;
+            bgmChoice = BuildFlags.DEVELOPER
+                    ? Math.max(0, Math.min(Music.NAMES.length - 1, store.loadBgm()))
+                    : Music.defaultChoice(false);
             // Masked: a store that hands back junk in the high bits must not make
             // Collect.owned() report more than there are entries.
             collected = store.loadCollected() & Collect.MASK;
@@ -1297,6 +1299,15 @@ final class GameCore {
             // had won nothing. Their collection is the floor on how many baskets they opened.
             collectTotal = Math.max(Collect.owned(collected),
                     Math.max(0, store.loadCollectTotal()));
+            int[] savedCounts = store.loadCollectionCounts();
+            long knownTotal = 0;
+            for (int i = 0; i < Collect.COUNT; i++) {
+                int saved = savedCounts != null && i < savedCounts.length ? savedCounts[i] : 0;
+                // Old saves know ownership, but cannot attribute historical duplicates.
+                collectionCounts[i] = Collect.has(collected, i) ? Math.max(1, saved) : 0;
+                knownTotal += collectionCounts[i];
+            }
+            collectTotal = Math.max(collectTotal, (int) Math.min(Integer.MAX_VALUE, knownTotal));
             steamer.opens = Math.max(0, store.loadSteamerOpens());
             stars.wins = Math.max(0, Math.min(StarPath.MAX_DIFFICULTY, store.loadStarWins()));
             int roster = store.loadRosterState();
@@ -1305,6 +1316,8 @@ final class GameCore {
             rosterLeavePending = (roster & 8) != 0;
             if (rosterLeavePending) beginRosterLeave();
         }
+        progress.seed(this);
+        progress.apply(this);
     }
 
     boolean playRosterFull() { return state == TITLE ? fullRoster : runFullRoster; }
@@ -1356,6 +1369,7 @@ final class GameCore {
     // ---- settings -----------------------------------------------------------
 
     void openSettings() {
+        if (!BuildFlags.DEVELOPER) return;
         settingsOpen = true;
         clearArmed = false;
     }
@@ -1399,6 +1413,7 @@ final class GameCore {
     }
 
     void setNextRoster(boolean six) {
+        if (!BuildFlags.DEVELOPER) return;
         fullRoster = six;
         earlyLosses = 0;
         rosterLeavePending = false;
@@ -1406,6 +1421,7 @@ final class GameCore {
     }
 
     void endCurrentRun() {
+        if (!BuildFlags.DEVELOPER) return;
         if (state != PLAY) return;
         closeSettings();
         lives = 0;
@@ -1413,12 +1429,14 @@ final class GameCore {
     }
 
     void setSpeed(float v) {
+        if (!BuildFlags.DEVELOPER) return;
         speed = clampSpeed(v);
         if (store != null) store.saveSpeed(speed);
     }
 
     /** Restores every persistent difficulty ladder to its first-play values. */
     void resetDifficultyScaling() {
+        if (!BuildFlags.DEVELOPER) return;
         steamer.resetDifficulty();
         stars.resetDifficulty();
         if (store != null) {
@@ -1444,6 +1462,7 @@ final class GameCore {
     }
 
     void setBgm(int choice) {
+        if (!BuildFlags.DEVELOPER) return;
         if (choice < 0 || choice >= Music.NAMES.length) return;
         bgmChoice = choice;
         if (store != null) store.saveBgm(choice);
@@ -1516,6 +1535,7 @@ final class GameCore {
     }
 
     void startGame() {
+        progress.startRun();
         state = PLAY;
         runFullRoster = fullRoster;
         time = 0;
@@ -1589,8 +1609,10 @@ final class GameCore {
     }
 
     void toTitle() {
+        progress.finishRun(score, true);
         boolean hadHaul = state == OVER && roundPrizes != 0L;
         state = TITLE;
+        progress.apply(this);
         time = 0;
         deathT = 0f;
         bossVictoryKind = -1;
@@ -1736,7 +1758,9 @@ final class GameCore {
         // one exception is a key it is holding — that is refused wherever it is pressed, including
         // into an engaged word, because the player does not have that key at all.
         if (boss.fighting() && BossPlay.claims(this, g)) {
+            float beforeHp = boss.hp;
             int verdict = boss.press(g, rnd, L);
+            progress.bossDamage(boss.kind, beforeHp, boss.hp);
             if (verdict != Boss.NONE) return BossPlay.press(this, g, verdict, L);
         }
 
@@ -2159,7 +2183,11 @@ final class GameCore {
 
     // ---- simulation ---------------------------------------------------------
 
-    void update(float dt, Layout L) {
+    void update(float dt, Layout L) { update(dt, dt, L); }
+
+    void update(float dt, float elapsed, Layout L) {
+        if (state == PLAY && boss.fighting() && !(BuildFlags.DEVELOPER && settingsOpen))
+            progress.bossTime(elapsed);
         // Slow motion from a multi-word fling stroke, and the readout it earned. Both ticked
         // on real time and before the scaling below, so neither is slowed by the thing the
         // beat is slowing.
@@ -2180,7 +2208,7 @@ final class GameCore {
         }
         if (sound != null && (settingsOpen || !boss.fighting() || boss.kind != Boss.SLIME
                 || boss.hasGlob() || boss.boltCount() > 0)) sound.bossCharge(0f);
-        if (settingsOpen) return;
+        if (BuildFlags.DEVELOPER && settingsOpen) return;
         time += dt;
         // Accumulated, not derived from clock, so the frenzy's faster drift does not make the
         // sky jump when it starts or stops.
@@ -2261,7 +2289,7 @@ final class GameCore {
         // title screen never reaches it.
         float cf = dt * CASE_FADE_RATE;
         caseFade = caseOpen ? Math.min(1f, caseFade + cf) : Math.max(0f, caseFade - cf);
-        if (caseOpen) caseT += dt;
+        if (caseOpen) { caseT += dt; caseHighlightAge += dt; }
         // Signed, so it eases back to zero from whichever side the scroll came in on. Left alone
         // under a finger: there the offset is the drag, not a leftover.
         float caseMotionDecay = Math.max(0f, 1f - dt * 8f);
@@ -2325,12 +2353,14 @@ final class GameCore {
                     // A course that ran out. The count is about to be read on screen and used to
                     // be read in silence; a won course rings the fanfare instead.
                     stars.reported = false;
+                    progress.finishMinigame(false);
                     if (sound != null) sound.tally(stars.count());
                 }
                 if (stars.awardPending) {
                     // Paid the moment the last star lands, not when the interlude ends: the victory
                     // tableau shows what was won, so the prize has to exist before it is drawn.
                     stars.awardPending = false;
+                    progress.finishMinigame(true);
                     stars.recordWin();
                     if (store != null) store.saveStarWins(stars.wins);
                     score += FREE_BONUS;
@@ -2389,6 +2419,7 @@ final class GameCore {
             // the two interludes end the same way and now sound like it.
             if (!statusRung && bonusStatus()) {
                 statusRung = true;
+                progress.finishMinigame(false);
                 if (sound != null) sound.tally(steamer.opens);
             }
             return;
@@ -2415,7 +2446,9 @@ final class GameCore {
 
         if (boss.active()) {
             // Visible projectiles reaching the deck cost lives; elapsed fight time alone does not.
+            float beforeHp = boss.hp;
             int bossHits = boss.update(dt, L, rnd);
+            progress.bossDamage(boss.kind, beforeHp, boss.hp);
             if (boss.octoPlayerHit && state == PLAY) BossPlay.octoWhipHit(this, L);
             if (boss.octoImpact) {
                 shake = Math.max(shake, 1.12f);
@@ -2740,6 +2773,7 @@ final class GameCore {
     private void enterStage(int n) {
         boolean hadBoss = boss.active();
         stage = Math.max(1, n);
+        progress.enterStage(stage);
         if (fullRoster && stage >= 6 && earlyLosses != 0) {
             earlyLosses = 0; saveRoster();
         }
@@ -2771,6 +2805,7 @@ final class GameCore {
      * at how a late stage plays with two lives left.
      */
     void jumpToStage(int n, Layout L) {
+        if (!BuildFlags.DEVELOPER) return;
         if (state != PLAY) return;
         enemies.clear();
         shots.clear();
@@ -2834,6 +2869,7 @@ final class GameCore {
      * early returns, or clear it where the early return is taken. There is no third way.
      */
     private void die() {
+        progress.finishRun(score, false);
         if (runFullRoster && fullRoster) {
             if (stage >= 6) earlyLosses = 0;
             else if (++earlyLosses >= 3) {

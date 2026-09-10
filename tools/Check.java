@@ -13,6 +13,10 @@ abstract class Check {
     static int pass, fail;
 
     static final class Mem implements GameCore.Store {
+        byte[] progress;
+        public byte[] loadProgress() { return progress == null ? null : progress.clone(); }
+        public void saveProgress(byte[] data) { progress = data.clone(); }
+        public String progressReplica() { return "test"; }
         int best;
         int saves;
         float speed = 1f;
@@ -21,6 +25,7 @@ abstract class Check {
         long collected;
         int collectedSaves;
         int collectTotal;
+        int[] collectionCounts = new int[Collect.COUNT];
         int collectTotalSaves;
         int steamerOpens, steamerOpenSaves;
         int starWins, starWinSaves;
@@ -33,6 +38,8 @@ abstract class Check {
         public void saveBgm(int v) { bgm = v; bgmSaves++; }
         public long loadCollected() { return collected; }
         public void saveCollected(long v) { collected = v; collectedSaves++; }
+        public int[] loadCollectionCounts() { return collectionCounts.clone(); }
+        public void saveCollectionCounts(int[] v) { collectionCounts = v.clone(); }
         public int loadCollectTotal() { return collectTotal; }
         public void saveCollectTotal(int v) { collectTotal = v; collectTotalSaves++; }
         public int loadStarWins() { return starWins; }

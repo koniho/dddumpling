@@ -106,6 +106,7 @@ final class Layout {
      * the text itself is small, and a mis-tap here costs nothing.
      */
     boolean inStageTap(float x, float y) {
+        if (!BuildFlags.DEVELOPER) return false;
         return Math.abs(x - w / 2f) <= 0.24f * w
                 && y >= topSafe - 0.01f * h
                 && y <= hudY + 0.6f * unit;

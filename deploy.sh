@@ -11,7 +11,8 @@ APK=hexatype.apk
 PKG=com.sram.hexatype
 ACTIVITY=$PKG/.MainActivity
 
-./build.sh
+if [ "$#" -eq 0 ]; then set -- --developer; fi
+./build.sh "$@"
 
 notify() {
     # Only if the Termux:API app is present; the CLI blocks forever without it.

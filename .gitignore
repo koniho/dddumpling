@@ -12,3 +12,12 @@ sdk/
 # A user-supplied music track stays local: res/raw/bgm.* is played if present, but
 # committing it would redistribute someone else's recording.
 res/raw/bgm.*
+
+# Play upload bundles and private signing material.
+*.aab
+*.apks
+.private/
+
+# Optional Play SDK dependency resolver caches.
+.gradle/
+__pycache__/
