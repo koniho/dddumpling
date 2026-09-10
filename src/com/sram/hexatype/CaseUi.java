@@ -17,7 +17,9 @@ final class CaseUi {
     static void open(GameCore c) {
         if (c.state != GameCore.TITLE || c.starting() || c.caseOpen) return;
         c.caseOpen = true;
-        c.caseSlide = 0f;
+        c.caseSlide = c.caseSlideY = 0f;
+        c.caseFreePan = false;
+        c.casePanMotionX = c.casePanMotionY = 0f;
         c.caseT = 0f;
         if (c.sound != null) c.sound.squish(c.caseIndex % Glyph.COUNT, 1);
     }
@@ -33,9 +35,11 @@ final class CaseUi {
     /** One entry along, for a tap beside the shelf. Wraps, so neither side ever does nothing. */
     static void scroll(GameCore c, int dir) {
         if (dir == 0 || !c.caseOpen || c.storyOpen()) return;
-        c.caseIndex = Showcase.wrap(c.caseIndex + (dir > 0 ? 1 : -1));
+        c.caseIndex = Showcase.across(c.caseIndex, dir > 0 ? 1 : -1);
         // Full slide, decaying to zero: the shelf glides in from the side it came from.
+        c.caseFreePan = false;
         c.caseSlide = dir > 0 ? 1f : -1f;
+        c.caseSlideY = 0f;
         if (c.sound != null) c.sound.squish(c.caseIndex % Glyph.COUNT, 1);
     }
 
@@ -48,39 +52,65 @@ final class CaseUi {
         int n = Showcase.wrap(i);
         if (n == c.caseIndex) return;
         c.caseIndex = n;
+        c.caseSlide = c.caseSlideY = 0f;
+        c.caseFreePan = false;
+        c.casePanMotionX = c.casePanMotionY = 0f;
+        if (c.sound != null) c.sound.squish(c.caseIndex % Glyph.COUNT, 1);
+    }
+
+    static void row(GameCore c, int dir) {
+        if (dir == 0 || !c.caseOpen || c.storyOpen()) return;
+        c.caseIndex = Showcase.down(c.caseIndex, dir > 0 ? 1 : -1);
+        c.caseFreePan = false;
+        c.caseSlideY = dir > 0 ? 1f : -1f;
         c.caseSlide = 0f;
         if (c.sound != null) c.sound.squish(c.caseIndex % Glyph.COUNT, 1);
     }
 
-    static void beginDrag(GameCore c, float x) {
+    /** Start at the visible position, then glide the selected collectible to the center. */
+    static void select(GameCore c, int index) {
         if (!c.caseOpen || c.storyOpen()) return;
-        c.caseDragging = true;
+        float panX = Showcase.column(c.caseIndex) - c.caseSlide;
+        float panY = Showcase.row(c.caseIndex) - c.caseSlideY;
+        c.caseIndex = Showcase.wrap(index);
+        c.caseSlide = Showcase.column(c.caseIndex) - panX;
+        c.caseSlideY = Showcase.row(c.caseIndex) - panY;
+        c.caseFreePan = false;
+        c.casePanMotionX = -Math.max(-1f, Math.min(1f, c.caseSlide));
+        c.casePanMotionY = -Math.max(-1f, Math.min(1f, c.caseSlideY));
+        if (c.sound != null) c.sound.squish(c.caseIndex % Glyph.COUNT, 1);
+    }
+
+    static void beginDrag(GameCore c, float x, float y) {
+        if (!c.caseOpen || c.storyOpen()) return;
+        c.caseDragging = c.caseFreePan = true;
         c.caseDragX = x;
+        c.caseDragY = y;
     }
 
-    /**
-     * The shelf following a finger. The offset rides in {@code caseSlide}, which the drawing and the
-     * position bar already read, so a drag needs no second channel.
-     *
-     * Whole steps commit as the shelf passes halfway rather than on release, so the caption, the bar
-     * and the story target are always the entry nearest the middle — the one being looked at.
-     */
-    static void dragTo(GameCore c, float x, Layout L) {
-        if (!c.caseDragging) return;
-        float step = Showcase.step(L);
-        float o = (x - c.caseDragX) / step;
-        int whole = Math.round(o);
-        if (whole != 0) {
-            c.caseIndex = Showcase.wrap(c.caseIndex - whole);
-            c.caseDragX += whole * step;
-            o -= whole;
-            // One tick per entry passed, so a long drag ratchets.
-            if (c.sound != null) c.sound.squish(c.caseIndex % Glyph.COUNT, 1);
-        }
-        c.caseSlide = o;
+    /** Pixel-continuous pan on both axes. Only the outer catalogue bounds limit movement. */
+    static void dragTo(GameCore c, float x, float y, Layout L) {
+        if (!c.caseDragging || !c.caseOpen || c.storyOpen()) return;
+        float dx = (x - c.caseDragX) / Showcase.step(L);
+        float dy = (y - c.caseDragY) / Showcase.rowStep(L);
+        c.caseDragX = x;
+        c.caseDragY = y;
+        float panX = Showcase.column(c.caseIndex) - c.caseSlide - dx;
+        float panY = Showcase.row(c.caseIndex) - c.caseSlideY - dy;
+        int maxColumns = 1;
+        for (int row = 0; row < Showcase.ROW_NAME.length; row++)
+            maxColumns = Math.max(maxColumns, Showcase.columns(row));
+        panX = Math.max(-0.35f, Math.min(maxColumns - 0.65f, panX));
+        panY = Math.max(-0.35f, Math.min(Showcase.ROW_NAME.length - 0.65f, panY));
+        int row = Math.max(0, Math.min(Showcase.ROW_NAME.length - 1, Math.round(panY)));
+        c.caseIndex = Showcase.entry(row, Math.round(panX));
+        c.caseSlide = Showcase.column(c.caseIndex) - panX;
+        c.caseSlideY = Showcase.row(c.caseIndex) - panY;
+        c.casePanMotionX = Math.max(-1f, Math.min(1f, dx * 5f));
+        c.casePanMotionY = Math.max(-1f, Math.min(1f, dy * 5f));
     }
 
-    /** Lets go. Whatever offset is left eases out through the usual slide decay. */
+    /** No snapping: leave the surface exactly where it was released. */
     static void endDrag(GameCore c) {
         c.caseDragging = false;
     }
@@ -105,7 +135,9 @@ final class CaseUi {
         c.homeLanded = 0;
         c.closeStory();
         c.caseIndex = 0;
-        c.caseSlide = 0f;
+        c.caseSlide = c.caseSlideY = 0f;
+        c.caseFreePan = false;
+        c.casePanMotionX = c.casePanMotionY = 0f;
         if (c.store != null) {
             c.store.saveCollected(0L);
             c.store.saveCollectTotal(0);

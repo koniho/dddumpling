@@ -17,8 +17,10 @@ committed included.
 Between stages a dim sum steamer arrives and spins for two of your six keys; alternate them to
 prise the lid off. The dumpling inside is a blind box — freeing it hands over one of thirty
 collectible squishies, from commons up to a single gold grail. The collection is kept for good
-and shown in the display case: a glass cabinet that fades up when you tap the small case in the
-middle of the title screen. Swipe it, tap either side of it or drag its position bar to browse;
+and shown in the display case: a shimmering glass cabinet that opens from the small case on the title screen.
+Pan freely in any direction through the animated collectibles, without snapping to cells.
+Fruits share one row, and candies share another. The glass catches the light as you move.
+Tap a visible tile to pan it into the center, then tap it again for its story;
 every key starts a run instead, and puts the case away first if it is open. Anything you have not
 won yet is a silhouette behind a question
 mark; tap one you have and it tells you where it lives and what its family gets up to. Win one

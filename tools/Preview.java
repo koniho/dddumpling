@@ -142,14 +142,45 @@ final class Preview {
         System.out.printf("case drag: index=%d slide=%.2f dragging=%s%n", c.caseIndex,
                 c.caseSlide, c.caseDragging);
         shot(dir, "40-case-drag", c, L, w, h, ss);
+        GameCore grid = new GameCore(store, 184L);
+        grid.collected = Collect.MASK;
+        grid.openCase();
+        step(grid, L, 0.5f);
+        grid.caseTo(3);
+        shot(dir, "40b-case-grid", grid, L, w, h, ss);
+        grid.beginCaseDrag(w / 2f, Showcase.focusCy(L));
+        grid.caseDragTo(w / 2f, Showcase.focusCy(L) - Showcase.rowStep(L) * 0.35f, L);
+        shot(dir, "40c-case-vertical-drag", grid, L, w, h, ss);
+        grid.endCaseDrag();
+        grid.caseTo(Collect.STAR_FIRST + 2);
+        shot(dir, "40d-case-star-row", grid, L, w, h, ss);
+        grid.caseTo(Showcase.entry(Showcase.FRUIT_ROW, 2));
+        grid.beginCaseDrag(w / 2f, Showcase.focusCy(L));
+        grid.caseDragTo(w / 2f + Showcase.step(L) * 0.35f, Showcase.focusCy(L), L);
+        shot(dir, "40e-case-fruit-glass", grid, L, w, h, ss);
+        grid.endCaseDrag();
+        grid.caseTo(Showcase.entry(Showcase.CANDY_ROW, 2));
+        shot(dir, "40f-case-candy-row", grid, L, w, h, ss);
+        grid.beginCaseDrag(w / 2f, Showcase.focusCy(L));
+        grid.caseDragTo(w / 2f - Showcase.step(L) * 0.3f,
+                Showcase.focusCy(L) + Showcase.rowStep(L) * 0.4f, L);
+        shot(dir, "40g-case-free-pan", grid, L, w, h, ss);
+        grid.endCaseDrag();
+        step(grid, L, 0.6f);
+        shot(dir, "40h-case-animated", grid, L, w, h, ss);
+        CaseUi.select(grid, Showcase.entry(Showcase.FRUIT_ROW, 3));
+        step(grid, L, 0.08f);
+        shot(dir, "40i-case-centering", grid, L, w, h, ss);
+        step(grid, L, 0.6f);
+        shot(dir, "40j-case-centered", grid, L, w, h, ss);
         c.endCaseDrag();
         step(c, L, 0.5f);
 
         // The badge out at one end of its arc, where the box is turned hardest.
         GameCore c20 = new GameCore(store, 83L);
         step(c20, L, Showcase.ARC_TIME * 0.25f);
-        System.out.printf("badge drift: x=%.0f of %.0f, turn=%.2f%n",
-                Showcase.iconCx(L, c20.clock), (float) w, Showcase.iconTurn(L, c20.clock));
+        System.out.printf("badge drift: x=%.0f of %.0f%n",
+                Showcase.iconCx(L, c20.clock), (float) w);
         shot(dir, "41-badge-turned", c20, L, w, h, ss);
 
         // The title screen part-way through dissolving on a start press.

@@ -544,7 +544,7 @@ final class GameCore {
     /** Which entry the display case is showing, and the slide left over from the last scroll. */
     int caseIndex;
     /** -1..1, decaying to 0: the shelf easing into place after a scroll, or held by a drag. */
-    float caseSlide;
+    float caseSlide, caseSlideY;
     /**
      * True while the case is up. Closed by default: the title screen offers a badge in the
      * middle and this is what a tap on it sets.
@@ -560,7 +560,9 @@ final class GameCore {
      */
     float caseT;
     /** Where the shelf's current entry was grabbed, in view pixels. */
-    float caseDragX;
+    float caseDragX, caseDragY;
+    boolean caseFreePan;
+    float casePanMotionX, casePanMotionY;
 
     /** How quickly the case fades in and out, in screens per second. */
     static final float CASE_FADE_RATE = 4.2f;
@@ -1384,9 +1386,15 @@ final class GameCore {
 
     void caseTo(int i) { CaseUi.to(this, i); }
 
-    void beginCaseDrag(float x) { CaseUi.beginDrag(this, x); }
+    void beginCaseDrag(float x) { CaseUi.beginDrag(this, x, 0f); }
 
-    void caseDragTo(float x, Layout L) { CaseUi.dragTo(this, x, L); }
+    void caseDragTo(float x, Layout L) { CaseUi.dragTo(this, x, 0f, L); }
+
+    void scrollCaseRow(int dir) { CaseUi.row(this, dir); }
+
+    void beginCaseDrag(float x, float y) { CaseUi.beginDrag(this, x, y); }
+
+    void caseDragTo(float x, float y, Layout L) { CaseUi.dragTo(this, x, y, L); }
 
     void endCaseDrag() { CaseUi.endDrag(this); }
 
@@ -1604,7 +1612,7 @@ final class GameCore {
         caseOpen = false;
         caseFade = 0f;
         caseDragging = false;
-        caseSlide = 0f;
+        caseSlide = caseSlideY = 0f;
         launchWho = -1;
         launchT = 0f;
         closeStory();
@@ -2261,7 +2269,15 @@ final class GameCore {
         if (caseOpen) caseT += dt;
         // Signed, so it eases back to zero from whichever side the scroll came in on. Left alone
         // under a finger: there the offset is the drag, not a leftover.
-        if (caseSlide != 0f && !caseDragging) {
+        float caseMotionDecay = Math.max(0f, 1f - dt * 8f);
+        casePanMotionX *= caseMotionDecay;
+        casePanMotionY *= caseMotionDecay;
+        if (caseSlideY != 0f && !caseDragging && !caseFreePan) {
+            float d = dt * Showcase.SLIDE_RATE;
+            caseSlideY = caseSlideY > 0f ? Math.max(0f, caseSlideY - d)
+                    : Math.min(0f, caseSlideY + d);
+        }
+        if (caseSlide != 0f && !caseDragging && !caseFreePan) {
             float d = dt * Showcase.SLIDE_RATE;
             caseSlide = caseSlide > 0f ? Math.max(0f, caseSlide - d)
                     : Math.min(0f, caseSlide + d);

@@ -356,7 +356,7 @@ final class TestCollect extends Check {
         check("the fade is brief", 1f / GameCore.CASE_FADE_RATE < 0.4f);
 
         c.scrollCase(1);
-        check("scrolling right advances one", c.caseIndex == 1);
+        check("scrolling right advances to the next bao variant", c.caseIndex == 2);
         check("the shelf slides in from the right", c.caseSlide > 0f);
         advance(c, L, 1f);
         check("the slide settles", c.caseSlide == 0f);
@@ -366,8 +366,8 @@ final class TestCollect extends Check {
         check("the shelf slides in from the left", c.caseSlide < 0f);
 
         c.scrollCase(-1);
-        check("scrolling off the front wraps to the end",
-                c.caseIndex == Collect.COUNT - 1);
+        check("scrolling off the front wraps within the character row",
+                c.caseIndex == 12);
         c.scrollCase(1);
         check("and back round to the front", c.caseIndex == 0);
 
@@ -378,15 +378,40 @@ final class TestCollect extends Check {
         }
         check("wrap always lands inside the catalogue", wrapped);
 
-        // Walking the whole strip must visit every entry exactly once and return home.
-        boolean[] seen = new boolean[Collect.COUNT];
+        boolean balanced = Showcase.ROW_NAME.length == 6;
+        for (int row = 0; row < Showcase.ROW_NAME.length; row++)
+            balanced &= Showcase.columns(row) >= 5 && Showcase.columns(row) <= 10;
+        check("six categories hold between five and ten collectibles each", balanced);
+        boolean fruitRow = true, candyRow = true;
         for (int i = 0; i < Collect.COUNT; i++) {
-            seen[c.caseIndex] = true;
-            c.scrollCase(1);
+            if (Collect.FAMILY[i] == Collect.FRUITS && Showcase.row(i) != Showcase.FRUIT_ROW) fruitRow = false;
+            if (Collect.FAMILY[i] == Collect.GLOBS && Showcase.row(i) != Showcase.CANDY_ROW) candyRow = false;
+        }
+        check("all nine fruits share one row", fruitRow && Showcase.columns(Showcase.FRUIT_ROW) == 9);
+        check("all eight candies share one row", candyRow && Showcase.columns(Showcase.CANDY_ROW) == 8);
+        boolean[] seen = new boolean[Collect.COUNT];
+        for (int row = 0; row < Showcase.ROW_NAME.length; row++) {
+            c.caseTo(Showcase.entry(row, 0));
+            for (int col = 0; col < Showcase.columns(row); col++) {
+                check("each row holds only its character category", Showcase.row(c.caseIndex) == row);
+                check("grid entries appear exactly once", !seen[c.caseIndex]);
+                seen[c.caseIndex] = true;
+                c.scrollCase(1);
+            }
+            check("a row wraps to its first variant", Showcase.column(c.caseIndex) == 0);
         }
         boolean all = true;
-        for (int i = 0; i < seen.length; i++) if (!seen[i]) all = false;
-        check("one lap shows every entry", all && c.caseIndex == 0);
+        for (boolean found : seen) if (!found) all = false;
+        check("rows and columns reach the entire collection", all);
+        c.caseTo(0);
+        c.scrollCaseRow(-1);
+        check("up wraps to the final character row", Showcase.row(c.caseIndex) == Showcase.ROW_NAME.length - 1);
+        c.scrollCaseRow(1);
+        check("down wraps to the first row", c.caseIndex == 0);
+        c.caseTo(12);
+        c.scrollCaseRow(1);
+        check("shorter rows clamp to their last valid variant", c.caseIndex == 10);
+        c.caseTo(0);
 
         c.closeCase();
         check("closing starts the fade out", !c.caseOpen && c.caseFade > 0f);
@@ -428,74 +453,86 @@ final class TestCollect extends Check {
         check("and keeps the whole case on screen", onScreen);
         check("no key sits inside it, wherever it has drifted", clearOfKeys);
         check("it dips as it swings out, being an arc", lowest > cy);
-        check("and the turn flips end to end",
-                Showcase.iconTurn(L, Showcase.ARC_TIME * 0.25f) > 0.99f
-                        && Showcase.iconTurn(L, Showcase.ARC_TIME * 0.75f) < -0.99f);
+
 
         c.openCase();
         advance(c, L, 0.5f);
 
-        // Tap targets. The shelf's two halves are the step buttons, because the neighbour tiles
-        // are half-size and a thumb aimed at one of those would miss.
-        check("the left half steps back",
-                Showcase.hit(L, cx - Showcase.padX(L) * 0.8f, cy) == Showcase.HIT_PREV);
-        check("the right half steps on",
-                Showcase.hit(L, cx + Showcase.padX(L) * 0.8f, cy) == Showcase.HIT_NEXT);
-        check("the middle is the entry itself",
-                Showcase.hit(L, cx, cy) == Showcase.HIT_FOCUS);
-        check("the position bar is its own target",
-                Showcase.hit(L, cx + L.unit, Showcase.barY(L)) == Showcase.HIT_BAR);
+        check("empty glass does not step between entries",
+                Showcase.hit(L, cx - Showcase.padX(L) * 0.8f, cy) == Showcase.HIT_NONE);
+        check("the selected tile opens its story",
+                Showcase.hit(c, L, cx, cy) == Showcase.HIT_FOCUS);
         check("the X closes",
                 Showcase.hit(L, Showcase.closeCx(L), Showcase.closeCy(L)) == Showcase.HIT_CLOSE);
         check("the sky is outside", Showcase.hit(L, cx, L.topSafe + 1f) == Showcase.HIT_OUTSIDE);
         check("and so is the deck", Showcase.hit(L, cx, L.deckTop + 1f) == Showcase.HIT_OUTSIDE);
         // The caption belongs to the panel: a tap on it must not shut the case under the finger.
+        check("the selected name does not navigate",
+                Showcase.hit(L, cx, cy + Showcase.focusR(L) * 3.63f) == Showcase.HIT_NONE);
         check("the caption is neither",
                 Showcase.hit(L, cx, Showcase.plaqueBot(L) + L.unit * 0.6f) == Showcase.HIT_NONE);
 
-        // A drag carries the shelf with the finger and turns the page as it passes the middle,
-        // so the caption is always naming whatever is nearest the centre of the case.
-        float step = Showcase.step(L);
-        c.caseIndex = 10;
-        c.beginCaseDrag(cx);
-        c.caseDragTo(cx + step * 0.3f, L);
-        check("a short drag moves the shelf without turning the page",
-                c.caseIndex == 10 && Math.abs(c.caseSlide - 0.3f) < 0.01f);
-        check("and the shelf is held rather than easing back", c.caseDragging);
-        advance(c, L, 0.25f);
-        check("it stays exactly where the finger left it",
-                Math.abs(c.caseSlide - 0.3f) < 0.01f);
-        c.caseDragTo(cx + step * 0.7f, L);
-        check("dragging right goes back an entry", c.caseIndex == 9);
-        check("carrying the leftover offset with it", Math.abs(c.caseSlide + 0.3f) < 0.01f);
-        c.caseDragTo(cx - step * 2.2f, L);
-        check("and a long drag crosses several", c.caseIndex == 12);
+        float step = Showcase.step(L), rowStep = Showcase.rowStep(L);
+        c.caseTo(3);
+        c.beginCaseDrag(cx, cy);
+        c.caseDragTo(cx + step * 0.3f, cy - rowStep * 0.25f, L);
+        float panX = Showcase.column(c.caseIndex) - c.caseSlide;
+        float panY = Showcase.row(c.caseIndex) - c.caseSlideY;
+        check("diagonal panning moves both axes continuously",
+                Math.abs(panX - 1.7f) < 0.01f && Math.abs(panY - 0.25f) < 0.01f);
         c.endCaseDrag();
-        check("letting go releases it", !c.caseDragging);
         advance(c, L, 1f);
-        check("and the last of the offset eases out",
-                c.caseSlide == 0f && c.caseIndex == 12);
-
-        // The position bar is a handle as well as a readout, and the only way across the
-        // catalogue in one gesture.
-        float half = Showcase.barHalf(L);
-        check("the bar spans the whole catalogue",
-                Showcase.barIndexAt(L, cx - half + 1f) == 0
-                        && Showcase.barIndexAt(L, cx + half - 1f) == Collect.COUNT - 1);
-        check("a finger past either end clamps", Showcase.barIndexAt(L, -1000f) == 0
-                && Showcase.barIndexAt(L, L.w * 4f) == Collect.COUNT - 1);
-        boolean monotone = true;
-        int prev = -1;
-        for (float x = cx - half; x <= cx + half; x += 1f) {
-            int at = Showcase.barIndexAt(L, x);
-            if (at < prev) monotone = false;
-            prev = at;
-        }
-        check("and never runs backwards along the track", monotone);
-        c.caseTo(Showcase.barIndexAt(L, cx));
-        check("the middle of the bar is the middle of the strip",
-                Math.abs(c.caseIndex - Collect.COUNT / 2) <= 1);
-        check("a bar jump does not slide in behind the finger", c.caseSlide == 0f);
+        check("release does not snap to a row or column",
+                Math.abs(Showcase.column(c.caseIndex) - c.caseSlide - panX) < 0.01f
+                && Math.abs(Showcase.row(c.caseIndex) - c.caseSlideY - panY) < 0.01f);
+        c.beginCaseDrag(cx, cy);
+        c.caseDragTo(cx - step * 0.2f, cy + rowStep * 0.1f, L);
+        check("a second pan continues from the released position",
+                Math.abs(Showcase.column(c.caseIndex) - c.caseSlide - 1.9f) < 0.01f
+                && Math.abs(Showcase.row(c.caseIndex) - c.caseSlideY - 0.15f) < 0.01f);
+        c.endCaseDrag();
+        panX = Showcase.column(c.caseIndex) - c.caseSlide;
+        panY = Showcase.row(c.caseIndex) - c.caseSlideY;
+        CaseUi.select(c, 1);
+        check("selecting a tile starts its pan without an immediate jump",
+                Math.abs(Showcase.column(c.caseIndex) - c.caseSlide - panX) < 0.01f
+                && Math.abs(Showcase.row(c.caseIndex) - c.caseSlideY - panY) < 0.01f);
+        float tileX = cx + (Showcase.column(1) - panX) * step;
+        float tileY = cy + (Showcase.row(1) - panY) * rowStep;
+        check("panned tile hit testing follows its visible position",
+                Showcase.hit(c, L, tileX, tileY) == Showcase.HIT_ENTRY + 1);
+        advance(c, L, 0.1f);
+        check("selection pans toward center on both axes",
+                Math.abs(c.caseSlide) < Math.abs(Showcase.column(1) - panX)
+                && Math.abs(c.caseSlideY) < Math.abs(Showcase.row(1) - panY));
+        advance(c, L, 1f);
+        check("selected character arrives at the center", c.caseIndex == 1
+                && c.caseSlide == 0f && c.caseSlideY == 0f);
+        check("the centered character opens its story",
+                Showcase.hit(c, L, cx, cy) == Showcase.HIT_FOCUS);
+        CaseUi.select(c, 3);
+        advance(c, L, 0.1f);
+        c.beginCaseDrag(cx, cy);
+        c.endCaseDrag();
+        float interruptedX = c.caseSlide, interruptedY = c.caseSlideY;
+        advance(c, L, 1f);
+        check("touching the surface interrupts centering without snapping",
+                c.caseSlide == interruptedX && c.caseSlideY == interruptedY);
+        c.beginCaseDrag(cx, cy);
+        c.caseDragTo(cx + L.w * 100f, cy + L.h * 100f, L);
+        check("pan stops at the top left catalogue bounds",
+                Math.abs(Showcase.column(c.caseIndex) - c.caseSlide + 0.35f) < 0.01f
+                && Math.abs(Showcase.row(c.caseIndex) - c.caseSlideY + 0.35f) < 0.01f);
+        c.caseDragTo(cx - L.w * 100f, cy - L.h * 100f, L);
+        check("pan stops at the bottom of the catalogue",
+                Math.abs(Showcase.row(c.caseIndex) - c.caseSlideY
+                - (Showcase.ROW_NAME.length - 0.65f)) < 0.01f);
+        c.endCaseDrag();
+        int last = c.caseIndex;
+        c.closeCase();
+        c.beginCaseDrag(cx, cy);
+        c.caseDragTo(0f, 0f, L);
+        check("closed cases cannot pan", c.caseIndex == last && !c.caseDragging);
 
         // Stories still come off the shelf, and only while it is out.
         GameCore d = new GameCore(store, 101L);

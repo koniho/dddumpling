@@ -1,23 +1,53 @@
 package com.sram.hexatype;
 
-/**
- * The display case on the title screen: a shelf of collected squishies, browsed by touch.
- *
- * A filmstrip rather than a grid. Thirty tiles laid out at once would each be too small for
- * a face to read, and the point of the case is looking at the thing you won — so one entry
- * gets the middle of the shelf at full size and its neighbours sit half-size at the edges,
- * which also shows which way a swipe moves.
- *
- * It is closed by default: the title screen shows {@link #icon} in the middle instead, and a
- * tap on that fades the case in. The keys have nothing to do with any of it. They used to
- * drive the carousel, which meant the six letters did one thing on the title screen and a
- * completely different thing a frame later in play, and the case owned the middle of the
- * screen whether or not you had come to look at it.
- */
+/** A glass cabinet browsed in two axes: character shapes down, variants across. */
 final class Showcase extends Draw {
 
-    /** Neighbours shown either side of the focused entry. */
-    static final int WINGS = 1;
+    static final int FRUIT_ROW = 2, CANDY_ROW = 3;
+    static final String[] ROW_NAME = {"BAO", "BUNS & FRIENDS", "FRUITS", "CANDIES", "STARLINGS", "GEL CUBES"};
+
+    static int row(int index) {
+        index = wrap(index);
+        switch (Collect.FAMILY[index]) {
+            case Collect.FRUITS: return FRUIT_ROW;
+            case Collect.GLOBS: return CANDY_ROW;
+            case Collect.STARLINGS: return 4;
+            case Collect.GEL_CUBES: return 5;
+            default: return Collect.SHAPE[index] == Collect.BAO ? 0 : 1;
+        }
+    }
+
+    static int columns(int row) {
+        int n = 0;
+        for (int i = 0; i < Collect.COUNT; i++) if (row(i) == row) n++;
+        return n;
+    }
+
+    static int column(int index) {
+        int n = 0, shape = row(index);
+        for (int i = 0; i < index; i++) if (row(i) == shape) n++;
+        return n;
+    }
+
+    static int entry(int row, int column) {
+        row = (row % ROW_NAME.length + ROW_NAME.length) % ROW_NAME.length;
+        int col = Math.max(0, Math.min(columns(row) - 1, column));
+        for (int i = 0; i < Collect.COUNT; i++) {
+            if (row(i) == row && col-- == 0) return i;
+        }
+        return 0;
+    }
+
+    static int across(int index, int delta) {
+        int row = row(index), n = columns(row);
+        return entry(row, ((column(index) + delta) % n + n) % n);
+    }
+
+    static int down(int index, int delta) {
+        return entry(row(index) + delta, column(index));
+    }
+
+    static float rowStep(Layout L) { return focusR(L) * 2.08f; }
 
     private Showcase() {}
 
@@ -38,11 +68,11 @@ final class Showcase extends Draw {
      * device, the height one stops the shelf swallowing a tall one.
      */
     static float focusR(Layout L) {
-        return Math.min(L.w * 0.145f, L.h * 0.075f);
+        return Math.min(L.w * 0.105f, L.h * 0.055f);
     }
 
     static float focusCy(Layout L) {
-        return L.dangerY - focusR(L) * 2.55f - L.unit * (3.35f + FIELD_MARGIN);
+        return L.dangerY - focusR(L) * 4.35f - L.unit * (3.35f + FIELD_MARGIN);
     }
 
     /** Centre-to-centre spacing along the shelf. Under 2r, so the neighbours tuck in close. */
@@ -52,15 +82,15 @@ final class Showcase extends Draw {
 
     /** Half-width of the plaque the shelf stands on. */
     static float padX(Layout L) {
-        return step(L) * (WINGS + 0.52f);
+        return L.w * 0.43f;
     }
 
     static float plaqueTop(Layout L) {
-        return focusCy(L) - focusR(L) * 1.5f;
+        return focusCy(L) - focusR(L) * 3.2f;
     }
 
     static float plaqueBot(Layout L) {
-        return focusCy(L) + focusR(L) * 2.55f;
+        return focusCy(L) + focusR(L) * 4.35f;
     }
 
     /** Centre line of the position bar. */
@@ -77,13 +107,7 @@ final class Showcase extends Draw {
         return L.unit * 0.16f;
     }
 
-    /**
-     * Top of the whole panel, label included: above this a tap is outside the case.
-     *
-     * Well clear of the front face, because the box recedes upward as well as sideways and the
-     * back edge lands above it. The labels are lifted for the same reason — at the old spacing
-     * the top-back edge ran straight through the collected count.
-     */
+    /** Top of the panel, including its title and collection count. */
     static float panelTop(Layout L) {
         return plaqueTop(L) - L.unit * 2.85f;
     }
@@ -146,17 +170,6 @@ final class Showcase extends Draw {
         return eyeY(L) - (float) Math.sqrt(Math.max(1f, radius * radius - dx * dx));
     }
 
-    /**
-     * How far round the arc the badge is, -1..1. The box's back face is swung by this, which is
-     * what turns it to keep facing the eye.
-     *
-     * Exaggerated well past the true angle: at this distance honest perspective across an arc
-     * 30% of the screen wide is two or three pixels of turn, which reads as none at all.
-     */
-    static float iconTurn(Layout L, float clock) {
-        return (iconCx(L, clock) - L.w / 2f) / (L.w * ARC_SPAN / 2f);
-    }
-
     // ---- hit tests ----------------------------------------------------------
 
     static final int HIT_NONE = 0;
@@ -169,6 +182,7 @@ final class Showcase extends Draw {
     static final int HIT_CLOSE = 5;
     /** Anywhere off the panel, which puts the case away. */
     static final int HIT_OUTSIDE = 6;
+    static final int HIT_UP = 7, HIT_DOWN = 8, HIT_ENTRY = 100;
 
     /**
      * True inside the focused entry.
@@ -216,25 +230,26 @@ final class Showcase extends Draw {
         if (dx * dx + dy * dy <= cr * cr) return HIT_CLOSE;
         if (y < panelTop(L) || y > panelBot(L)) return HIT_OUTSIDE;
         if (Math.abs(x - cx) > padX(L) + s * 1.45f) return HIT_OUTSIDE;
-        if (inFocus(L, x, y)) return HIT_FOCUS;
-        if (Math.abs(y - barY(L)) <= s * 0.85f) return HIT_BAR;
-        // The shelf band: everything at plinth height either side of the middle.
-        if (y >= plaqueTop(L) - s * 0.55f && y <= plaqueBot(L)) {
-            return x < cx ? HIT_PREV : HIT_NEXT;
-        }
         return HIT_NONE;
     }
 
-    /**
-     * The entry under x on the position bar. The track is the whole catalogue laid end to end,
-     * so this is the inverse of where {@link #scrollbar} puts the thumb.
-     */
-    static int barIndexAt(Layout L, float x) {
-        float half = barHalf(L), cap = barCapR(L);
-        float left = L.w / 2f - half + cap;
-        float track = 2f * half - 2f * cap;
-        int i = (int) Math.floor((x - left) / track * Collect.COUNT);
-        return i < 0 ? 0 : i >= Collect.COUNT ? Collect.COUNT - 1 : i;
+    /** Direct tile selection uses the same moving grid coordinates as the drawing. */
+    static int hit(GameCore c, Layout L, float x, float y) {
+        int hit = hit(L, x, y);
+        if (hit == HIT_CLOSE || hit == HIT_OUTSIDE || hit == HIT_BAR) return hit;
+        if (x < L.w / 2f - padX(L) || x > L.w / 2f + padX(L)
+                || y < plaqueTop(L) || y > focusCy(L) + focusR(L) * 3.12f) return hit;
+        float gx = (x - L.w / 2f) / step(L) - c.caseSlide;
+        float gy = (y - focusCy(L)) / rowStep(L) - c.caseSlideY;
+        int dx = Math.round(gx), dy = Math.round(gy);
+        int rr = row(c.caseIndex) + dy;
+        if (rr < 0 || rr >= ROW_NAME.length) return HIT_NONE;
+        int col = column(c.caseIndex) + dx;
+        if (col < 0 || col >= columns(rr) || Math.abs(gx - dx) > 0.46f
+                || Math.abs(gy - dy) > 0.44f) return hit;
+        int index = entry(rr, col);
+        return index == c.caseIndex && Math.abs(c.caseSlide) < 0.03f && Math.abs(c.caseSlideY) < 0.03f
+                ? HIT_FOCUS : HIT_ENTRY + index;
     }
 
     // ---- drawing ------------------------------------------------------------
@@ -272,7 +287,7 @@ final class Showcase extends Draw {
         float breathe = 1f + 0.045f * pulse;
         hw *= breathe;
         hh *= breathe;
-        float turn = iconTurn(L, c.clock);
+        float turn = (cx - L.w / 2f) / (L.w * ARC_SPAN / 2f);
         Cabinet.draw(p, c.clock, cx - hw, cy - hh, cx + hw, cy + hh,
                 -turn * s * 0.50f, s * 0.26f, 0.94f, s * 0.16f, fade);
         // The entry travels with the middle of the case, which is the point of the drift: the
@@ -311,149 +326,72 @@ final class Showcase extends Draw {
         int i = c.caseIndex;
         boolean known = Collect.has(c.collected, i);
 
-        // The cabinet. Everything below is drawn on its front plane, inside the glass.
-        float padX = padX(L);
-        float top = plaqueTop(L), bot = plaqueBot(L);
-        Cabinet.draw(p, c.clock, cx - padX, top, cx + padX, bot, s * 1.35f, s * 0.32f, fade);
-
+        float padX = padX(L), top = plaqueTop(L), bot = plaqueBot(L);
+        float motionX = Math.max(-1f, Math.min(1f, c.casePanMotionX));
+        float motionY = Math.max(-1f, Math.min(1f, c.casePanMotionY));
+        float motion = Math.min(1f, (Math.abs(motionX) + Math.abs(motionY)) * 2f);
+        float depthX = s * (0.84f - motionX * 0.50f);
+        float depthY = s * (-0.57f - motionY * 0.32f);
+        Cabinet.draw(p, c.clock, cx - padX, top, cx + padX, bot,
+                depthX, depthY, 1f, s * (0.32f + motion * 0.12f), fade);
         p.text("DISPLAY CASE", cx, top - s * 2.05f, type(s * 0.62f), fadeBy(INK_DIM, fade),
                 Painter.CENTER, true);
-        int have = Collect.owned(c.collected);
-        p.text(have + " OF " + Collect.COUNT + " COLLECTED", cx, top - s * 1.20f, type(s * 0.58f),
-                fadeBy(have >= Collect.COUNT ? GOLD : INK, fade), Painter.CENTER, true);
+        p.text(Collect.owned(c.collected) + " OF " + Collect.COUNT + " COLLECTED", cx,
+                top - s * 1.20f, type(s * 0.58f), fadeBy(INK, fade), Painter.CENTER, true);
         closeButton(p, L, fade);
-
-        // Everything on the shelf is clipped to the plaque. Mid-slide the whole row is offset,
-        // which without this put a neighbour past the plaque edge and half off the screen.
+        int selectedRow = row(i), selectedCol = column(i);
         p.save();
-        p.clipRect(cx - padX, top, cx + padX, bot);
-
-        // Neighbours first, so the focused entry overlaps them rather than the other way
-        // round. The slide offset is shared, which is what makes the row move as one shelf.
-        // One tile further out than is ever fully visible: mid-slide the outermost gap would
-        // otherwise show, and under a finger that gap is on screen for as long as the drag.
-        float slide = c.caseSlide * step;
-        for (int k = -WINGS - 1; k <= WINGS + 1; k++) {
-            if (k == 0) continue;
-            int idx = wrap(i + k);
-            float x = cx + k * step + slide;
-            Trinket.draw(p, idx, x, cy + r * 0.10f, r * 0.56f, c.clock,
-                    Collect.has(c.collected, idx), 0.50f * fade);
+        p.clipRect(cx-padX, top, cx+padX, cy + r * 3.12f);
+        for (int rr = 0; rr < ROW_NAME.length; rr++) {
+            int dy = rr - selectedRow;
+            float yy = cy + (dy + c.caseSlideY) * rowStep(L);
+            if (yy + r * 1.1f < top || yy - r * 1.1f > cy + r * 3.12f) continue;
+            float opacity = dy == 0 ? fade : fade * 0.76f;
+            float shelfY = yy + r * 1.03f;
+            p.fillPoly(new float[] {cx-padX,shelfY,cx+padX,shelfY,
+                    cx+padX+depthX,shelfY+depthY,cx-padX+depthX,shelfY+depthY},
+                    fadeBy(Glyph.withAlpha(0xFF8FE9FF, 16 + (int) (motion * 12)), fade));
+            p.polyline(new float[] {cx-padX,shelfY,cx-padX+depthX,shelfY+depthY,
+                    cx+padX+depthX,shelfY+depthY,cx+padX,shelfY,cx-padX,shelfY},
+                    fadeBy(Glyph.withAlpha(INK, 65), fade), s * 0.055f);
+            float labelY = yy - r * 0.88f;
+            if (labelY - type(s * 0.40f) >= top && labelY < cy + r * 3.10f)
+                p.text(ROW_NAME[rr], cx-padX+s*0.35f, labelY,
+                        type(s*0.40f), fadeBy(INK_DIM, opacity), Painter.LEFT, true);
+            for (int col = 0; col < columns(rr); col++) {
+                float xx = cx + (col - selectedCol + c.caseSlide) * step;
+                if (xx < cx-padX-r || xx > cx+padX+r) continue;
+                int idx = entry(rr, col);
+                boolean owned = Collect.has(c.collected, idx);
+                boolean focus = dy == 0 && col == selectedCol;
+                int tint = owned ? Collect.TIER_COLOR[Collect.TIER[idx]] : INK_DIM;
+                float tileR = r * (focus ? 0.86f : 0.67f);
+                p.fillPoly(Glyph.hex(xx, yy, tileR),
+                        fadeBy(Glyph.withAlpha(tint, focus ? 42 : 15), opacity));
+                p.strokePoly(Glyph.hex(xx, yy, tileR),
+                        fadeBy(Glyph.withAlpha(tint, focus ? 210 : 65), opacity), s * (focus ? 0.09f : 0.04f));
+                float phase = c.clock * (1.7f + hash(idx + 71) * 1.2f) + idx * 2.37f;
+                float bob = (float) Math.sin(phase) * tileR * 0.065f;
+                float sway = (float) Math.sin(phase * 0.73f) * tileR * 0.035f;
+                float breathe = 1f + (float) Math.sin(phase * 1.13f) * 0.035f;
+                Trinket.draw(p, idx, xx + sway, yy + bob, tileR * 0.82f * breathe,
+                        c.clock, owned, opacity);
+            }
         }
-
-        // Focused entry, on a hex plinth tinted by its tier.
+        p.restore();
+        Cabinet.reflection(p, c.clock, cx - padX, top, cx + padX, bot,
+                motionX, motionY, fade);
         int tier = Collect.TIER[i];
         int tint = known ? Collect.TIER_COLOR[tier] : INK_DIM;
-        float bob = (float) Math.abs(Math.sin(c.clock * 1.9f)) * r * 0.06f;
-        float fr = r * 1.06f;
-        p.fillPoly(Glyph.hex(cx + slide, cy, fr),
-                fadeBy(Glyph.withAlpha(tint, known ? 40 : 22), fade));
-        // A collected plinth breathes, which is the only cue that it can be tapped for a
-        // story. An uncollected one holds still, because it cannot.
-        int edge = known ? (int) (185 + 70 * (0.5f + 0.5f * (float) Math.sin(c.clock * 2.6f)))
-                : 90;
-        // The focused entry throbs for the first moment the case is up, which is what replaced the
-        // line telling you to tap it for a story. Only at the start: a permanent throb is
-        // wallpaper, and the plinth's own slow breathe carries it from there.
-        if (known) {
-            float woo = Math.max(0f, 1f - c.caseT / 1.6f);
-            if (woo > 0f) {
-                float beat = 0.5f + 0.5f * (float) Math.sin(c.caseT * 12f);
-                p.strokePoly(Glyph.hex(cx + slide, cy, fr * (1.12f + 0.10f * beat)),
-                        fadeBy(Glyph.withAlpha(INK, (int) (200 * woo * beat)), fade), fr * 0.05f);
-            }
-        }
-        p.strokePoly(Glyph.hex(cx + slide, cy, fr), fadeBy(Glyph.withAlpha(tint, edge), fade),
-                fr * 0.06f);
-        if (known && tier >= Collect.CHASE) {
-            // Chase and grail entries get rays, so a full case still has standouts in it.
-            for (int k = 3; k >= 1; k--) {
-                p.fillPoly(star(cx + slide, cy, fr * (1.15f + 0.35f * k), fr * 0.42f, 8,
-                        c.clock * 0.4f), fadeBy(Glyph.withAlpha(tint, 26 / k), fade));
-            }
-        }
-        Trinket.draw(p, i, cx + slide, cy - bob, r * 0.86f, c.clock, known, fade);
-        p.restore();
-
-        // Caption. The name is withheld until the entry is collected; the family is not,
-        // because knowing which shelf a gap belongs to is half of what makes it a gap.
-        p.text(known ? Collect.NAME[i] : "??????", cx, cy + r * 1.90f, type(s * 0.86f),
+        p.text(known ? Collect.NAME[i] : "??????", cx, cy + r * 3.63f, type(s * 0.78f),
                 fadeBy(known ? INK : INK_DIM, fade), Painter.CENTER, true);
-        p.text(known ? Collect.TIER_NAME[tier] : "NOT COLLECTED", cx, cy + r * 2.32f,
-                type(s * 0.56f), fadeBy(known ? tint : INK_DIM, fade), Painter.CENTER, true);
-        p.text(Collect.FAMILY_NAME[Collect.FAMILY[i]], cx, bot + s * 0.95f, type(s * 0.54f),
-                fadeBy(INK_DIM, fade), Painter.CENTER, false);
-        scrollbar(p, c, L, fade);
-        p.text((i + 1) + " / " + Collect.COUNT, cx, bot + s * 2.80f, type(s * 0.54f),
-                fadeBy(INK_DIM, fade), Painter.CENTER, true);
-        // Baskets opened over every run, duplicates and all. Below the position bar rather than up
-        // with the header: the count above is about the case in front of you and how much of it is
-        // filled, this one is about the whole history behind it, and it is the only number here
-        // that keeps climbing once the case is full. The gap goes through type() because the line
-        // above it is type-scaled — a plain unit multiple here rides up onto it as TEXT grows.
-        p.text("COLLECTIONS: " + c.collectTotal, cx, bot + s * 2.80f + type(s * 1.05f),
-                type(s * 0.54f), fadeBy(INK_DIM, fade), Painter.CENTER, true);
+        p.text(known ? Collect.TIER_NAME[tier] : "NOT COLLECTED", cx, cy + r * 3.96f,
+                type(s * 0.52f), fadeBy(tint, fade), Painter.CENTER, true);
+        p.text(ROW_NAME[selectedRow] + "  " + (selectedCol+1) + " / " + columns(selectedRow),
+                cx, bot + s * 0.95f, type(s * 0.54f), fadeBy(INK_DIM, fade), Painter.CENTER, true);
+        p.text("COLLECTIONS: " + c.collectTotal,
+                cx, bot + s * 2.80f, type(s * 0.48f), fadeBy(INK_DIM, fade), Painter.CENTER, true);
 
-        arrows(p, c, L, fade);
-    }
-
-    /**
-     * Position bar under the shelf: the track is all thirty entries, the thumb is the slice
-     * currently on it. It carries what the "12 / 30" cannot — that the strip wraps, and how
-     * far round it you are — and it is a handle as well as a readout: dragging it goes
-     * straight to an entry, which is the only way to cross the catalogue in one gesture.
-     */
-    private static void scrollbar(Painter p, GameCore c, Layout L, float fade) {
-        float cx = L.w / 2f;
-        float y = barY(L);
-        float half = barHalf(L);
-        float h = barCapR(L);
-        int span = 2 * WINGS + 1;
-        p.fillPoly(pill(cx, y, half, h, 6), fadeBy(Glyph.withAlpha(INK, 34), fade));
-
-        // Thumb width is the visible slice of the strip; its centre tracks the focused entry,
-        // slid by the same fraction the shelf is sliding so bar and shelf move as one.
-        float trackW = 2f * half - 2f * h;
-        float thumbHalf = Math.max(h, trackW * span / (2f * Collect.COUNT));
-        float pos = (c.caseIndex - c.caseSlide + 0.5f) / Collect.COUNT;
-        float tx = cx - half + h + trackW * pos;
-        // Brighter under the finger, so a drag that has left the bar is visibly still driving
-        // it rather than seeming to have come loose.
-        int thumb = c.caseDragging ? INK : INK_DIM;
-        p.fillPoly(pill(tx, y, thumbHalf + h, h, 6), fadeBy(Glyph.withAlpha(thumb, 210), fade));
-
-        // Ticks for what is already collected, so the bar doubles as a map of the gaps.
-        for (int k = 0; k < Collect.COUNT; k++) {
-            if (!Collect.has(c.collected, k)) continue;
-            float kx = cx - half + h + trackW * (k + 0.5f) / Collect.COUNT;
-            // Nearly the full height of the track: at half this they were dots you had to look
-            // for, and the point of them is reading the gaps at a glance.
-            p.fillCircle(kx, y, h * 0.84f,
-                    fadeBy(Glyph.withAlpha(Collect.TIER_COLOR[Collect.TIER[k]], 235), fade));
-        }
-    }
-
-    /**
-     * Triangles just outside the plaque, one either side. They are the tap targets for a step
-     * as well as the hint that the shelf moves — the whole half of the shelf behind each one
-     * steps the same way, but a thumb needs somewhere to aim.
-     *
-     * Drawn as polygons rather than typed as characters because the harness font is ASCII-only,
-     * and an arrow that only appears on the device is an arrow that never gets checked.
-     */
-    private static void arrows(Painter p, GameCore c, Layout L, float fade) {
-        float s = L.unit;
-        float d = s * 0.42f;
-        float cy = focusCy(L);
-        float padX = padX(L);
-        // Nudged outward and back on a slow cycle, in the direction each one moves the shelf.
-        float pulse = (float) Math.sin(c.clock * 2.4f) * s * 0.16f;
-        for (int side = -1; side <= 1; side += 2) {
-            float x = L.w / 2f + side * (padX + s * 0.62f + pulse);
-            float tip = x + side * d;
-            p.fillPoly(new float[] {tip, cy, x - side * d, cy - d, x - side * d, cy + d},
-                    fadeBy(Glyph.withAlpha(INK, 150), fade));
-        }
     }
 
     /** The X that puts the case away, on the plaque's top corner. */

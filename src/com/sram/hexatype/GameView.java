@@ -266,7 +266,7 @@ public class GameView extends View {
         return true;
     }
 
-    private static final int CASE_IDLE = 0, CASE_TAP = 1, CASE_SHELF = 2, CASE_BAR = 3;
+    private static final int CASE_IDLE = 0, CASE_TAP = 1, CASE_SHELF = 2;
     private int caseGesture;
     private float caseDownX, caseDownY;
     private int caseHit;
@@ -288,36 +288,22 @@ public class GameView extends View {
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
             // A story is modal: the caller dismisses it and nothing else acts on that touch.
             if (core.storyOpen() || core.keyAt(x, y, layout) >= 0) return false;
-            caseHit = Showcase.hit(layout, x, y);
+            caseHit = Showcase.hit(core, layout, x, y);
             caseDownX = x;
             caseDownY = y;
-            if (caseHit == Showcase.HIT_BAR) {
-                caseGesture = CASE_BAR;
-                core.caseTo(Showcase.barIndexAt(layout, x));
-                tick();
-            } else {
-                caseGesture = CASE_TAP;
-            }
+            caseGesture = CASE_TAP;
             return true;
         }
         if (caseGesture == CASE_IDLE) return false;
 
         if (action == MotionEvent.ACTION_MOVE) {
-            if (caseGesture == CASE_BAR) {
-                // Tracked past the ends of the bar on purpose: a thumb sliding along a bar this
-                // thin drifts off it, and stopping dead there feels like a fault.
-                core.caseTo(Showcase.barIndexAt(layout, x));
-                return true;
-            }
-            // A tap becomes a scroll once the finger has clearly gone sideways. Nothing on this
-            // screen scrolls vertically, so a drag that is mostly up or down is not one.
+            // A drag can move freely on both axes.
             float dx = x - caseDownX;
-            if (caseGesture == CASE_TAP && Math.abs(dx) > layout.unit * 0.7f
-                    && Math.abs(dx) > Math.abs(y - caseDownY)) {
+            if (caseGesture == CASE_TAP && Math.max(Math.abs(dx), Math.abs(y - caseDownY)) > layout.unit * 0.7f) {
                 caseGesture = CASE_SHELF;
-                core.beginCaseDrag(caseDownX);
+                core.beginCaseDrag(caseDownX, caseDownY);
             }
-            if (caseGesture == CASE_SHELF) core.caseDragTo(x, layout);
+            if (caseGesture == CASE_SHELF) core.caseDragTo(x, y, layout);
             return true;
         }
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
@@ -331,12 +317,18 @@ public class GameView extends View {
 
     /** A touch that lifted without becoming a drag. */
     private void tapCase(int hit) {
-        if (hit == Showcase.HIT_FOCUS) {
+        if (hit >= Showcase.HIT_ENTRY) {
+            CaseUi.select(core, hit - Showcase.HIT_ENTRY);
+        } else if (hit == Showcase.HIT_FOCUS) {
             core.openStory();
         } else if (hit == Showcase.HIT_PREV) {
             core.scrollCase(-1);
         } else if (hit == Showcase.HIT_NEXT) {
             core.scrollCase(1);
+        } else if (hit == Showcase.HIT_UP) {
+            core.scrollCaseRow(-1);
+        } else if (hit == Showcase.HIT_DOWN) {
+            core.scrollCaseRow(1);
         } else if (hit == Showcase.HIT_CLOSE || hit == Showcase.HIT_OUTSIDE) {
             core.closeCase();
         } else {

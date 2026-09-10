@@ -40,6 +40,27 @@ final class Cabinet extends Draw {
                 + 0.38 * Math.sin(clock * (5.1f + 4.3f * b) + b * 6.283f));
     }
 
+    /** Front glass catches more light while a row or column is being carried. */
+    static void reflection(Painter p, float clock, float l, float t, float r, float b,
+            float slideX, float slideY, float fade) {
+        float w = r - l, h = b - t;
+        float motion = Math.min(1f, (Math.abs(slideX) + Math.abs(slideY)) * 2f);
+        float drift = (float) Math.sin(clock * 0.65f) * 0.20f;
+        float x = l + w * (0.46f + drift + slideX * 0.28f + slideY * 0.22f);
+        float lean = w * (0.27f + slideY * 0.08f), band = w * 0.075f;
+        p.save();
+        p.clipRect(l, t, r, b);
+        p.fillPoly(new float[] {x,t,x+band,t,x-lean+band,b,x-lean,b},
+                fadeBy(Glyph.withAlpha(0xFFB4F2FF, 8 + (int) (motion * 24)), fade));
+        p.fillPoly(new float[] {x+band*1.5f,t,x+band*1.7f,t,
+                x-lean+band*1.7f,b,x-lean+band*1.5f,b},
+                fadeBy(Glyph.withAlpha(INK, 12 + (int) (motion * 30)), fade));
+        float y = t + h * (0.5f + slideY * 0.28f) + shimmer(clock, 41) * h * 0.03f;
+        p.line(l, y, l, Math.min(b, y + h * 0.18f),
+                fadeBy(Glyph.withAlpha(0xFF8FE9FF, 80 + (int) (motion * 100)), fade), w * 0.004f);
+        p.restore();
+    }
+
     /**
      * The fixed three-quarter view, receding right and up: how the open case stands.
      *
