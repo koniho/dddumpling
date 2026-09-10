@@ -380,10 +380,14 @@ final class Boss {
     final float[][] octoVX = new float[OCTO_ARMS][OCTO_NODES];
     final float[][] octoVY = new float[OCTO_ARMS][OCTO_NODES];
     int octoArms, octoTarget = -1, octoAttackArm = -1, octoCaptured = -1, disabledKeys;
-    int octoLashArm = -1, octoDyingArm = -1;
+    int octoLashArm = -1, octoDyingArm = -1, octoVulnerableArm = -1, octoEscapeArm = -1;
+    int octoFlurryLeft;
     float octoReach, octoReturn, octoPause, octoLash, octoDeath;
+    float octoSweep, octoCharge, octoCoil, octoDragX, octoDragY, octoTaunt, octoEat;
+    float octoDragTime, octoEscape, octoFlurryT;
     float octoLashX, octoLashY;
     boolean octoPlaced, octoCue, octoLock, octoImpact, octoPlayerHit, octoLashLanded;
+    boolean octoWrongLash, octoDragStarted, octoDragCanDamage;
 
     /** Stage 5 teaches boss play; stage 10 adds the first two-finger fight. */
     static int kindFor(int stage) {
@@ -521,10 +525,13 @@ final class Boss {
         pinchStart = divideBurst = 0f;
         octoArms = (1 << OCTO_ARMS) - 1;
         octoTarget = octoAttackArm = octoCaptured = -1;
-        octoLashArm = octoDyingArm = -1;
+        octoLashArm = octoDyingArm = octoVulnerableArm = octoEscapeArm = -1;
         disabledKeys = 0;
-        octoReach = octoReturn = octoLash = octoDeath = 0f; octoPause = 0.75f;
-        octoPlaced = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = false;
+        octoReach = -1f; octoReturn = octoLash = octoDeath = 0f; octoPause = 0.75f;
+        octoSweep = octoCharge = octoCoil = octoDragX = octoDragY = octoTaunt = octoEat = 0f;
+        octoDragTime = octoEscape = octoFlurryT = 0f; octoFlurryLeft = 0;
+        octoPlaced = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
+        octoDragStarted = octoDragCanDamage = false;
         resetDividePieces(rnd);
         if (which != SPLITTER) { randomGlyph(rnd); randomGlyph(rnd); }
         followX = followY = 0f;
@@ -600,9 +607,12 @@ final class Boss {
         boingWeight = -1f;
         pinchStart = divideBurst = 0f;
         octoArms = disabledKeys = 0; octoTarget = octoAttackArm = octoCaptured = -1;
-        octoLashArm = octoDyingArm = -1;
-        octoReach = octoReturn = octoPause = octoLash = octoDeath = 0f;
-        octoPlaced = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = false;
+        octoLashArm = octoDyingArm = octoVulnerableArm = octoEscapeArm = -1;
+        octoReach = -1f; octoReturn = octoPause = octoLash = octoDeath = 0f;
+        octoSweep = octoCharge = octoCoil = octoDragX = octoDragY = octoTaunt = octoEat = 0f;
+        octoDragTime = octoEscape = octoFlurryT = 0f; octoFlurryLeft = 0;
+        octoPlaced = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
+        octoDragStarted = octoDragCanDamage = false;
         for (int i = 0; i < DIVIDE_NODES; i++) {
             halfWant[i] = -1;
             halfIdle[i] = halfHurt[i] = 0f;
@@ -1065,6 +1075,8 @@ final class Boss {
             octoLash = 0.001f;
             octoLashArm = arm;
             octoLashLanded = false;
+            octoWrongLash = true;
+            octoTaunt = 0f;
             octoTarget = octoAttackArm = -1;
             octoReach = 0f;
             octoPause = 0.48f;
@@ -1091,14 +1103,17 @@ final class Boss {
             int arm = octoAttackArm;
             hitX = octoX[arm][OCTO_NODES - 1];
             hitY = octoY[arm][OCTO_NODES - 1];
-            octoArms &= ~(1 << arm);
-            octoDyingArm = arm;
-            octoDeath = 0.001f;
+            // The key defense only forces a recoil. Damage is earned by grabbing the
+            // exposed tip and tearing this arm to an edge of the play area.
+            octoVulnerableArm = arm;
+            octoCoil = 0.001f;
+            // The escape clock starts with the successful defense, not when the player finds it.
+            octoDragTime = 0.001f;
             octoTarget = octoAttackArm = -1;
-            octoReach = 0f; octoPause = 0.95f;
-            hurt = 1f;
-            if (body != null) body.squash(0.65f);
-            return damage(1f);
+            octoReach = -1f;
+            octoPause = 0f;
+            if (body != null) body.squash(0.38f);
+            return PART;
         }
 
         if (!open()) {
@@ -1294,9 +1309,21 @@ final class Boss {
         return true;
     }
 
-    /** Only the broad cap is draggable; the stalk remains rooted and bends after it. */
+    /** The mushroom cap, or an exposed Octopulse arm tip, can own a drag. */
     boolean grabBody(float x, float y) {
-        if (!fighting() || kind != MUSHROOM || body == null) return false;
+        if (!fighting() || body == null) return false;
+        if (kind == OCTOPUS && octoVulnerableArm >= 0 && octoCoil >= 0.72f) {
+            int tip = OCTO_NODES - 1;
+            float dx = x - octoX[octoVulnerableArm][tip];
+            float dy = y - octoY[octoVulnerableArm][tip];
+            if (dx * dx + dy * dy > body.rest * body.rest * 0.82f) return false;
+            held = -3;
+            octoDragX = x;
+            octoDragY = y;
+            octoDragStarted = octoDragCanDamage = false;
+            return true;
+        }
+        if (kind != MUSHROOM) return false;
         float capX = body.centreX() + mushroomCapDX;
         float capY = body.centreY() + mushroomCapDY - body.radiusY() * 0.12f;
         float dx = (x - capX) / Math.max(1f, body.radiusX() * 1.92f);
@@ -1313,6 +1340,11 @@ final class Boss {
         return true;
     }
 
+    private static boolean octoTearZone(float x, float y, Layout L, float edge) {
+        return x <= L.playLeft + edge || x >= L.playRight - edge
+                || y <= L.playTop + edge || y >= L.dangerY - edge;
+    }
+
     /**
      * A held element following a finger.
      *
@@ -1321,6 +1353,42 @@ final class Boss {
      */
     int dragTo(float x, float y, Layout L) {
         if (!fighting()) return NONE;
+        if (held == -3 && kind == OCTOPUS && octoVulnerableArm >= 0) {
+            float edge = L.keyR * 0.45f;
+            if (!octoDragStarted) {
+                octoDragCanDamage = !octoTearZone(octoDragX, octoDragY, L, edge);
+                octoDragStarted = true;
+            }
+            octoDragX = x;
+            octoDragY = y;
+            int arm = octoVulnerableArm;
+            hitX = octoX[arm][OCTO_NODES - 1];
+            hitY = octoY[arm][OCTO_NODES - 1];
+            boolean torn = octoTearZone(x, y, L, edge);
+            if (!octoDragCanDamage) {
+                if (!torn) octoDragCanDamage = true;
+                return PART;
+            }
+            if (!torn) return PART;
+            octoArms &= ~(1 << arm);
+            octoDyingArm = arm;
+            if (body != null) {
+                float recoilX = body.centreX() - hitX;
+                float recoilY = body.centreY() - hitY;
+                body.shove(recoilX, recoilY, 17.25f);
+                body.impulse(hitX, hitY, 0.72f);
+            }
+            octoDeath = 0.001f;
+            octoVulnerableArm = -1;
+            octoCoil = 0f;
+            octoDragStarted = octoDragCanDamage = false;
+            octoDragTime = 0f;
+            held = -1;
+            octoPause = 0.80f;
+            hurt = 1f;
+            if (body != null) body.squash(0.92f);
+            return damage(1f);
+        }
         if (held == -2 && kind == MUSHROOM) {
             float cx = body == null ? x : body.centreX();
             float cy = body == null ? y : body.centreY();
@@ -1444,6 +1512,7 @@ final class Boss {
         mushroomShakes = mushroomDirection = 0;
         if (mushroomStem != null) mushroomStem.letGo();
         globDragStarted = globDragCanDamage = false;
+        octoDragStarted = octoDragCanDamage = false;
     }
 
     /**
@@ -1648,6 +1717,33 @@ final class Boss {
 
     private void updateOctopus(float dt, Layout L, Random rnd) {
         octoImpact = octoPlayerHit = false;
+        octoTaunt = Math.max(0f, octoTaunt - dt / 1.20f);
+        octoEat = Math.max(0f, octoEat - dt / 0.92f);
+        octoEscape = Math.max(0f, octoEscape - dt / 0.72f);
+        if (octoVulnerableArm >= 0) {
+            octoDragTime += dt;
+            if (octoDragTime >= 2f) {
+                octoEscapeArm = octoVulnerableArm;
+                octoEscape = 1f;
+                octoVulnerableArm = -1;
+                octoCoil = 0f;
+                octoDragStarted = octoDragCanDamage = false;
+                octoDragTime = 0f;
+                held = -1;
+                octoFlurryLeft = 3;
+                octoFlurryT = 0f;
+                octoPause = 1.25f;
+                rage = 1f;
+                if (body != null) body.squash(-0.52f);
+            }
+        }
+        if (octoFlurryLeft > 0) {
+            octoFlurryT -= dt;
+            if (octoFlurryT <= 0f && singleBolt(rnd, body.centreX(), body.centreY())) {
+                octoFlurryLeft--;
+                octoFlurryT = 0.22f;
+            }
+        }
         if (!octoPlaced) {
             float cx = bodyX(L), cy = bodyY(L);
             for (int a = 0; a < OCTO_ARMS; a++) {
@@ -1669,7 +1765,11 @@ final class Boss {
             if (octoLash >= 1f) {
                 octoLash = 0f;
                 octoLashArm = -1;
-                octoPause = 0.42f;
+                if (octoWrongLash) {
+                    octoTaunt = 1f;
+                    octoPause = 1.18f;
+                } else octoPause = 0.42f;
+                octoWrongLash = false;
             }
         }
         if (octoDeath > 0f) {
@@ -1686,26 +1786,39 @@ final class Boss {
                 if (octoReturn >= 1f) {
                     octoCaptured = octoAttackArm = -1;
                     octoReturn = 0f;
-                    octoPause = 0.38f;
+                    octoEat = 1f;
+                    octoPause = 0.56f;
+                    if (body != null) body.squash(0.34f);
                 }
+            } else if (octoVulnerableArm >= 0) {
+                octoCoil = Math.min(1f, octoCoil + dt / 0.78f);
             } else if (octoTarget < 0) {
                 octoPause -= dt;
-                if (octoPause <= 0f && octoArms != 0) startOctoReach(rnd);
+                if (octoPause <= 0f && octoArms != 0 && octoFlurryLeft == 0 && boltCount() == 0)
+                    startOctoReach(rnd);
+            } else if (octoSweep < 1f) {
+                octoSweep = Math.min(1f, octoSweep + dt / 0.68f);
+            } else if (octoCharge < 1f) {
+                float before = octoCharge;
+                octoCharge = Math.min(1f, octoCharge + dt / 0.32f);
+                if (before < 1f && octoCharge >= 1f) {
+                    octoReach = 0f;
+                    octoCue = true;
+                }
             } else {
+                // The strike keeps the old reaction duration; sweep and charge are added before it.
                 float duration = Math.max(0.36f,
                         0.925f - Integer.bitCount(disabledKeys) * 0.125f);
                 octoReach += dt / duration;
                 if (octoReach >= 1f) {
                     if (octoKeysLeft() <= 2) {
-                        // With only two controls left, the reach becomes direct damage. It
-                        // retracts empty through the same whip state, so neither key can disappear.
                         octoLashX = Roster.keyX(L, octoTarget, rosterFull ? 1f : 0f);
                         octoLashY = Roster.keyY(L, octoTarget, rosterFull ? 1f : 0f);
                         octoLashArm = octoAttackArm;
                         octoLash = 0.64f;
                         octoLashLanded = true;
                         octoTarget = octoAttackArm = -1;
-                        octoReach = 0f;
+                        octoReach = -1f;
                         octoImpact = octoPlayerHit = true;
                         rage = 1f;
                     } else {
@@ -1720,13 +1833,34 @@ final class Boss {
             }
         }
 
-        float cx = bodyX(L), cy = bodyY(L);
+        float cx = body.centreX(), cy = body.centreY();
+        float resistedDragX = octoDragX, resistedDragY = octoDragY;
+        if (held == -3) {
+            float resistance = Math.min(1f, octoDragTime / 2f);
+            resistance *= resistance;
+            float towardX = cx - octoDragX, towardY = cy - octoDragY;
+            float towardD = Math.max(1f, (float) Math.sqrt(towardX * towardX + towardY * towardY));
+            resistedDragX += towardX / towardD * bodyR(L) * 1.35f * resistance;
+            resistedDragY += towardY / towardD * bodyR(L) * 1.35f * resistance;
+        }
         for (int a = 0; a < OCTO_ARMS; a++) {
+            float angle = -1.18f + 2.36f * a / (OCTO_ARMS - 1);
+            float breathe = 1f + 0.045f
+                    * (float) Math.sin(age * 0.62f + a * 1.73f);
+            float tipLength = bodyR(L) * (3.12f + 0.15f * (a % 3)) * breathe;
+            float restTipX = cx + (float) Math.sin(angle) * tipLength;
+            float restTipY = cy + (float) Math.cos(angle) * tipLength;
+            float tipWave = (float) Math.sin(age * 0.78f + a * 1.37f + 3.4f)
+                    * bodyR(L) * 0.18f;
+            restTipX += (float) Math.cos(angle) * tipWave;
+            restTipY -= (float) Math.sin(angle) * tipWave;
+            float tipCurl = bodyR(L) * 0.04f * (2.6f + 0.12f * (a % 3));
+            float tipSide = a < 4 ? -1f : 1f;
+            restTipX += (float) Math.cos(angle) * tipCurl * tipSide;
+            restTipY -= (float) Math.sin(angle) * tipCurl * tipSide;
             for (int n = 0; n < OCTO_NODES; n++) {
                 float u = n / (float) (OCTO_NODES - 1);
-                float angle = -1.18f + 2.36f * a / (OCTO_ARMS - 1);
-                float breathe = 1f + 0.045f
-                        * (float) Math.sin(age * 0.62f + a * 1.73f);
+                // angle and breathe are shared with the resting-tip calculation above.
                 float length = bodyR(L) * (0.28f + u * (2.84f + 0.15f * (a % 3)))
                         * breathe;
                 float tx = cx + (float) Math.sin(angle) * length;
@@ -1743,42 +1877,191 @@ final class Boss {
 
                 if (a == octoAttackArm) {
                     int key = octoTarget >= 0 ? octoTarget : octoCaptured;
-                    float q = octoTarget >= 0 ? Math.max(0f, octoReach) : 1f - octoReturn;
-                    float reach = q * q * (3f - 2f * q) * u;
-                    tx += (Roster.keyX(L, key, rosterFull ? 1f : 0f) - tx) * reach;
-                    ty += (Roster.keyY(L, key, rosterFull ? 1f : 0f) - ty) * reach;
+                    float keyX = Roster.keyX(L, key, rosterFull ? 1f : 0f);
+                    float keyY = Roster.keyY(L, key, rosterFull ? 1f : 0f);
+                    float frontY = L.deckTop - L.keyR * 0.42f;
+                    float aimX = keyX, aimY = frontY;
+                    if (octoTarget >= 0 && octoSweep < 1f) {
+                        float sweep = Math.max(0f, octoSweep);
+                        float waveX = L.w * 0.5f + (float) Math.sin(sweep * Softbody.TAU * 1.5f)
+                                * (L.playRight - L.playLeft) * 0.43f;
+                        float settle = Math.max(0f, Math.min(1f, (sweep - 0.70f) / 0.30f));
+                        settle = settle * settle * (3f - 2f * settle);
+                        aimX = waveX + (keyX - waveX) * settle;
+                    }
+                    float staged = u * u;
+                    tx += (aimX - tx) * staged;
+                    ty += (aimY - ty) * staged;
+                    float q = octoCaptured >= 0 ? 1f - octoReturn
+                            : octoCharge >= 1f ? Math.max(0f, octoReach) : 0f;
+                    q = q * q * (3f - 2f * q) * u * u;
+                    tx += (keyX - tx) * q;
+                    ty += (keyY - ty) * q;
+                    if (octoCaptured >= 0) {
+                        float swallow = Math.max(0f, Math.min(1f, octoReturn));
+                        swallow = swallow * swallow * (3f - 2f * swallow) * u;
+                        float mouthX = cx;
+                        float mouthY = cy + bodyR(L) * 0.20f;
+                        tx += (mouthX - tx) * swallow;
+                        ty += (mouthY - ty) * swallow;
+                    }
                 }
-                if (a == octoLashArm && octoLash > 0f) {
+                if (a == octoVulnerableArm) {
+                    float coil = Math.max(0f, Math.min(1f, octoCoil));
+                    coil = coil * coil * (3f - 2f * coil);
+                    // Curl the distal half around its idle path. The old coil was positioned from
+                    // the body centre, so a successful defense could hide the exposed tip inside
+                    // Octopulse. This loop returns to the ordinary resting tip and stays outside.
+                    float coilU = Math.max(0f, Math.min(1f, (u - 0.38f) / 0.62f));
+                    float loop = coilU * Softbody.TAU;
+                    float side = (a < 4 ? -1f : 1f) * (float) Math.sin(loop)
+                            * bodyR(L) * 0.58f;
+                    float outward = (1f - (float) Math.cos(loop)) * bodyR(L) * 0.25f;
+                    float coilX = tx + (float) Math.cos(angle) * side
+                            + (float) Math.sin(angle) * outward;
+                    float coilY = ty - (float) Math.sin(angle) * side
+                            + (float) Math.cos(angle) * outward;
+                    tx += (coilX - tx) * coil;
+                    ty += (coilY - ty) * coil;
+                    if (held != -3) {
+                        float urgency = Math.min(1f, octoDragTime / 2f);
+                        float safeTop = L.playTop + L.keyR * 1.15f;
+                        float safeBottom = L.deckTop - L.keyR * 1.35f;
+                        float playCX = (L.playLeft + L.playRight) * 0.5f;
+                        float playCY = (safeTop + safeBottom) * 0.5f;
+                        // The endpoint sweeps across half the screen while staying catchable.
+                        int armsRemoved = OCTO_ARMS - Integer.bitCount(octoArms);
+                        float armSpeed = 0.30f + 0.20f * armsRemoved / (OCTO_ARMS - 1f);
+                        float dodgePhase = octoDragTime * (5.5f + urgency * 3.0f)
+                                * armSpeed + a * 0.71f;
+                        float targetX = playCX + (float) Math.sin(dodgePhase) * L.w * 0.25f;
+                        float targetY = playCY + (float) Math.cos(dodgePhase * 1.23f)
+                                * (safeBottom - safeTop) * 0.22f;
+                        targetX = Math.max(L.playLeft + L.keyR,
+                                Math.min(L.playRight - L.keyR, targetX));
+                        targetY = Math.max(safeTop, Math.min(safeBottom, targetY));
+                        tx += (targetX - restTipX) * u;
+                        ty += (targetY - restTipY) * u;
+                        // A high-amplitude traveling wave makes the whole arm conduct that sweep.
+                        float waveEnvelope = (float) Math.sin(Math.PI * u);
+                        float armWave = (float) Math.sin(dodgePhase - u * Softbody.TAU * 1.25f)
+                                * L.w * (0.075f + urgency * 0.040f) * waveEnvelope;
+                        float aimX = targetX - cx, aimY = targetY - cy;
+                        float aimD = Math.max(1f, (float) Math.sqrt(aimX * aimX + aimY * aimY));
+                        tx += -aimY / aimD * armWave;
+                        ty += aimX / aimD * armWave;
+                        // Fast distal tremor: the pained hand-shake on top of the whole-arm wave.
+                        float wrist = Math.max(0f, (u - 0.42f) / 0.58f);
+                        wrist *= wrist;
+                        float shake = (float) Math.sin(octoDragTime * (40f + urgency * 24f)
+                                + u * 9f + a);
+                        tx += -aimY / aimD * shake * L.w * 0.018f * wrist;
+                        ty += aimX / aimD * shake * L.w * 0.018f * wrist;
+                    }
+                    if (held == -3) {
+                        // Spread the fingertip displacement down the whole arm. The root remains
+                        // fixed while every following segment takes an even share of the stretch.
+                        float tipDX = resistedDragX - restTipX;
+                        float tipDY = resistedDragY - restTipY;
+                        tx += tipDX * u;
+                        ty += tipDY * u;
+                    }
+                }
+                if (octoLash > 0f && (octoWrongLash
+                        ? (octoArms & (1 << a)) != 0 : a == octoLashArm)) {
                     float p = octoLash;
                     float phase = p < 0.64f ? p / 0.64f : (1f - p) / 0.36f;
                     phase = Math.max(0f, Math.min(1f, phase));
                     float snap = phase * phase * (3f - 2f * phase);
                     float reach = snap * u * u;
-                    tx += (octoLashX - tx) * reach;
-                    ty += (octoLashY - ty) * reach;
-                    float whip = (float) Math.sin(u * Math.PI * 1.35f - p * 8.5f)
+                    float lashX = octoLashX, lashY = octoLashY;
+                    if (octoWrongLash) {
+                        int key = Roster.at(rosterFull, a % Roster.count(rosterFull));
+                        lashX = Roster.keyX(L, key, rosterFull ? 1f : 0f);
+                        lashY = Roster.keyY(L, key, rosterFull ? 1f : 0f);
+                    }
+                    tx += (lashX - tx) * reach;
+                    ty += (lashY - ty) * reach;
+                    float whip = (float) Math.sin(u * Math.PI * 1.35f - p * 8.5f + a * 0.52f)
                             * bodyR(L) * 0.48f * phase * u;
                     tx += (float) Math.cos(angle) * whip;
                     ty -= (float) Math.sin(angle) * whip;
                 }
+                if (a == octoEscapeArm && octoEscape > 0f) {
+                    float escapeWave = (float) Math.sin((1f - octoEscape) * Math.PI * 5f + u * 4f);
+                    tx += (float) Math.cos(angle) * escapeWave * bodyR(L) * 0.58f * octoEscape * u;
+                    ty -= (1f - octoEscape) * bodyR(L) * 0.32f * u;
+                }
+                if (octoEat > 0f && (octoArms & (1 << a)) != 0) {
+                    float feast = 1f - octoEat;
+                    float cheer = (float) Math.sin(feast * Math.PI * 7f + a * 0.82f);
+                    float flourish = u * u * bodyR(L) * (0.42f + 0.30f * octoEat);
+                    tx += (float) Math.cos(angle) * cheer * flourish;
+                    ty -= (0.45f + 0.55f * Math.abs(cheer)) * flourish;
+                }
+                if (octoTaunt > 0f) {
+                    float boast = (float) Math.sin(age * 9f + a * 1.15f)
+                            * bodyR(L) * 0.34f * octoTaunt * u * u;
+                    tx += boast;
+                    ty -= Math.abs(boast) * 0.42f;
+                }
                 if (a == octoDyingArm && octoDeath > 0f) {
                     float death = Math.min(1f, octoDeath);
-                    float contract = 1f - death * 0.84f;
+                    // Release the stored drag tension in a quick elastic snap, then let the
+                    // detached arm crumple and fall. The overshoot ripple makes the break read.
+                    float snap = Math.min(1f, death / 0.24f);
+                    snap = 1f - (1f - snap) * (1f - snap) * (1f - snap);
+                    float after = Math.max(0f, (death - 0.24f) / 0.76f);
+                    float contract = 1f - snap * 0.58f - after * 0.27f;
                     tx = cx + (tx - cx) * contract;
                     ty = cy + (ty - cy) * contract;
-                    float thrash = (float) Math.sin(death * Math.PI * 4f + u * 5.5f)
-                            * bodyR(L) * 0.62f * (1f - death) * u;
+                    float recoil = (float) Math.sin(snap * Math.PI) * bodyR(L) * 0.92f
+                            * (0.25f + 0.75f * u) * (a < 4 ? -1f : 1f);
+                    tx += (float) Math.cos(angle) * recoil;
+                    ty -= (float) Math.sin(angle) * recoil;
+                    float thrash = (float) Math.sin(after * Math.PI * 3f + u * 5.5f)
+                            * bodyR(L) * 0.42f * (1f - after) * u;
                     tx += (float) Math.cos(angle) * thrash;
                     ty -= (float) Math.sin(angle) * thrash;
-                    ty += death * death * bodyR(L) * 0.45f * u;
+                    ty += after * after * bodyR(L) * 0.70f * u;
                 }
 
                 tx += (float) Math.sin(age * 0.43f + a * 2.1f + u * 5.2f)
                         * bodyR(L) * 0.018f * u;
-                octoVX[a][n] = (octoVX[a][n] + (tx - octoX[a][n]) * dt * 26f) * 0.94f;
-                octoVY[a][n] = (octoVY[a][n] + (ty - octoY[a][n]) * dt * 26f) * 0.94f;
+                float spring = a == octoDyingArm && octoDeath < 0.30f ? 68f : 26f;
+                float damping = a == octoDyingArm && octoDeath < 0.30f ? 0.88f : 0.94f;
+                octoVX[a][n] = (octoVX[a][n] + (tx - octoX[a][n]) * dt * spring) * damping;
+                octoVY[a][n] = (octoVY[a][n] + (ty - octoY[a][n]) * dt * spring) * damping;
                 octoX[a][n] += octoVX[a][n] * dt;
                 octoY[a][n] += octoVY[a][n] * dt;
+                if (a == octoVulnerableArm && held != -3 && n > 0) {
+                    // The ordinary tentacle spring deliberately lags idle motion, but that erased
+                    // this fast half-screen gesture. Track the authored wave directly, retaining
+                    // some elasticity along the arm and none at the catch point.
+                    float waveFollow = n == OCTO_NODES - 1 ? 1f : Math.min(1f, dt * 28f);
+                    octoX[a][n] += (tx - octoX[a][n]) * waveFollow;
+                    octoY[a][n] += (ty - octoY[a][n]) * waveFollow;
+                }
+                if (a == octoVulnerableArm && n == OCTO_NODES - 1) {
+                    if (held == -3) {
+                        float fingerFollow = Math.min(1f, dt * 46f);
+                        octoX[a][n] += (resistedDragX - octoX[a][n]) * fingerFollow;
+                        octoY[a][n] += (resistedDragY - octoY[a][n]) * fingerFollow;
+                    } else {
+                        float margin = L.keyR * 0.72f;
+                        octoX[a][n] = Math.max(L.playLeft + margin,
+                                Math.min(L.playRight - margin, octoX[a][n]));
+                        octoY[a][n] = Math.max(L.playTop + margin,
+                                Math.min(L.deckTop - margin, octoY[a][n]));
+                    }
+                }
+                // A living arm is physically rooted in the moving soft body. Do not spring the
+                // first node toward it: that produces a visible gap whenever the head rebounds.
+                if (n == 0 && (octoArms & (1 << a)) != 0 && a != octoDyingArm) {
+                    octoX[a][n] = tx;
+                    octoY[a][n] = ty;
+                    octoVX[a][n] = octoVY[a][n] = 0f;
+                }
             }
         }
     }
@@ -1812,7 +2095,10 @@ final class Boss {
                 break;
             }
         }
-        octoReach = -0.28f;
+        octoReach = -1f;
+        octoSweep = 0.001f;
+        octoCharge = 0f;
+        octoCoil = 0f;
         octoCue = true;
     }
 
@@ -2258,7 +2544,14 @@ final class Boss {
                 body.jiggle = JIGGLE[kind];
                 bodyPlaced = true;
             } else {
-                body.moveTo(bodyX(L), bodyY(L));
+                float bounce = 0f;
+                if (kind == OCTOPUS && octoVulnerableArm >= 0) {
+                    float urgency = Math.min(1f, octoDragTime / 2f);
+                    // Slow enough for the pressurised body to follow, broad enough to read.
+                    bounce = (float) Math.sin(octoDragTime * (4.2f + urgency * 1.8f))
+                            * bodyR(L) * (0.34f + urgency * 0.24f);
+                }
+                body.moveTo(bodyX(L), bodyY(L) + bounce);
             }
             // A glob being hauled out stretches the skin after it, like pulling at something in
             // treacle. Re-aimed every frame at wherever the finger has got to. At rest, the wart keeps a smaller

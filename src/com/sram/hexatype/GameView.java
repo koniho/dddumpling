@@ -424,17 +424,17 @@ public class GameView extends View {
                 if (core.dragBoss(ev.getHistoricalX(i, h), ev.getHistoricalY(i, h), layout)) {
                     bossDragging = false;
                     bossDragPointer = -1;
-                    tick();
+                    completedBossDragHaptic();
                     return true;
                 }
             }
             if (core.dragBoss(x, y, layout)) {
                 bossDragging = false;
                 bossDragPointer = -1;
-                tick();
+                completedBossDragHaptic();
             } else {
                 // A rejected mushroom sweep cancels ownership inside Boss.dragTo().
-                if (core.boss.held < 0 && core.boss.held != -2) {
+                if (core.boss.held < 0 && core.boss.held != -2 && core.boss.held != -3) {
                     bossDragging = false;
                     bossDragPointer = -1;
                 }
@@ -605,6 +605,18 @@ public class GameView extends View {
         lastBossDragHaptic = now;
         performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK,
                 HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+    }
+
+    private void completedBossDragHaptic() {
+        if (core.boss.kind != Boss.OCTOPUS || core.boss.octoDeath <= 0f) {
+            tick();
+            return;
+        }
+        // A hard tear at release, then a second lower beat as the head catches the recoil.
+        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
+                HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+        postDelayed(() -> performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
+                HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING), 72L);
     }
 
     private void bossDeathHaptic() {

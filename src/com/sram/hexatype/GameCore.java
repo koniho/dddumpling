@@ -2378,7 +2378,11 @@ final class GameCore {
             // handled by the same count; elapsed fight time alone never costs a life.
             int bossHits = boss.update(dt, L, rnd);
             if (boss.octoPlayerHit && state == PLAY) BossPlay.octoWhipHit(this, L);
-            if (boss.octoImpact) shake = Math.max(shake, 0.92f);
+            if (boss.octoImpact) {
+                shake = Math.max(shake, 1.12f);
+                flash = Math.max(flash, 1f);
+                flashColor = 0xFFFF355F;
+            }
             if (sound != null) {
                 float brew = boss.kind == Boss.SLIME && !boss.hasGlob()
                         && boss.boltCount() == 0 && boss.open()

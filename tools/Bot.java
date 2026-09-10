@@ -266,6 +266,22 @@ final class Bot {
     private boolean bossTouch(GameCore c, Layout L) {
         if (think > 0f || budget < 1f) return false;
         Boss b = c.boss;
+        if (b.kind == Boss.OCTOPUS && b.octoVulnerableArm >= 0) {
+            if (b.octoCoil < 0.72f) return true;
+            budget -= 1f;
+            presses++;
+            think = reaction;
+            if (b.held == -3) {
+                if (!b.octoDragStarted || !b.octoDragCanDamage)
+                    c.dragBoss(L.w * 0.5f, Math.min(b.octoDragY, L.dangerY - L.keyR), L);
+                else c.dragBoss(L.playLeft, b.octoDragY, L);
+            } else {
+                int tip = Boss.OCTO_NODES - 1;
+                c.grabBoss(b.octoX[b.octoVulnerableArm][tip],
+                        b.octoY[b.octoVulnerableArm][tip]);
+            }
+            return true;
+        }
         if (b.kind == Boss.MUSHROOM) {
             budget -= 1f;
             presses++;

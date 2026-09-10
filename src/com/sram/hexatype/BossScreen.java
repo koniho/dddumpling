@@ -202,7 +202,10 @@ final class BossScreen extends Draw {
             drawDividePieces(p, c, L, b, fade);
         } else {
             if (b.kind == Boss.MUSHROOM) drawMushroom(p, c, L, b, col, fade);
-            else if (b.kind == Boss.OCTOPUS) drawOctopusHead(p, c, b, col, mood, fade);
+            else if (b.kind == Boss.OCTOPUS) {
+                drawOctopusHead(p, c, b, col, mood, fade);
+                drawCapturedKey(p, L, b, fade);
+            }
             else Slime.draw(p, b.body, c.clock, col, face, mood, fade);
             if (b.kind == Boss.SLIME && !b.open() && b.rage > 0f) {
                 float[] skin = b.body.outline();
@@ -503,6 +506,67 @@ final class BossScreen extends Draw {
             smile[k * 2 + 1] = mouthY + ry * 0.10f * (1f - u * u);
         }
         p.polyline(smile, ink, rx * 0.055f);
+        if (b.octoVulnerableArm >= 0) {
+            float urgency = Math.min(1f, b.octoDragTime / 2f);
+            float wince = 0.5f + 0.5f * (float) Math.sin(
+                    c.clock * (8f + urgency * 20f));
+            // Squeezed brows, flushed cheeks and a trembling frown during the whole catch window.
+            p.line(cx - eyeDx - eyeR, eyeY - eyeR * (1.22f + 0.18f * wince),
+                    cx - eyeDx + eyeR, eyeY - eyeR * (0.78f - 0.10f * wince),
+                    Glyph.withAlpha(0xFFFFD83D, (int) (245 * fade)), rx * 0.055f);
+            p.line(cx + eyeDx - eyeR, eyeY - eyeR * (0.78f - 0.10f * wince),
+                    cx + eyeDx + eyeR, eyeY - eyeR * (1.22f + 0.18f * wince),
+                    Glyph.withAlpha(0xFFFFD83D, (int) (245 * fade)), rx * 0.055f);
+            p.fillCircle(cx - rx * 0.34f, mouthY + ry * 0.04f, rx * 0.105f,
+                    Glyph.withAlpha(0xFFFF5578, (int) ((105 + 75 * wince) * fade)));
+            p.fillCircle(cx + rx * 0.34f, mouthY + ry * 0.04f, rx * 0.105f,
+                    Glyph.withAlpha(0xFFFF5578, (int) ((105 + 75 * wince) * fade)));
+            p.fillEllipse(cx, mouthY + ry * 0.06f, rx * 0.25f, ry * 0.16f,
+                    Glyph.withAlpha(col, (int) (245 * fade)));
+            float[] frown = new float[14];
+            for (int k = 0; k < 7; k++) {
+                float u = -1f + 2f * k / 6f;
+                frown[k * 2] = cx + rx * 0.19f * u;
+                frown[k * 2 + 1] = mouthY + ry * (0.03f - 0.11f * (1f - u * u))
+                        + ry * 0.025f * wince;
+            }
+            p.polyline(frown, ink, rx * 0.060f);
+        }
+        if (b.octoEat > 0f) {
+            float eaten = 1f - b.octoEat;
+            float chew = 0.5f + 0.5f * (float) Math.sin(eaten * Math.PI * 7f);
+            float gulp = Math.min(1f, eaten * 5f);
+            // Puffed cheeks and a rubbery chomping mouth make the stolen key feel swallowed.
+            p.fillCircle(cx - rx * 0.31f, mouthY, rx * (0.16f + 0.035f * chew),
+                    Glyph.withAlpha(0xFFFF6F91, (int) (125 * fade * gulp)));
+            p.fillCircle(cx + rx * 0.31f, mouthY, rx * (0.16f + 0.035f * chew),
+                    Glyph.withAlpha(0xFFFF6F91, (int) (125 * fade * gulp)));
+            p.fillEllipse(cx, mouthY + ry * 0.015f, rx * (0.16f + 0.035f * chew),
+                    ry * (0.055f + 0.11f * chew), ink);
+            p.fillEllipse(cx, mouthY + ry * (0.045f + 0.025f * chew), rx * 0.085f,
+                    ry * 0.038f, Glyph.withAlpha(0xFFFF8AA8, (int) (235 * fade)));
+            float wordBounce = (float) Math.sin(eaten * Math.PI * 7f) * ry * 0.08f;
+            p.text(eaten < 0.48f ? "NOM!" : "YUM!", cx, cy - ry * 1.55f + wordBounce,
+                    type(rx * 0.29f), Glyph.withAlpha(0xFFFFD83D,
+                            (int) (245 * fade * Math.min(1f, b.octoEat * 5f))), Painter.CENTER, true);
+            for (int crumb = 0; crumb < 6; crumb++) {
+                float hop = (eaten * 1.7f + crumb * 0.29f) % 1f;
+                float side = crumb == 1 ? -1f : 1f;
+                p.fillCircle(cx + side * rx * (0.18f + hop * 0.26f),
+                        mouthY - ry * (0.08f + hop * 0.28f), rx * 0.025f * (1f - hop),
+                        Glyph.withAlpha(0xFFFFD83D, (int) (210 * fade * (1f - hop))));
+            }
+        }
+        if (b.octoTaunt > 0f) {
+            float appear = Math.min(1f, (1f - b.octoTaunt) * 9f);
+            float vanish = Math.min(1f, b.octoTaunt * 4f);
+            float taunt = appear * vanish * fade;
+            float bounce = (float) Math.sin(c.clock * 11f) * ry * 0.08f;
+            p.text("TOO SLOW!", cx, cy - ry * 1.62f + bounce, type(rx * 0.26f),
+                    Glyph.withAlpha(0xFFFFD83D, (int) (255 * taunt)), Painter.CENTER, true);
+            p.arc(cx, mouthY - ry * 0.02f, rx * 0.22f, ry * 0.15f, 8f, 164f,
+                    Glyph.withAlpha(0xFFFFD83D, (int) (235 * taunt)), rx * 0.055f);
+        }
     }
 
     private static float[] smoothTentacle(float[] src) {
@@ -549,13 +613,21 @@ final class BossScreen extends Draw {
             boolean dying = a == b.octoDyingArm && b.octoDeath > 0f;
             if ((b.octoArms & (1 << a)) != 0 || dying) {
                 float death = dying ? Math.min(1f, b.octoDeath) : 0f;
-                boolean warning = a == b.octoAttackArm && b.octoTarget >= 0 && b.octoReach < 0f;
-                float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 13f);
+                boolean warning = a == b.octoAttackArm && b.octoTarget >= 0
+                        && (b.octoSweep < 1f || b.octoCharge < 1f);
+                boolean vulnerable = a == b.octoVulnerableArm;
+                boolean escaping = a == b.octoEscapeArm && b.octoEscape > 0f;
+                float tug = vulnerable ? Math.min(1f, b.octoDragTime / 2f) : 0f;
+                // The warning heartbeat accelerates continuously toward the two-second escape.
+                float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * (8f + 24f * tug));
                 int armCol = dying
                         ? Glyph.mix(col, death < 0.38f ? 0xFFFFFF8A : 0xFFFF6A86,
                                 0.82f - death * 0.30f)
+                        : escaping ? Glyph.mix(0xFF861735, 0xFFFFFFFF, 0.38f + 0.52f * b.octoEscape)
+                        : vulnerable ? Glyph.mix(0xFF861735, YELLOW,
+                                0.54f + 0.34f * pulse + 0.10f * tug)
                         : warning ? Glyph.mix(0xFF861735, 0xFFFF355F,
-                                0.35f + 0.65f * pulse) : col;
+                                0.35f + 0.65f * pulse * (0.45f + 0.55f * b.octoCharge)) : col;
                 float[] curve = smoothTentacle(pts);
                 float variety = 0.88f + 0.16f * (float) Math.sin(a * 2.17f);
                 int steps = curve.length / 2 - 1;
@@ -610,32 +682,49 @@ final class BossScreen extends Draw {
                 p.fillCircle(tipX, tipY, thick * variety * 0.22f
                                 * (dying ? 1f - death * 0.72f : 1f),
                         Glyph.withAlpha(armCol, (int) (230 * fade)));
-                if (a == b.octoAttackArm && b.octoCaptured >= 0) {
-                    int g = b.octoCaptured; int keyCol = Glyph.COLOR[g];
-                    p.fillPoly(Glyph.hex(tipX, tipY, L.keyR), Glyph.withAlpha(keyCol, (int) (110 * fade)));
-                    p.strokePoly(Glyph.hex(tipX, tipY, L.keyR), Glyph.withAlpha(keyCol, (int) (255 * fade)), L.keyR * 0.10f);
-                    Kawaii.draw(p, g, tipX, tipY, L.keyR * 0.60f, Glyph.withAlpha(keyCol, (int) (255 * fade)), 1f, 0.1f);
+                if (vulnerable && b.octoCoil >= 0.72f) {
+                    float grabPulse = 0.86f + 0.14f * (float) Math.sin(c.clock * 8f);
+                    float grabR = thick * 0.82f * grabPulse;
+                    p.fillCircle(tipX, tipY, grabR * 1.72f,
+                            Glyph.withAlpha(YELLOW, (int) (62 * fade)));
+                    p.strokeCircle(tipX, tipY, grabR * 1.30f,
+                            Glyph.withAlpha(0xFFFFD83D, (int) (175 * fade)), grabR * 0.13f);
+                    p.fillCircle(tipX, tipY, grabR * 0.98f,
+                            Glyph.withAlpha(0xFF5A102B, (int) (238 * fade)));
+                    p.strokeCircle(tipX, tipY, grabR,
+                            Glyph.withAlpha(0xFFFFFFFF, (int) (255 * fade)), grabR * 0.20f);
+                    p.fillCircle(tipX, tipY, grabR * 0.58f,
+                            Glyph.withAlpha(0xFFFFD83D, (int) (255 * fade)));
+                    caret(p, tipX, tipY, grabR * 1.12f,
+                            Glyph.withAlpha(0xFFFFFFFF, (int) (255 * fade)));
+                    p.text("DRAG!", tipX, tipY + grabR * 1.72f, type(grabR * 0.50f),
+                            Glyph.withAlpha(0xFFFFFFFF, (int) (250 * fade)), Painter.CENTER, true);
                 }
+
             } else {
                 float gx = pts[2], gy = pts[3];
                 p.fillEllipse(gx, gy, thick * 0.58f, thick * 0.43f, Glyph.withAlpha(col, (int) (190 * fade)));
                 p.fillCircle(gx - thick * 0.14f, gy - thick * 0.13f, thick * 0.12f, Glyph.withAlpha(0xFFFFFFFF, (int) (120 * fade)));
             }
         }
-        if (b.octoLash > 0f) {
-            float t = b.octoLash;
-            float bend = (float) Math.sin(t * Math.PI) * L.enemyR * 1.8f;
-            float[] lash = {
-                    b.hitX, b.hitY,
-                    (b.hitX + b.octoLashX) * 0.5f + bend,
-                    (b.hitY + b.octoLashY) * 0.5f,
-                    b.octoLashX, b.octoLashY
-            };
-            float alpha = fade * (float) Math.sin(Math.PI * b.octoLash);
-            p.polyline(lash, Glyph.withAlpha(0xFF310817, (int) (190 * alpha)), thick * 0.82f);
-            p.polyline(lash, Glyph.withAlpha(0xFFFF355F, (int) (245 * alpha)), thick * 0.48f);
-            p.polyline(lash, Glyph.withAlpha(0xFFFFB0C0, (int) (150 * alpha)), thick * 0.10f);
-        }
+    }
+
+    /** Foreground pass: a stolen character must remain readable over arms and mantle. */
+    private static void drawCapturedKey(Painter p, Layout L, Boss b, float fade) {
+        if (b.octoAttackArm < 0 || b.octoCaptured < 0) return;
+        int tip = Boss.OCTO_NODES - 1;
+        float tipX = b.octoX[b.octoAttackArm][tip];
+        float tipY = b.octoY[b.octoAttackArm][tip];
+        int g = b.octoCaptured, keyCol = Glyph.COLOR[g];
+        float swallowed = Math.max(0f, Math.min(1f, (b.octoReturn - 0.68f) / 0.32f));
+        float keyR = L.keyR * (1f - swallowed * 0.72f);
+        p.fillCircle(tipX, tipY, keyR * 1.18f,
+                Glyph.withAlpha(0xFFFFFFFF, (int) (72 * fade * (1f - swallowed))));
+        p.fillPoly(Glyph.hex(tipX, tipY, keyR), Glyph.withAlpha(keyCol, (int) (150 * fade)));
+        p.strokePoly(Glyph.hex(tipX, tipY, keyR),
+                Glyph.withAlpha(0xFFFFFFFF, (int) (255 * fade)), keyR * 0.13f);
+        Kawaii.draw(p, g, tipX, tipY, keyR * 0.60f,
+                Glyph.withAlpha(keyCol, (int) (255 * fade)), 1f, 0.1f);
     }
 
     static boolean divideVulnerable(Boss b, int piece) {

@@ -140,6 +140,18 @@ abstract class Check {
     static boolean bossPlay(GameCore c, Layout L) {
         if (!c.bossFighting()) return false;
         Boss b = c.boss;
+        if (b.kind == Boss.OCTOPUS && b.octoVulnerableArm >= 0) {
+            if (b.held == -3) {
+                if (!b.octoDragStarted || !b.octoDragCanDamage)
+                    c.dragBoss(L.w * 0.5f, Math.min(b.octoDragY, L.dangerY - L.keyR), L);
+                if (b.held == -3) c.dragBoss(L.playLeft, b.octoDragY, L);
+                return true;
+            }
+            if (b.octoCoil < 0.72f) return true;
+            int tip = Boss.OCTO_NODES - 1;
+            return c.grabBoss(b.octoX[b.octoVulnerableArm][tip],
+                    b.octoY[b.octoVulnerableArm][tip]);
+        }
         if (b.kind == Boss.MUSHROOM) {
             if (b.held != -2) return b.grabBody(b.body.centreX(), b.body.centreY());
             if (b.mushroomMeterAlpha == 0f) {

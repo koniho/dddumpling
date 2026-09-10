@@ -594,6 +594,18 @@ final class Softbody {
         }
     }
 
+    /** Give the whole soft body a directional kick; its home spring supplies the rebound. */
+    void shove(float dx, float dy, float strength) {
+        float d = (float) Math.sqrt(dx * dx + dy * dy);
+        if (d < 1e-4f) return;
+        float kickX = dx / d * rest * strength;
+        float kickY = dy / d * rest * strength;
+        for (int i = 0; i < n; i++) {
+            vx[i] += kickX;
+            vy[i] += kickY;
+        }
+    }
+
     /**
      * A sustained tug on the nearest part of the ring, toward {@code px,py}.
      *

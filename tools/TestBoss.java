@@ -1173,18 +1173,82 @@ final class TestBoss extends Check {
         for (int i = 0; i < 240 && c.boss.octoTarget < 0; i++) c.update(DT, L);
         check("stage 15 octopus begins a key reach", c.boss.octoTarget >= 0
                 && c.boss.octoAttackArm >= 0);
+        int sweepingArm = c.boss.octoAttackArm;
+        for (int i = 0; i < 24; i++) c.update(DT, L);
+        check("the chosen arm waves before attacking", c.boss.octoSweep > 0.20f
+                && c.boss.octoReach < 0f && c.boss.octoAttackArm == sweepingArm);
         for (int i = 0; i < 120 && c.boss.octoReach < 0f; i++) c.update(DT, L);
+        check("the arm stops and charges before the timed strike",
+                c.boss.octoSweep >= 1f && c.boss.octoCharge >= 1f);
         int armCount = Integer.bitCount(c.boss.octoArms);
         float hp = c.boss.hp; int target = c.boss.octoTarget;
         c.tapKey(target, L);
-        check("defending in time removes exactly one arm", Integer.bitCount(c.boss.octoArms) == armCount - 1);
-        check("a defended reach damages the octopus", c.boss.hp == hp - 1f);
-        check("the severed arm becomes unavailable", c.boss.octoTarget < 0);
-        check("a severed arm remains visible for its dramatic collapse",
+        check("defending recoils one arm without dealing damage",
+                c.boss.octoVulnerableArm == sweepingArm
+                        && Integer.bitCount(c.boss.octoArms) == armCount && c.boss.hp == hp);
+        for (int i = 0; i < 60 && c.boss.octoCoil < 0.72f; i++) c.update(DT, L);
+        int tip = Boss.OCTO_NODES - 1;
+        float tipX = c.boss.octoX[sweepingArm][tip];
+        float tipY = c.boss.octoY[sweepingArm][tip];
+        check("the recoiled tip becomes a drag point", c.grabBoss(tipX, tipY));
+        // Simulate a touch whose grab coordinate was already inside the tear boundary. It must
+        // leave that zone before a later crossing can count as damage.
+        c.boss.octoDragX = L.playLeft;
+        c.boss.octoDragY = tipY;
+        check("an Octopulse drag beginning at the edge cannot immediately damage",
+                !c.dragBoss(L.playLeft, tipY, L)
+                        && Integer.bitCount(c.boss.octoArms) == armCount);
+        check("the edge-started arm must first return to the safe area",
+                !c.dragBoss(L.w * 0.5f, tipY, L));
+        check("dragging back to the edge after leaving it damages the arm",
+                c.dragBoss(L.playLeft, tipY, L));
+        check("the torn arm is removed and damages Octopulse",
+                Integer.bitCount(c.boss.octoArms) == armCount - 1 && c.boss.hp == hp - 1f);
+        check("a torn arm remains visible for its dramatic collapse",
                 c.boss.octoDyingArm >= 0 && c.boss.octoDeath > 0f);
-        for (int i = 0; i < 45; i++) c.update(DT, L);
-        check("the severed arm death lasts longer than a quick hit flash",
+        float maxRebound = 0f;
+        for (int i = 0; i < 12; i++) {
+            c.update(DT, L);
+            float bx = c.boss.body.centreX() - c.boss.body.homeX;
+            float by = c.boss.body.centreY() - c.boss.body.homeY;
+            maxRebound = Math.max(maxRebound, (float) Math.sqrt(bx * bx + by * by));
+        }
+        check("a snapped arm visibly shoves the Octopulse body",
+                maxRebound > Boss.bodyR(L) * 0.24f);
+        for (int i = 0; i < 33; i++) c.update(DT, L);
+        check("the torn arm death lasts longer than a quick hit flash",
                 c.boss.octoDyingArm >= 0);
+        for (int i = 0; i < 20; i++) c.update(DT, L);
+        float settledX = c.boss.body.centreX() - c.boss.body.homeX;
+        float settledY = c.boss.body.centreY() - c.boss.body.homeY;
+        float settled = (float) Math.sqrt(settledX * settledX + settledY * settledY);
+        check("the shoved Octopulse body returns home in about one second",
+                settled < maxRebound * 0.38f);
+
+        GameCore escape = enterBoss(L, Boss.OCTOPUS, 152L);
+        escape.enemies.clear(); escape.target = null;
+        for (int i = 0; i < 240 && escape.boss.octoTarget < 0; i++) escape.update(DT, L);
+        for (int i = 0; i < 120 && escape.boss.octoReach < 0f; i++) escape.update(DT, L);
+        int escapeArm = escape.boss.octoAttackArm;
+        escape.tapKey(escape.boss.octoTarget, L);
+        for (int i = 0; i < 60 && escape.boss.octoCoil < 0.72f; i++) escape.update(DT, L);
+        float escapeTipX = escape.boss.octoX[escapeArm][tip];
+        float escapeTipY = escape.boss.octoY[escapeArm][tip];
+        check("an exposed Octopulse arm begins its two-second tug timer",
+                escape.grabBoss(escapeTipX, escapeTipY));
+        for (int i = 0; i < 60; i++) escape.update(DT, L);
+        float resistedDX = escape.boss.octoX[escapeArm][tip] - escapeTipX;
+        float resistedDY = escape.boss.octoY[escapeArm][tip] - escapeTipY;
+        check("Octopulse pulls farther away from a held drag point as time expires",
+                resistedDX * resistedDX + resistedDY * resistedDY
+                        > Boss.bodyR(L) * Boss.bodyR(L) * 0.12f);
+        for (int i = 0; i < 40; i++) escape.update(DT, L);
+        check("an arm escapes when its two-second drag expires",
+                escape.boss.held == -1 && escape.boss.octoVulnerableArm == -1
+                        && escape.boss.octoEscape > 0f);
+        for (int i = 0; i < 32; i++) escape.update(DT, L);
+        check("an escaped arm retaliates with three staggered projectiles",
+                escape.boss.boltCount() == 3 && escape.boss.octoFlurryLeft == 0);
 
         GameCore wrong = enterBoss(L, Boss.OCTOPUS, 153L);
         wrong.enemies.clear(); wrong.target = null;
@@ -1195,7 +1259,8 @@ final class TestBoss extends Check {
         int lives = wrong.lives;
         wrong.tapKey(wrongKey, L);
         check("wrong-key damage waits for the animated contact", wrong.lives == lives);
-        check("the wrong-key lash is visible", wrong.boss.octoLash > 0f);
+        check("the all-arm wrong-key retaliation is active",
+                wrong.boss.octoLash > 0f && wrong.boss.octoWrongLash);
         check("the retaliation disables every player key", !wrong.keyActive(wanted));
         float blockedPress = wrong.keyPress[wanted];
         check("input cannot slip through during the retaliation",
@@ -1209,6 +1274,7 @@ final class TestBoss extends Check {
         check("the whip emits an impact for haptics and shake", impactSeen && wrong.shake > 0f);
         for (int i = 0; i < 60 && wrong.boss.playerLocked(); i++) wrong.update(DT, L);
         check("player keys return when the retaliation ends", wrong.keyActive(wanted));
+        check("Octopulse taunts after the all-arm retaliation", wrong.boss.octoTaunt > 0f);
         check("the lash cancels the reach without stealing a key",
                 wrong.boss.octoTarget < 0 && !wrong.boss.keyDisabled(wanted));
 

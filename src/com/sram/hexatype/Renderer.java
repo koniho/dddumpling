@@ -696,12 +696,6 @@ final class Renderer extends Draw {
                                 wanted ? (int) (110 + 145 * pulse) : 90), r * 0.075f);
             }
 
-            if (c.boss.kind == Boss.OCTOPUS && c.boss.octoTarget == g) {
-                float approach = Math.max(0f, c.boss.octoReach);
-                p.strokePoly(Glyph.hex(cx, cy, r * (1.85f - 0.72f * approach)),
-                        Glyph.withAlpha(GOLD, (int) (105 + 150 * approach)), r * 0.10f);
-            }
-
             if (hint == g) {
                 float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 6f);
                 p.strokePoly(Glyph.hex(cx, cy, r * 1.12f),
