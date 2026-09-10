@@ -19,6 +19,19 @@ final class TestVisuals extends Check {
                 Showcase.panelBot(L) <= L.dangerY - Showcase.FIELD_MARGIN * L.unit + 0.5f);
 
         GameCore c = new GameCore(new Mem(), 73L);
+        check("the powerup appears after the enemy has finished breaking apart",
+                Demo.POWER_START > Demo.impactAt(Demo.LEN - 1) + GameCore.DESTROY_TIME);
+        check("the collection burst finishes before the loop restarts",
+                Demo.LOOP > Demo.POWER_START + Demo.POWER_TOUCH + Power.POP_TIME + 0.5f);
+        c.clock = Demo.POWER_START - 0.01f;
+        check("the powerup waits for its lesson", Demo.lessonPower(c, L) == null);
+        c.clock = Demo.POWER_START + Demo.POWER_APPROACH;
+        Power drifting = Demo.lessonPower(c, L);
+        c.clock = Demo.POWER_START + Demo.POWER_TOUCH + 0.05f;
+        Power caught = Demo.lessonPower(c, L);
+        check("the powerup drifts across before the touch collects it",
+                !drifting.hit && caught.hit && caught.x > drifting.x);
+        check("the title powerup is only a demonstration", c.power == null && !c.powerActive());
         GameCore.Enemy demo = new GameCore.Enemy();
         demo.word = new int[Demo.LEN];
         demo.baseX = (L.playLeft + L.playRight) / 2f;

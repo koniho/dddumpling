@@ -1340,10 +1340,20 @@ final class Boss {
             return true;
         }
         if (kind != MUSHROOM) return false;
+        float charge = mushroomCharge <= 0f ? 0f : 1f - mushroomCharge / MUSHROOM_CHARGE_TIME;
+        float squeeze = (float) Math.sin(charge * Math.PI * 0.5f);
+        float sx = 1f + squeeze * 0.16f, sy = 1f - squeeze * 0.30f;
         float capX = body.centreX() + mushroomCapDX;
-        float capY = body.centreY() + mushroomCapDY - body.radiusY() * 0.12f;
-        float dx = (x - capX) / Math.max(1f, body.radiusX() * 1.92f);
-        float dy = (y - capY) / Math.max(1f, body.radiusY() * 0.94f);
+        float capY = body.centreY() + body.radiusY() * 0.65f + mushroomCapDY;
+        float bottom = body.centreY() + body.rest * (3.55f - squeeze * 0.20f);
+        float attachY = capY + body.rest * 0.36f * sy;
+        float angle = Math.max(-0.62f, Math.min(0.62f,
+                (float) Math.atan2(mushroomCapDX, Math.max(body.radiusY() * 0.55f, bottom - attachY))));
+        float ca = (float) Math.cos(angle), sa = (float) Math.sin(angle);
+        float localX = (x - capX) * ca + (y - capY) * sa;
+        float localY = -(x - capX) * sa + (y - capY) * ca;
+        float dx = localX / Math.max(1f, body.radiusX() * sx * 1.90f);
+        float dy = localY / Math.max(1f, body.radiusY() * sy * (localY < 0f ? 2.35f : 0.58f));
         if (dx * dx + dy * dy > 1f) return false;
         held = -2;
         mushroomLastX = x;

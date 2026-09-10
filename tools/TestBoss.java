@@ -1177,7 +1177,22 @@ final class TestBoss extends Check {
         for (int i = 0; i < 24; i++) c.update(DT, L);
         check("the chosen arm waves before attacking", c.boss.octoSweep > 0.20f
                 && c.boss.octoReach < 0f && c.boss.octoAttackArm == sweepingArm);
-        for (int i = 0; i < 120 && c.boss.octoReach < 0f; i++) c.update(DT, L);
+        check("the traveling pulse waits until the arm settles", BossScreen.octoPulseProgress(c.boss) < 0f);
+        boolean pulseTravelled = false;
+        for (int i = 0; i < 120 && c.boss.octoReach < 0f; i++) {
+            c.update(DT, L);
+            float progress = BossScreen.octoPulseProgress(c.boss);
+            pulseTravelled |= progress > 0f && progress < 1f && c.boss.octoSweep >= 1f;
+        }
+        check("the settled charge sends the pulse down the arm", pulseTravelled);
+        check("the pulse reaches the tip on the attack cue",
+                BossScreen.octoPulseProgress(c.boss) == 1f && c.boss.octoCue && c.boss.octoReach == 0f);
+        float[] uneven = {0f, 0f, 3f, 0f, 3f, 9f};
+        float[] midpoint = BossScreen.octoPulsePoint(uneven, 0.5f);
+        float[] endpoint = BossScreen.octoPulsePoint(uneven, 1f);
+        check("pulse speed follows distance along the arm, not node spacing",
+                Math.abs(midpoint[0] - 3f) < 0.001f && Math.abs(midpoint[1] - 3f) < 0.001f);
+        check("the pulse endpoint is exactly the arm tip", endpoint[0] == 3f && endpoint[1] == 9f);
         check("the arm stops and charges before the timed strike",
                 c.boss.octoSweep >= 1f && c.boss.octoCharge >= 1f);
         int armCount = Integer.bitCount(c.boss.octoArms);
@@ -1306,6 +1321,23 @@ final class TestBoss extends Check {
     }
 
     static void mushroom(Layout L) {
+        float[] bentStem = {100f, 0f, 100f, 50f, 20f, 100f, 0f, 150f,
+                -20f, 100f, 60f, 50f};
+        float[] highlight = BossScreen.mushroomStemHighlight(bentStem);
+        check("the stem highlight stays attached at both tapered endpoints",
+                highlight[0] == 100f && highlight[6] == 0f);
+        check("the highlight follows the bent upper stem instead of the planted base",
+                highlight[2] >= 60f && highlight[2] <= 100f
+                        && highlight[10] >= 60f && highlight[10] <= 100f);
+        check("the highlight remains inside the lower stem",
+                highlight[4] >= -20f && highlight[4] <= 20f
+                        && highlight[8] >= -20f && highlight[8] <= 20f);
+
+        GameCore capProbe = enterBoss(L, Boss.MUSHROOM, 169L);
+        check("the taller mushroom crown accepts a drag",
+                capProbe.boss.grabBody(capProbe.boss.body.centreX(),
+                        capProbe.boss.body.centreY() - capProbe.boss.body.radiusY() * 1.45f));
+
         group("boss: fly agaric");
         GameCore c = enterBoss(L, Boss.MUSHROOM, 166L);
         Ear mushroomEar = new Ear();
@@ -1313,7 +1345,7 @@ final class TestBoss extends Check {
         float hp = c.boss.hp;
         check("the stalk is not a draggable target",
                 !c.grabBoss(c.boss.body.centreX(),
-                        c.boss.body.centreY() + c.boss.body.radiusY() * 1.05f));
+                        c.boss.body.centreY() + c.boss.body.radiusY() * 2.05f));
         check("the cap is the draggable target",
                 c.grabBoss(c.boss.body.centreX(), c.boss.body.centreY()));
         c.dragBoss(c.boss.body.centreX() + L.w * 0.17f, c.boss.body.centreY(), L);

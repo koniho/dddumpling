@@ -18,14 +18,9 @@ final class Demo extends Draw {
 
     private Demo() {}
 
-    /**
-     * One turn of the loop: arrive, three presses, fly apart, a beat of nothing, repeat.
-     *
-     * The whole sequence has to finish inside this. The last press lands at 0.70 of it, so the
-     * bullet and the fly-apart after it — {@link #SHOT} plus {@link GameCore#DESTROY_TIME} — have
-     * the remaining 1.26s to play out in, and leave a beat over.
-     */
-    static final float LOOP = 10.5f;
+    /** Destroy a word, then demonstrate touching a drifting powerup before the next loop. */
+    static final float POWER_TOUCH = 2.8f, POWER_APPROACH = 1.4f;
+    static final float LOOP = 15.5f;
 
     /** Letters in the demo word. Three is enough to show "left to right" and fits the band. */
     static final int LEN = 3;
@@ -50,6 +45,8 @@ final class Demo extends Draw {
      * down, the deck and the word are visibly connected, which is the whole point of the demo.
      */
     static final float SHOT = 0.78f;
+    static final float POWER_START = PRESS[LEN - 1] + FIRE_DELAY + SHOT
+            + GameCore.DESTROY_TIME + 0.40f;
 
     /**
      * How long the word takes to arrive.
@@ -181,6 +178,10 @@ final class Demo extends Draw {
     static void draw(Painter p, GameCore c, Layout L, float fade) {
         if (fade <= 0.004f) return;
         float t = loopTime(c);
+        if (t >= POWER_START) {
+            powerLesson(p, c, L, fade);
+            return;
+        }
         float u = t / LOOP;
         int done = struck(c);
         float last = sinceLast(c);
@@ -240,4 +241,34 @@ final class Demo extends Draw {
                     since / SHOT, g, fade);
         }
     }
+    static Power lessonPower(GameCore c, Layout L) {
+        float age = loopTime(c) - POWER_START;
+        if (age < 0f || age >= POWER_TOUCH + Power.POP_TIME) return null;
+        Power power = new Power();
+        power.effect = Power.FLING;
+        float travel = Math.min(1f, age / POWER_TOUCH);
+        power.x = -L.enemyR * 2f + (L.w * 0.70f + L.enemyR * 2f) * travel;
+        power.y = L.h * 0.395f;
+        power.t = Math.min(age, POWER_TOUCH);
+        power.hit = age >= POWER_TOUCH;
+        power.hitT = Math.max(0f, age - POWER_TOUCH);
+        return power;
+    }
+
+    private static void powerLesson(Painter p, GameCore c, Layout L, float fade) {
+        Power power = lessonPower(c, L);
+        if (power == null) return;
+        Renderer.powerup(p, c, L, power, fade);
+        float age = loopTime(c) - POWER_START;
+        if (age < POWER_APPROACH) return;
+        float approach = Math.min(1f, (age - POWER_APPROACH) / (POWER_TOUCH - POWER_APPROACH));
+        float ease = approach * approach * (3f - 2f * approach);
+        float tipY = power.y + (float) Math.sin(power.t * 3.2f) * L.enemyR * 0.22f;
+        float x = power.x + (1f - ease) * L.unit * 3f;
+        float y = tipY + (1f - ease) * L.unit;
+        float alpha = fade * Math.min(1f, (age - POWER_APPROACH) / 0.25f);
+        if (power.hit) alpha *= 1f - power.hitT / Power.POP_TIME;
+        Renderer.touchHint(p, x, y, L.enemyR * 1.05f, 1.10f, alpha, c.clock);
+    }
+
 }

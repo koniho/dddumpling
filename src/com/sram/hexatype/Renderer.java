@@ -408,7 +408,10 @@ final class Renderer extends Draw {
      * mode it carries so you know what you are chasing before you commit a press to it.
      */
     static void powerup(Painter p, GameCore c, Layout L) {
-        Power w = c.power;
+        powerup(p, c, L, c.power, 1f);
+    }
+
+    static void powerup(Painter p, GameCore c, Layout L, Power w, float fade) {
         if (w == null) return;
         float r = L.enemyR * 1.25f;
         float bob = (float) Math.sin(w.t * 3.2f) * L.enemyR * 0.22f;
@@ -420,7 +423,7 @@ final class Renderer extends Draw {
             float t = Math.min(1f, w.hitT / Power.POP_TIME);
             for (int k = 3; k >= 1; k--) {
                 p.strokePoly(star(w.x, y, r * (1f + t * (2f + k)), r * 0.45f, 8, c.clock),
-                        Glyph.withAlpha(hue, (int) (200 * (1f - t) / k)), r * 0.10f);
+                        fadeBy(Glyph.withAlpha(hue, (int) (200 * (1f - t) / k)), fade), r * 0.10f);
             }
             return;
         }
@@ -428,12 +431,12 @@ final class Renderer extends Draw {
         // Halo: layered stars turning slowly, brightest at the core.
         for (int k = 4; k >= 1; k--) {
             p.fillPoly(star(w.x, y, r * (1.1f + 0.42f * k), r * 0.40f, 8, c.clock * 0.55f),
-                    Glyph.withAlpha(hue, 30 / k));
+                    fadeBy(Glyph.withAlpha(hue, 30 / k), fade));
         }
         float pulse = 0.85f + 0.15f * (float) Math.sin(w.t * 6f);
-        p.fillPoly(Glyph.hex(w.x, y, r * pulse), Glyph.withAlpha(hue, 90));
-        p.strokePoly(Glyph.hex(w.x, y, r * pulse), Glyph.withAlpha(INK, 235), r * 0.10f);
-        powerIcon(p, w.effect, w.x, y, r * 0.72f, hue);
+        p.fillPoly(Glyph.hex(w.x, y, r * pulse), fadeBy(Glyph.withAlpha(hue, 90), fade));
+        p.strokePoly(Glyph.hex(w.x, y, r * pulse), fadeBy(Glyph.withAlpha(INK, 235), fade), r * 0.10f);
+        powerIcon(p, w.effect, w.x, y, r * 0.72f, hue, fade);
 
         // The name is far wider than the letter it labels, and the letter drifts on from beyond one
         // edge and off past the other — so it is faded in only once the whole name is inside the
@@ -445,20 +448,20 @@ final class Renderer extends Draw {
         float inside = Math.min(w.x - half - L.playLeft, L.playRight - half - w.x);
         if (inside > 0f) {
             int a = (int) (240 * Math.min(1f, inside / (L.unit * 1.5f)));
-            p.text(w.name(), w.x, y - r * 1.7f, size, Glyph.withAlpha(INK, a),
+            p.text(w.name(), w.x, y - r * 1.7f, size, fadeBy(Glyph.withAlpha(INK, a), fade),
                     Painter.CENTER, true);
         }
     }
 
     /** Distinct, letter-free marks for the three player-facing powerups. */
-    private static void powerIcon(Painter p, int effect, float x, float y, float r, int hue) {
-        int ink = Glyph.withAlpha(INK, 245);
+    private static void powerIcon(Painter p, int effect, float x, float y, float r, int hue, float fade) {
+        int ink = fadeBy(Glyph.withAlpha(INK, 245), fade);
         if (effect == Power.FLURRY) {
             p.fillPoly(star(x, y, r * 0.78f, r * 0.30f, 6, 0f), ink);
             p.fillPoly(star(x - r * 0.62f, y + r * 0.45f, r * 0.28f, r * 0.11f, 5, 0.3f),
-                    Glyph.withAlpha(0xFFFFFFFF, 230));
+                    fadeBy(Glyph.withAlpha(0xFFFFFFFF, 230), fade));
             p.fillPoly(star(x + r * 0.66f, y - r * 0.42f, r * 0.24f, r * 0.09f, 5, -0.2f),
-                    Glyph.withAlpha(0xFFFFFFFF, 230));
+                    fadeBy(Glyph.withAlpha(0xFFFFFFFF, 230), fade));
         } else if (effect == Power.FLING) {
             p.polyline(new float[] {x - r * 0.78f, y + r * 0.38f, x - r * 0.20f, y - r * 0.28f,
                     x + r * 0.55f, y - r * 0.18f}, ink, r * 0.22f);
@@ -466,9 +469,9 @@ final class Renderer extends Draw {
                     x + r * 0.48f, y + r * 0.18f}, ink);
         } else {
             p.fillCircle(x - r * 0.34f, y, r * 0.48f, ink);
-            p.fillCircle(x + r * 0.34f, y, r * 0.48f, Glyph.withAlpha(0xFFFFFFFF, 235));
-            p.fillCircle(x - r * 0.45f, y - r * 0.06f, r * 0.07f, hue);
-            p.fillCircle(x + r * 0.23f, y - r * 0.06f, r * 0.07f, hue);
+            p.fillCircle(x + r * 0.34f, y, r * 0.48f, fadeBy(Glyph.withAlpha(0xFFFFFFFF, 235), fade));
+            p.fillCircle(x - r * 0.45f, y - r * 0.06f, r * 0.07f, fadeBy(hue, fade));
+            p.fillCircle(x + r * 0.23f, y - r * 0.06f, r * 0.07f, fadeBy(hue, fade));
             p.strokePoly(star(x, y + r * 0.62f, r * 0.22f, r * 0.10f, 5, 0f), ink, r * 0.08f);
         }
     }
@@ -481,28 +484,84 @@ final class Renderer extends Draw {
      */
     static void flingHint(Painter p, GameCore c, Layout L) {
         if (!c.showFlingHint()) return;
-        fingerHint(p, c.demoX, c.demoY, L.enemyR * 0.85f, 0.68f, 1f, c.clock);
+        touchHint(p, c.demoX, c.demoY, L.enemyR * 1.05f, 1.10f, 1f, c.clock);
     }
 
-    /** Shared gesture hand: FLING teaching and draggable boss ornaments use one visual language. */
-    static void fingerHint(Painter p, float x, float y, float r, float a, float fade,
+    /** Reference hand with a raised index finger; x/y is always the contact point. */
+    static void touchHint(Painter p, float x, float y, float r, float angle, float fade,
             float clock) {
-        for (int k = 1; k <= 3; k++) {
-            float t = ((clock * 0.9f) + k * 0.33f) % 1f;
-            p.strokeCircle(x, y, r * (0.8f + t * 2.0f),
-                    Glyph.withAlpha(INK, (int) (120 * (1f - t) * fade)), r * 0.22f);
+        if (fade <= 0f || r <= 0f) return;
+        int outline = fadeBy(0xFF171451, fade);
+        int skin = fadeBy(0xFFFFCCB4, fade);
+        float pulse = 1f + 0.06f * (float) Math.sin(clock * 5f);
+        // Open rings leave the palm clear; the bright outer edge keeps navy visible on the sky.
+        for (int i = 0; i < 2; i++) {
+            float radius = r * (0.46f + i * 0.30f) * pulse;
+            float start = angle * 180f / (float) Math.PI + 60f;
+            p.arc(x, y, radius, radius, start, 240f, fadeBy(INK, fade), r * 0.15f);
+            p.arc(x, y, radius, radius, start, 240f, outline, r * 0.09f);
         }
-        float dx = (float) Math.cos(a), dy = (float) Math.sin(a);
-        p.fillPoly(new float[] {
-                x - dy * r * 0.46f, y + dx * r * 0.46f,
-                x + dy * r * 0.46f, y - dx * r * 0.46f,
-                x + dx * r * 2.0f + dy * r * 0.72f, y + dy * r * 2.0f - dx * r * 0.72f,
-                x + dx * r * 2.0f - dy * r * 0.72f, y + dy * r * 2.0f + dx * r * 0.72f,
-        }, Glyph.withAlpha(INK, (int) (150 * fade)));
-        p.fillCircle(x + dx * r * 2.1f, y + dy * r * 2.1f, r * 0.80f,
-                Glyph.withAlpha(INK, (int) (150 * fade)));
-        p.fillCircle(x, y, r * 0.62f, Glyph.withAlpha(INK, (int) (245 * fade)));
-        p.fillCircle(x, y, r * 0.30f, Glyph.withAlpha(0xFF2A2348, (int) (210 * fade)));
+        float[] hand = touchTransform(TOUCH_HAND, x, y, r, angle);
+        p.fillPoly(hand, skin);
+        p.strokePoly(hand, fadeBy(INK, fade), r * 0.19f);
+        p.strokePoly(hand, outline, r * 0.12f);
+        // Short creases distinguish the three folded fingers at small phone sizes.
+        for (int i = 0; i < 3; i++) {
+            float xx = 0.18f + i * 0.35f;
+            p.polyline(touchTransform(new float[] {xx, 0.87f + i * 0.03f,
+                    xx, 1.17f}, x, y, r, angle), outline, r * 0.09f);
+        }
+        p.polyline(touchTransform(new float[] {-0.07f, 0.19f, -0.07f, 0.70f},
+                x, y, r, angle), fadeBy(0xFFFFE9DC, fade), r * 0.065f);
+    }
+
+    private static float[] touchTransform(float[] points, float x, float y, float r, float angle) {
+        float co = (float) Math.cos(angle), si = (float) Math.sin(angle);
+        float[] out = new float[points.length];
+        for (int i = 0; i < points.length; i += 2) {
+            out[i] = x + r * (points[i] * si + points[i + 1] * co);
+            out[i + 1] = y + r * (-points[i] * co + points[i + 1] * si);
+        }
+        return out;
+    }
+
+    private static final float[] TOUCH_HAND = touchHand();
+
+    /** Sample cubic edges once; the same silhouette serves the phone and preview renderer. */
+    private static float[] touchHand() {
+        float[] curves = {
+            -0.18f,-0.08f, 0.18f,-0.08f, 0.18f,0.16f,
+            0.18f,0.4f, 0.18f,0.6f, 0.18f,0.85f,
+            0.18f,0.64f, 0.53f,0.64f, 0.53f,0.86f,
+            0.53f,0.69f, 0.88f,0.70f, 0.88f,0.91f,
+            0.88f,0.78f, 1.23f,0.79f, 1.23f,1.0f,
+            1.23f,1.16f, 1.23f,1.32f, 1.23f,1.48f,
+            1.23f,1.90f, 0.95f,2.0f, 0.95f,2.23f,
+            0.95f,2.29f, 0.95f,2.34f, 0.95f,2.40f,
+            0.95f,2.50f, 0.85f,2.52f, 0.78f,2.52f,
+            0.57f,2.52f, 0.36f,2.52f, 0.15f,2.52f,
+            0.04f,2.52f, 0f,2.46f, 0f,2.36f,
+            0f,2.29f, 0f,2.22f, 0f,2.16f,
+            0f,2.01f, -0.50f,1.91f, -0.68f,1.62f,
+            -0.79f,1.48f, -0.90f,1.34f, -1.0f,1.20f,
+            -1.18f,0.96f, -0.90f,0.82f, -0.74f,1.0f,
+            -0.55f,1.19f, -0.37f,1.37f, -0.18f,1.56f,
+            -0.18f,1.1f, -0.18f,0.6f, -0.18f,0.16f
+        };
+        int steps = 6;
+        float[] out = new float[(curves.length / 6 * steps + 1) * 2];
+        float x = -0.18f, y = 0.16f;
+        out[0] = x; out[1] = y;
+        int at = 2;
+        for (int i = 0; i < curves.length; i += 6) {
+            for (int k = 1; k <= steps; k++) {
+                float t = k / (float) steps, u = 1f - t;
+                out[at++] = u*u*u*x + 3f*u*u*t*curves[i] + 3f*u*t*t*curves[i+2] + t*t*t*curves[i+4];
+                out[at++] = u*u*u*y + 3f*u*u*t*curves[i+1] + 3f*u*t*t*curves[i+3] + t*t*t*curves[i+5];
+            }
+            x = curves[i + 4]; y = curves[i + 5];
+        }
+        return out;
     }
 
     /**

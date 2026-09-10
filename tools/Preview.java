@@ -83,6 +83,10 @@ final class Preview {
         System.out.printf("title demo: lit key=%d amount=%.2f%n", Demo.litKey(c21),
                 Demo.litAmount(c21));
         shot(dir, "49-title-demo", c21, L, w, h, ss);
+        c21.clock = Demo.POWER_START + Demo.POWER_APPROACH + 0.85f;
+        shot(dir, "49b-title-touch-approach", c21, L, w, h, ss);
+        c21.clock = Demo.POWER_START + Demo.POWER_TOUCH + 0.08f;
+        shot(dir, "49c-title-touch-collect", c21, L, w, h, ss);
 
         // After the third press: the finishing bullet visibly travelling from its actual key.
         GameCore c22 = new GameCore(store, 87L);
@@ -852,6 +856,37 @@ final class Preview {
                 }
             }
         }
+
+        GameCore agaric = toBoss(L, Boss.MUSHROOM, 537L, true);
+        agaric.stageBanner = agaric.rosterSceneT = 0f;
+        agaric.boss.mushroomCharge = Boss.MUSHROOM_CHARGE_TIME * 0.5f;
+        shot(dir, "77b-agaric-charged", agaric, L, w, h, ss);
+        agaric.boss.mushroomCharge = 0f;
+        agaric.boss.mushroomCapDX = Boss.bodyR(L) * 0.55f;
+        agaric.boss.mushroomCapDY = -Boss.bodyR(L) * 0.15f;
+        shot(dir, "77c-agaric-bending", agaric, L, w, h, ss);
+        agaric.boss.mushroomCapDX = Boss.bodyR(L) * 2.2f;
+        shot(dir, "77d-agaric-hard-right", agaric, L, w, h, ss);
+        agaric.boss.mushroomCapDX = -Boss.bodyR(L) * 2.2f;
+        shot(dir, "77e-agaric-hard-left", agaric, L, w, h, ss);
+
+        GameCore pulseDemo = toBoss(L, Boss.OCTOPUS, 538L, true);
+        pulseDemo.stageBanner = pulseDemo.rosterSceneT = 0f;
+        for (int i = 0; i < 360 && pulseDemo.boss.octoSweep < 1f; i++)
+            pulseDemo.boss.update(DT, L, pulseDemo.rnd);
+        shot(dir, "76b-octopulse-settled", pulseDemo, L, w, h, ss);
+        for (int i = 0; i < 60 && pulseDemo.boss.octoCharge < 0.5f; i++)
+            pulseDemo.boss.update(DT, L, pulseDemo.rnd);
+        shot(dir, "76c-octopulse-charge", pulseDemo, L, w, h, ss);
+        for (int i = 0; i < 60 && pulseDemo.boss.octoCharge < 1f; i++)
+            pulseDemo.boss.update(DT, L, pulseDemo.rnd);
+        shot(dir, "76d-octopulse-strike", pulseDemo, L, w, h, ss);
+
+        GameCore slimeRest = toBoss(L, Boss.SLIME, 539L, true);
+        slimeRest.stageBanner = slimeRest.rosterSceneT = 0f;
+        slimeRest.boss.body.reset(L.w * 0.5f, Boss.restY(L), Boss.bodyR(L), 2f);
+        slimeRest.boss.hurt = 0f;
+        shot(dir, "60b-slime-reference-rest", slimeRest, L, w, h, ss);
 
         // Dark Divide gets a short visual sequence of its own: impact, charged gesture, split,
         // then two independent bodies with one hurt and its neglected twin about to fire.
