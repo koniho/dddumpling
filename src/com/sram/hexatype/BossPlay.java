@@ -92,6 +92,10 @@ final class BossPlay {
         // that costs a life.
         if (c.boss.boltWants(g)) return true;
         if (c.boss.denies(g)) return true;
+        // A shielded Slime rejects every press, including one made during a word. While open it
+        // only owns genuinely stray presses, so starting a valid enemy word still works.
+        if (c.boss.kind == Boss.SLIME && !c.boss.open()) return true;
+        if (c.boss.kind == Boss.SLIME && c.target == null && !anyWordWants(c, g)) return true;
         // Once an Octopulse arm is moving, every available key answers its reaction prompt.
         if (c.boss.kind == Boss.OCTOPUS && c.boss.octoTarget >= 0
                 && c.boss.octoReach >= 0f) return true;

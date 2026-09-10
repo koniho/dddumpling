@@ -297,6 +297,8 @@ final class Boss {
     float phase;
     /** Decaying flashes: hurt on damage, rage on a rebuff. Separate channels, on purpose. */
     float hurt, rage;
+    float slimeDragPulse, slimeKeyPulse, slimeKeyLock;
+    final float[] slimeBlobPulse = new float[Glyph.COUNT];
     boolean beaten;
     /** A damaged slime stays open while returning home, then answers with a three-bolt volley. */
     boolean slimeRetaliating;
@@ -489,7 +491,8 @@ final class Boss {
         // Starts shut, so the first thing a boss does is arrive rather than be vulnerable. The
         // opening breather is also where the blurb gets read.
         phase = 0f;
-        hurt = rage = 0f;
+        hurt = rage = slimeDragPulse = slimeKeyPulse = slimeKeyLock = 0f;
+        for (int g = 0; g < slimeBlobPulse.length; g++) slimeBlobPulse[g] = 0f;
         beaten = false;
         slimeRetaliating = boltDestroyed = false;
         mushroomShakes = mushroomDirection = 0;
@@ -575,7 +578,8 @@ final class Boss {
         hp = hpMax = 0f;
         age = intro = leaveT = 0f;
         phase = 0f;
-        hurt = rage = 0f;
+        hurt = rage = slimeDragPulse = slimeKeyPulse = slimeKeyLock = 0f;
+        for (int g = 0; g < slimeBlobPulse.length; g++) slimeBlobPulse[g] = 0f;
         beaten = false;
         slimeRetaliating = boltDestroyed = false;
         mushroomShakes = mushroomDirection = 0;
@@ -733,7 +737,8 @@ final class Boss {
 
     /** Slow at first and continuously accelerating until it clears the bottom. */
     float defeatMelt() {
-        float t = (leaveProgress() - 0.38f) / 0.62f;
+        float start = kind == OCTOPUS ? 0.70f : 0.38f;
+        float t = (leaveProgress() - start) / (1f - start);
         if (t <= 0f) return 0f;
         if (t >= 1f) return 1f;
         return t * t * t;
@@ -744,7 +749,7 @@ final class Boss {
         float t = leaveProgress();
         float bounceT = Math.min(1f, t / 0.38f);
         float bounce = (float) Math.pow(Math.sin(bounceT * Math.PI * 3f), 2)
-                * bodyR(L) * 0.10f * (1f - bounceT);
+                * bodyR(L) * 0.05f * (1f - bounceT);
         float melt = defeatMelt();
         float from = baseY(L) + followY;
         return from + bounce + (L.h + bodyR(L) * 2.2f - from) * melt;
@@ -1065,6 +1070,16 @@ final class Boss {
             if (swatted != NONE) return swatted;
         }
         if (!fighting()) return NONE;
+        if (kind == SLIME && (!open() || !asksFor(g))) {
+            slimeKeyLock = 1f;
+            rage = 1f;
+            if (body != null) {
+                hitX = body.centreX();
+                hitY = body.centreY();
+                body.squash(-0.42f);
+            }
+            return REBUFF;
+        }
         if (kind == OCTOPUS && octoTarget >= 0 && octoReach >= 0f && g != octoTarget) {
             int arm = octoAttackArm;
             if (arm < 0) return NONE;
@@ -1137,6 +1152,7 @@ final class Boss {
                 // which is why every press here is a PART and only dragTo returns a HIT.
                 chainAt++;
                 split++;
+                slimeKeyPulse = 0.11f;
                 promptT = promptDelay();
                 // Felt where the chain is being worked, even though nothing is being taken off the
                 // bar yet. A press with no answer at all reads as a press that missed.
@@ -1478,6 +1494,7 @@ final class Boss {
                 // Worth a hit of its own, which is what makes carrying one off a decision rather
                 // than tidying up. A glob is only ever shed by a press, so this cannot feed itself:
                 // damage taken here sheds nothing further.
+                slimeDragPulse = 0.30f;
                 int result = damage(1f);
                 if (!beaten) slimeRetaliating = true;
                 return result;
@@ -1713,7 +1730,9 @@ final class Boss {
     boolean keyDisabled(int g) { return kind == OCTOPUS && (disabledKeys & (1 << g)) != 0; }
 
     /** All player input is locked while a wrong-key retaliation whip is in flight. */
-    boolean playerLocked() { return kind == OCTOPUS && octoLash > 0f; }
+    boolean playerLocked() {
+        return kind == OCTOPUS && octoLash > 0f || kind == SLIME && slimeKeyLock > 0f;
+    }
 
     private void updateOctopus(float dt, Layout L, Random rnd) {
         octoImpact = octoPlayerHit = false;
@@ -2005,7 +2024,23 @@ final class Boss {
                     tx += boast;
                     ty -= Math.abs(boast) * 0.42f;
                 }
-                if (a == octoDyingArm && octoDeath > 0f) {
+                if (beaten) {
+                    // All eight arms return, fan outward, and dive below the screen before the
+                    // delayed body fall begins. Root influence stays zero so they remain attached.
+                    float descend = Math.min(1f, leaveProgress() / 0.62f);
+                    descend = descend * descend * (3f - 2f * descend);
+                    float spreadX = L.playLeft + (L.playRight - L.playLeft)
+                            * (a + 0.5f) / OCTO_ARMS;
+                    float belowY = L.h + bodyR(L) * (1.5f + 0.16f * (a % 3));
+                    float reach = descend * u * u;
+                    tx += (spreadX - tx) * reach;
+                    ty += (belowY - ty) * reach;
+                    float farewell = (float) Math.sin(u * Math.PI * 2.2f
+                            - leaveProgress() * 10f + a * 0.74f)
+                            * L.w * 0.055f * descend * (float) Math.sin(Math.PI * u);
+                    tx += farewell;
+                }
+                if (a == octoDyingArm && octoDeath > 0f && !beaten) {
                     float death = Math.min(1f, octoDeath);
                     // Release the stored drag tension in a quick elastic snap, then let the
                     // detached arm crumple and fall. The overshoot ripple makes the break read.
@@ -2057,7 +2092,7 @@ final class Boss {
                 }
                 // A living arm is physically rooted in the moving soft body. Do not spring the
                 // first node toward it: that produces a visible gap whenever the head rebounds.
-                if (n == 0 && (octoArms & (1 << a)) != 0 && a != octoDyingArm) {
+                if (n == 0 && ((octoArms & (1 << a)) != 0 || beaten) && a != octoDyingArm) {
                     octoX[a][n] = tx;
                     octoY[a][n] = ty;
                     octoVX[a][n] = octoVY[a][n] = 0f;
@@ -2516,6 +2551,11 @@ final class Boss {
     int update(float dt, Layout L, Random rnd) {
         if (kind < 0) return 0;
         hurt = Math.max(0f, hurt - dt * 2.6f);
+        for (int g = 0; g < slimeBlobPulse.length; g++)
+            slimeBlobPulse[g] = Math.max(0f, slimeBlobPulse[g] - dt);
+        slimeDragPulse = Math.max(0f, slimeDragPulse - dt);
+        slimeKeyPulse = Math.max(0f, slimeKeyPulse - dt);
+        slimeKeyLock = Math.max(0f, slimeKeyLock - dt);
         octoCue = octoLock = mushroomShakeCue = mushroomSporeCue = false;
         divideBurst = Math.max(0f, divideBurst - dt * 1.35f);
         for (int i = 0; i < halfHurt.length; i++)
@@ -2566,9 +2606,9 @@ final class Boss {
                 // Pulling below its travelling centre makes the silhouette neck, sag and melt.
                 float melt = defeatMelt();
                 if (melt > 0f) body.pull(body.centreX(), L.h + bodyR(L) * 2.5f,
-                        0.22f + melt * 0.58f);
-                body.jiggle = kind == SLIME ? 0.72f + melt * 0.32f
-                        : JIGGLE[kind] * (1f + melt * 2.6f);
+                        0.11f + melt * 0.29f);
+                body.jiggle = kind == SLIME ? 0.72f + melt * 0.16f
+                        : JIGGLE[kind] * (1f + melt * 1.3f);
             } else if (held >= 0 && etype[held] == E_GLOB) {
                 body.pull(ex[held], ey[held], PULL_K, er[held]);
             } else {

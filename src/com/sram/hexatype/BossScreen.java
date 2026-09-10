@@ -33,6 +33,7 @@ final class BossScreen extends Draw {
 
     /** Tint per boss, taken from the letter each one is a giant version of. */
     private static int tint(Boss b) {
+        if (b.kind == Boss.SLIME) return 0xFF83E51C;
         if (b.kind == Boss.SPLITTER) return DIVIDE_COLOR[0];
         if (b.kind == Boss.OCTOPUS) return 0xFF861735;
         return Glyph.COLOR[Boss.FACE[b.kind]];
@@ -147,6 +148,12 @@ final class BossScreen extends Draw {
         }
         // A hit whitens it for a moment on top of the dent the body is already taking.
         col = Glyph.mix(col, 0xFFFFFFFF, b.hurt * 0.35f);
+        if (b.kind == Boss.SLIME) {
+            float dragRed = Math.min(1f, b.slimeDragPulse / 0.30f);
+            float keyRed = Math.min(1f, b.slimeKeyPulse / 0.11f);
+            float red = Math.max(dragRed * 0.88f, keyRed * 0.66f);
+            col = Glyph.mix(col, 0xFFFF3048, red);
+        }
 
         float r = b.body.radius();
         float cx = b.body.centreX(), cy = b.body.centreY();
@@ -206,9 +213,10 @@ final class BossScreen extends Draw {
                 drawOctopusHead(p, c, b, col, mood, fade);
                 drawCapturedKey(p, L, b, fade);
             }
+            else if (b.kind == Boss.SLIME) drawSlimeBoss(p, c, b, col, mood, fade);
             else Slime.draw(p, b.body, c.clock, col, face, mood, fade);
             if (b.kind == Boss.SLIME && !b.open() && b.rage > 0f) {
-                float[] skin = b.body.outline();
+                float[] skin = slimeBossOutline(b.body);
                 float[] shield = new float[skin.length];
                 float shieldPulse = 1.08f + 0.035f * (float) Math.sin(c.clock * 15f);
                 for (int i = 0; i < skin.length; i += 2) {
@@ -230,6 +238,121 @@ final class BossScreen extends Draw {
 
         ornament(p, c, L, b, fade * b.defeatPromptFade());
         elements(p, c, L, b, fade, col);
+    }
+
+    /** Reference-led first boss: a bright jelly dome settled into a low rippled puddle. */
+    private static void drawSlimeBoss(Painter p, GameCore c, Boss b, int col, float mood,
+            float fade) {
+        float[] skin = slimeBossOutline(b.body);
+        float cx = b.body.centreX(), cy = b.body.centreY();
+        float rx = b.body.radiusX(), ry = b.body.radiusY();
+        int lime = Glyph.mix(col, 0xFFA8F02B, 0.32f);
+        int edge = Glyph.mix(0xFF176A24, col, 0.16f);
+        boolean vulnerable = b.hasGlob();
+
+        p.fillPoly(skin, Glyph.withAlpha(lime, (int) (232 * fade)));
+        p.strokePoly(skin, Glyph.withAlpha(edge, (int) (255 * fade)),
+                b.body.radius() * 0.072f);
+        // A second low curved line suggests the thick puddled lip without rebuilding a body ring.
+        float[] lip = new float[26];
+        for (int i = 0; i < 13; i++) {
+            float u = -1f + i / 6f;
+            float scallop = (float) Math.cos(u * Math.PI * 3f + c.clock * 0.55f);
+            lip[i * 2] = cx + rx * (0.90f + 0.045f * scallop) * u;
+            lip[i * 2 + 1] = cy + ry * (0.49f + 0.105f * (1f - u * u)
+                    + 0.030f * scallop);
+        }
+        p.polyline(lip, Glyph.withAlpha(0xFF4FAA20, (int) (210 * fade)), ry * 0.065f);
+
+        // Large wet reflection and its bright core, concentrated at the upper left.
+        float gleam = 0.96f + 0.05f * (float) Math.sin(c.clock * 2.1f);
+        p.fillEllipse(cx - rx * 0.34f, cy - ry * 0.88f, rx * 0.105f * gleam,
+                ry * 0.20f / gleam, Glyph.withAlpha(0xFFFFFFFF, (int) (198 * fade)));
+        p.fillEllipse(cx - rx * 0.30f, cy - ry * 0.95f, rx * 0.048f, ry * 0.080f,
+                Glyph.withAlpha(0xFFFFFFFF, (int) (238 * fade)));
+        p.fillCircle(cx - rx * 0.12f, cy - ry * 1.22f, ry * 0.040f,
+                Glyph.withAlpha(0xFFFFFFFF, (int) (205 * fade)));
+
+        // Sparse submerged bubbles: asymmetrical and faint, so they read as depth rather than spots.
+        for (int i = 0; i < 9; i++) {
+            float bx = cx + rx * (-0.66f + 0.165f * i);
+            float by = cy + ry * (0.05f + 0.31f * hash(i * 13 + 5));
+            float br = ry * (0.025f + 0.018f * hash(i * 7 + 2));
+            p.fillEllipse(bx, by, br * 1.35f, br,
+                    Glyph.withAlpha(i % 3 == 0 ? 0xFFFFFFFF : 0xFFBDF14A,
+                            (int) ((48 + 42 * hash(i + 19)) * fade)));
+        }
+
+        // The reference face: two deep green button eyes with crisp reflected light.
+        float eyeY = cy - ry * (vulnerable ? 0.07f : 0.10f), eyeDX = rx * 0.27f;
+        float eyeRX = ry * 0.135f, eyeRY = ry * (vulnerable ? 0.205f : 0.175f);
+        int ink = Glyph.withAlpha(0xFF154F19, (int) (255 * fade));
+        for (int side = -1; side <= 1; side += 2) {
+            float ex = cx + side * eyeDX;
+            p.fillEllipse(ex, eyeY, eyeRX, eyeRY, ink);
+            p.fillCircle(ex - eyeRX * 0.25f, eyeY - eyeRY * 0.34f, eyeRX * 0.25f,
+                    Glyph.withAlpha(0xFFFFFFFF, (int) (245 * fade)));
+            if (vulnerable) {
+                // Pinched, raised inner brows make the face read as worried even at phone scale.
+                float innerY = eyeY - eyeRY * 1.18f;
+                p.line(ex - side * eyeRX * 0.82f, innerY - eyeRY * 0.24f,
+                        ex + side * eyeRX * 0.70f, innerY + eyeRY * 0.05f, ink, ry * 0.050f);
+            }
+        }
+        if (vulnerable) {
+            // A trembling open gasp replaces the content smile while the glob can be pulled.
+            float gasp = 1f + 0.07f * (float) Math.sin(c.clock * 9f);
+            p.fillEllipse(cx, cy + ry * 0.18f, rx * 0.105f * gasp, ry * 0.145f / gasp, ink);
+            p.fillEllipse(cx, cy + ry * 0.225f, rx * 0.060f, ry * 0.050f,
+                    Glyph.withAlpha(0xFFFF8099, (int) (225 * fade)));
+            p.fillEllipse(cx - rx * 0.38f, cy + ry * 0.14f, rx * 0.075f, ry * 0.045f,
+                    Glyph.withAlpha(0xFFFF7291, (int) (115 * fade)));
+            p.fillEllipse(cx + rx * 0.38f, cy + ry * 0.14f, rx * 0.075f, ry * 0.045f,
+                    Glyph.withAlpha(0xFFFF7291, (int) (115 * fade)));
+        } else {
+            float[] smile = new float[18];
+            for (int i = 0; i < 9; i++) {
+                float u = -1f + i * 0.25f;
+                smile[i * 2] = cx + rx * 0.13f * u;
+                smile[i * 2 + 1] = cy + ry * (0.08f + 0.105f * (1f - u * u));
+            }
+            p.polyline(smile, ink, ry * 0.050f);
+        }
+    }
+
+    /** Maps the live soft-body wobble onto a domed top and a broad, nearly flat puddle base. */
+    static float[] slimeBossOutline(Softbody body) {
+        float[] raw = body.outline();
+        float[] out = new float[raw.length];
+        float cx = body.centreX(), cy = body.centreY();
+        // Normalize against the fixed rest shape, not the live bounds. Live normalization erased
+        // the very deformation that wraps the skin around a vulnerability glob while it is pulled.
+        float rx = Math.max(1f, body.rest * 2f), ry = Math.max(1f, body.rest);
+        for (int i = 0; i < raw.length; i += 2) {
+            float nx = (raw[i] - cx) / rx, ny = (raw[i + 1] - cy) / ry;
+            float d = Math.max(0.001f, (float) Math.sqrt(nx * nx + ny * ny));
+            float cs = nx / d, sn = ny / d;
+            float elastic = Math.max(0.72f, Math.min(2.60f, d));
+            float lower = Math.max(0f, sn);
+            float skirt = lower * lower * (3f - 2f * lower);
+            // The bottom third spreads sideways like a poured skirt, widest in its side lobes.
+            float flare = skirt * (0.20f + 0.16f * Math.abs(cs));
+            float sideLobe = skirt * (1f - skirt) * 0.18f;
+            float sideSign = cs < 0f ? -1f : 1f;
+            out[i] = cx + cs * rx * (1f + flare) * elastic
+                    + sideSign * rx * sideLobe * elastic;
+            if (sn < 0f) {
+                out[i + 1] = cy + ry * (0.42f + sn * 2.12f) * elastic;
+            } else {
+                // Three broad scallops and smaller living ripples form the uneven puddled hem.
+                float scallop = (float) Math.cos(cs * Math.PI * 3f) * 0.050f * skirt;
+                float liveRipple = (float) Math.sin(cs * 13f + body.motion() * 0.04f)
+                        * 0.018f * skirt;
+                out[i + 1] = cy + ry * (0.42f + sn * 0.34f + scallop + liveRipple)
+                        * elastic;
+            }
+        }
+        return out;
     }
 
     /** A fly-agaric silhouette built around the same live soft-body ring as every other boss. */
@@ -611,7 +734,7 @@ final class BossScreen extends Draw {
             float[] pts = new float[Boss.OCTO_NODES * 2];
             for (int n = 0; n < Boss.OCTO_NODES; n++) { pts[n * 2] = b.octoX[a][n]; pts[n * 2 + 1] = b.octoY[a][n]; }
             boolean dying = a == b.octoDyingArm && b.octoDeath > 0f;
-            if ((b.octoArms & (1 << a)) != 0 || dying) {
+            if ((b.octoArms & (1 << a)) != 0 || dying || b.beaten) {
                 float death = dying ? Math.min(1f, b.octoDeath) : 0f;
                 boolean warning = a == b.octoAttackArm && b.octoTarget >= 0
                         && (b.octoSweep < 1f || b.octoCharge < 1f);
@@ -1220,7 +1343,7 @@ final class BossScreen extends Draw {
     }
 
     private static float[] globPath(Softbody softbody, float x, float y, float grow) {
-        float[] body = softbody.outline();
+        float[] body = slimeBossOutline(softbody);
         int n = body.length / 2, nearest = 0;
         float best = Float.MAX_VALUE;
         for (int q = 0; q < n; q++) {

@@ -1705,6 +1705,12 @@ final class GameCore {
 
     /** Player pressed key {@code g}. Returns true when it advanced a word. */
     boolean tapKey(int g, Layout L) {
+        if (boss.kind == Boss.SLIME && boss.slimeKeyLock > 0f
+                && Roster.active(playRosterFull(), g)) {
+            boss.slimeBlobPulse[g] = 0.15f;
+            keyPress[g] = 1f;
+            return false;
+        }
         if (!keyActive(g) || rosterSceneT > 0f) return false;
         if (state != PLAY) {
             if (state != BONUS) screenKey(g);

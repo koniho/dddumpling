@@ -77,7 +77,7 @@ final class Music {
     /** Driving pulse detected from the recorded guide melody. */
     private static final float BOSS_BPM = 203f;
     /** Playback gain leaves room for one full-level effect without clipping the output mix. */
-    static final float BOSS_GAIN = 0.60f;
+    static final float BOSS_GAIN = 0.72f;
     /** Sanitized stem of the voice memo used for this boss arrangement. */
     static final String BOSS_SOURCE = "sep-4-at-6-47-pm";
     /** One 32-bar cadence in A harmonic minor: i, iv and VI continually pull toward V. */

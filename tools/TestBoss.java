@@ -510,7 +510,7 @@ final class TestBoss extends Check {
         check("while the slime silhouette protrudes around it",
                 c.boss.body.radiusX() > c.boss.bodyW(L) + c.boss.er[inside] * 0.2f);
         float[] skin = BossScreen.globPath(c.boss, c.boss.ex[inside], c.boss.ey[inside], 1f);
-        float[] outline = c.boss.body.outline();
+        float[] outline = BossScreen.slimeBossOutline(c.boss.body);
         boolean samePath = true;
         for (int q = 0; q < skin.length / 4; q++) {
             boolean found = false;

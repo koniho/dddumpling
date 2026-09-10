@@ -678,7 +678,15 @@ final class Renderer extends Draw {
             // Activated keys strobe through the palette rather than merely brightening.
             boolean bossDisabled = c.boss.keyDisabled(g) || c.boss.playerLocked();
             int col = c.flurry() ? rainbowAt(cy, L, c.clock) : Glyph.COLOR[g];
-            if (bossDisabled) col = Glyph.mix(col, BG, 0.72f);
+            if (bossDisabled) {
+                float gray = 1f;
+                if (c.boss.kind == Boss.SLIME && c.boss.slimeKeyLock > 0f) {
+                    float elapsed = 1f - c.boss.slimeKeyLock;
+                    gray = Math.min(1f, elapsed / 0.12f)
+                            * Math.min(1f, c.boss.slimeKeyLock / 0.16f);
+                }
+                col = Glyph.mix(col, 0xFF898992, 0.90f * gray);
+            }
             if (press > 0.02f) {
                 col = Glyph.mix(col, Glyph.cycle(c.clock * 9f + g * 0.13f), press * 0.9f);
             }
@@ -726,7 +734,65 @@ final class Renderer extends Draw {
                 Kawaii.draw(p, g, cx, cy, r * 0.60f * (1f + 0.12f * press), col,
                         1f + 0.20f * press, 0.25f + 0.6f * press);
             }
+            if (c.boss.kind == Boss.SLIME && c.boss.slimeKeyLock > 0f)
+                slimeKeyCover(p, c, L, cx, cy, r, g);
         }
+    }
+
+    /** A launched punishment blob that coats one key, then sags and drips clear. */
+    private static void slimeKeyCover(Painter p, GameCore c, Layout L, float keyX, float keyY,
+            float keyR, int g) {
+        float elapsed = 1f - c.boss.slimeKeyLock;
+        float fly = Math.min(1f, elapsed / 0.18f);
+        fly = 1f - (1f - fly) * (1f - fly) * (1f - fly);
+        float drip = Math.max(0f, Math.min(1f, (elapsed - 0.18f) / 0.82f));
+        float sourceX = c.boss.body == null ? L.w * 0.5f : c.boss.body.centreX();
+        float sourceY = c.boss.body == null ? L.playTop : c.boss.body.centreY();
+        float bx = sourceX + (keyX - sourceX) * fly;
+        float by = sourceY + (keyY - sourceY) * fly + keyR * 1.45f * drip * drip;
+        float fade = 1f - drip * drip * drip;
+        float wobble = (float) Math.sin(c.clock * 7f + g * 1.3f);
+        float tapped = Math.min(1f, c.boss.slimeBlobPulse[g] / 0.15f);
+        int blobColor = Glyph.mix(0xFF83E51C, 0xFFFFE338, tapped);
+        int goo = Glyph.withAlpha(blobColor, (int) (230 * fade));
+        float blobRX = keyR * (1.13f + 0.07f * wobble);
+        float blobRY = keyR * (0.96f - 0.16f * drip);
+        int rim = Glyph.withAlpha(Glyph.mix(0xFF286F25, 0xFFFFC928, tapped * 0.65f),
+                (int) (235 * fade));
+        // The reference is a glossy splat rather than a round drop: broad liquid centre,
+        // alternating reaching lobes, and bulbous tips. The inset repeats the silhouette to
+        // produce the same dark, translucent depth used by the redesigned Slime body.
+        fillKeySlimeForm(p, bx, by, blobRX, blobRY, drip, g, rim, 1f);
+        fillKeySlimeForm(p, bx, by - keyR * 0.02f, blobRX, blobRY, drip, g, goo, 0.89f);
+        if (drip > 0.08f) {
+            float dropY = by + keyR * (0.72f + drip * 0.92f);
+            p.fillEllipse(bx - keyR * 0.40f, dropY, keyR * 0.14f, keyR * 0.25f, goo);
+            p.fillEllipse(bx + keyR * 0.47f, dropY - keyR * 0.24f,
+                    keyR * 0.10f, keyR * 0.19f, goo);
+        }
+        p.fillEllipse(bx - keyR * 0.34f, by - keyR * 0.36f, keyR * 0.25f, keyR * 0.12f,
+                Glyph.withAlpha(0xFFFFFFFF, (int) (145 * fade)));
+    }
+
+    /** Draw the irregular glossy splat silhouette used by a Slime key coating. */
+    private static void fillKeySlimeForm(Painter p, float cx, float cy, float rx, float ry,
+            float drip, int seed, int color, float inset) {
+        final int n = 48;
+        float[] pts = new float[n * 2];
+        float phase = seed * 0.71f;
+        for (int i = 0; i < n; i++) {
+            float a = (float) (Math.PI * 2.0 * i / n);
+            // Six large rounded arms with smaller asymmetry keep it organic instead of star-like.
+            float lobe = 1f + 0.22f * (float) Math.cos(a * 6f + phase)
+                    + 0.07f * (float) Math.sin(a * 3f - phase * 0.6f);
+            float downward = Math.max(0f, (float) Math.sin(a));
+            float x = (float) Math.cos(a) * rx * lobe * inset;
+            float y = (float) Math.sin(a) * ry * lobe * inset
+                    + downward * downward * drip * ry * 0.42f * inset;
+            pts[i * 2] = cx + x;
+            pts[i * 2 + 1] = cy + y;
+        }
+        p.fillPoly(pts, color);
     }
 
     /** Bold directional face used by every key while the Starpath steering lesson is active. */
