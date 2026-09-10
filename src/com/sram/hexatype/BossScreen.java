@@ -868,7 +868,8 @@ final class BossScreen extends Draw {
             if (vulnerable)
                 halfCol = Glyph.mix(halfCol, YELLOW, vulnerabilityPulse(c.clock) * 0.78f);
             halfCol = Glyph.mix(halfCol, 0xFFFFFFFF, hurt * 0.65f);
-            Slime.draw(p, piece, c.clock + i * 0.31f, halfCol, Boss.FACE[b.kind], heat, fade);
+            Slime.cube(p, piece, c.clock + i * 0.31f, halfCol,
+                    b.pieceNodeIndex(i) == b.pinchNode, fade);
             divideSkin(p, c, L, b, i, piece, x, y, piece.radiusX(), piece.radiusY(),
                     halfCol, fade);
             float dangerR = rr * (1.48f - heat * 0.30f);
@@ -893,8 +894,8 @@ final class BossScreen extends Draw {
             if (remnant == null) continue;
             int depth = Math.max(0, Math.min(DIVIDE_COLOR.length - 1, b.nodeDepth(n)));
             int remnantCol = Glyph.mix(DIVIDE_COLOR[depth], BG, 0.36f);
-            Slime.draw(p, remnant, c.clock + n * 0.31f, remnantCol,
-                    Boss.FACE[b.kind], 1f, fade * DIVIDE_REMNANT_ALPHA);
+            Slime.cube(p, remnant, c.clock + n * 0.31f, remnantCol,
+                    false, fade * DIVIDE_REMNANT_ALPHA);
         }
 
         if (b.beaten) divideBreakup(p, c, L, b, fade);
@@ -990,7 +991,7 @@ final class BossScreen extends Draw {
     /** A mirrored vulnerable marker using the slime glob skin treatment, not a floating badge. */
     private static void divideBlob(Painter p, Softbody body, float x, float y, int bodyCol,
             float fade) {
-        float[] patch = globPath(body, x, y, 0.82f);
+        float[] patch = globPath(body, Slime.cubeOutline(body), x, y, 0.82f);
         fillGlobGradient(p, patch, bodyCol, fade);
         float[] outer = new float[patch.length / 2];
         System.arraycopy(patch, 0, outer, 0, outer.length);
@@ -1343,7 +1344,10 @@ final class BossScreen extends Draw {
     }
 
     private static float[] globPath(Softbody softbody, float x, float y, float grow) {
-        float[] body = slimeBossOutline(softbody);
+        return globPath(softbody, slimeBossOutline(softbody), x, y, grow);
+    }
+
+    private static float[] globPath(Softbody softbody, float[] body, float x, float y, float grow) {
         int n = body.length / 2, nearest = 0;
         float best = Float.MAX_VALUE;
         for (int q = 0; q < n; q++) {

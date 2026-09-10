@@ -852,12 +852,15 @@ final class Preview {
         shot(dir, "71-divide-damage", ddHit, L, w, h, ss);
 
         GameCore ddReady = toBoss(L, Boss.SPLITTER, 541L, true);
+        ddReady.stageBanner = ddReady.rosterSceneT = 0f;
         ddReady.boss.pieceHits[0] = Boss.DIVIDE_HITS;
         ddReady.boss.hurt = 0f;
         shot(dir, "72-divide-vulnerable", ddReady, L, w, h, ss);
         float readyX = ddReady.boss.pieceX(0, L), readyY = ddReady.boss.pieceY(0, L);
-        ddReady.boss.beginPinch(300f, readyX, readyY - 150f, readyX, readyY + 150f);
-        ddReady.boss.pinch(345f, readyX, readyY - 172.5f, readyX, readyY + 172.5f, ddReady.rnd);
+        float spread = ddReady.boss.pieceBody(0).spanY() * 1.1f;
+        ddReady.boss.beginPinch(spread, readyX, readyY - spread * 0.5f, readyX, readyY + spread * 0.5f);
+        ddReady.boss.pinch(spread * 1.15f, readyX, readyY - spread * 0.575f,
+                readyX, readyY + spread * 0.575f, ddReady.rnd);
         shot(dir, "72b-divide-finger-morph", ddReady, L, w, h, ss);
 
         GameCore ddSplit = toBoss(L, Boss.SPLITTER, 542L, true);

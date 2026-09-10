@@ -1561,6 +1561,8 @@ final class TestBoss extends Check {
 
         check("it begins as one large slime", c.boss.pieceCount() == 1
                 && c.boss.pieceDepth(0) == 0);
+        check("the cube starts at twice the original body radius",
+                Math.abs(c.boss.pieceR(0, L) - Boss.bodyR(L) * 2f) < 0.01f);
         check("Dark Divide does not use the generic persistent open aura",
                 !(c.boss.open() && c.boss.kind != Boss.SPLITTER));
         check("it cannot be pinched before it is charged", !c.beginBossPinch(100f));
@@ -1576,27 +1578,32 @@ final class TestBoss extends Check {
                 !c.pinchBoss(100f * (Boss.DIVIDE_SCALE - 0.01f), L));
         c.endBossPinch();
         float px = c.boss.pieceX(0, L), py = c.boss.pieceY(0, L);
+        float spread = beforeSpan * 1.1f;
         check("a charged body accepts a pinch over itself",
-                c.beginBossPinch(300f, px, py - 150f, px, py + 150f));
+                c.beginBossPinch(spread, px, py - spread * 0.5f, px, py + spread * 0.5f));
         check("the live body stretches around the gesture fingers",
-                !c.pinchBoss(345f, px, py - 172.5f, px, py + 172.5f, L)
+                !c.pinchBoss(spread * 1.15f, px, py - spread * 0.575f, px, py + spread * 0.575f, L)
                         && c.boss.pieceBody(0).spanY() > beforeSpan);
         for (int i = 0; i < 30; i++) c.boss.update(DT, L, c.rnd);
         float heldSpan = c.boss.pieceBody(0).spanY();
         check("a held pinch remains bounded and conforms to both fingers",
-                Math.abs(heldSpan - 345f) < 8f
+                Math.abs(heldSpan - spread * 1.15f) < 8f
                         && Math.abs(c.boss.pieceBody(0).centreX() - px) < 2f
                         && Math.abs(c.boss.pieceBody(0).centreY() - py) < 2f);
         check("the constrained body keeps its soft jiggle", c.boss.pieceBody(0).motion() > 0f);
-        c.pinchBoss(315f, px, py - 157.5f, px, py + 157.5f, L);
+        c.pinchBoss(spread * 1.05f, px, py - spread * 0.525f, px, py + spread * 0.525f, L);
         check("moving the fingers inward contracts the live shape",
                 c.boss.pieceBody(0).spanY() < heldSpan - 20f);
         check("the required pinch makes two",
-                c.pinchBoss(300f * (Boss.DIVIDE_SCALE + 0.01f), px, py - 190f, px, py + 190f, L)
+                c.pinchBoss(spread * (Boss.DIVIDE_SCALE + 0.01f), px, py - spread * 0.8f, px, py + spread * 0.8f, L)
                         && c.boss.pieceCount() == 2);
         check("both children are smaller than their unsplit parent",
                 c.boss.pieceBody(0).radiusY() < beforeSpan * 0.5f
                         && c.boss.pieceBody(1).radiusY() < beforeSpan * 0.5f);
+
+        check("the first split makes cubes at 62 percent of the starting radius",
+                Math.abs(c.boss.pieceR(0, L) - Boss.bodyR(L) * 2f * 0.62f) < 0.01f
+                        && Math.abs(c.boss.pieceR(1, L) - c.boss.pieceR(0, L)) < 0.01f);
 
         int splitEvents = 1;
         for (int depth = 1; depth < Boss.DIVIDE_LEVELS; depth++) {

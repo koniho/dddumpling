@@ -2338,8 +2338,8 @@ final class Boss {
         divideBody[left] = new Softbody(Softbody.NODES, left + 37);
         divideBody[right] = new Softbody(Softbody.NODES, right + 37);
         float rr = pieceRadiusNode(left, null);
-        divideBody[left].reset(divideX[left], divideY[left], rr, 1.35f);
-        divideBody[right].reset(divideX[right], divideY[right], rr, 1.35f);
+        divideBody[left].reset(divideX[left], divideY[left], rr, 1f);
+        divideBody[right].reset(divideX[right], divideY[right], rr, 1f);
         divideBody[left].jiggle = divideBody[right].jiggle = JIGGLE[SPLITTER] * 1.8f;
         divideBody[left].squash(-0.8f); divideBody[right].squash(-0.8f);
         divideBody[parent] = null; halfWant[parent] = -1;
@@ -2367,7 +2367,8 @@ final class Boss {
 
     private float pieceRadiusNode(int n, Layout L) {
         float root = L == null ? (lastBR > 0f ? lastBR : body == null ? 1f : body.radiusY()) : bodyR(L);
-        return root * (float) Math.pow(0.72f, nodeDepth(n));
+        int depth = nodeDepth(n);
+        return root * 2f * (depth == 0 ? 1f : 0.62f * (float) Math.pow(0.72f, depth - 1));
     }
 
     private boolean singleBolt(Random rnd, float x, float y) {
@@ -2455,8 +2456,8 @@ final class Boss {
     private void updateDivide(float dt, Layout L) {
         boingWeight = -1f;
         if (!dividePlaced) {
-            float x = bodyX(L), y = bodyY(L), r = bodyR(L);
-            body.reset(x, y, r, wide());
+            float x = bodyX(L), y = bodyY(L), r = pieceRadiusNode(0, L);
+            body.reset(x, y, r, 1f);
             body.jiggle = JIGGLE[SPLITTER];
             divideBody[0] = body;
             divideX[0] = x; divideY[0] = y;
@@ -2499,8 +2500,8 @@ final class Boss {
                 divideY[n] += divideVY[n] * step;
                 boolean bounced = false;
                 if (divideX[n] < L.playLeft + r) { divideX[n] = L.playLeft + r; divideVX[n] = Math.abs(divideVX[n]); bounced = true; }
-                if (divideX[n] > L.playRight - r) { divideX[n] = L.playRight - r; divideVX[n] = -Math.abs(divideVX[n]); bounced = true; }
-                if (divideY[n] < top) { divideY[n] = top; divideVY[n] = Math.abs(divideVY[n]); bounced = true; }
+                if (divideX[n] > L.playRight - r * 1.32f) { divideX[n] = L.playRight - r * 1.32f; divideVX[n] = -Math.abs(divideVX[n]); bounced = true; }
+                if (divideY[n] < top + r * 0.5f) { divideY[n] = top + r * 0.5f; divideVY[n] = Math.abs(divideVY[n]); bounced = true; }
                 if (divideY[n] > bottom - r) { divideY[n] = bottom - r; divideVY[n] = -Math.abs(divideVY[n]); bounced = true; }
                 if (bounced) {
                     pb.squash(0.34f);

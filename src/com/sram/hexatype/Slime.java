@@ -114,6 +114,80 @@ final class Slime extends Draw {
                 fadeBy(Glyph.withAlpha(0xFFFFFFFF, 185), fade));
     }
 
+    /** Project a rounded cube from the live ring; dents and finger stretches stay in the skin. */
+    static void cube(Painter p, Softbody b, float clock, int tint, boolean vulnerable, float fade) {
+        if (fade <= 0f) return;
+        float cx = b.centreX(), cy = b.centreY();
+        float rx = b.radiusX(), ry = b.radiusY(), core = Math.min(rx, ry);
+        float[] front = cubeOutline(b);
+        int count = front.length / 2;
+        float dx = core * 0.28f, dy = -core * 0.28f;
+        cubeFacet(p, front, count * 5 / 8, count * 7 / 8, dx, dy,
+                fadeBy(Glyph.mix(tint, 0xFFFFFFFF, 0.38f), fade));
+        cubeFacet(p, front, count * 7 / 8, count + count / 8, dx, dy,
+                fadeBy(Glyph.mix(tint, INK, 0.25f), fade));
+        p.fillPoly(front, Glyph.withAlpha(tint, (int) (225 * fade)));
+        int rim = fadeBy(Glyph.mix(tint, 0xFFFFFFFF, 0.52f), fade);
+        p.strokePoly(front, rim, core * 0.035f);
+        p.fillEllipse(cx - rx * 0.49f, cy - ry * 0.64f, core * 0.23f, core * 0.075f,
+                Glyph.withAlpha(0xFFFFFFFF, (int) (150 * fade)));
+        p.fillEllipse(cx - rx * 0.63f, cy - ry * 0.47f, core * 0.065f, core * 0.12f,
+                Glyph.withAlpha(0xFFFFFFFF, (int) (195 * fade)));
+        p.fillEllipse(cx + rx * 0.38f, cy + ry * 0.69f, core * 0.30f, core * 0.065f,
+                Glyph.withAlpha(0xFFFFFFFF, (int) (48 * fade)));
+        int face = fadeBy(0xFF251D3D, fade);
+        float ex = core * 0.29f, ey = cy - core * 0.10f;
+        for (int side = -1; side <= 1; side += 2) {
+            float x = cx + side * ex;
+            p.fillEllipse(x, ey, core * 0.085f, core * (vulnerable ? 0.145f : 0.10f), face);
+            p.fillCircle(x - core * 0.018f, ey - core * 0.035f, core * 0.023f,
+                    fadeBy(0xFFFFFFFF, fade));
+            if (vulnerable)
+                p.line(x - side * core * 0.09f, ey - core * 0.26f,
+                        x + side * core * 0.09f, ey - core * 0.19f, face, core * 0.035f);
+        }
+        if (vulnerable) {
+            p.fillEllipse(cx, cy + core * 0.27f, core * 0.105f, core * 0.135f, face);
+            p.fillEllipse(cx + core * 0.53f, cy + core * 0.03f,
+                    core * 0.05f, core * 0.10f, fadeBy(0xFFC4EEFF, fade));
+        } else {
+            p.polyline(new float[] {cx - core * 0.12f, cy + core * 0.22f,
+                    cx, cy + core * 0.27f, cx + core * 0.12f, cy + core * 0.22f},
+                    face, core * 0.035f);
+        }
+    }
+
+    static float[] cubeOutline(Softbody b) {
+        float rx = b.radiusX(), ry = b.radiusY();
+        float[] source = b.outline(), front = new float[source.length];
+        int count = front.length / 2;
+        for (int i = 0; i < count; i++) {
+            float angle = Softbody.TAU * i / count;
+            float co = (float) Math.cos(angle), si = (float) Math.sin(angle);
+            float c4 = co * co * co * co, s4 = si * si * si * si;
+            float round = (float) Math.pow(c4 * c4 + s4 * s4, -0.125);
+            // Add the rest-shape projection rather than magnifying a pulled node's displacement.
+            front[i * 2] = source[i * 2] + rx * co * (round - 1f);
+            front[i * 2 + 1] = source[i * 2 + 1] + ry * si * (round - 1f);
+        }
+        return front;
+    }
+
+    private static void cubeFacet(Painter p, float[] ring, int start, int end,
+            float dx, float dy, int color) {
+        int count = ring.length / 2, length = end - start + 1;
+        float[] facet = new float[length * 4];
+        for (int i = 0; i < length; i++) {
+            int at = ((start + i) % count) * 2;
+            facet[i * 2] = ring[at] + dx;
+            facet[i * 2 + 1] = ring[at + 1] + dy;
+            int back = (length * 2 - 1 - i) * 2;
+            facet[back] = ring[at];
+            facet[back + 1] = ring[at + 1];
+        }
+        p.fillPoly(facet, color);
+    }
+
     /**
      * The soft body's own structure, drawn faintly inside it: the node ring and the spokes out to it.
      *
