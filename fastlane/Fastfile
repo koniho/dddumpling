@@ -67,6 +67,8 @@ platform :android do
     client = Supply::Client.make_from_config(params: { json_key_data: play_credentials, timeout: 300 })
     begin
       client.begin_edit(package_name: "com.dddumpling.game")
+      UI.message("Uploaded AAB version codes: #{client.aab_version_codes.join(', ')}")
+      UI.message("Uploaded APK version codes: #{client.apks_version_codes.join(', ')}")
       tracks = client.tracks
       tracks.each do |track|
         versions = Array(track.releases).flat_map { |release| Array(release.version_codes) }

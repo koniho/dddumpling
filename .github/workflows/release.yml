@@ -70,11 +70,15 @@ jobs:
 
       - name: Build signed production bundle
         env:
+          DDDUMPLING_PLAY_CONFIG: ""
           HEXATYPE_KEYSTORE: build/release.keystore
           HEXATYPE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           HEXATYPE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           HEXATYPE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./build-bundle.sh
+
+      - name: Verify offline production bundle
+        run: python3 tools/verify-offline-bundle.py build/DDDUMPLING.aab
 
       - name: Build developer APK
         env:
