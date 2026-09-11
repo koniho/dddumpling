@@ -66,6 +66,8 @@ src/com/dddumpling/game/SettingsUi.java
 src/com/dddumpling/game/Draw.java
 src/com/dddumpling/game/Sky.java
 src/com/dddumpling/game/Lands.java
+src/com/dddumpling/game/SeaSkits.java
+src/com/dddumpling/game/LandPicker.java
 src/com/dddumpling/game/Slime.java
 src/com/dddumpling/game/Skits.java
 src/com/dddumpling/game/Shape.java

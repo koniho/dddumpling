@@ -74,6 +74,35 @@ final class Preview {
             }
         }
 
+        GameCore defaultPicker = new GameCore(new Mem(), 839L);
+        defaultPicker.collected = Collect.add(defaultPicker.collected, Collect.BOSS_FIRST);
+        shot(dir, "84-land-picker-default", defaultPicker, L, w, h, ss);
+        for (int unlocked = 1; unlocked <= 3; unlocked++) {
+            GameCore picker = new GameCore(new Mem(), 840L);
+            for (int boss = 0; boss < unlocked; boss++) picker.collected = Collect.add(picker.collected, Collect.BOSS_FIRST + boss);
+            LandPicker.select(picker, unlocked);
+            for (int frame = 0; frame < 180; frame++) picker.update(DT, L);
+            shot(dir, "84-land-picker-" + unlocked, picker, L, w, h, ss);
+        }
+
+        for (int kind = 0; kind < Lands.COUNT; kind++) {
+            GameCore bossLoss = toBoss(L, kind, 855L + kind, true);
+            bossLoss.lives = 1;
+            bossLoss.takeHit(L.w * 0.5f, L);
+            step(bossLoss, L, 0.6f);
+            shot(dir, "85-boss-loss-confetti-" + kind, bossLoss, L, w, h, ss);
+        }
+
+        for (int skit = 0; skit < 2; skit++) {
+            GameCore sea = new GameCore(new Mem(), 870L);
+            sea.startGame(); sea.stage = 12 + skit; sea.landBlend = 1f;
+            float[] moments = {0.12f, 0.48f, 0.78f};
+            for (int sample = 0; sample < moments.length; sample++) {
+                sea.stageBanner = GameCore.BANNER_TIME * (1f - moments[sample]);
+                shot(dir, "86-sea-skit-" + skit + "-" + sample, sea, L, w, h, ss);
+            }
+        }
+
         GameCore landFade = new GameCore(new Mem(), 823L);
         landFade.startGame();
         for (int sample = 0; sample < 3; sample++) {

@@ -25,7 +25,7 @@ final class Pause extends Draw {
         c.endStroke(); c.boss.release(); c.stars.endDrag();
         c.stars.left = c.stars.right = false;
         c.steamer.lidDrag = 0;
-        c.caseDragging = c.titleTouchDown = false;
+        c.caseDragging = c.titleTouchDown = c.landPickerDragging = false;
         if (c.sound != null) { c.sound.bossCharge(0); c.sound.rocket(0); }
     }
     static void open(GameCore c) {
@@ -44,10 +44,7 @@ final class Pause extends Draw {
         }
     }
     private static void end(GameCore c) {
-        if (c.score > c.best) {
-            c.best = c.score;
-            if (c.store != null) c.store.saveBest(c.best);
-        }
+        LandPicker.recordBest(c);
         release(c); resume(c); c.closeSettings();
         c.boss.leave(); c.buddy.leave(); c.power = null;
         c.mode = -1; c.modeLeft = 0; c.particles.clear();

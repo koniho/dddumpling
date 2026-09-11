@@ -162,6 +162,8 @@ final class GameCore {
     interface Store extends Progress.Store {
         int loadBest();
         void saveBest(int best);
+        default int loadLandBest(int land) { return land == 0 ? loadBest() : 0; }
+        default void saveLandBest(int land, int value) { if (land == 0) saveBest(value); }
         float loadSpeed();
         void saveSpeed(float speed);
         int loadBgm();
@@ -412,6 +414,10 @@ final class GameCore {
     private final float[] titleSpringVX = new float[TITLE_LETTERS];
     private final float[] titleSpringVY = new float[TITLE_LETTERS];
     int score, best, lives, stage, combo, maxCombo;
+    int landChoice, runStartLand;
+    final int[] landBests = new int[Lands.COUNT];
+    boolean landPickerDragging, landPickerMoved;
+    float landPickerSlide, landPickerX;
     /** Words squished this run. The game-over screen calls them squishes, so this does too. */
     int squishes;
     /** Words released so far in the current stage; capped at {@link #stageQuota()}. */
@@ -1291,6 +1297,8 @@ final class GameCore {
         }
         if (store != null) {
             best = store.loadBest();
+            for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
+            landBests[0] = Math.max(landBests[0], best);
             speed = BuildFlags.DEVELOPER ? clampSpeed(store.loadSpeed()) : 1f;
             bgmChoice = BuildFlags.DEVELOPER
                     ? Math.max(0, Math.min(Music.NAMES.length - 1, store.loadBgm()))
@@ -1543,14 +1551,18 @@ final class GameCore {
     }
 
     void startGame() {
-        progress.startRun();
+        runStartLand = LandPicker.unlocked(this, landChoice) ? landChoice : 0;
+        landChoice = runStartLand;
+        best = landBests[runStartLand];
+        landPickerDragging = false;
+        progress.startRun(runStartLand);
         Pause.resume(this);
         state = PLAY;
         runFullRoster = fullRoster;
         time = 0;
         score = 0;
         squishes = 0;
-        stage = 1;
+        stage = runStartLand * Boss.EVERY + 1;
         spawnedThisStage = 0;
         resolvedThisStage = 0;
         stageGap = 0;
@@ -2227,6 +2239,7 @@ final class GameCore {
         // sky jump when it starts or stops.
         skyClock += dt * (powerActive() ? Power.SKY_RATE : 1f);
         landBlend = Math.min(1f, landBlend + dt / Lands.FADE_TIME);
+        landPickerSlide *= Math.max(0f, 1f - dt * 12f);
 
         for (int i = 0; i < Glyph.COUNT; i++) {
             keyPress[i] = decay(keyPress[i], dt * 5.5f);
@@ -2920,10 +2933,7 @@ final class GameCore {
         if (bossVictory != null) boss = new Boss();
         else boss.leave();
         power = null;
-        if (score > best) {
-            best = score;
-            if (store != null) store.saveBest(best);
-        }
+        LandPicker.recordBest(this);
     }
 
     private void spawn(Layout L) {

@@ -18,11 +18,12 @@ final class BossVictory extends Draw {
         float cy = b.body.centreY();
         float beat = c.clock * 7f;
 
-        confetti(p, cx, cy, r, beat, fade, kind);
+        confetti(p, cx, cy, r, beat, fade, kind, false);
         p.save();
         p.translate(tauntX(kind, beat, r), tauntY(kind, beat, r));
         BossScreen.body(p, c, L, b, fade);
         p.restore();
+        confetti(p, cx, cy, r, beat, fade, kind, true);
     }
 
     /** Side-to-side swagger; each silhouette gets a slightly different taunting rhythm. */
@@ -41,15 +42,16 @@ final class BossVictory extends Draw {
     }
 
     private static void confetti(Painter p, float x, float y, float r, float t, float fade,
-            int kind) {
-        for (int i = 0; i < 12; i++) {
+            int kind, boolean front) {
+        for (int i = 0; i < 36; i++) {
+            if ((i % 3 != 0) != front) continue;
             float phase = t * (0.16f + (i % 3) * 0.025f) + i * 1.91f + kind;
-            float xx = x + (float) Math.sin(phase) * r * (1.05f + (i % 4) * 0.13f);
+            float xx = x + (float) Math.sin(phase) * r * (1.90f + (i % 4) * 0.25f);
             float fall = (t * 0.10f + i * 0.137f) % 1f;
-            float yy = y - r * 1.15f + fall * r * 2.25f;
+            float yy = y - r * 1.80f + fall * r * 3.50f;
             int color = i % 3 == 0 ? GOLD : i % 3 == 1 ? ROSE : 0xFF8FD9A0;
-            p.fillPoly(Glyph.hex(xx, yy, r * 0.09f),
-                    Glyph.withAlpha(color, (int) (205 * fade)));
+            p.fillPoly(Glyph.hex(xx, yy, r * (front ? 0.09f : 0.07f)),
+                    Glyph.withAlpha(color, (int) ((front ? 205 : 140) * fade)));
         }
     }
 }

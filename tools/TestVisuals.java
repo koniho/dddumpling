@@ -5,6 +5,48 @@ final class TestVisuals extends Check {
 
     static void titleScreen(Layout L) {
         group("title choreography");
+        Mem landStore = new Mem();
+        landStore.best = 123;
+        GameCore lands = new GameCore(landStore, 717L);
+        check("new players have no land picker", !LandPicker.visible(lands));
+        check("locked land cannot be selected", !LandPicker.unlocked(lands, 1));
+        landStore.collected = lands.collected = Collect.add(lands.collected, Collect.BOSS_FIRST);
+        check("a boss friend unlocks its next land", LandPicker.visible(lands) && LandPicker.count(lands) == 2);
+        LandPicker.select(lands, 2);
+        check("later locked lands remain unavailable", lands.landChoice == 0);
+        int titleColor = Lands.background(lands);
+        LandPicker.select(lands, 1);
+        for (int frame = 0; frame < 180; frame++) lands.update(DT, L);
+        check("land selection leaves the title palette unchanged", Lands.background(lands) == titleColor);
+        for (int layer = 0; layer < GameCore.CLOUD_LAYERS; layer++)
+            check("selection preserves intro clouds " + layer, Lands.cloudTint(lands, layer) == Sky.CLOUD_TINT[layer]);
+        check("the removed play button has no hit target", !LandPicker.down(lands, L, L.w * 0.5f, L.h * 0.62f));
+        lands.screenKey(Kawaii.DUMPLING);
+        check("a character key starts the chosen land", lands.starting());
+        for (int frame = 0; frame < 180 && lands.state == GameCore.TITLE; frame++) lands.update(DT, L);
+        check("land starts are fresh runs at their actual stage", lands.stage == 6 && lands.score == 0
+                && lands.lives == GameCore.START_LIVES && !lands.boss.active() && lands.runStartLand == 1);
+        check("the chosen land fades in only after play starts", lands.landBlend == 0f
+                && Lands.background(lands) == Draw.BG);
+        check("land difficulty uses the selected stage", lands.travelSeconds() == Pacing.travelSeconds(6, lands.speed));
+        lands.score = 456;
+        LandPicker.recordBest(lands);
+        check("land scores stay out of the full-run record", landStore.best == 123 && landStore.landBests[1] == 456);
+        GameCore fresh = new GameCore(landStore, 718L);
+        check("app launch defaults to full run while retaining unlocks and records", fresh.landChoice == 0
+                && fresh.best == 123 && fresh.landBests[1] == 456 && LandPicker.visible(fresh));
+        LandPicker.down(fresh, L, L.w * 0.6f, LandPicker.cardY(L));
+        LandPicker.move(fresh, L, L.w * 0.3f);
+        LandPicker.up(fresh, L, L.w * 0.3f, LandPicker.cardY(L));
+        check("swiping selects only an unlocked postcard", fresh.landChoice == 1 && !fresh.landPickerDragging);
+        fresh.landPickerSlide = 0f;
+        float firstX = LandPicker.cardX(fresh, L, 0);
+        LandPicker.down(fresh, L, firstX, LandPicker.cardY(L));
+        LandPicker.up(fresh, L, firstX, LandPicker.cardY(L));
+        check("overlapping icons select the nearest centre", fresh.landChoice == 0);
+        fresh.caseOpen = true;
+        check("the open display case hides the picker", !LandPicker.visible(fresh));
+
         boolean ordered = true;
         for (int i = 0; i < Demo.LEN; i++) {
             ordered &= Demo.ACQUIRE[i] < Demo.PRESS[i]

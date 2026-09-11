@@ -18,6 +18,9 @@ abstract class Check {
         public void saveProgress(byte[] data) { progress = data.clone(); }
         public String progressReplica() { return "test"; }
         int best;
+        int[] landBests = new int[Lands.COUNT];
+        public int loadLandBest(int land) { return land == 0 ? best : landBests[land]; }
+        public void saveLandBest(int land, int value) { if (land == 0) saveBest(value); else landBests[land] = value; }
         int saves;
         float speed = 1f;
         int bgm;

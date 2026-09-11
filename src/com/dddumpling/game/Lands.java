@@ -18,16 +18,17 @@ final class Lands extends Draw {
         float t = c.landBlend;
         return t * t * (3f - 2f * t);
     }
+    static int visualStage(GameCore c) { return c.state == GameCore.TITLE ? c.landChoice * Boss.EVERY + 1 : c.stage; }
     static int background(GameCore c) {
         return c.state == GameCore.TITLE ? Draw.BG
-                : Glyph.mix(c.landFromBg, BG[forStage(c.stage)], blend(c));
+                : Glyph.mix(c.landFromBg, BG[forStage(visualStage(c))], blend(c));
     }
     static int tint(GameCore c) {
-        return Glyph.mix(c.landFromTint, TINT[forStage(c.stage)], blend(c));
+        return Glyph.mix(c.landFromTint, TINT[forStage(visualStage(c))], blend(c));
     }
     static int cloudTint(GameCore c, int layer) {
         if (c.state == GameCore.TITLE) return Sky.CLOUD_TINT[layer];
-        int target = Glyph.mix(Sky.CLOUD_TINT[layer], TINT[forStage(c.stage)], 0.36f);
+        int target = Glyph.mix(Sky.CLOUD_TINT[layer], TINT[forStage(visualStage(c))], 0.36f);
         return Glyph.mix(c.landCloudFrom[layer], target, blend(c));
     }
     static void fromIntro(GameCore c) {
@@ -38,12 +39,12 @@ final class Lands extends Draw {
         c.landBlend = 0f;
     }
     static void transition(GameCore c, int stage) {
-        if (forStage(c.stage) == forStage(stage)) return;
+        if (forStage(visualStage(c)) == forStage(stage)) return;
         for (int layer = 0; layer < c.landCloudFrom.length; layer++)
             c.landCloudFrom[layer] = cloudTint(c, layer);
         c.landFromBg = background(c);
         c.landFromTint = tint(c);
-        c.landFrom = forStage(c.stage);
+        c.landFrom = forStage(visualStage(c));
         c.landBlend = 0f;
     }
 
@@ -53,7 +54,7 @@ final class Lands extends Draw {
         p.clipRect(0, L.playTop, L.w, L.deckTop);
         float mix = blend(c);
         if (mix < 1f && c.landFrom >= 0) sceneryLayer(p, c, L, c.landFrom, 1f - mix);
-        if (mix > 0f) sceneryLayer(p, c, L, forStage(c.stage), mix);
+        if (mix > 0f) sceneryLayer(p, c, L, forStage(visualStage(c)), mix);
         p.restore();
     }
 
@@ -89,8 +90,12 @@ final class Lands extends Draw {
 
     /** Shared scenery props also give each land's little stage skits a familiar toy. */
     static void prop(Painter p, int land, float x, float y, float r, int a, float t) {
-        int col = Glyph.withAlpha(Glyph.mix(Sky.CLOUD_TINT[1], TINT[land], 0.5f), a);
-        int light = Glyph.withAlpha(0xFFE6FFE5, a * 2 / 3);
+        prop(p, land, x, y, r, a, t, false);
+    }
+
+    static void prop(Painter p, int land, float x, float y, float r, int a, float t, boolean silhouette) {
+        int col = Glyph.withAlpha(silhouette ? 0xFF9A8FAF : Glyph.mix(Sky.CLOUD_TINT[1], TINT[land], 0.5f), a);
+        int light = silhouette ? 0 : Glyph.withAlpha(0xFFE6FFE5, a * 2 / 3);
         if (land == 0) {
             // Glassy puddles and floating goo pearls.
             p.fillEllipse(x, y + r * 0.6f, r * 1.35f, r * 0.40f, col);
@@ -101,7 +106,7 @@ final class Lands extends Draw {
         } else if (land == 1) {
             // Rounded jelly blocks with an offset dark face, like the dividing cube.
             p.fillPoly(pill(x + r * 0.13f, y + r * 0.18f, r, r * 0.9f, 6),
-                    Glyph.withAlpha(0xFF624A91, a));
+                    (silhouette ? col : Glyph.withAlpha(0xFF624A91, a)));
             p.fillPoly(pill(x, y, r, r * 0.9f, 6), col);
             p.line(x - r * 0.58f, y - r * 0.60f, x + r * 0.48f, y - r * 0.60f,
                     light, r * 0.08f);
@@ -129,10 +134,10 @@ final class Lands extends Draw {
             p.strokeCircle(x + r * 0.8f, y - r, r * 0.27f, light, r * 0.04f);
             p.strokeCircle(x + r * 0.4f, y - r * 1.6f, r * 0.13f, light, r * 0.035f);
         } else {
-            p.fillPoly(pill(x, y + r * 0.48f, r * 0.24f, r * 0.8f, 8), light);
+            p.fillPoly(pill(x, y + r * 0.48f, r * 0.24f, r * 0.8f, 8), silhouette ? col : light);
             p.fillEllipse(x, y, r * 1.12f, r * 0.65f, col);
             p.fillEllipse(x, y + r * 0.21f, r, r * 0.15f,
-                    Glyph.withAlpha(0xFF775968, a));
+                    (silhouette ? col : Glyph.withAlpha(0xFF775968, a)));
             for (int k = 0; k < 3; k++)
                 p.fillCircle(x + (k - 1) * r * 0.51f, y - r * (k == 1 ? 0.31f : 0.12f),
                         r * 0.12f, light);
@@ -141,6 +146,8 @@ final class Lands extends Draw {
 
     static void skit(Painter p, int stage, float x, float y, float r, float t, int a) {
         int land = forStage(stage), variant = skitFor(stage);
+        if (land == 2 && variant == 1) { SeaSkits.hide(p, x, y, r, t, a); return; }
+        if (land == 2 && variant == 2) { SeaSkits.trudge(p, x, y, r, t, a); return; }
         float arc = (float)Math.sin(t * Math.PI);
         float hop = Math.abs((float)Math.sin(t * Math.PI * 2f));
         int actor = land == 0 ? Kawaii.BLOB : land == 1 ? Kawaii.SQUISHY

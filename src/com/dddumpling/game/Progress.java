@@ -20,7 +20,7 @@ final class Progress {
     private ProgressData data = new ProgressData();
     private Sink sink;
     private boolean healthy = true, running, stageDone;
-    private int stage, boss = -1;
+    private int stage, boss = -1, startLand;
     private String minigame;
     private double bossSeconds;
     private boolean firstHit;
@@ -67,11 +67,15 @@ final class Progress {
         data.maximum("migrated", 1);
         changed();
     }
-    void startRun() {
+    private String scoreKey() { return scoreKey(startLand); }
+    private static String scoreKey(int land) { return land == 0 ? "best_score" : "best_score_land_" + land; }
+    void startRun() { startRun(0); }
+    void startRun(int land) {
         if (!available()) return;
         if (running) finishRun(0, true);
+        startLand = land;
         running = true; stage = 0; boss = -1; minigame = null;
-        event("runs_started"); enterStage(1);
+        event("runs_started"); enterStage(land * Boss.EVERY + 1);
     }
     void enterStage(int next) {
         if (!available() || !running || next == stage) return;
@@ -85,7 +89,7 @@ final class Progress {
     }
     void completeStage(int score) {
         if (!available() || !running || stageDone) return;
-        stageDone = true; data.maximum("best_score", score);
+        stageDone = true; data.maximum(scoreKey(), score);
         event("stages_completed"); changed();
     }
     void bossTime(double seconds) {
@@ -118,17 +122,17 @@ final class Progress {
     void reward(int who, boolean fresh, String source, int score) {
         if (!available() || !running || who < 0 || who >= Collect.COUNT) return;
         data.increment(replica, "prize_" + who, 1);
-        data.maximum("best_score", score);
+        data.maximum(scoreKey(), score);
         event("rewards_total"); event(fresh ? "rewards_new" : "rewards_duplicate");
         event("rewards_" + source); changed();
     }
     void checkpoint(int score) {
         if (!available()) return;
-        data.maximum("best_score", score); changed();
+        data.maximum(scoreKey(), score); changed();
     }
     void finishRun(int score, boolean abandoned) {
         if (!available() || !running) return;
-        data.maximum("best_score", score);
+        data.maximum(scoreKey(), score);
         event(abandoned ? "runs_abandoned" : "runs_finished");
         if (!abandoned) event("run_end_" + bucket(stage));
         if (boss >= 0) {
@@ -149,8 +153,11 @@ final class Progress {
     void apply(GameCore c) {
         if (!available()) return;
         boolean modified = false;
-        int best = Math.max(c.best, ProgressData.integer(data.maximum("best_score")));
-        modified |= c.best != best; c.best = best;
+        for (int land = 0; land < Lands.COUNT; land++) {
+            int best = Math.max(c.landBests[land], ProgressData.integer(data.maximum(scoreKey(land))));
+            modified |= c.landBests[land] != best; c.landBests[land] = best;
+        }
+        c.best = c.landBests[c.state == GameCore.TITLE ? c.landChoice : c.runStartLand];
         long known = 0;
         for (int i = 0; i < Collect.COUNT; i++) {
             int count = Math.max(c.collectionCounts[i], ProgressData.integer(data.total("prize_" + i)));
@@ -165,7 +172,8 @@ final class Progress {
         modified |= c.collectTotal != total || c.steamer.opens != opens || c.stars.wins != wins;
         c.collectTotal = total; c.steamer.opens = opens; c.stars.wins = wins;
         if (c.store != null && modified) {
-            c.store.saveBest(c.best); c.store.saveCollected(c.collected);
+            for (int land = 0; land < Lands.COUNT; land++) c.store.saveLandBest(land, c.landBests[land]);
+            c.store.saveCollected(c.collected);
             c.store.saveCollectionCounts(c.collectionCounts); c.store.saveCollectTotal(c.collectTotal);
             c.store.saveSteamerOpens(c.steamer.opens); c.store.saveStarWins(c.stars.wins);
         }

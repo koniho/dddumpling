@@ -163,6 +163,14 @@ public class MainActivity extends Activity implements GameCore.Store {
         prefs.edit().putInt(KEY_BEST, best).apply();
     }
 
+    @Override public int loadLandBest(int land) {
+        return land == 0 ? loadBest() : prefs.getInt("best_land_" + land, 0);
+    }
+    @Override public void saveLandBest(int land, int value) {
+        if (land == 0) saveBest(value);
+        else prefs.edit().putInt("best_land_" + land, value).apply();
+    }
+
     @Override public float loadSpeed() {
         return prefs.getFloat(KEY_SPEED, 1f);
     }

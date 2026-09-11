@@ -38,7 +38,7 @@ final class Screens extends Draw {
         // Gated on starting() rather than on the timer: the send-off holds the title state open
         // after the fade is spent, and reading the timer alone snapped the screen back to full.
         float fade = c.starting() ? c.startFade / GameCore.START_FADE : 1f;
-        scrim(p, L, (int) (210 * fade));
+        scrim(p, L, (int) (210 * fade), Lands.background(c));
         float s = L.unit;
         float cx = L.w / 2f;
         bubblyTitle(p, c, L, cx, L.h * 0.100f, fade);
@@ -60,6 +60,7 @@ final class Screens extends Draw {
         Showcase.icon(p, c, L, shut);
         Showcase.draw(p, c, L, open);
         PrivacyUi.draw(p, c, L);
+        LandPicker.draw(p, c, L);
 
         // Anchored above the danger line rather than off the deck: the dashed line shows
         // faintly through the scrim, and text sitting on it looks struck through. The lines swap

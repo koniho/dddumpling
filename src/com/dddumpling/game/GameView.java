@@ -140,6 +140,8 @@ public class GameView extends View {
             return true;
         }
 
+        if (handleLandPicker(ev, action)) return true;
+
         if (core.state == GameCore.TITLE) {
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN
                     || action == MotionEvent.ACTION_MOVE) {
@@ -246,6 +248,30 @@ public class GameView extends View {
             core.tapKey(key, layout);
             tick();
         }
+        return true;
+    }
+
+    private int landPointer = -1;
+    private boolean handleLandPicker(MotionEvent ev, int action) {
+        if (action == MotionEvent.ACTION_DOWN) {
+            landPointer = -1;
+            if (!LandPicker.down(core, layout, ev.getX(), ev.getY())) return false;
+            if (core.landPickerDragging) landPointer = ev.getPointerId(0);
+            tick(); return true;
+        }
+        if (landPointer < 0) return false;
+        if (!LandPicker.visible(core) || action == MotionEvent.ACTION_CANCEL) {
+            core.landPickerDragging = false; landPointer = -1; return true;
+        }
+        int index = ev.findPointerIndex(landPointer);
+        if (index < 0) { core.landPickerDragging = false; landPointer = -1; return true; }
+        int before = core.landChoice;
+        if (action == MotionEvent.ACTION_MOVE) LandPicker.move(core, layout, ev.getX(index));
+        else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP
+                && ev.getPointerId(ev.getActionIndex()) == landPointer) {
+            LandPicker.up(core, layout, ev.getX(index), ev.getY(index)); landPointer = -1;
+        }
+        if (before != core.landChoice) tick();
         return true;
     }
 

@@ -132,6 +132,25 @@ final class TestProgress extends Check {
         check("reporting failure cannot stop local progress", p.available() && p.count("runs_finished") == 1);
     }
     private static void production(Layout L) {
+        Mem landStore = new Mem(); landStore.best = 500;
+        landStore.collected = Collect.add(0L, Collect.BOSS_FIRST);
+        GameCore landRun = new GameCore(landStore, 619L);
+        LandPicker.select(landRun, 1);
+        landRun.startGame();
+        check("land starts report their real starting stage", landRun.progress.count("stage_reached_1_4") == 0
+                && landRun.progress.count("stage_reached_5_9") == 1);
+        landRun.score = 900; landRun.progress.checkpoint(landRun.score);
+        landRun.lives = 1; landRun.takeHit(L.w * 0.5f, L); landRun.toTitle();
+        check("production land scores do not contaminate full runs", landRun.progress.maximum("best_score") == 500
+                && landRun.progress.maximum("best_score_land_1") == 900 && landStore.best == 500);
+        GameCore reopened = new GameCore(landStore, 620L);
+        check("production app launch keeps unlocks but resets selection", reopened.landChoice == 0
+                && reopened.best == 500 && reopened.landBests[1] == 900 && LandPicker.visible(reopened));
+        try {
+            ProgressData remoteLand = new ProgressData(); remoteLand.maximum("best_score_land_1", 1200);
+            reopened.progress.restore(remoteLand.encode(), reopened);
+            check("merged land records remain separate", reopened.best == 500 && reopened.landBests[1] == 1200);
+        } catch (IOException e) { check("land score merge succeeds", false); }
         Mem fresh = new Mem(); new GameCore(fresh, 12);
         check("fresh tracking does not write a fake legacy score or unlock the tutorial roster", fresh.saves == 0);
         Mem store = new Mem(); store.collected = 1L; store.collectionCounts[0] = 7; store.collectTotal = 7; store.best = 400;
