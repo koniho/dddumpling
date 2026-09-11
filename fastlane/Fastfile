@@ -1,5 +1,7 @@
 require "json"
 require "rexml/document"
+require "fileutils"
+require "tmpdir"
 
 def play_credentials
   credentials = ENV.fetch("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON", "")
@@ -43,6 +45,10 @@ def play_upload_options(root, channel = "closed")
   aab = File.join(root, "build/DDDUMPLING.aab")
   UI.user_error!("Build or download the signed production AAB first") unless File.file?(aab)
   credentials = play_credentials
+  metadata = Dir.mktmpdir("play-notes-", File.join(root, "build"))
+  destination = File.join(metadata, "en-US", "changelogs")
+  FileUtils.mkdir_p(destination)
+  FileUtils.cp(notes, File.join(destination, "#{version}.txt"))
   {
     package_name: package,
     json_key_data: credentials,
@@ -50,7 +56,7 @@ def play_upload_options(root, channel = "closed")
     track: play_test_track(channel),
     release_status: "completed",
     version_name: "#{name} (#{version})",
-    metadata_path: File.join(root, "app-store/google-play"),
+    metadata_path: metadata,
     skip_upload_apk: true,
     skip_upload_metadata: true,
     skip_upload_images: true,

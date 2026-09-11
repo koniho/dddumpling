@@ -34,6 +34,7 @@ Dir.mktmpdir do |root|
   ENV["GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"] = JSON.generate(type: "service_account", client_email: "test@example.invalid", private_key: "fixture")
   ENV["GITHUB_REF"] = "refs/tags/v0.1.10"
   ENV.delete("PLAY_CLOSED_TRACK")
+  FileUtils.mkdir_p("#{root}/app-store/google-play/screenshots")
   options = play_upload_options(root)
   assert(play_upload_options(root, "internal")[:track] == "internal", "explicit internal uploads")
   ENV["PLAY_CLOSED_TRACK"] = "playtesters"
@@ -47,6 +48,8 @@ Dir.mktmpdir do |root|
   assert(options[:track] == "alpha" && options[:release_status] == "completed", "closed track by default")
   assert(options[:skip_upload_metadata] && options[:skip_upload_images] && options[:skip_upload_screenshots], "preserve store listing")
   assert(!options[:skip_upload_changelogs] && options[:version_name] == "0.1.10 (11)", "publish versioned notes")
+  assert(Dir.children(options[:metadata_path]) == ["en-US"], "shared assets are not treated as languages")
+  assert(File.read(File.join(options[:metadata_path], "en-US/changelogs/11.txt")) == File.read(notes), "stage the exact release notes")
   ENV["GITHUB_REF"] = "refs/tags/v0.1.9"
   rejects("Release tag must match") { play_upload_options(root) }
   ENV["GITHUB_REF"] = "refs/heads/main"
