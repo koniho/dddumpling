@@ -63,3 +63,8 @@ upload options without network calls. GitHub uses Ruby 3.3 and locked gem depend
 References:
 - https://developers.google.com/android-publisher/getting_started
 - https://docs.fastlane.tools/actions/supply/
+
+After adding or rotating the GitHub secret, manually run **Verify Google Play access**.
+It authenticates and reads internal-track version codes without uploading or publishing a release.
+A successful check confirms API access; publishing permissions are fully exercised on the next
+new-version upload. This workflow can also be used to diagnose account or API setup errors.
