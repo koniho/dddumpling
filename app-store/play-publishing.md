@@ -125,3 +125,17 @@ code, Play Games application metadata, and network permissions. Enabling Play Ga
 in a future release requires deliberately updating this workflow guard.
 The access check also lists uploaded APK/AAB version codes, including artifacts
 not assigned to a testing track.
+
+## Retry an upload without rebuilding
+
+If publishing fails, run **Verify Google Play access** first and inspect the uploaded
+version codes and track state. If the failed transaction did not retain the new
+version, **Upload existing release to closed testing** can upload its signed GitHub
+release AAB using the latest publishing fixes. The tag must match the manifest
+version on the selected ref. This workflow checks the offline bundle again and
+publishes only to the configured closed track. Do not use it to re-upload a
+version already retained by Play.
+
+Fastlane stages only the selected English changelog into a temporary metadata
+folder. The store-assets root also contains `screenshots`, which must never be
+passed to Fastlane as a language directory.
