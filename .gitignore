@@ -17,3 +17,10 @@ res/raw/bgm.*
 .private/
 tools/__pycache__/
 tools/play-deps/
+
+# Fastlane dependencies, generated reports and local Play credentials.
+.bundle/
+vendor/bundle/
+fastlane/report.xml
+fastlane/README.md
+fastlane/.env*

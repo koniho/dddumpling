@@ -1,0 +1,52 @@
+require "json"
+require "rexml/document"
+
+def play_upload_options(root)
+  manifest = REXML::Document.new(File.read(File.join(root, "AndroidManifest.xml"))).root
+  package = manifest.attributes["package"]
+  UI.user_error!("Unexpected Android package") unless package == "com.dddumpling.game"
+  version = manifest.attributes["android:versionCode"]
+  name = manifest.attributes["android:versionName"]
+  ref = ENV.fetch("GITHUB_REF", "")
+  if ref.start_with?("refs/tags/") && ref != "refs/tags/v#{name}"
+    UI.user_error!("Release tag must match AndroidManifest.xml versionName: v#{name}")
+  end
+  notes = File.join(root, "app-store/google-play/en-US/changelogs", "#{version}.txt")
+  UI.user_error!("Add release notes at #{notes}") unless File.file?(notes)
+  text = File.read(notes).strip
+  UI.user_error!("Release notes must contain 1–500 characters") unless (1..500).cover?(text.length)
+  aab = File.join(root, "build/DDDUMPLING.aab")
+  UI.user_error!("Build or download the signed production AAB first") unless File.file?(aab)
+  credentials = ENV.fetch("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON", "")
+  UI.user_error!("Set GitHub secret GOOGLE_PLAY_SERVICE_ACCOUNT_JSON; see app-store/play-publishing.md") if credentials.empty?
+  begin
+    key = JSON.parse(credentials)
+  rescue JSON::ParserError
+    UI.user_error!("Google Play credentials must be a valid service-account JSON key")
+  end
+  unless key["type"] == "service_account" && key["client_email"] && key["private_key"]
+    UI.user_error!("Google Play credentials must be a service-account JSON key")
+  end
+  {
+    package_name: package,
+    json_key_data: credentials,
+    aab: aab,
+    track: "internal",
+    release_status: "completed",
+    release_name: "#{name} (#{version})",
+    metadata_path: File.join(root, "app-store/google-play"),
+    skip_upload_apk: true,
+    skip_upload_metadata: true,
+    skip_upload_images: true,
+    skip_upload_screenshots: true,
+    skip_upload_changelogs: false
+  }
+end
+
+default_platform(:android)
+platform :android do
+  desc "Upload the signed production bundle and release notes to internal testing"
+  lane :internal do
+    upload_to_play_store(**play_upload_options(File.expand_path("..", __dir__)))
+  end
+end

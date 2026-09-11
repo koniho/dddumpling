@@ -5,11 +5,33 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      upload_to_play:
+        description: Upload this build to Google Play internal testing
+        type: boolean
+        default: false
+
 
 permissions:
   contents: write
 
 jobs:
+  validate_fastlane:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      - name: Verify upload configuration without publishing
+        env:
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+          FASTLANE_OPT_OUT_USAGE: "1"
+        run: |
+          bundle exec ruby tools/test-fastlane.rb
+          bundle exec fastlane lanes
+
   release:
     runs-on: ubuntu-latest
     steps:
@@ -80,3 +102,39 @@ jobs:
               "DDDUMPLING-${GITHUB_REF_NAME}-developer.apk" \
               --generate-notes --title "DDDUMPLING ${GITHUB_REF_NAME}"
           fi
+
+  upload_internal:
+    needs: [release, validate_fastlane]
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.upload_to_play == true
+    runs-on: ubuntu-latest
+    concurrency:
+      group: google-play-internal
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check Google Play credentials
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -z "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::Add GOOGLE_PLAY_SERVICE_ACCOUNT_JSON in repository secrets. See app-store/play-publishing.md."
+            exit 1
+          fi
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: DDDUMPLING-${{ github.ref_name }}
+          path: build/play-artifact
+      - name: Select the signed production bundle
+        run: cp "build/play-artifact/DDDUMPLING-${GITHUB_REF_NAME}.aab" build/DDDUMPLING.aab
+      - name: Publish to internal testing
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+          FASTLANE_OPT_OUT_USAGE: "1"
+        run: bundle exec fastlane android internal

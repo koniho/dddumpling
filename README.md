@@ -334,3 +334,8 @@ Both builds include the title screen privacy-policy link. Scores and collections
 upload signing key. CI uses the existing `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS`,
 `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_PASSWORD` secrets. Keep this key backed up privately.
 `./build-bundle.sh --unsigned` is for local bundle validation only, not Play upload.
+
+Version tags also publish the signed AAB to **Google Play internal testing** through fastlane.
+Manual workflow runs have an optional `upload_to_play` checkbox (off by default).
+See [Play publishing setup](app-store/play-publishing.md) for service-account credentials,
+versioned release notes, and retry instructions. Public releases remain manual.
