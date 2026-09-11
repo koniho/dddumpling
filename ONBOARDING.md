@@ -46,7 +46,7 @@ casts).
 
 ## Minute 2: understand the one architectural rule
 
-**All logic and all drawing are pure Java behind the [`Painter`](src/com/sram/hexatype/Painter.java)
+**All logic and all drawing are pure Java behind the [`Painter`](src/com/dddumpling/game/Painter.java)
 interface.** The APK implements `Painter` with `android.graphics.Canvas`; the harness implements it
 with a software rasterizer. One render path, two backends — so a PNG from the harness is what the
 phone draws.
@@ -188,7 +188,7 @@ is done**, without asking.
 ## When it crashes on device
 
 **You cannot see this app's crashes.** Termux's logcat only shows its own UID, and there is no adb or
-dumpsys here. That is why [`Crash.java`](src/com/sram/hexatype/Crash.java) renders the stack trace on
+dumpsys here. That is why [`Crash.java`](src/com/dddumpling/game/Crash.java) renders the stack trace on
 screen. If the user reports a crash, ask them to read that screen.
 
 ## Working alongside other agents

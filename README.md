@@ -3,9 +3,9 @@
 A kawaii typing-attack game for Android, built entirely on-device in Termux — no Gradle, no
 Android Studio, no PC.
 
-> The game is called DDDUMPLING on screen and in the launcher. The package, the directory and
-> every identifier are still `hexatype` — renaming those would change the package name, which
-> Android treats as a different app, so an install would not upgrade an existing one.
+> The game and launcher name is DDDUMPLING; the Android package is `com.dddumpling.game`.
+> This pre-store package change installs as a separate app from earlier development builds,
+> with separate scores and collections. The build output is still named `hexatype.apk`.
 
 Cute words fall from the sky. Each "letter" is one of six characters — dumpling, strawberry,
 cat, grapes, squishy, blob — with its own colour and face. You type by tapping the matching
@@ -86,7 +86,7 @@ It does two things:
 Reading the PNGs is the point: that loop is seconds, and it needs no device.
 
 This works because all logic and all drawing are pure Java behind the
-[`Painter`](src/com/sram/hexatype/Painter.java) interface. The APK implements it with
+[`Painter`](src/com/dddumpling/game/Painter.java) interface. The APK implements it with
 `android.graphics.Canvas`; `tools/RasterPainter` implements it with a software rasterizer.
 **One render path, two backends** — so a PNG from the harness is what the phone draws. Renders
 are deterministic (fixed RNG seeds, no wall clock), so a change that should not alter them can
@@ -171,7 +171,7 @@ installed and silently skips it otherwise. Termux add-ons must come from the sam
 Termux itself — mixing F-Droid and GitHub builds fails with a signature mismatch.
 
 **You cannot see this app's crashes.** Termux's `logcat` only shows its own UID, and there is
-no `dumpsys` here, so [`Crash.java`](src/com/sram/hexatype/Crash.java) renders the stack trace
+no `dumpsys` here, so [`Crash.java`](src/com/dddumpling/game/Crash.java) renders the stack trace
 on screen instead. If it crashes, read that screen.
 
 ## Layout of the code
@@ -237,7 +237,7 @@ file has to be added there. `build.sh` globs `src/`, so it needs no updating.
 | `Font` | 5x7 bitmap font — **ASCII subset only**, see below |
 | `Png` / `Wav` | minimal writers |
 
-`tools/` shares the `com.sram.hexatype` package so it can reach package-private state, but it
+`tools/` shares the `com.dddumpling.game` package so it can reach package-private state, but it
 is compiled separately and is not in `build.sh`'s source list.
 
 One thing worth knowing before you write any on-screen text: `tools/Font` has a bitmap per

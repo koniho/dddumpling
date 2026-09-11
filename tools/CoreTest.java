@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /**
  * Runs every headless assertion suite. Each suite is a Test* class; the tally and helpers are in
@@ -22,6 +22,7 @@ final class CoreTest {
         L.compute(1080, 2340, 0, 60, 0, 90);
         only = args.length > 0 && !args[0].isEmpty() ? args[0].toLowerCase() : null;
 
+        group("Back", () -> TestBack.navigation(L));
         group("Rules", () -> {
             TestRules.layout(L);
             TestRules.targeting(L);

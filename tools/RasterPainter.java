@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /**
  * {@link Painter} backed by a plain int[] framebuffer, so frames can be rendered off-device

@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /** Long runs: perfect play, and ten minutes of random input. */
 final class TestSoak extends Check {

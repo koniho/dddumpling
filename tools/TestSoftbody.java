@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /**
  * The boss slime's soft body: that pressure holds its area, that it settles, that it cannot be

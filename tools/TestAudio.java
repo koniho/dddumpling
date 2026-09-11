@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /** Effect normalisation and which sound fires on which event. */
 final class TestAudio extends Check {

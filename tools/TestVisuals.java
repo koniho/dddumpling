@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /** Sky and clouds, the lock indicator, the edge glow and the settings panel. */
 final class TestVisuals extends Check {

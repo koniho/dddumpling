@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /** Stage waves, the between-stages minigame, accuracy and danger warnings. */
 final class TestStages extends Check {
@@ -819,6 +819,25 @@ final class TestStages extends Check {
         c.startGame();
         check("no steamer damage at the start", c.steamer.hits == 0 && c.steamer.opens == 0);
         check("the first steamer target is ten", c.steamer.goal() == 10);
+        Steamer capped = new Steamer();
+        capped.reset();
+        for (int expected : new int[] {10, 12, 14, 16, 18, 20, 20, 20}) {
+            check("steamer target rises only to twenty", capped.goal() == expected);
+            for (int hit = 0; hit < expected; hit++) {
+                capped.press(capped.leftKey); capped.press(capped.rightKey);
+            }
+            check("the capped target still arms and frees the lid", capped.swipeReady
+                    && capped.hits == expected && capped.swipe() == Steamer.FREED);
+            capped.update(Steamer.FREE_TIME);
+        }
+        check("successes keep counting after reaching the cap", capped.opens == 8);
+        Mem cappedSave = new Mem(); cappedSave.steamerOpens = Integer.MAX_VALUE;
+        Steamer restoredCap = new GameCore(cappedSave, 123L).steamer;
+        check("old high-difficulty saves are capped immediately", restoredCap.goal() == 20);
+        restoredCap.swipeReady = true; restoredCap.swipe();
+        check("large lifetime totals cannot overflow and reset difficulty",
+                restoredCap.opens == Integer.MAX_VALUE && restoredCap.goal() == 20);
+
 
         // Clearing a wave drops into the minigame, not straight into the next stage.
         c.spawnedThisStage = c.stageQuota();

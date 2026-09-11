@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /** The thirty stories, and the popup that shows them. */
 final class TestLore extends Check {

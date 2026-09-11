@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /**
  * A player with stated limits, so the difficulty curve can be asserted instead of argued about.

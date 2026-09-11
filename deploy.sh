@@ -8,7 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 APK=hexatype.apk
-PKG=com.sram.hexatype
+PKG=com.dddumpling.game
 ACTIVITY=$PKG/.MainActivity
 
 ./build.sh

@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /**
  * Shared test harness: the pass/fail tally, the assertion and grouping helpers, the
