@@ -312,3 +312,25 @@ The workflow runs the complete test and render harness through `build.sh`, insta
 build tools, and signs with the project keystore stored as encrypted GitHub repository secrets. Keep
 that keystore backed up: Android will not install an update signed with a different key over an
 existing installation.
+
+### Google Play builds
+
+Tag pushes (`v*`) and manual runs of **Build Android release** produce two signed files:
+
+- `DDDUMPLING-<ref>.aab`: production bundle to upload to Play Console.
+- `DDDUMPLING-<ref>-developer.apk`: direct installation with developer controls enabled.
+
+Tag builds attach both files to the GitHub Release; manual builds provide them in the workflow
+artifact. They share the application ID and signing key, so the developer APK replaces an existing
+local installation rather than installing alongside it. Play App Signing may use a different app
+signing key, in which case switching from a Play installation requires uninstalling first.
+
+`./build.sh` defaults to developer mode for local installs; `./build.sh --production` disables
+settings and playtest actions at compile time and ignores saved developer speed/music preferences.
+Both builds include the title screen privacy-policy link. Scores and collections remain local.
+
+`./build-bundle.sh` creates `build/DDDUMPLING.aab`, targeting API 36. Set `HEXATYPE_KEYSTORE`,
+`HEXATYPE_KEY_ALIAS`, `HEXATYPE_KEYSTORE_PASSWORD` and optionally `HEXATYPE_KEY_PASSWORD` to the
+upload signing key. CI uses the existing `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS`,
+`ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_PASSWORD` secrets. Keep this key backed up privately.
+`./build-bundle.sh --unsigned` is for local bundle validation only, not Play upload.

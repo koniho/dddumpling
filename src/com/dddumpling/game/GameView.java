@@ -126,6 +126,17 @@ public class GameView extends View {
             return true;
         }
         int action = ev.getActionMasked();
+        if (action == MotionEvent.ACTION_DOWN && PrivacyUi.hit(core, layout, ev.getX(), ev.getY())) {
+            try {
+                getContext().startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse(PrivacyUi.URL)));
+            } catch (android.content.ActivityNotFoundException unavailable) {
+                new android.app.AlertDialog.Builder(getContext()).setTitle("Privacy policy")
+                        .setMessage(PrivacyUi.URL + "\nSupport: dddumpling.play@gmail.com")
+                        .setPositiveButton("OK", null).show();
+            }
+            return true;
+        }
 
         if (core.state == GameCore.TITLE) {
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN
@@ -147,7 +158,7 @@ public class GameView extends View {
         if (handleBonusSwipe(ev, action)) return true;
 
         // The settings panel needs drags, for the speed slider.
-        if (core.settingsOpen) {
+        if (BuildFlags.DEVELOPER && core.settingsOpen) {
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN
                     || action == MotionEvent.ACTION_MOVE) {
                 int i = ev.getActionIndex();
@@ -579,6 +590,7 @@ public class GameView extends View {
     }
 
     private void handleSettings(float x, float y, boolean dragging) {
+        if (!BuildFlags.DEVELOPER) return;
         settingsUi.compute(layout, Music.NAMES.length);
         int hit = settingsUi.hit(x, y);
         if (hit == SettingsUi.HIT_SLIDER) {

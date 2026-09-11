@@ -120,6 +120,7 @@ final class CaseUi {
      * thing here that took several runs to build, so it is behind a confirmation.
      */
     static void tapClear(GameCore c) {
+        if (!BuildFlags.DEVELOPER) return;
         if (!c.clearArmed) {
             c.clearArmed = true;
             return;

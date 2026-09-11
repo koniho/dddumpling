@@ -25,8 +25,8 @@ jobs:
       - name: Install Android build tools
         run: |
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "platforms;android-35" "build-tools;35.0.0"
-          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
+            "platforms;android-36" "build-tools;36.0.0"
+          echo "$ANDROID_HOME/build-tools/36.0.0" >> "$GITHUB_PATH"
 
       - name: Restore signing key
         env:
@@ -35,22 +35,35 @@ jobs:
           mkdir -p build
           printf "%s" "$KEYSTORE_BASE64" | base64 --decode > build/release.keystore
 
-      - name: Build and verify APK
+      - name: Build signed production bundle
         env:
           HEXATYPE_KEYSTORE: build/release.keystore
           HEXATYPE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           HEXATYPE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           HEXATYPE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./build.sh
+        run: ./build-bundle.sh
 
-      - name: Name release APK
-        run: cp hexatype.apk "DDDUMPLING-${GITHUB_REF_NAME}.apk"
+      - name: Build developer APK
+        env:
+          HEXATYPE_KEYSTORE: build/release.keystore
+          HEXATYPE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          HEXATYPE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          HEXATYPE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./build.sh --developer
 
-      - name: Upload workflow artifact
+      - name: Name upload files
+        run: |
+          cp build/DDDUMPLING.aab "DDDUMPLING-${GITHUB_REF_NAME}.aab"
+          cp hexatype.apk "DDDUMPLING-${GITHUB_REF_NAME}-developer.apk"
+
+      - name: Upload workflow artifacts
         uses: actions/upload-artifact@v6
         with:
           name: DDDUMPLING-${{ github.ref_name }}
-          path: DDDUMPLING-${{ github.ref_name }}.apk
+          if-no-files-found: error
+          path: |
+            DDDUMPLING-${{ github.ref_name }}.aab
+            DDDUMPLING-${{ github.ref_name }}-developer.apk
 
       - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -59,9 +72,11 @@ jobs:
         run: |
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" \
-              "DDDUMPLING-${GITHUB_REF_NAME}.apk" --clobber
+              "DDDUMPLING-${GITHUB_REF_NAME}.aab" \
+              "DDDUMPLING-${GITHUB_REF_NAME}-developer.apk" --clobber
           else
             gh release create "$GITHUB_REF_NAME" \
-              "DDDUMPLING-${GITHUB_REF_NAME}.apk" \
+              "DDDUMPLING-${GITHUB_REF_NAME}.aab" \
+              "DDDUMPLING-${GITHUB_REF_NAME}-developer.apk" \
               --generate-notes --title "DDDUMPLING ${GITHUB_REF_NAME}"
           fi

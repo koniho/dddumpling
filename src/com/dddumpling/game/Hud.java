@@ -38,9 +38,11 @@ final class Hud extends Draw {
                 Painter.CENTER, true);
         // Small hex-and-dot to the right: this readout is the settings button. Hung off the label's
         // own baseline rather than the HUD line, so it travels with the text it belongs to.
-        float gx = L.w / 2f + s * 2.5f, gy = labelY - type(s * 0.20f);
-        p.strokePoly(Glyph.hex(gx, gy, s * 0.34f), Glyph.withAlpha(INK, 95), s * 0.05f);
-        p.fillCircle(gx, gy, s * 0.10f, Glyph.withAlpha(INK, 120));
+        if (BuildFlags.DEVELOPER) {
+            float gx = L.w / 2f + s * 2.5f, gy = labelY - type(s * 0.20f);
+            p.strokePoly(Glyph.hex(gx, gy, s * 0.34f), Glyph.withAlpha(INK, 95), s * 0.05f);
+            p.fillCircle(gx, gy, s * 0.10f, Glyph.withAlpha(INK, 120));
+        }
         // One pip per word in this stage's wave, filling as each is dealt with.
         //
         // Left out entirely on a boss stage: there is no wave there, so the quota is never counted

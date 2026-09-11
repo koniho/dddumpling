@@ -15,6 +15,7 @@ if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi
 set -euo pipefail
 cd "$(dirname "$0")"
 
+PRODUCTION=0
 QUIET=0
 SUITE=
 FRAMES=
@@ -22,6 +23,7 @@ CROP=
 RULES_ONLY=0
 while [ $# -gt 0 ]; do
     case "$1" in
+        --production) PRODUCTION=1; shift ;;
         -q|--quiet)  QUIET=1; shift ;;
         -s|--suite)  SUITE="$2"; shift 2 ;;
         -f|--frames) FRAMES="$2"; shift 2 ;;
@@ -33,7 +35,8 @@ done
 
 # Every pure-Java file, by hand. A new pure file has to be added here or the harness fails to
 # compile while the APK builds fine.
-PURE="src/com/dddumpling/game/Pause.java
+PURE="src/com/dddumpling/game/PrivacyUi.java
+src/com/dddumpling/game/Pause.java
 src/com/dddumpling/game/Glyph.java
 src/com/dddumpling/game/Roster.java
 src/com/dddumpling/game/Kawaii.java
@@ -86,13 +89,21 @@ src/com/dddumpling/game/Renderer.java"
 rm -rf build/harness
 mkdir -p build/harness out
 # shellcheck disable=SC2086
-javac -nowarn -d build/harness $PURE tools/*.java
+DEVELOPER=true
+[ "$PRODUCTION" = 0 ] || DEVELOPER=false
+sh tools/build-flags.sh build/harness-flags "$DEVELOPER"
+javac -nowarn -d build/harness $PURE tools/*.java build/harness-flags/com/dddumpling/game/BuildFlags.java
 
 # Quiet drops the per-assertion ok lines and the per-frame wrote lines, keeping failures, the
 # indented printf diagnostics, DOES NOT FIT and the tally.
 filter() {
     if [ "$QUIET" = 1 ]; then grep -Ev "^  ok |^  wrote " || true; else cat; fi
 }
+
+if [ "$PRODUCTION" = 1 ]; then
+    java -cp build/harness com.dddumpling.game.TestProduction | filter
+    exit 0
+fi
 
 [ "$QUIET" = 1 ] || echo "=== rules ==="
 java -cp build/harness com.dddumpling.game.CoreTest "$SUITE" | filter

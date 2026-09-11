@@ -59,6 +59,7 @@ final class Screens extends Draw {
         float open = fade * caseIn(c);
         Showcase.icon(p, c, L, shut);
         Showcase.draw(p, c, L, open);
+        PrivacyUi.draw(p, c, L);
 
         // Anchored above the danger line rather than off the deck: the dashed line shows
         // faintly through the scrim, and text sitting on it looks struck through. The lines swap
@@ -610,6 +611,7 @@ final class Screens extends Draw {
      * panel. It is also the one screen nobody reads at arm's length mid-play.
      */
     static void settings(Painter p, GameCore c, Layout L) {
+        if (!BuildFlags.DEVELOPER) return;
         float s = L.unit;
         SettingsUi ui = new SettingsUi();
         ui.compute(L, Music.NAMES.length);

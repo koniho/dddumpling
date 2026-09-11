@@ -478,7 +478,7 @@ final class GameCore {
      * free tempo reset to be spent the moment a wave starts.
      */
     boolean pushReady() {
-        return state == PLAY && !pushUsed && !settingsOpen && !pendingBonus && warnLevel > 0f;
+        return state == PLAY && !pushUsed && !(BuildFlags.DEVELOPER && settingsOpen) && !pendingBonus && warnLevel > 0f;
     }
 
     // ---- between-stages minigame -------------------------------------------
@@ -1083,6 +1083,7 @@ final class GameCore {
      * Goes through {@link #startFrenzy} so it is the real thing, not a simulation of it.
      */
     void playtestMode(int effect, Layout L) {
+        if (!BuildFlags.DEVELOPER) return;
         if (state != PLAY) return;
         power = null;
         settingsOpen = false;
@@ -1101,6 +1102,7 @@ final class GameCore {
      * Anything less and the interlude plays over words that are still falling behind the scrim.
      */
     void playtestStars(Layout L) {
+        if (!BuildFlags.DEVELOPER) return;
         if (state != PLAY) return;
         power = null;
         settingsOpen = false;
@@ -1118,6 +1120,7 @@ final class GameCore {
 
     /** Drops straight into a full-length steamer round from the playtest panel. */
     void playtestSteamer(Layout L) {
+        if (!BuildFlags.DEVELOPER) return;
         if (state != PLAY) return;
         power = null;
         settingsOpen = false;
@@ -1288,8 +1291,8 @@ final class GameCore {
         }
         if (store != null) {
             best = store.loadBest();
-            speed = clampSpeed(store.loadSpeed());
-            bgmChoice = Math.max(0, Math.min(Music.NAMES.length - 1, store.loadBgm()));
+            speed = BuildFlags.DEVELOPER ? clampSpeed(store.loadSpeed()) : 1f;
+            bgmChoice = BuildFlags.DEVELOPER ? Math.max(0, Math.min(Music.NAMES.length - 1, store.loadBgm())) : Music.defaultChoice(false);
             // Masked: a store that hands back junk in the high bits must not make
             // Collect.owned() report more than there are entries.
             collected = store.loadCollected() & Collect.MASK;
@@ -1357,6 +1360,7 @@ final class GameCore {
     // ---- settings -----------------------------------------------------------
 
     void openSettings() {
+        if (!BuildFlags.DEVELOPER) return;
         settingsOpen = true;
         clearArmed = false;
     }
@@ -1400,6 +1404,7 @@ final class GameCore {
     }
 
     void setNextRoster(boolean six) {
+        if (!BuildFlags.DEVELOPER) return;
         fullRoster = six;
         earlyLosses = 0;
         rosterLeavePending = false;
@@ -1407,6 +1412,7 @@ final class GameCore {
     }
 
     void endCurrentRun() {
+        if (!BuildFlags.DEVELOPER) return;
         if (state != PLAY) return;
         closeSettings();
         lives = 0;
@@ -1414,12 +1420,14 @@ final class GameCore {
     }
 
     void setSpeed(float v) {
+        if (!BuildFlags.DEVELOPER) return;
         speed = clampSpeed(v);
         if (store != null) store.saveSpeed(speed);
     }
 
     /** Restores every persistent difficulty ladder to its first-play values. */
     void resetDifficultyScaling() {
+        if (!BuildFlags.DEVELOPER) return;
         steamer.resetDifficulty();
         stars.resetDifficulty();
         if (store != null) {
@@ -1445,6 +1453,7 @@ final class GameCore {
     }
 
     void setBgm(int choice) {
+        if (!BuildFlags.DEVELOPER) return;
         if (choice < 0 || choice >= Music.NAMES.length) return;
         bgmChoice = choice;
         if (store != null) store.saveBgm(choice);
@@ -2187,9 +2196,9 @@ final class GameCore {
                 rosterScene = 0;
             }
         }
-        if (sound != null && (settingsOpen || !boss.fighting() || boss.kind != Boss.SLIME
+        if (sound != null && ((BuildFlags.DEVELOPER && settingsOpen) || !boss.fighting() || boss.kind != Boss.SLIME
                 || boss.hasGlob() || boss.boltCount() > 0)) sound.bossCharge(0f);
-        if (settingsOpen) return;
+        if (BuildFlags.DEVELOPER && settingsOpen) return;
         time += dt;
         // Accumulated, not derived from clock, so the frenzy's faster drift does not make the
         // sky jump when it starts or stops.
@@ -2780,6 +2789,7 @@ final class GameCore {
      * at how a late stage plays with two lives left.
      */
     void jumpToStage(int n, Layout L) {
+        if (!BuildFlags.DEVELOPER) return;
         if (state != PLAY) return;
         enemies.clear();
         shots.clear();

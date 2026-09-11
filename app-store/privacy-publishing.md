@@ -10,8 +10,7 @@ Only the policy HTML is published there.
 The game repository remains private. Changes to docs/privacy.html pushed to main are automatically published by
 the Publish public pages workflow. See website-publishing.md.
 
-Enter the public HTTPS URL in Play Console. Access to the policy inside the
-production app is still pending.
+Enter the public HTTPS URL in Play Console. Both production and developer builds expose a PRIVACY link on the title screen.
 The policy covers the current offline main branch, not the unmerged Play Games
 integration. Re-audit the final release bundle and Data safety form before release.
 
