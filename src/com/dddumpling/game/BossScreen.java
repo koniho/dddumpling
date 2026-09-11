@@ -134,10 +134,8 @@ final class BossScreen extends Draw {
         if (wounded) col = Glyph.mix(col, YELLOW, vulnerabilityPulse(c.clock) * 0.78f);
         col = Glyph.mix(col, 0xFFFFFFFF, launch * 0.35f);
         if (b.kind == Boss.MUSHROOM && b.mushroomAngry > 0f) {
-            float angry = b.mushroomAngry / Boss.MUSHROOM_ANGER_TIME;
-            int flare = Glyph.mix(ROSE, Glyph.cycle(c.clock * 9f), 0.48f);
-            col = Glyph.mix(col, flare, angry * (0.72f + 0.20f
-                    * (float) Math.sin(c.clock * 26f)));
+            int flare = b.mushroomAngry > Boss.MUSHROOM_REACTION_RELEASE ? 0xFFFFCF83 : 0xFFFF8CBD;
+            col = Glyph.mix(col, flare, b.mushroomDamagePulse() * 0.90f);
         }
         // A hit whitens it for a moment on top of the dent the body is already taking.
         col = Glyph.mix(col, 0xFFFFFFFF, b.hurt * 0.35f);
@@ -464,6 +462,7 @@ final class BossScreen extends Draw {
         float squeeze = (float) Math.sin(charge * Math.PI * 0.5f);
         float shakeFlash = Math.max(0f, Math.min(1f,
                 b.mushroomSweepFlash / 0.28f));
+        float damagePulse = b.mushroomDamagePulse();
         float sy = 1f - squeeze * 0.30f, sx = 1f + squeeze * 0.16f;
 
         float capX = rootX + b.mushroomCapDX;
@@ -472,7 +471,7 @@ final class BossScreen extends Draw {
         float attachX = capX, attachY = capY + stemR * 0.36f * sy;
         float stemHalf = Boss.bodyR(L) * b.wide() * (0.35f + squeeze * 0.035f);
         int cream = Glyph.mix(Glyph.mix(0xFFFFF5ED, col, 0.015f), 0xFFFFFFFF,
-                shakeFlash * 0.72f);
+                Math.max(shakeFlash * 0.72f, damagePulse * 0.92f));
         int stemEdge = Glyph.withAlpha(Glyph.mix(cream, 0xFFBBA488, 0.32f),
                 (int) (220 * fade));
         int stemFill = Glyph.withAlpha(cream, (int) (255 * fade));
@@ -488,7 +487,7 @@ final class BossScreen extends Draw {
         float rootPulse = 0.42f + 0.58f * (0.5f + 0.5f
                 * (float) Math.sin(c.clock * (3.2f + damage * 10f)));
         int mycelium = Glyph.mix(Glyph.mix(0xFFDDFBEF, 0xFFFF416C, damage * 0.82f),
-                0xFFFFFFFF, shakeFlash * 0.62f);
+                0xFFFFFFFF, Math.max(shakeFlash * 0.62f, damagePulse));
         float rootSpan = Math.min(L.w * 0.47f, rx * 3.45f);
         // The body's centroid and measured radius breathe and recoil. Do not derive the buried tips
         // from either: homeY/rest are the planted pose, so only the inner roots flex with the stalk.
@@ -569,8 +568,10 @@ final class BossScreen extends Draw {
             cap[i] = capX + dx * ca - dy * sa;
             cap[i + 1] = capY + dx * sa + dy * ca;
         }
-        int red = Glyph.mix(0xFFEE2928, 0xFFFFFFFF, shakeFlash * 0.78f);
-        p.fillPoly(cap, Glyph.withAlpha(0xFFAE2029, (int) (255 * fade)));
+        int reactionColor = b.mushroomAngry > Boss.MUSHROOM_REACTION_RELEASE ? 0xFFFFCF83 : 0xFFFF8CBD;
+        int red = Glyph.mix(Glyph.mix(0xFFEE2928, reactionColor, damagePulse * 0.90f),
+                0xFFFFFFFF, shakeFlash * 0.78f);
+        p.fillPoly(cap, Glyph.withAlpha(Glyph.mix(0xFFAE2029, reactionColor, damagePulse * 0.60f), (int) (255 * fade)));
         float[] bright = new float[cap.length];
         for (int i = 0; i < cap.length; i += 2) {
             bright[i] = capX + (cap[i] - capX) * 0.86f - rx * 0.16f;
@@ -662,7 +663,10 @@ final class BossScreen extends Draw {
                 Glyph.withAlpha(0xFF4A2631, (int) (245 * fade)));
         p.fillCircle(faceX + stemHalf * 0.38f, faceY, ry * 0.055f,
                 Glyph.withAlpha(0xFF4A2631, (int) (245 * fade)));
-        p.line(faceX - stemHalf * 0.24f, faceY + ry * 0.16f,
+        if (b.mushroomAngry > 0f) {
+            p.fillEllipse(faceX, faceY + ry * 0.20f, ry * 0.10f, ry * 0.125f,
+                    Glyph.withAlpha(0xFF4A2631, (int) (240 * fade)));
+        } else p.line(faceX - stemHalf * 0.24f, faceY + ry * 0.16f,
                 faceX + stemHalf * 0.24f, faceY + ry * 0.16f,
                 Glyph.withAlpha(0xFF4A2631, (int) (220 * fade)), ry * 0.035f);
 
@@ -762,6 +766,10 @@ final class BossScreen extends Draw {
         int ink = Glyph.withAlpha(OCTO_INK, (int) (255 * fade));
         for (int side = -1; side <= 1; side += 2) {
             float ex = cx + side * eyeDx;
+            if (b.beaten) {
+                p.line(ex-eyeR, eyeY-eyeR*.25f, ex+eyeR, eyeY+eyeR*.25f, ink, rx*.065f);
+                continue;
+            }
             p.fillEllipse(ex, eyeY, eyeR, eyeR * 1.08f, ink);
             p.fillCircle(ex - eyeR * 0.27f, eyeY - eyeR * 0.34f, eyeR * 0.25f,
                     Glyph.withAlpha(0xFFFFFFFF, (int) (245 * fade)));
@@ -773,10 +781,10 @@ final class BossScreen extends Draw {
         for (int k = 0; k < 7; k++) {
             float u = -1f + 2f * k / 6f;
             smile[k * 2] = cx + rx * 0.18f * u;
-            smile[k * 2 + 1] = mouthY + ry * 0.10f * (1f - u * u);
+            smile[k * 2 + 1] = mouthY + ry * (b.beaten ? -0.10f : 0.10f) * (1f - u * u);
         }
         p.polyline(smile, ink, rx * 0.055f);
-        if (b.octoVulnerableArm >= 0) {
+        if (!b.beaten && b.octoVulnerableArm >= 0) {
             float urgency = Math.min(1f, b.octoDragTime / 2f);
             float wince = 0.5f + 0.5f * (float) Math.sin(
                     c.clock * (8f + urgency * 20f));
@@ -802,7 +810,7 @@ final class BossScreen extends Draw {
             }
             p.polyline(frown, ink, rx * 0.060f);
         }
-        if (b.octoEat > 0f) {
+        if (!b.beaten && b.octoEat > 0f) {
             float eaten = 1f - b.octoEat;
             float chew = 0.5f + 0.5f * (float) Math.sin(eaten * Math.PI * 7f);
             float gulp = Math.min(1f, eaten * 5f);
@@ -882,13 +890,13 @@ final class BossScreen extends Draw {
             int a = layer % 2 == 0 ? layer / 2 : Boss.OCTO_ARMS - 1 - layer / 2;
             float[] pts = new float[Boss.OCTO_NODES * 2];
             for (int n = 0; n < Boss.OCTO_NODES; n++) { pts[n * 2] = b.octoX[a][n]; pts[n * 2 + 1] = b.octoY[a][n]; }
-            boolean dying = a == b.octoDyingArm && b.octoDeath > 0f;
+            boolean dying = !b.beaten && a == b.octoDyingArm && b.octoDeath > 0f;
             if ((b.octoArms & (1 << a)) != 0 || dying || b.beaten) {
                 float death = dying ? Math.min(1f, b.octoDeath) : 0f;
-                boolean warning = a == b.octoAttackArm && b.octoTarget >= 0
+                boolean warning = !b.beaten && a == b.octoAttackArm && b.octoTarget >= 0
                         && (b.octoSweep < 1f || b.octoCharge < 1f);
-                boolean vulnerable = a == b.octoVulnerableArm;
-                boolean escaping = a == b.octoEscapeArm && b.octoEscape > 0f;
+                boolean vulnerable = !b.beaten && a == b.octoVulnerableArm;
+                boolean escaping = !b.beaten && a == b.octoEscapeArm && b.octoEscape > 0f;
                 float tug = vulnerable ? Math.min(1f, b.octoDragTime / 2f) : 0f;
                 // The warning heartbeat accelerates continuously toward the two-second escape.
                 float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * (8f + 24f * tug));

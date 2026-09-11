@@ -66,8 +66,48 @@ final class TestVisuals extends Check {
 
     static void sky(Layout L) {
         group("cloud sky");
+        for (int land = 0; land < Lands.COUNT; land++) {
+            int first = land * Boss.EVERY + 1, bossStage = first + Boss.EVERY - 1;
+            for (int stage = first; stage <= bossStage; stage++)
+                check("land stays consistent through stage " + stage, Lands.forStage(stage) == land);
+            check("land previews its upcoming boss " + land, Boss.kindFor(bossStage) == land);
+            check("each land has three skits " + land,
+                    Lands.skitFor(first) != Lands.skitFor(first + 1)
+                    && Lands.skitFor(first + 1) != Lands.skitFor(first + 2)
+                    && Lands.skitFor(first) != Lands.skitFor(first + 2));
+        }
+        check("endless stages reuse scenery", Lands.forStage(21) == Lands.forStage(1));
+        check("title uses the original palette", Lands.background(new GameCore(new Mem(), 1L)) == Draw.BG);
         GameCore c = new GameCore(new Mem(), 111L);
         c.startGame();
+
+        GameCore fade = new GameCore(new Mem(), 119L);
+        fade.startGame();
+        int initial = Lands.background(fade);
+        fade.jumpToStage(6, L);
+        check("new land begins in the previous palette", Lands.background(fade) == initial);
+        fade.update(Lands.FADE_TIME / 2f, L);
+        int midway = Lands.background(fade);
+        check("land colors interpolate", midway != initial && midway != Lands.BG[1]);
+        float beforeSameLand = fade.landBlend;
+        fade.jumpToStage(7, L);
+        check("same-land stages do not restart the fade", fade.landBlend == beforeSameLand);
+        fade.jumpToStage(11, L);
+        check("interrupted color fade remains continuous", Lands.background(fade) == midway);
+        for (int frame = 0; frame < 180; frame++) fade.update(1f / 60f, L);
+        check("land fade reaches its destination", fade.landBlend == 1f
+                && Lands.background(fade) == Lands.BG[2] && Lands.tint(fade) == Lands.TINT[2]);
+        fade.startGame();
+        check("new runs fade from the intro palette", Lands.background(fade) == Draw.BG
+                && fade.landFrom == -1 && fade.landBlend == 0f);
+        for (int layer = 0; layer < GameCore.CLOUD_LAYERS; layer++)
+            check("intro cloud tint stays continuous for layer " + layer,
+                    Lands.cloudTint(fade, layer) == Sky.CLOUD_TINT[layer]);
+        for (int frame = 0; frame < 72; frame++) fade.update(1f / 60f, L);
+        check("intro palette visibly blends into the first land",
+                Lands.background(fade) != Draw.BG && Lands.background(fade) != Lands.BG[0]);
+        for (int frame = 0; frame < 90; frame++) fade.update(1f / 60f, L);
+        check("intro fade completes in the first land", Lands.background(fade) == Lands.BG[0]);
 
         check("three cloud layers", GameCore.CLOUD_LAYERS == 3);
         check("one layer in front, two behind", Sky.CLOUD_FRONT_LAYER == 2);

@@ -171,7 +171,7 @@ final class Boss {
     /** Three times the old endpoint tolerance, giving fast reversals a readable grace window. */
     static final float MUSHROOM_GUIDE_WINDOW = 0.18f;
     static final float MUSHROOM_ATTACK_GAP = 5f, MUSHROOM_CHARGE_TIME = 0.72f,
-            MUSHROOM_ANGER_TIME = 0.48f;
+            MUSHROOM_ANGER_TIME = 1.60f, MUSHROOM_REACTION_RELEASE = 0.65f;
     static final int MUSHROOM_DUST = 64;
     final float[] mushroomDustX = new float[MUSHROOM_DUST], mushroomDustY = new float[MUSHROOM_DUST],
             mushroomDustVX = new float[MUSHROOM_DUST], mushroomDustVY = new float[MUSHROOM_DUST],
@@ -1110,6 +1110,11 @@ final class Boss {
             if (!beaten) {
                 mushroomAngry = MUSHROOM_ANGER_TIME;
                 mushroomReaction = true;
+                mushroomCharge = 0f;
+                mushroomAttackT = MUSHROOM_ATTACK_GAP;
+                body.squash(-0.72f);
+                if (mushroomStem != null) mushroomStem.squash(0.55f);
+                shedMushroomDust(L.w * 0.3f, L);
             }
             return result;
         }
@@ -1426,6 +1431,10 @@ final class Boss {
             }
         }
 
+        poseOctopus(dt, L);
+    }
+
+    private void poseOctopus(float dt, Layout L) {
         float cx = body.centreX(), cy = body.centreY();
         float resistedDragX = octoDragX, resistedDragY = octoDragY;
         if (held == -3) {
@@ -1599,20 +1608,16 @@ final class Boss {
                     ty -= Math.abs(boast) * 0.42f;
                 }
                 if (beaten) {
-                    // All eight arms return, fan outward, and dive below the screen before the
-                    // delayed body fall begins. Root influence stays zero so they remain attached.
-                    float descend = Math.min(1f, leaveProgress() / 0.62f);
-                    descend = descend * descend * (3f - 2f * descend);
-                    float spreadX = L.playLeft + (L.playRight - L.playLeft)
-                            * (a + 0.5f) / OCTO_ARMS;
-                    float belowY = L.h + bodyR(L) * (1.5f + 0.16f * (a % 3));
-                    float reach = descend * u * u;
-                    tx += (spreadX - tx) * reach;
-                    ty += (belowY - ty) * reach;
-                    float farewell = (float) Math.sin(u * Math.PI * 2.2f
-                            - leaveProgress() * 10f + a * 0.74f)
-                            * L.w * 0.055f * descend * (float) Math.sin(Math.PI * u);
-                    tx += farewell;
+                    // A frustrated shrug turns into limp curls, carried with the falling mantle.
+                    float t = leaveProgress();
+                    float shrug = (float) Math.sin(Math.min(1f, t / 0.45f) * Math.PI);
+                    float side = a < OCTO_ARMS / 2 ? -1f : 1f;
+                    float flutter = (float) Math.sin(t * 22f + a * 0.8f + u * 4f)
+                            * (1f - t) * u * u;
+                    tx = cx + (float) Math.sin(angle) * bodyR(L) * (0.28f + 2.15f*u)
+                            + side * bodyR(L) * (shrug * 0.55f + flutter * 0.32f) * u;
+                    ty = cy + bodyR(L) * (0.22f + 2.0f*u - shrug * 2.2f*u*u
+                            + flutter * 0.38f);
                 }
                 if (a == octoDyingArm && octoDeath > 0f && !beaten) {
                     float death = Math.min(1f, octoDeath);
@@ -1643,7 +1648,7 @@ final class Boss {
                 octoVY[a][n] = (octoVY[a][n] + (ty - octoY[a][n]) * dt * spring) * damping;
                 octoX[a][n] += octoVX[a][n] * dt;
                 octoY[a][n] += octoVY[a][n] * dt;
-                if (a == octoVulnerableArm && held != -3 && n > 0) {
+                if (!beaten && a == octoVulnerableArm && held != -3 && n > 0) {
                     // The ordinary tentacle spring deliberately lags idle motion, but that erased
                     // this fast half-screen gesture. Track the authored wave directly, retaining
                     // some elasticity along the arm and none at the catch point.
@@ -1651,7 +1656,7 @@ final class Boss {
                     octoX[a][n] += (tx - octoX[a][n]) * waveFollow;
                     octoY[a][n] += (ty - octoY[a][n]) * waveFollow;
                 }
-                if (a == octoVulnerableArm && n == OCTO_NODES - 1) {
+                if (!beaten && a == octoVulnerableArm && n == OCTO_NODES - 1) {
                     if (held == -3) {
                         float fingerFollow = Math.min(1f, dt * 46f);
                         octoX[a][n] += (resistedDragX - octoX[a][n]) * fingerFollow;
@@ -1666,7 +1671,7 @@ final class Boss {
                 }
                 // A living arm is physically rooted in the moving soft body. Do not spring the
                 // first node toward it: that produces a visible gap whenever the head rebounds.
-                if (n == 0 && ((octoArms & (1 << a)) != 0 || beaten) && a != octoDyingArm) {
+                if (n == 0 && ((octoArms & (1 << a)) != 0 || beaten) && (beaten || a != octoDyingArm)) {
                     octoX[a][n] = tx;
                     octoY[a][n] = ty;
                     octoVX[a][n] = octoVY[a][n] = 0f;
@@ -1847,6 +1852,13 @@ final class Boss {
             mushroomDustVY[i] = r * (0.22f + (i % 5) * 0.06f);
             mushroomDustLife[i] = 0.95f;
         }
+    }
+
+    float mushroomDamagePulse() {
+        if (mushroomAngry <= 0f) return 0f;
+        float t = 1f - mushroomAngry / MUSHROOM_ANGER_TIME;
+        float wave = (float) Math.sin(t * Math.PI * 3f);
+        return Math.max(Math.max(0f, 1f - t * 8f), wave * wave * (1f - t * 0.55f));
     }
 
     /** Drops pale spores which become ordinary readable letter projectiles as they descend. */
@@ -2228,7 +2240,8 @@ final class Boss {
                 // Shared death morph: gravity wins while the body is carried toward the player.
                 // Pulling below its travelling centre makes the silhouette neck, sag and melt.
                 float melt = defeatMelt();
-                if (melt > 0f) body.pull(body.centreX(), L.h + bodyR(L) * 2.5f,
+                if (kind == OCTOPUS) body.letGo();
+                else if (melt > 0f) body.pull(body.centreX(), L.h + bodyR(L) * 2.5f,
                         0.11f + melt * 0.29f);
                 body.jiggle = kind == SLIME ? 0.72f + melt * 0.16f
                         : JIGGLE[kind] * (1f + melt * 1.3f);
@@ -2256,7 +2269,7 @@ final class Boss {
                 else mushroomStem.letGo();
                 mushroomStem.update(dt);
             }
-            if (beaten) {
+            if (beaten && kind != OCTOPUS) {
                 float from = defeatStartW > 0f ? defeatStartW : body.spanX();
                 body.fitWidth(from + (L.w * 0.90f - from) * defeatStretch());
             }
@@ -2268,6 +2281,7 @@ final class Boss {
 
         if (beaten) {
             leaveT = Math.max(0f, leaveT - dt);
+            if (kind == OCTOPUS) poseOctopus(dt, L);
             float p = leaveProgress();
             int wantBeat = p >= 0.28f ? 3 : p >= 0.16f ? 2 : p >= 0.05f ? 1 : 0;
             if (defeatBeat < wantBeat) {
@@ -2317,9 +2331,11 @@ final class Boss {
             }
             if (mushroomAngry > 0f) {
                 mushroomAngry = Math.max(0f, mushroomAngry - dt);
-                if (mushroomAngry == 0f && mushroomReaction) {
+                if (mushroomAngry <= MUSHROOM_REACTION_RELEASE && mushroomReaction) {
                     mushroomReaction = mushroomShakeCue = mushroomSporeCue = false;
                     sporeVolley(3, rnd);
+                    shedMushroomDust(L.w * 0.3f, L);
+                    shedMushroomDust(-L.w * 0.3f, L);
                 }
             } else if (mushroomCharge > 0f) {
                 mushroomCharge = Math.max(0f, mushroomCharge - dt);

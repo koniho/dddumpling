@@ -643,6 +643,9 @@ final class GameCore {
      * accumulating it keeps the drift continuous rather than jumping when the frenzy ends.
      */
     float skyClock;
+    int landFrom, landFromBg = Lands.BG[0], landFromTint = Lands.TINT[0];
+    float landBlend = 1f;
+    final int[] landCloudFrom = Sky.CLOUD_TINT.clone();
 
     // ---- boss ---------------------------------------------------------------
     /**
@@ -1605,6 +1608,7 @@ final class GameCore {
         stageByPower = false;
         powerTimer = Power.SPAWN_MIN;
         pendingBonus = false;
+        Lands.fromIntro(this);
         stageBanner = BANNER_TIME;
         startFade = 0f;
         if (sound != null) {
@@ -2222,6 +2226,7 @@ final class GameCore {
         // Accumulated, not derived from clock, so the frenzy's faster drift does not make the
         // sky jump when it starts or stops.
         skyClock += dt * (powerActive() ? Power.SKY_RATE : 1f);
+        landBlend = Math.min(1f, landBlend + dt / Lands.FADE_TIME);
 
         for (int i = 0; i < Glyph.COUNT; i++) {
             keyPress[i] = decay(keyPress[i], dt * 5.5f);
@@ -2781,6 +2786,7 @@ final class GameCore {
      */
     private void enterStage(int n) {
         boolean hadBoss = boss.active();
+        Lands.transition(this, Math.max(1, n));
         stage = Math.max(1, n);
         progress.enterStage(stage);
         if (fullRoster && stage >= 6 && earlyLosses != 0) {

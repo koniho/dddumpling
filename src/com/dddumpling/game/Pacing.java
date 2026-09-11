@@ -33,7 +33,10 @@ final class Pacing {
 
     /** Seconds to fall from spawn to the danger line. Divided by speed, so 1.5x arrives faster. */
     static float travelSeconds(int stage, float speed) {
-        return Math.max(4.2f, 15f - ramp(stage) * 1.05f) / speed;
+        float r = ramp(stage);
+        // Once words reach full length, shorten reaction time gently instead of compounding it.
+        float seconds = r <= 5f ? 15f - r * 1.05f : 9.75f - (r - 5f) * 0.35f;
+        return Math.max(7.5f, seconds) / speed;
     }
 
     static float spawnInterval(int stage, float speed) {
@@ -61,7 +64,7 @@ final class Pacing {
 
     /** Words this stage releases in total. */
     static int stageQuota(int stage) {
-        return Math.min(10, 5 + step(stage));
+        return Math.min(8, 5 + step(stage));
     }
 
     /** Odds a tile becomes a stack. Stacks stay out of the opening stage. */

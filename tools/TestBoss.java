@@ -913,6 +913,27 @@ final class TestBoss extends Check {
      */
     static void octopus(Layout L) {
         group("boss: octopulse");
+        GameCore defeated = enterBoss(L, Boss.OCTOPUS, 914L);
+        defeated.boss.hp = 1f;
+        defeated.boss.octoVulnerableArm = 3; defeated.boss.held = -3;
+        defeated.boss.octoDragStarted = defeated.boss.octoDragCanDamage = true;
+        defeated.boss.dragTo(L.playLeft - L.keyR, L.playTop, L);
+        check("final arm tear starts defeat", defeated.boss.beaten);
+        float oldTip = defeated.boss.octoY[3][Boss.OCTO_NODES - 1];
+        for (int frame = 0; frame < 30; frame++) defeated.boss.update(DT, L, defeated.rnd);
+        boolean attached = true;
+        for (int arm = 0; arm < Boss.OCTO_ARMS; arm++)
+            attached &= Math.abs(defeated.boss.octoY[arm][0] - defeated.boss.body.centreY()) < Boss.bodyR(L);
+        check("all defeated arms stay attached including the last damaged arm", attached);
+        check("defeated arms continue animating", defeated.boss.octoY[3][Boss.OCTO_NODES-1] != oldTip);
+        check("defeated arms cannot attack", defeated.boss.boltCount() == 0 && !defeated.boss.octoPlayerHit);
+        for (int frame = 0; frame < 130; frame++) {
+            defeated.boss.update(DT, L, defeated.rnd);
+            for (int arm = 0; arm < Boss.OCTO_ARMS; arm++)
+                attached &= Math.abs(defeated.boss.octoY[arm][0]
+                        - defeated.boss.body.centreY()) < Boss.bodyR(L);
+        }
+        check("arms remain attached throughout the defeated fall", attached);
         GameCore c = enterBoss(L, Boss.OCTOPUS, 151L);
         c.enemies.clear(); c.target = null;
         for (int i = 0; i < 240 && c.boss.octoTarget < 0; i++) c.update(DT, L);
@@ -1180,7 +1201,12 @@ final class TestBoss extends Check {
         check("six reversals damage the mushroom", c.boss.hp == hp - 1f);
         check("damage starts an angry colour reaction",
                 c.boss.mushroomAngry > 0f && c.boss.mushroomReaction);
-        advance(c, L, Boss.MUSHROOM_ANGER_TIME + 2 * DT);
+        check("damage reaction starts bright", c.boss.mushroomDamagePulse() > 0.9f);
+        advance(c, L, 0.5f);
+        check("long damage cue holds spores before release", c.boss.mushroomAngry > 0f
+                && c.boss.mushroomReaction && c.boss.boltCount() == 0);
+        advance(c, L, Boss.MUSHROOM_ANGER_TIME - 0.5f + 2 * DT);
+        check("damage color settles after the sequence", c.boss.mushroomDamagePulse() == 0f);
         check("the angry reaction launches a short three-spore flurry",
                 c.boss.boltCount() == 3);
         check("the spore volley has its own sprinkle sound",

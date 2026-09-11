@@ -46,7 +46,8 @@ final class Sky extends Draw {
     }
 
     static void clouds(Painter p, GameCore c, Layout L, int layer, float hurt) {
-        int tint = Glyph.mix(CLOUD_TINT[layer], BG_HURT, hurt * 0.55f);
+        int base = Lands.cloudTint(c, layer);
+        int tint = Glyph.mix(base, BG_HURT, hurt * 0.55f);
         int alpha = CLOUD_ALPHA[layer];
 
         // A landed press washes the sky with that letter's colour; a cleared word floods it

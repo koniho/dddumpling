@@ -158,10 +158,9 @@ final class Hud extends Draw {
         p.text("STAGE " + c.stage, L.w / 2f, L.h * 0.34f, type(L.unit * 1.7f),
                 Glyph.withAlpha(INK, a), Painter.CENTER, true);
 
-        int skit = Skits.forStage(c.stage);
         // stageBanner counts down from BANNER_TIME, so invert it into 0..1 progress.
         float t = 1f - Math.min(1f, Math.max(0f, c.stageBanner / GameCore.BANNER_TIME));
-        Skits.draw(p, L, skit, L.w / 2f, L.h * 0.46f, L.unit * 2.1f, t, a, c.clock);
+        Lands.skit(p, c.stage, L.w / 2f, L.h * 0.46f, L.unit * 2.1f, t, a);
     }
 
     /**

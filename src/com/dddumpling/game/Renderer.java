@@ -24,12 +24,14 @@ final class Renderer extends Draw {
         // Kept moderate: the red reads as a pulse at the edges, not a wash over the
         // characters, which have to stay legible at exactly the moment you are panicking.
         p.fillRect(0, 0, L.w, L.h,
-                Glyph.mix(Glyph.mix(BG, BG_HURT, hurt * 0.45f), BG_DEATH, gone));
+                Glyph.mix(Glyph.mix(Lands.background(c), BG_HURT, hurt * 0.45f), BG_DEATH, gone));
         p.fillRect(0, L.deckTop, L.w, L.h,
                 Glyph.mix(Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f), BG_DEATH, gone * 0.85f));
 
         // Two cloud layers behind the words...
         Sky.cloudBand(p, c, L, 0, Sky.CLOUD_FRONT_LAYER, hurt);
+
+        Lands.scenery(p, c, L);
 
         p.save();
         if (c.shake > 0) {
@@ -81,7 +83,7 @@ final class Renderer extends Draw {
 
         // The title and game-over screens carry their own numbers; a second copy is clutter.
         if (c.state == GameCore.PLAY) {
-            Sky.hudBacking(p, L, Glyph.mix(BG, BG_HURT, hurt * 0.45f));
+            Sky.hudBacking(p, L, Glyph.mix(Lands.background(c), BG_HURT, hurt * 0.45f));
             Hud.hud(p, c, L);
             Hud.modeBar(p, c, L);
             // Shares the mode bar's slot, and cannot collide with it: powerups are suppressed for

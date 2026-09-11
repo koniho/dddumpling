@@ -60,6 +60,34 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
+        for (int land = 0; land < Lands.COUNT; land++) {
+            GameCore themed = new GameCore(new Mem(), 810L);
+            themed.startGame();
+            themed.stage = land * Boss.EVERY + 1;
+            step(themed, L, 5f);
+            themed.stageBanner = 0f;
+            shot(dir, "80-land-" + land + "-play", themed, L, w, h, ss);
+            for (int variant = 0; variant < 3; variant++) {
+                themed.stage = land * Boss.EVERY + variant + 1;
+                themed.stageBanner = GameCore.BANNER_TIME * 0.55f;
+                shot(dir, "81-land-" + land + "-skit-" + variant, themed, L, w, h, ss);
+            }
+        }
+
+        GameCore landFade = new GameCore(new Mem(), 823L);
+        landFade.startGame();
+        for (int sample = 0; sample < 3; sample++) {
+            landFade.landBlend = sample * 0.5f;
+            landFade.stageBanner = 0f;
+            shot(dir, "83-intro-land-crossfade-" + sample, landFade, L, w, h, ss);
+        }
+        landFade.jumpToStage(6, L);
+        for (int sample = 0; sample < 3; sample++) {
+            landFade.landBlend = sample * 0.5f;
+            landFade.stageBanner = 0f;
+            shot(dir, "82-land-crossfade-" + sample, landFade, L, w, h, ss);
+        }
+
         // Named, so a frame filter skips them along with everything else it did not ask for.
         if (wanted("chars")) characterSheet(dir, w, h, ss);
         if (wanted("skits")) skitSheet(dir, L, w, h, ss);
@@ -902,6 +930,15 @@ final class Preview {
             }
         }
 
+        GameCore defeatedOcto = toBoss(L, Boss.OCTOPUS, 538L, true);
+        defeatedOcto.boss.hp = 1f;
+        defeatedOcto.boss.octoVulnerableArm = 3; defeatedOcto.boss.held = -3;
+        defeatedOcto.boss.octoDragStarted = defeatedOcto.boss.octoDragCanDamage = true;
+        defeatedOcto.boss.dragTo(L.playLeft - L.keyR, L.playTop, L);
+        for (int i=0;i<24;i++) defeatedOcto.boss.update(DT,L,defeatedOcto.rnd);
+        shot(dir,"76g-octopulse-defeated-shrug",defeatedOcto,L,w,h,ss);
+        for (int i=0;i<48;i++) defeatedOcto.boss.update(DT,L,defeatedOcto.rnd);
+        shot(dir,"76h-octopulse-defeated-droop",defeatedOcto,L,w,h,ss);
         GameCore agaric = toBoss(L, Boss.MUSHROOM, 537L, true);
         agaric.stageBanner = agaric.rosterSceneT = 0f;
         agaric.boss.mushroomCharge = Boss.MUSHROOM_CHARGE_TIME * 0.5f;
@@ -921,6 +958,14 @@ final class Preview {
         for (int i = 0; i < 18; i++) agaric.update(DT, L);
         agaric.boss.shedMushroomDust(L.w * 0.3f, L);
         shot(dir, "77f-agaric-shaken-dust", agaric, L, w, h, ss);
+        agaric.boss.held = -1;
+        agaric.boss.mushroomAngry = Boss.MUSHROOM_ANGER_TIME;
+        agaric.boss.mushroomReaction = true;
+        for (int i=0;i<12;i++) agaric.update(DT,L);
+        shot(dir,"77g-agaric-damage-pulse",agaric,L,w,h,ss);
+        for (int i=0;i<54;i++) agaric.update(DT,L);
+        shot(dir,"77h-agaric-reactive-spores",agaric,L,w,h,ss);
+
 
         GameCore pulseDemo = toBoss(L, Boss.OCTOPUS, 538L, true);
         pulseDemo.stageBanner = pulseDemo.rosterSceneT = 0f;

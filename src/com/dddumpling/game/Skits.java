@@ -219,7 +219,7 @@ final class Skits {
     // ---- parts --------------------------------------------------------------
 
     /** A character with a soft halo, so it reads against the clouds behind it. */
-    private static void face(Painter p, int glyph, float cx, float cy, float r, int a,
+    static void face(Painter p, int glyph, float cx, float cy, float r, int a,
             float squash, float happy) {
         if (a <= 2) return;
         int col = Glyph.withAlpha(Glyph.COLOR[glyph], a);

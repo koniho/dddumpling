@@ -180,6 +180,24 @@ final class TestRules extends Check {
                     Math.abs(Pacing.spawnInterval(stage, 1.5f) * 1.5f - interval) < 0.001f);
             previous = interval;
         }
+        float previousFall = Pacing.travelSeconds(10, 1f);
+        for (int stage = 11; stage <= 60; stage++) {
+            float fall = Pacing.travelSeconds(stage, 1f);
+            check("late speed rises gradually at stage " + stage,
+                    fall <= previousFall && previousFall - fall <= 0.195f && fall >= 7.5f);
+            check("late stages keep the stage-ten word budget at stage " + stage,
+                    Pacing.stageQuota(stage) == Pacing.stageQuota(10));
+            check("speed setting still scales fall time at stage " + stage,
+                    Math.abs(Pacing.travelSeconds(stage, 1.5f) * 1.5f - fall) < 0.001f);
+            previousFall = fall;
+        }
+        for (int stage = 1; stage <= 10; stage++) {
+            check("early fall timing unchanged at stage " + stage,
+                    Math.abs(Pacing.travelSeconds(stage, 1f)
+                            - (15f - Pacing.ramp(stage) * 1.05f)) < 0.001f);
+            check("early word quota unchanged at stage " + stage,
+                    Pacing.stageQuota(stage) == 5 + (int)((Pacing.ramp(stage) + 1f) / 2f));
+        }
         c.stage = 16;
         check("stage 16 releases reach the gentler cap",
                 Math.abs(c.spawnInterval() - 2.75f) < 0.001f);
