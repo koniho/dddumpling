@@ -162,6 +162,8 @@ final class GameCore {
     interface Store extends Progress.Store {
         int loadBest();
         void saveBest(int best);
+        default int loadLandState() { return 0; }
+        default void saveLandState(int value) {}
         default int loadLandBest(int land) { return land == 0 ? loadBest() : 0; }
         default void saveLandBest(int land, int value) { if (land == 0) saveBest(value); }
         float loadSpeed();
@@ -418,6 +420,8 @@ final class GameCore {
     final int[] landBests = new int[Lands.COUNT];
     boolean landPickerDragging, landPickerMoved;
     float landPickerSlide, landPickerX;
+    int landSeen, landSuppressed, landDiscovery = -1;
+    float landDiscoveryT;
     /** Words squished this run. The game-over screen calls them squishes, so this does too. */
     int squishes;
     /** Words released so far in the current stage; capped at {@link #stageQuota()}. */
@@ -1296,6 +1300,9 @@ final class GameCore {
             }
         }
         if (store != null) {
+            int landState = store.loadLandState();
+            landSeen = landState & 14;
+            landSuppressed = (landState >> 4) & 14;
             best = store.loadBest();
             for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
             landBests[0] = Math.max(landBests[0], best);
@@ -2239,6 +2246,7 @@ final class GameCore {
         // sky jump when it starts or stops.
         skyClock += dt * (powerActive() ? Power.SKY_RATE : 1f);
         landBlend = Math.min(1f, landBlend + dt / Lands.FADE_TIME);
+        LandPicker.updateDiscovery(this, dt);
         landPickerSlide *= Math.max(0f, 1f - dt * 12f);
 
         for (int i = 0; i < Glyph.COUNT; i++) {

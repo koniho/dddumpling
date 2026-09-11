@@ -1652,7 +1652,21 @@ final class TestBoss extends Check {
             }
             check(Boss.NAMES[k] + ": visibly moves while taunting",
                     maxX - minX + maxY - minY > vr * 0.12f);
+            if (k == Boss.MUSHROOM) {
+                check("victory mushroom repeatedly reverses its shake",
+                        BossVictory.mushroomShake(0.175f, vr) > vr * 0.6f
+                        && BossVictory.mushroomShake(0.525f, vr) < -vr * 0.6f
+                        && BossVictory.mushroomShake(0.875f, vr) > vr * 0.6f);
+            }
             if (k == Boss.OCTOPUS) {
+                Boss retained = victory.bossVictory;
+                float[] first = new float[Boss.OCTO_NODES * 2], later = new float[Boss.OCTO_NODES * 2];
+                float originalTip = retained.octoY[0][Boss.OCTO_NODES - 1];
+                BossVictory.waveArm(first, retained, L, 0, 0f, 0.5f);
+                BossVictory.waveArm(later, retained, L, 0, 0.8f, 0.5f);
+                check("victory wave keeps arm roots fixed", first[0] == later[0] && first[1] == later[1]);
+                check("victory arm tips wave visibly", Math.abs(first[first.length - 1] - later[later.length - 1]) > vr * 0.25f);
+                check("victory wave does not mutate combat arms", retained.octoY[0][Boss.OCTO_NODES - 1] == originalTip);
                 check("OCTOPULSE: dying clears every transient haptic cue",
                         !victory.boss.octoCue && !victory.boss.octoLock
                                 && !victory.boss.octoImpact && !victory.boss.octoPlayerHit

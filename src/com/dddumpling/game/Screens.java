@@ -747,8 +747,11 @@ final class Screens extends Draw {
         p.text("STEAMER " + c.steamer.goal() + "   CASE "
                         + Collect.owned(c.collected) + "/" + Collect.COUNT,
                 ui.optionR(), ui.difficultyLabelY, s * 0.52f, INK, Painter.RIGHT, true);
-        float resetMid = (ui.optionL() + ui.optionR()) / 2f;
-        float difficultyR = resetMid - 3f, clearL = resetMid + 3f;
+        float difficultyR = ui.testChipR(0, 3), clearL = ui.testChipL(2, 3);
+        float landL = ui.testChipL(1, 3), landR = ui.testChipR(1, 3);
+        p.fillRect(landL, ui.clearY, landR, ui.clearY + ui.clearH, Glyph.withAlpha(GOLD, 35));
+        p.text("RESET LANDS", (landL + landR) / 2f, ui.clearY + ui.clearH * 0.66f,
+                s * 0.43f, INK, Painter.CENTER, true);
         int difficultyCol = c.steamer.opens > 0 ? GOLD : INK_DIM;
         p.fillRect(ui.optionL(), ui.difficultyY, difficultyR,
                 ui.difficultyY + ui.difficultyH, Glyph.withAlpha(difficultyCol, 42));

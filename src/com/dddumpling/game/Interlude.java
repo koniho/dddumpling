@@ -124,6 +124,7 @@ final class Interlude {
 
     /** Every award source records duplicates immediately, before its celebration starts. */
     private static void recordPrize(GameCore c, String source) {
+        LandPicker.reward(c, c.prize);
         c.caseIndex = c.prize;
         c.caseSlide = c.caseSlideY = c.caseHighlightAge = 0f;
         c.caseFreePan = false;

@@ -7,7 +7,7 @@ package com.dddumpling.game;
 final class SettingsUi {
 
     static final int HIT_NONE = 0, HIT_SLIDER = 1, HIT_CLOSE = 2, HIT_OUTSIDE = 3,
-            HIT_CLEAR = 4, HIT_ROSTER = 5, HIT_GAMEOVER = 6, HIT_RESET_DIFFICULTY = 7;
+            HIT_CLEAR = 4, HIT_ROSTER = 5, HIT_GAMEOVER = 6, HIT_RESET_DIFFICULTY = 7, HIT_RESET_LANDS = 8;
     /** Option rows are HIT_OPTION + index. */
     static final int HIT_OPTION = 100;
     /**
@@ -186,9 +186,9 @@ final class SettingsUi {
         }
 
         if (y >= clearY && y <= clearY + clearH) {
-            float mid = (optionL() + optionR()) / 2f;
-            if (x >= optionL() && x < mid - 3f) return HIT_RESET_DIFFICULTY;
-            if (x > mid + 3f && x <= optionR()) return HIT_CLEAR;
+            if (x >= testChipL(0, 3) && x <= testChipR(0, 3)) return HIT_RESET_DIFFICULTY;
+            if (x >= testChipL(1, 3) && x <= testChipR(1, 3)) return HIT_RESET_LANDS;
+            if (x >= testChipL(2, 3) && x <= testChipR(2, 3)) return HIT_CLEAR;
         }
         return HIT_NONE;
     }

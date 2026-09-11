@@ -163,6 +163,9 @@ public class MainActivity extends Activity implements GameCore.Store {
         prefs.edit().putInt(KEY_BEST, best).apply();
     }
 
+    @Override public int loadLandState() { return prefs.getInt("land_state", 0); }
+    @Override public void saveLandState(int value) { prefs.edit().putInt("land_state", value).apply(); }
+
     @Override public int loadLandBest(int land) {
         return land == 0 ? loadBest() : prefs.getInt("best_land_" + land, 0);
     }

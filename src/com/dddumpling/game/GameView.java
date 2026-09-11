@@ -653,6 +653,9 @@ public class GameView extends View {
         } else if (hit == SettingsUi.HIT_GAMEOVER) {
             core.endCurrentRun();
             tick();
+        } else if (hit == SettingsUi.HIT_RESET_LANDS) {
+            LandPicker.reset(core);
+            tick();
         } else if (hit == SettingsUi.HIT_RESET_DIFFICULTY) {
             core.resetDifficultyScaling();
             tick();

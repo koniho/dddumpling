@@ -85,12 +85,39 @@ final class Preview {
             shot(dir, "84-land-picker-" + unlocked, picker, L, w, h, ss);
         }
 
+        for (int land = 0; land < Lands.COUNT; land++) {
+            for (int frame = 0; frame < 2; frame++) {
+                GameCore logo = new GameCore(new Mem(), 892L);
+                logo.collected = Collect.MASK;
+                logo.landSeen = 14;
+                logo.landChoice = land;
+                logo.clock = 0.6f + frame * 1.2f;
+                shot(dir, "88-land-logo-" + land + "-" + frame, logo, L, w, h, ss);
+            }
+        }
+
+        for (int frame = 0; frame < 3; frame++) {
+            GameCore discovery = new GameCore(new Mem(), 891L);
+            discovery.collected = Collect.add(discovery.collected, Collect.BOSS_FIRST);
+            step(discovery, L, new float[]{0.7f, 2.2f, 3.8f}[frame]);
+            shot(dir, "87-land-discovery-" + frame, discovery, L, w, h, ss);
+        }
+
         for (int kind = 0; kind < Lands.COUNT; kind++) {
             GameCore bossLoss = toBoss(L, kind, 855L + kind, true);
+            step(bossLoss, L, 0.25f);
             bossLoss.lives = 1;
             bossLoss.takeHit(L.w * 0.5f, L);
             step(bossLoss, L, 0.6f);
             shot(dir, "85-boss-loss-confetti-" + kind, bossLoss, L, w, h, ss);
+            if (kind == Boss.MUSHROOM) {
+                step(bossLoss, L, 0.6f);
+                shot(dir, "85-mushroom-victory-storm", bossLoss, L, w, h, ss);
+            }
+            if (kind == Boss.OCTOPUS) {
+                step(bossLoss, L, 0.45f);
+                shot(dir, "85-octopulse-victory-wave", bossLoss, L, w, h, ss);
+            }
         }
 
         for (int skit = 0; skit < 2; skit++) {

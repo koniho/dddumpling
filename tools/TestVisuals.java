@@ -47,6 +47,40 @@ final class TestVisuals extends Check {
         fresh.caseOpen = true;
         check("the open display case hides the picker", !LandPicker.visible(fresh));
 
+        fresh.caseOpen = false;
+        LandPicker.updateDiscovery(fresh, 0.5f);
+        check("new land begins a title discovery", fresh.landDiscovery == 1);
+        float earlyReveal = LandPicker.discoveryReveal(fresh, L, 1);
+        fresh.landDiscoveryT = 1.6f;
+        check("new icon fades in as the explorer approaches", earlyReveal < 0.5f
+                && LandPicker.discoveryReveal(fresh, L, 1) > 0.99f);
+        check("explorer stops beside the discovered icon", Math.abs(
+                LandPicker.cardX(fresh, L, 1) - LandPicker.explorerX(fresh, L)
+                - L.keyR * fresh.keyScale() * 2.6f) < 0.01f);
+        fresh.caseOpen = true;
+        float discoveryAge = fresh.landDiscoveryT;
+        LandPicker.updateDiscovery(fresh, 2f);
+        check("covered discoveries wait for the title", fresh.landDiscoveryT == discoveryAge);
+        fresh.caseOpen = false;
+        LandPicker.updateDiscovery(fresh, 4.5f);
+        GameCore seen = new GameCore(landStore, 719L);
+        LandPicker.updateDiscovery(seen, 0.1f);
+        check("completed discoveries survive app restarts", seen.landDiscovery == -1 && seen.landSeen == 2);
+        long collection = seen.collected;
+        LandPicker.reset(seen);
+        GameCore reset = new GameCore(landStore, 720L);
+        check("reset lands persists without clearing collection or scores", !LandPicker.visible(reset)
+                && reset.collected == collection && reset.best == 123 && reset.landBests[1] == 456);
+        LandPicker.reward(reset, Collect.BOSS_FIRST);
+        LandPicker.updateDiscovery(reset, 0.1f);
+        check("a repeat boss reward unlocks and rediscovers its land", LandPicker.unlocked(reset, 1)
+                && reset.landDiscovery == 1);
+        SettingsUi resetUi = new SettingsUi();
+        resetUi.compute(L, Music.NAMES.length);
+        check("reset lands chip has its own hit target", resetUi.hit(
+                (resetUi.testChipL(1, 3) + resetUi.testChipR(1, 3)) / 2f,
+                resetUi.clearY + resetUi.clearH / 2f) == SettingsUi.HIT_RESET_LANDS);
+
         boolean ordered = true;
         for (int i = 0; i < Demo.LEN; i++) {
             ordered &= Demo.ACQUIRE[i] < Demo.PRESS[i]

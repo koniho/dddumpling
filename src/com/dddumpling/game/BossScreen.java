@@ -466,6 +466,8 @@ final class BossScreen extends Draw {
         float sy = 1f - squeeze * 0.30f, sx = 1f + squeeze * 0.16f;
 
         float capX = rootX + b.mushroomCapDX;
+        if (c.dying() && c.bossVictory == b)
+            capX += BossVictory.mushroomShake(c.deathDuration() - c.deathT, stemR);
         float capY = cy + ry * 0.65f + b.mushroomCapDY;
         float stemBottom = cy + stemR * (3.55f - squeeze * 0.20f);
         float attachX = capX, attachY = capY + stemR * 0.36f * sy;
@@ -884,19 +886,21 @@ final class BossScreen extends Draw {
     }
 
     private static void drawOctopusArms(Painter p, GameCore c, Layout L, Boss b, int col, float fade) {
+        boolean victory = c.dying() && c.bossVictory == b;
         float thick = Boss.bodyR(L) * 0.52f;
         // Paint outside-in so the central arms sit in front at every crossing.
         for (int layer = 0; layer < Boss.OCTO_ARMS; layer++) {
             int a = layer % 2 == 0 ? layer / 2 : Boss.OCTO_ARMS - 1 - layer / 2;
             float[] pts = new float[Boss.OCTO_NODES * 2];
             for (int n = 0; n < Boss.OCTO_NODES; n++) { pts[n * 2] = b.octoX[a][n]; pts[n * 2 + 1] = b.octoY[a][n]; }
-            boolean dying = !b.beaten && a == b.octoDyingArm && b.octoDeath > 0f;
+            if (victory) BossVictory.waveArm(pts, b, L, a, c.clock, c.deathProgress());
+            boolean dying = !victory && !b.beaten && a == b.octoDyingArm && b.octoDeath > 0f;
             if ((b.octoArms & (1 << a)) != 0 || dying || b.beaten) {
                 float death = dying ? Math.min(1f, b.octoDeath) : 0f;
-                boolean warning = !b.beaten && a == b.octoAttackArm && b.octoTarget >= 0
+                boolean warning = !victory && !b.beaten && a == b.octoAttackArm && b.octoTarget >= 0
                         && (b.octoSweep < 1f || b.octoCharge < 1f);
-                boolean vulnerable = !b.beaten && a == b.octoVulnerableArm;
-                boolean escaping = !b.beaten && a == b.octoEscapeArm && b.octoEscape > 0f;
+                boolean vulnerable = !victory && !b.beaten && a == b.octoVulnerableArm;
+                boolean escaping = !victory && !b.beaten && a == b.octoEscapeArm && b.octoEscape > 0f;
                 float tug = vulnerable ? Math.min(1f, b.octoDragTime / 2f) : 0f;
                 // The warning heartbeat accelerates continuously toward the two-second escape.
                 float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * (8f + 24f * tug));
@@ -970,7 +974,7 @@ final class BossScreen extends Draw {
                 p.fillCircle(tipX, tipY, thick * variety * 0.22f
                                 * (dying ? 1f - death * 0.72f : 1f),
                         Glyph.withAlpha(armCol, (int) (255 * fade)));
-                if (a == b.octoAttackArm) drawOctoCharge(p, b, curve, thick, fade);
+                if (!victory && a == b.octoAttackArm) drawOctoCharge(p, b, curve, thick, fade);
                 if (vulnerable && b.octoCoil >= 0.72f) {
                     float grabPulse = 0.86f + 0.14f * (float) Math.sin(c.clock * 8f);
                     float grabR = thick * 0.82f * grabPulse;
