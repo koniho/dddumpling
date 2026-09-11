@@ -15,7 +15,18 @@ def play_credentials
   credentials
 end
 
-def play_upload_options(root)
+def play_test_track(channel)
+  return "internal" if channel == "internal"
+  UI.user_error!("Testing channel must be closed or internal") unless channel == "closed"
+  track = ENV.fetch("PLAY_CLOSED_TRACK", "alpha").strip
+  track = "alpha" if track.empty?
+  if ["production", "beta", "internal"].include?(track) || track.include?(":")
+    UI.user_error!("PLAY_CLOSED_TRACK must identify a closed testing track")
+  end
+  track
+end
+
+def play_upload_options(root, channel = "closed")
   manifest = REXML::Document.new(File.read(File.join(root, "AndroidManifest.xml"))).root
   package = manifest.attributes["package"]
   UI.user_error!("Unexpected Android package") unless package == "com.dddumpling.game"
@@ -36,7 +47,7 @@ def play_upload_options(root)
     package_name: package,
     json_key_data: credentials,
     aab: aab,
-    track: "internal",
+    track: play_test_track(channel),
     release_status: "completed",
     release_name: "#{name} (#{version})",
     metadata_path: File.join(root, "app-store/google-play"),
@@ -52,16 +63,31 @@ default_platform(:android)
 platform :android do
   desc "Verify Google Play access without uploading or publishing"
   lane :verify_access do
-    codes = google_play_track_version_codes(
-      package_name: "com.dddumpling.game",
-      json_key_data: play_credentials,
-      track: "internal"
-    )
-    UI.success("Google Play access verified. Internal version codes: #{codes.join(', ')}")
+    require "supply"
+    client = Supply::Client.make_from_config(params: { json_key_data: play_credentials, timeout: 300 })
+    begin
+      client.begin_edit(package_name: "com.dddumpling.game")
+      tracks = client.tracks
+      tracks.each do |track|
+        versions = Array(track.releases).flat_map { |release| Array(release.version_codes) }
+        UI.message("Play track #{track.track}: version codes #{versions.join(', ')}")
+      end
+      target = play_test_track("closed")
+      UI.user_error!("Closed track #{target} not found. Create it in Play Console or set PLAY_CLOSED_TRACK.") unless tracks.any? { |track| track.track == target }
+      UI.success("Google Play access verified. Closed upload target: #{target}")
+    ensure
+      client.abort_current_edit if client.current_edit
+    end
+  end
+
+  desc "Upload the signed production bundle to the selected testing channel"
+  lane :testing do
+    channel = ENV.fetch("PLAY_TEST_CHANNEL", "closed")
+    upload_to_play_store(**play_upload_options(File.expand_path("..", __dir__), channel))
   end
 
   desc "Upload the signed production bundle and release notes to internal testing"
   lane :internal do
-    upload_to_play_store(**play_upload_options(File.expand_path("..", __dir__)))
+    upload_to_play_store(**play_upload_options(File.expand_path("..", __dir__), "internal"))
   end
 end

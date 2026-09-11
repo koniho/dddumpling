@@ -33,8 +33,18 @@ Dir.mktmpdir do |root|
   File.write(notes, "Improved playtest build.")
   ENV["GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"] = JSON.generate(type: "service_account", client_email: "test@example.invalid", private_key: "fixture")
   ENV["GITHUB_REF"] = "refs/tags/v0.1.10"
+  ENV.delete("PLAY_CLOSED_TRACK")
   options = play_upload_options(root)
-  assert(options[:track] == "internal" && options[:release_status] == "completed", "internal track only")
+  assert(play_upload_options(root, "internal")[:track] == "internal", "explicit internal uploads")
+  ENV["PLAY_CLOSED_TRACK"] = "playtesters"
+  assert(play_upload_options(root)[:track] == "playtesters", "custom closed track")
+  %w[production beta internal wear:production].each do |track|
+    ENV["PLAY_CLOSED_TRACK"] = track
+    rejects("closed testing track") { play_upload_options(root) }
+  end
+  ENV.delete("PLAY_CLOSED_TRACK")
+  rejects("closed or internal") { play_upload_options(root, "production") }
+  assert(options[:track] == "alpha" && options[:release_status] == "completed", "closed track by default")
   assert(options[:skip_upload_metadata] && options[:skip_upload_images] && options[:skip_upload_screenshots], "preserve store listing")
   assert(!options[:skip_upload_changelogs] && options[:release_name] == "0.1.10 (11)", "publish versioned notes")
   ENV["GITHUB_REF"] = "refs/tags/v0.1.9"

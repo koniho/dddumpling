@@ -15,9 +15,10 @@ jobs:
         with:
           ruby-version: "3.3"
           bundler-cache: true
-      - name: Read internal testing track without publishing
+      - name: Read testing tracks without publishing
         env:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_CLOSED_TRACK: ${{ vars.PLAY_CLOSED_TRACK }}
           FASTLANE_SKIP_UPDATE_CHECK: "1"
           FASTLANE_OPT_OUT_USAGE: "1"
         run: bundle exec fastlane android verify_access

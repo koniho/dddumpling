@@ -7,9 +7,16 @@ on:
   workflow_dispatch:
     inputs:
       upload_to_play:
-        description: Upload this build to Google Play internal testing
+        description: Upload this build to the selected Google Play testing track
         type: boolean
         default: false
+      play_track:
+        description: Testing destination (version tags always use closed)
+        type: choice
+        options:
+          - closed
+          - internal
+        default: closed
 
 
 permissions:
@@ -103,12 +110,12 @@ jobs:
               --generate-notes --title "DDDUMPLING ${GITHUB_REF_NAME}"
           fi
 
-  upload_internal:
+  upload_testing:
     needs: [release, validate_fastlane]
     if: startsWith(github.ref, 'refs/tags/v') || inputs.upload_to_play == true
     runs-on: ubuntu-latest
     concurrency:
-      group: google-play-internal
+      group: google-play-testing
       cancel-in-progress: false
     permissions:
       contents: read
@@ -132,9 +139,11 @@ jobs:
           path: build/play-artifact
       - name: Select the signed production bundle
         run: cp "build/play-artifact/DDDUMPLING-${GITHUB_REF_NAME}.aab" build/DDDUMPLING.aab
-      - name: Publish to internal testing
+      - name: Publish to selected testing track
         env:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           FASTLANE_SKIP_UPDATE_CHECK: "1"
           FASTLANE_OPT_OUT_USAGE: "1"
-        run: bundle exec fastlane android internal
+          PLAY_TEST_CHANNEL: ${{ github.event_name == 'push' && 'closed' || inputs.play_track }}
+          PLAY_CLOSED_TRACK: ${{ vars.PLAY_CLOSED_TRACK }}
+        run: bundle exec fastlane android testing
