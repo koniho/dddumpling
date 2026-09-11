@@ -49,7 +49,7 @@ def play_upload_options(root, channel = "closed")
     aab: aab,
     track: play_test_track(channel),
     release_status: "completed",
-    release_name: "#{name} (#{version})",
+    version_name: "#{name} (#{version})",
     metadata_path: File.join(root, "app-store/google-play"),
     skip_upload_apk: true,
     skip_upload_metadata: true,

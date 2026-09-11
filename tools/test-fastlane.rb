@@ -46,7 +46,7 @@ Dir.mktmpdir do |root|
   rejects("closed or internal") { play_upload_options(root, "production") }
   assert(options[:track] == "alpha" && options[:release_status] == "completed", "closed track by default")
   assert(options[:skip_upload_metadata] && options[:skip_upload_images] && options[:skip_upload_screenshots], "preserve store listing")
-  assert(!options[:skip_upload_changelogs] && options[:release_name] == "0.1.10 (11)", "publish versioned notes")
+  assert(!options[:skip_upload_changelogs] && options[:version_name] == "0.1.10 (11)", "publish versioned notes")
   ENV["GITHUB_REF"] = "refs/tags/v0.1.9"
   rejects("Release tag must match") { play_upload_options(root) }
   ENV["GITHUB_REF"] = "refs/heads/main"
