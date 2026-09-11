@@ -114,3 +114,7 @@ Run `python3 tools/test-prepare-release.py` to verify the tool in temporary Git 
 
 Manual-build artifacts use `DDDUMPLING-build-<run ID>` so branch names containing slashes are safe.
 Tagged release filenames continue to use the version tag.
+
+Developer APKs use `com.dddumpling.game.dev` and the launcher name **DDDUMPLING Dev**.
+Production AABs retain `com.dddumpling.game`. Both can be installed together with separate saves.
+The build checks the packaged application ID, label and launch activity after signing.

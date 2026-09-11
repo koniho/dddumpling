@@ -9,10 +9,11 @@ cd "$(dirname "$0")"
 
 APK=hexatype.apk
 PKG=com.dddumpling.game
-ACTIVITY=$PKG/.MainActivity
 
 if [ "$#" -eq 0 ]; then set -- --developer; fi
 ./build.sh "$@"
+if [ "$1" = --developer ]; then PKG=com.dddumpling.game.dev; fi
+ACTIVITY=$PKG/com.dddumpling.game.MainActivity
 
 notify() {
     # Only if the Termux:API app is present; the CLI blocks forever without it.

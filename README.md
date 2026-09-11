@@ -325,9 +325,10 @@ Tag pushes (`v*`) and manual runs of **Build Android release** produce two signe
 - `DDDUMPLING-<ref>-developer.apk`: direct installation with developer controls enabled.
 
 Tag builds attach both files to the GitHub Release; manual builds provide them in the workflow
-artifact. They share the application ID and signing key, so the developer APK replaces an existing
-local installation rather than installing alongside it. Play App Signing may use a different app
-signing key, in which case switching from a Play installation requires uninstalling first.
+artifact. Production uses `com.dddumpling.game` / **DDDUMPLING**. Developer builds use
+`com.dddumpling.game.dev` / **DDDUMPLING Dev**, so both can be installed together even when
+Play App Signing uses a different key. Scores, collections and preferences are separate;
+existing production saves are not copied into the developer app.
 
 `./build.sh` defaults to developer mode for local installs; `./build.sh --production` disables
 settings and playtest actions at compile time and ignores saved developer speed/music preferences.

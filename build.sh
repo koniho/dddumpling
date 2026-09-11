@@ -49,6 +49,14 @@ PLAY_RES=()
 PLAY_LINK=()
 PLATFORM_SRC=local-src
 MANIFEST=AndroidManifest.xml
+APP_ID=com.dddumpling.game
+APP_LABEL=DDDUMPLING
+if [ "$DEVELOPER" = true ]; then
+    APP_ID=com.dddumpling.game.dev
+    APP_LABEL="DDDUMPLING Dev"
+    MANIFEST="$OUT/developer-manifest.xml"
+    sed 's|@string/app_name"|@string/app_name_dev"|' AndroidManifest.xml > "$MANIFEST"
+fi
 if [ "$DEVELOPER" = false ] && [ -n "$PLAY_CONFIG" ]; then
     python tools/prepare-play.py --config "$PLAY_CONFIG"
     PLATFORM_SRC=play-src
@@ -62,7 +70,7 @@ fi
 echo ">> resources"
 aapt2 compile --dir res -o "$OUT/res.zip"
 aapt2 link -o "$OUT/base.apk" -I "$SDK" \
-    --manifest "$MANIFEST" \
+    --manifest "$MANIFEST" --rename-manifest-package "$APP_ID" --custom-package com.dddumpling.game \
     --java "$OUT/gen" --min-sdk-version "$MIN" --target-sdk-version "$TGT" \
     -A assets \
     "${PLAY_LINK[@]}" "${PLAY_RES[@]}" "$OUT/res.zip"
@@ -94,6 +102,11 @@ apksigner sign --ks "$KS" --ks-key-alias "$KS_ALIAS" \
     --ks-pass "pass:$KS_STORE_PASS" --key-pass "pass:$KS_KEY_PASS" \
     --out "$APK" "$OUT/base.apk"
 apksigner verify "$APK" && echo ">> signature ok"
+aapt2 dump badging "$APK" > "$OUT/apk-info.txt"
+grep -Fq "package: name='$APP_ID'" "$OUT/apk-info.txt"
+grep -Fq "application-label:'$APP_LABEL'" "$OUT/apk-info.txt"
+grep -Fq "launchable-activity: name='com.dddumpling.game.MainActivity'" "$OUT/apk-info.txt"
+echo ">> identity ok: $APP_ID ($APP_LABEL)"
 
 ls -la "$APK"
 echo
