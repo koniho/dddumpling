@@ -46,3 +46,9 @@ screenshots with visible text alongside the listing when appropriate.
 
 Store translations do not translate the game's hardcoded text. Review in-game
 translations and layout separately before advertising language support.
+
+## Video and reusable skills
+
+See [video/README.md](video/README.md) for the gameplay trailer, scene sources,
+and export commands. Repository skills are under skills/dddumpling-store-assets/
+and skills/dddumpling-gameplay-trailer/.
