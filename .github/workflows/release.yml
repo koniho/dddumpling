@@ -36,6 +36,7 @@ jobs:
           FASTLANE_SKIP_UPDATE_CHECK: "1"
           FASTLANE_OPT_OUT_USAGE: "1"
         run: |
+          python3 tools/test-prepare-release.py
           bundle exec ruby tools/test-fastlane.rb
           bundle exec fastlane lanes
 

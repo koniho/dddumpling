@@ -1,6 +1,6 @@
 ---
 name: dddumpling-store-assets
-description: Prepare DDDUMPLING app-store icons, feature graphics, screenshots, and listing copy using the existing game artwork and export tools. Use for store posting assets, not unrelated gameplay changes.
+description: Prepare DDDUMPLING app-store icons, feature graphics, screenshots, listing copy, and release notes using the existing game artwork and export tools. Use for store posting assets or preparing a game release, not unrelated gameplay changes.
 ---
 
 # DDDUMPLING store assets
@@ -63,3 +63,32 @@ into docs/site/assets/ and push main; .github/workflows/publish-pages.yml publis
 that directory. Wait for success and HTTP 200 before sharing a live download link.
 Google Drive is optional and not part of this workflow by default. Keep signing
 files, private credentials, rejected drafts, and game source out of public assets.
+
+## Preparing a release
+
+When asked to prepare or create a release, include the version bump and player-facing
+release notes. Read app-store/play-publishing.md for the current target and account setup.
+
+1. Run `python3 tools/prepare-release.py context --output build/release-context.json`.
+   Confirm the base is the last distributed version. For a manually uploaded release,
+   pass `--since <commit-or-tag>`: the nearest Git tag may be older than the actual release.
+   The initial Play version code 10 was built from `3451055` despite having no release tag.
+2. Read the context, relevant diffs, and linked merged PR descriptions. Summarize observable
+   gameplay changes and fixes into `build/release-notes.txt`. Omit publishing infrastructure,
+   developer-only changes, and unmerged features. Do not copy commit subjects blindly or
+   invent player benefits when the range contains only tooling changes. Report that case
+   and keep release preparation within the user's intended scope.
+3. Run `python3 tools/prepare-release.py prepare --notes build/release-notes.txt` to preview.
+   Defaults increment the patch version and version code. Override `--version-name` and
+   `--version-code` for the requested release; confirm the code has not already been uploaded
+   to Play, including unpublished uploads. Never retry an upload by reusing a consumed code.
+4. Once the notes accurately describe the release, repeat with `--write`. This updates
+   AndroidManifest.xml and writes `app-store/google-play/en-US/changelogs/<code>.txt`.
+   Review their diff together and show the notes with the version in the release summary.
+   Honor existing authorization for committing, tagging and publishing; preparation itself
+   does none of these. When authorized, include both files in the release commit before tagging.
+
+Fastlane uploads the versioned notes automatically and requires 1–500 characters.
+GitHub's generated release notes can stay more technical and detailed. Keep changelog files
+tracked as the authoritative record of what was sent to Play; do not generate new notes
+inside the upload job after the release has already been tagged.

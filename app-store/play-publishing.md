@@ -28,7 +28,8 @@ artifacts. Rotate the key in Google Cloud and replace the GitHub secret when nec
 
 ## Each new release
 
-1. Increment `android:versionCode` in `AndroidManifest.xml`; use a value never uploaded to Play.
+1. Prepare the bump and notes using the release preparation tool below. Use an
+   `android:versionCode` never uploaded to Play.
    Version code **10** was uploaded manually for the initial release and must not be uploaded again.
 2. Update `android:versionName` and create
    `app-store/google-play/en-US/changelogs/<versionCode>.txt` (1–500 characters).
@@ -88,3 +89,25 @@ Version code 10 can be selected from the existing artifact library in Play Conso
 closed release; do not upload it again. Future new versions go to closed testing on version tags.
 Google may require review or completion of app-content declarations before a closed release is
 available. A successful upload does not establish the 12-tester/14-day production-access requirement.
+
+## Prepare release notes and version together
+
+The store-assets skill includes this automatically when preparing a release. The tool gathers
+history and safely writes the result; the agent synthesizes player-facing wording from the evidence.
+It does not call an external text-generation service or publish anything.
+
+```sh
+python3 tools/prepare-release.py context --output build/release-context.json
+# Use --since <last-distributed-commit> if the last Play release had no Git tag.
+# Review that context and relevant diffs; write concise player-facing notes to build/release-notes.txt.
+python3 tools/prepare-release.py prepare --notes build/release-notes.txt
+python3 tools/prepare-release.py prepare --notes build/release-notes.txt --write
+```
+
+`prepare` previews by default, increments the patch version/code, and accepts explicit
+`--version-name` and `--version-code` overrides. It rejects empty/oversized notes, non-increasing
+codes, and overwriting an existing changelog. It cannot determine remotely consumed version codes;
+check Play before selecting one. Review and commit the manifest/changelog together before tagging.
+For the first release after version code 10, use `context --since 3451055` as the historical baseline.
+
+Run `python3 tools/test-prepare-release.py` to verify the tool in temporary Git repositories.
