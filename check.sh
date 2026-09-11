@@ -5,7 +5,6 @@
 # shellcheck shell=bash
 #
 # Usage: check.sh [-q] [-s SUITE] [-f TAGS] [-c BOX] [-r] [W H SS]
-#   --production  compile developer controls out and verify the production restrictions
 #   -q        only failures, printed diagnostics and the tally
 #   -s SUITE  run only suites whose name contains SUITE (Boss, Power, Soak, ...)
 #   -f TAGS   render only frames whose name starts with one of TAGS (comma-separated); also
@@ -16,12 +15,12 @@ if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi
 set -euo pipefail
 cd "$(dirname "$0")"
 
+PRODUCTION=0
 QUIET=0
 SUITE=
 FRAMES=
 CROP=
 RULES_ONLY=0
-PRODUCTION=0
 while [ $# -gt 0 ]; do
     case "$1" in
         --production) PRODUCTION=1; shift ;;
@@ -36,64 +35,66 @@ done
 
 # Every pure-Java file, by hand. A new pure file has to be added here or the harness fails to
 # compile while the APK builds fine.
-PURE="src/com/sram/hexatype/ProgressData.java
-src/com/sram/hexatype/Progress.java
-src/com/sram/hexatype/Glyph.java
-src/com/sram/hexatype/Roster.java
-src/com/sram/hexatype/Kawaii.java
-src/com/sram/hexatype/Layout.java
-src/com/sram/hexatype/Sfx.java
-src/com/sram/hexatype/Music.java
-src/com/sram/hexatype/Words.java
-src/com/sram/hexatype/Fx.java
-src/com/sram/hexatype/Steamer.java
-src/com/sram/hexatype/StarPath.java
-src/com/sram/hexatype/Collect.java
-src/com/sram/hexatype/Power.java
-src/com/sram/hexatype/Boss.java
-src/com/sram/hexatype/Softbody.java
-src/com/sram/hexatype/Buddy.java
-src/com/sram/hexatype/GameCore.java
-src/com/sram/hexatype/Pacing.java
-src/com/sram/hexatype/Blade.java
-src/com/sram/hexatype/CaseUi.java
-src/com/sram/hexatype/BossCollect.java
-src/com/sram/hexatype/Interlude.java
-src/com/sram/hexatype/BossPlay.java
-src/com/sram/hexatype/Painter.java
-src/com/sram/hexatype/SettingsUi.java
-src/com/sram/hexatype/Draw.java
-src/com/sram/hexatype/Sky.java
-src/com/sram/hexatype/Slime.java
-src/com/sram/hexatype/Skits.java
-src/com/sram/hexatype/Shape.java
-src/com/sram/hexatype/Basket.java
-src/com/sram/hexatype/Parade.java
-src/com/sram/hexatype/Finish.java
-src/com/sram/hexatype/Trinket.java
-src/com/sram/hexatype/Cabinet.java
-src/com/sram/hexatype/Launch.java
-src/com/sram/hexatype/RoundEnd.java
-src/com/sram/hexatype/Demo.java
-src/com/sram/hexatype/Lore.java
-src/com/sram/hexatype/Narration.java
-src/com/sram/hexatype/Showcase.java
-src/com/sram/hexatype/Storybook.java
-src/com/sram/hexatype/Hud.java
-src/com/sram/hexatype/TitleBubbleFont.java
-src/com/sram/hexatype/Screens.java
-src/com/sram/hexatype/StarScreen.java
-src/com/sram/hexatype/BossScreen.java
-src/com/sram/hexatype/BossVictory.java
-src/com/sram/hexatype/Renderer.java"
+PURE="src/com/dddumpling/game/ProgressData.java
+src/com/dddumpling/game/Progress.java
+src/com/dddumpling/game/PrivacyUi.java
+src/com/dddumpling/game/Pause.java
+src/com/dddumpling/game/Glyph.java
+src/com/dddumpling/game/Roster.java
+src/com/dddumpling/game/Kawaii.java
+src/com/dddumpling/game/Layout.java
+src/com/dddumpling/game/Sfx.java
+src/com/dddumpling/game/Music.java
+src/com/dddumpling/game/Words.java
+src/com/dddumpling/game/Fx.java
+src/com/dddumpling/game/Steamer.java
+src/com/dddumpling/game/StarPath.java
+src/com/dddumpling/game/Collect.java
+src/com/dddumpling/game/Power.java
+src/com/dddumpling/game/Boss.java
+src/com/dddumpling/game/Softbody.java
+src/com/dddumpling/game/Buddy.java
+src/com/dddumpling/game/GameCore.java
+src/com/dddumpling/game/Pacing.java
+src/com/dddumpling/game/Blade.java
+src/com/dddumpling/game/CaseUi.java
+src/com/dddumpling/game/BossCollect.java
+src/com/dddumpling/game/Interlude.java
+src/com/dddumpling/game/BossPlay.java
+src/com/dddumpling/game/Painter.java
+src/com/dddumpling/game/SettingsUi.java
+src/com/dddumpling/game/Draw.java
+src/com/dddumpling/game/Sky.java
+src/com/dddumpling/game/Slime.java
+src/com/dddumpling/game/Skits.java
+src/com/dddumpling/game/Shape.java
+src/com/dddumpling/game/Basket.java
+src/com/dddumpling/game/Parade.java
+src/com/dddumpling/game/Finish.java
+src/com/dddumpling/game/Trinket.java
+src/com/dddumpling/game/Cabinet.java
+src/com/dddumpling/game/Launch.java
+src/com/dddumpling/game/RoundEnd.java
+src/com/dddumpling/game/Demo.java
+src/com/dddumpling/game/Lore.java
+src/com/dddumpling/game/Narration.java
+src/com/dddumpling/game/Showcase.java
+src/com/dddumpling/game/Storybook.java
+src/com/dddumpling/game/Hud.java
+src/com/dddumpling/game/TitleBubbleFont.java
+src/com/dddumpling/game/Screens.java
+src/com/dddumpling/game/StarScreen.java
+src/com/dddumpling/game/BossScreen.java
+src/com/dddumpling/game/BossVictory.java
+src/com/dddumpling/game/Renderer.java"
 
 rm -rf build/harness
 mkdir -p build/harness out
 # shellcheck disable=SC2086
 DEVELOPER=true
-[ "$PRODUCTION" -eq 0 ] || DEVELOPER=false
+[ "$PRODUCTION" = 0 ] || DEVELOPER=false
 sh tools/build-flags.sh build/harness-flags "$DEVELOPER"
-javac -nowarn -d build/harness $PURE tools/*.java build/harness-flags/com/sram/hexatype/BuildFlags.java
+javac -nowarn -d build/harness $PURE tools/*.java build/harness-flags/com/dddumpling/game/BuildFlags.java
 
 # Quiet drops the per-assertion ok lines and the per-frame wrote lines, keeping failures, the
 # indented printf diagnostics, DOES NOT FIT and the tally.
@@ -101,16 +102,17 @@ filter() {
     if [ "$QUIET" = 1 ]; then grep -Ev "^  ok |^  wrote " || true; else cat; fi
 }
 
-[ "$QUIET" = 1 ] || echo "=== rules ==="
-if [ "$PRODUCTION" -eq 1 ]; then
-    java -cp build/harness com.sram.hexatype.TestProduction | filter
+if [ "$PRODUCTION" = 1 ]; then
+    java -cp build/harness com.dddumpling.game.TestProduction | filter
     exit 0
 fi
-java -cp build/harness com.sram.hexatype.CoreTest "$SUITE" | filter
+
+[ "$QUIET" = 1 ] || echo "=== rules ==="
+java -cp build/harness com.dddumpling.game.CoreTest "$SUITE" | filter
 
 if [ "$RULES_ONLY" = 1 ]; then exit 0; fi
 
 [ "$QUIET" = 1 ] || printf '\n=== frames ===\n'
-FRAMES="$FRAMES" CROP="$CROP" java -Xmx512m -cp build/harness com.sram.hexatype.Preview \
+FRAMES="$FRAMES" CROP="$CROP" java -Xmx512m -cp build/harness com.dddumpling.game.Preview \
     "${1:-640}" "${2:-1400}" "${3:-3}" out | filter
 [ "$QUIET" = 1 ] || ls -la out/*.png

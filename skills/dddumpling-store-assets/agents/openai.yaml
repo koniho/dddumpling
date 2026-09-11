@@ -1,0 +1,4 @@
+interface:
+  display_name: "DDDUMPLING Store Assets"
+  short_description: "Export store graphics from native game artwork"
+  default_prompt: "Use $dddumpling-store-assets to prepare app-store graphics and listing assets from the current game."

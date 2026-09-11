@@ -3,9 +3,9 @@
 A kawaii typing-attack game for Android, built entirely on-device in Termux — no Gradle, no
 Android Studio, no PC.
 
-> The game is called DDDUMPLING on screen and in the launcher. The package, the directory and
-> every identifier are still `hexatype` — renaming those would change the package name, which
-> Android treats as a different app, so an install would not upgrade an existing one.
+> The game and launcher name is DDDUMPLING; the Android package is `com.dddumpling.game`.
+> This pre-store package change installs as a separate app from earlier development builds,
+> with separate scores and collections. The build output is still named `hexatype.apk`.
 
 Cute words fall from the sky. Each "letter" is one of six characters — dumpling, strawberry,
 cat, grapes, squishy, blob — with its own colour and face. You type by tapping the matching
@@ -90,7 +90,7 @@ It does two things:
 Reading the PNGs is the point: that loop is seconds, and it needs no device.
 
 This works because all logic and all drawing are pure Java behind the
-[`Painter`](src/com/sram/hexatype/Painter.java) interface. The APK implements it with
+[`Painter`](src/com/dddumpling/game/Painter.java) interface. The APK implements it with
 `android.graphics.Canvas`; `tools/RasterPainter` implements it with a software rasterizer.
 **One render path, two backends** — so a PNG from the harness is what the phone draws. Renders
 are deterministic (fixed RNG seeds, no wall clock), so a change that should not alter them can
@@ -175,7 +175,7 @@ installed and silently skips it otherwise. Termux add-ons must come from the sam
 Termux itself — mixing F-Droid and GitHub builds fails with a signature mismatch.
 
 **You cannot see this app's crashes.** Termux's `logcat` only shows its own UID, and there is
-no `dumpsys` here, so [`Crash.java`](src/com/sram/hexatype/Crash.java) renders the stack trace
+no `dumpsys` here, so [`Crash.java`](src/com/dddumpling/game/Crash.java) renders the stack trace
 on screen instead. If it crashes, read that screen.
 
 ## Layout of the code
@@ -241,7 +241,7 @@ file has to be added there. `build.sh` globs `src/`, so it needs no updating.
 | `Font` | 5x7 bitmap font — **ASCII subset only**, see below |
 | `Png` / `Wav` | minimal writers |
 
-`tools/` shares the `com.sram.hexatype` package so it can reach package-private state, but it
+`tools/` shares the `com.dddumpling.game` package so it can reach package-private state, but it
 is compiled separately and is not in `build.sh`'s source list.
 
 One thing worth knowing before you write any on-screen text: `tools/Font` has a bitmap per
@@ -317,33 +317,37 @@ build tools, and signs with the project keystore stored as encrypted GitHub repo
 that keystore backed up: Android will not install an update signed with a different key over an
 existing installation.
 
-## Google Play submission
+### Google Play builds
 
-See [store/README.md](store/README.md) for the bundle build, signing, draft listing and remaining Console steps.
+Tag pushes (`v*`) and manual runs of **Build Android release** produce two signed files:
 
-### Production and developer builds
+- `DDDUMPLING-<ref>.aab`: production bundle to upload to Play Console.
+- `DDDUMPLING-<ref>-developer.apk`: direct installation with developer controls enabled.
 
-Settings exist only in developer builds. The generated `BuildFlags.DEVELOPER` is a Java compile-time
-constant, with no saved preference or in-app switch. Production removes the settings icon, panel,
-tap targets and settings actions, including playtest hooks and collection clearing. Production uses
-default speed/music while preserving normal progression and collection data.
+Tag builds attach both files to the GitHub Release; manual builds provide them in the workflow
+artifact. They share the application ID and signing key, so the developer APK replaces an existing
+local installation rather than installing alongside it. Play App Signing may use a different app
+signing key, in which case switching from a Play installation requires uninstalling first.
 
-| Command | Build |
-| --- | --- |
-| `./build.sh` or `./build.sh --production` | Production APK, no settings |
-| `./build.sh --developer` | Developer APK, full settings |
-| `./deploy.sh` | Build and install the developer APK |
-| `./deploy.sh --production` | Build and install the production APK |
-| `./build-bundle.sh` | Signed production Play bundle; developer mode cannot be selected |
-| `./check.sh --production -q` | Compile with developer mode off and test production restrictions |
+`./build.sh` defaults to developer mode for local installs; `./build.sh --production` disables
+settings and playtest actions at compile time and ignores saved developer speed/music preferences.
+Both builds include the title screen privacy-policy link. Scores and collections remain local.
 
-Every APK/bundle build runs the normal developer harness and the separately compiled production
-checks. GitHub release builds explicitly select production. Both APK modes currently share the
-same package and app data; changing modes updates the existing installation.
+`./build-bundle.sh` creates `build/DDDUMPLING.aab`, targeting API 36. Set `HEXATYPE_KEYSTORE`,
+`HEXATYPE_KEY_ALIAS`, `HEXATYPE_KEYSTORE_PASSWORD` and optionally `HEXATYPE_KEY_PASSWORD` to the
+upload signing key. CI uses the existing `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS`,
+`ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_PASSWORD` secrets. Keep this key backed up privately.
+`./build-bundle.sh --unsigned` is for local bundle validation only, not Play upload.
+
+Version tags also publish the signed AAB to **Google Play closed testing** through fastlane.
+Manual workflow runs have an optional `upload_to_play` checkbox (off by default) and a
+`play_track` choice of closed or internal. The closed track defaults to API ID `alpha`; set
+repository variable `PLAY_CLOSED_TRACK` for a custom track.
+See [Play publishing setup](app-store/play-publishing.md) for service-account credentials,
+versioned release notes, and retry instructions. Public releases remain manual.
 
 ### Optional Play Games integration
 
-Ordinary production builds remain local-only. On the `feature/play-games-progress` branch,
-production gameplay records local event/progress counters. To include Google Play Games events
-and cross-device saves, configure the project/event IDs and build with `DDDUMPLING_PLAY_CONFIG`.
-Developer builds never include the SDK or report events. See [Play Games setup and save semantics](store/play-games.md).
+Production builds record progress locally. To include Google Play Games events and cross-device
+saves, configure the project/event IDs and build with `DDDUMPLING_PLAY_CONFIG`. Developer builds
+exclude the SDK. See [Play Games setup and save semantics](store/play-games.md).

@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /**
  * The boss encounter: its cadence, the frame all five share, the press/tap/drag precedence, each
@@ -1444,6 +1444,9 @@ final class TestBoss extends Check {
                         && Math.abs(c.boss.pieceR(1, L) - c.boss.pieceR(0, L)) < 0.01f);
 
         int splitEvents = 1;
+        float lastInterval = c.boss.divideBoltInterval();
+        check("the first actual split speeds up every cube", c.boss.divideSplits == 1
+                && lastInterval < Boss.DIVIDE_BOLT_TIME && lastInterval > 2f);
         for (int depth = 1; depth < Boss.DIVIDE_LEVELS; depth++) {
             boolean more = true;
             while (more) {
@@ -1454,6 +1457,10 @@ final class TestBoss extends Check {
                     c.boss.beginPinch(100f);
                     c.boss.pinch(100f * (Boss.DIVIDE_SCALE + 0.01f));
                     splitEvents++;
+                    float nextInterval = c.boss.divideBoltInterval();
+                    check("each actual split increases firing rate", c.boss.divideSplits == splitEvents
+                            && nextInterval < lastInterval && nextInterval >= 2f);
+                    lastInterval = nextInterval;
                     more = true;
                     break;
                 }
@@ -1461,6 +1468,8 @@ final class TestBoss extends Check {
         }
         check("three generations produce eight fragments", c.boss.pieceCount() == 8);
         check("the binary tree needed seven split events", splitEvents == 7);
+        check("seven splits reach exactly 50 percent more shots per second",
+                Math.abs(Boss.DIVIDE_BOLT_TIME / c.boss.divideBoltInterval() - 1.5f) < .0001f);
         boolean terminal = true;
         for (int i = 0; i < c.boss.pieceCount(); i++)
             if (c.boss.pieceDepth(i) != Boss.DIVIDE_LEVELS) terminal = false;
@@ -1528,7 +1537,10 @@ final class TestBoss extends Check {
         check("the final drop breaks into many tiny slime fragments",
                 BossScreen.DIVIDE_SHARDS_PER_PIECE * Boss.DIVIDE_PIECES >= 90);
 
+        check("deactivating terminal cubes does not add split events", c.boss.divideSplits == 7);
         GameCore timers = enterBoss(L, Boss.SPLITTER, 82L);
+        check("a new boss begins at the original firing rate", timers.boss.divideSplits == 0
+                && timers.boss.divideBoltInterval() == Boss.DIVIDE_BOLT_TIME);
         int node = timers.boss.pieceNodeIndex(0);
         timers.boss.halfIdle[node] = Boss.DIVIDE_BOLT_TIME - 0.1f;
         timers.tapKey(timers.boss.pieceWant(0), L);
@@ -1537,6 +1549,19 @@ final class TestBoss extends Check {
         timers.boss.halfIdle[node] = Boss.DIVIDE_BOLT_TIME - 0.1f;
         timers.update(0.2f, L);
         check("a neglected slime launches from its own body", timers.boss.boltCount() == 1);
+        GameCore fast = enterBoss(L, Boss.SPLITTER, 83L);
+        fast.boss.divideSplits = 7;
+        int fastNode = fast.boss.pieceNodeIndex(0);
+        fast.boss.halfIdle[fastNode] = 1.8f;
+        fast.update(.1f, L);
+        check("capped firing still waits for its two-second interval", fast.boss.boltCount() == 0);
+        fast.update(.15f, L);
+        check("capped firing launches before the old three-second interval", fast.boss.boltCount() == 1);
+        fast.boss.divideSplits = 100;
+        check("firing rate cannot exceed its cap", fast.boss.divideBoltInterval() == 2f);
+        fast.boss.leave();
+        check("leaving clears the firing-rate progression", fast.boss.divideSplits == 0);
+
     }
 
     // ---- cleanup ------------------------------------------------------------

@@ -5,11 +5,41 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      upload_to_play:
+        description: Upload this build to the selected Google Play testing track
+        type: boolean
+        default: false
+      play_track:
+        description: Testing destination (version tags always use closed)
+        type: choice
+        options:
+          - closed
+          - internal
+        default: closed
+
 
 permissions:
   contents: write
 
 jobs:
+  validate_fastlane:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      - name: Verify upload configuration without publishing
+        env:
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+          FASTLANE_OPT_OUT_USAGE: "1"
+        run: |
+          python3 tools/test-prepare-release.py
+          bundle exec ruby tools/test-fastlane.rb
+          bundle exec fastlane lanes
+
   release:
     runs-on: ubuntu-latest
     steps:
@@ -25,8 +55,8 @@ jobs:
       - name: Install Android build tools
         run: |
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "platforms;android-36" "build-tools;35.0.0"
-          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
+            "platforms;android-36" "build-tools;36.0.0"
+          echo "$ANDROID_HOME/build-tools/36.0.0" >> "$GITHUB_PATH"
 
       - name: Restore signing key
         env:
@@ -35,22 +65,35 @@ jobs:
           mkdir -p build
           printf "%s" "$KEYSTORE_BASE64" | base64 --decode > build/release.keystore
 
-      - name: Build and verify APK
+      - name: Build signed production bundle
         env:
           HEXATYPE_KEYSTORE: build/release.keystore
           HEXATYPE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           HEXATYPE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           HEXATYPE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./build.sh --production
+        run: ./build-bundle.sh
 
-      - name: Name release APK
-        run: cp hexatype.apk "DDDUMPLING-${GITHUB_REF_NAME}.apk"
+      - name: Build developer APK
+        env:
+          HEXATYPE_KEYSTORE: build/release.keystore
+          HEXATYPE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          HEXATYPE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          HEXATYPE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./build.sh --developer
 
-      - name: Upload workflow artifact
+      - name: Name upload files
+        run: |
+          cp build/DDDUMPLING.aab "DDDUMPLING-${GITHUB_REF_NAME}.aab"
+          cp hexatype.apk "DDDUMPLING-${GITHUB_REF_NAME}-developer.apk"
+
+      - name: Upload workflow artifacts
         uses: actions/upload-artifact@v6
         with:
           name: DDDUMPLING-${{ github.ref_name }}
-          path: DDDUMPLING-${{ github.ref_name }}.apk
+          if-no-files-found: error
+          path: |
+            DDDUMPLING-${{ github.ref_name }}.aab
+            DDDUMPLING-${{ github.ref_name }}-developer.apk
 
       - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -59,9 +102,49 @@ jobs:
         run: |
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" \
-              "DDDUMPLING-${GITHUB_REF_NAME}.apk" --clobber
+              "DDDUMPLING-${GITHUB_REF_NAME}.aab" \
+              "DDDUMPLING-${GITHUB_REF_NAME}-developer.apk" --clobber
           else
             gh release create "$GITHUB_REF_NAME" \
-              "DDDUMPLING-${GITHUB_REF_NAME}.apk" \
+              "DDDUMPLING-${GITHUB_REF_NAME}.aab" \
+              "DDDUMPLING-${GITHUB_REF_NAME}-developer.apk" \
               --generate-notes --title "DDDUMPLING ${GITHUB_REF_NAME}"
           fi
+
+  upload_testing:
+    needs: [release, validate_fastlane]
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.upload_to_play == true
+    runs-on: ubuntu-latest
+    concurrency:
+      group: google-play-testing
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check Google Play credentials
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -z "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::Add GOOGLE_PLAY_SERVICE_ACCOUNT_JSON in repository secrets. See app-store/play-publishing.md."
+            exit 1
+          fi
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: DDDUMPLING-${{ github.ref_name }}
+          path: build/play-artifact
+      - name: Select the signed production bundle
+        run: cp "build/play-artifact/DDDUMPLING-${GITHUB_REF_NAME}.aab" build/DDDUMPLING.aab
+      - name: Publish to selected testing track
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+          FASTLANE_OPT_OUT_USAGE: "1"
+          PLAY_TEST_CHANNEL: ${{ github.event_name == 'push' && 'closed' || inputs.play_track }}
+          PLAY_CLOSED_TRACK: ${{ vars.PLAY_CLOSED_TRACK }}
+        run: bundle exec fastlane android testing

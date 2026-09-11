@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -163,9 +163,20 @@ final class TestProgress extends Check {
         boss.progress.enterStage(5); boss.boss.begin(Boss.SLIME, 5, boss.rnd, boss.playRosterFull());
         boss.update(.1f, .1f, L);
         boss.boss.intro = 0; boss.slowdown = 1;
+        Pause.open(boss);
+        boss.update(.01f, 45f, L);
+        Pause.resume(boss);
         boss.update(.01f, 2f, L);
         boss.progress.bossDamage(0, 10, 9);
-        check("timer excludes intro and counts real elapsed time rather than slow motion",
+        check("timer excludes intro and pause, and counts elapsed time before slow motion",
                 boss.progress.count("boss_slime_first_hit_ms_total") == 2000);
+        Pause.open(boss); Pause.action(boss, 2); Pause.action(boss, 2);
+        check("pause end records one abandonment and no loss", boss.state == GameCore.TITLE
+                && boss.progress.count("runs_abandoned") == 1
+                && boss.progress.count("boss_slime_abandoned") == 1
+                && boss.progress.count("runs_finished") == 0);
+        boss.toTitle();
+        check("repeated title transition does not double count abandonment",
+                boss.progress.count("runs_abandoned") == 1);
     }
 }

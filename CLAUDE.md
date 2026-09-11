@@ -45,7 +45,7 @@ a player can have either. Frenzy fairness is therefore measured as frenzies surv
 by comparison with abstinence.
 
 This works because *all* logic and *all* drawing are pure Java behind the
-[`Painter`](src/com/sram/hexatype/Painter.java) interface. The APK implements it with
+[`Painter`](src/com/dddumpling/game/Painter.java) interface. The APK implements it with
 `android.graphics.Canvas`; `tools/RasterPainter` implements it with a software rasterizer.
 One render path, two backends — a PNG from the harness is what the phone draws.
 
@@ -96,7 +96,7 @@ Installing needs a tap unless adb is paired over Wireless debugging (README.md).
 under Termux's own UID.
 
 **You cannot see this app's crashes.** Termux's logcat only shows its own UID, and there is no
-adb or dumpsys here. That is why [`Crash.java`](src/com/sram/hexatype/Crash.java) renders the
+adb or dumpsys here. That is why [`Crash.java`](src/com/dddumpling/game/Crash.java) renders the
 stack trace on screen instead. If the user reports a crash, ask them to read that screen.
 
 ## Working cheaply

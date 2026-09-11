@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /** The powerup letter, the frenzy it starts, and the three modes it can grant. */
 final class TestPower extends Check {

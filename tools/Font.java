@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /** 5x7 bitmap font for the offline harness only — just enough to read the HUD and screens. */
 final class Font {

@@ -1,0 +1,4 @@
+interface:
+  display_name: "DDDUMPLING Gameplay Trailer"
+  short_description: "Capture and edit real rendered gameplay trailers"
+  default_prompt: "Use $dddumpling-gameplay-trailer to render a gameplay trailer with game audio and review the exports."

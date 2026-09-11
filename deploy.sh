@@ -8,7 +8,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 APK=hexatype.apk
-PKG=com.sram.hexatype
+PKG=com.dddumpling.game
 ACTIVITY=$PKG/.MainActivity
 
 if [ "$#" -eq 0 ]; then set -- --developer; fi

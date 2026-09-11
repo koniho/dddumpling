@@ -1,0 +1,863 @@
+package com.dddumpling.game;
+
+/**
+ * A pressurised soft body: a ring of mass points held out from inside. What a boss is made of.
+ *
+ * Four forces per node. <b>Skin springs</b> between neighbours hold the perimeter. <b>Pressure</b>
+ * along each edge's outward normal holds the area — the term that turns a dent on one side into a
+ * bulge on the other, and why this is not just a mesh of springs, which fold flat. <b>Pull toward
+ * the rest shape</b>, weak: stiff makes it a wheel that answers a dent by rotating, absent leaves
+ * no bending stiffness at all (a squash was still 6% flat twenty seconds later, decaying like one
+ * over root t). <b>Centring pull</b> on the centroid toward home, applied uniformly, so it moves
+ * the centre of mass without touching the wobble.
+ *
+ * <p><b>Deterministic.</b> The harness hash-compares frames, so no RNG and no wall clock: the idle
+ * breath is two ring harmonics at hashed rates, off a clock accumulated from {@code dt}.
+ *
+ * <p><b>Stability.</b> Semi-implicit Euler. {@link #update} clamps {@code dt} to {@link #MAX_DT} —
+ * a long frame is a slow frame, not an exploded one — and substeps at {@link #STEP}, which keeps
+ * the stiffness usable. Every stiffness is an acceleration per unit displacement, i.e. a frequency
+ * squared, so the sim is scale-invariant: same wobble rate at any size.
+ */
+final class Softbody {
+
+    /**
+     * Ring nodes. Under ~12 the silhouette reads as a polygon and a dent as a corner; over ~24 is
+     * all cost, and this runs every frame.
+     */
+    static final int NODES = 18;
+    /** Spline samples per node gap in {@link #outline}. Eighteen at four is 72 points. */
+    static final int SMOOTH = 4;
+    static final float TAU = 6.2831853f;
+
+    /** Longest frame the sim will believe. See the stability note above. */
+    static final float MAX_DT = 0.05f;
+    /** Longest internal step. Half a frame at 60Hz, so an ordinary frame is two substeps. */
+    static final float STEP = 1f / 120f;
+    /** Hard cap on substeps, so nothing can turn one call into an unbounded loop. */
+    private static final int MAX_STEPS = 8;
+
+    /**
+     * Skin spring, in 1/s². 1600 = 40 rad/s, 80 for the shortest ring mode, against the 240 an
+     * explicit {@link #STEP} holds — 3x headroom, which a phone dropping frames needs.
+     */
+    private static final float KS = 1600f;
+    /**
+     * Spring damping, on relative speed. Separate from {@link #DAMP}: this kills the short
+     * wavelength modes that look like noise, without slowing the whole-body slosh.
+     */
+    private static final float SPRING_DAMP = 7f;
+    /** Pressure. Scaled by {@code n/TAU} at use, so node count does not change stiffness. */
+    private static final float KP = 900f;
+    /**
+     * Pull toward the rest shape. 7.8 rad/s against the skin's 40: the only restoring force the
+     * floppy modes have, and underdamped, so a squash rings twice. That ringing is the jiggle.
+     */
+    private static final float KR = 60f;
+    /** Centring pull on the centroid, and its damping. About 8 rad/s — a lazy half second home. */
+    private static final float KC = 70f, CENTRE_DAMP = 6f;
+    /**
+     * Whole-body damping. At 2 a hit still swings three seconds later — a body that never has a
+     * shape; at 4.2 it is spent in about one press.
+     */
+    private static final float DAMP = 4.2f;
+
+    /**
+     * Idle breath, as acceleration per unit {@link #rest}. Read against {@link #KR}, not the skin
+     * frequency — the harmonics it drives are the floppy modes KR alone restores — giving 2.7% of
+     * the radius. Read against the springs it looks 10x too small, which is how the first value
+     * breathed at a third of the radius.
+     */
+    private static final float WOBBLE = 2.4f;
+    /**
+     * Breath harmonics and mix. Per-node noise drives the shortest ring mode and looks crinkled;
+     * two low harmonics travelling opposite ways undulate.
+     */
+    private static final float BREATH_M1 = 2f, BREATH_M2 = 3f, BREATH_MIX = 0.62f;
+    /** How far a hit reaches, as a multiple of {@link #rest}. */
+    private static final float REACH = 1.1f;
+    /**
+     * Hit speed per unit {@link #rest}. Strength 1 lands at 0.19 deform, 0.3 at 0.07. Pass a
+     * fraction for an ordinary press; save 1 for something that matters.
+     */
+    private static final float PUNCH = 14f;
+    /**
+     * Squash speed per unit offset, and how much goes sideways. Strength 1 flattens to 1.5x wide
+     * and rebounds 12% taller. A velocity, not a displacement, so squashes add up.
+     */
+    private static final float SQUASH_V = 2.4f, SPREAD = 0.5f;
+    /**
+     * Lean during {@link #moveTo}: how much further the leading side travels, which is what makes a
+     * carried blob look carried. A steady state, not a one-off — injected every moving frame while
+     * KR pulls back, so a drifting boss sits ~10% wider than tall and is round a second after.
+     */
+    private static final float LEAN = 0.30f;
+    /**
+     * Guard rails, not physics: closest a node may come to the centroid, furthest from home, in
+     * multiples of {@link #rest}. The inner one stops a hard hit pushing a node through the middle
+     * and inverting the winding, after which pressure pulls and the body is inside out for good.
+     */
+    private static final float INNER = 0.22f, FAR = 3f;
+
+    final int n;
+    private final float[] x, y, vx, vy, fx, fy;
+    private final float[] out;
+    /** Each node's fixed place round the ring, in radians. The breath is a harmonic of this. */
+    private final float[] theta;
+    /** Breath rates and phases, hashed off the caller's seed so two bosses do not breathe in step. */
+    private final float wr1, wp1, wr2, wp2;
+
+    /**
+     * Where the body is being carried to, and the <em>vertical</em> radius it was settled at.
+     *
+     * {@link #rest} stayed the vertical half-height when the rest shape gained a width — see
+     * {@link #wide} — because it is the scale every force here is written against, and a body that
+     * is wider than it is tall should not also be a stiffer or a faster-breathing one.
+     */
+    float homeX, homeY, rest;
+    /** Area of the settled ring. The pressure term measures against this, not against pi r². */
+    private float restArea;
+    /**
+     * The rest shape, per node and per edge: how far from the centre node {@code i} belongs, and how
+     * long the edge leaving it is.
+     *
+     * Arrays rather than the two scalars this had, and that is what lets the rest shape be an
+     * ellipse. Both are read straight out of the rest polygon rather than derived, so a wide body is
+     * a body whose skin and roundness both agree it is wide — which is the difference between a
+     * genuinely wide creature and a round one being held stretched by something.
+     */
+    private final float[] rrest, rlen;
+    /**
+     * Rest width over rest height. 1 is round.
+     *
+     * Kept because two things have to divide it back out: {@link #squashAspect}, so a permanently
+     * wide body does not read as a permanently squashed one, and the {@link #FAR} guard rail, which
+     * is a bound on a radius and would otherwise sit inside a wide body's own resting silhouette.
+     */
+    private float wide = 1f;
+    /**
+     * How far everything springy is scaled up, 1 for ordinary.
+     *
+     * Deliberately only the <em>amplitudes</em> and the whole-body damping: a hit lands harder, the
+     * breath is deeper, and what is set going rings for longer. Not the stiffnesses — softening
+     * {@link #KS} makes the ring go noisy rather than floppy, and softening {@link #KR} is what the
+     * class note on the pull-toward-round warns about, since it is the only restoring force the low
+     * modes have and a body that never quite comes back is not jiggly, it is broken. So this stays a
+     * change to how much a body moves and how long for, not to what shape it believes in.
+     */
+    float jiggle = 1f;
+    /** Accumulated from {@code dt}, never from a clock. Drives the idle breath. */
+    private float clock;
+
+    /**
+     * How much of the idle breath to apply, 0..1. A field rather than a constant because a body
+     * that is meant to hold still — a boss frozen for a tableau, or a settling assertion — has to
+     * be able to actually hold still.
+     */
+    float idle = 1f;
+
+    /** Where the skin is being tugged to, and how hard. Zero strength means nothing is pulling. */
+    private float pullX, pullY, pullK;
+    /** Radius of the thing the tug has to keep wrapped, or 0 to just tug. See {@link #enclose()}. */
+    private float encloseR;
+    /** The tug target after clamping, which is where it is actually applied. See {@link #PULL_SPAN}. */
+    private float pullTX, pullTY;
+
+    /**
+     * How hard a full-strength {@link #pull} tugs, as an acceleration per unit of radius.
+     *
+     * Well under {@link #KR}'s pull toward round times the reach, so a tug stretches the skin into a
+     * teardrop and cannot turn the body inside out however long it is held. That bound is what makes
+     * it safe to call every frame for as long as a finger is down.
+     */
+    private static final float TUG = 90f;
+    /**
+     * How far from the centroid a tug target is allowed to be, in units of {@link #rest}.
+     *
+     * The target is clamped to this rather than the pull being switched off out of range, and that
+     * distinction is the whole effect. Testing the raw target against {@link #REACH} meant the tug
+     * stopped applying the moment the thing being dragged got further than a radius away — so the
+     * skin gave a small twitch at the start of a drag and then let go, which is the opposite of the
+     * intended read. Clamped, the skin stretches out to about two radii and stays there for as long
+     * as the finger holds, and everything past that is the drag having plainly won.
+     */
+    private static final float PULL_SPAN = 1.4f;
+    /**
+     * How far out the shoulders of an enclosing tongue reach, as a fraction of its tip.
+     *
+     * Low enough that the tip is plainly a tip — at 0.8 the whole side of the body comes out and it
+     * reads as the boss leaning rather than as goo being stretched off it. High enough that the
+     * shoulders are not a crease: at 0.3 the two edges into the tip fold back on themselves.
+     */
+    private static final float NECK = 0.55f;
+
+    // Measured once per update, so the getters are free.
+    private float cx, cy, sarea, meanR, wobble, minX, maxX, minY, maxY, motion;
+
+    Softbody() {
+        this(NODES, 0);
+    }
+
+    /**
+     * @param seed picks the breath's rates and phases. An int rather than a {@code Random} on
+     *     purpose: the caller has to be able to name it, so a body always breathes the same way for
+     *     a given boss and the frame hashes hold. Two bodies with the same seed are identical.
+     */
+    Softbody(int nodes, int seed) {
+        n = Math.max(6, nodes);
+        x = new float[n];
+        y = new float[n];
+        vx = new float[n];
+        vy = new float[n];
+        fx = new float[n];
+        fy = new float[n];
+        theta = new float[n];
+        rrest = new float[n];
+        rlen = new float[n];
+        out = new float[n * SMOOTH * 2];
+        for (int i = 0; i < n; i++) theta[i] = TAU * i / n;
+        wr1 = 0.9f + 0.7f * Draw.hash(seed * 7 + 11);
+        wp1 = Draw.hash(seed * 13 + 3) * TAU;
+        wr2 = 1.5f + 1.1f * Draw.hash(seed * 29 + 5);
+        wp2 = Draw.hash(seed * 41 + 17) * TAU;
+        reset(0f, 0f, 1f);
+    }
+
+    /** Settles the body into a circle at {@code cx,cy} of radius {@code r}, at rest. */
+    void reset(float cx, float cy, float r) {
+        reset(cx, cy, r, 1f);
+    }
+
+    /**
+     * Settles the body into an ellipse at {@code cx,cy}, {@code r} tall and {@code wide} times that
+     * across, at rest.
+     *
+     * The rest lengths and the rest area are both taken from the {@code n}-gon inscribed in that
+     * ellipse rather than from the ellipse it stands in for, and that is the difference between a
+     * body that sits still and one that hums: with the true area as the target, pressure is never
+     * zero at rest, so the blob inflates until the springs stop it and then oscillates about
+     * wherever that was.
+     *
+     * @param wide rest width over rest height. 1 is round; 2 is twice as wide as it is tall.
+     */
+    void reset(float cx, float cy, float r, float wide) {
+        homeX = cx;
+        homeY = cy;
+        pullK = 0f;
+        encloseR = 0f;
+        rest = Math.max(1e-3f, r);
+        this.wide = wide < 0.2f ? 0.2f : wide > 5f ? 5f : wide;
+        float rx = rest * this.wide, ry = rest;
+        // The inscribed n-gon's area in closed form: every triangle off the centre contributes
+        // rx*ry*sin(dtheta)/2, because the ellipse is the unit circle scaled on each axis.
+        restArea = 0.5f * n * rx * ry * (float) Math.sin(TAU / n);
+        clock = 0f;
+        for (int i = 0; i < n; i++) {
+            float px = rx * (float) Math.cos(theta[i]);
+            float py = ry * (float) Math.sin(theta[i]);
+            rrest[i] = (float) Math.sqrt(px * px + py * py);
+            x[i] = cx + px;
+            y[i] = cy + py;
+            vx[i] = 0f;
+            vy[i] = 0f;
+        }
+        for (int i = 0; i < n; i++) {
+            int j = i + 1 == n ? 0 : i + 1;
+            float dx = x[j] - x[i], dy = y[j] - y[i];
+            rlen[i] = (float) Math.sqrt(dx * dx + dy * dy);
+        }
+        measure();
+    }
+
+    /**
+     * One step. Clamped and substepped; see the stability note on the class.
+     *
+     * Two rules and no third one. Anything that is not a positive number is refused outright and
+     * changes nothing — zero, a negative, a NaN. Anything positive that is too big is
+     * <em>clamped</em>, and that includes an infinity: a long frame is a slow frame, and there is
+     * no length at which that stops being the answer. {@code TestSoftbody} pins both.
+     */
+    void update(float dt) {
+        // The negated form also catches NaN, since every comparison against it is false.
+        if (!(dt > 0f)) return;
+        if (dt > MAX_DT) dt = MAX_DT;
+        int steps = (int) Math.ceil(dt / STEP);
+        if (steps < 1) steps = 1;
+        if (steps > MAX_STEPS) steps = MAX_STEPS;
+        float h = dt / steps;
+        for (int s = 0; s < steps; s++) step(h);
+        measure();
+        // Belt and braces. A sim that has reached NaN draws nothing, forever, and gives no clue
+        // why; a body that snaps back to a circle is one bad frame and then it is playable again.
+        if (!finite()) reset(homeX, homeY, rest, wide);
+    }
+
+    private void step(float h) {
+        clock += h;
+        survey();
+        float area = Math.abs(sarea);
+        if (area < 1e-4f) area = 1e-4f;
+        float ratio = restArea / area - 1f;
+        // Capped both ways so a degenerate area cannot produce a force big enough to leave the
+        // world in one step. Being over-inflated is bounded naturally; being crushed is not.
+        if (ratio > 4f) ratio = 4f;
+        if (ratio < -1f) ratio = -1f;
+        float press = KP * ratio * n / TAU;
+        // The winding, so the edge normals point out of the body rather than into it. Taken from
+        // the sign of the signed area, which is one test for the whole ring instead of a
+        // dot-product per edge.
+        float wind = sarea < 0f ? -1f : 1f;
+
+        for (int i = 0; i < n; i++) {
+            fx[i] = 0f;
+            fy[i] = 0f;
+        }
+        for (int i = 0; i < n; i++) {
+            int j = i + 1 == n ? 0 : i + 1;
+            float dx = x[j] - x[i], dy = y[j] - y[i];
+            // Pressure on this edge is P times its length along its unit outward normal, and
+            // (dy,-dx) is already that normal times that length — so no square root is needed
+            // here at all. Split half to each end.
+            float pnx = wind * dy * press * 0.5f, pny = -wind * dx * press * 0.5f;
+            fx[i] += pnx;
+            fy[i] += pny;
+            fx[j] += pnx;
+            fy[j] += pny;
+
+            float len = (float) Math.sqrt(dx * dx + dy * dy);
+            if (len < 1e-5f) continue;
+            float ux = dx / len, uy = dy / len;
+            float rel = (vx[j] - vx[i]) * ux + (vy[j] - vy[i]) * uy;
+            float f = KS * (len - rlen[i]) + SPRING_DAMP * rel;
+            fx[i] += f * ux;
+            fy[i] += f * uy;
+            fx[j] -= f * ux;
+            fy[j] -= f * uy;
+        }
+
+        float mvx = 0f, mvy = 0f;
+        for (int i = 0; i < n; i++) {
+            mvx += vx[i];
+            mvy += vy[i];
+        }
+        mvx /= n;
+        mvy /= n;
+        // Uniform, so it reaches the centre of mass and nothing else. Damped on the mean velocity
+        // rather than each node's, or it would fight the wobble on the way home.
+        float hx = KC * (homeX - cx) - CENTRE_DAMP * mvx;
+        float hy = KC * (homeY - cy) - CENTRE_DAMP * mvy;
+
+        // Where the tug actually acts: the target, held to PULL_SPAN of the centroid. Computed once
+        // per substep rather than per node, and from the centroid rather than from home, so a body
+        // that has already been shoved off centre stretches from where it is.
+        //
+        // Not clamped at all when there is something to enclose: the caller has undertaken to keep
+        // the target within reach itself (Boss walks the body after a drag it cannot cover), and a
+        // clamp here would fight the containment pass below — the skin would be held short of the
+        // thing it is meant to be wrapped around and the two would argue every substep.
+        if (pullK > 0f) {
+            float ddx = pullX - cx, ddy = pullY - cy;
+            float dd = (float) Math.sqrt(ddx * ddx + ddy * ddy);
+            float cap = rest * PULL_SPAN;
+            if (encloseR <= 0f && dd > cap && dd > 1e-4f) {
+                pullTX = cx + ddx / dd * cap;
+                pullTY = cy + ddy / dd * cap;
+            } else {
+                pullTX = pullX;
+                pullTY = pullY;
+            }
+        }
+
+        float damp = DAMP / (jiggle <= 0.1f ? 0.1f : jiggle);
+        for (int i = 0; i < n; i++) {
+            float ax = fx[i] + hx - damp * vx[i];
+            float ay = fy[i] + hy - damp * vy[i];
+            if (pullK > 0f) {
+                // Toward the tug point, not outward from the centre: what is wanted is the skin
+                // following the finger, which is a direction the body cannot supply on its own.
+                float tx = pullTX - x[i], ty = pullTY - y[i];
+                float td = (float) Math.sqrt(tx * tx + ty * ty);
+                float reach = rest * REACH;
+                if (td < reach && td > 1e-4f) {
+                    float f = 1f - td / reach;
+                    f *= f;
+                    // Times rest, like every other force here: the sim is scale-invariant by
+                    // construction and a bare px/s² would tug a thumbnail across the screen and
+                    // barely dimple a full-size boss.
+                    float a = pullK * TUG * rest * f;
+                    ax += a * tx / td;
+                    ay += a * ty / td;
+                }
+            }
+            float dx = x[i] - cx, dy = y[i] - cy;
+            float d = (float) Math.sqrt(dx * dx + dy * dy);
+            if (d > 1e-4f) {
+                // Toward its own place in the rest shape, and the breath that rides on it. Both are
+                // radial, so they share the one normalisation.
+                float radial = KR * (rrest[i] - d);
+                if (idle > 0f) radial += idle * WOBBLE * jiggle * rest * breath(i);
+                ax += radial * dx / d;
+                ay += radial * dy / d;
+            }
+            vx[i] += ax * h;
+            vy[i] += ay * h;
+            x[i] += vx[i] * h;
+            y[i] += vy[i] * h;
+        }
+        constrain();
+        enclose();
+    }
+
+    /**
+     * Holds the skin out far enough that whatever is being pulled stays <em>inside</em> the body.
+     *
+     * A constraint rather than another force, and it has to be: the tug is a spring against the
+     * pressure and the pull toward round, so where it settles is whatever those three happen to
+     * balance at — which is a stretch that looks right most of the time and lets go of the thing it
+     * is wrapped around exactly when the drag is going well. "Always encapsulated" is a promise about
+     * geometry, and only geometry can keep it.
+     *
+     * Five nodes, in two tiers. The three nearest the pull direction are pushed out past the far side
+     * of what is being enclosed; the next one out on each side goes to {@link #NECK} of that, which
+     * is what turns a spike into a tongue of goo with the thing held in its tip. Three at full reach
+     * rather than one, because the ring's own vertices are 360/n apart and the outline leaves along
+     * the pull direction <em>between</em> two of them: with a single node projected, the crossing
+     * falls short by up to the cosine of half that gap, and the thing squeezes out through the gap.
+     *
+     * Only ever outward — a node already further out than the tongue needs is left alone — and the
+     * inward part of the velocity is dropped as the position is corrected. Without that the stretched
+     * skin springs in against the constraint every substep and the two grind, storing energy that
+     * comes out as an explosion on release. Dropped, the skin holds a steady stretch and the rebound
+     * is the one the springs have honestly got in them the moment the finger lifts.
+     */
+    private void enclose() {
+        if (pullK <= 0f || encloseR <= 0f) return;
+        float dx = pullX - cx, dy = pullY - cy;
+        float d = (float) Math.sqrt(dx * dx + dy * dy);
+        if (d < 1e-4f) return;
+        float ux = dx / d, uy = dy / d;
+        // Past the far side of it, so the whole thing is in rather than its centre.
+        float need = d + encloseR;
+        // The node pointing most nearly along the pull. Compared by projection, which is the same
+        // ordering as by angle for anything star-shaped about its centroid.
+        int best = 0;
+        float bestP = -Float.MAX_VALUE;
+        for (int i = 0; i < n; i++) {
+            float ndx = x[i] - cx, ndy = y[i] - cy;
+            float nd = (float) Math.sqrt(ndx * ndx + ndy * ndy);
+            if (nd < 1e-4f) continue;
+            float p = (ndx * ux + ndy * uy) / nd;
+            if (p > bestP) {
+                bestP = p;
+                best = i;
+            }
+        }
+        for (int k = -2; k <= 2; k++) {
+            int i = ((best + k) % n + n) % n;
+            float want = need * (k >= -1 && k <= 1 ? 1f : NECK);
+            float proj = (x[i] - cx) * ux + (y[i] - cy) * uy;
+            if (proj >= want) continue;
+            float add = want - proj;
+            x[i] += ux * add;
+            y[i] += uy * add;
+            float rv = vx[i] * ux + vy[i] * uy;
+            if (rv < 0f) {
+                vx[i] -= rv * ux;
+                vy[i] -= rv * uy;
+            }
+        }
+    }
+
+    /**
+     * Two harmonics travelling in opposite directions round the ring, at hashed rates and phases:
+     * unpredictable to look at, identical every run. The {@code Cabinet.shimmer} shape.
+     */
+    private float breath(int i) {
+        return BREATH_MIX * (float) Math.sin(BREATH_M1 * theta[i] + clock * wr1 + wp1)
+                + (1f - BREATH_MIX) * (float) Math.sin(BREATH_M2 * theta[i] - clock * wr2 + wp2);
+    }
+
+    private void constrain() {
+        float inner = rest * INNER;
+        // Scaled by the rest width, or the outer rail on a body twice as wide as it is tall would sit
+        // only half a body's width outside its own resting silhouette — a guard rail that clips the
+        // shape it is meant to be guarding. And opened up further while something is being enclosed,
+        // since the whole point of that is to reach past where an unstretched body ends.
+        float far = rest * FAR * (wide > 1f ? wide : 1f);
+        if (pullK > 0f && encloseR > 0f) {
+            float px = pullX - homeX, py = pullY - homeY;
+            float need = (float) Math.sqrt(px * px + py * py) + encloseR + rest;
+            if (need > far) far = need;
+        }
+        for (int i = 0; i < n; i++) {
+            float dx = x[i] - cx, dy = y[i] - cy;
+            float d = (float) Math.sqrt(dx * dx + dy * dy);
+            if (d > 1e-5f && d < inner) {
+                float k = inner / d;
+                x[i] = cx + dx * k;
+                y[i] = cy + dy * k;
+                // Only the inward part of the velocity is taken. The tangential part is the wobble
+                // travelling round the ring, and killing that turns a hard hit into a dead spot.
+                float nx = dx / d, ny = dy / d;
+                float rv = vx[i] * nx + vy[i] * ny;
+                if (rv < 0f) {
+                    vx[i] -= rv * nx;
+                    vy[i] -= rv * ny;
+                }
+            }
+            float ox = x[i] - homeX, oy = y[i] - homeY;
+            float od = (float) Math.sqrt(ox * ox + oy * oy);
+            if (od > far) {
+                float k = far / od;
+                x[i] = homeX + ox * k;
+                y[i] = homeY + oy * k;
+                vx[i] *= 0.5f;
+                vy[i] *= 0.5f;
+            }
+        }
+    }
+
+    /** Centroid and signed area. Needed inside every substep, so it is its own pass. */
+    private void survey() {
+        float sx = 0f, sy = 0f, a = 0f;
+        for (int i = 0; i < n; i++) {
+            int j = i + 1 == n ? 0 : i + 1;
+            sx += x[i];
+            sy += y[i];
+            a += x[i] * y[j] - x[j] * y[i];
+        }
+        cx = sx / n;
+        cy = sy / n;
+        sarea = a * 0.5f;
+    }
+
+    private void measure() {
+        survey();
+        float sum = 0f, mv = 0f;
+        minX = minY = Float.MAX_VALUE;
+        maxX = maxY = -Float.MAX_VALUE;
+        for (int i = 0; i < n; i++) {
+            float dx = x[i] - cx, dy = y[i] - cy;
+            sum += (float) Math.sqrt(dx * dx + dy * dy);
+            mv += (float) Math.sqrt(vx[i] * vx[i] + vy[i] * vy[i]);
+            if (x[i] < minX) minX = x[i];
+            if (x[i] > maxX) maxX = x[i];
+            if (y[i] < minY) minY = y[i];
+            if (y[i] > maxY) maxY = y[i];
+        }
+        meanR = sum / n;
+        motion = mv / n;
+        // Against the rest shape, node by node, rather than against the current mean radius.
+        //
+        // The mean was the same thing while every body was a circle and it stopped being so the
+        // moment one could be an ellipse: a settled body twice as wide as it is tall has node radii
+        // spread from r to 2r about their own mean, so measured that way it read 0.24 of deform
+        // standing perfectly still — five times what a solid hit is meant to be, which had the slime
+        // permanently drawn at full brightness with its rim at full weight. Against the rest radii it
+        // is 0 for anything settled, whatever shape it settled into, which is what every caller
+        // already believed it meant.
+        float v = 0f, rr = 0f;
+        for (int i = 0; i < n; i++) {
+            float dx = x[i] - cx, dy = y[i] - cy;
+            float e = (float) Math.sqrt(dx * dx + dy * dy) - rrest[i];
+            v += e * e;
+            rr += rrest[i];
+        }
+        rr /= n;
+        wobble = rr > 1e-4f ? (float) Math.sqrt(v / n) / rr : 0f;
+    }
+
+    /**
+     * A hit at {@code px,py}. Positive {@code strength} dents the surface inward, which is what a
+     * press looks like; negative bulges it out, for something bursting from inside.
+     *
+     * The falloff is squared so the dent lands where the hit did. Linear falloff spreads a press
+     * over half the ring and the body just gets smaller for a moment, which reads as the whole
+     * boss flinching rather than as a spot being struck.
+     */
+    void impulse(float px, float py, float strength) {
+        if (strength > 3f) strength = 3f;
+        if (strength < -3f) strength = -3f;
+        float reach = rest * REACH, r2 = reach * reach;
+        for (int i = 0; i < n; i++) {
+            float dx = x[i] - px, dy = y[i] - py;
+            float d2 = dx * dx + dy * dy;
+            if (d2 >= r2) continue;
+            float f = 1f - (float) Math.sqrt(d2) / reach;
+            f *= f;
+            float ox = cx - x[i], oy = cy - y[i];
+            float d = (float) Math.sqrt(ox * ox + oy * oy);
+            if (d < 1e-4f) continue;
+            float v = strength * PUNCH * jiggle * rest * f;
+            vx[i] += v * ox / d;
+            vy[i] += v * oy / d;
+        }
+    }
+
+    /** Give the whole soft body a directional kick; its home spring supplies the rebound. */
+    void shove(float dx, float dy, float strength) {
+        float d = (float) Math.sqrt(dx * dx + dy * dy);
+        if (d < 1e-4f) return;
+        float kickX = dx / d * rest * strength;
+        float kickY = dy / d * rest * strength;
+        for (int i = 0; i < n; i++) {
+            vx[i] += kickX;
+            vy[i] += kickY;
+        }
+    }
+
+    /**
+     * A sustained tug on the nearest part of the ring, toward {@code px,py}.
+     *
+     * Unlike {@link #impulse}, which is one kick, this is meant to be called every frame for as long
+     * as something is pulling — a glob being dragged out of the body — and it stretches the skin
+     * toward the finger until the springs and the pressure balance it. Stop calling it and the body
+     * springs back and rings on its own, which is exactly the rebound wanted when the glob comes
+     * free, so there is nothing to schedule for that.
+     *
+     * Held as a target and applied inside the solver rather than added to velocity here, because a
+     * per-frame velocity kick is a force whose strength depends on the frame rate: at 120fps it would
+     * pull twice as hard. {@link #letGo} clears it.
+     *
+     * The reach is deliberately the same {@link #REACH} the punch uses, and the falloff is squared
+     * for the same reason — a tug that grabs half the ring moves the whole body instead of stretching
+     * a spot on it, and the centring force would then simply fight it.
+     */
+    void pull(float px, float py, float strength) {
+        pull(px, py, strength, 0f);
+    }
+
+    /**
+     * The same tug, with a promise: the skin will be held out far enough that a disc of radius
+     * {@code enclose} centred on {@code px,py} stays inside the body. See {@link #enclose()}.
+     *
+     * The caller keeps its side of it by not asking for the impossible — the tongue reaches as far as
+     * it is told to, so something dragged half a screen away would be a spike rather than a body.
+     * {@code Boss} walks the whole body after a drag that gets away from it for exactly that reason.
+     */
+    void pull(float px, float py, float strength, float enclose) {
+        pullX = px;
+        pullY = py;
+        pullK = strength < 0f ? 0f : strength > 3f ? 3f : strength;
+        encloseR = enclose < 0f ? 0f : enclose;
+    }
+
+    /**
+     * Conforms the live ring to two gesture fingers without replacing its perpendicular wobble.
+     * Position is constrained as touch coordinates arrive and once per simulation frame; axial velocity is damped so the springs
+     * cannot store an explosive amount of energy while the fingers hold the body stretched.
+     */
+    void encompass(float x1, float y1, float x2, float y2) {
+        float mx = (x1 + x2) * 0.5f, my = (y1 + y2) * 0.5f;
+        float dx = x2 - x1, dy = y2 - y1;
+        float d = (float) Math.sqrt(dx * dx + dy * dy);
+        if (d < 1e-3f) return;
+        float ux = dx / d, uy = dy / d, extent = 0f;
+        for (int i = 0; i < n; i++)
+            extent = Math.max(extent, Math.abs((x[i] - mx) * ux + (y[i] - my) * uy));
+        if (extent < 1e-3f) return;
+        float wanted = Math.max(rest * 0.35f, Math.min(rest * 2.2f, d * 0.5f));
+        float scale = wanted / extent;
+        for (int i = 0; i < n; i++) {
+            float along = (x[i] - mx) * ux + (y[i] - my) * uy;
+            x[i] += ux * along * (scale - 1f);
+            y[i] += uy * along * (scale - 1f);
+            float axialV = vx[i] * ux + vy[i] * uy;
+            vx[i] -= ux * axialV * 0.82f;
+            vy[i] -= uy * axialV * 0.82f;
+        }
+        measure();
+    }
+
+    /** Lets the skin go. The spring back is the solver's, not an animation. */
+    void letGo() {
+        pullK = 0f;
+        encloseR = 0f;
+    }
+
+    /**
+     * True when {@code px,py} is inside the current outline. For the assertion that the containment
+     * promise above is actually being kept.
+     *
+     * A ray cast against the drawn outline rather than a radius test against the nodes, because the
+     * outline is a spline through them and "inside the body" has to mean inside the thing on screen.
+     */
+    boolean contains(float px, float py) {
+        float[] ring = outline();
+        boolean in = false;
+        for (int i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2) {
+            float ax = ring[i], ay = ring[i + 1], bx = ring[j], by = ring[j + 1];
+            if (ay > py != by > py && px < (bx - ax) * (py - ay) / (by - ay) + ax) in = !in;
+        }
+        return in;
+    }
+
+    /** True while something is stretching the skin. */
+    boolean pulled() {
+        return pullK > 0f;
+    }
+
+    /** Nodes in this body's ring, and where node {@code i} currently is. */
+    int nodes() {
+        return n;
+    }
+
+    float nodeX(int i) {
+        return x[((i % n) + n) % n];
+    }
+
+    float nodeY(int i) {
+        return y[((i % n) + n) % n];
+    }
+
+    /**
+     * A whole-body vertical squash and rebound: a landing, or a slam. Momentum-neutral by
+     * construction — the offsets it scales sum to zero over the ring, so a squash never moves the
+     * body. See {@link #SQUASH_V} for why this is a velocity and not a displacement.
+     */
+    void squash(float amount) {
+        // Capped after the jiggle scaling: a landing on a body twice as jiggly should hit twice as
+        // hard, but past about this it folds rather than flattens.
+        float a = amount * jiggle;
+        if (a > 2f) a = 2f;
+        if (a < -2f) a = -2f;
+        for (int i = 0; i < n; i++) {
+            vy[i] -= a * SQUASH_V * (y[i] - cy);
+            vx[i] += a * SQUASH_V * SPREAD * (x[i] - cx);
+        }
+    }
+
+    /** Forces the live silhouette to a width while preserving its current dents and wobble. */
+    void fitWidth(float width) {
+        float now = Math.max(1e-3f, maxX - minX);
+        float scale = width / now;
+        for (int i = 0; i < n; i++) {
+            x[i] = cx + (x[i] - cx) * scale;
+            vx[i] *= scale;
+        }
+        measure();
+    }
+
+    /**
+     * Carries the body to a new centre.
+     *
+     * Every node gets the whole delta, which is what keeps the wobble: a rigid translation leaves
+     * every node's offset from the centre exactly as it was, where re-seeding the ring at the new
+     * place would throw away whatever the body was in the middle of doing. The {@link #LEAN} on top
+     * of that is what makes it read as carried rather than repositioned.
+     *
+     * The lean is capped, because this method serves two callers that are indistinguishable from in
+     * here: a few pixels of drift a frame, and a one-off reposition of half a screen. Uncapped, the
+     * second tears the ring apart along the direction of travel. Past the cap it is a reposition and
+     * the body is simply carried.
+     */
+    void moveTo(float tx, float ty) {
+        float dx = tx - homeX, dy = ty - homeY;
+        homeX = tx;
+        homeY = ty;
+        float len = (float) Math.sqrt(dx * dx + dy * dy);
+        if (len < 1e-6f) return;
+        float ux = dx / len, uy = dy / len;
+        float lean = LEAN * len;
+        if (lean > rest * 0.30f) lean = rest * 0.30f;
+        for (int i = 0; i < n; i++) {
+            // How far along the travel this node sits, as a fraction of the radius. Sums to about
+            // zero over the ring, so the centroid still tracks the delta exactly.
+            float u = ((x[i] - cx) * ux + (y[i] - cy) * uy) / rest;
+            if (u > 1f) u = 1f;
+            if (u < -1f) u = -1f;
+            x[i] += dx + ux * lean * u;
+            y[i] += dy + uy * lean * u;
+        }
+        measure();
+    }
+
+    /**
+     * The body as a smooth closed outline, ready for {@link Painter#fillPoly}.
+     *
+     * Catmull-Rom through the nodes rather than Chaikin, for one reason: Chaikin cuts corners, so a
+     * subdivided ring is smaller than the ring it came from and the body would draw a little inside
+     * its own physics. This passes through every node, so what is drawn is where the sim says the
+     * surface is.
+     *
+     * <b>Returns a reused buffer.</b> Copy it if you mean to keep it — a fresh 144-float array per
+     * body per frame is garbage a phone does not need.
+     */
+    float[] outline() {
+        int k = 0;
+        for (int i = 0; i < n; i++) {
+            int i0 = (i + n - 1) % n, i2 = (i + 1) % n, i3 = (i + 2) % n;
+            for (int s = 0; s < SMOOTH; s++) {
+                float t = (float) s / SMOOTH;
+                out[k++] = spline(x[i0], x[i], x[i2], x[i3], t);
+                out[k++] = spline(y[i0], y[i], y[i2], y[i3], t);
+            }
+        }
+        return out;
+    }
+
+    private static float spline(float a, float b, float c, float d, float t) {
+        return b + 0.5f * t * ((c - a)
+                + t * ((2f * a - 5f * b + 4f * c - d) + t * (3f * b - 3f * c + d - a)));
+    }
+
+    float centreX() { return cx; }
+    float centreY() { return cy; }
+    /** Mean distance from the centroid to a node: the body's current radius. */
+    float radius() { return meanR; }
+    /**
+     * How far the skin is from the shape it wants to be, as a fraction of its mean rest radius: 0 for
+     * anything settled, 0.19 for a full hit. For driving a rim brightness or a wetness, which is all
+     * it is meant for — a look, not a measurement.
+     */
+    float deform() { return wobble; }
+    /**
+     * The rest radius in the direction of {@code dx,dy}: how far this body reaches that way before
+     * anything stretches it.
+     *
+     * The closed form for an ellipse, which is what any caller sizing a reach against a body that can
+     * be wider than it is tall needs — a bound in units of the vertical radius is half a body short
+     * sideways, and that shortfall is invisible except as an effect that never quite happens.
+     */
+    float restToward(float dx, float dy) {
+        float d = (float) Math.sqrt(dx * dx + dy * dy);
+        if (d < 1e-4f) return rest;
+        float ux = dx / d, uy = dy / d;
+        float a = rest * wide, b = rest;
+        float den = (float) Math.sqrt(b * b * ux * ux + a * a * uy * uy);
+        return den < 1e-4f ? rest : a * b / den;
+    }
+    /** Mean node speed, in px/s. Zero when the body has settled. */
+    float motion() { return motion; }
+    float area() { return Math.abs(sarea); }
+    /** The area the pressure term is holding it at. */
+    float restArea() { return restArea; }
+    float spanX() { return maxX - minX; }
+    float spanY() { return maxY - minY; }
+    /** Half the bounding box, per axis: what to lay anything out against, since a body can be wide. */
+    float radiusX() { return spanX() * 0.5f; }
+    float radiusY() { return spanY() * 0.5f; }
+    /** Width over height. Above 1 it is squashed flat, below 1 it is stretched tall. */
+    float aspect() { return spanY() > 1e-4f ? spanX() / spanY() : 1f; }
+    /** Rest width over rest height: what this body is shaped like before anything happens to it. */
+    float wide() { return wide; }
+    /**
+     * {@link #aspect} with the rest shape divided out, so 1 means "however wide this body is, it is
+     * that wide right now". What anything reading the squash wants — a permanently wide creature is
+     * not a permanently squashed one, and a face scaled by the raw aspect would be squeezed flat for
+     * the whole fight.
+     */
+    float squashAspect() { return wide > 1e-4f ? aspect() / wide : aspect(); }
+
+    /** True while every coordinate and velocity is a real number. */
+    boolean finite() {
+        for (int i = 0; i < n; i++) {
+            if (!real(x[i]) || !real(y[i]) || !real(vx[i]) || !real(vy[i])) return false;
+        }
+        return true;
+    }
+
+    private static boolean real(float v) {
+        return !Float.isNaN(v) && !Float.isInfinite(v);
+    }
+}

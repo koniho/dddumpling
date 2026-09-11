@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 import java.io.File;
 
@@ -83,6 +83,12 @@ final class Preview {
         System.out.printf("title: case=%d of %d collected, shut=%s%n",
                 Collect.owned(c.collected), Collect.COUNT, !c.caseOpen);
         shot(dir, "1-title", c, L, w, h, ss);
+
+        GameCore paused = new GameCore(store, 94L);
+        paused.startGame(); step(paused, L, 2f); Pause.open(paused);
+        shot(dir, "96-pause", paused, L, w, h, ss);
+        Pause.action(paused, 2);
+        shot(dir, "97-confirm-end", paused, L, w, h, ss);
 
         // The title lesson identifying its second target and matching key before pressing it.
         GameCore c21 = new GameCore(store, 87L);

@@ -83,14 +83,14 @@ def prepare(args):
     root = tree.getroot()
     ET.SubElement(root, 'uses-permission', {android + 'name': 'android.permission.INTERNET'})
     app = root.find('application')
-    app.set(android + 'name', 'com.sram.hexatype.PlayApplication')
+    app.set(android + 'name', 'com.dddumpling.game.PlayApplication')
     ET.SubElement(app, 'meta-data', {android + 'name': 'com.google.android.gms.games.APP_ID',
                                     android + 'value': '@string/game_services_project_id'})
     tree.write(out / 'main.xml', encoding='utf-8', xml_declaration=True)
     merger = str((resolved / 'merger' / '*').resolve())
     subprocess.run(['java', '-cp', merger, 'com.android.manifmerger.Merger',
                     '--main', str(out / 'main.xml'), '--libs', ':'.join(manifests),
-                    '--placeholder', 'applicationId=com.sram.hexatype',
+                    '--placeholder', 'applicationId=com.dddumpling.game',
                     '--property', 'MIN_SDK_VERSION=21', '--property', 'TARGET_SDK_VERSION=36',
                     '--remove-tools-declarations', '--out', str(out / 'AndroidManifest.xml')], check=True)
     res = out / 'config-res' / 'values'
@@ -98,9 +98,9 @@ def prepare(args):
     (res / 'play.xml').write_text('<resources><string name="game_services_project_id" translatable="false">' + cfg['project_id'] + '</string></resources>')
     subprocess.run(['aapt2', 'compile', '--dir', str(res.parent), '-o', str(out / 'config.zip')], check=True)
     resources.append(str(out / 'config.zip'))
-    java = Path('build/gen/com/sram/hexatype/PlayConfig.java')
+    java = Path('build/gen/com/dddumpling/game/PlayConfig.java')
     java.parent.mkdir(parents=True, exist_ok=True)
-    java.write_text('package com.sram.hexatype;\nfinal class PlayConfig {\n'
+    java.write_text('package com.dddumpling.game;\nfinal class PlayConfig {\n'
                    'static String event(String name) { switch (name) {\n' + ''.join(
                        'case ' + json.dumps(k) + ': return ' + json.dumps(v) + ';\n' for k, v in cfg['events'].items()) +
                    'default: return null; } }\n}\n')

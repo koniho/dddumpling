@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /** The collectible catalogue, the blind-box odds, the display case and its persistence. */
 final class TestCollect extends Check {

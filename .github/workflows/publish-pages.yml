@@ -1,0 +1,41 @@
+name: Publish public pages
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/site/**'
+      - 'docs/privacy.html'
+      - '.github/workflows/publish-pages.yml'
+      - '.github/github_known_hosts'
+      - 'tools/publish-pages.sh'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: public-pages
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - site: website
+            repository: koniho/dddumpling-game
+            secret: WEBSITE_DEPLOY_KEY
+          - site: privacy
+            repository: koniho/dddumpling-privacy
+            secret: PRIVACY_DEPLOY_KEY
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Publish reviewed page sources
+        env:
+          DEPLOY_KEY: ${{ secrets[matrix.secret] }}
+          SITE: ${{ matrix.site }}
+          PUBLIC_REPOSITORY: ${{ matrix.repository }}
+        run: bash tools/publish-pages.sh

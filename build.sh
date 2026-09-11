@@ -7,14 +7,13 @@ if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi
 set -euo pipefail
 cd "$(dirname "$0")"
 
-DEVELOPER=false
-case "${1:---production}" in
-    --developer) DEVELOPER=true ;;
-    --production) ;;
-    *) echo 'usage: ./build.sh [--production|--developer]' >&2; exit 1 ;;
+DEVELOPER=true
+case "${1:---developer}" in
+    --developer) ;;
+    --production) DEVELOPER=false ;;
+    *) echo "usage: ./build.sh [--developer|--production]" >&2; exit 1 ;;
 esac
-[ "$#" -le 1 ] || { echo 'Only one build mode is allowed' >&2; exit 1; }
-echo ">> developer controls: $DEVELOPER"
+[ "$#" -le 1 ] || exit 1
 
 SDK=sdk/android.jar
 if [ ! -f "$SDK" ] && [ -n "${ANDROID_HOME:-}" ]; then
@@ -29,6 +28,8 @@ KS_ALIAS=${HEXATYPE_KEY_ALIAS:-hexatype}
 KS_STORE_PASS=${HEXATYPE_KEYSTORE_PASSWORD:-android}
 KS_KEY_PASS=${HEXATYPE_KEY_PASSWORD:-$KS_STORE_PASS}
 
+[ -z "${HEXATYPE_KEYSTORE:-}" ] || [ -f "$KS" ] || { echo "Signing keystore not found: $KS" >&2; exit 1; }
+
 [ -f "$SDK" ] || { echo "missing $SDK - see README.md"; exit 1; }
 
 mkdir -p "$OUT"
@@ -38,7 +39,7 @@ grep -E '^[0-9]+ passed' "$OUT/check.log"
 bash ./check.sh --production -q >"$OUT/production-check.log" 2>&1 || { tail -30 "$OUT/production-check.log"; exit 1; }
 grep -E '^[0-9]+ passed' "$OUT/production-check.log"
 
-rm -rf "$OUT/classes" "$OUT/gen" "$OUT/res.zip" "$OUT/base.apk" "$OUT/classes.dex"
+rm -rf "$OUT/classes" "$OUT/gen" "$OUT/res.zip" "$OUT/base.apk" "$OUT"/classes*.dex
 mkdir -p "$OUT/classes" "$OUT/gen"
 sh tools/build-flags.sh "$OUT/gen" "$DEVELOPER"
 

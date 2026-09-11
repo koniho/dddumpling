@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 import java.io.File;
 import java.util.Arrays;
@@ -44,7 +44,9 @@ final class TestProduction extends Check {
         check("settings actions cannot reset progression", c.steamer.opens == 5 && c.stars.wins == 3);
         check("settings actions cannot clear collections", c.collected == 1L
                 && c.collectionCounts[0] == 7 && store.collectionCounts[0] == 7 && !c.clearArmed);
+        check("policy accessible on title", PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY-2f*L.unit));
         c.startGame();
+        check("policy hidden in play", !PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY-2f*L.unit));
         int stage = c.stage, lives = c.lives;
         c.playtestMode(Power.FLING,L);
         c.playtestStars(L);

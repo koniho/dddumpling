@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /** Layout geometry, targeting, engagement, scoring, breaches and screen transitions. */
 final class TestRules extends Check {
@@ -164,11 +164,27 @@ final class TestRules extends Check {
         c.stage = 10;
         check("late stages stop adding simultaneous words", c.maxEnemies() == 5);
         float spawn10 = c.spawnInterval();
+        for (int stage = 1; stage <= 10; stage++) {
+            check("early spawn timing unchanged at stage " + stage,
+                    Math.abs(Pacing.spawnInterval(stage, 1f)
+                            - (2.5f - Pacing.ramp(stage) * 0.13f)) < 0.001f);
+        }
+        c.stage = 11;
+        check("stage 11 provides more breathing room", Math.abs(c.spawnInterval() - 2.05f) < 0.001f);
+        float previous = spawn10;
+        for (int stage = 11; stage <= 40; stage++) {
+            float interval = Pacing.spawnInterval(stage, 1f);
+            check("late releases ease smoothly and stay capped at stage " + stage,
+                    interval >= previous && interval <= 2.751f);
+            check("speed setting scales late release timing at stage " + stage,
+                    Math.abs(Pacing.spawnInterval(stage, 1.5f) * 1.5f - interval) < 0.001f);
+            previous = interval;
+        }
         c.stage = 16;
-        check("stage 16 releases are eased below the old pressure",
-                c.spawnInterval() >= 2.39f && c.spawnInterval() > spawn10);
+        check("stage 16 releases reach the gentler cap",
+                Math.abs(c.spawnInterval() - 2.75f) < 0.001f);
         c.stage = 40;
-        check("late release relief is capped", c.spawnInterval() <= 2.501f);
+        check("late release relief is capped", Math.abs(c.spawnInterval() - 2.75f) < 0.001f);
 
         // The ramp was stretched, because the game hit a wall at stage 6: every dial arrived at
         // once and the once-a-stage panic swipe could not carry it. What landed at 6 lands at 10.
@@ -186,7 +202,7 @@ final class TestRules extends Check {
 
         // Printed because tuning a curve means reading it, and the numbers are the whole story.
         System.out.println("    stage  fall  spawn  len  crowd  quota  stack");
-        for (int s : new int[] {1, 2, 4, 6, 8, 10, 14, 20}) {
+        for (int s : new int[] {1, 2, 4, 6, 8, 10, 11, 12, 14, 16, 20}) {
             c.stage = s;
             System.out.printf("    %5d %5.1f %6.2f %4d %6d %6d %6.0f%%%n", s, c.travelSeconds(),
                     c.spawnInterval(), c.maxWordLen(), c.maxEnemies(), c.stageQuota(),

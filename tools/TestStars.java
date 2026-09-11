@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /** Alternation, steering, persistence and rewards for the star-path interlude. */
 final class TestStars extends Check {

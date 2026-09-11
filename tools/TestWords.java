@@ -1,4 +1,4 @@
-package com.sram.hexatype;
+package com.dddumpling.game;
 
 /** Word content: stacked letters, destruction, entrance and letter persistence. */
 final class TestWords extends Check {

@@ -1,0 +1,15 @@
+{
+  "app_name": "DDDUMPLING",
+  "package_name": "com.dddumpling.game",
+  "default_language": "en-US",
+  "support_email": "dddumpling.play@gmail.com",
+  "content_ratings_email": "dddumpling.play@gmail.com",
+  "website_url": "https://koniho.github.io/dddumpling-game/",
+  "privacy_policy_url": "https://koniho.github.io/dddumpling-privacy/",
+  "short_description_file": "en-US/short-description.txt",
+  "full_description_file": "en-US/full-description.txt",
+  "icon_file": "icon.png",
+  "screenshots_directory": "screenshots",
+  "scope": "Initial offline release; excludes unmerged Play Games cloud saves and events",
+  "feature_graphic_file": "feature-graphic.png"
+}

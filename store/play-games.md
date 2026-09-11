@@ -8,9 +8,9 @@ record progress locally, independently of whether Play integration is configured
 ## Build a Play-enabled test
 
 1. Create the Play Games Services project and enable **Saved Games** in Play Console.
-2. Link package `com.sram.hexatype` to the Android credential. Register the **Play app-signing**
+2. Link package `com.dddumpling.game` to the Android credential. Register the **Play app-signing**
    SHA-1 for installs from a Play track, and the local certificate for sideloaded test builds.
-   The upload certificate is not the app-signing certificate.
+   The upload certificate is not necessarily the app-signing certificate.
 3. Add tester accounts or the intended release track to Play Games testing access.
 4. Create the 76 events listed in `play-games.example.json`. Copy that file to
    `.private/play-games.json`, fill the numeric `project_id` and every event's Console-generated ID.
@@ -22,7 +22,7 @@ record progress locally, independently of whether Play integration is configured
 
    ```sh
    DDDUMPLING_PLAY_CONFIG=.private/play-games.json ./build.sh --production
-   # Use the same variable with the signing environment documented in store/README.md:
+   # Use the same variable with the signing environment documented in ../app-store/play-publishing.md:
    DDDUMPLING_PLAY_CONFIG=.private/play-games.json ./build-bundle.sh
    ```
 
@@ -56,7 +56,7 @@ produce an end-of-run event; explicit game-over and return-home paths do.
 
 The clock starts after the arrival card, when `Boss.fighting()` becomes true. It measures foreground
 elapsed time before the game's slow-motion multiplier, including time spent figuring out the
-mechanic. Background time is excluded. The measurement is sampled at frame/input boundaries;
+mechanic. Background and in-game pause time are excluded. The measurement is sampled at frame/input boundaries;
 allow approximately one frame of timing error. Shield bounces, successful prompts, parries, and
 other actions that leave HP unchanged do not finish the timer.
 
