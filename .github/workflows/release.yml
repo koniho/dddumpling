@@ -19,6 +19,9 @@ on:
         default: closed
 
 
+env:
+  RELEASE_ARTIFACT: ${{ github.ref_type == 'tag' && github.ref_name || format('build-{0}', github.run_id) }}
+
 permissions:
   contents: write
 
@@ -83,17 +86,17 @@ jobs:
 
       - name: Name upload files
         run: |
-          cp build/DDDUMPLING.aab "DDDUMPLING-${GITHUB_REF_NAME}.aab"
-          cp hexatype.apk "DDDUMPLING-${GITHUB_REF_NAME}-developer.apk"
+          cp build/DDDUMPLING.aab "DDDUMPLING-${RELEASE_ARTIFACT}.aab"
+          cp hexatype.apk "DDDUMPLING-${RELEASE_ARTIFACT}-developer.apk"
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: DDDUMPLING-${{ github.ref_name }}
+          name: DDDUMPLING-${{ env.RELEASE_ARTIFACT }}
           if-no-files-found: error
           path: |
-            DDDUMPLING-${{ github.ref_name }}.aab
-            DDDUMPLING-${{ github.ref_name }}-developer.apk
+            DDDUMPLING-${{ env.RELEASE_ARTIFACT }}.aab
+            DDDUMPLING-${{ env.RELEASE_ARTIFACT }}-developer.apk
 
       - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -102,12 +105,12 @@ jobs:
         run: |
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" \
-              "DDDUMPLING-${GITHUB_REF_NAME}.aab" \
-              "DDDUMPLING-${GITHUB_REF_NAME}-developer.apk" --clobber
+              "DDDUMPLING-${RELEASE_ARTIFACT}.aab" \
+              "DDDUMPLING-${RELEASE_ARTIFACT}-developer.apk" --clobber
           else
             gh release create "$GITHUB_REF_NAME" \
-              "DDDUMPLING-${GITHUB_REF_NAME}.aab" \
-              "DDDUMPLING-${GITHUB_REF_NAME}-developer.apk" \
+              "DDDUMPLING-${RELEASE_ARTIFACT}.aab" \
+              "DDDUMPLING-${RELEASE_ARTIFACT}-developer.apk" \
               --generate-notes --title "DDDUMPLING ${GITHUB_REF_NAME}"
           fi
 
@@ -136,10 +139,10 @@ jobs:
           bundler-cache: true
       - uses: actions/download-artifact@v8
         with:
-          name: DDDUMPLING-${{ github.ref_name }}
+          name: DDDUMPLING-${{ env.RELEASE_ARTIFACT }}
           path: build/play-artifact
       - name: Select the signed production bundle
-        run: cp "build/play-artifact/DDDUMPLING-${GITHUB_REF_NAME}.aab" build/DDDUMPLING.aab
+        run: cp "build/play-artifact/DDDUMPLING-${RELEASE_ARTIFACT}.aab" build/DDDUMPLING.aab
       - name: Publish to selected testing track
         env:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}

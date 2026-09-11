@@ -111,3 +111,6 @@ check Play before selecting one. Review and commit the manifest/changelog togeth
 For the first release after version code 10, use `context --since 3451055` as the historical baseline.
 
 Run `python3 tools/test-prepare-release.py` to verify the tool in temporary Git repositories.
+
+Manual-build artifacts use `DDDUMPLING-build-<run ID>` so branch names containing slashes are safe.
+Tagged release filenames continue to use the version tag.
