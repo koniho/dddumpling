@@ -92,7 +92,9 @@ remains open before selecting a different Painter backend.
   Add the Apple ID/team and a local signing certificate in Xcode; no account changes were made.
 - Signed archive validation, final privacy/runtime review, store metadata/screenshots and
   accessibility review. No App Store Connect or TestFlight upload was performed.
-- The macOS CI workflow is manual and checked in; it has not been run remotely.
+- Hosted CI now passes shared Java (4,864 assertions on the updated main baseline),
+  production (80), input (56), all 13 native/UI tests, and the unsigned Release archive.
+  See [CI results and signing setup](ci.md). Signed CI export/upload remain unverified.
 
 Game Center/iCloud, Android save transfer and native iPad layout remain explicitly outside the
 initial release scope. The full feature inventory is [parity.md](parity.md).

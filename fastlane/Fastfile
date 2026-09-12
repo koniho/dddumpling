@@ -3,6 +3,8 @@ require "rexml/document"
 require "fileutils"
 require "tmpdir"
 
+import("./ios.rb")
+
 def play_credentials
   credentials = ENV.fetch("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON", "")
   UI.user_error!("Set GitHub secret GOOGLE_PLAY_SERVICE_ACCOUNT_JSON; see app-store/play-publishing.md") if credentials.empty?

@@ -30,3 +30,6 @@ vendor/bundle/
 fastlane/report.xml
 fastlane/README.md
 fastlane/.env*
+*.p8
+*.p12
+*.mobileprovision

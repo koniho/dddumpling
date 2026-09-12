@@ -13,7 +13,6 @@ settings:
       - $(SRCROOT)/vendor/j2objc-3.1/dist/include
     LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]: $(SRCROOT)/vendor/j2objc-3.1/dist/lib/simulator
     LIBRARY_SEARCH_PATHS[sdk=iphoneos*]: $(SRCROOT)/vendor/j2objc-3.1/dist/lib/iphone
-    OTHER_LDFLAGS: ['$(inherited)', '-ObjC', '-ljre_emul', '-liconv', '-lz']
     TARGETED_DEVICE_FAMILY: '1'
     SUPPORTS_MACCATALYST: NO
     SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
@@ -35,6 +34,7 @@ targets:
         buildPhase: resources
     settings:
       base:
+        OTHER_LDFLAGS: ['$(inherited)', '-ObjC', '-ljre_emul', '-liconv', '-lz']
         PRODUCT_BUNDLE_IDENTIFIER: com.dddumpling.game.ios
         MARKETING_VERSION: 0.1.0
         CURRENT_PROJECT_VERSION: 1
