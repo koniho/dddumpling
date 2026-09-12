@@ -1,0 +1,36 @@
+name: Set up iOS toolchain
+description: Select Xcode and build/cache the pinned J2ObjC runtime
+runs:
+  using: composite
+  steps:
+    - name: Select Xcode 26.6
+      shell: bash
+      run: |
+        developer_dir=/Applications/Xcode_26.6.app/Contents/Developer
+        test -d "$developer_dir"
+        echo "DEVELOPER_DIR=$developer_dir" >> "$GITHUB_ENV"
+    - uses: actions/setup-java@v5
+      with:
+        distribution: temurin
+        java-version: '21'
+    - name: Install build tools
+      shell: bash
+      run: brew install maven xcodegen
+    - name: Record toolchain
+      id: toolchain
+      shell: bash
+      run: |
+        xcodebuild -version
+        java -version
+        mvn -version
+        xcodegen --version
+        echo "xcode=$(xcodebuild -version | shasum | cut -c1-12)" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v4
+      with:
+        path: ios/vendor
+        key: j2objc-3.1-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.xcode }}-${{ hashFiles('ios/scripts/bootstrap.sh') }}
+    - name: Build native Java runtime
+      shell: bash
+      env:
+        JOBS: '3'
+      run: ./ios/scripts/bootstrap.sh
