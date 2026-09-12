@@ -1,0 +1,89 @@
+name: DDDumpling
+options:
+  minimumXcodeGenVersion: 2.46.0
+  deploymentTarget:
+    iOS: '15.0'
+settings:
+  base:
+    CLANG_ENABLE_OBJC_ARC: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    HEADER_SEARCH_PATHS:
+      - $(SRCROOT)/DDDumpling
+      - $(SRCROOT)/build/generated
+      - $(SRCROOT)/vendor/j2objc-3.1/dist/include
+    LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]: $(SRCROOT)/vendor/j2objc-3.1/dist/lib/simulator
+    LIBRARY_SEARCH_PATHS[sdk=iphoneos*]: $(SRCROOT)/vendor/j2objc-3.1/dist/lib/iphone
+    OTHER_LDFLAGS: ['$(inherited)', '-ObjC', '-ljre_emul', '-liconv', '-lz']
+    TARGETED_DEVICE_FAMILY: '1'
+    SUPPORTS_MACCATALYST: NO
+    SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: '5.0'
+targets:
+  DDDumpling:
+    type: application
+    platform: iOS
+    sources:
+      - path: DDDumpling
+      - path: build/generated
+        compilerFlags: '-fno-objc-arc'
+      - path: ../assets/fonts/Bungee-Regular.ttf
+        buildPhase: resources
+      - path: ../assets/fonts/Bungee-OFL.txt
+        buildPhase: resources
+      - path: build/ThirdPartyNotices.txt
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dddumpling.game.ios
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
+        INFOPLIST_FILE: DDDumpling/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      configs:
+        Debug:
+          GCC_PREPROCESSOR_DEFINITIONS: ['$(inherited)', 'DEBUG=1']
+          PRODUCT_BUNDLE_IDENTIFIER: com.dddumpling.game.ios.dev
+    preBuildScripts:
+      - name: Translate shared Java
+        script: 'bash "$SRCROOT/scripts/translate.sh" "$CONFIGURATION"'
+        basedOnDependencyAnalysis: false
+    dependencies:
+      - sdk: UIKit.framework
+      - sdk: CoreGraphics.framework
+      - sdk: CoreText.framework
+      - sdk: AVFoundation.framework
+      - sdk: AudioToolbox.framework
+      - sdk: Security.framework
+      - sdk: SystemConfiguration.framework
+  DDDumplingUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dddumpling.game.ios.uitests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: DDDumpling
+  DDDumplingTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: tests
+        excludes: ['*.java']
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dddumpling.game.ios.tests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: DDDumpling
+schemes:
+  DDDumpling:
+    build:
+      targets:
+        DDDumpling: all
+        DDDumplingUITests: [test]
+        DDDumplingTests: [test]
+    test:
+      targets: [DDDumplingTests, DDDumplingUITests]
