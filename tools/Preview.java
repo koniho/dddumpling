@@ -476,6 +476,12 @@ final class Preview {
 
         // Any key sends them home. Caught mid-flight, with the star trails strung out behind.
         c3.tapKey(2, L);
+        step(c3, L, GameCore.RETURN_FADE * 0.25f);
+        shot(dir, "89-return-summary-fade", c3, L, w, h, ss);
+        step(c3, L, GameCore.RETURN_FADE * 0.25f);
+        shot(dir, "89-return-midpoint", c3, L, w, h, ss);
+        step(c3, L, GameCore.RETURN_FADE * 0.25f);
+        shot(dir, "89-return-title-fade", c3, L, w, h, ss);
         step(c3, L, GameCore.HOME_TIME * 0.45f);
         System.out.printf("haul homeward: %.0f%% of the way, state=%d%n",
                 c3.homeProgress() * 100f, c3.state);
@@ -1025,6 +1031,9 @@ final class Preview {
 
         GameCore pulseDemo = toBoss(L, Boss.OCTOPUS, 538L, true);
         pulseDemo.stageBanner = pulseDemo.rosterSceneT = 0f;
+        for (int i = 0; i < 360 && (pulseDemo.boss.octoTarget < 0 || pulseDemo.boss.octoSweep < 0.25f); i++)
+            pulseDemo.boss.update(DT, L, pulseDemo.rnd);
+        shot(dir, "76m-octopulse-early-recoil", pulseDemo, L, w, h, ss);
         for (int i = 0; i < 360 && pulseDemo.boss.octoSweep < 1f; i++)
             pulseDemo.boss.update(DT, L, pulseDemo.rnd);
         shot(dir, "76b-octopulse-settled", pulseDemo, L, w, h, ss);
@@ -1034,6 +1043,13 @@ final class Preview {
         for (int i = 0; i < 60 && pulseDemo.boss.octoCharge < 1f; i++)
             pulseDemo.boss.update(DT, L, pulseDemo.rnd);
         shot(dir, "76d-octopulse-strike", pulseDemo, L, w, h, ss);
+        for (int i = 0; i < 60 && pulseDemo.boss.octoReach < 0.75f; i++)
+            pulseDemo.boss.update(DT, L, pulseDemo.rnd);
+        shot(dir, "76i-octopulse-full-body-reach", pulseDemo, L, w, h, ss);
+        for (int i = 0; i < 60 && pulseDemo.boss.octoCaptured < 0; i++)
+            pulseDemo.boss.update(DT, L, pulseDemo.rnd);
+        for (int i = 0; i < 8; i++) pulseDemo.boss.update(DT, L, pulseDemo.rnd);
+        shot(dir, "76j-octopulse-too-slow-taunt", pulseDemo, L, w, h, ss);
 
         GameCore slimeRest = toBoss(L, Boss.SLIME, 539L, true);
         slimeRest.stageBanner = slimeRest.rosterSceneT = 0f;

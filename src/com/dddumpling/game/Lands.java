@@ -180,7 +180,7 @@ final class Lands extends Draw {
 
     private static void slimeHill(Painter p, float x, float base, float w, float h,
             int a, float t, int layer, boolean silhouette, boolean animated) {
-        float wobble = (float)Math.sin(t * 1.6f + layer * 1.8f) * (animated ? 0.045f : 0.018f);
+        float wobble = (float)Math.sin(t * 1.6f + layer * 1.8f) * (animated ? 0.18f : 0.018f);
         w *= 1f + wobble;
         h *= 1f - wobble;
         int green = Glyph.mix(Sky.CLOUD_TINT[1], 0xFF83C779, animated ? 0.80f : 0.50f);
@@ -193,6 +193,20 @@ final class Lands extends Draw {
                 Glyph.withAlpha(green, a));
         p.fillPoly(hillShape(x - w * 0.10f, base - h * 0.23f, w * 0.65f, h * 0.70f),
                 Glyph.withAlpha(0xFFD3EFBD, a / 5));
+        if (animated) for (int bubble = 0; bubble < (layer == 0 ? 2 : 1); bubble++) {
+            float phase = (t * 0.32f + layer * 0.29f + bubble * 0.37f) % 1f;
+            float swell = (float)Math.sin(Math.min(1f, phase / 0.85f) * Math.PI * 0.5f);
+            float bx = x + w * (bubble == 0 ? -0.25f : 0.32f);
+            float by = base - h * (bubble == 0 ? 0.62f : 0.50f);
+            float size = Math.min(w * 0.15f, h * 0.25f) * swell;
+            float fade = phase < 0.85f ? 1f : (1f - phase) / 0.15f;
+            int alpha = (int)(a * fade);
+            p.fillCircle(bx, by, size, Glyph.withAlpha(0xFF5FAF69, alpha * 3 / 4));
+            p.fillCircle(bx - size * 0.13f, by - size * 0.17f, size * 0.74f,
+                    Glyph.withAlpha(0xFFBCE89A, alpha * 4 / 5));
+            p.fillCircle(bx - size * 0.28f, by - size * 0.40f, size * 0.22f,
+                    Glyph.withAlpha(0xFFEEFFDA, alpha));
+        }
     }
 
     /** A broad dome with a shallow curved foot, rather than a floating oval. */

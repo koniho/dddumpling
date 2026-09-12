@@ -737,6 +737,7 @@ final class BossScreen extends Draw {
         float[] raw = b.body.outline();
         float cx = b.body.centreX(), cy = b.body.centreY();
         float rx = Math.max(1f, b.body.radiusX()), ry = Math.max(1f, b.body.radiusY());
+        float ca = (float)Math.cos(b.octoLean), sa = (float)Math.sin(b.octoLean);
         float[] mantle = new float[raw.length];
         for (int i = 0; i < raw.length; i += 2) {
             float dx = raw[i] - cx, dy = raw[i + 1] - cy;
@@ -749,17 +750,21 @@ final class BossScreen extends Draw {
             float width = sn < 0f ? 0.74f - 0.38f * sn + 0.05f * sn * sn
                     : 0.74f + 0.20f * sn;
             float height = sn < 0f ? 1.45f : 0.82f;
-            mantle[i] = cx + cs * rx * width * elastic;
-            mantle[i + 1] = cy + sn * ry * height * elastic - ry * 0.11f;
+            float px = cs * rx * width * elastic;
+            float py = sn * ry * height * elastic - ry * 0.11f;
+            mantle[i] = cx + px * ca - py * sa;
+            mantle[i + 1] = cy + px * sa + py * ca;
         }
         p.fillPoly(mantle, Glyph.withAlpha(col, (int) (250 * fade)));
         p.strokePoly(mantle, Glyph.withAlpha(OCTO_INK,
                 (int) (255 * fade)), b.body.radius() * 0.06f);
 
         // Wet sticker-like highlight from the reference, kept translucent to match the slime family.
-        p.fillEllipse(cx - rx * 0.35f, cy - ry * 0.43f, rx * 0.17f, ry * 0.27f,
+        orientedEllipse(p, cx - rx * 0.35f * ca + ry * 0.43f * sa,
+                cy - rx * 0.35f * sa - ry * 0.43f * ca, ca, sa, rx * 0.17f, ry * 0.27f,
                 Glyph.withAlpha(OCTO_GLEAM, (int) (235 * fade)));
-        p.fillCircle(cx - rx * 0.18f, cy - ry * 0.64f, rx * 0.085f,
+        p.fillCircle(cx - rx * 0.18f * ca + ry * 0.64f * sa,
+                cy - rx * 0.18f * sa - ry * 0.64f * ca, rx * 0.085f,
                 Glyph.withAlpha(OCTO_GLEAM, (int) (245 * fade)));
 
         float eyeY = cy - ry * 0.06f;
@@ -767,15 +772,16 @@ final class BossScreen extends Draw {
         float eyeDx = rx * 0.34f;
         int ink = Glyph.withAlpha(OCTO_INK, (int) (255 * fade));
         for (int side = -1; side <= 1; side += 2) {
-            float ex = cx + side * eyeDx;
+            float ex = cx + side * eyeDx * ca + ry * 0.06f * sa;
+            float ey = cy + side * eyeDx * sa - ry * 0.06f * ca;
             if (b.beaten) {
                 p.line(ex-eyeR, eyeY-eyeR*.25f, ex+eyeR, eyeY+eyeR*.25f, ink, rx*.065f);
                 continue;
             }
-            p.fillEllipse(ex, eyeY, eyeR, eyeR * 1.08f, ink);
-            p.fillCircle(ex - eyeR * 0.27f, eyeY - eyeR * 0.34f, eyeR * 0.25f,
+            p.fillEllipse(ex, ey, eyeR, eyeR * 1.08f, ink);
+            p.fillCircle(ex - eyeR * 0.27f, ey - eyeR * 0.34f, eyeR * 0.25f,
                     Glyph.withAlpha(0xFFFFFFFF, (int) (245 * fade)));
-            p.fillCircle(ex + eyeR * 0.22f, eyeY + eyeR * 0.25f, eyeR * 0.11f,
+            p.fillCircle(ex + eyeR * 0.22f, ey + eyeR * 0.25f, eyeR * 0.11f,
                     Glyph.withAlpha(0xFFFFFFFF, (int) (210 * fade)));
         }
         float mouthY = cy + ry * 0.24f;
@@ -784,6 +790,11 @@ final class BossScreen extends Draw {
             float u = -1f + 2f * k / 6f;
             smile[k * 2] = cx + rx * 0.18f * u;
             smile[k * 2 + 1] = mouthY + ry * (b.beaten ? -0.10f : 0.10f) * (1f - u * u);
+        }
+        for (int i = 0; i < smile.length; i += 2) {
+            float dx = smile[i] - cx, dy = smile[i + 1] - cy;
+            smile[i] = cx + dx * ca - dy * sa;
+            smile[i + 1] = cy + dx * sa + dy * ca;
         }
         p.polyline(smile, ink, rx * 0.055f);
         if (!b.beaten && b.octoVulnerableArm >= 0) {

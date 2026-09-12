@@ -67,6 +67,8 @@ final class TestBack extends Check {
                 && c.mode == -1 && c.power == null && !c.paused && !c.confirmEnd && c.earlyLosses == losses);
         c.startGame(); c.lives = 1; c.takeHit(L.w*.5f, L);
         Pause.back(c);
+        check("summary back begins a fade", c.returnFade > 0f);
+        advance(c, L, GameCore.RETURN_FADE + DT);
         check("summary back returns to title", c.state == GameCore.TITLE && !Pause.handlesBack(c));
         c.beginStart();
         Pause.back(c); c.update(10, L);

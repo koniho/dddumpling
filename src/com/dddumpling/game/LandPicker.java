@@ -39,7 +39,7 @@ final class LandPicker extends Draw {
             if (unlocked(c, land)) { select(c, land); return; }
     }
     static boolean down(GameCore c, Layout L, float x, float y) {
-        if (!visible(c)) return false;
+        if (!visible(c) || c.returnFade > 0f) return false;
         if (Math.abs(y - cardY(L)) > L.h * 0.05f) return false;
         c.landPickerDragging = true; c.landPickerMoved = false; c.landPickerX = x;
         return true;
@@ -91,7 +91,7 @@ final class LandPicker extends Draw {
         save(c);
     }
     static void updateDiscovery(GameCore c, float dt) {
-        if (!visible(c)) return;
+        if (!visible(c) || c.returnFade > 0f) return;
         if (c.landDiscovery < 0) {
             for (int land = 1; land < Lands.COUNT; land++) {
                 if (unlocked(c, land) && (c.landSeen & (1 << land)) == 0) {

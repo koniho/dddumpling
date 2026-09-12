@@ -1,0 +1,3 @@
+Octopulse now leans toward its target, fans its other arms back as the reach begins, and gives a quick taunt after a successful attack.
+Slime hills squish and bubble in the land picker.
+Enjoy a smoother fade from game over back to the title screen.

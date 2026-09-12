@@ -236,7 +236,7 @@ final class Boss {
     int octoLashArm = -1, octoDyingArm = -1, octoVulnerableArm = -1, octoEscapeArm = -1;
     int octoFlurryLeft;
     float octoReach, octoReturn, octoPause, octoLash, octoDeath;
-    float octoSweep, octoCharge, octoCoil, octoDragX, octoDragY, octoTaunt, octoEat;
+    float octoSweep, octoCharge, octoCoil, octoDragX, octoDragY, octoTaunt, octoEat, octoLean;
     float octoDragTime, octoEscape, octoFlurryT;
     float octoLashX, octoLashY;
     boolean octoPlaced, octoCue, octoLock, octoImpact, octoPlayerHit, octoLashLanded;
@@ -369,7 +369,7 @@ final class Boss {
         octoLashArm = octoDyingArm = octoVulnerableArm = octoEscapeArm = -1;
         disabledKeys = 0;
         octoReach = -1f; octoReturn = octoLash = octoDeath = 0f; octoPause = 0.75f;
-        octoSweep = octoCharge = octoCoil = octoDragX = octoDragY = octoTaunt = octoEat = 0f;
+        octoSweep = octoCharge = octoCoil = octoDragX = octoDragY = octoTaunt = octoEat = octoLean = 0f;
         octoDragTime = octoEscape = octoFlurryT = 0f; octoFlurryLeft = 0;
         octoPlaced = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
         octoDragStarted = octoDragCanDamage = false;
@@ -441,7 +441,7 @@ final class Boss {
         octoArms = disabledKeys = 0; octoTarget = octoAttackArm = octoCaptured = -1;
         octoLashArm = octoDyingArm = octoVulnerableArm = octoEscapeArm = -1;
         octoReach = -1f; octoReturn = octoPause = octoLash = octoDeath = 0f;
-        octoSweep = octoCharge = octoCoil = octoDragX = octoDragY = octoTaunt = octoEat = 0f;
+        octoSweep = octoCharge = octoCoil = octoDragX = octoDragY = octoTaunt = octoEat = octoLean = 0f;
         octoDragTime = octoEscape = octoFlurryT = 0f; octoFlurryLeft = 0;
         octoPlaced = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
         octoDragStarted = octoDragCanDamage = false;
@@ -1409,6 +1409,8 @@ final class Boss {
                         0.925f - Integer.bitCount(disabledKeys) * 0.125f);
                 octoReach += dt / duration;
                 if (octoReach >= 1f) {
+                    octoTaunt = 0.60f;
+                    if (body != null) body.squash(0.18f);
                     if (octoKeysLeft() <= 2) {
                         octoLashX = Roster.keyX(L, octoTarget, rosterFull ? 1f : 0f);
                         octoLashY = Roster.keyY(L, octoTarget, rosterFull ? 1f : 0f);
@@ -1436,6 +1438,22 @@ final class Boss {
 
     private void poseOctopus(float dt, Layout L) {
         float cx = body.centreX(), cy = body.centreY();
+        float brace = 0f;
+        int reachingArm = octoAttackArm;
+        int reachingKey = octoTarget >= 0 ? octoTarget : octoCaptured;
+        if (!beaten && reachingArm >= 0 && reachingKey >= 0) {
+            // Give the free arms a spring target on the very first reach frame.
+            // Complete the recoil during the opening sweep, before the key is locked.
+            brace = octoCaptured >= 0 ? Math.max(0f, 1f - octoReturn)
+                    : Math.min(1f, 0.20f + Math.max(0f, octoSweep) * 4f);
+            brace = brace * brace * (3f - 2f * brace);
+        }
+        float aimAngle = 0f;
+        if (brace > 0f) aimAngle = -(float)Math.atan2(
+                Roster.keyX(L, reachingKey, rosterFull ? 1f : 0f) - cx,
+                Roster.keyY(L, reachingKey, rosterFull ? 1f : 0f) - cy);
+        octoLean = aimAngle * brace;
+        float leanCos = (float)Math.cos(octoLean), leanSin = (float)Math.sin(octoLean);
         float resistedDragX = octoDragX, resistedDragY = octoDragY;
         if (held == -3) {
             float resistance = Math.min(1f, octoDragTime / 2f);
@@ -1477,7 +1495,49 @@ final class Boss {
                 tx += (float) Math.cos(angle) * curl * curlSide;
                 ty -= (float) Math.sin(angle) * curl * curlSide;
 
+                // Spread the attachments around the mantle and fold the free arms over tight arches.
+                if (brace > 0f && a != reachingArm && a != octoVulnerableArm
+                        && a != octoEscapeArm && a != octoDyingArm) {
+                    float r = bodyR(L), outer = Math.abs(a - 3.5f) / 3.5f;
+                    float rootX = cx + curlSide * body.radiusX() * (0.20f + outer * 0.60f);
+                    float rootY = cy + body.radiusY() * (0.38f - outer * 0.75f);
+                    float crestX = cx + curlSide * r * (0.85f + outer * 1.65f);
+                    float crestY = cy - r * (0.12f + outer * 0.78f);
+                    float sideRoom = curlSide < 0f ? cx - L.playLeft : L.playRight - cx;
+                    float fanWidth = Math.max(r * 0.75f, Math.min(r * 4.15f, sideRoom - r * 0.25f));
+                    float tipX = cx + curlSide * (r * 0.70f + outer * (fanWidth - r * 0.70f));
+                    float tipY = cy + r * (2.90f - outer * 1.85f);
+                    // A short shoulder arch turns into a longer falling section at a tight elbow.
+                    float q, ax, ay, bx, by, ex, ey;
+                    if (u < 0.32f) {
+                        q = u / 0.32f;
+                        ax = rootX; ay = rootY;
+                        bx = rootX + (crestX - rootX) * 0.55f;
+                        by = crestY - r * 0.24f;
+                        ex = crestX; ey = crestY;
+                    } else {
+                        q = (u - 0.32f) / 0.68f;
+                        ax = crestX; ay = crestY;
+                        bx = crestX + curlSide * r * (0.08f + outer * 0.55f);
+                        by = cy + r * 1.05f;
+                        ex = tipX; ey = tipY;
+                    }
+                    float v = 1f - q;
+                    float archX = v*v*ax + 2f*v*q*bx + q*q*ex;
+                    float archY = v*v*ay + 2f*v*q*by + q*q*ey;
+                    archX += (float)Math.sin(age * 1.3f + a + u * 4f) * r * 0.07f * u;
+                    float ca = (float)Math.cos(aimAngle), sa = (float)Math.sin(aimAngle);
+                    float dx = archX - cx, dy = archY - cy;
+                    archX = cx + dx * ca - dy * sa;
+                    archY = cy + dx * sa + dy * ca;
+                    tx += (archX - tx) * brace;
+                    ty += (archY - ty) * brace;
+                }
+
                 if (a == octoAttackArm) {
+                    float dx = tx - cx, dy = ty - cy;
+                    tx = cx + dx * leanCos - dy * leanSin;
+                    ty = cy + dx * leanSin + dy * leanCos;
                     int key = octoTarget >= 0 ? octoTarget : octoCaptured;
                     float keyX = Roster.keyX(L, key, rosterFull ? 1f : 0f);
                     float keyY = Roster.keyY(L, key, rosterFull ? 1f : 0f);

@@ -296,7 +296,9 @@ final class TestRules extends Check {
         advance(c, L, GameCore.OVER_FADE + GameCore.OVER_GRACE + 2 * DT);
         check("the summary settles", c.overFade() == 1f && c.overReady());
         c.tapKey(2, L);
-        check("game over accepts a key once it has settled", c.state == GameCore.TITLE);
+        check("game over accepts a key once it has settled", c.returnFade > 0f);
+        advance(c, L, GameCore.RETURN_FADE + DT);
+        check("the accepted key fades back to title", c.state == GameCore.TITLE);
 
         check("keys never count as a hit off the play screen",
                 !new GameCore(new Mem(), 9L).tapKey(2, L));

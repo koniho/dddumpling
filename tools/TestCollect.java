@@ -664,6 +664,7 @@ final class TestCollect extends Check {
         check("game over ignores keys during the grace period", c.state == GameCore.OVER);
         advancePastDeath(c, L);
         c.tapKey(0, L);
+        advance(c, L, GameCore.RETURN_FADE + DT);
         check("an outer key returns to the title", c.state == GameCore.TITLE);
         check("and a run starts again from there", startFromTitle(c, L, 3));
 
@@ -678,6 +679,7 @@ final class TestCollect extends Check {
             advance(d, L, GameCore.ATTACK_TIME + 2 * DT);
             advancePastDeath(d, L);
             d.tapKey(g, L);
+            advance(d, L, GameCore.RETURN_FADE + DT);
             if (d.state != GameCore.TITLE) allToTitle = false;
             if (d.state == GameCore.PLAY) noneToPlay = false;
         }
@@ -748,8 +750,7 @@ final class TestCollect extends Check {
         check("and the one after that starts the fade", e.starting());
         check("with no story hanging over it", !e.storyOpen());
 
-        // Leaving game over is a cut, not a fade: the fade belongs to the title screen, and one
-        // is now on the way in rather than out.
+        // The summary fades away before the title appears; repeated taps cannot skip it.
         GameCore f = new GameCore(store, 147L);
         f.startGame();
         f.lives = 1;
@@ -758,8 +759,13 @@ final class TestCollect extends Check {
         advance(f, L, GameCore.ATTACK_TIME + 2 * DT);
         advancePastDeath(f, L);
         f.tapKey(3, L);
-        check("game over cuts to the title with nothing fading",
-                f.state == GameCore.TITLE && f.startFade == 0f);
+        check("game over starts the return fade", f.state == GameCore.OVER && f.returnFade > 0f);
+        f.tapKey(3, L);
+        check("extra taps cannot start a run during return", !f.starting());
+        advance(f, L, GameCore.RETURN_FADE * 0.5f + DT);
+        check("title replaces the summary under the fade", f.state == GameCore.TITLE && f.returnFade > 0f);
+        advance(f, L, GameCore.RETURN_FADE);
+        check("return fade finishes cleanly", f.returnFade == 0f && f.startFade == 0f);
         check("and the case is shut on arrival", !f.caseOpen && f.caseFade == 0f);
         f.tapKey(3, L);
         check("the press after that fades into a run", f.starting());

@@ -73,6 +73,8 @@ final class GameCore {
     static final float BOSS_DEATH_TIME = DEATH_TIME * 3f - 2f;
     /** How long the summary takes to fade in once the hold is over. */
     static final float OVER_FADE = 0.45f;
+    static final float RETURN_FADE = 0.60f;
+    float returnFade;
 
     /** Counts down through the death sequence. Only ever non-zero in {@link #OVER}. */
     float deathT;
@@ -1538,7 +1540,7 @@ final class GameCore {
      * is acknowledged immediately and the triad carries over into the first wave.
      */
     void beginStart() {
-        if (state != TITLE || starting() || rosterSceneT > 0f) return;
+        if (state != TITLE || starting() || returnFade > 0f || rosterSceneT > 0f) return;
         startFade = START_FADE;
         // The entry the case was showing comes along, if it is one you own. Set before the
         // fade is under way so the send-off leaves from the badge rather than from a screen
@@ -1635,6 +1637,12 @@ final class GameCore {
             if (!startAnnounced) sound.gameStart();
         }
         startAnnounced = false;
+    }
+
+    void returnToTitle() {
+        if (returnFade > 0f) return;
+        if (state == OVER) returnFade = RETURN_FADE;
+        else toTitle();
     }
 
     void toTitle() {
@@ -1737,6 +1745,7 @@ final class GameCore {
      * presses of anything now, which also puts the display case back on the way past.
      */
     void screenKey(int g) {
+        if (returnFade > 0f) return;
         if (!keyActive(g) || rosterSceneT > 0f) return;
         // Nothing is dismissable until the summary is up and settled — the death sequence is not
         // something to be pressed through, and a screen that arrives under a thumb reads as a
@@ -1760,7 +1769,7 @@ final class GameCore {
         if (state == TITLE) {
             beginStart();
         } else {
-            toTitle();
+            returnToTitle();
         }
     }
 
@@ -2242,6 +2251,10 @@ final class GameCore {
                 || boss.hasGlob() || boss.boltCount() > 0)) sound.bossCharge(0f);
         if (BuildFlags.DEVELOPER && settingsOpen) return;
         time += dt;
+        if (returnFade > 0f) {
+            returnFade = Math.max(0f, returnFade - dt);
+            if (state == OVER && returnFade <= RETURN_FADE * 0.5f) toTitle();
+        }
         // Accumulated, not derived from clock, so the frenzy's faster drift does not make the
         // sky jump when it starts or stops.
         skyClock += dt * (powerActive() ? Power.SKY_RATE : 1f);

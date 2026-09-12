@@ -1086,6 +1086,7 @@ final class TestBoss extends Check {
         for (int i = 0; i < 300 && !miss.boss.keyDisabled(missed); i++) miss.update(DT, L);
         check("a tentacle reaching its key disables it", missed >= 0 && miss.boss.keyDisabled(missed));
         check("a disabled key no longer accepts touches", !miss.keyActive(missed));
+        check("a successful key steal triggers a quick taunt", miss.boss.octoTaunt > 0f);
         for (int i = 0; i < 60 * 20; i++) miss.update(DT, L);
         check("it disables no more than two keys per side",
                 Integer.bitCount(miss.boss.disabledKeys & 0x07) <= 2
@@ -1104,6 +1105,7 @@ final class TestBoss extends Check {
         for (int i = 0; i < 180 && lastTwo.lives == finalLives; i++) lastTwo.update(DT, L);
         check("a missed final-two reach damages instead of stealing",
                 lastTwo.lives == finalLives - 1 && lastTwo.boss.disabledKeys == finalMask);
+        check("a successful final-two hit triggers the same taunt", lastTwo.boss.octoTaunt > 0f);
     }
 
     static void mushroom(Layout L) {

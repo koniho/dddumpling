@@ -121,6 +121,11 @@ final class Renderer extends Draw {
         if (c.storyOpen()) Storybook.draw(p, c, L);
         if (BuildFlags.DEVELOPER && c.settingsOpen) Screens.settings(p, c, L);
         Pause.draw(p, c, L);
+        if (c.returnFade > 0f) {
+            float cover = 1f - Math.abs(c.returnFade / GameCore.RETURN_FADE * 2f - 1f);
+            cover = cover * cover * (3f - 2f * cover);
+            p.fillRect(0, 0, L.w, L.h, Glyph.withAlpha(BG, (int)(255 * cover)));
+        }
     }
 
     static void dangerLine(Painter p, GameCore c, Layout L) {

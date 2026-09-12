@@ -4,10 +4,11 @@ package com.dddumpling.game;
 final class Pause extends Draw {
     private Pause() {}
     static boolean handlesBack(GameCore c) {
-        return c.paused || (BuildFlags.DEVELOPER && c.settingsOpen) || c.storyOpen() || c.caseOpen
+        return c.returnFade > 0f || c.paused || (BuildFlags.DEVELOPER && c.settingsOpen) || c.storyOpen() || c.caseOpen
                 || c.starting() || c.state != GameCore.TITLE;
     }
     static boolean back(GameCore c) {
+        if (c.returnFade > 0f) return true;
         if (c.confirmEnd) { c.confirmEnd = false; return true; }
         if (c.paused) { resume(c); return true; }
         if (BuildFlags.DEVELOPER && c.settingsOpen) { c.closeSettings(); return true; }
@@ -17,7 +18,7 @@ final class Pause extends Draw {
             c.cancelStart();
             return true;
         }
-        if (c.state == GameCore.OVER) { c.toTitle(); return true; }
+        if (c.state == GameCore.OVER) { c.returnToTitle(); return true; }
         if (c.state == GameCore.PLAY || c.state == GameCore.BONUS) { open(c); return true; }
         return false;
     }
