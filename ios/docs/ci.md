@@ -5,6 +5,8 @@ XcodeGen build the pinned J2ObjC 3.1 runtime; a cache keyed by runner architectu
 Xcode build and bootstrap script avoids rebuilding it cold. Runtime compilation is
 limited to three workers to fit the standard runner. See GitHub's
 [runner inventory](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md).
+The completed runtime is cached before app tests begin, so a later test failure can
+reuse it. Simulator test targets run serially to limit memory use on the hosted runner.
 
 ## Checks without Apple credentials
 

@@ -25,7 +25,8 @@ runs:
         mvn -version
         xcodegen --version
         echo "xcode=$(xcodebuild -version | shasum | cut -c1-12)" >> "$GITHUB_OUTPUT"
-    - uses: actions/cache@v4
+    - uses: actions/cache/restore@v4
+      id: runtime-cache
       with:
         path: ios/vendor
         key: j2objc-3.1-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.xcode }}-${{ hashFiles('ios/scripts/bootstrap.sh') }}
@@ -34,3 +35,9 @@ runs:
       env:
         JOBS: '3'
       run: ./ios/scripts/bootstrap.sh
+    - name: Save completed runtime before app tests
+      if: steps.runtime-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ios/vendor
+        key: ${{ steps.runtime-cache.outputs.cache-primary-key }}

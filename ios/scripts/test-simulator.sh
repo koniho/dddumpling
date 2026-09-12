@@ -7,4 +7,5 @@ xcodegen generate --spec "$IOS_ROOT/project.yml"
 xcodebuild -project "$IOS_ROOT/DDDumpling.xcodeproj" -scheme DDDumpling -configuration Debug \
     -destination "platform=iOS Simulator,id=$simulator" -derivedDataPath "$IOS_ROOT/build/DerivedData" \
     -resultBundlePath "$IOS_ROOT/build/Test-$(date +%Y%m%d-%H%M%S).xcresult" \
+    -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1 \
     CODE_SIGNING_ALLOWED=NO test "$@"
