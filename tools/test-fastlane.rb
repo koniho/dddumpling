@@ -8,6 +8,7 @@ def default_platform(*); end
 def platform(*); yield; end
 def desc(*); end
 def lane(*); end
+def import(path); load File.expand_path("../fastlane/#{path}", __dir__); end
 load File.expand_path("../fastlane/Fastfile", __dir__)
 
 def assert(value, message)

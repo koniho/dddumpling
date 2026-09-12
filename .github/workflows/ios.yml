@@ -3,10 +3,10 @@ name: Check iOS port
 on:
   workflow_dispatch:
   pull_request:
-    paths: ['ios/**', 'src/**', 'tools/**', 'assets/fonts/**', 'check.sh', '.github/actions/setup-ios/**', '.github/workflows/ios.yml']
+    paths: ['ios/**', 'src/**', 'tools/**', 'assets/fonts/**', 'check.sh', 'Gemfile*', 'fastlane/**', '.github/actions/setup-ios/**', '.github/workflows/ios*.yml']
   push:
     branches: [main]
-    paths: ['ios/**', 'src/**', 'tools/**', 'assets/fonts/**', 'check.sh', '.github/actions/setup-ios/**', '.github/workflows/ios.yml']
+    paths: ['ios/**', 'src/**', 'tools/**', 'assets/fonts/**', 'check.sh', 'Gemfile*', 'fastlane/**', '.github/actions/setup-ios/**', '.github/workflows/ios*.yml']
 
 permissions:
   contents: read
@@ -16,6 +16,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  release_configuration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - name: Check fastlane configuration without publishing
+        env:
+          FASTLANE_SKIP_UPDATE_CHECK: '1'
+          FASTLANE_OPT_OUT_USAGE: '1'
+        run: |
+          bundle exec ruby tools/test-fastlane.rb
+          bundle exec ruby tools/test-ios-fastlane.rb
+          bundle exec fastlane lanes
   simulator:
     runs-on: macos-26
     timeout-minutes: 45

@@ -46,6 +46,8 @@ If adding a Java source, add shared code to `check.sh`'s PURE manifest or iOS-on
 
 ## Validation
 
+GitHub Actions and optional signed/TestFlight delivery are documented in [CI setup](docs/ci.md).
+
 ```sh
 source ios/scripts/env.sh
 ./check.sh -q -r
