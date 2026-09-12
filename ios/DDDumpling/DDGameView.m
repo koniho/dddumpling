@@ -2,6 +2,7 @@
 #import "DDPainter.h"
 #import "DDAudio.h"
 #import "DDStore.h"
+#import "DDFrameMetrics.h"
 #import "com/dddumpling/game/IOSGame.h"
 #import "com/dddumpling/game/IOSTouch.h"
 #import "IOSPrimitiveArray.h"
@@ -27,16 +28,13 @@
 @property(nonatomic, strong) UIAccessibilityElement *gameElement;
 @property(nonatomic, strong) UIButton *backButton;
 @property(nonatomic, strong) UIImpactFeedbackGenerator *haptic;
+@property(nonatomic, strong) DDFrameMetrics *frameMetrics;
 @property(nonatomic) NSInteger nextID;
 @property(nonatomic) CFTimeInterval lastTime;
 @property(nonatomic) BOOL active;
 @property(nonatomic) BOOL sceneLoaded;
 @property(nonatomic) BOOL storeErrorShown;
 @property(nonatomic) BOOL storeAlertVisible;
-@property(nonatomic) double updateMilliseconds;
-@property(nonatomic) double drawMilliseconds;
-@property(nonatomic) double maxFrameMilliseconds;
-@property(nonatomic) NSUInteger measuredFrames;
 @end
 
 @implementation DDHost
@@ -73,6 +71,8 @@
         host.view = self;
         [_game setHostWithDDIOSGame_Host:host];
         _haptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
+        _frameMetrics = [[DDFrameMetrics alloc]
+            initWithEnabled:[NSProcessInfo.processInfo.environment[@"DDD_PROFILE"] boolValue]];
         _backButton = [UIButton buttonWithType:UIButtonTypeSystem];
         [_backButton setImage:[UIImage systemImageNamed:@"pause.fill"] forState:UIControlStateNormal];
         _backButton.tintColor = [UIColor colorWithRed:.75 green:.70 blue:.87 alpha:1];
@@ -148,6 +148,7 @@
     [self.game back];
     [self clearPointers];
     self.lastTime = 0;
+    [self.frameMetrics reset];
     [self refreshNavigation];
     [self setNeedsDisplay];
 }
@@ -155,6 +156,7 @@
     if (_active == active) return;
     _active = active;
     self.lastTime = 0;
+    [self.frameMetrics reset];
     [self.game backgroundWithBoolean:!active || self.storeAlertVisible];
     [self clearPointers];
     [self.audio setActive:active && !self.storeAlertVisible];
@@ -165,11 +167,12 @@
 - (void)frame:(CADisplayLink *)link {
     if (!self.active || self.bounds.size.width <= 0) return;
     CFTimeInterval now = link.timestamp;
+    [self.frameMetrics recordDisplayLinkTimestamp:now];
     float elapsed = self.lastTime > 0 ? (float)(now - self.lastTime) : 0;
     self.lastTime = now;
     CFTimeInterval start = CACurrentMediaTime();
     [self.game updateWithFloat:elapsed];
-    self.updateMilliseconds = (CACurrentMediaTime() - start) * 1000;
+    [self.frameMetrics recordUpdateMilliseconds:(CACurrentMediaTime() - start) * 1000];
     [self showStoreErrorIfNeeded];
     [self refreshNavigation];
     [self setNeedsDisplay];
@@ -179,12 +182,13 @@
     self.painter.context = UIGraphicsGetCurrentContext();
     [self.game drawWithDDPainter:self.painter];
     self.painter.context = NULL;
-    self.drawMilliseconds = (CACurrentMediaTime() - start) * 1000;
-    self.maxFrameMilliseconds = MAX(self.maxFrameMilliseconds, self.drawMilliseconds + self.updateMilliseconds);
-    if (++self.measuredFrames % 600 == 0) {
-        NSLog(@"DDD frame CPU update=%.2fms draw=%.2fms max=%.2fms (600 frames, simulator is not device evidence)",
-              self.updateMilliseconds, self.drawMilliseconds, self.maxFrameMilliseconds);
-        self.maxFrameMilliseconds = 0;
+    [self.frameMetrics recordDrawMilliseconds:(CACurrentMediaTime() - start) * 1000];
+    if ([self.frameMetrics windowComplete]) {
+#if DEBUG
+        [self.frameMetrics logWindowWithDebugStatus:[self.game debugStatus]];
+#else
+        [self.frameMetrics logWindowWithDebugStatus:nil];
+#endif
     }
 }
 - (void)packet:(jint)action index:(NSUInteger)index event:(UIEvent *)event {

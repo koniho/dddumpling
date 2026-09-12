@@ -76,8 +76,21 @@ Debug-only launch environment `DDD_SCENE` accepts `title`, `play`, `case`, `star
 and compiles shared `BuildFlags.DEVELOPER=false`. Debug and Release use separate bundle IDs
 and saves (`com.dddumpling.game.ios.dev` and `com.dddumpling.game.ios`).
 
-Every 600 drawn frames the app logs CPU update/draw time and the maximum of their sum. This
-excludes compositor work and is **not** physical-device frame-pacing evidence. Use Instruments
+Set `DDD_PROFILE=1` in the Xcode scheme's launch environment to log bounded 600-draw windows:
+mean/p95/max update and draw-submission CPU time, display-link callback intervals, missed 60 Hz callback
+slots, and resident memory. It is quiet by default and resets on lifecycle/navigation changes.
+For an installed Debug simulator app, capture a scene with:
+
+```sh
+SIMCTL_CHILD_DDD_PROFILE=1 SIMCTL_CHILD_DDD_SCENE=stage:10 \
+  xcrun simctl launch --terminate-running-process \
+  --stderr="$PWD/ios/build/profile-divide.log" <iPhone-UDID> com.dddumpling.game.ios.dev
+# Play in Simulator, then inspect ios/build/profile-divide.log.
+```
+
+UIKit may defer Core Graphics rasterization until after `drawRect:` returns, so draw-submission
+timing excludes that work. Callback cadence is **not** presented FPS or physical-device
+frame-pacing evidence. Scene hooks are Debug-only; profiling also works in Release. Use Instruments
 Time Profiler/Core Animation on a signed physical iPhone for sustained play, missed refreshes,
 memory growth and touch latency. Physical-device validation and acoustic listening remain
 required before shipping. See [parity inventory](docs/parity.md), [rendering](docs/rendering.md),
