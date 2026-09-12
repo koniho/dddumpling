@@ -46,8 +46,8 @@ final class Power {
      */
     static final float DURATION = 15f;
     /**
-     * How much faster words arrive during a frenzy on the opening stage, how many more of them are
-     * allowed on screen, and how much faster they fall.
+     * Base opening-stage rates before the enemy spawn boost: word arrivals, crowd size,
+     * and fall speed.
      *
      * These are the *first-stage* figures. Every one of them is tapered by {@link #taper} as the
      * difficulty ramp climbs, because they used to be flat multipliers on top of a ramp that had
@@ -58,11 +58,11 @@ final class Power {
     static final float FALL_RATE = 2f;
 
     /**
-     * What a late frenzy is allowed to ask, as a multiple of what its own stage already asks.
+     * The base late-frenzy spawn multiple, before the additional enemy spawn boost.
      *
      * Note that a frenzy's press demand is *exactly* its spawn multiplier times the stage's own:
      * words cost the same to clear either way, they simply turn up N times as often. So this
-     * number is the whole balance statement, and the taper below is just the curve that reaches it.
+     * number defines the base curve; spawnRate applies the additional enemy-only boost.
      *
      * It used to be a flat 6. That reads fine on the opening stages, where six times almost nothing
      * is still almost nothing — but by stage 10 a frenzy wanted 23 presses a second sustained, and
@@ -103,7 +103,10 @@ final class Power {
         return 1f + (rate - 1f) * taper(ramp);
     }
 
-    static float spawnRate(float ramp) { return tapered(SPAWN_RATE, ramp); }
+    // Apply after tapering so every active powerup gets 30% more enemy spawn attempts.
+    // Pickup timing, fall speed, and the crowd cap keep their original settings.
+    static final float ENEMY_SPAWN_BOOST = 1.3f;
+    static float spawnRate(float ramp) { return tapered(SPAWN_RATE, ramp) * ENEMY_SPAWN_BOOST; }
 
     static float crowdRate(float ramp) { return tapered(CROWD_RATE, ramp); }
 
@@ -128,8 +131,7 @@ final class Power {
     /** How long the burst plays after it is struck, before it stops existing. */
     static final float POP_TIME = 0.45f;
     /** Seconds between powerup appearances. */
-    // 30% more pickup opportunities per eligible second: divide the wait by 1.3.
-    static final float SPAWN_MIN = 12f / 1.3f, SPAWN_MAX = 20f / 1.3f;
+    static final float SPAWN_MIN = 12f, SPAWN_MAX = 20f;
 
     int glyph;
     int effect;

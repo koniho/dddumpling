@@ -1,0 +1,2 @@
+- Corrected the 30% spawn-rate increase: enemies now spawn faster during active powerups.
+- Restored powerup pickups to their original frequency.

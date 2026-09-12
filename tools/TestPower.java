@@ -21,8 +21,8 @@ final class TestPower extends Check {
         group("powerup letter");
         GameCore c = new GameCore(new Mem(), 201L);
         c.startGame();
-        check("first pickup wait gives a 30% higher spawn rate",
-                Math.abs(c.powerTimer - 12f / 1.3f) < 1e-4f);
+        check("first pickup keeps its original 12-second wait",
+                Math.abs(c.powerTimer - 12f) < 1e-4f);
         check("none at the start", c.power == null);
         check("no mode at the start", !c.powerActive() && c.mode == -1);
 
@@ -49,8 +49,8 @@ final class TestPower extends Check {
         }
         check("it drifts away if ignored", c.power == null);
         check("no mode was granted", !c.powerActive());
-        check("another is queued up within the faster pickup window",
-                c.powerTimer >= 12f / 1.3f && c.powerTimer <= 20f / 1.3f);
+        check("another is queued up within the original 12-20 second pickup window",
+                c.powerTimer >= 12f && c.powerTimer <= 20f);
     }
 
     static void precedence(Layout L) {
@@ -1167,8 +1167,8 @@ final class TestPower extends Check {
         check("no fling hint in other modes", !d.showFlingHint());
         check("no trail in other modes", d.particles.isEmpty());
 
-        check("words arrive six times faster during an opening-stage frenzy",
-                Power.SPAWN_RATE == 6f && Power.spawnRate(0f) == 6f);
+        check("opening-stage frenzy enemy rate is boosted from 6x to 7.8x",
+                Math.abs(Power.spawnRate(0f) - 7.8f) < 1e-5f);
     }
 
     /**
@@ -1187,8 +1187,39 @@ final class TestPower extends Check {
         float floor = (Power.LATE_RATIO - 1f) / (Power.SPAWN_RATE - 1f);
         check("it bottoms out at the ratio the target implies",
                 Math.abs(Power.taper(99f) - floor) < 1e-6f);
-        check("and a late frenzy asks exactly the target",
-                Math.abs(Power.spawnRate(99f) - Power.LATE_RATIO) < 1e-4f);
+        check("late frenzy enemy rate is boosted from 2x to 2.6x",
+                Math.abs(Power.spawnRate(99f) - 2.6f) < 1e-4f);
+
+        boolean boosted = true, otherRatesUnchanged = true;
+        for (float ramp = 0f; ramp <= 20f; ramp += 0.25f) {
+            float originalTaper = Math.max(0.2f, 1f - ramp / 7f);
+            float originalSpawn = 1f + 5f * originalTaper;
+            boosted &= Math.abs(Power.spawnRate(ramp) / originalSpawn - 1.3f) < 1e-5f;
+            otherRatesUnchanged &= Math.abs(Power.fallRate(ramp) - (1f + originalTaper)) < 1e-5f
+                    && Math.abs(Power.crowdRate(ramp) - (1f + 3f * originalTaper)) < 1e-5f;
+        }
+        check("enemy spawn rate is exactly 30% higher across the entire ramp", boosted);
+        check("fall speed and crowd limits retain their original curves", otherRatesUnchanged);
+
+        boolean scheduled = true;
+        for (int effect = 0; effect < Power.COUNT; effect++) {
+            GameCore active = new GameCore(new Mem(), 930L + effect);
+            active.startGame();
+            active.enemies.clear();
+            active.mode = effect;
+            active.modeLeft = Power.DURATION;
+            active.spawnTimer = 0f;
+            active.update(DT, L);
+            scheduled &= active.enemies.size() == 1
+                    && Math.abs(active.spawnTimer - active.spawnInterval() / 7.8f) < 1e-5f;
+        }
+        check("every active powerup schedules the faster enemy spawns", scheduled);
+        GameCore calmRun = new GameCore(new Mem(), 939L);
+        calmRun.startGame();
+        calmRun.spawnTimer = 0f;
+        calmRun.update(DT, L);
+        check("ordinary enemy spawn timing is unchanged",
+                Math.abs(calmRun.spawnTimer - calmRun.spawnInterval()) < 1e-5f);
 
         // Monotonic, and never slower than the stage it interrupts.
         boolean falling = true, aboveOne = true;
@@ -1212,7 +1243,7 @@ final class TestPower extends Check {
         // *ratio* — what a frenzy adds to its own stage. It cannot own the absolute number, because
         // that is the ramp's, and by stage 25 ordinary play already wants 8.8 presses a second all
         // by itself. So the absolute cap is asserted over the stretch where the ramp is still sane,
-        // and past that the assertion is only that a frenzy is no worse than twice its stage.
+        // and past that the assertion is only that a frenzy is no worse than 2.6 times its stage.
         GameCore c = new GameCore(new Mem(), 941L);
         c.startGame();
         float worst = 0f, worstFlat = 0f, worstEarly = 0f;
@@ -1223,9 +1254,9 @@ final class TestPower extends Check {
             c.stage = stage;
             float calm = pressesPerWord(c, 719L + stage) / c.spawnInterval();
             float demand = calm * Power.spawnRate(c.ramp());
-            float flat = calm * Power.SPAWN_RATE;
+            float flat = calm * Power.SPAWN_RATE * Power.ENEMY_SPAWN_BOOST;
             // Past the point the taper bottoms out, a frenzy may only ask the target multiple.
-            if (Power.taper(c.ramp()) <= floorAt && demand > calm * Power.LATE_RATIO + 1e-3f) {
+            if (Power.taper(c.ramp()) <= floorAt && demand > calm * Power.LATE_RATIO * Power.ENEMY_SPAWN_BOOST + 1e-3f) {
                 withinTarget = false;
             }
             if (demand > worst) {
@@ -1243,9 +1274,8 @@ final class TestPower extends Check {
         check("a bottomed-out frenzy asks only the target multiple of its stage", withinTarget);
         System.out.printf("    worst is %.1f presses/s at stage %d, where flat rates asked %.1f%n",
                 worst, worstStage, worstFlat);
-        // A frenzy is still meant to be a scramble, so this is not comfortable — but it is inside
-        // what two thumbs can do in bursts, which 23 and 43 were not.
-        check("no frenzy up to stage 19 asks more than 12 presses a second", worstEarly < 12f);
+        // The requested enemy-rate boost scales the old 12 presses/s ceiling by 30%.
+        check("early frenzy demand stays within the boosted ceiling", worstEarly < 12f * 1.3f);
         check("and the worst stage of all is a real improvement on flat rates",
                 worst < worstFlat * 0.7f);
     }
