@@ -1,0 +1,9 @@
+/vendor/
+/build/
+/DDDumpling.xcodeproj/
+*.xcuserstate
+xcuserdata/
+*.xcarchive
+*.ipa
+*.mobileprovision
+*.p12

@@ -1,0 +1,109 @@
+#import <XCTest/XCTest.h>
+#import <CommonCrypto/CommonDigest.h>
+
+#import "DDStore.h"
+#import "IOSPrimitiveArray.h"
+#import "com/dddumpling/game/Collect.h"
+
+@interface DDStoreTests : XCTestCase
+@end
+
+@implementation DDStoreTests
+
+- (NSURL *)temporaryFile {
+  NSURL *directory = [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
+  return [directory URLByAppendingPathComponent:[NSString stringWithFormat:@"dddumpling-store-%@.plist", NSUUID.UUID.UUIDString]];
+}
+
+- (NSData *)envelopeWithVersion:(NSString *)version checksum:(NSData *)checksum {
+  NSData *payload = [NSPropertyListSerialization dataWithPropertyList:@{}
+                                                                 format:NSPropertyListBinaryFormat_v1_0
+                                                                options:0 error:nil];
+  if (!checksum) {
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(payload.bytes, (CC_LONG)payload.length, digest);
+    checksum = [NSData dataWithBytes:digest length:sizeof(digest)];
+  }
+  NSDictionary *envelope = @{ @"magic": @"dddumpling-store", @"version": version,
+                               @"payload": payload, @"checksum": checksum };
+  return [NSPropertyListSerialization dataWithPropertyList:envelope
+                                                     format:NSPropertyListBinaryFormat_v1_0
+                                                    options:0 error:nil];
+}
+
+- (void)assertReadOnlyForData:(NSData *)data atURL:(NSURL *)url {
+  [data writeToURL:url atomically:YES];
+  DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertNotNil(store.error);
+  NSData *original = [NSData dataWithContentsOfURL:url];
+  [store saveBestWithInt:999];
+  XCTAssertEqualObjects([NSData dataWithContentsOfURL:url], original);
+}
+
+- (void)testRoundTripsEveryStoreFieldAndProgress {
+  NSURL *url = [self temporaryFile];
+  DDIOSStore *saved = [[DDIOSStore alloc] initWithURL:url];
+  [saved saveBestWithInt:812];
+  [saved saveLandStateWithInt:0x52];
+  [saved saveLandBestWithInt:2 withInt:900];
+  [saved saveSpeedWithFloat:1.3f];
+  [saved saveBgmWithInt:2];
+  [saved saveCollectedWithLong:0x12345];
+  IOSIntArray *counts = [IOSIntArray arrayWithLength:DDCollect_COUNT];
+  counts->buffer_[0] = 2; counts->buffer_[DDCollect_COUNT - 1] = 4;
+  [saved saveCollectionCountsWithIntArray:counts];
+  [saved saveCollectTotalWithInt:27];
+  [saved saveSteamerOpensWithInt:8];
+  [saved saveStarWinsWithInt:3];
+  [saved saveRosterStateWithInt:5];
+  IOSByteArray *progress = [IOSByteArray arrayWithLength:4];
+  progress->buffer_[0] = 9; progress->buffer_[3] = 6;
+  [saved saveProgressWithByteArray:progress];
+  NSString *writer = saved.progressReplica;
+
+  DDIOSStore *loaded = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertNil(loaded.error);
+  XCTAssertEqual(loaded.loadBest, 812);
+  XCTAssertEqual(loaded.loadLandState, 0x52);
+  XCTAssertEqual([loaded loadLandBestWithInt:2], 900);
+  XCTAssertEqualWithAccuracy(loaded.loadSpeed, 1.3f, .0001f);
+  XCTAssertEqual(loaded.loadBgm, 2);
+  XCTAssertEqual(loaded.loadCollected, 0x12345);
+  XCTAssertEqual([loaded loadCollectionCounts]->buffer_[0], 2);
+  XCTAssertEqual([loaded loadCollectionCounts]->buffer_[DDCollect_COUNT - 1], 4);
+  XCTAssertEqual(loaded.loadCollectTotal, 27);
+  XCTAssertEqual(loaded.loadSteamerOpens, 8);
+  XCTAssertEqual(loaded.loadStarWins, 3);
+  XCTAssertEqual(loaded.loadRosterState, 5);
+  XCTAssertEqualObjects(loaded.progressReplica, writer);
+  XCTAssertEqual([loaded loadProgress]->buffer_[0], 9);
+  XCTAssertEqual([loaded loadProgress]->buffer_[3], 6);
+  [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
+}
+
+- (void)testCorruptionNeverReplacesTheOriginalSave {
+  NSURL *url = [self temporaryFile];
+  NSData *corrupt = [@"not a plist" dataUsingEncoding:NSUTF8StringEncoding];
+  [self assertReadOnlyForData:corrupt atURL:url];
+  [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
+}
+
+- (void)testEmptyUnknownVersionAndChecksumMismatchNeverOverwrite {
+  NSURL *url = [self temporaryFile];
+  [self assertReadOnlyForData:[NSData data] atURL:url];
+  [self assertReadOnlyForData:[self envelopeWithVersion:@"v99" checksum:nil] atURL:url];
+  NSData *wrongChecksum = [NSMutableData dataWithLength:CC_SHA256_DIGEST_LENGTH];
+  [self assertReadOnlyForData:[self envelopeWithVersion:@"v1" checksum:wrongChecksum] atURL:url];
+  [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
+}
+
+- (void)testFailedFirstWriteReportsError {
+  NSURL *base = [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
+  NSURL *missingDirectory = [base URLByAppendingPathComponent:NSUUID.UUID.UUIDString isDirectory:YES];
+  NSURL *url = [missingDirectory URLByAppendingPathComponent:@"store.plist"];
+  DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertNotNil(store.error);
+  XCTAssertFalse([[NSFileManager defaultManager] fileExistsAtPath:url.path]);
+}
+
+@end

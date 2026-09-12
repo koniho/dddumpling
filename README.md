@@ -3,6 +3,10 @@
 A kawaii typing-attack game for Android, built entirely on-device in Termux — no Gradle, no
 Android Studio, no PC.
 
+A native iPhone port shares the Java gameplay and renderer through J2ObjC. See
+[iOS build and simulator instructions](ios/README.md) and the
+[port's feature/validation inventory](ios/docs/parity.md).
+
 > The game and launcher name is DDDUMPLING; the Android package is `com.dddumpling.game`.
 > This pre-store package change installs as a separate app from earlier development builds,
 > with separate scores and collections. The build output is still named `hexatype.apk`.
