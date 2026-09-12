@@ -541,7 +541,7 @@ final class TestBoss extends Check {
                         c.boss.ey[inside] + c.boss.er[inside] * 1.8f) == inside);
         check("without claiming distant field touches",
                 c.boss.elemAt(c.boss.ex[inside],
-                        c.boss.ey[inside] + c.boss.er[inside] * 2.3f) < 0);
+                        c.boss.ey[inside] + c.boss.er[inside] * 3.5f) < 0);
 
         // Hauling it stretches the skin after it, and letting go stops the tug — the spring back is
         // the solver's, so there is nothing else to check for the rebound but that the pull ended.
@@ -680,6 +680,17 @@ final class TestBoss extends Check {
         for (int i = 0; i < Boss.ELEMS; i++) if (d.boss.etype[i] == Boss.E_GLOB) glob = i;
         check("there is a glob to drag", glob >= 0);
         check("and it is draggable, not tappable", d.boss.draggable(glob));
+        float grabProbeX = d.boss.ex[glob], grabProbeY = d.boss.ey[glob], grabProbeR = d.boss.er[glob];
+        for (int grabDirection = 0; grabDirection < 8; grabDirection++) {
+            float angle = grabDirection * Softbody.TAU / 8f;
+            float nearX = grabProbeX + (float)Math.cos(angle) * grabProbeR * 3.1f;
+            float nearY = grabProbeY + (float)Math.sin(angle) * grabProbeR * 3.1f;
+            check("near-miss glob grab succeeds around edge " + grabDirection, d.grabBoss(nearX, nearY)
+                    && d.boss.held == glob);
+            d.boss.release();
+        }
+        check("distant touches do not grab the glob", d.boss.elemAt(grabProbeX + grabProbeR * 3.5f, grabProbeY) != glob);
+
         check("grabbing it takes the finger",
                 d.grabBoss(d.boss.ex[glob], d.boss.ey[glob]));
         Ear damageEar = new Ear();

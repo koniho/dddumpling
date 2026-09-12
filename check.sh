@@ -89,6 +89,7 @@ src/com/dddumpling/game/Screens.java
 src/com/dddumpling/game/StarScreen.java
 src/com/dddumpling/game/BossScreen.java
 src/com/dddumpling/game/BossVictory.java
+src/com/dddumpling/game/SlimeGuide.java
 src/com/dddumpling/game/Renderer.java"
 
 rm -rf build/harness

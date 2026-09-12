@@ -1,0 +1,2 @@
+The Slime boss is easier to grab, with a larger touch area around its vulnerable glob.
+A full drag demonstration, glowing side targets and an impact flash make it clearer how to pull the slime into the side of the screen.

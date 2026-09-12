@@ -1389,7 +1389,6 @@ final class BossScreen extends Draw {
         float grow = born * (1.08f - 0.08f * born);
         rr *= grow;
         if (rr <= 0.1f) return;
-        float side = x < b.body.centreX() ? -1f : 1f;
         float[] patch = globPath(b, x, y, grow * 1.35f);
         fillGlobGradient(p, patch, bodyCol, dying * fade);
         // No closed outline through the body: only restore the shared exterior rim that the patch
@@ -1400,17 +1399,7 @@ final class BossScreen extends Draw {
         int rim = Glyph.mix(bodyCol, 0xFFFFFFFF, 0.42f + 0.38f * hit);
         p.polyline(outer, Glyph.withAlpha(rim, (int) (255 * dying * fade)),
                 b.body.radius() * (0.055f + 0.025f * hit));
-        if (!held && born >= 0.55f) {
-            float drag = (c.clock * 0.65f) % 1f;
-            float pull = Math.max(0f, Math.min(1f, (drag - 0.20f) / 0.65f));
-            pull = pull * pull * (3f - 2f * pull);
-            float tipX = x + side * rr * pull * 2.4f;
-            tipX = Math.max(L.playLeft + rr, Math.min(L.playRight - rr, tipX));
-            float tipY = y - rr * 0.10f * (float) Math.sin(drag * Math.PI);
-            float handAngle = side > 0f ? 2.45f : 0.69f;
-            Renderer.touchHint(p, tipX, tipY, rr * 0.85f, handAngle,
-                    fade * (1f - drag * 0.35f), c.clock);
-        }
+        if (born >= 0.55f) SlimeGuide.draw(p, c, L, b, i, held, dying * fade);
     }
 
     /** Colour bands from the untouched inner skin to rose at the protruding body arc. */
@@ -1514,7 +1503,7 @@ final class BossScreen extends Draw {
         // whole fight, so leaving it there means words crossing a line of text for half a minute.
         // It is instructions: it has a job at the start and none afterwards.
         float say = 1f - Math.max(0f, b.age - BLURB_HOLD) / BLURB_FADE;
-        if (say > 0.01f) {
+        if (say > 0.01f && b.kind != Boss.SLIME) {
             p.text(Boss.BLURB[b.kind], L.w / 2f, blurbY(L), blurbSize(L),
                     Glyph.withAlpha(INK_DIM, (int) (255 * fade * Math.min(1f, say))),
                     Painter.CENTER, false);

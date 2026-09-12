@@ -130,7 +130,7 @@ final class Boss {
     /** How wide the forgiving damage strip is, in glob radii. */
     private static final float GLOB_EDGE = 2f;
     /** Invisible pickup radius around the body-path patch, in logical glob radii. */
-    static final float GLOB_TOUCH = 2.2f;
+    static final float GLOB_TOUCH = 3.3f;
     /** How quickly a released glob catches the slime as its body walks home. */
     private static final float GLOB_HOME = 8f;
     /** Resting wart centre and skin reach beyond the plain silhouette, in glob radii. */
@@ -1164,9 +1164,13 @@ final class Boss {
         return PART;
     }
 
+    static float globSideEdge(Layout L, float radius, boolean right) {
+        return right ? L.playRight - radius * GLOB_EDGE : L.playLeft + radius * GLOB_EDGE;
+    }
+
     private boolean globDamageZone(float x, float y, int element, Layout L) {
         float slack = er[element] * GLOB_EDGE;
-        return x <= L.playLeft + slack || x >= L.playRight - slack
+        return x <= globSideEdge(L, er[element], false) || x >= globSideEdge(L, er[element], true)
                 || y <= L.playTop + slack;
     }
 

@@ -967,6 +967,13 @@ final class Preview {
                             c.boss.ex[glob], c.boss.ey[glob], c.boss.body.centreX(),
                             c.boss.body.centreY(), c.boss.body.radius());
                     shot(dir, "65-boss-split-inside", c, L, w, h, ss);
+                    float guideLife = c.boss.elife[glob];
+                    for (int demo = 0; demo < 3; demo++) {
+                        c.boss.elife[glob] = Boss.GLOB_TIME - 1.8f * (0.15f + demo * 0.325f);
+                        shot(dir, "65d-slime-side-guide-" + demo, c, L, w, h, ss);
+                    }
+                    c.boss.elife[glob] = guideLife;
+
 
                     // Hauled most of the way to the edge, so the skin is stretched after it. Walked
                     // there over several frames: the tug is a force, so it needs time to act.
