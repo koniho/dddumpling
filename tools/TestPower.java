@@ -21,6 +21,8 @@ final class TestPower extends Check {
         group("powerup letter");
         GameCore c = new GameCore(new Mem(), 201L);
         c.startGame();
+        check("first pickup wait gives a 30% higher spawn rate",
+                Math.abs(c.powerTimer - 12f / 1.3f) < 1e-4f);
         check("none at the start", c.power == null);
         check("no mode at the start", !c.powerActive() && c.mode == -1);
 
@@ -47,7 +49,8 @@ final class TestPower extends Check {
         }
         check("it drifts away if ignored", c.power == null);
         check("no mode was granted", !c.powerActive());
-        check("another is queued up", c.powerTimer > 0f);
+        check("another is queued up within the faster pickup window",
+                c.powerTimer >= 12f / 1.3f && c.powerTimer <= 20f / 1.3f);
     }
 
     static void precedence(Layout L) {
@@ -343,13 +346,15 @@ final class TestPower extends Check {
                 c.buddy.squishes == 0 && c.buddy.chase == null);
 
         // Frenzy spawns are a mixture: the ordinary top entrance remains, while side entries
-        // begin wholly beyond either edge and bend across to a safe landing on the far side.
+        // begin wholly beyond either edge and arc into a clear vertical lane.
         GameCore paths = new GameCore(store, 274L);
         paths.startGame();
         paths.enemies.clear();
         paths.playtestMode(Power.TEAM, L);
         int tops = 0, sides = 0, lefts = 0, rights = 0;
-        boolean outside = true, crosses = true, curved = true, lands = true;
+        boolean outside = true, curvesInward = true, curved = true, lands = true;
+        boolean settles = true;
+        boolean entersQuickly = true, staysVisible = true;
         for (int i = 0; i < 80; i++) {
             paths.enemies.clear();
             paths.spawnTimer = 0f;
@@ -364,11 +369,30 @@ final class TestPower extends Check {
             boolean left = word.pathStartX < L.playLeft;
             if (left) lefts++; else rights++;
             outside &= left ? word.pathStartX < L.playLeft : word.pathStartX > L.playRight;
-            crosses &= left ? word.pathEndX > L.w / 2f : word.pathEndX < L.w / 2f;
+            curvesInward &= left ? word.pathEndX > word.pathStartX : word.pathEndX < word.pathStartX;
+            float fallSpan = L.dangerY - L.enemyR - word.pathStartY;
+            float margin = L.wordWidth(word.word.length) / 2f + word.sway;
+            // By 15% of the descent, even the trailing tile and maximum sway are on screen.
+            word.y = word.pathStartY + fallSpan * 0.15f;
+            paths.updateSidePath(word, L);
+            entersQuickly &= word.baseX - margin >= L.playLeft - 0.01f
+                    && word.baseX + margin <= L.playRight + 0.01f;
+            for (int step = 16; step <= 100; step++) {
+                word.y = word.pathStartY + fallSpan * step / 100f;
+                paths.updateSidePath(word, L);
+                staysVisible &= word.baseX - margin >= L.playLeft - 0.01f
+                        && word.baseX + margin <= L.playRight + 0.01f;
+            }
             float linearMid = (word.pathStartX + word.pathEndX) / 2f;
-            word.y = (word.pathStartY + L.dangerY - L.enemyR) / 2f;
+            word.y = word.pathStartY + fallSpan * EnemyEntry.ARC_FRACTION / 2f;
             paths.updateSidePath(word, L);
             curved &= Math.abs(word.baseX - linearMid) > L.enemyR;
+            word.y = word.pathStartY + fallSpan * (EnemyEntry.ARC_FRACTION - 0.001f);
+            paths.updateSidePath(word, L);
+            settles &= Math.abs(word.baseX - word.pathEndX) < L.enemyR * 0.001f;
+            word.y = word.pathStartY + fallSpan * 0.5f;
+            paths.updateSidePath(word, L);
+            settles &= Math.abs(word.baseX - word.pathEndX) < 0.01f;
             word.y = L.dangerY - L.enemyR;
             paths.updateSidePath(word, L);
             lands &= Math.abs(word.baseX - word.pathEndX) < 0.01f
@@ -377,11 +401,14 @@ final class TestPower extends Check {
         check("TEAM SQUISH mixes top and side entrances", tops > 0 && sides > 0);
         check("side entrances use both edges", lefts > 0 && rights > 0);
         check("side words begin beyond the play area", outside);
-        check("they cross toward the opposite side", crosses);
-        check("their crossing is an arc, not a straight diagonal", curved);
-        check("they reach the damage line inside the opposite edge", lands);
+        check("side words become fully visible early in their descent", entersQuickly);
+        check("side words stay fully visible after entering", staysVisible);
+        check("they arc inward from their entry edge", curvesInward);
+        check("horizontal motion eases to zero before the vertical fall", settles);
+        check("their entrance curves rather than following a straight diagonal", curved);
+        check("they reach the damage line in their settled lane", lands);
 
-        // FLING shares the same mixed entrance pool. Its blade benefits from targets crossing
+        // FLING shares the same mixed entrance pool. Its blade benefits from targets arcing into
         // the field, but top-down words remain so the frenzy does not become one repeated motion.
         GameCore flingPaths = new GameCore(new Mem(), 276L);
         flingPaths.startGame();
@@ -400,11 +427,11 @@ final class TestPower extends Check {
             } else {
                 flingSides++;
                 flingCrosses &= word.pathStartX < L.playLeft
-                        ? word.pathEndX > L.w / 2f : word.pathEndX < L.w / 2f;
+                        ? word.pathEndX > word.pathStartX : word.pathEndX < word.pathStartX;
             }
         }
         check("FLING mixes top and side entrances", flingTops > 0 && flingSides > 0);
-        check("FLING side words cross toward the opposite edge", flingCrosses);
+        check("FLING side words arc into the field", flingCrosses);
         float small = c.buddy.radius(L), dim = c.buddy.glow();
 
         // It stays inside the field, however long it bounces around in there.

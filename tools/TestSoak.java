@@ -92,19 +92,10 @@ final class TestSoak extends Check {
         check("steady hands reach at least stage 12", steady.stage >= 12f);
         check("even casual hands get well past the opening stages", casual.stage >= 6f);
 
-        // 2. The relaxed late release curve still defeats casual hands. Steady and quick hands
-        //    may survive the simulation cap once they reach the deep game; crowd density is no
-        //    longer required to manufacture a loss there.
-        //
-        //    The quickest tier is allowed one run in four that never ends, and that is not slack: it
-        //    presses nine times a second and misses one press in fifty, so a run where the dice stay
-        //    kind runs to the cap with all three lives. Over twelve seeds it happens once, at about
-        //    twice the stage of a typical run, while the average run still ends at little more than
-        //    half the cap. Requiring all four to die made this a four-sample coin flip that any
-        //    change to interlude timing could turn over — the star course going from four seconds to
-        //    3.6 was enough, because it moves every RNG draw after the first interlude.
-        check("casual hands lose while skilled hands reach the deep game",
-                casual.deaths == casual.runs && steady.stage >= 20f && quick.stage >= 25f);
+        // 2. Clear side-entry lanes remove overlapping threats. Most casual runs still end,
+        //    but surviving the cap is allowed; skilled hands must still reach the deep game.
+        check("most casual runs end while skilled hands reach the deep game",
+                casual.deaths > casual.runs / 2 && steady.stage >= 20f && quick.stage >= 25f);
 
         // 3. Monotonic in capability. Faster hands must not do *worse* — if they do, something in
         //    here punishes engagement, and that is a bug rather than a difficulty setting.
@@ -157,7 +148,8 @@ final class TestSoak extends Check {
     private static Result tier(String name, float pps, float reaction, float miss, Layout L) {
         Result r = new Result();
         float lives = 0f, frenzyLives = 0f;
-        for (long seed = 1L; seed <= 4L; seed++) {
+        // Pickup timing shifts the RNG sequence; 32 seeds avoid a four-run sampling cliff.
+        for (long seed = 1L; seed <= 32L; seed++) {
             GameCore c = new GameCore(new Mem(), 400L + seed);
             c.startGame();
             Bot bot = new Bot(pps, reaction, miss, true, 900L + seed);

@@ -852,6 +852,41 @@ final class Preview {
                 c16.buddy.glow(), c16.buddy.chase != null);
         shot(dir, "33-team", c16, L, w, h, ss);
 
+        // Real frenzy spawns at entry, the vertical join, and the settled descent.
+        GameCore entry = new GameCore(store, 274L);
+        entry.startGame();
+        entry.playtestMode(Power.FLURRY, L);
+        GameCore.Enemy leftEntry = null, rightEntry = null;
+        for (int k = 0; k < 80 && (leftEntry == null || rightEntry == null); k++) {
+            entry.enemies.clear();
+            entry.spawnTimer = 0f;
+            entry.update(DT, L);
+            if (entry.enemies.isEmpty()) continue;
+            GameCore.Enemy sideWord = entry.enemies.get(0);
+            if (!sideWord.sideEntry) continue;
+            if (sideWord.pathStartX < L.playLeft) leftEntry = sideWord; else rightEntry = sideWord;
+        }
+        entry.enemies.clear();
+        if (leftEntry != null) entry.enemies.add(leftEntry);
+        if (rightEntry != null) entry.enemies.add(rightEntry);
+        entry.stageBanner = 0f;
+        for (int frame = 0; frame < 3; frame++) {
+            for (GameCore.Enemy sideWord : entry.enemies) {
+                sideWord.y = sideWord.pathStartY + (L.dangerY - L.enemyR - sideWord.pathStartY)
+                        * (frame == 0 ? 0.04f : frame == 1 ? 0.15f : 0.5f);
+                entry.updateSidePath(sideWord, L);
+            }
+            shot(dir, frame == 0 ? "33b-side-entering"
+                    : frame == 1 ? "33c-side-visible" : "33d-side-vertical",
+                    entry, L, w, h, ss);
+        }
+
+        GameCore traffic = new GameCore(store, 171L);
+        traffic.startGame();
+        traffic.playtestMode(Power.FLURRY, L);
+        step(traffic, L, 3.5f);
+        shot(dir, "33e-side-spacing", traffic, L, w, h, ss);
+
         // Settings panel, opened mid-game.
         GameCore c6 = new GameCore(store, 29L);
         c6.startGame();

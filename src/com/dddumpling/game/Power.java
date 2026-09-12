@@ -128,7 +128,8 @@ final class Power {
     /** How long the burst plays after it is struck, before it stops existing. */
     static final float POP_TIME = 0.45f;
     /** Seconds between powerup appearances. */
-    static final float SPAWN_MIN = 12f, SPAWN_MAX = 20f;
+    // 30% more pickup opportunities per eligible second: divide the wait by 1.3.
+    static final float SPAWN_MIN = 12f / 1.3f, SPAWN_MAX = 20f / 1.3f;
 
     int glyph;
     int effect;

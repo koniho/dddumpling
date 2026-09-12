@@ -59,13 +59,13 @@ public class GameView extends View {
     }
 
     /**
-     * The bundled rounded face, or null to let {@link CanvasPainter} fall back to the
+     * The bundled Bungee face, or null to let {@link CanvasPainter} fall back to the
      * platform sans-serif. A missing or unreadable font must never stop the game starting.
      */
     private static android.graphics.Typeface loadFace(Context ctx) {
         try {
             return android.graphics.Typeface.createFromAsset(ctx.getAssets(),
-                    "fonts/Quicksand.ttf");
+                    "fonts/Bungee-Regular.ttf");
         } catch (Throwable e) {
             return null;
         }

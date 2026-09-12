@@ -301,9 +301,9 @@ final class GameCore {
         /** Presses landed on the current tile so far. */
         int done;
         float baseX, y, speed, phase, sway;
-        /** Frenzy side entrance: a curved crossing from one edge to the other. */
+        /** Frenzy side entrance: an inward arc that settles into a vertical lane. */
         boolean sideEntry;
-        float pathStartX, pathControlX, pathEndX, pathStartY;
+        float pathStartX, pathEndX, pathStartY;
         boolean dying;
         float deathT;
         /** 1 right after a correct hit, decaying: drives the colour flash and scale pop. */
@@ -2199,15 +2199,11 @@ final class GameCore {
         return e.baseX + e.sway * (float) Math.sin(clock * 1.1f + e.phase);
     }
 
-    /** Keep a side-entering word on its quadratic crossing as its fall position advances. */
+    /** Ease the side entrance into a vertical lane without changing its fall speed. */
     void updateSidePath(Enemy e, Layout L) {
         if (!e.sideEntry) return;
-        float span = Math.max(1f, L.dangerY - L.enemyR - e.pathStartY);
-        float t = clamp01((e.y - e.pathStartY) / span);
-        float u = 1f - t;
-        e.baseX = u * u * e.pathStartX + 2f * u * t * e.pathControlX
-                + t * t * e.pathEndX;
-        e.enterT = clamp01(t * 5f);
+        e.baseX = EnemyEntry.xAt(e, e.y, L);
+        e.enterT = Math.min(1f, EnemyEntry.progress(e, e.y, L) * 3f);
     }
 
     /**
@@ -2540,9 +2536,12 @@ final class GameCore {
             // and the fight is the stage — the words were dividing attention away from the thing
             // the stage is actually about, and they took the screen the boss needs.
             if (spawnTimer <= 0 && liveEnemies() < crowdCap()) {
-                spawn(L);
-                if (!powerActive()) spawnedThisStage++;
-                spawnTimer = spawnInterval() / (powerActive() ? Power.spawnRate(ramp()) : 1f);
+                if (spawn(L)) {
+                    if (!powerActive()) spawnedThisStage++;
+                    spawnTimer = spawnInterval() / (powerActive() ? Power.spawnRate(ramp()) : 1f);
+                } else {
+                    spawnTimer = 0.1f; // No clear entrance yet; keep the wave quota outstanding.
+                }
             }
         } else if (stageCleared()) {
             Interlude.beginStageEnd(this);
@@ -2957,7 +2956,7 @@ final class GameCore {
         LandPicker.recordBest(this);
     }
 
-    private void spawn(Layout L) {
+    private boolean spawn(Layout L) {
         Enemy e = new Enemy();
         int len = minWordLen() + rnd.nextInt(maxWordLen() - minWordLen() + 1);
         Words.fill(e, len, stackChance(), rnd, playRosterFull());
@@ -2968,22 +2967,19 @@ final class GameCore {
         float hi = L.playRight - half - e.sway;
         e.baseX = hi > lo ? lo + rnd.nextFloat() * (hi - lo) : (L.playLeft + L.playRight) / 2f;
         e.phase = rnd.nextFloat() * 6.283f;
-        // Every frenzy mixes the ordinary rain with words sweeping in from both sides. Their
-        // quadratic crossing bends toward the far edge and finishes inside it at the damage
-        // line, so the unusual entrance never changes when the threat actually lands.
+        // Mix top rain with quick inward arcs, then keep each side word in its landing lane.
         if (powerActive()
                 && rnd.nextBoolean() && hi > lo) {
             e.sideEntry = true;
             boolean fromLeft = rnd.nextBoolean();
             e.pathStartX = fromLeft ? L.playLeft - half - L.enemyR
                     : L.playRight + half + L.enemyR;
-            e.pathEndX = fromLeft ? hi : lo;
-            e.pathControlX = e.pathStartX + (e.pathEndX - e.pathStartX) * 0.22f;
+            e.pathEndX = fromLeft ? lo + (hi - lo) * 0.25f : hi - (hi - lo) * 0.25f;
             e.pathStartY = L.playTop + (L.dangerY - L.playTop) *
                     (0.08f + rnd.nextFloat() * 0.24f);
             e.y = e.pathStartY;
             e.baseX = e.pathStartX;
-            e.sway *= 0.45f;
+            e.sway = 0f;
         } else {
             // Start fully above the top edge so words visibly fly in rather than popping
             // into existence. travelSeconds still measures spawn -> danger line.
@@ -2991,7 +2987,18 @@ final class GameCore {
         }
         e.enterT = 0f;
         e.speed = (L.dangerY - e.y) / travelSeconds();
-        enemies.add(e);
+        // Try other lanes before deferring. Existing side arcs also reserve space against
+        // later top entries, so words cannot be admitted into a future collision.
+        float preferredX = e.sideEntry ? e.pathEndX : e.baseX;
+        for (int attempt = 0; attempt < 9; attempt++) {
+            float lane = attempt == 0 ? preferredX : lo + (hi - lo) * (attempt - 1) / 7f;
+            if (e.sideEntry) e.pathEndX = lane; else e.baseX = lane;
+            if (EnemyEntry.clear(e, this, L)) {
+                enemies.add(e);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

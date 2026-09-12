@@ -277,8 +277,8 @@ final class RasterPainter implements Painter {
      *
      * Text that does not fit is not a rendering bug you can see in a PNG — it is a clipped word, or
      * a line that reads fine here and wraps off a narrower device. Recorded rather than eyeballed
-     * because there are dozens of lines across twenty screens, and because the harness font is
-     * wider than the one the device uses: a line that fits here fits there.
+     * because there are dozens of lines across twenty screens. This bitmap approximation does
+     * not measure Bungee; device text still needs a visual check.
      */
     static final java.util.List<String> unfit = new java.util.ArrayList<>();
 
@@ -289,8 +289,8 @@ final class RasterPainter implements Painter {
     /**
      * How wide a line comes out in the harness font, for assertions about text fitting inside
      * something that is not the screen edge — {@code DOES NOT FIT} only reports the edge, and a
-     * label leaving its box has now been drawn twice without anything catching it. The harness font
-     * is wider than Quicksand, so fitting here means fitting on the device.
+     * label leaving its box has now been drawn twice without anything catching it. These widths
+     * describe the harness bitmap font, not the bundled Bungee face.
      */
     static float textWidth(String s, float size) {
         if (s == null || s.isEmpty()) return 0f;

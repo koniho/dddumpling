@@ -1,0 +1,4 @@
+- New Bungee font for game text.
+- Powerup pickups appear 30% more frequently.
+- Side-entry enemies arrive quickly, arc inward, and ease into a vertical fall.
+- Improved enemy spacing keeps side-entry words clear of other enemies.

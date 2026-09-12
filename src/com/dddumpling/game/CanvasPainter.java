@@ -19,14 +19,12 @@ final class CanvasPainter implements Painter {
     private Canvas canvas;
 
     /**
-     * @param face the game face, or null to fall back to the platform sans-serif. Bold is
-     *     synthesised from it rather than loaded separately: the bundled Quicksand is a
-     *     variable font whose named weights need API 26, and a faux-bold is indistinguishable
-     *     at these sizes.
+     * @param face the game face, or null to fall back to the platform sans-serif.
+     *     Bungee already has heavy strokes; use its original weight for both text styles.
      */
     CanvasPainter(Typeface face) {
         regular = face != null ? face : Typeface.create("sans-serif-medium", Typeface.NORMAL);
-        heavy = face != null ? Typeface.create(face, Typeface.BOLD)
+        heavy = face != null ? face
                 : Typeface.create("sans-serif", Typeface.BOLD);
         init();
     }
@@ -40,7 +38,7 @@ final class CanvasPainter implements Painter {
         stroke.setStyle(Paint.Style.STROKE);
         stroke.setStrokeJoin(Paint.Join.ROUND);
         stroke.setStrokeCap(Paint.Cap.ROUND);
-        type.setLetterSpacing(0.09f);
+        type.setLetterSpacing(0f);
     }
 
     void bind(Canvas c) {

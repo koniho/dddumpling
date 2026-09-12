@@ -55,6 +55,7 @@ src/com/dddumpling/game/Boss.java
 src/com/dddumpling/game/Softbody.java
 src/com/dddumpling/game/Buddy.java
 src/com/dddumpling/game/GameCore.java
+src/com/dddumpling/game/EnemyEntry.java
 src/com/dddumpling/game/Pacing.java
 src/com/dddumpling/game/Blade.java
 src/com/dddumpling/game/CaseUi.java

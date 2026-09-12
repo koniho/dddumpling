@@ -113,6 +113,7 @@ final class CoreTest {
             TestAudio.interludeSounds(L);
         });
         group("Power", () -> {
+            TestSideEntry.all(L);
             TestPower.drifting(L);
             TestPower.precedence(L);
             TestPower.frenzy(L);

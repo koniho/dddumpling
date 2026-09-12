@@ -128,9 +128,8 @@ That is a ~64 MB download for a 27 MB jar; it is deliberately not committed.
 The pipeline is `aapt2 compile` → `aapt2 link` → `javac` → `d8` → `zip` → `apksigner`, and
 takes a few seconds. It runs `check.sh` first and refuses to package if any assertion fails.
 
-Output is a signed `hexatype.apk` of about 260 KB: a 130 KB dex and the 125 KB bundled
-Quicksand face. A personal music track dropped into `res/raw/` is added to that and will
-dominate it — see [Licensing](#licensing).
+Output is a signed `hexatype.apk` with bundled fonts. A personal music track dropped into
+`res/raw/` is added to that and will dominate it — see [Licensing](#licensing).
 
 A debug keystore is generated at `build/debug.keystore` on first run. It is throwaway — delete
 it and a new one appears.
@@ -191,6 +190,7 @@ file has to be added there. `build.sh` globs `src/`, so it needs no updating.
 | `Layout` | every screen coordinate, derived from view size and insets |
 | `GameCore` | all rules: state machine, waves, targeting, scoring, powerup, collection |
 | `Pacing` | the stage difficulty dials, as pure functions of stage |
+| `EnemyEntry` | side-entry arcs that ease into vertical lanes; checks future row spacing before spawning |
 | `Blade` | the FLING swipe: what a stroke is and what one sweep cuts |
 | `CaseUi` | browsing the display case |
 | `Interlude` | the between-stages round |
@@ -291,9 +291,10 @@ To add a collectible: one row across the parallel arrays in `Collect`, one in `L
 ## Licensing
 
 Characters, effects, music, collectibles and stories are all original and procedurally
-generated — there are no assets to license. The bundled font is
-[Quicksand](https://fonts.google.com/specimen/Quicksand) under the SIL Open Font License, whose
-text ships alongside it in `assets/fonts/OFL.txt`.
+generated — there are no assets to license. The game font is
+[Bungee](https://fonts.google.com/specimen/Bungee) under the SIL Open Font License, whose
+text ships alongside it in `assets/fonts/Bungee-OFL.txt`. Quicksand remains bundled for
+the trailer tools, with its license in `assets/fonts/OFL.txt`.
 
 `res/raw/bgm.*` is gitignored on purpose: a user-supplied track stays on that device and must
 never be committed, since this repo is shared. Drop one in and it becomes the MY TRACK option
