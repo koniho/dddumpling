@@ -50,6 +50,12 @@
     if ((self = [super initWithFrame:frame])) {
         self.multipleTouchEnabled = YES;
         self.opaque = YES;
+        // Keep deferred Core Graphics rasterization off the input/update thread.
+        self.layer.drawsAsynchronously = YES;
+#if DEBUG
+        if ([NSProcessInfo.processInfo.environment[@"DDD_SYNC_RASTER"] boolValue])
+            self.layer.drawsAsynchronously = NO;
+#endif
         self.backgroundColor = UIColor.blackColor;
         self.isAccessibilityElement = NO;
         _gameElement = [[UIAccessibilityElement alloc] initWithAccessibilityContainer:self];

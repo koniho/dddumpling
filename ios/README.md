@@ -88,6 +88,12 @@ SIMCTL_CHILD_DDD_PROFILE=1 SIMCTL_CHILD_DDD_SCENE=stage:10 \
 # Play in Simulator, then inspect ios/build/profile-divide.log.
 ```
 
+The game layer uses asynchronous Core Graphics rasterization after profiling identified
+deferred path filling on the main thread. Set `DDD_SYNC_RASTER=1` in a Debug launch to compare
+the old synchronous path. Shared scene drawing and gameplay still execute on the main thread;
+Core Animation processes the recorded drawing commands asynchronously. See the measured
+[before/after results](docs/performance.md).
+
 UIKit may defer Core Graphics rasterization until after `drawRect:` returns, so draw-submission
 timing excludes that work. Callback cadence is **not** presented FPS or physical-device
 frame-pacing evidence. Scene hooks are Debug-only; profiling also works in Release. Use Instruments

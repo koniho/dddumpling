@@ -22,8 +22,10 @@ physical-device acceptance and App Store distribution remain unfinished.
 | Install over existing app | `SIMULATOR_ID=57F475C1-B8F8-45F5-8990-5D9BC5687A50 ./ios/scripts/test-update.sh` | Passed; existing save byte-identical after reinstall, app launch accepted; snapshots in `ios/build/Update-20260912-134758` |
 | Android production build | Homebrew Bash 5.3.15, Android API/build tools 36, `bash ./build.sh --production` | 4,845 + 80 assertions passed again; signed APK verified as `com.dddumpling.game` / DDDUMPLING |
 
-Final full native/UI result bundle: `ios/build/Test-20260912-133549.xcresult` (13 tests, zero
-failures). Final pause/button result: `ios/build/Test-20260912-133923.xcresult`. An earlier
+Final full native/UI result bundle after asynchronous rasterization:
+`ios/build/Test-20260912-135634.xcresult` (13 tests, zero failures, iPhone 17 Pro).
+The earlier iPhone 17e suite is `ios/build/Test-20260912-133549.xcresult` (13 tests, zero
+failures). The separate pause/button result is `ios/build/Test-20260912-133923.xcresult`. An earlier
 iPhone 17 Pro run also passed the initial 2 storage + 3 UI tests. Result bundles and generated
 translations remain ignored build artifacts. The nine-pair [comparison sheet](render-comparison.png)
 is committed for review; detailed observations are in [rendering.md](rendering.md).
@@ -31,6 +33,9 @@ is committed for review; detailed observations are in [rendering.md](rendering.m
 The XCTest pinch test demonstrates native gesture delivery without a crash; successful charged
 Dark Divide pinching and concurrent deck/drag ownership are asserted in the Java input suite.
 These are not claims that a human completed every boss through UIKit.
+
+The unsigned arm64 Release archive was rebuilt successfully after enabling asynchronous
+rasterization and adding opt-in profiling (`/tmp/dddumpling-async-archive.log`).
 
 ## Failures found and corrected
 
@@ -52,6 +57,13 @@ These are not claims that a human completed every boss through UIKit.
 
 ## Performance evidence and limits
 
+Follow-up profiling now measures callback cadence and resident memory as well as
+draw submission. It found substantial deferred Core Graphics raster work and callback
+intervals above the 16.67 ms target in Simulator. Moving rasterization off the main thread
+improved title callback means from 24–25 ms to 16.67 ms and early Dark Divide to about 17 ms.
+This is now the default host behavior. See [performance.md](performance.md)
+for hardware, per-scene results, stack-sample evidence and measurement limits.
+
 Simulator title drawing logged 0.34 ms draw / 0.01 ms update and a 1.04 ms CPU maximum in one
 600-frame sample. An early Dark Divide launch logged an 87.67 ms maximum, with subsequent
 600-frame windows at 2.08–7.55 ms maximum. Those windows include idle/death states and competing
@@ -62,7 +74,8 @@ No sustained memory-growth profile, input-to-display latency measurement, or phy
 thermal/frame-pacing run has been completed. Use Instruments on the chosen minimum supported
 iPhone and record device/OS, normal stage, stretched Slime, split Dark Divide, and star-flight
 sessions before deciding the performance gate is met. The current Core Graphics backend has
-no demonstrated blocker requiring a renderer or engine migration.
+an identified simulator rasterization bottleneck; the physical-device feasibility gate
+remains open before selecting a different Painter backend.
 
 ## Remaining work before shipping
 
