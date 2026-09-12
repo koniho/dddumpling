@@ -53,11 +53,17 @@ source ios/scripts/env.sh
 ./ios/scripts/test-input.sh
 SIMULATOR_ID=<iPhone-UDID> ./ios/scripts/test-simulator.sh
 ./ios/scripts/render-reference.sh
+# After playing an installed build, check replacement without uninstalling:
+SIMULATOR_ID=<iPhone-UDID> ./ios/scripts/test-update.sh
 ```
 
 The input suite uses its own output directory and can run alongside the existing Java checks.
-Native tests exercise durable storage and launch/touch/background scenarios. XCTest screenshots
-and reports are retained in timestamped `ios/build/Test-*.xcresult` bundles, viewable in Xcode.
+Native tests exercise durable storage and launch/touch/background scenarios.
+The update check compares the existing save byte-for-byte before and after installing the built
+app and then launches it. It keeps snapshots under `ios/build/Update-*`; it does not test future
+save-schema migrations or replace a human progress-restoration check.
+XCTest screenshots and reports are retained in timestamped `ios/build/Test-*.xcresult` bundles,
+viewable in Xcode.
 
 For matching renderer captures, launch a Debug build with `SIMCTL_CHILD_DDD_RENDER_CHECK=1`
 using `xcrun simctl launch`. Nine fresh games use seed 42, a 640×1400 point layout, and exactly

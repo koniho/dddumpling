@@ -19,6 +19,7 @@ physical-device acceptance and App Store distribution remain unfinished.
 | Renderer parity | `./ios/scripts/render-reference.sh` plus Debug `DDD_RENDER_CHECK=1` | Nine matching-seed native/Java scene pairs reviewed; expected Bungee and antialiasing differences |
 | Simulator build | `./ios/scripts/build.sh` | Passed arm64 simulator compile/link/install/launch |
 | Device Release archive | `./ios/scripts/archive.sh --unsigned` | Passed; arm64 iPhone archive, production bundle ID, developer flag false, fonts/icon/privacy/license resources present |
+| Install over existing app | `SIMULATOR_ID=57F475C1-B8F8-45F5-8990-5D9BC5687A50 ./ios/scripts/test-update.sh` | Passed; existing save byte-identical after reinstall, app launch accepted; snapshots in `ios/build/Update-20260912-134758` |
 | Android production build | Homebrew Bash 5.3.15, Android API/build tools 36, `bash ./build.sh --production` | 4,845 + 80 assertions passed again; signed APK verified as `com.dddumpling.game` / DDDUMPLING |
 
 Final full native/UI result bundle: `ios/build/Test-20260912-133549.xcresult` (13 tests, zero
@@ -70,8 +71,9 @@ no demonstrated blocker requiring a renderer or engine migration.
 - Human audio listening: all music transitions/effects/narration, real calls/headphones and
   route restoration. Native tests check mechanics, not acoustic equivalence or voice quality.
 - End-to-end collection/story/progression traversal, save preservation across an app update,
-  and final Release interaction checks on the minimum supported OS. Unit storage tests reopen
-  the real file but do not replace the update-over-install acceptance test.
+  and final Release interaction checks on the minimum supported OS. Simulator installation
+  preservation passes for the current schema; future migrations and human progress restoration
+  across a version update remain unverified.
 - Signing: user has enrolled in Apple Developer, but `security find-identity -v -p codesigning`
   reports **0 valid identities** on this Mac, and `xcrun devicectl list devices` reports none.
   Add the Apple ID/team and a local signing certificate in Xcode; no account changes were made.
