@@ -60,7 +60,7 @@ final class Power {
     /**
      * The base late-frenzy spawn multiple, before the additional enemy spawn boost.
      *
-     * Note that a frenzy's press demand is *exactly* its spawn multiplier times the stage's own:
+     * The sustained spawn schedule multiplies the stage's base press demand:
      * words cost the same to clear either way, they simply turn up N times as often. So this
      * number defines the base curve; spawnRate applies the additional enemy-only boost.
      *
@@ -107,6 +107,33 @@ final class Power {
     // Pickup timing, fall speed, and the crowd cap keep their original settings.
     static final float ENEMY_SPAWN_BOOST = 1.3f;
     static float spawnRate(float ramp) { return tapered(SPAWN_RATE, ramp) * ENEMY_SPAWN_BOOST; }
+
+    /** Refill a cleared field quickly, then return to the stage's sustained frenzy pace. */
+    static float spawnDelay(GameCore c, Layout L) {
+        float normal = c.spawnInterval();
+        if (!c.powerActive()) return normal;
+        normal /= spawnRate(c.ramp());
+        int live = 0, presses = 0, visiblePresses = 0;
+        float danger = L.dangerY - (L.dangerY - L.playTop) * 0.35f;
+        for (GameCore.Enemy e : c.enemies) {
+            if (e.destroyed || e.dying) continue;
+            if (e.attacking || e.y >= danger) return normal;
+            live++;
+            int remaining = 0;
+            for (int i = e.pos; i < e.word.length; i++) remaining += c.pressesLeft(e, i);
+            presses += remaining;
+            float half = L.wordWidth(e.word.length) / 2f;
+            float x = c.enemyCentreX(e);
+            if (e.y - L.enemyR >= L.playTop && x - half >= L.playLeft
+                    && x + half <= L.playRight) visiblePresses += remaining;
+        }
+        // Accelerate a clear or empty view, including final hits still in flight. Two incoming
+        // rows stop the empty-view boost; a multi-clear earns at most two quick replacements.
+        float refill = 0.5f - Math.min(0.3f, c.ramp() * 0.05f);
+        boolean burst = c.powerRefillBurst > 0 && c.clock - c.powerLastClear < 0.8f;
+        boolean emptyView = live < 2 && visiblePresses == 0;
+        return emptyView || (live < 3 && (presses == 0 || burst)) ? normal * refill : normal;
+    }
 
     static float crowdRate(float ramp) { return tapered(CROWD_RATE, ramp); }
 

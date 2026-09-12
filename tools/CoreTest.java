@@ -114,6 +114,7 @@ final class CoreTest {
         });
         group("Power", () -> {
             TestSideEntry.all(L);
+            TestFrenzyRefill.all(L);
             TestPower.drifting(L);
             TestPower.precedence(L);
             TestPower.frenzy(L);

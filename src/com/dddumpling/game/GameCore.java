@@ -646,6 +646,9 @@ final class GameCore {
     /** Active mode, or -1. */
     int mode = -1;
     float modeLeft;
+    /** Rapid clears earn a short, bounded replacement burst. */
+    float powerLastClear = -100f;
+    int powerRefillBurst;
     /** True between the wave ending and the interlude opening. */
     boolean pendingBonus;
     /** Set when a frenzy ended the stage, so the interlude can run longer. */
@@ -1065,6 +1068,9 @@ final class GameCore {
         if (effect == Power.TEAM && entry < 0) return;
         mode = effect;
         modeLeft = Power.DURATION;
+        powerLastClear = -100f;
+        powerRefillBurst = 0;
+        spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
         flingUsed = false;
         // A finger already resting on the field does not get a free stroke: it has to lift and
         // land again, the same as it would to start a second swipe.
@@ -2527,6 +2533,7 @@ final class GameCore {
         if (stageGap > 0) {
             stageGap -= dt;
         } else if (powerActive() || (!boss.active() && spawnedThisStage < stageQuota())) {
+            if (powerActive()) spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
             spawnTimer -= dt;
             // Counted against live words only: a word already flying apart is no longer
             // occupying the field as far as pacing is concerned. During a frenzy the quota
@@ -2537,8 +2544,9 @@ final class GameCore {
             // the stage is actually about, and they took the screen the boss needs.
             if (spawnTimer <= 0 && liveEnemies() < crowdCap()) {
                 if (spawn(L)) {
+                    if (powerActive() && powerRefillBurst > 0) powerRefillBurst--;
                     if (!powerActive()) spawnedThisStage++;
-                    spawnTimer = spawnInterval() / (powerActive() ? Power.spawnRate(ramp()) : 1f);
+                    spawnTimer = Power.spawnDelay(this, L);
                 } else {
                     spawnTimer = 0.1f; // No clear entrance yet; keep the wave quota outstanding.
                 }
@@ -2654,6 +2662,10 @@ final class GameCore {
     void destroyWord(Enemy e, float px, float py, Layout L, boolean chime) {
         // The word is credited now but stays listed until it has flown apart, so anything
         // gated on the field being clear waits for the animation.
+        if (powerActive() && !e.destroyed) {
+            if (clock - powerLastClear <= 0.25f) powerRefillBurst = 2;
+            powerLastClear = clock;
+        }
         e.destroyed = true;
         e.destroyT = 0f;
         e.dying = false;
@@ -2968,8 +2980,10 @@ final class GameCore {
         e.baseX = hi > lo ? lo + rnd.nextFloat() * (hi - lo) : (L.playLeft + L.playRight) / 2f;
         e.phase = rnd.nextFloat() * 6.283f;
         // Mix top rain with quick inward arcs, then keep each side word in its landing lane.
+        boolean refill = powerActive() && Power.spawnDelay(this, L)
+                < spawnInterval() / Power.spawnRate(ramp());
         if (powerActive()
-                && rnd.nextBoolean() && hi > lo) {
+                && (rnd.nextBoolean() || (refill && rnd.nextFloat() < 0.75f)) && hi > lo) {
             e.sideEntry = true;
             boolean fromLeft = rnd.nextBoolean();
             e.pathStartX = fromLeft ? L.playLeft - half - L.enemyR

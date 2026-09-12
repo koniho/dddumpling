@@ -197,7 +197,7 @@ file has to be added there. `build.sh` globs `src/`, so it needs no updating.
 | `BossPlay` | the boss fight wired to score, sound, shots and lives |
 | `Words` | word generation and the press-budget rules |
 | `Fx` | shots and particles |
-| `Power` | the powerup letter and its four frenzy modes |
+| `Power` | powerup modes, stage-scaled spawn rates, and bounded replenishment after fast clears |
 | `Boss` | the every-fifth-stage boss: five mechanics, its touch elements, and its rules |
 | `BossScreen` | the boss on screen: body, health header, ornaments and elements |
 | `Softbody` | a pressurised 2D soft body — the sprung node ring every boss is built on |

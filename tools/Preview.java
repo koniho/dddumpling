@@ -887,6 +887,18 @@ final class Preview {
         step(traffic, L, 3.5f);
         shot(dir, "33e-side-spacing", traffic, L, w, h, ss);
 
+        // A mass clear during FLING, followed by its short replacement burst.
+        GameCore refill = new GameCore(store, 711L);
+        refill.startGame();
+        refill.stage = 13;
+        refill.startFrenzy(Power.FLING, L);
+        step(refill, L, 2f);
+        for (GameCore.Enemy word : refill.enemies) {
+            if (word.typeable()) refill.destroyWord(word, refill.enemyCentreX(word), word.y, L);
+        }
+        step(refill, L, 0.7f);
+        shot(dir, "33f-frenzy-refill", refill, L, w, h, ss);
+
         // Settings panel, opened mid-game.
         GameCore c6 = new GameCore(store, 29L);
         c6.startGame();

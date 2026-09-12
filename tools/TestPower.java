@@ -1211,9 +1211,9 @@ final class TestPower extends Check {
             active.spawnTimer = 0f;
             active.update(DT, L);
             scheduled &= active.enemies.size() == 1
-                    && Math.abs(active.spawnTimer - active.spawnInterval() / 7.8f) < 1e-5f;
+                    && Math.abs(active.spawnTimer - active.spawnInterval() / 7.8f * 0.5f) < 1e-5f;
         }
-        check("every active powerup schedules the faster enemy spawns", scheduled);
+        check("every active powerup promptly fills an empty view", scheduled);
         GameCore calmRun = new GameCore(new Mem(), 939L);
         calmRun.startGame();
         calmRun.spawnTimer = 0f;
