@@ -38,6 +38,7 @@ done
 PURE="src/com/dddumpling/game/ProgressData.java
 src/com/dddumpling/game/Progress.java
 src/com/dddumpling/game/Analytics.java
+src/com/dddumpling/game/AnalyticsUi.java
 src/com/dddumpling/game/PrivacyUi.java
 src/com/dddumpling/game/Pause.java
 src/com/dddumpling/game/Glyph.java

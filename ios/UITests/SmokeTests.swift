@@ -55,16 +55,16 @@ final class SmokeTests: XCTestCase {
     }
 
     func testAnalyticsChoiceDoesNotBlockPlayAndPersists() {
-        for choice in ["No thanks", "Allow analytics"] {
+        for choice in ["analytics-decline", "analytics-allow"] {
             let app = XCUIApplication()
             app.launchEnvironment["DDD_ANALYTICS_PREVIEW"] = "1"
             app.launchEnvironment["DDD_ANALYTICS_RESET"] = "1"
             app.launch()
-            let alert = app.alerts["Gameplay analytics"]
-            XCTAssertTrue(alert.waitForExistence(timeout: 15))
+            let prompt = app.buttons["analytics-allow"]
+            XCTAssertTrue(prompt.waitForExistence(timeout: 15))
             capture(app, "analytics-choice")
-            XCTAssertTrue(alert.buttons["Privacy policy"].exists)
-            alert.buttons[choice].tap()
+            XCTAssertTrue(app.buttons["analytics-policy"].exists)
+            app.buttons[choice].tap()
             let game = app.otherElements["game"]
             XCTAssertTrue(game.waitForExistence(timeout: 5))
             game.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.85)).tap()
@@ -74,7 +74,16 @@ final class SmokeTests: XCTestCase {
             app.launchEnvironment.removeValue(forKey: "DDD_ANALYTICS_RESET")
             app.launch()
             XCTAssertTrue(app.otherElements["game"].waitForExistence(timeout: 15))
-            XCTAssertFalse(app.alerts["Gameplay analytics"].exists)
+            XCTAssertFalse(app.buttons["analytics-allow"].exists)
+            app.buttons["privacy"].tap()
+            XCTAssertTrue(app.buttons["analytics-decline"].waitForExistence(timeout: 5))
+            if choice == "analytics-allow" {
+                XCTAssertEqual(app.buttons["analytics-decline"].label, "TURN OFF")
+                app.buttons["analytics-decline"].tap()
+                app.buttons["privacy"].tap()
+                XCTAssertEqual(app.buttons["analytics-allow"].label, "ALLOW ANALYTICS")
+            }
+            app.buttons["analytics-close"].tap()
             app.terminate()
         }
     }

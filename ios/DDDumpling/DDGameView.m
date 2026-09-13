@@ -5,6 +5,7 @@
 #import "DDFrameMetrics.h"
 #import "DDAnalytics.h"
 #import "com/dddumpling/game/IOSGame.h"
+#import "com/dddumpling/game/AnalyticsUi.h"
 #import "com/dddumpling/game/IOSTouch.h"
 #import "IOSPrimitiveArray.h"
 #import "IOSObjectArray.h"
@@ -28,9 +29,12 @@
 @property(nonatomic, strong) NSMutableArray<NSNumber *> *pointerTimes;
 @property(nonatomic, strong) UIAccessibilityElement *gameElement;
 @property(nonatomic, strong) UIButton *backButton;
+@property(nonatomic, strong) UIButton *privacyButton;
 @property(nonatomic, strong) UIImpactFeedbackGenerator *haptic;
 @property(nonatomic, strong) DDFrameMetrics *frameMetrics;
 @property(nonatomic, strong) DDGameAnalytics *analytics;
+@property(nonatomic, strong) NSArray<UIButton *> *analyticsButtons;
+@property(nonatomic, strong) UIAccessibilityElement *analyticsDescription;
 @property(nonatomic) NSInteger nextID;
 @property(nonatomic) CFTimeInterval lastTime;
 @property(nonatomic) BOOL active;
@@ -42,7 +46,13 @@
 @implementation DDHost
 - (void)tick { [self.view.haptic impactOccurred]; }
 - (void)openPrivacyWithNSString:(NSString *)url {
-    [self.view.analytics showPrivacyFrom:self.view.window.rootViewController];
+    if (self.view.analytics.available) {
+        [self.view.game showAnalyticsWithBoolean:self.view.analytics.enabled];
+    } else [self.view.analytics openPolicy];
+}
+- (void)analyticsChoiceWithInt:(jint)action {
+    if (action == DDAnalyticsUi_POLICY) [self.view.analytics openPolicy];
+    else [self.view.analytics setConsent:action == DDAnalyticsUi_ALLOW];
 }
 @end
 
@@ -79,6 +89,19 @@
         [_game setHostWithDDIOSGame_Host:host];
         _analytics = [DDGameAnalytics new];
         [_game setAnalyticsWithDDAnalytics_Sink:_analytics];
+        _analyticsDescription = [[UIAccessibilityElement alloc] initWithAccessibilityContainer:self];
+        _analyticsDescription.accessibilityIdentifier = @"analytics-description";
+        NSMutableArray *analyticsButtons = [NSMutableArray new];
+        for (NSInteger action = DDAnalyticsUi_ALLOW; action <= DDAnalyticsUi_CLOSE; action++) {
+            UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
+            button.tag = action;
+            button.hidden = YES;
+            button.accessibilityIdentifier = [@[@"analytics-allow", @"analytics-decline", @"analytics-policy", @"analytics-close"] objectAtIndex:action - 1];
+            [button addTarget:self action:@selector(analyticsAction:) forControlEvents:UIControlEventTouchUpInside];
+            [self addSubview:button];
+            [analyticsButtons addObject:button];
+        }
+        _analyticsButtons = analyticsButtons;
         _haptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
         _frameMetrics = [[DDFrameMetrics alloc]
             initWithEnabled:[NSProcessInfo.processInfo.environment[@"DDD_PROFILE"] boolValue]];
@@ -89,6 +112,11 @@
         _backButton.accessibilityLabel = @"Pause or go back";
         [_backButton addTarget:self action:@selector(navigateBack) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_backButton];
+        _privacyButton = [UIButton buttonWithType:UIButtonTypeCustom];
+        _privacyButton.accessibilityIdentifier = @"privacy";
+        _privacyButton.accessibilityLabel = @"Privacy and analytics";
+        [_privacyButton addTarget:self action:@selector(showPrivacy) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_privacyButton];
         _displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(frame:)];
         _displayLink.preferredFrameRateRange = CAFrameRateRangeMake(60, 60, 60);
         [_displayLink addToRunLoop:NSRunLoop.mainRunLoop forMode:NSRunLoopCommonModes];
@@ -115,12 +143,52 @@
 }
 - (void)safeAreaInsetsDidChange { [super safeAreaInsetsDidChange]; [self setNeedsLayout]; }
 - (void)refreshNavigation {
-    self.backButton.hidden = ![self.game handlesBack];
+    DDAnalyticsUi *ui = self.game.analyticsUi;
+    BOOL consentVisible = ui.visible;
+    self.backButton.hidden = consentVisible || ![self.game handlesBack];
     self.backButton.accessibilityLabel = [self.game paused] ? @"Resume or go back" : @"Pause or go back";
     self.accessibilityElements = self.backButton.hidden ? @[self.gameElement] : @[self.gameElement, self.backButton];
+    self.privacyButton.hidden = !self.game.privacyVisible;
+    if (!self.privacyButton.hidden) {
+        self.privacyButton.frame = CGRectMake(self.game.privacyLeft, self.game.privacyTop,
+                                             self.game.privacyWidth, self.game.privacyHeight);
+        self.accessibilityElements = [self.accessibilityElements arrayByAddingObject:self.privacyButton];
+    }
+    for (UIButton *button in self.analyticsButtons) {
+        button.hidden = !consentVisible;
+        if (consentVisible) {
+            jint action = (jint)button.tag;
+            button.frame = CGRectMake([ui actionLeftWithInt:action], [ui actionTopWithInt:action],
+                                      [ui actionWidthWithInt:action], [ui actionHeightWithInt:action]);
+            button.accessibilityLabel = [ui actionTitleWithInt:action];
+        }
+    }
+    if (consentVisible) {
+        self.analyticsDescription.accessibilityLabel = [NSString stringWithFormat:@"%@. %@", ui.title, ui.message];
+        CGFloat firstButtonY = [ui actionTopWithInt:DDAnalyticsUi_ALLOW];
+        self.analyticsDescription.accessibilityFrameInContainerSpace = CGRectMake(0, 0, self.bounds.size.width, firstButtonY);
+        self.accessibilityElements = [@[self.analyticsDescription] arrayByAddingObjectsFromArray:self.analyticsButtons];
+    }
 #if DEBUG
     self.gameElement.accessibilityValue = [self.game debugStatus];
 #endif
+}
+- (void)showPrivacy {
+    if (self.analytics.available) [self.game showAnalyticsWithBoolean:self.analytics.enabled];
+    else [self.analytics openPolicy];
+    [self clearPointers];
+    [self refreshNavigation];
+    [self setNeedsDisplay];
+    if (self.game.analyticsUi.visible)
+        UIAccessibilityPostNotification(UIAccessibilityScreenChangedNotification, self.analyticsDescription);
+}
+- (void)analyticsAction:(UIButton *)button {
+    [self.game analyticsActionWithInt:(jint)button.tag];
+    [self clearPointers];
+    [self refreshNavigation];
+    [self setNeedsDisplay];
+    UIAccessibilityPostNotification(UIAccessibilityScreenChangedNotification,
+        self.game.analyticsUi.visible ? self.analyticsDescription : self.gameElement);
 }
 - (void)clearPointers {
     [self.pointers removeAllObjects];
@@ -170,7 +238,10 @@
     [self clearPointers];
     [self.audio setActive:active && !self.storeAlertVisible];
     self.displayLink.paused = !active;
-    if (active) [self.analytics offerConsentFrom:self.window.rootViewController];
+    if (active && [self.analytics shouldOfferConsent]) {
+        [self.game showAnalyticsWithBoolean:self.analytics.enabled];
+        UIAccessibilityPostNotification(UIAccessibilityScreenChangedNotification, self.analyticsDescription);
+    }
     [self refreshNavigation];
     [self setNeedsDisplay];
 }

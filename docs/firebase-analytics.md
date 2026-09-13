@@ -5,6 +5,10 @@ not evidence that a Firebase project, Analytics property, retention setting, sto
 or release has been configured. Complete and record the account-side checks before distributing
 an analytics-enabled build.
 
+The owner has created [Firebase project `dddumpling-5695b`](https://console.firebase.google.com/project/dddumpling-5695b/overview).
+Register both apps there; the downloaded app configuration and Analytics property settings still
+need to be verified before enabling a release.
+
 Analytics is configuration-gated. If the platform-specific Firebase configuration is absent, the
 Android build uses the no-op analytics bridge and the iOS build does not package Firebase project
 configuration. Neither platform initializes Firebase or collects Analytics data in that state.
@@ -49,6 +53,11 @@ developer builds also keep Analytics unavailable. Firebase configuration is inde
 `DDDUMPLING_PLAY_CONFIG`; supplying the Play Games configuration must not implicitly enable
 Firebase, or vice versa.
 
+For GitHub Actions, store the Android file contents in repository secret
+`FIREBASE_GOOGLE_SERVICES_JSON`. The release workflow restores it privately and checks the configured
+bundle's consent and advertising controls. Without the secret it retains the offline build and
+offline verifier. iOS uses `IOS_FIREBASE_CONFIG_BASE64` in the `ios-release` environment.
+
 For a signed iOS release in GitHub Actions, create the repository secret
 `IOS_FIREBASE_CONFIG_BASE64` containing the base64 encoding of the complete Apple plist. The
 release workflow decodes it to the default `.private/firebase/GoogleService-Info.plist` path before
@@ -63,6 +72,11 @@ Official setup references: [Firebase pricing](https://firebase.google.com/pricin
 and [Apple registration and configuration](https://firebase.google.com/docs/ios/setup).
 
 ## Consent and SDK constraints
+
+The prompt is painted by shared `AnalyticsUi` using the game's own characters, palette, and font.
+Native accessible buttons use the same action bounds on each platform. Privacy policy access leaves
+the prompt open; closing an initial prompt keeps analytics off. The title Privacy control also lets
+a player withdraw consent. See the [iPhone simulator capture](../ios/docs/firebase-evidence/analytics-consent-iphone.png).
 
 These requirements apply worldwide and must be verified in the final release artifacts:
 

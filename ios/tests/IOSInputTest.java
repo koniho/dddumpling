@@ -4,9 +4,11 @@ package com.dddumpling.game;
 public final class IOSInputTest extends Check {
     private static final class Host implements IOSGame.Host {
         int ticks;
+        int analyticsAction;
         String privacy;
         public void tick() { ticks++; }
         public void openPrivacy(String url) { privacy = url; }
+        public void analyticsChoice(int action) { analyticsAction = action; }
     }
 
     private static IOSGame game() {
@@ -227,10 +229,36 @@ public final class IOSInputTest extends Check {
         check("debug title clears pause", !game.paused() && game.core().state==GameCore.TITLE);
     }
 
+    private static void analyticsConsent() {
+        IOSGame game = game(); Host host = new Host(); game.setHost(host);
+        game.showAnalytics(false);
+        check("analytics prompt owns back navigation", game.handlesBack());
+        String before = game.debugStatus();
+        tap(game, 2, 2); game.update(1f);
+        check("outside prompt touches cannot start or change the game", before.equals(game.debugStatus()));
+        AnalyticsUi ui = game.analyticsUi();
+        tap(game, ui.actionLeft(AnalyticsUi.POLICY) + ui.actionWidth(AnalyticsUi.POLICY)/2,
+                ui.actionTop(AnalyticsUi.POLICY) + ui.actionHeight(AnalyticsUi.POLICY)/2);
+        check("policy opens without accepting or dismissing consent", host.analyticsAction == AnalyticsUi.POLICY && ui.visible());
+        host.analyticsAction = 0;
+        float x = ui.actionLeft(AnalyticsUi.ALLOW) + ui.actionWidth(AnalyticsUi.ALLOW)/2;
+        float y = ui.actionTop(AnalyticsUi.ALLOW) + ui.actionHeight(AnalyticsUi.ALLOW)/2;
+        game.touch(one(0, 1, x, y)); game.touch(one(2, 1, 2, 2)); game.touch(one(1, 1, x, y));
+        check("dragging off a consent button cancels acceptance", ui.visible() && host.analyticsAction == 0);
+        game.touch(one(0, 1, x, y)); game.background(true); game.background(false); game.touch(one(1, 1, x, y));
+        check("backgrounding cancels an unfinished consent press", ui.visible() && host.analyticsAction == 0);
+        tap(game, x, y);
+        check("accepting reports only the explicit choice", host.analyticsAction == AnalyticsUi.ALLOW && !ui.visible());
+        game.showAnalytics(false); game.back();
+        check("back from an unaccepted prompt declines analytics", host.analyticsAction == AnalyticsUi.DECLINE && !ui.visible());
+        game.showAnalytics(true); game.back();
+        check("back from privacy settings preserves existing consent", host.analyticsAction == AnalyticsUi.ALLOW && !ui.visible());
+    }
+
     public static void main(String[] args) {
         packets(); titleAndLifecycle(); starsAndLand(); bossOwnership(); flingHistory();
         steamerAndPanic(); caseAndSettings();
-        debugScenes();
+        debugScenes(); analyticsConsent();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");
     }

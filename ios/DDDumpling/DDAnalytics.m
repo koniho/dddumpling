@@ -89,31 +89,9 @@ static NSString *const DDPrivacyURL = @"https://koniho.github.io/dddumpling-priv
     [UIApplication.sharedApplication openURL:[NSURL URLWithString:DDPrivacyURL]
                                     options:@{} completionHandler:nil];
 }
-- (void)offerConsentFrom:(UIViewController *)controller {
-    if (!self.available || self.prompted || [self.defaults objectForKey:DDConsentKey]) return;
-    [self showPrivacyFrom:controller];
-}
-- (void)showPrivacyFrom:(UIViewController *)controller {
-    if (!self.available) { [self openPolicy]; return; }
-    if (!controller.view.window || controller.presentedViewController) return;
+- (BOOL)shouldOfferConsent {
+    if (!self.available || self.prompted || [self.defaults objectForKey:DDConsentKey]) return NO;
     self.prompted = YES;
-    NSString *message = @"Share gameplay events, app/device information, approximate location, and an app-instance identifier with Google Analytics for Firebase to help improve the game? No advertising IDs. Your choice won't affect play or saves. You can change it using the privacy button on the title screen.";
-    if (self.enabled) message = @"Gameplay analytics are on. Turning them off stops collection and clears local analytics data; it does not delete reports already sent to Google. Your game progress is kept. See the privacy policy for deletion requests.";
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Gameplay analytics"
-        message:message preferredStyle:UIAlertControllerStyleAlert];
-    __weak DDGameAnalytics *weakSelf = self;
-    if (self.enabled) {
-        [alert addAction:[UIAlertAction actionWithTitle:@"Turn off analytics" style:UIAlertActionStyleDefault
-            handler:^(UIAlertAction *action) { [weakSelf setConsent:NO]; }]];
-        [alert addAction:[UIAlertAction actionWithTitle:@"Keep on" style:UIAlertActionStyleCancel handler:nil]];
-    } else {
-        [alert addAction:[UIAlertAction actionWithTitle:@"No thanks" style:UIAlertActionStyleCancel
-            handler:^(UIAlertAction *action) { [weakSelf setConsent:NO]; }]];
-        [alert addAction:[UIAlertAction actionWithTitle:@"Allow analytics" style:UIAlertActionStyleDefault
-            handler:^(UIAlertAction *action) { [weakSelf setConsent:YES]; }]];
-    }
-    [alert addAction:[UIAlertAction actionWithTitle:@"Privacy policy" style:UIAlertActionStyleDefault
-        handler:^(UIAlertAction *action) { [weakSelf openPolicy]; }]];
-    [controller presentViewController:alert animated:YES completion:nil];
+    return YES;
 }
 @end

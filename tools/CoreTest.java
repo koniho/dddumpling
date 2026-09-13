@@ -23,6 +23,7 @@ final class CoreTest {
         only = args.length > 0 && !args[0].isEmpty() ? args[0].toLowerCase() : null;
 
         group("Progress", () -> TestProgress.all(L));
+        group("Analytics", TestAnalyticsUi::layout);
 
         group("Back", () -> TestBack.navigation(L));
         group("Rules", () -> {

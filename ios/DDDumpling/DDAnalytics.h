@@ -11,6 +11,6 @@
 @property(nonatomic, readonly) BOOL enabled;
 - (instancetype)initWithDefaults:(NSUserDefaults *)defaults backend:(id<DDAnalyticsBackend>)backend;
 - (void)setConsent:(BOOL)allowed;
-- (void)offerConsentFrom:(UIViewController *)controller;
-- (void)showPrivacyFrom:(UIViewController *)controller;
+- (BOOL)shouldOfferConsent;
+- (void)openPolicy;
 @end
