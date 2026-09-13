@@ -1,0 +1,61 @@
+name: Publish itch.io Android download
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published release tag with a signed production Android APK
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: itch-android-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check publishing configuration
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          if [ -z "$BUTLER_API_KEY" ]; then
+            echo '::error::Add the itch.io API key as the repository secret BUTLER_API_KEY.'
+            exit 1
+          fi
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+
+      - name: Download signed release APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          mkdir -p build/itch
+          gh release download "$RELEASE_TAG" \
+            --pattern "DDDUMPLING-${RELEASE_TAG}-android.apk" --dir build/itch
+          test -s "build/itch/DDDUMPLING-${RELEASE_TAG}-android.apk"
+
+      - name: Install pinned butler
+        run: |
+          curl --fail --location --retry 3 \
+            https://github.com/itchio/butler/releases/download/v15.31.0/butler-linux-amd64.zip \
+            --output "$RUNNER_TEMP/butler.zip"
+          echo "1e536377187894ef5fe7f35edfb29df256df63e50e7f6b97ebd54bc5aba4c055  $RUNNER_TEMP/butler.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/butler.zip" -d "$RUNNER_TEMP/butler"
+          chmod +x "$RUNNER_TEMP/butler/butler"
+
+      - name: Publish Android channel
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          "$RUNNER_TEMP/butler/butler" push build/itch theorifice/dddumpling:android \
+            --userversion "${RELEASE_TAG#v}"
+          "$RUNNER_TEMP/butler/butler" status theorifice/dddumpling:android
