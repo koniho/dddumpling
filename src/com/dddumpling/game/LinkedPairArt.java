@@ -10,8 +10,8 @@ final class LinkedPairArt {
             GameCore.Enemy a = c.enemies.get(i), b = a.link;
             if (b == null || c.enemies.indexOf(b) <= i || a.destroyed || b.destroyed) continue;
             float r = L.enemyR;
-            float ax = c.enemyCentreX(a) + r*0.80f, ay = a.y;
-            float bx = c.enemyCentreX(b) - r*0.80f, by = b.y;
+            float ax = c.enemyCentreX(a) + maskRadius(a, r) - r*0.14f, ay = a.y;
+            float bx = c.enemyCentreX(b) - maskRadius(b, r) + r*0.14f, by = b.y;
             float mx = (ax + bx) * 0.5f, my = (ay + by) * 0.5f;
             if (my < L.playTop - r) continue;
             float wiggle = (float) Math.sin(c.clock * 1.4f) * r * 0.012f;
@@ -24,7 +24,7 @@ final class LinkedPairArt {
             float pose = Math.min(1f, strain/0.18f);
             // Hold a firm flex pose; only the short release tail blends back to rest.
             float limbR = r * (1f + pose*0.12f);
-            float bend = 0.48f - pose*0.60f;
+            float bend = 0.025f - pose*0.425f;
             Pulse wave = new Pulse(mx, Math.max(r*0.2f, (bx-ax)*0.5f), strain);
             // The entire limb layer is confined to the gap between the character silhouettes.
             // Its leaves, paws and flex overshoot cannot leak onto or behind either body.
@@ -61,10 +61,12 @@ final class LinkedPairArt {
     /** Include character extremities and late-stage threat jitter in the mask. */
     private static float maskRadius(GameCore.Enemy e, float r) {
         float attack = e.attacking ? Math.min(1f, e.attackT / GameCore.ATTACK_TIME) : 0f;
-        // Protect the whole tile, including its transparent areas, rather than guessing
-        // at the body width of each character.
-        float body = Layout.HEAD_SCALE + 0.04f;
-        return r * (body + Math.max(e.warn, attack) * 0.8f);
+        // Follow the rendered tile's entrance and threat scale. A small inset puts the
+        // shoulder beneath its border instead of leaving a visible gap around the key.
+        float enter = 0.62f + 0.38f*e.enterT;
+        float tile = Layout.HEAD_SCALE*enter*(1f+0.26f*attack+0.08f*e.warn);
+        float jitter = Math.max(e.warn, attack)*(0.14f+0.30f*attack);
+        return r*(tile*0.965f+jitter);
     }
 
     /** One highlight front travels from the clasp outward along both colored limbs. */
@@ -169,7 +171,7 @@ final class LinkedPairArt {
         }
     }
 
-    /** Upper arm and forearm meet at a visible round elbow, below the clasp. */
+    /** Nearly straight at rest; the elbow rises into an angled, held flex on rejection. */
     private static void arm(Painter p, float ax, float ay, float bx, float by, float r, int color, float bend, Pulse wave) {
         float ex = ax + (bx - ax) * 0.60f;
         float ey = Math.max(ay, by) + r * bend;

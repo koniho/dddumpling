@@ -334,7 +334,8 @@ behind and in front of the partner.
 Press either key, then its partner within 200 ms of elapsed play time (independent of speed
 settings and slow motion). Input resolves the chord immediately; projectiles are visual only.
 A single press keeps both faces visible with determined expressions and pulses the thickness
-of both intertwined limbs. Idle movement is very subtle. Elbows hold a flexed pose with a slight bulge on rejection; a bright color
+of both intertwined limbs. Idle arms are nearly straight with very subtle movement. Elbows hold a more angled pose with
+a slight bulge on rejection; a bright color
 front travels from the clasp toward both characters. A missed window renews that resistance pose and plays one low thud. The unpressed
 partner's gold highlight and the countdown remain visible; there is no checkmark. Arms and vines
 have varying thickness along their length and no dark outline. Limbs render behind the characters
