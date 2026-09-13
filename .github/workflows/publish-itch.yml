@@ -49,13 +49,13 @@ jobs:
             --output "$RUNNER_TEMP/butler.zip"
           echo "1e536377187894ef5fe7f35edfb29df256df63e50e7f6b97ebd54bc5aba4c055  $RUNNER_TEMP/butler.zip" | sha256sum --check
           unzip -q "$RUNNER_TEMP/butler.zip" -d "$RUNNER_TEMP/butler"
-          chmod +x "$RUNNER_TEMP/butler/butler"
+          chmod +x "$RUNNER_TEMP/butler/linux-amd64/butler"
 
       - name: Publish Android channel
         env:
           BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
-          "$RUNNER_TEMP/butler/butler" push build/itch theorifice/dddumpling:android \
+          "$RUNNER_TEMP/butler/linux-amd64/butler" push build/itch theorifice/dddumpling:android \
             --userversion "${RELEASE_TAG#v}"
-          "$RUNNER_TEMP/butler/butler" status theorifice/dddumpling:android
+          "$RUNNER_TEMP/butler/linux-amd64/butler" status theorifice/dddumpling:android
