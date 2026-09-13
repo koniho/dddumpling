@@ -17,7 +17,7 @@ or revoke previously granted permission.
 
 The policy distinguishes the original SDK-free releases, optional Firebase Analytics, and optional
 Android Play Games cloud saves. A missing Firebase configuration means Firebase Analytics is not
-included and no analytics data is collected by DDDUMPLING. A configured analytics build must not
+initialized and no analytics data is collected by DDDUMPLING. A configured analytics build must not
 be distributed until the policy is published and the account settings, consent behavior, signed
 artifacts, and store forms have been checked against
 [the Firebase Analytics checklist](../docs/firebase-analytics.md).
