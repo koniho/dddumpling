@@ -1,8 +1,10 @@
-Please test DDDumpling 0.1.16 on iPhone:
+Please test DDDumpling 0.1.17 on iPhone:
 
-- During power-ups, clear enemies rapidly and check that new arrivals keep the action moving at the current difficulty.
-- Split Dark Divide and check that the old central firing circle disappears while active pieces still show their firing effects.
-- Check the slime boss fight, now without damage pips.
-- Check simultaneous character-key taps, boss gestures, audio, and saved progress after backgrounding the app.
+- From stage 16, press linked keys within 200 ms and check the flex, miss sound, and release animation.
+- During Fling, cut the joined hands to clear a pair; cutting one body should trigger the miss reaction.
+- During Flurry, try any two distinct buttons within 200 ms. Repeating one button should not clear a pair.
+- During Team Squish, hit a pair once and check that both characters spin offscreen while holding hands.
+- Check that pairs continue spawning during power-ups and enter smoothly behind the header.
+- Check simultaneous touches, audio, and saved progress after backgrounding the app.
 
 Please report your iPhone model, iOS version, and any touch, sound, performance, or progress-saving problems. No account or purchase is required.

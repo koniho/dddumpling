@@ -38,7 +38,7 @@ targets:
         # XcodeGen's iOS target default overrides the project-level family.
         TARGETED_DEVICE_FAMILY: '1'
         PRODUCT_BUNDLE_IDENTIFIER: com.dddumpling.game.ios
-        MARKETING_VERSION: 0.1.16
+        MARKETING_VERSION: 0.1.17
         CURRENT_PROJECT_VERSION: 1
         INFOPLIST_FILE: DDDumpling/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
