@@ -21,6 +21,16 @@ It asks about actual play rather than asking adults to predict what children wil
 Re-running the completed script prints the same links without duplicating the form.
 A failed partial creation is retained for inspection rather than silently replaced.
 
+## Update the existing form with desperation-swipe questions
+
+Replace the code in the **original Apps Script project** with the updated generator and run
+`updateTesterSurvey`. It uses the saved form ID and inserts three optional questions under
+Play mechanics, before Bosses: discovery/use, the balance of the breathing room it provides,
+and difficulty performing the gesture. The wording correctly describes pushing words back.
+It skips matching question titles on subsequent runs and preserves existing answers and settings.
+The respondent link stays the same. Review the live form after running it; source changes alone
+do not update Google Forms. New forms created with `createTesterSurvey` also include these questions.
+
 ## Scope and privacy
 
 Approximately five minutes, with optional questions and explicit not-tried choices. Covers opening

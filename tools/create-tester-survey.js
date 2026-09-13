@@ -74,6 +74,7 @@ function createTesterSurvey() {
     'Always', 'Usually', 'Sometimes', 'Rarely', 'Not sure'
   ]);
   text('Which control or instruction needs improvement? Describe what you tried and what happened.');
+  addDesperationSwipeQuestions(form);
 
   section('Bosses — rate only those you actually played');
   const bosses = [
@@ -126,6 +127,46 @@ function createTesterSurvey() {
   form.setAcceptingResponses(true);
   properties.setProperty('DDDUMPLING_SURVEY_READY', 'yes');
   logSurveyLinks(form);
+}
+
+/** Run in the same Apps Script project used to create the live form. */
+function updateTesterSurvey() {
+  const id = PropertiesService.getScriptProperties().getProperty('DDDUMPLING_SURVEY_FORM_ID');
+  if (!id) throw new Error('Run this in the original survey script project; no stored form ID was found.');
+  const form = FormApp.openById(id);
+  const anchor = form.getItems().find(item => item.getTitle() === 'Bosses — rate only those you actually played');
+  if (!anchor) throw new Error('Bosses section was not found. No changes made; check the form structure.');
+  addDesperationSwipeQuestions(form, anchor);
+  logSurveyLinks(form);
+}
+
+/** Adds only missing questions; preserves existing questions, responses, and settings. */
+function addDesperationSwipeQuestions(form, beforeItem) {
+  const questions = [
+    {
+      title: 'Did you discover and use the desperation swipe to push falling words back?',
+      choices: [
+        'Yes — I used it several times', 'Yes — I tried it once',
+        'I knew about it but did not need it', 'I tried it but could not make it work',
+        'I did not know this mechanic existed'
+      ]
+    },
+    {
+      title: 'If you used the desperation swipe, how helpful was the breathing room it gave you?',
+      choices: [
+        'Too little to help', 'Enough to recover', 'So much that it made the game too easy',
+        'Not sure / did not use it'
+      ]
+    },
+    { title: 'Was the desperation swipe easy to perform when you needed it? Describe any difficulty.' }
+  ];
+  questions.forEach(question => {
+    if (form.getItems().some(item => item.getTitle() === question.title)) return;
+    const item = question.choices ? form.addMultipleChoiceItem() : form.addParagraphTextItem();
+    item.setTitle(question.title).setRequired(false);
+    if (question.choices) item.setChoiceValues(question.choices);
+    if (beforeItem) form.moveItem(item, beforeItem.getIndex());
+  });
 }
 
 function logSurveyLinks(form) {
