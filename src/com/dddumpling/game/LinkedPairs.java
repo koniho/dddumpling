@@ -1,14 +1,18 @@
 package com.dddumpling.game;
 
-/** One readable linked pair opens each ordinary wave from stage 16 onward. */
+/** Two linked pairs are scheduled in each ordinary wave from stage 16 onward. */
 final class LinkedPairs {
     static final int FIRST_STAGE = 16;
     static final float WINDOW = 0.200f;
     private LinkedPairs() {}
 
+    static boolean due(GameCore c) {
+        return c.stage >= FIRST_STAGE && !c.boss.active() && !c.powerActive()
+                && (c.spawnedThisStage == 0 || c.spawnedThisStage == 4);
+    }
+
     static boolean spawn(GameCore c, Layout L) {
-        if (c.stage < FIRST_STAGE || c.boss.active() || c.powerActive()
-                || c.spawnedThisStage != 0 || !c.enemies.isEmpty()) return false;
+        if (!due(c) || c.liveEnemies() + 2 > c.crowdCap()) return false;
         GameCore.Enemy a = member(c, L, 0), b = member(c, L, 1);
         boolean full = c.playRosterFull();
         int half = Roster.count(full) / 2;
@@ -18,6 +22,7 @@ final class LinkedPairs {
         b.link = a;
         // Equal velocity keeps the two keys side by side throughout their descent.
         b.speed = a.speed;
+        if (!EnemyEntry.clear(a, c, L) || !EnemyEntry.clear(b, c, L)) return false;
         c.enemies.add(a);
         c.enemies.add(b);
         c.spawnedThisStage += 2; // These replace two quota words, never add to the wave.

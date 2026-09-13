@@ -325,8 +325,10 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 
 ## Linked friends (stage 16 onward)
 
-Each ordinary wave from stage 16 opens with two single-key enemies, one from each thumb's
-keyboard group. They replace two quota enemies. Cartoon arms and clasped gloves join them.
+Each ordinary wave from stage 16 contains two linked pairs: one opens the wave, and another
+arrives after four quota enemies have spawned. Each pair has one key from each thumb's keyboard
+group. The pairs replace four quota enemies in total; a blocked entrance defers the pair rather
+than replacing it with an ordinary enemy. Cartoon arms and clasped gloves join them.
 Press either key, then its partner within 200 ms of elapsed play time (independent of speed
 settings and slow motion). Input resolves the chord immediately; projectiles are visual only.
 The first key becomes an outline with a checkmark, and a pointing glove, gold pulse and countdown

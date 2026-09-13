@@ -2562,7 +2562,7 @@ final class GameCore {
             if (spawnTimer <= 0 && liveEnemies() < crowdCap()) {
                 if (LinkedPairs.spawn(this, L)) {
                     spawnTimer = spawnInterval();
-                } else if (spawn(L)) {
+                } else if (!LinkedPairs.due(this) && spawn(L)) {
                     if (powerActive() && powerRefillBurst > 0) powerRefillBurst--;
                     if (!powerActive()) spawnedThisStage++;
                     spawnTimer = Power.spawnDelay(this, L);

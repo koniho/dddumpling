@@ -13,6 +13,40 @@ final class TestLinkedPairs extends Check {
     }
 
     static void all(Layout L) {
+        for (int stage = 16; stage <= 31; stage++) {
+            if (stage % Boss.EVERY == 0) continue;
+            GameCore wave = wave(L, stage);
+            java.util.Set<GameCore.Enemy> seen = new java.util.HashSet<GameCore.Enemy>();
+            int pairs = 0;
+            for (int frame = 0; frame < 1800 && wave.state == GameCore.PLAY && !wave.pendingBonus; frame++) {
+                for (GameCore.Enemy e : wave.enemies) {
+                    if (e.link != null && seen.add(e)) {
+                        seen.add(e.link);
+                        pairs++;
+                    }
+                }
+                for (GameCore.Enemy e : wave.enemies) {
+                    while (e.typeable()) {
+                        wave.target = e;
+                        wave.tapKey(e.word[e.pos], L);
+                    }
+                }
+                wave.update(DT, L);
+            }
+            check("two pairs spawn across full ordinary stage " + stage, pairs == 2);
+            check("two pairs preserve wave quota at stage " + stage,
+                    wave.spawnedThisStage == wave.stageQuota() && wave.resolvedThisStage == wave.stageQuota());
+        }
+        GameCore blocked = wave(L, 16);
+        blocked.spawnedThisStage = 4;
+        blocked.spawnTimer = 0f;
+        blocked.update(DT, L);
+        check("blocked pair keeps its quota slots reserved", blocked.spawnedThisStage == 4 && blocked.enemies.size() == 2);
+        blocked.enemies.clear();
+        blocked.spawnTimer = 0f;
+        blocked.update(DT, L);
+        check("reserved second pair spawns when entrance clears", blocked.spawnedThisStage == 6
+                && blocked.enemies.size() == 2 && blocked.enemies.get(0).link == blocked.enemies.get(1));
         GameCore early = wave(L, 14);
         check("no linked enemies before stage 16", early.enemies.size() == 1 && early.enemies.get(0).link == null);
         check("boss stages do not get pairs", wave(L, 20).enemies.isEmpty());
@@ -23,7 +57,7 @@ final class TestLinkedPairs extends Check {
         check("pair is two single-press keys", a.totalPresses() == 1 && b.totalPresses() == 1);
         check("pair uses opposite thumbs", a.word[0] < 3 && b.word[0] >= 3);
         check("paired keys do not overlap", b.baseX - a.baseX > L.enemyR * 3f && a.speed == b.speed);
-        check("only one pair per wave", !LinkedPairs.spawn(c, L));
+        check("second pair is not due immediately after the first", !LinkedPairs.spawn(c, L));
         check("later normal stages keep the pair", wave(L, 21).enemies.get(0).link != null);
         check("stage 16 gives slower falls than stage 14", Pacing.travelSeconds(16, 1f) > Pacing.travelSeconds(14, 1f));
         check("lesson has wider arrival spacing", Pacing.spawnInterval(16, 1f) > Pacing.spawnInterval(15, 1f));
