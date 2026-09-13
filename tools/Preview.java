@@ -97,6 +97,11 @@ final class Preview {
         shot(dir, "95-linked-countdown", linked, L, w, h, ss);
         step(linked, L, 0.10f);
         shot(dir, "95-linked-resist", linked, L, w, h, ss);
+        for (int frame = 0; frame < 5; frame++) {
+            for (GameCore.Enemy e : linked.enemies) e.linkStrain = 1f-frame*0.2f;
+            shot(dir, "98-linked-flex-" + frame, linked, L, w, h, ss);
+        }
+
 
         for (int land = 0; land < Lands.COUNT; land++) {
             GameCore themed = new GameCore(new Mem(), 810L);

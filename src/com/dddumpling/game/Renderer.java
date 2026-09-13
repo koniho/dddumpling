@@ -50,8 +50,8 @@ final class Renderer extends Draw {
             RoundEnd.swirl(p, c, L);
             BossVictory.draw(p, c, L);
         } else {
-            for (int i = 0; i < c.enemies.size(); i++) enemy(p, c, L, c.enemies.get(i));
             LinkedPairArt.draw(p, c, L);
+            for (int i = 0; i < c.enemies.size(); i++) enemy(p, c, L, c.enemies.get(i));
         }
         pushWave(p, c, L);
         pushImpacts(p, c, L);
@@ -231,7 +231,7 @@ final class Renderer extends Draw {
             // FLURRY recolours every letter on one upward-travelling rainbow wave.
             int col = c.flurry() ? rainbowAt(y, L, c.clock) : Glyph.COLOR[g];
             // Only the tile actually struck takes the full colour strobe and pop.
-            float pop = (e.hitIndex == i) ? e.hitPulse : 0f;
+            float pop = (e.link == null && e.hitIndex == i) ? e.hitPulse : 0f;
             if (pop > 0) {
                 col = Glyph.mix(col, Glyph.cycle(c.clock * 7f + i * 0.17f), pop * 0.62f);
             }

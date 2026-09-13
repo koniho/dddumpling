@@ -10,8 +10,8 @@ final class LinkedPairArt {
             GameCore.Enemy a = c.enemies.get(i), b = a.link;
             if (b == null || c.enemies.indexOf(b) <= i || a.destroyed || b.destroyed) continue;
             float r = L.enemyR;
-            float ax = c.enemyCentreX(a) + r * 0.65f, ay = a.y;
-            float bx = c.enemyCentreX(b) - r * 0.65f, by = b.y;
+            float ax = c.enemyCentreX(a) + maskRadius(a, r), ay = a.y;
+            float bx = c.enemyCentreX(b) - maskRadius(b, r), by = b.y;
             float mx = (ax + bx) * 0.5f, my = (ay + by) * 0.5f;
             if (my < L.playTop - r) continue;
             float wiggle = (float) Math.sin(c.clock * 5f) * r * 0.13f;
@@ -23,13 +23,21 @@ final class LinkedPairArt {
             if (waiting != null) strain = Math.max(strain, 0.65f);
             float flex = 1f + strain * (0.20f + 0.12f * (float)Math.sin(c.clock * 24f));
             float limbR = r * flex;
-            limb(p, a.word[0], ax, ay, ahx, ahy, limbR, 1f, ac, false);
-            limb(p, b.word[0], bx, by, bhx, bhy, limbR, -1f, bc, false);
-            if (!fruit(a.word[0])) extremity(p, a.word[0], ahx, ahy, limbR, 1f, ac, false);
-            if (!fruit(b.word[0])) extremity(p, b.word[0], bhx, bhy, limbR, -1f, bc, false);
+            float recoil = (float)Math.sin(Math.PI * Math.min(1f, (1f-strain)*1.3f)) * strain;
+            float bend = 0.48f - recoil*1.3f;
+            Pulse wave = new Pulse(mx, Math.max(r*0.2f, (bx-ax)*0.5f), strain);
+            // The entire limb layer is confined to the gap between the character silhouettes.
+            // Its leaves, paws and flex overshoot cannot leak onto or behind either body.
+            p.save();
+            p.clipRect(ax, L.playTop, Math.max(ax, bx), L.dangerY);
+            limb(p, a.word[0], ax, ay, ahx, ahy, limbR, 1f, ac, false, bend, wave);
+            limb(p, b.word[0], bx, by, bhx, bhy, limbR, -1f, bc, false, bend, wave);
+            if (!fruit(a.word[0])) extremity(p, a.word[0], ahx, ahy, limbR, 1f, wave.tint(ac, ahx), false);
+            if (!fruit(b.word[0])) extremity(p, b.word[0], bhx, bhy, limbR, -1f, wave.tint(bc, bhx), false);
             // Short foreground sections pass over the partner's limb; the rest stays behind it.
-            if (fruit(a.word[0])) curl(p, ahx, ahy, limbR, 1f, ac, 0.35f, 0.65f);
-            if (fruit(b.word[0])) curl(p, bhx, bhy, limbR, -1f, bc, 0.65f, 0.90f);
+            if (fruit(a.word[0])) curl(p, ahx, ahy, limbR, 1f, ac, 0.35f, 0.65f, wave);
+            if (fruit(b.word[0])) curl(p, bhx, bhy, limbR, -1f, bc, 0.65f, 0.90f, wave);
+            p.restore();
             if (waiting != null) {
                 GameCore.Enemy next = waiting == a ? b : a;
                 float tx = c.tileX(next, Math.min(next.pos, next.word.length - 1), L);
@@ -48,12 +56,37 @@ final class LinkedPairArt {
         }
     }
 
+    /** Include character extremities and late-stage threat jitter in the mask. */
+    private static float maskRadius(GameCore.Enemy e, float r) {
+        float attack = e.attacking ? Math.min(1f, e.attackT / GameCore.ATTACK_TIME) : 0f;
+        // Linked faces suppress the ordinary hit enlargement. Squishy's flank marks
+        // are wider than the other silhouettes, so reserve extra space for that cast member.
+        float body = e.word[0] == 4 ? 1f : 0.80f;
+        return r * (body + Math.max(e.warn, attack) * 0.8f);
+    }
+
+    /** One highlight front travels from the clasp outward along both colored limbs. */
+    private static final class Pulse {
+        final float center, reach, phase, strength;
+        Pulse(float center, float reach, float strain) {
+            this.center = center;
+            this.reach = reach;
+            phase = (1f-strain)*1.6f;
+            strength = strain > 0f ? 1f : 0f;
+        }
+        int tint(int color, float x) {
+            float distance = Math.abs(x-center)/reach;
+            float band = Math.max(0f, 1f-Math.abs(distance-phase)/0.30f);
+            return Glyph.mix(color, GLOVE, band*strength*0.85f);
+        }
+    }
+
     private static boolean fruit(int glyph) { return glyph == 1 || glyph == 3; }
 
     private static void limb(Painter p, int glyph, float ax, float ay, float hx, float hy,
-            float r, float dir, int color, boolean pointing) {
+            float r, float dir, int color, boolean pointing, float bend, Pulse wave) {
         if (!fruit(glyph)) {
-            arm(p, ax, ay, hx, hy, r, color);
+            arm(p, ax, ay, hx, hy, r, color, bend, wave);
             return;
         }
         float cx = hx + dir*r*0.24f;
@@ -63,22 +96,22 @@ final class LinkedPairArt {
         for (int i = 0; i <= 12; i++) {
             float t = i / 12f;
             stem[i*2] = ax + (endX-ax)*t;
-            stem[i*2+1] = ay + (endY-ay)*t + (float)Math.sin(t*Math.PI)*r*0.38f;
+            stem[i*2+1] = ay + (endY-ay)*t + (float)Math.sin(t*Math.PI)*r*bend;
         }
         float[] widths = new float[13];
         for (int i = 0; i <= 12; i++) {
             float t = i / 12f;
             widths[i] = r * (0.13f - 0.065f*t + 0.025f*(float)Math.sin(t*Math.PI));
         }
-        tube(p, stem, widths, color);
+        tube(p, stem, widths, color, wave);
         // A leaf at the bend replaces the glove's mechanical elbow with a growing node.
         float lx = stem[10], ly = stem[11];
-        leaf(p, lx, ly, lx-dir*r*0.32f, ly+r*0.38f, r*0.16f, color);
+        leaf(p, lx, ly, lx-dir*r*0.32f, ly+r*0.38f, r*0.16f, wave.tint(color, lx));
         if (pointing) {
             // The unfurled tip and pointed leaf direct attention at the remaining key.
             leaf(p, endX-dir*r*0.28f, endY, endX+dir*r*0.12f, endY, r*0.13f, color);
         } else {
-            curl(p, hx, hy, r, dir, color, 0f, 1f);
+            curl(p, hx, hy, r, dir, color, 0f, 1f, wave);
         }
     }
 
@@ -93,7 +126,7 @@ final class LinkedPairArt {
     }
 
     private static void curl(Painter p, float hx, float hy, float r, float dir, int color,
-            float from, float to) {
+            float from, float to, Pulse wave) {
         float[] path = new float[34];
         for (int i = 0; i <= 16; i++) {
             float t = from + (to-from)*i/16f;
@@ -107,7 +140,7 @@ final class LinkedPairArt {
             float t = from + (to-from)*i/16f;
             widths[i] = r*(0.075f-0.035f*t);
         }
-        tube(p, path, widths, color);
+        tube(p, path, widths, color, wave);
     }
 
     private static void extremity(Painter p, int glyph, float x, float y, float r,
@@ -135,19 +168,19 @@ final class LinkedPairArt {
     }
 
     /** Upper arm and forearm meet at a visible round elbow, below the clasp. */
-    private static void arm(Painter p, float ax, float ay, float bx, float by, float r, int color) {
+    private static void arm(Painter p, float ax, float ay, float bx, float by, float r, int color, float bend, Pulse wave) {
         float ex = ax + (bx - ax) * 0.38f;
-        float ey = Math.max(ay, by) + r * 0.48f;
+        float ey = Math.max(ay, by) + r * bend;
         // Fuller upper arm, pinched elbow, then a soft forearm taper into the wrist.
-        taperedSegment(p, ax, ay, ex, ey, r*0.16f, r*0.115f, r*0.025f, color);
-        taperedSegment(p, ex, ey, bx, by, r*0.115f, r*0.095f, r*0.045f, color);
-        p.fillCircle(ex, ey, r * 0.155f, Glyph.mix(color, GLOVE, 0.14f));
+        taperedSegment(p, ax, ay, ex, ey, r*0.16f, r*0.115f, r*0.025f, color, wave);
+        taperedSegment(p, ex, ey, bx, by, r*0.115f, r*0.095f, r*0.045f, color, wave);
+        p.fillCircle(ex, ey, r * 0.155f, wave.tint(Glyph.mix(color, GLOVE, 0.14f), ex));
         p.fillCircle(ex - r * 0.035f, ey - r * 0.035f, r * 0.045f,
                 Glyph.mix(color, GLOVE, 0.45f));
     }
 
     private static void taperedSegment(Painter p, float ax, float ay, float bx, float by,
-            float start, float end, float fullness, int color) {
+            float start, float end, float fullness, int color, Pulse wave) {
         float[] points = new float[18], widths = new float[9];
         for (int i = 0; i <= 8; i++) {
             float t = i/8f;
@@ -155,14 +188,14 @@ final class LinkedPairArt {
             points[i*2+1] = ay+(by-ay)*t;
             widths[i] = start+(end-start)*t+fullness*(float)Math.sin(t*Math.PI);
         }
-        tube(p, points, widths, color);
+        tube(p, points, widths, color, wave);
     }
 
     /** Filled variable-width segments with rounded joins; no outline stroke. */
-    private static void tube(Painter p, float[] points, float[] widths, int color) {
+    private static void tube(Painter p, float[] points, float[] widths, int color, Pulse wave) {
         for (int i = 0; i < widths.length; i++) {
             float x = points[i*2], y = points[i*2+1];
-            p.fillCircle(x, y, widths[i], color);
+            p.fillCircle(x, y, widths[i], wave.tint(color, x));
             if (i == 0) continue;
             float px = points[i*2-2], py = points[i*2-1];
             float dx = x-px, dy = y-py;
@@ -170,7 +203,7 @@ final class LinkedPairArt {
             float nx = -dy/length, ny = dx/length;
             float a = widths[i-1], b = widths[i];
             p.fillPoly(new float[] {px+nx*a,py+ny*a, x+nx*b,y+ny*b,
-                    x-nx*b,y-ny*b, px-nx*a,py-ny*a}, color);
+                    x-nx*b,y-ny*b, px-nx*a,py-ny*a}, wave.tint(color, (px+x)*0.5f));
         }
     }
 
