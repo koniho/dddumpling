@@ -40,11 +40,15 @@ jobs:
           FASTLANE_OPT_OUT_USAGE: "1"
         run: |
           python3 tools/test-prepare-release.py
+          python3 tools/test-prepare-play.py
+          python3 tools/test-verify-firebase-bundle.py
           bundle exec ruby tools/test-fastlane.rb
           bundle exec fastlane lanes
 
   release:
     runs-on: ubuntu-latest
+    env:
+      FIREBASE_GOOGLE_SERVICES_JSON: ${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}
     steps:
       - name: Check out source
         uses: actions/checkout@v6
@@ -60,6 +64,19 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
             "platforms;android-36" "build-tools;36.0.0"
           echo "$ANDROID_HOME/build-tools/36.0.0" >> "$GITHUB_PATH"
+
+      - name: Restore optional Firebase configuration
+        run: |
+          if [ -n "$FIREBASE_GOOGLE_SERVICES_JSON" ]; then
+            mkdir -p .private/firebase
+            printf '%s' "$FIREBASE_GOOGLE_SERVICES_JSON" > .private/firebase/google-services.json
+          fi
+
+      - name: Install Gradle for Firebase builds
+        if: ${{ env.FIREBASE_GOOGLE_SERVICES_JSON != '' }}
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: "9.7.1"
 
       - name: Restore signing key
         env:
@@ -78,7 +95,12 @@ jobs:
         run: ./build-bundle.sh
 
       - name: Verify offline production bundle
+        if: ${{ env.FIREBASE_GOOGLE_SERVICES_JSON == '' }}
         run: python3 tools/verify-offline-bundle.py build/DDDUMPLING.aab
+
+      - name: Verify Firebase production bundle
+        if: ${{ env.FIREBASE_GOOGLE_SERVICES_JSON != '' }}
+        run: python3 tools/verify-firebase-bundle.py build/DDDUMPLING.aab
 
       - name: Build developer APK
         env:

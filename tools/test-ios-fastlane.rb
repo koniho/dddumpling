@@ -87,6 +87,7 @@ assert(match_options[:keychain_password] == "", "match uses setup_ci's standard 
 signing_options = $calls.assoc(:update_code_signing_settings).last
 assert(signing_options[:targets] == ["DDDumpling"] && signing_options[:build_configurations] == ["Release"], "only the app Release configuration uses manual signing")
 build_options = $calls.assoc(:build_app).last
+assert(build_options[:disable_package_automatic_updates], "archive uses the committed Firebase dependency lock")
 assert(build_options[:xcargs] == "CURRENT_PROJECT_VERSION=42.1" && build_options[:export_method] == "app-store", "archive uses the supplied build number")
 assert(ENV["MATCH_PASSWORD"].nil? && ENV["MATCH_GIT_PRIVATE_KEY"].nil?, "match credentials do not leak into subsequent lanes")
 archive_calls = $calls.reject { |name, _| name == :sh }.to_h

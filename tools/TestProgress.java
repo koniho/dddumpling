@@ -18,14 +18,14 @@ final class TestProgress extends Check {
         }
         public String progressReplica() { return id; }
     }
-    static final class Events implements Progress.Sink {
+    static final class Events implements Analytics.Sink {
         final Map<String, Long> values = new HashMap<>();
         public void changed() {}
         public void event(String name, int amount) { values.put(name, count(name) + amount); }
         long count(String name) { return values.getOrDefault(name, 0L); }
     }
     static void all(Layout L) {
-        merge(); counters(); firstHit(); failures();
+        merge(); counters(); firstHit(); failures(); independentAnalytics();
         if (!BuildFlags.DEVELOPER) production(L);
         else {
             Mem m = new Mem(); GameCore c = new GameCore(m, 82);
@@ -66,7 +66,7 @@ final class TestProgress extends Check {
         try { ProgressData.decode(bytes); return false; } catch (IOException e) { return true; }
     }
     private static void counters() {
-        Storage store = new Storage("one"); Progress p = new Progress(store, true); Events e = new Events(); p.attach(e);
+        Storage store = new Storage("one"); Progress p = new Progress(store, true); Events e = new Events(); p.attachAnalytics(e);
         p.reward(0, true, "boss", 100);
         check("title/demo rewards are not counted", p.count("rewards_total") == 0);
         p.startRun(); p.enterStage(1); p.completeStage(100); p.completeStage(100);
@@ -80,7 +80,7 @@ final class TestProgress extends Check {
         check("reward sources share the same duplicate accounting", p.count("rewards_total") == 2
                 && p.count("rewards_new") == 1 && p.count("rewards_duplicate") == 1 && p.count("prize_45") == 2);
         check("game over counts once without adding abandonment", p.count("runs_finished") == 1 && p.count("runs_abandoned") == 0);
-        Progress loaded = new Progress(store, true); Events second = new Events(); loaded.attach(second);
+        Progress loaded = new Progress(store, true); Events second = new Events(); loaded.attachAnalytics(second);
         check("statistics survive restart without re-emitting events", loaded.count("runs_started") == 1 && second.values.isEmpty());
         p.startRun(); p.enterStage(10); p.startMinigame(true); p.finishRun(50, true);
         check("abandonment is separate from a loss", p.count("boss_dark_divide_abandoned") == 1
@@ -88,7 +88,7 @@ final class TestProgress extends Check {
     }
     private static void firstHit() {
         for (int kind = 0; kind < Boss.COUNT; kind++) {
-            Progress p = new Progress(new Storage("timer"), true); Events e = new Events(); p.attach(e);
+            Progress p = new Progress(new Storage("timer"), true); Events e = new Events(); p.attachAnalytics(e);
             p.startRun(); p.enterStage((kind + 1) * 5); p.bossTime(12.345);
             p.bossDamage(kind, 10, 10); p.bossDamage(kind, 10, 11);
             String prefix = "boss_" + Progress.BOSSES[kind] + "_first_hit_";
@@ -125,11 +125,36 @@ final class TestProgress extends Check {
         check("persistence failure does not crash gameplay", !p.available());
         p = new Progress(new Storage("network"), true);
         p.attach(new Progress.Sink() {
-            public void event(String name, int amount) { throw new IllegalStateException(); }
             public void changed() { throw new IllegalStateException(); }
         });
+        p.attachAnalytics((name, amount) -> { throw new IllegalStateException(); });
         p.startRun(); p.finishRun(10, false);
         check("reporting failure cannot stop local progress", p.available() && p.count("runs_finished") == 1);
+    }
+    private static void independentAnalytics() {
+        Progress p = new Progress(new Storage("separate"), true);
+        Events events = new Events();
+        int[] saves = {0};
+        p.attachAnalytics(events);
+        p.attach(() -> saves[0]++);
+        p.startRun();
+        p.attach(null);
+        p.enterStage(5); p.bossTime(12.345); p.bossDamage(0, 10, 9);
+        check("cloud sign-out does not detach analytics", events.count("boss_slime_started") == 1);
+        check("analytics preserves timer amounts", events.count("boss_slime_first_hit_ms_total") == 12345);
+        int before = saves[0];
+        p.attachAnalytics(null); p.attach(() -> saves[0]++);
+        p.beatBoss(0); p.finishRun(100, false);
+        check("analytics withdrawal preserves cloud saves and local counters", saves[0] > before
+                && p.count("boss_slime_won") == 1 && events.count("boss_slime_won") == 0);
+        p.attachAnalytics(events);
+        check("enabling analytics does not replay historical events", events.count("runs_finished") == 0);
+        Progress disabled = new Progress(new Storage("developer"), false);
+        disabled.attachAnalytics(events); disabled.startRun();
+        check("disabled progress cannot emit analytics", events.count("runs_started") == 1);
+        for (String name : events.values.keySet())
+            check("event fits Firebase name contract: " + name, name.length() <= 40
+                    && name.matches("[A-Za-z][A-Za-z0-9_]*"));
     }
     private static void production(Layout L) {
         Mem landStore = new Mem(); landStore.best = 500;

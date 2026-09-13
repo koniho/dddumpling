@@ -5,28 +5,54 @@ public final class IOSGame {
     public interface Host {
         void tick();
         void openPrivacy(String url);
+        default void analyticsChoice(int action) {}
     }
 
     private final GameCore core;
     private final Layout layout = new Layout();
     private final SettingsUi settingsUi = new SettingsUi();
+    private final AnalyticsUi analyticsUi = new AnalyticsUi();
+    private int analyticsPress;
+    private boolean analyticsAllowed;
 
     private Host host;
     private float elapsedClock, delayedHaptic;
     private boolean background;
     private int pausePress;
     public void setHost(Host host) { this.host = host; }
-    public boolean handlesBack() { return Pause.handlesBack(core); }
+    public void setAnalytics(Analytics.Sink analytics) {
+        core.progress.attachAnalytics(BuildFlags.DEVELOPER ? null : analytics);
+    }
+    public AnalyticsUi analyticsUi() { return analyticsUi; }
+    public boolean privacyVisible() { return !analyticsUi.visible() && PrivacyUi.visible(core); }
+    public float privacyLeft() { return layout.w - 7f * layout.unit; }
+    public float privacyTop() { return layout.dangerY - 3f * layout.unit; }
+    public float privacyWidth() { return 7f * layout.unit; }
+    public float privacyHeight() { return Math.max(44f, 2f * layout.unit); }
+    public void showAnalytics(boolean allowed) {
+        cancelPointers(); analyticsAllowed = allowed;
+        analyticsUi.show(allowed); analyticsUi.compute(layout);
+    }
+    public void analyticsAction(int action) {
+        if (!analyticsUi.visible() || action < AnalyticsUi.ALLOW || action > AnalyticsUi.CLOSE) return;
+        if (action == AnalyticsUi.CLOSE) action = analyticsAllowed ? AnalyticsUi.ALLOW : AnalyticsUi.DECLINE;
+        if (action != AnalyticsUi.POLICY) analyticsUi.hide();
+        analyticsPress = 0;
+        if (host != null) host.analyticsChoice(action);
+    }
+    public boolean handlesBack() { return analyticsUi.visible() || Pause.handlesBack(core); }
     public boolean paused() { return core.paused; }
     private void cancelPointers() {
         landPointer = starDragPointer = bonusSwipePointer = bossDragPointer = -1;
         bossDragging = bossPinching = pushArmed = false;
         caseGesture = CASE_IDLE; pausePress = 0;
+        analyticsPress = 0;
         delayedHaptic = 0f;
         core.endBossPinch();
         Pause.release(core);
     }
     public boolean back() {
+        if (analyticsUi.visible()) { analyticsAction(AnalyticsUi.CLOSE); return true; }
         if (!handlesBack()) return false;
         cancelPointers();
         boolean handled = Pause.back(core);
@@ -50,11 +76,25 @@ public final class IOSGame {
     Layout geometry() { return layout; }
 
     public void layout(float width, float height, float left, float top, float right, float bottom) {
-        if (width > 0 && height > 0) layout.compute(width, height, left, top, right, bottom);
+        if (width > 0 && height > 0) {
+            layout.compute(width, height, left, top, right, bottom);
+            analyticsUi.compute(layout);
+        }
     }
     public boolean touch(IOSTouch ev) {
         if (background) return true;
         if (ev.getActionMasked() == IOSTouch.ACTION_CANCEL) { cancelPointers(); return true; }
+        if (analyticsUi.visible()) {
+            int action = ev.getActionMasked(), hit = analyticsUi.hit(ev.getX(), ev.getY());
+            if (action == IOSTouch.ACTION_DOWN) analyticsPress = hit;
+            else if (action == IOSTouch.ACTION_MOVE && hit != analyticsPress) analyticsPress = 0;
+            else if (action == IOSTouch.ACTION_POINTER_DOWN) analyticsPress = 0;
+            else if (action == IOSTouch.ACTION_UP) {
+                int selected = analyticsPress; analyticsPress = 0;
+                if (selected != 0 && selected == hit) analyticsAction(selected);
+            }
+            return true;
+        }
         if (core.paused) {
             int action = ev.getActionMasked();
             int hit = Pause.hit(layout, ev.getX(), ev.getY());
@@ -638,6 +678,7 @@ public final class IOSGame {
         if (background || layout.w <= 0 || elapsed < 0f || Float.isNaN(elapsed)
                 || Float.isInfinite(elapsed)) return;
         elapsedClock += elapsed;
+        if (analyticsUi.visible()) return;
         if (delayedHaptic > 0f) {
             delayedHaptic -= elapsed;
             if (delayedHaptic <= 0f) tick();
@@ -651,7 +692,10 @@ public final class IOSGame {
     }
 
     public void draw(Painter painter) {
-        if (layout.w > 0) Renderer.draw(painter, core, layout);
+        if (layout.w > 0) {
+            Renderer.draw(painter, core, layout);
+            analyticsUi.draw(painter, layout, elapsedClock);
+        }
     }
 
     /** Simulator scenes use the same setup methods as the developer panel. */

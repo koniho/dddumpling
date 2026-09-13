@@ -17,9 +17,15 @@ help keep future listing revisions aligned with the actual build.
 Java filenames without a directory above are under src/com/dddumpling/game/.
 The gameplay tests are in tools/Test*.java and run through check.sh.
 
-The Play Games progress/events integration is on a separate unmerged branch.
-If it is included in a future release, review offline/account wording, the privacy
-policy, and the Play Console Data safety declaration against that release.
+These statements remain a historical record for the initial SDK-free release. Do not reuse the
+offline/no-analytics row for an optional Firebase-configured build. That build offers analytics
+only after an explicit ALLOW choice; NO THANKS and missing Firebase configuration collect nothing
+through Firebase. See [the setup and disclosure checklist](../docs/firebase-analytics.md).
+
+The Android Play Games configuration is independent. A Play Games-enabled build may authenticate
+and synchronize one private cloud save even when Firebase analytics is declined. Its current
+configuration does not report gameplay through the Play Games Events service. Review account,
+cloud-save, offline, privacy-policy, and Play Data safety wording against the final release artifact.
 
 No statements about supported languages, release availability, pricing, ratings,
 or online synchronization have been added to the descriptions.

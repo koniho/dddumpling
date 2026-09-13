@@ -16,6 +16,13 @@ public class GameView extends View {
     private final Layout layout = new Layout();
     private final CanvasPainter painter;
     private final SettingsUi settingsUi = new SettingsUi();
+    private final Runnable privacy;
+    private final AnalyticsUi analyticsUi = new AnalyticsUi();
+    interface AnalyticsAction { void run(int action); }
+    private AnalyticsAction analyticsAction;
+    private Runnable analyticsLayoutChanged;
+    private float analyticsClock;
+    private int analyticsPress;
 
     private float padL, padT, padR, padB;
     private long last;
@@ -24,15 +31,33 @@ public class GameView extends View {
     private Runnable navigationChanged;
     void navigationChanged(Runnable listener) { navigationChanged = listener; }
     private void refreshNavigation() { if (navigationChanged != null) navigationChanged.run(); }
-    boolean handlesBack() { return Pause.handlesBack(core); }
-    boolean paused() { return core.paused; }
+    boolean handlesBack() { return analyticsUi.visible() || Pause.handlesBack(core); }
+    boolean paused() { return analyticsUi.visible() || core.paused; }
+    AnalyticsUi analyticsUi() { return analyticsUi; }
+    Layout gameLayout() { return layout; }
+    void analyticsActions(AnalyticsAction action, Runnable layoutChanged) {
+        analyticsAction = action; analyticsLayoutChanged = layoutChanged;
+    }
+    void showAnalytics(boolean enabled) {
+        cancelPointers(); last = 0; analyticsClock = 0;
+        analyticsUi.show(enabled); analyticsUi.compute(layout);
+        refreshNavigation(); invalidate();
+    }
+    void hideAnalytics() {
+        analyticsUi.hide(); cancelPointers(); last = 0;
+        refreshNavigation(); invalidate();
+    }
     private void cancelPointers() {
-        starDragPointer = bonusSwipePointer = bossDragPointer = -1;
+        starDragPointer = bonusSwipePointer = bossDragPointer = landPointer = -1;
         bossDragging = bossPinching = pushArmed = false;
-        caseGesture = CASE_IDLE; pausePress = 0;
+        caseGesture = CASE_IDLE; pausePress = analyticsPress = 0;
         Pause.release(core);
     }
     boolean back() {
+        if (analyticsUi.visible()) {
+            if (analyticsAction != null) analyticsAction.run(AnalyticsUi.CLOSE);
+            return true;
+        }
         if (!handlesBack()) return false;
         cancelPointers();
         boolean handled = Pause.back(core);
@@ -46,8 +71,9 @@ public class GameView extends View {
     }
 
 
-    GameView(Context ctx, GameCore.Store store, GameCore.Sound sound) {
+    GameView(Context ctx, GameCore.Store store, GameCore.Sound sound, Runnable privacy) {
         super(ctx);
+        this.privacy = privacy;
         painter = new CanvasPainter(loadFace(ctx));
         core = new GameCore(store, SystemClock.elapsedRealtimeNanos());
         core.sound = sound;
@@ -76,6 +102,8 @@ public class GameView extends View {
     private void relayout() {
         if (getWidth() > 0 && getHeight() > 0) {
             layout.compute(getWidth(), getHeight(), padL, padT, padR, padB);
+            analyticsUi.compute(layout);
+            if (analyticsLayoutChanged != null) analyticsLayoutChanged.run();
         }
     }
 
@@ -115,6 +143,19 @@ public class GameView extends View {
     }
     private boolean touch(MotionEvent ev) {
         if (background) return true;
+        if (analyticsUi.visible()) {
+            int action = ev.getActionMasked();
+            int hit = analyticsUi.hit(ev.getX(), ev.getY());
+            if (action == MotionEvent.ACTION_DOWN) analyticsPress = hit;
+            else if (action == MotionEvent.ACTION_MOVE && hit != analyticsPress) analyticsPress = 0;
+            else if (action == MotionEvent.ACTION_UP) {
+                int selected = analyticsPress; analyticsPress = 0;
+                if (selected != AnalyticsUi.NONE && selected == hit && analyticsAction != null)
+                    analyticsAction.run(selected);
+            } else if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_POINTER_DOWN)
+                analyticsPress = 0;
+            return true;
+        }
         if (core.paused) {
             int action = ev.getActionMasked();
             int hit = Pause.hit(layout, ev.getX(), ev.getY());
@@ -129,14 +170,7 @@ public class GameView extends View {
         }
         int action = ev.getActionMasked();
         if (action == MotionEvent.ACTION_DOWN && PrivacyUi.hit(core, layout, ev.getX(), ev.getY())) {
-            try {
-                getContext().startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,
-                        android.net.Uri.parse(PrivacyUi.URL)));
-            } catch (android.content.ActivityNotFoundException unavailable) {
-                new android.app.AlertDialog.Builder(getContext()).setTitle("Privacy policy")
-                        .setMessage(PrivacyUi.URL + "\nSupport: dddumpling.play@gmail.com")
-                        .setPositiveButton("OK", null).show();
-            }
+            privacy.run();
             return true;
         }
 
@@ -724,8 +758,10 @@ public class GameView extends View {
         if (dt > 0.05f) dt = 0.05f;   // a backgrounded app must not teleport the wave
 
         try {
-            boolean playingBeforeUpdate = core.state == GameCore.PLAY && !core.paused && !background;
-            if (!background) core.update(dt, elapsed, layout);
+            boolean playingBeforeUpdate = core.state == GameCore.PLAY && !core.paused && !background
+                    && !analyticsUi.visible();
+            if (!background && !analyticsUi.visible()) core.update(dt, elapsed, layout);
+            if (!background && analyticsUi.visible()) analyticsClock += dt;
             refreshNavigation();
             if (playingBeforeUpdate && core.boss.octoImpact) bossImpactHaptic();
             boolean beaten = core.boss.active() && core.boss.beaten;
@@ -733,6 +769,7 @@ public class GameView extends View {
             bossWasBeaten = beaten;
             painter.bind(c);
             Renderer.draw(painter, core, layout);
+            if (analyticsUi.visible()) analyticsUi.draw(painter, layout, analyticsClock);
         } catch (Throwable t) {
             // A throw from inside onDraw would otherwise kill the process with no trace.
             if (getContext() instanceof android.app.Activity) {

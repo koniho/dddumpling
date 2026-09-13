@@ -44,10 +44,12 @@ mkdir -p "$OUT/classes" "$OUT/gen"
 sh tools/build-flags.sh "$OUT/gen" "$DEVELOPER"
 
 PLAY_CONFIG=${DDDUMPLING_PLAY_CONFIG:-}
+FIREBASE_CONFIG=${DDDUMPLING_FIREBASE_CONFIG:-.private/firebase/google-services.json}
 PLAY_JARS=()
 PLAY_RES=()
 PLAY_LINK=()
 PLATFORM_SRC=local-src
+ANALYTICS_SRC=analytics-local-src
 MANIFEST=AndroidManifest.xml
 APP_ID=com.dddumpling.game
 APP_LABEL=DDDUMPLING
@@ -57,29 +59,52 @@ if [ "$DEVELOPER" = true ]; then
     MANIFEST="$OUT/developer-manifest.xml"
     sed 's|@string/app_name"|@string/app_name_dev"|' AndroidManifest.xml > "$MANIFEST"
 fi
+if [ "$DEVELOPER" = false ] && [ -n "${DDDUMPLING_FIREBASE_CONFIG:-}" ] && [ ! -f "$FIREBASE_CONFIG" ]; then
+    echo "Firebase configuration not found: $FIREBASE_CONFIG" >&2; exit 1
+fi
+PREPARE_ARGS=()
 if [ "$DEVELOPER" = false ] && [ -n "$PLAY_CONFIG" ]; then
-    python tools/prepare-play.py --config "$PLAY_CONFIG"
+    PREPARE_ARGS+=(--play-config "$PLAY_CONFIG")
     PLATFORM_SRC=play-src
+fi
+if [ "$DEVELOPER" = false ] && [ -f "$FIREBASE_CONFIG" ]; then
+    PREPARE_ARGS+=(--firebase-config "$FIREBASE_CONFIG")
+    ANALYTICS_SRC=firebase-src
+fi
+if [ "${#PREPARE_ARGS[@]}" -gt 0 ]; then
+    python tools/prepare-play.py "${PREPARE_ARGS[@]}"
     MANIFEST="$OUT/play/AndroidManifest.xml"
-    mapfile -t PLAY_JARS < "$OUT/play/jars.txt"
-    mapfile -t PLAY_RES < "$OUT/play/resources.txt"
+    while IFS= read -r PLAY_JAR; do
+        [ -z "$PLAY_JAR" ] || PLAY_JARS+=("$PLAY_JAR")
+    done < "$OUT/play/jars.txt"
+    while IFS= read -r PLAY_RESOURCE; do
+        [ -z "$PLAY_RESOURCE" ] || PLAY_RES+=("$PLAY_RESOURCE")
+    done < "$OUT/play/resources.txt"
     PLAY_LINK=(--extra-packages "$(cat "$OUT/play/packages.txt")" --auto-add-overlay)
     if [ -d "$OUT/play/assets" ]; then PLAY_LINK+=(-A "$OUT/play/assets"); fi
 fi
 
 echo ">> resources"
 aapt2 compile --dir res -o "$OUT/res.zip"
-aapt2 link -o "$OUT/base.apk" -I "$SDK" \
-    --manifest "$MANIFEST" --rename-manifest-package "$APP_ID" --custom-package com.dddumpling.game \
-    --java "$OUT/gen" --min-sdk-version "$MIN" --target-sdk-version "$TGT" \
-    -A assets \
-    "${PLAY_LINK[@]}" "${PLAY_RES[@]}" "$OUT/res.zip"
+if [ "${#PLAY_LINK[@]}" -gt 0 ]; then
+    aapt2 link -o "$OUT/base.apk" -I "$SDK" \
+        --manifest "$MANIFEST" --rename-manifest-package "$APP_ID" --custom-package com.dddumpling.game \
+        --java "$OUT/gen" --min-sdk-version "$MIN" --target-sdk-version "$TGT" \
+        -A assets "${PLAY_LINK[@]}" "${PLAY_RES[@]}" "$OUT/res.zip"
+else
+    aapt2 link -o "$OUT/base.apk" -I "$SDK" \
+        --manifest "$MANIFEST" --rename-manifest-package "$APP_ID" --custom-package com.dddumpling.game \
+        --java "$OUT/gen" --min-sdk-version "$MIN" --target-sdk-version "$TGT" \
+        -A assets "$OUT/res.zip"
+fi
 
 TASK_CP="$SDK"
-for PLAY_JAR in "${PLAY_JARS[@]}"; do TASK_CP="$TASK_CP:$PLAY_JAR"; done
+if [ "${#PLAY_JARS[@]}" -gt 0 ]; then
+    for PLAY_JAR in "${PLAY_JARS[@]}"; do TASK_CP="$TASK_CP:$PLAY_JAR"; done
+fi
 
 echo ">> java"
-find src "$PLATFORM_SRC" "$OUT/gen" -name '*.java' >"$OUT/sources.txt"
+find src "$PLATFORM_SRC" "$ANALYTICS_SRC" "$OUT/gen" -name '*.java' >"$OUT/sources.txt"
 # Note: Termux's `ecj` wrapper hardcodes -7 and a bogus -cp, so javac is the sane choice.
 javac -nowarn -Xlint:none -encoding UTF-8 --release 8 \
     -cp "$TASK_CP" -d "$OUT/classes" @"$OUT/sources.txt"
@@ -89,7 +114,11 @@ find "$OUT/classes" -name '*.class' >"$OUT/classes.txt"
 # A fresh directory avoids carrying extra dex files over from an SDK-enabled build.
 mkdir -p "$OUT/dex"
 find "$OUT/dex" -name 'classes*.dex' -delete
-d8 --lib "$SDK" --min-api "$MIN" --output "$OUT/dex" @"$OUT/classes.txt" "${PLAY_JARS[@]}"
+if [ "${#PLAY_JARS[@]}" -gt 0 ]; then
+    d8 --lib "$SDK" --min-api "$MIN" --output "$OUT/dex" @"$OUT/classes.txt" "${PLAY_JARS[@]}"
+else
+    d8 --lib "$SDK" --min-api "$MIN" --output "$OUT/dex" @"$OUT/classes.txt"
+fi
 find "$OUT" -maxdepth 1 -name 'classes*.dex' -delete
 cp "$OUT"/dex/classes*.dex "$OUT/"
 

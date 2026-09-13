@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 import java.io.IOException;
 
-/** Local progress is authoritative while offline; Play events are best-effort observations. */
+/** Local progress is authoritative while offline; analytics are best-effort observations. */
 final class Progress {
     interface Store {
         byte[] loadProgress();
@@ -10,7 +10,6 @@ final class Progress {
         String progressReplica();
     }
     interface Sink {
-        void event(String name, int amount);
         void changed();
     }
     static final String[] BOSSES = {"slime", "dark_divide", "octopulse", "fly_agaric"};
@@ -19,6 +18,7 @@ final class Progress {
     private final boolean enabled;
     private ProgressData data = new ProgressData();
     private Sink sink;
+    private Analytics.Sink analytics;
     private boolean healthy = true, running, stageDone;
     private int stage, boss = -1, startLand;
     private String minigame;
@@ -41,10 +41,11 @@ final class Progress {
         return enabled && healthy;
     }
     void attach(Sink sink) { this.sink = available() ? sink : null; }
+    void attachAnalytics(Analytics.Sink analytics) { this.analytics = available() ? analytics : null; }
     long count(String name) { return data.total(name); }
     long maximum(String name) { return data.maximum(name); }
     byte[] snapshot() { return data.encode(); }
-    private void fail(String reason) { healthy = false; error = reason; sink = null; }
+    private void fail(String reason) { healthy = false; error = reason; sink = null; analytics = null; }
     private void changed() {
         if (!available()) return;
         try { if (store != null) store.saveProgress(data.encode()); }
@@ -55,7 +56,7 @@ final class Progress {
     private void event(String name, int amount) {
         if (amount <= 0) return;
         data.increment(replica, name, amount);
-        if (sink != null) try { sink.event(name, amount); } catch (RuntimeException ignored) { }
+        if (analytics != null) try { analytics.event(name, amount); } catch (RuntimeException ignored) { }
     }
     void seed(GameCore c) {
         if (!available() || data.maximum("migrated") != 0) return;

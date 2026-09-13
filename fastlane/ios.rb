@@ -1,3 +1,5 @@
+require "fileutils"
+
 IOS_BUNDLE_ID = "com.dddumpling.game.ios".freeze
 IOS_KEYCHAIN_NAME = "dddumpling-ci.keychain-db".freeze
 IOS_IPA_PATH = File.expand_path("../ios/build/DDDumpling.ipa", __dir__).freeze
@@ -49,6 +51,9 @@ def ios_prepare_release_project!
   root = File.expand_path("..", __dir__)
   sh("bash", File.join(root, "ios/scripts/translate.sh"), "Release")
   sh("xcodegen", "generate", "--spec", File.join(root, "ios/project.yml"))
+  package_dir = File.join(root, "ios/DDDumpling.xcodeproj/project.xcworkspace/xcshareddata/swiftpm")
+  FileUtils.mkdir_p(package_dir)
+  FileUtils.cp(File.join(root, "ios/Package.resolved"), File.join(package_dir, "Package.resolved"))
 end
 
 def ios_signing_profile_name!
@@ -106,6 +111,7 @@ def ios_archive!
     project: project,
     scheme: "DDDumpling",
     configuration: "Release",
+    disable_package_automatic_updates: true,
     xcargs: "CURRENT_PROJECT_VERSION=#{environment.fetch('IOS_BUILD_NUMBER')}",
     export_method: "app-store",
     archive_path: File.expand_path("../ios/build/DDDumpling.xcarchive", __dir__),

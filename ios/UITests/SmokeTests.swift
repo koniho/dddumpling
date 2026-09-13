@@ -53,4 +53,38 @@ final class SmokeTests: XCTestCase {
         XCTAssertEqual(app.state, .runningForeground)
         capture(app, "divide-after-gestures")
     }
+
+    func testAnalyticsChoiceDoesNotBlockPlayAndPersists() {
+        for choice in ["analytics-decline", "analytics-allow"] {
+            let app = XCUIApplication()
+            app.launchEnvironment["DDD_ANALYTICS_PREVIEW"] = "1"
+            app.launchEnvironment["DDD_ANALYTICS_RESET"] = "1"
+            app.launch()
+            let prompt = app.buttons["analytics-allow"]
+            XCTAssertTrue(prompt.waitForExistence(timeout: 15))
+            capture(app, "analytics-choice")
+            XCTAssertTrue(app.buttons["analytics-policy"].exists)
+            app.buttons[choice].tap()
+            let game = app.otherElements["game"]
+            XCTAssertTrue(game.waitForExistence(timeout: 5))
+            game.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.85)).tap()
+            expectation(for: NSPredicate(format: "value CONTAINS %@", "state=1"), evaluatedWith: game)
+            waitForExpectations(timeout: 5)
+            app.terminate()
+            app.launchEnvironment.removeValue(forKey: "DDD_ANALYTICS_RESET")
+            app.launch()
+            XCTAssertTrue(app.otherElements["game"].waitForExistence(timeout: 15))
+            XCTAssertFalse(app.buttons["analytics-allow"].exists)
+            app.buttons["privacy"].tap()
+            XCTAssertTrue(app.buttons["analytics-decline"].waitForExistence(timeout: 5))
+            if choice == "analytics-allow" {
+                XCTAssertEqual(app.buttons["analytics-decline"].label, "TURN OFF")
+                app.buttons["analytics-decline"].tap()
+                app.buttons["privacy"].tap()
+                XCTAssertEqual(app.buttons["analytics-allow"].label, "ALLOW ANALYTICS")
+            }
+            app.buttons["analytics-close"].tap()
+            app.terminate()
+        }
+    }
 }
