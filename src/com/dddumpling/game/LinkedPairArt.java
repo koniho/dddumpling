@@ -118,8 +118,9 @@ final class LinkedPairArt {
         float nx = -dy/length*width, ny = dx/length*width;
         float mx = (x+tx)*0.5f, my = (y+ty)*0.5f;
         float[] shape = {x,y, mx+nx,my+ny, tx,ty, mx-nx,my-ny};
-        p.fillPoly(shape, Glyph.mix(color, GLOVE, 0.12f));
-        p.line(x,y,tx,ty,Glyph.mix(color,INK,0.30f),width*0.20f);
+        p.fillPoly(shape, Glyph.withAlpha(color,45));
+        p.strokePoly(shape,Glyph.withAlpha(color,175),width*0.30f);
+        p.line(x,y,tx,ty,Glyph.withAlpha(color,100),width*0.20f);
     }
 
     private static void curl(Painter p, float hx, float hy, float r, float dir, int color,
@@ -168,39 +169,45 @@ final class LinkedPairArt {
     private static void arm(Painter p, float ax, float ay, float bx, float by, float r, int color, float bend, Pulse wave) {
         float ex = ax + (bx - ax) * 0.60f;
         float ey = Math.max(ay, by) + r * bend;
-        // Fuller upper arm, pinched elbow, then a soft forearm taper into the wrist.
-        taperedSegment(p, ax, ay, ex, ey, r*0.16f, r*0.115f, r*0.025f, color, wave);
-        taperedSegment(p, ex, ey, bx, by, r*0.115f, r*0.095f, r*0.045f, color, wave);
-        p.fillCircle(ex, ey, r * 0.155f, wave.tint(Glyph.mix(color, GLOVE, 0.14f), ex));
-        p.fillCircle(ex - r * 0.035f, ey - r * 0.035f, r * 0.045f,
-                Glyph.mix(color, GLOVE, 0.45f));
-    }
-
-    private static void taperedSegment(Painter p, float ax, float ay, float bx, float by,
-            float start, float end, float fullness, int color, Pulse wave) {
-        float[] points = new float[18], widths = new float[9];
-        for (int i = 0; i <= 8; i++) {
-            float t = i/8f;
-            points[i*2] = ax+(bx-ax)*t;
-            points[i*2+1] = ay+(by-ay)*t;
-            widths[i] = start+(end-start)*t+fullness*(float)Math.sin(t*Math.PI);
+        // One continuous silhouette keeps the elbow soft without an internal seam.
+        float[] points = new float[34], widths = new float[17];
+        for (int i = 0; i <= 16; i++) {
+            boolean upper = i <= 8;
+            float t = (upper ? i : i-8)/8f;
+            points[i*2] = upper ? ax+(ex-ax)*t : ex+(bx-ex)*t;
+            points[i*2+1] = upper ? ay+(ey-ay)*t : ey+(by-ey)*t;
+            widths[i] = r*(upper ? 0.16f-0.03f*t+0.025f*(float)Math.sin(t*Math.PI)
+                    : 0.13f-0.035f*t+0.045f*(float)Math.sin(t*Math.PI));
         }
         tube(p, points, widths, color, wave);
     }
 
-    /** Filled variable-width segments with rounded joins; no outline stroke. */
+    /** Faint fill and soft colored edges, matching the key hexagons. */
     private static void tube(Painter p, float[] points, float[] widths, int color, Pulse wave) {
-        for (int i = 0; i < widths.length; i++) {
-            float x = points[i*2], y = points[i*2+1];
-            p.fillCircle(x, y, widths[i], wave.tint(color, x));
-            if (i == 0) continue;
-            float px = points[i*2-2], py = points[i*2-1];
-            float dx = x-px, dy = y-py;
-            float length = Math.max(0.001f, (float)Math.sqrt(dx*dx+dy*dy));
-            float nx = -dy/length, ny = dx/length;
-            float a = widths[i-1], b = widths[i];
-            p.fillPoly(new float[] {px+nx*a,py+ny*a, x+nx*b,y+ny*b,
-                    x-nx*b,y-ny*b, px-nx*a,py-ny*a}, wave.tint(color, (px+x)*0.5f));
+        int n = widths.length;
+        float[] outline = new float[n*4];
+        float widest = 0f;
+        for (int i = 0; i < n; i++) {
+            int before = Math.max(0,i-1), after = Math.min(n-1,i+1);
+            float dx = points[after*2]-points[before*2];
+            float dy = points[after*2+1]-points[before*2+1];
+            float length = Math.max(0.001f,(float)Math.sqrt(dx*dx+dy*dy));
+            float nx = -dy/length*widths[i], ny = dx/length*widths[i];
+            outline[i*2] = points[i*2]+nx;
+            outline[i*2+1] = points[i*2+1]+ny;
+            int j = 2*n-1-i;
+            outline[j*2] = points[i*2]-nx;
+            outline[j*2+1] = points[i*2+1]-ny;
+            widest = Math.max(widest,widths[i]);
+        }
+        p.fillPoly(outline,Glyph.withAlpha(color,45));
+        float stroke = widest*0.40f;
+        // Tint each edge where the pulse passes, from clasp toward character.
+        for (int i = 0; i < 2*n; i++) {
+            int j = (i+1)%(2*n);
+            float x = (outline[i*2]+outline[j*2])*0.5f;
+            p.line(outline[i*2],outline[i*2+1],outline[j*2],outline[j*2+1],
+                    Glyph.withAlpha(wave.tint(color,x),175),stroke);
         }
     }
 
