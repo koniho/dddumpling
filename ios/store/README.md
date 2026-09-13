@@ -13,14 +13,14 @@ App Store Connect app: `6811478003` (`com.dddumpling.game.ios`). English text is
   depends on Apple's requirements; EU territories report missing trader status.
 - Build attached to the draft App Store version; release mode is manual.
 - TestFlight beta description, feedback address, and What to Test instructions.
+- Reviewer contact, review notes, and no-login-required setting in both App Store and
+  TestFlight sections, using the contact the account holder entered in App Store Connect.
 - Licensed third-party content declaration, including the bundled font and notices.
 - Real Release boss and gameplay screenshots, 1320 × 2868, processed COMPLETE by Apple.
   Apple's API calls the current large-iPhone screenshot set `APP_IPHONE_67`.
 
 ## Still required from the account holder
 
-- Reviewer contact email and phone number. Apple rejects saving the review details without
-  all contact fields; the prepared review notes and no-login declaration will be saved with them.
 - App Privacy: complete the website questionnaire. The current offline iOS implementation
   does not collect data for the developer; the source audit supports “No, we do not collect data
   from this app.” This questionnaire is not exposed by the public API used here.
@@ -41,7 +41,7 @@ The ignored `ios/build/videos/` directory contains:
 This is a **partial, silent automated preview**, not a complete playthrough. It shows normal
 play, a powerup, Starpath, and Slime; it does not demonstrate all bosses, both minigames, and
 the completed collection. The original recording is preserved. A full human-recorded
-walkthrough is pending; no App Store preview video has been uploaded.
+walkthrough will be recorded by the user; no App Store preview video has been uploaded.
 
 For a phone recording, start Screen Recording from Control Center, leave the microphone off
 unless narration is wanted, and confirm the game audio is audible in a short sample first.

@@ -24,6 +24,5 @@ the declaration in App Store Connect. The draft release mode is manual.
 
 Pending before release: supported physical iPhone testing; touch/audio listening;
 final Release screenshots; privacy report for the linked
-runtime; product-metadata, age-rating, and accessibility review. App Review contact details are
-also pending. Repository automation must not describe an upload as successful until App Store
-Connect confirms it.
+runtime; product-metadata, age-rating, and accessibility review. Reviewer contacts and review
+notes are now saved and verified in both App Store and TestFlight sections.
