@@ -155,6 +155,25 @@ final class Blade {
             if (n >= c.enemies.size()) continue;
             GameCore.Enemy e = c.enemies.get(n);
             if (!e.typeable()) continue;
+            if (e.link != null) {
+                GameCore.Enemy other = e.link;
+                float mx = (c.enemyCentreX(e)+c.enemyCentreX(other))*0.5f;
+                float my = (e.y+other.y)*0.5f;
+                float claspR = L.enemyR*0.55f;
+                if (segDist2(mx,my,x0,y0,x,y) <= claspR*claspR) {
+                    c.destroyWord(e,mx,my,L,false);
+                    c.destroyWord(other,mx,my,L,false);
+                    cut += 2;
+                    c.strokeCuts += 2;
+                    c.strokeKills += 2;
+                    if (c.sound != null) c.sound.chop();
+                    if (c.strokeKills >= SLOW_KILLS) {
+                        slowdown(c);
+                        c.callCuts = c.strokeCuts;
+                    }
+                }
+                continue; // Their bodies and arms are protected; only the clasp is cuttable.
+            }
             for (int i = e.word.length - 1; i >= e.pos; i--) {
                 if (e.gone[i]) continue;
                 if (segDist2(c.tileX(e, i, L), e.y, x0, y0, x, y) > r * r) continue;

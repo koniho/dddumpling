@@ -296,8 +296,10 @@ final class GameCore {
 
     static final class Enemy {
         Enemy link;
+        Enemy spinMate;
         boolean linkWaiting;
         float linkLeft;
+        int linkButton = -1;
         float linkStrain;
         float linkFlex;
         float linkReleaseDir, linkReleaseX, linkReleaseY;
@@ -1073,7 +1075,8 @@ final class GameCore {
         // substituting a different mode.
         int entry = effect == Power.TEAM ? anyCollected() : -1;
         if (effect == Power.TEAM && entry < 0) return;
-        LinkedPairs.release(this, L);
+        if (effect != Power.MULTI) LinkedPairs.preparePower(this);
+        else LinkedPairs.release(this, L);
         mode = effect;
         modeLeft = Power.DURATION;
         powerLastClear = -100f;
@@ -1805,7 +1808,8 @@ final class GameCore {
         }
         keyPress[g] = 1f;
 
-        if (target != null && (!target.typeable() || !enemies.contains(target))) target = null;
+        if (target != null && (!target.typeable() || !enemies.contains(target)
+                || (powerActive() && mode == Power.FLING && target.link != null))) target = null;
 
         // The boss, on the same terms the powerup gets: it outranks an *unengaged* word for the
         // letters it is asking for, and never steals a press out of a word already part-typed. The
@@ -1832,6 +1836,7 @@ final class GameCore {
             for (int i = 0; i < enemies.size(); i++) {
                 Enemy e = enemies.get(i);
                 if (!e.typeable()) continue;
+                if (powerActive() && mode == Power.FLING && e.link != null) continue;
                 if (!flurry() && e.word[e.pos] != g) continue;
                 boolean guided = e.link != null && (e.link.linkWaiting || e.link.dying);
                 boolean pickedGuide = pick != null && pick.link != null
@@ -1862,6 +1867,12 @@ final class GameCore {
         }
 
         Enemy e = target;
+        if (flurry() && e.link != null && e.link.linkWaiting && e.link.linkButton == g) {
+            if (sound != null) sound.wrong();
+            target = null;
+            return false; // Two distinct buttons, never a double-tap of one wildcard.
+        }
+        if (e.link != null) e.linkButton = g;
         int struck = e.pos;
         float hx = tileX(e, struck, L);
         float hy = e.y;
@@ -2056,8 +2067,15 @@ final class GameCore {
      * the screen a little harder each time as the squishy grows.
      */
     void buddySquish(Enemy e, Layout L) {
-        destroyWord(e, buddy.x, buddy.y, L);
-        computeImpactFlyDirs(e, buddy.x, buddy.y, L);
+        Enemy partner = e.link;
+        if (partner != null) {
+            destroyWord(e,buddy.x,buddy.y,L,false);
+            destroyWord(partner,buddy.x,buddy.y,L);
+            e.spinMate = partner; partner.spinMate = e;
+        } else {
+            destroyWord(e, buddy.x, buddy.y, L);
+            computeImpactFlyDirs(e, buddy.x, buddy.y, L);
+        }
         Fx.explode(this, rnd, buddy.x, buddy.y, L.enemyR * 1.6f, 14,
                 Collect.BODY[buddy.who]);
         shake = Math.max(shake, 0.30f + 0.03f * buddy.squishes);
@@ -2606,7 +2624,7 @@ final class GameCore {
 
             if (e.destroyed) {
                 e.destroyT += dt;
-                if (e.destroyT >= DESTROY_TIME) enemies.remove(i);
+                if (e.destroyT >= (e.spinMate != null ? LinkedPairArt.SPIN_TIME : DESTROY_TIME)) enemies.remove(i);
                 continue;
             }
 

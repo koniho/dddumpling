@@ -340,9 +340,11 @@ front travels from the clasp toward both characters. The first press plays the r
 partner's gold highlight remains visible; there is no countdown circle, text, or checkmark. Arms and vines
 have varying thickness along their length, solid hexagon-colored fills with stronger underside shadows and upper highlights for rounded volume, and key-colored outlines matching the hexagons. Limbs render behind the characters
 and are cut out around both complete character tiles, including during the flex. A missed window restores the first key without a life penalty
-or score; both enemies still descend. A successful chord credits two clears; the clasp opens, the characters peel outward with their hands, and a short curved whoosh marks the release point. Power-ups release
+or score; both enemies still descend. A successful chord credits two clears; the clasp opens, the characters peel outward with their hands, and a short curved whoosh marks the release point. The retired MULTI mode releases
 links, and a breached partner cannot leave the other waiting forever.
 
 Stage 16 gives 15% longer travel and spawn intervals and caps the field at four enemies.
 Stage 17 retains 7.5% timing relief; stage 18 returns to the ordinary curve.
 Rules: `LinkedPairs`; visuals: `LinkedPairArt`; difficulty: `Pacing.lessonRelief`.
+
+Linked pairs keep their hands connected during FLING, FLURRY, and TEAM SQUISH. One TEAM SQUISH collision clears both and sends them spinning around their clasp offscreen. FLING protects their bodies and requires a cut through the joined hands to clear both. FLURRY accepts any two distinct buttons within 200 ms; repeating one button cannot clear a pair. Entering these powers resets a pending half-press.

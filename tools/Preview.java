@@ -117,6 +117,22 @@ final class Preview {
             shot(dir,"99-linked-release-"+frame,linked,L,w,h,ss);
         }
 
+        GameCore spinning = new GameCore(new Mem(),1601L);
+        spinning.startGame(); spinning.jumpToStage(16,L);
+        spinning.stageGap = 0f; spinning.spawnTimer = 0f; spinning.powerTimer = 100f;
+        step(spinning,L,2.2f);
+        spinning.stageBanner = 0f; spinning.collected = Collect.MASK;
+        spinning.startFrenzy(Power.TEAM,L);
+        GameCore.Enemy spinLeft = spinning.enemies.get(0), spinRight = spinLeft.link;
+        shot(dir,"99-power-bond-team",spinning,L,w,h,ss);
+        spinning.buddy.x = spinning.enemyCentreX(spinLeft); spinning.buddy.y = spinLeft.y;
+        spinning.buddySquish(spinLeft,L);
+        spinning.flash = spinning.shake = 0f;
+        for (int frame = 0; frame < 4; frame++) {
+            spinLeft.destroyT = spinRight.destroyT = 0.06f+frame*0.12f;
+            shot(dir,"99-power-bond-spin-"+frame,spinning,L,w,h,ss);
+        }
+
         for (int land = 0; land < Lands.COUNT; land++) {
             GameCore themed = new GameCore(new Mem(), 810L);
             themed.startGame();

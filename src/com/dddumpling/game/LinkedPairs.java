@@ -7,7 +7,7 @@ final class LinkedPairs {
     private LinkedPairs() {}
 
     static boolean due(GameCore c) {
-        return c.stage >= FIRST_STAGE && !c.boss.active() && !c.powerActive()
+        return c.stage >= FIRST_STAGE && !c.boss.active() && (!c.powerActive() || c.mode != Power.MULTI)
                 && (c.spawnedThisStage == 0 || c.spawnedThisStage == 4);
     }
 
@@ -114,6 +114,15 @@ final class LinkedPairs {
         boolean waiting = other != null && other.linkWaiting;
         unlink(e);
         if (waiting) reset(other); // An incomplete chord earns no clear, even on a breach.
+    }
+
+    /** Keep the bond, but a power transition starts a fresh input window. */
+    static void preparePower(GameCore c) {
+        for (GameCore.Enemy e : c.enemies) {
+            if (e.link == null) continue;
+            if (e.linkWaiting) reset(e);
+            e.linkButton = -1;
+        }
     }
 
     /** Frenzies release the link, so every existing power remains a clean board-clearing reward. */

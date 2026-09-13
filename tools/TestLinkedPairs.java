@@ -149,9 +149,56 @@ final class TestLinkedPairs extends Check {
             c.tapKey(a.word[0], L);
             c.collected = Collect.MASK;
             c.startFrenzy(mode, L);
-            check("power releases pair without reviving cleared half " + mode,
-                    a.destroyed && a.link == null && b.link == null && b.typeable());
+            if (mode != Power.MULTI) {
+                check("active powers preserve the bond with fresh input " + mode,
+                        a.link == b && b.link == a && a.typeable() && b.typeable() && !a.linkWaiting);
+            } else {
+                check("other powers release pair " + mode,
+                        a.destroyed && a.link == null && b.link == null && b.typeable());
+            }
         }
+        c = wave(L,16); a = c.enemies.get(0); b = a.link;
+        c.collected = Collect.MASK;
+        c.startFrenzy(Power.TEAM,L);
+        c.buddy.x = c.enemyCentreX(a); c.buddy.y = a.y;
+        c.buddySquish(a,L);
+        check("one team collision clears both and keeps a shared spin",a.destroyed && b.destroyed
+                && a.spinMate == b && b.spinMate == a && c.resolvedThisStage == 2);
+
+        c = wave(L,16); a = c.enemies.get(0); b = a.link;
+        c.startFrenzy(Power.FLURRY,L);
+        int wildcard = (a.word[0]+1)%Glyph.COUNT;
+        c.tapKey(wildcard,L);
+        check("flurry first wildcard waits",a.linkWaiting);
+        c.tapKey(wildcard,L);
+        check("one flurry button cannot double-tap a bond",!a.destroyed && !b.destroyed && a.linkWaiting);
+        c.tapKey((wildcard+1)%Glyph.COUNT,L);
+        check("two distinct wildcards complete the pair",a.destroyed && b.destroyed);
+
+        c = wave(L,16); a = c.enemies.get(0); b = a.link;
+        c.startFrenzy(Power.FLURRY,L);
+        c.tapKey(0,L);
+        c.update(0.01f,0.201f,L);
+        c.tapKey(1,L);
+        check("flurry keeps the 200ms limit",!a.destroyed && !b.destroyed && c.score == 0);
+
+        c = wave(L,16); a = c.enemies.get(0); b = a.link;
+        a.y = b.y = L.playTop+L.enemyR*4f;
+        c.startFrenzy(Power.FLING,L);
+        float ax = c.enemyCentreX(a), mid = (ax+c.enemyCentreX(b))*0.5f, y = a.y;
+        c.tapKey(a.word[0],L);
+        check("fling keys cannot damage a linked body",a.typeable() && b.typeable());
+        c.beginStroke(ax,y-L.enemyR);
+        int bodyCuts = c.sliceTo(ax,y+L.enemyR,L);
+        c.endStroke();
+        check("fling body cut is protected",bodyCuts == 0 && !a.destroyed && !b.destroyed);
+        c.beginStroke(mid,y-L.enemyR);
+        int bondCuts = c.sliceTo(mid,y+L.enemyR,L);
+        check("fling clasp cut releases and credits both",bondCuts == 2 && a.destroyed && b.destroyed
+                && c.strokeCuts == 2 && c.strokeKills == 2 && c.resolvedThisStage == 2);
+        check("continued slice cannot score pair twice",c.sliceTo(mid,y-L.enemyR,L) == 0);
+        c.endStroke();
+
         c = wave(L, 16);
         c.tapKey(c.enemies.get(0).word[0], L);
         c.jumpToStage(17, L);

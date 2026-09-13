@@ -3,11 +3,16 @@ package com.dddumpling.game;
 /** Key-colored vines, paws and soft hands with a directional cue; shared by Android and iOS renderers. */
 final class LinkedPairArt {
     private static final int INK = 0xFF22253C, GLOVE = 0xFFFFF4DD, GOLD = 0xFFFFD56B;
+    static final float SPIN_TIME = 0.9f;
     private LinkedPairArt() {}
 
     static void draw(Painter p, GameCore c, Layout L) {
         for (int i = 0; i < c.enemies.size(); i++) {
             GameCore.Enemy a = c.enemies.get(i), b = a.link;
+            if (a.spinMate != null) {
+                if (a.linkReleaseDir < 0f) spin(p,c,L,a,a.spinMate);
+                continue;
+            }
             if (a.destroyed && a.linkReleaseDir != 0f) release(p,c,L,a);
             if (b == null || c.enemies.indexOf(b) <= i || a.destroyed || b.destroyed) continue;
             float r = L.enemyR;
@@ -50,6 +55,87 @@ final class LinkedPairArt {
                 p.strokePoly(Glyph.hex(tx, ty, r * (1.10f + pulse * 0.12f)), GOLD, r * 0.09f);
 
             }
+        }
+    }
+
+    /** One collision sends both bodies orbiting their still-joined hands offscreen. */
+    private static void spin(Painter p, GameCore c, Layout L, GameCore.Enemy a, GameCore.Enemy b) {
+        float t = Math.min(1f,a.destroyT/SPIN_TIME), r = L.enemyR;
+        float direction = a.linkReleaseX < L.w*0.5f ? -1f : 1f;
+        float mx = a.linkReleaseX+direction*t*t*(L.w+r*4f);
+        float my = a.linkReleaseY-t*t*L.h*0.45f;
+        float angle = t*(float)Math.PI*3.5f*direction;
+        float reach = Math.abs(a.baseX-b.baseX)*0.5f;
+        Painter q = new TurnPainter(p,mx,my,angle);
+        GameCore.Enemy[] pair = {a,b};
+        q.save();
+        q.clipOutCircle(-reach,0f,r*Layout.HEAD_SCALE*0.965f);
+        q.clipOutCircle(reach,0f,r*Layout.HEAD_SCALE*0.965f);
+        for (int i = 0; i < 2; i++) {
+            float sign = i == 0 ? 1f : -1f, cx = -sign*reach;
+            float hx = -sign*r*0.30f;
+            int g = pair[i].word[0], col = Glyph.COLOR[g];
+            limb(q,g,cx+sign*r*0.9f,0f,hx,0f,r,sign,col,false,0.08f,new Pulse(0f,r,0f));
+            if (!fruit(g)) extremity(q,g,hx,0f,r,sign,col,false);
+        }
+        q.restore();
+        for (int i = 0; i < 2; i++) {
+            int g = pair[i].word[0], col = Glyph.COLOR[g];
+            float x = (i == 0 ? -1f : 1f)*reach;
+            float[] hex = Glyph.hex(x,0f,r*Layout.HEAD_SCALE);
+            q.fillPoly(hex,Glyph.withAlpha(col,52));
+            q.strokePoly(hex,Glyph.withAlpha(col,200),r*0.08f);
+            Kawaii.draw(q,g,x,0f,r*Layout.HEAD_SCALE*0.60f,col,1f,1f);
+        }
+    }
+
+    /** Rotates the complete code-drawn pair, including faces, clasp and clipping masks. */
+    private static final class TurnPainter implements Painter {
+        final Painter p;
+        final float cx,cy,cos,sin;
+        TurnPainter(Painter p,float cx,float cy,float angle) {
+            this.p=p; this.cx=cx; this.cy=cy;
+            cos=(float)Math.cos(angle); sin=(float)Math.sin(angle);
+        }
+        float x(float x,float y) { return cx+x*cos-y*sin; }
+        float y(float x,float y) { return cy+x*sin+y*cos; }
+        float[] turn(float[] xy) {
+            float[] out=new float[xy.length];
+            for(int i=0;i<xy.length;i+=2) { out[i]=x(xy[i],xy[i+1]); out[i+1]=y(xy[i],xy[i+1]); }
+            return out;
+        }
+        public void fillPoly(float[] xy,int c) { p.fillPoly(turn(xy),c); }
+        public void strokePoly(float[] xy,int c,float w) { p.strokePoly(turn(xy),c,w); }
+        public void polyline(float[] xy,int c,float w) { p.polyline(turn(xy),c,w); }
+        public void fillContours(float[][] paths,int c) {
+            float[][] out=new float[paths.length][];
+            for(int i=0;i<paths.length;i++) out[i]=turn(paths[i]);
+            p.fillContours(out,c);
+        }
+        public void fillCircle(float x,float y,float r,int c) { p.fillCircle(x(x,y),y(x,y),r,c); }
+        public void strokeCircle(float x,float y,float r,int c,float w) { p.strokeCircle(x(x,y),y(x,y),r,c,w); }
+        float[] ellipse(float x,float y,float rx,float ry,float start,float sweep,int n) {
+            float[] out=new float[(n+1)*2];
+            for(int i=0;i<=n;i++) {
+                float a=(start+sweep*i/n)*(float)Math.PI/180f;
+                out[i*2]=x+rx*(float)Math.cos(a); out[i*2+1]=y+ry*(float)Math.sin(a);
+            }
+            return out;
+        }
+        public void fillEllipse(float x,float y,float rx,float ry,int c) { fillPoly(ellipse(x,y,rx,ry,0f,360f,40),c); }
+        public void arc(float x,float y,float rx,float ry,float a,float sweep,int c,float w) { polyline(ellipse(x,y,rx,ry,a,sweep,32),c,w); }
+        public void line(float ax,float ay,float bx,float by,int c,float w) { p.line(x(ax,ay),y(ax,ay),x(bx,by),y(bx,by),c,w); }
+        public void fillRect(float l,float t,float r,float b,int c) { fillPoly(new float[]{l,t,r,t,r,b,l,b},c); }
+        public void clipOutCircle(float x,float y,float r) { p.clipOutCircle(x(x,y),y(x,y),r); }
+        public void save() { p.save(); }
+        public void restore() { p.restore(); }
+        public void translate(float x,float y) { p.translate(x*cos-y*sin,x*sin+y*cos); }
+        public void text(String s,float x,float y,float size,int c,int align,boolean bold) { p.text(s,x(x,y),y(x,y),size,c,align,bold); }
+        public void clipRect(float l,float t,float r,float b) {
+            float[] xy=turn(new float[]{l,t,r,t,r,b,l,b});
+            float minX=xy[0],maxX=xy[0],minY=xy[1],maxY=xy[1];
+            for(int i=2;i<xy.length;i+=2) { minX=Math.min(minX,xy[i]); maxX=Math.max(maxX,xy[i]); minY=Math.min(minY,xy[i+1]); maxY=Math.max(maxY,xy[i+1]); }
+            p.clipRect(minX,minY,maxX,maxY);
         }
     }
 
