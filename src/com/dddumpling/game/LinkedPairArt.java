@@ -14,7 +14,7 @@ final class LinkedPairArt {
             float ax = c.enemyCentreX(a) + maskRadius(a, r) - r*0.14f, ay = a.y;
             float bx = c.enemyCentreX(b) - maskRadius(b, r) + r*0.14f, by = b.y;
             float mx = (ax + bx) * 0.5f, my = (ay + by) * 0.5f;
-            if (my < L.playTop - r) continue;
+            if (my < -r*2f) continue;
             float wiggle = (float) Math.sin(c.clock * 1.4f) * r * 0.012f;
             int ac = Glyph.COLOR[a.word[0]], bc = Glyph.COLOR[b.word[0]];
             GameCore.Enemy waiting = a.linkWaiting ? a : b.linkWaiting ? b : null;
@@ -29,8 +29,9 @@ final class LinkedPairArt {
             Pulse wave = new Pulse(mx, Math.max(r*0.2f, (bx-ax)*0.5f), strain);
             // The entire limb layer is confined to the gap between the character silhouettes.
             // Its leaves, paws and flex overshoot cannot leak onto or behind either body.
+            // Let the shared HUD backing fade the arms and characters together.
             p.save();
-            p.clipRect(L.playLeft, L.playTop, L.playRight, L.dangerY);
+            p.clipRect(L.playLeft, 0f, L.playRight, L.dangerY);
             p.clipOutCircle(c.enemyCentreX(a), a.y, maskRadius(a, r));
             p.clipOutCircle(c.enemyCentreX(b), b.y, maskRadius(b, r));
             limb(p, a.word[0], ax, ay, ahx, ahy, limbR, 1f, ac, false, bend, wave);
@@ -75,7 +76,7 @@ final class LinkedPairArt {
         int col = Glyph.COLOR[e.word[0]];
         Pulse quiet = new Pulse(hx,r,0f);
         p.save();
-        p.clipRect(L.playLeft,L.playTop,L.playRight,L.dangerY);
+        p.clipRect(L.playLeft,0f,L.playRight,L.dangerY);
         p.clipOutCircle(cx,cy,maskRadius(e,r)*(1f-0.30f*e.destroyT/GameCore.DESTROY_TIME));
         limb(p,e.word[0],cx-dir*r*0.9f,cy,hx,hy,size,-dir,col,false,0.18f,quiet);
         if (!fruit(e.word[0])) extremity(p,e.word[0],hx,hy,size,-dir,col,false);

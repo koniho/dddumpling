@@ -70,6 +70,12 @@ final class Preview {
         step(linked, L, 2.2f);
         linked.stageBanner = 0f;
         shot(dir, "95-linked-hands", linked, L, w, h, ss);
+        float pairY = linked.enemies.get(0).y;
+        for (int frame = 0; frame < 3; frame++) {
+            for (GameCore.Enemy e : linked.enemies) e.y = L.playTop+(frame-1)*L.enemyR*0.65f;
+            shot(dir,"95-linked-header-"+frame,linked,L,w,h,ss);
+        }
+        for (GameCore.Enemy e : linked.enemies) e.y = pairY;
         int originalLeft = linked.enemies.get(0).word[0], originalRight = linked.enemies.get(1).word[0];
         for (int left = 0; left < 3; left++) {
             for (int right = 3; right < 6; right++) {
