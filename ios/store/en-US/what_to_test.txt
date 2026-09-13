@@ -1,0 +1,10 @@
+Please test the first iPhone build of DDDumpling:
+
+- Start from the animated title screen and match the falling characters.
+- Try powerups and simultaneous character-key taps.
+- Play the Starpath and steamer minigames.
+- Test the four boss encounters and their drag, spread, and tapping gestures.
+- Browse collected characters and play their story narration.
+- Pause, background the app, and reopen it to check audio and saved progress.
+
+Please report your iPhone model, iOS version, and any touch, sound, performance, or progress-saving problems. No account or purchase is required.
