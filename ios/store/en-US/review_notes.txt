@@ -1,0 +1,9 @@
+DDDUMPLING is an offline, portrait arcade game. It requires no account, sign-in, subscription, in-app purchase, or special setup.
+
+On the title screen, tap any character key in the honeycomb deck to begin. During play, tap the character keys that match each falling sequence. The game introduces its mechanics through animation and on-screen prompts.
+
+Boss encounters occur at stages 5, 10, 15, and 20. Their touch mechanics include dragging, a two-finger spread, and character-key taps. Between regular stages, the game presents either the steamer or Starpath minigame. Winning these encounters awards characters for the collection.
+
+The small display-case badge on the title screen opens the collection. Drag in either direction to browse. Tap a collected character when it is centered to open its story; the story can use the system speech synthesizer for narration.
+
+The PRIVACY link on the title screen opens the public privacy-policy URL in the system browser. Progress, best scores, collection data, and preferences are stored locally on the device.

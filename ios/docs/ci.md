@@ -5,7 +5,10 @@ at code commit `a4cc6e6` passed 4,864 shared Java assertions, 80 production chec
 56 input assertions, all 13 native/UI tests, and the unsigned arm64 Release archive.
 The cold macOS job took 13m43s; the fastlane configuration job took 18s. Artifacts
 `ios-test-results` (about 5 MiB) and `ios-unsigned-archive` (about 12 MiB) were uploaded.
-The J2ObjC cache is about 627 MiB. Signed export and TestFlight remain unverified.
+The J2ObjC cache is about 627 MiB. Signed export and TestFlight upload passed in
+[release run 34732005221](https://github.com/koniho/dddumpling/actions/runs/34732005221)
+for version 0.1.0, build 2.1. Apple acknowledged the upload; build processing and tester
+availability are checked separately in App Store Connect.
 
 An earlier run was cancelled after duplicate J2ObjC class warnings appeared. The test
 bundle had inherited the app's static-runtime linker flags; those now belong only to

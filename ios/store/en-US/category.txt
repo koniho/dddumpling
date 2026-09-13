@@ -1,0 +1,3 @@
+Primary category: Games
+Primary subcategory: Casual
+Secondary subcategory: Action
