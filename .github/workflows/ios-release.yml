@@ -85,6 +85,18 @@ jobs:
           IOS_APPSTORE_ISSUER_ID: ${{ secrets.IOS_APPSTORE_ISSUER_ID }}
           IOS_APPSTORE_KEY_BASE64: ${{ secrets.IOS_APPSTORE_KEY_BASE64 }}
         run: bundle exec fastlane ios archive
+      - name: Verify exported iPhone device family
+        run: |
+          python3 - <<'PY'
+          import plistlib
+          import zipfile
+          with zipfile.ZipFile("ios/build/DDDumpling.ipa") as ipa:
+              info = plistlib.loads(ipa.read("Payload/DDDumpling.app/Info.plist"))
+          family = info.get("UIDeviceFamily")
+          if family != [1]:
+              raise SystemExit(f"Expected iPhone-only UIDeviceFamily [1], got {family!r}")
+          print("Exported IPA supports iPhone only.")
+          PY
       - name: Upload build artifacts
         uses: actions/upload-artifact@v6
         with:
