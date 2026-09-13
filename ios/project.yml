@@ -35,6 +35,8 @@ targets:
     settings:
       base:
         OTHER_LDFLAGS: ['$(inherited)', '-ObjC', '-ljre_emul', '-liconv', '-lz']
+        # XcodeGen's iOS target default overrides the project-level family.
+        TARGETED_DEVICE_FAMILY: '1'
         PRODUCT_BUNDLE_IDENTIFIER: com.dddumpling.game.ios
         MARKETING_VERSION: 0.1.0
         CURRENT_PROJECT_VERSION: 1
