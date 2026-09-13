@@ -328,11 +328,13 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 Each ordinary wave from stage 16 contains two linked pairs: one opens the wave, and another
 arrives after four quota enemies have spawned. Each pair has one key from each thumb's keyboard
 group. The pairs replace four quota enemies in total; a blocked entrance defers the pair rather
-than replacing it with an ordinary enemy. Cartoon arms and clasped gloves join them.
+than replacing it with an ordinary enemy. Fruit keys grow curling vines; the cat and blue creature
+have padded paws, while the other characters have soft hands. Key-colored limbs intertwine at the center, with vines passing
+behind and in front of the partner.
 Press either key, then its partner within 200 ms of elapsed play time (independent of speed
 settings and slow motion). Input resolves the chord immediately; projectiles are visual only.
-The first key becomes an outline with a checkmark, and a pointing glove, gold pulse and countdown
-ring direct the player to its partner. A missed window restores the first key without a life penalty
+The first key becomes an outline with a checkmark. A reaching paw, hand or vine tip, a gold pulse,
+and a countdown ring direct the player to its partner. A missed window restores the first key without a life penalty
 or score; both enemies still descend. A successful chord credits two clears. Power-ups release
 links, and a breached partner cannot leave the other waiting forever.
 

@@ -70,6 +70,26 @@ final class Preview {
         step(linked, L, 2.2f);
         linked.stageBanner = 0f;
         shot(dir, "95-linked-hands", linked, L, w, h, ss);
+        int originalLeft = linked.enemies.get(0).word[0], originalRight = linked.enemies.get(1).word[0];
+        for (int left = 0; left < 3; left++) {
+            for (int right = 3; right < 6; right++) {
+                linked.enemies.get(0).word[0] = left;
+                linked.enemies.get(1).word[0] = right;
+                shot(dir, "96-linked-material-" + left + "-" + right, linked, L, w, h, ss);
+                for (int side = 0; side < 2; side++) {
+                    GameCore.Enemy held = linked.enemies.get(side);
+                    held.linkWaiting = true;
+                    held.linkLeft = LinkedPairs.WINDOW * 0.6f;
+                    shot(dir, "97-linked-reaching-" + left + "-" + right + "-" + side, linked, L, w, h, ss);
+                    held.linkWaiting = false;
+                    held.linkLeft = 0f;
+                }
+
+            }
+        }
+        linked.enemies.get(0).word[0] = originalLeft;
+        linked.enemies.get(1).word[0] = originalRight;
+
         GameCore.Enemy friend = linked.enemies.get(0);
         linked.destroyWord(friend, linked.enemyCentreX(friend), friend.y, L);
         shot(dir, "95-linked-pointing", linked, L, w, h, ss);

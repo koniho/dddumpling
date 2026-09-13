@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** Jointed, key-colored mitten arms and a directional cue; shared by Android and iOS renderers. */
+/** Key-colored vines, paws and soft hands with a directional cue; shared by Android and iOS renderers. */
 final class LinkedPairArt {
     private static final int INK = 0xFF22253C, GLOVE = 0xFFFFF4DD, GOLD = 0xFFFFD56B;
     private LinkedPairArt() {}
@@ -23,10 +23,13 @@ final class LinkedPairArt {
                 ahy += r * (waiting == a ? -0.16f : 0.32f);
                 bhy += r * (waiting == b ? -0.16f : 0.32f);
             }
-            arm(p, ax, ay, ahx, ahy, r, ac);
-            arm(p, bx, by, bhx, bhy, r, bc);
-            hand(p, ahx, ahy, r, 1f, ac, waiting == a);
-            hand(p, bhx, bhy, r, -1f, bc, waiting == b);
+            limb(p, a.word[0], ax, ay, ahx, ahy, r, 1f, ac, waiting == a);
+            limb(p, b.word[0], bx, by, bhx, bhy, r, -1f, bc, waiting == b);
+            if (!fruit(a.word[0])) extremity(p, a.word[0], ahx, ahy, r, 1f, ac, waiting == a);
+            if (!fruit(b.word[0])) extremity(p, b.word[0], bhx, bhy, r, -1f, bc, waiting == b);
+            // Short foreground sections pass over the partner's limb; the rest stays behind it.
+            if (fruit(a.word[0]) && waiting != a) curl(p, ahx, ahy, r, 1f, ac, 0.35f, 0.65f);
+            if (fruit(b.word[0]) && waiting != b) curl(p, bhx, bhy, r, -1f, bc, 0.65f, 0.90f);
             if (waiting != null) {
                 GameCore.Enemy next = waiting == a ? b : a;
                 float tx = c.tileX(next, Math.min(next.pos, next.word.length - 1), L);
@@ -45,6 +48,88 @@ final class LinkedPairArt {
                 p.polyline(new float[] {cx-r*0.25f,cy, cx-r*0.05f,cy+r*0.22f,
                         cx+r*0.35f,cy-r*0.28f}, GLOVE, r * 0.12f);
             }
+        }
+    }
+
+    private static boolean fruit(int glyph) { return glyph == 1 || glyph == 3; }
+
+    private static void limb(Painter p, int glyph, float ax, float ay, float hx, float hy,
+            float r, float dir, int color, boolean pointing) {
+        if (!fruit(glyph)) {
+            arm(p, ax, ay, hx, hy, r, color);
+            return;
+        }
+        float cx = hx + dir*r*0.24f;
+        float endX = pointing ? hx + dir*r*0.85f : cx - dir*r*0.34f;
+        float endY = hy - (pointing ? r*0.12f : 0f);
+        float[] stem = new float[26];
+        for (int i = 0; i <= 12; i++) {
+            float t = i / 12f;
+            stem[i*2] = ax + (endX-ax)*t;
+            stem[i*2+1] = ay + (endY-ay)*t + (float)Math.sin(t*Math.PI)*r*0.38f;
+        }
+        p.polyline(stem, INK, r*0.21f);
+        p.polyline(stem, color, r*0.105f);
+        // A leaf at the bend replaces the glove's mechanical elbow with a growing node.
+        float lx = stem[10], ly = stem[11];
+        leaf(p, lx, ly, lx-dir*r*0.32f, ly+r*0.38f, r*0.16f, color);
+        if (pointing) {
+            // The unfurled tip and pointed leaf direct attention at the remaining key.
+            leaf(p, endX-dir*r*0.28f, endY, endX+dir*r*0.12f, endY, r*0.13f, color);
+        } else {
+            curl(p, hx, hy, r, dir, color, 0f, 1f);
+        }
+    }
+
+    private static void leaf(Painter p, float x, float y, float tx, float ty, float width, int color) {
+        float dx = tx-x, dy = ty-y;
+        float length = Math.max(0.001f, (float)Math.sqrt(dx*dx+dy*dy));
+        float nx = -dy/length*width, ny = dx/length*width;
+        float mx = (x+tx)*0.5f, my = (y+ty)*0.5f;
+        float[] shape = {x,y, mx+nx,my+ny, tx,ty, mx-nx,my-ny};
+        p.fillPoly(shape, Glyph.mix(color, GLOVE, 0.12f));
+        p.strokePoly(shape, INK, width*0.30f);
+        p.line(x,y,tx,ty,Glyph.mix(color,INK,0.30f),width*0.20f);
+    }
+
+    private static void curl(Painter p, float hx, float hy, float r, float dir, int color,
+            float from, float to) {
+        float[] path = new float[34];
+        for (int i = 0; i <= 16; i++) {
+            float t = from + (to-from)*i/16f;
+            float angle = (float)Math.PI + t*(float)Math.PI*1.8f;
+            float radius = r*(0.34f-0.08f*t);
+            path[i*2] = hx+dir*r*0.24f+dir*(float)Math.cos(angle)*radius;
+            path[i*2+1] = hy+(float)Math.sin(angle)*radius;
+        }
+        p.polyline(path, INK, r*0.19f);
+        p.polyline(path, color, r*0.10f);
+    }
+
+    private static void extremity(Painter p, int glyph, float x, float y, float r,
+            float dir, int color, boolean pointing) {
+        if (glyph != 2 && glyph != 5) {
+            hand(p, x, y, r, dir, color, pointing);
+            return;
+        }
+        float cx = x+dir*r*0.14f;
+        if (pointing) {
+            capsule(p,cx,y-r*0.10f,x+dir*r*0.82f,y-r*0.10f,r*0.13f,INK);
+            capsule(p,cx,y-r*0.10f,x+dir*r*0.82f,y-r*0.10f,r*0.08f,color);
+        }
+        // A broad animal paw, with joined toes and pads inside the silhouette.
+        p.fillEllipse(cx,y,r*0.38f,r*0.32f,INK);
+        p.fillEllipse(cx,y,r*0.32f,r*0.26f,color);
+        for (int i = 0; i < 3; i++) {
+            float toeX = cx + (i-1)*r*0.19f;
+            float toeY = y-r*(i == 1 ? 0.24f : 0.18f);
+            p.fillCircle(toeX,toeY,r*0.14f,INK);
+            p.fillCircle(toeX,toeY,r*0.10f,color);
+        }
+        int pad = Glyph.mix(color,0xFFCF718C,0.55f);
+        p.fillEllipse(cx,y+r*0.06f,r*0.14f,r*0.10f,pad);
+        for (int i = 0; i < 3; i++) {
+            p.fillEllipse(cx+(i-1)*r*0.16f,y-r*0.14f,r*0.045f,r*0.06f,pad);
         }
     }
 
