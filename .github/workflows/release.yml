@@ -6,6 +6,10 @@ on:
       - "v*"
   workflow_dispatch:
     inputs:
+      source_tag:
+        description: Optional existing version tag to rebuild (download artifacts only; no Play upload)
+        type: string
+        default: ""
       upload_to_play:
         description: Upload this build to the selected Google Play testing track
         type: boolean
@@ -20,7 +24,7 @@ on:
 
 
 env:
-  RELEASE_ARTIFACT: ${{ github.ref_type == 'tag' && github.ref_name || format('build-{0}', github.run_id) }}
+  RELEASE_ARTIFACT: ${{ inputs.source_tag || (github.ref_type == 'tag' && github.ref_name || format('build-{0}', github.run_id)) }}
 
 permissions:
   contents: write
@@ -48,6 +52,21 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.source_tag && format('refs/tags/{0}', inputs.source_tag) || github.ref }}
+
+      - name: Validate rebuild tag
+        if: inputs.source_tag != ''
+        env:
+          SOURCE_TAG: ${{ inputs.source_tag }}
+        run: |
+          python3 - <<'PY'
+          import os, re, xml.etree.ElementTree as ET
+          tag = os.environ['SOURCE_TAG']
+          assert re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+', tag), 'Expected vMAJOR.MINOR.PATCH tag'
+          version = ET.parse('AndroidManifest.xml').getroot().get('{http://schemas.android.com/apk/res/android}versionName')
+          assert tag == 'v' + version, 'Tag and manifest version do not match'
+          PY
 
       - name: Set up Java
         uses: actions/setup-java@v5
@@ -80,6 +99,26 @@ jobs:
       - name: Verify offline production bundle
         run: python3 tools/verify-offline-bundle.py build/DDDUMPLING.aab
 
+      - name: Preserve and verify signed production APK
+        run: |
+          cp hexatype.apk "DDDUMPLING-${RELEASE_ARTIFACT}.apk"
+          apksigner verify --verbose "DDDUMPLING-${RELEASE_ARTIFACT}.apk"
+          aapt2 dump badging "DDDUMPLING-${RELEASE_ARTIFACT}.apk" > build/production-apk-badging.txt
+          python3 - <<'PY'
+          import re, xml.etree.ElementTree as ET
+          from pathlib import Path
+          root = ET.parse('AndroidManifest.xml').getroot()
+          ns = '{http://schemas.android.com/apk/res/android}'
+          badging = Path('build/production-apk-badging.txt').read_text()
+          package = re.search(r"^package: name='([^']+)' versionCode='([^']+)' versionName='([^']+)'", badging)
+          assert package, 'Missing APK package metadata'
+          assert package.groups() == ('com.dddumpling.game', root.get(ns + 'versionCode'), root.get(ns + 'versionName')), 'Unexpected APK identity or version'
+          assert 'application-debuggable' not in badging, 'Production APK must not be debuggable'
+          assert 'android.permission.INTERNET' not in badging, 'Offline APK must not have network access'
+          assert 'android.permission.ACCESS_NETWORK_STATE' not in badging, 'Unexpected network permission'
+          print('Verified signed offline production APK:', package.groups())
+          PY
+
       - name: Build developer APK
         env:
           HEXATYPE_KEYSTORE: build/release.keystore
@@ -100,27 +139,30 @@ jobs:
           if-no-files-found: error
           path: |
             DDDUMPLING-${{ env.RELEASE_ARTIFACT }}.aab
+            DDDUMPLING-${{ env.RELEASE_ARTIFACT }}.apk
             DDDUMPLING-${{ env.RELEASE_ARTIFACT }}-developer.apk
 
       - name: Publish GitHub release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: inputs.source_tag == '' && startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" \
               "DDDUMPLING-${RELEASE_ARTIFACT}.aab" \
+              "DDDUMPLING-${RELEASE_ARTIFACT}.apk" \
               "DDDUMPLING-${RELEASE_ARTIFACT}-developer.apk" --clobber
           else
             gh release create "$GITHUB_REF_NAME" \
               "DDDUMPLING-${RELEASE_ARTIFACT}.aab" \
+              "DDDUMPLING-${RELEASE_ARTIFACT}.apk" \
               "DDDUMPLING-${RELEASE_ARTIFACT}-developer.apk" \
               --generate-notes --title "DDDUMPLING ${GITHUB_REF_NAME}"
           fi
 
   upload_testing:
     needs: [release, validate_fastlane]
-    if: startsWith(github.ref, 'refs/tags/v') || inputs.upload_to_play == true
+    if: inputs.source_tag == '' && (startsWith(github.ref, 'refs/tags/v') || inputs.upload_to_play == true)
     runs-on: ubuntu-latest
     concurrency:
       group: google-play-testing

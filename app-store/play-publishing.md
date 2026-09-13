@@ -1,10 +1,26 @@
 # Automated testing uploads
 
-GitHub's **Build Android release** workflow builds the production AAB and developer APK.
+GitHub's **Build Android release** workflow builds the production AAB, signed production APK,
+and developer APK. The production APK is preserved from the same build used to create the AAB,
+before the developer build overwrites the intermediate APK.
 A `v*` tag also uploads that exact production AAB and release notes to Google Play's
 closed testing track through fastlane (API ID `alpha` by default). Manual runs upload only when
 **upload_to_play** is selected; **play_track** chooses `closed` (default) or `internal`.
 No lane publishes to production or edits store descriptions, images, or screenshots.
+
+## Direct APK distribution (itch.io)
+
+Upload `DDDUMPLING-v<version>.apk` directly to itch.io and select Android. The
+`-developer.apk` is a separate debugging app and is not the public game build.
+The production APK uses the existing CI Android signing key. Updates to sideloaded copies
+must use that same key. Google Play may sign its distributed APKs with a different Play App
+Signing key, so installation over a Play copy is not guaranteed.
+
+For an existing tag, run **Build Android release** from the pipeline branch or main with
+`source_tag` set to, for example, `v0.1.15`. This checks out that exact tag and produces
+downloadable workflow artifacts. Tag rebuilds do not upload to Play or overwrite GitHub
+release assets, even if `upload_to_play` is selected. Ordinary future version-tag releases
+publish all three files to GitHub, while only the AAB goes to Google Play.
 
 ## One-time account setup
 
