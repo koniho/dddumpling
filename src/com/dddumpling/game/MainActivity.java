@@ -8,6 +8,9 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 
 public class MainActivity extends Activity implements GameCore.Store {
 
@@ -20,11 +23,18 @@ public class MainActivity extends Activity implements GameCore.Store {
     private static final String KEY_STEAMER_OPENS = "steamerOpens";
     private static final String KEY_STAR_WINS = "starWins";
     private static final String KEY_ROSTER = "roster";
+    private static final String KEY_ANALYTICS_CONSENT = "analyticsConsent";
+    private static final int ANALYTICS_UNSET = 0, ANALYTICS_ALLOWED = 1, ANALYTICS_DECLINED = 2;
 
     private SharedPreferences prefs;
     private Audio audio;
     private GameView game;
     private PlayBridge play;
+    private FirebaseAnalyticsBridge analytics;
+    private FrameLayout analyticsOverlay;
+    private TextView analyticsDisclosure;
+    private final Button[] analyticsButtons = new Button[5];
+    private Button privacyButton;
     private BackRegistration backRegistration;
     private boolean resumed;
     private boolean musicPaused;
@@ -49,6 +59,7 @@ public class MainActivity extends Activity implements GameCore.Store {
     }
     private void navigationChanged() {
         if (game == null) return;
+        updatePrivacyAccess();
         if (backRegistration != null) backRegistration.enabled(game.handlesBack());
         boolean pauseMusic = !resumed || game.paused();
         if (audio != null && pauseMusic != musicPaused) {
@@ -71,11 +82,21 @@ public class MainActivity extends Activity implements GameCore.Store {
             // setContentView first: it installs the decor view, and
             // Window.getInsetsController() dereferences that decor view, so going
             // fullscreen any earlier throws inside the framework.
-            game = new GameView(this, this, audio);
+            game = new GameView(this, this, audio, this::showPrivacy);
             if (Build.VERSION.SDK_INT >= 33) backRegistration = new Api33Back(this, () -> game.back());
             game.navigationChanged(this::navigationChanged);
-            setContentView(game);
+            FrameLayout content = new FrameLayout(this);
+            content.addView(game, new FrameLayout.LayoutParams(-1, -1));
+            installPrivacyAccess(content);
+            setContentView(content);
             play = new PlayBridge(this, game.core());
+            analytics = new FirebaseAnalyticsBridge(this);
+            if (analytics.available()) {
+                if (analyticsConsent() == ANALYTICS_ALLOWED) enableAnalytics();
+                if (analyticsConsent() == ANALYTICS_UNSET
+                        || state != null && state.getBoolean("analyticsPromptVisible"))
+                    game.post(this::showPrivacy);
+            }
             navigationChanged();
             goFullscreen();
         } catch (Throwable t) {
@@ -113,6 +134,140 @@ public class MainActivity extends Activity implements GameCore.Store {
         if (backRegistration != null) backRegistration.close();
         super.onDestroy();
         if (audio != null) audio.release();
+    }
+
+    @Override protected void onSaveInstanceState(Bundle state) {
+        state.putBoolean("analyticsPromptVisible", game != null && game.analyticsUi().visible());
+        super.onSaveInstanceState(state);
+    }
+
+    private int analyticsConsent() { return prefs.getInt(KEY_ANALYTICS_CONSENT, ANALYTICS_UNSET); }
+    private void enableAnalytics() {
+        if (analytics == null || !analytics.available()) return;
+        analytics.enable();
+        game.core().progress.attachAnalytics(analytics);
+    }
+    private void disableAnalytics() {
+        if (game != null) game.core().progress.attachAnalytics(null);
+        if (analytics != null) analytics.disable(true);
+    }
+    private void chooseAnalytics(boolean allowed) {
+        prefs.edit().putInt(KEY_ANALYTICS_CONSENT,
+                allowed ? ANALYTICS_ALLOWED : ANALYTICS_DECLINED).apply();
+        if (allowed) enableAnalytics(); else disableAnalytics();
+    }
+    private void showPrivacy() {
+        if (analytics == null || !analytics.available()) { openPrivacyPolicy(); return; }
+        if (game.analyticsUi().visible()) return;
+        game.showAnalytics(analyticsConsent() == ANALYTICS_ALLOWED);
+        AnalyticsUi ui = game.analyticsUi();
+        analyticsDisclosure.setText(ui.title() + ". " + ui.message());
+        for (int action = AnalyticsUi.ALLOW; action <= AnalyticsUi.CLOSE; action++)
+            analyticsButtons[action].setText(action == AnalyticsUi.CLOSE
+                    ? "Close analytics choices" : ui.actionTitle(action));
+        game.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        analyticsOverlay.setVisibility(View.VISIBLE);
+        layoutAnalyticsAccess();
+        analyticsDisclosure.requestFocus();
+        analyticsDisclosure.sendAccessibilityEvent(
+                android.view.accessibility.AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED);
+    }
+
+    private void analyticsAction(int action) {
+        if (game == null || !game.analyticsUi().visible()) return;
+        if (action == AnalyticsUi.POLICY) { openPrivacyPolicy(); return; }
+        if (action == AnalyticsUi.ALLOW) chooseAnalytics(true);
+        else if (action == AnalyticsUi.DECLINE
+                || action == AnalyticsUi.CLOSE && !game.analyticsUi().enabled()) chooseAnalytics(false);
+        else if (action != AnalyticsUi.CLOSE) return;
+        analyticsOverlay.setVisibility(View.GONE);
+        game.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+        game.hideAnalytics();
+        if (privacyButton.getVisibility() == View.VISIBLE) privacyButton.requestFocus();
+    }
+
+    /** Native semantic controls follow the shared painted controls for TalkBack and keyboard use. */
+    private void installPrivacyAccess(FrameLayout content) {
+        privacyButton = semanticButton("Privacy and analytics", this::showPrivacy);
+        content.addView(privacyButton, new FrameLayout.LayoutParams(1, 1));
+        analyticsOverlay = new FrameLayout(this);
+        analyticsOverlay.setVisibility(View.GONE);
+        analyticsOverlay.setOnTouchListener((view, event) -> true);
+        analyticsDisclosure = new TextView(this);
+        analyticsDisclosure.setTextColor(android.graphics.Color.TRANSPARENT);
+        analyticsDisclosure.setFocusable(true);
+        analyticsDisclosure.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        analyticsOverlay.addView(analyticsDisclosure, new FrameLayout.LayoutParams(1, 1));
+        for (int action = AnalyticsUi.ALLOW; action <= AnalyticsUi.CLOSE; action++) {
+            final int selected = action;
+            Button button = semanticButton("", () -> analyticsAction(selected));
+            analyticsButtons[action] = button;
+            analyticsOverlay.addView(button, new FrameLayout.LayoutParams(1, 1));
+        }
+        content.addView(analyticsOverlay, new FrameLayout.LayoutParams(-1, -1));
+        game.analyticsActions(this::analyticsAction, this::layoutAnalyticsAccess);
+    }
+
+    private Button semanticButton(String title, Runnable action) {
+        Button button = new Button(this);
+        button.setText(title);
+        button.setTextColor(android.graphics.Color.TRANSPARENT);
+        button.setPadding(0, 0, 0, 0);
+        button.setMinWidth(0); button.setMinHeight(0);
+        button.setMinimumWidth(0); button.setMinimumHeight(0);
+        android.graphics.drawable.GradientDrawable focus = new android.graphics.drawable.GradientDrawable();
+        focus.setColor(android.graphics.Color.TRANSPARENT);
+        focus.setStroke(Math.max(2, (int) (2 * getResources().getDisplayMetrics().density)), 0xFFFFDB72);
+        focus.setCornerRadius(12 * getResources().getDisplayMetrics().density);
+        android.graphics.drawable.StateListDrawable background = new android.graphics.drawable.StateListDrawable();
+        background.addState(new int[] {android.R.attr.state_focused}, focus);
+        background.addState(new int[0], new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        button.setBackground(background);
+        button.setOnClickListener(view -> action.run());
+        return button;
+    }
+
+    private static void place(View view, float left, float top, float width, float height) {
+        int x = Math.round(left), y = Math.round(top);
+        int w = Math.max(1, Math.round(width)), h = Math.max(1, Math.round(height));
+        FrameLayout.LayoutParams old = (FrameLayout.LayoutParams) view.getLayoutParams();
+        if (old.leftMargin == x && old.topMargin == y && old.width == w && old.height == h) return;
+        FrameLayout.LayoutParams bounds = new FrameLayout.LayoutParams(w, h);
+        bounds.leftMargin = x; bounds.topMargin = y;
+        view.setLayoutParams(bounds);
+    }
+
+    private void updatePrivacyAccess() {
+        if (privacyButton == null) return;
+        Layout layout = game.gameLayout();
+        boolean visible = !game.analyticsUi().visible() && PrivacyUi.visible(game.core());
+        privacyButton.setVisibility(visible ? View.VISIBLE : View.GONE);
+        place(privacyButton, layout.w - 7f * layout.unit, layout.dangerY - 3f * layout.unit,
+                7f * layout.unit, 2f * layout.unit);
+    }
+
+    private void layoutAnalyticsAccess() {
+        updatePrivacyAccess();
+        if (analyticsOverlay == null || !game.analyticsUi().visible()) return;
+        AnalyticsUi ui = game.analyticsUi();
+        for (int action = AnalyticsUi.ALLOW; action <= AnalyticsUi.CLOSE; action++)
+            place(analyticsButtons[action], ui.actionLeft(action), ui.actionTop(action),
+                    ui.actionWidth(action), ui.actionHeight(action));
+        float left = Math.min(ui.actionLeft(AnalyticsUi.ALLOW), ui.actionLeft(AnalyticsUi.DECLINE));
+        float right = Math.max(ui.actionLeft(AnalyticsUi.ALLOW) + ui.actionWidth(AnalyticsUi.ALLOW),
+                ui.actionLeft(AnalyticsUi.DECLINE) + ui.actionWidth(AnalyticsUi.DECLINE));
+        place(analyticsDisclosure, left, 0, right - left,
+                Math.min(ui.actionTop(AnalyticsUi.ALLOW), ui.actionTop(AnalyticsUi.DECLINE)));
+    }
+    private void openPrivacyPolicy() {
+        try {
+            startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse(PrivacyUi.URL)));
+        } catch (android.content.ActivityNotFoundException unavailable) {
+            new android.app.AlertDialog.Builder(this).setTitle("Privacy policy")
+                    .setMessage(PrivacyUi.URL + "\nSupport: dddumpling.play@gmail.com")
+                    .setPositiveButton("OK", null).show();
+        }
     }
 
     @Override public byte[] loadProgress() {

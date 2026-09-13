@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare the optional SDK for the existing aapt2/javac/d8 build, using Gradle only to resolve jars."""
+"""Prepare optional Play Games/Firebase SDKs for the custom Android build."""
 import argparse
 import json
 import os
@@ -11,38 +11,125 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 
-def catalog():
-    keys = ['runs_started', 'runs_finished', 'runs_abandoned', 'stages_completed']
-    for group in ['stage_reached', 'run_end']:
-        keys += [group + '_' + bucket for bucket in ['1_4', '5_9', '10_14', '15_19', '20_plus']]
-    for boss in ['slime', 'dark_divide', 'octopulse', 'fly_agaric']:
-        keys += ['boss_' + boss + '_' + suffix for suffix in [
-            'started', 'won', 'failed', 'abandoned', 'no_damage', 'first_hit_count',
-            'first_hit_ms_total', 'first_hit_under_5s', 'first_hit_5_15s',
-            'first_hit_15_30s', 'first_hit_30_60s', 'first_hit_60s_plus']]
-    for game in ['steamer', 'starpath']:
-        keys += [game + '_' + suffix for suffix in ['started', 'won', 'failed', 'abandoned']]
-    keys += ['rewards_' + suffix for suffix in ['total', 'new', 'duplicate', 'steamer', 'starpath', 'boss']]
-    return keys
+PACKAGE = 'com.dddumpling.game'
+ANDROID = '{http://schemas.android.com/apk/res/android}'
+TOOLS = '{http://schemas.android.com/tools}'
 
 
-def config(path):
-    value = json.loads(Path(path).read_text())
-    project = value.get('project_id', '')
-    events = value.get('events', {})
-    if not isinstance(project, str) or not re.fullmatch(r'[0-9]{6,30}', project):
-        raise ValueError('Set the numeric Play Games project_id in the configuration')
-    if set(events) != set(catalog()):
-        raise ValueError('Event keys must match store/play-games.example.json exactly')
-    if any(not isinstance(v, str) or not re.fullmatch(r'[A-Za-z0-9_-]{8,200}', v) for v in events.values()):
-        raise ValueError('Every event needs its real Play Console ID; blank placeholders are not allowed')
-    if len(set(events.values())) != len(events):
-        raise ValueError('Each event must have a distinct Play Console ID')
+def read_json(path, label):
+    try:
+        value = json.loads(Path(path).read_text())
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError('Could not read ' + label + ': ' + str(error)) from error
+    if not isinstance(value, dict):
+        raise ValueError(label + ' must contain a JSON object')
     return value
 
 
+def text(value, label):
+    if not isinstance(value, str) or not value:
+        raise ValueError('Missing ' + label)
+    return value
+
+
+def play_config(path):
+    value = read_json(path, 'Play Games configuration')
+    project = text(value.get('project_id'), 'numeric Play Games project_id')
+    if not re.fullmatch(r'[0-9]{6,30}', project):
+        raise ValueError('Set the numeric Play Games project_id in the configuration')
+    if set(value) - {'project_id', 'events'}:
+        raise ValueError('Play Games configuration only needs project_id')
+    return project
+
+
+def firebase_config(path):
+    value = read_json(path, 'google-services.json')
+    project = value.get('project_info')
+    if not isinstance(project, dict):
+        raise ValueError('google-services.json has no project_info')
+    number = text(project.get('project_number'), 'project_info.project_number')
+    app_project = text(project.get('project_id'), 'project_info.project_id')
+    if not re.fullmatch(r'[0-9]{6,30}', number):
+        raise ValueError('google-services.json project_number is not numeric')
+    clients = value.get('client')
+    if not isinstance(clients, list):
+        raise ValueError('google-services.json has no client list')
+    def package(client):
+        info = client.get('client_info') if isinstance(client, dict) else None
+        android = info.get('android_client_info') if isinstance(info, dict) else None
+        return android.get('package_name') if isinstance(android, dict) else None
+    matches = [client for client in clients if package(client) == PACKAGE]
+    if len(matches) != 1:
+        raise ValueError('google-services.json needs exactly one client for ' + PACKAGE)
+    client = matches[0]
+    info = client.get('client_info')
+    if not isinstance(info, dict):
+        raise ValueError('google-services.json client has no client_info')
+    app_id = text(info.get('mobilesdk_app_id'), 'client_info.mobilesdk_app_id')
+    if not app_id.startswith('1:' + number + ':android:'):
+        raise ValueError('google-services.json Android app ID does not match project_number')
+    keys = client.get('api_key')
+    if not isinstance(keys, list) or not keys:
+        raise ValueError('google-services.json client has no api_key')
+    api_key = text(keys[0].get('current_key') if isinstance(keys[0], dict) else None,
+                   'api_key.current_key')
+    analytics = client.get('services', {}).get('analytics_service', {})
+    if isinstance(analytics, dict) and analytics.get('status') == '1':
+        raise ValueError('Enable Google Analytics in the Firebase project before building')
+    values = {
+        'gcm_defaultSenderId': number,
+        'google_api_key': api_key,
+        'google_app_id': app_id,
+        'google_crash_reporting_api_key': api_key,
+        'project_id': app_project,
+    }
+    bucket = project.get('storage_bucket')
+    if isinstance(bucket, str) and bucket:
+        values['google_storage_bucket'] = bucket
+    oauth = client.get('oauth_client')
+    if isinstance(oauth, list):
+        web = [entry.get('client_id') for entry in oauth if isinstance(entry, dict)
+               and entry.get('client_type') == 3 and isinstance(entry.get('client_id'), str)]
+        if web:
+            values['default_web_client_id'] = web[0]
+    return values
+
+
+def compile_resources(out, values, resources):
+    if not values:
+        return
+    directory = out / 'config-res' / 'values'
+    directory.mkdir(parents=True)
+    root = ET.Element('resources')
+    for name in sorted(values):
+        node = ET.SubElement(root, 'string', {'name': name, 'translatable': 'false'})
+        node.text = values[name]
+    ET.ElementTree(root).write(directory / 'services.xml', encoding='utf-8', xml_declaration=True)
+    archive = out / 'config.zip'
+    subprocess.run(['aapt2', 'compile', '--dir', str(directory.parent), '-o', str(archive)], check=True)
+    resources.append(str(archive))
+
+
+def selected(args):
+    groups, config_values = [], {}
+    if args.play_config:
+        config_values['game_services_project_id'] = play_config(args.play_config)
+    if args.firebase_config:
+        config_values.update(firebase_config(args.firebase_config))
+    if args.play_config and args.firebase_config:
+        groups.append('combined')
+    elif args.play_config:
+        groups.append('play')
+    elif args.firebase_config:
+        groups.append('firebase')
+    else:
+        raise ValueError('Specify a Play Games or Firebase configuration')
+    return groups, config_values
+
+
 def prepare(args):
-    cfg = config(args.config)
+    groups, config_values = selected(args)
+
     out = Path('build/play')
     if out.exists():
         shutil.rmtree(out)
@@ -51,72 +138,79 @@ def prepare(args):
     env = dict(os.environ, GRADLE_USER_HOME=str(Path('build/gradle-cache').resolve()))
     subprocess.run(['gradle', '-p', 'tools/play-deps', '--no-daemon', 'resolve'], env=env, check=True)
     jars, manifests, packages, resources = [], [], [], []
-    for dependency in sorted((resolved / 'play').iterdir()):
-        if dependency.suffix == '.jar':
-            jars.append(str(dependency.resolve()))
-            continue
-        if dependency.suffix != '.aar':
-            raise ValueError('Unsupported dependency: ' + dependency.name)
-        directory = out / dependency.stem
-        directory.mkdir()
-        with zipfile.ZipFile(dependency) as aar:
-            for info in aar.infolist():
-                target = (directory / info.filename).resolve()
-                if not target.is_relative_to(directory.resolve()):
-                    raise ValueError('Unsafe archive path')
-            aar.extractall(directory)
-        if (directory / 'jni').exists():
-            raise ValueError('Native dependency requires explicit ABI packaging')
-        manifests.append(str(directory / 'AndroidManifest.xml'))
-        packages.append(ET.parse(manifests[-1]).getroot().attrib['package'])
-        jars += [str(j.resolve()) for j in directory.rglob('*.jar')]
-        res = directory / 'res'
-        if res.exists() and any(res.rglob('*.*')):
-            dest = out / (dependency.stem + '.zip')
-            subprocess.run(['aapt2', 'compile', '--dir', str(res), '-o', str(dest)], check=True)
-            resources.append(str(dest))
-        if (directory / 'assets').exists():
-            shutil.copytree(directory / 'assets', out / 'assets', dirs_exist_ok=True)
-    android = '{http://schemas.android.com/apk/res/android}'
-    ET.register_namespace('android', android[1:-1])
+    for group in groups:
+        for dependency in sorted((resolved / group).iterdir()):
+            if dependency.suffix == '.jar':
+                jars.append(str(dependency.resolve()))
+                continue
+            if dependency.suffix != '.aar':
+                raise ValueError('Unsupported dependency: ' + dependency.name)
+            directory = out / (group + '-' + dependency.stem)
+            directory.mkdir()
+            with zipfile.ZipFile(dependency) as aar:
+                for info in aar.infolist():
+                    target = (directory / info.filename).resolve()
+                    if not target.is_relative_to(directory.resolve()):
+                        raise ValueError('Unsafe archive path')
+                aar.extractall(directory)
+            if (directory / 'jni').exists():
+                raise ValueError('Native dependency requires explicit ABI packaging')
+            manifest = directory / 'AndroidManifest.xml'
+            manifests.append(str(manifest))
+            packages.append(ET.parse(manifest).getroot().attrib['package'])
+            jars += [str(j.resolve()) for j in directory.rglob('*.jar') if j.name != 'lint.jar']
+            res = directory / 'res'
+            if res.exists() and any(res.rglob('*.*')):
+                dest = out / (group + '-' + dependency.stem + '.zip')
+                subprocess.run(['aapt2', 'compile', '--dir', str(res), '-o', str(dest)], check=True)
+                resources.append(str(dest))
+            if (directory / 'assets').exists():
+                shutil.copytree(directory / 'assets', out / 'assets', dirs_exist_ok=True)
+
+    ET.register_namespace('android', ANDROID[1:-1])
+    ET.register_namespace('tools', TOOLS[1:-1])
     tree = ET.parse('AndroidManifest.xml')
     root = tree.getroot()
-    ET.SubElement(root, 'uses-permission', {android + 'name': 'android.permission.INTERNET'})
     app = root.find('application')
-    app.set(android + 'name', 'com.dddumpling.game.PlayApplication')
-    ET.SubElement(app, 'meta-data', {android + 'name': 'com.google.android.gms.games.APP_ID',
-                                    android + 'value': '@string/game_services_project_id'})
+    if args.play_config:
+        ET.SubElement(root, 'uses-permission', {ANDROID + 'name': 'android.permission.INTERNET'})
+        app.set(ANDROID + 'name', 'com.dddumpling.game.PlayApplication')
+        ET.SubElement(app, 'meta-data', {ANDROID + 'name': 'com.google.android.gms.games.APP_ID',
+                                         ANDROID + 'value': '@string/game_services_project_id'})
+    if args.firebase_config:
+        ET.SubElement(root, 'uses-permission', {ANDROID + 'name': 'com.google.android.gms.permission.AD_ID',
+                                                TOOLS + 'node': 'remove'})
+        for provider in ['com.google.firebase.provider.FirebaseInitProvider',
+                         'com.google.android.gms.measurement.AppMeasurementContentProvider']:
+            ET.SubElement(app, 'provider', {ANDROID + 'name': provider, TOOLS + 'node': 'remove'})
+        ET.SubElement(app, 'meta-data', {ANDROID + 'name': 'firebase_analytics_collection_enabled',
+                                         ANDROID + 'value': 'false'})
+        ET.SubElement(app, 'meta-data', {ANDROID + 'name': 'google_analytics_adid_collection_enabled',
+                                         ANDROID + 'value': 'false'})
+        ET.SubElement(app, 'meta-data', {ANDROID + 'name': 'google_analytics_default_allow_ad_storage',
+                                         ANDROID + 'value': 'false'})
+        ET.SubElement(app, 'meta-data', {ANDROID + 'name': 'google_analytics_default_allow_ad_user_data',
+                                         ANDROID + 'value': 'false'})
+        ET.SubElement(app, 'meta-data', {ANDROID + 'name': 'google_analytics_default_allow_ad_personalization_signals',
+                                         ANDROID + 'value': 'false'})
     tree.write(out / 'main.xml', encoding='utf-8', xml_declaration=True)
     merger = str((resolved / 'merger' / '*').resolve())
     subprocess.run(['java', '-cp', merger, 'com.android.manifmerger.Merger',
                     '--main', str(out / 'main.xml'), '--libs', ':'.join(manifests),
-                    '--placeholder', 'applicationId=com.dddumpling.game',
+                    '--placeholder', 'applicationId=' + PACKAGE,
                     '--property', 'MIN_SDK_VERSION=21', '--property', 'TARGET_SDK_VERSION=36',
                     '--remove-tools-declarations', '--out', str(out / 'AndroidManifest.xml')], check=True)
-    res = out / 'config-res' / 'values'
-    res.mkdir(parents=True)
-    (res / 'play.xml').write_text('<resources><string name="game_services_project_id" translatable="false">' + cfg['project_id'] + '</string></resources>')
-    subprocess.run(['aapt2', 'compile', '--dir', str(res.parent), '-o', str(out / 'config.zip')], check=True)
-    resources.append(str(out / 'config.zip'))
-    java = Path('build/gen/com/dddumpling/game/PlayConfig.java')
-    java.parent.mkdir(parents=True, exist_ok=True)
-    java.write_text('package com.dddumpling.game;\nfinal class PlayConfig {\n'
-                   'static String event(String name) { switch (name) {\n' + ''.join(
-                       'case ' + json.dumps(k) + ': return ' + json.dumps(v) + ';\n' for k, v in cfg['events'].items()) +
-                   'default: return null; } }\n}\n')
+    compile_resources(out, config_values, resources)
     (out / 'jars.txt').write_text('\n'.join(jars) + '\n')
     (out / 'classpath.txt').write_text(os.pathsep.join(jars))
     (out / 'resources.txt').write_text('\n'.join(resources) + '\n')
-    (out / 'packages.txt').write_text(':'.join(packages))
-    print('Prepared Play Games SDK with', len(jars), 'jars and', len(resources), 'resource archives')
+    (out / 'packages.txt').write_text(':'.join(dict.fromkeys(packages)))
+    print('Prepared ' + ', '.join(groups) + ' SDKs with ' + str(len(jars))
+          + ' jars and ' + str(len(resources)) + ' resource archives')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config')
-    parser.add_argument('--example', action='store_true')
-    args = parser.parse_args()
-    if args.example:
-        print(json.dumps({'project_id': '', 'events': dict.fromkeys(catalog(), '')}, indent=2))
-    else:
-        prepare(args)
+    parser.add_argument('--play-config')
+    parser.add_argument('--firebase-config')
+    prepare(parser.parse_args())

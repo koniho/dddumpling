@@ -119,10 +119,11 @@ Developer APKs use `com.dddumpling.game.dev` and the launcher name **DDDUMPLING 
 Production AABs retain `com.dddumpling.game`. Both can be installed together with separate saves.
 The build checks the packaged application ID, label and launch activity after signing.
 
-Release builds currently force Play Games configuration off. Before publication,
+Release builds without a Firebase configuration force Play Games configuration off. Before publication,
 `tools/verify-offline-bundle.py` checks the production AAB for Google Play services
-code, Play Games application metadata, and network permissions. Enabling Play Games
-in a future release requires deliberately updating this workflow guard.
+code, Play Games application metadata, and network permissions. The release workflow only runs
+that SDK-free check when `FIREBASE_GOOGLE_SERVICES_JSON` is absent; a configured build needs its
+own Firebase consent and Data safety review.
 The access check also lists uploaded APK/AAB version codes, including artifacts
 not assigned to a testing track.
 

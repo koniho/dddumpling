@@ -1,0 +1,24 @@
+name: Check analytics configuration
+
+on:
+  pull_request:
+    paths: ['analytics-local-src/**', 'firebase-src/**', 'tools/**', 'ios/scripts/**', 'build.sh', '.github/workflows/**']
+  push:
+    branches: [main]
+    paths: ['analytics-local-src/**', 'firebase-src/**', 'tools/**', 'ios/scripts/**', 'build.sh', '.github/workflows/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  configuration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check configuration and release guards without credentials
+        run: |
+          python3 tools/test-prepare-play.py
+          python3 tools/test-verify-firebase-bundle.py
+          python3 ios/scripts/test-firebase-config.py
+          bash -n build.sh ios/scripts/build.sh ios/scripts/archive.sh ios/scripts/env.sh

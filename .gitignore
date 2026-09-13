@@ -17,6 +17,7 @@ res/raw/bgm.*
 *.aab
 *.apks
 .private/
+google-services.json
 
 # Optional Play SDK dependency resolver caches.
 .gradle/

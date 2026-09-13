@@ -3,14 +3,20 @@ repositories {
     google { metadataSources { mavenPom(); artifact(); ignoreGradleMetadataRedirection() } }
     mavenCentral { metadataSources { mavenPom(); artifact(); ignoreGradleMetadataRedirection() } }
 }
-configurations { play; merger }
+configurations { play; firebase; combined; merger }
 dependencies {
     play 'com.google.android.gms:play-services-games-v2:21.0.0'
+    // Kept explicit because the game resolves AARs itself rather than applying a Gradle Android plugin.
+    firebase 'com.google.firebase:firebase-analytics:22.5.0'
+    combined 'com.google.android.gms:play-services-games-v2:21.0.0'
+    combined 'com.google.firebase:firebase-analytics:22.5.0'
     merger 'com.android.tools.build:manifest-merger:31.13.2'
 }
 tasks.register('resolve', Sync) {
     into layout.buildDirectory.dir('resolved')
     from(configurations.play) { into 'play' }
+    from(configurations.firebase) { into 'firebase' }
+    from(configurations.combined) { into 'combined' }
     from(configurations.merger) { into 'merger' }
 }
 

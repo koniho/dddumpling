@@ -352,8 +352,10 @@ repository variable `PLAY_CLOSED_TRACK` for a custom track.
 See [Play publishing setup](app-store/play-publishing.md) for service-account credentials,
 versioned release notes, and retry instructions. Public releases remain manual.
 
-### Optional Play Games integration
+### Optional Play Games and Firebase integrations
 
-Production builds record progress locally. To include Google Play Games events and cross-device
-saves, configure the project/event IDs and build with `DDDUMPLING_PLAY_CONFIG`. Developer builds
-exclude the SDK. See [Play Games setup and save semantics](store/play-games.md).
+Production builds record progress locally. To include Play Games cross-device saves, configure the
+numeric project ID and build with `DDDUMPLING_PLAY_CONFIG`. To offer consent-gated Firebase
+Analytics, place Firebase Console's Android `google-services.json` at
+`.private/firebase/google-services.json`, or set `DDDUMPLING_FIREBASE_CONFIG` to a local path.
+Developer builds exclude both SDKs. See [Play Games and Firebase setup](store/play-games.md).
