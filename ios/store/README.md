@@ -21,9 +21,12 @@ App Store Connect app: `6811478003` (`com.dddumpling.game.ios`). English text is
 
 ## Still required from the account holder
 
-- App Privacy: complete the website questionnaire. The current offline iOS implementation
-  does not collect data for the developer; the source audit supports “No, we do not collect data
-  from this app.” This questionnaire is not exposed by the public API used here.
+- App Privacy: complete the website questionnaire. The current SDK-free iOS build does not collect
+  data for the developer; the source audit supports “No, we do not collect data from this app” for
+  that build. Before submitting an analytics-enabled version, replace that answer using the
+  conservative draft and final-SDK audit in
+  [the Firebase Analytics checklist](../../docs/firebase-analytics.md). This questionnaire is not
+  exposed by the public API used here.
 - EU trader status: complete Business → Compliance → Digital Services Act in App Store Connect.
   Free pricing alone does not determine trader status.
 

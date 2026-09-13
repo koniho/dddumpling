@@ -23,6 +23,10 @@ EU availability still reports TRADER_STATUS_NOT_PROVIDED; the account holder mus
 the declaration in App Store Connect. The draft release mode is manual.
 
 Pending before release: supported physical iPhone testing; touch/audio listening;
-final Release screenshots; privacy report for the linked
-runtime; product-metadata, age-rating, and accessibility review. Reviewer contacts and review
+final Release screenshots; privacy report for the linked runtime; product-metadata, age-rating,
+and accessibility review. The existing “No, we do not collect data from this app” answer applies
+only to the SDK-free build. An analytics-enabled archive requires updated App Privacy answers and
+a final aggregate privacy-manifest/report audit, with the app manifest amended if that audit
+requires it, as described in
+[the Firebase Analytics checklist](../../docs/firebase-analytics.md). Reviewer contacts and review
 notes are now saved and verified in both App Store and TestFlight sections.
