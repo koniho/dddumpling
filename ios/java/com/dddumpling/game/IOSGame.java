@@ -16,6 +16,9 @@ public final class IOSGame {
     private boolean background;
     private int pausePress;
     public void setHost(Host host) { this.host = host; }
+    public void setAnalytics(Analytics.Sink analytics) {
+        core.progress.attachAnalytics(BuildFlags.DEVELOPER ? null : analytics);
+    }
     public boolean handlesBack() { return Pause.handlesBack(core); }
     public boolean paused() { return core.paused; }
     private void cancelPointers() {

@@ -68,13 +68,6 @@ final class PlayBridge implements Progress.Sink {
         handler.removeCallbacks(scheduled);
         if (foreground && !closed && !blocked) handler.postDelayed(scheduled, delay);
     }
-    @Override public void event(String name, int amount) {
-        if (!authenticated || !foreground || closed || amount <= 0 || BuildFlags.DEVELOPER) return;
-        String id = PlayConfig.event(name);
-        if (id == null) return;
-        try { PlayGames.getEventsClient(activity).increment(id, amount); }
-        catch (RuntimeException ignored) { /* Never retry an ambiguous increment and double-count it. */ }
-    }
     @Override public void changed() {
         if (merging) return;
         dirty = true;
