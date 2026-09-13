@@ -70,6 +70,7 @@ final class LinkedPairs {
             // Include the 200ms boundary, allowing only float-rounding tolerance.
             if (e.linkLeft >= -0.000001f) continue;
             reset(e);
+            if (c.sound != null) c.sound.linkedThud();
         }
     }
 

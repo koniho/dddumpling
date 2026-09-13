@@ -253,6 +253,16 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
   CGContextClipToRect(context, CGRectMake(left, top, right - left, bottom - top));
 }
 
+- (void)clipOutCircleWithFloat:(jfloat)x withFloat:(jfloat)y withFloat:(jfloat)radius {
+  CGContextRef context = self.context;
+  if (context == NULL) return;
+  CGRect bounds = CGContextGetClipBoundingBox(context);
+  CGContextBeginPath(context);
+  CGContextAddRect(context, bounds);
+  CGContextAddEllipseInRect(context, CGRectMake(x-radius, y-radius, radius*2, radius*2));
+  CGContextEOClip(context);
+}
+
 - (void)save {
   if (self.context != NULL) CGContextSaveGState(self.context);
 }

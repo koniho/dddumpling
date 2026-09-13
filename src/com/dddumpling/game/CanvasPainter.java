@@ -140,6 +140,12 @@ final class CanvasPainter implements Painter {
         canvas.clipRect(l, t, r, b);
     }
 
+    @Override public void clipOutCircle(float cx, float cy, float radius) {
+        Path mask = new Path();
+        mask.addCircle(cx, cy, radius, Path.Direction.CW);
+        canvas.clipPath(mask, android.graphics.Region.Op.DIFFERENCE);
+    }
+
     @Override public void save() {
         canvas.save();
     }

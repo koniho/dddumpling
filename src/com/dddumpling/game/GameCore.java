@@ -199,6 +199,7 @@ final class GameCore {
         void squish(int glyph, int depth);
         void clearWord();
         void wrong();
+        void linkedThud();
         void damage();
         void achievement();
         /** The slime has turned an unanswered prompt into a volley. */

@@ -10,26 +10,28 @@ final class LinkedPairArt {
             GameCore.Enemy a = c.enemies.get(i), b = a.link;
             if (b == null || c.enemies.indexOf(b) <= i || a.destroyed || b.destroyed) continue;
             float r = L.enemyR;
-            float ax = c.enemyCentreX(a) + maskRadius(a, r), ay = a.y;
-            float bx = c.enemyCentreX(b) - maskRadius(b, r), by = b.y;
+            float ax = c.enemyCentreX(a) + r*0.80f, ay = a.y;
+            float bx = c.enemyCentreX(b) - r*0.80f, by = b.y;
             float mx = (ax + bx) * 0.5f, my = (ay + by) * 0.5f;
             if (my < L.playTop - r) continue;
-            float wiggle = (float) Math.sin(c.clock * 5f) * r * 0.13f;
+            float wiggle = (float) Math.sin(c.clock * 1.4f) * r * 0.012f;
             int ac = Glyph.COLOR[a.word[0]], bc = Glyph.COLOR[b.word[0]];
             GameCore.Enemy waiting = a.linkWaiting ? a : b.linkWaiting ? b : null;
             float ahx = mx - r * 0.30f, bhx = mx + r * 0.30f;
             float ahy = my + wiggle, bhy = my - wiggle;
             float strain = Math.max(a.linkStrain, b.linkStrain);
             if (waiting != null) strain = Math.max(strain, 0.65f);
-            float flex = 1f + strain * (0.20f + 0.12f * (float)Math.sin(c.clock * 24f));
-            float limbR = r * flex;
-            float recoil = (float)Math.sin(Math.PI * Math.min(1f, (1f-strain)*1.3f)) * strain;
-            float bend = 0.48f - recoil*1.3f;
+            float pose = Math.min(1f, strain/0.18f);
+            // Hold a firm flex pose; only the short release tail blends back to rest.
+            float limbR = r * (1f + pose*0.12f);
+            float bend = 0.48f - pose*0.60f;
             Pulse wave = new Pulse(mx, Math.max(r*0.2f, (bx-ax)*0.5f), strain);
             // The entire limb layer is confined to the gap between the character silhouettes.
             // Its leaves, paws and flex overshoot cannot leak onto or behind either body.
             p.save();
-            p.clipRect(ax, L.playTop, Math.max(ax, bx), L.dangerY);
+            p.clipRect(L.playLeft, L.playTop, L.playRight, L.dangerY);
+            p.clipOutCircle(c.enemyCentreX(a), a.y, maskRadius(a, r));
+            p.clipOutCircle(c.enemyCentreX(b), b.y, maskRadius(b, r));
             limb(p, a.word[0], ax, ay, ahx, ahy, limbR, 1f, ac, false, bend, wave);
             limb(p, b.word[0], bx, by, bhx, bhy, limbR, -1f, bc, false, bend, wave);
             if (!fruit(a.word[0])) extremity(p, a.word[0], ahx, ahy, limbR, 1f, wave.tint(ac, ahx), false);
@@ -59,9 +61,9 @@ final class LinkedPairArt {
     /** Include character extremities and late-stage threat jitter in the mask. */
     private static float maskRadius(GameCore.Enemy e, float r) {
         float attack = e.attacking ? Math.min(1f, e.attackT / GameCore.ATTACK_TIME) : 0f;
-        // Linked faces suppress the ordinary hit enlargement. Squishy's flank marks
-        // are wider than the other silhouettes, so reserve extra space for that cast member.
-        float body = e.word[0] == 4 ? 1f : 0.80f;
+        // Protect the whole tile, including its transparent areas, rather than guessing
+        // at the body width of each character.
+        float body = Layout.HEAD_SCALE + 0.04f;
         return r * (body + Math.max(e.warn, attack) * 0.8f);
     }
 
@@ -169,7 +171,7 @@ final class LinkedPairArt {
 
     /** Upper arm and forearm meet at a visible round elbow, below the clasp. */
     private static void arm(Painter p, float ax, float ay, float bx, float by, float r, int color, float bend, Pulse wave) {
-        float ex = ax + (bx - ax) * 0.38f;
+        float ex = ax + (bx - ax) * 0.60f;
         float ey = Math.max(ay, by) + r * bend;
         // Fuller upper arm, pinched elbow, then a soft forearm taper into the wrist.
         taperedSegment(p, ax, ay, ex, ey, r*0.16f, r*0.115f, r*0.025f, color, wave);

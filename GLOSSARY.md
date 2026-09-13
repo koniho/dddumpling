@@ -334,11 +334,11 @@ behind and in front of the partner.
 Press either key, then its partner within 200 ms of elapsed play time (independent of speed
 settings and slow motion). Input resolves the chord immediately; projectiles are visual only.
 A single press keeps both faces visible with determined expressions and pulses the thickness
-of both intertwined limbs. Elbows bend upward and vines bow during the recoil; a bright color
-front travels from the clasp toward both characters. A missed window renews that resistance pose. The unpressed
+of both intertwined limbs. Idle movement is very subtle. Elbows hold a flexed pose with a slight bulge on rejection; a bright color
+front travels from the clasp toward both characters. A missed window renews that resistance pose and plays one low thud. The unpressed
 partner's gold highlight and the countdown remain visible; there is no checkmark. Arms and vines
 have varying thickness along their length and no dark outline. Limbs render behind the characters
-and are clipped out of their silhouettes, including during the flex. A missed window restores the first key without a life penalty
+and are cut out around both complete character tiles, including during the flex. A missed window restores the first key without a life penalty
 or score; both enemies still descend. A successful chord credits two clears. Power-ups release
 links, and a breached partner cannot leave the other waiting forever.
 

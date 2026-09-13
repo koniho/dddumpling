@@ -30,7 +30,7 @@ final class Sfx {
             SHIELD_BOUNCE = 32, SLIME_DAMAGE = 33, OCTO_CUE = 34, OCTO_LOCK = 35;
     static final int BOSS_TAUNT_0 = 36, BOLT_DEATH = BOSS_TAUNT_0 + Boss.COUNT,
             MUSHROOM_SHAKE = BOLT_DEATH + 1, MUSHROOM_SPORE = MUSHROOM_SHAKE + 1,
-            COUNT = MUSHROOM_SPORE + 1;
+            LINKED_THUD = MUSHROOM_SPORE + 1, COUNT = LINKED_THUD + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -51,6 +51,7 @@ final class Sfx {
             case DRIP: return drip();
             case CLEAR: return clear();
             case WRONG: return wrong();
+            case LINKED_THUD: return linkedThud();
             case START: return start();
             case STAGE_CLEAR: return stageClear();
             case POWER_CLEAR: return powerClear();
@@ -354,6 +355,21 @@ final class Sfx {
             float s = (float) Math.sin(2f * Math.PI * notes[step] * i / RATE)
                     + 0.3f * (float) Math.sin(4f * Math.PI * notes[step] * i / RATE);
             v[i] = s * (float) Math.exp(-4f * local) * envelope(t, 0.006f, 0.6f);
+        }
+        return render(v);
+    }
+
+    /** A short, low padded impact for a bond rejecting an incomplete chord. */
+    static short[] linkedThud() {
+        int n = (int)(RATE*0.14f);
+        float[] v = new float[n];
+        float phase = 0f;
+        for (int i = 0; i < n; i++) {
+            float t = i/(float)n;
+            phase += 2f*(float)Math.PI*(65f+70f*(float)Math.exp(-t*10f))/RATE;
+            float attack = Math.min(1f, t/0.025f);
+            v[i] = attack*(float)Math.exp(-t*7f)
+                    *((float)Math.sin(phase)+0.20f*(float)Math.sin(phase*2.13f));
         }
         return render(v);
     }

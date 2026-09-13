@@ -88,6 +88,8 @@ abstract class Check {
             lastDepth = depth;
         }
         public void clearWord() { clears++; }
+        int linkedThuds;
+        public void linkedThud() { linkedThuds++; }
         public void wrong() { wrongs++; }
         public void damage() { damages++; }
         public void achievement() { achievements++; }

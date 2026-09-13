@@ -363,6 +363,8 @@ final class Audio implements GameCore.Sound {
         play(Sfx.CLEAR, 1f);
     }
 
+    @Override public void linkedThud() { play(Sfx.LINKED_THUD, 1f, 0.85f); }
+
     @Override public void wrong() {
         play(Sfx.WRONG, 1f);
     }
