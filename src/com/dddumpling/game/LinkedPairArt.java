@@ -8,6 +8,7 @@ final class LinkedPairArt {
     static void draw(Painter p, GameCore c, Layout L) {
         for (int i = 0; i < c.enemies.size(); i++) {
             GameCore.Enemy a = c.enemies.get(i), b = a.link;
+            if (a.destroyed && a.linkReleaseDir != 0f) release(p,c,L,a);
             if (b == null || c.enemies.indexOf(b) <= i || a.destroyed || b.destroyed) continue;
             float r = L.enemyR;
             float ax = c.enemyCentreX(a) + maskRadius(a, r) - r*0.14f, ay = a.y;
@@ -47,6 +48,50 @@ final class LinkedPairArt {
                 float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 10f);
                 p.strokePoly(Glyph.hex(tx, ty, r * (1.10f + pulse * 0.12f)), GOLD, r * 0.09f);
 
+            }
+        }
+    }
+
+    static float releaseTravel(GameCore.Enemy e, Layout L) {
+        float t = Math.min(1f,e.destroyT/GameCore.DESTROY_TIME);
+        return e.linkReleaseDir*t*t*L.w*0.75f;
+    }
+
+    static float releaseLift(GameCore.Enemy e, Layout L) {
+        float t = Math.min(1f,e.destroyT/GameCore.DESTROY_TIME);
+        return -(float)Math.sin(t*Math.PI)*L.enemyR*0.65f;
+    }
+
+    /** The clasp opens, each hand recoils with its character, and paired swooshes fade. */
+    private static void release(Painter p, GameCore c, Layout L, GameCore.Enemy e) {
+        float t = Math.min(1f,e.destroyT/0.32f);
+        if (t >= 1f) return;
+        float r = L.enemyR, dir = e.linkReleaseDir, travel = releaseTravel(e,L);
+        float cy = e.y+releaseLift(e,L), cx = c.enemyCentreX(e)+travel;
+        float peel = 1f-(1f-t)*(1f-t);
+        float hx = e.linkReleaseX+travel+dir*r*(0.30f+0.55f*peel);
+        float hy = e.linkReleaseY+releaseLift(e,L)-r*0.22f*peel;
+        float size = r*(1f-t*t);
+        int col = Glyph.COLOR[e.word[0]];
+        Pulse quiet = new Pulse(hx,r,0f);
+        p.save();
+        p.clipRect(L.playLeft,L.playTop,L.playRight,L.dangerY);
+        p.clipOutCircle(cx,cy,maskRadius(e,r)*(1f-0.30f*e.destroyT/GameCore.DESTROY_TIME));
+        limb(p,e.word[0],cx-dir*r*0.9f,cy,hx,hy,size,-dir,col,false,0.18f,quiet);
+        if (!fruit(e.word[0])) extremity(p,e.word[0],hx,hy,size,-dir,col,false);
+        p.restore();
+        if (dir > 0f) return; // One burst for the bond, not one per character.
+        int ink = Glyph.withAlpha(GLOVE,(int)(210f*(1f-t)));
+        for (int side = -1; side <= 1; side += 2) {
+            for (int streak = 0; streak < 3; streak++) {
+                float[] path = new float[14];
+                for (int k = 0; k < 7; k++) {
+                    float u = k/6f;
+                    path[k*2] = e.linkReleaseX+side*r*(0.12f+t*0.65f+u*0.60f);
+                    path[k*2+1] = e.linkReleaseY+r*((streak-1)*0.24f
+                            +(streak-1)*(float)Math.sin(u*Math.PI)*0.16f);
+                }
+                p.polyline(path,ink,r*0.055f*(1f-t*0.6f));
             }
         }
     }

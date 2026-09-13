@@ -211,7 +211,10 @@ final class Renderer extends Draw {
 
             if (destroy > 0f) {
                 float ease = destroy * destroy;
-                if (e.radialFly) {
+                if (e.linkReleaseDir != 0f) {
+                    x += LinkedPairArt.releaseTravel(e,L);
+                    y += LinkedPairArt.releaseLift(e,L);
+                } else if (e.radialFly) {
                     // TEAM SQUISH radiates from the actual collision, including vertically.
                     float travel = (0.10f + 1.15f * ease) * L.w * 0.60f;
                     x += e.flyDir[i] * travel;
@@ -242,6 +245,8 @@ final class Renderer extends Draw {
             // recede so the remaining letters are what the eye lands on.
             int fillA = cleared ? 26 : head ? 52 : 30;
             int edgeA = cleared ? 58 : head ? 165 : 88;
+            float bondFlex = e.link == null ? 0f : e.linkFlex;
+            edgeA += (int)(65f*bondFlex);
 
             // Stacked tiles sit on a pile of offset copies, one per press still owed, so the
             // depth is legible before you even count the pips.
@@ -256,7 +261,7 @@ final class Renderer extends Draw {
 
             p.fillPoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, fillA * fade / 255));
             p.strokePoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, edgeA * fade / 255),
-                    cellR * 0.075f);
+                    cellR * (0.075f+0.045f*bondFlex));
 
             float charR = cellR * 0.60f * (1f + 0.045f * (float) Math.sin(wobble))
                     * (1f + 0.34f * pop);

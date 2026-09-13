@@ -46,6 +46,12 @@ final class LinkedPairs {
         if (other.linkWaiting) {
             c.combo += 2;
             c.maxCombo = Math.max(c.maxCombo, c.combo);
+            float ex = c.enemyCentreX(e), ox = c.enemyCentreX(other);
+            e.linkReleaseDir = ex < ox ? -1f : 1f;
+            other.linkReleaseDir = -e.linkReleaseDir;
+            e.linkReleaseX = other.linkReleaseX = (ex+ox)*0.5f;
+            e.linkReleaseY = other.linkReleaseY = (e.y+other.y)*0.5f;
+            e.baseX = ex; other.baseX = ox;
             unlink(e);
             c.destroyWord(other, c.enemyCentreX(other), other.y, L, false);
             return false; // Caller credits the second word normally.
@@ -65,6 +71,8 @@ final class LinkedPairs {
     static void update(GameCore c, float dt) {
         for (GameCore.Enemy e : c.enemies) {
             e.linkStrain = Math.max(0f, e.linkStrain - dt * 2.4f);
+            float flex = e.link == null ? 0f : Math.min(1f,e.linkStrain/0.18f);
+            e.linkFlex += (flex-e.linkFlex)*(1f-(float)Math.exp(-18f*dt));
             if (!e.linkWaiting) continue;
             e.linkLeft -= dt;
             // Include the 200ms boundary, allowing only float-rounding tolerance.
@@ -88,12 +96,12 @@ final class LinkedPairs {
 
     static void unlink(GameCore.Enemy e) {
         GameCore.Enemy other = e.link;
-        e.linkStrain = 0f;
+        e.linkStrain = e.linkFlex = 0f;
         e.link = null;
         e.linkWaiting = false;
         e.linkLeft = 0f;
         if (other != null) {
-            other.linkStrain = 0f;
+            other.linkStrain = other.linkFlex = 0f;
             other.link = null;
             other.linkWaiting = false;
             other.linkLeft = 0f;

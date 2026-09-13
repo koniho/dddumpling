@@ -103,6 +103,14 @@ final class Preview {
         }
 
 
+        linked.destroyWord(friend,linked.enemyCentreX(friend),friend.y,L);
+        GameCore.Enemy releasePartner = friend.link;
+        linked.destroyWord(releasePartner,linked.enemyCentreX(releasePartner),releasePartner.y,L);
+        for (int frame = 0; frame < 3; frame++) {
+            step(linked,L,0.06f);
+            shot(dir,"99-linked-release-"+frame,linked,L,w,h,ss);
+        }
+
         for (int land = 0; land < Lands.COUNT; land++) {
             GameCore themed = new GameCore(new Mem(), 810L);
             themed.startGame();

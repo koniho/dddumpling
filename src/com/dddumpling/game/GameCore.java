@@ -299,6 +299,8 @@ final class GameCore {
         boolean linkWaiting;
         float linkLeft;
         float linkStrain;
+        float linkFlex;
+        float linkReleaseDir, linkReleaseX, linkReleaseY;
         int[] word;
         /** Presses each tile needs: 1 for a plain letter, 2..4 for a stacked one. */
         int[] need;
@@ -2225,7 +2227,9 @@ final class GameCore {
     // ---- geometry helpers (shared by renderer and hit feedback) -------------
 
     float enemyCentreX(Enemy e) {
-        return e.baseX + e.sway * (float) Math.sin(clock * 1.1f + e.phase);
+        float x = e.baseX + e.sway * (float) Math.sin(clock * 1.1f + e.phase);
+        if (e.link != null) x += (e.link.baseX-e.baseX)*0.035f*e.linkFlex;
+        return x;
     }
 
     /** Ease the side entrance into a vertical lane without changing its fall speed. */

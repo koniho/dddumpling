@@ -96,6 +96,8 @@ final class TestLinkedPairs extends Check {
         check("completing chord plays hit without another miss", ((Ear)c.sound).squishes == 1
                 && ((Ear)c.sound).wrongs == 1 && ((Ear)c.sound).linkedThuds == 0);
         check("second press immediately finishes both", a.destroyed && b.destroyed && a.link == null && b.link == null);
+        check("pair releases outward from one shared clasp", a.linkReleaseDir == -1f
+                && b.linkReleaseDir == 1f && a.linkReleaseX == b.linkReleaseX);
         check("pair awards two clears and combo exactly once", c.squishes == 2 && c.resolvedThisStage == 2 && c.combo == 2);
         int score = c.score;
         advance(c, L, 0.5f);
