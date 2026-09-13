@@ -322,3 +322,18 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 - **skit** vs **beat** — both are little vignettes of characters interacting, and they are
   different things. A **skit** plays under a stage banner, runs once, and uses the six letters
   (`Skits`). A **beat** loops inside a story popup and uses the collectibles (`Storybook`).
+
+## Linked friends (stage 16 onward)
+
+Each ordinary wave from stage 16 opens with two single-key enemies, one from each thumb's
+keyboard group. They replace two quota enemies. Cartoon arms and clasped gloves join them.
+Press either key, then its partner within 200 ms of elapsed play time (independent of speed
+settings and slow motion). Input resolves the chord immediately; projectiles are visual only.
+The first key becomes an outline with a checkmark, and a pointing glove, gold pulse and countdown
+ring direct the player to its partner. A missed window restores the first key without a life penalty
+or score; both enemies still descend. A successful chord credits two clears. Power-ups release
+links, and a breached partner cannot leave the other waiting forever.
+
+Stage 16 gives 15% longer travel and spawn intervals and caps the field at four enemies.
+Stage 17 retains 7.5% timing relief; stage 18 returns to the ordinary curve.
+Rules: `LinkedPairs`; visuals: `LinkedPairArt`; difficulty: `Pacing.lessonRelief`.

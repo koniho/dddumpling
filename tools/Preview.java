@@ -60,6 +60,22 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
+        GameCore linked = new GameCore(new Mem(), 1601L);
+        linked.startGame();
+        linked.jumpToStage(16, L);
+        shot(dir, "95-linked-intro", linked, L, w, h, ss);
+        linked.stageGap = 0f;
+        linked.spawnTimer = 0f;
+        linked.powerTimer = 100f;
+        step(linked, L, 2.2f);
+        linked.stageBanner = 0f;
+        shot(dir, "95-linked-hands", linked, L, w, h, ss);
+        GameCore.Enemy friend = linked.enemies.get(0);
+        linked.destroyWord(friend, linked.enemyCentreX(friend), friend.y, L);
+        shot(dir, "95-linked-pointing", linked, L, w, h, ss);
+        step(linked, L, 0.12f);
+        shot(dir, "95-linked-countdown", linked, L, w, h, ss);
+
         for (int land = 0; land < Lands.COUNT; land++) {
             GameCore themed = new GameCore(new Mem(), 810L);
             themed.startGame();

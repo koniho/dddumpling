@@ -51,6 +51,7 @@ final class Renderer extends Draw {
             BossVictory.draw(p, c, L);
         } else {
             for (int i = 0; i < c.enemies.size(); i++) enemy(p, c, L, c.enemies.get(i));
+            LinkedPairArt.draw(p, c, L);
         }
         pushWave(p, c, L);
         pushImpacts(p, c, L);
@@ -148,6 +149,13 @@ final class Renderer extends Draw {
     // ---- enemies ------------------------------------------------------------
 
     static void enemy(Painter p, GameCore c, Layout L, GameCore.Enemy e) {
+        if (e.linkWaiting) {
+            for (int i = 0; i < e.word.length; i++) {
+                p.strokePoly(Glyph.hex(c.tileX(e, i, L), e.y, L.enemyR * Layout.TILE_SCALE),
+                        0x668C91AD, L.enemyR * 0.07f);
+            }
+            return;
+        }
         float destroy = e.destroyed
                 ? Math.min(1f, e.destroyT / GameCore.DESTROY_TIME) : 0f;
         if (e.dying) {

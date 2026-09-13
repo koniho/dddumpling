@@ -294,6 +294,9 @@ final class GameCore {
     Sound sound;
 
     static final class Enemy {
+        Enemy link;
+        boolean linkWaiting;
+        float linkLeft;
         int[] word;
         /** Presses each tile needs: 1 for a plain letter, 2..4 for a stacked one. */
         int[] need;
@@ -1066,6 +1069,7 @@ final class GameCore {
         // substituting a different mode.
         int entry = effect == Power.TEAM ? anyCollected() : -1;
         if (effect == Power.TEAM && entry < 0) return;
+        LinkedPairs.release(this, L);
         mode = effect;
         modeLeft = Power.DURATION;
         powerLastClear = -100f;
@@ -1825,7 +1829,11 @@ final class GameCore {
                 Enemy e = enemies.get(i);
                 if (!e.typeable()) continue;
                 if (!flurry() && e.word[e.pos] != g) continue;
-                if (pick == null || e.y > pick.y) pick = e;
+                boolean guided = e.link != null && (e.link.linkWaiting || e.link.dying);
+                boolean pickedGuide = pick != null && pick.link != null
+                        && (pick.link.linkWaiting || pick.link.dying);
+                if (pick == null || (guided && !pickedGuide)
+                        || (guided == pickedGuide && e.y > pick.y)) pick = e;
             }
             if (pick == null) {
                 miss(g);
@@ -1871,9 +1879,12 @@ final class GameCore {
         skyGlow = Math.max(skyGlow, GLOW_HIT);
         skyGlowColor = Glyph.COLOR[lit];
         hits++;
-        combo++;
-        if (combo > maxCombo) maxCombo = combo;
-        score += 5 + Math.min(combo, 25) / 2;
+        // A chord scores only when both keys land; retries cannot farm points or combo.
+        if (e.link == null) {
+            combo++;
+            if (combo > maxCombo) maxCombo = combo;
+            score += 5 + Math.min(combo, 25) / 2;
+        }
 
         boolean kill = e.pos >= e.word.length;
         if (kill) {
@@ -1897,6 +1908,12 @@ final class GameCore {
         s.tileIndex = struck;
         s.dur = SHOT_TIME;
         shots.add(s);
+        if (e.link != null) {
+            // A 200ms chord resolves at input time. Its shots are visual only, including
+            // shots still travelling after a missed window, so they cannot clear a retry.
+            s.kill = false;
+            destroyWord(e, hx, hy, L);
+        }
         return true;
     }
 
@@ -2543,7 +2560,9 @@ final class GameCore {
             // and the fight is the stage — the words were dividing attention away from the thing
             // the stage is actually about, and they took the screen the boss needs.
             if (spawnTimer <= 0 && liveEnemies() < crowdCap()) {
-                if (spawn(L)) {
+                if (LinkedPairs.spawn(this, L)) {
+                    spawnTimer = spawnInterval();
+                } else if (spawn(L)) {
                     if (powerActive() && powerRefillBurst > 0) powerRefillBurst--;
                     if (!powerActive()) spawnedThisStage++;
                     spawnTimer = Power.spawnDelay(this, L);
@@ -2556,6 +2575,7 @@ final class GameCore {
             return;
         }
 
+        LinkedPairs.update(this, elapsed);
         updateCaret(dt, L);
 
         float band = Math.max(1f, (L.dangerY - L.playTop) * WARN_BAND);
@@ -2625,6 +2645,11 @@ final class GameCore {
 
             e.y += e.speed * fallRate() * dt;
             updateSidePath(e, L);
+            if (e.linkWaiting) {
+                e.warn = 0f;
+                e.y = Math.min(e.y, L.dangerY - L.enemyR * 1.1f);
+                continue;
+            }
             e.warn = clamp01((e.y - (L.dangerY - band)) / band);
             if (e.warn > warnLevel) warnLevel = e.warn;
 
@@ -2660,6 +2685,7 @@ final class GameCore {
      *     letter of the word on the way through, and the tone on top of that crowds them.
      */
     void destroyWord(Enemy e, float px, float py, Layout L, boolean chime) {
+        if (e.destroyed || LinkedPairs.cleared(this, e, L)) return;
         // The word is credited now but stays listed until it has flown apart, so anything
         // gated on the field being clear waits for the animation.
         if (powerActive() && !e.destroyed) {
@@ -2901,6 +2927,7 @@ final class GameCore {
     }
 
     private void breach(Enemy e, Layout L) {
+        LinkedPairs.breached(this, e, L);
         if (target == e) target = null;
         resolvedThisStage++;
         takeHit(enemyCentreX(e), L);

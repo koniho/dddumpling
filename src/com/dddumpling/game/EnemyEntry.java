@@ -22,7 +22,8 @@ final class EnemyEntry {
     static boolean clear(GameCore.Enemy incoming, GameCore c, Layout L) {
         for (GameCore.Enemy other : c.enemies) {
             if (other == incoming || other.dying || other.destroyed) continue;
-            if (!incoming.sideEntry && !other.sideEntry) continue;
+            if (!incoming.sideEntry && !other.sideEntry
+                    && incoming.link == null && other.link == null) continue;
             if (conflict(incoming, other, L)) return false;
         }
         return true;

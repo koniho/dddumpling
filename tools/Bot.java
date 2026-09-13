@@ -201,7 +201,7 @@ final class Bot {
         // find first — unless FLURRY has made every key the right one, which is the whole of what
         // that mode does for you.
         boolean engaged = c.target != null && c.enemies.contains(c.target) && c.target.typeable();
-        if (!engaged && !c.flurry()) {
+        if (!engaged && pendingPartner(c) == null && !c.flurry()) {
             think -= dt;
             if (think > 0f) return;
         }
@@ -314,6 +314,15 @@ final class Bot {
         return false;
     }
 
+    /** The connected hand already identifies this key; no second search reaction is owed.
+     * It still costs a normal press from the budget and can still miss. */
+    private static GameCore.Enemy pendingPartner(GameCore c) {
+        for (GameCore.Enemy e : c.enemies) {
+            if (e.typeable() && e.link != null && e.link.linkWaiting) return e;
+        }
+        return null;
+    }
+
     /** The key this player would press next, or -1 with nothing worth pressing. */
     private int pick(GameCore c) {
         boolean engaged = c.target != null && c.enemies.contains(c.target) && c.target.typeable();
@@ -334,6 +343,8 @@ final class Bot {
         // FLURRY: any key hits, so there is nothing to work out.
         if (c.flurry()) return rnd.nextInt(Glyph.COUNT);
         if (engaged) return c.target.word[c.target.pos];
+        GameCore.Enemy partner = pendingPartner(c);
+        if (partner != null) return partner.word[partner.pos];
         // The lowest typeable word, being the one closest to costing a life.
         GameCore.Enemy best = null;
         for (int i = 0; i < c.enemies.size(); i++) {

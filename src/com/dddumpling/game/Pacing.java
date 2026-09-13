@@ -18,6 +18,13 @@ final class Pacing {
      */
     static final float RAMP = 5f / 9f;
 
+    /** A lesson gets a gentler wave, with half the relief carried into the next stage. */
+    static float lessonRelief(int stage) {
+        if (stage == LinkedPairs.FIRST_STAGE) return 1.15f;
+        if (stage == LinkedPairs.FIRST_STAGE + 1) return 1.075f;
+        return 1f;
+    }
+
     /** Hard ceiling on the presses any single word can demand. */
     static final int MAX_PRESSES = 8;
 
@@ -36,7 +43,7 @@ final class Pacing {
         float r = ramp(stage);
         // Once words reach full length, shorten reaction time gently instead of compounding it.
         float seconds = r <= 5f ? 15f - r * 1.05f : 9.75f - (r - 5f) * 0.35f;
-        return Math.max(7.5f, seconds) / speed;
+        return Math.max(7.5f, seconds) * lessonRelief(stage) / speed;
     }
 
     static float spawnInterval(int stage, float speed) {
@@ -45,13 +52,13 @@ final class Pacing {
         // more breathing room immediately, easing releases out to a 2.75-second cap.
         float seconds = r <= 5f ? 2.5f - r * 0.13f
                 : 1.85f + Math.min(0.9f, (r - 5f) * 0.36f);
-        return Math.max(1.35f, seconds) / speed;
+        return Math.max(1.35f, seconds) * lessonRelief(stage) / speed;
     }
 
     static int maxEnemies(int stage) {
         // Five is still a full field on a phone. The old curve rose to six at stage 10 and seven
         // shortly afterward, making concurrencynot word speedthe late-game wall.
-        return Math.min(5, 3 + step(stage));
+        return Math.min(stage == LinkedPairs.FIRST_STAGE ? 4 : 5, 3 + step(stage));
     }
 
     static int maxWordLen(int stage) {
