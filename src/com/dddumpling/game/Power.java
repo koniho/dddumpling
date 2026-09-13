@@ -24,13 +24,21 @@ final class Power {
      */
     static final int TEAM = 3;
     static final int COUNT = 4;
+    static final int INCOGNITO = 4, MONOCHROME = 5;
+    static final int MYSTERY_STAGE = 11;
+    static final float DEBUFF_TIME = 8f, SELECT_TIME = 1.1f;
+    static int mysteryCount(boolean team) { return offeredCount(team)+2; }
+    static int mysteryAt(boolean team,int i) {
+        int powers = offeredCount(team);
+        return i < powers ? offeredAt(i) : INCOGNITO+i-powers;
+    }
 
     /** Player-facing pool. MULTI is retired but retains its id for compatibility. */
     static final int[] OFFERED = {FLURRY, FLING, TEAM};
     static int offeredCount(boolean teamAvailable) { return teamAvailable ? 3 : 2; }
     static int offeredAt(int chip) { return OFFERED[chip]; }
 
-    static final String[] NAMES = {"FLURRY", "FLING", "MULTI", "TEAM SQUISH"};
+    static final String[] NAMES = {"FLURRY", "FLING", "MULTI", "TEAM SQUISH", "INCOGNITO", "MONOCHROME"};
     /**
      * The same four for the settings panel's playtest chips, where the space is a fifth of the
      * panel each and TEAM SQUISH ran straight out of its box the moment a fifth chip was added.
@@ -38,7 +46,7 @@ final class Power {
      */
     static final String[] CHIP = {"FLURRY", "FLING", "MULTI", "TEAM"};
     static final String[] BLURB = {"ANY KEY HITS", "SWIPE TO SLICE", "CHAINS EVERY MATCH",
-            "YOUR SQUISHY FIGHTS"};
+            "YOUR SQUISHY FIGHTS", "MATCH THE COLORS", "MATCH THE CHARACTERS"};
 
     /**
      * How long the frenzy lasts. Ending it clears the stage outright, so this doubles as the
@@ -162,6 +170,7 @@ final class Power {
 
     int glyph;
     int effect;
+    boolean mystery, teamAvailable, activated;
     float x, y, vx;
     /** Age, for the glow and bob. */
     float t;
@@ -175,7 +184,7 @@ final class Power {
 
     /** True once the burst has finished and it should be dropped. */
     boolean spent() {
-        return hit && hitT >= POP_TIME;
+        return hit && hitT >= POP_TIME+(mystery ? SELECT_TIME : 0f);
     }
 
     void update(float dt) {
@@ -192,7 +201,12 @@ final class Power {
         return x < -r * 2.5f || x > L.w + r * 2.5f;
     }
 
+    int shownEffect() {
+        if (!mystery || (hit && hitT >= SELECT_TIME)) return effect;
+        float ticks = hit ? 18f*(1f-(1f-hitT/SELECT_TIME)*(1f-hitT/SELECT_TIME)) : t*4f;
+        return mysteryAt(teamAvailable,((int)ticks)%mysteryCount(teamAvailable));
+    }
     String name() {
-        return NAMES[effect];
+        return mystery && !hit ? "MYSTERY" : NAMES[shownEffect()];
     }
 }

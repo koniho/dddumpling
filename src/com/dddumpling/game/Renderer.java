@@ -12,6 +12,7 @@ final class Renderer extends Draw {
     private Renderer() {}
 
     static void draw(Painter p, GameCore c, Layout L) {
+        if (c.state == GameCore.PLAY && c.monochromeFade > 0f) p = new MonochromePainter(p,c.monochromeFade);
         float harm = c.harm();
         // Low health drags the whole palette toward red, and the pulse quickens with it.
         float hurtPulse = 0.5f + 0.5f * (float) Math.sin(c.clock * (2.6f + 5.5f * harm));
@@ -206,7 +207,8 @@ final class Renderer extends Draw {
                 float r = L.enemyR * Layout.TILE_SCALE * (1f - 0.5f * t);
                 int col = Glyph.withAlpha(Glyph.COLOR[g], (int) (200 * (1f - t)));
                 p.strokePoly(Glyph.hex(x, y, r), col, r * 0.09f);
-                Kawaii.draw(p, g, x, y, r * 0.60f, col, 1f, 0.6f);
+                if (c.incognito()) Kawaii.incognito(p,g,x,y,r*0.60f,col,c.incognitoMorph);
+                else Kawaii.draw(p, g, x, y, r * 0.60f, col, 1f, 0.6f);
                 continue;
             }
 
@@ -268,7 +270,9 @@ final class Renderer extends Draw {
                     * (1f + 0.34f * pop);
             float squash = 1f + 0.16f * pop - 0.05f * (float) Math.sin(wobble);
             int charCol = cleared ? Glyph.withAlpha(Glyph.mix(col, INK_DIM, 0.42f), 180) : col;
-            if (e.link != null && (e.linkWaiting || e.link.linkWaiting || e.linkStrain > 0f)) {
+            if (c.incognito()) {
+                Kawaii.incognito(p,g,x,y,charR,charCol,c.incognitoMorph);
+            } else if (e.link != null && (e.linkWaiting || e.link.linkWaiting || e.linkStrain > 0f)) {
                 Kawaii.determined(p, g, x, y, charR, charCol, squash);
             } else {
                 Kawaii.draw(p, g, x, y, charR, charCol, squash,
@@ -437,9 +441,9 @@ final class Renderer extends Draw {
         float y = w.y + bob;
         int hue = Glyph.cycle(c.clock * 0.7f);
 
-        if (w.hit) {
+        if (w.hit && (!w.mystery || w.hitT >= Power.SELECT_TIME+0.25f)) {
             // Caught: the halo blows outward and fades.
-            float t = Math.min(1f, w.hitT / Power.POP_TIME);
+            float t = Math.min(1f, (w.hitT-(w.mystery ? Power.SELECT_TIME : 0f)) / Power.POP_TIME);
             for (int k = 3; k >= 1; k--) {
                 p.strokePoly(star(w.x, y, r * (1f + t * (2f + k)), r * 0.45f, 8, c.clock),
                         fadeBy(Glyph.withAlpha(hue, (int) (200 * (1f - t) / k)), fade), r * 0.10f);
@@ -455,7 +459,8 @@ final class Renderer extends Draw {
         float pulse = 0.85f + 0.15f * (float) Math.sin(w.t * 6f);
         p.fillPoly(Glyph.hex(w.x, y, r * pulse), fadeBy(Glyph.withAlpha(hue, 90), fade));
         p.strokePoly(Glyph.hex(w.x, y, r * pulse), fadeBy(Glyph.withAlpha(INK, 235), fade), r * 0.10f);
-        powerIcon(p, w.effect, w.x, y, r * 0.72f, hue, fade);
+        float iconPulse = w.mystery && w.hit ? 0.85f+0.15f*(float)Math.cos(w.hitT*24f) : 1f;
+        powerIcon(p, w.shownEffect(), w.x, y, r * 0.72f*iconPulse, hue, fade);
 
         // The name is far wider than the letter it labels, and the letter drifts on from beyond one
         // edge and off past the other — so it is faded in only once the whole name is inside the
@@ -481,6 +486,24 @@ final class Renderer extends Draw {
                     fadeBy(Glyph.withAlpha(0xFFFFFFFF, 230), fade));
             p.fillPoly(star(x + r * 0.66f, y - r * 0.42f, r * 0.24f, r * 0.09f, 5, -0.2f),
                     fadeBy(Glyph.withAlpha(0xFFFFFFFF, 230), fade));
+        } else if (effect == Power.INCOGNITO) {
+            // A little spy hat and eye mask: identity hidden, color still visible.
+            p.fillPoly(new float[]{x-r*0.55f,y-r*0.16f,x-r*0.32f,y-r*0.75f,
+                    x+r*0.32f,y-r*0.75f,x+r*0.55f,y-r*0.16f},ink);
+            p.line(x-r*0.78f,y-r*0.13f,x+r*0.78f,y-r*0.13f,ink,r*0.16f);
+            p.fillEllipse(x-r*0.32f,y+r*0.28f,r*0.37f,r*0.24f,ink);
+            p.fillEllipse(x+r*0.32f,y+r*0.28f,r*0.37f,r*0.24f,ink);
+            p.line(x-r*0.2f,y+r*0.2f,x+r*0.2f,y+r*0.2f,ink,r*0.12f);
+            for (int side=-1;side<=1;side+=2) p.fillEllipse(x+side*r*0.32f,y+r*0.27f,r*0.15f,r*0.09f,fadeBy(hue,fade));
+        } else if (effect == Power.MONOCHROME) {
+            // A split light/dark hexagon with three grayscale swatches.
+            float[] hex = Glyph.hex(x,y,r*0.75f);
+            p.fillPoly(hex,fadeBy(0xFFE5E5E5,fade));
+            p.fillPoly(new float[]{x,y-r*0.65f,x+r*0.375f,y-r*0.65f,
+                    x+r*0.75f,y,x+r*0.375f,y+r*0.65f,x,y+r*0.65f},fadeBy(0xFF555555,fade));
+            p.strokePoly(hex,ink,r*0.07f);
+            for(int i=0;i<3;i++) p.fillCircle(x+(i-1)*r*0.38f,y+r*0.90f,r*0.11f,
+                    fadeBy(i==0?0xFFF1F1F1:i==1?0xFFAAAAAA:0xFF555555,fade));
         } else if (effect == Power.FLING) {
             p.polyline(new float[] {x - r * 0.78f, y + r * 0.38f, x - r * 0.20f, y - r * 0.28f,
                     x + r * 0.55f, y - r * 0.18f}, ink, r * 0.22f);
@@ -797,7 +820,9 @@ final class Renderer extends Draw {
             p.strokePoly(Glyph.hex(cx, cy, r), Glyph.withAlpha(col, (int) ((190 + 65 * press) * appear)),
                     r * 0.085f);
 
-            if (newcomer && c.rosterScene == GameCore.ROSTER_LEAVE) {
+            if (c.incognito()) {
+                Kawaii.incognito(p,g,cx,cy,r*0.60f,col,c.incognitoMorph);
+            } else if (newcomer && c.rosterScene == GameCore.ROSTER_LEAVE) {
                 Kawaii.crying(p, g, cx, cy, r * 0.60f, col, 1f, c.clock * 5f + g, 1f);
             } else if (gone > 0.02f) {
                 // Stagger the sobs so the deck feels alive rather than moving as one stamp.

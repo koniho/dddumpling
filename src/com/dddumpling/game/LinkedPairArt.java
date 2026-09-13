@@ -22,6 +22,7 @@ final class LinkedPairArt {
             if (my < -r*2f) continue;
             float wiggle = (float) Math.sin(c.clock * 1.4f) * r * 0.012f;
             int ac = Glyph.COLOR[a.word[0]], bc = Glyph.COLOR[b.word[0]];
+            int ag = c.incognito() ? 0 : a.word[0], bg = c.incognito() ? 0 : b.word[0];
             GameCore.Enemy waiting = a.linkWaiting ? a : b.linkWaiting ? b : null;
             float ahx = mx - r * 0.30f, bhx = mx + r * 0.30f;
             float ahy = my + wiggle, bhy = my - wiggle;
@@ -39,13 +40,13 @@ final class LinkedPairArt {
             p.clipRect(L.playLeft, 0f, L.playRight, L.dangerY);
             p.clipOutCircle(c.enemyCentreX(a), a.y, maskRadius(a, r));
             p.clipOutCircle(c.enemyCentreX(b), b.y, maskRadius(b, r));
-            limb(p, a.word[0], ax, ay, ahx, ahy, limbR, 1f, ac, false, bend, wave);
-            limb(p, b.word[0], bx, by, bhx, bhy, limbR, -1f, bc, false, bend, wave);
-            if (!fruit(a.word[0])) extremity(p, a.word[0], ahx, ahy, limbR, 1f, wave.tint(ac, ahx), false);
-            if (!fruit(b.word[0])) extremity(p, b.word[0], bhx, bhy, limbR, -1f, wave.tint(bc, bhx), false);
+            limb(p, ag, ax, ay, ahx, ahy, limbR, 1f, ac, false, bend, wave);
+            limb(p, bg, bx, by, bhx, bhy, limbR, -1f, bc, false, bend, wave);
+            if (!fruit(ag)) extremity(p, ag, ahx, ahy, limbR, 1f, wave.tint(ac, ahx), false);
+            if (!fruit(bg)) extremity(p, bg, bhx, bhy, limbR, -1f, wave.tint(bc, bhx), false);
             // Short foreground sections pass over the partner's limb; the rest stays behind it.
-            if (fruit(a.word[0])) curl(p, ahx, ahy, limbR, 1f, ac, 0.35f, 0.65f, wave);
-            if (fruit(b.word[0])) curl(p, bhx, bhy, limbR, -1f, bc, 0.65f, 0.90f, wave);
+            if (fruit(ag)) curl(p, ahx, ahy, limbR, 1f, ac, 0.35f, 0.65f, wave);
+            if (fruit(bg)) curl(p, bhx, bhy, limbR, -1f, bc, 0.65f, 0.90f, wave);
             p.restore();
             if (waiting != null) {
                 GameCore.Enemy next = waiting == a ? b : a;
@@ -160,12 +161,13 @@ final class LinkedPairArt {
         float hy = e.linkReleaseY+releaseLift(e,L)-r*0.22f*peel;
         float size = r*(1f-t*t);
         int col = Glyph.COLOR[e.word[0]];
+        int glyph = c.incognito() ? 0 : e.word[0];
         Pulse quiet = new Pulse(hx,r,0f);
         p.save();
         p.clipRect(L.playLeft,0f,L.playRight,L.dangerY);
         p.clipOutCircle(cx,cy,maskRadius(e,r)*(1f-0.30f*e.destroyT/GameCore.DESTROY_TIME));
-        limb(p,e.word[0],cx-dir*r*0.9f,cy,hx,hy,size,-dir,col,false,0.18f,quiet);
-        if (!fruit(e.word[0])) extremity(p,e.word[0],hx,hy,size,-dir,col,false);
+        limb(p,glyph,cx-dir*r*0.9f,cy,hx,hy,size,-dir,col,false,0.18f,quiet);
+        if (!fruit(glyph)) extremity(p,glyph,hx,hy,size,-dir,col,false);
         p.restore();
         if (dir > 0f) return; // One burst for the bond, not one per character.
         int ink = Glyph.withAlpha(GLOVE,(int)(210f*(1f-t)));

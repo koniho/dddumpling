@@ -20,6 +20,8 @@ final class Pacing {
 
     /** A lesson gets a gentler wave, with half the relief carried into the next stage. */
     static float lessonRelief(int stage) {
+        if (stage == Power.MYSTERY_STAGE) return 1.15f;
+        if (stage == Power.MYSTERY_STAGE+1) return 1.075f;
         if (stage == LinkedPairs.FIRST_STAGE) return 1.15f;
         if (stage == LinkedPairs.FIRST_STAGE + 1) return 1.075f;
         return 1f;

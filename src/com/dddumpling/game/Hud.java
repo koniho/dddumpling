@@ -81,21 +81,22 @@ final class Hud extends Draw {
 
     /** Active frenzy: the mode name, what it does, and how long is left. */
     static void modeBar(Painter p, GameCore c, Layout L) {
-        if (!c.powerActive()) return;
+        if (!c.powerActive() && c.debuffLeft <= 0f) return;
+        int effect = c.debuffLeft > 0f ? c.debuff : c.mode;
         float s = L.unit;
         float y = L.playTop + s * 0.9f;
         float left = L.playLeft, right = L.playRight;
         int hue = Glyph.cycle(c.clock * 0.85f);
 
         // Countdown bar: the whole width at the start, empty as it expires.
-        float frac = Math.min(1f, c.modeLeft / Power.DURATION);
+        float frac = c.debuffLeft > 0f ? c.debuffLeft/Power.DEBUFF_TIME : Math.min(1f,c.modeLeft/Power.DURATION);
         p.fillRect(left, y, right, y + s * 0.22f, Glyph.withAlpha(INK, 40));
         p.fillRect(left, y, left + (right - left) * frac, y + s * 0.22f,
                 Glyph.withAlpha(hue, 235));
 
-        p.text(Power.NAMES[c.mode], L.w / 2f, y - s * 0.35f, type(s * 0.86f), hue,
+        p.text(Power.NAMES[effect], L.w / 2f, y - s * 0.35f, type(s * 0.86f), hue,
                 Painter.CENTER, true);
-        p.text(Power.BLURB[c.mode], L.w / 2f, y + s * 1.05f, type(s * 0.5f), INK_DIM,
+        p.text(Power.BLURB[effect], L.w / 2f, y + s * 1.05f, type(s * 0.5f), INK_DIM,
                 Painter.CENTER, false);
     }
 

@@ -170,7 +170,7 @@ final class TestRules extends Check {
                             - (2.5f - Pacing.ramp(stage) * 0.13f)) < 0.001f);
         }
         c.stage = 11;
-        check("stage 11 provides more breathing room", Math.abs(c.spawnInterval() - 2.05f) < 0.001f);
+        check("stage 11 provides more breathing room", Math.abs(c.spawnInterval() - 2.05f*Pacing.lessonRelief(11)) < 0.001f);
         float previous = spawn10;
         for (int stage = 11; stage <= 40; stage++) {
             float interval = Pacing.spawnInterval(stage, 1f) / Pacing.lessonRelief(stage);

@@ -247,7 +247,7 @@ final class TestPower extends Check {
     static void modeSpread(Layout L) {
         group("frenzy mode spread");
         check("a name and a blurb for every mode",
-                Power.NAMES.length == Power.COUNT && Power.BLURB.length == Power.COUNT);
+                Power.NAMES.length == Power.MONOCHROME+1 && Power.BLURB.length == Power.MONOCHROME+1);
         check("MULTI is absent from the offered pool",
                 Power.OFFERED.length == 3 && Power.OFFERED[0] == Power.FLURRY
                         && Power.OFFERED[1] == Power.FLING && Power.OFFERED[2] == Power.TEAM);
@@ -1487,7 +1487,7 @@ final class TestPower extends Check {
             wasActive = c.powerActive();
 
             if (c.modeLeft < 0f || c.mode < -1 || c.mode >= Power.COUNT) sane = false;
-            if (c.power != null && c.power.hit && c.power.hitT > Power.POP_TIME + 1f) {
+            if (c.power != null && c.power.hit && c.power.hitT > Power.POP_TIME + (c.power.mystery ? Power.SELECT_TIME : 0f) + 1f) {
                 sane = false;
             }
             if (c.lives < 0 || c.score < 0) sane = false;
