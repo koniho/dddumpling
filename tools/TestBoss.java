@@ -26,6 +26,42 @@ final class TestBoss extends Check {
         return c;
     }
 
+    static void renderEffects(Layout L) {
+        GameCore c = enterBoss(L, Boss.SPLITTER, 885L);
+        Boss b = c.boss;
+        b.launchT = 0f;
+        int restingRings = rootEffects(c, L, "strokeCircle");
+        b.launchT = Boss.LAUNCH_TIME * 0.7f;
+        check("intact Divide retains its launch rings",
+                rootEffects(c, L, "strokeCircle") == restingRings + 2);
+        b.pieceHits[0] = Boss.DIVIDE_HITS;
+        float x = b.pieceX(0, L), y = b.pieceY(0, L);
+        b.beginPinch(100f, x - 50f, y, x + 50f, y);
+        check("visual regression reaches the first split",
+                b.pinch(100f * Boss.DIVIDE_SCALE, x - 85f, y, x + 85f, y, c.rnd));
+        b.divideBurst = 0f;
+        for (float launch : new float[] {1f, 0.5f, 0.1f}) {
+            b.launchT = Boss.LAUNCH_TIME * launch;
+            check("split Divide has no parent firing circle at " + launch,
+                    rootEffects(c, L, "strokeCircle") == 0);
+            check("split Divide has no parent aura at " + launch,
+                    rootEffects(c, L, "fillEllipse") == 0);
+        }
+    }
+
+    private static int rootEffects(GameCore c, Layout L, String shape) {
+        final int[] count = {0};
+        float cx = c.boss.body.centreX(), cy = c.boss.body.centreY();
+        Painter p = (Painter) java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class<?>[] {Painter.class}, (proxy, method, args) -> {
+                    if (method.getName().equals(shape) && Math.abs((Float) args[0] - cx) < 0.01f
+                            && Math.abs((Float) args[1] - cy) < 0.01f) count[0]++;
+                    return null;
+                });
+        BossScreen.body(p, c, L);
+        return count[0];
+    }
+
     /** Steps until the boss's window is open, keeping the field clear so nothing interferes. */
     private static boolean toOpen(GameCore c, Layout L) {
         for (int i = 0; i < 60 * 30 && !c.boss.open(); i++) {
@@ -1275,12 +1311,6 @@ final class TestBoss extends Check {
                 beaten - RasterPainter.CAP * Draw.type(L.unit * 1.69f)
                         > Boss.restY(L) + Boss.bodyR(L) * 0.5f);
         check("and stays above the danger line", beaten < L.dangerY);
-
-        // The slime's split gauge hangs below the body, so it is one more row in the same column.
-        float gauge = Boss.restY(L) + Boss.bodyR(L) * 1.30f;
-        check("the split gauge clears the body it hangs off", gauge > Boss.restY(L)
-                + Boss.bodyR(L) * 1.05f);
-        check("and stays above the danger line", gauge + L.unit * 0.3f < L.dangerY);
 
         // The wide boss has to fit the play area at its widest wander, which is why the drift
         // amplitude is derived from what is left over rather than picked.

@@ -55,6 +55,7 @@ final class CoreTest {
         group("Boss", () -> {
             TestBoss.cadence(L);
             TestBoss.frame(L);
+            TestBoss.renderEffects(L);
             TestBoss.winning(L);
             TestBoss.precedence(L);
             TestBoss.slime(L);

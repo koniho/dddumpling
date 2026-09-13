@@ -1,0 +1,1 @@
+Power-ups keep the action moving with faster enemy replenishment that scales with the current difficulty. Fixed a lingering pulsing circle after Dark Divide splits. Removed the slime boss damage pips for a cleaner fight.

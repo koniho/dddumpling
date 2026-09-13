@@ -157,7 +157,9 @@ final class BossScreen extends Draw {
         // faintest first, and only three layers: this sits behind a soft outline that is already
         // translucent, and more than that greys the whole upper field. Elliptical, so it hugs the
         // silhouette instead of drawing a circle around a wide body.
-        for (int k = 3; k >= 1; k--) {
+        // Split cubes own their effects; the old parent body remains only as geometry storage.
+        boolean rootVisible = b.kind != Boss.SPLITTER || b.nodeActive(0);
+        for (int k = rootVisible ? 3 : 0; k >= 1; k--) {
             float g = 1.05f + 0.16f * k;
             p.fillEllipse(cx, cy, rx * g, ry * g,
                     Glyph.withAlpha(col, (int) ((22 + 26 * b.hurt) * fade / k)));
@@ -171,7 +173,7 @@ final class BossScreen extends Draw {
         // radius made that worse the moment a body could be stretched, since a glob hauled halfway
         // across the field doubles the radius and the scribble grew to fill the upper field with it.
         // The window is a property of the fight, not of what the skin happens to be doing.
-        if (launch > 0f) {
+        if (rootVisible && launch > 0f) {
             float kick = 1f - launch;
             float rr = Boss.bodyR(L) * (1.1f + kick * 0.9f);
             p.strokeCircle(cx, cy, rr, Glyph.withAlpha(ROSE, (int) (220 * launch * fade)),
@@ -1252,11 +1254,6 @@ final class BossScreen extends Draw {
                         slimeBoltR(c, L, urgency), fade,
                         b.open());
             }
-            // And how far the chain has got: the press does not move the health bar, so without
-            // this a run of four presses looks like four presses that did nothing. Hung off the
-            // resting height rather than the live one so it does not get swallowed by the body every
-            // time a squash flattens it.
-            splitGauge(p, c, L, b, cx, slimeBadgeY(L, b) + badgeR(L) * 1.65f, fade);
         } else if (b.kind == Boss.SPLITTER) {
             for (int i = 0; i < b.pieceCount(); i++) {
                 float x = b.pieceX(i, L), y = b.pieceY(i, L), pr = b.pieceR(i, L);
@@ -1311,32 +1308,6 @@ final class BossScreen extends Draw {
     private static float[] squash(float[] pts, float cx, float k) {
         for (int i = 0; i < pts.length; i += 2) pts[i] = cx + (pts[i] - cx) * k;
         return pts;
-    }
-
-    /**
-     * How far the chain has got toward tearing the next glob loose: one pip per press, under the body.
-     *
-     * The slime is the one boss whose presses do not move the health bar — only a glob carried off the
-     * screen does that — so this is the whole feedback for four presses out of every five. Rose,
-     * because that is the colour a glob is, and the last pip is what a glob will be.
-     */
-    private static void splitGauge(Painter p, GameCore c, Layout L, Boss b, float cx, float y,
-            float fade) {
-        float rr = L.unit * 0.20f, gap = rr * 3.0f;
-        float x0 = cx - gap * (Boss.SPLIT_HITS - 1) / 2f;
-        for (int i = 0; i < Boss.SPLIT_HITS; i++) {
-            boolean done = i < b.split;
-            // The next one to fill breathes, so the gauge says "press again" rather than only
-            // recording what has happened.
-            boolean next = i == b.split && b.open();
-            float pulse = next ? 1f + 0.22f * (float) Math.sin(c.clock * 8f) : 1f;
-            p.fillCircle(x0 + i * gap, y, rr * pulse,
-                    Glyph.withAlpha(done ? ROSE : INK, (int) ((done ? 235 : 40) * fade)));
-            if (next) {
-                p.strokeCircle(x0 + i * gap, y, rr * 1.5f * pulse,
-                        Glyph.withAlpha(ROSE, (int) (120 * fade)), rr * 0.22f);
-            }
-        }
     }
 
     /**
