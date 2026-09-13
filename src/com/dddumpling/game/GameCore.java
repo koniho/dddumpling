@@ -1868,7 +1868,11 @@ final class GameCore {
         int lit = e.word[struck];
 
         // A stacked tile absorbs several presses of the same letter before it clears.
-        if (sound != null) sound.squish(lit, pressesLeft(e, struck));
+        if (sound != null) {
+            // The first half meets the bond's resistance; only the completing key hits.
+            if (e.link != null && !e.link.linkWaiting) sound.wrong();
+            else sound.squish(lit, pressesLeft(e, struck));
+        }
         e.done++;
         if (e.done >= e.need[struck]) {
             e.pos++;

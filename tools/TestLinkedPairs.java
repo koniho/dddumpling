@@ -83,7 +83,8 @@ final class TestLinkedPairs extends Check {
         check("first press immediately waits without credit", a.linkWaiting && !a.destroyed
                 && c.squishes == 0 && c.resolvedThisStage == 0 && c.score == 0 && c.combo == 0);
         check("one press strains both sides of the bond", a.linkStrain == 1f && b.linkStrain == 1f);
-        check("first press waits before rejection thud", ((Ear)c.sound).linkedThuds == 0);
+        check("first press plays miss sound instead of hit", ((Ear)c.sound).wrongs == 1
+                && ((Ear)c.sound).squishes == 0 && ((Ear)c.sound).linkedThuds == 0);
         check("waiting key cannot take input", !a.typeable());
         float left = a.linkLeft;
         c.destroyWord(a, 0, 0, L);
@@ -92,7 +93,8 @@ final class TestLinkedPairs extends Check {
         check("pause freezes link countdown", a.linkLeft == left);
         c.paused = false;
         c.tapKey(b.word[0], L);
-        check("successful chord does not play rejection thud", ((Ear)c.sound).linkedThuds == 0);
+        check("completing chord plays hit without another miss", ((Ear)c.sound).squishes == 1
+                && ((Ear)c.sound).wrongs == 1 && ((Ear)c.sound).linkedThuds == 0);
         check("second press immediately finishes both", a.destroyed && b.destroyed && a.link == null && b.link == null);
         check("pair awards two clears and combo exactly once", c.squishes == 2 && c.resolvedThisStage == 2 && c.combo == 2);
         int score = c.score;
@@ -125,7 +127,8 @@ final class TestLinkedPairs extends Check {
         check("200ms is elapsed time, unaffected by slow motion or frame clamp", a.typeable() && !a.linkWaiting);
         check("missed chord keeps a visible resistance reaction", a.linkStrain > 0f && b.linkStrain > 0f);
         advance(c, L, 0.5f);
-        check("timeout plays exactly one dedicated thud", ((Ear)c.sound).linkedThuds == 1);
+        check("timeout and old projectile do not replay rejection audio", ((Ear)c.sound).wrongs == 1
+                && ((Ear)c.sound).squishes == 0 && ((Ear)c.sound).linkedThuds == 0);
         check("expired press projectile cannot complete or rearm the key", a.typeable() && c.resolvedThisStage == 0);
         c.tapKey(a.word[0], L);
         GameCore.Enemy distraction = add(c, L, new int[] {b.word[0], b.word[0]}, L.dangerY - L.enemyR * 4f);
