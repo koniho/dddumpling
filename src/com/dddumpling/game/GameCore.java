@@ -298,6 +298,7 @@ final class GameCore {
         Enemy link;
         Enemy spinMate;
         boolean linkWaiting;
+        boolean linkSliceRejected;
         float linkLeft;
         int linkButton = -1;
         float linkStrain;

@@ -83,6 +83,7 @@ final class Blade {
         c.flingUsed = true;
         c.strokeKills = 0;
         c.strokeCuts = 0;
+        for (GameCore.Enemy e : c.enemies) e.linkSliceRejected = false;
     }
 
     /**
@@ -171,6 +172,11 @@ final class Blade {
                         slowdown(c);
                         c.callCuts = c.strokeCuts;
                     }
+                } else if (!e.linkSliceRejected
+                        && segDist2(c.enemyCentreX(e),e.y,x0,y0,x,y) <= r*r) {
+                    e.linkSliceRejected = other.linkSliceRejected = true;
+                    e.linkStrain = other.linkStrain = 1f;
+                    if (c.sound != null) c.sound.wrong();
                 }
                 continue; // Their bodies and arms are protected; only the clasp is cuttable.
             }

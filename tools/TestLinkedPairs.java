@@ -209,8 +209,13 @@ final class TestLinkedPairs extends Check {
         float ax = c.enemyCentreX(a), mid = (ax+c.enemyCentreX(b))*0.5f, y = a.y;
         c.tapKey(a.word[0],L);
         check("fling keys cannot damage a linked body",a.typeable() && b.typeable());
+        int missesBeforeSlice = ((Ear)c.sound).wrongs;
         c.beginStroke(ax,y-L.enemyR);
         int bodyCuts = c.sliceTo(ax,y+L.enemyR,L);
+        check("fling body miss flexes both with one miss sound",a.linkStrain == 1f && b.linkStrain == 1f
+                && ((Ear)c.sound).wrongs == missesBeforeSlice+1 && !a.linkWaiting && !b.linkWaiting);
+        c.sliceTo(ax,y-L.enemyR,L);
+        check("one stroke cannot repeat pair rejection audio",((Ear)c.sound).wrongs == missesBeforeSlice+1);
         c.endStroke();
         check("fling body cut is protected",bodyCuts == 0 && !a.destroyed && !b.destroyed);
         c.beginStroke(mid,y-L.enemyR);
