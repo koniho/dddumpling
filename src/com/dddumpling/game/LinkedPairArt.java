@@ -19,17 +19,17 @@ final class LinkedPairArt {
             GameCore.Enemy waiting = a.linkWaiting ? a : b.linkWaiting ? b : null;
             float ahx = mx - r * 0.30f, bhx = mx + r * 0.30f;
             float ahy = my + wiggle, bhy = my - wiggle;
-            if (waiting != null) {
-                ahy += r * (waiting == a ? -0.16f : 0.32f);
-                bhy += r * (waiting == b ? -0.16f : 0.32f);
-            }
-            limb(p, a.word[0], ax, ay, ahx, ahy, r, 1f, ac, waiting == a);
-            limb(p, b.word[0], bx, by, bhx, bhy, r, -1f, bc, waiting == b);
-            if (!fruit(a.word[0])) extremity(p, a.word[0], ahx, ahy, r, 1f, ac, waiting == a);
-            if (!fruit(b.word[0])) extremity(p, b.word[0], bhx, bhy, r, -1f, bc, waiting == b);
+            float strain = Math.max(a.linkStrain, b.linkStrain);
+            if (waiting != null) strain = Math.max(strain, 0.65f);
+            float flex = 1f + strain * (0.20f + 0.12f * (float)Math.sin(c.clock * 24f));
+            float limbR = r * flex;
+            limb(p, a.word[0], ax, ay, ahx, ahy, limbR, 1f, ac, false);
+            limb(p, b.word[0], bx, by, bhx, bhy, limbR, -1f, bc, false);
+            if (!fruit(a.word[0])) extremity(p, a.word[0], ahx, ahy, limbR, 1f, ac, false);
+            if (!fruit(b.word[0])) extremity(p, b.word[0], bhx, bhy, limbR, -1f, bc, false);
             // Short foreground sections pass over the partner's limb; the rest stays behind it.
-            if (fruit(a.word[0]) && waiting != a) curl(p, ahx, ahy, r, 1f, ac, 0.35f, 0.65f);
-            if (fruit(b.word[0]) && waiting != b) curl(p, bhx, bhy, r, -1f, bc, 0.65f, 0.90f);
+            if (fruit(a.word[0])) curl(p, ahx, ahy, limbR, 1f, ac, 0.35f, 0.65f);
+            if (fruit(b.word[0])) curl(p, bhx, bhy, limbR, -1f, bc, 0.65f, 0.90f);
             if (waiting != null) {
                 GameCore.Enemy next = waiting == a ? b : a;
                 float tx = c.tileX(next, Math.min(next.pos, next.word.length - 1), L);
@@ -43,10 +43,7 @@ final class LinkedPairArt {
                 float labelY = waiting.y + r * 1.45f;
                 p.text("TOGETHER!", (c.enemyCentreX(a) + c.enemyCentreX(b)) * 0.5f, labelY,
                         r * 0.48f, GLOVE, Painter.CENTER, true);
-                // A check is legible independently of color and marks the completed half.
-                float cx = c.enemyCentreX(waiting), cy = waiting.y;
-                p.polyline(new float[] {cx-r*0.25f,cy, cx-r*0.05f,cy+r*0.22f,
-                        cx+r*0.35f,cy-r*0.28f}, GLOVE, r * 0.12f);
+
             }
         }
     }
@@ -68,8 +65,12 @@ final class LinkedPairArt {
             stem[i*2] = ax + (endX-ax)*t;
             stem[i*2+1] = ay + (endY-ay)*t + (float)Math.sin(t*Math.PI)*r*0.38f;
         }
-        p.polyline(stem, INK, r*0.21f);
-        p.polyline(stem, color, r*0.105f);
+        float[] widths = new float[13];
+        for (int i = 0; i <= 12; i++) {
+            float t = i / 12f;
+            widths[i] = r * (0.13f - 0.065f*t + 0.025f*(float)Math.sin(t*Math.PI));
+        }
+        tube(p, stem, widths, color);
         // A leaf at the bend replaces the glove's mechanical elbow with a growing node.
         float lx = stem[10], ly = stem[11];
         leaf(p, lx, ly, lx-dir*r*0.32f, ly+r*0.38f, r*0.16f, color);
@@ -88,7 +89,6 @@ final class LinkedPairArt {
         float mx = (x+tx)*0.5f, my = (y+ty)*0.5f;
         float[] shape = {x,y, mx+nx,my+ny, tx,ty, mx-nx,my-ny};
         p.fillPoly(shape, Glyph.mix(color, GLOVE, 0.12f));
-        p.strokePoly(shape, INK, width*0.30f);
         p.line(x,y,tx,ty,Glyph.mix(color,INK,0.30f),width*0.20f);
     }
 
@@ -102,8 +102,12 @@ final class LinkedPairArt {
             path[i*2] = hx+dir*r*0.24f+dir*(float)Math.cos(angle)*radius;
             path[i*2+1] = hy+(float)Math.sin(angle)*radius;
         }
-        p.polyline(path, INK, r*0.19f);
-        p.polyline(path, color, r*0.10f);
+        float[] widths = new float[17];
+        for (int i = 0; i <= 16; i++) {
+            float t = from + (to-from)*i/16f;
+            widths[i] = r*(0.075f-0.035f*t);
+        }
+        tube(p, path, widths, color);
     }
 
     private static void extremity(Painter p, int glyph, float x, float y, float r,
@@ -114,17 +118,14 @@ final class LinkedPairArt {
         }
         float cx = x+dir*r*0.14f;
         if (pointing) {
-            capsule(p,cx,y-r*0.10f,x+dir*r*0.82f,y-r*0.10f,r*0.13f,INK);
-            capsule(p,cx,y-r*0.10f,x+dir*r*0.82f,y-r*0.10f,r*0.08f,color);
+            capsule(p,cx,y-r*0.10f,x+dir*r*0.82f,y-r*0.10f,r*0.10f,color);
         }
         // A broad animal paw, with joined toes and pads inside the silhouette.
-        p.fillEllipse(cx,y,r*0.38f,r*0.32f,INK);
-        p.fillEllipse(cx,y,r*0.32f,r*0.26f,color);
+        p.fillEllipse(cx,y,r*0.36f,r*0.30f,color);
         for (int i = 0; i < 3; i++) {
             float toeX = cx + (i-1)*r*0.19f;
             float toeY = y-r*(i == 1 ? 0.24f : 0.18f);
-            p.fillCircle(toeX,toeY,r*0.14f,INK);
-            p.fillCircle(toeX,toeY,r*0.10f,color);
+            p.fillCircle(toeX,toeY,r*0.13f,color);
         }
         int pad = Glyph.mix(color,0xFFCF718C,0.55f);
         p.fillEllipse(cx,y+r*0.06f,r*0.14f,r*0.10f,pad);
@@ -137,13 +138,40 @@ final class LinkedPairArt {
     private static void arm(Painter p, float ax, float ay, float bx, float by, float r, int color) {
         float ex = ax + (bx - ax) * 0.38f;
         float ey = Math.max(ay, by) + r * 0.48f;
-        float[] path = {ax, ay, ex, ey, bx, by};
-        p.polyline(path, INK, r * 0.26f);
-        p.polyline(path, color, r * 0.15f);
-        p.fillCircle(ex, ey, r * 0.19f, INK);
-        p.fillCircle(ex, ey, r * 0.13f, color);
+        // Fuller upper arm, pinched elbow, then a soft forearm taper into the wrist.
+        taperedSegment(p, ax, ay, ex, ey, r*0.16f, r*0.115f, r*0.025f, color);
+        taperedSegment(p, ex, ey, bx, by, r*0.115f, r*0.095f, r*0.045f, color);
+        p.fillCircle(ex, ey, r * 0.155f, Glyph.mix(color, GLOVE, 0.14f));
         p.fillCircle(ex - r * 0.035f, ey - r * 0.035f, r * 0.045f,
-                Glyph.mix(color, GLOVE, 0.55f));
+                Glyph.mix(color, GLOVE, 0.45f));
+    }
+
+    private static void taperedSegment(Painter p, float ax, float ay, float bx, float by,
+            float start, float end, float fullness, int color) {
+        float[] points = new float[18], widths = new float[9];
+        for (int i = 0; i <= 8; i++) {
+            float t = i/8f;
+            points[i*2] = ax+(bx-ax)*t;
+            points[i*2+1] = ay+(by-ay)*t;
+            widths[i] = start+(end-start)*t+fullness*(float)Math.sin(t*Math.PI);
+        }
+        tube(p, points, widths, color);
+    }
+
+    /** Filled variable-width segments with rounded joins; no outline stroke. */
+    private static void tube(Painter p, float[] points, float[] widths, int color) {
+        for (int i = 0; i < widths.length; i++) {
+            float x = points[i*2], y = points[i*2+1];
+            p.fillCircle(x, y, widths[i], color);
+            if (i == 0) continue;
+            float px = points[i*2-2], py = points[i*2-1];
+            float dx = x-px, dy = y-py;
+            float length = Math.max(0.001f, (float)Math.sqrt(dx*dx+dy*dy));
+            float nx = -dy/length, ny = dx/length;
+            float a = widths[i-1], b = widths[i];
+            p.fillPoly(new float[] {px+nx*a,py+ny*a, x+nx*b,y+ny*b,
+                    x-nx*b,y-ny*b, px-nx*a,py-ny*a}, color);
+        }
     }
 
     private static void capsule(Painter p, float x, float y, float tx, float ty, float radius, int color) {
@@ -158,15 +186,11 @@ final class LinkedPairArt {
         // The extended index is part of its owner's silhouette and keeps that key's color.
         if (pointing) {
             capsule(p, palmX, y - r * 0.12f, x + dir * r * 0.85f, y - r * 0.12f,
-                    r * 0.115f, INK);
-            capsule(p, palmX, y - r * 0.12f, x + dir * r * 0.85f, y - r * 0.12f,
-                    r * 0.070f, color);
+                    r * 0.10f, color);
         }
-        p.fillEllipse(palmX, y, r * 0.36f, r * 0.29f, INK);
-        p.fillEllipse(palmX, y, r * 0.30f, r * 0.23f, color);
+        p.fillEllipse(palmX, y, r * 0.34f, r * 0.27f, color);
         // Thumb curves across the lower palm, making a clasp rather than a paw print.
-        capsule(p, x - dir*r*0.04f, y+r*0.16f, x+dir*r*0.24f, y+r*0.23f, r*0.12f, INK);
-        capsule(p, x - dir*r*0.04f, y+r*0.16f, x+dir*r*0.24f, y+r*0.23f, r*0.075f, color);
+        capsule(p, x - dir*r*0.04f, y+r*0.16f, x+dir*r*0.24f, y+r*0.23f, r*0.10f, color);
         int seam = Glyph.mix(color, INK, 0.48f);
         for (int i = 0; i < 2; i++) {
             float fx = palmX + dir * r * (0.08f + i * 0.10f);
@@ -174,8 +198,7 @@ final class LinkedPairArt {
         }
         // Cuff bridges the forearm and palm; a soft highlight keeps the hand readable small.
         float cuffX = x - dir*r*0.19f;
-        capsule(p, cuffX, y-r*0.12f, cuffX, y+r*0.12f, r*0.075f, INK);
-        capsule(p, cuffX, y-r*0.10f, cuffX, y+r*0.10f, r*0.040f, Glyph.mix(color, GLOVE, 0.35f));
+        capsule(p, cuffX, y-r*0.10f, cuffX, y+r*0.10f, r*0.060f, Glyph.mix(color, GLOVE, 0.35f));
         p.arc(palmX, y, r*0.22f, r*0.15f, 210f, 65f,
                 Glyph.mix(color, GLOVE, 0.42f), r*0.035f);
     }

@@ -149,13 +149,6 @@ final class Renderer extends Draw {
     // ---- enemies ------------------------------------------------------------
 
     static void enemy(Painter p, GameCore c, Layout L, GameCore.Enemy e) {
-        if (e.linkWaiting) {
-            for (int i = 0; i < e.word.length; i++) {
-                p.strokePoly(Glyph.hex(c.tileX(e, i, L), e.y, L.enemyR * Layout.TILE_SCALE),
-                        0x668C91AD, L.enemyR * 0.07f);
-            }
-            return;
-        }
         float destroy = e.destroyed
                 ? Math.min(1f, e.destroyT / GameCore.DESTROY_TIME) : 0f;
         if (e.dying) {
@@ -197,8 +190,8 @@ final class Renderer extends Draw {
 
         for (int i = 0; i < e.word.length; i++) {
             int g = e.word[i];
-            boolean head = i == e.pos && destroy == 0f;
-            boolean cleared = i < e.pos && destroy == 0f;
+            boolean head = (i == e.pos || e.linkWaiting) && destroy == 0f;
+            boolean cleared = i < e.pos && !e.linkWaiting && destroy == 0f;
             float x = c.tileX(e, i, L) + jx;
             float y = e.y + jy;
 
@@ -269,8 +262,12 @@ final class Renderer extends Draw {
                     * (1f + 0.34f * pop);
             float squash = 1f + 0.16f * pop - 0.05f * (float) Math.sin(wobble);
             int charCol = cleared ? Glyph.withAlpha(Glyph.mix(col, INK_DIM, 0.42f), 180) : col;
-            Kawaii.draw(p, g, x, y, charR, charCol, squash,
-                    cleared ? 1f : head ? 0.4f : 0.1f);
+            if (e.link != null && (e.linkWaiting || e.link.linkWaiting || e.linkStrain > 0f)) {
+                Kawaii.determined(p, g, x, y, charR, charCol, squash);
+            } else {
+                Kawaii.draw(p, g, x, y, charR, charCol, squash,
+                        cleared ? 1f : head ? 0.4f : 0.1f);
+            }
 
             // Exact count of presses still owed, so a 3-stack is never mistaken for a 4.
             if (left > 1) {

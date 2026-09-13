@@ -50,6 +50,7 @@ final class LinkedPairs {
             c.destroyWord(other, c.enemyCentreX(other), other.y, L, false);
             return false; // Caller credits the second word normally.
         }
+        e.linkStrain = other.linkStrain = 1f;
         e.linkWaiting = true;
         e.linkLeft = WINDOW;
         e.pos = e.word.length;
@@ -63,6 +64,7 @@ final class LinkedPairs {
 
     static void update(GameCore c, float dt) {
         for (GameCore.Enemy e : c.enemies) {
+            e.linkStrain = Math.max(0f, e.linkStrain - dt * 2.4f);
             if (!e.linkWaiting) continue;
             e.linkLeft -= dt;
             // Include the 200ms boundary, allowing only float-rounding tolerance.
@@ -76,7 +78,8 @@ final class LinkedPairs {
         e.linkLeft = 0f;
         e.pos = e.done = 0;
         e.dying = false;
-        e.failPulse = 1f;
+        e.linkStrain = 1f;
+        if (e.link != null) e.link.linkStrain = 1f;
         for (int i = 0; i < e.word.length; i++) {
             e.gone[i] = false;
             e.goneT[i] = 0f;
@@ -85,10 +88,12 @@ final class LinkedPairs {
 
     static void unlink(GameCore.Enemy e) {
         GameCore.Enemy other = e.link;
+        e.linkStrain = 0f;
         e.link = null;
         e.linkWaiting = false;
         e.linkLeft = 0f;
         if (other != null) {
+            other.linkStrain = 0f;
             other.link = null;
             other.linkWaiting = false;
             other.linkLeft = 0f;

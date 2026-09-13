@@ -95,6 +95,8 @@ final class Preview {
         shot(dir, "95-linked-pointing", linked, L, w, h, ss);
         step(linked, L, 0.12f);
         shot(dir, "95-linked-countdown", linked, L, w, h, ss);
+        step(linked, L, 0.10f);
+        shot(dir, "95-linked-resist", linked, L, w, h, ss);
 
         for (int land = 0; land < Lands.COUNT; land++) {
             GameCore themed = new GameCore(new Mem(), 810L);

@@ -297,6 +297,7 @@ final class GameCore {
         Enemy link;
         boolean linkWaiting;
         float linkLeft;
+        float linkStrain;
         int[] word;
         /** Presses each tile needs: 1 for a plain letter, 2..4 for a stacked one. */
         int[] need;

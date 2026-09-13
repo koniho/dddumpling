@@ -43,6 +43,31 @@ final class Kawaii {
         }
     }
 
+    /** Braced faces for a linked pair resisting a single press. */
+    static void determined(Painter p, int g, float cx, float cy, float size, int body, float squash) {
+        draw(p, g, cx, cy, size, body, squash, 0f);
+        float rx = size*squash, ry = size/squash;
+        float fy = cy + (g == GRAPES ? ry*0.24f : 0f);
+        float eyeX = g == GRAPES ? 0.16f : g == STRAWBERRY ? 0.32f : 0.35f;
+        float eyeY = g == SQUISHY ? -0.12f : g == STRAWBERRY ? -0.06f
+                : g == BLOB ? -0.04f : g == DUMPLING ? 0.06f : 0f;
+        float scale = g == GRAPES ? 0.5f : 1f;
+        for (int side = -1; side <= 1; side += 2) {
+            float ex = cx + side*rx*eyeX, ey = fy+ry*eyeY;
+            p.fillEllipse(ex,ey,rx*0.23f*scale,ry*0.27f*scale,body);
+            // Compressed eyes and inward-sloping brows make a readable determined squint.
+            p.line(ex-side*rx*0.13f*scale,ey+ry*0.04f*scale,
+                    ex+side*rx*0.16f*scale,ey-ry*0.08f*scale,INK,size*0.09f*scale);
+            p.line(ex-side*rx*0.13f*scale,ey-ry*0.12f*scale,
+                    ex+side*rx*0.19f*scale,ey-ry*0.25f*scale,INK,size*0.10f*scale);
+        }
+        float my = fy+ry*(g == GRAPES ? 0.17f : 0.39f);
+        float mw = rx*0.24f*scale, mh = ry*0.09f*scale;
+        p.fillEllipse(cx,my,rx*0.43f*scale,ry*0.24f*scale,body);
+        p.fillEllipse(cx,my,mw,mh,INK);
+        p.fillEllipse(cx,my,mw*0.80f,mh*0.55f,0xFFFFF4DD);
+    }
+
     /** Draws the original character with a trembling frown and two looping falling tears. */
     static void crying(Painter p, int g, float cx, float cy, float r, int body, float squash,
             float phase, float amount) {

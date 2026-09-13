@@ -333,8 +333,10 @@ have padded paws, while the other characters have soft hands. Key-colored limbs 
 behind and in front of the partner.
 Press either key, then its partner within 200 ms of elapsed play time (independent of speed
 settings and slow motion). Input resolves the chord immediately; projectiles are visual only.
-The first key becomes an outline with a checkmark. A reaching paw, hand or vine tip, a gold pulse,
-and a countdown ring direct the player to its partner. A missed window restores the first key without a life penalty
+A single press keeps both faces visible with determined expressions and pulses the thickness
+of both intertwined limbs. A missed window briefly renews that resistance pose. The unpressed
+partner's gold highlight and the countdown remain visible; there is no checkmark. Arms and vines
+have varying thickness along their length and no dark outline. A missed window restores the first key without a life penalty
 or score; both enemies still descend. A successful chord credits two clears. Power-ups release
 links, and a breached partner cannot leave the other waiting forever.
 

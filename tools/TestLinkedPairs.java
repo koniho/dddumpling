@@ -67,6 +67,7 @@ final class TestLinkedPairs extends Check {
         c.tapKey(a.word[0], L);
         check("first press immediately waits without credit", a.linkWaiting && !a.destroyed
                 && c.squishes == 0 && c.resolvedThisStage == 0 && c.score == 0 && c.combo == 0);
+        check("one press strains both sides of the bond", a.linkStrain == 1f && b.linkStrain == 1f);
         check("waiting key cannot take input", !a.typeable());
         float left = a.linkLeft;
         c.destroyWord(a, 0, 0, L);
@@ -105,6 +106,7 @@ final class TestLinkedPairs extends Check {
         c.slowdown = 1f;
         c.update(0.01f, 0.201f, L);
         check("200ms is elapsed time, unaffected by slow motion or frame clamp", a.typeable() && !a.linkWaiting);
+        check("missed chord keeps a visible resistance reaction", a.linkStrain > 0f && b.linkStrain > 0f);
         advance(c, L, 0.5f);
         check("expired press projectile cannot complete or rearm the key", a.typeable() && c.resolvedThisStage == 0);
         c.tapKey(a.word[0], L);
