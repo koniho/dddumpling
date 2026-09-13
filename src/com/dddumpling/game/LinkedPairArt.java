@@ -182,7 +182,7 @@ final class LinkedPairArt {
         tube(p, points, widths, color, wave);
     }
 
-    /** Faint fill and soft colored edges, matching the key hexagons. */
+    /** Faint key-colored fill, rounded underside shading, and soft hexagon-style edges. */
     private static void tube(Painter p, float[] points, float[] widths, int color, Pulse wave) {
         int n = widths.length;
         float[] outline = new float[n*4];
@@ -201,6 +201,28 @@ final class LinkedPairArt {
             widest = Math.max(widest,widths[i]);
         }
         p.fillPoly(outline,Glyph.withAlpha(color,45));
+        // Translucent shadow bands stay inside the silhouette. Lighting comes from
+        // above-left, so the shaded side follows each bend and either arm direction.
+        int shadow = Glyph.mix(color,INK,0.94f);
+        for (int side = -1; side <= 1; side += 2) {
+            for (int i = 1; i < n; i++) {
+                int a = side > 0 ? i-1 : 2*n-i;
+                int b = side > 0 ? i : 2*n-1-i;
+                float ax = points[(i-1)*2], ay = points[(i-1)*2+1];
+                float bx = points[i*2], by = points[i*2+1];
+                float anx = outline[a*2]-ax, any = outline[a*2+1]-ay;
+                float bnx = outline[b*2]-bx, bny = outline[b*2+1]-by;
+                float light = Math.max(0f,((anx*0.35f+any*0.94f)/widths[i-1]
+                        +(bnx*0.35f+bny*0.94f)/widths[i])*0.5f);
+                for (int band = 0; band < 4; band++) {
+                    float inner = 0.15f+band*0.2125f, outer = inner+0.2125f;
+                    p.fillPoly(new float[] {ax+anx*inner,ay+any*inner,
+                            bx+bnx*inner,by+bny*inner,bx+bnx*outer,by+bny*outer,
+                            ax+anx*outer,ay+any*outer},
+                            Glyph.withAlpha(shadow,(int)((18+band*16)*light)));
+                }
+            }
+        }
         float stroke = widest*0.40f;
         // Tint each edge where the pulse passes, from clasp toward character.
         for (int i = 0; i < 2*n; i++) {
