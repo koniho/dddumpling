@@ -118,7 +118,7 @@ final class LinkedPairArt {
         float nx = -dy/length*width, ny = dx/length*width;
         float mx = (x+tx)*0.5f, my = (y+ty)*0.5f;
         float[] shape = {x,y, mx+nx,my+ny, tx,ty, mx-nx,my-ny};
-        p.fillPoly(shape, Glyph.withAlpha(color,45));
+        p.fillPoly(shape, color);
         p.strokePoly(shape,Glyph.withAlpha(color,175),width*0.30f);
         p.line(x,y,tx,ty,Glyph.withAlpha(color,100),width*0.20f);
     }
@@ -182,7 +182,7 @@ final class LinkedPairArt {
         tube(p, points, widths, color, wave);
     }
 
-    /** Faint key-colored fill, rounded underside shading, and soft hexagon-style edges. */
+    /** Solid hexagon-colored fill with a separate rounded underside shadow layer. */
     private static void tube(Painter p, float[] points, float[] widths, int color, Pulse wave) {
         int n = widths.length;
         float[] outline = new float[n*4];
@@ -200,10 +200,10 @@ final class LinkedPairArt {
             outline[j*2+1] = points[i*2+1]-ny;
             widest = Math.max(widest,widths[i]);
         }
-        p.fillPoly(outline,Glyph.withAlpha(color,45));
+        p.fillPoly(outline,color);
         // Translucent shadow bands stay inside the silhouette. Lighting comes from
         // above-left, so the shaded side follows each bend and either arm direction.
-        int shadow = Glyph.mix(color,INK,0.94f);
+        int shadow = Glyph.mix(color,INK,0.72f);
         for (int side = -1; side <= 1; side += 2) {
             for (int i = 1; i < n; i++) {
                 int a = side > 0 ? i-1 : 2*n-i;
