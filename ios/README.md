@@ -1,10 +1,10 @@
-# DDDUMPLING for iPhone
+# DDDUMPLING for iPhone and iPad
 
 Native UIKit/Core Graphics/AVFoundation host for the existing Java game. J2ObjC translates the
 same gameplay and scene sources used by Android; generated Objective-C stays in `build/`.
-Initial target: portrait iPhone, iOS 15+, arm64. iPad, Mac Catalyst, Game Center, iCloud and
-Android save transfer are outside this initial port. The iPhone app may run in iPad compatibility
-mode; there is no native iPad layout or validation.
+Target: iPhone and iPad, iOS 15+, arm64. iPhone stays portrait; iPad supports all orientations
+and resizable windows with a centered portrait playfield. Mac Catalyst, Game Center, iCloud and
+Android save transfer remain outside this port. See [iPad layout and validation](docs/ipad.md).
 
 ## Prerequisites
 

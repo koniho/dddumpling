@@ -186,6 +186,12 @@
     [self refreshNavigation];
     [self setNeedsDisplay];
 }
+- (void)disconnect {
+    [self setActive:NO];
+    // A discarded scene must not retain its game through the display-link target.
+    [self.displayLink invalidate];
+    self.displayLink = nil;
+}
 - (void)frame:(CADisplayLink *)link {
     if (!self.active || self.bounds.size.width <= 0) return;
     CFTimeInterval now = link.timestamp;

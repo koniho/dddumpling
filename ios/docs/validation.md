@@ -96,5 +96,6 @@ remains open before selecting a different Painter backend.
   production (80), input (56), all 13 native/UI tests, and the unsigned Release archive.
   See [CI results and signing setup](ci.md). Signed CI export/upload remain unverified.
 
-Game Center/iCloud, Android save transfer and native iPad layout remain explicitly outside the
-initial release scope. The full feature inventory is [parity.md](parity.md).
+Game Center/iCloud and Android save transfer remain outside the initial release scope.
+Native iPad support and its separate validation record are described in [ipad.md](ipad.md).
+The full feature inventory is [parity.md](parity.md).

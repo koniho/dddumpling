@@ -46,6 +46,7 @@
     [(DDGameView *)self.window.rootViewController.view setActive:YES];
 }
 - (void)sceneDidDisconnect:(UIScene *)scene {
-    [(DDGameView *)self.window.rootViewController.view setActive:NO];
+    [(DDGameView *)self.window.rootViewController.view disconnect];
+    self.window = nil;
 }
 @end

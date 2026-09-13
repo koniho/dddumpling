@@ -2,6 +2,10 @@
 #import "DDGameView.h"
 #import "DDViewport.h"
 #import "com/dddumpling/game/IOSTouch.h"
+#import "com/dddumpling/game/IOSGame.h"
+#import "com/dddumpling/game/GameCore.h"
+#import "com/dddumpling/game/Showcase.h"
+#import "com/dddumpling/game/Layout.h"
 
 @interface DDTestTouch : UITouch
 @property(nonatomic) CGPoint point;
@@ -47,12 +51,63 @@
 @interface DDTouchViewportTests : XCTestCase
 @end
 @implementation DDTouchViewportTests
+- (void)testDisconnectedSceneReleasesItsDisplayLinkAndView {
+    __weak DDGameView *released;
+    @autoreleasepool {
+        DDGameView *view = [[DDGameView alloc] initWithFrame:CGRectMake(0, 0, 390, 844)];
+        released = view;
+        [view setActive:YES];
+        [view disconnect];
+        XCTAssertNil([view valueForKey:@"displayLink"]);
+        XCTAssertFalse([[view valueForKey:@"active"] boolValue]);
+    }
+    XCTAssertNil(released);
+}
 - (DDTestTouch *)touchAt:(CGPoint)point time:(NSTimeInterval)time viewport:(DDViewport)viewport {
     DDTestTouch *touch = [DDTestTouch new];
     touch.point = CGPointMake(viewport.frame.origin.x + point.x * viewport.scale,
                              viewport.frame.origin.y + point.y * viewport.scale);
     touch.time = time;
     return touch;
+}
+- (void)tap:(CGPoint)point inView:(DDTabletTestView *)view {
+    DDTestTouch *touch = [self touchAt:point time:1 viewport:DDViewportMake(view.bounds, view.safeAreaInsets, YES)];
+    DDTestEvent *event = [DDTestEvent new]; event.time = 1;
+    [view touchesBegan:[NSSet setWithObject:touch] withEvent:event];
+    [view touchesEnded:[NSSet setWithObject:touch] withEvent:event];
+}
+- (void)testCollectionStoryTouchAlignmentSurvivesResize {
+    DDTabletTestView *view = [[DDTabletTestView alloc] initWithFrame:CGRectMake(0, 0, 1133, 744)];
+    [view layoutSubviews];
+    [view setActive:YES];
+    DDIOSGame *game = [view valueForKey:@"game"];
+    DDGameCore *core = [game core];
+    DDLayout *layout = [game geometry];
+    // In-memory test fixture only; no save or production scene is modified.
+    core->collected_ = 1;
+    core->caseIndex_ = 0;
+    [self tap:CGPointMake([DDShowcase iconCxWithDDLayout:layout withFloat:core->clock_],
+                          [DDShowcase iconCyWithDDLayout:layout withFloat:core->clock_]) inView:view];
+    XCTAssertTrue(core->caseOpen_);
+    for (int frame = 0; frame < 30; frame++) [game updateWithFloat:.05];
+    [self tap:CGPointMake(195, [DDShowcase focusCyWithDDLayout:layout]) inView:view];
+    XCTAssertTrue([core storyOpen]);
+    for (int frame = 0; frame < 30; frame++) [game updateWithFloat:.05];
+    UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:view.bounds.size];
+    UIImage *image = [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
+        [view drawRect:view.bounds];
+    }];
+    XCTAttachment *shot = [XCTAttachment attachmentWithImage:image];
+    shot.name = @"ipad-story-test-fixture";
+    shot.lifetime = XCTAttachmentLifetimeKeepAlways;
+    [self addAttachment:shot];
+    view.frame = CGRectMake(0, 0, 320, 700);
+    [view layoutSubviews];
+    XCTAssertTrue([core storyOpen]);
+    [self tap:CGPointMake(195, 400) inView:view];
+    XCTAssertFalse([core storyOpen]);
+    XCTAssertTrue(core->caseOpen_);
+    [view disconnect];
 }
 - (void)testAllPacketCoordinatesAndResizeCancellationUseTheViewport {
     DDTabletTestView *view = [[DDTabletTestView alloc] initWithFrame:CGRectMake(0, 0, 1133, 744)];
