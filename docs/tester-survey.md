@@ -1,5 +1,10 @@
 # DDDUMPLING tester survey
 
+[Open the tester survey](https://docs.google.com/forms/d/e/1FAIpQLSfuoh2gVSIzftMTp_Os-Juy602pmbL-TYdPUcPYC2UmTk2i7w/viewform).
+The owner created the form and supplied this respondent link. On September 13, 2026,
+an unauthenticated read returned the survey title and questions, including all four bosses,
+Lands, and the display case. Submission and response delivery have not been tested by the agent.
+
 Ready-to-create Google Form: [tools/create-tester-survey.js](../tools/create-tester-survey.js).
 The form is intended for adult community testers and parents, not unsupervised child respondents.
 It asks about actual play rather than asking adults to predict what children will enjoy.
@@ -28,7 +33,7 @@ do not describe it as free of all provider data processing or guaranteed anonymo
 Keep raw answers private, remove accidental personal details, and retain only feedback needed
 for the testing work. Assess adult and parent-observed answers separately when tuning difficulty.
 
-No live form has been created by the repository script until it is run in the owner's Google account.
-Local syntax checks do not verify Google authorization, publishing, or actual response delivery.
+The live form above was created by the owner. Local syntax checks of the generator do not
+verify Google authorization, publishing, or actual response delivery.
 
 API reference: https://developers.google.com/apps-script/reference/forms/form
