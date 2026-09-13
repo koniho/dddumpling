@@ -1,0 +1,12 @@
+Test the complete DDDUMPLING run from the title screen through regular stages, minigames, boss encounters, and the collection.
+
+Please focus on:
+• Two-thumb character-key input and falling-sequence readability
+• Drag, swipe, and two-finger boss gestures
+• Steamer and Starpath controls
+• Pause, background, resume, and relaunch behavior
+• Music, sound effects, and character-story narration
+• Saved best scores, unlocked lands, and collection progress after relaunch
+• Display-case browsing and story playback
+
+Bosses appear at stages 5, 10, 15, and 20. The game runs in portrait orientation and requires no account or network connection. Please include your iPhone model and iOS version with feedback.
