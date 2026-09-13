@@ -55,17 +55,21 @@ final class Kawaii {
         for (int side = -1; side <= 1; side += 2) {
             float ex = cx + side*rx*eyeX, ey = fy+ry*eyeY;
             p.fillEllipse(ex,ey,rx*0.23f*scale,ry*0.27f*scale,body);
-            // Compressed eyes and inward-sloping brows make a readable determined squint.
-            p.line(ex-side*rx*0.13f*scale,ey+ry*0.04f*scale,
-                    ex+side*rx*0.16f*scale,ey-ry*0.08f*scale,INK,size*0.09f*scale);
-            p.line(ex-side*rx*0.13f*scale,ey-ry*0.12f*scale,
-                    ex+side*rx*0.19f*scale,ey-ry*0.25f*scale,INK,size*0.10f*scale);
+            // Soft effort squints: a rounded arch, without an angry brow.
+            float ew = rx*0.15f*scale, eh = ry*0.09f*scale;
+            p.polyline(new float[] {ex-ew,ey, ex-ew*0.5f,ey-eh*0.8f,
+                    ex,ey-eh, ex+ew*0.5f,ey-eh*0.8f, ex+ew,ey},
+                    INK,size*0.075f*scale);
         }
         float my = fy+ry*(g == GRAPES ? 0.17f : 0.39f);
-        float mw = rx*0.24f*scale, mh = ry*0.09f*scale;
         p.fillEllipse(cx,my,rx*0.43f*scale,ry*0.24f*scale,body);
-        p.fillEllipse(cx,my,mw,mh,INK);
-        p.fillEllipse(cx,my,mw*0.80f,mh*0.55f,0xFFFFF4DD);
+        // Rosy puffed cheeks and a compact, confident grin keep the effort playful.
+        for (int side = -1; side <= 1; side += 2) {
+            float cheekX = cx+side*rx*0.39f*scale;
+            p.fillEllipse(cheekX,my-ry*0.04f*scale,rx*0.15f*scale,
+                    ry*0.12f*scale,Glyph.mix(body,0xFFFF91A6,0.45f));
+        }
+        mouthCurve(p,cx,my-ry*0.025f*scale,rx*0.18f*scale,ry*0.095f*scale,1f);
     }
 
     /** Draws the original character with a trembling frown and two looping falling tears. */
