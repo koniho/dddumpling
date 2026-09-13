@@ -169,15 +169,13 @@ final class LinkedPairArt {
     private static void arm(Painter p, float ax, float ay, float bx, float by, float r, int color, float bend, Pulse wave) {
         float ex = ax + (bx - ax) * 0.60f;
         float ey = Math.max(ay, by) + r * bend;
-        // One continuous silhouette keeps the elbow soft without an internal seam.
-        float[] points = new float[34], widths = new float[17];
-        for (int i = 0; i <= 16; i++) {
-            boolean upper = i <= 8;
-            float t = (upper ? i : i-8)/8f;
-            points[i*2] = upper ? ax+(ex-ax)*t : ex+(bx-ex)*t;
-            points[i*2+1] = upper ? ay+(ey-ay)*t : ey+(by-ey)*t;
-            widths[i] = r*(upper ? 0.16f-0.03f*t+0.025f*(float)Math.sin(t*Math.PI)
-                    : 0.13f-0.035f*t+0.045f*(float)Math.sin(t*Math.PI));
+        // A cubic bend keeps both sides of the elbow rounded in the held flex.
+        float[] points = new float[50], widths = new float[25];
+        for (int i = 0; i <= 24; i++) {
+            float t = i/24f, u = 1f-t;
+            points[i*2] = u*u*u*ax+3f*u*t*ex+t*t*t*bx;
+            points[i*2+1] = u*u*u*ay+3f*u*t*ey+t*t*t*by;
+            widths[i] = r*(0.16f-0.065f*t+0.035f*(float)Math.sin(t*Math.PI));
         }
         tube(p, points, widths, color, wave);
     }
@@ -203,7 +201,8 @@ final class LinkedPairArt {
         p.fillPoly(outline,color);
         // Translucent shadow bands stay inside the silhouette. Lighting comes from
         // above-left, so the shaded side follows each bend and either arm direction.
-        int shadow = Glyph.mix(color,INK,0.72f);
+        int shadow = Glyph.mix(color,INK,0.82f);
+        int highlight = Glyph.mix(color,GLOVE,0.80f);
         for (int side = -1; side <= 1; side += 2) {
             for (int i = 1; i < n; i++) {
                 int a = side > 0 ? i-1 : 2*n-i;
@@ -212,18 +211,21 @@ final class LinkedPairArt {
                 float bx = points[i*2], by = points[i*2+1];
                 float anx = outline[a*2]-ax, any = outline[a*2+1]-ay;
                 float bnx = outline[b*2]-bx, bny = outline[b*2+1]-by;
-                float light = Math.max(0f,((anx*0.35f+any*0.94f)/widths[i-1]
-                        +(bnx*0.35f+bny*0.94f)/widths[i])*0.5f);
+                float light = ((anx*0.35f+any*0.94f)/widths[i-1]
+                        +(bnx*0.35f+bny*0.94f)/widths[i])*0.5f;
                 for (int band = 0; band < 4; band++) {
-                    float inner = 0.15f+band*0.2125f, outer = inner+0.2125f;
+                    float inner = band*0.25f, outer = inner+0.25f;
+                    int alpha = light >= 0f ? 40+band*40
+                            : band == 0 ? 25 : band == 1 ? 80 : band == 2 ? 115 : 65;
                     p.fillPoly(new float[] {ax+anx*inner,ay+any*inner,
                             bx+bnx*inner,by+bny*inner,bx+bnx*outer,by+bny*outer,
                             ax+anx*outer,ay+any*outer},
-                            Glyph.withAlpha(shadow,(int)((18+band*16)*light)));
+                            Glyph.withAlpha(light >= 0f ? shadow : highlight,
+                                    (int)(alpha*Math.abs(light))));
                 }
             }
         }
-        float stroke = widest*0.40f;
+        float stroke = widest*0.25f;
         // Tint each edge where the pulse passes, from clasp toward character.
         for (int i = 0; i < 2*n; i++) {
             int j = (i+1)%(2*n);
