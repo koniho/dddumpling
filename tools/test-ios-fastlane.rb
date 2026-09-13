@@ -3,6 +3,7 @@ require "tmpdir"
 require "fileutils"
 
 $calls = []
+$match_private_keys = []
 module UI
   def self.user_error!(message); raise ArgumentError, message; end
 end
@@ -19,6 +20,7 @@ def app_store_connect_api_key(**options); record_action(:app_store_connect_api_k
 def setup_ci(**options); record_action(:setup_ci, options); end
 def sh(*command); record_action(:sh, command: command); end
 def match(**options)
+  $match_private_keys << ENV["MATCH_GIT_PRIVATE_KEY"]
   ENV["sigh_com.dddumpling.game.ios_appstore_profile-name"] = "match AppStore com.dddumpling.game.ios"
   record_action(:match, options)
 end
@@ -50,8 +52,8 @@ end
 def archive_environment
   {
     "IOS_TEAM_ID" => "A1B2C3D4E5",
-    "IOS_MATCH_GIT_URL" => "https://github.com/example/signing.git",
-    "IOS_MATCH_GIT_BASIC_AUTHORIZATION" => "base64-basic-auth",
+    "IOS_MATCH_GIT_URL" => "git@github.com:example/signing.git",
+    "IOS_MATCH_GIT_PRIVATE_KEY" => "-----BEGIN OPENSSH PRIVATE KEY-----\nfixture\n-----END OPENSSH PRIVATE KEY-----",
     "IOS_MATCH_PASSWORD" => "encrypted-certificates-password",
     "IOS_APPSTORE_KEY_ID" => "ABC123DEFG",
     "IOS_APPSTORE_ISSUER_ID" => "00000000-0000-0000-0000-000000000000",
@@ -73,18 +75,20 @@ assert($calls.empty?, "archive validates the build number before actions")
 
 archive_environment.each { |name, value| ENV[name] = value }
 $calls.clear
+$match_private_keys.clear
 ios_archive!
 actions = $calls.map(&:first)
 assert(actions.include?(:match) && actions.include?(:build_app), "archive obtains signing assets and builds")
 assert(!actions.include?(:upload_to_testflight), "archive never uploads")
 match_options = $calls.assoc(:match).last
 assert(match_options[:readonly] && match_options[:type] == "appstore", "match is read-only App Store signing")
+assert($match_private_keys == [archive_environment.fetch("IOS_MATCH_GIT_PRIVATE_KEY")], "match receives the SSH deploy key contents")
 assert(match_options[:keychain_password] == "", "match uses setup_ci's standard empty temporary keychain password")
 signing_options = $calls.assoc(:update_code_signing_settings).last
 assert(signing_options[:targets] == ["DDDumpling"] && signing_options[:build_configurations] == ["Release"], "only the app Release configuration uses manual signing")
 build_options = $calls.assoc(:build_app).last
 assert(build_options[:xcargs] == "CURRENT_PROJECT_VERSION=42.1" && build_options[:export_method] == "app-store", "archive uses the supplied build number")
-assert(ENV["MATCH_PASSWORD"].nil? && ENV["MATCH_GIT_BASIC_AUTHORIZATION"].nil?, "match credentials do not leak into subsequent lanes")
+assert(ENV["MATCH_PASSWORD"].nil? && ENV["MATCH_GIT_PRIVATE_KEY"].nil?, "match credentials do not leak into subsequent lanes")
 archive_calls = $calls.reject { |name, _| name == :sh }.to_h
 
 clear_ios_environment
