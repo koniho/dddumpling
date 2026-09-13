@@ -26,7 +26,7 @@ final class Power {
     static final int COUNT = 4;
     static final int INCOGNITO = 4, MONOCHROME = 5;
     static final int MYSTERY_STAGE = 11;
-    static final float DEBUFF_TIME = 8f, SELECT_TIME = 1.1f;
+    static final float DEBUFF_TIME = 8f, SELECT_TIME = 0.55f;
     static int mysteryCount(boolean team) { return offeredCount(team)+2; }
     static int mysteryAt(boolean team,int i) {
         int powers = offeredCount(team);
@@ -203,7 +203,7 @@ final class Power {
 
     int shownEffect() {
         if (!mystery || (hit && hitT >= SELECT_TIME)) return effect;
-        float ticks = hit ? 18f*(1f-(1f-hitT/SELECT_TIME)*(1f-hitT/SELECT_TIME)) : t*4f;
+        float ticks = hit ? 18f*(1f-(1f-hitT/SELECT_TIME)*(1f-hitT/SELECT_TIME)) : t*8f;
         return mysteryAt(teamAvailable,((int)ticks)%mysteryCount(teamAvailable));
     }
     String name() {

@@ -353,7 +353,7 @@ From stage 16, each active power-up starts its own repeating spawn pattern: one 
 
 ### Mystery pickups (stage 11+)
 
-The floating pickup cycles through eligible powers plus INCOGNITO and MONOCHROME. A direct tap chooses the result randomly at collection time and starts a 1.1-second roulette reveal; repeated taps do not reroll it. Team Squish requires a collected character, and MULTI remains excluded. Before stage 11 pickups keep their existing fixed outcomes.
+The floating pickup cycles through eligible powers plus INCOGNITO and MONOCHROME. A direct tap chooses the result randomly at collection time and starts a 0.55-second roulette reveal; repeated taps do not reroll it. Team Squish requires a collected character, and MULTI remains excluded. Before stage 11 pickups keep their existing fixed outcomes.
 
 INCOGNITO puts pixel sunglasses on enemy and player characters, then morphs them into one shared round disguise differentiated only by key color. The 0.75-second transformation reverses when it expires. MONOCHROME fades the entire play area to grayscale over 0.6 seconds and fades back afterward. Both debuffs last eight seconds, preserve normal input and stage difficulty, pause with the game, and clear on stage changes or a new run. They do not trigger frenzy spawn/fall boosts or clear the stage on expiration.
 

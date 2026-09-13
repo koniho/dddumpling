@@ -88,6 +88,9 @@ abstract class Check {
             lastDepth = depth;
         }
         public void clearWord() { clears++; }
+        int shuffleBlips, debuffDowns;
+        public void shuffleBlip() { shuffleBlips++; }
+        public void debuffDown() { debuffDowns++; }
         int linkedThuds;
         public void linkedThud() { linkedThuds++; }
         public void wrong() { wrongs++; }

@@ -200,6 +200,8 @@ final class GameCore {
         void clearWord();
         void wrong();
         void linkedThud();
+        void shuffleBlip();
+        void debuffDown();
         void damage();
         void achievement();
         /** The slime has turned an unanswered prompt into a volley. */
@@ -702,7 +704,7 @@ final class GameCore {
         if (effect != Power.INCOGNITO && effect != Power.MONOCHROME) return;
         debuff = effect;
         debuffLeft = Power.DEBUFF_TIME;
-        if (sound != null) sound.wrong();
+        if (sound != null) sound.debuffDown();
     }
 
     boolean powerActive() { return modeLeft > 0f; }
@@ -997,7 +999,10 @@ final class GameCore {
         }
 
         if (power != null) {
+            int previousIcon = power.shownEffect();
             power.update(dt);
+            if (power.mystery && power.hit && power.hitT < Power.SELECT_TIME
+                    && power.shownEffect() != previousIcon && sound != null) sound.shuffleBlip();
             if (power.mystery && power.hit && !power.activated && power.hitT >= Power.SELECT_TIME) {
                 power.activated = true;
                 if (power.effect >= Power.COUNT) startDebuff(power.effect);
@@ -1086,6 +1091,7 @@ final class GameCore {
         score += Power.SCORE;
         Fx.explode(this, rnd, power.x, power.y, L.enemyR * 2.2f, 26, 0xFFFFFFFF);
         if (power.mystery) {
+            if (sound != null) sound.shuffleBlip();
             power.teamAvailable = Collect.owned(collected) > 0;
             power.effect = Power.mysteryAt(power.teamAvailable,rnd.nextInt(Power.mysteryCount(power.teamAvailable)));
         } else {

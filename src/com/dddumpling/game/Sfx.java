@@ -30,7 +30,8 @@ final class Sfx {
             SHIELD_BOUNCE = 32, SLIME_DAMAGE = 33, OCTO_CUE = 34, OCTO_LOCK = 35;
     static final int BOSS_TAUNT_0 = 36, BOLT_DEATH = BOSS_TAUNT_0 + Boss.COUNT,
             MUSHROOM_SHAKE = BOLT_DEATH + 1, MUSHROOM_SPORE = MUSHROOM_SHAKE + 1,
-            LINKED_THUD = MUSHROOM_SPORE + 1, COUNT = LINKED_THUD + 1;
+            LINKED_THUD = MUSHROOM_SPORE + 1, SHUFFLE_BLIP = LINKED_THUD + 1, DEBUFF_DOWN = SHUFFLE_BLIP + 1,
+            COUNT = DEBUFF_DOWN + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -52,6 +53,8 @@ final class Sfx {
             case CLEAR: return clear();
             case WRONG: return wrong();
             case LINKED_THUD: return linkedThud();
+            case SHUFFLE_BLIP: return shuffleBlip();
+            case DEBUFF_DOWN: return debuffDown();
             case START: return start();
             case STAGE_CLEAR: return stageClear();
             case POWER_CLEAR: return powerClear();
@@ -723,6 +726,23 @@ final class Sfx {
             }
             float airy = white * (0.18f + grains) * (1f - 0.55f * u);
             v[i] = airy * envelope(u, 0.006f, 1.7f);
+        }
+        return render(v);
+    }
+
+    /** Tiny rounded tick, short enough to leave space between roulette changes. */
+    static short[] shuffleBlip() { return sweepTone(0.035f, 1050f, 850f, 1f); }
+
+    /** Playful falling slide announcing a temporary debuff. */
+    static short[] debuffDown() {
+        int n = (int) (RATE * 0.48f);
+        float[] v = new float[n];
+        float phase = 0f;
+        for (int i = 0; i < n; i++) {
+            float u = i / (float) n;
+            phase += TAU * (760f * (float) Math.pow(0.25f, u)) / RATE;
+            float body = (float) Math.sin(phase) + 0.22f * (float) Math.sin(phase * 2f);
+            v[i] = body * envelope(u, 0.025f, 1.5f) * Math.min(1f, (1f-u)*12f);
         }
         return render(v);
     }

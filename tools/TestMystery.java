@@ -33,17 +33,27 @@ final class TestMystery extends Check {
             check("floating mystery cycles through every eligible icon",shown.equals(options));
         }
         c.power.x=L.w/2f; c.power.y=L.playTop+L.enemyR*3f;
+        Ear ear=new Ear(); c.sound=ear;
+        c.update(0.02f,L);
+        check("idle roulette stays quiet",ear.shuffleBlips==0);
+        check("selection takes half the original time",Power.SELECT_TIME==0.55f);
         int score=c.score;
         check("mystery accepts one collection tap",c.tapPower(c.power.x,c.power.y,L));
         check("selection is deferred and cannot be tapped again",!c.powerActive() && c.debuffLeft==0f
                 && !c.tapPower(c.power.x,c.power.y,L) && c.score==score+Power.SCORE);
+        check("collection starts shuffle audio",ear.shuffleBlips==1);
         c.power.effect=Power.MONOCHROME;
         c.paused=true; c.update(0.3f,L);
-        check("pause freezes the roulette",c.power.hitT==0f);
+        check("pause freezes the roulette",c.power.hitT==0f && ear.shuffleBlips==1);
         c.paused=false;
         advance(c,L,Power.SELECT_TIME+0.05f);
         check("roulette resolves to one debuff without frenzy acceleration",c.debuff==Power.MONOCHROME
                 && c.debuffLeft>0f && !c.powerActive());
+        check("shuffle blips and descending reveal replace miss audio",ear.shuffleBlips>3
+                && ear.debuffDowns==1 && ear.wrongs==0);
+        int blips=ear.shuffleBlips;
+        advance(c,L,0.02f);
+        check("shuffle audio stops at reveal",ear.shuffleBlips==blips && ear.debuffDowns==1);
         check("monochrome starts with a partial fade",c.monochromeFade>0f && c.monochromeFade<1f);
         advance(c,L,0.7f);
         check("monochrome reaches full strength",c.monochromeFade==1f);

@@ -363,6 +363,8 @@ final class Audio implements GameCore.Sound {
         play(Sfx.CLEAR, 1f);
     }
 
+    @Override public void shuffleBlip() { play(Sfx.SHUFFLE_BLIP, 1f, 0.3f); }
+    @Override public void debuffDown() { play(Sfx.DEBUFF_DOWN, 1f, 0.8f); }
     @Override public void linkedThud() { play(Sfx.LINKED_THUD, 1f, 0.85f); }
 
     @Override public void wrong() {
