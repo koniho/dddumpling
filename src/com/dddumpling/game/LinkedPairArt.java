@@ -45,14 +45,7 @@ final class LinkedPairArt {
                 float tx = c.tileX(next, Math.min(next.pos, next.word.length - 1), L);
                 float ty = next.y;
                 float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 10f);
-                float hx = mx, hy = my;
                 p.strokePoly(Glyph.hex(tx, ty, r * (1.10f + pulse * 0.12f)), GOLD, r * 0.09f);
-                float left = Math.max(0f, Math.min(1f, waiting.linkLeft / LinkedPairs.WINDOW));
-                p.strokeCircle(hx, hy, r * 0.76f, Glyph.withAlpha(GLOVE, 55), r * 0.08f);
-                p.arc(hx, hy, r * 0.76f, r * 0.76f, -90f, left * 360f, GOLD, r * 0.12f);
-                float labelY = waiting.y + r * 1.45f;
-                p.text("TOGETHER!", (c.enemyCentreX(a) + c.enemyCentreX(b)) * 0.5f, labelY,
-                        r * 0.48f, GLOVE, Painter.CENTER, true);
 
             }
         }

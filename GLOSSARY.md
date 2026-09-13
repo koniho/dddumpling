@@ -337,7 +337,7 @@ A single press keeps both faces visible with determined expressions and pulses t
 of both intertwined limbs. Idle arms are nearly straight with very subtle movement. Elbows hold a more angled pose with
 a slight bulge on rejection; a bright color
 front travels from the clasp toward both characters. A missed window renews that resistance pose and plays one low thud. The unpressed
-partner's gold highlight and the countdown remain visible; there is no checkmark. Arms and vines
+partner's gold highlight remains visible; there is no countdown circle, text, or checkmark. Arms and vines
 have varying thickness along their length and no dark outline. Limbs render behind the characters
 and are cut out around both complete character tiles, including during the flex. A missed window restores the first key without a life penalty
 or score; both enemies still descend. A successful chord credits two clears. Power-ups release
