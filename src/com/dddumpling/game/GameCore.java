@@ -1141,6 +1141,20 @@ final class GameCore {
      * Playtest hook: drops straight into a mode without waiting for a letter to drift past.
      * Goes through {@link #startFrenzy} so it is the real thing, not a simulation of it.
      */
+    void playtestDebuff(int effect) {
+        if (!BuildFlags.DEVELOPER || state != PLAY
+                || (effect != Power.INCOGNITO && effect != Power.MONOCHROME)) return;
+        power = null;
+        settingsOpen = false;
+        modeLeft = 0f;
+        buddy.leave();
+        fingerDown = touchDown = false;
+        strokeFade = 0f;
+        debuffLeft = monochromeFade = incognitoMorph = 0f;
+        if (sound != null) sound.frenzy(false);
+        startDebuff(effect);
+    }
+
     void playtestMode(int effect, Layout L) {
         if (!BuildFlags.DEVELOPER) return;
         if (state != PLAY) return;

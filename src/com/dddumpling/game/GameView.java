@@ -668,6 +668,9 @@ public class GameView extends View {
             core.jumpToStage(core.stage + SettingsUi.STAGE_STEP[hit - SettingsUi.HIT_STAGE],
                     layout);
             tick();
+        } else if (hit >= SettingsUi.HIT_DEBUFF) {
+            core.playtestDebuff(Power.INCOGNITO+hit-SettingsUi.HIT_DEBUFF);
+            tick();
         } else if (hit >= SettingsUi.HIT_TEST) {
             // Closes the panel and drops straight into the mode.
             int chip = hit - SettingsUi.HIT_TEST;

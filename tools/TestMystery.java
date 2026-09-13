@@ -10,6 +10,14 @@ final class TestMystery extends Check {
     }
     static void all(Layout L) {
         GameCore early=scene(L,9), c=scene(L,11);
+        SettingsUi ui=new SettingsUi();ui.compute(L,Music.NAMES.length);
+        for(int i=0;i<2;i++) {
+            float x=(ui.testChipL(i,2)+ui.testChipR(i,2))*0.5f;
+            check("debuff chip hit target " + i,ui.hit(x,ui.debuffY+ui.testH*0.5f)==SettingsUi.HIT_DEBUFF+i);
+            c.settingsOpen=true;c.playtestDebuff(Power.INCOGNITO+i);
+            check("debuff chip closes settings and starts effect " + i,!c.settingsOpen && c.debuff==Power.INCOGNITO+i && c.debuffLeft==Power.DEBUFF_TIME && !c.powerActive());
+        }
+        c=scene(L,11);
         check("mystery introduction eases the difficulty ramp",Pacing.lessonRelief(11)==1.15f
                 && Pacing.lessonRelief(12)==1.075f && Pacing.lessonRelief(13)==1f);
         check("early pickups keep their fixed outcome",!early.power.mystery && early.power.effect>=0);
