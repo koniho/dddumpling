@@ -51,6 +51,10 @@ the password you choose. CI uses it read-only and fails if valid assets are miss
 it never creates or repairs certificates/profiles. Follow the
 [match setup instructions](https://docs.fastlane.tools/actions/match/).
 
+Create a dedicated SSH key for CI. Add its public key to the match repository as a
+deploy key with write access disabled, and store the complete private-key contents in
+the `IOS_MATCH_GIT_PRIVATE_KEY` environment secret. Do not reuse a personal SSH key.
+
 Create an App Store Connect team API key with sufficient app-upload and signing-resource
 access (App Manager or Admin, with the needed account permissions). Store the downloaded
 `.p8` key as base64. Fastlane recommends API-key authentication for CI; signing still
@@ -67,8 +71,8 @@ The environment's deployment branch policy is configured to allow `main` only.
 | Kind | Name | Value |
 | --- | --- | --- |
 | Variable | `IOS_TEAM_ID` | Apple's ten-character team ID |
-| Variable | `IOS_MATCH_GIT_URL` | HTTPS URL of the private match repository |
-| Secret | `IOS_MATCH_GIT_BASIC_AUTHORIZATION` | Base64 of `username:token`; token needs read access to the match repository |
+| Variable | `IOS_MATCH_GIT_URL` | SSH URL of the private match repository, such as `git@github.com:owner/signing.git` |
+| Secret | `IOS_MATCH_GIT_PRIVATE_KEY` | PEM contents of an SSH deploy key with read-only access to the match repository |
 | Secret | `IOS_MATCH_PASSWORD` | Match repository encryption password |
 | Secret | `IOS_APPSTORE_KEY_ID` | App Store Connect API key ID |
 | Secret | `IOS_APPSTORE_ISSUER_ID` | Team API issuer ID |

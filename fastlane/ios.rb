@@ -28,7 +28,7 @@ def ios_archive_configuration!
   names = %w[
     IOS_TEAM_ID
     IOS_MATCH_GIT_URL
-    IOS_MATCH_GIT_BASIC_AUTHORIZATION
+    IOS_MATCH_GIT_PRIVATE_KEY
     IOS_MATCH_PASSWORD
     IOS_APPSTORE_KEY_ID
     IOS_APPSTORE_ISSUER_ID
@@ -59,13 +59,13 @@ end
 
 def ios_with_match_credentials(environment)
   prior_password = ENV["MATCH_PASSWORD"]
-  prior_basic_auth = ENV["MATCH_GIT_BASIC_AUTHORIZATION"]
+  prior_private_key = ENV["MATCH_GIT_PRIVATE_KEY"]
   ENV["MATCH_PASSWORD"] = environment.fetch("IOS_MATCH_PASSWORD")
-  ENV["MATCH_GIT_BASIC_AUTHORIZATION"] = environment.fetch("IOS_MATCH_GIT_BASIC_AUTHORIZATION")
+  ENV["MATCH_GIT_PRIVATE_KEY"] = environment.fetch("IOS_MATCH_GIT_PRIVATE_KEY")
   yield
 ensure
   ENV["MATCH_PASSWORD"] = prior_password
-  ENV["MATCH_GIT_BASIC_AUTHORIZATION"] = prior_basic_auth
+  ENV["MATCH_GIT_PRIVATE_KEY"] = prior_private_key
 end
 
 def ios_archive!
