@@ -77,6 +77,23 @@ jobs:
           ./check.sh -q -r
           ./check.sh -q --production
           ./ios/scripts/test-input.sh
+      - name: Prepare optional Firebase configuration
+        env:
+          IOS_FIREBASE_CONFIG_BASE64: ${{ secrets.IOS_FIREBASE_CONFIG_BASE64 }}
+        run: |
+          python3 - <<'PY'
+          import base64, os
+          from pathlib import Path
+          encoded = os.environ.get('IOS_FIREBASE_CONFIG_BASE64', '')
+          if encoded:
+              destination = Path('.private/firebase/GoogleService-Info.plist')
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              destination.write_bytes(base64.b64decode(encoded, validate=True))
+              destination.chmod(0o600)
+              print('Firebase project configured; analytics requires player consent.')
+          else:
+              print('No Firebase configuration: analytics will remain unavailable.')
+          PY
       - name: Build signed archive and IPA
         env:
           IOS_MATCH_GIT_PRIVATE_KEY: ${{ secrets.IOS_MATCH_GIT_PRIVATE_KEY }}

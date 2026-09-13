@@ -43,6 +43,7 @@ jobs:
           ./check.sh -q -r
           ./check.sh -q --production
           ./ios/scripts/test-input.sh
+          python3 ios/scripts/test-firebase-config.py
       - name: Run native and UI tests
         run: ./ios/scripts/test-simulator.sh
       - name: Build unsigned device Release archive

@@ -1,4 +1,8 @@
 name: DDDumpling
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk.git
+    exactVersion: 12.19.0
 options:
   minimumXcodeGenVersion: 2.46.0
   deploymentTarget:
@@ -47,10 +51,15 @@ targets:
           GCC_PREPROCESSOR_DEFINITIONS: ['$(inherited)', 'DEBUG=1']
           PRODUCT_BUNDLE_IDENTIFIER: com.dddumpling.game.ios.dev
     preBuildScripts:
+      - name: Configure optional Firebase analytics
+        script: 'python3 "$SRCROOT/scripts/firebase-config.py"'
+        basedOnDependencyAnalysis: false
       - name: Translate shared Java
         script: 'bash "$SRCROOT/scripts/translate.sh" "$CONFIGURATION"'
         basedOnDependencyAnalysis: false
     dependencies:
+      - package: Firebase
+        product: FirebaseAnalyticsCore
       - sdk: UIKit.framework
       - sdk: CoreGraphics.framework
       - sdk: CoreText.framework

@@ -3,6 +3,7 @@
 #import "DDAudio.h"
 #import "DDStore.h"
 #import "DDFrameMetrics.h"
+#import "DDAnalytics.h"
 #import "com/dddumpling/game/IOSGame.h"
 #import "com/dddumpling/game/IOSTouch.h"
 #import "IOSPrimitiveArray.h"
@@ -29,6 +30,7 @@
 @property(nonatomic, strong) UIButton *backButton;
 @property(nonatomic, strong) UIImpactFeedbackGenerator *haptic;
 @property(nonatomic, strong) DDFrameMetrics *frameMetrics;
+@property(nonatomic, strong) DDGameAnalytics *analytics;
 @property(nonatomic) NSInteger nextID;
 @property(nonatomic) CFTimeInterval lastTime;
 @property(nonatomic) BOOL active;
@@ -40,8 +42,7 @@
 @implementation DDHost
 - (void)tick { [self.view.haptic impactOccurred]; }
 - (void)openPrivacyWithNSString:(NSString *)url {
-    NSURL *address = [NSURL URLWithString:url];
-    if (address) [UIApplication.sharedApplication openURL:address options:@{} completionHandler:nil];
+    [self.view.analytics showPrivacyFrom:self.view.window.rootViewController];
 }
 @end
 
@@ -76,6 +77,8 @@
         DDHost *host = [DDHost new];
         host.view = self;
         [_game setHostWithDDIOSGame_Host:host];
+        _analytics = [DDGameAnalytics new];
+        [_game setAnalyticsWithDDAnalytics_Sink:_analytics];
         _haptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
         _frameMetrics = [[DDFrameMetrics alloc]
             initWithEnabled:[NSProcessInfo.processInfo.environment[@"DDD_PROFILE"] boolValue]];
@@ -167,6 +170,7 @@
     [self clearPointers];
     [self.audio setActive:active && !self.storeAlertVisible];
     self.displayLink.paused = !active;
+    if (active) [self.analytics offerConsentFrom:self.window.rootViewController];
     [self refreshNavigation];
     [self setNeedsDisplay];
 }

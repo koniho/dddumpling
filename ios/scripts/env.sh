@@ -11,3 +11,10 @@ if [ -z "${JAVA_HOME:-}" ]; then
 fi
 export PATH="$JAVA_HOME/bin:$PATH"
 J2OBJC_HOME="${J2OBJC_HOME:-$IOS_ROOT/vendor/j2objc-3.1/dist}"
+
+# XcodeGen projects are ignored; keep the dependency lock in a stable tracked location.
+prepare_packages() {
+    local package_dir="$IOS_ROOT/DDDumpling.xcodeproj/project.xcworkspace/xcshareddata/swiftpm"
+    mkdir -p "$package_dir"
+    cp "$IOS_ROOT/Package.resolved" "$package_dir/Package.resolved"
+}
