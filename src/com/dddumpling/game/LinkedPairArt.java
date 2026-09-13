@@ -24,7 +24,7 @@ final class LinkedPairArt {
             float pose = Math.min(1f, strain/0.18f);
             // Hold a firm flex pose; only the short release tail blends back to rest.
             float limbR = r * (1f + pose*0.12f);
-            float bend = 0.025f - pose*0.425f;
+            float bend = 0.025f + pose*0.375f;
             Pulse wave = new Pulse(mx, Math.max(r*0.2f, (bx-ax)*0.5f), strain);
             // The entire limb layer is confined to the gap between the character silhouettes.
             // Its leaves, paws and flex overshoot cannot leak onto or behind either body.
@@ -171,7 +171,7 @@ final class LinkedPairArt {
         }
     }
 
-    /** Nearly straight at rest; the elbow rises into an angled, held flex on rejection. */
+    /** Nearly straight at rest; the elbow drops below the clasp into a held flex on rejection. */
     private static void arm(Painter p, float ax, float ay, float bx, float by, float r, int color, float bend, Pulse wave) {
         float ex = ax + (bx - ax) * 0.60f;
         float ey = Math.max(ay, by) + r * bend;
