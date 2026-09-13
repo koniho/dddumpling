@@ -658,6 +658,7 @@ final class GameCore {
     /** Rapid clears earn a short, bounded replacement burst. */
     float powerLastClear = -100f;
     int powerRefillBurst;
+    int powerSpawnedEnemies;
     /** True between the wave ending and the interlude opening. */
     boolean pendingBonus;
     /** Set when a frenzy ended the stage, so the interlude can run longer. */
@@ -1081,6 +1082,7 @@ final class GameCore {
         modeLeft = Power.DURATION;
         powerLastClear = -100f;
         powerRefillBurst = 0;
+        powerSpawnedEnemies = 0;
         spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
         flingUsed = false;
         // A finger already resting on the field does not get a free stroke: it has to lift and
@@ -2589,10 +2591,12 @@ final class GameCore {
             // the stage is actually about, and they took the screen the boss needs.
             if (spawnTimer <= 0 && liveEnemies() < crowdCap()) {
                 if (LinkedPairs.spawn(this, L)) {
-                    spawnTimer = spawnInterval();
+                    if (powerActive() && powerRefillBurst > 0) powerRefillBurst--;
+                    spawnTimer = Power.spawnDelay(this, L);
                 } else if (!LinkedPairs.due(this) && spawn(L)) {
                     if (powerActive() && powerRefillBurst > 0) powerRefillBurst--;
-                    if (!powerActive()) spawnedThisStage++;
+                    if (powerActive()) powerSpawnedEnemies++;
+                    else spawnedThisStage++;
                     spawnTimer = Power.spawnDelay(this, L);
                 } else {
                     spawnTimer = 0.1f; // No clear entrance yet; keep the wave quota outstanding.

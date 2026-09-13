@@ -7,8 +7,9 @@ final class LinkedPairs {
     private LinkedPairs() {}
 
     static boolean due(GameCore c) {
-        return c.stage >= FIRST_STAGE && !c.boss.active() && (!c.powerActive() || c.mode != Power.MULTI)
-                && (c.spawnedThisStage == 0 || c.spawnedThisStage == 4);
+        if (c.stage < FIRST_STAGE || c.boss.active()) return false;
+        if (c.powerActive()) return c.mode != Power.MULTI && c.powerSpawnedEnemies%4 == 0;
+        return c.spawnedThisStage == 0 || c.spawnedThisStage == 4;
     }
 
     static boolean spawn(GameCore c, Layout L) {
@@ -25,7 +26,8 @@ final class LinkedPairs {
         if (!EnemyEntry.clear(a, c, L) || !EnemyEntry.clear(b, c, L)) return false;
         c.enemies.add(a);
         c.enemies.add(b);
-        c.spawnedThisStage += 2; // These replace two quota words, never add to the wave.
+        if (c.powerActive()) c.powerSpawnedEnemies += 2;
+        else c.spawnedThisStage += 2; // Replace two quota words in ordinary play.
         return true;
     }
 

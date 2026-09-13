@@ -157,6 +157,27 @@ final class TestLinkedPairs extends Check {
                         a.destroyed && a.link == null && b.link == null && b.typeable());
             }
         }
+        for (int effect : new int[]{Power.FLING,Power.FLURRY,Power.TEAM}) {
+            c = wave(L,16); c.collected = Collect.MASK;
+            c.spawnedThisStage = 12;
+            c.startFrenzy(effect,L);
+            for (int batch = 0; batch < 3; batch++) {
+                c.enemies.clear(); c.spawnTimer = 0f;
+                c.update(DT,L);
+                check("power repeatedly spawns a pair beyond ordinary quota " + effect + ":" + batch,
+                        c.enemies.size() == 2 && c.enemies.get(0).link == c.enemies.get(1));
+                for (int single = 0; single < 2; single++) {
+                    c.enemies.clear(); c.spawnTimer = 0f;
+                    c.update(DT,L);
+                    check("power mixes two solos between pairs " + effect,
+                            c.enemies.size() == 1 && c.enemies.get(0).link == null);
+                }
+            }
+            check("power spawning leaves ordinary quota alone " + effect,c.spawnedThisStage == 12);
+            c = wave(L,14); c.collected = Collect.MASK; c.startFrenzy(effect,L);
+            check("no power pairs below stage 16 " + effect,!LinkedPairs.due(c));
+        }
+
         c = wave(L,16); a = c.enemies.get(0); b = a.link;
         c.collected = Collect.MASK;
         c.startFrenzy(Power.TEAM,L);
