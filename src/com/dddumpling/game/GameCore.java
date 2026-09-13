@@ -199,6 +199,7 @@ final class GameCore {
         void squish(int glyph, int depth);
         void clearWord();
         void wrong();
+        void linkedThud();
         void damage();
         void achievement();
         /** The slime has turned an unanswered prompt into a volley. */
@@ -294,6 +295,15 @@ final class GameCore {
     Sound sound;
 
     static final class Enemy {
+        Enemy link;
+        Enemy spinMate;
+        boolean linkWaiting;
+        boolean linkSliceRejected;
+        float linkLeft;
+        int linkButton = -1;
+        float linkStrain;
+        float linkFlex;
+        float linkReleaseDir, linkReleaseX, linkReleaseY;
         int[] word;
         /** Presses each tile needs: 1 for a plain letter, 2..4 for a stacked one. */
         int[] need;
@@ -649,6 +659,7 @@ final class GameCore {
     /** Rapid clears earn a short, bounded replacement burst. */
     float powerLastClear = -100f;
     int powerRefillBurst;
+    int powerSpawnedEnemies;
     /** True between the wave ending and the interlude opening. */
     boolean pendingBonus;
     /** Set when a frenzy ended the stage, so the interlude can run longer. */
@@ -1066,10 +1077,13 @@ final class GameCore {
         // substituting a different mode.
         int entry = effect == Power.TEAM ? anyCollected() : -1;
         if (effect == Power.TEAM && entry < 0) return;
+        if (effect != Power.MULTI) LinkedPairs.preparePower(this);
+        else LinkedPairs.release(this, L);
         mode = effect;
         modeLeft = Power.DURATION;
         powerLastClear = -100f;
         powerRefillBurst = 0;
+        powerSpawnedEnemies = 0;
         spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
         flingUsed = false;
         // A finger already resting on the field does not get a free stroke: it has to lift and
@@ -1797,7 +1811,8 @@ final class GameCore {
         }
         keyPress[g] = 1f;
 
-        if (target != null && (!target.typeable() || !enemies.contains(target))) target = null;
+        if (target != null && (!target.typeable() || !enemies.contains(target)
+                || (powerActive() && mode == Power.FLING && target.link != null))) target = null;
 
         // The boss, on the same terms the powerup gets: it outranks an *unengaged* word for the
         // letters it is asking for, and never steals a press out of a word already part-typed. The
@@ -1824,8 +1839,13 @@ final class GameCore {
             for (int i = 0; i < enemies.size(); i++) {
                 Enemy e = enemies.get(i);
                 if (!e.typeable()) continue;
+                if (powerActive() && mode == Power.FLING && e.link != null) continue;
                 if (!flurry() && e.word[e.pos] != g) continue;
-                if (pick == null || e.y > pick.y) pick = e;
+                boolean guided = e.link != null && (e.link.linkWaiting || e.link.dying);
+                boolean pickedGuide = pick != null && pick.link != null
+                        && (pick.link.linkWaiting || pick.link.dying);
+                if (pick == null || (guided && !pickedGuide)
+                        || (guided == pickedGuide && e.y > pick.y)) pick = e;
             }
             if (pick == null) {
                 miss(g);
@@ -1850,6 +1870,12 @@ final class GameCore {
         }
 
         Enemy e = target;
+        if (flurry() && e.link != null && e.link.linkWaiting && e.link.linkButton == g) {
+            if (sound != null) sound.wrong();
+            target = null;
+            return false; // Two distinct buttons, never a double-tap of one wildcard.
+        }
+        if (e.link != null) e.linkButton = g;
         int struck = e.pos;
         float hx = tileX(e, struck, L);
         float hy = e.y;
@@ -1858,7 +1884,11 @@ final class GameCore {
         int lit = e.word[struck];
 
         // A stacked tile absorbs several presses of the same letter before it clears.
-        if (sound != null) sound.squish(lit, pressesLeft(e, struck));
+        if (sound != null) {
+            // The first half meets the bond's resistance; only the completing key hits.
+            if (e.link != null && !e.link.linkWaiting) sound.wrong();
+            else sound.squish(lit, pressesLeft(e, struck));
+        }
         e.done++;
         if (e.done >= e.need[struck]) {
             e.pos++;
@@ -1871,9 +1901,12 @@ final class GameCore {
         skyGlow = Math.max(skyGlow, GLOW_HIT);
         skyGlowColor = Glyph.COLOR[lit];
         hits++;
-        combo++;
-        if (combo > maxCombo) maxCombo = combo;
-        score += 5 + Math.min(combo, 25) / 2;
+        // A chord scores only when both keys land; retries cannot farm points or combo.
+        if (e.link == null) {
+            combo++;
+            if (combo > maxCombo) maxCombo = combo;
+            score += 5 + Math.min(combo, 25) / 2;
+        }
 
         boolean kill = e.pos >= e.word.length;
         if (kill) {
@@ -1897,6 +1930,12 @@ final class GameCore {
         s.tileIndex = struck;
         s.dur = SHOT_TIME;
         shots.add(s);
+        if (e.link != null) {
+            // A 200ms chord resolves at input time. Its shots are visual only, including
+            // shots still travelling after a missed window, so they cannot clear a retry.
+            s.kill = false;
+            destroyWord(e, hx, hy, L);
+        }
         return true;
     }
 
@@ -2031,8 +2070,15 @@ final class GameCore {
      * the screen a little harder each time as the squishy grows.
      */
     void buddySquish(Enemy e, Layout L) {
-        destroyWord(e, buddy.x, buddy.y, L);
-        computeImpactFlyDirs(e, buddy.x, buddy.y, L);
+        Enemy partner = e.link;
+        if (partner != null) {
+            destroyWord(e,buddy.x,buddy.y,L,false);
+            destroyWord(partner,buddy.x,buddy.y,L);
+            e.spinMate = partner; partner.spinMate = e;
+        } else {
+            destroyWord(e, buddy.x, buddy.y, L);
+            computeImpactFlyDirs(e, buddy.x, buddy.y, L);
+        }
         Fx.explode(this, rnd, buddy.x, buddy.y, L.enemyR * 1.6f, 14,
                 Collect.BODY[buddy.who]);
         shake = Math.max(shake, 0.30f + 0.03f * buddy.squishes);
@@ -2202,7 +2248,9 @@ final class GameCore {
     // ---- geometry helpers (shared by renderer and hit feedback) -------------
 
     float enemyCentreX(Enemy e) {
-        return e.baseX + e.sway * (float) Math.sin(clock * 1.1f + e.phase);
+        float x = e.baseX + e.sway * (float) Math.sin(clock * 1.1f + e.phase);
+        if (e.link != null) x += (e.link.baseX-e.baseX)*0.035f*e.linkFlex;
+        return x;
     }
 
     /** Ease the side entrance into a vertical lane without changing its fall speed. */
@@ -2543,9 +2591,13 @@ final class GameCore {
             // and the fight is the stage — the words were dividing attention away from the thing
             // the stage is actually about, and they took the screen the boss needs.
             if (spawnTimer <= 0 && liveEnemies() < crowdCap()) {
-                if (spawn(L)) {
+                if (LinkedPairs.spawn(this, L)) {
                     if (powerActive() && powerRefillBurst > 0) powerRefillBurst--;
-                    if (!powerActive()) spawnedThisStage++;
+                    spawnTimer = Power.spawnDelay(this, L);
+                } else if (!LinkedPairs.due(this) && spawn(L)) {
+                    if (powerActive() && powerRefillBurst > 0) powerRefillBurst--;
+                    if (powerActive()) powerSpawnedEnemies++;
+                    else spawnedThisStage++;
                     spawnTimer = Power.spawnDelay(this, L);
                 } else {
                     spawnTimer = 0.1f; // No clear entrance yet; keep the wave quota outstanding.
@@ -2556,6 +2608,7 @@ final class GameCore {
             return;
         }
 
+        LinkedPairs.update(this, elapsed);
         updateCaret(dt, L);
 
         float band = Math.max(1f, (L.dangerY - L.playTop) * WARN_BAND);
@@ -2576,7 +2629,7 @@ final class GameCore {
 
             if (e.destroyed) {
                 e.destroyT += dt;
-                if (e.destroyT >= DESTROY_TIME) enemies.remove(i);
+                if (e.destroyT >= (e.spinMate != null ? LinkedPairArt.SPIN_TIME : DESTROY_TIME)) enemies.remove(i);
                 continue;
             }
 
@@ -2625,6 +2678,11 @@ final class GameCore {
 
             e.y += e.speed * fallRate() * dt;
             updateSidePath(e, L);
+            if (e.linkWaiting) {
+                e.warn = 0f;
+                e.y = Math.min(e.y, L.dangerY - L.enemyR * 1.1f);
+                continue;
+            }
             e.warn = clamp01((e.y - (L.dangerY - band)) / band);
             if (e.warn > warnLevel) warnLevel = e.warn;
 
@@ -2660,6 +2718,7 @@ final class GameCore {
      *     letter of the word on the way through, and the tone on top of that crowds them.
      */
     void destroyWord(Enemy e, float px, float py, Layout L, boolean chime) {
+        if (e.destroyed || LinkedPairs.cleared(this, e, L)) return;
         // The word is credited now but stays listed until it has flown apart, so anything
         // gated on the field being clear waits for the animation.
         if (powerActive() && !e.destroyed) {
@@ -2901,6 +2960,7 @@ final class GameCore {
     }
 
     private void breach(Enemy e, Layout L) {
+        LinkedPairs.breached(this, e, L);
         if (target == e) target = null;
         resolvedThisStage++;
         takeHit(enemyCentreX(e), L);

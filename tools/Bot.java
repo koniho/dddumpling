@@ -201,12 +201,31 @@ final class Bot {
         // find first — unless FLURRY has made every key the right one, which is the whole of what
         // that mode does for you.
         boolean engaged = c.target != null && c.enemies.contains(c.target) && c.target.typeable();
-        if (!engaged && !c.flurry()) {
+        if (!engaged && pendingPartner(c) == null && !c.flurry()) {
             think -= dt;
             if (think > 0f) return;
         }
         if (budget < 1f) return;
 
+        // Linked FLING enemies require a swipe through the clasp, not key presses.
+        if (c.flinging()) {
+            GameCore.Enemy pair = null;
+            for (GameCore.Enemy e : c.enemies) {
+                if (e.typeable() && e.link != null && (pair == null || e.y > pair.y)) pair = e;
+            }
+            if (pair != null) {
+                budget -= 1f;
+                presses++;
+                float x = (c.enemyCentreX(pair)+c.enemyCentreX(pair.link))*0.5f;
+                float y = (pair.y+pair.link.y)*0.5f;
+                if (rnd.nextFloat() < missRate) x += L.enemyR*1.1f;
+                c.beginStroke(x,y-L.enemyR);
+                c.sliceTo(x,y+L.enemyR,L);
+                c.endStroke();
+                think = reaction;
+                return;
+            }
+        }
         int want = pick(c);
         if (want < 0) return;
         budget -= 1f;
@@ -314,6 +333,15 @@ final class Bot {
         return false;
     }
 
+    /** The connected hand already identifies this key; no second search reaction is owed.
+     * It still costs a normal press from the budget and can still miss. */
+    private static GameCore.Enemy pendingPartner(GameCore c) {
+        for (GameCore.Enemy e : c.enemies) {
+            if (e.typeable() && e.link != null && e.link.linkWaiting) return e;
+        }
+        return null;
+    }
+
     /** The key this player would press next, or -1 with nothing worth pressing. */
     private int pick(GameCore c) {
         boolean engaged = c.target != null && c.enemies.contains(c.target) && c.target.typeable();
@@ -332,8 +360,14 @@ final class Bot {
             }
         }
         // FLURRY: any key hits, so there is nothing to work out.
-        if (c.flurry()) return rnd.nextInt(Glyph.COUNT);
+        if (c.flurry()) {
+            GameCore.Enemy pending = pendingPartner(c);
+            if (pending != null) return (pending.link.linkButton+1+rnd.nextInt(Glyph.COUNT-1))%Glyph.COUNT;
+            return rnd.nextInt(Glyph.COUNT);
+        }
         if (engaged) return c.target.word[c.target.pos];
+        GameCore.Enemy partner = pendingPartner(c);
+        if (partner != null) return partner.word[partner.pos];
         // The lowest typeable word, being the one closest to costing a life.
         GameCore.Enemy best = null;
         for (int i = 0; i < c.enemies.size(); i++) {

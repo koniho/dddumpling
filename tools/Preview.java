@@ -60,6 +60,79 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
+        GameCore linked = new GameCore(new Mem(), 1601L);
+        linked.startGame();
+        linked.jumpToStage(16, L);
+        shot(dir, "95-linked-intro", linked, L, w, h, ss);
+        linked.stageGap = 0f;
+        linked.spawnTimer = 0f;
+        linked.powerTimer = 100f;
+        step(linked, L, 2.2f);
+        linked.stageBanner = 0f;
+        shot(dir, "95-linked-hands", linked, L, w, h, ss);
+        float pairY = linked.enemies.get(0).y;
+        for (int frame = 0; frame < 3; frame++) {
+            for (GameCore.Enemy e : linked.enemies) e.y = L.playTop+(frame-1)*L.enemyR*0.65f;
+            shot(dir,"95-linked-header-"+frame,linked,L,w,h,ss);
+        }
+        for (GameCore.Enemy e : linked.enemies) e.y = pairY;
+        int originalLeft = linked.enemies.get(0).word[0], originalRight = linked.enemies.get(1).word[0];
+        for (int left = 0; left < 3; left++) {
+            for (int right = 3; right < 6; right++) {
+                linked.enemies.get(0).word[0] = left;
+                linked.enemies.get(1).word[0] = right;
+                shot(dir, "96-linked-material-" + left + "-" + right, linked, L, w, h, ss);
+                for (int side = 0; side < 2; side++) {
+                    GameCore.Enemy held = linked.enemies.get(side);
+                    held.linkWaiting = true;
+                    held.linkLeft = LinkedPairs.WINDOW * 0.6f;
+                    shot(dir, "97-linked-reaching-" + left + "-" + right + "-" + side, linked, L, w, h, ss);
+                    held.linkWaiting = false;
+                    held.linkLeft = 0f;
+                }
+
+            }
+        }
+        linked.enemies.get(0).word[0] = originalLeft;
+        linked.enemies.get(1).word[0] = originalRight;
+
+        GameCore.Enemy friend = linked.enemies.get(0);
+        linked.destroyWord(friend, linked.enemyCentreX(friend), friend.y, L);
+        shot(dir, "95-linked-pointing", linked, L, w, h, ss);
+        step(linked, L, 0.12f);
+        shot(dir, "95-linked-countdown", linked, L, w, h, ss);
+        step(linked, L, 0.10f);
+        shot(dir, "95-linked-resist", linked, L, w, h, ss);
+        for (int frame = 0; frame < 5; frame++) {
+            for (GameCore.Enemy e : linked.enemies) e.linkStrain = 1f-frame*0.2f;
+            shot(dir, "98-linked-flex-" + frame, linked, L, w, h, ss);
+        }
+
+
+        linked.destroyWord(friend,linked.enemyCentreX(friend),friend.y,L);
+        GameCore.Enemy releasePartner = friend.link;
+        linked.destroyWord(releasePartner,linked.enemyCentreX(releasePartner),releasePartner.y,L);
+        for (int frame = 0; frame < 3; frame++) {
+            step(linked,L,0.06f);
+            shot(dir,"99-linked-release-"+frame,linked,L,w,h,ss);
+        }
+
+        GameCore spinning = new GameCore(new Mem(),1601L);
+        spinning.startGame(); spinning.jumpToStage(16,L);
+        spinning.stageGap = 0f; spinning.spawnTimer = 0f; spinning.powerTimer = 100f;
+        step(spinning,L,2.2f);
+        spinning.stageBanner = 0f; spinning.collected = Collect.MASK;
+        spinning.startFrenzy(Power.TEAM,L);
+        GameCore.Enemy spinLeft = spinning.enemies.get(0), spinRight = spinLeft.link;
+        shot(dir,"99-power-bond-team",spinning,L,w,h,ss);
+        spinning.buddy.x = spinning.enemyCentreX(spinLeft); spinning.buddy.y = spinLeft.y;
+        spinning.buddySquish(spinLeft,L);
+        spinning.flash = spinning.shake = 0f;
+        for (int frame = 0; frame < 4; frame++) {
+            spinLeft.destroyT = spinRight.destroyT = 0.06f+frame*0.12f;
+            shot(dir,"99-power-bond-spin-"+frame,spinning,L,w,h,ss);
+        }
+
         for (int land = 0; land < Lands.COUNT; land++) {
             GameCore themed = new GameCore(new Mem(), 810L);
             themed.startGame();
@@ -1313,7 +1386,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore"};
+                "mushroom-shake", "mushroom-spore", "linked-thud"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

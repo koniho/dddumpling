@@ -22,9 +22,10 @@ final class RasterPainter implements Painter {
 
     /** Clip in buffer pixels, inclusive. */
     private int clipL, clipT, clipR, clipB;
-    /** Six slots per save(): tx, ty and the four clip edges. */
-    private final float[] stack = new float[6 * 32];
+    /** Seven slots per save(): transform, rectangle clip and cutout count. */
+    private final float[] stack = new float[7 * 32];
     private int sp;
+    private final java.util.List<float[]> cutouts = new java.util.ArrayList<float[]>();
 
     RasterPainter(int w, int h, int ss) {
         this.w = w;
@@ -73,6 +74,10 @@ final class RasterPainter implements Painter {
 
     private void blend(int x, int y, int color, float cov) {
         if (x < clipL || y < clipT || x > clipR || y > clipB || cov <= 0) return;
+        for (float[] circle : cutouts) {
+            float dx = x + 0.5f - circle[0], dy = y + 0.5f - circle[1];
+            if (dx*dx + dy*dy <= circle[2]*circle[2]) return;
+        }
         float a = ((color >>> 24) / 255f) * (cov > 1 ? 1 : cov);
         if (a <= 0.0015f) return;
         int i = y * bw + x;
@@ -350,6 +355,10 @@ final class RasterPainter implements Painter {
         clipB = Math.min(clipB, (int) Math.ceil(sy(b)) - 1);
     }
 
+    @Override public void clipOutCircle(float cx, float cy, float radius) {
+        cutouts.add(new float[] {sx(cx), sy(cy), radius*ss});
+    }
+
     @Override public void save() {
         stack[sp++] = tx;
         stack[sp++] = ty;
@@ -357,9 +366,12 @@ final class RasterPainter implements Painter {
         stack[sp++] = clipT;
         stack[sp++] = clipR;
         stack[sp++] = clipB;
+        stack[sp++] = cutouts.size();
     }
 
     @Override public void restore() {
+        int count = (int)stack[--sp];
+        while (cutouts.size() > count) cutouts.remove(cutouts.size()-1);
         clipB = (int) stack[--sp];
         clipR = (int) stack[--sp];
         clipT = (int) stack[--sp];

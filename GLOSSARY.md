@@ -322,3 +322,31 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 - **skit** vs **beat** — both are little vignettes of characters interacting, and they are
   different things. A **skit** plays under a stage banner, runs once, and uses the six letters
   (`Skits`). A **beat** loops inside a story popup and uses the collectibles (`Storybook`).
+
+## Linked friends (stage 16 onward)
+
+Each ordinary wave from stage 16 contains two linked pairs: one opens the wave, and another
+arrives after four quota enemies have spawned. Each pair has one key from each thumb's keyboard
+group. The pairs replace four quota enemies in total; a blocked entrance defers the pair rather
+than replacing it with an ordinary enemy. Fruit keys grow curling vines; the cat and blue creature
+have padded paws, while the other characters have soft hands. Key-colored limbs intertwine at the center, with vines passing
+behind and in front of the partner.
+Press either key, then its partner within 200 ms of elapsed play time (independent of speed
+settings and slow motion). Input resolves the chord immediately; projectiles are visual only.
+A single press keeps both faces visible with determined expressions and pulses the thickness
+of both intertwined limbs. Idle arms are nearly straight with very subtle movement. Elbows hold a smoothly curved flex pose with
+a slight bulge on rejection; both keys ease a little toward each other and briefly thicken their hexagon outlines; a bright color
+front travels from the clasp toward both characters. The first press plays the regular miss sound instead of a hit. A missed window renews that resistance pose without replaying the sound. The unpressed
+partner's gold highlight remains visible; there is no countdown circle, text, or checkmark. Arms and vines
+have varying thickness along their length, solid hexagon-colored fills with stronger underside shadows and upper highlights for rounded volume, and key-colored outlines matching the hexagons. Limbs render behind the characters
+and are cut out around both complete character tiles, including during the flex. A missed window restores the first key without a life penalty
+or score; both enemies still descend. A successful chord credits two clears; the clasp opens, the characters peel outward with their hands, and a short curved whoosh marks the release point. The retired MULTI mode releases
+links, and a breached partner cannot leave the other waiting forever.
+
+Stage 16 gives 15% longer travel and spawn intervals and caps the field at four enemies.
+Stage 17 retains 7.5% timing relief; stage 18 returns to the ordinary curve.
+Rules: `LinkedPairs`; visuals: `LinkedPairArt`; difficulty: `Pacing.lessonRelief`.
+
+Linked pairs keep their hands connected during FLING, FLURRY, and TEAM SQUISH. One TEAM SQUISH collision clears both and sends them spinning around their clasp offscreen. FLING protects their bodies and requires a cut through the joined hands to clear both. A body-only cut plays the miss sound and flexes both characters once per stroke. FLURRY accepts any two distinct buttons within 200 ms; repeating one button cannot clear a pair. Entering these powers resets a pending half-press.
+
+From stage 16, each active power-up starts its own repeating spawn pattern: one linked pair, then two solo enemies. The pattern continues beyond the ordinary wave quota and uses the current power-up pacing and crowd cap.

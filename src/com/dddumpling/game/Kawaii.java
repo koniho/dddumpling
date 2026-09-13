@@ -43,6 +43,35 @@ final class Kawaii {
         }
     }
 
+    /** Braced faces for a linked pair resisting a single press. */
+    static void determined(Painter p, int g, float cx, float cy, float size, int body, float squash) {
+        draw(p, g, cx, cy, size, body, squash, 0f);
+        float rx = size*squash, ry = size/squash;
+        float fy = cy + (g == GRAPES ? ry*0.24f : 0f);
+        float eyeX = g == GRAPES ? 0.16f : g == STRAWBERRY ? 0.32f : 0.35f;
+        float eyeY = g == SQUISHY ? -0.12f : g == STRAWBERRY ? -0.06f
+                : g == BLOB ? -0.04f : g == DUMPLING ? 0.06f : 0f;
+        float scale = g == GRAPES ? 0.5f : 1f;
+        for (int side = -1; side <= 1; side += 2) {
+            float ex = cx + side*rx*eyeX, ey = fy+ry*eyeY;
+            p.fillEllipse(ex,ey,rx*0.23f*scale,ry*0.27f*scale,body);
+            // Soft effort squints: a rounded arch, without an angry brow.
+            float ew = rx*0.15f*scale, eh = ry*0.09f*scale;
+            p.polyline(new float[] {ex-ew,ey, ex-ew*0.5f,ey-eh*0.8f,
+                    ex,ey-eh, ex+ew*0.5f,ey-eh*0.8f, ex+ew,ey},
+                    INK,size*0.075f*scale);
+        }
+        float my = fy+ry*(g == GRAPES ? 0.17f : 0.39f);
+        p.fillEllipse(cx,my,rx*0.43f*scale,ry*0.24f*scale,body);
+        // Rosy puffed cheeks and a compact, confident grin keep the effort playful.
+        for (int side = -1; side <= 1; side += 2) {
+            float cheekX = cx+side*rx*0.39f*scale;
+            p.fillEllipse(cheekX,my-ry*0.04f*scale,rx*0.15f*scale,
+                    ry*0.12f*scale,Glyph.mix(body,0xFFFF91A6,0.45f));
+        }
+        mouthCurve(p,cx,my-ry*0.025f*scale,rx*0.18f*scale,ry*0.095f*scale,1f);
+    }
+
     /** Draws the original character with a trembling frown and two looping falling tears. */
     static void crying(Painter p, int g, float cx, float cy, float r, int body, float squash,
             float phase, float amount) {

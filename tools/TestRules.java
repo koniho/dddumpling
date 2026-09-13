@@ -173,22 +173,22 @@ final class TestRules extends Check {
         check("stage 11 provides more breathing room", Math.abs(c.spawnInterval() - 2.05f) < 0.001f);
         float previous = spawn10;
         for (int stage = 11; stage <= 40; stage++) {
-            float interval = Pacing.spawnInterval(stage, 1f);
+            float interval = Pacing.spawnInterval(stage, 1f) / Pacing.lessonRelief(stage);
             check("late releases ease smoothly and stay capped at stage " + stage,
                     interval >= previous && interval <= 2.751f);
             check("speed setting scales late release timing at stage " + stage,
-                    Math.abs(Pacing.spawnInterval(stage, 1.5f) * 1.5f - interval) < 0.001f);
+                    Math.abs(Pacing.spawnInterval(stage, 1.5f) * 1.5f / Pacing.lessonRelief(stage) - interval) < 0.001f);
             previous = interval;
         }
         float previousFall = Pacing.travelSeconds(10, 1f);
         for (int stage = 11; stage <= 60; stage++) {
-            float fall = Pacing.travelSeconds(stage, 1f);
+            float fall = Pacing.travelSeconds(stage, 1f) / Pacing.lessonRelief(stage);
             check("late speed rises gradually at stage " + stage,
                     fall <= previousFall && previousFall - fall <= 0.195f && fall >= 7.5f);
             check("late stages keep the stage-ten word budget at stage " + stage,
                     Pacing.stageQuota(stage) == Pacing.stageQuota(10));
             check("speed setting still scales fall time at stage " + stage,
-                    Math.abs(Pacing.travelSeconds(stage, 1.5f) * 1.5f - fall) < 0.001f);
+                    Math.abs(Pacing.travelSeconds(stage, 1.5f) * 1.5f / Pacing.lessonRelief(stage) - fall) < 0.001f);
             previousFall = fall;
         }
         for (int stage = 1; stage <= 10; stage++) {
@@ -199,8 +199,8 @@ final class TestRules extends Check {
                     Pacing.stageQuota(stage) == 5 + (int)((Pacing.ramp(stage) + 1f) / 2f));
         }
         c.stage = 16;
-        check("stage 16 releases reach the gentler cap",
-                Math.abs(c.spawnInterval() - 2.75f) < 0.001f);
+        check("stage 16 adds lesson relief to the late release cap",
+                Math.abs(c.spawnInterval() - 2.75f * 1.15f) < 0.001f);
         c.stage = 40;
         check("late release relief is capped", Math.abs(c.spawnInterval() - 2.75f) < 0.001f);
 

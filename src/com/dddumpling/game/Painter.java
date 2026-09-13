@@ -43,6 +43,9 @@ interface Painter {
      */
     void clipRect(float l, float t, float r, float b);
 
+    /** Excludes a circular foreground silhouette until restore(). */
+    void clipOutCircle(float cx, float cy, float radius);
+
     void save();
 
     void restore();

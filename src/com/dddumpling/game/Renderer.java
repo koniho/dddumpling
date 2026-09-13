@@ -50,6 +50,7 @@ final class Renderer extends Draw {
             RoundEnd.swirl(p, c, L);
             BossVictory.draw(p, c, L);
         } else {
+            LinkedPairArt.draw(p, c, L);
             for (int i = 0; i < c.enemies.size(); i++) enemy(p, c, L, c.enemies.get(i));
         }
         pushWave(p, c, L);
@@ -148,6 +149,7 @@ final class Renderer extends Draw {
     // ---- enemies ------------------------------------------------------------
 
     static void enemy(Painter p, GameCore c, Layout L, GameCore.Enemy e) {
+        if (e.spinMate != null) return; // Drawn as one connected spinning pair.
         float destroy = e.destroyed
                 ? Math.min(1f, e.destroyT / GameCore.DESTROY_TIME) : 0f;
         if (e.dying) {
@@ -189,8 +191,8 @@ final class Renderer extends Draw {
 
         for (int i = 0; i < e.word.length; i++) {
             int g = e.word[i];
-            boolean head = i == e.pos && destroy == 0f;
-            boolean cleared = i < e.pos && destroy == 0f;
+            boolean head = (i == e.pos || e.linkWaiting) && destroy == 0f;
+            boolean cleared = i < e.pos && !e.linkWaiting && destroy == 0f;
             float x = c.tileX(e, i, L) + jx;
             float y = e.y + jy;
 
@@ -210,7 +212,10 @@ final class Renderer extends Draw {
 
             if (destroy > 0f) {
                 float ease = destroy * destroy;
-                if (e.radialFly) {
+                if (e.linkReleaseDir != 0f) {
+                    x += LinkedPairArt.releaseTravel(e,L);
+                    y += LinkedPairArt.releaseLift(e,L);
+                } else if (e.radialFly) {
                     // TEAM SQUISH radiates from the actual collision, including vertically.
                     float travel = (0.10f + 1.15f * ease) * L.w * 0.60f;
                     x += e.flyDir[i] * travel;
@@ -230,7 +235,7 @@ final class Renderer extends Draw {
             // FLURRY recolours every letter on one upward-travelling rainbow wave.
             int col = c.flurry() ? rainbowAt(y, L, c.clock) : Glyph.COLOR[g];
             // Only the tile actually struck takes the full colour strobe and pop.
-            float pop = (e.hitIndex == i) ? e.hitPulse : 0f;
+            float pop = (e.link == null && e.hitIndex == i) ? e.hitPulse : 0f;
             if (pop > 0) {
                 col = Glyph.mix(col, Glyph.cycle(c.clock * 7f + i * 0.17f), pop * 0.62f);
             }
@@ -241,6 +246,8 @@ final class Renderer extends Draw {
             // recede so the remaining letters are what the eye lands on.
             int fillA = cleared ? 26 : head ? 52 : 30;
             int edgeA = cleared ? 58 : head ? 165 : 88;
+            float bondFlex = e.link == null ? 0f : e.linkFlex;
+            edgeA += (int)(65f*bondFlex);
 
             // Stacked tiles sit on a pile of offset copies, one per press still owed, so the
             // depth is legible before you even count the pips.
@@ -255,14 +262,18 @@ final class Renderer extends Draw {
 
             p.fillPoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, fillA * fade / 255));
             p.strokePoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, edgeA * fade / 255),
-                    cellR * 0.075f);
+                    cellR * (0.075f+0.045f*bondFlex));
 
             float charR = cellR * 0.60f * (1f + 0.045f * (float) Math.sin(wobble))
                     * (1f + 0.34f * pop);
             float squash = 1f + 0.16f * pop - 0.05f * (float) Math.sin(wobble);
             int charCol = cleared ? Glyph.withAlpha(Glyph.mix(col, INK_DIM, 0.42f), 180) : col;
-            Kawaii.draw(p, g, x, y, charR, charCol, squash,
-                    cleared ? 1f : head ? 0.4f : 0.1f);
+            if (e.link != null && (e.linkWaiting || e.link.linkWaiting || e.linkStrain > 0f)) {
+                Kawaii.determined(p, g, x, y, charR, charCol, squash);
+            } else {
+                Kawaii.draw(p, g, x, y, charR, charCol, squash,
+                        cleared ? 1f : head ? 0.4f : 0.1f);
+            }
 
             // Exact count of presses still owed, so a 3-stack is never mistaken for a 4.
             if (left > 1) {

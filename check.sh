@@ -57,6 +57,8 @@ src/com/dddumpling/game/Buddy.java
 src/com/dddumpling/game/GameCore.java
 src/com/dddumpling/game/EnemyEntry.java
 src/com/dddumpling/game/Pacing.java
+src/com/dddumpling/game/LinkedPairs.java
+src/com/dddumpling/game/LinkedPairArt.java
 src/com/dddumpling/game/Blade.java
 src/com/dddumpling/game/CaseUi.java
 src/com/dddumpling/game/BossCollect.java

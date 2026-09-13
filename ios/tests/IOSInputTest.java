@@ -227,10 +227,28 @@ public final class IOSInputTest extends Check {
         check("debug title clears pause", !game.paused() && game.core().state==GameCore.TITLE);
     }
 
+    private static void linkedChord() {
+        for (float delay : new float[] {0f, 0.199f, 0.2f, 0.201f}) {
+            IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
+            c.startGame(); c.jumpToStage(16, l);
+            c.stageGap = 0f; c.spawnTimer = 0f; c.powerTimer = 100f;
+            game.update(DT);
+            GameCore.Enemy a = c.enemies.get(0), b = c.enemies.get(1);
+            float ax = c.keyX(l, a.word[0]), ay = c.keyY(l, a.word[0]);
+            float bx = c.keyX(l, b.word[0]), by = c.keyY(l, b.word[0]);
+            game.touch(one(IOSTouch.ACTION_DOWN, 9, ax, ay));
+            check("native first thumb immediately cues partner", a.linkWaiting);
+            game.update(delay);
+            game.touch(two(IOSTouch.ACTION_POINTER_DOWN, 1, 9, ax, ay, 42, bx, by));
+            check("native second thumb obeys 200ms window " + delay,
+                    a.destroyed == (delay <= 0.2f) && b.destroyed == (delay <= 0.2f));
+        }
+    }
+
     public static void main(String[] args) {
         packets(); titleAndLifecycle(); starsAndLand(); bossOwnership(); flingHistory();
         steamerAndPanic(); caseAndSettings();
-        debugScenes();
+        debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");
     }
