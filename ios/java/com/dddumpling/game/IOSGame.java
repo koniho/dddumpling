@@ -19,6 +19,7 @@ public final class IOSGame {
     public boolean handlesBack() { return Pause.handlesBack(core); }
     public boolean paused() { return core.paused; }
     private void cancelPointers() {
+        core.releaseNotes.cancelTouch();
         landPointer = starDragPointer = bonusSwipePointer = bossDragPointer = -1;
         bossDragging = bossPinching = pushArmed = false;
         caseGesture = CASE_IDLE; pausePress = 0;
@@ -68,6 +69,8 @@ public final class IOSGame {
             return true;
         }
         int action = ev.getActionMasked();
+        if(core.releaseNotes.handleTouch(core,layout,action,ev.getX(ev.getActionIndex()),ev.getY(ev.getActionIndex())))
+            return true;
         if (BuildFlags.DEVELOPER && core.settingsOpen) {
             if (action == IOSTouch.ACTION_DOWN || action == IOSTouch.ACTION_POINTER_DOWN
                     || action == IOSTouch.ACTION_MOVE) {
@@ -590,6 +593,8 @@ public final class IOSGame {
         } else if (hit == SettingsUi.HIT_GAMEOVER) {
             core.endCurrentRun();
             tick();
+        } else if (hit == SettingsUi.HIT_RESET_NEWS) {
+            core.releaseMascot.reset(core);
         } else if (hit == SettingsUi.HIT_RESET_LANDS) {
             LandPicker.reset(core);
             tick();

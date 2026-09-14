@@ -308,6 +308,10 @@ present. Pick something else in settings and that choice sticks.
 
 ## GitHub releases
 
+Before creating or pushing a release tag, complete [Executing a release](docs/releasing.md).
+Finish the in-game and destination release notes first; the separate
+[writing guide](docs/release-notes.md) covers the human-editable catalog and commands.
+
 GitHub Actions builds an APK on demand and whenever a version tag beginning with `v` is pushed. A
 manual run leaves a downloadable workflow artifact; a tag run also creates a GitHub Release and
 attaches a source-labelled APK.

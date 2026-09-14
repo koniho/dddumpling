@@ -115,6 +115,13 @@ abstract class Draw {
         p.fillPoly(new float[] {cx - w, y - w, cx + w, y - w, cx, y + w * 0.75f}, color);
     }
 
+    /** Shared rotating star glow for pickups and the unread release steamer. */
+    static void powerHalo(Painter p,float x,float y,float r,float clock,int hue,float fade) {
+        for(int k=4;k>=1;k--)
+            p.fillPoly(star(x,y,r*(1.1f+.42f*k),r*.40f,8,clock*.55f),
+                    fadeBy(Glyph.withAlpha(hue,30/k),fade));
+    }
+
     /** Star polygon with {@code points} spikes, rotated by {@code rot} radians. */
     static float[] star(float cx, float cy, float outer, float inner, int points,
             float rot) {

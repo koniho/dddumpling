@@ -35,9 +35,17 @@ done
 
 # Every pure-Java file, by hand. A new pure file has to be added here or the harness fails to
 # compile while the APK builds fine.
+python3 tools/release-notes.py check >/dev/null
+
 PURE="src/com/dddumpling/game/ProgressData.java
 src/com/dddumpling/game/Progress.java
 src/com/dddumpling/game/PrivacyUi.java
+src/com/dddumpling/game/ReleaseNotes.java
+src/com/dddumpling/game/ReleaseChange.java
+src/com/dddumpling/game/ReleaseContent.java
+src/com/dddumpling/game/ReleaseTransition.java
+src/com/dddumpling/game/OpacityPainter.java
+src/com/dddumpling/game/ReleaseMascot.java
 src/com/dddumpling/game/Pause.java
 src/com/dddumpling/game/Glyph.java
 src/com/dddumpling/game/Roster.java

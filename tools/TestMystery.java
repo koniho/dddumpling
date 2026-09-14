@@ -17,7 +17,7 @@ final class TestMystery extends Check {
         GameCore early=scene(L,9), c=scene(L,11);
         SettingsUi ui=new SettingsUi();ui.compute(L,Music.NAMES.length);
         for(int i=0;i<2;i++) {
-            float x=(ui.testChipL(i,2)+ui.testChipR(i,2))*0.5f;
+            float x=(ui.testChipL(i,3)+ui.testChipR(i,3))*0.5f;
             check("debuff chip hit target " + i,ui.hit(x,ui.debuffY+ui.testH*0.5f)==SettingsUi.HIT_DEBUFF+i);
             c.settingsOpen=true;c.playtestDebuff(Power.INCOGNITO+i);
             check("debuff chip closes settings and starts effect " + i,!c.settingsOpen && c.debuff==Power.INCOGNITO+i && c.debuffLeft==Power.DEBUFF_TIME && !c.powerActive());

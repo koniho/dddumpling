@@ -251,9 +251,13 @@ public final class IOSInputTest extends Check {
         ui.compute(l,Music.NAMES.length);
         tap(game,ui.closeCx,ui.closeCy);
         check("settings close resumes play", !c.settingsOpen);
+        c.settingsOpen=true;
+        tap(game,(ui.testChipL(2,3)+ui.testChipR(2,3))/2,ui.debuffY+ui.testH/2);
+        check("native reset news clears seen status without leaving settings",c.settingsOpen && c.store.loadReleaseSeen().equals(""));
+        c.settingsOpen=false;
         for(int i=0;i<2;i++) {
             c.settingsOpen=true;
-            tap(game,(ui.testChipL(i,2)+ui.testChipR(i,2))/2,ui.debuffY+ui.testH/2);
+            tap(game,(ui.testChipL(i,3)+ui.testChipR(i,3))/2,ui.debuffY+ui.testH/2);
             check("native debuff chip activates correct effect " + i,!c.settingsOpen
                     && c.debuff==Power.INCOGNITO+i && c.debuffLeft>0f && !c.powerActive());
         }
@@ -291,8 +295,64 @@ public final class IOSInputTest extends Check {
         }
     }
 
+    private static void releaseAttention() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.releaseMascot.reset(c);game.update(DT);
+        tap(game,l.w*.95f,l.h*.55f);
+        check("native outside tap keeps unread attention",c.releaseMascot.unread && !c.releaseNotes.open);
+        tap(game,l.keyX[0],l.keyY[0]);
+        check("native title starts normally with unread notes",c.starting() && c.releaseMascot.unread);
+        game=game();c=game.core();l=game.geometry();
+        c.releaseMascot.reset(c);game.update(DT);
+        tap(game,c.releaseMascot.x(l),c.releaseMascot.y(l));
+        check("native steamer tap acknowledges current release",c.releaseNotes.open && !c.releaseMascot.unread
+                && c.store.loadReleaseSeen().equals(BuildFlags.BUILD_ID));
+    }
+
+    private static void releaseNotes() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        game.touch(one(0,1,l.unit*3f,l.dangerY-l.unit*2f));
+        game.touch(one(1,1,l.unit*3f,l.dangerY-l.unit*2f));
+        check("title book opens through native input",c.releaseNotes.open);
+        tap(game,l.keyX[0],l.keyY[0]);
+        check("native transition blocks title keys",!c.starting() && c.releaseNotes.listing);
+        for(int i=0;i<72;i++) game.update(DT);
+        float row=ReleaseNotes.rowY(l,0);
+        game.touch(one(0,2,l.w*0.5f,row));
+        game.touch(one(2,2,l.w*0.5f,row-l.h*0.3f));
+        game.touch(one(1,2,l.w*0.5f,row-l.h*0.3f));
+        check("native release swipe scrolls without selecting",c.releaseNotes.listing && c.releaseNotes.listScroll==ReleaseNotes.maxScroll(l));
+        float lastRow=ReleaseNotes.rowY(l,2)-c.releaseNotes.listScroll;
+        game.touch(one(0,2,ReleaseNotes.iconX(l,2,0),lastRow));
+        game.touch(one(1,2,ReleaseNotes.iconX(l,2,0),lastRow));
+        check("native release row opens selected details",!c.releaseNotes.listing && c.releaseNotes.page==2);
+        check("native feature selection slides in",c.releaseNotes.pageMoving());
+        for(int i=0;i<24;i++) game.update(DT);
+        GameCore.Enemy a=c.releaseNotes.demo.enemies.get(0),b=a.link;
+        float ax=l.w*0.08f+c.releaseNotes.demo.enemyCentreX(a),bx=l.w*0.08f+c.releaseNotes.demo.enemyCentreX(b);
+        float y=c.releaseNotes.demoTop(l)+a.y;
+        game.touch(one(0,3,ax,y));game.update(0.1f);
+        game.touch(two(5,1,3,ax,y,4,bx,y));
+        check("book pair accepts two native fingers",a.destroyed && b.destroyed && !c.starting());
+        game.touch(one(3,3,ax,y));
+        game.back();
+        check("native back reverses feature slide",c.releaseNotes.pageReturning && c.releaseNotes.open);
+        for(int i=0;i<24;i++) game.update(DT);
+        check("native feature back keeps release list open",c.releaseNotes.listing && c.releaseNotes.open);
+        tap(game,ReleaseNotes.iconX(l,2,0),ReleaseNotes.rowY(l,2)-c.releaseNotes.listScroll);
+        for(int i=0;i<24;i++) game.update(DT);
+        game.touch(one(0,8,l.w*0.9f,c.releaseNotes.closeY(l)));
+        game.touch(two(5,1,8,l.w*0.9f,ReleaseNotes.top(l),9,l.keyX[0],l.keyY[0]));
+        game.touch(one(1,8,l.keyX[0],l.keyY[0]));
+        check("book closing gesture cannot start a run",c.releaseNotes.open && c.releaseNotes.transition.closing && !c.starting());
+        for(int i=0;i<72;i++) game.update(DT);
+        check("native exit finishes on the title",!c.releaseNotes.open && !c.starting());
+        game.touch(one(0,10,l.keyX[0],l.keyY[0]));
+        check("fresh input works after closing the book",c.starting());
+    }
+
     public static void main(String[] args) {
-        packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); bossOwnership(); flingHistory();
+        releaseAttention(); releaseNotes(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); bossOwnership(); flingHistory();
         steamerAndPanic(); caseAndSettings();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");

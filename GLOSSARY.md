@@ -376,3 +376,21 @@ FLURRY activation sends a translucent seven-band circular rainbow outward from t
 position for 1.6 seconds. Mystery pickups wait for their selection to finish; the origin stays
 at the original pickup. The ring ends with the power or run. `GameCore.powerBurstX/Y` preserve
 the origin and `Renderer.flurryBurst` draws it without changing gameplay timing.
+
+## Release book
+
+The title’s “What’s new” entry opens a “What’s cooking?” book for the three latest published
+releases (currently v0.1.19, v0.1.18 and v0.1.17). Each release groups icons for its individual
+changes, left-aligned and without feature labels. Extra icons wrap into additional rows; the list scrolls vertically when needed. Each release groups all fixes under one cute bug icon. Lift on an icon to open its content-sized popup; drag to scroll.
+Land travel, the mystery pickup, and the 200 ms linked pair have interactive demos. Smaller
+highlights have compact illustrations. Every feature has its game phase and a short player-facing purpose. All Releases or Back preserves list scroll;
+close, or Back from the list, returns to the title. Demos own an isolated `GameCore` with no store.
+`ReleaseChange` draws icons; `ReleaseNotes` owns geometry, demo state and input.
+The human-editable `release-notes/releases.json` generates `ReleaseContent` through `tools/release-notes.py`;
+see `docs/release-notes.md` for writing and `docs/releasing.md` for the pre-tag checklist.
+The title scene keeps animating behind translucent panels while gameplay input stays blocked.
+`ReleaseTransition` moves the steamer to centre, then off left as the book arrives from the right;
+closing sends the list off right while the steamer enters from the left at its normal corner size and height. Feature pages slide in from
+the right as the list leaves left; Back reverses this without losing the list position. MVP scope is in `docs/plans/interactive-release-notes.md`.
+
+The **What’s new steamer** (`ReleaseMascot`) has a cute face, no arms, rising steam, and a lid that lifts when tapped. For an unread build, a star turns behind it, the lid pops repeatedly, and extra steam rises while the normal title screen stays usable. Tapping it opens the release list and saves the build as read; until then, the animation returns on title visits. **RESET NEWS** in developer settings restores this unread state.

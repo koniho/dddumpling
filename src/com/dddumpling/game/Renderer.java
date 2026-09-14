@@ -124,6 +124,8 @@ final class Renderer extends Draw {
         if (c.storyOpen()) Storybook.draw(p, c, L);
         if (BuildFlags.DEVELOPER && c.settingsOpen) Screens.settings(p, c, L);
         Pause.draw(p, c, L);
+        ReleaseNotes.entry(p,c,L);
+        c.releaseNotes.draw(p,c,L);
         if (c.returnFade > 0f) {
             float cover = 1f - Math.abs(c.returnFade / GameCore.RETURN_FADE * 2f - 1f);
             cover = cover * cover * (3f - 2f * cover);
@@ -496,10 +498,7 @@ final class Renderer extends Draw {
         }
 
         // Halo: layered stars turning slowly, brightest at the core.
-        for (int k = 4; k >= 1; k--) {
-            p.fillPoly(star(w.x, y, r * (1.1f + 0.42f * k), r * 0.40f, 8, c.clock * 0.55f),
-                    fadeBy(Glyph.withAlpha(hue, 30 / k), fade));
-        }
+        powerHalo(p,w.x,y,r,c.clock,hue,fade);
         float pulse = 0.85f + 0.15f * (float) Math.sin(w.t * 6f);
         p.fillPoly(Glyph.hex(w.x, y, r * pulse), fadeBy(Glyph.withAlpha(hue, 90), fade));
         p.strokePoly(Glyph.hex(w.x, y, r * pulse), fadeBy(Glyph.withAlpha(INK, 235), fade), r * 0.10f);

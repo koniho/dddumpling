@@ -45,6 +45,7 @@
   DDIOSStore *saved = [[DDIOSStore alloc] initWithURL:url];
   [saved saveBestWithInt:812];
   [saved saveLandStateWithInt:0x52];
+  [saved saveReleaseSeenWithNSString:@"test-build"];
   [saved saveLandBestWithInt:2 withInt:900];
   [saved saveSpeedWithFloat:1.3f];
   [saved saveBgmWithInt:2];
@@ -65,6 +66,7 @@
   XCTAssertNil(loaded.error);
   XCTAssertEqual(loaded.loadBest, 812);
   XCTAssertEqual(loaded.loadLandState, 0x52);
+  XCTAssertEqualObjects(loaded.loadReleaseSeen, @"test-build");
   XCTAssertEqual([loaded loadLandBestWithInt:2], 900);
   XCTAssertEqualWithAccuracy(loaded.loadSpeed, 1.3f, .0001f);
   XCTAssertEqual(loaded.loadBgm, 2);

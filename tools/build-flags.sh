@@ -8,6 +8,7 @@ cat > "$flags_dir/BuildFlags.java" <<JAVA
 package com.dddumpling.game;
 final class BuildFlags {
     static final boolean DEVELOPER = $2;
+    static final String BUILD_ID = "$(date -u +%Y%m%d%H%M%S%N)";
     private BuildFlags() {}
 }
 JAVA

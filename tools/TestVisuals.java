@@ -3,7 +3,217 @@ package com.dddumpling.game;
 /** Sky and clouds, the lock indicator, the edge glow and the settings panel. */
 final class TestVisuals extends Check {
 
+    private static void releaseWrap(Layout L) {
+        int[] original=ReleaseChange.ITEMS[0];
+        int columns=ReleaseNotes.columns(L);
+        float oldNext=ReleaseNotes.groupY(L,1)-ReleaseNotes.listTop(L);
+        try {
+            int[] many=new int[columns*9+2];
+            for(int i=0;i<many.length;i++) many[i]=original[i%original.length];
+            ReleaseChange.ITEMS[0]=many;
+            GameCore c=new GameCore(new Mem(),7201L);ReleaseNotes n=c.releaseNotes;
+            n.show(c,L);n.update(ReleaseTransition.DURATION,L);
+            check("overflow icons wrap to the same left edge",ReleaseNotes.iconX(L,0,columns)==ReleaseNotes.iconX(L,0,0)
+                    && ReleaseNotes.itemY(L,0,columns)>ReleaseNotes.itemY(L,0,0));
+            check("wrapped rows push the next release down",ReleaseNotes.groupY(L,1)-ReleaseNotes.listTop(L)>oldNext
+                    && ReleaseNotes.itemY(L,0,many.length-1)+ReleaseNotes.size(L)*1.5f<ReleaseNotes.groupY(L,1));
+            boolean fits=true;
+            for(int i=0;i<many.length;i++) fits &= ReleaseNotes.iconX(L,0,i)+ReleaseNotes.size(L)*1.4f<=L.w*.91f+.01f;
+            check("wrapped icons all fit the panel width",fits);
+            float ix=ReleaseNotes.iconX(L,0,0),iy=ReleaseNotes.rowY(L,0);
+            n.handleTouch(c,L,0,ix,iy);n.handleTouch(c,L,2,ix,iy-L.h*.4f);n.handleTouch(c,L,1,ix,iy-L.h*.4f);
+            check("wrapped content scrolls without selecting",n.listing && n.listScroll>0f);
+            for(int[] target:new int[][]{{0,columns},{0,many.length-1},{1,0},{2,ReleaseChange.ITEMS[2].length-1}}) {
+                float row=ReleaseNotes.itemY(L,target[0],target[1]);
+                n.listScroll=Math.max(0f,Math.min(ReleaseNotes.maxScroll(L),row-(ReleaseNotes.listTop(L)+ReleaseNotes.listBottom(L))*.5f));
+                float scroll=n.listScroll,x=ReleaseNotes.iconX(L,target[0],target[1]),y=row-scroll;
+                n.handleTouch(c,L,0,x,y);n.handleTouch(c,L,1,x,y);
+                check("wrapped icon opens exact feature "+target[0]+"/"+target[1],!n.listing && n.page==target[0] && n.feature==target[1]);
+                n.update(ReleaseNotes.PAGE_TIME,L);n.back();n.update(ReleaseNotes.PAGE_TIME,L);
+                check("wrapped list keeps scroll after back "+target[0]+"/"+target[1],n.listing && n.listScroll==scroll);
+            }
+        } finally { ReleaseChange.ITEMS[0]=original; }
+    }
+
+    private static void releaseBook(Layout L) {
+        Mem seen=new Mem();seen.releaseSeen="older-build";
+        GameCore news=new GameCore(seen,71L);
+        news.settingsOpen=true;news.releaseMascot.update(news,.1f);
+        check("news waits for visible title",!news.releaseMascot.unread && seen.releaseSeen.equals("older-build"));
+        news.settingsOpen=false;news.releaseMascot.update(news,.1f);
+        check("attention waits for an actual read before saving",news.releaseMascot.unread && seen.releaseSeen.equals("older-build"));
+        check("attention leaves outside taps alone",!news.releaseNotes.handleTouch(news,L,0,L.w*.95f,L.h*.7f)
+                && news.releaseMascot.unread && !Pause.handlesBack(news));
+        news.screenKey(0);
+        check("unread notes do not block starting a game",news.starting() && news.releaseMascot.unread);
+        GameCore again=new GameCore(seen,72L);again.releaseMascot.update(again,.1f);
+        check("unread build still attracts attention after restart",again.releaseMascot.unread);
+        again.clock=.4f;float lid=again.releaseMascot.attentionLift(again.clock);
+        check("unread lid pops repeatedly",lid>.4f && again.releaseMascot.attentionLift(2.6f)>.4f);
+        again.releaseNotes.handleTouch(again,L,0,again.releaseMascot.x(L),again.releaseMascot.y(L));
+        check("steamer opens release list and saves read status",again.releaseNotes.open && again.releaseNotes.listing
+                && !again.releaseMascot.unread && seen.releaseSeen.equals(BuildFlags.BUILD_ID));
+        check("attention enters without a position or lid jump",Math.abs(again.releaseNotes.transition.x(L)-again.releaseMascot.x(L))<.01f
+                && Math.abs(again.releaseNotes.transition.y(L)-again.releaseMascot.y(L))<.01f
+                && Math.abs(again.releaseNotes.transition.lidLift()-lid)<.01f);
+        GameCore read=new GameCore(seen,73L);read.releaseMascot.update(read,.1f);
+        check("read build stays quiet after restart",!read.releaseMascot.unread && read.releaseMascot.attentionLift(.4f)==0f);
+        read.releaseMascot.reset(read);read.releaseMascot.update(read,.1f);
+        check("reset restores attention for current build",seen.releaseSeen.equals("") && read.releaseMascot.unread);
+        SettingsUi newsUi=new SettingsUi();newsUi.compute(L,3);
+        check("reset news chip target",newsUi.hit((newsUi.testChipL(2,3)+newsUi.testChipR(2,3))*.5f,newsUi.debuffY+newsUi.testH*.5f)==SettingsUi.HIT_RESET_NEWS);
+        group("interactive release notes");
+        releaseWrap(L);
+        Mem save=new Mem();GameCore c=new GameCore(save,7100L),control=new GameCore(new Mem(),7100L);
+        ReleaseNotes n=c.releaseNotes;
+        check("book catalog holds the last three published releases",ReleaseNotes.VERSIONS.length==3
+                && ReleaseNotes.VERSIONS[0].equals("0.1.19") && ReleaseNotes.VERSIONS[2].equals("0.1.17"));
+        n.show(c,L);
+        check("release entrance starts at the steamer",n.transition.progress==0f && n.transition.listX(L)==L.w);
+        n.handleTouch(c,L,0,ReleaseNotes.iconX(L,0,0),ReleaseNotes.rowY(L,0));
+        n.handleTouch(c,L,1,ReleaseNotes.iconX(L,0,0),ReleaseNotes.rowY(L,0));
+        check("moving release icons ignore taps",n.listing && n.demo==null);
+        n.update(.15f,L);
+        check("steamer tap lifts the lid",n.transition.lidLift()>.25f);
+        n.update(ReleaseTransition.CENTRE*ReleaseTransition.DURATION-.15f,L);
+        check("steamer reaches centre before the list moves",Math.abs(n.transition.x(L)-L.w*.5f)<.01f
+                && Math.abs(n.transition.y(L)-L.h*.5f)<.01f && n.transition.listX(L)==L.w);
+        n.update(ReleaseTransition.DURATION,L);
+        check("steamer lid settles after its tap",Math.abs(n.transition.lidLift())<.001f);
+        check("idle steam keeps rising",ReleaseMascot.steamPhase(.2f,0)<ReleaseMascot.steamPhase(.6f,0));
+        float time=c.time,clock=c.clock;
+        for(int release=0;release<ReleaseNotes.VERSIONS.length;release++) {
+            int bugs=0;
+            for(int id:ReleaseChange.ITEMS[release]) if(ReleaseContent.ICONS[id]==ReleaseChange.BUGS) bugs++;
+            check("at most one bug group per release "+release,bugs<=1);
+            check("release icons share a left edge "+release,ReleaseNotes.iconX(L,release,0)==ReleaseNotes.iconX(L,0,0));
+        }
+        check("book opens on the release list",n.open && n.listing && n.demo==null);
+        float row=ReleaseNotes.rowY(L,0),icon=ReleaseNotes.iconX(L,0,0);
+        n.handleTouch(c,L,0,icon,row);
+        n.handleTouch(c,L,2,icon,row-L.h*.3f);
+        n.handleTouch(c,L,1,icon,row-L.h*.3f);
+        check("release swipe never opens an icon",n.listing && n.listScroll==ReleaseNotes.maxScroll(L));
+        n.listScroll=0f;
+        n.handleTouch(c,L,0,icon,row);
+        n.handleTouch(c,L,5,icon,row);
+        n.handleTouch(c,L,1,icon,row);
+        check("an extra finger cancels icon selection",n.listing);
+        n.handleTouch(c,L,0,L.w*.5f,ReleaseNotes.groupY(L,0)+ReleaseNotes.size(L)*.5f);
+        n.handleTouch(c,L,1,L.w*.5f,ReleaseNotes.groupY(L,0)+ReleaseNotes.size(L)*.5f);
+        check("release header is not clickable",n.listing);
+        for(int release=0;release<ReleaseNotes.VERSIONS.length;release++)
+            for(int feature=0;feature<ReleaseChange.ITEMS[release].length;feature++) {
+                float ix=ReleaseNotes.iconX(L,release,feature),iy=ReleaseNotes.itemY(L,release,feature);
+                n.handleTouch(c,L,0,ix,iy);
+                check("feature icon waits for finger lift "+release+"/"+feature,n.listing);
+                n.handleTouch(c,L,1,ix,iy);
+                check("feature icon opens its own page "+release+"/"+feature,!n.listing && n.page==release && n.feature==feature);
+                check("feature selection starts a horizontal slide "+release+"/"+feature,n.pageMoving() && n.pageSlide==0f);
+                n.update(ReleaseNotes.PAGE_TIME,L);
+                check("feature slide settles before interaction "+release+"/"+feature,!n.pageMoving() && n.pageSlide==1f);
+                n.back();n.update(ReleaseNotes.PAGE_TIME,L);
+            }
+        Layout shortL=new Layout();shortL.compute(852,393,0,0,0,0);
+        float shortRow=ReleaseNotes.rowY(shortL,0),sx=ReleaseNotes.iconX(shortL,0,0);
+        n.handleTouch(c,shortL,0,sx,shortRow);
+        n.handleTouch(c,shortL,2,sx,shortRow-200f);
+        n.handleTouch(c,shortL,1,sx,shortRow-200f);
+        check("short screens scroll the compact release groups",n.listing && n.listScroll>0f && n.listScroll==ReleaseNotes.maxScroll(shortL));
+        float savedScroll=n.listScroll;
+        n.select(2,shortL);n.update(ReleaseNotes.PAGE_TIME,shortL);n.back();n.update(ReleaseNotes.PAGE_TIME,shortL);
+        check("feature back preserves release scroll",n.listScroll==savedScroll);
+        n.listScroll=0f;
+        for(int[] dimensions:new int[][]{{393,852},{918,2048},{1080,2400},{852,393}}) {
+            Layout box=new Layout();box.compute(dimensions[0],dimensions[1],0,0,0,0);
+            n.select(0,1,box);float small=n.windowHeight(box);
+            n.select(2,box);
+            check("feature window follows content "+dimensions[0],n.windowHeight(box)>small
+                    && n.windowTop(box)>=box.topSafe && n.windowBottom(box)<=box.h-box.padB
+                    && n.demoBottom(box)<n.windowBottom(box)-ReleaseNotes.size(box)*3f);
+        }
+        n.select(0,L);n.update(ReleaseNotes.PAGE_TIME,L);
+        c.screenKey(0);c.update(0.2f,L);
+        check("book keeps the title animating while swallowing keys",!c.starting() && c.time>time && c.clock>clock && c.state==GameCore.TITLE);
+        n.touch(c,L,L.w*0.75f,(n.demoTop(L)+n.demoBottom(L))*.5f);
+        check("land illustration starts a real journey",n.demo.landTravelFrom>=0);
+        GameCore travelDemo=n.demo;int destination=n.demo.landChoice;
+        n.update(ReleaseNotes.RESTART_DELAY+.1f,L);
+        check("land illustration keeps its destination after two seconds",n.demo==travelDemo
+                && n.demo.landChoice==destination && n.demo.landTravelFrom<0);
+        n.update(3f,L);
+        check("land illustration does not reset while idle",n.demo==travelDemo && n.demo.landChoice==destination);
+        n.select(1,L);n.update(ReleaseNotes.PAGE_TIME,L);n.touch(c,L,L.w*0.5f,(n.demoTop(L)+n.demoBottom(L))*.5f);
+        check("mystery illustration begins its shuffle",n.demo.power.hit);
+        n.update(Power.SELECT_TIME+0.1f,L);
+        check("mystery illustration reveals its choice",n.demo.power.shownEffect()==n.demo.power.effect);
+        n.update(ReleaseNotes.RESTART_DELAY-Power.SELECT_TIME-.1f+.001f,L);
+        check("shuffle restarts as an uncollected pickup",!n.demo.power.hit);
+        int shuffleItem=n.item();boolean resetChoice=ReleaseContent.AUTO_RESET[shuffleItem];
+        try {
+            ReleaseContent.AUTO_RESET[shuffleItem]=false;
+            n.touch(c,L,L.w*.5f,(n.demoTop(L)+n.demoBottom(L))*.5f);
+            GameCore heldDemo=n.demo;n.update(ReleaseNotes.RESTART_DELAY+.1f,L);
+            check("entry can opt out of shuffle reset",n.demo==heldDemo && n.demo.power.hit);
+        } finally { ReleaseContent.AUTO_RESET[shuffleItem]=resetChoice; }
+
+        n.select(2,L);n.update(ReleaseNotes.PAGE_TIME,L);n.select(3,L);check("invalid release cannot replace the selected page",n.page==2);
+        GameCore.Enemy a=n.demo.enemies.get(0),b=a.link;
+        float ax=L.w*0.08f+n.demo.enemyCentreX(a),bx=L.w*0.08f+n.demo.enemyCentreX(b);
+        float y=n.demoTop(L)+a.y;
+        n.touch(c,L,ax,y);n.update(0.1f,L);
+        check("one illustrated key flexes the bond",a.linkWaiting && a.linkStrain>0f);
+        n.touch(c,L,bx,y);check("illustrated pair accepts the real chord",a.destroyed && b.destroyed);
+        n.update(1.99f,L);
+        check("pair destruction remains visible before restart",n.demo.enemies.get(0)==a && a.destroyed);
+        n.update(.011f,L);
+        check("pair automatically returns intact",n.demo.enemies.get(0)!=a && !n.demo.enemies.get(0).destroyed
+                && n.demo.enemies.get(0).link!=null);
+        check("demo state never changes saved progress",c.score==0 && c.collected==control.collected
+                && save.saves==0 && save.collectedSaves==0 && c.rnd.nextLong()==control.rnd.nextLong());
+        check("detail back starts a reverse slide",Pause.handlesBack(c) && Pause.back(c) && n.open && n.pageReturning && n.demo!=null);
+        n.update(ReleaseNotes.PAGE_TIME,L);
+        check("detail back restores the release list",n.listing && n.demo==null);
+        n.select(0,L);n.update(ReleaseNotes.PAGE_TIME*.4f,L);
+        float pageTravel=n.pageTravel();
+        n.touch(c,L,L.w*.75f,(n.demoTop(L)+n.demoBottom(L))*.5f);
+        check("moving feature demo ignores taps",n.demo.landTravelFrom<0);
+        n.back();
+        check("feature back reverses from its current position",n.pageTravel()==pageTravel && n.pageReturning);
+        n.update(ReleaseNotes.PAGE_TIME,L);
+        check("interrupted feature returns to list",n.listing && n.open && !n.transition.closing);
+        check("list back begins the reverse transition",Pause.back(c) && n.open && n.transition.closing);
+        float lastListX=-1f,lastSteamerX=-L.w;
+        for(int step=0;step<=4;step++) {
+            if(step>0) n.update(ReleaseTransition.DURATION/10f,L);
+            check("closing steamer stays corner-sized and level "+step,
+                    Math.abs(n.transition.radius(L)-c.releaseMascot.radius(L))<.001f
+                    && Math.abs(n.transition.y(L)-c.releaseMascot.y(L))<.001f);
+            check("closing list slides right and steamer travels home "+step,
+                    n.transition.listX(L)>lastListX && n.transition.x(L)>lastSteamerX
+                    && n.transition.x(L)<=c.releaseMascot.x(L));
+            lastListX=n.transition.listX(L);lastSteamerX=n.transition.x(L);
+        }
+        c.update(ReleaseTransition.DURATION*.1f+.00001f,L);
+        check("half-duration exit returns steamer to corner",!n.open && !c.releaseMascot.unread && c.releaseMascot.x(L)==L.unit*2.5f);
+        n.show(c,L);n.update(ReleaseTransition.DURATION,L);
+        n.handleTouch(c,L,0,L.w*0.9f,n.closeY(L));
+        check("close consumes the rest of its touch gesture",n.open && n.transition.closing && n.handleTouch(c,L,5,L.w*.5f,L.h*.95f)
+                && n.handleTouch(c,L,1,L.w*.5f,L.h*.95f) && !c.starting());
+        c.update(ReleaseTransition.DURATION,L);
+        n.show(c,L);n.update(ReleaseTransition.DURATION*.7f,L);
+        float beforeX=n.transition.x(L),beforeListX=n.transition.listX(L);
+        n.back();
+        check("back during entrance reverses without a snap",n.transition.closing
+                && n.transition.x(L)==beforeX && n.transition.listX(L)==beforeListX);
+        c.update(ReleaseTransition.DURATION,L);
+        check("interrupted entrance finishes closed",!n.open);
+        c.state=GameCore.PLAY;n.show(c,L);
+        check("book cannot open over an active run",!n.open);
+    }
+
     static void titleScreen(Layout L) {
+        releaseBook(L);
         group("title choreography");
         Mem landStore = new Mem();
         landStore.best = 123;
