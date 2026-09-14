@@ -1,0 +1,1 @@
+Land hopping gets a little adventure: Dumpling travels between staggered islands with soft shuffle sounds, one land per swipe. Star Path adds pickup haptics and 10 growing difficulty levels, advancing one level per win. Fixed the character reappearing after an incomplete Star Path blast-off.
