@@ -1665,6 +1665,11 @@ final class GameCore {
     }
 
     void startGame() {
+        // A paid win may have been quit before its tableau/parade retired the course.
+        if (stars.count() == StarPath.COUNT) {
+            stars.make(rnd);
+            starNext = false;
+        }
         runStartLand = LandPicker.unlocked(this, landChoice) ? landChoice : 0;
         landChoice = runStartLand;
         best = landBests[runStartLand];
