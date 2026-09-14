@@ -2,7 +2,7 @@
 
 Use this guide to add or edit notes. For publishing and tagging, use [Executing a release](releasing.md).
 
-You edit plain JSON in [release-notes/releases.json](../release-notes/releases.json). You do not need to edit Java, count rows, or position icons. The tool wraps the copy and updates the game. The source keeps the history; the game shows the first three releases, newest first.
+You edit plain JSON in [release-notes/releases.json](../release-notes/releases.json). You do not need to edit Java, count rows, or position icons. The tool wraps the copy and updates the game. The source keeps the history; the game shows the first three releases, newest first. Generated content retains older entries so the harness can still exercise their demos after they leave the visible list.
 
 ## Add a release
 
@@ -98,6 +98,8 @@ Keep a separate entry only when it communicates a distinct change the player nee
 
 | `icon` value | Use for | Illustration |
 | --- | --- | --- |
+| `news` | Exploring release notes | Little steamer |
+| `flurry` | Flurry pickup feedback | Circular rainbow |
 | `travel` | Choosing or traveling between lands | Interactive land travel |
 | `stars` | Star Path challenges | Star and trail |
 | `shuffle` | Mystery power-up pickups | Interactive pickup shuffle |

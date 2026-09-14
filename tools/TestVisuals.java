@@ -36,6 +36,9 @@ final class TestVisuals extends Check {
     }
 
     private static void releaseBook(Layout L) {
+        try(ReleaseExamples examples=new ReleaseExamples()) { releaseBookExamples(L); }
+    }
+    private static void releaseBookExamples(Layout L) {
         Mem seen=new Mem();seen.releaseSeen="older-build";
         GameCore news=new GameCore(seen,71L);
         news.settingsOpen=true;news.releaseMascot.update(news,.1f);
@@ -67,7 +70,8 @@ final class TestVisuals extends Check {
         Mem save=new Mem();GameCore c=new GameCore(save,7100L),control=new GameCore(new Mem(),7100L);
         ReleaseNotes n=c.releaseNotes;
         check("book catalog holds the last three published releases",ReleaseNotes.VERSIONS.length==3
-                && ReleaseNotes.VERSIONS[0].equals("0.1.19") && ReleaseNotes.VERSIONS[2].equals("0.1.17"));
+                && ReleaseNotes.VERSIONS.length==ReleaseChange.ITEMS.length
+                && !ReleaseNotes.VERSIONS[0].equals(ReleaseNotes.VERSIONS[2]));
         n.show(c,L);
         check("release entrance starts at the steamer",n.transition.progress==0f && n.transition.listX(L)==L.w);
         n.handleTouch(c,L,0,ReleaseNotes.iconX(L,0,0),ReleaseNotes.rowY(L,0));

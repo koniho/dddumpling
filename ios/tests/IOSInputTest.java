@@ -310,6 +310,9 @@ public final class IOSInputTest extends Check {
     }
 
     private static void releaseNotes() {
+        try(ReleaseExamples examples=new ReleaseExamples()) { releaseNoteExamples(); }
+    }
+    private static void releaseNoteExamples() {
         IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
         game.touch(one(0,1,l.unit*3f,l.dangerY-l.unit*2f));
         game.touch(one(1,1,l.unit*3f,l.dangerY-l.unit*2f));

@@ -230,6 +230,7 @@ final class Preview {
             book.releaseNotes.listScroll=ReleaseNotes.maxScroll(L);
             shot(dir,"103-release-book-wrapped-scrolled",book,L,w,h,ss);
         } finally { ReleaseChange.ITEMS[0]=releaseItems;book.releaseNotes.listScroll=0f; }
+        try(Check.ReleaseExamples examples=new Check.ReleaseExamples()) {
         for(int page=0;page<3;page++) {
             book.releaseNotes.select(page,L);book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
             shot(dir,"103-release-book-"+page,book,L,w,h,ss);
@@ -248,9 +249,10 @@ final class Preview {
         book.releaseNotes.touch(book,L,L.w*0.08f+book.releaseNotes.demo.enemyCentreX(bookB),bookY);
         book.releaseNotes.update(0.15f,L);
         shot(dir,"103-release-book-pair-clear",book,L,w,h,ss);
+        }
 
         for(int release=0;release<ReleaseNotes.VERSIONS.length;release++)
-            for(int feature=1;feature<ReleaseChange.ITEMS[release].length;feature++) {
+            for(int feature=0;feature<ReleaseChange.ITEMS[release].length;feature++) {
                 book.releaseNotes.select(release,feature,L);book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
                 shot(dir,"103-release-feature-"+release+"-"+feature,book,L,w,h,ss);
             }

@@ -3,12 +3,18 @@ package com.dddumpling.game;
 /** Shipped highlights and their shared list/popup illustrations. */
 final class ReleaseChange extends Draw {
     static final int TRAVEL=0, STARS=1, BUGS=2, SHUFFLE=3, DISGUISE=4, SLIME=5,
-            PAIR=6, FLEX=7, TEAM=8;
+            PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10;
     static final int[][] ITEMS=ReleaseContent.ITEMS;
     static boolean playable(int id) { return id==TRAVEL || id==SHUFFLE || id==PAIR; }
     static float artUnits(int id) { return id==TRAVEL ? 8f : id==PAIR ? 9f : id==SHUFFLE ? 9f : 5f; }
     static void icon(Painter p,int id,float x,float y,float r,float time) {
-        if(id==TRAVEL) {
+        if(id==NEWS) {
+            powerHalo(p,x,y,r*.6f,time,Glyph.cycle(time*.7f),1f);
+            ReleaseMascot.steamer(p,x,y,r*.85f,time);
+        } else if(id==FLURRY) {
+            for(int band=0;band<7;band++)
+                p.strokeCircle(x,y,r*(.95f-band*.09f),Glyph.cycle(band*.85f),r*.08f);
+        } else if(id==TRAVEL) {
             Lands.logo(p,0,x,y-r*.4f,r,255,time);
         } else if(id==STARS) {
             p.polyline(new float[]{x-r*.9f,y+r*.8f,x-r*.4f,y+r*.35f,x+r*.15f,y+r*.6f,x+r*.6f,y-r*.6f},0xFFAE9ADA,r*.14f);

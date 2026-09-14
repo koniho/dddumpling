@@ -1,5 +1,3 @@
 Tap the title-screen steamer to explore what's new with little interactive demos.
 A rainbow now ripples from your pickup when Flurry starts.
 Partner enemies count as one toward stage progress. Two pals, one team!
-
-Try the release list, feature demos, Back navigation, and the steamer reminder after updating. Shuffle and partner demos reset after two seconds; land travel keeps its position.
