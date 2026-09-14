@@ -9,6 +9,11 @@ final class TestMystery extends Check {
         return c;
     }
     static void all(Layout L) {
+        Power reveal=new Power(); reveal.mystery=true; reveal.hit=true;
+        reveal.hitT=Power.SELECT_TIME+0.99f;
+        check("selected icon remains for one second",!reveal.spent());
+        reveal.hitT=Power.SELECT_TIME+1f;
+        check("selected icon retires after the reveal",reveal.spent());
         GameCore early=scene(L,9), c=scene(L,11);
         SettingsUi ui=new SettingsUi();ui.compute(L,Music.NAMES.length);
         for(int i=0;i<2;i++) {

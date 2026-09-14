@@ -1449,7 +1449,7 @@ final class TestPower extends Check {
      * Three seeds, and the count is averaged, because one seed is not a measurement. It used to be a
      * single run asserting {@code frenzies >= 2} and it passed with four — until boss stages, which
      * release no powerups at all, shifted the RNG enough that the same assertion saw one. Nothing was
-     * broken either time: the metric is simply noisy over one run, which is the trap CLAUDE.md
+     * broken either time: the metric is simply noisy over one run, which is the trap AGENTS.md
      * records about small-sample yes/no checks.
      */
     static void soak(Layout L) {
@@ -1487,7 +1487,7 @@ final class TestPower extends Check {
             wasActive = c.powerActive();
 
             if (c.modeLeft < 0f || c.mode < -1 || c.mode >= Power.COUNT) sane = false;
-            if (c.power != null && c.power.hit && c.power.hitT > Power.POP_TIME + (c.power.mystery ? Power.SELECT_TIME : 0f) + 1f) {
+            if (c.power != null && c.power.hit && c.power.hitT > (c.power.mystery ? Power.SELECT_TIME + Power.REVEAL_TIME : Power.POP_TIME) + 1f) {
                 sane = false;
             }
             if (c.lives < 0 || c.score < 0) sane = false;

@@ -5,7 +5,7 @@ package com.dddumpling.game;
  * a wet specular that glistens on its own clock, a pooled underside, and a face.
  *
  * The whole read is in the layering, and one rule sits behind all of it — translucent primitives
- * that overlap double-blend (CLAUDE.md), so every pass that carries the goo's own colour is
+ * that overlap double-blend (AGENTS.md), so every pass that carries the goo's own colour is
  * <em>one</em> polygon. The body is a single filled outline. The core is the character's own
  * silhouette rather than a second inset ring, because two rings read as concentric hard edges. And
  * the rim is opaque, which is worth reading the note at the stroke for.
@@ -94,7 +94,7 @@ final class Slime extends Draw {
         // Opaque, and that is not a style choice. A stroked polygon is drawn as one quad per edge
         // with a round cap at each join, so at any alpha below full it double-blends at every single
         // vertex — and this ring has seventy-two of them, which came out as a dotted line all the
-        // way round the boss. It is the translucent-overlap trap from CLAUDE.md turning up somewhere
+        // way round the boss. It is the translucent-overlap trap from AGENTS.md turning up somewhere
         // nothing else in the game meets it, since every other stroke here is a handful of points
         // long. The {@code fade} still reaches it, so an arrival is briefly stippled; a whole body
         // at half alpha is not a frame anybody reads the rim of.

@@ -26,7 +26,7 @@ final class Power {
     static final int COUNT = 4;
     static final int INCOGNITO = 4, MONOCHROME = 5;
     static final int MYSTERY_STAGE = 11;
-    static final float DEBUFF_TIME = 8f, SELECT_TIME = 0.55f;
+    static final float DEBUFF_TIME = 8f, SELECT_TIME = 0.55f, REVEAL_TIME = 1f;
     static int mysteryCount(boolean team) { return offeredCount(team)+2; }
     static int mysteryAt(boolean team,int i) {
         int powers = offeredCount(team);
@@ -184,7 +184,7 @@ final class Power {
 
     /** True once the burst has finished and it should be dropped. */
     boolean spent() {
-        return hit && hitT >= POP_TIME+(mystery ? SELECT_TIME : 0f);
+        return hit && hitT >= (mystery ? SELECT_TIME + REVEAL_TIME : POP_TIME);
     }
 
     void update(float dt) {
