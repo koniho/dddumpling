@@ -176,6 +176,8 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 
 - (jint)loadBest { return MAX(0, [self intForKey:@"best" defaultValue:0]); }
 - (void)saveBestWithInt:(jint)best { [self setValue:@(best) forKey:@"best"]; }
+- (NSString *)loadReleaseSeen { return [self stringForKey:@"releaseSeen" validWriter:NO] ?: @""; }
+- (void)saveReleaseSeenWithNSString:(NSString *)value { [self setValue:value forKey:@"releaseSeen"]; }
 - (jint)loadLandState { return [self intForKey:@"landState" defaultValue:0]; }
 - (void)saveLandStateWithInt:(jint)value { [self setValue:@(value) forKey:@"landState"]; }
 

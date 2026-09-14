@@ -108,6 +108,11 @@ available. A successful upload does not establish the 12-tester/14-day productio
 
 ## Prepare release notes and version together
 
+Follow [Executing a release](../docs/releasing.md): finish the in-game notes and store summaries
+before creating or pushing a tag. Use the separate [writing guide](../docs/release-notes.md) to
+add notes with game-phase context and player purpose. The tag must include the reviewed JSON,
+generated game copy, and version-specific store notes.
+
 The store-assets skill includes this automatically when preparing a release. The tool gathers
 history and safely writes the result; the agent synthesizes player-facing wording from the evidence.
 It does not call an external text-generation service or publish anything.

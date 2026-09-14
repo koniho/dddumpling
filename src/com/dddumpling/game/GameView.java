@@ -27,6 +27,7 @@ public class GameView extends View {
     boolean handlesBack() { return Pause.handlesBack(core); }
     boolean paused() { return core.paused; }
     private void cancelPointers() {
+        core.releaseNotes.cancelTouch();
         starDragPointer = bonusSwipePointer = bossDragPointer = -1;
         bossDragging = bossPinching = pushArmed = false;
         caseGesture = CASE_IDLE; pausePress = 0;
@@ -128,6 +129,8 @@ public class GameView extends View {
             return true;
         }
         int action = ev.getActionMasked();
+        if(core.releaseNotes.handleTouch(core,layout,action,ev.getX(ev.getActionIndex()),ev.getY(ev.getActionIndex())))
+            return true;
         if (BuildFlags.DEVELOPER && core.settingsOpen) {
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN
                     || action == MotionEvent.ACTION_MOVE) {
@@ -657,6 +660,8 @@ public class GameView extends View {
         } else if (hit == SettingsUi.HIT_GAMEOVER) {
             core.endCurrentRun();
             tick();
+        } else if (hit == SettingsUi.HIT_RESET_NEWS) {
+            core.releaseMascot.reset(core);
         } else if (hit == SettingsUi.HIT_RESET_LANDS) {
             LandPicker.reset(core);
             tick();

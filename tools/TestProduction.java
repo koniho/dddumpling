@@ -9,6 +9,12 @@ final class TestProduction extends Check {
         check("production flag is compiled off", !BuildFlags.DEVELOPER);
         Layout L = new Layout();
         L.compute(640, 1400, 0, 0, 0, 0);
+        GameCore reader=new GameCore(new Mem(),7190L);
+        reader.releaseNotes.show(reader,L);
+        check("release notes are available in production",reader.releaseNotes.open);
+        reader.screenKey(0);
+        check("production release notes keep key taps modal",!reader.starting());
+        reader.releaseNotes.close();
         Mem store = new Mem();
         store.speed = GameCore.SPEED_MAX;
         store.bgm = (Music.defaultChoice(false) + 1) % Music.NAMES.length;

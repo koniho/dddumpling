@@ -162,6 +162,8 @@ final class GameCore {
 
     /** Persistence seam; the Activity backs this with SharedPreferences. */
     interface Store extends Progress.Store {
+        default String loadReleaseSeen() { return BuildFlags.BUILD_ID; }
+        default void saveReleaseSeen(String value) {}
         int loadBest();
         void saveBest(int best);
         default int loadLandState() { return 0; }
@@ -470,6 +472,8 @@ final class GameCore {
     int bgmChoice;
     /** While true the simulation is frozen and the settings panel is showing. */
     boolean settingsOpen;
+    final ReleaseNotes releaseNotes=new ReleaseNotes();
+    final ReleaseMascot releaseMascot=new ReleaseMascot();
     int settingsTab;
     /** Newly collected stars in this update, including the winning pickup. */
     int starPickups;
@@ -1847,6 +1851,7 @@ final class GameCore {
      * presses of anything now, which also puts the display case back on the way past.
      */
     void screenKey(int g) {
+        if(releaseNotes.open) return;
         if (returnFade > 0f) return;
         if (!keyActive(g) || rosterSceneT > 0f) return;
         // Nothing is dismissable until the summary is up and settled — the death sequence is not
@@ -2360,6 +2365,13 @@ final class GameCore {
     void update(float dt, float elapsed, Layout L) {
         starPickups = 0;
         if (paused) return;
+        if(releaseNotes.open) {
+            releaseNotes.update(elapsed,L);
+            clock+=elapsed;time+=elapsed;skyClock+=elapsed;
+            updateTitleSprings(elapsed,L);LandPicker.updateTravel(this,elapsed);
+            return;
+        }
+        releaseMascot.update(this,elapsed);
         if (state == PLAY && boss.fighting() && !(BuildFlags.DEVELOPER && settingsOpen))
             progress.bossTime(elapsed);
         // Slow motion from a multi-word fling stroke, and the readout it earned. Both ticked

@@ -71,6 +71,11 @@ you are doing.
 
 ## Build and deploy
 
+Before tagging a release, finish and review its release notes using [Executing a release](docs/releasing.md).
+The separate [writing guide](docs/release-notes.md) explains the human-editable JSON catalog.
+Each feature needs its game phase and player purpose. Run `python3 tools/release-notes.py check --version <version>`
+before tagging; include the JSON, generated game copy, and destination notes in the release commit.
+
 ```sh
 ./check.sh                      # rules + frames, no SDK needed
 ./check.sh -q                   # failures, diagnostics and the tally only — use this by default

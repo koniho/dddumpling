@@ -1,0 +1,91 @@
+{
+  "releases": [
+    {
+      "version": "0.1.19",
+      "changes": [
+        {
+          "icon": "travel",
+          "title": "Off we go!",
+          "where": "On the title screen",
+          "why": "Pick a land and your dumpling walks there. A little trip before the action!",
+          "autoReset": false
+        },
+        {
+          "icon": "stars",
+          "title": "Star chaser",
+          "where": "Star Path bonus rounds",
+          "why": "Each win adds a little more zip, keeping the chase fresh.",
+          "autoReset": false
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "fixes": [
+            {
+              "where": "After Star Path",
+              "why": "Your flyer stays gone after blasting off."
+            }
+          ],
+          "autoReset": false
+        }
+      ]
+    },
+    {
+      "version": "0.1.18",
+      "changes": [
+        {
+          "icon": "shuffle",
+          "title": "Surprise delivery",
+          "where": "Stage 11+ power-ups",
+          "why": "Catch a surprise: a power-up or a cheeky debuff. Every pickup keeps you guessing.",
+          "autoReset": true
+        },
+        {
+          "icon": "disguise",
+          "title": "Nice disguise!",
+          "where": "Stage 11+ mystery pickups",
+          "why": "Incognito hides faces. Monochrome hides colors. A fresh twist for your eyes!",
+          "autoReset": false
+        },
+        {
+          "icon": "slime",
+          "title": "Sneaky slime",
+          "where": "Slime boss fights",
+          "why": "The boss hides its prompt in slime, so you can see when it is safe to hit.",
+          "autoReset": false
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "fixes": [
+            {
+              "where": "Mystery pickups",
+              "why": "See your surprise before it takes off."
+            },
+            {
+              "where": "Boss fights",
+              "why": "A louder beat for the big showdown."
+            },
+            {
+              "where": "Playing on iOS",
+              "why": "Sound effects stay ready to play."
+            }
+          ],
+          "autoReset": false
+        }
+      ]
+    },
+    {
+      "version": "0.1.17",
+      "changes": [
+        {
+          "icon": "pair",
+          "title": "Better together",
+          "where": "Normal waves, stage 16+",
+          "why": "Press both pals together to pop the pair. A little teamwork for your thumbs.",
+          "autoReset": true
+        }
+      ]
+    }
+  ]
+}

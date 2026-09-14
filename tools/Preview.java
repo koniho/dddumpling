@@ -193,6 +193,85 @@ final class Preview {
             }
         }
 
+        Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
+        GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);
+        shot(dir,"103-release-steamer",news,L,w,h,ss);
+        for(int frame=1;frame<=2;frame++) {
+            news.clock=frame*.4f;
+            shot(dir,"103-release-steamer-idle-"+frame,news,L,w,h,ss);
+        }
+        news.releaseMascot.read(news);
+        shot(dir,"103-release-steamer-read",news,L,w,h,ss);
+        shot(dir,"103-release-steamer-corner",news,L,w,h,ss);
+        news.settingsOpen=true;
+        shot(dir,"103-release-steamer-settings",news,L,w,h,ss);
+        Check.Mem inviteSave=new Check.Mem();inviteSave.releaseSeen="";
+        GameCore invite=new GameCore(inviteSave,7002L);invite.releaseMascot.update(invite,.1f);
+        invite.releaseNotes.show(invite,L);
+        shot(dir,"103-release-invite-enter-0",invite,L,w,h,ss);
+        invite.update(.5f,L);
+        shot(dir,"103-release-invite-enter-1",invite,L,w,h,ss);
+
+        GameCore book=new GameCore(new Mem(),7001L);
+        book.releaseNotes.show(book,L);
+        for(int frame=0;frame<7;frame++) {
+            shot(dir,"103-release-enter-"+frame,book,L,w,h,ss);
+            book.update(.2f,L);
+        }
+        shot(dir,"103-release-book-list",book,L,w,h,ss);
+        book.releaseNotes.listScroll=ReleaseNotes.maxScroll(L);
+        shot(dir,"103-release-book-list-scrolled",book,L,w,h,ss);
+        int[] releaseItems=ReleaseChange.ITEMS[0];
+        try {
+            ReleaseChange.ITEMS[0]=new int[ReleaseNotes.columns(L)*9+2];
+            for(int i=0;i<ReleaseChange.ITEMS[0].length;i++) ReleaseChange.ITEMS[0][i]=releaseItems[i%releaseItems.length];
+            book.releaseNotes.listScroll=0f;
+            shot(dir,"103-release-book-wrapped",book,L,w,h,ss);
+            book.releaseNotes.listScroll=ReleaseNotes.maxScroll(L);
+            shot(dir,"103-release-book-wrapped-scrolled",book,L,w,h,ss);
+        } finally { ReleaseChange.ITEMS[0]=releaseItems;book.releaseNotes.listScroll=0f; }
+        for(int page=0;page<3;page++) {
+            book.releaseNotes.select(page,L);book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
+            shot(dir,"103-release-book-"+page,book,L,w,h,ss);
+            book.releaseNotes.touch(book,L,L.w*0.65f,(book.releaseNotes.demoTop(L)+book.releaseNotes.demoBottom(L))*.5f);
+            book.releaseNotes.update(page==1 ? 0.8f : 0.3f,L);
+            shot(dir,"103-release-book-active-"+page,book,L,w,h,ss);
+            book.releaseNotes.update(ReleaseNotes.RESTART_DELAY,L);
+            shot(dir,"103-release-book-restarted-"+page,book,L,w,h,ss);
+        }
+
+        book.releaseNotes.reset(L);
+        GameCore.Enemy bookA=book.releaseNotes.demo.enemies.get(0),bookB=bookA.link;
+        float bookY=book.releaseNotes.demoTop(L)+bookA.y;
+        book.releaseNotes.touch(book,L,L.w*0.08f+book.releaseNotes.demo.enemyCentreX(bookA),bookY);
+        book.releaseNotes.update(0.1f,L);
+        book.releaseNotes.touch(book,L,L.w*0.08f+book.releaseNotes.demo.enemyCentreX(bookB),bookY);
+        book.releaseNotes.update(0.15f,L);
+        shot(dir,"103-release-book-pair-clear",book,L,w,h,ss);
+
+        for(int release=0;release<ReleaseNotes.VERSIONS.length;release++)
+            for(int feature=1;feature<ReleaseChange.ITEMS[release].length;feature++) {
+                book.releaseNotes.select(release,feature,L);book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
+                shot(dir,"103-release-feature-"+release+"-"+feature,book,L,w,h,ss);
+            }
+
+        book.releaseNotes.back();book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
+        book.releaseNotes.select(0,L);
+        for(int frame=0;frame<5;frame++) {
+            shot(dir,"103-release-page-enter-"+frame,book,L,w,h,ss);
+            book.update(.1f,L);
+        }
+        book.releaseNotes.back();
+        for(int frame=0;frame<5;frame++) {
+            shot(dir,"103-release-page-back-"+frame,book,L,w,h,ss);
+            book.update(.1f,L);
+        }
+        book.releaseNotes.close();
+        for(int frame=0;frame<7;frame++) {
+            shot(dir,"103-release-exit-"+frame,book,L,w,h,ss);
+            book.update(.2f,L);
+        }
+
         GameCore defaultPicker = new GameCore(new Mem(), 839L);
         defaultPicker.collected = Collect.add(defaultPicker.collected, Collect.BOSS_FIRST);
         shot(dir, "84-land-picker-default", defaultPicker, L, w, h, ss);

@@ -17,6 +17,9 @@ abstract class Check {
         public byte[] loadProgress() { return progress == null ? null : progress.clone(); }
         public void saveProgress(byte[] data) { progress = data.clone(); }
         public String progressReplica() { return "test"; }
+        String releaseSeen=BuildFlags.BUILD_ID;
+        public String loadReleaseSeen() { return releaseSeen; }
+        public void saveReleaseSeen(String value) { releaseSeen=value; }
         int best;
         int landState;
         public int loadLandState() { return landState; }
