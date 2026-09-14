@@ -83,3 +83,19 @@ it recycles a busy player. At most twelve requests may be pending, and requests 
 100 ms are discarded. Pausing invalidates pending requests and queues a stop for active effects.
 Native audio tests cover worker execution, saturation reuse and cancellation across a pause.
 Repeated misses and FLING still need a physical-device feel check; haptic cost is unmeasured.
+
+## Physical-device follow-up — 2026-09-13
+
+The player reports FLING is much improved after moving audio off the main thread, but rapid
+presses still stutter, especially during FLURRY. A 31.3-second Time Profiler attachment to
+the Debug build on iPhone 16 Pro Max / iOS 26.6.1 captured 9,784 main-thread CPU samples.
+7,139 (73%) included `DDGameView.drawRect:`, 20 included input packet handling, and three
+included `UIImpactFeedbackGenerator`'s impact call. Color-component evaluation appeared in
+850 main-thread samples (8.7%). These are inclusive CPU samples, not elapsed frame times;
+the capture does not measure waiting threads or establish a FLURRY-only workload.
+
+`DDIOSPainter` now reuses native Device RGB colors in a fixed 1,024-slot cache instead of
+rebuilding them for each shape. Alpha remains part of the key; collisions replace entries.
+Native tests compare fill/stroke pixels against the original RGB setters and exercise 10,000
+color replacements. Thirteen native tests pass. The rendering improvement still needs a
+device retest; haptics are unchanged, and their small CPU sample count does not rule out waits.
