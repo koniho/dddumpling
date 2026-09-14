@@ -43,6 +43,38 @@ final class Kawaii {
         }
     }
 
+    /** Pixel shades drop on, then every character rounds into the same colored disguise. */
+    static void incognito(Painter p,int glyph,float cx,float cy,float r,int color,float amount) {
+        float t=Math.max(0f,Math.min(1f,amount));
+        float morph=Math.max(0f,(t-0.25f)/0.75f);
+        morph=morph*morph*(3f-2f*morph);
+        if (morph > 0f) {
+            float bodyR=r*0.86f*morph;
+            p.fillEllipse(cx,cy+r*0.06f,bodyR,bodyR*0.92f,Glyph.mix(color,INK,0.16f));
+            p.fillEllipse(cx,cy-r*0.015f,bodyR*0.98f,bodyR*0.86f,color);
+            p.fillEllipse(cx-bodyR*0.35f,cy-bodyR*0.36f,bodyR*0.15f,bodyR*0.08f,
+                    Glyph.mix(color,0xFFFFFFFF,0.4f));
+        }
+        if (morph < 1f) draw(p,glyph,cx,cy,r*(1f-morph),color,1f+0.12f*morph,0.4f);
+        if (morph > 0f) mouthCurve(p,cx,cy+r*0.30f,r*0.19f*morph,r*0.08f,1f);
+        float drop=Math.min(1f,t/0.45f);
+        drop=1f-(1f-drop)*(1f-drop);
+        float sy=cy-r*0.10f-r*1.1f*(1f-drop);
+        int black=Glyph.withAlpha(0xFF171821,(int)(255f*Math.min(1f,t*6f)));
+        for(int side=-1;side<=1;side+=2) {
+            float x=cx+side*r*0.33f;
+            p.fillPoly(new float[]{x-r*0.31f,sy-r*0.16f,x+r*0.31f,sy-r*0.16f,
+                    x+r*0.31f,sy+r*0.10f,x+r*0.22f,sy+r*0.10f,
+                    x+r*0.22f,sy+r*0.20f,x-r*0.19f,sy+r*0.20f,
+                    x-r*0.19f,sy+r*0.11f,x-r*0.31f,sy+r*0.11f},black);
+            int glint=Glyph.withAlpha(0xFFFFFFFF,(int)(220f*Math.min(1f,t*6f)));
+            for(int k=0;k<3;k++) p.fillRect(x-r*0.20f+k*r*0.07f,sy-r*0.09f+k*r*0.055f,
+                    x-r*0.12f+k*r*0.07f,sy-r*0.015f+k*r*0.055f,glint);
+        }
+        p.line(cx-r*0.15f,sy-r*0.10f,cx+r*0.15f,sy-r*0.10f,black,r*0.12f);
+        p.line(cx-r*0.80f,sy-r*0.17f,cx+r*0.80f,sy-r*0.17f,black,r*0.08f);
+    }
+
     /** Braced faces for a linked pair resisting a single press. */
     static void determined(Painter p, int g, float cx, float cy, float size, int body, float squash) {
         draw(p, g, cx, cy, size, body, squash, 0f);

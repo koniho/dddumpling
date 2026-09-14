@@ -18,6 +18,7 @@ final class SettingsUi {
      * Waiting for it meant clearing a wave, winning a steamer and then clearing another.
      */
     static final int HIT_TEST = 200;
+    static final int HIT_DEBUFF = 250;
     /** Chips in the playtest row: the frenzy modes, Starpath, and Steamer. */
     static final int TEST_CHIPS = Power.OFFERED.length + 2;
     /** The star-course chip's index within that row. */
@@ -46,7 +47,7 @@ final class SettingsUi {
     float firstOptionY;
     float closeCx, closeCy, closeR;
     /** Playtest row: one chip per powerup mode. */
-    float testLabelY, testY, testH;
+    float testLabelY, testY, testH, debuffY;
     /** Stage-jump row: one chip per {@link #STAGE_STEP}. */
     float stageLabelY, stageY, stageH;
     /** Next-run roster toggle and end-current-run button. */
@@ -72,7 +73,7 @@ final class SettingsUi {
         clearH = s * 1.6f;
         runH = s * 1.6f;
         difficultyH = s * 1.6f;
-        float bodyH = s * 8.4f + optionH * optionCount + testH + stageH + runH + clearH
+        float bodyH = s * 8.4f + optionH * optionCount + testH*2f + s*0.4f + stageH + runH + clearH
                 + s * 5.4f;
         panelT = Math.max(L.topSafe + s, (L.h - bodyH) / 2f - s);
         panelB = panelT + bodyH;
@@ -92,7 +93,8 @@ final class SettingsUi {
         testLabelY = firstOptionY + optionH * optionCount + s * 1.0f;
         testY = testLabelY + s * 0.35f;
 
-        stageLabelY = testY + testH + s * 1.15f;
+        debuffY = testY + testH + s*0.4f;
+        stageLabelY = debuffY + testH + s * 1.15f;
         stageY = stageLabelY + s * 0.35f;
 
         runLabelY = stageY + stageH + s * 1.05f;
@@ -172,6 +174,9 @@ final class SettingsUi {
             }
         }
 
+        if (y >= debuffY && y <= debuffY+testH) {
+            for(int i=0;i<2;i++) if(x>=testChipL(i,2) && x<=testChipR(i,2)) return HIT_DEBUFF+i;
+        }
         if (y >= stageY && y <= stageY + stageH) {
             int n = STAGE_STEP.length;
             for (int i = 0; i < n; i++) {

@@ -211,6 +211,12 @@ public final class IOSInputTest extends Check {
         check("stage chip jumps stage rather than starting frenzy", c.stage==before+1 && c.mode==-1 && c.settingsOpen);
         tap(game,ui.closeCx,ui.closeCy);
         check("settings close resumes play", !c.settingsOpen);
+        for(int i=0;i<2;i++) {
+            c.settingsOpen=true;
+            tap(game,(ui.testChipL(i,2)+ui.testChipR(i,2))/2,ui.debuffY+ui.testH/2);
+            check("native debuff chip activates correct effect " + i,!c.settingsOpen
+                    && c.debuff==Power.INCOGNITO+i && c.debuffLeft>0f && !c.powerActive());
+        }
     }
 
     private static void debugScenes() {

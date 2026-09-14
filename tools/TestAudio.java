@@ -200,7 +200,9 @@ final class TestAudio extends Check {
             // Peak-normalised: every effect tops out at the same level.
             if (Math.abs(max - peak) > 2) allNormalised = false;
             if (max >= 32767) allClean = false;
-            if (pcm.length < Sfx.RATE / 20 || pcm.length > Sfx.RATE * 2) allSane = false;
+            // Roulette ticks intentionally fit between fast icon changes.
+            int minimum = id == Sfx.SHUFFLE_BLIP ? Sfx.RATE / 40 : Sfx.RATE / 20;
+            if (pcm.length < minimum || pcm.length > Sfx.RATE * 2) allSane = false;
         }
         check("every effect is normalised to the same peak", allNormalised);
         check("no effect clips", allClean);

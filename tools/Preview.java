@@ -60,6 +60,34 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
+        GameCore mystery = new GameCore(new Mem(),1101L);
+        mystery.startGame(); mystery.jumpToStage(11,L);
+        mystery.stageGap=0f; mystery.spawnTimer=0f; mystery.powerTimer=100f;
+        step(mystery,L,3f); mystery.stageBanner=0f;
+        for(int effect : new int[]{Power.INCOGNITO,Power.MONOCHROME}) {
+            Power icon=new Power(); icon.effect=effect; icon.x=L.w*0.5f;
+            icon.y=L.playTop+L.enemyR*5f; mystery.power=icon;
+            shot(dir,"100-debuff-icon-"+effect,mystery,L,w,h,ss);
+        }
+        mystery.power.mystery=true; mystery.power.teamAvailable=true; mystery.power.effect=Power.MONOCHROME;
+        mystery.power.hit=true;
+        for(int frame=0;frame<5;frame++) {
+            mystery.power.hitT=frame*0.19f;
+            shot(dir,"100-mystery-roulette-"+frame,mystery,L,w,h,ss);
+        }
+        mystery.power=null; mystery.startDebuff(Power.INCOGNITO);
+        for(int frame=0;frame<4;frame++) {
+            mystery.incognitoMorph=frame/3f;
+            shot(dir,"100-incognito-morph-"+frame,mystery,L,w,h,ss);
+        }
+        shot(dir,"100-incognito",mystery,L,w,h,ss);
+        mystery.incognitoMorph=0f;
+        mystery.startDebuff(Power.MONOCHROME);
+        for(int frame=0;frame<3;frame++) {
+            mystery.monochromeFade=frame*0.5f;
+            shot(dir,"100-monochrome-fade-"+frame,mystery,L,w,h,ss);
+        }
+
         GameCore linked = new GameCore(new Mem(), 1601L);
         linked.startGame();
         linked.jumpToStage(16, L);
@@ -1386,7 +1414,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

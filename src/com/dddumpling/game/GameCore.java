@@ -200,6 +200,8 @@ final class GameCore {
         void clearWord();
         void wrong();
         void linkedThud();
+        void shuffleBlip();
+        void debuffDown();
         void damage();
         void achievement();
         /** The slime has turned an unanswered prompt into a volley. */
@@ -656,6 +658,8 @@ final class GameCore {
     /** Active mode, or -1. */
     int mode = -1;
     float modeLeft;
+    int debuff = -1;
+    float debuffLeft, monochromeFade, incognitoMorph;
     /** Rapid clears earn a short, bounded replacement burst. */
     float powerLastClear = -100f;
     int powerRefillBurst;
@@ -694,6 +698,14 @@ final class GameCore {
 
     /** Score for beating one, and for one landed hit on the way there. */
     static final int BOSS_BONUS = 900, BOSS_HIT = 40;
+
+    boolean incognito() { return state == PLAY && ((debuffLeft > 0f && debuff == Power.INCOGNITO) || incognitoMorph > 0f); }
+    void startDebuff(int effect) {
+        if (effect != Power.INCOGNITO && effect != Power.MONOCHROME) return;
+        debuff = effect;
+        debuffLeft = Power.DEBUFF_TIME;
+        if (sound != null) sound.debuffDown();
+    }
 
     boolean powerActive() { return modeLeft > 0f; }
 
@@ -976,13 +988,26 @@ final class GameCore {
 
     /** Ticks the frenzy timer, and the drifting letter that starts one. */
     private void updatePower(float dt, Layout L) {
+        debuffLeft = Math.max(0f,debuffLeft-dt);
+        float mono = debuffLeft > 0f && debuff == Power.MONOCHROME ? 1f : 0f;
+        monochromeFade += Math.max(-dt/0.6f,Math.min(dt/0.6f,mono-monochromeFade));
+        float disguise = debuffLeft > 0f && debuff == Power.INCOGNITO ? 1f : 0f;
+        incognitoMorph += Math.max(-dt/0.75f,Math.min(dt/0.75f,disguise-incognitoMorph));
         if (powerActive()) {
             modeLeft -= dt;
             if (modeLeft <= 0f) endPower(L);
         }
 
         if (power != null) {
+            int previousIcon = power.shownEffect();
             power.update(dt);
+            if (power.mystery && power.hit && power.hitT < Power.SELECT_TIME
+                    && power.shownEffect() != previousIcon && sound != null) sound.shuffleBlip();
+            if (power.mystery && power.hit && !power.activated && power.hitT >= Power.SELECT_TIME) {
+                power.activated = true;
+                if (power.effect >= Power.COUNT) startDebuff(power.effect);
+                else startFrenzy(power.effect,L);
+            }
             if (power.spent() || (power.catchable() && power.offScreen(L, L.enemyR))) {
                 power = null;
                 powerTimer = Power.SPAWN_MIN
@@ -998,7 +1023,7 @@ final class GameCore {
         // actually threatening you; FLURRY, the fourth, wildcards every key and would hand over
         // every boss window for free. One set piece at a time is both the simpler rule and the
         // better one, and it keeps the frenzy taper's arithmetic about what a stage asks intact.
-        if (powerActive() || boss.active() || stageGap > 0
+        if (powerActive() || debuffLeft > 0f || boss.active() || stageGap > 0
                 || spawnedThisStage >= stageQuota()) {
             return;
         }
@@ -1010,7 +1035,9 @@ final class GameCore {
     private void spawnPower(Layout L) {
         Power w = new Power();
         w.glyph = randomGlyph();
-        w.effect = rollEffect();
+        w.mystery = stage >= Power.MYSTERY_STAGE;
+        w.teamAvailable = Collect.owned(collected) > 0;
+        w.effect = w.mystery ? -1 : rollEffect();
         // Kept in the upper half of the descent, clear of the danger line.
         w.y = L.playTop + (L.dangerY - L.playTop) * (0.15f + rnd.nextFloat() * 0.30f);
         boolean toRight = rnd.nextBoolean();
@@ -1046,7 +1073,7 @@ final class GameCore {
 
     /** Caught it: scores, then starts the frenzy the letter was carrying. */
     boolean tapPower(float x, float y, Layout L) {
-        if (state != PLAY || power == null || !power.catchable()) return false;
+        if (paused || state != PLAY || power == null || !power.catchable()) return false;
         float bobY = power.y + (float) Math.sin(power.t * 3.2f) * L.enemyR * 0.22f;
         float dx = x - power.x, dy = y - bobY;
         float grab = L.enemyR * 2.05f;
@@ -1063,7 +1090,14 @@ final class GameCore {
         power.hitT = 0f;
         score += Power.SCORE;
         Fx.explode(this, rnd, power.x, power.y, L.enemyR * 2.2f, 26, 0xFFFFFFFF);
-        startFrenzy(power.effect, L);
+        if (power.mystery) {
+            if (sound != null) sound.shuffleBlip();
+            power.teamAvailable = Collect.owned(collected) > 0;
+            power.effect = Power.mysteryAt(power.teamAvailable,rnd.nextInt(Power.mysteryCount(power.teamAvailable)));
+        } else {
+            power.activated = true;
+            startFrenzy(power.effect, L);
+        }
     }
 
     /**
@@ -1079,6 +1113,7 @@ final class GameCore {
         if (effect == Power.TEAM && entry < 0) return;
         if (effect != Power.MULTI) LinkedPairs.preparePower(this);
         else LinkedPairs.release(this, L);
+        debuffLeft = monochromeFade = incognitoMorph = 0f;
         mode = effect;
         modeLeft = Power.DURATION;
         powerLastClear = -100f;
@@ -1112,6 +1147,20 @@ final class GameCore {
      * Playtest hook: drops straight into a mode without waiting for a letter to drift past.
      * Goes through {@link #startFrenzy} so it is the real thing, not a simulation of it.
      */
+    void playtestDebuff(int effect) {
+        if (!BuildFlags.DEVELOPER || state != PLAY
+                || (effect != Power.INCOGNITO && effect != Power.MONOCHROME)) return;
+        power = null;
+        settingsOpen = false;
+        modeLeft = 0f;
+        buddy.leave();
+        fingerDown = touchDown = false;
+        strokeFade = 0f;
+        debuffLeft = monochromeFade = incognitoMorph = 0f;
+        if (sound != null) sound.frenzy(false);
+        startDebuff(effect);
+    }
+
     void playtestMode(int effect, Layout L) {
         if (!BuildFlags.DEVELOPER) return;
         if (state != PLAY) return;
@@ -1172,6 +1221,7 @@ final class GameCore {
     private void endPower(Layout L) {
         mode = -1;
         modeLeft = 0f;
+        debuffLeft = monochromeFade = incognitoMorph = 0f;
         buddy.leave();
         for (int i = enemies.size() - 1; i >= 0; i--) {
             Enemy e = enemies.get(i);
@@ -1550,7 +1600,8 @@ final class GameCore {
      */
     boolean stageCleared() {
         return !boss.active() && spawnedThisStage >= stageQuota()
-                && enemies.isEmpty() && shots.isEmpty();
+                && enemies.isEmpty() && shots.isEmpty()
+                && !(power != null && power.mystery && power.hit && !power.activated);
     }
 
     // ---- lifecycle ----------------------------------------------------------
@@ -1642,6 +1693,7 @@ final class GameCore {
         power = null;
         mode = -1;
         modeLeft = 0;
+        debuffLeft = monochromeFade = incognitoMorph = 0f;
         buddy.leave();
         // Stage 1 is never a boss stage, so this is only ever clearing one a previous run left
         // standing — but a run must not begin with the last one's boss still on the field.
@@ -2902,6 +2954,7 @@ final class GameCore {
         resolvedThisStage = 0;
         stageBanner = BANNER_TIME;
         stageGap = STAGE_GAP;
+        debuffLeft = monochromeFade = incognitoMorph = 0f;
         spawnTimer = 0.35f;
         // Every fifth stage is a boss instead of a wave. Started here rather than on the first frame
         // of play so its arrival card runs over the stage breather it already had.
@@ -2938,6 +2991,7 @@ final class GameCore {
         power = null;
         mode = -1;
         modeLeft = 0f;
+        debuffLeft = monochromeFade = incognitoMorph = 0f;
         buddy.leave();
         boolean leftBoss = boss.active();
         boss.leave();
@@ -3014,6 +3068,7 @@ final class GameCore {
         if (powerActive()) {
             mode = -1;
             modeLeft = 0f;
+            debuffLeft = monochromeFade = incognitoMorph = 0f;
             fingerDown = false;
             if (sound != null) sound.frenzy(false);
         }

@@ -345,6 +345,8 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
                rate:powf(.92f, MAX(0, depth - 1)) gain:1.f];
 }
 - (void)clearWord { [self playEffect:DDSfx_CLEAR rate:1 gain:1]; }
+- (void)shuffleBlip { [self playEffect:DDSfx_SHUFFLE_BLIP rate:1 gain:.3f]; }
+- (void)debuffDown { [self playEffect:DDSfx_DEBUFF_DOWN rate:1 gain:.8f]; }
 - (void)linkedThud { [self playEffect:DDSfx_LINKED_THUD rate:1 gain:.85f]; }
 - (void)wrong { [self playEffect:DDSfx_WRONG rate:1 gain:1]; }
 - (void)damage { [self playEffect:DDSfx_DRIP rate:1 gain:1]; }

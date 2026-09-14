@@ -176,3 +176,9 @@ PATH="$JAVA_HOME/bin:/opt/homebrew/bin:$ANDROID_HOME/build-tools/36.0.0:$PATH" \
 
 Install `platforms;android-36` and `build-tools;36.0.0` using the existing SDK's `sdkmanager`
 if they are missing. This is an Android toolchain requirement, not a gameplay regression.
+
+## TestFlight version policy
+
+Keep `MARKETING_VERSION` fixed for TestFlight iterations (currently `0.1.17`). Only bump it when preparing a public App Store release, not for Android tags, feature builds, or beta fixes. The release workflow already supplies a unique `IOS_BUILD_NUMBER` from its run number and attempt; this updates `CURRENT_PROJECT_VERSION` without changing the marketing version. Update `ios/store/en-US/what_to_test.txt` for each beta.
+
+Every uploaded build still undergoes Apple processing. Later builds of the same version may avoid a full TestFlight review, but immediate availability to external testers is not guaranteed. See https://developer.apple.com/help/app-store-connect/test-a-beta-version/invite-external-testers .
