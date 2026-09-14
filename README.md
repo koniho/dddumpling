@@ -339,6 +339,7 @@ existing production saves are not copied into the developer app.
 settings and playtest actions at compile time and ignores saved developer speed/music preferences.
 Developer builds offer the Minigames settings tab from the stage readout. Star Path's saved level
 can be adjusted for the next attempt; wins raise it automatically, with a stronger early ramp.
+Each win advances two levels, reaching the ceiling after three wins from the starting level.
 Levels 1–6 now use bend rates of 1.00, 1.08, 1.13, 1.16, 1.185 and 1.20×, replacing
 1.00, 1.04, 1.08, 1.12, 1.16 and 1.20×. Flight timing, pickup grace and lookahead stay unchanged.
 Both builds include the title screen privacy-policy link. Scores and collections remain local.

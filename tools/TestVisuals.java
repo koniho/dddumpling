@@ -668,7 +668,7 @@ final class TestVisuals extends Check {
         check("chosen difficulty survives a new run", c.stars.wins == 2);
         check("chosen difficulty survives relaunch", new GameCore(store, 83L).stars.wins == 2);
         c.stars.recordWin();
-        check("wins continue from the chosen level", c.stars.wins == 3);
+        check("wins advance two levels from the chosen level", c.stars.wins == 4);
         c.setStarDifficulty(99);
         check("difficulty control clamps high", c.stars.wins == StarPath.MAX_DIFFICULTY);
         c.setStarDifficulty(-1);

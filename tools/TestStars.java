@@ -127,8 +127,8 @@ final class TestStars extends Check {
         }
         check("taking the last star completes the course", took && c.stars.count() == StarPath.COUNT);
         check("the winning pickup emits feedback", c.starPickups == 1);
-        check("success immediately saves one difficulty step",
-                c.stars.wins == 1 && progress.starWins == 1 && progress.starWinSaves == 1);
+        check("success immediately saves two difficulty steps",
+                c.stars.wins == 2 && progress.starWins == 2 && progress.starWinSaves == 1);
         check("the victory tableau takes the screen", c.stars.winning() && c.starFlight());
         check("it knows which star finished the course", c.stars.winStar == last);
         check("completion pays like the steamer", c.score >= score + GameCore.FREE_BONUS);
@@ -158,7 +158,7 @@ final class TestStars extends Check {
         c.startGame();
         GameCore restored = new GameCore(progress, 20L);
         check("Starpath difficulty survives new playthroughs and reloads",
-                c.stars.wins == 1 && restored.stars.wins == 1);
+                c.stars.wins == 2 && restored.stars.wins == 2);
         restored.stars.collected = 7;
         restored.resetDifficultyScaling();
         check("settings reset the stored Starpath ladder while keeping earned stars",
@@ -230,8 +230,15 @@ final class TestStars extends Check {
                     harder.bendRate() > 1f + level * 0.04f && harder.bendRate() > previous);
             previous = harder.bendRate();
         }
+        harder.resetDifficulty();
+        harder.recordWin();
+        check("first win advances two levels", harder.wins == 2);
+        harder.recordWin();
+        check("second win advances two more levels", harder.wins == 4);
+        harder.recordWin();
+        check("third win reaches the ceiling", harder.wins == StarPath.MAX_DIFFICULTY);
         for (int i = 0; i < 100; i++) harder.recordWin();
-        check("difficulty stops after five successes", harder.wins == StarPath.MAX_DIFFICULTY
+        check("further wins keep the difficulty capped", harder.wins == StarPath.MAX_DIFFICULTY
                 && Math.abs(harder.bendRate() - 1.2f) < 0.0001f);
         baseline.make(new java.util.Random(77L));
         harder.make(new java.util.Random(77L));

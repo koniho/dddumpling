@@ -654,7 +654,7 @@ final class Screens extends Draw {
             p.text("" + (c.stars.wins + 1) + " / " + (StarPath.MAX_DIFFICULTY + 1),
                     L.w / 2f, ui.sliderY + ui.testH * 0.65f, s * 0.7f, INK, Painter.CENTER, true);
             p.text("SAVED ACROSS RUNS", L.w / 2f, ui.sliderY + s * 3f, s * 0.52f, INK_DIM, Painter.CENTER, false);
-            p.text("WINS RAISE THE LEVEL", L.w / 2f, ui.sliderY + s * 4f, s * 0.52f, INK_DIM, Painter.CENTER, false);
+            p.text("WINS ADD " + StarPath.WIN_STEP + " LEVELS", L.w / 2f, ui.sliderY + s * 4f, s * 0.52f, INK_DIM, Painter.CENTER, false);
             p.text("APPLIES NEXT ATTEMPT", L.w / 2f, ui.sliderY + s * 5f, s * 0.48f, INK_DIM, Painter.CENTER, false);
             return;
         }
