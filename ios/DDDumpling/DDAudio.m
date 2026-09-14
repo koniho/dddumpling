@@ -1,4 +1,5 @@
 #import "DDAudio.h"
+#import "DDEffectMixer.h"
 
 #import <AVFoundation/AVFoundation.h>
 #import <UIKit/UIKit.h>
@@ -15,9 +16,8 @@ static const jint DDStyleOff = DDMusic_OFF;
 static const jint DDStyleCustom = DDMusic_CUSTOM;
 
 @interface DDIOSAudio () <AVAudioPlayerDelegate, AVSpeechSynthesizerDelegate>
-@property(nonatomic) NSMutableSet<AVAudioPlayer *> *effects;
-@property(nonatomic) NSCache<NSNumber *, NSData *> *effectWavs;
-@property(nonatomic) NSMutableDictionary<NSString *, NSMutableArray<AVAudioPlayer *> *> *effectPlayers;
+@property(nonatomic) NSCache<NSNumber *, AVAudioPCMBuffer *> *effectBuffers;
+@property(nonatomic) DDEffectMixer *effectMixer;
 @property(nonatomic) AVAudioPlayer *music;
 @property(nonatomic) AVAudioPlayer *bubble;
 @property(nonatomic) AVAudioEngine *rocketEngine;
@@ -25,6 +25,12 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 @property(nonatomic) AVAudioUnitVarispeed *rocketPitch;
 @property(nonatomic) AVSpeechSynthesizer *speech;
 @property(nonatomic) dispatch_queue_t renderQueue;
+@property(nonatomic) dispatch_queue_t effectsQueue;
+@property(nonatomic) dispatch_semaphore_t effectSlots;
+@property(atomic) NSUInteger effectGeneration;
+#if DEBUG
+@property(nonatomic) BOOL profileMuteEffects;
+#endif
 @property(nonatomic) BOOL active;
 @property(nonatomic) BOOL interrupted;
 /** A route/privacy interruption can only be cleared by iOS permission or app reactivation. */
@@ -45,12 +51,16 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 
 - (instancetype)init {
   if ((self = [super init])) {
-    _effects = [NSMutableSet set];
-    _effectWavs = [[NSCache alloc] init];
-    _effectPlayers = [NSMutableDictionary dictionary];
+    _effectBuffers = [[NSCache alloc] init];
+    _effectMixer = [DDEffectMixer new];
     _speech = [[AVSpeechSynthesizer alloc] init];
     _speech.delegate = self;
     _renderQueue = dispatch_queue_create("com.dddumpling.audio.render", DISPATCH_QUEUE_SERIAL);
+    _effectsQueue = dispatch_queue_create("com.dddumpling.audio.effects", DISPATCH_QUEUE_SERIAL);
+    _effectSlots = dispatch_semaphore_create(12);
+#if DEBUG
+    _profileMuteEffects = [NSProcessInfo.processInfo.environment[@"DDD_PROFILE_MUTE_EFFECTS"] boolValue];
+#endif
     _selectedStyle = DDStyleSwing;
     _playbackAllowed = YES;
     [self observeAudioSession];
@@ -79,9 +89,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
   dispatch_async(_renderQueue, ^{
     @autoreleasepool {
       for (jint i = 0; i < DDSfx_COUNT; ++i) {
-        IOSShortArray *pcm = [DDSfx buildWithInt:i];
-        NSData *wav = [self wavData:pcm sampleRate:DDSfx_RATE];
-        if (wav) [self.effectWavs setObject:wav forKey:@(i)];
+        [self bufferForEffect:i];
       }
       [DDSfx rocket]; [DDSfx bubble];
       [DDMusic preRenderWithInt:DDStyleSwing];
@@ -152,8 +160,10 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 
 - (void)pausePlayers {
   [_music pause]; [_rocketNode pause]; [_rocketEngine pause]; [_bubble pause];
-  for (AVAudioPlayer *effect in _effects) [effect stop];
-  [_effects removeAllObjects];
+  self.effectGeneration += 1;
+  dispatch_async(_effectsQueue, ^{
+    [self.effectMixer pause];
+  });
   [_speech stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
   _narrating = NO;
   [self applyMusicMix];
@@ -161,6 +171,10 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 
 - (void)resumePlayersIfNeeded {
   if (!_active || _interrupted || !_playbackAllowed) return;
+  NSUInteger generation = self.effectGeneration;
+  dispatch_async(_effectsQueue, ^{
+    if (generation == self.effectGeneration) [self.effectMixer prepare];
+  });
   if (_music && !_music.isPlaying && _selectedStyle != DDStyleOff) [_music play];
   if (_rocketOn && _rocketNode && !_rocketNode.isPlaying) {
     NSError *error = nil;
@@ -200,65 +214,45 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
   return player;
 }
 
-- (NSData *)wavForEffect:(jint)effect rate:(float)rate {
-  NSData *base = [_effectWavs objectForKey:@(effect)];
-  if (!base) {
-    @try {
-      IOSShortArray *pcm = [DDSfx buildWithInt:effect];
-      base = [self wavData:pcm sampleRate:DDSfx_RATE];
-      if (base) [_effectWavs setObject:base forKey:@(effect)];
-    } @catch (NSException *exception) { return nil; }
-  }
-  if (!base || fabsf(rate - 1.f) < .0001f) return base;
-  uint32_t sampleRate = (uint32_t)MAX(1, lroundf(DDSfx_RATE * MAX(.5f, MIN(2.f, rate))));
-  NSMutableData *pitched = [base mutableCopy];
-  uint32_t byteRate = sampleRate * 2;
-  [pitched replaceBytesInRange:NSMakeRange(24, sizeof(sampleRate)) withBytes:&sampleRate];
-  [pitched replaceBytesInRange:NSMakeRange(28, sizeof(byteRate)) withBytes:&byteRate];
-  return pitched;
+- (AVAudioPCMBuffer *)bufferForEffect:(jint)effect {
+  AVAudioPCMBuffer *buffer = [_effectBuffers objectForKey:@(effect)];
+  if (buffer) return buffer;
+  IOSShortArray *pcm = [DDSfx buildWithInt:effect];
+  if (!pcm || !pcm->size_) return nil;
+  AVAudioFormat *format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:DDSfx_RATE channels:1];
+  buffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:format frameCapacity:(AVAudioFrameCount)pcm->size_];
+  buffer.frameLength = (AVAudioFrameCount)pcm->size_;
+  for (jint i = 0; i < pcm->size_; ++i) buffer.floatChannelData[0][i] = pcm->buffer_[i] / 32768.f;
+  [_effectBuffers setObject:buffer forKey:@(effect)];
+  return buffer;
 }
 
 - (AVAudioPlayer *)playerForPCM:(IOSShortArray *)pcm loop:(BOOL)loop {
   return [self playerForData:[self wavData:pcm sampleRate:DDSfx_RATE] loop:loop];
 }
 
-- (AVAudioPlayer *)effectPlayer:(jint)effect rate:(float)rate {
-  uint32_t sampleRate = (uint32_t)MAX(1, lroundf(DDSfx_RATE * MAX(.5f, MIN(2.f, rate))));
-  NSString *key = [NSString stringWithFormat:@"%d/%u", effect, sampleRate];
-  NSMutableArray<AVAudioPlayer *> *pool = _effectPlayers[key];
-  if (!pool) { pool = [NSMutableArray array]; _effectPlayers[key] = pool; }
-  for (AVAudioPlayer *candidate in pool) if (!candidate.isPlaying) return candidate;
-  AVAudioPlayer *player = [self playerForData:[self wavForEffect:effect rate:rate] loop:NO];
-  if (!player) return nil;
-  // A small per-variant pool lets quick chains overlap while bounding memory for held presses.
-  if (pool.count >= 6) {
-    AVAudioPlayer *oldest = pool.firstObject;
-    [oldest stop];
-    [_effects removeObject:oldest];
-    [pool removeObjectAtIndex:0];
-  }
-  [pool addObject:player];
-  return player;
-}
-
 - (void)playEffect:(jint)effect rate:(float)rate gain:(float)gain {
+#if DEBUG
+  if (_profileMuteEffects) return;
+#endif
   if (!_active || _interrupted || !_playbackAllowed) return;
-  @try {
-    AVAudioPlayer *player = [self effectPlayer:effect rate:rate];
-    if (!player) return;
-    // AVAudioPlayer retains its last playhead after finishing or being stopped.
-    player.currentTime = 0;
-    player.volume = MAX(0.f, MIN(1.f, gain));
-    [_effects addObject:player];
-    [player play];
-  } @catch (NSException *exception) {
-    // Audio is optional. A translated synthesis error must not affect gameplay.
-  }
-}
-
-- (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag {
-  (void)flag;
-  [_effects removeObject:player];
+  if (dispatch_semaphore_wait(_effectSlots, DISPATCH_TIME_NOW) != 0) return;
+  NSUInteger generation = self.effectGeneration;
+  CFTimeInterval requested = CACurrentMediaTime();
+  dispatch_async(_effectsQueue, ^{
+    @try {
+      // Drop stale impacts rather than replaying a backlog after a pause or slow audio call.
+      if (generation != self.effectGeneration || CACurrentMediaTime() - requested > .1) return;
+      AVAudioPCMBuffer *buffer = [self bufferForEffect:effect];
+      if (!buffer || ![self.effectMixer prepare]) return;
+      if (generation != self.effectGeneration || CACurrentMediaTime() - requested > .1) return;
+      [self.effectMixer playBuffer:buffer rate:rate gain:gain];
+    } @catch (NSException *exception) {
+      // Audio is optional. A translated synthesis error must not affect gameplay.
+    } @finally {
+      dispatch_semaphore_signal(self.effectSlots);
+    }
+  });
 }
 
 - (void)applyMusicMix {

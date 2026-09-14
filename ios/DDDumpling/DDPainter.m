@@ -9,21 +9,9 @@
 
 static const CGFloat DDDegreesToRadians = (CGFloat)M_PI / 180.0;
 
-static inline void DDSetFillColor(CGContextRef context, jint color) {
-  const CGFloat alpha = ((uint32_t)color >> 24) / 255.0;
-  const CGFloat red = ((uint32_t)color >> 16 & 0xff) / 255.0;
-  const CGFloat green = ((uint32_t)color >> 8 & 0xff) / 255.0;
-  const CGFloat blue = ((uint32_t)color & 0xff) / 255.0;
-  CGContextSetRGBFillColor(context, red, green, blue, alpha);
-}
-
-static inline void DDSetStrokeColor(CGContextRef context, jint color,
+static inline void DDSetStrokeColor(CGContextRef context, CGColorRef color,
                                     jfloat width) {
-  const CGFloat alpha = ((uint32_t)color >> 24) / 255.0;
-  const CGFloat red = ((uint32_t)color >> 16 & 0xff) / 255.0;
-  const CGFloat green = ((uint32_t)color >> 8 & 0xff) / 255.0;
-  const CGFloat blue = ((uint32_t)color & 0xff) / 255.0;
-  CGContextSetRGBStrokeColor(context, red, green, blue, alpha);
+  CGContextSetStrokeColorWithColor(context, color);
   CGContextSetLineWidth(context, width);
   CGContextSetLineJoin(context, kCGLineJoinRound);
   CGContextSetLineCap(context, kCGLineCapRound);
@@ -43,14 +31,45 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
   CGContextClosePath(context);
 }
 
+@interface DDIOSPainter () {
+  CGColorSpaceRef _colorSpace;
+  CGColorRef _colors[1024];
+  uint32_t _colorKeys[1024];
+}
+@end
+
 @implementation DDIOSPainter
+
+- (instancetype)init {
+  if ((self = [super init])) _colorSpace = CGColorSpaceCreateDeviceRGB();
+  return self;
+}
+
+- (void)dealloc {
+  for (NSUInteger i = 0; i < 1024; ++i) CGColorRelease(_colors[i]);
+  CGColorSpaceRelease(_colorSpace);
+}
+
+- (CGColorRef)cachedColor:(jint)color {
+  uint32_t key = (uint32_t)color;
+  NSUInteger slot = ((key ^ (key >> 16)) * 2654435761u) >> 22;
+  if (!_colors[slot] || _colorKeys[slot] != key) {
+    CGFloat components[] = {(key >> 16 & 255) / 255.0, (key >> 8 & 255) / 255.0,
+                            (key & 255) / 255.0, (key >> 24) / 255.0};
+    // Fixed capacity: rainbow and fading effects must not grow a palette indefinitely.
+    CGColorRelease(_colors[slot]);
+    _colors[slot] = CGColorCreate(_colorSpace, components);
+    _colorKeys[slot] = key;
+  }
+  return _colors[slot];
+}
 
 - (void)fillPolyWithFloatArray:(IOSFloatArray *)points withInt:(jint)color {
   CGContextRef context = self.context;
   if (context == NULL || !DDHasPolygon(points)) return;
   CGContextBeginPath(context);
   DDAppendPolygon(context, points);
-  DDSetFillColor(context, color);
+  CGContextSetFillColorWithColor(context, [self cachedColor:color]);
   CGContextFillPath(context);
 }
 
@@ -64,7 +83,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
     IOSFloatArray *points = (IOSFloatArray *)[contours objectAtIndex:i];
     if (DDHasPolygon(points)) DDAppendPolygon(context, points);
   }
-  DDSetFillColor(context, color);
+  CGContextSetFillColorWithColor(context, [self cachedColor:color]);
   CGContextEOFillPath(context);
 }
 
@@ -75,7 +94,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
   if (context == NULL || !DDHasPolygon(points)) return;
   CGContextBeginPath(context);
   DDAppendPolygon(context, points);
-  DDSetStrokeColor(context, color, width);
+  DDSetStrokeColor(context, [self cachedColor:color], width);
   CGContextStrokePath(context);
 }
 
@@ -85,7 +104,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
                      withInt:(jint)color {
   CGContextRef context = self.context;
   if (context == NULL || radius <= 0) return;
-  DDSetFillColor(context, color);
+  CGContextSetFillColorWithColor(context, [self cachedColor:color]);
   CGContextFillEllipseInRect(context, CGRectMake(cx - radius, cy - radius,
                                                   radius * 2, radius * 2));
 }
@@ -97,7 +116,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
                      withFloat:(jfloat)width {
   CGContextRef context = self.context;
   if (context == NULL || radius <= 0) return;
-  DDSetStrokeColor(context, color, width);
+  DDSetStrokeColor(context, [self cachedColor:color], width);
   CGContextStrokeEllipseInRect(context, CGRectMake(cx - radius, cy - radius,
                                                     radius * 2, radius * 2));
 }
@@ -136,7 +155,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
                              y1 - handle * ry * cos(next), x1, y1);
     angle = next;
   }
-  DDSetStrokeColor(context, color, width);
+  DDSetStrokeColor(context, [self cachedColor:color], width);
   CGContextStrokePath(context);
 }
 
@@ -147,7 +166,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
                       withInt:(jint)color {
   CGContextRef context = self.context;
   if (context == NULL || rx <= 0 || ry <= 0) return;
-  DDSetFillColor(context, color);
+  CGContextSetFillColorWithColor(context, [self cachedColor:color]);
   CGContextFillEllipseInRect(context, CGRectMake(cx - rx, cy - ry, rx * 2,
                                                   ry * 2));
 }
@@ -164,7 +183,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
   for (jint i = 2; i < count; i += 2) {
     CGContextAddLineToPoint(context, values[i], values[i + 1]);
   }
-  DDSetStrokeColor(context, color, width);
+  DDSetStrokeColor(context, [self cachedColor:color], width);
   CGContextStrokePath(context);
 }
 
@@ -175,7 +194,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
                    withInt:(jint)color {
   CGContextRef context = self.context;
   if (context == NULL) return;
-  DDSetFillColor(context, color);
+  CGContextSetFillColorWithColor(context, [self cachedColor:color]);
   CGContextFillRect(context, CGRectMake(left, top, right - left, bottom - top));
 }
 
@@ -190,7 +209,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
   CGContextBeginPath(context);
   CGContextMoveToPoint(context, x1, y1);
   CGContextAddLineToPoint(context, x2, y2);
-  DDSetStrokeColor(context, color, width);
+  DDSetStrokeColor(context, [self cachedColor:color], width);
   CGContextStrokePath(context);
 }
 

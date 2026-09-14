@@ -2,8 +2,11 @@
 
 `DDIOSAudio` is the iOS implementation of `GameCore.Sound`. The game continues to
 synthesise every PCM buffer in translated `Sfx` and `Music`; AVFoundation only mixes
-those buffers, caches their WAV form before play, lets several effects overlap, and loops
-the selected music, rocket, and boss-charge beds. Music is rebuilt whenever selection,
+those buffers. Short effects cache float PCM and use `DDEffectMixer`: one persistent engine
+with twelve reusable player nodes and varispeed units, operated on a serial effects queue.
+Finishing an effect leaves the graph alive; a saturated voice is interrupted for reuse.
+Music and the boss-charge bed retain WAV playback, while the rocket has its own engine.
+Music is rebuilt whenever selection,
 frenzy, or boss mode changes.
 Boss PCM is balanced to 115% of the matching synthesized stage track's RMS level,
 with soft-limited peaks at 38% of full scale to leave room for effects. Both platforms

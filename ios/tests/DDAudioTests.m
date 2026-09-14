@@ -2,15 +2,16 @@
 #import <AVFoundation/AVFoundation.h>
 
 #import "DDAudio.h"
+#import "DDEffectMixer.h"
 #import "com/dddumpling/game/Sfx.h"
+#import "IOSPrimitiveArray.h"
 
 @interface DDIOSAudio (TestHooks)
-- (NSData *)wavForEffect:(jint)effect rate:(float)rate;
+- (AVAudioPCMBuffer *)bufferForEffect:(jint)effect;
 - (void)pausePlayers;
 - (void)resumePlayersIfNeeded;
 - (void)routeChanged:(NSNotification *)note;
 - (void)playEffect:(jint)effect rate:(float)rate gain:(float)gain;
-- (AVAudioPlayer *)effectPlayer:(jint)effect rate:(float)rate;
 @end
 
 @interface DDCountingPlayer : AVAudioPlayer
@@ -18,6 +19,7 @@
 @property(nonatomic) NSInteger stopCount;
 @property(nonatomic) NSInteger playCount;
 @property(nonatomic) NSInteger currentTimeWrites;
+@property(nonatomic) BOOL playedOnMainThread;
 @end
 @implementation DDCountingPlayer
 - (instancetype)init {
@@ -29,14 +31,23 @@
 }
 - (void)pause { ++_pauseCount; }
 - (void)stop { ++_stopCount; }
-- (BOOL)play { ++_playCount; return YES; }
+- (BOOL)play { ++_playCount; _playedOnMainThread = NSThread.isMainThread; return YES; }
 - (void)setCurrentTime:(NSTimeInterval)currentTime { (void)currentTime; ++_currentTimeWrites; }
 @end
 
-@interface DDAlwaysPlayingPlayer : DDCountingPlayer
+@interface DDCountingMixer : DDEffectMixer
+@property(nonatomic) NSUInteger playCount;
+@property(nonatomic) NSUInteger pauseCount;
+@property(nonatomic) BOOL playedOnMainThread;
+@property(nonatomic) float rate;
+@property(nonatomic) float gain;
 @end
-@implementation DDAlwaysPlayingPlayer
-- (BOOL)isPlaying { return YES; }
+@implementation DDCountingMixer
+- (BOOL)prepare { return YES; }
+- (void)pause { ++_pauseCount; }
+- (void)playBuffer:(AVAudioPCMBuffer *)buffer rate:(float)rate gain:(float)gain {
+  ++_playCount; _rate = rate; _gain = gain; _playedOnMainThread = NSThread.isMainThread;
+}
 @end
 
 @interface DDCountingPlayerNode : AVAudioPlayerNode
@@ -60,41 +71,36 @@
 
 @implementation DDAudioTests
 
-- (uint32_t)sampleRateInWav:(NSData *)wav {
-  uint32_t rate = 0;
-  XCTAssertGreaterThanOrEqual(wav.length, (NSUInteger)44);
-  [wav getBytes:&rate range:NSMakeRange(24, sizeof(rate))];
-  return rate;
-}
-
-- (void)testPitchVariantsChangeTheWavSampleRate {
+- (void)testEffectBufferPreservesSynthesizedPCM {
   DDIOSAudio *audio = [DDIOSAudio new];
-  NSData *base = [audio wavForEffect:DDSfx_ZAP rate:1.f];
-  NSData *raised = [audio wavForEffect:DDSfx_ZAP rate:1.5f];
-  XCTAssertEqual([self sampleRateInWav:base], (uint32_t)DDSfx_RATE);
-  XCTAssertEqual([self sampleRateInWav:raised], (uint32_t)(DDSfx_RATE * 1.5f));
+  AVAudioPCMBuffer *buffer = [audio bufferForEffect:DDSfx_ZAP];
+  IOSShortArray *pcm = [DDSfx buildWithInt:DDSfx_ZAP];
+  XCTAssertEqual(buffer.format.sampleRate, DDSfx_RATE);
+  XCTAssertEqual(buffer.frameLength, pcm->size_);
+  for (jint i = 0; i < pcm->size_; ++i)
+    XCTAssertEqual(buffer.floatChannelData[0][i], pcm->buffer_[i] / 32768.f);
 }
 
 - (void)testPauseStopsTransientPlayersAndSpeech {
   DDIOSAudio *audio = [DDIOSAudio new];
   DDCountingPlayer *music = [DDCountingPlayer new];
   DDCountingPlayer *bubble = [DDCountingPlayer new];
-  DDCountingPlayer *effect = [DDCountingPlayer new];
+  DDCountingMixer *effect = [DDCountingMixer new];
   DDCountingSpeech *speech = [DDCountingSpeech new];
   [audio setValue:music forKey:@"music"];
   [audio setValue:bubble forKey:@"bubble"];
-  [audio setValue:[NSMutableSet setWithObject:effect] forKey:@"effects"];
+  [audio setValue:effect forKey:@"effectMixer"];
   [audio setValue:speech forKey:@"speech"];
   [audio setValue:@YES forKey:@"narrating"];
 
   [audio pausePlayers];
+  dispatch_sync([audio valueForKey:@"effectsQueue"], ^{});
 
   XCTAssertEqual(music.pauseCount, 1);
   XCTAssertEqual(bubble.pauseCount, 1);
-  XCTAssertEqual(effect.stopCount, 1);
+  XCTAssertEqual(effect.pauseCount, 1);
   XCTAssertEqual(speech.stopCount, 1);
   XCTAssertFalse([[audio valueForKey:@"narrating"] boolValue]);
-  XCTAssertEqual([[audio valueForKey:@"effects"] count], 0u);
 }
 
 - (void)testRouteRemovalBlocksLaterLoopRestartsUntilActivation {
@@ -148,29 +154,38 @@
   [audio setActive:NO];
 }
 
-- (void)testEffectPoolResetsPlayheadAndBoundsAbandonedPlayers {
+- (void)testEffectWorkerPreservesPitchAndGain {
   DDIOSAudio *audio = [DDIOSAudio new];
-  DDCountingPlayer *reused = [DDCountingPlayer new];
+  DDCountingMixer *mixer = [DDCountingMixer new];
   [audio setValue:@YES forKey:@"active"];
   [audio setValue:@YES forKey:@"playbackAllowed"];
-  [audio setValue:[NSMutableSet setWithObject:reused] forKey:@"effects"];
-  [audio setValue:[@{ @"14/22050": [NSMutableArray arrayWithObject:reused] } mutableCopy]
-          forKey:@"effectPlayers"];
-  [audio playEffect:DDSfx_ZAP rate:1 gain:1];
-  XCTAssertEqual(reused.currentTimeWrites, 1);
+  [audio setValue:mixer forKey:@"effectMixer"];
+  [audio playEffect:DDSfx_ZAP rate:1.5 gain:.7];
+  dispatch_sync([audio valueForKey:@"effectsQueue"], ^{});
+  XCTAssertEqual(mixer.playCount, 1u);
+  XCTAssertEqualWithAccuracy(mixer.rate, 1.5f, .0001f);
+  XCTAssertEqualWithAccuracy(mixer.gain, .7f, .0001f);
+  XCTAssertFalse(mixer.playedOnMainThread);
+}
 
-  NSMutableArray *busy = [NSMutableArray array];
-  DDAlwaysPlayingPlayer *victim = nil;
-  for (NSUInteger i = 0; i < 6; ++i) {
-    DDAlwaysPlayingPlayer *player = [DDAlwaysPlayingPlayer new];
-    if (i == 0) victim = player;
-    [busy addObject:player];
-  }
-  [audio setValue:[NSMutableSet setWithObject:victim] forKey:@"effects"];
-  [audio setValue:[@{ @"14/22050": busy } mutableCopy] forKey:@"effectPlayers"];
-  [audio effectPlayer:DDSfx_ZAP rate:1];
-  XCTAssertLessThanOrEqual([(NSDictionary *)[audio valueForKey:@"effectPlayers"][@"14/22050"] count], 6u);
-  XCTAssertFalse([[(NSSet *)[audio valueForKey:@"effects"] allObjects] containsObject:victim]);
+- (void)testPendingEffectsDoNotBlockInputAndAreCancelledByPause {
+  DDIOSAudio *audio = [DDIOSAudio new];
+  DDCountingMixer *player = [DDCountingMixer new];
+  [audio setValue:@YES forKey:@"active"];
+  [audio setValue:player forKey:@"effectMixer"];
+  dispatch_queue_t queue = [audio valueForKey:@"effectsQueue"];
+  dispatch_semaphore_t gate = dispatch_semaphore_create(0);
+  dispatch_async(queue, ^{ dispatch_semaphore_wait(gate, DISPATCH_TIME_FOREVER); });
+  // A blocked worker must not hold up input, even after all pending slots fill.
+  for (NSUInteger i = 0; i < 100; ++i) [audio playEffect:DDSfx_ZAP rate:1 gain:1];
+  [audio pausePlayers];
+  dispatch_semaphore_signal(gate);
+  dispatch_sync(queue, ^{});
+  XCTAssertEqual(player.playCount, 0);
+  [audio playEffect:DDSfx_ZAP rate:1 gain:1];
+  dispatch_sync(queue, ^{});
+  XCTAssertEqual(player.playCount, 1);
+  XCTAssertFalse(player.playedOnMainThread);
 }
 
 @end
