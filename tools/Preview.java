@@ -204,6 +204,17 @@ final class Preview {
             shot(dir, "84-land-picker-" + unlocked, picker, L, w, h, ss);
         }
 
+        for(int direction:new int[]{1,-1}) {
+            for(int frame=0;frame<5;frame++) {
+                GameCore trip=new GameCore(new Mem(),841L);
+                trip.collected=Collect.MASK;trip.landSeen=14;
+                trip.landChoice=direction>0 ? 1 : 2;
+                LandPicker.step(trip,direction);
+                LandPicker.updateTravel(trip,LandPicker.TRAVEL_TIME*(0.08f+frame*0.20f));
+                shot(dir,"102-land-travel-"+(direction>0 ? "right" : "left")+"-"+frame,trip,L,w,h,ss);
+            }
+        }
+
         for (int land = 0; land < Lands.COUNT; land++) {
             for (int frame = 0; frame < 2; frame++) {
                 GameCore logo = new GameCore(new Mem(), 892L);
@@ -1432,7 +1443,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

@@ -203,6 +203,7 @@ final class GameCore {
         void shuffleBlip();
         void debuffDown();
         void slimeCover(boolean release);
+        void landShuffle();
         void damage();
         void achievement();
         /** The slime has turned an unanswered prompt into a volley. */
@@ -435,6 +436,9 @@ final class GameCore {
     final int[] landBests = new int[Lands.COUNT];
     boolean landPickerDragging, landPickerMoved;
     float landPickerSlide, landPickerX;
+    int landTravelFrom = -1;
+    float landTravelT;
+    final ArrayList<Integer> landTravelQueue = new ArrayList<Integer>();
     int landSeen, landSuppressed, landDiscovery = -1;
     float landDiscoveryT;
     /** Words squished this run. The game-over screen calls them squishes, so this does too. */
@@ -2363,7 +2367,7 @@ final class GameCore {
         skyClock += dt * (powerActive() ? Power.SKY_RATE : 1f);
         landBlend = Math.min(1f, landBlend + dt / Lands.FADE_TIME);
         LandPicker.updateDiscovery(this, dt);
-        landPickerSlide *= Math.max(0f, 1f - dt * 12f);
+        LandPicker.updateTravel(this, dt);
 
         for (int i = 0; i < Glyph.COUNT; i++) {
             keyPress[i] = decay(keyPress[i], dt * 5.5f);

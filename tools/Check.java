@@ -88,6 +88,8 @@ abstract class Check {
             lastDepth = depth;
         }
         public void clearWord() { clears++; }
+        int landShuffles;
+        public void landShuffle() { landShuffles++; }
         int slimeCovers, slimeReleases;
         public void slimeCover(boolean release) { if(release) slimeReleases++; else slimeCovers++; }
         int shuffleBlips, debuffDowns;

@@ -3,6 +3,7 @@ package com.dddumpling.game;
 /** Session-only starting-land selection; boss friends are the persistent unlocks. */
 final class LandPicker extends Draw {
     private LandPicker() {}
+    static final float TRAVEL_TIME = 0.85f;
     static boolean unlocked(GameCore c, int land) {
         return land == 0 || land > 0 && land < Lands.COUNT
                 && (c.landSuppressed & (1 << land)) == 0
@@ -18,24 +19,60 @@ final class LandPicker extends Draw {
                 && !c.storyOpen() && !c.starting() && !c.settingsOpen && c.rosterSceneT <= 0f;
     }
     static float cardY(Layout L) { return L.h * 0.705f; }
+    // Adjacent centres differ by 30% of the full icon height.
+    static float cardY(GameCore c, Layout L, int land) {
+        return cardY(L) + (slot(c,land)%2==0 ? -0.3f : 0.3f)*iconRadius(c,L);
+    }
     static int slot(GameCore c, int land) {
         int n = 0;
         for (int i = 0; i < land; i++) if (unlocked(c, i)) n++;
         return n;
     }
-    static float spacing(GameCore c, Layout L) { return L.keyR * c.keyScale() * 0.95f; }
+    static float spacing(GameCore c, Layout L) { return L.keyR * c.keyScale() * 1.65f; }
     static float iconRadius(GameCore c, Layout L) { return L.keyR * c.keyScale() * 0.72f; }
     static float cardX(GameCore c, Layout L, int land) {
         return L.w * 0.5f + (slot(c, land) - slot(c, c.landChoice) + c.landPickerSlide) * spacing(c, L);
     }
+    private static int pendingLand(GameCore c) {
+        return c.landTravelQueue.isEmpty() ? c.landChoice : c.landTravelQueue.get(c.landTravelQueue.size()-1);
+    }
     static void select(GameCore c, int land) {
-        if (!visible(c) || !unlocked(c, land) || c.landChoice == land) return;
-        c.landPickerSlide += slot(c, land) - slot(c, c.landChoice);
-        c.landChoice = land;
-        c.best = c.landBests[land];
+        if (!visible(c) || !unlocked(c,land)) return;
+        int from=pendingLand(c);
+        if(from==land) return;
+        int direction=land>from ? 1 : -1;
+        for(int next=from+direction;next!=land+direction;next+=direction)
+            if(unlocked(c,next)) c.landTravelQueue.add(next);
+        if(c.landTravelFrom<0) beginTravel(c);
+    }
+    private static void beginTravel(GameCore c) {
+        if(c.landTravelQueue.isEmpty()) return;
+        c.landTravelFrom=c.landChoice;
+        c.landChoice=c.landTravelQueue.remove(0);
+        c.landTravelT=0f;
+        c.landPickerSlide=slot(c,c.landChoice)-slot(c,c.landTravelFrom);
+        c.best=c.landBests[c.landChoice];
+        if(c.sound!=null) c.sound.landShuffle();
+    }
+    static void updateTravel(GameCore c,float dt) {
+        if(!visible(c)) {
+            c.landTravelFrom=-1;c.landTravelQueue.clear();c.landPickerSlide=0f;
+            c.landPickerDragging=false;
+            return;
+        }
+        if(c.landTravelFrom<0) return;
+        c.landTravelT=Math.min(TRAVEL_TIME,c.landTravelT+dt);
+        float walk=ease((c.landTravelT/TRAVEL_TIME-0.16f)/0.68f);
+        c.landPickerSlide=(slot(c,c.landChoice)-slot(c,c.landTravelFrom))*(1f-walk);
+        if(c.landTravelT>=TRAVEL_TIME) {
+            c.landTravelFrom=-1;c.landPickerSlide=0f;
+            beginTravel(c);
+        }
     }
     static void step(GameCore c, int direction) {
-        for (int land = c.landChoice + direction; land >= 0 && land < Lands.COUNT; land += direction)
+        if(direction==0) return;
+        direction=direction<0 ? -1 : 1;
+        for (int land = pendingLand(c) + direction; land >= 0 && land < Lands.COUNT; land += direction)
             if (unlocked(c, land)) { select(c, land); return; }
     }
     static boolean down(GameCore c, Layout L, float x, float y) {
@@ -45,7 +82,7 @@ final class LandPicker extends Draw {
         return true;
     }
     static void move(GameCore c, Layout L, float x) {
-        if (!c.landPickerDragging || !visible(c)) return;
+        if (!c.landPickerDragging || c.landPickerMoved || !visible(c)) return;
         float dx = x - c.landPickerX;
         if (Math.abs(dx) < spacing(c, L) * 0.65f) return;
         step(c, dx < 0 ? 1 : -1);
@@ -80,6 +117,7 @@ final class LandPicker extends Draw {
         c.landDiscovery = -1;
         c.landDiscoveryT = c.landPickerSlide = 0f;
         c.landPickerDragging = false;
+        c.landTravelFrom=-1;c.landTravelQueue.clear();c.landTravelT=0f;
         c.landChoice = 0;
         c.best = c.landBests[0];
         save(c);
@@ -91,7 +129,7 @@ final class LandPicker extends Draw {
         save(c);
     }
     static void updateDiscovery(GameCore c, float dt) {
-        if (!visible(c) || c.returnFade > 0f) return;
+        if (!visible(c) || c.returnFade > 0f || c.landTravelFrom>=0) return;
         if (c.landDiscovery < 0) {
             for (int land = 1; land < Lands.COUNT; land++) {
                 if (unlocked(c, land) && (c.landSeen & (1 << land)) == 0) {
@@ -126,25 +164,19 @@ final class LandPicker extends Draw {
         return ease((r * 4.5f - distance) / (r * 1.9f));
     }
     private static void drawDiscovery(Painter p, GameCore c, Layout L) {
-        if (c.landDiscovery < 0) return;
+        if (c.landDiscovery < 0 || c.landTravelFrom>=0) return;
         float t = c.landDiscoveryT, r = L.keyR * c.keyScale();
         float fade = Math.min(1f, t * 5f) * Math.min(1f, (4.5f - t) * 2f);
         int a = (int)(255 * Math.max(0f, fade));
         float reveal = discoveryReveal(c, L, c.landDiscovery);
         float settle = ease((t - 3.2f) / 1f);
         float x = explorerX(c, L);
-        float ground = cardY(L);
+        float ground = cardY(c,L,c.landDiscovery);
         float hop = t < 1.6f ? Math.abs((float)Math.sin(t * 12f)) * r * 0.10f
                 : (float)Math.sin(ease((t - 1.6f) / 0.7f) * Math.PI) * r * 0.30f;
-        float y = ground - hop;
-        Skits.face(p, Kawaii.DUMPLING, x, y, r * 0.60f, a, 1f, reveal);
-        // Soft felt crown, pinched top and a wide brim: an adventure hat.
-        int felt = Glyph.withAlpha(0xFFC59A62, a), band = Glyph.withAlpha(0xFF795840, a);
-        p.fillPoly(new float[]{x-r*.48f,y-r*.42f,x-r*.34f,y-r*.92f,
-                x-r*.08f,y-r*.84f,x+r*.25f,y-r*.96f,x+r*.43f,y-r*.42f}, felt);
-        p.fillEllipse(x, y-r*.47f, r*.46f, r*.10f, band);
-        p.fillEllipse(x, y-r*.39f, r*.76f, r*.12f, felt);
-        float tx = cardX(c, L, c.landDiscovery), ty = cardY(L);
+        float y = ground + iconRadius(c,L)*1.10f - r*0.60f - hop;
+        adventure(p,x,y,r,a,reveal);
+        float tx = cardX(c, L, c.landDiscovery), ty = cardY(c,L,c.landDiscovery);
         for (int i = 0; i < 7; i++) {
             float phase = i * Softbody.TAU / 7f;
             float reach = r * (1.1f + reveal * 0.5f);
@@ -156,10 +188,53 @@ final class LandPicker extends Draw {
         }
     }
 
+    private static void adventure(Painter p,float x,float y,float r,int a,float reveal) {
+        Skits.face(p, Kawaii.DUMPLING, x, y, r * 0.60f, a, 1f, reveal);
+        // Soft felt crown, pinched top and a wide brim: an adventure hat.
+        int felt = Glyph.withAlpha(0xFFC59A62, a), band = Glyph.withAlpha(0xFF795840, a);
+        p.fillPoly(new float[]{x-r*.48f,y-r*.42f,x-r*.34f,y-r*.92f,
+                x-r*.08f,y-r*.84f,x+r*.25f,y-r*.96f,x+r*.43f,y-r*.42f}, felt);
+        p.fillEllipse(x, y-r*.47f, r*.46f, r*.10f, band);
+        p.fillEllipse(x, y-r*.39f, r*.76f, r*.12f, felt);
+    }
+    static float travelX(GameCore c,Layout L) {
+        float t=c.landTravelT/TRAVEL_TIME;
+        float walk=ease((t-0.16f)/0.68f);
+        float direction=c.landChoice>c.landTravelFrom ? 1f : -1f;
+        float start=cardX(c,L,c.landTravelFrom)-direction*iconRadius(c,L)*0.95f;
+        return start+(cardX(c,L,c.landChoice)-start)*walk;
+    }
+    static float travelGround(GameCore c,Layout L) {
+        float walk=ease((c.landTravelT/TRAVEL_TIME-0.16f)/0.68f);
+        float from=cardY(c,L,c.landTravelFrom),to=cardY(c,L,c.landChoice);
+        return from+(to-from)*walk;
+    }
+    static float travelArc(GameCore c,Layout L) {
+        float walk=ease((c.landTravelT/TRAVEL_TIME-0.16f)/0.68f);
+        return 4f*walk*(1f-walk)*iconRadius(c,L)*0.45f;
+    }
+    private static void drawTravel(Painter p,GameCore c,Layout L) {
+        if(c.landTravelFrom<0) return;
+        float t=c.landTravelT/TRAVEL_TIME,r=L.keyR*c.keyScale()*0.55f;
+        float pop=ease(t/0.16f),fade=Math.min(1f,(1f-t)/0.14f);
+        float walking=t>0.16f && t<0.84f ? 1f : 0f;
+        float stride=(float)Math.sin(t*Softbody.TAU*5f)*walking;
+        // Feet settle just below the emblem base; the arc still lifts them in transit.
+        float x=travelX(c,L),ground=travelGround(c,L)+iconRadius(c,L)*1.10f+r*0.07f;
+        float y=ground-r*0.70f*pop-travelArc(c,L)-Math.abs(stride)*r*0.08f;
+        int alpha=(int)(255*pop*fade);
+        p.fillEllipse(x,ground,r*0.60f,r*0.10f,Glyph.withAlpha(INK,(int)(alpha*0.18f)));
+        for(int side=-1;side<=1;side+=2)
+            p.fillEllipse(x+side*r*0.25f+stride*side*r*0.14f,y+r*0.53f,
+                    r*0.19f,r*0.10f,Glyph.withAlpha(0xFF795840,alpha));
+        adventure(p,x,y,r,alpha,0.7f);
+    }
+
     static void draw(Painter p, GameCore c, Layout L) {
         if (!visible(c)) return;
         float cy = cardY(L);
-        p.save(); p.clipRect(0, cy - L.h * 0.063f, L.w, cy + L.h * 0.063f);
+        float halfHeight=Math.max(L.h*0.063f,iconRadius(c,L)*1.6f);
+        p.save(); p.clipRect(0, cy-halfHeight, L.w, cy+halfHeight);
         // Back to front: the focused emblem covers the inner edges of its neighbours.
         for (int distance = Lands.COUNT - 1; distance >= 0; distance--)
         for (int land = 0; land < Lands.COUNT; land++) {
@@ -172,7 +247,7 @@ final class LandPicker extends Draw {
             if (land == c.landDiscovery)
                 focus += (1f - focus) * (1f - ease((c.landDiscoveryT - 3.2f) / 1f));
             float r = iconRadius(c, L) * (0.72f + focus * 0.28f);
-            float y = cy + r * (land == 2 ? 0.4f : land == 3 ? -0.3f : 0f);
+            float y = cardY(c,L,land);
             // The neighbouring emblems are blurred silhouettes, becoming clear as they centre.
             float falloff = (float)Math.pow(0.45f, Math.max(0f, stepsAway - 1f));
             int haze = (int)(80 * (1f - focus) * falloff * reveal);
@@ -184,5 +259,6 @@ final class LandPicker extends Draw {
         }
         p.restore();
         drawDiscovery(p, c, L);
+        drawTravel(p,c,L);
     }
 }
