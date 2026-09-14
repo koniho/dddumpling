@@ -10,7 +10,7 @@ final class ReleaseContent {
     static final String[][] TEXT={
         {"ON THE TITLE SCREEN","Tap the little steamer to","explore what is new. A few tiny","demos, a few new tricks!"},
         {"WHEN FLURRY STARTS","A rainbow ripples out from your","pickup. Your power-up has","arrived!"},
-        {"NORMAL WAVES, STAGE 16+","Partner enemies now count as one","toward the stage. Two pals, one","team!","AFTER A STAR PATH WIN","Finished all 20 stars? No more","empty courses if you leave the","celebration early."},
+        {"Partner pairs count as one stage","enemy.","AFTER A STAR PATH WIN","Fixed an issue where Star Path","could not finish after all 20","stars were collected."},
         {"ON THE TITLE SCREEN","Pick a land and your dumpling","walks there. A little trip","before the action!"},
         {"STAR PATH BONUS ROUNDS","Each win adds a little more zip,","keeping the chase fresh."},
         {"AFTER STAR PATH","Your flyer stays gone after","blasting off."},
@@ -20,5 +20,5 @@ final class ReleaseContent {
         {"MYSTERY PICKUPS","See your surprise before it","takes off.","BOSS FIGHTS","A louder beat for the big","showdown.","PLAYING ON IOS","Sound effects stay ready to","play."},
         {"NORMAL WAVES, STAGE 16+","Press both pals together to pop","the pair. A little teamwork for","your thumbs."}
     };
-    static final boolean[][] CONTEXT={{true,false,false,false},{true,false,false,false},{true,false,false,false,true,false,false,false},{true,false,false,false},{true,false,false},{true,false,false},{true,false,false,false},{true,false,false,false},{true,false,false,false},{true,false,false,true,false,false,true,false,false},{true,false,false,false}};
+    static final boolean[][] CONTEXT={{true,false,false,false},{true,false,false,false},{false,false,true,false,false,false},{true,false,false,false},{true,false,false},{true,false,false},{true,false,false,false},{true,false,false,false},{true,false,false,false},{true,false,false,true,false,false,true,false,false},{true,false,false,false}};
 }

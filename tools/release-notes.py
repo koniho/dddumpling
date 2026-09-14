@@ -62,7 +62,7 @@ def validate(data):
                 raise ValueError(f'{label}: choose autoReset true or false (restart two seconds after activation)')
             text(change['title'], label + ' title', 24)
             rows, contexts = lines(change)
-            height = ART.get(change['icon'], 5) + 6.0 + (len(rows) - 1) * 1.1 + (sum(contexts) - 1) * .4
+            height = ART.get(change['icon'], 5) + 6.0 + (len(rows) - 1) * 1.1 + sum(contexts[1:]) * .4
             if height > 23.5:
                 raise ValueError(f'{label}: too much copy for the popup; shorten or combine the points')
         if bugs > 1:
@@ -74,8 +74,9 @@ def lines(change):
     rows, contexts = [], []
     points = change['fixes'] if change['icon'] == 'bugs' else [change]
     for point in points:
-        rows.append(text(point.get('where'), 'where', 32).upper())
-        contexts.append(True)
+        if change['icon'] != 'bugs' or point.get('where') != '':
+            rows.append(text(point.get('where'), 'where', 32).upper())
+            contexts.append(True)
         wrapped = textwrap.wrap(text(point.get('why'), 'why'), width=32, break_long_words=False)
         if any(len(line) > 32 for line in wrapped):
             raise ValueError('why: use shorter words so the line fits')

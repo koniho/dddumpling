@@ -23,12 +23,12 @@
           "autoReset": false,
           "fixes": [
             {
-              "where": "Normal waves, stage 16+",
-              "why": "Partner enemies now count as one toward the stage. Two pals, one team!"
+              "where": "",
+              "why": "Partner pairs count as one stage enemy."
             },
             {
               "where": "After a Star Path win",
-              "why": "Finished all 20 stars? No more empty courses if you leave the celebration early."
+              "why": "Fixed an issue where Star Path could not finish after all 20 stars were collected."
             }
           ]
         }

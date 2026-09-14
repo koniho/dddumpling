@@ -43,6 +43,17 @@ class ReleaseNotes(unittest.TestCase):
         data['releases'][0]['changes'][0]['autoReset'] = False
         self.assertIn('AUTO_RESET={false,', notes.render(data))
 
+    def test_bug_context_can_be_omitted_without_blank_lines(self):
+        change = {'icon': 'bugs', 'title': 'Happy little fixes', 'autoReset': False,
+                  'fixes': [{'where': '', 'why': 'Partner pairs count as one stage enemy.'},
+                            {'where': 'After a Star Path win', 'why': 'No more empty Star Path replays.'}]}
+        rows, styles = notes.lines(change)
+        self.assertEqual(rows[0], 'Partner pairs count as one stage')
+        self.assertFalse(styles[0])
+        self.assertNotIn('', rows)
+        self.assertEqual(sum(styles), 1)
+        notes.validate({'releases': [{'version': '1.0.0', 'changes': [change]}]})
+
     def test_actionable_copy_errors(self):
         for field in ('where', 'why'):
             data = copy.deepcopy(self.data)
