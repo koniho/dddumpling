@@ -3,3 +3,5 @@ A rainbow now ripples from your pickup when Flurry starts.
 Partner enemies count as one toward stage progress. Two pals, one team!
 
 Try the release list, feature demos, Back navigation, and the steamer reminder after updating. Shuffle and partner demos reset after two seconds; land travel keeps its position.
+
+After collecting all 20 stars, end the run during the victory or prize parade and start again. Star Path should not repeat an empty course or award the prize twice.
