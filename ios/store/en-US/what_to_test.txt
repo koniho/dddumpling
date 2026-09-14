@@ -1,10 +1,9 @@
-Please test DDDumpling 0.1.17 on iPhone:
+Please test this new build of DDDumpling 0.1.17 on iPhone:
 
-- From stage 16, press linked keys within 200 ms and check the flex, miss sound, and release animation.
-- During Fling, cut the joined hands to clear a pair; cutting one body should trigger the miss reaction.
-- During Flurry, try any two distinct buttons within 200 ms. Repeating one button should not clear a pair.
-- During Team Squish, hit a pair once and check that both characters spin offscreen while holding hands.
-- Check that pairs continue spawning during power-ups and enter smoothly behind the header.
-- Check simultaneous touches, audio, and saved progress after backgrounding the app.
+- Rapidly press keys during FLURRY and repeatedly cut during FLING. Check smooth motion, responsive input, and sound effects, including pitch changes and overlapping sounds.
+- Repeat wrong-key presses, then background and resume the app. Check that old effects do not replay and new effects still sound.
+- From stage 11, check mystery pickups, the selected power-up reveal, and the Incognito and Monochrome visual effects.
+- During the Slime boss, check the protected prompt cover, bubbles, and dissolve back to a hittable prompt.
+- Check boss music balance, simultaneous touches, and saved progress after relaunching.
 
 Please report your iPhone model, iOS version, and any touch, sound, performance, or progress-saving problems. No account or purchase is required.
