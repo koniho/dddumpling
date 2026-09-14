@@ -3,6 +3,9 @@
 App Store Connect app: `6811478003` (`com.dddumpling.game.ios`). English text is in
 `en-US/`. Private Apple credentials and reviewer contact details do not belong here.
 
+Native iPad Release screenshots are prepared in [screenshots/en-US/ipad-13](screenshots/en-US/ipad-13/README.md).
+They include the title and Stage 1 in portrait and landscape and have not been uploaded.
+
 ## Saved in App Store Connect
 
 - Version 0.1.0, build 2.1: processed VALID; ready for internal TestFlight testing and

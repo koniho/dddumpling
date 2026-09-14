@@ -21,6 +21,42 @@ The release workflow now intentionally verifies `UIDeviceFamily == [1, 2]` in th
 
 ## Validation
 
+### Completion on current main
+
+Rebased onto `fb243e9` on September 14, 2026, bringing in the persistent audio mixer,
+updated Star Path, linked pairs, mystery pickups and release book without modifying
+shared Java sources. Xcode 26.6 / iOS 26.5 validation:
+
+- Shared harness: 5,328 assertions; production checks: 82; iOS input: 92, all passed.
+- Pro and mini: native adapters, both landscape directions, upside-down rotation,
+  scaled controls, pause/backgrounding, collection, bosses and minigames passed.
+  Both devices completed the actual window-handle resize and fullscreen restoration.
+- The release book opens through mapped touches, survives a resize to 320 × 700,
+  opens a feature page and returns to the list through native Back.
+- iPhone 17e: all 21 native tests and all three applicable UI tests passed; iPad-only
+  tests and the Release-only screenshot capture were skipped by the Debug UI run.
+- The native packaging check reads the built `Info.plist`, verifying `[1, 2]`,
+  portrait-only iPhone, all four iPad orientations and the resizable scene configuration.
+  It reads raw bytes because `NSBundle.infoDictionary` resolves device-qualified keys.
+- CI now runs native and UI tests on both iPhone and iPad. Choose a local device with
+  `SIMULATOR_ID` or `SIMULATOR_NAME_PREFIX='iPad mini'`.
+- Release capture passed on 13-inch Pro using the ordinary title and Stage 1, with
+  Debug scene hooks absent. [Store PNGs and recapture commands](../store/screenshots/en-US/ipad-13/README.md)
+  include portrait and landscape, with rotation metadata normalized into full-resolution RGB pixels.
+- The installed Release save remained byte-identical after reinstall and the app relaunched.
+  This checks installation preservation, not complete progress restoration or schema migration.
+- `./ios/scripts/archive.sh --unsigned` passed. Both the simulator Release app and
+  archived arm64 app declare `[1, 2]`, portrait iPhone and all four iPad orientations.
+
+Local result bundles under `ios/build/`: `Test-20260914-141033.xcresult` (Pro),
+`Test-20260914-141407.xcresult` (mini), `Test-20260914-141707.xcresult` (iPhone UI),
+`Test-20260914-141905.xcresult` (iPhone native rerun), and
+`Test-20260914-142136.xcresult` (Release captures).
+The initial iPhone packaging test read filtered `NSBundle` metadata and failed; its raw-plist
+replacement passed all 21 native tests. Save snapshots: `Update-20260914-142349`.
+
+### Original implementation evidence
+
 Validated on Xcode 26.6 / iOS 26.5 simulators, September 12, 2026:
 
 - Shared Java harness: 4,864 assertions passed; iOS packet/gesture suite: 56 passed.
@@ -55,9 +91,8 @@ passed, including the audio test. The earlier mini/Pro/iPhone runs also passed t
 test. This intermittent simulator audio failure remains recorded rather than treated as
 evidence of physical-device audio stability.
 
-Debug scene captures are test evidence, not final App Store marketing screenshots. Final
-App Store captures must use the Release app and ordinary gameplay/earned progress on the
-required iPad display size.
+These older Debug captures remain test evidence. The separate September 14 Release captures
+above are the store assets; none have been uploaded to App Store Connect.
 
 ## Physical validation still required
 

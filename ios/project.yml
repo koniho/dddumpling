@@ -82,6 +82,16 @@ targets:
     dependencies:
       - target: DDDumpling
 schemes:
+  DDDumplingStoreCapture:
+    build:
+      targets:
+        DDDumpling: all
+        DDDumplingUITests: [test]
+    test:
+      config: Release
+      targets:
+        - name: DDDumplingUITests
+          selectedTests: [StoreCaptureTests]
   DDDumpling:
     build:
       targets:

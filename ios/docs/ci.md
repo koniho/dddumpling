@@ -30,7 +30,8 @@ reuse it. Simulator test targets run serially to limit memory use on the hosted 
 gh workflow run ios.yml --ref main
 ```
 
-It runs shared Java/production/input checks, native and UI tests, and an unsigned
+It runs shared Java/production/input checks, native and UI tests on both iPhone and iPad
+(including iPad rotation and window resizing), and an unsigned
 arm64 device Release archive. Artifacts include `.xcresult` test evidence and
 `DDDumpling-unsigned.xcarchive.zip`, retained for seven days. The unsigned archive
 cannot be installed directly on an iPhone. A separate Linux job validates Android

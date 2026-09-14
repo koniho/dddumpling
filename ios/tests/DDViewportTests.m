@@ -5,6 +5,24 @@
 @end
 
 @implementation DDViewportTests
+- (void)testBuiltAppDeclaresUniversalSupportAndResizableIPadScenes {
+    // NSBundle resolves device-qualified keys; inspect the packaged plist itself.
+    NSData *plist = [NSData dataWithContentsOfURL:[NSBundle.mainBundle.bundleURL URLByAppendingPathComponent:@"Info.plist"]];
+    XCTAssertNotNil(plist);
+    if (!plist) return;
+    NSDictionary *info = [NSPropertyListSerialization propertyListWithData:plist options:0 format:NULL error:NULL];
+    XCTAssertEqualObjects(info[@"UIDeviceFamily"], (@[@1, @2]));
+    XCTAssertEqualObjects(info[@"UISupportedInterfaceOrientations"], (@[@"UIInterfaceOrientationPortrait"]));
+    NSSet *orientations = [NSSet setWithArray:info[@"UISupportedInterfaceOrientations~ipad"]];
+    XCTAssertEqualObjects(orientations, ([NSSet setWithArray:@[@"UIInterfaceOrientationPortrait",
+        @"UIInterfaceOrientationPortraitUpsideDown", @"UIInterfaceOrientationLandscapeLeft",
+        @"UIInterfaceOrientationLandscapeRight"]]));
+    XCTAssertFalse([info[@"UIRequiresFullScreen"] boolValue]);
+    NSDictionary *scenes = info[@"UIApplicationSceneManifest"];
+    XCTAssertFalse([scenes[@"UIApplicationSupportsMultipleScenes"] boolValue]);
+    NSArray *roles = scenes[@"UISceneConfigurations"][@"UIWindowSceneSessionRoleApplication"];
+    XCTAssertEqualObjects(roles.firstObject[@"UISceneDelegateClassName"], @"DDSceneDelegate");
+}
 - (void)testPortraitLandscapeAndNarrowWindowsKeepOneCanvasInsideSafeArea {
     for (NSValue *value in @[[NSValue valueWithCGSize:CGSizeMake(744, 1133)],
                             [NSValue valueWithCGSize:CGSizeMake(1133, 744)],

@@ -43,7 +43,11 @@ jobs:
           ./check.sh -q -r
           ./check.sh -q --production
           ./ios/scripts/test-input.sh
-      - name: Run native and UI tests
+      - name: Run iPhone native and UI tests
+        run: ./ios/scripts/test-simulator.sh
+      - name: Run iPad native, rotation and window tests
+        env:
+          SIMULATOR_NAME_PREFIX: iPad
         run: ./ios/scripts/test-simulator.sh
       - name: Build unsigned device Release archive
         run: ./ios/scripts/archive.sh --unsigned

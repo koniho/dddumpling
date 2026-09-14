@@ -6,6 +6,8 @@
 #import "com/dddumpling/game/GameCore.h"
 #import "com/dddumpling/game/Showcase.h"
 #import "com/dddumpling/game/Layout.h"
+#import "com/dddumpling/game/ReleaseNotes.h"
+#import "com/dddumpling/game/ReleaseMascot.h"
 
 @interface DDTestTouch : UITouch
 @property(nonatomic) CGPoint point;
@@ -107,6 +109,31 @@
     [self tap:CGPointMake(195, 400) inView:view];
     XCTAssertFalse([core storyOpen]);
     XCTAssertTrue(core->caseOpen_);
+    [view disconnect];
+}
+- (void)testReleaseBookTouchAlignmentSurvivesResize {
+    DDTabletTestView *view = [[DDTabletTestView alloc] initWithFrame:CGRectMake(0, 0, 1133, 744)];
+    [view layoutSubviews];
+    [view setActive:YES];
+    DDIOSGame *game = [view valueForKey:@"game"];
+    DDGameCore *core = [game core];
+    DDLayout *layout = [game geometry];
+    [self tap:CGPointMake([core->releaseMascot_ xWithDDLayout:layout],
+                          [core->releaseMascot_ yWithDDLayout:layout]) inView:view];
+    XCTAssertTrue(core->releaseNotes_->open_);
+    for (int frame = 0; frame < 30; frame++) [game updateWithFloat:.05];
+    view.frame = CGRectMake(0, 0, 320, 700);
+    [view layoutSubviews];
+    [self tap:CGPointMake([DDReleaseNotes iconXWithDDLayout:layout withInt:0 withInt:0],
+                          [DDReleaseNotes itemYWithDDLayout:layout withInt:0 withInt:0]) inView:view];
+    XCTAssertFalse(core->releaseNotes_->listing_);
+    XCTAssertEqual(core->releaseNotes_->page_, 0);
+    XCTAssertEqual(core->releaseNotes_->feature_, 0);
+    XCTAssertEqual(core->state_, 0);
+    for (int frame = 0; frame < 30; frame++) [game updateWithFloat:.05];
+    [view navigateBack];
+    for (int frame = 0; frame < 30; frame++) [game updateWithFloat:.05];
+    XCTAssertTrue(core->releaseNotes_->listing_);
     [view disconnect];
 }
 - (void)testAllPacketCoordinatesAndResizeCancellationUseTheViewport {

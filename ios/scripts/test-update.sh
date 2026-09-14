@@ -2,7 +2,7 @@
 # Reinstall over an existing simulator save; never uninstall or seed synthetic progress.
 set -euo pipefail
 source "$(dirname "$0")/env.sh"
-simulator="${SIMULATOR_ID:?Set SIMULATOR_ID to a booted iPhone simulator}"
+simulator="${SIMULATOR_ID:?Set SIMULATOR_ID to a booted iPhone or iPad simulator}"
 app="${1:-$IOS_ROOT/build/DerivedData/Build/Products/Debug-iphonesimulator/DDDumpling.app}"
 bundle=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Info.plist")
 container=$(xcrun simctl get_app_container "$simulator" "$bundle" data)

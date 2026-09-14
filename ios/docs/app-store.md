@@ -13,7 +13,7 @@ The game runs offline and includes falling-word play, four soft-body bosses, ste
 minigames, collectible stories and local progress. No account, ads or in-app purchases are added.
 
 The target includes a 1024×1024 icon, bundled font license, portrait launch screen, and initial
-privacy manifest. Capture final Release screenshots on the App Store's requested iPhone sizes;
+privacy manifest. Capture final Release screenshots on the App Store's requested iPhone and iPad sizes;
 Debug test screenshots are development evidence, not approved marketing assets. Keep the current
 App Store screenshot requirements and age-rating questionnaire as final account-side checks.
 

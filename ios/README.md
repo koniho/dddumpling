@@ -54,6 +54,7 @@ source ios/scripts/env.sh
 ./check.sh -q --production
 ./ios/scripts/test-input.sh
 SIMULATOR_ID=<iPhone-UDID> ./ios/scripts/test-simulator.sh
+SIMULATOR_NAME_PREFIX='iPad mini' ./ios/scripts/test-simulator.sh
 ./ios/scripts/render-reference.sh
 # After playing an installed build, check replacement without uninstalling:
 SIMULATOR_ID=<iPhone-UDID> ./ios/scripts/test-update.sh
@@ -61,6 +62,9 @@ SIMULATOR_ID=<iPhone-UDID> ./ios/scripts/test-update.sh
 
 The input suite uses its own output directory and can run alongside the existing Java checks.
 Native tests exercise durable storage and launch/touch/background scenarios.
+CI runs both iPhone and iPad suites. `SIMULATOR_NAME_PREFIX` selects the first available
+matching device when `SIMULATOR_ID` is omitted. See [iPad validation](docs/ipad.md) for
+windowing prerequisites and Release screenshot capture commands.
 The update check compares the existing save byte-for-byte before and after installing the built
 app and then launches it. It keeps snapshots under `ios/build/Update-*`; it does not test future
 save-schema migrations or replace a human progress-restoration check.
