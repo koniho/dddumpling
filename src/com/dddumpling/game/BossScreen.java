@@ -206,10 +206,10 @@ final class BossScreen extends Draw {
                 drawOctopusHead(p, c, b, col, mood, fade);
                 drawCapturedKey(p, L, b, fade);
             }
-            else if (b.kind == Boss.SLIME) drawSlimeBoss(p, c, b, col, mood, fade);
+            else if (b.kind == Boss.SLIME) drawSlimeBoss(p, c, L, b, col, mood, fade);
             else Slime.draw(p, b.body, c.clock, col, face, mood, fade);
             if (b.kind == Boss.SLIME && !b.open() && b.rage > 0f) {
-                float[] skin = slimeBossOutline(b.body);
+                float[] skin = slimePromptOutline(L,b);
                 float[] shield = new float[skin.length];
                 float shieldPulse = 1.08f + 0.035f * (float) Math.sin(c.clock * 15f);
                 for (int i = 0; i < skin.length; i += 2) {
@@ -234,9 +234,9 @@ final class BossScreen extends Draw {
     }
 
     /** Reference-led first boss: a bright jelly dome settled into a low rippled puddle. */
-    private static void drawSlimeBoss(Painter p, GameCore c, Boss b, int col, float mood,
+    private static void drawSlimeBoss(Painter p, GameCore c, Layout L, Boss b, int col, float mood,
             float fade) {
-        float[] skin = slimeBossOutline(b.body);
+        float[] skin = slimePromptOutline(L,b);
         float cx = b.body.centreX(), cy = b.body.centreY();
         float rx = b.body.radiusX(), ry = b.body.radiusY();
         int lime = Glyph.mix(col, 0xFFA8F02B, 0.32f);
@@ -372,6 +372,22 @@ final class BossScreen extends Draw {
             out[i + 1] = cy + ny * ry * radius;
         }
         return out;
+    }
+
+    /** Stretch one continuous skin, so the fold shares the body's shading without overlap seams. */
+    static float[] slimePromptOutline(Layout L, Boss b) {
+        float[] skin=slimeBossOutline(b.body);
+        float cover=b.slimePromptCover();
+        if(cover<=0f) return skin;
+        float cy=b.body.centreY();
+        float bottom=cy;
+        for(int i=1;i<skin.length;i+=2) bottom=Math.max(bottom,skin[i]);
+        float extension=Math.max(0f,slimeBadgeY(L,b)+L.unit*1.25f-bottom);
+        for(int i=0;i<skin.length;i+=2) {
+            float lower=Math.max(0f,Math.min(1f,(skin[i+1]-cy)/Math.max(1f,b.body.radiusY()*0.65f)));
+            skin[i+1]+=extension*cover*lower;
+        }
+        return skin;
     }
 
     private static final float[] SLIME_RADII = slimeReferenceRadii();
@@ -1249,10 +1265,22 @@ final class BossScreen extends Draw {
         if (b.kind == Boss.SLIME) {
             // The next prompt does not appear until the whole launched volley is gone.
             if (b.boltCount() == 0 && !b.hasGlob()) {
-                float urgency = b.promptProgress();
-                letterBadge(p, c, L, b.chainLetter(), cx, slimeBadgeY(L, b),
-                        slimeBoltR(c, L, urgency), fade,
-                        b.open());
+                slimePromptBubbles(p,L,b,cx,fade);
+                float cover=b.slimePromptCover();
+                float visibility=1f-cover*cover*cover*cover;
+                if(visibility>0f) {
+                    float y=slimeBadgeY(L,b)-L.unit*0.65f*cover;
+                    float radius=slimeBoltR(c,L,b.promptProgress());
+                    int g=b.chainLetter();
+                    int slime=Glyph.mix(tint(b),0xFFA8F02B,0.32f);
+                    Painter prompt=new ColorFadePainter(p,slime,cover,fade*visibility);
+                    if(cover>0.02f) {
+                        int color=Glyph.COLOR[g];
+                        prompt.fillPoly(Glyph.hex(cx,y,radius),Glyph.withAlpha(color,60));
+                        prompt.strokePoly(Glyph.hex(cx,y,radius),Glyph.withAlpha(color,220),radius*0.10f);
+                        Kawaii.surprised(prompt,g,cx,y,radius*0.60f,color);
+                    } else letterBadge(prompt,c,L,g,cx,y,radius,1f,b.open());
+                }
             }
         } else if (b.kind == Boss.SPLITTER) {
             for (int i = 0; i < b.pieceCount(); i++) {
@@ -1271,6 +1299,32 @@ final class BossScreen extends Draw {
             }
         } else if (b.kind == Boss.OCTOPUS) {
             return;
+        }
+    }
+
+    /** Small wet bubbles escape sideways from the prompt as the skirt swallows it. */
+    private static void slimePromptBubbles(Painter p,Layout L,Boss b,float x,float fade) {
+        float time=b.slimeCoverBubbleTime();
+        if(time<0f) return;
+        float r=L.unit,y=slimeBadgeY(L,b)-r*0.45f;
+        int green=Glyph.mix(tint(b),0xFFCBFF73,0.45f);
+        for(int i=0;i<7;i++) {
+            float age=time-i*0.027f;
+            if(age<=0f || age>=0.44f) continue;
+            float u=age/0.44f,side=i%2==0 ? -1f : 1f;
+            float bx=x+side*r*(0.15f+u*(1.65f+(i%3)*0.35f));
+            float by=y-r*(u*(0.6f+(i%3)*0.4f)+u*u*0.55f);
+            float radius=r*(0.13f+(i%3)*0.035f)*Math.min(1f,u*9f);
+            float alpha=fade*Math.min(1f,(1f-u)*5f);
+            if(u>0.82f) {
+                p.strokeCircle(bx,by,radius*(1f+(u-0.82f)*5f),
+                        fadeBy(Glyph.withAlpha(green,190),alpha),r*0.035f);
+            } else {
+                p.fillCircle(bx,by,radius,fadeBy(Glyph.withAlpha(green,155),alpha));
+                p.strokeCircle(bx,by,radius,fadeBy(Glyph.withAlpha(green,235),alpha),r*0.035f);
+                p.fillCircle(bx-radius*0.28f,by-radius*0.32f,radius*0.24f,
+                        fadeBy(Glyph.withAlpha(0xFFFFFFD5,230),alpha));
+            }
         }
     }
 

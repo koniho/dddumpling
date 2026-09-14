@@ -163,6 +163,8 @@ final class Boss {
     boolean beaten;
     /** A damaged slime stays open while returning home, then answers with a three-bolt volley. */
     boolean slimeRetaliating;
+    boolean slimeCoverLearned;
+    int slimePromptHits;
     /** Set by swat() for the press frame so audio can distinguish a hit from a destroyed bolt. */
     boolean boltDestroyed;
 
@@ -337,6 +339,8 @@ final class Boss {
         for (int g = 0; g < slimeBlobPulse.length; g++) slimeBlobPulse[g] = 0f;
         beaten = false;
         slimeRetaliating = boltDestroyed = false;
+        slimeCoverLearned = false;
+        slimePromptHits = 0;
         mushroomShakes = mushroomDirection = 0;
         mushroomLastX = mushroomShakeWindow = mushroomCharge = mushroomAngry = mushroomSweepFlash = 0f;
         mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
@@ -414,6 +418,8 @@ final class Boss {
         for (int g = 0; g < slimeBlobPulse.length; g++) slimeBlobPulse[g] = 0f;
         beaten = false;
         slimeRetaliating = boltDestroyed = false;
+        slimeCoverLearned = false;
+        slimePromptHits = 0;
         mushroomShakes = mushroomDirection = 0;
         mushroomLastX = mushroomShakeWindow = mushroomAttackT = mushroomCharge = mushroomAngry = mushroomSweepFlash = 0f;
         mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
@@ -674,10 +680,31 @@ final class Boss {
 
     boolean open() {
         if (!fighting()) return false;
-        if (kind == SLIME && slimeRetaliating) return true;
+        if (kind == SLIME && (!slimeCoverLearned || slimeRetaliating)) return true;
         if (kind == SPLITTER) return true;
 
         return phase >= CYCLE[kind] - SHOW[kind];
+    }
+
+    static final float SLIME_PROMPT_TRANSITION = 0.30f;
+
+    /** The same curve runs backward on release; hit eligibility starts at open(), not its end. */
+    float slimePromptCover() {
+        if (kind != SLIME || !slimeCoverLearned || !fighting() || hasGlob() || boltCount() > 0 || slimeRetaliating) return 0f;
+        if (!open()) return 1f;
+        float sinceOpen = phase-(CYCLE[kind]-SHOW[kind]);
+        float release = Math.max(0f,1f-sinceOpen/SLIME_PROMPT_TRANSITION);
+        float gather = Math.max(0f,1f-(CYCLE[kind]-phase)/SLIME_PROMPT_TRANSITION);
+        float t = Math.min(1f,Math.max(release,gather));
+        return t*t*(3f-2f*t);
+    }
+
+    /** Bubble trails finish just after the skirt closes, before the release starts. */
+    float slimeCoverBubbleTime() {
+        if(slimePromptCover()<=0f) return -1f;
+        float start=CYCLE[SLIME]-SLIME_PROMPT_TRANSITION;
+        if(phase>=start) return phase-start;
+        return phase<0.35f ? phase+SLIME_PROMPT_TRANSITION : -1f;
     }
 
     /** 0..1 through the current window, or through the breather when it is shut. */
@@ -895,6 +922,7 @@ final class Boss {
                 // So the chain is not the fight, it is what earns you something to fight with —
                 // which is why every press here is a PART and only dragTo returns a HIT.
                 chainAt++;
+                slimePromptHits=Math.min(2,slimePromptHits+1);
                 split++;
                 slimeKeyPulse = 0.11f;
                 promptT = promptDelay();
@@ -2422,7 +2450,8 @@ final class Boss {
         if (kind == SLIME && slimeRetaliating && boltCount() == 0) {
             float home = bodyR(L) * 0.02f;
             if (followX * followX + followY * followY <= home * home) volley(rnd);
-        } else if (kind == SLIME && boltCount() == 0 && !hasGlob() && open()) {
+        } else if (kind == SLIME && age >= CYCLE[SLIME]-SHOW[SLIME]
+                && boltCount() == 0 && !hasGlob() && open()) {
             promptT -= dt;
             if (promptT <= 0f) volley(rnd);
         }
@@ -2441,6 +2470,8 @@ final class Boss {
 
         float cycle = CYCLE[kind];
         phase += dt;
+        if(kind==SLIME && slimePromptHits>=2 && phase>=CYCLE[SLIME]-SLIME_PROMPT_TRANSITION)
+            slimeCoverLearned=true;
         if (phase >= cycle) phase -= cycle;
 
         return hits;

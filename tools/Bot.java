@@ -238,7 +238,8 @@ final class Bot {
 
         // Whatever that press did, if nothing is engaged now the next one has to be found.
         if (!(c.target != null && c.enemies.contains(c.target) && c.target.typeable())) {
-            think = reaction;
+            // A stacked bolt still under the same key needs another press, not another search.
+            think = g == want && c.bossFighting() && c.boss.boltWants(g) ? 0f : reaction;
         }
     }
 
@@ -348,9 +349,11 @@ final class Bot {
         // A bolt in the air, ahead of everything including the field: it is aimed at the deck and
         // already committed, and no word is closer to costing a life than that.
         if (c.bossFighting()) {
-            for (int g = 0; g < Glyph.COUNT; g++) {
-                if (c.boss.boltWants(g)) return g;
+            int nearest=-1;
+            for(int i=0;i<Boss.MAX_BOLTS;i++) {
+                if(c.boss.blive[i] && (nearest<0 || c.boss.bt[i]>c.boss.bt[nearest])) nearest=i;
             }
+            if(nearest>=0) return c.boss.bglyph[nearest];
         }
         // The boss, when it is asking for something and no word is part-way through. Ahead of the
         // words on purpose: its window is a few seconds long and a word is not going anywhere.

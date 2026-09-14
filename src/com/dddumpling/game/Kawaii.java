@@ -75,6 +75,25 @@ final class Kawaii {
         p.line(cx-r*0.80f,sy-r*0.17f,cx+r*0.80f,sy-r*0.17f,black,r*0.08f);
     }
 
+    /** Wide eyes and a tiny gasp when the Slime scoops up its prompt. */
+    static void surprised(Painter p,int g,float cx,float cy,float r,int body) {
+        draw(p,g,cx,cy,r,body,1f,0f);
+        float fy=cy+(g==GRAPES ? r*0.24f : 0f);
+        float scale=g==GRAPES ? 0.5f : 1f;
+        float eyeX=g==GRAPES ? 0.16f : g==STRAWBERRY ? 0.32f : 0.35f;
+        float eyeY=g==SQUISHY ? -0.12f : g==STRAWBERRY ? -0.06f
+                : g==BLOB ? -0.04f : g==DUMPLING ? 0.06f : 0f;
+        for(int side=-1;side<=1;side+=2) {
+            float x=cx+side*r*eyeX,y=fy+r*eyeY;
+            p.fillEllipse(x,y,r*0.23f*scale,r*0.28f*scale,body);
+            p.fillEllipse(x,y,r*0.17f*scale,r*0.23f*scale,0xFFFFFFFF);
+            p.fillEllipse(x,y+r*0.035f*scale,r*0.08f*scale,r*0.13f*scale,INK);
+        }
+        float my=fy+r*(g==GRAPES ? 0.17f : 0.39f);
+        p.fillEllipse(cx,my,r*0.43f*scale,r*0.25f*scale,body);
+        p.fillEllipse(cx,my,r*0.13f*scale,r*0.18f*scale,INK);
+    }
+
     /** Braced faces for a linked pair resisting a single press. */
     static void determined(Painter p, int g, float cx, float cy, float size, int body, float squash) {
         draw(p, g, cx, cy, size, body, squash, 0f);

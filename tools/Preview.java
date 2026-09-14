@@ -60,6 +60,17 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
+        GameCore cover = new GameCore(new Mem(),3001L);
+        cover.startGame(); cover.jumpToStage(5,L);
+        cover.boss.intro=0f; cover.stageGap=0f; cover.stageBanner=0f;
+        cover.update(1f/60f,L);
+        cover.boss.chainAt=2; cover.boss.slimePromptHits=2; cover.boss.slimeCoverLearned=true;
+        float[] coverPhases={4.7f,4.80f,4.85f,4.9f,4.95f,0.08f,0.2f,0.34f,1f,1.03f,1.10f,1.20f,1.30f};
+        for(int frame=0;frame<coverPhases.length;frame++) {
+            cover.boss.phase=coverPhases[frame];
+            shot(dir,"101-slime-cover-"+frame,cover,L,w,h,ss);
+        }
+
         GameCore mystery = new GameCore(new Mem(),1101L);
         mystery.startGame(); mystery.jumpToStage(11,L);
         mystery.stageGap=0f; mystery.spawnTimer=0f; mystery.powerTimer=100f;
@@ -1421,7 +1432,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

@@ -202,6 +202,7 @@ final class GameCore {
         void linkedThud();
         void shuffleBlip();
         void debuffDown();
+        void slimeCover(boolean release);
         void damage();
         void achievement();
         /** The slime has turned an unanswered prompt into a volley. */
@@ -2597,7 +2598,15 @@ final class GameCore {
         if (boss.active()) {
             // Visible projectiles reaching the deck cost lives; elapsed fight time alone does not.
             float beforeHp = boss.hp;
+            float priorCover=boss.slimePromptCover();
+            boolean priorOpen=boss.open();
             int bossHits = boss.update(dt, L, rnd);
+            float cover=boss.slimePromptCover();
+            if(sound!=null && boss.kind==Boss.SLIME && boss.fighting() && boss.slimePromptHits>=2
+                    && !boss.hasGlob() && boss.boltCount()==0 && !boss.slimeRetaliating) {
+                if(!priorOpen && boss.open()) sound.slimeCover(true);
+                else if(priorCover==0f && cover>0f && boss.open()) sound.slimeCover(false);
+            }
             progress.bossDamage(boss.kind, beforeHp, boss.hp);
             if (boss.octoPlayerHit && state == PLAY) BossPlay.octoWhipHit(this, L);
             if (boss.octoImpact) {

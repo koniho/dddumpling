@@ -346,6 +346,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 }
 - (void)clearWord { [self playEffect:DDSfx_CLEAR rate:1 gain:1]; }
 - (void)shuffleBlip { [self playEffect:DDSfx_SHUFFLE_BLIP rate:1 gain:.3f]; }
+- (void)slimeCoverWithBoolean:(jboolean)release { [self playEffect:release ? DDSfx_SLIME_RELEASE : DDSfx_SLIME_COVER rate:1 gain:.65f]; }
 - (void)debuffDown { [self playEffect:DDSfx_DEBUFF_DOWN rate:1 gain:.8f]; }
 - (void)linkedThud { [self playEffect:DDSfx_LINKED_THUD rate:1 gain:.85f]; }
 - (void)wrong { [self playEffect:DDSfx_WRONG rate:1 gain:1]; }

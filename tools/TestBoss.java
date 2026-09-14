@@ -23,6 +23,8 @@ final class TestBoss extends Check {
         c.enemies.clear();
         c.boss.begin(kind, c.stage, c.rnd);
         for (int i = 0; i < 60 * 10 && !c.boss.fighting(); i++) c.update(DT, L);
+        // Let the arrival wobble settle before tests measure dragging distances.
+        if(kind==Boss.SLIME) for(int i=0;i<60;i++) c.update(DT,L);
         return c;
     }
 
@@ -122,6 +124,92 @@ final class TestBoss extends Check {
         check("beating the stage-5 slime unlocks cubes for this run", unlock.cubeUnlocked);
         unlock.startGame();
         check("a new playthrough locks the cube pool again", !unlock.cubeUnlocked);
+        ColorFadePainter dissolved=new ColorFadePainter(new RasterPainter(1,1,1),0xFF9CE923,1f,0.5f);
+        check("prompt tint reaches slime color while preserving source alpha",dissolved.color(0x80000000)==0x409CE923);
+        ColorFadePainter hidden=new ColorFadePainter(new RasterPainter(1,1,1),0xFF9CE923,1f,0f);
+        check("prompt fade also removes opaque facial details",(hidden.color(0xFFFFFFFF)>>>24)==0);
+        GameCore rapid=enterBoss(L,Boss.SLIME,3002L);
+        rapid.enemies.clear();rapid.target=null;
+        for(int i=0;i<Boss.MAX_BOLTS;i++) rapid.boss.blive[i]=false;
+        for(int i=0;i<2;i++) {
+            rapid.boss.blive[i]=true;rapid.boss.bglyph[i]=i==0 ? 5 : 0;
+            rapid.boss.bhp[i]=rapid.boss.bhpMax[i]=3;rapid.boss.bt[i]=i==0 ? 0.8f : 0.1f;
+        }
+        Bot repeated=new Bot(4f,0.30f,0f,false,1L);
+        repeated.step(rapid,L,0.25f);
+        check("bot prioritizes the bolt landing first",rapid.boss.bhp[0]==2 && rapid.boss.bhp[1]==3);
+        repeated.step(rapid,L,0.20f);
+        check("repeat bolt presses still obey the press budget",rapid.boss.bhp[0]==2);
+        repeated.step(rapid,L,0.05f);
+        check("same bolt needs no second recognition delay",rapid.boss.bhp[0]==1);
+        repeated.step(rapid,L,0.25f);
+        check("rapid repeat finishes the three-hit bolt",!rapid.boss.blive[0]);
+        repeated.step(rapid,L,0.25f);
+        check("switching bolts still pays the reaction delay",rapid.boss.bhp[1]==3);
+        repeated.step(rapid,L,0.06f);
+        check("the new bolt becomes actionable after recognition",rapid.boss.bhp[1]==2);
+
+        GameCore unanswered=enterBoss(L,Boss.SLIME,3003L);
+        for(int volley=0;volley<2;volley++) {
+            unanswered.boss.promptT=0f;unanswered.update(DT,L);
+            for(int i=0;i<Boss.MAX_BOLTS;i++) if(unanswered.boss.blive[i])
+                unanswered.tapKey(unanswered.boss.bglyph[i],L);
+        }
+        unanswered.boss.phase=4.71f;unanswered.update(DT,L);
+        check("missed prompts and parries do not unlock covering",unanswered.boss.chainAt>=2
+                && unanswered.boss.slimePromptHits==0 && !unanswered.boss.slimeCoverLearned);
+        unanswered.startGame();
+        check("new run resets successful prompt hits",unanswered.boss.slimePromptHits==0);
+
+        GameCore covered=enterBoss(L,Boss.SLIME,3001L);
+        covered.boss.phase=0.5f;
+        check("slime starts exposed before two successful hits",covered.boss.open() && covered.boss.slimePromptCover()==0f);
+        covered.tapKey(covered.boss.chainLetter(),L);
+        check("first hit leaves the prompt exposed",covered.boss.chainAt==1 && covered.boss.open() && covered.boss.slimePromptCover()==0f);
+        covered.tapKey(covered.boss.chainLetter(),L);
+        check("second hit enables the cover cycle",covered.boss.chainAt==2 && covered.boss.slimePromptHits==2);
+        covered.boss.slimeCoverLearned=true;
+        covered.boss.phase=0.5f;
+        check("slime hides the prompt while protected",!covered.boss.open() && covered.boss.slimePromptCover()==1f);
+        float[] coveredSkin=BossScreen.slimePromptOutline(L,covered.boss);
+        float lowest=0f;
+        for(int i=1;i<coveredSkin.length;i+=2) lowest=Math.max(lowest,coveredSkin[i]);
+        check("slime body reaches over the protected prompt",lowest>BossScreen.slimeBadgeY(L,covered.boss)+L.unit);
+        for(float elapsed:new float[]{0f,0.03f,0.10f,0.20f,0.30f}) {
+            covered.boss.phase=5f-elapsed;
+            float closing=covered.boss.slimePromptCover();
+            covered.boss.phase=1f+elapsed;
+            check("prompt reappearance reverses the covering curve " + elapsed,
+                    Math.abs(closing-covered.boss.slimePromptCover())<0.00001f);
+        }
+        for(float phase:new float[]{0.999f,1f,1.001f,1.10f}) {
+            GameCore emerging=enterBoss(L,Boss.SLIME,3001L);
+            emerging.boss.chainAt=2; emerging.boss.slimeCoverLearned=true;
+            emerging.boss.phase=phase;
+            int before=emerging.boss.chainAt;
+            emerging.tapKey(emerging.boss.chainLetter(),L);
+            check("prompt accepts hits from the first release instant " + phase,
+                    (emerging.boss.chainAt>before)==(phase>=1f));
+        }
+        GameCore bubbling=enterBoss(L,Boss.SLIME,3001L);
+        Ear bubbleEar=new Ear(); bubbling.sound=bubbleEar;
+        bubbling.boss.phase=4.69f;
+        bubbling.update(DT,L);
+        check("no cover sound before the first two hits",bubbleEar.slimeCovers==0 && bubbleEar.slimeReleases==0);
+        bubbling.boss.chainAt=2; bubbling.boss.slimePromptHits=2; bubbling.boss.phase=4.69f; bubbling.boss.promptT=10f;
+        bubbling.update(DT,L); bubbling.update(DT,L);
+        check("cover plays one rising bubble cue",bubbleEar.slimeCovers==1 && bubbleEar.slimeReleases==0);
+        bubbling.boss.phase=0.999f;
+        bubbling.update(DT,L); bubbling.update(DT,L);
+        check("release plays one falling bubble cue",bubbleEar.slimeCovers==1 && bubbleEar.slimeReleases==1);
+        bubbling.paused=true; bubbling.update(DT,L);
+        check("paused cover does not replay its cue",bubbleEar.slimeCovers==1 && bubbleEar.slimeReleases==1);
+        covered.boss.phase=1.15f;
+        check("slime releases the prompt while vulnerable",covered.boss.open() && covered.boss.slimePromptCover()>0f && covered.boss.slimePromptCover()<1f);
+        covered.boss.phase=1.4f;
+        check("slime returns to its original silhouette",java.util.Arrays.equals(BossScreen.slimePromptOutline(L,covered.boss),BossScreen.slimeBossOutline(covered.boss.body)));
+        covered.boss.beaten=true;
+        check("defeat clears the protective fold",covered.boss.slimePromptCover()==0f);
         check("stage 10 is the split slime", Boss.kindFor(10) == Boss.SPLITTER);
         check("stage 15 is the octopus and stage 20 is the mushroom",
                 Boss.kindFor(15) == Boss.OCTOPUS && Boss.kindFor(20) == Boss.MUSHROOM
@@ -439,6 +527,10 @@ final class TestBoss extends Check {
         check("and it is gone once it lands", sh.shots.isEmpty());
 
         GameCore shielded = enterBoss(L, Boss.SLIME, 361L);
+        shielded.tapKey(shielded.boss.chainLetter(),L);
+        shielded.tapKey(shielded.boss.chainLetter(),L);
+        shielded.boss.slimeCoverLearned=true;
+        shielded.boss.phase=4.7f;
         toShut(shielded, L);
         shielded.enemies.clear();
         shielded.shots.clear();

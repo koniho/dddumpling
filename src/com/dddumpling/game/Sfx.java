@@ -31,7 +31,8 @@ final class Sfx {
     static final int BOSS_TAUNT_0 = 36, BOLT_DEATH = BOSS_TAUNT_0 + Boss.COUNT,
             MUSHROOM_SHAKE = BOLT_DEATH + 1, MUSHROOM_SPORE = MUSHROOM_SHAKE + 1,
             LINKED_THUD = MUSHROOM_SPORE + 1, SHUFFLE_BLIP = LINKED_THUD + 1, DEBUFF_DOWN = SHUFFLE_BLIP + 1,
-            COUNT = DEBUFF_DOWN + 1;
+            SLIME_COVER = DEBUFF_DOWN + 1, SLIME_RELEASE = SLIME_COVER + 1,
+            COUNT = SLIME_RELEASE + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -55,6 +56,8 @@ final class Sfx {
             case LINKED_THUD: return linkedThud();
             case SHUFFLE_BLIP: return shuffleBlip();
             case DEBUFF_DOWN: return debuffDown();
+            case SLIME_COVER: return slimeCover(false);
+            case SLIME_RELEASE: return slimeCover(true);
             case START: return start();
             case STAGE_CLEAR: return stageClear();
             case POWER_CLEAR: return powerClear();
@@ -726,6 +729,23 @@ final class Sfx {
             }
             float airy = white * (0.18f + grains) * (1f - 0.55f * u);
             v[i] = airy * envelope(u, 0.006f, 1.7f);
+        }
+        return render(v);
+    }
+
+    /** Three rounded bubbles, rising into the fold and falling back out on release. */
+    static short[] slimeCover(boolean release) {
+        float[] v=new float[(int)(RATE*0.30f)];
+        float[] notes={260f,360f,490f};
+        for(int k=0;k<3;k++) {
+            int start=(int)(k*0.085f*RATE), length=(int)(0.13f*RATE);
+            float phase=0f,base=notes[release ? 2-k : k];
+            for(int j=0;j<length && start+j<v.length;j++) {
+                float u=j/(float)length;
+                phase+=TAU*base*(1f+0.35f*(float)Math.sin(Math.PI*u))/RATE;
+                float bubble=(float)Math.sin(phase)+0.18f*(float)Math.sin(phase*2f);
+                v[start+j]+=bubble*(float)Math.sin(Math.PI*u)*(float)Math.exp(-2f*u);
+            }
         }
         return render(v);
     }
