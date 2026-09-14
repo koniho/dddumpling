@@ -36,7 +36,25 @@ final class TestVisuals extends Check {
     }
 
     private static void releaseBook(Layout L) {
+        releaseHistory();
         try(ReleaseExamples examples=new ReleaseExamples()) { releaseBookExamples(L); }
+    }
+    private static void releaseHistory() {
+        Layout L=new Layout();L.compute(852,393,0,0,0,0);
+        GameCore history=new GameCore(new Mem(),7202L);ReleaseNotes n=history.releaseNotes;
+        n.show(history,L);n.update(ReleaseTransition.DURATION,L);
+        int oldest=ReleaseNotes.VERSIONS.length-1;
+        float x=ReleaseNotes.iconX(L,0,0),y=ReleaseNotes.rowY(L,0);
+        n.handleTouch(history,L,0,x,y);
+        n.handleTouch(history,L,2,x,y-L.h*ReleaseNotes.VERSIONS.length);
+        n.handleTouch(history,L,1,x,y-L.h*ReleaseNotes.VERSIONS.length);
+        check("full history scroll reaches the oldest release",oldest>=3 && n.listing && n.listScroll>0f && n.listScroll==ReleaseNotes.maxScroll(L));
+        float scroll=n.listScroll;
+        x=ReleaseNotes.iconX(L,oldest,0);y=ReleaseNotes.itemY(L,oldest,0)-scroll;
+        n.handleTouch(history,L,0,x,y);n.handleTouch(history,L,1,x,y);
+        check("old release remains selectable below the first three",!n.listing && n.page==oldest);
+        n.update(ReleaseNotes.PAGE_TIME,L);n.back();n.update(ReleaseNotes.PAGE_TIME,L);
+        check("old release back preserves history position",n.listing && n.listScroll==scroll);
     }
     private static void releaseBookExamples(Layout L) {
         Mem seen=new Mem();seen.releaseSeen="older-build";
@@ -69,7 +87,7 @@ final class TestVisuals extends Check {
         releaseWrap(L);
         Mem save=new Mem();GameCore c=new GameCore(save,7100L),control=new GameCore(new Mem(),7100L);
         ReleaseNotes n=c.releaseNotes;
-        check("book catalog holds the last three published releases",ReleaseNotes.VERSIONS.length==3
+        check("book catalog preserves historical releases",ReleaseNotes.VERSIONS.length>=4
                 && ReleaseNotes.VERSIONS.length==ReleaseChange.ITEMS.length
                 && !ReleaseNotes.VERSIONS[0].equals(ReleaseNotes.VERSIONS[2]));
         n.show(c,L);
@@ -109,6 +127,8 @@ final class TestVisuals extends Check {
         for(int release=0;release<ReleaseNotes.VERSIONS.length;release++)
             for(int feature=0;feature<ReleaseChange.ITEMS[release].length;feature++) {
                 float ix=ReleaseNotes.iconX(L,release,feature),iy=ReleaseNotes.itemY(L,release,feature);
+                n.listScroll=Math.max(0f,Math.min(ReleaseNotes.maxScroll(L),iy-(ReleaseNotes.listTop(L)+ReleaseNotes.listBottom(L))*.5f));
+                iy-=n.listScroll;
                 n.handleTouch(c,L,0,ix,iy);
                 check("feature icon waits for finger lift "+release+"/"+feature,n.listing);
                 n.handleTouch(c,L,1,ix,iy);
@@ -161,7 +181,7 @@ final class TestVisuals extends Check {
             check("entry can opt out of shuffle reset",n.demo==heldDemo && n.demo.power.hit);
         } finally { ReleaseContent.AUTO_RESET[shuffleItem]=resetChoice; }
 
-        n.select(2,L);n.update(ReleaseNotes.PAGE_TIME,L);n.select(3,L);check("invalid release cannot replace the selected page",n.page==2);
+        n.select(2,L);n.update(ReleaseNotes.PAGE_TIME,L);n.select(ReleaseNotes.VERSIONS.length,L);check("invalid release cannot replace the selected page",n.page==2);
         GameCore.Enemy a=n.demo.enemies.get(0),b=a.link;
         float ax=L.w*0.08f+n.demo.enemyCentreX(a),bx=L.w*0.08f+n.demo.enemyCentreX(b);
         float y=n.demoTop(L)+a.y;

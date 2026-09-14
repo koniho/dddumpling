@@ -8,7 +8,7 @@ package com.dddumpling.game;
  * resolve unqualified — it keeps the assertions terse, which is the whole point of them.
  */
 abstract class Check {
-    /** Stable interaction examples, independent of the latest three shipped releases. */
+    /** Stable interaction examples, independent of release-list ordering. */
     static final class ReleaseExamples implements AutoCloseable {
         final int[][] saved=ReleaseChange.ITEMS.clone();
         ReleaseExamples() {

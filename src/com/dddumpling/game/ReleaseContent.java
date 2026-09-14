@@ -2,8 +2,8 @@ package com.dddumpling.game;
 
 // Generated from release-notes/releases.json by tools/release-notes.py sync.
 final class ReleaseContent {
-    static final String[] VERSIONS={"0.1.20","0.1.19","0.1.18"};
-    static final int[][] ITEMS={{0,1,2},{3,4,5},{6,7,8,9}};
+    static final String[] VERSIONS={"0.1.20","0.1.19","0.1.18","0.1.17"};
+    static final int[][] ITEMS={{0,1,2},{3,4,5},{6,7,8,9},{10}};
     static final int[] ICONS={ReleaseChange.NEWS,ReleaseChange.FLURRY,ReleaseChange.BUGS,ReleaseChange.TRAVEL,ReleaseChange.STARS,ReleaseChange.BUGS,ReleaseChange.SHUFFLE,ReleaseChange.DISGUISE,ReleaseChange.SLIME,ReleaseChange.BUGS,ReleaseChange.PAIR};
     static final boolean[] AUTO_RESET={false,false,false,false,false,false,true,false,false,false,true};
     static final String[] TITLES={"WHAT'S COOKING?","HELLO, RAINBOW!","HAPPY LITTLE FIXES","OFF WE GO!","STAR CHASER","HAPPY LITTLE FIXES","SURPRISE DELIVERY","NICE DISGUISE!","SNEAKY SLIME","HAPPY LITTLE FIXES","BETTER TOGETHER"};

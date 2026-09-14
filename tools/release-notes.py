@@ -97,8 +97,8 @@ def render(data):
         groups.append(list(range(len(changes), len(changes) + len(release['changes']))))
         changes.extend(release['changes'])
     fields = [
-        ('String[]', 'VERSIONS', array([r['version'] for r in releases[:3]])),
-        ('int[][]', 'ITEMS', '{' + ','.join(array(g) for g in groups[:3]) + '}'),
+        ('String[]', 'VERSIONS', array([r['version'] for r in releases])),
+        ('int[][]', 'ITEMS', '{' + ','.join(array(g) for g in groups) + '}'),
         ('int[]', 'ICONS', '{' + ','.join('ReleaseChange.' + c['icon'].upper() for c in changes) + '}'),
         ('boolean[]', 'AUTO_RESET', array([c['autoReset'] for c in changes])),
         ('String[]', 'TITLES', array([c['title'].upper() for c in changes])),
@@ -154,7 +154,7 @@ def main():
                 raise ValueError('Game copy is stale. Run: python3 tools/release-notes.py sync')
             print('Release notes checked')
         elif args.command == 'preview':
-            for release in data['releases'][:3]:
+            for release in data['releases']:
                 print('\n' + release['version'])
                 for change in release['changes']:
                     print('\n  ' + change['title'])

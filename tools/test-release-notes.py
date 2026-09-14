@@ -54,6 +54,13 @@ class ReleaseNotes(unittest.TestCase):
         self.assertEqual(sum(styles), 1)
         notes.validate({'releases': [{'version': '1.0.0', 'changes': [change]}]})
 
+    def test_history_is_not_limited_to_three_releases(self):
+        data = copy.deepcopy(self.data)
+        older = copy.deepcopy(data['releases'][-1])
+        older['version'] = '0.1.16'
+        data['releases'].append(older)
+        self.assertIn('"0.1.16"', notes.render(data))
+
     def test_actionable_copy_errors(self):
         for field in ('where', 'why'):
             data = copy.deepcopy(self.data)
@@ -95,6 +102,7 @@ class ReleaseNotes(unittest.TestCase):
             change['version'] = '0.1.20'
             draft.write_text(json.dumps(change))
             self.assertEqual(run('add', str(draft)).returncode, 0)
+            self.assertIn('0.1.17', run('preview').stdout)
             self.assertEqual(len(notes.load(root / notes.SOURCE)['releases']), len(self.data['releases']) + 1)
             generated = (root / notes.OUTPUT).read_text()
             self.assertIn('"0.1.20","0.1.19","0.1.18"', generated)
