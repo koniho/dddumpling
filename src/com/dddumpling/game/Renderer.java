@@ -441,9 +441,37 @@ final class Renderer extends Draw {
         float y = w.y + bob;
         int hue = Glyph.cycle(c.clock * 0.7f);
 
-        if (w.hit && (!w.mystery || w.hitT >= Power.SELECT_TIME+0.25f)) {
+        if (w.mystery && w.hit && w.hitT >= Power.SELECT_TIME) {
+            float t = Math.min(1f, (w.hitT-Power.SELECT_TIME)/Power.REVEAL_TIME);
+            boolean debuff = w.effect >= Power.COUNT;
+            int glow = debuff ? 0xFF7761B8 : 0xFFFFE7A0;
+            float endFade = fade * Math.min(1f, (1f-t)/0.15f);
+            // Warm light opens outward; a debuff draws violet wisps back into the icon.
+            for (int k=0;k<3;k++) {
+                float travel = Math.max(0f, Math.min(1f, (t-k*0.12f)/0.64f));
+                float radius = r*(0.95f+2.2f*(debuff ? 1f-travel : travel));
+                float alpha = (float)Math.sin(Math.PI*travel);
+                p.strokeCircle(w.x,y,radius,fadeBy(Glyph.withAlpha(glow,(int)(150*alpha)),endFade),r*0.09f);
+                for(int ray=0;ray<8;ray++) {
+                    float angle=ray*(float)Math.PI/4f+k*0.16f;
+                    float x=w.x+(float)Math.cos(angle)*radius;
+                    float yy=y+(float)Math.sin(angle)*radius;
+                    p.fillCircle(x,yy,r*0.07f,fadeBy(Glyph.withAlpha(glow,(int)(220*alpha)),endFade));
+                }
+            }
+            float settle = (float)Math.sin(Math.PI*Math.min(1f,t/0.45f));
+            float iconR = r*(1.12f+(debuff ? -0.08f : 0.16f)*settle);
+            for(int k=5;k>=1;k--) p.fillCircle(w.x,y,iconR*(1f+k*0.12f),
+                    fadeBy(Glyph.withAlpha(glow,18),endFade));
+            p.fillPoly(Glyph.hex(w.x,y,iconR),fadeBy(debuff ? 0xFFE0D8F0 : 0xFFFFF2CE,endFade));
+            p.strokePoly(Glyph.hex(w.x,y,iconR),fadeBy(glow,endFade),r*0.08f);
+            powerIcon(p,w.effect,w.x,y,iconR*0.72f,glow,endFade);
+            return;
+        }
+
+        if (w.hit && !w.mystery) {
             // Caught: the halo blows outward and fades.
-            float t = Math.min(1f, (w.hitT-(w.mystery ? Power.SELECT_TIME : 0f)) / Power.POP_TIME);
+            float t = Math.min(1f, w.hitT / Power.POP_TIME);
             for (int k = 3; k >= 1; k--) {
                 p.strokePoly(star(w.x, y, r * (1f + t * (2f + k)), r * 0.45f, 8, c.clock),
                         fadeBy(Glyph.withAlpha(hue, (int) (200 * (1f - t) / k)), fade), r * 0.10f);
@@ -467,6 +495,7 @@ final class Renderer extends Draw {
         // play area. A name sliced in half by the screen edge reads as a fault, and it is what the
         // harness reports as DOES NOT FIT. The half-width is estimated from the harness font, which
         // is wider than Quicksand, so on the device it appears a shade later than it needs to.
+        if (w.mystery) return;
         float size = type(L.unit * 0.56f);
         float half = size * 0.36f * w.name().length();
         float inside = Math.min(w.x - half - L.playLeft, L.playRight - half - w.x);

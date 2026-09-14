@@ -173,6 +173,10 @@ nothing. Follow the pattern rather than "fixing" it.
 
 ## Conventions worth keeping
 
+- **Explain game mechanics through visual cues wherever possible.** Use character poses,
+  animation, shape, color, and reactions to show what to do and what happened. Keep explanatory
+  words and extra UI to a minimum; new mechanics should be understandable through play.
+
 - Every rule change gets an assertion in the matching `Test*` suite, and every new visual
   state gets a frame in `Preview` so it can be looked at.
 - **Comments are terse.** One or two lines, and only for what the code cannot say: why a value is

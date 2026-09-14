@@ -75,6 +75,13 @@ final class Preview {
             mystery.power.hitT=frame*0.19f;
             shot(dir,"100-mystery-roulette-"+frame,mystery,L,w,h,ss);
         }
+        for(int effect : new int[]{Power.FLURRY,Power.INCOGNITO}) {
+            mystery.power.effect=effect;
+            for(int frame=0;frame<4;frame++) {
+                mystery.power.hitT=Power.SELECT_TIME+frame*0.28f;
+                shot(dir,"100-reveal-"+effect+"-"+frame,mystery,L,w,h,ss);
+            }
+        }
         mystery.power=null; mystery.startDebuff(Power.INCOGNITO);
         for(int frame=0;frame<4;frame++) {
             mystery.incognitoMorph=frame/3f;
