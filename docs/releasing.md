@@ -1,6 +1,6 @@
 # Executing a release
 
-**Finish and review release notes before creating or pushing the release tag.** The tag must contain the notes that describe its build. Do not tag first and figure out the wording afterward.
+**Every release request starts with interactive release-note review with the user. Wait for their explicit approval of the final notes before version preparation, tagging, or publishing. A request to release does not approve notes they have not seen.** The tag must contain the notes that describe its build. Do not tag first and figure out the wording afterward.
 
 For adding in-game notes, use the separate [release-notes writing guide](release-notes.md). This document covers release order; platform credentials and upload details remain in [Play publishing](../app-store/play-publishing.md) and [iOS](../ios/README.md).
 
@@ -14,8 +14,9 @@ python3 tools/prepare-release.py context --output build/release-context.json
 
 Use `--since <last-distributed-tag-or-commit>` if the nearest tag was not the last shipped build. Review the relevant diffs and merged PRs. Include only the changes in this release; unmerged branch work is not shipped work.
 
-## 2. Finish the notes before the version/tag step
+## 2. Review the notes interactively before the version/tag step
 
+- Present each proposed entry to the user: title, game-phase context, player benefit, icon/demo, and automatic-reset choice. Work through edits one entry at a time (or in small groups if they prefer). After the entries are settled, show the final grouped notes and destination summaries and obtain explicit approval to proceed. If release contents change afterward, review the affected notes again. Read-only research and draft previews may continue while waiting; do not interpret silence as approval.
 - Follow [Writing in-game release notes](release-notes.md). Each feature must say **where in the game it applies** and **what changes for the player or why it matters**. Keep the voice light.
 - Coalesce redundant entries before approval: one entry per distinct player-facing change. Fold a new feature’s related behavior, polish, and fixes into that entry; keep the copy brief. Put only remaining standalone fixes under one bug icon, omitting it when none remain. See [Combine redundant entries](release-notes.md#combine-redundant-entries).
 - Decide `autoReset` for every entry while creating the notes; see [reset guidance](release-notes.md#decide-whether-the-demo-resets). Verify the choice by activating each demo and waiting more than two seconds.

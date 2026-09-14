@@ -71,7 +71,8 @@ you are doing.
 
 ## Build and deploy
 
-Before tagging a release, finish and review its release notes using [Executing a release](docs/releasing.md).
+When the user requests a release, first work through its release notes interactively with them using [Executing a release](docs/releasing.md).
+Present the entries and reset choices, incorporate their edits, and wait for explicit approval of the final notes before proceeding with version preparation, tagging, or publishing. A release request alone is not approval of unseen notes.
 The separate [writing guide](docs/release-notes.md) explains the human-editable JSON catalog.
 Each feature needs its game phase and player purpose. Run `python3 tools/release-notes.py check --version <version>`
 before tagging; include the JSON, generated game copy, and destination notes in the release commit.

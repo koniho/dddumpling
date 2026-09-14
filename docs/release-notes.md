@@ -1,6 +1,6 @@
 # Writing in-game release notes
 
-Use this guide to add or edit notes. For publishing and tagging, use [Executing a release](releasing.md).
+Use this guide to add or edit notes. For every release request, work through the proposed entries interactively with the user and obtain explicit approval of the final notes before proceeding with version preparation, tagging, or publishing. For publishing and tagging, use [Executing a release](releasing.md).
 
 You edit plain JSON in [release-notes/releases.json](../release-notes/releases.json). You do not need to edit Java, count rows, or position icons. The tool wraps the copy and updates the game. The source keeps the history; the game shows the first three releases, newest first. Generated content retains older entries so the harness can still exercise their demos after they leave the visible list.
 
@@ -52,7 +52,7 @@ You edit plain JSON in [release-notes/releases.json](../release-notes/releases.j
 
    `add` validates the draft, puts it first in the source, and updates the game's generated copy. It never changes the app version, commits, tags, or uploads anything. It refuses a duplicate release version. The preview prints exactly the text the game uses.
 
-4. Review the images under `out/103-release-*.png`, then try the steamer entry in the app. `RESET NEWS` in developer settings restores the corner steamer’s star, lid pops, and extra steam until the notes are opened. Check the feature context, icon, copy, wrapped rows, and Back navigation. The `wrapped` preview frames deliberately use an overfilled test catalog, not real release contents.
+4. Review each entry with the user: title, phase, benefit, icon/demo, and reset choice. Incorporate their edits, then present the final grouped notes and applicable store summaries for approval. Review the images under `out/103-release-*.png`, then try the steamer entry in the app. `RESET NEWS` in developer settings restores the corner steamer’s star, lid pops, and extra steam until the notes are opened. Check the feature context, icon, copy, wrapped rows, and Back navigation. The `wrapped` preview frames deliberately use an overfilled test catalog, not real release contents.
 
 5. Commit `release-notes/releases.json` and `src/com/dddumpling/game/ReleaseContent.java` with the release preparation. Finish the [release checklist](releasing.md) before tagging.
 

@@ -67,7 +67,7 @@ files, private credentials, rejected drafts, and game source out of public asset
 ## Preparing a release
 
 When asked to prepare or create a release, include the version bump and player-facing
-release notes. Follow docs/releasing.md and finish the notes before creating or pushing a tag.
+release notes. First work through those notes interactively with the user: title, phase, player benefit, icon/demo, and reset choice. Incorporate edits and obtain explicit approval of the final notes before version preparation, tagging, or publishing; the release request itself does not approve unseen notes. Follow docs/releasing.md.
 Use docs/release-notes.md for the human-editable in-game catalog; every feature needs its game
 phase and player purpose, with fixes grouped under one bug icon. Include the JSON and generated
 copy in the release commit and run tools/release-notes.py check --version <version> before tagging. Read app-store/play-publishing.md for the current target and account setup.
