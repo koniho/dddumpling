@@ -19,6 +19,10 @@ final class LandPicker extends Draw {
                 && !c.storyOpen() && !c.starting() && !c.settingsOpen && c.rosterSceneT <= 0f;
     }
     static float cardY(Layout L) { return L.h * 0.705f; }
+    // Adjacent centres differ by 30% of the full icon height.
+    static float cardY(GameCore c, Layout L, int land) {
+        return cardY(L) + (slot(c,land)%2==0 ? -0.3f : 0.3f)*iconRadius(c,L);
+    }
     static int slot(GameCore c, int land) {
         int n = 0;
         for (int i = 0; i < land; i++) if (unlocked(c, i)) n++;
@@ -167,12 +171,12 @@ final class LandPicker extends Draw {
         float reveal = discoveryReveal(c, L, c.landDiscovery);
         float settle = ease((t - 3.2f) / 1f);
         float x = explorerX(c, L);
-        float ground = cardY(L);
+        float ground = cardY(c,L,c.landDiscovery);
         float hop = t < 1.6f ? Math.abs((float)Math.sin(t * 12f)) * r * 0.10f
                 : (float)Math.sin(ease((t - 1.6f) / 0.7f) * Math.PI) * r * 0.30f;
-        float y = ground - hop;
+        float y = ground + iconRadius(c,L)*1.10f - r*0.60f - hop;
         adventure(p,x,y,r,a,reveal);
-        float tx = cardX(c, L, c.landDiscovery), ty = cardY(L);
+        float tx = cardX(c, L, c.landDiscovery), ty = cardY(c,L,c.landDiscovery);
         for (int i = 0; i < 7; i++) {
             float phase = i * Softbody.TAU / 7f;
             float reach = r * (1.1f + reveal * 0.5f);
@@ -200,14 +204,24 @@ final class LandPicker extends Draw {
         float start=cardX(c,L,c.landTravelFrom)-direction*iconRadius(c,L)*0.95f;
         return start+(cardX(c,L,c.landChoice)-start)*walk;
     }
+    static float travelGround(GameCore c,Layout L) {
+        float walk=ease((c.landTravelT/TRAVEL_TIME-0.16f)/0.68f);
+        float from=cardY(c,L,c.landTravelFrom),to=cardY(c,L,c.landChoice);
+        return from+(to-from)*walk;
+    }
+    static float travelArc(GameCore c,Layout L) {
+        float walk=ease((c.landTravelT/TRAVEL_TIME-0.16f)/0.68f);
+        return 4f*walk*(1f-walk)*iconRadius(c,L)*0.45f;
+    }
     private static void drawTravel(Painter p,GameCore c,Layout L) {
         if(c.landTravelFrom<0) return;
         float t=c.landTravelT/TRAVEL_TIME,r=L.keyR*c.keyScale()*0.55f;
         float pop=ease(t/0.16f),fade=Math.min(1f,(1f-t)/0.14f);
         float walking=t>0.16f && t<0.84f ? 1f : 0f;
         float stride=(float)Math.sin(t*Softbody.TAU*5f)*walking;
-        float x=travelX(c,L),ground=cardY(L)-r*0.05f;
-        float y=ground-r*0.70f*pop-Math.abs(stride)*r*0.08f;
+        // Feet settle just below the emblem base; the arc still lifts them in transit.
+        float x=travelX(c,L),ground=travelGround(c,L)+iconRadius(c,L)*1.10f+r*0.07f;
+        float y=ground-r*0.70f*pop-travelArc(c,L)-Math.abs(stride)*r*0.08f;
         int alpha=(int)(255*pop*fade);
         p.fillEllipse(x,ground,r*0.60f,r*0.10f,Glyph.withAlpha(INK,(int)(alpha*0.18f)));
         for(int side=-1;side<=1;side+=2)
@@ -219,7 +233,8 @@ final class LandPicker extends Draw {
     static void draw(Painter p, GameCore c, Layout L) {
         if (!visible(c)) return;
         float cy = cardY(L);
-        p.save(); p.clipRect(0, cy - L.h * 0.063f, L.w, cy + L.h * 0.063f);
+        float halfHeight=Math.max(L.h*0.063f,iconRadius(c,L)*1.6f);
+        p.save(); p.clipRect(0, cy-halfHeight, L.w, cy+halfHeight);
         // Back to front: the focused emblem covers the inner edges of its neighbours.
         for (int distance = Lands.COUNT - 1; distance >= 0; distance--)
         for (int land = 0; land < Lands.COUNT; land++) {
@@ -232,7 +247,7 @@ final class LandPicker extends Draw {
             if (land == c.landDiscovery)
                 focus += (1f - focus) * (1f - ease((c.landDiscoveryT - 3.2f) / 1f));
             float r = iconRadius(c, L) * (0.72f + focus * 0.28f);
-            float y = cy + r * (land == 2 ? 0.4f : land == 3 ? -0.3f : 0f);
+            float y = cardY(c,L,land);
             // The neighbouring emblems are blurred silhouettes, becoming clear as they centre.
             float falloff = (float)Math.pow(0.45f, Math.max(0f, stepsAway - 1f));
             int haze = (int)(80 * (1f - focus) * falloff * reveal);

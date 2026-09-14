@@ -69,6 +69,21 @@ final class TestVisuals extends Check {
         LandPicker.step(travel,-1);
         check("land boundary does not play a false journey",travel.landChoice==0 && travel.landTravelFrom<0 && travelEar.landShuffles==4);
         check("land icon centres leave room between full sized icons",LandPicker.spacing(travel,L)>LandPicker.iconRadius(travel,L)*2f);
+        float high=LandPicker.cardY(travel,L,0),low=LandPicker.cardY(travel,L,1);
+        check("land heights alternate with a thirty percent step", Math.abs(low-high-LandPicker.iconRadius(travel,L)*0.6f)<0.01f
+                && LandPicker.cardY(travel,L,2)==high && LandPicker.cardY(travel,L,3)==low);
+        LandPicker.step(travel,1);
+        check("travel starts at the previous land height",LandPicker.travelGround(travel,L)==high && LandPicker.travelArc(travel,L)==0f);
+        LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME*0.5f);
+        check("travel arcs above the midpoint between land heights",Math.abs(LandPicker.travelGround(travel,L)-(high+low)*0.5f)<0.01f
+                && LandPicker.travelArc(travel,L)>LandPicker.iconRadius(travel,L)*0.4f);
+        LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME*0.35f);
+        check("travel lands at the destination height",Math.abs(LandPicker.travelGround(travel,L)-low)<0.01f && LandPicker.travelArc(travel,L)==0f);
+        LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME);
+        LandPicker.step(travel,-1);
+        check("reverse travel starts at the lower land",LandPicker.travelGround(travel,L)==low);
+        LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME*0.85f);
+        check("reverse travel arrives at the upper land",Math.abs(LandPicker.travelGround(travel,L)-high)<0.01f);
         LandPicker.step(travel,1);LandPicker.step(travel,1);
         travel.caseOpen=true;LandPicker.updateTravel(travel,DT);
         check("leaving the picker clears pending journeys",travel.landTravelFrom<0 && travel.landTravelQueue.isEmpty() && travel.landPickerSlide==0f);

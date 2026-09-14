@@ -363,7 +363,8 @@ Stage 11 introduces mystery pickups with 15% longer travel/spawn intervals; stag
 
 The title land picker spaces icons apart and moves one adjacent unlocked land per swipe. Each
 change takes 0.85 seconds: the Adventure Dumpling pops up on the trailing side of the previous
-land, walks toward the destination with soft shuffling footsteps, and settles out. Leftward
+land, follows a gentle arc toward the destination with soft shuffling footsteps, and settles out.
+Icon centres alternate vertically by 30% of the full icon height; the journey follows both heights. Leftward
 travel mirrors the entrance. Rapid swipes queue separate journeys; tapping a distant icon visits
 each intervening unlocked land. Discovery animations pause while travelling.
 
