@@ -25,6 +25,9 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 @property(nonatomic) AVAudioUnitVarispeed *rocketPitch;
 @property(nonatomic) AVSpeechSynthesizer *speech;
 @property(nonatomic) dispatch_queue_t renderQueue;
+@property(nonatomic) dispatch_queue_t effectsQueue;
+@property(nonatomic) dispatch_semaphore_t effectSlots;
+@property(atomic) NSUInteger effectGeneration;
 @property(nonatomic) BOOL active;
 @property(nonatomic) BOOL interrupted;
 /** A route/privacy interruption can only be cleared by iOS permission or app reactivation. */
@@ -51,6 +54,8 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
     _speech = [[AVSpeechSynthesizer alloc] init];
     _speech.delegate = self;
     _renderQueue = dispatch_queue_create("com.dddumpling.audio.render", DISPATCH_QUEUE_SERIAL);
+    _effectsQueue = dispatch_queue_create("com.dddumpling.audio.effects", DISPATCH_QUEUE_SERIAL);
+    _effectSlots = dispatch_semaphore_create(12);
     _selectedStyle = DDStyleSwing;
     _playbackAllowed = YES;
     [self observeAudioSession];
@@ -152,8 +157,11 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 
 - (void)pausePlayers {
   [_music pause]; [_rocketNode pause]; [_rocketEngine pause]; [_bubble pause];
-  for (AVAudioPlayer *effect in _effects) [effect stop];
-  [_effects removeAllObjects];
+  self.effectGeneration += 1;
+  dispatch_async(_effectsQueue, ^{
+    for (AVAudioPlayer *effect in self.effects) [effect stop];
+    [self.effects removeAllObjects];
+  });
   [_speech stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
   _narrating = NO;
   [self applyMusicMix];
@@ -228,14 +236,17 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
   NSMutableArray<AVAudioPlayer *> *pool = _effectPlayers[key];
   if (!pool) { pool = [NSMutableArray array]; _effectPlayers[key] = pool; }
   for (AVAudioPlayer *candidate in pool) if (!candidate.isPlaying) return candidate;
-  AVAudioPlayer *player = [self playerForData:[self wavForEffect:effect rate:rate] loop:NO];
-  if (!player) return nil;
-  // A small per-variant pool lets quick chains overlap while bounding memory for held presses.
+  // Recycle at saturation; constructing another player makes rapid chains more expensive.
+  AVAudioPlayer *player;
   if (pool.count >= 6) {
-    AVAudioPlayer *oldest = pool.firstObject;
-    [oldest stop];
-    [_effects removeObject:oldest];
+    player = pool.firstObject;
+    [player stop];
+    [_effects removeObject:player];
     [pool removeObjectAtIndex:0];
+  } else {
+    player = [self playerForData:[self wavForEffect:effect rate:rate] loop:NO];
+    if (!player) return nil;
+    player.delegate = nil;
   }
   [pool addObject:player];
   return player;
@@ -243,22 +254,28 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 
 - (void)playEffect:(jint)effect rate:(float)rate gain:(float)gain {
   if (!_active || _interrupted || !_playbackAllowed) return;
-  @try {
+  if (dispatch_semaphore_wait(_effectSlots, DISPATCH_TIME_NOW) != 0) return;
+  NSUInteger generation = self.effectGeneration;
+  CFTimeInterval requested = CACurrentMediaTime();
+  dispatch_async(_effectsQueue, ^{
+   @try {
+    // Drop stale impacts rather than replaying a backlog after a pause or slow audio call.
+    if (generation != self.effectGeneration || CACurrentMediaTime() - requested > .1) return;
     AVAudioPlayer *player = [self effectPlayer:effect rate:rate];
-    if (!player) return;
+    if (!player || generation != self.effectGeneration) return;
+    for (AVAudioPlayer *finished in self.effects.allObjects)
+      if (!finished.isPlaying) [self.effects removeObject:finished];
     // AVAudioPlayer retains its last playhead after finishing or being stopped.
     player.currentTime = 0;
     player.volume = MAX(0.f, MIN(1.f, gain));
-    [_effects addObject:player];
+    [self.effects addObject:player];
     [player play];
-  } @catch (NSException *exception) {
+   } @catch (NSException *exception) {
     // Audio is optional. A translated synthesis error must not affect gameplay.
-  }
-}
-
-- (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag {
-  (void)flag;
-  [_effects removeObject:player];
+   } @finally {
+    dispatch_semaphore_signal(self.effectSlots);
+   }
+  });
 }
 
 - (void)applyMusicMix {

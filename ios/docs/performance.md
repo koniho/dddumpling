@@ -74,3 +74,12 @@ This improves simulator scheduling; it does not prove presented 60 fps, physical
 latency or thermal behavior. Occasional boss-update spikes remain (56.56 ms maximum in
 the first asynchronous window); their source needs a separate event-level trace. The
 asynchronous star scene has not received a timing run, though the UI suite exercises it.
+
+## Rapid sound effects
+
+Transient effects run on a dedicated serial queue so player preparation and playback do not
+block touch handling or drawing. Each pitch variant reuses up to six players; at saturation
+it recycles a busy player. At most twelve requests may be pending, and requests older than
+100 ms are discarded. Pausing invalidates pending requests and queues a stop for active effects.
+Native audio tests cover worker execution, saturation reuse and cancellation across a pause.
+Repeated misses and FLING still need a physical-device feel check; haptic cost is unmeasured.
