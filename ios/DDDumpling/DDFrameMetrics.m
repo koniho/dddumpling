@@ -43,9 +43,13 @@ static uint64_t DDResidentBytes(void) {
   double _updateSamples[600];
   double _drawSamples[600];
   double _intervalSamples[600];
+  double _touchSamples[600];
+  double _hapticSamples[600];
   NSUInteger _updateCount;
   NSUInteger _drawCount;
   NSUInteger _intervalCount;
+  NSUInteger _touchCount;
+  NSUInteger _hapticCount;
   NSUInteger _missedDisplayLinkIntervals;
 }
 @end
@@ -65,6 +69,8 @@ static uint64_t DDResidentBytes(void) {
   _updateCount = 0;
   _drawCount = 0;
   _intervalCount = 0;
+  _touchCount = 0;
+  _hapticCount = 0;
   _missedDisplayLinkIntervals = 0;
 }
 
@@ -99,12 +105,23 @@ static uint64_t DDResidentBytes(void) {
   return _enabled && _drawCount == DDFrameMetricsWindowSize;
 }
 
+- (void)recordTouchMilliseconds:(double)milliseconds {
+  if (_enabled && _touchCount < DDFrameMetricsWindowSize)
+    _touchSamples[_touchCount++] = milliseconds;
+}
+
+- (void)recordHapticMilliseconds:(double)milliseconds {
+  if (_enabled && _hapticCount < DDFrameMetricsWindowSize)
+    _hapticSamples[_hapticCount++] = milliseconds;
+}
+
 - (void)logWindowWithDebugStatus:(NSString *)debugStatus {
   if (![self windowComplete]) return;
   const uint64_t residentBytes = DDResidentBytes();
   NSString *status = debugStatus.length ? [NSString stringWithFormat:@" status=%@", debugStatus] : @"";
-  NSLog(@"DDD profile cpu(update %@) cpu(draw-submit %@; deferred raster excluded) display-link(%@ missed=%lu target=60Hz; not compositor FPS) resident=%.1fMiB%@",
+  NSLog(@"DDD profile wall(update %@) wall(draw-submit %@; deferred raster excluded) wall(touch %@; includes haptics) wall(haptic %@) display-link(%@ missed=%lu target=60Hz; not compositor FPS) resident=%.1fMiB%@",
         DDStats(_updateSamples, _updateCount), DDStats(_drawSamples, _drawCount),
+        DDStats(_touchSamples, _touchCount), DDStats(_hapticSamples, _hapticCount),
         DDStats(_intervalSamples, _intervalCount),
         (unsigned long)_missedDisplayLinkIntervals,
         residentBytes / (1024.0 * 1024.0), status);

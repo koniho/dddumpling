@@ -77,12 +77,16 @@ asynchronous star scene has not received a timing run, though the UI suite exerc
 
 ## Rapid sound effects
 
-Transient effects run on a dedicated serial queue so player preparation and playback do not
-block touch handling or drawing. Each pitch variant reuses up to six players; at saturation
-it recycles a busy player. At most twelve requests may be pending, and requests older than
-100 ms are discarded. Pausing invalidates pending requests and queues a stop for active effects.
-Native audio tests cover worker execution, saturation reuse and cancellation across a pause.
-Repeated misses and FLING still need a physical-device feel check; haptic cost is unmeasured.
+Transient effects run on a dedicated serial queue using a persistent `AVAudioEngine` and
+twelve reusable `AVAudioPlayerNode` voices. This avoids `AVAudioPlayer`'s per-effect completion
+and audio-queue disposal. At most twelve requests may be pending; requests older than 100 ms
+are discarded. Pausing invalidates pending requests, stops scheduled buffers and pauses the
+engine. Native tests cover PCM fidelity, pitch/gain, graph reuse, worker execution and pause.
+
+`DDD_PROFILE=1` records elapsed update, drawing submission, touch and haptic durations alongside
+display-link cadence. Touch duration includes its haptic call. In Debug only,
+`DDD_PROFILE_MUTE_EFFECTS=1` suppresses short effects for comparison while retaining music and
+haptics. These launch switches are diagnostic tools, not saved player settings.
 
 ## Physical-device follow-up — 2026-09-13
 

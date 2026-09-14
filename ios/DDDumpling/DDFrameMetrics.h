@@ -13,6 +13,8 @@
 - (void)recordDisplayLinkTimestamp:(CFTimeInterval)timestamp;
 - (void)recordUpdateMilliseconds:(double)milliseconds;
 - (void)recordDrawMilliseconds:(double)milliseconds;
+- (void)recordTouchMilliseconds:(double)milliseconds;
+- (void)recordHapticMilliseconds:(double)milliseconds;
 - (BOOL)windowComplete;
 - (void)logWindowWithDebugStatus:(nullable NSString *)debugStatus;
 

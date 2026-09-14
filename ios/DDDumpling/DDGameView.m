@@ -38,7 +38,11 @@
 @end
 
 @implementation DDHost
-- (void)tick { [self.view.haptic impactOccurred]; }
+- (void)tick {
+    CFTimeInterval start = CACurrentMediaTime();
+    [self.view.haptic impactOccurred];
+    [self.view.frameMetrics recordHapticMilliseconds:(CACurrentMediaTime() - start) * 1000];
+}
 - (void)openPrivacyWithNSString:(NSString *)url {
     NSURL *address = [NSURL URLWithString:url];
     if (address) [UIApplication.sharedApplication openURL:address options:@{} completionHandler:nil];
@@ -200,6 +204,7 @@
 - (void)packet:(jint)action index:(NSUInteger)index event:(UIEvent *)event {
     NSUInteger n = self.pointers.count;
     if (!n) return;
+    CFTimeInterval start = CACurrentMediaTime();
     IOSIntArray *ids = [IOSIntArray arrayWithLength:(jint)n];
     IOSFloatArray *xs = [IOSFloatArray arrayWithLength:(jint)n];
     IOSFloatArray *ys = [IOSFloatArray arrayWithLength:(jint)n];
@@ -244,6 +249,7 @@
     [game touchWithDDIOSTouch:[[DDIOSTouch alloc] initWithInt:action withInt:(jint)index
         withIntArray:ids withFloatArray:xs withFloatArray:ys withFloatArray2:historyX withFloatArray2:historyY]];
     [self refreshNavigation];
+    [self.frameMetrics recordTouchMilliseconds:(CACurrentMediaTime() - start) * 1000];
 }
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     if (!self.active) return;
