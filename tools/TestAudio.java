@@ -241,6 +241,17 @@ final class TestAudio extends Check {
         int bossMax = 0;
         for (int i = 0; i < bossLoop.length; i++)
             bossMax = Math.max(bossMax, Math.abs(bossLoop[i]));
+        for(int style=0;style<Music.NAMES.length;style++) {
+            if(!Music.isSynth(style)) continue;
+            short[] normal=Music.loop(style,false), battle=Music.bossLoop(style);
+            double normalEnergy=0,bossEnergy=0;
+            for(short sample:normal) normalEnergy+=(double)sample*sample;
+            int maxBoss=0;
+            for(short sample:battle) {bossEnergy+=(double)sample*sample;maxBoss=Math.max(maxBoss,Math.abs(sample));}
+            double ratio=Math.sqrt(bossEnergy/battle.length/(normalEnergy/normal.length))*Music.BOSS_GAIN;
+            check("boss music sits slightly above stage music " + style,ratio>1.13 && ratio<1.17);
+            check("boss mix retains effect headroom " + style,maxBoss*Music.BOSS_GAIN+peak*0.72f<32767);
+        }
         check("boss progression spans thirty-two bars", Music.bossBars() == 32);
         check("boss melody is quantized to eighth notes", Music.bossMelodyOnEighths());
         check("boss loop is at least eight old four-bar loops",

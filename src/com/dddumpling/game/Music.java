@@ -76,8 +76,8 @@ final class Music {
     private static final float FRENZY_TEMPO = 1.35f;
     /** Driving pulse detected from the recorded guide melody. */
     private static final float BOSS_BPM = 203f;
-    /** Playback gain leaves room for one full-level effect without clipping the output mix. */
-    static final float BOSS_GAIN = 0.72f;
+    /** Boss PCM is balanced against the normal arrangement before playback. */
+    static final float BOSS_GAIN = 1f;
     /** Sanitized stem of the voice memo used for this boss arrangement. */
     static final String BOSS_SOURCE = "sep-4-at-6-47-pm";
     /** One 32-bar cadence in A harmonic minor: i, iv and VI continually pull toward V. */
@@ -259,7 +259,28 @@ final class Music {
                     freq, leadAmp, leadDecay, bright);
         }
 
-        return render(v);
+        return boss ? renderBoss(v, loop(style, false)) : render(v);
+    }
+
+    /** Match average loudness, rounding off isolated peaks rather than lifting them into effects. */
+    private static short[] renderBoss(float[] v, short[] normal) {
+        double energy=0;
+        for(short sample:normal) energy+=(double)sample*sample;
+        double target=Math.sqrt(energy/normal.length)/32767.0*1.15;
+        float peak=0f;
+        for(float sample:v) peak=Math.max(peak,Math.abs(sample));
+        double low=0, high=32;
+        for(int pass=0;pass<16;pass++) {
+            double gain=(low+high)/2, sum=0;
+            for(float sample:v) {
+                double value=0.38*Math.tanh(sample/peak*gain);
+                sum+=value*value;
+            }
+            if(Math.sqrt(sum/v.length)<target) low=gain; else high=gain;
+        }
+        short[] out=new short[v.length];
+        for(int i=0;i<v.length;i++) out[i]=(short)(32767*0.38*Math.tanh(v[i]/peak*(low+high)/2));
+        return out;
     }
 
     /** Equal-tempered frequency, {@code semis} semitones above A2 (110 Hz). */

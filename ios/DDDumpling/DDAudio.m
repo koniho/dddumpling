@@ -262,7 +262,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 }
 
 - (void)applyMusicMix {
-  float gain = _boss ? 0.72f : (_selectedStyle == DDStyleCustom ? 0.55f : 1.f);
+  float gain = _boss ? DDMusic_BOSS_GAIN : (_selectedStyle == DDStyleCustom ? 0.55f : 1.f);
   if (_rocketOn) gain *= 0.68f;
   if (_narrating) gain *= 0.22f;
   _music.volume = gain;

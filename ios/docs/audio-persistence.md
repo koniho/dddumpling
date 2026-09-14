@@ -5,6 +5,9 @@ synthesise every PCM buffer in translated `Sfx` and `Music`; AVFoundation only m
 those buffers, caches their WAV form before play, lets several effects overlap, and loops
 the selected music, rocket, and boss-charge beds. Music is rebuilt whenever selection,
 frenzy, or boss mode changes.
+Boss PCM is balanced to 115% of the matching synthesized stage track's RMS level,
+with soft-limited peaks at 38% of full scale to leave room for effects. Both platforms
+use the shared `Music.BOSS_GAIN`; music-off and temporary ducking still apply.
 The host sets `setActive:` after it has selected the persisted music choice. The adapter
 also pauses for app backgrounding, interruptions, and unplugged output routes, and only
 resumes an interruption when iOS says that resumption is appropriate. Narration uses the
