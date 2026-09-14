@@ -615,7 +615,8 @@ final class Screens extends Draw {
         if (!BuildFlags.DEVELOPER) return;
         float s = L.unit;
         SettingsUi ui = new SettingsUi();
-        ui.compute(L, Music.NAMES.length);
+        int tab = c.settingsTab;
+        ui.compute(L, Music.NAMES.length, tab);
 
         p.fillRect(0, 0, L.w, L.h, Glyph.withAlpha(0xFF0D0A18, 205));
         p.fillRect(ui.panelL, ui.panelT, ui.panelR, ui.panelB,
@@ -623,7 +624,13 @@ final class Screens extends Draw {
         p.strokePoly(new float[] {ui.panelL, ui.panelT, ui.panelR, ui.panelT, ui.panelR,
                 ui.panelB, ui.panelL, ui.panelB}, Glyph.withAlpha(INK, 60), s * 0.06f);
 
-        p.text("SETTINGS", ui.panelL + s * 1.2f, ui.titleY, s * 0.92f, INK, Painter.LEFT, true);
+        for (int i = 0; i < 2; i++) {
+            p.fillRect(ui.tabL(i), ui.tabY, ui.tabR(i), ui.tabY + ui.tabH,
+                    Glyph.withAlpha(INK, i == tab ? 55 : 15));
+            p.text(i == SettingsUi.GENERAL ? "GENERAL" : "MINIGAMES",
+                    (ui.tabL(i) + ui.tabR(i)) / 2f, ui.titleY, s * 0.52f,
+                    i == tab ? INK : INK_DIM, Painter.CENTER, true);
+        }
         p.text("PAUSED", ui.panelL + s * 1.2f, ui.titleY + s * 0.8f, s * 0.5f, INK_DIM,
                 Painter.LEFT, false);
 
@@ -634,6 +641,23 @@ final class Screens extends Draw {
         float k = ui.closeR * 0.42f;
         p.line(ui.closeCx - k, ui.closeCy - k, ui.closeCx + k, ui.closeCy + k, INK, s * 0.09f);
         p.line(ui.closeCx + k, ui.closeCy - k, ui.closeCx - k, ui.closeCy + k, INK, s * 0.09f);
+
+        if (tab == SettingsUi.MINIGAMES) {
+            p.text("STAR PATH", ui.optionL(), ui.speedLabelY, s * 0.72f, INK, Painter.LEFT, true);
+            for (int i = 0; i < 3; i += 2) {
+                boolean enabled = i == 0 ? c.stars.wins > 0 : c.stars.wins < StarPath.MAX_DIFFICULTY;
+                p.fillRect(ui.testChipL(i, 3), ui.sliderY, ui.testChipR(i, 3), ui.sliderY + ui.testH,
+                        Glyph.withAlpha(INK, enabled ? 50 : 15));
+                p.text(i == 0 ? "EASIER" : "HARDER", (ui.testChipL(i, 3) + ui.testChipR(i, 3)) / 2f,
+                        ui.sliderY + ui.testH * 0.65f, s * 0.5f, enabled ? INK : INK_DIM, Painter.CENTER, true);
+            }
+            p.text("" + (c.stars.wins + 1) + " / " + (StarPath.MAX_DIFFICULTY + 1),
+                    L.w / 2f, ui.sliderY + ui.testH * 0.65f, s * 0.7f, INK, Painter.CENTER, true);
+            p.text("SAVED ACROSS RUNS", L.w / 2f, ui.sliderY + s * 3f, s * 0.52f, INK_DIM, Painter.CENTER, false);
+            p.text("WINS ADD " + StarPath.WIN_STEP + " LEVELS", L.w / 2f, ui.sliderY + s * 4f, s * 0.52f, INK_DIM, Painter.CENTER, false);
+            p.text("APPLIES NEXT ATTEMPT", L.w / 2f, ui.sliderY + s * 5f, s * 0.48f, INK_DIM, Painter.CENTER, false);
+            return;
+        }
 
         // Speed slider.
         p.text("SPEED", ui.sliderL, ui.speedLabelY, s * 0.58f, INK_DIM, Painter.LEFT, true);

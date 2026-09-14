@@ -755,6 +755,12 @@ final class Preview {
         cs.stars.vx = 0f;
         cs.stars.x = cs.stars.starX(6, L);
         shot(dir, "54d-stars-max-bends", cs, L, w, h, ss);
+        for(int frame=0;frame<3;frame++) {
+            cs.stars.timer=StarPath.REPORT+(frame==0 ? 0.02f : frame==1 ? -0.01f : -0.8f);
+            cs.bonusTimer=cs.stars.timer;
+            shot(dir,"54e-stars-incomplete-exit-"+frame,cs,L,w,h,ss);
+        }
+
 
         // Taking the last star: the course stops dead and the prize climbs out of the checkpoint
         // that ended it, early in the tableau and again once it is standing in place.
@@ -1041,6 +1047,12 @@ final class Preview {
         c6.openSettings();
         step(c6, L, 0.3f);
         shot(dir, "12-settings", c6, L, w, h, ss);
+        c6.settingsTab = SettingsUi.MINIGAMES;
+        c6.setStarDifficulty(0);
+        shot(dir, "12a-settings-minigames", c6, L, w, h, ss);
+        c6.setStarDifficulty(StarPath.MAX_DIFFICULTY);
+        shot(dir, "12b-settings-minigames-max", c6, L, w, h, ss);
+        c6.settingsTab = SettingsUi.GENERAL;
 
         // Clear-collection button armed, waiting for the confirming tap.
         c6.tapClearCase();

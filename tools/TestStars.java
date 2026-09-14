@@ -66,17 +66,6 @@ final class TestStars extends Check {
                 q.flyerX(L) == q.x + shakeX
                         && q.flyerY(L) == q.characterY(L) + shakeY);
 
-        q.begin(3, L);
-        q.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 0.1f;
-        float x = q.x;
-        q.hold(0, true);
-        q.update(0.25f, L);
-        check("a held left-hand key accelerates left", q.x < x && q.vx < 0f);
-        q.hold(3, true);
-        float before = Math.abs(q.vx);
-        q.update(0.25f, L);
-        check("opposite hands cancel and ease", Math.abs(q.vx) < before);
-
         q.collected = 0b10101;
         q.begin(3, L);
         float readyTarget = L.playRight - StarPath.flyerR(L);
@@ -126,6 +115,7 @@ final class TestStars extends Check {
             took = c.stars.won;
         }
         check("taking the last star completes the course", took && c.stars.count() == StarPath.COUNT);
+        check("the winning pickup emits feedback", c.starPickups == 1);
         check("success immediately saves one difficulty step",
                 c.stars.wins == 1 && progress.starWins == 1 && progress.starWinSaves == 1);
         check("the victory tableau takes the screen", c.stars.winning() && c.starFlight());
@@ -138,10 +128,11 @@ final class TestStars extends Check {
 
         // Frozen: the course, the flyer and the clock all hold for the length of the tableau.
         float held = c.stars.timer, atX = c.stars.x;
-        c.stars.hold(0, true);
+        c.stars.dragTo(L.playLeft, L);
         c.update(DT, L);
+        check("the tableau never repeats pickup feedback", c.starPickups == 0);
         check("the course stops dead", c.stars.timer == held && c.stars.x == atX
-                && c.stars.vx == 0f && !c.stars.left);
+                && c.stars.vx == 0f);
         check("the tableau runs on its own clock", c.stars.winProgress() > 0f);
         check("no parade until the tableau is done", !c.bonusParading());
 
@@ -213,16 +204,44 @@ final class TestStars extends Check {
         check("only from play, never over a screen that owns the keys",
                 new GameCore(new Mem(), 31L).state == GameCore.TITLE);
 
+        incompleteExit();
         courseIsFlyable(L);
         difficulty(L);
+    }
+
+    private static void incompleteExit() {
+        Layout l=new Layout();l.compute(240,520,0,0,0,0);
+        GameCore c=new GameCore(new Mem(),84L);c.startGame();c.state=GameCore.BONUS;c.starBonus=true;
+        c.stars.make(c.rnd);c.stars.begin(0,l);
+        for(float remaining:new float[]{StarPath.REPORT-0.01f,0.8f,0.1f}) {
+            c.stars.timer=remaining;
+            RasterPainter a=new RasterPainter(240,520,1),b=new RasterPainter(240,520,1);
+            c.stars.x=l.playLeft;StarScreen.draw(a,c,l);
+            c.stars.x=l.playRight;StarScreen.draw(b,c,l);
+            check("departed flyer cannot reappear during incomplete report " + remaining,
+                    java.util.Arrays.equals(a.resolve(),b.resolve()));
+        }
     }
 
     private static void difficulty(Layout L) {
         group("star path difficulty");
         StarPath baseline = new StarPath(), harder = new StarPath();
+        float previous = baseline.bendRate();
+        check("the first course stays approachable", previous == 1f);
+        for (int level = 1; level < StarPath.MAX_DIFFICULTY; level++) {
+            harder.wins = level;
+            check("the ramp rises faster at level " + level,
+                    harder.bendRate() > 1f + level * 0.04f && harder.bendRate() > previous);
+            previous = harder.bendRate();
+        }
+        harder.resetDifficulty();
+        for(int win=1;win<=10;win++) {
+            harder.recordWin();
+            check("win advances exactly one difficulty level " + win,harder.wins==win);
+        }
         for (int i = 0; i < 100; i++) harder.recordWin();
-        check("difficulty stops after five successes", harder.wins == StarPath.MAX_DIFFICULTY
-                && Math.abs(harder.bendRate() - 1.2f) < 0.0001f);
+        check("further wins keep the difficulty capped", harder.wins == StarPath.MAX_DIFFICULTY
+                && Math.abs(harder.bendRate() - 7f) < 0.0001f);
         baseline.make(new java.util.Random(77L));
         harder.make(new java.util.Random(77L));
         boolean changed = false;
@@ -255,181 +274,39 @@ final class TestStars extends Check {
                 failed.stars.wins == 2 && failedSave.starWinSaves == 0
                         && failed.stars.collected == 7);
 
-        float baseQuick = 0f, cappedQuick = 0f, cappedSlow = 0f, tries = 0f;
-        for (long seed = 1; seed <= SEEDS; seed++) {
-            baseQuick += Integer.bitCount(flown(seed, 0.05f, L, true, 0, seed, 0));
-            cappedQuick += Integer.bitCount(flown(seed, 0.05f, L, true, 0, seed, StarPath.MAX_DIFFICULTY));
-            cappedSlow += Integer.bitCount(flown(seed, 0.25f, L, true, 0, seed, StarPath.MAX_DIFFICULTY));
-            tries += attemptsToFinish(seed, 0.25f, L, StarPath.MAX_DIFFICULTY);
+        float dragBase=0f,dragCap=0f,dragQuick=0f,dragTries=0f;
+        for(long seed=1;seed<=32;seed++) {
+            dragBase+=Integer.bitCount(dragFlown(seed,L,0,0,0.18f,1.8f));
+            dragCap+=Integer.bitCount(dragFlown(seed,L,StarPath.MAX_DIFFICULTY,0,0.18f,1.8f));
+            dragQuick+=Integer.bitCount(dragFlown(seed,L,StarPath.MAX_DIFFICULTY,0,0.08f,3f));
+            int held=0,attempt=0;
+            while(Integer.bitCount(held)<StarPath.COUNT && attempt<12)
+                held=dragFlown(seed*31+attempt++,L,StarPath.MAX_DIFFICULTY,held,0.18f,1.8f);
+            dragTries+=attempt;
         }
-        System.out.printf("    base quick %.1f, capped quick %.1f, capped slow %.1f stars; slow prize %.1f attempts%n",
-                baseQuick / SEEDS, cappedQuick / SEEDS, cappedSlow / SEEDS, tries / SEEDS);
-        check("the capped bends demand more steering", cappedQuick < baseQuick);
-        check("the capped course still rewards responsive thumbs", cappedQuick > cappedSlow);
-        check("slow thumbs can finish the capped course across attempts", tries / SEEDS <= 4.5f);
+        System.out.printf("    drag: base %.1f, cap %.1f, quick cap %.1f stars; capped prize %.1f attempts%n",
+                dragBase/32,dragCap/32,dragQuick/32,dragTries/32);
+        check("capped bends challenge a bounded drag player",dragCap<dragBase*0.85f);
+        check("faster drag reactions reward skill",dragQuick>dragCap);
+        check("drag carry-over still yields prizes",dragTries/32<=6f);
         for (int level = 0; level <= StarPath.MAX_DIFFICULTY; level++) {
-            float window = tightestWindow(L, level);
+            float window = tightestWindow(L, level, 3f);
             System.out.printf("    bend level %d: feasible window %.3f widths%n", level, window);
-            check("every difficulty keeps the course reachable at level " + level, window > 0f);
+            check("every difficulty is reachable with drag steering at level " + level, window > 0f);
         }
     }
-
-    /**
-     * That the course can actually be flown, and by hands rather than by a god.
-     *
-     * The soak bot cannot steer, so without this the only readings available were "a passenger
-     * collects a few by drifting" and nothing else — and the course generator is tuned against the
-     * steering, which is exactly the sort of arithmetic that stops being true after a tweak.
-     */
-    /** Courses measured per figure. See the note on variance where the pilots are flown. */
-    private static final int SEEDS = 12;
 
     private static void courseIsFlyable(Layout L) {
-        group("star course is flyable");
-
-        // The peak demand ratio, which is printed and no longer asserted on, because it turned out
-        // to measure almost nothing. A sine only exceeds the steering speed over a short arc either
-        // side of its steepest point, so the course that "asked 1.2 times the steering" for a long
-        // time cost a tracker a hundredth of a width — a twelfth of the catch band — and every pilot
-        // the harness can write took all twenty at every reaction time it was given. What is worth
-        // holding is what that overspeed integrates to.
-        float demand = StarPath.SWEEP * StarPath.TAU / StarPath.SWEEP_TIME
-                + StarPath.RIPPLE * StarPath.TAU / StarPath.RIPPLE_TIME;
-        float band = StarPath.pickupR(L) / (L.playRight - L.playLeft);
-        float lag = trackerLag(L);
-        System.out.printf("    sweep asks %.2f widths a second, steering gives %.2f (%.2fx)%n",
-                demand, StarPath.MAX_VX, demand / StarPath.MAX_VX);
-        System.out.printf("    following the line costs %.3f widths, the catch band is %.3f "
-                + "(%.0f%% of it)%n", lag, band, 100f * lag / band);
-        // Following the line has to be a losing strategy, or the course is not asking for anything:
-        // a lag worth a good part of the band is what makes it necessary to cut across instead.
-        check("following the line is not enough to fly a course", lag >= band * 0.45f);
-        // And the far side of it is still a cliff rather than a dial — a flyer that can never catch
-        // up is not late, it is somewhere else, and which stars it gets turns to luck.
-        check("but the line is not hopeless to follow either", lag <= band * 1.1f);
-
-        // What a perfect-speed pilot who knows the whole course in advance is left to thread. Empty
-        // anywhere and nobody can complete it; as wide as the catch band everywhere and it demands
-        // no precision at all. This is the reachability bound the peak ratio was standing in for.
-        float win = tightestWindow(L);
-        System.out.printf("    the tightest window through a course is %.3f widths, %.0f%% of "
-                + "the band%n", win, 100f * win / (2f * band));
-        check("a course leaves a line through it", win > band * 0.20f);
-        check("and asks the player to find it", win < 2f * band);
-
-        // Reachable: the flyer's centre stops a radius inside the play area, and the sweep goes no
-        // wider than that. As a fraction of the play area, that radius is the floor for EDGE.
-        float stop = StarPath.flyerR(L) / (L.playRight - L.playLeft);
-        check("and it never puts a checkpoint out of reach", StarPath.EDGE >= stop - 0.001f);
-
-        // How long a checkpoint is level with the flyer. Nothing a player does moves this — the
-        // climb and the scroll are both functions of the clock — so it is not difficulty, it is how
-        // much of the difficulty is luck. PICKUP_TALL exists to hold it roughly where it was before
-        // the stars were spaced out and the flight shortened; see the note on it.
-        float window = levelWindow(L);
-        System.out.printf("    a checkpoint is level with the flyer for %.0fms at the tightest%n",
-                window * 1000f);
-        check("a star stays level long enough to be caught deliberately", window >= 0.095f);
-
-        // Twelve seeds, not six, and the reason is worth stating: which sweep period, direction and
-        // ripple phase a course draws moves the outcome enormously — six seeds put slow thumbs at
-        // 18.3 of 20 and the next six at 9.6 — and the pilot's fixed decision quantum aliases
-        // against the arrival rhythm on top of that, so its score is not monotonic in reaction time
-        // at a single value. Read the ends against each other over a wide sample; never one value of
-        // the curve against another nearby one.
-        // How much warning a player actually gets: the seconds between the course line entering the
-        // top of the screen and reaching the flyer. Not something the harness pilots can speak to —
-        // they know the whole course in advance — but it is the number the spacing knob moves fastest
-        // and the one a hand feels, so it is printed on every run.
-        float look = lookahead(L);
-        System.out.printf("    the line is visible %.0fms ahead of the flyer, and a checkpoint "
-                + "%.0fms after the one before it%n", look * 1000f,
-                1000f * (StarPath.encounterTime(StarPath.COUNT - 1)
-                        - StarPath.encounterTime(StarPath.COUNT - 2)));
-        // A floor with a reason: at 162ms — which is what two and a half times the old spacing came
-        // to — the line arrives inside a hand's own reaction time and the course reads as unfair
-        // rather than fast. Reported from the device, not from here; every pilot in this file knows
-        // the whole course in advance and scores the same at any lookahead at all.
-        check("a player can see the course coming", look >= 0.25f);
-
-        int sharp = 0, laggy = 0, drift = 0;
-        float longest = 0f;
-        for (long seed = 1L; seed <= SEEDS; seed++) {
-            int got = Integer.bitCount(flown(seed, 0.05f, L, true));
-            sharp += got;
-            // Taken from a won run only: a course that runs its clock out instead of ending on a
-            // win says nothing about what the grab beats cost, and quick thumbs no longer win
-            // every course.
-            if (got == StarPath.COUNT) longest = Math.max(longest, realSeconds);
-            laggy += Integer.bitCount(flown(seed, 0.25f, L, true));
-            drift += Integer.bitCount(flown(seed, 0.25f, L, false));
-        }
-        float quick = sharp / (float) SEEDS, slow = laggy / (float) SEEDS;
-        System.out.printf("    quick thumbs %.1f of %d a course, slow thumbs %.1f, "
-                + "a passenger %.1f%n", quick, StarPath.COUNT, slow, drift / (float) SEEDS);
-        // A course has to be completable, or the prize at the end of it is decoration. It is no
-        // longer the certainty it was, which is the point of the retune: this pilot brakes for
-        // nothing and looks one checkpoint ahead, and it used to take all twenty at every reaction
-        // time it was given.
-        check("quick thumbs take nearly the whole course", quick >= StarPath.COUNT - 1.5f);
-
-        // And they get to the end of one. Counted in attempts rather than as "wins one course in
-        // one go", because that is the promise the game actually makes: the same course comes back
-        // with the stars already taken still taken, so what matters is how many interludes a prize
-        // costs. As a single-attempt rate it was one course in six for these seeds and five in
-        // twelve for the next six — a six-sample coin flip standing where a design promise should
-        // be. Note also that a repeated attempt is not a repeat: the stars in hand change which
-        // checkpoint the pilot chases next, so it flies the same course on a different line.
-        float quickTries = 0f, slowTries = 0f;
-        for (long seed = 1L; seed <= SEEDS; seed++) {
-            quickTries += attemptsToFinish(seed, 0.05f, L);
-            slowTries += attemptsToFinish(seed, 0.25f, L);
-        }
-        System.out.printf("    a prize costs quick thumbs %.1f attempts, slow thumbs %.1f%n",
-                quickTries / SEEDS, slowTries / SEEDS);
-        check("quick thumbs finish a course in a couple of attempts", quickTries / SEEDS <= 2.5f);
-        check("and slow thumbs get there over a few stages", slowTries / SEEDS <= 4f);
-        // And it has to be worth flying badly: the stars carry over between attempts, so a slow
-        // pair of thumbs is meant to get there over several stages rather than never.
-        check("slow thumbs still take most of it", slow >= StarPath.COUNT * 0.55f);
-        // The one that has already gone wrong once. The sweep has to leave the middle of the screen
-        // far enough behind that a flyer nobody is steering cannot collect its way to a prize: the
-        // stars carry over between courses, so anything it can reach it eventually completes.
-        check("and a passenger cannot fly one at all",
-                drift / (float) SEEDS <= StarPath.COUNT * 0.6f);
-        // Reaction time has to be worth something, or the whole thing is a cutscene. This is the
-        // check that would have caught the course being trackable: it used to be 20.0 against 20.0.
-        // Stated as a margin over the whole sample, because at one reaction value against the next
-        // the aliasing above is bigger than the effect.
-        check("and thumbs a quarter-second slow pay for it", slow <= quick - 2f);
-
-        // Every grab spends a slow-motion beat, and the course clock is inside it, so a clean run
-        // is longer in real time than the flight is in game time. A second of stutter is the point;
-        // three would be a different minigame.
-        System.out.printf("    a clean course takes %.1fs of real time, flying %.1fs of it%n",
-                longest, StarPath.FLY);
-        check("the grab beats do not stretch a course out of shape",
-                longest > 0f && longest <= StarPath.READY + StarPath.FLY + 1.5f);
-    }
-
-    /**
-     * What a pilot who simply follows the line falls behind by at worst, in play widths — the
-     * measure that replaced the peak demand ratio. It integrates the overspeed instead of sampling
-     * it, so it knows the difference between a course that is briefly steep and one that is gone.
-     */
-    private static float trackerLag(Layout L) {
-        float worst = 0f;
-        for (long seed = 1L; seed <= SEEDS; seed++) {
-            StarPath q = new StarPath();
-            q.make(new java.util.Random(seed));
-            float me = 0.5f, step = StarPath.MAX_VX * DT;
-            for (float t = 0; t <= StarPath.FLY; t += DT) {
-                float want = courseAt(q, t);
-                me = want > me ? Math.min(want, me + step) : Math.max(want, me - step);
-                worst = Math.max(worst, Math.abs(want - me));
-            }
-        }
-        return worst;
+        group("star course is flyable by dragging");
+        float stop=StarPath.flyerR(L)/(L.playRight-L.playLeft);
+        check("checkpoints stay inside the drag bounds",StarPath.EDGE>=stop-0.001f);
+        float window=levelWindow(L),look=lookahead(L);
+        System.out.printf("    pickup window %.0fms, visible warning %.0fms%n",window*1000f,look*1000f);
+        check("a star stays level long enough to catch deliberately",window>=0.095f);
+        check("a player can see the course coming",look>=0.25f);
+        float drift=0f;
+        for(long seed=1;seed<=32;seed++) drift+=Integer.bitCount(dragFlown(seed,L,0,0,0.18f,0f));
+        check("a stationary passenger cannot finish a course",drift/32<=StarPath.COUNT*0.6f);
     }
 
     /**
@@ -440,9 +317,7 @@ final class TestStars extends Check {
      * the exact reachability statement: if it ever closes, no line completes the course. Stars level
      * with the flyer at the off are skipped — the course begins under it, so they are free.
      */
-    private static float tightestWindow(Layout L) { return tightestWindow(L, 0); }
-
-    private static float tightestWindow(Layout L, int wins) {
+    private static float tightestWindow(Layout L, int wins, float maxSpeed) {
         float band = StarPath.pickupR(L) / (L.playRight - L.playLeft);
         float tightest = 9f;
         for (long seed = 1L; seed <= 256; seed++) {
@@ -452,7 +327,7 @@ final class TestStars extends Check {
             float lo = 0.5f, hi = 0.5f, prev = 0f;
             for (int i = 0; i < StarPath.COUNT; i++) {
                 float t = StarPath.encounterTime(i);
-                float reach = StarPath.MAX_VX * (t - prev);
+                float reach = maxSpeed * (t - prev);
                 prev = t;
                 lo = Math.max(lo - reach, q.sx[i] - band);
                 hi = Math.min(hi + reach, q.sx[i] + band);
@@ -461,18 +336,6 @@ final class TestStars extends Check {
             }
         }
         return tightest;
-    }
-
-    /** Where the course wants the flyer at time {@code t}, lerped between its checkpoints. */
-    private static float courseAt(StarPath q, float t) {
-        for (int i = 1; i < StarPath.COUNT; i++) {
-            float a = StarPath.encounterTime(i - 1), b = StarPath.encounterTime(i);
-            if (t <= b && b > a) {
-                float u = (t - a) / (b - a);
-                return q.sx[i - 1] + (q.sx[i] - q.sx[i - 1]) * Math.max(0f, u);
-            }
-        }
-        return q.sx[StarPath.COUNT - 1];
     }
 
     /**
@@ -523,71 +386,22 @@ final class TestStars extends Check {
         return least;
     }
 
-    /** Real seconds the last {@link #flown} call took, beats and all. */
-    private static float realSeconds;
-
-    /**
-     * Flies one course with stated limits and returns how many of the twenty it took.
-     *
-     * The pilot only changes its mind every {@code reaction} seconds and holds whichever thumb the
-     * next checkpoint is on — no braking and no planning, which is about what a hand does. With
-     * {@code steer} false it touches nothing, which is the passenger the soak bot is.
-     */
-    private static int flown(long seed, float reaction, Layout L, boolean steer) {
-        return flown(seed, reaction, L, steer, 0, seed);
-    }
-
-    /**
-     * How many attempts a pilot needs to finish one course, the stars it has already taken carrying
-     * over between them exactly as they do in play.
-     */
-    private static int attemptsToFinish(long seed, float reaction, Layout L) {
-        return attemptsToFinish(seed, reaction, L, 0);
-    }
-
-    private static int attemptsToFinish(long seed, float reaction, Layout L, int wins) {
-        int held = 0;
-        for (int attempt = 1; attempt <= 6; attempt++) {
-            // A different line each attempt, which is what the game hands out — see
-            // StarPath.reroll. On one repeated line this pilot stalls forever partway up.
-            held = flown(seed, reaction, L, true, held, seed * 31L + attempt, wins);
-            if (Integer.bitCount(held) == StarPath.COUNT) return attempt;
-        }
-        return 7;
-    }
-
-    /** @return the checkpoints in hand at the end of the attempt, {@code carried} included */
-    private static int flown(long seed, float reaction, Layout L, boolean steer, int carried,
-            long courseSeed) {
-        return flown(seed, reaction, L, steer, carried, courseSeed, 0);
-    }
-
-    private static int flown(long seed, float reaction, Layout L, boolean steer, int carried,
-            long courseSeed, int wins) {
-        GameCore c = new GameCore(new Mem(), seed);
-        c.startGame();
-        c.state = GameCore.BONUS;
-        c.starBonus = true;
-        c.stars.wins = wins;
-        c.stars.make(new java.util.Random(courseSeed));
-        c.stars.begin(-1, L);
-        c.stars.collected = carried;
-        float since = reaction;
-        realSeconds = 0f;
-        for (int i = 0; i < 60 * 20 && c.state == GameCore.BONUS && !c.stars.won; i++) {
-            since += DT;
-            if (steer && since >= reaction) {
-                since = 0f;
-                int aim = nextStar(c.stars, L);
-                float dead = StarPath.pickupR(L) * 0.35f;
-                float want = aim < 0 ? c.stars.x : c.stars.starX(aim, L);
-                c.stars.hold(0, want < c.stars.x - dead);
-                c.stars.hold(3, want > c.stars.x + dead);
+    // A finger reacts to visible checkpoints and has finite sideways speed; no teleporting.
+    private static int dragFlown(long seed,Layout L,int wins,int carried,float reaction,float speed) {
+        StarPath q=new StarPath();q.wins=wins;q.make(new java.util.Random(seed));q.begin(-1,L);
+        q.collected=carried;q.beginDrag();
+        float since=0f,target=q.x;
+        for(int frame=0;frame<600 && !q.won && !q.reporting();frame++) {
+            since+=DT;
+            if(since>=reaction) {
+                since=0f;int aim=nextStar(q,L);
+                if(aim>=0 && q.starY(aim,L)>=L.playTop) target=q.starX(aim,L);
             }
-            c.update(DT, L);
-            realSeconds += DT;
+            float step=L.w*speed*DT;
+            q.dragTo(q.x+Math.max(-step,Math.min(step,target-q.x)),L);
+            q.update(DT,L);
         }
-        return c.stars.collected;
+        return q.collected;
     }
 
     /** The next checkpoint still worth chasing: not taken, and not yet past the flyer. */

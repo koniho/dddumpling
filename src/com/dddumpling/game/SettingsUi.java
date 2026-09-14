@@ -7,7 +7,9 @@ package com.dddumpling.game;
 final class SettingsUi {
 
     static final int HIT_NONE = 0, HIT_SLIDER = 1, HIT_CLOSE = 2, HIT_OUTSIDE = 3,
-            HIT_CLEAR = 4, HIT_ROSTER = 5, HIT_GAMEOVER = 6, HIT_RESET_DIFFICULTY = 7, HIT_RESET_LANDS = 8;
+            HIT_CLEAR = 4, HIT_ROSTER = 5, HIT_GAMEOVER = 6, HIT_RESET_DIFFICULTY = 7, HIT_RESET_LANDS = 8,
+            HIT_GENERAL = 9, HIT_MINIGAMES = 10, HIT_EASIER = 11, HIT_HARDER = 12;
+    static final int GENERAL = 0, MINIGAMES = 1;
     /** Option rows are HIT_OPTION + index. */
     static final int HIT_OPTION = 100;
     /**
@@ -39,6 +41,7 @@ final class SettingsUi {
 
     float panelL, panelT, panelR, panelB;
     float titleY;
+    float tabY, tabH;
     float speedLabelY;
     float sliderL, sliderR, sliderY, sliderH;
     float speedValueY;
@@ -58,8 +61,14 @@ final class SettingsUi {
     float clearLabelY, clearY, clearH;
 
     private int options;
+    private int tab;
 
     void compute(Layout L, int optionCount) {
+        compute(L, optionCount, GENERAL);
+    }
+
+    void compute(Layout L, int optionCount, int selectedTab) {
+        tab = selectedTab;
         options = optionCount;
         float s = L.unit;
 
@@ -75,10 +84,13 @@ final class SettingsUi {
         difficultyH = s * 1.6f;
         float bodyH = s * 8.4f + optionH * optionCount + testH*2f + s*0.4f + stageH + runH + clearH
                 + s * 5.4f;
+        if (tab == MINIGAMES) bodyH = s * 12f;
         panelT = Math.max(L.topSafe + s, (L.h - bodyH) / 2f - s);
         panelB = panelT + bodyH;
 
         titleY = panelT + s * 1.5f;
+        tabY = titleY - s * 0.9f;
+        tabH = s * 1.4f;
 
         speedLabelY = titleY + s * 1.9f;
         sliderH = s * 0.55f;
@@ -157,6 +169,19 @@ final class SettingsUi {
         float dx = x - closeCx, dy = y - closeCy;
         if (dx * dx + dy * dy <= closeR * closeR * 1.3f) return HIT_CLOSE;
 
+        if (y >= tabY && y <= tabY + tabH) {
+            for (int i = 0; i < 2; i++)
+                if (x >= tabL(i) && x <= tabR(i))
+                    return i == GENERAL ? HIT_GENERAL : HIT_MINIGAMES;
+        }
+        if (tab == MINIGAMES) {
+            if (y >= sliderY && y <= sliderY + testH) {
+                if (x >= testChipL(0, 3) && x <= testChipR(0, 3)) return HIT_EASIER;
+                if (x >= testChipL(2, 3) && x <= testChipR(2, 3)) return HIT_HARDER;
+            }
+            return HIT_NONE;
+        }
+
         // Generous vertical band: the track itself is thin but the target should not be.
         float grab = Math.max(optionH * 0.55f, sliderH * 2.2f);
         if (y >= sliderY - grab && y <= sliderY + grab) return HIT_SLIDER;
@@ -197,4 +222,9 @@ final class SettingsUi {
         }
         return HIT_NONE;
     }
+
+    float tabL(int i) {
+        return optionL() + i * (closeCx - closeR * 1.4f - optionL()) / 2f;
+    }
+    float tabR(int i) { return tabL(i + 1) - 6f; }
 }

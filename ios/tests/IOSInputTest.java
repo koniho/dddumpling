@@ -187,6 +187,34 @@ public final class IOSInputTest extends Check {
         game.touch(one(1,3,x,y-l.enemyR*2));
     }
 
+    private static void starFeedback() {
+        for (boolean finalOnly : new boolean[] {false, true}) {
+            IOSGame game = game(); Host host = new Host(); game.setHost(host);
+            GameCore c = game.core(); Layout l = game.geometry();
+            c.startGame(); c.state = GameCore.BONUS; c.starBonus = true; c.starNext = true;
+            c.stars.begin(-1, l);
+            if (finalOnly) c.stars.collected = (1 << (StarPath.COUNT - 1)) - 1;
+            int initial = c.stars.count();
+            boolean exact = true;
+            for (int frame = 0; frame < 600 && c.starBonus && !c.stars.won; frame++) {
+                int target = 0;
+                while (target < StarPath.COUNT && (c.stars.collected & (1 << target)) != 0) target++;
+                if (target < StarPath.COUNT) c.stars.x = c.stars.starX(target, l);
+                int before = c.stars.collected, ticks = host.ticks;
+                game.update(DT);
+                exact &= host.ticks - ticks == Integer.bitCount(c.stars.collected & ~before);
+            }
+            check("native haptics match only new stars, final-only=" + finalOnly, exact
+                    && host.ticks == c.stars.count() - initial && host.ticks > 0);
+            if (finalOnly) check("the final star has a haptic", c.stars.won && host.ticks == 1);
+            int ticks = host.ticks;
+            game.background(true); game.update(1f); game.update(1f);
+            check("background cannot replay star feedback", host.ticks == ticks);
+            game.background(false); game.update(DT);
+            check("paused foreground has no pending star feedback", host.ticks == ticks && c.starPickups == 0);
+        }
+    }
+
     private static void caseAndSettings() {
         IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
         tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(l,c.clock));
@@ -211,6 +239,16 @@ public final class IOSInputTest extends Check {
         int before = c.stage;
         tap(game,(ui.testChipL(2,4)+ui.testChipR(2,4))/2,ui.stageY+ui.stageH/2);
         check("stage chip jumps stage rather than starting frenzy", c.stage==before+1 && c.mode==-1 && c.settingsOpen);
+        tap(game,(ui.tabL(1)+ui.tabR(1))/2,ui.tabY+ui.tabH/2);
+        check("native settings opens minigames tab", c.settingsTab == SettingsUi.MINIGAMES);
+        ui.compute(l,Music.NAMES.length,c.settingsTab);
+        c.stars.collected = 7;
+        tap(game,(ui.testChipL(2,3)+ui.testChipR(2,3))/2,ui.sliderY+ui.testH/2);
+        check("native harder control edits saved level without erasing stars", c.stars.wins == 1 && c.stars.collected == 7);
+        tap(game,(ui.testChipL(0,3)+ui.testChipR(0,3))/2,ui.sliderY+ui.testH/2);
+        check("native easier control edits level", c.stars.wins == 0);
+        tap(game,(ui.tabL(0)+ui.tabR(0))/2,ui.tabY+ui.tabH/2);
+        ui.compute(l,Music.NAMES.length);
         tap(game,ui.closeCx,ui.closeCy);
         check("settings close resumes play", !c.settingsOpen);
         for(int i=0;i<2;i++) {
@@ -254,7 +292,7 @@ public final class IOSInputTest extends Check {
     }
 
     public static void main(String[] args) {
-        packets(); titleAndLifecycle(); starsAndLand(); bossOwnership(); flingHistory();
+        packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); bossOwnership(); flingHistory();
         steamerAndPanic(); caseAndSettings();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");

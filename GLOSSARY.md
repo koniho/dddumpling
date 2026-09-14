@@ -159,7 +159,7 @@ The other interlude, offered after a steamer has been opened. Two thumbs steer, 
 | **passenger** | a flyer nobody is steering. It must never be able to finish a course | `TestStars.flown` with steering off |
 | **tracker lag** | what following the line costs, against the catch band — the measure of how hard a course is, in place of the peak speed ratio it asks for | `TestStars.trackerLag` |
 | **re-roll** | a failed attempt gets a fresh line, keeping the stars already in hand | `StarPath.reroll` |
-| **star-path difficulty** | each successful course makes bends cycle 4% more often, capped at 20% after five wins; saved across playthroughs and cleared by Reset Difficulty | `StarPath.bendRate`, `GameCore.resetDifficultyScaling` |
+| **star-path difficulty** | each successful course advances one level (+0.6× bend rate), reaching level 10 and a 7× cap after ten wins; tuned for drag control, saved across playthroughs and cleared by Reset Difficulty | `StarPath.bendRate`, `GameCore.resetDifficultyScaling` |
 
 ## Boss
 
@@ -268,6 +268,7 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **game over screen** | score, accuracy dumpling, best. Fades up after the hold; GAME OVER is yellow, not rose | `Screens.gameOver` |
 | **accuracy dumpling** | the face that reflects accuracy: tear below 60%, sparkles above 90% | `Screens.accuracy` |
 | **settings panel** | opened by tapping the stage readout; pauses the game | `Screens.settings` |
+| **minigame difficulty** | Minigames settings tab; saved Star Path level, applied next attempt, raised by wins | `SettingsUi.MINIGAMES`, `GameCore.setStarDifficulty` |
 | **stage readout** | the "STAGE n" text — also the settings button | `Layout.inStageTap` |
 | **speed slider** | the 0.5×–1.5× pacing control | `SettingsUi` |
 | **stage jump** | the ±1 / ±5 steppers in the settings panel that jump straight to a stage, so a boss can be reached without playing twenty stages. Steps of five because bosses land on every fifth | `SettingsUi.STAGE_STEP`, `GameCore.jumpToStage` |

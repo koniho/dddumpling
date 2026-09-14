@@ -467,6 +467,9 @@ final class GameCore {
     int bgmChoice;
     /** While true the simulation is frozen and the settings panel is showing. */
     boolean settingsOpen;
+    int settingsTab;
+    /** Newly collected stars in this update, including the winning pickup. */
+    int starPickups;
     boolean paused, confirmEnd;
 
     // ---- transient ----------------------------------------------------------
@@ -1475,6 +1478,14 @@ final class GameCore {
         clearArmed = false;
     }
 
+    void setStarDifficulty(int level) {
+        if (!BuildFlags.DEVELOPER) return;
+        int next = Math.max(0, Math.min(StarPath.MAX_DIFFICULTY, level));
+        if (next == stars.wins) return;
+        stars.wins = next;
+        if (store != null) store.saveStarWins(next);
+    }
+
     /** True once the clear-case button has been tapped and is waiting for a second. */
     boolean clearArmed;
 
@@ -2333,6 +2344,7 @@ final class GameCore {
     void update(float dt, Layout L) { update(dt, dt, L); }
 
     void update(float dt, float elapsed, Layout L) {
+        starPickups = 0;
         if (paused) return;
         if (state == PLAY && boss.fighting() && !(BuildFlags.DEVELOPER && settingsOpen))
             progress.bossTime(elapsed);
@@ -2486,7 +2498,9 @@ final class GameCore {
                 return;
             }
             if (starBonus) {
+                int heldStars = stars.collected;
                 stars.update(dt, L);
+                starPickups = Integer.bitCount(stars.collected & ~heldStars);
                 if (sound != null) sound.rocket(stars.exiting() ? 1f : stars.flying()
                         ? 0.15f + 0.85f * stars.flightProgress() : 0f);
                 bonusTimer = stars.timer;

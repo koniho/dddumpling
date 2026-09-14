@@ -691,6 +691,31 @@ final class TestVisuals extends Check {
         }
         check("the settings region does not cover any key", keysClear);
         check("mid-field taps do not open settings", !L.inStageTap(L.w / 2f, L.h * 0.5f));
+
+        check("minigames tab is hittable", ui.hit((ui.tabL(1) + ui.tabR(1)) / 2f,
+                ui.tabY + ui.tabH / 2f) == SettingsUi.HIT_MINIGAMES);
+        ui.compute(L, Music.NAMES.length, SettingsUi.MINIGAMES);
+        check("minigames panel fits", ui.panelT >= L.topSafe && ui.panelB <= L.h);
+        check("difficulty decreases and increases have distinct targets",
+                ui.hit((ui.testChipL(0, 3) + ui.testChipR(0, 3)) / 2f, ui.sliderY + ui.testH / 2f)
+                        == SettingsUi.HIT_EASIER
+                && ui.hit((ui.testChipL(2, 3) + ui.testChipR(2, 3)) / 2f, ui.sliderY + ui.testH / 2f)
+                        == SettingsUi.HIT_HARDER);
+        c.stars.collected = 7;
+        c.steamer.opens = 4;
+        float oldBend = c.stars.sx[7];
+        c.setStarDifficulty(2);
+        check("difficulty edits preserve the current course and other progression",
+                c.stars.collected == 7 && c.stars.sx[7] == oldBend && c.steamer.opens == 4);
+        c.startGame();
+        check("chosen difficulty survives a new run", c.stars.wins == 2);
+        check("chosen difficulty survives relaunch", new GameCore(store, 83L).stars.wins == 2);
+        c.stars.recordWin();
+        check("wins advance one level from the chosen level", c.stars.wins == 3);
+        c.setStarDifficulty(99);
+        check("difficulty control clamps high", c.stars.wins == StarPath.MAX_DIFFICULTY);
+        c.setStarDifficulty(-1);
+        check("difficulty control clamps low and saves", c.stars.wins == 0 && store.starWins == 0);
     }
 
 }
