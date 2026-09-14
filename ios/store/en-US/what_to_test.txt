@@ -1,6 +1,7 @@
-Tap the title-screen steamer to explore what's new with little interactive demos.
-A rainbow now ripples from your pickup when Flurry starts.
-Partner enemies count as one toward stage progress. Two pals, one team!
+Tap the little steamer to explore what is new. A few tiny demos, a few new tricks!
+When Flurry starts: A rainbow ripples out from your pickup. Your power-up has arrived!
+Partner pairs count as one stage enemy.
+Fixed an issue where Star Path could not finish after all 20 stars were collected.
 
 Try the release list, feature demos, Back navigation, and the steamer reminder after updating. Shuffle and partner demos reset after two seconds; land travel keeps its position.
 

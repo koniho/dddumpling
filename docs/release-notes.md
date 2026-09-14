@@ -71,7 +71,7 @@ python3 tools/release-notes.py preview
 
 - **autoReset:** required `true` or `false`. Choose whether this entry’s demo should return to its starting state two seconds after activation. The draft leaves this as `null` so you must decide before adding it.
 - **title:** a short, playful name, up to 24 characters.
-- **where:** where the player encounters it, up to 32 characters. Name the phase and stage gate when relevant: “On the title screen”, “Star Path bonus rounds”, or “Power-ups, stage 16+”.
+- **where:** for a bug fix that is already clear on its own, use an empty string to omit the context line. Otherwise, where the player encounters it, up to 32 characters. Name the phase and stage gate when relevant: “On the title screen”, “Star Path bonus rounds”, or “Power-ups, stage 16+”.
 - **why:** what changed and what that gives the player. A sentence or two is enough. Prefer “Press both pals together… teamwork for your thumbs” over “Improved linked-pair logic”.
 
 Use straight quotes and plain English punctuation. The tool wraps `why` automatically; don't insert line breaks. Keep each point brief. If the tool says a popup is too long, combine related fixes or shorten the explanation. Do not remove the phase just to make it fit.
