@@ -680,13 +680,15 @@ final class Boss {
         return phase >= CYCLE[kind] - SHOW[kind];
     }
 
-    /** Gather the skin before protection, then relax it as the prompt comes free. */
+    static final float SLIME_PROMPT_TRANSITION = 0.30f;
+
+    /** The same curve runs backward on release; hit eligibility starts at open(), not its end. */
     float slimePromptCover() {
         if (kind != SLIME || !fighting() || hasGlob() || boltCount() > 0 || slimeRetaliating) return 0f;
         if (!open()) return 1f;
         float sinceOpen = phase-(CYCLE[kind]-SHOW[kind]);
-        float release = Math.max(0f,1f-sinceOpen/0.35f);
-        float gather = Math.max(0f,1f-(CYCLE[kind]-phase)/0.30f);
+        float release = Math.max(0f,1f-sinceOpen/SLIME_PROMPT_TRANSITION);
+        float gather = Math.max(0f,1f-(CYCLE[kind]-phase)/SLIME_PROMPT_TRANSITION);
         float t = Math.min(1f,Math.max(release,gather));
         return t*t*(3f-2f*t);
     }

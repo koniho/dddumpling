@@ -133,6 +133,21 @@ final class TestBoss extends Check {
         float lowest=0f;
         for(int i=1;i<coveredSkin.length;i+=2) lowest=Math.max(lowest,coveredSkin[i]);
         check("slime body reaches over the protected prompt",lowest>BossScreen.slimeBadgeY(L,covered.boss)+L.unit);
+        for(float elapsed:new float[]{0f,0.03f,0.10f,0.20f,0.30f}) {
+            covered.boss.phase=5f-elapsed;
+            float closing=covered.boss.slimePromptCover();
+            covered.boss.phase=1f+elapsed;
+            check("prompt reappearance reverses the covering curve " + elapsed,
+                    Math.abs(closing-covered.boss.slimePromptCover())<0.00001f);
+        }
+        for(float phase:new float[]{0.999f,1f,1.001f,1.10f}) {
+            GameCore emerging=enterBoss(L,Boss.SLIME,3001L);
+            emerging.boss.phase=phase;
+            int before=emerging.boss.chainAt;
+            emerging.tapKey(emerging.boss.chainLetter(),L);
+            check("prompt accepts hits from the first release instant " + phase,
+                    (emerging.boss.chainAt>before)==(phase>=1f));
+        }
         covered.boss.phase=1.15f;
         check("slime releases the prompt while vulnerable",covered.boss.open() && covered.boss.slimePromptCover()>0f && covered.boss.slimePromptCover()<1f);
         covered.boss.phase=1.4f;
