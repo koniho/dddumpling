@@ -59,6 +59,7 @@ final class Renderer extends Draw {
         // Over the words: the burst is the payoff and nothing should be in front of it.
         BossScreen.burst(p, c, L);
         buddy(p, c, L);
+        flurryBurst(p,c,L);
         powerup(p, c, L);
         chain(p, c, L);
         shots(p, c, L);
@@ -432,6 +433,21 @@ final class Renderer extends Draw {
      */
     static void powerup(Painter p, GameCore c, Layout L) {
         powerup(p, c, L, c.power, 1f);
+    }
+
+    private static void flurryBurst(Painter p,GameCore c,Layout L) {
+        float t=c.flurryBurstProgress();
+        if(t<0f) return;
+        float width=L.enemyR*0.24f;
+        float dx=Math.max(c.powerBurstX,L.w-c.powerBurstX);
+        float dy=Math.max(c.powerBurstY,L.h-c.powerBurstY);
+        float reach=(float)Math.hypot(dx,dy)+width*7f;
+        float radius=width*7f+reach*t;
+        float fade=Math.min(1f,t/0.06f)*(1f-t)*(1f-t);
+        int[] colors={0xFFFF707C,0xFFFFA75E,0xFFFFE477,0xFF8FE39A,0xFF79DDEB,0xFF8D9FF3,0xFFC58DEA};
+        for(int band=0;band<colors.length;band++)
+            p.strokeCircle(c.powerBurstX,c.powerBurstY,radius-band*width,
+                    Glyph.withAlpha(colors[band],(int)(135*fade)),width);
     }
 
     static void powerup(Painter p, GameCore c, Layout L, Power w, float fade) {

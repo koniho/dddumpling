@@ -165,6 +165,7 @@ final class Power {
     static final int SCORE = 150;
     /** How long the burst plays after it is struck, before it stops existing. */
     static final float POP_TIME = 0.45f;
+    static final float FLURRY_BURST = 1.6f;
     /** Seconds between powerup appearances. */
     static final float SPAWN_MIN = 12f, SPAWN_MAX = 20f;
 

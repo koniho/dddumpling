@@ -888,6 +888,16 @@ final class Preview {
                 Power.NAMES[c9.mode], c9.modeLeft, c9.enemies.size());
         shot(dir, "17-frenzy", c9, L, w, h, ss);
 
+        for(int frame=0;frame<4;frame++) {
+            GameCore rainbow=new GameCore(store,431L);rainbow.startGame();
+            Power pickup=new Power();pickup.effect=Power.FLURRY;pickup.x=L.w*0.4f;
+            pickup.y=L.playTop+(L.dangerY-L.playTop)*0.35f;rainbow.power=pickup;
+            rainbow.tapPower(pickup.x,pickup.y,L);
+            rainbow.modeLeft=Power.DURATION-Power.FLURRY_BURST*(0.07f+frame*0.22f);
+            rainbow.shake=rainbow.flash=0f;
+            shot(dir,"18a-flurry-rainbow-"+frame,rainbow,L,w,h,ss);
+        }
+
         // FLING with the instructional finger and its sparkle trail.
         GameCore c10 = new GameCore(store, 43L);
         c10.startGame();

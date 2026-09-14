@@ -666,6 +666,7 @@ final class GameCore {
     /** Active mode, or -1. */
     int mode = -1;
     float modeLeft;
+    float powerBurstX, powerBurstY;
     int debuff = -1;
     float debuffLeft, monochromeFade, incognitoMorph;
     /** Rapid clears earn a short, bounded replacement burst. */
@@ -718,6 +719,11 @@ final class GameCore {
     boolean powerActive() { return modeLeft > 0f; }
 
     boolean flurry() { return powerActive() && mode == Power.FLURRY; }
+    float flurryBurstProgress() {
+        float age=Power.DURATION-modeLeft;
+        return state==PLAY && flurry() && age<Power.FLURRY_BURST ? age/Power.FLURRY_BURST : -1f;
+    }
+
 
     boolean flinging() { return powerActive() && mode == Power.FLING; }
 
@@ -1096,6 +1102,8 @@ final class GameCore {
     private void catchPower(Layout L) {
         power.hit = true;
         power.hitT = 0f;
+        powerBurstX=power.x;
+        powerBurstY=power.y+(float)Math.sin(power.t*3.2f)*L.enemyR*0.22f;
         score += Power.SCORE;
         Fx.explode(this, rnd, power.x, power.y, L.enemyR * 2.2f, 26, 0xFFFFFFFF);
         if (power.mystery) {
@@ -1124,6 +1132,9 @@ final class GameCore {
         debuffLeft = monochromeFade = incognitoMorph = 0f;
         mode = effect;
         modeLeft = Power.DURATION;
+        if(power==null || !power.hit) {
+            powerBurstX=L.w*0.5f;powerBurstY=(L.playTop+L.dangerY)*0.5f;
+        }
         powerLastClear = -100f;
         powerRefillBurst = 0;
         powerSpawnedEnemies = 0;

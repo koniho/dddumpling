@@ -180,6 +180,10 @@ final class TestPower extends Check {
         place(c, L, Power.FLURRY, 0);
         c.tapPower(c.power.x, c.power.y, L);
         check("flurry is running", c.flurry() && !c.flinging() && !c.multi());
+        check("flurry rainbow starts at the pickup",c.powerBurstX==c.power.x && c.powerBurstY==c.power.y
+                && c.flurryBurstProgress()==0f);
+        float originX=c.powerBurstX,originY=c.powerBurstY;
+
 
         GameCore.Enemy e = add(c, L, new int[] {2, 5}, L.playTop + 300);
         int missesBefore = c.misses;
@@ -191,6 +195,15 @@ final class TestPower extends Check {
         check("a non-matching key still advances", e.pos == 2);
         advance(c, L, 0.3f);
         check("the word still finishes", e.destroyed);
+        check("rainbow keeps its pickup origin",c.powerBurstX==originX && c.powerBurstY==originY
+                && c.flurryBurstProgress()>0f);
+        float savedMode=c.modeLeft;
+        c.modeLeft=Power.DURATION-Power.FLURRY_BURST-0.01f;
+        check("rainbow ends while flurry continues",c.flurry() && c.flurryBurstProgress()<0f);
+        c.modeLeft=savedMode;c.state=GameCore.OVER;
+        check("rainbow cannot linger after death",c.flurryBurstProgress()<0f);
+        c.state=GameCore.PLAY;
+
 
         // Once it lapses, wrong keys are wrong again.
         c.modeLeft = 0f;
@@ -200,6 +213,18 @@ final class TestPower extends Check {
         GameCore.Enemy f = add(c, L, new int[] {2, 5}, L.playTop + 300);
         c.tapKey(1, L);
         check("after flurry a wrong key misses", f.pos == 0 && c.misses > missesBefore);
+        check("rainbow is gone after flurry ends",c.flurryBurstProgress()<0f);
+        GameCore mystery=new GameCore(new Mem(),207L);mystery.startGame();
+        place(mystery,L,Power.FLURRY,0);mystery.power.mystery=true;mystery.power.t=0.3f;
+        float pickedY=mystery.power.y+(float)Math.sin(mystery.power.t*3.2f)*L.enemyR*0.22f;
+        mystery.tapPower(mystery.power.x,mystery.power.y,L);mystery.power.effect=Power.FLURRY;
+        check("mystery rainbow waits for selection",mystery.flurryBurstProgress()<0f);
+        advance(mystery,L,Power.SELECT_TIME+0.05f);
+        check("mystery flurry expands from the original bobbed pickup",mystery.flurryBurstProgress()>=0f
+                && mystery.powerBurstY==pickedY);
+        mystery.playtestMode(Power.FLING,L);
+        check("other powers do not show a flurry rainbow",mystery.flurryBurstProgress()<0f);
+
     }
 
     static void multiMode(Layout L) {
