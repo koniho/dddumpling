@@ -25,7 +25,7 @@ final class StarScreen extends Draw {
     /**
      * Baseline of the READY prompt. The gap below the counter goes through {@code type()} like
      * the sizes do: as a plain unit multiple it was 1.2 units, and at TEXT 1.34 READY's caps
-     * came up through the counter's baseline. See the note on the global text scale in CLAUDE.md.
+     * came up through the counter's baseline. See the note on the global text scale in AGENTS.md.
      */
     static float readyY(Layout L) {
         return countY(L) + type(L.unit * 1.35f);

@@ -6,7 +6,7 @@ package com.dddumpling.game;
  *
  * The last one is why this suite exists at all. Everything else here could be taken to the device
  * and looked at; determinism cannot, and a sim that drifts by a bit between runs turns every PNG
- * hash comparison in the harness into noise and costs the eyes described in CLAUDE.md.
+ * hash comparison in the harness into noise and costs the eyes described in AGENTS.md.
  */
 final class TestSoftbody extends Check {
 

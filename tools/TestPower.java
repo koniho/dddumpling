@@ -1449,7 +1449,7 @@ final class TestPower extends Check {
      * Three seeds, and the count is averaged, because one seed is not a measurement. It used to be a
      * single run asserting {@code frenzies >= 2} and it passed with four — until boss stages, which
      * release no powerups at all, shifted the RNG enough that the same assertion saw one. Nothing was
-     * broken either time: the metric is simply noisy over one run, which is the trap CLAUDE.md
+     * broken either time: the metric is simply noisy over one run, which is the trap AGENTS.md
      * records about small-sample yes/no checks.
      */
     static void soak(Layout L) {

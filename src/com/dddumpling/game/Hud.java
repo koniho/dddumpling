@@ -28,7 +28,7 @@ final class Hud extends Draw {
         // The labels sit one line above the number, so the gap between them has to be scaled by
         // type() along with the sizes it separates. At a plain 0.95 units the score's digits stood
         // 1.01 units tall once TEXT reached 1.34 and their caps came up through SCORE's baseline —
-        // three pixels of collision at 1080 wide, and the exact trap CLAUDE.md records for stacked
+        // three pixels of collision at 1080 wide, and the exact trap AGENTS.md records for stacked
         // text. Screens was fixed for it at the time; this line was missed.
         float labelY = labelY(L);
         p.text("SCORE", L.playLeft, labelY, type(s * 0.52f), INK_DIM, Painter.LEFT, false);

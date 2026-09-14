@@ -169,7 +169,7 @@ final class BossScreen extends Draw {
         //
         // Filled and sized off the resting shape, both for the same reason the burst is: a stroked
         // ten-point star is twenty vertices of translucent line that double-blends at every one, and
-        // it came out as a spidery scribble — the CLAUDE.md overlap trap. Sizing it off the live
+        // it came out as a spidery scribble — the AGENTS.md overlap trap. Sizing it off the live
         // radius made that worse the moment a body could be stretched, since a glob hauled halfway
         // across the field doubles the radius and the scribble grew to fill the upper field with it.
         // The window is a property of the fight, not of what the skin happens to be doing.

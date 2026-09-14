@@ -50,11 +50,11 @@ Four documents, and they do not overlap. Read the one that answers your question
 | --- | --- |
 | I am new here, what do I do first? | [ONBOARDING.md](ONBOARDING.md) |
 | What is this thing called in the code? | [GLOSSARY.md](GLOSSARY.md) |
-| How do I work on it without breaking it? | [CLAUDE.md](CLAUDE.md) |
+| How do I work on it without breaking it? | [AGENTS.md](AGENTS.md) |
 | How do I build, run or check it? | this file |
 
 `GLOSSARY.md` exists because several plain-English names differ from the identifiers — a
-falling word is an `Enemy`, the frenzy is `mode`, the interlude is `BONUS`. `CLAUDE.md` carries
+falling word is an `Enemy`, the frenzy is `mode`, the interlude is `BONUS`. `AGENTS.md` carries
 the conventions and, more usefully, the traps that have already cost time.
 
 ## The fast loop
@@ -98,7 +98,7 @@ This works because all logic and all drawing are pure Java behind the
 `android.graphics.Canvas`; `tools/RasterPainter` implements it with a software rasterizer.
 **One render path, two backends** — so a PNG from the harness is what the phone draws. Renders
 are deterministic (fixed RNG seeds, no wall clock), so a change that should not alter them can
-be proved not to; `CLAUDE.md` has the recipe.
+be proved not to; `AGENTS.md` has the recipe.
 
 ## Requirements
 

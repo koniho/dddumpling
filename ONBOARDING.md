@@ -15,7 +15,7 @@ Read them in this order, and only as far as you need:
 | Document | Read it when |
 | --- | --- |
 | **this file** | now, all of it — it is short |
-| [CLAUDE.md](CLAUDE.md) | before you touch code. The "Traps that have already bitten" section is the accumulated cost of every mistake made here. It is long because it is worth it |
+| [AGENTS.md](AGENTS.md) | before you touch code. The "Traps that have already bitten" section is the accumulated cost of every mistake made here. It is long because it is worth it |
 | [GLOSSARY.md](GLOSSARY.md) | when the user names a thing you cannot find. Several plain-English names differ from the identifiers — a falling word is `Enemy`, the frenzy is `mode`, the interlude is `BONUS` |
 | [README.md](README.md) | for build, install and deploy mechanics |
 
@@ -118,7 +118,7 @@ would measure a stalemate rather than a difficulty curve.
 
 ## The five traps that catch people first
 
-The full list is in `CLAUDE.md` and you should read it. These five are the ones that bite soonest:
+The full list is in `AGENTS.md` and you should read it. These five are the ones that bite soonest:
 
 1. **Reset state above the early returns in `update()`.** A death never reaches the `PLAY` half of
    the loop, so anything a set piece owns must be cleared where the death happens — `GameCore.die()`
@@ -142,7 +142,7 @@ The full list is in `CLAUDE.md` and you should read it. These five are the ones 
 
 ## Where things live
 
-Start from the table in `CLAUDE.md`, which lists every file and what it holds. The shape to have in
+Start from the table in `AGENTS.md`, which lists every file and what it holds. The shape to have in
 your head:
 
 - `GameCore` — all the rules: state machine, waves, targeting, scoring, and the seams to audio and
