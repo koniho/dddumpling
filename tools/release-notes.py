@@ -9,7 +9,7 @@ import textwrap
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = Path('release-notes/releases.json')
 OUTPUT = Path('src/com/dddumpling/game/ReleaseContent.java')
-ICONS = ('travel', 'stars', 'bugs', 'shuffle', 'disguise', 'slime', 'pair', 'flex', 'team')
+ICONS = ('travel', 'stars', 'bugs', 'shuffle', 'disguise', 'slime', 'pair', 'flex', 'team', 'news', 'flurry')
 ART = {'travel': 8, 'shuffle': 9, 'pair': 9}
 
 
@@ -90,14 +90,14 @@ def array(values):
 
 def render(data):
     validate(data)
-    releases = data['releases'][:3]
+    releases = data['releases']
     changes, groups = [], []
     for release in releases:
         groups.append(list(range(len(changes), len(changes) + len(release['changes']))))
         changes.extend(release['changes'])
     fields = [
-        ('String[]', 'VERSIONS', array([r['version'] for r in releases])),
-        ('int[][]', 'ITEMS', '{' + ','.join(array(g) for g in groups) + '}'),
+        ('String[]', 'VERSIONS', array([r['version'] for r in releases[:3]])),
+        ('int[][]', 'ITEMS', '{' + ','.join(array(g) for g in groups[:3]) + '}'),
         ('int[]', 'ICONS', '{' + ','.join('ReleaseChange.' + c['icon'].upper() for c in changes) + '}'),
         ('boolean[]', 'AUTO_RESET', array([c['autoReset'] for c in changes])),
         ('String[]', 'TITLES', array([c['title'].upper() for c in changes])),

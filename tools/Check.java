@@ -8,6 +8,26 @@ package com.dddumpling.game;
  * resolve unqualified — it keeps the assertions terse, which is the whole point of them.
  */
 abstract class Check {
+    /** Stable interaction examples, independent of the latest three shipped releases. */
+    static final class ReleaseExamples implements AutoCloseable {
+        final int[][] saved=ReleaseChange.ITEMS.clone();
+        ReleaseExamples() {
+            int[][] icons={{ReleaseChange.TRAVEL,ReleaseChange.STARS,ReleaseChange.BUGS},
+                    {ReleaseChange.SHUFFLE,ReleaseChange.DISGUISE,ReleaseChange.SLIME,ReleaseChange.BUGS},
+                    {ReleaseChange.PAIR}};
+            for(int row=0;row<icons.length;row++) {
+                int[] items=icons[row].clone();
+                for(int i=0;i<items.length;i++) {
+                    int id=0;
+                    while(id<ReleaseContent.ICONS.length && ReleaseContent.ICONS[id]!=items[i]) id++;
+                    if(id==ReleaseContent.ICONS.length) throw new AssertionError("Missing release example "+items[i]);
+                    items[i]=id;
+                }
+                ReleaseChange.ITEMS[row]=items;
+            }
+        }
+        public void close() { for(int i=0;i<saved.length;i++) ReleaseChange.ITEMS[i]=saved[i]; }
+    }
 
     static final float DT = 1f / 60f;
     static int pass, fail;

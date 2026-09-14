@@ -1,0 +1,4 @@
+Tap the title-screen steamer to explore what's new with little interactive demos.
+A rainbow now ripples from your pickup when Flurry starts.
+Partner enemies count as one toward stage progress. Two pals, one team!
+Fixed empty Star Path retries after leaving a victory celebration early.

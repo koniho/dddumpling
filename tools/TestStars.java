@@ -2,8 +2,68 @@ package com.dddumpling.game;
 
 /** Alternation, steering, persistence and rewards for the star-path interlude. */
 final class TestStars extends Check {
+    private static void interruptedWin(Layout L, boolean duringParade) {
+        Mem store = new Mem();
+        GameCore c = new GameCore(store, 19L);
+        c.startGame();
+        c.starNext = true;
+        Interlude.enterBonus(c, L);
+        int last = StarPath.COUNT - 1;
+        c.stars.collected = (1 << last) - 1;
+        for (int i = 0; i < 60 * 12 && !c.stars.won; i++) {
+            c.stars.x = c.stars.starX(last, L);
+            c.update(DT, L);
+        }
+        check("interruption fixture earns its final star", c.stars.won && store.starWins == 1);
+        if (duringParade)
+            for (int i = 0; i < 60 * 10 && !c.bonusParading(); i++) c.update(DT, L);
+        check("quit starts during the intended celebration",
+                duringParade ? c.bonusParading() : c.stars.winning());
+        int prizes = c.collectTotal;
+        Pause.open(c);
+        Pause.action(c, 2);
+        Pause.action(c, 2);
+        c.startGame();
+        check("quitting a completed course keeps its prize and difficulty",
+                c.collectTotal == prizes && c.stars.wins == 1 && store.starWinSaves == 1);
+        check("the next run retires the completed course",
+                !c.starNext && c.stars.count() == 0);
+        Interlude.enterBonus(c, L);
+        check("the next minigame returns to the steamer", !c.starBonus);
+        c.starNext = true;
+        Interlude.enterBonus(c, L);
+        check("the next star course has twenty stars to collect",
+                c.starBonus && c.stars.count() == 0 && !c.stars.won);
+        check("entering the recovered course never pays the old reward twice",
+                c.collectTotal == prizes && c.stars.wins == 1 && store.starWinSaves == 1);
+    }
+
     static void game(Layout L) {
         group("star path minigame");
+        interruptedWin(L, false);
+        interruptedWin(L, true);
+        StarPath full = new StarPath();
+        full.collected = (1 << StarPath.COUNT) - 1;
+        full.reroll(new java.util.Random(91L));
+        check("a stale completed course never rerolls without stars", full.count() == 0);
+        Mem staleStore = new Mem();
+        staleStore.starWins = 3;
+        GameCore stale = new GameCore(staleStore, 93L);
+        stale.starNext = true;
+        stale.stars.collected = (1 << StarPath.COUNT) - 1;
+        stale.stars.won = false;
+        int prizesBefore = stale.collectTotal;
+        stale.startGame();
+        check("a stale full hand recovers even after its win flag was lost",
+                stale.stars.count() == 0 && !stale.starNext);
+        check("recovery neither repays nor advances a saved difficulty",
+                stale.collectTotal == prizesBefore && stale.stars.wins == 3
+                        && staleStore.starWinSaves == 0);
+        stale.starNext = true;
+        stale.stars.collected = 7;
+        stale.startGame();
+        check("new runs keep unfinished stars and their pending Star Path turn",
+                stale.stars.count() == 3 && stale.starNext);
         StarPath q = new StarPath();
         q.make(new java.util.Random(7));
         q.begin(3, L);

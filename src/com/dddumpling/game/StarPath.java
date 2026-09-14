@@ -305,7 +305,8 @@ final class StarPath {
      * attempt asks a different question and what has been answered stays answered.
      */
     void reroll(Random rnd) {
-        int held = collected;
+        // Recover a completed hand left behind by an interrupted celebration.
+        int held = count() == COUNT ? 0 : collected;
         make(rnd);
         collected = held;
     }

@@ -1,11 +1,7 @@
-Please test this new build of DDDumpling 0.1.17 on iPhone:
+Tap the title-screen steamer to explore what's new with little interactive demos.
+A rainbow now ripples from your pickup when Flurry starts.
+Partner enemies count as one toward stage progress. Two pals, one team!
 
-- Swipe between unlocked lands. Check the staggered icons, Adventure Dumpling travel, quiet shuffle sounds, and one land per swipe.
-- Fly Star Path using the slider. Check pickup haptics, one difficulty level per completed course up to level 10, saved progress, and no character reappearance after an incomplete blast-off.
-- Rapidly press keys during FLURRY and repeatedly cut during FLING. Check smooth motion, responsive input, and sound effects, including pitch changes and overlapping sounds.
-- Repeat wrong-key presses, then background and resume the app. Check that old effects do not replay and new effects still sound.
-- From stage 11, check mystery pickups, the selected power-up reveal, and the Incognito and Monochrome visual effects.
-- During the Slime boss, check the protected prompt cover, bubbles, and dissolve back to a hittable prompt.
-- Check boss music balance, simultaneous touches, and saved progress after relaunching.
+Try the release list, feature demos, Back navigation, and the steamer reminder after updating. Shuffle and partner demos reset after two seconds; land travel keeps its position.
 
-Please report your iPhone model, iOS version, and any touch, sound, performance, or progress-saving problems. No account or purchase is required.
+After collecting all 20 stars, end the run during the victory or prize parade and start again. Star Path should not repeat an empty course or award the prize twice.

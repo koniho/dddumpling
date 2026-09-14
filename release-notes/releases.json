@@ -1,6 +1,40 @@
 {
   "releases": [
     {
+      "version": "0.1.20",
+      "changes": [
+        {
+          "icon": "news",
+          "title": "What's cooking?",
+          "autoReset": false,
+          "where": "On the title screen",
+          "why": "Tap the little steamer to explore what is new. A few tiny demos, a few new tricks!"
+        },
+        {
+          "icon": "flurry",
+          "title": "Hello, rainbow!",
+          "autoReset": false,
+          "where": "When Flurry starts",
+          "why": "A rainbow ripples out from your pickup. Your power-up has arrived!"
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "autoReset": false,
+          "fixes": [
+            {
+              "where": "Normal waves, stage 16+",
+              "why": "Partner enemies now count as one toward the stage. Two pals, one team!"
+            },
+            {
+              "where": "After a Star Path win",
+              "why": "Finished all 20 stars? No more empty courses if you leave the celebration early."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.19",
       "changes": [
         {
