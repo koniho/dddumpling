@@ -37,6 +37,7 @@ final class TestProduction extends Check {
         boolean roster = c.fullRoster;
         c.setNextRoster(!roster);
         c.resetDifficultyScaling();
+        c.setStarDifficulty(0);
         c.tapClearCase(); c.tapClearCase();
         check("settings actions cannot change speed or music", c.speed == 1f
                 && c.bgmChoice == Music.defaultChoice(false) && store.speedSaves == 0 && store.bgmSaves == 0);

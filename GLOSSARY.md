@@ -268,6 +268,7 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **game over screen** | score, accuracy dumpling, best. Fades up after the hold; GAME OVER is yellow, not rose | `Screens.gameOver` |
 | **accuracy dumpling** | the face that reflects accuracy: tear below 60%, sparkles above 90% | `Screens.accuracy` |
 | **settings panel** | opened by tapping the stage readout; pauses the game | `Screens.settings` |
+| **minigame difficulty** | Minigames settings tab; saved Star Path level, applied next attempt, raised by wins | `SettingsUi.MINIGAMES`, `GameCore.setStarDifficulty` |
 | **stage readout** | the "STAGE n" text — also the settings button | `Layout.inStageTap` |
 | **speed slider** | the 0.5×–1.5× pacing control | `SettingsUi` |
 | **stage jump** | the ±1 / ±5 steppers in the settings panel that jump straight to a stage, so a boss can be reached without playing twenty stages. Steps of five because bosses land on every fifth | `SettingsUi.STAGE_STEP`, `GameCore.jumpToStage` |

@@ -126,6 +126,7 @@ final class TestStars extends Check {
             took = c.stars.won;
         }
         check("taking the last star completes the course", took && c.stars.count() == StarPath.COUNT);
+        check("the winning pickup emits feedback", c.starPickups == 1);
         check("success immediately saves one difficulty step",
                 c.stars.wins == 1 && progress.starWins == 1 && progress.starWinSaves == 1);
         check("the victory tableau takes the screen", c.stars.winning() && c.starFlight());
@@ -140,6 +141,7 @@ final class TestStars extends Check {
         float held = c.stars.timer, atX = c.stars.x;
         c.stars.hold(0, true);
         c.update(DT, L);
+        check("the tableau never repeats pickup feedback", c.starPickups == 0);
         check("the course stops dead", c.stars.timer == held && c.stars.x == atX
                 && c.stars.vx == 0f && !c.stars.left);
         check("the tableau runs on its own clock", c.stars.winProgress() > 0f);
@@ -220,6 +222,14 @@ final class TestStars extends Check {
     private static void difficulty(Layout L) {
         group("star path difficulty");
         StarPath baseline = new StarPath(), harder = new StarPath();
+        float previous = baseline.bendRate();
+        check("the first course stays approachable", previous == 1f);
+        for (int level = 1; level < StarPath.MAX_DIFFICULTY; level++) {
+            harder.wins = level;
+            check("the ramp rises faster at level " + level,
+                    harder.bendRate() > 1f + level * 0.04f && harder.bendRate() > previous);
+            previous = harder.bendRate();
+        }
         for (int i = 0; i < 100; i++) harder.recordWin();
         check("difficulty stops after five successes", harder.wins == StarPath.MAX_DIFFICULTY
                 && Math.abs(harder.bendRate() - 1.2f) < 0.0001f);

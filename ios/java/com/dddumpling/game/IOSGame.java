@@ -68,6 +68,14 @@ public final class IOSGame {
             return true;
         }
         int action = ev.getActionMasked();
+        if (BuildFlags.DEVELOPER && core.settingsOpen) {
+            if (action == IOSTouch.ACTION_DOWN || action == IOSTouch.ACTION_POINTER_DOWN
+                    || action == IOSTouch.ACTION_MOVE) {
+                int i = ev.getActionIndex();
+                handleSettings(ev.getX(i), ev.getY(i), action == IOSTouch.ACTION_MOVE);
+            }
+            return true;
+        }
         if (action == IOSTouch.ACTION_DOWN && PrivacyUi.hit(core, layout, ev.getX(), ev.getY())) {
             if (host != null) host.openPrivacy(PrivacyUi.URL);
             return true;
@@ -93,16 +101,6 @@ public final class IOSGame {
         }
 
         if (handleBonusSwipe(ev, action)) return true;
-
-        // The settings panel needs drags, for the speed slider.
-        if (BuildFlags.DEVELOPER && core.settingsOpen) {
-            if (action == IOSTouch.ACTION_DOWN || action == IOSTouch.ACTION_POINTER_DOWN
-                    || action == IOSTouch.ACTION_MOVE) {
-                int i = ev.getActionIndex();
-                handleSettings(ev.getX(i), ev.getY(i), action == IOSTouch.ACTION_MOVE);
-            }
-            return true;
-        }
 
         // The display case browses by touch. Needs MOVE events, so it comes before the down-only
         // filter, and it holds on to a gesture that outlives the case being closed.
@@ -557,7 +555,7 @@ public final class IOSGame {
 
     private void handleSettings(float x, float y, boolean dragging) {
         if (!BuildFlags.DEVELOPER) return;
-        settingsUi.compute(layout, Music.NAMES.length);
+        settingsUi.compute(layout, Music.NAMES.length, core.settingsTab);
         int hit = settingsUi.hit(x, y);
         if (hit == SettingsUi.HIT_SLIDER) {
             float v = settingsUi.speedAt(x);
@@ -576,6 +574,12 @@ public final class IOSGame {
 
         if (hit == SettingsUi.HIT_CLOSE || hit == SettingsUi.HIT_OUTSIDE) {
             core.closeSettings();
+            tick();
+        } else if (hit == SettingsUi.HIT_GENERAL || hit == SettingsUi.HIT_MINIGAMES) {
+            core.settingsTab = hit == SettingsUi.HIT_GENERAL ? SettingsUi.GENERAL : SettingsUi.MINIGAMES;
+            tick();
+        } else if (hit == SettingsUi.HIT_EASIER || hit == SettingsUi.HIT_HARDER) {
+            core.setStarDifficulty(core.stars.wins + (hit == SettingsUi.HIT_EASIER ? -1 : 1));
             tick();
         } else if (hit == SettingsUi.HIT_CLEAR) {
             core.tapClearCase();
@@ -647,6 +651,7 @@ public final class IOSGame {
         }
         boolean playing = core.state == GameCore.PLAY && !core.paused;
         core.update(Math.min(elapsed, .05f), elapsed, layout);
+        for (int i = 0; i < core.starPickups; i++) tick();
         if (playing && core.boss.octoImpact) tick();
         boolean beaten = core.boss.active() && core.boss.beaten;
         if (beaten && !bossWasBeaten) tick();
