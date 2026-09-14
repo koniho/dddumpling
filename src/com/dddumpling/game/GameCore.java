@@ -300,6 +300,9 @@ final class GameCore {
 
     static final class Enemy {
         Enemy link;
+        // Stage membership survives the visual bond being released or broken.
+        Enemy stageMate;
+        boolean stageResolved;
         Enemy spinMate;
         boolean linkWaiting;
         boolean linkSliceRejected;
@@ -443,9 +446,9 @@ final class GameCore {
     float landDiscoveryT;
     /** Words squished this run. The game-over screen calls them squishes, so this does too. */
     int squishes;
-    /** Words released so far in the current stage; capped at {@link #stageQuota()}. */
+    /** Stage enemies released; a linked pair occupies one quota slot. */
     int spawnedThisStage;
-    /** Words of the current stage that are done with, whether cleared or breached. */
+    /** Stage enemies resolved, after both halves of a pair clear or breach. */
     int resolvedThisStage;
     /** Correct and incorrect presses over the whole run, for the accuracy readout. */
     int hits, misses;
@@ -2830,7 +2833,7 @@ final class GameCore {
         skyGlow = 1f;
         skyGlowColor = FLASH_CLEAR;
         squishes++;
-        resolvedThisStage++;
+        resolveStageEnemy(e);
         // Scored per press, so a stacked word is worth what it cost to clear.
         score += 25 * e.totalPresses();
         if (chime && sound != null) sound.clearWord();
@@ -3040,10 +3043,16 @@ final class GameCore {
         if (sound != null) sound.frenzy(false);
     }
 
+    private void resolveStageEnemy(Enemy e) {
+        if(e.stageResolved) return;
+        e.stageResolved=true;
+        if(e.stageMate==null || e.stageMate.stageResolved) resolvedThisStage++;
+    }
+
     private void breach(Enemy e, Layout L) {
         LinkedPairs.breached(this, e, L);
         if (target == e) target = null;
-        resolvedThisStage++;
+        resolveStageEnemy(e);
         takeHit(enemyCentreX(e), L);
     }
 

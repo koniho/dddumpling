@@ -32,9 +32,11 @@ final class TestLinkedPairs extends Check {
             if (stage % Boss.EVERY == 0) continue;
             GameCore wave = wave(L, stage);
             java.util.Set<GameCore.Enemy> seen = new java.util.HashSet<GameCore.Enemy>();
+            java.util.Set<GameCore.Enemy> characters = new java.util.HashSet<GameCore.Enemy>();
             int pairs = 0;
             for (int frame = 0; frame < 1800 && wave.state == GameCore.PLAY && !wave.pendingBonus; frame++) {
                 for (GameCore.Enemy e : wave.enemies) {
+                    characters.add(e);
                     if (e.link != null && seen.add(e)) {
                         seen.add(e.link);
                         pairs++;
@@ -49,18 +51,20 @@ final class TestLinkedPairs extends Check {
                 wave.update(DT, L);
             }
             check("two pairs spawn across full ordinary stage " + stage, pairs == 2);
+            check("each pair adds a partner without consuming another stage slot " + stage,
+                    characters.size()==wave.stageQuota()+2);
             check("two pairs preserve wave quota at stage " + stage,
                     wave.spawnedThisStage == wave.stageQuota() && wave.resolvedThisStage == wave.stageQuota());
         }
         GameCore blocked = wave(L, 16);
-        blocked.spawnedThisStage = 4;
+        blocked.spawnedThisStage = 3;
         blocked.spawnTimer = 0f;
         blocked.update(DT, L);
-        check("blocked pair keeps its quota slots reserved", blocked.spawnedThisStage == 4 && blocked.enemies.size() == 2);
+        check("blocked pair keeps its quota slots reserved", blocked.spawnedThisStage == 3 && blocked.enemies.size() == 2);
         blocked.enemies.clear();
         blocked.spawnTimer = 0f;
         blocked.update(DT, L);
-        check("reserved second pair spawns when entrance clears", blocked.spawnedThisStage == 6
+        check("reserved second pair spawns when entrance clears", blocked.spawnedThisStage == 4
                 && blocked.enemies.size() == 2 && blocked.enemies.get(0).link == blocked.enemies.get(1));
         GameCore early = wave(L, 14);
         check("no linked enemies before stage 16", early.enemies.size() == 1 && early.enemies.get(0).link == null);
@@ -68,7 +72,7 @@ final class TestLinkedPairs extends Check {
         GameCore c = wave(L, 16);
         GameCore.Enemy a = c.enemies.get(0), b = c.enemies.get(1);
         check("stage 16 opens with a reciprocal pair", a.link == b && b.link == a);
-        check("pair replaces exactly two quota enemies", c.spawnedThisStage == 2);
+        check("pair occupies one stage enemy slot", c.spawnedThisStage == 1);
         check("pair is two single-press keys", a.totalPresses() == 1 && b.totalPresses() == 1);
         check("pair uses opposite thumbs", a.word[0] < 3 && b.word[0] >= 3);
         check("paired keys do not overlap", b.baseX - a.baseX > L.enemyR * 3f && a.speed == b.speed);
@@ -98,11 +102,11 @@ final class TestLinkedPairs extends Check {
         check("second press immediately finishes both", a.destroyed && b.destroyed && a.link == null && b.link == null);
         check("pair releases outward from one shared clasp", a.linkReleaseDir == -1f
                 && b.linkReleaseDir == 1f && a.linkReleaseX == b.linkReleaseX);
-        check("pair awards two clears and combo exactly once", c.squishes == 2 && c.resolvedThisStage == 2 && c.combo == 2);
+        check("pair awards one stage clear with both character rewards", c.squishes == 2 && c.resolvedThisStage == 1 && c.combo == 2);
         int score = c.score;
         advance(c, L, 0.5f);
         c.destroyWord(a, 0, 0, L);
-        check("old projectiles and repeated clears cannot score twice", c.score == score && c.resolvedThisStage == 2);
+        check("old projectiles and repeated clears cannot score twice", c.score == score && c.resolvedThisStage == 1);
 
         for (float speed : new float[] {0.75f, 1f, 1.5f}) {
             for (float delay : new float[] {0f, 0.1f, 0.199f, 0.2f, 0.201f, 0.4f}) {
@@ -141,8 +145,18 @@ final class TestLinkedPairs extends Check {
         c.tapKey(a.word[0], L);
         b.attacking = true; b.attackT = GameCore.ATTACK_TIME;
         c.update(DT, L);
-        check("breach restores survivor without awarding an incomplete chord", a.typeable() && a.link == null && c.resolvedThisStage == 1 && c.score == 0);
+        check("breach restores survivor without awarding an incomplete chord", a.typeable() && a.link == null && c.resolvedThisStage == 0 && c.score == 0);
         check("a partner breach costs only its own life", c.lives == GameCore.START_LIVES - 1);
+        c.destroyWord(a,0,0,L);
+        check("clearing the surviving half resolves one stage enemy",c.resolvedThisStage==1);
+        for(int first=0;first<2;first++) {
+            c=wave(L,16);a=c.enemies.get(first);b=a.link;
+            a.attacking=true;a.attackT=GameCore.ATTACK_TIME;c.update(DT,L);
+            check("first breached half leaves stage unit pending " + first,c.resolvedThisStage==0);
+            b.attacking=true;b.attackT=GameCore.ATTACK_TIME;c.update(DT,L);
+            check("both breached halves resolve one stage enemy " + first,c.resolvedThisStage==1);
+        }
+
 
         for (int mode = 0; mode < Power.COUNT; mode++) {
             c = wave(L, 16); a = c.enemies.get(0); b = a.link;
@@ -184,7 +198,7 @@ final class TestLinkedPairs extends Check {
         c.buddy.x = c.enemyCentreX(a); c.buddy.y = a.y;
         c.buddySquish(a,L);
         check("one team collision clears both and keeps a shared spin",a.destroyed && b.destroyed
-                && a.spinMate == b && b.spinMate == a && c.resolvedThisStage == 2);
+                && a.spinMate == b && b.spinMate == a && c.resolvedThisStage == 1);
 
         c = wave(L,16); a = c.enemies.get(0); b = a.link;
         c.startFrenzy(Power.FLURRY,L);
@@ -221,7 +235,7 @@ final class TestLinkedPairs extends Check {
         c.beginStroke(mid,y-L.enemyR);
         int bondCuts = c.sliceTo(mid,y+L.enemyR,L);
         check("fling clasp cut releases and credits both",bondCuts == 2 && a.destroyed && b.destroyed
-                && c.strokeCuts == 2 && c.strokeKills == 2 && c.resolvedThisStage == 2);
+                && c.strokeCuts == 2 && c.strokeKills == 2 && c.resolvedThisStage == 1);
         check("continued slice cannot score pair twice",c.sliceTo(mid,y-L.enemyR,L) == 0);
         c.endStroke();
 

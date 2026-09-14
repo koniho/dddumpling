@@ -9,7 +9,7 @@ final class LinkedPairs {
     static boolean due(GameCore c) {
         if (c.stage < FIRST_STAGE || c.boss.active()) return false;
         if (c.powerActive()) return c.mode != Power.MULTI && c.powerSpawnedEnemies%4 == 0;
-        return c.spawnedThisStage == 0 || c.spawnedThisStage == 4;
+        return c.spawnedThisStage == 0 || c.spawnedThisStage == 3;
     }
 
     static boolean spawn(GameCore c, Layout L) {
@@ -21,13 +21,14 @@ final class LinkedPairs {
         b.word[0] = Roster.at(full, half + c.rnd.nextInt(half));
         a.link = b;
         b.link = a;
+        a.stageMate=b; b.stageMate=a;
         // Equal velocity keeps the two keys side by side throughout their descent.
         b.speed = a.speed;
         if (!EnemyEntry.clear(a, c, L) || !EnemyEntry.clear(b, c, L)) return false;
         c.enemies.add(a);
         c.enemies.add(b);
         if (c.powerActive()) c.powerSpawnedEnemies += 2;
-        else c.spawnedThisStage += 2; // Replace two quota words in ordinary play.
+        else c.spawnedThisStage++; // One stage enemy, with two physical characters.
         return true;
     }
 

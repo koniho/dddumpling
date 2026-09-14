@@ -327,8 +327,8 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 ## Linked friends (stage 16 onward)
 
 Each ordinary wave from stage 16 contains two linked pairs: one opens the wave, and another
-arrives after four quota enemies have spawned. Each pair has one key from each thumb's keyboard
-group. The pairs replace four quota enemies in total; a blocked entrance defers the pair rather
+arrives after three stage enemies have spawned (the opening pair and two solos). Each pair has one key from each thumb's keyboard
+group. Each pair occupies one stage slot and two physical crowd slots; a blocked entrance defers the pair rather
 than replacing it with an ordinary enemy. Fruit keys grow curling vines; the cat and blue creature
 have padded paws, while the other characters have soft hands. Key-colored limbs intertwine at the center, with vines passing
 behind and in front of the partner.
@@ -341,7 +341,7 @@ front travels from the clasp toward both characters. The first press plays the r
 partner's gold highlight remains visible; there is no countdown circle, text, or checkmark. Arms and vines
 have varying thickness along their length, solid hexagon-colored fills with stronger underside shadows and upper highlights for rounded volume, and key-colored outlines matching the hexagons. Limbs render behind the characters
 and are cut out around both complete character tiles, including during the flex. A missed window restores the first key without a life penalty
-or score; both enemies still descend. A successful chord credits two clears; the clasp opens, the characters peel outward with their hands, and a short curved whoosh marks the release point. The retired MULTI mode releases
+or score; both enemies still descend. A successful chord credits one stage enemy while retaining both character rewards; the clasp opens, the characters peel outward with their hands, and a short curved whoosh marks the release point. Stage credit waits until both halves are cleared or breached, even if the bond breaks. The retired MULTI mode releases
 links, and a breached partner cannot leave the other waiting forever.
 
 Stage 16 gives 15% longer travel and spawn intervals and caps the field at four enemies.
