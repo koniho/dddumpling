@@ -1,10 +1,10 @@
-# DDDUMPLING for iPhone
+# DDDUMPLING for iPhone and iPad
 
 Native UIKit/Core Graphics/AVFoundation host for the existing Java game. J2ObjC translates the
 same gameplay and scene sources used by Android; generated Objective-C stays in `build/`.
-Initial target: portrait iPhone, iOS 15+, arm64. iPad, Mac Catalyst, Game Center, iCloud and
-Android save transfer are outside this initial port. The iPhone app may run in iPad compatibility
-mode; there is no native iPad layout or validation.
+Target: iPhone and iPad, iOS 15+, arm64. iPhone stays portrait; iPad supports all orientations
+and resizable windows with a centered portrait playfield. Mac Catalyst, Game Center, iCloud and
+Android save transfer remain outside this port. See [iPad layout and validation](docs/ipad.md).
 
 ## Prerequisites
 
@@ -54,6 +54,7 @@ source ios/scripts/env.sh
 ./check.sh -q --production
 ./ios/scripts/test-input.sh
 SIMULATOR_ID=<iPhone-UDID> ./ios/scripts/test-simulator.sh
+SIMULATOR_NAME_PREFIX='iPad mini' ./ios/scripts/test-simulator.sh
 ./ios/scripts/render-reference.sh
 # After playing an installed build, check replacement without uninstalling:
 SIMULATOR_ID=<iPhone-UDID> ./ios/scripts/test-update.sh
@@ -61,6 +62,9 @@ SIMULATOR_ID=<iPhone-UDID> ./ios/scripts/test-update.sh
 
 The input suite uses its own output directory and can run alongside the existing Java checks.
 Native tests exercise durable storage and launch/touch/background scenarios.
+CI runs both iPhone and iPad suites. `SIMULATOR_NAME_PREFIX` selects the first available
+matching device when `SIMULATOR_ID` is omitted. See [iPad validation](docs/ipad.md) for
+windowing prerequisites and Release screenshot capture commands.
 The update check compares the existing save byte-for-byte before and after installing the built
 app and then launches it. It keeps snapshots under `ios/build/Update-*`; it does not test future
 save-schema migrations or replace a human progress-restoration check.

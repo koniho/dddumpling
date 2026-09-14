@@ -3,6 +3,7 @@
 #import "DDAudio.h"
 #import "DDStore.h"
 #import "DDFrameMetrics.h"
+#import "DDViewport.h"
 #import "com/dddumpling/game/IOSGame.h"
 #import "com/dddumpling/game/IOSTouch.h"
 #import "IOSPrimitiveArray.h"
@@ -35,6 +36,7 @@
 @property(nonatomic) BOOL sceneLoaded;
 @property(nonatomic) BOOL storeErrorShown;
 @property(nonatomic) BOOL storeAlertVisible;
+@property(nonatomic) DDViewport viewport;
 @end
 
 @implementation DDHost
@@ -99,12 +101,21 @@
 }
 - (void)layoutSubviews {
     [super layoutSubviews];
-    UIEdgeInsets p = self.safeAreaInsets;
-    // A native navigation strip keeps the pause target clear of the shared score/lives HUD.
-    [self.game layoutWithFloat:self.bounds.size.width withFloat:self.bounds.size.height
-                   withFloat:p.left withFloat:p.top + 44 withFloat:p.right withFloat:p.bottom];
-    self.backButton.frame = CGRectMake(self.bounds.size.width - p.right - 46, p.top, 44, 44);
-    self.gameElement.accessibilityFrameInContainerSpace = self.bounds;
+    DDViewport next = DDViewportMake(self.bounds, self.safeAreaInsets,
+                                    self.traitCollection.userInterfaceIdiom == UIUserInterfaceIdiomPad);
+    if (!CGRectEqualToRect(next.frame, self.viewport.frame)
+            || !UIEdgeInsetsEqualToEdgeInsets(next.insets, self.viewport.insets)) {
+        // Cancel against the old geometry before any retained or coalesced samples can move.
+        [self packet:3 index:0 event:nil];
+        [self clearPointers];
+        self.lastTime = 0;
+    }
+    self.viewport = next;
+    UIEdgeInsets p = next.insets;
+    [self.game layoutWithFloat:next.size.width withFloat:next.size.height
+                   withFloat:p.left withFloat:p.top withFloat:p.right withFloat:p.bottom];
+    self.backButton.frame = next.navigation;
+    self.gameElement.accessibilityFrameInContainerSpace = next.frame;
 #if DEBUG
     if (!self.sceneLoaded && self.bounds.size.width > 0 && self.bounds.size.height > 0) {
         NSString *scene = NSProcessInfo.processInfo.environment[@"DDD_SCENE"];
@@ -113,6 +124,7 @@
     }
 #endif
     [self refreshNavigation];
+    [self setNeedsDisplay];
 }
 - (void)safeAreaInsetsDidChange { [super safeAreaInsetsDidChange]; [self setNeedsLayout]; }
 - (void)refreshNavigation {
@@ -174,6 +186,12 @@
     [self refreshNavigation];
     [self setNeedsDisplay];
 }
+- (void)disconnect {
+    [self setActive:NO];
+    // A discarded scene must not retain its game through the display-link target.
+    [self.displayLink invalidate];
+    self.displayLink = nil;
+}
 - (void)frame:(CADisplayLink *)link {
     if (!self.active || self.bounds.size.width <= 0) return;
     CFTimeInterval now = link.timestamp;
@@ -189,9 +207,18 @@
 }
 - (void)drawRect:(CGRect)rect {
     CFTimeInterval start = CACurrentMediaTime();
-    self.painter.context = UIGraphicsGetCurrentContext();
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, self.backgroundColor.CGColor);
+    CGContextFillRect(context, self.bounds);
+    if (self.viewport.scale <= 0) return;
+    CGContextSaveGState(context);
+    CGContextClipToRect(context, self.viewport.frame);
+    CGContextTranslateCTM(context, self.viewport.frame.origin.x, self.viewport.frame.origin.y);
+    CGContextScaleCTM(context, self.viewport.scale, self.viewport.scale);
+    self.painter.context = context;
     [self.game drawWithDDPainter:self.painter];
     self.painter.context = NULL;
+    CGContextRestoreGState(context);
     [self.frameMetrics recordDrawMilliseconds:(CACurrentMediaTime() - start) * 1000];
     if ([self.frameMetrics windowComplete]) {
 #if DEBUG
@@ -230,7 +257,8 @@
             CGPoint point = self.pointerPositions[i].CGPointValue;
             for (UITouch *sample in histories[i]) {
                 if (sample.timestamp > times[h].doubleValue) break;
-                if (sample.timestamp >= self.pointerTimes[i].doubleValue) point = [sample locationInView:self];
+                if (sample.timestamp >= self.pointerTimes[i].doubleValue)
+                    point = DDViewportPoint(self.viewport, [sample locationInView:self]);
             }
             rowX->buffer_[i] = point.x; rowY->buffer_[i] = point.y;
         }
@@ -238,7 +266,7 @@
         IOSObjectArray_Set(historyY, h, rowY);
     }
     for (NSUInteger i = 0; i < n; i++) {
-        CGPoint point = [self.pointers[i] locationInView:self];
+        CGPoint point = DDViewportPoint(self.viewport, [self.pointers[i] locationInView:self]);
         ids->buffer_[i] = self.pointerIDs[i].intValue;
         xs->buffer_[i] = point.x;
         ys->buffer_[i] = point.y;
@@ -254,9 +282,11 @@
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     if (!self.active) return;
     for (UITouch *touch in touches) {
+        CGPoint point = [touch locationInView:self];
+        if (self.viewport.scale <= 0 || !CGRectContainsPoint(self.viewport.frame, point)) continue;
         [self.pointers addObject:touch];
         [self.pointerIDs addObject:@(self.nextID++)];
-        [self.pointerPositions addObject:[NSValue valueWithCGPoint:[touch locationInView:self]]];
+        [self.pointerPositions addObject:[NSValue valueWithCGPoint:DDViewportPoint(self.viewport, point)]];
         [self.pointerTimes addObject:@(touch.timestamp)];
         [self packet:self.pointers.count == 1 ? 0 : 5 index:self.pointers.count - 1 event:event];
     }
