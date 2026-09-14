@@ -122,6 +122,10 @@ final class TestBoss extends Check {
         check("beating the stage-5 slime unlocks cubes for this run", unlock.cubeUnlocked);
         unlock.startGame();
         check("a new playthrough locks the cube pool again", !unlock.cubeUnlocked);
+        ColorFadePainter dissolved=new ColorFadePainter(new RasterPainter(1,1,1),0xFF9CE923,1f,0.5f);
+        check("prompt tint reaches slime color while preserving source alpha",dissolved.color(0x80000000)==0x409CE923);
+        ColorFadePainter hidden=new ColorFadePainter(new RasterPainter(1,1,1),0xFF9CE923,1f,0f);
+        check("prompt fade also removes opaque facial details",(hidden.color(0xFFFFFFFF)>>>24)==0);
         GameCore covered=enterBoss(L,Boss.SLIME,3001L);
         covered.boss.phase=0.5f;
         check("slime hides the prompt while protected",!covered.boss.open() && covered.boss.slimePromptCover()==1f);

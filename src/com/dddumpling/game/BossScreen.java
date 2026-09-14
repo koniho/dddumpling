@@ -1266,11 +1266,22 @@ final class BossScreen extends Draw {
 
         if (b.kind == Boss.SLIME) {
             // The next prompt does not appear until the whole launched volley is gone.
-            if (b.boltCount() == 0 && !b.hasGlob() && b.open()) {
-                float urgency = b.promptProgress();
-                letterBadge(p, c, L, b.chainLetter(), cx, slimeBadgeY(L, b)-L.unit*0.65f*b.slimePromptCover(),
-                        slimeBoltR(c, L, urgency), fade,
-                        b.open());
+            if (b.boltCount() == 0 && !b.hasGlob()) {
+                float cover=b.slimePromptCover();
+                float visibility=1f-cover*cover*cover*cover;
+                if(visibility>0f) {
+                    float y=slimeBadgeY(L,b)-L.unit*0.65f*cover;
+                    float radius=slimeBoltR(c,L,b.promptProgress());
+                    int g=b.chainLetter();
+                    int slime=Glyph.mix(tint(b),0xFFA8F02B,0.32f);
+                    Painter prompt=new ColorFadePainter(p,slime,cover,fade*visibility);
+                    if(cover>0.02f) {
+                        int color=Glyph.COLOR[g];
+                        prompt.fillPoly(Glyph.hex(cx,y,radius),Glyph.withAlpha(color,60));
+                        prompt.strokePoly(Glyph.hex(cx,y,radius),Glyph.withAlpha(color,220),radius*0.10f);
+                        Kawaii.surprised(prompt,g,cx,y,radius*0.60f,color);
+                    } else letterBadge(prompt,c,L,g,cx,y,radius,1f,b.open());
+                }
             }
         } else if (b.kind == Boss.SPLITTER) {
             for (int i = 0; i < b.pieceCount(); i++) {

@@ -66,6 +66,7 @@ src/com/dddumpling/game/Interlude.java
 src/com/dddumpling/game/BossPlay.java
 src/com/dddumpling/game/Painter.java
 src/com/dddumpling/game/MonochromePainter.java
+src/com/dddumpling/game/ColorFadePainter.java
 src/com/dddumpling/game/SettingsUi.java
 src/com/dddumpling/game/Draw.java
 src/com/dddumpling/game/Sky.java
