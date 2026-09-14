@@ -152,8 +152,8 @@ final class StarScreen extends Draw {
             // be asked for separately; in flight the steering itself is the answer.
             float sway = q.ready() ? q.lessonSway(c.clock) : q.vx / (L.w * StarPath.MAX_VX);
             wake(p, q, L, x, y, sway, c.clock, fade);
+            flyer(p, q, rr, x, y, c.clock, fade);
         }
-        flyer(p, q, rr, x, y, c.clock, fade);
         if (q.ready() || q.flying()) slider(p, q, L, fade, c.clock);
 
         String count = q.count() + " / " + StarPath.COUNT;

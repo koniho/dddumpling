@@ -5,14 +5,13 @@ import java.util.Random;
 /** Persistent course and flight state for the alternating star-path interlude. */
 final class StarPath {
     static final int COUNT = 20;
-    static final int MAX_DIFFICULTY = 5;
-    static final int WIN_STEP = 2;
-    // Front-load the ramp; keep the first course and the reachable ceiling unchanged.
-    private static final float[] BEND = {1f, 1.08f, 1.13f, 1.16f, 1.185f, 1.2f};
+    static final int MAX_DIFFICULTY = 10;
+    static final int WIN_STEP = 1;
+    // Continue the same +0.6 bend rate per level through ten successful courses.
     /** Saved difficulty level; keeps the historical wins storage key. */
     int wins;
 
-    float bendRate() { return BEND[Math.max(0, Math.min(MAX_DIFFICULTY, wins))]; }
+    float bendRate() { return 1f + 0.6f * Math.max(0, Math.min(MAX_DIFFICULTY, wins)); }
 
     void recordWin() { wins = Math.min(MAX_DIFFICULTY, Math.max(0, wins) + WIN_STEP); }
 

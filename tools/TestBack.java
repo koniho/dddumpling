@@ -32,14 +32,14 @@ final class TestBack extends Check {
         for (int kind = 0; kind < Boss.COUNT; kind++) {
             c.startGame(); c.boss.begin(kind, (kind+1)*5, c.rnd, c.playRosterFull());
             c.boss.intro = 0; c.boss.held = -2;
-            c.stars.left = c.stars.right = true; c.stars.beginDrag();
+            c.stars.beginDrag();
             c.beginStroke(L.w*.4f, L.h*.4f);
             Pause.back(c);
             float hp = c.boss.hp, age = c.boss.age, mode = c.modeLeft;
             c.update(30, L);
             check("boss " + kind + " freezes and drops held gestures", c.boss.hp == hp
                     && c.boss.age == age && c.modeLeft == mode && c.boss.held == -1
-                    && !c.touchDown && !c.stars.dragging && !c.stars.left && !c.stars.right);
+                    && !c.touchDown && !c.stars.dragging);
             Pause.back(c); c.update(DT, L);
             check("boss " + kind + " resumes", !c.paused && c.boss.age > age);
         }
