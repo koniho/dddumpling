@@ -696,6 +696,14 @@ final class Boss {
         return t*t*(3f-2f*t);
     }
 
+    /** Bubble trails finish just after the skirt closes, before the release starts. */
+    float slimeCoverBubbleTime() {
+        if(slimePromptCover()<=0f) return -1f;
+        float start=CYCLE[SLIME]-SLIME_PROMPT_TRANSITION;
+        if(phase>=start) return phase-start;
+        return phase<0.35f ? phase+SLIME_PROMPT_TRANSITION : -1f;
+    }
+
     /** 0..1 through the current window, or through the breather when it is shut. */
     float phaseProgress() {
         if (kind < 0) return 0f;

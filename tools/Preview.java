@@ -65,7 +65,7 @@ final class Preview {
         cover.boss.intro=0f; cover.stageGap=0f; cover.stageBanner=0f;
         cover.update(1f/60f,L);
         cover.boss.chainAt=2; cover.boss.slimeCoverLearned=true;
-        float[] coverPhases={4.7f,4.80f,4.85f,4.9f,4.95f,0.2f,1f,1.03f,1.10f,1.20f,1.30f};
+        float[] coverPhases={4.7f,4.80f,4.85f,4.9f,4.95f,0.08f,0.2f,0.34f,1f,1.03f,1.10f,1.20f,1.30f};
         for(int frame=0;frame<coverPhases.length;frame++) {
             cover.boss.phase=coverPhases[frame];
             shot(dir,"101-slime-cover-"+frame,cover,L,w,h,ss);

@@ -1265,6 +1265,7 @@ final class BossScreen extends Draw {
         if (b.kind == Boss.SLIME) {
             // The next prompt does not appear until the whole launched volley is gone.
             if (b.boltCount() == 0 && !b.hasGlob()) {
+                slimePromptBubbles(p,L,b,cx,fade);
                 float cover=b.slimePromptCover();
                 float visibility=1f-cover*cover*cover*cover;
                 if(visibility>0f) {
@@ -1298,6 +1299,32 @@ final class BossScreen extends Draw {
             }
         } else if (b.kind == Boss.OCTOPUS) {
             return;
+        }
+    }
+
+    /** Small wet bubbles escape sideways from the prompt as the skirt swallows it. */
+    private static void slimePromptBubbles(Painter p,Layout L,Boss b,float x,float fade) {
+        float time=b.slimeCoverBubbleTime();
+        if(time<0f) return;
+        float r=L.unit,y=slimeBadgeY(L,b)-r*0.45f;
+        int green=Glyph.mix(tint(b),0xFFCBFF73,0.45f);
+        for(int i=0;i<7;i++) {
+            float age=time-i*0.027f;
+            if(age<=0f || age>=0.44f) continue;
+            float u=age/0.44f,side=i%2==0 ? -1f : 1f;
+            float bx=x+side*r*(0.15f+u*(1.65f+(i%3)*0.35f));
+            float by=y-r*(u*(0.6f+(i%3)*0.4f)+u*u*0.55f);
+            float radius=r*(0.13f+(i%3)*0.035f)*Math.min(1f,u*9f);
+            float alpha=fade*Math.min(1f,(1f-u)*5f);
+            if(u>0.82f) {
+                p.strokeCircle(bx,by,radius*(1f+(u-0.82f)*5f),
+                        fadeBy(Glyph.withAlpha(green,190),alpha),r*0.035f);
+            } else {
+                p.fillCircle(bx,by,radius,fadeBy(Glyph.withAlpha(green,155),alpha));
+                p.strokeCircle(bx,by,radius,fadeBy(Glyph.withAlpha(green,235),alpha),r*0.035f);
+                p.fillCircle(bx-radius*0.28f,by-radius*0.32f,radius*0.24f,
+                        fadeBy(Glyph.withAlpha(0xFFFFFFD5,230),alpha));
+            }
         }
     }
 
