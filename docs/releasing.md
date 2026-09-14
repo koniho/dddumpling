@@ -24,7 +24,7 @@ Use `--since <last-distributed-tag-or-commit>` if the nearest tag was not the la
 - Write the Play summary in `build/release-notes.txt` using the same reviewed facts; keep it within the existing 500-character limit.
 - Update `ios/store/en-US/what_to_test.txt` for TestFlight, and prepare the intended GitHub/itch release copy before tagging when those channels are in scope.
 
-The JSON catalog keeps historical notes. Only the latest three appear in the current in-game MVP. It does not publish store notes or bump versions.
+The JSON catalog keeps historical notes. All authored releases remain available in the vertically scrollable in-game list. It does not publish store notes or bump versions.
 
 ## 3. Prepare and verify the release commit
 

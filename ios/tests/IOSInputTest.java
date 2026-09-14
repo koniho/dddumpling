@@ -324,7 +324,8 @@ public final class IOSInputTest extends Check {
         game.touch(one(0,2,l.w*0.5f,row));
         game.touch(one(2,2,l.w*0.5f,row-l.h*0.3f));
         game.touch(one(1,2,l.w*0.5f,row-l.h*0.3f));
-        check("native release swipe scrolls without selecting",c.releaseNotes.listing && c.releaseNotes.listScroll==ReleaseNotes.maxScroll(l));
+        check("native release swipe scrolls without selecting",c.releaseNotes.listing && (c.releaseNotes.listScroll>0f || ReleaseNotes.maxScroll(l)==0f));
+        c.releaseNotes.listScroll=Math.max(0f,Math.min(ReleaseNotes.maxScroll(l),ReleaseNotes.rowY(l,2)-(ReleaseNotes.listTop(l)+ReleaseNotes.listBottom(l))*.5f));
         float lastRow=ReleaseNotes.rowY(l,2)-c.releaseNotes.listScroll;
         game.touch(one(0,2,ReleaseNotes.iconX(l,2,0),lastRow));
         game.touch(one(1,2,ReleaseNotes.iconX(l,2,0),lastRow));

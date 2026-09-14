@@ -2,7 +2,7 @@
 
 Use this guide to add or edit notes. For every release request, work through the proposed entries interactively with the user and obtain explicit approval of the final notes before proceeding with version preparation, tagging, or publishing. For publishing and tagging, use [Executing a release](releasing.md).
 
-You edit plain JSON in [release-notes/releases.json](../release-notes/releases.json). You do not need to edit Java, count rows, or position icons. The tool wraps the copy and updates the game. The source keeps the history; the game shows the first three releases, newest first. Generated content retains older entries so the harness can still exercise their demos after they leave the visible list.
+You edit plain JSON in [release-notes/releases.json](../release-notes/releases.json). You do not need to edit Java, count rows, or position icons. The tool wraps the copy and updates the game. The source and game keep the full authored history, newest first. Players scroll down to reach older releases; adding a release never removes earlier entries from the list.
 
 ## Add a release
 
