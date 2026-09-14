@@ -23,6 +23,8 @@ final class TestBoss extends Check {
         c.enemies.clear();
         c.boss.begin(kind, c.stage, c.rnd);
         for (int i = 0; i < 60 * 10 && !c.boss.fighting(); i++) c.update(DT, L);
+        // Let the arrival wobble settle before tests measure dragging distances.
+        if(kind==Boss.SLIME) for(int i=0;i<60;i++) c.update(DT,L);
         return c;
     }
 
@@ -128,6 +130,13 @@ final class TestBoss extends Check {
         check("prompt fade also removes opaque facial details",(hidden.color(0xFFFFFFFF)>>>24)==0);
         GameCore covered=enterBoss(L,Boss.SLIME,3001L);
         covered.boss.phase=0.5f;
+        check("slime starts exposed before two successful hits",covered.boss.open() && covered.boss.slimePromptCover()==0f);
+        covered.tapKey(covered.boss.chainLetter(),L);
+        check("first hit leaves the prompt exposed",covered.boss.chainAt==1 && covered.boss.open() && covered.boss.slimePromptCover()==0f);
+        covered.tapKey(covered.boss.chainLetter(),L);
+        check("second hit enables the cover cycle",covered.boss.chainAt==2);
+        covered.boss.slimeCoverLearned=true;
+        covered.boss.phase=0.5f;
         check("slime hides the prompt while protected",!covered.boss.open() && covered.boss.slimePromptCover()==1f);
         float[] coveredSkin=BossScreen.slimePromptOutline(L,covered.boss);
         float lowest=0f;
@@ -142,12 +151,26 @@ final class TestBoss extends Check {
         }
         for(float phase:new float[]{0.999f,1f,1.001f,1.10f}) {
             GameCore emerging=enterBoss(L,Boss.SLIME,3001L);
+            emerging.boss.chainAt=2; emerging.boss.slimeCoverLearned=true;
             emerging.boss.phase=phase;
             int before=emerging.boss.chainAt;
             emerging.tapKey(emerging.boss.chainLetter(),L);
             check("prompt accepts hits from the first release instant " + phase,
                     (emerging.boss.chainAt>before)==(phase>=1f));
         }
+        GameCore bubbling=enterBoss(L,Boss.SLIME,3001L);
+        Ear bubbleEar=new Ear(); bubbling.sound=bubbleEar;
+        bubbling.boss.phase=4.69f;
+        bubbling.update(DT,L);
+        check("no cover sound before the first two hits",bubbleEar.slimeCovers==0 && bubbleEar.slimeReleases==0);
+        bubbling.boss.chainAt=2; bubbling.boss.phase=4.69f; bubbling.boss.promptT=10f;
+        bubbling.update(DT,L); bubbling.update(DT,L);
+        check("cover plays one rising bubble cue",bubbleEar.slimeCovers==1 && bubbleEar.slimeReleases==0);
+        bubbling.boss.phase=0.999f;
+        bubbling.update(DT,L); bubbling.update(DT,L);
+        check("release plays one falling bubble cue",bubbleEar.slimeCovers==1 && bubbleEar.slimeReleases==1);
+        bubbling.paused=true; bubbling.update(DT,L);
+        check("paused cover does not replay its cue",bubbleEar.slimeCovers==1 && bubbleEar.slimeReleases==1);
         covered.boss.phase=1.15f;
         check("slime releases the prompt while vulnerable",covered.boss.open() && covered.boss.slimePromptCover()>0f && covered.boss.slimePromptCover()<1f);
         covered.boss.phase=1.4f;
@@ -471,6 +494,10 @@ final class TestBoss extends Check {
         check("and it is gone once it lands", sh.shots.isEmpty());
 
         GameCore shielded = enterBoss(L, Boss.SLIME, 361L);
+        shielded.tapKey(shielded.boss.chainLetter(),L);
+        shielded.tapKey(shielded.boss.chainLetter(),L);
+        shielded.boss.slimeCoverLearned=true;
+        shielded.boss.phase=4.7f;
         toShut(shielded, L);
         shielded.enemies.clear();
         shielded.shots.clear();

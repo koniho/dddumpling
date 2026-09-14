@@ -379,15 +379,13 @@ final class BossScreen extends Draw {
         float[] skin=slimeBossOutline(b.body);
         float cover=b.slimePromptCover();
         if(cover<=0f) return skin;
-        float cx=b.body.centreX(),cy=b.body.centreY();
-        float width=L.unit*1.85f;
+        float cy=b.body.centreY();
         float bottom=cy;
         for(int i=1;i<skin.length;i+=2) bottom=Math.max(bottom,skin[i]);
         float extension=Math.max(0f,slimeBadgeY(L,b)+L.unit*1.25f-bottom);
         for(int i=0;i<skin.length;i+=2) {
-            float dx=(skin[i]-cx)/width;
             float lower=Math.max(0f,Math.min(1f,(skin[i+1]-cy)/Math.max(1f,b.body.radiusY()*0.65f)));
-            skin[i+1]+=extension*cover*(float)Math.exp(-dx*dx*dx*dx*0.65f)*lower;
+            skin[i+1]+=extension*cover*lower;
         }
         return skin;
     }
