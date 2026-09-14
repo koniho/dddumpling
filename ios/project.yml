@@ -90,6 +90,13 @@ targets:
     dependencies:
       - target: DDDumpling
 schemes:
+  AnalyticsLive:
+    build:
+      targets:
+        DDDumpling: all
+        DDDumplingUITests: [test]
+    test:
+      targets: [DDDumplingUITests]
   DDDumpling:
     build:
       targets:
