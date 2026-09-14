@@ -658,3 +658,8 @@ nothing. Follow the pattern rather than "fixing" it.
 Characters, effects and music are all original and procedurally generated — no assets to
 license. `res/raw/bgm.*` is gitignored: a user-supplied track stays on their device and must
 never be committed, since this repo is shared.
+
+- **Repeated presses on one boss projectile do not require repeated recognition.** The test bot
+  should keep its press-rate limit but only pay the reaction delay when choosing a new target.
+  Prioritize bolts by arrival time, not glyph index; otherwise a visual change that shifts the
+  seeded run can look like a pacing regression caused by the boss.

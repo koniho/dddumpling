@@ -2602,7 +2602,7 @@ final class GameCore {
             boolean priorOpen=boss.open();
             int bossHits = boss.update(dt, L, rnd);
             float cover=boss.slimePromptCover();
-            if(sound!=null && boss.kind==Boss.SLIME && boss.fighting() && boss.chainAt>=2
+            if(sound!=null && boss.kind==Boss.SLIME && boss.fighting() && boss.slimePromptHits>=2
                     && !boss.hasGlob() && boss.boltCount()==0 && !boss.slimeRetaliating) {
                 if(!priorOpen && boss.open()) sound.slimeCover(true);
                 else if(priorCover==0f && cover>0f && boss.open()) sound.slimeCover(false);

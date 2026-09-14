@@ -164,6 +164,7 @@ final class Boss {
     /** A damaged slime stays open while returning home, then answers with a three-bolt volley. */
     boolean slimeRetaliating;
     boolean slimeCoverLearned;
+    int slimePromptHits;
     /** Set by swat() for the press frame so audio can distinguish a hit from a destroyed bolt. */
     boolean boltDestroyed;
 
@@ -339,6 +340,7 @@ final class Boss {
         beaten = false;
         slimeRetaliating = boltDestroyed = false;
         slimeCoverLearned = false;
+        slimePromptHits = 0;
         mushroomShakes = mushroomDirection = 0;
         mushroomLastX = mushroomShakeWindow = mushroomCharge = mushroomAngry = mushroomSweepFlash = 0f;
         mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
@@ -417,6 +419,7 @@ final class Boss {
         beaten = false;
         slimeRetaliating = boltDestroyed = false;
         slimeCoverLearned = false;
+        slimePromptHits = 0;
         mushroomShakes = mushroomDirection = 0;
         mushroomLastX = mushroomShakeWindow = mushroomAttackT = mushroomCharge = mushroomAngry = mushroomSweepFlash = 0f;
         mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
@@ -919,6 +922,7 @@ final class Boss {
                 // So the chain is not the fight, it is what earns you something to fight with —
                 // which is why every press here is a PART and only dragTo returns a HIT.
                 chainAt++;
+                slimePromptHits=Math.min(2,slimePromptHits+1);
                 split++;
                 slimeKeyPulse = 0.11f;
                 promptT = promptDelay();
@@ -2466,7 +2470,7 @@ final class Boss {
 
         float cycle = CYCLE[kind];
         phase += dt;
-        if(kind==SLIME && chainAt>=2 && phase>=CYCLE[SLIME]-SLIME_PROMPT_TRANSITION)
+        if(kind==SLIME && slimePromptHits>=2 && phase>=CYCLE[SLIME]-SLIME_PROMPT_TRANSITION)
             slimeCoverLearned=true;
         if (phase >= cycle) phase -= cycle;
 
