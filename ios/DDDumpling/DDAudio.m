@@ -231,6 +231,8 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
   return [self playerForData:[self wavData:pcm sampleRate:DDSfx_RATE] loop:loop];
 }
 
+- (CFTimeInterval)effectTime { return CACurrentMediaTime(); }
+
 - (void)playEffect:(jint)effect rate:(float)rate gain:(float)gain {
 #if DEBUG
   if (_profileMuteEffects) return;
@@ -238,14 +240,14 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
   if (!_active || _interrupted || !_playbackAllowed) return;
   if (dispatch_semaphore_wait(_effectSlots, DISPATCH_TIME_NOW) != 0) return;
   NSUInteger generation = self.effectGeneration;
-  CFTimeInterval requested = CACurrentMediaTime();
+  CFTimeInterval requested = [self effectTime];
   dispatch_async(_effectsQueue, ^{
     @try {
       // Drop stale impacts rather than replaying a backlog after a pause or slow audio call.
-      if (generation != self.effectGeneration || CACurrentMediaTime() - requested > .1) return;
+      if (generation != self.effectGeneration || [self effectTime] - requested > .1) return;
       AVAudioPCMBuffer *buffer = [self bufferForEffect:effect];
       if (!buffer || ![self.effectMixer prepare]) return;
-      if (generation != self.effectGeneration || CACurrentMediaTime() - requested > .1) return;
+      if (generation != self.effectGeneration || [self effectTime] - requested > .1) return;
       [self.effectMixer playBuffer:buffer rate:rate gain:gain];
     } @catch (NSException *exception) {
       // Audio is optional. A translated synthesis error must not affect gameplay.

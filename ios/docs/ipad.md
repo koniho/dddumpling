@@ -55,9 +55,11 @@ Local result bundles under `ios/build/`: `Test-20260914-141033.xcresult` (Pro),
 The initial iPhone packaging test read filtered `NSBundle` metadata and failed; its raw-plist
 replacement passed all 21 native tests. Save snapshots: `Update-20260914-142349`.
 
-The first completion CI run dropped the pitch/gain test's effect under the existing
-100 ms stale-impact cutoff during cold audio startup. Dispatch tests now wait for buffer
-prewarming before submitting measured effects; the production cutoff is unchanged.
+Hosted CI dropped the pitch/gain test's effect under the existing 100 ms stale-impact
+cutoff, even after prewarming. Dispatch tests now control the effect clock; production
+still uses `CACurrentMediaTime()` and the same cutoff. A separate regression advances
+the clock before execution and during mixer preparation, checking both stale drops and
+that a fresh effect still plays afterward.
 
 ### Original implementation evidence
 

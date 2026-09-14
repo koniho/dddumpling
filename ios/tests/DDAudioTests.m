@@ -12,6 +12,14 @@
 - (void)resumePlayersIfNeeded;
 - (void)routeChanged:(NSNotification *)note;
 - (void)playEffect:(jint)effect rate:(float)rate gain:(float)gain;
+- (CFTimeInterval)effectTime;
+@end
+
+@interface DDTestAudio : DDIOSAudio
+@property(atomic) CFTimeInterval testTime;
+@end
+@implementation DDTestAudio
+- (CFTimeInterval)effectTime { return self.testTime; }
 @end
 
 @interface DDCountingPlayer : AVAudioPlayer
@@ -41,9 +49,10 @@
 @property(nonatomic) BOOL playedOnMainThread;
 @property(nonatomic) float rate;
 @property(nonatomic) float gain;
+@property(nonatomic, copy) void (^onPrepare)(void);
 @end
 @implementation DDCountingMixer
-- (BOOL)prepare { return YES; }
+- (BOOL)prepare { if (_onPrepare) _onPrepare(); return YES; }
 - (void)pause { ++_pauseCount; }
 - (void)playBuffer:(AVAudioPCMBuffer *)buffer rate:(float)rate gain:(float)gain {
   ++_playCount; _rate = rate; _gain = gain; _playedOnMainThread = NSThread.isMainThread;
@@ -155,9 +164,8 @@
 }
 
 - (void)testEffectWorkerPreservesPitchAndGain {
-  DDIOSAudio *audio = [DDIOSAudio new];
-  // Cold synthesis on a loaded simulator can consume the 100 ms stale-impact window.
-  dispatch_sync([audio valueForKey:@"renderQueue"], ^{});
+  // Assert dispatch semantics independently of a loaded runner's 100 ms scheduling budget.
+  DDTestAudio *audio = [DDTestAudio new];
   DDCountingMixer *mixer = [DDCountingMixer new];
   [audio setValue:@YES forKey:@"active"];
   [audio setValue:@YES forKey:@"playbackAllowed"];
@@ -171,8 +179,7 @@
 }
 
 - (void)testPendingEffectsDoNotBlockInputAndAreCancelledByPause {
-  DDIOSAudio *audio = [DDIOSAudio new];
-  dispatch_sync([audio valueForKey:@"renderQueue"], ^{});
+  DDTestAudio *audio = [DDTestAudio new];
   DDCountingMixer *player = [DDCountingMixer new];
   [audio setValue:@YES forKey:@"active"];
   [audio setValue:player forKey:@"effectMixer"];
@@ -189,6 +196,34 @@
   dispatch_sync(queue, ^{});
   XCTAssertEqual(player.playCount, 1);
   XCTAssertFalse(player.playedOnMainThread);
+}
+
+- (void)testStaleEffectsAreDroppedBeforeAndAfterPreparation {
+  DDTestAudio *audio = [DDTestAudio new];
+  DDCountingMixer *mixer = [DDCountingMixer new];
+  [audio setValue:@YES forKey:@"active"];
+  [audio setValue:mixer forKey:@"effectMixer"];
+  dispatch_queue_t queue = [audio valueForKey:@"effectsQueue"];
+  dispatch_semaphore_t gate = dispatch_semaphore_create(0);
+  dispatch_async(queue, ^{ dispatch_semaphore_wait(gate, DISPATCH_TIME_FOREVER); });
+  audio.testTime = 1;
+  [audio playEffect:DDSfx_ZAP rate:1 gain:1];
+  audio.testTime = 1.101;
+  dispatch_semaphore_signal(gate);
+  dispatch_sync(queue, ^{});
+  XCTAssertEqual(mixer.playCount, 0u);
+
+  audio.testTime = 2;
+  mixer.onPrepare = ^{ audio.testTime = 2.101; };
+  [audio playEffect:DDSfx_ZAP rate:1 gain:1];
+  dispatch_sync(queue, ^{});
+  XCTAssertEqual(mixer.playCount, 0u);
+  mixer.onPrepare = nil;
+
+  audio.testTime = 3;
+  [audio playEffect:DDSfx_ZAP rate:1 gain:1];
+  dispatch_sync(queue, ^{});
+  XCTAssertEqual(mixer.playCount, 1u);
 }
 
 @end
