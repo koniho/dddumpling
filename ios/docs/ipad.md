@@ -55,6 +55,10 @@ Local result bundles under `ios/build/`: `Test-20260914-141033.xcresult` (Pro),
 The initial iPhone packaging test read filtered `NSBundle` metadata and failed; its raw-plist
 replacement passed all 21 native tests. Save snapshots: `Update-20260914-142349`.
 
+The first completion CI run dropped the pitch/gain test's effect under the existing
+100 ms stale-impact cutoff during cold audio startup. Dispatch tests now wait for buffer
+prewarming before submitting measured effects; the production cutoff is unchanged.
+
 ### Original implementation evidence
 
 Validated on Xcode 26.6 / iOS 26.5 simulators, September 12, 2026:

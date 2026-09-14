@@ -156,6 +156,8 @@
 
 - (void)testEffectWorkerPreservesPitchAndGain {
   DDIOSAudio *audio = [DDIOSAudio new];
+  // Cold synthesis on a loaded simulator can consume the 100 ms stale-impact window.
+  dispatch_sync([audio valueForKey:@"renderQueue"], ^{});
   DDCountingMixer *mixer = [DDCountingMixer new];
   [audio setValue:@YES forKey:@"active"];
   [audio setValue:@YES forKey:@"playbackAllowed"];
@@ -170,6 +172,7 @@
 
 - (void)testPendingEffectsDoNotBlockInputAndAreCancelledByPause {
   DDIOSAudio *audio = [DDIOSAudio new];
+  dispatch_sync([audio valueForKey:@"renderQueue"], ^{});
   DDCountingMixer *player = [DDCountingMixer new];
   [audio setValue:@YES forKey:@"active"];
   [audio setValue:player forKey:@"effectMixer"];
