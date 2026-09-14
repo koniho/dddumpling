@@ -32,7 +32,7 @@ final class Sfx {
             MUSHROOM_SHAKE = BOLT_DEATH + 1, MUSHROOM_SPORE = MUSHROOM_SHAKE + 1,
             LINKED_THUD = MUSHROOM_SPORE + 1, SHUFFLE_BLIP = LINKED_THUD + 1, DEBUFF_DOWN = SHUFFLE_BLIP + 1,
             SLIME_COVER = DEBUFF_DOWN + 1, SLIME_RELEASE = SLIME_COVER + 1,
-            COUNT = SLIME_RELEASE + 1;
+            LAND_SHUFFLE = SLIME_RELEASE + 1, COUNT = LAND_SHUFFLE + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -58,6 +58,7 @@ final class Sfx {
             case DEBUFF_DOWN: return debuffDown();
             case SLIME_COVER: return slimeCover(false);
             case SLIME_RELEASE: return slimeCover(true);
+            case LAND_SHUFFLE: return landShuffle();
             case START: return start();
             case STAGE_CLEAR: return stageClear();
             case POWER_CLEAR: return powerClear();
@@ -729,6 +730,25 @@ final class Sfx {
             }
             float airy = white * (0.18f + grains) * (1f - 0.55f * u);
             v[i] = airy * envelope(u, 0.006f, 1.7f);
+        }
+        return render(v);
+    }
+
+    /** Four soft scuffs under the Adventure Dumpling's short walk. */
+    static short[] landShuffle() {
+        float[] v=new float[(int)(RATE*0.70f)];
+        int seed=0x1A4D;
+        float soft=0f;
+        for(int k=0;k<4;k++) {
+            int start=(int)((0.12f+k*0.13f)*RATE),length=(int)(0.12f*RATE);
+            for(int j=0;j<length && start+j<v.length;j++) {
+                float u=j/(float)length;
+                seed=seed*1664525+1013904223;
+                float noise=((seed>>>9)&0x7FFFFF)/4194303.5f-1f;
+                soft+=(noise-soft)*0.18f;
+                float thump=(float)Math.sin(TAU*(145f+k%2*20f)*j/RATE);
+                v[start+j]+=(soft*0.75f+thump*0.18f)*(float)Math.sin(Math.PI*u)*(float)Math.exp(-3f*u);
+            }
         }
         return render(v);
     }

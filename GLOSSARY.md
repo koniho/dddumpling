@@ -358,3 +358,14 @@ The floating pickup cycles through eligible powers plus INCOGNITO and MONOCHROME
 INCOGNITO puts pixel sunglasses on enemy and player characters, then morphs them into one shared round disguise differentiated only by key color. The 0.75-second transformation reverses when it expires. MONOCHROME fades the entire play area to grayscale over 0.6 seconds and fades back afterward. Both debuffs last eight seconds, preserve normal input and stage difficulty, pause with the game, and clear on stage changes or a new run. They do not trigger frenzy spawn/fall boosts or clear the stage on expiration.
 
 Stage 11 introduces mystery pickups with 15% longer travel/spawn intervals; stage 12 retains 7.5% relief and stage 13 returns to the normal ramp.
+
+## Land travel
+
+The title land picker spaces icons apart and moves one adjacent unlocked land per swipe. Each
+change takes 0.85 seconds: the Adventure Dumpling pops up on the trailing side of the previous
+land, walks toward the destination with soft shuffling footsteps, and settles out. Leftward
+travel mirrors the entrance. Rapid swipes queue separate journeys; tapping a distant icon visits
+each intervening unlocked land. Discovery animations pause while travelling.
+
+`LandPicker` owns input and choreography; `GameCore.landTravelQueue`, `landTravelFrom`, and
+`landTravelT` hold the session-only journey state.

@@ -104,11 +104,13 @@ public final class IOSInputTest extends Check {
         check("native cancellation releases flyer", !c.stars.dragging);
 
         game = game(); c = game.core(); l = game.geometry();
-        c.collected |= 1L << Collect.BOSS_FIRST;
+        c.collected |= 7L << Collect.BOSS_FIRST;
         game.touch(one(0, 25, l.w/2, LandPicker.cardY(l)));
         check("unlocked land picker begins drag", c.landPickerDragging);
-        game.touch(two(2, 0, 90, l.w, 0, 25, 0, LandPicker.cardY(l)));
+        game.touch(two(2, 0, 90, l.w, 0, 25, l.w*0.25f, LandPicker.cardY(l)));
         check("land picker follows stable owner", c.landChoice == 1);
+        game.touch(one(2,25,0,LandPicker.cardY(l)));
+        check("native long swipe cannot skip another land",c.landChoice==1 && c.landTravelQueue.isEmpty());
         game.background(true); game.background(false);
         check("background releases title land picker", !c.landPickerDragging);
         game.touch(one(2, 25, l.w, LandPicker.cardY(l)));
