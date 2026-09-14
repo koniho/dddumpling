@@ -60,6 +60,16 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
+        GameCore cover = new GameCore(new Mem(),3001L);
+        cover.startGame(); cover.jumpToStage(5,L);
+        cover.boss.intro=0f; cover.stageGap=0f; cover.stageBanner=0f;
+        cover.update(1f/60f,L);
+        float[] coverPhases={4.7f,4.85f,0.2f,1f,1.15f,1.4f};
+        for(int frame=0;frame<coverPhases.length;frame++) {
+            cover.boss.phase=coverPhases[frame];
+            shot(dir,"101-slime-cover-"+frame,cover,L,w,h,ss);
+        }
+
         GameCore mystery = new GameCore(new Mem(),1101L);
         mystery.startGame(); mystery.jumpToStage(11,L);
         mystery.stageGap=0f; mystery.spawnTimer=0f; mystery.powerTimer=100f;

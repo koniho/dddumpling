@@ -122,6 +122,19 @@ final class TestBoss extends Check {
         check("beating the stage-5 slime unlocks cubes for this run", unlock.cubeUnlocked);
         unlock.startGame();
         check("a new playthrough locks the cube pool again", !unlock.cubeUnlocked);
+        GameCore covered=enterBoss(L,Boss.SLIME,3001L);
+        covered.boss.phase=0.5f;
+        check("slime hides the prompt while protected",!covered.boss.open() && covered.boss.slimePromptCover()==1f);
+        float[] coveredSkin=BossScreen.slimePromptOutline(L,covered.boss);
+        float lowest=0f;
+        for(int i=1;i<coveredSkin.length;i+=2) lowest=Math.max(lowest,coveredSkin[i]);
+        check("slime body reaches over the protected prompt",lowest>BossScreen.slimeBadgeY(L,covered.boss)+L.unit);
+        covered.boss.phase=1.15f;
+        check("slime releases the prompt while vulnerable",covered.boss.open() && covered.boss.slimePromptCover()>0f && covered.boss.slimePromptCover()<1f);
+        covered.boss.phase=1.4f;
+        check("slime returns to its original silhouette",java.util.Arrays.equals(BossScreen.slimePromptOutline(L,covered.boss),BossScreen.slimeBossOutline(covered.boss.body)));
+        covered.boss.beaten=true;
+        check("defeat clears the protective fold",covered.boss.slimePromptCover()==0f);
         check("stage 10 is the split slime", Boss.kindFor(10) == Boss.SPLITTER);
         check("stage 15 is the octopus and stage 20 is the mushroom",
                 Boss.kindFor(15) == Boss.OCTOPUS && Boss.kindFor(20) == Boss.MUSHROOM

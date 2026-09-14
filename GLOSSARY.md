@@ -185,7 +185,7 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **enrage** | the visual warning on a dragging fight: it reddens, but does no damage by itself | `Boss.ENRAGE_AT`, `ENRAGE_RAMP` |
 | **slime** | boss 1. A wide, twice-as-jiggly mass of goo. A chain of letters to type, and the only thing that hurts it is a glob carried off the screen | `Boss.SLIME`, `WIDE`, `JIGGLE` |
 | **split** | working a glob loose: five presses of the chain. The presses themselves take no health off it | `Boss.SPLIT_HITS`, `split`, `splitProgress` |
-| **prompt** | the character on the slime. Answer it before its two-to-one-second deadline or it leads a volley | `promptT`, `promptDelay` |
+| **prompt** | the character on the slime. The body folds over it while invulnerable; it slips out as the skin relaxes. Answer it while exposed before its two-to-one-second deadline or it leads a volley | `promptT`, `promptDelay` |
 | **volley** / **bolt** | three projectiles launched by a missed prompt. They take one to three presses as the slime weakens; the next prompt waits until all three are gone | `Boss.BOLTS`, `bhp`, `boltWants`, `PARRY` |
 | **parry** | swatting a bolt. Scores like a hit and does not touch the boss | `Boss.PARRY`, `BossPlay.press` |
 | **glob** / **wart** | what the fifth press grows from the silhouette, red and visibly joined to the slime. The boss waits wounded with no prompt or volley clock until it is dragged to the edge or fades | `Boss.E_GLOB`, `GLOB_TIME` |

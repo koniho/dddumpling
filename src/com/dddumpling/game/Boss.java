@@ -680,6 +680,17 @@ final class Boss {
         return phase >= CYCLE[kind] - SHOW[kind];
     }
 
+    /** Gather the skin before protection, then relax it as the prompt comes free. */
+    float slimePromptCover() {
+        if (kind != SLIME || !fighting() || hasGlob() || boltCount() > 0 || slimeRetaliating) return 0f;
+        if (!open()) return 1f;
+        float sinceOpen = phase-(CYCLE[kind]-SHOW[kind]);
+        float release = Math.max(0f,1f-sinceOpen/0.35f);
+        float gather = Math.max(0f,1f-(CYCLE[kind]-phase)/0.30f);
+        float t = Math.min(1f,Math.max(release,gather));
+        return t*t*(3f-2f*t);
+    }
+
     /** 0..1 through the current window, or through the breather when it is shut. */
     float phaseProgress() {
         if (kind < 0) return 0f;
