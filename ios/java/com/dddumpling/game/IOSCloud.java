@@ -15,7 +15,7 @@ public final class IOSCloud implements Progress.Sink {
     private double clock, due;
     private String status = "Playing locally";
 
-    public IOSCloud(IOSGame game, Host host) { this(game.core(), host, BuildFlags.DEVELOPER); }
+    public IOSCloud(IOSGame game, Host host, boolean enabled) { this(game.core(), host, enabled); }
     IOSCloud(GameCore core, Host host, boolean enabled) {
         this.core = core; this.host = host; this.enabled = enabled;
     }

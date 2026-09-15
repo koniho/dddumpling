@@ -1,8 +1,8 @@
 #import "DDGameCloud.h"
 #import "DDGameCenter.h"
 #import "DDStore.h"
-#import "com/dddumpling/game/BuildFlags.h"
-#if DEBUG
+#import "DDGameServices.h"
+#if DDDUMPLING_GAME_CENTER
 #import <GameKit/GameKit.h>
 #import <CommonCrypto/CommonDigest.h>
 #import "com/dddumpling/game/IOSCloud.h"
@@ -46,7 +46,7 @@
 
 @implementation DDGameCloud
 - (NSString *)status {
-#if DEBUG
+#if DDDUMPLING_GAME_CENTER
     NSString *status = self.availability ?: (self.cloud ? [self.cloud status] : @"Disabled");
     return self.lastError ? [NSString stringWithFormat:@"%@\n%@", status, self.lastError] : status;
 #else
@@ -55,12 +55,12 @@
 }
 - (instancetype)initWithGame:(DDIOSGame *)game store:(DDIOSStore *)store center:(DDGameCenter *)center {
     if ((self = [super init])) {
-#if DEBUG
-        if (DDBuildFlags_DEVELOPER) {
+#if DDDUMPLING_GAME_CENTER
+        {
             _store = store; _center = center;
             DDCloudHost *host = [DDCloudHost new]; host.owner = self;
             _host = host;
-            _cloud = [[DDIOSCloud alloc] initWithDDIOSGame:game withDDIOSCloud_Host:host];
+            _cloud = [[DDIOSCloud alloc] initWithDDIOSGame:game withDDIOSCloud_Host:host withBoolean:YES];
             __weak DDGameCloud *weakSelf = self;
             _identityObserver = [NSNotificationCenter.defaultCenter
                 addObserverForName:NSUbiquityIdentityDidChangeNotification object:nil
@@ -73,7 +73,7 @@
     return self;
 }
 - (void)updateActive:(BOOL)active elapsed:(double)elapsed {
-#if DEBUG
+#if DDDUMPLING_GAME_CENTER
     if (!self.cloud) return;
     self.active = active;
     id identity = NSFileManager.defaultManager.ubiquityIdentityToken;
@@ -112,7 +112,7 @@
     [self.cloud updateWithDouble:elapsed];
 #endif
 }
-#if DEBUG
+#if DDDUMPLING_GAME_CENTER
 - (void)dealloc {
     if (self.registered) [GKLocalPlayer.localPlayer unregisterListener:self.host];
     if (self.identityObserver) [NSNotificationCenter.defaultCenter removeObserver:self.identityObserver];

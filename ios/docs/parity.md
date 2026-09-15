@@ -14,9 +14,9 @@ developer-panel shortcuts.
 
 ## Runtime seam
 
-Developer-only Game Center authentication and iCloud progress sync are described in
+Build-gated Game Center authentication and iCloud progress sync are described in
 [native game services](game-center.md). They preserve the existing Android Play Games
-integration and are excluded from the production iOS behavior inventoried here.
+integration. Release builds enable them explicitly with `DDDUMPLING_GAME_CENTER=1`.
 
 | Area | Shared code | Native boundary | Status |
 | --- | --- | --- | --- |

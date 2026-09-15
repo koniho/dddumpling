@@ -39,6 +39,11 @@ targets:
         TARGETED_DEVICE_FAMILY: '1'
         PRODUCT_BUNDLE_IDENTIFIER: com.dddumpling.game.ios
         APP_DISPLAY_NAME: DDDUMPLING
+        DDDUMPLING_GAME_CENTER: '0'
+        GAME_CENTER_ENTITLEMENTS_0: ''
+        GAME_CENTER_ENTITLEMENTS_1: DDDumpling/GameCenter.entitlements
+        CODE_SIGN_ENTITLEMENTS: '$(GAME_CENTER_ENTITLEMENTS_$(DDDUMPLING_GAME_CENTER))'
+        GCC_PREPROCESSOR_DEFINITIONS: ['$(inherited)', 'DDDUMPLING_GAME_CENTER=$(DDDUMPLING_GAME_CENTER)']
         # Keep fixed for TestFlight; bump only for a public App Store release.
         MARKETING_VERSION: 0.1.17
         CURRENT_PROJECT_VERSION: 1
@@ -47,8 +52,8 @@ targets:
       configs:
         Debug:
           APP_DISPLAY_NAME: DDD Dev
-          CODE_SIGN_ENTITLEMENTS: DDDumpling/GameCenterDebug.entitlements
-          GCC_PREPROCESSOR_DEFINITIONS: ['$(inherited)', 'DEBUG=1']
+          DDDUMPLING_GAME_CENTER: '1'
+          GCC_PREPROCESSOR_DEFINITIONS: ['$(inherited)', 'DEBUG=1', 'DDDUMPLING_GAME_CENTER=$(DDDUMPLING_GAME_CENTER)']
           PRODUCT_BUNDLE_IDENTIFIER: com.dddumpling.game.ios.dev
     preBuildScripts:
       - name: Translate shared Java

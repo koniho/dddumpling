@@ -2,7 +2,7 @@
 
 Native UIKit/Core Graphics/AVFoundation host for the existing Java game. J2ObjC translates the
 same gameplay and scene sources used by Android; generated Objective-C stays in `build/`.
-Initial target: portrait iPhone, iOS 15+, arm64. iPad, Mac Catalyst, production Game Center/iCloud and
+Initial target: portrait iPhone, iOS 15+, arm64. iPad, Mac Catalyst and
 Android save transfer are outside this initial port. The iPhone app may run in iPad compatibility
 mode; there is no native iPad layout or validation.
 
@@ -115,8 +115,9 @@ insets to compare drawing independently of that native navigation space.
 
 ## Resources and release
 
-Developer builds now integrate native Game Center sign-in and iCloud saved games;
-see [setup, platform selection and testing](docs/game-center.md). Release remains offline.
+Native Game Center sign-in and iCloud saved games are enabled by default in Debug.
+Release opts in with `DDDUMPLING_GAME_CENTER=1`; see
+[setup, build commands and testing](docs/game-center.md).
 
 The target bundles Bungee and its SIL OFL notice. Artwork is rendered from shared code; the
 1024×1024 AppIcon is regenerated with `./ios/scripts/resources.sh` using the existing launcher

@@ -3,10 +3,9 @@
 #import "DDAudio.h"
 #import "DDStore.h"
 #import "DDFrameMetrics.h"
-#if DEBUG
 #import "DDGameCenter.h"
 #import "DDGameCloud.h"
-#endif
+#import "DDGameServices.h"
 #import "com/dddumpling/game/IOSGame.h"
 #import "com/dddumpling/game/IOSTouch.h"
 #import "IOSPrimitiveArray.h"
@@ -41,9 +40,9 @@
 @property(nonatomic) BOOL storeAlertVisible;
 @property(nonatomic) BOOL gameCenterVisible;
 @property(nonatomic) BOOL muteSimulator;
-#if DEBUG
 @property(nonatomic, strong) DDGameCenter *gameCenter;
 @property(nonatomic, strong) DDGameCloud *gameCloud;
+#if DEBUG
 @property(nonatomic, strong) UIButton *servicesButton;
 #endif
 @end
@@ -63,7 +62,7 @@
 @implementation DDGameView
 - (void)didMoveToWindow {
     [super didMoveToWindow];
-#if DEBUG
+#if DEBUG || DDDUMPLING_GAME_CENTER
     if (self.window && !self.gameCenter) {
         self.gameCenter = [[DDGameCenter alloc] initWithPresenter:self.window.rootViewController];
         self.gameCloud = [[DDGameCloud alloc] initWithGame:self.game store:self.store center:self.gameCenter];
@@ -226,7 +225,7 @@
     if (_active == active) return;
     _active = active;
     [self refreshActivity];
-#if DEBUG
+#if DDDUMPLING_GAME_CENTER
     [self.gameCenter refreshActive:active && !self.storeAlertVisible];
     [self.gameCloud updateActive:active elapsed:0];
 #endif
@@ -248,7 +247,7 @@
     [self.frameMetrics recordDisplayLinkTimestamp:now];
     float elapsed = self.lastTime > 0 ? (float)(now - self.lastTime) : 0;
     self.lastTime = now;
-#if DEBUG
+#if DDDUMPLING_GAME_CENTER
     [self.gameCenter refreshActive:!self.storeAlertVisible];
     [self.gameCloud updateActive:YES elapsed:elapsed];
 #endif

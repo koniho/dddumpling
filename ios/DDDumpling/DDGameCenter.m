@@ -1,6 +1,6 @@
 #import "DDGameCenter.h"
-#import "com/dddumpling/game/BuildFlags.h"
-#if DEBUG
+#import "DDGameServices.h"
+#if DDDUMPLING_GAME_CENTER
 #import <GameKit/GameKit.h>
 
 @interface DDGameKitPlayer : NSObject <DDGameCenterPlayer>
@@ -30,8 +30,8 @@
 @implementation DDGameCenter
 - (instancetype)initWithPresenter:(UIViewController *)presenter {
     id<DDGameCenterPlayer> player = nil;
-    BOOL enabled = DDBuildFlags_DEVELOPER;
-#if DEBUG
+    BOOL enabled = DDDUMPLING_GAME_CENTER;
+#if DDDUMPLING_GAME_CENTER
     NSDictionary *environment = NSProcessInfo.processInfo.environment;
     enabled = enabled && ![environment[@"DDD_GAME_CENTER_DISABLED"] boolValue]
         && !environment[@"XCTestConfigurationFilePath"];
@@ -43,7 +43,7 @@
                            player:(id<DDGameCenterPlayer>)player enabled:(BOOL)enabled {
     if ((self = [super init])) {
         _presenter = presenter;
-        _enabled = enabled && DDBuildFlags_DEVELOPER;
+        _enabled = enabled && DDDUMPLING_GAME_CENTER;
         _player = _enabled ? player : nil;
         _status = _enabled ? @"Waiting" : @"Disabled";
     }
