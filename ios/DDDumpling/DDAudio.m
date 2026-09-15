@@ -379,6 +379,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 - (void)collectWithInt:(jint)nth { [self playEffect:DDSfx_COLLECT rate:1 + .05f * MAX(0, MIN(7, nth)) gain:1]; }
 - (void)starWithInt:(jint)nth { [self playEffect:DDSfx_STAR rate:1 + .032f * MAX(0, MIN(16, nth - 1)) gain:1]; }
 - (void)courseStart { [self playEffect:DDSfx_COURSE rate:1 gain:1]; }
+- (void)courseFinish { [self playEffect:DDSfx_BLAST_OFF rate:1 gain:1]; }
 - (void)tallyWithInt:(jint)nth { [self playEffect:DDSfx_TALLY rate:.94f + .018f * MAX(0, MIN(20, nth)) gain:1]; }
 - (void)paradeJoin { [self playEffect:DDSfx_JOIN rate:1 gain:1]; }
 - (void)rosterJoin { [self playEffect:DDSfx_ROSTER_JOIN rate:1 gain:1]; }
