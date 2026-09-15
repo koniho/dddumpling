@@ -9,6 +9,8 @@ esac
 if [ "$mode" != --build-only ] && [ ! -f "$IOS_ROOT/build/simulator-id" ]; then
     bash "$IOS_ROOT/scripts/boot-simulator.sh"
 fi
+# Test artifacts are not distributed; reuse their identity across repeat translations/runs.
+export DDDUMPLING_BUILD_ID="${DDDUMPLING_BUILD_ID:-ios-check-${GITHUB_SHA:-$(git -C "$REPO_ROOT" rev-parse HEAD)}}"
 started=$SECONDS
 bash "$IOS_ROOT/scripts/translate.sh" Debug
 xcodegen generate --spec "$IOS_ROOT/project.yml"

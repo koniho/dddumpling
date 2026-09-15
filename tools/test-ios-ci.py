@@ -110,7 +110,8 @@ class SimulatorScript(unittest.TestCase):
                 p = binary / name; p.write_text(fake); p.chmod(0o755)
             log = root / 'calls'
             env = dict(os.environ, PATH=str(binary)+os.pathsep+os.environ['PATH'],
-                       JAVA_HOME=str(root / 'java'), CALL_LOG=str(log), SIMULATOR_ID='test-device')
+                       JAVA_HOME=str(root / 'java'), CALL_LOG=str(log), SIMULATOR_ID='test-device',
+                       DDDUMPLING_BUILD_ID='test-build')
             command = ['bash', str(scripts / 'test-simulator.sh')]
             subprocess.run(command + ['--build-only'], env=env, check=True, stdout=subprocess.DEVNULL)
             calls = [json.loads(line) for line in log.read_text().splitlines()]
@@ -129,6 +130,24 @@ class SimulatorScript(unittest.TestCase):
             self.assertIn('-only-testing:DDDumplingTests/DDAudioTests', tests[0])
             self.assertLess(calls.index(compiles[0]), calls.index(tests[0]))
             self.assertTrue(any('bootstatus' in call for call in calls))
+
+
+class BuildIdentity(unittest.TestCase):
+    def test_explicit_test_identity_and_default_release_identity(self):
+        with tempfile.TemporaryDirectory() as temp:
+            command = ['sh', str(ROOT / 'tools/build-flags.sh'), temp, 'true']
+            env = dict(os.environ, DDDUMPLING_BUILD_ID='ios-check-abc123')
+            subprocess.run(command, env=env, check=True)
+            output = Path(temp) / 'com/dddumpling/game/BuildFlags.java'
+            first = output.read_text()
+            subprocess.run(command, env=env, check=True)
+            self.assertEqual(first, output.read_text())
+            self.assertIn('ios-check-abc123', first)
+            del env['DDDUMPLING_BUILD_ID']
+            subprocess.run(command, env=env, check=True)
+            self.assertNotIn('ios-check-', output.read_text())
+            env['DDDUMPLING_BUILD_ID'] = 'bad"identity'
+            self.assertNotEqual(subprocess.run(command, env=env, stderr=subprocess.DEVNULL).returncode, 0)
 
 
 class Translation(unittest.TestCase):

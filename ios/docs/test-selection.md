@@ -58,6 +58,10 @@ runtime-cache restore, and compilation. Logs record boot readiness, compilation,
 boot wait, and test-runner/execution/shutdown time. The latter still includes app installation
 and test-runner overhead; do not label it all as test assertion time.
 
+CI test artifacts use a stable commit-based build ID so the timestamp in BuildFlags does not
+invalidate every translation. Distributable Android/iOS builds keep their default unique IDs
+for the unread-release indicator.
+
 J2ObjC translation is keyed by source content/list, build configuration, prefixes, translation
 scripts, pinned bootstrap, translator binaries, and Java version. Cache hits verify generated
 file hashes. Misses translate into a temporary directory, remove stale outputs, and only
