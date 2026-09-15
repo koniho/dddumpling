@@ -38,8 +38,53 @@ final class TestStars extends Check {
                 c.collectTotal == prizes && c.stars.wins == 1 && store.starWinSaves == 1);
     }
 
+    private static void selectedPilot(Layout L) {
+        Mem store = new Mem();
+        store.collected = (1L << 2) | (1L << 7);
+        GameCore c = new GameCore(store, 173L);
+        c.caseIndex = 7;
+        c.beginStart();
+        advance(c, L, Launch.TIME + GameCore.START_FADE + DT);
+        check("pilot fixture starts through the title send-off", c.state == GameCore.PLAY);
+        c.starNext = true;
+        Interlude.enterBonus(c, L);
+        check("Star Path uses the title selection without a prize", c.prize == -1 && c.stars.who == 7);
+        c.stars.collected = 7;
+        Interlude.awardBossPrize(c, 0);
+        c.bossPrizePending = false;
+        Interlude.enterBonus(c, L);
+        check("a new boss collectible changes the case but not the pilot",
+                c.caseIndex == Collect.BOSS_FIRST && c.stars.who == 7 && c.stars.count() == 3);
+        Interlude.awardPrize(c);
+        Interlude.enterBonus(c, L);
+        check("a steamer award never replaces the run's pilot", c.stars.who == 7);
+        Interlude.awardStarPrize(c);
+        check("the victory tableau keeps its pilot when the star prize arrives", c.stars.who == 7);
+        Interlude.enterBonus(c, L);
+        check("the next course keeps the title selection after a star award", c.stars.who == 7);
+        c.state = GameCore.TITLE;
+        c.caseIndex = 2;
+        c.beginStart();
+        advance(c, L, Launch.TIME + GameCore.START_FADE + DT);
+        Interlude.enterBonus(c, L);
+        check("unfinished stars resume with the next run's selected character",
+                c.starBonus && c.prize == -1 && c.stars.who == 2 && c.stars.count() == 3);
+        if (BuildFlags.DEVELOPER) {
+            c.state = GameCore.PLAY;
+            c.playtestStars(L);
+            check("the Star Path test chip uses the same pilot without inventing a prize",
+                    c.stars.who == 2 && c.prize == -1);
+        }
+        GameCore fresh = new GameCore(new Mem(), 175L);
+        fresh.startGame();
+        fresh.starNext = true;
+        Interlude.enterBonus(fresh, L);
+        check("an empty collection still flies a dumpling instead of a blank circle", fresh.stars.who == 0);
+    }
+
     static void game(Layout L) {
         group("star path minigame");
+        selectedPilot(L);
         interruptedWin(L, false);
         interruptedWin(L, true);
         StarPath full = new StarPath();
@@ -150,7 +195,7 @@ final class TestStars extends Check {
         check("and a failed attempt is a new line, not the same one back",
                 q.count() == 3 && q.sx[7] != wasAt);
         check("pickup animation resets between attempts", q.burst[0] == 0f);
-        check("the steamer prize pilots the course", q.who == 3);
+        check("the requested character pilots the course", q.who == 3);
 
         Mem progress = new Mem();
         GameCore c = new GameCore(progress, 19L);
