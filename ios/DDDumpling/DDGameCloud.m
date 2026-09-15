@@ -23,6 +23,7 @@
 @property(nonatomic, strong) id identity;
 @property(nonatomic, strong) NSData *identityData;
 @property(nonatomic, copy) NSString *playerID, *saveName;
+@property(nonatomic, copy) NSString *availability, *lastError;
 @property(nonatomic, strong) NSArray<GKSavedGame *> *records;
 @property(nonatomic) BOOL active, registered;
 @property(nonatomic) jint request;
@@ -44,6 +45,14 @@
 #endif
 
 @implementation DDGameCloud
+- (NSString *)status {
+#if DEBUG
+    NSString *status = self.availability ?: (self.cloud ? [self.cloud status] : @"Disabled");
+    return self.lastError ? [NSString stringWithFormat:@"%@\n%@", status, self.lastError] : status;
+#else
+    return @"Disabled";
+#endif
+}
 - (instancetype)initWithGame:(DDIOSGame *)game store:(DDIOSStore *)store center:(DDGameCenter *)center {
     if ((self = [super init])) {
 #if DEBUG
@@ -89,7 +98,13 @@
         for (NSUInteger i = 0; i < sizeof(hash); i++) [name appendFormat:@"%02x", hash[i]];
         self.saveName = name;
     }
-    allowed = allowed && [self.store bindCloudPlayer:player identity:self.identityData];
+    BOOL bound = allowed && [self.store bindCloudPlayer:player identity:self.identityData];
+    self.availability = !player.length ? @"Waiting for Game Center sign-in"
+        : !identity ? @"iCloud Drive unavailable"
+        : self.store.error ? self.store.error
+        : !allowed ? @"Game Center account changed"
+        : !bound ? @"Account differs from this local save; sync paused" : nil;
+    allowed = bound;
     if (allowed && !self.registered) {
         [GKLocalPlayer.localPlayer registerListener:self.host]; self.registered = YES;
     }
@@ -120,12 +135,13 @@
 - (void)fetchWithInt:(jint)token {
     self.request = token;
     if (![self valid:token]) return;
+    self.lastError = nil;
     __weak DDGameCloud *weakSelf = self;
     [GKLocalPlayer.localPlayer fetchSavedGamesWithCompletionHandler:^(NSArray<GKSavedGame *> *games, NSError *error) {
         dispatch_async(dispatch_get_main_queue(), ^{
             DDGameCloud *sync = weakSelf;
             if (!sync || ![sync valid:token]) return;
-            if (error) { [sync.cloud failedWithInt:token withBoolean:NO]; return; }
+            if (error) { [sync failed:token error:error]; return; }
             NSMutableArray *records = [NSMutableArray new];
             for (GKSavedGame *game in games) if ([game.name isEqual:sync.saveName]) [records addObject:game];
             if (records.count > 32) { [sync.cloud failedWithInt:token withBoolean:YES]; return; }
@@ -152,7 +168,7 @@
         dispatch_async(dispatch_get_main_queue(), ^{
             DDGameCloud *sync = weakSelf;
             if (!sync || ![sync valid:token]) return;
-            if (error || !data) { [sync.cloud failedWithInt:token withBoolean:NO]; return; }
+            if (error || !data) { [sync failed:token error:error]; return; }
             if (data.length > 512 * 1024) { [sync.cloud failedWithInt:token withBoolean:YES]; return; }
             [payloads addObject:data];
             [sync loadRecords:records index:index + 1 payloads:payloads token:token];
@@ -168,7 +184,7 @@
             DDGameCloud *sync = weakSelf;
             if (!sync || ![sync valid:token]) return;
             sync.records = nil;
-            if (error) [sync.cloud failedWithInt:token withBoolean:NO];
+            if (error) [sync failed:token error:error];
             else [sync.cloud savedWithInt:token];
         });
     };
@@ -181,5 +197,11 @@
     }
 }
 - (void)conflictsChanged { [self.cloud changed]; }
+- (void)failed:(jint)token error:(NSError *)error {
+    self.lastError = error ? [NSString stringWithFormat:@"%@ (%ld): %@",
+        error.domain, (long)error.code, error.localizedDescription] : @"Cloud data unavailable";
+    NSLog(@"Game Center cloud: %@", self.lastError);
+    [self.cloud failedWithInt:token withBoolean:NO];
+}
 #endif
 @end

@@ -18,6 +18,9 @@ public final class IOSGame {
     public void setHost(Host host) { this.host = host; }
     public boolean handlesBack() { return Pause.handlesBack(core); }
     public boolean paused() { return core.paused; }
+    public boolean developerServicesVisible() {
+        return BuildFlags.DEVELOPER && (core.state == GameCore.TITLE || core.settingsOpen || core.paused);
+    }
     private void cancelPointers() {
         core.releaseNotes.cancelTouch();
         core.cave.input.release();

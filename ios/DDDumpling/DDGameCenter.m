@@ -22,6 +22,7 @@
 @property(nonatomic, strong) UIViewController *pending;
 @property(nonatomic, strong) UIViewController *presented;
 @property(nonatomic, readwrite) NSString *status;
+@property(nonatomic, readwrite) NSString *lastError;
 @property(nonatomic, readwrite) NSString *playerID;
 @property(nonatomic) BOOL enabled, started, active, presenting;
 @end
@@ -65,9 +66,13 @@
             DDGameCenter *service = weakSelf;
             if (!service) return;
             service.playerID = error ? nil : player;
+            service.lastError = error ? [NSString stringWithFormat:@"%@ (%ld): %@",
+                error.domain, (long)error.code, error.localizedDescription] : nil;
             service.pending = controller == service.presented ? nil : controller;
             service.status = controller ? @"Sign in" : player.length ? @"Connected" : @"Playing locally";
             if (error) service.status = @"Playing locally";
+            NSLog(@"Game Center: %@%@", service.status,
+                service.lastError ? [@" — " stringByAppendingString:service.lastError] : @"");
             [service presentIfReady];
         }];
     }

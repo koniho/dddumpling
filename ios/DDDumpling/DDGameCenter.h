@@ -8,6 +8,7 @@ typedef void (^DDGameCenterAuthentication)(UIViewController *, NSString *, NSErr
 
 @interface DDGameCenter : NSObject
 @property(nonatomic, readonly) NSString *status;
+@property(nonatomic, readonly) NSString *lastError;
 @property(nonatomic, readonly) NSString *playerID;
 @property(nonatomic, copy) void (^presentationChanged)(BOOL visible);
 - (instancetype)initWithPresenter:(UIViewController *)presenter;

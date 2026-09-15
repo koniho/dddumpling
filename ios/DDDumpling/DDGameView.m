@@ -44,6 +44,7 @@
 #if DEBUG
 @property(nonatomic, strong) DDGameCenter *gameCenter;
 @property(nonatomic, strong) DDGameCloud *gameCloud;
+@property(nonatomic, strong) UIButton *servicesButton;
 #endif
 @end
 
@@ -118,6 +119,15 @@
         _backButton.accessibilityLabel = @"Pause or go back";
         [_backButton addTarget:self action:@selector(navigateBack) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_backButton];
+#if DEBUG
+        _servicesButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        [_servicesButton setTitle:@"DEV · Game Center" forState:UIControlStateNormal];
+        _servicesButton.tintColor = _backButton.tintColor;
+        _servicesButton.titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
+        _servicesButton.accessibilityIdentifier = @"gameServices";
+        [_servicesButton addTarget:self action:@selector(showGameServices) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_servicesButton];
+#endif
         _displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(frame:)];
         _displayLink.preferredFrameRateRange = CAFrameRateRangeMake(60, 60, 60);
         [_displayLink addToRunLoop:NSRunLoop.mainRunLoop forMode:NSRunLoopCommonModes];
@@ -134,6 +144,7 @@
     self.backButton.frame = CGRectMake(self.bounds.size.width - p.right - 46, p.top, 44, 44);
     self.gameElement.accessibilityFrameInContainerSpace = self.bounds;
 #if DEBUG
+    self.servicesButton.frame = CGRectMake(p.left + 8, p.top, MIN(200, self.bounds.size.width - p.left - p.right - 60), 44);
     if (!self.sceneLoaded && self.bounds.size.width > 0 && self.bounds.size.height > 0) {
         NSString *scene = NSProcessInfo.processInfo.environment[@"DDD_SCENE"];
         if (scene.length) [self.game debugSceneWithNSString:scene];
@@ -148,9 +159,31 @@
     self.backButton.accessibilityLabel = [self.game paused] ? @"Resume or go back" : @"Pause or go back";
     self.accessibilityElements = self.backButton.hidden ? @[self.gameElement] : @[self.gameElement, self.backButton];
 #if DEBUG
+    self.servicesButton.hidden = ![self.game developerServicesVisible];
+    if (!self.servicesButton.hidden)
+        self.accessibilityElements = [self.accessibilityElements arrayByAddingObject:self.servicesButton];
     self.gameElement.accessibilityValue = [self.game debugStatus];
 #endif
 }
+#if DEBUG
+- (void)showGameServices {
+    UIViewController *controller = self.window.rootViewController;
+    if (!self.active || !controller || controller.presentedViewController) return;
+    NSString *message = [NSString stringWithFormat:@"Game Center: %@\nCloud save: %@\n%@\n\n%@",
+        self.gameCenter.status ?: @"Waiting", self.gameCloud.status ?: @"Waiting",
+        self.gameCenter.lastError ?: @"", NSBundle.mainBundle.bundleIdentifier];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"DDD Dev services"
+        message:message preferredStyle:UIAlertControllerStyleAlert];
+    self.gameCenterVisible = YES;
+    [self refreshActivity];
+    __weak DDGameView *weakSelf = self;
+    [alert addAction:[UIAlertAction actionWithTitle:@"Done" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        weakSelf.gameCenterVisible = NO;
+        [weakSelf refreshActivity];
+    }]];
+    [controller presentViewController:alert animated:YES completion:nil];
+}
+#endif
 - (void)clearPointers {
     [self.pointers removeAllObjects];
     [self.pointerIDs removeAllObjects];

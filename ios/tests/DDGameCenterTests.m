@@ -46,8 +46,10 @@
     [service refreshActive:YES]; XCTAssertEqual(player.calls, 1u);
     player.callback(nil, nil, [NSError errorWithDomain:@"test" code:1 userInfo:nil]);
     XCTAssertEqualObjects(service.status, @"Playing locally"); XCTAssertNil(service.playerID);
+    XCTAssertTrue([service.lastError containsString:@"test (1)"]);
     [service refreshActive:NO]; [service refreshActive:YES]; XCTAssertEqual(player.calls, 1u);
     player.callback(nil, @"player-a", nil); XCTAssertEqualObjects(service.playerID, @"player-a");
+    XCTAssertNil(service.lastError);
     player.callback(nil, nil, nil); XCTAssertNil(service.playerID);
     player.callback(nil, @"player-b", nil); XCTAssertEqualObjects(service.playerID, @"player-b");
 }

@@ -21,6 +21,11 @@ final class SmokeTests: XCTestCase {
         let app = launch()
         let game = app.otherElements["game"]
         XCTAssertTrue((game.value as? String ?? "").contains("state=0"))
+        app.buttons["gameServices"].tap()
+        let services = app.alerts["DDD Dev services"]
+        XCTAssertTrue(services.waitForExistence(timeout: 5))
+        XCTAssertTrue(services.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Game Center: Disabled")).firstMatch.exists)
+        services.buttons["Done"].tap()
         capture(app, "title")
         game.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.85)).tap()
         let playing = NSPredicate(format: "value CONTAINS %@", "state=1")

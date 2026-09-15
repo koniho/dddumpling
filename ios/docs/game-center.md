@@ -11,6 +11,10 @@ the game playable when sign-in is cancelled or unavailable. There is no new dash
 button. Authentication UI cancels touches and pauses gameplay/audio; dismissing it
 leaves an interrupted run paused for the player to resume.
 
+Debug installs appear as **DDD Dev** on the Home Screen. Tap **DEV · Game Center**
+on the title screen, in settings or while paused to inspect authentication, cloud-save
+status and the latest service error. Release installs retain the **DDDUMPLING** name.
+
 `DDGameCenter` handles authentication/presentation; `DDGameCloud` adapts GameKit saved
 games to the pure-Java `IOSCloud` coordinator. `IOSCloud` reuses `Progress` and
 `ProgressData`, including their per-install counters and maximum-score conflict merge.

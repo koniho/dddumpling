@@ -38,6 +38,7 @@ targets:
         # XcodeGen's iOS target default overrides the project-level family.
         TARGETED_DEVICE_FAMILY: '1'
         PRODUCT_BUNDLE_IDENTIFIER: com.dddumpling.game.ios
+        APP_DISPLAY_NAME: DDDUMPLING
         # Keep fixed for TestFlight; bump only for a public App Store release.
         MARKETING_VERSION: 0.1.17
         CURRENT_PROJECT_VERSION: 1
@@ -45,6 +46,7 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       configs:
         Debug:
+          APP_DISPLAY_NAME: DDD Dev
           CODE_SIGN_ENTITLEMENTS: DDDumpling/GameCenterDebug.entitlements
           GCC_PREPROCESSOR_DEFINITIONS: ['$(inherited)', 'DEBUG=1']
           PRODUCT_BUNDLE_IDENTIFIER: com.dddumpling.game.ios.dev
