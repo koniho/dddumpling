@@ -1,5 +1,13 @@
 name: Set up iOS toolchain
 description: Select Xcode and build/cache the pinned J2ObjC runtime
+inputs:
+  boot-simulator:
+    description: Start one simulator while toolchain setup continues
+    default: 'false'
+outputs:
+  xcode:
+    description: Exact Xcode toolchain fingerprint
+    value: ${{ steps.toolchain.outputs.xcode }}
 runs:
   using: composite
   steps:
@@ -9,6 +17,10 @@ runs:
         developer_dir=/Applications/Xcode_26.6.app/Contents/Developer
         test -d "$developer_dir"
         echo "DEVELOPER_DIR=$developer_dir" >> "$GITHUB_ENV"
+    - name: Start simulator boot
+      if: inputs.boot-simulator == 'true'
+      shell: bash
+      run: bash ios/scripts/boot-simulator.sh
     - uses: actions/setup-java@v5
       with:
         distribution: temurin

@@ -9,5 +9,7 @@ files += sorted(p for p in (upstream / 'jre_emul').rglob('*')
                 if p.is_file() and p.name in names and 'build_result' not in p.parts)
 output = root / 'build/ThirdPartyNotices.txt'
 output.parent.mkdir(parents=True, exist_ok=True)
-output.write_text('\n\n'.join(str(p.relative_to(upstream)) + '\n\n' +
-                             p.read_text(errors='replace') for p in files))
+text = '\n\n'.join(str(p.relative_to(upstream)) + '\n\n' +
+                             p.read_text(errors='replace') for p in files)
+if not output.exists() or output.read_text() != text:
+    output.write_text(text)

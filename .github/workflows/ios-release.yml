@@ -68,6 +68,8 @@ jobs:
             fi
           done
       - uses: ./.github/actions/setup-ios
+        with:
+          boot-simulator: 'true'
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
@@ -77,6 +79,8 @@ jobs:
           ./check.sh -q -r
           ./check.sh -q --production
           ./ios/scripts/test-input.sh
+      - name: Run full native and UI release checks
+        run: ./ios/scripts/test-simulator.sh --full
       - name: Build signed archive and IPA
         env:
           IOS_MATCH_GIT_PRIVATE_KEY: ${{ secrets.IOS_MATCH_GIT_PRIVATE_KEY }}
