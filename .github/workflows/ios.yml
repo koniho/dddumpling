@@ -2,11 +2,15 @@ name: Check iOS port
 
 on:
   workflow_dispatch:
+    inputs:
+      suite:
+        description: Full validation, or a focused diagnostic run
+        type: choice
+        default: full
+        options: [full, build, native, audio, input, render, storage]
   pull_request:
-    paths: ['ios/**', 'src/**', 'tools/**', 'assets/fonts/**', 'check.sh', 'Gemfile*', 'fastlane/**', '.github/actions/setup-ios/**', '.github/workflows/ios*.yml']
   push:
     branches: [main]
-    paths: ['ios/**', 'src/**', 'tools/**', 'assets/fonts/**', 'check.sh', 'Gemfile*', 'fastlane/**', '.github/actions/setup-ios/**', '.github/workflows/ios*.yml']
 
 permissions:
   contents: read
@@ -16,6 +20,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      shared: ${{ steps.plan.outputs.shared }}
+      simulator: ${{ steps.plan.outputs.simulator }}
+      archive: ${{ steps.plan.outputs.archive }}
+      tests: ${{ steps.plan.outputs.tests }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Test selection and cache contracts
+        run: python3 tools/test-ios-ci.py
+      - name: Select checks
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          SUITE: ${{ inputs.suite || 'full' }}
+        run: |
+          case "$EVENT" in
+            pull_request) python3 ios/scripts/ci-plan.py --base "$BASE" ;;
+            push) python3 ios/scripts/ci-plan.py --full ;;
+            workflow_dispatch) python3 ios/scripts/ci-plan.py --suite "$SUITE" ;;
+            *) exit 1 ;;
+          esac
   release_configuration:
     runs-on: ubuntu-latest
     steps:
@@ -32,27 +62,66 @@ jobs:
           bundle exec ruby tools/test-fastlane.rb
           bundle exec ruby tools/test-ios-fastlane.rb
           bundle exec fastlane lanes
-  simulator:
-    runs-on: macos-26
-    timeout-minutes: 45
+  shared:
+    needs: changes
+    if: needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup-ios
-      - name: Check shared gameplay and input
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Check shared gameplay, production guards, and iOS input
         run: |
           ./check.sh -q -r
           ./check.sh -q --production
           ./ios/scripts/test-input.sh
-      - name: Run native and UI tests
-        run: ./ios/scripts/test-simulator.sh
-      - name: Build unsigned device Release archive
-        run: ./ios/scripts/archive.sh --unsigned
+  simulator:
+    needs: changes
+    if: needs.changes.outputs.simulator == 'true'
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-ios
+        id: toolchain
+        with:
+          boot-simulator: ${{ needs.changes.outputs.tests != '[]' }}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ios/build/DerivedData
+            ios/build/generated
+            ios/build/translation-cache.json
+          key: ios-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.xcode }}-${{ hashFiles('ios/project.yml', 'ios/scripts/**', '.github/actions/setup-ios/action.yml') }}-${{ github.sha }}
+          restore-keys: |
+            ios-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.xcode }}-${{ hashFiles('ios/project.yml', 'ios/scripts/**', '.github/actions/setup-ios/action.yml') }}-
+      - name: Build and run selected iOS tests
+        env:
+          IOS_TEST_TARGETS: ${{ needs.changes.outputs.tests }}
+        run: |
+          if [ "$IOS_TEST_TARGETS" = '[]' ]; then
+            ./ios/scripts/test-simulator.sh --build-only
+          else
+            ./ios/scripts/test-simulator.sh --selected
+          fi
       - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: ios-test-results
           path: ios/build/Test-*.xcresult
           retention-days: 7
+  archive:
+    needs: changes
+    if: needs.changes.outputs.archive == 'true'
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-ios
+      - name: Build unsigned device Release archive
+        run: ./ios/scripts/archive.sh --unsigned
       - name: Package unsigned archive
         run: ditto -c -k --sequesterRsrc --keepParent ios/build/DDDumpling.xcarchive ios/build/DDDumpling-unsigned.xcarchive.zip
       - uses: actions/upload-artifact@v6
@@ -61,3 +130,14 @@ jobs:
           path: ios/build/DDDumpling-unsigned.xcarchive.zip
           if-no-files-found: error
           retention-days: 7
+  ios_checks:
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.suite != 'full' && 'iOS focused checks' || 'iOS checks' }}
+    needs: [changes, release_configuration, shared, simulator, archive]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Require every selected check to pass
+        env:
+          CI_NEEDS: ${{ toJSON(needs) }}
+        run: python3 ios/scripts/ci-plan.py --gate

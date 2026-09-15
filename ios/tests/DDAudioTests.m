@@ -12,6 +12,17 @@
 - (void)resumePlayersIfNeeded;
 - (void)routeChanged:(NSNotification *)note;
 - (void)playEffect:(jint)effect rate:(float)rate gain:(float)gain;
+- (CFTimeInterval)effectTime;
+- (void)warmBuffers;
+@end
+
+// Exercise queue routing/deadlines independently of simulator scheduling and warmup load.
+@interface DDClockedAudio : DDIOSAudio
+@property(atomic) CFTimeInterval now;
+@end
+@implementation DDClockedAudio
+- (CFTimeInterval)effectTime { return self.now; }
+- (void)warmBuffers {}
 @end
 
 @interface DDCountingPlayer : AVAudioPlayer
@@ -155,13 +166,11 @@
 }
 
 - (void)testEffectWorkerPreservesPitchAndGain {
-  DDIOSAudio *audio = [DDIOSAudio new];
+  DDClockedAudio *audio = [DDClockedAudio new];
   DDCountingMixer *mixer = [DDCountingMixer new];
   [audio setValue:@YES forKey:@"active"];
   [audio setValue:@YES forKey:@"playbackAllowed"];
   [audio setValue:mixer forKey:@"effectMixer"];
-  // Pitch/gain routing should not race cold synthesis against the 100 ms stale-effect limit.
-  [audio bufferForEffect:DDSfx_ZAP];
   [audio playEffect:DDSfx_ZAP rate:1.5 gain:.7];
   dispatch_sync([audio valueForKey:@"effectsQueue"], ^{});
   XCTAssertEqual(mixer.playCount, 1u);
@@ -170,8 +179,25 @@
   XCTAssertFalse(mixer.playedOnMainThread);
 }
 
+- (void)testQueuedEffectsRespectTheStaleDeadline {
+  for (NSNumber *delay in @[@.099, @.101]) {
+    DDClockedAudio *audio = [DDClockedAudio new];
+    DDCountingMixer *mixer = [DDCountingMixer new];
+    [audio setValue:@YES forKey:@"active"];
+    [audio setValue:mixer forKey:@"effectMixer"];
+    dispatch_queue_t queue = [audio valueForKey:@"effectsQueue"];
+    dispatch_semaphore_t gate = dispatch_semaphore_create(0);
+    dispatch_async(queue, ^{ dispatch_semaphore_wait(gate, DISPATCH_TIME_FOREVER); });
+    [audio playEffect:DDSfx_ZAP rate:1 gain:1];
+    audio.now = delay.doubleValue;
+    dispatch_semaphore_signal(gate);
+    dispatch_sync(queue, ^{});
+    XCTAssertEqual(mixer.playCount, delay.doubleValue < .1 ? 1u : 0u);
+  }
+}
+
 - (void)testPendingEffectsDoNotBlockInputAndAreCancelledByPause {
-  DDIOSAudio *audio = [DDIOSAudio new];
+  DDClockedAudio *audio = [DDClockedAudio new];
   DDCountingMixer *player = [DDCountingMixer new];
   [audio setValue:@YES forKey:@"active"];
   [audio setValue:player forKey:@"effectMixer"];

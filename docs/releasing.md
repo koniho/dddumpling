@@ -43,6 +43,8 @@ For TestFlight, keep the iOS marketing version unchanged and increment the build
 
 ## 4. Tag the verified main commit
 
+Require the full **iOS checks** run for the intended main commit to pass, including native/UI tests and the unsigned device archive. A focused manual run is diagnostic, not a replacement for this release gate. See [iOS test selection](../ios/docs/test-selection.md).
+
 When carrying out an authorized release, merge the reviewed preparation into main, check that the intended main commit includes it, and run the version check again before tagging. For example:
 
 ```sh

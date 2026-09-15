@@ -1,5 +1,7 @@
 # iOS CI and signed delivery
 
+For current PR selection, focused runs, caching, and required checks, see [test selection](test-selection.md).
+
 Verified on GitHub Actions: [run 34715180724](https://github.com/koniho/dddumpling/actions/runs/34715180724)
 at code commit `a4cc6e6` passed 4,864 shared Java assertions, 80 production checks,
 56 input assertions, all 13 native/UI tests, and the unsigned arm64 Release archive.
