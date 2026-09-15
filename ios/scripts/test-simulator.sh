@@ -25,13 +25,16 @@ fi
 simulator="${SIMULATOR_ID:-$(cat "$IOS_ROOT/build/simulator-id")}"
 args+=(-destination "platform=iOS Simulator,id=$simulator"
        -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1)
-selection=()
+# Append to the populated args array: Bash 3.2 rejects empty arrays under nounset.
 if [ "$mode" = --selected ]; then
-    while IFS= read -r target; do selection+=("-only-testing:$target"); done < <(
+    selected=0
+    while IFS= read -r target; do
+        args+=("-only-testing:$target"); selected=$((selected+1))
+    done < <(
         python3 -c 'import json,os; targets=json.loads(os.environ["IOS_TEST_TARGETS"]); assert targets; print("\n".join(targets))')
-    [ "${#selection[@]}" -gt 0 ] || { echo 'No selected tests' >&2; exit 1; }
+    [ "$selected" -gt 0 ] || { echo 'No selected tests' >&2; exit 1; }
 fi
-xcodebuild "${args[@]}" build-for-testing "${selection[@]}" "$@"
+xcodebuild "${args[@]}" build-for-testing "$@"
 echo "Simulator test build: $((SECONDS-started)) seconds"
 ready=$SECONDS
 xcrun simctl bootstatus "$simulator" -b
@@ -43,5 +46,5 @@ if [ -f "$IOS_ROOT/build/simulator-boot-end" ]; then
 fi
 tested=$SECONDS
 xcodebuild "${args[@]}" -resultBundlePath "$IOS_ROOT/build/Test-$(date +%Y%m%d-%H%M%S).xcresult" \
-    test-without-building "${selection[@]}" "$@"
+    test-without-building "$@"
 echo "Test runner, execution, and shutdown: $((SECONDS-tested)) seconds"
