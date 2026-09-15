@@ -170,6 +170,7 @@ public class GameView extends View {
             return true;
         }
 
+        if (handleCave(ev, action)) return true;
         if (handleBonusSwipe(ev, action)) return true;
 
         // The display case browses by touch. Needs MOVE events, so it comes before the down-only
@@ -253,6 +254,22 @@ public class GameView extends View {
     }
 
     private int landPointer = -1;
+    private boolean handleCave(MotionEvent ev, int action) {
+        CaveInput input=core.cave.input;
+        if (!Cave.active(core)) { input.release(); return false; }
+        int i=ev.getActionIndex();
+        if (action==MotionEvent.ACTION_DOWN || action==MotionEvent.ACTION_POINTER_DOWN) {
+            if (input.down(core,layout,ev.getPointerId(i),ev.getX(i),ev.getY(i))) { tick(); return true; }
+        } else if (action==MotionEvent.ACTION_MOVE && input.pointer>=0) {
+            int owner=ev.findPointerIndex(input.pointer);
+            if(owner>=0) return input.move(core,layout,input.pointer,ev.getX(owner));
+            input.release();
+        } else if (action==MotionEvent.ACTION_CANCEL) input.release();
+        else if (action==MotionEvent.ACTION_UP || action==MotionEvent.ACTION_POINTER_UP)
+            input.up(ev.getPointerId(i));
+        return false;
+    }
+
     private boolean handleLandPicker(MotionEvent ev, int action) {
         if (action == MotionEvent.ACTION_DOWN) {
             landPointer = -1;

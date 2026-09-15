@@ -20,6 +20,7 @@ public final class IOSGame {
     public boolean paused() { return core.paused; }
     private void cancelPointers() {
         core.releaseNotes.cancelTouch();
+        core.cave.input.release();
         landPointer = starDragPointer = bonusSwipePointer = bossDragPointer = -1;
         bossDragging = bossPinching = pushArmed = false;
         caseGesture = CASE_IDLE; pausePress = 0;
@@ -103,6 +104,7 @@ public final class IOSGame {
             return true;
         }
 
+        if (handleCave(ev, action)) return true;
         if (handleBonusSwipe(ev, action)) return true;
 
         // The display case browses by touch. Needs MOVE events, so it comes before the down-only
@@ -186,6 +188,22 @@ public final class IOSGame {
     }
 
     private int landPointer = -1;
+    private boolean handleCave(IOSTouch ev, int action) {
+        CaveInput input=core.cave.input;
+        if (!Cave.active(core)) { input.release(); return false; }
+        int i=ev.getActionIndex();
+        if (action==IOSTouch.ACTION_DOWN || action==IOSTouch.ACTION_POINTER_DOWN) {
+            if (input.down(core,layout,ev.getPointerId(i),ev.getX(i),ev.getY(i))) { tick(); return true; }
+        } else if (action==IOSTouch.ACTION_MOVE && input.pointer>=0) {
+            int owner=ev.findPointerIndex(input.pointer);
+            if(owner>=0) return input.move(core,layout,input.pointer,ev.getX(owner));
+            input.release();
+        } else if (action==IOSTouch.ACTION_CANCEL) input.release();
+        else if (action==IOSTouch.ACTION_UP || action==IOSTouch.ACTION_POINTER_UP)
+            input.up(ev.getPointerId(i));
+        return false;
+    }
+
     private boolean handleLandPicker(IOSTouch ev, int action) {
         if (action == IOSTouch.ACTION_DOWN) {
             landPointer = -1;

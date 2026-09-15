@@ -29,7 +29,7 @@ final class TestLinkedPairs extends Check {
         mask.fillCircle(20, 30, 2, 0xFFFF0000);
         check("restoring mask allows characters and later layers to draw", mask.resolve()[30*100+20] == 0xFFFF0000);
         for (int stage = 16; stage <= 31; stage++) {
-            if (stage % Boss.EVERY == 0) continue;
+            if (stage % Boss.EVERY == 0 || Cave.stage(stage)) continue;
             GameCore wave = wave(L, stage);
             java.util.Set<GameCore.Enemy> seen = new java.util.HashSet<GameCore.Enemy>();
             java.util.Set<GameCore.Enemy> characters = new java.util.HashSet<GameCore.Enemy>();
@@ -77,7 +77,7 @@ final class TestLinkedPairs extends Check {
         check("pair uses opposite thumbs", a.word[0] < 3 && b.word[0] >= 3);
         check("paired keys do not overlap", b.baseX - a.baseX > L.enemyR * 3f && a.speed == b.speed);
         check("second pair is not due immediately after the first", !LinkedPairs.spawn(c, L));
-        check("later normal stages keep the pair", wave(L, 21).enemies.get(0).link != null);
+        check("later normal stages keep the pair", wave(L, 26).enemies.get(0).link != null);
         check("stage 16 gives slower falls than stage 14", Pacing.travelSeconds(16, 1f) > Pacing.travelSeconds(14, 1f));
         check("lesson has wider arrival spacing", Pacing.spawnInterval(16, 1f) > Pacing.spawnInterval(15, 1f));
         check("first lesson limits crowd to four", c.maxEnemies() == 4);

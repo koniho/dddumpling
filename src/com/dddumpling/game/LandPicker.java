@@ -5,7 +5,7 @@ final class LandPicker extends Draw {
     private LandPicker() {}
     static final float TRAVEL_TIME = 0.85f;
     static boolean unlocked(GameCore c, int land) {
-        return land == 0 || land > 0 && land < Lands.COUNT
+        return land == 0 || land > 0 && land < Lands.playableCount()
                 && (BuildFlags.DEVELOPER && c.allLandsEnabled || (c.landSuppressed & (1 << land)) == 0
                 && Collect.has(c.collected, Collect.BOSS_FIRST + land - 1));
     }
@@ -107,8 +107,16 @@ final class LandPicker extends Draw {
         c.landBests[land] = Math.max(c.landBests[land], c.best);
         if (c.store != null) c.store.saveLandBest(land, c.landBests[land]);
     }
+    private static final int STATE_V2 = 1 << 30;
+    static int stateMask() { return (1 << Lands.COUNT) - 2; }
+    static void restore(GameCore c, int value) {
+        // Old saves packed two four-bit groups. Widen without reinterpreting suppression as visits.
+        boolean modern = (value & STATE_V2) != 0;
+        c.landSeen = value & (modern ? stateMask() : 14);
+        c.landSuppressed = (value >> (modern ? 8 : 4)) & (modern ? stateMask() : 14);
+    }
     static void save(GameCore c) {
-        if (c.store != null) c.store.saveLandState(c.landSeen | (c.landSuppressed << 4));
+        if (c.store != null) c.store.saveLandState(STATE_V2 | c.landSeen | (c.landSuppressed << 8));
     }
     static void enableAll(GameCore c) {
         if (BuildFlags.DEVELOPER) c.allLandsEnabled=true;
@@ -116,7 +124,7 @@ final class LandPicker extends Draw {
     static void reset(GameCore c) {
         if (!BuildFlags.DEVELOPER) return;
         c.allLandsEnabled = false;
-        c.landSuppressed = 14;
+        c.landSuppressed = stateMask();
         c.landSeen = 0;
         c.landDiscovery = -1;
         c.landDiscoveryT = c.landPickerSlide = 0f;

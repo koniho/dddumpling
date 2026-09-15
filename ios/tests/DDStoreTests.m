@@ -43,6 +43,8 @@
 - (void)testRoundTripsEveryStoreFieldAndProgress {
   NSURL *url = [self temporaryFile];
   DDIOSStore *saved = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertEqual(saved.loadCaveChoice, -1);
+  [saved saveCaveChoiceWithInt:4];
   [saved saveBestWithInt:812];
   [saved saveLandStateWithInt:0x52];
   [saved saveReleaseSeenWithNSString:@"test-build"];
@@ -64,6 +66,7 @@
 
   DDIOSStore *loaded = [[DDIOSStore alloc] initWithURL:url];
   XCTAssertNil(loaded.error);
+  XCTAssertEqual(loaded.loadCaveChoice, 4);
   XCTAssertEqual(loaded.loadBest, 812);
   XCTAssertEqual(loaded.loadLandState, 0x52);
   XCTAssertEqualObjects(loaded.loadReleaseSeen, @"test-build");

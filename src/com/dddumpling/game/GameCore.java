@@ -166,6 +166,8 @@ final class GameCore {
         default void saveReleaseSeen(String value) {}
         int loadBest();
         void saveBest(int best);
+        default int loadCaveChoice() { return -1; }
+        default void saveCaveChoice(int value) {}
         default int loadLandState() { return 0; }
         default void saveLandState(int value) {}
         default int loadLandBest(int land) { return land == 0 ? loadBest() : 0; }
@@ -526,6 +528,8 @@ final class GameCore {
     // ---- between-stages minigame -------------------------------------------
     final Steamer steamer = new Steamer();
     final StarPath stars = new StarPath();
+    final Cave cave = new Cave();
+    int caveChoice = -1;
     /** Successful games alternate; failures leave the same game queued. */
     boolean starNext, starBonus;
     /** Unlocked for this run after defeating the stage-5 slime. */
@@ -1134,7 +1138,7 @@ final class GameCore {
      * buttons, so a playtest exercises exactly what play does.
      */
     void startFrenzy(int effect, Layout L) {
-        if (effect < 0 || effect >= Power.COUNT) return;
+        if (Cave.active(this) || effect < 0 || effect >= Power.COUNT) return;
         // TEAM SQUISH has nobody to field with an empty case. The drifting letter never rolls it
         // then, so only the playtest chips can ask for it, and refusing is clearer than quietly
         // substituting a different mode.
@@ -1402,9 +1406,8 @@ final class GameCore {
             }
         }
         if (store != null) {
-            int landState = store.loadLandState();
-            landSeen = landState & 14;
-            landSuppressed = (landState >> 4) & 14;
+            LandPicker.restore(this, store.loadLandState());
+            caveChoice = CaveDumpling.valid(store.loadCaveChoice());
             best = store.loadBest();
             for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
             landBests[0] = Math.max(landBests[0], best);
@@ -1492,6 +1495,7 @@ final class GameCore {
     void openSettings() {
         if (!BuildFlags.DEVELOPER) return;
         settingsOpen = true;
+        cave.input.release();
         clearArmed = false;
     }
 
@@ -1753,6 +1757,7 @@ final class GameCore {
             if (!startAnnounced) sound.gameStart();
         }
         startAnnounced = false;
+        cave.begin(this);
     }
 
     void returnToTitle() {
@@ -1762,6 +1767,7 @@ final class GameCore {
     }
 
     void toTitle() {
+        cave.leave();
         progress.finishRun(score, true);
         Pause.resume(this);
         boolean hadHaul = state == OVER && roundPrizes != 0L;
@@ -1907,6 +1913,7 @@ final class GameCore {
             return false;
         }
         keyPress[g] = 1f;
+        if (Cave.active(this)) return cave.press(this, g, L);
 
         if (target != null && (!target.typeable() || !enemies.contains(target)
                 || (powerActive() && mode == Power.FLING && target.link != null))) target = null;
@@ -2338,6 +2345,7 @@ final class GameCore {
 
     /** The glyph the player must press next, or -1 when nothing is locked. */
     int hintGlyph() {
+        if (Cave.active(this)) return cave.wanted();
         if (state != PLAY || target == null || target.pos >= target.word.length) return -1;
         return target.word[target.pos];
     }
@@ -2643,6 +2651,8 @@ final class GameCore {
             }
             return;
         }
+
+        if (Cave.active(this)) { cave.update(this, dt, L); return; }
 
         updatePower(dt, L);
         Blade.updateTrail(this, dt, L);
@@ -3025,6 +3035,7 @@ final class GameCore {
         if (bk >= 0) boss.begin(bk, stage, rnd, playRosterFull());
         else boss.leave();
         if (sound != null && hadBoss != (bk >= 0)) sound.bossMusic(bk >= 0);
+        cave.begin(this);
     }
 
     /**
@@ -3112,6 +3123,7 @@ final class GameCore {
      * early returns, or clear it where the early return is taken. There is no third way.
      */
     private void die() {
+        cave.leave();
         progress.finishRun(score, false);
         if (runFullRoster && fullRoster) {
             if (stage >= 6) earlyLosses = 0;

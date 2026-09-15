@@ -86,8 +86,39 @@ final class TestProduction extends Check {
         c.bonusTimer = 0.001f;
         c.update(DT,L);
         check("normal stage progression still works", c.stage == stage + 1);
+        caveGate(L);
         TestProgress.all(L);
         System.out.printf("%d passed, %d failed%n",pass,fail);
         if (fail > 0) System.exit(1);
     }
+    private static void caveGate(Layout L) {
+        Mem store=new Mem();store.collected=Collect.MASK;store.caveChoice=CaveDumpling.GOLDEN;
+        GameCore c=new GameCore(store,981L);
+        c.allLandsEnabled=true;
+        check("production exposes only the original lands",LandPicker.count(c)==4);
+        check("cave stays locked with all rewards and developer override",!LandPicker.unlocked(c,Cave.LAND));
+        c.landSeen=14;LandPicker.updateDiscovery(c,1f);
+        check("production never tours the cave",c.landDiscovery<0);
+        LandPicker.select(c,Cave.LAND);
+        check("production cannot select cave from picker",c.landChoice==0);
+        c.landChoice=Cave.LAND;c.startGame();
+        check("stale cave selection starts a normal run",c.stage==1 && !Cave.active(c));
+        boolean original=true;
+        for(int stage=1;stage<=120;stage++)
+            original &= Lands.forStage(stage)==(stage-1)/Boss.EVERY%4 && !Cave.stage(stage);
+        check("production retains original endless scenery cycle",original);
+        c.stage=20;Interlude.enterBonus(c,L);c.bonusTimer=.001f;
+        c.update(DT,L);c.update(DT,L);
+        check("leaving stage 20 enters ordinary stage 21",c.stage==21 && c.state==GameCore.PLAY && !c.cave.running);
+        for(int frame=0;frame<240;frame++)c.update(DT,L);
+        check("stage 21 still spawns ordinary enemies",!c.enemies.isEmpty() && c.spawnedThisStage>0);
+        c.cave.running=true;
+        check("stale cave state cannot enable production cave input",!Cave.active(c)
+                && !c.cave.input.down(c,L,1,L.w*.5f,L.playTop+L.w*.4f));
+        c.landSeen|=1<<Cave.LAND;LandPicker.save(c);
+        GameCore reload=new GameCore(store,982L);
+        check("gate preserves saved cave choices and visits",reload.caveChoice==CaveDumpling.GOLDEN
+                && (reload.landSeen&(1<<Cave.LAND))!=0);
+    }
+
 }
