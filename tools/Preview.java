@@ -482,6 +482,13 @@ final class Preview {
         shot(dir, "59-roster-leave", cLeave, L, w, h, ss);
         store.rosterState = 1;
 
+        GameCore caseScore = new GameCore(store, 728L);
+        for (int sample = 0; sample <= 4; sample++) {
+            caseScore.caseOpen = true;
+            caseScore.caseFade = sample * .25f;
+            shot(dir, "110-case-score-fade-" + sample, caseScore, L, w, h, ss);
+        }
+
         // Part-way through fading in on that tap.
         c.openCase();
         step(c, L, 0.78f / GameCore.CASE_FADE_RATE);

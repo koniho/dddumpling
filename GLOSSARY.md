@@ -419,3 +419,7 @@ The **explorer selection** (`CaveSelection`) appears on first cave entry. Choose
 golden, silver, sparkly mint, or purple; that finish persists across cave levels and restarts.
 `CaveDumpling` draws the chosen finish and uses a normalized `Softbody` to give each walking step
 a small spring-driven lift and squash. Cave walking speed is .36 route units per second.
+
+The title’s **Best Score** fades out before the display case heading appears, stays hidden
+while the case is open, and fades back in after the case heading disappears. `Screens.caseOut`
+keeps these labels from overlapping during either transition.

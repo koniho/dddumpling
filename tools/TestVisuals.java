@@ -331,7 +331,39 @@ final class TestVisuals extends Check {
 
     }
 
+    private static void caseScoreFade() {
+        Layout phone = new Layout();
+        phone.compute(1290, 2796, 0, 0, 0, 0);
+        GameCore c = new GameCore(new Mem(), 728L);
+        c.best = 1840;
+        final int[] alpha = new int[2];
+        Painter p = (Painter) java.lang.reflect.Proxy.newProxyInstance(
+                Painter.class.getClassLoader(), new Class<?>[] {Painter.class}, (proxy, method, args) -> {
+                    if (method.getName().equals("text")) {
+                        int a = (Integer) args[4] >>> 24;
+                        if (args[0].equals("BEST 1840")) alpha[0] = Math.max(alpha[0], a);
+                        if (args[0].equals("DISPLAY CASE")) alpha[1] = Math.max(alpha[1], a);
+                    }
+                    return null;
+                });
+        for (boolean opening : new boolean[] {true, false}) {
+            c.caseOpen = opening;
+            for (int step = 0; step <= 20; step++) {
+                c.caseFade = (opening ? step : 20 - step) / 20f;
+                alpha[0] = alpha[1] = 0;
+                Screens.title(p, c, phone);
+                if (c.caseFade == 0f) check("closed case restores Best Score", alpha[0] == 255);
+                if (c.caseFade == .25f) check("Best Score fades with the closing content",
+                        alpha[0] > 0 && alpha[0] < 255);
+                if (c.caseFade >= .5f) check("Best Score is gone before the open-case heading",
+                        alpha[0] == 0);
+                if (c.caseFade == 1f) check("open display case retains its heading", alpha[1] > 0);
+            }
+        }
+    }
+
     static void titleScreen(Layout L) {
+        caseScoreFade();
         discoveryTrip(L);
         GameCore trail=new GameCore(new Mem(),724L);
         float r=LandPicker.iconRadius(trail,L);
