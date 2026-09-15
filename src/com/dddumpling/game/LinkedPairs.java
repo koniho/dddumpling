@@ -7,7 +7,7 @@ final class LinkedPairs {
     private LinkedPairs() {}
 
     static boolean due(GameCore c) {
-        if (c.stage < FIRST_STAGE || c.boss.active()) return false;
+        if (c.stage < FIRST_STAGE || c.boss.active() || Cave.active(c)) return false;
         if (c.powerActive()) return c.mode != Power.MULTI && c.powerSpawnedEnemies%4 == 0;
         return c.spawnedThisStage == 0 || c.spawnedThisStage == 3;
     }

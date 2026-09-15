@@ -2,17 +2,20 @@ package com.dddumpling.game;
 
 /** Five-stage scenery chapters. Cosmetic clocks never consume gameplay randomness. */
 final class Lands extends Draw {
-    static final int COUNT = 4;
+    static final int COUNT = 5;
     static final float FADE_TIME = 2.4f;
     static final int[] BG = {
         Glyph.mix(Draw.BG, 0xFF142A29, 0.5f), Glyph.mix(Draw.BG, 0xFF21182F, 0.5f),
-        Glyph.mix(Draw.BG, 0xFF102735, 0.5f), Glyph.mix(Draw.BG, 0xFF241F2A, 0.5f)
+        Glyph.mix(Draw.BG, 0xFF102735, 0.5f), Glyph.mix(Draw.BG, 0xFF241F2A, 0.5f), CaveArt.DARK
     };
-    static final int[] TINT = {0xFF79C99D, 0xFFB18CDB, 0xFF62BEC5, 0xFFE4A19C};
+    static final int[] TINT = {0xFF79C99D, 0xFFB18CDB, 0xFF62BEC5, 0xFFE4A19C, CaveArt.LIGHT};
     private Lands() {}
 
+    // Keep catalog/save slots stable while production cycles through its original four lands.
+    static int playableCount() { return BuildFlags.DEVELOPER ? COUNT : Cave.LAND; }
+
     // Beyond the authored bosses, scenery repeats without adding encounters.
-    static int forStage(int stage) { return (Math.max(1, stage) - 1) / Boss.EVERY % COUNT; }
+    static int forStage(int stage) { return (Math.max(1, stage) - 1) / Boss.EVERY % playableCount(); }
     static int skitFor(int stage) { return (Math.max(1, stage) - 1) % Boss.EVERY % 3; }
     static float blend(GameCore c) {
         float t = c.landBlend;
@@ -107,6 +110,7 @@ final class Lands extends Draw {
 
     private static void prop(Painter p, int land, float x, float y, float r, int a, float t,
             boolean silhouette, boolean animated) {
+        if (land == Cave.LAND) { CaveArt.entrance(p, x, y, r, a, silhouette); return; }
         int col = Glyph.withAlpha(silhouette ? 0xFF9A8FAF : Glyph.mix(Sky.CLOUD_TINT[1], TINT[land], 0.5f), a);
         int light = silhouette ? 0 : Glyph.withAlpha(0xFFE6FFE5, a * 2 / 3);
         if (land == 0) {
@@ -279,6 +283,11 @@ final class Lands extends Draw {
 
     static void skit(Painter p, int stage, float x, float y, float r, float t, int a) {
         int land = forStage(stage), variant = skitFor(stage);
+        if (land == Cave.LAND) {
+            CaveArt.entrance(p,x,y,r,a,false);
+            Skits.face(p,Kawaii.DUMPLING,x+r*(t-.5f),y+r*.65f,r*.36f,a,1f,.5f);
+            return;
+        }
         if (land == 2 && variant == 1) { SeaSkits.hide(p, x, y, r, t, a); return; }
         if (land == 2 && variant == 2) { SeaSkits.trudge(p, x, y, r, t, a); return; }
         float arc = (float)Math.sin(t * Math.PI);

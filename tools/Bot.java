@@ -147,6 +147,39 @@ final class Bot {
         return r;
     }
 
+    private int cavePhase = -1;
+    private void cavePlay(GameCore c, Layout L, float dt) {
+        Cave v=c.cave;
+        if(v.phase!=cavePhase) { cavePhase=v.phase; think=reaction; }
+        think-=dt;
+        if(think>0f || c.pendingBonus) return;
+        if(v.phase==Cave.ROCKS) {
+            // Only falling rocks are visible; no knowledge of later releases.
+            float best=v.traps.x, distance=Float.MAX_VALUE;
+            for(float candidate:new float[]{.20f,.40f,.60f,.80f}) {
+                boolean safe=true;
+                for(int i=0;i<CaveTraps.ROCK_COUNT;i++)
+                    if(v.traps.rockProgress(i)>=0f && !v.traps.landed[i]
+                            && Math.abs(candidate-v.traps.lanes[i])<CaveTraps.ROCK_R+CaveTraps.PLAYER_R+.02f) safe=false;
+                if(safe && Math.abs(candidate-v.traps.x)<distance) {best=candidate;distance=Math.abs(candidate-v.traps.x);}
+            }
+            v.traps.drag(best);think=reaction;return;
+        }
+        if(budget<1f) return;
+        if(v.phase==Cave.CHOOSE) {
+            v.tap(c,L,CaveSelection.x(L,0),CaveSelection.y(L,0));
+        } else if(v.phase==Cave.FORK) {
+            v.tap(c,L,Cave.branchX(v.fork,-1,v.z+.4f)*L.w,v.screenY(v.z+.4f,L));
+        } else if(v.phase==Cave.SHADOW) {
+            v.tap(c,L,v.enemyX*L.w,v.screenY(v.enemyZ,L));
+        } else if(v.wanted()>=0) {
+            int g=v.wanted();
+            if(rnd.nextFloat()<missRate) g=Roster.at(c.playRosterFull(),(Roster.count(c.playRosterFull())-1));
+            c.tapKey(g,L);
+        } else return;
+        budget-=1f;presses++;
+    }
+
     private int presses;
 
     /**
@@ -172,6 +205,7 @@ final class Bot {
         if (c.state != GameCore.PLAY) return;
 
         budget = Math.min(BURST, budget + dt * pps);
+        if (Cave.active(c)) { cavePlay(c,L,dt); return; }
         if (c.bossFighting() && c.boss.kind == Boss.SPLITTER
                 && c.boss.vulnerablePiece() >= 0 && budget >= 1f) {
             budget -= 1f;

@@ -24,6 +24,9 @@ final class Renderer extends Draw {
 
         // Kept moderate: the red reads as a pulse at the edges, not a wash over the
         // characters, which have to stay legible at exactly the moment you are panicking.
+        if (Cave.active(c)) {
+            CaveScreen.draw(p, c, L);
+        } else {
         p.fillRect(0, 0, L.w, L.h,
                 Glyph.mix(Glyph.mix(Lands.background(c), BG_HURT, hurt * 0.45f), BG_DEATH, gone));
         p.fillRect(0, L.deckTop, L.w, L.h,
@@ -76,6 +79,8 @@ final class Renderer extends Draw {
         if (!(c.state == GameCore.BONUS && c.starBonus)) keys(p, c, L);
         p.restore();
 
+        }
+
         // Red closing-in glow: from low health, and from a word about to land.
         Sky.vignette(p, L, ROSE, Math.max(hurt, c.warnLevel * (0.45f + 0.55f * hurtPulse)));
         // Gold rim while the slow-motion beat runs, so the drop in speed reads as deliberate
@@ -104,7 +109,7 @@ final class Renderer extends Draw {
         if (c.state == GameCore.TITLE) Screens.title(p, c, L);
         else if (c.state == GameCore.OVER) Screens.gameOver(p, c, L);
         else if (c.state == GameCore.BONUS) Screens.bonus(p, c, L);
-        else if (c.stageBanner > 0) Hud.stageBanner(p, c, L);
+        else if (c.stageBanner > 0 && !(Cave.active(c) && c.cave.phase == Cave.CHOOSE)) Hud.stageBanner(p, c, L);
         // The boss's arrival card, over whatever the stage banner is doing: both are up at once,
         // since a boss starts as its stage begins, and the card sits lower than the banner.
         BossScreen.intro(p, c, L);

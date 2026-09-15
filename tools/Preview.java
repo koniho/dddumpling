@@ -9,6 +9,45 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void caveFrames(File dir, Layout L, int w, int h, int ss) throws Exception {
+        GameCore c=new GameCore(new Mem(),921L);c.caveChoice=0;c.startGame();c.jumpToStage(21,L);
+        c.stageBanner=0f;c.landBlend=1f;Cave v=c.cave;
+        shot(dir,"106-cave-entrance",c,L,w,h,ss);
+        v.z=v.cameraZ=2f;v.phase=Cave.FORK;v.timer=.7f;v.fork=0;
+        shot(dir,"106-cave-first-fork",c,L,w,h,ss);
+        v.timer=3.6f;
+        shot(dir,"106-cave-fork-countdown",c,L,w,h,ss);
+        v.choose(c,-1);v.z=v.cameraZ=2.6f;v.aim=-.4f;
+        shot(dir,"106-cave-chosen-path",c,L,w,h,ss);
+        v.encounter(c,Cave.SHADOW);v.aim=1.3f;
+        shot(dir,"106-cave-hidden-enemy",c,L,w,h,ss);
+        v.phase=Cave.FIGHT;v.aim=0f;v.timer=1.5f;v.responsePos=1;v.enemyZ=v.z+.55f;
+        shot(dir,"106-cave-enemy-response",c,L,w,h,ss);
+        v.phase=Cave.WALK;v.encounter(c,Cave.ROCKS);v.traps.age=.6f;
+        shot(dir,"106-cave-rock-warning",c,L,w,h,ss);
+        v.traps.age=2.1f;v.traps.x=.65f;
+        shot(dir,"106-cave-falling-rocks",c,L,w,h,ss);
+        v.phase=Cave.WALK;v.z=v.cameraZ=5.72f;v.routes[1]=-1;v.encounter(c,Cave.SAND);
+        v.traps.age=4f;v.traps.hits=5;
+        shot(dir,"106-cave-quicksand",c,L,w,h,ss);
+        v.phase=Cave.WALK;v.z=v.cameraZ=6.4f;c.lives=1;v.aim=.2f;
+        shot(dir,"106-cave-heart-route",c,L,w,h,ss);
+        v.z=v.cameraZ=Cave.LENGTH;v.phase=Cave.EXIT;
+        shot(dir,"106-cave-exit",c,L,w,h,ss);
+        for(int finish=0;finish<CaveDumpling.COUNT;finish++) {
+            GameCore pick=new GameCore(new Mem(),973L);pick.startGame();pick.jumpToStage(21,L);
+            step(pick,L,.7f);
+            if(finish==0)shot(dir,"107-cave-choose-explorer",pick,L,w,h,ss);
+            pick.cave.selection.pick(pick,finish);step(pick,L,.4f);
+            if(finish==1)shot(dir,"107-cave-selected-departure",pick,L,w,h,ss);
+            step(pick,L,.5f);step(pick,L,.53f);
+            shot(dir,"107-cave-walker-"+finish,pick,L,w,h,ss);
+            if(finish==2)for(int pose=0;pose<3;pose++) {
+                step(pick,L,.10f);shot(dir,"107-cave-bounce-"+pose,pick,L,w,h,ss);
+            }
+        }
+    }
+
     private static final float DT = 1f / 60f;
 
     /** Lines that ran off the screen across every frame rendered, for the summary at the end. */
@@ -182,7 +221,8 @@ final class Preview {
         for (int land = 0; land < Lands.COUNT; land++) {
             GameCore themed = new GameCore(new Mem(), 810L);
             themed.startGame();
-            themed.stage = land * Boss.EVERY + 1;
+            if (land == Cave.LAND) { themed.caveChoice=0; themed.jumpToStage(land * Boss.EVERY + 1, L); }
+            else themed.stage = land * Boss.EVERY + 1;
             step(themed, L, 5f);
             themed.stageBanner = 0f;
             shot(dir, "80-land-" + land + "-play", themed, L, w, h, ss);
@@ -192,6 +232,8 @@ final class Preview {
                 shot(dir, "81-land-" + land + "-skit-" + variant, themed, L, w, h, ss);
             }
         }
+
+        caveFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);
@@ -327,7 +369,7 @@ final class Preview {
             shot(dir,"104-land-discovery-tour-"+frame,tour,L,w,h,ss);
         }
 
-        for (int kind = 0; kind < Lands.COUNT; kind++) {
+        for (int kind = 0; kind < Boss.COUNT; kind++) {
             GameCore bossLoss = toBoss(L, kind, 855L + kind, true);
             step(bossLoss, L, 0.25f);
             bossLoss.lives = 1;

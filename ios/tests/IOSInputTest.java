@@ -389,7 +389,24 @@ public final class IOSInputTest extends Check {
         check("fresh input works after closing the book",c.starting());
     }
 
+    private static void cave() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.startGame();c.jumpToStage(21,l);for(int i=0;i<45;i++)game.update(DT);
+        tap(game,CaveSelection.x(l,2),CaveSelection.y(l,2));
+        check("native cave selection saves chosen explorer",c.caveChoice==2 && ((Mem)c.store).caveChoice==2);
+        for(int i=0;i<55;i++)game.update(DT);c.cave.phase=Cave.FORK;c.cave.z=c.cave.cameraZ=2f;c.cave.fork=0;
+        tap(game,Cave.branchX(0,-1,2.4f)*l.w,c.cave.screenY(2.4f,l));
+        check("native lantern selects a cave route",c.cave.routes[0]==-1 && c.cave.phase==Cave.WALK);
+        c.cave.encounter(c,Cave.ROCKS);float x=l.w*.5f,y=c.cave.playerY(l),before=c.cave.traps.targetX;
+        game.touch(one(0,17,x,y));game.touch(two(2,0,88,0,0,17,x+30,y));
+        check("native cave drag follows stable pointer",c.cave.input.pointer==17 && c.cave.traps.targetX>before);
+        game.touch(two(6,0,88,0,0,17,x+30,y));
+        check("other native finger cannot end cave drag",c.cave.input.pointer==17);
+        game.touch(one(3,17,x+30,y));check("native cancel ends cave drag",c.cave.input.pointer<0);
+    }
+
     public static void main(String[] args) {
+        cave();
         releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); bossOwnership(); flingHistory();
         steamerAndPanic(); caseAndSettings();
         debugScenes(); linkedChord();

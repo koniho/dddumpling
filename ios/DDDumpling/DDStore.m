@@ -178,6 +178,8 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 - (void)saveBestWithInt:(jint)best { [self setValue:@(best) forKey:@"best"]; }
 - (NSString *)loadReleaseSeen { return [self stringForKey:@"releaseSeen" validWriter:NO] ?: @""; }
 - (void)saveReleaseSeenWithNSString:(NSString *)value { [self setValue:value forKey:@"releaseSeen"]; }
+- (jint)loadCaveChoice { return [self intForKey:@"caveChoice" defaultValue:-1]; }
+- (void)saveCaveChoiceWithInt:(jint)value { [self setValue:@(value) forKey:@"caveChoice"]; }
 - (jint)loadLandState { return [self intForKey:@"landState" defaultValue:0]; }
 - (void)saveLandStateWithInt:(jint)value { [self setValue:@(value) forKey:@"landState"]; }
 

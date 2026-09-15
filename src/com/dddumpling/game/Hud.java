@@ -50,7 +50,7 @@ final class Hud extends Draw {
         // "not applicable". The boss's own health bar is that stage's progress readout.
         if (!c.bossActive()) {
             int quota = c.stageQuota();
-            int done = Math.min(quota, c.resolvedThisStage);
+            int done = Cave.active(c) ? (int)(quota*c.cave.z/Cave.LENGTH) : Math.min(quota, c.resolvedThisStage);
             float span = Math.min(s * 0.46f * (quota - 1), L.w * 0.38f);
             float gap = quota > 1 ? span / (quota - 1) : 0f;
             float x0 = L.w / 2f - span / 2f;

@@ -398,3 +398,23 @@ The **What’s new steamer** (`ReleaseMascot`) has a cute face, no arms, rising 
 The **land discovery tour** (`LandDiscovery`) uses the swipe traveler’s size and arc, sliding through newly unlocked lands in sequence. Each first arrival pulses that land’s color and persists its seen flag; later visits do not repeat the glow. Covered title scenes pause the tour.
 
 The developer settings **ALL LANDS** chip enables every land for the current session without granting collectibles. **RESET LANDS** clears that override. The dotted walking trail is fixed relative to the lands and stops outside their silhouettes. Rightward swipe movement is preserved; leftward travel follows that fixed curve in reverse.
+
+## Cave expedition
+
+The developer-only fifth land, after Mushroom Land, begins at stage 21. Production retains
+its original four-land progression. The **explorer dumpling** automatically
+walks along the cave path while a following camera looks ahead. Tap the playfield to aim the
+**lantern beam**; illuminate a branch at a **fork** to choose it. Three fading lights show its
+limited pause. A finger demonstrates the first fork before that countdown begins.
+
+**Shadow enemies** reveal a character-key response in the beam, then approach the explorer.
+Completing the response defeats them; reaching the explorer costs a life. **Route hearts** heal
+one life when walked over. A **cave-in** uses sideways dragging to dodge falling rocks and their
+landing shadows; **quicksand** uses alternating character keys to escape. Reaching the **exit**
+completes the stage. `CaveRoute`, `Cave`, `CaveTraps`, `CaveInput`, `CaveScreen`, and `CaveArt`
+separate route content, rules, controls, and drawing. See [cave design](docs/plans/cave-expedition.md).
+
+The **explorer selection** (`CaveSelection`) appears on first cave entry. Choose cream, rainbow,
+golden, silver, sparkly mint, or purple; that finish persists across cave levels and restarts.
+`CaveDumpling` draws the chosen finish and uses a normalized `Softbody` to give each walking step
+a small spring-driven lift and squash. Cave walking speed is .36 route units per second.

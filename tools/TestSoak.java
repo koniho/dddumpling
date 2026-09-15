@@ -136,7 +136,8 @@ final class TestSoak extends Check {
      * turns up inside an arbitrary window. Cheap even so — the whole tier is a fraction of a second,
      * because nothing is being drawn.
      */
-    private static final float RUN_CAP = 900f;
+    // Five cave expeditions replace short waves after stage 20; leave time to traverse them.
+    private static final float RUN_CAP = 1200f;
 
     /**
      * Runs one tier over a spread of seeds and averages it.

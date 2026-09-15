@@ -78,6 +78,14 @@ src/com/dddumpling/game/ColorFadePainter.java
 src/com/dddumpling/game/SettingsUi.java
 src/com/dddumpling/game/Draw.java
 src/com/dddumpling/game/Sky.java
+src/com/dddumpling/game/CaveDumpling.java
+src/com/dddumpling/game/CaveSelection.java
+src/com/dddumpling/game/CaveRoute.java
+src/com/dddumpling/game/CaveInput.java
+src/com/dddumpling/game/Cave.java
+src/com/dddumpling/game/CaveTraps.java
+src/com/dddumpling/game/CaveArt.java
+src/com/dddumpling/game/CaveScreen.java
 src/com/dddumpling/game/Lands.java
 src/com/dddumpling/game/SeaSkits.java
 src/com/dddumpling/game/LandPicker.java

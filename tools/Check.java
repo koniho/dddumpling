@@ -41,6 +41,9 @@ abstract class Check {
         public String loadReleaseSeen() { return releaseSeen; }
         public void saveReleaseSeen(String value) { releaseSeen=value; }
         int best;
+        int caveChoice = -1;
+        public int loadCaveChoice() { return caveChoice; }
+        public void saveCaveChoice(int value) { caveChoice=value; }
         int landState;
         public int loadLandState() { return landState; }
         public void saveLandState(int value) { landState = value; }

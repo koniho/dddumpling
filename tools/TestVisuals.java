@@ -316,11 +316,11 @@ final class TestVisuals extends Check {
                     c.landDiscoveryChained && Math.abs(LandDiscovery.x(c,L)-x)<.01f
                     && Math.abs(LandDiscovery.ground(c,L)-ground)<.01f);
         }
-        check("tour ends on the final land",c.landDiscovery==-1 && c.landChoice==3 && c.landSeen==14 && ear.landShuffles==3);
+        check("tour ends on the final land",c.landDiscovery==-1 && c.landChoice==Lands.COUNT-1 && c.landSeen==(1<<Lands.COUNT)-2 && ear.landShuffles==Lands.COUNT-1);
         LandPicker.step(c,-1);LandPicker.updateTravel(c,LandPicker.TRAVEL_TIME);LandPicker.updateDiscovery(c,1f);
         check("revisiting a discovered land does not glow again",c.landDiscovery==-1 && LandDiscovery.glow(c,2)==0f);
         GameCore reload=new GameCore(store,724L);LandPicker.updateDiscovery(reload,1f);
-        check("all discovered lands stay seen after restart",reload.landSeen==14 && reload.landDiscovery==-1);
+        check("all discovered lands stay seen after restart",reload.landSeen==(1<<Lands.COUNT)-2 && reload.landDiscovery==-1);
         GameCore gap=new GameCore(new Mem(),725L);gap.collected=c.collected;gap.landSeen=4;
         LandPicker.updateDiscovery(gap,0f);LandPicker.updateDiscovery(gap,LandDiscovery.arrival(gap)+LandDiscovery.HOLD);
         check("tour traverses an already-seen intermediate land",gap.landDiscovery==2 && !gap.landDiscoveryFresh);
@@ -410,7 +410,7 @@ final class TestVisuals extends Check {
         LandPicker.updateTravel(fresh,LandPicker.TRAVEL_TIME);
         GameCore travel=new GameCore(new Mem(),721L);
         for(int i=0;i<Lands.COUNT-1;i++) travel.collected=Collect.add(travel.collected,Collect.BOSS_FIRST+i);
-        travel.landSeen=14;
+        travel.landSeen=(1<<Lands.COUNT)-2;
         Ear travelEar=new Ear();travel.sound=travelEar;
         float row=LandPicker.cardY(L),start=L.w*0.8f;
         LandPicker.down(travel,L,start,row);
@@ -565,13 +565,13 @@ final class TestVisuals extends Check {
             int first = land * Boss.EVERY + 1, bossStage = first + Boss.EVERY - 1;
             for (int stage = first; stage <= bossStage; stage++)
                 check("land stays consistent through stage " + stage, Lands.forStage(stage) == land);
-            check("land previews its upcoming boss " + land, Boss.kindFor(bossStage) == land);
+            check("land previews its upcoming boss " + land, Boss.kindFor(bossStage) == (land < Boss.COUNT ? land : -1));
             check("each land has three skits " + land,
                     Lands.skitFor(first) != Lands.skitFor(first + 1)
                     && Lands.skitFor(first + 1) != Lands.skitFor(first + 2)
                     && Lands.skitFor(first) != Lands.skitFor(first + 2));
         }
-        check("endless stages reuse scenery", Lands.forStage(21) == Lands.forStage(1));
+        check("endless stages reuse scenery", Lands.forStage(26) == Lands.forStage(1));
         check("title uses the original palette", Lands.background(new GameCore(new Mem(), 1L)) == Draw.BG);
         GameCore c = new GameCore(new Mem(), 111L);
         c.startGame();
