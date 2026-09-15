@@ -154,6 +154,7 @@ The other interlude, offered after a steamer has been opened. Two thumbs steer, 
 | **join chord** | the new collectible taking its place in the parade line | `Sfx.join`, `Sound.paradeJoin` |
 | **full stop** | the end of a run, played when the swirl clears rather than on the fatal breach. The only descending figure in the game | `Sfx.over`, `Sound.gameOver` |
 | **grab beat** | the flick of slow motion each taken star lands with, the fling stroke's beat at a quarter length | `GameCore.STAR_BEAT`, `StarPath.grabbed` |
+| **blast-off** | one short rising exhaust cue when the flight ends or the victory tableau begins; the continuous rocket stops at that transition | `Sfx.BLAST_OFF`, `Sound.courseFinish` |
 | **ting** | the pickup note, pitched up with the count so a course is a rising ladder | `Sfx.star()`, `Audio.star` |
 | **victory tableau** | what a completed course ends on: everything stops, the prize climbs out of the last star, then the parade | `StarPath.WIN_HOLD`, `winning()`, `StarScreen.victory` |
 | **passenger** | a flyer nobody is steering. It must never be able to finish a course | `TestStars.flown` with steering off |
