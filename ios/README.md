@@ -2,7 +2,7 @@
 
 Native UIKit/Core Graphics/AVFoundation host for the existing Java game. J2ObjC translates the
 same gameplay and scene sources used by Android; generated Objective-C stays in `build/`.
-Initial target: portrait iPhone, iOS 15+, arm64. iPad, Mac Catalyst, Game Center, iCloud and
+Initial target: portrait iPhone, iOS 15+, arm64. iPad, Mac Catalyst, production Game Center/iCloud and
 Android save transfer are outside this initial port. The iPhone app may run in iPad compatibility
 mode; there is no native iPad layout or validation.
 
@@ -45,6 +45,10 @@ If adding a Java source, add shared code to `check.sh`'s PURE manifest or iOS-on
 `ios/java/`, then rerun `build.sh` to refresh Xcode's file list.
 
 ## Validation
+
+Simulator gameplay is silent by default. Set `DDD_SIMULATOR_AUDIO=1` in the launch
+environment to listen. Physical-device audio is unaffected; native audio unit tests
+still exercise their own audio engines.
 
 GitHub Actions and optional signed/TestFlight delivery are documented in [CI setup](docs/ci.md).
 
@@ -111,6 +115,9 @@ insets to compare drawing independently of that native navigation space.
 
 ## Resources and release
 
+Developer builds now integrate native Game Center sign-in and iCloud saved games;
+see [setup, platform selection and testing](docs/game-center.md). Release remains offline.
+
 The target bundles Bungee and its SIL OFL notice. Artwork is rendered from shared code; the
 1024×1024 AppIcon is regenerated with `./ios/scripts/resources.sh` using the existing launcher
 composition at native resolution. Quicksand is trailer-only and omitted. Personal `res/raw/bgm.*`
@@ -119,7 +126,7 @@ J2ObjC's runtime is Apache 2.0 and includes third-party notices. Translation col
 runtime's LICENSE/NOTICE files into the bundled `ThirdPartyNotices.txt`; review attribution
 against the final archive before release.
 
-The app uses offline local storage, with no Play SDK, account sign-in, ads, tracking or analytics.
+The Release app uses offline local storage, with no Play SDK, account sign-in, ads, tracking or analytics.
 The privacy link opens the existing policy in the system browser. `PrivacyInfo.xcprivacy` declares
 local timing and sandbox file metadata uses. Before an App Store upload, review the final archive's
 privacy report against [Apple's required-reason API documentation](https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api).

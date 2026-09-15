@@ -3,6 +3,7 @@ import XCTest
 final class SmokeTests: XCTestCase {
     private func launch(_ scene: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
+        app.launchEnvironment["DDD_GAME_CENTER_DISABLED"] = "1"
         if let scene = scene { app.launchEnvironment["DDD_SCENE"] = scene }
         app.launch()
         XCTAssertTrue(app.otherElements["game"].waitForExistence(timeout: 15))

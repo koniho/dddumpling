@@ -1394,8 +1394,12 @@ final class GameCore {
     private static final float WARN_BAND = 0.20f;
 
     GameCore(Store store, long seed) {
+        this(store, seed, !BuildFlags.DEVELOPER);
+    }
+
+    GameCore(Store store, long seed, boolean trackProgress) {
         this.store = store;
-        this.progress = new Progress(store, !BuildFlags.DEVELOPER);
+        this.progress = new Progress(store, trackProgress);
         this.rnd = new Random(seed);
         Random sr = new Random(20260803L);
         for (int l = 0; l < CLOUD_LAYERS; l++) {

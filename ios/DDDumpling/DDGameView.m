@@ -3,6 +3,10 @@
 #import "DDAudio.h"
 #import "DDStore.h"
 #import "DDFrameMetrics.h"
+#if DEBUG
+#import "DDGameCenter.h"
+#import "DDGameCloud.h"
+#endif
 #import "com/dddumpling/game/IOSGame.h"
 #import "com/dddumpling/game/IOSTouch.h"
 #import "IOSPrimitiveArray.h"
@@ -35,6 +39,12 @@
 @property(nonatomic) BOOL sceneLoaded;
 @property(nonatomic) BOOL storeErrorShown;
 @property(nonatomic) BOOL storeAlertVisible;
+@property(nonatomic) BOOL gameCenterVisible;
+@property(nonatomic) BOOL muteSimulator;
+#if DEBUG
+@property(nonatomic, strong) DDGameCenter *gameCenter;
+@property(nonatomic, strong) DDGameCloud *gameCloud;
+#endif
 @end
 
 @implementation DDHost
@@ -50,6 +60,21 @@
 @end
 
 @implementation DDGameView
+- (void)didMoveToWindow {
+    [super didMoveToWindow];
+#if DEBUG
+    if (self.window && !self.gameCenter) {
+        self.gameCenter = [[DDGameCenter alloc] initWithPresenter:self.window.rootViewController];
+        self.gameCloud = [[DDGameCloud alloc] initWithGame:self.game store:self.store center:self.gameCenter];
+        __weak DDGameView *weakSelf = self;
+        self.gameCenter.presentationChanged = ^(BOOL visible) {
+            DDGameView *view = weakSelf;
+            view.gameCenterVisible = visible;
+            [view refreshActivity];
+        };
+    }
+#endif
+}
 - (instancetype)initWithFrame:(CGRect)frame {
     if ((self = [super initWithFrame:frame])) {
         self.multipleTouchEnabled = YES;
@@ -71,6 +96,9 @@
         _pointerTimes = [NSMutableArray new];
         _store = [DDIOSStore new];
         _audio = [DDIOSAudio new];
+#if TARGET_OS_SIMULATOR
+        _muteSimulator = ![NSProcessInfo.processInfo.environment[@"DDD_SIMULATOR_AUDIO"] boolValue];
+#endif
         _painter = [DDIOSPainter new];
         jlong seed = (jlong)(CACurrentMediaTime() * 1e9);
 #if DEBUG
@@ -147,8 +175,7 @@
         DDGameView *view = weakSelf;
         if (!view) return;
         view.storeAlertVisible = NO;
-        [view.game backgroundWithBoolean:!view.active];
-        [view.audio setActive:view.active];
+        [view refreshActivity];
         view.lastTime = 0;
         [view refreshNavigation];
     }]];
@@ -165,12 +192,20 @@
 - (void)setActive:(BOOL)active {
     if (_active == active) return;
     _active = active;
+    [self refreshActivity];
+#if DEBUG
+    [self.gameCenter refreshActive:active && !self.storeAlertVisible];
+    [self.gameCloud updateActive:active elapsed:0];
+#endif
+}
+- (void)refreshActivity {
     self.lastTime = 0;
     [self.frameMetrics reset];
-    [self.game backgroundWithBoolean:!active || self.storeAlertVisible];
+    BOOL playable = self.active && !self.storeAlertVisible && !self.gameCenterVisible;
+    [self.game backgroundWithBoolean:!playable];
     [self clearPointers];
-    [self.audio setActive:active && !self.storeAlertVisible];
-    self.displayLink.paused = !active;
+    [self.audio setActive:playable && !self.muteSimulator];
+    self.displayLink.paused = !self.active;
     [self refreshNavigation];
     [self setNeedsDisplay];
 }
@@ -180,6 +215,10 @@
     [self.frameMetrics recordDisplayLinkTimestamp:now];
     float elapsed = self.lastTime > 0 ? (float)(now - self.lastTime) : 0;
     self.lastTime = now;
+#if DEBUG
+    [self.gameCenter refreshActive:!self.storeAlertVisible];
+    [self.gameCloud updateActive:YES elapsed:elapsed];
+#endif
     CFTimeInterval start = CACurrentMediaTime();
     [self.game updateWithFloat:elapsed];
     [self.frameMetrics recordUpdateMilliseconds:(CACurrentMediaTime() - start) * 1000];

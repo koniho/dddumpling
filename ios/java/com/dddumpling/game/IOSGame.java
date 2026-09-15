@@ -41,7 +41,8 @@ public final class IOSGame {
 
 
     public IOSGame(GameCore.Store store, GameCore.Sound sound, long seed) {
-        core = new GameCore(store, seed);
+        // iOS developer saves have their own bundle/container; exercise the real progress model.
+        core = new GameCore(store, seed, true);
         core.sound = sound;
         // Has to be after the sound is attached, and before the Activity resumes: the loaded
         // choice is otherwise never announced and the backend picks its own fallback.
