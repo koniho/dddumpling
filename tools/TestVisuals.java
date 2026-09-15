@@ -82,7 +82,7 @@ final class TestVisuals extends Check {
         read.releaseMascot.reset(read);read.releaseMascot.update(read,.1f);
         check("reset restores attention for current build",seen.releaseSeen.equals("") && read.releaseMascot.unread);
         SettingsUi newsUi=new SettingsUi();newsUi.compute(L,3);
-        check("reset news chip target",newsUi.hit((newsUi.testChipL(2,3)+newsUi.testChipR(2,3))*.5f,newsUi.debuffY+newsUi.testH*.5f)==SettingsUi.HIT_RESET_NEWS);
+        check("reset news chip target",newsUi.hit((newsUi.testChipL(2,4)+newsUi.testChipR(2,4))*.5f,newsUi.debuffY+newsUi.testH*.5f)==SettingsUi.HIT_RESET_NEWS);
         group("interactive release notes");
         releaseWrap(L);
         Mem save=new Mem();GameCore c=new GameCore(save,7100L),control=new GameCore(new Mem(),7100L);
@@ -236,7 +236,82 @@ final class TestVisuals extends Check {
         check("book cannot open over an active run",!n.open);
     }
 
+    private static void discoveryTrip(Layout L) {
+        Mem store=new Mem();GameCore c=new GameCore(store,723L);Ear ear=new Ear();c.sound=ear;
+        for(int land=1;land<Lands.COUNT;land++) c.collected=Collect.add(c.collected,Collect.BOSS_FIRST+land-1);
+        store.collected=c.collected;
+        LandPicker.updateDiscovery(c,0f);
+        check("discovery uses the swipe traveler size",LandPicker.travelerRadius(c,L)==L.keyR*c.keyScale()*.55f);
+        check("tour begins from the current land",c.landDiscovery==1 && c.landDiscoveryFrom==0 && c.landPickerSlide==1f);
+        check("tour owns its land motion",!LandPicker.down(c,L,L.w*.7f,LandPicker.cardY(L)));
+        for(int land=1;land<Lands.COUNT;land++) {
+            check("tour visits each new land in order "+land,c.landDiscovery==land && c.landDiscoveryFrom==land-1);
+            check("no glow or seen flag before arrival "+land,LandDiscovery.glow(c,land)==0f && (c.landSeen&(1<<land))==0);
+            LandPicker.updateDiscovery(c,LandDiscovery.arrival(c)*.5f);
+            check("discovery follows the trail meander "+land,Math.abs(LandDiscovery.arc(c,L)
+                    -LandPicker.walkingDip(LandDiscovery.walk(c))*LandPicker.iconRadius(c,L))<.001f);
+            LandPicker.updateDiscovery(c,LandDiscovery.arrival(c)*.5f+.001f);
+            check("arrival persists its newly seen land "+land,(store.landState&(1<<land))!=0 && c.landPickerSlide==0f);
+            LandPicker.updateDiscovery(c,LandDiscovery.HOLD*.35f);
+            check("arrival glows only on its own land "+land,LandDiscovery.glow(c,land)>.5f && LandDiscovery.glow(c,0)==0f);
+            float age=c.landDiscoveryT;c.caseOpen=true;LandPicker.updateDiscovery(c,1f);
+            check("covered tour pauses its arrival glow "+land,c.landDiscoveryT==age);c.caseOpen=false;
+            float x=LandDiscovery.x(c,L),ground=LandDiscovery.ground(c,L);
+            LandPicker.updateDiscovery(c,LandDiscovery.HOLD);
+            if(land<Lands.COUNT-1) check("next journey joins without a position jump "+land,
+                    c.landDiscoveryChained && Math.abs(LandDiscovery.x(c,L)-x)<.01f
+                    && Math.abs(LandDiscovery.ground(c,L)-ground)<.01f);
+        }
+        check("tour ends on the final land",c.landDiscovery==-1 && c.landChoice==3 && c.landSeen==14 && ear.landShuffles==3);
+        LandPicker.step(c,-1);LandPicker.updateTravel(c,LandPicker.TRAVEL_TIME);LandPicker.updateDiscovery(c,1f);
+        check("revisiting a discovered land does not glow again",c.landDiscovery==-1 && LandDiscovery.glow(c,2)==0f);
+        GameCore reload=new GameCore(store,724L);LandPicker.updateDiscovery(reload,1f);
+        check("all discovered lands stay seen after restart",reload.landSeen==14 && reload.landDiscovery==-1);
+        GameCore gap=new GameCore(new Mem(),725L);gap.collected=c.collected;gap.landSeen=4;
+        LandPicker.updateDiscovery(gap,0f);LandPicker.updateDiscovery(gap,LandDiscovery.arrival(gap)+LandDiscovery.HOLD);
+        check("tour traverses an already-seen intermediate land",gap.landDiscovery==2 && !gap.landDiscoveryFresh);
+        LandPicker.updateDiscovery(gap,LandDiscovery.arrival(gap)+LandDiscovery.HOLD*.5f);
+        check("intermediate land does not repeat its discovery glow",LandDiscovery.glow(gap,2)==0f);
+        LandPicker.updateDiscovery(gap,LandDiscovery.HOLD);
+        check("tour continues to the next unseen land",gap.landDiscovery==3 && gap.landDiscoveryChained);
+
+    }
+
     static void titleScreen(Layout L) {
+        discoveryTrip(L);
+        GameCore trail=new GameCore(new Mem(),724L);
+        float r=LandPicker.iconRadius(trail,L);
+        float footOffset=r*1.10f-LandPicker.travelerRadius(trail,L)*.10f;
+        trail.collected=Collect.MASK;trail.landSeen=14;
+        for(int direction:new int[]{1,-1}) {
+            trail.landTravelFrom=direction>0 ? 0 : 1;
+            trail.landChoice=direction>0 ? 1 : 0;
+            for(float time:new float[]{.16f,.30f,.5f,.70f,.84f}) {
+                trail.landTravelT=time*LandPicker.TRAVEL_TIME;
+                float t=Math.max(0f,Math.min(1f,(time-.16f)/.68f));
+                float walk=t*t*(3f-2f*t);
+                float pathT=direction>0 ? walk : 1f-walk*(1f-r*.95f/(LandPicker.spacing(trail,L)+r*.95f));
+                check("swipe follows fixed trail x "+direction+" "+time,
+                        Math.abs(LandPicker.trailX(trail,L,0,pathT)-LandPicker.travelX(trail,L))<.001f);
+                check("swipe follows fixed trail feet "+direction+" "+time,
+                        Math.abs(LandPicker.trailY(trail,L,0,pathT)
+                        -(LandPicker.travelGround(trail,L)+LandPicker.travelArc(trail,L)+footOffset))<.001f);
+            }
+        }
+        trail.landChoice=1;trail.landTravelFrom=-1;trail.landDiscovery=-1;
+        float fixedX=LandPicker.trailX(trail,L,1,.35f),fixedY=LandPicker.trailY(trail,L,1,.35f);
+        trail.landTravelFrom=2;
+        check("leftward travel cannot reshape the trail",LandPicker.trailX(trail,L,1,.35f)==fixedX
+                && LandPicker.trailY(trail,L,1,.35f)==fixedY);
+        trail.landTravelFrom=-1;trail.landDiscoveryFrom=1;trail.landDiscovery=2;trail.landDiscoveryChained=true;
+        check("discovery cannot reshape the trail",LandPicker.trailX(trail,L,1,.35f)==fixedX
+                && LandPicker.trailY(trail,L,1,.35f)==fixedY);
+        for(int land=0;land<Lands.COUNT;land++) {
+            float lx=LandPicker.cardX(trail,L,land),ly=LandPicker.cardY(trail,L,land);
+            check("trail excludes the land silhouette "+land,LandPicker.trailCovered(trail,L,land,lx,ly+r*.8f));
+            check("trail is visible outside the land edge "+land,!LandPicker.trailCovered(trail,L,land,lx+r*2f,ly));
+        }
+
         releaseBook(L);
         group("title choreography");
         Mem landStore = new Mem();
@@ -296,7 +371,8 @@ final class TestVisuals extends Check {
         LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME);
         check("each queued land gets a fresh travel animation",travel.landChoice==2 && travel.landTravelFrom==1 && travelEar.landShuffles==2);
         LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME);
-        check("leftward travel emerges right of the previous land",travel.landChoice==1 && LandPicker.travelX(travel,L)>LandPicker.cardX(travel,L,2));
+        check("leftward travel starts on the fixed trail at the previous land",travel.landChoice==1
+                && Math.abs(LandPicker.travelX(travel,L)-LandPicker.cardX(travel,L,2))<.001f);
         LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME);
         check("travel settles precisely on the selected land",travel.landTravelFrom<0 && travel.landPickerSlide==0f && travelEar.landShuffles==3);
         LandPicker.select(travel,0);LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME);
@@ -309,7 +385,7 @@ final class TestVisuals extends Check {
         LandPicker.step(travel,1);
         check("travel starts at the previous land height",LandPicker.travelGround(travel,L)==high && LandPicker.travelArc(travel,L)==0f);
         LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME*0.5f);
-        check("travel arcs above the midpoint between land heights",Math.abs(LandPicker.travelGround(travel,L)-(high+low)*0.5f)<0.01f
+        check("travel dips below the midpoint between land heights",Math.abs(LandPicker.travelGround(travel,L)-(high+low)*0.5f)<0.01f
                 && LandPicker.travelArc(travel,L)>LandPicker.iconRadius(travel,L)*0.4f);
         LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME*0.35f);
         check("travel lands at the destination height",Math.abs(LandPicker.travelGround(travel,L)-low)<0.01f && LandPicker.travelArc(travel,L)==0f);
@@ -317,23 +393,23 @@ final class TestVisuals extends Check {
         LandPicker.step(travel,-1);
         check("reverse travel starts at the lower land",LandPicker.travelGround(travel,L)==low);
         LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME*0.85f);
-        check("reverse travel arrives at the upper land",Math.abs(LandPicker.travelGround(travel,L)-high)<0.01f);
+        check("reverse travel reaches the upper land along its fixed trail",
+                Math.abs(LandPicker.travelX(travel,L)-LandPicker.cardX(travel,L,0))<.01f);
         LandPicker.step(travel,1);LandPicker.step(travel,1);
         travel.caseOpen=true;LandPicker.updateTravel(travel,DT);
         check("leaving the picker clears pending journeys",travel.landTravelFrom<0 && travel.landTravelQueue.isEmpty() && travel.landPickerSlide==0f);
         fresh.caseOpen = true;
         check("the open display case hides the picker", !LandPicker.visible(fresh));
 
-        fresh.caseOpen = false;
-        LandPicker.updateDiscovery(fresh, 0.5f);
+        fresh.caseOpen = false;fresh.landSeen=0;landStore.landState=0;
+        LandPicker.updateDiscovery(fresh, 0.1f);
         check("new land begins a title discovery", fresh.landDiscovery == 1);
         float earlyReveal = LandPicker.discoveryReveal(fresh, L, 1);
-        fresh.landDiscoveryT = 1.6f;
+        fresh.landDiscoveryT = LandDiscovery.arrival(fresh);
+        LandPicker.updateDiscovery(fresh,0f);
         check("new icon fades in as the explorer approaches", earlyReveal < 0.5f
                 && LandPicker.discoveryReveal(fresh, L, 1) > 0.99f);
-        check("explorer stops beside the discovered icon", Math.abs(
-                LandPicker.cardX(fresh, L, 1) - LandPicker.explorerX(fresh, L)
-                - L.keyR * fresh.keyScale() * 2.6f) < 0.01f);
+        check("explorer arrives at the focused discovered land", Math.abs(LandPicker.explorerX(fresh,L)-L.w*.5f)<.01f);
         fresh.caseOpen = true;
         float discoveryAge = fresh.landDiscoveryT;
         LandPicker.updateDiscovery(fresh, 2f);
@@ -352,8 +428,20 @@ final class TestVisuals extends Check {
         LandPicker.updateDiscovery(reset, 0.1f);
         check("a repeat boss reward unlocks and rediscovers its land", LandPicker.unlocked(reset, 1)
                 && reset.landDiscovery == 1);
+        GameCore allLands=new GameCore(new Mem(),725L);
+        long beforeUnlock=allLands.collected;
+        LandPicker.enableAll(allLands);
+        check("all lands chip enables every land without granting collectibles",
+                LandPicker.count(allLands)==Lands.COUNT && allLands.collected==beforeUnlock);
+        LandPicker.reset(allLands);
+        check("reset lands clears the developer unlock",LandPicker.count(allLands)==1);
+        check("trail leaves to the right before dipping toward the next land",
+                LandPicker.walkingDip(.2f)<0f && LandPicker.walkingDip(.7f)>.6f);
         SettingsUi resetUi = new SettingsUi();
         resetUi.compute(L, Music.NAMES.length);
+        check("all lands chip has its own hit target", resetUi.hit(
+                (resetUi.testChipL(3,4)+resetUi.testChipR(3,4))*.5f,
+                resetUi.debuffY+resetUi.testH*.5f)==SettingsUi.HIT_ALL_LANDS);
         check("reset lands chip has its own hit target", resetUi.hit(
                 (resetUi.testChipL(1, 3) + resetUi.testChipR(1, 3)) / 2f,
                 resetUi.clearY + resetUi.clearH / 2f) == SettingsUi.HIT_RESET_LANDS);

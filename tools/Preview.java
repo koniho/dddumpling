@@ -274,6 +274,12 @@ final class Preview {
             book.update(.2f,L);
         }
 
+        for(int selected:new int[]{0,1,Lands.COUNT-1}) {
+            GameCore trail=new GameCore(new Mem(),839L);
+            trail.collected=Collect.MASK;trail.landSeen=14;trail.landChoice=selected;
+            shot(dir,"105-land-trail-"+selected,trail,L,w,h,ss);
+        }
+
         GameCore defaultPicker = new GameCore(new Mem(), 839L);
         defaultPicker.collected = Collect.add(defaultPicker.collected, Collect.BOSS_FIRST);
         shot(dir, "84-land-picker-default", defaultPicker, L, w, h, ss);
@@ -310,8 +316,15 @@ final class Preview {
         for (int frame = 0; frame < 3; frame++) {
             GameCore discovery = new GameCore(new Mem(), 891L);
             discovery.collected = Collect.add(discovery.collected, Collect.BOSS_FIRST);
-            step(discovery, L, new float[]{0.7f, 2.2f, 3.8f}[frame]);
+            step(discovery, L, new float[]{0.12f, 0.48f, 1.02f}[frame]);
             shot(dir, "87-land-discovery-" + frame, discovery, L, w, h, ss);
+        }
+
+        for(int frame=0;frame<8;frame++) {
+            GameCore tour=new GameCore(new Mem(),893L);
+            for(int land=1;land<Lands.COUNT;land++) tour.collected=Collect.add(tour.collected,Collect.BOSS_FIRST+land-1);
+            step(tour,L,new float[]{.12f,.46f,1.02f,1.39f,1.80f,2.48f,3.25f,3.95f}[frame]);
+            shot(dir,"104-land-discovery-tour-"+frame,tour,L,w,h,ss);
         }
 
         for (int kind = 0; kind < Lands.COUNT; kind++) {
