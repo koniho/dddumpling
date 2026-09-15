@@ -8,7 +8,7 @@ final class SettingsUi {
 
     static final int HIT_NONE = 0, HIT_SLIDER = 1, HIT_CLOSE = 2, HIT_OUTSIDE = 3,
             HIT_CLEAR = 4, HIT_ROSTER = 5, HIT_GAMEOVER = 6, HIT_RESET_DIFFICULTY = 7, HIT_RESET_LANDS = 8,
-            HIT_GENERAL = 9, HIT_MINIGAMES = 10, HIT_EASIER = 11, HIT_HARDER = 12, HIT_RESET_NEWS = 13;
+            HIT_GENERAL = 9, HIT_MINIGAMES = 10, HIT_EASIER = 11, HIT_HARDER = 12, HIT_RESET_NEWS = 13, HIT_ALL_LANDS = 14;
     static final int GENERAL = 0, MINIGAMES = 1;
     /** Option rows are HIT_OPTION + index. */
     static final int HIT_OPTION = 100;
@@ -200,7 +200,8 @@ final class SettingsUi {
         }
 
         if (y >= debuffY && y <= debuffY+testH) {
-            for(int i=0;i<3;i++) if(x>=testChipL(i,3) && x<=testChipR(i,3)) return i==2 ? HIT_RESET_NEWS : HIT_DEBUFF+i;
+            for(int i=0;i<4;i++) if(x>=testChipL(i,4) && x<=testChipR(i,4))
+                return i==3 ? HIT_ALL_LANDS : i==2 ? HIT_RESET_NEWS : HIT_DEBUFF+i;
         }
         if (y >= stageY && y <= stageY + stageH) {
             int n = STAGE_STEP.length;

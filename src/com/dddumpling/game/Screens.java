@@ -710,13 +710,13 @@ final class Screens extends Draw {
                     INK, Painter.CENTER, true);
         }
 
-        for(int i=0;i<3;i++) {
-            float l=ui.testChipL(i,3), r=ui.testChipR(i,3);
+        for(int i=0;i<4;i++) {
+            float l=ui.testChipL(i,4), r=ui.testChipR(i,4);
             int col=i==0?Glyph.COLOR[5]:INK_DIM;
             p.fillRect(l,ui.debuffY,r,ui.debuffY+ui.testH,Glyph.withAlpha(col,46));
             p.strokePoly(new float[]{l,ui.debuffY,r,ui.debuffY,r,ui.debuffY+ui.testH,
                     l,ui.debuffY+ui.testH},Glyph.withAlpha(col,190),s*0.05f);
-            p.text(i==2 ? "RESET NEWS" : Power.NAMES[Power.INCOGNITO+i],(l+r)*0.5f,ui.debuffY+ui.testH*0.66f,
+            p.text(i==3 ? "ALL LANDS" : i==2 ? "RESET NEWS" : Power.NAMES[Power.INCOGNITO+i],(l+r)*0.5f,ui.debuffY+ui.testH*0.66f,
                     s*0.46f,INK,Painter.CENTER,true);
         }
 
