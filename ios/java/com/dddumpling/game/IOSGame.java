@@ -595,6 +595,9 @@ public final class IOSGame {
             tick();
         } else if (hit == SettingsUi.HIT_RESET_NEWS) {
             core.releaseMascot.reset(core);
+        } else if (hit == SettingsUi.HIT_ALL_LANDS) {
+            LandPicker.enableAll(core);
+            tick();
         } else if (hit == SettingsUi.HIT_RESET_LANDS) {
             LandPicker.reset(core);
             tick();

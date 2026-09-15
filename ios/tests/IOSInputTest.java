@@ -252,12 +252,14 @@ public final class IOSInputTest extends Check {
         tap(game,ui.closeCx,ui.closeCy);
         check("settings close resumes play", !c.settingsOpen);
         c.settingsOpen=true;
-        tap(game,(ui.testChipL(2,3)+ui.testChipR(2,3))/2,ui.debuffY+ui.testH/2);
+        tap(game,(ui.testChipL(3,4)+ui.testChipR(3,4))/2,ui.debuffY+ui.testH/2);
+        check("native all lands chip enables every land",LandPicker.count(c)==Lands.COUNT);
+        tap(game,(ui.testChipL(2,4)+ui.testChipR(2,4))/2,ui.debuffY+ui.testH/2);
         check("native reset news clears seen status without leaving settings",c.settingsOpen && c.store.loadReleaseSeen().equals(""));
         c.settingsOpen=false;
         for(int i=0;i<2;i++) {
             c.settingsOpen=true;
-            tap(game,(ui.testChipL(i,3)+ui.testChipR(i,3))/2,ui.debuffY+ui.testH/2);
+            tap(game,(ui.testChipL(i,4)+ui.testChipR(i,4))/2,ui.debuffY+ui.testH/2);
             check("native debuff chip activates correct effect " + i,!c.settingsOpen
                     && c.debuff==Power.INCOGNITO+i && c.debuffLeft>0f && !c.powerActive());
         }

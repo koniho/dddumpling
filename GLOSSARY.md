@@ -394,3 +394,7 @@ closing sends the list off right while the steamer enters from the left at its n
 the right as the list leaves left; Back reverses this without losing the list position. MVP scope is in `docs/plans/interactive-release-notes.md`.
 
 The **What’s new steamer** (`ReleaseMascot`) has a cute face, no arms, rising steam, and a lid that lifts when tapped. For an unread build, a star turns behind it, the lid pops repeatedly, and extra steam rises while the normal title screen stays usable. Tapping it opens the release list and saves the build as read; until then, the animation returns on title visits. **RESET NEWS** in developer settings restores this unread state.
+
+The **land discovery tour** (`LandDiscovery`) uses the swipe traveler’s size and arc, sliding through newly unlocked lands in sequence. Each first arrival pulses that land’s color and persists its seen flag; later visits do not repeat the glow. Covered title scenes pause the tour.
+
+The developer settings **ALL LANDS** chip enables every land for the current session without granting collectibles. **RESET LANDS** clears that override. The dotted walking trail is fixed relative to the lands and stops outside their silhouettes. Rightward swipe movement is preserved; leftward travel follows that fixed curve in reverse.

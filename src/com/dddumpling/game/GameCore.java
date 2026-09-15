@@ -444,8 +444,11 @@ final class GameCore {
     int landTravelFrom = -1;
     float landTravelT;
     final ArrayList<Integer> landTravelQueue = new ArrayList<Integer>();
+    boolean allLandsEnabled;
     int landSeen, landSuppressed, landDiscovery = -1;
     float landDiscoveryT;
+    int landDiscoveryFrom;
+    boolean landDiscoveryChained, landDiscoveryFresh;
     /** Words squished this run. The game-over screen calls them squishes, so this does too. */
     int squishes;
     /** Stage enemies released; a linked pair occupies one quota slot. */
