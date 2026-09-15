@@ -111,6 +111,8 @@ abstract class Check {
             lastDepth = depth;
         }
         public void clearWord() { clears++; }
+        int uiBloops;
+        public void uiBloop() { uiBloops++; }
         int landShuffles;
         public void landShuffle() { landShuffles++; }
         int slimeCovers, slimeReleases;

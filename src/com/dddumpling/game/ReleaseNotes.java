@@ -12,7 +12,8 @@ final class ReleaseNotes extends Draw {
     GameCore demo;
     private final Layout mini=new Layout();
     private boolean gesture;
-    private int replay;
+    private int replay,feedbackPending;
+    private GameCore.Sound feedbackSound;
     private float restartIn=-1f;
     float listScroll;
     private float listDownY,listStartScroll,age;
@@ -83,12 +84,22 @@ final class ReleaseNotes extends Draw {
         mini.keyR=Math.min(mini.keyR*1.5f,size(L)*2f);
     }
     void show(GameCore c,Layout L) {
-        if(!available(c)) return;
+        if(open || !available(c)) return;
+        feedbackSound=c.sound;
+        feedback();
         transition.begin(c.releaseMascot,L,c.clock);
         c.releaseMascot.read(c);
         open=true;listing=true;pageSlide=0f;pageReturning=false;page=feature=replay=0;listScroll=0f;demo=null;c.titleTouchDown=false;
     }
-    void close() { transition.close(); }
+    private void feedback() {
+        feedbackPending++;
+        if(feedbackSound!=null) feedbackSound.uiBloop();
+    }
+    int takeFeedback() { int count=feedbackPending;feedbackPending=0;return count; }
+    void close() {
+        if(!open || transition.closing) return;
+        feedback();transition.close();
+    }
     void cancelTouch() { gesture=false;listDragging=false;pressedRow=-1; }
     private int rowAt(Layout L,float x,float y) {
         if(y<listTop(L) || y>listBottom(L)) return -1;
@@ -111,6 +122,7 @@ final class ReleaseNotes extends Draw {
     void select(int release,Layout L) { select(release,0,L); }
     void select(int release,int item,Layout L) {
         if(release<0 || release>=VERSIONS.length || item<0 || item>=ReleaseChange.ITEMS[release].length) return;
+        if(open && listing && !transition.moving()) feedback();
         page=release;feature=item;listing=false;pageSlide=0f;pageReturning=false;reset(L);
     }
     boolean pageMoving() { return !listing && (pageReturning || pageSlide<1f); }

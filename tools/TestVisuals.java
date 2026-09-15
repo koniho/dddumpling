@@ -38,7 +38,32 @@ final class TestVisuals extends Check {
     private static void releaseBook(Layout L) {
         releaseHistory();
         releaseOutside(L);
+        releaseFeedback(L);
         try(ReleaseExamples examples=new ReleaseExamples()) { releaseBookExamples(L); }
+    }
+    private static void releaseFeedback(Layout L) {
+        GameCore c=new GameCore(new Mem(),7205L);Ear ear=new Ear();c.sound=ear;ReleaseNotes n=c.releaseNotes;
+        n.close();check("closed book has no feedback",ear.uiBloops==0 && n.takeFeedback()==0);
+        n.show(c,L);n.show(c,L);
+        check("opening book gives one bloop and haptic",ear.uiBloops==1 && n.takeFeedback()==1 && n.takeFeedback()==0);
+        n.handleTouch(c,L,0,0,0);n.handleTouch(c,L,1,0,0);
+        check("opening animation ignores feedback",ear.uiBloops==1 && n.takeFeedback()==0);
+        n.update(ReleaseTransition.DURATION,L);
+        float x=ReleaseNotes.iconX(L,0,0),y=ReleaseNotes.rowY(L,0);
+        n.handleTouch(c,L,0,x,y);n.handleTouch(c,L,2,x,y-20f*ReleaseNotes.size(L));
+        n.handleTouch(c,L,1,x,y-20f*ReleaseNotes.size(L));
+        check("list scrolling is silent",ear.uiBloops==1 && n.takeFeedback()==0);
+        n.listScroll=0f;n.handleTouch(c,L,0,x,y);n.handleTouch(c,L,1,x,y);
+        check("entering item gives one bloop and haptic",ear.uiBloops==2 && n.takeFeedback()==1);
+        n.handleTouch(c,L,0,x,y);n.handleTouch(c,L,1,x,y);
+        check("item animation ignores feedback",ear.uiBloops==2 && n.takeFeedback()==0);
+        n.update(ReleaseNotes.PAGE_TIME,L);n.back();n.update(ReleaseNotes.PAGE_TIME,L);
+        n.handleTouch(c,L,0,0,0);n.close();
+        check("outside exit gives exactly one bloop and haptic",ear.uiBloops==3 && n.takeFeedback()==1);
+        n.update(ReleaseTransition.DURATION,L);n.close();
+        check("exit completion stays silent",ear.uiBloops==3 && n.takeFeedback()==0);
+        n.show(c,L);n.update(ReleaseTransition.DURATION,L);n.takeFeedback();n.back();
+        check("back exit also gives feedback",ear.uiBloops==5 && n.takeFeedback()==1);
     }
     private static void releaseOutside(Layout L) {
         float[][] outside={{L.w*.02f,(ReleaseNotes.listTop(L)+ReleaseNotes.listBottom(L))*.5f},
