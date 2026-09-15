@@ -806,6 +806,20 @@ final class Preview {
                 c8.prize >= 0 ? Collect.NAME[c8.prize] : "none", c8.prizeNew);
         shot(dir, "15-bonus-freed", c8, L, w, h, ss);
 
+        // A run's title selection survives awards moving the case to a different character.
+        GameCore selected = new GameCore(new Mem(), 173L);
+        selected.collected = Collect.add(selected.collected, 7);
+        selected.caseIndex = 7;
+        selected.startGame();
+        Interlude.awardBossPrize(selected, 0);
+        selected.bossPrizePending = false;
+        selected.starNext = true;
+        Interlude.enterBonus(selected, L);
+        step(selected, L, 0.45f);
+        System.out.printf("selected pilot: who=%d case=%d prize=%d%n", selected.stars.who,
+                selected.caseIndex, selected.prize);
+        shot(dir, "53c-stars-selected-after-reward", selected, L, w, h, ss);
+
         // Star-path ready lesson and a mid-flight course with earlier pickups ghosted.
         GameCore cs = new GameCore(store, 83L);
         cs.startGame();

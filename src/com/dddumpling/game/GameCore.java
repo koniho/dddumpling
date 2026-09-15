@@ -617,6 +617,8 @@ final class GameCore {
 
     /** Which squishy is being sent off as the run starts, or -1 for none. */
     int launchWho = -1;
+    /** Title selection for this run; awards can move the case without changing the pilot. */
+    int runWho;
     /** Seconds left of that send-off. Play waits for it. */
     float launchT;
     /**
@@ -1221,8 +1223,6 @@ final class GameCore {
         caretOwner = null;
         spawnedThisStage = stageQuota();
         resolvedThisStage = stageQuota();
-        // Whoever the case last showed pilots it, so the flyer is not the blank placeholder.
-        if (prize < 0) prize = caseIndex;
         starNext = true;
         Interlude.enterBonus(this, L);
     }
@@ -1669,6 +1669,7 @@ final class GameCore {
     }
 
     void startGame() {
+        runWho = Collect.has(collected, caseIndex) ? caseIndex : 0;
         // A paid win may have been quit before its tableau/parade retired the course.
         if (stars.count() == StarPath.COUNT) {
             stars.make(rnd);

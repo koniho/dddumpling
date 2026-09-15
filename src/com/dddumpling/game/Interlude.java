@@ -42,7 +42,7 @@ final class Interlude {
             // A fresh line every attempt, with whatever is already in hand kept — see
             // StarPath.reroll for why a repeated attempt must not be a repeated course.
             c.stars.reroll(c.rnd);
-            c.stars.begin(c.prize, L);
+            c.stars.begin(c.runWho, L);
             c.bonusTimer = c.stars.timer;
             c.paradeTimer = 0f;
             c.target = null;
