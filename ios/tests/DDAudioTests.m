@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import <AVFoundation/AVFoundation.h>
+#import <objc/runtime.h>
 
 #import "DDAudio.h"
 #import "DDEffectMixer.h"
@@ -81,6 +82,17 @@
 @end
 
 @implementation DDAudioTests
+
+- (void)testEverySharedSoundCallbackHasANativeImplementation {
+  unsigned int count = 0;
+  struct objc_method_description *methods = protocol_copyMethodDescriptionList(
+      @protocol(DDGameCore_Sound), YES, YES, &count);
+  XCTAssertGreaterThan(count, 0u);
+  for (unsigned int i = 0; i < count; ++i)
+    XCTAssertTrue([DDIOSAudio instancesRespondToSelector:methods[i].name],
+                  @"Missing sound callback %@", NSStringFromSelector(methods[i].name));
+  free(methods);
+}
 
 - (void)testEffectBufferPreservesSynthesizedPCM {
   DDIOSAudio *audio = [DDIOSAudio new];
