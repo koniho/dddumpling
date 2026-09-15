@@ -43,7 +43,7 @@ final class Screens extends Draw {
         float cx = L.w / 2f;
         bubblyTitle(p, c, L, cx, L.h * 0.100f, fade);
         if (c.best > 0) {
-            p.text("BEST " + c.best, cx, L.h * 0.292f, type(s * 0.74f), fadeBy(ROSE, fade),
+            p.text("BEST " + c.best, cx, L.h * 0.292f, type(s * 0.74f), fadeBy(ROSE, fade * caseOut(c)),
                     Painter.CENTER, true);
         }
 
