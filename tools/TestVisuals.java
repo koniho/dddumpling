@@ -195,8 +195,8 @@ final class TestVisuals extends Check {
         Layout shortL=new Layout();shortL.compute(852,393,0,0,0,0);
         float shortRow=ReleaseNotes.rowY(shortL,0),sx=ReleaseNotes.iconX(shortL,0,0);
         n.handleTouch(c,shortL,0,sx,shortRow);
-        n.handleTouch(c,shortL,2,sx,shortRow-200f);
-        n.handleTouch(c,shortL,1,sx,shortRow-200f);
+        n.handleTouch(c,shortL,2,sx,shortRow-ReleaseNotes.maxScroll(shortL)-shortL.h);
+        n.handleTouch(c,shortL,1,sx,shortRow-ReleaseNotes.maxScroll(shortL)-shortL.h);
         check("short screens scroll the compact release groups",n.listing && n.listScroll>0f && n.listScroll==ReleaseNotes.maxScroll(shortL));
         float savedScroll=n.listScroll;
         n.select(2,shortL);n.update(ReleaseNotes.PAGE_TIME,shortL);n.back();n.update(ReleaseNotes.PAGE_TIME,shortL);

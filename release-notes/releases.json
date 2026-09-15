@@ -1,6 +1,41 @@
 {
   "releases": [
     {
+      "version": "0.1.21",
+      "changes": [
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "On the title screen",
+              "why": "New lands get a little tour, with clearer trails between stops."
+            },
+            {
+              "where": "In the release book",
+              "why": "Tap outside to close the list. Browse with soft bloops and a little buzz."
+            }
+          ]
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "autoReset": false,
+          "fixes": [
+            {
+              "where": "Star Path bonus rounds",
+              "why": "Your chosen flyer stays with you. The rocket loop ends with one blast-off."
+            },
+            {
+              "where": "In the display case",
+              "why": "Best Score fades away so the heading stays clear."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.20",
       "changes": [
         {

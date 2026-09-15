@@ -54,6 +54,25 @@ class ReleaseNotes(unittest.TestCase):
         self.assertEqual(sum(styles), 1)
         notes.validate({'releases': [{'version': '1.0.0', 'changes': [change]}]})
 
+    def test_misc_groups_improvements_and_preserves_history(self):
+        change = {'icon': 'misc', 'title': 'Little improvements', 'autoReset': False,
+                  'improvements': [{'where': 'On the title screen', 'why': 'New lands get a little tour.'},
+                                   {'where': 'In the release book', 'why': 'Tap outside to close the list.'}]}
+        data = copy.deepcopy(self.data)
+        data['releases'].insert(0, {'version': '0.1.21', 'changes': [change]})
+        generated = notes.render(data)
+        self.assertIn('ReleaseChange.MISC', generated)
+        self.assertIn('ON THE TITLE SCREEN', generated)
+        self.assertIn('IN THE RELEASE BOOK', generated)
+        self.assertIn('"0.1.19"', generated)
+        data['releases'][0]['changes'].append(copy.deepcopy(change))
+        with self.assertRaisesRegex(ValueError, 'one misc icon'):
+            notes.validate(data)
+        data['releases'][0]['changes'].pop()
+        change['improvements'] = []
+        with self.assertRaisesRegex(ValueError, 'at least one'):
+            notes.validate(data)
+
     def test_history_is_not_limited_to_three_releases(self):
         data = copy.deepcopy(self.data)
         older = copy.deepcopy(data['releases'][-1])
@@ -95,6 +114,8 @@ class ReleaseNotes(unittest.TestCase):
             self.assertEqual(run('new', '0.1.20').returncode, 0)
             draft = root / 'build/release-0.1.20.json'
             self.assertIsNone(notes.load(draft)['changes'][0]['autoReset'])
+            self.assertEqual(notes.load(draft)['changes'][0]['icon'], 'misc')
+            self.assertEqual(notes.load(draft)['changes'][0]['improvements'], [{'where': '', 'why': ''}])
             original = (root / notes.SOURCE).read_text()
             self.assertNotEqual(run('add', str(draft)).returncode, 0)
             self.assertEqual((root / notes.SOURCE).read_text(), original)

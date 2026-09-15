@@ -1,8 +1,19 @@
-Tap the little steamer to explore what is new. A few tiny demos, a few new tricks!
-When Flurry starts: A rainbow ripples out from your pickup. Your power-up has arrived!
-Partner pairs count as one stage enemy.
-Fixed an issue where Star Path could not finish after all 20 stars were collected.
+### Little improvements
 
-Try the release list, feature demos, Back navigation, and the steamer reminder after updating. Shuffle and partner demos reset after two seconds; land travel keeps its position.
+On the title screen: New lands get a little tour, with clearer trails between stops.
 
-After collecting all 20 stars, end the run during the victory or prize parade and start again. Star Path should not repeat an empty course or award the prize twice.
+In the release book: Tap outside to close the list. Browse with soft bloops and a little buzz.
+
+### Happy little fixes
+
+Star Path bonus rounds: Your chosen flyer stays with you. The rocket loop ends with one blast-off.
+
+In the display case: Best Score fades away so the heading stays clear.
+
+Please try the new-land tour and travel in both directions. Open the release book, select an entry, go Back, and tap outside the list to close it.
+
+On Star Path, check that your selected flyer remains through retries and rewards. Try both a timed finish and collecting all 20 stars: the rocket loop should stop with a single blast-off, and the finish should complete without a crash.
+
+On the title screen, open and close the display case. Best Score should fade out before the case heading appears and return afterward.
+
+The misc and bug illustrations keep their state after two seconds; they do not automatically reset.

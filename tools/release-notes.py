@@ -9,7 +9,7 @@ import textwrap
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = Path('release-notes/releases.json')
 OUTPUT = Path('src/com/dddumpling/game/ReleaseContent.java')
-ICONS = ('travel', 'stars', 'bugs', 'shuffle', 'disguise', 'slime', 'pair', 'flex', 'team', 'news', 'flurry')
+ICONS = ('travel', 'stars', 'bugs', 'shuffle', 'disguise', 'slime', 'pair', 'flex', 'team', 'news', 'flurry', 'misc')
 ART = {'travel': 8, 'shuffle': 9, 'pair': 9}
 
 
@@ -44,18 +44,22 @@ def validate(data):
         seen.add(version)
         if not isinstance(release['changes'], list) or not release['changes']:
             raise ValueError(f'{version}: add at least one change')
-        bugs = 0
+        groups = set()
         for change in release['changes']:
             if not isinstance(change, dict) or change.get('icon') not in ICONS:
                 raise ValueError(f'{version}: choose an icon from {", ".join(ICONS)}')
             label = f'{version}/{change["icon"]}'
-            if change['icon'] == 'bugs':
-                bugs += 1
-                keys(change, ('icon', 'title', 'autoReset', 'fixes'), label)
-                if not isinstance(change['fixes'], list) or not change['fixes']:
-                    raise ValueError(f'{label}: add at least one fix')
-                for fix in change['fixes']:
-                    keys(fix, ('where', 'why'), label)
+            if change['icon'] in ('bugs', 'misc'):
+                icon = change['icon']
+                if icon in groups:
+                    raise ValueError(f'{version}: group entries under one {icon} icon')
+                groups.add(icon)
+                field = 'fixes' if icon == 'bugs' else 'improvements'
+                keys(change, ('icon', 'title', 'autoReset', field), label)
+                if not isinstance(change[field], list) or not change[field]:
+                    raise ValueError(f'{label}: add at least one {field} entry')
+                for point in change[field]:
+                    keys(point, ('where', 'why'), label)
             else:
                 keys(change, ('icon', 'title', 'autoReset', 'where', 'why'), label)
             if type(change['autoReset']) is not bool:
@@ -65,14 +69,13 @@ def validate(data):
             height = ART.get(change['icon'], 5) + 6.0 + (len(rows) - 1) * 1.1 + sum(contexts[1:]) * .4
             if height > 23.5:
                 raise ValueError(f'{label}: too much copy for the popup; shorten or combine the points')
-        if bugs > 1:
-            raise ValueError(f'{version}: group all fixes under one bugs icon')
     return data
 
 
 def lines(change):
     rows, contexts = [], []
-    points = change['fixes'] if change['icon'] == 'bugs' else [change]
+    field = {'bugs': 'fixes', 'misc': 'improvements'}.get(change['icon'])
+    points = change[field] if field else [change]
     for point in points:
         if change['icon'] != 'bugs' or point.get('where') != '':
             rows.append(text(point.get('where'), 'where', 32).upper())
@@ -137,7 +140,8 @@ def main():
             path.parent.mkdir(parents=True, exist_ok=True)
             with path.open('x', encoding='utf-8') as output:
                 json.dump({'version': args.version, 'changes': [
-                    {'icon': 'travel', 'title': '', 'autoReset': None, 'where': '', 'why': ''}]}, output, indent=2)
+                    {'icon': 'misc', 'title': 'Little improvements', 'autoReset': None,
+                     'improvements': [{'where': '', 'why': ''}]}]}, output, indent=2)
                 output.write('\n')
             print(f'Edit {path}, then run: python3 tools/release-notes.py add {path}')
             return
