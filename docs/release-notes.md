@@ -12,7 +12,7 @@ You edit plain JSON in [release-notes/releases.json](../release-notes/releases.j
    python3 tools/release-notes.py new 0.1.20
    ```
 
-2. Open `build/release-0.1.20.json` in any text editor. Fill in the fields and add one change object per distinct player-facing feature. Combine redundant entries and choose `autoReset` for every entry before adding the draft. Use only changes included in the release. For example:
+2. Open `build/release-0.1.20.json` in any text editor. First collect minor improvements into one `misc` entry; the draft starts with that group. Add one change object per substantial player-facing feature and remove empty groups. Combine redundant entries and choose `autoReset` for every entry before adding the draft. Use only changes included in the release. For example:
 
    ```json
    {
@@ -108,6 +108,7 @@ Keep a separate entry only when it communicates a distinct change the player nee
 | `pair` | Linked-pair gameplay | Interactive linked pair |
 | `flex` | A pair rejecting a single hit | Flexed arm |
 | `team` | Linked pairs during power-ups | Frenzy character |
+| `misc` | Small improvements grouped into one entry | Dumpling with little sparkles |
 | `bugs` | Standalone fixes not already covered by a feature | Cute bug |
 
 An icon also chooses its illustration. Reuse one only when its meaning and demo match the change. A genuinely new mechanic needs a matching drawing/demo in `ReleaseChange` and a supported tool icon; ask for that as part of implementing the mechanic. Normal copy updates and new releases using existing icons require no Java edits.
@@ -119,3 +120,26 @@ python3 tools/release-notes.py check --version 0.1.20
 ```
 
 This verifies the source, generated game copy, and newest release version. It cannot prove a feature shipped or that a sentence is accurate: review those against the release diff. Summarize the same reviewed changes for Play, TestFlight, GitHub, and itch as applicable; the in-game catalog does not automatically update those destinations.
+
+## Small improvements
+
+Group minor polish under one `misc` entry titled "Little improvements". Use an
+`improvements` array of `where`/`why` objects, just as the bug entry uses `fixes`.
+Keep each point brief and retain its game-phase context. Use `autoReset: false`
+for the small sparkle illustration. Standalone fixes still belong under `bugs`;
+changes with a substantial new mechanic can keep their own feature entry.
+
+```json
+{
+  "icon": "misc",
+  "title": "Little improvements",
+  "autoReset": false,
+  "improvements": [
+    {"where": "On the title screen", "why": "New lands get a little tour."},
+    {"where": "In the release book", "why": "Tap outside the list to close it."}
+  ]
+}
+```
+
+Collect these points from the actual release diff before the interactive note review.
+Review them together as one entry and keep the same grouping in destination summaries.

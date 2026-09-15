@@ -261,6 +261,19 @@ final class Preview {
             book.update(.2f,L);
         }
         shot(dir,"103-release-book-list",book,L,w,h,ss);
+        book.releaseNotes.select(0,0,L);book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
+        shot(dir,"103-release-current-first",book,L,w,h,ss);
+        book.releaseNotes.touch(book,L,L.w*.5f,(book.releaseNotes.demoTop(L)+book.releaseNotes.demoBottom(L))*.5f);
+        book.releaseNotes.update(2.5f,L);
+        shot(dir,"103-release-current-first-held",book,L,w,h,ss);
+        if(ReleaseChange.ITEMS[0].length>1) {
+            book.releaseNotes.select(0,1,L);book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
+            shot(dir,"103-release-current-second",book,L,w,h,ss);
+            book.releaseNotes.touch(book,L,L.w*.5f,(book.releaseNotes.demoTop(L)+book.releaseNotes.demoBottom(L))*.5f);
+            book.releaseNotes.update(2.5f,L);
+            shot(dir,"103-release-current-second-held",book,L,w,h,ss);
+        }
+        book.releaseNotes.back();book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
         book.releaseNotes.listScroll=ReleaseNotes.maxScroll(L);
         shot(dir,"103-release-book-list-scrolled",book,L,w,h,ss);
         int[] releaseItems=ReleaseChange.ITEMS[0];

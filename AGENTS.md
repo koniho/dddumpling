@@ -74,6 +74,8 @@ you are doing.
 When the user requests a release, first work through its release notes interactively with them using [Executing a release](docs/releasing.md).
 Present the entries and reset choices, incorporate their edits, and wait for explicit approval of the final notes before proceeding with version preparation, tagging, or publishing. A release request alone is not approval of unseen notes.
 The separate [writing guide](docs/release-notes.md) explains the human-editable JSON catalog.
+Collect small player-facing improvements into one `misc` entry each release; keep standalone bugs
+in one `bugs` entry and substantial features separate. Omit empty groups.
 Each feature needs its game phase and player purpose. Run `python3 tools/release-notes.py check --version <version>`
 before tagging; include the JSON, generated game copy, and destination notes in the release commit.
 

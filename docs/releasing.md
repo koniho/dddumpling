@@ -14,11 +14,19 @@ python3 tools/prepare-release.py context --output build/release-context.json
 
 Use `--since <last-distributed-tag-or-commit>` if the nearest tag was not the last shipped build. Review the relevant diffs and merged PRs. Include only the changes in this release; unmerged branch work is not shipped work.
 
+Before drafting entries, collect the player-facing changes into substantial features,
+small improvements, and standalone bugs. Gather minor UI, navigation, visual, and audio
+polish into one **Little improvements** (`misc`) entry with an `improvements` array.
+Give each point its game phase and player benefit. Keep standalone fixes in one `bugs`
+entry; feature-specific polish stays with the feature it completes. Omit empty groups.
+Use the same grouping in the in-game notes and destination release summaries.
+
 ## 2. Review the notes interactively before the version/tag step
 
 - Present each proposed entry to the user: title, game-phase context, player benefit, icon/demo, and automatic-reset choice. Work through edits one entry at a time (or in small groups if they prefer). After the entries are settled, show the final grouped notes and destination summaries and obtain explicit approval to proceed. If release contents change afterward, review the affected notes again. Read-only research and draft previews may continue while waiting; do not interpret silence as approval.
 - Follow [Writing in-game release notes](release-notes.md). Each feature must say **where in the game it applies** and **what changes for the player or why it matters**. Keep the voice light.
 - Coalesce redundant entries before approval: one entry per distinct player-facing change. Fold a new feature’s related behavior, polish, and fixes into that entry; keep the copy brief. Put only remaining standalone fixes under one bug icon, omitting it when none remain. See [Combine redundant entries](release-notes.md#combine-redundant-entries).
+- Include the collected misc points in the interactive review as one entry, using the sparkle-dumpling illustration and `autoReset: false`.
 - Decide `autoReset` for every entry while creating the notes; see [reset guidance](release-notes.md#decide-whether-the-demo-resets). Verify the choice by activating each demo and waiting more than two seconds.
 - Review the popup renders and interactions. Confirm the newest in-game release has the planned shared release version.
 - Write the Play summary in `build/release-notes.txt` using the same reviewed facts; keep it within the existing 500-character limit.

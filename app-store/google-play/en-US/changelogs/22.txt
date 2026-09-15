@@ -1,0 +1,1 @@
+Little improvements: new-land tours and clearer trails; tap outside the release list to close it, with soft bloops and gentle vibration while browsing. Fixes: Star Path keeps your chosen flyer and ends its rocket loop with one blast-off. Best Score fades out while the display case is open.

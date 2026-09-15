@@ -39,8 +39,8 @@ jobs:
         run: |
           mkdir -p build/itch
           gh release download "$RELEASE_TAG" \
-            --pattern "DDDUMPLING-${RELEASE_TAG}-android.apk" --dir build/itch
-          test -s "build/itch/DDDUMPLING-${RELEASE_TAG}-android.apk"
+            --pattern "DDDUMPLING-${RELEASE_TAG}.apk" --dir build/itch
+          test -s "build/itch/DDDUMPLING-${RELEASE_TAG}.apk"
 
       - name: Install pinned butler
         run: |
