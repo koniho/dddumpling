@@ -131,7 +131,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
   ios_checks:
-    name: iOS checks
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.suite != 'full' && 'iOS focused checks' || 'iOS checks' }}
     needs: [changes, release_configuration, shared, simulator, archive]
     if: always()
     runs-on: ubuntu-latest

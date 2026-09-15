@@ -41,7 +41,8 @@ gh workflow run ios.yml --ref your-branch -f suite=audio
 # Other choices: full, build, native, input, render, storage.
 ```
 
-Manual focused runs are diagnostics. They do not replace the full main/release gate.
+Manual focused runs are diagnostics. Their aggregate is named **iOS focused checks** so
+they cannot satisfy the required **iOS checks** gate for a PR or full main/release run.
 On a Mac, run `ios/scripts/test-simulator.sh --full` or `--build-only`. For a focused test:
 
 ```sh
