@@ -166,7 +166,7 @@ final class ReleaseNotes extends Draw {
             if(action==1 || action==3) cancelTouch();
             return true;
         }
-        if(open && listing && action==0 && y>=listTop(L) && y<=listBottom(L)) {
+        if(open && listing && action==0 && x>=L.w*.04f && x<=L.w*.96f && y>=listTop(L) && y<=listBottom(L)) {
             listDragging=true;listMoved=false;gesture=true;listDownY=y;listStartScroll=listScroll;
             pressedRow=rowAt(L,x,y);return true;
         }
@@ -200,7 +200,10 @@ final class ReleaseNotes extends Draw {
         if(transition.moving() || pageMoving()) return true;
         float s=size(L);
         if(x>L.w*.82f && x<L.w*.96f && Math.abs(y-closeY(L))<s) { close();return true; }
-        if(listing) return true;
+        if(listing) {
+            if(x<L.w*.04f || x>L.w*.96f || y<top(L) || y>bottom(L)) close();
+            return true;
+        }
         if(x<L.w*.21f && x>L.w*.04f && Math.abs(y-closeY(L))<s) { back();return true; }
         if(y<demoTop(L) || y>demoBottom(L) || x<L.w*.08f || x>L.w*.92f) return true;
         if(demo==null) { age=0f;activated();return true; }

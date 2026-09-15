@@ -381,7 +381,7 @@ the origin and `Renderer.flurryBurst` draws it without changing gameplay timing.
 
 The title’s “What’s new” entry opens a “What’s cooking?” book for the full authored release
 history, newest first; scroll down to reach older entries. Each release groups icons for its individual
-changes, left-aligned and without feature labels. Extra icons wrap into additional rows; the list scrolls vertically when needed. Each release groups all fixes under one cute bug icon. Lift on an icon to open its content-sized popup; drag to scroll.
+changes, left-aligned and without feature labels. Extra icons wrap into additional rows; the list scrolls vertically when needed. Each release groups all fixes under one cute bug icon. Lift on an icon to open its content-sized popup; drag to scroll. Tap outside the release-list window to close it.
 Land travel, the mystery pickup, and the 200 ms linked pair have interactive demos. Smaller
 highlights have compact illustrations. Every feature has its game phase and a short player-facing purpose. All Releases or Back preserves list scroll;
 close, or Back from the list, returns to the title. Demos own an isolated `GameCore` with no store.

@@ -37,7 +37,36 @@ final class TestVisuals extends Check {
 
     private static void releaseBook(Layout L) {
         releaseHistory();
+        releaseOutside(L);
         try(ReleaseExamples examples=new ReleaseExamples()) { releaseBookExamples(L); }
+    }
+    private static void releaseOutside(Layout L) {
+        float[][] outside={{L.w*.02f,(ReleaseNotes.listTop(L)+ReleaseNotes.listBottom(L))*.5f},
+                {L.w*.98f,ReleaseNotes.rowY(L,0)}, {L.w*.5f,ReleaseNotes.top(L)-1f},
+                {L.w*.5f,ReleaseNotes.bottom(L)+1f}};
+        for(float[] point:outside) {
+            GameCore c=new GameCore(new Mem(),7203L);ReleaseNotes n=c.releaseNotes;
+            n.show(c,L);n.update(ReleaseTransition.DURATION,L);
+            check("outside list press is consumed",n.handleTouch(c,L,0,point[0],point[1]));
+            check("outside list starts existing exit",n.open && n.transition.closing);
+            n.update(ReleaseTransition.DURATION,L);
+            check("held closing gesture still owns input",n.handleTouch(c,L,2,L.keyX[0],L.keyY[0]));
+            check("closing lift is consumed",n.handleTouch(c,L,1,L.keyX[0],L.keyY[0]));
+            check("fresh title input is released",!n.handleTouch(c,L,0,L.keyX[0],L.keyY[0]));
+        }
+        GameCore c=new GameCore(new Mem(),7204L);ReleaseNotes n=c.releaseNotes;
+        n.show(c,L);n.update(ReleaseTransition.DURATION,L);
+        n.handleTouch(c,L,0,L.w*.5f,ReleaseNotes.top(L)+ReleaseNotes.size(L));
+        n.handleTouch(c,L,1,L.w*.5f,ReleaseNotes.top(L)+ReleaseNotes.size(L));
+        check("inside list header stays open",n.open && !n.transition.closing);
+        float x=ReleaseNotes.iconX(L,0,0),y=ReleaseNotes.rowY(L,0);
+        n.handleTouch(c,L,0,x,y);n.handleTouch(c,L,2,x,ReleaseNotes.top(L)-5f);
+        n.handleTouch(c,L,1,x,ReleaseNotes.top(L)-5f);
+        check("scroll ending outside does not dismiss",n.listing && !n.transition.closing);
+        n.listScroll=0f;n.handleTouch(c,L,0,x,y);n.handleTouch(c,L,1,x,y);
+        n.update(ReleaseNotes.PAGE_TIME,L);
+        n.handleTouch(c,L,0,0,0);n.handleTouch(c,L,1,0,0);
+        check("feature outside taps retain existing behavior",!n.listing && !n.transition.closing);
     }
     private static void releaseHistory() {
         Layout L=new Layout();L.compute(852,393,0,0,0,0);

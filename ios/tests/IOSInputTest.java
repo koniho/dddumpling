@@ -351,6 +351,14 @@ public final class IOSInputTest extends Check {
         check("book closing gesture cannot start a run",c.releaseNotes.open && c.releaseNotes.transition.closing && !c.starting());
         for(int i=0;i<72;i++) game.update(DT);
         check("native exit finishes on the title",!c.releaseNotes.open && !c.starting());
+        c.releaseNotes.show(c,l);
+        for(int i=0;i<72;i++) game.update(DT);
+        game.touch(one(0,10,l.w*.02f,ReleaseNotes.rowY(l,0)));
+        check("native outside list tap begins exit",c.releaseNotes.transition.closing && !c.starting());
+        for(int i=0;i<72;i++) game.update(DT);
+        game.touch(one(2,10,l.keyX[0],l.keyY[0]));
+        game.touch(one(1,10,l.keyX[0],l.keyY[0]));
+        check("native outside dismiss gesture cannot reach title",!c.releaseNotes.open && !c.starting());
         game.touch(one(0,10,l.keyX[0],l.keyY[0]));
         check("fresh input works after closing the book",c.starting());
     }
