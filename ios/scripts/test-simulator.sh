@@ -15,7 +15,8 @@ xcodegen generate --spec "$IOS_ROOT/project.yml"
 args=(-project "$IOS_ROOT/DDDumpling.xcodeproj" -scheme DDDumpling -configuration Debug
       -derivedDataPath "$IOS_ROOT/build/DerivedData" CODE_SIGNING_ALLOWED=NO)
 if [ "$mode" = --build-only ]; then
-    xcodebuild "${args[@]}" -destination 'generic/platform=iOS Simulator' build "$@"
+    xcodebuild "${args[@]}" -destination 'generic/platform=iOS Simulator' \
+        "ARCHS=$(uname -m)" ONLY_ACTIVE_ARCH=YES build "$@"
     echo "Simulator compile: $((SECONDS-started)) seconds"
     exit
 fi

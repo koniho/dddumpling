@@ -115,7 +115,9 @@ class SimulatorScript(unittest.TestCase):
             subprocess.run(command + ['--build-only'], env=env, check=True, stdout=subprocess.DEVNULL)
             calls = [json.loads(line) for line in log.read_text().splitlines()]
             self.assertFalse(any(Path(call[0]).name == 'xcrun' for call in calls))
-            self.assertTrue(any('build' in call and 'generic/platform=iOS Simulator' in call for call in calls))
+            self.assertTrue(any('build' in call and 'generic/platform=iOS Simulator' in call
+                                and 'ONLY_ACTIVE_ARCH=YES' in call
+                                and any(arg.startswith('ARCHS=') for arg in call) for call in calls))
             log.write_text('')
             (build / 'simulator-id').write_text('test-device')
             env['IOS_TEST_TARGETS'] = '["DDDumplingTests/DDAudioTests"]'
