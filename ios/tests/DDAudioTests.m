@@ -160,6 +160,8 @@
   [audio setValue:@YES forKey:@"active"];
   [audio setValue:@YES forKey:@"playbackAllowed"];
   [audio setValue:mixer forKey:@"effectMixer"];
+  // Pitch/gain routing should not race cold synthesis against the 100 ms stale-effect limit.
+  [audio bufferForEffect:DDSfx_ZAP];
   [audio playEffect:DDSfx_ZAP rate:1.5 gain:.7];
   dispatch_sync([audio valueForKey:@"effectsQueue"], ^{});
   XCTAssertEqual(mixer.playCount, 1u);

@@ -6,6 +6,14 @@ final class TestAudio extends Check {
     /** What the two frenzy squish sounds are, and that they are the right shape for the job. */
     static void frenzySounds(Layout L) {
         group("frenzy sounds");
+        short[] bloop=Sfx.build(Sfx.UI_BLOOP);
+        check("UI bloop stays brief",bloop.length>Sfx.RATE*.07f && bloop.length<Sfx.RATE*.15f);
+        check("UI bloop is tonal",crossRate(bloop)>300f && crossRate(bloop)<1200f);
+        int bloopHead=0,bloopTail=0;
+        for(int i=0;i<bloop.length/2;i++) bloopHead=Math.max(bloopHead,Math.abs(bloop[i]));
+        for(int i=bloop.length*3/4;i<bloop.length;i++) bloopTail=Math.max(bloopTail,Math.abs(bloop[i]));
+        check("UI bloop fades softly",bloopTail<bloopHead/4);
+
         // The chop fires several times per swipe, so anything with a tail would smear.
         short[] chop = Sfx.build(Sfx.CHOP);
         float chopLen = (float) chop.length / Sfx.RATE;

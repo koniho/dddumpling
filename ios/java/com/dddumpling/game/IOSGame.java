@@ -659,6 +659,7 @@ public final class IOSGame {
         }
         boolean playing = core.state == GameCore.PLAY && !core.paused;
         core.update(Math.min(elapsed, .05f), elapsed, layout);
+        for (int i = 0, n = core.releaseNotes.takeFeedback(); i < n; i++) tick();
         for (int i = 0; i < core.starPickups; i++) tick();
         if (playing && core.boss.octoImpact) tick();
         boolean beaten = core.boss.active() && core.boss.beaten;

@@ -311,6 +311,30 @@ public final class IOSInputTest extends Check {
                 && c.store.loadReleaseSeen().equals(BuildFlags.BUILD_ID));
     }
 
+    private static void releaseFeedback() {
+        IOSGame game=game();Host host=new Host();game.setHost(host);
+        GameCore c=game.core();Layout l=game.geometry();Ear ear=(Ear)c.sound;
+        tap(game,c.releaseMascot.x(l),c.releaseMascot.y(l));game.update(DT);
+        check("native book opening bloops and ticks once",host.ticks==1 && ear.uiBloops==1);
+        tap(game,0,0);game.update(DT);
+        check("native opening ignores repeated input",host.ticks==1 && ear.uiBloops==1);
+        for(int i=0;i<72;i++) game.update(DT);
+        float x=ReleaseNotes.iconX(l,0,0),y=ReleaseNotes.rowY(l,0);
+        game.touch(one(0,1,x,y));game.touch(one(2,1,x,y-150f));game.touch(one(1,1,x,y-150f));game.update(DT);
+        check("native scrolling has no navigation feedback",host.ticks==1 && ear.uiBloops==1);
+        c.releaseNotes.listScroll=0f;tap(game,x,y);game.update(DT);
+        check("native item entry bloops and ticks once",host.ticks==2 && ear.uiBloops==2);
+        for(int i=0;i<24;i++) game.update(DT);
+        game.back();for(int i=0;i<24;i++) game.update(DT);
+        tap(game,0,0);game.update(DT);
+        check("native outside exit bloops and ticks once",host.ticks==3 && ear.uiBloops==3);
+        tap(game,0,0);for(int i=0;i<72;i++) game.update(DT);
+        check("native exit animation does not repeat feedback",host.ticks==3 && ear.uiBloops==3);
+        tap(game,c.releaseMascot.x(l),c.releaseMascot.y(l));
+        for(int i=0;i<72;i++) game.update(DT);
+        game.back();game.back();game.update(DT);
+        check("native back close has one feedback event",host.ticks==5 && ear.uiBloops==5);
+    }
     private static void releaseNotes() {
         try(ReleaseExamples examples=new ReleaseExamples()) { releaseNoteExamples(); }
     }
@@ -353,12 +377,20 @@ public final class IOSInputTest extends Check {
         check("book closing gesture cannot start a run",c.releaseNotes.open && c.releaseNotes.transition.closing && !c.starting());
         for(int i=0;i<72;i++) game.update(DT);
         check("native exit finishes on the title",!c.releaseNotes.open && !c.starting());
+        c.releaseNotes.show(c,l);
+        for(int i=0;i<72;i++) game.update(DT);
+        game.touch(one(0,10,l.w*.02f,ReleaseNotes.rowY(l,0)));
+        check("native outside list tap begins exit",c.releaseNotes.transition.closing && !c.starting());
+        for(int i=0;i<72;i++) game.update(DT);
+        game.touch(one(2,10,l.keyX[0],l.keyY[0]));
+        game.touch(one(1,10,l.keyX[0],l.keyY[0]));
+        check("native outside dismiss gesture cannot reach title",!c.releaseNotes.open && !c.starting());
         game.touch(one(0,10,l.keyX[0],l.keyY[0]));
         check("fresh input works after closing the book",c.starting());
     }
 
     public static void main(String[] args) {
-        releaseAttention(); releaseNotes(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); bossOwnership(); flingHistory();
+        releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); bossOwnership(); flingHistory();
         steamerAndPanic(); caseAndSettings();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");

@@ -206,6 +206,7 @@ final class GameCore {
         void debuffDown();
         void slimeCover(boolean release);
         void landShuffle();
+        void uiBloop();
         void damage();
         void achievement();
         /** The slime has turned an unanswered prompt into a volley. */

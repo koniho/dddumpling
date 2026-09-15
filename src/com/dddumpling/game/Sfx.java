@@ -32,7 +32,7 @@ final class Sfx {
             MUSHROOM_SHAKE = BOLT_DEATH + 1, MUSHROOM_SPORE = MUSHROOM_SHAKE + 1,
             LINKED_THUD = MUSHROOM_SPORE + 1, SHUFFLE_BLIP = LINKED_THUD + 1, DEBUFF_DOWN = SHUFFLE_BLIP + 1,
             SLIME_COVER = DEBUFF_DOWN + 1, SLIME_RELEASE = SLIME_COVER + 1,
-            LAND_SHUFFLE = SLIME_RELEASE + 1, COUNT = LAND_SHUFFLE + 1;
+            LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, COUNT = UI_BLOOP + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -59,6 +59,7 @@ final class Sfx {
             case SLIME_COVER: return slimeCover(false);
             case SLIME_RELEASE: return slimeCover(true);
             case LAND_SHUFFLE: return landShuffle();
+            case UI_BLOOP: return uiBloop();
             case START: return start();
             case STAGE_CLEAR: return stageClear();
             case POWER_CLEAR: return powerClear();
@@ -771,6 +772,16 @@ final class Sfx {
     }
 
     /** Tiny rounded tick, short enough to leave space between roulette changes. */
+    static short[] uiBloop() {
+        float[] v=new float[(int)(RATE*.11f)];float phase=0f;
+        for(int i=0;i<v.length;i++) {
+            float u=i/(float)v.length;
+            phase+=TAU*(540f-350f*u)/RATE;
+            v[i]=(float)Math.sin(phase)*envelope(u,.04f,4f)*(1f-u);
+        }
+        return render(v);
+    }
+
     static short[] shuffleBlip() { return sweepTone(0.035f, 1050f, 850f, 1f); }
 
     /** Playful falling slide announcing a temporary debuff. */

@@ -742,6 +742,7 @@ public class GameView extends View {
             boolean playingBeforeUpdate = core.state == GameCore.PLAY && !core.paused && !background;
             if (!background) {
                 core.update(dt, elapsed, layout);
+                for (int i = 0, n = core.releaseNotes.takeFeedback(); i < n; i++) tick();
                 for (int i = 0; i < core.starPickups; i++) tick();
             }
             refreshNavigation();
