@@ -288,6 +288,10 @@ final class Audio implements GameCore.Sound {
         play(Sfx.COURSE, 1f);
     }
 
+    @Override public void courseFinish() {
+        play(Sfx.BLAST_OFF, 1f);
+    }
+
     @Override public void rocket(float thrust) {
         try {
             if (thrust <= 0f) {

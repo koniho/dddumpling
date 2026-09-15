@@ -483,6 +483,12 @@ final class TestAudio extends Check {
     static void interludeSounds(Layout L) {
         group("interlude and cut-scene sounds");
 
+        short[] blast = Sfx.build(Sfx.BLAST_OFF);
+        check("blast-off ends before the climb-out", blast.length < Sfx.RATE * StarPath.EXIT);
+        int blastHead = 0, blastTail = 0;
+        for (int i = 0; i < blast.length / 2; i++) blastHead = Math.max(blastHead, Math.abs(blast[i]));
+        for (int i = blast.length * 3 / 4; i < blast.length; i++) blastTail = Math.max(blastTail, Math.abs(blast[i]));
+        check("blast-off exhaust fades away", blastTail < blastHead / 4);
         short[] go = Sfx.build(Sfx.COURSE);
         int firstQuarter = 0, back = 0;
         for (int i = 0; i < go.length / 4; i++) firstQuarter = Math.max(firstQuarter,
@@ -552,10 +558,14 @@ final class TestAudio extends Check {
         c.stars.begin(-1, L);
         c.bonusTimer = c.stars.timer;
         int launchesInLesson = 0;
+        boolean silentFinish = true;
         for (int i = 0; i < 60 * 12 && c.state == GameCore.BONUS; i++) {
             if (c.stars.ready()) launchesInLesson = ear.courseStarts;
             c.update(DT, L);
+            if (c.stars.exiting() || c.stars.reporting())
+                silentFinish &= ear.rocketThrust == 0f && ear.courseFinishes == 1;
         }
+        check("climb-out stops the loop and blasts off exactly once", silentFinish && ear.courseFinishes == 1);
         System.out.printf("    a lost course: %d launches, %d tallies at %d stars, %d fanfares%n",
                 ear.courseStarts, ear.tallies, ear.lastTally, ear.achievements);
         check("a course announces its launch once", ear.courseStarts == 1);
@@ -580,10 +590,13 @@ final class TestAudio extends Check {
         w.stars.collected = (1 << (StarPath.COUNT - 1)) - 1;
         w.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 0.5f;
         int last = StarPath.COUNT - 1;
+        boolean silentWin = true;
         for (int i = 0; i < 60 * 25 && w.state == GameCore.BONUS; i++) {
             if (!w.stars.won) w.stars.x = w.stars.starX(last, L);
             w.update(DT, L);
+            if (w.stars.winning()) silentWin &= won.rocketThrust == 0f && won.courseFinishes == 1;
         }
+        check("victory stops the loop and blasts off exactly once", silentWin && won.courseFinishes == 1);
         System.out.printf("    a won course: %d fanfares, %d tallies, %d join chords%n",
                 won.achievements, won.tallies, won.joins);
         check("a won course rings the fanfare and no tally",

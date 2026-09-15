@@ -261,6 +261,8 @@ final class GameCore {
         void star(int nth);
         /** The ready lesson ending and the course starting to move. Once per attempt. */
         void courseStart();
+        /** One blast as the course enters its finish sequence. */
+        void courseFinish();
         /** Continuous light rocket layer; zero stops it, 0..1 raises its thrust. */
         void rocket(float thrust);
         /**
@@ -2543,10 +2545,15 @@ final class GameCore {
             }
             if (starBonus) {
                 int heldStars = stars.collected;
+                boolean wasFinishing = stars.won || stars.exiting() || stars.reporting();
                 stars.update(dt, L);
                 starPickups = Integer.bitCount(stars.collected & ~heldStars);
-                if (sound != null) sound.rocket(stars.exiting() ? 1f : stars.flying()
-                        ? 0.15f + 0.85f * stars.flightProgress() : 0f);
+                boolean finishing = stars.won || stars.exiting() || stars.reporting();
+                if (sound != null) {
+                    sound.rocket(!finishing && stars.flying()
+                            ? 0.15f + 0.85f * stars.flightProgress() : 0f);
+                    if (!wasFinishing && finishing) sound.courseFinish();
+                }
                 bonusTimer = stars.timer;
                 if (stars.grabbed) {
                     // The fling stroke's beat, briefly: a taken star lands with the same stutter and

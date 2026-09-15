@@ -32,7 +32,7 @@ final class Sfx {
             MUSHROOM_SHAKE = BOLT_DEATH + 1, MUSHROOM_SPORE = MUSHROOM_SHAKE + 1,
             LINKED_THUD = MUSHROOM_SPORE + 1, SHUFFLE_BLIP = LINKED_THUD + 1, DEBUFF_DOWN = SHUFFLE_BLIP + 1,
             SLIME_COVER = DEBUFF_DOWN + 1, SLIME_RELEASE = SLIME_COVER + 1,
-            LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, COUNT = UI_BLOOP + 1;
+            LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, BLAST_OFF = UI_BLOOP + 1, COUNT = BLAST_OFF + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -68,6 +68,7 @@ final class Sfx {
             case COLLECT: return collect();
             case STAR: return star();
             case COURSE: return course();
+            case BLAST_OFF: return blastOff();
             case TALLY: return tally();
             case JOIN: return join();
             case OVER: return over();
@@ -556,6 +557,23 @@ final class Sfx {
     static synchronized short[] rocket() {
         if (rocketCache == null) rocketCache = renderRocket();
         return rocketCache;
+    }
+
+    /** Ignition punch and rising exhaust, fading before the climb-out ends. */
+    private static short[] blastOff() {
+        float[] v = new float[(int) (RATE * 0.65f)];
+        java.util.Random rng = new java.util.Random(731L);
+        float air = 0f;
+        for (int i = 0; i < v.length; i++) {
+            float t = (float) i / RATE, u = t / 0.65f;
+            air += 0.24f * (rng.nextFloat() * 2f - 1f - air);
+            float phase = TAU * (95f * t + 340f * t * t);
+            float body = (float) Math.sin(phase) * 0.55f
+                    + (float) Math.sin(phase * 1.51f) * 0.18f;
+            float env = Math.min(1f, t / 0.012f) * (float) Math.pow(1f - u, 2.3f);
+            v[i] = (body + air * 1.4f) * env;
+        }
+        return render(v);
     }
 
     private static short[] renderRocket() {
