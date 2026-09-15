@@ -95,7 +95,7 @@ class Selection(unittest.TestCase):
 
 
 class SimulatorScript(unittest.TestCase):
-    def test_compile_only_and_focused_execution(self):
+    def test_compile_only_focused_and_full_execution(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             scripts = root / 'ios/scripts'; scripts.mkdir(parents=True)
@@ -130,6 +130,15 @@ class SimulatorScript(unittest.TestCase):
             self.assertIn('-only-testing:DDDumplingTests/DDAudioTests', tests[0])
             self.assertLess(calls.index(compiles[0]), calls.index(tests[0]))
             self.assertTrue(any('bootstatus' in call for call in calls))
+            for flags in (['--full'], []):
+                log.write_text('')
+                subprocess.run(command + flags, env=env, check=True, stdout=subprocess.DEVNULL)
+                calls = [json.loads(line) for line in log.read_text().splitlines()]
+                compiles = [call for call in calls if 'build-for-testing' in call]
+                tests = [call for call in calls if 'test-without-building' in call]
+                self.assertEqual(len(compiles), 1); self.assertEqual(len(tests), 1)
+                self.assertFalse(any(arg.startswith('-only-testing:') for call in calls for arg in call))
+                self.assertLess(calls.index(compiles[0]), calls.index(tests[0]))
 
 
 class BuildIdentity(unittest.TestCase):
