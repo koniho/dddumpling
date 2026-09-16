@@ -154,7 +154,7 @@
 }
 - (void)safeAreaInsetsDidChange { [super safeAreaInsetsDidChange]; [self setNeedsLayout]; }
 - (void)refreshNavigation {
-    self.backButton.hidden = ![self.game handlesBack];
+    self.backButton.hidden = ![self.game showsBackButton];
     self.backButton.accessibilityLabel = [self.game paused] ? @"Resume or go back" : @"Pause or go back";
     self.accessibilityElements = self.backButton.hidden ? @[self.gameElement] : @[self.gameElement, self.backButton];
 #if DEBUG

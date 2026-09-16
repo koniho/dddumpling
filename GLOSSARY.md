@@ -267,7 +267,7 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **swipe catchment** | where a panic swipe may start: the lower half of the field, much wider than the strip that advertises it | `Layout.inPushZone` |
 | **shelving** | one of the haul reaching the case at the end of its trip, and the chime that says so | `RoundEnd.arrival`, `Sound.collect`, `Sfx.collect` |
 | **game over screen** | score, accuracy dumpling, best. Fades up after the hold; GAME OVER is yellow, not rose | `Screens.gameOver` |
-| **accuracy dumpling** | the face that reflects accuracy: tear below 60%, sparkles above 90% | `Screens.accuracy` |
+| **accuracy dumpling** | the face that reflects accuracy: tear below 60%, sparkles above 90%; no presses means 0% | `Screens.accuracy` |
 | **settings panel** | opened by tapping the stage readout; pauses the game | `Screens.settings` |
 | **minigame difficulty** | Minigames settings tab; saved Star Path level, applied next attempt, raised by wins | `SettingsUi.MINIGAMES`, `GameCore.setStarDifficulty` |
 | **stage readout** | the "STAGE n" text — also the settings button | `Layout.inStageTap` |
@@ -423,3 +423,27 @@ a small spring-driven lift and squash. Cave walking speed is .36 route units per
 The title’s **Best Score** fades out before the display case heading appears, stays hidden
 while the case is open, and fades back in after the case heading disappears. `Screens.caseOut`
 keeps these labels from overlapping during either transition.
+
+The settled **game-over summary** accepts a fresh tap anywhere to return to the title.
+The death and haul animations finish before dismissal becomes available. The returning gesture cannot start a new run, and the iOS pause button is hidden.
+
+## Player settings
+
+The title's **Settings** entry replaces the standalone privacy link. **Player** contains the privacy
+policy, independent music and sound-effects volume/mute controls, and **Kids Mode** for the next run.
+Drag the key-sized cat or slime along its slider; the handles have no hexagon frames. The cat goes from ukulele to electric guitar as
+music rises, with floating notes that grow with volume; mute removes its guitar and makes it sad.
+The slime whispers at low effects volume, shakes and yells with expanding sound waves at high
+volume, and covers its mouth when muted. Waves and notes stop when muted. Mute retains the slider level. Preferences
+are saved on the device and applied to audio on launch.
+
+The developer-only **Developer** tab groups **Run** (speed, music track, stage, next-run keys, End
+Run), **Powers** (frenzies and debuffs), **Minigames** (Star Path, Steamer, difficulty), and **Progress**
+(lands, release book, collection). Stage changes, End Run and playtests are disabled outside active
+play, including interludes; settings never starts a run implicitly.
+
+**Kids Mode** keeps lives and game over, runs gameplay at 45% speed, keeps four keys and two-letter
+unstacked words with early-stage pacing, and grants 600 ms for linked pairs. Regular play returns on
+the next run after switching it off. `PlayerSettings`, `SettingsArt`, and `SettingsInput` own the
+public preferences, character handles, and shared native input; `SettingsUi` and `DevSettings` own
+the developer groups.

@@ -52,8 +52,11 @@ public final class IOSInputTest extends Check {
         check("music choice announced after backend attached", ((Ear) c.sound).musicCalls == 1);
         check("UIKit points preserve safe-area geometry", l.w == 393 && l.padT == 59 && l.padB == 34);
         check("title has no back navigation", !game.handlesBack() && !game.back());
-        tap(game, l.w - 2*l.unit, l.dangerY - 2*l.unit);
-        check("privacy opens host URL without starting play", PrivacyUi.URL.equals(host.privacy) && !c.starting());
+        tap(game, l.w - 2*l.unit, l.dangerY);
+        check("title settings open without launching privacy", c.settingsOpen && host.privacy==null && !c.starting());
+        tap(game,l.w*.5f,PlayerSettings.row(l,3));
+        check("privacy link inside settings opens host URL",PrivacyUi.URL.equals(host.privacy));
+        game.back();
         tap(game, l.keyX[0], l.keyY[0]);
         for (int i = 0; i < 180; i++) game.update(DT);
         check("title deck press starts real run", c.state == GameCore.PLAY);
@@ -85,6 +88,62 @@ public final class IOSInputTest extends Check {
         check("second back resumes", !game.paused());
         clock = c.clock; game.update(Float.NaN); game.update(-1); game.update(Float.POSITIVE_INFINITY);
         check("invalid frame intervals do not poison simulation", c.clock == clock);
+    }
+
+    private static void playerSettings() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        tap(game,l.w-l.unit,l.dangerY);
+        check("public player tab is first",c.settingsOpen && c.settingsPage==0);
+        float s=PlayerSettings.unit(l),y=PlayerSettings.row(l,0)+s*3;
+        c.preferences.music=.5f;
+        float cx=(PlayerSettings.trackL(l)+PlayerSettings.trackR(l))*.5f;
+        game.touch(one(0,17,cx+l.keyR*.5f,y));
+        check("grabbing character edge does not jump the slider",c.preferences.music==.5f);
+        game.touch(two(2,0,88,0,0,17,PlayerSettings.trackR(l)+l.keyR*.5f,y));
+        check("volume follows its owner across pointer reorder",c.preferences.music==1f);
+        game.touch(one(1,17,PlayerSettings.trackR(l)+l.keyR*.5f,y));
+        tap(game,PlayerSettings.right(l)-s*3,PlayerSettings.row(l,0));
+        check("native mute keeps slider value",c.preferences.musicMuted && c.preferences.music==1f && !c.preferences.effectsMuted);
+        tap(game,l.w*.5f,PlayerSettings.row(l,2));
+        check("kids setting persists from native settings",new GameCore(c.store,93L).preferences.kids);
+        tap(game,l.w*.75f,PlayerSettings.top(l)+s*4);
+        check("native developer tab opens",c.settingsPage==1);
+        SettingsUi ui=new SettingsUi();ui.compute(l,Music.NAMES.length);
+        tap(game,(ui.testChipL(2,4)+ui.testChipR(2,4))*.5f,ui.stageY+ui.stageH*.5f);
+        check("title stage chip cannot start a run",c.state==GameCore.TITLE && !c.starting());
+        game.back();
+        check("closing native settings consumes gesture",!c.settingsOpen && !c.starting());
+    }
+
+    private static void gameOverDismissal() {
+        for (int target = 0; target < 4; target++) {
+            IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
+            c.startGame();
+            check("play retains pause button", game.showsBackButton());
+            c.lives = 1; c.enemies.clear();
+            add(c, l, new int[] {0}, l.dangerY - l.enemyR + 1);
+            advance(c, l, GameCore.ATTACK_TIME + 2 * DT);
+            check("game over hides pause but retains system back", !game.showsBackButton() && game.handlesBack());
+            float x = target == 0 ? l.w/2 : target == 1 ? 1 : target == 2 ? l.w-1 : l.keyX[0];
+            float y = target == 0 ? l.h/2 : target == 1 ? 1 : target == 2 ? l.h-1 : l.keyY[0];
+            tap(game, x, y);
+            game.back();
+            check("tap and back preserve death animation", c.returnFade == 0 && c.state == GameCore.OVER);
+            game.touch(one(0, 42, x, y));
+            for (int i=0; i<900 && !c.overReady(); i++) game.update(DT);
+            game.touch(one(1, 42, x, y));
+            check("lifting a finger held through death cannot dismiss", c.overReady() && c.returnFade == 0);
+            game.touch(one(0, 42, x, y));
+            check("fresh tap anywhere dismisses settled summary", c.returnFade > 0);
+            for (int i=0; i<60; i++) game.update(DT);
+            game.touch(one(2, 42, l.keyX[0], l.keyY[0]));
+            game.touch(two(5, 1, 42, x, y, 9, l.keyX[0], l.keyY[0]));
+            game.touch(one(1, 42, l.keyX[0], l.keyY[0]));
+            check("return gesture cannot start a run or browse title", c.state == GameCore.TITLE
+                    && !c.starting() && !c.titleTouchDown && !c.caseOpen);
+            tap(game, l.keyX[0], l.keyY[0]);
+            check("next separate key tap starts normally", c.starting());
+        }
     }
 
     private static void starsAndLand() {
@@ -251,15 +310,15 @@ public final class IOSInputTest extends Check {
         ui.compute(l,Music.NAMES.length);
         tap(game,ui.closeCx,ui.closeCy);
         check("settings close resumes play", !c.settingsOpen);
-        c.settingsOpen=true;
-        tap(game,(ui.testChipL(3,4)+ui.testChipR(3,4))/2,ui.debuffY+ui.testH/2);
+        c.settingsOpen=true;c.settingsTab=SettingsUi.PROGRESS;ui.compute(l,Music.NAMES.length,c.settingsTab);
+        tap(game,(ui.testChipL(0,2)+ui.testChipR(0,2))/2,ui.debuffY+ui.testH/2);
         check("native all lands chip enables every land",LandPicker.count(c)==Lands.COUNT);
-        tap(game,(ui.testChipL(2,4)+ui.testChipR(2,4))/2,ui.debuffY+ui.testH/2);
+        tap(game,l.w*.5f,ui.difficultyY+ui.difficultyH/2);
         check("native reset news clears seen status without leaving settings",c.settingsOpen && c.store.loadReleaseSeen().equals(""));
         c.settingsOpen=false;
         for(int i=0;i<2;i++) {
-            c.settingsOpen=true;
-            tap(game,(ui.testChipL(i,4)+ui.testChipR(i,4))/2,ui.debuffY+ui.testH/2);
+            c.settingsOpen=true;c.settingsTab=SettingsUi.POWERS;ui.compute(l,Music.NAMES.length,c.settingsTab);
+            tap(game,(ui.testChipL(i,2)+ui.testChipR(i,2))/2,ui.debuffY+ui.testH/2);
             check("native debuff chip activates correct effect " + i,!c.settingsOpen
                     && c.debuff==Power.INCOGNITO+i && c.debuffLeft>0f && !c.powerActive());
         }
@@ -340,8 +399,8 @@ public final class IOSInputTest extends Check {
     }
     private static void releaseNoteExamples() {
         IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
-        game.touch(one(0,1,l.unit*3f,l.dangerY-l.unit*2f));
-        game.touch(one(1,1,l.unit*3f,l.dangerY-l.unit*2f));
+        game.touch(one(0,1,l.unit*3f,l.dangerY));
+        game.touch(one(1,1,l.unit*3f,l.dangerY));
         check("title book opens through native input",c.releaseNotes.open);
         tap(game,l.keyX[0],l.keyY[0]);
         check("native transition blocks title keys",!c.starting() && c.releaseNotes.listing);
@@ -406,6 +465,8 @@ public final class IOSInputTest extends Check {
     }
 
     public static void main(String[] args) {
+        playerSettings();
+        gameOverDismissal();
         cave();
         releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); bossOwnership(); flingHistory();
         steamerAndPanic(); caseAndSettings();

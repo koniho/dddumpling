@@ -127,7 +127,7 @@ final class Renderer extends Draw {
         if (c.state == GameCore.PLAY && c.perfectBanner > 0) Hud.perfectStage(p, c, L);
         // Over the title screen and its display case, under nothing: the story is modal.
         if (c.storyOpen()) Storybook.draw(p, c, L);
-        if (BuildFlags.DEVELOPER && c.settingsOpen) Screens.settings(p, c, L);
+        if (c.settingsOpen) PlayerSettings.draw(p, c, L);
         Pause.draw(p, c, L);
         ReleaseNotes.entry(p,c,L);
         c.releaseNotes.draw(p,c,L);
@@ -151,6 +151,9 @@ final class Renderer extends Draw {
         float dash = 0.030f * L.w, gap = 0.022f * L.w;
         for (float x = L.playLeft; x < L.playRight; x += dash + gap) {
             float x2 = Math.min(x + dash, L.playRight);
+            // Leave room for the title controls sitting on the line.
+            if (ReleaseNotes.available(c) && !c.releaseNotes.open && x < 4f * L.unit) continue;
+            if (PrivacyUi.visible(c) && x2 > L.w - 7f * L.unit) continue;
             p.line(x, L.dangerY, x2, L.dangerY, col, Math.max(1.5f, 0.004f * L.w) * (1 + alarm));
         }
     }

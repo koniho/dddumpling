@@ -261,6 +261,9 @@ final class Preview {
             book.update(.2f,L);
         }
         shot(dir,"103-release-book-list",book,L,w,h,ss);
+        book.releaseNotes.listScroll=ReleaseNotes.maxScroll(L);
+        shot(dir,"103-release-book-oldest",book,L,w,h,ss);
+        book.releaseNotes.listScroll=0f;
         book.releaseNotes.select(0,0,L);book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
         shot(dir,"103-release-current-first",book,L,w,h,ss);
         book.releaseNotes.touch(book,L,L.w*.5f,(book.releaseNotes.demoTop(L)+book.releaseNotes.demoBottom(L))*.5f);
@@ -272,6 +275,13 @@ final class Preview {
             book.releaseNotes.touch(book,L,L.w*.5f,(book.releaseNotes.demoTop(L)+book.releaseNotes.demoBottom(L))*.5f);
             book.releaseNotes.update(2.5f,L);
             shot(dir,"103-release-current-second-held",book,L,w,h,ss);
+        }
+        if(ReleaseChange.ITEMS[0].length>2) {
+            book.releaseNotes.select(0,2,L);book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
+            shot(dir,"103-release-current-third",book,L,w,h,ss);
+            book.releaseNotes.touch(book,L,L.w*.5f,(book.releaseNotes.demoTop(L)+book.releaseNotes.demoBottom(L))*.5f);
+            book.releaseNotes.update(2.5f,L);
+            shot(dir,"103-release-current-third-held",book,L,w,h,ss);
         }
         book.releaseNotes.back();book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
         book.releaseNotes.listScroll=ReleaseNotes.maxScroll(L);
@@ -743,6 +753,9 @@ final class Preview {
         System.out.printf("gameover: accuracy=%d%% mood=%.2f%n",
                 c3.accuracyPercent(), c3.accuracyMood());
         shot(dir, "8-gameover", c3, L, w, h, ss);
+
+        c3.hits = c3.misses = 0;
+        shot(dir, "8b-gameover-zero-hits", c3, L, w, h, ss);
 
         // Same screen at both mood extremes.
         c3.hits = 92;
@@ -1484,6 +1497,29 @@ final class Preview {
         System.out.printf("stage jump: on stage %d, boss %s%n", cj.stage,
                 Boss.NAMES[cj.boss.kind]);
         shot(dir, "67-settings-stage-jump", cj, L, w, h, ss);
+        GameCore settings=new GameCore(new Mem(),819L);
+        PlayerSettings.open(settings);
+        for(int v=0;v<4;v++) {
+            settings.preferences.music=settings.preferences.effects=new float[]{.1f,.5f,1f,.5f}[v];
+            settings.preferences.musicMuted=settings.preferences.effectsMuted=v==3;
+            shot(dir,"120-settings-audio-"+v,settings,L,w,h,ss);
+        }
+        settings.preferences.musicMuted=settings.preferences.effectsMuted=false;
+        settings.preferences.music=settings.preferences.effects=1f;
+        for(int beat=0;beat<3;beat++) {
+            settings.clock=beat*.19f;
+            shot(dir,"120b-settings-loud-motion-"+beat,settings,L,w,h,ss);
+        }
+        settings.settingsPage=1;
+        for(int tab=0;tab<4;tab++) {
+            settings.settingsTab=tab;
+            shot(dir,"121-settings-disabled-"+tab,settings,L,w,h,ss);
+        }
+        settings.startGame();settings.openSettings();
+        for(int tab=0;tab<4;tab++) {
+            settings.settingsTab=tab;
+            shot(dir,"122-settings-active-"+tab,settings,L,w,h,ss);
+        }
 
         // Beaten, mid-burst.
         GameCore cb = toBoss(L, Boss.SLIME, 530L, true);

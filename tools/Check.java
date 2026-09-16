@@ -40,6 +40,9 @@ abstract class Check {
         String releaseSeen=BuildFlags.BUILD_ID;
         public String loadReleaseSeen() { return releaseSeen; }
         public void saveReleaseSeen(String value) { releaseSeen=value; }
+        int playerSettings = PlayerSettings.DEFAULT;
+        public int loadPlayerSettings() { return playerSettings; }
+        public void savePlayerSettings(int value) { playerSettings=value; }
         int best;
         int caveChoice = -1;
         public int loadCaveChoice() { return caveChoice; }
@@ -83,6 +86,8 @@ abstract class Check {
     }
 
     static final class Ear implements GameCore.Sound {
+        float musicVolume, effectsVolume, squishVolume;
+        public void volumes(float music,float effects) { musicVolume=music;effectsVolume=effects; }
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeDamages, bossSplits,
                 bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideBoings, chops, zaps;
         float bossCharge, maxBossCharge;
@@ -109,6 +114,7 @@ abstract class Check {
         int narrations, hushes;
         int narrated = -1;
         public void squish(int glyph, int depth) {
+            squishVolume=effectsVolume;
             squishes++;
             lastGlyph = glyph;
             lastDepth = depth;

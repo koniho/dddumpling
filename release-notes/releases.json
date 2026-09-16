@@ -1,6 +1,44 @@
 {
   "releases": [
     {
+      "version": "0.1.22",
+      "changes": [
+        {
+          "icon": "settings",
+          "title": "Settings, your way",
+          "autoReset": false,
+          "where": "Title screen and during a run",
+          "why": "Adjust music and sound effects independently, with separate volume and mute controls. Enable Kids Mode before your next run for slower play, four keys, and shorter words."
+        },
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "After a run",
+              "why": "Tap finished results to return to the title."
+            },
+            {
+              "where": "In the release book",
+              "why": "Browse older changes with a yellow scrollbar, clear of the keys."
+            }
+          ]
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "autoReset": false,
+          "fixes": [
+            {
+              "where": "After a run",
+              "why": "Zero-hit runs now show 0% accuracy."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.21",
       "changes": [
         {

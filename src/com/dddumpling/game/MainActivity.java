@@ -178,6 +178,9 @@ public class MainActivity extends Activity implements GameCore.Store {
         else prefs.edit().putInt("best_land_" + land, value).apply();
     }
 
+    @Override public int loadPlayerSettings() { return prefs.getInt("playerSettings", PlayerSettings.DEFAULT); }
+    @Override public void savePlayerSettings(int value) { prefs.edit().putInt("playerSettings", value).apply(); }
+
     @Override public float loadSpeed() {
         return prefs.getFloat(KEY_SPEED, 1f);
     }

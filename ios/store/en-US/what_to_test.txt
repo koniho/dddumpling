@@ -1,19 +1,15 @@
-### Little improvements
+## Settings, your way
 
-On the title screen: New lands get a little tour, with clearer trails between stops.
+Open Settings from the title screen or during a run. Adjust music and sound effects independently, with separate volume and mute controls. Enable Kids Mode before your next run for slower play, four keys, and shorter words.
 
-In the release book: Tap outside to close the list. Browse with soft bloops and a little buzz.
+## Little improvements
 
-### Happy little fixes
+Tap finished results to return to the title. Browse older changes with a yellow scrollbar, clear of the keys.
 
-Star Path bonus rounds: Your chosen flyer stays with you. The rocket loop ends with one blast-off.
+## Happy little fixes
 
-In the display case: Best Score fades away so the heading stays clear.
+Zero-hit runs now show 0% accuracy.
 
-Please try the new-land tour and travel in both directions. Open the release book, select an entry, go Back, and tap outside the list to close it.
+Please try Settings from the title and during a run. Adjust and mute each audio channel, check the sound-effects volume preview, and check play pauses and resumes. Enable Kids Mode before starting a new run. Scroll to the oldest release-book entry and check the pane stays above the keys. Finish a run with no hits, check 0% accuracy, and tap the results to return to the title.
 
-On Star Path, check that your selected flyer remains through retries and rewards. Try both a timed finish and collecting all 20 stars: the rocket loop should stop with a single blast-off, and the finish should complete without a crash.
-
-On the title screen, open and close the display case. Best Score should fade out before the case heading appears and return afterward.
-
-The misc and bug illustrations keep their state after two seconds; they do not automatically reset.
+The settings, improvements, and bug illustrations do not automatically reset.

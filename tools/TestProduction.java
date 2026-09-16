@@ -29,15 +29,16 @@ final class TestProduction extends Check {
         check("production retains progression and collection counts",
                 c.collectionCounts[0] == 7 && c.steamer.opens == 5 && c.stars.wins == 3);
         c.openSettings();
-        check("settings cannot open", !c.settingsOpen);
+        check("settings open on player page", c.settingsOpen && c.settingsPage==0);
+        c.closeSettings();
         SettingsUi ui = new SettingsUi();
         ui.compute(L, Music.NAMES.length);
         boolean targetsGone = true;
         for (float y = 0; y < L.h; y += 7f) {
             for (float x = 0; x < L.w; x += 11f)
-                targetsGone &= !L.inStageTap(x,y) && ui.hit(x,y) == SettingsUi.HIT_NONE;
+                targetsGone &= ui.hit(x,y) == SettingsUi.HIT_NONE;
         }
-        check("production has no settings touch targets", targetsGone);
+        check("production has no developer touch targets", targetsGone);
         c.setSpeed(GameCore.SPEED_MIN);
         c.setBgm(store.bgm);
         boolean roster = c.fullRoster;
@@ -51,9 +52,20 @@ final class TestProduction extends Check {
         check("settings actions cannot reset progression", c.steamer.opens == 5 && c.stars.wins == 3);
         check("settings actions cannot clear collections", c.collected == 1L
                 && c.collectionCounts[0] == 7 && store.collectionCounts[0] == 7 && !c.clearArmed);
-        check("policy accessible on title", PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY-2f*L.unit));
+        check("policy accessible on title", PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY));
+        PlayerSettings.open(c);
+        check("public settings open in production",c.settingsOpen && c.settingsPage==0);
+        check("production header has no tab hit target",PlayerSettings.hit(c,L,L.w*.5f,
+                PlayerSettings.top(L)+PlayerSettings.unit(L)*3.5f)==0);
+        check("music mute uses reclaimed tab space",PlayerSettings.hit(c,L,
+                PlayerSettings.right(L)-PlayerSettings.unit(L)*3f,PlayerSettings.row(L,0))==PlayerSettings.MUSIC_MUTE);
+        SettingsInput.action(c,L,1000+PlayerSettings.DEVELOPER);
+        check("developer tab cannot be selected in production",c.settingsPage==0);
+        SettingsInput.action(c,L,1000+PlayerSettings.KIDS);
+        check("kids preference persists in production",new GameCore(store,71L).preferences.kids);
+        c.preferences.kids=false;c.preferences.save(c);c.closeSettings();
         c.startGame();
-        check("policy hidden in play", !PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY-2f*L.unit));
+        check("policy hidden in play", !PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY));
         int stage = c.stage, lives = c.lives;
         c.playtestMode(Power.FLING,L);
         c.playtestStars(L);
@@ -62,16 +74,21 @@ final class TestProduction extends Check {
         c.endCurrentRun();
         check("playtest actions cannot start modes, skip stages or end a run",
                 c.state == GameCore.PLAY && c.stage == stage && c.lives == lives && c.mode == -1);
-        c.settingsOpen = true;
+        check("production stage readout is a settings target",L.inStageTap(L.w*.5f,Hud.labelY(L)));
+        c.openSettings();
+        check("in-run settings open only player page",c.settingsOpen && c.settingsPage==0 && c.state==GameCore.PLAY);
         float clock = c.time;
         c.update(DT,L);
-        check("a stale settings flag cannot pause production", c.time > clock);
+        check("player settings pause production", c.time == clock);
         RasterPainter hidden = new RasterPainter(640,1400,1);
         RasterPainter normal = new RasterPainter(640,1400,1);
         Renderer.draw(hidden,c,L);
-        c.settingsOpen = false;
+        Png.write(new File("out/production-run-settings.png"),hidden.resolve(),640,1400);
+        c.closeSettings();
         Renderer.draw(normal,c,L);
-        check("even a forced settings flag draws no panel", Arrays.equals(hidden.resolve(),normal.resolve()));
+        check("player settings render in production", !Arrays.equals(hidden.resolve(),normal.resolve()));
+        c.update(DT,L);
+        check("closing player settings resumes run",c.time>clock && c.state==GameCore.PLAY);
         int[] before = normal.resolve();
         Screens.settings(normal,c,L);
         check("direct panel rendering is disabled", Arrays.equals(before,normal.resolve()));

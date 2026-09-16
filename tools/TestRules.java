@@ -284,6 +284,8 @@ final class TestRules extends Check {
         check("but shots are dropped", c.shots.isEmpty());
         check("and the summary is not up yet", c.overFade() == 0f);
 
+        c.dismissGameOver();
+        check("field tap cannot skip death", c.returnFade == 0f);
         c.tapKey(2, L);
         check("a key cannot skip the death sequence", c.state == GameCore.OVER);
         advance(c, L, GameCore.DEATH_TIME + 2 * DT);
@@ -292,6 +294,8 @@ final class TestRules extends Check {
         check("the summary is fading up", c.overFade() > 0f && c.overFade() < 1f);
         c.tapKey(2, L);
         check("still not dismissable mid-fade", c.state == GameCore.OVER);
+        c.dismissGameOver();
+        check("field tap cannot skip summary fade", c.returnFade == 0f);
 
         advance(c, L, GameCore.OVER_FADE + GameCore.OVER_GRACE + 2 * DT);
         check("the summary settles", c.overFade() == 1f && c.overReady());

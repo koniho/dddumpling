@@ -94,6 +94,14 @@ final class TestVisuals extends Check {
         check("feature outside taps retain existing behavior",!n.listing && !n.transition.closing);
     }
     private static void releaseHistory() {
+        for(int[] dimensions:new int[][]{{320,568},{393,852},{640,1400},{1080,2400},{852,393}}) {
+            Layout bounds=new Layout();bounds.compute(dimensions[0],dimensions[1],0,0,0,0);
+            check("release list clears dotted line "+dimensions[0],ReleaseNotes.bottom(bounds)<bounds.dangerY
+                    && ReleaseNotes.top(bounds)>=bounds.topSafe);
+            int last=ReleaseNotes.VERSIONS.length-1;
+            float lastBottom=ReleaseNotes.itemY(bounds,last,ReleaseChange.ITEMS[last].length-1)+ReleaseNotes.size(bounds)*1.4f;
+            check("oldest release fits after scroll "+dimensions[0],lastBottom-ReleaseNotes.maxScroll(bounds)<=ReleaseNotes.listBottom(bounds));
+        }
         Layout L=new Layout();L.compute(852,393,0,0,0,0);
         GameCore history=new GameCore(new Mem(),7202L);ReleaseNotes n=history.releaseNotes;
         n.show(history,L);n.update(ReleaseTransition.DURATION,L);
@@ -135,8 +143,8 @@ final class TestVisuals extends Check {
         check("read build stays quiet after restart",!read.releaseMascot.unread && read.releaseMascot.attentionLift(.4f)==0f);
         read.releaseMascot.reset(read);read.releaseMascot.update(read,.1f);
         check("reset restores attention for current build",seen.releaseSeen.equals("") && read.releaseMascot.unread);
-        SettingsUi newsUi=new SettingsUi();newsUi.compute(L,3);
-        check("reset news chip target",newsUi.hit((newsUi.testChipL(2,4)+newsUi.testChipR(2,4))*.5f,newsUi.debuffY+newsUi.testH*.5f)==SettingsUi.HIT_RESET_NEWS);
+        SettingsUi newsUi=new SettingsUi();newsUi.compute(L,3,SettingsUi.PROGRESS);
+        check("reset news chip target",newsUi.hit(L.w*.5f,newsUi.difficultyY+newsUi.testH*.5f)==SettingsUi.HIT_RESET_NEWS);
         group("interactive release notes");
         releaseWrap(L);
         Mem save=new Mem();GameCore c=new GameCore(save,7100L),control=new GameCore(new Mem(),7100L);
@@ -524,13 +532,13 @@ final class TestVisuals extends Check {
         check("trail leaves to the right before dipping toward the next land",
                 LandPicker.walkingDip(.2f)<0f && LandPicker.walkingDip(.7f)>.6f);
         SettingsUi resetUi = new SettingsUi();
-        resetUi.compute(L, Music.NAMES.length);
+        resetUi.compute(L, Music.NAMES.length, SettingsUi.PROGRESS);
         check("all lands chip has its own hit target", resetUi.hit(
-                (resetUi.testChipL(3,4)+resetUi.testChipR(3,4))*.5f,
+                (resetUi.testChipL(0,2)+resetUi.testChipR(0,2))*.5f,
                 resetUi.debuffY+resetUi.testH*.5f)==SettingsUi.HIT_ALL_LANDS);
         check("reset lands chip has its own hit target", resetUi.hit(
-                (resetUi.testChipL(1, 3) + resetUi.testChipR(1, 3)) / 2f,
-                resetUi.clearY + resetUi.clearH / 2f) == SettingsUi.HIT_RESET_LANDS);
+                (resetUi.testChipL(1, 2) + resetUi.testChipR(1, 2)) / 2f,
+                resetUi.debuffY + resetUi.testH / 2f) == SettingsUi.HIT_RESET_LANDS);
 
         boolean ordered = true;
         for (int i = 0; i < Demo.LEN; i++) {
@@ -1066,13 +1074,16 @@ final class TestVisuals extends Check {
         check("the close button is hit", ui.hit(ui.closeCx, ui.closeCy) == SettingsUi.HIT_CLOSE);
         check("the slider is hit",
                 ui.hit((ui.sliderL + ui.sliderR) / 2f, ui.sliderY) == SettingsUi.HIT_SLIDER);
+        ui.compute(L,Music.NAMES.length,SettingsUi.MINIGAMES);
         check("the difficulty-reset chip is hit",
                 ui.hit((ui.optionL() * 3f + ui.optionR()) / 4f,
                         ui.difficultyY + ui.difficultyH / 2f)
                         == SettingsUi.HIT_RESET_DIFFICULTY);
+        ui.compute(L,Music.NAMES.length,SettingsUi.PROGRESS);
         check("the collection-reset chip remains hit",
                 ui.hit((ui.optionL() + ui.optionR() * 3f) / 4f,
                         ui.clearY + ui.clearH / 2f) == SettingsUi.HIT_CLEAR);
+        ui.compute(L,Music.NAMES.length,SettingsUi.GENERAL);
         boolean rowsOk = true;
         for (int i = 0; i < Music.NAMES.length; i++) {
             if (ui.hit(ui.optionL() + 5f, ui.optionCy(i)) != SettingsUi.HIT_OPTION + i) {
