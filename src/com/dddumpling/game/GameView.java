@@ -21,6 +21,7 @@ public class GameView extends View {
     private long last;
     private boolean background;
     private int pausePress;
+    private boolean overGesture;
     private Runnable navigationChanged;
     void navigationChanged(Runnable listener) { navigationChanged = listener; }
     private void refreshNavigation() { if (navigationChanged != null) navigationChanged.run(); }
@@ -30,7 +31,7 @@ public class GameView extends View {
         core.releaseNotes.cancelTouch();
         starDragPointer = bonusSwipePointer = bossDragPointer = -1;
         bossDragging = bossPinching = pushArmed = false;
-        caseGesture = CASE_IDLE; pausePress = 0;
+        caseGesture = CASE_IDLE; pausePress = 0; overGesture = false;
         Pause.release(core);
     }
     boolean back() {
@@ -136,6 +137,16 @@ public class GameView extends View {
                     || action == MotionEvent.ACTION_MOVE) {
                 int i = ev.getActionIndex();
                 handleSettings(ev.getX(i), ev.getY(i), action == MotionEvent.ACTION_MOVE);
+            }
+            return true;
+        }
+        // Own the whole gesture, even if the return fade reaches the title before lift.
+        if (overGesture || core.state == GameCore.OVER || core.returnFade > 0f) {
+            if (action == MotionEvent.ACTION_DOWN) {
+                overGesture = true;
+                core.dismissGameOver();
+            } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                overGesture = false;
             }
             return true;
         }

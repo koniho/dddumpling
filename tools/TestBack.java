@@ -67,6 +67,9 @@ final class TestBack extends Check {
                 && c.mode == -1 && c.power == null && !c.paused && !c.confirmEnd && c.earlyLosses == losses);
         c.startGame(); c.lives = 1; c.takeHit(L.w*.5f, L);
         Pause.back(c);
+        check("back preserves the death and haul animation", c.returnFade == 0f);
+        advance(c, L, c.deathDuration() + GameCore.OVER_FADE + GameCore.OVER_GRACE + 2*DT);
+        Pause.back(c);
         check("summary back begins a fade", c.returnFade > 0f);
         advance(c, L, GameCore.RETURN_FADE + DT);
         check("summary back returns to title", c.state == GameCore.TITLE && !Pause.handlesBack(c));
