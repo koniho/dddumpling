@@ -113,5 +113,16 @@ five Release gate assertions.
 The original Debug regression run passed three authentication tests and the title/status/pause
 UI smoke test with the then-default flag enabled. Current builds require explicit opt-in.
 
+Default-off completion (2026-09-16, issue #63): 5,684 shared and 100 production assertions,
+144 iOS input assertions, 24 cloud assertions in each Java configuration and five production
+cloud-gate assertions passed. All 475 current preview PNG/WAV artifacts match main exactly.
+The default Debug simulator passed 20 native and three UI tests; explicit opt-in passed nine
+authentication/storage tests and the title/status/pause UI test. Fastlane flag tests and ten
+CI/cache contract tests passed. Both unsigned Release device archives built successfully.
+Binary inspection found no GameKit linkage or service symbols in the default Debug/Release
+builds; the enabled Release binary links GameKit. Resolved Release settings omit entitlements
+by default and select `GameCenter.entitlements` with the production bundle ID on opt-in.
+Two-device sync and production provisioning remain unverified; issue #63 tracks that work.
+
 References: [initialization/configuration](https://developer.apple.com/documentation/gamekit/initializing-and-configuring-game-center),
 [GameKit saved games](https://developer.apple.com/documentation/gamekit/saving-the-player-s-game-data-to-an-icloud-account).

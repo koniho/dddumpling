@@ -127,7 +127,7 @@ J2ObjC's runtime is Apache 2.0 and includes third-party notices. Translation col
 runtime's LICENSE/NOTICE files into the bundled `ThirdPartyNotices.txt`; review attribution
 against the final archive before release.
 
-The Release app uses offline local storage, with no Play SDK, account sign-in, ads, tracking or analytics.
+The default Release app uses offline local storage, with no Play SDK, account sign-in, ads, tracking or analytics.
 The privacy link opens the existing policy in the system browser. `PrivacyInfo.xcprivacy` declares
 local timing and sandbox file metadata uses. Before an App Store upload, review the final archive's
 privacy report against [Apple's required-reason API documentation](https://developer.apple.com/documentation/bundleresources/describing-use-of-required-reason-api).
