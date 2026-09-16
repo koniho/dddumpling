@@ -95,6 +95,7 @@ public final class IOSGame {
             return true;
         }
         if (action == IOSTouch.ACTION_DOWN && PrivacyUi.hit(core, layout, ev.getX(), ev.getY())) {
+            cancelPointers();
             PlayerSettings.open(core);
             return true;
         }
@@ -189,6 +190,7 @@ public final class IOSGame {
         }
         // The stage readout opens settings, so check it before the keys.
         if (BuildFlags.DEVELOPER && layout.inStageTap(x, y)) {
+            cancelPointers();
             core.openSettings();
             tick();
             return true;

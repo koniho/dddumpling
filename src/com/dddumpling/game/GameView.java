@@ -159,6 +159,7 @@ public class GameView extends View {
             return true;
         }
         if (action == MotionEvent.ACTION_DOWN && PrivacyUi.hit(core, layout, ev.getX(), ev.getY())) {
+            cancelPointers();
             PlayerSettings.open(core);
             return true;
         }
@@ -253,6 +254,7 @@ public class GameView extends View {
         }
         // The stage readout opens settings, so check it before the keys.
         if (BuildFlags.DEVELOPER && layout.inStageTap(x, y)) {
+            cancelPointers();
             core.openSettings();
             tick();
             return true;
