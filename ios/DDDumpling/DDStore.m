@@ -151,6 +151,22 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 
 // Progress.Store -----------------------------------------------------------
 
+- (BOOL)bindCloudPlayer:(NSString *)player identity:(NSData *)identity {
+  if (!player.length || !identity.length) return NO;
+  [_lock lock];
+  BOOL matches = _healthy;
+  if (_values[@"cloudPlayer"] || _values[@"cloudIdentity"]) {
+    matches = matches && [_values[@"cloudPlayer"] isEqual:player]
+        && [_values[@"cloudIdentity"] isEqual:identity];
+  } else if (matches) {
+    _values[@"cloudPlayer"] = player;
+    _values[@"cloudIdentity"] = identity;
+    matches = [self persist];
+  }
+  [_lock unlock];
+  return matches;
+}
+
 - (IOSByteArray *)loadProgress {
   [_lock lock];
   NSData *data = [_values[@"progress"] isKindOfClass:NSData.class] ? _values[@"progress"] : nil;

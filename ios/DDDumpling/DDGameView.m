@@ -3,6 +3,9 @@
 #import "DDAudio.h"
 #import "DDStore.h"
 #import "DDFrameMetrics.h"
+#import "DDGameCenter.h"
+#import "DDGameCloud.h"
+#import "DDGameServices.h"
 #import "com/dddumpling/game/IOSGame.h"
 #import "com/dddumpling/game/IOSTouch.h"
 #import "IOSPrimitiveArray.h"
@@ -35,6 +38,12 @@
 @property(nonatomic) BOOL sceneLoaded;
 @property(nonatomic) BOOL storeErrorShown;
 @property(nonatomic) BOOL storeAlertVisible;
+@property(nonatomic) BOOL gameCenterVisible;
+@property(nonatomic, strong) DDGameCenter *gameCenter;
+@property(nonatomic, strong) DDGameCloud *gameCloud;
+#if DEBUG
+@property(nonatomic, strong) UIButton *servicesButton;
+#endif
 @end
 
 @implementation DDHost
@@ -50,6 +59,21 @@
 @end
 
 @implementation DDGameView
+- (void)didMoveToWindow {
+    [super didMoveToWindow];
+#if DEBUG || DDDUMPLING_GAME_CENTER
+    if (self.window && !self.gameCenter) {
+        self.gameCenter = [[DDGameCenter alloc] initWithPresenter:self.window.rootViewController];
+        self.gameCloud = [[DDGameCloud alloc] initWithGame:self.game store:self.store center:self.gameCenter];
+        __weak DDGameView *weakSelf = self;
+        self.gameCenter.presentationChanged = ^(BOOL visible) {
+            DDGameView *view = weakSelf;
+            view.gameCenterVisible = visible;
+            [view refreshActivity];
+        };
+    }
+#endif
+}
 - (instancetype)initWithFrame:(CGRect)frame {
     if ((self = [super initWithFrame:frame])) {
         self.multipleTouchEnabled = YES;
@@ -90,6 +114,15 @@
         _backButton.accessibilityLabel = @"Pause or go back";
         [_backButton addTarget:self action:@selector(navigateBack) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_backButton];
+#if DEBUG
+        _servicesButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        [_servicesButton setTitle:@"DEV · Game Center" forState:UIControlStateNormal];
+        _servicesButton.tintColor = _backButton.tintColor;
+        _servicesButton.titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
+        _servicesButton.accessibilityIdentifier = @"gameServices";
+        [_servicesButton addTarget:self action:@selector(showGameServices) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_servicesButton];
+#endif
         _displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(frame:)];
         _displayLink.preferredFrameRateRange = CAFrameRateRangeMake(60, 60, 60);
         [_displayLink addToRunLoop:NSRunLoop.mainRunLoop forMode:NSRunLoopCommonModes];
@@ -106,6 +139,7 @@
     self.backButton.frame = CGRectMake(self.bounds.size.width - p.right - 46, p.top, 44, 44);
     self.gameElement.accessibilityFrameInContainerSpace = self.bounds;
 #if DEBUG
+    self.servicesButton.frame = CGRectMake(p.left + 8, p.top, MIN(200, self.bounds.size.width - p.left - p.right - 60), 44);
     if (!self.sceneLoaded && self.bounds.size.width > 0 && self.bounds.size.height > 0) {
         NSString *scene = NSProcessInfo.processInfo.environment[@"DDD_SCENE"];
         if (scene.length) [self.game debugSceneWithNSString:scene];
@@ -120,9 +154,31 @@
     self.backButton.accessibilityLabel = [self.game paused] ? @"Resume or go back" : @"Pause or go back";
     self.accessibilityElements = self.backButton.hidden ? @[self.gameElement] : @[self.gameElement, self.backButton];
 #if DEBUG
+    self.servicesButton.hidden = ![self.game developerServicesVisible];
+    if (!self.servicesButton.hidden)
+        self.accessibilityElements = [self.accessibilityElements arrayByAddingObject:self.servicesButton];
     self.gameElement.accessibilityValue = [self.game debugStatus];
 #endif
 }
+#if DEBUG
+- (void)showGameServices {
+    UIViewController *controller = self.window.rootViewController;
+    if (!self.active || !controller || controller.presentedViewController) return;
+    NSString *message = [NSString stringWithFormat:@"Game Center: %@\nCloud save: %@\n%@\n\n%@",
+        self.gameCenter.status ?: @"Waiting", self.gameCloud.status ?: @"Waiting",
+        self.gameCenter.lastError ?: @"", NSBundle.mainBundle.bundleIdentifier];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"DDD Dev services"
+        message:message preferredStyle:UIAlertControllerStyleAlert];
+    self.gameCenterVisible = YES;
+    [self refreshActivity];
+    __weak DDGameView *weakSelf = self;
+    [alert addAction:[UIAlertAction actionWithTitle:@"Done" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        weakSelf.gameCenterVisible = NO;
+        [weakSelf refreshActivity];
+    }]];
+    [controller presentViewController:alert animated:YES completion:nil];
+}
+#endif
 - (void)clearPointers {
     [self.pointers removeAllObjects];
     [self.pointerIDs removeAllObjects];
@@ -147,8 +203,7 @@
         DDGameView *view = weakSelf;
         if (!view) return;
         view.storeAlertVisible = NO;
-        [view.game backgroundWithBoolean:!view.active];
-        [view.audio setActive:view.active];
+        [view refreshActivity];
         view.lastTime = 0;
         [view refreshNavigation];
     }]];
@@ -165,12 +220,20 @@
 - (void)setActive:(BOOL)active {
     if (_active == active) return;
     _active = active;
+    [self refreshActivity];
+#if DDDUMPLING_GAME_CENTER
+    [self.gameCenter refreshActive:active && !self.storeAlertVisible];
+    [self.gameCloud updateActive:active elapsed:0];
+#endif
+}
+- (void)refreshActivity {
     self.lastTime = 0;
     [self.frameMetrics reset];
-    [self.game backgroundWithBoolean:!active || self.storeAlertVisible];
+    BOOL playable = self.active && !self.storeAlertVisible && !self.gameCenterVisible;
+    [self.game backgroundWithBoolean:!playable];
     [self clearPointers];
-    [self.audio setActive:active && !self.storeAlertVisible];
-    self.displayLink.paused = !active;
+    [self.audio setActive:playable];
+    self.displayLink.paused = !self.active;
     [self refreshNavigation];
     [self setNeedsDisplay];
 }
@@ -180,6 +243,10 @@
     [self.frameMetrics recordDisplayLinkTimestamp:now];
     float elapsed = self.lastTime > 0 ? (float)(now - self.lastTime) : 0;
     self.lastTime = now;
+#if DDDUMPLING_GAME_CENTER
+    [self.gameCenter refreshActive:!self.storeAlertVisible];
+    [self.gameCloud updateActive:YES elapsed:elapsed];
+#endif
     CFTimeInterval start = CACurrentMediaTime();
     [self.game updateWithFloat:elapsed];
     [self.frameMetrics recordUpdateMilliseconds:(CACurrentMediaTime() - start) * 1000];

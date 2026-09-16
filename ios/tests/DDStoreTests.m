@@ -10,6 +10,21 @@
 
 @implementation DDStoreTests
 
+- (void)testCloudOwnerPersistsAndRejectsEitherAccountChanging {
+  NSURL *url = [self temporaryFile];
+  NSData *identity = [@"icloud-a" dataUsingEncoding:NSUTF8StringEncoding];
+  DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertFalse([store bindCloudPlayer:@"" identity:identity]);
+  XCTAssertTrue([store bindCloudPlayer:@"game-a" identity:identity]);
+  NSData *before = [NSData dataWithContentsOfURL:url];
+  DDIOSStore *reopened = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertTrue([reopened bindCloudPlayer:@"game-a" identity:identity]);
+  XCTAssertFalse([reopened bindCloudPlayer:@"game-b" identity:identity]);
+  XCTAssertFalse([reopened bindCloudPlayer:@"game-a" identity:[@"icloud-b" dataUsingEncoding:NSUTF8StringEncoding]]);
+  XCTAssertEqualObjects(before, [NSData dataWithContentsOfURL:url]);
+  [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
+}
+
 - (NSURL *)temporaryFile {
   NSURL *directory = [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
   return [directory URLByAppendingPathComponent:[NSString stringWithFormat:@"dddumpling-store-%@.plist", NSUUID.UUID.UUIDString]];

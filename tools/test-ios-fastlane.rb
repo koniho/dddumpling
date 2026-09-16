@@ -45,6 +45,7 @@ def rejects(message)
 end
 
 def clear_ios_environment
+  ENV.delete("DDDUMPLING_GAME_CENTER")
   ENV.keys.grep(/\AIOS_|\AMATCH_/).each { |name| ENV.delete(name) }
   ENV.delete("sigh_com.dddumpling.game.ios_appstore_profile-name")
 end
@@ -87,9 +88,18 @@ assert(match_options[:keychain_password] == "", "match uses setup_ci's standard 
 signing_options = $calls.assoc(:update_code_signing_settings).last
 assert(signing_options[:targets] == ["DDDumpling"] && signing_options[:build_configurations] == ["Release"], "only the app Release configuration uses manual signing")
 build_options = $calls.assoc(:build_app).last
-assert(build_options[:xcargs] == "CURRENT_PROJECT_VERSION=42.1" && build_options[:export_method] == "app-store", "archive uses the supplied build number")
+assert(build_options[:xcargs] == "CURRENT_PROJECT_VERSION=42.1 DDDUMPLING_GAME_CENTER=0" && build_options[:export_method] == "app-store", "archive uses the supplied build number and defaults GameKit off")
 assert(ENV["MATCH_PASSWORD"].nil? && ENV["MATCH_GIT_PRIVATE_KEY"].nil?, "match credentials do not leak into subsequent lanes")
 archive_calls = $calls.reject { |name, _| name == :sh }.to_h
+
+ENV["DDDUMPLING_GAME_CENTER"] = "1"
+$calls.clear
+ios_archive!
+assert($calls.assoc(:build_app).last[:xcargs].end_with?("DDDUMPLING_GAME_CENTER=1"), "archive passes explicit GameKit opt-in")
+ENV["DDDUMPLING_GAME_CENTER"] = "yes"
+$calls.clear
+rejects("DDDUMPLING_GAME_CENTER must be 0 or 1") { ios_archive! }
+assert($calls.empty?, "invalid GameKit setting fails before signing actions")
 
 clear_ios_environment
 $calls.clear

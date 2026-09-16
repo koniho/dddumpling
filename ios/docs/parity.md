@@ -14,6 +14,11 @@ developer-panel shortcuts.
 
 ## Runtime seam
 
+Build-gated Game Center authentication and iCloud progress sync are described in
+[native game services](game-center.md). They preserve the existing Android Play Games
+integration. Debug and Release both default off and enable them explicitly with
+`DDDUMPLING_GAME_CENTER=1`.
+
 | Area | Shared code | Native boundary | Status |
 | --- | --- | --- | --- |
 | App lifecycle, portrait layout, safe areas, 60 Hz frame loop | `GameCore`, `Layout`, `Renderer`, `Pause` | `DDAppDelegate`, `DDGameView` | Wired; simulator lifecycle, safe-area, and resume checks pending |
