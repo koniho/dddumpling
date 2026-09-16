@@ -57,6 +57,8 @@ final class SettingsInput {
                 c.preferences.effects=v;
             }
             c.preferences.save(c);
+            if(pressed==1000+PlayerSettings.EFFECTS && !c.preferences.effectsMuted && v>0f && c.sound!=null)
+                c.sound.squish(Kawaii.BLOB,0);
         }
     }
     static boolean action(GameCore c,Layout L,int h) {

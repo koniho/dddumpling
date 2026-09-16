@@ -66,6 +66,26 @@ final class TestSettings extends Check {
             input.touch(c,l,2,7,l.w*.5f,PlayerSettings.row(l,3));
             check("dragging off a switch cannot trigger a link",!input.touch(c,l,1,7,l.w*.5f,PlayerSettings.row(l,3)));
         }
+        GameCore preview=new GameCore(new Mem(),206L);Ear sample=new Ear();preview.sound=sample;
+        PlayerSettings.open(preview);
+        SettingsInput slider=new SettingsInput();
+        float left=PlayerSettings.trackL(L),span=PlayerSettings.trackR(L)-left;
+        float effectY=PlayerSettings.row(L,1)+PlayerSettings.unit(L)*3f;
+        slider.touch(preview,L,0,1,left+span*.5f,effectY);
+        check("effects slider previews slime squish at updated gain",sample.squishes==1
+                && sample.lastGlyph==Kawaii.BLOB && sample.squishVolume==.5f);
+        slider.touch(preview,L,2,1,left+span*.5f,effectY);
+        check("stationary slider does not repeat preview",sample.squishes==1);
+        slider.touch(preview,L,2,1,left+span*.75f,effectY);
+        check("drag previews the new gain",sample.squishes==2 && sample.squishVolume==.75f);
+        slider.touch(preview,L,2,1,left,effectY);
+        check("zero effects volume stays silent",sample.squishes==2 && sample.effectsVolume==0f);
+        preview.preferences.effectsMuted=true;
+        slider.touch(preview,L,2,1,left+span*.5f,effectY);
+        check("muted effects retain level without preview",sample.squishes==2 && preview.preferences.effects==.5f && sample.effectsVolume==0f);
+        slider.cancel();
+        slider.touch(preview,L,0,1,left+span*.5f,PlayerSettings.row(L,0)+PlayerSettings.unit(L)*3f);
+        check("music slider does not preview effects",sample.squishes==2);
         group("kids bounded play");
         float normalStages=0,kidsStages=0;int kidsSurvived=0;
         for(int seed=0;seed<4;seed++) for(int mode=0;mode<2;mode++) {

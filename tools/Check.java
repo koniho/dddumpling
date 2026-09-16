@@ -86,7 +86,7 @@ abstract class Check {
     }
 
     static final class Ear implements GameCore.Sound {
-        float musicVolume, effectsVolume;
+        float musicVolume, effectsVolume, squishVolume;
         public void volumes(float music,float effects) { musicVolume=music;effectsVolume=effects; }
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeDamages, bossSplits,
                 bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideBoings, chops, zaps;
@@ -114,6 +114,7 @@ abstract class Check {
         int narrations, hushes;
         int narrated = -1;
         public void squish(int glyph, int depth) {
+            squishVolume=effectsVolume;
             squishes++;
             lastGlyph = glyph;
             lastDepth = depth;
