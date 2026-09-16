@@ -8,11 +8,11 @@ final class PrivacyUi extends Draw {
     }
     static boolean hit(GameCore c, Layout L, float x, float y) {
         return visible(c) && x >= L.w - 7f * L.unit && x <= L.w
-                && y >= L.dangerY - 3f * L.unit && y <= L.dangerY - L.unit;
+                && y >= L.dangerY - L.unit && y <= L.dangerY + L.unit;
     }
     static void draw(Painter p, GameCore c, Layout L) {
         if (!visible(c)) return;
-        p.text("SETTINGS", L.w - L.unit, L.dangerY - 1.7f * L.unit,
+        p.text("SETTINGS", L.w - L.unit, L.dangerY + 0.25f * L.unit,
                 type(L.unit * 0.5f), INK_DIM, Painter.RIGHT, false);
     }
 }

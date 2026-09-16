@@ -51,7 +51,7 @@ final class TestProduction extends Check {
         check("settings actions cannot reset progression", c.steamer.opens == 5 && c.stars.wins == 3);
         check("settings actions cannot clear collections", c.collected == 1L
                 && c.collectionCounts[0] == 7 && store.collectionCounts[0] == 7 && !c.clearArmed);
-        check("policy accessible on title", PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY-2f*L.unit));
+        check("policy accessible on title", PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY));
         PlayerSettings.open(c);
         check("public settings open in production",c.settingsOpen && c.settingsPage==0);
         SettingsInput.action(c,L,1000+PlayerSettings.DEVELOPER);
@@ -60,7 +60,7 @@ final class TestProduction extends Check {
         check("kids preference persists in production",new GameCore(store,71L).preferences.kids);
         c.preferences.kids=false;c.preferences.save(c);c.closeSettings();
         c.startGame();
-        check("policy hidden in play", !PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY-2f*L.unit));
+        check("policy hidden in play", !PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY));
         int stage = c.stage, lives = c.lives;
         c.playtestMode(Power.FLING,L);
         c.playtestStars(L);

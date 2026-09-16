@@ -52,7 +52,7 @@ public final class IOSInputTest extends Check {
         check("music choice announced after backend attached", ((Ear) c.sound).musicCalls == 1);
         check("UIKit points preserve safe-area geometry", l.w == 393 && l.padT == 59 && l.padB == 34);
         check("title has no back navigation", !game.handlesBack() && !game.back());
-        tap(game, l.w - 2*l.unit, l.dangerY - 2*l.unit);
+        tap(game, l.w - 2*l.unit, l.dangerY);
         check("title settings open without launching privacy", c.settingsOpen && host.privacy==null && !c.starting());
         tap(game,l.w*.5f,PlayerSettings.row(l,3));
         check("privacy link inside settings opens host URL",PrivacyUi.URL.equals(host.privacy));
@@ -92,7 +92,7 @@ public final class IOSInputTest extends Check {
 
     private static void playerSettings() {
         IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
-        tap(game,l.w-l.unit,l.dangerY-l.unit*2);
+        tap(game,l.w-l.unit,l.dangerY);
         check("public player tab is first",c.settingsOpen && c.settingsPage==0);
         float s=PlayerSettings.unit(l),y=PlayerSettings.row(l,0)+s*3;
         c.preferences.music=.5f;
@@ -399,8 +399,8 @@ public final class IOSInputTest extends Check {
     }
     private static void releaseNoteExamples() {
         IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
-        game.touch(one(0,1,l.unit*3f,l.dangerY-l.unit*2f));
-        game.touch(one(1,1,l.unit*3f,l.dangerY-l.unit*2f));
+        game.touch(one(0,1,l.unit*3f,l.dangerY));
+        game.touch(one(1,1,l.unit*3f,l.dangerY));
         check("title book opens through native input",c.releaseNotes.open);
         tap(game,l.keyX[0],l.keyY[0]);
         check("native transition blocks title keys",!c.starting() && c.releaseNotes.listing);

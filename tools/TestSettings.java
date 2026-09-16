@@ -3,6 +3,11 @@ package com.dddumpling.game;
 final class TestSettings extends Check {
     static void all(Layout L) {
         group("player settings");
+        GameCore title=new GameCore(new Mem(),203L);
+        check("title settings hit target follows danger line",PrivacyUi.hit(title,L,L.w-2f*L.unit,L.dangerY));
+        check("old settings position no longer opens settings",!PrivacyUi.hit(title,L,L.w-2f*L.unit,L.dangerY-2f*L.unit));
+        check("release steamer sits on danger line",ReleaseMascot.y(L)==L.dangerY
+                && title.releaseMascot.hit(L,title.releaseMascot.x(L),L.dangerY));
         Mem m=new Mem(); GameCore c=new GameCore(m,204L); Ear e=new Ear();c.sound=e;
         c.startMusic();
         check("audio defaults enable both channels at full volume",e.musicVolume==1f && e.effectsVolume==1f);
