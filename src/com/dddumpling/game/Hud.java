@@ -37,10 +37,10 @@ final class Hud extends Draw {
         p.text("STAGE " + c.stage, L.w / 2f, labelY, type(s * 0.58f), INK_DIM,
                 Painter.CENTER, true);
         // Menu follows the stage label; the whole readout remains the touch target.
-        float gx = L.w / 2f + s * 2.8f, gy = labelY - type(s * 0.20f);
-        p.strokePoly(Glyph.hex(gx, gy, s * 0.50f), Glyph.withAlpha(INK, 180), s * 0.06f);
+        float gx = L.w / 2f + s * 2.5f, gy = labelY - type(s * 0.58f) * .36f;
+        p.strokePoly(Glyph.hex(gx, gy, s * 0.30f), INK_DIM, s * 0.035f);
         for (int line = -1; line <= 1; line++)
-            p.line(gx-s*.23f,gy+line*s*.15f,gx+s*.23f,gy+line*s*.15f,INK,s*.06f);
+            p.line(gx-s*.14f,gy+line*s*.09f,gx+s*.14f,gy+line*s*.09f,INK_DIM,s*.035f);
         // One pip per word in this stage's wave, filling as each is dealt with.
         //
         // Left out entirely on a boss stage: there is no wave there, so the quota is never counted
