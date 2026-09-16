@@ -3,12 +3,16 @@ package com.dddumpling.game;
 /** Shipped highlights and their shared list/popup illustrations. */
 final class ReleaseChange extends Draw {
     static final int TRAVEL=0, STARS=1, BUGS=2, SHUFFLE=3, DISGUISE=4, SLIME=5,
-            PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11;
+            PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11, SETTINGS=12;
     static final int[][] ITEMS=ReleaseContent.ITEMS;
     static boolean playable(int id) { return id==TRAVEL || id==SHUFFLE || id==PAIR; }
     static float artUnits(int id) { return id==TRAVEL ? 8f : id==PAIR ? 9f : id==SHUFFLE ? 9f : 5f; }
     static void icon(Painter p,int id,float x,float y,float r,float time) {
-        if(id==MISC) {
+        if(id==SETTINGS) {
+            p.strokePoly(Glyph.hex(x,y,r),INK_DIM,r*.117f);
+            for(int line=-1;line<=1;line++)
+                p.line(x-r*.467f,y+line*r*.3f,x+r*.467f,y+line*r*.3f,INK_DIM,r*.117f);
+        } else if(id==MISC) {
             Skits.face(p,Kawaii.DUMPLING,x-r*.12f,y+r*.15f,r*.65f,255,1f,1f);
             for(int i=0;i<3;i++) {
                 float sx=x+r*(i==0 ? -.72f : i==1 ? .08f : .72f);

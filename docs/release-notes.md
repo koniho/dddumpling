@@ -98,6 +98,7 @@ Keep a separate entry only when it communicates a distinct change the player nee
 
 | `icon` value | Use for | Illustration |
 | --- | --- | --- |
+| `settings` | Player settings | Hexagon with three menu lines |
 | `news` | Exploring release notes | Little steamer |
 | `flurry` | Flurry pickup feedback | Circular rainbow |
 | `travel` | Choosing or traveling between lands | Interactive land travel |

@@ -276,6 +276,13 @@ final class Preview {
             book.releaseNotes.update(2.5f,L);
             shot(dir,"103-release-current-second-held",book,L,w,h,ss);
         }
+        if(ReleaseChange.ITEMS[0].length>2) {
+            book.releaseNotes.select(0,2,L);book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
+            shot(dir,"103-release-current-third",book,L,w,h,ss);
+            book.releaseNotes.touch(book,L,L.w*.5f,(book.releaseNotes.demoTop(L)+book.releaseNotes.demoBottom(L))*.5f);
+            book.releaseNotes.update(2.5f,L);
+            shot(dir,"103-release-current-third-held",book,L,w,h,ss);
+        }
         book.releaseNotes.back();book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
         book.releaseNotes.listScroll=ReleaseNotes.maxScroll(L);
         shot(dir,"103-release-book-list-scrolled",book,L,w,h,ss);
