@@ -4,13 +4,19 @@ package com.dddumpling.game;
 final class SettingsArt extends Draw {
     static void draw(Painter p,boolean music,float x,float y,float keyR,float volume,boolean muted,float clock) {
         int glyph=music?Kawaii.CAT:Kawaii.BLOB, col=Glyph.COLOR[glyph];
-        p.fillPoly(Glyph.hex(x,y,keyR),Glyph.withAlpha(col,35));
-        p.strokePoly(Glyph.hex(x,y,keyR),Glyph.withAlpha(col,190),keyR*.025f);
         float r=keyR*.60f;
+        float pulse=(float)Math.sin(clock*(4f+volume*10f));
+        if(!muted) {
+            y-=r*.055f*volume*(1f+pulse);
+            if(!music) x+=r*.04f*volume*volume*(float)Math.sin(clock*37f);
+        }
         if(music && muted) Kawaii.crying(p,glyph,x,y,r,col,1f,clock,.8f);
-        else Kawaii.draw(p,glyph,x,y,r,col,1f,muted?0f:volume);
+        else Kawaii.draw(p,glyph,x,y,r,col,muted?1f:1f+.055f*volume*pulse,muted?0f:volume);
         if(music) {
-            if(!muted) guitar(p,x,y,r,volume,clock,col);
+            if(!muted) {
+                guitar(p,x,y,r,volume,clock,col);
+                notes(p,x,y,r,volume,clock);
+            }
         } else {
             float my=y+r*.32f;
             p.fillEllipse(x,my,r*.27f,r*.17f,col);
@@ -22,18 +28,32 @@ final class SettingsArt extends Draw {
                 for(int i=0;i<3;i++) p.fillCircle(x+r*(-.15f+i*.14f),my-r*.06f,r*.075f,hand);
                 p.line(x-r*.09f,my+r*.015f,x+r*.13f,my+r*.015f,col,r*.03f);
             } else {
-                float h=r*(.025f+.24f*volume);
-                p.fillEllipse(x,my,r*(.045f+.14f*volume),h,INK);
-                if(volume>.35f) p.fillEllipse(x,my+h*.5f,r*.10f*volume,h*.3f,ROSE);
-                for(int side=-1;side<=1;side+=2) {
-                    if(volume<.3f) {
-                        for(int i=0;i<3;i++) p.fillCircle(x+side*r*(.35f+i*.16f),my,r*.025f,INK_DIM);
-                    } else for(int i=0;i<3;i++) {
-                        float a=(i-1)*.5f;
-                        p.line(x+side*r*.48f,my+a*r*.4f,x+side*r*(.52f+.25f*volume),my+a*r*.7f,INK,r*.035f);
-                    }
-                }
+                float h=r*(.025f+.34f*volume*(.8f+.2f*pulse));
+                p.fillEllipse(x,my,r*(.04f+.22f*volume),h,INK);
+                if(volume>.35f) p.fillEllipse(x,my+h*.5f,r*.14f*volume,h*.3f,ROSE);
+                waves(p,x,my,r,volume,clock);
             }
+        }
+    }
+    private static void waves(Painter p,float x,float y,float r,float v,float clock) {
+        for(int i=0;i<3;i++) {
+            float phase=(clock*(1.2f+v*2f)+i/3f)%1f;
+            float radius=r*(.30f+.65f*phase)*(.3f+.7f*v);
+            int color=Glyph.withAlpha(Glyph.COLOR[Kawaii.BLOB],Math.round(225f*v*(1f-phase)));
+            for(int side=-1;side<=1;side+=2)
+                p.arc(x+side*r*.5f,y,radius,radius*.9f,side>0?-50f:130f,100f,color,r*(.025f+.04f*v));
+        }
+    }
+    private static void notes(Painter p,float x,float y,float r,float v,float clock) {
+        for(int i=0;i<3;i++) {
+            float phase=(clock*(.65f+v*.8f)+i/3f)%1f;
+            float side=i%2==0?-1f:1f;
+            float nx=x+side*r*(1f+.1f*(float)Math.sin(clock*2f+i));
+            float ny=y+r*(.25f-phase*.95f),h=r*(.16f+.55f*v);
+            int color=Glyph.withAlpha(i==1?GOLD:Glyph.COLOR[3],Math.round(235f*(1f-phase)*(.4f+.6f*v)));
+            p.fillEllipse(nx,ny,h*.23f,h*.16f,color);
+            p.line(nx+h*.16f,ny,nx+h*.16f,ny-h,color,h*.10f);
+            p.line(nx+h*.16f,ny-h,nx+h*.48f,ny-h*.77f,color,h*.13f);
         }
     }
     private static void guitar(Painter p,float x,float y,float r,float v,float clock,int paw) {
@@ -54,8 +74,6 @@ final class SettingsArt extends Draw {
         p.fillCircle(x+r*.52f,y+r*.22f,r*.12f,paw);
         float strum=(float)Math.sin(clock*(4+v*12))*r*.08f*v;
         p.fillEllipse(gx-r*.12f,gy+strum,r*.16f,r*.11f,paw);
-        if(electric) for(int side=-1;side<=1;side+=2)
-            p.polyline(new float[]{x+side*r*.9f,y-r*.55f,x+side*r*.76f,y-r*.35f,
-                    x+side*r*.96f,y-r*.3f,x+side*r*.84f,y-r*.1f},GOLD,r*.055f);
+
     }
 }

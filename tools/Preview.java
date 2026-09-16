@@ -1494,6 +1494,12 @@ final class Preview {
             settings.preferences.musicMuted=settings.preferences.effectsMuted=v==3;
             shot(dir,"120-settings-audio-"+v,settings,L,w,h,ss);
         }
+        settings.preferences.musicMuted=settings.preferences.effectsMuted=false;
+        settings.preferences.music=settings.preferences.effects=1f;
+        for(int beat=0;beat<3;beat++) {
+            settings.clock=beat*.19f;
+            shot(dir,"120b-settings-loud-motion-"+beat,settings,L,w,h,ss);
+        }
         settings.settingsPage=1;
         for(int tab=0;tab<4;tab++) {
             settings.settingsTab=tab;

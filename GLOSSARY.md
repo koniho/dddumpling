@@ -431,9 +431,10 @@ The death and haul animations finish before dismissal becomes available. The ret
 
 The title's **Settings** entry replaces the standalone privacy link. **Player** contains the privacy
 policy, independent music and sound-effects volume/mute controls, and **Kids Mode** for the next run.
-Drag the key-sized cat or slime along its slider. The cat goes from ukulele to electric guitar as
-music rises; mute removes its guitar and makes it sad. The slime whispers at low effects volume,
-yells at high volume, and covers its mouth when muted. Mute retains the slider level. Preferences
+Drag the key-sized cat or slime along its slider; the handles have no hexagon frames. The cat goes from ukulele to electric guitar as
+music rises, with floating notes that grow with volume; mute removes its guitar and makes it sad.
+The slime whispers at low effects volume, shakes and yells with expanding sound waves at high
+volume, and covers its mouth when muted. Waves and notes stop when muted. Mute retains the slider level. Preferences
 are saved on the device and applied to audio on launch.
 
 The developer-only **Developer** tab groups **Run** (speed, music track, stage, next-run keys, End
