@@ -142,4 +142,19 @@ abstract class Draw {
         h ^= h >>> 16;
         return (h & 0xFFFFFF) / (float) 0xFFFFFF;
     }
+    static void glassPanel(Painter p,float l,float t,float r,float b,float unit) {
+        p.fillPoly(pageShape(l,t,r,b,unit*.8f),0xE8302944);
+    }
+    static float[] pageShape(float l,float t,float r,float b,float radius) {
+        float[] points=new float[56];int n=0;
+        for(int corner=0;corner<4;corner++) {
+            float x=corner==0 || corner==3 ? r-radius : l+radius,y=corner<2 ? b-radius : t+radius;
+            for(int step=0;step<=6;step++) {
+                float angle=(corner*90f+step*15f)*(float)Math.PI/180f;
+                points[n++]=x+(float)Math.cos(angle)*radius;points[n++]=y+(float)Math.sin(angle)*radius;
+            }
+        }
+        return points;
+    }
+
 }
