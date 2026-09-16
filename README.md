@@ -340,7 +340,8 @@ Play App Signing uses a different key. Scores, collections and preferences are s
 existing production saves are not copied into the developer app.
 
 `./build.sh` defaults to developer mode for local installs; `./build.sh --production` disables
-settings and playtest actions at compile time and ignores saved developer speed/music preferences.
+developer settings and playtest actions at compile time and ignores saved developer speed/music preferences.
+Player settings remain available from the title and the in-run stage readout in both builds.
 Developer builds offer the Minigames settings tab from the stage readout. Star Path's saved level
 can be adjusted for the next attempt; wins raise it automatically, with a stronger early ramp.
 Each win advances two levels, reaching the ceiling after three wins from the starting level.

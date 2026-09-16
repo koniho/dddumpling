@@ -27,9 +27,10 @@ final class PlayerSettings extends Draw {
     static float unit(Layout L) { return Math.min(L.unit, L.h / 38f); }
     static float left(Layout L) { return L.w * .06f; }
     static float right(Layout L) { return L.w * .94f; }
-    static float top(Layout L) { return Math.max(L.topSafe, (L.h - unit(L)*31f)*.5f); }
-    static float bottom(Layout L) { return Math.min(L.h-L.padB, top(L)+unit(L)*31f); }
-    static float row(Layout L, int row) { return top(L) + unit(L)*new float[]{7f,14.5f,22f,28f}[row]; }
+    static float height(Layout L) { return unit(L)*(BuildFlags.DEVELOPER?31f:28f); }
+    static float top(Layout L) { return Math.max(L.topSafe, (L.h - height(L))*.5f); }
+    static float bottom(Layout L) { return Math.min(L.h-L.padB, top(L)+height(L)); }
+    static float row(Layout L, int row) { return top(L) + unit(L)*(new float[]{7f,14.5f,22f,28f}[row]-(BuildFlags.DEVELOPER?0f:3f)); }
     static float trackL(Layout L) { return left(L)+L.keyR*Roster.STARTER_SCALE+unit(L)*.4f; }
     static float trackR(Layout L) { return right(L)-L.keyR*Roster.STARTER_SCALE-unit(L)*.4f; }
     static float volumeAt(Layout L, float x) {
@@ -39,8 +40,8 @@ final class PlayerSettings extends Draw {
         float s=unit(L), t=top(L);
         if (x<left(L) || x>right(L) || y<t || y>bottom(L)) return CLOSE;
         if (x>right(L)-s*2.5f && y<t+s*2.7f) return CLOSE;
-        if (y>=t+s*3f && y<=t+s*5f) {
-            if (x<L.w*.5f || !BuildFlags.DEVELOPER) return PLAYER;
+        if (BuildFlags.DEVELOPER && y>=t+s*3f && y<=t+s*5f) {
+            if (x<L.w*.5f) return PLAYER;
             return DEVELOPER;
         }
         if (c.settingsPage==1 && BuildFlags.DEVELOPER) return 0;
@@ -65,7 +66,7 @@ final class PlayerSettings extends Draw {
         float cx=r-s*1.3f,cy=t+s*1.5f;
         p.line(cx-s*.4f,cy-s*.4f,cx+s*.4f,cy+s*.4f,INK,s*.1f);
         p.line(cx+s*.4f,cy-s*.4f,cx-s*.4f,cy+s*.4f,INK,s*.1f);
-        int tabs=BuildFlags.DEVELOPER?2:1;
+        int tabs=BuildFlags.DEVELOPER?2:0;
         for(int i=0;i<tabs;i++) {
             float a=l+(r-l)*i/tabs,b=l+(r-l)*(i+1)/tabs;
             p.fillRect(a,t+s*3f,b,t+s*5f,i==(BuildFlags.DEVELOPER?c.settingsPage:0)?0x554DCEAA:0x18FFFFFF);

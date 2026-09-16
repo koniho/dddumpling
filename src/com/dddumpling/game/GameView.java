@@ -253,7 +253,7 @@ public class GameView extends View {
             return true;
         }
         // The stage readout opens settings, so check it before the keys.
-        if (BuildFlags.DEVELOPER && layout.inStageTap(x, y)) {
+        if (layout.inStageTap(x, y)) {
             cancelPointers();
             core.openSettings();
             tick();

@@ -59,7 +59,7 @@ final class SettingsArt extends Draw {
     private static void guitar(Painter p,float x,float y,float r,float v,float clock,int paw) {
         float size=.55f+.3f*v, gx=x-r*.18f,gy=y+r*.57f,w=r*size;
         boolean electric=v>=.8f;
-        int wood=electric?0xFF941C35:v<.35f?0xFFE9B878:0xFFBB784F;
+        int wood=electric?0xFF941C35:v<.35f?0xFF287E89:0xFFBB784F;
         p.line(gx,gy,x+r*.77f,y+r*.05f,0xFF714A46,r*.16f);
         if(electric) {
             // Two swept wings and an open notch, aligned with the neck.
