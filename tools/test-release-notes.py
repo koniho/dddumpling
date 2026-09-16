@@ -18,6 +18,12 @@ class ReleaseNotes(unittest.TestCase):
         self.data = {'releases': [r for r in catalog['releases'] if r['version'] in ('0.1.19', '0.1.18', '0.1.17')]}
         notes.validate(catalog)
 
+    def test_settings_icon_generates_matching_game_identifier(self):
+        data = copy.deepcopy(self.data)
+        data['releases'][0]['changes'][0]['icon'] = 'settings'
+        data['releases'][0]['changes'][0]['autoReset'] = False
+        self.assertIn('ReleaseChange.SETTINGS', notes.render(data))
+
     def test_context_and_player_purpose_survive_generation(self):
         for release in self.data['releases']:
             for change in release['changes']:

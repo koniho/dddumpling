@@ -9,7 +9,7 @@ import textwrap
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = Path('release-notes/releases.json')
 OUTPUT = Path('src/com/dddumpling/game/ReleaseContent.java')
-ICONS = ('travel', 'stars', 'bugs', 'shuffle', 'disguise', 'slime', 'pair', 'flex', 'team', 'news', 'flurry', 'misc')
+ICONS = ('travel', 'stars', 'bugs', 'shuffle', 'disguise', 'slime', 'pair', 'flex', 'team', 'news', 'flurry', 'misc', 'settings')
 ART = {'travel': 8, 'shuffle': 9, 'pair': 9}
 
 
