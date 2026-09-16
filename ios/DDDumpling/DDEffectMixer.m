@@ -11,6 +11,8 @@ static const NSUInteger DDVoiceCount = 12;
 @end
 
 @implementation DDEffectMixer
+- (instancetype)init { if ((self = [super init])) _volume = 1.f; return self; }
+- (void)setVolume:(float)value { _volume = value; _engine.mainMixerNode.outputVolume = value; }
 - (BOOL)prepare {
   if (!_engine) {
     _engine = [AVAudioEngine new];
@@ -25,6 +27,7 @@ static const NSUInteger DDVoiceCount = 12;
       [_engine connect:pitch to:_engine.mainMixerNode format:format];
       [_voices addObject:voice]; [_pitches addObject:pitch];
     }
+    _engine.mainMixerNode.outputVolume = _volume;
     [_engine prepare];
   }
   if (!_engine.isRunning) {

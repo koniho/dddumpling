@@ -9,18 +9,20 @@ public final class IOSGame {
 
     private final GameCore core;
     private final Layout layout = new Layout();
-    private final SettingsUi settingsUi = new SettingsUi();
+    private final SettingsInput settingsInput = new SettingsInput();
 
     private Host host;
     private float elapsedClock, delayedHaptic;
     private boolean background;
     private int pausePress;
     private boolean overGesture;
+    private int settingsPointer=-1;
     public void setHost(Host host) { this.host = host; }
     public boolean handlesBack() { return Pause.handlesBack(core); }
     public boolean showsBackButton() { return core.state != GameCore.OVER && core.returnFade <= 0f && handlesBack(); }
     public boolean paused() { return core.paused; }
     private void cancelPointers() {
+        settingsInput.cancel();
         core.releaseNotes.cancelTouch();
         core.cave.input.release();
         landPointer = starDragPointer = bonusSwipePointer = bossDragPointer = -1;
@@ -74,11 +76,11 @@ public final class IOSGame {
         int action = ev.getActionMasked();
         if(core.releaseNotes.handleTouch(core,layout,action,ev.getX(ev.getActionIndex()),ev.getY(ev.getActionIndex())))
             return true;
-        if (BuildFlags.DEVELOPER && core.settingsOpen) {
-            if (action == IOSTouch.ACTION_DOWN || action == IOSTouch.ACTION_POINTER_DOWN
-                    || action == IOSTouch.ACTION_MOVE) {
-                int i = ev.getActionIndex();
-                handleSettings(ev.getX(i), ev.getY(i), action == IOSTouch.ACTION_MOVE);
+        if (core.settingsOpen) {
+            int i=action==IOSTouch.ACTION_MOVE?ev.findPointerIndex(settingsPointer):ev.getActionIndex();
+            if(action==IOSTouch.ACTION_DOWN) settingsPointer=ev.getPointerId(ev.getActionIndex());
+            if(i>=0 && settingsInput.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i))) {
+                if (host != null) host.openPrivacy(PrivacyUi.URL);
             }
             return true;
         }
@@ -93,7 +95,7 @@ public final class IOSGame {
             return true;
         }
         if (action == IOSTouch.ACTION_DOWN && PrivacyUi.hit(core, layout, ev.getX(), ev.getY())) {
-            if (host != null) host.openPrivacy(PrivacyUi.URL);
+            PlayerSettings.open(core);
             return true;
         }
 
@@ -584,79 +586,6 @@ public final class IOSGame {
             return had;
         }
         return core.touchDown;
-    }
-
-    private void handleSettings(float x, float y, boolean dragging) {
-        if (!BuildFlags.DEVELOPER) return;
-        settingsUi.compute(layout, Music.NAMES.length, core.settingsTab);
-        int hit = settingsUi.hit(x, y);
-        if (hit == SettingsUi.HIT_SLIDER) {
-            float v = settingsUi.speedAt(x);
-            if (v != core.speed) {
-                core.setSpeed(v);
-                tick();
-            }
-            return;
-        }
-        // A drag that wandered off the slider must not trip the other controls.
-        if (dragging) return;
-
-        // Any other tap in the panel stands the clear button back down, so an armed erase
-        // cannot sit waiting through a music change for a second tap that meant something else.
-        if (hit != SettingsUi.HIT_CLEAR) core.clearArmed = false;
-
-        if (hit == SettingsUi.HIT_CLOSE || hit == SettingsUi.HIT_OUTSIDE) {
-            core.closeSettings();
-            tick();
-        } else if (hit == SettingsUi.HIT_GENERAL || hit == SettingsUi.HIT_MINIGAMES) {
-            core.settingsTab = hit == SettingsUi.HIT_GENERAL ? SettingsUi.GENERAL : SettingsUi.MINIGAMES;
-            tick();
-        } else if (hit == SettingsUi.HIT_EASIER || hit == SettingsUi.HIT_HARDER) {
-            core.setStarDifficulty(core.stars.wins + (hit == SettingsUi.HIT_EASIER ? -1 : 1));
-            tick();
-        } else if (hit == SettingsUi.HIT_CLEAR) {
-            core.tapClearCase();
-            tick();
-        } else if (hit == SettingsUi.HIT_ROSTER) {
-            core.setNextRoster(!core.fullRoster);
-            tick();
-        } else if (hit == SettingsUi.HIT_GAMEOVER) {
-            core.endCurrentRun();
-            tick();
-        } else if (hit == SettingsUi.HIT_RESET_NEWS) {
-            core.releaseMascot.reset(core);
-        } else if (hit == SettingsUi.HIT_ALL_LANDS) {
-            LandPicker.enableAll(core);
-            tick();
-        } else if (hit == SettingsUi.HIT_RESET_LANDS) {
-            LandPicker.reset(core);
-            tick();
-        } else if (hit == SettingsUi.HIT_RESET_DIFFICULTY) {
-            core.resetDifficultyScaling();
-            tick();
-        } else if (hit >= SettingsUi.HIT_STAGE) {
-            // Before the playtest branch, not after: HIT_STAGE is the higher number, so a
-            // `hit >= HIT_TEST` test would swallow every stage chip.
-            //
-            // The panel deliberately stays open, so the steppers can be tapped several times while
-            // watching the number. Play resumes at whatever stage it is left on.
-            core.jumpToStage(core.stage + SettingsUi.STAGE_STEP[hit - SettingsUi.HIT_STAGE],
-                    layout);
-            tick();
-        } else if (hit >= SettingsUi.HIT_DEBUFF) {
-            core.playtestDebuff(Power.INCOGNITO+hit-SettingsUi.HIT_DEBUFF);
-            tick();
-        } else if (hit >= SettingsUi.HIT_TEST) {
-            // Closes the panel and drops straight into the mode.
-            int chip = hit - SettingsUi.HIT_TEST;
-            if (chip == SettingsUi.TEST_STARS) core.playtestStars(layout);
-            else if (chip == SettingsUi.TEST_STEAMER) core.playtestSteamer(layout);
-            else core.playtestMode(Power.offeredAt(chip), layout);
-            tick();
-        } else if (hit >= SettingsUi.HIT_OPTION) {
-            core.setBgm(hit - SettingsUi.HIT_OPTION);
-            tick();
-        }
     }
 
     private void dragHaptic() {

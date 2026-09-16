@@ -53,7 +53,10 @@ public final class IOSInputTest extends Check {
         check("UIKit points preserve safe-area geometry", l.w == 393 && l.padT == 59 && l.padB == 34);
         check("title has no back navigation", !game.handlesBack() && !game.back());
         tap(game, l.w - 2*l.unit, l.dangerY - 2*l.unit);
-        check("privacy opens host URL without starting play", PrivacyUi.URL.equals(host.privacy) && !c.starting());
+        check("title settings open without launching privacy", c.settingsOpen && host.privacy==null && !c.starting());
+        tap(game,l.w*.5f,PlayerSettings.row(l,3));
+        check("privacy link inside settings opens host URL",PrivacyUi.URL.equals(host.privacy));
+        game.back();
         tap(game, l.keyX[0], l.keyY[0]);
         for (int i = 0; i < 180; i++) game.update(DT);
         check("title deck press starts real run", c.state == GameCore.PLAY);
@@ -85,6 +88,31 @@ public final class IOSInputTest extends Check {
         check("second back resumes", !game.paused());
         clock = c.clock; game.update(Float.NaN); game.update(-1); game.update(Float.POSITIVE_INFINITY);
         check("invalid frame intervals do not poison simulation", c.clock == clock);
+    }
+
+    private static void playerSettings() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        tap(game,l.w-l.unit,l.dangerY-l.unit*2);
+        check("public player tab is first",c.settingsOpen && c.settingsPage==0);
+        float s=PlayerSettings.unit(l),y=PlayerSettings.row(l,0)+s*3;
+        c.preferences.music=.5f;
+        float cx=(PlayerSettings.trackL(l)+PlayerSettings.trackR(l))*.5f;
+        game.touch(one(0,17,cx+l.keyR*.5f,y));
+        check("grabbing character edge does not jump the slider",c.preferences.music==.5f);
+        game.touch(two(2,0,88,0,0,17,PlayerSettings.trackR(l)+l.keyR*.5f,y));
+        check("volume follows its owner across pointer reorder",c.preferences.music==1f);
+        game.touch(one(1,17,PlayerSettings.trackR(l)+l.keyR*.5f,y));
+        tap(game,PlayerSettings.right(l)-s*3,PlayerSettings.row(l,0));
+        check("native mute keeps slider value",c.preferences.musicMuted && c.preferences.music==1f && !c.preferences.effectsMuted);
+        tap(game,l.w*.5f,PlayerSettings.row(l,2));
+        check("kids setting persists from native settings",new GameCore(c.store,93L).preferences.kids);
+        tap(game,l.w*.75f,PlayerSettings.top(l)+s*4);
+        check("native developer tab opens",c.settingsPage==1);
+        SettingsUi ui=new SettingsUi();ui.compute(l,Music.NAMES.length);
+        tap(game,(ui.testChipL(2,4)+ui.testChipR(2,4))*.5f,ui.stageY+ui.stageH*.5f);
+        check("title stage chip cannot start a run",c.state==GameCore.TITLE && !c.starting());
+        game.back();
+        check("closing native settings consumes gesture",!c.settingsOpen && !c.starting());
     }
 
     private static void gameOverDismissal() {
@@ -282,15 +310,15 @@ public final class IOSInputTest extends Check {
         ui.compute(l,Music.NAMES.length);
         tap(game,ui.closeCx,ui.closeCy);
         check("settings close resumes play", !c.settingsOpen);
-        c.settingsOpen=true;
-        tap(game,(ui.testChipL(3,4)+ui.testChipR(3,4))/2,ui.debuffY+ui.testH/2);
+        c.settingsOpen=true;c.settingsTab=SettingsUi.PROGRESS;ui.compute(l,Music.NAMES.length,c.settingsTab);
+        tap(game,(ui.testChipL(0,2)+ui.testChipR(0,2))/2,ui.debuffY+ui.testH/2);
         check("native all lands chip enables every land",LandPicker.count(c)==Lands.COUNT);
-        tap(game,(ui.testChipL(2,4)+ui.testChipR(2,4))/2,ui.debuffY+ui.testH/2);
+        tap(game,l.w*.5f,ui.difficultyY+ui.difficultyH/2);
         check("native reset news clears seen status without leaving settings",c.settingsOpen && c.store.loadReleaseSeen().equals(""));
         c.settingsOpen=false;
         for(int i=0;i<2;i++) {
-            c.settingsOpen=true;
-            tap(game,(ui.testChipL(i,4)+ui.testChipR(i,4))/2,ui.debuffY+ui.testH/2);
+            c.settingsOpen=true;c.settingsTab=SettingsUi.POWERS;ui.compute(l,Music.NAMES.length,c.settingsTab);
+            tap(game,(ui.testChipL(i,2)+ui.testChipR(i,2))/2,ui.debuffY+ui.testH/2);
             check("native debuff chip activates correct effect " + i,!c.settingsOpen
                     && c.debuff==Power.INCOGNITO+i && c.debuffLeft>0f && !c.powerActive());
         }
@@ -437,6 +465,7 @@ public final class IOSInputTest extends Check {
     }
 
     public static void main(String[] args) {
+        playerSettings();
         gameOverDismissal();
         cave();
         releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); bossOwnership(); flingHistory();

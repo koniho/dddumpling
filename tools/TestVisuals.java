@@ -135,8 +135,8 @@ final class TestVisuals extends Check {
         check("read build stays quiet after restart",!read.releaseMascot.unread && read.releaseMascot.attentionLift(.4f)==0f);
         read.releaseMascot.reset(read);read.releaseMascot.update(read,.1f);
         check("reset restores attention for current build",seen.releaseSeen.equals("") && read.releaseMascot.unread);
-        SettingsUi newsUi=new SettingsUi();newsUi.compute(L,3);
-        check("reset news chip target",newsUi.hit((newsUi.testChipL(2,4)+newsUi.testChipR(2,4))*.5f,newsUi.debuffY+newsUi.testH*.5f)==SettingsUi.HIT_RESET_NEWS);
+        SettingsUi newsUi=new SettingsUi();newsUi.compute(L,3,SettingsUi.PROGRESS);
+        check("reset news chip target",newsUi.hit(L.w*.5f,newsUi.difficultyY+newsUi.testH*.5f)==SettingsUi.HIT_RESET_NEWS);
         group("interactive release notes");
         releaseWrap(L);
         Mem save=new Mem();GameCore c=new GameCore(save,7100L),control=new GameCore(new Mem(),7100L);
@@ -524,13 +524,13 @@ final class TestVisuals extends Check {
         check("trail leaves to the right before dipping toward the next land",
                 LandPicker.walkingDip(.2f)<0f && LandPicker.walkingDip(.7f)>.6f);
         SettingsUi resetUi = new SettingsUi();
-        resetUi.compute(L, Music.NAMES.length);
+        resetUi.compute(L, Music.NAMES.length, SettingsUi.PROGRESS);
         check("all lands chip has its own hit target", resetUi.hit(
-                (resetUi.testChipL(3,4)+resetUi.testChipR(3,4))*.5f,
+                (resetUi.testChipL(0,2)+resetUi.testChipR(0,2))*.5f,
                 resetUi.debuffY+resetUi.testH*.5f)==SettingsUi.HIT_ALL_LANDS);
         check("reset lands chip has its own hit target", resetUi.hit(
-                (resetUi.testChipL(1, 3) + resetUi.testChipR(1, 3)) / 2f,
-                resetUi.clearY + resetUi.clearH / 2f) == SettingsUi.HIT_RESET_LANDS);
+                (resetUi.testChipL(1, 2) + resetUi.testChipR(1, 2)) / 2f,
+                resetUi.debuffY + resetUi.testH / 2f) == SettingsUi.HIT_RESET_LANDS);
 
         boolean ordered = true;
         for (int i = 0; i < Demo.LEN; i++) {
@@ -1066,13 +1066,16 @@ final class TestVisuals extends Check {
         check("the close button is hit", ui.hit(ui.closeCx, ui.closeCy) == SettingsUi.HIT_CLOSE);
         check("the slider is hit",
                 ui.hit((ui.sliderL + ui.sliderR) / 2f, ui.sliderY) == SettingsUi.HIT_SLIDER);
+        ui.compute(L,Music.NAMES.length,SettingsUi.MINIGAMES);
         check("the difficulty-reset chip is hit",
                 ui.hit((ui.optionL() * 3f + ui.optionR()) / 4f,
                         ui.difficultyY + ui.difficultyH / 2f)
                         == SettingsUi.HIT_RESET_DIFFICULTY);
+        ui.compute(L,Music.NAMES.length,SettingsUi.PROGRESS);
         check("the collection-reset chip remains hit",
                 ui.hit((ui.optionL() + ui.optionR() * 3f) / 4f,
                         ui.clearY + ui.clearH / 2f) == SettingsUi.HIT_CLEAR);
+        ui.compute(L,Music.NAMES.length,SettingsUi.GENERAL);
         boolean rowsOk = true;
         for (int i = 0; i < Music.NAMES.length; i++) {
             if (ui.hit(ui.optionL() + 5f, ui.optionCy(i)) != SettingsUi.HIT_OPTION + i) {

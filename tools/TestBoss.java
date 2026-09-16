@@ -1481,9 +1481,9 @@ final class TestBoss extends Check {
                 u.compute(t, Music.NAMES.length);
                 if (u.panelT < 0f || u.panelB > t.h) fits = false;
                 // And the rows have to stay in order, in the panel, and clear of each other.
-                if (u.stageY < u.testY + u.testH) fits = false;
-                if (u.clearY < u.stageY + u.stageH) fits = false;
-                if (u.clearY + u.clearH > u.panelB) fits = false;
+                if (u.stageY < u.optionCy(Music.NAMES.length-1)+u.optionH*.5f) fits = false;
+                if (u.runY < u.stageY + u.stageH) fits = false;
+                if (u.runY + u.runH > u.panelB) fits = false;
             }
         }
         check("the panel still fits at every screen size", fits);

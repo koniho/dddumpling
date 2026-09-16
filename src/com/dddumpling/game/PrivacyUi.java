@@ -1,10 +1,10 @@
 package com.dddumpling.game;
 
-/** Public policy access stays available in both builds, outside the developer panel. */
+/** Title entry for player settings; the policy link lives inside. */
 final class PrivacyUi extends Draw {
     static final String URL = "https://koniho.github.io/dddumpling-privacy/";
     static boolean visible(GameCore c) {
-        return c.state == GameCore.TITLE && !c.starting() && !c.caseOpen && !c.storyOpen();
+        return c.state == GameCore.TITLE && !c.starting() && !c.caseOpen && !c.storyOpen() && !c.settingsOpen && !c.releaseNotes.open && c.returnFade<=0f;
     }
     static boolean hit(GameCore c, Layout L, float x, float y) {
         return visible(c) && x >= L.w - 7f * L.unit && x <= L.w
@@ -12,7 +12,7 @@ final class PrivacyUi extends Draw {
     }
     static void draw(Painter p, GameCore c, Layout L) {
         if (!visible(c)) return;
-        p.text("PRIVACY", L.w - L.unit, L.dangerY - 1.7f * L.unit,
+        p.text("SETTINGS", L.w - L.unit, L.dangerY - 1.7f * L.unit,
                 type(L.unit * 0.5f), INK_DIM, Painter.RIGHT, false);
     }
 }
