@@ -13,6 +13,9 @@ final class TestSettings extends Check {
                 && loaded.preferences.musicMuted && loaded.preferences.kids && e.musicVolume==0f);
         loaded.preferences.musicMuted=false;loaded.preferences.effectsMuted=true;loaded.preferences.save(loaded);
         check("unmute restores chosen volume without enabling other channel",e.musicVolume==.25f && e.effectsVolume==0f);
+        c.preferences.musicMuted=false;c.setBgm(Music.OFF);
+        SettingsInput.action(c,L,1000+PlayerSettings.MUSIC_MUTE);
+        check("one unmute restores music from the old OFF track",c.bgmChoice==Music.defaultChoice(false) && !c.preferences.musicMuted);
         PlayerSettings.open(c);
         c.screenKey(0);
         check("settings block title keys",c.settingsOpen && !c.starting());

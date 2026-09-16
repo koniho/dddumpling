@@ -66,7 +66,7 @@ final class SettingsInput {
                 case PlayerSettings.PLAYER: c.settingsPage=0;c.clearArmed=false;break;
                 case PlayerSettings.DEVELOPER: if(BuildFlags.DEVELOPER) { c.settingsPage=1;c.clearArmed=false; } break;
                 case PlayerSettings.MUSIC_MUTE:
-                    c.preferences.musicMuted=!c.preferences.musicMuted;
+                    c.preferences.musicMuted=!(c.preferences.musicMuted || c.bgmChoice==Music.OFF);
                     if(!c.preferences.musicMuted && c.bgmChoice==Music.OFF) c.setBgm(Music.defaultChoice(false));
                     c.preferences.save(c);break;
                 case PlayerSettings.EFFECTS_MUTE: c.preferences.effectsMuted=!c.preferences.effectsMuted;c.preferences.save(c);break;
