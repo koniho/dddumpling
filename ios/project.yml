@@ -18,6 +18,8 @@ settings:
     SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: '5.0'
+    DDDUMPLING_GAME_CENTER: '0'
+    GCC_PREPROCESSOR_DEFINITIONS: ['$(inherited)', 'DDDUMPLING_GAME_CENTER=$(DDDUMPLING_GAME_CENTER)']
 targets:
   DDDumpling:
     type: application
@@ -34,16 +36,16 @@ targets:
         buildPhase: resources
     settings:
       base:
-        OTHER_LDFLAGS: ['$(inherited)', '-ObjC', '-ljre_emul', '-liconv', '-lz']
+        OTHER_LDFLAGS: ['$(inherited)', '-ObjC', '-ljre_emul', '-liconv', '-lz', '$(GAME_CENTER_LDFLAGS_$(DDDUMPLING_GAME_CENTER))']
         # XcodeGen's iOS target default overrides the project-level family.
         TARGETED_DEVICE_FAMILY: '1'
         PRODUCT_BUNDLE_IDENTIFIER: com.dddumpling.game.ios
         APP_DISPLAY_NAME: DDDUMPLING
-        DDDUMPLING_GAME_CENTER: '0'
+        GAME_CENTER_LDFLAGS_0: ''
+        GAME_CENTER_LDFLAGS_1: '-framework GameKit'
         GAME_CENTER_ENTITLEMENTS_0: ''
         GAME_CENTER_ENTITLEMENTS_1: DDDumpling/GameCenter.entitlements
         CODE_SIGN_ENTITLEMENTS: '$(GAME_CENTER_ENTITLEMENTS_$(DDDUMPLING_GAME_CENTER))'
-        GCC_PREPROCESSOR_DEFINITIONS: ['$(inherited)', 'DDDUMPLING_GAME_CENTER=$(DDDUMPLING_GAME_CENTER)']
         # Keep fixed for TestFlight; bump only for a public App Store release.
         MARKETING_VERSION: 0.1.17
         CURRENT_PROJECT_VERSION: 1
@@ -52,15 +54,13 @@ targets:
       configs:
         Debug:
           APP_DISPLAY_NAME: DDD Dev
-          DDDUMPLING_GAME_CENTER: '1'
-          GCC_PREPROCESSOR_DEFINITIONS: ['$(inherited)', 'DEBUG=1', 'DDDUMPLING_GAME_CENTER=$(DDDUMPLING_GAME_CENTER)']
+          GCC_PREPROCESSOR_DEFINITIONS: ['$(inherited)', 'DEBUG=1']
           PRODUCT_BUNDLE_IDENTIFIER: com.dddumpling.game.ios.dev
     preBuildScripts:
       - name: Translate shared Java
         script: 'bash "$SRCROOT/scripts/translate.sh" "$CONFIGURATION"'
         basedOnDependencyAnalysis: false
     dependencies:
-      - sdk: GameKit.framework
       - sdk: UIKit.framework
       - sdk: CoreGraphics.framework
       - sdk: CoreText.framework

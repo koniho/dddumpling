@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 source "$(dirname "$0")/env.sh"
+case "${DDDUMPLING_GAME_CENTER:-}" in ''|0|1) ;; *) echo 'DDDUMPLING_GAME_CENTER must be 0 or 1' >&2; exit 2 ;; esac
 mode="${1:---full}"
 case "$mode" in
   --full|--selected|--build-only) [ "$#" -eq 0 ] || shift ;;
@@ -16,6 +17,9 @@ bash "$IOS_ROOT/scripts/translate.sh" Debug
 xcodegen generate --spec "$IOS_ROOT/project.yml"
 args=(-project "$IOS_ROOT/DDDumpling.xcodeproj" -scheme DDDumpling -configuration Debug
       -derivedDataPath "$IOS_ROOT/build/DerivedData" CODE_SIGNING_ALLOWED=NO)
+if [ -n "${DDDUMPLING_GAME_CENTER:-}" ]; then
+    args+=("DDDUMPLING_GAME_CENTER=$DDDUMPLING_GAME_CENTER")
+fi
 if [ "$mode" = --build-only ]; then
     xcodebuild "${args[@]}" -destination 'generic/platform=iOS Simulator' \
         "ARCHS=$(uname -m)" ONLY_ACTIVE_ARCH=YES build "$@"

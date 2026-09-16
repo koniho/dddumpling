@@ -16,7 +16,8 @@ developer-panel shortcuts.
 
 Build-gated Game Center authentication and iCloud progress sync are described in
 [native game services](game-center.md). They preserve the existing Android Play Games
-integration. Release builds enable them explicitly with `DDDUMPLING_GAME_CENTER=1`.
+integration. Debug and Release both default off and enable them explicitly with
+`DDDUMPLING_GAME_CENTER=1`.
 
 | Area | Shared code | Native boundary | Status |
 | --- | --- | --- | --- |

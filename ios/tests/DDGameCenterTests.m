@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "DDGameCenter.h"
+#import "DDGameServices.h"
 
 @interface DDTestPlayer : NSObject <DDGameCenterPlayer>
 @property(nonatomic) NSUInteger calls;
@@ -39,6 +40,17 @@
     XCTAssertEqual(player.calls, 0u);
     XCTAssertEqualObjects(service.status, @"Disabled");
 }
+- (void)testBuildGate {
+    DDTestPlayer *player = [DDTestPlayer new];
+    DDGameCenter *service = [[DDGameCenter alloc] initWithPresenter:[UIViewController new] player:player enabled:YES];
+    [service refreshActive:YES];
+    XCTAssertEqual(player.calls, (NSUInteger)DDDUMPLING_GAME_CENTER);
+#if !DDDUMPLING_GAME_CENTER
+    XCTAssertEqualObjects(service.status, @"Disabled");
+    XCTAssertNil(service.playerID);
+#endif
+}
+#if DDDUMPLING_GAME_CENTER
 - (void)testOfflineFailureAndAccountChangesDoNotRepeatAuthentication {
     DDTestPlayer *player = [DDTestPlayer new];
     DDGameCenter *service = [[DDGameCenter alloc] initWithPresenter:[UIViewController new] player:player enabled:YES];
@@ -75,4 +87,5 @@
     [service refreshActive:YES]; [service refreshActive:YES];
     XCTAssertEqualObjects(visibility, (@[@YES, @NO]));
 }
+#endif
 @end

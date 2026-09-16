@@ -68,7 +68,15 @@ ensure
   ENV["MATCH_GIT_PRIVATE_KEY"] = prior_private_key
 end
 
+def ios_game_center_flag!
+  value = ENV.fetch("DDDUMPLING_GAME_CENTER", "0")
+  value = "0" if value.empty?
+  UI.user_error!("DDDUMPLING_GAME_CENTER must be 0 or 1") unless %w[0 1].include?(value)
+  value
+end
+
 def ios_archive!
+  game_center = ios_game_center_flag!
   environment = ios_archive_configuration!
   api_key = ios_app_store_api_key!(environment)
   ENV.delete("sigh_com.dddumpling.game.ios_appstore_profile-name")
@@ -106,7 +114,7 @@ def ios_archive!
     project: project,
     scheme: "DDDumpling",
     configuration: "Release",
-    xcargs: "CURRENT_PROJECT_VERSION=#{environment.fetch('IOS_BUILD_NUMBER')}",
+    xcargs: "CURRENT_PROJECT_VERSION=#{environment.fetch('IOS_BUILD_NUMBER')} DDDUMPLING_GAME_CENTER=#{game_center}",
     export_method: "app-store",
     archive_path: File.expand_path("../ios/build/DDDumpling.xcarchive", __dir__),
     output_directory: File.dirname(IOS_IPA_PATH),

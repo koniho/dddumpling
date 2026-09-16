@@ -39,7 +39,6 @@
 @property(nonatomic) BOOL storeErrorShown;
 @property(nonatomic) BOOL storeAlertVisible;
 @property(nonatomic) BOOL gameCenterVisible;
-@property(nonatomic) BOOL muteSimulator;
 @property(nonatomic, strong) DDGameCenter *gameCenter;
 @property(nonatomic, strong) DDGameCloud *gameCloud;
 #if DEBUG
@@ -96,9 +95,6 @@
         _pointerTimes = [NSMutableArray new];
         _store = [DDIOSStore new];
         _audio = [DDIOSAudio new];
-#if TARGET_OS_SIMULATOR
-        _muteSimulator = ![NSProcessInfo.processInfo.environment[@"DDD_SIMULATOR_AUDIO"] boolValue];
-#endif
         _painter = [DDIOSPainter new];
         jlong seed = (jlong)(CACurrentMediaTime() * 1e9);
 #if DEBUG
@@ -236,7 +232,7 @@
     BOOL playable = self.active && !self.storeAlertVisible && !self.gameCenterVisible;
     [self.game backgroundWithBoolean:!playable];
     [self clearPointers];
-    [self.audio setActive:playable && !self.muteSimulator];
+    [self.audio setActive:playable];
     self.displayLink.paused = !self.active;
     [self refreshNavigation];
     [self setNeedsDisplay];

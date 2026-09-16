@@ -115,8 +115,8 @@ insets to compare drawing independently of that native navigation space.
 
 ## Resources and release
 
-Native Game Center sign-in and iCloud saved games are enabled by default in Debug.
-Release opts in with `DDDUMPLING_GAME_CENTER=1`; see
+Native Game Center sign-in and iCloud saved games are disabled by default in all builds.
+Debug and Release opt in with `DDDUMPLING_GAME_CENTER=1`; see
 [setup, build commands and testing](docs/game-center.md).
 
 The target bundles Bungee and its SIL OFL notice. Artwork is rendered from shared code; the

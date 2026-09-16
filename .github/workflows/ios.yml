@@ -106,6 +106,12 @@ jobs:
           else
             ./ios/scripts/test-simulator.sh --selected
           fi
+      - name: Check explicitly enabled GameKit integration
+        if: needs.changes.outputs.tests != '[]'
+        env:
+          DDDUMPLING_GAME_CENTER: '1'
+          IOS_TEST_TARGETS: '["DDDumplingTests/DDGameCenterTests", "DDDumplingTests/DDStoreTests"]'
+        run: ./ios/scripts/test-simulator.sh --selected
       - uses: actions/upload-artifact@v6
         if: always()
         with:

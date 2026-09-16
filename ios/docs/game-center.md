@@ -6,8 +6,7 @@ explicitly configured **production** build and refuses developer builds. This fe
 does not change that behavior.
 
 iOS enables GameKit through the **DDDUMPLING_GAME_CENTER** build setting (0 or 1).
-Debug defaults to 1; Release defaults to 0 and must explicitly opt in, like Android's
-configured production adapter. When enabled, it initializes the local
+Debug and Release both default to 0 and must explicitly opt in. When enabled, it initializes the local
 player at launch, presents Apple's authentication controller when needed, and keeps
 the game playable when sign-in is cancelled or unavailable. There is no new dashboard
 button. Authentication UI cancels touches and pauses gameplay/audio; dismissing it
@@ -29,7 +28,7 @@ Shared Android/harness construction retains its existing progress flag behavior.
    `com.dddumpling.game.ios.dev` in the Apple Developer account.
 2. Create/associate the development iCloud container
    `iCloud.com.dddumpling.game.ios.dev` and refresh its development provisioning profile.
-3. Build Debug with the development team. `ios/project.yml` selects
+3. Build Debug with `DDDUMPLING_GAME_CENTER=1` and the development team. `ios/project.yml` selects
    `GameCenter.entitlements` only when the services flag is 1.
 4. Register the matching app record in App Store Connect and enable Game Center on its
    iOS version page. Sign into Game Center and iCloud on the device and enable iCloud Drive.
@@ -52,11 +51,15 @@ CONFIGURATION=Release DDDUMPLING_GAME_CENTER=1 bash ios/scripts/build.sh iphoneo
 DDDUMPLING_GAME_CENTER=1 bash ios/scripts/archive.sh
 # Direct Xcode builds use the same setting:
 # xcodebuild ... DDDUMPLING_GAME_CENTER=1
+# Fastlane's signed archive uses the same opt-in:
+DDDUMPLING_GAME_CENTER=1 bundle exec fastlane ios archive
 ```
 
 Supply `DEVELOPMENT_TEAM` for signed command-line builds. The flag controls both native
-authentication/cloud code and signing entitlements. A value of 0 excludes GameKit service
-calls and both entitlements, while retaining local progress. The iCloud container expands
+authentication/cloud code, framework linking and signing entitlements. A value of 0 excludes
+GameKit linking, service calls and Game Center/iCloud entitlements, while retaining local progress.
+Unset or empty script values also leave services disabled; other values are rejected.
+The iCloud container expands
 from `PRODUCT_BUNDLE_IDENTIFIER`, keeping Debug and Release separate. The status button,
 developer settings and diagnostic scene controls remain Debug-only.
 
@@ -81,6 +84,9 @@ offline play, stale callbacks, debounce/backoff, background checkpoints and disa
 The cloud suite runs under both Java build configurations; Release also checks the public
 constructor with the service flag off and on.
 Native tests cover authentication presentation/lifecycle and durable account binding.
+Run `bash ios/scripts/test-simulator.sh --full` for the default-disabled build, then
+`DDDUMPLING_GAME_CENTER=1 bash ios/scripts/test-simulator.sh --full` for the enabled build.
+The build-gate test verifies that an injected player cannot bypass a disabled compilation.
 The UI smoke suite disables live Game Center using `DDD_GAME_CENTER_DISABLED=1`; unit
 tests inject a player instead of contacting Apple. The same environment switch is available
 for offline diagnostics, and cannot enable services excluded by the build flag.
@@ -104,8 +110,8 @@ The enabled build selects the Game Center entitlements and production bundle ID.
 All eight authentication/storage tests passed under Release with test symbol visibility
 enabled for XCTest. Java checks passed: 107 input, 24 cloud in each configuration and
 five Release gate assertions.
-The final Debug regression run passed three authentication tests and the title/status/pause
-UI smoke test with the default flag enabled.
+The original Debug regression run passed three authentication tests and the title/status/pause
+UI smoke test with the then-default flag enabled. Current builds require explicit opt-in.
 
 References: [initialization/configuration](https://developer.apple.com/documentation/gamekit/initializing-and-configuring-game-center),
 [GameKit saved games](https://developer.apple.com/documentation/gamekit/saving-the-player-s-game-data-to-an-icloud-account).
