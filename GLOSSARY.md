@@ -267,7 +267,7 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **swipe catchment** | where a panic swipe may start: the lower half of the field, much wider than the strip that advertises it | `Layout.inPushZone` |
 | **shelving** | one of the haul reaching the case at the end of its trip, and the chime that says so | `RoundEnd.arrival`, `Sound.collect`, `Sfx.collect` |
 | **game over screen** | score, accuracy dumpling, best. Fades up after the hold; GAME OVER is yellow, not rose | `Screens.gameOver` |
-| **accuracy dumpling** | the face that reflects accuracy: tear below 60%, sparkles above 90% | `Screens.accuracy` |
+| **accuracy dumpling** | the face that reflects accuracy: tear below 60%, sparkles above 90%; no presses means 0% | `Screens.accuracy` |
 | **settings panel** | opened by tapping the stage readout; pauses the game | `Screens.settings` |
 | **minigame difficulty** | Minigames settings tab; saved Star Path level, applied next attempt, raised by wins | `SettingsUi.MINIGAMES`, `GameCore.setStarDifficulty` |
 | **stage readout** | the "STAGE n" text — also the settings button | `Layout.inStageTap` |
@@ -423,3 +423,6 @@ a small spring-driven lift and squash. Cave walking speed is .36 route units per
 The title’s **Best Score** fades out before the display case heading appears, stays hidden
 while the case is open, and fades back in after the case heading disappears. `Screens.caseOut`
 keeps these labels from overlapping during either transition.
+
+The settled **game-over summary** accepts a fresh tap anywhere to return to the title.
+The death and haul animations finish before dismissal becomes available. The returning gesture cannot start a new run, and the iOS pause button is hidden.

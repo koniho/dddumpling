@@ -1762,6 +1762,10 @@ final class GameCore {
         cave.begin(this);
     }
 
+    void dismissGameOver() {
+        if (overReady()) returnToTitle();
+    }
+
     void returnToTitle() {
         if (returnFade > 0f) return;
         if (state == OVER) returnFade = RETURN_FADE;
@@ -2301,10 +2305,10 @@ final class GameCore {
         shake = Math.max(shake, 0.25f);
     }
 
-    /** Correct presses as a fraction of all presses; 1 before anything is pressed. */
+    /** Correct presses as a fraction of all presses; 0 before anything is pressed. */
     float accuracy() {
         int total = hits + misses;
-        return total == 0 ? 1f : (float) hits / total;
+        return total == 0 ? 0f : (float) hits / total;
     }
 
     int accuracyPercent() {

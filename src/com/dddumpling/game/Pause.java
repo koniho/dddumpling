@@ -19,7 +19,7 @@ final class Pause extends Draw {
             c.cancelStart();
             return true;
         }
-        if (c.state == GameCore.OVER) { c.returnToTitle(); return true; }
+        if (c.state == GameCore.OVER) { c.dismissGameOver(); return true; }
         if (c.state == GameCore.PLAY || c.state == GameCore.BONUS) { open(c); return true; }
         return false;
     }

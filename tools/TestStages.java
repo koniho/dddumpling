@@ -1084,14 +1084,21 @@ final class TestStages extends Check {
         group("accuracy");
         GameCore c = new GameCore(new Mem(), 61L);
         c.startGame();
-        check("accuracy starts at 100%", c.accuracyPercent() == 100);
-        check("no presses means the happiest face", c.accuracyMood() == 1f);
+        check("accuracy starts at 0%", c.accuracyPercent() == 0);
+        check("no presses means the saddest face", c.accuracyMood() == 0f);
+        GameCore idle = new GameCore(new Mem(), 62L);
+        idle.startGame(); idle.lives = 1; idle.takeHit(L.w * .5f, L);
+        check("zero-press run ends with 0% accuracy", idle.state == GameCore.OVER
+                && idle.hits == 0 && idle.misses == 0 && idle.accuracyPercent() == 0);
+        idle.misses = 5;
+        check("miss-only run has 0% accuracy", idle.accuracyPercent() == 0);
 
         c.enemies.clear();
         c.target = null;
         add(c, L, new int[] {0, 1, 2, 3}, L.playTop + 90);
         c.tapKey(0, L);
         check("a correct press counts as a hit", c.hits == 1 && c.misses == 0);
+        check("a hit without misses earns 100% accuracy", c.accuracyPercent() == 100);
         c.tapKey(5, L);
         check("a wrong press counts as a miss", c.hits == 1 && c.misses == 1);
         check("accuracy halves at one for one", c.accuracyPercent() == 50);

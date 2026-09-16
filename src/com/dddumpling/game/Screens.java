@@ -160,9 +160,6 @@ final class Screens extends Draw {
         p.text(c.score >= c.best ? "NEW BEST!" : "BEST " + c.best, L.w / 2f, L.h * 0.695f,
                 type(s * 0.78f), fadeBy(c.score >= c.best ? GOLD : INK_DIM, fade), Painter.CENTER, true);
 
-        // Nothing asks for a press here either: once the summary has settled the deck picks up the
-        // same glow the title screen uses. See Renderer.keys.
-
     }
 
     /**

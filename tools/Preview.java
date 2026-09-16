@@ -744,6 +744,9 @@ final class Preview {
                 c3.accuracyPercent(), c3.accuracyMood());
         shot(dir, "8-gameover", c3, L, w, h, ss);
 
+        c3.hits = c3.misses = 0;
+        shot(dir, "8b-gameover-zero-hits", c3, L, w, h, ss);
+
         // Same screen at both mood extremes.
         c3.hits = 92;
         c3.misses = 84;   // 52% -> saddest

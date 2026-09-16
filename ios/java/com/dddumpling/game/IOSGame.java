@@ -15,15 +15,17 @@ public final class IOSGame {
     private float elapsedClock, delayedHaptic;
     private boolean background;
     private int pausePress;
+    private boolean overGesture;
     public void setHost(Host host) { this.host = host; }
     public boolean handlesBack() { return Pause.handlesBack(core); }
+    public boolean showsBackButton() { return core.state != GameCore.OVER && core.returnFade <= 0f && handlesBack(); }
     public boolean paused() { return core.paused; }
     private void cancelPointers() {
         core.releaseNotes.cancelTouch();
         core.cave.input.release();
         landPointer = starDragPointer = bonusSwipePointer = bossDragPointer = -1;
         bossDragging = bossPinching = pushArmed = false;
-        caseGesture = CASE_IDLE; pausePress = 0;
+        caseGesture = CASE_IDLE; pausePress = 0; overGesture = false;
         delayedHaptic = 0f;
         core.endBossPinch();
         Pause.release(core);
@@ -77,6 +79,16 @@ public final class IOSGame {
                     || action == IOSTouch.ACTION_MOVE) {
                 int i = ev.getActionIndex();
                 handleSettings(ev.getX(i), ev.getY(i), action == IOSTouch.ACTION_MOVE);
+            }
+            return true;
+        }
+        // Own the whole gesture, even if the return fade reaches the title before lift.
+        if (overGesture || core.state == GameCore.OVER || core.returnFade > 0f) {
+            if (action == IOSTouch.ACTION_DOWN) {
+                overGesture = true;
+                core.dismissGameOver();
+            } else if (action == IOSTouch.ACTION_UP || action == IOSTouch.ACTION_CANCEL) {
+                overGesture = false;
             }
             return true;
         }

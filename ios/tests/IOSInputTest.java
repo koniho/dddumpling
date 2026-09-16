@@ -87,6 +87,37 @@ public final class IOSInputTest extends Check {
         check("invalid frame intervals do not poison simulation", c.clock == clock);
     }
 
+    private static void gameOverDismissal() {
+        for (int target = 0; target < 4; target++) {
+            IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
+            c.startGame();
+            check("play retains pause button", game.showsBackButton());
+            c.lives = 1; c.enemies.clear();
+            add(c, l, new int[] {0}, l.dangerY - l.enemyR + 1);
+            advance(c, l, GameCore.ATTACK_TIME + 2 * DT);
+            check("game over hides pause but retains system back", !game.showsBackButton() && game.handlesBack());
+            float x = target == 0 ? l.w/2 : target == 1 ? 1 : target == 2 ? l.w-1 : l.keyX[0];
+            float y = target == 0 ? l.h/2 : target == 1 ? 1 : target == 2 ? l.h-1 : l.keyY[0];
+            tap(game, x, y);
+            game.back();
+            check("tap and back preserve death animation", c.returnFade == 0 && c.state == GameCore.OVER);
+            game.touch(one(0, 42, x, y));
+            for (int i=0; i<900 && !c.overReady(); i++) game.update(DT);
+            game.touch(one(1, 42, x, y));
+            check("lifting a finger held through death cannot dismiss", c.overReady() && c.returnFade == 0);
+            game.touch(one(0, 42, x, y));
+            check("fresh tap anywhere dismisses settled summary", c.returnFade > 0);
+            for (int i=0; i<60; i++) game.update(DT);
+            game.touch(one(2, 42, l.keyX[0], l.keyY[0]));
+            game.touch(two(5, 1, 42, x, y, 9, l.keyX[0], l.keyY[0]));
+            game.touch(one(1, 42, l.keyX[0], l.keyY[0]));
+            check("return gesture cannot start a run or browse title", c.state == GameCore.TITLE
+                    && !c.starting() && !c.titleTouchDown && !c.caseOpen);
+            tap(game, l.keyX[0], l.keyY[0]);
+            check("next separate key tap starts normally", c.starting());
+        }
+    }
+
     private static void starsAndLand() {
         IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
         c.startGame(); c.playtestStars(l);
@@ -406,6 +437,7 @@ public final class IOSInputTest extends Check {
     }
 
     public static void main(String[] args) {
+        gameOverDismissal();
         cave();
         releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); bossOwnership(); flingHistory();
         steamerAndPanic(); caseAndSettings();
