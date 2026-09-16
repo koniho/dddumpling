@@ -1502,8 +1502,7 @@ final class GameCore {
     // ---- settings -----------------------------------------------------------
 
     void openSettings() {
-        if (!BuildFlags.DEVELOPER) return;
-        settingsOpen = true; settingsPage = 1;
+        settingsOpen = true; settingsPage = BuildFlags.DEVELOPER ? 1 : 0;
         Pause.release(this);
         clearArmed = false;
     }
