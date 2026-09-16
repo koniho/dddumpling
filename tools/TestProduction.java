@@ -55,6 +55,10 @@ final class TestProduction extends Check {
         check("policy accessible on title", PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY));
         PlayerSettings.open(c);
         check("public settings open in production",c.settingsOpen && c.settingsPage==0);
+        check("production header has no tab hit target",PlayerSettings.hit(c,L,L.w*.5f,
+                PlayerSettings.top(L)+PlayerSettings.unit(L)*3.5f)==0);
+        check("music mute uses reclaimed tab space",PlayerSettings.hit(c,L,
+                PlayerSettings.right(L)-PlayerSettings.unit(L)*3f,PlayerSettings.row(L,0))==PlayerSettings.MUSIC_MUTE);
         SettingsInput.action(c,L,1000+PlayerSettings.DEVELOPER);
         check("developer tab cannot be selected in production",c.settingsPage==0);
         SettingsInput.action(c,L,1000+PlayerSettings.KIDS);
