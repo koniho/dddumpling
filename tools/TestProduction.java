@@ -51,9 +51,16 @@ final class TestProduction extends Check {
         check("settings actions cannot reset progression", c.steamer.opens == 5 && c.stars.wins == 3);
         check("settings actions cannot clear collections", c.collected == 1L
                 && c.collectionCounts[0] == 7 && store.collectionCounts[0] == 7 && !c.clearArmed);
-        check("policy accessible on title", PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY-2f*L.unit));
+        check("policy accessible on title", PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY));
+        PlayerSettings.open(c);
+        check("public settings open in production",c.settingsOpen && c.settingsPage==0);
+        SettingsInput.action(c,L,1000+PlayerSettings.DEVELOPER);
+        check("developer tab cannot be selected in production",c.settingsPage==0);
+        SettingsInput.action(c,L,1000+PlayerSettings.KIDS);
+        check("kids preference persists in production",new GameCore(store,71L).preferences.kids);
+        c.preferences.kids=false;c.preferences.save(c);c.closeSettings();
         c.startGame();
-        check("policy hidden in play", !PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY-2f*L.unit));
+        check("policy hidden in play", !PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY));
         int stage = c.stage, lives = c.lives;
         c.playtestMode(Power.FLING,L);
         c.playtestStars(L);
@@ -65,13 +72,13 @@ final class TestProduction extends Check {
         c.settingsOpen = true;
         float clock = c.time;
         c.update(DT,L);
-        check("a stale settings flag cannot pause production", c.time > clock);
+        check("player settings pause production", c.time == clock);
         RasterPainter hidden = new RasterPainter(640,1400,1);
         RasterPainter normal = new RasterPainter(640,1400,1);
         Renderer.draw(hidden,c,L);
         c.settingsOpen = false;
         Renderer.draw(normal,c,L);
-        check("even a forced settings flag draws no panel", Arrays.equals(hidden.resolve(),normal.resolve()));
+        check("player settings render in production", !Arrays.equals(hidden.resolve(),normal.resolve()));
         int[] before = normal.resolve();
         Screens.settings(normal,c,L);
         check("direct panel rendering is disabled", Arrays.equals(before,normal.resolve()));

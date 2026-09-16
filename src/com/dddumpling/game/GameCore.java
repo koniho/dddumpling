@@ -172,6 +172,8 @@ final class GameCore {
         default void saveLandState(int value) {}
         default int loadLandBest(int land) { return land == 0 ? loadBest() : 0; }
         default void saveLandBest(int land, int value) { if (land == 0) saveBest(value); }
+        default int loadPlayerSettings() { return PlayerSettings.DEFAULT; }
+        default void savePlayerSettings(int value) {}
         float loadSpeed();
         void saveSpeed(float speed);
         int loadBgm();
@@ -199,6 +201,7 @@ final class GameCore {
      * assert which effect fires on which event.
      */
     interface Sound {
+        default void volumes(float music, float effects) {}
         /** @param depth presses that were still owed on the tile before this press */
         void squish(int glyph, int depth);
         void clearWord();
@@ -480,6 +483,9 @@ final class GameCore {
     int bgmChoice;
     /** While true the simulation is frozen and the settings panel is showing. */
     boolean settingsOpen;
+    int settingsPage;
+    final PlayerSettings preferences = new PlayerSettings();
+    boolean kidsRun;
     final ReleaseNotes releaseNotes=new ReleaseNotes();
     final ReleaseMascot releaseMascot=new ReleaseMascot();
     int settingsTab;
@@ -524,7 +530,7 @@ final class GameCore {
      * free tempo reset to be spent the moment a wave starts.
      */
     boolean pushReady() {
-        return state == PLAY && !pushUsed && !(BuildFlags.DEVELOPER && settingsOpen) && !pendingBonus && warnLevel > 0f;
+        return state == PLAY && !pushUsed && !settingsOpen && !pendingBonus && warnLevel > 0f;
     }
 
     // ---- between-stages minigame -------------------------------------------
@@ -1413,6 +1419,7 @@ final class GameCore {
             best = store.loadBest();
             for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
             landBests[0] = Math.max(landBests[0], best);
+            preferences.load(store.loadPlayerSettings());
             speed = BuildFlags.DEVELOPER ? clampSpeed(store.loadSpeed()) : 1f;
             bgmChoice = BuildFlags.DEVELOPER
                     ? Math.max(0, Math.min(Music.NAMES.length - 1, store.loadBgm()))
@@ -1476,7 +1483,7 @@ final class GameCore {
                 | (Math.min(2, earlyLosses) << 1) | (rosterLeavePending ? 8 : 0));
     }
     void unlockRoster() {
-        if (fullRoster) return;
+        if (fullRoster || kidsRun) return;
         fullRoster = runFullRoster = true; earlyLosses = 0; rosterLeavePending = false;
         rosterScene = ROSTER_JOIN; rosterSceneT = ROSTER_SCENE_TIME;
         if (sound != null) sound.rosterJoin();
@@ -1496,8 +1503,8 @@ final class GameCore {
 
     void openSettings() {
         if (!BuildFlags.DEVELOPER) return;
-        settingsOpen = true;
-        cave.input.release();
+        settingsOpen = true; settingsPage = 1;
+        Pause.release(this);
         clearArmed = false;
     }
 
@@ -1590,6 +1597,7 @@ final class GameCore {
      * default both did nothing until the player opened settings and picked something.
      */
     void startMusic() {
+        preferences.apply(this);
         if (sound != null) {
             if (boss.active()) sound.bossMusic(true);
             else sound.selectMusic(bgmChoice);
@@ -1614,21 +1622,23 @@ final class GameCore {
     static final float RAMP = Pacing.RAMP;
     static final int MAX_PRESSES = Pacing.MAX_PRESSES;
 
-    float ramp() { return Pacing.ramp(stage); }
+    int pacingStage() { return kidsRun ? 1 : stage; }
 
-    float travelSeconds() { return Pacing.travelSeconds(stage, speed); }
+    float ramp() { return Pacing.ramp(pacingStage()); }
 
-    float spawnInterval() { return Pacing.spawnInterval(stage, speed); }
+    float travelSeconds() { return Pacing.travelSeconds(pacingStage(), kidsRun ? 1f : speed); }
 
-    int maxEnemies() { return Pacing.maxEnemies(stage); }
+    float spawnInterval() { return Pacing.spawnInterval(pacingStage(), kidsRun ? 1f : speed); }
 
-    int maxWordLen() { return Pacing.maxWordLen(stage); }
+    int maxEnemies() { return Pacing.maxEnemies(pacingStage()); }
 
-    int minWordLen() { return Pacing.minWordLen(stage); }
+    int maxWordLen() { return Pacing.maxWordLen(pacingStage()); }
 
-    int stageQuota() { return Pacing.stageQuota(stage); }
+    int minWordLen() { return Pacing.minWordLen(pacingStage()); }
 
-    float stackChance() { return Pacing.stackChance(stage); }
+    int stageQuota() { return Pacing.stageQuota(pacingStage()); }
+
+    float stackChance() { return Pacing.stackChance(pacingStage()); }
 
     /** Concurrent words allowed now. A frenzy lets more pile up, tapering with the ramp. */
     int crowdCap() {
@@ -1688,7 +1698,8 @@ final class GameCore {
         progress.startRun(runStartLand);
         Pause.resume(this);
         state = PLAY;
-        runFullRoster = fullRoster;
+        kidsRun = preferences.kids;
+        runFullRoster = !kidsRun && fullRoster;
         time = 0;
         score = 0;
         squishes = 0;
@@ -1873,6 +1884,7 @@ final class GameCore {
      * presses of anything now, which also puts the display case back on the way past.
      */
     void screenKey(int g) {
+        if (settingsOpen) return;
         if(releaseNotes.open) return;
         if (returnFade > 0f) return;
         if (!keyActive(g) || rosterSceneT > 0f) return;
@@ -2396,7 +2408,7 @@ final class GameCore {
             return;
         }
         releaseMascot.update(this,elapsed);
-        if (state == PLAY && boss.fighting() && !(BuildFlags.DEVELOPER && settingsOpen))
+        if (state == PLAY && boss.fighting() && !settingsOpen)
             progress.bossTime(elapsed);
         // Slow motion from a multi-word fling stroke, and the readout it earned. Both ticked
         // on real time and before the scaling below, so neither is slowed by the thing the
@@ -2406,6 +2418,7 @@ final class GameCore {
         // What ends a blade stroke by itself, on real time and above every early return below.
         Blade.updateStroke(this, dt);
         dt *= timeScale();
+        if (kidsRun && (state == PLAY || state == BONUS)) dt *= .45f;
         // The clock keeps running so the panel itself can animate, but nothing else moves.
         clock += dt;
         updateTitleSprings(dt, L);
@@ -2416,9 +2429,9 @@ final class GameCore {
                 rosterScene = 0;
             }
         }
-        if (sound != null && ((BuildFlags.DEVELOPER && settingsOpen) || !boss.fighting() || boss.kind != Boss.SLIME
+        if (sound != null && (settingsOpen || !boss.fighting() || boss.kind != Boss.SLIME
                 || boss.hasGlob() || boss.boltCount() > 0)) sound.bossCharge(0f);
-        if (BuildFlags.DEVELOPER && settingsOpen) return;
+        if (settingsOpen) return;
         time += dt;
         if (returnFade > 0f) {
             returnFade = Math.max(0f, returnFade - dt);

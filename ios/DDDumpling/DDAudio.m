@@ -44,6 +44,9 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 @property(nonatomic) NSInteger selectedStyle;
 @property(nonatomic) NSUInteger musicGeneration;
 @property(nonatomic) float bubbleVolume;
+@property(nonatomic) float musicVolume;
+@property(nonatomic) float effectsVolume;
+@property(nonatomic) float rocketGain;
 @property(nonatomic) CFTimeInterval boltPopUntil;
 @end
 
@@ -61,6 +64,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 #if DEBUG
     _profileMuteEffects = [NSProcessInfo.processInfo.environment[@"DDD_PROFILE_MUTE_EFFECTS"] boolValue];
 #endif
+    _musicVolume = _effectsVolume = 1.f;
     _selectedStyle = DDStyleSwing;
     _playbackAllowed = YES;
     [self observeAudioSession];
@@ -261,7 +265,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
   float gain = _boss ? DDMusic_BOSS_GAIN : (_selectedStyle == DDStyleCustom ? 0.55f : 1.f);
   if (_rocketOn) gain *= 0.68f;
   if (_narrating) gain *= 0.22f;
-  _music.volume = gain;
+  _music.volume = gain * _musicVolume;
 }
 
 - (NSURL *)customMusicURL {
@@ -393,7 +397,8 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
   if (thrust <= 0) { _rocketOn = NO; [_rocketNode pause]; [self applyMusicMix]; return; }
   [self ensureRocket];
   float p = MAX(0.f, MIN(1.f, thrust));
-  _rocketNode.volume = .16f + .28f * p; _rocketPitch.rate = .82f + .43f * p; _rocketOn = YES;
+  _rocketGain = .16f + .28f * p;
+  _rocketNode.volume = _rocketGain * _effectsVolume; _rocketPitch.rate = .82f + .43f * p; _rocketOn = YES;
   [self applyMusicMix];
   if (_active && !_interrupted && _playbackAllowed && !_rocketNode.isPlaying) {
     NSError *error = nil;
@@ -413,8 +418,17 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
   [self ensureBubble];
   float target = MAX(0.f, MIN(1.f, charge)) * .10f;
   _bubbleVolume += (target - _bubbleVolume) * .18f;
-  _bubble.volume = _bubbleVolume; _bubble.rate = 1; _bubbleOn = YES;
+  _bubble.volume = _bubbleVolume * _effectsVolume; _bubble.rate = 1; _bubbleOn = YES;
   if (_active && !_interrupted && _playbackAllowed && !_bubble.isPlaying) [_bubble play];
+}
+
+- (void)volumesWithFloat:(jfloat)music withFloat:(jfloat)effects {
+  _musicVolume = music; _effectsVolume = effects;
+  [self applyMusicMix];
+  _rocketNode.volume = _rocketGain * effects;
+  _bubble.volume = _bubbleVolume * effects;
+  dispatch_async(_effectsQueue, ^{ self.effectMixer.volume = effects; });
+  if (effects == 0) [self hush];
 }
 
 - (void)selectMusicWithInt:(jint)style { _selectedStyle = style; _boss = NO; [self rebuildMusic]; }
@@ -422,7 +436,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 - (void)frenzyWithBoolean:(jboolean)on { if (_frenzy == on) return; _frenzy = on; [self rebuildMusic]; }
 
 - (void)narrateWithInt:(jint)entry {
-  if (!_active || _interrupted || !_playbackAllowed) return;
+  if (!_active || _interrupted || !_playbackAllowed || _effectsVolume <= 0) return;
   @try {
     IOSObjectArray *lines = [DDNarration linesWithInt:entry];
     if (!lines || lines->size_ == 0) return;
@@ -432,6 +446,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
       NSString *text = [lines objectAtIndex:i];
       AVSpeechUtterance *utterance = [AVSpeechUtterance speechUtteranceWithString:text ?: @""];
       utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-US"];
+      utterance.volume = _effectsVolume;
       utterance.pitchMultiplier = 1.9f;
       utterance.rate = i == 0 ? AVSpeechUtteranceDefaultSpeechRate * .90f : AVSpeechUtteranceDefaultSpeechRate;
       utterance.postUtteranceDelay = i == 0 ? .28 : i == 1 ? .20 : 0;

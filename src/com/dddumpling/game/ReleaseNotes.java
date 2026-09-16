@@ -271,7 +271,7 @@ final class ReleaseNotes extends Draw {
     }
     private void drawPanel(Painter p,GameCore c,Layout L,boolean list) {
         float s=size(L),cx=L.w*.5f,t=list?top(L):windowTop(L),b=list?bottom(L):windowBottom(L);
-        p.fillPoly(pageShape(L.w*.04f,t,L.w*.96f,b,s*.8f),0xE8302944);
+        glassPanel(p,L.w*.04f,t,L.w*.96f,b,s);
         float closeX=L.w*.89f,closeY=t+1.25f*s,r=s*.3f;
         p.line(closeX-r,closeY-r,closeX+r,closeY+r,INK,s*.12f);
         p.line(closeX-r,closeY+r,closeX+r,closeY-r,INK,s*.12f);
@@ -328,17 +328,6 @@ final class ReleaseNotes extends Draw {
             p.line(L.w*.935f,listTop(L),L.w*.935f,listBottom(L),0xFF463B59,s*.1f);
             p.line(L.w*.935f,y,L.w*.935f,y+thumb,0xFFAE9ADA,s*.1f);
         }
-    }
-    private static float[] pageShape(float l,float t,float r,float b,float radius) {
-        float[] points=new float[56];int n=0;
-        for(int corner=0;corner<4;corner++) {
-            float x=corner==0 || corner==3 ? r-radius : l+radius,y=corner<2 ? b-radius : t+radius;
-            for(int step=0;step<=6;step++) {
-                float angle=(corner*90f+step*15f)*(float)Math.PI/180f;
-                points[n++]=x+(float)Math.cos(angle)*radius;points[n++]=y+(float)Math.sin(angle)*radius;
-            }
-        }
-        return points;
     }
     private static void arrow(Painter p,float x,float y,int dir,float s) {
         p.line(x-dir*s*.3f,y-s*.4f,x+dir*s*.3f,y,INK,s*.14f);

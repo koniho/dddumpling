@@ -82,6 +82,35 @@
 @end
 
 @implementation DDAudioTests
+- (void)testUserVolumesSurviveDuckingAndMuteChannelsIndependently {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  DDCountingPlayer *music = [DDCountingPlayer new];
+  DDCountingPlayer *bubble = [DDCountingPlayer new];
+  DDCountingMixer *mixer = [DDCountingMixer new];
+  [audio setValue:music forKey:@"music"];
+  [audio setValue:bubble forKey:@"bubble"];
+  [audio setValue:mixer forKey:@"effectMixer"];
+  [audio setValue:@.1f forKey:@"bubbleVolume"];
+  [audio volumesWithFloat:.4f withFloat:.25f];
+  dispatch_queue_t queue = [audio valueForKey:@"effectsQueue"];
+  dispatch_sync(queue, ^{});
+  XCTAssertEqualWithAccuracy(music.volume, .4f, .001f);
+  XCTAssertEqualWithAccuracy(bubble.volume, .025f, .001f);
+  XCTAssertEqualWithAccuracy(mixer.volume, .25f, .001f);
+  [audio setValue:@YES forKey:@"narrating"];
+  [audio volumesWithFloat:.4f withFloat:.25f];
+  XCTAssertEqualWithAccuracy(music.volume, .4f * .22f, .001f);
+  [audio volumesWithFloat:.4f withFloat:0];
+  dispatch_sync(queue, ^{});
+  XCTAssertEqualWithAccuracy(mixer.volume, 0, .001f);
+  XCTAssertEqualWithAccuracy(bubble.volume, 0, .001f);
+  XCTAssertEqualWithAccuracy(music.volume, .4f, .001f);
+  [audio volumesWithFloat:0 withFloat:1];
+  dispatch_sync(queue, ^{});
+  XCTAssertEqualWithAccuracy(music.volume, 0, .001f);
+  XCTAssertEqualWithAccuracy(mixer.volume, 1, .001f);
+}
+
 
 - (void)testEverySharedSoundCallbackHasANativeImplementation {
   unsigned int count = 0;

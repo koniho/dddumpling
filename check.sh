@@ -37,7 +37,11 @@ done
 # compile while the APK builds fine.
 python3 tools/release-notes.py check >/dev/null
 
-PURE="src/com/dddumpling/game/ProgressData.java
+PURE="src/com/dddumpling/game/SettingsArt.java
+src/com/dddumpling/game/PlayerSettings.java
+src/com/dddumpling/game/DevSettings.java
+src/com/dddumpling/game/SettingsInput.java
+src/com/dddumpling/game/ProgressData.java
 src/com/dddumpling/game/Progress.java
 src/com/dddumpling/game/PrivacyUi.java
 src/com/dddumpling/game/ReleaseNotes.java

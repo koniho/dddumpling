@@ -33,7 +33,7 @@ final class ReleaseTransition {
         return center-(L.w*.5f+L.w*.23f)*slide();
     }
     float y(Layout L) {
-        if(cornerReturn) return L.dangerY-L.unit*2.1f;
+        if(cornerReturn) return ReleaseMascot.y(L);
         float start=sourceY*L.h;
         return start+(L.h*.5f-start)*ease(progress/CENTRE);
     }

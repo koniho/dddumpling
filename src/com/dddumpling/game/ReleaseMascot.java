@@ -19,7 +19,7 @@ final class ReleaseMascot extends Draw {
         if(c.store!=null) c.store.saveReleaseSeen(BuildFlags.BUILD_ID);
     }
     float x(Layout L) { return L.unit*2.5f; }
-    float y(Layout L) { return L.dangerY-L.unit*2.1f; }
+    static float y(Layout L) { return L.dangerY; }
     float radius(Layout L) { return L.unit*.8f; }
     float attentionLift(float time) {
         float beat=(time%2.2f)/.8f;

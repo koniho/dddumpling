@@ -1370,21 +1370,23 @@ final class TestPower extends Check {
     static void playtest(Layout L) {
         group("playtest hook");
         SettingsUi ui = new SettingsUi();
-        ui.compute(L, Music.NAMES.length);
+        ui.compute(L, Music.NAMES.length, SettingsUi.POWERS);
         check("panel still fits with the playtest row",
                 ui.panelB <= L.h && ui.testY + ui.testH < ui.panelB);
-        check("the playtest row sits below the music rows",
-                ui.testY > ui.optionCy(Music.NAMES.length - 1));
+        check("powers have a dedicated page below its tabs",
+                ui.testY > ui.tabY+ui.tabH);
 
         // Every chip in the row, with shortcuts for both between-stage games after the modes. Written against TEST_CHIPS rather than Power.COUNT so adding another
         // playtest shortcut cannot quietly leave the new chip untestable.
         boolean chipsOk = true, chipsDistinct = true;
         int chips = SettingsUi.TEST_CHIPS;
         for (int i = 0; i < chips; i++) {
-            float cx = (ui.testChipL(i, chips) + ui.testChipR(i, chips)) / 2f;
-            if (ui.hit(cx, ui.testY + ui.testH / 2f) != SettingsUi.HIT_TEST + i) chipsOk = false;
-            if (i > 0 && ui.testChipL(i, chips)
-                    < ui.testChipR(i - 1, chips)) chipsDistinct = false;
+            boolean mini=i>=SettingsUi.TEST_STARS;
+            ui.compute(L,Music.NAMES.length,mini?SettingsUi.MINIGAMES:SettingsUi.POWERS);
+            int index=mini?i-SettingsUi.TEST_STARS:i,n=mini?2:Power.OFFERED.length;
+            float cx = (ui.testChipL(index,n)+ui.testChipR(index,n))*.5f;
+            if(ui.hit(cx,ui.testY+ui.testH*.5f)!=SettingsUi.HIT_TEST+i) chipsOk=false;
+            if(index>0 && ui.testChipL(index,n)<ui.testChipR(index-1,n)) chipsDistinct=false;
         }
         check("the row has chips for both between-stage games",
                 SettingsUi.TEST_STARS == Power.OFFERED.length

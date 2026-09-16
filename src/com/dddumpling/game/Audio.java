@@ -24,6 +24,10 @@ final class Audio implements GameCore.Sound {
     private final Context ctx;
     private AudioTrack bgmTrack;
     private boolean musicPaused;
+    private volatile float musicVolume=1f, effectsVolume=1f;
+    private final float[] effectGains=new float[Sfx.COUNT];
+    private float rocketGain;
+    private boolean rocketDucked;
     private AudioTrack rocketTrack;
     private AudioTrack bubbleTrack;
     private boolean rocketActive;
@@ -103,7 +107,6 @@ final class Audio implements GameCore.Sound {
                 try {
                     short[] pcm = Music.bossLoop(style);
                     AudioTrack t = musicTrack(pcm);
-                    t.setVolume(Music.BOSS_GAIN);
                     if (!bossPlaying) { t.release(); return; }
                     startPreparedMusic(t);
                 } catch (Throwable ignored) {}
@@ -146,9 +149,10 @@ final class Audio implements GameCore.Sound {
             MediaPlayer mp = MediaPlayer.create(ctx, id);
             if (mp == null) return false;
             mp.setLooping(true);
-            mp.setVolume(0.55f, 0.55f);
+            mp.setVolume(0.55f * musicVolume, 0.55f * musicVolume);
             synchronized (this) {
                 bgmPlayer = mp;
+                applyMusicMix();
                 if (!musicPaused) mp.start();
             }
             return true;
@@ -184,6 +188,7 @@ final class Audio implements GameCore.Sound {
     /** A track prepared in the background must honor a pause that happened while it was loading. */
     private synchronized void startPreparedMusic(AudioTrack track) {
         bgmTrack = track;
+        applyMusicMix();
         if (!musicPaused) track.play();
     }
 
@@ -245,7 +250,8 @@ final class Audio implements GameCore.Sound {
             t.stop();
             t.reloadStaticData();
             t.setPlaybackRate((int) (Sfx.RATE * rate));
-            t.setVolume(gain);
+            effectGains[id]=gain;
+            t.setVolume(gain * effectsVolume);
             t.play();
         } catch (Throwable ignored) {
             // Mid-playback state races are not worth crashing over.
@@ -318,7 +324,8 @@ final class Audio implements GameCore.Sound {
                 rocketTrack.setLoopPoints(0, pcm.length, -1);
             }
             float p = Math.max(0f, Math.min(1f, thrust));
-            rocketTrack.setVolume(0.16f + 0.28f * p);
+            rocketGain=0.16f + 0.28f * p;
+            rocketTrack.setVolume(rocketGain * effectsVolume);
             rocketTrack.setPlaybackRate((int) (Sfx.RATE * (0.82f + 0.43f * p)));
             if (!rocketActive) {
                 mixRocket(true);
@@ -331,16 +338,24 @@ final class Audio implements GameCore.Sound {
     }
 
     /** Leaves a little headroom for the engine without muting the selected music. */
-    private void mixRocket(boolean on) {
+    private void mixRocket(boolean on) { rocketDucked=on; applyMusicMix(); }
+
+    @Override public void volumes(float music,float effects) {
+        musicVolume=music; effectsVolume=effects;
+        applyMusicMix();
         try {
-            if (bgmPlayer != null) {
-                float v = on ? 0.38f : 0.55f;
-                bgmPlayer.setVolume(v, v);
-            }
-            if (bgmTrack != null) bgmTrack.setVolume(on ? 0.68f : 1f);
-        } catch (Throwable ignored) {
-            // The engine still plays if music volume cannot be changed.
-        }
+            for(int i=0;i<tracks.length;i++) if(tracks[i]!=null) tracks[i].setVolume(effectGains[i]*effects);
+            if(rocketTrack!=null) rocketTrack.setVolume(rocketGain*effects);
+            if(bubbleTrack!=null) bubbleTrack.setVolume(bubbleVolume*effects);
+            if(effects==0f) hush();
+        } catch(Throwable ignored) {}
+    }
+    private void applyMusicMix() {
+        float gain=musicVolume*(rocketDucked?.68f:1f)*(ducked?.22f:1f);
+        try {
+            if(bgmPlayer!=null) bgmPlayer.setVolume(.55f*gain,.55f*gain);
+            if(bgmTrack!=null) bgmTrack.setVolume((bossPlaying?Music.BOSS_GAIN:1f)*gain);
+        } catch(Throwable ignored) {}
     }
 
     @Override public void tally(int nth) {
@@ -447,7 +462,7 @@ final class Audio implements GameCore.Sound {
             float p = Math.max(0f, Math.min(1f, charge));
             float target = p * 0.10f;
             bubbleVolume += (target - bubbleVolume) * 0.18f;
-            bubbleTrack.setVolume(bubbleVolume);
+            bubbleTrack.setVolume(bubbleVolume * effectsVolume);
             // Fixed-rate playback avoids resampler zipper noise. Once created, the zero-ended loop
             // keeps running silently between charges so no waveform is ever paused mid-cycle.
             if (!bubbleActive) {
@@ -505,6 +520,7 @@ final class Audio implements GameCore.Sound {
      * speech engine at all, and a missing voice must never be more than a missing voice.
      */
     @Override public void narrate(int entry) {
+        if(effectsVolume<=0f) return;
         if (ttsBroken) return;
         ttsPending = entry;
         if (tts != null) {
@@ -610,16 +626,15 @@ final class Audio implements GameCore.Sound {
      * Queues the whole reading at once: the name, the place, then the story in one piece, with a
      * beat of silence between them.
      *
-     * Volume is set explicitly to full. It is a scale of the music stream rather than a gain, so
-     * full is as loud as this can be made from here — the rest of "louder" is the music getting out
-     * of the way, which is what {@link #duck} does.
+     * Speech follows the effects volume; ducking keeps the selected music below it.
      */
     private void read(int entry) {
+        if(effectsVolume<=0f) { ttsPending=-1; return; }
         ttsPending = -1;
         try {
             String[] lines = Narration.lines(entry);
             android.os.Bundle params = new android.os.Bundle();
-            params.putFloat(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_VOLUME, 1f);
+            params.putFloat(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_VOLUME, effectsVolume);
             // One pitch for the whole reading, set once. See Narration for why it stopped moving.
             tts.setPitch(Narration.PITCH);
             duck(true);
@@ -653,20 +668,7 @@ final class Audio implements GameCore.Sound {
      * stream it plays on, so it cannot be pushed past what the music is already using — the way to
      * make a voice louder is to make everything else quieter.
      */
-    private void duck(boolean on) {
-        if (ducked == on) return;
-        ducked = on;
-        try {
-            // The custom track is mixed at 0.55 to begin with; the synth loop at unity.
-            if (bgmPlayer != null) {
-                float v = on ? 0.55f * 0.25f : 0.55f;
-                bgmPlayer.setVolume(v, v);
-            }
-            if (bgmTrack != null) bgmTrack.setVolume(on ? 0.22f : 1f);
-        } catch (Throwable ignored) {
-            // Ducking is a courtesy; failing at it must not stop the voice.
-        }
-    }
+    private void duck(boolean on) { ducked=on; applyMusicMix(); }
 
     void release() {
         stopMusic();

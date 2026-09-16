@@ -426,3 +426,24 @@ keeps these labels from overlapping during either transition.
 
 The settled **game-over summary** accepts a fresh tap anywhere to return to the title.
 The death and haul animations finish before dismissal becomes available. The returning gesture cannot start a new run, and the iOS pause button is hidden.
+
+## Player settings
+
+The title's **Settings** entry replaces the standalone privacy link. **Player** contains the privacy
+policy, independent music and sound-effects volume/mute controls, and **Kids Mode** for the next run.
+Drag the key-sized cat or slime along its slider; the handles have no hexagon frames. The cat goes from ukulele to electric guitar as
+music rises, with floating notes that grow with volume; mute removes its guitar and makes it sad.
+The slime whispers at low effects volume, shakes and yells with expanding sound waves at high
+volume, and covers its mouth when muted. Waves and notes stop when muted. Mute retains the slider level. Preferences
+are saved on the device and applied to audio on launch.
+
+The developer-only **Developer** tab groups **Run** (speed, music track, stage, next-run keys, End
+Run), **Powers** (frenzies and debuffs), **Minigames** (Star Path, Steamer, difficulty), and **Progress**
+(lands, release book, collection). Stage changes, End Run and playtests are disabled outside active
+play, including interludes; settings never starts a run implicitly.
+
+**Kids Mode** keeps lives and game over, runs gameplay at 45% speed, keeps four keys and two-letter
+unstacked words with early-stage pacing, and grants 600 ms for linked pairs. Regular play returns on
+the next run after switching it off. `PlayerSettings`, `SettingsArt`, and `SettingsInput` own the
+public preferences, character handles, and shared native input; `SettingsUi` and `DevSettings` own
+the developer groups.
