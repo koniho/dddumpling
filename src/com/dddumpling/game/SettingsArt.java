@@ -23,10 +23,10 @@ final class SettingsArt extends Draw {
             if(muted) {
                 // A rounded palm, three fingers and a short arm across the mouth.
                 p.line(x+r*.70f,y+r*.61f,x+r*.08f,my,col,r*.22f);
-                int hand=Glyph.mix(col,INK,.30f);
+                int hand=0xFF999CA5;
                 p.fillEllipse(x,my,r*.26f,r*.15f,hand);
                 for(int i=0;i<3;i++) p.fillCircle(x+r*(-.15f+i*.14f),my-r*.06f,r*.075f,hand);
-                p.line(x-r*.09f,my+r*.015f,x+r*.13f,my+r*.015f,col,r*.03f);
+                p.line(x-r*.09f,my+r*.015f,x+r*.13f,my+r*.015f,0xFF686B75,r*.03f);
             } else {
                 float h=r*(.025f+.34f*volume*(.8f+.2f*pulse));
                 p.fillEllipse(x,my,r*(.04f+.22f*volume),h,INK);
@@ -59,11 +59,20 @@ final class SettingsArt extends Draw {
     private static void guitar(Painter p,float x,float y,float r,float v,float clock,int paw) {
         float size=.55f+.3f*v, gx=x-r*.18f,gy=y+r*.57f,w=r*size;
         boolean electric=v>=.8f;
-        int wood=electric?Glyph.COLOR[1]:v<.35f?0xFFE9B878:0xFFBB784F;
+        int wood=electric?0xFF941C35:v<.35f?0xFFE9B878:0xFFBB784F;
         p.line(gx,gy,x+r*.77f,y+r*.05f,0xFF714A46,r*.16f);
-        if(electric) p.fillPoly(new float[]{gx-w*.6f,gy+w*.05f,gx-w*.2f,gy-w*.65f,
-                gx+w*.04f,gy-w*.27f,gx+w*.55f,gy-w*.45f,gx+w*.28f,gy+w*.2f,
-                gx+w*.5f,gy+w*.55f,gx-w*.5f,gy+w*.55f},wood);
+        if(electric) {
+            // Two swept wings and an open notch, aligned with the neck.
+            float[] body={.38f,0f,-.68f,-.65f,-.29f,0f,-.68f,.65f};
+            for(int i=0;i<body.length;i+=2) {
+                float along=body[i]*w,across=body[i+1]*w;
+                body[i]=gx+along*.866f+across*.5f;
+                body[i+1]=gy-along*.5f+across*.866f;
+            }
+            p.fillPoly(body,wood);
+            p.line(body[0],body[1],body[2],body[3],0xFFCF5363,r*.025f);
+            p.line(gx-r*.06f,gy-r*.10f,gx+r*.06f,gy+r*.10f,INK,r*.09f);
+        }
         else {
             p.fillEllipse(gx-w*.12f,gy+w*.17f,w*.48f,w*.42f,wood);
             p.fillEllipse(gx+w*.17f,gy-w*.13f,w*.34f,w*.31f,wood);
