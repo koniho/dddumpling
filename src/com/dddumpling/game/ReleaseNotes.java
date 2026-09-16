@@ -40,8 +40,10 @@ final class ReleaseNotes extends Draw {
         for(int release=0;release<VERSIONS.length;release++) height+=groupHeight(L,release);
         return height;
     }
-    static float panelHeight(Layout L) { return Math.min(contentHeight(L)+4f*size(L),L.h-L.topSafe-L.padB-3f*size(L)); }
-    static float top(Layout L) { return L.topSafe+(L.h-L.topSafe-L.padB-panelHeight(L))*.5f; }
+    static float panelLimit(Layout L) { return L.dangerY-size(L)*.6f; }
+    static float naturalHeight(Layout L) { return Math.min(contentHeight(L)+4f*size(L),L.h-L.topSafe-L.padB-3f*size(L)); }
+    static float panelHeight(Layout L) { return Math.min(naturalHeight(L),panelLimit(L)-top(L)); }
+    static float top(Layout L) { return L.topSafe+(L.h-L.topSafe-L.padB-naturalHeight(L))*.5f; }
     static float bottom(Layout L) { return top(L)+panelHeight(L); }
     static float listTop(Layout L) { return top(L)+3f*size(L); }
     static float listBottom(Layout L) { return bottom(L)-size(L); }
@@ -325,8 +327,8 @@ final class ReleaseNotes extends Draw {
         float height=listBottom(L)-listTop(L),max=maxScroll(L);
         if(max>0f) {
             float thumb=height*height/(height+max),y=listTop(L)+(height-thumb)*listScroll/max;
-            p.line(L.w*.935f,listTop(L),L.w*.935f,listBottom(L),0xFF463B59,s*.1f);
-            p.line(L.w*.935f,y,L.w*.935f,y+thumb,0xFFAE9ADA,s*.1f);
+            p.line(L.w*.935f,listTop(L),L.w*.935f,listBottom(L),Glyph.withAlpha(GOLD,65),s*.12f);
+            p.line(L.w*.935f,y,L.w*.935f,y+thumb,GOLD,s*.16f);
         }
     }
     private static void arrow(Painter p,float x,float y,int dir,float s) {

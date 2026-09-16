@@ -261,6 +261,9 @@ final class Preview {
             book.update(.2f,L);
         }
         shot(dir,"103-release-book-list",book,L,w,h,ss);
+        book.releaseNotes.listScroll=ReleaseNotes.maxScroll(L);
+        shot(dir,"103-release-book-oldest",book,L,w,h,ss);
+        book.releaseNotes.listScroll=0f;
         book.releaseNotes.select(0,0,L);book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
         shot(dir,"103-release-current-first",book,L,w,h,ss);
         book.releaseNotes.touch(book,L,L.w*.5f,(book.releaseNotes.demoTop(L)+book.releaseNotes.demoBottom(L))*.5f);
