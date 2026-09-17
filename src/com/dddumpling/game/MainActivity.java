@@ -233,6 +233,9 @@ public class MainActivity extends Activity implements GameCore.Store {
         prefs.edit().putInt(KEY_COLLECT_TOTAL, total).apply();
     }
 
+    @Override public int loadMineCarts() { return prefs.getInt("mineCarts", 0); }
+    @Override public void saveMineCarts(int carts) { prefs.edit().putInt("mineCarts", carts).apply(); }
+
     @Override public int loadStarWins() {
         return prefs.getInt(KEY_STAR_WINS, 0);
     }

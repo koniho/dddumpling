@@ -464,7 +464,45 @@ public final class IOSInputTest extends Check {
         game.touch(one(3,17,x+30,y));check("native cancel ends cave drag",c.cave.input.pointer<0);
     }
 
+    private static void caveBand() {
+        IOSGame game=game();GameCore c=game.core();Layout L=game.geometry();
+        c.startGame();c.jumpToStage(21,L);Interlude.enterBonus(c,L);
+        check("cave interlude selects band on iOS",c.band.active && !c.starBonus);
+        int g=c.band.glyph[0];c.band.position=CaveSong.at(c.band.song,0)+.25f;
+        game.touch(one(IOSTouch.ACTION_DOWN,42,c.keyX(L,g),c.keyY(L,g)),.25f);
+        check("UIKit event age reaches rhythm judge",c.band.hits==1);
+        game.touch(one(IOSTouch.ACTION_UP,42,c.keyX(L,g),c.keyY(L,g)));
+        check("lifting a key never plays an extra note",c.band.hits==1);
+        game.background(true);float before=c.band.position;game.update(2f);
+        check("background freezes cave performance",c.band.position==before && c.paused);
+    }
+
+    private static void caveMining() {
+        IOSGame game=game();GameCore c=game.core();Layout L=game.geometry();
+        c.startGame();c.jumpToStage(22,L);Interlude.enterBonus(c,L);CaveMining m=c.mining;m.ready=0;
+        check("iOS selects mining for second cave interlude",m.active && !c.band.active);
+        for(int load=0;load<5;load++)for(int i=0;i<m.length;i++) {
+            int g=m.sequence[i];tap(game,c.keyX(L,g),c.keyY(L,g));
+        }
+        check("native key taps fill cart after five sequences",m.swipeReady() && m.carts==0);
+        for(int g=0;g<6;g++)tap(game,c.keyX(L,g),c.keyY(L,g));
+        check("full cart ignores native key taps",m.loads==5 && m.carts==0);
+        float x=m.cartX*L.w,y=CaveMiningScreen.cartY(L);
+        game.touch(one(IOSTouch.ACTION_DOWN,42,x,y));
+        game.touch(two(IOSTouch.ACTION_POINTER_DOWN,1,42,x,y,43,x,y));
+        game.touch(two(IOSTouch.ACTION_POINTER_UP,1,42,x,y,43,x,y));
+        check("second UIKit finger cannot release cart",m.input.pointer==42);
+        game.touch(one(IOSTouch.ACTION_MOVE,42,x-L.w*.20f,y));
+        check("UIKit swipe sends cart left and saves progress",m.phase==CaveMining.PUSH && m.direction==-1
+                && m.carts==1 && ((Mem)c.store).mineCarts==1);
+        game.touch(one(IOSTouch.ACTION_UP,42,x-L.w*.20f,y));
+        check("lifting cannot dispatch again",m.carts==1);
+        game.background(true);check("background releases minecart pointer",m.input.pointer<0);
+    }
+
     public static void main(String[] args) {
+        caveMining();
+        caveBand();
         playerSettings();
         gameOverDismissal();
         cave();

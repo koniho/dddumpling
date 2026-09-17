@@ -12,6 +12,13 @@ final class Renderer extends Draw {
     private Renderer() {}
 
     static void draw(Painter p, GameCore c, Layout L) {
+        if (c.state == GameCore.BONUS && CaveInterlude.active(c)) {
+            if(c.mining.active) CaveMiningScreen.draw(p,c,L);
+            else CaveBandScreen.draw(p,c,L);
+            if(c.settingsOpen) PlayerSettings.draw(p,c,L);
+            Pause.draw(p,c,L);
+            return;
+        }
         if (c.state == GameCore.PLAY && c.monochromeFade > 0f) p = new MonochromePainter(p,c.monochromeFade);
         float harm = c.harm();
         // Low health drags the whole palette toward red, and the pulse quickens with it.

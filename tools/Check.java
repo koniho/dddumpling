@@ -77,6 +77,9 @@ abstract class Check {
         public void saveCollectionCounts(int[] v) { collectionCounts = v.clone(); }
         public int loadCollectTotal() { return collectTotal; }
         public void saveCollectTotal(int v) { collectTotal = v; collectTotalSaves++; }
+        int mineCarts, mineSaves;
+        public int loadMineCarts() { return mineCarts; }
+        public void saveMineCarts(int carts) { mineCarts=carts;mineSaves++; }
         public int loadStarWins() { return starWins; }
         public void saveStarWins(int v) { starWins = v; starWinSaves++; }
         public int loadSteamerOpens() { return steamerOpens; }
@@ -85,7 +88,7 @@ abstract class Check {
         public void saveRosterState(int v) { rosterState = v; rosterSaves++; }
     }
 
-    static final class Ear implements GameCore.Sound {
+    static class Ear implements GameCore.Sound {
         float musicVolume, effectsVolume, squishVolume;
         public void volumes(float music,float effects) { musicVolume=music;effectsVolume=effects; }
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeDamages, bossSplits,

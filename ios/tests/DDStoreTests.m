@@ -74,6 +74,7 @@
   [saved saveCollectTotalWithInt:27];
   [saved saveSteamerOpensWithInt:8];
   [saved saveStarWinsWithInt:3];
+  [saved saveMineCartsWithInt:4];
   [saved saveRosterStateWithInt:5];
   IOSByteArray *progress = [IOSByteArray arrayWithLength:4];
   progress->buffer_[0] = 9; progress->buffer_[3] = 6;
@@ -96,6 +97,7 @@
   XCTAssertEqual(loaded.loadCollectTotal, 27);
   XCTAssertEqual(loaded.loadSteamerOpens, 8);
   XCTAssertEqual(loaded.loadStarWins, 3);
+  XCTAssertEqual(loaded.loadMineCarts, 4);
   XCTAssertEqual(loaded.loadRosterState, 5);
   XCTAssertEqualObjects(loaded.progressReplica, writer);
   XCTAssertEqual([loaded loadProgress]->buffer_[0], 9);

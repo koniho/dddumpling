@@ -36,6 +36,7 @@ final class Interlude {
             if (c.sound != null) c.sound.achievement();
             return;
         }
+        if (CaveInterlude.enter(c)) return;
         c.starBonus = c.starNext;
         c.progress.startMinigame(c.starBonus);
         if (c.starBonus) {
@@ -149,6 +150,18 @@ final class Interlude {
                 ? Collect.rollCube(c.rnd, c.collected) : Collect.roll(c.rnd, c.collected);
         recordPrize(c, "steamer");
         // Scheduled, not started: it runs after the rest of the interlude has played out.
+        c.paradeTimer = GameCore.PARADE_TIME;
+    }
+
+    static void awardMiningPrize(GameCore c) {
+        c.prize = Collect.roll(c.rnd, c.collected);
+        recordPrize(c, "cave-mining");
+        c.paradeTimer = GameCore.PARADE_TIME;
+    }
+
+    static void awardBandPrize(GameCore c) {
+        c.prize = Collect.roll(c.rnd, c.collected);
+        recordPrize(c, "cave-band");
         c.paradeTimer = GameCore.PARADE_TIME;
     }
 

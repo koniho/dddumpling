@@ -183,6 +183,7 @@ public class GameView extends View {
             return true;
         }
 
+        if (handleMining(ev, action)) return true;
         if (handleCave(ev, action)) return true;
         if (handleBonusSwipe(ev, action)) return true;
 
@@ -225,7 +226,7 @@ public class GameView extends View {
             // Mash any key to hammer the steamer open.
             int mash = core.keyAt(x, y, layout);
             if (mash >= 0) {
-                core.tapBonus(mash);
+                core.tapBonus(mash, (android.os.SystemClock.uptimeMillis()-ev.getEventTime())/1000f);
                 tick();
             }
             return true;
@@ -268,6 +269,23 @@ public class GameView extends View {
     }
 
     private int landPointer = -1;
+    private boolean handleMining(MotionEvent ev,int action) {
+        CaveMiningInput input=core.mining.input;
+        if(!core.mining.active){input.release();return false;}
+        int i=ev.getActionIndex();
+        if(action==MotionEvent.ACTION_DOWN || action==MotionEvent.ACTION_POINTER_DOWN)
+            return input.down(core,layout,ev.getPointerId(i),ev.getX(i),ev.getY(i));
+        if(action==MotionEvent.ACTION_MOVE && input.pointer>=0) {
+            int owner=ev.findPointerIndex(input.pointer);
+            if(owner>=0)return input.move(core,layout,input.pointer,ev.getX(owner),ev.getY(owner));
+            input.release();return true;
+        }
+        if(action==MotionEvent.ACTION_CANCEL)input.release();
+        else if(action==MotionEvent.ACTION_UP || action==MotionEvent.ACTION_POINTER_UP)
+            input.up(ev.getPointerId(i));
+        return false;
+    }
+
     private boolean handleCave(MotionEvent ev, int action) {
         CaveInput input=core.cave.input;
         if (!Cave.active(core)) { input.release(); return false; }

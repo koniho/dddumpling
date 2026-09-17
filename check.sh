@@ -86,6 +86,13 @@ src/com/dddumpling/game/CaveDumpling.java
 src/com/dddumpling/game/CaveSelection.java
 src/com/dddumpling/game/CaveRoute.java
 src/com/dddumpling/game/CaveInput.java
+src/com/dddumpling/game/CaveSong.java
+src/com/dddumpling/game/CaveMining.java
+src/com/dddumpling/game/CaveMiningInput.java
+src/com/dddumpling/game/CaveMiningScreen.java
+src/com/dddumpling/game/CaveBand.java
+src/com/dddumpling/game/CaveInterlude.java
+src/com/dddumpling/game/CaveBandScreen.java
 src/com/dddumpling/game/Cave.java
 src/com/dddumpling/game/CaveTraps.java
 src/com/dddumpling/game/CaveArt.java

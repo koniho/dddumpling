@@ -195,6 +195,31 @@ final class TestAudio extends Check {
         check("and saved", store.bgm == Music.DRIFT && store.bgmSaves == 1);
         c.setBgm(99);
         check("an out-of-range choice is refused", c.bgmChoice == Music.DRIFT);
+
+        c.setBgm(Music.MARCH);
+        c.state = GameCore.PLAY;
+        c.jumpToStage(21, L);
+        check("cave entry selects LOFI DRIFT", ear.music == Music.DRIFT);
+        check("cave music preserves the saved choice", store.bgm == Music.MARCH);
+        c.jumpToStage(24, L);
+        c.startMusic();
+        check("later cave stages and resume keep LOFI DRIFT", ear.music == Music.DRIFT);
+        c.setBgm(Music.OFF);
+        check("cave music respects OFF", ear.music == Music.OFF);
+        c.setBgm(Music.MARCH);
+        check("enabling cave music restores LOFI DRIFT", ear.music == Music.DRIFT);
+        c.jumpToStage(19, L);
+        check("leaving the cave restores the selected track", ear.music == Music.MARCH);
+        c.jumpToStage(20, L);
+        check("ordinary bosses retain boss music", ear.bossMusic);
+        c.jumpToStage(21, L);
+        check("boss to cave switches to LOFI DRIFT", !ear.bossMusic && ear.music == Music.DRIFT);
+        c.toTitle();
+        check("title restores the selected track", ear.music == Music.MARCH);
+        c.allLandsEnabled = true;
+        c.landChoice = Cave.LAND;
+        c.startGame();
+        check("starting directly in the cave selects LOFI DRIFT", ear.music == Music.DRIFT);
     }
 
     static void audio(Layout L) {
