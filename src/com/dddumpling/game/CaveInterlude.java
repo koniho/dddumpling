@@ -2,6 +2,15 @@ package com.dddumpling.game;
 
 /** Cave games alternate by stage without changing the ordinary interlude's saved alternation. */
 final class CaveInterlude {
+    static void playtest(GameCore c,Layout L,boolean mining) {
+        if(!BuildFlags.DEVELOPER || c.state!=GameCore.PLAY || c.pendingBonus || c.starting())return;
+        c.closeSettings();
+        // Stage entry clears boss, frenzy and gestures before the real interlude opens.
+        c.jumpToStage(mining?22:21,L);
+        c.bossPrizePending=false;
+        c.spawnedThisStage=c.resolvedThisStage=c.stageQuota();
+        Interlude.enterBonus(c,L);
+    }
     static boolean active(GameCore c) {return c.band.active || c.mining.active;}
     static boolean miningStage(int stage) {return Cave.stage(stage) && (stage-21)%2!=0;}
     static boolean enter(GameCore c) {

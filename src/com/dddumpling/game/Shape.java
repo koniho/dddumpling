@@ -40,6 +40,8 @@ final class Shape {
         int leaf = Draw.fadeBy(known ? LEAF : body, fade);
         int stem = Draw.fadeBy(known ? STEM : body, fade);
         switch (s) {
+            case Collect.MOLE:
+            case Collect.SNAKE: CaveCollect.body(p,s,cx,cy,r,fill,trim,known); break;
             case Collect.BAO: bao(p, cx, cy, r, fill, gloss); break;
             case Collect.BUN: bun(p, cx, cy, r, fill, trim, gloss); break;
             case Collect.SHELL: shell(p, cx, cy, r, fill, trim, gloss); break;

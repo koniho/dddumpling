@@ -31,6 +31,8 @@ final class DevSettings extends Draw {
             label(p,u,u.testLabelY,"PLAY MINIGAME",s);
             chip(actions,u,u.testY,0,2,"STAR PATH",s,false);
             chip(actions,u,u.testY,1,2,"STEAMER",s,false);
+            chip(actions,u,u.caveY,0,2,"CAVE BAND",s,false);
+            chip(actions,u,u.caveY,1,2,"DUMPLING MINE",s,false);
             label(p,u,u.difficultyLabelY,"MINIGAME DIFFICULTY",s);
             chip(difficulty,u,u.difficultyY,0,1,"RESET MINIGAME DIFFICULTY",s,false);
             label(p,u,u.clearLabelY,"STEAMER TARGET: "+c.steamer.goal(),s);

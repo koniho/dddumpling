@@ -67,6 +67,7 @@ final class TestCaveBand extends Check {
         int count=c.collectTotal;c.update(.1f,L);
         check("full crystals award once",c.band.won && count==1 && c.collectTotal==1 && c.paradeTimer>0);
         check("award consumes exactly one goal",c.band.charge==0);
+        check("band completion awards a snake",Collect.FAMILY[c.prize]==Collect.SNAKES);
         c.update(CaveBand.REPORT+GameCore.PARADE_TIME+1,L);
         check("winning parade eventually resumes cave",c.state==GameCore.PLAY && !c.band.active);
         c=TestCave.game(L);Transport ear=new Transport();c.sound=ear;Interlude.enterBonus(c,L);

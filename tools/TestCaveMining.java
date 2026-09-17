@@ -57,6 +57,7 @@ final class TestCaveMining extends Check {
             c.update(CaveMining.PUSH_TIME,L);
         }
         check("fifth cart grants exactly one reward",m.won && c.collectTotal==1 && c.paradeTimer>0);
+        check("completed mine awards a mole",Collect.FAMILY[c.prize]==Collect.MOLES);
         check("reward resets saved cart progress",m.carts==0 && store.mineCarts==0);
         c.update(.1f,L);check("reward cannot repeat",c.collectTotal==1);
         c.update(CaveMining.REPORT_TIME+GameCore.PARADE_TIME+1,L);

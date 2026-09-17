@@ -9,6 +9,24 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void caveCollectFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(wanted("110")) {
+            RasterPainter p=new RasterPainter(w,h,ss);p.clear(Renderer.BG);
+            float cell=w/5f,top=h*.12f,gap=h*.21f,r=Math.min(cell*.36f,gap*.29f);
+            p.text("CAVE FRIENDS",w*.5f,h*.055f,w*.035f,Renderer.INK,Painter.CENTER,true);
+            for(int row=0;row<4;row++)for(int col=0;col<5;col++) {
+                int i=Collect.MOLE_FIRST+(row%2)*5+col;
+                float x=cell*(col+.5f),y=top+gap*row+r;
+                Trinket.draw(p,i,x,y,r,1.3f,row<2,1f);
+                p.text(row<2?Collect.NAME[i]:"???",x,y+r*1.6f,w*.014f,Renderer.INK,Painter.CENTER,true);
+            }
+            Png.write(new File(dir,"110-cave-families.png"),p.resolve(),w,h);
+        }
+        GameCore c=new GameCore(new Mem(),615L);c.collected=Collect.MASK;c.openCase();c.caseFade=1;
+        c.caseTo(Collect.MOLE_FIRST);shot(dir,"110-case-moles",c,L,w,h,ss);
+        c.caseTo(Collect.SNAKE_FIRST);shot(dir,"110-case-snakes",c,L,w,h,ss);
+    }
+
     private static void miningFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         GameCore c=TestCaveMining.game(L,new Check.Mem());CaveMining m=c.mining;
         shot(dir,"109-mine-start",c,L,w,h,ss);
@@ -44,7 +62,7 @@ final class Preview {
             c.band.position=CaveSong.at(song,25);c.band.badPulse=1;
             shot(dir,"108-band-fast-"+song,c,L,w,h,ss);
             c.band.position=CaveSong.duration(song);c.band.badPulse=0;
-            c.band.finished=true;c.band.report=2;c.band.won=true;c.band.paid=true;c.prize=0;
+            c.band.finished=true;c.band.report=2;c.band.won=true;c.band.paid=true;c.prize=Collect.SNAKE_FIRST+song;
             shot(dir,"108-band-win-"+song,c,L,w,h,ss);
             c.band.won=false;
             shot(dir,"108-band-retry-"+song,c,L,w,h,ss);
@@ -277,6 +295,7 @@ final class Preview {
         caveFrames(dir,L,w,h,ss);
         bandFrames(dir,L,w,h,ss);
         miningFrames(dir,L,w,h,ss);
+        caveCollectFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);
@@ -1831,7 +1850,7 @@ final class Preview {
      * the names and the labels landed on top of the row below.
      */
     private static void collectSheet(File dir, int w, int h, int ss) throws Exception {
-        grid(dir, w, h, ss, "0-collect", "THE FORTY-FIVE COLLECTIBLES",
+        grid(dir, w, h, ss, "0-collect", "THE "+Collect.COUNT+" COLLECTIBLES",
                 "EVERY ENTRY, COLLECTED", true);
         grid(dir, w, h, ss, "0-collect-unknown", "NOT YET COLLECTED",
                 "SILHOUETTE AND QUESTION MARK", false);

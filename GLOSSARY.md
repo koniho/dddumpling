@@ -440,7 +440,7 @@ volume, and covers its mouth when muted. Waves and notes stop when muted. Mute r
 are saved on the device and applied to audio on launch.
 
 The developer-only **Developer** tab groups **Run** (speed, stage, next-run keys, End
-Run), **Powers** (frenzies and debuffs), **Minigames** (Star Path, Steamer, difficulty), and **Progress**
+Run), **Powers** (frenzies and debuffs), **Minigames** (Star Path, Steamer, Cave Band, Dumpling Mine, difficulty), and **Progress**
 (lands, release book, collection). Stage changes, End Run and playtests are disabled outside active
 play, including interludes; settings never starts a run implicitly.
 
@@ -489,3 +489,12 @@ The **mining lantern** fades, its flame shrinks, and its pool of light contracts
 of mining/swiping time. The helper animation does not spend that time. Pause and settings freeze
 it. Time running out ends the attempt without taking a life; only delivered carts carry forward.
 `CaveMining`, `CaveMiningInput`, and `CaveMiningScreen` own rules, cart input, and rendering.
+
+Developer Cave Band and Dumpling Mine chips jump an active run to the stage 21 or 22 interlude.
+They retain band charge and delivered minecarts; finishing continues into the next cave expedition.
+
+**Burrow Moles** are five kawaii minecart rewards: Cocoa Dig, Rosy Scoop, Sleepy Shovel,
+Starnose, and Golden Burrow. **Cave Snakes** are five Cave Band rewards: Mint Noodle,
+Peach Coil, Berry Boa, Moon Ribbon, and Golden Hiss. Both have dedicated display-case rows,
+family stories, mystery silhouettes, and the Cave Friend tier. The catalogue has 59 entries;
+existing collectible IDs and normal reward pools stay unchanged. `CaveCollect` draws the new families.

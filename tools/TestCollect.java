@@ -22,9 +22,10 @@ final class TestCollect extends Check {
     }
 
     static void catalogue(Layout L) {
+        caveFamilies(L);
         group("collectible catalogue");
-        check("thirty blind, five star, ten cube and four boss entries", Collect.BLIND_COUNT == 30
-                && Collect.STAR_COUNT == 5 && Collect.CUBE_COUNT == 10 && Collect.BOSS_COUNT == Boss.COUNT && Collect.COUNT == 49);
+        check("original catalogue plus five moles and five snakes", Collect.BLIND_COUNT == 30
+                && Collect.STAR_COUNT == 5 && Collect.CUBE_COUNT == 10 && Collect.BOSS_COUNT == Boss.COUNT && Collect.MOLE_COUNT == 5 && Collect.SNAKE_COUNT == 5 && Collect.COUNT == 59);
         check("every table is the same length",
                 Collect.NAME.length == Collect.COUNT && Collect.FAMILY.length == Collect.COUNT
                         && Collect.SHAPE.length == Collect.COUNT
@@ -107,6 +108,47 @@ final class TestCollect extends Check {
             if (Collect.TIER_WEIGHT[t] >= Collect.TIER_WEIGHT[t - 1]) weightsFall = false;
         }
         check("rarer tiers are strictly rarer", weightsFall);
+    }
+
+    static void caveFamilies(Layout L) {
+        group("cave collectible families");
+        check("new IDs append without changing old saves",Collect.MOLE_FIRST==49 && Collect.SNAKE_FIRST==54 && Collect.COUNT<64);
+        java.util.Random rnd=new java.util.Random(612L);
+        long seen=0;boolean pools=true,otherPools=true;
+        for(int i=0;i<500;i++) {
+            for(boolean mining:new boolean[]{false,true}) {
+                int pick=Collect.rollCave(rnd,seen,mining);
+                pools&=Collect.FAMILY[pick]==(mining?Collect.MOLES:Collect.SNAKES);
+                seen=Collect.add(seen,pick);
+            }
+            otherPools&=Collect.roll(rnd,seen)<Collect.BLIND_COUNT
+                    && Collect.rollStar(rnd,seen)<Collect.CUBE_FIRST
+                    && Collect.rollCube(rnd,seen)<Collect.BOSS_FIRST;
+        }
+        check("each cave game awards only its own family",pools);
+        check("all ten cave friends are reachable",Collect.owned(seen)==10);
+        check("ordinary reward pools stay unchanged",otherPools);
+        Mem legacy=new Mem();legacy.collected=(1L<<49)-1;legacy.collectionCounts=new int[49];
+        legacy.collectionCounts[48]=3;
+        GameCore migrated=new GameCore(legacy,613L);
+        check("old catalogue counts migrate without granting new friends",migrated.collectionCounts[48]==3
+                && Collect.owned(migrated.collected)==49 && migrated.collectionCounts[58]==0);
+        migrated.cubeUnlocked=true;
+        Interlude.awardMiningPrize(migrated);int mole=migrated.prize;
+        Interlude.awardBandPrize(migrated);int snake=migrated.prize;
+        GameCore restored=new GameCore(legacy,614L);
+        check("cave prizes persist despite cube unlock",Collect.FAMILY[mole]==Collect.MOLES
+                && Collect.FAMILY[snake]==Collect.SNAKES && restored.collectionCounts[mole]==1
+                && restored.collectionCounts[snake]==1 && Collect.has(restored.collected,snake));
+        check("new families have distinct shelves",Showcase.row(mole)==7 && Showcase.row(snake)==8);
+        for(int i=Collect.MOLE_FIRST;i<Collect.COUNT;i++) {
+            int[] pixels;
+            RasterPainter p=new RasterPainter(160,160,1);p.clear(0xFF000000);
+            Trinket.draw(p,i,80,80,50,1f,true,1f);pixels=p.resolve();
+            RasterPainter unknown=new RasterPainter(160,160,1);unknown.clear(0xFF000000);
+            Trinket.draw(unknown,i,80,80,50,1f,false,1f);
+            check("cave friend has distinct owned and mystery artwork "+i,!java.util.Arrays.equals(pixels,unknown.resolve()));
+        }
     }
 
     static void ownedSet(Layout L) {
@@ -436,10 +478,10 @@ final class TestCollect extends Check {
         }
         check("wrap always lands inside the catalogue", wrapped);
 
-        boolean balanced = Showcase.ROW_NAME.length == 7;
+        boolean balanced = Showcase.ROW_NAME.length == 9;
         for (int row = 0; row < Showcase.ROW_NAME.length; row++)
             balanced &= Showcase.columns(row) >= (row == 6 ? 4 : 5) && Showcase.columns(row) <= 10;
-        check("seven categories hold between four and ten collectibles each", balanced);
+        check("nine categories hold between four and ten collectibles each", balanced);
         boolean fruitRow = true, candyRow = true;
         for (int i = 0; i < Collect.COUNT; i++) {
             if (Collect.FAMILY[i] == Collect.FRUITS && Showcase.row(i) != Showcase.FRUIT_ROW) fruitRow = false;

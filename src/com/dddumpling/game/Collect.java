@@ -3,13 +3,13 @@ package com.dddumpling.game;
 import java.util.Random;
 
 /**
- * The thirty collectible squishies — the catalogue, the blind-box odds, and the owned-set
+ * The collectible squishies — the catalogue, the blind-box odds, and the owned-set
  * bitmask that outlives a run.
  *
  * Three families, modelled on the real blind-box squishy scene: mystery dumplings (the bao
  * buns, with their glitter, holo and golden-ticket chases), squishy fruits, and squeeze
  * globs. Every entry here is described only by shape, finish, tier and colour — no brand
- * names and no artwork — because {@link Trinket} draws all thirty procedurally, and the
+ * names and no artwork — because {@link Trinket} draws them procedurally, and the
  * repo's licensing line depends on there being nothing to license.
  *
  * The table is parallel arrays rather than an object per entry: thirty of anything is a lot
@@ -19,16 +19,17 @@ import java.util.Random;
 final class Collect {
 
     static final int BLIND_COUNT = 30, STAR_FIRST = 30, STAR_COUNT = 5,
-            CUBE_FIRST = 35, CUBE_COUNT = 10, BOSS_FIRST = 45, BOSS_COUNT = 4, COUNT = 49;
+            CUBE_FIRST = 35, CUBE_COUNT = 10, BOSS_FIRST = 45, BOSS_COUNT = 4,
+            MOLE_FIRST = 49, MOLE_COUNT = 5, SNAKE_FIRST = 54, SNAKE_COUNT = 5, COUNT = 59;
 
     // ---- families -----------------------------------------------------------
-    static final int DUMPLINGS = 0, FRUITS = 1, GLOBS = 2, STARLINGS = 3, GEL_CUBES = 4, BOSSES = 5;
+    static final int DUMPLINGS = 0, FRUITS = 1, GLOBS = 2, STARLINGS = 3, GEL_CUBES = 4, BOSSES = 5, MOLES = 6, SNAKES = 7;
     static final String[] FAMILY_NAME = {"MYSTERY DUMPLINGS", "SQUISHY FRUITS",
-            "SQUEEZE GLOBS", "STARLINGS", "GELATINOUS CUBES", "BOSS FRIENDS"};
+            "SQUEEZE GLOBS", "STARLINGS", "GELATINOUS CUBES", "BOSS FRIENDS", "BURROW MOLES", "CAVE SNAKES"};
 
     // ---- rarity tiers -------------------------------------------------------
-    static final int COMMON = 0, UNCOMMON = 1, RARE = 2, CHASE = 3, GRAIL = 4, CUBE_TIER = 5, BOSS_TIER = 6;
-    static final String[] TIER_NAME = {"COMMON", "UNCOMMON", "RARE", "CHASE", "GRAIL", "CUBE", "BOSS FRIEND"};
+    static final int COMMON = 0, UNCOMMON = 1, RARE = 2, CHASE = 3, GRAIL = 4, CUBE_TIER = 5, BOSS_TIER = 6, CAVE_TIER = 7;
+    static final String[] TIER_NAME = {"COMMON", "UNCOMMON", "RARE", "CHASE", "GRAIL", "CUBE", "BOSS FRIEND", "CAVE FRIEND"};
     /** Frame and label colour per tier, climbing from plain to gold. */
     static final int[] TIER_COLOR = {
         0xFFA79DCC,   // common   - the dim ink
@@ -38,18 +39,19 @@ final class Collect {
         0xFFFFCE4A,   // grail    - gold
         0xFF75E6B1,   // cube     - slime mint
         0xFFFFD477,   // boss friend - victory gold
+        0xFFB9E6CB,
     };
     /**
      * Relative odds of one entry of that tier. Steep on purpose: a grail is forty times
      * less likely than any single common, which is what makes the case worth filling.
      */
-    static final int[] TIER_WEIGHT = {40, 16, 6, 2, 1, 0, 0};
+    static final int[] TIER_WEIGHT = {40, 16, 6, 2, 1, 0, 0, 0};
 
     // ---- shapes -------------------------------------------------------------
     static final int BAO = 0, BUN = 1, SHELL = 2, FIN = 3, CRESCENT = 4, WEDGE = 5,
             CLUSTER = 6, POME = 7, CITRUS = 8, GLOB = 9, CUBE = 10, GUM = 11, RING = 12,
-            CONE = 13, DROP = 14, STAR = 15, GEL_CUBE = 16;
-    static final int SHAPE_COUNT = 17;
+            CONE = 13, DROP = 14, STAR = 15, GEL_CUBE = 16, MOLE = 17, SNAKE = 18;
+    static final int SHAPE_COUNT = 19;
 
     // ---- finishes -----------------------------------------------------------
     static final int MATTE = 0, GLITTER = 1, HOLO = 2, GALAXY = 3, METALLIC = 4, CLEAR = 5,
@@ -71,6 +73,7 @@ final class Collect {
         "LIME LIMBO", "BERRY BLOCK", "MINT MATRIX", "PEACH PRISM", "COLA CUBIE",
         "GRAPE GLITCH", "AQUA WOBBLE", "SUNSET SLAB", "ROYAL GEL", "JELLO JULEP",
         "SLIME BUD", "DIVIDE CUB", "OCTO PIP", "AGARIC BUD",
+        "COCOA DIG", "ROSY SCOOP", "SLEEPY SHOVEL", "STARNOSE", "GOLDEN BURROW", "MINT NOODLE", "PEACH COIL", "BERRY BOA", "MOON RIBBON", "GOLDEN HISS",
     };
 
     static final int[] FAMILY = {
@@ -80,6 +83,7 @@ final class Collect {
         3, 3, 3, 3, 3,
         4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
         5, 5, 5, 5,
+        MOLES, MOLES, MOLES, MOLES, MOLES, SNAKES, SNAKES, SNAKES, SNAKES, SNAKES,
     };
 
     static final int[] SHAPE = {
@@ -90,6 +94,7 @@ final class Collect {
         GEL_CUBE, GEL_CUBE, GEL_CUBE, GEL_CUBE, GEL_CUBE,
         GEL_CUBE, GEL_CUBE, GEL_CUBE, GEL_CUBE, GEL_CUBE,
         GLOB, GEL_CUBE, GLOB, BAO,
+        MOLE, MOLE, MOLE, MOLE, MOLE, SNAKE, SNAKE, SNAKE, SNAKE, SNAKE,
     };
 
     static final int[] FINISH = {
@@ -100,6 +105,7 @@ final class Collect {
         MATTE, GLITTER, HOLO, GALAXY, METALLIC,
         CLEAR, GLITTER, MATTE, HOLO, CLEAR, GALAXY, GLOW, TIEDYE, METALLIC, CONFETTI,
         MATTE, MATTE, MATTE, MATTE,
+        MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, MATTE,
     };
 
     static final int[] TIER = {
@@ -111,6 +117,7 @@ final class Collect {
         CUBE_TIER, CUBE_TIER, CUBE_TIER, CUBE_TIER, CUBE_TIER,
         CUBE_TIER, CUBE_TIER, CUBE_TIER, CUBE_TIER, CUBE_TIER,
         BOSS_TIER, BOSS_TIER, BOSS_TIER, BOSS_TIER,
+        CAVE_TIER, CAVE_TIER, CAVE_TIER, CAVE_TIER, CAVE_TIER, CAVE_TIER, CAVE_TIER, CAVE_TIER, CAVE_TIER, CAVE_TIER,
     };
 
     /** Body fill. */
@@ -126,6 +133,7 @@ final class Collect {
         0xFF9EF27B, 0xFFFF7FB3, 0xFF86E8C4, 0xFFFFB07C, 0xFFB87952,
         0xFFA98AF3, 0xFF79DDF2, 0xFFFF8D72, 0xFFE9D45B, 0xFFFFD36E,
         0xFF96E6A2, 0xFF84D6A0, 0xFFD967DC, 0xFFEE2928,
+        0xFFAA7969, 0xFFEBA4B9, 0xFFADA3D2, 0xFF829EBF, 0xFFE8BC58, 0xFF8CD5AD, 0xFFFFBA98, 0xFFBA95DF, 0xFF8FBBDD, 0xFFF2CD66,
     };
 
     /**
@@ -144,6 +152,7 @@ final class Collect {
         0xFFDFFFF0, 0xFFFFD8EA, 0xFFCFFFF0, 0xFFFFE1CC, 0xFFF1C7A8,
         0xFFE1D8FF, 0xFFD8F8FF, 0xFFFFD65C, 0xFFFFF1A8, 0xFFFFF3C4,
         0xFFD8FFE3, 0xFF458D70, 0xFFFFC7AB, 0xFFFFF0D5,
+        0xFFFFD7B8, 0xFFFFDFDA, 0xFFE7E2FF, 0xFFFFBECF, 0xFFFFEDB2, 0xFFE5F8C3, 0xFFFFE8CB, 0xFFF7DBF0, 0xFFE4F4FF, 0xFFFFF1C9,
     };
 
     private Collect() {}
@@ -218,6 +227,13 @@ final class Collect {
         int pick = CUBE_FIRST + rnd.nextInt(CUBE_COUNT);
         for (int t = 0; t < REROLLS && has(owned, pick); t++)
             pick = CUBE_FIRST + rnd.nextInt(CUBE_COUNT);
+        return pick;
+    }
+
+    static int rollCave(Random rnd,long owned,boolean mining) {
+        int first=mining?MOLE_FIRST:SNAKE_FIRST, count=mining?MOLE_COUNT:SNAKE_COUNT;
+        int pick=first+rnd.nextInt(count);
+        for(int t=0;t<REROLLS && has(owned,pick);t++)pick=first+rnd.nextInt(count);
         return pick;
     }
 

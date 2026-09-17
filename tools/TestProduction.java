@@ -69,6 +69,8 @@ final class TestProduction extends Check {
         c.playtestMode(Power.FLING,L);
         c.playtestStars(L);
         c.playtestSteamer(L);
+        CaveInterlude.playtest(c,L,false);
+        CaveInterlude.playtest(c,L,true);
         c.jumpToStage(20,L);
         c.endCurrentRun();
         check("playtest actions cannot start modes, skip stages or end a run",

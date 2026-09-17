@@ -154,13 +154,13 @@ final class Interlude {
     }
 
     static void awardMiningPrize(GameCore c) {
-        c.prize = Collect.roll(c.rnd, c.collected);
+        c.prize = Collect.rollCave(c.rnd, c.collected, true);
         recordPrize(c, "cave-mining");
         c.paradeTimer = GameCore.PARADE_TIME;
     }
 
     static void awardBandPrize(GameCore c) {
-        c.prize = Collect.roll(c.rnd, c.collected);
+        c.prize = Collect.rollCave(c.rnd, c.collected, false);
         recordPrize(c, "cave-band");
         c.paradeTimer = GameCore.PARADE_TIME;
     }

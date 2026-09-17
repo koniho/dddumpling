@@ -96,3 +96,11 @@ Android static audio must receive the PCM before checking for `STATE_INITIALIZED
 created static track reports `STATE_NO_STATIC_DATA`. `tools/test-band-audio.py` exercises the
 real adapter against this lifecycle, including playback-clock timing across tempo changes,
 mute, pause, cleanup, and a rejected PCM write. The headless check runs it automatically.
+
+Developer Minigames includes Cave Band and Dumpling Mine launch chips for active runs; they
+enter the real stage 21/22 interludes and preserve accumulated progress.
+
+Cave rewards now have exclusive five-member families: Burrow Moles for mining and Cave Snakes
+for band performances. IDs 49–58 append to the existing catalogue, keeping saved collections
+compatible. Each friend has a dedicated drawing, family story and vignette; both families have
+their own case row. Normal blind boxes, Star Path, cubes and boss prizes keep their pools.
