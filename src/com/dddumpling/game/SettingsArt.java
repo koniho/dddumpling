@@ -56,7 +56,7 @@ final class SettingsArt extends Draw {
             p.line(nx+h*.16f,ny-h,nx+h*.48f,ny-h*.77f,color,h*.13f);
         }
     }
-    private static void guitar(Painter p,float x,float y,float r,float v,float clock,int paw) {
+    static void guitar(Painter p,float x,float y,float r,float v,float clock,int paw) {
         float size=.55f+.3f*v, gx=x-r*.18f,gy=y+r*.57f,w=r*size;
         boolean electric=v>=.8f;
         int wood=electric?0xFF941C35:v<.35f?0xFF287E89:0xFFBB784F;

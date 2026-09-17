@@ -9,6 +9,48 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void miningFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        GameCore c=TestCaveMining.game(L,new Check.Mem());CaveMining m=c.mining;
+        shot(dir,"109-mine-start",c,L,w,h,ss);
+        m.ready=0;c.tapBonus(m.sequence[0]);
+        shot(dir,"109-mine-sequence",c,L,w,h,ss);
+        c.tapBonus(m.sequence[1]);m.falling[0]=CaveMining.DROP*.5f;
+        shot(dir,"109-mine-falling-rocks",c,L,w,h,ss);
+        TestCaveMining.fill(c);for(int i=0;i<m.loads;i++)m.falling[i]=0;
+        shot(dir,"109-mine-full-cart",c,L,w,h,ss);
+        m.launch(c,1);m.update(c,.50f);
+        shot(dir,"109-mine-helpers",c,L,w,h,ss);
+        m.update(c,CaveMining.PUSH_TIME);
+        shot(dir,"109-mine-three-keys",c,L,w,h,ss);
+        TestCaveMining.fill(c);m.launch(c,-1);m.update(c,CaveMining.PUSH_TIME);
+        m.left=CaveMining.TIME*.18f;
+        shot(dir,"109-mine-four-keys-dim",c,L,w,h,ss);
+        m.update(c,CaveMining.TIME);
+        shot(dir,"109-mine-timeout",c,L,w,h,ss);
+        m.carts=4;m.begin(c);m.ready=0;TestCaveMining.fill(c);m.launch(c,1);
+        c.update(CaveMining.PUSH_TIME,L);
+        shot(dir,"109-mine-reward",c,L,w,h,ss);
+        c.update(CaveMining.REPORT_TIME+.01f,L);
+        shot(dir,"109-mine-parade",c,L,w,h,ss);
+    }
+
+    private static void bandFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        for(int song=0;song<CaveSong.COUNT;song++) {
+            GameCore c=TestCave.game(L);c.stage=21+song*2;Interlude.enterBonus(c,L);
+            c.stage=21+song;c.band.begin(c);
+            shot(dir,"108-band-count-in-"+song,c,L,w,h,ss);
+            c.band.position=CaveSong.at(song,8);c.band.charge=17;c.band.pulse=1;
+            shot(dir,"108-band-play-"+song,c,L,w,h,ss);
+            c.band.position=CaveSong.at(song,25);c.band.badPulse=1;
+            shot(dir,"108-band-fast-"+song,c,L,w,h,ss);
+            c.band.position=CaveSong.duration(song);c.band.badPulse=0;
+            c.band.finished=true;c.band.report=2;c.band.won=true;c.band.paid=true;c.prize=0;
+            shot(dir,"108-band-win-"+song,c,L,w,h,ss);
+            c.band.won=false;
+            shot(dir,"108-band-retry-"+song,c,L,w,h,ss);
+        }
+    }
+
     private static void caveFrames(File dir, Layout L, int w, int h, int ss) throws Exception {
         GameCore c=new GameCore(new Mem(),921L);c.caveChoice=0;c.startGame();c.jumpToStage(21,L);
         c.landBlend=1f;c.update(.6f,L);
@@ -236,6 +278,8 @@ final class Preview {
         }
 
         caveFrames(dir,L,w,h,ss);
+        bandFrames(dir,L,w,h,ss);
+        miningFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);
@@ -1702,6 +1746,9 @@ final class Preview {
             for (int i = 0; i < loop.length; i++) lmax = Math.max(lmax, Math.abs(loop[i]));
             System.out.printf("  wrote bgm-%-12s %.2fs peak=%d%n", slug,
                     (float) loop.length / Sfx.RATE, lmax);
+        }
+        for(int song=0;song<CaveSong.COUNT;song++) {
+            Wav.write(new File(sfxDir,"cave-band-"+song+".wav"),CaveSong.performance(song),Sfx.RATE);
         }
         short[] fren = Music.loop(Music.SWING_STYLE, true);
         short[] boss = Music.bossLoop(Music.SWING_STYLE);

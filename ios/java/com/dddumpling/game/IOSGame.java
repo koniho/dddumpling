@@ -62,7 +62,8 @@ public final class IOSGame {
     public void layout(float width, float height, float left, float top, float right, float bottom) {
         if (width > 0 && height > 0) layout.compute(width, height, left, top, right, bottom);
     }
-    public boolean touch(IOSTouch ev) {
+    public boolean touch(IOSTouch ev) { return touch(ev,0f); }
+    public boolean touch(IOSTouch ev,float inputAge) {
         if (background) return true;
         if (ev.getActionMasked() == IOSTouch.ACTION_CANCEL) { cancelPointers(); return true; }
         if (core.paused) {
@@ -123,6 +124,7 @@ public final class IOSGame {
             return true;
         }
 
+        if (handleMining(ev, action)) return true;
         if (handleCave(ev, action)) return true;
         if (handleBonusSwipe(ev, action)) return true;
 
@@ -165,7 +167,7 @@ public final class IOSGame {
             // Mash any key to hammer the steamer open.
             int mash = core.keyAt(x, y, layout);
             if (mash >= 0) {
-                core.tapBonus(mash);
+                core.tapBonus(mash,inputAge);
                 tick();
             }
             return true;
@@ -208,6 +210,23 @@ public final class IOSGame {
     }
 
     private int landPointer = -1;
+    private boolean handleMining(IOSTouch ev,int action) {
+        CaveMiningInput input=core.mining.input;
+        if(!core.mining.active){input.release();return false;}
+        int i=ev.getActionIndex();
+        if(action==IOSTouch.ACTION_DOWN || action==IOSTouch.ACTION_POINTER_DOWN)
+            return input.down(core,layout,ev.getPointerId(i),ev.getX(i),ev.getY(i));
+        if(action==IOSTouch.ACTION_MOVE && input.pointer>=0) {
+            int owner=ev.findPointerIndex(input.pointer);
+            if(owner>=0)return input.move(core,layout,input.pointer,ev.getX(owner),ev.getY(owner));
+            input.release();return true;
+        }
+        if(action==IOSTouch.ACTION_CANCEL)input.release();
+        else if(action==IOSTouch.ACTION_UP || action==IOSTouch.ACTION_POINTER_UP)
+            input.up(ev.getPointerId(i));
+        return false;
+    }
+
     private boolean handleCave(IOSTouch ev, int action) {
         CaveInput input=core.cave.input;
         if (!Cave.active(core)) { input.release(); return false; }

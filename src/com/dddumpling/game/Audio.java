@@ -21,6 +21,7 @@ final class Audio implements GameCore.Sound {
     private final AudioTrack[] tracks = new AudioTrack[Sfx.COUNT];
     private boolean broken;
 
+    private final CaveBandAudio band = new CaveBandAudio();
     private final Context ctx;
     private AudioTrack bgmTrack;
     private boolean musicPaused;
@@ -67,8 +68,19 @@ final class Audio implements GameCore.Sound {
         selectMusic(choice < 0 ? Music.SWING_STYLE : choice);
     }
 
+    @Override public void bandStart(int song, boolean muted) {
+        musicMode = -1; bossPlaying = frenzyPlaying = false;
+        band.start(song,muted); stopMusic(); band.volume(musicVolume);
+    }
+    @Override public float bandTime() { return band.time(); }
+    @Override public void bandNote(int song,int note) { band.note(note); }
+    @Override public void bandPause(boolean paused) { band.pause(paused,false); }
+    @Override public void bandStop() { band.stop(); musicMode = -1; }
+    @Override public void bandMuted(boolean muted) { band.muted(muted); }
+
     @Override public void selectMusic(final int style) {
         choice = style;
+        if (band.active()) return;
         bgmStarted = true;
         if (musicMode == 0 && playingStyle == style) return;
         musicMode = 0;
@@ -151,6 +163,7 @@ final class Audio implements GameCore.Sound {
             mp.setLooping(true);
             mp.setVolume(0.55f * musicVolume, 0.55f * musicVolume);
             synchronized (this) {
+                if (band.active()) { mp.release(); return true; }
                 bgmPlayer = mp;
                 applyMusicMix();
                 if (!musicPaused) mp.start();
@@ -187,6 +200,7 @@ final class Audio implements GameCore.Sound {
 
     /** A track prepared in the background must honor a pause that happened while it was loading. */
     private synchronized void startPreparedMusic(AudioTrack track) {
+        if (band.active()) { track.release(); return; }
         bgmTrack = track;
         applyMusicMix();
         if (!musicPaused) track.play();
@@ -194,6 +208,7 @@ final class Audio implements GameCore.Sound {
 
     synchronized void pauseMusic() {
         musicPaused = true;
+        band.pause(true,true);
         try {
             if (bgmPlayer != null) bgmPlayer.pause();
             if (bgmTrack != null) bgmTrack.pause();
@@ -205,6 +220,7 @@ final class Audio implements GameCore.Sound {
 
     synchronized void resumeMusic() {
         musicPaused = false;
+        band.pause(false,true);
         try {
             if (bgmPlayer != null) bgmPlayer.start();
             if (bgmTrack != null) bgmTrack.play();
@@ -351,6 +367,7 @@ final class Audio implements GameCore.Sound {
         } catch(Throwable ignored) {}
     }
     private void applyMusicMix() {
+        band.volume(musicVolume);
         float gain=musicVolume*(rocketDucked?.68f:1f)*(ducked?.22f:1f);
         try {
             if(bgmPlayer!=null) bgmPlayer.setVolume(.55f*gain,.55f*gain);
@@ -671,6 +688,7 @@ final class Audio implements GameCore.Sound {
     private void duck(boolean on) { ducked=on; applyMusicMix(); }
 
     void release() {
+        band.stop();
         stopMusic();
         try {
             if (rocketTrack != null) rocketTrack.release();

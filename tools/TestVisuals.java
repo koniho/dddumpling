@@ -1079,10 +1079,11 @@ final class TestVisuals extends Check {
         check("the fall floor still applies at max speed", c.travelSeconds() > 0f);
 
         // Music selection persists and notifies the audio layer.
+        int musicCalls = ear.musicCalls;
         c.setBgm(Music.MARCH);
         check("music choice applies", c.bgmChoice == Music.MARCH);
         check("music choice persists", store.bgm == Music.MARCH && store.bgmSaves == 1);
-        check("the audio layer is told", ear.music == Music.MARCH && ear.musicCalls == 1);
+        check("the audio layer is told", ear.music == Music.MARCH && ear.musicCalls == musicCalls + 1);
         c.setBgm(-1);
         check("a bogus low choice is ignored", c.bgmChoice == Music.MARCH);
         c.setBgm(Music.NAMES.length);

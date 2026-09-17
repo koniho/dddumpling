@@ -414,6 +414,8 @@ one life when walked over. A **cave-in** uses sideways dragging to dodge falling
 landing shadows; **quicksand** uses alternating character keys to escape. Reaching the **exit**
 completes the stage. `CaveRoute`, `Cave`, `CaveTraps`, `CaveInput`, `CaveScreen`, and `CaveArt`
 separate route content, rules, controls, and drawing. See [cave design](docs/plans/cave-expedition.md).
+Normal cave play uses **LOFI DRIFT**, respecting music volume and mute; leaving the cave restores
+the selected regular track.
 
 The **explorer selection** (`CaveSelection`) appears on first cave entry. Choose cream, rainbow,
 golden, silver, sparkly mint, or purple; that finish persists across cave levels and restarts.
@@ -447,3 +449,43 @@ unstacked words with early-stage pacing, and grants 600 ms for linked pairs. Reg
 the next run after switching it off. `PlayerSettings`, `SettingsArt`, and `SettingsInput` own the
 public preferences, character handles, and shared native input; `SettingsUi` and `DevSettings` own
 the developer groups.
+
+
+## Cave band interlude
+
+**Cave Band** alternates with Dumpling Mine after cave expeditions, starting with the band at stage 21. The explorer dumpling plays
+lead guitar alongside a drummer, bassist, and keyboard player. Character notes scroll right to
+left; press the matching deck key at the gold strike line. Four drumstick ticks count in each
+performance. Eight hanging crystals extinguish bar by bar, showing the song's remaining time.
+
+Three original eight-bar songs rotate: **Crystal Crunch** (90/110/130 BPM), **Tunnel Trouble**
+(110/135/160 BPM), and **Bat Outta Bedrock** (125/150/175 BPM). Tempo changes after bars three
+and six. The score, note positions, and judging share the audio timeline; pause freezes all three.
+The normal hit window is ±140 ms; Kids Mode widens it without slowing the music. Misses do not
+cost lives. Forty successful notes charge a collectible reward and one life, capped at the usual
+maximum. Partial charge carries between cave interludes in the same run. The ordinary Steamer /
+Star Path alternation is preserved outside caves.
+
+`CaveSong` owns the scores and synthesized music; `CaveBand` owns judging and progress;
+`CaveBandScreen` draws the band; `CaveInterlude` selects and closes cave minigames.
+See [the cave minigame plan](docs/plans/cave-minigames.md) for both games.
+
+
+## Dumpling Mine interlude
+
+**Dumpling Mine** alternates with Cave Band, beginning after cave stage 22. Complete the displayed
+character sequence five times to fill a **minecart** with falling rocks. The first cart repeats a
+two-key sequence; subsequent carts use three, then four distinct keys. Four remains the maximum.
+The sequence stays fixed for that cart. Wrong presses restart only the current sequence and cost
+no life. Completed repetitions remain in the cart during that attempt.
+
+A full cart hides the sequence and dims the keyboard. Swipe the cart left or right to send it
+along the track; four dumpling helpers run in to push it offscreen. Keys cannot add rocks while
+it is full or being pushed. Delivered carts are saved immediately and survive new runs and app
+restarts. Five delivered carts earn one collectible and a capped extra life, then reset the saved
+cart count for the next reward.
+
+The **mining lantern** fades, its flame shrinks, and its pool of light contracts over 18 seconds
+of mining/swiping time. The helper animation does not spend that time. Pause and settings freeze
+it. Time running out ends the attempt without taking a life; only delivered carts carry forward.
+`CaveMining`, `CaveMiningInput`, and `CaveMiningScreen` own rules, cart input, and rendering.
