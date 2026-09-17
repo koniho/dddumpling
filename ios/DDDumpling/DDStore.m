@@ -218,8 +218,6 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
   return isfinite(value) ? value : 1.f;
 }
 - (void)saveSpeedWithFloat:(jfloat)speed { [self setValue:@(speed) forKey:@"speed"]; }
-- (jint)loadBgm { return [self intForKey:@"bgm" defaultValue:0]; }
-- (void)saveBgmWithInt:(jint)choice { [self setValue:@(choice) forKey:@"bgm"]; }
 
 - (jlong)loadCollected {
   NSNumber *value = [self numberForKey:@"collected"];

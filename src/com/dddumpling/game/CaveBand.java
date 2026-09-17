@@ -16,7 +16,7 @@ final class CaveBand {
             glyph[i]=Roster.at(c.playRosterFull(),(CaveSong.RIFF[song][i%8]+i/4)%Roster.count(c.playRosterFull()));
             result[i]=CaveSong.cue(song,i)?0:2;
         }
-        if(c.sound!=null)c.sound.bandStart(song,c.bgmChoice==Music.OFF);
+        if(c.sound!=null)c.sound.bandStart(song,false);
     }
     void sample(GameCore c,float elapsed) {
         float audio=c.sound==null?-1:c.sound.bandTime();

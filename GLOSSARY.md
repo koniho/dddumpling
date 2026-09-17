@@ -288,7 +288,7 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **start tone** | new game | `Sfx.START` |
 | **stage clear tone** | a stage ending normally | `Sfx.STAGE_CLEAR` |
 | **power clear tone** | a frenzy ending a stage; replaces the stage tone | `Sfx.POWER_CLEAR` |
-| **BGM** | the looping track: MOOG SWING, LOFI DRIFT, CHIP MARCH, OFF, MY TRACK | `Music.NAMES` |
+| **BGM** | the automatic looping track: MOOG SWING normally, LOFI DRIFT in caves | `Music.NAMES` |
 | **frenzy track** | the faster four-on-the-floor variant | `Music.loop(style, true)` |
 
 ## Terms that are easy to mix up
@@ -415,7 +415,7 @@ landing shadows; **quicksand** uses alternating character keys to escape. Reachi
 completes the stage. `CaveRoute`, `Cave`, `CaveTraps`, `CaveInput`, `CaveScreen`, and `CaveArt`
 separate route content, rules, controls, and drawing. See [cave design](docs/plans/cave-expedition.md).
 Normal cave play uses **LOFI DRIFT**, respecting music volume and mute; leaving the cave restores
-the selected regular track.
+MOOG SWING.
 
 The **explorer selection** (`CaveSelection`) appears on first cave entry. Choose cream, rainbow,
 golden, silver, sparkly mint, or purple; that finish persists across cave levels and restarts.
@@ -439,7 +439,7 @@ The slime whispers at low effects volume, shakes and yells with expanding sound 
 volume, and covers its mouth when muted. Waves and notes stop when muted. Mute retains the slider level. Preferences
 are saved on the device and applied to audio on launch.
 
-The developer-only **Developer** tab groups **Run** (speed, music track, stage, next-run keys, End
+The developer-only **Developer** tab groups **Run** (speed, stage, next-run keys, End
 Run), **Powers** (frenzies and debuffs), **Minigames** (Star Path, Steamer, difficulty), and **Progress**
 (lands, release book, collection). Stage changes, End Run and playtests are disabled outside active
 play, including interludes; settings never starts a run implicitly.

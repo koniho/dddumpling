@@ -176,8 +176,6 @@ final class GameCore {
         default void savePlayerSettings(int value) {}
         float loadSpeed();
         void saveSpeed(float speed);
-        int loadBgm();
-        void saveBgm(int choice);
         /** The collected-squishy bitmask; see {@link Collect}. */
         long loadCollected();
         void saveCollected(long owned);
@@ -489,7 +487,6 @@ final class GameCore {
     static final float SPEED_MIN = 0.5f, SPEED_MAX = 1.5f;
     /** Pacing multiplier: >1 makes words fall and arrive faster. */
     float speed = 1f;
-    int bgmChoice;
     /** While true the simulation is frozen and the settings panel is showing. */
     boolean settingsOpen;
     int settingsPage;
@@ -1437,9 +1434,6 @@ final class GameCore {
             landBests[0] = Math.max(landBests[0], best);
             preferences.load(store.loadPlayerSettings());
             speed = BuildFlags.DEVELOPER ? clampSpeed(store.loadSpeed()) : 1f;
-            bgmChoice = BuildFlags.DEVELOPER
-                    ? Math.max(0, Math.min(Music.NAMES.length - 1, store.loadBgm()))
-                    : Music.defaultChoice(false);
             // Masked: a store that hands back junk in the high bits must not make
             // Collect.owned() report more than there are entries.
             collected = store.loadCollected() & Collect.MASK;
@@ -1604,15 +1598,7 @@ final class GameCore {
         }
     }
 
-    /**
-     * Announces the loaded music choice to the audio backend.
-     *
-     * Separate from the constructor because {@link #sound} is attached afterwards, and separate
-     * from {@link #setBgm} because nothing here changes — this only tells the backend what was
-     * already loaded. Without it the choice was never announced at all: the backend fell back
-     * to the first synth track on every launch, so the stored preference and the first-run
-     * default both did nothing until the player opened settings and picked something.
-     */
+    /** The native backend is attached after construction. */
     void startMusic() {
         preferences.apply(this);
         if (band.active) return;
@@ -1623,23 +1609,7 @@ final class GameCore {
     }
 
     private int normalMusicChoice() {
-        return state != TITLE && Cave.stage(stage) && bgmChoice != Music.OFF
-                ? Music.DRIFT : bgmChoice;
-    }
-
-    void setBgm(int choice) {
-        if (!BuildFlags.DEVELOPER) return;
-        if (choice < 0 || choice >= Music.NAMES.length) return;
-        bgmChoice = choice;
-        if (store != null) store.saveBgm(choice);
-        if (band.active) {
-            if (sound != null) sound.bandMuted(choice == Music.OFF);
-            return;
-        }
-        if (sound != null) {
-            if (boss.active()) sound.bossMusic(true);
-            else sound.selectMusic(normalMusicChoice());
-        }
+        return state != TITLE && Cave.stage(stage) ? Music.DRIFT : Music.SWING_STYLE;
     }
 
     // ---- stage pacing -------------------------------------------------------
@@ -1819,7 +1789,7 @@ final class GameCore {
         Pause.resume(this);
         boolean hadHaul = state == OVER && roundPrizes != 0L;
         state = TITLE;
-        if (sound != null) sound.selectMusic(bgmChoice);
+        if (sound != null) sound.selectMusic(normalMusicChoice());
         progress.apply(this);
         time = 0;
         deathT = 0f;

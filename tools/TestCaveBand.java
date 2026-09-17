@@ -80,8 +80,10 @@ final class TestCaveBand extends Check {
         check("pause freezes song and input",ear.paused && c.band.position==pos && ear.notes==1);
         Pause.resume(c);check("resume releases transport",!ear.paused);
         c.openSettings();check("settings pause transport",ear.paused);c.closeSettings();
-        c.setBgm(Music.OFF);check("off mutes without resetting song",ear.muted && ear.starts==1);
-        c.setBgm(Music.DRIFT);
+        c.preferences.musicMuted=true;c.preferences.save(c);
+        check("mute silences band without resetting song",ear.musicVolume==0f && ear.starts==1);
+        c.preferences.music=.4f;c.preferences.musicMuted=false;c.preferences.save(c);
+        check("unmute restores band volume without restarting",ear.musicVolume==.4f && ear.starts==1);
         ear.position=CaveSong.at(c.band.song,5)+.25f;c.update(.01f,L);
         c.tapBonus(c.band.glyph[5],.25f);
         check("queued touch uses original event time",c.band.result[5]==1 && ear.notes==2);

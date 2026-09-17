@@ -1456,7 +1456,7 @@ final class TestBoss extends Check {
 
         // The chips are laid out and hit-tested where they are drawn.
         SettingsUi ui = new SettingsUi();
-        ui.compute(L, Music.NAMES.length);
+        ui.compute(L);
         int n = SettingsUi.STAGE_STEP.length;
         boolean hits = true;
         for (int i = 0; i < n; i++) {
@@ -1478,10 +1478,10 @@ final class TestBoss extends Check {
                 Layout t = new Layout();
                 t.compute(px, px * num / 9, 0, 0, 0, 0);
                 SettingsUi u = new SettingsUi();
-                u.compute(t, Music.NAMES.length);
+                u.compute(t);
                 if (u.panelT < 0f || u.panelB > t.h) fits = false;
                 // And the rows have to stay in order, in the panel, and clear of each other.
-                if (u.stageY < u.optionCy(Music.NAMES.length-1)+u.optionH*.5f) fits = false;
+                if (u.stageY < u.speedValueY) fits = false;
                 if (u.runY < u.stageY + u.stageH) fits = false;
                 if (u.runY + u.runH > u.panelB) fits = false;
             }
@@ -1506,7 +1506,7 @@ final class TestBoss extends Check {
         c.jumpToStage(6, L);
         check("jumping off a boss stage takes the boss with it",
                 c.stage == 6 && !c.boss.active());
-        check("and restores the selected music", !musicEar.bossMusic);
+        check("and restores the scene music", !musicEar.bossMusic);
         int musicRequests = musicEar.bossMusicCalls;
         c.jumpToStage(7, L);
         check("consecutive normal stages do not restart their music",

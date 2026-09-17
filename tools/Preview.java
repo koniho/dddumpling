@@ -102,7 +102,6 @@ final class Preview {
         public String progressReplica() { return "test"; }
         int best;
         float speed = 1f;
-        int bgm;
         long collected;
         int collectTotal;
         int[] collectionCounts = new int[Collect.COUNT];
@@ -113,8 +112,6 @@ final class Preview {
         public void saveBest(int b) { best = b; }
         public float loadSpeed() { return speed; }
         public void saveSpeed(float v) { speed = v; }
-        public int loadBgm() { return bgm; }
-        public void saveBgm(int v) { bgm = v; }
         public long loadCollected() { return collected; }
         public void saveCollected(long v) { collected = v; }
         public int[] loadCollectionCounts() { return collectionCounts.clone(); }
@@ -1279,7 +1276,6 @@ final class Preview {
         c6.stage = 3;
         step(c6, L, 6f);
         c6.setSpeed(1.2f);
-        c6.setBgm(Music.DRIFT);
         c6.collected = 0b0000_0100_1000_0011_0010_0110_1101L;
         c6.openSettings();
         step(c6, L, 0.3f);

@@ -7,15 +7,12 @@ package com.dddumpling.game;
  * a shaker — over a ii-V-I turnaround, so it loops without an obvious seam. Written here
  * rather than shipped as an audio file: no licensing question, nothing to bundle, and the
  * harness can render it to WAV and audition it like any other sound.
- *
- * If you have a track you hold the rights to, drop it in as {@code res/raw/bgm.<ext>} and
- * {@link Audio} plays that instead; see README.md.
  */
 final class Music {
 
-    /** Selectable tracks. The last entry plays {@code res/raw/bgm} if one is present. */
-    static final String[] NAMES = {"MOOG SWING", "LOFI DRIFT", "CHIP MARCH", "OFF", "MY TRACK"};
-    static final int SWING_STYLE = 0, DRIFT = 1, MARCH = 2, OFF = 3, CUSTOM = 4;
+    /** Synthesized arrangements used by the game and audio previews. */
+    static final String[] NAMES = {"MOOG SWING", "LOFI DRIFT", "CHIP MARCH"};
+    static final int SWING_STYLE = 0, DRIFT = 1, MARCH = 2;
 
     private static final int BARS = 4;
     private static final int BEATS = BARS * 4;
@@ -52,16 +49,6 @@ final class Music {
     private static final short[][] BOSS_CACHE = new short[STYLE.length][];
 
     private Music() {}
-
-    /** True when the style index names a synthesised track rather than OFF or a file. */
-    /**
-     * What a fresh install starts on: the player's own track when there is one, because
-     * somebody who went to the trouble of adding it did not do so in order to then go and find
-     * the option.
-     */
-    static int defaultChoice(boolean haveCustom) {
-        return haveCustom ? CUSTOM : SWING_STYLE;
-    }
 
     static boolean isSynth(int style) {
         return style >= 0 && style < STYLE.length;

@@ -21,7 +21,7 @@ final class SettingsInput {
         int player=PlayerSettings.hit(c,L,x,y);
         if(player!=0) return 1000+player;
         if(c.settingsPage!=1 || !BuildFlags.DEVELOPER) return 0;
-        SettingsUi u=new SettingsUi();u.compute(L,Music.NAMES.length,c.settingsTab);
+        SettingsUi u=new SettingsUi();u.compute(L,c.settingsTab);
         int h=u.hit(x,y);return enabled(c,h)?h:0;
     }
     // Android and IOSTouch share action numbers. Only the owning finger may drag or release.
@@ -46,7 +46,7 @@ final class SettingsInput {
     }
     private void drag(GameCore c,Layout L,float x) {
         if(pressed==SettingsUi.HIT_SLIDER) {
-            SettingsUi u=new SettingsUi();u.compute(L,Music.NAMES.length,c.settingsTab);c.setSpeed(u.speedAt(x));
+            SettingsUi u=new SettingsUi();u.compute(L,c.settingsTab);c.setSpeed(u.speedAt(x));
         } else {
             float v=PlayerSettings.volumeAt(L,x);
             if(pressed==1000+PlayerSettings.MUSIC) {
@@ -68,8 +68,7 @@ final class SettingsInput {
                 case PlayerSettings.PLAYER: c.settingsPage=0;c.clearArmed=false;break;
                 case PlayerSettings.DEVELOPER: if(BuildFlags.DEVELOPER) { c.settingsPage=1;c.clearArmed=false; } break;
                 case PlayerSettings.MUSIC_MUTE:
-                    c.preferences.musicMuted=!(c.preferences.musicMuted || c.bgmChoice==Music.OFF);
-                    if(!c.preferences.musicMuted && c.bgmChoice==Music.OFF) c.setBgm(Music.defaultChoice(false));
+                    c.preferences.musicMuted=!c.preferences.musicMuted;
                     c.preferences.save(c);break;
                 case PlayerSettings.EFFECTS_MUTE: c.preferences.effectsMuted=!c.preferences.effectsMuted;c.preferences.save(c);break;
                 case PlayerSettings.KIDS: c.preferences.kids=!c.preferences.kids;c.preferences.save(c);break;
@@ -101,7 +100,7 @@ final class SettingsInput {
             if(i==SettingsUi.TEST_STARS) c.playtestStars(L);
             else if(i==SettingsUi.TEST_STEAMER) c.playtestSteamer(L);
             else c.playtestMode(Power.offeredAt(i),L);
-        } else if(h>=SettingsUi.HIT_OPTION && h<SettingsUi.HIT_OPTION+Music.NAMES.length) c.setBgm(h-SettingsUi.HIT_OPTION);
+        }
         return false;
     }
 }

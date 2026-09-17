@@ -156,8 +156,8 @@ The pipeline is `aapt2 compile` → `aapt2 link` → `javac` → `d8` → `zip` 
 It runs both developer and production harness checks before packaging and stops on failed
 assertions. Logs are in `build/check.log` and `build/production-check.log`.
 
-Output is a signed `hexatype.apk` with bundled fonts. A personal music track dropped into
-`res/raw/` is bundled too — see [Licensing](#licensing).
+Output is a signed `hexatype.apk` with bundled fonts. Legacy personal `res/raw/bgm.*` files
+are excluded from packaging.
 
 Without a supplied signing key, the build creates `build/debug.keystore` on first run. Keep
 the same key to update an existing installation without uninstalling it.
@@ -255,12 +255,10 @@ generated. The game font is
 text ships alongside it in `assets/fonts/Bungee-OFL.txt`. Quicksand remains bundled for
 the trailer tools, with its license in `assets/fonts/OFL.txt`.
 
-`res/raw/bgm.*` is gitignored on purpose: a user-supplied track stays on that device and must
-never be committed, since this repo is shared. Drop one in and it becomes the MY TRACK option
-in settings — and the default, since `Music.defaultChoice` prefers it whenever the file is
-present. Pick something else in settings and that choice sticks. Personal tracks are not copied
-into the iPhone release; its J2ObjC runtime notices are bundled separately.
-
+Legacy `res/raw/bgm.*` files remain gitignored and are excluded from builds. Custom music is
+no longer supported. Music follows the game scene: MOOG SWING normally and LOFI DRIFT in caves,
+with dedicated boss, frenzy, and Cave Band arrangements. Player settings retain music volume
+and mute. The iPhone release bundles its J2ObjC runtime notices separately.
 
 ## GitHub releases
 

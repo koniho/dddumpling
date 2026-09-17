@@ -9,8 +9,8 @@ sdk/
 # this one is a real source file.
 !AndroidManifest.xml
 
-# A user-supplied music track stays local: res/raw/bgm.* is played if present, but
-# committing it would redistribute someone else's recording.
+# Legacy personal music stays local and is excluded from builds.
+# Committing it would redistribute someone else's recording.
 res/raw/bgm.*
 
 # Play upload bundles and private signing material.

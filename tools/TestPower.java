@@ -1370,7 +1370,7 @@ final class TestPower extends Check {
     static void playtest(Layout L) {
         group("playtest hook");
         SettingsUi ui = new SettingsUi();
-        ui.compute(L, Music.NAMES.length, SettingsUi.POWERS);
+        ui.compute(L, SettingsUi.POWERS);
         check("panel still fits with the playtest row",
                 ui.panelB <= L.h && ui.testY + ui.testH < ui.panelB);
         check("powers have a dedicated page below its tabs",
@@ -1382,7 +1382,7 @@ final class TestPower extends Check {
         int chips = SettingsUi.TEST_CHIPS;
         for (int i = 0; i < chips; i++) {
             boolean mini=i>=SettingsUi.TEST_STARS;
-            ui.compute(L,Music.NAMES.length,mini?SettingsUi.MINIGAMES:SettingsUi.POWERS);
+            ui.compute(L,mini?SettingsUi.MINIGAMES:SettingsUi.POWERS);
             int index=mini?i-SettingsUi.TEST_STARS:i,n=mini?2:Power.OFFERED.length;
             float cx = (ui.testChipL(index,n)+ui.testChipR(index,n))*.5f;
             if(ui.hit(cx,ui.testY+ui.testH*.5f)!=SettingsUi.HIT_TEST+i) chipsOk=false;

@@ -14,7 +14,6 @@ public class MainActivity extends Activity implements GameCore.Store {
     private static final String PREFS = "hexatype";
     private static final String KEY_BEST = "best";
     private static final String KEY_SPEED = "speed";
-    private static final String KEY_BGM = "bgm";
     private static final String KEY_COLLECTED = "collected";
     private static final String KEY_COLLECT_TOTAL = "collectTotal";
     private static final String KEY_STEAMER_OPENS = "steamerOpens";
@@ -187,22 +186,6 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     @Override public void saveSpeed(float speed) {
         prefs.edit().putFloat(KEY_SPEED, speed).apply();
-    }
-
-    @Override public int loadBgm() {
-        return prefs.getInt(KEY_BGM, Music.defaultChoice(haveCustomTrack()));
-    }
-
-    /**
-     * True when a personal track was dropped into {@code res/raw}. Resolved by name so the
-     * build does not depend on the file existing — it is gitignored and usually absent.
-     */
-    private boolean haveCustomTrack() {
-        return getResources().getIdentifier("bgm", "raw", getPackageName()) != 0;
-    }
-
-    @Override public void saveBgm(int choice) {
-        prefs.edit().putInt(KEY_BGM, choice).apply();
     }
 
     @Override public long loadCollected() {

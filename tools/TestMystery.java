@@ -15,7 +15,7 @@ final class TestMystery extends Check {
         reveal.hitT=Power.SELECT_TIME+1f;
         check("selected icon retires after the reveal",reveal.spent());
         GameCore early=scene(L,9), c=scene(L,11);
-        SettingsUi ui=new SettingsUi();ui.compute(L,Music.NAMES.length,SettingsUi.POWERS);
+        SettingsUi ui=new SettingsUi();ui.compute(L,SettingsUi.POWERS);
         for(int i=0;i<2;i++) {
             float x=(ui.testChipL(i,2)+ui.testChipR(i,2))*0.5f;
             check("debuff chip hit target " + i,ui.hit(x,ui.debuffY+ui.testH*0.5f)==SettingsUi.HIT_DEBUFF+i);
