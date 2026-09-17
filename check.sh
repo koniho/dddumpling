@@ -146,6 +146,7 @@ fi
 
 [ "$QUIET" = 1 ] || echo "=== rules ==="
 java -cp build/harness com.dddumpling.game.CoreTest "$SUITE" | filter
+if [ -z "$SUITE" ] || [[ "CaveBand Audio" == *"$SUITE"* ]]; then python3 tools/test-band-audio.py; fi
 
 if [ "$RULES_ONLY" = 1 ]; then exit 0; fi
 

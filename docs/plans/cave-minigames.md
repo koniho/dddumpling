@@ -91,3 +91,8 @@ Bounded miners at 3/5/8 presses per second check that the reward remains reachab
 `109-mine-*` covers bright/dim lighting, falling rocks, full cart, helpers, all sequence lengths,
 timeout, reward and parade. The iOS input harness covers the actual native gesture route; its
 native store test includes a cart-progress round trip.
+
+Android static audio must receive the PCM before checking for `STATE_INITIALIZED`; a newly
+created static track reports `STATE_NO_STATIC_DATA`. `tools/test-band-audio.py` exercises the
+real adapter against this lifecycle, including playback-clock timing across tempo changes,
+mute, pause, cleanup, and a rejected PCM write. The headless check runs it automatically.

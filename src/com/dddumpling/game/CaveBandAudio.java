@@ -46,8 +46,13 @@ final class CaveBandAudio {
                 new AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT)
                 .setSampleRate(Sfx.RATE).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build(),
                 pcm.length*2,AudioTrack.MODE_STATIC,AudioManager.AUDIO_SESSION_ID_GENERATE);
-        if(t.getState()!=AudioTrack.STATE_INITIALIZED){t.release();throw new IllegalStateException("audio unavailable");}
-        t.write(pcm,0,pcm.length);return t;
+        try {
+            // MODE_STATIC stays NO_STATIC_DATA until its first successful write.
+            if(t.getState()==AudioTrack.STATE_UNINITIALIZED || t.write(pcm,0,pcm.length)!=pcm.length
+                    || t.getState()!=AudioTrack.STATE_INITIALIZED)
+                throw new IllegalStateException("audio unavailable");
+            return t;
+        } catch(RuntimeException failure) {release(t);throw failure;}
     }
     synchronized float time() {
         if(!active || failed)return -1;
