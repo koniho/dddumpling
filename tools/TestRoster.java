@@ -51,7 +51,7 @@ final class TestRoster extends Check {
         choice.toTitle(); choice.startGame();
         check("next run adopts the chosen roster", choice.runFullRoster == choice.fullRoster);
 
-        SettingsUi ui = new SettingsUi(); ui.compute(L, Music.NAMES.length);
+        SettingsUi ui = new SettingsUi(); ui.compute(L);
         float mid = (ui.optionL() + ui.optionR()) / 2f;
         float left = (ui.optionL() + mid) / 2f, right = (mid + ui.optionR()) / 2f;
         check("next-roster chip is hittable", ui.hit(left, ui.runY + ui.runH / 2f)

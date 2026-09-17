@@ -68,7 +68,9 @@ if [ "$DEVELOPER" = false ] && [ -n "$PLAY_CONFIG" ]; then
 fi
 
 echo ">> resources"
-aapt2 compile --dir res -o "$OUT/res.zip"
+RESOURCE_FILES=()
+while IFS= read -r -d '' RESOURCE_FILE; do RESOURCE_FILES+=("$RESOURCE_FILE"); done < <(find res -type f ! -path 'res/raw/bgm.*' -print0)
+aapt2 compile "${RESOURCE_FILES[@]}" -o "$OUT/res.zip"
 aapt2 link -o "$OUT/base.apk" -I "$SDK" \
     --manifest "$MANIFEST" --rename-manifest-package "$APP_ID" --custom-package com.dddumpling.game \
     --java "$OUT/gen" --min-sdk-version "$MIN" --target-sdk-version "$TGT" \

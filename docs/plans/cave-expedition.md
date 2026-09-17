@@ -66,5 +66,5 @@ The bounded bot pays its normal reaction time and press budget. For rocks, it ca
 already-visible falling rocks and is subject to the same steering speed cap.
 
 This version uses one authored route with three forks across the five cave stages, varying the
-combat responses. Existing synthesized effects and selected music are reused. Device playtesting
+combat responses. Existing synthesized effects and scene music are reused. Device playtesting
 should guide later route variety, enemy designs, sound changes, and trap difficulty.

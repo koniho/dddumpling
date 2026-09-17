@@ -13,8 +13,6 @@
 
 static const double DDBoltPopInterval = 0.165;
 static const jint DDStyleSwing = DDMusic_SWING_STYLE;
-static const jint DDStyleOff = DDMusic_OFF;
-static const jint DDStyleCustom = DDMusic_CUSTOM;
 
 @interface DDIOSAudio () <AVAudioPlayerDelegate, AVSpeechSynthesizerDelegate>
 @property(nonatomic) NSCache<NSNumber *, AVAudioPCMBuffer *> *effectBuffers;
@@ -190,8 +188,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
   dispatch_async(_effectsQueue, ^{
     if (generation == self.effectGeneration) [self.effectMixer prepare];
   });
-  if (_music && !_music.isPlaying && !_bandPaused && !_bandFinished
-      && (_bandActive || _selectedStyle != DDStyleOff)) [_music play];
+  if (_music && !_music.isPlaying && !_bandPaused && !_bandFinished) [_music play];
   if (_rocketOn && _rocketNode && !_rocketNode.isPlaying) {
     NSError *error = nil;
     [_rocketEngine startAndReturnError:&error];
@@ -274,7 +271,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 }
 
 - (void)applyMusicMix {
-  float gain = _boss ? DDMusic_BOSS_GAIN : (_selectedStyle == DDStyleCustom ? 0.55f : 1.f);
+  float gain = _boss ? DDMusic_BOSS_GAIN : 1.f;
   if (_rocketOn) gain *= 0.68f;
   if (_narrating) gain *= 0.22f;
   _music.volume = _bandActive ? (_bandMuted ? 0 : _musicVolume) : gain * _musicVolume;
@@ -282,41 +279,22 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
   dispatch_async(_effectsQueue, ^{ self.bandMixer.volume = bandGain; });
 }
 
-- (NSURL *)customMusicURL {
-  for (NSString *extension in @[@"m4a", @"mp3", @"wav", @"aiff", @"caf"]) {
-    NSURL *url = [NSBundle.mainBundle URLForResource:@"bgm" withExtension:extension];
-    if (url) return url;
-  }
-  return nil;
-}
-
 - (void)rebuildMusic {
   if (_bandActive) return;
   ++_musicGeneration;
   NSUInteger generation = _musicGeneration;
   [_music stop]; _music = nil;
-  if (_selectedStyle == DDStyleOff) return;
   BOOL boss = _boss, frenzy = _frenzy;
   NSInteger style = _selectedStyle;
-  NSURL *customURL = style == DDStyleCustom && !boss && !frenzy ? [self customMusicURL] : nil;
-  if (customURL) {
-    AVAudioPlayer *player = [[AVAudioPlayer alloc] initWithContentsOfURL:customURL error:nil];
-    if (player && generation == _musicGeneration) {
-      player.numberOfLoops = -1; player.enableRate = YES; player.delegate = self;
-      _music = player; [self applyMusicMix];
-      if (_active && !_interrupted && _playbackAllowed) [player play];
-    }
-    return;
-  }
   dispatch_async(_renderQueue, ^{
     IOSShortArray *pcm = nil;
     @try {
-      jint synthStyle = style >= 0 && style < DDStyleOff ? (jint)style : DDStyleSwing;
+      jint synthStyle = [DDMusic isSynthWithInt:(jint)style] ? (jint)style : DDStyleSwing;
       pcm = boss ? [DDMusic bossLoopWithInt:synthStyle]
                  : [DDMusic loopWithInt:synthStyle withBoolean:frenzy];
     } @catch (NSException *exception) { return; }
     dispatch_async(dispatch_get_main_queue(), ^{
-      if (generation != self.musicGeneration || self.selectedStyle == DDStyleOff) return;
+      if (generation != self.musicGeneration) return;
       AVAudioPlayer *player = [self playerForPCM:pcm loop:YES];
       if (!player) return;
       self.music = player; [self applyMusicMix];

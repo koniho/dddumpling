@@ -13,7 +13,7 @@ final class DevSettings extends Draw {
     static void draw(Painter p,GameCore c,Layout L) {
         if(!BuildFlags.DEVELOPER) return;
         float s=PlayerSettings.unit(L); SettingsUi u=new SettingsUi();
-        u.compute(L,Music.NAMES.length,c.settingsTab);
+        u.compute(L,c.settingsTab);
         for(int i=0;i<4;i++) {
             p.fillRect(u.tabL(i),u.tabY,u.tabR(i),u.tabY+u.tabH,i==c.settingsTab?0x554DCEAA:0x18FFFFFF);
             p.text(SettingsUi.TABS[i],(u.tabL(i)+u.tabR(i))*.5f,u.titleY,s*.52f,INK,Painter.CENTER,true);
@@ -58,12 +58,6 @@ final class DevSettings extends Draw {
         p.fillRect(u.sliderL,u.sliderY-s*.12f,u.sliderR,u.sliderY+s*.12f,0x55FFFFFF);
         p.fillCircle(x,u.sliderY,s*.45f,GOLD);
         p.text(Screens.fmtSpeed(c.speed)+"X",L.w*.5f,u.speedValueY,s*.65f,INK,Painter.CENTER,true);
-        label(p,u,u.bgmLabelY,"MUSIC TRACK",s);
-        for(int i=0;i<Music.NAMES.length;i++) {
-            float y=u.optionCy(i);
-            p.fillRect(u.optionL(),y-u.optionH*.45f,u.optionR(),y+u.optionH*.45f,i==c.bgmChoice?0x554DCEAA:0x18FFFFFF);
-            p.text(Music.NAMES[i],L.w*.5f,y+s*.2f,s*.6f,INK,Painter.CENTER,true);
-        }
         label(p,u,u.stageLabelY,"STAGE "+c.stage,s);
         for(int i=0;i<4;i++) {
             int step=SettingsUi.STAGE_STEP[i];

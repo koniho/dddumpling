@@ -104,7 +104,7 @@ Support. The following `GameCore.Store` and `Progress.Store` values are wired:
 | Land discovery/suppression bits | `LandPicker`, `GameCore` | `landState` | Wired; pending |
 | Per-land bests | `LandPicker`, `GameCore` | `best` for land 0, `landBest.N` otherwise | Wired; pending |
 | Developer speed | `GameCore` | `speed` | Persisted but excluded from production UI |
-| Developer music selection | `GameCore`, `Music` | `bgm` | Persisted but production uses its fixed default choice |
+| Player audio preferences | `PlayerSettings` | `playerSettings` | Independent volume/mute; legacy `bgm` values ignored |
 | Collected-item bitmask | `Collect`, `GameCore` | `collected` | Wired; pending |
 | Per-item duplicate counts | `Collect`, `GameCore` | `collectionCounts` | Wired; pending |
 | Lifetime reward total | `GameCore`, `Interlude` | `collectTotal` | Wired; pending |
@@ -126,12 +126,12 @@ Support. The following `GameCore.Store` and `Progress.Store` values are wired:
 
 The iOS target currently packages Bungee and its license text. `Quicksand.ttf` and
 the `res/` launcher artwork are Android-side resources, not iOS gameplay assets.
-No external music or sound file is required for the shipped procedural soundtrack;
-an optional bundled `bgm` file is only a developer custom-music path.
+All soundtrack playback is synthesized. Custom music files are unsupported; normal music
+follows the scene, with player volume/mute applied to every arrangement.
 
 ## Explicitly excluded from production scope
 
-- The developer settings panel, speed/music controls, stage jumps, test-mode chips,
+- The developer settings panel, speed controls, stage jumps, test-mode chips,
   collection wipe, roster toggle, reset controls, and debug scene environment variable
   are all guarded by `BuildFlags.DEVELOPER`.
 - The developer-only direct Starpath/Steamer/power-mode entry points are not release

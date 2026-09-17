@@ -49,7 +49,7 @@ public final class IOSInputTest extends Check {
     private static void titleAndLifecycle() {
         IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
         Host host = new Host(); game.setHost(host);
-        check("music choice announced after backend attached", ((Ear) c.sound).musicCalls == 1);
+        check("scene soundtrack announced after backend attached", ((Ear) c.sound).musicCalls == 1);
         check("UIKit points preserve safe-area geometry", l.w == 393 && l.padT == 59 && l.padB == 34);
         check("title has no back navigation", !game.handlesBack() && !game.back());
         tap(game, l.w - 2*l.unit, l.dangerY);
@@ -108,7 +108,7 @@ public final class IOSInputTest extends Check {
         check("kids setting persists from native settings",new GameCore(c.store,93L).preferences.kids);
         tap(game,l.w*.75f,PlayerSettings.top(l)+s*4);
         check("native developer tab opens",c.settingsPage==1);
-        SettingsUi ui=new SettingsUi();ui.compute(l,Music.NAMES.length);
+        SettingsUi ui=new SettingsUi();ui.compute(l);
         tap(game,(ui.testChipL(2,4)+ui.testChipR(2,4))*.5f,ui.stageY+ui.stageH*.5f);
         check("title stage chip cannot start a run",c.state==GameCore.TITLE && !c.starting());
         game.back();
@@ -289,7 +289,7 @@ public final class IOSInputTest extends Check {
         for(int i=0;i<180;i++) game.update(DT);
         tap(game,l.w/2,l.hudY);
         check("stage readout opens developer settings", c.settingsOpen);
-        SettingsUi ui = new SettingsUi(); ui.compute(l,Music.NAMES.length);
+        SettingsUi ui = new SettingsUi(); ui.compute(l);
         tap(game,ui.sliderR,ui.sliderY);
         check("settings slider sets speed", c.speed==GameCore.SPEED_MAX);
         game.touch(one(0,3,ui.sliderL,ui.sliderY));
@@ -300,24 +300,24 @@ public final class IOSInputTest extends Check {
         check("stage chip jumps stage rather than starting frenzy", c.stage==before+1 && c.mode==-1 && c.settingsOpen);
         tap(game,(ui.tabL(1)+ui.tabR(1))/2,ui.tabY+ui.tabH/2);
         check("native settings opens minigames tab", c.settingsTab == SettingsUi.MINIGAMES);
-        ui.compute(l,Music.NAMES.length,c.settingsTab);
+        ui.compute(l,c.settingsTab);
         c.stars.collected = 7;
         tap(game,(ui.testChipL(2,3)+ui.testChipR(2,3))/2,ui.sliderY+ui.testH/2);
         check("native harder control edits saved level without erasing stars", c.stars.wins == 1 && c.stars.collected == 7);
         tap(game,(ui.testChipL(0,3)+ui.testChipR(0,3))/2,ui.sliderY+ui.testH/2);
         check("native easier control edits level", c.stars.wins == 0);
         tap(game,(ui.tabL(0)+ui.tabR(0))/2,ui.tabY+ui.tabH/2);
-        ui.compute(l,Music.NAMES.length);
+        ui.compute(l);
         tap(game,ui.closeCx,ui.closeCy);
         check("settings close resumes play", !c.settingsOpen);
-        c.settingsOpen=true;c.settingsTab=SettingsUi.PROGRESS;ui.compute(l,Music.NAMES.length,c.settingsTab);
+        c.settingsOpen=true;c.settingsTab=SettingsUi.PROGRESS;ui.compute(l,c.settingsTab);
         tap(game,(ui.testChipL(0,2)+ui.testChipR(0,2))/2,ui.debuffY+ui.testH/2);
         check("native all lands chip enables every land",LandPicker.count(c)==Lands.COUNT);
         tap(game,l.w*.5f,ui.difficultyY+ui.difficultyH/2);
         check("native reset news clears seen status without leaving settings",c.settingsOpen && c.store.loadReleaseSeen().equals(""));
         c.settingsOpen=false;
         for(int i=0;i<2;i++) {
-            c.settingsOpen=true;c.settingsTab=SettingsUi.POWERS;ui.compute(l,Music.NAMES.length,c.settingsTab);
+            c.settingsOpen=true;c.settingsTab=SettingsUi.POWERS;ui.compute(l,c.settingsTab);
             tap(game,(ui.testChipL(i,2)+ui.testChipR(i,2))/2,ui.debuffY+ui.testH/2);
             check("native debuff chip activates correct effect " + i,!c.settingsOpen
                     && c.debuff==Power.INCOGNITO+i && c.debuffLeft>0f && !c.powerActive());

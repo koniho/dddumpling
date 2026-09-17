@@ -12,8 +12,6 @@ final class SettingsUi {
     static final int GENERAL = 0, MINIGAMES = 1, POWERS = 2, PROGRESS = 3;
     static final int HIT_POWERS = 15, HIT_PROGRESS = 16;
     static final String[] TABS = {"RUN", "MINIGAMES", "POWERS", "PROGRESS"};
-    /** Option rows are HIT_OPTION + index. */
-    static final int HIT_OPTION = 100;
     /** Power shortcuts and minigame shortcuts share action IDs, not a row. */
     static final int HIT_TEST = 200;
     static final int HIT_DEBUFF = 250;
@@ -41,9 +39,7 @@ final class SettingsUi {
     float speedLabelY;
     float sliderL, sliderR, sliderY, sliderH;
     float speedValueY;
-    float bgmLabelY;
-    float optionH;
-    float firstOptionY;
+    float sliderHitH;
     float closeCx, closeCy, closeR;
     /** Playtest row: one chip per powerup mode. */
     float testLabelY, testY, testH, debuffY;
@@ -56,26 +52,24 @@ final class SettingsUi {
     /** Empty-the-display-case button, at the foot of the panel. */
     float clearLabelY, clearY, clearH;
 
-    private int options;
     private int tab;
 
-    void compute(Layout L, int optionCount) {
-        compute(L, optionCount, GENERAL);
+    void compute(Layout L) {
+        compute(L, GENERAL);
     }
 
-    void compute(Layout L, int optionCount, int selectedTab) {
-        tab=selectedTab; options=optionCount;
+    void compute(Layout L, int selectedTab) {
+        tab=selectedTab;
         float s=PlayerSettings.unit(L);
         panelL=PlayerSettings.left(L); panelR=PlayerSettings.right(L);
         panelT=PlayerSettings.top(L); panelB=PlayerSettings.bottom(L);
         titleY=panelT+s*6.7f; tabY=panelT+s*5.5f; tabH=s*1.8f;
         closeR=s; closeCx=panelR-s*1.3f; closeCy=panelT+s*1.5f;
         sliderL=optionL(); sliderR=optionR(); sliderH=s*.5f;
-        optionH=s*1.65f; testH=stageH=runH=clearH=difficultyH=s*2f;
+        sliderHitH=s*1.65f; testH=stageH=runH=clearH=difficultyH=s*2f;
         speedLabelY=panelT+s*9f; sliderY=panelT+s*10.3f; speedValueY=panelT+s*12f;
-        bgmLabelY=panelT+s*14f; firstOptionY=bgmLabelY+s*.6f;
-        stageLabelY=panelT+s*24f; stageY=stageLabelY+s*.5f;
-        runLabelY=panelT+s*28f; runY=runLabelY+s*.5f;
+        stageLabelY=panelT+s*15f; stageY=stageLabelY+s*.5f;
+        runLabelY=panelT+s*19f; runY=runLabelY+s*.5f;
         testLabelY=panelT+s*9f; testY=testLabelY+s*.5f;
         debuffY=panelT+s*14f;
         difficultyLabelY=panelT+s*20f; difficultyY=difficultyLabelY+s*.5f;
@@ -93,12 +87,7 @@ final class SettingsUi {
         return testChipL(i, n) + (optionR() - optionL()) / n - 6f;
     }
 
-    /** Centre y of option row {@code i}. */
-    float optionCy(int i) {
-        return firstOptionY + optionH * (i + 0.5f);
-    }
-
-    /** Left edge of the option rows. */
+    /** Shared horizontal bounds for controls. */
     float optionL() {
         return panelL + Layout.SQ3_2 * 0f + (panelR - panelL) * 0.06f;
     }
@@ -152,8 +141,7 @@ final class SettingsUi {
             if(y>=difficultyY && y<=difficultyY+difficultyH) return HIT_RESET_NEWS;
             if(y>=clearY && y<=clearY+clearH) return HIT_CLEAR;
         } else {
-            if(Math.abs(y-sliderY)<=optionH*.55f) return HIT_SLIDER;
-            for(int i=0;i<options;i++) if(Math.abs(y-optionCy(i))<=optionH*.5f) return HIT_OPTION+i;
+            if(Math.abs(y-sliderY)<=sliderHitH*.55f) return HIT_SLIDER;
             if(y>=stageY && y<=stageY+stageH) for(int i=0;i<STAGE_STEP.length;i++)
                 if(inChip(x,i,STAGE_STEP.length)) return HIT_STAGE+i;
             if(y>=runY && y<=runY+runH) {

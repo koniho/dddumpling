@@ -158,68 +158,29 @@ final class TestAudio extends Check {
         return crossings * (float) Sfx.RATE / pcm.length;
     }
 
-    /** Which track the game starts on, and that the loaded choice actually gets announced. */
     static void musicChoice(Layout L) {
-        group("music choice");
-        check("a personal track is the default when there is one",
-                Music.defaultChoice(true) == Music.CUSTOM);
-        check("otherwise the first synth track is",
-                Music.defaultChoice(false) == Music.SWING_STYLE);
-        check("every name has a constant and vice versa",
-                Music.NAMES.length == Music.CUSTOM + 1);
-        check("the custom slot is not a synth style", !Music.isSynth(Music.CUSTOM));
-        check("and neither is off", !Music.isSynth(Music.OFF));
-
-        // The regression this exists for: the loaded preference was read into bgmChoice and
-        // then never announced, so the backend fell back to its own first track on every
-        // launch and both the stored choice and the first-run default did nothing.
-        Mem store = new Mem();
-        store.bgm = Music.CUSTOM;
-        GameCore c = new GameCore(store, 301L);
-        Ear ear = new Ear();
-        c.sound = ear;
-        check("the stored choice is loaded", c.bgmChoice == Music.CUSTOM);
-        check("nothing is announced before it is asked for", ear.musicCalls == 0);
+        group("automatic music");
+        GameCore c = new GameCore(new Mem(),301L);
+        Ear ear = new Ear(); c.sound=ear;
+        check("music waits for backend attachment",ear.musicCalls==0);
         c.startMusic();
-        check("starting announces the loaded choice",
-                ear.musicCalls == 1 && ear.music == Music.CUSTOM);
-
-        // And with no sound attached it must not throw: the harness runs that way throughout.
-        GameCore d = new GameCore(new Mem(), 302L);
-        d.startMusic();
-        check("announcing without a backend is harmless", d.bgmChoice == 0);
-
-        // A deliberate later choice still wins, and is persisted.
-        c.setBgm(Music.DRIFT);
-        check("a later choice is announced", ear.music == Music.DRIFT && ear.musicCalls == 2);
-        check("and saved", store.bgm == Music.DRIFT && store.bgmSaves == 1);
-        c.setBgm(99);
-        check("an out-of-range choice is refused", c.bgmChoice == Music.DRIFT);
-
-        c.setBgm(Music.MARCH);
-        c.state = GameCore.PLAY;
-        c.jumpToStage(21, L);
-        check("cave entry selects LOFI DRIFT", ear.music == Music.DRIFT);
-        check("cave music preserves the saved choice", store.bgm == Music.MARCH);
-        c.jumpToStage(24, L);
-        c.startMusic();
-        check("later cave stages and resume keep LOFI DRIFT", ear.music == Music.DRIFT);
-        c.setBgm(Music.OFF);
-        check("cave music respects OFF", ear.music == Music.OFF);
-        c.setBgm(Music.MARCH);
-        check("enabling cave music restores LOFI DRIFT", ear.music == Music.DRIFT);
-        c.jumpToStage(19, L);
-        check("leaving the cave restores the selected track", ear.music == Music.MARCH);
-        c.jumpToStage(20, L);
-        check("ordinary bosses retain boss music", ear.bossMusic);
-        c.jumpToStage(21, L);
-        check("boss to cave switches to LOFI DRIFT", !ear.bossMusic && ear.music == Music.DRIFT);
-        c.toTitle();
-        check("title restores the selected track", ear.music == Music.MARCH);
-        c.allLandsEnabled = true;
-        c.landChoice = Cave.LAND;
-        c.startGame();
-        check("starting directly in the cave selects LOFI DRIFT", ear.music == Music.DRIFT);
+        check("title automatically uses MOOG SWING",ear.music==Music.SWING_STYLE && ear.musicCalls==1);
+        new GameCore(new Mem(),302L).startMusic();
+        c.state=GameCore.PLAY; c.jumpToStage(21,L);
+        check("cave entry selects LOFI DRIFT",ear.music==Music.DRIFT);
+        c.preferences.music=.35f;c.preferences.musicMuted=true;c.preferences.save(c);
+        c.jumpToStage(24,L);c.startMusic();
+        check("cave resume preserves mute and automatic track",ear.music==Music.DRIFT && ear.musicVolume==0f);
+        c.preferences.musicMuted=false;c.preferences.save(c);
+        check("unmute restores volume without restarting music",ear.musicVolume==.35f && ear.music==Music.DRIFT);
+        c.jumpToStage(19,L);
+        check("leaving caves restores MOOG SWING",ear.music==Music.SWING_STYLE);
+        c.jumpToStage(20,L);check("ordinary bosses retain boss music",ear.bossMusic);
+        c.jumpToStage(21,L);
+        check("boss to cave switches to LOFI DRIFT",!ear.bossMusic && ear.music==Music.DRIFT);
+        c.toTitle();check("title restores MOOG SWING",ear.music==Music.SWING_STYLE);
+        c.allLandsEnabled=true;c.landChoice=Cave.LAND;c.startGame();
+        check("starting directly in caves selects LOFI DRIFT",ear.music==Music.DRIFT);
     }
 
     static void audio(Layout L) {
