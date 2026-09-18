@@ -478,8 +478,8 @@ See [the cave minigame plan](docs/plans/cave-minigames.md) for both games.
 ## Dumpling Mine interlude
 
 **Dumpling Mine** alternates with Cave Band, beginning after cave stage 22. Complete the displayed
-character sequence down five wall segments to build a **rock pile**. One prompt appears at a
-time, descending from the top to the bottom of the rock; the dumpling targets it with a pickaxe.
+character sequence down five wall segments to build a **rock pile**. All prompts appear down the wall, with only the current one in full color. Each correct hit
+turns that prompt into a rock flying toward the parked cart; completed slots show faded rocks.
 Rocks fly left, and the explorer walks right to the next wall. The first cart repeats a
 two-key sequence; subsequent carts use three, then four distinct keys. Four remains the maximum.
 The sequence stays fixed for that cart. Wrong presses restart only the current sequence and cost

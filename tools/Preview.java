@@ -33,6 +33,7 @@ final class Preview {
         m.ready=0;m.update(c,1.3f);shot(dir,"109-mine-cheering",c,L,w,h,ss);
         c.tapBonus(m.sequence[0]);m.update(c,.08f);
         shot(dir,"109-mine-sequence",c,L,w,h,ss);
+        m.update(c,.22f);shot(dir,"109-mine-prompt-rock-flight",c,L,w,h,ss);
         c.tapBonus(m.sequence[1]);m.update(c,.15f);
         shot(dir,"109-mine-falling-rocks",c,L,w,h,ss);
         m.update(c,.10f);shot(dir,"109-mine-walk-forward",c,L,w,h,ss);

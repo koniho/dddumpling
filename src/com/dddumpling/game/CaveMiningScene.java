@@ -2,7 +2,8 @@ package com.dddumpling.game;
 
 /** Forced travel and loading leave the lantern clock to the player. */
 final class CaveMiningScene extends Draw {
-    static final float STRIDE=.64f;
+    static final float STRIDE=.64f, ROCK_FLIGHT=.65f;
+    static float rockRadius(int i){return i%4==0?.043f:.012f+(i%3)*.004f;}
     final float[] age=new float[32],startX=new float[32],height=new float[32];
     int cursor,feedback;
     float clock,distance,shake,hitAge=2,hitFraction,idle,cheer=1.2f,cheerPose;
@@ -67,11 +68,11 @@ final class CaveMiningScene extends Draw {
             p.line(bx-w*.025f,by-w*.035f,bx+w*.035f,by+w*.03f,0xFFD2DEE4,w*.019f);
             p.fillCircle(ax,ay,w*.018f,CaveDumpling.COLORS[Math.max(0,c.caveChoice)]);
         }
-        for(int i=0;i<32;i++)if(age[i]<.65f){
-            float t=age[i]/.65f,from=(startX[i]-scroll)*w,target=.25f*w;
-            float x=from+(target-from)*t,y=promptY(m,L,height[i])+(gy-w*.06f-promptY(m,L,height[i]))*t*t-w*.18f*(float)Math.sin(t*Math.PI);
-            x+=(i%4-1.5f)*w*.018f*t;
-            CaveArt.tumbling(p,x,y,w*(.015f+(i%3)*.006f),i*77,255,clock*(i%2==0?9:-11));
+        for(int i=0;i<32;i++)if(age[i]<ROCK_FLIGHT){
+            float t=age[i]/ROCK_FLIGHT,from=(startX[i]-scroll)*w,target=c.mining.cartX*w;
+            float x=from+(target-from)*t,y=promptY(m,L,height[i])+(gy+w*.055f-promptY(m,L,height[i]))*t*t-w*.18f*(float)Math.sin(t*Math.PI);
+            if(i%4!=0)x+=(i%4-2)*w*.018f*t;
+            CaveArt.tumbling(p,x,y,w*rockRadius(i),i*77,255,clock*(i%2==0?9:-11));
             if(t<.35f)p.fillCircle(x+w*.035f,y,w*.008f,Glyph.withAlpha(CaveArt.LAMP,100));
         }
     }
@@ -91,7 +92,7 @@ final class CaveMiningScene extends Draw {
     private void pile(Painter p,GameCore c,Layout L){
         CaveMining m=c.mining;float w=L.w,gy=ground(L),loading=m.phase==CaveMining.PUSH?Math.min(1,m.travel/CaveMining.LOAD_TIME):0;
         for(int i=0;i<m.loads*3;i++){
-            float px=m.cartX*w+w*((i%4)-1.5f)*.042f,py=gy-w*(.025f+(i/4)*.045f),lift=0;
+            float px=m.cartX*w+w*((i%4)-1.5f)*.042f,py=gy+w*(.055f-(i/4)*.045f),lift=0;
             if(m.phase==CaveMining.PUSH){
                 float delay=i/(float)Math.max(1,m.loads*3-1)*.22f;
                 lift=Math.max(0,Math.min(1,(m.travel-delay)/.30f));
@@ -102,10 +103,10 @@ final class CaveMiningScene extends Draw {
             CaveArt.tumbling(p,px,py,w*.035f,i*41,255,i+lift*5);
         }
         if(m.phase==CaveMining.PUSH){
-            float enter=Math.min(1,m.travel/.20f),cx=(m.cartX-.45f*(1-enter))*w;
+            float cx=m.cartX*w;
             CaveMiningScreen.cart(p,cx,gy+w*.10f,w*.14f,(int)(m.loads*loading),null,clock,m.travel*2);
-            p.line(0,gy+w*.21f,w,gy+w*.21f,0xFFB5B3BD,w*.008f);
-        }
+        }else CaveMiningScreen.cart(p,m.cartX*w,gy+w*.10f,w*.14f,0,null,clock,0);
+        p.line(0,gy+w*.21f,w,gy+w*.21f,0xFFB5B3BD,w*.008f);
     }
     private void team(Painter p,GameCore c,Layout L){
         CaveMining m=c.mining;float w=L.w,gy=ground(L),t=m.phase==CaveMining.PUSH?Math.min(1,m.travel/CaveMining.LOAD_TIME):0;

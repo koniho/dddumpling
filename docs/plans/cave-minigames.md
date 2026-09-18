@@ -107,9 +107,11 @@ their own case row. Normal blind boxes, Star Path, cubes and boss prizes keep th
 
 ## Moving tunnel mining
 
-Dumpling Mine presents one key prompt on the wall at a time, from top to bottom, with positions
-spaced for sequences of two, three or four keys. Each correct strike targets that position,
-throws tumbling rocks left and shakes the scene with native haptic feedback. A completed
+Dumpling Mine presents all sequence prompts on the wall from top to bottom, with positions
+spaced for sequences of two, three or four keys. Only the current prompt is in full color;
+upcoming prompts and completed rock slots are faded. Each correct strike targets that position,
+turns the prompt into a large tumbling rock flying toward the visible parked cart, and shakes
+the scene with native haptic feedback. A completed
 sequence clears a wall; the dumpling walks forward as the tunnel scrolls to the next segment.
 
 Five walls build a pile. Swiping that pile calls the cheering team to carry rocks into a cart,

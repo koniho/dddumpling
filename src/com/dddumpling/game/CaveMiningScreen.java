@@ -23,11 +23,16 @@ final class CaveMiningScreen extends Draw {
         if(c.bonusParading()){Parade.draw(p,c,L,Math.min(1,c.paradeTimer/.35f));return;}
         if(m.phase==CaveMining.DIG) {
             p.save();p.translate((float)Math.sin(m.scene.clock*91)*w*.008f*shake,(float)Math.sin(m.scene.clock*113)*w*.005f*shake);
-            float nr=w*.048f,x=CaveMiningScene.wallX(m)*w,y=CaveMiningScene.promptY(m,L,m.pos/(float)(m.length-1));
-            int g=m.sequence[m.pos];
-            p.fillCircle(x,y,nr*1.28f,0xFF241A24);
-            p.strokeCircle(x,y,nr*1.28f,m.bad>0?ROSE:GOLD,w*.005f);
-            Kawaii.draw(p,g,x,y,nr,Glyph.COLOR[g],1,0);p.restore();
+            float nr=w*.043f,x=CaveMiningScene.wallX(m)*w;
+            for(int i=0;i<m.length;i++) {
+                float y=CaveMiningScene.promptY(m,L,i/(float)(m.length-1));
+                Painter q=i==m.pos?p:new OpacityPainter(p,.25f);
+                q.fillCircle(x,y,nr*1.28f,0xFF241A24);
+                if(i<m.pos)CaveArt.tumbling(q,x,y,nr,i*77,255,0);
+                else Kawaii.draw(q,m.sequence[i],x,y,nr,Glyph.COLOR[m.sequence[i]],1,0);
+                if(i==m.pos)q.strokeCircle(x,y,nr*1.28f,m.bad>0?ROSE:GOLD,w*.005f);
+            }
+            p.restore();
         } else if(m.phase==CaveMining.FULL) {
             // No sequence and no live keyboard while the cart is waiting for a swipe.
             p.text("SWIPE THE PILE!",w*.5f,top+h*.17f,type(s*.78f),GOLD,Painter.CENTER,true);

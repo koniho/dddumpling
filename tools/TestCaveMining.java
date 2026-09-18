@@ -106,11 +106,14 @@ final class TestCaveMining extends Check {
                     -CaveMiningScene.promptY(m,L,(pos-1)/(float)(length-1))>=L.w*.119f;
             spaced&=last>first && last<CaveMiningScene.ground(L);
         }
-        check("all sequence lengths progress down the wall with room for one prompt",spaced);
+        check("all sequence lengths space their prompts down the wall",spaced);
         m.update(c,1.3f);check("idle friends cheer with a voice cue",ear.lastCaveSound==Sfx.MINING_CHEER && m.scene.cheerPose>0);
         int sounds=ear.caveSounds;m.update(c,.1f);check("cheers are spaced rather than frame repeated",ear.caveSounds==sounds);
         c.tapBonus(m.sequence[0]);check("dig targets the current prompt and shakes",m.scene.hitFraction==0 && m.scene.cursor==4 && m.scene.shake>0 && m.scene.takeFeedback()==1);
         check("dig feedback is consumed once",m.scene.takeFeedback()==0);
+        check("hit prompt becomes a prompt-sized flying rock",CaveMiningScene.rockRadius(0)==.043f
+                && CaveMiningScene.rockRadius(1)<CaveMiningScene.rockRadius(0)
+                && m.scene.age[0]==0 && m.scene.height[0]==0 && m.scene.startX[0]==m.scene.distance+.79f);
         c.tapBonus(m.sequence[1]);check("last dig targets bottom of wall",m.scene.hitFraction==1 && m.phase==CaveMining.ADVANCE);
         float travel=m.travel,clock=m.scene.clock;Pause.open(c);c.update(1,L);
         check("pause freezes tunnel movement and clears impact haptics",m.travel==travel && m.scene.clock==clock && m.scene.takeFeedback()==0);Pause.resume(c);
