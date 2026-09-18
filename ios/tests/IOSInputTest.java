@@ -457,7 +457,7 @@ public final class IOSInputTest extends Check {
         check("native cave introduction waits after explorer choice",c.stageBanner>0 && c.cave.z==0);
         for(int i=0;i<120;i++)game.update(DT);
         c.cave.phase=Cave.FORK;c.cave.z=c.cave.cameraZ=2f;c.cave.fork=0;
-        tap(game,Cave.branchX(0,-1,2.4f)*l.w,c.cave.screenY(2.4f,l));
+        tap(game,c.cave.branchScreenX(-1,l),c.cave.branchScreenY(-1,l));
         check("native lantern selects a cave route",c.cave.routes[0]==-1 && c.cave.phase==Cave.WALK);
         c.cave.encounter(c,Cave.ROCKS);float x=l.w*.5f,y=c.cave.playerY(l),before=c.cave.traps.targetX;
         game.touch(one(0,17,x,y));game.touch(two(2,0,88,0,0,17,x+30,y));
@@ -465,6 +465,12 @@ public final class IOSInputTest extends Check {
         game.touch(two(6,0,88,0,0,17,x+30,y));
         check("other native finger cannot end cave drag",c.cave.input.pointer==17);
         game.touch(one(3,17,x+30,y));check("native cancel ends cave drag",c.cave.input.pointer<0);
+        Host host=new Host();game.setHost(host);c.cave.effects.takeFeedback();
+        c.cave.effects.cue(c,Sfx.CAVE_CRASH,1);game.update(DT);
+        check("native cave impact vibrates once",host.ticks==1);
+        game.update(DT);check("native cave impact does not repeat",host.ticks==1);
+        c.cave.effects.cue(c,Sfx.CAVE_RUMBLE,.5f);Pause.release(c);game.update(DT);
+        check("released cave cue cannot vibrate later",host.ticks==1);
     }
 
     private static void caveBand() {

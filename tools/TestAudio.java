@@ -6,6 +6,13 @@ final class TestAudio extends Check {
     /** What the two frenzy squish sounds are, and that they are the right shape for the job. */
     static void frenzySounds(Layout L) {
         group("frenzy sounds");
+        for(int id=Sfx.CAVE_RUMBLE;id<=Sfx.CAVE_SINK;id++){
+            short[] effect=Sfx.build(id);int head=0,tail=0;
+            for(int i=0;i<effect.length/2;i++)head=Math.max(head,Math.abs(effect[i]));
+            for(int i=effect.length*3/4;i<effect.length;i++)tail=Math.max(tail,Math.abs(effect[i]));
+            check("cave cue fits between impacts "+id,effect.length<Sfx.RATE*CaveTraps.GAP && head>1000);
+            check("cave cue fades before next impact "+id,tail<head/4);
+        }
         short[] bloop=Sfx.build(Sfx.UI_BLOOP);
         check("UI bloop stays brief",bloop.length>Sfx.RATE*.07f && bloop.length<Sfx.RATE*.15f);
         check("UI bloop is tonal",crossRate(bloop)>300f && crossRate(bloop)<1200f);

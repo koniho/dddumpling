@@ -343,6 +343,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)landShuffle { [self playEffect:DDSfx_LAND_SHUFFLE rate:1 gain:.16f]; }
 - (void)slimeCoverWithBoolean:(jboolean)release { [self playEffect:release ? DDSfx_SLIME_RELEASE : DDSfx_SLIME_COVER rate:1 gain:.65f]; }
 - (void)debuffDown { [self playEffect:DDSfx_DEBUFF_DOWN rate:1 gain:.8f]; }
+- (void)caveEventWithInt:(jint)sound { [self playEffect:sound rate:1 gain:.85f]; }
 - (void)linkedThud { [self playEffect:DDSfx_LINKED_THUD rate:1 gain:.85f]; }
 - (void)wrong { [self playEffect:DDSfx_WRONG rate:1 gain:1]; }
 - (void)damage { [self playEffect:DDSfx_DRIP rate:1 gain:1]; }

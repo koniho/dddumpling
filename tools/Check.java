@@ -129,6 +129,8 @@ abstract class Check {
         int shuffleBlips, debuffDowns;
         public void shuffleBlip() { shuffleBlips++; }
         public void debuffDown() { debuffDowns++; }
+        int caveSounds,lastCaveSound;
+        public void caveEvent(int sound) { caveSounds++;lastCaveSound=sound; }
         int linkedThuds;
         public void linkedThud() { linkedThuds++; }
         public void wrong() { wrongs++; }

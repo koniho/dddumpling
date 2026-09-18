@@ -1,70 +1,55 @@
 # Cave expedition
 
 Tracking issue: [#54](https://github.com/koniho/dddumpling/issues/54).
+Active branch: `cave-minigames`.
 
-Feature branch: `feature/cave-expedition`.
+## Gauntlet pacing
 
-## First playable version
+Developer stages 21–25 are cave expeditions; production retains its original four-land progression.
+First entry keeps the saved explorer selection. Normal play uses LOFI DRIFT.
 
-The cave is gated by `BuildFlags.DEVELOPER`. Production retains four playable lands and its
-original scenery cycle after stage 20; cave choices and discovery save slots remain intact.
+The explorer now runs at 1.15 route units per second, over three times the former .36.
+Seven encounters repeat through a stage with roughly 1–2 seconds of travel between them.
+Three forks allow a quick tap choice, with a .55-second fallback; the first has a concurrent
+finger hint instead of a separate blocking lesson. There are no route heart pickups.
 
-In developer builds, the fifth land follows Mushroom Land at stage 21. Its picker entry unlocks from the mushroom
-boss friend. Stages 21–25 use expeditions; stage 26 resumes the existing endless waves.
-The developer ALL LANDS chip or a stage jump can reach it immediately.
+- Enemies spring from side cover and rush in over 1.8 seconds. Their two- or three-key
+  response is active from the first animation frame; aiming the lantern is not a combat gate.
+- Cave-ins zoom toward the centered explorer and crack the floor immediately. Six rocks
+  start falling at .40-second intervals, each with .72 seconds to land and a visible shadow.
+  Relative dragging retains a 1.3-screen-width/second steering limit. Collision tolerance is
+  unchanged; the close-up is visual, not a larger damage target.
+- Quicksand zooms in immediately, pulls the dumpling down with a frightened face and flailing
+  arms, and allows eight alternating presses over 2.8 seconds. Progress lifts the dumpling.
+- Encounters do not overlap. Each failure can charge one life; survivors resume running.
+  The exit enters the alternating Cave Band / Dumpling Mine interludes.
 
-First entry opens a short explorer-selection scene: cream, rainbow, golden, silver, sparkly mint,
-or purple. Tapping one saves it across cave levels and app restarts, then animates it into the
-entrance. No choice is saved until a player selects one.
+Encounter deadlines do not multiply the developer travel-speed setting. Kids Mode and pause
+retain the shared game-clock behavior. Zooms and effects freeze along with their encounters.
 
-The camera follows the automatically walking dumpling. Tap the playfield to aim its lantern.
-At a fork, tapping a branch commits that route. Three fading lights show the three-second wait;
-when it expires, the branch nearest the beam is selected. The first stage's first fork shows a
-finger tapping a branch, a swinging beam, and a dotted path before the countdown begins.
-A real tap dismisses that demonstration immediately.
+## Winding passages and light
 
-Enemies wait as eyes in the dark. Holding the beam over one for 250 ms reveals its response;
-it then approaches for 4.5 seconds at normal speed. Complete the character-key response before
-it arrives. Wrong keys keep progress and consume time. Arrival costs one life, once.
+A sampled spline moves left, right, forward and back. Arc-length lookup keeps forward motion
+consistent through bends. Branch offsets follow the local route normal, and the camera follows
+both world axes. A fast .14-second trap zoom and .20-second release keep the action centered.
 
-Forks offer different encounters and hearts. Walking over a heart restores one life up to the
-normal maximum. The heart sits within the junction's lookahead, so recovery can inform a choice.
+Only passage floor and cave walls fill the world; no carpet of loose stones remains. Lantern
+falloff is evaluated on floor and wall facets, so empty space receives no painted light fan.
+Nearby surfaces retain a small readable ambient glow. Side-cover boulders, falling rocks and
+the exit remain encounter objects.
 
-- Cave-in: a 1.2-second dust/drag warning, then six rocks with visible landing shadows. Drag
-  sideways anywhere in the playfield, using the star course's relative-drag interaction.
-- Quicksand: a 1.2-second warning, then alternate the two illustrated keys fourteen times.
-- Each trap has six active seconds and can cost at most one life. Failed traps let surviving
-  players continue. Encounters never overlap.
+## Development seams and verification
 
-The exit completes the stage and enters the normal interlude. The first expedition takes roughly
-44–46 seconds for the current bounded test players. Walking now covers .36 route units per second, twice the original .18. Encounter and trap clocks
-retain their existing durations. The walker uses normalized Softbody springs for step-driven
-lift and squash, which settle when walking stops and freeze on pause.
+`CaveRoute` owns the spline, forks and event schedule. `Cave` owns progress, projection and
+encounters; `CaveTraps` owns steering and escape rules. `CaveTerrain` shades corridor surfaces;
+`CaveScreen` stages encounters. All remain pure Java behind Painter.
 
-The longer stages require a longer full-run
-soak budget; they do not add pressure to the old falling-word difficulty ramp.
+`./check.sh -q -s Cave -f 106,107` tests the expedition and renders its main visual states.
+Bounded tests cover stages 21–25 on both fork choices, with reaction delays, miss rates and
+press limits. The rock pilot sees only rocks already falling and checks its bounded steering
+trajectory at their predicted impact times. The full soak still guards the overall skill curve.
 
-## Development seams
+Device playtesting remains necessary for the faster motion and reaction windows. Production
+is still gated pending the broader cave review.
 
-- `CaveSelection` / `CaveDumpling`: first-entry selection, saved finishes, and spring-driven walking.
-- `CaveRoute`: authored fork contents, hearts, and path geometry.
-- `Cave`: route progress, lantern identification, encounters, combat, and completion.
-- `CaveTraps`: timed trap rules and bounded steering.
-- `CaveInput`: platform-free pointer ownership, shared touch commands, and cancellation.
-- `CaveScreen` / `CaveArt`: drawing with the existing Painter/Kawaii helpers, layered brown stone,
-  light-brown path edges, warm lantern light, and darker unlit areas.
-
-GameCore retains frame-loop and key-routing order. Cave rules run in the PLAY section before
-ordinary word spawning. Input is released on pause, settings, trap completion, stage changes,
-and death. Android and iOS route their touch packets through `CaveInput`; both native stores
-persist the explorer choice. No new Android dependency reaches a pure file.
-
-## Validation and iteration
-
-`./check.sh -q -s Cave -f 106,107` exercises the expedition and renders its main visual states.
-The bounded bot pays its normal reaction time and press budget. For rocks, it can react only to
-already-visible falling rocks and is subject to the same steering speed cap.
-
-This version uses one authored route with three forks across the five cave stages, varying the
-combat responses. Existing synthesized effects and scene music are reused. Device playtesting
-should guide later route variety, enemy designs, sound changes, and trap difficulty.
+Rocks tumble along straight and angled approaches into fixed landing markers. Each crash throws rotating shards and expanding dust that persist after the encounter. Short synthesised rumble, crash, ambush and sinking cues accompany the action. Scene rumble leaves the keyboard steady; native haptics fire once per cue, with stronger rock impacts on Android. Quicksand pulses every 0.65 seconds. Pausing clears queued haptics and leaving clears debris and rumble.

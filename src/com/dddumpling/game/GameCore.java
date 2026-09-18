@@ -214,6 +214,7 @@ final class GameCore {
         void clearWord();
         void wrong();
         void linkedThud();
+        default void caveEvent(int sound) {}
         void shuffleBlip();
         void debuffDown();
         void slimeCover(boolean release);

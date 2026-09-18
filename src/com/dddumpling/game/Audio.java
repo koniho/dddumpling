@@ -365,6 +365,7 @@ final class Audio implements GameCore.Sound {
     @Override public void landShuffle() { play(Sfx.LAND_SHUFFLE, 1f, 0.16f); }
     @Override public void slimeCover(boolean release) { play(release ? Sfx.SLIME_RELEASE : Sfx.SLIME_COVER, 1f, 0.65f); }
     @Override public void debuffDown() { play(Sfx.DEBUFF_DOWN, 1f, 0.8f); }
+    @Override public void caveEvent(int sound) { play(sound, 1f, .85f); }
     @Override public void linkedThud() { play(Sfx.LINKED_THUD, 1f, 0.85f); }
 
     @Override public void wrong() {

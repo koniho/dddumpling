@@ -403,24 +403,28 @@ The developer settings **ALL LANDS** chip enables every land for the current ses
 ## Cave expedition
 
 The developer-only fifth land, after Mushroom Land, begins at stage 21. Production retains
-its original four-land progression. The **explorer dumpling** automatically
-walks along the cave path while a following camera looks ahead. Tap the playfield to aim the
-**lantern beam**; illuminate a branch at a **fork** to choose it. Three fading lights show its
-limited pause. A finger demonstrates the first fork before that countdown begins.
+its original four-land progression. The **explorer dumpling** runs through a winding gauntlet
+at 1.15 route units per second. Arc-length sampling keeps travel speed steady through lateral
+bends and downward turns; the camera follows both axes. Seven encounters are spaced about
+1–2 seconds of travel apart. Forks give a short 0.55-second choice, then follow the lantern.
+Tap a branch to choose immediately or tap elsewhere to aim the lantern during travel.
 
-**Shadow enemies** reveal a character-key response in the beam, then approach the explorer.
-Completing the response defeats them; reaching the explorer costs a life. **Route hearts** heal
-one life when walked over. A **cave-in** uses sideways dragging to dodge falling rocks and their
-landing shadows; **quicksand** uses alternating character keys to escape. Reaching the **exit**
-completes the stage. `CaveRoute`, `Cave`, `CaveTraps`, `CaveInput`, `CaveScreen`, and `CaveArt`
-separate route content, rules, controls, and drawing. See [cave design](docs/plans/cave-expedition.md).
-Normal cave play uses **LOFI DRIFT**, respecting music volume and mute; leaving the cave restores
-MOOG SWING.
+**Side ambushes** burst from behind a rock, show their character-key response immediately,
+and rush the explorer over 1.8 seconds. **Cave-ins** start dropping rocks immediately: a
+0.72-second fall, landing shadows, a cracked shaking floor, and a fast close-up. Drag sideways
+to dodge. **Quicksand** zooms in immediately, rapidly sinks the frightened dumpling, and asks
+for eight alternating key presses within 2.8 seconds. Each failed encounter costs at most one
+life; route heart pickups are removed. Reaching the **exit** completes the stage.
+
+`CaveRoute`, `Cave`, `CaveTraps`, `CaveInput`, `CaveTerrain`, `CaveScreen`, and `CaveArt`
+separate geometry, rules, controls, wall/floor lighting, and encounter animation.
+See [cave design](docs/plans/cave-expedition.md). Normal cave play uses **LOFI DRIFT**,
+respecting music volume and mute; leaving the cave restores MOOG SWING.
 
 The **explorer selection** (`CaveSelection`) appears on first cave entry. Choose cream, rainbow,
 golden, silver, sparkly mint, or purple; that finish persists across cave levels and restarts.
-`CaveDumpling` draws the chosen finish and uses a normalized `Softbody` to give each walking step
-a small spring-driven lift and squash. Cave walking speed is .36 route units per second.
+`CaveDumpling` draws the chosen finish and uses a normalized `Softbody` for running lift and
+squash. Its quicksand expression has wide eyes, a gasping mouth, sweat, and flailing arms.
 
 The title’s **Best Score** fades out before the display case heading appears, stays hidden
 while the case is open, and fades back in after the case heading disappears. `Screens.caseOut`

@@ -75,26 +75,35 @@ final class Preview {
         shot(dir,"106-cave-stage-introduction",c,L,w,h,ss);
         c.stageBanner=0f;Cave v=c.cave;
         shot(dir,"106-cave-entrance",c,L,w,h,ss);
-        v.z=v.cameraZ=2f;v.phase=Cave.FORK;v.timer=.7f;v.fork=0;
+        v.z=v.cameraZ=2f;v.phase=Cave.FORK;v.timer=.10f;v.fork=0;
         shot(dir,"106-cave-first-fork",c,L,w,h,ss);
-        v.timer=3.6f;
-        shot(dir,"106-cave-fork-countdown",c,L,w,h,ss);
-        v.choose(c,-1);v.z=v.cameraZ=2.6f;v.aim=-.4f;
+        v.timer=.42f;shot(dir,"106-cave-fork-countdown",c,L,w,h,ss);
+        v.choose(c,-1);v.z=v.cameraZ=2.6f;v.aim=CaveRoute.heading(v.z);
         shot(dir,"106-cave-chosen-path",c,L,w,h,ss);
-        v.encounter(c,Cave.SHADOW);v.aim=1.3f;
-        shot(dir,"106-cave-hidden-enemy",c,L,w,h,ss);
-        v.phase=Cave.FIGHT;v.aim=0f;v.timer=1.5f;v.responsePos=1;v.enemyZ=v.z+.55f;
-        shot(dir,"106-cave-enemy-response",c,L,w,h,ss);
-        v.phase=Cave.WALK;v.encounter(c,Cave.ROCKS);v.traps.age=.6f;
-        shot(dir,"106-cave-rock-warning",c,L,w,h,ss);
-        v.traps.age=2.1f;v.traps.x=.65f;
+        v.routes[1]=-1;v.routes[2]=1;
+        for(int bend=0;bend<3;bend++) {
+            v.z=v.cameraZ=3.2f+bend*2.5f;v.aim=CaveRoute.heading(v.z);
+            shot(dir,"106-cave-winding-"+bend,c,L,w,h,ss);
+        }
+        v.z=v.cameraZ=2.75f;v.encounter(c,Cave.SHADOW);v.update(c,.06f,L);
+        shot(dir,"106-cave-side-ambush",c,L,w,h,ss);
+        v.update(c,.85f,L);v.responsePos=1;
+        shot(dir,"106-cave-enemy-rush",c,L,w,h,ss);
+        v.phase=Cave.WALK;v.encounter(c,Cave.ROCKS);
+        shot(dir,"106-cave-rock-immediate",c,L,w,h,ss);
+        v.update(c,.3f,L);shot(dir,"106-cave-rock-closeup",c,L,w,h,ss);
+        v.traps.x=v.traps.targetX=.2f;v.update(c,.44f,L);v.effects.update(.12f);
+        shot(dir,"106-cave-rock-breakup",c,L,w,h,ss);
+        v.phase=Cave.WALK;v.effects.update(.22f);
+        shot(dir,"106-cave-rock-dust-after",c,L,w,h,ss);
+        v.phase=Cave.ROCKS;v.traps.age=1.12f;v.traps.landed[0]=true;v.traps.x=.65f;
         shot(dir,"106-cave-falling-rocks",c,L,w,h,ss);
-        v.phase=Cave.WALK;v.z=v.cameraZ=5.72f;v.routes[1]=-1;v.encounter(c,Cave.SAND);
-        v.traps.age=4f;v.traps.hits=5;
-        shot(dir,"106-cave-quicksand",c,L,w,h,ss);
-        v.phase=Cave.WALK;v.z=v.cameraZ=6.4f;c.lives=1;v.aim=.2f;
-        shot(dir,"106-cave-heart-route",c,L,w,h,ss);
-        v.z=v.cameraZ=Cave.LENGTH;v.phase=Cave.EXIT;
+        v.phase=Cave.WALK;v.z=v.cameraZ=5.75f;v.routes[1]=-1;v.encounter(c,Cave.SAND);
+        v.update(c,.2f,L);shot(dir,"106-cave-quicksand-start",c,L,w,h,ss);
+        v.traps.age=1.4f;v.traps.hits=0;
+        shot(dir,"106-cave-quicksand-panic",c,L,w,h,ss);
+        v.traps.hits=6;shot(dir,"106-cave-quicksand-escape",c,L,w,h,ss);
+        v.z=v.cameraZ=Cave.LENGTH;v.phase=Cave.EXIT;v.focus=0;
         shot(dir,"106-cave-exit",c,L,w,h,ss);
         for(int finish=0;finish<CaveDumpling.COUNT;finish++) {
             GameCore pick=new GameCore(new Mem(),973L);pick.startGame();pick.jumpToStage(21,L);
@@ -102,7 +111,7 @@ final class Preview {
             if(finish==0)shot(dir,"107-cave-choose-explorer",pick,L,w,h,ss);
             pick.cave.selection.pick(pick,finish);step(pick,L,.4f);
             if(finish==1)shot(dir,"107-cave-selected-departure",pick,L,w,h,ss);
-            step(pick,L,.5f);step(pick,L,.53f);
+            step(pick,L,.5f);step(pick,L,.25f);
             shot(dir,"107-cave-walker-"+finish,pick,L,w,h,ss);
             if(finish==2)for(int pose=0;pose<3;pose++) {
                 step(pick,L,.10f);shot(dir,"107-cave-bounce-"+pose,pick,L,w,h,ss);
@@ -1743,7 +1752,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);
