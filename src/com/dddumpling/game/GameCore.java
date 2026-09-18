@@ -2454,6 +2454,7 @@ final class GameCore {
         shake = decay(shake, dt * 2.6f);
         flash = decay(flash, dt * 2.2f);
         skyGlow = decay(skyGlow, dt * 2.4f);
+        float stageIntroLeft = stageBanner;
         stageBanner = decay(stageBanner, dt);
         perfectBanner = decay(perfectBanner, dt);
         pushT = decay(pushT, dt);
@@ -2679,7 +2680,15 @@ final class GameCore {
             return;
         }
 
-        if (Cave.active(this)) { cave.update(this, dt, L); return; }
+        if (Cave.active(this)) {
+            // The arrival skit owns the field before expedition time can advance.
+            float caveDt = cave.phase == Cave.CHOOSE ? dt : Math.max(0f, dt - stageIntroLeft);
+            if (caveDt > 0f) {
+                stageGap = 0f;
+                cave.update(this, caveDt, L);
+            }
+            return;
+        }
 
         updatePower(dt, L);
         Blade.updateTrail(this, dt, L);

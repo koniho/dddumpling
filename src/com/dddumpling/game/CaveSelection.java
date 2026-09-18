@@ -25,7 +25,7 @@ final class CaveSelection extends Draw {
     }
     void update(GameCore c,float dt) {
         age+=dt;
-        if(selected>=0 && age>=DEPART) { c.cave.phase=Cave.WALK;c.stageBanner=0f; }
+        if(selected>=0 && age>=DEPART) { c.cave.phase=Cave.WALK;c.stageBanner=GameCore.BANNER_TIME; }
     }
     void draw(Painter p,GameCore c,Layout L) {
         float cy=L.playTop+L.w*.14f;

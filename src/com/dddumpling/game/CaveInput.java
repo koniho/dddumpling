@@ -7,6 +7,7 @@ final class CaveInput {
     void release() { pointer = -1; }
     boolean down(GameCore c, Layout L, int id, float x, float y) {
         if (!Cave.active(c) || c.paused || c.settingsOpen || c.pendingBonus) return false;
+        if (c.stageBanner > 0f && c.cave.phase != Cave.CHOOSE) return false;
         if (c.keyAt(x,y,L) >= 0 || y < L.playTop || y >= L.deckTop) return false;
         if (c.cave.phase != Cave.ROCKS) return c.cave.tap(c,L,x,y);
         if (pointer < 0) { pointer=id; offset=c.cave.traps.x*L.w-x; }

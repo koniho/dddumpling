@@ -23,6 +23,7 @@ final class CoreTest {
         only = args.length > 0 && !args[0].isEmpty() ? args[0].toLowerCase() : null;
 
         group("Settings", () -> TestSettings.all(L));
+        group("Cave Intro", () -> TestCaveIntro.all(L));
         group("Cave", () -> TestCave.all(L));
         group("Mystery pickups", () -> TestMystery.all(L));
         group("Linked pairs", () -> TestLinkedPairs.all(L));
