@@ -53,3 +53,7 @@ Device playtesting remains necessary for the faster motion and reaction windows.
 is still gated pending the broader cave review.
 
 Rocks tumble along straight and angled approaches into fixed landing markers. Each crash throws rotating shards and expanding dust that persist after the encounter. Short synthesised rumble, crash, ambush and sinking cues accompany the action. Scene rumble leaves the keyboard steady; native haptics fire once per cue, with stronger rock impacts on Android. Quicksand pulses every 0.65 seconds. Pausing clears queued haptics and leaving clears debris and rumble.
+
+Rockfall and quicksand ease the follow camera from the explorer's current cave position to the center of the playfield over 300 ms. Magnification and camera travel share a smoothstep curve; hazard animation and input continue during the zoom. Each hazard plays its distinct entry cue once.
+
+The rockfall ground slides up from below the playfield during that same 300 ms camera move. Low continuous scene shake lasts throughout rockfall, with stronger impact jolts layered over it; the keyboard stays steady.

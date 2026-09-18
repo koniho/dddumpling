@@ -24,8 +24,38 @@ final class TestCave extends Check {
         check("sinking pulses on gameplay clock",v.effects.takeFeedback()==1 && ear.lastCaveSound==Sfx.CAVE_SINK);
         v.leave();check("leaving clears rumble and debris",v.effects.rumble==0 && v.effects.age[0]>=.65f && v.effects.takeFeedback()==0);
     }
+    static void zoomTransition(Layout L) {
+        for(int kind:new int[]{Cave.ROCKS,Cave.SAND}) {
+            GameCore c=game(L);Cave v=c.cave;Ear ear=new Ear();c.sound=ear;
+            v.z=1.3f;v.cameraZ=1.17f;
+            float x=v.playerX(),y=v.playerY(L),camera=v.cameraZ;
+            v.encounter(c,kind);
+            check("hazard begins at explorer's existing position "+kind,
+                    Math.abs(v.playerX()-x)<.0001f && v.playerY(L)==y && v.cameraZ==camera && v.zoom()==1);
+            check("hazard has its own entry sound "+kind,ear.caveSounds==1
+                    && ear.lastCaveSound==(kind==Cave.ROCKS?Sfx.CAVE_RUMBLE:Sfx.CAVE_SINK));
+            if(kind==Cave.ROCKS)check("rockfall ground begins below playfield",CaveScreen.rockFloorY(v,L)-L.w*.16f>=L.deckTop);
+            v.update(c,.10f,L);float first=v.focus;
+            if(kind==Cave.ROCKS)check("rockfall ground scrolls toward explorer",CaveScreen.rockFloorY(v,L)>v.playerY(L)
+                    && CaveScreen.rockFloorY(v,L)<L.deckTop+L.w*.18f);
+            v.update(c,.10f,L);
+            check("hazard camera eases continuously "+kind,first>0 && first<v.focus && v.focus<1 && v.cameraZ< v.z);
+            v.update(c,.10f,L);
+            check("hazard camera arrives at 300ms "+kind,v.focus==1 && v.cameraZ==v.z
+                    && Math.abs(v.playerX()-.5f)<.001f && Math.abs(v.playerY(L)-(L.playTop+L.deckTop)*.5f)<.01f);
+            check("zoom does not replay entry sound "+kind,ear.caveSounds==1);
+            if(kind==Cave.ROCKS) {
+                check("rockfall ground settles with camera",Math.abs(CaveScreen.rockFloorY(v,L)-v.playerY(L))<.01f);
+                v.effects.rumble=0;boolean sustained=true;
+                for(float at=0;at<CaveTraps.DURATION;at+=.02f){v.traps.age=at;sustained&=CaveScreen.shakeStrength(v)>=.25f;}
+                check("rockfall shake lasts entire hazard",sustained);
+                v.phase=Cave.WALK;check("sustained shake stops after rockfall",CaveScreen.shakeStrength(v)==0);
+            }
+        }
+    }
     static void all(Layout L) {
         group("cave expedition");
+        zoomTransition(L);
         feedback(L);
         selection(L);
         GameCore c=game(L);Cave v=c.cave;
@@ -171,8 +201,11 @@ final class TestCave extends Check {
         GameCore c=game(L);Cave v=c.cave;v.encounter(c,Cave.ROCKS);
         check("first rock falls immediately with a readable landing window",v.traps.rockProgress(0)==0
                 && CaveTraps.FALL>=.65f && CaveTraps.FALL<.85f);
-        v.update(c,.16f,L);
-        check("trap closeup centers explorer and rapidly zooms",v.focus==1f && Math.abs(v.playerX()-.5f)<.001f);
+        v.update(c,.15f,L);
+        check("hazard zoom is halfway after 150ms",Math.abs(v.focus-.5f)<.001f);
+        v.update(c,.15f,L);
+        check("trap closeup centers explorer after 300ms",v.focus==1f && Math.abs(v.playerX()-.5f)<.001f
+                && Math.abs(v.playerY(L)-(L.playTop+L.deckTop)*.5f)<.01f);
         float focus=v.focus;Pause.open(c);c.update(1,L);check("pause freezes closeup",v.focus==focus);Pause.resume(c);
         v.encounter(c,Cave.SAND);check("quicksand accepts escape keys on arrival",v.wanted()>=0);
         v.traps.age=1.2f;check("quicksand visibly sinks fast",CaveScreen.sink(v)>.5f);

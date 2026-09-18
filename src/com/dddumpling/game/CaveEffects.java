@@ -15,7 +15,7 @@ final class CaveEffects {
     void update(float dt){clock+=dt;rumble=Math.max(0,rumble-dt*3.5f);for(int i=0;i<6;i++)age[i]+=dt;}
     void impact(GameCore c,Layout L,float lane){
         Cave v=c.cave;int i=cursor++%6;age[i]=0;
-        x[i]=v.pathX(v.cameraZ)+(lane-.5f)*L.w/(Cave.scale(L)*v.zoom());y[i]=v.pathY(v.z);
+        x[i]=v.pathX(v.z)+(lane-.5f)*L.w/(Cave.scale(L)*v.zoom());y[i]=v.pathY(v.z);
         cue(c,Sfx.CAVE_CRASH,1);
     }
     void draw(Painter p,Cave v,Layout L){

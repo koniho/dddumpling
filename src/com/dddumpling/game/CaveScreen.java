@@ -8,12 +8,13 @@ final class CaveScreen extends Draw {
         p.fillRect(0,0,L.w,L.deckTop,CaveArt.DARK);p.fillRect(0,L.deckTop,L.w,L.h,CaveArt.ROCK);
         if(v.phase==Cave.CHOOSE){v.selection.draw(p,c,L);return;}
         p.save();p.clipRect(0,L.playTop,L.w,L.deckTop);
-        p.translate((float)Math.sin(v.effects.clock*83)*L.w*.006f*v.effects.rumble,
-                (float)Math.sin(v.effects.clock*107)*L.w*.004f*v.effects.rumble);
+        float rumble=shakeStrength(v);
+        p.translate((float)Math.sin(v.effects.clock*83)*L.w*.006f*rumble,
+                (float)Math.sin(v.effects.clock*107)*L.w*.004f*rumble);
         CaveTerrain.draw(p,v,L);
         if(v.phase==Cave.ROCKS||v.phase==Cave.SAND)floor(p,c,L);
         if(v.phase==Cave.SHADOW||v.phase==Cave.FIGHT)enemy(p,c,L);
-        float px=v.playerX()*L.w,py=v.playerY(L),r=L.w*(v.phase==Cave.SAND?.065f:.043f)*v.zoom();
+        float px=v.playerX()*L.w,py=v.playerY(L),r=L.w*(.043f+(v.phase==Cave.SAND?.022f*v.focus:0))*v.zoom();
         float bounce=v.walker.lift()*r;
         boolean sand=v.phase==Cave.SAND;
         float sink=sand?sink(v):0;
@@ -43,9 +44,18 @@ final class CaveScreen extends Draw {
         if(v.phase==Cave.EXIT)p.text("EXIT REACHED",L.w*.5f,L.playTop+L.w*.18f,type(L.unit*.8f),CaveArt.LAMP,Painter.CENTER,true);
         Renderer.particles(p,c);p.restore();Renderer.keys(p,c,L);
     }
+    static float shakeStrength(Cave v) {
+        float sustained=v.phase==Cave.ROCKS?.38f+.12f*(float)Math.sin(v.traps.age*19):0;
+        return Math.max(v.effects.rumble,sustained);
+    }
+    static float rockFloorY(Cave v,Layout L) {
+        float t=Math.min(1,v.zoomAge/Cave.HAZARD_ZOOM),ease=t*t*(3-2*t);
+        float below=L.deckTop+L.w*.18f;
+        return below+(v.playerY(L)-below)*ease;
+    }
     static float sink(Cave v){return Math.max(.12f,Math.min(.94f,.12f+1.0f*v.traps.age/CaveTraps.DURATION-v.traps.hits*.035f));}
     private static void floor(Painter p,GameCore c,Layout L) {
-        Cave v=c.cave;float x=L.w*.5f,y=v.playerY(L),s=L.w;CaveTraps t=v.traps;
+        Cave v=c.cave;float x=L.w*(.5f+v.hazardOffset()),y=v.playerY(L),s=L.w;CaveTraps t=v.traps;
         if(v.phase==Cave.SAND) {
             for(int i=7;i>0;i--) {
                 float curl=t.age*5+i*.8f;
@@ -57,7 +67,8 @@ final class CaveScreen extends Draw {
                 p.fillCircle(x+(float)Math.cos(a)*rr,y+s*.035f+(float)Math.sin(a)*rr*.45f,s*.006f,CaveArt.MID);
             }
         } else {
-            float rumble=(float)Math.sin(t.age*63)*s*.002f*Math.max(0,1-t.age);
+            y=rockFloorY(v,L);
+            float rumble=(float)Math.sin(t.age*63)*s*.002f;
             p.fillEllipse(x,y+s*.025f,s*.42f,s*.16f,CaveArt.ROCK);
             p.fillEllipse(x,y+s*.015f,s*.40f,s*.145f,CaveArt.LIGHT);
             p.fillEllipse(x,y,s*.38f,s*.13f,CaveArt.FLOOR);
@@ -71,15 +82,15 @@ final class CaveScreen extends Draw {
     private static void rocks(Painter p,GameCore c,Layout L) {
         Cave v=c.cave;CaveTraps t=v.traps;float py=v.playerY(L);
         for(int i=0;i<CaveTraps.ROCK_COUNT;i++) {
-            float progress=t.rockProgress(i),x=t.lanes[i]*L.w;
+            float progress=t.rockProgress(i),x=(t.lanes[i]+v.hazardOffset())*L.w;
             if(progress<0)continue;
             if(t.landed[i])continue;
             float fall=.12f+.88f*progress*progress;
             p.fillEllipse(x,py,L.w*CaveTraps.ROCK_R*(.55f+progress*.45f),L.w*.025f,Glyph.withAlpha(CaveArt.DARK,180));
             p.strokeCircle(x,py,L.w*.075f,CaveArt.LAMP,L.w*.002f);
-            CaveArt.tumbling(p,t.rockX(i,progress)*L.w,py-(1-fall)*L.w*.60f,L.w*CaveTraps.ROCK_R,i*77,255,
+            CaveArt.tumbling(p,(t.rockX(i,progress)+v.hazardOffset())*L.w,py-(1-fall)*L.w*.60f,L.w*CaveTraps.ROCK_R,i*77,255,
                     i+progress*(i%2==0?5f:-7f));
-            for(int j=0;j<3;j++)p.fillCircle(t.rockX(i,progress)*L.w+(j-1)*L.w*.024f,py-(1-fall)*L.w*.6f-L.w*(.08f+j*.022f),L.w*.006f,CaveArt.LIGHT);
+            for(int j=0;j<3;j++)p.fillCircle((t.rockX(i,progress)+v.hazardOffset())*L.w+(j-1)*L.w*.024f,py-(1-fall)*L.w*.6f-L.w*(.08f+j*.022f),L.w*.006f,CaveArt.LIGHT);
         }
         if(t.age<.45f)Renderer.touchHint(p,L.w*(.5f+.2f*t.age/.45f),py+L.w*.09f,L.w*.035f,1.1f,.75f,c.clock);
     }
