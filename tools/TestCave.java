@@ -172,7 +172,7 @@ final class TestCave extends Check {
         c=game(L);v=c.cave;v.nextEvent=CaveRoute.EVENTS_AT.length;
         for(int i=0;i<3;i++)v.routes[i]=-1;
         c.lives=1;
-        for(int i=0;i<650 && v.phase==Cave.WALK;i++)v.update(c,DT,L);
+        for(int i=0;i<(int)(Cave.LENGTH/Cave.WALK_SPEED/DT)+10 && v.phase==Cave.WALK;i++)v.update(c,DT,L);
         check("route has no healing pickups",c.lives==1 && v.phase==Cave.EXIT);
         c=game(L);v=c.cave;c.lives=1;v.encounter(c,Cave.SAND);v.traps.update(c,10f,L);
         check("fatal trap clears cave and touch state",c.state==GameCore.OVER && !v.running && v.traps.kind==-1);
@@ -232,7 +232,7 @@ final class TestCave extends Check {
         c.update(.7f,L);c.cave.selection.pick(c,0);c.update(.9f,L);
         c.stageBanner=0f;
         for(int frame=0;frame<12;frame++)c.update(DT,L);
-        check("walker moves over three times faster",Cave.WALK_SPEED>=1.08f && Math.abs(c.cave.z-Cave.WALK_SPEED*.2f)<.001f);
+        check("walker follows the reduced cave pace",Math.abs(Cave.WALK_SPEED-.805f)<.0001f && Math.abs(c.cave.z-Cave.WALK_SPEED*.2f)<.001f);
         CaveDumpling walking=new CaveDumpling(),idle=new CaveDumpling();float peakLift=0f,peakShape=0f;
         for(int i=0;i<180;i++) {
             walking.update(DT,Cave.WALK_SPEED*DT);idle.update(DT,0f);
@@ -248,6 +248,12 @@ final class TestCave extends Check {
         check("new expedition resets walker physics",Math.abs(c.cave.walker.lift())<.0001f);
     }
     static void gauntlet(Layout L) {
+        check("cave pace is thirty percent slower",Math.abs(Cave.WALK_SPEED/1.15f-.7f)<.0001f
+                && Math.abs(1.8f/Cave.APPROACH-.7f)<.0001f
+                && Math.abs(.72f/CaveTraps.FALL-.7f)<.0001f
+                && Math.abs(.40f/CaveTraps.GAP-.7f)<.0001f
+                && Math.abs(2.8f/CaveTraps.DURATION-.7f)<.0001f);
+        check("slower pacing preserves fast zoom and steering",Cave.HAZARD_ZOOM==.30f && CaveTraps.MAX_VX==1.3f);
         CaveRoute route=new CaveRoute();
         float sideways=0,vertical=0,down=0,length=0;
         for(float at=.02f;at<Cave.LENGTH;at+=.02f) {
@@ -260,12 +266,12 @@ final class TestCave extends Check {
         boolean spacing=true;
         for(int i=1;i<CaveRoute.EVENTS_AT.length;i++) {
             float gap=(CaveRoute.EVENTS_AT[i]-CaveRoute.EVENTS_AT[i-1])/Cave.WALK_SPEED;
-            spacing&=gap>=1f && gap<=2f;
+            spacing&=gap>=1f/Cave.PACE && gap<=2f/Cave.PACE;
         }
-        check("seven gauntlet events with one to two seconds travel",CaveRoute.EVENTS_AT.length==7 && spacing);
+        check("seven gauntlet events with slowed travel gaps",CaveRoute.EVENTS_AT.length==7 && spacing);
         GameCore c=game(L);Cave v=c.cave;v.encounter(c,Cave.ROCKS);
         check("first rock falls immediately with a readable landing window",v.traps.rockProgress(0)==0
-                && CaveTraps.FALL>=.65f && CaveTraps.FALL<.85f);
+                && CaveTraps.FALL>=.65f/Cave.PACE && CaveTraps.FALL<.85f/Cave.PACE);
         v.update(c,.15f,L);
         check("hazard zoom is halfway after 150ms",Math.abs(v.focus-.5f)<.001f);
         v.update(c,.15f,L);
@@ -273,7 +279,7 @@ final class TestCave extends Check {
                 && Math.abs(v.playerY(L)-(L.playTop+L.deckTop)*.5f)<.01f);
         float focus=v.focus;Pause.open(c);c.update(1,L);check("pause freezes closeup",v.focus==focus);Pause.resume(c);
         v.encounter(c,Cave.SAND);check("quicksand accepts escape keys on arrival",v.wanted()>=0);
-        v.traps.age=1.2f;check("quicksand visibly sinks fast",CaveScreen.sink(v)>.5f);
+        v.traps.age=1.2f/Cave.PACE;check("quicksand visibly sinks with its deadline",CaveScreen.sink(v)>.5f);
         v.traps.hits=4;check("escape progress visibly lifts dumpling",CaveScreen.sink(v)<.5f);
         v.encounter(c,Cave.SHADOW);c.speed=1.5f;v.update(c,.5f,L);
         check("developer travel speed does not multiply ambush deadline",Math.abs(v.timer-.5f)<.001f);
@@ -298,9 +304,9 @@ final class TestCave extends Check {
                 total+=t;totalEvents+=events;
             }
             System.out.printf("    cave %.0f/s .25s reaction 4%% misses: %.1fs avg, %d/%d survive, longest gap %.2fs%n",pps,total/runs,survived,runs,maxGap);
-            check("bounded hands survive every stage and branch "+pps,survived>=runs*.95f && total/runs>=12 && total/runs<32);
+            check("bounded hands survive every stage and branch "+pps,survived>=runs*.95f && total/runs>=12 && total/runs<32/Cave.PACE);
             check("bounded players encounter all seven threats "+pps,totalEvents>=runs*7*.95f);
-            check("gauntlet has no long empty walk "+pps,maxGap<2.2f);
+            check("gauntlet has no long empty walk "+pps,maxGap<2.2f/Cave.PACE);
         }
     }
 }

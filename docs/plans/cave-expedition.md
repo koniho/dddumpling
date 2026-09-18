@@ -8,19 +8,19 @@ Active branch: `cave-minigames`.
 Developer stages 21–25 are cave expeditions; production retains its original four-land progression.
 First entry keeps the saved explorer selection. Normal play uses LOFI DRIFT.
 
-The explorer now runs at 1.15 route units per second, over three times the former .36.
-Seven encounters repeat through a stage with roughly 1–2 seconds of travel between them.
-Three forks allow a quick tap choice, with a .55-second fallback; the first has a concurrent
+The explorer runs at .805 route units per second. Cave pacing is 70% of the original gauntlet rate.
+Seven encounters repeat through a stage with roughly 1.4–2.9 seconds of travel between them.
+Three forks allow a quick tap choice, with a .79-second fallback; the first has a concurrent
 finger hint instead of a separate blocking lesson. There are no route heart pickups.
 
-- Enemies spring from side cover and rush in over 1.8 seconds. Their two- or three-key
+- Enemies spring from side cover and rush in over 2.57 seconds. Their two- or three-key
   response is active from the first animation frame; aiming the lantern is not a combat gate.
 - Cave-ins zoom toward the centered explorer while the cracked floor slides up. Six rocks
-  start falling at .40-second intervals, each with .72 seconds to land and a visible shadow.
+  start falling at .57-second intervals, each with 1.03 seconds to land and a visible shadow.
   Relative dragging retains a 1.3-screen-width/second steering limit. Collision tolerance is
   unchanged; the close-up is visual, not a larger damage target.
 - Quicksand zooms in over 300 ms, pulls the dumpling down with a frightened face and flailing
-  arms, and allows eight alternating presses over 2.8 seconds. Progress lifts the dumpling.
+  arms, and allows eight alternating presses over 4 seconds. Progress lifts the dumpling.
 - Encounters do not overlap. Each failure can charge one life; survivors resume running.
   The exit enters the alternating Cave Band / Dumpling Mine interludes.
 
@@ -66,19 +66,21 @@ and enemies, with shuffled free encounters and distinct random hazards at each f
 
 Enemy responses draw non-repeating adjacent keys; quicksand draws two distinct alternating keys.
 Rock lanes vary within a band that guarantees reachable escape space, including 300 ms human
-reaction time. Timing, response lengths and encounter count retain their tuned limits.
+reaction time. Response lengths and encounter count retain their tuned limits; timing follows the shared cave pace.
 
 The harness covers 256 generated maps and all eight branch combinations, plus 960 bounded-player
 runs across five stages. All 960 survived with 250 ms reaction, 4% misses and 4, 6 or 9 presses/sec.
 
 ## Surprise enemy feedback
 
-Ambush cover is positioned on the local corridor wall. A 260 ms step clock drives alternating
+Ambush cover is positioned on the local corridor wall. A 371 ms step clock drives alternating
 feet, body bounce, dust, thuds, scene shake and one-shot native haptics. Correct keys launch
 100 ms bolts from the explorer to the enemy's tummy; impact triggers wide eyes and flailing
 arms. Defeated enemies remain visible for a 650 ms reaction and retreat behind their own rock,
-while normal travel resumes. Scoring and the 1.8-second response deadline are unchanged.
+while normal travel resumes. Scoring and the response deadline remain independent of the animation.
 
 Wall silhouettes use fixed world-space irregularity, with uneven polygonal rock faces, cracks
 and dark seams. Facets respond to the lantern at their world positions. Floor masks keep the
 walking corridor clear; wall geometry does not change collision rules or consume gameplay RNG.
+
+The 30% pacing reduction applies to travel, fork choices, enemy approaches, stomps and rockfall/quicksand deadlines. The 300 ms zoom, steering response, bolts and hit feedback retain their responsive timing.

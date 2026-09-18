@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** Each trap can charge one life; timings are real seconds, steering has a speed ceiling. */
 final class CaveTraps {
-    static final float WARNING = 0f, DURATION = 2.8f, FALL = .72f, GAP = .40f,
+    static final float WARNING = 0f, DURATION = 2.8f/Cave.PACE, FALL = .72f/Cave.PACE, GAP = .40f/Cave.PACE,
             MAX_VX = 1.3f, ROCK_R = .065f, PLAYER_R = .032f;
     static final int ROCK_COUNT = 6, ESCAPE_PRESSES = 8;
     final float[] lanes = {.50f, .28f, .72f, .40f, .62f, .50f};

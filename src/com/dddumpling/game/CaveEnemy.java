@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** Encounter animation follows the same stomp clock as sound and native feedback. */
 final class CaveEnemy extends Draw {
-    static final float STEP=.26f,FLIGHT=.10f,RETREAT=.65f;
+    static final float STEP=.26f/Cave.PACE,FLIGHT=.10f,RETREAT=.65f;
     final float[] dustAge=new float[8],dustX=new float[8],dustY=new float[8];
     final float[] boltAge=new float[5],boltX=new float[5],boltY=new float[5];
     final int[] boltColor=new int[5];

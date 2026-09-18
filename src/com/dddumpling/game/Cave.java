@@ -3,8 +3,8 @@ package com.dddumpling.game;
 /** Fast travel between immediate encounters; the following camera moves in both world axes. */
 final class Cave {
     static final int LAND=4,WALK=0,FORK=1,SHADOW=2,FIGHT=3,ROCKS=4,SAND=5,EXIT=6,CHOOSE=7;
-    static final float LENGTH=CaveRoute.LENGTH,WALK_SPEED=1.15f,FORK_WAIT=.55f,
-            LESSON=.35f,REVEAL=.16f,APPROACH=1.8f,HAZARD_ZOOM=.30f;
+    static final float PACE=.70f,LENGTH=CaveRoute.LENGTH,WALK_SPEED=1.15f*PACE,FORK_WAIT=.55f/PACE,
+            LESSON=.35f,REVEAL=.16f,APPROACH=1.8f/PACE,HAZARD_ZOOM=.30f;
     static final float[] FORKS=CaveRoute.FORKS;
     final int[] routes=new int[3],response=new int[5];
     final CaveRoute route=new CaveRoute();

@@ -103,17 +103,17 @@ final class Preview {
         shot(dir,"106-cave-rock-immediate",c,L,w,h,ss);
         v.update(c,.15f,L);shot(dir,"106-cave-rock-zoom-mid",c,L,w,h,ss);
         v.update(c,.15f,L);shot(dir,"106-cave-rock-closeup",c,L,w,h,ss);
-        v.traps.x=v.traps.targetX=.2f;v.update(c,.44f,L);v.effects.update(.12f);
+        v.traps.x=v.traps.targetX=.2f;v.update(c,CaveTraps.FALL-.3f+.02f,L);v.effects.update(.12f);
         shot(dir,"106-cave-rock-breakup",c,L,w,h,ss);
         v.phase=Cave.WALK;v.effects.update(.22f);
         shot(dir,"106-cave-rock-dust-after",c,L,w,h,ss);
-        v.phase=Cave.ROCKS;v.traps.age=1.12f;v.traps.landed[0]=true;v.traps.x=.65f;
+        v.phase=Cave.ROCKS;v.traps.age=1.12f/Cave.PACE;v.traps.landed[0]=true;v.traps.x=.65f;
         shot(dir,"106-cave-falling-rocks",c,L,w,h,ss);
         v.phase=Cave.WALK;v.z=v.cameraZ=5.75f;v.routes[1]=-1;v.focus=0;v.cameraZ=v.z-.13f;v.encounter(c,Cave.SAND);
         shot(dir,"106-cave-quicksand-zoom-start",c,L,w,h,ss);
         v.update(c,.15f,L);shot(dir,"106-cave-quicksand-zoom-mid",c,L,w,h,ss);
         v.update(c,.15f,L);shot(dir,"106-cave-quicksand-start",c,L,w,h,ss);
-        v.traps.age=1.4f;v.traps.hits=0;
+        v.traps.age=1.4f/Cave.PACE;v.traps.hits=0;
         shot(dir,"106-cave-quicksand-panic",c,L,w,h,ss);
         v.traps.hits=6;shot(dir,"106-cave-quicksand-escape",c,L,w,h,ss);
         for(int variation=0;variation<3;variation++) {
