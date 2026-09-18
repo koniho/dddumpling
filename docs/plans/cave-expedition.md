@@ -78,3 +78,7 @@ feet, body bounce, dust, thuds, scene shake and one-shot native haptics. Correct
 100 ms bolts from the explorer to the enemy's tummy; impact triggers wide eyes and flailing
 arms. Defeated enemies remain visible for a 650 ms reaction and retreat behind their own rock,
 while normal travel resumes. Scoring and the 1.8-second response deadline are unchanged.
+
+Wall silhouettes use fixed world-space irregularity, with uneven polygonal rock faces, cracks
+and dark seams. Facets respond to the lantern at their world positions. Floor masks keep the
+walking corridor clear; wall geometry does not change collision rules or consume gameplay RNG.

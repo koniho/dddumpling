@@ -75,6 +75,9 @@ final class Preview {
         shot(dir,"106-cave-stage-introduction",c,L,w,h,ss);
         c.stageBanner=0f;Cave v=c.cave;
         shot(dir,"106-cave-entrance",c,L,w,h,ss);
+        v.z=v.cameraZ=1.2f;v.aim=v.route.heading(v.z);v.focus=.6f;
+        shot(dir,"106-cave-irregular-walls",c,L,w,h,ss);v.focus=0;
+
         v.z=v.cameraZ=2f;v.phase=Cave.FORK;v.timer=.10f;v.fork=0;
         shot(dir,"106-cave-first-fork",c,L,w,h,ss);
         v.timer=.42f;shot(dir,"106-cave-fork-countdown",c,L,w,h,ss);
