@@ -6,6 +6,7 @@ final class TestAudio extends Check {
     /** What the two frenzy squish sounds are, and that they are the right shape for the job. */
     static void frenzySounds(Layout L) {
         group("frenzy sounds");
+        check("mining cheer is a short voiced phrase",Sfx.build(Sfx.MINING_CHEER).length<Sfx.RATE*.6f && crossRate(Sfx.build(Sfx.MINING_CHEER))<3000);
         for(int id=Sfx.CAVE_RUMBLE;id<=Sfx.CAVE_SINK;id++){
             short[] effect=Sfx.build(id);int head=0,tail=0;
             for(int i=0;i<effect.length/2;i++)head=Math.max(head,Math.abs(effect[i]));

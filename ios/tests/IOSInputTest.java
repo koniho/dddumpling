@@ -490,8 +490,9 @@ public final class IOSInputTest extends Check {
         IOSGame game=game();GameCore c=game.core();Layout L=game.geometry();
         c.startGame();c.jumpToStage(22,L);Interlude.enterBonus(c,L);CaveMining m=c.mining;m.ready=0;
         check("iOS selects mining for second cave interlude",m.active && !c.band.active);
-        for(int load=0;load<5;load++)for(int i=0;i<m.length;i++) {
-            int g=m.sequence[i];tap(game,c.keyX(L,g),c.keyY(L,g));
+        for(int load=0;load<5;load++) {
+            for(int i=0;i<m.length;i++){int g=m.sequence[i];tap(game,c.keyX(L,g),c.keyY(L,g));}
+            for(int frame=0;frame<31;frame++)game.update(DT);
         }
         check("native key taps fill cart after five sequences",m.swipeReady() && m.carts==0);
         for(int g=0;g<6;g++)tap(game,c.keyX(L,g),c.keyY(L,g));

@@ -478,19 +478,21 @@ See [the cave minigame plan](docs/plans/cave-minigames.md) for both games.
 ## Dumpling Mine interlude
 
 **Dumpling Mine** alternates with Cave Band, beginning after cave stage 22. Complete the displayed
-character sequence five times to fill a **minecart** with falling rocks. The first cart repeats a
+character sequence down five wall segments to build a **rock pile**. One prompt appears at a
+time, descending from the top to the bottom of the rock; the dumpling targets it with a pickaxe.
+Rocks fly left, and the explorer walks right to the next wall. The first cart repeats a
 two-key sequence; subsequent carts use three, then four distinct keys. Four remains the maximum.
 The sequence stays fixed for that cart. Wrong presses restart only the current sequence and cost
-no life. Completed repetitions remain in the cart during that attempt.
+no life. Completed walls remain in the pile during that attempt.
 
-A full cart hides the sequence and dims the keyboard. Swipe the cart left or right to send it
-along the track; four dumpling helpers run in to push it offscreen. Keys cannot add rocks while
+A full pile hides the prompt and dims the keyboard. Swipe the pile left or right; cheering
+dumpling friends load it into a cart and pull it rapidly offscreen. Keys cannot add rocks while
 it is full or being pushed. Delivered carts are saved immediately and survive new runs and app
 restarts. Five delivered carts earn one collectible and a capped extra life, then reset the saved
 cart count for the next reward.
 
 The **mining lantern** fades, its flame shrinks, and its pool of light contracts over 18 seconds
-of mining/swiping time. The helper animation does not spend that time. Pause and settings freeze
+of mining/swiping time. Walking between walls and helper animations do not spend that time. Pause and settings freeze
 it. Time running out ends the attempt without taking a life; only delivered carts carry forward.
 `CaveMining`, `CaveMiningInput`, and `CaveMiningScreen` own rules, cart input, and rendering.
 

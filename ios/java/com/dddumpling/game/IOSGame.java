@@ -643,7 +643,7 @@ public final class IOSGame {
         }
         boolean playing = core.state == GameCore.PLAY && !core.paused;
         core.update(Math.min(elapsed, .05f), elapsed, layout);
-        int caveFeedback=core.cave.effects.takeFeedback();
+        int caveFeedback=Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback());
         if(caveFeedback>0 && !core.paused && !core.settingsOpen)tick();
         for (int i = 0, n = core.releaseNotes.takeFeedback(); i < n; i++) tick();
         for (int i = 0; i < core.starPickups; i++) tick();

@@ -7,10 +7,14 @@ final class TestCaveMining extends Check {
     }
     static void fill(GameCore c) {
         CaveMining m=c.mining;
-        while(m.phase==CaveMining.DIG) c.tapBonus(m.sequence[m.pos]);
+        while(m.phase==CaveMining.DIG || m.phase==CaveMining.ADVANCE) {
+            if(m.phase==CaveMining.ADVANCE)m.update(c,CaveMining.WALK_TIME);
+            else c.tapBonus(m.sequence[m.pos]);
+        }
     }
     static void all(Layout L) {
         group("cave mining");
+        scene(L);
         Mem store=new Mem();GameCore c=game(L,store);CaveMining m=c.mining;
         check("second cave interlude selects only mining",m.active && !c.band.active && !c.starBonus
                 && !c.bonusMashing() && !c.bonusRolling() && !c.bonusHolding() && !c.bonusStatus());
@@ -19,12 +23,19 @@ final class TestCaveMining extends Check {
         check("first cart alternates two different keys",m.length==2 && m.sequence[0]!=m.sequence[1]);
         c.tapBonus(m.sequence[0]);check("first key advances sequence without dropping rocks",m.pos==1 && m.loads==0);
         c.tapBonus(m.sequence[1]);check("complete sequence drops one rock load",m.pos==0 && m.loads==1 && m.falling[0]>0);
+        float fuel=m.left;float distance=m.scene.distance;
+        check("cleared wall starts a walk",m.phase==CaveMining.ADVANCE);
+        c.tapBonus(m.sequence[0]);check("walk ignores mining keys",m.pos==0);
+        m.update(c,CaveMining.WALK_TIME);
+        check("walking advances tunnel without spending lantern",m.scene.distance>distance && m.left==fuel && m.phase==CaveMining.DIG);
         c.tapBonus(m.sequence[0]);c.tapBonus((m.sequence[1]+1)%6);
         check("wrong key cannot complete sequence",m.loads==1 && m.pos<m.length);
         m.pos=0;
         for(int n=0;n<4;n++) {
             for(int key=0;key<m.length;key++)c.tapBonus(m.sequence[key]);
-            check("cart needs all five repetitions "+n,m.loads==n+2 && m.phase==(n==3?CaveMining.FULL:CaveMining.DIG));
+            check("wall needs a whole sequence "+n,m.loads==n+2 && m.phase==CaveMining.ADVANCE);
+            m.update(c,CaveMining.WALK_TIME);
+            check("five walls fill the swipeable pile "+n,m.phase==(n==3?CaveMining.FULL:CaveMining.DIG));
         }
         check("filling alone never credits a cart",m.carts==0 && store.mineSaves==0);
         for(int g=0;g<6;g++)c.tapBonus(g);
@@ -43,7 +54,7 @@ final class TestCaveMining extends Check {
         m.update(c,.3f);cx=m.cartX*L.w;m.input.down(c,L,2,cx,cy);m.input.move(c,L,2,cx+L.w*.18f,cy);
         check("sideways swipe dispatches and saves once",m.phase==CaveMining.PUSH && m.carts==1 && store.mineCarts==1 && store.mineSaves==1);
         m.launch(c,1);c.tapBonus(m.sequence[0]);check("pushing cannot mine or save twice",m.loads==5 && store.mineSaves==1);
-        float left=m.left;m.update(c,.5f);check("helpers do not spend player's lantern time",m.left==left && m.cartX>.56f);
+        float left=m.left;m.update(c,.8f);check("helpers do not spend player's lantern time",m.left==left && m.cartX>m.pushStart);
         c.toTitle();c.startGame();check("new run retains delivered cart",c.mining.carts==1);
         c=game(L,store);m=c.mining;check("restart restores cart and three-key difficulty",m.carts==1 && m.length==3);
         m.ready=0;
@@ -85,6 +96,27 @@ final class TestCaveMining extends Check {
         check("four-key mode has an achievable four-long sequence",starters && m.length==4);
         c.update(2f,L);check("kids mode grants a slower lantern",Math.abs(m.left-(CaveMining.TIME-.9f))<.01f);
         bounded(L);
+    }
+    private static void scene(Layout L) {
+        GameCore c=game(L,new Mem());CaveMining m=c.mining;m.ready=0;Ear ear=new Ear();c.sound=ear;
+        boolean spaced=true;
+        for(int length=2;length<=4;length++) {
+            float first=CaveMiningScene.promptY(m,L,0),last=CaveMiningScene.promptY(m,L,1);
+            for(int pos=1;pos<length;pos++)spaced&=CaveMiningScene.promptY(m,L,pos/(float)(length-1))
+                    -CaveMiningScene.promptY(m,L,(pos-1)/(float)(length-1))>=L.w*.119f;
+            spaced&=last>first && last<CaveMiningScene.ground(L);
+        }
+        check("all sequence lengths progress down the wall with room for one prompt",spaced);
+        m.update(c,1.3f);check("idle friends cheer with a voice cue",ear.lastCaveSound==Sfx.MINING_CHEER && m.scene.cheerPose>0);
+        int sounds=ear.caveSounds;m.update(c,.1f);check("cheers are spaced rather than frame repeated",ear.caveSounds==sounds);
+        c.tapBonus(m.sequence[0]);check("dig targets the current prompt and shakes",m.scene.hitFraction==0 && m.scene.cursor==4 && m.scene.shake>0 && m.scene.takeFeedback()==1);
+        check("dig feedback is consumed once",m.scene.takeFeedback()==0);
+        c.tapBonus(m.sequence[1]);check("last dig targets bottom of wall",m.scene.hitFraction==1 && m.phase==CaveMining.ADVANCE);
+        float travel=m.travel,clock=m.scene.clock;Pause.open(c);c.update(1,L);
+        check("pause freezes tunnel movement and clears impact haptics",m.travel==travel && m.scene.clock==clock && m.scene.takeFeedback()==0);Pause.resume(c);
+        m.update(c,CaveMining.WALK_TIME);fill(c);m.launch(c,-1);float fuel=m.left;
+        m.update(c,CaveMining.LOAD_TIME*.8f);check("team loads before cart departs",m.cartX==m.pushStart && m.left==fuel);
+        m.update(c,CaveMining.LOAD_TIME*.4f);check("cart accelerates away after loading",m.cartX<m.pushStart && m.left==fuel);
     }
     private static void bounded(Layout L) {
         float[] rates={3,5,8},reactions={.30f,.20f,.13f},errors={.08f,.04f,.02f};

@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** One cart finger; keys and other fingers cannot accidentally dispatch a full load. */
+/** One pile finger; keys and other fingers cannot accidentally dispatch a full load. */
 final class CaveMiningInput {
     int pointer=-1;
     float startX,startY,origin;

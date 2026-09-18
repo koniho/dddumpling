@@ -30,18 +30,22 @@ final class Preview {
     private static void miningFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         GameCore c=TestCaveMining.game(L,new Check.Mem());CaveMining m=c.mining;
         shot(dir,"109-mine-start",c,L,w,h,ss);
-        m.ready=0;c.tapBonus(m.sequence[0]);
+        m.ready=0;m.update(c,1.3f);shot(dir,"109-mine-cheering",c,L,w,h,ss);
+        c.tapBonus(m.sequence[0]);m.update(c,.08f);
         shot(dir,"109-mine-sequence",c,L,w,h,ss);
-        c.tapBonus(m.sequence[1]);m.falling[0]=CaveMining.DROP*.5f;
+        c.tapBonus(m.sequence[1]);m.update(c,.15f);
         shot(dir,"109-mine-falling-rocks",c,L,w,h,ss);
+        m.update(c,.10f);shot(dir,"109-mine-walk-forward",c,L,w,h,ss);
         TestCaveMining.fill(c);for(int i=0;i<m.loads;i++)m.falling[i]=0;
         shot(dir,"109-mine-full-cart",c,L,w,h,ss);
-        m.launch(c,1);m.update(c,.50f);
+        m.launch(c,1);m.update(c,.30f);
         shot(dir,"109-mine-helpers",c,L,w,h,ss);
+        m.update(c,.60f);shot(dir,"109-mine-cart-rush",c,L,w,h,ss);
         m.update(c,CaveMining.PUSH_TIME);
         shot(dir,"109-mine-three-keys",c,L,w,h,ss);
         TestCaveMining.fill(c);m.launch(c,-1);m.update(c,CaveMining.PUSH_TIME);
         m.left=CaveMining.TIME*.18f;
+        for(int pos=0;pos<4;pos++){m.pos=pos;shot(dir,"109-mine-four-prompt-"+pos,c,L,w,h,ss);}
         shot(dir,"109-mine-four-keys-dim",c,L,w,h,ss);
         m.update(c,CaveMining.TIME);
         shot(dir,"109-mine-timeout",c,L,w,h,ss);
@@ -1770,7 +1774,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

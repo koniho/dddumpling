@@ -718,7 +718,7 @@ public class GameView extends View {
             boolean playingBeforeUpdate = core.state == GameCore.PLAY && !core.paused && !background;
             if (!background) {
                 core.update(dt, elapsed, layout);
-                int caveFeedback=core.cave.effects.takeFeedback();
+                int caveFeedback=Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback());
                 if(caveFeedback>0 && !core.paused && !core.settingsOpen)
                     performHapticFeedback(caveFeedback>1?HapticFeedbackConstants.LONG_PRESS:HapticFeedbackConstants.KEYBOARD_TAP);
                 for (int i = 0, n = core.releaseNotes.takeFeedback(); i < n; i++) tick();

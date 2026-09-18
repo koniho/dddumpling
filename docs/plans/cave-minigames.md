@@ -104,3 +104,15 @@ Cave rewards now have exclusive five-member families: Burrow Moles for mining an
 for band performances. IDs 49–58 append to the existing catalogue, keeping saved collections
 compatible. Each friend has a dedicated drawing, family story and vignette; both families have
 their own case row. Normal blind boxes, Star Path, cubes and boss prizes keep their pools.
+
+## Moving tunnel mining
+
+Dumpling Mine presents one key prompt on the wall at a time, from top to bottom, with positions
+spaced for sequences of two, three or four keys. Each correct strike targets that position,
+throws tumbling rocks left and shakes the scene with native haptic feedback. A completed
+sequence clears a wall; the dumpling walks forward as the tunnel scrolls to the next segment.
+
+Five walls build a pile. Swiping that pile calls the cheering team to carry rocks into a cart,
+then pull it offscreen quickly. The helpers cheer with short synthesized voice cues while idle.
+The 18-second lantern only counts digging and waiting for a pile swipe; forward walks and
+loading/hauling animations pause it. Five delivered carts and their persistence remain unchanged.

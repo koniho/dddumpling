@@ -24,7 +24,7 @@ final class Pause extends Draw {
         return false;
     }
     static void release(GameCore c) {
-        c.endStroke(); c.boss.release(); c.stars.endDrag(); c.cave.input.release(); c.cave.effects.takeFeedback(); c.mining.input.release();
+        c.endStroke(); c.boss.release(); c.stars.endDrag(); c.cave.input.release(); c.cave.effects.takeFeedback(); c.mining.input.release(); c.mining.scene.takeFeedback();
         c.stars.left = c.stars.right = false;
         c.steamer.lidDrag = 0;
         c.caseDragging = c.titleTouchDown = c.landPickerDragging = false;

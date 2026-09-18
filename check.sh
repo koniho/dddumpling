@@ -91,6 +91,7 @@ src/com/dddumpling/game/CaveSong.java
 src/com/dddumpling/game/CaveMining.java
 src/com/dddumpling/game/CaveMiningInput.java
 src/com/dddumpling/game/CaveMiningScreen.java
+src/com/dddumpling/game/CaveMiningScene.java
 src/com/dddumpling/game/CaveBand.java
 src/com/dddumpling/game/CaveInterlude.java
 src/com/dddumpling/game/CaveBandScreen.java

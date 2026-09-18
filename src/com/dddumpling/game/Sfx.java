@@ -33,7 +33,7 @@ final class Sfx {
             LINKED_THUD = MUSHROOM_SPORE + 1, SHUFFLE_BLIP = LINKED_THUD + 1, DEBUFF_DOWN = SHUFFLE_BLIP + 1,
             SLIME_COVER = DEBUFF_DOWN + 1, SLIME_RELEASE = SLIME_COVER + 1,
             LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, BLAST_OFF = UI_BLOOP + 1, CAVE_RUMBLE = BLAST_OFF + 1, CAVE_CRASH = CAVE_RUMBLE + 1,
-            CAVE_AMBUSH = CAVE_CRASH + 1, CAVE_SINK = CAVE_AMBUSH + 1, COUNT = CAVE_SINK + 1;
+            CAVE_AMBUSH = CAVE_CRASH + 1, CAVE_SINK = CAVE_AMBUSH + 1, MINING_CHEER = CAVE_SINK + 1, COUNT = MINING_CHEER + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -51,6 +51,7 @@ final class Sfx {
         if (id >= BOSS_TAUNT_0 && id < BOSS_TAUNT_0 + Boss.COUNT)
             return bossTaunt(id - BOSS_TAUNT_0);
         if(id>=CAVE_RUMBLE && id<=CAVE_SINK)return cave(id);
+        if(id==MINING_CHEER)return miningCheer();
         switch (id) {
             case DRIP: return drip();
             case CLEAR: return clear();
@@ -1018,6 +1019,17 @@ final class Sfx {
     }
 
     /** Peak-normalises to {@link #PEAK} and converts to 16-bit, so nothing can clip. */
+    private static short[] miningCheer() {
+        float[] v=new float[(int)(RATE*.48f)];
+        for(int i=0;i<v.length;i++){
+            float t=i/(float)RATE,beat=t%.24f,u=beat/.24f;
+            double phase=6.283185*(380*beat+170*beat*beat)+(t>.24?1.2:0);
+            float voice=(float)(Math.sin(phase)+.45*Math.sin(phase*3)+.22*Math.sin(phase*5));
+            v[i]=voice*(float)Math.sin(Math.PI*u)*(1-u)*.55f;
+        }
+        return render(v);
+    }
+
     private static short[] cave(int id) {
         float duration=id==CAVE_CRASH?.32f:id==CAVE_AMBUSH?.22f:.28f;
         float[] v=new float[(int)(RATE*duration)];
