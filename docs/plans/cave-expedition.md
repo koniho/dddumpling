@@ -15,11 +15,11 @@ finger hint instead of a separate blocking lesson. There are no route heart pick
 
 - Enemies spring from side cover and rush in over 1.8 seconds. Their two- or three-key
   response is active from the first animation frame; aiming the lantern is not a combat gate.
-- Cave-ins zoom toward the centered explorer and crack the floor immediately. Six rocks
+- Cave-ins zoom toward the centered explorer while the cracked floor slides up. Six rocks
   start falling at .40-second intervals, each with .72 seconds to land and a visible shadow.
   Relative dragging retains a 1.3-screen-width/second steering limit. Collision tolerance is
   unchanged; the close-up is visual, not a larger damage target.
-- Quicksand zooms in immediately, pulls the dumpling down with a frightened face and flailing
+- Quicksand zooms in over 300 ms, pulls the dumpling down with a frightened face and flailing
   arms, and allows eight alternating presses over 2.8 seconds. Progress lifts the dumpling.
 - Encounters do not overlap. Each failure can charge one life; survivors resume running.
   The exit enters the alternating Cave Band / Dumpling Mine interludes.
@@ -31,7 +31,7 @@ retain the shared game-clock behavior. Zooms and effects freeze along with their
 
 A sampled spline moves left, right, forward and back. Arc-length lookup keeps forward motion
 consistent through bends. Branch offsets follow the local route normal, and the camera follows
-both world axes. A fast .14-second trap zoom and .20-second release keep the action centered.
+both world axes. A .30-second trap zoom and .20-second release keep the action centered.
 
 Only passage floor and cave walls fill the world; no carpet of loose stones remains. Lantern
 falloff is evaluated on floor and wall facets, so empty space receives no painted light fan.
@@ -57,3 +57,16 @@ Rocks tumble along straight and angled approaches into fixed landing markers. Ea
 Rockfall and quicksand ease the follow camera from the explorer's current cave position to the center of the playfield over 300 ms. Magnification and camera travel share a smoothstep curve; hazard animation and input continue during the zoom. Each hazard plays its distinct entry cue once.
 
 The rockfall ground slides up from below the playfield during that same 300 ms camera move. Low continuous scene shake lasts throughout rockfall, with stronger impact jolts layered over it; the keyboard stays steady.
+
+## Generated runs
+
+Each cave stage entry draws a fresh seed. A bounded spline generator varies and mirrors the
+winding map, then resamples to the same travel length. Every route includes rockfall, quicksand
+and enemies, with shuffled free encounters and distinct random hazards at each fork.
+
+Enemy responses draw non-repeating adjacent keys; quicksand draws two distinct alternating keys.
+Rock lanes vary within a band that guarantees reachable escape space, including 300 ms human
+reaction time. Timing, response lengths and encounter count retain their tuned limits.
+
+The harness covers 256 generated maps and all eight branch combinations, plus 960 bounded-player
+runs across five stages. All 960 survived with 250 ms reaction, 4% misses and 4, 6 or 9 presses/sec.

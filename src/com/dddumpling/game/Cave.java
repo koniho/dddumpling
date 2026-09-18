@@ -7,6 +7,9 @@ final class Cave {
             LESSON=.35f,REVEAL=.16f,APPROACH=1.8f,HAZARD_ZOOM=.30f;
     static final float[] FORKS=CaveRoute.FORKS;
     final int[] routes=new int[3],response=new int[5];
+    final CaveRoute route=new CaveRoute();
+    final java.util.Random random=new java.util.Random(0);
+    long runSeed;
     final CaveDumpling walker=new CaveDumpling();
     final CaveSelection selection=new CaveSelection();
     final CaveInput input=new CaveInput();
@@ -20,18 +23,19 @@ final class Cave {
     static boolean active(GameCore c){return BuildFlags.DEVELOPER && c.state==GameCore.PLAY && c.cave.running;}
     void begin(GameCore c) {
         running=stage(c.stage);phase=WALK;z=cameraZ=timer=pulse=focus=aimHold=0;
-        aim=CaveRoute.heading(0);fork=responsePos=nextEvent=0;lessonSeen=c.stage!=21;
+        if(running){runSeed=c.rnd.nextLong();random.setSeed(runSeed);route.make(random);}
+        aim=route.heading(0);fork=responsePos=nextEvent=0;lessonSeen=c.stage!=21;
         seed=c.stage;exitTime=returnTime=zoomAge=zoomFromCamera=zoomFromFocus=0;
         for(int i=0;i<routes.length;i++)routes[i]=0;
         input.release();traps.reset();effects.reset();walker.reset();selection.reset();
         if(running && c.caveChoice<0)phase=CHOOSE;
     }
     void leave(){running=false;input.release();traps.reset();effects.reset();}
-    static float centre(float at){return CaveRoute.centre(at);}
-    static float branchX(int junction,int side,float at){return CaveRoute.x(junction,side,at);}
+    float centre(float at){return route.centre(at);}
+    float branchX(int junction,int side,float at){return route.x(junction,side,at);}
     int junction(float at){for(int i=0;i<3;i++)if(at>=FORKS[i] && at<=FORKS[i]+1.4f)return i;return -1;}
     float pathX(float at){int i=junction(at);return i<0?centre(at):branchX(i,routes[i],at);}
-    float pathY(float at){int i=junction(at);return i<0?CaveRoute.y(at):CaveRoute.branchY(i,routes[i],at);}
+    float pathY(float at){int i=junction(at);return i<0?route.y(at):route.branchY(i,routes[i],at);}
     float zoom(){return 1f+.62f*focus;}
     static float scale(Layout L){return L.w*.78f;}
     static float anchor(Layout L){return L.playTop+(L.deckTop-L.playTop)*.57f;}
@@ -46,9 +50,9 @@ final class Cave {
     float hazardOffset(){return (pathX(z)-pathX(cameraZ))*.78f*zoom();}
     float playerY(Layout L){return screenY(z,L);}
     float branchScreenX(int side,Layout L){return screenX(branchX(fork,side,z+.48f),L);}
-    float branchScreenY(int side,Layout L){return worldScreenY(CaveRoute.branchY(fork,side,z+.48f),L);}
-    int nearestBranch(){return Math.sin(aim-CaveRoute.heading(z))<0?-1:1;}
-    int event(int junction,int side){return CaveRoute.event(junction,side);}
+    float branchScreenY(int side,Layout L){return worldScreenY(route.branchY(fork,side,z+.48f),L);}
+    int nearestBranch(){return Math.sin(aim-route.heading(z))<0?-1:1;}
+    int event(int junction,int side){return route.event(junction,side);}
     boolean tap(GameCore c,Layout L,float x,float y) {
         if(!active(c)||c.paused||c.settingsOpen||y<L.playTop||y>=L.deckTop)return false;
         if(phase==CHOOSE)return selection.tap(c,L,x,y);
@@ -87,10 +91,15 @@ final class Cave {
         phase=kind;timer=0;aimHold=0;c.stageBanner=0;
         zoomAge=0;zoomFromCamera=cameraZ;zoomFromFocus=focus;
         if(kind==SHADOW) {
-            int side=(nextEvent+seed)%2==0?-1:1;
+            int side=random.nextBoolean()?-1:1;
             enemyX=enemyStartX=pathX(z)+side*.48f;enemyY=enemyStartY=pathY(z)+.30f;
             responsePos=0;responseSize=2+(seed-21)%2;
-            for(int i=0;i<responseSize;i++)response[i]=Roster.at(c.playRosterFull(),(seed+i*2+nextEvent)%Roster.count(c.playRosterFull()));
+            int count=Roster.count(c.playRosterFull()),previous=-1;
+            for(int i=0;i<responseSize;i++) {
+                int pick=random.nextInt(count-(i>0?1:0));
+                if(i>0 && pick>=previous)pick++;
+                response[i]=Roster.at(c.playRosterFull(),pick);previous=pick;
+            }
             aim=(float)Math.atan2(enemyX-pathX(z),enemyY-pathY(z));
             effects.cue(c,Sfx.CAVE_AMBUSH,.65f);
         } else {
@@ -135,7 +144,7 @@ final class Cave {
                 float stop=next;int junction=-1;
                 for(int i=0;i<3;i++)if(routes[i]==0&&FORKS[i]>=z&&FORKS[i]<=stop){stop=FORKS[i];junction=i;}
                 if(nextEvent<CaveRoute.EVENTS_AT.length && CaveRoute.EVENTS_AT[nextEvent]<=stop) {
-                    z=CaveRoute.EVENTS_AT[nextEvent];int kind=CaveRoute.encounter(nextEvent,seed,routes);nextEvent++;encounter(c,kind);break;
+                    z=CaveRoute.EVENTS_AT[nextEvent];int kind=route.encounter(nextEvent,routes);nextEvent++;encounter(c,kind);break;
                 }
                 z=stop;
                 if(junction>=0){fork=junction;phase=FORK;timer=0;break;}

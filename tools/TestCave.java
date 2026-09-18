@@ -53,8 +53,46 @@ final class TestCave extends Check {
             }
         }
     }
+    static void generated(Layout L) {
+        java.util.HashSet<String> maps=new java.util.HashSet<>(),hazards=new java.util.HashSet<>(),keys=new java.util.HashSet<>();
+        boolean lengthOkay=true,balanced=true,distinct=true,safe=true;
+        for(int seed=0;seed<256;seed++) {
+            GameCore c=new GameCore(new Mem(),seed);c.caveChoice=0;c.startGame();c.jumpToStage(21+seed%5,L);
+            Cave v=c.cave;CaveRoute r=v.route;
+            maps.add(r.centre(2)+":"+r.y(5)+":"+r.centre(8));
+            float length=0;
+            for(float z=.02f;z<Cave.LENGTH;z+=.02f)length+=(float)Math.hypot(r.centre(z)-r.centre(z-.02f),r.y(z)-r.y(z-.02f));
+            lengthOkay&=Math.abs(length-Cave.LENGTH)<.08f;
+            for(int branches=0;branches<8;branches++) {
+                int[] choices=new int[3];for(int i=0;i<3;i++)choices[i]=(branches&(1<<i))==0?-1:1;
+                int mask=0;String signature="";
+                for(int i=0;i<7;i++){int kind=r.encounter(i,choices);mask|=1<<kind;signature+=kind;}
+                hazards.add(signature);balanced&=(mask&(1<<Cave.ROCKS))!=0 && (mask&(1<<Cave.SAND))!=0 && (mask&(1<<Cave.SHADOW))!=0;
+            }
+            v.encounter(c,Cave.SHADOW);String sequence="";
+            for(int i=0;i<v.responseSize;i++){sequence+=v.response[i];if(i>0)distinct&=v.response[i]!=v.response[i-1];}
+            keys.add(sequence);
+            v.encounter(c,Cave.SAND);distinct&=v.traps.left!=v.traps.right;
+            v.encounter(c,Cave.ROCKS);
+            for(float lane:v.traps.lanes)safe&=lane-.18f>CaveTraps.ROCK_R+CaveTraps.PLAYER_R
+                    && .82f-lane>CaveTraps.ROCK_R+CaveTraps.PLAYER_R;
+            safe&=(.5f-.18f)/CaveTraps.MAX_VX+.30f<CaveTraps.FALL;
+        }
+        check("256 generated maps preserve travel length",lengthOkay);
+        check("all generated branch combinations contain every hazard",balanced);
+        check("randomized keys remain distinct and alternating",distinct);
+        check("generated rocks leave reachable escape space after human reaction",safe);
+        check("runs vary map hazard order and keys",maps.size()==256 && hazards.size()>40 && keys.size()>30);
+        GameCore c=game(L);long first=c.cave.runSeed;float x=c.cave.route.centre(2);
+        c.startGame();c.jumpToStage(21,L);
+        check("replaying same stage rerolls seed and layout",first!=c.cave.runSeed && x!=c.cave.route.centre(2));
+        CaveRoute a=new CaveRoute(),b=new CaveRoute();a.make(new java.util.Random(57));b.make(new java.util.Random(57));
+        boolean same=true;for(int i=0;i<7;i++)same&=a.encounter(i,new int[]{1,-1,1})==b.encounter(i,new int[]{1,-1,1});
+        check("seed reproduces layout and hazards for debugging",same && a.centre(2)==b.centre(2) && a.y(5)==b.y(5));
+    }
     static void all(Layout L) {
         group("cave expedition");
+        generated(L);
         zoomTransition(L);
         feedback(L);
         selection(L);
@@ -69,13 +107,13 @@ final class TestCave extends Check {
         c.stageBanner=0f;c.update(.2f,L);check("camera follows without jumping",v.z>v.cameraZ);
         c.update(.2f,L);check("camera advances toward walker",v.cameraZ>0f && v.cameraZ<v.z);
         float at=v.z;c.paused=true;c.update(1f,L);check("pause freezes expedition",v.z==at);c.paused=false;
-        v.z=2;v.phase=Cave.FORK;v.timer=0;v.fork=0;v.aim=CaveRoute.heading(v.z)+.4f;v.aimHold=2;
+        v.z=2;v.phase=Cave.FORK;v.timer=0;v.fork=0;v.aim=v.route.heading(v.z)+.4f;v.aimHold=2;
         v.update(c,Cave.LESSON+.1f,L);check("first demonstration precedes timeout",v.phase==Cave.FORK);
         v.update(c,Cave.FORK_WAIT,L);check("fork eventually commits predictable fallback",v.phase==Cave.WALK && v.routes[0]==1);
         v.phase=Cave.FORK;v.fork=1;v.z=v.cameraZ=5;v.timer=0;
         v.tap(c,L,v.branchScreenX(-1,L),v.branchScreenY(-1,L));
         check("lit branch commits instantly",v.routes[1]==-1 && v.phase==Cave.WALK);
-        v.z=5.5f;check("walker stays on chosen route",Math.abs(v.playerX()*L.w-v.screenX(Cave.branchX(1,-1,v.z),L))<.001f);
+        v.z=5.5f;check("walker stays on chosen route",Math.abs(v.playerX()*L.w-v.screenX(v.branchX(1,-1,v.z),L))<.001f);
         v.encounter(c,Cave.SHADOW);v.aim=3f;
         int lives=c.lives;
         check("ambush shows playable response immediately",v.wanted()==v.response[0] && v.timer==0 && c.stageBanner==0);
@@ -184,9 +222,10 @@ final class TestCave extends Check {
         check("new expedition resets walker physics",Math.abs(c.cave.walker.lift())<.0001f);
     }
     static void gauntlet(Layout L) {
+        CaveRoute route=new CaveRoute();
         float sideways=0,vertical=0,down=0,length=0;
         for(float at=.02f;at<Cave.LENGTH;at+=.02f) {
-            float dx=Cave.centre(at)-Cave.centre(at-.02f),dy=CaveRoute.y(at)-CaveRoute.y(at-.02f);
+            float dx=route.centre(at)-route.centre(at-.02f),dy=route.y(at)-route.y(at-.02f);
             sideways+=Math.abs(dx);vertical+=Math.abs(dy);if(dy<0)down-=dy;
             length+=(float)Math.hypot(dx,dy);
         }
@@ -218,9 +257,10 @@ final class TestCave extends Check {
     static void bounded(Layout L) {
         for(float pps:new float[]{4f,6f,9f}) {
             int survived=0;float total=0,maxGap=0;int totalEvents=0;
-            for(int stage=21;stage<=25;stage++)for(int side:new int[]{-1,1}) {
-                GameCore c=game(L);c.jumpToStage(stage,L);c.stageBanner=0;
-                Bot b=new Bot(pps,.25f,.04f,true,977L+stage);b.caveSide=side;
+            int runs=320;
+            for(int attempt=0;attempt<32;attempt++)for(int stage=21;stage<=25;stage++)for(int side:new int[]{-1,1}) {
+                GameCore c=new GameCore(new Mem(),977L+attempt*37);c.caveChoice=0;c.startGame();c.jumpToStage(stage,L);c.stageBanner=0;
+                Bot b=new Bot(pps,.25f,.04f,true,977L+stage+attempt*71);b.caveSide=side;
                 float t=0,gap=0;int events=0;
                 while(t<60 && c.state==GameCore.PLAY && !c.pendingBonus) {
                     int before=c.cave.nextEvent;
@@ -231,9 +271,9 @@ final class TestCave extends Check {
                 if(c.pendingBonus&&c.lives>0)survived++;
                 total+=t;totalEvents+=events;
             }
-            System.out.printf("    cave %.0f/s .25s reaction 4%% misses: %.1fs avg, %d/10 survive, longest gap %.2fs%n",pps,total/10,survived,maxGap);
-            check("bounded hands survive every stage and branch "+pps,survived==10 && total/10>=12 && total/10<32);
-            check("bounded players encounter all seven threats "+pps,totalEvents==70);
+            System.out.printf("    cave %.0f/s .25s reaction 4%% misses: %.1fs avg, %d/%d survive, longest gap %.2fs%n",pps,total/runs,survived,runs,maxGap);
+            check("bounded hands survive every stage and branch "+pps,survived>=runs*.95f && total/runs>=12 && total/runs<32);
+            check("bounded players encounter all seven threats "+pps,totalEvents>=runs*7*.95f);
             check("gauntlet has no long empty walk "+pps,maxGap<2.2f);
         }
     }

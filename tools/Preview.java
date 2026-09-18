@@ -78,11 +78,11 @@ final class Preview {
         v.z=v.cameraZ=2f;v.phase=Cave.FORK;v.timer=.10f;v.fork=0;
         shot(dir,"106-cave-first-fork",c,L,w,h,ss);
         v.timer=.42f;shot(dir,"106-cave-fork-countdown",c,L,w,h,ss);
-        v.choose(c,-1);v.z=v.cameraZ=2.6f;v.aim=CaveRoute.heading(v.z);
+        v.choose(c,-1);v.z=v.cameraZ=2.6f;v.aim=v.route.heading(v.z);
         shot(dir,"106-cave-chosen-path",c,L,w,h,ss);
         v.routes[1]=-1;v.routes[2]=1;
         for(int bend=0;bend<3;bend++) {
-            v.z=v.cameraZ=3.2f+bend*2.5f;v.aim=CaveRoute.heading(v.z);
+            v.z=v.cameraZ=3.2f+bend*2.5f;v.aim=v.route.heading(v.z);
             shot(dir,"106-cave-winding-"+bend,c,L,w,h,ss);
         }
         v.z=v.cameraZ=2.75f;v.encounter(c,Cave.SHADOW);v.update(c,.06f,L);
@@ -106,6 +106,11 @@ final class Preview {
         v.traps.age=1.4f;v.traps.hits=0;
         shot(dir,"106-cave-quicksand-panic",c,L,w,h,ss);
         v.traps.hits=6;shot(dir,"106-cave-quicksand-escape",c,L,w,h,ss);
+        for(int variation=0;variation<3;variation++) {
+            v.route.make(new java.util.Random(100+variation));v.phase=Cave.WALK;v.focus=0;v.z=v.cameraZ=3.7f;
+            v.aim=v.route.heading(v.z);v.effects.reset();
+            shot(dir,"106-cave-generated-"+variation,c,L,w,h,ss);
+        }
         v.z=v.cameraZ=Cave.LENGTH;v.phase=Cave.EXIT;v.focus=0;
         shot(dir,"106-cave-exit",c,L,w,h,ss);
         for(int finish=0;finish<CaveDumpling.COUNT;finish++) {

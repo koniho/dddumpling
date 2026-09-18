@@ -13,8 +13,10 @@ final class CaveTraps {
     void reset() { age = 0f; hits = 0; kind = -1; }
     void begin(GameCore c, int type, float px) {
         reset(); kind = type; x = targetX = px;
-        left = Roster.at(c.playRosterFull(), 0);
-        right = Roster.at(c.playRosterFull(), Roster.count(c.playRosterFull()) / 2);
+        int count=Roster.count(c.playRosterFull()),a=c.cave.random.nextInt(count),b=c.cave.random.nextInt(count-1);
+        if(b>=a)b++;
+        left=Roster.at(c.playRosterFull(),a);right=Roster.at(c.playRosterFull(),b);
+        for(int i=0;i<ROCK_COUNT;i++)lanes[i]=.30f+c.cave.random.nextFloat()*.40f;
         for (int i = 0; i < ROCK_COUNT; i++) landed[i] = false;
     }
     void drag(float px) { targetX = Math.max(.18f, Math.min(.82f, px)); }

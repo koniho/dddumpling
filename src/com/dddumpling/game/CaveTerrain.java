@@ -19,13 +19,13 @@ final class CaveTerrain extends Draw {
             p.fillEllipse(x,y+L.w*.025f,L.w*.04f,L.w*.075f,Glyph.withAlpha(CaveArt.LAMP,175));
         }
     }
-    private static float x(int fork,int side,float at){return fork<0?Cave.centre(at):Cave.branchX(fork,side,at);}
-    private static float y(int fork,int side,float at){return fork<0?CaveRoute.y(at):CaveRoute.branchY(fork,side,at);}
+    private static float x(Cave v,int fork,int side,float at){return fork<0?v.centre(at):v.branchX(fork,side,at);}
+    private static float y(Cave v,int fork,int side,float at){return fork<0?v.route.y(at):v.route.branchY(fork,side,at);}
     private static float[] edge(Cave v,Layout L,int fork,int side,float at,float width) {
-        float dx=x(fork,side,at+.012f)-x(fork,side,at-.012f);
-        float dy=y(fork,side,at+.012f)-y(fork,side,at-.012f);
+        float dx=x(v,fork,side,at+.012f)-x(v,fork,side,at-.012f);
+        float dy=y(v,fork,side,at+.012f)-y(v,fork,side,at-.012f);
         float length=Math.max(.0001f,(float)Math.hypot(dx,dy));
-        float nx=dy/length*width,ny=-dx/length*width,px=x(fork,side,at),py=y(fork,side,at);
+        float nx=dy/length*width,ny=-dx/length*width,px=x(v,fork,side,at),py=y(v,fork,side,at);
         return new float[]{v.screenX(px+nx,L),v.worldScreenY(py+ny,L),v.screenX(px-nx,L),v.worldScreenY(py-ny,L)};
     }
     private static void passage(Painter p,Cave v,Layout L,float from,float to,int fork,int side,int layer) {
@@ -36,9 +36,9 @@ final class CaveTerrain extends Draw {
         for(int i=1;i<=count;i++) {
             float at=from+(to-from)*i/count,mid=at-(to-from)/count*.5f;
             float[] next=edge(v,L,fork,side,at,width);
-            float px=v.screenX(x(fork,side,mid),L),py=v.worldScreenY(y(fork,side,mid),L);
+            float px=v.screenX(x(v,fork,side,mid),L),py=v.worldScreenY(y(v,fork,side,mid),L);
             if(px>-L.w*.4f && px<L.w*1.4f && py>L.playTop-L.w*.4f && py<L.deckTop+L.w*.4f) {
-                float light=v.light(x(fork,side,mid),y(fork,side,mid));
+                float light=v.light(x(v,fork,side,mid),y(v,fork,side,mid));
                 float rough=hash((int)(mid*97)+layer*123)*.13f;
                 int surface=layer==0?CaveArt.ROCK:layer==1?CaveArt.LIGHT:CaveArt.FLOOR;
                 int color=Glyph.mix(CaveArt.DARK,surface,Math.min(1,.08f+light*(.85f+rough)));
