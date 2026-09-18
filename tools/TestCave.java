@@ -90,8 +90,34 @@ final class TestCave extends Check {
         boolean same=true;for(int i=0;i<7;i++)same&=a.encounter(i,new int[]{1,-1,1})==b.encounter(i,new int[]{1,-1,1});
         check("seed reproduces layout and hazards for debugging",same && a.centre(2)==b.centre(2) && a.y(5)==b.y(5));
     }
+    static void enemyAnimation(Layout L) {
+        GameCore c=game(L);Cave v=c.cave;Ear ear=new Ear();c.sound=ear;
+        v.z=v.cameraZ=2.75f;v.nextEvent=2;v.routes[0]=-1;v.encounter(c,Cave.SHADOW);
+        float ahead=v.z+.55f;
+        check("ambush cover sits against corridor wall",Math.abs(Math.hypot(v.enemyStartX-v.pathX(ahead),v.enemyStartY-v.pathY(ahead))-.19f)<.001f);
+        v.effects.takeFeedback();v.update(c,Cave.REVEAL,L);
+        check("first planted foot emits dust rumble and haptic",v.enemy.steps==1 && v.enemy.dustCursor==1 && v.effects.takeFeedback()==1 && ear.lastCaveSound==Sfx.LINKED_THUD);
+        int sounds=ear.caveSounds;v.update(c,.01f,L);
+        check("stomp feedback does not repeat each frame",ear.caveSounds==sounds && v.effects.takeFeedback()==0);
+        v.update(c,CaveEnemy.STEP,L);check("next step emits a new stomp",v.enemy.steps==2 && v.enemy.dustCursor==2);
+        int wrong=(v.wanted()+1)%Glyph.COUNT;v.press(c,wrong,L);
+        check("miss does not fire an attack bolt",v.enemy.boltCursor==0);
+        v.press(c,v.wanted(),L);
+        check("correct attack launches from dumpling",v.enemy.boltCursor==1 && v.enemy.boltAge[0]==0 && v.enemy.recoil==0);
+        v.update(c,CaveEnemy.FLIGHT*.5f,L);check("bolt travels before tummy reaction",v.enemy.impacts==0);
+        v.update(c,CaveEnemy.FLIGHT*.5f,L);check("bolt arrival triggers surprise",v.enemy.impacts==1 && v.enemy.recoil>0);
+        while(v.phase==Cave.FIGHT||v.phase==Cave.SHADOW)v.press(c,v.wanted(),L);
+        check("defeated enemy remains visible for retreat",v.phase==Cave.WALK && v.enemy.retreat==0 && v.enemy.visible(v));
+        float distance=(float)Math.hypot(v.enemyX-v.enemyStartX,v.enemyY-v.enemyStartY);
+        v.update(c,.3f,L);
+        check("retreat heads back to cover",Math.hypot(v.enemyX-v.enemyStartX,v.enemyY-v.enemyStartY)<distance && v.enemy.visible(v));
+        v.update(c,.4f,L);
+        check("retreat finishes behind its own rock",!v.enemy.visible(v) && Math.abs(v.enemyX-v.enemyStartX)<.001f && Math.abs(v.enemyY-v.enemyStartY)<.001f);
+        v.leave();check("leaving clears enemy bolts and retreat",v.enemy.retreat<0 && v.enemy.boltAge[0]>1);
+    }
     static void all(Layout L) {
         group("cave expedition");
+        enemyAnimation(L);
         generated(L);
         zoomTransition(L);
         feedback(L);

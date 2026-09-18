@@ -99,6 +99,7 @@ src/com/dddumpling/game/CaveTraps.java
 src/com/dddumpling/game/CaveArt.java
 src/com/dddumpling/game/CaveTerrain.java
 src/com/dddumpling/game/CaveEffects.java
+src/com/dddumpling/game/CaveEnemy.java
 src/com/dddumpling/game/CaveScreen.java
 src/com/dddumpling/game/Lands.java
 src/com/dddumpling/game/SeaSkits.java

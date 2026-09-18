@@ -85,10 +85,17 @@ final class Preview {
             v.z=v.cameraZ=3.2f+bend*2.5f;v.aim=v.route.heading(v.z);
             shot(dir,"106-cave-winding-"+bend,c,L,w,h,ss);
         }
-        v.z=v.cameraZ=2.75f;v.encounter(c,Cave.SHADOW);v.update(c,.06f,L);
+        v.z=v.cameraZ=2.75f;v.nextEvent=2;v.encounter(c,Cave.SHADOW);v.update(c,.06f,L);
         shot(dir,"106-cave-side-ambush",c,L,w,h,ss);
-        v.update(c,.85f,L);v.responsePos=1;
-        shot(dir,"106-cave-enemy-rush",c,L,w,h,ss);
+        v.update(c,.36f,L);
+        shot(dir,"106-cave-enemy-stomp",c,L,w,h,ss);
+        v.update(c,.35f,L);shot(dir,"106-cave-enemy-rush",c,L,w,h,ss);
+        v.press(c,v.wanted(),L);v.update(c,.05f,L);
+        shot(dir,"106-cave-enemy-bolt",c,L,w,h,ss);
+        v.update(c,.06f,L);shot(dir,"106-cave-enemy-tummy-hit",c,L,w,h,ss);
+        while(v.phase==Cave.FIGHT||v.phase==Cave.SHADOW)v.press(c,v.wanted(),L);
+        v.update(c,.3f,L);shot(dir,"106-cave-enemy-retreat",c,L,w,h,ss);
+        v.update(c,.4f,L);shot(dir,"106-cave-enemy-hidden",c,L,w,h,ss);
         v.phase=Cave.WALK;v.focus=0;v.cameraZ=v.z-.13f;v.encounter(c,Cave.ROCKS);
         shot(dir,"106-cave-rock-immediate",c,L,w,h,ss);
         v.update(c,.15f,L);shot(dir,"106-cave-rock-zoom-mid",c,L,w,h,ss);

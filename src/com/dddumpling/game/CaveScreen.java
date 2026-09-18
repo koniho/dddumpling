@@ -13,7 +13,8 @@ final class CaveScreen extends Draw {
                 (float)Math.sin(v.effects.clock*107)*L.w*.004f*rumble);
         CaveTerrain.draw(p,v,L);
         if(v.phase==Cave.ROCKS||v.phase==Cave.SAND)floor(p,c,L);
-        if(v.phase==Cave.SHADOW||v.phase==Cave.FIGHT)enemy(p,c,L);
+        v.enemy.draw(p,c,L);
+        if(v.phase==Cave.SHADOW||v.phase==Cave.FIGHT)response(p,c,L,v.response,v.responsePos,v.responseSize,v.playerY(L)-L.w*.20f);
         float px=v.playerX()*L.w,py=v.playerY(L),r=L.w*(.043f+(v.phase==Cave.SAND?.022f*v.focus:0))*v.zoom();
         float bounce=v.walker.lift()*r;
         boolean sand=v.phase==Cave.SAND;
@@ -39,7 +40,7 @@ final class CaveScreen extends Draw {
                     i<v.traps.hits?CaveArt.LAMP:CaveArt.ROCK);
         }
         if(v.phase==Cave.ROCKS)rocks(p,c,L);
-        v.effects.draw(p,v,L);
+        v.effects.draw(p,v,L);v.enemy.bolts(p,v,L);
         if(v.phase==Cave.FORK)fork(p,c,L);
         if(v.phase==Cave.EXIT)p.text("EXIT REACHED",L.w*.5f,L.playTop+L.w*.18f,type(L.unit*.8f),CaveArt.LAMP,Painter.CENTER,true);
         Renderer.particles(p,c);p.restore();Renderer.keys(p,c,L);
@@ -93,20 +94,6 @@ final class CaveScreen extends Draw {
             for(int j=0;j<3;j++)p.fillCircle((t.rockX(i,progress)+v.hazardOffset())*L.w+(j-1)*L.w*.024f,py-(1-fall)*L.w*.6f-L.w*(.08f+j*.022f),L.w*.006f,CaveArt.LIGHT);
         }
         if(t.age<.45f)Renderer.touchHint(p,L.w*(.5f+.2f*t.age/.45f),py+L.w*.09f,L.w*.035f,1.1f,.75f,c.clock);
-    }
-    private static void enemy(Painter p,GameCore c,Layout L) {
-        Cave v=c.cave;float x=v.screenX(v.enemyX,L),y=v.worldScreenY(v.enemyY,L);
-        float pop=Math.min(1,v.timer/Cave.REVEAL),r=L.w*(.043f+.023f*Math.min(1,v.timer/Cave.APPROACH));
-        float bx=v.screenX(v.enemyStartX,L),by=v.worldScreenY(v.enemyStartY,L);
-        if(pop>=1)CaveArt.stone(p,bx,by+L.w*.026f,L.w*.09f,81,255);
-        p.fillEllipse(x,y+r*.7f,r*1.1f,r*.28f,Glyph.withAlpha(0xFF000000,140));
-        Kawaii.determined(p,Kawaii.BLOB,x,y-r*.5f*(float)Math.sin(pop*Math.PI),r,Glyph.mix(Glyph.COLOR[v.response[0]],CaveArt.MID,.2f),1f+v.pulse*.15f);
-        if(pop<1)CaveArt.stone(p,bx,by+L.w*(.026f+pop*.055f),L.w*.09f*(1-pop*.35f),81,255);
-        if(pop>=1)for(int i=0;i<3;i++) {
-            float dx=(v.enemyStartX-v.enemyX),dy=(v.enemyStartY-v.enemyY);
-            p.line(x+dx*L.w*(.1f+i*.10f),y-dy*L.w*(.1f+i*.10f),x+dx*L.w*(.16f+i*.10f),y-dy*L.w*(.16f+i*.10f),CaveArt.LIGHT,L.w*.003f);
-        }
-        response(p,c,L,v.response,v.responsePos,v.responseSize,v.playerY(L)-L.w*.20f);
     }
     private static void response(Painter p,GameCore c,Layout L,int[] glyphs,int pos,int count,float y) {
         float gap=L.w*.090f,r=L.w*.032f;

@@ -70,3 +70,11 @@ reaction time. Timing, response lengths and encounter count retain their tuned l
 
 The harness covers 256 generated maps and all eight branch combinations, plus 960 bounded-player
 runs across five stages. All 960 survived with 250 ms reaction, 4% misses and 4, 6 or 9 presses/sec.
+
+## Surprise enemy feedback
+
+Ambush cover is positioned on the local corridor wall. A 260 ms step clock drives alternating
+feet, body bounce, dust, thuds, scene shake and one-shot native haptics. Correct keys launch
+100 ms bolts from the explorer to the enemy's tummy; impact triggers wide eyes and flailing
+arms. Defeated enemies remain visible for a 650 ms reaction and retreat behind their own rock,
+while normal travel resumes. Scoring and the 1.8-second response deadline are unchanged.

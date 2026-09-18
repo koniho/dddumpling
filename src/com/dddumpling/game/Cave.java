@@ -14,6 +14,7 @@ final class Cave {
     final CaveSelection selection=new CaveSelection();
     final CaveInput input=new CaveInput();
     final CaveTraps traps=new CaveTraps();
+    final CaveEnemy enemy=new CaveEnemy();
     final CaveEffects effects=new CaveEffects();
     int phase,fork,responsePos,responseSize,seed,nextEvent;
     float z,cameraZ,aim,timer,enemyX,enemyY,enemyStartX,enemyStartY,pulse,exitTime,returnX,returnTime,focus,aimHold;
@@ -27,10 +28,10 @@ final class Cave {
         aim=route.heading(0);fork=responsePos=nextEvent=0;lessonSeen=c.stage!=21;
         seed=c.stage;exitTime=returnTime=zoomAge=zoomFromCamera=zoomFromFocus=0;
         for(int i=0;i<routes.length;i++)routes[i]=0;
-        input.release();traps.reset();effects.reset();walker.reset();selection.reset();
+        input.release();traps.reset();effects.reset();enemy.reset();walker.reset();selection.reset();
         if(running && c.caveChoice<0)phase=CHOOSE;
     }
-    void leave(){running=false;input.release();traps.reset();effects.reset();}
+    void leave(){running=false;input.release();traps.reset();effects.reset();enemy.reset();}
     float centre(float at){return route.centre(at);}
     float branchX(int junction,int side,float at){return route.x(junction,side,at);}
     int junction(float at){for(int i=0;i<3;i++)if(at>=FORKS[i] && at<=FORKS[i]+1.4f)return i;return -1;}
@@ -83,8 +84,9 @@ final class Cave {
         if(phase!=FIGHT&&phase!=SHADOW)return false;
         if(g!=wanted()){c.keyBad[g]=1;c.misses++;c.missesThisStage++;c.combo=0;if(c.sound!=null)c.sound.wrong();return false;}
         c.hits++;c.combo++;c.maxCombo=Math.max(c.maxCombo,c.combo);c.score+=10;pulse=1;responsePos++;
+        enemy.fire(this,L,Glyph.COLOR[g]);
         if(c.sound!=null)c.sound.squish(g,1);
-        if(responsePos==responseSize){c.squishes++;c.score+=40;Fx.explode(c,c.rnd,screenX(enemyX,L),worldScreenY(enemyY,L),L.enemyR,12,Glyph.COLOR[g]);phase=WALK;}
+        if(responsePos==responseSize){c.squishes++;c.score+=40;enemy.defeated(this);phase=WALK;}
         return true;
     }
     void encounter(GameCore c,int kind) {
@@ -92,7 +94,11 @@ final class Cave {
         zoomAge=0;zoomFromCamera=cameraZ;zoomFromFocus=focus;
         if(kind==SHADOW) {
             int side=random.nextBoolean()?-1:1;
-            enemyX=enemyStartX=pathX(z)+side*.48f;enemyY=enemyStartY=pathY(z)+.30f;
+            enemy.reset();float ahead=Math.min(LENGTH,z+.55f);
+            float dx=pathX(ahead+.02f)-pathX(ahead-.02f),dy=pathY(ahead+.02f)-pathY(ahead-.02f);
+            float length=Math.max(.001f,(float)Math.hypot(dx,dy));
+            enemyX=enemyStartX=pathX(ahead)+side*dy/length*.19f;
+            enemyY=enemyStartY=pathY(ahead)-side*dx/length*.19f;
             responsePos=0;responseSize=2+(seed-21)%2;
             int count=Roster.count(c.playRosterFull()),previous=-1;
             for(int i=0;i<responseSize;i++) {
@@ -108,7 +114,7 @@ final class Cave {
         }
     }
     void update(GameCore c,float dt,Layout L) {
-        effects.update(dt);
+        effects.update(dt);enemy.update(c,dt);
         float distance=phase==WALK&&returnTime<=0&&!c.pendingBonus?dt*WALK_SPEED*c.speed:0;
         walker.update(dt,distance);pulse=Math.max(0,pulse-dt*3);returnTime=Math.max(0,returnTime-dt);
         if(phase==ROCKS||phase==SAND) {
@@ -134,6 +140,7 @@ final class Cave {
                 if(timer>=REVEAL)phase=FIGHT;
                 float rush=Math.min(1,timer/APPROACH);rush=rush*rush;
                 enemyX=enemyStartX+(pathX(z)-enemyStartX)*rush;enemyY=enemyStartY+(pathY(z)-enemyStartY)*rush;
+                enemy.stomp(c);
                 if(timer>=APPROACH){phase=WALK;c.takeHit(playerX()*L.w,L);}break;
             case ROCKS:case SAND:traps.update(c,dt,L);break;
             case EXIT:exitTime+=dt;if(exitTime>=.6f){c.score+=100;Interlude.beginStageEnd(c);}break;
