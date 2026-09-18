@@ -453,7 +453,10 @@ public final class IOSInputTest extends Check {
         c.startGame();c.jumpToStage(21,l);for(int i=0;i<45;i++)game.update(DT);
         tap(game,CaveSelection.x(l,2),CaveSelection.y(l,2));
         check("native cave selection saves chosen explorer",c.caveChoice==2 && ((Mem)c.store).caveChoice==2);
-        for(int i=0;i<55;i++)game.update(DT);c.cave.phase=Cave.FORK;c.cave.z=c.cave.cameraZ=2f;c.cave.fork=0;
+        for(int i=0;i<55;i++)game.update(DT);
+        check("native cave introduction waits after explorer choice",c.stageBanner>0 && c.cave.z==0);
+        for(int i=0;i<120;i++)game.update(DT);
+        c.cave.phase=Cave.FORK;c.cave.z=c.cave.cameraZ=2f;c.cave.fork=0;
         tap(game,Cave.branchX(0,-1,2.4f)*l.w,c.cave.screenY(2.4f,l));
         check("native lantern selects a cave route",c.cave.routes[0]==-1 && c.cave.phase==Cave.WALK);
         c.cave.encounter(c,Cave.ROCKS);float x=l.w*.5f,y=c.cave.playerY(l),before=c.cave.traps.targetX;

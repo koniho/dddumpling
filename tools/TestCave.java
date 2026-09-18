@@ -16,7 +16,7 @@ final class TestCave extends Check {
         check("stage jump enters expedition",Cave.active(c) && c.enemies.isEmpty());
         c.landChoice=Cave.LAND;c.startGame();
         check("picker and jump enter same cave",c.stage==21 && Cave.active(c) && c.cave.z==0f);
-        c.update(.2f,L);check("camera follows without jumping",v.z>v.cameraZ);
+        c.stageBanner=0f;c.update(.2f,L);check("camera follows without jumping",v.z>v.cameraZ);
         c.update(.2f,L);check("camera advances toward walker",v.cameraZ>0f && v.cameraZ<v.z);
         float at=v.z;c.paused=true;c.update(1f,L);check("pause freezes expedition",v.z==at);c.paused=false;
         v.z=2;v.phase=Cave.FORK;v.timer=0;v.fork=0;
@@ -114,6 +114,7 @@ final class TestCave extends Check {
         c.paused=true;c.update(2f,L);
         check("pause freezes entrance scene",c.cave.selection.age==0f);c.paused=false;
         c.update(.7f,L);c.cave.selection.pick(c,0);c.update(.9f,L);
+        c.stageBanner=0f;
         for(int frame=0;frame<60;frame++)c.update(DT,L);
         check("walker covers twice the former distance in one second",Math.abs(c.cave.z-.36f)<.001f);
         CaveDumpling walking=new CaveDumpling(),idle=new CaveDumpling();float peakLift=0f,peakShape=0f;

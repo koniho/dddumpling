@@ -11,7 +11,9 @@ final class Preview {
 
     private static void caveFrames(File dir, Layout L, int w, int h, int ss) throws Exception {
         GameCore c=new GameCore(new Mem(),921L);c.caveChoice=0;c.startGame();c.jumpToStage(21,L);
-        c.stageBanner=0f;c.landBlend=1f;Cave v=c.cave;
+        c.landBlend=1f;c.update(.6f,L);
+        shot(dir,"106-cave-stage-introduction",c,L,w,h,ss);
+        c.stageBanner=0f;Cave v=c.cave;
         shot(dir,"106-cave-entrance",c,L,w,h,ss);
         v.z=v.cameraZ=2f;v.phase=Cave.FORK;v.timer=.7f;v.fork=0;
         shot(dir,"106-cave-first-fork",c,L,w,h,ss);
