@@ -12,10 +12,6 @@ final class PushLesson extends Draw {
         float t = clamp01((clock % 1.8f - .25f) / .9f);
         return t * t * (3f - 2f * t);
     }
-    static int barColor(float clock) {
-        float pulse = .5f - .5f * (float) Math.cos(clock * Math.PI * 2 / 1.2f);
-        return Glyph.mix(0xFF805626, GOLD, pulse);
-    }
 
     void cancelTouch() { armed = ownsTouch = false; }
     void reset() { active = false; clock = 0; cancelTouch(); }
@@ -65,7 +61,11 @@ final class PushLesson extends Draw {
         if (!lesson.active) return;
         float s = Pause.scale(L), x = L.w * .5f;
         float y = L.playTop + (L.dangerY - L.playTop) * .36f;
-        p.fillRect(0, 0, L.w, L.h, 0xCC100D20);
+        // Leave the real swipe bar uncovered so the lesson teaches its ordinary appearance.
+        p.fillRect(0, 0, L.w, L.dangerY, 0xCC100D20);
+        p.fillRect(0, L.deckTop, L.w, L.h, 0xCC100D20);
+        p.fillRect(0, L.dangerY, L.playLeft, L.deckTop, 0xCC100D20);
+        p.fillRect(L.playRight, L.dangerY, L.w, L.deckTop, 0xCC100D20);
         p.text("LAST LIFE!", x, y, type(s * .95f), GOLD, Painter.CENTER, true);
         p.text("Swipe up from the bar", x, y + type(s * 1.5f),
                 type(s * .58f), INK, Painter.CENTER, true);
@@ -73,7 +73,6 @@ final class PushLesson extends Draw {
                 type(s * .54f), INK, Painter.CENTER, false);
         p.text("Once per stage", x, y + type(s * 3.6f),
                 type(s * .44f), INK_DIM, Painter.CENTER, false);
-        p.fillRect(L.playLeft, L.dangerY, L.playRight, L.deckTop, barColor(lesson.clock));
         float base = (L.dangerY + L.deckTop) * .5f;
         float tip = base - L.enemyR * 2.7f;
         p.polyline(new float[] {x, base, x, tip}, GOLD, s * .15f);

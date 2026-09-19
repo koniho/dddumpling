@@ -242,7 +242,6 @@ final class TestStages extends Check {
         float y=e.y, time=c.time, mode=c.modeLeft, lessonClock=c.pushLesson.clock;
         c.update(10f,L);
         check("instruction clock advances while play is frozen", c.pushLesson.clock>lessonClock);
-        check("swipe bar pulses between dark amber and gold", PushLesson.barColor(0f)!=PushLesson.barColor(.6f));
         check("finger starts at bar and demonstrates a full upward swipe",
                 PushLesson.swipeProgress(.2f)==0f && PushLesson.swipeProgress(1.2f)==1f);
         check("lesson freezes words and simulation timers", e.y==y && c.time==time && c.modeLeft==mode);
