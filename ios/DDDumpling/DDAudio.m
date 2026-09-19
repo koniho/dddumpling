@@ -361,6 +361,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 - (void)divideDamage { [self playEffect:DDSfx_DIVIDE_DAMAGE rate:1 gain:.76f]; }
 - (void)divideSplit { [self playEffect:DDSfx_DIVIDE_SPLIT rate:1 gain:.78f]; }
 - (void)divideDeactivate { [self playEffect:DDSfx_DIVIDE_DEACTIVATE rate:1 gain:.82f]; }
+- (void)divideSupernova { [self playEffect:DDSfx_DIVIDE_SUPERNOVA rate:1 gain:.95f]; }
 - (void)divideBoingWithFloat:(jfloat)weight {
   float w = MAX(0.f, MIN(1.f, weight));
   jint sound = w >= .67f ? DDSfx_DIVIDE_BOING_HEAVY : w >= .34f ? DDSfx_DIVIDE_BOING_MEDIUM : DDSfx_DIVIDE_BOING_LIGHT;

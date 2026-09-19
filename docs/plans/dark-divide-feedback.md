@@ -21,6 +21,9 @@ for pacing changes, and device-playtest the final sound and movement feel.
 
 Projectile interceptions also use the rounded bloop, avoiding the generic hard shell snap.
 The final death sequence gathers the cubes for 0.9 seconds, shakes them with increasing intensity
-for one second, then bursts into 180 tumbling cubes in six purple shades. Debris travels radially
+for one second, then bursts into 360 tumbling cubes in six purple shades. Debris travels radially
 without gravity; the existing 3.6-second defeat duration stays unchanged. `DivideDeath` owns
 the deterministic pose and renderer, previewed across seven beats in `75d-divide-supernova-*`.
+
+The doubled 360-cube burst triggers one intense 1.4-second layered bleep-and-bloop effect
+at ignition on Android and iOS. Pausing freezes the trigger, and debris frames cannot replay it.

@@ -89,7 +89,7 @@ abstract class Check {
         float musicVolume, effectsVolume, squishVolume;
         public void volumes(float music,float effects) { musicVolume=music;effectsVolume=effects; }
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeDamages, bossSplits,
-                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideBoings, chops, zaps;
+                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideSupernovas, divideBoings, chops, zaps;
         float bossCharge, maxBossCharge;
         float lastDivideBoingWeight = -1f;
         int collects;
@@ -141,6 +141,7 @@ abstract class Check {
         public void divideDamage() { divideDamages++; }
         public void divideSplit() { divideSplits++; }
         public void divideDeactivate() { divideDeactivates++; }
+        public void divideSupernova() { divideSupernovas++; }
         public void divideBoing(float weight) {
             divideBoings++;
             lastDivideBoingWeight = weight;

@@ -237,6 +237,15 @@ final class TestAudio extends Check {
             check("divide bubbles fade before the next action", tail < head / 4);
         }
 
+        short[] nova = Sfx.build(Sfx.DIVIDE_SUPERNOVA);
+        check("the supernova fills the explosion without spilling into the next stage",
+                nova.length > Sfx.RATE && nova.length < Sfx.RATE * (Boss.LEAVE - DivideDeath.BURST_AT));
+        check("the supernova stays tonal", crossRate(nova) > 600f && crossRate(nova) < 4500f);
+        int novaHead = 0, novaTail = 0;
+        for (int i = 0; i < nova.length / 2; i++) novaHead = Math.max(novaHead, Math.abs(nova[i]));
+        for (int i = nova.length * 9 / 10; i < nova.length; i++) novaTail = Math.max(novaTail, Math.abs(nova[i]));
+        check("the supernova bleeps and bloops finish with a soft tail", novaTail < novaHead / 10);
+
         short[] heavyBoing = Sfx.build(Sfx.DIVIDE_BOING_HEAVY);
         short[] mediumBoing = Sfx.build(Sfx.DIVIDE_BOING_MEDIUM);
         short[] lightBoing = Sfx.build(Sfx.DIVIDE_BOING_LIGHT);

@@ -1704,7 +1704,7 @@ final class TestBoss extends Check {
                 < Boss.bodyR(L) * Boss.DIVIDE_PIECES * .25f);
         while (DivideDeath.elapsed(c.boss) < DivideDeath.BURST_AT + .02f) c.boss.update(DT, L, c.rnd);
         check("the supernova follows the full shake", DivideDeath.bursting(c.boss));
-        check("the supernova has 180 tiny cubes", DivideDeath.SHARDS == 180);
+        check("the supernova has 360 tiny cubes", DivideDeath.SHARDS == 360);
         int[] quadrants = new int[4];
         boolean outward = true;
         for (int i = 0; i < DivideDeath.SHARDS; i++) {
@@ -1714,6 +1714,21 @@ final class TestBoss extends Check {
         }
         check("cube debris flies outward in every direction", outward
                 && quadrants[0] > 35 && quadrants[1] > 35 && quadrants[2] > 35 && quadrants[3] > 35);
+
+        GameCore nova = enterBoss(L, Boss.SPLITTER, 189L);
+        Ear novaEar = new Ear(); nova.sound = novaEar;
+        nova.boss.beaten = true;
+        nova.boss.leaveT = Boss.LEAVE - DivideDeath.BURST_AT + .025f;
+        nova.update(.01f, L);
+        check("the supernova sound waits for ignition", novaEar.divideSupernovas == 0);
+        nova.paused = true;
+        nova.update(.1f, L);
+        check("pausing cannot trigger the supernova", novaEar.divideSupernovas == 0);
+        nova.paused = false;
+        nova.update(.03f, L);
+        check("the ignition frame plays its supernova sound", novaEar.divideSupernovas == 1);
+        for (int i = 0; i < 40; i++) nova.update(DT, L);
+        check("the supernova sound never repeats during the debris", novaEar.divideSupernovas == 1);
 
         GameCore intercepted = enterBoss(L, Boss.SPLITTER, 188L);
         Ear interceptEar = new Ear(); intercepted.sound = interceptEar;

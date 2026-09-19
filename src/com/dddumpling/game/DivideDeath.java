@@ -4,7 +4,7 @@ package com.dddumpling.game;
 final class DivideDeath extends Draw {
     static final float GATHER = 0.9f, SHAKE = 1f;
     static final float BURST_AT = GATHER + SHAKE;
-    static final int SHARDS = 180;
+    static final int SHARDS = 360;
     private static final int[] COLORS = {0xFF6432A0, 0xFF8147C9, 0xFFA264E8,
             0xFFC48BFA, 0xFFE0BAFF, 0xFF9251B5};
 

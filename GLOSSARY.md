@@ -210,7 +210,8 @@ The unsplit cube fires three staggered projectiles every 1.5 seconds; after the 
 each cube fires two every 2.1 seconds. Subsequent splits retain the single-projectile firing ramp.
 Successful hits still reset the struck cube’s firing timer.
 On defeat the cubes gather in a circle, shake with growing intensity for one second, then
-explode into 180 tiny tumbling cubes in six purple shades. `DivideDeath` owns this sequence.
+explode into 360 tiny tumbling cubes in six purple shades. A rapid, layered bleep-and-bloop burst sounds once at ignition.
+`DivideDeath` owns this sequence; `Sfx.DIVIDE_SUPERNOVA` supplies its sound.
 
 ## Powerup
 

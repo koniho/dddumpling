@@ -230,6 +230,8 @@ final class GameCore {
         void divideSplit();
         /** A terminal Dark Divide fragment was pulled apart and deactivated. */
         void divideDeactivate();
+        /** The gathered cubes ignite into a supernova. */
+        void divideSupernova();
         /** Two Dark Divide bodies, or one body and a wall, rebounded. 1 is largest/heaviest. */
         void divideBoing(float weight);
         /** A charged or flying slime bolt was destroyed: one short, low bloop. */
@@ -2702,7 +2704,9 @@ final class GameCore {
             float beforeHp = boss.hp;
             float priorCover=boss.slimePromptCover();
             boolean priorOpen=boss.open();
+            boolean beforeSupernova = boss.kind == Boss.SPLITTER && boss.beaten && !DivideDeath.bursting(boss);
             int bossHits = boss.update(dt, L, rnd);
+            if (beforeSupernova && DivideDeath.bursting(boss) && sound != null) sound.divideSupernova();
             float cover=boss.slimePromptCover();
             if(sound!=null && boss.kind==Boss.SLIME && boss.fighting() && boss.slimePromptHits>=2
                     && !boss.hasGlob() && boss.boltCount()==0 && !boss.slimeRetaliating) {

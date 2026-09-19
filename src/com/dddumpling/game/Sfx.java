@@ -32,7 +32,7 @@ final class Sfx {
             MUSHROOM_SHAKE = BOLT_DEATH + 1, MUSHROOM_SPORE = MUSHROOM_SHAKE + 1,
             LINKED_THUD = MUSHROOM_SPORE + 1, SHUFFLE_BLIP = LINKED_THUD + 1, DEBUFF_DOWN = SHUFFLE_BLIP + 1,
             SLIME_COVER = DEBUFF_DOWN + 1, SLIME_RELEASE = SLIME_COVER + 1,
-            LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, BLAST_OFF = UI_BLOOP + 1, COUNT = BLAST_OFF + 1;
+            LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, BLAST_OFF = UI_BLOOP + 1, DIVIDE_SUPERNOVA = BLAST_OFF + 1, COUNT = DIVIDE_SUPERNOVA + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -86,6 +86,7 @@ final class Sfx {
             case DIVIDE_BOING_LIGHT: return divideBoing(2);
             case ROSTER_JOIN: return rosterJoin();
             case DIVIDE_DEACTIVATE: return divideDeactivate();
+            case DIVIDE_SUPERNOVA: return divideSupernova();
             case SHIELD_BOUNCE: return shieldBounce();
             case SLIME_DAMAGE: return slimeDamage();
             case OCTO_CUE: return octoCue();
@@ -907,6 +908,37 @@ final class Sfx {
                     + (u > 0.16f ? 0.75f * (float) Math.exp(-55f * (u - 0.16f)) : 0f));
             float sub = (float) Math.sin(TAU * (145f * t - 62f * t * t));
             v[i] = (cracks * 0.48f + sub * 0.86f) * envelope(u, 0.003f, 1.7f);
+        }
+        return render(v);
+    }
+
+    /** Dense alternating arcade bleeps and elastic bubbles, launched with the cube burst. */
+    static short[] divideSupernova() {
+        int n = (int) (RATE * 1.4f);
+        float[] v = new float[n];
+        float[] notes = {1047f, 262f, 1568f, 392f, 1319f, 330f, 2093f, 523f};
+        for (int k = 0; k < 16; k++) {
+            int start = (int) (RATE * k * .068f);
+            boolean bleep = k % 2 == 0;
+            int length = (int) (RATE * (bleep ? .15f : .28f));
+            float phase = 0f, hz = notes[k % notes.length];
+            for (int j = 0; j < length && start + j < n; j++) {
+                float u = j / (float) length;
+                float pitch = bleep ? hz * (1f + .18f * u)
+                        : hz * (.48f + 1.4f * (float) Math.exp(-6f * u));
+                phase += TAU * pitch / RATE;
+                float wave = (float) Math.sin(phase)
+                        + (bleep ? .22f : .10f) * (float) Math.sin(phase * (bleep ? 3f : 2f));
+                v[start + j] += wave * envelope(u, .04f, bleep ? 3f : 4f)
+                        * (1f - u) * (.85f - k * .025f);
+            }
+        }
+        float phase = 0f;
+        for (int i = 0; i < n; i++) {
+            float t = i / (float) RATE;
+            phase += TAU * (85f + 190f * (float) Math.exp(-18f * t)) / RATE;
+            v[i] += (float) Math.sin(phase) * (float) Math.exp(-9f * t)
+                    * Math.min(1f, t / .006f) * .65f;
         }
         return render(v);
     }
