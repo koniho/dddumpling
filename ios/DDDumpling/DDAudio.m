@@ -7,18 +7,25 @@
 
 #import "com/dddumpling/game/Sfx.h"
 #import "com/dddumpling/game/Music.h"
+#import "com/dddumpling/game/CaveSong.h"
 #import "com/dddumpling/game/Narration.h"
 #import "IOSPrimitiveArray.h"
 
 static const double DDBoltPopInterval = 0.165;
 static const jint DDStyleSwing = DDMusic_SWING_STYLE;
-static const jint DDStyleOff = DDMusic_OFF;
-static const jint DDStyleCustom = DDMusic_CUSTOM;
 
 @interface DDIOSAudio () <AVAudioPlayerDelegate, AVSpeechSynthesizerDelegate>
 @property(nonatomic) NSCache<NSNumber *, AVAudioPCMBuffer *> *effectBuffers;
 @property(nonatomic) DDEffectMixer *effectMixer;
 @property(nonatomic) AVAudioPlayer *music;
+@property(nonatomic) DDEffectMixer *bandMixer;
+@property(nonatomic) NSArray<AVAudioPCMBuffer *> *bandNotes;
+@property(nonatomic) BOOL bandActive;
+@property(nonatomic) BOOL bandPaused;
+@property(nonatomic) BOOL bandMuted;
+@property(nonatomic) BOOL bandFailed;
+@property(nonatomic) BOOL bandFinished;
+@property(nonatomic) float bandDuration;
 @property(nonatomic) AVAudioPlayer *bubble;
 @property(nonatomic) AVAudioEngine *rocketEngine;
 @property(nonatomic) AVAudioPlayerNode *rocketNode;
@@ -56,6 +63,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
   if ((self = [super init])) {
     _effectBuffers = [[NSCache alloc] init];
     _effectMixer = [DDEffectMixer new];
+    _bandMixer = [DDEffectMixer new];
     _speech = [[AVSpeechSynthesizer alloc] init];
     _speech.delegate = self;
     _renderQueue = dispatch_queue_create("com.dddumpling.audio.render", DISPATCH_QUEUE_SERIAL);
@@ -167,6 +175,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
   self.effectGeneration += 1;
   dispatch_async(_effectsQueue, ^{
     [self.effectMixer pause];
+    [self.bandMixer pause];
   });
   [_speech stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
   _narrating = NO;
@@ -179,7 +188,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
   dispatch_async(_effectsQueue, ^{
     if (generation == self.effectGeneration) [self.effectMixer prepare];
   });
-  if (_music && !_music.isPlaying && _selectedStyle != DDStyleOff) [_music play];
+  if (_music && !_music.isPlaying && !_bandPaused && !_bandFinished) [_music play];
   if (_rocketOn && _rocketNode && !_rocketNode.isPlaying) {
     NSError *error = nil;
     [_rocketEngine startAndReturnError:&error];
@@ -262,46 +271,30 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 }
 
 - (void)applyMusicMix {
-  float gain = _boss ? DDMusic_BOSS_GAIN : (_selectedStyle == DDStyleCustom ? 0.55f : 1.f);
+  float gain = _boss ? DDMusic_BOSS_GAIN : 1.f;
   if (_rocketOn) gain *= 0.68f;
   if (_narrating) gain *= 0.22f;
-  _music.volume = gain * _musicVolume;
-}
-
-- (NSURL *)customMusicURL {
-  for (NSString *extension in @[@"m4a", @"mp3", @"wav", @"aiff", @"caf"]) {
-    NSURL *url = [NSBundle.mainBundle URLForResource:@"bgm" withExtension:extension];
-    if (url) return url;
-  }
-  return nil;
+  _music.volume = _bandActive ? (_bandMuted ? 0 : _musicVolume) : gain * _musicVolume;
+  float bandGain = _bandMuted ? 0 : _musicVolume;
+  dispatch_async(_effectsQueue, ^{ self.bandMixer.volume = bandGain; });
 }
 
 - (void)rebuildMusic {
+  if (_bandActive) return;
   ++_musicGeneration;
   NSUInteger generation = _musicGeneration;
   [_music stop]; _music = nil;
-  if (_selectedStyle == DDStyleOff) return;
   BOOL boss = _boss, frenzy = _frenzy;
   NSInteger style = _selectedStyle;
-  NSURL *customURL = style == DDStyleCustom && !boss && !frenzy ? [self customMusicURL] : nil;
-  if (customURL) {
-    AVAudioPlayer *player = [[AVAudioPlayer alloc] initWithContentsOfURL:customURL error:nil];
-    if (player && generation == _musicGeneration) {
-      player.numberOfLoops = -1; player.enableRate = YES; player.delegate = self;
-      _music = player; [self applyMusicMix];
-      if (_active && !_interrupted && _playbackAllowed) [player play];
-    }
-    return;
-  }
   dispatch_async(_renderQueue, ^{
     IOSShortArray *pcm = nil;
     @try {
-      jint synthStyle = style >= 0 && style < DDStyleOff ? (jint)style : DDStyleSwing;
+      jint synthStyle = [DDMusic isSynthWithInt:(jint)style] ? (jint)style : DDStyleSwing;
       pcm = boss ? [DDMusic bossLoopWithInt:synthStyle]
                  : [DDMusic loopWithInt:synthStyle withBoolean:frenzy];
     } @catch (NSException *exception) { return; }
     dispatch_async(dispatch_get_main_queue(), ^{
-      if (generation != self.musicGeneration || self.selectedStyle == DDStyleOff) return;
+      if (generation != self.musicGeneration) return;
       AVAudioPlayer *player = [self playerForPCM:pcm loop:YES];
       if (!player) return;
       self.music = player; [self applyMusicMix];
@@ -350,6 +343,7 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
 - (void)landShuffle { [self playEffect:DDSfx_LAND_SHUFFLE rate:1 gain:.16f]; }
 - (void)slimeCoverWithBoolean:(jboolean)release { [self playEffect:release ? DDSfx_SLIME_RELEASE : DDSfx_SLIME_COVER rate:1 gain:.65f]; }
 - (void)debuffDown { [self playEffect:DDSfx_DEBUFF_DOWN rate:1 gain:.8f]; }
+- (void)caveEventWithInt:(jint)sound { [self playEffect:sound rate:1 gain:.85f]; }
 - (void)linkedThud { [self playEffect:DDSfx_LINKED_THUD rate:1 gain:.85f]; }
 - (void)wrong { [self playEffect:DDSfx_WRONG rate:1 gain:1]; }
 - (void)damage { [self playEffect:DDSfx_DRIP rate:1 gain:1]; }
@@ -433,7 +427,81 @@ static const jint DDStyleCustom = DDMusic_CUSTOM;
   if (effects == 0) [self hush];
 }
 
-- (void)selectMusicWithInt:(jint)style { _selectedStyle = style; _boss = NO; [self rebuildMusic]; }
+- (void)bandStartWithInt:(jint)song withBoolean:(jboolean)muted {
+  [self bandStop];
+  _bandActive = YES; _bandPaused = _bandFailed = _bandFinished = NO; _bandMuted = muted;
+  _boss = _frenzy = NO;
+  _bandDuration = [DDCaveSong durationWithInt:song];
+  NSUInteger generation = ++_musicGeneration;
+  [_music stop]; _music = nil;
+  dispatch_async(_renderQueue, ^{
+    @try {
+      IOSShortArray *pcm = [DDCaveSong backingWithInt:song];
+      NSMutableArray *notes = [NSMutableArray array];
+      AVAudioFormat *format = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:DDSfx_RATE channels:1];
+      for (int i = 0; i < DDCaveSong_BEATS; ++i) {
+        IOSShortArray *lead = [DDCaveSong leadWithInt:song withInt:i];
+        AVAudioPCMBuffer *buffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:format frameCapacity:lead->size_];
+        buffer.frameLength = lead->size_;
+        for (jint j = 0; j < lead->size_; ++j) buffer.floatChannelData[0][j] = lead->buffer_[j] / 32768.f;
+        [notes addObject:buffer];
+      }
+      dispatch_async(dispatch_get_main_queue(), ^{
+        if (generation != self.musicGeneration || !self.bandActive) return;
+        self.bandNotes = notes;
+        self.music = [self playerForPCM:pcm loop:NO];
+        self.bandFailed = self.music == nil;
+        [self applyMusicMix];
+        if (self.active && !self.interrupted && self.playbackAllowed && !self.bandPaused)
+          self.bandFailed = ![self.music play];
+        dispatch_async(self.effectsQueue, ^{ [self.bandMixer prepare]; });
+      });
+    } @catch (NSException *exception) {
+      dispatch_async(dispatch_get_main_queue(), ^{ if (generation == self.musicGeneration) self.bandFailed = YES; });
+    }
+  });
+}
+
+- (jfloat)bandTime {
+  if (!_bandActive || _bandFailed) return -1.f;
+  if (_bandFinished) return _bandDuration;
+  if (!_music) return NAN;
+  return MAX(0, _music.currentTime - AVAudioSession.sharedInstance.outputLatency);
+}
+
+- (void)bandNoteWithInt:(jint)song withInt:(jint)note {
+  if (!_bandActive || _bandPaused || _bandMuted || !_active || _interrupted || !_playbackAllowed
+      || note < 0 || note >= _bandNotes.count) return;
+  AVAudioPCMBuffer *buffer = _bandNotes[note];
+  NSUInteger generation = _effectGeneration;
+  dispatch_async(_effectsQueue, ^{
+    if (generation == self.effectGeneration) [self.bandMixer playBuffer:buffer rate:1 gain:1];
+  });
+}
+
+- (void)bandPauseWithBoolean:(jboolean)paused {
+  _bandPaused = paused;
+  if (paused) {
+    [_music pause];
+    ++_effectGeneration;
+    dispatch_async(_effectsQueue, ^{ [self.bandMixer pause]; });
+  } else [self resumePlayersIfNeeded];
+}
+
+- (void)bandMutedWithBoolean:(jboolean)muted { _bandMuted = muted; [self applyMusicMix]; }
+
+- (void)bandStop {
+  if (_bandActive) { ++_musicGeneration; [_music stop]; _music = nil; }
+  _bandActive = _bandPaused = _bandFinished = NO; _bandNotes = nil;
+  ++_effectGeneration;
+  dispatch_async(_effectsQueue, ^{ [self.bandMixer pause]; });
+}
+
+- (void)audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag {
+  if (_bandActive && player == _music) _bandFinished = YES;
+}
+
+- (void)selectMusicWithInt:(jint)style { _selectedStyle = style; if (_bandActive) return; _boss = NO; [self rebuildMusic]; }
 - (void)bossMusicWithBoolean:(jboolean)active { if (_boss == active) return; _boss = active; [self rebuildMusic]; }
 - (void)frenzyWithBoolean:(jboolean)on { if (_frenzy == on) return; _frenzy = on; [self rebuildMusic]; }
 

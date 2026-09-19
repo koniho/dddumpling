@@ -6,12 +6,12 @@ those buffers. Short effects cache float PCM and use `DDEffectMixer`: one persis
 with twelve reusable player nodes and varispeed units, operated on a serial effects queue.
 Finishing an effect leaves the graph alive; a saturated voice is interrupted for reuse.
 Music and the boss-charge bed retain WAV playback, while the rocket has its own engine.
-Music is rebuilt whenever selection,
+Music is rebuilt whenever the game scene,
 frenzy, or boss mode changes.
 Boss PCM is balanced to 115% of the matching synthesized stage track's RMS level,
 with soft-limited peaks at 38% of full scale to leave room for effects. Both platforms
-use the shared `Music.BOSS_GAIN`; music-off and temporary ducking still apply.
-The host sets `setActive:` after it has selected the persisted music choice. The adapter
+use the shared `Music.BOSS_GAIN`; player mute and temporary ducking still apply.
+The host sets `setActive:` after it has selected the scene soundtrack. The adapter
 also pauses for app backgrounding, interruptions, and unplugged output routes, and only
 resumes an interruption when iOS says that resumption is appropriate. Narration uses the
 system English voice at the Java-defined pitch and timing and ducks music while speaking.

@@ -58,8 +58,7 @@ abstract class Check {
         public void saveLandBest(int land, int value) { if (land == 0) saveBest(value); else landBests[land] = value; }
         int saves;
         float speed = 1f;
-        int bgm;
-        int speedSaves, bgmSaves;
+        int speedSaves;
         long collected;
         int collectedSaves;
         int collectTotal;
@@ -72,14 +71,21 @@ abstract class Check {
         public void saveBest(int b) { best = b; saves++; }
         public float loadSpeed() { return speed; }
         public void saveSpeed(float v) { speed = v; speedSaves++; }
-        public int loadBgm() { return bgm; }
-        public void saveBgm(int v) { bgm = v; bgmSaves++; }
         public long loadCollected() { return collected; }
         public void saveCollected(long v) { collected = v; collectedSaves++; }
         public int[] loadCollectionCounts() { return collectionCounts.clone(); }
         public void saveCollectionCounts(int[] v) { collectionCounts = v.clone(); }
         public int loadCollectTotal() { return collectTotal; }
         public void saveCollectTotal(int v) { collectTotal = v; collectTotalSaves++; }
+        boolean caveMiningNext;
+        public boolean loadCaveMiningNext(){return caveMiningNext;}
+        public void saveCaveMiningNext(boolean mining){caveMiningNext=mining;}
+        int cartTrack,cartSaves;
+        public int loadCartTrack(){return cartTrack;}
+        public void saveCartTrack(int progress){cartTrack=progress;cartSaves++;}
+        int mineCarts, mineSaves;
+        public int loadMineCarts() { return mineCarts; }
+        public void saveMineCarts(int carts) { mineCarts=carts;mineSaves++; }
         public int loadStarWins() { return starWins; }
         public void saveStarWins(int v) { starWins = v; starWinSaves++; }
         public int loadSteamerOpens() { return steamerOpens; }
@@ -88,7 +94,7 @@ abstract class Check {
         public void saveRosterState(int v) { rosterState = v; rosterSaves++; }
     }
 
-    static final class Ear implements GameCore.Sound {
+    static class Ear implements GameCore.Sound {
         float musicVolume, effectsVolume, squishVolume;
         public void volumes(float music,float effects) { musicVolume=music;effectsVolume=effects; }
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeDamages, bossSplits,
@@ -132,6 +138,8 @@ abstract class Check {
         int shuffleBlips, debuffDowns;
         public void shuffleBlip() { shuffleBlips++; }
         public void debuffDown() { debuffDowns++; }
+        int caveSounds,lastCaveSound;
+        public void caveEvent(int sound) { caveSounds++;lastCaveSound=sound; }
         int linkedThuds;
         public void linkedThud() { linkedThuds++; }
         public void wrong() { wrongs++; }

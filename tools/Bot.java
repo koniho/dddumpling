@@ -148,19 +148,27 @@ final class Bot {
     }
 
     private int cavePhase = -1;
+    int caveSide=-1;
     private void cavePlay(GameCore c, Layout L, float dt) {
         Cave v=c.cave;
-        if(v.phase!=cavePhase) { cavePhase=v.phase; think=reaction; }
+        int phase=v.phase==Cave.SHADOW?Cave.FIGHT:v.phase;
+        if(phase!=cavePhase) { cavePhase=phase; think=reaction; }
         think-=dt;
         if(think>0f || c.pendingBonus) return;
         if(v.phase==Cave.ROCKS) {
             // Only falling rocks are visible; no knowledge of later releases.
             float best=v.traps.x, distance=Float.MAX_VALUE;
-            for(float candidate:new float[]{.20f,.40f,.60f,.80f}) {
+            for(int spot=0;spot<=31;spot++) {
+                float candidate=.19f+spot*.02f;
                 boolean safe=true;
-                for(int i=0;i<CaveTraps.ROCK_COUNT;i++)
-                    if(v.traps.rockProgress(i)>=0f && !v.traps.landed[i]
-                            && Math.abs(candidate-v.traps.lanes[i])<CaveTraps.ROCK_R+CaveTraps.PLAYER_R+.02f) safe=false;
+                for(int i=0;i<CaveTraps.ROCK_COUNT;i++) {
+                    float progress=v.traps.rockProgress(i);
+                    if(progress<0 || v.traps.landed[i])continue;
+                    float travel=CaveTraps.MAX_VX*Math.max(0,(1-progress)*CaveTraps.FALL);
+                    float atImpact=v.traps.x+Math.max(-travel,Math.min(travel,candidate-v.traps.x));
+                    // Dodge the impact along the steering path, not just at its destination.
+                    if(Math.abs(atImpact-v.traps.lanes[i])<CaveTraps.ROCK_R+CaveTraps.PLAYER_R+.006f)safe=false;
+                }
                 if(safe && Math.abs(candidate-v.traps.x)<distance) {best=candidate;distance=Math.abs(candidate-v.traps.x);}
             }
             v.traps.drag(best);think=reaction;return;
@@ -169,9 +177,8 @@ final class Bot {
         if(v.phase==Cave.CHOOSE) {
             v.tap(c,L,CaveSelection.x(L,0),CaveSelection.y(L,0));
         } else if(v.phase==Cave.FORK) {
-            v.tap(c,L,Cave.branchX(v.fork,-1,v.z+.4f)*L.w,v.screenY(v.z+.4f,L));
-        } else if(v.phase==Cave.SHADOW) {
-            v.tap(c,L,v.enemyX*L.w,v.screenY(v.enemyZ,L));
+            v.tap(c,L,v.branchScreenX(caveSide,L),v.branchScreenY(caveSide,L));
+
         } else if(v.wanted()>=0) {
             int g=v.wanted();
             if(rnd.nextFloat()<missRate) g=Roster.at(c.playRosterFull(),(Roster.count(c.playRosterFull())-1));

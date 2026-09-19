@@ -60,6 +60,8 @@ src/com/dddumpling/game/Roster.java
 src/com/dddumpling/game/Kawaii.java
 src/com/dddumpling/game/Layout.java
 src/com/dddumpling/game/Sfx.java
+src/com/dddumpling/game/CartRecording.java
+src/com/dddumpling/game/RockRecording.java
 src/com/dddumpling/game/Music.java
 src/com/dddumpling/game/Words.java
 src/com/dddumpling/game/Fx.java
@@ -90,9 +92,25 @@ src/com/dddumpling/game/CaveDumpling.java
 src/com/dddumpling/game/CaveSelection.java
 src/com/dddumpling/game/CaveRoute.java
 src/com/dddumpling/game/CaveInput.java
+src/com/dddumpling/game/CaveCollect.java
+src/com/dddumpling/game/CaveSong.java
+src/com/dddumpling/game/CaveCart.java
+src/com/dddumpling/game/CaveCartInput.java
+src/com/dddumpling/game/CaveCartScene.java
+src/com/dddumpling/game/CaveCartScreen.java
+src/com/dddumpling/game/CaveMining.java
+src/com/dddumpling/game/CaveMiningInput.java
+src/com/dddumpling/game/CaveMiningScreen.java
+src/com/dddumpling/game/CaveMiningScene.java
+src/com/dddumpling/game/CaveBand.java
+src/com/dddumpling/game/CaveInterlude.java
+src/com/dddumpling/game/CaveBandScreen.java
 src/com/dddumpling/game/Cave.java
 src/com/dddumpling/game/CaveTraps.java
 src/com/dddumpling/game/CaveArt.java
+src/com/dddumpling/game/CaveTerrain.java
+src/com/dddumpling/game/CaveEffects.java
+src/com/dddumpling/game/CaveEnemy.java
 src/com/dddumpling/game/CaveScreen.java
 src/com/dddumpling/game/Lands.java
 src/com/dddumpling/game/SeaSkits.java
@@ -143,6 +161,7 @@ fi
 
 [ "$QUIET" = 1 ] || echo "=== rules ==="
 java -cp build/harness com.dddumpling.game.CoreTest "$SUITE" | filter
+if [ -z "$SUITE" ] || [[ "CaveBand Audio" == *"$SUITE"* ]]; then python3 tools/test-band-audio.py; fi
 
 if [ "$RULES_ONLY" = 1 ]; then exit 0; fi
 

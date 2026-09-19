@@ -17,7 +17,6 @@ final class TestProduction extends Check {
         reader.releaseNotes.close();
         Mem store = new Mem();
         store.speed = GameCore.SPEED_MAX;
-        store.bgm = (Music.defaultChoice(false) + 1) % Music.NAMES.length;
         store.collected = 1L;
         store.collectionCounts[0] = 7;
         store.collectTotal = 7;
@@ -25,14 +24,15 @@ final class TestProduction extends Check {
         store.starWins = 3;
         GameCore c = new GameCore(store, 412L);
         check("production ignores saved developer speed", c.speed == 1f);
-        check("production uses default music", c.bgmChoice == Music.defaultChoice(false));
+        Ear ear=new Ear(); c.sound=ear; c.startMusic();
+        check("production uses automatic music", ear.music == Music.SWING_STYLE);
         check("production retains progression and collection counts",
                 c.collectionCounts[0] == 7 && c.steamer.opens == 5 && c.stars.wins == 3);
         c.openSettings();
         check("settings open on player page", c.settingsOpen && c.settingsPage==0);
         c.closeSettings();
         SettingsUi ui = new SettingsUi();
-        ui.compute(L, Music.NAMES.length);
+        ui.compute(L);
         boolean targetsGone = true;
         for (float y = 0; y < L.h; y += 7f) {
             for (float x = 0; x < L.w; x += 11f)
@@ -40,14 +40,13 @@ final class TestProduction extends Check {
         }
         check("production has no developer touch targets", targetsGone);
         c.setSpeed(GameCore.SPEED_MIN);
-        c.setBgm(store.bgm);
         boolean roster = c.fullRoster;
         c.setNextRoster(!roster);
         c.resetDifficultyScaling();
         c.setStarDifficulty(0);
         c.tapClearCase(); c.tapClearCase();
         check("settings actions cannot change speed or music", c.speed == 1f
-                && c.bgmChoice == Music.defaultChoice(false) && store.speedSaves == 0 && store.bgmSaves == 0);
+                && ear.music == Music.SWING_STYLE && store.speedSaves == 0);
         check("settings actions cannot change the roster", c.fullRoster == roster && store.rosterSaves == 0);
         check("settings actions cannot reset progression", c.steamer.opens == 5 && c.stars.wins == 3);
         check("settings actions cannot clear collections", c.collected == 1L
@@ -70,6 +69,8 @@ final class TestProduction extends Check {
         c.playtestMode(Power.FLING,L);
         c.playtestStars(L);
         c.playtestSteamer(L);
+        CaveInterlude.playtest(c,L,false);
+        CaveInterlude.playtest(c,L,true);
         c.jumpToStage(20,L);
         c.endCurrentRun();
         check("playtest actions cannot start modes, skip stages or end a run",

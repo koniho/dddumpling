@@ -5,7 +5,6 @@ import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
-import android.media.MediaPlayer;
 
 /**
  * Plays the {@link Sfx} buffers through {@link AudioTrack}.
@@ -21,6 +20,7 @@ final class Audio implements GameCore.Sound {
     private final AudioTrack[] tracks = new AudioTrack[Sfx.COUNT];
     private boolean broken;
 
+    private final CaveBandAudio band = new CaveBandAudio();
     private final Context ctx;
     private AudioTrack bgmTrack;
     private boolean musicPaused;
@@ -33,7 +33,6 @@ final class Audio implements GameCore.Sound {
     private boolean rocketActive;
     private boolean bubbleActive;
     private float bubbleVolume;
-    private MediaPlayer bgmPlayer;
     private boolean bgmStarted;
     private boolean frenzyPlaying;
     private boolean bossPlaying;
@@ -53,11 +52,6 @@ final class Audio implements GameCore.Sound {
         }, "hexatype-audio-prerender").start();
     }
 
-    /**
-     * Starts looping background music, off the calling thread because synthesising the loop
-     * takes a moment. Prefers a user-supplied {@code res/raw/bgm} if one is present —
-     * resolved by name so the build does not depend on the file existing.
-     */
     private int choice = -1;
 
     /** Starts the loop for the current choice if it is not already playing, off the calling thread. */
@@ -67,20 +61,27 @@ final class Audio implements GameCore.Sound {
         selectMusic(choice < 0 ? Music.SWING_STYLE : choice);
     }
 
+    @Override public void bandStart(int song, boolean muted) {
+        musicMode = -1; bossPlaying = frenzyPlaying = false;
+        band.start(song,muted); stopMusic(); band.volume(musicVolume);
+    }
+    @Override public float bandTime() { return band.time(); }
+    @Override public void bandNote(int song,int note) { band.note(note); }
+    @Override public void bandPause(boolean paused) { band.pause(paused,false); }
+    @Override public void bandStop() { band.stop(); musicMode = -1; }
+    @Override public void bandMuted(boolean muted) { band.muted(muted); }
+
     @Override public void selectMusic(final int style) {
         choice = style;
+        if (band.active()) return;
         bgmStarted = true;
         if (musicMode == 0 && playingStyle == style) return;
         musicMode = 0;
         playingStyle = style;
         bossPlaying = false;
         stopMusic();
-        if (style == Music.OFF) return;
         new Thread(new Runnable() {
             @Override public void run() {
-                // "MY TRACK" plays res/raw/bgm when present, and falls back to the synth
-                // loop when it is not, so the option is never a dead end.
-                if (style == Music.CUSTOM && playRawMusic()) return;
                 playSynthMusic(Music.isSynth(style) ? style : Music.SWING_STYLE, frenzyPlaying);
             }
         }, "hexatype-bgm").start();
@@ -99,7 +100,6 @@ final class Audio implements GameCore.Sound {
         musicMode = 1;
         playingStyle = choice;
         stopMusic();
-        if (choice == Music.OFF) return;
         bgmStarted = true;
         new Thread(new Runnable() {
              public void run() {
@@ -128,10 +128,6 @@ final class Audio implements GameCore.Sound {
 
     private void stopMusic() {
         try {
-            if (bgmPlayer != null) {
-                bgmPlayer.release();
-                bgmPlayer = null;
-            }
             if (bgmTrack != null) {
                 bgmTrack.stop();
                 bgmTrack.release();
@@ -139,25 +135,6 @@ final class Audio implements GameCore.Sound {
             }
         } catch (Throwable ignored) {
             // Already gone.
-        }
-    }
-
-    private boolean playRawMusic() {
-        try {
-            int id = ctx.getResources().getIdentifier("bgm", "raw", ctx.getPackageName());
-            if (id == 0) return false;
-            MediaPlayer mp = MediaPlayer.create(ctx, id);
-            if (mp == null) return false;
-            mp.setLooping(true);
-            mp.setVolume(0.55f * musicVolume, 0.55f * musicVolume);
-            synchronized (this) {
-                bgmPlayer = mp;
-                applyMusicMix();
-                if (!musicPaused) mp.start();
-            }
-            return true;
-        } catch (Throwable e) {
-            return false;
         }
     }
 
@@ -187,6 +164,7 @@ final class Audio implements GameCore.Sound {
 
     /** A track prepared in the background must honor a pause that happened while it was loading. */
     private synchronized void startPreparedMusic(AudioTrack track) {
+        if (band.active()) { track.release(); return; }
         bgmTrack = track;
         applyMusicMix();
         if (!musicPaused) track.play();
@@ -194,8 +172,8 @@ final class Audio implements GameCore.Sound {
 
     synchronized void pauseMusic() {
         musicPaused = true;
+        band.pause(true,true);
         try {
-            if (bgmPlayer != null) bgmPlayer.pause();
             if (bgmTrack != null) bgmTrack.pause();
             if (rocketTrack != null) rocketTrack.pause();
         } catch (Throwable ignored) {
@@ -205,8 +183,8 @@ final class Audio implements GameCore.Sound {
 
     synchronized void resumeMusic() {
         musicPaused = false;
+        band.pause(false,true);
         try {
-            if (bgmPlayer != null) bgmPlayer.start();
             if (bgmTrack != null) bgmTrack.play();
             if (rocketTrack != null && rocketActive) rocketTrack.play();
         } catch (Throwable ignored) {
@@ -337,7 +315,7 @@ final class Audio implements GameCore.Sound {
         }
     }
 
-    /** Leaves a little headroom for the engine without muting the selected music. */
+    /** Leaves a little headroom for the engine without muting the scene music. */
     private void mixRocket(boolean on) { rocketDucked=on; applyMusicMix(); }
 
     @Override public void volumes(float music,float effects) {
@@ -351,9 +329,9 @@ final class Audio implements GameCore.Sound {
         } catch(Throwable ignored) {}
     }
     private void applyMusicMix() {
+        band.volume(musicVolume);
         float gain=musicVolume*(rocketDucked?.68f:1f)*(ducked?.22f:1f);
         try {
-            if(bgmPlayer!=null) bgmPlayer.setVolume(.55f*gain,.55f*gain);
             if(bgmTrack!=null) bgmTrack.setVolume((bossPlaying?Music.BOSS_GAIN:1f)*gain);
         } catch(Throwable ignored) {}
     }
@@ -387,6 +365,7 @@ final class Audio implements GameCore.Sound {
     @Override public void landShuffle() { play(Sfx.LAND_SHUFFLE, 1f, 0.16f); }
     @Override public void slimeCover(boolean release) { play(release ? Sfx.SLIME_RELEASE : Sfx.SLIME_COVER, 1f, 0.65f); }
     @Override public void debuffDown() { play(Sfx.DEBUFF_DOWN, 1f, 0.8f); }
+    @Override public void caveEvent(int sound) { play(sound, 1f, .85f); }
     @Override public void linkedThud() { play(Sfx.LINKED_THUD, 1f, 0.85f); }
 
     @Override public void wrong() {
@@ -489,19 +468,16 @@ final class Audio implements GameCore.Sound {
         play(Sfx.POWER_CLEAR, 1f);
     }
 
-    /** Swaps the looping track for the driven variant of whatever the player selected. */
+    /** Swaps the looping track for the driven variant of the current scene. */
     @Override public void frenzy(boolean on) {
         if (frenzyPlaying == on) return;
         frenzyPlaying = on;
-        if (!bgmStarted || choice == Music.OFF) return;
+        if (!bgmStarted) return;
         stopMusic();
         final int style = Music.isSynth(choice) ? choice : Music.SWING_STYLE;
         final boolean fast = on;
         new Thread(new Runnable() {
             @Override public void run() {
-                // A custom track cannot be sped up on API 21, so the frenzy always uses the
-                // synth variant; the player's own track resumes when it ends.
-                if (!fast && choice == Music.CUSTOM && playRawMusic()) return;
                 playSynthMusic(style, fast);
             }
         }, "hexatype-bgm").start();
@@ -628,7 +604,7 @@ final class Audio implements GameCore.Sound {
      * Queues the whole reading at once: the name, the place, then the story in one piece, with a
      * beat of silence between them.
      *
-     * Speech follows the effects volume; ducking keeps the selected music below it.
+     * Speech follows the effects volume; ducking keeps the scene music below it.
      */
     private void read(int entry) {
         if(effectsVolume<=0f) { ttsPending=-1; return; }
@@ -673,6 +649,7 @@ final class Audio implements GameCore.Sound {
     private void duck(boolean on) { ducked=on; applyMusicMix(); }
 
     void release() {
+        band.stop();
         stopMusic();
         try {
             if (rocketTrack != null) rocketTrack.release();

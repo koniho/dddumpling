@@ -601,7 +601,7 @@ final class Screens extends Draw {
         }
     }
 
-    /** Settings panel: pacing multiplier and music choice. Freezes the game behind it. */
+    /** Settings panel: player preferences and developer controls. Freezes the game behind it. */
     /**
      * The settings panel, and the one screen whose text is <em>not</em> run through
      * {@link Draw#type}. Its rows, chips and slider are all sized from {@code unit} and packed

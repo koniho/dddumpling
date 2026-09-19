@@ -26,6 +26,18 @@ final class CaveArt extends Draw {
         p.fillPoly(pts, Glyph.withAlpha(ROCK, a));
         p.fillEllipse(x - r * .22f, y - r * .41f, r * .31f, r * .045f, Glyph.withAlpha(LIGHT, a / 2));
     }
+    static void tumbling(Painter p,float x,float y,float r,int seed,int alpha,float rotation) {
+        float[] pts=new float[14];
+        for(int i=0;i<7;i++){
+            float a=i*6.283185f/7,rr=r*(.72f+.28f*hash(seed+i*17));
+            float dx=(float)Math.cos(a)*rr,dy=(float)Math.sin(a)*rr*.8f;
+            pts[i*2]=x+dx*(float)Math.cos(rotation)-dy*(float)Math.sin(rotation);
+            pts[i*2+1]=y+dx*(float)Math.sin(rotation)+dy*(float)Math.cos(rotation);
+        }
+        p.fillPoly(pts,Glyph.withAlpha(MID,alpha));
+        p.strokePoly(pts,Glyph.withAlpha(DARK,alpha),r*.10f);
+        p.fillPoly(new float[]{x,y,pts[0],pts[1],pts[2],pts[3],pts[4],pts[5]},Glyph.withAlpha(LIGHT,alpha));
+    }
     static void entrance(Painter p, float x, float y, float r, int a, boolean silhouette) {
         p.fillEllipse(x, y + r * .55f, r * 1.18f, r * .35f, Glyph.withAlpha(DARK, a));
         for (int i = 0; i < 7; i++) {
@@ -43,15 +55,5 @@ final class CaveArt extends Draw {
         p.fillPoly(pill(x, y, r * .70f, r, 8), Glyph.withAlpha(ROCK, a));
         p.fillPoly(pill(x, y, r * .45f, r * .74f, 8), Glyph.withAlpha(LAMP, a));
         p.fillEllipse(x, y - r * .9f, r * .85f, r * .16f, Glyph.withAlpha(LIGHT, a));
-    }
-    static void heart(Painter p, float x, float y, float r, int a) {
-        float[] pts = new float[64];
-        for (int i = 0; i < 32; i++) {
-            double t = i * Math.PI * 2 / 32;
-            pts[i * 2] = x + r * (float)Math.pow(Math.sin(t), 3);
-            pts[i * 2 + 1] = y - r * (float)(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)) / 16f;
-        }
-        p.fillPoly(pts, Glyph.withAlpha(ROSE, a));
-        p.fillEllipse(x-r*.36f, y-r*.33f, r*.2f, r*.10f, Glyph.withAlpha(INK, a*2/3));
     }
 }

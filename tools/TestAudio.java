@@ -6,6 +6,38 @@ final class TestAudio extends Check {
     /** What the two frenzy squish sounds are, and that they are the right shape for the job. */
     static void frenzySounds(Layout L) {
         group("frenzy sounds");
+        check("mining cheer is a short voiced phrase",Sfx.build(Sfx.MINING_CHEER).length<Sfx.RATE*.6f && crossRate(Sfx.build(Sfx.MINING_CHEER))<3000);
+        for(int id=Sfx.CAVE_RUMBLE;id<=Sfx.CAVE_SINK;id++){
+            short[] effect=Sfx.build(id);int head=0,tail=0;
+            for(int i=0;i<effect.length/2;i++)head=Math.max(head,Math.abs(effect[i]));
+            for(int i=effect.length*3/4;i<effect.length;i++)tail=Math.max(tail,Math.abs(effect[i]));
+            check("cave cue fits between impacts "+id,effect.length<Sfx.RATE*(id==Sfx.CAVE_RUMBLE ? CaveTraps.FALL : CaveTraps.GAP) && head>1000);
+            check("cave cue fades before next impact "+id,tail<head/4);
+        }
+        for(int id=Sfx.CAVE_RUMBLE;id<=Sfx.CART_TUMBLE;id++){
+            if(id==Sfx.MINING_CHEER)continue;
+            short[] effect=Sfx.build(id);
+            double total=0,lowEnergy=0,phoneEnergy=0,lo=0,hi=0;
+            int peak=0;
+            for(short value:effect){
+                lo+=.025*(value-lo);hi+=.16*(value-hi);
+                total+=(double)value*value;lowEnergy+=lo*lo;phoneEnergy+=(hi-lo)*(hi-lo);
+                peak=Math.max(peak,Math.abs(value));
+            }
+            System.out.printf("    cave audio %d: %.0f ms, low %.2f, phone %.2f%n",id,
+                    effect.length*1000f/Sfx.RATE,lowEnergy/total,phoneEnergy/total);
+            check("cave sound has low body "+id,lowEnergy/total>.12);
+            check("cave sound survives small speakers "+id,phoneEnergy/total>.075);
+            check("cave sound leaves mixing headroom "+id,peak<30000);
+            check("ride cue finishes before repeat "+id,id<Sfx.CART_ROLL || (id==Sfx.CART_ROLL ? effect.length==Math.round(Sfx.RATE*CartRecording.DURATION) : effect.length<=Sfx.RATE*.35f));
+        }
+        for(int id=Sfx.CAVE_RUMBLE;id<=Sfx.CAVE_CRASH;id++){
+            short[] rock=Sfx.build(id);
+            check("recorded rock endpoints are click-free "+id,rock[0]==0 && rock[rock.length-1]==0);
+        }
+        short[] rolling=Sfx.build(Sfx.CART_ROLL);
+        check("recorded cart has click-free endpoints",rolling[0]==0 && rolling[rolling.length-1]==0);
+        check("recorded cart survives shared cache",rolling==Sfx.build(Sfx.CART_ROLL));
         short[] bloop=Sfx.build(Sfx.UI_BLOOP);
         check("UI bloop stays brief",bloop.length>Sfx.RATE*.07f && bloop.length<Sfx.RATE*.15f);
         check("UI bloop is tonal",crossRate(bloop)>300f && crossRate(bloop)<1200f);
@@ -158,43 +190,29 @@ final class TestAudio extends Check {
         return crossings * (float) Sfx.RATE / pcm.length;
     }
 
-    /** Which track the game starts on, and that the loaded choice actually gets announced. */
     static void musicChoice(Layout L) {
-        group("music choice");
-        check("a personal track is the default when there is one",
-                Music.defaultChoice(true) == Music.CUSTOM);
-        check("otherwise the first synth track is",
-                Music.defaultChoice(false) == Music.SWING_STYLE);
-        check("every name has a constant and vice versa",
-                Music.NAMES.length == Music.CUSTOM + 1);
-        check("the custom slot is not a synth style", !Music.isSynth(Music.CUSTOM));
-        check("and neither is off", !Music.isSynth(Music.OFF));
-
-        // The regression this exists for: the loaded preference was read into bgmChoice and
-        // then never announced, so the backend fell back to its own first track on every
-        // launch and both the stored choice and the first-run default did nothing.
-        Mem store = new Mem();
-        store.bgm = Music.CUSTOM;
-        GameCore c = new GameCore(store, 301L);
-        Ear ear = new Ear();
-        c.sound = ear;
-        check("the stored choice is loaded", c.bgmChoice == Music.CUSTOM);
-        check("nothing is announced before it is asked for", ear.musicCalls == 0);
+        group("automatic music");
+        GameCore c = new GameCore(new Mem(),301L);
+        Ear ear = new Ear(); c.sound=ear;
+        check("music waits for backend attachment",ear.musicCalls==0);
         c.startMusic();
-        check("starting announces the loaded choice",
-                ear.musicCalls == 1 && ear.music == Music.CUSTOM);
-
-        // And with no sound attached it must not throw: the harness runs that way throughout.
-        GameCore d = new GameCore(new Mem(), 302L);
-        d.startMusic();
-        check("announcing without a backend is harmless", d.bgmChoice == 0);
-
-        // A deliberate later choice still wins, and is persisted.
-        c.setBgm(Music.DRIFT);
-        check("a later choice is announced", ear.music == Music.DRIFT && ear.musicCalls == 2);
-        check("and saved", store.bgm == Music.DRIFT && store.bgmSaves == 1);
-        c.setBgm(99);
-        check("an out-of-range choice is refused", c.bgmChoice == Music.DRIFT);
+        check("title automatically uses MOOG SWING",ear.music==Music.SWING_STYLE && ear.musicCalls==1);
+        new GameCore(new Mem(),302L).startMusic();
+        c.state=GameCore.PLAY; c.jumpToStage(21,L);
+        check("cave entry selects LOFI DRIFT",ear.music==Music.DRIFT);
+        c.preferences.music=.35f;c.preferences.musicMuted=true;c.preferences.save(c);
+        c.jumpToStage(24,L);c.startMusic();
+        check("cave resume preserves mute and automatic track",ear.music==Music.DRIFT && ear.musicVolume==0f);
+        c.preferences.musicMuted=false;c.preferences.save(c);
+        check("unmute restores volume without restarting music",ear.musicVolume==.35f && ear.music==Music.DRIFT);
+        c.jumpToStage(19,L);
+        check("leaving caves restores MOOG SWING",ear.music==Music.SWING_STYLE);
+        c.jumpToStage(20,L);check("ordinary bosses retain boss music",ear.bossMusic);
+        c.jumpToStage(21,L);
+        check("boss to cave switches to LOFI DRIFT",!ear.bossMusic && ear.music==Music.DRIFT);
+        c.toTitle();check("title restores MOOG SWING",ear.music==Music.SWING_STYLE);
+        c.allLandsEnabled=true;c.landChoice=Cave.LAND;c.startGame();
+        check("starting directly in caves selects LOFI DRIFT",ear.music==Music.DRIFT);
     }
 
     static void audio(Layout L) {

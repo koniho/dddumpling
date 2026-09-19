@@ -24,7 +24,7 @@ final class Pause extends Draw {
         return false;
     }
     static void release(GameCore c) {
-        c.endStroke(); c.boss.release(); c.stars.endDrag(); c.cave.input.release();
+        c.endStroke(); c.boss.release(); c.stars.endDrag(); c.cave.input.release(); c.cave.effects.takeFeedback(); c.mining.input.release(); c.mining.scene.takeFeedback(); c.cart.input.release(); c.cart.scene.takeFeedback();
         c.stars.left = c.stars.right = false;
         c.steamer.lidDrag = 0;
         c.caseDragging = c.titleTouchDown = c.landPickerDragging = false;
@@ -33,9 +33,13 @@ final class Pause extends Draw {
     static void open(GameCore c) {
         if (c.state != GameCore.PLAY && c.state != GameCore.BONUS) return;
         if (c.paused) return;
+        if (c.band.active && c.sound != null) c.sound.bandPause(true);
         release(c); c.paused = true; c.confirmEnd = false;
     }
-    static void resume(GameCore c) { c.paused = c.confirmEnd = false; }
+    static void resume(GameCore c) {
+        c.paused = c.confirmEnd = false;
+        if (c.band.active && c.sound != null) c.sound.bandPause(false);
+    }
     static void action(GameCore c, int hit) {
         if (!c.paused) return;
         if (hit == 1) {

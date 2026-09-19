@@ -4,7 +4,7 @@ package com.dddumpling.game;
 final class Showcase extends Draw {
 
     static final int FRUIT_ROW = 2, CANDY_ROW = 3;
-    static final String[] ROW_NAME = {"BAO", "BUNS & FRIENDS", "FRUITS", "CANDIES", "STARLINGS", "GEL CUBES", "BOSSES"};
+    static final String[] ROW_NAME = {"BAO", "BUNS & FRIENDS", "FRUITS", "CANDIES", "STARLINGS", "GEL CUBES", "BOSSES", "MOLES", "SNAKES"};
 
     static int row(int index) {
         index = wrap(index);
@@ -14,6 +14,8 @@ final class Showcase extends Draw {
             case Collect.STARLINGS: return 4;
             case Collect.GEL_CUBES: return 5;
             case Collect.BOSSES: return 6;
+            case Collect.MOLES: return 7;
+            case Collect.SNAKES: return 8;
             default: return Collect.SHAPE[index] == Collect.BAO ? 0 : 1;
         }
     }

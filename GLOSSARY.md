@@ -308,7 +308,7 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 | **start tone** | new game | `Sfx.START` |
 | **stage clear tone** | a stage ending normally | `Sfx.STAGE_CLEAR` |
 | **power clear tone** | a frenzy ending a stage; replaces the stage tone | `Sfx.POWER_CLEAR` |
-| **BGM** | the looping track: MOOG SWING, LOFI DRIFT, CHIP MARCH, OFF, MY TRACK | `Music.NAMES` |
+| **BGM** | the automatic looping track: MOOG SWING normally, LOFI DRIFT in caves | `Music.NAMES` |
 | **frenzy track** | the faster four-on-the-floor variant | `Music.loop(style, true)` |
 
 ## Terms that are easy to mix up
@@ -423,22 +423,28 @@ The developer settings **ALL LANDS** chip enables every land for the current ses
 ## Cave expedition
 
 The developer-only fifth land, after Mushroom Land, begins at stage 21. Production retains
-its original four-land progression. The **explorer dumpling** automatically
-walks along the cave path while a following camera looks ahead. Tap the playfield to aim the
-**lantern beam**; illuminate a branch at a **fork** to choose it. Three fading lights show its
-limited pause. A finger demonstrates the first fork before that countdown begins.
+its original four-land progression. The **explorer dumpling** runs through a winding gauntlet
+at 1.15 route units per second. Arc-length sampling keeps travel speed steady through lateral
+bends and downward turns; the camera follows both axes. Seven encounters are spaced about
+1–2 seconds of travel apart. Forks give a short 0.55-second choice, then follow the lantern.
+Tap a branch to choose immediately or tap elsewhere to aim the lantern during travel.
 
-**Shadow enemies** reveal a character-key response in the beam, then approach the explorer.
-Completing the response defeats them; reaching the explorer costs a life. **Route hearts** heal
-one life when walked over. A **cave-in** uses sideways dragging to dodge falling rocks and their
-landing shadows; **quicksand** uses alternating character keys to escape. Reaching the **exit**
-completes the stage. `CaveRoute`, `Cave`, `CaveTraps`, `CaveInput`, `CaveScreen`, and `CaveArt`
-separate route content, rules, controls, and drawing. See [cave design](docs/plans/cave-expedition.md).
+**Side ambushes** burst from behind a rock, show their character-key response immediately,
+and rush the explorer over 1.8 seconds. **Cave-ins** start dropping rocks immediately: a
+0.72-second fall, landing shadows, a cracked shaking floor, and a fast close-up. Drag sideways
+to dodge. **Quicksand** zooms in immediately, rapidly sinks the frightened dumpling, and asks
+for eight alternating key presses within 2.8 seconds. Each failed encounter costs at most one
+life; route heart pickups are removed. Reaching the **exit** completes the stage.
+
+`CaveRoute`, `Cave`, `CaveTraps`, `CaveInput`, `CaveTerrain`, `CaveScreen`, and `CaveArt`
+separate geometry, rules, controls, wall/floor lighting, and encounter animation.
+See [cave design](docs/plans/cave-expedition.md). Normal cave play uses **LOFI DRIFT**,
+respecting music volume and mute; leaving the cave restores MOOG SWING.
 
 The **explorer selection** (`CaveSelection`) appears on first cave entry. Choose cream, rainbow,
 golden, silver, sparkly mint, or purple; that finish persists across cave levels and restarts.
-`CaveDumpling` draws the chosen finish and uses a normalized `Softbody` to give each walking step
-a small spring-driven lift and squash. Cave walking speed is .36 route units per second.
+`CaveDumpling` draws the chosen finish and uses a normalized `Softbody` for running lift and
+squash. Its quicksand expression has wide eyes, a gasping mouth, sweat, and flailing arms.
 
 The title’s **Best Score** fades out before the display case heading appears, stays hidden
 while the case is open, and fades back in after the case heading disappears. `Screens.caseOut`
@@ -457,8 +463,8 @@ The slime whispers at low effects volume, shakes and yells with expanding sound 
 volume, and covers its mouth when muted. Waves and notes stop when muted. Mute retains the slider level. Preferences
 are saved on the device and applied to audio on launch.
 
-The developer-only **Developer** tab groups **Run** (speed, music track, stage, next-run keys, End
-Run), **Powers** (frenzies and debuffs), **Minigames** (Star Path, Steamer, difficulty), and **Progress**
+The developer-only **Developer** tab groups **Run** (speed, stage, next-run keys, End
+Run), **Powers** (frenzies and debuffs), **Minigames** (Star Path, Steamer, Cart Rush, Dumpling Mine, difficulty), and **Progress**
 (lands, release book, collection). Stage changes, End Run and playtests are disabled outside active
 play, including interludes; settings never starts a run implicitly.
 
@@ -467,6 +473,53 @@ unstacked words with early-stage pacing, and grants 600 ms for linked pairs. Reg
 the next run after switching it off. `PlayerSettings`, `SettingsArt`, and `SettingsInput` own the
 public preferences, character handles, and shared native input; `SettingsUi` and `DevSettings` own
 the developer groups.
+
+
+## Cart Rush interlude
+
+**Cart Rush** replaces Cave Band and is the first cave minigame. Three
+dumplings ride a winding track. Drag the bottom slider or grab the cart, using the same controls as Star Path, to lean into bends.
+The six-key deck is replaced by the slider. Rails show upcoming curves; a balance meter shows outward drift and danger near either end.
+Foreground arches pass over the ride and distant rails fade into darkness. Sparks, wheel scrape,
+screen shake, haptics, and frightened passengers warn before a spill. A shrinking ring gives
+1.25 seconds in red to recover; returning to safety resets it.
+
+Twenty track sections earn a Cave Snake and the normal bonus reward. Completed sections save
+immediately across attempts and app restarts. Each visit lasts up to ten seconds; partial sections
+restart next visit. Mining carts and ride progress are independent. Success resets only the ride.
+A failed attempt keeps the same game selected; only completion switches games. That selection
+persists across new runs and app restarts.
+`CaveCart`, `CaveCartInput`, `CaveCartScene`, and `CaveCartScreen` own this game.
+
+## Dumpling Mine interlude
+
+**Dumpling Mine** follows a successful Cart Rush. Complete the displayed
+character sequence down five wall segments to build a **rock pile**. All prompts appear down the wall, with only the current one in full color. Each correct hit
+turns that prompt into a rock flying toward the parked cart; completed slots show faded rocks.
+Rocks fly left, and the explorer walks right to the next wall. The first cart repeats a
+two-key sequence; subsequent carts use three, then four distinct keys. Four remains the maximum.
+The sequence stays fixed for that cart. Wrong presses restart only the current sequence and cost
+no life. Completed walls remain in the pile during that attempt.
+
+A full pile hides the prompt and dims the keyboard. Swipe the pile left or right; cheering
+dumpling friends load it into a cart and pull it rapidly offscreen. Keys cannot add rocks while
+it is full or being pushed. Delivered carts are saved immediately and survive new runs and app
+restarts. Five delivered carts earn one collectible and a capped extra life, then reset the saved
+cart count for the next reward.
+
+The **mining lantern** fades, its flame shrinks, and its pool of light contracts over 18 seconds
+of mining/swiping time. Walking between walls and helper animations do not spend that time. Pause and settings freeze
+it. Time running out ends the attempt without taking a life; only delivered carts carry forward.
+`CaveMining`, `CaveMiningInput`, and `CaveMiningScreen` own rules, cart input, and rendering.
+
+Developer Cart Rush and Dumpling Mine chips jump an active run to the stage 21 or 22 interlude.
+They retain track progress and delivered minecarts; finishing continues into the next cave expedition.
+
+**Burrow Moles** are five kawaii minecart rewards: Cocoa Dig, Rosy Scoop, Sleepy Shovel,
+Starnose, and Golden Burrow. **Cave Snakes** are five Cart Rush rewards: Mint Noodle,
+Peach Coil, Berry Boa, Moon Ribbon, and Golden Hiss. Both have dedicated display-case rows,
+family stories, mystery silhouettes, and the Cave Friend tier. The catalogue has 59 entries;
+existing collectible IDs and normal reward pools stay unchanged. `CaveCollect` draws the new families.
 
 The first normal-stage threat on the last life pauses play for a **desperation swipe lesson**.
 Swipe upward from the highlighted bar to perform the real push-back and resume; taps cannot

@@ -143,7 +143,7 @@ final class TestVisuals extends Check {
         check("read build stays quiet after restart",!read.releaseMascot.unread && read.releaseMascot.attentionLift(.4f)==0f);
         read.releaseMascot.reset(read);read.releaseMascot.update(read,.1f);
         check("reset restores attention for current build",seen.releaseSeen.equals("") && read.releaseMascot.unread);
-        SettingsUi newsUi=new SettingsUi();newsUi.compute(L,3,SettingsUi.PROGRESS);
+        SettingsUi newsUi=new SettingsUi();newsUi.compute(L,SettingsUi.PROGRESS);
         check("reset news chip target",newsUi.hit(L.w*.5f,newsUi.difficultyY+newsUi.testH*.5f)==SettingsUi.HIT_RESET_NEWS);
         group("interactive release notes");
         releaseWrap(L);
@@ -573,7 +573,7 @@ final class TestVisuals extends Check {
         check("trail leaves to the right before dipping toward the next land",
                 LandPicker.walkingDip(.2f)<0f && LandPicker.walkingDip(.7f)>.6f);
         SettingsUi resetUi = new SettingsUi();
-        resetUi.compute(L, Music.NAMES.length, SettingsUi.PROGRESS);
+        resetUi.compute(L, SettingsUi.PROGRESS);
         check("all lands chip has its own hit target", resetUi.hit(
                 (resetUi.testChipL(0,2)+resetUi.testChipR(0,2))*.5f,
                 resetUi.debuffY+resetUi.testH*.5f)==SettingsUi.HIT_ALL_LANDS);
@@ -1120,18 +1120,6 @@ final class TestVisuals extends Check {
         check("higher speed tightens spawns", c.spawnInterval() < slowSpawn);
         check("the fall floor still applies at max speed", c.travelSeconds() > 0f);
 
-        // Music selection persists and notifies the audio layer.
-        c.setBgm(Music.MARCH);
-        check("music choice applies", c.bgmChoice == Music.MARCH);
-        check("music choice persists", store.bgm == Music.MARCH && store.bgmSaves == 1);
-        check("the audio layer is told", ear.music == Music.MARCH && ear.musicCalls == 1);
-        c.setBgm(-1);
-        check("a bogus low choice is ignored", c.bgmChoice == Music.MARCH);
-        c.setBgm(Music.NAMES.length);
-        check("a bogus high choice is ignored", c.bgmChoice == Music.MARCH);
-        c.setBgm(Music.OFF);
-        check("music can be turned off", c.bgmChoice == Music.OFF);
-
         // Every synth style must produce a clean, correctly sized loop.
         boolean stylesOk = true;
         for (int style = 0; style < Music.NAMES.length; style++) {
@@ -1143,13 +1131,11 @@ final class TestVisuals extends Check {
             if (max >= 32767 || max < 2000) stylesOk = false;
         }
         check("every music style renders cleanly", stylesOk);
-        check("OFF and MY TRACK are not synth styles",
-                !Music.isSynth(Music.OFF) && !Music.isSynth(Music.CUSTOM));
         check("an unknown style still returns audio", Music.loop(99).length > 0);
 
         // Panel hit-testing.
         SettingsUi ui = new SettingsUi();
-        ui.compute(L, Music.NAMES.length);
+        ui.compute(L);
         check("panel fits on screen",
                 ui.panelT >= L.topSafe && ui.panelB <= L.h && ui.panelL > 0);
         check("a tap outside closes",
@@ -1157,23 +1143,18 @@ final class TestVisuals extends Check {
         check("the close button is hit", ui.hit(ui.closeCx, ui.closeCy) == SettingsUi.HIT_CLOSE);
         check("the slider is hit",
                 ui.hit((ui.sliderL + ui.sliderR) / 2f, ui.sliderY) == SettingsUi.HIT_SLIDER);
-        ui.compute(L,Music.NAMES.length,SettingsUi.MINIGAMES);
+        ui.compute(L,SettingsUi.MINIGAMES);
         check("the difficulty-reset chip is hit",
                 ui.hit((ui.optionL() * 3f + ui.optionR()) / 4f,
                         ui.difficultyY + ui.difficultyH / 2f)
                         == SettingsUi.HIT_RESET_DIFFICULTY);
-        ui.compute(L,Music.NAMES.length,SettingsUi.PROGRESS);
+        ui.compute(L,SettingsUi.PROGRESS);
         check("the collection-reset chip remains hit",
                 ui.hit((ui.optionL() + ui.optionR() * 3f) / 4f,
                         ui.clearY + ui.clearH / 2f) == SettingsUi.HIT_CLEAR);
-        ui.compute(L,Music.NAMES.length,SettingsUi.GENERAL);
-        boolean rowsOk = true;
-        for (int i = 0; i < Music.NAMES.length; i++) {
-            if (ui.hit(ui.optionL() + 5f, ui.optionCy(i)) != SettingsUi.HIT_OPTION + i) {
-                rowsOk = false;
-            }
-        }
-        check("every music row is hittable", rowsOk);
+        ui.compute(L,SettingsUi.GENERAL);
+        check("stage controls follow the speed slider", ui.stageY>ui.speedValueY && ui.stageY<ui.runLabelY);
+        check("former music rows contain no track targets", ui.hit(L.w*.5f,ui.panelT+PlayerSettings.unit(L)*23f)==SettingsUi.HIT_NONE);
         check("slider left end reads minimum", ui.speedAt(ui.sliderL) == GameCore.SPEED_MIN);
         check("slider right end reads maximum", ui.speedAt(ui.sliderR) == GameCore.SPEED_MAX);
         check("slider clamps past its ends",
@@ -1196,7 +1177,7 @@ final class TestVisuals extends Check {
 
         check("minigames tab is hittable", ui.hit((ui.tabL(1) + ui.tabR(1)) / 2f,
                 ui.tabY + ui.tabH / 2f) == SettingsUi.HIT_MINIGAMES);
-        ui.compute(L, Music.NAMES.length, SettingsUi.MINIGAMES);
+        ui.compute(L, SettingsUi.MINIGAMES);
         check("minigames panel fits", ui.panelT >= L.topSafe && ui.panelB <= L.h);
         check("difficulty decreases and increases have distinct targets",
                 ui.hit((ui.testChipL(0, 3) + ui.testChipR(0, 3)) / 2f, ui.sliderY + ui.testH / 2f)

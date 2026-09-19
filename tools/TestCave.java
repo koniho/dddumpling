@@ -5,8 +5,122 @@ final class TestCave extends Check {
         GameCore c=new GameCore(new Mem(),921L);c.caveChoice=0;c.startGame();c.jumpToStage(21,L);c.stageBanner=0f;
         return c;
     }
+    static void feedback(Layout L) {
+        GameCore c=game(L);Cave v=c.cave;Ear ear=new Ear();c.sound=ear;
+        v.encounter(c,Cave.ROCKS);
+        check("rock event cues once",ear.caveSounds==1 && v.effects.takeFeedback()==1 && v.effects.takeFeedback()==0);
+        for(int i=0;i<CaveTraps.ROCK_COUNT;i++)check("angled rock lands on its marked lane "+i,
+                v.traps.rockX(i,1)==v.traps.lanes[i]);
+        check("rocks approach from both angles",v.traps.rockX(0,0)<v.traps.lanes[0] && v.traps.rockX(2,0)>v.traps.lanes[2]);
+        v.traps.x=v.traps.targetX=.2f;v.update(c,CaveTraps.FALL+.01f,L);
+        check("landing starts debris and strong feedback",v.effects.cursor==1 && v.effects.age[0]==0 && v.effects.takeFeedback()==2);
+        int sounds=ear.caveSounds;v.update(c,.01f,L);
+        check("landing never repeats per frame",ear.caveSounds==sounds && v.effects.takeFeedback()==0);
+        v.phase=Cave.WALK;float age=v.effects.age[0];v.update(c,.05f,L);
+        check("debris survives encounter",v.effects.age[0]>age && v.effects.age[0]<.65f);
+        v.effects.cue(c,Sfx.CAVE_CRASH,1);Pause.release(c);
+        check("pause clears pending cave haptic",v.effects.takeFeedback()==0);
+        v.encounter(c,Cave.SAND);v.effects.takeFeedback();v.update(c,.66f,L);
+        check("sinking pulses on gameplay clock",v.effects.takeFeedback()==1 && ear.lastCaveSound==Sfx.CAVE_SINK);
+        v.leave();check("leaving clears rumble and debris",v.effects.rumble==0 && v.effects.age[0]>=.65f && v.effects.takeFeedback()==0);
+    }
+    static void zoomTransition(Layout L) {
+        for(int kind:new int[]{Cave.ROCKS,Cave.SAND}) {
+            GameCore c=game(L);Cave v=c.cave;Ear ear=new Ear();c.sound=ear;
+            v.z=1.3f;v.cameraZ=1.17f;
+            float x=v.playerX(),y=v.playerY(L),camera=v.cameraZ;
+            v.encounter(c,kind);
+            check("hazard begins at explorer's existing position "+kind,
+                    Math.abs(v.playerX()-x)<.0001f && v.playerY(L)==y && v.cameraZ==camera && v.zoom()==1);
+            check("hazard has its own entry sound "+kind,ear.caveSounds==1
+                    && ear.lastCaveSound==(kind==Cave.ROCKS?Sfx.CAVE_RUMBLE:Sfx.CAVE_SINK));
+            if(kind==Cave.ROCKS)check("rockfall ground begins below playfield",CaveScreen.rockFloorY(v,L)-L.w*.16f>=L.deckTop);
+            v.update(c,.10f,L);float first=v.focus;
+            if(kind==Cave.ROCKS)check("rockfall ground scrolls toward explorer",CaveScreen.rockFloorY(v,L)>v.playerY(L)
+                    && CaveScreen.rockFloorY(v,L)<L.deckTop+L.w*.18f);
+            v.update(c,.10f,L);
+            check("hazard camera eases continuously "+kind,first>0 && first<v.focus && v.focus<1 && v.cameraZ< v.z);
+            v.update(c,.10f,L);
+            check("hazard camera arrives at 300ms "+kind,v.focus==1 && v.cameraZ==v.z
+                    && Math.abs(v.playerX()-.5f)<.001f && Math.abs(v.playerY(L)-(L.playTop+L.deckTop)*.5f)<.01f);
+            check("zoom does not replay entry sound "+kind,ear.caveSounds==1);
+            if(kind==Cave.ROCKS) {
+                check("rockfall ground settles with camera",Math.abs(CaveScreen.rockFloorY(v,L)-v.playerY(L))<.01f);
+                v.effects.rumble=0;boolean sustained=true;
+                for(float at=0;at<CaveTraps.DURATION;at+=.02f){v.traps.age=at;sustained&=CaveScreen.shakeStrength(v)>=.25f;}
+                check("rockfall shake lasts entire hazard",sustained);
+                v.phase=Cave.WALK;check("sustained shake stops after rockfall",CaveScreen.shakeStrength(v)==0);
+            }
+        }
+    }
+    static void generated(Layout L) {
+        java.util.HashSet<String> maps=new java.util.HashSet<>(),hazards=new java.util.HashSet<>(),keys=new java.util.HashSet<>();
+        boolean lengthOkay=true,balanced=true,distinct=true,safe=true;
+        for(int seed=0;seed<256;seed++) {
+            GameCore c=new GameCore(new Mem(),seed);c.caveChoice=0;c.startGame();c.jumpToStage(21+seed%5,L);
+            Cave v=c.cave;CaveRoute r=v.route;
+            maps.add(r.centre(2)+":"+r.y(5)+":"+r.centre(8));
+            float length=0;
+            for(float z=.02f;z<Cave.LENGTH;z+=.02f)length+=(float)Math.hypot(r.centre(z)-r.centre(z-.02f),r.y(z)-r.y(z-.02f));
+            lengthOkay&=Math.abs(length-Cave.LENGTH)<.08f;
+            for(int branches=0;branches<8;branches++) {
+                int[] choices=new int[3];for(int i=0;i<3;i++)choices[i]=(branches&(1<<i))==0?-1:1;
+                int mask=0;String signature="";
+                for(int i=0;i<7;i++){int kind=r.encounter(i,choices);mask|=1<<kind;signature+=kind;}
+                hazards.add(signature);balanced&=(mask&(1<<Cave.ROCKS))!=0 && (mask&(1<<Cave.SAND))!=0 && (mask&(1<<Cave.SHADOW))!=0;
+            }
+            v.encounter(c,Cave.SHADOW);String sequence="";
+            for(int i=0;i<v.responseSize;i++){sequence+=v.response[i];if(i>0)distinct&=v.response[i]!=v.response[i-1];}
+            keys.add(sequence);
+            v.encounter(c,Cave.SAND);distinct&=v.traps.left!=v.traps.right;
+            v.encounter(c,Cave.ROCKS);
+            for(float lane:v.traps.lanes)safe&=lane-.18f>CaveTraps.ROCK_R+CaveTraps.PLAYER_R
+                    && .82f-lane>CaveTraps.ROCK_R+CaveTraps.PLAYER_R;
+            safe&=(.5f-.18f)/CaveTraps.MAX_VX+.30f<CaveTraps.FALL;
+        }
+        check("256 generated maps preserve travel length",lengthOkay);
+        check("all generated branch combinations contain every hazard",balanced);
+        check("randomized keys remain distinct and alternating",distinct);
+        check("generated rocks leave reachable escape space after human reaction",safe);
+        check("runs vary map hazard order and keys",maps.size()==256 && hazards.size()>40 && keys.size()>30);
+        GameCore c=game(L);long first=c.cave.runSeed;float x=c.cave.route.centre(2);
+        c.startGame();c.jumpToStage(21,L);
+        check("replaying same stage rerolls seed and layout",first!=c.cave.runSeed && x!=c.cave.route.centre(2));
+        CaveRoute a=new CaveRoute(),b=new CaveRoute();a.make(new java.util.Random(57));b.make(new java.util.Random(57));
+        boolean same=true;for(int i=0;i<7;i++)same&=a.encounter(i,new int[]{1,-1,1})==b.encounter(i,new int[]{1,-1,1});
+        check("seed reproduces layout and hazards for debugging",same && a.centre(2)==b.centre(2) && a.y(5)==b.y(5));
+    }
+    static void enemyAnimation(Layout L) {
+        GameCore c=game(L);Cave v=c.cave;Ear ear=new Ear();c.sound=ear;
+        v.z=v.cameraZ=2.75f;v.nextEvent=2;v.routes[0]=-1;v.encounter(c,Cave.SHADOW);
+        float ahead=v.z+.55f;
+        check("ambush cover sits against corridor wall",Math.abs(Math.hypot(v.enemyStartX-v.pathX(ahead),v.enemyStartY-v.pathY(ahead))-.19f)<.001f);
+        v.effects.takeFeedback();v.update(c,Cave.REVEAL,L);
+        check("first planted foot emits dust rumble and haptic",v.enemy.steps==1 && v.enemy.dustCursor==1 && v.effects.takeFeedback()==1 && ear.lastCaveSound==Sfx.LINKED_THUD);
+        int sounds=ear.caveSounds;v.update(c,.01f,L);
+        check("stomp feedback does not repeat each frame",ear.caveSounds==sounds && v.effects.takeFeedback()==0);
+        v.update(c,CaveEnemy.STEP,L);check("next step emits a new stomp",v.enemy.steps==2 && v.enemy.dustCursor==2);
+        int wrong=(v.wanted()+1)%Glyph.COUNT;v.press(c,wrong,L);
+        check("miss does not fire an attack bolt",v.enemy.boltCursor==0);
+        v.press(c,v.wanted(),L);
+        check("correct attack launches from dumpling",v.enemy.boltCursor==1 && v.enemy.boltAge[0]==0 && v.enemy.recoil==0);
+        v.update(c,CaveEnemy.FLIGHT*.5f,L);check("bolt travels before tummy reaction",v.enemy.impacts==0);
+        v.update(c,CaveEnemy.FLIGHT*.5f,L);check("bolt arrival triggers surprise",v.enemy.impacts==1 && v.enemy.recoil>0);
+        while(v.phase==Cave.FIGHT||v.phase==Cave.SHADOW)v.press(c,v.wanted(),L);
+        check("defeated enemy remains visible for retreat",v.phase==Cave.WALK && v.enemy.retreat==0 && v.enemy.visible(v));
+        float distance=(float)Math.hypot(v.enemyX-v.enemyStartX,v.enemyY-v.enemyStartY);
+        v.update(c,.3f,L);
+        check("retreat heads back to cover",Math.hypot(v.enemyX-v.enemyStartX,v.enemyY-v.enemyStartY)<distance && v.enemy.visible(v));
+        v.update(c,.4f,L);
+        check("retreat finishes behind its own rock",!v.enemy.visible(v) && Math.abs(v.enemyX-v.enemyStartX)<.001f && Math.abs(v.enemyY-v.enemyStartY)<.001f);
+        v.leave();check("leaving clears enemy bolts and retreat",v.enemy.retreat<0 && v.enemy.boltAge[0]>1);
+    }
     static void all(Layout L) {
         group("cave expedition");
+        enemyAnimation(L);
+        generated(L);
+        zoomTransition(L);
+        feedback(L);
         selection(L);
         GameCore c=game(L);Cave v=c.cave;
         check("cave follows mushroom land",Lands.forStage(20)==3 && Lands.forStage(21)==Cave.LAND);
@@ -19,19 +133,20 @@ final class TestCave extends Check {
         c.stageBanner=0f;c.update(.2f,L);check("camera follows without jumping",v.z>v.cameraZ);
         c.update(.2f,L);check("camera advances toward walker",v.cameraZ>0f && v.cameraZ<v.z);
         float at=v.z;c.paused=true;c.update(1f,L);check("pause freezes expedition",v.z==at);c.paused=false;
-        v.z=2;v.phase=Cave.FORK;v.timer=0;v.fork=0;
+        v.z=2;v.phase=Cave.FORK;v.timer=0;v.fork=0;v.aim=v.route.heading(v.z)+.4f;v.aimHold=2;
         v.update(c,Cave.LESSON+.1f,L);check("first demonstration precedes timeout",v.phase==Cave.FORK);
         v.update(c,Cave.FORK_WAIT,L);check("fork eventually commits predictable fallback",v.phase==Cave.WALK && v.routes[0]==1);
         v.phase=Cave.FORK;v.fork=1;v.z=v.cameraZ=5;v.timer=0;
-        v.tap(c,L,Cave.branchX(1,-1,5.4f)*L.w,v.screenY(5.4f,L));
+        v.tap(c,L,v.branchScreenX(-1,L),v.branchScreenY(-1,L));
         check("lit branch commits instantly",v.routes[1]==-1 && v.phase==Cave.WALK);
-        v.z=5.5f;check("walker stays on chosen route",v.playerX()==Cave.branchX(1,-1,v.z));
+        v.z=5.5f;check("walker stays on chosen route",Math.abs(v.playerX()*L.w-v.screenX(v.branchX(1,-1,v.z),L))<.001f);
         v.encounter(c,Cave.SHADOW);v.aim=3f;
-        int lives=c.lives;v.update(c,1f,L);c.tapKey(v.response[0],L);
-        check("unidentified enemy cannot be attacked",v.phase==Cave.SHADOW && v.responsePos==0);
-        v.tap(c,L,v.enemyX*L.w,v.screenY(v.enemyZ,L));v.update(c,Cave.REVEAL+.01f,L);
-        check("beam reveals response",v.phase==Cave.FIGHT && v.wanted()==v.response[0]);
-        float enemy=v.enemyZ;v.update(c,.2f,L);check("revealed enemy advances",v.enemyZ<enemy);
+        int lives=c.lives;
+        check("ambush shows playable response immediately",v.wanted()==v.response[0] && v.timer==0 && c.stageBanner==0);
+        float enemyDistance=(float)Math.hypot(v.enemyX-v.pathX(v.z),v.enemyY-v.pathY(v.z));
+        v.update(c,.3f,L);
+        check("enemy rushes from side cover without lantern gate",v.phase==Cave.FIGHT
+                && Math.hypot(v.enemyX-v.pathX(v.z),v.enemyY-v.pathY(v.z))<enemyDistance);
         c.tapKey(v.wanted(),L);int progress=v.responsePos;
         int wrong=(v.wanted()+1)%Glyph.COUNT;c.tapKey(wrong,L);
         check("wrong key keeps landed response progress",v.responsePos==progress);
@@ -51,14 +166,14 @@ final class TestCave extends Check {
         v.traps.x=v.traps.targetX=v.traps.lanes[0];v.traps.update(c,CaveTraps.WARNING+CaveTraps.FALL+.01f,L);
         check("rock collision resolves the trap with one hit",c.lives==2 && v.phase==Cave.WALK);
         check("trap exit keeps the player at its last position",Math.abs(v.playerX()-v.traps.x)<.0001f);
-        v.update(c,.5f,L);check("player walks back onto route",v.returnTime==0f && v.playerX()==v.pathX(v.z));
+        v.update(c,.5f,L);check("player walks back onto route",v.returnTime==0f && Math.abs(v.playerX()*L.w-v.screenX(v.pathX(v.z),L))<.001f);
         v.encounter(c,Cave.ROCKS);float before=v.traps.x;v.traps.drag(.82f);v.traps.update(c,.01f,L);
         check("rock steering is bounded",v.traps.x-before<=CaveTraps.MAX_VX*.01f+.0001f);
-        c=game(L);v=c.cave;v.openingMet=true;v.routes[0]=-1;v.met[0]=true;v.z=3.34f;c.lives=1;
-        v.update(c,.1f,L);check("walking over route heart restores one life",c.lives==2 && v.hearts[0]);
-        v.z=3.34f;v.update(c,.1f,L);check("heart cannot pay twice",c.lives==2);
-        v.hearts[0]=false;v.z=3.34f;c.lives=GameCore.START_LIVES;v.update(c,.1f,L);
-        check("heart respects life cap",c.lives==GameCore.START_LIVES);
+        c=game(L);v=c.cave;v.nextEvent=CaveRoute.EVENTS_AT.length;
+        for(int i=0;i<3;i++)v.routes[i]=-1;
+        c.lives=1;
+        for(int i=0;i<(int)(Cave.LENGTH/Cave.WALK_SPEED/DT)+10 && v.phase==Cave.WALK;i++)v.update(c,DT,L);
+        check("route has no healing pickups",c.lives==1 && v.phase==Cave.EXIT);
         c=game(L);v=c.cave;c.lives=1;v.encounter(c,Cave.SAND);v.traps.update(c,10f,L);
         check("fatal trap clears cave and touch state",c.state==GameCore.OVER && !v.running && v.traps.kind==-1);
         c.startGame();c.jumpToStage(21,L);c.jumpToStage(16,L);
@@ -88,6 +203,7 @@ final class TestCave extends Check {
         check("reset suppresses new cave across restart",!LandPicker.unlocked(migrated,Cave.LAND));
         LandPicker.reward(migrated,Collect.BOSS_FIRST+3);
         check("mushroom reward restores reset cave",LandPicker.unlocked(migrated,Cave.LAND));
+        gauntlet(L);
         bounded(L);
     }
     static void selection(Layout L) {
@@ -115,8 +231,8 @@ final class TestCave extends Check {
         check("pause freezes entrance scene",c.cave.selection.age==0f);c.paused=false;
         c.update(.7f,L);c.cave.selection.pick(c,0);c.update(.9f,L);
         c.stageBanner=0f;
-        for(int frame=0;frame<60;frame++)c.update(DT,L);
-        check("walker covers twice the former distance in one second",Math.abs(c.cave.z-.36f)<.001f);
+        for(int frame=0;frame<12;frame++)c.update(DT,L);
+        check("walker follows the reduced cave pace",Math.abs(Cave.WALK_SPEED-.805f)<.0001f && Math.abs(c.cave.z-Cave.WALK_SPEED*.2f)<.001f);
         CaveDumpling walking=new CaveDumpling(),idle=new CaveDumpling();float peakLift=0f,peakShape=0f;
         for(int i=0;i<180;i++) {
             walking.update(DT,Cave.WALK_SPEED*DT);idle.update(DT,0f);
@@ -131,13 +247,66 @@ final class TestCave extends Check {
         c.jumpToStage(22,L);
         check("new expedition resets walker physics",Math.abs(c.cave.walker.lift())<.0001f);
     }
+    static void gauntlet(Layout L) {
+        check("cave pace is thirty percent slower",Math.abs(Cave.WALK_SPEED/1.15f-.7f)<.0001f
+                && Math.abs(1.8f/Cave.APPROACH-.7f)<.0001f
+                && Math.abs(.72f/CaveTraps.FALL-.7f)<.0001f
+                && Math.abs(.40f/CaveTraps.GAP-.7f)<.0001f
+                && Math.abs(2.8f/CaveTraps.DURATION-.7f)<.0001f);
+        check("slower pacing preserves fast zoom and steering",Cave.HAZARD_ZOOM==.30f && CaveTraps.MAX_VX==1.3f);
+        CaveRoute route=new CaveRoute();
+        float sideways=0,vertical=0,down=0,length=0;
+        for(float at=.02f;at<Cave.LENGTH;at+=.02f) {
+            float dx=route.centre(at)-route.centre(at-.02f),dy=route.y(at)-route.y(at-.02f);
+            sideways+=Math.abs(dx);vertical+=Math.abs(dy);if(dy<0)down-=dy;
+            length+=(float)Math.hypot(dx,dy);
+        }
+        check("passage snakes laterally and doubles back",sideways>vertical && down>.5f);
+        check("travel is measured along the winding route",Math.abs(length-Cave.LENGTH)<.08f);
+        boolean spacing=true;
+        for(int i=1;i<CaveRoute.EVENTS_AT.length;i++) {
+            float gap=(CaveRoute.EVENTS_AT[i]-CaveRoute.EVENTS_AT[i-1])/Cave.WALK_SPEED;
+            spacing&=gap>=1f/Cave.PACE && gap<=2f/Cave.PACE;
+        }
+        check("seven gauntlet events with slowed travel gaps",CaveRoute.EVENTS_AT.length==7 && spacing);
+        GameCore c=game(L);Cave v=c.cave;v.encounter(c,Cave.ROCKS);
+        check("first rock falls immediately with a readable landing window",v.traps.rockProgress(0)==0
+                && CaveTraps.FALL>=.65f/Cave.PACE && CaveTraps.FALL<.85f/Cave.PACE);
+        v.update(c,.15f,L);
+        check("hazard zoom is halfway after 150ms",Math.abs(v.focus-.5f)<.001f);
+        v.update(c,.15f,L);
+        check("trap closeup centers explorer after 300ms",v.focus==1f && Math.abs(v.playerX()-.5f)<.001f
+                && Math.abs(v.playerY(L)-(L.playTop+L.deckTop)*.5f)<.01f);
+        float focus=v.focus;Pause.open(c);c.update(1,L);check("pause freezes closeup",v.focus==focus);Pause.resume(c);
+        v.encounter(c,Cave.SAND);check("quicksand accepts escape keys on arrival",v.wanted()>=0);
+        v.traps.age=1.2f/Cave.PACE;check("quicksand visibly sinks with its deadline",CaveScreen.sink(v)>.5f);
+        v.traps.hits=4;check("escape progress visibly lifts dumpling",CaveScreen.sink(v)<.5f);
+        v.encounter(c,Cave.SHADOW);c.speed=1.5f;v.update(c,.5f,L);
+        check("developer travel speed does not multiply ambush deadline",Math.abs(v.timer-.5f)<.001f);
+        float near=v.light(v.pathX(v.z),v.pathY(v.z));
+        check("light follows the player on both axes",near>.7f && v.light(v.pathX(v.z)+3,v.pathY(v.z))<.06f);
+    }
     static void bounded(Layout L) {
         for(float pps:new float[]{4f,6f,9f}) {
-            GameCore c=game(L);Bot b=new Bot(pps,.25f,.04f,true,977L);
-            float t=0f;
-            while(t<130f && c.state==GameCore.PLAY && !c.pendingBonus) {c.update(DT,L);b.step(c,L,DT);t+=DT;}
-            System.out.printf("    cave %.0f/s: %.1fs, %d lives, exit %s%n",pps,t,c.lives,c.pendingBonus);
-            check("bounded hands reach cave exit "+pps,c.pendingBonus && c.lives>0 && t>=30f && t<65f);
+            int survived=0;float total=0,maxGap=0;int totalEvents=0;
+            int runs=320;
+            for(int attempt=0;attempt<32;attempt++)for(int stage=21;stage<=25;stage++)for(int side:new int[]{-1,1}) {
+                GameCore c=new GameCore(new Mem(),977L+attempt*37);c.caveChoice=0;c.startGame();c.jumpToStage(stage,L);c.stageBanner=0;
+                Bot b=new Bot(pps,.25f,.04f,true,977L+stage+attempt*71);b.caveSide=side;
+                float t=0,gap=0;int events=0;
+                while(t<60 && c.state==GameCore.PLAY && !c.pendingBonus) {
+                    int before=c.cave.nextEvent;
+                    if(c.cave.phase==Cave.WALK||c.cave.phase==Cave.FORK)gap+=DT;
+                    c.update(DT,L);b.step(c,L,DT);t+=DT;
+                    if(c.cave.nextEvent>before){maxGap=Math.max(maxGap,gap);gap=0;events++;}
+                }
+                if(c.pendingBonus&&c.lives>0)survived++;
+                total+=t;totalEvents+=events;
+            }
+            System.out.printf("    cave %.0f/s .25s reaction 4%% misses: %.1fs avg, %d/%d survive, longest gap %.2fs%n",pps,total/runs,survived,runs,maxGap);
+            check("bounded hands survive every stage and branch "+pps,survived>=runs*.95f && total/runs>=12 && total/runs<32/Cave.PACE);
+            check("bounded players encounter all seven threats "+pps,totalEvents>=runs*7*.95f);
+            check("gauntlet has no long empty walk "+pps,maxGap<2.2f/Cave.PACE);
         }
     }
 }

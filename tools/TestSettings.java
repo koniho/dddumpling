@@ -18,18 +18,39 @@ final class TestSettings extends Check {
                 && loaded.preferences.musicMuted && loaded.preferences.kids && e.musicVolume==0f);
         loaded.preferences.musicMuted=false;loaded.preferences.effectsMuted=true;loaded.preferences.save(loaded);
         check("unmute restores chosen volume without enabling other channel",e.musicVolume==.25f && e.effectsVolume==0f);
-        c.preferences.musicMuted=false;c.setBgm(Music.OFF);
+        c.preferences.musicMuted=true;
         SettingsInput.action(c,L,1000+PlayerSettings.MUSIC_MUTE);
-        check("one unmute restores music from the old OFF track",c.bgmChoice==Music.defaultChoice(false) && !c.preferences.musicMuted);
+        check("mute button restores saved volume",!c.preferences.musicMuted && e.musicVolume==.25f);
+        int musicCalls=e.musicCalls;
+        for(int oldTrack=100;oldTrack<=104;oldTrack++) SettingsInput.action(c,L,oldTrack);
+        check("retired music actions cannot change playback or mute",e.musicCalls==musicCalls
+                && !c.preferences.musicMuted && e.musicVolume==.25f);
         PlayerSettings.open(c);
         c.screenKey(0);
         check("settings block title keys",c.settingsOpen && !c.starting());
         check("Back closes public settings",Pause.back(c) && !c.settingsOpen);
         int[] actions={SettingsUi.HIT_GAMEOVER,SettingsUi.HIT_STAGE+2,SettingsUi.HIT_TEST,
-                SettingsUi.HIT_TEST+SettingsUi.TEST_STARS,SettingsUi.HIT_TEST+SettingsUi.TEST_STEAMER,SettingsUi.HIT_DEBUFF};
+                SettingsUi.HIT_TEST+SettingsUi.TEST_STARS,SettingsUi.HIT_TEST+SettingsUi.TEST_STEAMER,SettingsUi.HIT_DEBUFF,
+                SettingsUi.HIT_TEST+SettingsUi.TEST_BAND,SettingsUi.HIT_TEST+SettingsUi.TEST_MINE};
         for(int state:new int[]{GameCore.TITLE,GameCore.OVER,GameCore.BONUS}) {
             c.state=state;int stage=c.stage;
             for(int h:actions) { SettingsInput.action(c,L,h);check("run-only action blocked in state "+state+" hit "+h,c.state==state && c.stage==stage && !c.powerActive()); }
+        }
+        for(boolean mine:new boolean[]{false,true}) {
+            GameCore run=new GameCore(new Mem(),220L);run.startGame();run.jumpToStage(20,L);
+            run.mining.carts=2;run.cart.progress=7;run.starNext=true;
+            run.openSettings();run.settingsPage=1;run.settingsTab=SettingsUi.MINIGAMES;
+            SettingsUi ui=new SettingsUi();ui.compute(L,SettingsUi.MINIGAMES);
+            int col=mine?1:0;
+            float x=(ui.testChipL(col,2)+ui.testChipR(col,2))*.5f,y=ui.caveY+ui.testH*.5f;
+            SettingsInput input=new SettingsInput();input.touch(run,L,0,1,x,y);input.touch(run,L,1,1,x,y);
+            check("cave chip launches requested game "+mine,run.state==GameCore.BONUS && !run.settingsOpen
+                    && run.cart.active==!mine && run.mining.active==mine && run.stage==(mine?22:21));
+            check("cave shortcut clears boss and retains progress "+mine,!run.boss.active()
+                    && run.enemies.isEmpty() && run.mining.carts==2 && run.cart.progress==7 && run.starNext);
+            for(int tick=0;tick<4 && run.state==GameCore.BONUS;tick++)run.update(100,L);
+            check("cave shortcut exits into next expedition "+mine,run.state==GameCore.PLAY
+                    && run.stage==(mine?23:22) && !CaveInterlude.active(run));
         }
         c.state=GameCore.BONUS;c.stars.wins=3;c.steamer.opens=5;
         SettingsInput.action(c,L,SettingsUi.HIT_RESET_DIFFICULTY);

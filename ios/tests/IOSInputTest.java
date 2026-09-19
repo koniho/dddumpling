@@ -50,7 +50,7 @@ public final class IOSInputTest extends Check {
     private static void titleAndLifecycle() {
         IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
         Host host = new Host(); game.setHost(host);
-        check("music choice announced after backend attached", ((Ear) c.sound).musicCalls == 1);
+        check("scene soundtrack announced after backend attached", ((Ear) c.sound).musicCalls == 1);
         check("UIKit points preserve safe-area geometry", l.w == 393 && l.padT == 59 && l.padB == 34);
         check("title has no back navigation", !game.handlesBack() && !game.back());
         tap(game, l.w - 2*l.unit, l.dangerY);
@@ -109,7 +109,7 @@ public final class IOSInputTest extends Check {
         check("kids setting persists from native settings",new GameCore(c.store,93L).preferences.kids);
         tap(game,l.w*.75f,PlayerSettings.top(l)+s*4);
         check("native developer tab opens",c.settingsPage==1);
-        SettingsUi ui=new SettingsUi();ui.compute(l,Music.NAMES.length);
+        SettingsUi ui=new SettingsUi();ui.compute(l);
         tap(game,(ui.testChipL(2,4)+ui.testChipR(2,4))*.5f,ui.stageY+ui.stageH*.5f);
         check("title stage chip cannot start a run",c.state==GameCore.TITLE && !c.starting());
         game.back();
@@ -306,7 +306,7 @@ public final class IOSInputTest extends Check {
         for(int i=0;i<180;i++) game.update(DT);
         tap(game,l.w/2,l.hudY);
         check("stage readout opens developer settings", c.settingsOpen);
-        SettingsUi ui = new SettingsUi(); ui.compute(l,Music.NAMES.length);
+        SettingsUi ui = new SettingsUi(); ui.compute(l);
         tap(game,ui.sliderR,ui.sliderY);
         check("settings slider sets speed", c.speed==GameCore.SPEED_MAX);
         game.touch(one(0,3,ui.sliderL,ui.sliderY));
@@ -317,17 +317,17 @@ public final class IOSInputTest extends Check {
         check("stage chip jumps stage rather than starting frenzy", c.stage==before+1 && c.mode==-1 && c.settingsOpen);
         tap(game,(ui.tabL(1)+ui.tabR(1))/2,ui.tabY+ui.tabH/2);
         check("native settings opens minigames tab", c.settingsTab == SettingsUi.MINIGAMES);
-        ui.compute(l,Music.NAMES.length,c.settingsTab);
+        ui.compute(l,c.settingsTab);
         c.stars.collected = 7;
         tap(game,(ui.testChipL(2,3)+ui.testChipR(2,3))/2,ui.sliderY+ui.testH/2);
         check("native harder control edits saved level without erasing stars", c.stars.wins == 1 && c.stars.collected == 7);
         tap(game,(ui.testChipL(0,3)+ui.testChipR(0,3))/2,ui.sliderY+ui.testH/2);
         check("native easier control edits level", c.stars.wins == 0);
         tap(game,(ui.tabL(0)+ui.tabR(0))/2,ui.tabY+ui.tabH/2);
-        ui.compute(l,Music.NAMES.length);
+        ui.compute(l);
         tap(game,ui.closeCx,ui.closeCy);
         check("settings close resumes play", !c.settingsOpen);
-        c.settingsOpen=true;c.settingsTab=SettingsUi.PROGRESS;ui.compute(l,Music.NAMES.length,c.settingsTab);
+        c.settingsOpen=true;c.settingsTab=SettingsUi.PROGRESS;ui.compute(l,c.settingsTab);
         tap(game,(ui.testChipL(0,2)+ui.testChipR(0,2))/2,ui.debuffY+ui.testH/2);
         check("native all lands chip enables every land",LandPicker.count(c)==Lands.COUNT);
         tap(game,l.w*.5f,ui.difficultyY+ui.difficultyH/2);
@@ -339,7 +339,7 @@ public final class IOSInputTest extends Check {
 
         c.settingsOpen=false;
         for(int i=0;i<2;i++) {
-            c.settingsOpen=true;c.settingsTab=SettingsUi.POWERS;ui.compute(l,Music.NAMES.length,c.settingsTab);
+            c.settingsOpen=true;c.settingsTab=SettingsUi.POWERS;ui.compute(l,c.settingsTab);
             tap(game,(ui.testChipL(i,2)+ui.testChipR(i,2))/2,ui.debuffY+ui.testH/2);
             check("native debuff chip activates correct effect " + i,!c.settingsOpen
                     && c.debuff==Power.INCOGNITO+i && c.debuffLeft>0f && !c.powerActive());
@@ -479,7 +479,7 @@ public final class IOSInputTest extends Check {
         check("native cave introduction waits after explorer choice",c.stageBanner>0 && c.cave.z==0);
         for(int i=0;i<120;i++)game.update(DT);
         c.cave.phase=Cave.FORK;c.cave.z=c.cave.cameraZ=2f;c.cave.fork=0;
-        tap(game,Cave.branchX(0,-1,2.4f)*l.w,c.cave.screenY(2.4f,l));
+        tap(game,c.cave.branchScreenX(-1,l),c.cave.branchScreenY(-1,l));
         check("native lantern selects a cave route",c.cave.routes[0]==-1 && c.cave.phase==Cave.WALK);
         c.cave.encounter(c,Cave.ROCKS);float x=l.w*.5f,y=c.cave.playerY(l),before=c.cave.traps.targetX;
         game.touch(one(0,17,x,y));game.touch(two(2,0,88,0,0,17,x+30,y));
@@ -487,6 +487,54 @@ public final class IOSInputTest extends Check {
         game.touch(two(6,0,88,0,0,17,x+30,y));
         check("other native finger cannot end cave drag",c.cave.input.pointer==17);
         game.touch(one(3,17,x+30,y));check("native cancel ends cave drag",c.cave.input.pointer<0);
+        Host host=new Host();game.setHost(host);c.cave.effects.takeFeedback();
+        c.cave.effects.cue(c,Sfx.CAVE_CRASH,1);game.update(DT);
+        check("native cave impact vibrates once",host.ticks==1);
+        game.update(DT);check("native cave impact does not repeat",host.ticks==1);
+        c.cave.effects.cue(c,Sfx.CAVE_RUMBLE,.5f);Pause.release(c);game.update(DT);
+        check("released cave cue cannot vibrate later",host.ticks==1);
+    }
+
+    private static void caveMining() {
+        IOSGame game=game();GameCore c=game.core();Layout L=game.geometry();
+        c.startGame();c.jumpToStage(22,L);CaveInterlude.select(c,true);Interlude.enterBonus(c,L);CaveMining m=c.mining;m.ready=0;
+        check("iOS selects requested cave game without rhythm",m.active && !c.band.active);
+        for(int load=0;load<5;load++) {
+            for(int i=0;i<m.length;i++){int g=m.sequence[i];tap(game,c.keyX(L,g),c.keyY(L,g));}
+            for(int frame=0;frame<31;frame++)game.update(DT);
+        }
+        check("native key taps fill cart after five sequences",m.swipeReady() && m.carts==0);
+        for(int g=0;g<6;g++)tap(game,c.keyX(L,g),c.keyY(L,g));
+        check("full cart ignores native key taps",m.loads==5 && m.carts==0);
+        float x=m.cartX*L.w,y=CaveMiningScreen.cartY(L);
+        game.touch(one(IOSTouch.ACTION_DOWN,42,x,y));
+        game.touch(two(IOSTouch.ACTION_POINTER_DOWN,1,42,x,y,43,x,y));
+        game.touch(two(IOSTouch.ACTION_POINTER_UP,1,42,x,y,43,x,y));
+        check("second UIKit finger cannot release cart",m.input.pointer==42);
+        game.touch(one(IOSTouch.ACTION_MOVE,42,x-L.w*.20f,y));
+        check("UIKit swipe sends cart left and saves progress",m.phase==CaveMining.PUSH && m.direction==-1
+                && m.carts==1 && ((Mem)c.store).mineCarts==1);
+        game.touch(one(IOSTouch.ACTION_UP,42,x-L.w*.20f,y));
+        check("lifting cannot dispatch again",m.carts==1);
+        game.background(true);check("background releases minecart pointer",m.input.pointer<0);
+    }
+
+    private static void caveCart() {
+        IOSGame game=game();GameCore c=game.core();Layout L=game.geometry();
+        c.startGame();c.jumpToStage(21,L);Interlude.enterBonus(c,L);CaveCart m=c.cart;m.ready=0;
+        check("iOS selects requested cave game without rhythm",m.active && !c.band.active);
+        float x=L.w*.22f,y=StarScreen.sliderY(L);
+        game.touch(one(IOSTouch.ACTION_DOWN,42,x,y));
+        check("Star Path slider leans left",m.intent<0);
+        game.touch(two(IOSTouch.ACTION_POINTER_DOWN,1,42,x,y,43,x,y));
+        game.touch(two(IOSTouch.ACTION_POINTER_UP,1,42,x,y,43,x,y));
+        check("second UIKit finger cannot release cart",m.input.pointer==42);
+        game.touch(one(IOSTouch.ACTION_MOVE,42,L.w*.78f,y));
+        check("UIKit drag leans right",m.intent>0);
+        game.touch(one(IOSTouch.ACTION_UP,42,L.w*.78f,y));
+        check("lifting keeps slider lean",m.input.pointer<0 && m.intent>0);
+        game.touch(one(IOSTouch.ACTION_DOWN,44,x,y));
+        game.background(true);check("background releases minecart pointer",m.input.pointer<0 && m.intent==0);
     }
 
     private static void bossDeathFeedback() {
@@ -510,6 +558,9 @@ public final class IOSInputTest extends Check {
     }
 
     public static void main(String[] args) {
+        caveMining();
+        caveCart();
+
         bossDeathFeedback();
         playerSettings();
         gameOverDismissal();

@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /**
  * Sound effects as 16-bit mono PCM, shared by Android, iOS and the harness.
- * Most effects are synthesised; OctoWaveRecording embeds the user-supplied arm-wave cue.
+ * Most effects are synthesised; cart, rock and Octopulse cues embed recordings.
  * Recording provenance and regeneration: audio/recorded/README.md.
  *
  * Every effect is peak-normalised to {@link #PEAK} by {@link #render}, so nothing is
@@ -29,7 +29,9 @@ final class Sfx {
             MUSHROOM_SHAKE = BOLT_DEATH + 1, MUSHROOM_SPORE = MUSHROOM_SHAKE + 1,
             LINKED_THUD = MUSHROOM_SPORE + 1, SHUFFLE_BLIP = LINKED_THUD + 1, DEBUFF_DOWN = SHUFFLE_BLIP + 1,
             SLIME_COVER = DEBUFF_DOWN + 1, SLIME_RELEASE = SLIME_COVER + 1,
-            LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, BLAST_OFF = UI_BLOOP + 1, DIVIDE_SUPERNOVA = BLAST_OFF + 1, OCTO_WAVE = DIVIDE_SUPERNOVA + 1, COUNT = OCTO_WAVE + 1;
+            LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, BLAST_OFF = UI_BLOOP + 1, DIVIDE_SUPERNOVA = BLAST_OFF + 1, OCTO_WAVE = DIVIDE_SUPERNOVA + 1, CAVE_RUMBLE = OCTO_WAVE + 1, CAVE_CRASH = CAVE_RUMBLE + 1,
+            CAVE_AMBUSH = CAVE_CRASH + 1, CAVE_SINK = CAVE_AMBUSH + 1, MINING_CHEER = CAVE_SINK + 1,
+            CART_ROLL = MINING_CHEER + 1, CART_SQUEAL = CART_ROLL + 1, CART_TUMBLE = CART_SQUEAL + 1, COUNT = CART_TUMBLE + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -46,6 +48,12 @@ final class Sfx {
         if (id >= SQUISH_0 && id < SQUISH_0 + Glyph.COUNT) return squish(id - SQUISH_0);
         if (id >= BOSS_TAUNT_0 && id < BOSS_TAUNT_0 + Boss.COUNT)
             return bossTaunt(id - BOSS_TAUNT_0);
+        if(id==CAVE_RUMBLE)return RockRecording.rumble();
+        if(id==CAVE_CRASH)return RockRecording.crash();
+        if(id>=CAVE_AMBUSH && id<=CAVE_SINK)return cave(id);
+        if(id==MINING_CHEER)return miningCheer();
+        if(id==CART_ROLL)return CartRecording.build();
+        if(id>=CART_SQUEAL && id<=CART_TUMBLE)return cart(id);
         if (id == OCTO_WAVE) return OctoWaveRecording.build();
         switch (id) {
             case DRIP: return drip();
@@ -1038,6 +1046,67 @@ final class Sfx {
     }
 
     /** Peak-normalises to {@link #PEAK} and converts to 16-bit, so nothing can clip. */
+    private static short[] miningCheer() {
+        float[] v=new float[(int)(RATE*.48f)];
+        for(int i=0;i<v.length;i++){
+            float t=i/(float)RATE,beat=t%.24f,u=beat/.24f;
+            double phase=6.283185*(380*beat+170*beat*beat)+(t>.24?1.2:0);
+            float voice=(float)(Math.sin(phase)+.45*Math.sin(phase*3)+.22*Math.sin(phase*5));
+            v[i]=voice*(float)Math.sin(Math.PI*u)*(1-u)*.55f;
+        }
+        return render(v);
+    }
+
+    private static short[] cave(int id) {
+        float duration=.32f;
+        float[] v=new float[(int)(RATE*duration)];
+        java.util.Random random=new java.util.Random(817+id);
+        double bass=0,gravel=0,air=0;
+        for(int i=0;i<v.length;i++){
+            double t=i/(double)RATE,u=t/duration,noise=random.nextDouble()*2-1;
+            bass+=.018*(noise-bass);gravel+=.085*(noise-gravel);air+=.32*(noise-air);
+            // Inharmonic rock modes retain weight on speakers which cannot reproduce sub-bass.
+            double body=.44*Math.sin(6.283185*51*t)+.32*Math.sin(6.283185*83*t+.7)
+                    +.25*Math.sin(6.283185*149*t+1.4)+.20*Math.sin(6.283185*227*t+2.1)
+                    +.12*Math.sin(6.283185*373*t);
+            double texture=bass*4.8+gravel*1.9;
+            double attack=Math.min(1,t/.009),decay=Math.pow(1-u,3.3),hit=0;
+            if(id==CAVE_AMBUSH){
+                double stomp=Math.exp(-t*24)+.6*Math.exp(-Math.max(0,t-.075)*35)*(t>.075?1:0);
+                body*=stomp*1.4;texture*=.7;hit=air*.8*Math.exp(-t*55);
+            }else if(id==CAVE_SINK){
+                double gulp=.6+.4*Math.sin(6.283185*17*t+2*Math.sin(t*21));
+                texture*=gulp*1.6;body*=.5;hit=gravel*Math.sin(6.283185*470*t)*.7;
+            }
+            v[i]=(float)((body+texture+hit)*attack*decay);
+        }
+        return render(v);
+    }
+
+    private static short[] cart(int id) {
+        float duration=id==CART_SQUEAL?.28f:.34f;
+        float[] v=new float[(int)(RATE*duration)];
+        java.util.Random random=new java.util.Random(431+id);
+        double low=0,grit=0;
+        for(int i=0;i<v.length;i++){
+            double t=i/(double)RATE,u=t/duration,n=random.nextDouble()*2-1;
+            low+=.035*(n-low);grit+=.23*(n-grit);
+            double body=.3*Math.sin(6.283185*67*t)+.24*Math.sin(6.283185*137*t+.8)
+                    +.15*Math.sin(6.283185*243*t);
+            double sample=(low*3+body)*.65;
+            if(id==CART_SQUEAL){
+                double phase=6.283185*(540*t+130*t*t)+.6*Math.sin(6.283185*37*t);
+                sample+=.22*Math.sin(phase)+.08*Math.sin(phase*2.73)+grit*.5;
+            }else{
+                // A wobbly wooden chassis knock, kept separate from the happy crew voices.
+                sample+=.38*Math.sin(6.283185*189*t+2*Math.sin(t*45))*Math.exp(-t*12)
+                        +grit*.9*Math.exp(-t*26);
+            }
+            v[i]=(float)(sample*Math.min(1,t/.005)*Math.pow(1-u,3));
+        }
+        return render(v);
+    }
+
     private static short[] render(float[] v) {
         float max = 0f;
         for (int i = 0; i < v.length; i++) {

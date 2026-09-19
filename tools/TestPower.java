@@ -1370,7 +1370,7 @@ final class TestPower extends Check {
     static void playtest(Layout L) {
         group("playtest hook");
         SettingsUi ui = new SettingsUi();
-        ui.compute(L, Music.NAMES.length, SettingsUi.POWERS);
+        ui.compute(L, SettingsUi.POWERS);
         check("panel still fits with the playtest row",
                 ui.panelB <= L.h && ui.testY + ui.testH < ui.panelB);
         check("powers have a dedicated page below its tabs",
@@ -1382,27 +1382,30 @@ final class TestPower extends Check {
         int chips = SettingsUi.TEST_CHIPS;
         for (int i = 0; i < chips; i++) {
             boolean mini=i>=SettingsUi.TEST_STARS;
-            ui.compute(L,Music.NAMES.length,mini?SettingsUi.MINIGAMES:SettingsUi.POWERS);
-            int index=mini?i-SettingsUi.TEST_STARS:i,n=mini?2:Power.OFFERED.length;
+            ui.compute(L,mini?SettingsUi.MINIGAMES:SettingsUi.POWERS);
+            int index=mini?(i-SettingsUi.TEST_STARS)%2:i,n=mini?2:Power.OFFERED.length;
             float cx = (ui.testChipL(index,n)+ui.testChipR(index,n))*.5f;
-            if(ui.hit(cx,ui.testY+ui.testH*.5f)!=SettingsUi.HIT_TEST+i) chipsOk=false;
+            if(ui.hit(cx,(i>=SettingsUi.TEST_BAND?ui.caveY:ui.testY)+ui.testH*.5f)!=SettingsUi.HIT_TEST+i) chipsOk=false;
             if(index>0 && ui.testChipL(index,n)<ui.testChipR(index-1,n)) chipsDistinct=false;
         }
         check("the row has chips for both between-stage games",
                 SettingsUi.TEST_STARS == Power.OFFERED.length
                         && SettingsUi.TEST_STEAMER == Power.OFFERED.length + 1
-                        && chips == Power.OFFERED.length + 2);
+                        && chips == Power.OFFERED.length + 4);
         // Labels inside their boxes, which nothing was checking: adding the fifth chip put TEAM
         // SQUISH's label across two of its neighbours, and DOES NOT FIT only watches the screen
         // edge. Measured in the harness font, which is wider than the device's.
-        float chipType = Draw.type(L.unit * 0.46f);
+        float chipType = PlayerSettings.unit(L) * .57f;
         boolean labelsFit = true;
         String widest = "";
         float worst = 0f;
         for (int i = 0; i < chips; i++) {
-            String label = i == SettingsUi.TEST_STARS ? "PATH"
-                    : i == SettingsUi.TEST_STEAMER ? "STEAM" : Power.CHIP[Power.offeredAt(i)];
-            float box = ui.testChipR(i, chips) - ui.testChipL(i, chips);
+            String label = i == SettingsUi.TEST_STARS ? "STAR PATH"
+                    : i == SettingsUi.TEST_STEAMER ? "STEAMER"
+                    : i == SettingsUi.TEST_BAND ? "CART RUSH"
+                    : i == SettingsUi.TEST_MINE ? "DUMPLING MINE" : Power.CHIP[Power.offeredAt(i)];
+            int n=i>=SettingsUi.TEST_STARS?2:Power.OFFERED.length;
+            float box = ui.testChipR(0, n) - ui.testChipL(0, n);
             float wide = RasterPainter.textWidth(label, chipType);
             if (wide / box > worst) { worst = wide / box; widest = label; }
             if (wide > box * 0.94f) labelsFit = false;

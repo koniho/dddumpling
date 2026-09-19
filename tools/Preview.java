@@ -9,32 +9,136 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void caveCollectFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(wanted("110")) {
+            RasterPainter p=new RasterPainter(w,h,ss);p.clear(Renderer.BG);
+            float cell=w/5f,top=h*.12f,gap=h*.21f,r=Math.min(cell*.36f,gap*.29f);
+            p.text("CAVE FRIENDS",w*.5f,h*.055f,w*.035f,Renderer.INK,Painter.CENTER,true);
+            for(int row=0;row<4;row++)for(int col=0;col<5;col++) {
+                int i=Collect.MOLE_FIRST+(row%2)*5+col;
+                float x=cell*(col+.5f),y=top+gap*row+r;
+                Trinket.draw(p,i,x,y,r,1.3f,row<2,1f);
+                p.text(row<2?Collect.NAME[i]:"???",x,y+r*1.6f,w*.014f,Renderer.INK,Painter.CENTER,true);
+            }
+            Png.write(new File(dir,"110-cave-families.png"),p.resolve(),w,h);
+        }
+        GameCore c=new GameCore(new Mem(),615L);c.collected=Collect.MASK;c.openCase();c.caseFade=1;
+        c.caseTo(Collect.MOLE_FIRST);shot(dir,"110-case-moles",c,L,w,h,ss);
+        c.caseTo(Collect.SNAKE_FIRST);shot(dir,"110-case-snakes",c,L,w,h,ss);
+    }
+
+    private static void miningFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        GameCore c=TestCaveMining.game(L,new Check.Mem());CaveMining m=c.mining;
+        shot(dir,"109-mine-start",c,L,w,h,ss);
+        m.ready=0;m.update(c,1.3f);shot(dir,"109-mine-cheering",c,L,w,h,ss);
+        c.tapBonus(m.sequence[0]);m.update(c,.08f);
+        shot(dir,"109-mine-sequence",c,L,w,h,ss);
+        m.update(c,.22f);shot(dir,"109-mine-prompt-rock-flight",c,L,w,h,ss);
+        c.tapBonus(m.sequence[1]);m.update(c,.15f);
+        shot(dir,"109-mine-falling-rocks",c,L,w,h,ss);
+        m.update(c,.10f);shot(dir,"109-mine-walk-forward",c,L,w,h,ss);
+        TestCaveMining.fill(c);for(int i=0;i<m.loads;i++)m.falling[i]=0;
+        shot(dir,"109-mine-full-cart",c,L,w,h,ss);
+        m.launch(c,1);m.update(c,.30f);
+        shot(dir,"109-mine-helpers",c,L,w,h,ss);
+        m.update(c,.60f);shot(dir,"109-mine-cart-rush",c,L,w,h,ss);
+        m.update(c,CaveMining.PUSH_TIME);
+        shot(dir,"109-mine-three-keys",c,L,w,h,ss);
+        TestCaveMining.fill(c);m.launch(c,-1);m.update(c,CaveMining.PUSH_TIME);
+        m.left=CaveMining.TIME*.18f;
+        for(int pos=0;pos<4;pos++){m.pos=pos;shot(dir,"109-mine-four-prompt-"+pos,c,L,w,h,ss);}
+        shot(dir,"109-mine-four-keys-dim",c,L,w,h,ss);
+        m.update(c,CaveMining.TIME);
+        shot(dir,"109-mine-timeout",c,L,w,h,ss);
+        m.carts=4;m.begin(c);m.ready=0;TestCaveMining.fill(c);m.launch(c,1);
+        c.update(CaveMining.PUSH_TIME,L);
+        shot(dir,"109-mine-reward",c,L,w,h,ss);
+        c.update(CaveMining.REPORT_TIME+.01f,L);
+        shot(dir,"109-mine-parade",c,L,w,h,ss);
+    }
+
+    private static void cartFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        GameCore c=TestCaveCart.game(L,new Check.Mem());CaveCart m=c.cart;
+        shot(dir,"111-cart-ready",c,L,w,h,ss);
+        m.ready=0;m.progress=3;m.segment=.5f;m.lean=-.8f;m.turn=-.8f;m.scene.clock=2;
+        shot(dir,"111-cart-left",c,L,w,h,ss);
+        int gentle=0,sharp=0;
+        for(int i=1;i<CaveCart.TRACK;i++){
+            if(Math.abs(CaveCart.bend(i))<Math.abs(CaveCart.bend(gentle)))gentle=i;
+            if(Math.abs(CaveCart.bend(i))>Math.abs(CaveCart.bend(sharp)))sharp=i;
+        }
+        m.progress=gentle;m.segment=CaveCart.SEGMENT*.7f;m.turn=CaveCart.curve(gentle+.7f);m.lean=m.turn;
+        shot(dir,"111-cart-gentle-bank",c,L,w,h,ss);
+        m.progress=sharp;m.turn=CaveCart.curve(sharp+.7f);m.lean=m.turn;
+        shot(dir,"111-cart-sharp-bank",c,L,w,h,ss);
+        m.progress=5;m.lean=.8f;m.turn=.8f;m.scene.clock=3;
+        shot(dir,"111-cart-right",c,L,w,h,ss);
+        m.scene.clock=1.35f;shot(dir,"111-cart-foreground-arches",c,L,w,h,ss);
+        m.balance=.85f;m.lean=-.5f;m.scene.rumble=.6f;
+        m.danger=.25f;shot(dir,"111-cart-danger",c,L,w,h,ss);
+        m.danger=1.05f;shot(dir,"111-cart-red-countdown",c,L,w,h,ss);
+        m.balance=-.85f;shot(dir,"111-cart-balance-right",c,L,w,h,ss);
+        m.balance=.85f;
+        m.phase=CaveCart.REPORT;m.spilled=true;m.scene.spillAge=.32f;
+        shot(dir,"111-cart-spill",c,L,w,h,ss);
+        m.progress=14;m.begin(c);shot(dir,"111-cart-resume",c,L,w,h,ss);
+        m.progress=CaveCart.TRACK;m.begin(c);c.update(.01f,L);
+        shot(dir,"111-cart-reward",c,L,w,h,ss);
+    }
+
     private static void caveFrames(File dir, Layout L, int w, int h, int ss) throws Exception {
         GameCore c=new GameCore(new Mem(),921L);c.caveChoice=0;c.startGame();c.jumpToStage(21,L);
         c.landBlend=1f;c.update(.6f,L);
         shot(dir,"106-cave-stage-introduction",c,L,w,h,ss);
         c.stageBanner=0f;Cave v=c.cave;
         shot(dir,"106-cave-entrance",c,L,w,h,ss);
-        v.z=v.cameraZ=2f;v.phase=Cave.FORK;v.timer=.7f;v.fork=0;
+        v.z=v.cameraZ=1.2f;v.aim=v.route.heading(v.z);v.focus=.6f;
+        shot(dir,"106-cave-irregular-walls",c,L,w,h,ss);v.focus=0;
+
+        v.z=v.cameraZ=2f;v.phase=Cave.FORK;v.timer=.10f;v.fork=0;
         shot(dir,"106-cave-first-fork",c,L,w,h,ss);
-        v.timer=3.6f;
-        shot(dir,"106-cave-fork-countdown",c,L,w,h,ss);
-        v.choose(c,-1);v.z=v.cameraZ=2.6f;v.aim=-.4f;
+        v.timer=.42f;shot(dir,"106-cave-fork-countdown",c,L,w,h,ss);
+        v.choose(c,-1);v.z=v.cameraZ=2.6f;v.aim=v.route.heading(v.z);
         shot(dir,"106-cave-chosen-path",c,L,w,h,ss);
-        v.encounter(c,Cave.SHADOW);v.aim=1.3f;
-        shot(dir,"106-cave-hidden-enemy",c,L,w,h,ss);
-        v.phase=Cave.FIGHT;v.aim=0f;v.timer=1.5f;v.responsePos=1;v.enemyZ=v.z+.55f;
-        shot(dir,"106-cave-enemy-response",c,L,w,h,ss);
-        v.phase=Cave.WALK;v.encounter(c,Cave.ROCKS);v.traps.age=.6f;
-        shot(dir,"106-cave-rock-warning",c,L,w,h,ss);
-        v.traps.age=2.1f;v.traps.x=.65f;
+        v.routes[1]=-1;v.routes[2]=1;
+        for(int bend=0;bend<3;bend++) {
+            v.z=v.cameraZ=3.2f+bend*2.5f;v.aim=v.route.heading(v.z);
+            shot(dir,"106-cave-winding-"+bend,c,L,w,h,ss);
+        }
+        v.z=v.cameraZ=2.75f;v.nextEvent=2;v.encounter(c,Cave.SHADOW);v.update(c,.06f,L);
+        shot(dir,"106-cave-side-ambush",c,L,w,h,ss);
+        v.update(c,.36f,L);
+        shot(dir,"106-cave-enemy-stomp",c,L,w,h,ss);
+        v.update(c,.35f,L);shot(dir,"106-cave-enemy-rush",c,L,w,h,ss);
+        v.press(c,v.wanted(),L);v.update(c,.05f,L);
+        shot(dir,"106-cave-enemy-bolt",c,L,w,h,ss);
+        v.update(c,.06f,L);shot(dir,"106-cave-enemy-tummy-hit",c,L,w,h,ss);
+        while(v.phase==Cave.FIGHT||v.phase==Cave.SHADOW)v.press(c,v.wanted(),L);
+        v.update(c,.3f,L);shot(dir,"106-cave-enemy-retreat",c,L,w,h,ss);
+        v.update(c,.4f,L);shot(dir,"106-cave-enemy-hidden",c,L,w,h,ss);
+        v.phase=Cave.WALK;v.focus=0;v.cameraZ=v.z-.13f;v.encounter(c,Cave.ROCKS);
+        shot(dir,"106-cave-rock-immediate",c,L,w,h,ss);
+        v.update(c,.15f,L);shot(dir,"106-cave-rock-zoom-mid",c,L,w,h,ss);
+        v.update(c,.15f,L);shot(dir,"106-cave-rock-closeup",c,L,w,h,ss);
+        v.traps.x=v.traps.targetX=.2f;v.update(c,CaveTraps.FALL-.3f+.02f,L);v.effects.update(.12f);
+        shot(dir,"106-cave-rock-breakup",c,L,w,h,ss);
+        v.phase=Cave.WALK;v.effects.update(.22f);
+        shot(dir,"106-cave-rock-dust-after",c,L,w,h,ss);
+        v.phase=Cave.ROCKS;v.traps.age=1.12f/Cave.PACE;v.traps.landed[0]=true;v.traps.x=.65f;
         shot(dir,"106-cave-falling-rocks",c,L,w,h,ss);
-        v.phase=Cave.WALK;v.z=v.cameraZ=5.72f;v.routes[1]=-1;v.encounter(c,Cave.SAND);
-        v.traps.age=4f;v.traps.hits=5;
-        shot(dir,"106-cave-quicksand",c,L,w,h,ss);
-        v.phase=Cave.WALK;v.z=v.cameraZ=6.4f;c.lives=1;v.aim=.2f;
-        shot(dir,"106-cave-heart-route",c,L,w,h,ss);
-        v.z=v.cameraZ=Cave.LENGTH;v.phase=Cave.EXIT;
+        v.phase=Cave.WALK;v.z=v.cameraZ=5.75f;v.routes[1]=-1;v.focus=0;v.cameraZ=v.z-.13f;v.encounter(c,Cave.SAND);
+        shot(dir,"106-cave-quicksand-zoom-start",c,L,w,h,ss);
+        v.update(c,.15f,L);shot(dir,"106-cave-quicksand-zoom-mid",c,L,w,h,ss);
+        v.update(c,.15f,L);shot(dir,"106-cave-quicksand-start",c,L,w,h,ss);
+        v.traps.age=1.4f/Cave.PACE;v.traps.hits=0;
+        shot(dir,"106-cave-quicksand-panic",c,L,w,h,ss);
+        v.traps.hits=6;shot(dir,"106-cave-quicksand-escape",c,L,w,h,ss);
+        for(int variation=0;variation<3;variation++) {
+            v.route.make(new java.util.Random(100+variation));v.phase=Cave.WALK;v.focus=0;v.z=v.cameraZ=3.7f;
+            v.aim=v.route.heading(v.z);v.effects.reset();
+            shot(dir,"106-cave-generated-"+variation,c,L,w,h,ss);
+        }
+        v.z=v.cameraZ=Cave.LENGTH;v.phase=Cave.EXIT;v.focus=0;
         shot(dir,"106-cave-exit",c,L,w,h,ss);
         for(int finish=0;finish<CaveDumpling.COUNT;finish++) {
             GameCore pick=new GameCore(new Mem(),973L);pick.startGame();pick.jumpToStage(21,L);
@@ -42,7 +146,7 @@ final class Preview {
             if(finish==0)shot(dir,"107-cave-choose-explorer",pick,L,w,h,ss);
             pick.cave.selection.pick(pick,finish);step(pick,L,.4f);
             if(finish==1)shot(dir,"107-cave-selected-departure",pick,L,w,h,ss);
-            step(pick,L,.5f);step(pick,L,.53f);
+            step(pick,L,.5f);step(pick,L,.25f);
             shot(dir,"107-cave-walker-"+finish,pick,L,w,h,ss);
             if(finish==2)for(int pose=0;pose<3;pose++) {
                 step(pick,L,.10f);shot(dir,"107-cave-bounce-"+pose,pick,L,w,h,ss);
@@ -65,7 +169,6 @@ final class Preview {
         public String progressReplica() { return "test"; }
         int best;
         float speed = 1f;
-        int bgm;
         long collected;
         int collectTotal;
         int[] collectionCounts = new int[Collect.COUNT];
@@ -76,8 +179,6 @@ final class Preview {
         public void saveBest(int b) { best = b; }
         public float loadSpeed() { return speed; }
         public void saveSpeed(float v) { speed = v; }
-        public int loadBgm() { return bgm; }
-        public void saveBgm(int v) { bgm = v; }
         public long loadCollected() { return collected; }
         public void saveCollected(long v) { collected = v; }
         public int[] loadCollectionCounts() { return collectionCounts.clone(); }
@@ -239,6 +340,9 @@ final class Preview {
         }
 
         caveFrames(dir,L,w,h,ss);
+        cartFrames(dir,L,w,h,ss);
+        miningFrames(dir,L,w,h,ss);
+        caveCollectFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);
@@ -1260,7 +1364,6 @@ final class Preview {
         c6.stage = 3;
         step(c6, L, 6f);
         c6.setSpeed(1.2f);
-        c6.setBgm(Music.DRIFT);
         c6.collected = 0b0000_0100_1000_0011_0010_0110_1101L;
         c6.openSettings();
         step(c6, L, 0.3f);
@@ -1740,7 +1843,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);
@@ -1758,6 +1861,9 @@ final class Preview {
             for (int i = 0; i < loop.length; i++) lmax = Math.max(lmax, Math.abs(loop[i]));
             System.out.printf("  wrote bgm-%-12s %.2fs peak=%d%n", slug,
                     (float) loop.length / Sfx.RATE, lmax);
+        }
+        for(int song=0;song<CaveSong.COUNT;song++) {
+            Wav.write(new File(sfxDir,"cave-band-"+song+".wav"),CaveSong.performance(song),Sfx.RATE);
         }
         short[] fren = Music.loop(Music.SWING_STYLE, true);
         short[] boss = Music.bossLoop(Music.SWING_STYLE);
@@ -1844,7 +1950,7 @@ final class Preview {
      * the names and the labels landed on top of the row below.
      */
     private static void collectSheet(File dir, int w, int h, int ss) throws Exception {
-        grid(dir, w, h, ss, "0-collect", "THE FORTY-FIVE COLLECTIBLES",
+        grid(dir, w, h, ss, "0-collect", "THE "+Collect.COUNT+" COLLECTIBLES",
                 "EVERY ENTRY, COLLECTED", true);
         grid(dir, w, h, ss, "0-collect-unknown", "NOT YET COLLECTED",
                 "SILHOUETTE AND QUESTION MARK", false);

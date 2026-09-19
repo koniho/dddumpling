@@ -65,7 +65,6 @@
   [saved saveReleaseSeenWithNSString:@"test-build"];
   [saved saveLandBestWithInt:2 withInt:900];
   [saved saveSpeedWithFloat:1.3f];
-  [saved saveBgmWithInt:2];
   [saved savePlayerSettingsWithInt:98329];
   [saved saveCollectedWithLong:0x12345];
   IOSIntArray *counts = [IOSIntArray arrayWithLength:DDCollect_COUNT];
@@ -74,6 +73,7 @@
   [saved saveCollectTotalWithInt:27];
   [saved saveSteamerOpensWithInt:8];
   [saved saveStarWinsWithInt:3];
+  [saved saveMineCartsWithInt:4];
   [saved saveRosterStateWithInt:5];
   IOSByteArray *progress = [IOSByteArray arrayWithLength:4];
   progress->buffer_[0] = 9; progress->buffer_[3] = 6;
@@ -88,7 +88,6 @@
   XCTAssertEqualObjects(loaded.loadReleaseSeen, @"test-build");
   XCTAssertEqual([loaded loadLandBestWithInt:2], 900);
   XCTAssertEqualWithAccuracy(loaded.loadSpeed, 1.3f, .0001f);
-  XCTAssertEqual(loaded.loadBgm, 2);
   XCTAssertEqual(loaded.loadPlayerSettings, 98329);
   XCTAssertEqual(loaded.loadCollected, 0x12345);
   XCTAssertEqual([loaded loadCollectionCounts]->buffer_[0], 2);
@@ -96,6 +95,7 @@
   XCTAssertEqual(loaded.loadCollectTotal, 27);
   XCTAssertEqual(loaded.loadSteamerOpens, 8);
   XCTAssertEqual(loaded.loadStarWins, 3);
+  XCTAssertEqual(loaded.loadMineCarts, 4);
   XCTAssertEqual(loaded.loadRosterState, 5);
   XCTAssertEqualObjects(loaded.progressReplica, writer);
   XCTAssertEqual([loaded loadProgress]->buffer_[0], 9);

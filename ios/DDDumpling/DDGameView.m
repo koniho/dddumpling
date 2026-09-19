@@ -321,7 +321,8 @@
     }
     DDIOSGame *game = self.game;
     [game touchWithDDIOSTouch:[[DDIOSTouch alloc] initWithInt:action withInt:(jint)index
-        withIntArray:ids withFloatArray:xs withFloatArray:ys withFloatArray2:historyX withFloatArray2:historyY]];
+        withIntArray:ids withFloatArray:xs withFloatArray:ys withFloatArray2:historyX withFloatArray2:historyY]
+        withFloat:(float)MAX(0, NSProcessInfo.processInfo.systemUptime - self.pointers[index].timestamp)];
     [self refreshNavigation];
     [self.frameMetrics recordTouchMilliseconds:(CACurrentMediaTime() - start) * 1000];
 }
