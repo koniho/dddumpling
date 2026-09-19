@@ -1,12 +1,9 @@
 package com.dddumpling.game;
 
 /**
- * Procedurally generated sound effects, as 16-bit mono PCM.
- *
- * Synthesised rather than sampled: no audio assets to license or ship, the APK stays tiny,
- * every sound can be pitched per character, and — like the rest of the game — it is pure
- * Java, so the harness can render the same buffers to WAV files and audition them without
- * building or installing anything.
+ * Sound effects as 16-bit mono PCM, shared by Android, iOS and the harness.
+ * Most effects are synthesised; OctoWaveRecording embeds the user-supplied arm-wave cue.
+ * Recording provenance and regeneration: audio/recorded/README.md.
  *
  * Every effect is peak-normalised to {@link #PEAK} by {@link #render}, so nothing is
  * louder than anything else by accident.
@@ -32,7 +29,7 @@ final class Sfx {
             MUSHROOM_SHAKE = BOLT_DEATH + 1, MUSHROOM_SPORE = MUSHROOM_SHAKE + 1,
             LINKED_THUD = MUSHROOM_SPORE + 1, SHUFFLE_BLIP = LINKED_THUD + 1, DEBUFF_DOWN = SHUFFLE_BLIP + 1,
             SLIME_COVER = DEBUFF_DOWN + 1, SLIME_RELEASE = SLIME_COVER + 1,
-            LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, BLAST_OFF = UI_BLOOP + 1, DIVIDE_SUPERNOVA = BLAST_OFF + 1, COUNT = DIVIDE_SUPERNOVA + 1;
+            LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, BLAST_OFF = UI_BLOOP + 1, DIVIDE_SUPERNOVA = BLAST_OFF + 1, OCTO_WAVE = DIVIDE_SUPERNOVA + 1, COUNT = OCTO_WAVE + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -49,6 +46,7 @@ final class Sfx {
         if (id >= SQUISH_0 && id < SQUISH_0 + Glyph.COUNT) return squish(id - SQUISH_0);
         if (id >= BOSS_TAUNT_0 && id < BOSS_TAUNT_0 + Boss.COUNT)
             return bossTaunt(id - BOSS_TAUNT_0);
+        if (id == OCTO_WAVE) return OctoWaveRecording.build();
         switch (id) {
             case DRIP: return drip();
             case CLEAR: return clear();
