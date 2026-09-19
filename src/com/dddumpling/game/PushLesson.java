@@ -5,6 +5,18 @@ final class PushLesson extends Draw {
     boolean seen, active, ownsTouch, armed;
     float clock, startX, startY;
 
+    // Stop just before the tile reaches the line; the lunge remains a fallback for crowded hits.
+    static float triggerY(Layout L) { return L.dangerY - L.enemyR * 1.4f; }
+    private static float clamp01(float t) { return Math.max(0f, Math.min(1f, t)); }
+    static float swipeProgress(float clock) {
+        float t = clamp01((clock % 1.8f - .25f) / .9f);
+        return t * t * (3f - 2f * t);
+    }
+    static int barColor(float clock) {
+        float pulse = .5f - .5f * (float) Math.cos(clock * Math.PI * 2 / 1.2f);
+        return Glyph.mix(0xFF805626, GOLD, pulse);
+    }
+
     void cancelTouch() { armed = ownsTouch = false; }
     void reset() { active = false; clock = 0; cancelTouch(); }
 
@@ -12,10 +24,9 @@ final class PushLesson extends Draw {
         if (c.state != GameCore.PLAY) { reset(); return false; }
         if (!active && !seen && c.lives == 1 && !c.pushUsed && !c.settingsOpen
                 && !c.pendingBonus && !c.boss.active() && !Cave.active(c)) {
-            float band = (L.dangerY - L.playTop) * GameCore.WARN_BAND;
             for (GameCore.Enemy e : c.enemies) {
                 if (e.destroyed || e.dying || e.linkWaiting || e.slideT > 0) continue;
-                if (e.attacking || e.y >= L.dangerY - band * .5f) {
+                if (e.attacking || e.y >= triggerY(L)) {
                     Pause.release(c);
                     active = true;
                     c.warnLevel = Math.max(.5f, c.warnLevel);
@@ -62,13 +73,16 @@ final class PushLesson extends Draw {
                 type(s * .54f), INK, Painter.CENTER, false);
         p.text("Once per stage", x, y + type(s * 3.6f),
                 type(s * .44f), INK_DIM, Painter.CENTER, false);
-        p.fillRect(L.playLeft, L.dangerY, L.playRight, L.deckTop, 0xAA806026);
+        p.fillRect(L.playLeft, L.dangerY, L.playRight, L.deckTop, barColor(lesson.clock));
         float base = (L.dangerY + L.deckTop) * .5f;
         float tip = base - L.enemyR * 2.7f;
         p.polyline(new float[] {x, base, x, tip}, GOLD, s * .15f);
         p.polyline(new float[] {x-s*.6f, tip+s*.65f, x, tip, x+s*.6f, tip+s*.65f},
                 GOLD, s*.15f);
-        float t = (lesson.clock % 1.5f) / 1.5f;
-        p.fillCircle(x, base - L.enemyR * 2.7f * t, s * .3f, INK);
+        float phase = lesson.clock % 1.8f;
+        float fade = Math.min(clamp01(phase / .15f),
+                clamp01((1.65f - phase) / .3f));
+        Renderer.touchHint(p, x, base - L.enemyR * 2.7f * swipeProgress(lesson.clock),
+                L.enemyR * 1.05f, (float) Math.PI * .5f, fade, lesson.clock);
     }
 }

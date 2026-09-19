@@ -230,10 +230,21 @@ final class TestStages extends Check {
         check("settings do not open lesson", !c.pushLesson.active);
         c.settingsOpen=false; c.pushUsed=true; c.update(DT,L);
         check("spent swipe cannot trap player", !c.pushLesson.active);
-        c.pushUsed=false; c.update(DT,L);
+        c.pushUsed=false; e.attacking=false; e.speed=0;
+        e.y=L.dangerY-(L.dangerY-L.playTop)*GameCore.WARN_BAND*.5f;
+        c.update(DT,L);
+        check("lesson waits beyond the old halfway warning threshold", !c.pushLesson.active);
+        e.y=PushLesson.triggerY(L)-1f; c.update(DT,L);
+        check("lesson leaves approaching words moving until the closer threshold", !c.pushLesson.active);
+        e.y=PushLesson.triggerY(L); c.update(DT,L);
+        check("closer threshold still precedes the lunge", !e.attacking && e.y+L.enemyR<L.dangerY);
         check("last-life threat opens lesson before damage", c.pushLesson.active && c.lives==1);
-        float y=e.y, time=c.time, mode=c.modeLeft;
+        float y=e.y, time=c.time, mode=c.modeLeft, lessonClock=c.pushLesson.clock;
         c.update(10f,L);
+        check("instruction clock advances while play is frozen", c.pushLesson.clock>lessonClock);
+        check("swipe bar pulses between dark amber and gold", PushLesson.barColor(0f)!=PushLesson.barColor(.6f));
+        check("finger starts at bar and demonstrates a full upward swipe",
+                PushLesson.swipeProgress(.2f)==0f && PushLesson.swipeProgress(1.2f)==1f);
         check("lesson freezes words and simulation timers", e.y==y && c.time==time && c.modeLeft==mode);
         check("keys cannot dismiss lesson", !c.tapKey(1,L) && c.pushLesson.active);
         float x=L.w*.5f, bar=(L.dangerY+L.deckTop)*.5f, rise=L.enemyR*2;
