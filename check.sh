@@ -56,6 +56,7 @@ src/com/dddumpling/game/Roster.java
 src/com/dddumpling/game/Kawaii.java
 src/com/dddumpling/game/Layout.java
 src/com/dddumpling/game/Sfx.java
+src/com/dddumpling/game/CartRecording.java
 src/com/dddumpling/game/Music.java
 src/com/dddumpling/game/Words.java
 src/com/dddumpling/game/Fx.java

@@ -1,12 +1,11 @@
 package com.dddumpling.game;
 
 /**
- * Procedurally generated sound effects, as 16-bit mono PCM.
+ * Sound effects as 16-bit mono PCM; cart rolling uses a licensed recording.
  *
- * Synthesised rather than sampled: no audio assets to license or ship, the APK stays tiny,
- * every sound can be pitched per character, and — like the rest of the game — it is pure
- * Java, so the harness can render the same buffers to WAV files and audition them without
- * building or installing anything.
+ * Most sounds are synthesised. CartRecording embeds a CC0 sample so Android, iOS
+ * and the preview harness use exactly the same PCM without platform asset loaders.
+ * Source and processing provenance: audio/recorded/README.md.
  *
  * Every effect is peak-normalised to {@link #PEAK} by {@link #render}, so nothing is
  * louder than anything else by accident.
@@ -53,7 +52,8 @@ final class Sfx {
             return bossTaunt(id - BOSS_TAUNT_0);
         if(id>=CAVE_RUMBLE && id<=CAVE_SINK)return cave(id);
         if(id==MINING_CHEER)return miningCheer();
-        if(id>=CART_ROLL && id<=CART_TUMBLE)return cart(id);
+        if(id==CART_ROLL)return CartRecording.build();
+        if(id>=CART_SQUEAL && id<=CART_TUMBLE)return cart(id);
         switch (id) {
             case DRIP: return drip();
             case CLEAR: return clear();
@@ -1067,7 +1067,7 @@ final class Sfx {
     }
 
     private static short[] cart(int id) {
-        float duration=id==CART_ROLL?.30f:id==CART_SQUEAL?.28f:.34f;
+        float duration=id==CART_SQUEAL?.28f:.34f;
         float[] v=new float[(int)(RATE*duration)];
         java.util.Random random=new java.util.Random(431+id);
         double low=0,grit=0;
@@ -1077,14 +1077,7 @@ final class Sfx {
             double body=.3*Math.sin(6.283185*67*t)+.24*Math.sin(6.283185*137*t+.8)
                     +.15*Math.sin(6.283185*243*t);
             double sample=(low*3+body)*.65;
-            if(id==CART_ROLL){
-                // Paired rail-joint clacks over the rolling chassis; repeat at >=300 ms.
-                for(int k=0;k<2;k++){
-                    double d=t-k*.062;
-                    if(d>=0)sample+=(grit*1.7+.45*Math.sin(6.283185*410*d)
-                            +.22*Math.sin(6.283185*697*d))*Math.exp(-d*70);
-                }
-            }else if(id==CART_SQUEAL){
+            if(id==CART_SQUEAL){
                 double phase=6.283185*(540*t+130*t*t)+.6*Math.sin(6.283185*37*t);
                 sample+=.22*Math.sin(phase)+.08*Math.sin(phase*2.73)+grit*.5;
             }else{

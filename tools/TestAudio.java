@@ -29,8 +29,11 @@ final class TestAudio extends Check {
             check("cave sound has low body "+id,lowEnergy/total>.12);
             check("cave sound survives small speakers "+id,phoneEnergy/total>.075);
             check("cave sound leaves mixing headroom "+id,peak<30000);
-            check("ride cue finishes before repeat "+id,id<Sfx.CART_ROLL || effect.length<=Sfx.RATE*.35f);
+            check("ride cue finishes before repeat "+id,id<Sfx.CART_ROLL || (id==Sfx.CART_ROLL ? effect.length==Math.round(Sfx.RATE*CartRecording.DURATION) : effect.length<=Sfx.RATE*.35f));
         }
+        short[] rolling=Sfx.build(Sfx.CART_ROLL);
+        check("recorded cart has click-free endpoints",rolling[0]==0 && rolling[rolling.length-1]==0);
+        check("recorded cart survives shared cache",rolling==Sfx.build(Sfx.CART_ROLL));
         short[] bloop=Sfx.build(Sfx.UI_BLOOP);
         check("UI bloop stays brief",bloop.length>Sfx.RATE*.07f && bloop.length<Sfx.RATE*.15f);
         check("UI bloop is tonal",crossRate(bloop)>300f && crossRate(bloop)<1200f);
