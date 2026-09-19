@@ -203,6 +203,10 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **soft body** | how every boss's body is built: a ring of sprung nodes under pressure, so it dents where you hit it | `Softbody`, `Boss.body` |
 | **burst** | what a beaten boss goes out on | `BossScreen.burst`, `Boss.LEAVE` |
 
+Fly Agaric’s final shake starts its death: the cap and mycelium brown and shrivel,
+then the cap flattens against its planted roots, spreads into a thin horizontal brown smear,
+melts into the ground, and fades away.
+
 Dark Divide answers successful key hits and intercepted projectiles with a short rounded bloop. Firing gives the cube
 a springy jiggle and a slight recoil opposite its projectile; disabling a cube plays a softer
 falling bubble-pop. Recoil settles back without changing the cube’s roaming speed.

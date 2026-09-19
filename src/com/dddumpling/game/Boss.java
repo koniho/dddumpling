@@ -566,7 +566,8 @@ final class Boss {
     }
 
     float deathImpactTime() {
-        return kind == SPLITTER ? DivideDeath.BURST_AT : LEAVE * (kind == OCTOPUS ? .70f : .38f);
+        return kind == MUSHROOM ? MushroomDeath.FLATTEN_END
+                : kind == SPLITTER ? DivideDeath.BURST_AT : LEAVE * (kind == OCTOPUS ? .70f : .38f);
     }
 
     /** Slow at first and continuously accelerating until it clears the bottom. */
@@ -580,6 +581,7 @@ final class Boss {
 
     /** Shared defeated-boss route: three soft bounces, then melt toward the player. */
     float defeatY(Layout L) {
+        if (kind == MUSHROOM) return baseY(L) + followY;
         float t = leaveProgress();
         float bounceT = Math.min(1f, t / 0.38f);
         float bounce = (float) Math.pow(Math.sin(bounceT * Math.PI * 3f), 2)
@@ -2347,10 +2349,11 @@ final class Boss {
                 // Shared death morph: gravity wins while the body is carried toward the player.
                 // Pulling below its travelling centre makes the silhouette neck, sag and melt.
                 float melt = defeatMelt();
-                if (kind == OCTOPUS) body.letGo();
+                if (kind == OCTOPUS || kind == MUSHROOM) body.letGo();
                 else if (melt > 0f) body.pull(body.centreX(), L.h + bodyR(L) * 2.5f,
                         0.11f + melt * 0.29f);
-                body.jiggle = kind == SLIME ? 0.72f + melt * 0.16f
+                body.jiggle = kind == MUSHROOM ? JIGGLE[kind] * (1f - leaveProgress())
+                        : kind == SLIME ? 0.72f + melt * 0.16f
                         : JIGGLE[kind] * (1f + melt * 1.3f);
             } else if (held >= 0 && etype[held] == E_GLOB) {
                 body.pull(ex[held], ey[held], PULL_K, er[held]);
@@ -2376,7 +2379,7 @@ final class Boss {
                 else mushroomStem.letGo();
                 mushroomStem.update(dt);
             }
-            if (beaten && kind != OCTOPUS) {
+            if (beaten && kind != OCTOPUS && kind != MUSHROOM) {
                 float from = defeatStartW > 0f ? defeatStartW : body.spanX();
                 body.fitWidth(from + (L.w * 0.90f - from) * defeatStretch());
             }
@@ -2388,13 +2391,21 @@ final class Boss {
 
         if (beaten) {
             leaveT = Math.max(0f, leaveT - dt);
+            if (kind == MUSHROOM) {
+                mushroomCapDX *= Math.max(0f, 1f - dt * 8f);
+                mushroomCapDY *= Math.max(0f, 1f - dt * 8f);
+                mushroomSweepFlash = Math.max(0f, mushroomSweepFlash - dt);
+                mushroomAngry = mushroomCharge = mushroomReject = mushroomMeterAlpha = 0f;
+                for (int i = 0; i < MUSHROOM_DUST; i++)
+                    mushroomDustLife[i] = Math.max(0f, mushroomDustLife[i] - dt);
+            }
             if (kind == OCTOPUS) poseOctopus(dt, L);
             float p = leaveProgress();
             int wantBeat = p >= 0.28f ? 3 : p >= 0.16f ? 2 : p >= 0.05f ? 1 : 0;
             if (defeatBeat < wantBeat) {
                 defeatBeat++;
                 defeatChime = true;
-                if (body != null) {
+                if (body != null && kind != MUSHROOM) {
                     float kick = defeatBeat % 2 == 0 ? -0.42f : 0.58f;
                     body.squash(kind == SLIME ? kick * 0.38f : kick);
                 }

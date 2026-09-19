@@ -50,6 +50,7 @@ src/com/dddumpling/game/ReleaseChange.java
 src/com/dddumpling/game/ReleaseContent.java
 src/com/dddumpling/game/ReleaseTransition.java
 src/com/dddumpling/game/OpacityPainter.java
+src/com/dddumpling/game/MushroomDeath.java
 src/com/dddumpling/game/ReleaseMascot.java
 src/com/dddumpling/game/Pause.java
 src/com/dddumpling/game/Glyph.java

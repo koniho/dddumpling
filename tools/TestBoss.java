@@ -1342,6 +1342,48 @@ final class TestBoss extends Check {
                         capProbe.boss.body.centreY() - capProbe.boss.body.radiusY() * 1.45f));
 
         group("boss: fly agaric");
+        GameCore dying = enterBoss(L, Boss.MUSHROOM, 169L);
+        dying.boss.hp = 1f;
+        for (int i = 0; i < 1200 && !dying.boss.beaten; i++) {
+            bossPlay(dying, L);
+            dying.update(DT, L);
+        }
+        Boss dead = dying.boss;
+        check("final guided shake starts mushroom death", dead.beaten);
+        float planted = dead.body.homeY, originalWidth = dead.body.spanX();
+        MushroomDeath fresh = new MushroomDeath(null, dead, L, 1f);
+        for (int i = 0; i < 54; i++) dead.update(DT, L, dying.rnd);
+        MushroomDeath dry = new MushroomDeath(null, dead, L, 1f);
+        int brown = dry.color(0xFFFF3344);
+        check("cap turns brown before flattening", dry.brown == 1f && dry.flat < .02f
+                && ((brown >>> 16) & 255) > ((brown >>> 8) & 255)
+                && ((brown >>> 8) & 255) > (brown & 255));
+        check("mycelium contracts toward its planted roots",
+                dry.x(dry.cx + dry.radius * 3f, dry.ground + dry.radius) - dry.cx
+                        < dry.radius
+                && dry.y(dry.ground + dry.radius) - dry.ground < dry.radius * .25f);
+        for (int i = 0; i < 80; i++) dead.update(DT, L, dying.rnd);
+        MushroomDeath flat = new MushroomDeath(null, dead, L, 1f);
+        check("cap flattens against the ground before fading",
+                flat.ground - flat.y(planted) < fresh.radius * .2f && flat.opacity == 1f);
+        check("mushroom stays planted instead of widening and falling",
+                Math.abs(dead.body.homeY - planted) < .01f
+                && dead.body.spanX() < originalWidth * 1.5f);
+        check("death releases the shake guide", dead.held == -1 && dead.mushroomMeterAlpha == 0f);
+        for (int i = 0; i < 40; i++) dead.update(DT, L, dying.rnd);
+        MushroomDeath spread = new MushroomDeath(null, dead, L, 1f);
+        float left = flat.cx - flat.radius, right = flat.cx + flat.radius;
+        check("flattened cap stretches sideways before fading",
+                spread.x(right, planted) - spread.x(left, planted)
+                        > (flat.x(right, planted) - flat.x(left, planted)) * 1.7f
+                && spread.opacity == 1f);
+        check("spread cap gets thinner as it returns to earth",
+                spread.ground - spread.y(planted) < (flat.ground - flat.y(planted)) * .4f);
+        for (int i = 0; i < 50; i++) dead.update(DT, L, dying.rnd);
+        MushroomDeath gone = new MushroomDeath(null, dead, L, 1f);
+        check("cap melts below ground and fades completely",
+                gone.y(planted) > gone.ground && gone.opacity == 0f);
+
         GameCore c = enterBoss(L, Boss.MUSHROOM, 166L);
         Ear mushroomEar = new Ear();
         c.sound = mushroomEar;
