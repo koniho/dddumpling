@@ -187,8 +187,10 @@ final class GameCore {
         /** Lifetime steamer successes, used to retain its rising target across playthroughs. */
         int loadSteamerOpens();
         void saveSteamerOpens(int opens);
-        default int loadMineTrack() { return Math.max(0,Math.min(5,loadMineCarts()))*CaveMining.TRACK/5; }
-        default void saveMineTrack(int progress) {}
+        default boolean loadCaveMiningNext() { return false; }
+        default void saveCaveMiningNext(boolean mining) {}
+        default int loadCartTrack() { return 0; }
+        default void saveCartTrack(int progress) {}
         default int loadMineCarts() { return 0; }
         default void saveMineCarts(int carts) {}
         int loadStarWins();
@@ -550,9 +552,10 @@ final class GameCore {
     final Cave cave = new Cave();
     int caveChoice = -1;
     /** Successful games alternate; failures leave the same game queued. */
-    boolean starNext, starBonus;
+    boolean starNext, starBonus, caveMiningNext;
     final CaveBand band = new CaveBand();
     final CaveMining mining = new CaveMining();
+    final CaveCart cart = new CaveCart();
     /** Unlocked for this run after defeating the stage-5 slime. */
     boolean cubeUnlocked;
     /** Cat and Grapes stay until three consecutive runs end before stage 6. */
@@ -923,12 +926,12 @@ final class GameCore {
 
     /** True while the spinner is still settling on this round's pair. */
     boolean bonusRolling() {
-        return state == BONUS && !starBonus && !band.active && !mining.active && !bossReward && bonusTimer > bonusRollEnd;
+        return state == BONUS && !starBonus && !band.active && !cart.active && !mining.active && !bossReward && bonusTimer > bonusRollEnd;
     }
 
     /** True while the interlude accepts presses. */
     boolean bonusMashing() {
-        return state == BONUS && !starBonus && !band.active && !mining.active && !bossReward && !bonusPrizeWon()
+        return state == BONUS && !starBonus && !band.active && !cart.active && !mining.active && !bossReward && !bonusPrizeWon()
                 && bonusTimer <= bonusRollEnd && bonusTimer > MASH_END;
     }
 
@@ -939,13 +942,13 @@ final class GameCore {
 
     /** True during the beat after the clock runs out, before anything fades. */
     boolean bonusHolding() {
-        return state == BONUS && !starBonus && !band.active && !mining.active && !bossReward && !bonusPrizeWon()
+        return state == BONUS && !starBonus && !band.active && !cart.active && !mining.active && !bossReward && !bonusPrizeWon()
                 && bonusTimer <= MASH_END && bonusTimer > BONUS_STATUS;
     }
 
     /** True while a won prize is climbing out, which is all that is left of a won round. */
     boolean bonusEscape() {
-        return state == BONUS && !starBonus && !band.active && !mining.active && !bossReward && bonusPrizeWon() && bonusTimer > 0f;
+        return state == BONUS && !starBonus && !band.active && !cart.active && !mining.active && !bossReward && bonusPrizeWon() && bonusTimer > 0f;
     }
 
     /**
@@ -968,7 +971,7 @@ final class GameCore {
      * watching it join the line.
      */
     boolean bonusStatus() {
-        return state == BONUS && !starBonus && !band.active && !mining.active && !bossReward && !bonusPrizeWon() && bonusTimer <= BONUS_STATUS;
+        return state == BONUS && !starBonus && !band.active && !cart.active && !mining.active && !bossReward && !bonusPrizeWon() && bonusTimer <= BONUS_STATUS;
     }
 
     /** True once something has been won this interlude, for the whole rest of it. */
@@ -1433,7 +1436,9 @@ final class GameCore {
         if (store != null) {
             LandPicker.restore(this, store.loadLandState());
             caveChoice = CaveDumpling.valid(store.loadCaveChoice());
-            mining.progress = Math.max(0, Math.min(CaveMining.TRACK,store.loadMineTrack()));
+            mining.carts = Math.max(0,Math.min(CaveMining.CARTS,store.loadMineCarts()));
+            cart.progress = Math.max(0,Math.min(CaveCart.TRACK,store.loadCartTrack()));
+            caveMiningNext = store.loadCaveMiningNext();
             best = store.loadBest();
             for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
             landBests[0] = Math.max(landBests[0], best);
@@ -1687,7 +1692,7 @@ final class GameCore {
     }
 
     void startGame() {
-        band.reset(this); mining.stop();
+        band.reset(this); mining.stop(); cart.stop();
         runWho = Collect.has(collected, caseIndex) ? caseIndex : 0;
         // A paid win may have been quit before its tableau/parade retired the course.
         if (stars.count() == StarPath.COUNT) {
@@ -1788,7 +1793,7 @@ final class GameCore {
     }
 
     void toTitle() {
-        band.stop(this); mining.stop();
+        band.stop(this); mining.stop(); cart.stop();
         cave.leave();
         progress.finishRun(score, true);
         Pause.resume(this);
@@ -2554,7 +2559,7 @@ final class GameCore {
 
         if (state == BONUS) {
             if (CaveInterlude.active(this)) {
-                if (CaveInterlude.update(this, mining.active ? dt : elapsed)) {
+                if (CaveInterlude.update(this, (mining.active || cart.active) ? dt : elapsed)) {
                     advanceStage(); state = PLAY; time = 0f;
                 }
                 return;

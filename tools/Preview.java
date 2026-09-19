@@ -29,35 +29,57 @@ final class Preview {
 
     private static void miningFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         GameCore c=TestCaveMining.game(L,new Check.Mem());CaveMining m=c.mining;
-        shot(dir,"109-cart-ready",c,L,w,h,ss);
-        m.ready=0;m.progress=3;m.segment=.5f;m.lean=-.8f;m.turn=-.8f;m.scene.clock=2;
-        shot(dir,"109-cart-left",c,L,w,h,ss);
-        m.progress=5;m.lean=.8f;m.turn=.8f;m.scene.clock=3;
-        shot(dir,"109-cart-right",c,L,w,h,ss);
-        m.balance=.85f;m.lean=-.5f;m.scene.rumble=.6f;
-        shot(dir,"109-cart-danger",c,L,w,h,ss);
-        m.phase=CaveMining.REPORT;m.spilled=true;m.scene.spillAge=.32f;
-        shot(dir,"109-cart-spill",c,L,w,h,ss);
-        m.progress=14;m.begin(c);shot(dir,"109-cart-resume",c,L,w,h,ss);
-        m.progress=CaveMining.TRACK;m.begin(c);c.update(.01f,L);
-        shot(dir,"109-cart-reward",c,L,w,h,ss);
+        shot(dir,"109-mine-start",c,L,w,h,ss);
+        m.ready=0;m.update(c,1.3f);shot(dir,"109-mine-cheering",c,L,w,h,ss);
+        c.tapBonus(m.sequence[0]);m.update(c,.08f);
+        shot(dir,"109-mine-sequence",c,L,w,h,ss);
+        m.update(c,.22f);shot(dir,"109-mine-prompt-rock-flight",c,L,w,h,ss);
+        c.tapBonus(m.sequence[1]);m.update(c,.15f);
+        shot(dir,"109-mine-falling-rocks",c,L,w,h,ss);
+        m.update(c,.10f);shot(dir,"109-mine-walk-forward",c,L,w,h,ss);
+        TestCaveMining.fill(c);for(int i=0;i<m.loads;i++)m.falling[i]=0;
+        shot(dir,"109-mine-full-cart",c,L,w,h,ss);
+        m.launch(c,1);m.update(c,.30f);
+        shot(dir,"109-mine-helpers",c,L,w,h,ss);
+        m.update(c,.60f);shot(dir,"109-mine-cart-rush",c,L,w,h,ss);
+        m.update(c,CaveMining.PUSH_TIME);
+        shot(dir,"109-mine-three-keys",c,L,w,h,ss);
+        TestCaveMining.fill(c);m.launch(c,-1);m.update(c,CaveMining.PUSH_TIME);
+        m.left=CaveMining.TIME*.18f;
+        for(int pos=0;pos<4;pos++){m.pos=pos;shot(dir,"109-mine-four-prompt-"+pos,c,L,w,h,ss);}
+        shot(dir,"109-mine-four-keys-dim",c,L,w,h,ss);
+        m.update(c,CaveMining.TIME);
+        shot(dir,"109-mine-timeout",c,L,w,h,ss);
+        m.carts=4;m.begin(c);m.ready=0;TestCaveMining.fill(c);m.launch(c,1);
+        c.update(CaveMining.PUSH_TIME,L);
+        shot(dir,"109-mine-reward",c,L,w,h,ss);
+        c.update(CaveMining.REPORT_TIME+.01f,L);
+        shot(dir,"109-mine-parade",c,L,w,h,ss);
     }
 
-    private static void bandFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
-        for(int song=0;song<CaveSong.COUNT;song++) {
-            GameCore c=TestCave.game(L);c.stage=21+song*2;Interlude.enterBonus(c,L);
-            c.stage=21+song;c.band.begin(c);
-            shot(dir,"108-band-count-in-"+song,c,L,w,h,ss);
-            c.band.position=CaveSong.at(song,8);c.band.charge=17;c.band.pulse=1;
-            shot(dir,"108-band-play-"+song,c,L,w,h,ss);
-            c.band.position=CaveSong.at(song,25);c.band.badPulse=1;
-            shot(dir,"108-band-fast-"+song,c,L,w,h,ss);
-            c.band.position=CaveSong.duration(song);c.band.badPulse=0;
-            c.band.finished=true;c.band.report=2;c.band.won=true;c.band.paid=true;c.prize=Collect.SNAKE_FIRST+song;
-            shot(dir,"108-band-win-"+song,c,L,w,h,ss);
-            c.band.won=false;
-            shot(dir,"108-band-retry-"+song,c,L,w,h,ss);
+    private static void cartFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        GameCore c=TestCaveCart.game(L,new Check.Mem());CaveCart m=c.cart;
+        shot(dir,"111-cart-ready",c,L,w,h,ss);
+        m.ready=0;m.progress=3;m.segment=.5f;m.lean=-.8f;m.turn=-.8f;m.scene.clock=2;
+        shot(dir,"111-cart-left",c,L,w,h,ss);
+        int gentle=0,sharp=0;
+        for(int i=1;i<CaveCart.TRACK;i++){
+            if(Math.abs(CaveCart.bend(i))<Math.abs(CaveCart.bend(gentle)))gentle=i;
+            if(Math.abs(CaveCart.bend(i))>Math.abs(CaveCart.bend(sharp)))sharp=i;
         }
+        m.progress=gentle;m.segment=CaveCart.SEGMENT*.7f;m.turn=CaveCart.curve(gentle+.7f);m.lean=m.turn;
+        shot(dir,"111-cart-gentle-bank",c,L,w,h,ss);
+        m.progress=sharp;m.turn=CaveCart.curve(sharp+.7f);m.lean=m.turn;
+        shot(dir,"111-cart-sharp-bank",c,L,w,h,ss);
+        m.progress=5;m.lean=.8f;m.turn=.8f;m.scene.clock=3;
+        shot(dir,"111-cart-right",c,L,w,h,ss);
+        m.balance=.85f;m.lean=-.5f;m.scene.rumble=.6f;
+        shot(dir,"111-cart-danger",c,L,w,h,ss);
+        m.phase=CaveCart.REPORT;m.spilled=true;m.scene.spillAge=.32f;
+        shot(dir,"111-cart-spill",c,L,w,h,ss);
+        m.progress=14;m.begin(c);shot(dir,"111-cart-resume",c,L,w,h,ss);
+        m.progress=CaveCart.TRACK;m.begin(c);c.update(.01f,L);
+        shot(dir,"111-cart-reward",c,L,w,h,ss);
     }
 
     private static void caveFrames(File dir, Layout L, int w, int h, int ss) throws Exception {
@@ -311,7 +333,7 @@ final class Preview {
         }
 
         caveFrames(dir,L,w,h,ss);
-        bandFrames(dir,L,w,h,ss);
+        cartFrames(dir,L,w,h,ss);
         miningFrames(dir,L,w,h,ss);
         caveCollectFrames(dir,L,w,h,ss);
 

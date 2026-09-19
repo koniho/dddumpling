@@ -216,8 +216,10 @@ public class MainActivity extends Activity implements GameCore.Store {
         prefs.edit().putInt(KEY_COLLECT_TOTAL, total).apply();
     }
 
-    @Override public int loadMineTrack() { return prefs.getInt("mineTrack", Math.max(0,Math.min(5,loadMineCarts()))*CaveMining.TRACK/5); }
-    @Override public void saveMineTrack(int progress) { prefs.edit().putInt("mineTrack", progress).apply(); }
+    @Override public boolean loadCaveMiningNext() { return prefs.getBoolean("caveMiningNext",false); }
+    @Override public void saveCaveMiningNext(boolean mining) { prefs.edit().putBoolean("caveMiningNext",mining).apply(); }
+    @Override public int loadCartTrack() { return prefs.getInt("mineTrack", 0); }
+    @Override public void saveCartTrack(int progress) { prefs.edit().putInt("mineTrack", progress).apply(); }
     @Override public int loadMineCarts() { return prefs.getInt("mineCarts", 0); }
     @Override public void saveMineCarts(int carts) { prefs.edit().putInt("mineCarts", carts).apply(); }
 

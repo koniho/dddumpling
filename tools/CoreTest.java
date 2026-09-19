@@ -26,6 +26,7 @@ final class CoreTest {
         group("Cave Intro", () -> TestCaveIntro.all(L));
         group("Cave", () -> TestCave.all(L));
         group("Cave Band", () -> TestCaveBand.all(L));
+        group("Cave Cart", () -> TestCaveCart.all(L));
         group("Cave Mining", () -> TestCaveMining.all(L));
         group("Mystery pickups", () -> TestMystery.all(L));
         group("Linked pairs", () -> TestLinkedPairs.all(L));

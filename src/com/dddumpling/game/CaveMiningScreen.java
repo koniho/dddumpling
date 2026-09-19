@@ -1,97 +1,86 @@
 package com.dddumpling.game;
 
-/** The incoming rail bends and the passengers' lean share the ride's signed turn. */
+/** The lantern's shrinking, fading pool is the clock; a full rock pile replaces the key prompt. */
 final class CaveMiningScreen extends Draw {
     static float field(Layout L){return L.deckTop-L.playTop;}
-    static float railX(CaveMining m,float z){
-        float ahead=(1-z)*2.2f;
-        float total=0,at=m.progress+m.segment/CaveMining.SEGMENT;
-        for(int i=0;i<16;i++)total+=CaveMining.curve(at+ahead*(i+.5f)/16);
-        return .5f+total/16*ahead*.17f;
+    static float cartY(Layout L){return CaveMiningScene.ground(L)-L.w*.07f;}
+    static boolean inCart(CaveMining m,Layout L,float x,float y) {
+        return Math.abs(x-m.cartX*L.w)<L.w*.24f && Math.abs(y-cartY(L))<L.w*.23f
+                && y<L.deckTop && y>L.playTop;
     }
-    static void draw(Painter p,GameCore c,Layout L){
-        CaveMining m=c.mining;float w=L.w,top=L.playTop,h=field(L),s=L.unit,t=m.scene.clock;
-        p.fillRect(0,0,w,L.h,0xFF100F1D);
+    static float light(CaveMining m){return Math.max(0,Math.min(1,m.left/CaveMining.TIME));}
+    static void draw(Painter p,GameCore c,Layout L) {
+        CaveMining m=c.mining;float w=L.w,top=L.playTop,h=field(L),s=L.unit,light=light(m);
+        p.fillRect(0,0,w,L.h,0xFF141321);
         p.save();p.clipRect(0,top,w,L.deckTop);
-        p.translate((float)Math.sin(t*91)*w*.008f*m.scene.rumble,(float)Math.sin(t*113)*w*.006f*m.scene.rumble);
-        float vy=top+h*.18f;
-        p.fillEllipse(w*.5f,vy,w*.42f,h*.72f,0xFF262536);
-        for(int i=12;i>=0;i--){
-            float z=(i/13f+t*.32f)%1;z=z*z;
-            float cx=railX(m,z)*w,y=vy+h*.79f*z,rx=w*(.10f+z*.64f),ry=h*(.1f+z*.60f);
-            p.polyline(new float[]{cx-rx,y+ry*.35f,cx-rx*.93f,y-ry*.48f,cx-rx*.48f,y-ry,cx+rx*.22f,y-ry*1.12f,cx+rx*.82f,y-ry*.65f,cx+rx,y+ry*.35f},Glyph.mix(0xFF302B3E,0xFF786353,z),w*(.009f+.016f*z));
-            if(i%3==0){float x=cx-rx*.81f,yy=y-ry*.39f;
-                p.fillCircle(x,yy,w*(.012f+.023f*z),0xFFBDEAD8);
-                p.fillCircle(x,yy,w*(.029f+.045f*z),0x226DDDC6);
-            }
-        }
-        p.fillPoly(new float[]{w*.35f,vy,w*.65f,vy,w*1.25f,top+h,w*-.25f,top+h},0xFF3A3038);
-        for(int i=0;i<26;i++){
-            float z=(i/26f+t*.56f)%1;z=z*z;
-            float x=railX(m,z)*w,y=vy+h*.79f*z,r=w*(.018f+z*.32f);
-            p.line(x-r,y,x+r,y,0xFF8B6C5B,w*(.003f+z*.02f));
-        }
-        for(int side=-1;side<=1;side+=2){
-            float[] points=new float[82];
-            for(int j=0;j<=40;j++){float z=j/40f;points[j*2]=railX(m,z)*w+side*w*(.012f+.245f*z);points[j*2+1]=vy+h*.79f*z;}
-            p.polyline(points,0xFFB7B9CF,w*.012f);p.polyline(points,0xFFECE1C2,w*.003f);
-        }
-        for(int i=0;i<18;i++){
-            float z=(hash(i*43)+t*(.6f+hash(i)*.3f))%1,side=i%2==0?-1:1;
-            float x=w*(.5f+side*(.28f+z*.28f)),y=top+h*(.2f+z*.8f);
-            p.line(x,y,x+side*w*.06f*z,y+h*.12f*z,Glyph.withAlpha(0xFFE9C394,(int)(z*110)),w*.004f);
-        }
-        if(m.progress>=CaveMining.TRACK-2 || m.won){
-            float z=m.won?.7f:Math.max(.06f,(m.progress+m.segment/CaveMining.SEGMENT-(CaveMining.TRACK-2))*.35f);
-            float gx=railX(m,z)*w,gy=vy+h*.79f*z,gr=w*(.06f+.27f*z);
-            p.line(gx-gr,gy,gx-gr,gy-gr*1.5f,GOLD,w*.014f);
-            p.line(gx+gr,gy,gx+gr,gy-gr*1.5f,GOLD,w*.014f);
-            for(int i=0;i<10;i++)for(int row=0;row<2;row++)
-                p.fillRect(gx-gr+i*gr*.2f,gy-gr*1.5f+row*gr*.2f,gx-gr+(i+1)*gr*.2f,gy-gr*1.5f+(row+1)*gr*.2f,(i+row)%2==0?INK:0xFF30283B);
-        }
-        float x=railX(m,.684f)*w,y=top+h*.72f+(float)Math.sin(t*39)*w*.004f,tilt=m.balance*.18f-m.lean*.08f,r=w*.235f;
-        boolean panic=Math.abs(m.balance)>.52f;
-        for(int i=0;i<3;i++){
-            float dx=(i-1)*r*.58f+m.lean*r*.22f-m.balance*r*.19f,dy=-r*.53f+dx*tilt;
-            if(m.spilled){float a=Math.max(0,m.scene.spillAge-i*.055f);dx-=Math.signum(m.balance)*w*a*(.65f+i*.14f);dy+=w*(-a*1.65f+a*a*2.3f);}
-            float rr=r*.32f;
-            for(int side=-1;side<=1;side+=2)p.line(x+dx+side*rr*.65f,y+dy,x+dx+side*rr*1.3f,y+dy-rr*(panic||m.spilled?1.1f:.2f),0xFFFFDDA8,w*.013f);
-            CaveDumpling.draw(p,i==1?c.caveChoice:i+2,x+dx,y+dy,rr,1+(float)Math.sin(t*22+i)*.05f,t,panic||m.spilled);
-        }
-        p.fillPoly(new float[]{x-r,y-r*.2f-r*tilt,x+r,y-r*.2f+r*tilt,x+r*.8f,y+r*.43f+r*tilt,x-r*.8f,y+r*.43f-r*tilt},0xFF956B80);
-        p.line(x-r,y-r*.2f-r*tilt,x+r,y-r*.2f+r*tilt,0xFFF1C79B,w*.018f);
-        for(int side=-1;side<=1;side+=2){float wx=x+side*r*.65f,wy=y+r*.52f+side*r*tilt;
-            p.fillCircle(wx,wy,r*.20f,0xFF191B2B);p.strokeCircle(wx,wy,r*.20f,0xFFB9C8D0,w*.011f);
-            p.line(wx,wy,wx+(float)Math.cos(t*24)*r*.14f,wy+(float)Math.sin(t*24)*r*.14f,GOLD,w*.005f);
-            if(panic)for(int i=0;i<8;i++){float a=(t*4+i*.125f)%1;
-                float sx=wx-side*w*a*.13f,sy=wy+w*a*a*.17f;
-                p.line(sx,sy,sx+side*w*.02f,sy-w*.025f,GOLD,w*.004f*(1-a));}
-        }
-        if(panic)p.polyline(new float[]{w*.012f,top+w*.012f,w*.012f,L.deckTop-w*.012f,w*.988f,L.deckTop-w*.012f,w*.988f,top+w*.012f},Glyph.withAlpha(ROSE,(int)(100+70*Math.sin(t*15))),w*.015f);
+        float shake=m.scene.shake;
+        p.translate((float)Math.sin(m.scene.clock*91)*w*.008f*shake,(float)Math.sin(m.scene.clock*113)*w*.005f*shake);
+        m.scene.draw(p,c,L);
         p.restore();
-        p.text("CART RUSH",w*.5f,top+s*.5f,type(s*.8f),INK,Painter.CENTER,true);
-        float barY=top+h*.105f;
-        p.line(w*.15f,barY,w*.85f,barY,0xFF4A415A,w*.015f);
-        float done=m.won?1:m.progress/(float)CaveMining.TRACK;
-        p.line(w*.15f,barY,w*(.15f+.70f*done),barY,GOLD,w*.015f);
-        p.fillCircle(w*(.15f+.70f*done),barY,w*.018f,GOLD);
-        if(m.phase==CaveMining.REPORT){
-            p.text(m.won?"TRACK COMPLETE!":"PROGRESS SAVED",w*.5f,top+h*.30f,type(s*.72f),GOLD,Painter.CENTER,true);
-            if(m.won)Trinket.draw(p,c.prize,w*.5f,top+h*.46f,w*.075f,t,true,1);
-        }else{
-            float next=CaveMining.bend(m.progress);
-            arrow(p,w*.5f,top+h*.29f,w*.065f,next<0?-1:1,GOLD);
-            p.text(m.ready>0?"LEAN INTO THE TURN":"HOLD TO LEAN",w*.5f,top+h*.91f,type(s*.55f),INK,Painter.CENTER,true);
-            for(int side=-1;side<=1;side+=2){
-                int col=m.intent*side>.2f?GOLD:0xFF8D829F;
-                arrow(p,w*(.5f+side*.33f),top+h*.81f,w*.052f,side,col);
+        p.fillRect(0,0,w,L.deckTop,Glyph.withAlpha(0xFF060713,(int)((1-light)*155)));
+        lantern(p,w*.13f,top+h*.30f,w*.037f,light,c.clock);
+        p.text("DUMPLING MINE",w*.5f,top+s*.5f,type(s*.78f),INK,Painter.CENTER,true);
+        if(c.bonusParading()){Parade.draw(p,c,L,Math.min(1,c.paradeTimer/.35f));return;}
+        if(m.phase==CaveMining.DIG) {
+            p.save();p.translate((float)Math.sin(m.scene.clock*91)*w*.008f*shake,(float)Math.sin(m.scene.clock*113)*w*.005f*shake);
+            float nr=w*.043f,x=CaveMiningScene.wallX(m)*w;
+            for(int i=0;i<m.length;i++) {
+                float y=CaveMiningScene.promptY(m,L,i/(float)(m.length-1));
+                Painter q=i==m.pos?p:new OpacityPainter(p,.25f);
+                q.fillCircle(x,y,nr*1.28f,0xFF241A24);
+                if(i<m.pos)CaveArt.tumbling(q,x,y,nr,i*77,255,0);
+                else Kawaii.draw(q,m.sequence[i],x,y,nr,Glyph.COLOR[m.sequence[i]],1,0);
+                if(i==m.pos)q.strokeCircle(x,y,nr*1.28f,m.bad>0?ROSE:GOLD,w*.005f);
             }
+            p.restore();
+        } else if(m.phase==CaveMining.FULL) {
+            // No sequence and no live keyboard while the cart is waiting for a swipe.
+            p.text("SWIPE THE PILE!",w*.5f,top+h*.17f,type(s*.78f),GOLD,Painter.CENTER,true);
+            for(int side=-1;side<=1;side+=2) {
+                float x=m.cartX*w+side*w*(.23f+.015f*(float)Math.sin(c.clock*4));
+                p.polyline(new float[]{x-side*w*.022f,cartY(L)-w*.022f,x,cartY(L),x-side*w*.022f,cartY(L)+w*.022f},GOLD,w*.01f);
+            }
+        } else if(m.phase==CaveMining.REPORT) {
+            p.text(m.won?"A PRECIOUS FIND!":"MORE NEXT TIME",w*.5f,top+h*.17f,type(s*.67f),m.won?GOLD:INK,Painter.CENTER,true);
+            if(m.won)Trinket.draw(p,c.prize,w*.5f,top+h*.58f,w*.085f,c.clock,true,1);
         }
+        int delivered=m.won?CaveMining.CARTS:m.carts;
+        for(int i=0;i<CaveMining.CARTS;i++)miniCart(p,w*(.25f+i*.125f),top+h*.86f,w*.035f,i<delivered);
         p.fillRect(0,L.deckTop,w,L.h,0xFF221E31);
-        Renderer.keys(m.phase==CaveMining.RIDE?p:new OpacityPainter(p,.2f),c,L);
-        if(c.bonusParading())Parade.draw(p,c,L,Math.min(1,c.paradeTimer/.35f));
+        Renderer.keys(m.phase==CaveMining.DIG?p:new OpacityPainter(p,.20f),c,L);
     }
-    private static void arrow(Painter p,float x,float y,float r,int side,int color){
-        p.polyline(new float[]{x-side*r*.35f,y-r*.7f,x+side*r*.5f,y,x-side*r*.35f,y+r*.7f},color,r*.22f);
+    static void rock(Painter p,float x,float y,float r,int col) {
+        p.fillPoly(new float[]{x-r,y+r*.3f,x-r*.65f,y-r*.6f,x+r*.25f,y-r,x+r,y-r*.2f,x+r*.65f,y+r*.65f,x-r*.3f,y+r},col);
+        p.line(x-r*.6f,y-r*.5f,x+r*.15f,y-r*.8f,Glyph.withAlpha(INK,85),r*.14f);
+    }
+    static void cart(Painter p,float x,float y,float r,int loads,float[] falling,float clock,float moving) {
+        for(int i=0;i<loads;i++)if(falling==null || falling[i]<=0) {
+            float rx=x+r*((i%3)-1)*.58f,ry=y-r*(.32f+(i/3)*.38f);
+            rock(p,rx,ry,r*.39f,0xFF9697AB);
+        }
+        p.fillPoly(new float[]{x-r,y-r*.30f,x+r,y-r*.30f,x+r*.77f,y+r*.42f,x-r*.77f,y+r*.42f},0xFF9B6375);
+        p.line(x-r,y-r*.30f,x+r,y-r*.30f,0xFFDAA0AB,r*.10f);
+        for(int side=-1;side<=1;side+=2) {
+            float wx=x+side*r*.58f,wy=y+r*.53f;
+            p.fillCircle(wx,wy,r*.22f,0xFF252331);p.strokeCircle(wx,wy,r*.22f,0xFFBAB8C7,r*.055f);
+            float angle=moving*14;
+            p.line(wx,wy,wx+(float)Math.cos(angle)*r*.17f,wy+(float)Math.sin(angle)*r*.17f,0xFFBAB8C7,r*.055f);
+            p.fillCircle(x+side*r*.65f,y+r*.02f,r*.045f,0xFFE0B5A8);
+        }
+    }
+    private static void miniCart(Painter p,float x,float y,float r,boolean full) {
+        cart(new OpacityPainter(p,full?1f:.28f),x,y,r,full?5:0,null,0,0);
+    }
+    private static void lantern(Painter p,float x,float y,float r,float light,float clock) {
+        p.line(x,y-r*2.5f,x,y-r*1.35f,0xFFBDA77D,r*.12f);
+        p.strokeCircle(x,y-r*1.05f,r*.40f,0xFFE0BE80,r*.12f);
+        p.fillPoly(new float[]{x-r*.7f,y-r*.7f,x+r*.7f,y-r*.7f,x+r*.85f,y+r*.7f,x-r*.85f,y+r*.7f},0xFF4B3540);
+        p.fillRect(x-r*.54f,y-r*.52f,x+r*.54f,y+r*.50f,Glyph.mix(0xFF392C38,0xFFFFC76A,light));
+        if(light>0) {
+            float f=r*(.18f+.55f*light)*(1+.05f*(float)Math.sin(clock*11));
+            p.fillEllipse(x,y,f*.47f,f,0xFFFFEDB0);
+            p.fillCircle(x,y+f*.30f,f*.25f,INK);
+        }
+        p.line(x-r*.9f,y+r*.7f,x+r*.9f,y+r*.7f,0xFFCFAD78,r*.18f);
     }
 }

@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** Cave games alternate by stage without changing the ordinary interlude's saved alternation. */
+/** Cave games switch only after success without changing the ordinary interlude's saved alternation. */
 final class CaveInterlude {
     static void playtest(GameCore c,Layout L,boolean mining) {
         if(!BuildFlags.DEVELOPER || c.state!=GameCore.PLAY || c.pendingBonus || c.starting())return;
@@ -9,21 +9,26 @@ final class CaveInterlude {
         c.jumpToStage(mining?22:21,L);
         c.bossPrizePending=false;
         c.spawnedThisStage=c.resolvedThisStage=c.stageQuota();
+        select(c,mining);
         Interlude.enterBonus(c,L);
     }
-    static boolean active(GameCore c) {return c.band.active || c.mining.active;}
-    static boolean miningStage(int stage) {return Cave.stage(stage) && (stage-21)%2!=0;}
+    static boolean active(GameCore c) {return c.cart.active || c.band.active || c.mining.active;}
+    static void select(GameCore c,boolean mining) {
+        c.caveMiningNext=mining;
+        if(c.store!=null)c.store.saveCaveMiningNext(mining);
+    }
     static boolean enter(GameCore c) {
         if(!Cave.stage(c.stage))return false;
-        c.band.stop(c);c.mining.stop();
+        c.band.stop(c);c.mining.stop();c.cart.stop();
         c.starBonus=false;c.bossReward=false;c.paradeTimer=0;c.bonusTimer=1;
         c.target=c.caretOwner=null;c.power=null;c.stageByPower=false;
-        if(miningStage(c.stage)){c.mining.begin(c);c.startMusic();}
-        else c.band.begin(c);
+        if(c.caveMiningNext){c.mining.begin(c);c.startMusic();}
+        else {c.cart.begin(c);c.startMusic();}
         return true;
     }
     static boolean update(GameCore c,float elapsed) {
         if(c.mining.active)return mining(c,elapsed);
+        if(c.cart.active)return cart(c,elapsed);
         CaveBand b=c.band;
         b.update(c,elapsed);
         if(b.finished && !b.paid) {
@@ -48,12 +53,28 @@ final class CaveInterlude {
                 c.score+=GameCore.FREE_BONUS;
                 if(c.lives<GameCore.START_LIVES)c.lives++;
                 Interlude.awardMiningPrize(c);
-                m.progress=0;m.save(c);
+                m.carts=0;m.save(c);select(c,false);
                 if(c.sound!=null)c.sound.achievement();
-            } else if(c.sound!=null)c.sound.tally(m.progress);
+            } else if(c.sound!=null)c.sound.tally(m.carts);
         }
         c.bonusTimer=m.phase==CaveMining.REPORT?m.report:1;
         if(m.phase!=CaveMining.REPORT || m.report>0 || parade(c,dt))return false;
+        m.stop();return true;
+    }
+    private static boolean cart(GameCore c,float dt) {
+        CaveCart m=c.cart;m.update(c,dt);
+        if(m.phase==CaveCart.REPORT && !m.paid) {
+            m.paid=true;
+            if(m.won) {
+                c.score+=GameCore.FREE_BONUS;
+                if(c.lives<GameCore.START_LIVES)c.lives++;
+                Interlude.awardBandPrize(c);
+                m.progress=0;m.save(c);select(c,true);
+                if(c.sound!=null)c.sound.achievement();
+            } else if(c.sound!=null)c.sound.tally(m.progress);
+        }
+        c.bonusTimer=m.phase==CaveCart.REPORT?m.report:1;
+        if(m.phase!=CaveCart.REPORT || m.report>0 || parade(c,dt))return false;
         m.stop();return true;
     }
     private static boolean parade(GameCore c,float dt) {
@@ -63,6 +84,7 @@ final class CaveInterlude {
     }
     static void press(GameCore c,int g,float inputAge) {
         if(c.mining.active){c.mining.press(c,g);return;}
+        if(c.cart.active){c.cart.press(c,g);return;}
         if(!Roster.active(c.playRosterFull(),g))return;
         int note=c.band.press(c,g,inputAge);
         c.keyPress[g]=1;

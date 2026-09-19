@@ -38,16 +38,16 @@ final class TestSettings extends Check {
         }
         for(boolean mine:new boolean[]{false,true}) {
             GameCore run=new GameCore(new Mem(),220L);run.startGame();run.jumpToStage(20,L);
-            run.mining.progress=2;run.band.charge=7;run.starNext=true;
+            run.mining.carts=2;run.cart.progress=7;run.starNext=true;
             run.openSettings();run.settingsPage=1;run.settingsTab=SettingsUi.MINIGAMES;
             SettingsUi ui=new SettingsUi();ui.compute(L,SettingsUi.MINIGAMES);
             int col=mine?1:0;
             float x=(ui.testChipL(col,2)+ui.testChipR(col,2))*.5f,y=ui.caveY+ui.testH*.5f;
             SettingsInput input=new SettingsInput();input.touch(run,L,0,1,x,y);input.touch(run,L,1,1,x,y);
             check("cave chip launches requested game "+mine,run.state==GameCore.BONUS && !run.settingsOpen
-                    && run.band.active==!mine && run.mining.active==mine && run.stage==(mine?22:21));
+                    && run.cart.active==!mine && run.mining.active==mine && run.stage==(mine?22:21));
             check("cave shortcut clears boss and retains progress "+mine,!run.boss.active()
-                    && run.enemies.isEmpty() && run.mining.progress==2 && run.band.charge==7 && run.starNext);
+                    && run.enemies.isEmpty() && run.mining.carts==2 && run.cart.progress==7 && run.starNext);
             for(int tick=0;tick<4 && run.state==GameCore.BONUS;tick++)run.update(100,L);
             check("cave shortcut exits into next expedition "+mine,run.state==GameCore.PLAY
                     && run.stage==(mine?23:22) && !CaveInterlude.active(run));

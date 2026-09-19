@@ -444,7 +444,7 @@ volume, and covers its mouth when muted. Waves and notes stop when muted. Mute r
 are saved on the device and applied to audio on launch.
 
 The developer-only **Developer** tab groups **Run** (speed, stage, next-run keys, End
-Run), **Powers** (frenzies and debuffs), **Minigames** (Star Path, Steamer, Cave Band, Cart Rush, difficulty), and **Progress**
+Run), **Powers** (frenzies and debuffs), **Minigames** (Star Path, Steamer, Cart Rush, Dumpling Mine, difficulty), and **Progress**
 (lands, release book, collection). Stage changes, End Run and playtests are disabled outside active
 play, including interludes; settings never starts a run implicitly.
 
@@ -455,44 +455,46 @@ public preferences, character handles, and shared native input; `SettingsUi` and
 the developer groups.
 
 
-## Cave band interlude
-
-**Cave Band** alternates with Cart Rush after cave expeditions, starting with the band at stage 21. The explorer dumpling plays
-lead guitar alongside a drummer, bassist, and keyboard player. Character notes scroll right to
-left; press the matching deck key at the gold strike line. Four drumstick ticks count in each
-performance. Eight hanging crystals extinguish bar by bar, showing the song's remaining time.
-
-Three original eight-bar songs rotate: **Crystal Crunch** (90/110/130 BPM), **Tunnel Trouble**
-(110/135/160 BPM), and **Bat Outta Bedrock** (125/150/175 BPM). Tempo changes after bars three
-and six. The score, note positions, and judging share the audio timeline; pause freezes all three.
-The normal hit window is ±140 ms; Kids Mode widens it without slowing the music. Misses do not
-cost lives. Forty successful notes charge a collectible reward and one life, capped at the usual
-maximum. Partial charge carries between cave interludes in the same run. The ordinary Steamer /
-Star Path alternation is preserved outside caves.
-
-`CaveSong` owns the scores and synthesized music; `CaveBand` owns judging and progress;
-`CaveBandScreen` draws the band; `CaveInterlude` selects and closes cave minigames.
-See [the cave minigame plan](docs/plans/cave-minigames.md) for both games.
-
-
 ## Cart Rush interlude
 
-**Cart Rush** alternates with Cave Band, beginning after cave stage 22. Three dumplings ride a
-minecart down a winding tunnel. Hold or drag the play field left/right, or tap keys in the left/right
-half of the deck, to lean into each bend. Incoming rails and a gold arrow show the turn; passengers
-slide, panic, and flail as balance is lost. Wheel scrape, sparks, shake, and haptics warn before a spill.
+**Cart Rush** replaces Cave Band and is the first cave minigame. Three
+dumplings ride a winding track. Hold or drag left/right in the field, or tap the matching half of
+the keyboard, to lean into bends. Rails and a gold arrow show turns; sparks, wheel scrape,
+screen shake, haptics, and frightened passengers warn before a spill.
 
-Twenty completed track sections earn a Burrow Mole and the normal bonus reward. Each completed
-section is saved immediately; spills and ten-second visits retain progress, including after restarting.
-An unfinished section restarts on the next visit. No steering cannot accumulate progress. Legacy
-mining carts migrate at four track sections per cart. Reward collection resets the saved track.
+Twenty track sections earn a Cave Snake and the normal bonus reward. Completed sections save
+immediately across attempts and app restarts. Each visit lasts up to ten seconds; partial sections
+restart next visit. Mining carts and ride progress are independent. Success resets only the ride.
+A failed attempt keeps the same game selected; only completion switches games. That selection
+persists across new runs and app restarts.
+`CaveCart`, `CaveCartInput`, `CaveCartScene`, and `CaveCartScreen` own this game.
 
-`CaveMining`, `CaveMiningInput`, `CaveMiningScene`, and `CaveMiningScreen` own ride rules,
-field steering, feedback, and perspective rendering. The old identifiers retain native integration.
-Developer Cave Band and Cart Rush chips jump an active run to the stage 21 or 22 interlude.
+## Dumpling Mine interlude
+
+**Dumpling Mine** follows a successful Cart Rush. Complete the displayed
+character sequence down five wall segments to build a **rock pile**. All prompts appear down the wall, with only the current one in full color. Each correct hit
+turns that prompt into a rock flying toward the parked cart; completed slots show faded rocks.
+Rocks fly left, and the explorer walks right to the next wall. The first cart repeats a
+two-key sequence; subsequent carts use three, then four distinct keys. Four remains the maximum.
+The sequence stays fixed for that cart. Wrong presses restart only the current sequence and cost
+no life. Completed walls remain in the pile during that attempt.
+
+A full pile hides the prompt and dims the keyboard. Swipe the pile left or right; cheering
+dumpling friends load it into a cart and pull it rapidly offscreen. Keys cannot add rocks while
+it is full or being pushed. Delivered carts are saved immediately and survive new runs and app
+restarts. Five delivered carts earn one collectible and a capped extra life, then reset the saved
+cart count for the next reward.
+
+The **mining lantern** fades, its flame shrinks, and its pool of light contracts over 18 seconds
+of mining/swiping time. Walking between walls and helper animations do not spend that time. Pause and settings freeze
+it. Time running out ends the attempt without taking a life; only delivered carts carry forward.
+`CaveMining`, `CaveMiningInput`, and `CaveMiningScreen` own rules, cart input, and rendering.
+
+Developer Cart Rush and Dumpling Mine chips jump an active run to the stage 21 or 22 interlude.
+They retain track progress and delivered minecarts; finishing continues into the next cave expedition.
 
 **Burrow Moles** are five kawaii minecart rewards: Cocoa Dig, Rosy Scoop, Sleepy Shovel,
-Starnose, and Golden Burrow. **Cave Snakes** are five Cave Band rewards: Mint Noodle,
+Starnose, and Golden Burrow. **Cave Snakes** are five Cart Rush rewards: Mint Noodle,
 Peach Coil, Berry Boa, Moon Ribbon, and Golden Hiss. Both have dedicated display-case rows,
 family stories, mystery silhouettes, and the Cave Friend tier. The catalogue has 59 entries;
 existing collectible IDs and normal reward pools stay unchanged. `CaveCollect` draws the new families.

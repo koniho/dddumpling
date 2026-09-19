@@ -124,6 +124,7 @@ public final class IOSGame {
             return true;
         }
 
+        if (handleCart(ev, action)) return true;
         if (handleMining(ev, action)) return true;
         if (handleCave(ev, action)) return true;
         if (handleBonusSwipe(ev, action)) return true;
@@ -213,6 +214,23 @@ public final class IOSGame {
     private boolean handleMining(IOSTouch ev,int action) {
         CaveMiningInput input=core.mining.input;
         if(!core.mining.active){input.release();return false;}
+        int i=ev.getActionIndex();
+        if(action==IOSTouch.ACTION_DOWN || action==IOSTouch.ACTION_POINTER_DOWN)
+            return input.down(core,layout,ev.getPointerId(i),ev.getX(i),ev.getY(i));
+        if(action==IOSTouch.ACTION_MOVE && input.pointer>=0) {
+            int owner=ev.findPointerIndex(input.pointer);
+            if(owner>=0)return input.move(core,layout,input.pointer,ev.getX(owner),ev.getY(owner));
+            input.release();return true;
+        }
+        if(action==IOSTouch.ACTION_CANCEL)input.release();
+        else if(action==IOSTouch.ACTION_UP || action==IOSTouch.ACTION_POINTER_UP)
+            input.up(ev.getPointerId(i));
+        return false;
+    }
+
+    private boolean handleCart(IOSTouch ev,int action) {
+        CaveCartInput input=core.cart.input;
+        if(!core.cart.active){input.release();return false;}
         int i=ev.getActionIndex();
         if(action==IOSTouch.ACTION_DOWN || action==IOSTouch.ACTION_POINTER_DOWN)
             return input.down(core,layout,ev.getPointerId(i),ev.getX(i),ev.getY(i));
@@ -643,7 +661,7 @@ public final class IOSGame {
         }
         boolean playing = core.state == GameCore.PLAY && !core.paused;
         core.update(Math.min(elapsed, .05f), elapsed, layout);
-        int caveFeedback=Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback());
+        int caveFeedback=Math.max(core.cart.scene.takeFeedback(),Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback()));
         if(caveFeedback>0 && !core.paused && !core.settingsOpen)tick();
         for (int i = 0, n = core.releaseNotes.takeFeedback(); i < n; i++) tick();
         for (int i = 0; i < core.starPickups; i++) tick();
