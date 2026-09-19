@@ -521,9 +521,12 @@ Peach Coil, Berry Boa, Moon Ribbon, and Golden Hiss. Both have dedicated display
 family stories, mystery silhouettes, and the Cave Friend tier. The catalogue has 59 entries;
 existing collectible IDs and normal reward pools stay unchanged. `CaveCollect` draws the new families.
 
-The first normal-stage threat on the last life pauses play for a **desperation swipe lesson**.
+The first normal-stage threat on the last life pauses just before reaching the danger line for a **desperation swipe lesson**.
+The text-free lesson shows the shared instructional finger repeatedly swiping upward from the normal bar,
+which remains uncovered by the tutorial dimming.
 Swipe upward from the highlighted bar to perform the real push-back and resume; taps cannot
-dismiss it. Completion is saved across runs and app restarts. Boss fights and cave expeditions
+dismiss it. Any successful desperation swipe marks the lesson learned, including one used before
+the tutorial appears. Completion is saved across runs and app restarts. Boss fights and cave expeditions
 are excluded, and a spent swipe defers the lesson until a later stage. `PushLesson` owns the
 prompt, freeze, and shared native gesture.
 Developer settings → Progress → **RESET SWIPE** clears the saved lesson completion flag.

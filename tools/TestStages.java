@@ -230,10 +230,20 @@ final class TestStages extends Check {
         check("settings do not open lesson", !c.pushLesson.active);
         c.settingsOpen=false; c.pushUsed=true; c.update(DT,L);
         check("spent swipe cannot trap player", !c.pushLesson.active);
-        c.pushUsed=false; c.update(DT,L);
+        c.pushUsed=false; e.attacking=false; e.speed=0;
+        e.y=L.dangerY-(L.dangerY-L.playTop)*GameCore.WARN_BAND*.5f;
+        c.update(DT,L);
+        check("lesson waits beyond the old halfway warning threshold", !c.pushLesson.active);
+        e.y=PushLesson.triggerY(L)-1f; c.update(DT,L);
+        check("lesson leaves approaching words moving until the closer threshold", !c.pushLesson.active);
+        e.y=PushLesson.triggerY(L); c.update(DT,L);
+        check("closer threshold still precedes the lunge", !e.attacking && e.y+L.enemyR<L.dangerY);
         check("last-life threat opens lesson before damage", c.pushLesson.active && c.lives==1);
-        float y=e.y, time=c.time, mode=c.modeLeft;
+        float y=e.y, time=c.time, mode=c.modeLeft, lessonClock=c.pushLesson.clock;
         c.update(10f,L);
+        check("instruction clock advances while play is frozen", c.pushLesson.clock>lessonClock);
+        check("finger starts at bar and demonstrates a full upward swipe",
+                PushLesson.swipeProgress(.2f)==0f && PushLesson.swipeProgress(1.2f)==1f);
         check("lesson freezes words and simulation timers", e.y==y && c.time==time && c.modeLeft==mode);
         check("keys cannot dismiss lesson", !c.tapKey(1,L) && c.pushLesson.active);
         float x=L.w*.5f, bar=(L.dangerY+L.deckTop)*.5f, rise=L.enemyR*2;
@@ -258,6 +268,29 @@ final class TestStages extends Check {
         check("reload remembers completion", new GameCore(mem,1L).pushLesson.seen);
         c.startGame();
         check("new run remembers completion", c.pushLesson.seen && !c.pushLesson.active);
+        Mem earlySave = new Mem(); earlySave.pushLessonSeen=false;
+        GameCore early = new GameCore(earlySave, 162L);
+        early.startGame(); advance(early,L,2f); early.enemies.clear();
+        early.warnLevel=0;
+        check("unavailable swipe does not skip the lesson", !early.swipeUp(L)
+                && !early.pushLesson.seen && !earlySave.pushLessonSeen);
+        add(early,L,new int[] {1,2},PushLesson.triggerY(L));
+        early.update(DT,L);
+        check("player can discover the swipe before the last-life lesson",
+                !early.pushLesson.active && early.swipeUp(L));
+        check("self-taught swipe is saved", early.pushLesson.seen && earlySave.pushLessonSeen);
+        early.jumpToStage(2,L); early.lives=1; early.stageBanner=0;
+        add(early,L,new int[] {1,2},PushLesson.triggerY(L));
+        early.update(DT,L);
+        check("later last-life threat does not interrupt a player who already swiped",
+                !early.pushLesson.active && !early.pushUsed);
+        GameCore returned = new GameCore(earlySave,163L);
+        returned.startGame(); returned.lives=1; returned.stageBanner=0;
+        add(returned,L,new int[] {1,2},PushLesson.triggerY(L));
+        returned.update(DT,L);
+        check("self-taught swipe skips lesson after restarting", returned.pushLesson.seen
+                && !returned.pushLesson.active);
+
         mem.pushLessonSeen=false;
         GameCore boss=new GameCore(mem,2L); boss.startGame(); boss.jumpToStage(5,L);
         boss.lives=1; add(boss,L,new int[] {1,2},L.dangerY);

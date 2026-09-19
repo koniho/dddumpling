@@ -806,9 +806,17 @@ final class Preview {
         System.out.printf("danger frame: warn=%.2f harm=%.2f%n", c4.warnLevel, c4.harm());
         shot(dir, "6-danger", c4, L, w, h, ss);
 
+        float lessonY = near.y;
+        near.y = PushLesson.triggerY(L);
         c4.pushLesson.seen = false;
         c4.update(DT, L);
+        c4.pushLesson.clock = .2f;
         shot(dir, "199-push-lesson", c4, L, w, h, ss);
+        c4.pushLesson.clock = .6f;
+        shot(dir, "199-push-lesson-swipe", c4, L, w, h, ss);
+        c4.pushLesson.clock = 1.2f;
+        shot(dir, "199-push-lesson-lift", c4, L, w, h, ss);
+        near.y = lessonY;
         GameCore reset = new GameCore(store, 18L);
         reset.settingsOpen = true; reset.settingsPage = 1; reset.settingsTab = SettingsUi.PROGRESS;
         shot(dir, "200-swipe-reset", reset, L, w, h, ss);

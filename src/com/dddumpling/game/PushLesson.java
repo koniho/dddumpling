@@ -5,6 +5,14 @@ final class PushLesson extends Draw {
     boolean seen, active, ownsTouch, armed;
     float clock, startX, startY;
 
+    // Stop just before the tile reaches the line; the lunge remains a fallback for crowded hits.
+    static float triggerY(Layout L) { return L.dangerY - L.enemyR * 1.4f; }
+    private static float clamp01(float t) { return Math.max(0f, Math.min(1f, t)); }
+    static float swipeProgress(float clock) {
+        float t = clamp01((clock % 1.8f - .25f) / .9f);
+        return t * t * (3f - 2f * t);
+    }
+
     void cancelTouch() { armed = ownsTouch = false; }
     void reset() { active = false; clock = 0; cancelTouch(); }
 
@@ -12,10 +20,9 @@ final class PushLesson extends Draw {
         if (c.state != GameCore.PLAY) { reset(); return false; }
         if (!active && !seen && c.lives == 1 && !c.pushUsed && !c.settingsOpen
                 && !c.pendingBonus && !c.boss.active() && !Cave.active(c)) {
-            float band = (L.dangerY - L.playTop) * GameCore.WARN_BAND;
             for (GameCore.Enemy e : c.enemies) {
                 if (e.destroyed || e.dying || e.linkWaiting || e.slideT > 0) continue;
-                if (e.attacking || e.y >= L.dangerY - band * .5f) {
+                if (e.attacking || e.y >= triggerY(L)) {
                     Pause.release(c);
                     active = true;
                     c.warnLevel = Math.max(.5f, c.warnLevel);
@@ -53,22 +60,20 @@ final class PushLesson extends Draw {
         PushLesson lesson = c.pushLesson;
         if (!lesson.active) return;
         float s = Pause.scale(L), x = L.w * .5f;
-        float y = L.playTop + (L.dangerY - L.playTop) * .36f;
-        p.fillRect(0, 0, L.w, L.h, 0xCC100D20);
-        p.text("LAST LIFE!", x, y, type(s * .95f), GOLD, Painter.CENTER, true);
-        p.text("Swipe up from the bar", x, y + type(s * 1.5f),
-                type(s * .58f), INK, Painter.CENTER, true);
-        p.text("to push danger back.", x, y + type(s * 2.5f),
-                type(s * .54f), INK, Painter.CENTER, false);
-        p.text("Once per stage", x, y + type(s * 3.6f),
-                type(s * .44f), INK_DIM, Painter.CENTER, false);
-        p.fillRect(L.playLeft, L.dangerY, L.playRight, L.deckTop, 0xAA806026);
+        // Leave the real swipe bar uncovered so the lesson teaches its ordinary appearance.
+        p.fillRect(0, 0, L.w, L.dangerY, 0xCC100D20);
+        p.fillRect(0, L.deckTop, L.w, L.h, 0xCC100D20);
+        p.fillRect(0, L.dangerY, L.playLeft, L.deckTop, 0xCC100D20);
+        p.fillRect(L.playRight, L.dangerY, L.w, L.deckTop, 0xCC100D20);
         float base = (L.dangerY + L.deckTop) * .5f;
         float tip = base - L.enemyR * 2.7f;
         p.polyline(new float[] {x, base, x, tip}, GOLD, s * .15f);
         p.polyline(new float[] {x-s*.6f, tip+s*.65f, x, tip, x+s*.6f, tip+s*.65f},
                 GOLD, s*.15f);
-        float t = (lesson.clock % 1.5f) / 1.5f;
-        p.fillCircle(x, base - L.enemyR * 2.7f * t, s * .3f, INK);
+        float phase = lesson.clock % 1.8f;
+        float fade = Math.min(clamp01(phase / .15f),
+                clamp01((1.65f - phase) / .3f));
+        Renderer.touchHint(p, x, base - L.enemyR * 2.7f * swipeProgress(lesson.clock),
+                L.enemyR * 1.05f, (float) Math.PI * .5f, fade, lesson.clock);
     }
 }
