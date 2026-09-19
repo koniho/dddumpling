@@ -60,19 +60,11 @@ final class PushLesson extends Draw {
         PushLesson lesson = c.pushLesson;
         if (!lesson.active) return;
         float s = Pause.scale(L), x = L.w * .5f;
-        float y = L.playTop + (L.dangerY - L.playTop) * .36f;
         // Leave the real swipe bar uncovered so the lesson teaches its ordinary appearance.
         p.fillRect(0, 0, L.w, L.dangerY, 0xCC100D20);
         p.fillRect(0, L.deckTop, L.w, L.h, 0xCC100D20);
         p.fillRect(0, L.dangerY, L.playLeft, L.deckTop, 0xCC100D20);
         p.fillRect(L.playRight, L.dangerY, L.w, L.deckTop, 0xCC100D20);
-        p.text("LAST LIFE!", x, y, type(s * .95f), GOLD, Painter.CENTER, true);
-        p.text("Swipe up from the bar", x, y + type(s * 1.5f),
-                type(s * .58f), INK, Painter.CENTER, true);
-        p.text("to push danger back.", x, y + type(s * 2.5f),
-                type(s * .54f), INK, Painter.CENTER, false);
-        p.text("Once per stage", x, y + type(s * 3.6f),
-                type(s * .44f), INK_DIM, Painter.CENTER, false);
         float base = (L.dangerY + L.deckTop) * .5f;
         float tip = base - L.enemyR * 2.7f;
         p.polyline(new float[] {x, base, x, tip}, GOLD, s * .15f);
