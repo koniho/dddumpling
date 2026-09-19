@@ -187,6 +187,8 @@ final class GameCore {
         /** Lifetime steamer successes, used to retain its rising target across playthroughs. */
         int loadSteamerOpens();
         void saveSteamerOpens(int opens);
+        default int loadMineTrack() { return Math.max(0,Math.min(5,loadMineCarts()))*CaveMining.TRACK/5; }
+        default void saveMineTrack(int progress) {}
         default int loadMineCarts() { return 0; }
         default void saveMineCarts(int carts) {}
         int loadStarWins();
@@ -1431,7 +1433,7 @@ final class GameCore {
         if (store != null) {
             LandPicker.restore(this, store.loadLandState());
             caveChoice = CaveDumpling.valid(store.loadCaveChoice());
-            mining.carts = Math.max(0, Math.min(CaveMining.CARTS,store.loadMineCarts()));
+            mining.progress = Math.max(0, Math.min(CaveMining.TRACK,store.loadMineTrack()));
             best = store.loadBest();
             for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
             landBests[0] = Math.max(landBests[0], best);

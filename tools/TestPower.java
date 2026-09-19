@@ -1403,7 +1403,7 @@ final class TestPower extends Check {
             String label = i == SettingsUi.TEST_STARS ? "STAR PATH"
                     : i == SettingsUi.TEST_STEAMER ? "STEAMER"
                     : i == SettingsUi.TEST_BAND ? "CAVE BAND"
-                    : i == SettingsUi.TEST_MINE ? "DUMPLING MINE" : Power.CHIP[Power.offeredAt(i)];
+                    : i == SettingsUi.TEST_MINE ? "CART RUSH" : Power.CHIP[Power.offeredAt(i)];
             int n=i>=SettingsUi.TEST_STARS?2:Power.OFFERED.length;
             float box = ui.testChipR(0, n) - ui.testChipL(0, n);
             float wide = RasterPainter.textWidth(label, chipType);

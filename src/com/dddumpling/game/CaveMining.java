@@ -1,84 +1,69 @@
 package com.dddumpling.game;
 
-/** Delivered carts are durable; loose rocks and an unfinished sequence belong to this visit. */
+/** The former mining slot now holds a checkpointed minecart balance ride. */
 final class CaveMining {
-    static final int CARTS=5, LOADS=5, DIG=0, FULL=1, PUSH=2, REPORT=3, ADVANCE=4;
-    static final float TIME=18f, READY=1.1f, PUSH_TIME=1.25f, LOAD_TIME=.55f, WALK_TIME=.48f, REPORT_TIME=2.3f, DROP=.42f;
-    final int[] sequence=new int[4];
-    final float[] falling=new float[LOADS];
+    static final int TRACK=20, RIDE=0, REPORT=1;
+    static final float READY=1.4f, RUN_TIME=10f, SEGMENT=.95f, REPORT_TIME=2.3f, LEAN_SPEED=4.8f;
+    final CaveMiningInput input=new CaveMiningInput(this);
     final CaveMiningScene scene=new CaveMiningScene();
-    final CaveMiningInput input=new CaveMiningInput();
-    int carts,length,pos,loads,phase,direction=1;
-    float left,ready,travel,report,strike,bad,cartX=.25f,pushStart;
-    boolean active,won,paid;
-    void begin(GameCore c) {
-        active=true;won=paid=false;phase=DIG;left=TIME;ready=READY;report=travel=strike=bad=0;
-        input.release();scene.reset();newCart(c);
-        if(carts>=CARTS)finish(true);
+    int progress,phase;
+    float ready,elapsed,segment,report,lean,intent,hold,balance,aligned,turn,grace,rollTick,squealTick;
+    boolean active,won,paid,spilled;
+    void begin(GameCore c){
+        active=true;won=paid=spilled=false;phase=RIDE;ready=READY;
+        elapsed=segment=report=lean=intent=hold=balance=aligned=rollTick=squealTick=0;
+        grace=.25f;input.release();scene.reset();turn=curve(progress);
+        if(progress>=TRACK)finish(c,true,false);
     }
-    private void newCart(GameCore c) {
-        length=Math.min(4,2+carts);pos=loads=0;cartX=.25f;
-        for(int i=0;i<falling.length;i++)falling[i]=0;
-        int[] keys=new int[Roster.count(c.playRosterFull())];
-        for(int i=0;i<keys.length;i++)keys[i]=Roster.at(c.playRosterFull(),i);
-        for(int i=0;i<length;i++) {
-            int pick=i+c.rnd.nextInt(keys.length-i),key=keys[pick];keys[pick]=keys[i];keys[i]=key;
-            sequence[i]=key;
-        }
+    static float bend(int index){
+        if(index<0)return 0;
+        int side=(index%4==0||index%4==3)?-1:1;
+        return side*(.72f+.12f*Draw.hash(index*71+13));
     }
-    boolean digging() {return active && phase==DIG && ready<=0;}
-    boolean swipeReady() {return active && phase==FULL;}
-    boolean accepts(GameCore c) {return c.state==GameCore.BONUS && active && !c.paused && !c.settingsOpen;}
-    void press(GameCore c,int g) {
-        if(!accepts(c) || !digging() || !Roster.active(c.playRosterFull(),g))return;
-        c.keyPress[g]=1;
-        if(g!=sequence[pos]) {
-            pos=g==sequence[0]?1:0;bad=1;c.keyBad[g]=1;
-            if(c.sound!=null)c.sound.wrong();
-            return;
-        }
-        scene.hit(c,pos/(float)(length-1));pos++;strike=.6f;
-        if(c.sound!=null)c.sound.squish(g,1);
-        if(pos==length) {
-            pos=0;falling[loads++]=DROP;strike=1;
-            if(c.sound!=null)c.sound.clearWord();
-            phase=ADVANCE;travel=0;input.release();
-        }
+    static float curve(float at){
+        int i=(int)at;float t=Math.min(1,(at-i)/.25f);t=t*t*(3-2*t);
+        return bend(i-1)+(bend(i)-bend(i-1))*t;
     }
-    void launch(GameCore c,int dir) {
-        if(!accepts(c) || !swipeReady())return;
-        direction=dir<0?-1:1;pushStart=cartX;travel=0;phase=PUSH;input.release();
-        // Save when the swipe commits, so leaving during the helpers' animation cannot lose a cart.
-        carts=Math.min(CARTS,carts+1);save(c);
-        if(c.sound!=null)c.sound.paradeJoin();
+    boolean accepts(GameCore c){return active && c.state==GameCore.BONUS && !c.paused && !c.settingsOpen && phase==RIDE;}
+    void steer(float value){intent=Math.max(-1,Math.min(1,value));hold=.7f;}
+    void press(GameCore c,int g){
+        if(!accepts(c)||!Roster.active(c.playRosterFull(),g))return;
+        int count=Roster.count(c.playRosterFull()),index=0;
+        while(index<count && Roster.at(c.playRosterFull(),index)!=g)index++;
+        steer(index<count/2?-.85f:.85f);c.keyPress[g]=1;
     }
-    void save(GameCore c) {if(c.store!=null)c.store.saveMineCarts(carts);}
-    void update(GameCore c,float dt) {
-        scene.update(c,dt);
-        strike=Math.max(0,strike-dt*3);bad=Math.max(0,bad-dt*4);
-        for(int i=0;i<loads;i++)falling[i]=Math.max(0,falling[i]-dt);
+    void save(GameCore c){if(c.store!=null)c.store.saveMineTrack(progress);}
+    void update(GameCore c,float dt){
+        if(!active)return;
+        // Fixed substeps make a delayed frame obey the same balance and checkpoint rules.
+        while(dt>0){float step=Math.min(dt,1f/120);tick(c,step);dt-=step;}
+    }
+    private void tick(GameCore c,float dt){
+        scene.update(dt);
         if(phase==REPORT){report=Math.max(0,report-dt);return;}
+        if(input.pointer<0){hold=Math.max(0,hold-dt);if(hold==0)intent=0;}
+        lean+=Math.max(-LEAN_SPEED*dt,Math.min(LEAN_SPEED*dt,intent-lean));
         if(ready>0){ready=Math.max(0,ready-dt);return;}
-        if(phase==ADVANCE) {
-            travel=Math.min(WALK_TIME,travel+dt);
-            if(travel>=WALK_TIME){scene.distance+=CaveMiningScene.STRIDE;travel=0;phase=loads==LOADS?FULL:DIG;}
-            return;
+        elapsed+=dt;segment+=dt;grace=Math.max(0,grace-dt);
+        turn=curve(progress+segment/SEGMENT);
+        balance+=((turn-lean)*2.6f-balance*1.15f)*dt;
+        if(Math.abs(turn-lean)<.40f)aligned+=dt;
+        rollTick-=dt;squealTick-=dt;
+        if(rollTick<=0){rollTick=.32f;scene.rumble=Math.max(scene.rumble,.22f);if(c.sound!=null)c.sound.caveEvent(Sfx.CART_ROLL);}
+        if(Math.abs(balance)>.52f && squealTick<=0){squealTick=.65f;scene.feedback=1;scene.rumble=.6f;if(c.sound!=null)c.sound.caveEvent(Sfx.CART_SQUEAL);}
+        if(grace==0 && Math.abs(balance)>=1){finish(c,false,true);return;}
+        if(segment>=SEGMENT){
+            if(aligned<.24f){finish(c,false,true);return;}
+            segment-=SEGMENT;aligned=0;progress=Math.min(TRACK,progress+1);save(c);
+            scene.feedback=1;scene.pulse=.35f;
+            if(progress>=TRACK){finish(c,true,false);return;}
         }
-        if(phase==PUSH) {
-            travel=Math.min(PUSH_TIME,travel+dt);
-            float t=Math.max(0,(travel-LOAD_TIME)/(PUSH_TIME-LOAD_TIME));cartX=pushStart+direction*(1.65f*t*t);
-            if(travel>=PUSH_TIME) {
-                if(carts>=CARTS)finish(true);
-                else {newCart(c);phase=DIG;}
-            }
-            return;
-        }
-        if(input.pointer<0)cartX+=(.25f-cartX)*Math.min(1,dt*12);
-        left=Math.max(0,left-dt);
-        if(left<=0)finish(false);
+        if(elapsed>=RUN_TIME)finish(c,false,false);
     }
-    private void finish(boolean success) {
-        phase=REPORT;won=success;report=REPORT_TIME;input.release();
+    private void finish(GameCore c,boolean success,boolean fall){
+        phase=REPORT;won=success;spilled=fall;report=REPORT_TIME;input.release();
+        if(fall){scene.rumble=1;scene.feedback=2;scene.spillAge=0;if(c.sound!=null)c.sound.caveEvent(Sfx.CART_TUMBLE);}
+        else if(c.sound!=null)c.sound.caveEvent(Sfx.MINING_CHEER);
     }
     void stop(){active=false;input.release();scene.reset();}
 }

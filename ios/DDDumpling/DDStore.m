@@ -247,6 +247,8 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 - (void)saveCollectTotalWithInt:(jint)total { [self setValue:@(total) forKey:@"collectTotal"]; }
 - (jint)loadSteamerOpens { return MAX(0, [self intForKey:@"steamerOpens" defaultValue:0]); }
 - (void)saveSteamerOpensWithInt:(jint)opens { [self setValue:@(opens) forKey:@"steamerOpens"]; }
+- (jint)loadMineTrack { return [self intForKey:@"mineTrack" defaultValue:MIN(5, [self loadMineCarts]) * 4]; }
+- (void)saveMineTrackWithInt:(jint)progress { [self setValue:@(progress) forKey:@"mineTrack"]; }
 - (jint)loadMineCarts { return MAX(0, [self intForKey:@"mineCarts" defaultValue:0]); }
 - (void)saveMineCartsWithInt:(jint)carts { [self setValue:@(carts) forKey:@"mineCarts"]; }
 

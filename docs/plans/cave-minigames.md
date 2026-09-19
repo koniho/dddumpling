@@ -4,7 +4,7 @@ Branch: `cave-band-minigame`.
 
 ## Cave Band
 
-Cave expedition interludes alternate Cave Band and Dumpling Mine. Other lands retain Steamer and Star Path,
+Cave expedition interludes alternate Cave Band and Cart Rush. Other lands retain Steamer and Star Path,
 and cave visits do not alter their alternation or partial progress. The existing developer-only
 cave gate remains in effect.
 
@@ -59,62 +59,22 @@ Preview family `108-band-*` covers all songs, count-in, play, acceleration, win 
 `out/sfx/cave-band-0.wav` through `cave-band-2.wav` are complete listening exports with guitar.
 The regular full rule/soak suite and production build remain required.
 
-## Second game: Dumpling Mine
+## Second game: Cart Rush
 
-Implemented in place of the earlier Underground Stream proposal. Band plays after cave stage 21,
-mining after stage 22, then they alternate. Ordinary-land routing remains unchanged.
+Replaces the typing-and-loading mine with a full-screen perspective minecart ride. Hold/drag either
+side of the field or tap the matching half of the keyboard to lean into bends. The rails preview
+upcoming turns; the crew lean, slide, panic, and fly out when balance reaches its limit. Tunnel ribs,
+crystals, sleepers, wheel motion, speed streaks, sparks, and camera rumble convey speed.
 
-- Cart sequence lengths are 2, 3, 4, 4, 4. A cart uses one fixed sequence of distinct active keys.
-- Every complete sequence drops a visible load of rocks. Five loads fill the cart.
-- Wrong input restarts only the current sequence; it cannot erase completed loads or take a life.
-- The full cart hides all sequence prompts and disables mining keys. A horizontal drag starting
-  on the cart commits a dispatch after 16% of the screen width. Either direction works; vertical
-  drags, keys, extra fingers and small movements cannot accidentally dispatch it.
-- Four dumpling helpers run in and push the committed cart offscreen over 1.4 seconds.
-- A delivered cart is saved at swipe commitment, before animation, so quitting during the push
-  does not lose it. A saved fifth cart recovers its pending reward on the next mining visit.
-- Five delivered carts pay one collectible plus a capped extra life, then clear saved progress.
-  Incomplete sequences and loose cart loads last only for the current attempt.
-- An 18-second lantern clock starts after a short ready beat. Flame, warm light radius and scene
-  brightness fade together. Keys stay legible as the cave darkens. Pause/settings stop the clock;
-  the automatic helpers' animation also stops it. Kids Mode retains its ordinary slower clock.
-- Timeout gives a short report and resumes the expedition without a life penalty. Saved carts
-  remain. Success uses the existing collection parade before the next expedition.
+The track has 20 sections, each lasting 0.95 seconds. Each visit lasts at most ten seconds, after a
+1.4-second ready beat. Completed sections persist immediately; partial sections restart on the next
+attempt. Success awards a mole collectible and resets track progress. Existing saved mining carts
+migrate to four sections each. Pausing/backgrounding releases steering and freezes the ride.
 
-`CaveInterlude` owns selection and reward/exit routing. `CaveMining` owns the small state machine,
-`CaveMiningInput` owns the cart pointer, and `CaveMiningScreen` owns all rendering. The Store seam
-adds `loadMineCarts` / `saveMineCarts`, implemented on Android and iOS.
+Audio uses original synthesized low cave rumble and phone-audible body harmonics. The cart has
+short rail clacks, wheel scrape, and a tumble impact, alongside the deeper cave hazard effects.
+Existing native effect and haptic bridges play these on Android and iOS.
 
-`TestCaveMining` covers sequence lengths, five repetitions, full-cart lockout, pointer ownership,
-checkpoint durability, fifth-cart recovery, one-time rewards, timeouts, dimming, pause and routing.
-Bounded miners at 3/5/8 presses per second check that the reward remains reachable. Preview family
-`109-mine-*` covers bright/dim lighting, falling rocks, full cart, helpers, all sequence lengths,
-timeout, reward and parade. The iOS input harness covers the actual native gesture route; its
-native store test includes a cart-progress round trip.
-
-Android static audio must receive the PCM before checking for `STATE_INITIALIZED`; a newly
-created static track reports `STATE_NO_STATIC_DATA`. `tools/test-band-audio.py` exercises the
-real adapter against this lifecycle, including playback-clock timing across tempo changes,
-mute, pause, cleanup, and a rejected PCM write. The headless check runs it automatically.
-
-Developer Minigames includes Cave Band and Dumpling Mine launch chips for active runs; they
-enter the real stage 21/22 interludes and preserve accumulated progress.
-
-Cave rewards now have exclusive five-member families: Burrow Moles for mining and Cave Snakes
-for band performances. IDs 49–58 append to the existing catalogue, keeping saved collections
-compatible. Each friend has a dedicated drawing, family story and vignette; both families have
-their own case row. Normal blind boxes, Star Path, cubes and boss prizes keep their pools.
-
-## Moving tunnel mining
-
-Dumpling Mine presents all sequence prompts on the wall from top to bottom, with positions
-spaced for sequences of two, three or four keys. Only the current prompt is in full color;
-upcoming prompts and completed rock slots are faded. Each correct strike targets that position,
-turns the prompt into a large tumbling rock flying toward the visible parked cart, and shakes
-the scene with native haptic feedback. A completed
-sequence clears a wall; the dumpling walks forward as the tunnel scrolls to the next segment.
-
-Five walls build a pile. Swiping that pile calls the cheering team to carry rocks into a cart,
-then pull it offscreen quickly. The helpers cheer with short synthesized voice cues while idle.
-The 18-second lantern only counts digging and waiting for a pile swipe; forward walks and
-loading/hauling animations pause it. Five delivered carts and their persistence remain unchanged.
+`TestCaveMining` covers persistence, migration, rewards, idle failure, bounded riders, and pointer
+ownership. Preview group 109 shows ready, both turn directions, danger, spill, resume, and reward.
+Native input tests cover field steering and background release. Cave Band remains the other cave game.

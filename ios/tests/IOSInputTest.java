@@ -490,24 +490,18 @@ public final class IOSInputTest extends Check {
         IOSGame game=game();GameCore c=game.core();Layout L=game.geometry();
         c.startGame();c.jumpToStage(22,L);Interlude.enterBonus(c,L);CaveMining m=c.mining;m.ready=0;
         check("iOS selects mining for second cave interlude",m.active && !c.band.active);
-        for(int load=0;load<5;load++) {
-            for(int i=0;i<m.length;i++){int g=m.sequence[i];tap(game,c.keyX(L,g),c.keyY(L,g));}
-            for(int frame=0;frame<31;frame++)game.update(DT);
-        }
-        check("native key taps fill cart after five sequences",m.swipeReady() && m.carts==0);
-        for(int g=0;g<6;g++)tap(game,c.keyX(L,g),c.keyY(L,g));
-        check("full cart ignores native key taps",m.loads==5 && m.carts==0);
-        float x=m.cartX*L.w,y=CaveMiningScreen.cartY(L);
+        float x=L.w*.22f,y=(L.playTop+L.deckTop)*.5f;
         game.touch(one(IOSTouch.ACTION_DOWN,42,x,y));
+        check("field hold leans left",m.intent<0);
         game.touch(two(IOSTouch.ACTION_POINTER_DOWN,1,42,x,y,43,x,y));
         game.touch(two(IOSTouch.ACTION_POINTER_UP,1,42,x,y,43,x,y));
         check("second UIKit finger cannot release cart",m.input.pointer==42);
-        game.touch(one(IOSTouch.ACTION_MOVE,42,x-L.w*.20f,y));
-        check("UIKit swipe sends cart left and saves progress",m.phase==CaveMining.PUSH && m.direction==-1
-                && m.carts==1 && ((Mem)c.store).mineCarts==1);
-        game.touch(one(IOSTouch.ACTION_UP,42,x-L.w*.20f,y));
-        check("lifting cannot dispatch again",m.carts==1);
-        game.background(true);check("background releases minecart pointer",m.input.pointer<0);
+        game.touch(one(IOSTouch.ACTION_MOVE,42,L.w*.78f,y));
+        check("UIKit drag leans right",m.intent>0);
+        game.touch(one(IOSTouch.ACTION_UP,42,L.w*.78f,y));
+        check("lifting releases lean",m.input.pointer<0 && m.intent==0);
+        game.touch(one(IOSTouch.ACTION_DOWN,44,x,y));
+        game.background(true);check("background releases minecart pointer",m.input.pointer<0 && m.intent==0);
     }
 
     public static void main(String[] args) {

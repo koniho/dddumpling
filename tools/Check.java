@@ -74,6 +74,9 @@ abstract class Check {
         public void saveCollectionCounts(int[] v) { collectionCounts = v.clone(); }
         public int loadCollectTotal() { return collectTotal; }
         public void saveCollectTotal(int v) { collectTotal = v; collectTotalSaves++; }
+        int mineTrack=-1;
+        public int loadMineTrack(){return mineTrack==-1?Math.max(0,Math.min(5,mineCarts))*4:mineTrack;}
+        public void saveMineTrack(int progress){mineTrack=progress;mineSaves++;}
         int mineCarts, mineSaves;
         public int loadMineCarts() { return mineCarts; }
         public void saveMineCarts(int carts) { mineCarts=carts;mineSaves++; }

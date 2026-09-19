@@ -48,9 +48,9 @@ final class CaveInterlude {
                 c.score+=GameCore.FREE_BONUS;
                 if(c.lives<GameCore.START_LIVES)c.lives++;
                 Interlude.awardMiningPrize(c);
-                m.carts=0;m.save(c);
+                m.progress=0;m.save(c);
                 if(c.sound!=null)c.sound.achievement();
-            } else if(c.sound!=null)c.sound.tally(m.carts);
+            } else if(c.sound!=null)c.sound.tally(m.progress);
         }
         c.bonusTimer=m.phase==CaveMining.REPORT?m.report:1;
         if(m.phase!=CaveMining.REPORT || m.report>0 || parade(c,dt))return false;
