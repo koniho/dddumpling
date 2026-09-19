@@ -27,7 +27,7 @@ final class CaveMiningScene extends Draw {
         if(m.phase==CaveMining.REPORT)return;
         cheer-=dt;
         if(cheer<=0 && idle>.6f && (m.phase==CaveMining.DIG||m.phase==CaveMining.FULL)){
-            cheer=2.4f;cheerPose=.65f;if(c.sound!=null)c.sound.caveEvent(Sfx.MINING_CHEER);
+            cheer=2.4f;cheerPose=.65f;
         }
     }
     void draw(Painter p,GameCore c,Layout L){

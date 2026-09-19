@@ -108,8 +108,8 @@ final class TestCaveMining extends Check {
             spaced&=last>first && last<CaveMiningScene.ground(L);
         }
         check("all sequence lengths space their prompts down the wall",spaced);
-        m.update(c,1.3f);check("idle friends cheer with a voice cue",ear.lastCaveSound==Sfx.MINING_CHEER && m.scene.cheerPose>0);
-        int sounds=ear.caveSounds;m.update(c,.1f);check("cheers are spaced rather than frame repeated",ear.caveSounds==sounds);
+        int beforeCheer=ear.caveSounds;m.update(c,1.3f);check("idle friends animate without repeating voice",ear.caveSounds==beforeCheer && m.scene.cheerPose>0);
+        int sounds=ear.caveSounds;m.update(c,.1f);check("silent cheering does not emit sound on following frames",ear.caveSounds==sounds);
         c.tapBonus(m.sequence[0]);check("dig targets the current prompt and shakes",m.scene.hitFraction==0 && m.scene.cursor==4 && m.scene.shake>0 && m.scene.takeFeedback()==1);
         check("dig feedback is consumed once",m.scene.takeFeedback()==0);
         check("hit prompt becomes a prompt-sized flying rock",CaveMiningScene.rockRadius(0)==.043f

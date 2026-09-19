@@ -459,7 +459,8 @@ the developer groups.
 
 **Cart Rush** replaces Cave Band and is the first cave minigame. Three
 dumplings ride a winding track. Hold or drag left/right in the field, or tap the matching half of
-the keyboard, to lean into bends. Rails and a gold arrow show turns; sparks, wheel scrape,
+the keyboard, to lean into bends. Rails show upcoming curves; a balance meter shows outward drift and danger near either end.
+Foreground arches pass over the ride and distant rails fade into darkness. Sparks, wheel scrape,
 screen shake, haptics, and frightened passengers warn before a spill.
 
 Twenty track sections earn a Cave Snake and the normal bonus reward. Completed sections save

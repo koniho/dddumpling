@@ -42,6 +42,6 @@ The generated Java data embeds the exact recorded samples to preserve identical
 Android, iOS and headless playback without platform-specific asset loading. The
 WAVs are review/reproduction artifacts and are not duplicated in the APK assets.
 
-Validation: 179 audio assertions and 47 Android band-audio checks pass. The recording
+Validation: 181 audio assertions and 47 Android band-audio checks pass. The recording
 passes the existing low-body and phone-band energy checks. Phone/headphone listening
 is still the final subjective check; measurements do not establish that preference.

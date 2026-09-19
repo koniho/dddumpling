@@ -19,15 +19,6 @@ final class CaveCartScreen extends Draw {
         p.translate((float)Math.sin(t*91)*w*.008f*m.scene.rumble,(float)Math.sin(t*113)*w*.006f*m.scene.rumble);
         float vy=top+h*.18f;
         p.fillEllipse(w*.5f,vy,w*.42f,h*.72f,0xFF262536);
-        for(int i=12;i>=0;i--){
-            float z=(i/13f+t*.32f)%1;z=z*z;
-            float cx=railX(m,z)*w,y=vy+h*.79f*z,rx=w*(.10f+z*.64f),ry=h*(.1f+z*.60f);
-            p.polyline(new float[]{cx-rx,y+ry*.35f,cx-rx*.93f,y-ry*.48f,cx-rx*.48f,y-ry,cx+rx*.22f,y-ry*1.12f,cx+rx*.82f,y-ry*.65f,cx+rx,y+ry*.35f},Glyph.mix(0xFF302B3E,0xFF786353,z),w*(.009f+.016f*z));
-            if(i%3==0){float x=cx-rx*.81f,yy=y-ry*.39f;
-                p.fillCircle(x,yy,w*(.012f+.023f*z),0xFFBDEAD8);
-                p.fillCircle(x,yy,w*(.029f+.045f*z),0x226DDDC6);
-            }
-        }
         p.fillPoly(new float[]{w*.35f,vy,w*.65f,vy,w*1.25f,top+h,w*-.25f,top+h},0xFF3A3038);
         for(int i=0;i<26;i++){
             float z=(i/26f+t*.56f)%1;z=z*z;
@@ -79,6 +70,9 @@ final class CaveCartScreen extends Draw {
         p.line(x-r,y-r*.08f-r*tilt,x+r,y-r*.08f+r*tilt,0xFFF1C79B,w*.018f);
         p.line(x-r*.84f,y+r*.28f-r*.84f*tilt,x+r*.84f,y+r*.28f+r*.84f*tilt,0xFFBC8D94,w*.008f);
         for(int side=-1;side<=1;side+=2)p.fillCircle(x+side*r*.75f,y+r*.10f+side*r*.75f*tilt,w*.008f,0xFFF1C79B);
+        // Tunnel ribs occlude the ride; fog and HUD are composited afterward.
+        arches(p,m,L,vy);
+        distanceFog(p,L,vy);
         if(panic)p.polyline(new float[]{w*.012f,top+w*.012f,w*.012f,L.deckTop-w*.012f,w*.988f,L.deckTop-w*.012f,w*.988f,top+w*.012f},Glyph.withAlpha(ROSE,(int)(100+70*Math.sin(t*15))),w*.015f);
         p.restore();
         p.text("CART RUSH",w*.5f,top+s*.5f,type(s*.8f),INK,Painter.CENTER,true);
@@ -91,8 +85,7 @@ final class CaveCartScreen extends Draw {
             p.text(m.won?"TRACK COMPLETE!":"PROGRESS SAVED",w*.5f,top+h*.30f,type(s*.72f),GOLD,Painter.CENTER,true);
             if(m.won)Trinket.draw(p,c.prize,w*.5f,top+h*.46f,w*.075f,t,true,1);
         }else{
-            float next=CaveCart.bend(m.progress);
-            arrow(p,w*.5f,top+h*.29f,w*.065f,next<0?-1:1,GOLD);
+            balanceMeter(p,m,L);
             p.text(m.ready>0?"LEAN INTO THE TURN":"HOLD TO LEAN",w*.5f,top+h*.91f,type(s*.55f),INK,Painter.CENTER,true);
             for(int side=-1;side<=1;side+=2){
                 int col=m.intent*side>.2f?GOLD:0xFF8D829F;
@@ -102,6 +95,40 @@ final class CaveCartScreen extends Draw {
         p.fillRect(0,L.deckTop,w,L.h,0xFF221E31);
         Renderer.keys(m.phase==CaveCart.RIDE?p:new OpacityPainter(p,.2f),c,L);
         if(c.bonusParading())Parade.draw(p,c,L,Math.min(1,c.paradeTimer/.35f));
+    }
+    private static void arches(Painter p,CaveCart m,Layout L,float vy){
+        float w=L.w,h=field(L),t=m.scene.clock;
+        for(int i=12;i>=0;i--){
+            float z=(i/13f+t*.32f)%1;z=z*z;
+            float cx=railX(m,z)*w,y=vy+h*.79f*z,rx=w*(.10f+z*.64f),ry=h*(.1f+z*.60f);
+            p.polyline(new float[]{cx-rx,y+ry*.35f,cx-rx*.93f,y-ry*.48f,cx-rx*.48f,y-ry,cx+rx*.22f,y-ry*1.12f,cx+rx*.82f,y-ry*.65f,cx+rx,y+ry*.35f},Glyph.mix(0xFF302B3E,0xFF786353,z),w*(.009f+.016f*z));
+            if(i%3==0){float x=cx-rx*.81f,yy=y-ry*.39f;
+                p.fillCircle(x,yy,w*(.012f+.023f*z),0xFFBDEAD8);
+                p.fillCircle(x,yy,w*(.029f+.045f*z),0x226DDDC6);
+            }
+        }
+    }
+    private static void distanceFog(Painter p,Layout L,float horizon){
+        int dark=0xFF100F1D;float reach=field(L)*.19f;
+        p.fillRect(0,L.playTop,L.w,horizon,dark);
+        for(int i=0;i<64;i++){
+            float t=i/63f,alpha=1-t*t*(3-2*t);
+            p.fillRect(0,horizon+reach*i/64,L.w,horizon+reach*(i+1)/64,Glyph.withAlpha(dark,(int)(255*alpha)));
+        }
+    }
+    private static void balanceMeter(Painter p,CaveCart m,Layout L){
+        float x=L.w*.5f,y=L.playTop+field(L)*.24f,half=L.w*.34f,h=Math.max(20f,L.unit*.42f);
+        float travel=half-h*1.65f,value=Math.max(-1,Math.min(1,-m.balance));
+        p.fillPoly(pill(x,y,half,h*1.28f,16),0xFF27152F);
+        p.strokePoly(pill(x,y,half,h*1.28f,16),0xFFF5ECEB,Math.max(4f,L.unit*.085f));
+        p.line(x-travel,y,x+travel,y,0xFFC64B72,h*.55f);
+        p.line(x-travel*.52f,y,x+travel*.52f,y,0xFF65C7B0,h*.55f);
+        p.line(x,y-h,x,y+h,0xFFF5ECEB,L.unit*.055f);
+        int color=Math.abs(value)>.52f?0xFFFF477E:0xFF65F5E3;
+        float marker=x+value*travel;
+        p.fillCircle(marker,y,h*1.06f,color);
+        p.fillCircle(marker,y,h*.57f,0xFF17333A);
+        p.line(marker,y-h*1.27f,marker,y+h*1.27f,color,L.unit*.060f);
     }
     private static void wheel(Painter p,float x,float y,float r,float tilt,float t){
         float half=r*.075f,height=r*.26f;

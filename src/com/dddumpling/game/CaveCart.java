@@ -49,7 +49,8 @@ final class CaveCart {
         balance+=((turn-lean)*2.6f-balance*1.15f)*dt;
         if(Math.abs(turn-lean)<.40f && Math.abs(lean)>.25f && turn*lean>0)aligned+=dt;
         rollTick-=dt;squealTick-=dt;
-        if(rollTick<=0){rollTick=.32f;scene.rumble=Math.max(scene.rumble,.22f);if(c.sound!=null)c.sound.caveEvent(Sfx.CART_ROLL);}
+        scene.rumble=Math.max(scene.rumble,.16f+.06f*(float)Math.sin(scene.clock*24));
+        if(rollTick<=0){rollTick=CartRecording.DURATION;if(c.sound!=null)c.sound.caveEvent(Sfx.CART_ROLL);}
         if(Math.abs(balance)>.52f && squealTick<=0){squealTick=.65f;scene.feedback=1;scene.rumble=.6f;if(c.sound!=null)c.sound.caveEvent(Sfx.CART_SQUEAL);}
         if(grace==0 && Math.abs(balance)>=1){finish(c,false,true);return;}
         if(segment>=SEGMENT){

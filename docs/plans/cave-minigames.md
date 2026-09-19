@@ -9,7 +9,9 @@ Other lands keep Steamer and Star Path.
 ## Cart Rush
 
 Hold/drag either side of the field or tap the matching half of the keyboard to lean into bends.
-Incoming rails preview turns. The camera follows behind the cart: rear panel, edge-on wheel treads,
+Incoming rails preview turns and fade into darkness at the far end. Foreground tunnel arches
+pass over the rails and riders. A balance meter with a safe center and danger ends replaces
+the turn arrow; its marker follows the passengers' outward drift. The camera follows behind the cart: rear panel, edge-on wheel treads,
 and the backs of the passengers. Rails integrate the same smooth, varying curvature used by
 balance and cart banking; sharper bends tilt the cart further. The crew lean, panic, and spill out if balance is lost. Tunnel ribs,
 crystals, sleepers, wheel movement, speed streaks, sparks, sound, and haptics convey speed.
@@ -24,7 +26,8 @@ only its own progress after paying its reward.
 The original digging game remains: two-, three-, then four-key sequences, five mined wall
 segments per cart, a swipe to send the loaded cart away, and five delivered carts per mole.
 The lantern dims as time runs out. Prompts run down the wall, hits fly into the pile, the miner
-walks to the next segment, and friends load and haul the cart. Delivered carts persist.
+walks to the next segment, and friends load and haul the cart. Idle cheering is visual only;
+the repeating voice cue is removed. Delivered carts persist.
 
 ## Verification
 

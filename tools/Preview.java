@@ -73,8 +73,11 @@ final class Preview {
         shot(dir,"111-cart-sharp-bank",c,L,w,h,ss);
         m.progress=5;m.lean=.8f;m.turn=.8f;m.scene.clock=3;
         shot(dir,"111-cart-right",c,L,w,h,ss);
+        m.scene.clock=1.35f;shot(dir,"111-cart-foreground-arches",c,L,w,h,ss);
         m.balance=.85f;m.lean=-.5f;m.scene.rumble=.6f;
         shot(dir,"111-cart-danger",c,L,w,h,ss);
+        m.balance=-.85f;shot(dir,"111-cart-balance-right",c,L,w,h,ss);
+        m.balance=.85f;
         m.phase=CaveCart.REPORT;m.spilled=true;m.scene.spillAge=.32f;
         shot(dir,"111-cart-spill",c,L,w,h,ss);
         m.progress=14;m.begin(c);shot(dir,"111-cart-resume",c,L,w,h,ss);

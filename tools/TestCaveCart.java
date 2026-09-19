@@ -66,8 +66,21 @@ final class TestCaveCart extends Check {
         float z=CaveCartScreen.CART_Z,delta=.01f;
         float curvature=(CaveCartScreen.railX(m,z+delta)-2*CaveCartScreen.railX(m,z)+CaveCartScreen.railX(m,z-delta))/(delta*delta);
         check("rail curvature at the cart matches the live turn",Math.abs(curvature-m.turn*.2f*2.2f*2.2f)<.01f);
+        recordedCadence(L);
         rotation(L);
         bounded(L);
+    }
+    private static void recordedCadence(Layout L){
+        final GameCore c=game(L,new Mem());c.cart.ready=0;
+        final float[] last={-10},gap={10};final int[] rolls={0};
+        c.sound=new Ear(){public void caveEvent(int id){if(id==Sfx.CART_ROLL){
+            gap[0]=Math.min(gap[0],c.cart.elapsed-last[0]);last[0]=c.cart.elapsed;rolls[0]++;
+        }}};
+        for(int frame=0;frame<310;frame++){
+            c.cart.steer(CaveCart.curve(c.cart.progress+c.cart.segment/CaveCart.SEGMENT));
+            c.cart.update(c,1f/120);
+        }
+        check("recorded roll finishes before replay",rolls[0]>=2 && gap[0]>=Sfx.build(Sfx.CART_ROLL).length/(float)Sfx.RATE-.001f);
     }
     private static void rotation(Layout L){
         Mem saved=new Mem();GameCore c=game(L,saved);
