@@ -2228,25 +2228,8 @@ final class Boss {
             if (pb == null) continue;
             float r = pieceRadiusNode(n, L);
             if (beaten) {
-                float p = leaveProgress();
                 int ordinal = Integer.bitCount(visible & ((1 << n) - 1));
-                float angle = -Softbody.TAU * 0.25f + Softbody.TAU * ordinal / Math.max(1, visibleCount);
-                float orbit = bodyR(L) * 0.72f;
-                float tx = (L.playLeft + L.playRight) * 0.5f + (float) Math.cos(angle) * orbit;
-                float ty = (L.playTop + L.dangerY) * 0.5f + (float) Math.sin(angle) * orbit;
-                if (p < 0.55f) {
-                    // Brake first, then gather. The remnants visibly lose their bounce before the fall.
-                    float brake = Math.max(0f, 1f - dt * (3f + p * 12f));
-                    divideVX[n] *= brake; divideVY[n] *= brake;
-                    float gather = Math.min(1f, dt * (2.5f + p * 14f));
-                    divideX[n] += (tx - divideX[n]) * gather;
-                    divideY[n] += (ty - divideY[n]) * gather;
-                } else {
-                    float drop = Math.min(1f, (p - 0.55f) / 0.45f);
-                    divideVX[n] = divideVY[n] = 0f;
-                    divideX[n] = tx;
-                    divideY[n] = ty + drop * drop * (L.h + r * 2f - ty);
-                }
+                DivideDeath.pose(this, n, ordinal, Math.max(1, visibleCount), dt, L);
                 continue;
             }
             if (n != pinchNode) {

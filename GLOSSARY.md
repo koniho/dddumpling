@@ -203,12 +203,14 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **soft body** | how every boss's body is built: a ring of sprung nodes under pressure, so it dents where you hit it | `Softbody`, `Boss.body` |
 | **burst** | what a beaten boss goes out on | `BossScreen.burst`, `Boss.LEAVE` |
 
-Dark Divide answers successful key hits with a short rounded bloop. Firing gives the cube
+Dark Divide answers successful key hits and intercepted projectiles with a short rounded bloop. Firing gives the cube
 a springy jiggle and a slight recoil opposite its projectile; disabling a cube plays a softer
 falling bubble-pop. Recoil settles back without changing the cube’s roaming speed.
 The unsplit cube fires three staggered projectiles every 1.5 seconds; after the first split,
 each cube fires two every 2.1 seconds. Subsequent splits retain the single-projectile firing ramp.
 Successful hits still reset the struck cube’s firing timer.
+On defeat the cubes gather in a circle, shake with growing intensity for one second, then
+explode into 180 tiny tumbling cubes in six purple shades. `DivideDeath` owns this sequence.
 
 ## Powerup
 

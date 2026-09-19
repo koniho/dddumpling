@@ -1678,8 +1678,8 @@ final class TestBoss extends Check {
         float speedAfter = 0f;
         for (int n = 0; n < Boss.DIVIDE_NODES; n++) if (c.boss.nodeVisible(n))
             speedAfter += Math.abs(c.boss.divideVX[n]) + Math.abs(c.boss.divideVY[n]);
-        check("the fragments slow before they drop", speedAfter < speedBefore * 0.35f);
-        while (c.boss.leaveProgress() < 0.55f) c.boss.update(DT, L, c.rnd);
+        check("the fragments slow before they gather", speedAfter < speedBefore * 0.35f);
+        while (DivideDeath.elapsed(c.boss) < DivideDeath.GATHER + .02f) c.boss.update(DT, L, c.rnd);
         float ringY = 0f, minOrbit = Float.MAX_VALUE, maxOrbit = 0f;
         float deathCX = (L.playLeft + L.playRight) * 0.5f;
         float deathCY = (L.playTop + L.dangerY) * 0.5f;
@@ -1691,13 +1691,37 @@ final class TestBoss extends Check {
         }
         check("the remnants coalesce around a circle at screen center",
                 maxOrbit - minOrbit < Boss.bodyR(L) * 0.08f);
-        for (int i = 0; i < 24; i++) c.boss.update(DT, L, c.rnd);
-        float droppedY = 0f;
+        check("the shake lasts exactly one second", DivideDeath.SHAKE == 1f
+                && Math.abs(DivideDeath.BURST_AT - DivideDeath.GATHER - 1f) < .0001f);
+        check("the shake grows toward the burst", DivideDeath.shakeAmplitude(1.8f, L)
+                > DivideDeath.shakeAmplitude(1.2f, L) * 4f);
+        while (DivideDeath.elapsed(c.boss) < DivideDeath.BURST_AT - .04f) c.boss.update(DT, L, c.rnd);
+        check("the gathered cubes remain intact through the shake", !DivideDeath.bursting(c.boss));
+        float shakingY = 0f;
         for (int n = 0; n < Boss.DIVIDE_NODES; n++) if (c.boss.nodeVisible(n))
-            droppedY += c.boss.divideY[n];
-        check("the gathered circle then drops toward the bottom", droppedY > ringY);
-        check("the final drop breaks into many tiny slime fragments",
-                BossScreen.DIVIDE_SHARDS_PER_PIECE * Boss.DIVIDE_PIECES >= 90);
+            shakingY += c.boss.divideY[n];
+        check("shaking stays around the circle instead of falling", Math.abs(shakingY - ringY)
+                < Boss.bodyR(L) * Boss.DIVIDE_PIECES * .25f);
+        while (DivideDeath.elapsed(c.boss) < DivideDeath.BURST_AT + .02f) c.boss.update(DT, L, c.rnd);
+        check("the supernova follows the full shake", DivideDeath.bursting(c.boss));
+        check("the supernova has 180 tiny cubes", DivideDeath.SHARDS == 180);
+        int[] quadrants = new int[4];
+        boolean outward = true;
+        for (int i = 0; i < DivideDeath.SHARDS; i++) {
+            double a = DivideDeath.angle(i);
+            quadrants[(Math.cos(a) < 0 ? 1 : 0) + (Math.sin(a) < 0 ? 2 : 0)]++;
+            outward &= DivideDeath.travel(i, .6f, L) > DivideDeath.travel(i, .2f, L);
+        }
+        check("cube debris flies outward in every direction", outward
+                && quadrants[0] > 35 && quadrants[1] > 35 && quadrants[2] > 35 && quadrants[3] > 35);
+
+        GameCore intercepted = enterBoss(L, Boss.SPLITTER, 188L);
+        Ear interceptEar = new Ear(); intercepted.sound = interceptEar;
+        intercepted.boss.halfIdle[0] = intercepted.boss.divideBoltInterval();
+        intercepted.update(DT, L);
+        intercepted.tapKey(intercepted.boss.bglyph[0], L);
+        check("Dark Divide projectile hits use the bloop without a hard snap",
+                interceptEar.divideDamages == 1 && interceptEar.boltDeaths == 0 && interceptEar.boltPops == 0);
 
         check("deactivating terminal cubes does not add split events", c.boss.divideSplits == 7);
         GameCore timers = enterBoss(L, Boss.SPLITTER, 82L);

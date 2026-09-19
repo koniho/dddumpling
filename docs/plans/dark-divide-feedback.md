@@ -18,3 +18,9 @@ volleys wait for enough free projectile slots to launch in full.
 `TestAudio` checks short, tonal, decaying effects. Preview frames `75a`, `75b`, and `75c` show
 unsplit firing, split-cube recoil, and the three-projectile volley. Run the bounded-player soak
 for pacing changes, and device-playtest the final sound and movement feel.
+
+Projectile interceptions also use the rounded bloop, avoiding the generic hard shell snap.
+The final death sequence gathers the cubes for 0.9 seconds, shakes them with increasing intensity
+for one second, then bursts into 180 tumbling cubes in six purple shades. Debris travels radially
+without gravity; the existing 3.6-second defeat duration stays unchanged. `DivideDeath` owns
+the deterministic pose and renderer, previewed across seven beats in `75d-divide-supernova-*`.

@@ -124,7 +124,8 @@ final class BossPlay {
             c.score += GameCore.BOSS_HIT;
             Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR * 1.2f, 10, Glyph.COLOR[g]);
             if (c.sound != null) {
-                if (c.boss.boltDestroyed) c.sound.boltDeath();
+                if (c.boss.kind == Boss.SPLITTER) c.sound.divideDamage();
+                else if (c.boss.boltDestroyed) c.sound.boltDeath();
                 else c.sound.boltPop();
             }
             return true;

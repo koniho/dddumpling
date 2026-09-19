@@ -1510,6 +1510,19 @@ final class Preview {
         step(ddDanger, L, 0.08f);
         shot(dir, "75b-divide-firing-recoil", ddDanger, L, w, h, ss);
 
+        GameCore ddDeath = toBoss(L, Boss.SPLITTER, 545L, true);
+        while (!ddDeath.boss.beaten) {
+            int node = ddDeath.boss.pieceNodeIndex(0);
+            ddDeath.boss.pieceHits[node] = Boss.DIVIDE_HITS;
+            ddDeath.boss.beginPinch(100f);
+            ddDeath.boss.pinch(100f * (Boss.DIVIDE_SCALE + .01f));
+        }
+        float[] deathTimes = {.4f, .95f, 1.4f, 1.85f, 2.03f, 2.35f, 2.85f};
+        for (int i = 0; i < deathTimes.length; i++) {
+            while (DivideDeath.elapsed(ddDeath.boss) < deathTimes[i]) step(ddDeath, L, DT);
+            shot(dir, "75d-divide-supernova-" + i, ddDeath, L, w, h, ss);
+        }
+
         // The settings panel's stage jump, parked on a boss stage so the row names the boss it is
         // sitting on — which is the state the control exists for.
         GameCore cj = toBoss(L, Boss.SLIME, 520L, true);
