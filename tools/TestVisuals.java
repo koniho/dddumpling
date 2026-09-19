@@ -370,26 +370,67 @@ final class TestVisuals extends Check {
         }
     }
 
+    static void persistentExplorer(Layout L) {
+        GameCore c=new GameCore(new Mem(),725L);
+        c.collected=Collect.MASK;c.landSeen=LandPicker.stateMask();
+        LandPicker.updateTravel(c,1.3f);
+        float x=LandPicker.explorerBodyX(c,L),y=LandPicker.explorerBodyY(c,L);
+        check("resident explores within the emblem",Math.abs(x-L.w*.5f)>.1f && LandPicker.explorerScale(c)==.42f);
+        LandPicker.select(c,3);
+        check("departing preserves resident position",Math.abs(x-LandPicker.explorerBodyX(c,L))<.001f
+                && Math.abs(y-LandPicker.explorerBodyY(c,L))<.001f && LandPicker.explorerScale(c)==.42f);
+        LandPicker.updateTravel(c,LandPicker.TRAVEL_TIME*.99f);
+        check("distant destination does not shrink at intermediate land",LandPicker.explorerScale(c)==1f);
+        float before=LandPicker.explorerBodyX(c,L);
+        LandPicker.updateTravel(c,LandPicker.TRAVEL_TIME*.01f+.00001f);
+        check("queued leg joins without position or scale jump",c.landTravelFrom==1 && LandPicker.explorerScale(c)==1f
+                && Math.abs(before-LandPicker.explorerBodyX(c,L))<L.w*.01f);
+        LandPicker.updateTravel(c,LandPicker.TRAVEL_TIME*.5f);
+        check("intermediate journey keeps moving",LandPicker.travelWalk(c)>.49f && LandPicker.travelWalk(c)<.51f);
+        LandPicker.updateTravel(c,LandPicker.TRAVEL_TIME*1.5f);
+        check("final arrival becomes a small resident",c.landChoice==3 && c.landTravelFrom<0 && LandPicker.explorerScale(c)==.42f);
+        x=LandPicker.explorerBodyX(c,L);y=LandPicker.explorerBodyY(c,L);
+        LandPicker.updateTravel(c,.001f);
+        check("arrival joins idle wandering continuously",Math.abs(x-LandPicker.explorerBodyX(c,L))<.01f
+                && Math.abs(y-LandPicker.explorerBodyY(c,L))<.01f);
+        boolean inside=true;
+        for(int i=0;i<600;i++) {
+            LandPicker.updateTravel(c,DT);
+            inside &= Math.abs(LandPicker.explorerBodyX(c,L)-LandPicker.cardX(c,L,3))<LandPicker.iconRadius(c,L)*.5f;
+            inside &= Math.abs(LandPicker.explorerBodyY(c,L)-LandPicker.cardY(c,L,3))<LandPicker.iconRadius(c,L)*.6f;
+        }
+        check("wandering remains inside the selected land",inside);
+        LandPicker.select(c,0);LandPicker.updateTravel(c,LandPicker.TRAVEL_TIME*.4f);LandPicker.select(c,2);
+        LandPicker.updateTravel(c,LandPicker.TRAVEL_TIME*6f);
+        check("retargeting completes the queued route",c.landChoice==2 && c.landTravelFrom<0 && c.landTravelQueue.isEmpty());
+        LandPicker.select(c,0);c.caseOpen=true;LandPicker.updateTravel(c,DT);c.caseOpen=false;
+        check("covered journey returns to a visible resident",c.landTravelFrom<0 && LandPicker.explorerScale(c)==.42f);
+        c.landChoice=0;LandPicker.select(c,1);LandPicker.updateTravel(c,LandPicker.TRAVEL_TIME*.9f);
+        float scale=LandPicker.explorerScale(c);LandPicker.select(c,3);
+        check("late retarget preserves the current size",Math.abs(scale-LandPicker.explorerScale(c))<.0001f);
+        LandPicker.updateTravel(c,LandPicker.TRAVEL_TIME*.1f+.00001f);
+        check("late retarget grows into the next uninterrupted leg",LandPicker.explorerScale(c)==1f);
+
+    }
+
     static void titleScreen(Layout L) {
         caseScoreFade();
         discoveryTrip(L);
+        persistentExplorer(L);
         GameCore trail=new GameCore(new Mem(),724L);
         float r=LandPicker.iconRadius(trail,L);
-        float footOffset=r*1.10f-LandPicker.travelerRadius(trail,L)*.10f;
         trail.collected=Collect.MASK;trail.landSeen=14;
         for(int direction:new int[]{1,-1}) {
             trail.landTravelFrom=direction>0 ? 0 : 1;
             trail.landChoice=direction>0 ? 1 : 0;
-            for(float time:new float[]{.16f,.30f,.5f,.70f,.84f}) {
+            for(float time:new float[]{0f,.30f,.5f,.70f,1f}) {
                 trail.landTravelT=time*LandPicker.TRAVEL_TIME;
-                float t=Math.max(0f,Math.min(1f,(time-.16f)/.68f));
-                float walk=t*t*(3f-2f*t);
-                float pathT=direction>0 ? walk : 1f-walk*(1f-r*.95f/(LandPicker.spacing(trail,L)+r*.95f));
-                check("swipe follows fixed trail x "+direction+" "+time,
-                        Math.abs(LandPicker.trailX(trail,L,0,pathT)-LandPicker.travelX(trail,L))<.001f);
-                check("swipe follows fixed trail feet "+direction+" "+time,
-                        Math.abs(LandPicker.trailY(trail,L,0,pathT)
-                        -(LandPicker.travelGround(trail,L)+LandPicker.travelArc(trail,L)+footOffset))<.001f);
+                float from=LandPicker.cardX(trail,L,trail.landTravelFrom);
+                float to=LandPicker.cardX(trail,L,trail.landChoice);
+                check("explorer crosses between land centres "+direction+" "+time,
+                        Math.abs(LandPicker.travelX(trail,L)-(from+(to-from)*time))<.001f);
+                check("explorer stays fully visible in travel "+direction+" "+time,
+                        LandPicker.explorerScale(trail)>=.42f && LandPicker.explorerScale(trail)<=1f);
             }
         }
         trail.landChoice=1;trail.landTravelFrom=-1;trail.landDiscovery=-1;
@@ -458,7 +499,7 @@ final class TestVisuals extends Check {
         LandPicker.move(travel,L,0f);
         LandPicker.up(travel,L,0f,row);
         check("one long swipe moves exactly one land",travel.landChoice==1 && travel.landTravelQueue.isEmpty() && travelEar.landShuffles==1);
-        check("rightward travel emerges left of the previous land",LandPicker.travelX(travel,L)<LandPicker.cardX(travel,L,0));
+        check("rightward travel starts inside the previous land",Math.abs(LandPicker.travelX(travel,L)-LandPicker.cardX(travel,L,0))<.001f);
         LandPicker.step(travel,1);
         LandPicker.step(travel,-1);
         check("rapid swipes queue distinct journeys",travel.landChoice==1 && travel.landTravelQueue.size()==2 && travelEar.landShuffles==1);
@@ -476,17 +517,17 @@ final class TestVisuals extends Check {
         float high=LandPicker.cardY(travel,L,0),low=LandPicker.cardY(travel,L,1);
         check("land heights alternate with a thirty percent step", Math.abs(low-high-LandPicker.iconRadius(travel,L)*0.6f)<0.01f
                 && LandPicker.cardY(travel,L,2)==high && LandPicker.cardY(travel,L,3)==low);
-        LandPicker.step(travel,1);
+        travel.landWanderT=0f;LandPicker.step(travel,1);
         check("travel starts at the previous land height",LandPicker.travelGround(travel,L)==high && LandPicker.travelArc(travel,L)==0f);
         LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME*0.5f);
         check("travel dips below the midpoint between land heights",Math.abs(LandPicker.travelGround(travel,L)-(high+low)*0.5f)<0.01f
                 && LandPicker.travelArc(travel,L)>LandPicker.iconRadius(travel,L)*0.4f);
-        LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME*0.35f);
+        LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME*0.5f);
         check("travel lands at the destination height",Math.abs(LandPicker.travelGround(travel,L)-low)<0.01f && LandPicker.travelArc(travel,L)==0f);
         LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME);
-        LandPicker.step(travel,-1);
+        travel.landWanderT=0f;LandPicker.step(travel,-1);
         check("reverse travel starts at the lower land",LandPicker.travelGround(travel,L)==low);
-        LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME*0.85f);
+        LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME);
         check("reverse travel reaches the upper land along its fixed trail",
                 Math.abs(LandPicker.travelX(travel,L)-LandPicker.cardX(travel,L,0))<.01f);
         LandPicker.step(travel,1);LandPicker.step(travel,1);

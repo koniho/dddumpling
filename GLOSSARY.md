@@ -364,11 +364,11 @@ Stage 11 introduces mystery pickups with 15% longer travel/spawn intervals; stag
 ## Land travel
 
 The title land picker spaces icons apart and moves one adjacent unlocked land per swipe. Each
-change takes 0.85 seconds: the Adventure Dumpling pops up on the trailing side of the previous
-land, follows a gentle arc toward the destination with soft shuffling footsteps, and settles out.
-Icon centres alternate vertically by 30% of the full icon height; the journey follows both heights. Leftward
-travel mirrors the entrance. Rapid swipes queue separate journeys; tapping a distant icon visits
-each intervening unlocked land. Discovery animations pause while travelling.
+change takes 0.85 seconds. The Adventure Dumpling wanders within the selected land at a small,
+fully visible size, grows while walking to the next land, and shrinks into its new home on arrival.
+Icon centres alternate vertically; the journey follows both heights with a gentle walking arc.
+Rapid swipes queue journeys. Tapping a distant icon traverses intervening unlocked lands continuously
+at travel size, shrinking only at the final destination. Discovery animations pause while travelling.
 
 `LandPicker` owns input and choreography; `GameCore.landTravelQueue`, `landTravelFrom`, and
 `landTravelT` hold the session-only journey state.
@@ -398,7 +398,7 @@ The **What’s new steamer** (`ReleaseMascot`) has a cute face, no arms, rising 
 
 The **land discovery tour** (`LandDiscovery`) uses the swipe traveler’s size and arc, sliding through newly unlocked lands in sequence. Each first arrival pulses that land’s color and persists its seen flag; later visits do not repeat the glow. Covered title scenes pause the tour.
 
-The developer settings **ALL LANDS** chip enables every land for the current session without granting collectibles. **RESET LANDS** clears that override. The dotted walking trail is fixed relative to the lands and stops outside their silhouettes. Rightward swipe movement is preserved; leftward travel follows that fixed curve in reverse.
+The developer settings **ALL LANDS** chip enables every land for the current session without granting collectibles. **RESET LANDS** clears that override. The dotted walking trail is fixed relative to the lands and stops outside their silhouettes. The explorer crosses between the land centres and remains in front of their artwork.
 
 ## Cave expedition
 

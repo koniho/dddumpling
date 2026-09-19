@@ -450,7 +450,9 @@ final class GameCore {
     boolean landPickerDragging, landPickerMoved;
     float landPickerSlide, landPickerX;
     int landTravelFrom = -1;
-    float landTravelT;
+    float landTravelT, landWanderT, landTravelStartX, landTravelStartY;
+    float landTravelRegrowT=-1f, landTravelRegrowScale;
+    boolean landTravelChained;
     final ArrayList<Integer> landTravelQueue = new ArrayList<Integer>();
     boolean allLandsEnabled;
     int landSeen, landSuppressed, landDiscovery = -1;

@@ -43,13 +43,11 @@ final class LandDiscovery extends Draw {
         if(c.landDiscoveryT>=arrival(c)+HOLD) {
             int destination=next(c);
             if(destination>=0) begin(c,destination,true);
-            else { c.landDiscovery=-1;c.landPickerSlide=0f; }
+            else { c.landDiscovery=-1;c.landPickerSlide=c.landWanderT=0f; }
         }
     }
     static float x(GameCore c,Layout L) {
-        float direction=c.landDiscovery>=c.landDiscoveryFrom ? 1f : -1f;
         float start=LandPicker.cardX(c,L,c.landDiscoveryFrom);
-        if(!c.landDiscoveryChained) start-=direction*LandPicker.iconRadius(c,L)*.95f;
         return start+(LandPicker.cardX(c,L,c.landDiscovery)-start)*walk(c);
     }
     static float ground(GameCore c,Layout L) {
@@ -79,8 +77,11 @@ final class LandDiscovery extends Draw {
     static void draw(Painter p,GameCore c,Layout L) {
         if(c.landDiscovery<0 || c.landTravelFrom>=0) return;
         float t=c.landDiscoveryT/LandPicker.TRAVEL_TIME;
-        float pop=c.landDiscoveryChained ? 1f : ease(t/.16f);
-        float fade=next(c)<0 ? Math.min(1f,(arrival(c)+HOLD-c.landDiscoveryT)/.16f) : 1f;
-        LandPicker.drawJourney(p,c,L,x(c,L),ground(c,L),arc(c,L),walk(c),pop,Math.max(0f,fade),t);
+        boolean finished=next(c)<0;
+        float settle=finished ? ease((c.landDiscoveryT-arrival(c))/(HOLD*.65f)) : 0f;
+        float grow=c.landDiscoveryChained ? 1f : ease(t/.16f);
+        float scale=.42f+.58f*grow*(1f-settle);
+        float px=x(c,L),py=ground(c,L)+arc(c,L)+LandPicker.iconRadius(c,L)*.40f;
+        LandPicker.drawExplorer(p,c,L,px,py,scale,c.landDiscoveryT,walk(c)<1f);
     }
 }

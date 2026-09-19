@@ -40,16 +40,22 @@ final class LandPicker extends Draw {
         if (!visible(c) || !unlocked(c,land) || c.landDiscovery>=0) return;
         int from=pendingLand(c);
         if(from==land) return;
+        if(c.landTravelFrom>=0 && c.landTravelQueue.isEmpty() && travelWalk(c)>.78f) {
+            c.landTravelRegrowScale=explorerScale(c);c.landTravelRegrowT=c.landTravelT;
+        }
         int direction=land>from ? 1 : -1;
         for(int next=from+direction;next!=land+direction;next+=direction)
             if(unlocked(c,next)) c.landTravelQueue.add(next);
-        if(c.landTravelFrom<0) beginTravel(c);
+        if(c.landTravelFrom<0) beginTravel(c,false);
     }
-    private static void beginTravel(GameCore c) {
+    private static void beginTravel(GameCore c,boolean chained) {
         if(c.landTravelQueue.isEmpty()) return;
+        c.landTravelStartX=chained ? 0f : wanderX(c);
+        c.landTravelStartY=chained ? 0f : wanderY(c);
+        c.landTravelChained=chained;
         c.landTravelFrom=c.landChoice;
         c.landChoice=c.landTravelQueue.remove(0);
-        c.landTravelT=0f;
+        c.landTravelT=0f;c.landTravelRegrowT=-1f;
         c.landPickerSlide=slot(c,c.landChoice)-slot(c,c.landTravelFrom);
         c.best=c.landBests[c.landChoice];
         if(c.sound!=null) c.sound.landShuffle();
@@ -60,15 +66,19 @@ final class LandPicker extends Draw {
             c.landPickerDragging=false;
             return;
         }
-        if(c.landTravelFrom<0) return;
-        c.landTravelT=Math.min(TRAVEL_TIME,c.landTravelT+dt);
-        float walk=ease((c.landTravelT/TRAVEL_TIME-0.16f)/0.68f);
-        c.landPickerSlide=(slot(c,c.landChoice)-slot(c,c.landTravelFrom))*(1f-walk);
-        if(c.landTravelT>=TRAVEL_TIME) {
-            c.landTravelFrom=-1;c.landPickerSlide=0f;
-            beginTravel(c);
+        if(c.landDiscovery>=0) return;
+        while(dt>0f && c.landTravelFrom>=0) {
+            float step=Math.min(dt,TRAVEL_TIME-c.landTravelT);
+            c.landTravelT+=step;dt-=step;
+            c.landPickerSlide=(slot(c,c.landChoice)-slot(c,c.landTravelFrom))*(1f-travelWalk(c));
+            if(c.landTravelT>=TRAVEL_TIME) {
+                c.landTravelFrom=-1;c.landPickerSlide=0f;c.landWanderT=0f;
+                beginTravel(c,true);
+            }
         }
+        if(c.landTravelFrom<0) c.landWanderT+=dt;
     }
+
     static void step(GameCore c, int direction) {
         if(direction==0) return;
         direction=direction<0 ? -1 : 1;
@@ -129,7 +139,7 @@ final class LandPicker extends Draw {
         c.landDiscovery = -1;
         c.landDiscoveryT = c.landPickerSlide = 0f;
         c.landPickerDragging = false;
-        c.landTravelFrom=-1;c.landTravelQueue.clear();c.landTravelT=0f;
+        c.landTravelFrom=-1;c.landTravelQueue.clear();c.landTravelT=c.landWanderT=0f;
         c.landChoice = 0;
         c.best = c.landBests[0];
         save(c);
@@ -157,49 +167,58 @@ final class LandPicker extends Draw {
         p.fillEllipse(x, y-r*.47f, r*.46f, r*.10f, band);
         p.fillEllipse(x, y-r*.39f, r*.76f, r*.12f, felt);
     }
+    static float travelWalk(GameCore c) { return Math.min(1f,c.landTravelT/TRAVEL_TIME); }
+    static float wanderX(GameCore c) {
+        return (float)Math.sin(c.landWanderT*1.1f)*.46f*ease(c.landWanderT/.4f);
+    }
+    static float wanderY(GameCore c) {
+        return (float)Math.sin(c.landWanderT*1.7f)*.16f*ease(c.landWanderT/.4f);
+    }
     static float travelX(GameCore c,Layout L) {
-        float t=c.landTravelT/TRAVEL_TIME;
-        float walk=ease((t-0.16f)/0.68f);
-        if(c.landChoice<c.landTravelFrom)
-            return trailX(c,L,slot(c,c.landChoice),reverseTrailProgress(c,L,walk));
-        float direction=c.landChoice>c.landTravelFrom ? 1f : -1f;
-        float start=cardX(c,L,c.landTravelFrom)-direction*iconRadius(c,L)*0.95f;
+        float walk=travelWalk(c),r=iconRadius(c,L);
+        float start=cardX(c,L,c.landTravelFrom)+c.landTravelStartX*r;
         return start+(cardX(c,L,c.landChoice)-start)*walk;
     }
     static float travelGround(GameCore c,Layout L) {
-        float walk=ease((c.landTravelT/TRAVEL_TIME-0.16f)/0.68f);
-        if(c.landChoice<c.landTravelFrom) {
-            float t=reverseTrailProgress(c,L,walk);
-            float left=cardY(c,L,c.landChoice),right=cardY(c,L,c.landTravelFrom);
-            return left+(right-left)*t;
-        }
-        float from=cardY(c,L,c.landTravelFrom),to=cardY(c,L,c.landChoice);
-        return from+(to-from)*walk;
+        float walk=travelWalk(c);
+        float from=cardY(c,L,c.landTravelFrom)+c.landTravelStartY*iconRadius(c,L);
+        return from+(cardY(c,L,c.landChoice)-from)*walk;
     }
     static float travelArc(GameCore c,Layout L) {
-        float walk=ease((c.landTravelT/TRAVEL_TIME-0.16f)/0.68f);
-        if(c.landChoice<c.landTravelFrom) walk=reverseTrailProgress(c,L,walk);
-        return walkingDip(walk)*iconRadius(c,L);
+        return walkingDip(travelWalk(c))*iconRadius(c,L);
+    }
+    static float explorerScale(GameCore c) {
+        if(c.landTravelFrom<0) return .42f;
+        float t=travelWalk(c);
+        if(c.landTravelRegrowT>=0f) return c.landTravelRegrowScale+(1f-c.landTravelRegrowScale)
+                *ease((c.landTravelT-c.landTravelRegrowT)/(TRAVEL_TIME-c.landTravelRegrowT));
+        float grow=c.landTravelChained ? 1f : ease(t/.22f);
+        float shrink=c.landTravelQueue.isEmpty() ? ease((1f-t)/.22f) : 1f;
+        return .42f+.58f*Math.min(grow,shrink);
+    }
+    static float explorerBodyX(GameCore c,Layout L) {
+        return c.landTravelFrom>=0 ? travelX(c,L) : cardX(c,L,c.landChoice)+wanderX(c)*iconRadius(c,L);
+    }
+    static float explorerBodyY(GameCore c,Layout L) {
+        float ground=c.landTravelFrom>=0 ? travelGround(c,L)+travelArc(c,L)
+                : cardY(c,L,c.landChoice)+wanderY(c)*iconRadius(c,L);
+        // Walk across the foreground of each emblem; draw after the land so the face stays visible.
+        return ground+iconRadius(c,L)*.40f;
     }
     static float travelerRadius(GameCore c,Layout L) { return L.keyR*c.keyScale()*.55f; }
-    static void drawJourney(Painter p,GameCore c,Layout L,float x,float base,float arc,
-            float walk,float pop,float fade,float time) {
-        float r=travelerRadius(c,L);
-        float stride=(float)Math.sin(time*Softbody.TAU*5f)*(walk>0f && walk<1f ? 1f : 0f);
-        float ground=base+iconRadius(c,L)*1.10f+r*.07f+arc;
-        float y=ground-r*.70f*pop-Math.abs(stride)*r*.08f;
-        int alpha=(int)(255*pop*fade);
-        p.fillEllipse(x,ground,r*.60f,r*.10f,Glyph.withAlpha(INK,(int)(alpha*.18f)));
-        for(int side=-1;side<=1;side+=2)
-            p.fillEllipse(x+side*r*.25f+stride*side*r*.14f,y+r*.53f,
-                    r*.19f,r*.10f,Glyph.withAlpha(0xFF795840,alpha));
-        adventure(p,x,y,r,alpha,.7f);
-    }
     private static void drawTravel(Painter p,GameCore c,Layout L) {
-        if(c.landTravelFrom<0) return;
-        float t=c.landTravelT/TRAVEL_TIME;
-        drawJourney(p,c,L,travelX(c,L),travelGround(c,L),travelArc(c,L),
-                ease((t-.16f)/.68f),ease(t/.16f),Math.min(1f,(1f-t)/.14f),t);
+        if(c.landDiscovery>=0) return;
+        float age=c.landTravelFrom>=0 ? c.landTravelT : c.landWanderT;
+        drawExplorer(p,c,L,explorerBodyX(c,L),explorerBodyY(c,L),explorerScale(c),age,c.landTravelFrom>=0);
+    }
+    static void drawExplorer(Painter p,GameCore c,Layout L,float x,float y,float scale,float age,boolean walking) {
+        float r=travelerRadius(c,L)*scale;
+        float stride=(float)Math.sin(age*Softbody.TAU*(walking ? 5f : 2f));
+        p.fillEllipse(x,y+r*.60f,r*.64f,r*.12f,Glyph.withAlpha(INK,46));
+        for(int side=-1;side<=1;side+=2)
+            p.fillEllipse(x+side*r*.25f+stride*side*r*.12f,y+r*.53f,
+                    r*.19f,r*.10f,0xFF795840);
+        adventure(p,x,y,r,255,.7f);
     }
 
     static float walkingDip(float t) {
@@ -225,11 +244,6 @@ final class LandPicker extends Draw {
         return Math.abs(x-cardX(c,L,land))<=r*width+dot
                 && y>=cardY(c,L,land)-r*1.8f-dot
                 && y<=cardY(c,L,land)+r*bottom+dot;
-    }
-    private static float reverseTrailProgress(GameCore c,Layout L,float walk) {
-        float lead=iconRadius(c,L)*.95f;
-        float end=lead/(spacing(c,L)+lead);
-        return 1f+(end-1f)*walk;
     }
     private static void drawTrail(Painter p,GameCore c,Layout L) {
         float gap=spacing(c,L),r=iconRadius(c,L);

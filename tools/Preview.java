@@ -369,6 +369,17 @@ final class Preview {
             }
         }
 
+        for(int state=0;state<5;state++) {
+            GameCore explorer=new GameCore(new Mem(),843L);
+            explorer.collected=Collect.MASK;explorer.landSeen=LandPicker.stateMask();
+            if(state<2) LandPicker.updateTravel(explorer,state==0 ? 0f : 1.6f);
+            else {
+                LandPicker.select(explorer,3);
+                LandPicker.updateTravel(explorer,LandPicker.TRAVEL_TIME*(state==2 ? 1f : state==3 ? 1.5f : 3f));
+            }
+            shot(dir,"102-land-explorer-"+state,explorer,L,w,h,ss);
+        }
+
         for (int land = 0; land < Lands.COUNT; land++) {
             for (int frame = 0; frame < 2; frame++) {
                 GameCore logo = new GameCore(new Mem(), 892L);
