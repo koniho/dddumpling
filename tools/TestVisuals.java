@@ -640,7 +640,49 @@ final class TestVisuals extends Check {
         check("spring squash and stretch stays drawable", shaped);
     }
 
+    private static void backgroundShake(Layout L) {
+        GameCore c = new GameCore(new Mem(), 8801L); c.startGame();
+        c.clock = .137f; c.shake = 1.2f;
+        final float[] offset = new float[2], backdrop = new float[2];
+        final java.util.ArrayList<float[]> stack = new java.util.ArrayList<float[]>();
+        final boolean[] seen = new boolean[4];
+        Painter p = (Painter) java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class<?>[] {Painter.class}, (proxy, method, args) -> {
+            String name = method.getName();
+            if (name.equals("save")) stack.add(offset.clone());
+            else if (name.equals("restore")) {
+                float[] saved = stack.remove(stack.size() - 1);
+                offset[0] = saved[0]; offset[1] = saved[1];
+            } else if (name.equals("translate")) {
+                offset[0] += (Float) args[0]; offset[1] += (Float) args[1];
+            } else if (name.equals("fillRect") && !seen[0]) {
+                seen[0] = true; backdrop[0] = offset[0]; backdrop[1] = offset[1];
+                check("shaken background covers every screen edge", (Float) args[0] + offset[0] <= 0f
+                        && (Float) args[1] + offset[1] <= 0f && (Float) args[2] + offset[0] >= L.w
+                        && (Float) args[3] + offset[1] >= L.h);
+            } else if (name.equals("clipRect") && (Float) args[1] <= 0f
+                    && (Float) args[3] == L.deckTop && !seen[1]) {
+                seen[1] = true;
+                check("cloud clipping leaves no stationary edge strip", (Float) args[0] + offset[0] <= 0f
+                        && (Float) args[2] + offset[0] >= L.w);
+                check("background clouds move with screen shake", Math.abs(offset[0]) > 1f
+                        && offset[0] == backdrop[0] && offset[1] == backdrop[1]);
+            } else if (name.equals("line") && (Float) args[1] == L.dangerY && !seen[2]) {
+                seen[2] = true;
+                check("playfield shares the background shake", offset[0] == backdrop[0] && offset[1] == backdrop[1]);
+            } else if (name.equals("text") && "SCORE".equals(args[0])) {
+                seen[3] = true;
+                check("score remains steady above the shaking scene", offset[0] == 0f && offset[1] == 0f);
+            }
+            return null;
+        });
+        Renderer.draw(p, c, L);
+        check("shake regression inspected background, clouds, field and HUD", seen[0] && seen[1] && seen[2] && seen[3]);
+        check("screen shake restores its drawing transform", stack.isEmpty() && offset[0] == 0f && offset[1] == 0f);
+    }
+
     static void sky(Layout L) {
+        backgroundShake(L);
         group("cloud sky");
         for (int land = 0; land < Lands.COUNT; land++) {
             int first = land * Boss.EVERY + 1, bossStage = first + Boss.EVERY - 1;

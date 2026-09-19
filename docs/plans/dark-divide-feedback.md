@@ -32,3 +32,6 @@ All four boss deaths now share screen shake and haptics: a heavy opening, three 
 animation beats, and a heavy climax at the collapse or Dark Divide supernova. Shared per-frame
 cues pause with play and clear before early returns; native adapters dispatch light/heavy
 feedback without replaying it in settings, the background, or after the fight.
+
+Screen shake includes the background clouds and land scenery. The backing fills extend
+past the viewport to cover displaced edges; the HUD and modal panels remain steady.
