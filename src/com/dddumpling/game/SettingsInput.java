@@ -89,6 +89,10 @@ final class SettingsInput {
         else if(h==SettingsUi.HIT_CLEAR) c.tapClearCase();
         else if(h==SettingsUi.HIT_ROSTER) c.setNextRoster(!c.fullRoster);
         else if(h==SettingsUi.HIT_GAMEOVER) c.endCurrentRun();
+        else if(h==SettingsUi.HIT_RESET_SWIPE) {
+            c.pushLesson.seen=false;
+            if(c.store!=null) c.store.savePushLessonSeen(false);
+        }
         else if(h==SettingsUi.HIT_RESET_NEWS) c.releaseMascot.reset(c);
         else if(h==SettingsUi.HIT_ALL_LANDS) LandPicker.enableAll(c);
         else if(h==SettingsUi.HIT_RESET_LANDS) LandPicker.reset(c);

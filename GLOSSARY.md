@@ -467,3 +467,10 @@ unstacked words with early-stage pacing, and grants 600 ms for linked pairs. Reg
 the next run after switching it off. `PlayerSettings`, `SettingsArt`, and `SettingsInput` own the
 public preferences, character handles, and shared native input; `SettingsUi` and `DevSettings` own
 the developer groups.
+
+The first normal-stage threat on the last life pauses play for a **desperation swipe lesson**.
+Swipe upward from the highlighted bar to perform the real push-back and resume; taps cannot
+dismiss it. Completion is saved across runs and app restarts. Boss fights and cave expeditions
+are excluded, and a spent swipe defers the lesson until a later stage. `PushLesson` owns the
+prompt, freeze, and shared native gesture.
+Developer settings → Progress → **RESET SWIPE** clears the saved lesson completion flag.
