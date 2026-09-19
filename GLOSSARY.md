@@ -363,7 +363,7 @@ partner's gold highlight remains visible; there is no countdown circle, text, or
 have varying thickness along their length, solid hexagon-colored fills with stronger underside shadows and upper highlights for rounded volume, and key-colored outlines matching the hexagons. Limbs render behind the characters
 and are cut out around both complete character tiles, including during the flex. A missed window restores the first key without a life penalty
 or score; both enemies still descend. A successful chord credits one stage enemy while retaining both character rewards; the clasp opens, the characters peel outward with their hands, and a short curved whoosh marks the release point. Stage credit waits until both halves are cleared or breached, even if the bond breaks. The retired MULTI mode releases
-links, and a breached partner cannot leave the other waiting forever.
+links. While linked, the first half to breach removes the whole pair, costs one life, and resolves one stage enemy without clear rewards.
 
 Stage 16 gives 15% longer travel and spawn intervals and caps the field at four enemies.
 Stage 17 retains 7.5% timing relief; stage 18 returns to the ordinary curve.

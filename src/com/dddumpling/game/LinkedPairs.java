@@ -111,12 +111,14 @@ final class LinkedPairs {
         }
     }
 
-    /** A breached partner cannot leave a cleared word waiting forever. */
+    /** One linked threat costs one life; remove its partner before the damage lands. */
     static void breached(GameCore c, GameCore.Enemy e, Layout L) {
         GameCore.Enemy other = e.link;
-        boolean waiting = other != null && other.linkWaiting;
         unlink(e);
-        if (waiting) reset(other); // An incomplete chord earns no clear, even on a breach.
+        if (other == null) return;
+        c.enemies.remove(other);
+        if (c.target == other) c.target = null;
+        c.resolveStageEnemy(other);
     }
 
     /** Keep the bond, but a power transition starts a fresh input window. */

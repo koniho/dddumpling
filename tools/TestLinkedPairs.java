@@ -145,17 +145,43 @@ final class TestLinkedPairs extends Check {
         c.tapKey(a.word[0], L);
         b.attacking = true; b.attackT = GameCore.ATTACK_TIME;
         c.update(DT, L);
-        check("breach restores survivor without awarding an incomplete chord", a.typeable() && a.link == null && c.resolvedThisStage == 0 && c.score == 0);
-        check("a partner breach costs only its own life", c.lives == GameCore.START_LIVES - 1);
-        c.destroyWord(a,0,0,L);
-        check("clearing the surviving half resolves one stage enemy",c.resolvedThisStage==1);
-        for(int first=0;first<2;first++) {
-            c=wave(L,16);a=c.enemies.get(first);b=a.link;
-            a.attacking=true;a.attackT=GameCore.ATTACK_TIME;c.update(DT,L);
-            check("first breached half leaves stage unit pending " + first,c.resolvedThisStage==0);
-            b.attacking=true;b.attackT=GameCore.ATTACK_TIME;c.update(DT,L);
-            check("both breached halves resolve one stage enemy " + first,c.resolvedThisStage==1);
+        check("breach consumes incomplete chord without rewards", !c.enemies.contains(a)
+                && !c.enemies.contains(b) && c.resolvedThisStage == 1 && c.score == 0 && c.squishes == 0);
+        check("incomplete chord breach costs one life", c.lives == GameCore.START_LIVES - 1);
+        for (int first = 0; first < 2; first++) {
+            for (boolean simultaneous : new boolean[] {false, true}) {
+                c = wave(L, 16); a = c.enemies.get(first); b = a.link;
+                c.target = b;
+                GameCore.Enemy bystander = add(c, L, new int[] {0}, L.playTop);
+                bystander.speed = 100f;
+                float beforeY = bystander.y;
+                a.attacking = true; a.attackT = GameCore.ATTACK_TIME;
+                b.attacking = simultaneous; b.attackT = GameCore.ATTACK_TIME;
+                c.update(DT, L);
+                String scenario = first + ":" + simultaneous;
+                check("pair breach removes both halves " + scenario,
+                        !c.enemies.contains(a) && !c.enemies.contains(b) && c.target == null);
+                check("pair breach charges one hit and one stage slot " + scenario,
+                        c.lives == GameCore.START_LIVES - 1 && c.hurtThisStage == 1
+                        && c.resolvedThisStage == 1 && ((Ear)c.sound).damages == 1);
+                check("pair removal does not update bystander twice " + scenario,
+                        Math.abs(bystander.y - beforeY - bystander.speed * DT) < .001f);
+                c.update(DT, L);
+                check("pair cannot deal a delayed second hit " + scenario,
+                        c.lives == GameCore.START_LIVES - 1 && ((Ear)c.sound).damages == 1);
+                bystander.attacking = true; bystander.attackT = GameCore.ATTACK_TIME;
+                c.update(DT, L);
+                check("unrelated word still deals its own damage " + scenario,
+                        c.lives == GameCore.START_LIVES - 2 && ((Ear)c.sound).damages == 2);
+            }
         }
+        c = wave(L, 16); a = c.enemies.get(0); b = a.link;
+        c.lives = 1;
+        a.attacking = b.attacking = true;
+        a.attackT = b.attackT = GameCore.ATTACK_TIME;
+        c.update(DT, L);
+        check("fatal pair breach ends run with exactly one hit", c.state == GameCore.OVER
+                && c.lives == 0 && c.enemies.isEmpty() && ((Ear)c.sound).damages == 1);
 
 
         for (int mode = 0; mode < Power.COUNT; mode++) {
