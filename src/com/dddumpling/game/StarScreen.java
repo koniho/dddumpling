@@ -170,13 +170,16 @@ final class StarScreen extends Draw {
 
     /** Dedicated direct-control track replacing the six keyboard arrows during Starpath. */
     private static void slider(Painter p, StarPath q, Layout L, float fade, float clock) {
+        slider(p,q.x,L,fade,clock);
+    }
+    static void slider(Painter p,float knobX,Layout L,float fade,float clock) {
         float l = sliderLeft(L), r = sliderRight(L), y = sliderY(L);
         float pulse = 0.72f + 0.28f * (float) Math.sin(clock * 7f);
         p.line(l, y, r, y, Glyph.withAlpha(0xFF312A62, (int) (220 * fade)), L.unit * 0.52f);
         p.line(l, y, r, y, Glyph.withAlpha(0xFFBDEBFF, (int) (150 * fade * pulse)),
                 L.unit * 0.16f);
-        p.fillCircle(q.x, y, L.unit * 0.78f, Glyph.withAlpha(0xFF6E72C8, (int) (210 * fade)));
-        p.strokeCircle(q.x, y, L.unit * (0.92f + 0.08f * pulse),
+        p.fillCircle(knobX, y, L.unit * 0.78f, Glyph.withAlpha(0xFF6E72C8, (int) (210 * fade)));
+        p.strokeCircle(knobX, y, L.unit * (0.92f + 0.08f * pulse),
                 Glyph.withAlpha(0xFFFFFFFF, (int) (235 * fade)), L.unit * 0.12f);
         float a = L.unit * 0.34f;
         p.fillPoly(new float[] {l - a, y, l + a, y - a, l + a, y + a},

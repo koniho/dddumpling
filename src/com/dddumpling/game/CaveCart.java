@@ -4,15 +4,16 @@ package com.dddumpling.game;
 final class CaveCart {
     static final int TRACK=20, RIDE=0, REPORT=1;
     static final float READY=1.4f, RUN_TIME=10f, SEGMENT=.95f, REPORT_TIME=2.3f, LEAN_SPEED=4.8f;
+    static final float RED=.52f, RED_GRACE=1.25f;
     final CaveCartInput input=new CaveCartInput(this);
     final CaveCartScene scene=new CaveCartScene();
     int progress,phase;
-    float ready,elapsed,segment,report,lean,intent,hold,balance,aligned,turn,grace,rollTick,squealTick;
+    float ready,elapsed,segment,report,lean,intent,hold,balance,aligned,turn,grace,danger,rollTick,squealTick;
     boolean active,won,paid,spilled;
     void begin(GameCore c){
         active=true;won=paid=spilled=false;phase=RIDE;ready=READY;
         elapsed=segment=report=lean=intent=hold=balance=aligned=rollTick=squealTick=0;
-        grace=.25f;input.release();scene.reset();turn=curve(progress);
+        danger=0;grace=.25f;input.release();scene.reset();turn=curve(progress);
         if(progress>=TRACK)finish(c,true,false);
     }
     static float bend(int index){
@@ -45,19 +46,23 @@ final class CaveCart {
         lean+=Math.max(-LEAN_SPEED*dt,Math.min(LEAN_SPEED*dt,intent-lean));
         if(ready>0){ready=Math.max(0,ready-dt);return;}
         elapsed+=dt;segment+=dt;grace=Math.max(0,grace-dt);
-        turn=curve(progress+segment/SEGMENT);
+        turn=curve(progress+Math.min(segment/SEGMENT,.99999f));
         balance+=((turn-lean)*2.6f-balance*1.15f)*dt;
+        balance=Math.max(-1,Math.min(1,balance));
+        danger=Math.abs(balance)>RED?danger+dt:0;
         if(Math.abs(turn-lean)<.40f && Math.abs(lean)>.25f && turn*lean>0)aligned+=dt;
         rollTick-=dt;squealTick-=dt;
         scene.rumble=Math.max(scene.rumble,.16f+.06f*(float)Math.sin(scene.clock*24));
         if(rollTick<=0){rollTick=CartRecording.DURATION;if(c.sound!=null)c.sound.caveEvent(Sfx.CART_ROLL);}
-        if(Math.abs(balance)>.52f && squealTick<=0){squealTick=.65f;scene.feedback=1;scene.rumble=.6f;if(c.sound!=null)c.sound.caveEvent(Sfx.CART_SQUEAL);}
-        if(grace==0 && Math.abs(balance)>=1){finish(c,false,true);return;}
+        if(Math.abs(balance)>RED && squealTick<=0){squealTick=.65f;scene.feedback=1;scene.rumble=.6f;if(c.sound!=null)c.sound.caveEvent(Sfx.CART_SQUEAL);}
+        if(grace==0 && danger>=RED_GRACE){finish(c,false,true);return;}
         if(segment>=SEGMENT){
-            if(aligned<.24f){finish(c,false,true);return;}
-            segment-=SEGMENT;aligned=0;progress=Math.min(TRACK,progress+1);save(c);
-            scene.feedback=1;scene.pulse=.35f;
-            if(progress>=TRACK){finish(c,true,false);return;}
+            if(aligned<.24f)segment=SEGMENT-.00001f;
+            else {
+                segment-=SEGMENT;aligned=0;progress=Math.min(TRACK,progress+1);save(c);
+                scene.feedback=1;scene.pulse=.35f;
+                if(progress>=TRACK){finish(c,true,false);return;}
+            }
         }
         if(elapsed>=RUN_TIME)finish(c,false,false);
     }

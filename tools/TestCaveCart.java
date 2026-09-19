@@ -10,20 +10,23 @@ final class TestCaveCart extends Check {
         Mem store=new Mem();GameCore c=game(L,store);CaveCart m=c.cart;
         check("first cave slot replaces rhythm with minecart",m.active && !c.band.active && !c.mining.active && !c.starBonus);
         m.update(c,1);check("ready holds progress and balance",m.progress==0 && m.segment==0 && m.balance==0);
-        float y=(L.playTop+L.deckTop)*.5f;
-        check("keyboard cannot claim field drag",!m.input.down(c,L,1,c.keyX(L,0),c.keyY(L,0)));
-        check("field starts left lean",m.input.down(c,L,2,L.w*.2f,y) && m.intent<0);
+        float y=StarScreen.sliderY(L);
+        check("outside slider does not steer",!m.input.down(c,L,1,L.w*.1f,L.playTop));
+        check("Star Path slider starts left lean",m.input.down(c,L,2,L.w*.2f,y) && m.intent<0);
         m.input.down(c,L,3,L.w*.8f,y);m.input.move(c,L,3,L.w*.8f,y);m.input.up(3);
         check("second finger cannot steal steering",m.input.pointer==2 && m.intent<0);
         m.input.move(c,L,2,L.w*.8f,y);check("drag crosses to right lean",m.intent>0);
-        m.input.up(2);check("release centres intent",m.intent==0 && m.input.pointer<0);
+        m.input.up(2);check("release retains direct slider position",m.intent>0 && m.input.pointer<0);
+        float lean=m.lean;
+        m.input.down(c,L,4,L.w*.6f,L.playTop+CaveCartScreen.field(L)*.72f);
+        check("grabbing cart does not snap lean",Math.abs(m.lean-lean)<.001f);m.input.up(4);
         m.press(c,Roster.at(c.playRosterFull(),0));check("left keys lean left",m.intent<0);
         m.press(c,Roster.at(c.playRosterFull(),Roster.count(c.playRosterFull())-1));check("right keys lean right",m.intent>0);
         Pause.open(c);float before=m.ready;c.update(2,L);check("pause freezes ride",m.ready==before && m.input.pointer<0 && m.intent==0);Pause.resume(c);
         c.openSettings();c.update(2,L);check("settings freezes ride",m.ready==before);c.closeSettings();
         for(int visit=0;visit<3;visit++){
             c=game(L,store);m=c.cart;m.ready=0;int lives=c.lives;
-            m.update(c,2);
+            m.update(c,3);
             check("idle spills without farming progress "+visit,m.spilled && m.progress==0 && c.lives==lives);
             check("spill rumble consumed once "+visit,m.scene.takeFeedback()==2 && m.scene.takeFeedback()==0);
         }
@@ -51,7 +54,7 @@ final class TestCaveCart extends Check {
         for(int f=0;f<30;f++)b.cart.update(b,1f/60);
         check("frame partition preserves balance",Math.abs(a.cart.balance-b.cart.balance)<.001f && a.cart.progress==b.cart.progress);
         for(int point=0;point<CaveCart.TRACK;point++){
-            c=game(L,new Mem());m=c.cart;m.progress=point;m.begin(c);m.ready=0;m.update(c,2);
+            c=game(L,new Mem());m=c.cart;m.progress=point;m.begin(c);m.ready=0;m.update(c,3);
             check("idle cannot farm saved section "+point,m.progress==point && m.spilled);
         }
         float min=1,max=0,step=0;
@@ -66,9 +69,23 @@ final class TestCaveCart extends Check {
         float z=CaveCartScreen.CART_Z,delta=.01f;
         float curvature=(CaveCartScreen.railX(m,z+delta)-2*CaveCartScreen.railX(m,z)+CaveCartScreen.railX(m,z-delta))/(delta*delta);
         check("rail curvature at the cart matches the live turn",Math.abs(curvature-m.turn*.2f*2.2f*2.2f)<.01f);
+        recovery(L);
         recordedCadence(L);
         rotation(L);
         bounded(L);
+    }
+    private static void recovery(Layout L){
+        GameCore c=game(L,new Mem());CaveCart m=c.cart;m.ready=0;m.progress=3;m.segment=.6f;
+        m.balance=-1;m.steer(1);m.hold=Float.POSITIVE_INFINITY;
+        m.update(c,.8f);check("red allows correction before falling",m.phase==CaveCart.RIDE && m.danger>.7f);
+        m.update(c,.5f);check("continuous red eventually spills",m.spilled);
+        c=game(L,new Mem());m=c.cart;m.ready=0;m.progress=3;m.segment=.6f;
+        m.balance=-.9f;m.danger=.4f;m.steer(-.9f);m.lean=-.9f;m.hold=Float.POSITIVE_INFINITY;
+        m.update(c,.5f);
+        check("correct lean clears red countdown",m.phase==CaveCart.RIDE && m.danger==0 && Math.abs(m.balance)<CaveCart.RED);
+        m.danger=.8f;Pause.open(c);c.update(3,L);check("pause freezes recovery countdown",m.danger==.8f);
+        c=game(L,new Mem());m=c.cart;m.ready=0;m.segment=CaveCart.SEGMENT-.01f;
+        m.update(c,.03f);check("unhandled checkpoint cannot instantly spill",m.phase==CaveCart.RIDE && m.progress==0);
     }
     private static void recordedCadence(Layout L){
         final GameCore c=game(L,new Mem());c.cart.ready=0;

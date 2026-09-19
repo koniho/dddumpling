@@ -8,7 +8,7 @@ Other lands keep Steamer and Star Path.
 
 ## Cart Rush
 
-Hold/drag either side of the field or tap the matching half of the keyboard to lean into bends.
+Drag the Star Path slider or grab the cart to lean; the slider replaces the keyboard.
 Incoming rails preview turns and fade into darkness at the far end. Foreground tunnel arches
 pass over the rails and riders. A balance meter with a safe center and danger ends replaces
 the turn arrow; its marker follows the passengers' outward drift. The camera follows behind the cart: rear panel, edge-on wheel treads,
@@ -20,6 +20,9 @@ Twenty sections earn a snake. Completed sections save immediately; unfinished se
 next visit. Visits last up to ten seconds after a 1.4-second ready beat. Existing ride progress
 retains its saved key, but mining carts no longer migrate into ride progress. Each game resets
 only its own progress after paying its reward.
+
+The red balance warning lasts 1.25 seconds before a spill. Returning to the safe region resets
+the countdown. Unhandled checkpoints wait for steering instead of causing instant failure.
 
 ## Dumpling Mine
 

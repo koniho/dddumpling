@@ -75,7 +75,8 @@ final class Preview {
         shot(dir,"111-cart-right",c,L,w,h,ss);
         m.scene.clock=1.35f;shot(dir,"111-cart-foreground-arches",c,L,w,h,ss);
         m.balance=.85f;m.lean=-.5f;m.scene.rumble=.6f;
-        shot(dir,"111-cart-danger",c,L,w,h,ss);
+        m.danger=.25f;shot(dir,"111-cart-danger",c,L,w,h,ss);
+        m.danger=1.05f;shot(dir,"111-cart-red-countdown",c,L,w,h,ss);
         m.balance=-.85f;shot(dir,"111-cart-balance-right",c,L,w,h,ss);
         m.balance=.85f;
         m.phase=CaveCart.REPORT;m.spilled=true;m.scene.spillAge=.32f;

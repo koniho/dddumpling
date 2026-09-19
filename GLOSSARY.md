@@ -458,10 +458,11 @@ the developer groups.
 ## Cart Rush interlude
 
 **Cart Rush** replaces Cave Band and is the first cave minigame. Three
-dumplings ride a winding track. Hold or drag left/right in the field, or tap the matching half of
-the keyboard, to lean into bends. Rails show upcoming curves; a balance meter shows outward drift and danger near either end.
+dumplings ride a winding track. Drag the bottom slider or grab the cart, using the same controls as Star Path, to lean into bends.
+The six-key deck is replaced by the slider. Rails show upcoming curves; a balance meter shows outward drift and danger near either end.
 Foreground arches pass over the ride and distant rails fade into darkness. Sparks, wheel scrape,
-screen shake, haptics, and frightened passengers warn before a spill.
+screen shake, haptics, and frightened passengers warn before a spill. A shrinking ring gives
+1.25 seconds in red to recover; returning to safety resets it.
 
 Twenty track sections earn a Cave Snake and the normal bonus reward. Completed sections save
 immediately across attempts and app restarts. Each visit lasts up to ten seconds; partial sections

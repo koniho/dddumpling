@@ -501,16 +501,16 @@ public final class IOSInputTest extends Check {
         IOSGame game=game();GameCore c=game.core();Layout L=game.geometry();
         c.startGame();c.jumpToStage(21,L);Interlude.enterBonus(c,L);CaveCart m=c.cart;m.ready=0;
         check("iOS selects requested cave game without rhythm",m.active && !c.band.active);
-        float x=L.w*.22f,y=(L.playTop+L.deckTop)*.5f;
+        float x=L.w*.22f,y=StarScreen.sliderY(L);
         game.touch(one(IOSTouch.ACTION_DOWN,42,x,y));
-        check("field hold leans left",m.intent<0);
+        check("Star Path slider leans left",m.intent<0);
         game.touch(two(IOSTouch.ACTION_POINTER_DOWN,1,42,x,y,43,x,y));
         game.touch(two(IOSTouch.ACTION_POINTER_UP,1,42,x,y,43,x,y));
         check("second UIKit finger cannot release cart",m.input.pointer==42);
         game.touch(one(IOSTouch.ACTION_MOVE,42,L.w*.78f,y));
         check("UIKit drag leans right",m.intent>0);
         game.touch(one(IOSTouch.ACTION_UP,42,L.w*.78f,y));
-        check("lifting releases lean",m.input.pointer<0 && m.intent==0);
+        check("lifting keeps slider lean",m.input.pointer<0 && m.intent>0);
         game.touch(one(IOSTouch.ACTION_DOWN,44,x,y));
         game.background(true);check("background releases minecart pointer",m.input.pointer<0 && m.intent==0);
     }

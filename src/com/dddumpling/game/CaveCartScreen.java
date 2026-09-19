@@ -44,7 +44,7 @@ final class CaveCartScreen extends Draw {
                 p.fillRect(gx-gr+i*gr*.2f,gy-gr*1.5f+row*gr*.2f,gx-gr+(i+1)*gr*.2f,gy-gr*1.5f+(row+1)*gr*.2f,(i+row)%2==0?INK:0xFF30283B);
         }
         float x=railX(m,CART_Z)*w,y=top+h*.72f+(float)Math.sin(t*39)*w*.004f,tilt=bank(m),r=w*.235f;
-        boolean panic=Math.abs(m.balance)>.52f;
+        boolean panic=Math.abs(m.balance)>CaveCart.RED;
         // Far axle and tub opening sit behind the riders; rear wheel treads have no face-on spokes.
         for(int side=-1;side<=1;side+=2)wheel(p,x+side*r*.72f,y-r*.12f+side*r*.72f*tilt,r*.65f,tilt,t);
         p.fillPoly(new float[]{x-r*.78f,y-r*.55f-r*.78f*tilt,x+r*.78f,y-r*.55f+r*.78f*tilt,
@@ -86,14 +86,10 @@ final class CaveCartScreen extends Draw {
             if(m.won)Trinket.draw(p,c.prize,w*.5f,top+h*.46f,w*.075f,t,true,1);
         }else{
             balanceMeter(p,m,L);
-            p.text(m.ready>0?"LEAN INTO THE TURN":"HOLD TO LEAN",w*.5f,top+h*.91f,type(s*.55f),INK,Painter.CENTER,true);
-            for(int side=-1;side<=1;side+=2){
-                int col=m.intent*side>.2f?GOLD:0xFF8D829F;
-                arrow(p,w*(.5f+side*.33f),top+h*.81f,w*.052f,side,col);
-            }
+            p.text(m.ready>0?"SLIDE TO LEAN":"KEEP YOUR BALANCE",w*.5f,top+h*.91f,type(s*.55f),INK,Painter.CENTER,true);
         }
         p.fillRect(0,L.deckTop,w,L.h,0xFF221E31);
-        Renderer.keys(m.phase==CaveCart.RIDE?p:new OpacityPainter(p,.2f),c,L);
+        StarScreen.slider(p,CaveCartInput.knob(m,L),L,m.phase==CaveCart.RIDE?1:.2f,t);
         if(c.bonusParading())Parade.draw(p,c,L,Math.min(1,c.paradeTimer/.35f));
     }
     private static void arches(Painter p,CaveCart m,Layout L,float vy){
@@ -122,13 +118,14 @@ final class CaveCartScreen extends Draw {
         p.fillPoly(pill(x,y,half,h*1.28f,16),0xFF27152F);
         p.strokePoly(pill(x,y,half,h*1.28f,16),0xFFF5ECEB,Math.max(4f,L.unit*.085f));
         p.line(x-travel,y,x+travel,y,0xFFC64B72,h*.55f);
-        p.line(x-travel*.52f,y,x+travel*.52f,y,0xFF65C7B0,h*.55f);
+        p.line(x-travel*CaveCart.RED,y,x+travel*CaveCart.RED,y,0xFF65C7B0,h*.55f);
         p.line(x,y-h,x,y+h,0xFFF5ECEB,L.unit*.055f);
-        int color=Math.abs(value)>.52f?0xFFFF477E:0xFF65F5E3;
+        int color=Math.abs(value)>CaveCart.RED?0xFFFF477E:0xFF65F5E3;
         float marker=x+value*travel;
         p.fillCircle(marker,y,h*1.06f,color);
         p.fillCircle(marker,y,h*.57f,0xFF17333A);
         p.line(marker,y-h*1.27f,marker,y+h*1.27f,color,L.unit*.060f);
+        if(m.danger>0)p.arc(marker,y,h*1.5f,h*1.5f,-90,360*Math.max(0,1-m.danger/CaveCart.RED_GRACE),GOLD,L.unit*.08f);
     }
     private static void wheel(Painter p,float x,float y,float r,float tilt,float t){
         float half=r*.075f,height=r*.26f;
@@ -149,8 +146,5 @@ final class CaveCartScreen extends Draw {
         p.arc(x,y+r*.1f,r*.72f,r*.36f,15,150,Glyph.mix(col,INK,.22f),r*.035f);
         if(panic)for(int side=-1;side<=1;side+=2){float yy=y-r*(.7f+.10f*(float)Math.sin(t*18));
             p.line(x+side*r*.95f,yy,x+side*r*1.16f,yy-r*.2f,GOLD,r*.07f);}
-    }
-    private static void arrow(Painter p,float x,float y,float r,int side,int color){
-        p.polyline(new float[]{x-side*r*.35f,y-r*.7f,x+side*r*.5f,y,x-side*r*.35f,y+r*.7f},color,r*.22f);
     }
 }
