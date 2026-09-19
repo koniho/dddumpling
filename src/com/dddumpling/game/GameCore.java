@@ -2846,9 +2846,11 @@ final class GameCore {
                 flashColor = FLASH_DAMAGE;
                 shake = Math.max(shake, 0.35f * (e.attackT / ATTACK_TIME));
                 if (e.attackT >= ATTACK_TIME) {
-                    // Unlist first: a fatal breach clears the whole field, which would
-                    // invalidate this index.
-                    enemies.remove(i);
+                    // A breach also removes its partner; skip that lower slot without replaying others.
+                    // Unlist before damage: a fatal hit clears the whole field.
+                    int partnerIndex = enemies.indexOf(e.link);
+                    if (partnerIndex >= 0 && partnerIndex < i) i--;
+                    enemies.remove(e);
                     breach(e, L);
                     // Nothing left to simulate once the run is over.
                     if (state != PLAY) return;
@@ -3168,7 +3170,7 @@ final class GameCore {
         if (sound != null) sound.frenzy(false);
     }
 
-    private void resolveStageEnemy(Enemy e) {
+    void resolveStageEnemy(Enemy e) {
         if(e.stageResolved) return;
         e.stageResolved=true;
         if(e.stageMate==null || e.stageMate.stageResolved) resolvedThisStage++;
