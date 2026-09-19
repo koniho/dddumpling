@@ -136,6 +136,7 @@ final class Renderer extends Draw {
         // Over the title screen and its display case, under nothing: the story is modal.
         if (c.storyOpen()) Storybook.draw(p, c, L);
         if (c.settingsOpen) PlayerSettings.draw(p, c, L);
+        PushLesson.draw(p, c, L);
         Pause.draw(p, c, L);
         ReleaseNotes.entry(p,c,L);
         c.releaseNotes.draw(p,c,L);

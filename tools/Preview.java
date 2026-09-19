@@ -160,6 +160,9 @@ final class Preview {
     private static int unfitFrames;
 
     private static final class Mem implements GameCore.Store {
+        boolean pushLessonSeen = true; // Ordinary simulations model a player past onboarding.
+        public boolean loadPushLessonSeen() { return pushLessonSeen; }
+        public void savePushLessonSeen(boolean value) { pushLessonSeen = value; }
         byte[] progress;
         public byte[] loadProgress() { return progress == null ? null : progress.clone(); }
         public void saveProgress(byte[] data) { progress = data.clone(); }
@@ -802,6 +805,15 @@ final class Preview {
         step(c4, L, 2 * DT);
         System.out.printf("danger frame: warn=%.2f harm=%.2f%n", c4.warnLevel, c4.harm());
         shot(dir, "6-danger", c4, L, w, h, ss);
+
+        c4.pushLesson.seen = false;
+        c4.update(DT, L);
+        shot(dir, "199-push-lesson", c4, L, w, h, ss);
+        GameCore reset = new GameCore(store, 18L);
+        reset.settingsOpen = true; reset.settingsPage = 1; reset.settingsTab = SettingsUi.PROGRESS;
+        shot(dir, "200-swipe-reset", reset, L, w, h, ss);
+        c4.pushLesson.reset();
+        c4.pushLesson.seen = true;
 
         // The push-back offered: a word inside the warning band and the swipe strip lit.
         System.out.printf("push offered: ready=%s warn=%.2f%n", c4.pushReady(), c4.warnLevel);

@@ -33,6 +33,9 @@ abstract class Check {
     static int pass, fail;
 
     static final class Mem implements GameCore.Store {
+        boolean pushLessonSeen = true; // Ordinary simulations model a player past onboarding.
+        public boolean loadPushLessonSeen() { return pushLessonSeen; }
+        public void savePushLessonSeen(boolean value) { pushLessonSeen = value; }
         byte[] progress;
         public byte[] loadProgress() { return progress == null ? null : progress.clone(); }
         public void saveProgress(byte[] data) { progress = data.clone(); }

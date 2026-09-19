@@ -29,6 +29,7 @@ public class GameView extends View {
     boolean handlesBack() { return Pause.handlesBack(core); }
     boolean paused() { return core.paused; }
     private void cancelPointers() {
+        core.pushLesson.cancelTouch();
         settingsInput.cancel();
         core.releaseNotes.cancelTouch();
         starDragPointer = bonusSwipePointer = bossDragPointer = -1;
@@ -132,6 +133,10 @@ public class GameView extends View {
             return true;
         }
         int action = ev.getActionMasked();
+        if (core.pushLesson.active || core.pushLesson.ownsTouch) {
+            if (core.pushLesson.touch(core, layout, action, ev.getX(), ev.getY())) tick();
+            return true;
+        }
         if(core.releaseNotes.handleTouch(core,layout,action,ev.getX(ev.getActionIndex()),ev.getY(ev.getActionIndex())))
             return true;
         if (core.settingsOpen) {

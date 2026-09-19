@@ -244,6 +244,22 @@ public final class IOSInputTest extends Check {
         game.touch(one(2,3,x,y-l.enemyR*2));
         check("lower-field upward swipe triggers panic", c.pushT>0);
         game.touch(one(1,3,x,y-l.enemyR*2));
+        c.pushUsed=false; c.pushLesson.seen=false; c.lives=1;
+        c.enemies.clear(); add(c,l,new int[] {0},l.dangerY-10); game.update(DT);
+        check("native last-life threat freezes for lesson",c.pushLesson.active);
+        tap(game,l.keyX[0],l.keyY[0]);
+        check("native key cannot dismiss lesson",c.pushLesson.active);
+        y=(l.dangerY+l.deckTop)*.5f;
+        game.touch(one(0,3,x,y)); game.touch(one(3,3,x,y));
+        game.touch(one(2,3,x,y-l.enemyR*2));
+        check("native cancellation requires fresh swipe",c.pushLesson.active);
+        game.touch(one(0,3,x,y)); game.background(true); game.background(false);
+        Pause.resume(c);
+        game.touch(one(2,3,x,y-l.enemyR*2));
+        check("background cannot complete stale lesson swipe",c.pushLesson.active);
+        game.touch(one(0,3,x,y)); game.touch(one(2,3,x,y-l.enemyR*2));
+        check("native bar swipe finishes lesson and pushes",!c.pushLesson.active && c.pushUsed);
+        game.touch(one(1,3,x,y-l.enemyR*2));
     }
 
     private static void starFeedback() {
@@ -315,6 +331,11 @@ public final class IOSInputTest extends Check {
         check("native all lands chip enables every land",LandPicker.count(c)==Lands.COUNT);
         tap(game,l.w*.5f,ui.difficultyY+ui.difficultyH/2);
         check("native reset news clears seen status without leaving settings",c.settingsOpen && c.store.loadReleaseSeen().equals(""));
+        c.pushLesson.seen=true; c.store.savePushLessonSeen(true);
+        tap(game,(ui.testChipL(0,1)+ui.testChipR(0,1))*.5f,ui.testY+ui.testH*.5f);
+        check("reset swipe clears saved lesson without leaving settings",c.settingsOpen
+                && !c.pushLesson.seen && !c.store.loadPushLessonSeen());
+
         c.settingsOpen=false;
         for(int i=0;i<2;i++) {
             c.settingsOpen=true;c.settingsTab=SettingsUi.POWERS;ui.compute(l,c.settingsTab);

@@ -218,6 +218,56 @@ final class TestStages extends Check {
     }
 
     /** The push-back: when it is offered, what it moves, and that it is once a stage. */
+    static void pushLesson(Layout L) {
+        group("desperation swipe lesson");
+        Mem mem = new Mem(); mem.pushLessonSeen = false;
+        GameCore c = new GameCore(mem, 161L);
+        c.startGame(); advance(c,L,2f); c.enemies.clear();
+        GameCore.Enemy e = add(c,L,new int[] {1,2},L.dangerY-L.enemyR);
+        c.update(DT,L);
+        check("healthy player is not interrupted", !c.pushLesson.active);
+        c.lives=1; c.settingsOpen=true; c.update(DT,L);
+        check("settings do not open lesson", !c.pushLesson.active);
+        c.settingsOpen=false; c.pushUsed=true; c.update(DT,L);
+        check("spent swipe cannot trap player", !c.pushLesson.active);
+        c.pushUsed=false; c.update(DT,L);
+        check("last-life threat opens lesson before damage", c.pushLesson.active && c.lives==1);
+        float y=e.y, time=c.time, mode=c.modeLeft;
+        c.update(10f,L);
+        check("lesson freezes words and simulation timers", e.y==y && c.time==time && c.modeLeft==mode);
+        check("keys cannot dismiss lesson", !c.tapKey(1,L) && c.pushLesson.active);
+        float x=L.w*.5f, bar=(L.dangerY+L.deckTop)*.5f, rise=L.enemyR*2;
+        c.pushLesson.touch(c,L,0,x,L.playTop);
+        c.pushLesson.touch(c,L,2,x,L.playTop-rise);
+        check("swipe must begin at bar", c.pushLesson.active);
+        c.pushLesson.touch(c,L,0,x,bar);
+        c.pushLesson.touch(c,L,1,x,bar);
+        check("tap does not dismiss", c.pushLesson.active);
+        c.pushLesson.touch(c,L,0,x,bar);
+        c.pushLesson.touch(c,L,2,x,bar+rise);
+        c.pushLesson.touch(c,L,2,x+rise*2,bar-rise);
+        check("downward and sideways drags do not dismiss", c.pushLesson.active);
+        c.pushLesson.touch(c,L,3,x,bar);
+        c.pushLesson.touch(c,L,2,x,bar-rise);
+        check("cancelled gesture cannot finish", c.pushLesson.active);
+        c.pushLesson.touch(c,L,0,x,bar);
+        check("upward swipe performs push", c.pushLesson.touch(c,L,2,x,bar-rise) && c.pushUsed);
+        check("completion persists and owns remaining touch", !c.pushLesson.active && mem.pushLessonSeen && c.pushLesson.ownsTouch);
+        c.pushLesson.touch(c,L,1,x,bar-rise);
+        check("lift releases touch", !c.pushLesson.ownsTouch);
+        check("reload remembers completion", new GameCore(mem,1L).pushLesson.seen);
+        c.startGame();
+        check("new run remembers completion", c.pushLesson.seen && !c.pushLesson.active);
+        mem.pushLessonSeen=false;
+        GameCore boss=new GameCore(mem,2L); boss.startGame(); boss.jumpToStage(5,L);
+        boss.lives=1; add(boss,L,new int[] {1,2},L.dangerY);
+        boss.update(DT,L);
+        check("boss excluded", !boss.pushLesson.active);
+        boss.jumpToStage(21,L); boss.lives=1;
+        add(boss,L,new int[] {1,2},L.dangerY); boss.update(DT,L);
+        check("cave excluded", !boss.pushLesson.active);
+    }
+
     static void pushBack(Layout L) {
         group("push-back");
         GameCore c = new GameCore(new Mem(), 161L);
