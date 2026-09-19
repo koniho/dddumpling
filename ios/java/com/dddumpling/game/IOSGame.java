@@ -26,6 +26,7 @@ public final class IOSGame {
         return BuildFlags.DEVELOPER && (core.state == GameCore.TITLE || core.settingsOpen || core.paused);
     }
     private void cancelPointers() {
+        core.pushLesson.cancelTouch();
         settingsInput.cancel();
         core.releaseNotes.cancelTouch();
         core.cave.input.release();
@@ -79,6 +80,10 @@ public final class IOSGame {
             return true;
         }
         int action = ev.getActionMasked();
+        if (core.pushLesson.active || core.pushLesson.ownsTouch) {
+            if (core.pushLesson.touch(core, layout, action, ev.getX(), ev.getY())) tick();
+            return true;
+        }
         if(core.releaseNotes.handleTouch(core,layout,action,ev.getX(ev.getActionIndex()),ev.getY(ev.getActionIndex())))
             return true;
         if (core.settingsOpen) {

@@ -162,6 +162,8 @@ final class GameCore {
 
     /** Persistence seam; the Activity backs this with SharedPreferences. */
     interface Store extends Progress.Store {
+        default boolean loadPushLessonSeen() { return false; }
+        default void savePushLessonSeen(boolean value) {}
         default String loadReleaseSeen() { return BuildFlags.BUILD_ID; }
         default void saveReleaseSeen(String value) {}
         int loadBest();
@@ -524,6 +526,7 @@ final class GameCore {
     float warnLevel;
     /** Spent for this stage once the push-back has been used. */
     boolean pushUsed;
+    final PushLesson pushLesson = new PushLesson();
     /** Counts down while the push-back shockwave is on screen. */
     float pushT;
     /** Words the last push-back shoved back, for the readout. */
@@ -1316,7 +1319,13 @@ final class GameCore {
 
     boolean swipeUp(Layout L) {
 
-        return pushBack(L);
+        if (!pushBack(L)) return false;
+        if (pushLesson.active) {
+            pushLesson.active = false;
+            pushLesson.seen = true;
+            if (store != null) store.savePushLessonSeen(true);
+        }
+        return true;
     }
 
     /**
@@ -1402,7 +1411,7 @@ final class GameCore {
     /** Length of the lunge animation between crossing the line and losing a life. */
     static final float ATTACK_TIME = 0.42f;
     /** Fraction of the descent over which a word counts as "closing in". */
-    private static final float WARN_BAND = 0.20f;
+    static final float WARN_BAND = 0.20f;
 
     GameCore(Store store, long seed) {
         this(store, seed, !BuildFlags.DEVELOPER);
@@ -1410,6 +1419,7 @@ final class GameCore {
 
     GameCore(Store store, long seed, boolean trackProgress) {
         this.store = store;
+        pushLesson.seen = store == null || store.loadPushLessonSeen();
         this.progress = new Progress(store, trackProgress);
         this.rnd = new Random(seed);
         Random sr = new Random(20260803L);
@@ -1744,6 +1754,7 @@ final class GameCore {
         launchWho = -1;
         launchT = 0f;
         pushUsed = false;
+        pushLesson.reset();
         pushT = 0f;
         pushSlowT = 0f;
         pushCount = 0;
@@ -1927,7 +1938,7 @@ final class GameCore {
 
     /** Player pressed key {@code g}. Returns true when it advanced a word. */
     boolean tapKey(int g, Layout L) {
-        if (paused) return false;
+        if (paused || pushLesson.active) return false;
         if (boss.kind == Boss.SLIME && boss.slimeKeyLock > 0f
                 && Roster.active(playRosterFull(), g)) {
             boss.slimeBlobPulse[g] = 0.15f;
@@ -2411,6 +2422,7 @@ final class GameCore {
         starPickups = 0;
         bossDeathHaptic = 0;
         if (paused) return;
+        if (pushLesson.update(this, elapsed, L)) return;
         if(releaseNotes.open) {
             releaseNotes.update(elapsed,L);
             clock+=elapsed;time+=elapsed;skyClock+=elapsed;
@@ -2826,6 +2838,7 @@ final class GameCore {
                     breach(e, L);
                     // Nothing left to simulate once the run is over.
                     if (state != PLAY) return;
+                    if (pushLesson.update(this, 0f, L)) return;
                 }
                 continue;
             }
@@ -3070,6 +3083,7 @@ final class GameCore {
         }
         // One per stage, and this is where a stage begins.
         pushUsed = false;
+        pushLesson.reset();
         spawnedThisStage = 0;
         resolvedThisStage = 0;
         stageBanner = BANNER_TIME;

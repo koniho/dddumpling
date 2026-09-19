@@ -37,7 +37,8 @@ done
 # compile while the APK builds fine.
 python3 tools/release-notes.py check >/dev/null
 
-PURE="src/com/dddumpling/game/DivideDeath.java
+PURE="src/com/dddumpling/game/PushLesson.java
+src/com/dddumpling/game/DivideDeath.java
 src/com/dddumpling/game/SettingsArt.java
 src/com/dddumpling/game/PlayerSettings.java
 src/com/dddumpling/game/DevSettings.java

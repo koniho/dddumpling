@@ -44,6 +44,8 @@ final class DevSettings extends Draw {
             return;
         }
         if(c.settingsTab==SettingsUi.PROGRESS) {
+            label(p,u,u.testLabelY,"SWIPE LESSON",s);
+            chip(p,u,u.testY,0,1,"RESET SWIPE",s,false);
             label(p,u,u.debuffY-s*.6f,"LAND DISCOVERY",s);
             chip(p,u,u.debuffY,0,2,"ALL LANDS",s,false);
             chip(p,u,u.debuffY,1,2,"RESET LANDS",s,false);
