@@ -268,6 +268,29 @@ final class TestStages extends Check {
         check("reload remembers completion", new GameCore(mem,1L).pushLesson.seen);
         c.startGame();
         check("new run remembers completion", c.pushLesson.seen && !c.pushLesson.active);
+        Mem earlySave = new Mem(); earlySave.pushLessonSeen=false;
+        GameCore early = new GameCore(earlySave, 162L);
+        early.startGame(); advance(early,L,2f); early.enemies.clear();
+        early.warnLevel=0;
+        check("unavailable swipe does not skip the lesson", !early.swipeUp(L)
+                && !early.pushLesson.seen && !earlySave.pushLessonSeen);
+        add(early,L,new int[] {1,2},PushLesson.triggerY(L));
+        early.update(DT,L);
+        check("player can discover the swipe before the last-life lesson",
+                !early.pushLesson.active && early.swipeUp(L));
+        check("self-taught swipe is saved", early.pushLesson.seen && earlySave.pushLessonSeen);
+        early.jumpToStage(2,L); early.lives=1; early.stageBanner=0;
+        add(early,L,new int[] {1,2},PushLesson.triggerY(L));
+        early.update(DT,L);
+        check("later last-life threat does not interrupt a player who already swiped",
+                !early.pushLesson.active && !early.pushUsed);
+        GameCore returned = new GameCore(earlySave,163L);
+        returned.startGame(); returned.lives=1; returned.stageBanner=0;
+        add(returned,L,new int[] {1,2},PushLesson.triggerY(L));
+        returned.update(DT,L);
+        check("self-taught swipe skips lesson after restarting", returned.pushLesson.seen
+                && !returned.pushLesson.active);
+
         mem.pushLessonSeen=false;
         GameCore boss=new GameCore(mem,2L); boss.startGame(); boss.jumpToStage(5,L);
         boss.lives=1; add(boss,L,new int[] {1,2},L.dangerY);

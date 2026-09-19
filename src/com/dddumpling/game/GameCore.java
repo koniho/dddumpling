@@ -1333,10 +1333,9 @@ final class GameCore {
     void endBossPinch() { boss.endPinch(); }
 
     boolean swipeUp(Layout L) {
-
         if (!pushBack(L)) return false;
-        if (pushLesson.active) {
-            pushLesson.active = false;
+        pushLesson.active = false;
+        if (!pushLesson.seen) {
             pushLesson.seen = true;
             if (store != null) store.savePushLessonSeen(true);
         }
