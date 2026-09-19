@@ -242,6 +242,7 @@ final class GameCore {
         void boltDeath();
         /** A player projectile ricocheted from the Slime boss shield. */
         void shieldBounce();
+        default void octoWave() {}
         void octoCue();
         void octoLock();
         /** One accepted Fly Agaric shake endpoint. */
@@ -2747,6 +2748,7 @@ final class GameCore {
                 if (boss.launched && boss.kind != Boss.MUSHROOM) sound.bossLaugh();
                 if (boss.mushroomSporeCue) sound.mushroomSpore();
                 if (boss.boingWeight >= 0f) sound.divideBoing(boss.boingWeight);
+                if (boss.octoWave) sound.octoWave();
                 if (boss.octoCue) sound.octoCue();
                 if (boss.octoLock) sound.octoLock();
                 if (boss.defeatChime) sound.squish(Boss.FACE[boss.kind], boss.defeatBeat);

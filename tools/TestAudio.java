@@ -216,6 +216,12 @@ final class TestAudio extends Check {
         check("no effect clips", allClean);
         check("effect lengths are sane", allSane);
 
+        short[] wave = Sfx.build(Sfx.OCTO_WAVE);
+        check("recorded wave keeps both sounds within two seconds",
+                wave.length > Sfx.RATE * 1.9f && wave.length <= Sfx.RATE * 2);
+        check("recorded wave fades at both cut edges", wave[0] == 0 && wave[wave.length-1] == 0);
+        check("wave and later strike use different buffers", wave != Sfx.build(Sfx.OCTO_CUE));
+
         short[] divideHit = Sfx.build(Sfx.DIVIDE_DAMAGE);
         short[] divideSplit = Sfx.build(Sfx.DIVIDE_SPLIT);
         check("Dark Divide damage is shorter than an ordinary boss hit",
