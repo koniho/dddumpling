@@ -69,6 +69,8 @@ python3 tools/release-notes.py preview
 
 ## What to write
 
+Exclude features and changes that are available only behind development flags or in developer builds. Verify availability in the intended production build before drafting notes; merging code into main does not make a feature release-ready. Apply this rule to in-game notes and all store, TestFlight, GitHub, itch, and dev-blog release summaries.
+
 - **autoReset:** required `true` or `false`. Choose whether this entry’s demo should return to its starting state two seconds after activation. The draft leaves this as `null` so you must decide before adding it.
 - **title:** a short, playful name, up to 24 characters.
 - **where:** for a bug fix that is already clear on its own, use an empty string to omit the context line. Otherwise, where the player encounters it, up to 32 characters. Name the phase and stage gate when relevant: “On the title screen”, “Star Path bonus rounds”, or “Power-ups, stage 16+”.

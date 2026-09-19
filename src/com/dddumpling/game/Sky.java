@@ -80,7 +80,8 @@ final class Sky extends Draw {
     static void cloudBand(Painter p, GameCore c, Layout L, int from, int to,
             float hurt) {
         p.save();
-        p.clipRect(0, 0, L.w, L.deckTop);
+        float margin = Renderer.shakeMargin(c, L);
+        p.clipRect(-margin, -margin, L.w + margin, L.deckTop);
         for (int l = from; l < to; l++) clouds(p, c, L, l, hurt);
         p.restore();
     }

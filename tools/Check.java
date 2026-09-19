@@ -33,6 +33,9 @@ abstract class Check {
     static int pass, fail;
 
     static final class Mem implements GameCore.Store {
+        boolean pushLessonSeen = true; // Ordinary simulations model a player past onboarding.
+        public boolean loadPushLessonSeen() { return pushLessonSeen; }
+        public void savePushLessonSeen(boolean value) { pushLessonSeen = value; }
         byte[] progress;
         public byte[] loadProgress() { return progress == null ? null : progress.clone(); }
         public void saveProgress(byte[] data) { progress = data.clone(); }
@@ -95,7 +98,7 @@ abstract class Check {
         float musicVolume, effectsVolume, squishVolume;
         public void volumes(float music,float effects) { musicVolume=music;effectsVolume=effects; }
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeDamages, bossSplits,
-                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideBoings, chops, zaps;
+                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoWaves, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideSupernovas, divideBoings, chops, zaps;
         float bossCharge, maxBossCharge;
         float lastDivideBoingWeight = -1f;
         int collects;
@@ -149,6 +152,7 @@ abstract class Check {
         public void divideDamage() { divideDamages++; }
         public void divideSplit() { divideSplits++; }
         public void divideDeactivate() { divideDeactivates++; }
+        public void divideSupernova() { divideSupernovas++; }
         public void divideBoing(float weight) {
             divideBoings++;
             lastDivideBoingWeight = weight;
@@ -156,6 +160,7 @@ abstract class Check {
         public void boltPop() { boltPops++; }
         public void boltDeath() { boltDeaths++; }
         public void shieldBounce() { shieldBounces++; }
+        public void octoWave() { octoWaves++; }
         public void octoCue() { octoCues++; }
         public void octoLock() { octoLocks++; }
         public void mushroomShake() { mushroomShakeSounds++; }

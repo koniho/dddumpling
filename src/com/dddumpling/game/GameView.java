@@ -29,6 +29,7 @@ public class GameView extends View {
     boolean handlesBack() { return Pause.handlesBack(core); }
     boolean paused() { return core.paused; }
     private void cancelPointers() {
+        core.pushLesson.cancelTouch();
         settingsInput.cancel();
         core.releaseNotes.cancelTouch();
         starDragPointer = bonusSwipePointer = bossDragPointer = -1;
@@ -132,6 +133,10 @@ public class GameView extends View {
             return true;
         }
         int action = ev.getActionMasked();
+        if (core.pushLesson.active || core.pushLesson.ownsTouch) {
+            if (core.pushLesson.touch(core, layout, action, ev.getX(), ev.getY())) tick();
+            return true;
+        }
         if(core.releaseNotes.handleTouch(core,layout,action,ev.getX(ev.getActionIndex()),ev.getY(ev.getActionIndex())))
             return true;
         if (core.settingsOpen) {
@@ -498,7 +503,6 @@ public class GameView extends View {
     private int bossDragPointer = -1;
     private boolean bossPinching;
     private long lastBossDragHaptic;
-    private boolean bossWasBeaten;
 
     /**
      * The boss's elements: a tap on one acts at once, a drag on one carries it.
@@ -744,9 +748,10 @@ public class GameView extends View {
             }
             refreshNavigation();
             if (playingBeforeUpdate && core.boss.octoImpact) bossImpactHaptic();
-            boolean beaten = core.boss.active() && core.boss.beaten;
-            if (beaten && !bossWasBeaten) bossDeathHaptic();
-            bossWasBeaten = beaten;
+            if (playingBeforeUpdate && core.bossDeathHaptic > 0) {
+                if (core.bossDeathHaptic == 2) bossDeathHaptic();
+                else tick();
+            }
             painter.bind(c);
             Renderer.draw(painter, core, layout);
         } catch (Throwable t) {

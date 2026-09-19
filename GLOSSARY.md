@@ -203,6 +203,26 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **soft body** | how every boss's body is built: a ring of sprung nodes under pressure, so it dents where you hit it | `Softbody`, `Boss.body` |
 | **burst** | what a beaten boss goes out on | `BossScreen.burst`, `Boss.LEAVE` |
 
+Fly Agaric’s final shake starts its death: the cap and mycelium brown and shrivel,
+then the cap flattens against its planted roots, spreads into a thin horizontal brown smear,
+melts into the ground, and fades away.
+
+Dark Divide answers successful key hits and intercepted projectiles with a short rounded bloop. Firing gives the cube
+a springy jiggle and a slight recoil opposite its projectile; disabling a cube plays a softer
+falling bubble-pop. Recoil settles back without changing the cube’s roaming speed.
+The unsplit cube fires three staggered projectiles every 1.5 seconds; after the first split,
+each cube fires two every 2.1 seconds. Subsequent splits retain the single-projectile firing ramp.
+Successful hits still reset the struck cube’s firing timer.
+On defeat the cubes gather in a circle, shake with growing intensity for one second, then
+explode into 360 tiny tumbling cubes in six purple shades. A rapid, layered bleep-and-bloop burst sounds once at ignition.
+`DivideDeath` owns this sequence; `Sfx.DIVIDE_SUPERNOVA` supplies its sound.
+
+Screen shake moves background clouds, land scenery, and the playfield together, with an
+oversized background fill covering the edges. HUD and modal panels stay steady.
+Every boss death has screen shake and haptics: heavy at the opening and final collapse (or
+Dark Divide supernova), with three lighter animation beats. Pausing/settings freeze the
+sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and iOS.
+
 ## Powerup
 
 | Say | Means | Code |
@@ -500,3 +520,14 @@ Starnose, and Golden Burrow. **Cave Snakes** are five Cart Rush rewards: Mint No
 Peach Coil, Berry Boa, Moon Ribbon, and Golden Hiss. Both have dedicated display-case rows,
 family stories, mystery silhouettes, and the Cave Friend tier. The catalogue has 59 entries;
 existing collectible IDs and normal reward pools stay unchanged. `CaveCollect` draws the new families.
+
+The first normal-stage threat on the last life pauses play for a **desperation swipe lesson**.
+Swipe upward from the highlighted bar to perform the real push-back and resume; taps cannot
+dismiss it. Completion is saved across runs and app restarts. Boss fights and cave expeditions
+are excluded, and a spent swipe defers the lesson until a later stage. `PushLesson` owns the
+prompt, freeze, and shared native gesture.
+Developer settings → Progress → **RESET SWIPE** clears the saved lesson completion flag.
+
+Octopulse plays the supplied recorded sound once when its attacking arm starts to wave.
+The later strike retains its short synthesized cue. `Boss.octoWave` signals the wave's
+start; `OctoWaveRecording` supplies the same PCM to Android, iOS, and previews.

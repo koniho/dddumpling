@@ -355,6 +355,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)divideDamage { [self playEffect:DDSfx_DIVIDE_DAMAGE rate:1 gain:.76f]; }
 - (void)divideSplit { [self playEffect:DDSfx_DIVIDE_SPLIT rate:1 gain:.78f]; }
 - (void)divideDeactivate { [self playEffect:DDSfx_DIVIDE_DEACTIVATE rate:1 gain:.82f]; }
+- (void)divideSupernova { [self playEffect:DDSfx_DIVIDE_SUPERNOVA rate:1 gain:.95f]; }
 - (void)divideBoingWithFloat:(jfloat)weight {
   float w = MAX(0.f, MIN(1.f, weight));
   jint sound = w >= .67f ? DDSfx_DIVIDE_BOING_HEAVY : w >= .34f ? DDSfx_DIVIDE_BOING_MEDIUM : DDSfx_DIVIDE_BOING_LIGHT;
@@ -368,6 +369,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 }
 - (void)boltDeath { [self playEffect:DDSfx_BOLT_DEATH rate:1 gain:.82f]; }
 - (void)shieldBounce { [self playEffect:DDSfx_SHIELD_BOUNCE rate:1 gain:.72f]; }
+- (void)octoWave { [self playEffect:DDSfx_OCTO_WAVE rate:1 gain:.74f]; }
 - (void)octoCue { [self playEffect:DDSfx_OCTO_CUE rate:1 gain:.74f]; }
 - (void)octoLock { [self playEffect:DDSfx_OCTO_LOCK rate:1 gain:.70f]; }
 - (void)mushroomShake { [self playEffect:DDSfx_MUSHROOM_SHAKE rate:1 gain:.78f]; }

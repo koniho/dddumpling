@@ -82,6 +82,7 @@ final class CoreTest {
         group("Stages", () -> {
             TestStages.accuracyTracking(L);
             TestStages.warningsAndHarm(L);
+            TestStages.pushLesson(L);
             TestStages.pushBack(L);
             TestStages.pushBackRelief(L);
         });

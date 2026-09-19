@@ -8,7 +8,7 @@ final class SettingsUi {
 
     static final int HIT_NONE = 0, HIT_SLIDER = 1, HIT_CLOSE = 2, HIT_OUTSIDE = 3,
             HIT_CLEAR = 4, HIT_ROSTER = 5, HIT_GAMEOVER = 6, HIT_RESET_DIFFICULTY = 7, HIT_RESET_LANDS = 8,
-            HIT_GENERAL = 9, HIT_MINIGAMES = 10, HIT_EASIER = 11, HIT_HARDER = 12, HIT_RESET_NEWS = 13, HIT_ALL_LANDS = 14;
+            HIT_GENERAL = 9, HIT_MINIGAMES = 10, HIT_EASIER = 11, HIT_HARDER = 12, HIT_RESET_NEWS = 13, HIT_ALL_LANDS = 14, HIT_RESET_SWIPE = 17;
     static final int GENERAL = 0, MINIGAMES = 1, POWERS = 2, PROGRESS = 3;
     static final int HIT_POWERS = 15, HIT_PROGRESS = 16;
     static final String[] TABS = {"RUN", "MINIGAMES", "POWERS", "PROGRESS"};
@@ -143,6 +143,7 @@ final class SettingsUi {
             if(y>=debuffY && y<=debuffY+testH) for(int i=0;i<2;i++)
                 if(inChip(x,i,2)) return HIT_DEBUFF+i;
         } else if(tab==PROGRESS) {
+            if(y>=testY && y<=testY+testH && inChip(x,0,1)) return HIT_RESET_SWIPE;
             if(y>=debuffY && y<=debuffY+testH) {
                 if(inChip(x,0,2)) return HIT_ALL_LANDS;
                 if(inChip(x,1,2)) return HIT_RESET_LANDS;

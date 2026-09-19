@@ -241,7 +241,7 @@ final class Boss {
     float octoSweep, octoCharge, octoCoil, octoDragX, octoDragY, octoTaunt, octoEat, octoLean;
     float octoDragTime, octoEscape, octoFlurryT;
     float octoLashX, octoLashY;
-    boolean octoPlaced, octoCue, octoLock, octoImpact, octoPlayerHit, octoLashLanded;
+    boolean octoPlaced, octoWave, octoCue, octoLock, octoImpact, octoPlayerHit, octoLashLanded;
     boolean octoWrongLash, octoDragStarted, octoDragCanDamage;
 
     /** Stage 5 teaches boss play; stage 10 adds the first two-finger fight. */
@@ -375,7 +375,7 @@ final class Boss {
         octoReach = -1f; octoReturn = octoLash = octoDeath = 0f; octoPause = 0.75f;
         octoSweep = octoCharge = octoCoil = octoDragX = octoDragY = octoTaunt = octoEat = octoLean = 0f;
         octoDragTime = octoEscape = octoFlurryT = 0f; octoFlurryLeft = 0;
-        octoPlaced = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
+        octoPlaced = octoWave = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
         octoDragStarted = octoDragCanDamage = false;
         resetDividePieces(rnd);
         if (which != SPLITTER) { randomGlyph(rnd); randomGlyph(rnd); }
@@ -449,7 +449,7 @@ final class Boss {
         octoReach = -1f; octoReturn = octoPause = octoLash = octoDeath = 0f;
         octoSweep = octoCharge = octoCoil = octoDragX = octoDragY = octoTaunt = octoEat = octoLean = 0f;
         octoDragTime = octoEscape = octoFlurryT = 0f; octoFlurryLeft = 0;
-        octoPlaced = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
+        octoPlaced = octoWave = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
         octoDragStarted = octoDragCanDamage = false;
         for (int i = 0; i < DIVIDE_NODES; i++) {
             halfWant[i] = -1;
@@ -565,9 +565,14 @@ final class Boss {
         return 1f - (float) Math.pow(1f - t, 3);
     }
 
+    float deathImpactTime() {
+        return kind == MUSHROOM ? MushroomDeath.FLATTEN_END
+                : kind == SPLITTER ? DivideDeath.BURST_AT : LEAVE * (kind == OCTOPUS ? .70f : .38f);
+    }
+
     /** Slow at first and continuously accelerating until it clears the bottom. */
     float defeatMelt() {
-        float start = kind == OCTOPUS ? 0.70f : 0.38f;
+        float start = deathImpactTime() / LEAVE;
         float t = (leaveProgress() - start) / (1f - start);
         if (t <= 0f) return 0f;
         if (t >= 1f) return 1f;
@@ -576,6 +581,7 @@ final class Boss {
 
     /** Shared defeated-boss route: three soft bounces, then melt toward the player. */
     float defeatY(Layout L) {
+        if (kind == MUSHROOM) return baseY(L) + followY;
         float t = leaveProgress();
         float bounceT = Math.min(1f, t / 0.38f);
         float bounce = (float) Math.pow(Math.sin(bounceT * Math.PI * 3f), 2)
@@ -1369,7 +1375,7 @@ final class Boss {
         }
         if (octoFlurryLeft > 0) {
             octoFlurryT -= dt;
-            if (octoFlurryT <= 0f && singleBolt(rnd, body.centreX(), body.centreY())) {
+            if (octoFlurryT <= 0f && singleBolt(rnd, body.centreX(), body.centreY()) >= 0) {
                 octoFlurryLeft--;
                 octoFlurryT = 0.22f;
             }
@@ -1805,7 +1811,7 @@ final class Boss {
         octoSweep = 0.001f;
         octoCharge = 0f;
         octoCoil = 0f;
-        octoCue = true;
+        octoWave = true;
     }
 
     // ---- bolts --------------------------------------------------------------
@@ -2069,8 +2075,10 @@ final class Boss {
         return true;
     }
 
-    /** Seven splits raise shots per second by up to 50%; projectile travel stays unchanged. */
+    /** Early volleys use shorter waits; later fragments keep their split-rate ramp. */
     float divideBoltInterval() {
+        if (divideSplits == 0) return DIVIDE_BOLT_TIME * 0.5f;
+        if (divideSplits == 1) return DIVIDE_BOLT_TIME * 0.7f;
         float progress = Math.min(DIVIDE_PIECES - 1, Math.max(0, divideSplits))
                 / (float) (DIVIDE_PIECES - 1);
         return DIVIDE_BOLT_TIME / (1f + 0.5f * progress);
@@ -2094,14 +2102,40 @@ final class Boss {
         return root * 2f * (depth == 0 ? 1f : 0.62f * (float) Math.pow(0.72f, depth - 1));
     }
 
-    private boolean singleBolt(Random rnd, float x, float y) {
+    int divideVolleySize() { return divideSplits == 0 ? 3 : divideSplits == 1 ? 2 : 1; }
+
+    private boolean divideVolley(int node, Layout L, Random rnd) {
+        int made = 0, count = divideVolleySize(), free = 0;
+        for (boolean live : blive) if (!live) free++;
+        if (free < count) return false;
+        for (int i = 0; i < count; i++) {
+            int bolt = singleBolt(rnd, divideX[node], divideY[node] + pieceRadiusNode(node, L));
+            if (bolt < 0) break;
+            bt[bolt] = -BOLT_STAGGER * i;
+            divideRecoil(node, bolt, L);
+            made++;
+        }
+        return made > 0;
+    }
+
+    private void divideRecoil(int node, int bolt, Layout L) {
+        Softbody piece = divideBody[node];
+        if (piece == null) return;
+        float dx = Roster.keyX(L, bglyph[bolt], rosterFull ? 1f : 0f) - bsx[bolt];
+        float dy = Roster.keyY(L, bglyph[bolt], rosterFull ? 1f : 0f) - bsy[bolt];
+        // Rebound toward home without adding speed to the cube's roaming trajectory.
+        piece.shove(-dx, -dy, 1.8f / divideVolleySize());
+        piece.squash(0.28f / divideVolleySize());
+    }
+
+    private int singleBolt(Random rnd, float x, float y) {
         int slot = -1;
         for (int i = 0; i < MAX_BOLTS; i++) if (!blive[i]) { slot = i; break; }
-        if (slot < 0) return false;
+        if (slot < 0) return -1;
         int glyph;
         if (kind == OCTOPUS) {
             int available = octoKeysLeft();
-            if (available == 0) return false;
+            if (available == 0) return -1;
             int pick = rnd.nextInt(available);
             glyph = -1;
             for (int g = 0; g < Glyph.COUNT; g++) {
@@ -2119,7 +2153,7 @@ final class Boss {
         bsy[slot] = y;
         launchT = LAUNCH_TIME;
         launched = true;
-        return true;
+        return slot;
     }
 
     /**
@@ -2200,25 +2234,8 @@ final class Boss {
             if (pb == null) continue;
             float r = pieceRadiusNode(n, L);
             if (beaten) {
-                float p = leaveProgress();
                 int ordinal = Integer.bitCount(visible & ((1 << n) - 1));
-                float angle = -Softbody.TAU * 0.25f + Softbody.TAU * ordinal / Math.max(1, visibleCount);
-                float orbit = bodyR(L) * 0.72f;
-                float tx = (L.playLeft + L.playRight) * 0.5f + (float) Math.cos(angle) * orbit;
-                float ty = (L.playTop + L.dangerY) * 0.5f + (float) Math.sin(angle) * orbit;
-                if (p < 0.55f) {
-                    // Brake first, then gather. The remnants visibly lose their bounce before the fall.
-                    float brake = Math.max(0f, 1f - dt * (3f + p * 12f));
-                    divideVX[n] *= brake; divideVY[n] *= brake;
-                    float gather = Math.min(1f, dt * (2.5f + p * 14f));
-                    divideX[n] += (tx - divideX[n]) * gather;
-                    divideY[n] += (ty - divideY[n]) * gather;
-                } else {
-                    float drop = Math.min(1f, (p - 0.55f) / 0.45f);
-                    divideVX[n] = divideVY[n] = 0f;
-                    divideX[n] = tx;
-                    divideY[n] = ty + drop * drop * (L.h + r * 2f - ty);
-                }
+                DivideDeath.pose(this, n, ordinal, Math.max(1, visibleCount), dt, L);
                 continue;
             }
             if (n != pinchNode) {
@@ -2283,7 +2300,7 @@ final class Boss {
         slimeDragPulse = Math.max(0f, slimeDragPulse - dt);
         slimeKeyPulse = Math.max(0f, slimeKeyPulse - dt);
         slimeKeyLock = Math.max(0f, slimeKeyLock - dt);
-        octoCue = octoLock = mushroomShakeCue = mushroomSporeCue = false;
+        octoWave = octoCue = octoLock = mushroomShakeCue = mushroomSporeCue = false;
         divideBurst = Math.max(0f, divideBurst - dt * 1.35f);
         for (int i = 0; i < halfHurt.length; i++)
             halfHurt[i] = Math.max(0f, halfHurt[i] - dt * 3.4f);
@@ -2332,10 +2349,11 @@ final class Boss {
                 // Shared death morph: gravity wins while the body is carried toward the player.
                 // Pulling below its travelling centre makes the silhouette neck, sag and melt.
                 float melt = defeatMelt();
-                if (kind == OCTOPUS) body.letGo();
+                if (kind == OCTOPUS || kind == MUSHROOM) body.letGo();
                 else if (melt > 0f) body.pull(body.centreX(), L.h + bodyR(L) * 2.5f,
                         0.11f + melt * 0.29f);
-                body.jiggle = kind == SLIME ? 0.72f + melt * 0.16f
+                body.jiggle = kind == MUSHROOM ? JIGGLE[kind] * (1f - leaveProgress())
+                        : kind == SLIME ? 0.72f + melt * 0.16f
                         : JIGGLE[kind] * (1f + melt * 1.3f);
             } else if (held >= 0 && etype[held] == E_GLOB) {
                 body.pull(ex[held], ey[held], PULL_K, er[held]);
@@ -2361,7 +2379,7 @@ final class Boss {
                 else mushroomStem.letGo();
                 mushroomStem.update(dt);
             }
-            if (beaten && kind != OCTOPUS) {
+            if (beaten && kind != OCTOPUS && kind != MUSHROOM) {
                 float from = defeatStartW > 0f ? defeatStartW : body.spanX();
                 body.fitWidth(from + (L.w * 0.90f - from) * defeatStretch());
             }
@@ -2373,13 +2391,21 @@ final class Boss {
 
         if (beaten) {
             leaveT = Math.max(0f, leaveT - dt);
+            if (kind == MUSHROOM) {
+                mushroomCapDX *= Math.max(0f, 1f - dt * 8f);
+                mushroomCapDY *= Math.max(0f, 1f - dt * 8f);
+                mushroomSweepFlash = Math.max(0f, mushroomSweepFlash - dt);
+                mushroomAngry = mushroomCharge = mushroomReject = mushroomMeterAlpha = 0f;
+                for (int i = 0; i < MUSHROOM_DUST; i++)
+                    mushroomDustLife[i] = Math.max(0f, mushroomDustLife[i] - dt);
+            }
             if (kind == OCTOPUS) poseOctopus(dt, L);
             float p = leaveProgress();
             int wantBeat = p >= 0.28f ? 3 : p >= 0.16f ? 2 : p >= 0.05f ? 1 : 0;
             if (defeatBeat < wantBeat) {
                 defeatBeat++;
                 defeatChime = true;
-                if (body != null) {
+                if (body != null && kind != MUSHROOM) {
                     float kick = defeatBeat % 2 == 0 ? -0.42f : 0.58f;
                     body.squash(kind == SLIME ? kick * 0.38f : kick);
                 }
@@ -2462,8 +2488,7 @@ final class Boss {
                 if (!nodeActive(n)) continue;
                 halfIdle[n] += dt;
                 if (halfIdle[n] >= interval) {
-                    if (singleBolt(rnd, divideX[n], divideY[n] + pieceRadiusNode(n, L)))
-                        halfIdle[n] -= interval;
+                    if (divideVolley(n, L, rnd)) halfIdle[n] -= interval;
                 }
             }
         }

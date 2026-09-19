@@ -354,6 +354,41 @@ final class TestBoss extends Check {
             check("repeat boss victories pay the duplicate reward " + kind,
                     !reward.prizeNew && reward.score == score + GameCore.DUPE_BONUS);
         }
+        for (int kind = 0; kind < Boss.COUNT; kind++) {
+            for (float frame : new float[] {1f / 60f, 1f / 120f}) {
+                GameCore death = enterBoss(L, kind, 3100L + kind);
+                death.boss.beaten = true; death.boss.leaveT = Boss.LEAVE;
+                int heavy = 0, light = 0;
+                for (float time = 0f; time < Boss.LEAVE - .1f; time += frame) {
+                    death.update(frame, L);
+                    if (death.bossDeathHaptic == 2) heavy++;
+                    if (death.bossDeathHaptic == 1) light++;
+                    if (death.bossDeathHaptic > 0)
+                        check("death haptic has matching shake " + kind, death.shake >= .30f);
+                }
+                check("each death has three light beats and two heavy impacts " + kind,
+                        heavy == 2 && light == 3);
+                death.boss.leave(); death.update(frame, L);
+                check("leaving clears death feedback " + kind, death.bossDeathHaptic == 0);
+            }
+            GameCore pause = enterBoss(L, kind, 3120L + kind);
+            pause.boss.beaten = true;
+            pause.boss.leaveT = Boss.LEAVE - pause.boss.deathImpactTime() + .02f;
+            pause.boss.defeatBeat = 3;
+            pause.paused = true;
+            pause.bossDeathHaptic = 2;
+            float remaining = pause.boss.leaveT;
+            pause.update(.05f, L);
+            check("paused death clears feedback and freezes its clock " + kind,
+                    pause.bossDeathHaptic == 0 && pause.boss.leaveT == remaining);
+            pause.paused = false; pause.settingsOpen = true;
+            pause.update(.05f, L);
+            check("settings cannot trigger a death impact " + kind, pause.bossDeathHaptic == 0);
+            pause.settingsOpen = false; pause.update(.03f, L);
+            check("resuming reaches the death impact once " + kind, pause.bossDeathHaptic == 2);
+            pause.update(DT, L);
+            check("the death impact is not repeated " + kind, pause.bossDeathHaptic == 0);
+        }
         GameCore lostBoss = enterBoss(L, Boss.MUSHROOM, 3099L);
         long lostOwned = lostBoss.collected;
         BossPlay.endBoss(lostBoss, L);
@@ -1074,14 +1109,19 @@ final class TestBoss extends Check {
         }
         check("arms remain attached throughout the defeated fall", attached);
         GameCore c = enterBoss(L, Boss.OCTOPUS, 151L);
+        Ear waveEar = new Ear(); c.sound = waveEar;
         c.enemies.clear(); c.target = null;
         for (int i = 0; i < 240 && c.boss.octoTarget < 0; i++) c.update(DT, L);
         check("stage 15 octopus begins a key reach", c.boss.octoTarget >= 0
                 && c.boss.octoAttackArm >= 0);
+        check("recording starts once with the arm wave", waveEar.octoWaves == 1 && waveEar.octoCues == 0);
+        c.paused = true; c.update(.5f, L); c.paused = false;
+        check("paused arm does not repeat its recording", waveEar.octoWaves == 1);
         int sweepingArm = c.boss.octoAttackArm;
         for (int i = 0; i < 24; i++) c.update(DT, L);
         check("the chosen arm waves before attacking", c.boss.octoSweep > 0.20f
                 && c.boss.octoReach < 0f && c.boss.octoAttackArm == sweepingArm);
+        check("arm motion does not retrigger the recording", waveEar.octoWaves == 1);
         check("the traveling pulse waits until the arm settles", BossScreen.octoPulseProgress(c.boss) < 0f);
         boolean pulseTravelled = false;
         for (int i = 0; i < 120 && c.boss.octoReach < 0f; i++) {
@@ -1092,6 +1132,7 @@ final class TestBoss extends Check {
         check("the settled charge sends the pulse down the arm", pulseTravelled);
         check("the pulse reaches the tip on the attack cue",
                 BossScreen.octoPulseProgress(c.boss) == 1f && c.boss.octoCue && c.boss.octoReach == 0f);
+        check("strike retains a separate cue without replaying the recording", waveEar.octoCues == 1 && waveEar.octoWaves == 1);
         float[] uneven = {0f, 0f, 3f, 0f, 3f, 9f};
         float[] midpoint = BossScreen.octoPulsePoint(uneven, 0.5f);
         float[] endpoint = BossScreen.octoPulsePoint(uneven, 1f);
@@ -1307,6 +1348,48 @@ final class TestBoss extends Check {
                         capProbe.boss.body.centreY() - capProbe.boss.body.radiusY() * 1.45f));
 
         group("boss: fly agaric");
+        GameCore dying = enterBoss(L, Boss.MUSHROOM, 169L);
+        dying.boss.hp = 1f;
+        for (int i = 0; i < 1200 && !dying.boss.beaten; i++) {
+            bossPlay(dying, L);
+            dying.update(DT, L);
+        }
+        Boss dead = dying.boss;
+        check("final guided shake starts mushroom death", dead.beaten);
+        float planted = dead.body.homeY, originalWidth = dead.body.spanX();
+        MushroomDeath fresh = new MushroomDeath(null, dead, L, 1f);
+        for (int i = 0; i < 54; i++) dead.update(DT, L, dying.rnd);
+        MushroomDeath dry = new MushroomDeath(null, dead, L, 1f);
+        int brown = dry.color(0xFFFF3344);
+        check("cap turns brown before flattening", dry.brown == 1f && dry.flat < .02f
+                && ((brown >>> 16) & 255) > ((brown >>> 8) & 255)
+                && ((brown >>> 8) & 255) > (brown & 255));
+        check("mycelium contracts toward its planted roots",
+                dry.x(dry.cx + dry.radius * 3f, dry.ground + dry.radius) - dry.cx
+                        < dry.radius
+                && dry.y(dry.ground + dry.radius) - dry.ground < dry.radius * .25f);
+        for (int i = 0; i < 80; i++) dead.update(DT, L, dying.rnd);
+        MushroomDeath flat = new MushroomDeath(null, dead, L, 1f);
+        check("cap flattens against the ground before fading",
+                flat.ground - flat.y(planted) < fresh.radius * .2f && flat.opacity == 1f);
+        check("mushroom stays planted instead of widening and falling",
+                Math.abs(dead.body.homeY - planted) < .01f
+                && dead.body.spanX() < originalWidth * 1.5f);
+        check("death releases the shake guide", dead.held == -1 && dead.mushroomMeterAlpha == 0f);
+        for (int i = 0; i < 40; i++) dead.update(DT, L, dying.rnd);
+        MushroomDeath spread = new MushroomDeath(null, dead, L, 1f);
+        float left = flat.cx - flat.radius, right = flat.cx + flat.radius;
+        check("flattened cap stretches sideways before fading",
+                spread.x(right, planted) - spread.x(left, planted)
+                        > (flat.x(right, planted) - flat.x(left, planted)) * 1.7f
+                && spread.opacity == 1f);
+        check("spread cap gets thinner as it returns to earth",
+                spread.ground - spread.y(planted) < (flat.ground - flat.y(planted)) * .4f);
+        for (int i = 0; i < 50; i++) dead.update(DT, L, dying.rnd);
+        MushroomDeath gone = new MushroomDeath(null, dead, L, 1f);
+        check("cap melts below ground and fades completely",
+                gone.y(planted) > gone.ground && gone.opacity == 0f);
+
         GameCore c = enterBoss(L, Boss.MUSHROOM, 166L);
         Ear mushroomEar = new Ear();
         c.sound = mushroomEar;
@@ -1606,8 +1689,8 @@ final class TestBoss extends Check {
 
         int splitEvents = 1;
         float lastInterval = c.boss.divideBoltInterval();
-        check("the first actual split speeds up every cube", c.boss.divideSplits == 1
-                && lastInterval < Boss.DIVIDE_BOLT_TIME && lastInterval > 2f);
+        check("the first split uses a thirty-percent shorter wait", c.boss.divideSplits == 1
+                && Math.abs(lastInterval - 2.1f) < .0001f && c.boss.divideVolleySize() == 2);
         for (int depth = 1; depth < Boss.DIVIDE_LEVELS; depth++) {
             boolean more = true;
             while (more) {
@@ -1619,8 +1702,9 @@ final class TestBoss extends Check {
                     c.boss.pinch(100f * (Boss.DIVIDE_SCALE + 0.01f));
                     splitEvents++;
                     float nextInterval = c.boss.divideBoltInterval();
-                    check("each actual split increases firing rate", c.boss.divideSplits == splitEvents
-                            && nextInterval < lastInterval && nextInterval >= 2f);
+                    check("later splits keep the single-projectile ramp", c.boss.divideSplits == splitEvents
+                            && (splitEvents == 2 || nextInterval < lastInterval) && nextInterval >= 2f
+                            && c.boss.divideVolleySize() == 1);
                     lastInterval = nextInterval;
                     more = true;
                     break;
@@ -1677,8 +1761,8 @@ final class TestBoss extends Check {
         float speedAfter = 0f;
         for (int n = 0; n < Boss.DIVIDE_NODES; n++) if (c.boss.nodeVisible(n))
             speedAfter += Math.abs(c.boss.divideVX[n]) + Math.abs(c.boss.divideVY[n]);
-        check("the fragments slow before they drop", speedAfter < speedBefore * 0.35f);
-        while (c.boss.leaveProgress() < 0.55f) c.boss.update(DT, L, c.rnd);
+        check("the fragments slow before they gather", speedAfter < speedBefore * 0.35f);
+        while (DivideDeath.elapsed(c.boss) < DivideDeath.GATHER + .02f) c.boss.update(DT, L, c.rnd);
         float ringY = 0f, minOrbit = Float.MAX_VALUE, maxOrbit = 0f;
         float deathCX = (L.playLeft + L.playRight) * 0.5f;
         float deathCY = (L.playTop + L.dangerY) * 0.5f;
@@ -1690,26 +1774,113 @@ final class TestBoss extends Check {
         }
         check("the remnants coalesce around a circle at screen center",
                 maxOrbit - minOrbit < Boss.bodyR(L) * 0.08f);
-        for (int i = 0; i < 24; i++) c.boss.update(DT, L, c.rnd);
-        float droppedY = 0f;
+        check("the shake lasts exactly one second", DivideDeath.SHAKE == 1f
+                && Math.abs(DivideDeath.BURST_AT - DivideDeath.GATHER - 1f) < .0001f);
+        check("the shake grows toward the burst", DivideDeath.shakeAmplitude(1.8f, L)
+                > DivideDeath.shakeAmplitude(1.2f, L) * 4f);
+        while (DivideDeath.elapsed(c.boss) < DivideDeath.BURST_AT - .04f) c.boss.update(DT, L, c.rnd);
+        check("the gathered cubes remain intact through the shake", !DivideDeath.bursting(c.boss));
+        float shakingY = 0f;
         for (int n = 0; n < Boss.DIVIDE_NODES; n++) if (c.boss.nodeVisible(n))
-            droppedY += c.boss.divideY[n];
-        check("the gathered circle then drops toward the bottom", droppedY > ringY);
-        check("the final drop breaks into many tiny slime fragments",
-                BossScreen.DIVIDE_SHARDS_PER_PIECE * Boss.DIVIDE_PIECES >= 90);
+            shakingY += c.boss.divideY[n];
+        check("shaking stays around the circle instead of falling", Math.abs(shakingY - ringY)
+                < Boss.bodyR(L) * Boss.DIVIDE_PIECES * .25f);
+        while (DivideDeath.elapsed(c.boss) < DivideDeath.BURST_AT + .02f) c.boss.update(DT, L, c.rnd);
+        check("the supernova follows the full shake", DivideDeath.bursting(c.boss));
+        check("the supernova has 360 tiny cubes", DivideDeath.SHARDS == 360);
+        int[] quadrants = new int[4];
+        boolean outward = true;
+        for (int i = 0; i < DivideDeath.SHARDS; i++) {
+            double a = DivideDeath.angle(i);
+            quadrants[(Math.cos(a) < 0 ? 1 : 0) + (Math.sin(a) < 0 ? 2 : 0)]++;
+            outward &= DivideDeath.travel(i, .6f, L) > DivideDeath.travel(i, .2f, L);
+        }
+        check("cube debris flies outward in every direction", outward
+                && quadrants[0] > 35 && quadrants[1] > 35 && quadrants[2] > 35 && quadrants[3] > 35);
+
+        GameCore nova = enterBoss(L, Boss.SPLITTER, 189L);
+        Ear novaEar = new Ear(); nova.sound = novaEar;
+        nova.boss.beaten = true;
+        nova.boss.leaveT = Boss.LEAVE - DivideDeath.BURST_AT + .025f;
+        nova.update(.01f, L);
+        check("the supernova sound waits for ignition", novaEar.divideSupernovas == 0);
+        nova.paused = true;
+        nova.update(.1f, L);
+        check("pausing cannot trigger the supernova", novaEar.divideSupernovas == 0);
+        nova.paused = false;
+        nova.update(.03f, L);
+        check("the ignition frame plays its supernova sound", novaEar.divideSupernovas == 1);
+        for (int i = 0; i < 40; i++) nova.update(DT, L);
+        check("the supernova sound never repeats during the debris", novaEar.divideSupernovas == 1);
+
+        GameCore intercepted = enterBoss(L, Boss.SPLITTER, 188L);
+        Ear interceptEar = new Ear(); intercepted.sound = interceptEar;
+        intercepted.boss.halfIdle[0] = intercepted.boss.divideBoltInterval();
+        intercepted.update(DT, L);
+        intercepted.tapKey(intercepted.boss.bglyph[0], L);
+        check("Dark Divide projectile hits use the bloop without a hard snap",
+                interceptEar.divideDamages == 1 && interceptEar.boltDeaths == 0 && interceptEar.boltPops == 0);
 
         check("deactivating terminal cubes does not add split events", c.boss.divideSplits == 7);
         GameCore timers = enterBoss(L, Boss.SPLITTER, 82L);
-        check("a new boss begins at the original firing rate", timers.boss.divideSplits == 0
-                && timers.boss.divideBoltInterval() == Boss.DIVIDE_BOLT_TIME);
+        check("an unsplit boss fires three bolts with a fifty-percent shorter wait", timers.boss.divideSplits == 0
+                && timers.boss.divideBoltInterval() == Boss.DIVIDE_BOLT_TIME * .5f
+                && timers.boss.divideVolleySize() == 3);
         int node = timers.boss.pieceNodeIndex(0);
-        timers.boss.halfIdle[node] = Boss.DIVIDE_BOLT_TIME - 0.1f;
+        timers.boss.halfIdle[node] = timers.boss.divideBoltInterval() - 0.1f;
         timers.tapKey(timers.boss.pieceWant(0), L);
         timers.update(0.2f, L);
-        check("attacking a slime resets its own three-second clock", timers.boss.boltCount() == 0);
-        timers.boss.halfIdle[node] = Boss.DIVIDE_BOLT_TIME - 0.1f;
+        check("attacking a cube resets its firing clock", timers.boss.boltCount() == 0);
+        timers.boss.halfIdle[node] = timers.boss.divideBoltInterval() - 0.1f;
         timers.update(0.2f, L);
-        check("a neglected slime launches from its own body", timers.boss.boltCount() == 1);
+        check("an unsplit cube launches a three-bolt volley", timers.boss.boltCount() == 3);
+        check("volley arrivals are staggered", timers.boss.bt[0] > timers.boss.bt[1]
+                && timers.boss.bt[1] > timers.boss.bt[2]);
+        GameCore pair = enterBoss(L, Boss.SPLITTER, 185L);
+        chargeDivide(pair, 0, L);
+        pair.boss.beginPinch(100f);
+        pair.boss.pinch(100f * (Boss.DIVIDE_SCALE + .01f));
+        for (int i = 0; i < pair.boss.pieceCount(); i++)
+            pair.boss.halfIdle[pair.boss.pieceNodeIndex(i)] = 2.09f;
+        pair.update(.02f, L);
+        check("both first-split cubes fire two-bolt volleys", pair.boss.boltCount() == 4);
+
+        GameCore crowded = enterBoss(L, Boss.SPLITTER, 186L);
+        for (int i = 0; i < Boss.MAX_BOLTS - 2; i++) {
+            crowded.boss.blive[i] = true;
+            crowded.boss.bt[i] = 0f;
+        }
+        crowded.boss.halfIdle[0] = crowded.boss.divideBoltInterval();
+        crowded.update(DT, L);
+        check("a volley waits for room rather than firing short", crowded.boss.boltCount() == Boss.MAX_BOLTS - 2
+                && crowded.boss.halfIdle[0] >= crowded.boss.divideBoltInterval());
+        crowded.boss.blive[0] = false;
+        crowded.update(DT, L);
+        check("a waiting volley launches in full when room opens", crowded.boss.boltCount() == Boss.MAX_BOLTS);
+
+        GameCore firing = enterBoss(L, Boss.SPLITTER, 184L);
+        GameCore quiet = enterBoss(L, Boss.SPLITTER, 184L);
+        firing.boss.halfIdle[0] = firing.boss.divideBoltInterval();
+        firing.update(DT, L);
+        quiet.update(DT, L);
+        float aimX = 0f, aimY = 0f;
+        for (int i = 0; i < Boss.MAX_BOLTS; i++) if (firing.boss.blive[i]) {
+            float dx = Roster.keyX(L, firing.boss.bglyph[i], 1f) - firing.boss.bsx[i];
+            float dy = Roster.keyY(L, firing.boss.bglyph[i], 1f) - firing.boss.bsy[i];
+            float distance = (float) Math.sqrt(dx * dx + dy * dy);
+            aimX += dx / distance; aimY += dy / distance;
+        }
+        for (int i = 0; i < 5; i++) { firing.update(DT, L); quiet.update(DT, L); }
+        Softbody shotBody = firing.boss.divideBody[0], quietBody = quiet.boss.divideBody[0];
+        float recoilX = shotBody.centreX() - quietBody.centreX();
+        float recoilY = shotBody.centreY() - quietBody.centreY();
+        check("firing pushes the cube opposite its projectile", recoilX * aimX + recoilY * aimY < 0f);
+        float recoil = (float) Math.sqrt(recoilX * recoilX + recoilY * recoilY) / firing.boss.pieceR(0, L);
+        check("firing recoil is visible but slight", recoil > .025f && recoil < .20f);
+        check("firing jiggles the cube skin", Math.abs(shotBody.deform() - quietBody.deform()) > .005f);
+        check("recoil leaves roaming speed unchanged", firing.boss.divideVX[0] == quiet.boss.divideVX[0]
+                && firing.boss.divideVY[0] == quiet.boss.divideVY[0]);
+
         GameCore fast = enterBoss(L, Boss.SPLITTER, 83L);
         fast.boss.divideSplits = 7;
         int fastNode = fast.boss.pieceNodeIndex(0);
@@ -1764,7 +1935,7 @@ final class TestBoss extends Check {
             // hit. If leave() retains them, GameView repeats its long impact haptic every frame of
             // the next run.
             if (k == Boss.OCTOPUS) {
-                victory.boss.octoCue = victory.boss.octoLock = true;
+                victory.boss.octoWave = victory.boss.octoCue = victory.boss.octoLock = true;
                 victory.boss.octoImpact = victory.boss.octoPlayerHit = true;
                 victory.boss.octoLashLanded = true;
             }
@@ -1803,7 +1974,7 @@ final class TestBoss extends Check {
                 check("victory arm tips wave visibly", Math.abs(first[first.length - 1] - later[later.length - 1]) > vr * 0.25f);
                 check("victory wave does not mutate combat arms", retained.octoY[0][Boss.OCTO_NODES - 1] == originalTip);
                 check("OCTOPULSE: dying clears every transient haptic cue",
-                        !victory.boss.octoCue && !victory.boss.octoLock
+                        !victory.boss.octoWave && !victory.boss.octoCue && !victory.boss.octoLock
                                 && !victory.boss.octoImpact && !victory.boss.octoPlayerHit
                                 && !victory.boss.octoLashLanded);
             }

@@ -399,6 +399,7 @@ final class Audio implements GameCore.Sound {
     @Override public void divideDamage() { play(Sfx.DIVIDE_DAMAGE, 1f, 0.76f); }
     @Override public void divideSplit() { play(Sfx.DIVIDE_SPLIT, 1f, 0.78f); }
 @Override public void divideDeactivate() { play(Sfx.DIVIDE_DEACTIVATE, 1f, 0.82f); }
+    @Override public void divideSupernova() { play(Sfx.DIVIDE_SUPERNOVA, 1f, 0.95f); }
     @Override public void divideBoing(float weight) {
         float w = Math.max(0f, Math.min(1f, weight));
         int id = w >= 0.67f ? Sfx.DIVIDE_BOING_HEAVY
@@ -408,6 +409,7 @@ final class Audio implements GameCore.Sound {
 
     @Override public void shieldBounce() { play(Sfx.SHIELD_BOUNCE, 1f, 0.72f); }
     @Override public void slimeDamage() { play(Sfx.SLIME_DAMAGE, 1f, 0.76f); }
+    @Override public void octoWave() { play(Sfx.OCTO_WAVE, 1f, 0.74f); }
     @Override public void octoCue() { play(Sfx.OCTO_CUE, 1f, 0.74f); }
     @Override public void octoLock() { play(Sfx.OCTO_LOCK, 1f, 0.70f); }
     @Override public void mushroomShake() { play(Sfx.MUSHROOM_SHAKE, 1f, 0.78f); }

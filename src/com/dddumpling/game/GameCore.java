@@ -162,6 +162,8 @@ final class GameCore {
 
     /** Persistence seam; the Activity backs this with SharedPreferences. */
     interface Store extends Progress.Store {
+        default boolean loadPushLessonSeen() { return false; }
+        default void savePushLessonSeen(boolean value) {}
         default String loadReleaseSeen() { return BuildFlags.BUILD_ID; }
         default void saveReleaseSeen(String value) {}
         int loadBest();
@@ -236,12 +238,14 @@ final class GameCore {
         void slimeDamage();
         /** The slime chain tore a glob free: a taut, wet pop distinct from damage. */
         void bossSplit();
-        /** Dark Divide was struck: a low crack-squelch distinct from every other boss. */
+        /** Dark Divide was struck: a rounded bloop distinct from every other boss. */
         void divideDamage();
         /** The charged Dark Divide was pulled into two bodies. */
         void divideSplit();
         /** A terminal Dark Divide fragment was pulled apart and deactivated. */
         void divideDeactivate();
+        /** The gathered cubes ignite into a supernova. */
+        void divideSupernova();
         /** Two Dark Divide bodies, or one body and a wall, rebounded. 1 is largest/heaviest. */
         void divideBoing(float weight);
         /** A charged or flying slime bolt was destroyed: one short, low bloop. */
@@ -250,6 +254,7 @@ final class GameCore {
         void boltDeath();
         /** A player projectile ricocheted from the Slime boss shield. */
         void shieldBounce();
+        default void octoWave() {}
         void octoCue();
         void octoLock();
         /** One accepted Fly Agaric shake endpoint. */
@@ -520,6 +525,7 @@ final class GameCore {
     /** Counts down while the flawless-stage gold dumpling is on screen. */
     float perfectBanner;
     float shake, flash, stageBanner;
+    int bossDeathHaptic; // Per-frame: 1 light, 2 heavy.
     /** Colour of the current full-screen flash. */
     int flashColor = FLASH_DAMAGE;
     /**
@@ -532,6 +538,7 @@ final class GameCore {
     float warnLevel;
     /** Spent for this stage once the push-back has been used. */
     boolean pushUsed;
+    final PushLesson pushLesson = new PushLesson();
     /** Counts down while the push-back shockwave is on screen. */
     float pushT;
     /** Words the last push-back shoved back, for the readout. */
@@ -1327,7 +1334,13 @@ final class GameCore {
 
     boolean swipeUp(Layout L) {
 
-        return pushBack(L);
+        if (!pushBack(L)) return false;
+        if (pushLesson.active) {
+            pushLesson.active = false;
+            pushLesson.seen = true;
+            if (store != null) store.savePushLessonSeen(true);
+        }
+        return true;
     }
 
     /**
@@ -1413,7 +1426,7 @@ final class GameCore {
     /** Length of the lunge animation between crossing the line and losing a life. */
     static final float ATTACK_TIME = 0.42f;
     /** Fraction of the descent over which a word counts as "closing in". */
-    private static final float WARN_BAND = 0.20f;
+    static final float WARN_BAND = 0.20f;
 
     GameCore(Store store, long seed) {
         this(store, seed, !BuildFlags.DEVELOPER);
@@ -1421,6 +1434,7 @@ final class GameCore {
 
     GameCore(Store store, long seed, boolean trackProgress) {
         this.store = store;
+        pushLesson.seen = store == null || store.loadPushLessonSeen();
         this.progress = new Progress(store, trackProgress);
         this.rnd = new Random(seed);
         Random sr = new Random(20260803L);
@@ -1730,6 +1744,7 @@ final class GameCore {
         target = null;
         spawnTimer = 0.7f;
         shake = 0;
+        bossDeathHaptic = 0;
         flash = 0;
         skyGlow = 0;
         steamer.reset();
@@ -1743,6 +1758,7 @@ final class GameCore {
         launchWho = -1;
         launchT = 0f;
         pushUsed = false;
+        pushLesson.reset();
         pushT = 0f;
         pushSlowT = 0f;
         pushCount = 0;
@@ -1929,7 +1945,7 @@ final class GameCore {
 
     /** Player pressed key {@code g}. Returns true when it advanced a word. */
     boolean tapKey(int g, Layout L) {
-        if (paused) return false;
+        if (paused || pushLesson.active) return false;
         if (boss.kind == Boss.SLIME && boss.slimeKeyLock > 0f
                 && Roster.active(playRosterFull(), g)) {
             boss.slimeBlobPulse[g] = 0.15f;
@@ -2411,7 +2427,9 @@ final class GameCore {
 
     void update(float dt, float elapsed, Layout L) {
         starPickups = 0;
+        bossDeathHaptic = 0;
         if (paused) return;
+        if (pushLesson.update(this, elapsed, L)) return;
         if(releaseNotes.open) {
             releaseNotes.update(elapsed,L);
             clock+=elapsed;time+=elapsed;skyClock+=elapsed;
@@ -2714,7 +2732,11 @@ final class GameCore {
             float beforeHp = boss.hp;
             float priorCover=boss.slimePromptCover();
             boolean priorOpen=boss.open();
+            float beforeDeath = boss.beaten ? boss.leaveProgress() * Boss.LEAVE : -1f;
+            boolean beforeSupernova = boss.kind == Boss.SPLITTER && boss.beaten && !DivideDeath.bursting(boss);
             int bossHits = boss.update(dt, L, rnd);
+            BossPlay.deathFeedback(this, beforeDeath);
+            if (beforeSupernova && DivideDeath.bursting(boss) && sound != null) sound.divideSupernova();
             float cover=boss.slimePromptCover();
             if(sound!=null && boss.kind==Boss.SLIME && boss.fighting() && boss.slimePromptHits>=2
                     && !boss.hasGlob() && boss.boltCount()==0 && !boss.slimeRetaliating) {
@@ -2738,6 +2760,7 @@ final class GameCore {
                 if (boss.launched && boss.kind != Boss.MUSHROOM) sound.bossLaugh();
                 if (boss.mushroomSporeCue) sound.mushroomSpore();
                 if (boss.boingWeight >= 0f) sound.divideBoing(boss.boingWeight);
+                if (boss.octoWave) sound.octoWave();
                 if (boss.octoCue) sound.octoCue();
                 if (boss.octoLock) sound.octoLock();
                 if (boss.defeatChime) sound.squish(Boss.FACE[boss.kind], boss.defeatBeat);
@@ -2829,6 +2852,7 @@ final class GameCore {
                     breach(e, L);
                     // Nothing left to simulate once the run is over.
                     if (state != PLAY) return;
+                    if (pushLesson.update(this, 0f, L)) return;
                 }
                 continue;
             }
@@ -3078,6 +3102,7 @@ final class GameCore {
         }
         // One per stage, and this is where a stage begins.
         pushUsed = false;
+        pushLesson.reset();
         spawnedThisStage = 0;
         resolvedThisStage = 0;
         stageBanner = BANNER_TIME;

@@ -16,7 +16,6 @@ package com.dddumpling.game;
 final class BossScreen extends Draw {
 
     static final float DIVIDE_REMNANT_ALPHA = 0.38f;
-    static final int DIVIDE_SHARDS_PER_PIECE = 12;
 
     /** Deep plum through hot mulberry: every generation of Divide is angrier than its parent. */
     private static final int[] DIVIDE_COLOR = {
@@ -116,9 +115,14 @@ final class BossScreen extends Draw {
     static void body(Painter p, GameCore c, Layout L, Boss b, float alpha) {
         if (!b.active() || b.body == null) return;
 
+        if (b.beaten && b.kind == Boss.MUSHROOM) {
+            drawMushroom(p, c, L, b, tint(b), alpha);
+            return;
+        }
+
         // In on the arrival card, out on the burst.
         float fade = b.intro > 0f ? Math.min(1f, b.introProgress() * 1.6f)
-                : b.beaten ? Math.max(0f, 1f - b.defeatMelt() * b.defeatMelt()) : 1f;
+                : b.beaten && b.kind != Boss.SPLITTER ? Math.max(0f, 1f - b.defeatMelt() * b.defeatMelt()) : 1f;
         fade *= alpha;
         if (fade <= 0.01f) return;
 
@@ -470,6 +474,8 @@ final class BossScreen extends Draw {
 
     /** A fly-agaric silhouette built around the same live soft-body ring as every other boss. */
     private static void drawMushroom(Painter p, GameCore c, Layout L, Boss b, int col, float fade) {
+        MushroomDeath death = b.beaten ? new MushroomDeath(p, b, L, fade) : null;
+        if (death != null) { p = death; fade = 1f; }
         float rootX = b.body.centreX(), cy = b.body.centreY();
         float rx = b.body.radiusX(), ry = b.body.radiusY();
         // The cap may squash violently at every endpoint. The stalk must not inherit that
@@ -549,9 +555,10 @@ final class BossScreen extends Draw {
                     + branch * 0.113f) % 1f;
             float px = midX + (endX - midX) * wave;
             float py = midY + (endY - midY) * wave;
-            p.fillCircle(px, py, ry * (0.025f + damage * 0.035f) * rootPulse,
+            if (!b.beaten) p.fillCircle(px, py, ry * (0.025f + damage * 0.035f) * rootPulse,
                     Glyph.withAlpha(mycelium, (int) ((125f + damage * 120f) * fade)));
         }
+        if (death != null) death.groundCover();
         p.fillEllipse(rootX, stemBottom + stemR * 0.05f, stemHalf * 2.0f, stemR * 0.13f,
                 Glyph.withAlpha(0xFFE7C5CE, (int) (70 * fade)));
         float[] stemRaw = b.mushroomStem == null ? null : b.mushroomStem.outline();
@@ -689,6 +696,8 @@ final class BossScreen extends Draw {
         } else p.line(faceX - stemHalf * 0.24f, faceY + ry * 0.16f,
                 faceX + stemHalf * 0.24f, faceY + ry * 0.16f,
                 Glyph.withAlpha(0xFF4A2631, (int) (220 * fade)), ry * 0.035f);
+
+        if (death != null) { death.endGroundCover(); return; }
 
         if (b.mushroomReject > 0f) {
             float taunt = b.mushroomReject;
@@ -1100,12 +1109,16 @@ final class BossScreen extends Draw {
     }
 
     private static void drawDividePieces(Painter p, GameCore c, Layout L, Boss b, float fade) {
+        if (b.beaten && DivideDeath.bursting(b)) {
+            DivideDeath.draw(p, L, b, fade);
+            return;
+        }
         for (int i = 0; i < b.pieceCount(); i++) {
             Softbody piece = b.pieceBody(i);
             if (piece == null) continue;
             float rr = b.pieceR(i, L);
             float x = piece.centreX(), y = piece.centreY();
-            float heat = Math.min(1f, b.pieceIdle(i) / Boss.DIVIDE_BOLT_TIME);
+            float heat = Math.min(1f, b.pieceIdle(i) / b.divideBoltInterval());
             float hurt = b.pieceHurt(i);
             int depth = Math.max(0, Math.min(DIVIDE_COLOR.length - 1, b.pieceDepth(i)));
             int halfCol = Glyph.mix(DIVIDE_COLOR[depth], ROSE, heat * 0.45f);
@@ -1138,12 +1151,14 @@ final class BossScreen extends Draw {
             Softbody remnant = b.divideBody[n];
             if (remnant == null) continue;
             int depth = Math.max(0, Math.min(DIVIDE_COLOR.length - 1, b.nodeDepth(n)));
-            int remnantCol = Glyph.mix(DIVIDE_COLOR[depth], BG, 0.36f);
+            float charge = b.beaten ? DivideDeath.charge(DivideDeath.elapsed(b)) : 0f;
+            int remnantCol = b.beaten ? Glyph.mix(0xFF9B62FF, 0xFFE0BAFF, charge * .6f)
+                    : Glyph.mix(DIVIDE_COLOR[depth], BG, 0.36f);
             Slime.cube(p, remnant, c.clock + n * 0.31f, remnantCol,
-                    false, fade * DIVIDE_REMNANT_ALPHA);
+                    false, fade * (b.beaten ? .85f : DIVIDE_REMNANT_ALPHA));
         }
 
-        if (b.beaten) divideBreakup(p, c, L, b, fade);
+        if (b.beaten) DivideDeath.draw(p, L, b, fade);
 
         if (b.divideBurst > 0f) {
             float burst = b.divideBurst;
@@ -1154,43 +1169,6 @@ final class BossScreen extends Draw {
                     Glyph.withAlpha(0xFFFFFFFF, (int) (210 * burst * fade)));
             p.strokeCircle(cx, cy, rr * (0.45f + (1f - burst) * 1.25f),
                     Glyph.withAlpha(GOLD, (int) (235 * burst * fade)), rr * 0.12f);
-        }
-    }
-
-    /** Tiny same-colour droplets shed as the defeated fragments break apart and fall. */
-    private static void divideBreakup(Painter p, GameCore c, Layout L, Boss b, float fade) {
-        float progress = b.leaveProgress();
-        if (progress < 0.50f) return;
-        float fall = Math.min(1f, (progress - 0.50f) / 0.50f);
-        int visible = b.divideActive | b.divideDead;
-        int count = Math.max(1, Integer.bitCount(visible));
-        float centreX = (L.playLeft + L.playRight) * 0.5f;
-        float centreY = (L.playTop + L.dangerY) * 0.5f;
-        float orbit = Boss.bodyR(L) * 0.72f;
-        for (int n = 0; n < Boss.DIVIDE_NODES; n++) {
-            if (!b.nodeVisible(n)) continue;
-            int ordinal = Integer.bitCount(visible & ((1 << n) - 1));
-            float ring = -Softbody.TAU * 0.25f + Softbody.TAU * ordinal / count;
-            float ox = centreX + (float) Math.cos(ring) * orbit;
-            float oy = centreY + (float) Math.sin(ring) * orbit;
-            int depth = Math.max(0, Math.min(DIVIDE_COLOR.length - 1, b.nodeDepth(n)));
-            int col = DIVIDE_COLOR[depth];
-            float sourceR = b.divideBody[n] == null ? L.enemyR : b.divideBody[n].radius();
-            for (int k = 0; k < DIVIDE_SHARDS_PER_PIECE; k++) {
-                int hash = n * 1103515245 + k * 12345 + 0x51A7;
-                float jitter = ((hash >>> 8) & 1023) / 1023f;
-                float angle = ring + (k / (float) DIVIDE_SHARDS_PER_PIECE - 0.5f) * 2.8f
-                        + jitter * 0.55f;
-                float speed = sourceR * (1.4f + 2.2f * (((hash >>> 18) & 255) / 255f));
-                float x = ox + (float) Math.cos(angle) * speed * fall;
-                float y = oy + (float) Math.sin(angle) * speed * fall
-                        + fall * fall * L.h * (0.72f + 0.28f * jitter);
-                float r = sourceR * (0.075f + 0.075f * (((hash >>> 4) & 15) / 15f));
-                int alpha = (int) (220f * Math.min(1f, fall * 5f) * (1f - fall * 0.58f) * fade);
-                p.fillEllipse(x, y, r, r * (0.72f + 0.20f * jitter), Glyph.withAlpha(col, alpha));
-                p.fillCircle(x - r * 0.22f, y - r * 0.20f, r * 0.22f,
-                        Glyph.withAlpha(0xFFFFFFFF, alpha / 3));
-            }
         }
     }
 
@@ -1643,7 +1621,8 @@ final class BossScreen extends Draw {
     /** The burst a beaten boss goes out on. */
     static void burst(Painter p, GameCore c, Layout L) {
         Boss b = c.boss;
-        if (!b.active() || !b.beaten || b.body == null) return;
+        if (!b.active() || !b.beaten || b.body == null || b.kind == Boss.SPLITTER
+                || b.kind == Boss.MUSHROOM) return;
         float t = b.leaveProgress();
         float cx = b.body.centreX(), cy = b.body.centreY();
         float r = b.body.radius();

@@ -160,6 +160,9 @@ final class Preview {
     private static int unfitFrames;
 
     private static final class Mem implements GameCore.Store {
+        boolean pushLessonSeen = true; // Ordinary simulations model a player past onboarding.
+        public boolean loadPushLessonSeen() { return pushLessonSeen; }
+        public void savePushLessonSeen(boolean value) { pushLessonSeen = value; }
         byte[] progress;
         public byte[] loadProgress() { return progress == null ? null : progress.clone(); }
         public void saveProgress(byte[] data) { progress = data.clone(); }
@@ -802,6 +805,15 @@ final class Preview {
         step(c4, L, 2 * DT);
         System.out.printf("danger frame: warn=%.2f harm=%.2f%n", c4.warnLevel, c4.harm());
         shot(dir, "6-danger", c4, L, w, h, ss);
+
+        c4.pushLesson.seen = false;
+        c4.update(DT, L);
+        shot(dir, "199-push-lesson", c4, L, w, h, ss);
+        GameCore reset = new GameCore(store, 18L);
+        reset.settingsOpen = true; reset.settingsPage = 1; reset.settingsTab = SettingsUi.PROGRESS;
+        shot(dir, "200-swipe-reset", reset, L, w, h, ss);
+        c4.pushLesson.reset();
+        c4.pushLesson.seen = true;
 
         // The push-back offered: a word inside the warning band and the swipe strip lit.
         System.out.printf("push offered: ready=%s warn=%.2f%n", c4.pushReady(), c4.warnLevel);
@@ -1506,6 +1518,20 @@ final class Preview {
         shot(dir,"76g-octopulse-defeated-shrug",defeatedOcto,L,w,h,ss);
         for (int i=0;i<48;i++) defeatedOcto.boss.update(DT,L,defeatedOcto.rnd);
         shot(dir,"76h-octopulse-defeated-droop",defeatedOcto,L,w,h,ss);
+        GameCore wilt = toBoss(L, Boss.MUSHROOM, 539L, true);
+        wilt.stageBanner = wilt.rosterSceneT = 0f;
+        wilt.boss.hp = 1f;
+        for (int i = 0; i < 1200 && !wilt.boss.beaten; i++) {
+            Check.bossPlay(wilt, L);
+            wilt.update(DT, L);
+        }
+        float[] wiltTimes = {0f, .85f, 1.55f, 2.2f, 2.9f, 3.25f, 3.5f};
+        String[] wiltNames = {"last-shake", "brown-shriveled", "flattening", "flat", "spread", "melting", "faded"};
+        for (int phase = 0; phase < wiltTimes.length; phase++) {
+            while (wilt.boss.leaveProgress() * Boss.LEAVE + DT * .5f < wiltTimes[phase])
+                wilt.update(DT, L);
+            shot(dir, "77i-agaric-death-" + phase + "-" + wiltNames[phase], wilt, L, w, h, ss);
+        }
         GameCore agaric = toBoss(L, Boss.MUSHROOM, 537L, true);
         agaric.stageBanner = agaric.rosterSceneT = 0f;
         agaric.boss.mushroomCharge = Boss.MUSHROOM_CHARGE_TIME * 0.5f;
@@ -1589,6 +1615,14 @@ final class Preview {
         step(ddSplit, L, 0.08f);
         shot(dir, "73-divide-split", ddSplit, L, w, h, ss);
 
+        GameCore ddVolley = toBoss(L, Boss.SPLITTER, 544L, true);
+        ddVolley.boss.halfIdle[0] = ddVolley.boss.divideBoltInterval() - DT * .5f;
+        step(ddVolley, L, DT);
+        step(ddVolley, L, .08f);
+        shot(dir, "75a-divide-unsplit-volley", ddVolley, L, w, h, ss);
+        step(ddVolley, L, .9f);
+        shot(dir, "75c-divide-three-projectiles", ddVolley, L, w, h, ss);
+
         GameCore ddDanger = toBoss(L, Boss.SPLITTER, 543L, true);
         ddDanger.boss.pieceHits[0] = Boss.DIVIDE_HITS;
         float ddx2 = ddDanger.boss.pieceX(0, L), ddy2 = ddDanger.boss.pieceY(0, L);
@@ -1597,13 +1631,26 @@ final class Preview {
         ddDanger.boss.divideBurst = 0f;
         ddDanger.boss.halfHurt[1] = 0.90f;
         ddDanger.boss.halfIdle[1] = 0.10f;
-        ddDanger.boss.halfIdle[2] = Boss.DIVIDE_BOLT_TIME * 0.91f;
+        ddDanger.boss.halfIdle[2] = ddDanger.boss.divideBoltInterval() * 0.91f;
         shot(dir, "74-divide-half-danger", ddDanger, L, w, h, ss);
-        ddDanger.boss.halfIdle[2] = Boss.DIVIDE_BOLT_TIME - DT * 0.5f;
+        ddDanger.boss.halfIdle[2] = ddDanger.boss.divideBoltInterval() - DT * 0.5f;
         step(ddDanger, L, DT);
         shot(dir, "75-divide-bolt", ddDanger, L, w, h, ss);
         step(ddDanger, L, 0.08f);
-        shot(dir, "75b-divide-after-split-firing", ddDanger, L, w, h, ss);
+        shot(dir, "75b-divide-firing-recoil", ddDanger, L, w, h, ss);
+
+        GameCore ddDeath = toBoss(L, Boss.SPLITTER, 545L, true);
+        while (!ddDeath.boss.beaten) {
+            int node = ddDeath.boss.pieceNodeIndex(0);
+            ddDeath.boss.pieceHits[node] = Boss.DIVIDE_HITS;
+            ddDeath.boss.beginPinch(100f);
+            ddDeath.boss.pinch(100f * (Boss.DIVIDE_SCALE + .01f));
+        }
+        float[] deathTimes = {.4f, .95f, 1.4f, 1.85f, 2.03f, 2.35f, 2.85f};
+        for (int i = 0; i < deathTimes.length; i++) {
+            while (DivideDeath.elapsed(ddDeath.boss) < deathTimes[i]) step(ddDeath, L, DT);
+            shot(dir, "75d-divide-supernova-" + i, ddDeath, L, w, h, ss);
+        }
 
         // The settings panel's stage jump, parked on a boss stage so the row names the boss it is
         // sitting on — which is the state the control exists for.
@@ -1635,6 +1682,15 @@ final class Preview {
         for(int tab=0;tab<4;tab++) {
             settings.settingsTab=tab;
             shot(dir,"122-settings-active-"+tab,settings,L,w,h,ss);
+        }
+
+        for (int kind = 0; kind < Boss.COUNT; kind++) {
+            if (kind == Boss.SPLITTER) continue; // Its seven supernova frames include the impact.
+            GameCore death = toBoss(L, kind, 590L + kind, true);
+            death.boss.beaten = true; death.boss.hp = 0f; death.boss.leaveT = Boss.LEAVE;
+            step(death, L, death.boss.deathImpactTime() + .04f);
+            System.out.printf("boss death %s: shake %.2f%n", death.boss.name(), death.shake);
+            shot(dir, "66b-boss-death-impact-" + kind, death, L, w, h, ss);
         }
 
         // Beaten, mid-burst.
@@ -1787,7 +1843,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

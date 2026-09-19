@@ -11,6 +11,8 @@ final class Renderer extends Draw {
 
     private Renderer() {}
 
+    static float shakeMargin(GameCore c, Layout L) { return Math.max(0f, c.shake) * .016f * L.w; }
+
     static void draw(Painter p, GameCore c, Layout L) {
         if (c.state == GameCore.BONUS && CaveInterlude.active(c)) {
             if(c.mining.active) CaveMiningScreen.draw(p,c,L);
@@ -35,22 +37,23 @@ final class Renderer extends Draw {
         if (Cave.active(c)) {
             CaveScreen.draw(p, c, L);
         } else {
-        p.fillRect(0, 0, L.w, L.h,
+        float shakeMargin = shakeMargin(c, L);
+        p.save();
+        if (c.shake > 0) {
+            float m = shakeMargin;
+            p.translate(m * (float) Math.sin(c.clock * 57f),
+                    m * 0.6f * (float) Math.cos(c.clock * 71f));
+        }
+        // Overscan the flat backing so camera motion cannot expose an unpainted edge.
+        p.fillRect(-shakeMargin, -shakeMargin, L.w + shakeMargin, L.h + shakeMargin,
                 Glyph.mix(Glyph.mix(Lands.background(c), BG_HURT, hurt * 0.45f), BG_DEATH, gone));
-        p.fillRect(0, L.deckTop, L.w, L.h,
+        p.fillRect(-shakeMargin, L.deckTop, L.w + shakeMargin, L.h + shakeMargin,
                 Glyph.mix(Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f), BG_DEATH, gone * 0.85f));
 
         // Two cloud layers behind the words...
         Sky.cloudBand(p, c, L, 0, Sky.CLOUD_FRONT_LAYER, hurt);
 
         Lands.scenery(p, c, L);
-
-        p.save();
-        if (c.shake > 0) {
-            float m = c.shake * 0.016f * L.w;
-            p.translate(m * (float) Math.sin(c.clock * 57f),
-                    m * 0.6f * (float) Math.cos(c.clock * 71f));
-        }
 
         dangerLine(p, c, L);
         pushHint(p, c, L);
@@ -136,6 +139,7 @@ final class Renderer extends Draw {
         // Over the title screen and its display case, under nothing: the story is modal.
         if (c.storyOpen()) Storybook.draw(p, c, L);
         if (c.settingsOpen) PlayerSettings.draw(p, c, L);
+        PushLesson.draw(p, c, L);
         Pause.draw(p, c, L);
         ReleaseNotes.entry(p,c,L);
         c.releaseNotes.draw(p,c,L);
