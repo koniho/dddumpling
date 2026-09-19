@@ -1403,6 +1403,20 @@ final class Preview {
         shot(dir,"76g-octopulse-defeated-shrug",defeatedOcto,L,w,h,ss);
         for (int i=0;i<48;i++) defeatedOcto.boss.update(DT,L,defeatedOcto.rnd);
         shot(dir,"76h-octopulse-defeated-droop",defeatedOcto,L,w,h,ss);
+        GameCore wilt = toBoss(L, Boss.MUSHROOM, 539L, true);
+        wilt.stageBanner = wilt.rosterSceneT = 0f;
+        wilt.boss.hp = 1f;
+        for (int i = 0; i < 1200 && !wilt.boss.beaten; i++) {
+            Check.bossPlay(wilt, L);
+            wilt.update(DT, L);
+        }
+        float[] wiltTimes = {0f, .85f, 1.55f, 2.2f, 2.9f, 3.25f, 3.5f};
+        String[] wiltNames = {"last-shake", "brown-shriveled", "flattening", "flat", "spread", "melting", "faded"};
+        for (int phase = 0; phase < wiltTimes.length; phase++) {
+            while (wilt.boss.leaveProgress() * Boss.LEAVE + DT * .5f < wiltTimes[phase])
+                wilt.update(DT, L);
+            shot(dir, "77i-agaric-death-" + phase + "-" + wiltNames[phase], wilt, L, w, h, ss);
+        }
         GameCore agaric = toBoss(L, Boss.MUSHROOM, 537L, true);
         agaric.stageBanner = agaric.rosterSceneT = 0f;
         agaric.boss.mushroomCharge = Boss.MUSHROOM_CHARGE_TIME * 0.5f;

@@ -115,6 +115,11 @@ final class BossScreen extends Draw {
     static void body(Painter p, GameCore c, Layout L, Boss b, float alpha) {
         if (!b.active() || b.body == null) return;
 
+        if (b.beaten && b.kind == Boss.MUSHROOM) {
+            drawMushroom(p, c, L, b, tint(b), alpha);
+            return;
+        }
+
         // In on the arrival card, out on the burst.
         float fade = b.intro > 0f ? Math.min(1f, b.introProgress() * 1.6f)
                 : b.beaten && b.kind != Boss.SPLITTER ? Math.max(0f, 1f - b.defeatMelt() * b.defeatMelt()) : 1f;
@@ -469,6 +474,8 @@ final class BossScreen extends Draw {
 
     /** A fly-agaric silhouette built around the same live soft-body ring as every other boss. */
     private static void drawMushroom(Painter p, GameCore c, Layout L, Boss b, int col, float fade) {
+        MushroomDeath death = b.beaten ? new MushroomDeath(p, b, L, fade) : null;
+        if (death != null) { p = death; fade = 1f; }
         float rootX = b.body.centreX(), cy = b.body.centreY();
         float rx = b.body.radiusX(), ry = b.body.radiusY();
         // The cap may squash violently at every endpoint. The stalk must not inherit that
@@ -548,9 +555,10 @@ final class BossScreen extends Draw {
                     + branch * 0.113f) % 1f;
             float px = midX + (endX - midX) * wave;
             float py = midY + (endY - midY) * wave;
-            p.fillCircle(px, py, ry * (0.025f + damage * 0.035f) * rootPulse,
+            if (!b.beaten) p.fillCircle(px, py, ry * (0.025f + damage * 0.035f) * rootPulse,
                     Glyph.withAlpha(mycelium, (int) ((125f + damage * 120f) * fade)));
         }
+        if (death != null) death.groundCover();
         p.fillEllipse(rootX, stemBottom + stemR * 0.05f, stemHalf * 2.0f, stemR * 0.13f,
                 Glyph.withAlpha(0xFFE7C5CE, (int) (70 * fade)));
         float[] stemRaw = b.mushroomStem == null ? null : b.mushroomStem.outline();
@@ -688,6 +696,8 @@ final class BossScreen extends Draw {
         } else p.line(faceX - stemHalf * 0.24f, faceY + ry * 0.16f,
                 faceX + stemHalf * 0.24f, faceY + ry * 0.16f,
                 Glyph.withAlpha(0xFF4A2631, (int) (220 * fade)), ry * 0.035f);
+
+        if (death != null) { death.endGroundCover(); return; }
 
         if (b.mushroomReject > 0f) {
             float taunt = b.mushroomReject;
@@ -1611,7 +1621,8 @@ final class BossScreen extends Draw {
     /** The burst a beaten boss goes out on. */
     static void burst(Painter p, GameCore c, Layout L) {
         Boss b = c.boss;
-        if (!b.active() || !b.beaten || b.body == null || b.kind == Boss.SPLITTER) return;
+        if (!b.active() || !b.beaten || b.body == null || b.kind == Boss.SPLITTER
+                || b.kind == Boss.MUSHROOM) return;
         float t = b.leaveProgress();
         float cx = b.body.centreX(), cy = b.body.centreY();
         float r = b.body.radius();

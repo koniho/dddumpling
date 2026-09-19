@@ -14,6 +14,8 @@ python3 tools/prepare-release.py context --output build/release-context.json
 
 Use `--since <last-distributed-tag-or-commit>` if the nearest tag was not the last shipped build. Review the relevant diffs and merged PRs. Include only the changes in this release; unmerged branch work is not shipped work.
 
+Exclude features and changes that are available only behind development flags or in developer builds. Verify availability in the intended production build before drafting notes; merging code into main does not make a feature release-ready. Apply this rule to in-game notes and all store, TestFlight, GitHub, itch, and dev-blog release summaries.
+
 Before drafting entries, collect the player-facing changes into substantial features,
 small improvements, and standalone bugs. Gather minor UI, navigation, visual, and audio
 polish into one **Little improvements** (`misc`) entry with an `improvements` array.
