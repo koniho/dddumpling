@@ -1,9 +1,9 @@
 package com.dddumpling.game;
 
 /**
- * Sound effects as 16-bit mono PCM; cart rolling uses a licensed recording.
+ * Sound effects as 16-bit mono PCM; cart and rock effects use licensed recordings.
  *
- * Most sounds are synthesised. CartRecording embeds a CC0 sample so Android, iOS
+ * Most sounds are synthesised. CartRecording and RockRecording embed CC0 samples so Android, iOS
  * and the preview harness use exactly the same PCM without platform asset loaders.
  * Source and processing provenance: audio/recorded/README.md.
  *
@@ -50,7 +50,9 @@ final class Sfx {
         if (id >= SQUISH_0 && id < SQUISH_0 + Glyph.COUNT) return squish(id - SQUISH_0);
         if (id >= BOSS_TAUNT_0 && id < BOSS_TAUNT_0 + Boss.COUNT)
             return bossTaunt(id - BOSS_TAUNT_0);
-        if(id>=CAVE_RUMBLE && id<=CAVE_SINK)return cave(id);
+        if(id==CAVE_RUMBLE)return RockRecording.rumble();
+        if(id==CAVE_CRASH)return RockRecording.crash();
+        if(id>=CAVE_AMBUSH && id<=CAVE_SINK)return cave(id);
         if(id==MINING_CHEER)return miningCheer();
         if(id==CART_ROLL)return CartRecording.build();
         if(id>=CART_SQUEAL && id<=CART_TUMBLE)return cart(id);
@@ -1033,7 +1035,7 @@ final class Sfx {
     }
 
     private static short[] cave(int id) {
-        float duration=id==CAVE_RUMBLE?.38f:id==CAVE_CRASH?.34f:.32f;
+        float duration=.32f;
         float[] v=new float[(int)(RATE*duration)];
         java.util.Random random=new java.util.Random(817+id);
         double bass=0,gravel=0,air=0;
@@ -1046,15 +1048,7 @@ final class Sfx {
                     +.12*Math.sin(6.283185*373*t);
             double texture=bass*4.8+gravel*1.9;
             double attack=Math.min(1,t/.009),decay=Math.pow(1-u,3.3),hit=0;
-            if(id==CAVE_CRASH){
-                hit=(air-gravel)*2.2*Math.exp(-t*65);
-                // Delayed chips tumble after the first heavy contact.
-                for(int k=0;k<3;k++){
-                    double d=t-(.043+k*.039);
-                    if(d>=0)hit+=(air*.7+Math.sin(6.283185*(310+k*119)*d)*.14)*Math.exp(-d*85);
-                }
-                texture*=.8;body*=1.15;
-            }else if(id==CAVE_AMBUSH){
+            if(id==CAVE_AMBUSH){
                 double stomp=Math.exp(-t*24)+.6*Math.exp(-Math.max(0,t-.075)*35)*(t>.075?1:0);
                 body*=stomp*1.4;texture*=.7;hit=air*.8*Math.exp(-t*55);
             }else if(id==CAVE_SINK){

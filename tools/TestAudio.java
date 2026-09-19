@@ -11,7 +11,7 @@ final class TestAudio extends Check {
             short[] effect=Sfx.build(id);int head=0,tail=0;
             for(int i=0;i<effect.length/2;i++)head=Math.max(head,Math.abs(effect[i]));
             for(int i=effect.length*3/4;i<effect.length;i++)tail=Math.max(tail,Math.abs(effect[i]));
-            check("cave cue fits between impacts "+id,effect.length<Sfx.RATE*CaveTraps.GAP && head>1000);
+            check("cave cue fits between impacts "+id,effect.length<Sfx.RATE*(id==Sfx.CAVE_RUMBLE ? CaveTraps.FALL : CaveTraps.GAP) && head>1000);
             check("cave cue fades before next impact "+id,tail<head/4);
         }
         for(int id=Sfx.CAVE_RUMBLE;id<=Sfx.CART_TUMBLE;id++){
@@ -30,6 +30,10 @@ final class TestAudio extends Check {
             check("cave sound survives small speakers "+id,phoneEnergy/total>.075);
             check("cave sound leaves mixing headroom "+id,peak<30000);
             check("ride cue finishes before repeat "+id,id<Sfx.CART_ROLL || (id==Sfx.CART_ROLL ? effect.length==Math.round(Sfx.RATE*CartRecording.DURATION) : effect.length<=Sfx.RATE*.35f));
+        }
+        for(int id=Sfx.CAVE_RUMBLE;id<=Sfx.CAVE_CRASH;id++){
+            short[] rock=Sfx.build(id);
+            check("recorded rock endpoints are click-free "+id,rock[0]==0 && rock[rock.length-1]==0);
         }
         short[] rolling=Sfx.build(Sfx.CART_ROLL);
         check("recorded cart has click-free endpoints",rolling[0]==0 && rolling[rolling.length-1]==0);

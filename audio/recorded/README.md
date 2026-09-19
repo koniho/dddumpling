@@ -45,3 +45,39 @@ WAVs are review/reproduction artifacts and are not duplicated in the APK assets.
 Validation: 181 audio assertions and 47 Android band-audio checks pass. The recording
 passes the existing low-body and phone-band energy checks. Phone/headphone listening
 is still the final subjective check; measurements do not establish that preference.
+
+# Recorded cave rockfall and rumble
+
+`cave-rumble.wav` and `cave-crash.wav` replace `Sfx.CAVE_RUMBLE` and
+`Sfx.CAVE_CRASH`. They share a documented natural stone field recording, with
+separate excerpts and processing for an approaching cascade and a landing impact.
+
+- Work: **rockfall2a.wav**, by **AlanCat**, published April 24, 2017.
+- Source: https://freesound.org/people/AlanCat/sounds/389303/
+- Downloaded public high-quality preview: https://cdn.freesound.org/previews/389/389303_5486695-hq.mp3
+- License: **CC0 1.0 Universal**, https://creativecommons.org/publicdomain/zero/1.0/
+- Retrieved September 19, 2026. Source page explicitly permits modification,
+  redistribution and commercial use without requesting permission.
+- Courtesy credit: “Cave rockfall adapted from rockfall2a.wav by AlanCat (Freesound), CC0.”
+- Author documents rocks falling down a cliff with smaller stones following,
+  recorded with an Olympus LS-14, then background noise removed in Audacity.
+- Original listed duration: 16.849 seconds, stereo, 44,100 Hz.
+- Downloaded preview SHA-256: `db15885029d027756ef2b90114c202f4837f10a128371f493904b4886818ffcd`.
+
+`rockfall-source.wav` is the decoded MP3 preview, not the original uploaded WAV.
+Run `python tools/prepare-rock-recording.py` to rebuild the two review WAVs and
+`RockRecording.java`. No synthesized noise, oscillators or added recordings are used.
+
+The rumble takes the passage at 0.65 seconds, at 48% speed, rolls off above 500 Hz,
+and emphasizes the existing body below 180 Hz. It lasts .95 seconds, with an
+8 ms entrance and decaying last 40%. The crash uses the impact at 7.125 seconds,
+at 65% speed, retains detail up to 1.6 kHz, emphasizes body below 180 Hz, and decays
+over .46 seconds. Both remove sub-28 Hz/DC energy, fold stereo to mono, normalize
+peaks to 85%, and run at 22,050 Hz. These are deliberately pitched rock recordings,
+not unaltered claims about the size of the stones.
+
+Playback uses the existing effects route. The .95-second rumble is a single cue
+on rockfall introduction, ending before the first falling rock reaches the floor.
+The .46-second impact finishes before the existing .571-second landing spacing;
+no repeat interval change or background loop is needed. Squeal, tumble, enemy
+stomps and quicksand remain the existing synthesized sounds.
