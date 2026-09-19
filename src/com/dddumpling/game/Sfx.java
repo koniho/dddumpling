@@ -879,18 +879,17 @@ final class Sfx {
         return render(v);
     }
 
-    /** Low brittle crack over a wet body, unique to Dark Divide damage. */
+    /** A rounded water-drop pitch bend, short enough for repeated key hits. */
     static short[] divideDamage() {
-        int n = (int) (RATE * 0.30f);
+        int n = (int) (RATE * 0.19f);
         float[] v = new float[n];
-        int seed = 0x51d3;
+        float phase = 0f;
         for (int i = 0; i < n; i++) {
-            float u = (float) i / n;
-            seed = seed * 1103515245 + 12345;
-            float grit = ((seed >>> 16) & 0x7fff) / 16383.5f - 1f;
-            float bass = (float) Math.sin(TAU * (118f - 46f * u) * i / RATE);
-            float crack = grit * (float) Math.exp(-35f * u);
-            v[i] = (bass * 0.82f + crack * 0.55f) * envelope(u, 0.004f, 2.8f);
+            float t = (float) i / RATE, u = (float) i / n;
+            float hz = 210f + 430f * (float) Math.exp(-32f * t);
+            phase += TAU * hz / RATE;
+            v[i] = ((float) Math.sin(phase) + 0.12f * (float) Math.sin(phase * 2f))
+                    * envelope(u, 0.035f, 3.6f);
         }
         return render(v);
     }
@@ -912,24 +911,17 @@ final class Sfx {
         return render(v);
     }
 
-    /** A terminal fragment shutting down: three weighty notes descending into a low thump. */
+    /** A soft bubble popping and sinking away as the cube goes dormant. */
     static short[] divideDeactivate() {
-        int n = (int) (RATE * 0.72f);
+        int n = (int) (RATE * 0.36f);
         float[] v = new float[n];
-        float[] note = {523f, 392f, 262f};
+        float phase = 0f;
         for (int i = 0; i < n; i++) {
-            float t = (float) i / RATE, s = 0f;
-            for (int k = 0; k < note.length; k++) {
-                float local = t - k * 0.13f;
-                if (local < 0f) continue;
-                s += ((float) Math.sin(TAU * note[k] * local)
-                        + 0.24f * (float) Math.sin(TAU * note[k] * 2f * local))
-                        * (float) Math.exp(-7f * local) * 0.55f;
-            }
-            float thumpAt = t - 0.39f;
-            if (thumpAt >= 0f) s += (float) Math.sin(TAU * (105f - 48f * thumpAt) * thumpAt)
-                    * (float) Math.exp(-12f * thumpAt) * 0.85f;
-            v[i] = s * envelope((float) i / n, 0.004f, 0.9f);
+            float t = (float) i / RATE, u = (float) i / n;
+            float hz = 105f + 620f * (float) Math.exp(-16f * t);
+            phase += TAU * hz / RATE;
+            v[i] = ((float) Math.sin(phase) + 0.16f * (float) Math.sin(phase * 2f))
+                    * envelope(u, 0.025f, 3.2f);
         }
         return render(v);
     }

@@ -1606,8 +1606,8 @@ final class TestBoss extends Check {
 
         int splitEvents = 1;
         float lastInterval = c.boss.divideBoltInterval();
-        check("the first actual split speeds up every cube", c.boss.divideSplits == 1
-                && lastInterval < Boss.DIVIDE_BOLT_TIME && lastInterval > 2f);
+        check("the first split uses a thirty-percent shorter wait", c.boss.divideSplits == 1
+                && Math.abs(lastInterval - 2.1f) < .0001f && c.boss.divideVolleySize() == 2);
         for (int depth = 1; depth < Boss.DIVIDE_LEVELS; depth++) {
             boolean more = true;
             while (more) {
@@ -1619,8 +1619,9 @@ final class TestBoss extends Check {
                     c.boss.pinch(100f * (Boss.DIVIDE_SCALE + 0.01f));
                     splitEvents++;
                     float nextInterval = c.boss.divideBoltInterval();
-                    check("each actual split increases firing rate", c.boss.divideSplits == splitEvents
-                            && nextInterval < lastInterval && nextInterval >= 2f);
+                    check("later splits keep the single-projectile ramp", c.boss.divideSplits == splitEvents
+                            && (splitEvents == 2 || nextInterval < lastInterval) && nextInterval >= 2f
+                            && c.boss.divideVolleySize() == 1);
                     lastInterval = nextInterval;
                     more = true;
                     break;
@@ -1700,16 +1701,64 @@ final class TestBoss extends Check {
 
         check("deactivating terminal cubes does not add split events", c.boss.divideSplits == 7);
         GameCore timers = enterBoss(L, Boss.SPLITTER, 82L);
-        check("a new boss begins at the original firing rate", timers.boss.divideSplits == 0
-                && timers.boss.divideBoltInterval() == Boss.DIVIDE_BOLT_TIME);
+        check("an unsplit boss fires three bolts with a fifty-percent shorter wait", timers.boss.divideSplits == 0
+                && timers.boss.divideBoltInterval() == Boss.DIVIDE_BOLT_TIME * .5f
+                && timers.boss.divideVolleySize() == 3);
         int node = timers.boss.pieceNodeIndex(0);
-        timers.boss.halfIdle[node] = Boss.DIVIDE_BOLT_TIME - 0.1f;
+        timers.boss.halfIdle[node] = timers.boss.divideBoltInterval() - 0.1f;
         timers.tapKey(timers.boss.pieceWant(0), L);
         timers.update(0.2f, L);
-        check("attacking a slime resets its own three-second clock", timers.boss.boltCount() == 0);
-        timers.boss.halfIdle[node] = Boss.DIVIDE_BOLT_TIME - 0.1f;
+        check("attacking a cube resets its firing clock", timers.boss.boltCount() == 0);
+        timers.boss.halfIdle[node] = timers.boss.divideBoltInterval() - 0.1f;
         timers.update(0.2f, L);
-        check("a neglected slime launches from its own body", timers.boss.boltCount() == 1);
+        check("an unsplit cube launches a three-bolt volley", timers.boss.boltCount() == 3);
+        check("volley arrivals are staggered", timers.boss.bt[0] > timers.boss.bt[1]
+                && timers.boss.bt[1] > timers.boss.bt[2]);
+        GameCore pair = enterBoss(L, Boss.SPLITTER, 185L);
+        chargeDivide(pair, 0, L);
+        pair.boss.beginPinch(100f);
+        pair.boss.pinch(100f * (Boss.DIVIDE_SCALE + .01f));
+        for (int i = 0; i < pair.boss.pieceCount(); i++)
+            pair.boss.halfIdle[pair.boss.pieceNodeIndex(i)] = 2.09f;
+        pair.update(.02f, L);
+        check("both first-split cubes fire two-bolt volleys", pair.boss.boltCount() == 4);
+
+        GameCore crowded = enterBoss(L, Boss.SPLITTER, 186L);
+        for (int i = 0; i < Boss.MAX_BOLTS - 2; i++) {
+            crowded.boss.blive[i] = true;
+            crowded.boss.bt[i] = 0f;
+        }
+        crowded.boss.halfIdle[0] = crowded.boss.divideBoltInterval();
+        crowded.update(DT, L);
+        check("a volley waits for room rather than firing short", crowded.boss.boltCount() == Boss.MAX_BOLTS - 2
+                && crowded.boss.halfIdle[0] >= crowded.boss.divideBoltInterval());
+        crowded.boss.blive[0] = false;
+        crowded.update(DT, L);
+        check("a waiting volley launches in full when room opens", crowded.boss.boltCount() == Boss.MAX_BOLTS);
+
+        GameCore firing = enterBoss(L, Boss.SPLITTER, 184L);
+        GameCore quiet = enterBoss(L, Boss.SPLITTER, 184L);
+        firing.boss.halfIdle[0] = firing.boss.divideBoltInterval();
+        firing.update(DT, L);
+        quiet.update(DT, L);
+        float aimX = 0f, aimY = 0f;
+        for (int i = 0; i < Boss.MAX_BOLTS; i++) if (firing.boss.blive[i]) {
+            float dx = Roster.keyX(L, firing.boss.bglyph[i], 1f) - firing.boss.bsx[i];
+            float dy = Roster.keyY(L, firing.boss.bglyph[i], 1f) - firing.boss.bsy[i];
+            float distance = (float) Math.sqrt(dx * dx + dy * dy);
+            aimX += dx / distance; aimY += dy / distance;
+        }
+        for (int i = 0; i < 5; i++) { firing.update(DT, L); quiet.update(DT, L); }
+        Softbody shotBody = firing.boss.divideBody[0], quietBody = quiet.boss.divideBody[0];
+        float recoilX = shotBody.centreX() - quietBody.centreX();
+        float recoilY = shotBody.centreY() - quietBody.centreY();
+        check("firing pushes the cube opposite its projectile", recoilX * aimX + recoilY * aimY < 0f);
+        float recoil = (float) Math.sqrt(recoilX * recoilX + recoilY * recoilY) / firing.boss.pieceR(0, L);
+        check("firing recoil is visible but slight", recoil > .025f && recoil < .20f);
+        check("firing jiggles the cube skin", Math.abs(shotBody.deform() - quietBody.deform()) > .005f);
+        check("recoil leaves roaming speed unchanged", firing.boss.divideVX[0] == quiet.boss.divideVX[0]
+                && firing.boss.divideVY[0] == quiet.boss.divideVY[0]);
+
         GameCore fast = enterBoss(L, Boss.SPLITTER, 83L);
         fast.boss.divideSplits = 7;
         int fastNode = fast.boss.pieceNodeIndex(0);

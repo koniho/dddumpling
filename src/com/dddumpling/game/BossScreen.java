@@ -1105,7 +1105,7 @@ final class BossScreen extends Draw {
             if (piece == null) continue;
             float rr = b.pieceR(i, L);
             float x = piece.centreX(), y = piece.centreY();
-            float heat = Math.min(1f, b.pieceIdle(i) / Boss.DIVIDE_BOLT_TIME);
+            float heat = Math.min(1f, b.pieceIdle(i) / b.divideBoltInterval());
             float hurt = b.pieceHurt(i);
             int depth = Math.max(0, Math.min(DIVIDE_COLOR.length - 1, b.pieceDepth(i)));
             int halfCol = Glyph.mix(DIVIDE_COLOR[depth], ROSE, heat * 0.45f);

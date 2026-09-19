@@ -1369,7 +1369,7 @@ final class Boss {
         }
         if (octoFlurryLeft > 0) {
             octoFlurryT -= dt;
-            if (octoFlurryT <= 0f && singleBolt(rnd, body.centreX(), body.centreY())) {
+            if (octoFlurryT <= 0f && singleBolt(rnd, body.centreX(), body.centreY()) >= 0) {
                 octoFlurryLeft--;
                 octoFlurryT = 0.22f;
             }
@@ -2069,8 +2069,10 @@ final class Boss {
         return true;
     }
 
-    /** Seven splits raise shots per second by up to 50%; projectile travel stays unchanged. */
+    /** Early volleys use shorter waits; later fragments keep their split-rate ramp. */
     float divideBoltInterval() {
+        if (divideSplits == 0) return DIVIDE_BOLT_TIME * 0.5f;
+        if (divideSplits == 1) return DIVIDE_BOLT_TIME * 0.7f;
         float progress = Math.min(DIVIDE_PIECES - 1, Math.max(0, divideSplits))
                 / (float) (DIVIDE_PIECES - 1);
         return DIVIDE_BOLT_TIME / (1f + 0.5f * progress);
@@ -2094,14 +2096,40 @@ final class Boss {
         return root * 2f * (depth == 0 ? 1f : 0.62f * (float) Math.pow(0.72f, depth - 1));
     }
 
-    private boolean singleBolt(Random rnd, float x, float y) {
+    int divideVolleySize() { return divideSplits == 0 ? 3 : divideSplits == 1 ? 2 : 1; }
+
+    private boolean divideVolley(int node, Layout L, Random rnd) {
+        int made = 0, count = divideVolleySize(), free = 0;
+        for (boolean live : blive) if (!live) free++;
+        if (free < count) return false;
+        for (int i = 0; i < count; i++) {
+            int bolt = singleBolt(rnd, divideX[node], divideY[node] + pieceRadiusNode(node, L));
+            if (bolt < 0) break;
+            bt[bolt] = -BOLT_STAGGER * i;
+            divideRecoil(node, bolt, L);
+            made++;
+        }
+        return made > 0;
+    }
+
+    private void divideRecoil(int node, int bolt, Layout L) {
+        Softbody piece = divideBody[node];
+        if (piece == null) return;
+        float dx = Roster.keyX(L, bglyph[bolt], rosterFull ? 1f : 0f) - bsx[bolt];
+        float dy = Roster.keyY(L, bglyph[bolt], rosterFull ? 1f : 0f) - bsy[bolt];
+        // Rebound toward home without adding speed to the cube's roaming trajectory.
+        piece.shove(-dx, -dy, 1.8f / divideVolleySize());
+        piece.squash(0.28f / divideVolleySize());
+    }
+
+    private int singleBolt(Random rnd, float x, float y) {
         int slot = -1;
         for (int i = 0; i < MAX_BOLTS; i++) if (!blive[i]) { slot = i; break; }
-        if (slot < 0) return false;
+        if (slot < 0) return -1;
         int glyph;
         if (kind == OCTOPUS) {
             int available = octoKeysLeft();
-            if (available == 0) return false;
+            if (available == 0) return -1;
             int pick = rnd.nextInt(available);
             glyph = -1;
             for (int g = 0; g < Glyph.COUNT; g++) {
@@ -2119,7 +2147,7 @@ final class Boss {
         bsy[slot] = y;
         launchT = LAUNCH_TIME;
         launched = true;
-        return true;
+        return slot;
     }
 
     /**
@@ -2462,8 +2490,7 @@ final class Boss {
                 if (!nodeActive(n)) continue;
                 halfIdle[n] += dt;
                 if (halfIdle[n] >= interval) {
-                    if (singleBolt(rnd, divideX[n], divideY[n] + pieceRadiusNode(n, L)))
-                        halfIdle[n] -= interval;
+                    if (divideVolley(n, L, rnd)) halfIdle[n] -= interval;
                 }
             }
         }

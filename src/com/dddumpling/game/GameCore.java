@@ -224,7 +224,7 @@ final class GameCore {
         void slimeDamage();
         /** The slime chain tore a glob free: a taut, wet pop distinct from damage. */
         void bossSplit();
-        /** Dark Divide was struck: a low crack-squelch distinct from every other boss. */
+        /** Dark Divide was struck: a rounded bloop distinct from every other boss. */
         void divideDamage();
         /** The charged Dark Divide was pulled into two bodies. */
         void divideSplit();

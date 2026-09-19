@@ -1486,6 +1486,14 @@ final class Preview {
         step(ddSplit, L, 0.08f);
         shot(dir, "73-divide-split", ddSplit, L, w, h, ss);
 
+        GameCore ddVolley = toBoss(L, Boss.SPLITTER, 544L, true);
+        ddVolley.boss.halfIdle[0] = ddVolley.boss.divideBoltInterval() - DT * .5f;
+        step(ddVolley, L, DT);
+        step(ddVolley, L, .08f);
+        shot(dir, "75a-divide-unsplit-volley", ddVolley, L, w, h, ss);
+        step(ddVolley, L, .9f);
+        shot(dir, "75c-divide-three-projectiles", ddVolley, L, w, h, ss);
+
         GameCore ddDanger = toBoss(L, Boss.SPLITTER, 543L, true);
         ddDanger.boss.pieceHits[0] = Boss.DIVIDE_HITS;
         float ddx2 = ddDanger.boss.pieceX(0, L), ddy2 = ddDanger.boss.pieceY(0, L);
@@ -1494,13 +1502,13 @@ final class Preview {
         ddDanger.boss.divideBurst = 0f;
         ddDanger.boss.halfHurt[1] = 0.90f;
         ddDanger.boss.halfIdle[1] = 0.10f;
-        ddDanger.boss.halfIdle[2] = Boss.DIVIDE_BOLT_TIME * 0.91f;
+        ddDanger.boss.halfIdle[2] = ddDanger.boss.divideBoltInterval() * 0.91f;
         shot(dir, "74-divide-half-danger", ddDanger, L, w, h, ss);
-        ddDanger.boss.halfIdle[2] = Boss.DIVIDE_BOLT_TIME - DT * 0.5f;
+        ddDanger.boss.halfIdle[2] = ddDanger.boss.divideBoltInterval() - DT * 0.5f;
         step(ddDanger, L, DT);
         shot(dir, "75-divide-bolt", ddDanger, L, w, h, ss);
         step(ddDanger, L, 0.08f);
-        shot(dir, "75b-divide-after-split-firing", ddDanger, L, w, h, ss);
+        shot(dir, "75b-divide-firing-recoil", ddDanger, L, w, h, ss);
 
         // The settings panel's stage jump, parked on a boss stage so the row names the boss it is
         // sitting on — which is the state the control exists for.
