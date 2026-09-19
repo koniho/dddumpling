@@ -31,6 +31,7 @@
 @property(nonatomic, strong) UIAccessibilityElement *gameElement;
 @property(nonatomic, strong) UIButton *backButton;
 @property(nonatomic, strong) UIImpactFeedbackGenerator *haptic;
+@property(nonatomic, strong) UIImpactFeedbackGenerator *heavyHaptic;
 @property(nonatomic, strong) DDFrameMetrics *frameMetrics;
 @property(nonatomic) NSInteger nextID;
 @property(nonatomic) CFTimeInterval lastTime;
@@ -50,6 +51,11 @@
 - (void)tick {
     CFTimeInterval start = CACurrentMediaTime();
     [self.view.haptic impactOccurred];
+    [self.view.frameMetrics recordHapticMilliseconds:(CACurrentMediaTime() - start) * 1000];
+}
+- (void)impact {
+    CFTimeInterval start = CACurrentMediaTime();
+    [self.view.heavyHaptic impactOccurred];
     [self.view.frameMetrics recordHapticMilliseconds:(CACurrentMediaTime() - start) * 1000];
 }
 - (void)openPrivacyWithNSString:(NSString *)url {
@@ -105,6 +111,7 @@
         host.view = self;
         [_game setHostWithDDIOSGame_Host:host];
         _haptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
+        _heavyHaptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
         _frameMetrics = [[DDFrameMetrics alloc]
             initWithEnabled:[NSProcessInfo.processInfo.environment[@"DDD_PROFILE"] boolValue]];
         _backButton = [UIButton buttonWithType:UIButtonTypeSystem];

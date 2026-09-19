@@ -223,8 +223,28 @@ final class TestAudio extends Check {
         check("its split is the larger, lingering event",
                 divideSplit.length > Sfx.build(Sfx.BOSS_SPLIT).length
                         && divideSplit.length > divideHit.length * 2);
-        check("its damage cue starts with an immediate crack",
+        check("its damage bloop responds immediately",
                 peakAt(divideHit) < Sfx.RATE / 100);
+
+        check("damage is tonal rather than static", crossRate(divideHit) < 1000f);
+        short[] deactivate = Sfx.build(Sfx.DIVIDE_DEACTIVATE);
+        check("disabling a cube is a brief, distinct bubble", deactivate.length > divideHit.length
+                && deactivate.length < Sfx.RATE / 2 && crossRate(deactivate) < 1000f);
+        for (short[] cue : new short[][] {divideHit, deactivate}) {
+            int head = 0, tail = 0;
+            for (int i = 0; i < cue.length / 2; i++) head = Math.max(head, Math.abs(cue[i]));
+            for (int i = cue.length * 3 / 4; i < cue.length; i++) tail = Math.max(tail, Math.abs(cue[i]));
+            check("divide bubbles fade before the next action", tail < head / 4);
+        }
+
+        short[] nova = Sfx.build(Sfx.DIVIDE_SUPERNOVA);
+        check("the supernova fills the explosion without spilling into the next stage",
+                nova.length > Sfx.RATE && nova.length < Sfx.RATE * (Boss.LEAVE - DivideDeath.BURST_AT));
+        check("the supernova stays tonal", crossRate(nova) > 600f && crossRate(nova) < 4500f);
+        int novaHead = 0, novaTail = 0;
+        for (int i = 0; i < nova.length / 2; i++) novaHead = Math.max(novaHead, Math.abs(nova[i]));
+        for (int i = nova.length * 9 / 10; i < nova.length; i++) novaTail = Math.max(novaTail, Math.abs(nova[i]));
+        check("the supernova bleeps and bloops finish with a soft tail", novaTail < novaHead / 10);
 
         short[] heavyBoing = Sfx.build(Sfx.DIVIDE_BOING_HEAVY);
         short[] mediumBoing = Sfx.build(Sfx.DIVIDE_BOING_MEDIUM);

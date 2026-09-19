@@ -1486,6 +1486,14 @@ final class Preview {
         step(ddSplit, L, 0.08f);
         shot(dir, "73-divide-split", ddSplit, L, w, h, ss);
 
+        GameCore ddVolley = toBoss(L, Boss.SPLITTER, 544L, true);
+        ddVolley.boss.halfIdle[0] = ddVolley.boss.divideBoltInterval() - DT * .5f;
+        step(ddVolley, L, DT);
+        step(ddVolley, L, .08f);
+        shot(dir, "75a-divide-unsplit-volley", ddVolley, L, w, h, ss);
+        step(ddVolley, L, .9f);
+        shot(dir, "75c-divide-three-projectiles", ddVolley, L, w, h, ss);
+
         GameCore ddDanger = toBoss(L, Boss.SPLITTER, 543L, true);
         ddDanger.boss.pieceHits[0] = Boss.DIVIDE_HITS;
         float ddx2 = ddDanger.boss.pieceX(0, L), ddy2 = ddDanger.boss.pieceY(0, L);
@@ -1494,13 +1502,26 @@ final class Preview {
         ddDanger.boss.divideBurst = 0f;
         ddDanger.boss.halfHurt[1] = 0.90f;
         ddDanger.boss.halfIdle[1] = 0.10f;
-        ddDanger.boss.halfIdle[2] = Boss.DIVIDE_BOLT_TIME * 0.91f;
+        ddDanger.boss.halfIdle[2] = ddDanger.boss.divideBoltInterval() * 0.91f;
         shot(dir, "74-divide-half-danger", ddDanger, L, w, h, ss);
-        ddDanger.boss.halfIdle[2] = Boss.DIVIDE_BOLT_TIME - DT * 0.5f;
+        ddDanger.boss.halfIdle[2] = ddDanger.boss.divideBoltInterval() - DT * 0.5f;
         step(ddDanger, L, DT);
         shot(dir, "75-divide-bolt", ddDanger, L, w, h, ss);
         step(ddDanger, L, 0.08f);
-        shot(dir, "75b-divide-after-split-firing", ddDanger, L, w, h, ss);
+        shot(dir, "75b-divide-firing-recoil", ddDanger, L, w, h, ss);
+
+        GameCore ddDeath = toBoss(L, Boss.SPLITTER, 545L, true);
+        while (!ddDeath.boss.beaten) {
+            int node = ddDeath.boss.pieceNodeIndex(0);
+            ddDeath.boss.pieceHits[node] = Boss.DIVIDE_HITS;
+            ddDeath.boss.beginPinch(100f);
+            ddDeath.boss.pinch(100f * (Boss.DIVIDE_SCALE + .01f));
+        }
+        float[] deathTimes = {.4f, .95f, 1.4f, 1.85f, 2.03f, 2.35f, 2.85f};
+        for (int i = 0; i < deathTimes.length; i++) {
+            while (DivideDeath.elapsed(ddDeath.boss) < deathTimes[i]) step(ddDeath, L, DT);
+            shot(dir, "75d-divide-supernova-" + i, ddDeath, L, w, h, ss);
+        }
 
         // The settings panel's stage jump, parked on a boss stage so the row names the boss it is
         // sitting on — which is the state the control exists for.
@@ -1532,6 +1553,15 @@ final class Preview {
         for(int tab=0;tab<4;tab++) {
             settings.settingsTab=tab;
             shot(dir,"122-settings-active-"+tab,settings,L,w,h,ss);
+        }
+
+        for (int kind = 0; kind < Boss.COUNT; kind++) {
+            if (kind == Boss.SPLITTER) continue; // Its seven supernova frames include the impact.
+            GameCore death = toBoss(L, kind, 590L + kind, true);
+            death.boss.beaten = true; death.boss.hp = 0f; death.boss.leaveT = Boss.LEAVE;
+            step(death, L, death.boss.deathImpactTime() + .04f);
+            System.out.printf("boss death %s: shake %.2f%n", death.boss.name(), death.shake);
+            shot(dir, "66b-boss-death-impact-" + kind, death, L, w, h, ss);
         }
 
         // Beaten, mid-burst.
@@ -1684,7 +1714,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

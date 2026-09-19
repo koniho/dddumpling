@@ -462,7 +462,6 @@ public class GameView extends View {
     private int bossDragPointer = -1;
     private boolean bossPinching;
     private long lastBossDragHaptic;
-    private boolean bossWasBeaten;
 
     /**
      * The boss's elements: a tap on one acts at once, a drag on one carries it.
@@ -705,9 +704,10 @@ public class GameView extends View {
             }
             refreshNavigation();
             if (playingBeforeUpdate && core.boss.octoImpact) bossImpactHaptic();
-            boolean beaten = core.boss.active() && core.boss.beaten;
-            if (beaten && !bossWasBeaten) bossDeathHaptic();
-            bossWasBeaten = beaten;
+            if (playingBeforeUpdate && core.bossDeathHaptic > 0) {
+                if (core.bossDeathHaptic == 2) bossDeathHaptic();
+                else tick();
+            }
             painter.bind(c);
             Renderer.draw(painter, core, layout);
         } catch (Throwable t) {

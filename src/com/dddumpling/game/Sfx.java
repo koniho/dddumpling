@@ -32,7 +32,7 @@ final class Sfx {
             MUSHROOM_SHAKE = BOLT_DEATH + 1, MUSHROOM_SPORE = MUSHROOM_SHAKE + 1,
             LINKED_THUD = MUSHROOM_SPORE + 1, SHUFFLE_BLIP = LINKED_THUD + 1, DEBUFF_DOWN = SHUFFLE_BLIP + 1,
             SLIME_COVER = DEBUFF_DOWN + 1, SLIME_RELEASE = SLIME_COVER + 1,
-            LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, BLAST_OFF = UI_BLOOP + 1, COUNT = BLAST_OFF + 1;
+            LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, BLAST_OFF = UI_BLOOP + 1, DIVIDE_SUPERNOVA = BLAST_OFF + 1, COUNT = DIVIDE_SUPERNOVA + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -86,6 +86,7 @@ final class Sfx {
             case DIVIDE_BOING_LIGHT: return divideBoing(2);
             case ROSTER_JOIN: return rosterJoin();
             case DIVIDE_DEACTIVATE: return divideDeactivate();
+            case DIVIDE_SUPERNOVA: return divideSupernova();
             case SHIELD_BOUNCE: return shieldBounce();
             case SLIME_DAMAGE: return slimeDamage();
             case OCTO_CUE: return octoCue();
@@ -879,18 +880,17 @@ final class Sfx {
         return render(v);
     }
 
-    /** Low brittle crack over a wet body, unique to Dark Divide damage. */
+    /** A rounded water-drop pitch bend, short enough for repeated key hits. */
     static short[] divideDamage() {
-        int n = (int) (RATE * 0.30f);
+        int n = (int) (RATE * 0.19f);
         float[] v = new float[n];
-        int seed = 0x51d3;
+        float phase = 0f;
         for (int i = 0; i < n; i++) {
-            float u = (float) i / n;
-            seed = seed * 1103515245 + 12345;
-            float grit = ((seed >>> 16) & 0x7fff) / 16383.5f - 1f;
-            float bass = (float) Math.sin(TAU * (118f - 46f * u) * i / RATE);
-            float crack = grit * (float) Math.exp(-35f * u);
-            v[i] = (bass * 0.82f + crack * 0.55f) * envelope(u, 0.004f, 2.8f);
+            float t = (float) i / RATE, u = (float) i / n;
+            float hz = 210f + 430f * (float) Math.exp(-32f * t);
+            phase += TAU * hz / RATE;
+            v[i] = ((float) Math.sin(phase) + 0.12f * (float) Math.sin(phase * 2f))
+                    * envelope(u, 0.035f, 3.6f);
         }
         return render(v);
     }
@@ -912,24 +912,48 @@ final class Sfx {
         return render(v);
     }
 
-    /** A terminal fragment shutting down: three weighty notes descending into a low thump. */
-    static short[] divideDeactivate() {
-        int n = (int) (RATE * 0.72f);
+    /** Dense alternating arcade bleeps and elastic bubbles, launched with the cube burst. */
+    static short[] divideSupernova() {
+        int n = (int) (RATE * 1.4f);
         float[] v = new float[n];
-        float[] note = {523f, 392f, 262f};
-        for (int i = 0; i < n; i++) {
-            float t = (float) i / RATE, s = 0f;
-            for (int k = 0; k < note.length; k++) {
-                float local = t - k * 0.13f;
-                if (local < 0f) continue;
-                s += ((float) Math.sin(TAU * note[k] * local)
-                        + 0.24f * (float) Math.sin(TAU * note[k] * 2f * local))
-                        * (float) Math.exp(-7f * local) * 0.55f;
+        float[] notes = {1047f, 262f, 1568f, 392f, 1319f, 330f, 2093f, 523f};
+        for (int k = 0; k < 16; k++) {
+            int start = (int) (RATE * k * .068f);
+            boolean bleep = k % 2 == 0;
+            int length = (int) (RATE * (bleep ? .15f : .28f));
+            float phase = 0f, hz = notes[k % notes.length];
+            for (int j = 0; j < length && start + j < n; j++) {
+                float u = j / (float) length;
+                float pitch = bleep ? hz * (1f + .18f * u)
+                        : hz * (.48f + 1.4f * (float) Math.exp(-6f * u));
+                phase += TAU * pitch / RATE;
+                float wave = (float) Math.sin(phase)
+                        + (bleep ? .22f : .10f) * (float) Math.sin(phase * (bleep ? 3f : 2f));
+                v[start + j] += wave * envelope(u, .04f, bleep ? 3f : 4f)
+                        * (1f - u) * (.85f - k * .025f);
             }
-            float thumpAt = t - 0.39f;
-            if (thumpAt >= 0f) s += (float) Math.sin(TAU * (105f - 48f * thumpAt) * thumpAt)
-                    * (float) Math.exp(-12f * thumpAt) * 0.85f;
-            v[i] = s * envelope((float) i / n, 0.004f, 0.9f);
+        }
+        float phase = 0f;
+        for (int i = 0; i < n; i++) {
+            float t = i / (float) RATE;
+            phase += TAU * (85f + 190f * (float) Math.exp(-18f * t)) / RATE;
+            v[i] += (float) Math.sin(phase) * (float) Math.exp(-9f * t)
+                    * Math.min(1f, t / .006f) * .65f;
+        }
+        return render(v);
+    }
+
+    /** A soft bubble popping and sinking away as the cube goes dormant. */
+    static short[] divideDeactivate() {
+        int n = (int) (RATE * 0.36f);
+        float[] v = new float[n];
+        float phase = 0f;
+        for (int i = 0; i < n; i++) {
+            float t = (float) i / RATE, u = (float) i / n;
+            float hz = 105f + 620f * (float) Math.exp(-16f * t);
+            phase += TAU * hz / RATE;
+            v[i] = ((float) Math.sin(phase) + 0.16f * (float) Math.sin(phase * 2f))
+                    * envelope(u, 0.025f, 3.2f);
         }
         return render(v);
     }

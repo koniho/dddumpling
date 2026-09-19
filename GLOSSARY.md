@@ -203,6 +203,22 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **soft body** | how every boss's body is built: a ring of sprung nodes under pressure, so it dents where you hit it | `Softbody`, `Boss.body` |
 | **burst** | what a beaten boss goes out on | `BossScreen.burst`, `Boss.LEAVE` |
 
+Dark Divide answers successful key hits and intercepted projectiles with a short rounded bloop. Firing gives the cube
+a springy jiggle and a slight recoil opposite its projectile; disabling a cube plays a softer
+falling bubble-pop. Recoil settles back without changing the cube’s roaming speed.
+The unsplit cube fires three staggered projectiles every 1.5 seconds; after the first split,
+each cube fires two every 2.1 seconds. Subsequent splits retain the single-projectile firing ramp.
+Successful hits still reset the struck cube’s firing timer.
+On defeat the cubes gather in a circle, shake with growing intensity for one second, then
+explode into 360 tiny tumbling cubes in six purple shades. A rapid, layered bleep-and-bloop burst sounds once at ignition.
+`DivideDeath` owns this sequence; `Sfx.DIVIDE_SUPERNOVA` supplies its sound.
+
+Screen shake moves background clouds, land scenery, and the playfield together, with an
+oversized background fill covering the edges. HUD and modal panels stay steady.
+Every boss death has screen shake and haptics: heavy at the opening and final collapse (or
+Dark Divide supernova), with three lighter animation beats. Pausing/settings freeze the
+sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and iOS.
+
 ## Powerup
 
 | Say | Means | Code |
