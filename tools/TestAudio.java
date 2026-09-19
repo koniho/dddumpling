@@ -14,6 +14,23 @@ final class TestAudio extends Check {
             check("cave cue fits between impacts "+id,effect.length<Sfx.RATE*CaveTraps.GAP && head>1000);
             check("cave cue fades before next impact "+id,tail<head/4);
         }
+        for(int id=Sfx.CAVE_RUMBLE;id<=Sfx.CART_TUMBLE;id++){
+            if(id==Sfx.MINING_CHEER)continue;
+            short[] effect=Sfx.build(id);
+            double total=0,lowEnergy=0,phoneEnergy=0,lo=0,hi=0;
+            int peak=0;
+            for(short value:effect){
+                lo+=.025*(value-lo);hi+=.16*(value-hi);
+                total+=(double)value*value;lowEnergy+=lo*lo;phoneEnergy+=(hi-lo)*(hi-lo);
+                peak=Math.max(peak,Math.abs(value));
+            }
+            System.out.printf("    cave audio %d: %.0f ms, low %.2f, phone %.2f%n",id,
+                    effect.length*1000f/Sfx.RATE,lowEnergy/total,phoneEnergy/total);
+            check("cave sound has low body "+id,lowEnergy/total>.12);
+            check("cave sound survives small speakers "+id,phoneEnergy/total>.075);
+            check("cave sound leaves mixing headroom "+id,peak<30000);
+            check("ride cue finishes before repeat "+id,id<Sfx.CART_ROLL || effect.length<=Sfx.RATE*.35f);
+        }
         short[] bloop=Sfx.build(Sfx.UI_BLOOP);
         check("UI bloop stays brief",bloop.length>Sfx.RATE*.07f && bloop.length<Sfx.RATE*.15f);
         check("UI bloop is tonal",crossRate(bloop)>300f && crossRate(bloop)<1200f);

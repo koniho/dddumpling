@@ -33,7 +33,8 @@ final class Sfx {
             LINKED_THUD = MUSHROOM_SPORE + 1, SHUFFLE_BLIP = LINKED_THUD + 1, DEBUFF_DOWN = SHUFFLE_BLIP + 1,
             SLIME_COVER = DEBUFF_DOWN + 1, SLIME_RELEASE = SLIME_COVER + 1,
             LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, BLAST_OFF = UI_BLOOP + 1, CAVE_RUMBLE = BLAST_OFF + 1, CAVE_CRASH = CAVE_RUMBLE + 1,
-            CAVE_AMBUSH = CAVE_CRASH + 1, CAVE_SINK = CAVE_AMBUSH + 1, MINING_CHEER = CAVE_SINK + 1, COUNT = MINING_CHEER + 1;
+            CAVE_AMBUSH = CAVE_CRASH + 1, CAVE_SINK = CAVE_AMBUSH + 1, MINING_CHEER = CAVE_SINK + 1, CART_ROLL = MINING_CHEER + 1,
+            CART_SQUEAL = CART_ROLL + 1, CART_TUMBLE = CART_SQUEAL + 1, COUNT = CART_TUMBLE + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -52,6 +53,7 @@ final class Sfx {
             return bossTaunt(id - BOSS_TAUNT_0);
         if(id>=CAVE_RUMBLE && id<=CAVE_SINK)return cave(id);
         if(id==MINING_CHEER)return miningCheer();
+        if(id>=CART_ROLL && id<=CART_TUMBLE)return cart(id);
         switch (id) {
             case DRIP: return drip();
             case CLEAR: return clear();
@@ -1031,18 +1033,66 @@ final class Sfx {
     }
 
     private static short[] cave(int id) {
-        float duration=id==CAVE_CRASH?.32f:id==CAVE_AMBUSH?.22f:.28f;
+        float duration=id==CAVE_RUMBLE?.38f:id==CAVE_CRASH?.34f:.32f;
         float[] v=new float[(int)(RATE*duration)];
         java.util.Random random=new java.util.Random(817+id);
-        float low=0;
+        double bass=0,gravel=0,air=0;
         for(int i=0;i<v.length;i++){
-            float t=i/(float)RATE,u=t/duration,noise=random.nextFloat()*2-1;
-            low+=.12f*(noise-low);
-            double phase=6.283185*(id==CAVE_AMBUSH?240*t-340*t*t:id==CAVE_SINK?110*t-100*t*t:65*t-55*t*t);
-            float body=(float)Math.sin(phase);
-            float grit=id==CAVE_CRASH?noise*.42f*(float)Math.exp(-t*25):low*.8f;
-            if(id==CAVE_SINK)body*=(float)(.5+.5*Math.sin(t*100));
-            v[i]=(body*.6f+grit)*Math.min(1,t/.004f)*(float)Math.pow(1-u,3);
+            double t=i/(double)RATE,u=t/duration,noise=random.nextDouble()*2-1;
+            bass+=.018*(noise-bass);gravel+=.085*(noise-gravel);air+=.32*(noise-air);
+            // Inharmonic rock modes retain weight on speakers which cannot reproduce sub-bass.
+            double body=.44*Math.sin(6.283185*51*t)+.32*Math.sin(6.283185*83*t+.7)
+                    +.25*Math.sin(6.283185*149*t+1.4)+.20*Math.sin(6.283185*227*t+2.1)
+                    +.12*Math.sin(6.283185*373*t);
+            double texture=bass*4.8+gravel*1.9;
+            double attack=Math.min(1,t/.009),decay=Math.pow(1-u,3.3),hit=0;
+            if(id==CAVE_CRASH){
+                hit=(air-gravel)*2.2*Math.exp(-t*65);
+                // Delayed chips tumble after the first heavy contact.
+                for(int k=0;k<3;k++){
+                    double d=t-(.043+k*.039);
+                    if(d>=0)hit+=(air*.7+Math.sin(6.283185*(310+k*119)*d)*.14)*Math.exp(-d*85);
+                }
+                texture*=.8;body*=1.15;
+            }else if(id==CAVE_AMBUSH){
+                double stomp=Math.exp(-t*24)+.6*Math.exp(-Math.max(0,t-.075)*35)*(t>.075?1:0);
+                body*=stomp*1.4;texture*=.7;hit=air*.8*Math.exp(-t*55);
+            }else if(id==CAVE_SINK){
+                double gulp=.6+.4*Math.sin(6.283185*17*t+2*Math.sin(t*21));
+                texture*=gulp*1.6;body*=.5;hit=gravel*Math.sin(6.283185*470*t)*.7;
+            }
+            v[i]=(float)((body+texture+hit)*attack*decay);
+        }
+        return render(v);
+    }
+
+    private static short[] cart(int id) {
+        float duration=id==CART_ROLL?.30f:id==CART_SQUEAL?.28f:.34f;
+        float[] v=new float[(int)(RATE*duration)];
+        java.util.Random random=new java.util.Random(431+id);
+        double low=0,grit=0;
+        for(int i=0;i<v.length;i++){
+            double t=i/(double)RATE,u=t/duration,n=random.nextDouble()*2-1;
+            low+=.035*(n-low);grit+=.23*(n-grit);
+            double body=.3*Math.sin(6.283185*67*t)+.24*Math.sin(6.283185*137*t+.8)
+                    +.15*Math.sin(6.283185*243*t);
+            double sample=(low*3+body)*.65;
+            if(id==CART_ROLL){
+                // Paired rail-joint clacks over the rolling chassis; repeat at >=300 ms.
+                for(int k=0;k<2;k++){
+                    double d=t-k*.062;
+                    if(d>=0)sample+=(grit*1.7+.45*Math.sin(6.283185*410*d)
+                            +.22*Math.sin(6.283185*697*d))*Math.exp(-d*70);
+                }
+            }else if(id==CART_SQUEAL){
+                double phase=6.283185*(540*t+130*t*t)+.6*Math.sin(6.283185*37*t);
+                sample+=.22*Math.sin(phase)+.08*Math.sin(phase*2.73)+grit*.5;
+            }else{
+                // A wobbly wooden chassis knock, kept separate from the happy crew voices.
+                sample+=.38*Math.sin(6.283185*189*t+2*Math.sin(t*45))*Math.exp(-t*12)
+                        +grit*.9*Math.exp(-t*26);
+            }
+            v[i]=(float)(sample*Math.min(1,t/.005)*Math.pow(1-u,3));
         }
         return render(v);
     }
