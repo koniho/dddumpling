@@ -565,9 +565,13 @@ final class Boss {
         return 1f - (float) Math.pow(1f - t, 3);
     }
 
+    float deathImpactTime() {
+        return kind == SPLITTER ? DivideDeath.BURST_AT : LEAVE * (kind == OCTOPUS ? .70f : .38f);
+    }
+
     /** Slow at first and continuously accelerating until it clears the bottom. */
     float defeatMelt() {
-        float start = kind == OCTOPUS ? 0.70f : 0.38f;
+        float start = deathImpactTime() / LEAVE;
         float t = (leaveProgress() - start) / (1f - start);
         if (t <= 0f) return 0f;
         if (t >= 1f) return 1f;

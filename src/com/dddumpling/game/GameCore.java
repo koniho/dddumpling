@@ -511,6 +511,7 @@ final class GameCore {
     /** Counts down while the flawless-stage gold dumpling is on screen. */
     float perfectBanner;
     float shake, flash, stageBanner;
+    int bossDeathHaptic; // Per-frame: 1 light, 2 heavy.
     /** Colour of the current full-screen flash. */
     int flashColor = FLASH_DAMAGE;
     /**
@@ -1729,6 +1730,7 @@ final class GameCore {
         target = null;
         spawnTimer = 0.7f;
         shake = 0;
+        bossDeathHaptic = 0;
         flash = 0;
         skyGlow = 0;
         steamer.reset();
@@ -2407,6 +2409,7 @@ final class GameCore {
 
     void update(float dt, float elapsed, Layout L) {
         starPickups = 0;
+        bossDeathHaptic = 0;
         if (paused) return;
         if(releaseNotes.open) {
             releaseNotes.update(elapsed,L);
@@ -2704,8 +2707,10 @@ final class GameCore {
             float beforeHp = boss.hp;
             float priorCover=boss.slimePromptCover();
             boolean priorOpen=boss.open();
+            float beforeDeath = boss.beaten ? boss.leaveProgress() * Boss.LEAVE : -1f;
             boolean beforeSupernova = boss.kind == Boss.SPLITTER && boss.beaten && !DivideDeath.bursting(boss);
             int bossHits = boss.update(dt, L, rnd);
+            BossPlay.deathFeedback(this, beforeDeath);
             if (beforeSupernova && DivideDeath.bursting(boss) && sound != null) sound.divideSupernova();
             float cover=boss.slimePromptCover();
             if(sound!=null && boss.kind==Boss.SLIME && boss.fighting() && boss.slimePromptHits>=2

@@ -27,3 +27,8 @@ the deterministic pose and renderer, previewed across seven beats in `75d-divide
 
 The doubled 360-cube burst triggers one intense 1.4-second layered bleep-and-bloop effect
 at ignition on Android and iOS. Pausing freezes the trigger, and debris frames cannot replay it.
+
+All four boss deaths now share screen shake and haptics: a heavy opening, three light
+animation beats, and a heavy climax at the collapse or Dark Divide supernova. Shared per-frame
+cues pause with play and clear before early returns; native adapters dispatch light/heavy
+feedback without replaying it in settings, the background, or after the fight.

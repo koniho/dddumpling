@@ -354,6 +354,41 @@ final class TestBoss extends Check {
             check("repeat boss victories pay the duplicate reward " + kind,
                     !reward.prizeNew && reward.score == score + GameCore.DUPE_BONUS);
         }
+        for (int kind = 0; kind < Boss.COUNT; kind++) {
+            for (float frame : new float[] {1f / 60f, 1f / 120f}) {
+                GameCore death = enterBoss(L, kind, 3100L + kind);
+                death.boss.beaten = true; death.boss.leaveT = Boss.LEAVE;
+                int heavy = 0, light = 0;
+                for (float time = 0f; time < Boss.LEAVE - .1f; time += frame) {
+                    death.update(frame, L);
+                    if (death.bossDeathHaptic == 2) heavy++;
+                    if (death.bossDeathHaptic == 1) light++;
+                    if (death.bossDeathHaptic > 0)
+                        check("death haptic has matching shake " + kind, death.shake >= .30f);
+                }
+                check("each death has three light beats and two heavy impacts " + kind,
+                        heavy == 2 && light == 3);
+                death.boss.leave(); death.update(frame, L);
+                check("leaving clears death feedback " + kind, death.bossDeathHaptic == 0);
+            }
+            GameCore pause = enterBoss(L, kind, 3120L + kind);
+            pause.boss.beaten = true;
+            pause.boss.leaveT = Boss.LEAVE - pause.boss.deathImpactTime() + .02f;
+            pause.boss.defeatBeat = 3;
+            pause.paused = true;
+            pause.bossDeathHaptic = 2;
+            float remaining = pause.boss.leaveT;
+            pause.update(.05f, L);
+            check("paused death clears feedback and freezes its clock " + kind,
+                    pause.bossDeathHaptic == 0 && pause.boss.leaveT == remaining);
+            pause.paused = false; pause.settingsOpen = true;
+            pause.update(.05f, L);
+            check("settings cannot trigger a death impact " + kind, pause.bossDeathHaptic == 0);
+            pause.settingsOpen = false; pause.update(.03f, L);
+            check("resuming reaches the death impact once " + kind, pause.bossDeathHaptic == 2);
+            pause.update(DT, L);
+            check("the death impact is not repeated " + kind, pause.bossDeathHaptic == 0);
+        }
         GameCore lostBoss = enterBoss(L, Boss.MUSHROOM, 3099L);
         long lostOwned = lostBoss.collected;
         BossPlay.endBoss(lostBoss, L);

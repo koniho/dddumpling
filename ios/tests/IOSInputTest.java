@@ -3,9 +3,10 @@ package com.dddumpling.game;
 /** Native packet contract and gesture ownership, using the real game rules. */
 public final class IOSInputTest extends Check {
     private static final class Host implements IOSGame.Host {
-        int ticks;
+        int ticks, impacts;
         String privacy;
         public void tick() { ticks++; }
+        public void impact() { impacts++; }
         public void openPrivacy(String url) { privacy = url; }
     }
 
@@ -467,7 +468,28 @@ public final class IOSInputTest extends Check {
         game.touch(one(3,17,x+30,y));check("native cancel ends cave drag",c.cave.input.pointer<0);
     }
 
+    private static void bossDeathFeedback() {
+        for (int kind = 0; kind < Boss.COUNT; kind++) {
+            IOSGame game = game(); GameCore c = game.core();
+            Host host = new Host(); game.setHost(host);
+            c.startGame(); c.stage = Boss.EVERY; c.enemies.clear();
+            c.boss.begin(kind, c.stage, c.rnd); c.boss.intro = 0f;
+            c.boss.beaten = true; c.boss.leaveT = Boss.LEAVE;
+            game.update(DT);
+            check("iOS boss death begins with a heavy impact " + kind, host.impacts == 1);
+            game.background(true);
+            for (int i = 0; i < 10; i++) game.update(DT);
+            check("background cannot replay death feedback " + kind, host.impacts == 1 && host.ticks == 0);
+            game.background(false); Pause.resume(c);
+            for (int i = 0; i < 200; i++) game.update(DT);
+            check("iOS dispatches all death beats once " + kind, host.impacts == 2 && host.ticks == 3);
+            c.boss.leave(); game.update(DT);
+            check("iOS death feedback ends with the boss " + kind, host.impacts == 2 && host.ticks == 3);
+        }
+    }
+
     public static void main(String[] args) {
+        bossDeathFeedback();
         playerSettings();
         gameOverDismissal();
         cave();

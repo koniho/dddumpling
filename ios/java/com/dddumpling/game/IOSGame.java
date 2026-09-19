@@ -4,6 +4,7 @@ package com.dddumpling.game;
 public final class IOSGame {
     public interface Host {
         void tick();
+        void impact();
         void openPrivacy(String url);
     }
 
@@ -402,7 +403,6 @@ public final class IOSGame {
     private int bossDragPointer = -1;
     private boolean bossPinching;
     private float lastBossDragHaptic = -1f;
-    private boolean bossWasBeaten;
 
     /**
      * The boss's elements: a tap on one acts at once, a drag on one carries it.
@@ -627,9 +627,10 @@ public final class IOSGame {
         for (int i = 0, n = core.releaseNotes.takeFeedback(); i < n; i++) tick();
         for (int i = 0; i < core.starPickups; i++) tick();
         if (playing && core.boss.octoImpact) tick();
-        boolean beaten = core.boss.active() && core.boss.beaten;
-        if (beaten && !bossWasBeaten) tick();
-        bossWasBeaten = beaten;
+        if (playing && host != null && core.bossDeathHaptic > 0) {
+            if (core.bossDeathHaptic == 2) host.impact();
+            else tick();
+        }
     }
 
     public void draw(Painter painter) {

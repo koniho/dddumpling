@@ -213,6 +213,10 @@ On defeat the cubes gather in a circle, shake with growing intensity for one sec
 explode into 360 tiny tumbling cubes in six purple shades. A rapid, layered bleep-and-bloop burst sounds once at ignition.
 `DivideDeath` owns this sequence; `Sfx.DIVIDE_SUPERNOVA` supplies its sound.
 
+Every boss death has screen shake and haptics: heavy at the opening and final collapse (or
+Dark Divide supernova), with three lighter animation beats. Pausing/settings freeze the
+sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and iOS.
+
 ## Powerup
 
 | Say | Means | Code |

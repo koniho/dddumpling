@@ -49,6 +49,18 @@ final class BossPlay {
         c.spawnedThisStage = c.stageQuota();
     }
 
+    static void deathFeedback(GameCore c, float before) {
+        Boss b = c.boss;
+        if (!b.beaten || before < 0f) return;
+        float now = b.leaveProgress() * Boss.LEAVE;
+        if (now <= before) return;
+        boolean impact = before == 0f || (before < b.deathImpactTime() && now >= b.deathImpactTime());
+        if (impact || b.defeatChime) {
+            c.bossDeathHaptic = impact ? 2 : 1;
+            c.shake = Math.max(c.shake, impact ? 1.2f : .22f + b.defeatBeat * .08f);
+        }
+    }
+
     static void slam(GameCore c, Layout L) {
         c.shake = Math.max(c.shake, 1f);
         c.takeHit(c.boss.bodyX(L), L);

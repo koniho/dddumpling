@@ -1555,6 +1555,15 @@ final class Preview {
             shot(dir,"122-settings-active-"+tab,settings,L,w,h,ss);
         }
 
+        for (int kind = 0; kind < Boss.COUNT; kind++) {
+            if (kind == Boss.SPLITTER) continue; // Its seven supernova frames include the impact.
+            GameCore death = toBoss(L, kind, 590L + kind, true);
+            death.boss.beaten = true; death.boss.hp = 0f; death.boss.leaveT = Boss.LEAVE;
+            step(death, L, death.boss.deathImpactTime() + .04f);
+            System.out.printf("boss death %s: shake %.2f%n", death.boss.name(), death.shake);
+            shot(dir, "66b-boss-death-impact-" + kind, death, L, w, h, ss);
+        }
+
         // Beaten, mid-burst.
         GameCore cb = toBoss(L, Boss.SLIME, 530L, true);
         for (int i = 0; i < 60 * 60 && !cb.boss.beaten; i++) {
