@@ -1590,6 +1590,16 @@ final class Preview {
         for (int i = 0; i < 8; i++) pulseDemo.boss.update(DT, L, pulseDemo.rnd);
         shot(dir, "76j-octopulse-too-slow-taunt", pulseDemo, L, w, h, ss);
 
+        GameCore pulsePain = toBoss(L, Boss.OCTOPUS, 538L, true);
+        pulsePain.stageBanner = pulsePain.rosterSceneT = 0f;
+        for (int i = 0; i < 360 && pulsePain.boss.octoCharge < 1f; i++)
+            pulsePain.boss.update(DT, L, pulsePain.rnd);
+        pulsePain.boss.press(pulsePain.boss.octoTarget, pulsePain.rnd, L);
+        for (int frame = 0; frame < 3; frame++) {
+            for (int i = 0; i < 24; i++) pulsePain.update(DT, L);
+            shot(dir, "76n-octopulse-pain-wave-" + frame, pulsePain, L, w, h, ss);
+        }
+
         GameCore slimeRest = toBoss(L, Boss.SLIME, 539L, true);
         slimeRest.stageBanner = slimeRest.rosterSceneT = 0f;
         slimeRest.boss.body.reset(L.w * 0.5f, Boss.restY(L), Boss.bodyR(L), 2f);

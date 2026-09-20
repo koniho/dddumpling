@@ -531,6 +531,7 @@ are excluded, and a spent swipe defers the lesson until a later stage. `PushLess
 prompt, freeze, and shared native gesture.
 Developer settings → Progress → **RESET SWIPE** clears the saved lesson completion flag.
 
-Octopulse plays the supplied recorded sound once when its attacking arm starts to wave.
+Octopulse plays the supplied recorded sound, low-pass filtered at 1 kHz, once when its attacking arm starts to wave.
+While an arm is vulnerable, the other intact arms ripple and flick upward in pain.
 The later strike retains its short synthesized cue. `Boss.octoWave` signals the wave's
 start; `OctoWaveRecording` supplies the same PCM to Android, iOS, and previews.
