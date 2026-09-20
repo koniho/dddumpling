@@ -78,8 +78,8 @@ final class TestLinkedPairs extends Check {
         check("paired keys do not overlap", b.baseX - a.baseX > L.enemyR * 3f && a.speed == b.speed);
         check("second pair is not due immediately after the first", !LinkedPairs.spawn(c, L));
         check("later normal stages keep the pair", wave(L, 26).enemies.get(0).link != null);
-        check("stage 16 gives slower falls than stage 14", Pacing.travelSeconds(16, 1f) > Pacing.travelSeconds(14, 1f));
-        check("lesson has wider arrival spacing", Pacing.spawnInterval(16, 1f) > Pacing.spawnInterval(15, 1f));
+        check("stage 16 gives slower falls than stage 14", Pacing.travelSeconds(16) > Pacing.travelSeconds(14));
+        check("lesson has wider arrival spacing", Pacing.spawnInterval(16) > Pacing.spawnInterval(15));
         check("first lesson limits crowd to four", c.maxEnemies() == 4);
         check("stage 17 tapers the lesson relief", Pacing.lessonRelief(16) > Pacing.lessonRelief(17)
                 && Pacing.lessonRelief(17) > Pacing.lessonRelief(18));
@@ -108,15 +108,16 @@ final class TestLinkedPairs extends Check {
         c.destroyWord(a, 0, 0, L);
         check("old projectiles and repeated clears cannot score twice", c.score == score && c.resolvedThisStage == 1);
 
-        for (float speed : new float[] {0.75f, 1f, 1.5f}) {
+        for (boolean kids : new boolean[]{false,true}) {
+        for (float scale : new float[] {0.45f, 1f}) {
             for (float delay : new float[] {0f, 0.1f, 0.199f, 0.2f, 0.201f, 0.4f}) {
                 for (int reverse = 0; reverse < 2; reverse++) {
-                    c = wave(L, 16); c.speed = speed;
+                    c = wave(L, 16);c.kidsRun=kids;
                     a = c.enemies.get(reverse); b = a.link;
                     c.tapKey(a.word[0], L);
-                    c.update(delay, delay, L);
+                    c.update(delay * scale, delay, L);
                     c.tapKey(b.word[0], L);
-                    check("fixed 200ms input window at speed " + speed + " delay " + delay + " order " + reverse,
+                    check("fixed 200ms input window kids=" + kids + " simulation scale " + scale + " delay " + delay + " order " + reverse,
                             a.destroyed == (delay <= 0.2f) && b.destroyed == (delay <= 0.2f));
                     if (delay > 0.2f) {
                         check("late second key starts a fresh attempt", a.typeable() && b.linkWaiting && c.score == 0);
@@ -125,6 +126,7 @@ final class TestLinkedPairs extends Check {
                     }
                 }
             }
+        }
         }
         c = wave(L, 16); a = c.enemies.get(0); b = a.link;
         c.tapKey(a.word[0], L);

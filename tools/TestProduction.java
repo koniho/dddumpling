@@ -16,14 +16,12 @@ final class TestProduction extends Check {
         check("production release notes keep key taps modal",!reader.starting());
         reader.releaseNotes.close();
         Mem store = new Mem();
-        store.speed = GameCore.SPEED_MAX;
         store.collected = 1L;
         store.collectionCounts[0] = 7;
         store.collectTotal = 7;
         store.steamerOpens = 5;
         store.starWins = 3;
         GameCore c = new GameCore(store, 412L);
-        check("production ignores saved developer speed", c.speed == 1f);
         Ear ear=new Ear(); c.sound=ear; c.startMusic();
         check("production uses automatic music", ear.music == Music.SWING_STYLE);
         check("production retains progression and collection counts",
@@ -39,14 +37,12 @@ final class TestProduction extends Check {
                 targetsGone &= ui.hit(x,y) == SettingsUi.HIT_NONE;
         }
         check("production has no developer touch targets", targetsGone);
-        c.setSpeed(GameCore.SPEED_MIN);
         boolean roster = c.fullRoster;
         c.setNextRoster(!roster);
         c.resetDifficultyScaling();
         c.setStarDifficulty(0);
         c.tapClearCase(); c.tapClearCase();
-        check("settings actions cannot change speed or music", c.speed == 1f
-                && ear.music == Music.SWING_STYLE && store.speedSaves == 0);
+        check("settings actions cannot change music", ear.music == Music.SWING_STYLE);
         check("settings actions cannot change the roster", c.fullRoster == roster && store.rosterSaves == 0);
         check("settings actions cannot reset progression", c.steamer.opens == 5 && c.stars.wins == 3);
         check("settings actions cannot clear collections", c.collected == 1L

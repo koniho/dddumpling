@@ -281,8 +281,17 @@ final class TestCave extends Check {
         v.encounter(c,Cave.SAND);check("quicksand accepts escape keys on arrival",v.wanted()>=0);
         v.traps.age=1.2f/Cave.PACE;check("quicksand visibly sinks with its deadline",CaveScreen.sink(v)>.5f);
         v.traps.hits=4;check("escape progress visibly lifts dumpling",CaveScreen.sink(v)<.5f);
-        v.encounter(c,Cave.SHADOW);c.speed=1.5f;v.update(c,.5f,L);
-        check("developer travel speed does not multiply ambush deadline",Math.abs(v.timer-.5f)<.001f);
+        v.encounter(c,Cave.SHADOW);v.update(c,.5f,L);
+        check("normal ambush deadline follows elapsed time",Math.abs(v.timer-.5f)<.001f);
+        c.kidsRun=true;v.encounter(c,Cave.SHADOW);v.update(c,.5f,L);
+        check("kids reveal keeps normal timing and only approach slows",
+                Math.abs(v.timer-(Cave.REVEAL+(.5f-Cave.REVEAL)*.45f))<.001f);
+        v.enemy.fire(v,L,0);v.enemy.update(c,.1f);
+        check("kids cave bolt travels slower",Math.abs(v.enemy.boltAge[0]-.045f)<.001f);
+        v.enemy.boltAge[0]=CaveEnemy.FLIGHT;v.enemy.update(c,.1f);
+        check("kids cave bolt impact animates normally",Math.abs(v.enemy.boltAge[0]-CaveEnemy.FLIGHT-.1f)<.001f);
+        v.encounter(c,Cave.SAND);v.update(c,.1f,L);
+        check("kids cave trap clock stays normal",Math.abs(v.traps.age-.1f)<.001f);
         float near=v.light(v.pathX(v.z),v.pathY(v.z));
         check("light follows the player on both axes",near>.7f && v.light(v.pathX(v.z)+3,v.pathY(v.z))<.06f);
     }

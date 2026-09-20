@@ -176,8 +176,6 @@ final class GameCore {
         default void saveLandBest(int land, int value) { if (land == 0) saveBest(value); }
         default int loadPlayerSettings() { return PlayerSettings.DEFAULT; }
         default void savePlayerSettings(int value) {}
-        float loadSpeed();
-        void saveSpeed(float speed);
         /** The collected-squishy bitmask; see {@link Collect}. */
         long loadCollected();
         void saveCollected(long owned);
@@ -497,9 +495,6 @@ final class GameCore {
     float earnedMash = MASH_HURT;
 
     // ---- settings (persisted) ----------------------------------------------
-    static final float SPEED_MIN = 0.5f, SPEED_MAX = 1.5f;
-    /** Pacing multiplier: >1 makes words fall and arrive faster. */
-    float speed = 1f;
     /** While true the simulation is frozen and the settings panel is showing. */
     boolean settingsOpen;
     int settingsPage;
@@ -927,6 +922,7 @@ final class GameCore {
      * swipe is not damage, it is what you spent to avoid damage.
      */
     float mashEarned() {
+        if (kidsRun) return MASH_PERFECT;
         if (pushUsed) return MASH_PANIC;
         if (hurtThisStage > 0) return MASH_HURT;
         return perfectRound() ? MASH_PERFECT : MASH_UNHURT;
@@ -1457,7 +1453,6 @@ final class GameCore {
             for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
             landBests[0] = Math.max(landBests[0], best);
             preferences.load(store.loadPlayerSettings());
-            speed = BuildFlags.DEVELOPER ? clampSpeed(store.loadSpeed()) : 1f;
             // Masked: a store that hands back junk in the high bits must not make
             // Collect.owned() report more than there are entries.
             collected = store.loadCollected() & Collect.MASK;
@@ -1526,11 +1521,6 @@ final class GameCore {
     private void beginRosterLeave() {
         rosterScene = ROSTER_LEAVE;
         rosterSceneT = ROSTER_SCENE_TIME; saveRoster();
-    }
-
-    static float clampSpeed(float v) {
-        if (v != v) return 1f;                       // NaN from a corrupt store
-        return v < SPEED_MIN ? SPEED_MIN : v > SPEED_MAX ? SPEED_MAX : v;
     }
 
     // ---- settings -----------------------------------------------------------
@@ -1605,12 +1595,6 @@ final class GameCore {
         die();
     }
 
-    void setSpeed(float v) {
-        if (!BuildFlags.DEVELOPER) return;
-        speed = clampSpeed(v);
-        if (store != null) store.saveSpeed(speed);
-    }
-
     /** Restores every persistent difficulty ladder to its first-play values. */
     void resetDifficultyScaling() {
         if (!BuildFlags.DEVELOPER) return;
@@ -1643,23 +1627,28 @@ final class GameCore {
     static final float RAMP = Pacing.RAMP;
     static final int MAX_PRESSES = Pacing.MAX_PRESSES;
 
+    /** Kids slow traversal only; allowed call sites are listed in docs/game-timing.md. */
+    float traversalRate() { return kidsRun ? .45f : 1f; }
+
     int pacingStage() { return kidsRun ? 1 : stage; }
 
     float ramp() { return Pacing.ramp(pacingStage()); }
 
-    float travelSeconds() { return Pacing.travelSeconds(pacingStage(), kidsRun ? 1f : speed); }
+    float travelSeconds() { return Pacing.travelSeconds(pacingStage()); }
 
-    float spawnInterval() { return Pacing.spawnInterval(pacingStage(), kidsRun ? 1f : speed); }
+    float spawnInterval() { return Pacing.spawnInterval(pacingStage()); }
 
     int maxEnemies() { return Pacing.maxEnemies(pacingStage()); }
 
-    int maxWordLen() { return Pacing.maxWordLen(pacingStage()); }
+    int maxPresses() { return kidsRun ? 6 : Pacing.MAX_PRESSES; }
 
-    int minWordLen() { return Pacing.minWordLen(pacingStage()); }
+    int maxWordLen() { return Math.min(maxPresses(), Pacing.maxWordLen(stage)); }
+
+    int minWordLen() { return Pacing.minWordLen(stage); }
 
     int stageQuota() { return Pacing.stageQuota(pacingStage()); }
 
-    float stackChance() { return Pacing.stackChance(pacingStage()); }
+    float stackChance() { return Pacing.stackChance(stage); }
 
     /** Concurrent words allowed now. A frenzy lets more pile up, tapering with the ramp. */
     int crowdCap() {
@@ -1721,6 +1710,7 @@ final class GameCore {
         Pause.resume(this);
         state = PLAY;
         kidsRun = preferences.kids;
+        stars.difficultyCap = kidsRun ? StarPath.KIDS_DIFFICULTY : StarPath.MAX_DIFFICULTY;
         runFullRoster = !kidsRun && fullRoster;
         time = 0;
         score = 0;
@@ -2447,7 +2437,6 @@ final class GameCore {
         // What ends a blade stroke by itself, on real time and above every early return below.
         Blade.updateStroke(this, dt);
         dt *= timeScale();
-        if (kidsRun && (state == PLAY || state == BONUS)) dt *= .45f;
         // The clock keeps running so the panel itself can animate, but nothing else moves.
         clock += dt;
         updateTitleSprings(dt, L);
@@ -2573,7 +2562,7 @@ final class GameCore {
 
         updateChain(dt);
         Fx.updateParticles(this, dt);
-        Fx.updateShots(this, dt, L);
+        Fx.updateShots(this, dt * traversalRate(), L);
 
         if (state == BONUS) {
             if (CaveInterlude.active(this)) {
@@ -2734,7 +2723,7 @@ final class GameCore {
             boolean priorOpen=boss.open();
             float beforeDeath = boss.beaten ? boss.leaveProgress() * Boss.LEAVE : -1f;
             boolean beforeSupernova = boss.kind == Boss.SPLITTER && boss.beaten && !DivideDeath.bursting(boss);
-            int bossHits = boss.update(dt, L, rnd);
+            int bossHits = boss.update(dt, dt * traversalRate(), L, rnd);
             BossPlay.deathFeedback(this, beforeDeath);
             if (beforeSupernova && DivideDeath.bursting(boss) && sound != null) sound.divideSupernova();
             float cover=boss.slimePromptCover();
@@ -2838,8 +2827,8 @@ final class GameCore {
 
             if (e.attacking) {
                 // Committed lunge: it dives at the player, and the screen reacts.
-                e.attackT += dt;
-                e.y += e.speed * 3.2f * dt;
+                e.attackT += dt * traversalRate();
+                e.y += e.speed * 3.2f * dt * traversalRate();
                 e.warn = 1f;
                 warnLevel = 1f;
                 flash = Math.max(flash, 0.35f + 0.5f * (e.attackT / ATTACK_TIME));
@@ -2877,7 +2866,7 @@ final class GameCore {
                 continue;
             }
 
-            e.y += e.speed * fallRate() * dt;
+            e.y += e.speed * fallRate() * dt * traversalRate();
             updateSidePath(e, L);
             if (e.linkWaiting) {
                 e.warn = 0f;
@@ -3250,7 +3239,7 @@ final class GameCore {
     private boolean spawn(Layout L) {
         Enemy e = new Enemy();
         int len = minWordLen() + rnd.nextInt(maxWordLen() - minWordLen() + 1);
-        Words.fill(e, len, stackChance(), rnd, playRosterFull());
+        Words.fill(e, len, stackChance(), rnd, playRosterFull(), maxPresses());
 
         float half = L.wordWidth(len) / 2f;
         e.sway = Math.min(0.035f * L.w, Math.max(0f, (L.playRight - L.playLeft) / 2f - half - 4f));

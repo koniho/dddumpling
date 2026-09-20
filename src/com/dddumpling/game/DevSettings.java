@@ -23,11 +23,11 @@ final class DevSettings extends Draw {
         if(!running && c.settingsTab!=SettingsUi.PROGRESS) p.text(c.state==GameCore.BONUS?"FINISH THE MINIGAME FIRST":"START A RUN TO PLAYTEST",
                 L.w*.5f,u.panelT+s*8.2f,s*.50f,INK_DIM,Painter.CENTER,false);
         if(c.settingsTab==SettingsUi.MINIGAMES) {
-            label(p,u,u.speedLabelY,"STAR PATH DIFFICULTY",s);
+            label(p,u,u.difficultyStepLabelY,"STAR PATH DIFFICULTY",s);
             Painter difficulty=c.state==GameCore.BONUS?new OpacityPainter(p,.3f):p;
-            chip(difficulty,u,u.sliderY,0,3,"EASIER",s,false);
-            chip(p,u,u.sliderY,1,3,(c.stars.wins+1)+" / "+(StarPath.MAX_DIFFICULTY+1),s,true);
-            chip(difficulty,u,u.sliderY,2,3,"HARDER",s,false);
+            chip(difficulty,u,u.difficultyStepY,0,3,"EASIER",s,false);
+            chip(p,u,u.difficultyStepY,1,3,(c.stars.wins+1)+" / "+(StarPath.MAX_DIFFICULTY+1),s,true);
+            chip(difficulty,u,u.difficultyStepY,2,3,"HARDER",s,false);
             label(p,u,u.testLabelY,"PLAY MINIGAME",s);
             chip(actions,u,u.testY,0,2,"STAR PATH",s,false);
             chip(actions,u,u.testY,1,2,"STEAMER",s,false);
@@ -57,11 +57,6 @@ final class DevSettings extends Draw {
             chip(p,u,u.clearY,0,1,c.clearArmed?"TAP AGAIN TO EMPTY":"EMPTY COLLECTION",s,c.clearArmed);
             return;
         }
-        label(p,u,u.speedLabelY,"SPEED",s);
-        float x=u.knobX(c.speed);
-        p.fillRect(u.sliderL,u.sliderY-s*.12f,u.sliderR,u.sliderY+s*.12f,0x55FFFFFF);
-        p.fillCircle(x,u.sliderY,s*.45f,GOLD);
-        p.text(Screens.fmtSpeed(c.speed)+"X",L.w*.5f,u.speedValueY,s*.65f,INK,Painter.CENTER,true);
         label(p,u,u.stageLabelY,"STAGE "+c.stage,s);
         for(int i=0;i<4;i++) {
             int step=SettingsUi.STAGE_STEP[i];

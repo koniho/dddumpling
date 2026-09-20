@@ -57,8 +57,6 @@ abstract class Check {
         public int loadLandBest(int land) { return land == 0 ? best : landBests[land]; }
         public void saveLandBest(int land, int value) { if (land == 0) saveBest(value); else landBests[land] = value; }
         int saves;
-        float speed = 1f;
-        int speedSaves;
         long collected;
         int collectedSaves;
         int collectTotal;
@@ -69,8 +67,6 @@ abstract class Check {
         int rosterState = 1, rosterSaves;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; saves++; }
-        public float loadSpeed() { return speed; }
-        public void saveSpeed(float v) { speed = v; speedSaves++; }
         public long loadCollected() { return collected; }
         public void saveCollected(long v) { collected = v; collectedSaves++; }
         public int[] loadCollectionCounts() { return collectionCounts.clone(); }

@@ -214,13 +214,6 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 - (jint)loadPlayerSettings { return [self intForKey:@"playerSettings" defaultValue:(100 | (100 << 7))]; }
 - (void)savePlayerSettingsWithInt:(jint)value { [self setValue:@(value) forKey:@"playerSettings"]; }
 
-- (jfloat)loadSpeed {
-  NSNumber *number = [self numberForKey:@"speed"];
-  float value = number ? number.floatValue : 1.f;
-  return isfinite(value) ? value : 1.f;
-}
-- (void)saveSpeedWithFloat:(jfloat)speed { [self setValue:@(speed) forKey:@"speed"]; }
-
 - (jlong)loadCollected {
   NSNumber *value = [self numberForKey:@"collected"];
   return value ? value.longLongValue : 0;

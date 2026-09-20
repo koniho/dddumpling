@@ -168,7 +168,6 @@ final class Preview {
         public void saveProgress(byte[] data) { progress = data.clone(); }
         public String progressReplica() { return "test"; }
         int best;
-        float speed = 1f;
         long collected;
         int collectTotal;
         int[] collectionCounts = new int[Collect.COUNT];
@@ -177,8 +176,6 @@ final class Preview {
         int rosterState = 1;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; }
-        public float loadSpeed() { return speed; }
-        public void saveSpeed(float v) { speed = v; }
         public long loadCollected() { return collected; }
         public void saveCollected(long v) { collected = v; }
         public int[] loadCollectionCounts() { return collectionCounts.clone(); }
@@ -1365,13 +1362,28 @@ final class Preview {
         step(refill, L, 0.7f);
         shot(dir, "33f-frenzy-refill", refill, L, w, h, ss);
 
+        GameCore kids = new GameCore(store, 582L);
+        kids.preferences.kids=true;kids.startGame();kids.stage=19;
+        step(kids,L,8f);
+        for(int i=0;i<kids.enemies.size();i++) {
+            GameCore.Enemy word=kids.enemies.get(i);
+            word.y=L.playTop+(L.dangerY-L.playTop)*(word.link!=null?.2f:.65f);
+        }
+        shot(dir,"33g-kids-late-words",kids,L,w,h,ss);
+        kids.enemies.clear();kids.shots.clear();
+        kids.starNext=false;kids.earnedMash=GameCore.MASH_PANIC;Interlude.enterBonus(kids,L);
+        kids.bonusTimer=kids.bonusRollEnd;kids.time=1f;
+        shot(dir,"33h-kids-steamer-five",kids,L,w,h,ss);
+        kids.stars.wins=StarPath.MAX_DIFFICULTY;kids.starNext=true;Interlude.enterBonus(kids,L);
+        step(kids,L,StarPath.READY+.3f);
+        shot(dir,"33i-kids-star-cap",kids,L,w,h,ss);
+
         // Settings panel, opened mid-game.
         GameCore c6 = new GameCore(store, 29L);
         c6.startGame();
         c6.score = 1420;
         c6.stage = 3;
         step(c6, L, 6f);
-        c6.setSpeed(1.2f);
         c6.collected = 0b0000_0100_1000_0011_0010_0110_1101L;
         c6.openSettings();
         step(c6, L, 0.3f);

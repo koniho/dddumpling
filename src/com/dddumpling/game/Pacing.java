@@ -1,7 +1,7 @@
 package com.dddumpling.game;
 
 /**
- * The stage difficulty dials. Pure functions of stage (and the player's speed setting), so this is
+ * The stage difficulty dials. Pure functions of stage, so this is
  * the one file to read when tuning the curve.
  *
  * Every dial reads its position off {@link #ramp} rather than off stage directly, so the whole curve
@@ -40,21 +40,21 @@ final class Pacing {
         return (int) ((ramp(stage) + 1f) / 2f);
     }
 
-    /** Seconds to fall from spawn to the danger line. Divided by speed, so 1.5x arrives faster. */
-    static float travelSeconds(int stage, float speed) {
+    /** Seconds to fall from spawn to the danger line. */
+    static float travelSeconds(int stage) {
         float r = ramp(stage);
         // Once words reach full length, shorten reaction time gently instead of compounding it.
         float seconds = r <= 5f ? 15f - r * 1.05f : 9.75f - (r - 5f) * 0.35f;
-        return Math.max(7.5f, seconds) * lessonRelief(stage) / speed;
+        return Math.max(7.5f, seconds) * lessonRelief(stage);
     }
 
-    static float spawnInterval(int stage, float speed) {
+    static float spawnInterval(int stage) {
         float r = ramp(stage);
         // Past stage 10, faster falls and longer words supply the pressure. Give stage 11
         // more breathing room immediately, easing releases out to a 2.75-second cap.
         float seconds = r <= 5f ? 2.5f - r * 0.13f
                 : 1.85f + Math.min(0.9f, (r - 5f) * 0.36f);
-        return Math.max(1.35f, seconds) * lessonRelief(stage) / speed;
+        return Math.max(1.35f, seconds) * lessonRelief(stage);
     }
 
     static int maxEnemies(int stage) {

@@ -307,11 +307,6 @@ public final class IOSInputTest extends Check {
         tap(game,l.w/2,l.hudY);
         check("stage readout opens developer settings", c.settingsOpen);
         SettingsUi ui = new SettingsUi(); ui.compute(l);
-        tap(game,ui.sliderR,ui.sliderY);
-        check("settings slider sets speed", c.speed==GameCore.SPEED_MAX);
-        game.touch(one(0,3,ui.sliderL,ui.sliderY));
-        game.touch(one(2,3,ui.closeCx,ui.closeCy));
-        check("slider drag cannot activate close control", c.settingsOpen);
         int before = c.stage;
         tap(game,(ui.testChipL(2,4)+ui.testChipR(2,4))/2,ui.stageY+ui.stageH/2);
         check("stage chip jumps stage rather than starting frenzy", c.stage==before+1 && c.mode==-1 && c.settingsOpen);
@@ -319,9 +314,9 @@ public final class IOSInputTest extends Check {
         check("native settings opens minigames tab", c.settingsTab == SettingsUi.MINIGAMES);
         ui.compute(l,c.settingsTab);
         c.stars.collected = 7;
-        tap(game,(ui.testChipL(2,3)+ui.testChipR(2,3))/2,ui.sliderY+ui.testH/2);
+        tap(game,(ui.testChipL(2,3)+ui.testChipR(2,3))/2,ui.difficultyStepY+ui.testH/2);
         check("native harder control edits saved level without erasing stars", c.stars.wins == 1 && c.stars.collected == 7);
-        tap(game,(ui.testChipL(0,3)+ui.testChipR(0,3))/2,ui.sliderY+ui.testH/2);
+        tap(game,(ui.testChipL(0,3)+ui.testChipR(0,3))/2,ui.difficultyStepY+ui.testH/2);
         check("native easier control edits level", c.stars.wins == 0);
         tap(game,(ui.tabL(0)+ui.tabR(0))/2,ui.tabY+ui.tabH/2);
         ui.compute(l);

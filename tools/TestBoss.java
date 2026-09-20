@@ -1577,7 +1577,8 @@ final class TestBoss extends Check {
             if (ui.hit(cx, ui.stageY + ui.stageH / 2f) != SettingsUi.HIT_STAGE + i) hits = false;
         }
         check("every stage chip hit-tests to itself", hits);
-        check("and none of them collides with the playtest row",
+        ui.compute(L,SettingsUi.POWERS);
+        check("powers tab routes its own row",
                 ui.hit((ui.testChipL(0, n) + ui.testChipR(0, n)) / 2f,
                         ui.testY + ui.testH / 2f) < SettingsUi.HIT_STAGE);
         check("the steps cover one and a boss's worth",
@@ -1594,7 +1595,7 @@ final class TestBoss extends Check {
                 u.compute(t);
                 if (u.panelT < 0f || u.panelB > t.h) fits = false;
                 // And the rows have to stay in order, in the panel, and clear of each other.
-                if (u.stageY < u.speedValueY) fits = false;
+                if (u.stageY < u.tabY + u.tabH) fits = false;
                 if (u.runY < u.stageY + u.stageH) fits = false;
                 if (u.runY + u.runH > u.panelB) fits = false;
             }

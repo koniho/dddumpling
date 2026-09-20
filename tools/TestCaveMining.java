@@ -95,7 +95,7 @@ final class TestCaveMining extends Check {
         m=c.mining;m.carts=3;m.begin(c);m.ready=0;
         boolean starters=true;for(int g:m.sequence)starters &= Roster.active(false,g);
         check("four-key mode has an achievable four-long sequence",starters && m.length==4);
-        c.update(2f,L);check("kids mode grants a slower lantern",Math.abs(m.left-(CaveMining.TIME-.9f))<.01f);
+        c.update(2f,L);check("kids mode keeps normal lantern timing",Math.abs(m.left-(CaveMining.TIME-2f))<.01f);
         bounded(L);
     }
     private static void scene(Layout L) {

@@ -6,7 +6,7 @@ package com.dddumpling.game;
  */
 final class SettingsUi {
 
-    static final int HIT_NONE = 0, HIT_SLIDER = 1, HIT_CLOSE = 2, HIT_OUTSIDE = 3,
+    static final int HIT_NONE = 0, HIT_CLOSE = 2, HIT_OUTSIDE = 3,
             HIT_CLEAR = 4, HIT_ROSTER = 5, HIT_GAMEOVER = 6, HIT_RESET_DIFFICULTY = 7, HIT_RESET_LANDS = 8,
             HIT_GENERAL = 9, HIT_MINIGAMES = 10, HIT_EASIER = 11, HIT_HARDER = 12, HIT_RESET_NEWS = 13, HIT_ALL_LANDS = 14, HIT_RESET_SWIPE = 17;
     static final int GENERAL = 0, MINIGAMES = 1, POWERS = 2, PROGRESS = 3;
@@ -37,10 +37,8 @@ final class SettingsUi {
     float panelL, panelT, panelR, panelB;
     float titleY;
     float tabY, tabH;
-    float speedLabelY;
-    float sliderL, sliderR, sliderY, sliderH;
-    float speedValueY;
-    float sliderHitH;
+    float difficultyStepLabelY;
+    float difficultyStepY;
     float closeCx, closeCy, closeR;
     /** Playtest row: one chip per powerup mode. */
     float testLabelY, testY, testH, caveY, debuffY;
@@ -66,11 +64,10 @@ final class SettingsUi {
         panelT=PlayerSettings.top(L); panelB=PlayerSettings.bottom(L);
         titleY=panelT+s*6.7f; tabY=panelT+s*5.5f; tabH=s*1.8f;
         closeR=s; closeCx=panelR-s*1.3f; closeCy=panelT+s*1.5f;
-        sliderL=optionL(); sliderR=optionR(); sliderH=s*.5f;
-        sliderHitH=s*1.65f; testH=stageH=runH=clearH=difficultyH=s*2f;
-        speedLabelY=panelT+s*9f; sliderY=panelT+s*10.3f; speedValueY=panelT+s*12f;
-        stageLabelY=panelT+s*15f; stageY=stageLabelY+s*.5f;
-        runLabelY=panelT+s*19f; runY=runLabelY+s*.5f;
+        testH=stageH=runH=clearH=difficultyH=s*2f;
+        difficultyStepLabelY=panelT+s*9f; difficultyStepY=panelT+s*10.3f;
+        stageLabelY=panelT+s*9f; stageY=stageLabelY+s*.5f;
+        runLabelY=panelT+s*13f; runY=runLabelY+s*.5f;
         testLabelY=panelT+s*9f; testY=testLabelY+s*.5f;
         debuffY=panelT+s*14f;
         difficultyLabelY=panelT+s*20f; difficultyY=difficultyLabelY+s*.5f;
@@ -101,22 +98,6 @@ final class SettingsUi {
         return panelR - (panelR - panelL) * 0.06f;
     }
 
-    /** Where the slider knob sits for a given speed. */
-    float knobX(float speed) {
-        float t = (speed - GameCore.SPEED_MIN) / (GameCore.SPEED_MAX - GameCore.SPEED_MIN);
-        return sliderL + (sliderR - sliderL) * t;
-    }
-
-    /** Speed implied by a touch at {@code x}, clamped to the legal range. */
-    float speedAt(float x) {
-        float t = (x - sliderL) / (sliderR - sliderL);
-        if (t < 0) t = 0;
-        if (t > 1) t = 1;
-        // Snap to a twentieth, so the value is reachable and readable.
-        float v = GameCore.SPEED_MIN + t * (GameCore.SPEED_MAX - GameCore.SPEED_MIN);
-        return Math.round(v * 20f) / 20f;
-    }
-
     int hit(float x, float y) {
         if (!BuildFlags.DEVELOPER) return HIT_NONE;
         if (x<panelL || x>panelR || y<panelT || y>panelB) return HIT_OUTSIDE;
@@ -124,7 +105,7 @@ final class SettingsUi {
         if(y>=tabY && y<=tabY+tabH) for(int i=0;i<4;i++)
             if(x>=tabL(i) && x<=tabR(i)) return new int[]{HIT_GENERAL,HIT_MINIGAMES,HIT_POWERS,HIT_PROGRESS}[i];
         if(tab==MINIGAMES) {
-            if(y>=sliderY && y<=sliderY+testH) {
+            if(y>=difficultyStepY && y<=difficultyStepY+testH) {
                 if(inChip(x,0,3)) return HIT_EASIER;
                 if(inChip(x,2,3)) return HIT_HARDER;
             }
@@ -151,7 +132,6 @@ final class SettingsUi {
             if(y>=difficultyY && y<=difficultyY+difficultyH) return HIT_RESET_NEWS;
             if(y>=clearY && y<=clearY+clearH) return HIT_CLEAR;
         } else {
-            if(Math.abs(y-sliderY)<=sliderHitH*.55f) return HIT_SLIDER;
             if(y>=stageY && y<=stageY+stageH) for(int i=0;i<STAGE_STEP.length;i++)
                 if(inChip(x,i,STAGE_STEP.length)) return HIT_STAGE+i;
             if(y>=runY && y<=runY+runH) {

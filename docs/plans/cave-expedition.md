@@ -24,8 +24,9 @@ finger hint instead of a separate blocking lesson. There are no route heart pick
 - Encounters do not overlap. Each failure can charge one life; survivors resume running.
   The exit enters the alternating Cave Band / Dumpling Mine interludes.
 
-Encounter deadlines do not multiply the developer travel-speed setting. Kids Mode and pause
-retain the shared game-clock behavior. Zooms and effects freeze along with their encounters.
+Kids Mode slows the enemy approach and projectile flight only; traversal through the cave,
+trap deadlines, zooms and effects keep normal timing. Pause freezes the encounter.
+See [Game timing](../game-timing.md) for the timing boundaries.
 
 ## Winding passages and light
 

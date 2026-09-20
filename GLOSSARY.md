@@ -291,7 +291,6 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 | **settings panel** | opened by tapping the stage readout; pauses the game | `Screens.settings` |
 | **minigame difficulty** | Minigames settings tab; saved Star Path level, applied next attempt, raised by wins | `SettingsUi.MINIGAMES`, `GameCore.setStarDifficulty` |
 | **stage readout** | the "STAGE n" text — also the settings button | `Layout.inStageTap` |
-| **speed slider** | the 0.5×–1.5× pacing control | `SettingsUi` |
 | **stage jump** | the ±1 / ±5 steppers in the settings panel that jump straight to a stage, so a boss can be reached without playing twenty stages. Steps of five because bosses land on every fifth | `SettingsUi.STAGE_STEP`, `GameCore.jumpToStage` |
 
 ## Sound
@@ -463,16 +462,22 @@ The slime whispers at low effects volume, shakes and yells with expanding sound 
 volume, and covers its mouth when muted. Waves and notes stop when muted. Mute retains the slider level. Preferences
 are saved on the device and applied to audio on launch.
 
-The developer-only **Developer** tab groups **Run** (speed, stage, next-run keys, End
+The developer-only **Developer** tab groups **Run** (stage, next-run keys, End
 Run), **Powers** (frenzies and debuffs), **Minigames** (Star Path, Steamer, Cart Rush, Dumpling Mine, difficulty), and **Progress**
 (lands, release book, collection). Stage changes, End Run and playtests are disabled outside active
 play, including interludes; settings never starts a run implicitly.
 
-**Kids Mode** keeps lives and game over, runs gameplay at 45% speed, keeps four keys and two-letter
-unstacked words with early-stage pacing, and grants 600 ms for linked pairs. Regular play returns on
+**Kids Mode** keeps lives and game over, slows enemy and projectile traversal to 45% speed, keeps four keys and early-stage movement/spawn pacing.
+Words grow with the stage, including multipress keys, with a six-press total cap.
+Linked pairs use the same 200 ms window as normal mode. Boss actions, animations,
+sequences, and minigame clocks run at normal speed. Regular play returns on
 the next run after switching it off. `PlayerSettings`, `SettingsArt`, and `SettingsInput` own the
 public preferences, character handles, and shared native input; `SettingsUi` and `DevSettings` own
-the developer groups.
+the developer groups. See [Game timing](docs/game-timing.md) for the multiplier boundaries.
+
+Kids Mode always grants five seconds of Steamer mash time and caps Star Path at 30%
+of its normal difficulty ladder (level 3 of 10). Saved Star Path progression is preserved
+for normal mode; easier saved levels stay easier. Animation and flight clocks remain normal.
 
 
 ## Cart Rush interlude
