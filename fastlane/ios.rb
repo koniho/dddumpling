@@ -139,10 +139,41 @@ def ios_upload_testflight!(ipa_path: IOS_IPA_PATH)
   )
 end
 
+def ios_distribute_external!(app: nil)
+  environment = ios_upload_configuration!
+  build = ios_build_number!
+  version = ENV.fetch("IOS_TEST_VERSION", "").strip
+  UI.user_error!("Set IOS_TEST_VERSION to the uploaded marketing version") unless /\A\d+\.\d+\.\d+\z/.match?(version)
+  api_key = ios_app_store_api_key!(environment)
+  app ||= Spaceship::ConnectAPI::App.find(IOS_BUNDLE_ID)
+  UI.user_error!("TestFlight app not found") unless app
+  groups = app.get_beta_groups.reject(&:is_internal_group).map(&:id)
+  UI.user_error!("No existing external TestFlight groups") if groups.empty?
+  upload_to_testflight(
+    api_key: api_key,
+    app_identifier: IOS_BUNDLE_ID,
+    app_version: version,
+    build_number: build,
+    distribute_only: true,
+    distribute_external: true,
+    groups: groups,
+    submit_beta_review: true,
+    notify_external_testers: true,
+    skip_waiting_for_build_processing: false,
+    wait_processing_timeout_duration: 1200,
+    changelog: File.read(File.expand_path("../ios/store/en-US/what_to_test.txt", __dir__)).strip
+  )
+end
+
 platform :ios do
   desc "Build a signed iPhone IPA using read-only match assets; does not upload"
   lane :archive do
     ios_archive!
+  end
+
+  desc "Assign an exact uploaded build to existing external groups and submit beta review"
+  lane :distribute_external do
+    ios_distribute_external!
   end
 
   desc "Upload an already archived IPA to TestFlight without distributing to external testers"

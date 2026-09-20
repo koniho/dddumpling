@@ -1,0 +1,44 @@
+name: Distribute TestFlight build to external testers
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Uploaded iOS marketing version
+        type: string
+        required: true
+      build:
+        description: Exact uploaded iOS build number
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testflight-external-distribution
+  cancel-in-progress: false
+
+jobs:
+  distribute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ios-release
+    steps:
+      - name: Require main
+        run: test "$GITHUB_REF" = refs/heads/main
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - name: Assign build to existing external groups and submit beta review
+        env:
+          FASTLANE_SKIP_UPDATE_CHECK: '1'
+          FASTLANE_OPT_OUT_USAGE: '1'
+          IOS_APPSTORE_KEY_ID: ${{ secrets.IOS_APPSTORE_KEY_ID }}
+          IOS_APPSTORE_ISSUER_ID: ${{ secrets.IOS_APPSTORE_ISSUER_ID }}
+          IOS_APPSTORE_KEY_BASE64: ${{ secrets.IOS_APPSTORE_KEY_BASE64 }}
+          IOS_TEST_VERSION: ${{ inputs.version }}
+          IOS_BUILD_NUMBER: ${{ inputs.build }}
+        run: bundle exec fastlane ios distribute_external
