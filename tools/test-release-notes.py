@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('notes', Path(__file__).with_name('release-notes.py'))
 notes = importlib.util.module_from_spec(spec)
@@ -23,6 +24,29 @@ class ReleaseNotes(unittest.TestCase):
         data['releases'][0]['changes'][0]['icon'] = 'settings'
         data['releases'][0]['changes'][0]['autoReset'] = False
         self.assertIn('ReleaseChange.SETTINGS', notes.render(data))
+
+    def test_review_image_uses_draft_without_changing_catalog_and_opens_android(self):
+        draft = {'version': '1.0.0', 'changes': [{'icon': 'swipe', 'title': 'Swipe',
+                 'autoReset': False, 'where': 'Last life', 'why': 'Swipe up.'}]}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'check.sh').write_text('PURE="src/com/dddumpling/game/ReleaseContent.java src/com/dddumpling/game/ReleaseChange.java"')
+            catalog = root / notes.SOURCE
+            catalog.parent.mkdir()
+            catalog.write_text('unchanged')
+            with patch.object(notes.subprocess, 'run') as run, \
+                 patch.dict(notes.os.environ, {'ANDROID_ROOT': '/system'}), \
+                 patch.object(notes.shutil, 'which', side_effect=lambda name: '/bin/' + name):
+                output = notes.review_image(root, draft)
+                commands = [call.args[0] for call in run.call_args_list]
+                self.assertIn('content://com.termux.files' + str(output), commands[-1])
+                self.assertIn('--grant-read-uri-permission', commands[-1])
+                self.assertNotIn(str(root / notes.OUTPUT), commands[1])
+                self.assertIn('ReleaseChange.SWIPE', (root / 'build/release-review/ReleaseContent.java').read_text())
+                self.assertEqual(catalog.read_text(), 'unchanged')
+                run.reset_mock()
+                notes.review_image(root, draft, open_android=False)
+                self.assertEqual(run.call_count, 3)
 
     def test_context_and_player_purpose_survive_generation(self):
         for release in self.data['releases']:

@@ -1,6 +1,44 @@
 {
   "releases": [
     {
+      "version": "0.1.23",
+      "changes": [
+        {
+          "icon": "swipe",
+          "title": "A helping hand",
+          "autoReset": false,
+          "where": "Normal waves, last life",
+          "why": "A little hand shows the rescue swipe just before trouble. Swipe up to push words back. Already tried it? No lesson needed."
+        },
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "Boss battles",
+              "why": "Clearer hits, bigger farewells and a new sound for Octopulse waving its arms."
+            },
+            {
+              "where": "On the title screen",
+              "why": "Your little explorer stays in view while wandering between lands."
+            }
+          ]
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "autoReset": false,
+          "fixes": [
+            {
+              "where": "Normal waves, stage 16+",
+              "why": "A linked pair now costs one life if it reaches you, not two."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.22",
       "changes": [
         {
