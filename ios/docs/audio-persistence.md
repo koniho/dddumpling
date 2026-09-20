@@ -6,8 +6,9 @@ those buffers. Short effects cache float PCM and use `DDEffectMixer`: one persis
 with twelve reusable player nodes and varispeed units, operated on a serial effects queue.
 Finishing an effect leaves the graph alive; a saturated voice is interrupted for reuse.
 Music and the boss-charge bed retain WAV playback, while the rocket has its own engine.
-Music is rebuilt whenever the game scene,
-frenzy, or boss mode changes.
+Music is rebuilt only when the synthesized style or audible arrangement changes.
+Repeated scene selections preserve the player and its position, including paused playback
+and pending renders. Band playback invalidates that selection so normal music can return.
 Boss PCM is balanced to 115% of the matching synthesized stage track's RMS level,
 with soft-limited peaks at 38% of full scale to leave room for effects. Both platforms
 use the shared `Music.BOSS_GAIN`; player mute and temporary ducking still apply.
