@@ -234,6 +234,15 @@ final class TestAudio extends Check {
         check("no effect clips", allClean);
         check("effect lengths are sane", allSane);
 
+        short[] arm = Sfx.build(Sfx.OCTO_DAMAGE);
+        int armHead = 0, armTail = 0;
+        for (int i = 0; i < arm.length / 2; i++) armHead = Math.max(armHead, Math.abs(arm[i]));
+        for (int i = arm.length * 3 / 4; i < arm.length; i++) armTail = Math.max(armTail, Math.abs(arm[i]));
+        check("arm boing snap finishes before the next attack", arm.length < Sfx.RATE * .4f);
+        check("arm snap leaves a tonal spring rather than a hiss", crossRate(arm) < 2000);
+        check("arm spring decays cleanly", armTail < armHead / 4 && Math.abs(arm[arm.length-1]) < 10);
+        check("arm damage is distinct from the attack recording", arm != Sfx.build(Sfx.OCTO_WAVE));
+
         short[] wave = Sfx.build(Sfx.OCTO_WAVE);
         check("recorded wave keeps both sounds within two seconds",
                 wave.length > Sfx.RATE * 1.9f && wave.length <= Sfx.RATE * 2);

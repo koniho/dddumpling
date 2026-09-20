@@ -255,6 +255,7 @@ final class GameCore {
         /** A player projectile ricocheted from the Slime boss shield. */
         void shieldBounce();
         default void octoWave() {}
+        default void octoDamage() {}
         void octoCue();
         void octoLock();
         /** One accepted Fly Agaric shake endpoint. */

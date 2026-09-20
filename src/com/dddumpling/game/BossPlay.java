@@ -243,6 +243,7 @@ final class BossPlay {
         Fx.explode(c, c.rnd, x, y, L.enemyR * 1.5f, 14, GameCore.INK_SPARK);
         if (c.sound != null) {
             if (c.boss.kind == Boss.SLIME) c.sound.slimeDamage();
+            else if (c.boss.kind == Boss.OCTOPUS) c.sound.octoDamage();
             else c.sound.bossDamage();
         }
         return true;
