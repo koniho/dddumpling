@@ -794,7 +794,7 @@ final class GameCore {
         return rate;
     }
 
-    /** Counts down through the drag a shove leaves on the field. */
+    /** Counts down through the recovery after a shove or surviving damage. */
     float pushSlowT;
 
     /** 0..1 through that drag, for anything that wants to show it. */
@@ -3182,6 +3182,7 @@ final class GameCore {
         flashColor = FLASH_DAMAGE;
         Fx.explode(this, rnd, px, L.dangerY, L.enemyR * 2f, 16, 0xFFFF7A9E);
         if (lives <= 0) die();
+        else pushSlowT = PUSH_SLOW;
     }
 
     /**
