@@ -83,7 +83,8 @@ final class TestHighScores extends Check {
         check("settings tap selects saved run",ui.selected==0);
         check("back returns to list",Pause.back(c) && ui.open && ui.selected==-1);
         input.touch(c,L,0,5,x,y);input.touch(c,L,2,5,x,y-L.unit*3);input.touch(c,L,1,5,x,y-L.unit*3);
-        check("drag scrolls without opening row",ui.scroll>0 && ui.selected==-1);
+        check("drag scrolls within content bounds without opening row",
+                ui.scroll==Math.min(L.unit*3,ui.maxScroll(c,L)) && ui.selected==-1);
         input.touch(c,L,0,5,x,y);input.touch(c,L,3,5,x,y);input.touch(c,L,1,5,x,y);
         check("cancelled gesture cannot select",ui.selected==-1);
         check("back closes list",Pause.back(c) && !ui.open);

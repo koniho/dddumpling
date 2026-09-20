@@ -287,7 +287,7 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 | **swipe catchment** | where a panic swipe may start: the lower half of the field, much wider than the strip that advertises it | `Layout.inPushZone` |
 | **shelving** | one of the haul reaching the case at the end of its trip, and the chime that says so | `RoundEnd.arrival`, `Sound.collect`, `Sfx.collect` |
 | **game over screen** | score, accuracy dumpling, best. Fades up after the hold; GAME OVER is yellow, not rose | `Screens.gameOver` |
-| **high-score screen** | tap BEST on the title to browse the ten highest saved runs; ties favor newer runs, and only the latest completed run glows if it qualifies. Rows show defeated bosses, completed stages, all rewards including duplicates, activated powerups, successful rescue swipes, and a death blurb; tap for the saved summary | `HighScores`, `HighScoreScreen` |
+| **high-score screen** | tap BEST on the title to browse the ten highest saved runs; ties favor newer runs, and only the latest completed run glows if it qualifies. Each compact row shows score, death blurb, overlapping defeated bosses, and a dumpling icon with its reward count including duplicates; tap for completed stages, powerup and rescue-swipe usage, and the full saved summary | `HighScores`, `HighScoreScreen` |
 | **accuracy dumpling** | the face that reflects accuracy: tear below 60%, sparkles above 90%; no presses means 0% | `Screens.accuracy` |
 | **settings panel** | opened by tapping the stage readout; pauses the game | `Screens.settings` |
 | **minigame difficulty** | Minigames settings tab; saved Star Path level, applied next attempt, raised by wins | `SettingsUi.MINIGAMES`, `GameCore.setStarDifficulty` |
