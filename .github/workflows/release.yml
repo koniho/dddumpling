@@ -125,7 +125,7 @@ jobs:
           HEXATYPE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           HEXATYPE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           HEXATYPE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./build.sh --developer
+        run: ./build.sh --developer --full-checks
 
       - name: Name upload files
         run: |
