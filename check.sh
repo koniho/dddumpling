@@ -70,6 +70,7 @@ src/com/dddumpling/game/StarPath.java
 src/com/dddumpling/game/Collect.java
 src/com/dddumpling/game/Power.java
 src/com/dddumpling/game/Boss.java
+src/com/dddumpling/game/OctoThrow.java
 src/com/dddumpling/game/Softbody.java
 src/com/dddumpling/game/Buddy.java
 src/com/dddumpling/game/GameCore.java

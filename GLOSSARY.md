@@ -183,7 +183,7 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **element** | a hit-testable thing a boss puts on the field to be tapped or dragged. Always in the upper field, because a drag may not start on a key | `Boss.ELEMS`, `elemAt`, `etype` |
 | **rebuff** | the right thing at the wrong moment, or a held key. Sounds wrong, never counted as a miss, and fires no bullet | `Boss.REBUFF` |
 | **boss bullet** | the shot a landed key press fires at the boss, the same one a press at a word fires. Homes toward the boss as it drifts | `GameCore.bossShot`, `Shot.atBoss`, `Boss.hitX` |
-| **enrage** | the visual warning on a dragging fight: it reddens, but does no damage by itself | `Boss.ENRAGE_AT`, `ENRAGE_RAMP` |
+| **enrage** | the visual warning on a dragging fight: it reddens, but does no damage by itself | `Boss.enrageAt`, `ENRAGE_RAMP` |
 | **slime** | boss 1. A wide, twice-as-jiggly mass of goo. A chain of letters to type, and the only thing that hurts it is a glob carried off the screen | `Boss.SLIME`, `WIDE`, `JIGGLE` |
 | **split** | working a glob loose: five presses of the chain. The presses themselves take no health off it | `Boss.SPLIT_HITS`, `split`, `splitProgress` |
 | **prompt** | the character on the slime. After the first two successful prompt hits, the whole lower edge folds over it while invulnerable; the surprised prompt blends into the slime color and fades away in front of the skin, then reverses that fade over 0.3 seconds as the skin relaxes. It accepts hits from the start of reappearance. Three bubbles rise in pitch on covering and descend on release. Answer it while exposed before its two-to-one-second deadline or it leads a volley | `promptT`, `promptDelay` |
@@ -535,3 +535,10 @@ Octopulse plays the supplied recorded sound, low-pass filtered at 1 kHz, once wh
 While an arm is vulnerable, the other intact arms ripple and flick upward in pain.
 The later strike retains its short synthesized cue. `Boss.octoWave` signals the wave's
 start; `OctoWaveRecording` supplies the same PCM to Android, iOS, and previews.
+
+After Octopulse's first four arm tears, an intact arm winds up and throws one enemy key.
+The fifth and sixth tears trigger two throws, and the seventh triggers three sequential throws
+from the last arm. Each enemy leaves the throwing tip and can be destroyed with its matching key.
+The next arm-wave attack waits until every thrown enemy is destroyed or reaches the player.
+The final arm tear ends the fight without another throw.
+Octopulse’s visual enrage warning starts at 40 seconds to allow for the added wind-ups and throws.

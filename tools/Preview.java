@@ -1600,6 +1600,20 @@ final class Preview {
             shot(dir, "76n-octopulse-pain-wave-" + frame, pulsePain, L, w, h, ss);
         }
 
+        GameCore throwing = TestOctoThrow.tear(L, 7);
+        throwing.stageBanner = throwing.rosterSceneT = 0f;
+        String[] throwTags = {"76o-octopulse-throw-windup", "76p-octopulse-throw-release",
+                "76q-octopulse-throw-volley"};
+        int[] throwFrames = {48, 63, 177};
+        int thrownFrame = 0;
+        for (int pose = 0; pose < throwTags.length; pose++) {
+            while (thrownFrame < throwFrames[pose]) {
+                throwing.boss.update(DT, L, throwing.rnd);
+                thrownFrame++;
+            }
+            shot(dir, throwTags[pose], throwing, L, w, h, ss);
+        }
+
         GameCore slimeRest = toBoss(L, Boss.SLIME, 539L, true);
         slimeRest.stageBanner = slimeRest.rosterSceneT = 0f;
         slimeRest.boss.body.reset(L.w * 0.5f, Boss.restY(L), Boss.bodyR(L), 2f);

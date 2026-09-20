@@ -209,6 +209,7 @@ final class BossScreen extends Draw {
             else if (b.kind == Boss.OCTOPUS) {
                 drawOctopusHead(p, c, b, col, mood, fade);
                 drawCapturedKey(p, L, b, fade);
+                drawThrowKey(p, L, b, fade);
             }
             else if (b.kind == Boss.SLIME) drawSlimeBoss(p, c, L, b, col, mood, fade);
             else Slime.draw(p, b.body, c.clock, col, face, mood, fade);
@@ -1085,6 +1086,17 @@ final class BossScreen extends Draw {
         p.fillCircle(point[0], point[1], r, Glyph.withAlpha(color, (int) (255 * alpha)));
         p.strokeCircle(point[0], point[1], r, Glyph.withAlpha(INK, (int) (255 * alpha)), r * 0.22f);
         p.fillCircle(point[0], point[1], r * 0.36f, Glyph.withAlpha(INK, (int) (255 * alpha)));
+    }
+
+    private static void drawThrowKey(Painter p, Layout L, Boss b, float fade) {
+        if (b.beaten || b.octoThrowArm < 0 || b.octoThrowReleased) return;
+        int tip = Boss.OCTO_NODES - 1, g = b.octoThrowGlyph;
+        float x = b.octoX[b.octoThrowArm][tip], y = b.octoY[b.octoThrowArm][tip];
+        float r = standardBoltR(L, 0f);
+        int col = Glyph.COLOR[g];
+        p.fillPoly(Glyph.hex(x, y, r), Glyph.withAlpha(col, (int)(96 * fade)));
+        p.strokePoly(Glyph.hex(x, y, r), Glyph.withAlpha(col, (int)(255 * fade)), r * .13f);
+        Kawaii.draw(p, g, x, y, r * .58f, Glyph.withAlpha(col, (int)(255 * fade)), 1f, .1f);
     }
 
     private static void drawCapturedKey(Painter p, Layout L, Boss b, float fade) {
