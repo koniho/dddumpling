@@ -133,6 +133,7 @@ def ios_upload_testflight!(ipa_path: IOS_IPA_PATH)
   upload_to_testflight(
     api_key: api_key,
     ipa: ipa_path,
+    changelog: File.read(File.expand_path("../ios/store/en-US/what_to_test.txt", __dir__)).strip,
     distribute_external: false,
     skip_waiting_for_build_processing: true
   )
