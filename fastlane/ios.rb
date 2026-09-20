@@ -152,6 +152,7 @@ def ios_distribute_external!(app: nil)
   upload_to_testflight(
     api_key: api_key,
     app_identifier: IOS_BUNDLE_ID,
+    app_platform: "ios",
     app_version: version,
     build_number: build,
     distribute_only: true,

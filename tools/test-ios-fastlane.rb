@@ -133,6 +133,7 @@ ENV["IOS_TEST_VERSION"] = "0.1.17"
 $calls.clear
 ios_distribute_external!(app: TestApp.new([Group.new("internal", true), Group.new("external", false)]))
 external_options = $calls.assoc(:upload_to_testflight).last
+assert(external_options[:app_platform] == "ios", "distribution without an IPA never prompts for platform")
 assert(external_options[:groups] == ["external"], "distribution selects only existing external groups")
 assert(external_options[:app_version] == "0.1.17" && external_options[:build_number] == "42.1", "distribution pins the exact uploaded build")
 assert(external_options[:distribute_only] && external_options[:distribute_external] && external_options[:submit_beta_review], "external distribution submits review without uploading again")
