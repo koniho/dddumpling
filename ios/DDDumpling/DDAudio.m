@@ -379,7 +379,8 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 }
 - (void)boltDeath { [self playEffect:DDSfx_BOLT_DEATH rate:1 gain:.82f]; }
 - (void)shieldBounce { [self playEffect:DDSfx_SHIELD_BOUNCE rate:1 gain:.72f]; }
-- (void)octoWave { [self playEffect:DDSfx_OCTO_WAVE rate:1 gain:.74f]; }
+- (void)octoWave { [self playEffect:DDSfx_OCTO_WAVE rate:1 gain:DDSfx_OCTO_WAVE_GAIN]; }
+- (void)octoDamage { [self playEffect:DDSfx_OCTO_DAMAGE rate:1 gain:.82f]; }
 - (void)octoCue { [self playEffect:DDSfx_OCTO_CUE rate:1 gain:.74f]; }
 - (void)octoLock { [self playEffect:DDSfx_OCTO_LOCK rate:1 gain:.70f]; }
 - (void)mushroomShake { [self playEffect:DDSfx_MUSHROOM_SHAKE rate:1 gain:.78f]; }

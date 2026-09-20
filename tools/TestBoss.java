@@ -1091,7 +1091,9 @@ final class TestBoss extends Check {
         defeated.boss.hp = 1f;
         defeated.boss.octoVulnerableArm = 3; defeated.boss.held = -3;
         defeated.boss.octoDragStarted = defeated.boss.octoDragCanDamage = true;
-        defeated.boss.dragTo(L.playLeft - L.keyR, L.playTop, L);
+        Ear finalArmEar = new Ear(); defeated.sound = finalArmEar;
+        defeated.dragBoss(L.playLeft - L.keyR, L.playTop, L);
+        check("final arm damage plays one boing snap", finalArmEar.octoDamages == 1 && finalArmEar.bossDamages == 0);
         check("final arm tear starts defeat", defeated.boss.beaten);
         float oldTip = defeated.boss.octoY[3][Boss.OCTO_NODES - 1];
         for (int frame = 0; frame < 30; frame++) defeated.boss.update(DT, L, defeated.rnd);
@@ -1108,6 +1110,30 @@ final class TestBoss extends Check {
                         - defeated.boss.body.centreY()) < Boss.bodyR(L);
         }
         check("arms remain attached throughout the defeated fall", attached);
+        GameCore pain = enterBoss(L, Boss.OCTOPUS, 151L);
+        pain.boss.octoPause = 10f;
+        for (int i = 0; i < 240; i++) pain.update(DT, L);
+        pain.boss.octoVulnerableArm = 3;
+        pain.boss.octoDragTime = 0f;
+        int exposed = pain.boss.octoVulnerableArm;
+        float[] low = new float[Boss.OCTO_ARMS], high = new float[Boss.OCTO_ARMS];
+        java.util.Arrays.fill(low, Float.MAX_VALUE);
+        java.util.Arrays.fill(high, -Float.MAX_VALUE);
+        for (int i = 0; i < 90; i++) {
+            pain.update(DT, L);
+            if (i < 24) continue;
+            for (int a = 0; a < Boss.OCTO_ARMS; a++) {
+                float angle = -1.18f + 2.36f * a / (Boss.OCTO_ARMS - 1);
+                float x = pain.boss.octoX[a][Boss.OCTO_NODES - 1] - pain.boss.body.centreX();
+                float y = pain.boss.octoY[a][Boss.OCTO_NODES - 1] - pain.boss.body.centreY();
+                float sideways = x * (float)Math.cos(angle) - y * (float)Math.sin(angle);
+                low[a] = Math.min(low[a], sideways); high[a] = Math.max(high[a], sideways);
+            }
+        }
+        for (int a = 0; a < Boss.OCTO_ARMS; a++) if (a != exposed)
+            check("intact arm " + a + " waves during vulnerability", high[a] - low[a] > Boss.bodyR(L) * 0.45f);
+        check("pain waves preserve the exposed arm and health", pain.boss.octoVulnerableArm == exposed
+                && pain.boss.hp == pain.boss.hpMax && pain.boss.octoTarget < 0);
         GameCore c = enterBoss(L, Boss.OCTOPUS, 151L);
         Ear waveEar = new Ear(); c.sound = waveEar;
         c.enemies.clear(); c.target = null;
@@ -1161,8 +1187,12 @@ final class TestBoss extends Check {
                         && Integer.bitCount(c.boss.octoArms) == armCount);
         check("the edge-started arm must first return to the safe area",
                 !c.dragBoss(L.w * 0.5f, tipY, L));
+        check("defending and stretching do not play the arm damage sound", waveEar.octoDamages == 0);
         check("dragging back to the edge after leaving it damages the arm",
                 c.dragBoss(L.playLeft, tipY, L));
+        check("arm damage replaces the generic hit with one boing snap", waveEar.octoDamages == 1 && waveEar.bossDamages == 0);
+        c.dragBoss(L.playLeft, tipY, L);
+        check("continued dragging cannot repeat the damage sound", waveEar.octoDamages == 1);
         check("the torn arm is removed and damages Octopulse",
                 Integer.bitCount(c.boss.octoArms) == armCount - 1 && c.boss.hp == hp - 1f);
         check("a torn arm remains visible for its dramatic collapse",

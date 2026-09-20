@@ -1590,6 +1590,16 @@ final class Preview {
         for (int i = 0; i < 8; i++) pulseDemo.boss.update(DT, L, pulseDemo.rnd);
         shot(dir, "76j-octopulse-too-slow-taunt", pulseDemo, L, w, h, ss);
 
+        GameCore pulsePain = toBoss(L, Boss.OCTOPUS, 538L, true);
+        pulsePain.stageBanner = pulsePain.rosterSceneT = 0f;
+        for (int i = 0; i < 360 && pulsePain.boss.octoCharge < 1f; i++)
+            pulsePain.boss.update(DT, L, pulsePain.rnd);
+        pulsePain.boss.press(pulsePain.boss.octoTarget, pulsePain.rnd, L);
+        for (int frame = 0; frame < 3; frame++) {
+            for (int i = 0; i < 24; i++) pulsePain.update(DT, L);
+            shot(dir, "76n-octopulse-pain-wave-" + frame, pulsePain, L, w, h, ss);
+        }
+
         GameCore slimeRest = toBoss(L, Boss.SLIME, 539L, true);
         slimeRest.stageBanner = slimeRest.rosterSceneT = 0f;
         slimeRest.boss.body.reset(L.w * 0.5f, Boss.restY(L), Boss.bodyR(L), 2f);
@@ -1851,7 +1861,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

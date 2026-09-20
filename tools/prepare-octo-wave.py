@@ -16,7 +16,7 @@ if termux.exists():
     env["LD_LIBRARY_PATH"] = str(termux)
 raw = subprocess.check_output([
     "ffmpeg", "-v", "error", "-i", str(source), "-map", "0:a:0",
-    "-ac", "1", "-ar", "22050", "-f", "s16le", "-"
+    "-af", "lowpass=f=1000:p=2", "-ac", "1", "-ar", "22050", "-f", "s16le", "-"
 ], env=env)
 samples = array.array("h", raw)
 if sys.byteorder != "little":

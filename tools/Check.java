@@ -98,7 +98,7 @@ abstract class Check {
         float musicVolume, effectsVolume, squishVolume;
         public void volumes(float music,float effects) { musicVolume=music;effectsVolume=effects; }
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeDamages, bossSplits,
-                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoWaves, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideSupernovas, divideBoings, chops, zaps;
+                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoDamages, octoWaves, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideSupernovas, divideBoings, chops, zaps;
         float bossCharge, maxBossCharge;
         float lastDivideBoingWeight = -1f;
         int collects;
@@ -160,6 +160,7 @@ abstract class Check {
         public void boltPop() { boltPops++; }
         public void boltDeath() { boltDeaths++; }
         public void shieldBounce() { shieldBounces++; }
+        public void octoDamage() { octoDamages++; }
         public void octoWave() { octoWaves++; }
         public void octoCue() { octoCues++; }
         public void octoLock() { octoLocks++; }

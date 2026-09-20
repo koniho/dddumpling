@@ -31,7 +31,8 @@ final class Sfx {
             SLIME_COVER = DEBUFF_DOWN + 1, SLIME_RELEASE = SLIME_COVER + 1,
             LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, BLAST_OFF = UI_BLOOP + 1, DIVIDE_SUPERNOVA = BLAST_OFF + 1, OCTO_WAVE = DIVIDE_SUPERNOVA + 1, CAVE_RUMBLE = OCTO_WAVE + 1, CAVE_CRASH = CAVE_RUMBLE + 1,
             CAVE_AMBUSH = CAVE_CRASH + 1, CAVE_SINK = CAVE_AMBUSH + 1, MINING_CHEER = CAVE_SINK + 1,
-            CART_ROLL = MINING_CHEER + 1, CART_SQUEAL = CART_ROLL + 1, CART_TUMBLE = CART_SQUEAL + 1, COUNT = CART_TUMBLE + 1;
+            CART_ROLL = MINING_CHEER + 1, CART_SQUEAL = CART_ROLL + 1, CART_TUMBLE = CART_SQUEAL + 1, OCTO_DAMAGE = CART_TUMBLE + 1, COUNT = OCTO_DAMAGE + 1;
+    static final float OCTO_WAVE_GAIN = .66f;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -95,6 +96,7 @@ final class Sfx {
             case DIVIDE_SUPERNOVA: return divideSupernova();
             case SHIELD_BOUNCE: return shieldBounce();
             case SLIME_DAMAGE: return slimeDamage();
+            case OCTO_DAMAGE: return octoDamage();
             case OCTO_CUE: return octoCue();
             case OCTO_LOCK: return octoLock();
             default: return achievement();
@@ -882,6 +884,26 @@ final class Sfx {
                     * (float) Math.exp(-9f * u);
             v[i] = (snap * 0.50f + pop * 0.82f + bounce * 0.28f)
                     * envelope(u, 0.006f, 1.8f);
+        }
+        return render(v);
+    }
+
+    /** A tight snap followed by a springy falling pitch as the arm recoils. */
+    static short[] octoDamage() {
+        int n = (int)(RATE * .34f), seed = 0x0c70;
+        float[] v = new float[n];
+        float phase = 0f;
+        for (int i = 0; i < n; i++) {
+            float t = (float)i / RATE, u = (float)i / n;
+            float hz = 170f + 560f * (float)Math.exp(-17f*t)
+                    + 110f * (float)Math.sin(TAU*23f*t) * (float)Math.exp(-12f*t);
+            phase += TAU * hz / RATE;
+            seed = seed * 1664525 + 1013904223;
+            float noise = ((seed >>> 8) / 8388608f) - 1f;
+            float snap = noise * .48f * (float)Math.exp(-150f*t);
+            float spring = (float)Math.sin(phase) + .22f*(float)Math.sin(phase*2f);
+            float tail = Math.min(1f, (n - 1 - i) / (RATE * .025f));
+            v[i] = (spring + snap) * envelope(u,.008f,3.8f) * tail;
         }
         return render(v);
     }

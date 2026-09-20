@@ -1572,6 +1572,18 @@ final class Boss {
                     ty += (archY - ty) * brace;
                 }
 
+                if (!beaten && octoVulnerableArm >= 0 && a != octoVulnerableArm
+                        && (octoArms & (1 << a)) != 0 && a != octoDyingArm) {
+                    // Stagger the pain ripple across intact arms; leave the grab target alone.
+                    float onset = Math.min(1f, octoDragTime / 0.18f);
+                    float phase = octoDragTime * 7.5f + a * 1.37f - u * 4.5f;
+                    float writhe = (float)Math.sin(phase) * bodyR(L) * 0.72f * u * onset;
+                    tx += (float)Math.cos(angle) * writhe;
+                    ty -= (float)Math.sin(angle) * writhe;
+                    ty -= (0.5f + 0.5f * (float)Math.sin(phase + 1.2f))
+                            * bodyR(L) * 0.48f * u * u * onset;
+                }
+
                 if (a == octoAttackArm) {
                     float dx = tx - cx, dy = ty - cy;
                     tx = cx + dx * leanCos - dy * leanSin;
