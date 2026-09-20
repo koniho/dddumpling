@@ -85,6 +85,15 @@ public final class IOSGame {
             if (core.pushLesson.touch(core, layout, action, ev.getX(), ev.getY())) tick();
             return true;
         }
+        if(action==0 && HighScoreScreen.entryHit(core,layout,ev.getX(),ev.getY())) {
+            cancelPointers();core.highScoreScreen.show(core);return true;
+        }
+        if(core.highScoreScreen.open) {
+            int i=action==2?ev.findPointerIndex(settingsPointer):ev.getActionIndex();
+            if(action==0) settingsPointer=ev.getPointerId(ev.getActionIndex());
+            if(i>=0) settingsInput.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));
+            return true;
+        }
         if(core.releaseNotes.handleTouch(core,layout,action,ev.getX(ev.getActionIndex()),ev.getY(ev.getActionIndex())))
             return true;
         if (core.settingsOpen) {

@@ -47,6 +47,17 @@ public final class IOSInputTest extends Check {
         check("duplicate native identities are rejected", rejected);
     }
 
+    private static void highScores() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.startGame();c.score=500;c.highScores.finish(c);c.toTitle();c.returnFade=0;
+        tap(game,l.w*.5f,l.h*.292f);
+        check("title best opens high scores",c.highScoreScreen.open && !c.starting());
+        tap(game,l.w*.5f,HighScoreScreen.listTop(l)+HighScoreScreen.size(l));
+        check("native tap opens saved summary",c.highScoreScreen.selected==0);
+        game.back();check("native back returns to score list",c.highScoreScreen.open && c.highScoreScreen.selected==-1);
+        game.back();check("native back returns to title",!c.highScoreScreen.open && c.state==GameCore.TITLE);
+    }
+
     private static void titleAndLifecycle() {
         IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
         Host host = new Host(); game.setHost(host);
@@ -560,6 +571,7 @@ public final class IOSInputTest extends Check {
         playerSettings();
         gameOverDismissal();
         cave();
+        highScores();
         releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); bossOwnership(); flingHistory();
         steamerAndPanic(); caseAndSettings();
         debugScenes(); linkedChord();

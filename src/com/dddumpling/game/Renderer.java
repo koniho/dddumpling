@@ -143,6 +143,7 @@ final class Renderer extends Draw {
         Pause.draw(p, c, L);
         ReleaseNotes.entry(p,c,L);
         c.releaseNotes.draw(p,c,L);
+        c.highScoreScreen.draw(p,c,L);
         if (c.returnFade > 0f) {
             float cover = 1f - Math.abs(c.returnFade / GameCore.RETURN_FADE * 2f - 1f);
             cover = cover * cover * (3f - 2f * cover);

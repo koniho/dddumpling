@@ -21,7 +21,7 @@ final class ReleaseNotes extends Draw {
     private boolean listDragging,listMoved;
 
     static boolean available(GameCore c) {
-        return c.state==GameCore.TITLE && !c.starting() && !c.caseOpen && c.caseFade<0.01f
+        return !c.highScoreScreen.open && c.state==GameCore.TITLE && !c.starting() && !c.caseOpen && c.caseFade<0.01f
                 && !c.storyOpen() && !c.settingsOpen && c.returnFade<=0f && c.rosterSceneT<=0f;
     }
     static boolean entryHit(GameCore c,Layout L,float x,float y) {

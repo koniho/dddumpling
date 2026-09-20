@@ -131,6 +131,7 @@ final class Interlude {
         c.caseSlide = c.caseSlideY = c.caseHighlightAge = 0f;
         c.caseFreePan = false;
         c.prizeNew = !Collect.has(c.collected, c.prize);
+        c.highScores.dumplings++;
         c.roundPrizes = Collect.add(c.roundPrizes, c.prize);
         int previous = Math.max(c.collectionCounts[c.prize], c.prizeNew ? 0 : 1);
         c.collectionCounts[c.prize] = previous == Integer.MAX_VALUE ? previous : previous + 1;
@@ -194,6 +195,7 @@ final class Interlude {
      * finished, so the interlude opens after that celebration rather than on top of it.
      */
     static void beginStageEnd(GameCore c) {
+        c.highScores.stages++;
         c.progress.completeStage(c.score);
         if (c.perfectRound()) {
             c.perfectBanner = GameCore.PERFECT_TIME;

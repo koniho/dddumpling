@@ -202,6 +202,30 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
+        if(wanted("130")) {
+            GameCore scores=new GameCore(new Mem(),101L);
+            shot(dir,"130-high-scores-title",scores,L,w,h,ss);
+            scores.highScoreScreen.show(scores);
+            shot(dir,"130-high-scores-empty",scores,L,w,h,ss);
+            for(int i=0;i<10;i++) {
+                scores.startGame();scores.score=(10-i)*1357;scores.stage=new int[]{5,10,15,20,1,6,11,16,21,25}[i];
+                scores.hits=123;scores.misses=7;scores.squishes=56;scores.maxCombo=48;
+                scores.highScores.stages=scores.stage-1;scores.highScores.bosses=(1<<Math.min(Boss.COUNT,(scores.stage-1)/Boss.EVERY))-1;
+                scores.highScores.dumplings=14-i;scores.highScores.powers=7;scores.highScores.swipes=3;
+                scores.lives=0;scores.highScores.finish(scores);
+                if(i==0) {
+                    scores.toTitle();scores.returnFade=0;scores.highScoreScreen.show(scores);
+                    shot(dir,"130-high-scores-partial",scores,L,w,h,ss);
+                }
+            }
+            scores.toTitle();scores.returnFade=0;scores.highScoreScreen.show(scores);
+            shot(dir,"130-high-scores-full",scores,L,w,h,ss);
+            scores.highScoreScreen.scrollTo(scores,L,scores.highScoreScreen.maxScroll(scores,L));
+            shot(dir,"130-high-scores-latest",scores,L,w,h,ss);
+            scores.highScoreScreen.selected=0;
+            shot(dir,"130-high-scores-summary",scores,L,w,h,ss);
+        }
+
         GameCore cover = new GameCore(new Mem(),3001L);
         cover.startGame(); cover.jumpToStage(5,L);
         cover.boss.intro=0f; cover.stageGap=0f; cover.stageBanner=0f;

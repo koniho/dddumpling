@@ -166,6 +166,8 @@ final class GameCore {
         default void savePushLessonSeen(boolean value) {}
         default String loadReleaseSeen() { return BuildFlags.BUILD_ID; }
         default void saveReleaseSeen(String value) {}
+        default String loadHighScores() { return ""; }
+        default void saveHighScores(String value) {}
         int loadBest();
         void saveBest(int best);
         default int loadCaveChoice() { return -1; }
@@ -500,6 +502,8 @@ final class GameCore {
     int settingsPage;
     final PlayerSettings preferences = new PlayerSettings();
     boolean kidsRun;
+    final HighScores highScores=new HighScores();
+    final HighScoreScreen highScoreScreen=new HighScoreScreen();
     final ReleaseNotes releaseNotes=new ReleaseNotes();
     final ReleaseMascot releaseMascot=new ReleaseMascot();
     int settingsTab;
@@ -1175,6 +1179,7 @@ final class GameCore {
         if (effect != Power.MULTI) LinkedPairs.preparePower(this);
         else LinkedPairs.release(this, L);
         debuffLeft = monochromeFade = incognitoMorph = 0f;
+        highScores.powers++;
         mode = effect;
         modeLeft = Power.DURATION;
         if(power==null || !power.hit) {
@@ -1449,6 +1454,7 @@ final class GameCore {
             mining.carts = Math.max(0,Math.min(CaveMining.CARTS,store.loadMineCarts()));
             cart.progress = Math.max(0,Math.min(CaveCart.TRACK,store.loadCartTrack()));
             caveMiningNext = store.loadCaveMiningNext();
+            highScores.load(store.loadHighScores());
             best = store.loadBest();
             for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
             landBests[0] = Math.max(landBests[0], best);
@@ -1695,6 +1701,8 @@ final class GameCore {
     }
 
     void startGame() {
+        highScores.start();
+        highScoreScreen.open=false;
         band.reset(this); mining.stop(); cart.stop();
         runWho = Collect.has(collected, caseIndex) ? caseIndex : 0;
         // A paid win may have been quit before its tableau/parade retired the course.
@@ -1902,7 +1910,7 @@ final class GameCore {
      */
     void screenKey(int g) {
         if (settingsOpen) return;
-        if(releaseNotes.open) return;
+        if(releaseNotes.open || highScoreScreen.open) return;
         if (returnFade > 0f) return;
         if (!keyActive(g) || rosterSceneT > 0f) return;
         // Nothing is dismissable until the summary is up and settled — the death sequence is not
@@ -2306,6 +2314,7 @@ final class GameCore {
         // bands are ever retuned apart, the stage's one use is not silently eaten.
         if (moved == 0) return false;
 
+        highScores.swipes++;
         pushUsed = true;
         pushCount = moved;
         pushT = PUSH_TIME;
@@ -2420,6 +2429,7 @@ final class GameCore {
         bossDeathHaptic = 0;
         if (paused) return;
         if (pushLesson.update(this, elapsed, L)) return;
+        if(highScoreScreen.open) { clock+=elapsed;return; }
         if(releaseNotes.open) {
             releaseNotes.update(elapsed,L);
             clock+=elapsed;time+=elapsed;skyClock+=elapsed;
@@ -3197,6 +3207,7 @@ final class GameCore {
      */
     private void die() {
         cave.leave();
+        highScores.finish(this);
         progress.finishRun(score, false);
         if (runFullRoster && fullRoster) {
             if (stage >= 6) earlyLosses = 0;
