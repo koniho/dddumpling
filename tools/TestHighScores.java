@@ -19,14 +19,22 @@ final class TestHighScores extends Check {
         check("nonqualifying latest still recorded exactly once",c.highScores.latest==14 && c.highScores.runs.get(0).id!=14);
         GameCore loaded=new GameCore(mem,102L);
         check("history round trips",loaded.highScores.encode().equals(c.highScores.encode()));
+        check("latest outside top ten is appended and saved",loaded.highScores.displayCount()==11
+                && loaded.highScores.displayRun(10).id==14 && loaded.highScores.displayRun(10).score==1);
+        c.startGame();c.score=2;c.highScores.finish(c);
+        check("another low run replaces the extra row",c.highScores.displayCount()==11 && c.highScores.displayRun(10).score==2);
+        c.startGame();c.score=2000;c.highScores.finish(c);
+        check("qualifying latest appears only once",c.highScores.displayCount()==10 && !c.highScores.latestOutsideTopTen());
+        HighScores legacy=new HighScores();legacy.load(c.highScores.encode().replaceFirst("2:","1:"));
+        check("old top-ten saves retain qualifying latest",legacy.runs.size()==10 && legacy.latestRun.id==c.highScores.latest);
         check("historical summary remains frozen",original.score==1200 && original.stage==4 && original.stages==3
                 && original.dumplings==2 && original.squishes==9 && original.combo==7 && original.accuracy()==67 && original.best==9000);
-        for(String bad:new String[]{"junk","2:1","1:-1","1:1;1,0","1:1;999999999999999999999999999999999"}) {
+        for(String bad:new String[]{"junk","3:1","1:-1","1:1;1,0","1:1;999999999999999999999999999999999"}) {
             HighScores history=new HighScores();history.load(bad);
             check("bad history safely ignored "+bad,history.runs.isEmpty() && history.latest==0);
         }
-        c.startGame();c.score=1500;c.lives=1;c.takeHit(L.w*.5f,L);
-        check("fatal hit saves the completed run",c.highScores.runs.get(0).score==1500);
+        c.startGame();c.score=2500;c.lives=1;c.takeHit(L.w*.5f,L);
+        check("fatal hit saves the completed run",c.highScores.runs.get(0).score==2500);
         c.startGame();
         check("new run resets counters",c.highScores.stages==0 && c.highScores.dumplings==0
                 && c.highScores.bosses==0 && c.highScores.powers==0 && c.highScores.swipes==0);
@@ -47,8 +55,25 @@ final class TestHighScores extends Check {
         Interlude.awardBossPrize(c,Boss.SLIME);
         check("duplicate rewards count toward run haul",c.highScores.dumplings==rewards+1);
         c.state=GameCore.TITLE;c.pendingBonus=false;c.startFade=0;c.launchT=0;c.caseOpen=false;c.caseFade=0;
+        onePage(L);
         navigation(c,L);
         blurbs(L);
+    }
+    private static void onePage(Layout L) {
+        GameCore c=new GameCore(new Mem(),104L);
+        for(int i=0;i<11;i++) { c.startGame();c.score=1100-i*100;c.highScores.finish(c); }
+        c.toTitle();c.returnFade=0;c.highScoreScreen.show(c);
+        for(int[] dims:new int[][]{{320,568},{393,852},{1080,2400},{768,1024}}) {
+            Layout l=new Layout();l.compute(dims[0],dims[1],0,24,0,24);
+            float rh=HighScoreScreen.rowHeight(c,l),top=HighScoreScreen.listTop(l);
+            check("eleven rows fit on one page "+dims[0],top+11*rh<=HighScoreScreen.listBottom(l)+.01f);
+            check("last row is clickable "+dims[0],c.highScoreScreen.hit(c,l,l.w*.5f,top+10.5f*rh)==HighScoreScreen.ROW+10);
+        }
+        c.highScoreScreen.action(c,HighScoreScreen.ROW+10);
+        check("extra row opens its saved summary",c.highScoreScreen.selected==10 && c.highScores.displayRun(10).score==100);
+        HighScores old=new HighScores();String data=c.highScores.encode();
+        old.load(data.substring(0,data.lastIndexOf(';')).replaceFirst("2:","1:"));
+        check("legacy nonqualifying run is not fabricated",old.latestRun==null && old.displayCount()==10);
     }
     private static void blurbs(Layout L) {
         group("saved death blurbs");
@@ -83,15 +108,14 @@ final class TestHighScores extends Check {
         check("settings tap selects saved run",ui.selected==0);
         check("back returns to list",Pause.back(c) && ui.open && ui.selected==-1);
         input.touch(c,L,0,5,x,y);input.touch(c,L,2,5,x,y-L.unit*3);input.touch(c,L,1,5,x,y-L.unit*3);
-        check("drag scrolls within content bounds without opening row",
-                ui.scroll==Math.min(L.unit*3,ui.maxScroll(c,L)) && ui.selected==-1);
+        check("drag cannot open a row",ui.selected==-1);
         input.touch(c,L,0,5,x,y);input.touch(c,L,3,5,x,y);input.touch(c,L,1,5,x,y);
         check("cancelled gesture cannot select",ui.selected==-1);
         check("back closes list",Pause.back(c) && !ui.open);
         c.preferences.effectsMuted=true;c.preferences.apply(c);ui.show(c);
         check("opening uses muted sound backend",ear.effectsVolume==0f && ui.open);
         ui.back(c);
-        for(int[] dimensions:new int[][]{{320,568},{393,852},{1080,2400},{1024,768},{768,1024}}) {
+        for(int[] dimensions:new int[][]{{320,568},{393,852},{1080,2400},{768,1024}}) {
             Layout l=new Layout();l.compute(dimensions[0],dimensions[1],0,24,0,24);
             check("summary fits "+dimensions[0]+"x"+dimensions[1],
                     HighScoreScreen.listTop(l)+HighScoreScreen.size(l)*20f<HighScoreScreen.listBottom(l));

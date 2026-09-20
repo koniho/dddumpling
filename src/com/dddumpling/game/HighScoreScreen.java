@@ -5,24 +5,21 @@ final class HighScoreScreen extends Draw {
     static final int CLOSE=-1, BACK=-2, ROW=2000;
     boolean open;
     int selected=-1;
-    float scroll;
     static float size(Layout L) { return Math.min(ReleaseNotes.size(L),(L.dangerY-L.topSafe)/27f); }
     static float top(Layout L) { return L.topSafe+size(L); }
-    static float bottom(Layout L) { return Math.min(L.dangerY-size(L)*.6f,L.h-L.padB-size(L)); }
+    static float bottom(Layout L) { return L.h-L.padB-size(L); }
     static float listTop(Layout L) { return top(L)+size(L)*3.5f; }
     static float listBottom(Layout L) { return bottom(L)-size(L); }
-    static float rowHeight(Layout L) { return size(L)*3.6f; }
-    float maxScroll(GameCore c,Layout L) {
-        return Math.max(0f,c.highScores.runs.size()*rowHeight(L)-(listBottom(L)-listTop(L)));
+    static float rowHeight(GameCore c,Layout L) {
+        return Math.min(size(L)*3.6f,(listBottom(L)-listTop(L))/Math.max(1,c.highScores.displayCount()));
     }
-    void scrollTo(GameCore c,Layout L,float value) { scroll=Math.max(0f,Math.min(maxScroll(c,L),value)); }
     static boolean entryHit(GameCore c,Layout L,float x,float y) {
         return ReleaseNotes.available(c) && !c.releaseNotes.open
                 && Math.abs(x-L.w*.5f)<L.w*.30f && Math.abs(y-L.h*.292f)<L.unit*1.1f;
     }
     void show(GameCore c) {
         if(!ReleaseNotes.available(c) || c.releaseNotes.open) return;
-        Pause.release(c);open=true;selected=-1;scroll=0f;feedback(c);
+        Pause.release(c);open=true;selected=-1;feedback(c);
     }
     private void feedback(GameCore c) { if(c.sound!=null) c.sound.uiBloop(); }
     void back(GameCore c) {
@@ -35,17 +32,16 @@ final class HighScoreScreen extends Draw {
         if(x>L.w*.82f && y<t+2.5f*s) return CLOSE;
         if(selected>=0) return x<L.w*.21f && y<t+2.5f*s?BACK:0;
         if(y<listTop(L) || y>listBottom(L)) return 0;
-        int row=(int)((y-listTop(L)+scroll)/rowHeight(L));
-        return row<c.highScores.runs.size()?ROW+row:0;
+        int row=(int)((y-listTop(L))/rowHeight(c,L));
+        return row<c.highScores.displayCount()?ROW+row:0;
     }
     void action(GameCore c,int hit) {
         if(hit==CLOSE) { open=false;feedback(c); }
         else if(hit==BACK) back(c);
-        else if(hit>=ROW && hit<ROW+c.highScores.runs.size()) { selected=hit-ROW;feedback(c); }
+        else if(hit>=ROW && hit<ROW+c.highScores.displayCount()) { selected=hit-ROW;feedback(c); }
     }
     void draw(Painter p,GameCore c,Layout L) {
         if(!open) return;
-        scrollTo(c,L,scroll);
         float s=size(L),t=top(L),b=bottom(L);
         p.fillRect(0,0,L.w,L.h,0x990F1026);
         glassPanel(p,L.w*.04f,t,L.w*.96f,b,s);
@@ -58,23 +54,18 @@ final class HighScoreScreen extends Draw {
         }
         p.text(selected<0?"HIGH SCORES":"RUN SUMMARY",L.w*.5f,t+s*1.7f,type(s*.8f),GOLD,Painter.CENTER,true);
         p.save();p.clipRect(L.w*.07f,listTop(L),L.w*.93f,listBottom(L));
-        if(selected>=0 && selected<c.highScores.runs.size()) summary(p,c,L,c.highScores.runs.get(selected));
-        else if(c.highScores.runs.isEmpty()) {
+        if(selected>=0 && selected<c.highScores.displayCount()) summary(p,c,L,c.highScores.displayRun(selected));
+        else if(c.highScores.displayCount()==0) {
             Kawaii.moodDumpling(p,L.w*.5f,t+8f*s,2f*s,Glyph.COLOR[0],.7f,1f);
             p.text("Your next run starts the list.",L.w*.5f,t+12f*s,type(s*.52f),INK_DIM,Painter.CENTER,false);
         } else {
-            for(int i=0;i<c.highScores.runs.size();i++) {
-                float ry=listTop(L)+i*rowHeight(L)-scroll;
-                if(ry+rowHeight(L)<listTop(L) || ry>listBottom(L)) continue;
-                row(p,c,L,c.highScores.runs.get(i),ry);
+            for(int i=0;i<c.highScores.displayCount();i++) {
+                float ry=listTop(L)+i*rowHeight(c,L);
+                if(ry+rowHeight(c,L)<listTop(L) || ry>listBottom(L)) continue;
+                row(p,c,L,c.highScores.displayRun(i),ry);
             }
         }
         p.restore();
-        if(selected<0 && maxScroll(c,L)>0f) {
-            float h=listBottom(L)-listTop(L),total=c.highScores.runs.size()*rowHeight(L);
-            float thumb=h*h/total,sy=listTop(L)+(h-thumb)*scroll/maxScroll(c,L);
-            p.line(L.w*.945f,sy,L.w*.945f,sy+thumb,INK_DIM,s*.10f);
-        }
     }
     private void score(Painter p,GameCore c,Layout L,HighScores.Run run,float y) {
         float s=size(L);
@@ -95,11 +86,12 @@ final class HighScoreScreen extends Draw {
         }
     }
     private void row(Painter p,GameCore c,Layout L,HighScores.Run run,float y) {
-        float s=size(L),cy=y+rowHeight(L)*.5f;
+        float height=rowHeight(c,L),s=Math.min(size(L),height/3.2f),cy=y+height*.5f;
         String value=String.valueOf(run.score),haul=String.valueOf(run.dumplings);
         float font=Math.min(type(s*.52f),Math.min(L.w*.13f/(value.length()*.73f),L.w*.065f/(haul.length()*.73f)));
         float baseline=cy+font*.36f;
         if(run.id==c.highScores.latest) {
+            p.fillRect(L.w*.08f,y,L.w*.92f,y+height,0x18FFD76F);
             float half=value.length()*font*.36f;
             for(int i=4;i>0;i--) p.fillEllipse(L.w*.10f+half,cy,half+i*s*.13f,font*.6f+i*s*.1f,
                     Glyph.withAlpha(GOLD,(int)((13-i*2)*(1f+.15f*Math.sin(c.clock*3f)))));
@@ -119,7 +111,7 @@ final class HighScoreScreen extends Draw {
         bosses(p,c,run,L.w*.71f,cy,Math.min(s*.9f,L.w*.032f),L.w*.14f);
         icon(p,0,L.w*.825f,cy,s*.65f,c.clock);
         p.text(haul,L.w*.86f,baseline,font,INK,Painter.LEFT,true);
-        p.line(L.w*.10f,y+rowHeight(L)-s*.1f,L.w*.90f,y+rowHeight(L)-s*.1f,0x25FFFFFF,s*.05f);
+        p.line(L.w*.10f,y+height-s*.1f,L.w*.90f,y+height-s*.1f,0x25FFFFFF,s*.05f);
     }
     private static void icon(Painter p,int kind,float x,float y,float r,float clock) {
         if(kind==0) Kawaii.moodDumpling(p,x,y,r,Glyph.COLOR[0],1f,1f);

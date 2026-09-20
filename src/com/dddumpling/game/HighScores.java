@@ -20,6 +20,7 @@ final class HighScores {
     };
     final ArrayList<Run> runs=new ArrayList<>();
     long latest;
+    Run latestRun;
     int stages, dumplings, powers, swipes, bosses;
     private boolean recording;
 
@@ -48,6 +49,7 @@ final class HighScores {
         int ending=c.lives>0?0:boss>=0?1+boss:5+Lands.forStage(c.stage);
         Run run=new Run(++latest,new int[]{Math.max(0,c.score),c.stage,stages,dumplings,powers,
                 swipes,bosses,c.hits,c.misses,c.squishes,c.maxCombo,Math.max(c.best,c.score),c.runStartLand,c.kidsRun?1:0,ending});
+        latestRun=run;
         insert(run);
         if(c.store!=null) c.store.saveHighScores(encode());
     }
@@ -58,20 +60,29 @@ final class HighScores {
         runs.add(at,run);
         if(runs.size()>LIMIT) runs.remove(LIMIT);
     }
+    boolean latestOutsideTopTen() {
+        if(latestRun==null) return false;
+        for(Run run:runs) if(run.id==latestRun.id) return false;
+        return true;
+    }
+    int displayCount() { return runs.size()+(latestOutsideTopTen()?1:0); }
+    Run displayRun(int row) { return row<runs.size()?runs.get(row):latestRun; }
     String encode() {
-        StringBuilder s=new StringBuilder("1:").append(latest);
-        for(Run run:runs) {
+        StringBuilder s=new StringBuilder("2:").append(latest);
+        for(int i=0;i<displayCount();i++) {
+            Run run=displayRun(i);
             s.append(';').append(run.id);
             for(int value:run.values()) s.append(',').append(value);
         }
         return s.toString();
     }
     void load(String data) {
-        runs.clear();latest=0;
+        runs.clear();latest=0;latestRun=null;
         if(data==null || data.isEmpty() || data.length()>16000) return;
         try {
             String[] rows=data.split(";",-1);
-            if(rows.length>LIMIT+1 || !rows[0].startsWith("1:")) return;
+            boolean current=rows[0].startsWith("2:");
+            if((!current && !rows[0].startsWith("1:")) || rows.length>LIMIT+(current?2:1)) return;
             long sequence=Long.parseLong(rows[0].substring(2));
             if(sequence<0) return;
             ArrayList<Run> parsed=new ArrayList<>();
@@ -87,7 +98,10 @@ final class HighScores {
                 parsed.add(new Run(id,v));
             }
             latest=sequence;
-            for(Run run:parsed) insert(run);
-        } catch(NumberFormatException ignored) { runs.clear();latest=0; }
+            for(Run run:parsed) {
+                if(run.id==latest) latestRun=run;
+                insert(run);
+            }
+        } catch(NumberFormatException ignored) { runs.clear();latest=0;latestRun=null; }
     }
 }

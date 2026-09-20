@@ -4,8 +4,7 @@ package com.dddumpling.game;
 final class SettingsInput {
     private int pressed, pointer=-1;
     private float downX, downY, offset;
-    private boolean moved, scoreList;
-    private float startScroll;
+    private boolean moved;
     void cancel() { pressed=0; pointer=-1; }
     static boolean runAction(int hit) {
         return hit==SettingsUi.HIT_GAMEOVER || hit>=SettingsUi.HIT_TEST;
@@ -31,9 +30,6 @@ final class SettingsInput {
         if(action==3) { cancel();return false; }
         if(action==0) {
             pointer=id; pressed=hit(c,L,x,y); downX=x;downY=y;moved=false;offset=0;
-            scoreList=c.highScoreScreen.open && c.highScoreScreen.selected<0
-                    && y>=HighScoreScreen.listTop(L) && y<=HighScoreScreen.listBottom(L) && pressed>=0;
-            startScroll=c.highScoreScreen.scroll;
             if(pressed==1000+PlayerSettings.MUSIC || pressed==1000+PlayerSettings.EFFECTS) {
                 float v=pressed==1000+PlayerSettings.MUSIC?c.preferences.music:c.preferences.effects;
                 float knob=PlayerSettings.trackL(L)+(PlayerSettings.trackR(L)-PlayerSettings.trackL(L))*v;
@@ -42,7 +38,6 @@ final class SettingsInput {
             if(slider(pressed)) drag(c,L,x+offset);
         } else if(id==pointer && action==2) {
             if(Math.abs(x-downX)+Math.abs(y-downY)>L.unit*.4f) moved=true;
-            if(scoreList && moved) c.highScoreScreen.scrollTo(c,L,startScroll-(y-downY));
             if(slider(pressed)) drag(c,L,x+offset);
         } else if(id==pointer && (action==1 || action==6)) {
             int h=pressed;cancel();

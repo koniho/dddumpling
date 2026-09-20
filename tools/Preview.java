@@ -220,7 +220,9 @@ final class Preview {
             }
             scores.toTitle();scores.returnFade=0;scores.highScoreScreen.show(scores);
             shot(dir,"130-high-scores-full",scores,L,w,h,ss);
-            scores.highScoreScreen.scrollTo(scores,L,scores.highScoreScreen.maxScroll(scores,L));
+            scores.startGame();scores.score=123;scores.stage=6;scores.lives=0;
+            scores.highScores.dumplings=1;scores.highScores.bosses=1;scores.highScores.finish(scores);
+            scores.toTitle();scores.returnFade=0;scores.highScoreScreen.show(scores);
             shot(dir,"130-high-scores-latest",scores,L,w,h,ss);
             scores.highScoreScreen.selected=0;
             shot(dir,"130-high-scores-summary",scores,L,w,h,ss);
