@@ -50,6 +50,10 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 @property(nonatomic) BOOL narrating;
 @property(nonatomic) NSInteger selectedStyle;
 @property(nonatomic) NSUInteger musicGeneration;
+@property(nonatomic) BOOL musicRequested;
+@property(nonatomic) NSInteger playingStyle;
+@property(nonatomic) BOOL playingBoss;
+@property(nonatomic) BOOL playingFrenzy;
 @property(nonatomic) float bubbleVolume;
 @property(nonatomic) float musicVolume;
 @property(nonatomic) float effectsVolume;
@@ -281,22 +285,28 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 
 - (void)rebuildMusic {
   if (_bandActive) return;
-  ++_musicGeneration;
-  NSUInteger generation = _musicGeneration;
+  BOOL boss = _boss, frenzy = !boss && _frenzy;
+  jint style = [DDMusic isSynthWithInt:(jint)_selectedStyle] ? (jint)_selectedStyle : DDStyleSwing;
+  // Track pending renders too; repeated selections must not cancel the first load.
+  if (_musicRequested && _playingStyle == style && _playingBoss == boss && _playingFrenzy == frenzy) return;
+  _musicRequested = YES; _playingStyle = style; _playingBoss = boss; _playingFrenzy = frenzy;
+  NSUInteger generation = ++_musicGeneration;
   [_music stop]; _music = nil;
-  BOOL boss = _boss, frenzy = _frenzy;
-  NSInteger style = _selectedStyle;
   dispatch_async(_renderQueue, ^{
     IOSShortArray *pcm = nil;
     @try {
-      jint synthStyle = [DDMusic isSynthWithInt:(jint)style] ? (jint)style : DDStyleSwing;
-      pcm = boss ? [DDMusic bossLoopWithInt:synthStyle]
-                 : [DDMusic loopWithInt:synthStyle withBoolean:frenzy];
-    } @catch (NSException *exception) { return; }
+      pcm = boss ? [DDMusic bossLoopWithInt:style]
+                 : [DDMusic loopWithInt:style withBoolean:frenzy];
+    } @catch (NSException *exception) {
+      dispatch_async(dispatch_get_main_queue(), ^{
+        if (generation == self.musicGeneration) self.musicRequested = NO;
+      });
+      return;
+    }
     dispatch_async(dispatch_get_main_queue(), ^{
       if (generation != self.musicGeneration) return;
       AVAudioPlayer *player = [self playerForPCM:pcm loop:YES];
-      if (!player) return;
+      if (!player) { self.musicRequested = NO; return; }
       self.music = player; [self applyMusicMix];
       if (self.active && !self.interrupted && self.playbackAllowed) [player play];
     });
@@ -429,6 +439,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 
 - (void)bandStartWithInt:(jint)song withBoolean:(jboolean)muted {
   [self bandStop];
+  _musicRequested = NO;
   _bandActive = YES; _bandPaused = _bandFailed = _bandFinished = NO; _bandMuted = muted;
   _boss = _frenzy = NO;
   _bandDuration = [DDCaveSong durationWithInt:song];
