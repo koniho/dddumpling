@@ -539,7 +539,9 @@ start; `OctoWaveRecording` supplies the same PCM to Android, iOS, and previews.
 After Octopulse's first four arm tears, an intact arm winds up and throws one enemy key.
 The fifth and sixth tears trigger two simultaneous throws from different arms, and the seventh triggers three sequential throws
 from the last arm. Each enemy leaves the throwing tip and can be destroyed with its matching key.
-Octopulse projectiles take 1.2 seconds to reach the player.
+Successful-tear retaliation projectiles take 1.2 seconds to reach the player; missed-tear
+punishment projectiles retain their 2.4-second flight. The final three throws have a
+0.47-second interval, half the usual throwing cycle.
 The next arm-wave attack waits until every thrown enemy is destroyed or reaches the player.
 The final arm tear ends the fight without another throw.
 Octopulse’s visual enrage warning starts at 40 seconds to allow for the added wind-ups and throws.

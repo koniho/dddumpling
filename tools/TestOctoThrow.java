@@ -36,7 +36,9 @@ final class TestOctoThrow extends Check {
                 }
                 if (b.launched) {
                     events++;
-                    spaced &= frame - lastLaunch >= 45;
+                    if (lastLaunch >= 0 && removed == 7)
+                        spaced &= Math.abs((frame - lastLaunch) * DT - OctoThrow.END * .5f) < DT * 2f;
+                    else spaced &= frame - lastLaunch >= 45;
                     lastLaunch = frame;
                     int tip = Boss.OCTO_NODES - 1;
                     releaseY = b.octoY[b.octoThrowArm][tip];
@@ -75,12 +77,23 @@ final class TestOctoThrow extends Check {
         GameCore speed = TestBoss.enterBoss(L, Boss.OCTOPUS, 888L);
         Boss fast = speed.boss;
         fast.octoPause = 10f;
-        fast.blive[0] = true; fast.bt[0] = 0f;
+        fast.blive[0] = true; fast.bfast[0] = true; fast.bt[0] = 0f;
         for (int i = 0; i < 36; i++) fast.update(DT, L, speed.rnd);
         check("Octopulse projectile is halfway there after 0.6 seconds", Math.abs(fast.bt[0] - .5f) < .001f);
         int arrivals = 0;
         for (int i = 0; i < 37; i++) arrivals += fast.update(DT, L, speed.rnd);
         check("Octopulse projectile lands after 1.2 seconds", arrivals == 1 && !fast.blive[0]);
+        GameCore missed = TestBoss.enterBoss(L, Boss.OCTOPUS, 889L);
+        Boss slow = missed.boss;
+        // Reuse a fast projectile slot for the missed-tear punishment.
+        slow.bfast[0] = true;
+        slow.octoVulnerableArm = 3;
+        slow.octoDragTime = 1.99f;
+        slow.update(DT, L, missed.rnd);
+        check("missed tear launches at the original speed even in a reused slot", slow.blive[0] && !slow.bfast[0]);
+        for (int i = 0; i < 72; i++) slow.update(DT, L, missed.rnd);
+        check("missed-tear projectile is only halfway there after 1.2 seconds", slow.blive[0]
+                && Math.abs(slow.bt[0] - .5f) < .001f);
         GameCore reset = tear(L, 7);
         reset.boss.leave();
         check("leaving clears queued throws", !OctoThrow.busy(reset.boss));

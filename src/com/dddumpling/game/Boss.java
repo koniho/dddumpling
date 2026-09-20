@@ -1869,6 +1869,7 @@ final class Boss {
     static final float BOLT_STAGGER = 0.18f;
     /** Live flag, letter, launch point and 0..1 of the way down, per bolt. */
     final boolean[] blive = new boolean[MAX_BOLTS];
+    final boolean[] bfast = new boolean[MAX_BOLTS];
     final int[] bglyph = new int[MAX_BOLTS];
     final float[] bsx = new float[MAX_BOLTS];
     final float[] bsy = new float[MAX_BOLTS];
@@ -1936,6 +1937,7 @@ final class Boss {
         promptT = promptDelay();
         for (int i = 0; i < BOLTS; i++) {
             blive[i] = true;
+            bfast[i] = false;
             // Spread round the six rather than drawn independently — a repeat would collapse the
             // volley, and the spacing keeps the three keys apart on the deck.
             int offset = rosterFull ? i * 2 : (i == 2 ? 1 : i * 2);
@@ -2002,6 +2004,7 @@ final class Boss {
         for (int slot = 0; slot < MAX_BOLTS && made < count; slot++) {
             if (blive[slot]) continue;
             blive[slot] = true;
+            bfast[slot] = false;
             bglyph[slot] = Roster.at(rosterFull,
                     (Roster.ordinal(rosterFull, first) + made) % Roster.count(rosterFull));
             bhp[slot] = bhpMax[slot] = 1;
@@ -2182,6 +2185,7 @@ final class Boss {
             }
         } else glyph = randomGlyph(rnd);
         blive[slot] = true;
+        bfast[slot] = false;
         bglyph[slot] = glyph;
         bhp[slot] = bhpMax[slot] = 1;
         bt[slot] = 0f;
@@ -2214,7 +2218,7 @@ final class Boss {
         int landed = 0;
         for (int i = 0; i < MAX_BOLTS; i++) {
             if (!blive[i]) continue;
-            bt[i] += dt / (kind == OCTOPUS ? BOLT_TIME * .5f : BOLT_TIME);
+            bt[i] += dt / (bfast[i] ? BOLT_TIME * .5f : BOLT_TIME);
             if (bt[i] < 1f) continue;
             blive[i] = false;
             landed++;
@@ -2225,6 +2229,7 @@ final class Boss {
     private void clearBolts() {
         for (int i = 0; i < MAX_BOLTS; i++) {
             blive[i] = false;
+            bfast[i] = false;
             bt[i] = 0f;
             bhp[i] = bhpMax[i] = 0;
         }

@@ -26,7 +26,8 @@ final class OctoThrow {
     static void update(Boss b, float dt, Random rnd) {
         if (!busy(b)) return;
         if (b.beaten || b.octoArms == 0) { reset(b); return; }
-        b.octoThrowT += dt;
+        float rate = Integer.bitCount(b.octoArms) == 1 && b.octoThrowT >= 0f ? 2f : 1f;
+        b.octoThrowT += dt * rate;
         if (b.octoThrowArm >= 0 && b.octoThrowT >= END && b.octoThrowReleased) {
             b.octoThrowArm = b.octoThrowGlyph = -1;
             b.octoThrowArm2 = b.octoThrowGlyph2 = -1;
@@ -106,6 +107,7 @@ final class OctoThrow {
         for (int i = 0; i < Boss.MAX_BOLTS; i++) if (!b.blive[i]) {
             int tip = Boss.OCTO_NODES - 1;
             b.blive[i] = true;
+            b.bfast[i] = true;
             b.bglyph[i] = glyph;
             b.bhp[i] = b.bhpMax[i] = 1;
             b.bt[i] = 0f;

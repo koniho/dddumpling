@@ -1604,7 +1604,7 @@ final class Preview {
         throwing.stageBanner = throwing.rosterSceneT = 0f;
         String[] throwTags = {"76o-octopulse-throw-windup", "76p-octopulse-throw-release",
                 "76q-octopulse-throw-volley"};
-        int[] throwFrames = {48, 63, 177};
+        int[] throwFrames = {35, 42, 100};
         int thrownFrame = 0;
         for (int pose = 0; pose < throwTags.length; pose++) {
             while (thrownFrame < throwFrames[pose]) {
