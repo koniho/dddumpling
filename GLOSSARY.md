@@ -283,7 +283,7 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 | **flight home** | the haul carrying itself to the case with star trails, on the way to the title | `RoundEnd.homeward`, `GameCore.HOME_TIME` |
 | **lifetime collections** | every basket ever opened, duplicates counted — the number under the position bar that keeps climbing after the case is full | `GameCore.collectTotal` |
 | **earned mash** | how long the round bought at the steamer, and the only thing that sets it: 5s perfect, 4s unhurt, 3s hurt, 1s if the panic swipe was used | `GameCore.mashEarned`, `MASH_*` |
-| **winded** | the field at a quarter fall speed for three seconds after a panic swipe, ramping back up | `GameCore.PUSH_SLOW`, `pushSlowT` |
+| **winded** | the field starts at quarter fall speed after a panic swipe or surviving damage, ramping back up over three seconds; another hit refreshes it | `GameCore.PUSH_SLOW`, `pushSlowT` |
 | **swipe catchment** | where a panic swipe may start: the lower half of the field, much wider than the strip that advertises it | `Layout.inPushZone` |
 | **shelving** | one of the haul reaching the case at the end of its trip, and the chime that says so | `RoundEnd.arrival`, `Sound.collect`, `Sfx.collect` |
 | **game over screen** | score, accuracy dumpling, best. Fades up after the hold; GAME OVER is yellow, not rose | `Screens.gameOver` |
