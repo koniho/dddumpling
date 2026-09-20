@@ -612,9 +612,4 @@ final class Screens extends Draw {
         if (BuildFlags.DEVELOPER) PlayerSettings.draw(p,c,L);
     }
 
-    /** One decimal place without String.format, which is not worth the cost per frame. */
-    static String fmtSpeed(float v) {
-        int tenths = Math.round(v * 10f);
-        return (tenths / 10) + "." + (tenths % 10);
-    }
 }

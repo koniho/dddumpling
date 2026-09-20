@@ -72,8 +72,8 @@ final class TestCaveBand extends Check {
         check("winning parade eventually resumes cave",c.state==GameCore.PLAY && !c.band.active);
         c=TestCave.game(L);Transport ear=new Transport();c.sound=ear;Interlude.enterBonus(c,L);c.cart.stop();c.band.begin(c);
         c.update(5,L);check("audio preparation freezes chart",c.band.position==0);
-        ear.position=CaveSong.at(c.band.song,0);c.kidsRun=true;c.speed=2f;c.update(.01f,L);
-        check("audio clock ignores game speed and kids slow motion",c.band.position==ear.position);
+        ear.position=CaveSong.at(c.band.song,0);c.kidsRun=true;c.update(.01f,L);
+        check("audio clock ignores kids traversal speed",c.band.position==ear.position);
         c.tapBonus(c.band.glyph[0]);check("live input samples transport and plays guitar",ear.notes==1);
         ear.position=CaveSong.at(c.band.song,4);c.update(.01f,L);
         check("frame stall expires skipped notes",c.band.misses>0 && c.band.position==ear.position);

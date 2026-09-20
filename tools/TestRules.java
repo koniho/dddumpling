@@ -166,34 +166,30 @@ final class TestRules extends Check {
         float spawn10 = c.spawnInterval();
         for (int stage = 1; stage <= 10; stage++) {
             check("early spawn timing unchanged at stage " + stage,
-                    Math.abs(Pacing.spawnInterval(stage, 1f)
+                    Math.abs(Pacing.spawnInterval(stage)
                             - (2.5f - Pacing.ramp(stage) * 0.13f)) < 0.001f);
         }
         c.stage = 11;
         check("stage 11 provides more breathing room", Math.abs(c.spawnInterval() - 2.05f*Pacing.lessonRelief(11)) < 0.001f);
         float previous = spawn10;
         for (int stage = 11; stage <= 40; stage++) {
-            float interval = Pacing.spawnInterval(stage, 1f) / Pacing.lessonRelief(stage);
+            float interval = Pacing.spawnInterval(stage) / Pacing.lessonRelief(stage);
             check("late releases ease smoothly and stay capped at stage " + stage,
                     interval >= previous && interval <= 2.751f);
-            check("speed setting scales late release timing at stage " + stage,
-                    Math.abs(Pacing.spawnInterval(stage, 1.5f) * 1.5f / Pacing.lessonRelief(stage) - interval) < 0.001f);
             previous = interval;
         }
-        float previousFall = Pacing.travelSeconds(10, 1f);
+        float previousFall = Pacing.travelSeconds(10);
         for (int stage = 11; stage <= 60; stage++) {
-            float fall = Pacing.travelSeconds(stage, 1f) / Pacing.lessonRelief(stage);
+            float fall = Pacing.travelSeconds(stage) / Pacing.lessonRelief(stage);
             check("late speed rises gradually at stage " + stage,
                     fall <= previousFall && previousFall - fall <= 0.195f && fall >= 7.5f);
             check("late stages keep the stage-ten word budget at stage " + stage,
                     Pacing.stageQuota(stage) == Pacing.stageQuota(10));
-            check("speed setting still scales fall time at stage " + stage,
-                    Math.abs(Pacing.travelSeconds(stage, 1.5f) * 1.5f / Pacing.lessonRelief(stage) - fall) < 0.001f);
             previousFall = fall;
         }
         for (int stage = 1; stage <= 10; stage++) {
             check("early fall timing unchanged at stage " + stage,
-                    Math.abs(Pacing.travelSeconds(stage, 1f)
+                    Math.abs(Pacing.travelSeconds(stage)
                             - (15f - Pacing.ramp(stage) * 1.05f)) < 0.001f);
             check("early word quota unchanged at stage " + stage,
                     Pacing.stageQuota(stage) == 5 + (int)((Pacing.ramp(stage) + 1f) / 2f));

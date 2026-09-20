@@ -13,7 +13,6 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     private static final String PREFS = "hexatype";
     private static final String KEY_BEST = "best";
-    private static final String KEY_SPEED = "speed";
     private static final String KEY_COLLECTED = "collected";
     private static final String KEY_COLLECT_TOTAL = "collectTotal";
     private static final String KEY_STEAMER_OPENS = "steamerOpens";
@@ -181,14 +180,6 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     @Override public int loadPlayerSettings() { return prefs.getInt("playerSettings", PlayerSettings.DEFAULT); }
     @Override public void savePlayerSettings(int value) { prefs.edit().putInt("playerSettings", value).apply(); }
-
-    @Override public float loadSpeed() {
-        return prefs.getFloat(KEY_SPEED, 1f);
-    }
-
-    @Override public void saveSpeed(float speed) {
-        prefs.edit().putFloat(KEY_SPEED, speed).apply();
-    }
 
     @Override public long loadCollected() {
         return prefs.getLong(KEY_COLLECTED, 0L);

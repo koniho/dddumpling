@@ -2334,6 +2334,11 @@ final class Boss {
 
     /** Returns how many visible boss threats reached the deck this frame. */
     int update(float dt, Layout L, Random rnd) {
+        return update(dt, dt, L, rnd);
+    }
+
+    // Action/animation time stays separate from Kids Mode projectile flight.
+    int update(float dt, float projectileDt, Layout L, Random rnd) {
         if (kind < 0) return 0;
         hurt = Math.max(0f, hurt - dt * 2.6f);
         for (int g = 0; g < slimeBlobPulse.length; g++)
@@ -2428,7 +2433,7 @@ final class Boss {
 
         // Above both early returns: a volley already in the air still arrives. Cleared on the frame
         // the boss is beaten, so nothing lands after the burst.
-        int hits = ageBolts(dt);
+        int hits = ageBolts(projectileDt);
 
         if (beaten) {
             leaveT = Math.max(0f, leaveT - dt);

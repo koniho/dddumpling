@@ -52,7 +52,8 @@ both partner keys within 200 ms. MULTI is retired from the offered powers.
 
 Player settings, available from the title and in-run stage readout, provide independent music
 and effects volume/mute controls, the privacy policy, and Kids Mode. Kids Mode applies to the
-next run: slower play, four keys, short unstacked words, and more time for linked friends;
+next run: slower enemy and projectile traversal, four keys, short unstacked words, and more time for linked friends;
+boss actions, animations, and minigames keep normal timing;
 lives and game over remain. The title's What's new steamer opens the release history and demos.
 
 ## Where to look

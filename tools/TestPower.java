@@ -1336,13 +1336,6 @@ final class TestPower extends Check {
                 Math.abs((e.y - before) - slowStep) < 0.01f);
         check("fall rate is back to normal", c.fallRate() == 1f);
 
-        // The player's own speed setting still compounds with it.
-        c.setSpeed(GameCore.SPEED_MAX);
-        float fastTravel = c.travelSeconds();
-        c.setSpeed(GameCore.SPEED_MIN);
-        check("the speed setting is independent of the frenzy",
-                c.travelSeconds() > fastTravel);
-
         // Dying mid-frenzy must end it. updatePower only runs during PLAY, so without an
         // explicit teardown the mode stayed live and the driven music carried on into the
         // game-over screen.
