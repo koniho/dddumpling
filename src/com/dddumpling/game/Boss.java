@@ -147,7 +147,7 @@ final class Boss {
 
     /** -1 when there is no boss. Also the index into every table above. */
     int kind = -1;
-    private boolean rosterFull = true;
+    boolean rosterFull = true;
     float hp, hpMax;
     /** Seconds the fight has been running, and of the arrival card and the exit. */
     float age, intro, leaveT;
@@ -237,6 +237,10 @@ final class Boss {
     int octoArms, octoTarget = -1, octoAttackArm = -1, octoCaptured = -1, disabledKeys;
     int octoLashArm = -1, octoDyingArm = -1, octoVulnerableArm = -1, octoEscapeArm = -1;
     int octoFlurryLeft;
+    int octoThrowsLeft, octoThrowArm = -1, octoThrowGlyph = -1;
+    int octoThrowArm2 = -1, octoThrowGlyph2 = -1;
+    float octoThrowT;
+    boolean octoThrowReleased;
     float octoReach, octoReturn, octoPause, octoLash, octoDeath;
     float octoSweep, octoCharge, octoCoil, octoDragX, octoDragY, octoTaunt, octoEat, octoLean;
     float octoDragTime, octoEscape, octoFlurryT;
@@ -292,10 +296,15 @@ final class Boss {
         return n > 3 ? 3 : n;
     }
 
-    /** 0..1 of how wound up the enrage is; 0 until {@link #ENRAGE_AT}. */
+    static float enrageAt(int kind) {
+        // Eleven authored throws add recovery time to the eight-arm fight.
+        return kind == OCTOPUS ? 40f : ENRAGE_AT;
+    }
+
+    /** 0..1 of the visual enrage warning after this fight's time allowance. */
     float enrage() {
-        if (!fighting() || age <= ENRAGE_AT) return 0f;
-        float t = (age - ENRAGE_AT) / ENRAGE_RAMP;
+        if (!fighting() || age <= enrageAt(kind)) return 0f;
+        float t = (age - enrageAt(kind)) / ENRAGE_RAMP;
         return t > 1f ? 1f : t;
     }
 
@@ -375,6 +384,7 @@ final class Boss {
         octoReach = -1f; octoReturn = octoLash = octoDeath = 0f; octoPause = 0.75f;
         octoSweep = octoCharge = octoCoil = octoDragX = octoDragY = octoTaunt = octoEat = octoLean = 0f;
         octoDragTime = octoEscape = octoFlurryT = 0f; octoFlurryLeft = 0;
+        OctoThrow.reset(this);
         octoPlaced = octoWave = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
         octoDragStarted = octoDragCanDamage = false;
         resetDividePieces(rnd);
@@ -449,6 +459,7 @@ final class Boss {
         octoReach = -1f; octoReturn = octoPause = octoLash = octoDeath = 0f;
         octoSweep = octoCharge = octoCoil = octoDragX = octoDragY = octoTaunt = octoEat = octoLean = 0f;
         octoDragTime = octoEscape = octoFlurryT = 0f; octoFlurryLeft = 0;
+        OctoThrow.reset(this);
         octoPlaced = octoWave = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
         octoDragStarted = octoDragCanDamage = false;
         for (int i = 0; i < DIVIDE_NODES; i++) {
@@ -1075,6 +1086,7 @@ final class Boss {
             }
             if (!torn) return PART;
             octoArms &= ~(1 << arm);
+            OctoThrow.torn(this);
             octoDyingArm = arm;
             if (body != null) {
                 float recoilX = body.centreX() - hitX;
@@ -1233,6 +1245,7 @@ final class Boss {
         if (hp <= 0f) {
             hp = 0f;
             beaten = true;
+            OctoThrow.reset(this);
             leaveT = LEAVE;
             defeatBeat = 0;
             defeatStartW = body == null ? 0f : body.spanX();
@@ -1392,6 +1405,7 @@ final class Boss {
             octoPlaced = true;
         }
 
+        OctoThrow.update(this, dt, rnd);
         if (octoLash > 0f) {
             octoLash += dt / 0.46f;
             if (!octoLashLanded && octoLash >= 0.64f) {
@@ -1430,7 +1444,7 @@ final class Boss {
                 octoCoil = Math.min(1f, octoCoil + dt / 0.78f);
             } else if (octoTarget < 0) {
                 octoPause -= dt;
-                if (octoPause <= 0f && octoArms != 0 && octoFlurryLeft == 0 && boltCount() == 0)
+                if (octoPause <= 0f && octoArms != 0 && octoFlurryLeft == 0 && !OctoThrow.busy(this) && boltCount() == 0)
                     startOctoReach(rnd);
             } else if (octoSweep < 1f) {
                 octoSweep = Math.min(1f, octoSweep + dt / 0.68f);
@@ -1472,6 +1486,7 @@ final class Boss {
         }
 
         poseOctopus(dt, L);
+        OctoThrow.release(this);
     }
 
     private void poseOctopus(float dt, Layout L) {
@@ -1750,6 +1765,15 @@ final class Boss {
                     ty += after * after * bodyR(L) * 0.70f * u;
                 }
 
+                if (!beaten && OctoThrow.usesArm(this, a)) {
+                    float blend = OctoThrow.blend(this);
+                    float bend = u * u;
+                    tx += (OctoThrow.handX(this, L, a) - restTipX) * bend * blend;
+                    ty += (OctoThrow.handY(this, L) - restTipY) * bend * blend;
+                    tx += (a < 4 ? -1f : 1f) * (float)Math.sin(u * Math.PI)
+                            * bodyR(L) * .65f * blend;
+                }
+
                 tx += (float) Math.sin(age * 0.43f + a * 2.1f + u * 5.2f)
                         * bodyR(L) * 0.018f * u;
                 float spring = a == octoDyingArm && octoDeath < 0.30f ? 68f : 26f;
@@ -1758,7 +1782,7 @@ final class Boss {
                 octoVY[a][n] = (octoVY[a][n] + (ty - octoY[a][n]) * dt * spring) * damping;
                 octoX[a][n] += octoVX[a][n] * dt;
                 octoY[a][n] += octoVY[a][n] * dt;
-                if (!beaten && a == octoVulnerableArm && held != -3 && n > 0) {
+                if (!beaten && (a == octoVulnerableArm && held != -3 || OctoThrow.usesArm(this, a)) && n > 0) {
                     // The ordinary tentacle spring deliberately lags idle motion, but that erased
                     // this fast half-screen gesture. Track the authored wave directly, retaining
                     // some elasticity along the arm and none at the catch point.
@@ -1845,6 +1869,7 @@ final class Boss {
     static final float BOLT_STAGGER = 0.18f;
     /** Live flag, letter, launch point and 0..1 of the way down, per bolt. */
     final boolean[] blive = new boolean[MAX_BOLTS];
+    final boolean[] bfast = new boolean[MAX_BOLTS];
     final int[] bglyph = new int[MAX_BOLTS];
     final float[] bsx = new float[MAX_BOLTS];
     final float[] bsy = new float[MAX_BOLTS];
@@ -1912,6 +1937,7 @@ final class Boss {
         promptT = promptDelay();
         for (int i = 0; i < BOLTS; i++) {
             blive[i] = true;
+            bfast[i] = false;
             // Spread round the six rather than drawn independently — a repeat would collapse the
             // volley, and the spacing keeps the three keys apart on the deck.
             int offset = rosterFull ? i * 2 : (i == 2 ? 1 : i * 2);
@@ -1978,6 +2004,7 @@ final class Boss {
         for (int slot = 0; slot < MAX_BOLTS && made < count; slot++) {
             if (blive[slot]) continue;
             blive[slot] = true;
+            bfast[slot] = false;
             bglyph[slot] = Roster.at(rosterFull,
                     (Roster.ordinal(rosterFull, first) + made) % Roster.count(rosterFull));
             bhp[slot] = bhpMax[slot] = 1;
@@ -2158,6 +2185,7 @@ final class Boss {
             }
         } else glyph = randomGlyph(rnd);
         blive[slot] = true;
+        bfast[slot] = false;
         bglyph[slot] = glyph;
         bhp[slot] = bhpMax[slot] = 1;
         bt[slot] = 0f;
@@ -2190,7 +2218,7 @@ final class Boss {
         int landed = 0;
         for (int i = 0; i < MAX_BOLTS; i++) {
             if (!blive[i]) continue;
-            bt[i] += dt / BOLT_TIME;
+            bt[i] += dt / (bfast[i] ? BOLT_TIME * .5f : BOLT_TIME);
             if (bt[i] < 1f) continue;
             blive[i] = false;
             landed++;
@@ -2201,6 +2229,7 @@ final class Boss {
     private void clearBolts() {
         for (int i = 0; i < MAX_BOLTS; i++) {
             blive[i] = false;
+            bfast[i] = false;
             bt[i] = 0f;
             bhp[i] = bhpMax[i] = 0;
         }

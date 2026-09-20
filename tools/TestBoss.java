@@ -16,7 +16,7 @@ final class TestBoss extends Check {
      * and {@code advanceStage} starts the fight — rather than by calling {@code begin} directly, so
      * what these assertions exercise is the wiring as well as the rules.
      */
-    private static GameCore enterBoss(Layout L, int kind, long seed) {
+    static GameCore enterBoss(Layout L, int kind, long seed) {
         GameCore c = new GameCore(new Mem(), seed);
         c.startGame();
         c.stage = Boss.EVERY;
@@ -456,9 +456,9 @@ final class TestBoss extends Check {
         for (int k = 0; k < Boss.COUNT; k++) {
             float took = fightSeconds(L, k, 800L + k);
             System.out.printf("    %-10s takes a steady hand %.0fs of its %.0fs enrage warning%n",
-                    Boss.NAMES[k], took, Boss.ENRAGE_AT);
+                    Boss.NAMES[k], took, Boss.enrageAt(k));
             check(Boss.NAMES[k] + " falls to a hand with limits", took >= 0f);
-            check("well inside the enrage warning", took >= 0f && took < Boss.ENRAGE_AT);
+            check("well inside the enrage warning", took >= 0f && took < Boss.enrageAt(k));
         }
     }
 
