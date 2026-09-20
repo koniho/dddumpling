@@ -61,7 +61,7 @@ final class LinkedPairs {
         }
         e.linkStrain = other.linkStrain = 1f;
         e.linkWaiting = true;
-        e.linkLeft = c.kidsRun ? .6f : WINDOW;
+        e.linkLeft = WINDOW;
         e.pos = e.word.length;
         e.done = 0;
         e.dying = false;

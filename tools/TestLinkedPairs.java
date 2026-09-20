@@ -108,15 +108,16 @@ final class TestLinkedPairs extends Check {
         c.destroyWord(a, 0, 0, L);
         check("old projectiles and repeated clears cannot score twice", c.score == score && c.resolvedThisStage == 1);
 
+        for (boolean kids : new boolean[]{false,true}) {
         for (float scale : new float[] {0.45f, 1f}) {
             for (float delay : new float[] {0f, 0.1f, 0.199f, 0.2f, 0.201f, 0.4f}) {
                 for (int reverse = 0; reverse < 2; reverse++) {
-                    c = wave(L, 16);
+                    c = wave(L, 16);c.kidsRun=kids;
                     a = c.enemies.get(reverse); b = a.link;
                     c.tapKey(a.word[0], L);
                     c.update(delay * scale, delay, L);
                     c.tapKey(b.word[0], L);
-                    check("fixed 200ms input window at simulation scale " + scale + " delay " + delay + " order " + reverse,
+                    check("fixed 200ms input window kids=" + kids + " simulation scale " + scale + " delay " + delay + " order " + reverse,
                             a.destroyed == (delay <= 0.2f) && b.destroyed == (delay <= 0.2f));
                     if (delay > 0.2f) {
                         check("late second key starts a fresh attempt", a.typeable() && b.linkWaiting && c.score == 0);
@@ -125,6 +126,7 @@ final class TestLinkedPairs extends Check {
                     }
                 }
             }
+        }
         }
         c = wave(L, 16); a = c.enemies.get(0); b = a.link;
         c.tapKey(a.word[0], L);

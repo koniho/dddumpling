@@ -467,12 +467,17 @@ Run), **Powers** (frenzies and debuffs), **Minigames** (Star Path, Steamer, Cart
 (lands, release book, collection). Stage changes, End Run and playtests are disabled outside active
 play, including interludes; settings never starts a run implicitly.
 
-**Kids Mode** keeps lives and game over, slows enemy and projectile traversal to 45% speed, keeps four keys and two-letter
-unstacked words with early-stage pacing, and grants 600 ms for linked pairs. Boss actions, animations,
+**Kids Mode** keeps lives and game over, slows enemy and projectile traversal to 45% speed, keeps four keys and early-stage movement/spawn pacing.
+Words grow with the stage, including multipress keys, with a six-press total cap.
+Linked pairs use the same 200 ms window as normal mode. Boss actions, animations,
 sequences, and minigame clocks run at normal speed. Regular play returns on
 the next run after switching it off. `PlayerSettings`, `SettingsArt`, and `SettingsInput` own the
 public preferences, character handles, and shared native input; `SettingsUi` and `DevSettings` own
 the developer groups. See [Game timing](docs/game-timing.md) for the multiplier boundaries.
+
+Kids Mode always grants five seconds of Steamer mash time and caps Star Path at 30%
+of its normal difficulty ladder (level 3 of 10). Saved Star Path progression is preserved
+for normal mode; easier saved levels stay easier. Animation and flight clocks remain normal.
 
 
 ## Cart Rush interlude

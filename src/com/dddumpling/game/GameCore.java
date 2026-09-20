@@ -922,6 +922,7 @@ final class GameCore {
      * swipe is not damage, it is what you spent to avoid damage.
      */
     float mashEarned() {
+        if (kidsRun) return MASH_PERFECT;
         if (pushUsed) return MASH_PANIC;
         if (hurtThisStage > 0) return MASH_HURT;
         return perfectRound() ? MASH_PERFECT : MASH_UNHURT;
@@ -1639,13 +1640,15 @@ final class GameCore {
 
     int maxEnemies() { return Pacing.maxEnemies(pacingStage()); }
 
-    int maxWordLen() { return Pacing.maxWordLen(pacingStage()); }
+    int maxPresses() { return kidsRun ? 6 : Pacing.MAX_PRESSES; }
 
-    int minWordLen() { return Pacing.minWordLen(pacingStage()); }
+    int maxWordLen() { return Math.min(maxPresses(), Pacing.maxWordLen(stage)); }
+
+    int minWordLen() { return Pacing.minWordLen(stage); }
 
     int stageQuota() { return Pacing.stageQuota(pacingStage()); }
 
-    float stackChance() { return Pacing.stackChance(pacingStage()); }
+    float stackChance() { return Pacing.stackChance(stage); }
 
     /** Concurrent words allowed now. A frenzy lets more pile up, tapering with the ramp. */
     int crowdCap() {
@@ -1707,6 +1710,7 @@ final class GameCore {
         Pause.resume(this);
         state = PLAY;
         kidsRun = preferences.kids;
+        stars.difficultyCap = kidsRun ? StarPath.KIDS_DIFFICULTY : StarPath.MAX_DIFFICULTY;
         runFullRoster = !kidsRun && fullRoster;
         time = 0;
         score = 0;
@@ -3235,7 +3239,7 @@ final class GameCore {
     private boolean spawn(Layout L) {
         Enemy e = new Enemy();
         int len = minWordLen() + rnd.nextInt(maxWordLen() - minWordLen() + 1);
-        Words.fill(e, len, stackChance(), rnd, playRosterFull());
+        Words.fill(e, len, stackChance(), rnd, playRosterFull(), maxPresses());
 
         float half = L.wordWidth(len) / 2f;
         e.sway = Math.min(0.035f * L.w, Math.max(0f, (L.playRight - L.playLeft) / 2f - half - 4f));

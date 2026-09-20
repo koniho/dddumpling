@@ -3,7 +3,32 @@ package com.dddumpling.game;
 /** Word content: stacked letters, destruction, entrance and letter persistence. */
 final class TestWords extends Check {
 
+    private static void kidsWords(Layout L) {
+        GameCore c=new GameCore(new Mem(),581L);c.preferences.kids=true;c.startGame();
+        for(int stage:new int[]{1,4,9,16,30,80}) {
+            boolean capped=true,roster=true,stack=false,longer=false,fullBudget=false;
+            for(int trial=0;trial<200;trial++) {
+                c.stage=stage;c.stageGap=c.spawnTimer=0;c.spawnedThisStage=1;c.enemies.clear();
+                c.update(.001f,L);
+                for(GameCore.Enemy word:c.enemies) {
+                    capped &= word.totalPresses()<=6;
+                    longer |= word.word.length>2;
+                    fullBudget |= word.totalPresses()==6;
+                    for(int k=0;k<word.word.length;k++) {
+                        roster &= Roster.active(false,word.word[k]);
+                        stack |= word.need[k]>1;
+                    }
+                }
+            }
+            check("kids generated words obey six presses and four keys at "+stage,capped && roster);
+            if(stage==1) check("kids opening words stay simple",!stack && !longer);
+            if(stage>=9) check("later kids words grow, use stacks, and reach six presses at "+stage,
+                    stack && longer && fullBudget);
+        }
+    }
+
     static void stackedLetters(Layout L) {
+        kidsWords(L);
         group("stacked letters");
         GameCore c = new GameCore(new Mem(), 51L);
         c.startGame();

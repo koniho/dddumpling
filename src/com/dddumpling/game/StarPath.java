@@ -6,12 +6,14 @@ import java.util.Random;
 final class StarPath {
     static final int COUNT = 20;
     static final int MAX_DIFFICULTY = 10;
+    static final int KIDS_DIFFICULTY = MAX_DIFFICULTY * 3 / 10;
     static final int WIN_STEP = 1;
     // Continue the same +0.6 bend rate per level through ten successful courses.
     /** Saved difficulty level; keeps the historical wins storage key. */
     int wins;
+    int difficultyCap = MAX_DIFFICULTY;
 
-    float bendRate() { return 1f + 0.6f * Math.max(0, Math.min(MAX_DIFFICULTY, wins)); }
+    float bendRate() { return 1f + 0.6f * Math.max(0, Math.min(difficultyCap, wins)); }
 
     void recordWin() { wins = Math.min(MAX_DIFFICULTY, Math.max(0, wins) + WIN_STEP); }
 

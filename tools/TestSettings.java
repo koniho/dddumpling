@@ -48,8 +48,32 @@ final class TestSettings extends Check {
         check("kids cart ride clock runs normally",Math.abs(c.cart.elapsed-.1f)<.001f);
     }
 
+    private static void kidsMinigames(Layout L) {
+        Mem store=new Mem();store.starWins=StarPath.MAX_DIFFICULTY;
+        GameCore c=new GameCore(store,583L);c.preferences.kids=true;c.startGame();
+        for(boolean panic:new boolean[]{false,true}) for(int hurt:new int[]{0,1}) for(int misses:new int[]{0,1}) {
+            c.pushUsed=panic;c.hurtThisStage=hurt;c.missesThisStage=misses;c.earnedMash=1f;
+            c.starNext=false;Interlude.enterBonus(c,L);
+            check("kids always earns five mash seconds",c.mashEarned()==5f && c.bonusRollEnd-GameCore.MASH_END==5f);
+        }
+        c.starNext=true;Interlude.enterBonus(c,L);
+        StarPath cap=new StarPath();cap.wins=StarPath.KIDS_DIFFICULTY;
+        c.stars.reroll(new java.util.Random(584L));cap.make(new java.util.Random(584L));
+        check("kids course uses thirty percent difficulty at saved maximum",
+                c.stars.bendRate()==cap.bendRate() && java.util.Arrays.equals(c.stars.sx,cap.sx));
+        check("kids cap preserves saved normal difficulty",c.stars.wins==StarPath.MAX_DIFFICULTY
+                && store.starWins==StarPath.MAX_DIFFICULTY);
+        c.stars.wins=1;
+        check("kids cap preserves easier courses",Math.abs(c.stars.bendRate()-1.6f)<.001f);
+        c.stars.wins=StarPath.KIDS_DIFFICULTY;c.stars.recordWin();
+        check("kids wins cannot exceed effective difficulty cap",c.stars.bendRate()==cap.bendRate());
+        c.preferences.kids=false;c.startGame();c.stars.wins=StarPath.MAX_DIFFICULTY;
+        check("normal run restores full star difficulty",Math.abs(c.stars.bendRate()-7f)<.001f);
+    }
+
     static void all(Layout L) {
         kidsTiming(L);
+        kidsMinigames(L);
         group("player settings");
         GameCore title=new GameCore(new Mem(),203L);
         check("title settings hit target follows danger line",PrivacyUi.hit(title,L,L.w-2f*L.unit,L.dangerY));
@@ -110,7 +134,9 @@ final class TestSettings extends Check {
         check("changing mode waits for next run",c.kidsRun);
         for(int stage:new int[]{1,9,16,30}) {
             c.stage=stage;
-            check("kids words stay short and unstacked at stage "+stage,c.maxWordLen()==2 && c.stackChance()==0f && c.maxEnemies()==3);
+            check("kids word complexity follows the stage with a six-press cap "+stage,
+                    c.maxWordLen()==Pacing.maxWordLen(stage) && c.stackChance()==Pacing.stackChance(stage)
+                    && c.maxPresses()==6 && c.maxEnemies()==3);
         }
         c.unlockRoster();check("kids run cannot promote to six keys",!c.runFullRoster);
         c.startGame();check("normal mode restores next run",!c.kidsRun && c.maxWordLen()==Pacing.maxWordLen(c.stage));
