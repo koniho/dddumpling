@@ -120,6 +120,8 @@ Dir.mktmpdir("ios-fastlane-ipa-") do |root|
   ios_upload_testflight!(ipa_path: ipa_path)
   upload_options = $calls.assoc(:upload_to_testflight).last
   assert(upload_options[:ipa] == ipa_path, "upload uses the archived IPA")
+  notes = File.read(File.expand_path("../ios/store/en-US/what_to_test.txt", __dir__)).strip
+  assert(!notes.empty? && upload_options[:changelog] == notes, "upload includes the reviewed TestFlight notes")
   assert(!upload_options[:distribute_external] && upload_options[:skip_waiting_for_build_processing], "upload avoids external distribution")
 end
 
@@ -141,7 +143,7 @@ assert_supported_options(Fastlane::Actions::SetupCiAction, %i[force keychain_nam
 assert_supported_options(Fastlane::Actions::MatchAction, %i[type readonly app_identifier team_id git_url keychain_name keychain_password api_key])
 assert_supported_options(Fastlane::Actions::UpdateCodeSigningSettingsAction, %i[path use_automatic_signing targets build_configurations team_id code_sign_identity profile_name])
 assert_supported_options(Fastlane::Actions::BuildAppAction, %i[project scheme configuration xcargs export_method archive_path output_directory output_name export_options])
-assert_supported_options(Fastlane::Actions::UploadToTestflightAction, %i[api_key ipa distribute_external skip_waiting_for_build_processing])
+assert_supported_options(Fastlane::Actions::UploadToTestflightAction, %i[api_key ipa changelog distribute_external skip_waiting_for_build_processing])
 
 {
   app_store_connect_api_key: Fastlane::Actions::AppStoreConnectApiKeyAction,
