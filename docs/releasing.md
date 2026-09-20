@@ -30,6 +30,7 @@ Use the same grouping in the in-game notes and destination release summaries.
 - Coalesce redundant entries before approval: one entry per distinct player-facing change. Fold a new feature’s related behavior, polish, and fixes into that entry; keep the copy brief. Put only remaining standalone fixes under one bug icon, omitting it when none remain. See [Combine redundant entries](release-notes.md#combine-redundant-entries).
 - Include the collected misc points in the interactive review as one entry, using the sparkle-dumpling illustration and `autoReset: false`.
 - Decide `autoReset` for every entry while creating the notes; see [reset guidance](release-notes.md#decide-whether-the-demo-resets). Verify the choice by activating each demo and waiting more than two seconds.
+- Generate and open the [release icon review image](#release-icon-review-image) before requesting final approval.
 - Review the popup renders and interactions. Confirm the newest in-game release has the planned shared release version.
 - Write the Play summary in `build/release-notes.txt` using the same reviewed facts; keep it within the existing 500-character limit.
 - Update `ios/store/en-US/what_to_test.txt` for TestFlight, and prepare the intended GitHub/itch release copy before tagging when those channels are in scope.
@@ -64,3 +65,22 @@ git push origin v0.1.20
 ```
 
 Use the actual release version. Verify the tag matches the manifest and notes, and monitor the Android, iOS, and itch workflows requested for the release. A successful build or tag push alone does not confirm an upload or tester availability. Use the platform publishing docs for retries; don't move a published tag to repair missing notes or reuse a consumed build/version code.
+
+## Release icon review image
+
+Before asking for final release-note approval, generate a sheet of the proposed release's
+icons from the actual game renderer, including animation samples and each reset choice:
+
+```sh
+python3 tools/release-notes.py review-image build/release-0.1.23.json
+```
+
+Use the intended version's draft path. This does not alter the catalog or prepare a version.
+Review the PNG together with the notes and destination summaries. Regenerate after icon or
+reset edits. On Android the command requests the system image viewer through a readable content URI.
+Confirm the image actually appears; a successful command alone does not prove it opened.
+If no viewer appears, show the PNG inline for review and retry opening it in Files.
+Do this immediately after generation, before approval.
+Use `--no-open` only for CI or when opening applications is unavailable. On other systems,
+open the printed PNG path. The sheet shows artwork samples; also check interactive demos
+in the release book and wait more than two seconds to verify their reset choices.

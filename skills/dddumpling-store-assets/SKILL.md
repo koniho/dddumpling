@@ -72,6 +72,15 @@ Use docs/release-notes.md for the human-editable in-game catalog; every feature 
 phase and player purpose, with fixes grouped under one bug icon. Include the JSON and generated
 copy in the release commit and run tools/release-notes.py check --version <version> before tagging. Read app-store/play-publishing.md for the current target and account setup.
 
+Before step 3, follow [the interactive release review](../../docs/releasing.md).
+Generate the proposed release icon sheet with
+`python3 tools/release-notes.py review-image build/release-<version>.json`.
+On Android, request the system image viewer immediately; the command does this automatically.
+Confirm it actually appears. If it does not, show the PNG inline and retry opening in Files. Review the image, grouped notes, destination
+summaries, and every automatic-reset choice with the user. Wait for explicit approval before
+version preparation, tagging, or publishing. Regenerate the sheet after artwork/reset edits.
+
+
 1. Run `python3 tools/prepare-release.py context --output build/release-context.json`.
    Confirm the base is the last distributed version. For a manually uploaded release,
    pass `--since <commit-or-tag>`: the nearest Git tag may be older than the actual release.

@@ -2,14 +2,18 @@
 """Edit player-facing release notes without editing Java. See docs/release-notes.md."""
 import argparse
 import json
+import os
+import shutil
+import subprocess
 from pathlib import Path
 import re
 import textwrap
+from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = Path('release-notes/releases.json')
 OUTPUT = Path('src/com/dddumpling/game/ReleaseContent.java')
-ICONS = ('travel', 'stars', 'bugs', 'shuffle', 'disguise', 'slime', 'pair', 'flex', 'team', 'news', 'flurry', 'misc', 'settings')
+ICONS = ('travel', 'stars', 'bugs', 'shuffle', 'disguise', 'slime', 'pair', 'flex', 'team', 'news', 'flurry', 'misc', 'settings', 'swipe')
 ART = {'travel': 8, 'shuffle': 9, 'pair': 9}
 
 
@@ -118,6 +122,41 @@ def load(path):
     return json.loads(path.read_text(encoding='utf-8'))
 
 
+def review_image(root, draft, open_android=True):
+    """Compile current game artwork against the draft, without changing the catalog."""
+    validate({'releases': [draft]})
+    build = root / 'build/release-review'
+    build.mkdir(parents=True, exist_ok=True)
+    generated = build / 'ReleaseContent.java'
+    generated.write_text(render({'releases': [draft]}), encoding='utf-8')
+    pure = re.search(r'PURE="(.*?)"', (root / 'check.sh').read_text(), re.S).group(1).split()
+    sources = [str(root / name) for name in pure if name != str(OUTPUT)]
+    subprocess.run(['sh', 'tools/build-flags.sh', str(build / 'flags'), 'false'], cwd=root, check=True)
+    subprocess.run(['javac', '-nowarn', '-d', str(build), *sources,
+                    str(generated), str(build / 'flags/com/dddumpling/game/BuildFlags.java'),
+                    *[str(root / 'tools' / (name + '.java')) for name in
+                      ('RasterPainter', 'Font', 'Png', 'ReleaseReview')]], cwd=root, check=True)
+    output = root / ('build/release-' + draft['version'] + '-icons.png')
+    subprocess.run(['java', '-cp', str(build), 'com.dddumpling.game.ReleaseReview', str(output)],
+                   cwd=root, check=True)
+    print(f'Release icon review: {output}', flush=True)
+    if open_android and (os.environ.get('ANDROID_ROOT') or Path('/system/bin/app_process').exists()):
+        opener = shutil.which('termux-open')
+        if opener:
+            activity = shutil.which('am')
+            if activity:
+                # Direct launch reports failures; termux-open hides its broadcast result.
+                uri = 'content://com.termux.files' + quote(str(output), safe='/')
+                subprocess.run([activity, 'start', '-a', 'android.intent.action.VIEW',
+                                '-d', uri, '-t', 'image/png', '--grant-read-uri-permission'], check=True)
+            else:
+                subprocess.run([opener, '--view', '--content-type', 'image/png', str(output)], check=True)
+            print('Requested Android image viewer; confirm the sheet is visible before review.')
+        else:
+            print('Android file viewer unavailable; open the PNG in Files manually.')
+    return output
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repo', type=Path, default=ROOT)
@@ -130,9 +169,15 @@ def main():
     new.add_argument('version')
     add = sub.add_parser('add', help='Add a completed draft as the newest release and sync')
     add.add_argument('draft', type=Path)
+    review = sub.add_parser('review-image', help='Render draft icons and open the Android file viewer')
+    review.add_argument('draft', type=Path)
+    review.add_argument('--no-open', action='store_true', help='Generate only (CI or desktop review)')
     args = parser.parse_args()
     root = args.repo.resolve()
     try:
+        if args.command == 'review-image':
+            review_image(root, load(args.draft), not args.no_open)
+            return
         if args.command == 'new':
             if not re.fullmatch(r'\d+\.\d+\.\d+', args.version):
                 raise ValueError('Use a version such as 0.1.20')
@@ -168,7 +213,7 @@ def main():
                 (root / SOURCE).write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
             (root / OUTPUT).write_text(generated, encoding='utf-8')
             print(f'Updated {OUTPUT}; review with: ./check.sh -q -s Visuals -f 103-release')
-    except (ValueError, OSError, KeyError, TypeError) as error:
+    except (ValueError, OSError, KeyError, TypeError, subprocess.CalledProcessError) as error:
         parser.exit(1, f'Release notes: {error}\n')
 
 
