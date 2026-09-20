@@ -55,9 +55,22 @@ final class TestHighScores extends Check {
         Interlude.awardBossPrize(c,Boss.SLIME);
         check("duplicate rewards count toward run haul",c.highScores.dumplings==rewards+1);
         c.state=GameCore.TITLE;c.pendingBonus=false;c.startFade=0;c.launchT=0;c.caseOpen=false;c.caseFade=0;
+        titleAttention(L);
         onePage(L);
         navigation(c,L);
         blurbs(L);
+    }
+    private static void titleAttention(Layout L) {
+        GameCore c=new GameCore(new Mem(),105L);
+        check("fresh title has no score attention",!c.highScores.unread);
+        c.startGame();c.score=500;c.lives=1;c.takeHit(L.w*.5f,L);
+        c.toTitle();
+        check("completed run calls attention on returning to title",c.highScores.unread && c.state==GameCore.TITLE);
+        c.highScoreScreen.show(c);
+        check("viewing scores acknowledges attention",c.highScoreScreen.open && !c.highScores.unread);
+        c.highScoreScreen.back(c);c.startGame();c.score=1;c.highScores.finish(c);c.toTitle();
+        check("lower scoring run also calls attention",c.highScores.unread);
+        c.startGame();check("starting next run clears attention",!c.highScores.unread);
     }
     private static void onePage(Layout L) {
         GameCore c=new GameCore(new Mem(),104L);

@@ -19,7 +19,18 @@ final class HighScoreScreen extends Draw {
     }
     void show(GameCore c) {
         if(!ReleaseNotes.available(c) || c.releaseNotes.open) return;
-        Pause.release(c);open=true;selected=-1;feedback(c);
+        Pause.release(c);c.highScores.unread=false;open=true;selected=-1;feedback(c);
+    }
+    static void titleGlow(Painter p,GameCore c,Layout L,float fade) {
+        if(!c.highScores.unread || c.settingsOpen || c.releaseNotes.open || c.highScoreScreen.open || c.storyOpen()) return;
+        float s=L.unit,font=type(s*.74f),y=L.h*.292f-font*.36f;
+        float pulse=.5f-.5f*(float)Math.cos(c.time*3.5f);
+        float width=Math.min(L.w*.42f,("BEST "+c.best).length()*font*.36f+s*.3f);
+        for(int i=6;i>0;i--) {
+            float spread=s*i*(.09f+.04f*pulse);
+            p.fillEllipse(L.w*.5f,y,width+spread,font*.55f+spread,
+                    fadeBy(GOLD,fade*(7-i)*.012f*(.25f+.75f*pulse)));
+        }
     }
     private void feedback(GameCore c) { if(c.sound!=null) c.sound.uiBloop(); }
     void back(GameCore c) {

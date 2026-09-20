@@ -23,6 +23,7 @@ final class HighScores {
     Run latestRun;
     int stages, dumplings, powers, swipes, bosses;
     private boolean recording;
+    boolean unread;
 
     static final class Run {
         final long id;
@@ -40,7 +41,7 @@ final class HighScores {
         int[] values() { return new int[]{score,stage,stages,dumplings,powers,swipes,bosses,
                 hits,misses,squishes,combo,best,land,kids?1:0,ending}; }
     }
-    void start() { stages=dumplings=powers=swipes=bosses=0;recording=true; }
+    void start() { stages=dumplings=powers=swipes=bosses=0;recording=true;unread=false; }
     void finish(GameCore c) {
         if(!recording) return;
         recording=false;
@@ -49,6 +50,7 @@ final class HighScores {
         int ending=c.lives>0?0:boss>=0?1+boss:5+Lands.forStage(c.stage);
         Run run=new Run(++latest,new int[]{Math.max(0,c.score),c.stage,stages,dumplings,powers,
                 swipes,bosses,c.hits,c.misses,c.squishes,c.maxCombo,Math.max(c.best,c.score),c.runStartLand,c.kidsRun?1:0,ending});
+        unread=true;
         latestRun=run;
         insert(run);
         if(c.store!=null) c.store.saveHighScores(encode());

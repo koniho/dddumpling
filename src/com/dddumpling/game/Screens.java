@@ -42,6 +42,7 @@ final class Screens extends Draw {
         float s = L.unit;
         float cx = L.w / 2f;
         bubblyTitle(p, c, L, cx, L.h * 0.100f, fade);
+        HighScoreScreen.titleGlow(p,c,L,fade*caseOut(c));
         p.text("BEST " + c.best, cx, L.h * 0.292f, type(s * 0.74f), fadeBy(ROSE, fade * caseOut(c)),
                 Painter.CENTER, true);
 
