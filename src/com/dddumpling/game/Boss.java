@@ -238,6 +238,7 @@ final class Boss {
     int octoLashArm = -1, octoDyingArm = -1, octoVulnerableArm = -1, octoEscapeArm = -1;
     int octoFlurryLeft;
     int octoThrowsLeft, octoThrowArm = -1, octoThrowGlyph = -1;
+    int octoThrowArm2 = -1, octoThrowGlyph2 = -1;
     float octoThrowT;
     boolean octoThrowReleased;
     float octoReach, octoReturn, octoPause, octoLash, octoDeath;
@@ -1764,10 +1765,10 @@ final class Boss {
                     ty += after * after * bodyR(L) * 0.70f * u;
                 }
 
-                if (!beaten && a == octoThrowArm) {
+                if (!beaten && OctoThrow.usesArm(this, a)) {
                     float blend = OctoThrow.blend(this);
                     float bend = u * u;
-                    tx += (OctoThrow.handX(this, L) - restTipX) * bend * blend;
+                    tx += (OctoThrow.handX(this, L, a) - restTipX) * bend * blend;
                     ty += (OctoThrow.handY(this, L) - restTipY) * bend * blend;
                     tx += (a < 4 ? -1f : 1f) * (float)Math.sin(u * Math.PI)
                             * bodyR(L) * .65f * blend;
@@ -1781,7 +1782,7 @@ final class Boss {
                 octoVY[a][n] = (octoVY[a][n] + (ty - octoY[a][n]) * dt * spring) * damping;
                 octoX[a][n] += octoVX[a][n] * dt;
                 octoY[a][n] += octoVY[a][n] * dt;
-                if (!beaten && (a == octoVulnerableArm && held != -3 || a == octoThrowArm) && n > 0) {
+                if (!beaten && (a == octoVulnerableArm && held != -3 || OctoThrow.usesArm(this, a)) && n > 0) {
                     // The ordinary tentacle spring deliberately lags idle motion, but that erased
                     // this fast half-screen gesture. Track the authored wave directly, retaining
                     // some elasticity along the arm and none at the catch point.
@@ -2213,7 +2214,7 @@ final class Boss {
         int landed = 0;
         for (int i = 0; i < MAX_BOLTS; i++) {
             if (!blive[i]) continue;
-            bt[i] += dt / BOLT_TIME;
+            bt[i] += dt / (kind == OCTOPUS ? BOLT_TIME * .5f : BOLT_TIME);
             if (bt[i] < 1f) continue;
             blive[i] = false;
             landed++;

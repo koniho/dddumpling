@@ -1614,6 +1614,13 @@ final class Preview {
             shot(dir, throwTags[pose], throwing, L, w, h, ss);
         }
 
+        GameCore pairThrow = TestOctoThrow.tear(L, 6);
+        pairThrow.stageBanner = pairThrow.rosterSceneT = 0f;
+        for (int i = 0; i < 48; i++) pairThrow.boss.update(DT, L, pairThrow.rnd);
+        shot(dir, "76r-octopulse-pair-windup", pairThrow, L, w, h, ss);
+        for (int i = 0; i < 15; i++) pairThrow.boss.update(DT, L, pairThrow.rnd);
+        shot(dir, "76s-octopulse-pair-release", pairThrow, L, w, h, ss);
+
         GameCore slimeRest = toBoss(L, Boss.SLIME, 539L, true);
         slimeRest.stageBanner = slimeRest.rosterSceneT = 0f;
         slimeRest.boss.body.reset(L.w * 0.5f, Boss.restY(L), Boss.bodyR(L), 2f);

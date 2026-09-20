@@ -1090,8 +1090,13 @@ final class BossScreen extends Draw {
 
     private static void drawThrowKey(Painter p, Layout L, Boss b, float fade) {
         if (b.beaten || b.octoThrowArm < 0 || b.octoThrowReleased) return;
-        int tip = Boss.OCTO_NODES - 1, g = b.octoThrowGlyph;
-        float x = b.octoX[b.octoThrowArm][tip], y = b.octoY[b.octoThrowArm][tip];
+        drawThrowKey(p, L, b, fade, b.octoThrowArm, b.octoThrowGlyph);
+        if (b.octoThrowArm2 >= 0) drawThrowKey(p, L, b, fade, b.octoThrowArm2, b.octoThrowGlyph2);
+    }
+
+    private static void drawThrowKey(Painter p, Layout L, Boss b, float fade, int arm, int g) {
+        int tip = Boss.OCTO_NODES - 1;
+        float x = b.octoX[arm][tip], y = b.octoY[arm][tip];
         float r = standardBoltR(L, 0f);
         int col = Glyph.COLOR[g];
         p.fillPoly(Glyph.hex(x, y, r), Glyph.withAlpha(col, (int)(96 * fade)));

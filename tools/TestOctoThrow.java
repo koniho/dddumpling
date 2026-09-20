@@ -20,7 +20,7 @@ final class TestOctoThrow extends Check {
             GameCore c = tear(L, removed);
             Boss b = c.boss;
             int expected = removed == 8 ? 0 : removed == 7 ? 3 : removed >= 5 ? 2 : 1;
-            int launches = 0, hits = 0, cleared = 0, lastLaunch = -1000;
+            int launches = 0, events = 0, hits = 0, cleared = 0, lastLaunch = -1000;
             boolean validArm = true, waiting = true, spaced = true, tipOrigin = true, wound = true;
             float windY = Float.NaN, releaseY = Float.NaN;
             for (int frame = 0; frame < 480; frame++) {
@@ -35,18 +35,26 @@ final class TestOctoThrow extends Check {
                     if (b.octoThrowT < OctoThrow.RELEASE) wound &= !b.launched;
                 }
                 if (b.launched) {
-                    launches++;
+                    events++;
                     spaced &= frame - lastLaunch >= 45;
                     lastLaunch = frame;
                     int tip = Boss.OCTO_NODES - 1;
                     releaseY = b.octoY[b.octoThrowArm][tip];
                     boolean found = false;
                     for (int i = 0; i < Boss.MAX_BOLTS; i++) if (b.blive[i] && b.bt[i] == 0f) {
-                        found |= Math.abs(b.bsx[i] - b.octoX[b.octoThrowArm][tip]) < .01f
-                                && Math.abs(b.bsy[i] - releaseY) < .01f;
+                        launches++;
+                        int arm = b.bglyph[i] == b.octoThrowGlyph2 ? b.octoThrowArm2 : b.octoThrowArm;
+                        found |= Math.abs(b.bsx[i] - b.octoX[arm][tip]) < .01f
+                                && Math.abs(b.bsy[i] - b.octoY[arm][tip]) < .01f;
+                        validArm &= (b.octoArms & (1 << arm)) != 0;
                         validArm &= !b.keyDisabled(b.bglyph[i]);
                     }
                     tipOrigin &= found;
+                    if (removed == 5 || removed == 6) {
+                        check("pair launches on the same frame", launches == 2 && b.octoThrowArm2 >= 0);
+                        check("pair uses different arms and keys", b.octoThrowArm != b.octoThrowArm2
+                                && b.octoThrowGlyph != b.octoThrowGlyph2);
+                    }
                 }
                 if (parry != 0) for (int i = 0; i < Boss.MAX_BOLTS; i++) if (b.blive[i]) {
                     cleared += b.press(b.bglyph[i], c.rnd, L) == Boss.PARRY ? 1 : 0;
@@ -54,6 +62,7 @@ final class TestOctoThrow extends Check {
                 if (!OctoThrow.busy(b) && b.boltCount() == 0 && b.octoTarget >= 0) break;
             }
             check("tear " + removed + " throws " + expected + " enemies, parry=" + parry, launches == expected);
+            check("volley uses the requested number of release events", events == (expected == 2 ? 1 : expected));
             check("throw uses intact arm and enabled key", validArm);
             check("next attack waits for all throws to resolve", waiting);
             check("each throw has a wind-up and distinct release", spaced && wound && tipOrigin);
@@ -63,6 +72,15 @@ final class TestOctoThrow extends Check {
                 check("next arm wave resumes after the field clears", b.octoTarget >= 0);
             } else check("last tear defeats without retaliation", b.beaten && !OctoThrow.busy(b));
         }
+        GameCore speed = TestBoss.enterBoss(L, Boss.OCTOPUS, 888L);
+        Boss fast = speed.boss;
+        fast.octoPause = 10f;
+        fast.blive[0] = true; fast.bt[0] = 0f;
+        for (int i = 0; i < 36; i++) fast.update(DT, L, speed.rnd);
+        check("Octopulse projectile is halfway there after 0.6 seconds", Math.abs(fast.bt[0] - .5f) < .001f);
+        int arrivals = 0;
+        for (int i = 0; i < 37; i++) arrivals += fast.update(DT, L, speed.rnd);
+        check("Octopulse projectile lands after 1.2 seconds", arrivals == 1 && !fast.blive[0]);
         GameCore reset = tear(L, 7);
         reset.boss.leave();
         check("leaving clears queued throws", !OctoThrow.busy(reset.boss));
