@@ -90,17 +90,17 @@ final class TownScreen extends Draw {
 
     private static void balloons(Painter p, Town t, Layout L, float clock) {
         String letters = "DDDUMPLING TOWN";
-        float size = L.w * .068f;
+        float size = L.w * .26f;
         for (int i = 0; i < letters.length(); i++) {
             char ch = letters.charAt(i);
             if (ch == ' ') continue;
-            float anchor = L.w * (.05f + i * .062f);
+            float anchor = L.w * (.13f + i * .195f);
             float phase = clock * 1.2f + i * .73f;
             float x = anchor + L.w * .006f * (float) Math.sin(phase);
             float y = L.playTop + (L.deckTop - L.playTop) * .24f
-                    + L.w * .012f * (float) Math.sin(phase * .8f);
+                    + L.w * .035f * (float) Math.sin(phase * .8f);
             float ground = meadowTop(anchor,L) + L.w*.035f;
-            float kick = t.motion(anchor, y - size*.4f, L.w*.15f)
+            float kick = t.motion(anchor, y - size*.4f, L.w*.23f)
                     + .7f*t.motion(anchor,(y+ground)*.5f,L.w*.12f)
                     + .6f*t.motion(anchor,ground,L.w*.12f);
             kick = Math.max(-.8f,Math.min(.8f,kick));

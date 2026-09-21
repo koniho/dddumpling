@@ -26,7 +26,7 @@ slots; `order`/`destination` map its display position without renumbering combat
   use the same path coordinate. A clamped camera follows the traveler across a three-screen
   meadow; POI taps subtract the same camera offset, while controls remain fixed. Background
   sky scrolls at 0.06x, hills at 0.18x/0.34x/0.52x, the main field at 1x, and
-  foreground foliage at 1.35x for depth. Foreground coverage extends past both map ends. Title-font letter balloons mark the entrance.
+  foreground foliage at 1.35x for depth. Foreground coverage extends past both map ends. Large title-font letter balloons spell the town name across the full route.
   The neutral slider/release stops movement. Foreground
   foliage is translucent, uses idle animation only, and never receives touch impulses. Flowers grow with visits/active time. Meadow taps trigger a local,
   visit-only damped spring in world coordinates; attraction taps also retain tap-to-travel.
