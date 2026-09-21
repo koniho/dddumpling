@@ -12,11 +12,11 @@ final class HighScores {
         "Dark Divide cubed your cuteness.",
         "Octopulse: eight hugs too many.",
         "Fly Agaric made you a spore snack.",
-        "The slime hills hugged back.",
+        "Slime hills hugged back.",
         "Crystal sparkle nap. Very shiny.",
         "Kelp tucked you in. Bubble blanket!",
-        "A mushroom cap became your pillow.",
-        "A pebble adopted its own dumpling."
+        "Mushroom cap became your pillow.",
+        "Pebble adopted its own dumpling."
     };
     final ArrayList<Run> runs=new ArrayList<>();
     long latest;
