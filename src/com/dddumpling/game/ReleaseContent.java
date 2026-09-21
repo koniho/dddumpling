@@ -2,12 +2,17 @@ package com.dddumpling.game;
 
 // Generated from release-notes/releases.json by tools/release-notes.py sync.
 final class ReleaseContent {
-    static final String[] VERSIONS={"0.1.23","0.1.22","0.1.21","0.1.20","0.1.19","0.1.18","0.1.17"};
-    static final int[][] ITEMS={{0,1,2},{3,4,5},{6,7},{8,9,10},{11,12,13},{14,15,16,17},{18}};
-    static final int[] ICONS={ReleaseChange.SWIPE,ReleaseChange.MISC,ReleaseChange.BUGS,ReleaseChange.SETTINGS,ReleaseChange.MISC,ReleaseChange.BUGS,ReleaseChange.MISC,ReleaseChange.BUGS,ReleaseChange.NEWS,ReleaseChange.FLURRY,ReleaseChange.BUGS,ReleaseChange.TRAVEL,ReleaseChange.STARS,ReleaseChange.BUGS,ReleaseChange.SHUFFLE,ReleaseChange.DISGUISE,ReleaseChange.SLIME,ReleaseChange.BUGS,ReleaseChange.PAIR};
-    static final boolean[] AUTO_RESET={false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,true};
-    static final String[] TITLES={"A HELPING HAND","LITTLE IMPROVEMENTS","HAPPY LITTLE FIXES","SETTINGS, YOUR WAY","LITTLE IMPROVEMENTS","HAPPY LITTLE FIXES","LITTLE IMPROVEMENTS","HAPPY LITTLE FIXES","WHAT'S COOKING?","HELLO, RAINBOW!","HAPPY LITTLE FIXES","OFF WE GO!","STAR CHASER","HAPPY LITTLE FIXES","SURPRISE DELIVERY","NICE DISGUISE!","SNEAKY SLIME","HAPPY LITTLE FIXES","BETTER TOGETHER"};
+    static final String[] VERSIONS={"0.1.24","0.1.23","0.1.22","0.1.21","0.1.20","0.1.19","0.1.18","0.1.17"};
+    static final int[][] ITEMS={{0,1,2,3,4},{5,6,7},{8,9,10},{11,12},{13,14,15},{16,17,18},{19,20,21,22},{23}};
+    static final int[] ICONS={ReleaseChange.SCORES,ReleaseChange.OCTOPULSE,ReleaseChange.SETTINGS,ReleaseChange.MISC,ReleaseChange.BUGS,ReleaseChange.SWIPE,ReleaseChange.MISC,ReleaseChange.BUGS,ReleaseChange.SETTINGS,ReleaseChange.MISC,ReleaseChange.BUGS,ReleaseChange.MISC,ReleaseChange.BUGS,ReleaseChange.NEWS,ReleaseChange.FLURRY,ReleaseChange.BUGS,ReleaseChange.TRAVEL,ReleaseChange.STARS,ReleaseChange.BUGS,ReleaseChange.SHUFFLE,ReleaseChange.DISGUISE,ReleaseChange.SLIME,ReleaseChange.BUGS,ReleaseChange.PAIR};
+    static final boolean[] AUTO_RESET={false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,true};
+    static final String[] TITLES={"HIGH SCORE LIST","ARMED AND GRUMPY","LITTLE THUMBS, BIG FUN","LITTLE IMPROVEMENTS","HAPPY LITTLE FIXES","A HELPING HAND","LITTLE IMPROVEMENTS","HAPPY LITTLE FIXES","SETTINGS, YOUR WAY","LITTLE IMPROVEMENTS","HAPPY LITTLE FIXES","LITTLE IMPROVEMENTS","HAPPY LITTLE FIXES","WHAT'S COOKING?","HELLO, RAINBOW!","HAPPY LITTLE FIXES","OFF WE GO!","STAR CHASER","HAPPY LITTLE FIXES","SURPRISE DELIVERY","NICE DISGUISE!","SNEAKY SLIME","HAPPY LITTLE FIXES","BETTER TOGETHER"};
     static final String[][] TEXT={
+        {"ON THE TITLE SCREEN","Tap your best score for the top","ten and your latest run. Open a","row for stats, boss wins, and a","bite-sized farewell."},
+        {"IN THE OCTOPULSE BATTLE","Tear an arm and watch for return","throws! Clearer hurt motions and","softer wave sounds help you","follow the eight-armed fuss."},
+        {"WITH KIDS MODE ON","Slower falling words keep their","snappy effects. Words grow to at","most six presses, and bonus","challenges stay gentler."},
+        {"AFTER SURVIVING A HIT","A short slowdown gives you room","to recover.","IN YOUR COLLECTION","Divide Cub wears purple with a","bright rim, just like Dark","Divide.","IN MENUS","Settings, release notes, and","high scores share the same soft","glass look."},
+        {"WHILE PLAYING ON IOS","Music keeps playing smoothly","when the next scene uses the","same song."},
         {"NORMAL WAVES, LAST LIFE","A little hand shows the rescue","swipe just before trouble. Swipe","up to push words back. Already","tried it? No lesson needed."},
         {"BOSS BATTLES","Clearer hits, bigger farewells","and a new sound for Octopulse","waving its arms.","ON THE TITLE SCREEN","Your little explorer stays in","view while wandering between","lands."},
         {"NORMAL WAVES, STAGE 16+","A linked pair now costs one life","if it reaches you, not two."},
@@ -28,5 +33,5 @@ final class ReleaseContent {
         {"MYSTERY PICKUPS","See your surprise before it","takes off.","BOSS FIGHTS","A louder beat for the big","showdown.","PLAYING ON IOS","Sound effects stay ready to","play."},
         {"NORMAL WAVES, STAGE 16+","Press both pals together to pop","the pair. A little teamwork for","your thumbs."}
     };
-    static final boolean[][] CONTEXT={{true,false,false,false,false},{true,false,false,false,true,false,false,false},{true,false,false},{true,false,false,false,false,false,false},{true,false,false,true,false,false,false},{true,false,false},{true,false,false,false,true,false,false,false},{true,false,false,false,true,false,false},{true,false,false,false},{true,false,false,false},{false,false,true,false,false,false},{true,false,false,false},{true,false,false},{true,false,false},{true,false,false,false},{true,false,false,false},{true,false,false,false},{true,false,false,true,false,false,true,false,false},{true,false,false,false}};
+    static final boolean[][] CONTEXT={{true,false,false,false,false},{true,false,false,false,false},{true,false,false,false,false},{true,false,false,true,false,false,false,true,false,false,false},{true,false,false,false},{true,false,false,false,false},{true,false,false,false,true,false,false,false},{true,false,false},{true,false,false,false,false,false,false},{true,false,false,true,false,false,false},{true,false,false},{true,false,false,false,true,false,false,false},{true,false,false,false,true,false,false},{true,false,false,false},{true,false,false,false},{false,false,true,false,false,false},{true,false,false,false},{true,false,false},{true,false,false},{true,false,false,false},{true,false,false,false},{true,false,false,false},{true,false,false,true,false,false,true,false,false},{true,false,false,false}};
 }
