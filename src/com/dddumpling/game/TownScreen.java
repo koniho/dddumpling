@@ -25,7 +25,7 @@ final class TownScreen extends Draw {
         p.clipRect(0, 0, L.w, L.deckTop);
         p.translate(-cameraX(t, L), 0);
         TownScenery.ground(p, t, L, c.clock);
-        balloons(p, t, L, c.clock);
+        TownScenery.treesAndBalloons(p,t,L,c.clock);
         drawPlots(p, L);
         drawPath(p, L);
 
@@ -88,32 +88,35 @@ final class TownScreen extends Draw {
         return pathX(at, L) - cameraX(t, L);
     }
 
-    private static void balloons(Painter p, Town t, Layout L, float clock) {
+    static float balloonAnchorY(int index,Layout L) {
+        float x=L.w*(.13f+index*.195f);
+        return meadowTop(x,L)+L.w*(.025f+.095f*hash(index*37+717));
+    }
+
+    static void balloon(Painter p, Town t, Layout L, float clock, int i) {
         String letters = "DDDUMPLING TOWN";
         float size = L.w * .26f;
-        for (int i = 0; i < letters.length(); i++) {
-            char ch = letters.charAt(i);
-            if (ch == ' ') continue;
-            float anchor = L.w * (.13f + i * .195f);
-            float phase = clock * 1.2f + i * .73f;
-            float x = anchor + L.w * .006f * (float) Math.sin(phase);
-            float y = L.playTop + (L.deckTop - L.playTop) * .24f
-                    + L.w * .035f * (float) Math.sin(phase * .8f);
-            float ground = meadowTop(anchor,L) + L.w*.035f;
-            float kick = t.motion(anchor, y - size*.4f, L.w*.23f)
-                    + .7f*t.motion(anchor,(y+ground)*.5f,L.w*.12f)
-                    + .6f*t.motion(anchor,ground,L.w*.12f);
-            kick = Math.max(-.8f,Math.min(.8f,kick));
-            y -= kick * size * .72f;
-            x += kick * size * .22f;
-            p.polyline(new float[]{x,y,x + size*.10f,y+(ground-y)*.35f,
-                    anchor-size*.08f,y+(ground-y)*.72f,anchor,ground}, 0xB36D7858, L.w*.002f);
-            p.line(anchor, ground - size*.06f, anchor, ground + size*.08f, WOOD, L.w*.005f);
-            int color = Glyph.COLOR[i % Glyph.COUNT];
-            p.fillPoly(new float[]{x,y-size*.02f,x-size*.06f,y+size*.065f,
-                    x+size*.06f,y+size*.065f},color);
-            TitleBubbleFont.draw(p,ch,x,y,size,color,1f,phase,1f+kick*.15f);
-        }
+        char ch = letters.charAt(i);
+        if (ch == ' ') return;
+        float anchor = L.w * (.13f + i * .195f);
+        float phase = clock * 1.2f + i * .73f;
+        float x = anchor + L.w * .006f * (float) Math.sin(phase);
+        float y = L.playTop + (L.deckTop - L.playTop) * .24f
+                + L.w * .035f * (float) Math.sin(phase * .8f);
+        float ground = balloonAnchorY(i,L);
+        float kick = t.motion(anchor, y - size*.4f, L.w*.23f)
+                + .7f*t.motion(anchor,(y+ground)*.5f,L.w*.12f)
+                + .6f*t.motion(anchor,ground,L.w*.12f);
+        kick = Math.max(-.8f,Math.min(.8f,kick));
+        y -= kick * size * .72f;
+        x += kick * size * .22f;
+        p.polyline(new float[]{x,y,x + size*.10f,y+(ground-y)*.35f,
+                anchor-size*.08f,y+(ground-y)*.72f,anchor,ground}, 0xB36D7858, L.w*.002f);
+        p.line(anchor, ground - size*.06f, anchor, ground + size*.08f, WOOD, L.w*.005f);
+        int color = Glyph.COLOR[i % Glyph.COUNT];
+        p.fillPoly(new float[]{x,y-size*.02f,x-size*.06f,y+size*.065f,
+                x+size*.06f,y+size*.065f},color);
+        TitleBubbleFont.draw(p,ch,x,y,size,color,1f,phase,1f+kick*.15f);
     }
 
     static float meadowTop(float worldX, Layout L) {

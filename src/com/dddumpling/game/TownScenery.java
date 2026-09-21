@@ -67,22 +67,6 @@ final class TownScenery extends Draw {
             groundPatch(p,x,y,w*(.30f+.07f*(i%2)),field*(.10f+.025f*(i%3)),i);
         }
 
-        // Uneven groves with open clearings, small saplings and taller shelter trees.
-        float[] groves={.08f,.48f,1.07f,1.49f,2.12f,2.62f,2.94f};
-        for(int group=0;group<groves.length;group++) {
-            int count=3+group%3;
-            for(int j=0;j<count;j++) {
-                int seed=group*11+j;
-                float x=w*(groves[group]+(hash(seed*43+9)-.5f)*.30f);
-                float r=w*(.033f+hash(seed*61+2)*.070f);
-                float root=TownScreen.meadowTop(x,L)+field*(.025f+j*.018f)
-                        +w*.025f*hash(seed*19+4);
-                if(TownScreen.inPlot(x,root,r*.8f,L))continue;
-                float y=root-r*1.43f;
-                tree(p,x,y,r,seed,1f,clock,t.motion(x,y-r*.45f,r*2.3f));
-            }
-        }
-
         // Low rounded shrubs border both sides of the path while leaving its cream surface clear.
         for(int i=0;i<44;i++){
             float at=.015f+.97f*hash(i*59+404),x=TownScreen.pathX(at,L);
@@ -146,6 +130,48 @@ final class TownScenery extends Draw {
             x+=react*w*.018f;y-=Math.abs(react)*w*.012f;
             p.fillCircle(x, y, w * .005f, Glyph.withAlpha(0xFFFFF2A2, (int) (50 + 75 * pulse)));
             p.fillCircle(x, y, w * .0022f, Glyph.withAlpha(0xFFFFFFCE, (int) (150 + 90 * pulse)));
+        }
+    }
+
+    // Rows contain root/anchor depth, x, canopy y, radius (zero for balloons), and seed/index.
+    static float[][] depthItems(Layout L) {
+        float w=L.w,field=L.deckTop-L.playTop;
+        float[][] items=new float[48][];
+        int count=0;
+        // Uneven groves with open clearings, small saplings and taller shelter trees.
+        float[] groves={.08f,.48f,1.07f,1.49f,2.12f,2.62f,2.94f};
+        for(int group=0;group<groves.length;group++) {
+            int members=3+group%3;
+            for(int j=0;j<members;j++) {
+                int seed=group*11+j;
+                float x=w*(groves[group]+(hash(seed*43+9)-.5f)*.30f);
+                float r=w*(.033f+hash(seed*61+2)*.070f);
+                float root=TownScreen.meadowTop(x,L)+field*(.025f+j*.018f)
+                        +w*.025f*hash(seed*19+4);
+                if(TownScreen.inPlot(x,root,r*.8f,L))continue;
+                float y=root-r*1.43f;
+                items[count++]=new float[]{root,x,y,r,seed};
+            }
+        }
+
+        for(int i=0;i<"DDDUMPLING TOWN".length();i++) {
+            if("DDDUMPLING TOWN".charAt(i)==' ')continue;
+            items[count++]=new float[]{TownScreen.balloonAnchorY(i,L),0f,0f,0f,i};
+        }
+        // Stable back-to-front ordering uses ground contact, never canopy height or idle sway.
+        for(int i=1;i<count;i++) {
+            float[] item=items[i];int j=i-1;
+            while(j>=0&&items[j][0]>item[0]) {items[j+1]=items[j];j--;}
+            items[j+1]=item;
+        }
+        return java.util.Arrays.copyOf(items,count);
+    }
+
+    static void treesAndBalloons(Painter p,Town t,Layout L,float clock) {
+        for(float[] item:depthItems(L)) {
+            if(item[3]==0f)TownScreen.balloon(p,t,L,clock,(int)item[4]);
+            else tree(p,item[1],item[2],item[3],(int)item[4],1f,clock,
+                    t.motion(item[1],item[2]-item[3]*.45f,item[3]*2.3f));
         }
     }
 

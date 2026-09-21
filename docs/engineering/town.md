@@ -27,6 +27,8 @@ slots; `order`/`destination` map its display position without renumbering combat
   meadow; POI taps subtract the same camera offset, while controls remain fixed. Background
   sky scrolls at 0.06x, hills at 0.18x/0.34x/0.52x, the main field at 1x, and
   foreground foliage at 1.35x for depth. Foreground coverage extends past both map ends. Large title-font letter balloons spell the town name across the full route.
+  Their ground anchors vary in height; balloons and main-layer trees draw back to front
+  using anchor/root height, so nearer trees hide strings and stakes behind them.
   The neutral slider/release stops movement. Foreground
   foliage is translucent, uses idle animation only, and never receives touch impulses. Flowers grow with visits/active time. Meadow taps trigger a local,
   visit-only damped spring in world coordinates; attraction taps also retain tap-to-travel.

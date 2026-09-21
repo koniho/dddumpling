@@ -11,6 +11,22 @@ final class TestTown extends Check {
         decorationMotion(L);
         translatedLabels(L);
         flowerSettings(L);
+        balloonDepth(L);
+    }
+
+    private static void balloonDepth(Layout L) {
+        float previous=-Float.MAX_VALUE,min=Float.MAX_VALUE,max=-Float.MAX_VALUE;
+        boolean ordered=true;int balloons=0,trees=0;
+        for(float[] item:TownScenery.depthItems(L)) {
+            ordered &= item[0]>=previous;previous=item[0];
+            if(item[3]==0f) {
+                balloons++;
+                float offset=item[0]-TownScreen.meadowTop(L.w*(.13f+item[4]*.195f),L);
+                min=Math.min(min,offset);max=Math.max(max,offset);
+            } else trees++;
+        }
+        check("tree roots and balloon anchors draw back to front",ordered&&trees>0&&balloons==14);
+        check("balloon ground anchors have varied heights",max-min>L.w*.04f);
     }
 
     private static void flowerSettings(Layout L) {
