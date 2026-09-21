@@ -60,7 +60,7 @@ final class PlayerSettings extends Draw {
     }
     static void draw(Painter p, GameCore c, Layout L) {
         float s=unit(L), t=top(L), l=left(L), r=right(L);
-        p=new OpacityPainter(p,.96f);
+        p=new OpacityPainter(p,PANEL_OPACITY);
         glassPanel(p,l,t,r,bottom(L),s);
         p.text("SETTINGS",l+s*1.5f,t+s*2f,type(s*.85f),INK,Painter.LEFT,true);
         float cx=r-s*1.3f,cy=t+s*1.5f;

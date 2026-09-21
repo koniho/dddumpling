@@ -8,6 +8,8 @@ package com.dddumpling.game;
  */
 abstract class Draw {
 
+    static final float PANEL_OPACITY = .96f;
+
     static final int BG = 0xFF1B1730;
     static final int BG_HI = 0xFF251F42;
     static final int BG_HURT = 0xFF4A0F22;

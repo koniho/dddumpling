@@ -42,10 +42,10 @@ final class Screens extends Draw {
         float s = L.unit;
         float cx = L.w / 2f;
         bubblyTitle(p, c, L, cx, L.h * 0.100f, fade);
-        if (c.best > 0) {
-            p.text("BEST " + c.best, cx, L.h * 0.292f, type(s * 0.74f), fadeBy(ROSE, fade * caseOut(c)),
-                    Painter.CENTER, true);
-        }
+        HighScoreScreen.titleGlow(p,c,L,fade*caseOut(c));
+        p.text("BEST " + c.best, cx, L.h * 0.292f, type(s * 0.74f)*HighScoreScreen.titleTextScale(c),
+                fadeBy(HighScoreScreen.titleTextColor(c), fade * caseOut(c)),
+                Painter.CENTER, true);
 
         // Where the two lines explaining the game used to be: the game, played. A word falls and
         // types itself while the matching keys light under it. Suppressed with the case open —

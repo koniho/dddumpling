@@ -161,6 +161,9 @@ public class MainActivity extends Activity implements GameCore.Store {
         prefs.edit().putInt(KEY_BEST, best).apply();
     }
 
+    @Override public String loadHighScores() { return prefs.getString("high_scores", ""); }
+    @Override public void saveHighScores(String value) { prefs.edit().putString("high_scores", value).apply(); }
+
     @Override public String loadReleaseSeen() { return prefs.getString("release_seen", ""); }
     @Override public void saveReleaseSeen(String value) { prefs.edit().putString("release_seen", value).apply(); }
     @Override public boolean loadPushLessonSeen() { return prefs.getBoolean("push_lesson_seen", false); }

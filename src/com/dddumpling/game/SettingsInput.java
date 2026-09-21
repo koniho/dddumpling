@@ -18,6 +18,7 @@ final class SettingsInput {
         return hit==1000+PlayerSettings.MUSIC || hit==1000+PlayerSettings.EFFECTS;
     }
     private int hit(GameCore c,Layout L,float x,float y) {
+        if(c.highScoreScreen.open) return c.highScoreScreen.hit(c,L,x,y);
         int player=PlayerSettings.hit(c,L,x,y);
         if(player!=0) return 1000+player;
         if(c.settingsPage!=1 || !BuildFlags.DEVELOPER) return 0;
@@ -58,6 +59,7 @@ final class SettingsInput {
             c.sound.squish(Kawaii.BLOB,0);
     }
     static boolean action(GameCore c,Layout L,int h) {
+        if(c.highScoreScreen.open) { c.highScoreScreen.action(c,h);return false; }
         if(h>=1000) {
             switch(h-1000) {
                 case PlayerSettings.CLOSE: c.closeSettings();break;

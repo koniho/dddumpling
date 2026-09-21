@@ -4,10 +4,11 @@ package com.dddumpling.game;
 final class Pause extends Draw {
     private Pause() {}
     static boolean handlesBack(GameCore c) {
-        return c.releaseNotes.open || c.returnFade > 0f || c.paused || c.settingsOpen || c.storyOpen() || c.caseOpen
+        return c.highScoreScreen.open || c.releaseNotes.open || c.returnFade > 0f || c.paused || c.settingsOpen || c.storyOpen() || c.caseOpen
                 || c.starting() || c.state != GameCore.TITLE;
     }
     static boolean back(GameCore c) {
+        if(c.highScoreScreen.open) { c.highScoreScreen.back(c);return true; }
         if(c.releaseNotes.open) { c.releaseNotes.back();return true; }
         if (c.returnFade > 0f) return true;
         if (c.confirmEnd) { c.confirmEnd = false; return true; }
@@ -50,6 +51,7 @@ final class Pause extends Draw {
         }
     }
     private static void end(GameCore c) {
+        c.highScores.finish(c);
         LandPicker.recordBest(c);
         release(c); resume(c); c.closeSettings();
         c.boss.leave(); c.buddy.leave(); c.power = null;

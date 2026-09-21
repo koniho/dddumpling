@@ -38,6 +38,9 @@ required gate immediately before the same suite runs in the full check.
 Rules-only is the default for code: `./check.sh -q -r`. Do not generate all PNGs/WAVs for
 nonvisual changes. Do not run a full visual baseline just because this is a first session.
 For tuning, use bounded players; perfect play alone does not establish fairness.
+The game is portrait-only. Use portrait layouts for previews and visual validation; do not
+generate landscape previews unless the user explicitly requests them.
+
 For visuals, inspect affected frames and their `DOES NOT FIT` diagnostics. Add a Preview
 state only when the new state is not already represented. Compare hashes only when preserving
 rendering is part of the task. See [rendering notes](docs/engineering/rendering.md).
