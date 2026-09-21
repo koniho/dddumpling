@@ -3,7 +3,9 @@ package com.dddumpling.game;
 /** Saved runs in the release-notes glass, using the Settings gesture and back routes. */
 final class HighScoreScreen extends Draw {
     static final int CLOSE=-1, BACK=-2, ROW=2000;
-    boolean open;
+    static final float ENTRY_TIME=.4f;
+    boolean open,closing;
+    float entrance;
     int selected=-1;
     static float size(Layout L) { return Math.min(ReleaseNotes.size(L),(L.dangerY-L.topSafe)/27f); }
     static float top(Layout L) { return L.topSafe+size(L); }
@@ -19,12 +21,25 @@ final class HighScoreScreen extends Draw {
     }
     void show(GameCore c) {
         if(!ReleaseNotes.available(c) || c.releaseNotes.open) return;
-        Pause.release(c);c.highScores.unread=false;open=true;selected=-1;feedback(c);
+        Pause.release(c);c.highScores.unread=false;open=true;selected=-1;entrance=0f;closing=false;feedback(c);
     }
+    void update(float dt) {
+        if(!open) return;
+        entrance=Math.max(0f,Math.min(1f,entrance+(closing?-dt:dt)/ENTRY_TIME));
+        if(closing && entrance==0f) { open=false;closing=false; }
+    }
+    boolean moving() { return closing || entrance<1f; }
+    float offsetY(Layout L) { float left=1f-entrance;return -bottom(L)*left*left*left; }
+    static float pulse(float time) { return .5f-.5f*(float)Math.cos(time*3.5f); }
+    static boolean titleAttention(GameCore c) {
+        return c.highScores.unread && !c.settingsOpen && !c.releaseNotes.open && !c.highScoreScreen.open && !c.storyOpen();
+    }
+    static float titleTextScale(GameCore c) { return titleAttention(c)?1f+.1f*pulse(c.time):1f; }
+    static int titleTextColor(GameCore c) { return titleAttention(c)?Glyph.mix(ROSE,GOLD,pulse(c.time)*.8f):ROSE; }
     static void titleGlow(Painter p,GameCore c,Layout L,float fade) {
-        if(!c.highScores.unread || c.settingsOpen || c.releaseNotes.open || c.highScoreScreen.open || c.storyOpen()) return;
-        float s=L.unit,font=type(s*.74f),y=L.h*.292f-font*.36f;
-        float pulse=.5f-.5f*(float)Math.cos(c.time*3.5f);
+        if(!titleAttention(c)) return;
+        float s=L.unit,font=type(s*.74f)*titleTextScale(c),y=L.h*.292f-font*.36f;
+        float pulse=pulse(c.time);
         float width=Math.min(L.w*.42f,("BEST "+c.best).length()*font*.36f+s*.3f);
         for(int i=6;i>0;i--) {
             float spread=s*i*(.09f+.04f*pulse);
@@ -33,11 +48,16 @@ final class HighScoreScreen extends Draw {
         }
     }
     private void feedback(GameCore c) { if(c.sound!=null) c.sound.uiBloop(); }
+    private void close(GameCore c) {
+        if(!open || closing) return;
+        closing=true;feedback(c);
+    }
     void back(GameCore c) {
-        if(selected>=0) selected=-1;else open=false;
-        feedback(c);
+        if(closing) return;
+        if(selected>=0) { selected=-1;feedback(c); } else close(c);
     }
     int hit(GameCore c,Layout L,float x,float y) {
+        if(moving()) return 0;
         float s=size(L),t=top(L);
         if(x<L.w*.04f || x>L.w*.96f || y<t || y>bottom(L)) return CLOSE;
         if(x>L.w*.82f && y<t+2.5f*s) return CLOSE;
@@ -47,14 +67,16 @@ final class HighScoreScreen extends Draw {
         return row<c.highScores.displayCount()?ROW+row:0;
     }
     void action(GameCore c,int hit) {
-        if(hit==CLOSE) { open=false;feedback(c); }
+        if(moving()) return;
+        if(hit==CLOSE) close(c);
         else if(hit==BACK) back(c);
         else if(hit>=ROW && hit<ROW+c.highScores.displayCount()) { selected=hit-ROW;feedback(c); }
     }
     void draw(Painter p,GameCore c,Layout L) {
         if(!open) return;
         float s=size(L),t=top(L),b=bottom(L);
-        p.fillRect(0,0,L.w,L.h,0x990F1026);
+        p.save();p.clipRect(0,0,L.w,L.h);p.translate(0,offsetY(L));
+        p=new OpacityPainter(p,PANEL_OPACITY);
         glassPanel(p,L.w*.04f,t,L.w*.96f,b,s);
         float x=L.w*.89f,y=t+s*1.25f,r=s*.3f;
         p.line(x-r,y-r,x+r,y+r,INK,s*.12f);
@@ -77,12 +99,13 @@ final class HighScoreScreen extends Draw {
             }
         }
         p.restore();
+        p.restore();
     }
     private void score(Painter p,GameCore c,Layout L,HighScores.Run run,float y) {
         float s=size(L);
         if(run.id==c.highScores.latest) {
-            for(int i=4;i>0;i--) p.fillEllipse(L.w*.5f,y-s*.42f,s*(3.2f+i*.25f),s*(.65f+i*.15f),
-                    Glyph.withAlpha(GOLD,(int)((13-i*2)*(1f+.15f*Math.sin(c.clock*3f)))));
+            for(int i=4;i>0;i--) p.fillEllipse(L.w*.5f,y-s*.42f,s*(3.2f+i*(.2f+.1f*pulse(c.clock))),s*(.65f+i*(.1f+.1f*pulse(c.clock))),
+                    Glyph.withAlpha(GOLD,(int)((13-i*2)*(.4f+2f*pulse(c.clock)))));
         }
         p.text(String.valueOf(run.score),L.w*.5f,y,type(s*.95f),INK,Painter.CENTER,true);
     }
@@ -102,10 +125,10 @@ final class HighScoreScreen extends Draw {
         float font=Math.min(type(s*.52f),Math.min(L.w*.13f/(value.length()*.73f),L.w*.065f/(haul.length()*.73f)));
         float baseline=cy+font*.36f;
         if(run.id==c.highScores.latest) {
-            p.fillRect(L.w*.08f,y,L.w*.92f,y+height,0x18FFD76F);
+            p.fillRect(L.w*.08f,y,L.w*.92f,y+height,Glyph.withAlpha(GOLD,(int)(10+20*pulse(c.clock))));
             float half=value.length()*font*.36f;
-            for(int i=4;i>0;i--) p.fillEllipse(L.w*.10f+half,cy,half+i*s*.13f,font*.6f+i*s*.1f,
-                    Glyph.withAlpha(GOLD,(int)((13-i*2)*(1f+.15f*Math.sin(c.clock*3f)))));
+            for(int i=4;i>0;i--) p.fillEllipse(L.w*.10f+half,cy,half+i*s*(.1f+.07f*pulse(c.clock)),font*.6f+i*s*(.08f+.06f*pulse(c.clock)),
+                    Glyph.withAlpha(GOLD,(int)((13-i*2)*(.4f+2f*pulse(c.clock)))));
         }
         p.text(value,L.w*.10f,baseline,font,INK,Painter.LEFT,true);
         java.util.ArrayList<String> lines=new java.util.ArrayList<>();

@@ -255,7 +255,7 @@ final class ReleaseNotes extends Draw {
     void draw(Painter p,GameCore c,Layout L) {
         if(!open) return;
         p.save();p.clipRect(0,0,L.w,L.h);
-        Painter glass=new OpacityPainter(p,.96f);
+        Painter glass=new OpacityPainter(p,PANEL_OPACITY);
         if(transition.progress<1f)
             ReleaseMascot.steamer(glass,transition.x(L),transition.y(L),transition.radius(L),c.clock,transition.lidLift());
         p.translate(transition.listX(L),0);

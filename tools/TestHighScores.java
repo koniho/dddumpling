@@ -55,18 +55,42 @@ final class TestHighScores extends Check {
         Interlude.awardBossPrize(c,Boss.SLIME);
         check("duplicate rewards count toward run haul",c.highScores.dumplings==rewards+1);
         c.state=GameCore.TITLE;c.pendingBonus=false;c.startFade=0;c.launchT=0;c.caseOpen=false;c.caseFade=0;
+        entrance(L);
         titleAttention(L);
         onePage(L);
         navigation(c,L);
         blurbs(L);
+    }
+    private static void entrance(Layout L) {
+        GameCore c=new GameCore(new Mem(),106L);HighScoreScreen ui=c.highScoreScreen;
+        ui.show(c);
+        check("score panel starts above screen",ui.offsetY(L)==-HighScoreScreen.bottom(L));
+        float y=HighScoreScreen.listTop(L)+L.unit;
+        check("entrance ignores touches",ui.hit(c,L,L.w*.5f,y)==0);
+        c.update(HighScoreScreen.ENTRY_TIME*.5f,L);
+        check("panel slides down without starting play",ui.offsetY(L)<0 && ui.offsetY(L)>-HighScoreScreen.bottom(L)
+                && c.state==GameCore.TITLE && !c.starting());
+        c.update(HighScoreScreen.ENTRY_TIME*.5f,L);
+        check("panel settles at normal layout",!ui.moving() && ui.offsetY(L)==0f);
+        ui.back(c);c.update(HighScoreScreen.ENTRY_TIME*.5f,L);
+        check("exit slides upward while remaining modal",ui.open && ui.closing && ui.offsetY(L)<0f
+                && ui.hit(c,L,L.w*.5f,y)==0);
+        c.screenKey(0);check("exit cannot start the next run",!c.starting());
+        c.update(HighScoreScreen.ENTRY_TIME*.5f,L);
+        check("exit finishes above screen",!ui.open && ui.offsetY(L)==-HighScoreScreen.bottom(L));
+        ui.show(c);c.update(HighScoreScreen.ENTRY_TIME*.2f,L);ui.back(c);c.update(HighScoreScreen.ENTRY_TIME,L);
+        check("back during entrance closes panel",!ui.open);
     }
     private static void titleAttention(Layout L) {
         GameCore c=new GameCore(new Mem(),105L);
         check("fresh title has no score attention",!c.highScores.unread);
         c.startGame();c.score=500;c.lives=1;c.takeHit(L.w*.5f,L);
         c.toTitle();
+        c.time=0f;float low=HighScoreScreen.titleTextScale(c);int lowColor=HighScoreScreen.titleTextColor(c);
+        c.time=(float)Math.PI/3.5f;
+        check("title text pulses in scale and color",HighScoreScreen.titleTextScale(c)>low && HighScoreScreen.titleTextColor(c)!=lowColor);
         check("completed run calls attention on returning to title",c.highScores.unread && c.state==GameCore.TITLE);
-        c.highScoreScreen.show(c);
+        c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
         check("viewing scores acknowledges attention",c.highScoreScreen.open && !c.highScores.unread);
         c.highScoreScreen.back(c);c.startGame();c.score=1;c.highScores.finish(c);c.toTitle();
         check("lower scoring run also calls attention",c.highScores.unread);
@@ -75,7 +99,7 @@ final class TestHighScores extends Check {
     private static void onePage(Layout L) {
         GameCore c=new GameCore(new Mem(),104L);
         for(int i=0;i<11;i++) { c.startGame();c.score=1100-i*100;c.highScores.finish(c); }
-        c.toTitle();c.returnFade=0;c.highScoreScreen.show(c);
+        c.toTitle();c.returnFade=0;c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
         for(int[] dims:new int[][]{{320,568},{393,852},{1080,2400},{768,1024}}) {
             Layout l=new Layout();l.compute(dims[0],dims[1],0,24,0,24);
             float rh=HighScoreScreen.rowHeight(c,l),top=HighScoreScreen.listTop(l);
@@ -110,7 +134,7 @@ final class TestHighScores extends Check {
     private static void navigation(GameCore c,Layout L) {
         group("high-score navigation");
         Ear ear=new Ear();c.sound=ear;
-        HighScoreScreen ui=c.highScoreScreen;ui.show(c);
+        HighScoreScreen ui=c.highScoreScreen;ui.show(c);ui.update(HighScoreScreen.ENTRY_TIME);
         check("opens with existing sound",ui.open && ear.uiBloops==1);
         check("blocks starting game under modal",!ReleaseNotes.available(c));
         c.screenKey(0);check("screen keys cannot start run",c.state==GameCore.TITLE && !c.starting());
@@ -124,8 +148,10 @@ final class TestHighScores extends Check {
         check("drag cannot open a row",ui.selected==-1);
         input.touch(c,L,0,5,x,y);input.touch(c,L,3,5,x,y);input.touch(c,L,1,5,x,y);
         check("cancelled gesture cannot select",ui.selected==-1);
-        check("back closes list",Pause.back(c) && !ui.open);
-        c.preferences.effectsMuted=true;c.preferences.apply(c);ui.show(c);
+        check("back starts list exit",Pause.back(c) && ui.closing);
+        ui.update(HighScoreScreen.ENTRY_TIME);
+        check("list closes after exit",!ui.open);
+        c.preferences.effectsMuted=true;c.preferences.apply(c);ui.show(c);ui.update(HighScoreScreen.ENTRY_TIME);
         check("opening uses muted sound backend",ear.effectsVolume==0f && ui.open);
         ui.back(c);
         for(int[] dimensions:new int[][]{{320,568},{393,852},{1080,2400},{768,1024}}) {

@@ -205,7 +205,7 @@ final class Preview {
         if(wanted("130")) {
             GameCore scores=new GameCore(new Mem(),101L);
             shot(dir,"130-high-scores-title",scores,L,w,h,ss);
-            scores.highScoreScreen.show(scores);
+            scores.highScoreScreen.show(scores);scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
             shot(dir,"130-high-scores-empty",scores,L,w,h,ss);
             for(int i=0;i<10;i++) {
                 scores.startGame();scores.score=(10-i)*1357;scores.stage=new int[]{5,10,15,20,1,6,11,16,21,25}[i];
@@ -214,21 +214,29 @@ final class Preview {
                 scores.highScores.dumplings=14-i;scores.highScores.powers=7;scores.highScores.swipes=3;
                 scores.lives=0;scores.highScores.finish(scores);
                 if(i==0) {
-                    scores.toTitle();scores.returnFade=0;scores.highScoreScreen.show(scores);
+                    scores.toTitle();scores.returnFade=0;scores.highScoreScreen.show(scores);scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
                     shot(dir,"130-high-scores-partial",scores,L,w,h,ss);
                 }
             }
-            scores.toTitle();scores.returnFade=0;scores.highScoreScreen.show(scores);
+            scores.toTitle();scores.returnFade=0;scores.highScoreScreen.show(scores);scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+            scores.highScoreScreen.entrance=.3f;
+            shot(dir,"130-high-scores-entering",scores,L,w,h,ss);
+            scores.highScoreScreen.entrance=1f;
             shot(dir,"130-high-scores-full",scores,L,w,h,ss);
             scores.startGame();scores.score=123;scores.stage=6;scores.lives=0;
             scores.highScores.dumplings=1;scores.highScores.bosses=1;scores.highScores.finish(scores);
             LandPicker.recordBest(scores);scores.toTitle();scores.returnFade=0;
             scores.time=0f;shot(dir,"130-high-scores-title-glow-low",scores,L,w,h,ss);
             scores.time=(float)Math.PI/3.5f;shot(dir,"130-high-scores-title-glow-high",scores,L,w,h,ss);
-            scores.highScoreScreen.show(scores);
+            scores.highScoreScreen.show(scores);scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+            scores.clock=0f;shot(dir,"130-high-scores-latest-low",scores,L,w,h,ss);
+            scores.clock=(float)Math.PI/3.5f;
             shot(dir,"130-high-scores-latest",scores,L,w,h,ss);
             scores.highScoreScreen.selected=0;
             shot(dir,"130-high-scores-summary",scores,L,w,h,ss);
+            scores.highScoreScreen.back(scores);scores.highScoreScreen.back(scores);
+            scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME*.65f);
+            shot(dir,"130-high-scores-exiting",scores,L,w,h,ss);
         }
 
         GameCore cover = new GameCore(new Mem(),3001L);

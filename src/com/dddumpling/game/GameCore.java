@@ -2429,7 +2429,7 @@ final class GameCore {
         bossDeathHaptic = 0;
         if (paused) return;
         if (pushLesson.update(this, elapsed, L)) return;
-        if(highScoreScreen.open) { clock+=elapsed;return; }
+        if(highScoreScreen.open) { highScoreScreen.update(elapsed);clock+=elapsed;return; }
         if(releaseNotes.open) {
             releaseNotes.update(elapsed,L);
             clock+=elapsed;time+=elapsed;skyClock+=elapsed;
