@@ -1,6 +1,100 @@
 {
   "releases": [
     {
+      "version": "0.1.24",
+      "changes": [
+        {
+          "icon": "scores",
+          "title": "High score list",
+          "autoReset": false,
+          "where": "On the title screen",
+          "why": "Tap your best score for the top ten and your latest run. Open a row for stats, boss wins, and a bite-sized farewell."
+        },
+        {
+          "icon": "octopulse",
+          "title": "Armed and grumpy",
+          "autoReset": false,
+          "where": "In the Octopulse battle",
+          "why": "Tear an arm and watch for return throws! Clearer hurt motions and softer wave sounds help you follow the eight-armed fuss."
+        },
+        {
+          "icon": "settings",
+          "title": "Little thumbs, big fun",
+          "autoReset": false,
+          "where": "With Kids Mode on",
+          "why": "Slower falling words keep their snappy effects. Words grow to at most six presses, and bonus challenges stay gentler."
+        },
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "After surviving a hit",
+              "why": "A short slowdown gives you room to recover."
+            },
+            {
+              "where": "In your collection",
+              "why": "Divide Cub wears purple with a bright rim, just like Dark Divide."
+            },
+            {
+              "where": "In menus",
+              "why": "Settings, release notes, and high scores share the same soft glass look."
+            }
+          ]
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "autoReset": false,
+          "fixes": [
+            {
+              "where": "While playing on iOS",
+              "why": "Music keeps playing smoothly when the next scene uses the same song."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.1.23",
+      "changes": [
+        {
+          "icon": "swipe",
+          "title": "A helping hand",
+          "autoReset": false,
+          "where": "Normal waves, last life",
+          "why": "A little hand shows the rescue swipe just before trouble. Swipe up to push words back. Already tried it? No lesson needed."
+        },
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "Boss battles",
+              "why": "Clearer hits, bigger farewells and a new sound for Octopulse waving its arms."
+            },
+            {
+              "where": "On the title screen",
+              "why": "Your little explorer stays in view while wandering between lands."
+            }
+          ]
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "autoReset": false,
+          "fixes": [
+            {
+              "where": "Normal waves, stage 16+",
+              "why": "A linked pair now costs one life if it reaches you, not two."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.22",
       "changes": [
         {

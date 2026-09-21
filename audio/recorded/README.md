@@ -90,7 +90,8 @@ Octopulse's sound when starting to wave an arm. It is not a CC0 library asset.
 
 The original is preserved as octo-wave-source.m4a. Run
 `python3 tools/prepare-octo-wave.py` to regenerate octo-wave.wav and
-OctoWaveRecording.java. FFmpeg downmixes to mono at 22050 Hz. The 0.68–2.66s
+OctoWaveRecording.java. FFmpeg applies a two-pole low-pass filter at 1 kHz
+and downmixes to mono at 22050 Hz. The 0.68–2.66s
 excerpt retains both recorded sounds, with 8ms/25ms edge fades and a peak of
 85% full scale. Playback preserves the recording's pitch and speed.
 

@@ -4,6 +4,7 @@ package com.dddumpling.game;
 public final class IOSGame {
     public interface Host {
         void tick();
+        void impact();
         void openPrivacy(String url);
     }
 
@@ -96,6 +97,15 @@ public final class IOSGame {
         }
         if (core.pushLesson.active || core.pushLesson.ownsTouch) {
             if (core.pushLesson.touch(core, layout, action, ev.getX(), ev.getY())) tick();
+            return true;
+        }
+        if(action==0 && HighScoreScreen.entryHit(core,layout,ev.getX(),ev.getY())) {
+            cancelPointers();core.highScoreScreen.show(core);return true;
+        }
+        if(core.highScoreScreen.open) {
+            int i=action==2?ev.findPointerIndex(settingsPointer):ev.getActionIndex();
+            if(action==0) settingsPointer=ev.getPointerId(ev.getActionIndex());
+            if(i>=0) settingsInput.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));
             return true;
         }
         if(core.releaseNotes.handleTouch(core,layout,action,ev.getX(ev.getActionIndex()),ev.getY(ev.getActionIndex())))
@@ -458,7 +468,6 @@ public final class IOSGame {
     private int bossDragPointer = -1;
     private boolean bossPinching;
     private float lastBossDragHaptic = -1f;
-    private boolean bossWasBeaten;
 
     /**
      * The boss's elements: a tap on one acts at once, a drag on one carries it.
@@ -685,9 +694,10 @@ public final class IOSGame {
         for (int i = 0, n = core.releaseNotes.takeFeedback(); i < n; i++) tick();
         for (int i = 0; i < core.starPickups; i++) tick();
         if (playing && core.boss.octoImpact) tick();
-        boolean beaten = core.boss.active() && core.boss.beaten;
-        if (beaten && !bossWasBeaten) tick();
-        bossWasBeaten = beaten;
+        if (playing && host != null && core.bossDeathHaptic > 0) {
+            if (core.bossDeathHaptic == 2) host.impact();
+            else tick();
+        }
     }
 
     public void draw(Painter painter) {

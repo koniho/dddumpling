@@ -40,6 +40,9 @@ abstract class Check {
         public byte[] loadProgress() { return progress == null ? null : progress.clone(); }
         public void saveProgress(byte[] data) { progress = data.clone(); }
         public String progressReplica() { return "test"; }
+        String highScores="";
+        public String loadHighScores() { return highScores; }
+        public void saveHighScores(String value) { highScores=value; }
         String releaseSeen=BuildFlags.BUILD_ID;
         public String loadReleaseSeen() { return releaseSeen; }
         public void saveReleaseSeen(String value) { releaseSeen=value; }
@@ -105,7 +108,7 @@ abstract class Check {
         float musicVolume, effectsVolume, squishVolume;
         public void volumes(float music,float effects) { musicVolume=music;effectsVolume=effects; }
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeDamages, bossSplits,
-                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoWaves, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideBoings, chops, zaps;
+                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoDamages, octoWaves, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideSupernovas, divideBoings, chops, zaps;
         float bossCharge, maxBossCharge;
         float lastDivideBoingWeight = -1f;
         int collects;
@@ -159,6 +162,7 @@ abstract class Check {
         public void divideDamage() { divideDamages++; }
         public void divideSplit() { divideSplits++; }
         public void divideDeactivate() { divideDeactivates++; }
+        public void divideSupernova() { divideSupernovas++; }
         public void divideBoing(float weight) {
             divideBoings++;
             lastDivideBoingWeight = weight;
@@ -166,6 +170,7 @@ abstract class Check {
         public void boltPop() { boltPops++; }
         public void boltDeath() { boltDeaths++; }
         public void shieldBounce() { shieldBounces++; }
+        public void octoDamage() { octoDamages++; }
         public void octoWave() { octoWaves++; }
         public void octoCue() { octoCues++; }
         public void octoLock() { octoLocks++; }

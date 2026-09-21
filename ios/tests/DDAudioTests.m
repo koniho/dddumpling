@@ -5,6 +5,7 @@
 #import "DDAudio.h"
 #import "DDEffectMixer.h"
 #import "com/dddumpling/game/Sfx.h"
+#import "com/dddumpling/game/Music.h"
 #import "IOSPrimitiveArray.h"
 
 @interface DDIOSAudio (TestHooks)
@@ -82,6 +83,74 @@
 @end
 
 @implementation DDAudioTests
+- (void)testRepeatedMusicSelectionPreservesPlayerAndPausedPosition {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  [audio selectMusicWithInt:DDMusic_SWING_STYLE];
+  DDCountingPlayer *player = [DDCountingPlayer new];
+  [audio setValue:player forKey:@"music"];
+  NSUInteger generation = [[audio valueForKey:@"musicGeneration"] unsignedIntegerValue];
+  [audio selectMusicWithInt:DDMusic_SWING_STYLE];
+  [audio pausePlayers];
+  [audio selectMusicWithInt:DDMusic_SWING_STYLE];
+  XCTAssertEqual([audio valueForKey:@"music"], player);
+  XCTAssertEqual(player.stopCount, 0);
+  XCTAssertEqual(player.currentTimeWrites, 0);
+  XCTAssertEqual(player.playCount, 0);
+  XCTAssertEqual([[audio valueForKey:@"musicGeneration"] unsignedIntegerValue], generation);
+}
+
+- (void)testDuplicateSelectionsKeepThePendingInitialRender {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  dispatch_queue_t queue = [audio valueForKey:@"renderQueue"];
+  dispatch_semaphore_t gate = dispatch_semaphore_create(0);
+  dispatch_async(queue, ^{ dispatch_semaphore_wait(gate, DISPATCH_TIME_FOREVER); });
+  [audio selectMusicWithInt:DDMusic_SWING_STYLE];
+  NSUInteger generation = [[audio valueForKey:@"musicGeneration"] unsignedIntegerValue];
+  [audio selectMusicWithInt:DDMusic_SWING_STYLE];
+  XCTAssertGreaterThan(generation, 0u);
+  XCTAssertNil([audio valueForKey:@"music"]);
+  XCTAssertEqual([[audio valueForKey:@"musicGeneration"] unsignedIntegerValue], generation);
+  dispatch_semaphore_signal(gate);
+}
+
+- (void)testDifferentStylesAndArrangementsStillReplaceMusic {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  [audio selectMusicWithInt:DDMusic_SWING_STYLE];
+  NSUInteger generation = [[audio valueForKey:@"musicGeneration"] unsignedIntegerValue];
+  DDCountingPlayer *player = [DDCountingPlayer new];
+  [audio setValue:player forKey:@"music"];
+  [audio selectMusicWithInt:DDMusic_DRIFT];
+  XCTAssertEqual(player.stopCount, 1);
+  XCTAssertEqual([[audio valueForKey:@"musicGeneration"] unsignedIntegerValue], generation + 1);
+  generation++;
+  [audio frenzyWithBoolean:YES];
+  XCTAssertEqual([[audio valueForKey:@"musicGeneration"] unsignedIntegerValue], generation + 1);
+  generation++;
+  [audio selectMusicWithInt:DDMusic_DRIFT];
+  XCTAssertEqual([[audio valueForKey:@"musicGeneration"] unsignedIntegerValue], generation);
+  [audio bossMusicWithBoolean:YES];
+  XCTAssertEqual([[audio valueForKey:@"musicGeneration"] unsignedIntegerValue], generation + 1);
+  generation++;
+  [audio frenzyWithBoolean:NO]; // Boss arrangements do not depend on frenzy.
+  XCTAssertEqual([[audio valueForKey:@"musicGeneration"] unsignedIntegerValue], generation);
+  [audio selectMusicWithInt:DDMusic_DRIFT];
+  XCTAssertEqual([[audio valueForKey:@"musicGeneration"] unsignedIntegerValue], generation + 1);
+  generation++;
+}
+
+- (void)testNormalMusicReturnsAfterBandPlayback {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  [audio selectMusicWithInt:DDMusic_SWING_STYLE];
+  [audio bandStartWithInt:0 withBoolean:NO];
+  NSUInteger generation = [[audio valueForKey:@"musicGeneration"] unsignedIntegerValue];
+  [audio selectMusicWithInt:DDMusic_SWING_STYLE];
+  XCTAssertEqual([[audio valueForKey:@"musicGeneration"] unsignedIntegerValue], generation);
+  [audio bandStop];
+  [audio selectMusicWithInt:DDMusic_SWING_STYLE];
+  XCTAssertGreaterThan([[audio valueForKey:@"musicGeneration"] unsignedIntegerValue], generation);
+  XCTAssertTrue([[audio valueForKey:@"musicRequested"] boolValue]);
+}
+
 - (void)testUserVolumesSurviveDuckingAndMuteChannelsIndependently {
   DDClockedAudio *audio = [DDClockedAudio new];
   DDCountingPlayer *music = [DDCountingPlayer new];

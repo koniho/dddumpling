@@ -69,6 +69,8 @@ python3 tools/release-notes.py preview
 
 ## What to write
 
+Exclude features and changes that are available only behind development flags or in developer builds. Verify availability in the intended production build before drafting notes; merging code into main does not make a feature release-ready. Apply this rule to in-game notes and all store, TestFlight, GitHub, itch, and dev-blog release summaries.
+
 - **autoReset:** required `true` or `false`. Choose whether this entry’s demo should return to its starting state two seconds after activation. The draft leaves this as `null` so you must decide before adding it.
 - **title:** a short, playful name, up to 24 characters.
 - **where:** for a bug fix that is already clear on its own, use an empty string to omit the context line. Otherwise, where the player encounters it, up to 32 characters. Name the phase and stage gate when relevant: “On the title screen”, “Star Path bonus rounds”, or “Power-ups, stage 16+”.
@@ -98,6 +100,9 @@ Keep a separate entry only when it communicates a distinct change the player nee
 
 | `icon` value | Use for | Illustration |
 | --- | --- | --- |
+| `scores` | Saved high-score runs | Glowing score rows and a gold star |
+| `octopulse` | Octopulse battle changes | Waving Octopulse portrait |
+| `swipe` | Rescue-swipe lesson | Shared instruction hand swiping up from a pulsing bar |
 | `settings` | Player settings | Hexagon with three menu lines |
 | `news` | Exploring release notes | Little steamer |
 | `flurry` | Flurry pickup feedback | Circular rainbow |
@@ -144,3 +149,22 @@ changes with a substantial new mechanic can keep their own feature entry.
 
 Collect these points from the actual release diff before the interactive note review.
 Review them together as one entry and keep the same grouping in destination summaries.
+
+## Release icon review image
+
+Before asking for final release-note approval, generate a sheet of the proposed release's
+icons from the actual game renderer, including animation samples and each reset choice:
+
+```sh
+python3 tools/release-notes.py review-image build/release-0.1.23.json
+```
+
+Use the intended version's draft path. This does not alter the catalog or prepare a version.
+Review the PNG together with the notes and destination summaries. Regenerate after icon or
+reset edits. On Android the command requests the system image viewer through a readable content URI.
+Confirm the image actually appears; a successful command alone does not prove it opened.
+If no viewer appears, show the PNG inline for review and retry opening it in Files.
+Do this immediately after generation, before approval.
+Use `--no-open` only for CI or when opening applications is unavailable. On other systems,
+open the printed PNG path. The sheet shows artwork samples; also check interactive demos
+in the release book and wait more than two seconds to verify their reset choices.

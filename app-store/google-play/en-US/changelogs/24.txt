@@ -1,0 +1,1 @@
+A helping hand: a visual rescue-swipe lesson appears near danger on your last life, unless you have already swiped. Little improvements: clearer boss hits, bigger farewells, new Octopulse arm-wave audio, and an explorer that stays in view on the title screen. Happy little fixes: a linked pair reaching you now costs one life, not two.

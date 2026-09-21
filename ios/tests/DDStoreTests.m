@@ -65,6 +65,7 @@
   XCTAssertTrue([saved saveTownWithNSString:@"v1;t=7;lc=3;rs=3"]);
   [saved saveLandStateWithInt:0x52];
   [saved saveReleaseSeenWithNSString:@"test-build"];
+  [saved saveHighScoresWithNSString:@"1:1;1,100,2,1,0,0,0,0,4,1,3,4,100,0,0,5"];
   [saved saveLandBestWithInt:2 withInt:900];
   [saved savePlayerSettingsWithInt:98329];
   [saved saveCollectedWithLong:0x12345];
@@ -88,6 +89,7 @@
   XCTAssertEqualObjects(loaded.loadTown, @"v1;t=7;lc=3;rs=3");
   XCTAssertEqual(loaded.loadLandState, 0x52);
   XCTAssertEqualObjects(loaded.loadReleaseSeen, @"test-build");
+  XCTAssertEqualObjects(loaded.loadHighScores, @"1:1;1,100,2,1,0,0,0,0,4,1,3,4,100,0,0,5");
   XCTAssertEqual([loaded loadLandBestWithInt:2], 900);
   XCTAssertEqual(loaded.loadPlayerSettings, 98329);
   XCTAssertEqual(loaded.loadCollected, 0x12345);

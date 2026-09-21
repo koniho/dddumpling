@@ -168,6 +168,8 @@ final class GameCore {
         default void savePushLessonSeen(boolean value) {}
         default String loadReleaseSeen() { return BuildFlags.BUILD_ID; }
         default void saveReleaseSeen(String value) {}
+        default String loadHighScores() { return ""; }
+        default void saveHighScores(String value) {}
         int loadBest();
         void saveBest(int best);
         default int loadCaveChoice() { return -1; }
@@ -238,12 +240,14 @@ final class GameCore {
         void slimeDamage();
         /** The slime chain tore a glob free: a taut, wet pop distinct from damage. */
         void bossSplit();
-        /** Dark Divide was struck: a low crack-squelch distinct from every other boss. */
+        /** Dark Divide was struck: a rounded bloop distinct from every other boss. */
         void divideDamage();
         /** The charged Dark Divide was pulled into two bodies. */
         void divideSplit();
         /** A terminal Dark Divide fragment was pulled apart and deactivated. */
         void divideDeactivate();
+        /** The gathered cubes ignite into a supernova. */
+        void divideSupernova();
         /** Two Dark Divide bodies, or one body and a wall, rebounded. 1 is largest/heaviest. */
         void divideBoing(float weight);
         /** A charged or flying slime bolt was destroyed: one short, low bloop. */
@@ -253,6 +257,7 @@ final class GameCore {
         /** A player projectile ricocheted from the Slime boss shield. */
         void shieldBounce();
         default void octoWave() {}
+        default void octoDamage() {}
         void octoCue();
         void octoLock();
         /** One accepted Fly Agaric shake endpoint. */
@@ -499,6 +504,8 @@ final class GameCore {
     int settingsPage;
     final PlayerSettings preferences = new PlayerSettings();
     boolean kidsRun;
+    final HighScores highScores=new HighScores();
+    final HighScoreScreen highScoreScreen=new HighScoreScreen();
     final ReleaseNotes releaseNotes=new ReleaseNotes();
     final ReleaseMascot releaseMascot=new ReleaseMascot();
     int settingsTab;
@@ -520,6 +527,7 @@ final class GameCore {
     /** Counts down while the flawless-stage gold dumpling is on screen. */
     float perfectBanner;
     float shake, flash, stageBanner;
+    int bossDeathHaptic; // Per-frame: 1 light, 2 heavy.
     /** Colour of the current full-screen flash. */
     int flashColor = FLASH_DAMAGE;
     /**
@@ -971,6 +979,7 @@ final class GameCore {
      * swipe is not damage, it is what you spent to avoid damage.
      */
     float mashEarned() {
+        if (kidsRun) return MASH_PERFECT;
         if (pushUsed) return MASH_PANIC;
         if (hurtThisStage > 0) return MASH_HURT;
         return perfectRound() ? MASH_PERFECT : MASH_UNHURT;
@@ -1223,6 +1232,7 @@ final class GameCore {
         if (effect != Power.MULTI) LinkedPairs.preparePower(this);
         else LinkedPairs.release(this, L);
         debuffLeft = monochromeFade = incognitoMorph = 0f;
+        highScores.powers++;
         mode = effect;
         modeLeft = Power.DURATION;
         if(power==null || !power.hit) {
@@ -1378,10 +1388,9 @@ final class GameCore {
     void endBossPinch() { boss.endPinch(); }
 
     boolean swipeUp(Layout L) {
-
         if (!pushBack(L)) return false;
-        if (pushLesson.active) {
-            pushLesson.active = false;
+        pushLesson.active = false;
+        if (!pushLesson.seen) {
             pushLesson.seen = true;
             if (store != null) store.savePushLessonSeen(true);
         }
@@ -1499,6 +1508,7 @@ final class GameCore {
             mining.carts = Math.max(0,Math.min(CaveMining.CARTS,store.loadMineCarts()));
             cart.progress = Math.max(0,Math.min(CaveCart.TRACK,store.loadCartTrack()));
             caveMiningNext = store.loadCaveMiningNext();
+            highScores.load(store.loadHighScores());
             best = store.loadBest();
             for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
             landBests[0] = Math.max(landBests[0], best);
@@ -1690,13 +1700,15 @@ final class GameCore {
 
     int maxEnemies() { return Pacing.maxEnemies(pacingStage()); }
 
-    int maxWordLen() { return Pacing.maxWordLen(pacingStage()); }
+    int maxPresses() { return kidsRun ? 6 : Pacing.MAX_PRESSES; }
 
-    int minWordLen() { return Pacing.minWordLen(pacingStage()); }
+    int maxWordLen() { return Math.min(maxPresses(), Pacing.maxWordLen(stage)); }
+
+    int minWordLen() { return Pacing.minWordLen(stage); }
 
     int stageQuota() { return Pacing.stageQuota(pacingStage()); }
 
-    float stackChance() { return Pacing.stackChance(pacingStage()); }
+    float stackChance() { return Pacing.stackChance(stage); }
 
     /** Concurrent words allowed now. A frenzy lets more pile up, tapering with the ramp. */
     int crowdCap() {
@@ -1747,6 +1759,8 @@ final class GameCore {
     void startGame() {
         town.leave(); townOpen=false;
         townRunId=town.beginRun(); townRunTickets=0; saveTown();
+        highScores.start();
+        highScoreScreen.open=false;
         band.reset(this); mining.stop(); cart.stop();
         runWho = Collect.has(collected, caseIndex) ? caseIndex : 0;
         // A paid win may have been quit before its tableau/parade retired the course.
@@ -1762,6 +1776,7 @@ final class GameCore {
         Pause.resume(this);
         state = PLAY;
         kidsRun = preferences.kids;
+        stars.difficultyCap = kidsRun ? StarPath.KIDS_DIFFICULTY : StarPath.MAX_DIFFICULTY;
         runFullRoster = !kidsRun && fullRoster;
         time = 0;
         score = 0;
@@ -1785,6 +1800,7 @@ final class GameCore {
         target = null;
         spawnTimer = 0.7f;
         shake = 0;
+        bossDeathHaptic = 0;
         flash = 0;
         skyGlow = 0;
         steamer.reset();
@@ -1954,7 +1970,7 @@ final class GameCore {
     void screenKey(int g) {
         if (townOpen) return;
         if (settingsOpen) return;
-        if(releaseNotes.open) return;
+        if(releaseNotes.open || highScoreScreen.open) return;
         if (returnFade > 0f) return;
         if (!keyActive(g) || rosterSceneT > 0f) return;
         // Nothing is dismissable until the summary is up and settled — the death sequence is not
@@ -2358,6 +2374,7 @@ final class GameCore {
         // bands are ever retuned apart, the stage's one use is not silently eaten.
         if (moved == 0) return false;
 
+        highScores.swipes++;
         pushUsed = true;
         pushCount = moved;
         pushT = PUSH_TIME;
@@ -2469,6 +2486,7 @@ final class GameCore {
 
     void update(float dt, float elapsed, Layout L) {
         starPickups = 0;
+        bossDeathHaptic = 0;
         if (paused) return;
         townSaveRetry=Math.max(0f,townSaveRetry-elapsed);
         if (town.dirty && townSaveRetry<=0f) saveTown();
@@ -2487,6 +2505,7 @@ final class GameCore {
             return;
         }
         if (pushLesson.update(this, elapsed, L)) return;
+        if(highScoreScreen.open) { highScoreScreen.update(elapsed);clock+=elapsed;return; }
         if(releaseNotes.open) {
             releaseNotes.update(elapsed,L);
             clock+=elapsed;time+=elapsed;skyClock+=elapsed;
@@ -2788,7 +2807,11 @@ final class GameCore {
             float beforeHp = boss.hp;
             float priorCover=boss.slimePromptCover();
             boolean priorOpen=boss.open();
+            float beforeDeath = boss.beaten ? boss.leaveProgress() * Boss.LEAVE : -1f;
+            boolean beforeSupernova = boss.kind == Boss.SPLITTER && boss.beaten && !DivideDeath.bursting(boss);
             int bossHits = boss.update(dt, dt * traversalRate(), L, rnd);
+            BossPlay.deathFeedback(this, beforeDeath);
+            if (beforeSupernova && DivideDeath.bursting(boss) && sound != null) sound.divideSupernova();
             float cover=boss.slimePromptCover();
             if(sound!=null && boss.kind==Boss.SLIME && boss.fighting() && boss.slimePromptHits>=2
                     && !boss.hasGlob() && boss.boltCount()==0 && !boss.slimeRetaliating) {
@@ -2898,9 +2921,11 @@ final class GameCore {
                 flashColor = FLASH_DAMAGE;
                 shake = Math.max(shake, 0.35f * (e.attackT / ATTACK_TIME));
                 if (e.attackT >= ATTACK_TIME) {
-                    // Unlist first: a fatal breach clears the whole field, which would
-                    // invalidate this index.
-                    enemies.remove(i);
+                    // A breach also removes its partner; skip that lower slot without replaying others.
+                    // Unlist before damage: a fatal hit clears the whole field.
+                    int partnerIndex = enemies.indexOf(e.link);
+                    if (partnerIndex >= 0 && partnerIndex < i) i--;
+                    enemies.remove(e);
                     breach(e, L);
                     // Nothing left to simulate once the run is over.
                     if (state != PLAY) return;
@@ -3220,7 +3245,7 @@ final class GameCore {
         if (sound != null) sound.frenzy(false);
     }
 
-    private void resolveStageEnemy(Enemy e) {
+    void resolveStageEnemy(Enemy e) {
         if(e.stageResolved) return;
         e.stageResolved=true;
         if(e.stageMate==null || e.stageMate.stageResolved) resolvedThisStage++;
@@ -3259,6 +3284,7 @@ final class GameCore {
     private void die() {
         finishTownRun();
         cave.leave();
+        highScores.finish(this);
         progress.finishRun(score, false);
         if (runFullRoster && fullRoster) {
             if (stage >= 6) earlyLosses = 0;
@@ -3302,7 +3328,7 @@ final class GameCore {
     private boolean spawn(Layout L) {
         Enemy e = new Enemy();
         int len = minWordLen() + rnd.nextInt(maxWordLen() - minWordLen() + 1);
-        Words.fill(e, len, stackChance(), rnd, playRosterFull());
+        Words.fill(e, len, stackChance(), rnd, playRosterFull(), maxPresses());
 
         float half = L.wordWidth(len) / 2f;
         e.sway = Math.min(0.035f * L.w, Math.max(0f, (L.playRight - L.playLeft) / 2f - half - 4f));

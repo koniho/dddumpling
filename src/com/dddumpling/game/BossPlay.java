@@ -29,6 +29,7 @@ final class BossPlay {
             if (!e.destroyed) c.destroyWord(e, c.enemyCentreX(e), e.y, L);
         }
         if (won) {
+            c.highScores.bosses |= 1 << c.boss.kind;
             c.progress.beatBoss(c.boss.kind);
             Interlude.awardBossPrize(c, c.boss.kind);
             if (c.boss.kind == Boss.SLIME && c.stage == Boss.EVERY) c.cubeUnlocked = true;
@@ -47,6 +48,18 @@ final class BossPlay {
         // boss and a satisfied stage at the same time.
         c.boss.leave();
         c.spawnedThisStage = c.stageQuota();
+    }
+
+    static void deathFeedback(GameCore c, float before) {
+        Boss b = c.boss;
+        if (!b.beaten || before < 0f) return;
+        float now = b.leaveProgress() * Boss.LEAVE;
+        if (now <= before) return;
+        boolean impact = before == 0f || (before < b.deathImpactTime() && now >= b.deathImpactTime());
+        if (impact || b.defeatChime) {
+            c.bossDeathHaptic = impact ? 2 : 1;
+            c.shake = Math.max(c.shake, impact ? 1.2f : .22f + b.defeatBeat * .08f);
+        }
     }
 
     static void slam(GameCore c, Layout L) {
@@ -124,7 +137,8 @@ final class BossPlay {
             c.score += GameCore.BOSS_HIT;
             Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR * 1.2f, 10, Glyph.COLOR[g]);
             if (c.sound != null) {
-                if (c.boss.boltDestroyed) c.sound.boltDeath();
+                if (c.boss.kind == Boss.SPLITTER) c.sound.divideDamage();
+                else if (c.boss.boltDestroyed) c.sound.boltDeath();
                 else c.sound.boltPop();
             }
             return true;
@@ -230,6 +244,7 @@ final class BossPlay {
         Fx.explode(c, c.rnd, x, y, L.enemyR * 1.5f, 14, GameCore.INK_SPARK);
         if (c.sound != null) {
             if (c.boss.kind == Boss.SLIME) c.sound.slimeDamage();
+            else if (c.boss.kind == Boss.OCTOPUS) c.sound.octoDamage();
             else c.sound.bossDamage();
         }
         return true;

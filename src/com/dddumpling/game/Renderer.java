@@ -11,6 +11,8 @@ final class Renderer extends Draw {
 
     private Renderer() {}
 
+    static float shakeMargin(GameCore c, Layout L) { return Math.max(0f, c.shake) * .016f * L.w; }
+
     static void draw(Painter p, GameCore c, Layout L) {
         if (c.townOpen) {
             TownScreen.draw(p,c,L);
@@ -40,22 +42,23 @@ final class Renderer extends Draw {
         if (Cave.active(c)) {
             CaveScreen.draw(p, c, L);
         } else {
-        p.fillRect(0, 0, L.w, L.h,
+        float shakeMargin = shakeMargin(c, L);
+        p.save();
+        if (c.shake > 0) {
+            float m = shakeMargin;
+            p.translate(m * (float) Math.sin(c.clock * 57f),
+                    m * 0.6f * (float) Math.cos(c.clock * 71f));
+        }
+        // Overscan the flat backing so camera motion cannot expose an unpainted edge.
+        p.fillRect(-shakeMargin, -shakeMargin, L.w + shakeMargin, L.h + shakeMargin,
                 Glyph.mix(Glyph.mix(Lands.background(c), BG_HURT, hurt * 0.45f), BG_DEATH, gone));
-        p.fillRect(0, L.deckTop, L.w, L.h,
+        p.fillRect(-shakeMargin, L.deckTop, L.w + shakeMargin, L.h + shakeMargin,
                 Glyph.mix(Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f), BG_DEATH, gone * 0.85f));
 
         // Two cloud layers behind the words...
         Sky.cloudBand(p, c, L, 0, Sky.CLOUD_FRONT_LAYER, hurt);
 
         Lands.scenery(p, c, L);
-
-        p.save();
-        if (c.shake > 0) {
-            float m = c.shake * 0.016f * L.w;
-            p.translate(m * (float) Math.sin(c.clock * 57f),
-                    m * 0.6f * (float) Math.cos(c.clock * 71f));
-        }
 
         dangerLine(p, c, L);
         pushHint(p, c, L);
@@ -147,6 +150,7 @@ final class Renderer extends Draw {
         c.releaseNotes.draw(p,c,L);
         if(c.townReturnFade>0f) p.fillRect(0,0,L.w,L.h,
                 Glyph.withAlpha(0xFFCEF0D1,(int)(255*c.townReturnFade/GameCore.TOWN_FADE)));
+        c.highScoreScreen.draw(p,c,L);
         if (c.returnFade > 0f) {
             float cover = 1f - Math.abs(c.returnFade / GameCore.RETURN_FADE * 2f - 1f);
             cover = cover * cover * (3f - 2f * cover);

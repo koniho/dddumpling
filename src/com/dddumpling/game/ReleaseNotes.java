@@ -21,7 +21,7 @@ final class ReleaseNotes extends Draw {
     private boolean listDragging,listMoved;
 
     static boolean available(GameCore c) {
-        return c.state==GameCore.TITLE && !c.starting() && !c.caseOpen && c.caseFade<0.01f
+        return !c.highScoreScreen.open && c.state==GameCore.TITLE && !c.starting() && !c.caseOpen && c.caseFade<0.01f
                 && !c.storyOpen() && !c.settingsOpen && c.returnFade<=0f && c.rosterSceneT<=0f;
     }
     static boolean entryHit(GameCore c,Layout L,float x,float y) {
@@ -255,7 +255,7 @@ final class ReleaseNotes extends Draw {
     void draw(Painter p,GameCore c,Layout L) {
         if(!open) return;
         p.save();p.clipRect(0,0,L.w,L.h);
-        Painter glass=new OpacityPainter(p,.96f);
+        Painter glass=new OpacityPainter(p,PANEL_OPACITY);
         if(transition.progress<1f)
             ReleaseMascot.steamer(glass,transition.x(L),transition.y(L),transition.radius(L),c.clock,transition.lidLift());
         p.translate(transition.listX(L),0);

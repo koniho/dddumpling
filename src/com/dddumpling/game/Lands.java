@@ -54,7 +54,8 @@ final class Lands extends Draw {
     static void scenery(Painter p, GameCore c, Layout L) {
         if (c.state == GameCore.TITLE) return;
         p.save();
-        p.clipRect(0, L.playTop, L.w, L.deckTop);
+        float margin = Renderer.shakeMargin(c, L);
+        p.clipRect(-margin, L.playTop - margin, L.w + margin, L.deckTop);
         float mix = blend(c);
         if (mix < 1f && c.landFrom >= 0) sceneryLayer(p, c, L, c.landFrom, 1f - mix);
         if (mix > 0f) sceneryLayer(p, c, L, forStage(visualStage(c)), mix);

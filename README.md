@@ -52,9 +52,14 @@ both partner keys within 200 ms. MULTI is retired from the offered powers.
 
 Player settings, available from the title and in-run stage readout, provide independent music
 and effects volume/mute controls, the privacy policy, and Kids Mode. Kids Mode applies to the
-next run: slower enemy and projectile traversal, four keys, short unstacked words, and more time for linked friends;
+next run: slower enemy and projectile traversal, four keys, and stage-growing words capped at six presses including multipress keys;
+linked friends use the standard 200 ms window;
 boss actions, animations, and minigames keep normal timing;
 lives and game over remain. The title's What's new steamer opens the release history and demos.
+
+Kids Mode always grants five seconds of Steamer mash time and caps Star Path at 30%
+of its normal difficulty ladder (level 3 of 10). Saved Star Path progression is preserved
+for normal mode; easier saved levels stay easier. Animation and flight clocks remain normal.
 
 ## Where to look
 

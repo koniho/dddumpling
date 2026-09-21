@@ -3,12 +3,26 @@ package com.dddumpling.game;
 /** Shipped highlights and their shared list/popup illustrations. */
 final class ReleaseChange extends Draw {
     static final int TRAVEL=0, STARS=1, BUGS=2, SHUFFLE=3, DISGUISE=4, SLIME=5,
-            PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11, SETTINGS=12;
+            PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11, SETTINGS=12, SWIPE=13, SCORES=14, OCTOPULSE=15;
     static final int[][] ITEMS=ReleaseContent.ITEMS;
     static boolean playable(int id) { return id==TRAVEL || id==SHUFFLE || id==PAIR; }
     static float artUnits(int id) { return id==TRAVEL ? 8f : id==PAIR ? 9f : id==SHUFFLE ? 9f : 5f; }
     static void icon(Painter p,int id,float x,float y,float r,float time) {
-        if(id==SETTINGS) {
+        if(id==SCORES) {
+            powerHalo(p,x,y,r*.7f,time,GOLD,1f);
+            for(int row=0;row<3;row++) {
+                float yy=y+r*(row*.5f-.5f);
+                p.line(x-r*.65f,yy,x+r*.65f,yy,row==0?GOLD:INK_DIM,r*.12f);
+            }
+            p.fillPoly(star(x+r*.55f,y-r*.55f,r*.38f,r*.18f,5,0f),GOLD);
+        } else if(id==OCTOPULSE) {
+            BossCollect.draw(p,Boss.OCTOPUS,x,y,r,time,true,1f);
+        } else if(id==SWIPE) {
+            float lift=(float)(.5-.5*Math.cos(time*2.5f));
+            p.line(x-r*.85f,y+r*.7f,x+r*.85f,y+r*.7f,Glyph.cycle(time),r*.16f);
+            p.polyline(new float[]{x-r*.3f,y-r*.45f,x,y-r*.8f,x+r*.3f,y-r*.45f},GOLD,r*.12f);
+            Renderer.touchHint(p,x,y+r*(.45f-lift*.65f),r*.42f,(float)Math.PI/2f,1f,time);
+        } else if(id==SETTINGS) {
             p.strokePoly(Glyph.hex(x,y,r),INK_DIM,r*.117f);
             for(int line=-1;line<=1;line++)
                 p.line(x-r*.467f,y+line*r*.3f,x+r*.467f,y+line*r*.3f,INK_DIM,r*.117f);

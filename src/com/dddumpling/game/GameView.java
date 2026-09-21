@@ -151,6 +151,15 @@ public class GameView extends View {
             if (core.pushLesson.touch(core, layout, action, ev.getX(), ev.getY())) tick();
             return true;
         }
+        if(action==0 && HighScoreScreen.entryHit(core,layout,ev.getX(),ev.getY())) {
+            cancelPointers();core.highScoreScreen.show(core);return true;
+        }
+        if(core.highScoreScreen.open) {
+            int i=action==2?ev.findPointerIndex(settingsPointer):ev.getActionIndex();
+            if(action==0) settingsPointer=ev.getPointerId(ev.getActionIndex());
+            if(i>=0) settingsInput.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));
+            return true;
+        }
         if(core.releaseNotes.handleTouch(core,layout,action,ev.getX(ev.getActionIndex()),ev.getY(ev.getActionIndex())))
             return true;
         if (core.settingsOpen) {
@@ -517,7 +526,6 @@ public class GameView extends View {
     private int bossDragPointer = -1;
     private boolean bossPinching;
     private long lastBossDragHaptic;
-    private boolean bossWasBeaten;
 
     /**
      * The boss's elements: a tap on one acts at once, a drag on one carries it.
@@ -763,9 +771,10 @@ public class GameView extends View {
             }
             refreshNavigation();
             if (playingBeforeUpdate && core.boss.octoImpact) bossImpactHaptic();
-            boolean beaten = core.boss.active() && core.boss.beaten;
-            if (beaten && !bossWasBeaten) bossDeathHaptic();
-            bossWasBeaten = beaten;
+            if (playingBeforeUpdate && core.bossDeathHaptic > 0) {
+                if (core.bossDeathHaptic == 2) bossDeathHaptic();
+                else tick();
+            }
             painter.bind(c);
             Renderer.draw(painter, core, layout);
         } catch (Throwable t) {

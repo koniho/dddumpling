@@ -24,9 +24,14 @@ Boss actions retain their durations. Actions that already wait for the board to 
 can still wait longer because a projectile remains airborne longer. Movement-linked
 cues (word entrance/warning and cave approach stomps) follow the slowed position.
 
-Kids Mode's other assistance remains separate: four keys, short unstacked words,
-early-stage word pacing, and a 600 ms linked-pair window. These are rule choices,
+Kids Mode's other assistance remains separate: four keys and early-stage movement/spawn pacing. Word length
+and stack odds follow the actual stage, with a six-press total cap including multipress
+keys. Linked pairs use the same 200 ms window as normal mode. These are rule choices,
 not a shared time multiplier. Lives and game over remain enabled.
+
+Kids Mode always grants five seconds of Steamer mash time and caps Star Path at 30%
+of its normal difficulty ladder (level 3 of 10). Saved Star Path progression is preserved
+for normal mode; easier saved levels stay easier. Animation and flight clocks remain normal.
 
 Existing gameplay effects are separate too: frenzy fall-rate boosts, panic-swipe
 recovery, and brief earned slow-motion beats retain their own rules. Pause still freezes
@@ -34,4 +39,5 @@ play. Real-time input windows use `elapsed`, independently of simulation slow mo
 
 When adding movement, decide explicitly whether it belongs in this table. Pass scaled
 time only to flight/movement, never to a whole boss, minigame, or animation system.
-Regression coverage lives in `TestSettings.kidsTiming`, `TestCave`, and `TestCaveMining`.
+Regression coverage lives in `TestSettings`, `TestWords`,
+`TestLinkedPairs`, `TestCave`, and `TestCaveMining`.

@@ -56,7 +56,8 @@ final class Interlude {
         // The mash is exactly what the round earned, and nothing else adds to it — a frenzy no
         // longer buys extra time here, because that bonus was wider than the whole earned ladder
         // and erased it. See bonusRollEnd for how the one timer carries all four phases.
-        c.bonusRollEnd = c.earnedMash + GameCore.MASH_END;
+        // Kids always get the full mash, including direct playtests.
+        c.bonusRollEnd = (c.kidsRun ? GameCore.MASH_PERFECT : c.earnedMash) + GameCore.MASH_END;
         c.bonusTimer = GameCore.BONUS_ROLL + c.bonusRollEnd;
         c.paradeTimer = 0f;
         c.steamer.lidPulse = 0;
@@ -130,6 +131,7 @@ final class Interlude {
         c.caseSlide = c.caseSlideY = c.caseHighlightAge = 0f;
         c.caseFreePan = false;
         c.prizeNew = !Collect.has(c.collected, c.prize);
+        c.highScores.dumplings++;
         c.roundPrizes = Collect.add(c.roundPrizes, c.prize);
         int previous = Math.max(c.collectionCounts[c.prize], c.prizeNew ? 0 : 1);
         c.collectionCounts[c.prize] = previous == Integer.MAX_VALUE ? previous : previous + 1;
@@ -193,6 +195,7 @@ final class Interlude {
      * finished, so the interlude opens after that celebration rather than on top of it.
      */
     static void beginStageEnd(GameCore c) {
+        c.highScores.stages++;
         c.progress.completeStage(c.score);
         if (c.perfectRound()) {
             c.perfectBanner = GameCore.PERFECT_TIME;

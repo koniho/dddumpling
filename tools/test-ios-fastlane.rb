@@ -113,6 +113,7 @@ Dir.mktmpdir("ios-fastlane-missing-") do |root|
 end
 assert($calls.empty?, "upload requires a pre-existing IPA before contacting Apple")
 
+upload_options = nil
 Dir.mktmpdir("ios-fastlane-ipa-") do |root|
   ipa_path = File.join(root, "DDDumpling.ipa")
   File.write(ipa_path, "fixture")
@@ -120,8 +121,26 @@ Dir.mktmpdir("ios-fastlane-ipa-") do |root|
   ios_upload_testflight!(ipa_path: ipa_path)
   upload_options = $calls.assoc(:upload_to_testflight).last
   assert(upload_options[:ipa] == ipa_path, "upload uses the archived IPA")
+  notes = File.read(File.expand_path("../ios/store/en-US/what_to_test.txt", __dir__)).strip
+  assert(!notes.empty? && upload_options[:changelog] == notes, "upload includes the reviewed TestFlight notes")
   assert(!upload_options[:distribute_external] && upload_options[:skip_waiting_for_build_processing], "upload avoids external distribution")
 end
+
+Group = Struct.new(:id, :is_internal_group)
+TestApp = Struct.new(:get_beta_groups)
+ENV["IOS_BUILD_NUMBER"] = "42.1"
+ENV["IOS_TEST_VERSION"] = "0.1.17"
+$calls.clear
+ios_distribute_external!(app: TestApp.new([Group.new("internal", true), Group.new("external", false)]))
+external_options = $calls.assoc(:upload_to_testflight).last
+assert(external_options[:app_platform] == "ios", "distribution without an IPA never prompts for platform")
+assert(external_options[:groups] == ["external"], "distribution selects only existing external groups")
+assert(external_options[:app_version] == "0.1.17" && external_options[:build_number] == "42.1", "distribution pins the exact uploaded build")
+assert(external_options[:distribute_only] && external_options[:distribute_external] && external_options[:submit_beta_review], "external distribution submits review without uploading again")
+assert(!external_options[:skip_waiting_for_build_processing], "external distribution waits for processing")
+$calls.clear
+rejects("No existing external") { ios_distribute_external!(app: TestApp.new([Group.new("internal", true)])) }
+assert(!$calls.assoc(:upload_to_testflight), "no groups never falls through to another distribution target")
 
 require "fastlane"
 require "fastlane/actions/app_store_connect_api_key"
@@ -141,7 +160,7 @@ assert_supported_options(Fastlane::Actions::SetupCiAction, %i[force keychain_nam
 assert_supported_options(Fastlane::Actions::MatchAction, %i[type readonly app_identifier team_id git_url keychain_name keychain_password api_key])
 assert_supported_options(Fastlane::Actions::UpdateCodeSigningSettingsAction, %i[path use_automatic_signing targets build_configurations team_id code_sign_identity profile_name])
 assert_supported_options(Fastlane::Actions::BuildAppAction, %i[project scheme configuration xcargs export_method archive_path output_directory output_name export_options])
-assert_supported_options(Fastlane::Actions::UploadToTestflightAction, %i[api_key ipa distribute_external skip_waiting_for_build_processing])
+assert_supported_options(Fastlane::Actions::UploadToTestflightAction, %i[api_key ipa changelog distribute_external skip_waiting_for_build_processing])
 
 {
   app_store_connect_api_key: Fastlane::Actions::AppStoreConnectApiKeyAction,
@@ -150,6 +169,7 @@ assert_supported_options(Fastlane::Actions::UploadToTestflightAction, %i[api_key
   update_code_signing_settings: Fastlane::Actions::UpdateCodeSigningSettingsAction,
   build_app: Fastlane::Actions::BuildAppAction
 }.each { |name, action| assert_supported_options(action, archive_calls.fetch(name).keys) }
-assert_supported_options(Fastlane::Actions::UploadToTestflightAction, $calls.assoc(:upload_to_testflight).last.keys)
+assert_supported_options(Fastlane::Actions::UploadToTestflightAction, upload_options.keys)
+assert_supported_options(Fastlane::Actions::UploadToTestflightAction, external_options.keys)
 
 puts "iOS Fastlane configuration checks passed"

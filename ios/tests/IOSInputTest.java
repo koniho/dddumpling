@@ -3,9 +3,10 @@ package com.dddumpling.game;
 /** Native packet contract and gesture ownership, using the real game rules. */
 public final class IOSInputTest extends Check {
     private static final class Host implements IOSGame.Host {
-        int ticks;
+        int ticks, impacts;
         String privacy;
         public void tick() { ticks++; }
+        public void impact() { impacts++; }
         public void openPrivacy(String url) { privacy = url; }
     }
 
@@ -44,6 +45,18 @@ public final class IOSInputTest extends Check {
         try { new IOSTouch(0, 0, new int[] {7, 7}, new float[2], new float[2]); }
         catch (IllegalArgumentException expected) { rejected = true; }
         check("duplicate native identities are rejected", rejected);
+    }
+
+    private static void highScores() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.startGame();c.score=500;c.highScores.finish(c);c.toTitle();c.returnFade=0;
+        tap(game,l.w*.5f,l.h*.292f);
+        game.update(HighScoreScreen.ENTRY_TIME);
+        check("title best opens high scores",c.highScoreScreen.open && !c.starting());
+        tap(game,l.w*.5f,HighScoreScreen.listTop(l)+HighScoreScreen.size(l));
+        check("native tap opens saved summary",c.highScoreScreen.selected==0);
+        game.back();check("native back returns to score list",c.highScoreScreen.open && c.highScoreScreen.selected==-1);
+        game.back();game.update(HighScoreScreen.ENTRY_TIME);check("native back returns to title",!c.highScoreScreen.open && c.state==GameCore.TITLE);
     }
 
     private static void titleAndLifecycle() {
@@ -531,6 +544,7 @@ public final class IOSInputTest extends Check {
         game.background(true);check("background releases minecart pointer",m.input.pointer<0 && m.intent==0);
     }
 
+
     private static void townNavigation() {
         IOSGame game=game(); GameCore c=game.core(); Layout l=game.geometry();
         c.openTown();
@@ -555,13 +569,37 @@ public final class IOSInputTest extends Check {
         check("native back leaves town without launching combat",!c.townOpen && c.state==GameCore.TITLE);
     }
 
+    private static void bossDeathFeedback() {
+        for (int kind = 0; kind < Boss.COUNT; kind++) {
+            IOSGame game = game(); GameCore c = game.core();
+            Host host = new Host(); game.setHost(host);
+            c.startGame(); c.stage = Boss.EVERY; c.enemies.clear();
+            c.boss.begin(kind, c.stage, c.rnd); c.boss.intro = 0f;
+            c.boss.beaten = true; c.boss.leaveT = Boss.LEAVE;
+            game.update(DT);
+            check("iOS boss death begins with a heavy impact " + kind, host.impacts == 1);
+            game.background(true);
+            for (int i = 0; i < 10; i++) game.update(DT);
+            check("background cannot replay death feedback " + kind, host.impacts == 1 && host.ticks == 0);
+            game.background(false); Pause.resume(c);
+            for (int i = 0; i < 200; i++) game.update(DT);
+            check("iOS dispatches all death beats once " + kind, host.impacts == 2 && host.ticks == 3);
+            c.boss.leave(); game.update(DT);
+            check("iOS death feedback ends with the boss " + kind, host.impacts == 2 && host.ticks == 3);
+        }
+
+    }
+
     public static void main(String[] args) {
         townNavigation();
         caveMining();
         caveCart();
+
+        bossDeathFeedback();
         playerSettings();
         gameOverDismissal();
         cave();
+        highScores();
         releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); bossOwnership(); flingHistory();
         steamerAndPanic(); caseAndSettings();
         debugScenes(); linkedChord();

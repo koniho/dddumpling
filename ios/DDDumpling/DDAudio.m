@@ -50,6 +50,10 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 @property(nonatomic) BOOL narrating;
 @property(nonatomic) NSInteger selectedStyle;
 @property(nonatomic) NSUInteger musicGeneration;
+@property(nonatomic) BOOL musicRequested;
+@property(nonatomic) NSInteger playingStyle;
+@property(nonatomic) BOOL playingBoss;
+@property(nonatomic) BOOL playingFrenzy;
 @property(nonatomic) float bubbleVolume;
 @property(nonatomic) float musicVolume;
 @property(nonatomic) float effectsVolume;
@@ -281,22 +285,28 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 
 - (void)rebuildMusic {
   if (_bandActive) return;
-  ++_musicGeneration;
-  NSUInteger generation = _musicGeneration;
+  BOOL boss = _boss, frenzy = !boss && _frenzy;
+  jint style = [DDMusic isSynthWithInt:(jint)_selectedStyle] ? (jint)_selectedStyle : DDStyleSwing;
+  // Track pending renders too; repeated selections must not cancel the first load.
+  if (_musicRequested && _playingStyle == style && _playingBoss == boss && _playingFrenzy == frenzy) return;
+  _musicRequested = YES; _playingStyle = style; _playingBoss = boss; _playingFrenzy = frenzy;
+  NSUInteger generation = ++_musicGeneration;
   [_music stop]; _music = nil;
-  BOOL boss = _boss, frenzy = _frenzy;
-  NSInteger style = _selectedStyle;
   dispatch_async(_renderQueue, ^{
     IOSShortArray *pcm = nil;
     @try {
-      jint synthStyle = [DDMusic isSynthWithInt:(jint)style] ? (jint)style : DDStyleSwing;
-      pcm = boss ? [DDMusic bossLoopWithInt:synthStyle]
-                 : [DDMusic loopWithInt:synthStyle withBoolean:frenzy];
-    } @catch (NSException *exception) { return; }
+      pcm = boss ? [DDMusic bossLoopWithInt:style]
+                 : [DDMusic loopWithInt:style withBoolean:frenzy];
+    } @catch (NSException *exception) {
+      dispatch_async(dispatch_get_main_queue(), ^{
+        if (generation == self.musicGeneration) self.musicRequested = NO;
+      });
+      return;
+    }
     dispatch_async(dispatch_get_main_queue(), ^{
       if (generation != self.musicGeneration) return;
       AVAudioPlayer *player = [self playerForPCM:pcm loop:YES];
-      if (!player) return;
+      if (!player) { self.musicRequested = NO; return; }
       self.music = player; [self applyMusicMix];
       if (self.active && !self.interrupted && self.playbackAllowed) [player play];
     });
@@ -355,6 +365,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)divideDamage { [self playEffect:DDSfx_DIVIDE_DAMAGE rate:1 gain:.76f]; }
 - (void)divideSplit { [self playEffect:DDSfx_DIVIDE_SPLIT rate:1 gain:.78f]; }
 - (void)divideDeactivate { [self playEffect:DDSfx_DIVIDE_DEACTIVATE rate:1 gain:.82f]; }
+- (void)divideSupernova { [self playEffect:DDSfx_DIVIDE_SUPERNOVA rate:1 gain:.95f]; }
 - (void)divideBoingWithFloat:(jfloat)weight {
   float w = MAX(0.f, MIN(1.f, weight));
   jint sound = w >= .67f ? DDSfx_DIVIDE_BOING_HEAVY : w >= .34f ? DDSfx_DIVIDE_BOING_MEDIUM : DDSfx_DIVIDE_BOING_LIGHT;
@@ -368,7 +379,8 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 }
 - (void)boltDeath { [self playEffect:DDSfx_BOLT_DEATH rate:1 gain:.82f]; }
 - (void)shieldBounce { [self playEffect:DDSfx_SHIELD_BOUNCE rate:1 gain:.72f]; }
-- (void)octoWave { [self playEffect:DDSfx_OCTO_WAVE rate:1 gain:.74f]; }
+- (void)octoWave { [self playEffect:DDSfx_OCTO_WAVE rate:1 gain:DDSfx_OCTO_WAVE_GAIN]; }
+- (void)octoDamage { [self playEffect:DDSfx_OCTO_DAMAGE rate:1 gain:.82f]; }
 - (void)octoCue { [self playEffect:DDSfx_OCTO_CUE rate:1 gain:.74f]; }
 - (void)octoLock { [self playEffect:DDSfx_OCTO_LOCK rate:1 gain:.70f]; }
 - (void)mushroomShake { [self playEffect:DDSfx_MUSHROOM_SHAKE rate:1 gain:.78f]; }
@@ -428,6 +440,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 
 - (void)bandStartWithInt:(jint)song withBoolean:(jboolean)muted {
   [self bandStop];
+  _musicRequested = NO;
   _bandActive = YES; _bandPaused = _bandFailed = _bandFinished = NO; _bandMuted = muted;
   _boss = _frenzy = NO;
   _bandDuration = [DDCaveSong durationWithInt:song];

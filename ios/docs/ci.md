@@ -129,3 +129,11 @@ bundle exec fastlane lanes
 Signing and TestFlight delivery cannot be end-to-end validated until the environment
 has real credentials and initialized match assets. No TestFlight upload is part of
 the unsigned workflow.
+
+### External TestFlight assignment
+
+After an authorized external-testing rollout and a successful upload, dispatch
+`testflight-distribute.yml` on main with the exact iOS marketing `version` and uploaded
+`build` number. It waits for processing, assigns only existing external groups, and submits
+beta review when required. It does not upload another binary or create groups/testers.
+Confirm the workflow outcome and distinguish pending Apple review from availability.

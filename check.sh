@@ -46,8 +46,11 @@ fi
 # compile while the APK builds fine.
 python3 tools/release-notes.py check >/dev/null
 
-PURE="src/com/dddumpling/game/OctoWaveRecording.java
+PURE="src/com/dddumpling/game/HighScores.java
+src/com/dddumpling/game/HighScoreScreen.java
+src/com/dddumpling/game/OctoWaveRecording.java
 src/com/dddumpling/game/PushLesson.java
+src/com/dddumpling/game/DivideDeath.java
 src/com/dddumpling/game/SettingsArt.java
 src/com/dddumpling/game/PlayerSettings.java
 src/com/dddumpling/game/DevSettings.java
@@ -60,6 +63,7 @@ src/com/dddumpling/game/ReleaseChange.java
 src/com/dddumpling/game/ReleaseContent.java
 src/com/dddumpling/game/ReleaseTransition.java
 src/com/dddumpling/game/OpacityPainter.java
+src/com/dddumpling/game/MushroomDeath.java
 src/com/dddumpling/game/ReleaseMascot.java
 src/com/dddumpling/game/Pause.java
 src/com/dddumpling/game/Glyph.java
@@ -84,6 +88,7 @@ src/com/dddumpling/game/SlimeFightScreen.java
 src/com/dddumpling/game/Collect.java
 src/com/dddumpling/game/Power.java
 src/com/dddumpling/game/Boss.java
+src/com/dddumpling/game/OctoThrow.java
 src/com/dddumpling/game/Softbody.java
 src/com/dddumpling/game/Buddy.java
 src/com/dddumpling/game/GameCore.java

@@ -183,7 +183,7 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **element** | a hit-testable thing a boss puts on the field to be tapped or dragged. Always in the upper field, because a drag may not start on a key | `Boss.ELEMS`, `elemAt`, `etype` |
 | **rebuff** | the right thing at the wrong moment, or a held key. Sounds wrong, never counted as a miss, and fires no bullet | `Boss.REBUFF` |
 | **boss bullet** | the shot a landed key press fires at the boss, the same one a press at a word fires. Homes toward the boss as it drifts | `GameCore.bossShot`, `Shot.atBoss`, `Boss.hitX` |
-| **enrage** | the visual warning on a dragging fight: it reddens, but does no damage by itself | `Boss.ENRAGE_AT`, `ENRAGE_RAMP` |
+| **enrage** | the visual warning on a dragging fight: it reddens, but does no damage by itself | `Boss.enrageAt`, `ENRAGE_RAMP` |
 | **slime** | boss 1. A wide, twice-as-jiggly mass of goo. A chain of letters to type, and the only thing that hurts it is a glob carried off the screen | `Boss.SLIME`, `WIDE`, `JIGGLE` |
 | **split** | working a glob loose: five presses of the chain. The presses themselves take no health off it | `Boss.SPLIT_HITS`, `split`, `splitProgress` |
 | **prompt** | the character on the slime. After the first two successful prompt hits, the whole lower edge folds over it while invulnerable; the surprised prompt blends into the slime color and fades away in front of the skin, then reverses that fade over 0.3 seconds as the skin relaxes. It accepts hits from the start of reappearance. Three bubbles rise in pitch on covering and descend on release. Answer it while exposed before its two-to-one-second deadline or it leads a volley | `promptT`, `promptDelay` |
@@ -202,6 +202,26 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **boss friends** | four collectible boss portraits, awarded only by defeating their matching bosses | `BossCollect`, `Interlude.awardBossPrize` |
 | **soft body** | how every boss's body is built: a ring of sprung nodes under pressure, so it dents where you hit it | `Softbody`, `Boss.body` |
 | **burst** | what a beaten boss goes out on | `BossScreen.burst`, `Boss.LEAVE` |
+
+Fly Agaric’s final shake starts its death: the cap and mycelium brown and shrivel,
+then the cap flattens against its planted roots, spreads into a thin horizontal brown smear,
+melts into the ground, and fades away.
+
+Dark Divide answers successful key hits and intercepted projectiles with a short rounded bloop. Firing gives the cube
+a springy jiggle and a slight recoil opposite its projectile; disabling a cube plays a softer
+falling bubble-pop. Recoil settles back without changing the cube’s roaming speed.
+The unsplit cube fires three staggered projectiles every 1.5 seconds; after the first split,
+each cube fires two every 2.1 seconds. Subsequent splits retain the single-projectile firing ramp.
+Successful hits still reset the struck cube’s firing timer.
+On defeat the cubes gather in a circle, shake with growing intensity for one second, then
+explode into 360 tiny tumbling cubes in six purple shades. A rapid, layered bleep-and-bloop burst sounds once at ignition.
+`DivideDeath` owns this sequence; `Sfx.DIVIDE_SUPERNOVA` supplies its sound.
+
+Screen shake moves background clouds, land scenery, and the playfield together, with an
+oversized background fill covering the edges. HUD and modal panels stay steady.
+Every boss death has screen shake and haptics: heavy at the opening and final collapse (or
+Dark Divide supernova), with three lighter animation beats. Pausing/settings freeze the
+sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and iOS.
 
 ## Powerup
 
@@ -267,6 +287,7 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **swipe catchment** | where a panic swipe may start: the lower half of the field, much wider than the strip that advertises it | `Layout.inPushZone` |
 | **shelving** | one of the haul reaching the case at the end of its trip, and the chime that says so | `RoundEnd.arrival`, `Sound.collect`, `Sfx.collect` |
 | **game over screen** | score, accuracy dumpling, best. Fades up after the hold; GAME OVER is yellow, not rose | `Screens.gameOver` |
+| **high-score screen** | tap BEST on the title to browse the ten highest saved runs; the panel slides down from the top to open and back up to close, using the same opacity as Settings and release notes; ties favor newer runs, and the latest completed run glows. If it misses the top ten, it appears as an extra row at the bottom; all rows fit on one page. Returning from a run pulses BEST until the list is opened or another run starts. Each compact row shows score, death blurb, overlapping defeated bosses, and a dumpling icon with its reward count including duplicates; tap for completed stages, powerup and rescue-swipe usage, and the full saved summary | `HighScores`, `HighScoreScreen` |
 | **accuracy dumpling** | the face that reflects accuracy: tear below 60%, sparkles above 90%; no presses means 0% | `Screens.accuracy` |
 | **settings panel** | opened by tapping the stage readout; pauses the game | `Screens.settings` |
 | **minigame difficulty** | Minigames settings tab; saved Star Path level, applied next attempt, raised by wins | `SettingsUi.MINIGAMES`, `GameCore.setStarDifficulty` |
@@ -342,7 +363,7 @@ partner's gold highlight remains visible; there is no countdown circle, text, or
 have varying thickness along their length, solid hexagon-colored fills with stronger underside shadows and upper highlights for rounded volume, and key-colored outlines matching the hexagons. Limbs render behind the characters
 and are cut out around both complete character tiles, including during the flex. A missed window restores the first key without a life penalty
 or score; both enemies still descend. A successful chord credits one stage enemy while retaining both character rewards; the clasp opens, the characters peel outward with their hands, and a short curved whoosh marks the release point. Stage credit waits until both halves are cleared or breached, even if the bond breaks. The retired MULTI mode releases
-links, and a breached partner cannot leave the other waiting forever.
+links. While linked, the first half to breach removes the whole pair, costs one life, and resolves one stage enemy without clear rewards.
 
 Stage 16 gives 15% longer travel and spawn intervals and caps the field at four enemies.
 Stage 17 retains 7.5% timing relief; stage 18 returns to the ordinary curve.
@@ -447,12 +468,17 @@ Run), **Powers** (frenzies and debuffs), **Minigames** (Star Path, Steamer, Cart
 (lands, release book, collection). Stage changes, End Run and playtests are disabled outside active
 play, including interludes; settings never starts a run implicitly.
 
-**Kids Mode** keeps lives and game over, slows enemy and projectile traversal to 45% speed, keeps four keys and two-letter
-unstacked words with early-stage pacing, and grants 600 ms for linked pairs. Boss actions, animations,
+**Kids Mode** keeps lives and game over, slows enemy and projectile traversal to 45% speed, keeps four keys and early-stage movement/spawn pacing.
+Words grow with the stage, including multipress keys, with a six-press total cap.
+Linked pairs use the same 200 ms window as normal mode. Boss actions, animations,
 sequences, and minigame clocks run at normal speed. Regular play returns on
 the next run after switching it off. `PlayerSettings`, `SettingsArt`, and `SettingsInput` own the
 public preferences, character handles, and shared native input; `SettingsUi` and `DevSettings` own
 the developer groups. See [Game timing](docs/game-timing.md) for the multiplier boundaries.
+
+Kids Mode always grants five seconds of Steamer mash time and caps Star Path at 30%
+of its normal difficulty ladder (level 3 of 10). Saved Star Path progression is preserved
+for normal mode; easier saved levels stay easier. Animation and flight clocks remain normal.
 
 
 ## Cart Rush interlude
@@ -501,13 +527,27 @@ Peach Coil, Berry Boa, Moon Ribbon, and Golden Hiss. Both have dedicated display
 family stories, mystery silhouettes, and the Cave Friend tier. The catalogue has 59 entries;
 existing collectible IDs and normal reward pools stay unchanged. `CaveCollect` draws the new families.
 
-The first normal-stage threat on the last life pauses play for a **desperation swipe lesson**.
+The first normal-stage threat on the last life pauses just before reaching the danger line for a **desperation swipe lesson**.
+The text-free lesson shows the shared instructional finger repeatedly swiping upward from the normal bar,
+which remains uncovered by the tutorial dimming.
 Swipe upward from the highlighted bar to perform the real push-back and resume; taps cannot
-dismiss it. Completion is saved across runs and app restarts. Boss fights and cave expeditions
+dismiss it. Any successful desperation swipe marks the lesson learned, including one used before
+the tutorial appears. Completion is saved across runs and app restarts. Boss fights and cave expeditions
 are excluded, and a spent swipe defers the lesson until a later stage. `PushLesson` owns the
 prompt, freeze, and shared native gesture.
 Developer settings → Progress → **RESET SWIPE** clears the saved lesson completion flag.
 
-Octopulse plays the supplied recorded sound once when its attacking arm starts to wave.
+Octopulse plays the supplied recorded sound, low-pass filtered at 1 kHz, once when its attacking arm starts to wave.
+While an arm is vulnerable, the other intact arms ripple and flick upward in pain.
 The later strike retains its short synthesized cue. `Boss.octoWave` signals the wave's
 start; `OctoWaveRecording` supplies the same PCM to Android, iOS, and previews.
+
+After Octopulse's first four arm tears, an intact arm winds up and throws one enemy key.
+The fifth and sixth tears trigger two simultaneous throws from different arms, and the seventh triggers three sequential throws
+from the last arm. Each enemy leaves the throwing tip and can be destroyed with its matching key.
+Successful-tear retaliation projectiles take 1.2 seconds to reach the player; missed-tear
+punishment projectiles retain their 2.4-second flight. The final three throws have a
+0.47-second interval, half the usual throwing cycle.
+The next arm-wave attack waits until every thrown enemy is destroyed or reaches the player.
+The final arm tear ends the fight without another throw.
+Octopulse’s visual enrage warning starts at 40 seconds to allow for the added wind-ups and throws.
