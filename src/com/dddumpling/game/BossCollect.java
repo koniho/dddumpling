@@ -50,9 +50,10 @@ final class BossCollect extends Draw {
             faceY += r * 0.48f;
             faceR = r * 0.27f;
         } else if (boss == Boss.SPLITTER) {
-            Shape.draw(p, Collect.GEL_CUBE, x, y, r * 0.95f,
-                    known ? Collect.BODY[i] : 0xFF393054,
-                    known ? Collect.ACCENT[i] : 0xFF393054, fade, clock, known);
+            // Match Dark Divide's pale rim so the purple body clears dark backgrounds.
+            int rim = known ? fadeBy(Glyph.mix(Collect.BODY[i], 0xFFFFFFFF, .52f), fade) : 0;
+            Shape.gelCube(p, x, y, r * 0.95f, body, cream,
+                    known ? fade : 0f, clock, known, rim);
             faceR = r * 0.56f;
         } else {
             p.fillEllipse(x, y + r * 0.05f, r * 0.86f, r * 0.82f, body);
