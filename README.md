@@ -52,7 +52,8 @@ both partner keys within 200 ms. MULTI is retired from the offered powers.
 
 Player settings, available from the title and in-run stage readout, provide independent music
 and effects volume/mute controls, the privacy policy, and Kids Mode. Kids Mode applies to the
-next run: slower play, four keys, short unstacked words, and more time for linked friends;
+next run: slower enemy and projectile traversal, four keys, short unstacked words, and more time for linked friends;
+boss actions, animations, and minigames keep normal timing;
 lives and game over remain. The title's What's new steamer opens the release history and demos.
 
 ## Where to look
@@ -68,23 +69,24 @@ Start with the document that answers your question:
 
 `GLOSSARY.md` exists because several plain-English names differ from the identifiers — a
 falling word is an `Enemy`, the frenzy is `mode`, the interlude is `BONUS`. `AGENTS.md` carries
-the conventions and, more usefully, the traps that have already cost time.
+the concise workflow defaults; [engineering notes](docs/engineering/index.md) hold topic-specific pitfalls.
 
 ## The fast loop
 
 **You can see and hear this game without building or installing it.** No SDK, no device:
 
 ```sh
-./check.sh -q                # rules + frames at 640x1400; quiet output
-./check.sh -q --production   # production configuration
-./check.sh -q -r             # rules only, no frames
-./check.sh -q -s Boss         # one suite
+./check.sh -q -r             # default code check: rules only, no frames
+./check.sh -q -r -s Boss     # focused suite for iteration
+./check.sh --town -q         # Town rules and selected Town/attraction frames
+./check.sh -q --production   # when production behavior is affected
+./check.sh -q                # full visual/audio export, only when needed
 ./check.sh -q -f 60,65        # only these frames, skipping the sheets and the WAVs
 ./check.sh -q -f 60 -c 0,.1,1,.45   # ...cropped to that box, in 0..1 fractions
 ./check.sh 1080 2400 2        # a specific screen size and supersampling factor
 ```
 
-It does two things:
+Without `-r`, it does two things:
 
 1. **Rule assertions** (`tools/CoreTest.java`, `tools/Test*.java`): layout
    geometry, hit-testing, targeting, scoring, stage pacing, the interlude's phases and both paths through it, the
@@ -115,7 +117,7 @@ This works because all logic and all drawing are pure Java behind the
 The iPhone host implements the same interface with Core Graphics. The harness exercises the
 shared drawing path; native fonts and antialiasing can differ. Renders
 are deterministic (fixed RNG seeds, no wall clock), so a change that should not alter them can
-be proved not to; `AGENTS.md` has the recipe.
+be compared selectively; see the [rendering notes](docs/engineering/rendering.md).
 
 ## Android requirements
 
@@ -147,20 +149,31 @@ from an SDK installation into `sdk/`. SDK files are not committed.
 
 ## Build
 
+Build and deploy only when explicitly requested. Ordinary code and PR work uses the
+change-appropriate checks in [AGENTS.md](AGENTS.md); documentation changes need no game run.
+
 ```sh
-./build.sh                 # developer APK (default)
-./build.sh --production    # production APK
+./build.sh                 # local developer APK: rule smoke checks + build
+./build.sh --developer --town # Town-scoped checks + installable developer APK
+./build.sh --developer --rules-checks # full rules, no exports + developer APK
+./build.sh --developer --full-checks # full checks and exports when explicitly needed
+./build.sh --production    # production APK: full verification
 ```
 
 The pipeline is `aapt2 compile` → `aapt2 link` → `javac` → `d8` → `zip` → `apksigner`.
-It runs both developer and production harness checks before packaging and stops on failed
-assertions. Logs are in `build/check.log` and `build/production-check.log`.
+Local developer builds run the Rules smoke suite, then compile, package, sign and verify the
+APK. A passing build is sufficient for a requested local install; no full export or soak run
+is required. Production and `--full-checks` builds retain full headless/render checks and
+production privacy assertions. Logs are in `build/check.log` and, for full verification,
+`build/production-check.log`.
 
 Output is a signed `hexatype.apk` with bundled fonts. Legacy personal `res/raw/bgm.*` files
 are excluded from packaging.
 
 Without a supplied signing key, the build creates `build/debug.keystore` on first run. Keep
 the same key to update an existing installation without uninstalling it.
+Local Termux developer builds retain at least the installed Dev app's version code in the
+generated manifest, so an older checkout can update it without changing release metadata.
 
 ## Install
 

@@ -241,7 +241,7 @@ final class Boss {
     float octoSweep, octoCharge, octoCoil, octoDragX, octoDragY, octoTaunt, octoEat, octoLean;
     float octoDragTime, octoEscape, octoFlurryT;
     float octoLashX, octoLashY;
-    boolean octoPlaced, octoCue, octoLock, octoImpact, octoPlayerHit, octoLashLanded;
+    boolean octoPlaced, octoWave, octoCue, octoLock, octoImpact, octoPlayerHit, octoLashLanded;
     boolean octoWrongLash, octoDragStarted, octoDragCanDamage;
 
     /** Stage 5 teaches boss play; stage 10 adds the first two-finger fight. */
@@ -375,7 +375,7 @@ final class Boss {
         octoReach = -1f; octoReturn = octoLash = octoDeath = 0f; octoPause = 0.75f;
         octoSweep = octoCharge = octoCoil = octoDragX = octoDragY = octoTaunt = octoEat = octoLean = 0f;
         octoDragTime = octoEscape = octoFlurryT = 0f; octoFlurryLeft = 0;
-        octoPlaced = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
+        octoPlaced = octoWave = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
         octoDragStarted = octoDragCanDamage = false;
         resetDividePieces(rnd);
         if (which != SPLITTER) { randomGlyph(rnd); randomGlyph(rnd); }
@@ -449,7 +449,7 @@ final class Boss {
         octoReach = -1f; octoReturn = octoPause = octoLash = octoDeath = 0f;
         octoSweep = octoCharge = octoCoil = octoDragX = octoDragY = octoTaunt = octoEat = octoLean = 0f;
         octoDragTime = octoEscape = octoFlurryT = 0f; octoFlurryLeft = 0;
-        octoPlaced = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
+        octoPlaced = octoWave = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
         octoDragStarted = octoDragCanDamage = false;
         for (int i = 0; i < DIVIDE_NODES; i++) {
             halfWant[i] = -1;
@@ -1805,7 +1805,7 @@ final class Boss {
         octoSweep = 0.001f;
         octoCharge = 0f;
         octoCoil = 0f;
-        octoCue = true;
+        octoWave = true;
     }
 
     // ---- bolts --------------------------------------------------------------
@@ -2276,6 +2276,11 @@ final class Boss {
 
     /** Returns how many visible boss threats reached the deck this frame. */
     int update(float dt, Layout L, Random rnd) {
+        return update(dt, dt, L, rnd);
+    }
+
+    // Action/animation time stays separate from Kids Mode projectile flight.
+    int update(float dt, float projectileDt, Layout L, Random rnd) {
         if (kind < 0) return 0;
         hurt = Math.max(0f, hurt - dt * 2.6f);
         for (int g = 0; g < slimeBlobPulse.length; g++)
@@ -2283,7 +2288,7 @@ final class Boss {
         slimeDragPulse = Math.max(0f, slimeDragPulse - dt);
         slimeKeyPulse = Math.max(0f, slimeKeyPulse - dt);
         slimeKeyLock = Math.max(0f, slimeKeyLock - dt);
-        octoCue = octoLock = mushroomShakeCue = mushroomSporeCue = false;
+        octoWave = octoCue = octoLock = mushroomShakeCue = mushroomSporeCue = false;
         divideBurst = Math.max(0f, divideBurst - dt * 1.35f);
         for (int i = 0; i < halfHurt.length; i++)
             halfHurt[i] = Math.max(0f, halfHurt[i] - dt * 3.4f);
@@ -2369,7 +2374,7 @@ final class Boss {
 
         // Above both early returns: a volley already in the air still arrives. Cleared on the frame
         // the boss is beaten, so nothing lands after the burst.
-        int hits = ageBolts(dt);
+        int hits = ageBolts(projectileDt);
 
         if (beaten) {
             leaveT = Math.max(0f, leaveT - dt);

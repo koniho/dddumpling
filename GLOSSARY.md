@@ -263,7 +263,7 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **flight home** | the haul carrying itself to the case with star trails, on the way to the title | `RoundEnd.homeward`, `GameCore.HOME_TIME` |
 | **lifetime collections** | every basket ever opened, duplicates counted — the number under the position bar that keeps climbing after the case is full | `GameCore.collectTotal` |
 | **earned mash** | how long the round bought at the steamer, and the only thing that sets it: 5s perfect, 4s unhurt, 3s hurt, 1s if the panic swipe was used | `GameCore.mashEarned`, `MASH_*` |
-| **winded** | the field at a quarter fall speed for three seconds after a panic swipe, ramping back up | `GameCore.PUSH_SLOW`, `pushSlowT` |
+| **winded** | the field starts at quarter fall speed after a panic swipe or surviving damage, ramping back up over three seconds; another hit refreshes it | `GameCore.PUSH_SLOW`, `pushSlowT` |
 | **swipe catchment** | where a panic swipe may start: the lower half of the field, much wider than the strip that advertises it | `Layout.inPushZone` |
 | **shelving** | one of the haul reaching the case at the end of its trip, and the chime that says so | `RoundEnd.arrival`, `Sound.collect`, `Sfx.collect` |
 | **game over screen** | score, accuracy dumpling, best. Fades up after the hold; GAME OVER is yellow, not rose | `Screens.gameOver` |
@@ -271,7 +271,6 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **settings panel** | opened by tapping the stage readout; pauses the game | `Screens.settings` |
 | **minigame difficulty** | Minigames settings tab; saved Star Path level, applied next attempt, raised by wins | `SettingsUi.MINIGAMES`, `GameCore.setStarDifficulty` |
 | **stage readout** | the "STAGE n" text — also the settings button | `Layout.inStageTap` |
-| **speed slider** | the 0.5×–1.5× pacing control | `SettingsUi` |
 | **stage jump** | the ±1 / ±5 steppers in the settings panel that jump straight to a stage, so a boss can be reached without playing twenty stages. Steps of five because bosses land on every fifth | `SettingsUi.STAGE_STEP`, `GameCore.jumpToStage` |
 
 ## Sound
@@ -443,16 +442,17 @@ The slime whispers at low effects volume, shakes and yells with expanding sound 
 volume, and covers its mouth when muted. Waves and notes stop when muted. Mute retains the slider level. Preferences
 are saved on the device and applied to audio on launch.
 
-The developer-only **Developer** tab groups **Run** (speed, stage, next-run keys, End
+The developer-only **Developer** tab groups **Run** (stage, next-run keys, End
 Run), **Powers** (frenzies and debuffs), **Minigames** (Star Path, Steamer, Cart Rush, Dumpling Mine, difficulty), and **Progress**
 (lands, release book, collection). Stage changes, End Run and playtests are disabled outside active
 play, including interludes; settings never starts a run implicitly.
 
-**Kids Mode** keeps lives and game over, runs gameplay at 45% speed, keeps four keys and two-letter
-unstacked words with early-stage pacing, and grants 600 ms for linked pairs. Regular play returns on
+**Kids Mode** keeps lives and game over, slows enemy and projectile traversal to 45% speed, keeps four keys and two-letter
+unstacked words with early-stage pacing, and grants 600 ms for linked pairs. Boss actions, animations,
+sequences, and minigame clocks run at normal speed. Regular play returns on
 the next run after switching it off. `PlayerSettings`, `SettingsArt`, and `SettingsInput` own the
 public preferences, character handles, and shared native input; `SettingsUi` and `DevSettings` own
-the developer groups.
+the developer groups. See [Game timing](docs/game-timing.md) for the multiplier boundaries.
 
 
 ## Cart Rush interlude
@@ -507,3 +507,7 @@ dismiss it. Completion is saved across runs and app restarts. Boss fights and ca
 are excluded, and a spent swipe defers the lesson until a later stage. `PushLesson` owns the
 prompt, freeze, and shared native gesture.
 Developer settings → Progress → **RESET SWIPE** clears the saved lesson completion flag.
+
+Octopulse plays the supplied recorded sound once when its attacking arm starts to wave.
+The later strike retains its short synthesized cue. `Boss.octoWave` signals the wave's
+start; `OctoWaveRecording` supplies the same PCM to Android, iOS, and previews.

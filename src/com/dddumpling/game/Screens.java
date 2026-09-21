@@ -152,6 +152,9 @@ final class Screens extends Draw {
                 fadeBy(INK, fade), Painter.CENTER, true);
 
         accuracy(p, c, L, L.h * 0.475f, fade);
+        if (c.townRunTickets > 0)
+            p.text("+"+c.townRunTickets+" TOWN TICKETS",L.w*.5f,L.h*.758f,
+                    type(s*.58f),fadeBy(GOLD,fade),Painter.CENTER,true);
 
         p.text("STAGE " + c.stage + "   SQUISHES " + c.squishes, L.w / 2f, L.h * 0.615f, type(s * 0.6f),
                 fadeBy(INK_DIM, fade), Painter.CENTER, false);
@@ -612,9 +615,4 @@ final class Screens extends Draw {
         if (BuildFlags.DEVELOPER) PlayerSettings.draw(p,c,L);
     }
 
-    /** One decimal place without String.format, which is not worth the cost per frame. */
-    static String fmtSpeed(float v) {
-        int tenths = Math.round(v * 10f);
-        return (tenths / 10) + "." + (tenths % 10);
-    }
 }

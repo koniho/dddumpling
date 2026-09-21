@@ -12,6 +12,11 @@ final class Renderer extends Draw {
     private Renderer() {}
 
     static void draw(Painter p, GameCore c, Layout L) {
+        if (c.townOpen) {
+            TownScreen.draw(p,c,L);
+            Pause.draw(p,c,L);
+            return;
+        }
         if (c.state == GameCore.BONUS && CaveInterlude.active(c)) {
             if(c.mining.active) CaveMiningScreen.draw(p,c,L);
             else if(c.cart.active) CaveCartScreen.draw(p,c,L);
@@ -140,6 +145,8 @@ final class Renderer extends Draw {
         Pause.draw(p, c, L);
         ReleaseNotes.entry(p,c,L);
         c.releaseNotes.draw(p,c,L);
+        if(c.townReturnFade>0f) p.fillRect(0,0,L.w,L.h,
+                Glyph.withAlpha(0xFFCEF0D1,(int)(255*c.townReturnFade/GameCore.TOWN_FADE)));
         if (c.returnFade > 0f) {
             float cover = 1f - Math.abs(c.returnFade / GameCore.RETURN_FADE * 2f - 1f);
             cover = cover * cover * (3f - 2f * cover);

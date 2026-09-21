@@ -53,14 +53,11 @@ final class TestFrenzyRefill extends Check {
         for (int stage : new int[] {1, 7, 13, 19}) {
             c.stage = stage;
             c.enemies.clear();
-            c.speed = 1f;
             float base = c.spawnInterval() / Power.spawnRate(c.ramp());
             float refill = Power.spawnDelay(c, L);
             scaled &= refill < base && refill >= base * 0.19f;
-            c.speed = 2f;
-            scaled &= Math.abs(Power.spawnDelay(c, L) * 2f - refill) < 1e-5f;
         }
-        check("refill timing follows the stage curve and speed setting", scaled);
+        check("refill timing follows the stage curve", scaled);
         c.modeLeft = 0f;
         check("ending a powerup restores ordinary spawn timing", Power.spawnDelay(c, L) == c.spawnInterval());
         rapidClears(L);

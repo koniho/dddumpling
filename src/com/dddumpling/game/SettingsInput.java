@@ -15,7 +15,7 @@ final class SettingsInput {
         return !runAction(hit) || (c.state==GameCore.PLAY && !c.pendingBonus && !c.starting());
     }
     private static boolean slider(int hit) {
-        return hit==1000+PlayerSettings.MUSIC || hit==1000+PlayerSettings.EFFECTS || hit==SettingsUi.HIT_SLIDER;
+        return hit==1000+PlayerSettings.MUSIC || hit==1000+PlayerSettings.EFFECTS;
     }
     private int hit(GameCore c,Layout L,float x,float y) {
         int player=PlayerSettings.hit(c,L,x,y);
@@ -45,21 +45,17 @@ final class SettingsInput {
         return false;
     }
     private void drag(GameCore c,Layout L,float x) {
-        if(pressed==SettingsUi.HIT_SLIDER) {
-            SettingsUi u=new SettingsUi();u.compute(L,c.settingsTab);c.setSpeed(u.speedAt(x));
+        float v=PlayerSettings.volumeAt(L,x);
+        if(pressed==1000+PlayerSettings.MUSIC) {
+            if(c.preferences.music==v) return;
+            c.preferences.music=v;
         } else {
-            float v=PlayerSettings.volumeAt(L,x);
-            if(pressed==1000+PlayerSettings.MUSIC) {
-                if(c.preferences.music==v) return;
-                c.preferences.music=v;
-            } else {
-                if(c.preferences.effects==v) return;
-                c.preferences.effects=v;
-            }
-            c.preferences.save(c);
-            if(pressed==1000+PlayerSettings.EFFECTS && !c.preferences.effectsMuted && v>0f && c.sound!=null)
-                c.sound.squish(Kawaii.BLOB,0);
+            if(c.preferences.effects==v) return;
+            c.preferences.effects=v;
         }
+        c.preferences.save(c);
+        if(pressed==1000+PlayerSettings.EFFECTS && !c.preferences.effectsMuted && v>0f && c.sound!=null)
+            c.sound.squish(Kawaii.BLOB,0);
     }
     static boolean action(GameCore c,Layout L,int h) {
         if(h>=1000) {

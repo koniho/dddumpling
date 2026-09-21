@@ -190,6 +190,20 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 
 // GameCore.Store -----------------------------------------------------------
 
+- (NSString *)loadTown {
+  [_lock lock];
+  NSString *saved = [_values[@"town_v1"] isKindOfClass:NSString.class] ? _values[@"town_v1"] : @"";
+  [_lock unlock];
+  return saved;
+}
+- (jboolean)saveTownWithNSString:(NSString *)value {
+  [_lock lock];
+  _values[@"town_v1"] = value ?: @"";
+  BOOL saved = [self persist];
+  [_lock unlock];
+  return saved;
+}
+
 - (jint)loadBest { return MAX(0, [self intForKey:@"best" defaultValue:0]); }
 - (void)saveBestWithInt:(jint)best { [self setValue:@(best) forKey:@"best"]; }
 - (NSString *)loadReleaseSeen { return [self stringForKey:@"releaseSeen" validWriter:NO] ?: @""; }
@@ -213,13 +227,6 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 
 - (jint)loadPlayerSettings { return [self intForKey:@"playerSettings" defaultValue:(100 | (100 << 7))]; }
 - (void)savePlayerSettingsWithInt:(jint)value { [self setValue:@(value) forKey:@"playerSettings"]; }
-
-- (jfloat)loadSpeed {
-  NSNumber *number = [self numberForKey:@"speed"];
-  float value = number ? number.floatValue : 1.f;
-  return isfinite(value) ? value : 1.f;
-}
-- (void)saveSpeedWithFloat:(jfloat)speed { [self setValue:@(speed) forKey:@"speed"]; }
 
 - (jlong)loadCollected {
   NSNumber *value = [self numberForKey:@"collected"];

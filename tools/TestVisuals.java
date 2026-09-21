@@ -455,7 +455,7 @@ final class TestVisuals extends Check {
         check("new players have no land picker", !LandPicker.visible(lands));
         check("locked land cannot be selected", !LandPicker.unlocked(lands, 1));
         landStore.collected = lands.collected = Collect.add(lands.collected, Collect.BOSS_FIRST);
-        check("a boss friend unlocks its next land", LandPicker.visible(lands) && LandPicker.count(lands) == 2);
+        check("a boss friend unlocks its next land and town", LandPicker.visible(lands) && LandPicker.count(lands) == 3);
         LandPicker.select(lands, 2);
         check("later locked lands remain unavailable", lands.landChoice == 0);
         int titleColor = Lands.background(lands);
@@ -472,7 +472,7 @@ final class TestVisuals extends Check {
                 && lands.lives == GameCore.START_LIVES && !lands.boss.active() && lands.runStartLand == 1);
         check("the chosen land fades in only after play starts", lands.landBlend == 0f
                 && Lands.background(lands) == Draw.BG);
-        check("land difficulty uses the selected stage", lands.travelSeconds() == Pacing.travelSeconds(6, lands.speed));
+        check("land difficulty uses the selected stage", lands.travelSeconds() == Pacing.travelSeconds(6));
         lands.score = 456;
         LandPicker.recordBest(lands);
         check("land scores stay out of the full-run record", landStore.best == 123 && landStore.landBests[1] == 456);
@@ -512,10 +512,16 @@ final class TestVisuals extends Check {
         check("travel settles precisely on the selected land",travel.landTravelFrom<0 && travel.landPickerSlide==0f && travelEar.landShuffles==3);
         LandPicker.select(travel,0);LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME);
         LandPicker.step(travel,-1);
-        check("land boundary does not play a false journey",travel.landChoice==0 && travel.landTravelFrom<0 && travelEar.landShuffles==4);
+        check("town is one journey left of Slime Hills",travel.landChoice==LandPicker.TOWN
+                && travel.landTravelFrom==0 && travelEar.landShuffles==5);
+        LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME);
+        LandPicker.step(travel,-1);
+        check("town boundary does not play a false journey",travel.landChoice==LandPicker.TOWN
+                && travel.landTravelFrom<0 && travelEar.landShuffles==5);
+        LandPicker.step(travel,1);LandPicker.updateTravel(travel,LandPicker.TRAVEL_TIME);
         check("land icon centres leave room between full sized icons",LandPicker.spacing(travel,L)>LandPicker.iconRadius(travel,L)*2f);
         float high=LandPicker.cardY(travel,L,0),low=LandPicker.cardY(travel,L,1);
-        check("land heights alternate with a thirty percent step", Math.abs(low-high-LandPicker.iconRadius(travel,L)*0.6f)<0.01f
+        check("land heights alternate with a thirty percent step", Math.abs(Math.abs(low-high)-LandPicker.iconRadius(travel,L)*0.6f)<0.01f
                 && LandPicker.cardY(travel,L,2)==high && LandPicker.cardY(travel,L,3)==low);
         travel.landWanderT=0f;LandPicker.step(travel,1);
         check("travel starts at the previous land height",LandPicker.travelGround(travel,L)==high && LandPicker.travelArc(travel,L)==0f);
@@ -1037,7 +1043,6 @@ final class TestVisuals extends Check {
         Ear ear = new Ear();
         c.sound = ear;
         c.startGame();
-        check("defaults to normal speed", c.speed == 1f);
         check("settings start closed", !c.settingsOpen);
 
         // Opening freezes the simulation.
@@ -1054,29 +1059,6 @@ final class TestVisuals extends Check {
         c.closeSettings();
         c.update(DT, L);
         check("closing resumes the simulation", e.y > movedY);
-
-        // Speed clamps and persists.
-        c.setSpeed(1.3f);
-        check("speed applies", Math.abs(c.speed - 1.3f) < 1e-6f);
-        check("speed persists", Math.abs(store.speed - 1.3f) < 1e-6f && store.speedSaves == 1);
-        c.setSpeed(9f);
-        check("speed clamps at the top", c.speed == GameCore.SPEED_MAX);
-        c.setSpeed(-4f);
-        check("speed clamps at the bottom", c.speed == GameCore.SPEED_MIN);
-        check("a corrupt stored speed falls back", GameCore.clampSpeed(Float.NaN) == 1f);
-
-        GameCore reloaded = new GameCore(store, 82L);
-        check("stored speed is reloaded",
-                Math.abs(reloaded.speed - GameCore.SPEED_MIN) < 1e-6f);
-
-        // Faster speed means less time to react and tighter spawns.
-        c.stage = 3;
-        c.setSpeed(0.5f);
-        float slowTravel = c.travelSeconds(), slowSpawn = c.spawnInterval();
-        c.setSpeed(1.5f);
-        check("higher speed shortens the fall", c.travelSeconds() < slowTravel);
-        check("higher speed tightens spawns", c.spawnInterval() < slowSpawn);
-        check("the fall floor still applies at max speed", c.travelSeconds() > 0f);
 
         // Every synth style must produce a clean, correctly sized loop.
         boolean stylesOk = true;
@@ -1099,8 +1081,6 @@ final class TestVisuals extends Check {
         check("a tap outside closes",
                 ui.hit(L.w / 2f, ui.panelB + 20f) == SettingsUi.HIT_OUTSIDE);
         check("the close button is hit", ui.hit(ui.closeCx, ui.closeCy) == SettingsUi.HIT_CLOSE);
-        check("the slider is hit",
-                ui.hit((ui.sliderL + ui.sliderR) / 2f, ui.sliderY) == SettingsUi.HIT_SLIDER);
         ui.compute(L,SettingsUi.MINIGAMES);
         check("the difficulty-reset chip is hit",
                 ui.hit((ui.optionL() * 3f + ui.optionR()) / 4f,
@@ -1111,19 +1091,8 @@ final class TestVisuals extends Check {
                 ui.hit((ui.optionL() + ui.optionR() * 3f) / 4f,
                         ui.clearY + ui.clearH / 2f) == SettingsUi.HIT_CLEAR);
         ui.compute(L,SettingsUi.GENERAL);
-        check("stage controls follow the speed slider", ui.stageY>ui.speedValueY && ui.stageY<ui.runLabelY);
+        check("stage controls lead the run panel", ui.stageY<ui.runLabelY);
         check("former music rows contain no track targets", ui.hit(L.w*.5f,ui.panelT+PlayerSettings.unit(L)*23f)==SettingsUi.HIT_NONE);
-        check("slider left end reads minimum", ui.speedAt(ui.sliderL) == GameCore.SPEED_MIN);
-        check("slider right end reads maximum", ui.speedAt(ui.sliderR) == GameCore.SPEED_MAX);
-        check("slider clamps past its ends",
-                ui.speedAt(ui.sliderL - 500f) == GameCore.SPEED_MIN
-                        && ui.speedAt(ui.sliderR + 500f) == GameCore.SPEED_MAX);
-        check("slider midpoint is centre speed",
-                Math.abs(ui.speedAt((ui.sliderL + ui.sliderR) / 2f) - 1f) < 0.03f);
-        check("knob tracks the value",
-                Math.abs(ui.knobX(GameCore.SPEED_MIN) - ui.sliderL) < 0.5f
-                        && Math.abs(ui.knobX(GameCore.SPEED_MAX) - ui.sliderR) < 0.5f);
-
         // The stage readout is the settings button, and must not swallow key taps.
         check("the stage readout opens settings", L.inStageTap(L.w / 2f, L.hudY));
         boolean keysClear = true;
@@ -1138,9 +1107,9 @@ final class TestVisuals extends Check {
         ui.compute(L, SettingsUi.MINIGAMES);
         check("minigames panel fits", ui.panelT >= L.topSafe && ui.panelB <= L.h);
         check("difficulty decreases and increases have distinct targets",
-                ui.hit((ui.testChipL(0, 3) + ui.testChipR(0, 3)) / 2f, ui.sliderY + ui.testH / 2f)
+                ui.hit((ui.testChipL(0, 3) + ui.testChipR(0, 3)) / 2f, ui.difficultyStepY + ui.testH / 2f)
                         == SettingsUi.HIT_EASIER
-                && ui.hit((ui.testChipL(2, 3) + ui.testChipR(2, 3)) / 2f, ui.sliderY + ui.testH / 2f)
+                && ui.hit((ui.testChipL(2, 3) + ui.testChipR(2, 3)) / 2f, ui.difficultyStepY + ui.testH / 2f)
                         == SettingsUi.HIT_HARDER);
         c.stars.collected = 7;
         c.steamer.opens = 4;

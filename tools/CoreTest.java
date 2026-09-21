@@ -31,6 +31,7 @@ final class CoreTest {
         group("Mystery pickups", () -> TestMystery.all(L));
         group("Linked pairs", () -> TestLinkedPairs.all(L));
         group("Progress", () -> TestProgress.all(L));
+        group("Town", () -> TestTown.all(L));
 
         group("Back", () -> TestBack.navigation(L));
         group("Rules", () -> {

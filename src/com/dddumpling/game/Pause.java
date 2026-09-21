@@ -4,10 +4,11 @@ package com.dddumpling.game;
 final class Pause extends Draw {
     private Pause() {}
     static boolean handlesBack(GameCore c) {
-        return c.releaseNotes.open || c.returnFade > 0f || c.paused || c.settingsOpen || c.storyOpen() || c.caseOpen
+        return c.townOpen || c.releaseNotes.open || c.returnFade > 0f || c.paused || c.settingsOpen || c.storyOpen() || c.caseOpen
                 || c.starting() || c.state != GameCore.TITLE;
     }
     static boolean back(GameCore c) {
+        if(c.townOpen) { TownScreen.back(c); c.saveTown(); return true; }
         if(c.releaseNotes.open) { c.releaseNotes.back();return true; }
         if (c.returnFade > 0f) return true;
         if (c.confirmEnd) { c.confirmEnd = false; return true; }

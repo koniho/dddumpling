@@ -318,9 +318,10 @@ final class RasterPainter implements Painter {
         float clipLo = clipL / (float) ss - tx;
         float clipHi = (clipR + 1) / (float) ss - tx;
         boolean visible = left < clipHi && left + total > clipLo;
-        if (visible && (left < 0f || left + total > w)) {
+        float screenLeft = left + tx;
+        if (visible && (screenLeft < 0f || screenLeft + total > w)) {
             unfit.add(String.format("%-46s %5.0fpx wide, x %.0f..%.0f of %d",
-                    '"' + s + '"', total, left, left + total, w));
+                    '"' + s + '"', total, screenLeft, screenLeft + total, w));
         }
         for (int i = 0; i < s.length(); i++) {
             drawChar(s.charAt(i), left + i * advance, top, px, color, bold);

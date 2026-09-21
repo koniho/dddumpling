@@ -1,7 +1,7 @@
 package com.dddumpling.game;
 
 /**
- * The title's tiny display face. Only the eight letters in DDDUMPLING exist: each glyph is a
+ * The title's tiny display face. Shared by the title and town balloons; each glyph is a
  * hand-shaped compound vector silhouette, with an outer contour followed by any punched counters.
  */
 final class TitleBubbleFont extends Draw {
@@ -53,13 +53,26 @@ final class TitleBubbleFont extends Draw {
           0.02f,-0.22f,0.02f,-0.47f,0.18f,-0.47f,0.14f,-0.54f}
     };
 
+    private static final float[][] T = {{-.46f,-.82f,.46f,-.82f,.46f,-.58f,
+        .15f,-.58f,.15f,0f,-.15f,0f,-.15f,-.58f,-.46f,-.58f}};
+    private static final float[][] O = {
+        {0f,-.84f,.30f,-.78f,.47f,-.57f,.49f,-.26f,.30f,-.03f,0f,.04f,
+         -.30f,-.03f,-.49f,-.26f,-.47f,-.57f,-.30f,-.78f},
+        {0f,-.59f,.16f,-.54f,.21f,-.40f,.16f,-.23f,0f,-.19f,
+         -.16f,-.23f,-.21f,-.40f,-.16f,-.54f}
+    };
+    private static final float[][] W = {{-.50f,-.82f,-.23f,-.82f,-.17f,-.31f,
+        -.08f,-.58f,.08f,-.58f,.17f,-.31f,.23f,-.82f,.50f,-.82f,
+        .36f,0f,.11f,0f,0f,-.28f,-.11f,0f,-.36f,0f}};
+
     // The authored points above establish each letter's proportions. Two closed Chaikin passes
     // turn those control cages into the soft continuous contours of an inflated display face.
     private static final float[][] RD = rounded(D), RU = rounded(U), RM = rounded(M),
-            RP = rounded(P), RL = rounded(L), RI = rounded(I), RN = rounded(N), RG = rounded(G);
+            RP = rounded(P), RL = rounded(L), RI = rounded(I), RN = rounded(N), RG = rounded(G), RT = rounded(T), RO = rounded(O), RW = rounded(W);
 
     private static float[][] glyph(char ch) {
         switch (ch) {
+            case 'T': return RT; case 'O': return RO; case 'W': return RW;
             case 'D': return RD; case 'U': return RU; case 'M': return RM; case 'P': return RP;
             case 'L': return RL; case 'I': return RI; case 'N': return RN; case 'G': return RG;
             default: return RD;

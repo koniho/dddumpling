@@ -1,7 +1,55 @@
 package com.dddumpling.game;
 
 final class TestSettings extends Check {
+    private static void kidsTiming(Layout L) {
+        group("kids timing boundaries");
+        GameCore c=new GameCore(new Mem(),901L);c.preferences.kids=true;c.startGame();
+        c.stageGap=2f;c.enemies.clear();
+        GameCore.Enemy word=new GameCore.Enemy();word.word=new int[]{0,1};
+        word.gone=new boolean[2];word.goneT=new float[2];word.y=L.playTop;word.speed=100f;word.hitPulse=1f;
+        c.enemies.add(word);float y=word.y,clock=c.clock;
+        c.update(.1f,L);
+        check("kids slows word descent only",Math.abs(word.y-y-4.5f)<.001f
+                && Math.abs(c.clock-clock-.1f)<.001f && Math.abs(c.stageGap-1.9f)<.001f);
+        check("kids hit feedback animates normally",Math.abs(word.hitPulse-.35f)<.001f);
+        word.attacking=true;word.attackT=0;word.y=L.dangerY;
+        c.update(.1f,L);
+        check("kids lunge arrival follows slowed traversal",Math.abs(word.attackT-.045f)<.001f
+                && Math.abs(word.y-L.dangerY-14.4f)<.001f);
+        c.enemies.clear();
+        GameCore.Shot shot=new GameCore.Shot();shot.dur=1f;c.shots.add(shot);
+        c.update(.1f,L);
+        check("kids slows player projectile flight",Math.abs(shot.t-.045f)<.001f);
+        for(int kind=0;kind<Boss.COUNT;kind++) {
+            c.boss.begin(kind,5,c.rnd);float intro=c.boss.intro;
+            c.update(.1f,L);
+            check("kids preserves boss introduction "+kind,Math.abs(c.boss.intro-intro+.1f)<.001f);
+            c.boss.intro=0;c.boss.blive[0]=true;c.boss.bt[0]=0;
+            float age=c.boss.age;c.update(.1f,L);
+            check("kids preserves boss action clock but slows bolts "+kind,
+                    Math.abs(c.boss.age-age-.1f)<.001f
+                    && Math.abs(c.boss.bt[0]-.045f/Boss.BOLT_TIME)<.001f);
+        }
+        c.boss.begin(Boss.MUSHROOM,5,c.rnd);c.boss.intro=0;c.boss.mushroomCharge=.5f;
+        c.update(.1f,L);
+        check("kids boss charge keeps its action duration",Math.abs(c.boss.mushroomCharge-.4f)<.001f);
+        c.boss.beaten=true;c.boss.leaveT=1f;c.update(.1f,L);
+        check("kids boss defeat sequence keeps its duration",Math.abs(c.boss.leaveT-.9f)<.001f);
+        c.boss.leave();
+        for(boolean stars:new boolean[]{false,true}) {
+            c.starNext=stars;Interlude.enterBonus(c,L);float timer=c.bonusTimer;
+            c.update(.1f,L);
+            check("kids preserves minigame and ready timing "+stars,Math.abs(c.bonusTimer-timer+.1f)<.001f);
+        }
+        c.state=GameCore.BONUS;c.cart.begin(c);float ready=c.cart.ready;
+        c.update(.1f,L);
+        check("kids cart ready sequence runs normally",Math.abs(c.cart.ready-ready+.1f)<.001f);
+        c.cart.ready=0;c.update(.1f,L);
+        check("kids cart ride clock runs normally",Math.abs(c.cart.elapsed-.1f)<.001f);
+    }
+
     static void all(Layout L) {
+        kidsTiming(L);
         group("player settings");
         GameCore title=new GameCore(new Mem(),203L);
         check("title settings hit target follows danger line",PrivacyUi.hit(title,L,L.w-2f*L.unit,L.dangerY));

@@ -639,6 +639,35 @@ final class TestStages extends Check {
     static void pushBackRelief(Layout L) {
         group("panic swipe relief");
 
+        GameCore hurt = new GameCore(new Mem(), 170L);
+        hurt.startGame();
+        hurt.enemies.clear();
+        GameCore.Enemy falling = add(hurt, L, new int[] {0}, L.playTop + L.enemyR);
+        falling.speed = L.enemyR * 6f;
+        hurt.takeHit(L.w / 2f, L);
+        check("surviving damage grants the swipe's full recovery",
+                hurt.lives == 2 && hurt.pushSlowT == GameCore.PUSH_SLOW
+                && Math.abs(hurt.fallRate() - GameCore.PUSH_SLOW_RATE) < .0001f);
+        check("damage recovery does not spend or animate the swipe",
+                !hurt.pushUsed && hurt.pushT == 0f && falling.slideT == 0f);
+        float beforeDamageStep = falling.y;
+        hurt.update(DT, L);
+        check("damage recovery slows actual word descent",
+                Math.abs(falling.y - beforeDamageStep
+                        - falling.speed * DT * hurt.fallRate()) < .001f);
+        advance(hurt, L, 1f);
+        check("damage recovery gradually restores speed", hurt.fallRate() > GameCore.PUSH_SLOW_RATE
+                && hurt.fallRate() < 1f);
+        hurt.takeHit(L.w / 2f, L);
+        check("another hit refreshes recovery without stacking it",
+                hurt.lives == 1 && hurt.pushSlowT == GameCore.PUSH_SLOW);
+        hurt.enemies.clear();
+        advance(hurt, L, GameCore.PUSH_SLOW + DT);
+        check("damage recovery expires", hurt.pushSlowT == 0f && hurt.fallRate() == 1f);
+        hurt.takeHit(L.w / 2f, L);
+        check("fatal damage ends the run without starting recovery",
+                hurt.state == GameCore.OVER && hurt.pushSlowT == 0f);
+
         // 1. Where it can start. The lit strip is the target; the catchment is much bigger.
         float insideStrip = (L.dangerY + L.deckTop) / 2f;
         check("the lit strip still starts it", L.inPushZone(L.w / 2f, insideStrip));

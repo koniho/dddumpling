@@ -5,6 +5,7 @@ package com.dddumpling.game;
  *
  * Most sounds are synthesised. CartRecording and RockRecording embed CC0 samples so Android, iOS
  * and the preview harness use exactly the same PCM without platform asset loaders.
+ * OctoWaveRecording embeds the user-supplied arm-wave cue.
  * Source and processing provenance: audio/recorded/README.md.
  *
  * Every effect is peak-normalised to {@link #PEAK} by {@link #render}, so nothing is
@@ -33,7 +34,7 @@ final class Sfx {
             SLIME_COVER = DEBUFF_DOWN + 1, SLIME_RELEASE = SLIME_COVER + 1,
             LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, BLAST_OFF = UI_BLOOP + 1, CAVE_RUMBLE = BLAST_OFF + 1, CAVE_CRASH = CAVE_RUMBLE + 1,
             CAVE_AMBUSH = CAVE_CRASH + 1, CAVE_SINK = CAVE_AMBUSH + 1, MINING_CHEER = CAVE_SINK + 1, CART_ROLL = MINING_CHEER + 1,
-            CART_SQUEAL = CART_ROLL + 1, CART_TUMBLE = CART_SQUEAL + 1, COUNT = CART_TUMBLE + 1;
+            CART_SQUEAL = CART_ROLL + 1, CART_TUMBLE = CART_SQUEAL + 1, OCTO_WAVE = CART_TUMBLE + 1, COUNT = OCTO_WAVE + 1;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -56,6 +57,7 @@ final class Sfx {
         if(id==MINING_CHEER)return miningCheer();
         if(id==CART_ROLL)return CartRecording.build();
         if(id>=CART_SQUEAL && id<=CART_TUMBLE)return cart(id);
+        if (id == OCTO_WAVE) return OctoWaveRecording.build();
         switch (id) {
             case DRIP: return drip();
             case CLEAR: return clear();

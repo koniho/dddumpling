@@ -103,7 +103,6 @@ Support. The following `GameCore.Store` and `Progress.Store` values are wired:
 | Global best | `GameCore` | `best` | Wired; pending |
 | Land discovery/suppression bits | `LandPicker`, `GameCore` | `landState` | Wired; pending |
 | Per-land bests | `LandPicker`, `GameCore` | `best` for land 0, `landBest.N` otherwise | Wired; pending |
-| Developer speed | `GameCore` | `speed` | Persisted but excluded from production UI |
 | Player audio preferences | `PlayerSettings` | `playerSettings` | Independent volume/mute; legacy `bgm` values ignored |
 | Collected-item bitmask | `Collect`, `GameCore` | `collected` | Wired; pending |
 | Per-item duplicate counts | `Collect`, `GameCore` | `collectionCounts` | Wired; pending |
@@ -131,7 +130,7 @@ follows the scene, with player volume/mute applied to every arrangement.
 
 ## Explicitly excluded from production scope
 
-- The developer settings panel, speed controls, stage jumps, test-mode chips,
+- The developer settings panel, stage jumps, test-mode chips,
   collection wipe, roster toggle, reset controls, and debug scene environment variable
   are all guarded by `BuildFlags.DEVELOPER`.
 - The developer-only direct Starpath/Steamer/power-mode entry points are not release

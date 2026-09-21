@@ -162,6 +162,8 @@ final class GameCore {
 
     /** Persistence seam; the Activity backs this with SharedPreferences. */
     interface Store extends Progress.Store {
+        default String loadTown() { return ""; }
+        default boolean saveTown(String value) { return true; }
         default boolean loadPushLessonSeen() { return false; }
         default void savePushLessonSeen(boolean value) {}
         default String loadReleaseSeen() { return BuildFlags.BUILD_ID; }
@@ -176,8 +178,6 @@ final class GameCore {
         default void saveLandBest(int land, int value) { if (land == 0) saveBest(value); }
         default int loadPlayerSettings() { return PlayerSettings.DEFAULT; }
         default void savePlayerSettings(int value) {}
-        float loadSpeed();
-        void saveSpeed(float speed);
         /** The collected-squishy bitmask; see {@link Collect}. */
         long loadCollected();
         void saveCollected(long owned);
@@ -252,6 +252,7 @@ final class GameCore {
         void boltDeath();
         /** A player projectile ricocheted from the Slime boss shield. */
         void shieldBounce();
+        default void octoWave() {}
         void octoCue();
         void octoLock();
         /** One accepted Fly Agaric shake endpoint. */
@@ -493,9 +494,6 @@ final class GameCore {
     float earnedMash = MASH_HURT;
 
     // ---- settings (persisted) ----------------------------------------------
-    static final float SPEED_MIN = 0.5f, SPEED_MAX = 1.5f;
-    /** Pacing multiplier: >1 makes words fall and arrive faster. */
-    float speed = 1f;
     /** While true the simulation is frozen and the settings panel is showing. */
     boolean settingsOpen;
     int settingsPage;
@@ -552,6 +550,57 @@ final class GameCore {
     // ---- between-stages minigame -------------------------------------------
     final Steamer steamer = new Steamer();
     final StarPath stars = new StarPath();
+    final Town town = new Town();
+    boolean townOpen, townClosing;
+    static final float TOWN_FADE = .28f;
+    float townReveal, townExitFade, townReturnFade;
+    long townRunId;
+    int townRunTickets;
+    float townSaveRetry;
+
+    void openTown() {
+        if (townOpen || state != TITLE || starting() || !LandPicker.townUnlocked(this)) return;
+        closeCase(); closeStory();
+        caseFade=0f; titleTouchDown=false;
+        landTravelFrom=-1; landTravelQueue.clear(); landPickerSlide=0f;
+        town.enter(collectionCounts, Collect.has(collected, Collect.BOSS_FIRST));
+        townOpen=true; townClosing=false;
+        townReveal=TOWN_FADE; townExitFade=townReturnFade=0f;
+        saveTown();
+    }
+    void requestCloseTown() {
+        if (!townOpen || townClosing) return;
+        TownScreen.cancel(this);
+        townClosing=true; townExitFade=0f;
+        saveTown();
+    }
+    boolean townTouch(Layout L,int action,int id,float x,float y) {
+        if (!townOpen) return false;
+        if (!townClosing && townReveal<=0f) TownScreen.touch(this,L,action,id,x,y);
+        saveTown();
+        return true;
+    }
+    void cancelTownInput() { TownScreen.cancel(this); saveTown(); }
+    void closeTown() {
+        town.leave(); townOpen=false; townClosing=false;
+        townReveal=townExitFade=0f;
+        landChoice=LandPicker.townUnlocked(this) ? LandPicker.TOWN : 0;
+        best=landChoice==LandPicker.TOWN ? 0 : landBests[0];
+        saveTown();
+    }
+    void saveTown() {
+        if (!town.dirty) return;
+        try {
+            if (store==null || store.saveTown(town.save())) town.markSaved();
+        } catch (RuntimeException unavailable) { /* Retry the same complete snapshot. */ }
+        townSaveRetry=1f;
+    }
+    private void finishTownRun() {
+        if (townRunId<=0) return;
+        townRunTickets=town.grantRunReward(townRunId,score);
+        townRunId=0;
+        saveTown();
+    }
     final Cave cave = new Cave();
     int caveChoice = -1;
     /** Successful games alternate; failures leave the same game queued. */
@@ -794,7 +843,7 @@ final class GameCore {
         return rate;
     }
 
-    /** Counts down through the drag a shove leaves on the field. */
+    /** Counts down through the recovery after a shove or surviving damage. */
     float pushSlowT;
 
     /** 0..1 through that drag, for anything that wants to show it. */
@@ -1444,6 +1493,7 @@ final class GameCore {
             }
         }
         if (store != null) {
+            town.load(store.loadTown());
             LandPicker.restore(this, store.loadLandState());
             caveChoice = CaveDumpling.valid(store.loadCaveChoice());
             mining.carts = Math.max(0,Math.min(CaveMining.CARTS,store.loadMineCarts()));
@@ -1453,7 +1503,6 @@ final class GameCore {
             for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
             landBests[0] = Math.max(landBests[0], best);
             preferences.load(store.loadPlayerSettings());
-            speed = BuildFlags.DEVELOPER ? clampSpeed(store.loadSpeed()) : 1f;
             // Masked: a store that hands back junk in the high bits must not make
             // Collect.owned() report more than there are entries.
             collected = store.loadCollected() & Collect.MASK;
@@ -1522,11 +1571,6 @@ final class GameCore {
     private void beginRosterLeave() {
         rosterScene = ROSTER_LEAVE;
         rosterSceneT = ROSTER_SCENE_TIME; saveRoster();
-    }
-
-    static float clampSpeed(float v) {
-        if (v != v) return 1f;                       // NaN from a corrupt store
-        return v < SPEED_MIN ? SPEED_MIN : v > SPEED_MAX ? SPEED_MAX : v;
     }
 
     // ---- settings -----------------------------------------------------------
@@ -1601,12 +1645,6 @@ final class GameCore {
         die();
     }
 
-    void setSpeed(float v) {
-        if (!BuildFlags.DEVELOPER) return;
-        speed = clampSpeed(v);
-        if (store != null) store.saveSpeed(speed);
-    }
-
     /** Restores every persistent difficulty ladder to its first-play values. */
     void resetDifficultyScaling() {
         if (!BuildFlags.DEVELOPER) return;
@@ -1639,13 +1677,16 @@ final class GameCore {
     static final float RAMP = Pacing.RAMP;
     static final int MAX_PRESSES = Pacing.MAX_PRESSES;
 
+    /** Kids slow traversal only; allowed call sites are listed in docs/game-timing.md. */
+    float traversalRate() { return kidsRun ? .45f : 1f; }
+
     int pacingStage() { return kidsRun ? 1 : stage; }
 
     float ramp() { return Pacing.ramp(pacingStage()); }
 
-    float travelSeconds() { return Pacing.travelSeconds(pacingStage(), kidsRun ? 1f : speed); }
+    float travelSeconds() { return Pacing.travelSeconds(pacingStage()); }
 
-    float spawnInterval() { return Pacing.spawnInterval(pacingStage(), kidsRun ? 1f : speed); }
+    float spawnInterval() { return Pacing.spawnInterval(pacingStage()); }
 
     int maxEnemies() { return Pacing.maxEnemies(pacingStage()); }
 
@@ -1683,6 +1724,8 @@ final class GameCore {
      */
     void beginStart() {
         if (state != TITLE || starting() || returnFade > 0f || rosterSceneT > 0f) return;
+        if (townOpen) return;
+        if (landChoice == LandPicker.TOWN) { openTown(); return; }
         startFade = START_FADE;
         // The entry the case was showing comes along, if it is one you own. Set before the
         // fade is under way so the send-off leaves from the badge rather than from a screen
@@ -1702,6 +1745,8 @@ final class GameCore {
     }
 
     void startGame() {
+        town.leave(); townOpen=false;
+        townRunId=town.beginRun(); townRunTickets=0; saveTown();
         band.reset(this); mining.stop(); cart.stop();
         runWho = Collect.has(collected, caseIndex) ? caseIndex : 0;
         // A paid win may have been quit before its tableau/parade retired the course.
@@ -1709,7 +1754,7 @@ final class GameCore {
             stars.make(rnd);
             starNext = false;
         }
-        runStartLand = LandPicker.unlocked(this, landChoice) ? landChoice : 0;
+        runStartLand = landChoice < Lands.COUNT && LandPicker.unlocked(this, landChoice) ? landChoice : 0;
         landChoice = runStartLand;
         best = landBests[runStartLand];
         landPickerDragging = false;
@@ -1804,6 +1849,7 @@ final class GameCore {
     }
 
     void toTitle() {
+        if (state == PLAY || state == BONUS || state == OVER) finishTownRun();
         band.stop(this); mining.stop(); cart.stop();
         cave.leave();
         progress.finishRun(score, true);
@@ -1906,6 +1952,7 @@ final class GameCore {
      * presses of anything now, which also puts the display case back on the way past.
      */
     void screenKey(int g) {
+        if (townOpen) return;
         if (settingsOpen) return;
         if(releaseNotes.open) return;
         if (returnFade > 0f) return;
@@ -2423,6 +2470,22 @@ final class GameCore {
     void update(float dt, float elapsed, Layout L) {
         starPickups = 0;
         if (paused) return;
+        townSaveRetry=Math.max(0f,townSaveRetry-elapsed);
+        if (town.dirty && townSaveRetry<=0f) saveTown();
+        townReturnFade=Math.max(0f,townReturnFade-dt);
+        if (townOpen) {
+            if (!LandPicker.townUnlocked(this)) { closeTown(); return; }
+            if (townClosing) {
+                townExitFade=Math.min(TOWN_FADE,townExitFade+dt);
+                if (townExitFade>=TOWN_FADE) { closeTown(); townReturnFade=TOWN_FADE; }
+                return;
+            }
+            townReveal=Math.max(0f,townReveal-dt);
+            clock+=Math.max(0f,Math.min(.1f,elapsed));
+            town.update(elapsed,L);
+            if (town.dirty && townSaveRetry<=0f) saveTown();
+            return;
+        }
         if (pushLesson.update(this, elapsed, L)) return;
         if(releaseNotes.open) {
             releaseNotes.update(elapsed,L);
@@ -2441,7 +2504,6 @@ final class GameCore {
         // What ends a blade stroke by itself, on real time and above every early return below.
         Blade.updateStroke(this, dt);
         dt *= timeScale();
-        if (kidsRun && (state == PLAY || state == BONUS)) dt *= .45f;
         // The clock keeps running so the panel itself can animate, but nothing else moves.
         clock += dt;
         updateTitleSprings(dt, L);
@@ -2567,7 +2629,7 @@ final class GameCore {
 
         updateChain(dt);
         Fx.updateParticles(this, dt);
-        Fx.updateShots(this, dt, L);
+        Fx.updateShots(this, dt * traversalRate(), L);
 
         if (state == BONUS) {
             if (CaveInterlude.active(this)) {
@@ -2726,7 +2788,7 @@ final class GameCore {
             float beforeHp = boss.hp;
             float priorCover=boss.slimePromptCover();
             boolean priorOpen=boss.open();
-            int bossHits = boss.update(dt, L, rnd);
+            int bossHits = boss.update(dt, dt * traversalRate(), L, rnd);
             float cover=boss.slimePromptCover();
             if(sound!=null && boss.kind==Boss.SLIME && boss.fighting() && boss.slimePromptHits>=2
                     && !boss.hasGlob() && boss.boltCount()==0 && !boss.slimeRetaliating) {
@@ -2750,6 +2812,7 @@ final class GameCore {
                 if (boss.launched && boss.kind != Boss.MUSHROOM) sound.bossLaugh();
                 if (boss.mushroomSporeCue) sound.mushroomSpore();
                 if (boss.boingWeight >= 0f) sound.divideBoing(boss.boingWeight);
+                if (boss.octoWave) sound.octoWave();
                 if (boss.octoCue) sound.octoCue();
                 if (boss.octoLock) sound.octoLock();
                 if (boss.defeatChime) sound.squish(Boss.FACE[boss.kind], boss.defeatBeat);
@@ -2827,8 +2890,8 @@ final class GameCore {
 
             if (e.attacking) {
                 // Committed lunge: it dives at the player, and the screen reacts.
-                e.attackT += dt;
-                e.y += e.speed * 3.2f * dt;
+                e.attackT += dt * traversalRate();
+                e.y += e.speed * 3.2f * dt * traversalRate();
                 e.warn = 1f;
                 warnLevel = 1f;
                 flash = Math.max(flash, 0.35f + 0.5f * (e.attackT / ATTACK_TIME));
@@ -2864,7 +2927,7 @@ final class GameCore {
                 continue;
             }
 
-            e.y += e.speed * fallRate() * dt;
+            e.y += e.speed * fallRate() * dt * traversalRate();
             updateSidePath(e, L);
             if (e.linkWaiting) {
                 e.warn = 0f;
@@ -3180,6 +3243,7 @@ final class GameCore {
         flashColor = FLASH_DAMAGE;
         Fx.explode(this, rnd, px, L.dangerY, L.enemyR * 2f, 16, 0xFFFF7A9E);
         if (lives <= 0) die();
+        else pushSlowT = PUSH_SLOW;
     }
 
     /**
@@ -3193,6 +3257,7 @@ final class GameCore {
      * early returns, or clear it where the early return is taken. There is no third way.
      */
     private void die() {
+        finishTownRun();
         cave.leave();
         progress.finishRun(score, false);
         if (runFullRoster && fullRoster) {

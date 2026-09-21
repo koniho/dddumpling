@@ -4,7 +4,8 @@
 # /bin/sh is the only shebang that exists both in Termux and on desktop Linux; sh then finds bash.
 # shellcheck shell=bash
 #
-# Usage: check.sh [-q] [-s SUITE] [-f TAGS] [-c BOX] [-r] [W H SS]
+# Usage: check.sh [--town] [-q] [-s SUITE] [-f TAGS] [-c BOX] [-r] [W H SS]
+#   --town    run the Town suite and, unless -r is set, only town attraction frames
 #   -q        only failures, printed diagnostics and the tally
 #   -s SUITE  run only suites whose name contains SUITE (Boss, Power, Soak, ...)
 #   -f TAGS   render only frames whose name starts with one of TAGS (comma-separated); also
@@ -21,9 +22,11 @@ SUITE=
 FRAMES=
 CROP=
 RULES_ONLY=0
+TOWN_ONLY=0
 while [ $# -gt 0 ]; do
     case "$1" in
         --production) PRODUCTION=1; shift ;;
+        --town)       TOWN_ONLY=1; shift ;;
         -q|--quiet)  QUIET=1; shift ;;
         -s|--suite)  SUITE="$2"; shift 2 ;;
         -f|--frames) FRAMES="$2"; shift 2 ;;
@@ -33,11 +36,18 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+if [ "$TOWN_ONLY" = 1 ]; then
+    [ -z "$SUITE" ] || { echo "--town cannot be combined with --suite" >&2; exit 2; }
+    SUITE=Town
+    if [ "$RULES_ONLY" = 0 ] && [ -z "$FRAMES" ]; then FRAMES="town-,slime-fight-"; fi
+fi
+
 # Every pure-Java file, by hand. A new pure file has to be added here or the harness fails to
 # compile while the APK builds fine.
 python3 tools/release-notes.py check >/dev/null
 
-PURE="src/com/dddumpling/game/PushLesson.java
+PURE="src/com/dddumpling/game/OctoWaveRecording.java
+src/com/dddumpling/game/PushLesson.java
 src/com/dddumpling/game/SettingsArt.java
 src/com/dddumpling/game/PlayerSettings.java
 src/com/dddumpling/game/DevSettings.java
@@ -64,6 +74,13 @@ src/com/dddumpling/game/Words.java
 src/com/dddumpling/game/Fx.java
 src/com/dddumpling/game/Steamer.java
 src/com/dddumpling/game/StarPath.java
+src/com/dddumpling/game/Town.java
+src/com/dddumpling/game/TownScreen.java
+src/com/dddumpling/game/TownScenery.java
+src/com/dddumpling/game/TownAttractions.java
+src/com/dddumpling/game/TownPlayer.java
+src/com/dddumpling/game/SlimeFight.java
+src/com/dddumpling/game/SlimeFightScreen.java
 src/com/dddumpling/game/Collect.java
 src/com/dddumpling/game/Power.java
 src/com/dddumpling/game/Boss.java

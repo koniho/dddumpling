@@ -157,7 +157,7 @@ final class Progress {
             int best = Math.max(c.landBests[land], ProgressData.integer(data.maximum(scoreKey(land))));
             modified |= c.landBests[land] != best; c.landBests[land] = best;
         }
-        c.best = c.landBests[c.state == GameCore.TITLE ? c.landChoice : c.runStartLand];
+        c.best = c.landBests[c.state == GameCore.TITLE && c.landChoice < Lands.COUNT ? c.landChoice : c.runStartLand];
         long known = 0;
         for (int i = 0; i < Collect.COUNT; i++) {
             int count = Math.max(c.collectionCounts[i], ProgressData.integer(data.total("prize_" + i)));

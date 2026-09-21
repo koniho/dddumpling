@@ -13,9 +13,11 @@ final class LandDiscovery extends Draw {
     private static void begin(GameCore c,int destination,boolean chained) {
         int from=c.landChoice;
         if(destination!=from) {
-            int direction=destination>from ? 1 : -1;
-            for(int land=from+direction;land!=destination;land+=direction)
-                if(LandPicker.unlocked(c,land)) { destination=land;break; }
+            int direction=LandPicker.order(destination)>LandPicker.order(from) ? 1 : -1;
+            for(int i=LandPicker.order(from)+direction;i!=LandPicker.order(destination);i+=direction) {
+                int land=LandPicker.destination(i);
+                if(land != LandPicker.TOWN && LandPicker.unlocked(c,land)) { destination=land;break; }
+            }
         }
         c.landDiscoveryFrom=from;c.landDiscovery=destination;c.landChoice=destination;
         c.landDiscoveryT=0f;c.landDiscoveryChained=chained;

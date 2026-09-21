@@ -1074,14 +1074,19 @@ final class TestBoss extends Check {
         }
         check("arms remain attached throughout the defeated fall", attached);
         GameCore c = enterBoss(L, Boss.OCTOPUS, 151L);
+        Ear waveEar = new Ear(); c.sound = waveEar;
         c.enemies.clear(); c.target = null;
         for (int i = 0; i < 240 && c.boss.octoTarget < 0; i++) c.update(DT, L);
         check("stage 15 octopus begins a key reach", c.boss.octoTarget >= 0
                 && c.boss.octoAttackArm >= 0);
+        check("recording starts once with the arm wave", waveEar.octoWaves == 1 && waveEar.octoCues == 0);
+        c.paused = true; c.update(.5f, L); c.paused = false;
+        check("paused arm does not repeat its recording", waveEar.octoWaves == 1);
         int sweepingArm = c.boss.octoAttackArm;
         for (int i = 0; i < 24; i++) c.update(DT, L);
         check("the chosen arm waves before attacking", c.boss.octoSweep > 0.20f
                 && c.boss.octoReach < 0f && c.boss.octoAttackArm == sweepingArm);
+        check("arm motion does not retrigger the recording", waveEar.octoWaves == 1);
         check("the traveling pulse waits until the arm settles", BossScreen.octoPulseProgress(c.boss) < 0f);
         boolean pulseTravelled = false;
         for (int i = 0; i < 120 && c.boss.octoReach < 0f; i++) {
@@ -1092,6 +1097,7 @@ final class TestBoss extends Check {
         check("the settled charge sends the pulse down the arm", pulseTravelled);
         check("the pulse reaches the tip on the attack cue",
                 BossScreen.octoPulseProgress(c.boss) == 1f && c.boss.octoCue && c.boss.octoReach == 0f);
+        check("strike retains a separate cue without replaying the recording", waveEar.octoCues == 1 && waveEar.octoWaves == 1);
         float[] uneven = {0f, 0f, 3f, 0f, 3f, 9f};
         float[] midpoint = BossScreen.octoPulsePoint(uneven, 0.5f);
         float[] endpoint = BossScreen.octoPulsePoint(uneven, 1f);
@@ -1464,7 +1470,8 @@ final class TestBoss extends Check {
             if (ui.hit(cx, ui.stageY + ui.stageH / 2f) != SettingsUi.HIT_STAGE + i) hits = false;
         }
         check("every stage chip hit-tests to itself", hits);
-        check("and none of them collides with the playtest row",
+        ui.compute(L,SettingsUi.POWERS);
+        check("powers tab routes its own row",
                 ui.hit((ui.testChipL(0, n) + ui.testChipR(0, n)) / 2f,
                         ui.testY + ui.testH / 2f) < SettingsUi.HIT_STAGE);
         check("the steps cover one and a boss's worth",
@@ -1481,7 +1488,7 @@ final class TestBoss extends Check {
                 u.compute(t);
                 if (u.panelT < 0f || u.panelB > t.h) fits = false;
                 // And the rows have to stay in order, in the panel, and clear of each other.
-                if (u.stageY < u.speedValueY) fits = false;
+                if (u.stageY < u.tabY + u.tabH) fits = false;
                 if (u.runY < u.stageY + u.stageH) fits = false;
                 if (u.runY + u.runH > u.panelB) fits = false;
             }
@@ -1764,7 +1771,7 @@ final class TestBoss extends Check {
             // hit. If leave() retains them, GameView repeats its long impact haptic every frame of
             // the next run.
             if (k == Boss.OCTOPUS) {
-                victory.boss.octoCue = victory.boss.octoLock = true;
+                victory.boss.octoWave = victory.boss.octoCue = victory.boss.octoLock = true;
                 victory.boss.octoImpact = victory.boss.octoPlayerHit = true;
                 victory.boss.octoLashLanded = true;
             }
@@ -1803,7 +1810,7 @@ final class TestBoss extends Check {
                 check("victory arm tips wave visibly", Math.abs(first[first.length - 1] - later[later.length - 1]) > vr * 0.25f);
                 check("victory wave does not mutate combat arms", retained.octoY[0][Boss.OCTO_NODES - 1] == originalTip);
                 check("OCTOPULSE: dying clears every transient haptic cue",
-                        !victory.boss.octoCue && !victory.boss.octoLock
+                        !victory.boss.octoWave && !victory.boss.octoCue && !victory.boss.octoLock
                                 && !victory.boss.octoImpact && !victory.boss.octoPlayerHit
                                 && !victory.boss.octoLashLanded);
             }

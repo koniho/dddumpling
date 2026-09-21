@@ -9,6 +9,88 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void townFrames(File dir, Layout L, int w, int h, int ss) throws Exception {
+        if (!wanted("town-")) return;
+        GameCore hidden = new GameCore(new Mem(), 1069L);
+        shot(dir, "town-title-hidden", hidden, L, w, h, ss);
+        GameCore unlocked = new GameCore(new Mem(), 1070L);
+        unlocked.collected |= 1L << Collect.BOSS_FIRST;
+        unlocked.landChoice = LandPicker.TOWN;
+        shot(dir, "town-title-unlocked", unlocked, L, w, h, ss);
+
+        GameCore c = new GameCore(new Mem(), 1071L);
+        c.collected |= 1L << Collect.BOSS_FIRST;
+        c.collectionCounts[Collect.BOSS_FIRST] = 1;
+        c.openTown(); c.townReveal=0f;
+        c.town.dialogue = Town.TALK_NONE;
+        c.town.flowerCount = 11;
+        c.town.path = .08f;
+        shot(dir, "town-meadow", c, L, w, h, ss);
+        c.town.path = .50f;
+        shot(dir, "town-pan-middle", c, L, w, h, ss);
+        c.town.path = .61f;
+        shot(dir, "town-slide-clearing", c, L, w, h, ss);
+        c.town.react(TownScreen.pathX(.66f,L),TownScreen.landmarkGround(.66f,L)-L.w*.07f);
+        for (int frame=0;frame<12;frame++) {
+            shot(dir, String.format("town-touch-motion-%02d",frame), c, L, w, h, ss);
+            c.update(.1f,L);
+        }
+        c.town.touchAge=3f;
+        c.town.path = .945f;
+        shot(dir, "town-pan-end", c, L, w, h, ss);
+        for(int frame=0;frame<24;frame++) {
+            c.town.path=.10f+.84f*frame/23f;
+            c.town.bounceClock+=.45f;
+            c.clock+=.1f;
+            shot(dir,String.format("town-parallax-%02d",frame),c,L,w,h,ss);
+        }
+
+        c.town.dialogue = Town.TALK_BUILD_ARCH;
+        c.town.path = .20f;
+        shot(dir, "town-flower-arch-plot", c, L, w, h, ss);
+        c.town.archBuilt = true;
+        c.town.dialogue = Town.TALK_NONE;
+        shot(dir, "town-flower-arch-built", c, L, w, h, ss);
+        c.town.dialogue = Town.TALK_SLIME;
+        c.town.path = .84f;
+        shot(dir, "town-slime-conversation", c, L, w, h, ss);
+
+        c.town.beginSlide();
+        c.town.holdSlide();
+        for (int i = 0; i < 70; i++) c.town.update(DT, L);
+        shot(dir, "town-slide-charged", c, L, w, h, ss);
+        c.town.releaseSlide();
+        for (int i = 0; i < 25; i++) c.town.update(DT, L);
+        shot(dir, "town-slide-ramp", c, L, w, h, ss);
+        for (int i = 0; i < 180 && !c.town.slideAirborne; i++) c.town.update(DT, L);
+        for (int i = 0; i < 12 && !c.town.slideLanded; i++) c.town.update(DT, L);
+        shot(dir, "town-slide-flight", c, L, w, h, ss);
+        for (int i = 0; i < 240 && !c.town.slideLanded; i++) c.town.update(DT, L);
+        shot(dir, "town-slide-landed", c, L, w, h, ss);
+    }
+
+    private static void slimeFightFrames(File dir, Layout L, int w, int h, int ss)
+            throws Exception {
+        if (!wanted("slime-fight-")) return;
+        SlimeFight f = new SlimeFight();
+        f.begin(L, 1081);
+        slimeShot(dir, "slime-fight-ready", f, L, w, h, ss);
+        for (int i = 0; i < 100; i++) f.update(DT, L);
+        f.steer(.72f, L);
+        for (int i = 0; i < 22; i++) f.update(DT, L);
+        slimeShot(dir, "slime-fight-play", f, L, w, h, ss);
+        float y = SlimeFight.playerY(L);
+        f.touch(L, 0, 1, f.playerX, y);
+        f.update(.08f, L);
+        f.touch(L, 2, 1, f.playerX - L.w * .04f, y - L.w * .24f);
+        f.touch(L, 1, 1, f.playerX - L.w * .04f, y - L.w * .24f);
+        for (int i = 0; i < 10; i++) f.update(DT, L);
+        slimeShot(dir, "slime-fight-fling", f, L, w, h, ss);
+        f.timeLeft = .01f;
+        f.update(.02f, L);
+        slimeShot(dir, "slime-fight-fun-report", f, L, w, h, ss);
+    }
+
     private static void caveCollectFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(wanted("110")) {
             RasterPainter p=new RasterPainter(w,h,ss);p.clear(Renderer.BG);
@@ -168,7 +250,6 @@ final class Preview {
         public void saveProgress(byte[] data) { progress = data.clone(); }
         public String progressReplica() { return "test"; }
         int best;
-        float speed = 1f;
         long collected;
         int collectTotal;
         int[] collectionCounts = new int[Collect.COUNT];
@@ -177,8 +258,6 @@ final class Preview {
         int rosterState = 1;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; }
-        public float loadSpeed() { return speed; }
-        public void saveSpeed(float v) { speed = v; }
         public long loadCollected() { return collected; }
         public void saveCollected(long v) { collected = v; }
         public int[] loadCollectionCounts() { return collectionCounts.clone(); }
@@ -343,6 +422,8 @@ final class Preview {
         cartFrames(dir,L,w,h,ss);
         miningFrames(dir,L,w,h,ss);
         caveCollectFrames(dir,L,w,h,ss);
+        townFrames(dir,L,w,h,ss);
+        slimeFightFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);
@@ -1363,7 +1444,6 @@ final class Preview {
         c6.score = 1420;
         c6.stage = 3;
         step(c6, L, 6f);
-        c6.setSpeed(1.2f);
         c6.collected = 0b0000_0100_1000_0011_0010_0110_1101L;
         c6.openSettings();
         step(c6, L, 0.3f);
@@ -1789,6 +1869,35 @@ final class Preview {
         }
     }
 
+    private static void slimeShot(File dir, String name, SlimeFight f, Layout L, int w, int h,
+            int ss) throws Exception {
+        if (!wanted(name)) return;
+        RasterPainter p = new RasterPainter(w, h, ss);
+        p.clear(0xFF000000);
+        RasterPainter.clearFit();
+        SlimeFightScreen.draw(p, f, L);
+        File file = new File(dir, name + ".png");
+        int[] pixels = p.resolve();
+        if (crop == null) Png.write(file, pixels, w, h);
+        else {
+            int x0 = Math.max(0, Math.min(w - 1, (int) (crop[0] * w)));
+            int y0 = Math.max(0, Math.min(h - 1, (int) (crop[1] * h)));
+            int x1 = Math.max(x0 + 1, Math.min(w, (int) (crop[2] * w)));
+            int y1 = Math.max(y0 + 1, Math.min(h, (int) (crop[3] * h)));
+            int cw = x1 - x0, ch = y1 - y0;
+            int[] sub = new int[cw * ch];
+            for (int y = 0; y < ch; y++)
+                System.arraycopy(pixels, (y0 + y) * w + x0, sub, y * cw, cw);
+            Png.write(file, sub, cw, ch);
+        }
+        System.out.printf("  wrote %-25s FUN=%d throws=%d hits=%d dodges=%d%n",
+                file.getName(), f.fun, f.throwsMade, f.hits, f.dodges);
+        for (String bad : RasterPainter.unfit) {
+            System.out.println("    DOES NOT FIT  " + bad);
+            unfitFrames++;
+        }
+    }
+
     /** Writes every effect and the music loop to WAV so they can be auditioned. */
     private static void sounds(File dir) throws Exception {
         File sfxDir = new File(dir, "sfx");
@@ -1799,7 +1908,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-wave"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

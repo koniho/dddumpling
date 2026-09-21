@@ -115,7 +115,7 @@ final class Cave {
     }
     void update(GameCore c,float dt,Layout L) {
         effects.update(dt);enemy.update(c,dt);
-        float distance=phase==WALK&&returnTime<=0&&!c.pendingBonus?dt*WALK_SPEED*c.speed:0;
+        float distance=phase==WALK&&returnTime<=0&&!c.pendingBonus?dt*WALK_SPEED:0;
         walker.update(dt,distance);pulse=Math.max(0,pulse-dt*3);returnTime=Math.max(0,returnTime-dt);
         if(phase==ROCKS||phase==SAND) {
             zoomAge=Math.min(HAZARD_ZOOM,zoomAge+dt);
@@ -136,7 +136,9 @@ final class Cave {
             case CHOOSE:selection.update(c,dt);break;
             case FORK:timer+=dt;if(timer>=FORK_WAIT)choose(c,nearestBranch());break;
             case SHADOW:case FIGHT:
-                timer+=dt;
+                // Reveal is a sequence; only the approach toward the player slows.
+                float revealDt=Math.min(dt,Math.max(0,REVEAL-timer));
+                timer+=revealDt+(dt-revealDt)*c.traversalRate();
                 if(timer>=REVEAL)phase=FIGHT;
                 float rush=Math.min(1,timer/APPROACH);rush=rush*rush;
                 enemyX=enemyStartX+(pathX(z)-enemyStartX)*rush;enemyY=enemyStartY+(pathY(z)-enemyStartY)*rush;

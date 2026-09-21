@@ -53,12 +53,21 @@ abstract class Check {
         int landState;
         public int loadLandState() { return landState; }
         public void saveLandState(int value) { landState = value; }
+        String townState = "";
+        int townSaves, townSaveAttempts;
+        boolean townSaveSucceeds = true;
+        public String loadTown() { return townState; }
+        public boolean saveTown(String value) {
+            townSaveAttempts++;
+            if (!townSaveSucceeds) return false;
+            townState = value;
+            townSaves++;
+            return true;
+        }
         int[] landBests = new int[Lands.COUNT];
         public int loadLandBest(int land) { return land == 0 ? best : landBests[land]; }
         public void saveLandBest(int land, int value) { if (land == 0) saveBest(value); else landBests[land] = value; }
         int saves;
-        float speed = 1f;
-        int speedSaves;
         long collected;
         int collectedSaves;
         int collectTotal;
@@ -69,8 +78,6 @@ abstract class Check {
         int rosterState = 1, rosterSaves;
         public int loadBest() { return best; }
         public void saveBest(int b) { best = b; saves++; }
-        public float loadSpeed() { return speed; }
-        public void saveSpeed(float v) { speed = v; speedSaves++; }
         public long loadCollected() { return collected; }
         public void saveCollected(long v) { collected = v; collectedSaves++; }
         public int[] loadCollectionCounts() { return collectionCounts.clone(); }
@@ -98,7 +105,7 @@ abstract class Check {
         float musicVolume, effectsVolume, squishVolume;
         public void volumes(float music,float effects) { musicVolume=music;effectsVolume=effects; }
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeDamages, bossSplits,
-                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideBoings, chops, zaps;
+                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoWaves, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideBoings, chops, zaps;
         float bossCharge, maxBossCharge;
         float lastDivideBoingWeight = -1f;
         int collects;
@@ -159,6 +166,7 @@ abstract class Check {
         public void boltPop() { boltPops++; }
         public void boltDeath() { boltDeaths++; }
         public void shieldBounce() { shieldBounces++; }
+        public void octoWave() { octoWaves++; }
         public void octoCue() { octoCues++; }
         public void octoLock() { octoLocks++; }
         public void mushroomShake() { mushroomShakeSounds++; }

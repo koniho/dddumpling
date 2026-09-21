@@ -8,12 +8,32 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 DEVELOPER=true
-case "${1:---developer}" in
-    --developer) ;;
-    --production) DEVELOPER=false ;;
-    *) echo "usage: ./build.sh [--developer|--production]" >&2; exit 1 ;;
-esac
-[ "$#" -le 1 ] || exit 1
+FULL_CHECKS=false
+TOWN_CHECKS=false
+RULES_CHECKS=false
+for option in "$@"; do
+    case "$option" in
+        --developer) DEVELOPER=true ;;
+        --production) DEVELOPER=false ;;
+        --full-checks) FULL_CHECKS=true ;;
+        --town) TOWN_CHECKS=true ;;
+        --rules-checks) RULES_CHECKS=true ;;
+        *) echo "usage: ./build.sh [--developer|--production] [--town|--rules-checks|--full-checks]" >&2; exit 1 ;;
+    esac
+done
+
+[ "$TOWN_CHECKS" = false ] || [ "$FULL_CHECKS" = false ] || {
+    echo "--town cannot be combined with --full-checks" >&2
+    exit 1
+}
+[ "$RULES_CHECKS" = false ] || { [ "$TOWN_CHECKS" = false ] && [ "$FULL_CHECKS" = false ]; } || {
+    echo "--rules-checks cannot be combined with --town or --full-checks" >&2
+    exit 1
+}
+if [ "$DEVELOPER" = false ] && { [ "$TOWN_CHECKS" = true ] || [ "$RULES_CHECKS" = true ]; }; then
+    echo "--town and --rules-checks are developer-build gates; production uses its full checks" >&2
+    exit 1
+fi
 
 SDK=sdk/android.jar
 if [ ! -f "$SDK" ] && [ -n "${ANDROID_HOME:-}" ]; then
@@ -33,11 +53,25 @@ KS_KEY_PASS=${HEXATYPE_KEY_PASSWORD:-$KS_STORE_PASS}
 [ -f "$SDK" ] || { echo "missing $SDK - see README.md"; exit 1; }
 
 mkdir -p "$OUT"
-echo ">> rules + frame renders"
-bash ./check.sh >"$OUT/check.log" 2>&1 || { tail -30 "$OUT/check.log"; exit 1; }
-grep -E '^[0-9]+ passed' "$OUT/check.log"
-bash ./check.sh --production -q >"$OUT/production-check.log" 2>&1 || { tail -30 "$OUT/production-check.log"; exit 1; }
-grep -E '^[0-9]+ passed' "$OUT/production-check.log"
+if [ "$TOWN_CHECKS" = true ]; then
+    echo ">> town rules + selected frames"
+    bash ./check.sh --town -q >"$OUT/check.log" 2>&1 || { tail -30 "$OUT/check.log"; exit 1; }
+    grep -E '^[0-9]+ passed' "$OUT/check.log"
+elif [ "$RULES_CHECKS" = true ]; then
+    echo ">> full rules checks"
+    bash ./check.sh -q -r >"$OUT/check.log" 2>&1 || { tail -30 "$OUT/check.log"; exit 1; }
+    grep -E '^[0-9]+ passed' "$OUT/check.log"
+elif [ "$DEVELOPER" = true ] && [ "$FULL_CHECKS" = false ]; then
+    echo ">> local rule smoke checks"
+    bash ./check.sh -q -r -s Rules >"$OUT/check.log" 2>&1 || { tail -30 "$OUT/check.log"; exit 1; }
+    grep -E '^[0-9]+ passed' "$OUT/check.log"
+else
+    echo ">> rules + frame renders"
+    bash ./check.sh >"$OUT/check.log" 2>&1 || { tail -30 "$OUT/check.log"; exit 1; }
+    grep -E '^[0-9]+ passed' "$OUT/check.log"
+    bash ./check.sh --production -q >"$OUT/production-check.log" 2>&1 || { tail -30 "$OUT/production-check.log"; exit 1; }
+    grep -E '^[0-9]+ passed' "$OUT/production-check.log"
+fi
 
 rm -rf "$OUT/classes" "$OUT/gen" "$OUT/res.zip" "$OUT/base.apk" "$OUT"/classes*.dex
 mkdir -p "$OUT/classes" "$OUT/gen"
@@ -56,6 +90,18 @@ if [ "$DEVELOPER" = true ]; then
     APP_LABEL="DDDUMPLING Dev"
     MANIFEST="$OUT/developer-manifest.xml"
     sed 's|@string/app_name"|@string/app_name_dev"|' AndroidManifest.xml > "$MANIFEST"
+    # Local checkouts can lag an installed Dev build. Keep release metadata unchanged.
+    if command -v pm >/dev/null 2>&1; then
+        INSTALLED_DEV_APK=$(pm path "$APP_ID" 2>/dev/null | sed -n 's/^package://p' | head -n 1 || true)
+        if [ -r "$INSTALLED_DEV_APK" ]; then
+            INSTALLED_DEV_CODE=$(aapt2 dump badging "$INSTALLED_DEV_APK" 2>/dev/null | sed -n "s/.* versionCode='\([0-9]*\)'.*/\1/p" | head -n 1)
+            SOURCE_DEV_CODE=$(sed -n 's/.*android:versionCode="\([0-9]*\)".*/\1/p' "$MANIFEST")
+            if [[ "$INSTALLED_DEV_CODE" =~ ^[0-9]+$ ]] && [ "$INSTALLED_DEV_CODE" -gt "$SOURCE_DEV_CODE" ]; then
+                sed -i "s/android:versionCode=\"$SOURCE_DEV_CODE\"/android:versionCode=\"$INSTALLED_DEV_CODE\"/" "$MANIFEST"
+                echo ">> local Dev version code: $INSTALLED_DEV_CODE (matches installed app)"
+            fi
+        fi
+    fi
 fi
 if [ "$DEVELOPER" = false ] && [ -n "$PLAY_CONFIG" ]; then
     python tools/prepare-play.py --config "$PLAY_CONFIG"

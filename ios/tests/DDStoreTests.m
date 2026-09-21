@@ -61,10 +61,11 @@
   XCTAssertEqual(saved.loadCaveChoice, -1);
   [saved saveCaveChoiceWithInt:4];
   [saved saveBestWithInt:812];
+  XCTAssertEqualObjects(saved.loadTown, @"");
+  XCTAssertTrue([saved saveTownWithNSString:@"v1;t=7;lc=3;rs=3"]);
   [saved saveLandStateWithInt:0x52];
   [saved saveReleaseSeenWithNSString:@"test-build"];
   [saved saveLandBestWithInt:2 withInt:900];
-  [saved saveSpeedWithFloat:1.3f];
   [saved savePlayerSettingsWithInt:98329];
   [saved saveCollectedWithLong:0x12345];
   IOSIntArray *counts = [IOSIntArray arrayWithLength:DDCollect_COUNT];
@@ -84,10 +85,10 @@
   XCTAssertNil(loaded.error);
   XCTAssertEqual(loaded.loadCaveChoice, 4);
   XCTAssertEqual(loaded.loadBest, 812);
+  XCTAssertEqualObjects(loaded.loadTown, @"v1;t=7;lc=3;rs=3");
   XCTAssertEqual(loaded.loadLandState, 0x52);
   XCTAssertEqualObjects(loaded.loadReleaseSeen, @"test-build");
   XCTAssertEqual([loaded loadLandBestWithInt:2], 900);
-  XCTAssertEqualWithAccuracy(loaded.loadSpeed, 1.3f, .0001f);
   XCTAssertEqual(loaded.loadPlayerSettings, 98329);
   XCTAssertEqual(loaded.loadCollected, 0x12345);
   XCTAssertEqual([loaded loadCollectionCounts]->buffer_[0], 2);

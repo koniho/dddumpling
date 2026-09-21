@@ -25,6 +25,7 @@ public final class IOSGame {
         return BuildFlags.DEVELOPER && (core.state == GameCore.TITLE || core.settingsOpen || core.paused);
     }
     private void cancelPointers() {
+        core.cancelTownInput();
         core.pushLesson.cancelTouch();
         settingsInput.cancel();
         core.releaseNotes.cancelTouch();
@@ -80,6 +81,19 @@ public final class IOSGame {
             return true;
         }
         int action = ev.getActionMasked();
+        if (core.townOpen) {
+            if (action == IOSTouch.ACTION_CANCEL) core.cancelTownInput();
+            else if (action == IOSTouch.ACTION_MOVE) {
+                for (int i=0;i<ev.getPointerCount();i++)
+                    core.townTouch(layout,2,ev.getPointerId(i),ev.getX(i),ev.getY(i));
+            } else {
+                int i=ev.getActionIndex();
+                int townAction=(action==IOSTouch.ACTION_DOWN || action==IOSTouch.ACTION_POINTER_DOWN) ? 0 : 1;
+                core.townTouch(layout,townAction,ev.getPointerId(i),ev.getX(i),ev.getY(i));
+            }
+            core.saveTown();
+            return true;
+        }
         if (core.pushLesson.active || core.pushLesson.ownsTouch) {
             if (core.pushLesson.touch(core, layout, action, ev.getX(), ev.getY())) tick();
             return true;

@@ -29,6 +29,7 @@ public class GameView extends View {
     boolean handlesBack() { return Pause.handlesBack(core); }
     boolean paused() { return core.paused; }
     private void cancelPointers() {
+        core.cancelTownInput();
         core.pushLesson.cancelTouch();
         settingsInput.cancel();
         core.releaseNotes.cancelTouch();
@@ -133,6 +134,19 @@ public class GameView extends View {
             return true;
         }
         int action = ev.getActionMasked();
+        if (core.townOpen) {
+            if (action == MotionEvent.ACTION_CANCEL) core.cancelTownInput();
+            else if (action == MotionEvent.ACTION_MOVE) {
+                for (int i=0;i<ev.getPointerCount();i++)
+                    core.townTouch(layout,2,ev.getPointerId(i),ev.getX(i),ev.getY(i));
+            } else {
+                int i=ev.getActionIndex();
+                int townAction=(action==MotionEvent.ACTION_DOWN || action==MotionEvent.ACTION_POINTER_DOWN) ? 0 : 1;
+                core.townTouch(layout,townAction,ev.getPointerId(i),ev.getX(i),ev.getY(i));
+            }
+            core.saveTown();
+            return true;
+        }
         if (core.pushLesson.active || core.pushLesson.ownsTouch) {
             if (core.pushLesson.touch(core, layout, action, ev.getX(), ev.getY())) tick();
             return true;
