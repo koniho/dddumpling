@@ -177,7 +177,7 @@ final class TestVisuals extends Check {
         n.handleTouch(c,L,0,icon,row);
         n.handleTouch(c,L,2,icon,row-L.h*.3f);
         n.handleTouch(c,L,1,icon,row-L.h*.3f);
-        check("release swipe never opens an icon",n.listing && n.listScroll==ReleaseNotes.maxScroll(L));
+        check("release swipe never opens an icon",n.listing && Math.abs(n.listScroll-Math.min(L.h*.3f,ReleaseNotes.maxScroll(L)))<.01f);
         n.listScroll=0f;
         n.handleTouch(c,L,0,icon,row);
         n.handleTouch(c,L,5,icon,row);
@@ -198,6 +198,12 @@ final class TestVisuals extends Check {
                 check("feature selection starts a horizontal slide "+release+"/"+feature,n.pageMoving() && n.pageSlide==0f);
                 n.update(ReleaseNotes.PAGE_TIME,L);
                 check("feature slide settles before interaction "+release+"/"+feature,!n.pageMoving() && n.pageSlide==1f);
+                if(!ReleaseChange.playable(n.change()) && !ReleaseContent.AUTO_RESET[n.item()]) {
+                    n.touch(c,L,L.w*.5f,(n.demoTop(L)+n.demoBottom(L))*.5f);
+                    n.update(ReleaseNotes.RESTART_DELAY+.1f,L);
+                    check("illustration keeps animating without reset "+release+"/"+feature,
+                            n.feature==feature && n.page==release && !n.listing && n.demo==null);
+                }
                 n.back();n.update(ReleaseNotes.PAGE_TIME,L);
             }
         Layout shortL=new Layout();shortL.compute(852,393,0,0,0,0);

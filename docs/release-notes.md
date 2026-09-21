@@ -100,6 +100,8 @@ Keep a separate entry only when it communicates a distinct change the player nee
 
 | `icon` value | Use for | Illustration |
 | --- | --- | --- |
+| `scores` | Saved high-score runs | Glowing score rows and a gold star |
+| `octopulse` | Octopulse battle changes | Waving Octopulse portrait |
 | `swipe` | Rescue-swipe lesson | Shared instruction hand swiping up from a pulsing bar |
 | `settings` | Player settings | Hexagon with three menu lines |
 | `news` | Exploring release notes | Little steamer |
