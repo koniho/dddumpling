@@ -1,13 +1,15 @@
 # iOS listing and media
 
 App Store Connect app: `6811478003` (`com.dddumpling.game.ios`). English text is in
-`en-US/`. Private Apple credentials and reviewer contact details do not belong here.
+`en-US/`, including the store name in `name.txt`. Private Apple credentials and
+reviewer contact details do not belong here.
 
 ## Saved in App Store Connect
 
 - Version 0.1.0, build 2.1: processed VALID; ready for internal TestFlight testing and
   external beta submission. [Signed CI/upload run](https://github.com/koniho/dddumpling/actions/runs/34732005221).
-- Public description, subtitle, keywords, promotional text, support/marketing/privacy URLs.
+- Public name, description, subtitle, keywords, promotional text, and
+  support/marketing/privacy URLs.
 - Games category with Casual and Action subcategories; source-based age-rating answers.
 - Free pricing in all 175 territories and future territories. Regional eligibility still
   depends on Apple's requirements; EU territories report missing trader status.

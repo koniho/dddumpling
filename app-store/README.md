@@ -1,7 +1,7 @@
 # App-store posting assets
 
-Reusable listing copy and upload assets for DDDUMPLING. The English descriptions
-are the wording prepared for the first Google Play listing, preserved verbatim.
+Reusable listing copy and upload assets for DDDUMPLING. The English text is the
+current source of truth for the Google Play listing.
 
 ## Google Play
 

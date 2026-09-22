@@ -1,6 +1,6 @@
 # App Store preparation
 
-Title: DDDUMPLING. Version/build: 0.1.0 (2.1). App Store Connect app ID: `6811478003`.
+Title: DDDumpling: Tap Game. Version/build: 0.1.0 (2.1). App Store Connect app ID: `6811478003`.
 Bundle ID `com.dddumpling.game.ios` is registered under Apple Developer team `QC7LYR5635`.
 Signed archive/export and TestFlight upload passed in [release run 34732005221](https://github.com/koniho/dddumpling/actions/runs/34732005221).
 Apple acknowledged the upload and its upload record is COMPLETE with no warnings or errors.
@@ -8,7 +8,7 @@ Apple processed the build as VALID: internal state READY_FOR_BETA_TESTING, exter
 state READY_FOR_BETA_SUBMISSION. It is attached to the 0.1.0 App Store draft.
 
 The source-controlled English App Store and TestFlight fields are in `ios/store/en-US/`.
-The subtitle is **Tiny keys. Big squishy bosses.**
+The subtitle is **Cute tap game. Squishy bosses.**
 The game runs offline and includes falling-word play, four soft-body bosses, steamer and star
 minigames, collectible stories and local progress. No account, ads or in-app purchases are added.
 
