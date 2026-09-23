@@ -77,7 +77,7 @@ final class TestHighScores extends Check {
         check("selection and saved portrait survive restart",loaded.caseIndex==1 && loaded.highScores.latestRun.character==1);
         loaded.openCase();CaseUi.select(loaded,2);loaded.closeCase(); // Unknown entry explicitly chooses no character.
         GameCore empty=new GameCore(mem,902L);empty.startGame();empty.highScores.finish(empty);
-        check("empty selection survives restart and snapshots placeholder",empty.caseIndex==2 && empty.highScores.latestRun.character==-1);
+        check("empty selection survives restart and snapshots resolved squishy",empty.caseIndex==2 && empty.highScores.latestRun.character==empty.runWho);
         check("new choice cannot rewrite old portrait",empty.highScores.runs.get(1).character==1);
         for(int version=1;version<=2;version++) {
             HighScores old=new HighScores();old.load(legacy(empty.highScores.encode(),version));
@@ -87,7 +87,7 @@ final class TestHighScores extends Check {
         empty.startGame();Interlude.awardBossPrize(empty,Boss.SLIME);
         check("reward-selected character survives restart",new GameCore(mem,904L).caseIndex==empty.prize);
         empty.highScores.finish(empty);
-        check("reward cannot change the active run portrait",empty.highScores.latestRun.character==-1);
+        check("reward cannot change the active run portrait",empty.highScores.latestRun.character==empty.runWho);
         mem.caseIndex=Integer.MAX_VALUE;
         check("invalid saved selection is bounded",new GameCore(mem,903L).caseIndex==0);
     }

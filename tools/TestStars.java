@@ -79,7 +79,7 @@ final class TestStars extends Check {
         fresh.startGame();
         fresh.starNext = true;
         Interlude.enterBonus(fresh, L);
-        check("an empty collection still flies a dumpling instead of a blank circle", fresh.stars.who == 0);
+        check("an empty collection flies the resolved run squishy", fresh.stars.who == fresh.runWho && fresh.runWho >= 0);
     }
 
     static void game(Layout L) {

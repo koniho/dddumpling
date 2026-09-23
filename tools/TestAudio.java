@@ -3,8 +3,41 @@ package com.dddumpling.game;
 /** Effect normalisation and which sound fires on which event. */
 final class TestAudio extends Check {
 
+    private static void runNameAnnouncement(Layout L) {
+        group("run name announcement");
+        for(boolean selected:new boolean[]{true,false}) {
+            GameCore c=new GameCore(new Mem(),112L);Ear ear=new Ear();c.sound=ear;
+            c.collected=(1L<<4)|(1L<<11);c.caseIndex=selected?11:0;c.beginStart();
+            while(c.pickerT>0f) c.update(DT,L);
+            check("shuffle never speaks candidate names",ear.nameCalls==0);
+            int chosen=c.launchWho;
+            c.update(Launch.NAME_START*.5f,L);
+            check("voice waits for the first name letters",ear.nameCalls==0);
+            advance(c,L,Launch.NAME_START);
+            check("visible name gets one call",ear.nameCalls==1 && ear.announcedName==chosen && ear.narrations==0);
+            c.caseIndex=4;advance(c,L,.25f);
+            check("animation frames never repeat or change the name",ear.nameCalls==1 && ear.announcedName==chosen);
+            int hush=ear.hushes;
+            c.cancelStart();
+            check("cancelling stops active or queued name speech",ear.hushes==hush+1);
+            c.beginStart();advance(c,L,Launch.TIME+.1f);
+            check("another run announces again and stops at gameplay",c.state==GameCore.PLAY && ear.nameCalls==2
+                    && ear.hushes==hush+2);
+        }
+        GameCore early=new GameCore(new Mem(),113L);Ear ear=new Ear();early.sound=ear;
+        early.beginStart();early.cancelStart();advance(early,L,2f);
+        check("cancelled picker cannot announce later",ear.nameCalls==0);
+        boolean names=true;
+        for(int i=0;i<Collect.COUNT;i++) names &= Narration.name(i).equals(Collect.NAME[i].toLowerCase(java.util.Locale.US)+"!");
+        check("announcer speaks only the whole name with emphasis",names);
+        check("name call uses a high cutesy pitch",Narration.NAME_PITCH>=1.5f && Narration.NAME_PITCH<=2f);
+        check("name and voice wait until the slide has settled",Launch.NAME_START>Launch.CENTER_TIME
+                && Launch.slide(0f)==0f && Launch.slide(Launch.NAME_START)==1f);
+    }
+
     /** What the two frenzy squish sounds are, and that they are the right shape for the job. */
     static void frenzySounds(Layout L) {
+        runNameAnnouncement(L);
         group("frenzy sounds");
         check("mining cheer is a short voiced phrase",Sfx.build(Sfx.MINING_CHEER).length<Sfx.RATE*.6f && crossRate(Sfx.build(Sfx.MINING_CHEER))<3000);
         for(int id=Sfx.CAVE_RUMBLE;id<=Sfx.CAVE_SINK;id++){
@@ -162,6 +195,7 @@ final class TestAudio extends Check {
         d.enemies.clear();
         d.target = null;
         d.playtestMode(Power.TEAM, L);
+        d.buddy.update(d, Buddy.ENTRY_TIME, L);
         GameCore.Enemy prey = add(d, L, new int[] {2, 2}, d.buddy.y);
         prey.baseX = d.buddy.x;
         int sq = ear2.squishes, fan = ear2.achievements;

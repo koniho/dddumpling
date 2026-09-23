@@ -344,7 +344,71 @@ final class TestPower extends Check {
     }
 
     /** TEAM SQUISH: who turns up, how it moves, and what it takes. */
+    private static void runSelectionAndEntrance(Layout L) {
+        group("run squishy and entrance");
+        GameCore c=new GameCore(new Mem(),112L);
+        c.collected=(1L<<4)|(1L<<11); c.caseIndex=11;
+        c.beginStart(); c.caseIndex=4;
+        advance(c,L,Launch.TIME+.1f);
+        check("start press freezes the selected squishy",c.runWho==11 && c.pickerT==0f);
+        for(int pickup=0;pickup<2;pickup++) {
+            c.startFrenzy(Power.TEAM,L);
+            check("every pickup uses the frozen run character",c.buddy.who==11);
+            check("pickup starts one entrance below the screen",c.buddy.entryLeft==Buddy.ENTRY_TIME && c.buddy.y>L.h);
+            GameCore.Enemy prey=add(c,L,new int[]{2},L.playTop+L.enemyR*3);
+            c.tapKey(2,L);
+            check("keys queue a target during entrance",c.buddy.chase==prey);
+            float previous=c.buddy.y;
+            boolean path=true;
+            for(int i=0;i<90 && c.buddy.entryLeft>0f;i++) {
+                c.buddy.update(c,DT,L);
+                path &= c.buddy.y<previous;
+                if(c.buddy.y>=L.keyTop) path &= c.buddy.x-c.buddy.radius(L)>L.keyX[2]+L.keyR
+                        && c.buddy.x+c.buddy.radius(L)<L.keyX[3]-L.keyR;
+                previous=c.buddy.y;
+            }
+            check("entrance climbs between the keys",path);
+            check("arrival bursts once and ends at drift speed",c.buddy.burstLeft==Buddy.BURST_TIME
+                    && Math.abs(speedOf(c.buddy)-Buddy.SPEED*L.w)<.01f);
+            c.buddy.update(c,.02f,L);
+            check("arrival does not restart on the next frame",c.buddy.entryLeft==0f && c.buddy.burstLeft<Buddy.BURST_TIME);
+            c.enemies.clear();
+        }
+        c.highScores.finish(c);
+        check("saved portrait uses the same run character",c.highScores.latestRun.character==11);
+        c.toTitle();c.caseIndex=0;c.beginStart();
+        check("no selected character shows a picker before play",c.pickerT==Launch.PICK_TIME && c.state==GameCore.TITLE);
+        java.util.Set<Integer> colors=new java.util.HashSet<Integer>();
+        for(int frame=0;frame<24;frame++) {
+            colors.add(Collect.BODY[c.pickerWho()]);
+            c.update(Launch.PICK_TIME*.7f/24f,L);
+        }
+        check("shuffle varies character colors before settling",colors.size()>=4);
+        int picked=c.pickerWho();
+        check("picker settles inside the fully visible title case",c.state==GameCore.TITLE && c.enemies.isEmpty()
+                && c.startFade==GameCore.START_FADE && c.launchT==0f);
+        c.caseIndex=11;
+        while(c.pickerT>0f) c.update(DT,L);
+        check("shuffle uses the same full send-off as a selected squishy",c.launchWho==picked
+                && c.launchT==Launch.TIME && c.startFade==GameCore.START_FADE && c.state==GameCore.TITLE);
+        c.update(DT,L);
+        check("title fades only after the shuffled squishy launches",c.startFade<GameCore.START_FADE
+                && c.launchT<Launch.TIME && c.pickerT==0f);
+        advance(c,L,Launch.TIME);
+        check("picker result is the frozen run selection",c.state==GameCore.PLAY && c.runWho==picked);
+        c.startFrenzy(Power.TEAM,L);
+        check("random selection is also used by TEAM",c.buddy.who==picked);
+        c.lives=1;c.takeHit(L.w*.5f,L);
+        check("death clears entrance and burst",c.buddy.out() && c.buddy.entryLeft==0f && c.buddy.burstLeft==0f);
+        GameCore empty=new GameCore(new Mem(),113L);empty.beginStart();
+        advance(empty,L,Launch.PICK_TIME+Launch.TIME+.1f);
+        check("empty case still resolves a valid run squishy",empty.runWho>=0 && empty.runWho<Collect.COUNT);
+        empty.toTitle();empty.beginStart();empty.cancelStart();
+        check("cancel clears the picker",empty.pickerT==0f && !empty.starting());
+    }
+
     static void teamMode(Layout L) {
+        runSelectionAndEntrance(L);
         group("TEAM SQUISH");
         // The gate: nobody collected, nobody to field.
         GameCore empty = new GameCore(new Mem(), 271L);
@@ -363,12 +427,14 @@ final class TestPower extends Check {
         c.playtestMode(Power.TEAM, L);
         check("the mode starts with a stocked case", c.team() && !c.buddy.out());
         check("the squishy is one of yours", Collect.has(c.collected, c.buddy.who));
-        check("it starts inside the field",
+        check("it starts below the screen",
                 c.buddy.x > L.playLeft && c.buddy.x < L.playRight
-                        && c.buddy.y > L.playTop && c.buddy.y < L.dangerY);
+                        && c.buddy.y > L.h);
         check("it starts moving in both axes", c.buddy.vx != 0f && c.buddy.vy != 0f);
         check("it starts with nothing squished and no target",
                 c.buddy.squishes == 0 && c.buddy.chase == null);
+
+        c.buddy.update(c, Buddy.ENTRY_TIME, L);
 
         // Frenzy spawns are a mixture: the ordinary top entrance remains, while side entries
         // begin wholly beyond either edge and arc into a clear vertical lane.
@@ -484,6 +550,7 @@ final class TestPower extends Check {
         d.enemies.clear();
         d.target = null;
         d.playtestMode(Power.TEAM, L);
+        d.buddy.update(d, Buddy.ENTRY_TIME, L);
         GameCore.Enemy prey = add(d, L, new int[] {1, 2, 3}, d.buddy.y);
         prey.baseX = d.buddy.x;
         int squishesBefore = d.squishes;
@@ -560,6 +627,7 @@ final class TestPower extends Check {
         t.enemies.clear();
         t.target = null;
         t.playtestMode(Power.TEAM, L);
+        t.buddy.update(t, Buddy.ENTRY_TIME, L);
         check("a full turn takes about 0.7s", Math.abs(Buddy.TURN_TIME - 0.7f) < 0.001f);
         check("the rate follows from it",
                 Math.abs(Buddy.TURN_RATE * Buddy.TURN_TIME - 6.28319f) < 0.01f);
@@ -617,6 +685,7 @@ final class TestPower extends Check {
         s.enemies.clear();
         s.target = null;
         s.playtestMode(Power.TEAM, L);
+        s.buddy.update(s, Buddy.ENTRY_TIME, L);
         s.buddy.x = (L.playLeft + L.playRight) / 2f;
         s.buddy.y = (L.playTop + L.dangerY) / 2f;
         s.buddy.vx = drift;                       // pointing right, at drift speed

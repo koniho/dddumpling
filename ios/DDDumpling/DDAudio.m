@@ -31,6 +31,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 @property(nonatomic) AVAudioPlayerNode *rocketNode;
 @property(nonatomic) AVAudioUnitVarispeed *rocketPitch;
 @property(nonatomic) AVSpeechSynthesizer *speech;
+@property(nonatomic) AVSpeechUtterance *lastUtterance;
 @property(nonatomic) dispatch_queue_t renderQueue;
 @property(nonatomic) dispatch_queue_t effectsQueue;
 @property(nonatomic) dispatch_semaphore_t effectSlots;
@@ -517,6 +518,22 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)bossMusicWithBoolean:(jboolean)active { if (_boss == active) return; _boss = active; [self rebuildMusic]; }
 - (void)frenzyWithBoolean:(jboolean)on { if (_frenzy == on) return; _frenzy = on; [self rebuildMusic]; }
 
+- (void)announceSquishyWithInt:(jint)entry {
+  if (!_active || _interrupted || !_playbackAllowed || _effectsVolume <= 0) return;
+  @try {
+    NSString *name = [DDNarration nameWithInt:entry];
+    [_speech stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
+    AVSpeechUtterance *utterance = [AVSpeechUtterance speechUtteranceWithString:name];
+    utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-US"];
+    utterance.volume = _effectsVolume;
+    utterance.pitchMultiplier = DDNarration_NAME_PITCH;
+    utterance.rate = AVSpeechUtteranceDefaultSpeechRate * DDNarration_NAME_RATE;
+    _narrating = YES; [self applyMusicMix];
+    _lastUtterance = utterance;
+    [_speech speakUtterance:utterance];
+  } @catch (NSException *exception) { [self hush]; }
+}
+
 - (void)narrateWithInt:(jint)entry {
   if (!_active || _interrupted || !_playbackAllowed || _effectsVolume <= 0) return;
   @try {
@@ -532,22 +549,25 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
       utterance.pitchMultiplier = 1.9f;
       utterance.rate = i == 0 ? AVSpeechUtteranceDefaultSpeechRate * .90f : AVSpeechUtteranceDefaultSpeechRate;
       utterance.postUtteranceDelay = i == 0 ? .28 : i == 1 ? .20 : 0;
+      _lastUtterance = utterance;
       [_speech speakUtterance:utterance];
     }
   } @catch (NSException *exception) { [self hush]; }
 }
 
 - (void)hush {
+  _lastUtterance = nil;
   [_speech stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
   _narrating = NO; [self applyMusicMix];
 }
 
 - (void)speechSynthesizer:(AVSpeechSynthesizer *)synthesizer didFinishSpeechUtterance:(AVSpeechUtterance *)utterance {
-  (void)synthesizer; (void)utterance;
-  if (!_speech.isSpeaking) { _narrating = NO; [self applyMusicMix]; }
+  (void)synthesizer;
+  if (utterance == _lastUtterance) { _lastUtterance = nil; _narrating = NO; [self applyMusicMix]; }
 }
 - (void)speechSynthesizer:(AVSpeechSynthesizer *)synthesizer didCancelSpeechUtterance:(AVSpeechUtterance *)utterance {
-  (void)synthesizer; (void)utterance; _narrating = NO; [self applyMusicMix];
+  (void)synthesizer;
+  if (utterance == _lastUtterance) { _lastUtterance = nil; _narrating = NO; [self applyMusicMix]; }
 }
 
 @end

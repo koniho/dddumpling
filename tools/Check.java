@@ -124,6 +124,8 @@ abstract class Check {
         int bossMusicCalls;
         int narrations, hushes;
         int narrated = -1;
+        int nameCalls, announcedName=-1;
+        public void announceSquishy(int entry) { nameCalls++; announcedName=entry; }
         public void squish(int glyph, int depth) {
             squishVolume=effectsVolume;
             squishes++;
