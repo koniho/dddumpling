@@ -6,6 +6,7 @@ public final class IOSGame {
         void tick();
         void impact();
         void openPrivacy(String url);
+        void openAppAction(boolean share);
     }
 
     private final GameCore core;
@@ -19,6 +20,7 @@ public final class IOSGame {
     private boolean overGesture;
     private int settingsPointer=-1;
     public void setHost(Host host) { this.host = host; }
+    public void externalFinished() { core.preferences.externalFinished(core); }
     public boolean handlesBack() { return Pause.handlesBack(core); }
     public boolean showsBackButton() { return core.state != GameCore.OVER && core.returnFade <= 0f && handlesBack(); }
     public boolean paused() { return core.paused; }
@@ -45,7 +47,7 @@ public final class IOSGame {
     }
     public void background(boolean hidden) {
         background = hidden;
-        if (hidden) { cancelPointers(); Pause.open(core); }
+        if (hidden) { cancelPointers(); if(!core.settingsOpen) Pause.open(core); }
     }
 
 
@@ -675,6 +677,11 @@ public final class IOSGame {
         }
         boolean playing = core.state == GameCore.PLAY && !core.paused;
         core.update(Math.min(elapsed, .05f), elapsed, layout);
+        int external=core.preferences.takeExternal(core);
+        if(external!=0) {
+            if(host!=null) host.openAppAction(external==PlayerSettings.SHARE);
+            else externalFinished();
+        }
         int caveFeedback=Math.max(core.cart.scene.takeFeedback(),Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback()));
         if(caveFeedback>0 && !core.paused && !core.settingsOpen)tick();
         for (int i = 0, n = core.releaseNotes.takeFeedback(); i < n; i++) tick();

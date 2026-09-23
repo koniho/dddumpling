@@ -8,6 +8,8 @@
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>$(MARKETING_VERSION)</string>
   <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
+  <!-- Set this to the public apps.apple.com listing when its App Store ID is assigned. -->
+  <key>DDPublicAppStoreURL</key><string></string>
   <key>LSRequiresIPhoneOS</key><true/>
   <key>ITSAppUsesNonExemptEncryption</key><false/>
   <key>UIRequiredDeviceCapabilities</key><array><string>arm64</string></array>

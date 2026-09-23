@@ -62,6 +62,39 @@
     NSURL *address = [NSURL URLWithString:url];
     if (address) [UIApplication.sharedApplication openURL:address options:@{} completionHandler:nil];
 }
+- (void)openAppActionWithBoolean:(jboolean)share {
+    DDGameView *view=self.view;
+    UIViewController *presenter=view.window.rootViewController;
+    if(!presenter || presenter.presentedViewController) { [view.game externalFinished]; return; }
+    NSString *listing=[NSBundle.mainBundle objectForInfoDictionaryKey:@"DDPublicAppStoreURL"];
+    NSURL *url=[listing isKindOfClass:NSString.class] ? [NSURL URLWithString:listing] : nil;
+    void (^finished)(void)=^{ [view.game externalFinished]; };
+    void (^message)(NSString *)=^(NSString *text) {
+        UIAlertController *alert=[UIAlertController alertControllerWithTitle:share?@"Share App":@"Rate your app"
+                message:text preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault
+                handler:^(UIAlertAction *action) { finished(); }]];
+        [presenter presentViewController:alert animated:YES completion:nil];
+    };
+    if(![url.scheme isEqualToString:@"https"] || ![url.host isEqualToString:@"apps.apple.com"]
+            || [url.path rangeOfString:@"/id"].location==NSNotFound) {
+        message(@"The public iOS App Store listing is not available yet."); return;
+    }
+    if(share) {
+        NSString *invitation=[@"Come play DDDUMPLING with me! " stringByAppendingString:url.absoluteString];
+        UIActivityViewController *sheet=[[UIActivityViewController alloc] initWithActivityItems:@[invitation]
+                applicationActivities:nil];
+        sheet.completionWithItemsHandler=^(UIActivityType type,BOOL completed,NSArray *items,NSError *error) { finished(); };
+        sheet.popoverPresentationController.sourceView=view;
+        sheet.popoverPresentationController.sourceRect=CGRectMake(CGRectGetMidX(view.bounds),CGRectGetMidY(view.bounds),1,1);
+        [presenter presentViewController:sheet animated:YES completion:nil];
+    } else {
+        [UIApplication.sharedApplication openURL:url options:@{} completionHandler:^(BOOL success) {
+            if(success) finished(); else message(@"The App Store could not be opened. Please try again later.");
+        }];
+    }
+}
+
 @end
 
 @implementation DDGameView

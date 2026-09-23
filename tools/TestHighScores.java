@@ -2,6 +2,7 @@ package com.dddumpling.game;
 
 final class TestHighScores extends Check {
     static void all(Layout L) {
+        portraits();
         group("high-score history");
         Mem mem=new Mem();mem.best=9000;
         GameCore c=new GameCore(mem,101L);
@@ -25,11 +26,11 @@ final class TestHighScores extends Check {
         check("another low run replaces the extra row",c.highScores.displayCount()==11 && c.highScores.displayRun(10).score==2);
         c.startGame();c.score=2000;c.highScores.finish(c);
         check("qualifying latest appears only once",c.highScores.displayCount()==10 && !c.highScores.latestOutsideTopTen());
-        HighScores legacy=new HighScores();legacy.load(c.highScores.encode().replaceFirst("2:","1:"));
+        HighScores legacy=new HighScores();legacy.load(legacy(c.highScores.encode(),1));
         check("old top-ten saves retain qualifying latest",legacy.runs.size()==10 && legacy.latestRun.id==c.highScores.latest);
         check("historical summary remains frozen",original.score==1200 && original.stage==4 && original.stages==3
                 && original.dumplings==2 && original.squishes==9 && original.combo==7 && original.accuracy()==67 && original.best==9000);
-        for(String bad:new String[]{"junk","3:1","1:-1","1:1;1,0","1:1;999999999999999999999999999999999"}) {
+        for(String bad:new String[]{"junk","4:1","1:-1","1:1;1,0","1:1;999999999999999999999999999999999"}) {
             HighScores history=new HighScores();history.load(bad);
             check("bad history safely ignored "+bad,history.runs.isEmpty() && history.latest==0);
         }
@@ -60,6 +61,35 @@ final class TestHighScores extends Check {
         onePage(L);
         navigation(c,L);
         blurbs(L);
+    }
+    private static String legacy(String data,int version) {
+        String[] rows=data.split(";");
+        StringBuilder result=new StringBuilder(version+rows[0].substring(1));
+        for(int i=1;i<rows.length;i++) result.append(';').append(rows[i].substring(0,rows[i].lastIndexOf(',')));
+        return result.toString();
+    }
+    private static void portraits() {
+        Mem mem=new Mem();mem.collected=3L;
+        GameCore c=new GameCore(mem,900L);c.openCase();CaseUi.select(c,1);c.closeCase();
+        c.startGame();c.caseIndex=0;c.highScores.finish(c);
+        check("run portrait snapshots start rather than finish",c.highScores.latestRun.character==1);
+        GameCore loaded=new GameCore(mem,901L);
+        check("selection and saved portrait survive restart",loaded.caseIndex==1 && loaded.highScores.latestRun.character==1);
+        loaded.openCase();CaseUi.select(loaded,2);loaded.closeCase(); // Unknown entry explicitly chooses no character.
+        GameCore empty=new GameCore(mem,902L);empty.startGame();empty.highScores.finish(empty);
+        check("empty selection survives restart and snapshots placeholder",empty.caseIndex==2 && empty.highScores.latestRun.character==-1);
+        check("new choice cannot rewrite old portrait",empty.highScores.runs.get(1).character==1);
+        for(int version=1;version<=2;version++) {
+            HighScores old=new HighScores();old.load(legacy(empty.highScores.encode(),version));
+            check("legacy format has unknown portraits "+version,old.runs.size()==2
+                    && old.runs.get(0).character==-1 && old.runs.get(1).character==-1);
+        }
+        empty.startGame();Interlude.awardBossPrize(empty,Boss.SLIME);
+        check("reward-selected character survives restart",new GameCore(mem,904L).caseIndex==empty.prize);
+        empty.highScores.finish(empty);
+        check("reward cannot change the active run portrait",empty.highScores.latestRun.character==-1);
+        mem.caseIndex=Integer.MAX_VALUE;
+        check("invalid saved selection is bounded",new GameCore(mem,903L).caseIndex==0);
     }
     private static void entrance(Layout L) {
         GameCore c=new GameCore(new Mem(),106L);HighScoreScreen ui=c.highScoreScreen;

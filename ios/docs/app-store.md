@@ -26,3 +26,7 @@ Pending before release: supported physical iPhone testing; touch/audio listening
 final Release screenshots; privacy report for the linked
 runtime; product-metadata, age-rating, and accessibility review. Reviewer contacts and review
 notes are now saved and verified in both App Store and TestFlight sections.
+
+Settings sharing and rating use `DDPublicAppStoreURL` in `DDDumpling/Info.plist`.
+Set it to the public HTTPS `apps.apple.com` listing once the App Store ID is assigned.
+An empty value shows an availability message; it never substitutes the Android or TestFlight link.

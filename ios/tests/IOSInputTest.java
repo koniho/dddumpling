@@ -3,10 +3,11 @@ package com.dddumpling.game;
 /** Native packet contract and gesture ownership, using the real game rules. */
 public final class IOSInputTest extends Check {
     private static final class Host implements IOSGame.Host {
-        int ticks, impacts;
+        int ticks, impacts, shares, rates;
         String privacy;
         public void tick() { ticks++; }
         public void impact() { impacts++; }
+        public void openAppAction(boolean share) { if(share) shares++; else rates++; }
         public void openPrivacy(String url) { privacy = url; }
     }
 
@@ -67,9 +68,10 @@ public final class IOSInputTest extends Check {
         check("title has no back navigation", !game.handlesBack() && !game.back());
         tap(game, l.w - 2*l.unit, l.dangerY);
         check("title settings open without launching privacy", c.settingsOpen && host.privacy==null && !c.starting());
+        game.update(PlayerSettings.PANEL_TIME);
         tap(game,l.w*.5f,PlayerSettings.row(l,3));
         check("privacy link inside settings opens host URL",PrivacyUi.URL.equals(host.privacy));
-        game.back();
+        game.back();game.update(PlayerSettings.PANEL_TIME);
         tap(game, l.keyX[0], l.keyY[0]);
         for (int i = 0; i < 180; i++) game.update(DT);
         check("title deck press starts real run", c.state == GameCore.PLAY);
@@ -103,10 +105,32 @@ public final class IOSInputTest extends Check {
         check("invalid frame intervals do not poison simulation", c.clock == clock);
     }
 
+    private static void appActions() {
+        for(boolean playing:new boolean[]{false,true}) {
+            IOSGame game=game();Host host=new Host();game.setHost(host);
+            GameCore c=game.core();Layout l=game.geometry();if(playing)c.startGame();PlayerSettings.open(c);game.update(PlayerSettings.PANEL_TIME);
+            int score=c.score,stage=c.stage;float gap=c.stageGap;
+            tap(game,l.w*.28f,PlayerSettings.socialY(l));
+            tap(game,l.w*.72f,PlayerSettings.socialY(l));
+            check("social tap leaves time for animation",host.shares==0 && host.rates==0);
+            for(int i=0;i<10;i++)game.update(.05f);
+            check("one pending share dispatch despite rapid rating tap",host.shares==1 && host.rates==0);
+            game.background(true);game.background(false);game.externalFinished();
+            check("cancel keeps settings and exact pause state",c.settingsOpen && c.settingsPage==0 && !c.paused
+                    && c.score==score && c.stage==stage && c.stageGap==gap);
+            for(int i=0;i<12;i++)game.update(.05f);
+            tap(game,l.w*.72f,PlayerSettings.socialY(l));
+            for(int i=0;i<10;i++)game.update(.05f);
+            check("rating dispatches once after return",host.rates==1);
+            game.externalFinished();game.background(true);game.background(false);
+            check("store completion before background preserves pause",!c.paused && c.settingsOpen);
+        }
+    }
     private static void playerSettings() {
         IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
         tap(game,l.w-l.unit,l.dangerY);
         check("public player tab is first",c.settingsOpen && c.settingsPage==0);
+        game.update(PlayerSettings.PANEL_TIME);
         float s=PlayerSettings.unit(l),y=PlayerSettings.row(l,0)+s*3;
         c.preferences.music=.5f;
         float cx=(PlayerSettings.trackL(l)+PlayerSettings.trackR(l))*.5f;
@@ -125,6 +149,7 @@ public final class IOSInputTest extends Check {
         tap(game,(ui.testChipL(2,4)+ui.testChipR(2,4))*.5f,ui.stageY+ui.stageH*.5f);
         check("title stage chip cannot start a run",c.state==GameCore.TITLE && !c.starting());
         game.back();
+        game.update(PlayerSettings.PANEL_TIME);
         check("closing native settings consumes gesture",!c.settingsOpen && !c.starting());
     }
 
@@ -318,6 +343,7 @@ public final class IOSInputTest extends Check {
         for(int i=0;i<180;i++) game.update(DT);
         tap(game,l.w/2,l.hudY);
         check("stage readout opens developer settings", c.settingsOpen);
+        game.update(PlayerSettings.PANEL_TIME);
         SettingsUi ui = new SettingsUi(); ui.compute(l);
         int before = c.stage;
         tap(game,(ui.testChipL(2,4)+ui.testChipR(2,4))/2,ui.stageY+ui.stageH/2);
@@ -333,6 +359,7 @@ public final class IOSInputTest extends Check {
         tap(game,(ui.tabL(0)+ui.tabR(0))/2,ui.tabY+ui.tabH/2);
         ui.compute(l);
         tap(game,ui.closeCx,ui.closeCy);
+        game.update(PlayerSettings.PANEL_TIME);
         check("settings close resumes play", !c.settingsOpen);
         c.settingsOpen=true;c.settingsTab=SettingsUi.PROGRESS;ui.compute(l,c.settingsTab);
         tap(game,(ui.testChipL(0,2)+ui.testChipR(0,2))/2,ui.debuffY+ui.testH/2);
@@ -569,6 +596,7 @@ public final class IOSInputTest extends Check {
         caveCart();
 
         bossDeathFeedback();
+        appActions();
         playerSettings();
         gameOverDismissal();
         cave();

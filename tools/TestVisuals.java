@@ -277,7 +277,7 @@ final class TestVisuals extends Check {
         check("list back begins the reverse transition",Pause.back(c) && n.open && n.transition.closing);
         float lastListX=-1f,lastSteamerX=-L.w;
         for(int step=0;step<=4;step++) {
-            if(step>0) n.update(ReleaseTransition.DURATION/10f,L);
+            if(step>0) n.update(Draw.PANEL_SLIDE_TIME/5f,L);
             check("closing steamer stays corner-sized and level "+step,
                     Math.abs(n.transition.radius(L)-c.releaseMascot.radius(L))<.001f
                     && Math.abs(n.transition.y(L)-c.releaseMascot.y(L))<.001f);
@@ -286,8 +286,8 @@ final class TestVisuals extends Check {
                     && n.transition.x(L)<=c.releaseMascot.x(L));
             lastListX=n.transition.listX(L);lastSteamerX=n.transition.x(L);
         }
-        c.update(ReleaseTransition.DURATION*.1f+.00001f,L);
-        check("half-duration exit returns steamer to corner",!n.open && !c.releaseMascot.unread && c.releaseMascot.x(L)==L.unit*2.5f);
+        c.update(Draw.PANEL_SLIDE_TIME/5f+.00001f,L);
+        check("shared-duration exit returns steamer to corner",!n.open && !c.releaseMascot.unread && c.releaseMascot.x(L)==L.unit*2.5f);
         n.show(c,L);n.update(ReleaseTransition.DURATION,L);
         n.handleTouch(c,L,0,L.w*0.9f,n.closeY(L));
         check("close consumes the rest of its touch gesture",n.open && n.transition.closing && n.handleTouch(c,L,5,L.w*.5f,L.h*.95f)

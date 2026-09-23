@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** Existing key characters act as the slider handles; their props show the channel level. */
+/** Character controls for the player settings: musical handles and the pear age toggle. */
 final class SettingsArt extends Draw {
     static void draw(Painter p,boolean music,float x,float y,float keyR,float volume,boolean muted,float clock) {
         int glyph=music?Kawaii.CAT:Kawaii.BLOB, col=Glyph.COLOR[glyph];
@@ -33,6 +33,39 @@ final class SettingsArt extends Draw {
                 if(volume>.35f) p.fillEllipse(x,my+h*.5f,r*.14f*volume,h*.3f,ROSE);
                 waves(p,x,my,r,volume,clock);
             }
+        }
+    }
+    static void kidsToggle(Painter p,float x,float y,float s,float position,float lift) {
+        p.fillPoly(pill(x,y,s*2f,s*.70f,12),Glyph.mix(0xFF555066,0xFF397C69,position));
+        float cx=x+(position*2f-1f)*s, r=s*1.05f*(1f+lift*.10f);
+        y-=s*lift;
+        // Keep the pear opaque while its young/old face and track blend during the hop.
+        Shape.draw(p,Collect.POME,cx,y,r,Glyph.mix(0xFFB9C877,0xFFCBE06A,position),0xFF8FD9A0,1f,0f,true);
+        if(position<1f) pearFace(new OpacityPainter(p,1f-position),cx,y,r,false);
+        if(position>0f) pearFace(new OpacityPainter(p,position),cx,y,r,true);
+    }
+    private static void pearFace(Painter p,float cx,float y,float r,boolean young) {
+        int face=0xFF3A2E4F;
+        float ey=y+r*.13f;
+        for(int side=-1;side<=1;side+=2) {
+            float ex=cx+side*r*.27f;
+            if(young) {
+                p.fillEllipse(ex,ey,r*.13f,r*.17f,face);
+                p.fillCircle(ex-r*.025f,ey-r*.06f,r*.04f,0xFFFFFAEF);
+                p.fillEllipse(cx+side*r*.49f,y+r*.34f,r*.12f,r*.07f,0xDDFF8F9A);
+            } else {
+                p.strokeCircle(ex,ey,r*.20f,face,r*.055f);
+                p.line(ex-r*.07f,ey,ex+r*.07f,ey,face,r*.05f);
+                p.line(ex-r*.15f,ey-r*.29f,ex+r*.13f,ey-r*.31f,0xFFF5F0D8,r*.10f);
+                p.line(cx+side*r*.48f,ey+r*.24f,cx+side*r*.59f,ey+r*.29f,face,r*.035f);
+            }
+        }
+        p.arc(cx,y+r*.33f,r*.16f,r*.13f,0,180,face,r*.05f);
+        if(!young) {
+            p.line(cx-r*.07f,ey,cx+r*.07f,ey,face,r*.05f);
+            for(int side=-1;side<=1;side+=2)
+                p.fillEllipse(cx+side*r*.13f,y+r*.37f,r*.18f,r*.09f,0xFFFFF6DF);
+            p.line(cx-r*.12f,y-r*.20f,cx+r*.12f,y-r*.20f,face,r*.035f);
         }
     }
     private static void waves(Painter p,float x,float y,float r,float v,float clock) {
