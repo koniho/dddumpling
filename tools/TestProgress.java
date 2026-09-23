@@ -25,13 +25,34 @@ final class TestProgress extends Check {
         long count(String name) { return values.getOrDefault(name, 0L); }
     }
     static void all(Layout L) {
-        merge(); counters(); firstHit(); failures();
+        scoreResetMerge(); merge(); counters(); firstHit(); failures();
         if (!BuildFlags.DEVELOPER) production(L);
         else {
             Mem m = new Mem(); GameCore c = new GameCore(m, 82);
             c.startGame(); Interlude.awardBossPrize(c, Boss.SLIME); c.toTitle();
             check("developer build does not record production progress", m.progress == null && c.progress.count("runs_started") == 0);
         }
+    }
+    private static void scoreResetMerge() {
+        try {
+            ProgressData old=new ProgressData();old.maximum("best_score",9000);
+            old.maximum("best_score_land_1",8000);old.increment("one","prize_0",3);
+            ProgressData reset=ProgressData.decode(old.encode());reset.resetScores();
+            ProgressData a=ProgressData.decode(old.encode());a.merge(reset);
+            ProgressData b=ProgressData.decode(reset.encode());b.merge(old);
+            check("score resets merge in either order",Arrays.equals(a.encode(),b.encode())
+                    && a.maximum("best_score")==0 && a.maximum("best_score_land_1")==0);
+            reset.maximum("best_score",120);a.merge(reset);a.merge(old);
+            check("post-reset records replace higher old scores",a.maximum("best_score")==120 && a.total("prize_0")==3);
+            ProgressData newer=ProgressData.decode(reset.encode());newer.resetScores();newer.maximum("best_score",20);
+            b.merge(newer);a.merge(b);b.merge(a);
+            check("repeated resets merge idempotently",Arrays.equals(a.encode(),b.encode()) && a.maximum("best_score")==20);
+            Mem m=new Mem();GameCore c=new GameCore(m,111,true);
+            c.startGame();c.score=9999;LandPicker.recordBest(c);c.highScores.finish(c);c.toTitle();
+            c.progress.restore(newer.encode(),c);
+            check("remote reset clears local history and projects new records",c.highScores.runs.isEmpty() && c.best==20
+                    && new GameCore(m,112,true).best==20);
+        } catch(Exception failure) { check("score reset merge succeeds",false); }
     }
     private static void merge() {
         try {

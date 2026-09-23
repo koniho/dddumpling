@@ -11,6 +11,7 @@ final class Pause extends Draw {
         if(c.highScoreScreen.open) { c.highScoreScreen.back(c);return true; }
         if(c.releaseNotes.open) { c.releaseNotes.back();return true; }
         if (c.returnFade > 0f) return true;
+        if(c.settingsOpen && c.preferences.scoreReset.active()) { PlayerSettings.close(c);return true; }
         if (c.confirmEnd) { c.confirmEnd = false; return true; }
         if (c.paused) { resume(c); return true; }
         if (c.settingsOpen) { PlayerSettings.close(c); return true; }

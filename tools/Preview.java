@@ -90,6 +90,22 @@ final class Preview {
         shot(dir,"118-companion-cave",c,L,w,h,ss);
     }
 
+    static void scoreResetFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("111-reset-settings") && !wanted("111-reset-confirm")
+                && !wanted("111-reset-poof") && !wanted("111-reset-done") && !wanted("111-reset-empty")) return;
+        GameCore c=new GameCore(new Mem(),111L);c.collected=3;c.startGame();c.score=9000;
+        LandPicker.recordBest(c);c.highScores.finish(c);c.toTitle();c.returnFade=0;
+        PlayerSettings.open(c);c.preferences.updatePanel(c,PlayerSettings.PANEL_TIME);
+        shot(dir,"111-reset-settings",c,L,w,h,ss);
+        c.preferences.scoreReset.action(c,ScoreReset.OPEN);
+        shot(dir,"111-reset-confirm",c,L,w,h,ss);
+        c.preferences.scoreReset.action(c,ScoreReset.CONFIRM);
+        c.update(.3f,L);shot(dir,"111-reset-poof",c,L,w,h,ss);
+        c.update(.75f,L);shot(dir,"111-reset-done",c,L,w,h,ss);
+        c.update(.5f,L);c.closeSettings();c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+        shot(dir,"111-reset-empty",c,L,w,h,ss);
+    }
+
     private static void squishyEntryFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         boolean selected=only==null;
         if(only!=null) for(String tag:only) selected |= "112-".startsWith(tag.trim()) || tag.trim().startsWith("112-");
@@ -508,6 +524,7 @@ final class Preview {
         miningFrames(dir,L,w,h,ss);
         caveCollectFrames(dir,L,w,h,ss);
         companionFrames(dir,L,w,h,ss);
+        scoreResetFrames(dir,L,w,h,ss);
         squishyEntryFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";

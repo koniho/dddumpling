@@ -42,6 +42,10 @@ final class HighScores {
         int[] values() { return new int[]{score,stage,stages,dumplings,powers,swipes,bosses,
                 hits,misses,squishes,combo,best,land,kids?1:0,ending,character}; }
     }
+    void clear() {
+        runs.clear();latest=0;latestRun=null;unread=false;recording=false;
+        stages=dumplings=powers=swipes=bosses=0;character=-1;
+    }
     void start(int selection) { character=selection; stages=dumplings=powers=swipes=bosses=0;recording=true;unread=false; }
     void finish(GameCore c) {
         if(!recording) return;

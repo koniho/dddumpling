@@ -160,7 +160,74 @@ final class TestSettings extends Check {
         c.update(.6f,L);SettingsInput.action(c,L,1000+PlayerSettings.RATE);c.update(.2f,L);
         check("rate can launch after dismissal",c.preferences.takeExternal(c)==PlayerSettings.RATE);
     }
+    private static void settingsTap(GameCore c,Layout L,float x,float y) {
+        SettingsInput input=new SettingsInput();
+        input.touch(c,L,0,7,x,y);input.touch(c,L,1,7,x,y);
+    }
+    static void scoreReset(Layout L) {
+        group("score reset");
+        Mem save=new Mem();save.collected=3L;save.caseIndex=1;save.landState=(1<<30)|2;
+        GameCore c=new GameCore(save,111L,true);
+        c.preferences.kids=true;c.preferences.music=.4f;c.preferences.save(c);
+        c.startGame();c.score=9000;LandPicker.recordBest(c);c.highScores.finish(c);
+        c.progress.checkpoint(c.score);c.toTitle();
+        c.landBests[1]=12000;save.saveLandBest(1,12000);
+        byte[] oldCloud=c.progress.snapshot();
+        long collected=c.collected;int landState=save.landState;int prefs=save.loadPlayerSettings();
+        PlayerSettings.open(c);c.preferences.updatePanel(c,PlayerSettings.PANEL_TIME);
+        ScoreReset ui=c.preferences.scoreReset;
+        settingsTap(c,L,L.w*.5f,PlayerSettings.resetY(L));
+        check("reset action asks before clearing",ui.confirming && c.best==9000 && save.scoreResets==0);
+        settingsTap(c,L,L.w*.28f,ScoreReset.buttonsY(L));
+        check("cancel leaves records and animation untouched",!ui.active() && c.highScores.latestRun!=null && save.scoreResets==0);
+        settingsTap(c,L,L.w*.5f,PlayerSettings.resetY(L));Pause.back(c);
+        check("back cancels confirmation but keeps settings",!ui.active() && c.settingsOpen && !c.preferences.panelClosing);
+        settingsTap(c,L,L.w*.5f,PlayerSettings.resetY(L));
+        settingsTap(c,L,L.w*.72f,ScoreReset.buttonsY(L));
+        check("confirmed reset clears every score surface",c.best==0 && c.landBests[1]==0
+                && c.highScores.runs.isEmpty() && c.highScores.latestRun==null && !c.highScores.unread
+                && c.highScoreScreen.selected==-1 && !c.highScoreScreen.open);
+        check("reset starts one celebration",ui.left==ScoreReset.TIME && save.scoreResets==1);
+        for(int i=0;i<3;i++) settingsTap(c,L,L.w*.72f,ScoreReset.buttonsY(L));
+        SettingsInput.action(c,L,1000+PlayerSettings.KIDS);Pause.back(c);
+        check("celebration blocks overlapping reset and navigation",ui.left==ScoreReset.TIME
+                && save.scoreResets==1 && c.settingsOpen && c.preferences.kids);
+        c.progress.checkpoint(c.score);LandPicker.recordBest(c);c.highScores.finish(c);
+        check("old run cannot immediately repopulate cleared scores",c.best==0
+                && c.highScores.runs.isEmpty() && c.progress.maximum("best_score")==0);
+        c.update(ScoreReset.TIME+.01f,L);
+        check("celebration returns control to settings",!ui.active() && c.settingsOpen && !c.preferences.panelMoving());
+        GameCore reopened=new GameCore(save,112L,true);
+        check("reset survives restart",reopened.best==0 && reopened.landBests[1]==0
+                && reopened.highScores.runs.isEmpty() && reopened.highScores.latestRun==null);
+        check("non-score save is untouched",reopened.collected==collected && reopened.caseIndex==1
+                && save.landState==landState && save.loadPlayerSettings()==prefs);
+        try {
+            reopened.progress.restore(oldCloud,reopened);
+            check("stale sync cannot resurrect a reset score",reopened.best==0 && reopened.progress.maximum("best_score")==0);
+        } catch(Exception failure) { check("stale restore decodes",false); }
+        reopened.startGame();reopened.score=321;LandPicker.recordBest(reopened);
+        reopened.highScores.finish(reopened);reopened.progress.finishRun(reopened.score,false);
+        check("next run establishes new records",reopened.best==321 && reopened.highScores.latestRun.score==321);
+        check("new records survive another restart",new GameCore(save,113L,true).best==321);
+        PlayerSettings.open(reopened);reopened.preferences.updatePanel(reopened,PlayerSettings.PANEL_TIME);
+        save.resetFails=true;
+        settingsTap(reopened,L,L.w*.5f,PlayerSettings.resetY(L));
+        settingsTap(reopened,L,L.w*.72f,ScoreReset.buttonsY(L));
+        check("failed save keeps scores and offers retry without celebration",reopened.best==321
+                && reopened.preferences.scoreReset.failed && reopened.preferences.scoreReset.left==0f);
+        // Resetting a paused live run leaves play state and collectibles alone.
+        save.resetFails=false;reopened.preferences.scoreReset.cancel();reopened.closeSettings();
+        reopened.startGame();reopened.score=44;int stage=reopened.stage;
+        PlayerSettings.open(reopened);reopened.preferences.updatePanel(reopened,PlayerSettings.PANEL_TIME);
+        reopened.preferences.scoreReset.action(reopened,ScoreReset.OPEN);
+        reopened.preferences.scoreReset.action(reopened,ScoreReset.CONFIRM);
+        reopened.update(ScoreReset.TIME+.1f,L);
+        check("live reset does not restart gameplay",reopened.state==GameCore.PLAY && reopened.score==44 && reopened.stage==stage);
+    }
+
     static void all(Layout L) {
+        scoreReset(L);
         panelTiming(L);
         kidsToggle(L);
         transitions(L);

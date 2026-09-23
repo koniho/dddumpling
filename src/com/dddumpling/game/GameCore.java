@@ -170,6 +170,14 @@ final class GameCore {
         default void saveCaseIndex(int value) {}
         default String loadHighScores() { return ""; }
         default void saveHighScores(String value) {}
+        /** Hosts commit the reset and its sync marker together. */
+        default boolean resetHighScores(byte[] progress) {
+            saveHighScores("");
+            for (int land=0;land<Lands.COUNT;land++) saveLandBest(land,0);
+            saveBest(0);
+            if (progress!=null) saveProgress(progress);
+            return true;
+        }
         int loadBest();
         void saveBest(int best);
         default int loadCaveChoice() { return -1; }
@@ -468,6 +476,7 @@ final class GameCore {
     private final float[] titleSpringVY = new float[TITLE_LETTERS];
     int score, best, lives, stage, combo, maxCombo;
     int landChoice, runStartLand;
+    boolean scoresSuppressed;
     final int[] landBests = new int[Lands.COUNT];
     boolean landPickerDragging, landPickerMoved;
     float landPickerSlide, landPickerX;
@@ -1749,7 +1758,26 @@ final class GameCore {
         starNext = starBonus = false;
     }
 
+    boolean resetHighScores() {
+        try {
+            ProgressData next=progress.prepareScoreReset();
+            if (store!=null && !store.resetHighScores(next==null?null:next.encode())) return false;
+            progress.acceptScoreReset(next);
+            clearScoreRecords();
+            return true;
+        } catch (Exception unavailable) { return false; }
+    }
+    void clearScoreRecords() {
+        best=0;
+        java.util.Arrays.fill(landBests,0);
+        highScores.clear();
+        highScoreScreen.open=highScoreScreen.closing=false;
+        highScoreScreen.selected=-1;
+        scoresSuppressed=true;
+    }
+
     void startGame() {
+        scoresSuppressed=false;
         stopLaunchVoice();
         runWho = pendingRunWho >= 0 ? pendingRunWho : resolveRunWho();
         pendingRunWho = -1;

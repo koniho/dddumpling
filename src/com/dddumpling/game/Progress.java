@@ -23,7 +23,7 @@ final class Progress {
     private int stage, boss = -1, startLand;
     private String minigame;
     private double bossSeconds;
-    private boolean firstHit;
+    private boolean firstHit, scoresSuppressed;
     String error;
 
     Progress(Store store, boolean enabled) {
@@ -73,6 +73,7 @@ final class Progress {
     void startRun(int land) {
         if (!available()) return;
         if (running) finishRun(0, true);
+        scoresSuppressed = false;
         startLand = land;
         running = true; stage = 0; boss = -1; minigame = null;
         event("runs_started"); enterStage(land * Boss.EVERY + 1);
@@ -89,7 +90,7 @@ final class Progress {
     }
     void completeStage(int score) {
         if (!available() || !running || stageDone) return;
-        stageDone = true; data.maximum(scoreKey(), score);
+        stageDone = true; recordScore(score);
         event("stages_completed"); changed();
     }
     void bossTime(double seconds) {
@@ -122,17 +123,17 @@ final class Progress {
     void reward(int who, boolean fresh, String source, int score) {
         if (!available() || !running || who < 0 || who >= Collect.COUNT) return;
         data.increment(replica, "prize_" + who, 1);
-        data.maximum(scoreKey(), score);
+        recordScore(score);
         event("rewards_total"); event(fresh ? "rewards_new" : "rewards_duplicate");
         event("rewards_" + source); changed();
     }
     void checkpoint(int score) {
         if (!available()) return;
-        data.maximum(scoreKey(), score); changed();
+        recordScore(score); changed();
     }
     void finishRun(int score, boolean abandoned) {
         if (!available() || !running) return;
-        data.maximum(scoreKey(), score);
+        recordScore(score);
         event(abandoned ? "runs_abandoned" : "runs_finished");
         if (!abandoned) event("run_end_" + bucket(stage));
         if (boss >= 0) {
@@ -142,11 +143,32 @@ final class Progress {
         if (minigame != null) event(minigame + "_abandoned");
         running = false; boss = -1; minigame = null; changed();
     }
-    /** Merge first, then project into the old save fields without emitting collection events. */
+    private void recordScore(int score) {
+        if (!scoresSuppressed) data.maximum(scoreKey(), score);
+    }
+    ProgressData prepareScoreReset() throws IOException {
+        if (!enabled) return null;
+        if (!available()) throw new IOException("Progress unavailable");
+        ProgressData next=ProgressData.decode(data.encode());
+        next.resetScores();
+        return next;
+    }
+    void acceptScoreReset(ProgressData next) {
+        if (next!=null) data=next;
+        scoresSuppressed=true;
+        if (sink!=null) try { sink.changed(); } catch (RuntimeException ignored) { }
+    }
+    /** A newer score reset wins over old maxima; collection counters still merge. */
     void restore(byte[] bytes, GameCore c) throws IOException {
         if (!available()) throw new IOException("Progress unavailable");
-        ProgressData remote = ProgressData.decode(bytes);
-        data.merge(remote);
+        ProgressData merged=ProgressData.decode(data.encode());
+        merged.merge(ProgressData.decode(bytes));
+        if (merged.scoreEpoch()>data.scoreEpoch()) {
+            if (c.store!=null && !c.store.resetHighScores(merged.encode()))
+                throw new IOException("Score reset could not be saved");
+            acceptScoreReset(merged);
+            c.clearScoreRecords();
+        } else data=merged;
         if (c.state == GameCore.TITLE) apply(c);
         changed();
     }

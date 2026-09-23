@@ -60,8 +60,13 @@ final class SettingsInput {
     }
     static boolean action(GameCore c,Layout L,int h) {
         if(c.highScoreScreen.open) { c.highScoreScreen.action(c,h);return false; }
+        if(c.preferences.scoreReset.active() && h!=1000+ScoreReset.CONFIRM
+                && h!=1000+ScoreReset.CANCEL) return false;
         if(h>=1000) {
             switch(h-1000) {
+                case ScoreReset.OPEN:
+                case ScoreReset.CONFIRM:
+                case ScoreReset.CANCEL: c.preferences.scoreReset.action(c,h-1000);break;
                 case PlayerSettings.CLOSE: PlayerSettings.close(c);break;
                 case PlayerSettings.PLAYER: c.settingsPage=0;c.clearArmed=false;break;
                 case PlayerSettings.DEVELOPER: if(BuildFlags.DEVELOPER) { c.settingsPage=1;c.clearArmed=false; } break;

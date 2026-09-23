@@ -17,7 +17,22 @@ public final class IOSCloudTest extends Check {
     private static void tick(IOSCloud cloud, int seconds) {
         for (int i = 0; i < seconds; i++) cloud.update(1);
     }
+    private static void resetInFlight() throws Exception {
+        Mem store=new Mem();GameCore core=new GameCore(store,111,true);
+        core.startGame();core.score=7000;LandPicker.recordBest(core);core.highScores.finish(core);core.toTitle();
+        Host host=new Host();IOSCloud cloud=new IOSCloud(core,host,true);
+        cloud.session("player",true);cloud.update(0);
+        check("reset saves while a cloud fetch is pending",core.resetHighScores());
+        cloud.fetched(new byte[][]{remote(99000,4)},host.token);
+        check("late cloud response cannot restore scores",core.best==0 && core.highScores.runs.isEmpty()
+                && ProgressData.decode(host.saved).maximum("best_score")==0);
+        check("late cloud response still merges collectibles",core.collectionCounts[0]==4);
+        cloud.saved(host.token);cloud.session("player",false);
+        GameCore reopened=new GameCore(store,112,true);
+        check("background and restart preserve synced reset",reopened.best==0 && reopened.highScores.latestRun==null);
+    }
     public static void main(String[] args) throws Exception {
+        resetInFlight();
         Mem store = new Mem(); GameCore core = new GameCore(store, 9, true);
         Host host = new Host(); IOSCloud cloud = new IOSCloud(core, host, true);
         cloud.session(null, true); cloud.update(1);

@@ -10,6 +10,31 @@
 
 @implementation DDStoreTests
 
+- (void)testScoreResetPersistsWithoutChangingOtherProgress {
+  NSURL *url = [self temporaryFile];
+  DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];
+  [store saveBestWithInt:9000];
+  [store saveLandBestWithInt:1 withInt:12000];
+  [store saveHighScoresWithNSString:@"old records"];
+  [store saveCollectedWithLong:3];
+  [store saveCaseIndexWithInt:1];
+  [store saveLandStateWithInt:7];
+  [store savePlayerSettingsWithInt:42];
+  IOSByteArray *progress = [IOSByteArray arrayWithLength:3];
+  progress->buffer_[0] = 11;
+  XCTAssertTrue([store resetHighScoresWithByteArray:progress]);
+  DDIOSStore *reopened = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertEqual([reopened loadBest], 0);
+  XCTAssertEqual([reopened loadLandBestWithInt:1], 0);
+  XCTAssertEqualObjects([reopened loadHighScores], @"");
+  XCTAssertEqual([reopened loadProgress]->buffer_[0], 11);
+  XCTAssertEqual([reopened loadCollected], 3);
+  XCTAssertEqual([reopened loadCaseIndex], 1);
+  XCTAssertEqual([reopened loadLandState], 7);
+  XCTAssertEqual([reopened loadPlayerSettings], 42);
+  [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
+}
+
 - (void)testCloudOwnerPersistsAndRejectsEitherAccountChanging {
   NSURL *url = [self temporaryFile];
   NSData *identity = [@"icloud-a" dataUsingEncoding:NSUTF8StringEncoding];
@@ -52,6 +77,7 @@
   XCTAssertNotNil(store.error);
   NSData *original = [NSData dataWithContentsOfURL:url];
   [store saveBestWithInt:999];
+  XCTAssertFalse([store resetHighScoresWithByteArray:nil]);
   XCTAssertEqualObjects([NSData dataWithContentsOfURL:url], original);
 }
 
