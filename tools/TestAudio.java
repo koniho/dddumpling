@@ -30,7 +30,8 @@ final class TestAudio extends Check {
         boolean names=true;
         for(int i=0;i<Collect.COUNT;i++) names &= Narration.name(i).equals(Collect.NAME[i].toLowerCase(java.util.Locale.US)+"!");
         check("announcer speaks only the whole name with emphasis",names);
-        check("name call uses a high cutesy pitch",Narration.NAME_PITCH>=1.5f && Narration.NAME_PITCH<=2f);
+        check("run name matches display-case voice delivery",Narration.NAME_PITCH==Narration.PITCH
+                && Narration.NAME_RATE==Narration.rate(0));
         check("name and voice wait until the slide has settled",Launch.NAME_START>Launch.CENTER_TIME
                 && Launch.slide(0f)==0f && Launch.slide(Launch.NAME_START)==1f);
     }

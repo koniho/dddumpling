@@ -41,8 +41,8 @@ final class Narration {
      */
     static final float RATE = 1.0f;
 
-    /** A bright, cutesy name call, kept brisk enough for the short greeting. */
-    static final float NAME_PITCH = 1.65f, NAME_RATE = 1.05f;
+    /** The same name delivery in the display case and the run greeting. */
+    static final float NAME_PITCH = PITCH, NAME_RATE = .90f;
     static String name(int entry) {
         return (Collect.NAME[entry]+"!").toLowerCase(java.util.Locale.US);
     }
@@ -68,7 +68,7 @@ final class Narration {
      * little slower than the rest is read.
      */
     static float rate(int k) {
-        return k == 0 ? 0.90f : RATE;
+        return k == 0 ? NAME_RATE : RATE;
     }
 
     /**
