@@ -1740,6 +1740,11 @@ final class GameCore {
         return owned >= 0 ? owned : rnd.nextInt(Collect.COUNT);
     }
 
+    private void resetStarRun() {
+        stars.resetRun();
+        starNext = starBonus = false;
+    }
+
     void startGame() {
         stopLaunchVoice();
         runWho = pendingRunWho >= 0 ? pendingRunWho : resolveRunWho();
@@ -1748,11 +1753,9 @@ final class GameCore {
         highScores.start(runWho);
         highScoreScreen.open=false;
         band.reset(this); mining.stop(); cart.stop();
-        // A paid win may have been quit before its tableau/parade retired the course.
-        if (stars.count() == StarPath.COUNT) {
-            stars.make(rnd);
-            starNext = false;
-        }
+        // Checkpoints and the pending turn belong to one main-game run. Keep only the saved
+        // difficulty ladder when a fresh run begins, including after an interrupted course.
+        resetStarRun();
         runStartLand = LandPicker.unlocked(this, landChoice) ? landChoice : 0;
         landChoice = runStartLand;
         best = landBests[runStartLand];
@@ -1852,6 +1855,7 @@ final class GameCore {
     void toTitle() {
         band.stop(this); mining.stop(); cart.stop();
         cave.leave();
+        resetStarRun();
         progress.finishRun(score, true);
         Pause.resume(this);
         boolean hadHaul = state == OVER && roundPrizes != 0L;
@@ -3260,6 +3264,7 @@ final class GameCore {
      */
     private void die() {
         cave.leave();
+        resetStarRun();
         highScores.finish(this);
         progress.finishRun(score, false);
         if (runFullRoster && fullRoster) {
