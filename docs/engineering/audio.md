@@ -41,6 +41,6 @@ policy lives in [AGENTS.md](../../AGENTS.md).
   since nothing downstream can tell that the lesson has *just* ended.
 
 Run-start names use `Sound.announceSquishy` when the first greeting letters appear, after the squishy has slid to screen center.
-`Narration` supplies a single emphasized name using the same pitch and name-reading speed
+`Narration` supplies a single emphasized name using a higher chipmunk pitch and the same name-reading speed
 as display-case narration. Android warms its offline speech engine on the title screen; both hosts
 follow effects volume and duck music. Cancelling or completing the entrance stops queued speech.

@@ -41,8 +41,8 @@ final class Narration {
      */
     static final float RATE = 1.0f;
 
-    /** The same name delivery in the display case and the run greeting. */
-    static final float NAME_PITCH = PITCH, NAME_RATE = .90f;
+    /** An extra-high chipmunk greeting, with the display case's name-reading speed. */
+    static final float NAME_PITCH = 2.0f, NAME_RATE = .90f;
     static String name(int entry) {
         return (Collect.NAME[entry]+"!").toLowerCase(java.util.Locale.US);
     }
