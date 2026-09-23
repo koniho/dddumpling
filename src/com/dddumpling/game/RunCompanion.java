@@ -24,16 +24,17 @@ final class RunCompanion extends Draw {
         home.impulse(event==DAMAGE?-.7f:.7f,-.6f,.18f*strength);
     }
     void update(GameCore c,float dt) {
-        if(c.state!=GameCore.PLAY || c.paused || c.settingsOpen || who<0) return;
+        boolean play=c.state==GameCore.PLAY;
+        if((!play && c.state!=GameCore.BONUS) || c.paused || c.settingsOpen || who<0) return;
         clock+=dt;age+=dt;left=Math.max(0f,left-dt);
         if(left==0f) reaction=IDLE;
-        boolean boss=c.boss.active(),won=boss && c.boss.beaten;
-        boolean threat=c.boss.fighting() && (c.boss.boltCount()>0 || c.boss.hasGlob()
+        boolean boss=play && c.boss.active(),won=boss && c.boss.beaten;
+        boolean threat=play && c.boss.fighting() && (c.boss.boltCount()>0 || c.boss.hasGlob()
                 || c.boss.mushroomCharge>0f || c.boss.octoLock);
         if(boss && !bossSeen) react(BOSS,.7f);
         if(threat && !threatSeen) react(DANGER,.8f);
         if(won && !wonSeen) react(VICTORY,1f);
-        bossSeen=boss;wonSeen=won;threatSeen=threat;powered=c.powerActive();
+        bossSeen=boss;wonSeen=won;threatSeen=threat;powered=play && c.powerActive();
         home.pull(.15f*(float)Math.sin(clock*1.7f),.8f,.14f);
         home.update(dt);
     }
@@ -48,6 +49,7 @@ final class RunCompanion extends Draw {
     static float y(Layout L) { return L.keyY[2]-L.keyR*1.55f; }
     static float halfWidth(Layout L) { return L.keyR*.72f; }
     static float halfHeight(Layout L) { return L.keyR*.50f; }
+    static float radius(Layout L) { return L.keyR*.55f*.84f; }
     static float radius(GameCore c,Layout L) { return LandPicker.travelerRadius(c,L)*.84f; }
     float beat() { return left>0f?(float)Math.sin(Math.min(1f,age/.48f)*Math.PI)*strength:0f; }
     float squash() { return 1f+beat()*(reaction==DAMAGE?.20f:-.16f); }
@@ -62,7 +64,9 @@ final class RunCompanion extends Draw {
     }
     static void draw(Painter p,GameCore c,Layout L) {
         RunCompanion a=c.companion;
-        if(c.state!=GameCore.PLAY || a.who<0) return;
+        boolean steamer=c.state==GameCore.BONUS && !c.starBonus && !c.bossReward
+                && !CaveInterlude.active(c);
+        if((c.state!=GameCore.PLAY && !steamer) || a.who<0 || !c.buddy.out()) return;
         float x=x(L),y=y(L),w=halfWidth(L),h=halfHeight(L),r=radius(c,L);
         float beat=a.beat();
         int tint=a.reaction==DAMAGE?ROSE:a.reaction==VICTORY?GOLD:Collect.BODY[a.who];

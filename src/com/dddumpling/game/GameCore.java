@@ -1208,7 +1208,7 @@ final class GameCore {
         strokeCuts = 0;
         callKills = 0;
         callCuts = 0;
-        if (entry >= 0) buddy.enter(entry, L, rnd);
+        if (entry >= 0) buddy.enter(entry,L,rnd,RunCompanion.radius(this,L));
         else buddy.leave();
         shake = Math.max(shake, 0.5f);
         flash = Math.max(flash, 0.8f);
@@ -1295,10 +1295,11 @@ final class GameCore {
      * destroyed and the wave counts as fully released, so the interlude follows.
      */
     private void endPower(Layout L) {
+        boolean teamEnded=mode==Power.TEAM;
         mode = -1;
         modeLeft = 0f;
         debuffLeft = monochromeFade = incognitoMorph = 0f;
-        buddy.leave();
+        if(teamEnded) buddy.returnHome(L); else buddy.leave();
         for (int i = enemies.size() - 1; i >= 0; i--) {
             Enemy e = enemies.get(i);
             if (!e.destroyed) destroyWord(e, enemyCentreX(e), e.y, L);
@@ -2513,6 +2514,9 @@ final class GameCore {
                 || boss.hasGlob() || boss.boltCount() > 0)) sound.bossCharge(0f);
         if (settingsOpen) { preferences.updatePanel(this,elapsed); return; }
         companion.update(this,dt);
+        // TEAM SQUISH can finish on the same frame that schedules an interlude. Its return owns
+        // the companion until it reaches home, so it keeps moving through that transition.
+        if(buddy.returning()) buddy.update(this,dt,L);
         time += dt;
         if (returnFade > 0f) {
             returnFade = Math.max(0f, returnFade - dt);
@@ -2767,7 +2771,7 @@ final class GameCore {
         // dumpling gets the screen to itself. Nothing spawns and nothing falls; the field is
         // already empty, which is what let the wave end.
         if (pendingBonus) {
-            if (perfectBanner <= 0f) {
+            if (perfectBanner <= 0f && buddy.out()) {
                 pendingBonus = false;
                 Interlude.enterBonus(this, L);
             }
@@ -2786,8 +2790,8 @@ final class GameCore {
 
         updatePower(dt, L);
         Blade.updateTrail(this, dt, L);
-        if (team()) buddy.update(this, dt, L);
-        else if (!buddy.out()) buddy.leave();
+        if (team()) buddy.update(this,dt,L);
+        else if (!buddy.out() && !buddy.returning()) buddy.leave();
 
         if (boss.active()) {
             // Visible projectiles reaching the deck cost lives; elapsed fight time alone does not.

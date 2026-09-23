@@ -28,6 +28,21 @@ final class Preview {
         for(int frame=0;frame<8;frame++) {
             shot(dir,"118-companion-team-"+frame,c,L,w,h,ss);step(c,L,.09f);
         }
+        c.modeLeft=.01f;step(c,L,DT);
+        for(int frame=0;frame<8;frame++) {
+            shot(dir,"118-companion-team-return-"+frame,c,L,w,h,ss);step(c,L,.09f);
+        }
+        c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
+        c.playtestSteamer(L);c.time=.7f;
+        shot(dir,"118-companion-steamer",c,L,w,h,ss);
+        c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
+        c.starNext=true;Interlude.enterBonus(c,L);
+        for(int frame=0;frame<6;frame++) {
+            c.time=frame*StarScreen.COMPANION_TRAVEL/5f;
+            shot(dir,"118-companion-starpath-entry-"+frame,c,L,w,h,ss);
+        }
+        c.time=2f;c.stars.timer=StarPath.REPORT+StarPath.EXIT*.5f;
+        shot(dir,"118-companion-starpath-return",c,L,w,h,ss);
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=49;c.caveChoice=0;
         c.startGame();c.jumpToStage(21,L);c.stageBanner=0;
         shot(dir,"118-companion-cave",c,L,w,h,ss);

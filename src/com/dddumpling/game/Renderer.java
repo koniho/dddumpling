@@ -93,7 +93,7 @@ final class Renderer extends Draw {
         }
 
         if(!Cave.active(c) || c.cave.phase!=Cave.CHOOSE) RunCompanion.draw(p,c,L);
-        // The helper flies in front of the decorative home on its way into the field.
+        // The grown TEAM form flies in front of the home while it leaves the key deck.
         if(c.buddy.entryLeft>0f) buddy(p,c,L);
 
         // Red closing-in glow: from low health, and from a word about to land.

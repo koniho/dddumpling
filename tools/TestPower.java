@@ -354,20 +354,20 @@ final class TestPower extends Check {
         for(int pickup=0;pickup<2;pickup++) {
             c.startFrenzy(Power.TEAM,L);
             check("every pickup uses the frozen run character",c.buddy.who==11);
-            check("pickup starts one entrance below the screen",c.buddy.entryLeft==Buddy.ENTRY_TIME && c.buddy.y>L.h);
+            check("pickup starts at the companion home",c.buddy.entryLeft==Buddy.ENTRY_TIME
+                    && c.buddy.x==RunCompanion.x(L) && c.buddy.y==RunCompanion.y(L)
+                    && c.buddy.radius(L)==RunCompanion.radius(c,L));
             GameCore.Enemy prey=add(c,L,new int[]{2},L.playTop+L.enemyR*3);
             c.tapKey(2,L);
             check("keys queue a target during entrance",c.buddy.chase==prey);
-            float previous=c.buddy.y;
+            float previous=c.buddy.y,previousR=c.buddy.radius(L);
             boolean path=true;
             for(int i=0;i<90 && c.buddy.entryLeft>0f;i++) {
                 c.buddy.update(c,DT,L);
-                path &= c.buddy.y<previous;
-                if(c.buddy.y>=L.keyTop) path &= c.buddy.x-c.buddy.radius(L)>L.keyX[2]+L.keyR
-                        && c.buddy.x+c.buddy.radius(L)<L.keyX[3]-L.keyR;
-                previous=c.buddy.y;
+                path &= c.buddy.y<previous && c.buddy.radius(L)>=previousR;
+                previous=c.buddy.y;previousR=c.buddy.radius(L);
             }
-            check("entrance climbs between the keys",path);
+            check("companion climbs and grows into TEAM SQUISH",path);
             check("arrival bursts once and ends at drift speed",c.buddy.burstLeft==Buddy.BURST_TIME
                     && Math.abs(speedOf(c.buddy)-Buddy.SPEED*L.w)<.01f);
             c.buddy.update(c,.02f,L);
@@ -427,9 +427,9 @@ final class TestPower extends Check {
         c.playtestMode(Power.TEAM, L);
         check("the mode starts with a stocked case", c.team() && !c.buddy.out());
         check("the squishy is one of yours", Collect.has(c.collected, c.buddy.who));
-        check("it starts below the screen",
-                c.buddy.x > L.playLeft && c.buddy.x < L.playRight
-                        && c.buddy.y > L.h);
+        check("it starts in the companion home",
+                c.buddy.x==RunCompanion.x(L) && c.buddy.y==RunCompanion.y(L)
+                        && c.buddy.radius(L)==RunCompanion.radius(c,L));
         check("it starts moving in both axes", c.buddy.vx != 0f && c.buddy.vy != 0f);
         check("it starts with nothing squished and no target",
                 c.buddy.squishes == 0 && c.buddy.chase == null);
@@ -759,13 +759,16 @@ final class TestPower extends Check {
         e.update(DT, L);
         check("a target that is gone is dropped", e.buddy.chase == null);
 
-        // The squishy leaves with the frenzy, and never lingers into play.
+        // The fighter shrinks back into its home instead of disappearing at the field edge.
+        float awayX=e.buddy.x,awayY=e.buddy.y;
         e.modeLeft = 0.01f;
         advance(e, L, 0.2f);
         check("the frenzy ended", !e.powerActive());
-        check("the squishy has gone with it", e.buddy.out());
-        advance(e, L, 1f);
-        check("and stays gone", e.buddy.out());
+        float beforeHome=(float)Math.hypot(awayX-RunCompanion.x(L),awayY-RunCompanion.y(L));
+        float goingHome=(float)Math.hypot(e.buddy.x-RunCompanion.x(L),e.buddy.y-RunCompanion.y(L));
+        check("the same squishy is returning home",e.buddy.returning() && goingHome<beforeHome);
+        advance(e,L,Buddy.RETURN_TIME);
+        check("the fighter retires when the companion reaches home",e.buddy.out());
 
         // Dying mid-mode has to take it too. It is only ever sent home from the PLAY half of
         // update(), which a death puts out of reach — so the bubble used to carry on bouncing

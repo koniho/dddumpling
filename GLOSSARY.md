@@ -242,9 +242,9 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 | **slow-motion beat** | the brief slowdown a stroke earns by taking two or more words | `GameCore.slowdown`, `SLOW_RATE` |
 | **slice call** | the "N IN ONE!" readout during that beat. Shows the counts frozen when the stroke that earned it ended, not the live ones | `Hud.sliceCall`, `GameCore.callKills` |
 | **MULTI** | one press chains through every matching letter, hop by hop | `Power.MULTI` |
-| **TEAM SQUISH** | the run’s squishy flies up between the keys, bursts in its body color, then bounces round the field squishing words | `Power.TEAM`, `Buddy` |
+| **TEAM SQUISH** | the run companion grows out of its home, flies into the field and bounces around squishing words, then shrinks back home when the power ends | `Power.TEAM`, `Buddy`, `RunCompanion` |
 | **run squishy** | display-case selection frozen at Start; without a selection, the display case shuffles through squishies, chooses from owned squishies (or the full catalog for an empty case), then slides to center and shows its name with a short greeting before the usual send-off. Shared by TEAM SQUISH, Starpath and the saved-run portrait | `GameCore.runWho`, `Launch` |
-| **run companion** | the run squishy's small, soft home between the key groups. It stays through normal play, caves, powers and bosses, and reacts to damage, cleared words, danger, victories and power-ups without taking input | `RunCompanion`, `GameCore.companion` |
+| **run companion** | the run squishy's small, soft home between the key groups. It stays through normal play, caves, the Steamer, powers and bosses; for TEAM SQUISH and Star Path the same character travels out of its home instead of being duplicated | `RunCompanion`, `GameCore.companion` |
 | **squishy** / **buddy** | the collectible fighting for you during it | `Buddy`, `GameCore.buddy` |
 | **bubble** | the glowing shell round it, brighter and bigger with every word it takes | `Buddy.radius`, `glow` |
 | **charge** | the squishy accelerating at the word a press aimed it at | `Buddy.charge`, `GameCore.teamStrike` |

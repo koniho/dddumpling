@@ -26,11 +26,37 @@ final class TestCompanion extends Check {
         check("reaction settles without a queue",c.companion.reaction==RunCompanion.IDLE);
         check("home has genuine soft-body motion",!java.util.Arrays.equals(skin,c.companion.outline(L)) && c.companion.home.finite());
         c.startFrenzy(Power.TEAM,L);
-        check("TEAM keeps the UI companion and its separate helper",c.companion.who==11 && c.buddy.who==11
-                && c.buddy.entryLeft>0 && c.companion.reaction==RunCompanion.POWER);
+        check("TEAM grows the companion from its home",c.companion.who==11 && c.buddy.who==11
+                && c.buddy.entryLeft>0 && c.buddy.x==RunCompanion.x(L)
+                && c.buddy.y==RunCompanion.y(L) && c.companion.reaction==RunCompanion.POWER);
         c.modeLeft=DT*.5f;c.update(DT,L);
-        // The active power reaction has priority over its ending, then naturally settles.
-        check("power ending does not remove the companion",c.companion.who==11 && !c.powerActive());
+        check("power ending sends the fighter back to the companion home",
+                c.companion.who==11 && !c.powerActive() && c.buddy.returning());
+        advance(c,L,Buddy.RETURN_TIME+.1f);
+        check("home companion resumes after TEAM returns",c.buddy.out() && c.companion.who==11);
+
+        Layout small=new Layout();small.compute(320,700,0,0,0,0);
+        GameCore interlude=new GameCore(save,121L);interlude.startGame();interlude.playtestSteamer(small);
+        RasterPainter visible=new RasterPainter(320,700,1);visible.clear(0xFF010203);
+        RunCompanion.draw(visible,interlude,small);
+        boolean painted=false;for(int pixel:visible.resolve()) painted|=pixel!=0xFF010203;
+        check("companion remains visible throughout the steamer game",painted);
+
+        interlude=new GameCore(save,122L);interlude.startGame();interlude.starNext=true;
+        Interlude.enterBonus(interlude,small);
+        float targetX=interlude.stars.flyerX(small),targetY=interlude.stars.flyerY(small);
+        check("Star Path starts the companion at home",
+                StarScreen.companionX(interlude,small,targetX)==RunCompanion.x(small)
+                        && StarScreen.companionY(interlude,small,targetY)==RunCompanion.y(small));
+        interlude.time=StarScreen.COMPANION_TRAVEL;
+        check("Star Path moves the companion into the flyer position",
+                StarScreen.companionX(interlude,small,targetX)==targetX
+                        && StarScreen.companionY(interlude,small,targetY)==targetY
+                        && StarScreen.companionR(interlude,small)==StarPath.flyerR(small));
+        interlude.stars.timer=StarPath.REPORT-.01f;
+        check("Star Path report keeps the companion visible at home",
+                StarScreen.companionX(interlude,small,targetX)==RunCompanion.x(small)
+                        && StarScreen.companionY(interlude,small,targetY)==RunCompanion.y(small));
         c.toTitle();check("title clears all reaction state",c.companion.who<0 && c.companion.left==0f);
         c.startGame();check("new run starts from idle",c.companion.reaction==0 && c.companion.clock==0);
         c.lives=1;c.takeHit(0,L);check("death clears owned state before early returns",c.companion.who<0 && c.companion.left==0f);
