@@ -41,6 +41,12 @@ final class Narration {
      */
     static final float RATE = 1.0f;
 
+    /** A bright, cutesy name call, kept brisk enough for the short greeting. */
+    static final float NAME_PITCH = 1.65f, NAME_RATE = 1.05f;
+    static String name(int entry) {
+        return (Collect.NAME[entry]+"!").toLowerCase(java.util.Locale.US);
+    }
+
     /**
      * What to say, in order: the name, where it lives, and the story in one piece.
      *

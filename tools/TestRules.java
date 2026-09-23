@@ -262,7 +262,7 @@ final class TestRules extends Check {
         c.tapKey(2, L);
         check("an inner key begins the fade, not the game",
                 c.starting() && c.state == GameCore.TITLE);
-        advance(c, L, GameCore.START_FADE + 0.1f);
+        advance(c, L, Launch.PICK_TIME + Launch.TIME + 0.1f);
         check("and play begins once the title has gone", c.state == GameCore.PLAY);
 
         c.lives = 1;

@@ -23,6 +23,10 @@ final class Buddy {
     GameCore.Enemy chase;
     /** 1 right after a hit, decaying: the bubble flashes and swells. */
     float pulse;
+    static final float ENTRY_TIME = .72f;
+    float entryLeft, burstLeft, burstX, burstY;
+    private float entrySide;
+    static final float BURST_TIME = .48f;
 
     /** Radius at the start, in tile radii. */
     private static final float START = 1.05f;
@@ -66,24 +70,28 @@ final class Buddy {
     /** Radians per second, from the above. */
     static final float TURN_RATE = 6.28319f / TURN_TIME;
 
-    /** Sends a fresh squishy in, moving diagonally so it starts crossing the field at once. */
+    /** Flies up the centre gap, then curves into the existing field drift. */
     void enter(int entry, Layout L, java.util.Random rnd) {
         who = entry;
         squishes = 0;
         pulse = 0f;
         chase = null;
         x = (L.playLeft + L.playRight) / 2f;
-        y = L.playTop + (L.dangerY - L.playTop) * 0.35f;
+        y = L.h + L.enemyR * 2f;
+        entryLeft = ENTRY_TIME;
+        burstLeft = 0f;
         // A shallow angle would have it skimming one wall for seconds at a time.
         double a = (0.25 + rnd.nextFloat() * 0.5) * Math.PI * (rnd.nextBoolean() ? 1 : -1);
         float sp = SPEED * L.w;
         vx = sp * (float) Math.cos(a);
         vy = sp * (float) Math.sin(a);
+        entrySide = vx < 0f ? -1f : 1f;
     }
 
     void leave() {
         who = -1;
         chase = null;
+        entryLeft = burstLeft = 0f;
     }
 
     boolean out() {
@@ -93,8 +101,17 @@ final class Buddy {
     /** Current radius. */
     float radius(Layout L) {
         float grown = Math.min(GROW_MAX, squishes * GROW);
-        return L.enemyR * (START + grown) * (1f + 0.18f * pulse);
+        float r = L.enemyR * (START + grown) * (1f + 0.18f * pulse);
+        if (entryLeft > 0f) {
+            float gap=(L.keyX[3]-L.keyX[2]-2f*L.keyR)*.5f;
+            float small=Math.min(r,gap*.8f);
+            float grow=Math.max(0f,Math.min(1f,(L.keyTop-y)/(L.keyTop-entryY(L))));
+            r=small+(r-small)*grow;
+        }
+        return r;
     }
+
+    static float entryY(Layout L) { return L.dangerY-L.enemyR*2.2f; }
 
     /** 0..1 glow, climbing with every word taken. */
     float glow() {
@@ -114,6 +131,25 @@ final class Buddy {
      */
     int update(GameCore c, float dt, Layout L) {
         if (out()) return 0;
+        burstLeft = Math.max(0f, burstLeft-dt);
+        if (entryLeft > 0f) {
+            entryLeft=Math.max(0f,entryLeft-dt);
+            float u=1f-entryLeft/ENTRY_TIME, from=L.h+L.enemyR*2f, to=entryY(L);
+            // Hermite arrival ends at ordinary drift speed, with no position or speed snap.
+            float speed=SPEED*L.w, exitX=entrySide*speed*.45f;
+            float exitY=-(float)Math.sqrt(speed*speed-exitX*exitX);
+            float end=exitY*ENTRY_TIME;
+            y=from+(to-from)*(2f*u-u*u)+end*(u*u-u);
+            x=(L.keyX[2]+L.keyX[3])*.5f;
+            vy=((to-from)*(2f-2f*u)+end*(2f*u-1f))/ENTRY_TIME;
+            // Turn only after clearing the deck; match both velocity components at arrival.
+            float span=L.keyTop-to, turn=Math.max(0f,(L.keyTop-y)/span);
+            float across=exitX*span/(-2f*exitY);
+            x+=across*turn*turn;
+            vx=2f*across*turn*(-vy)/span;
+            if(entryLeft==0f) { burstLeft=BURST_TIME; burstX=x; burstY=y; pulse=.6f; }
+            return 0;
+        }
         pulse = pulse - dt * 3.2f;
         if (pulse < 0f) pulse = 0f;
 

@@ -1,7 +1,7 @@
 package com.dddumpling.game;
 
 /**
- * The title's tiny display face. Only the eight letters in DDDUMPLING exist: each glyph is a
+ * The title's tiny display face. Shared by the title and squishy names; each glyph is a
  * hand-shaped compound vector silhouette, with an outer contour followed by any punched counters.
  */
 final class TitleBubbleFont extends Draw {
@@ -53,18 +53,102 @@ final class TitleBubbleFont extends Draw {
           0.02f,-0.22f,0.02f,-0.47f,0.18f,-0.47f,0.14f,-0.54f}
     };
 
+    private static final float[][] T = {{-.46f,-.82f,.46f,-.82f,.46f,-.58f,
+        .15f,-.58f,.15f,0f,-.15f,0f,-.15f,-.58f,-.46f,-.58f}};
+    private static final float[][] O = {
+        {0f,-.84f,.30f,-.78f,.47f,-.57f,.49f,-.26f,.30f,-.03f,0f,.04f,
+         -.30f,-.03f,-.49f,-.26f,-.47f,-.57f,-.30f,-.78f},
+        {0f,-.59f,.16f,-.54f,.21f,-.40f,.16f,-.23f,0f,-.19f,
+         -.16f,-.23f,-.21f,-.40f,-.16f,-.54f}
+    };
+    private static final float[][] W = {{-.50f,-.82f,-.23f,-.82f,-.17f,-.31f,
+        -.08f,-.58f,.08f,-.58f,.17f,-.31f,.23f,-.82f,.50f,-.82f,
+        .36f,0f,.11f,0f,0f,-.28f,-.11f,0f,-.36f,0f}};
+
+    // Extra letters for squishy names, using the same rounded, inflated silhouettes.
+    private static final float[][] A = rounded(new float[][] {
+        {-.49f,0f,-.20f,-.82f,.20f,-.82f,.49f,0f,.19f,0f,.13f,-.18f,-.13f,-.18f,-.19f,0f},
+        {-.09f,-.37f,0f,-.64f,.09f,-.37f}
+    });
+    private static final float[][] B = rounded(new float[][] {
+        {-.42f,0f,-.42f,-.82f,.10f,-.82f,.36f,-.73f,.42f,-.57f,.30f,-.42f,
+         .45f,-.28f,.43f,-.13f,.29f,-.02f,.08f,0f},
+        {-.14f,-.64f,.06f,-.64f,.15f,-.58f,.12f,-.51f,-.14f,-.49f},
+        {-.14f,-.33f,.09f,-.33f,.17f,-.24f,.09f,-.17f,-.14f,-.17f}
+    });
+    private static final float[][] C = rounded(new float[][] {{
+        .43f,-.70f,.25f,-.82f,-.08f,-.84f,-.36f,-.66f,-.49f,-.40f,-.38f,-.13f,
+        -.12f,.03f,.20f,.03f,.43f,-.10f,.29f,-.31f,.12f,-.21f,-.04f,-.23f,
+        -.19f,-.39f,-.08f,-.57f,.12f,-.59f,.28f,-.49f
+    }});
+    private static final float[][] E = rounded(new float[][] {{
+        -.42f,0f,-.42f,-.82f,.40f,-.82f,.40f,-.60f,-.13f,-.60f,-.13f,-.51f,
+        .28f,-.51f,.28f,-.31f,-.13f,-.31f,-.13f,-.22f,.42f,-.22f,.42f,0f
+    }});
+    private static final float[][] F = rounded(new float[][] {{
+        -.42f,0f,-.42f,-.82f,.40f,-.82f,.40f,-.60f,-.12f,-.60f,-.12f,-.49f,
+        .28f,-.49f,.28f,-.27f,-.12f,-.27f,-.12f,0f
+    }});
+    private static final float[][] H = rounded(new float[][] {{
+        -.45f,0f,-.45f,-.82f,-.15f,-.82f,-.15f,-.53f,.15f,-.53f,.15f,-.82f,
+        .45f,-.82f,.45f,0f,.15f,0f,.15f,-.29f,-.15f,-.29f,-.15f,0f
+    }});
+    private static final float[][] J = rounded(new float[][] {{
+        -.10f,-.82f,.43f,-.82f,.43f,-.24f,.31f,-.04f,.09f,.04f,-.20f,0f,
+        -.42f,-.17f,-.42f,-.36f,-.15f,-.36f,-.12f,-.23f,.04f,-.20f,.13f,-.30f,
+        .13f,-.60f,-.10f,-.60f
+    }});
+    private static final float[][] K = rounded(new float[][] {{
+        -.43f,0f,-.43f,-.82f,-.13f,-.82f,-.13f,-.50f,.14f,-.82f,.47f,-.82f,
+        .12f,-.41f,.49f,0f,.13f,0f,-.13f,-.30f,-.13f,0f
+    }});
+    private static final float[][] Q = rounded(new float[][] {
+        {0f,-.84f,.31f,-.77f,.47f,-.53f,.45f,-.22f,.29f,-.04f,.43f,.10f,
+         .18f,.13f,.05f,.01f,-.23f,-.02f,-.44f,-.23f,-.47f,-.53f,-.29f,-.77f},
+        {-.02f,-.59f,.16f,-.52f,.19f,-.33f,.03f,-.19f,-.15f,-.25f,-.21f,-.42f,-.15f,-.54f}
+    });
+    private static final float[][] R = rounded(new float[][] {
+        {-.42f,0f,-.42f,-.82f,.12f,-.82f,.35f,-.72f,.43f,-.53f,.34f,-.33f,
+         .19f,-.27f,.46f,0f,.09f,0f,-.13f,-.25f,-.13f,0f},
+        {-.13f,-.61f,.05f,-.61f,.15f,-.53f,.10f,-.43f,-.13f,-.42f}
+    });
+    private static final float[][] S = rounded(new float[][] {{
+        .40f,-.73f,.16f,-.84f,-.16f,-.82f,-.40f,-.66f,-.40f,-.46f,-.18f,-.33f,
+        .15f,-.27f,.15f,-.18f,-.07f,-.17f,-.33f,-.28f,-.46f,-.09f,-.17f,.03f,
+        .16f,.02f,.41f,-.13f,.43f,-.34f,.20f,-.48f,-.13f,-.55f,-.13f,-.63f,
+        .06f,-.64f,.27f,-.54f
+    }});
+    private static final float[][] V = rounded(new float[][] {{
+        -.49f,-.82f,-.17f,-.82f,0f,-.27f,.17f,-.82f,.49f,-.82f,.18f,0f,-.18f,0f
+    }});
+    private static final float[][] X = rounded(new float[][] {{
+        -.47f,-.82f,-.13f,-.82f,0f,-.58f,.13f,-.82f,.47f,-.82f,.18f,-.41f,
+        .48f,0f,.13f,0f,0f,-.25f,-.13f,0f,-.48f,0f,-.18f,-.41f
+    }});
+    private static final float[][] Y = rounded(new float[][] {{
+        -.49f,-.82f,-.16f,-.82f,0f,-.50f,.16f,-.82f,.49f,-.82f,.15f,-.29f,
+        .15f,0f,-.15f,0f,-.15f,-.29f
+    }});
+
     // The authored points above establish each letter's proportions. Two closed Chaikin passes
     // turn those control cages into the soft continuous contours of an inflated display face.
     private static final float[][] RD = rounded(D), RU = rounded(U), RM = rounded(M),
-            RP = rounded(P), RL = rounded(L), RI = rounded(I), RN = rounded(N), RG = rounded(G);
+            RP = rounded(P), RL = rounded(L), RI = rounded(I), RN = rounded(N), RG = rounded(G), RT = rounded(T), RO = rounded(O), RW = rounded(W);
 
     private static float[][] glyph(char ch) {
         switch (ch) {
+            case 'T': return RT; case 'O': return RO; case 'W': return RW;
             case 'D': return RD; case 'U': return RU; case 'M': return RM; case 'P': return RP;
             case 'L': return RL; case 'I': return RI; case 'N': return RN; case 'G': return RG;
-            default: return RD;
+            case 'A': return A; case 'B': return B; case 'C': return C; case 'E': return E;
+            case 'F': return F; case 'H': return H; case 'J': return J; case 'K': return K;
+            case 'Q': return Q; case 'R': return R; case 'S': return S; case 'V': return V;
+            case 'X': return X; case 'Y': return Y;
+            default: return null;
         }
     }
+
+    static boolean supports(char ch) { return ch==' ' || glyph(ch)!=null; }
 
     private static float[][] rounded(float[][] glyph) {
         float[][] out = new float[glyph.length][];
@@ -105,6 +189,7 @@ final class TitleBubbleFont extends Draw {
     static void draw(Painter p, char ch, float cx, float baseline, float h, int goo, float fade,
             float phase, float springShape) {
         float[][] g = glyph(ch);
+        if(g==null) return;
         float breathe = 1f + 0.014f * (float) Math.sin(phase * 1.9f);
         // Preserve approximate volume: a body stretched vertically narrows, and a compressed one
         // bulges. This is the same squash/stretch illusion used by the soft slime bosses.

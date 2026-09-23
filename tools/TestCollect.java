@@ -816,6 +816,10 @@ final class TestCollect extends Check {
     /** The send-off: the case's squishy bouncing out of the screen as a run starts. */
     static void sendOff(Layout L) {
         group("start send-off");
+        boolean alphabet=true;
+        for(String name:Collect.NAME) for(int i=0;i<name.length();i++)
+            alphabet &= TitleBubbleFont.supports(name.charAt(i));
+        check("every squishy name has real bubble glyphs",alphabet);
         Mem store = new Mem();
         store.collected = 0b101L;               // entries 0 and 2
         GameCore c = new GameCore(store, 151L);
@@ -840,21 +844,22 @@ final class TestCollect extends Check {
         check("the fade is spent", c.startFade == 0f);
         check("but play has not begun", c.state == GameCore.TITLE && c.starting());
         float u = Launch.progress(c);
-        check("the send-off is part way through", u > 0.4f && u < 1f);
+        check("the squishy is greeting before its leap", u > Launch.POP && u < Launch.LAND
+                && c.enemies.isEmpty());
         advance(c, L, Launch.TIME);
         check("play begins once it is done", c.state == GameCore.PLAY);
         check("and nothing is left of it", c.launchWho < 0 && c.launchT == 0f);
         check("both bounces sounded", ear.squishes == 2);
         check("the start tone still led the whole thing", ear.starts == 1);
 
-        // An uncollected entry has nothing to send off, so that press starts as it always did.
+        // An uncollected entry shuffles in the case, then uses the same send-off.
         GameCore d = new GameCore(store, 153L);
         d.caseIndex = 1;
         d.tapKey(2, L);
         check("an uncollected entry is not sent off", d.launchWho < 0 && d.launchT == 0f);
-        check("and the fade is the whole wait", d.starting() && d.startFade > 0f);
-        advance(d, L, GameCore.START_FADE + 2 * DT);
-        check("play begins on the fade alone", d.state == GameCore.PLAY);
+        check("a quick picker precedes the send-off", d.starting() && d.pickerT > 0f);
+        advance(d, L, Launch.PICK_TIME + Launch.TIME + 2 * DT);
+        check("play begins after the picker and send-off", d.state == GameCore.PLAY);
 
         // Progress only ever runs forward, whatever the frame rate.
         GameCore e = new GameCore(store, 155L);

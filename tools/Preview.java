@@ -9,6 +9,53 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void squishyEntryFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        boolean selected=only==null;
+        if(only!=null) for(String tag:only) selected |= "112-".startsWith(tag.trim()) || tag.trim().startsWith("112-");
+        if(!selected) return;
+        GameCore picker=new GameCore(new Mem(),112L);picker.beginStart();
+        for(int frame=0;frame<5;frame++) {
+            shot(dir,"112-picker-"+frame,picker,L,w,h,ss);
+            step(picker,L,.16f);
+        }
+        while(picker.pickerT>0f) step(picker,L,DT);
+        shot(dir,"112-picker-launch",picker,L,w,h,ss);
+        step(picker,L,Launch.TIME*Launch.POP*.75f);
+        shot(dir,"112-picker-pop",picker,L,w,h,ss);
+        step(picker,L,Launch.TIME*(Launch.POP*1.1f-Launch.POP*.75f));
+        for(int frame=0;frame<4;frame++) {
+            shot(dir,"112-picker-hello-"+frame,picker,L,w,h,ss);
+            step(picker,L,Launch.TIME*(Launch.LAND-Launch.POP)*.20f);
+        }
+        while(Launch.progress(picker)<Launch.TOP) step(picker,L,DT);
+        shot(dir,"112-picker-roof",picker,L,w,h,ss);
+        GameCore lettering=new GameCore(new Mem(),112L);lettering.collected=Collect.MASK;
+        lettering.caseIndex=51;lettering.clock=18.87f;lettering.beginStart();
+        step(lettering,L,Launch.CENTER_TIME*.5f);
+        shot(dir,"112-center-slide",lettering,L,w,h,ss);
+        step(lettering,L,Launch.NAME_START-Launch.CENTER_TIME*.5f);
+        shot(dir,"112-center-arrived",lettering,L,w,h,ss);
+        for(int frame=0;frame<8;frame++) {
+            shot(dir,"112-name-spring-"+frame,lettering,L,w,h,ss);
+            step(lettering,L,.10f);
+        }
+        for(int who:new int[]{0,11,23,51}) {
+            GameCore hello=new GameCore(new Mem(),112L);hello.collected=Collect.MASK;hello.caseIndex=who;
+            hello.clock=who*.37f;hello.beginStart();
+            step(hello,L,Launch.TIME*(Launch.POP+(Launch.LAND-Launch.POP)*.45f));
+            shot(dir,"112-greeting-"+who,hello,L,w,h,ss);
+        }
+        for(int who:new int[]{4,11,23}) {
+            GameCore c=new GameCore(new Mem(),112L);c.collected=Collect.MASK;c.caseIndex=who;c.startGame();
+            c.stageBanner=0;c.startFrenzy(Power.TEAM,L);c.flash=0;c.shake=0;
+            for(int frame=0;frame<9;frame++) {
+                shot(dir,"112-entry-"+who+"-"+frame,c,L,w,h,ss);
+                step(c,L,.11f);
+            }
+        }
+    }
+
+
     private static void caveCollectFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(wanted("110")) {
             RasterPainter p=new RasterPainter(w,h,ss);p.clear(Renderer.BG);
@@ -379,6 +426,7 @@ final class Preview {
         cartFrames(dir,L,w,h,ss);
         miningFrames(dir,L,w,h,ss);
         caveCollectFrames(dir,L,w,h,ss);
+        squishyEntryFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);

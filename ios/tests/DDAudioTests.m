@@ -6,6 +6,7 @@
 #import "DDEffectMixer.h"
 #import "com/dddumpling/game/Sfx.h"
 #import "com/dddumpling/game/Music.h"
+#import "com/dddumpling/game/Narration.h"
 #import "IOSPrimitiveArray.h"
 
 @interface DDIOSAudio (TestHooks)
@@ -74,8 +75,11 @@
 
 @interface DDCountingSpeech : AVSpeechSynthesizer
 @property(nonatomic) NSInteger stopCount;
+@property(nonatomic) NSInteger speakCount;
+@property(nonatomic) AVSpeechUtterance *utterance;
 @end
 @implementation DDCountingSpeech
+- (void)speakUtterance:(AVSpeechUtterance *)utterance { ++_speakCount; _utterance = utterance; }
 - (BOOL)stopSpeakingAtBoundary:(AVSpeechBoundary)boundary { (void)boundary; ++_stopCount; return YES; }
 @end
 
@@ -83,6 +87,30 @@
 @end
 
 @implementation DDAudioTests
+- (void)testRunNameUsesAnnouncerDeliveryAndRespectsMute {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  DDCountingSpeech *speech = [DDCountingSpeech new];
+  [audio setValue:speech forKey:@"speech"];
+  [audio setValue:@YES forKey:@"active"];
+  [audio setValue:@0.4f forKey:@"effectsVolume"];
+  [audio announceSquishyWithInt:11];
+  XCTAssertEqual(speech.speakCount, 1);
+  XCTAssertEqualObjects(speech.utterance.speechString, [DDNarration nameWithInt:11]);
+  XCTAssertEqualWithAccuracy(speech.utterance.pitchMultiplier, DDNarration_NAME_PITCH, .001);
+  XCTAssertEqualWithAccuracy(speech.utterance.rate, AVSpeechUtteranceDefaultSpeechRate * DDNarration_NAME_RATE, .001);
+  XCTAssertEqualWithAccuracy(speech.utterance.volume, .4, .001);
+  XCTAssertTrue([[audio valueForKey:@"narrating"] boolValue]);
+  [audio hush];
+  XCTAssertFalse([[audio valueForKey:@"narrating"] boolValue]);
+  [audio setValue:@0 forKey:@"effectsVolume"];
+  [audio announceSquishyWithInt:4];
+  XCTAssertEqual(speech.speakCount, 1);
+  [audio setValue:@1 forKey:@"effectsVolume"];
+  [audio setValue:@NO forKey:@"active"];
+  [audio announceSquishyWithInt:4];
+  XCTAssertEqual(speech.speakCount, 1);
+}
+
 - (void)testRepeatedMusicSelectionPreservesPlayerAndPausedPosition {
   DDClockedAudio *audio = [DDClockedAudio new];
   [audio selectMusicWithInt:DDMusic_SWING_STYLE];

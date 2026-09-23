@@ -321,6 +321,8 @@ final class GameCore {
          * is {@link Narration}'s business; a backend only has to speak it.
          */
         void narrate(int entry);
+        /** One short name call as the run character introduces itself. */
+        default void announceSquishy(int entry) {}
         /** Stop talking mid-sentence: the panel has gone. */
         void hush();
     }
@@ -656,6 +658,8 @@ final class GameCore {
     int launchWho = -1;
     /** Title selection for this run; awards can move the case without changing the pilot. */
     int runWho;
+    private int pendingRunWho = -1;
+    float pickerT;
     /** Seconds left of that send-off. Play waits for it. */
     float launchT;
     /**
@@ -665,10 +669,11 @@ final class GameCore {
     float launchClock;
     /** How many of the send-off's impacts have sounded, so each one ticks once. */
     private int launchPips;
+    private boolean launchNameAnnounced;
 
     /** True while the title screen is on its way out and play has not begun. */
     boolean starting() {
-        return state == TITLE && (startFade > 0f || launchT > 0f);
+        return state == TITLE && (startFade > 0f || launchT > 0f || pickerT > 0f);
     }
     /** Set when the start tone has already played, so {@link #startGame} does not repeat it. */
     private boolean startAnnounced;
@@ -1176,7 +1181,7 @@ final class GameCore {
         // TEAM SQUISH has nobody to field with an empty case. The drifting letter never rolls it
         // then, so only the playtest chips can ask for it, and refusing is clearer than quietly
         // substituting a different mode.
-        int entry = effect == Power.TEAM ? anyCollected() : -1;
+        int entry = effect == Power.TEAM && Collect.owned(collected) > 0 ? runWho : -1;
         if (effect == Power.TEAM && entry < 0) return;
         if (effect != Power.MULTI) LinkedPairs.preparePower(this);
         else LinkedPairs.release(this, L);
@@ -1692,8 +1697,12 @@ final class GameCore {
         // The entry the case was showing comes along, if it is one you own. Set before the
         // fade is under way so the send-off leaves from the badge rather than from a screen
         // that has already gone.
-        launchWho = Collect.has(collected, caseIndex) ? caseIndex : -1;
-        launchT = launchWho >= 0 ? Launch.TIME : 0f;
+        boolean selected = Collect.has(collected, caseIndex);
+        pendingRunWho = resolveRunWho();
+        pickerT = selected ? 0f : Launch.PICK_TIME;
+        launchWho = -1;
+        launchT = 0f;
+        if (selected) beginLaunch();
         launchClock = clock;
         launchPips = 0;
         closeCase();
@@ -1702,15 +1711,43 @@ final class GameCore {
         if (sound != null) sound.gameStart();
     }
 
+    private void beginLaunch() {
+        launchNameAnnounced = false;
+        launchWho = pendingRunWho;
+        launchT = Launch.TIME;
+        launchPips = 0;
+    }
+
+    private void stopLaunchVoice() {
+        if (launchNameAnnounced && sound != null) sound.hush();
+        launchNameAnnounced = false;
+    }
+
     void cancelStart() {
-        startFade = launchT = 0; launchWho = -1; startAnnounced = false;
+        stopLaunchVoice();
+        startFade = launchT = pickerT = 0; launchWho = pendingRunWho = -1; startAnnounced = false;
+    }
+
+    int pickerWho() {
+        float elapsed = Launch.PICK_TIME - pickerT;
+        if (elapsed >= Launch.PICK_TIME * .65f) return pendingRunWho;
+        return (pendingRunWho + 1 + Launch.shuffleStep(pickerT)*17) % Collect.COUNT;
+    }
+
+    private int resolveRunWho() {
+        if (Collect.has(collected, caseIndex)) return caseIndex;
+        int owned = anyCollected();
+        return owned >= 0 ? owned : rnd.nextInt(Collect.COUNT);
     }
 
     void startGame() {
-        highScores.start(Collect.has(collected,caseIndex)?caseIndex:-1);
+        stopLaunchVoice();
+        runWho = pendingRunWho >= 0 ? pendingRunWho : resolveRunWho();
+        pendingRunWho = -1;
+        pickerT = 0f;
+        highScores.start(runWho);
         highScoreScreen.open=false;
         band.reset(this); mining.stop(); cart.stop();
-        runWho = Collect.has(collected, caseIndex) ? caseIndex : 0;
         // A paid win may have been quit before its tableau/parade retired the course.
         if (stars.count() == StarPath.COUNT) {
             stars.make(rnd);
@@ -1840,7 +1877,7 @@ final class GameCore {
         caseDragging = false;
         caseSlide = caseSlideY = 0f;
         launchWho = -1;
-        launchT = 0f;
+        cancelStart();
         closeStory();
         resetTitleSprings();
         if (rosterLeavePending) beginRosterLeave();
@@ -2532,20 +2569,29 @@ final class GameCore {
         // The title screen dissolving, and the squishy's send-off over the top of it. Play begins
         // the frame the last of them finishes, not on the press.
         if (state == TITLE && starting()) {
-            startFade = Math.max(0f, startFade - dt);
-            if (launchT > 0f) {
-                launchT = Math.max(0f, launchT - dt);
-                float u = Launch.progress(this);
-                // One tick per bounce, as it happens. The impacts are what the sound is for.
-                if (launchPips == 0 && u >= Launch.LAND) {
-                    launchPips = 1;
-                    bounceTick();
-                } else if (launchPips == 1 && u >= Launch.TOP) {
-                    launchPips = 2;
-                    bounceTick();
+            if (pickerT > 0f) {
+                pickerT = Math.max(0f, pickerT - dt);
+                if (pickerT == 0f) beginLaunch();
+            } else {
+                startFade = Math.max(0f, startFade - dt);
+                if (launchT > 0f) {
+                    launchT = Math.max(0f, launchT - dt);
+                    float u = Launch.progress(this);
+                    if (!launchNameAnnounced && Launch.TIME-launchT >= Launch.NAME_START) {
+                        launchNameAnnounced = true;
+                        if (sound != null) sound.announceSquishy(launchWho);
+                    }
+                    // One tick per bounce, as it happens. The impacts are what the sound is for.
+                    if (launchPips == 0 && u >= Launch.LAND) {
+                        launchPips = 1;
+                        bounceTick();
+                    } else if (launchPips == 1 && u >= Launch.TOP) {
+                        launchPips = 2;
+                        bounceTick();
+                    }
                 }
             }
-            if (startFade == 0f && launchT == 0f) {
+            if (startFade == 0f && launchT == 0f && pickerT == 0f) {
                 startGame();
                 return;
             }
