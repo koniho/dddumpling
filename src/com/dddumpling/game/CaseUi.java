@@ -10,8 +10,11 @@ final class CaseUi {
 
     private CaseUi() {}
 
-    private static void highlight(GameCore c, int index) {
-        if (c.caseIndex != index) c.caseHighlightAge = 0f;
+    static void highlight(GameCore c, int index) {
+        if (c.caseIndex != index) {
+            c.caseHighlightAge = 0f;
+            if(c.store!=null) c.store.saveCaseIndex(index);
+        }
         c.caseIndex = index;
     }
 
@@ -142,7 +145,7 @@ final class CaseUi {
         c.homeT = 0f;
         c.homeLanded = 0;
         c.closeStory();
-        c.caseIndex = 0;
+        highlight(c, 0);
         c.caseSlide = c.caseSlideY = 0f;
         c.caseFreePan = false;
         c.casePanMotionX = c.casePanMotionY = 0f;

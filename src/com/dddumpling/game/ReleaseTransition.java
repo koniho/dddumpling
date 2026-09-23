@@ -2,7 +2,9 @@ package com.dddumpling.game;
 
 /** Steamer gathers at centre, then trades places with the list. Closing slides the small steamer home from the left. */
 final class ReleaseTransition {
-    static final float DURATION=1.15f, CENTRE=.38f, SLIDE=.46f, LID_TIME=.75f;
+    // Preserve the steamer lead-in; the list itself uses the shared panel slide duration.
+    static final float GATHER_TIME=.529f, DURATION=GATHER_TIME+Draw.PANEL_SLIDE_TIME;
+    static final float CENTRE=.437f/DURATION, SLIDE=GATHER_TIME/DURATION, LID_TIME=.75f;
     float progress=1f;
     private float lidAge=LID_TIME;
     boolean closing;
@@ -19,11 +21,11 @@ final class ReleaseTransition {
     boolean moving() { return closing || progress<1f; }
     boolean update(float dt) {
         lidAge=Math.min(LID_TIME,lidAge+dt);
-        progress=Math.max(0f,Math.min(1f,progress+(closing?-2f*dt:dt)/DURATION));
+        progress=Math.max(0f,Math.min(1f,progress+(closing?-dt:dt)/(cornerReturn?Draw.PANEL_SLIDE_TIME:DURATION)));
         return closing && progress<=0f;
     }
     float lidLift() { return .55f*(float)Math.sin(Math.PI*lidAge/LID_TIME)+sourceLift*(1f-lidAge/LID_TIME); }
-    private static float ease(float t) { t=Math.max(0f,Math.min(1f,t));return t*t*(3f-2f*t); }
+    private static float ease(float t) { return Draw.panelTravel(t); }
     float slide() { return cornerReturn ? ease(progress) : ease((progress-SLIDE)/(1f-SLIDE)); }
     float listX(Layout L) { return L.w*(1f-slide()); }
     float x(Layout L) {

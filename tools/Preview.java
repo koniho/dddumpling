@@ -208,10 +208,12 @@ final class Preview {
             scores.highScoreScreen.show(scores);scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
             shot(dir,"130-high-scores-empty",scores,L,w,h,ss);
             for(int i=0;i<10;i++) {
+                scores.collected=Collect.MASK;scores.caseIndex=i%3==0?0:i;
+                if(i%3==0) scores.collected=0L;
                 scores.startGame();scores.score=(10-i)*1357;scores.stage=new int[]{5,10,15,20,1,6,11,16,21,25}[i];
                 scores.hits=123;scores.misses=7;scores.squishes=56;scores.maxCombo=48;
                 scores.highScores.stages=scores.stage-1;scores.highScores.bosses=(1<<Math.min(Boss.COUNT,(scores.stage-1)/Boss.EVERY))-1;
-                scores.highScores.dumplings=14-i;scores.highScores.powers=7;scores.highScores.swipes=3;
+                scores.highScores.dumplings=i==0?12345:14-i;scores.highScores.powers=7;scores.highScores.swipes=3;
                 scores.lives=0;scores.highScores.finish(scores);
                 if(i==0) {
                     scores.toTitle();scores.returnFade=0;scores.highScoreScreen.show(scores);scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
@@ -1422,7 +1424,7 @@ final class Preview {
         c6.stage = 3;
         step(c6, L, 6f);
         c6.collected = 0b0000_0100_1000_0011_0010_0110_1101L;
-        c6.openSettings();
+        c6.openSettings();c6.preferences.updatePanel(c6,PlayerSettings.PANEL_TIME);
         step(c6, L, 0.3f);
         shot(dir, "12-settings", c6, L, w, h, ss);
         c6.settingsTab = SettingsUi.MINIGAMES;
@@ -1743,13 +1745,34 @@ final class Preview {
         // The settings panel's stage jump, parked on a boss stage so the row names the boss it is
         // sitting on — which is the state the control exists for.
         GameCore cj = toBoss(L, Boss.SLIME, 520L, true);
-        cj.openSettings();
+        cj.openSettings();cj.preferences.updatePanel(cj,PlayerSettings.PANEL_TIME);
         step(cj, L, 0.3f);
         System.out.printf("stage jump: on stage %d, boss %s%n", cj.stage,
                 Boss.NAMES[cj.boss.kind]);
         shot(dir, "67-settings-stage-jump", cj, L, w, h, ss);
         GameCore settings=new GameCore(new Mem(),819L);
         PlayerSettings.open(settings);
+        settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME*.5f);
+        shot(dir,"120f-settings-entering",settings,L,w,h,ss);
+        settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME*.5f);
+        PlayerSettings.close(settings);settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME*.5f);
+        shot(dir,"120f-settings-exiting",settings,L,w,h,ss);
+        settings.closeSettings();PlayerSettings.open(settings);settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME);
+        for(boolean kids:new boolean[]{false,true}) {
+            settings.preferences.kids=kids;
+            shot(dir,"120g-settings-kids-"+(kids?"young":"old"),settings,L,w,h,ss);
+        }
+        settings.preferences.kids=false;
+        for(int direction=0;direction<2;direction++) {
+            settings.preferences.toggleKids(settings);
+            float start=settings.clock;
+            for(int beat=0;beat<=4;beat++) {
+                settings.clock=start+PlayerSettings.KIDS_TOGGLE_TIME*beat/4f;
+                shot(dir,"120h-settings-kids-toggle-"+direction+"-"+beat,settings,L,w,h,ss);
+            }
+            settings.clock+=.01f;
+        }
+        settings.preferences.load(PlayerSettings.DEFAULT);
         for(int v=0;v<4;v++) {
             settings.preferences.music=settings.preferences.effects=new float[]{.1f,.5f,1f,.5f}[v];
             settings.preferences.musicMuted=settings.preferences.effectsMuted=v==3;
@@ -1761,12 +1784,25 @@ final class Preview {
             settings.clock=beat*.19f;
             shot(dir,"120b-settings-loud-motion-"+beat,settings,L,w,h,ss);
         }
+        for(int beat=0;beat<=5;beat++) {
+            settings.clock=beat*.8f;
+            shot(dir,"120d-settings-share-skit-"+beat,settings,L,w,h,ss);
+        }
+        for(int beat=0;beat<5;beat++) {
+            settings.clock=.325f+beat*.18f;
+            shot(dir,"120e-settings-rate-wave-"+beat,settings,L,w,h,ss);
+        }
+        for(int action:new int[]{PlayerSettings.SHARE,PlayerSettings.RATE}) {
+            settings.preferences.animatedAction=action;settings.preferences.externalAt=settings.clock;
+            settings.clock+=.18f;
+            shot(dir,"120c-settings-social-tap-"+action,settings,L,w,h,ss);
+        }
         settings.settingsPage=1;
         for(int tab=0;tab<4;tab++) {
             settings.settingsTab=tab;
             shot(dir,"121-settings-disabled-"+tab,settings,L,w,h,ss);
         }
-        settings.startGame();settings.openSettings();
+        settings.startGame();settings.openSettings();settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME);
         for(int tab=0;tab<4;tab++) {
             settings.settingsTab=tab;
             shot(dir,"122-settings-active-"+tab,settings,L,w,h,ss);

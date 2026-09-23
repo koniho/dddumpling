@@ -186,9 +186,13 @@ final class Skits {
 
     /** One hands a heart to a sad one, who brightens. */
     private static void share(Painter p, float cx, float cy, float r, float t, int a) {
+        share(p,cx,cy,r,t,a,Kawaii.DUMPLING);
+    }
+
+    static void share(Painter p, float cx, float cy, float r, float t, int a, int giver) {
         float give = Math.min(1f, t / 0.6f);
         float cheer = t > 0.6f ? Math.min(1f, (t - 0.6f) / 0.4f) : 0f;
-        face(p, Kawaii.DUMPLING, cx - r * 0.9f, cy, r * 0.60f, a, 1f, 1f);
+        face(p, giver, cx - r * 0.9f, cy, r * 0.60f, a, 1f, 1f);
         face(p, Kawaii.GRAPES, cx + r * 0.9f, cy - cheer * r * 0.14f, r * 0.60f, a, 1f, cheer);
         float hx = cx - r * 0.55f + give * r * 1.1f;
         heart(p, hx, cy - r * 0.15f - (float) Math.sin(give * Math.PI) * r * 0.3f,

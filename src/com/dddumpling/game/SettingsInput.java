@@ -27,7 +27,7 @@ final class SettingsInput {
     }
     // Android and IOSTouch share action numbers. Only the owning finger may drag or release.
     boolean touch(GameCore c,Layout L,int action,int id,float x,float y) {
-        if(action==3) { cancel();return false; }
+        if(action==3 || (c.settingsOpen && c.preferences.panelMoving())) { cancel();return false; }
         if(action==0) {
             pointer=id; pressed=hit(c,L,x,y); downX=x;downY=y;moved=false;offset=0;
             if(pressed==1000+PlayerSettings.MUSIC || pressed==1000+PlayerSettings.EFFECTS) {
@@ -62,14 +62,16 @@ final class SettingsInput {
         if(c.highScoreScreen.open) { c.highScoreScreen.action(c,h);return false; }
         if(h>=1000) {
             switch(h-1000) {
-                case PlayerSettings.CLOSE: c.closeSettings();break;
+                case PlayerSettings.CLOSE: PlayerSettings.close(c);break;
                 case PlayerSettings.PLAYER: c.settingsPage=0;c.clearArmed=false;break;
                 case PlayerSettings.DEVELOPER: if(BuildFlags.DEVELOPER) { c.settingsPage=1;c.clearArmed=false; } break;
                 case PlayerSettings.MUSIC_MUTE:
                     c.preferences.musicMuted=!c.preferences.musicMuted;
                     c.preferences.save(c);break;
                 case PlayerSettings.EFFECTS_MUTE: c.preferences.effectsMuted=!c.preferences.effectsMuted;c.preferences.save(c);break;
-                case PlayerSettings.KIDS: c.preferences.kids=!c.preferences.kids;c.preferences.save(c);break;
+                case PlayerSettings.KIDS: c.preferences.toggleKids(c);break;
+                case PlayerSettings.SHARE:
+                case PlayerSettings.RATE: c.preferences.requestExternal(c,h-1000);break;
                 case PlayerSettings.PRIVACY: return true;
                 default: break;
             }
@@ -77,7 +79,7 @@ final class SettingsInput {
         }
         if(!BuildFlags.DEVELOPER || !enabled(c,h)) return false;
         if(h!=SettingsUi.HIT_CLEAR) c.clearArmed=false;
-        if(h==SettingsUi.HIT_CLOSE || h==SettingsUi.HIT_OUTSIDE) c.closeSettings();
+        if(h==SettingsUi.HIT_CLOSE || h==SettingsUi.HIT_OUTSIDE) PlayerSettings.close(c);
         else if(h==SettingsUi.HIT_GENERAL) c.settingsTab=SettingsUi.GENERAL;
         else if(h==SettingsUi.HIT_MINIGAMES) c.settingsTab=SettingsUi.MINIGAMES;
         else if(h==SettingsUi.HIT_POWERS) c.settingsTab=SettingsUi.POWERS;

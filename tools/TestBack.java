@@ -10,9 +10,9 @@ final class TestBack extends Check {
         check("story back leaves display case open", !c.storyOpen() && c.caseOpen);
         Pause.back(c);
         check("case back returns to title", !c.caseOpen && c.state == GameCore.TITLE);
-        c.openSettings(); Pause.back(c);
+        c.openSettings(); Pause.back(c); c.update(PlayerSettings.PANEL_TIME,L);
         check("settings back closes just settings", !c.settingsOpen && !c.paused);
-        c.startGame(); c.openSettings(); Pause.back(c);
+        c.startGame(); c.openSettings(); Pause.back(c); c.update(PlayerSettings.PANEL_TIME,L);
         check("game settings close without opening pause", c.state == GameCore.PLAY && !c.paused);
         Pause.back(c);
         float clock = c.clock, time = c.time, spawn = c.spawnTimer;

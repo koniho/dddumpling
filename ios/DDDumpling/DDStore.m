@@ -192,6 +192,8 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 
 - (jint)loadBest { return MAX(0, [self intForKey:@"best" defaultValue:0]); }
 - (void)saveBestWithInt:(jint)best { [self setValue:@(best) forKey:@"best"]; }
+- (jint)loadCaseIndex { return [self intForKey:@"caseIndex" defaultValue:0]; }
+- (void)saveCaseIndexWithInt:(jint)value { [self setValue:@(value) forKey:@"caseIndex"]; }
 - (NSString *)loadHighScores { return [self stringForKey:@"highScores" validWriter:NO] ?: @""; }
 - (void)saveHighScoresWithNSString:(NSString *)value { [self setValue:value forKey:@"highScores"]; }
 

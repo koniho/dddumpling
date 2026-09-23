@@ -166,6 +166,8 @@ final class GameCore {
         default void savePushLessonSeen(boolean value) {}
         default String loadReleaseSeen() { return BuildFlags.BUILD_ID; }
         default void saveReleaseSeen(String value) {}
+        default int loadCaseIndex() { return 0; }
+        default void saveCaseIndex(int value) {}
         default String loadHighScores() { return ""; }
         default void saveHighScores(String value) {}
         int loadBest();
@@ -1455,6 +1457,8 @@ final class GameCore {
             cart.progress = Math.max(0,Math.min(CaveCart.TRACK,store.loadCartTrack()));
             caveMiningNext = store.loadCaveMiningNext();
             highScores.load(store.loadHighScores());
+            int savedCase=store.loadCaseIndex();
+            caseIndex=savedCase>=0 && savedCase<Collect.COUNT?savedCase:0;
             best = store.loadBest();
             for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
             landBests[0] = Math.max(landBests[0], best);
@@ -1532,6 +1536,7 @@ final class GameCore {
     // ---- settings -----------------------------------------------------------
 
     void openSettings() {
+        preferences.enterPanel();
         if (band.active && sound != null) sound.bandPause(true);
         settingsOpen = true; settingsPage = BuildFlags.DEVELOPER ? 1 : 0;
         Pause.release(this);
@@ -1539,6 +1544,7 @@ final class GameCore {
     }
 
     void closeSettings() {
+        preferences.panelClosing=false;preferences.panelEntrance=1f;
         if (band.active && sound != null) sound.bandPause(paused);
         settingsOpen = false;
         clearArmed = false;
@@ -1701,7 +1707,7 @@ final class GameCore {
     }
 
     void startGame() {
-        highScores.start();
+        highScores.start(Collect.has(collected,caseIndex)?caseIndex:-1);
         highScoreScreen.open=false;
         band.reset(this); mining.stop(); cart.stop();
         runWho = Collect.has(collected, caseIndex) ? caseIndex : 0;
@@ -2459,7 +2465,7 @@ final class GameCore {
         }
         if (sound != null && (settingsOpen || !boss.fighting() || boss.kind != Boss.SLIME
                 || boss.hasGlob() || boss.boltCount() > 0)) sound.bossCharge(0f);
-        if (settingsOpen) return;
+        if (settingsOpen) { preferences.updatePanel(this,elapsed); return; }
         time += dt;
         if (returnFade > 0f) {
             returnFade = Math.max(0f, returnFade - dt);
