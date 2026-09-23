@@ -197,6 +197,7 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 - (jboolean)resetHighScoresWithByteArray:(IOSByteArray *)progress {
   [_lock lock];
   NSMutableDictionary *before = [_values mutableCopy];
+  _values[@"roster"] = @([self loadRosterState]);
   _values[@"best"] = @0;
   _values[@"highScores"] = @"";
   for (NSString *key in [_values.allKeys copy])

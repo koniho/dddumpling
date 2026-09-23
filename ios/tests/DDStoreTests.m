@@ -10,6 +10,16 @@
 
 @implementation DDStoreTests
 
+- (void)testEmptyScoreResetKeepsTheStarterRoster {
+  NSURL *url = [self temporaryFile];
+  DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertEqual([store loadRosterState], 0);
+  XCTAssertTrue([store resetHighScoresWithByteArray:nil]);
+  DDIOSStore *reopened = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertEqual([reopened loadRosterState], 0);
+  [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
+}
+
 - (void)testScoreResetPersistsWithoutChangingOtherProgress {
   NSURL *url = [self temporaryFile];
   DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];
