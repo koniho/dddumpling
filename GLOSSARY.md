@@ -138,7 +138,7 @@ The other interlude, offered after a steamer has been opened. Two thumbs steer, 
 | --- | --- | --- |
 | **star course** / **course** | the whole star-path interlude: ready lesson, flight, then a win or a report | `StarPath` (state), `StarScreen` (drawing), `GameCore.starFlight` |
 | **flyer** | the collectible piloting it — whatever the last steamer handed over | `StarPath.who`, `StarScreen.flyer` |
-| **checkpoint** / **star** | one of the twenty to collect. They carry over between attempts | `StarPath.COUNT`, `collected` |
+| **checkpoint** / **star** | one of the twenty to collect. They carry over between attempts in the same main-game run | `StarPath.COUNT`, `collected` |
 | **pearl** | the lit centre of a checkpoint, and the thing the pickup actually aims at — the petals are decoration | `StarPath.HEART`, `pickupR` |
 | **catch band** | how close counts as a catch: tight side to side, where the skill is, and a stated *number of milliseconds* tall, where the clock is | `StarPath.pickupR`, `pickupY`, `GRACE` |
 | **grace** | how late a flyer may be and still take a checkpoint, in seconds — not in pixels, so it survives the spacing being changed | `StarPath.GRACE`, `closingSpeed` |

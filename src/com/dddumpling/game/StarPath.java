@@ -313,6 +313,21 @@ final class StarPath {
         collected = held;
     }
 
+    /** Clears one main-game run's course state without touching saved difficulty. */
+    void resetRun() {
+        collected = 0;
+        who = -1;
+        timer = x = vx = 0f;
+        left = right = won = dragging = false;
+        winT = 0f;
+        winStar = -1;
+        grabbed = launched = reported = awardPending = false;
+        for (int i = 0; i < COUNT; i++) {
+            sx[i] = 0f;
+            burst[i] = 0f;
+        }
+    }
+
     /**
      * Roughly how many seconds into the flight star {@code i} comes level with the flyer.
      *
