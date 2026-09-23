@@ -1,0 +1,92 @@
+package com.dddumpling.game;
+
+final class TestCompanion extends Check {
+    static void all(Layout L) {
+        group("run companion");
+        Mem save=new Mem();save.collected=(1L<<11)|(1L<<4);save.caseIndex=11;
+        GameCore c=new GameCore(save,118L);c.startGame();
+        check("companion uses the frozen run selection",c.companion.who==11);
+        c.caseIndex=4;
+        check("later case changes do not replace the companion",c.companion.who==11);
+        GameCore.Enemy e=add(c,L,new int[]{0,1},L.playTop+L.enemyR*3);
+        c.destroyWord(e,0,0,L);
+        check("word destruction celebrates",c.companion.reaction==RunCompanion.WORD);
+        c.takeHit(L.w*.5f,L);
+        check("damage interrupts celebration",c.companion.reaction==RunCompanion.DAMAGE && c.companion.mood()==3);
+        float left=c.companion.left;
+        for(int i=0;i<50;i++) c.companion.react(RunCompanion.WORD,1f);
+        check("event bursts cannot queue or prolong damage",c.companion.left==left && c.companion.reaction==RunCompanion.DAMAGE);
+        float clock=c.companion.clock;float[] skin=c.companion.outline(L);
+        c.paused=true;c.update(.2f,L);
+        check("pause freezes character and home",clock==c.companion.clock && java.util.Arrays.equals(skin,c.companion.outline(L)));
+        c.paused=false;c.openSettings();c.update(.2f,L);
+        check("settings freeze the companion",clock==c.companion.clock && java.util.Arrays.equals(skin,c.companion.outline(L)));
+        c.closeSettings();
+        for(int i=0;i<60;i++) c.companion.update(c,DT);
+        check("reaction settles without a queue",c.companion.reaction==RunCompanion.IDLE);
+        check("home has genuine soft-body motion",!java.util.Arrays.equals(skin,c.companion.outline(L)) && c.companion.home.finite());
+        c.startFrenzy(Power.TEAM,L);
+        check("TEAM keeps the UI companion and its separate helper",c.companion.who==11 && c.buddy.who==11
+                && c.buddy.entryLeft>0 && c.companion.reaction==RunCompanion.POWER);
+        c.modeLeft=DT*.5f;c.update(DT,L);
+        // The active power reaction has priority over its ending, then naturally settles.
+        check("power ending does not remove the companion",c.companion.who==11 && !c.powerActive());
+        c.toTitle();check("title clears all reaction state",c.companion.who<0 && c.companion.left==0f);
+        c.startGame();check("new run starts from idle",c.companion.reaction==0 && c.companion.clock==0);
+        c.lives=1;c.takeHit(0,L);check("death clears owned state before early returns",c.companion.who<0 && c.companion.left==0f);
+        c=new GameCore(new Mem(),119L);c.beginStart();advance(c,L,Launch.PICK_TIME+Launch.TIME+.1f);
+        check("shuffled run uses its resolved character",c.companion.who==c.runWho && c.companion.who>=0);
+        c.boss.begin(Boss.SLIME,5,c.rnd);c.companion.update(c,DT);
+        check("boss arrival gets anticipation",c.companion.reaction==RunCompanion.BOSS);
+        c.boss.intro=0;c.boss.blive[0]=true;c.companion.update(c,DT);
+        check("live boss attack gets concern",c.companion.reaction==RunCompanion.DANGER);
+        c.boss.beaten=true;c.companion.update(c,DT);
+        check("boss defeat gets celebration",c.companion.reaction==RunCompanion.VICTORY);
+        GameCore twin=new GameCore(new Mem(),120L);c=new GameCore(new Mem(),120L);c.startGame();twin.startGame();
+        for(int i=0;i<100;i++) { c.companion.react(RunCompanion.WORD,.6f);c.companion.update(c,DT); }
+        check("companion never advances gameplay randomness",c.rnd.nextLong()==twin.rnd.nextLong());
+        bounds();
+    }
+    private static void bounds() {
+        for(int[] size:new int[][]{{320,568},{393,852},{640,1400},{1080,2400}}) for(boolean full:new boolean[]{false,true}) {
+            Layout l=new Layout();l.compute(size[0],size[1],0,size[0]*.04f,0,size[0]*.04f);
+            GameCore c=new GameCore(new Mem(),118L);c.startGame();c.fullRoster=c.runFullRoster=full;
+            boolean clear=true;
+            for(int event=0;event<=RunCompanion.DAMAGE;event++) {
+                c.companion.begin(c.runWho);c.companion.react(event,1f);
+                for(int frame=0;frame<60;frame++) {
+                    c.companion.update(c,DT);
+                    float[] ring=c.companion.outline(l);
+                    for(int i=0;i<ring.length;i+=2) {
+                        clear &= ring[i]>=0 && ring[i]<=l.w && ring[i+1]>=l.deckTop && ring[i+1]<=l.h-l.padB;
+                        for(int key=0;key<Glyph.COUNT;key++) if(c.keyActive(key)) {
+                            float dx=ring[i]-l.keyX[key],dy=ring[i+1]-l.keyY[key];
+                            float keyR=l.keyR*c.keyScale();
+                            clear &= dx*dx+dy*dy>keyR*keyR*1.1f;
+                        }
+                    }
+                }
+            }
+            check("soft home clears key hit areas "+size[0]+" full="+full,clear);
+            check("companion uses the title adventurer as its size reference "+size[0]+" full="+full,
+                    RunCompanion.radius(c,l)==LandPicker.travelerRadius(c,l)*.84f);
+        }
+        Layout l=new Layout();l.compute(320,700,0,0,0,0);
+        GameCore c=new GameCore(new Mem(),118L);c.startGame();
+        boolean contained=true;
+        for(int who=0;who<Collect.COUNT;who++) for(int event:new int[]{RunCompanion.IDLE,RunCompanion.DAMAGE,RunCompanion.VICTORY}) {
+            c.companion.begin(who);c.companion.react(event,1);c.companion.update(c,.15f);
+            RasterPainter p=new RasterPainter(320,700,1);p.clear(0xFF010203);
+            RunCompanion.draw(p,c,l);int[] pixels=p.resolve();
+            for(int y=0;y<700;y++) for(int x=0;x<320;x++) if(pixels[y*320+x]!=0xFF010203) {
+                boolean inside=y>=0 && y<l.h-l.padB;
+                for(int key=0;key<Glyph.COUNT;key++) if(c.keyActive(key)) {
+                    float dx=x-l.keyX[key],dy=y-l.keyY[key];
+                    inside &= dx*dx+dy*dy>l.keyR*l.keyR;
+                }
+                contained &= inside;
+            }
+        }
+        check("all collectible silhouettes and expressions stay in the reserved key gap",contained);
+    }
+}

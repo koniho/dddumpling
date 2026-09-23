@@ -8,6 +8,9 @@ final class BossCollect extends Draw {
 
     static void draw(Painter p, int boss, float x, float y, float r, float clock,
             boolean known, float fade) {
+        draw(p,boss,x,y,r,clock,known,fade,-1,0f);
+    }
+    static void draw(Painter p,int boss,float x,float y,float r,float clock,boolean known,float fade,int mood,float look) {
         int i = Collect.BOSS_FIRST + boss;
         int body = fadeBy(known ? Collect.BODY[i] : 0xFF393054, fade);
         int cream = fadeBy(known ? Collect.ACCENT[i] : 0xFF393054, fade);
@@ -62,7 +65,10 @@ final class BossCollect extends Draw {
                 p.fillEllipse(x-r*.30f,y-r*.42f,r*.22f,r*.13f,cream);
             }
         }
-        if (known) face(p, x, faceY, faceR, clock, fade);
+        if (known) {
+            if(mood<0) face(p, x, faceY, faceR, clock, fade);
+            else Trinket.reactionFace(p,x,faceY,faceR,clock,fade,mood,look);
+        }
         if (!known) p.text("?",x,y+r*.25f,type(r*.65f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
     }
 

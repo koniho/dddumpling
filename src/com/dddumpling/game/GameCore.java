@@ -788,6 +788,7 @@ final class GameCore {
 
     /** The squishy that fights during TEAM SQUISH. */
     final Buddy buddy = new Buddy();
+    final RunCompanion companion = new RunCompanion();
 
     /**
      * Fall-speed multiplier. Applied per frame rather than baked into a word's speed at
@@ -1189,6 +1190,7 @@ final class GameCore {
         highScores.powers++;
         mode = effect;
         modeLeft = Power.DURATION;
+        companion.react(RunCompanion.POWER,.9f);
         if(power==null || !power.hit) {
             powerBurstX=L.w*0.5f;powerBurstY=(L.playTop+L.dangerY)*0.5f;
         }
@@ -1303,6 +1305,7 @@ final class GameCore {
         }
         spawnedThisStage = stageQuota();
         stageByPower = true;
+        companion.react(RunCompanion.POWER_END,.6f);
         flash = Math.max(flash, 1f);
         flashColor = FLASH_CLEAR;
         skyGlow = 1f;
@@ -1746,6 +1749,7 @@ final class GameCore {
         pendingRunWho = -1;
         pickerT = 0f;
         highScores.start(runWho);
+        companion.begin(runWho);
         highScoreScreen.open=false;
         band.reset(this); mining.stop(); cart.stop();
         // A paid win may have been quit before its tableau/parade retired the course.
@@ -1850,6 +1854,7 @@ final class GameCore {
     }
 
     void toTitle() {
+        companion.clear();
         band.stop(this); mining.stop(); cart.stop();
         cave.leave();
         progress.finishRun(score, true);
@@ -2503,6 +2508,7 @@ final class GameCore {
         if (sound != null && (settingsOpen || !boss.fighting() || boss.kind != Boss.SLIME
                 || boss.hasGlob() || boss.boltCount() > 0)) sound.bossCharge(0f);
         if (settingsOpen) { preferences.updatePanel(this,elapsed); return; }
+        companion.update(this,dt);
         time += dt;
         if (returnFade > 0f) {
             returnFade = Math.max(0f, returnFade - dt);
@@ -3004,6 +3010,7 @@ final class GameCore {
         skyGlow = 1f;
         skyGlowColor = FLASH_CLEAR;
         squishes++;
+        companion.react(RunCompanion.WORD,Math.min(1f,.45f+e.word.length*.06f));
         resolveStageEnemy(e);
         // Scored per press, so a stacked word is worth what it cost to clear.
         score += 25 * e.totalPresses();
@@ -3236,6 +3243,7 @@ final class GameCore {
     }
 
     void takeHit(float px, Layout L) {
+        companion.react(RunCompanion.DAMAGE,1f);
         lives--;
         hurtThisStage++;
         combo = 0;
@@ -3259,6 +3267,7 @@ final class GameCore {
      * early returns, or clear it where the early return is taken. There is no third way.
      */
     private void die() {
+        companion.clear();
         cave.leave();
         highScores.finish(this);
         progress.finishRun(score, false);

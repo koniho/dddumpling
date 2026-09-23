@@ -9,6 +9,30 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void companionFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("118-companion")) return;
+        for(int event=0;event<=RunCompanion.DAMAGE;event++) {
+            GameCore c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=11;c.startGame();
+            c.stageBanner=0;c.companion.react(event,1f);
+            for(int step=0;step<10;step++) c.companion.update(c,DT);
+            shot(dir,"118-companion-reaction-"+event,c,L,w,h,ss);
+        }
+        for(int who:new int[]{0,8,23,Collect.BOSS_FIRST,Collect.BOSS_FIRST+1,Collect.BOSS_FIRST+2,
+                Collect.BOSS_FIRST+3,Collect.MOLE_FIRST,Collect.SNAKE_FIRST}) {
+            GameCore c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=who;c.startGame();
+            c.stageBanner=0;c.companion.update(c,.1f);
+            shot(dir,"118-companion-character-"+who,c,L,w,h,ss);
+        }
+        GameCore c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
+        c.stageBanner=0;c.startFrenzy(Power.TEAM,L);
+        for(int frame=0;frame<8;frame++) {
+            shot(dir,"118-companion-team-"+frame,c,L,w,h,ss);step(c,L,.09f);
+        }
+        c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=49;c.caveChoice=0;
+        c.startGame();c.jumpToStage(21,L);c.stageBanner=0;
+        shot(dir,"118-companion-cave",c,L,w,h,ss);
+    }
+
     private static void squishyEntryFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         boolean selected=only==null;
         if(only!=null) for(String tag:only) selected |= "112-".startsWith(tag.trim()) || tag.trim().startsWith("112-");
@@ -426,6 +450,7 @@ final class Preview {
         cartFrames(dir,L,w,h,ss);
         miningFrames(dir,L,w,h,ss);
         caveCollectFrames(dir,L,w,h,ss);
+        companionFrames(dir,L,w,h,ss);
         squishyEntryFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";

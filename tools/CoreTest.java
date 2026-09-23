@@ -22,6 +22,7 @@ final class CoreTest {
         L.compute(1080, 2340, 0, 60, 0, 90);
         only = args.length > 0 && !args[0].isEmpty() ? args[0].toLowerCase() : null;
 
+        group("Companion", () -> TestCompanion.all(L));
         group("HighScores", () -> TestHighScores.all(L));
         group("Settings", () -> TestSettings.all(L));
         group("Cave Intro", () -> TestCaveIntro.all(L));

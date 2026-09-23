@@ -72,7 +72,7 @@ final class Renderer extends Draw {
         pushImpacts(p, c, L);
         // Over the words: the burst is the payoff and nothing should be in front of it.
         BossScreen.burst(p, c, L);
-        buddy(p, c, L);
+        if(c.buddy.entryLeft<=0f) buddy(p, c, L);
         flurryBurst(p,c,L);
         powerup(p, c, L);
         chain(p, c, L);
@@ -91,6 +91,10 @@ final class Renderer extends Draw {
         p.restore();
 
         }
+
+        if(!Cave.active(c) || c.cave.phase!=Cave.CHOOSE) RunCompanion.draw(p,c,L);
+        // The helper flies in front of the decorative home on its way into the field.
+        if(c.buddy.entryLeft>0f) buddy(p,c,L);
 
         // Red closing-in glow: from low health, and from a word about to land.
         Sky.vignette(p, L, ROSE, Math.max(hurt, c.warnLevel * (0.45f + 0.55f * hurtPulse)));
