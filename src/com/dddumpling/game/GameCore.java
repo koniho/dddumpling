@@ -2568,14 +2568,15 @@ final class GameCore {
         if (storyOpen()) storyT += dt;
         // The title screen dissolving, and the squishy's send-off over the top of it. Play begins
         // the frame the last of them finishes, not on the press.
+        // UI timing follows elapsed time even when slow frames cap gameplay physics.
         if (state == TITLE && starting()) {
             if (pickerT > 0f) {
-                pickerT = Math.max(0f, pickerT - dt);
+                pickerT = Math.max(0f, pickerT - elapsed);
                 if (pickerT == 0f) beginLaunch();
             } else {
-                startFade = Math.max(0f, startFade - dt);
+                startFade = Math.max(0f, startFade - elapsed);
                 if (launchT > 0f) {
-                    launchT = Math.max(0f, launchT - dt);
+                    launchT = Math.max(0f, launchT - elapsed);
                     float u = Launch.progress(this);
                     if (!launchNameAnnounced && Launch.TIME-launchT >= Launch.NAME_START) {
                         launchNameAnnounced = true;

@@ -60,6 +60,18 @@ public final class IOSInputTest extends Check {
         game.back();game.update(HighScoreScreen.ENTRY_TIME);check("native back returns to title",!c.highScoreScreen.open && c.state==GameCore.TITLE);
     }
 
+    private static void slowRunIntro() {
+        for (boolean selected : new boolean[]{false, true}) {
+            IOSGame game=game(); GameCore c=game.core(); Layout l=game.geometry();
+            if (selected) c.collected=1L;
+            tap(game,l.w*.2f,l.h*.85f);
+            check("smoke-test coordinate starts intro " + selected,c.starting());
+            for (int i=0;i<16;i++) game.update(.2f);
+            check("intro finishes on elapsed time at five frames per second " + selected,
+                    c.state==GameCore.PLAY && !c.starting());
+        }
+    }
+
     private static void titleAndLifecycle() {
         IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
         Host host = new Host(); game.setHost(host);
@@ -592,6 +604,7 @@ public final class IOSInputTest extends Check {
     }
 
     public static void main(String[] args) {
+        slowRunIntro();
         caveMining();
         caveCart();
 
