@@ -125,6 +125,9 @@ final class Preview {
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
         c.stageBanner=0;c.startFrenzy(Power.FLING,L);c.companion.update(c,.18f);
         shot(dir,"118-companion-fling-mask",c,L,w,h,ss);
+        c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
+        c.stageBanner=0;c.startFrenzy(Power.FLURRY,L);c.companion.update(c,.24f);
+        shot(dir,"118-companion-flurry-bubble",c,L,w,h,ss);
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();c.stageBanner=0;
         c.pushUsed=true;c.pushCount=3;c.pushSlowT=GameCore.PUSH_SLOW;c.pushT=GameCore.PUSH_TIME;
         c.companion.rescue();
@@ -150,6 +153,15 @@ final class Preview {
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
         c.playtestSteamer(L);c.time=.7f;
         shot(dir,"118-companion-steamer",c,L,w,h,ss);
+        c.bonusTimer=c.bonusRollEnd;
+        c.tapBonus(c.steamer.wanted());c.tapBonus(c.steamer.wanted());
+        c.companion.update(c,.24f);
+        shot(dir,"118-companion-steamer-score",c,L,w,h,ss);
+        c.steamer.hits=c.steamer.goal()-1;
+        c.steamer.expectLeft=true;
+        c.tapBonus(c.steamer.wanted());c.tapBonus(c.steamer.wanted());
+        c.swipeBonus();c.companion.update(c,.18f);
+        shot(dir,"118-companion-steamer-win",c,L,w,h,ss);
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
         c.starNext=true;Interlude.enterBonus(c,L);
         for(int frame=0;frame<6;frame++) {
@@ -172,6 +184,27 @@ final class Preview {
         shot(dir,"118-companion-cave",c,L,w,h,ss);
     }
 
+    static void scoreResetFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("111-reset-settings") && !wanted("111-reset-confirm")
+                && !wanted("111-reset-wipe") && !wanted("111-reset-done") && !wanted("111-reset-empty")) return;
+        GameCore c=new GameCore(new Mem(),111L);c.collected=3;c.startGame();c.score=9000;
+        LandPicker.recordBest(c);c.highScores.finish(c);c.toTitle();c.returnFade=0;
+        PlayerSettings.open(c);c.preferences.updatePanel(c,PlayerSettings.PANEL_TIME);
+        shot(dir,"111-reset-settings",c,L,w,h,ss);
+        c.preferences.scoreReset.action(c,ScoreReset.OPEN);
+        shot(dir,"111-reset-confirm",c,L,w,h,ss);
+        c.preferences.scoreReset.action(c,ScoreReset.CONFIRM);
+        for(int stroke=0;stroke<3;stroke++) {
+            c.update(stroke==0?ScoreReset.LEAD+ScoreReset.STROKE_TIME*.55f
+                    :ScoreReset.STROKE_TIME+ScoreReset.STROKE_GAP,L);
+            shot(dir,"111-reset-wipe-"+(stroke+1),c,L,w,h,ss);
+        }
+        c.update(.35f,L);shot(dir,"111-reset-done",c,L,w,h,ss);
+        c.update(ScoreReset.TIME,L);
+        c.closeSettings();c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+        shot(dir,"111-reset-empty",c,L,w,h,ss);
+    }
+
     private static void squishyEntryFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         boolean selected=only==null;
         if(only!=null) for(String tag:only) selected |= "112-".startsWith(tag.trim()) || tag.trim().startsWith("112-");
@@ -190,8 +223,8 @@ final class Preview {
             shot(dir,"112-picker-hello-"+frame,picker,L,w,h,ss);
             step(picker,L,Launch.TIME*(Launch.LAND-Launch.POP)*.20f);
         }
-        while(Launch.progress(picker)<Launch.TOP) step(picker,L,DT);
-        shot(dir,"112-picker-roof",picker,L,w,h,ss);
+        while(Launch.progress(picker)<Launch.HOME) step(picker,L,DT);
+        shot(dir,"112-picker-home",picker,L,w,h,ss);
         GameCore lettering=new GameCore(new Mem(),112L);lettering.collected=Collect.MASK;
         lettering.caseIndex=51;lettering.clock=18.87f;lettering.beginStart();
         step(lettering,L,Launch.CENTER_TIME*.5f);
@@ -591,6 +624,7 @@ final class Preview {
         townFrames(dir,L,w,h,ss);
         slimeFightFrames(dir,L,w,h,ss);
         companionFrames(dir,L,w,h,ss);
+        scoreResetFrames(dir,L,w,h,ss);
         squishyEntryFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
@@ -980,8 +1014,8 @@ final class Preview {
                 GameCore.START_FADE, c18.state);
         shot(dir, "35-title-fading", c18, L, w, h, ss);
 
-        // The send-off: the squishy swelling out of the badge in a pip of stars, and again as it
-        // bounces off the top of the screen with the title long gone.
+        // The send-off: the squishy swelling out of the badge, then arriving at its run home and
+        // finally holding there as the home bubble fades in.
         GameCore c19 = new GameCore(store, 81L);
         step(c19, L, 1.4f);
         c19.tapKey(2, L);
@@ -989,10 +1023,16 @@ final class Preview {
         System.out.printf("send-off pop: who=%d left=%.2f progress=%.2f%n", c19.launchWho,
                 c19.launchT, Launch.progress(c19));
         shot(dir, "42-sendoff-pop", c19, L, w, h, ss);
-        step(c19, L, Launch.TIME * (Launch.TOP - Launch.POP * 0.75f));
-        System.out.printf("send-off roof: progress=%.2f state=%d%n", Launch.progress(c19),
+        step(c19, L, Launch.TIME * (Launch.HOME - Launch.POP * 0.75f));
+        System.out.printf("send-off home: progress=%.2f state=%d%n", Launch.progress(c19),
                 c19.state);
-        shot(dir, "43-sendoff-roof", c19, L, w, h, ss);
+        shot(dir, "43-sendoff-home", c19, L, w, h, ss);
+        step(c19,L,Launch.TIME*(1f-Launch.HOME)*.62f);
+        shot(dir,"43b-sendoff-bubble",c19,L,w,h,ss);
+        step(c19,L,Math.max(0f,c19.launchT-DT));
+        shot(dir,"43c-sendoff-settled",c19,L,w,h,ss);
+        step(c19,L,DT*2f);
+        shot(dir,"43d-sendoff-play",c19,L,w,h,ss);
 
         // Story popup, mid-panel-spring and again settled with the scene playing.
         c.caseIndex = 0;
@@ -2216,7 +2256,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage", "score-reset-confirm", "score-reset-brush"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

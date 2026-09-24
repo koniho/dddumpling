@@ -813,7 +813,7 @@ final class TestCollect extends Check {
         check("the press after that fades into a run", f.starting());
     }
 
-    /** The send-off: the case's squishy bouncing out of the screen as a run starts. */
+    /** The send-off: the case's squishy settling into its run home as play starts. */
     static void sendOff(Layout L) {
         group("start send-off");
         boolean alphabet=true;
@@ -828,7 +828,11 @@ final class TestCollect extends Check {
         check("nothing being sent off to begin with", c.launchWho < 0 && c.launchT == 0f);
         check("the send-off outlasts the title fade", Launch.TIME > GameCore.START_FADE);
         check("its phases are in order", Launch.POP < Launch.LAND
-                && Launch.LAND < Launch.TOP && Launch.TOP < 1f);
+                && Launch.LAND < Launch.HOME && Launch.HOME < 1f);
+        check("the companion bubble waits for arrival",Launch.bubbleFade(Launch.HOME)==0f
+                && Launch.bubbleFade(1f)==1f);
+        float halfBubble=Launch.bubbleFade((Launch.HOME+1f)*.5f);
+        check("the companion bubble eases in after arrival",halfBubble>0f && halfBubble<1f);
 
         // Let the badge drift off centre first: the send-off has to leave from where it is.
         advance(c, L, 1.4f);
@@ -849,7 +853,7 @@ final class TestCollect extends Check {
         advance(c, L, Launch.TIME);
         check("play begins once it is done", c.state == GameCore.PLAY);
         check("and nothing is left of it", c.launchWho < 0 && c.launchT == 0f);
-        check("both bounces sounded", ear.squishes == 2);
+        check("the greeting landing and home arrival sounded", ear.squishes == 2);
         check("the start tone still led the whole thing", ear.starts == 1);
 
         // An uncollected entry shuffles in the case, then uses the same send-off.

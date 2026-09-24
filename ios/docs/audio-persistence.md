@@ -28,3 +28,11 @@ The host should present that error once after creating the store, then allow the
 without further local writes rather than silently replacing a recoverable save.
 The progress replica identifier is generated once and saved with the same envelope. The save
 is local-only and contains no account identity or network data.
+
+Score resets commit the empty run history, overall/per-land best values, and progress snapshot
+in one store write. The shared progress document carries a monotonically increasing
+`score_reset_epoch`: merges retain score maxima only from the newest epoch while still
+merging all non-score counters. Android commits the same fields in one preferences transaction.
+A reset during a run leaves gameplay intact but stops that run from re-adding score records;
+recording resumes with the next run. Older clients without epoch-aware merging should not be
+used to sync a reset save.

@@ -99,6 +99,9 @@ Use [docs/release-notes.md](docs/release-notes.md) for the catalog and required 
 
 ## Repository hygiene
 
+When merging changes into local `main`, always push `main` to `origin/main` and verify the remote
+advanced before reporting the merge complete.
+
 Do not commit local audio, APKs, render output, secrets or unrelated workspace changes.
 `res/raw/bgm.*` is a user-supplied local track and must never be committed.
 Preserve the provenance and licenses of imported assets. Keep large explanations in topic docs,

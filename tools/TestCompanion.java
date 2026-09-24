@@ -11,6 +11,9 @@ final class TestCompanion extends Check {
         GameCore.Enemy e=add(c,L,new int[]{0,1},L.playTop+L.enemyR*3);
         c.destroyWord(e,0,0,L);
         check("word destruction celebrates",c.companion.reaction==RunCompanion.WORD);
+        c.companion.age=.24f;
+        check("word destruction briefly grows and glows the companion bubble",
+                c.companion.bubblePulse()>.5f);
         c.takeHit(L.w*.5f,L);
         check("damage interrupts celebration",c.companion.reaction==RunCompanion.DAMAGE && c.companion.mood()==3);
         c.companion.age=.24f;
@@ -81,6 +84,11 @@ final class TestCompanion extends Check {
         advance(c,L,Buddy.RETURN_TIME+.1f);
         check("home companion resumes after TEAM returns",c.buddy.out() && c.companion.who==11);
 
+        int rainbow0=RunCompanion.flurryRing(0f,0);
+        check("FLURRY bubble outlines form a shifting rainbow",
+                rainbow0!=RunCompanion.flurryRing(0f,1)
+                        && rainbow0!=RunCompanion.flurryRing(.25f,0));
+
         Layout small=new Layout();small.compute(320,700,0,0,0,0);
         GameCore interlude=new GameCore(save,121L);interlude.startGame();interlude.playtestSteamer(small);
         RasterPainter visible=new RasterPainter(320,700,1);visible.clear(0xFF010203);
@@ -112,6 +120,8 @@ final class TestCompanion extends Check {
         check("game over keeps the run companion crying",c.state==GameCore.OVER
                 && c.companion.who==c.runWho && c.companion.reaction==RunCompanion.CRY
                 && c.companion.mood()==5 && c.companion.rescueLift(L)==0f);
+        check("game-over tears are sized from the deck keys",
+                RunCompanion.cryTearSize(L)==L.keyR);
         float cryClock=c.companion.clock;c.update(.1f,L);
         check("crying animation continues during game over",c.companion.clock>cryClock
                 && c.companion.reaction==RunCompanion.CRY);
@@ -131,6 +141,9 @@ final class TestCompanion extends Check {
         c.companion.react(RunCompanion.BOSS_HIT,1f);
         check("boss damage gets the stronger cheer",c.companion.reaction==RunCompanion.BOSS_HIT
                 && c.companion.mood()==8);
+        c.companion.age=.24f;
+        check("boss damage gives the companion bubble a full impact pulse",
+                c.companion.bubblePulse()>.99f);
         c.boss.beaten=true;c.companion.update(c,DT);
         check("boss defeat cheers throughout the death animation",c.companion.reaction==RunCompanion.VICTORY
                 && c.companion.left==Boss.LEAVE);
@@ -175,7 +188,7 @@ final class TestCompanion extends Check {
         GameCore c=new GameCore(new Mem(),118L);c.startGame();
         boolean contained=true;
         for(int who=0;who<Collect.COUNT;who++) for(int event:new int[]{RunCompanion.IDLE,
-                RunCompanion.VICTORY,RunCompanion.CRY}) {
+                RunCompanion.VICTORY}) {
             c.companion.begin(who);c.companion.react(event,1);c.companion.update(c,.15f);
             RasterPainter p=new RasterPainter(320,700,1);p.clear(0xFF010203);
             RunCompanion.draw(p,c,l);int[] pixels=p.resolve();

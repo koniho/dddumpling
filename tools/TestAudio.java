@@ -79,6 +79,12 @@ final class TestAudio extends Check {
         for(int i=0;i<bloop.length/2;i++) bloopHead=Math.max(bloopHead,Math.abs(bloop[i]));
         for(int i=bloop.length*3/4;i<bloop.length;i++) bloopTail=Math.max(bloopTail,Math.abs(bloop[i]));
         check("UI bloop fades softly",bloopTail<bloopHead/4);
+        short[] resetConfirm=Sfx.build(Sfx.SCORE_RESET_CONFIRM);
+        short[] resetBrush=Sfx.build(Sfx.SCORE_RESET_BRUSH);
+        check("score reset confirmation is distinct from navigation",resetConfirm!=bloop
+                && resetConfirm.length>bloop.length);
+        check("board brush fits inside one wipe",resetBrush.length<Sfx.RATE*ScoreReset.STROKE_TIME);
+        check("board brush is textured rather than tonal",crossRate(resetBrush)>crossRate(resetConfirm)*1.5f);
 
         // The chop fires several times per swipe, so anything with a tail would smear.
         short[] chop = Sfx.build(Sfx.CHOP);

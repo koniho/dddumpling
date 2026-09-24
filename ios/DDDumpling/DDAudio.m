@@ -351,6 +351,10 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)clearWord { [self playEffect:DDSfx_CLEAR rate:1 gain:1]; }
 - (void)shuffleBlip { [self playEffect:DDSfx_SHUFFLE_BLIP rate:1 gain:.3f]; }
 - (void)uiBloop { [self playEffect:DDSfx_UI_BLOOP rate:1 gain:.22f]; }
+- (void)scoreResetConfirm { [self playEffect:DDSfx_SCORE_RESET_CONFIRM rate:1 gain:.7f]; }
+- (void)scoreResetBrushWithInt:(jint)stroke {
+  [self playEffect:DDSfx_SCORE_RESET_BRUSH rate:1 + .035f * MAX(0, MIN(2, stroke)) gain:.62f];
+}
 - (void)landShuffle { [self playEffect:DDSfx_LAND_SHUFFLE rate:1 gain:.16f]; }
 - (void)slimeCoverWithBoolean:(jboolean)release { [self playEffect:release ? DDSfx_SLIME_RELEASE : DDSfx_SLIME_COVER rate:1 gain:.65f]; }
 - (void)debuffDown { [self playEffect:DDSfx_DEBUFF_DOWN rate:1 gain:.8f]; }

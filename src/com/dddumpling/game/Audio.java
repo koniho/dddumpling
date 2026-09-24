@@ -363,6 +363,10 @@ final class Audio implements GameCore.Sound {
 
     @Override public void shuffleBlip() { play(Sfx.SHUFFLE_BLIP, 1f, 0.3f); }
     @Override public void uiBloop() { play(Sfx.UI_BLOOP, 1f, 0.22f); }
+    @Override public void scoreResetConfirm() { play(Sfx.SCORE_RESET_CONFIRM,1f,.7f); }
+    @Override public void scoreResetBrush(int stroke) {
+        play(Sfx.SCORE_RESET_BRUSH,1f+.035f*Math.max(0,Math.min(2,stroke)),.62f);
+    }
     @Override public void landShuffle() { play(Sfx.LAND_SHUFFLE, 1f, 0.16f); }
     @Override public void slimeCover(boolean release) { play(release ? Sfx.SLIME_RELEASE : Sfx.SLIME_COVER, 1f, 0.65f); }
     @Override public void debuffDown() { play(Sfx.DEBUFF_DOWN, 1f, 0.8f); }

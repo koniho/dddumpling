@@ -2,8 +2,8 @@ package com.dddumpling.game;
 
 /**
  * The send-off when a run starts: the squishy the display case was showing swells out of its
- * badge in a pip of stars, shows its name with a wave, then leaps off the top of
- * the screen. Stage 1 begins once it has left.
+ * badge in a pip of stars, shows its name with a wave, then travels into its run-companion
+ * home above the keyboard. The home fades in around it before Stage 1 begins.
  *
  * Only when the case is parked on something collected — an uncollected entry is a silhouette
  * with a question mark on it, and sending that off would be sending off nothing. So the title
@@ -26,8 +26,8 @@ final class Launch extends Draw {
     static final float POP = CENTER_TIME / TIME;
     /** Greeting ends and the leap starts. */
     static final float LAND = 0.64f;
-    /** Contact with the top edge, and the second pip. */
-    static final float TOP = 0.84f;
+    /** Arrival at the run-companion home, and the second pip. */
+    static final float HOME = 0.84f;
 
     /** How long a pip's stars last. */
     private static final float PIP = 0.20f;
@@ -52,7 +52,7 @@ final class Launch extends Draw {
         float x0 = Showcase.iconCx(L, c.launchClock);
         float y0 = Showcase.iconCy(L, c.launchClock);
         float r0 = Showcase.iconR(L) * 0.62f;
-        float roof = L.topSafe + r0 * GROWN;
+        float homeX=RunCompanion.x(L),homeY=RunCompanion.y(L);
 
         float across = slide(TIME-c.launchT);
         float x = x0 + (L.w / 2f - x0) * across;
@@ -63,27 +63,31 @@ final class Launch extends Draw {
             float v = (u - POP) / (LAND - POP);
             float hello = (float)Math.sin(v*Math.PI);
             y = centerY - r0*.28f*hello*(1f+(float)Math.sin(v*Math.PI*4f));
-        } else if (u >= LAND && u < TOP) {
-            // The leap: fast off the ground, decelerating into the roof.
-            float v = (u - LAND) / (TOP - LAND);
-            y = centerY + (roof - centerY) * (1f - (1f - v) * (1f - v));
-        } else if (u >= TOP) {
-            // A little spring at the roof, then fully offscreen before gameplay starts.
-            float v = (u - TOP) / (1f - TOP);
-            y = roof + (-r0*GROWN*2f-roof)*v*v;
+        } else if (u >= LAND && u < HOME) {
+            // Carry the same visible squishy into the place it will occupy during the run.
+            float v = ease((u - LAND) / (HOME - LAND));
+            x=L.w*.5f+(homeX-L.w*.5f)*v;
+            y=centerY+(homeY-centerY)*v;
+        } else if (u >= HOME) {
+            x=homeX;y=homeY;
         }
 
         // Swelling out of the badge with an overshoot, then squashed by each impact.
         float grow = u < POP ? GROWN * over(u / POP) : GROWN;
-        float r = r0 * grow * (1f - 0.26f * hit(u, LAND) - 0.30f * hit(u, TOP));
-        // Fading only right at the end, so it is gone by the first word of the wave.
-        float fade = u < 0.9f ? 1f : Math.max(0f, (1f - u) / 0.1f);
+        float launchR=r0*grow*(1f-.26f*hit(u,LAND));
+        float homeSize=u<=LAND?0f:ease((u-LAND)/(HOME-LAND));
+        float r=launchR+(RunCompanion.radius(c,L)-launchR)*homeSize;
+        float fade=1f;
+
+        // The character arrives first; only then does its normal home resolve around it.
+        float bubble=bubbleFade(u);
+        if(bubble>0f) RunCompanion.drawHomeOnly(p,c,L,c.launchWho,bubble);
 
         // Reaches chosen to clear the body: the stars go behind it, so a burst tucked inside the
         // silhouette is a burst nobody sees.
         stars(p, c, L, x0, y0, u - POP * 0.55f, r0 * 3.6f, fade);
         stars(p, c, L, x, y, u - LAND, r * 1.9f, fade);
-        stars(p, c, L, x, y, u - TOP, r * 2.4f, fade);
+        stars(p, c, L, x, y, u - HOME, r * 2.4f, fade);
         if(u>=POP && u<LAND) wave(p,c.launchWho,x,y,r,(u-POP)/(LAND-POP),fade);
         Trinket.draw(p, c.launchWho, x, y, r, c.clock, true, fade);
         float nameFade=Math.min(1f,Math.max(0f,(TIME-c.launchT-NAME_START)/.10f))
@@ -96,6 +100,14 @@ final class Launch extends Draw {
             p.fillCircle(L.w*.5f+L.unit*.4f,nameY+L.unit*.45f,L.unit*.08f,
                     fadeBy(Collect.ACCENT[c.launchWho],nameFade));
         }
+    }
+
+    static float bubbleFade(float progress) {
+        return ease((progress-HOME)/(1f-HOME));
+    }
+
+    private static float ease(float u) {
+        u=Math.max(0f,Math.min(1f,u));return u*u*(3f-2f*u);
     }
 
     private static float nameAdvance(char ch) { return ch==' ' ? .55f : ch=='I' ? .72f : 1.25f; }

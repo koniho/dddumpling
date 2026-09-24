@@ -138,8 +138,6 @@ final class Trinket {
                 p.fillCircle(ex-side*r*.02f,y-r*.16f+cheer,r*.04f,Draw.fadeBy(0xFFFFFFFF,fade));
             } else if(mood==5) {
                 p.polyline(new float[]{ex-r*.15f,y-r*.02f,ex,y+r*.08f,ex+r*.15f,y-r*.02f},ink,r*.085f);
-                p.fillEllipse(ex+side*r*.08f,y+r*(.23f+.08f*(float)Math.sin(clock*7f+side)),
-                        r*.07f,r*.15f,Draw.fadeBy(0xFF79DDEB,fade));
             } else if(mood==3) {
                 p.polyline(new float[]{ex-side*r*.12f,y-r*.17f,ex+side*r*.07f,y,
                         ex-side*r*.12f,y+r*.09f},ink,r*.09f);

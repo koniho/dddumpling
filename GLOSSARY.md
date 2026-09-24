@@ -100,6 +100,7 @@ geometry; `Kawaii` draws the creature.
 | **banded finish** | a finish drawn as bands, so it only sits on a round shape | `Collect.banded` |
 | **prize** | what the steamer just handed over | `GameCore.prize`, `prizeNew` |
 | **duplicate** | a prize already in the case; pays score instead | `GameCore.DUPE_BONUS` |
+| **reset high scores** | Settings action that confirms before clearing saved runs and all best scores; keeps other progress and celebrates once | `ScoreReset`, `GameCore.resetHighScores` |
 | **clear collection** | the settings button that empties the case, behind a confirming tap | `GameCore.tapClearCase`, `clearArmed` |
 | **story** | the popup a collected entry opens: where it lives, its family, and the joke | `Lore`, `Storybook` |
 | **setting** | the one-line "where it lives" under the name | `Lore.WHERE` |

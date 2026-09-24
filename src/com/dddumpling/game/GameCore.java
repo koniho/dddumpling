@@ -172,6 +172,14 @@ final class GameCore {
         default void saveCaseIndex(int value) {}
         default String loadHighScores() { return ""; }
         default void saveHighScores(String value) {}
+        /** Hosts commit the reset and its sync marker together. */
+        default boolean resetHighScores(byte[] progress) {
+            saveHighScores("");
+            for (int land=0;land<Lands.COUNT;land++) saveLandBest(land,0);
+            saveBest(0);
+            if (progress!=null) saveProgress(progress);
+            return true;
+        }
         int loadBest();
         void saveBest(int best);
         default int loadCaveChoice() { return -1; }
@@ -230,6 +238,10 @@ final class GameCore {
         void slimeCover(boolean release);
         void landShuffle();
         void uiBloop();
+        /** A high-score reset was accepted and the board is about to be cleaned. */
+        default void scoreResetConfirm() {}
+        /** One of the three left-to-right blackboard strokes. */
+        default void scoreResetBrush(int stroke) {}
         void damage();
         void achievement();
         /** The slime has turned an unanswered prompt into a volley. */
@@ -470,6 +482,7 @@ final class GameCore {
     private final float[] titleSpringVY = new float[TITLE_LETTERS];
     int score, best, lives, stage, combo, maxCombo;
     int landChoice, runStartLand;
+    boolean scoresSuppressed;
     final int[] landBests = new int[Lands.COUNT];
     boolean landPickerDragging, landPickerMoved;
     float landPickerSlide, landPickerX;
@@ -1805,7 +1818,26 @@ final class GameCore {
         starNext = starBonus = false;
     }
 
+    boolean resetHighScores() {
+        try {
+            ProgressData next=progress.prepareScoreReset();
+            if (store!=null && !store.resetHighScores(next==null?null:next.encode())) return false;
+            progress.acceptScoreReset(next);
+            clearScoreRecords();
+            return true;
+        } catch (Exception unavailable) { return false; }
+    }
+    void clearScoreRecords() {
+        best=0;
+        java.util.Arrays.fill(landBests,0);
+        highScores.clear();
+        highScoreScreen.open=highScoreScreen.closing=false;
+        highScoreScreen.selected=-1;
+        scoresSuppressed=true;
+    }
+
     void startGame() {
+        scoresSuppressed=false;
         stopLaunchVoice();
         town.leave(); townOpen=false;
         townRunId=town.beginRun(); townRunTickets=0; saveTown();
@@ -2673,11 +2705,11 @@ final class GameCore {
                         launchNameAnnounced = true;
                         if (sound != null) sound.announceSquishy(launchWho);
                     }
-                    // One tick per bounce, as it happens. The impacts are what the sound is for.
+                    // The greeting landing and arrival home each get one soft punctuation.
                     if (launchPips == 0 && u >= Launch.LAND) {
                         launchPips = 1;
                         bounceTick();
-                    } else if (launchPips == 1 && u >= Launch.TOP) {
+                    } else if (launchPips == 1 && u >= Launch.HOME) {
                         launchPips = 2;
                         bounceTick();
                     }

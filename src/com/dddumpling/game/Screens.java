@@ -160,8 +160,8 @@ final class Screens extends Draw {
                 fadeBy(INK_DIM, fade), Painter.CENTER, false);
         p.text("BEST COMBO " + c.maxCombo, L.w / 2f, L.h * 0.615f + type(s * 0.85f), type(s * 0.6f),
                 fadeBy(INK_DIM, fade), Painter.CENTER, false);
-        p.text(c.score >= c.best ? "NEW BEST!" : "BEST " + c.best, L.w / 2f, L.h * 0.695f,
-                type(s * 0.78f), fadeBy(c.score >= c.best ? GOLD : INK_DIM, fade), Painter.CENTER, true);
+        p.text(!c.scoresSuppressed && c.score >= c.best ? "NEW BEST!" : "BEST " + c.best, L.w / 2f, L.h * 0.695f,
+                type(s * 0.78f), fadeBy(!c.scoresSuppressed && c.score >= c.best ? GOLD : INK_DIM, fade), Painter.CENTER, true);
 
     }
 

@@ -208,6 +208,20 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 - (void)saveBestWithInt:(jint)best { [self setValue:@(best) forKey:@"best"]; }
 - (jint)loadCaseIndex { return [self intForKey:@"caseIndex" defaultValue:0]; }
 - (void)saveCaseIndexWithInt:(jint)value { [self setValue:@(value) forKey:@"caseIndex"]; }
+- (jboolean)resetHighScoresWithByteArray:(IOSByteArray *)progress {
+  [_lock lock];
+  NSMutableDictionary *before = [_values mutableCopy];
+  _values[@"roster"] = @([self loadRosterState]);
+  _values[@"best"] = @0;
+  _values[@"highScores"] = @"";
+  for (NSString *key in [_values.allKeys copy])
+    if ([key hasPrefix:@"landBest."]) _values[key] = @0;
+  if (progress) _values[@"progress"] = [NSData dataWithBytes:progress->buffer_ length:progress->size_];
+  BOOL saved = [self persist];
+  if (!saved) _values = before;
+  [_lock unlock];
+  return saved;
+}
 - (NSString *)loadHighScores { return [self stringForKey:@"highScores" validWriter:NO] ?: @""; }
 - (void)saveHighScoresWithNSString:(NSString *)value { [self setValue:value forKey:@"highScores"]; }
 

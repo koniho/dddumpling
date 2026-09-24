@@ -7,6 +7,7 @@ final class PlayerSettings extends Draw {
             KIDS = 5, PRIVACY = 6, CLOSE = 7, PLAYER = 8, DEVELOPER = 9, SHARE = 10, RATE = 11;
     static final String PUBLIC_ANDROID_URL="https://play.google.com/store/apps/details?id=com.dddumpling.game";
     static String invitation(String url) { return "Come play DDDUMPLING with me! " + url; }
+    final ScoreReset scoreReset=new ScoreReset();
     int externalAction;
     boolean externalBusy;
     float externalAt=-10f, externalDone=-10f;
@@ -24,16 +25,21 @@ final class PlayerSettings extends Draw {
     static final float PANEL_TIME=PANEL_SLIDE_TIME;
     float panelEntrance=1f;
     boolean panelClosing;
-    void enterPanel() { panelEntrance=0f;panelClosing=false; }
+    void enterPanel() { panelEntrance=0f;panelClosing=false;scoreReset.cancel(); }
     boolean panelMoving() { return panelClosing || panelEntrance<1f; }
     float panelOffset(Layout L) {
         return L.w*(1f-panelTravel(panelEntrance));
     }
     void updatePanel(GameCore c,float elapsed) {
+        scoreReset.update(c,elapsed);
         panelEntrance=Math.max(0f,Math.min(1f,panelEntrance+(panelClosing?-elapsed:elapsed)/PANEL_TIME));
         if(panelClosing && panelEntrance==0f) c.closeSettings();
     }
-    static void close(GameCore c) { if(c.settingsOpen) c.preferences.panelClosing=true; }
+    static void close(GameCore c) {
+        if(c.preferences.scoreReset.left>0f) return;
+        if(c.preferences.scoreReset.active()) { c.preferences.scoreReset.cancel();return; }
+        if(c.settingsOpen) c.preferences.panelClosing=true;
+    }
     float music = 1f, effects = 1f;
     boolean musicMuted, effectsMuted, kids;
 
@@ -73,13 +79,13 @@ final class PlayerSettings extends Draw {
     void apply(GameCore c) {
         if (c.sound != null) c.sound.volumes(musicMuted ? 0f : music, effectsMuted ? 0f : effects);
     }
-    static float unit(Layout L) { return Math.min(L.unit, L.h / 43f); }
+    static float unit(Layout L) { return Math.min(L.unit, L.h / 46f); }
     static float left(Layout L) { return L.w * .06f; }
     static float right(Layout L) { return L.w * .94f; }
-    static float height(Layout L) { return unit(L)*(BuildFlags.DEVELOPER?36f:33f); }
+    static float height(Layout L) { return unit(L)*(BuildFlags.DEVELOPER?39f:36f); }
     static float top(Layout L) { return Math.max(L.topSafe, (L.h - height(L))*.5f); }
     static float bottom(Layout L) { return Math.min(L.h-L.padB, top(L)+height(L)); }
-    static float row(Layout L, int row) { return top(L) + unit(L)*(new float[]{7f,14.5f,22f,33f}[row]-(BuildFlags.DEVELOPER?0f:3f)); }
+    static float row(Layout L, int row) { return top(L) + unit(L)*(new float[]{7f,14.5f,22f,36f}[row]-(BuildFlags.DEVELOPER?0f:3f)); }
     static float trackL(Layout L) { return left(L)+L.keyR*Roster.STARTER_SCALE+unit(L)*.4f; }
     static float trackR(Layout L) { return right(L)-L.keyR*Roster.STARTER_SCALE-unit(L)*.4f; }
     static float volumeAt(Layout L, float x) {
@@ -87,6 +93,7 @@ final class PlayerSettings extends Draw {
     }
     static int hit(GameCore c, Layout L, float x, float y) {
         float s=unit(L), t=top(L);
+        if(c.preferences.scoreReset.active()) return c.preferences.scoreReset.hit(L,x,y);
         if (x<left(L) || x>right(L) || y<t || y>bottom(L)) return CLOSE;
         if (x>right(L)-s*2.5f && y<t+s*2.7f) return CLOSE;
         if (BuildFlags.DEVELOPER && y>=t+s*3f && y<=t+s*5f) {
@@ -101,9 +108,11 @@ final class PlayerSettings extends Draw {
         }
         if (Math.abs(y-row(L,2))<s*1.1f) return KIDS;
         if (Math.abs(y-socialY(L))<s*2.4f) return x<L.w*.5f?SHARE:RATE;
+        if (Math.abs(y-resetY(L))<s*1.2f) return ScoreReset.OPEN;
         if (Math.abs(y-row(L,3))<s*1.1f) return PRIVACY;
         return 0;
     }
+    static float resetY(Layout L) { return top(L)+unit(L)*(BuildFlags.DEVELOPER?32f:29f); }
     static float socialY(Layout L) { return top(L)+unit(L)*(BuildFlags.DEVELOPER?27.5f:24.5f); }
     static void open(GameCore c) {
         c.openSettings();c.settingsPage=0;
@@ -122,6 +131,7 @@ final class PlayerSettings extends Draw {
         float cx=r-s*1.3f,cy=t+s*1.5f;
         p.line(cx-s*.4f,cy-s*.4f,cx+s*.4f,cy+s*.4f,INK,s*.1f);
         p.line(cx+s*.4f,cy-s*.4f,cx-s*.4f,cy+s*.4f,INK,s*.1f);
+        if(c.preferences.scoreReset.active()) { c.preferences.scoreReset.draw(p,c,L);return; }
         int tabs=BuildFlags.DEVELOPER?2:0;
         for(int i=0;i<tabs;i++) {
             float a=l+(r-l)*i/tabs,b=l+(r-l)*(i+1)/tabs;
@@ -145,6 +155,8 @@ final class PlayerSettings extends Draw {
         p.text("KIDS MODE",trackL(L),row(L,2)+s*.25f,type(s*.57f),INK,Painter.LEFT,true);
         SettingsArt.kidsToggle(p,r-s*3.2f,row(L,2),s,a.kidsPosition(c.clock),a.kidsLift(c.clock));
         social(p,c,L,true);social(p,c,L,false);
+        p.fillRect(l+s,resetY(L)-s*1.2f,r-s,resetY(L)+s*1.2f,0x33F080A8);
+        p.text("RESET HIGH SCORES",L.w*.5f,resetY(L)+s*.25f,type(s*.58f),INK,Painter.CENTER,true);
         p.text("PRIVACY POLICY",L.w*.5f,row(L,3)+s*.25f,type(s*.58f),GOLD,Painter.CENTER,true);
     }
     private static void social(Painter p,GameCore c,Layout L,boolean share) {

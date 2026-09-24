@@ -86,6 +86,7 @@ final class Interlude {
         if (!c.bonusMashing()) return;
         c.keyPress[g] = 1f;
 
+        int hitsBefore = c.steamer.hits;
         int r = c.steamer.press(g);
         if (r == Steamer.WRONG) {
             // Sounds wrong but is not counted as a miss: this is not a typing test, and it
@@ -95,6 +96,10 @@ final class Interlude {
             return;
         }
         if (c.sound != null) c.sound.squish(g, 1);
+        // A completed pair is the steamer's scoring event. Let it land in the companion home with
+        // the same brief grow-and-glow used for a cleared enemy; half-pairs and reminders to swipe
+        // have not scored and deliberately leave the companion alone.
+        if (c.steamer.hits > hitsBefore) c.companion.react(RunCompanion.WORD, .7f);
         if (r == Steamer.READY) return;
         return;
 
@@ -117,6 +122,7 @@ final class Interlude {
         awardPrize(c);
         c.starNext = true;
         c.bonusTimer = c.steamer.freedT;
+        c.companion.react(RunCompanion.VICTORY, 1f);
         if (c.sound != null) c.sound.achievement();
     }
 

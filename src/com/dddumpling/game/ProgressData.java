@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
 
-/** Grow-only per-install counters: merging an offline reward twice never awards it twice. */
+/** Grow-only reward counters and score maxima within the latest reset generation. */
 final class ProgressData {
     static final int MAX_BYTES = 512 * 1024, MAX_ENTRIES = 4096;
     private static final int MAGIC = 0x44445047, VERSION = 1;
@@ -40,9 +40,24 @@ final class ProgressData {
             throw new IllegalStateException("Progress save is full");
         values.put(key, value);
     }
+    private static boolean scoreKey(String key) {
+        return key.equals("m:best_score") || key.startsWith("m:best_score_land_");
+    }
+    private static void removeScores(TreeMap<String, Long> map) {
+        java.util.Iterator<String> keys=map.keySet().iterator();
+        while(keys.hasNext()) if(scoreKey(keys.next())) keys.remove();
+    }
+    long scoreEpoch() { return maximum("score_reset_epoch"); }
+    void resetScores() {
+        if (scoreEpoch()==Long.MAX_VALUE) throw new IllegalStateException("Score reset limit reached");
+        maximum("score_reset_epoch",scoreEpoch()+1);
+        removeScores(values);
+    }
     void merge(ProgressData other) {
         TreeMap<String, Long> merged = new TreeMap<>(values);
+        if (other.scoreEpoch()>scoreEpoch()) removeScores(merged);
         for (Map.Entry<String, Long> e : other.values.entrySet()) {
+            if (scoreKey(e.getKey()) && other.scoreEpoch()<scoreEpoch()) continue;
             Long old = merged.get(e.getKey());
             if (old == null || e.getValue() > old) merged.put(e.getKey(), e.getValue());
         }

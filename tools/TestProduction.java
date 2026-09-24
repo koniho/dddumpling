@@ -102,6 +102,7 @@ final class TestProduction extends Check {
         check("normal stage progression still works", c.stage == stage + 1);
         caveGate(L);
         TestProgress.all(L);
+        TestSettings.scoreReset(L);
         System.out.printf("%d passed, %d failed%n",pass,fail);
         if (fail > 0) System.exit(1);
     }

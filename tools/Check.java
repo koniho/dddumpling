@@ -40,6 +40,13 @@ abstract class Check {
         public byte[] loadProgress() { return progress == null ? null : progress.clone(); }
         public void saveProgress(byte[] data) { progress = data.clone(); }
         public String progressReplica() { return "test"; }
+        boolean resetFails;
+        int scoreResets;
+        public boolean resetHighScores(byte[] data) {
+            if(resetFails) return false;
+            scoreResets++;
+            return GameCore.Store.super.resetHighScores(data);
+        }
         int caseIndex;
         public int loadCaseIndex() { return caseIndex; }
         public void saveCaseIndex(int value) { caseIndex=value; }
@@ -146,6 +153,9 @@ abstract class Check {
         public void clearWord() { clears++; }
         int uiBloops;
         public void uiBloop() { uiBloops++; }
+        int scoreResetConfirms,scoreResetBrushes,lastScoreResetBrush=-1;
+        public void scoreResetConfirm() { scoreResetConfirms++; }
+        public void scoreResetBrush(int stroke) { scoreResetBrushes++;lastScoreResetBrush=stroke; }
         int landShuffles;
         public void landShuffle() { landShuffles++; }
         int slimeCovers, slimeReleases;

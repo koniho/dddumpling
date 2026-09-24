@@ -31,7 +31,9 @@ final class Sfx {
             SLIME_COVER = DEBUFF_DOWN + 1, SLIME_RELEASE = SLIME_COVER + 1,
             LAND_SHUFFLE = SLIME_RELEASE + 1, UI_BLOOP = LAND_SHUFFLE + 1, BLAST_OFF = UI_BLOOP + 1, DIVIDE_SUPERNOVA = BLAST_OFF + 1, OCTO_WAVE = DIVIDE_SUPERNOVA + 1, CAVE_RUMBLE = OCTO_WAVE + 1, CAVE_CRASH = CAVE_RUMBLE + 1,
             CAVE_AMBUSH = CAVE_CRASH + 1, CAVE_SINK = CAVE_AMBUSH + 1, MINING_CHEER = CAVE_SINK + 1,
-            CART_ROLL = MINING_CHEER + 1, CART_SQUEAL = CART_ROLL + 1, CART_TUMBLE = CART_SQUEAL + 1, OCTO_DAMAGE = CART_TUMBLE + 1, COUNT = OCTO_DAMAGE + 1;
+            CART_ROLL = MINING_CHEER + 1, CART_SQUEAL = CART_ROLL + 1, CART_TUMBLE = CART_SQUEAL + 1,
+            OCTO_DAMAGE = CART_TUMBLE + 1, SCORE_RESET_CONFIRM = OCTO_DAMAGE + 1,
+            SCORE_RESET_BRUSH = SCORE_RESET_CONFIRM + 1, COUNT = SCORE_RESET_BRUSH + 1;
     static final float OCTO_WAVE_GAIN = .66f;
 
     private static final short[][] CACHE = new short[COUNT][];
@@ -97,6 +99,8 @@ final class Sfx {
             case SHIELD_BOUNCE: return shieldBounce();
             case SLIME_DAMAGE: return slimeDamage();
             case OCTO_DAMAGE: return octoDamage();
+            case SCORE_RESET_CONFIRM: return scoreResetConfirm();
+            case SCORE_RESET_BRUSH: return scoreResetBrush();
             case OCTO_CUE: return octoCue();
             case OCTO_LOCK: return octoLock();
             default: return achievement();
@@ -805,6 +809,35 @@ final class Sfx {
             float u=i/(float)v.length;
             phase+=TAU*(540f-350f*u)/RATE;
             v[i]=(float)Math.sin(phase)*envelope(u,.04f,4f)*(1f-u);
+        }
+        return render(v);
+    }
+
+    /** Firm two-note acceptance cue, separate from ordinary menu navigation. */
+    static short[] scoreResetConfirm() {
+        float[] v=new float[(int)(RATE*.24f)];
+        for(int i=0;i<v.length;i++) {
+            float t=i/(float)RATE,u=i/(float)v.length;
+            float first=(float)Math.sin(Softbody.TAU*440f*t)*(float)Math.exp(-18f*t);
+            float second=t<.075f?0f:(float)Math.sin(Softbody.TAU*660f*(t-.075f))
+                    *(float)Math.exp(-14f*(t-.075f));
+            v[i]=(first*.72f+second*.9f)*envelope(u,.018f,2.8f);
+        }
+        return render(v);
+    }
+
+    /** Dry felt-on-slate brush with enough low body to survive a phone speaker. */
+    static short[] scoreResetBrush() {
+        float[] v=new float[(int)(RATE*.27f)];
+        int seed=0x5EEDB04D;float smooth=0f,phase=0f;
+        for(int i=0;i<v.length;i++) {
+            float u=i/(float)v.length;
+            seed=seed*1103515245+12345;
+            float noise=((seed>>>16)&0x7fff)/16384f-1f;
+            smooth+=.18f*(noise-smooth);
+            phase+=Softbody.TAU*(150f+35f*(float)Math.sin(u*Math.PI))/RATE;
+            float rub=smooth*.82f+(float)Math.sin(phase)*.25f;
+            v[i]=rub*(float)Math.sin(Math.PI*u)*(.82f+.18f*(float)Math.sin(u*9f*Math.PI));
         }
         return render(v);
     }
