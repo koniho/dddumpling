@@ -349,6 +349,8 @@ final class TestBoss extends Check {
             check("boss friendship moves the companion before sending the heart " + kind,
                     BossCollect.friendProgress(.2f)==0f
                     && BossCollect.friendProgress(.2f+BossCollect.FRIEND_TRAVEL)==1f
+                    && BossCollect.friendProgress(.2f+BossCollect.FRIEND_TRAVEL*.1f)<.01f
+                    && BossCollect.friendProgress(.2f+BossCollect.FRIEND_TRAVEL*.9f)>.99f
                     && BossCollect.friendReturnProgress(BossCollect.REVEAL_TIME-BossCollect.FRIEND_RETURN)==0f
                     && BossCollect.friendReturnProgress(BossCollect.REVEAL_TIME)==1f
                     && BossCollect.friendHomeFade(0f)==1f

@@ -148,10 +148,10 @@ final class BossCollect extends Draw {
     }
 
     static float friendProgress(float age) {
-        return ease(Math.max(0f,Math.min(1f,(age-.20f)/FRIEND_TRAVEL)));
+        return motionEase(Math.max(0f,Math.min(1f,(age-.20f)/FRIEND_TRAVEL)));
     }
     static float friendReturnProgress(float age) {
-        return ease(Math.max(0f,Math.min(1f,(age-(REVEAL_TIME-FRIEND_RETURN))/FRIEND_RETURN)));
+        return motionEase(Math.max(0f,Math.min(1f,(age-(REVEAL_TIME-FRIEND_RETURN))/FRIEND_RETURN)));
     }
     static float friendHomeFade(float age) {
         return Math.max(1f-friendProgress(age),friendReturnProgress(age));
@@ -161,6 +161,7 @@ final class BossCollect extends Draw {
     static float heartProgress(float age) {
         return Math.max(0f,Math.min(1f,(age-HEART_START)/HEART_TIME));
     }
+    private static float motionEase(float t) { return t*t*t*(t*(t*6f-15f)+10f); }
     private static float ease(float t) { return t*t*(3f-2f*t); }
     private static void heart(Painter p,float x,float y,float r,int col) {
         p.fillCircle(x-r*.45f,y-r*.28f,r*.55f,col);
