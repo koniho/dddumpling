@@ -4,22 +4,24 @@ package com.dddumpling.game;
 final class RunCompanion extends Draw {
     static final int IDLE=0, WORD=1, POWER_END=2, POWER=3, BOSS=4, DANGER=5, VICTORY=6,
             DAMAGE=7, CRY=8;
-    static final float RESCUE_HOLD=.5f,RESCUE_RETURN=.42f;
+    static final float RESCUE_HOLD=.5f,RESCUE_RETURN=.42f,
+            RESCUE_TIME=GameCore.PUSH_TIME+RESCUE_HOLD+RESCUE_RETURN;
     private static final int HOME_NODES=20;
     private static final float[] HOME_SHAPE=roundedHex();
     int who=-1, reaction;
-    float clock, left, age, strength;
+    float clock, left, age, strength, rescueT;
     final Softbody home=new Softbody(HOME_NODES,118);
     private boolean bossSeen, wonSeen, threatSeen, powered;
 
     void begin(int selection) { clear();who=selection; }
     void clear() {
-        who=-1;reaction=IDLE;clock=left=age=strength=0f;
+        who=-1;reaction=IDLE;clock=left=age=strength=rescueT=0f;
         bossSeen=wonSeen=threatSeen=powered=false;
         home.reset(0,0,1f,1.25f);
     }
     void react(int event,float amount) {
         if(who<0 || (left>0f && event<reaction)) return;
+        if(event==DAMAGE || event==CRY) rescueT=0f;
         // Repeated clears strengthen this beat instead of restarting it indefinitely.
         if(left>0f && event==reaction) { strength=Math.min(1f,strength+.12f);return; }
         reaction=event;age=0f;strength=Math.max(.3f,Math.min(1f,amount));
@@ -30,7 +32,7 @@ final class RunCompanion extends Draw {
     void update(GameCore c,float dt) {
         boolean play=c.state==GameCore.PLAY,over=c.state==GameCore.OVER;
         if((!play && !over && c.state!=GameCore.BONUS) || c.paused || c.settingsOpen || who<0) return;
-        clock+=dt;age+=dt;
+        clock+=dt;age+=dt;rescueT=Math.max(0f,rescueT-dt);
         if(!over) {
             left=Math.max(0f,left-dt);
             if(left==0f) reaction=IDLE;
@@ -55,7 +57,7 @@ final class RunCompanion extends Draw {
     }
     int displayMood(GameCore c) {
         if(reaction==DAMAGE || reaction==CRY) return mood();
-        if(rescuePowered(c)) return 6;
+        if(rescuePowered()) return 6;
         if(c.pushUsed && reaction==IDLE) return 7;
         return mood();
     }
@@ -68,9 +70,11 @@ final class RunCompanion extends Draw {
     float beat() { return left>0f?(float)Math.sin(Math.min(1f,age/.48f)*Math.PI)*strength:0f; }
     float squash() { return 1f+beat()*(reaction==DAMAGE?.20f:-.16f); }
     float damagePush(Layout L) { return reaction==DAMAGE?halfHeight(L)*1.5f*beat():0f; }
-    static float rescueLift(GameCore c,Layout L) {
-        if(c.pushSlowT<=0f) return 0f;
-        float age=GameCore.PUSH_SLOW-c.pushSlowT;
+    void rescue() { rescueT=RESCUE_TIME; }
+    float rescueAge() { return RESCUE_TIME-rescueT; }
+    float rescueLift(Layout L) {
+        if(rescueT<=0f) return 0f;
+        float age=rescueAge();
         float amount;
         if(age<GameCore.PUSH_TIME) amount=age/GameCore.PUSH_TIME;
         else if(age<GameCore.PUSH_TIME+RESCUE_HOLD) amount=1f;
@@ -81,9 +85,13 @@ final class RunCompanion extends Draw {
         amount=amount*amount*(3f-2f*amount);
         return -(L.dangerY-L.playTop)*GameCore.PUSH_LIFT*amount;
     }
-    static boolean rescuePowered(GameCore c) {
-        if(!c.pushUsed || c.pushSlowT<=0f) return false;
-        return GameCore.PUSH_SLOW-c.pushSlowT<GameCore.PUSH_TIME+RESCUE_HOLD;
+    boolean rescuePowered() {
+        return rescueT>RESCUE_RETURN;
+    }
+    float rescueBarFade() {
+        if(!rescuePowered()) return 0f;
+        float left=rescueT-RESCUE_RETURN;
+        return Math.min(1f,left/.18f);
     }
     float[] outline(Layout L) {
         float[] ring=home.outline(),out=new float[ring.length];
@@ -131,20 +139,22 @@ final class RunCompanion extends Draw {
         boolean over=c.state==GameCore.OVER;
         if((c.state!=GameCore.PLAY && !steamer && !over) || a.who<0 || !c.buddy.out()) return;
         float x=x(L),y=y(L),w=halfWidth(L),h=halfHeight(L),r=radius(c,L);
-        float rescueLift=rescueLift(c,L),damagePush=a.damagePush(L);
+        float rescueLift=a.rescueLift(L),damagePush=a.damagePush(L);
         p.save();p.translate(0,rescueLift+damagePush);
         float beat=a.beat();
-        boolean rescuePowered=rescuePowered(c);
+        boolean rescuePowered=a.rescuePowered();
         int body=Collect.BODY[a.who];
         int tint=a.reaction==DAMAGE?Glyph.mix(body,ROSE,.25f+.75f*beat)
                 :rescuePowered?GOLD:a.reaction==VICTORY?GOLD:body;
         float[] skin=a.outline(L);
-        if(rescuePowered) {
-            float u=Math.min(1f,(GameCore.PUSH_SLOW-c.pushSlowT)/GameCore.PUSH_TIME);
-            float spread=w+(L.w*.5f-w)*(u*u*(3f-2f*u));
+        float barFade=a.rescueBarFade();
+        if(barFade>0f) {
+            float u=Math.min(1f,a.rescueAge()/GameCore.PUSH_TIME);
+            float spread=w+(L.w*.62f-w)*(u*u*(3f-2f*u));
             float pulse=.78f+.22f*(float)Math.sin(a.clock*24f);
-            p.fillPoly(pill(x,y,spread,h*.24f,10),Glyph.withAlpha(GOLD,(int)(42*pulse)));
-            p.fillPoly(pill(x,y,spread,h*.10f,10),Glyph.withAlpha(0xFFFFFFFF,(int)(155*pulse)));
+            p.fillPoly(pill(x,y,spread,h*.24f,10),Glyph.withAlpha(GOLD,(int)(42*pulse*barFade)));
+            p.fillPoly(pill(x,y,spread,h*.10f,10),
+                    Glyph.withAlpha(0xFFFFFFFF,(int)(155*pulse*barFade)));
             for(int k=0;k<12;k++) {
                 float angle=k*Softbody.TAU/12f+a.clock*.8f;
                 float inner=r*(1.15f+.08f*(float)Math.sin(a.clock*18f+k));

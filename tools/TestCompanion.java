@@ -47,19 +47,27 @@ final class TestCompanion extends Check {
                         && maskPixels[82*200+100]==0xFF211B35
                         && maskPixels[114*200+100]==0xFF211B35);
         c.modeLeft=DT*.5f;c.update(DT,L);
-        c.pushUsed=true;c.pushT=GameCore.PUSH_TIME*.5f;c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME*.5f;
+        c.pushUsed=true;c.pushT=GameCore.PUSH_TIME*.5f;c.companion.rescue();
+        c.companion.rescueT=RunCompanion.RESCUE_TIME-GameCore.PUSH_TIME*.5f;
         check("rescue swipe carries the companion upward with an intense expression",
-                RunCompanion.rescueLift(c,L)<0f && c.companion.displayMood(c)==6);
-        c.pushT=0f;c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME-RunCompanion.RESCUE_HOLD*.5f;
+                c.companion.rescueLift(L)<0f && c.companion.displayMood(c)==6);
+        c.pushT=0f;c.companion.rescueT=RunCompanion.RESCUE_TIME-GameCore.PUSH_TIME
+                -RunCompanion.RESCUE_HOLD*.5f;
         check("rescue companion holds at the push-back height for half a second",
-                Math.abs(RunCompanion.rescueLift(c,L)
+                Math.abs(c.companion.rescueLift(L)
                         +(L.dangerY-L.playTop)*GameCore.PUSH_LIFT)<.001f
                         && c.companion.displayMood(c)==6);
-        c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME-RunCompanion.RESCUE_HOLD
-                -RunCompanion.RESCUE_RETURN-.01f;
+        c.companion.rescueT=RunCompanion.RESCUE_RETURN;
+        check("energy bar leaves the screen before the companion returns",
+                c.companion.rescueBarFade()==0f && c.companion.rescueLift(L)<0f);
+        c.companion.rescueT=0f;
         c.companion.reaction=RunCompanion.IDLE;
         check("companion returns home tired after the rescue swipe",
-                RunCompanion.rescueLift(c,L)==0f && c.companion.displayMood(c)==7);
+                c.companion.rescueLift(L)==0f && c.companion.displayMood(c)==7);
+        c.pushSlowT=GameCore.PUSH_SLOW;c.companion.react(RunCompanion.DAMAGE,1f);
+        check("damage recovery cannot replay a spent rescue animation",
+                c.companion.rescueT==0f && c.companion.rescueLift(L)==0f);
+        c.companion.left=0f;c.companion.reaction=RunCompanion.IDLE;
         c.pushUsed=false;c.pushSlowT=0f;
         c.startFrenzy(Power.TEAM,L);
         check("TEAM grows the companion from its home",c.companion.who==11 && c.buddy.who==11
@@ -101,7 +109,7 @@ final class TestCompanion extends Check {
         c.pushT=GameCore.PUSH_TIME;c.pushSlowT=GameCore.PUSH_SLOW;c.lives=1;c.takeHit(0,L);
         check("game over keeps the run companion crying",c.state==GameCore.OVER
                 && c.companion.who==c.runWho && c.companion.reaction==RunCompanion.CRY
-                && c.companion.mood()==5 && RunCompanion.rescueLift(c,L)==0f);
+                && c.companion.mood()==5 && c.companion.rescueLift(L)==0f);
         float cryClock=c.companion.clock;c.update(.1f,L);
         check("crying animation continues during game over",c.companion.clock>cryClock
                 && c.companion.reaction==RunCompanion.CRY);

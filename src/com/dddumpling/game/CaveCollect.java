@@ -63,7 +63,7 @@ final class CaveCollect extends Draw {
             }
                 p.fillEllipse(fx+side*r*(eyes+.13f),fy+r*.12f,r*.11f,r*.06f,pink);
         }
-        if(ninja) Trinket.ninjaMask(p,fx,fy,r*.62f,fade);
+        if(ninja) Trinket.ninjaMask(p,fx,fy,r*.82f,fade);
         if(mole) {
             if(variant==3)p.fillPoly(star(fx,fy+r*.14f,r*.13f,r*.065f,6,0),pink);
             else p.fillEllipse(fx,fy+r*.13f,r*.115f,r*.075f,pink);

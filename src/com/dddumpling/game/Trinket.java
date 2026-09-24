@@ -84,7 +84,7 @@ final class Trinket {
         float faceY=cy+r*FACE_DY[shape],faceR=r*FACE_R[shape];
         if(mood<0) face(p, i % 3, cx, faceY, faceR, fade);
         else reactionFace(p,cx,faceY,faceR,clock,fade,mood,look);
-        if(ninja) ninjaMask(p,cx,faceY,faceR,fade);
+        if(ninja) ninjaMask(p,cx,faceY,r*.82f,fade);
     }
 
     /** Ninja cap and lower wrap, leaving the eyes in an uncovered horizontal opening. */

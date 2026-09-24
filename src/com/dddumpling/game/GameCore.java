@@ -2371,6 +2371,7 @@ final class GameCore {
         pushUsed = true;
         pushCount = moved;
         pushT = PUSH_TIME;
+        companion.rescue();
         // The field is winded by it. Distance alone was not much of a save: the words came straight
         // back down at full speed, and against a late wave the swipe bought about a second. The drag
         // is where the recovery actually lives.
