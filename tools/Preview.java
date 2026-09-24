@@ -14,7 +14,8 @@ final class Preview {
         for(int event=0;event<=RunCompanion.CRY;event++) {
             GameCore c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=11;c.startGame();
             c.stageBanner=0;c.companion.react(event,1f);
-            for(int step=0;step<10;step++) c.companion.update(c,DT);
+            int steps=event==RunCompanion.DAMAGE?14:10;
+            for(int step=0;step<steps;step++) c.companion.update(c,DT);
             shot(dir,"118-companion-reaction-"+event,c,L,w,h,ss);
         }
         for(int who:new int[]{0,8,23,Collect.BOSS_FIRST,Collect.BOSS_FIRST+1,Collect.BOSS_FIRST+2,

@@ -54,6 +54,7 @@ final class RunCompanion extends Draw {
         return 0;
     }
     int displayMood(GameCore c) {
+        if(reaction==DAMAGE || reaction==CRY) return mood();
         if(rescuePowered(c)) return 6;
         if(c.pushUsed && reaction==IDLE) return 7;
         return mood();
@@ -66,6 +67,7 @@ final class RunCompanion extends Draw {
     static float radius(GameCore c,Layout L) { return LandPicker.travelerRadius(c,L)*.84f; }
     float beat() { return left>0f?(float)Math.sin(Math.min(1f,age/.48f)*Math.PI)*strength:0f; }
     float squash() { return 1f+beat()*(reaction==DAMAGE?.20f:-.16f); }
+    float damagePush(Layout L) { return reaction==DAMAGE?halfHeight(L)*1.5f*beat():0f; }
     static float rescueLift(GameCore c,Layout L) {
         if(c.pushSlowT<=0f) return 0f;
         float age=GameCore.PUSH_SLOW-c.pushSlowT;
@@ -129,11 +131,13 @@ final class RunCompanion extends Draw {
         boolean over=c.state==GameCore.OVER;
         if((c.state!=GameCore.PLAY && !steamer && !over) || a.who<0 || !c.buddy.out()) return;
         float x=x(L),y=y(L),w=halfWidth(L),h=halfHeight(L),r=radius(c,L);
-        float rescueLift=rescueLift(c,L);
-        p.save();p.translate(0,rescueLift);
+        float rescueLift=rescueLift(c,L),damagePush=a.damagePush(L);
+        p.save();p.translate(0,rescueLift+damagePush);
         float beat=a.beat();
         boolean rescuePowered=rescuePowered(c);
-        int tint=rescuePowered?GOLD:a.reaction==DAMAGE?ROSE:a.reaction==VICTORY?GOLD:Collect.BODY[a.who];
+        int body=Collect.BODY[a.who];
+        int tint=a.reaction==DAMAGE?Glyph.mix(body,ROSE,.25f+.75f*beat)
+                :rescuePowered?GOLD:a.reaction==VICTORY?GOLD:body;
         float[] skin=a.outline(L);
         if(rescuePowered) {
             float u=Math.min(1f,(GameCore.PUSH_SLOW-c.pushSlowT)/GameCore.PUSH_TIME);
@@ -153,6 +157,8 @@ final class RunCompanion extends Draw {
         p.fillEllipse(x,y+h*.95f,w*.8f,h*.12f,0x44302050);
         p.fillPoly(skin,Glyph.mix(0xFF352D52,tint,.16f));
         p.strokePoly(skin,Glyph.withAlpha(Glyph.mix(tint,INK,.4f),180),Math.max(1f,L.unit*.065f));
+        if(a.reaction==DAMAGE && beat>0f)
+            p.strokePoly(skin,Glyph.withAlpha(ROSE,(int)(210*beat)),Math.max(1f,L.unit*(.07f+.08f*beat)));
         p.polyline(new float[]{x-w*.42f,y-h*.22f,x-w*.24f,y-h*.52f,x+w*.02f,y-h*.62f},
                 0x55FFFFFF,L.unit*.07f);
         float hop=(a.reaction==WORD || a.reaction==POWER || a.reaction==VICTORY)?beat:0f;

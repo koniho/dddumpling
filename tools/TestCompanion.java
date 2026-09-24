@@ -13,6 +13,9 @@ final class TestCompanion extends Check {
         check("word destruction celebrates",c.companion.reaction==RunCompanion.WORD);
         c.takeHit(L.w*.5f,L);
         check("damage interrupts celebration",c.companion.reaction==RunCompanion.DAMAGE && c.companion.mood()==3);
+        c.companion.age=.24f;
+        check("damage pushes companion and home back three quarters of their height",
+                Math.abs(c.companion.damagePush(L)-RunCompanion.halfHeight(L)*1.5f)<.001f);
         float left=c.companion.left;
         for(int i=0;i<50;i++) c.companion.react(RunCompanion.WORD,1f);
         check("event bursts cannot queue or prolong damage",c.companion.left==left && c.companion.reaction==RunCompanion.DAMAGE);
@@ -144,7 +147,7 @@ final class TestCompanion extends Check {
         GameCore c=new GameCore(new Mem(),118L);c.startGame();
         boolean contained=true;
         for(int who=0;who<Collect.COUNT;who++) for(int event:new int[]{RunCompanion.IDLE,
-                RunCompanion.DAMAGE,RunCompanion.VICTORY,RunCompanion.CRY}) {
+                RunCompanion.VICTORY,RunCompanion.CRY}) {
             c.companion.begin(who);c.companion.react(event,1);c.companion.update(c,.15f);
             RasterPainter p=new RasterPainter(320,700,1);p.clear(0xFF010203);
             RunCompanion.draw(p,c,l);int[] pixels=p.resolve();
@@ -158,6 +161,13 @@ final class TestCompanion extends Check {
             }
         }
         check("all collectible silhouettes and expressions stay in the reserved key gap",contained);
+        c.companion.begin(c.runWho);c.companion.react(RunCompanion.DAMAGE,1f);c.companion.age=.24f;
+        RasterPainter hurt=new RasterPainter(320,700,1);hurt.clear(0xFF010203);
+        RunCompanion.draw(hurt,c,l);boolean damageOnscreen=true;
+        int[] hurtPixels=hurt.resolve();
+        for(int y=0;y<700;y++)for(int x=0;x<320;x++)if(hurtPixels[y*320+x]!=0xFF010203)
+            damageOnscreen &= y>=0 && y<l.h-l.padB;
+        check("damage knockback remains on screen",damageOnscreen);
         c.companion.begin(Collect.BOSS_FIRST+1);c.startFrenzy(Power.FLING,l);
         RasterPainter masked=new RasterPainter(320,700,1);masked.clear(0xFF010203);
         RunCompanion.draw(masked,c,l);
