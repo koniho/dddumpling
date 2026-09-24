@@ -87,23 +87,31 @@ final class Trinket {
         if(ninja) ninjaMask(p,cx,faceY,r*.82f,fade);
     }
 
-    /** Ninja cap and lower wrap, leaving the eyes in an uncovered horizontal opening. */
+    /** Oval ninja hood with a horizontal eye opening and a tied right side. */
     static void ninjaMask(Painter p,float x,float y,float r,float fade) {
         int cloth=Draw.fadeBy(0xFF211B35,fade),edge=Draw.fadeBy(0xFF615370,fade);
-        // The cap stops well above the eye line; its small band makes it read as cloth rather
-        // than dark hair on characters whose body already has a deep colour.
-        p.fillPoly(Draw.pill(x,y-r*.61f,r*.86f,r*.34f,9),cloth);
-        p.fillPoly(Draw.pill(x,y-r*.32f,r*.82f,r*.075f,6),edge);
-        // Knot and two loose ends are tied to the cap, clear of the right eye.
-        p.fillCircle(x+r*.78f,y-r*.43f,r*.13f,cloth);
-        p.fillPoly(new float[]{x+r*.82f,y-r*.44f,x+r*1.25f,y-r*.67f,
-                x+r*1.08f,y-r*.35f},cloth);
-        p.fillPoly(new float[]{x+r*.82f,y-r*.39f,x+r*1.24f,y-r*.18f,
-                x+r*.99f,y-r*.12f},cloth);
-        // The lower wrap covers the mouth while its top edge stays below every eye style.
-        p.fillPoly(Draw.pill(x,y+r*.48f,r*.88f,r*.31f,9),cloth);
-        p.polyline(new float[]{x-r*.68f,y+r*.25f,x,y+r*.34f,x+r*.68f,y+r*.25f},
-                edge,r*.055f);
+        float[] hood=oval(x,y+r*.10f,r*.98f,r*1.05f,32);
+        float[] eyes=oval(x,y-r*.02f,r*.68f,r*.29f,24);
+        // Even-odd fill leaves the character and both eyes visible through the opening while the
+        // continuous hood covers the forehead, mouth, and both outer sides of the eye line.
+        p.fillContours(new float[][]{hood,eyes},cloth);
+        p.strokePoly(eyes,edge,r*.055f);
+        // Knot and loose ends sit outside the opening, as in the screenshot reference.
+        p.fillCircle(x+r*.91f,y-r*.42f,r*.14f,cloth);
+        p.fillPoly(new float[]{x+r*.93f,y-r*.48f,x+r*1.38f,y-r*.76f,
+                x+r*1.20f,y-r*.38f},cloth);
+        p.fillPoly(new float[]{x+r*.94f,y-r*.39f,x+r*1.39f,y-r*.12f,
+                x+r*1.12f,y-r*.10f},cloth);
+    }
+
+    private static float[] oval(float x,float y,float rx,float ry,int points) {
+        float[] out=new float[points*2];
+        for(int i=0;i<points;i++) {
+            float a=i*Softbody.TAU/points;
+            out[i*2]=x+(float)Math.cos(a)*rx;
+            out[i*2+1]=y+(float)Math.sin(a)*ry;
+        }
+        return out;
     }
 
     /** Compact expressions shared by every collectible family, only in the run companion. */

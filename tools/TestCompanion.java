@@ -46,6 +46,8 @@ final class TestCompanion extends Check {
                 maskPixels[100*200+90]==0xFF010203 && maskPixels[100*200+110]==0xFF010203
                         && maskPixels[82*200+100]==0xFF211B35
                         && maskPixels[114*200+100]==0xFF211B35);
+        check("ninja hood covers both sides of the eye opening",
+                maskPixels[100*200+75]==0xFF211B35 && maskPixels[100*200+125]==0xFF211B35);
         c.modeLeft=DT*.5f;c.update(DT,L);
         c.pushUsed=true;c.pushT=GameCore.PUSH_TIME*.5f;c.companion.rescue();
         c.companion.rescueT=RunCompanion.RESCUE_TIME-GameCore.PUSH_TIME*.5f;
