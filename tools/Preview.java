@@ -858,9 +858,14 @@ final class Preview {
         grid.endCaseDrag();
         for (int boss = 0; boss < Boss.COUNT; boss++) {
             GameCore welcome = new GameCore(store, 199L + boss);
+            welcome.startGame();
             welcome.stage = Boss.EVERY;
             Interlude.awardBossPrize(welcome, boss);
             Interlude.enterBonus(welcome, L);
+            welcome.bonusTimer = BossCollect.REVEAL_TIME - .55f;
+            shot(dir, "95-boss-friend-travel-" + boss, welcome, L, w, h, ss);
+            welcome.bonusTimer = BossCollect.REVEAL_TIME - 1.8f;
+            shot(dir, "95-boss-friend-heart-" + boss, welcome, L, w, h, ss);
             welcome.bonusTimer = BossCollect.REVEAL_TIME - 2.2f;
             shot(dir, "95-boss-friend-" + boss, welcome, L, w, h, ss);
         }

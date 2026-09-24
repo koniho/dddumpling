@@ -344,7 +344,13 @@ final class TestBoss extends Check {
             Interlude.enterBonus(reward, L);
             check("boss celebration replaces either minigame " + kind,
                     reward.bossReward && !reward.starBonus && !reward.bonusRolling()
-                    && !reward.bonusMashing() && !reward.bonusParading());
+                    && !reward.bonusMashing() && !reward.bonusParading()
+                    && reward.companion.who==reward.runWho);
+            check("boss friendship moves the companion before sending the heart " + kind,
+                    BossCollect.friendProgress(.2f)==0f
+                    && BossCollect.friendProgress(.2f+BossCollect.FRIEND_TRAVEL)==1f
+                    && BossCollect.heartProgress(BossCollect.HEART_START)==0f
+                    && BossCollect.heartProgress(BossCollect.HEART_START+BossCollect.HEART_TIME)==1f);
             int stage = reward.stage;
             advance(reward, L, BossCollect.REVEAL_TIME + 0.2f);
             check("celebration advances exactly one stage and preserves the pending star course " + kind,

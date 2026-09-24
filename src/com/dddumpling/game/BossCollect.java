@@ -3,6 +3,7 @@ package com.dddumpling.game;
 /** Friendly pocket-sized boss portraits and their victory welcome. */
 final class BossCollect extends Draw {
     static final float REVEAL_TIME = 6.8f;
+    static final float FRIEND_TRAVEL=.9f,HEART_START=1.25f,HEART_TIME=1.2f;
 
     private BossCollect() {}
 
@@ -117,10 +118,40 @@ final class BossCollect extends Draw {
         p.text(Collect.NAME[c.prize],x,L.h*.60f,type(L.unit*1.08f),fadeBy(INK,fade),Painter.CENTER,true);
         p.text(c.prizeNew ? "JOINS YOUR COLLECTION" : "A FRIEND RETURNS",x,L.h*.64f,
                 type(L.unit*.62f),fadeBy(GOLD,fade),Painter.CENTER,true);
-        int[] mates = new int[5];
-        int n = Parade.companions(c,mates);
-        for (int k = 0; k < n; k++) Trinket.draw(p,mates[k],x+(k-(n-1)*.5f)*L.w*.13f,
-                L.h*.74f-(float)Math.abs(Math.sin(age*4f+k))*L.unit*.35f,
-                L.w*.045f,c.clock,true,fade);
+        // The run companion takes the foreground itself; the old collection lineup made the new
+        // friendship look like another parade instead of a moment between these two characters.
+        int friend=c.companion.who;
+        if(friend>=0) {
+            float travel=friendProgress(age);
+            float fx=RunCompanion.x(L)+(x-r*.68f-RunCompanion.x(L))*travel;
+            float fy=RunCompanion.y(L)+(y+r*.58f-RunCompanion.y(L))*travel
+                    -(float)Math.sin(Math.min(1f,travel)*Math.PI)*r*.18f;
+            float fr=RunCompanion.radius(c,L)*(1f+.12f*(float)Math.sin(travel*Math.PI));
+            p.fillEllipse(fx,fy+fr*.92f,fr*.72f,fr*.13f,fadeBy(0x55302045,fade));
+            Trinket.drawReacting(p,friend,fx,fy,fr,c.clock,fade,4,.12f*travel);
+            float heart=heartProgress(age);
+            if(heart>0f && heart<1f) {
+                float move=ease(heart);
+                float hx=fx+fr*.50f+(x-(fx+fr*.50f))*move;
+                float hy=fy-fr*.18f+(y-r*.08f-(fy-fr*.18f))*move
+                        -(float)Math.sin(heart*Math.PI)*r*.32f;
+                float hf=r*(.13f+.045f*(float)Math.sin(heart*Math.PI));
+                int ha=(int)(255f*Math.min(1f,(1f-heart)*4f)*fade);
+                heart(p,hx,hy,hf,Glyph.withAlpha(ROSE,ha));
+            }
+        }
+    }
+
+    static float friendProgress(float age) {
+        return ease(Math.max(0f,Math.min(1f,(age-.20f)/FRIEND_TRAVEL)));
+    }
+    static float heartProgress(float age) {
+        return Math.max(0f,Math.min(1f,(age-HEART_START)/HEART_TIME));
+    }
+    private static float ease(float t) { return t*t*(3f-2f*t); }
+    private static void heart(Painter p,float x,float y,float r,int col) {
+        p.fillCircle(x-r*.45f,y-r*.28f,r*.55f,col);
+        p.fillCircle(x+r*.45f,y-r*.28f,r*.55f,col);
+        p.fillPoly(new float[]{x-r*.95f,y-r*.10f,x+r*.95f,y-r*.10f,x,y+r*1.05f},col);
     }
 }
