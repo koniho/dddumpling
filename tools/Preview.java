@@ -18,6 +18,13 @@ final class Preview {
             for(int step=0;step<steps;step++) c.companion.update(c,DT);
             shot(dir,"118-companion-reaction-"+event,c,L,w,h,ss);
         }
+        for(int frame=0;frame<4;frame++) {
+            GameCore c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=11;c.startGame();
+            c.stageBanner=0;c.companion.react(RunCompanion.VICTORY,1f);
+            c.companion.age=(float)Math.PI/18f+frame*(float)Math.PI/9f;
+            c.companion.clock=c.companion.age;
+            shot(dir,"118-companion-boss-victory-rock-"+frame,c,L,w,h,ss);
+        }
         for(int who:new int[]{0,8,23,Collect.BOSS_FIRST,Collect.BOSS_FIRST+1,Collect.BOSS_FIRST+2,
                 Collect.BOSS_FIRST+3,Collect.MOLE_FIRST,Collect.SNAKE_FIRST}) {
             GameCore c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=who;c.startGame();

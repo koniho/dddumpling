@@ -132,7 +132,12 @@ final class TestCompanion extends Check {
         check("boss damage gets the stronger cheer",c.companion.reaction==RunCompanion.BOSS_HIT
                 && c.companion.mood()==8);
         c.boss.beaten=true;c.companion.update(c,DT);
-        check("boss defeat gets celebration",c.companion.reaction==RunCompanion.VICTORY);
+        check("boss defeat cheers throughout the death animation",c.companion.reaction==RunCompanion.VICTORY
+                && c.companion.left==Boss.LEAVE);
+        c.companion.age=(float)Math.PI/18f;float cheerRight=c.companion.victoryRock();
+        c.companion.age=(float)Math.PI/6f;
+        check("boss defeat cheer rocks back and forth",
+                cheerRight>0f && c.companion.victoryRock()<0f);
         GameCore cleared=new GameCore(save,123L);cleared.startGame();
         Interlude.beginStageEnd(cleared);
         check("stage clear gives the companion an accomplished glow reaction",

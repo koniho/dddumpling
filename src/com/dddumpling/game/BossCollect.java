@@ -124,13 +124,16 @@ final class BossCollect extends Draw {
         if(friend>=0) {
             float travel=friendProgress(age),returning=friendReturnProgress(age);
             float away=travel*(1f-returning);
+            RunCompanion.drawHomeOnly(p,c,L,friendHomeFade(age));
             float fx=RunCompanion.x(L)+(friendTargetX(L)-RunCompanion.x(L))*away;
             float fy=RunCompanion.y(L)+(friendTargetY(L)-RunCompanion.y(L))*away
                     -(float)Math.sin(travel*Math.PI)*r*.18f
                     -(float)Math.sin(returning*Math.PI)*r*.14f;
             float fr=RunCompanion.radius(c,L)*(1f+.12f*(float)Math.sin(away*Math.PI));
-            p.fillEllipse(fx,fy+fr*.92f,fr*.72f,fr*.13f,fadeBy(0x55302045,fade));
-            Trinket.drawReacting(p,friend,fx,fy,fr,c.clock,fade,4,.12f*travel);
+            // This character bridges the fading reward screen and the live playfield, so it stays
+            // opaque while its home disappears for the visit and reforms around its return.
+            p.fillEllipse(fx,fy+fr*.92f,fr*.72f,fr*.13f,0x55302045);
+            Trinket.drawReacting(p,friend,fx,fy,fr,c.clock,1f,4,.12f*travel);
             float heart=heartProgress(age);
             if(heart>0f && heart<1f) {
                 float move=ease(heart);
@@ -149,6 +152,9 @@ final class BossCollect extends Draw {
     }
     static float friendReturnProgress(float age) {
         return ease(Math.max(0f,Math.min(1f,(age-(REVEAL_TIME-FRIEND_RETURN))/FRIEND_RETURN)));
+    }
+    static float friendHomeFade(float age) {
+        return Math.max(1f-friendProgress(age),friendReturnProgress(age));
     }
     static float friendTargetX(Layout L) { return L.w*.5f; }
     static float friendTargetY(Layout L) { return L.h*.72f; }

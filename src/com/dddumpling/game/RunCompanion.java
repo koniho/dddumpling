@@ -25,7 +25,7 @@ final class RunCompanion extends Draw {
         // Repeated clears strengthen this beat instead of restarting it indefinitely.
         if(left>0f && event==reaction) { strength=Math.min(1f,strength+.12f);return; }
         reaction=event;age=0f;strength=Math.max(.3f,Math.min(1f,amount));
-        left=event==DAMAGE? .85f:event==VICTORY?1.2f:event==STAGE_CLEAR?1.6f
+        left=event==DAMAGE? .85f:event==VICTORY?Boss.LEAVE:event==STAGE_CLEAR?1.6f
                 :event==BOSS_HIT?.95f:event==WORD?.6f:.8f;
         home.squash((event==DAMAGE?.7f:.4f)*strength);
         home.impulse(event==DAMAGE?-.7f:.7f,-.6f,.18f*strength);
@@ -71,6 +71,7 @@ final class RunCompanion extends Draw {
     static float radius(Layout L) { return L.keyR*.55f*.84f; }
     static float radius(GameCore c,Layout L) { return LandPicker.travelerRadius(c,L)*.84f; }
     float beat() { return left>0f?(float)Math.sin(Math.min(1f,age/.48f)*Math.PI)*strength:0f; }
+    float victoryRock() { return reaction==VICTORY?(float)Math.sin(age*9f)*strength:0f; }
     float squash() { return 1f+beat()*(reaction==DAMAGE?.20f:-.16f); }
     float damagePush(Layout L) { return reaction==DAMAGE?halfHeight(L)*1.5f*beat():0f; }
     void rescue() { rescueT=RESCUE_TIME; }
@@ -135,6 +136,18 @@ final class RunCompanion extends Draw {
         }
         return out;
     }
+    static void drawHomeOnly(Painter p,GameCore c,Layout L,float fade) {
+        if(fade<=0f || c.companion.who<0) return;
+        float x=x(L),y=y(L),w=halfWidth(L),h=halfHeight(L);
+        int body=Collect.BODY[c.companion.who];
+        float[] skin=c.companion.outline(L);
+        p.fillEllipse(x,y+h*.95f,w*.8f,h*.12f,fadeBy(0x44302050,fade));
+        p.fillPoly(skin,fadeBy(Glyph.mix(0xFF352D52,body,.16f),fade));
+        p.strokePoly(skin,fadeBy(Glyph.withAlpha(Glyph.mix(body,INK,.4f),180),fade),
+                Math.max(1f,L.unit*.065f));
+        p.polyline(new float[]{x-w*.42f,y-h*.22f,x-w*.24f,y-h*.52f,x+w*.02f,y-h*.62f},
+                fadeBy(0x55FFFFFF,fade),L.unit*.07f);
+    }
     static void draw(Painter p,GameCore c,Layout L) {
         RunCompanion a=c.companion;
         boolean steamer=c.state==GameCore.BONUS && !c.starBonus && !c.bossReward
@@ -197,6 +210,9 @@ final class RunCompanion extends Draw {
         float cx=x+w*.10f*(float)Math.sin(a.clock*1.6f);
         float cy=y+r*.10f+r*.055f*(float)Math.sin(a.clock*2.3f)
                 -r*(a.reaction==BOSS_HIT?.78f:.42f)*hop;
+        float victoryRock=a.victoryRock();
+        cx+=r*.48f*victoryRock;
+        cy-=r*.24f*Math.abs(victoryRock);
         if(a.reaction==DAMAGE) cx+=r*.12f*(float)Math.sin(a.age*55f)*beat;
         p.fillEllipse(x,y+r*.85f,r*.7f,r*.13f,0x55302045);
         Trinket.drawReacting(new Squash(p,cx,cy,a.squash()),a.who,cx,cy,r,a.clock,1f,a.displayMood(c),

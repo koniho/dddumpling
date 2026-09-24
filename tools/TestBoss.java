@@ -351,6 +351,9 @@ final class TestBoss extends Check {
                     && BossCollect.friendProgress(.2f+BossCollect.FRIEND_TRAVEL)==1f
                     && BossCollect.friendReturnProgress(BossCollect.REVEAL_TIME-BossCollect.FRIEND_RETURN)==0f
                     && BossCollect.friendReturnProgress(BossCollect.REVEAL_TIME)==1f
+                    && BossCollect.friendHomeFade(0f)==1f
+                    && BossCollect.friendHomeFade(.2f+BossCollect.FRIEND_TRAVEL)==0f
+                    && BossCollect.friendHomeFade(BossCollect.REVEAL_TIME)==1f
                     && BossCollect.heartProgress(BossCollect.HEART_START)==0f
                     && BossCollect.heartProgress(BossCollect.HEART_START+BossCollect.HEART_TIME)==1f
                     && BossCollect.friendTargetX(L)==L.w*.5f
