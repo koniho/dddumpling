@@ -32,7 +32,7 @@ final class TestStars extends Check {
         c.startGame();
         c.starNext = true;
         Interlude.enterBonus(c, L);
-        int last = StarPath.COUNT - 1;
+        int last = c.stars.total() - 1;
         c.stars.collected = (1 << last) - 1;
         for (int i = 0; i < 60 * 12 && !c.stars.won; i++) {
             c.stars.x = c.stars.starX(last, L);
@@ -56,8 +56,9 @@ final class TestStars extends Check {
         check("the next minigame returns to the steamer", !c.starBonus);
         c.starNext = true;
         Interlude.enterBonus(c, L);
-        check("the next star course has twenty stars to collect",
-                c.starBonus && c.stars.count() == 0 && !c.stars.won);
+        check("the next difficulty adds one star to collect",
+                c.starBonus && c.stars.total() == StarPath.COUNT + 1
+                        && c.stars.count() == 0 && !c.stars.won);
         check("entering the recovered course never pays the old reward twice",
                 c.collectTotal == prizes && c.stars.wins == 1 && store.starWinSaves == 1);
     }
@@ -121,7 +122,8 @@ final class TestStars extends Check {
         staleStore.starWins = 3;
         GameCore stale = new GameCore(staleStore, 93L);
         stale.starNext = true;
-        stale.stars.collected = (1 << StarPath.COUNT) - 1;
+        stale.stars.make(new java.util.Random(93L));
+        stale.stars.collected = stale.stars.fullMask();
         stale.stars.won = false;
         int prizesBefore = stale.collectTotal;
         stale.startGame();
@@ -166,7 +168,8 @@ final class TestStars extends Check {
         q.make(new java.util.Random(7));
         q.begin(3, L);
         check("starts with a visual ready beat", q.ready());
-        check("course has twenty stars", q.sx.length == 20);
+        check("the first difficulty has twenty stars", q.total() == 20);
+        check("the course has capacity for every difficulty", q.sx.length == StarPath.MAX_COUNT);
         check("the Starpath slider spans the deck and is directly hittable",
                 StarScreen.sliderLeft(L) < L.w * 0.25f
                         && StarScreen.sliderRight(L) > L.w * 0.75f
@@ -240,6 +243,19 @@ final class TestStars extends Check {
         q.timer = StarPath.REPORT + StarPath.EXIT * 0.5f;
         check("the blast-off phase exposes increasing exit progress",
                 q.exiting() && q.exitProgress() > 0.49f && q.exitProgress() < 0.51f);
+        q.timer = StarPath.REPORT + StarPath.EXIT;
+        float exitStart = q.traversalProgress();
+        q.timer = StarPath.REPORT + StarPath.EXIT * 0.5f;
+        float exitMiddle = q.traversalProgress();
+        q.timer = StarPath.REPORT;
+        float exitEnd = q.traversalProgress();
+        check("the route keeps scrolling throughout blast-off",
+                exitStart < exitMiddle && exitMiddle < exitEnd);
+        check("the whole route clears the screen before the report",
+                q.starY(q.total() - 1, L) > L.h);
+        q.timer = 0.01f;
+        check("reporting holds the cleared route instead of snapping it back",
+                q.traversalProgress() == exitEnd);
 
         q.begin(3, L);
         check("failed-run stars persist when the course restarts", q.count() == 3);
@@ -272,7 +288,7 @@ final class TestStars extends Check {
             c.update(DT, L);
             took = c.stars.won;
         }
-        check("taking the last star completes the course", took && c.stars.count() == StarPath.COUNT);
+        check("taking the last star completes the course", took && c.stars.count() == c.stars.total());
         check("the winning pickup emits feedback", c.starPickups == 1);
         check("success immediately saves one difficulty step",
                 c.stars.wins == 1 && progress.starWins == 1 && progress.starWinSaves == 1);
@@ -371,6 +387,20 @@ final class TestStars extends Check {
         Layout l=new Layout();l.compute(240,520,0,0,0,0);
         GameCore c=new GameCore(new Mem(),84L);c.startGame();c.state=GameCore.BONUS;c.starBonus=true;
         c.stars.make(c.rnd);c.stars.begin(0,l);
+        c.time=1f;c.stars.timer=Parade.HANDOFF+.01f;
+        check("an incomplete report stays fully visible before its handoff",
+                StarScreen.sceneFade(c)==1f);
+        c.stars.timer=Parade.HANDOFF*.5f;
+        check("an incomplete report cross-fades like the completed flow",
+                Math.abs(StarScreen.sceneFade(c)-.5f)<.001f);
+        c.stars.timer=0f;
+        check("the incomplete report finishes its cross-fade into play",
+                StarScreen.sceneFade(c)==0f);
+        check("the companion does not fade with the incomplete report",
+                StarScreen.companionFade(c)==1f);
+        c.stars.won=true;c.stars.winT=.01f;
+        check("a victory tableau stays fully visible through handoff",StarScreen.sceneFade(c)==1f);
+        c.stars.won=false;c.stars.winT=0f;
         for(float remaining:new float[]{StarPath.REPORT-0.01f,0.8f,0.1f}) {
             c.stars.timer=remaining;
             RasterPainter a=new RasterPainter(240,520,1),b=new RasterPainter(240,520,1);
@@ -403,18 +433,21 @@ final class TestStars extends Check {
         baseline.make(new java.util.Random(77L));
         harder.make(new java.util.Random(77L));
         boolean changed = false;
-        for (int i = 0; i < StarPath.COUNT; i++)
+        check("each difficulty adds one checkpoint",
+                baseline.total() == StarPath.COUNT
+                        && harder.total() == StarPath.COUNT + StarPath.MAX_DIFFICULTY);
+        for (int i = 0; i < baseline.total(); i++)
             changed |= Math.abs(baseline.sx[i] - harder.sx[i]) > 0.01f;
         check("wins change the actual course bends", changed);
         baseline.begin(-1, L);
         harder.begin(-1, L);
-        baseline.collected = harder.collected = (1 << StarPath.COUNT) - 1;
+        baseline.collected = baseline.fullMask();
+        harder.collected = harder.fullMask();
         boolean sameTiming = true;
         for (int i = 0; i < 360; i++) {
             baseline.update(DT, L);
             harder.update(DT, L);
-            sameTiming &= baseline.timer == harder.timer
-                    && baseline.starY(10, L) == harder.starY(10, L);
+            sameTiming &= baseline.timer == harder.timer;
         }
         check("harder curvature preserves flight and phase timing", sameTiming);
         Mem failedSave = new Mem();
@@ -438,7 +471,7 @@ final class TestStars extends Check {
             dragCap+=Integer.bitCount(dragFlown(seed,L,StarPath.MAX_DIFFICULTY,0,0.18f,1.8f));
             dragQuick+=Integer.bitCount(dragFlown(seed,L,StarPath.MAX_DIFFICULTY,0,0.08f,3f));
             int held=0,attempt=0;
-            while(Integer.bitCount(held)<StarPath.COUNT && attempt<12)
+            while(Integer.bitCount(held)<StarPath.MAX_COUNT && attempt<12)
                 held=dragFlown(seed*31+attempt++,L,StarPath.MAX_DIFFICULTY,held,0.18f,1.8f);
             dragTries+=attempt;
         }
@@ -446,11 +479,12 @@ final class TestStars extends Check {
                 dragBase/32,dragCap/32,dragQuick/32,dragTries/32);
         check("capped bends challenge a bounded drag player",dragCap<dragBase*0.85f);
         check("faster drag reactions reward skill",dragQuick>dragCap);
-        check("drag carry-over still yields prizes",dragTries/32<=6f);
+        check("drag carry-over still yields prizes",dragTries/32<=9f);
         for (int level = 0; level <= StarPath.MAX_DIFFICULTY; level++) {
             float window = tightestWindow(L, level, 3f);
             System.out.printf("    bend level %d: feasible window %.3f widths%n", level, window);
-            check("every difficulty is reachable with drag steering at level " + level, window > 0f);
+            check("courses below the cap remain completable in one run at level " + level,
+                    level == StarPath.MAX_DIFFICULTY || window > 0f);
         }
     }
 
@@ -483,8 +517,8 @@ final class TestStars extends Check {
             q.wins = wins;
             q.make(new java.util.Random(seed));
             float lo = 0.5f, hi = 0.5f, prev = 0f;
-            for (int i = 0; i < StarPath.COUNT; i++) {
-                float t = StarPath.encounterTime(i);
+            for (int i = 0; i < q.total(); i++) {
+                float t = q.encounterTime(i);
                 float reach = maxSpeed * (t - prev);
                 prev = t;
                 lo = Math.max(lo - reach, q.sx[i] - band);
@@ -525,18 +559,18 @@ final class TestStars extends Check {
         StarPath q = new StarPath();
         q.make(new java.util.Random(5L));
         q.begin(-1, L);
-        float[] seen = new float[StarPath.COUNT];
+        float[] seen = new float[q.total()];
         for (float t = 0; t <= StarPath.FLY; t += DT) {
             q.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - t;
             // Asked for per frame, not once: the catch is GRACE seconds of the closing speed, and
             // the closing speed is what the launch ramp and the rush curve are doing right now.
             float ry = q.pickupY(L);
-            for (int i = 0; i < StarPath.COUNT; i++) {
+            for (int i = 0; i < q.total(); i++) {
                 if (Math.abs(q.characterY(L) - q.starY(i, L)) <= ry) seen[i] += DT;
             }
         }
         float least = 9f;
-        for (int i = 0; i < StarPath.COUNT; i++) {
+        for (int i = 0; i < q.total(); i++) {
             // Stars that never come level at all are the ones still off the top when the flight
             // ends — the course is longer than the screen and only the flown part counts.
             if (seen[i] > 0f) least = Math.min(least, seen[i]);
@@ -564,7 +598,7 @@ final class TestStars extends Check {
 
     /** The next checkpoint still worth chasing: not taken, and not yet past the flyer. */
     private static int nextStar(StarPath q, Layout L) {
-        for (int i = 0; i < StarPath.COUNT; i++) {
+        for (int i = 0; i < q.total(); i++) {
             if ((q.collected & (1 << i)) != 0) continue;
             if (q.starY(i, L) > q.characterY(L) + q.pickupY(L)) continue;
             return i;

@@ -1006,31 +1006,19 @@ final class TestVisuals extends Check {
         check("at every screen width too", holds);
     }
 
-    /**
-     * The star screen stacks READY under the checkpoint counter, so it needs the same clearance
-     * check the HUD does — and for the same reason. The counter and the prompt arrived with a
-     * plain unit gap between them and READY's caps sat on the counter's baseline at TEXT 1.34.
-     */
+    /** The live course uses one top line now that its checkpoint count is reserved for the end. */
     static void starStacking(Layout L) {
-        group("star screen stacking");
-        float clear = StarScreen.readyY(L) - RasterPainter.CAP * StarScreen.readySize(L)
-                - StarScreen.countY(L);
-        System.out.printf("    READY clears the counter by %.1fpx at TEXT=%.2f%n",
-                clear, Draw.TEXT);
-        check("READY clears the counter above it", clear > 0f);
-        check("with room to spare, not by a pixel", clear > L.unit * 0.1f);
+        group("star screen heading");
+        check("READY uses the former counter line", StarScreen.readyY(L) == StarScreen.countY(L));
 
         boolean holds = true;
         for (int px = 640; px <= 1600; px += 240) {
             Layout t = new Layout();
             t.compute(px, px * 20 / 9, 0, 0, 0, 0);
-            if (StarScreen.readyY(t) - RasterPainter.CAP * StarScreen.readySize(t)
-                    <= StarScreen.countY(t)) holds = false;
+            float top = StarScreen.readyY(t) - RasterPainter.CAP * StarScreen.readySize(t);
+            if (top < t.playTop || StarScreen.readyY(t) >= t.deckTop) holds = false;
         }
-        check("at every screen width too", holds);
-
-        // Both lines live in the play field, above the deck: the prompt must not reach the keys.
-        check("and READY stays clear of the deck", StarScreen.readyY(L) < L.deckTop);
+        check("READY stays inside the play field at every screen width", holds);
     }
 
     /**

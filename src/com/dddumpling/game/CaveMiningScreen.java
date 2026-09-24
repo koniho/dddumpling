@@ -20,7 +20,7 @@ final class CaveMiningScreen extends Draw {
         p.fillRect(0,0,w,L.deckTop,Glyph.withAlpha(0xFF060713,(int)((1-light)*155)));
         lantern(p,w*.13f,top+h*.30f,w*.037f,light,c.clock);
         p.text("DUMPLING MINE",w*.5f,top+s*.5f,type(s*.78f),INK,Painter.CENTER,true);
-        if(c.bonusParading()){Parade.draw(p,c,L,Math.min(1,c.paradeTimer/.35f));return;}
+        if(c.bonusParading()){Parade.draw(p,c,L,Math.min(1,c.paradeTimer/Parade.HANDOFF));return;}
         if(m.phase==CaveMining.DIG) {
             p.save();p.translate((float)Math.sin(m.scene.clock*91)*w*.008f*shake,(float)Math.sin(m.scene.clock*113)*w*.005f*shake);
             float nr=w*.043f,x=CaveMiningScene.wallX(m)*w;

@@ -4,8 +4,10 @@ import java.util.Random;
 
 /** Persistent course and flight state for the alternating star-path interlude. */
 final class StarPath {
+    /** First difficulty level's checkpoint count. Each later level adds one. */
     static final int COUNT = 20;
     static final int MAX_DIFFICULTY = 10;
+    static final int MAX_COUNT = COUNT + MAX_DIFFICULTY;
     static final int KIDS_DIFFICULTY = MAX_DIFFICULTY * 3 / 10;
     static final int WIN_STEP = 1;
     // Continue the same +0.6 bend rate per level through ten successful courses.
@@ -20,17 +22,18 @@ final class StarPath {
     void resetDifficulty() { wins = 0; }
 
     /**
-     * The flight is down from five seconds to four and now to 3.6: the same twenty checkpoints
-     * arrive in ever less time, which together with the wider spacing below puts the scroll up
-     * by nearly half again on where it started.
+     * The flight is down from five seconds to four and now to 3.6: its twenty to thirty checkpoints
+     * arrive in ever less time, which together with the wider spacing below puts the scroll up by
+     * nearly half again on where it started.
      */
     static final float READY = 1.5f, FLY = 3.6f, EXIT = 0.75f, REPORT = 1.5f;
     /**
      * Course lengths visible at once; larger means wider gaps between its stars.
      *
      * This is also the spacing knob: the gap between two checkpoints is
-     * {@code span * COURSE_SCREENS / COUNT}, and since the whole course still passes in {@link #FLY}
-     * seconds, raising it spreads them out <em>and</em> speeds the scroll up in the same move.
+     * {@code span * COURSE_SCREENS / courseCount}, and since the whole course still passes in
+     * {@link #FLY} seconds, raising it spreads them out <em>and</em> speeds the scroll up in the
+     * same move.
      *
      * Note what it does <em>not</em> change: when each checkpoint arrives. The gaps between arrivals
      * come out of {@link #FLY} and {@link #RUSH} through {@link #encounterTime}, which touches this
@@ -218,9 +221,11 @@ final class StarPath {
     /** One frame, for the finite difference in {@link #closingSpeed}. */
     private static final float DT = 1f / 60f;
 
-    final float[] sx = new float[COUNT];
+    final float[] sx = new float[MAX_COUNT];
     /** 1 on pickup, decaying to zero; drives the shine and burst without spawning objects. */
-    final float[] burst = new float[COUNT];
+    final float[] burst = new float[MAX_COUNT];
+    /** Frozen for one course so recording its win cannot move its finish line. */
+    int courseCount = COUNT;
     int collected;
     int who = -1;
     float timer, x, vx;
@@ -267,8 +272,8 @@ final class StarPath {
      * whole play area and still sit inside what the steering can deliver.
      *
      * Wins shorten both bend periods without changing the flight clock or catch tolerance.
-     * {@code TestStars} checks reachability at every level and flies the capped course with
-     * reaction-limited pilots.
+     * {@code TestStars} measures the feasible window at every level and flies the capped course
+     * with reaction-limited pilots, including repeated attempts that keep earlier pickups.
      */
     void make(Random rnd) {
         // The side is taken from the second draw, not the first. Java's generator gives nearby
@@ -276,10 +281,11 @@ final class StarPath {
         // seeded harness the same way — the game shares one long-lived generator and would never
         // have shown it.
         float bends = bendRate();
+        courseCount = COUNT + Math.max(0, Math.min(difficultyCap, wins));
         float period = SWEEP_TIME * (1f + 0.20f * rnd.nextFloat()) / bends;
         float dir = rnd.nextFloat() < 0.5f ? 1f : -1f;
         float ripplePhase = rnd.nextFloat() * TAU;
-        for (int i = 0; i < COUNT; i++) {
+        for (int i = 0; i < courseCount; i++) {
             float t = encounterTime(i);
             // No sweep phase: every course leaves from the middle, which is where the flyer starts.
             // A random phase put the first star out at an edge and opened with a dash nobody could
@@ -291,7 +297,7 @@ final class StarPath {
             sx[i] = at;
         }
         collected = 0;
-        for (int i = 0; i < COUNT; i++) burst[i] = 0f;
+        for (int i = 0; i < MAX_COUNT; i++) burst[i] = 0f;
     }
 
     /**
@@ -308,13 +314,14 @@ final class StarPath {
      */
     void reroll(Random rnd) {
         // Recover a completed hand left behind by an interrupted celebration.
-        int held = count() == COUNT ? 0 : collected;
+        int held = complete() ? 0 : collected;
         make(rnd);
-        collected = held;
+        collected = held & fullMask();
     }
 
     /** Clears one main-game run's course state without touching saved difficulty. */
     void resetRun() {
+        courseCount = COUNT;
         collected = 0;
         who = -1;
         timer = x = vx = 0f;
@@ -322,7 +329,7 @@ final class StarPath {
         winT = 0f;
         winStar = -1;
         grabbed = launched = reported = awardPending = false;
-        for (int i = 0; i < COUNT; i++) {
+        for (int i = 0; i < MAX_COUNT; i++) {
             sx[i] = 0f;
             burst[i] = 0f;
         }
@@ -340,8 +347,12 @@ final class StarPath {
      * so the soft start does not slide the whole course out from under the sweep it was shaped
      * against. {@code TestStars} round-trips the pair.
      */
-    static float encounterTime(int i) {
-        float ahead = (i + 0.5f) / COUNT - LEAD;
+    float encounterTime(int i) {
+        return encounterTime(i, courseCount);
+    }
+
+    static float encounterTime(int i, int count) {
+        float ahead = (i + 0.5f) / count - LEAD;
         if (ahead <= 0f) return 0f;
         return FLY * unlaunch((float) Math.pow(ahead, 1f / RUSH));
     }
@@ -365,6 +376,8 @@ final class StarPath {
     private static final float RAMP = EASE_IN / FLY;
     /** What the ramp gives away at the off, and so what the rest of the flight takes back. */
     private static final float LOST = RAMP * 0.5f;
+    /** Continued terminal scroll during blast-off, in course progress per second. */
+    private static final float EXIT_SCROLL = RUSH / (FLY * (1f - LOST));
 
     /**
      * Flight progress with the soft start applied: a rate of zero on the first frame, climbing
@@ -401,7 +414,7 @@ final class StarPath {
         winT = 0f;
         winStar = -1;
         awardPending = false;
-        for (int i = 0; i < COUNT; i++) burst[i] = 0f;
+        for (int i = 0; i < courseCount; i++) burst[i] = 0f;
     }
 
     boolean ready() { return timer > FLY + EXIT + REPORT; }
@@ -449,9 +462,17 @@ final class StarPath {
      * accelerating gently from there to the end of the flight.
      */
     float traversalProgress() {
-        return (float) Math.pow(launch(flightProgress()), RUSH);
+        float flight = (float) Math.pow(launch(flightProgress()), RUSH);
+        // Continue at terminal speed while the flyer blasts away, then hold the cleared route
+        // below the screen during the report instead of snapping it back into view.
+        if (exiting()) return 1f + EXIT_SCROLL * EXIT * exitProgress();
+        if (reporting()) return 1f + EXIT_SCROLL * EXIT;
+        return flight;
     }
-    int count() { return Integer.bitCount(collected); }
+    int count() { return Integer.bitCount(collected & fullMask()); }
+    int total() { return courseCount; }
+    int fullMask() { return (1 << courseCount) - 1; }
+    boolean complete() { return (collected & fullMask()) == fullMask(); }
 
     void hold(int key, boolean down) {
         if (key < 0 || key >= Glyph.COUNT || winning()) return;
@@ -480,7 +501,7 @@ final class StarPath {
             // The shines are the exception, and deliberately: a pickup burst frozen part-way
             // through leaves a white glint stuck beside the last star for the whole tableau, which
             // reads as a drawing fault. It is the pickup that just landed, so it finishes.
-            for (int i = 0; i < COUNT; i++) burst[i] = Math.max(0f, burst[i] - dt * 1.8f);
+            for (int i = 0; i < courseCount; i++) burst[i] = Math.max(0f, burst[i] - dt * 1.8f);
             winT -= dt;
             if (winT <= 0f) {
                 winT = 0f;
@@ -501,7 +522,7 @@ final class StarPath {
         // a number arriving without a prize behind it.
         reported = !won && !wasReporting && reporting();
         grabbed = false;
-        for (int i = 0; i < COUNT; i++) burst[i] = Math.max(0f, burst[i] - dt * 1.8f);
+        for (int i = 0; i < courseCount; i++) burst[i] = Math.max(0f, burst[i] - dt * 1.8f);
         if (!flying()) return;
         float dir = left == right ? 0f : left ? -1f : 1f;
         float max = L.w * MAX_VX;
@@ -517,13 +538,13 @@ final class StarPath {
 
         float cx = flyerX(L), cy = flyerY(L);
         float rx = pickupR(L), ry = pickupY(L);
-        for (int i = 0; i < COUNT; i++) {
+        for (int i = 0; i < courseCount; i++) {
             if ((collected & (1 << i)) != 0) continue;
             float dx = (cx - starX(i, L)) / rx, dy = (cy - starY(i, L)) / ry;
             if (dx * dx + dy * dy <= 1f) {
                 collected |= 1 << i;
                 burst[i] = 1f;
-                if (count() == COUNT) {
+                if (complete()) {
                     // The last one. The course is over here rather than when the clock runs out,
                     // so the win is announced where it happened.
                     won = true;
@@ -596,7 +617,7 @@ final class StarPath {
     /** The course scrolls down past the climber; only a segment is visible at once. */
     float starY(int i, Layout L) {
         float span = L.dangerY - L.playTop;
-        float course = (i + 0.5f) / COUNT;
+        float course = (i + 0.5f) / courseCount;
         return L.dangerY - (course - traversalProgress()) * span * COURSE_SCREENS;
     }
 

@@ -376,7 +376,7 @@ final class Screens extends Draw {
         // won it. Handled before the fade below, which reads the interlude's own countdown —
         // already spent by now, so it would render the whole parade invisible.
         if (c.bonusParading()) {
-            float pf = Math.min(1f, c.paradeTimer / 0.35f);
+            float pf = Math.min(1f, c.paradeTimer / Parade.HANDOFF);
             scrim(p, L, (int) (195 * pf));
             Parade.draw(p, c, L, pf);
             return;

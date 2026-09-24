@@ -90,7 +90,7 @@ final class CaveCartScreen extends Draw {
         }
         p.fillRect(0,L.deckTop,w,L.h,0xFF221E31);
         StarScreen.slider(p,CaveCartInput.knob(m,L),L,m.phase==CaveCart.RIDE?1:.2f,t);
-        if(c.bonusParading())Parade.draw(p,c,L,Math.min(1,c.paradeTimer/.35f));
+        if(c.bonusParading())Parade.draw(p,c,L,Math.min(1,c.paradeTimer/Parade.HANDOFF));
     }
     private static void arches(Painter p,CaveCart m,Layout L,float vy){
         float w=L.w,h=field(L),t=m.scene.clock;

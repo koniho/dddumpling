@@ -19,7 +19,7 @@ final class Blade {
     /** Length of that beat, in real seconds. An impact, not an interlude. */
     static final float SLOW_TIME = 0.28f;
     /**
-     * The same beat for taking a star, at a quarter of the length. A course hands out twenty of
+     * The same beat for taking a star, at a quarter of the length. A course hands out up to thirty
      * these, the last few a fifth of a second apart, so at the fling's length a good course would be
      * continuously slow rather than punctuated. Every beat also stretches the flight in real time,
      * since the course clock is scaled by it. {@code TestStars} holds the total.

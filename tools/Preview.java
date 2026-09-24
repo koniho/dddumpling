@@ -621,11 +621,11 @@ final class Preview {
         cartFrames(dir,L,w,h,ss);
         miningFrames(dir,L,w,h,ss);
         caveCollectFrames(dir,L,w,h,ss);
+        squishyEntryFrames(dir,L,w,h,ss);
         townFrames(dir,L,w,h,ss);
         slimeFightFrames(dir,L,w,h,ss);
         companionFrames(dir,L,w,h,ss);
         scoreResetFrames(dir,L,w,h,ss);
-        squishyEntryFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);
@@ -1361,7 +1361,7 @@ final class Preview {
         // The wake at full strength: nineteen in hand, which is what the last stretch of a course
         // that is nearly won looks like. It is the only thing on screen that says how far along a
         // playthrough is without a number on it.
-        cs.stars.collected = (1 << (StarPath.COUNT - 1)) - 1;
+        cs.stars.collected = (1 << (cs.stars.total() - 1)) - 1;
         cs.stars.x = cs.stars.starX(6, L);
         cs.stars.vx = L.w * StarPath.MAX_VX * 0.7f;
         shot(dir, "54c-stars-wake", cs, L, w, h, ss);
@@ -1371,8 +1371,11 @@ final class Preview {
         cs.stars.vx = 0f;
         cs.stars.x = cs.stars.starX(6, L);
         shot(dir, "54d-stars-max-bends", cs, L, w, h, ss);
+        // The failed-course handoff: full report, midpoint of the same cross-fade used by the
+        // winning parade, then the last trace over the play field beneath it.
         for(int frame=0;frame<3;frame++) {
-            cs.stars.timer=StarPath.REPORT+(frame==0 ? 0.02f : frame==1 ? -0.01f : -0.8f);
+            cs.stars.timer=frame==0 ? StarPath.REPORT-0.01f
+                    : frame==1 ? Parade.HANDOFF*.5f : 0.01f;
             cs.bonusTimer=cs.stars.timer;
             shot(dir,"54e-stars-incomplete-exit-"+frame,cs,L,w,h,ss);
         }
@@ -1386,12 +1389,12 @@ final class Preview {
         cw.starBonus = true;
         cw.stars.make(new java.util.Random(91L));
         cw.stars.begin(c8.prize, L);
-        cw.stars.collected = (1 << (StarPath.COUNT - 1)) - 1;
+        cw.stars.collected = (1 << (cw.stars.total() - 1)) - 1;
         cw.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 3.05f;
         // Steered onto the last star frame by frame: where the course has scrolled to is the only
         // thing that knows where that star is.
         for (int i = 0; i < 60 * 6 && !cw.stars.won; i++) {
-            cw.stars.x = cw.stars.starX(StarPath.COUNT - 1, L);
+            cw.stars.x = cw.stars.starX(cw.stars.total() - 1, L);
             cw.update(DT, L);
         }
         System.out.printf("stars won: star=%d prize=%s new=%s parade=%.2f%n", cw.stars.winStar,

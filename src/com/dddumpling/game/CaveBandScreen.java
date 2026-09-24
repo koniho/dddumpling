@@ -39,7 +39,7 @@ final class CaveBandScreen extends Draw {
             float a=i*1.57f+b.position;
             crystal(p,w*.49f+(float)Math.cos(a)*r*1.7f,gy+(float)Math.sin(a)*r*1.3f,r*.12f*b.pulse,GOLD);
         }
-        if(c.bonusParading()) { Parade.draw(p,c,L,Math.min(1,c.paradeTimer/.35f));return; }
+        if(c.bonusParading()) { Parade.draw(p,c,L,Math.min(1,c.paradeTimer/Parade.HANDOFF));return; }
         float y=lane(L),radius=w*.040f;
         p.fillRect(w*.05f,y-radius*1.7f,w*.95f,y+radius*1.7f,0xFF0C1221);
         p.line(w*.05f,y,w*.95f,y,0xFF514B66,w*.003f);

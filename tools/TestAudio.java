@@ -524,8 +524,8 @@ final class TestAudio extends Check {
         check("the ting is short enough to repeat", len < 0.13f);
         check("and shorter than the shelving chime", ting.length < Sfx.build(Sfx.COLLECT).length);
         // The gap between the last two stars of a course, which is the tightest it ever has to fit.
-        float gap = StarPath.encounterTime(StarPath.COUNT - 1)
-                - StarPath.encounterTime(StarPath.COUNT - 2);
+        float gap = StarPath.encounterTime(StarPath.MAX_COUNT - 1, StarPath.MAX_COUNT)
+                - StarPath.encounterTime(StarPath.MAX_COUNT - 2, StarPath.MAX_COUNT);
         System.out.printf("    the last two stars are %.0fms apart%n", gap * 1000f);
         check("and shorter than the gap between the last two stars", len < gap);
         check("the ting dies away", tail < head / 4);

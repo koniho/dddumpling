@@ -60,7 +60,8 @@ final class TestSettings extends Check {
         StarPath cap=new StarPath();cap.wins=StarPath.KIDS_DIFFICULTY;
         c.stars.reroll(new java.util.Random(584L));cap.make(new java.util.Random(584L));
         check("kids course uses thirty percent difficulty at saved maximum",
-                c.stars.bendRate()==cap.bendRate() && java.util.Arrays.equals(c.stars.sx,cap.sx));
+                c.stars.bendRate()==cap.bendRate() && c.stars.total()==StarPath.COUNT+StarPath.KIDS_DIFFICULTY
+                        && java.util.Arrays.equals(c.stars.sx,cap.sx));
         check("kids cap preserves saved normal difficulty",c.stars.wins==StarPath.MAX_DIFFICULTY
                 && store.starWins==StarPath.MAX_DIFFICULTY);
         c.stars.wins=1;

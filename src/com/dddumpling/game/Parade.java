@@ -10,6 +10,9 @@ package com.dddumpling.game;
  */
 final class Parade extends Draw {
 
+    /** Tail shared by winning and incomplete interludes as they cross-fade back to play. */
+    static final float HANDOFF = 0.35f;
+
     /** Figures in the line, the new one included. More than this will not fit legibly. */
     static final int LINE = 7;
 

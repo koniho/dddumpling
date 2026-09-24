@@ -290,7 +290,7 @@ final class GameCore {
          */
         void collect(int nth);
         /**
-         * A star taken on the course. Fires up to twenty times in five seconds, so it is the
+         * A star taken on the course. Fires up to thirty times in a few seconds, so it is the
          * shortest effect there is.
          *
          * @param nth 1-based count of stars held, so the note can climb as the course fills

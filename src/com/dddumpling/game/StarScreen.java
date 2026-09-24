@@ -41,23 +41,19 @@ final class StarScreen extends Draw {
         return q.reporting()?home:full;
     }
 
-    /** Baseline of the star screen's checkpoint counter. */
+    /** Baseline of the result count shown after a completed course. */
     static float countY(Layout L) {
         return L.playTop + L.unit * 1.2f;
     }
 
-    /** Type size of the READY prompt, whose caps have to clear {@link #countY}. */
+    /** Type size of the READY prompt. */
     static float readySize(Layout L) {
         return type(L.unit * 1.1f);
     }
 
-    /**
-     * Baseline of the READY prompt. The gap below the counter goes through {@code type()} like
-     * the sizes do: as a plain unit multiple it was 1.2 units, and at TEXT 1.34 READY's caps
-     * came up through the counter's baseline. See the note on the global text scale in AGENTS.md.
-     */
+    /** READY takes the single top line while the live checkpoint count stays hidden. */
     static float readyY(Layout L) {
-        return countY(L) + type(L.unit * 1.35f);
+        return countY(L);
     }
 
     static float sliderY(Layout L) { return (L.deckTop + L.h - L.padB) * 0.5f; }
@@ -70,10 +66,7 @@ final class StarScreen extends Draw {
 
     static void draw(Painter p, GameCore c, Layout L) {
         StarPath q = c.stars;
-        float fade = Math.min(1f, c.time / 0.35f)
-                * (q.reporting() ? Math.min(1f, q.timer / 0.35f) : 1f);
-        // The tableau fades itself out at the end instead, since its clock is not the interlude's.
-        if (q.winning()) fade = Math.min(1f, q.winT / 0.35f);
+        float fade = sceneFade(c);
         Screens.scrim(p, L, (int) (175 * fade));
         // The grab beat's gold rim, redrawn here because the shared one goes on under the scrim,
         // which is dark enough to swallow it whole. Clamped: a fling beat from the wave that opened
@@ -105,7 +98,7 @@ final class StarScreen extends Draw {
         p.polyline(route, fadeBy(Glyph.withAlpha(0xFFBDEBFF,
                 (int) (115 * (q.flying() ? beat : 1f))), cf), pearl * beat);
         if (q.flying()) pulse(p, q, route, L, c.clock, cf, pearl);
-        for (int i = 0; i < StarPath.COUNT; i++) {
+        for (int i = 0; i < q.total(); i++) {
             float y = q.starY(i, L);
             if (y < L.playTop - s * 2f || y > L.dangerY + s * 2f) continue;
             boolean got = (q.collected & (1 << i)) != 0;
@@ -152,7 +145,7 @@ final class StarScreen extends Draw {
         if (q.winning()) {
             victory(p, c, L, fade);
             // Gold, and it stays up: the number that was being counted is the thing just won.
-            p.text(q.count() + " / " + StarPath.COUNT, L.w / 2f, countY(L), type(s * 0.78f),
+            p.text(q.count() + " / " + q.total(), L.w / 2f, countY(L), type(s * 0.78f),
                     fadeBy(GOLD, fade), Painter.CENTER, true);
             return;
         }
@@ -182,15 +175,13 @@ final class StarScreen extends Draw {
             // be asked for separately; in flight the steering itself is the answer.
             float sway = q.ready() ? q.lessonSway(c.clock) : q.vx / (L.w * StarPath.MAX_VX);
             wake(p, q, L, drawX, drawY, sway, c.clock, fade);
-            flyer(p, q, drawR, drawX, drawY, c.clock, fade);
+            flyer(p, q, drawR, drawX, drawY, c.clock, fade, fade);
         } else if(q.reporting()) {
-            flyer(p,q,drawR,drawX,drawY,c.clock,fade);
+            flyer(p,q,drawR,drawX,drawY,c.clock,fade,companionFade(c));
         }
         if (q.ready() || q.flying()) slider(p, q, L, fade, c.clock);
 
-        String count = q.count() + " / " + StarPath.COUNT;
-        p.text(count, L.w / 2f, countY(L), type(s * 0.78f), fadeBy(INK, fade),
-                Painter.CENTER, true);
+        String count = q.count() + " / " + q.total();
         if (q.ready()) {
             p.text("READY", L.w / 2f, readyY(L), readySize(L),
                     fadeBy(GOLD, fade), Painter.CENTER, true);
@@ -198,6 +189,19 @@ final class StarScreen extends Draw {
             p.text(q.won ? "ALL STARS!" : count + " STARS", L.w / 2f, L.h * 0.38f,
                     type(s * 1.15f), fadeBy(q.won ? GOLD : INK, fade), Painter.CENTER, true);
         }
+    }
+
+    /** Enters softly; an incomplete report leaves through the parade's cross-fade into play. */
+    static float sceneFade(GameCore c) {
+        float fade = Math.min(1f, c.time / Parade.HANDOFF);
+        if (c.stars.reporting() && !c.stars.won)
+            fade *= Math.max(0f, Math.min(1f, c.stars.timer / Parade.HANDOFF));
+        return fade;
+    }
+
+    /** The returning companion remains solid while the report around it cross-fades away. */
+    static float companionFade(GameCore c) {
+        return c.stars.reporting() && !c.stars.won ? 1f : sceneFade(c);
     }
 
     /** Dedicated direct-control track replacing the six keyboard arrows during Starpath. */
@@ -289,7 +293,7 @@ final class StarScreen extends Draw {
     private static void wake(Painter p, StarPath q, Layout L, float x, float y, float sway,
             float clock, float fade) {
         float rr = StarPath.flyerR(L);
-        float str = q.count() / (float) StarPath.COUNT;
+        float str = q.count() / (float) q.total();
         float exit = q.exitProgress();
         int n = 10 + q.count() + (int) (18f * exit);
         float len = rr * (1.35f + 1.85f * str + 1.4f * exit);
@@ -332,7 +336,7 @@ final class StarScreen extends Draw {
 
     /** The climber: a soft aura, a rimmed hex, and whichever collectible is piloting it. */
     private static void flyer(Painter p, StarPath q, float rr, float x, float y, float clock,
-            float fade) {
+            float fade, float companionFade) {
         if (q.dragging) {
             float pulse = 1f + 0.10f * (float) Math.sin(clock * 9f);
             p.fillCircle(x, y, rr * 1.62f * pulse,
@@ -345,9 +349,10 @@ final class StarScreen extends Draw {
         p.strokePoly(Glyph.hex(x, y, rr * 1.15f), fadeBy(Glyph.withAlpha(0xFF93D6F7, 150), fade),
                 rr * 0.07f);
         if (q.who >= 0 && q.who < Collect.COUNT) {
-            Trinket.draw(p, q.who, x, y, rr, clock, true, fade);
+            Trinket.draw(p, q.who, x, y, rr, clock, true, companionFade);
         } else {
-            p.fillCircle(x, y, rr * 0.75f, fadeBy(Glyph.withAlpha(INK_DIM, 210), fade));
+            p.fillCircle(x, y, rr * 0.75f,
+                    fadeBy(Glyph.withAlpha(INK_DIM, 210), companionFade));
         }
     }
 
@@ -423,7 +428,7 @@ final class StarScreen extends Draw {
         // here, though it is the one moment a full-strength one could be shown: the tableau is a
         // full stop, with the flyer standing still, and the prize's name sits directly under it —
         // twenty sparks at full brightness fell straight down through the label.
-        flyer(p, q, rr, fx, fy - hop, c.clock, fade);
+        flyer(p, q, rr, fx, fy - hop, c.clock, fade, fade);
         if (c.prize >= 0) Trinket.draw(p, c.prize, px, py, pr, c.clock, true, fade);
 
         // Sparks around the arrived prize, turning slowly the other way from the rays.
@@ -471,15 +476,16 @@ final class StarScreen extends Draw {
     private static float[] spline(StarPath q, Layout L) {
         final int steps = 7;
         boolean runway = q.starY(0, L) < L.dangerY;
-        float[] pts = new float[(StarPath.COUNT - 1) * steps * 2 + 2 + (runway ? 2 : 0)];
+        int total = q.total();
+        float[] pts = new float[(total - 1) * steps * 2 + 2 + (runway ? 2 : 0)];
         int at = 0;
         if (runway) {
             pts[at++] = q.starX(0, L);
             pts[at++] = L.dangerY;
         }
-        for (int i = 0; i < StarPath.COUNT - 1; i++) {
+        for (int i = 0; i < total - 1; i++) {
             int a = Math.max(0, i - 1), b = i, cc = i + 1,
-                    d = Math.min(StarPath.COUNT - 1, i + 2);
+                    d = Math.min(total - 1, i + 2);
             for (int k = 0; k < steps; k++) {
                 float t = k / (float) steps;
                 pts[at++] = catmull(q.starX(a, L), q.starX(b, L), q.starX(cc, L),
@@ -488,8 +494,8 @@ final class StarScreen extends Draw {
                         q.starY(d, L), t);
             }
         }
-        pts[at++] = q.starX(StarPath.COUNT - 1, L);
-        pts[at] = q.starY(StarPath.COUNT - 1, L);
+        pts[at++] = q.starX(total - 1, L);
+        pts[at] = q.starY(total - 1, L);
         return pts;
     }
 
