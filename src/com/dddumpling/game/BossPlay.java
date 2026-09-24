@@ -29,7 +29,7 @@ final class BossPlay {
             if (!e.destroyed) c.destroyWord(e, c.enemyCentreX(e), e.y, L);
         }
         if (won) {
-            c.highScores.bosses |= 1 << c.boss.kind;
+            c.highScores.recordBoss(c.boss.kind);
             c.progress.beatBoss(c.boss.kind);
             Interlude.awardBossPrize(c, c.boss.kind);
             if (c.boss.kind == Boss.SLIME && c.stage == Boss.EVERY) c.cubeUnlocked = true;

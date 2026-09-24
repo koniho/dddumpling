@@ -565,7 +565,7 @@ final class Renderer extends Draw {
     }
 
     /** Distinct, letter-free marks for the three player-facing powerups. */
-    private static void powerIcon(Painter p, int effect, float x, float y, float r, int hue, float fade) {
+    static void powerIcon(Painter p, int effect, float x, float y, float r, int hue, float fade) {
         int ink = fadeBy(Glyph.withAlpha(INK, 245), fade);
         if (effect == Power.FLURRY) {
             p.fillPoly(star(x, y, r * 0.78f, r * 0.30f, 6, 0f), ink);

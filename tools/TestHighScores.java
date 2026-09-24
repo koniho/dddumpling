@@ -3,6 +3,7 @@ package com.dddumpling.game;
 final class TestHighScores extends Check {
     static void all(Layout L) {
         portraits();
+        details(L);
         group("high-score history");
         Mem mem=new Mem();mem.best=9000;
         GameCore c=new GameCore(mem,101L);
@@ -30,7 +31,7 @@ final class TestHighScores extends Check {
         check("old top-ten saves retain qualifying latest",legacy.runs.size()==10 && legacy.latestRun.id==c.highScores.latest);
         check("historical summary remains frozen",original.score==1200 && original.stage==4 && original.stages==3
                 && original.dumplings==2 && original.squishes==9 && original.combo==7 && original.accuracy()==67 && original.best==9000);
-        for(String bad:new String[]{"junk","4:1","1:-1","1:1;1,0","1:1;999999999999999999999999999999999"}) {
+        for(String bad:new String[]{"junk","5:1","1:-1","1:1;1,0","1:1;999999999999999999999999999999999"}) {
             HighScores history=new HighScores();history.load(bad);
             check("bad history safely ignored "+bad,history.runs.isEmpty() && history.latest==0);
         }
@@ -38,7 +39,9 @@ final class TestHighScores extends Check {
         check("fatal hit saves the completed run",c.highScores.runs.get(0).score==2500);
         c.startGame();
         check("new run resets counters",c.highScores.stages==0 && c.highScores.dumplings==0
-                && c.highScores.bosses==0 && c.highScores.powers==0 && c.highScores.swipes==0);
+                && c.highScores.bosses==0 && c.highScores.powers==0 && c.highScores.swipes==0
+                && c.highScores.bossOrder.isEmpty() && c.highScores.prizes.isEmpty()
+                && total(c.highScores.powerUses)==0 && total(c.highScores.debuffUses)==0);
         c.startFrenzy(-1,L);c.startFrenzy(Power.TEAM,L);
         check("rejected powers do not count",c.highScores.powers==0);
         c.startFrenzy(Power.MULTI,L);
@@ -65,8 +68,45 @@ final class TestHighScores extends Check {
     private static String legacy(String data,int version) {
         String[] rows=data.split(";");
         StringBuilder result=new StringBuilder(version+rows[0].substring(1));
-        for(int i=1;i<rows.length;i++) result.append(';').append(rows[i].substring(0,rows[i].lastIndexOf(',')));
+        int fields=version>=3?17:16;
+        for(int i=1;i<rows.length;i++) {
+            String[] values=rows[i].split(",",-1);result.append(';');
+            for(int k=0;k<fields;k++) { if(k>0)result.append(',');result.append(values[k]); }
+        }
         return result.toString();
+    }
+    private static int total(int[] values) { int n=0;for(int value:values)n+=value;return n; }
+    private static void details(Layout L) {
+        group("saved run details");
+        Mem mem=new Mem();GameCore c=new GameCore(mem,120L);c.startGame();
+        c.highScores.recordBoss(Boss.OCTOPUS);c.highScores.recordBoss(Boss.SLIME);
+        c.highScores.recordPrize(7);c.highScores.recordPrize(7);c.highScores.recordPrize(3);
+        c.startFrenzy(Power.FLURRY,L);c.modeLeft=0;c.startFrenzy(Power.FLURRY,L);
+        c.modeLeft=0;c.startFrenzy(Power.MULTI,L);
+        c.startDebuff(Power.INCOGNITO);c.startDebuff(Power.INCOGNITO);
+        c.startDebuff(Power.MONOCHROME);c.score=777;c.highScores.finish(c);
+        HighScores.Run run=c.highScores.latestRun;
+        check("bosses retain deterministic encounter order",
+                java.util.Arrays.equals(run.bossOrder,new int[]{Boss.OCTOPUS,Boss.SLIME}));
+        check("run prizes retain repeats and award order",
+                java.util.Arrays.equals(run.prizes,new int[]{7,7,3}));
+        check("powerups count successful activations by type",run.powerUses[Power.FLURRY]==2
+                && run.powerUses[Power.MULTI]==1 && total(run.powerUses)==3);
+        check("debuffs count applied effects by type",run.debuffUses[0]==2
+                && run.debuffUses[1]==1 && total(run.debuffUses)==3);
+        HighScores loaded=new HighScores();loaded.load(c.highScores.encode());
+        HighScores.Run saved=loaded.latestRun;
+        check("all detailed history survives reload",java.util.Arrays.equals(saved.bossOrder,run.bossOrder)
+                && java.util.Arrays.equals(saved.prizes,run.prizes)
+                && java.util.Arrays.equals(saved.powerUses,run.powerUses)
+                && java.util.Arrays.equals(saved.debuffUses,run.debuffUses));
+        c.startGame();c.highScores.recordPrize(22);c.score=888;c.highScores.finish(c);
+        check("a newer run cannot overwrite an older run's details",
+                java.util.Arrays.equals(run.prizes,new int[]{7,7,3}) && run.score==777);
+        HighScores historical=new HighScores();historical.load(legacy(loaded.encode(),3));
+        check("historical runs upgrade without invented detail",historical.latestRun.bossOrder.length==0
+                && historical.latestRun.prizes.length==0 && historical.latestRun.powerUses.length==0
+                && historical.latestRun.debuffUses.length==0);
     }
     private static void portraits() {
         Mem mem=new Mem();mem.collected=3L;
@@ -139,7 +179,7 @@ final class TestHighScores extends Check {
         c.highScoreScreen.action(c,HighScoreScreen.ROW+10);
         check("extra row opens its saved summary",c.highScoreScreen.selected==10 && c.highScores.displayRun(10).score==100);
         HighScores old=new HighScores();String data=c.highScores.encode();
-        old.load(data.substring(0,data.lastIndexOf(';')).replaceFirst("2:","1:"));
+        old.load(legacy(data.substring(0,data.lastIndexOf(';')),1));
         check("legacy nonqualifying run is not fabricated",old.latestRun==null && old.displayCount()==10);
     }
     private static void blurbs(Layout L) {

@@ -158,6 +158,40 @@ final class HighScoreScreen extends Draw {
     private static void icon(Painter p,int kind,float x,float y,float r,float clock) {
         ReleaseChange.icon(p,kind==1?ReleaseChange.SHUFFLE:ReleaseChange.SWIPE,x,y,r,clock);
     }
+    private static int used(int[] counts) { int n=0;for(int count:counts)if(count>0)n++;return n; }
+    private static void portraits(Painter p,GameCore c,Layout L,int[] values,boolean boss,
+            float top,float bottom,float maxR) {
+        if(values.length==0 || bottom<=top)return;
+        float width=L.w*.72f,height=bottom-top;
+        int cols=Math.max(1,(int)Math.ceil(Math.sqrt(values.length*width/height)));
+        cols=Math.min(cols,values.length);
+        int rows=(values.length+cols-1)/cols;
+        float cellW=width/cols,cellH=height/rows,r=Math.min(maxR,Math.min(cellW,cellH)*.40f);
+        for(int i=0;i<values.length;i++) {
+            int row=i/cols,col=i%cols,inRow=Math.min(cols,values.length-row*cols);
+            float x=L.w*.5f+(col-(inRow-1)*.5f)*cellW;
+            float y=top+(row+.5f)*cellH;
+            if(boss)BossCollect.draw(p,values[i],x,y,r,c.clock,true,1f);
+            else Trinket.draw(p,values[i],x,y,r,c.clock,true,1f);
+        }
+    }
+    private static float effects(Painter p,GameCore c,Layout L,String title,int first,int[] counts,
+            float top,float s) {
+        int used=used(counts);if(used==0)return top;
+        p.text(title,L.w*.5f,top+s*.38f,type(s*.40f),INK_DIM,Painter.CENTER,true);
+        int slot=0;
+        for(int i=0;i<counts.length;i++) {
+            if(counts[i]==0)continue;
+            int row=slot/2,col=slot%2,effect=first+i;
+            float x=L.w*(col==0?.27f:.73f),y=top+s*(.85f+row*.95f);
+            int hue=effect>=Power.COUNT?0xFF7761B8:Glyph.cycle(effect*.21f);
+            Renderer.powerIcon(p,effect,x-s*.95f,y-s*.18f,s*.42f,hue,1f);
+            p.text(Power.NAMES[effect]+"  ×"+counts[i],x-s*.35f,y,type(s*.36f),INK,
+                    Painter.LEFT,true);
+            slot++;
+        }
+        return top+s*(1.15f+((used-1)/2)*.95f);
+    }
     private void summary(Painter p,GameCore c,Layout L,HighScores.Run run) {
         float s=size(L),t=listTop(L),cx=L.w*.5f;
         score(p,c,L,run,t+s*1.3f);
@@ -169,16 +203,21 @@ final class HighScoreScreen extends Draw {
         p.text("STAGE "+run.stage+"   SQUISHES "+run.squishes,cx,t+s*7.7f,type(s*.48f),INK_DIM,Painter.CENTER,false);
         p.text("BEST COMBO "+run.combo,cx,t+s*8.7f,type(s*.52f),INK_DIM,Painter.CENTER,false);
         p.text("STAGES COMPLETED "+run.stages,cx,t+s*10.1f,type(s*.48f),GOLD,Painter.CENTER,true);
-        bosses(p,c,run,cx,t+s*12f,s*.85f,L.w*.5f);
-        String[] labels={"DUMPLINGS","POWERUPS USED","RESCUE SWIPES"};
-        int[] counts={run.dumplings,run.powers,run.swipes};
-        for(int i=0;i<3;i++) {
-            float y=t+s*(14.3f+i*1.7f);
-            if(i==0) haul(p,counts[i],L.w*.82f,y-s*.2f,s*1.25f,c.clock);
-            else icon(p,i,L.w*.17f,y-s*.2f,s*.55f,c.clock);
-            p.text(labels[i],L.w*.23f,y,type(s*.44f),INK_DIM,Painter.LEFT,false);
-            if(i!=0) p.text(String.valueOf(counts[i]),L.w*.84f,y,type(s*.53f),INK,Painter.RIGHT,true);
+        float y=t+s*10.85f;
+        if(run.bossOrder.length>0) {
+            p.text("BOSSES DEFEATED",cx,y,type(s*.40f),INK_DIM,Painter.CENTER,true);
+            portraits(p,c,L,run.bossOrder,true,y+s*.30f,y+s*1.40f,s*.62f);
+            y+=s*1.65f;
         }
-        p.text("START STAGE "+(run.land*Boss.EVERY+1)+(run.kids?"   KIDS MODE":""),cx,t+s*20f,type(s*.4f),INK_DIM,Painter.CENTER,false);
+        if(run.prizes.length>0) {
+            p.text("DUMPLINGS COLLECTED",cx,y,type(s*.40f),INK_DIM,Painter.CENTER,true);
+            portraits(p,c,L,run.prizes,false,y+s*.30f,y+s*2.10f,s*.58f);
+            y+=s*2.35f;
+        }
+        y=effects(p,c,L,"POWERUPS USED",0,run.powerUses,y,s);
+        y=effects(p,c,L,"DEBUFFS",Power.COUNT,run.debuffUses,y,s);
+        float footer=listBottom(L)-s*.35f;
+        p.text("RESCUE SWIPES "+run.swipes+"   START STAGE "+(run.land*Boss.EVERY+1)
+                +(run.kids?"   KIDS MODE":""),cx,footer,type(s*.36f),INK_DIM,Painter.CENTER,false);
     }
 }
