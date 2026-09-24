@@ -31,7 +31,7 @@ final class PlayerSettings extends Draw {
         return L.w*(1f-panelTravel(panelEntrance));
     }
     void updatePanel(GameCore c,float elapsed) {
-        scoreReset.update(elapsed);
+        scoreReset.update(c,elapsed);
         panelEntrance=Math.max(0f,Math.min(1f,panelEntrance+(panelClosing?-elapsed:elapsed)/PANEL_TIME));
         if(panelClosing && panelEntrance==0f) c.closeSettings();
     }

@@ -168,6 +168,7 @@ final class TestSettings extends Check {
         group("score reset");
         Mem save=new Mem();save.collected=3L;save.caseIndex=1;save.landState=(1<<30)|2;
         GameCore c=new GameCore(save,111L,true);
+        Ear ear=new Ear();c.sound=ear;
         c.preferences.kids=true;c.preferences.music=.4f;c.preferences.save(c);
         c.startGame();c.score=9000;LandPicker.recordBest(c);c.highScores.finish(c);
         c.progress.checkpoint(c.score);c.toTitle();
@@ -188,10 +189,17 @@ final class TestSettings extends Check {
                 && c.highScores.runs.isEmpty() && c.highScores.latestRun==null && !c.highScores.unread
                 && c.highScoreScreen.selected==-1 && !c.highScoreScreen.open);
         check("reset starts one celebration",ui.left==ScoreReset.TIME && save.scoreResets==1);
+        check("confirmed reset has its own cue",ear.scoreResetConfirms==1 && ear.uiBloops==0);
         for(int i=0;i<3;i++) settingsTap(c,L,L.w*.72f,ScoreReset.buttonsY(L));
         SettingsInput.action(c,L,1000+PlayerSettings.KIDS);Pause.back(c);
         check("celebration blocks overlapping reset and navigation",ui.left==ScoreReset.TIME
                 && save.scoreResets==1 && c.settingsOpen && c.preferences.kids);
+        c.update(ScoreReset.LEAD+.001f,L);
+        check("first wipe starts one brush sound",ear.scoreResetBrushes==1 && ear.lastScoreResetBrush==0);
+        c.update(ScoreReset.STROKE_TIME+ScoreReset.STROKE_GAP,L);
+        check("second wipe starts one brush sound",ear.scoreResetBrushes==2 && ear.lastScoreResetBrush==1);
+        c.update(ScoreReset.STROKE_TIME+ScoreReset.STROKE_GAP,L);
+        check("third wipe starts one brush sound",ear.scoreResetBrushes==3 && ear.lastScoreResetBrush==2);
         c.progress.checkpoint(c.score);LandPicker.recordBest(c);c.highScores.finish(c);
         check("old run cannot immediately repopulate cleared scores",c.best==0
                 && c.highScores.runs.isEmpty() && c.progress.maximum("best_score")==0);

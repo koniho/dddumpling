@@ -236,6 +236,10 @@ final class GameCore {
         void slimeCover(boolean release);
         void landShuffle();
         void uiBloop();
+        /** A high-score reset was accepted and the board is about to be cleaned. */
+        default void scoreResetConfirm() {}
+        /** One of the three left-to-right blackboard strokes. */
+        default void scoreResetBrush(int stroke) {}
         void damage();
         void achievement();
         /** The slime has turned an unanswered prompt into a volley. */

@@ -91,7 +91,7 @@ final class LinkedPairArt {
     }
 
     /** Rotates the complete code-drawn pair, including faces, clasp and clipping masks. */
-    private static final class TurnPainter implements Painter {
+    static final class TurnPainter implements Painter {
         final Painter p;
         final float cx,cy,cos,sin;
         TurnPainter(Painter p,float cx,float cy,float angle) {

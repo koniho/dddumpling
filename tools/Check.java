@@ -142,6 +142,9 @@ abstract class Check {
         public void clearWord() { clears++; }
         int uiBloops;
         public void uiBloop() { uiBloops++; }
+        int scoreResetConfirms,scoreResetBrushes,lastScoreResetBrush=-1;
+        public void scoreResetConfirm() { scoreResetConfirms++; }
+        public void scoreResetBrush(int stroke) { scoreResetBrushes++;lastScoreResetBrush=stroke; }
         int landShuffles;
         public void landShuffle() { landShuffles++; }
         int slimeCovers, slimeReleases;

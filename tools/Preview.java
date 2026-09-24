@@ -92,7 +92,7 @@ final class Preview {
 
     static void scoreResetFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("111-reset-settings") && !wanted("111-reset-confirm")
-                && !wanted("111-reset-poof") && !wanted("111-reset-done") && !wanted("111-reset-empty")) return;
+                && !wanted("111-reset-wipe") && !wanted("111-reset-done") && !wanted("111-reset-empty")) return;
         GameCore c=new GameCore(new Mem(),111L);c.collected=3;c.startGame();c.score=9000;
         LandPicker.recordBest(c);c.highScores.finish(c);c.toTitle();c.returnFade=0;
         PlayerSettings.open(c);c.preferences.updatePanel(c,PlayerSettings.PANEL_TIME);
@@ -100,9 +100,14 @@ final class Preview {
         c.preferences.scoreReset.action(c,ScoreReset.OPEN);
         shot(dir,"111-reset-confirm",c,L,w,h,ss);
         c.preferences.scoreReset.action(c,ScoreReset.CONFIRM);
-        c.update(.3f,L);shot(dir,"111-reset-poof",c,L,w,h,ss);
-        c.update(.75f,L);shot(dir,"111-reset-done",c,L,w,h,ss);
-        c.update(.5f,L);c.closeSettings();c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+        for(int stroke=0;stroke<3;stroke++) {
+            c.update(stroke==0?ScoreReset.LEAD+ScoreReset.STROKE_TIME*.55f
+                    :ScoreReset.STROKE_TIME+ScoreReset.STROKE_GAP,L);
+            shot(dir,"111-reset-wipe-"+(stroke+1),c,L,w,h,ss);
+        }
+        c.update(.35f,L);shot(dir,"111-reset-done",c,L,w,h,ss);
+        c.update(ScoreReset.TIME,L);
+        c.closeSettings();c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
         shot(dir,"111-reset-empty",c,L,w,h,ss);
     }
 
@@ -2121,7 +2126,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage", "score-reset-confirm", "score-reset-brush"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);
