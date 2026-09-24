@@ -70,7 +70,12 @@ final class RunCompanion extends Draw {
     static float halfHeight(Layout L) { return halfWidth(L)*.8660254f; }
     static float radius(Layout L) { return L.keyR*.55f*.84f; }
     static float radius(GameCore c,Layout L) { return LandPicker.travelerRadius(c,L)*.84f; }
+    static float cryTearSize(Layout L) { return L.keyR; }
     float beat() { return left>0f?(float)Math.sin(Math.min(1f,age/.48f)*Math.PI)*strength:0f; }
+    float bubblePulse() { return reaction==WORD || reaction==BOSS_HIT ? beat() : 0f; }
+    static int flurryRing(float clock,int band) {
+        return Glyph.cycle(clock*.85f+band*.16f);
+    }
     float victoryRock() { return reaction==VICTORY?(float)Math.sin(age*9f)*strength:0f; }
     float squash() { return 1f+beat()*(reaction==DAMAGE?.20f:-.16f); }
     float damagePush(Layout L) { return reaction==DAMAGE?halfHeight(L)*1.5f*beat():0f; }
@@ -138,8 +143,12 @@ final class RunCompanion extends Draw {
     }
     static void drawHomeOnly(Painter p,GameCore c,Layout L,float fade) {
         if(fade<=0f || c.companion.who<0) return;
+        drawHomeOnly(p,c,L,c.companion.who,fade);
+    }
+    static void drawHomeOnly(Painter p,GameCore c,Layout L,int who,float fade) {
+        if(fade<=0f || who<0) return;
         float x=x(L),y=y(L),w=halfWidth(L),h=halfHeight(L);
-        int body=Collect.BODY[c.companion.who];
+        int body=Collect.BODY[who];
         float[] skin=c.companion.outline(L);
         p.fillEllipse(x,y+h*.95f,w*.8f,h*.12f,fadeBy(0x44302050,fade));
         p.fillPoly(skin,fadeBy(Glyph.mix(0xFF352D52,body,.16f),fade));
@@ -163,6 +172,27 @@ final class RunCompanion extends Draw {
         int tint=a.reaction==DAMAGE?Glyph.mix(body,ROSE,.25f+.75f*beat)
                 :rescuePowered?GOLD:(a.reaction==VICTORY || a.reaction==BOSS_HIT)?GOLD:body;
         float[] skin=a.outline(L);
+        // A scored clear lands in the companion's home as well as in the counter. Keep the
+        // character at its usual size while its shell briefly swells, brightens and throws a
+        // soft halo. Boss damage uses the same beat so both kinds of progress feel related.
+        float bubblePulse=a.bubblePulse();
+        if(bubblePulse>0f) {
+            float scale=1f+.14f*bubblePulse;
+            for(int i=0;i<skin.length;i+=2) {
+                skin[i]=x+(skin[i]-x)*scale;
+                skin[i+1]=y+(skin[i+1]-y)*scale;
+            }
+            float[] halo=skin.clone();
+            for(int i=0;i<halo.length;i+=2) {
+                halo[i]=x+(halo[i]-x)*1.10f;
+                halo[i+1]=y+(halo[i+1]-y)*1.10f;
+            }
+            int glow=Glyph.mix(GOLD,0xFFFFFFFF,.45f);
+            p.fillPoly(halo,Glyph.withAlpha(glow,(int)(72*bubblePulse)));
+            p.strokePoly(skin,Glyph.withAlpha(glow,(int)(190*bubblePulse)),
+                    Math.max(1f,L.unit*(.10f+.10f*bubblePulse)));
+            tint=Glyph.mix(tint,glow,.78f*bubblePulse);
+        }
         float stageGlow=a.reaction==STAGE_CLEAR
                 ?(float)Math.sin(Math.min(1f,a.age/1.25f)*Math.PI)*a.strength:0f;
         if(stageGlow>0f) {
@@ -200,7 +230,24 @@ final class RunCompanion extends Draw {
         }
         p.fillEllipse(x,y+h*.95f,w*.8f,h*.12f,0x44302050);
         p.fillPoly(skin,Glyph.mix(0xFF352D52,tint,.16f));
-        p.strokePoly(skin,Glyph.withAlpha(Glyph.mix(tint,INK,.4f),180),Math.max(1f,L.unit*.065f));
+        if(c.flurry()) {
+            // The pickup announces FLURRY with a cycling rainbow halo. Carry that same sweep into
+            // the companion's home: three breathing outlines sit behind the crisp inner rim, each
+            // offset in hue so the bubble reads as rainbow even in a still frame.
+            for(int band=3;band>=1;band--) {
+                float shimmer=.5f+.5f*(float)Math.sin(c.clock*5f+band*1.7f);
+                float scale=1f+band*.032f+shimmer*.014f;
+                float[] ring=skin.clone();
+                for(int i=0;i<ring.length;i+=2) {
+                    ring[i]=x+(ring[i]-x)*scale;
+                    ring[i+1]=y+(ring[i+1]-y)*scale;
+                }
+                p.strokePoly(ring,Glyph.withAlpha(flurryRing(c.clock,band),
+                        (int)(48+42*shimmer)),Math.max(1f,L.unit*(.075f+band*.018f)));
+            }
+        }
+        int rim=c.flurry()?flurryRing(c.clock,0):Glyph.mix(tint,INK,.4f);
+        p.strokePoly(skin,Glyph.withAlpha(rim,c.flurry()?235:180),Math.max(1f,L.unit*.065f));
         if(a.reaction==DAMAGE && beat>0f)
             p.strokePoly(skin,Glyph.withAlpha(ROSE,(int)(210*beat)),Math.max(1f,L.unit*(.07f+.08f*beat)));
         p.polyline(new float[]{x-w*.42f,y-h*.22f,x-w*.24f,y-h*.52f,x+w*.02f,y-h*.62f},
@@ -217,6 +264,7 @@ final class RunCompanion extends Draw {
         p.fillEllipse(x,y+r*.85f,r*.7f,r*.13f,0x55302045);
         Trinket.drawReacting(new Squash(p,cx,cy,a.squash()),a.who,cx,cy,r,a.clock,1f,a.displayMood(c),
                 .10f*(float)Math.sin(a.clock*.9f),c.flinging());
+        if(a.reaction==CRY) cryTears(p,cx,cy,r,cryTearSize(L),a.clock);
         if(a.reaction==BOSS_HIT) {
             float poleX=x+w*.60f,poleTop=y-h*(.94f+.18f*beat),poleBottom=y+h*.30f;
             p.line(poleX,poleBottom,poleX,poleTop,Glyph.mix(INK,GOLD,.45f),r*.075f);
@@ -235,6 +283,23 @@ final class RunCompanion extends Draw {
             p.fillCircle(x+w*.65f,y-h*.05f,r*.07f,GOLD);
         }
         p.restore();
+    }
+
+    /** Comically oversized game-over tears, each about the height of one of the deck keys. */
+    private static void cryTears(Painter p,float x,float y,float faceR,float size,float clock) {
+        for(int side=-1;side<=1;side+=2) {
+            float bob=.5f+.5f*(float)Math.sin(clock*7f+side);
+            float tx=x+side*faceR*.36f;
+            float top=y-faceR*.03f;
+            float bulbY=top+size*(.88f+.10f*bob);
+            float rx=size*(.38f+.035f*bob),ry=size*(.50f+.04f*bob);
+            int water=Glyph.withAlpha(0xFF79DDEB,220);
+            p.fillPoly(new float[]{tx,top,tx-rx*.70f,bulbY-ry*.50f,
+                    tx+rx*.70f,bulbY-ry*.50f},water);
+            p.fillEllipse(tx,bulbY,rx,ry,water);
+            p.fillEllipse(tx-side*rx*.20f,bulbY-ry*.18f,rx*.16f,ry*.25f,
+                    Glyph.withAlpha(0xFFFFFFFF,145));
+        }
     }
 
     /** Scale the existing collectible artwork without changing its body or accessories. */

@@ -43,6 +43,9 @@ final class Preview {
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
         c.stageBanner=0;c.startFrenzy(Power.FLING,L);c.companion.update(c,.18f);
         shot(dir,"118-companion-fling-mask",c,L,w,h,ss);
+        c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
+        c.stageBanner=0;c.startFrenzy(Power.FLURRY,L);c.companion.update(c,.24f);
+        shot(dir,"118-companion-flurry-bubble",c,L,w,h,ss);
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();c.stageBanner=0;
         c.pushUsed=true;c.pushCount=3;c.pushSlowT=GameCore.PUSH_SLOW;c.pushT=GameCore.PUSH_TIME;
         c.companion.rescue();
@@ -68,6 +71,15 @@ final class Preview {
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
         c.playtestSteamer(L);c.time=.7f;
         shot(dir,"118-companion-steamer",c,L,w,h,ss);
+        c.bonusTimer=c.bonusRollEnd;
+        c.tapBonus(c.steamer.wanted());c.tapBonus(c.steamer.wanted());
+        c.companion.update(c,.24f);
+        shot(dir,"118-companion-steamer-score",c,L,w,h,ss);
+        c.steamer.hits=c.steamer.goal()-1;
+        c.steamer.expectLeft=true;
+        c.tapBonus(c.steamer.wanted());c.tapBonus(c.steamer.wanted());
+        c.swipeBonus();c.companion.update(c,.18f);
+        shot(dir,"118-companion-steamer-win",c,L,w,h,ss);
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
         c.starNext=true;Interlude.enterBonus(c,L);
         for(int frame=0;frame<6;frame++) {
@@ -129,8 +141,8 @@ final class Preview {
             shot(dir,"112-picker-hello-"+frame,picker,L,w,h,ss);
             step(picker,L,Launch.TIME*(Launch.LAND-Launch.POP)*.20f);
         }
-        while(Launch.progress(picker)<Launch.TOP) step(picker,L,DT);
-        shot(dir,"112-picker-roof",picker,L,w,h,ss);
+        while(Launch.progress(picker)<Launch.HOME) step(picker,L,DT);
+        shot(dir,"112-picker-home",picker,L,w,h,ss);
         GameCore lettering=new GameCore(new Mem(),112L);lettering.collected=Collect.MASK;
         lettering.caseIndex=51;lettering.clock=18.87f;lettering.beginStart();
         step(lettering,L,Launch.CENTER_TIME*.5f);
@@ -919,8 +931,8 @@ final class Preview {
                 GameCore.START_FADE, c18.state);
         shot(dir, "35-title-fading", c18, L, w, h, ss);
 
-        // The send-off: the squishy swelling out of the badge in a pip of stars, and again as it
-        // bounces off the top of the screen with the title long gone.
+        // The send-off: the squishy swelling out of the badge, then arriving at its run home and
+        // finally holding there as the home bubble fades in.
         GameCore c19 = new GameCore(store, 81L);
         step(c19, L, 1.4f);
         c19.tapKey(2, L);
@@ -928,10 +940,16 @@ final class Preview {
         System.out.printf("send-off pop: who=%d left=%.2f progress=%.2f%n", c19.launchWho,
                 c19.launchT, Launch.progress(c19));
         shot(dir, "42-sendoff-pop", c19, L, w, h, ss);
-        step(c19, L, Launch.TIME * (Launch.TOP - Launch.POP * 0.75f));
-        System.out.printf("send-off roof: progress=%.2f state=%d%n", Launch.progress(c19),
+        step(c19, L, Launch.TIME * (Launch.HOME - Launch.POP * 0.75f));
+        System.out.printf("send-off home: progress=%.2f state=%d%n", Launch.progress(c19),
                 c19.state);
-        shot(dir, "43-sendoff-roof", c19, L, w, h, ss);
+        shot(dir, "43-sendoff-home", c19, L, w, h, ss);
+        step(c19,L,Launch.TIME*(1f-Launch.HOME)*.62f);
+        shot(dir,"43b-sendoff-bubble",c19,L,w,h,ss);
+        step(c19,L,Math.max(0f,c19.launchT-DT));
+        shot(dir,"43c-sendoff-settled",c19,L,w,h,ss);
+        step(c19,L,DT*2f);
+        shot(dir,"43d-sendoff-play",c19,L,w,h,ss);
 
         // Story popup, mid-panel-spring and again settled with the scene playing.
         c.caseIndex = 0;

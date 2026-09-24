@@ -979,6 +979,8 @@ final class TestStages extends Check {
         c.tapBonus(rk);
         check("a completed pair scores one", c.steamer.hits == 1);
         check("and it wants the left one again", c.steamer.expectLeft);
+        check("a scored steamer pair grows and glows the companion bubble",
+                c.companion.reaction == RunCompanion.WORD);
 
         int other = (lk + 1) % (Glyph.COUNT / 2);
         c.tapBonus(other);
@@ -1072,6 +1074,8 @@ final class TestStages extends Check {
                 && c.steamer.hits == c.steamer.goal() && c.steamer.opens == 0);
         c.swipeBonus();
         check("swiping the armed lid frees the dumpling", c.steamer.opens == 1);
+        check("freeing the dumpling starts the companion win animation",
+                c.companion.reaction == RunCompanion.VICTORY && c.companion.mood() == 4);
         check("a success raises the next target by two", c.steamer.goal() == 12);
         check("the higher target is saved immediately",
                 persistent.steamerOpens == 1 && persistent.steamerOpenSaves == 1);

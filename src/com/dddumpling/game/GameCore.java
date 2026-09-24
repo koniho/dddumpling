@@ -2629,11 +2629,11 @@ final class GameCore {
                         launchNameAnnounced = true;
                         if (sound != null) sound.announceSquishy(launchWho);
                     }
-                    // One tick per bounce, as it happens. The impacts are what the sound is for.
+                    // The greeting landing and arrival home each get one soft punctuation.
                     if (launchPips == 0 && u >= Launch.LAND) {
                         launchPips = 1;
                         bounceTick();
-                    } else if (launchPips == 1 && u >= Launch.TOP) {
+                    } else if (launchPips == 1 && u >= Launch.HOME) {
                         launchPips = 2;
                         bounceTick();
                     }
