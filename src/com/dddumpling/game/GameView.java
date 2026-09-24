@@ -47,7 +47,7 @@ public class GameView extends View {
     }
     void background(boolean hidden) {
         background = hidden; last = 0;
-        if (hidden) { cancelPointers(); Pause.open(core); }
+        if (hidden) { cancelPointers(); if(!core.settingsOpen) Pause.open(core); }
         refreshNavigation(); invalidate();
     }
 
@@ -763,6 +763,8 @@ public class GameView extends View {
             boolean playingBeforeUpdate = core.state == GameCore.PLAY && !core.paused && !background;
             if (!background) {
                 core.update(dt, elapsed, layout);
+                int external=core.preferences.takeExternal(core);
+                if(external!=0) ((MainActivity)getContext()).openAppAction(external);
                 int caveFeedback=Math.max(core.cart.scene.takeFeedback(),Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback()));
                 if(caveFeedback>0 && !core.paused && !core.settingsOpen)
                     performHapticFeedback(caveFeedback>1?HapticFeedbackConstants.LONG_PRESS:HapticFeedbackConstants.KEYBOARD_TAP);

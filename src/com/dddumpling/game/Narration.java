@@ -41,6 +41,12 @@ final class Narration {
      */
     static final float RATE = 1.0f;
 
+    /** An extra-high chipmunk greeting, with the display case's name-reading speed. */
+    static final float NAME_PITCH = 2.0f, NAME_RATE = .90f;
+    static String name(int entry) {
+        return (Collect.NAME[entry]+"!").toLowerCase(java.util.Locale.US);
+    }
+
     /**
      * What to say, in order: the name, where it lives, and the story in one piece.
      *
@@ -62,7 +68,7 @@ final class Narration {
      * little slower than the rest is read.
      */
     static float rate(int k) {
-        return k == 0 ? 0.90f : RATE;
+        return k == 0 ? NAME_RATE : RATE;
     }
 
     /**

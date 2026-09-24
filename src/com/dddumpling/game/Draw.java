@@ -9,6 +9,11 @@ package com.dddumpling.game;
 abstract class Draw {
 
     static final float PANEL_OPACITY = .96f;
+    static final float PANEL_SLIDE_TIME = .32f;
+    static float panelTravel(float progress) {
+        float t=Math.max(0f,Math.min(1f,progress));
+        return t*t*(3f-2f*t);
+    }
 
     static final int BG = 0xFF1B1730;
     static final int BG_HI = 0xFF251F42;

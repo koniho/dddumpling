@@ -2,6 +2,30 @@ package com.dddumpling.game;
 
 /** Alternation, steering, persistence and rewards for the star-path interlude. */
 final class TestStars extends Check {
+    private static void dirtyRun(GameCore c) {
+        c.starNext = c.starBonus = true;
+        c.stars.collected = 0b10101;
+        c.stars.who = 4;
+        c.stars.timer = 3f;
+        c.stars.x = 12f;
+        c.stars.vx = 7f;
+        c.stars.left = c.stars.right = c.stars.won = c.stars.dragging = true;
+        c.stars.winT = 1f;
+        c.stars.winStar = 2;
+        c.stars.grabbed = c.stars.launched = c.stars.reported = c.stars.awardPending = true;
+        c.stars.sx[0] = .4f;
+        c.stars.burst[0] = 1f;
+    }
+
+    private static boolean cleanRun(GameCore c) {
+        return !c.starNext && !c.starBonus && c.stars.collected == 0 && c.stars.who == -1
+                && c.stars.timer == 0f && c.stars.x == 0f && c.stars.vx == 0f
+                && !c.stars.left && !c.stars.right && !c.stars.won && !c.stars.dragging
+                && c.stars.winT == 0f && c.stars.winStar == -1
+                && !c.stars.grabbed && !c.stars.launched && !c.stars.reported
+                && !c.stars.awardPending && c.stars.sx[0] == 0f && c.stars.burst[0] == 0f;
+    }
+
     private static void interruptedWin(Layout L, boolean duringParade) {
         Mem store = new Mem();
         GameCore c = new GameCore(store, 19L);
@@ -62,13 +86,15 @@ final class TestStars extends Check {
         check("the victory tableau keeps its pilot when the star prize arrives", c.stars.who == 7);
         Interlude.enterBonus(c, L);
         check("the next course keeps the title selection after a star award", c.stars.who == 7);
-        c.state = GameCore.TITLE;
+        c.toTitle();
         c.caseIndex = 2;
         c.beginStart();
         advance(c, L, Launch.TIME + GameCore.START_FADE + DT);
+        check("a new run starts without the previous Star Path turn", cleanRun(c));
+        c.starNext = true;
         Interlude.enterBonus(c, L);
-        check("unfinished stars resume with the next run's selected character",
-                c.starBonus && c.prize == -1 && c.stars.who == 2 && c.stars.count() == 3);
+        check("a fresh course uses the next run's selected character",
+                c.starBonus && c.prize == -1 && c.stars.who == 2 && c.stars.count() == 0);
         if (BuildFlags.DEVELOPER) {
             c.state = GameCore.PLAY;
             c.playtestStars(L);
@@ -79,7 +105,7 @@ final class TestStars extends Check {
         fresh.startGame();
         fresh.starNext = true;
         Interlude.enterBonus(fresh, L);
-        check("an empty collection still flies a dumpling instead of a blank circle", fresh.stars.who == 0);
+        check("an empty collection flies the resolved run squishy", fresh.stars.who == fresh.runWho && fresh.runWho >= 0);
     }
 
     static void game(Layout L) {
@@ -107,8 +133,35 @@ final class TestStars extends Check {
         stale.starNext = true;
         stale.stars.collected = 7;
         stale.startGame();
-        check("new runs keep unfinished stars and their pending Star Path turn",
-                stale.stars.count() == 3 && stale.starNext);
+        check("new runs clear unfinished stars and their pending Star Path turn",
+                cleanRun(stale));
+
+        Mem quitStore = new Mem();
+        quitStore.starWins = 4;
+        GameCore quit = new GameCore(quitStore, 94L);
+        quit.startGame();
+        dirtyRun(quit);
+        quit.toTitle();
+        check("ending a run clears every transient Star Path field",
+                cleanRun(quit) && quit.stars.wins == 4 && quitStore.starWinSaves == 0);
+
+        GameCore lost = new GameCore(quitStore, 95L);
+        lost.startGame();
+        dirtyRun(lost);
+        lost.state = GameCore.PLAY;
+        lost.lives = 1;
+        lost.takeHit(L.w * .5f, L);
+        check("death clears every transient Star Path field",
+                lost.state == GameCore.OVER && cleanRun(lost) && lost.stars.wins == 4);
+
+        GameCore oldSession = new GameCore(quitStore, 96L);
+        oldSession.startGame();
+        dirtyRun(oldSession);
+        GameCore reloaded = new GameCore(quitStore, 97L);
+        reloaded.startGame();
+        check("a reloaded new run restores difficulty but no old course state",
+                cleanRun(reloaded) && reloaded.stars.wins == 4
+                        && oldSession.stars.count() == 3);
         StarPath q = new StarPath();
         q.make(new java.util.Random(7));
         q.begin(3, L);

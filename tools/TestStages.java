@@ -326,6 +326,8 @@ final class TestStages extends Check {
         check("it counted what it moved", c.pushCount == 1);
         check("the alarm is cleared", c.warnLevel == 0f);
         check("and it shows a shockwave", c.pushT > 0f);
+        check("and it starts the companion's independent rescue motion",
+                c.companion.rescueT==RunCompanion.RESCUE_TIME);
         // Resolved now, travelled afterwards. The word has not moved yet; it has been given
         // somewhere to be and PUSH_SLIDE to get there.
         check("the near word does not teleport", low.y == lowWas);

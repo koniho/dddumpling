@@ -42,6 +42,7 @@ final class Audio implements GameCore.Sound {
 
     Audio(Context ctx) {
         this.ctx = ctx;
+        prepareSpeech();
         new Thread(new Runnable() {
              public void run() {
                 for (int id = 0; id < Sfx.COUNT; id++) Sfx.build(id);
@@ -490,35 +491,50 @@ final class Audio implements GameCore.Sound {
     private boolean ttsReady, ttsBroken;
     /** Queued while the engine is still waking up, or -1 for nothing waiting. */
     private int ttsPending = -1;
+    private boolean ttsPendingName;
+    private long speechSerial;
 
     /**
-     * The story popup, read aloud. The engine is built on first use and takes a moment to come
-     * up, so the entry is parked until it does.
+     * The story popup, read aloud. Requests wait if the title-screen speech warmup has not
+     * finished yet.
      *
      * Guarded throughout and switched off for good on any failure: plenty of devices have no
      * speech engine at all, and a missing voice must never be more than a missing voice.
      */
-    @Override public void narrate(int entry) {
-        if(effectsVolume<=0f) return;
-        if (ttsBroken) return;
+    @Override public synchronized void narrate(int entry) {
+        requestSpeech(entry, false);
+    }
+
+    @Override public synchronized void announceSquishy(int entry) {
+        requestSpeech(entry, true);
+    }
+
+    private void requestSpeech(int entry, boolean nameOnly) {
+        if(effectsVolume<=0f || ttsBroken || entry<0 || entry>=Collect.COUNT) return;
         ttsPending = entry;
-        if (tts != null) {
-            if (ttsReady) read(entry);
-            return;
-        }
+        ttsPendingName = nameOnly;
+        prepareSpeech();
+        if (ttsReady) readPending();
+    }
+
+    /** Warm up on the title screen so the short name call is ready for the first run. */
+    private synchronized void prepareSpeech() {
+        if(tts!=null || ttsBroken) return;
         try {
             tts = new android.speech.tts.TextToSpeech(ctx,
                     new android.speech.tts.TextToSpeech.OnInitListener() {
                         @Override public void onInit(int status) {
-                            if (status != android.speech.tts.TextToSpeech.SUCCESS) {
-                                ttsBroken = true;
-                                return;
+                            synchronized (Audio.this) {
+                                if (ttsBroken || status != android.speech.tts.TextToSpeech.SUCCESS) {
+                                    ttsBroken = true;
+                                    return;
+                                }
+                                setVoice();
+                                listen();
+                                ttsReady = true;
+                                // The panel may well have been dismissed while it started up.
+                                if (ttsPending >= 0) readPending();
                             }
-                            setVoice();
-                            listen();
-                            ttsReady = true;
-                            // The panel may well have been dismissed while it started up.
-                            if (ttsPending >= 0) read(ttsPending);
                         }
                     });
         } catch (Throwable t) {
@@ -526,8 +542,9 @@ final class Audio implements GameCore.Sound {
         }
     }
 
-    @Override public void hush() {
+    @Override public synchronized void hush() {
         ttsPending = -1;
+        lastUtterance = null;
         try {
             if (tts != null && ttsReady) tts.stop();
         } catch (Throwable ignored) {
@@ -554,12 +571,12 @@ final class Audio implements GameCore.Sound {
                         }
 
                         @Override public void onStop(String id, boolean interrupted) {
-                            duck(false);
+                            if (id != null && id.equals(lastUtterance)) duck(false);
                         }
 
                         @SuppressWarnings("deprecation")
                         @Override public void onError(String id) {
-                            duck(false);
+                            if (id != null && id.equals(lastUtterance)) duck(false);
                         }
                     });
         } catch (Throwable ignored) {
@@ -601,17 +618,32 @@ final class Audio implements GameCore.Sound {
         }
     }
 
-    /**
-     * Queues the whole reading at once: the name, the place, then the story in one piece, with a
-     * beat of silence between them.
-     *
-     * Speech follows the effects volume; ducking keeps the scene music below it.
-     */
+    /** Speech follows effects volume; ducking keeps the scene music below it. */
+    private void readPending() {
+        int entry=ttsPending;
+        if(entry<0) return;
+        if(!ttsPendingName) { read(entry); return; }
+        ttsPending=-1;
+        if(effectsVolume<=0f) return;
+        try {
+            android.os.Bundle params=new android.os.Bundle();
+            params.putFloat(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_VOLUME,effectsVolume);
+            tts.setPitch(Narration.NAME_PITCH);
+            tts.setSpeechRate(Narration.NAME_RATE);
+            lastUtterance="name-"+(++speechSerial);
+            duck(true);
+            if(tts.speak(Narration.name(entry),android.speech.tts.TextToSpeech.QUEUE_FLUSH,
+                    params,lastUtterance)!=android.speech.tts.TextToSpeech.SUCCESS) duck(false);
+        } catch(Throwable t) { ttsBroken=true; duck(false); }
+    }
+
+    /** Queue the name, place and whole story, with a beat between them. */
     private void read(int entry) {
         if(effectsVolume<=0f) { ttsPending=-1; return; }
         ttsPending = -1;
         try {
             String[] lines = Narration.lines(entry);
+            long serial=++speechSerial;
             android.os.Bundle params = new android.os.Bundle();
             params.putFloat(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_VOLUME, effectsVolume);
             // One pitch for the whole reading, set once. See Narration for why it stopped moving.
@@ -619,7 +651,7 @@ final class Audio implements GameCore.Sound {
             duck(true);
             for (int i = 0; i < lines.length; i++) {
                 tts.setSpeechRate(Narration.rate(i));
-                lastUtterance = "story-" + entry + "-" + i;
+                lastUtterance = "story-" + serial + "-" + i;
                 tts.speak(lines[i], i == 0
                         ? android.speech.tts.TextToSpeech.QUEUE_FLUSH
                         : android.speech.tts.TextToSpeech.QUEUE_ADD, params, lastUtterance);
@@ -636,7 +668,7 @@ final class Audio implements GameCore.Sound {
     }
 
     /** The last utterance queued, so the listener knows when the reading is over. */
-    private String lastUtterance;
+    private volatile String lastUtterance;
     /** True while the music is held down for the voice. */
     private boolean ducked;
 
@@ -649,7 +681,9 @@ final class Audio implements GameCore.Sound {
      */
     private void duck(boolean on) { ducked=on; applyMusicMix(); }
 
-    void release() {
+    synchronized void release() {
+        ttsBroken=true;
+        hush();
         band.stop();
         stopMusic();
         try {

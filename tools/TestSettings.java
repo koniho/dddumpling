@@ -71,7 +71,100 @@ final class TestSettings extends Check {
         check("normal run restores full star difficulty",Math.abs(c.stars.bendRate()-7f)<.001f);
     }
 
+    private static void panelTiming(Layout L) {
+        GameCore settings=new GameCore(new Mem(),915L),scores=new GameCore(new Mem(),916L),news=new GameCore(new Mem(),917L);
+        PlayerSettings.open(settings);scores.highScoreScreen.show(scores);news.releaseNotes.show(news,L);
+        news.releaseNotes.update(ReleaseTransition.GATHER_TIME,L);
+        check("release steamer lead-in ends before the shared slide",Math.abs(news.releaseNotes.transition.listX(L)-L.w)<.001f);
+        float half=PlayerSettings.PANEL_TIME*.5f;
+        settings.update(half,L);scores.update(half,L);news.update(half,L);
+        float travel=settings.preferences.panelOffset(L)/L.w;
+        check("three panels share midpoint timing and easing",Math.abs(travel-.5f)<.0001f
+                && Math.abs(-scores.highScoreScreen.offsetY(L)/HighScoreScreen.bottom(L)-travel)<.0001f
+                && Math.abs(news.releaseNotes.transition.listX(L)/L.w-travel)<.0001f);
+        settings.update(half+.00001f,L);scores.update(half+.00001f,L);news.update(half+.00001f,L);
+        check("three panels settle after one shared duration",!settings.preferences.panelMoving()
+                && !scores.highScoreScreen.moving() && !news.releaseNotes.transition.moving());
+        PlayerSettings.close(settings);scores.highScoreScreen.back(scores);news.releaseNotes.close();
+        settings.update(half,L);scores.update(half,L);news.update(half,L);
+        check("three exits share midpoint timing",Math.abs(settings.preferences.panelOffset(L)/L.w-.5f)<.0001f
+                && Math.abs(-scores.highScoreScreen.offsetY(L)/HighScoreScreen.bottom(L)-.5f)<.0001f
+                && Math.abs(news.releaseNotes.transition.listX(L)/L.w-.5f)<.0001f);
+        settings.update(half+.00001f,L);scores.update(half+.00001f,L);news.update(half+.00001f,L);
+        check("three exits finish after one shared duration",!settings.settingsOpen && !scores.highScoreScreen.open && !news.releaseNotes.open);
+    }
+    private static void kidsToggle(Layout L) {
+        Mem mem=new Mem();GameCore c=new GameCore(mem,911L);c.startGame();PlayerSettings.open(c);
+        c.update(PlayerSettings.PANEL_TIME,L);
+        SettingsInput.action(c,L,1000+PlayerSettings.KIDS);
+        check("kids choice persists immediately while handle starts at old position",new GameCore(mem,912L).preferences.kids
+                && c.preferences.kidsPosition(c.clock)==0f && !c.kidsRun);
+        c.update(PlayerSettings.KIDS_TOGGLE_TIME*.5f,L);
+        float position=c.preferences.kidsPosition(c.clock),lift=c.preferences.kidsLift(c.clock);
+        check("pear slides and hops between positions",position>0f && position<1f && lift>0f);
+        SettingsInput.action(c,L,1000+PlayerSettings.KIDS);
+        check("rapid retoggle continues from visible pose",Math.abs(c.preferences.kidsPosition(c.clock)-position)<.0001f
+                && Math.abs(c.preferences.kidsLift(c.clock)-lift)<.0001f && !c.preferences.kids);
+        c.update(PlayerSettings.KIDS_TOGGLE_TIME+.01f,L);
+        check("off animation settles and saves",c.preferences.kidsPosition(c.clock)==0f
+                && c.preferences.kidsLift(c.clock)==0f && !new GameCore(mem,913L).preferences.kids);
+        SettingsInput.action(c,L,1000+PlayerSettings.KIDS);c.update(PlayerSettings.KIDS_TOGGLE_TIME+.01f,L);
+        PlayerSettings loaded=new GameCore(mem,914L).preferences;
+        check("on animation and restart settle at young pear",c.preferences.kidsPosition(c.clock)==1f
+                && c.preferences.kidsLift(c.clock)==0f && loaded.kidsPosition(0f)==1f && loaded.kidsLift(0f)==0f);
+    }
+    private static void transitions(Layout L) {
+        GameCore c=new GameCore(new Mem(),910L);c.startGame();
+        float time=c.time,gap=c.stageGap;
+        PlayerSettings.open(c);
+        check("settings starts offscreen right",c.preferences.panelOffset(L)==L.w);
+        SettingsInput input=new SettingsInput();float x=L.w*.28f,y=PlayerSettings.socialY(L);
+        input.touch(c,L,0,1,x,y);input.touch(c,L,1,1,x,y);
+        check("moving panel cannot launch external flow",!c.preferences.externalBusy);
+        c.update(PlayerSettings.PANEL_TIME*.5f,L);
+        check("settings slides into place while run stays frozen",c.preferences.panelOffset(L)>0f
+                && c.preferences.panelOffset(L)<L.w && c.time==time && c.stageGap==gap);
+        c.update(PlayerSettings.PANEL_TIME*.5f,L);
+        check("settings settles at its hit targets",!c.preferences.panelMoving() && c.preferences.panelOffset(L)==0f);
+        PlayerSettings.close(c);c.update(PlayerSettings.PANEL_TIME*.5f,L);
+        float offset=c.preferences.panelOffset(L);
+        check("exit remains modal and moves right",c.settingsOpen && offset>0f && offset<L.w);
+        Pause.back(c);
+        check("repeated back does not restart exit",c.preferences.panelOffset(L)==offset && !c.paused);
+        input.touch(c,L,0,1,x,y);input.touch(c,L,1,1,x,y);c.tapKey(0,L);
+        check("exit consumes gameplay and settings input",!c.preferences.externalBusy && c.time==time && c.stageGap==gap);
+        c.update(PlayerSettings.PANEL_TIME*.5f,L);
+        check("exit resumes only after panel leaves",!c.settingsOpen && c.time==time && c.stageGap==gap);
+        c.update(.05f,L);check("game resumes on following tick",c.time>time);
+        PlayerSettings.open(c);c.update(PlayerSettings.PANEL_TIME*.25f,L);PlayerSettings.close(c);
+        c.update(PlayerSettings.PANEL_TIME*.25f,L);
+        check("back during entrance reverses and closes",!c.settingsOpen);
+    }
+    private static void social(Layout L) {
+        GameCore c=new GameCore(new Mem(),909L);PlayerSettings.open(c);
+        float y=PlayerSettings.socialY(L);
+        check("share target",PlayerSettings.hit(c,L,L.w*.28f,y)==PlayerSettings.SHARE);
+        check("rate target",PlayerSettings.hit(c,L,L.w*.72f,y)==PlayerSettings.RATE);
+        check("social rows fit above privacy",y+PlayerSettings.unit(L)*2.4f<PlayerSettings.row(L,3)-PlayerSettings.unit(L)*1.1f);
+        check("production invitation",PlayerSettings.invitation(PlayerSettings.PUBLIC_ANDROID_URL).equals(
+                "Come play DDDUMPLING with me! https://play.google.com/store/apps/details?id=com.dddumpling.game"));
+        SettingsInput.action(c,L,1000+PlayerSettings.SHARE);
+        check("tap begins feedback before dispatch",c.preferences.externalBusy && c.preferences.takeExternal(c)==0);
+        c.update(.2f,L);
+        check("share dispatch consumed once",c.preferences.takeExternal(c)==PlayerSettings.SHARE && c.preferences.takeExternal(c)==0);
+        SettingsInput.action(c,L,1000+PlayerSettings.RATE);
+        check("busy host ignores additional tap",c.preferences.externalAction==0);
+        c.preferences.externalFinished(c);
+        SettingsInput.action(c,L,1000+PlayerSettings.RATE);
+        check("return cooldown blocks double tap",!c.preferences.externalBusy);
+        c.update(.6f,L);SettingsInput.action(c,L,1000+PlayerSettings.RATE);c.update(.2f,L);
+        check("rate can launch after dismissal",c.preferences.takeExternal(c)==PlayerSettings.RATE);
+    }
     static void all(Layout L) {
+        panelTiming(L);
+        kidsToggle(L);
+        transitions(L);
+        social(L);
         kidsTiming(L);
         kidsMinigames(L);
         group("player settings");
@@ -100,7 +193,9 @@ final class TestSettings extends Check {
         PlayerSettings.open(c);
         c.screenKey(0);
         check("settings block title keys",c.settingsOpen && !c.starting());
-        check("Back closes public settings",Pause.back(c) && !c.settingsOpen);
+        check("Back starts settings exit",Pause.back(c) && c.preferences.panelClosing);
+        c.update(PlayerSettings.PANEL_TIME,L);
+        check("Back closes public settings",!c.settingsOpen);
         int[] actions={SettingsUi.HIT_GAMEOVER,SettingsUi.HIT_STAGE+2,SettingsUi.HIT_TEST,
                 SettingsUi.HIT_TEST+SettingsUi.TEST_STARS,SettingsUi.HIT_TEST+SettingsUi.TEST_STEAMER,SettingsUi.HIT_DEBUFF,
                 SettingsUi.HIT_TEST+SettingsUi.TEST_BAND,SettingsUi.HIT_TEST+SettingsUi.TEST_MINE};
@@ -111,7 +206,7 @@ final class TestSettings extends Check {
         for(boolean mine:new boolean[]{false,true}) {
             GameCore run=new GameCore(new Mem(),220L);run.startGame();run.jumpToStage(20,L);
             run.mining.carts=2;run.cart.progress=7;run.starNext=true;
-            run.openSettings();run.settingsPage=1;run.settingsTab=SettingsUi.MINIGAMES;
+            run.openSettings();run.update(PlayerSettings.PANEL_TIME,L);run.settingsPage=1;run.settingsTab=SettingsUi.MINIGAMES;
             SettingsUi ui=new SettingsUi();ui.compute(L,SettingsUi.MINIGAMES);
             int col=mine?1:0;
             float x=(ui.testChipL(col,2)+ui.testChipR(col,2))*.5f,y=ui.caveY+ui.testH*.5f;
@@ -142,7 +237,7 @@ final class TestSettings extends Check {
         c.startGame();check("normal mode restores next run",!c.kidsRun && c.maxWordLen()==Pacing.maxWordLen(c.stage));
         for(int[] size:new int[][]{{320,568},{393,852},{640,960},{1080,2400}}) {
             Layout l=new Layout();l.compute(size[0],size[1],0,0,0,0);
-            PlayerSettings.open(c);
+            PlayerSettings.open(c);c.update(PlayerSettings.PANEL_TIME,l);
             float s=PlayerSettings.unit(l), r=l.keyR;
             check("sliding characters fit at both endpoints "+size[0],PlayerSettings.trackL(l)-r>=PlayerSettings.left(l)
                     && PlayerSettings.trackR(l)+r<=PlayerSettings.right(l));
@@ -162,7 +257,7 @@ final class TestSettings extends Check {
             check("dragging off a switch cannot trigger a link",!input.touch(c,l,1,7,l.w*.5f,PlayerSettings.row(l,3)));
         }
         GameCore preview=new GameCore(new Mem(),206L);Ear sample=new Ear();preview.sound=sample;
-        PlayerSettings.open(preview);
+        PlayerSettings.open(preview);preview.update(PlayerSettings.PANEL_TIME,L);
         SettingsInput slider=new SettingsInput();
         float left=PlayerSettings.trackL(L),span=PlayerSettings.trackR(L)-left;
         float effectY=PlayerSettings.row(L,1)+PlayerSettings.unit(L)*3f;

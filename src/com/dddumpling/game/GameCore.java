@@ -168,6 +168,8 @@ final class GameCore {
         default void savePushLessonSeen(boolean value) {}
         default String loadReleaseSeen() { return BuildFlags.BUILD_ID; }
         default void saveReleaseSeen(String value) {}
+        default int loadCaseIndex() { return 0; }
+        default void saveCaseIndex(int value) {}
         default String loadHighScores() { return ""; }
         default void saveHighScores(String value) {}
         int loadBest();
@@ -321,6 +323,8 @@ final class GameCore {
          * is {@link Narration}'s business; a backend only has to speak it.
          */
         void narrate(int entry);
+        /** One short name call as the run character introduces itself. */
+        default void announceSquishy(int entry) {}
         /** Stop talking mid-sentence: the panel has gone. */
         void hush();
     }
@@ -707,6 +711,8 @@ final class GameCore {
     int launchWho = -1;
     /** Title selection for this run; awards can move the case without changing the pilot. */
     int runWho;
+    private int pendingRunWho = -1;
+    float pickerT;
     /** Seconds left of that send-off. Play waits for it. */
     float launchT;
     /**
@@ -716,10 +722,11 @@ final class GameCore {
     float launchClock;
     /** How many of the send-off's impacts have sounded, so each one ticks once. */
     private int launchPips;
+    private boolean launchNameAnnounced;
 
     /** True while the title screen is on its way out and play has not begun. */
     boolean starting() {
-        return state == TITLE && (startFade > 0f || launchT > 0f);
+        return state == TITLE && (startFade > 0f || launchT > 0f || pickerT > 0f);
     }
     /** Set when the start tone has already played, so {@link #startGame} does not repeat it. */
     private boolean startAnnounced;
@@ -834,6 +841,7 @@ final class GameCore {
 
     /** The squishy that fights during TEAM SQUISH. */
     final Buddy buddy = new Buddy();
+    final RunCompanion companion = new RunCompanion();
 
     /**
      * Fall-speed multiplier. Applied per frame rather than baked into a word's speed at
@@ -1227,7 +1235,7 @@ final class GameCore {
         // TEAM SQUISH has nobody to field with an empty case. The drifting letter never rolls it
         // then, so only the playtest chips can ask for it, and refusing is clearer than quietly
         // substituting a different mode.
-        int entry = effect == Power.TEAM ? anyCollected() : -1;
+        int entry = effect == Power.TEAM && Collect.owned(collected) > 0 ? runWho : -1;
         if (effect == Power.TEAM && entry < 0) return;
         if (effect != Power.MULTI) LinkedPairs.preparePower(this);
         else LinkedPairs.release(this, L);
@@ -1235,6 +1243,7 @@ final class GameCore {
         highScores.powers++;
         mode = effect;
         modeLeft = Power.DURATION;
+        companion.react(RunCompanion.POWER,.9f);
         if(power==null || !power.hit) {
             powerBurstX=L.w*0.5f;powerBurstY=(L.playTop+L.dangerY)*0.5f;
         }
@@ -1252,7 +1261,7 @@ final class GameCore {
         strokeCuts = 0;
         callKills = 0;
         callCuts = 0;
-        if (entry >= 0) buddy.enter(entry, L, rnd);
+        if (entry >= 0) buddy.enter(entry,L,rnd,RunCompanion.radius(this,L));
         else buddy.leave();
         shake = Math.max(shake, 0.5f);
         flash = Math.max(flash, 0.8f);
@@ -1339,16 +1348,18 @@ final class GameCore {
      * destroyed and the wave counts as fully released, so the interlude follows.
      */
     private void endPower(Layout L) {
+        boolean teamEnded=mode==Power.TEAM;
         mode = -1;
         modeLeft = 0f;
         debuffLeft = monochromeFade = incognitoMorph = 0f;
-        buddy.leave();
+        if(teamEnded) buddy.returnHome(L); else buddy.leave();
         for (int i = enemies.size() - 1; i >= 0; i--) {
             Enemy e = enemies.get(i);
             if (!e.destroyed) destroyWord(e, enemyCentreX(e), e.y, L);
         }
         spawnedThisStage = stageQuota();
         stageByPower = true;
+        companion.react(RunCompanion.POWER_END,.6f);
         flash = Math.max(flash, 1f);
         flashColor = FLASH_CLEAR;
         skyGlow = 1f;
@@ -1509,6 +1520,8 @@ final class GameCore {
             cart.progress = Math.max(0,Math.min(CaveCart.TRACK,store.loadCartTrack()));
             caveMiningNext = store.loadCaveMiningNext();
             highScores.load(store.loadHighScores());
+            int savedCase=store.loadCaseIndex();
+            caseIndex=savedCase>=0 && savedCase<Collect.COUNT?savedCase:0;
             best = store.loadBest();
             for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
             landBests[0] = Math.max(landBests[0], best);
@@ -1586,6 +1599,7 @@ final class GameCore {
     // ---- settings -----------------------------------------------------------
 
     void openSettings() {
+        preferences.enterPanel();
         if (band.active && sound != null) sound.bandPause(true);
         settingsOpen = true; settingsPage = BuildFlags.DEVELOPER ? 1 : 0;
         Pause.release(this);
@@ -1593,6 +1607,7 @@ final class GameCore {
     }
 
     void closeSettings() {
+        preferences.panelClosing=false;preferences.panelEntrance=1f;
         if (band.active && sound != null) sound.bandPause(paused);
         settingsOpen = false;
         clearArmed = false;
@@ -1742,8 +1757,12 @@ final class GameCore {
         // The entry the case was showing comes along, if it is one you own. Set before the
         // fade is under way so the send-off leaves from the badge rather than from a screen
         // that has already gone.
-        launchWho = Collect.has(collected, caseIndex) ? caseIndex : -1;
-        launchT = launchWho >= 0 ? Launch.TIME : 0f;
+        boolean selected = Collect.has(collected, caseIndex);
+        pendingRunWho = resolveRunWho();
+        pickerT = selected ? 0f : Launch.PICK_TIME;
+        launchWho = -1;
+        launchT = 0f;
+        if (selected) beginLaunch();
         launchClock = clock;
         launchPips = 0;
         closeCase();
@@ -1752,22 +1771,54 @@ final class GameCore {
         if (sound != null) sound.gameStart();
     }
 
+    private void beginLaunch() {
+        launchNameAnnounced = false;
+        launchWho = pendingRunWho;
+        launchT = Launch.TIME;
+        launchPips = 0;
+    }
+
+    private void stopLaunchVoice() {
+        if (launchNameAnnounced && sound != null) sound.hush();
+        launchNameAnnounced = false;
+    }
+
     void cancelStart() {
-        startFade = launchT = 0; launchWho = -1; startAnnounced = false;
+        stopLaunchVoice();
+        startFade = launchT = pickerT = 0; launchWho = pendingRunWho = -1; startAnnounced = false;
+    }
+
+    int pickerWho() {
+        float elapsed = Launch.PICK_TIME - pickerT;
+        if (elapsed >= Launch.PICK_TIME * .65f) return pendingRunWho;
+        return (pendingRunWho + 1 + Launch.shuffleStep(pickerT)*17) % Collect.COUNT;
+    }
+
+    private int resolveRunWho() {
+        if (Collect.has(collected, caseIndex)) return caseIndex;
+        int owned = anyCollected();
+        return owned >= 0 ? owned : rnd.nextInt(Collect.COUNT);
+    }
+
+    private void resetStarRun() {
+        stars.resetRun();
+        starNext = starBonus = false;
     }
 
     void startGame() {
+        stopLaunchVoice();
         town.leave(); townOpen=false;
         townRunId=town.beginRun(); townRunTickets=0; saveTown();
-        highScores.start();
+        runWho = pendingRunWho >= 0 ? pendingRunWho : resolveRunWho();
+        pendingRunWho = -1;
+        pickerT = 0f;
+        highScores.start(runWho);
+        companion.begin(runWho);
         highScoreScreen.open=false;
         band.reset(this); mining.stop(); cart.stop();
-        runWho = Collect.has(collected, caseIndex) ? caseIndex : 0;
-        // A paid win may have been quit before its tableau/parade retired the course.
-        if (stars.count() == StarPath.COUNT) {
-            stars.make(rnd);
-            starNext = false;
-        }
+        // Checkpoints and the pending turn belong to one main-game run. Keep only the saved
+        // difficulty ladder when a fresh run begins, including after an interrupted course.
+        resetStarRun();
         runStartLand = landChoice < Lands.COUNT && LandPicker.unlocked(this, landChoice) ? landChoice : 0;
         landChoice = runStartLand;
         best = landBests[runStartLand];
@@ -1866,8 +1917,10 @@ final class GameCore {
 
     void toTitle() {
         if (state == PLAY || state == BONUS || state == OVER) finishTownRun();
+        companion.clear();
         band.stop(this); mining.stop(); cart.stop();
         cave.leave();
+        resetStarRun();
         progress.finishRun(score, true);
         Pause.resume(this);
         boolean hadHaul = state == OVER && roundPrizes != 0L;
@@ -1893,7 +1946,7 @@ final class GameCore {
         caseDragging = false;
         caseSlide = caseSlideY = 0f;
         launchWho = -1;
-        launchT = 0f;
+        cancelStart();
         closeStory();
         resetTitleSprings();
         if (rosterLeavePending) beginRosterLeave();
@@ -2378,6 +2431,7 @@ final class GameCore {
         pushUsed = true;
         pushCount = moved;
         pushT = PUSH_TIME;
+        companion.rescue();
         // The field is winded by it. Distance alone was not much of a save: the words came straight
         // back down at full speed, and against a late wave the swipe bought about a second. The drag
         // is where the recovery actually lives.
@@ -2535,7 +2589,11 @@ final class GameCore {
         }
         if (sound != null && (settingsOpen || !boss.fighting() || boss.kind != Boss.SLIME
                 || boss.hasGlob() || boss.boltCount() > 0)) sound.bossCharge(0f);
-        if (settingsOpen) return;
+        if (settingsOpen) { preferences.updatePanel(this,elapsed); return; }
+        companion.update(this,dt);
+        // TEAM SQUISH can finish on the same frame that schedules an interlude. Its return owns
+        // the companion until it reaches home, so it keeps moving through that transition.
+        if(buddy.returning()) buddy.update(this,dt,L);
         time += dt;
         if (returnFade > 0f) {
             returnFade = Math.max(0f, returnFade - dt);
@@ -2601,21 +2659,31 @@ final class GameCore {
         if (storyOpen()) storyT += dt;
         // The title screen dissolving, and the squishy's send-off over the top of it. Play begins
         // the frame the last of them finishes, not on the press.
+        // UI timing follows elapsed time even when slow frames cap gameplay physics.
         if (state == TITLE && starting()) {
-            startFade = Math.max(0f, startFade - dt);
-            if (launchT > 0f) {
-                launchT = Math.max(0f, launchT - dt);
-                float u = Launch.progress(this);
-                // One tick per bounce, as it happens. The impacts are what the sound is for.
-                if (launchPips == 0 && u >= Launch.LAND) {
-                    launchPips = 1;
-                    bounceTick();
-                } else if (launchPips == 1 && u >= Launch.TOP) {
-                    launchPips = 2;
-                    bounceTick();
+            if (pickerT > 0f) {
+                pickerT = Math.max(0f, pickerT - elapsed);
+                if (pickerT == 0f) beginLaunch();
+            } else {
+                startFade = Math.max(0f, startFade - elapsed);
+                if (launchT > 0f) {
+                    launchT = Math.max(0f, launchT - elapsed);
+                    float u = Launch.progress(this);
+                    if (!launchNameAnnounced && Launch.TIME-launchT >= Launch.NAME_START) {
+                        launchNameAnnounced = true;
+                        if (sound != null) sound.announceSquishy(launchWho);
+                    }
+                    // One tick per bounce, as it happens. The impacts are what the sound is for.
+                    if (launchPips == 0 && u >= Launch.LAND) {
+                        launchPips = 1;
+                        bounceTick();
+                    } else if (launchPips == 1 && u >= Launch.TOP) {
+                        launchPips = 2;
+                        bounceTick();
+                    }
                 }
             }
-            if (startFade == 0f && launchT == 0f) {
+            if (startFade == 0f && launchT == 0f && pickerT == 0f) {
                 startGame();
                 return;
             }
@@ -2780,7 +2848,7 @@ final class GameCore {
         // dumpling gets the screen to itself. Nothing spawns and nothing falls; the field is
         // already empty, which is what let the wave end.
         if (pendingBonus) {
-            if (perfectBanner <= 0f) {
+            if (perfectBanner <= 0f && buddy.out()) {
                 pendingBonus = false;
                 Interlude.enterBonus(this, L);
             }
@@ -2799,8 +2867,8 @@ final class GameCore {
 
         updatePower(dt, L);
         Blade.updateTrail(this, dt, L);
-        if (team()) buddy.update(this, dt, L);
-        else if (!buddy.out()) buddy.leave();
+        if (team()) buddy.update(this,dt,L);
+        else if (!buddy.out() && !buddy.returning()) buddy.leave();
 
         if (boss.active()) {
             // Visible projectiles reaching the deck cost lives; elapsed fight time alone does not.
@@ -3027,6 +3095,7 @@ final class GameCore {
         skyGlow = 1f;
         skyGlowColor = FLASH_CLEAR;
         squishes++;
+        companion.react(RunCompanion.WORD,Math.min(1f,.45f+e.word.length*.06f));
         resolveStageEnemy(e);
         // Scored per press, so a stacked word is worth what it cost to clear.
         score += 25 * e.totalPresses();
@@ -3259,6 +3328,7 @@ final class GameCore {
     }
 
     void takeHit(float px, Layout L) {
+        companion.react(RunCompanion.DAMAGE,1f);
         lives--;
         hurtThisStage++;
         combo = 0;
@@ -3283,7 +3353,11 @@ final class GameCore {
      */
     private void die() {
         finishTownRun();
+        // The run companion belongs to the summary after play stops. It cries in place until the
+        // return fade reaches full cover; toTitle clears it under that cover.
+        companion.react(RunCompanion.CRY,1f);
         cave.leave();
+        resetStarRun();
         highScores.finish(this);
         progress.finishRun(score, false);
         if (runFullRoster && fullRoster) {
@@ -3299,6 +3373,7 @@ final class GameCore {
         state = OVER;
         time = 0;
         deathT = deathDuration();
+        pushT = pushSlowT = 0f;
         // The words are deliberately left standing: they swirl away over the death hold, and
         // the field is cleared when it ends, before the summary is drawn over it. Only the
         // shots go now — a kill landing after the run is over would credit a squish.

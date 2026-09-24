@@ -274,8 +274,8 @@ final class Showcase extends Draw {
         float t = c.starting() ? c.launchClock : c.clock;
         float cx = iconCx(L, t), cy = iconCy(L, t);
         float r = iconR(L);
-        int i = c.caseIndex;
-        boolean known = Collect.has(c.collected, i);
+        int i = c.pickerT > 0f ? c.pickerWho() : c.launchWho >= 0 ? c.launchWho : c.caseIndex;
+        boolean known = c.starting() || Collect.has(c.collected, i);
         int tint = known ? Collect.TIER_COLOR[Collect.TIER[i]] : INK_DIM;
         float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 2.2f);
         float hw = iconHalfW(L), hh = iconHalfH(L);
@@ -290,12 +290,15 @@ final class Showcase extends Draw {
         float breathe = 1f + 0.045f * pulse;
         hw *= breathe;
         hh *= breathe;
+        if(c.pickerT>0f) Launch.shuffle(p,c,cx,cy,hw,hh,fade);
         float turn = (cx - L.w / 2f) / (L.w * ARC_SPAN / 2f);
         Cabinet.draw(p, c.clock, cx - hw, cy - hh, cx + hw, cy + hh,
                 -turn * s * 0.50f, s * 0.26f, 0.94f, s * 0.16f, fade);
         // The entry travels with the middle of the case, which is the point of the drift: the
         // badge is the squishy going past in a box, not a button with a picture on it.
-        Trinket.draw(p, i, cx, cy + hh * 0.10f, r * 0.62f, c.clock, known, fade);
+        float shufflePop=c.pickerT>Launch.PICK_TIME*.35f
+                ? .08f*(float)Math.sin((Launch.PICK_TIME-c.pickerT)*32f) : 0f;
+        Trinket.draw(p, i, cx, cy + hh * 0.10f, r * (.62f+shufflePop), c.clock, known, fade);
         // A tier-tinted glow behind the glass, so a chase entry still catches the eye closed.
         if (known) {
             p.strokePoly(new float[] {cx - hw, cy - hh, cx + hw, cy - hh, cx + hw, cy + hh,
@@ -304,10 +307,12 @@ final class Showcase extends Draw {
         }
 
         int have = Collect.owned(c.collected);
-        p.text("DISPLAY CASE", cx, cy - hh - s * 1.00f, type(s * 0.62f), fadeBy(INK_DIM, fade),
+        // The greeting's letters take over this space as the squishy leaves the glass.
+        float labelFade=c.launchT>0f ? fade*Math.max(0f,1f-Launch.progress(c)/.07f) : fade;
+        p.text("DISPLAY CASE", cx, cy - hh - s * 1.00f, type(s * 0.62f), fadeBy(INK_DIM, labelFade),
                 Painter.CENTER, true);
         p.text(have + " OF " + Collect.COUNT, cx, cy + hh + s * 1.15f, type(s * 0.70f),
-                fadeBy(have >= Collect.COUNT ? GOLD : INK, fade), Painter.CENTER, true);
+                fadeBy(have >= Collect.COUNT ? GOLD : INK, labelFade), Painter.CENTER, true);
     }
 
     static void draw(Painter p, GameCore c, Layout L) {

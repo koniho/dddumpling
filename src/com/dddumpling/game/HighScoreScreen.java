@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Saved runs in the release-notes glass, using the Settings gesture and back routes. */
 final class HighScoreScreen extends Draw {
     static final int CLOSE=-1, BACK=-2, ROW=2000;
-    static final float ENTRY_TIME=.4f;
+    static final float ENTRY_TIME=PANEL_SLIDE_TIME;
     boolean open,closing;
     float entrance;
     int selected=-1;
@@ -29,7 +29,7 @@ final class HighScoreScreen extends Draw {
         if(closing && entrance==0f) { open=false;closing=false; }
     }
     boolean moving() { return closing || entrance<1f; }
-    float offsetY(Layout L) { float left=1f-entrance;return -bottom(L)*left*left*left; }
+    float offsetY(Layout L) { return -bottom(L)*(1f-panelTravel(entrance)); }
     static float pulse(float time) { return .5f-.5f*(float)Math.cos(time*3.5f); }
     static boolean titleAttention(GameCore c) {
         return c.highScores.unread && !c.settingsOpen && !c.releaseNotes.open && !c.highScoreScreen.open && !c.storyOpen();
@@ -121,18 +121,19 @@ final class HighScoreScreen extends Draw {
     }
     private void row(Painter p,GameCore c,Layout L,HighScores.Run run,float y) {
         float height=rowHeight(c,L),s=Math.min(size(L),height/3.2f),cy=y+height*.5f;
-        String value=String.valueOf(run.score),haul=String.valueOf(run.dumplings);
-        float font=Math.min(type(s*.52f),Math.min(L.w*.13f/(value.length()*.73f),L.w*.065f/(haul.length()*.73f)));
+        String value=String.valueOf(run.score);
+        float font=Math.min(type(s*.52f),L.w*.13f/(value.length()*.73f));
         float baseline=cy+font*.36f;
         if(run.id==c.highScores.latest) {
             p.fillRect(L.w*.08f,y,L.w*.92f,y+height,Glyph.withAlpha(GOLD,(int)(10+20*pulse(c.clock))));
             float half=value.length()*font*.36f;
-            for(int i=4;i>0;i--) p.fillEllipse(L.w*.10f+half,cy,half+i*s*(.1f+.07f*pulse(c.clock)),font*.6f+i*s*(.08f+.06f*pulse(c.clock)),
+            for(int i=4;i>0;i--) p.fillEllipse(L.w*.21f+half,cy,half+i*s*(.1f+.07f*pulse(c.clock)),font*.6f+i*s*(.08f+.06f*pulse(c.clock)),
                     Glyph.withAlpha(GOLD,(int)((13-i*2)*(.4f+2f*pulse(c.clock)))));
         }
-        p.text(value,L.w*.10f,baseline,font,INK,Painter.LEFT,true);
+        Trinket.draw(p,Math.max(0,run.character),L.w*.135f,cy,Math.min(s*.9f,L.w*.037f),c.clock,run.character>=0,1f);
+        p.text(value,L.w*.21f,baseline,font,INK,Painter.LEFT,true);
         java.util.ArrayList<String> lines=new java.util.ArrayList<>();
-        int limit=Math.max(1,(int)(L.w*.35f/(font*.73f)));
+        int limit=Math.max(1,(int)(L.w*.27f/(font*.73f)));
         String line="";
         for(String word:run.blurb().split(" ")) {
             if(!line.isEmpty() && line.length()+word.length()+1>limit) { lines.add(line);line=""; }
@@ -140,16 +141,22 @@ final class HighScoreScreen extends Draw {
         }
         lines.add(line);
         float leading=font*1.25f;
-        for(int i=0;i<lines.size();i++) p.text(lines.get(i),L.w*.26f,
+        for(int i=0;i<lines.size();i++) p.text(lines.get(i),L.w*.36f,
                 baseline+(i-(lines.size()-1)*.5f)*leading,font,INK_DIM,Painter.LEFT,false);
         bosses(p,c,run,L.w*.71f,cy,Math.min(s*.9f,L.w*.032f),L.w*.14f);
-        icon(p,0,L.w*.825f,cy,s*.65f,c.clock);
-        p.text(haul,L.w*.86f,baseline,font,INK,Painter.LEFT,true);
+        haul(p,run.dumplings,L.w*.865f,cy,Math.min(s*1.05f,L.w*.047f),c.clock);
         p.line(L.w*.10f,y+height-s*.1f,L.w*.90f,y+height-s*.1f,0x25FFFFFF,s*.05f);
     }
+    private static void haul(Painter p,int count,float x,float y,float r,float clock) {
+        ReleaseMascot.steamer(p,x,y,r,clock);
+        // A bamboo label covers the mascot face and keeps long counts inside the basket.
+        p.fillEllipse(x,y+r*.18f,r*.79f,r*.35f,0xFFF3D4A2);
+        String value=String.valueOf(count);
+        float font=Math.min(type(r*.48f),r*1.45f/(value.length()*.73f));
+        p.text(value,x,y+r*.18f+font*.36f,font,0xFF3A2E4F,Painter.CENTER,true);
+    }
     private static void icon(Painter p,int kind,float x,float y,float r,float clock) {
-        if(kind==0) Kawaii.moodDumpling(p,x,y,r,Glyph.COLOR[0],1f,1f);
-        else ReleaseChange.icon(p,kind==1?ReleaseChange.SHUFFLE:ReleaseChange.SWIPE,x,y,r,clock);
+        ReleaseChange.icon(p,kind==1?ReleaseChange.SHUFFLE:ReleaseChange.SWIPE,x,y,r,clock);
     }
     private void summary(Painter p,GameCore c,Layout L,HighScores.Run run) {
         float s=size(L),t=listTop(L),cx=L.w*.5f;
@@ -167,9 +174,10 @@ final class HighScoreScreen extends Draw {
         int[] counts={run.dumplings,run.powers,run.swipes};
         for(int i=0;i<3;i++) {
             float y=t+s*(14.3f+i*1.7f);
-            icon(p,i,L.w*.17f,y-s*.2f,s*.55f,c.clock);
+            if(i==0) haul(p,counts[i],L.w*.82f,y-s*.2f,s*1.25f,c.clock);
+            else icon(p,i,L.w*.17f,y-s*.2f,s*.55f,c.clock);
             p.text(labels[i],L.w*.23f,y,type(s*.44f),INK_DIM,Painter.LEFT,false);
-            p.text(String.valueOf(counts[i]),L.w*.84f,y,type(s*.53f),INK,Painter.RIGHT,true);
+            if(i!=0) p.text(String.valueOf(counts[i]),L.w*.84f,y,type(s*.53f),INK,Painter.RIGHT,true);
         }
         p.text("START STAGE "+(run.land*Boss.EVERY+1)+(run.kids?"   KIDS MODE":""),cx,t+s*20f,type(s*.4f),INK_DIM,Painter.CENTER,false);
     }

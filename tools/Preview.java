@@ -91,6 +91,133 @@ final class Preview {
         slimeShot(dir, "slime-fight-fun-report", f, L, w, h, ss);
     }
 
+    private static void companionFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("118-companion")) return;
+        for(int event=0;event<=RunCompanion.CRY;event++) {
+            GameCore c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=11;c.startGame();
+            c.stageBanner=0;c.companion.react(event,1f);
+            int steps=event==RunCompanion.DAMAGE?14:event==RunCompanion.STAGE_CLEAR?36:10;
+            for(int step=0;step<steps;step++) c.companion.update(c,DT);
+            shot(dir,"118-companion-reaction-"+event,c,L,w,h,ss);
+        }
+        for(int frame=0;frame<4;frame++) {
+            GameCore c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=11;c.startGame();
+            c.stageBanner=0;c.companion.react(RunCompanion.VICTORY,1f);
+            c.companion.age=(float)Math.PI/18f+frame*(float)Math.PI/9f;
+            c.companion.clock=c.companion.age;
+            shot(dir,"118-companion-boss-victory-rock-"+frame,c,L,w,h,ss);
+        }
+        for(int who:new int[]{0,8,23,Collect.BOSS_FIRST,Collect.BOSS_FIRST+1,Collect.BOSS_FIRST+2,
+                Collect.BOSS_FIRST+3,Collect.MOLE_FIRST,Collect.SNAKE_FIRST}) {
+            GameCore c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=who;c.startGame();
+            c.stageBanner=0;c.companion.update(c,.1f);
+            shot(dir,"118-companion-character-"+who,c,L,w,h,ss);
+        }
+        GameCore c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
+        c.stageBanner=0;c.startFrenzy(Power.TEAM,L);
+        for(int frame=0;frame<8;frame++) {
+            shot(dir,"118-companion-team-"+frame,c,L,w,h,ss);step(c,L,.09f);
+        }
+        c.modeLeft=.01f;step(c,L,DT);
+        for(int frame=0;frame<8;frame++) {
+            shot(dir,"118-companion-team-return-"+frame,c,L,w,h,ss);step(c,L,.09f);
+        }
+        c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
+        c.stageBanner=0;c.startFrenzy(Power.FLING,L);c.companion.update(c,.18f);
+        shot(dir,"118-companion-fling-mask",c,L,w,h,ss);
+        c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();c.stageBanner=0;
+        c.pushUsed=true;c.pushCount=3;c.pushSlowT=GameCore.PUSH_SLOW;c.pushT=GameCore.PUSH_TIME;
+        c.companion.rescue();
+        for(int frame=0;frame<6;frame++) {
+            c.pushT=GameCore.PUSH_TIME*(1f-frame/6f);
+            c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME*(frame/6f);
+            c.companion.rescueT=RunCompanion.RESCUE_TIME-GameCore.PUSH_TIME*(frame/6f);
+            shot(dir,"118-companion-rescue-"+frame,c,L,w,h,ss);
+        }
+        c.pushT=0;c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME-RunCompanion.RESCUE_HOLD*.5f;
+        c.companion.rescueT=RunCompanion.RESCUE_TIME-GameCore.PUSH_TIME-RunCompanion.RESCUE_HOLD*.5f;
+        shot(dir,"118-companion-rescue-hold",c,L,w,h,ss);
+        c.companion.rescueT=RunCompanion.RESCUE_RETURN+.08f;
+        shot(dir,"118-companion-rescue-bar-exit",c,L,w,h,ss);
+        c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME-RunCompanion.RESCUE_HOLD
+                -RunCompanion.RESCUE_RETURN*.5f;
+        c.companion.rescueT=RunCompanion.RESCUE_RETURN*.5f;
+        shot(dir,"118-companion-rescue-return",c,L,w,h,ss);
+        c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME-RunCompanion.RESCUE_HOLD
+                -RunCompanion.RESCUE_RETURN-.1f;
+        c.companion.rescueT=0f;
+        shot(dir,"118-companion-rescue-tired",c,L,w,h,ss);
+        c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
+        c.playtestSteamer(L);c.time=.7f;
+        shot(dir,"118-companion-steamer",c,L,w,h,ss);
+        c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
+        c.starNext=true;Interlude.enterBonus(c,L);
+        for(int frame=0;frame<6;frame++) {
+            c.time=frame*StarScreen.COMPANION_TRAVEL/5f;
+            shot(dir,"118-companion-starpath-entry-"+frame,c,L,w,h,ss);
+        }
+        c.time=2f;c.stars.timer=StarPath.REPORT+StarPath.EXIT*.5f;
+        shot(dir,"118-companion-starpath-blastoff",c,L,w,h,ss);
+        for(int frame=0;frame<6;frame++) {
+            c.stars.timer=StarPath.REPORT-frame*StarScreen.COMPANION_RETURN/5f;
+            shot(dir,"118-companion-starpath-return-"+frame,c,L,w,h,ss);
+        }
+        c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
+        c.lives=1;c.takeHit(L.w*.5f,L);step(c,L,c.deathDuration()+GameCore.OVER_FADE+.1f);
+        shot(dir,"118-companion-gameover-cry",c,L,w,h,ss);
+        c.returnFade=GameCore.RETURN_FADE*.75f;
+        shot(dir,"118-companion-gameover-exit",c,L,w,h,ss);
+        c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=49;c.caveChoice=0;
+        c.startGame();c.jumpToStage(21,L);c.stageBanner=0;
+        shot(dir,"118-companion-cave",c,L,w,h,ss);
+    }
+
+    private static void squishyEntryFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        boolean selected=only==null;
+        if(only!=null) for(String tag:only) selected |= "112-".startsWith(tag.trim()) || tag.trim().startsWith("112-");
+        if(!selected) return;
+        GameCore picker=new GameCore(new Mem(),112L);picker.beginStart();
+        for(int frame=0;frame<5;frame++) {
+            shot(dir,"112-picker-"+frame,picker,L,w,h,ss);
+            step(picker,L,.16f);
+        }
+        while(picker.pickerT>0f) step(picker,L,DT);
+        shot(dir,"112-picker-launch",picker,L,w,h,ss);
+        step(picker,L,Launch.TIME*Launch.POP*.75f);
+        shot(dir,"112-picker-pop",picker,L,w,h,ss);
+        step(picker,L,Launch.TIME*(Launch.POP*1.1f-Launch.POP*.75f));
+        for(int frame=0;frame<4;frame++) {
+            shot(dir,"112-picker-hello-"+frame,picker,L,w,h,ss);
+            step(picker,L,Launch.TIME*(Launch.LAND-Launch.POP)*.20f);
+        }
+        while(Launch.progress(picker)<Launch.TOP) step(picker,L,DT);
+        shot(dir,"112-picker-roof",picker,L,w,h,ss);
+        GameCore lettering=new GameCore(new Mem(),112L);lettering.collected=Collect.MASK;
+        lettering.caseIndex=51;lettering.clock=18.87f;lettering.beginStart();
+        step(lettering,L,Launch.CENTER_TIME*.5f);
+        shot(dir,"112-center-slide",lettering,L,w,h,ss);
+        step(lettering,L,Launch.NAME_START-Launch.CENTER_TIME*.5f);
+        shot(dir,"112-center-arrived",lettering,L,w,h,ss);
+        for(int frame=0;frame<8;frame++) {
+            shot(dir,"112-name-spring-"+frame,lettering,L,w,h,ss);
+            step(lettering,L,.10f);
+        }
+        for(int who:new int[]{0,11,23,51}) {
+            GameCore hello=new GameCore(new Mem(),112L);hello.collected=Collect.MASK;hello.caseIndex=who;
+            hello.clock=who*.37f;hello.beginStart();
+            step(hello,L,Launch.TIME*(Launch.POP+(Launch.LAND-Launch.POP)*.45f));
+            shot(dir,"112-greeting-"+who,hello,L,w,h,ss);
+        }
+        for(int who:new int[]{4,11,23}) {
+            GameCore c=new GameCore(new Mem(),112L);c.collected=Collect.MASK;c.caseIndex=who;c.startGame();
+            c.stageBanner=0;c.startFrenzy(Power.TEAM,L);c.flash=0;c.shake=0;
+            for(int frame=0;frame<9;frame++) {
+                shot(dir,"112-entry-"+who+"-"+frame,c,L,w,h,ss);
+                step(c,L,.11f);
+            }
+        }
+    }
+
     private static void caveCollectFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(wanted("110")) {
             RasterPainter p=new RasterPainter(w,h,ss);p.clear(Renderer.BG);
@@ -290,10 +417,12 @@ final class Preview {
             scores.highScoreScreen.show(scores);scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
             shot(dir,"130-high-scores-empty",scores,L,w,h,ss);
             for(int i=0;i<10;i++) {
+                scores.collected=Collect.MASK;scores.caseIndex=i%3==0?0:i;
+                if(i%3==0) scores.collected=0L;
                 scores.startGame();scores.score=(10-i)*1357;scores.stage=new int[]{5,10,15,20,1,6,11,16,21,25}[i];
                 scores.hits=123;scores.misses=7;scores.squishes=56;scores.maxCombo=48;
                 scores.highScores.stages=scores.stage-1;scores.highScores.bosses=(1<<Math.min(Boss.COUNT,(scores.stage-1)/Boss.EVERY))-1;
-                scores.highScores.dumplings=14-i;scores.highScores.powers=7;scores.highScores.swipes=3;
+                scores.highScores.dumplings=i==0?12345:14-i;scores.highScores.powers=7;scores.highScores.swipes=3;
                 scores.lives=0;scores.highScores.finish(scores);
                 if(i==0) {
                     scores.toTitle();scores.returnFade=0;scores.highScoreScreen.show(scores);scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
@@ -461,6 +590,8 @@ final class Preview {
         caveCollectFrames(dir,L,w,h,ss);
         townFrames(dir,L,w,h,ss);
         slimeFightFrames(dir,L,w,h,ss);
+        companionFrames(dir,L,w,h,ss);
+        squishyEntryFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);
@@ -817,11 +948,18 @@ final class Preview {
         grid.endCaseDrag();
         for (int boss = 0; boss < Boss.COUNT; boss++) {
             GameCore welcome = new GameCore(store, 199L + boss);
+            welcome.startGame();
             welcome.stage = Boss.EVERY;
             Interlude.awardBossPrize(welcome, boss);
             Interlude.enterBonus(welcome, L);
+            welcome.bonusTimer = BossCollect.REVEAL_TIME - .55f;
+            shot(dir, "95-boss-friend-travel-" + boss, welcome, L, w, h, ss);
+            welcome.bonusTimer = BossCollect.REVEAL_TIME - 1.8f;
+            shot(dir, "95-boss-friend-heart-" + boss, welcome, L, w, h, ss);
             welcome.bonusTimer = BossCollect.REVEAL_TIME - 2.2f;
             shot(dir, "95-boss-friend-" + boss, welcome, L, w, h, ss);
+            welcome.bonusTimer = .42f;
+            shot(dir, "95-boss-friend-return-" + boss, welcome, L, w, h, ss);
         }
         c.endCaseDrag();
         step(c, L, 0.5f);
@@ -1506,7 +1644,7 @@ final class Preview {
         c6.stage = 3;
         step(c6, L, 6f);
         c6.collected = 0b0000_0100_1000_0011_0010_0110_1101L;
-        c6.openSettings();
+        c6.openSettings();c6.preferences.updatePanel(c6,PlayerSettings.PANEL_TIME);
         step(c6, L, 0.3f);
         shot(dir, "12-settings", c6, L, w, h, ss);
         c6.settingsTab = SettingsUi.MINIGAMES;
@@ -1827,13 +1965,34 @@ final class Preview {
         // The settings panel's stage jump, parked on a boss stage so the row names the boss it is
         // sitting on — which is the state the control exists for.
         GameCore cj = toBoss(L, Boss.SLIME, 520L, true);
-        cj.openSettings();
+        cj.openSettings();cj.preferences.updatePanel(cj,PlayerSettings.PANEL_TIME);
         step(cj, L, 0.3f);
         System.out.printf("stage jump: on stage %d, boss %s%n", cj.stage,
                 Boss.NAMES[cj.boss.kind]);
         shot(dir, "67-settings-stage-jump", cj, L, w, h, ss);
         GameCore settings=new GameCore(new Mem(),819L);
         PlayerSettings.open(settings);
+        settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME*.5f);
+        shot(dir,"120f-settings-entering",settings,L,w,h,ss);
+        settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME*.5f);
+        PlayerSettings.close(settings);settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME*.5f);
+        shot(dir,"120f-settings-exiting",settings,L,w,h,ss);
+        settings.closeSettings();PlayerSettings.open(settings);settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME);
+        for(boolean kids:new boolean[]{false,true}) {
+            settings.preferences.kids=kids;
+            shot(dir,"120g-settings-kids-"+(kids?"young":"old"),settings,L,w,h,ss);
+        }
+        settings.preferences.kids=false;
+        for(int direction=0;direction<2;direction++) {
+            settings.preferences.toggleKids(settings);
+            float start=settings.clock;
+            for(int beat=0;beat<=4;beat++) {
+                settings.clock=start+PlayerSettings.KIDS_TOGGLE_TIME*beat/4f;
+                shot(dir,"120h-settings-kids-toggle-"+direction+"-"+beat,settings,L,w,h,ss);
+            }
+            settings.clock+=.01f;
+        }
+        settings.preferences.load(PlayerSettings.DEFAULT);
         for(int v=0;v<4;v++) {
             settings.preferences.music=settings.preferences.effects=new float[]{.1f,.5f,1f,.5f}[v];
             settings.preferences.musicMuted=settings.preferences.effectsMuted=v==3;
@@ -1845,12 +2004,25 @@ final class Preview {
             settings.clock=beat*.19f;
             shot(dir,"120b-settings-loud-motion-"+beat,settings,L,w,h,ss);
         }
+        for(int beat=0;beat<=5;beat++) {
+            settings.clock=beat*.8f;
+            shot(dir,"120d-settings-share-skit-"+beat,settings,L,w,h,ss);
+        }
+        for(int beat=0;beat<5;beat++) {
+            settings.clock=.325f+beat*.18f;
+            shot(dir,"120e-settings-rate-wave-"+beat,settings,L,w,h,ss);
+        }
+        for(int action:new int[]{PlayerSettings.SHARE,PlayerSettings.RATE}) {
+            settings.preferences.animatedAction=action;settings.preferences.externalAt=settings.clock;
+            settings.clock+=.18f;
+            shot(dir,"120c-settings-social-tap-"+action,settings,L,w,h,ss);
+        }
         settings.settingsPage=1;
         for(int tab=0;tab<4;tab++) {
             settings.settingsTab=tab;
             shot(dir,"121-settings-disabled-"+tab,settings,L,w,h,ss);
         }
-        settings.startGame();settings.openSettings();
+        settings.startGame();settings.openSettings();settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME);
         for(int tab=0;tab<4;tab++) {
             settings.settingsTab=tab;
             shot(dir,"122-settings-active-"+tab,settings,L,w,h,ss);

@@ -32,6 +32,13 @@ final class CaveCollect extends Draw {
     }
 
     static void draw(Painter p,int i,float x,float y,float r,float clock,boolean known,float fade) {
+        draw(p,i,x,y,r,clock,known,fade,-1,0f);
+    }
+    static void draw(Painter p,int i,float x,float y,float r,float clock,boolean known,float fade,int mood,float look) {
+        draw(p,i,x,y,r,clock,known,fade,mood,look,false);
+    }
+    static void draw(Painter p,int i,float x,float y,float r,float clock,boolean known,float fade,
+            int mood,float look,boolean ninja) {
         boolean mole=Collect.FAMILY[i]==Collect.MOLES;
         int variant=i-(mole?Collect.MOLE_FIRST:Collect.SNAKE_FIRST);
         int fill=fadeBy(known?Collect.BODY[i]:0xFF302748,fade);
@@ -45,7 +52,8 @@ final class CaveCollect extends Draw {
         float fx=x+(mole?0:r*.15f),fy=y-r*(mole?.19f:.48f);
         float eyes=mole?.23f:.24f;
         boolean sleepy=mole && variant==2;
-        for(int side=-1;side<=1;side+=2) {
+        if(mood>=0) Trinket.reactionFace(p,fx,fy,r*.62f,clock,fade,mood,look);
+        else for(int side=-1;side<=1;side+=2) {
             float ex=fx+side*r*eyes;
             if(sleepy || Math.sin(clock*1.2+i)>.996)
                 p.polyline(new float[]{ex-r*.075f,fy,ex,fy+r*.035f,ex+r*.075f,fy},ink,r*.035f);
@@ -53,12 +61,13 @@ final class CaveCollect extends Draw {
                 p.fillEllipse(ex,fy,r*.058f,r*.085f,ink);
                 p.fillCircle(ex-r*.018f,fy-r*.025f,r*.022f,white);
             }
-            p.fillEllipse(fx+side*r*(eyes+.13f),fy+r*.12f,r*.11f,r*.06f,pink);
+                p.fillEllipse(fx+side*r*(eyes+.13f),fy+r*.12f,r*.11f,r*.06f,pink);
         }
+        if(ninja) Trinket.ninjaMask(p,fx,fy,r*.82f,fade);
         if(mole) {
             if(variant==3)p.fillPoly(star(fx,fy+r*.14f,r*.13f,r*.065f,6,0),pink);
             else p.fillEllipse(fx,fy+r*.13f,r*.115f,r*.075f,pink);
-            p.polyline(new float[]{fx-r*.09f,fy+r*.27f,fx,fy+r*.31f,fx+r*.09f,fy+r*.27f},ink,r*.035f);
+            if(mood<0) p.polyline(new float[]{fx-r*.09f,fy+r*.27f,fx,fy+r*.31f,fx+r*.09f,fy+r*.27f},ink,r*.035f);
             if(variant==0 || variant==4) {
                 int hat=fadeBy(variant==0?0xFF84C6A8:0xFFF6DA80,fade);
                 p.fillEllipse(x,y-r*.68f,r*.44f,r*.14f,hat);
@@ -73,9 +82,11 @@ final class CaveCollect extends Draw {
                 p.fillCircle(x+r*.39f,y-r*.91f,r*.085f,white);
             }
         } else {
-            p.polyline(new float[]{fx-r*.09f,fy+r*.13f,fx,fy+r*.18f,fx+r*.09f,fy+r*.13f},ink,r*.032f);
-            p.line(fx,fy+r*.18f,fx,fy+r*.29f,pink,r*.04f);
-            p.polyline(new float[]{fx-r*.05f,fy+r*.33f,fx,fy+r*.27f,fx+r*.05f,fy+r*.33f},pink,r*.03f);
+            if(mood<0) {
+                p.polyline(new float[]{fx-r*.09f,fy+r*.13f,fx,fy+r*.18f,fx+r*.09f,fy+r*.13f},ink,r*.032f);
+                p.line(fx,fy+r*.18f,fx,fy+r*.29f,pink,r*.04f);
+                p.polyline(new float[]{fx-r*.05f,fy+r*.33f,fx,fy+r*.27f,fx+r*.05f,fy+r*.33f},pink,r*.03f);
+            }
             for(int k=0;k<3;k++) {
                 float sx=x-r*(.57f-k*.23f),sy=y+r*.43f;
                 if(variant==3)p.fillPoly(star(sx,sy,r*.075f,r*.035f,4,clock*.1f),white);

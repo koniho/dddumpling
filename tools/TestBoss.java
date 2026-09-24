@@ -344,7 +344,23 @@ final class TestBoss extends Check {
             Interlude.enterBonus(reward, L);
             check("boss celebration replaces either minigame " + kind,
                     reward.bossReward && !reward.starBonus && !reward.bonusRolling()
-                    && !reward.bonusMashing() && !reward.bonusParading());
+                    && !reward.bonusMashing() && !reward.bonusParading()
+                    && reward.companion.who==reward.runWho);
+            check("boss friendship moves the companion before sending the heart " + kind,
+                    BossCollect.friendProgress(.2f)==0f
+                    && BossCollect.friendProgress(.2f+BossCollect.FRIEND_TRAVEL)==1f
+                    && BossCollect.friendProgress(.2f+BossCollect.FRIEND_TRAVEL*.1f)<.01f
+                    && BossCollect.friendProgress(.2f+BossCollect.FRIEND_TRAVEL*.9f)>.99f
+                    && BossCollect.friendReturnProgress(BossCollect.REVEAL_TIME-BossCollect.FRIEND_RETURN)==0f
+                    && BossCollect.friendReturnProgress(BossCollect.REVEAL_TIME)==1f
+                    && BossCollect.friendHomeFade(0f)==1f
+                    && BossCollect.friendHomeFade(.2f+BossCollect.FRIEND_TRAVEL)==0f
+                    && BossCollect.friendHomeFade(BossCollect.REVEAL_TIME)==1f
+                    && BossCollect.heartProgress(BossCollect.HEART_START)==0f
+                    && BossCollect.heartProgress(BossCollect.HEART_START+BossCollect.HEART_TIME)==1f
+                    && BossCollect.friendTargetX(L)==L.w*.5f
+                    && BossCollect.friendTargetY(L)>L.h*.64f
+                    && BossCollect.friendTargetY(L)<L.deckTop);
             int stage = reward.stage;
             advance(reward, L, BossCollect.REVEAL_TIME + 0.2f);
             check("celebration advances exactly one stage and preserves the pending star course " + kind,
@@ -1710,6 +1726,8 @@ final class TestBoss extends Check {
         check("the required pinch makes two",
                 c.pinchBoss(spread * (Boss.DIVIDE_SCALE + 0.01f), px, py - spread * 0.8f, px, py + spread * 0.8f, L)
                         && c.boss.pieceCount() == 2);
+        check("a Dark Divide split cheers as boss damage",
+                c.companion.reaction == RunCompanion.BOSS_HIT);
         check("both children are smaller than their unsplit parent",
                 c.boss.pieceBody(0).radiusY() < beforeSpan * 0.5f
                         && c.boss.pieceBody(1).radiusY() < beforeSpan * 0.5f);

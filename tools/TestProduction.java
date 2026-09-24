@@ -75,7 +75,7 @@ final class TestProduction extends Check {
         c.openSettings();
         check("in-run settings open only player page",c.settingsOpen && c.settingsPage==0 && c.state==GameCore.PLAY);
         float clock = c.time;
-        c.update(DT,L);
+        c.update(PlayerSettings.PANEL_TIME,L);
         check("player settings pause production", c.time == clock);
         RasterPainter hidden = new RasterPainter(640,1400,1);
         RasterPainter normal = new RasterPainter(640,1400,1);

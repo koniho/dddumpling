@@ -127,7 +127,7 @@ final class Interlude {
     /** Every award source records duplicates immediately, before its celebration starts. */
     private static void recordPrize(GameCore c, String source) {
         LandPicker.reward(c, c.prize);
-        c.caseIndex = c.prize;
+        CaseUi.highlight(c, c.prize);
         c.caseSlide = c.caseSlideY = c.caseHighlightAge = 0f;
         c.caseFreePan = false;
         c.prizeNew = !Collect.has(c.collected, c.prize);
@@ -197,6 +197,7 @@ final class Interlude {
     static void beginStageEnd(GameCore c) {
         c.highScores.stages++;
         c.progress.completeStage(c.score);
+        c.companion.react(RunCompanion.STAGE_CLEAR, 1f);
         if (c.perfectRound()) {
             c.perfectBanner = GameCore.PERFECT_TIME;
             if (c.sound != null) c.sound.achievement();

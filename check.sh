@@ -46,7 +46,8 @@ fi
 # compile while the APK builds fine.
 python3 tools/release-notes.py check >/dev/null
 
-PURE="src/com/dddumpling/game/HighScores.java
+PURE="src/com/dddumpling/game/RunCompanion.java
+src/com/dddumpling/game/HighScores.java
 src/com/dddumpling/game/HighScoreScreen.java
 src/com/dddumpling/game/OctoWaveRecording.java
 src/com/dddumpling/game/PushLesson.java

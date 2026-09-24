@@ -81,6 +81,29 @@ public class MainActivity extends Activity implements GameCore.Store {
         }
     }
 
+    private static final int APP_ACTION_REQUEST=110;
+    void openAppAction(int action) {
+        String url=PlayerSettings.PUBLIC_ANDROID_URL;
+        android.content.Intent intent;
+        if(action==PlayerSettings.SHARE) {
+            android.content.Intent send=new android.content.Intent(android.content.Intent.ACTION_SEND);
+            send.setType("text/plain");
+            send.putExtra(android.content.Intent.EXTRA_TEXT,PlayerSettings.invitation(url));
+            intent=android.content.Intent.createChooser(send,"Share DDDUMPLING");
+        } else intent=new android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse(url));
+        try { startActivityForResult(intent,APP_ACTION_REQUEST); }
+        catch(android.content.ActivityNotFoundException | SecurityException unavailable) {
+            new android.app.AlertDialog.Builder(this).setTitle(action==PlayerSettings.SHARE?"Share App":"Rate your app")
+                    .setMessage(action==PlayerSettings.SHARE?PlayerSettings.invitation(url):url)
+                    .setPositiveButton("OK",null)
+                    .setOnDismissListener(dialog -> game.core().preferences.externalFinished(game.core())).show();
+        }
+    }
+    @Override protected void onActivityResult(int request,int result,android.content.Intent data) {
+        super.onActivityResult(request,result,data);
+        if(request==APP_ACTION_REQUEST && game!=null) game.core().preferences.externalFinished(game.core());
+    }
+
     @Override protected void onResume() {
         super.onResume();
         resumed = true;
@@ -166,6 +189,8 @@ public class MainActivity extends Activity implements GameCore.Store {
         prefs.edit().putInt(KEY_BEST, best).apply();
     }
 
+    @Override public int loadCaseIndex() { return prefs.getInt("case_index", 0); }
+    @Override public void saveCaseIndex(int value) { prefs.edit().putInt("case_index", value).apply(); }
     @Override public String loadHighScores() { return prefs.getString("high_scores", ""); }
     @Override public void saveHighScores(String value) { prefs.edit().putString("high_scores", value).apply(); }
 

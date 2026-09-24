@@ -1,32 +1,61 @@
 Small dumpling. Big adventure.
 
-Welcome to DDDUMPLING, a colorful arcade game where quick fingers meet a cast of little characters. Tap to clear falling waves, drag through playful encounters, and turn defeated bosses into friends for your collection.
+DDDumpling is a colorful tap game where quick fingers meet a cast of little characters. Match the faces on a honeycomb keyboard to clear falling sequences, master playful touch challenges, and turn defeated bosses into friends for your collection.
+
+Every run starts simply, then keeps finding new ways to surprise you. Build a rhythm, chase a higher score, and see how far your little dumpling can go.
 
 EASY TO START, PLENTY TO MASTER
 
-Match the character keys to the falling sequences before they reach the bottom. Find your rhythm, build combos, and grab powerups that change the action. As the stages get tougher, timing and accuracy make all the difference.
+Tap the character keys that match each falling sequence before it reaches the bottom. Clear a whole wave without a mistake to earn a perfect round, or recover from danger with a well-timed rescue swipe. As the stages grow faster and the sequences get longer, timing and accuracy make all the difference.
+
+Later stages bring linked friends that ask both thumbs to work together. Learn the six colorful keys, read a busy field at a glance, and find the calm inside the cute chaos. This is a tap game that rewards rhythm and quick decisions without leaving precision behind.
+
+POWERUPS THAT CHANGE THE RULES
+
+Catch a glowing powerup and the whole field transforms for a playful burst of action:
+
+• FLURRY turns rapid taps into a rainbow rush
+• FLING lets a swipe slice through falling sequences
+• TEAM SQUISH sends a collected friend bouncing into the action
+
+Deeper runs add mystery pickups too. You might uncover another burst of power, or face a mischievous twist that disguises the characters or drains away their color. Adapt quickly and keep the run alive.
 
 BOSSES WITH PERSONALITY
 
-These bosses demand more than fast tapping. Stretch Slime, split Dark Divide, face Octopulse's reaching tentacles, and shake things up with Fly Agaric. Learn their tells, discover their weaknesses, and earn a cute collectible version of each boss you defeat.
+Every fifth stage trades the falling waves for a hands-on boss battle. Each one has its own tells, touch controls, and squishy personality:
 
-TAKE A PLAYFUL DETOUR
+• Answer Slime's prompts, then drag its wobbly weak spot away
+• Split Dark Divide with a two-finger gesture
+• Defend your keys from Octopulse and pull away its exposed arms
+• Shake Fly Agaric's cap while dodging its spores
 
-Follow the glowing curves of Starpath or race to pop open the steamer. These quick challenges put a different spin on your reflexes between waves.
+These fights demand more than fast tapping. Watch for an opening, discover each weakness, and earn a cute collectible version of every boss you defeat.
+
+PLAYFUL CHALLENGES BETWEEN WAVES
+
+The adventure takes little detours between stages. Race to pop open the steamer and free the prize inside. Then guide that friend along the glowing curves of Star Path, steering with both thumbs as you gather twenty shining checkpoints.
+
+Your progress carries across attempts, so a close run still moves you nearer to the reward. Win a Star Path course and its bends grow trickier for the next flight.
 
 A CASE FULL OF FRIENDS
 
-Collect dumplings, fruits, candies, curious creatures, and boss friends. Pan through your shimmering display case, watch your characters come to life, and discover their stories.
+Collect dumplings, fruits, candies, curious creatures, and boss friends as you play. Pan across lands in your shimmering display case and watch every character come to life. Center a collected friend to open its story and discover where it lives, who its family is, and the little joke behind its personality.
 
-MADE FOR LITTLE MOMENTS
+YOUR RUN, YOUR WAY
 
-Chase a new best score, conquer one more boss, or meet your next favorite character. Enjoy expressive faces, squishy animation, colorful effects, original music, and playful sound.
+Chase a new personal best, then open the high score list to revisit saved runs and their stats. See the bosses you defeated, the rewards you earned, and how your strongest attempts unfolded.
 
-• Tap-and-drag arcade action
-• Four boss battles with distinct mechanics
-• Powerups that transform the action
-• Starpath and steamer minigames
-• An animated character collection
-• Offline gameplay with no ads or account required
+Tune music and sound effects separately, or choose Kids Mode before a run for a gentler pace, four keys, shorter sequences, and friendlier bonus challenges. Progress, settings, scores, and your collection are saved on your device.
 
-How far can your little dumpling go?
+WHY YOU'LL LOVE DDDUMPLING
+
+• Quick tap-and-drag arcade action made for portrait play
+• Four distinctive boss battles with character-key and gesture mechanics
+• Transforming powerups, mystery effects, and two-thumb linked pairs
+• Steamer and Star Path minigames with collectible rewards
+• An animated collection filled with character stories
+• Saved high scores and detailed run summaries
+• Adjustable music and effects plus an optional Kids Mode
+• Offline play with no ads, in-app purchases, or account required
+
+Whether you have time for one wave or one more boss, DDDumpling packs expressive faces, squishy animation, colorful effects, original music, and plenty of tiny victories into every run.

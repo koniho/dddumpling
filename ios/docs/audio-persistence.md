@@ -16,6 +16,8 @@ The host sets `setActive:` after it has selected the scene soundtrack. The adapt
 also pauses for app backgrounding, interruptions, and unplugged output routes, and only
 resumes an interruption when iOS says that resumption is appropriate. Narration uses the
 system English voice at the Java-defined pitch and timing and ducks music while speaking.
+Run-start names use a higher chipmunk pitch and the display-case name-reading speed in one short utterance,
+following effects volume; cancellation or the start of gameplay stops the announcement.
 
 `DDIOSStore` stores all `GameCore.Store` fields in one binary plist beneath Application
 Support. The values plist is enclosed with a format marker and SHA-256 checksum; it is

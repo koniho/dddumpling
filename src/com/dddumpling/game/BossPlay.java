@@ -144,6 +144,7 @@ final class BossPlay {
             return true;
         }
         if (verdict == Boss.HIT) {
+            c.companion.react(RunCompanion.BOSS_HIT, 1f);
             c.score += GameCore.BOSS_HIT;
             c.shake = Math.max(c.shake, 0.30f);
             c.flash = Math.max(c.flash, 0.4f);
@@ -236,6 +237,7 @@ final class BossPlay {
         if (c.boss.mushroomShakeCue && c.sound != null) c.sound.mushroomShake();
         c.boss.mushroomShakeCue = false;
         if (r != Boss.HIT) return false;
+        c.companion.react(RunCompanion.BOSS_HIT, 1f);
         c.score += GameCore.BOSS_HIT;
         c.hits++;
         c.combo++;
@@ -264,6 +266,7 @@ final class BossPlay {
         boolean changed = c.boss.pinch(distance, x1, y1, x2, y2, c.rnd);
         c.progress.bossDamage(c.boss.kind, beforeHp, c.boss.hp);
         if (!changed) return false;
+        c.companion.react(RunCompanion.BOSS_HIT, 1f);
         boolean deactivate = c.boss.divideDeactivated;
         c.shake = Math.max(c.shake, deactivate ? 1.2f : 0.85f);
         c.flashColor = deactivate ? 0xFFFFFFFF : 0xFF7D45D6;

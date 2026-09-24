@@ -77,7 +77,7 @@ final class Renderer extends Draw {
         pushImpacts(p, c, L);
         // Over the words: the burst is the payoff and nothing should be in front of it.
         BossScreen.burst(p, c, L);
-        buddy(p, c, L);
+        if(c.buddy.entryLeft<=0f) buddy(p, c, L);
         flurryBurst(p,c,L);
         powerup(p, c, L);
         chain(p, c, L);
@@ -96,6 +96,10 @@ final class Renderer extends Draw {
         p.restore();
 
         }
+
+        if(!Cave.active(c) || c.cave.phase!=Cave.CHOOSE) RunCompanion.draw(p,c,L);
+        // The grown TEAM form flies in front of the home while it leaves the key deck.
+        if(c.buddy.entryLeft>0f) buddy(p,c,L);
 
         // Red closing-in glow: from low health, and from a word about to land.
         Sky.vignette(p, L, ROSE, Math.max(hurt, c.warnLevel * (0.45f + 0.55f * hurtPulse)));
@@ -423,8 +427,19 @@ final class Renderer extends Draw {
         float glow = b.glow();
         int tint = Collect.BODY[b.who];
 
+        if(b.burstLeft>0f) {
+            float u=1f-b.burstLeft/Buddy.BURST_TIME;
+            for(int i=0;i<12;i++) {
+                float angle=i*6.283185f/12f+b.who*.37f;
+                float reach=L.enemyR*(1.5f+4f*u);
+                p.fillPoly(star(b.burstX+reach*(float)Math.cos(angle),
+                        b.burstY+reach*(float)Math.sin(angle),L.enemyR*.42f*(1f-u),
+                        L.enemyR*.18f*(1f-u),4,angle),Glyph.withAlpha(tint,(int)(230*(1f-u))));
+            }
+        }
+
         // A charge leaves a streak behind it, so a fast one is legible as a direction.
-        if (b.chase != null) {
+        if (b.chase != null && b.entryLeft == 0f) {
             float sp = (float) Math.sqrt(b.vx * b.vx + b.vy * b.vy);
             if (sp > 1f) {
                 float back = r * 2.4f;

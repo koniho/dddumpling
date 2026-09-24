@@ -40,6 +40,9 @@ abstract class Check {
         public byte[] loadProgress() { return progress == null ? null : progress.clone(); }
         public void saveProgress(byte[] data) { progress = data.clone(); }
         public String progressReplica() { return "test"; }
+        int caseIndex;
+        public int loadCaseIndex() { return caseIndex; }
+        public void saveCaseIndex(int value) { caseIndex=value; }
         String highScores="";
         public String loadHighScores() { return highScores; }
         public void saveHighScores(String value) { highScores=value; }
@@ -132,6 +135,8 @@ abstract class Check {
         int bossMusicCalls;
         int narrations, hushes;
         int narrated = -1;
+        int nameCalls, announcedName=-1;
+        public void announceSquishy(int entry) { nameCalls++; announcedName=entry; }
         public void squish(int glyph, int depth) {
             squishVolume=effectsVolume;
             squishes++;

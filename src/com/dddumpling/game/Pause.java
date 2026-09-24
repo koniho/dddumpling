@@ -15,7 +15,7 @@ final class Pause extends Draw {
         if (c.returnFade > 0f) return true;
         if (c.confirmEnd) { c.confirmEnd = false; return true; }
         if (c.paused) { resume(c); return true; }
-        if (c.settingsOpen) { c.closeSettings(); return true; }
+        if (c.settingsOpen) { PlayerSettings.close(c); return true; }
         if (c.storyOpen()) { c.closeStory(); return true; }
         if (c.caseOpen) { c.closeCase(); return true; }
         if (c.starting()) {

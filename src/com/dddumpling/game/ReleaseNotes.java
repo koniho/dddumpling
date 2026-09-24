@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Compact release groups, with an icon opening each isolated feature page. */
 final class ReleaseNotes extends Draw {
     static final String[] VERSIONS=ReleaseContent.VERSIONS;
-    static final float PAGE_TIME=.38f, RESTART_DELAY=2f;
+    static final float PAGE_TIME=PANEL_SLIDE_TIME, RESTART_DELAY=2f;
     boolean open,listing;
     float pageSlide;
     boolean pageReturning;
@@ -128,7 +128,7 @@ final class ReleaseNotes extends Draw {
         page=release;feature=item;listing=false;pageSlide=0f;pageReturning=false;reset(L);
     }
     boolean pageMoving() { return !listing && (pageReturning || pageSlide<1f); }
-    float pageTravel() { return pageSlide*pageSlide*(3f-2f*pageSlide); }
+    float pageTravel() { return panelTravel(pageSlide); }
     void back() {
         if(transition.moving()) { close();return; }
         if(listing) close();else pageReturning=true;
