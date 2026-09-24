@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Decorative run companion: event reactions never consume input or gameplay randomness. */
 final class RunCompanion extends Draw {
     static final int IDLE=0, WORD=1, POWER_END=2, POWER=3, BOSS=4, DANGER=5, BOSS_HIT=6,
-            STAGE_CLEAR=7, VICTORY=8, DAMAGE=9, CRY=10;
+            STAGE_CLEAR=7, VICTORY=8, DAMAGE=9, CRY=10, TOUCH=11;
     static final float RESCUE_HOLD=.5f,RESCUE_RETURN=.42f,
             RESCUE_TIME=GameCore.PUSH_TIME+RESCUE_HOLD+RESCUE_RETURN;
     private static final int HOME_NODES=20;
@@ -20,7 +20,7 @@ final class RunCompanion extends Draw {
         home.reset(0,0,1f,1.25f);
     }
     void react(int event,float amount) {
-        if(who<0 || (left>0f && event<reaction)) return;
+        if(who<0 || (left>0f && event<reaction && reaction!=TOUCH)) return;
         if(event==DAMAGE || event==CRY) rescueT=0f;
         // Repeated clears strengthen this beat instead of restarting it indefinitely.
         if(left>0f && event==reaction) { strength=Math.min(1f,strength+.12f);return; }
@@ -65,9 +65,9 @@ final class RunCompanion extends Draw {
         return mood();
     }
     static float x(Layout L) { return (L.keyX[2]+L.keyX[3])*.5f; }
-    static float y(Layout L) { return L.keyY[2]-L.keyR*1.55f; }
+    static float y(Layout L) { return L.keyY[2]-L.keyR*1.54f; }
     static float halfWidth(Layout L) { return L.keyR*.736f; }
-    static float halfHeight(Layout L) { return halfWidth(L)*.8660254f; }
+    static float halfHeight(Layout L) { return halfWidth(L)*.90f; }
     static float radius(Layout L) { return L.keyR*.55f*.84f; }
     static float radius(GameCore c,Layout L) { return LandPicker.travelerRadius(c,L)*.84f; }
     static float cryTearSize(Layout L) { return L.keyR; }
@@ -77,6 +77,9 @@ final class RunCompanion extends Draw {
         return Glyph.cycle(clock*.85f+band*.16f);
     }
     float victoryRock() { return reaction==VICTORY?(float)Math.sin(age*9f)*strength:0f; }
+    float touchRock() {
+        return reaction==TOUCH?(float)Math.sin(age*36f)*beat():0f;
+    }
     float squash() { return 1f+beat()*(reaction==DAMAGE?.20f:-.16f); }
     float damagePush(Layout L) { return reaction==DAMAGE?halfHeight(L)*1.5f*beat():0f; }
     void rescue() { rescueT=RESCUE_TIME; }
@@ -101,6 +104,20 @@ final class RunCompanion extends Draw {
         if(!rescuePowered()) return 0f;
         float left=rescueT-RESCUE_RETURN;
         return Math.min(1f,left/.18f);
+    }
+    /** A playful local reaction; it never consumes gameplay randomness or changes run state. */
+    void touch(float side) {
+        home.squash(.55f);
+        home.impulse(side<0f?.85f:-.85f,-.45f,.20f);
+        // Do not replace damage, danger or other gameplay feedback with a decorative poke.
+        if(left>0f && reaction!=IDLE && reaction!=TOUCH) return;
+        reaction=TOUCH;age=0f;strength=.8f;left=.55f;
+    }
+    static boolean hit(GameCore c,Layout L,float px,float py) {
+        if(c.companion.who<0 || !c.buddy.out()) return false;
+        float cx=x(L),cy=y(L)+c.companion.rescueLift(L)+c.companion.damagePush(L);
+        float dx=(px-cx)/(halfWidth(L)*1.12f),dy=(py-cy)/(halfHeight(L)*1.12f);
+        return dx*dx+dy*dy<=1f;
     }
     float[] outline(Layout L) {
         float[] ring=home.outline(),out=new float[ring.length];
@@ -260,10 +277,13 @@ final class RunCompanion extends Draw {
         float victoryRock=a.victoryRock();
         cx+=r*.48f*victoryRock;
         cy-=r*.24f*Math.abs(victoryRock);
+        float touchRock=a.touchRock();
+        cx+=r*.24f*touchRock;
+        cy-=r*.12f*Math.abs(touchRock);
         if(a.reaction==DAMAGE) cx+=r*.12f*(float)Math.sin(a.age*55f)*beat;
         p.fillEllipse(x,y+r*.85f,r*.7f,r*.13f,0x55302045);
         Trinket.drawReacting(new Squash(p,cx,cy,a.squash()),a.who,cx,cy,r,a.clock,1f,a.displayMood(c),
-                .10f*(float)Math.sin(a.clock*.9f),c.flinging());
+                .10f*(float)Math.sin(a.clock*.9f)+.18f*touchRock,c.flinging());
         if(a.reaction==CRY) cryTears(p,cx,cy,r,cryTearSize(L),a.clock);
         if(a.reaction==BOSS_HIT) {
             float poleX=x+w*.60f,poleTop=y-h*(.94f+.18f*beat),poleBottom=y+h*.30f;

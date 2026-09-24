@@ -239,6 +239,15 @@ public class GameView extends View {
         // starts on a letter is never mistaken for a key press.
         if (core.flinging() && handleFling(ev, action)) return true;
 
+        // The companion sits inside the panic swipe's broad catchment. A direct touch on its
+        // bubble belongs to the companion; field gestures and FLING still keep precedence above.
+        if ((action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN)
+                && core.tapCompanion(ev.getX(ev.getActionIndex()), ev.getY(ev.getActionIndex()),
+                        layout)) {
+            tick();
+            return true;
+        }
+
         // Panic swipe: an upward drag starting anywhere in the lower half of the field.
         // Needs MOVE events, so it is handled before the down-only filter. After the blade,
         // because during a FLING frenzy a stroke through that strip is a cut and should stay one.

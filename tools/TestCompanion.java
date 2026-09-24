@@ -35,8 +35,20 @@ final class TestCompanion extends Check {
         check("home has a broad rounded hexagonal top",
                 Math.abs(hex[109]-hex[115])<RunCompanion.halfHeight(L)*.12f
                         && Math.abs(hex[115]-hex[121])<RunCompanion.halfHeight(L)*.12f);
-        check("home uses an even regular-hexagon aspect",
-                Math.abs(RunCompanion.halfHeight(L)/RunCompanion.halfWidth(L)-.8660254f)<.0001f);
+        check("home is taller and closer to an even visual aspect",
+                Math.abs(RunCompanion.halfHeight(L)/RunCompanion.halfWidth(L)-.90f)<.0001f);
+        check("touches outside the companion remain available to play",
+                !c.tapCompanion(0,L.playTop,L));
+        check("the companion claims a direct normal-play touch",
+                c.tapCompanion(RunCompanion.x(L),RunCompanion.y(L),L)
+                        && c.companion.reaction==RunCompanion.TOUCH);
+        c.companion.update(c,.08f);
+        check("a touch jiggles the companion as well as its bubble",
+                Math.abs(c.companion.touchRock())>.05f && c.companion.home.finite());
+        c.state=GameCore.BONUS;
+        check("the decorative touch reaction is normal-play only",
+                !c.tapCompanion(RunCompanion.x(L),RunCompanion.y(L),L));
+        c.state=GameCore.PLAY;
         c.startFrenzy(Power.FLING,L);
         RasterPainter masked=new RasterPainter((int)L.w,(int)L.h,1);masked.clear(0xFF010203);
         RunCompanion.draw(masked,c,L);

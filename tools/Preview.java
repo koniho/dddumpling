@@ -100,6 +100,11 @@ final class Preview {
             for(int step=0;step<steps;step++) c.companion.update(c,DT);
             shot(dir,"118-companion-reaction-"+event,c,L,w,h,ss);
         }
+        GameCore touched=new GameCore(new Mem(),118L);touched.collected=Collect.MASK;
+        touched.caseIndex=11;touched.startGame();touched.stageBanner=0;
+        touched.tapCompanion(RunCompanion.x(L),RunCompanion.y(L),L);
+        touched.companion.update(touched,.08f);
+        shot(dir,"118-companion-touch",touched,L,w,h,ss);
         for(int frame=0;frame<4;frame++) {
             GameCore c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=11;c.startGame();
             c.stageBanner=0;c.companion.react(RunCompanion.VICTORY,1f);

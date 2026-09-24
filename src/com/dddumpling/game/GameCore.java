@@ -2086,6 +2086,14 @@ final class GameCore {
 
     // ---- input --------------------------------------------------------------
 
+    /** Tap the decorative run companion without turning the touch into a gameplay action. */
+    boolean tapCompanion(float x,float y,Layout L) {
+        if(state!=PLAY || paused || settingsOpen || Cave.active(this)
+                || !RunCompanion.hit(this,L,x,y)) return false;
+        companion.touch(x-RunCompanion.x(L));
+        return true;
+    }
+
     /** Player pressed key {@code g}. Returns true when it advanced a word. */
     boolean tapKey(int g, Layout L) {
         if (paused || pushLesson.active) return false;
