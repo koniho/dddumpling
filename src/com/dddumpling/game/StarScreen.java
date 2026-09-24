@@ -11,7 +11,7 @@ package com.dddumpling.game;
 final class StarScreen extends Draw {
 
     private StarScreen() {}
-    static final float COMPANION_TRAVEL=.72f;
+    static final float COMPANION_TRAVEL=.72f,COMPANION_RETURN=.72f;
 
     static float companionX(GameCore c,Layout L,float target) {
         StarPath q=c.stars;
@@ -19,7 +19,6 @@ final class StarScreen extends Draw {
             float t=ease(c.time/COMPANION_TRAVEL);
             return RunCompanion.x(L)+(target-RunCompanion.x(L))*t;
         }
-        if(q.exiting()) return target+(RunCompanion.x(L)-target)*ease(q.exitProgress());
         return q.reporting()?RunCompanion.x(L):target;
     }
     static float companionY(GameCore c,Layout L,float target) {
@@ -28,17 +27,17 @@ final class StarScreen extends Draw {
             float t=ease(c.time/COMPANION_TRAVEL);
             return RunCompanion.y(L)+(target-RunCompanion.y(L))*t;
         }
-        if(q.exiting()) {
-            float middle=L.playTop+(L.dangerY-L.playTop)*.50f;
-            return middle+(RunCompanion.y(L)-middle)*ease(q.exitProgress());
+        if(q.reporting()) {
+            float t=Math.max(0f,Math.min(1f,(StarPath.REPORT-q.timer)/COMPANION_RETURN));
+            float below=L.h+RunCompanion.radius(c,L)*2f;
+            return below+(RunCompanion.y(L)-below)*ease(t);
         }
-        return q.reporting()?RunCompanion.y(L):target;
+        return target;
     }
     static float companionR(GameCore c,Layout L) {
         StarPath q=c.stars;float home=RunCompanion.radius(c,L),full=StarPath.flyerR(L);
         if(q.ready() && c.time<COMPANION_TRAVEL)
             return home+(full-home)*ease(c.time/COMPANION_TRAVEL);
-        if(q.exiting()) return full+(home-full)*ease(q.exitProgress());
         return q.reporting()?home:full;
     }
 
@@ -185,7 +184,7 @@ final class StarScreen extends Draw {
             wake(p, q, L, drawX, drawY, sway, c.clock, fade);
             flyer(p, q, drawR, drawX, drawY, c.clock, fade);
         } else if(q.reporting()) {
-            flyer(p,q,RunCompanion.radius(c,L),RunCompanion.x(L),RunCompanion.y(L),c.clock,fade);
+            flyer(p,q,drawR,drawX,drawY,c.clock,fade);
         }
         if (q.ready() || q.flying()) slider(p, q, L, fade, c.clock);
 

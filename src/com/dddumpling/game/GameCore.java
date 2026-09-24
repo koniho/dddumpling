@@ -3275,7 +3275,9 @@ final class GameCore {
      * early returns, or clear it where the early return is taken. There is no third way.
      */
     private void die() {
-        companion.clear();
+        // The run companion belongs to the summary after play stops. It cries in place until the
+        // return fade reaches full cover; toTitle clears it under that cover.
+        companion.react(RunCompanion.CRY,1f);
         cave.leave();
         resetStarRun();
         highScores.finish(this);
@@ -3293,6 +3295,7 @@ final class GameCore {
         state = OVER;
         time = 0;
         deathT = deathDuration();
+        pushT = pushSlowT = 0f;
         // The words are deliberately left standing: they swirl away over the death hold, and
         // the field is cleared when it ends, before the summary is drawn over it. Only the
         // shots go now — a kill landing after the run is over would credit a squish.

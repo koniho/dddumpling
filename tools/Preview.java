@@ -11,7 +11,7 @@ final class Preview {
 
     private static void companionFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("118-companion")) return;
-        for(int event=0;event<=RunCompanion.DAMAGE;event++) {
+        for(int event=0;event<=RunCompanion.CRY;event++) {
             GameCore c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=11;c.startGame();
             c.stageBanner=0;c.companion.react(event,1f);
             for(int step=0;step<10;step++) c.companion.update(c,DT);
@@ -33,6 +33,18 @@ final class Preview {
             shot(dir,"118-companion-team-return-"+frame,c,L,w,h,ss);step(c,L,.09f);
         }
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
+        c.stageBanner=0;c.startFrenzy(Power.FLING,L);c.companion.update(c,.18f);
+        shot(dir,"118-companion-fling-mask",c,L,w,h,ss);
+        c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();c.stageBanner=0;
+        c.pushUsed=true;c.pushSlowT=GameCore.PUSH_SLOW;c.pushT=GameCore.PUSH_TIME;
+        for(int frame=0;frame<6;frame++) {
+            c.pushT=GameCore.PUSH_TIME*(1f-frame/6f);
+            c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME*(frame/6f);
+            shot(dir,"118-companion-rescue-"+frame,c,L,w,h,ss);
+        }
+        c.pushT=0;c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME-RunCompanion.RESCUE_RETURN-.1f;
+        shot(dir,"118-companion-rescue-tired",c,L,w,h,ss);
+        c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
         c.playtestSteamer(L);c.time=.7f;
         shot(dir,"118-companion-steamer",c,L,w,h,ss);
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
@@ -42,7 +54,16 @@ final class Preview {
             shot(dir,"118-companion-starpath-entry-"+frame,c,L,w,h,ss);
         }
         c.time=2f;c.stars.timer=StarPath.REPORT+StarPath.EXIT*.5f;
-        shot(dir,"118-companion-starpath-return",c,L,w,h,ss);
+        shot(dir,"118-companion-starpath-blastoff",c,L,w,h,ss);
+        for(int frame=0;frame<6;frame++) {
+            c.stars.timer=StarPath.REPORT-frame*StarScreen.COMPANION_RETURN/5f;
+            shot(dir,"118-companion-starpath-return-"+frame,c,L,w,h,ss);
+        }
+        c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
+        c.lives=1;c.takeHit(L.w*.5f,L);step(c,L,c.deathDuration()+GameCore.OVER_FADE+.1f);
+        shot(dir,"118-companion-gameover-cry",c,L,w,h,ss);
+        c.returnFade=GameCore.RETURN_FADE*.75f;
+        shot(dir,"118-companion-gameover-exit",c,L,w,h,ss);
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=49;c.caveChoice=0;
         c.startGame();c.jumpToStage(21,L);c.stageBanner=0;
         shot(dir,"118-companion-cave",c,L,w,h,ss);

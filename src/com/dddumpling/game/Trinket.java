@@ -45,16 +45,24 @@ final class Trinket {
         draw(p,i,cx,cy,r,clock,known,fade,-1,0f);
     }
     static void drawReacting(Painter p,int i,float cx,float cy,float r,float clock,float fade,int mood,float look) {
-        draw(p,i,cx,cy,r,clock,true,fade,mood,look);
+        draw(p,i,cx,cy,r,clock,true,fade,mood,look,false);
+    }
+    static void drawReacting(Painter p,int i,float cx,float cy,float r,float clock,float fade,int mood,
+            float look,boolean ninja) {
+        draw(p,i,cx,cy,r,clock,true,fade,mood,look,ninja);
     }
     private static void draw(Painter p,int i,float cx,float cy,float r,float clock,boolean known,
             float fade,int mood,float look) {
+        draw(p,i,cx,cy,r,clock,known,fade,mood,look,false);
+    }
+    private static void draw(Painter p,int i,float cx,float cy,float r,float clock,boolean known,
+            float fade,int mood,float look,boolean ninja) {
         if (fade <= 0.01f || i < 0 || i >= Collect.COUNT) return;
         if (Collect.FAMILY[i]==Collect.MOLES || Collect.FAMILY[i]==Collect.SNAKES) {
-            CaveCollect.draw(p,i,cx,cy,r,clock,known,fade,mood,look);return;
+            CaveCollect.draw(p,i,cx,cy,r,clock,known,fade,mood,look,ninja);return;
         }
         if (i >= Collect.BOSS_FIRST && i < Collect.BOSS_FIRST + Collect.BOSS_COUNT) {
-            BossCollect.draw(p, i - Collect.BOSS_FIRST, cx, cy, r, clock, known, fade,mood,look);
+            BossCollect.draw(p, i - Collect.BOSS_FIRST, cx, cy, r, clock, known, fade,mood,look,ninja);
             return;
         }
         int shape = Collect.SHAPE[i];
@@ -73,8 +81,19 @@ final class Trinket {
         }
         Shape.draw(p, shape, cx, cy, r, Collect.BODY[i], Collect.ACCENT[i], fade, i * 1.7f, true);
         Finish.draw(p, Collect.FINISH[i], cx, cy, r, Collect.ACCENT[i], clock, fade, i);
-        if(mood<0) face(p, i % 3, cx, cy + r * FACE_DY[shape], r * FACE_R[shape], fade);
-        else reactionFace(p,cx,cy+r*FACE_DY[shape],r*FACE_R[shape],clock,fade,mood,look);
+        float faceY=cy+r*FACE_DY[shape],faceR=r*FACE_R[shape];
+        if(ninja) ninjaMask(p,cx,faceY,faceR,fade);
+        if(mood<0) face(p, i % 3, cx, faceY, faceR, fade);
+        else reactionFace(p,cx,faceY,faceR,clock,fade,mood,look);
+    }
+
+    /** Dark wrap with a narrow eye opening, used while the companion powers a fling. */
+    static void ninjaMask(Painter p,float x,float y,float r,float fade) {
+        int cloth=Draw.fadeBy(0xFF211B35,fade),slit=Draw.fadeBy(0xFF615370,fade);
+        p.fillPoly(Draw.pill(x,y-r*.02f,r*.94f,r*.43f,8),cloth);
+        p.fillPoly(new float[]{x+r*.72f,y+r*.20f,x+r*1.10f,y+r*.48f,
+                x+r*.91f,y+r*.04f,x+r*1.16f,y-r*.17f},cloth);
+        p.fillPoly(Draw.pill(x,y-r*.04f,r*.68f,r*.18f,8),slit);
     }
 
     /** Compact expressions shared by every collectible family, only in the run companion. */
@@ -83,7 +102,19 @@ final class Trinket {
         boolean blink=Math.sin(clock*1.7f)>.985f;
         for(int side=-1;side<=1;side+=2) {
             float ex=x+side*r*.35f+look*r;
-            if(mood==3) {
+            if(mood==6) {
+                p.polyline(new float[]{ex-side*r*.20f,y-r*.26f,ex+side*r*.16f,y-r*.12f},ink,r*.09f);
+                p.fillEllipse(ex,y,r*.16f,r*.075f,ink);
+                p.fillCircle(ex-side*r*.04f,y-r*.015f,r*.035f,Draw.fadeBy(0xFFFFFFFF,fade));
+            } else if(mood==7) {
+                p.polyline(new float[]{ex-r*.16f,y-r*.01f,ex,y+r*.08f,ex+r*.16f,y+r*.04f},ink,r*.08f);
+                if(side>0)p.fillEllipse(ex+r*.13f,y-r*.20f,r*.065f,r*.13f,
+                        Draw.fadeBy(0xFF79DDEB,fade));
+            } else if(mood==5) {
+                p.polyline(new float[]{ex-r*.15f,y-r*.02f,ex,y+r*.08f,ex+r*.15f,y-r*.02f},ink,r*.085f);
+                p.fillEllipse(ex+side*r*.08f,y+r*(.23f+.08f*(float)Math.sin(clock*7f+side)),
+                        r*.07f,r*.15f,Draw.fadeBy(0xFF79DDEB,fade));
+            } else if(mood==3) {
                 p.polyline(new float[]{ex-side*r*.12f,y-r*.17f,ex+side*r*.07f,y,
                         ex-side*r*.12f,y+r*.09f},ink,r*.09f);
             } else if(mood==1 || blink) {
@@ -96,7 +127,14 @@ final class Trinket {
             }
             p.fillEllipse(x+side*r*.60f,y+r*.18f,r*.16f,r*.09f,Draw.fadeBy(BLUSH,fade));
         }
-        if(mood==2) p.strokeCircle(x,y+r*.33f,r*.11f,ink,r*.07f);
+        if(mood==6) {
+            p.fillEllipse(x,y+r*.34f,r*.20f,r*.20f,ink);
+            p.fillEllipse(x,y+r*.29f,r*.10f,r*.06f,Draw.fadeBy(0xFFFFD4C8,fade));
+        } else if(mood==7) p.polyline(new float[]{x-r*.18f,y+r*.36f,x,y+r*.28f,
+                x+r*.18f,y+r*.36f},ink,r*.07f);
+        else if(mood==5) p.polyline(new float[]{x-r*.19f,y+r*.38f,x,y+r*.25f,
+                x+r*.19f,y+r*.38f},ink,r*.075f);
+        else if(mood==2) p.strokeCircle(x,y+r*.33f,r*.11f,ink,r*.07f);
         else if(mood==3) p.polyline(new float[]{x-r*.18f,y+r*.31f,x-r*.06f,y+r*.24f,
                 x+r*.06f,y+r*.34f,x+r*.18f,y+r*.27f},ink,r*.075f);
         else if(mood==4) {

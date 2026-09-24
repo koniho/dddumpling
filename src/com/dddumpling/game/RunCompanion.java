@@ -2,10 +2,14 @@ package com.dddumpling.game;
 
 /** Decorative run companion: event reactions never consume input or gameplay randomness. */
 final class RunCompanion extends Draw {
-    static final int IDLE=0, WORD=1, POWER_END=2, POWER=3, BOSS=4, DANGER=5, VICTORY=6, DAMAGE=7;
+    static final int IDLE=0, WORD=1, POWER_END=2, POWER=3, BOSS=4, DANGER=5, VICTORY=6,
+            DAMAGE=7, CRY=8;
+    static final float RESCUE_RETURN=.42f;
+    private static final int HOME_NODES=20;
+    private static final float[] HOME_SHAPE=roundedHex();
     int who=-1, reaction;
     float clock, left, age, strength;
-    final Softbody home=new Softbody(20,118);
+    final Softbody home=new Softbody(HOME_NODES,118);
     private boolean bossSeen, wonSeen, threatSeen, powered;
 
     void begin(int selection) { clear();who=selection; }
@@ -24,10 +28,13 @@ final class RunCompanion extends Draw {
         home.impulse(event==DAMAGE?-.7f:.7f,-.6f,.18f*strength);
     }
     void update(GameCore c,float dt) {
-        boolean play=c.state==GameCore.PLAY;
-        if((!play && c.state!=GameCore.BONUS) || c.paused || c.settingsOpen || who<0) return;
-        clock+=dt;age+=dt;left=Math.max(0f,left-dt);
-        if(left==0f) reaction=IDLE;
+        boolean play=c.state==GameCore.PLAY,over=c.state==GameCore.OVER;
+        if((!play && !over && c.state!=GameCore.BONUS) || c.paused || c.settingsOpen || who<0) return;
+        clock+=dt;age+=dt;
+        if(!over) {
+            left=Math.max(0f,left-dt);
+            if(left==0f) reaction=IDLE;
+        }
         boolean boss=play && c.boss.active(),won=boss && c.boss.beaten;
         boolean threat=play && c.boss.fighting() && (c.boss.boltCount()>0 || c.boss.hasGlob()
                 || c.boss.mushroomCharge>0f || c.boss.octoLock);
@@ -39,11 +46,17 @@ final class RunCompanion extends Draw {
         home.update(dt);
     }
     int mood() {
+        if(reaction==CRY) return 5;
         if(reaction==DAMAGE) return 3;
         if(reaction==DANGER || reaction==BOSS) return 2;
         if(reaction==VICTORY || reaction==POWER) return 4;
         if(reaction==WORD || reaction==POWER_END || powered) return 1;
         return 0;
+    }
+    int displayMood(GameCore c) {
+        if(c.pushT>0f) return 6;
+        if(c.pushUsed && reaction==IDLE) return 7;
+        return mood();
     }
     static float x(Layout L) { return (L.keyX[2]+L.keyX[3])*.5f; }
     static float y(Layout L) { return L.keyY[2]-L.keyR*1.55f; }
@@ -53,12 +66,54 @@ final class RunCompanion extends Draw {
     static float radius(GameCore c,Layout L) { return LandPicker.travelerRadius(c,L)*.84f; }
     float beat() { return left>0f?(float)Math.sin(Math.min(1f,age/.48f)*Math.PI)*strength:0f; }
     float squash() { return 1f+beat()*(reaction==DAMAGE?.20f:-.16f); }
+    static float rescueLift(GameCore c,Layout L) {
+        if(c.pushSlowT<=0f) return 0f;
+        float age=GameCore.PUSH_SLOW-c.pushSlowT;
+        float amount;
+        if(c.pushT>0f) amount=1f-c.pushT/GameCore.PUSH_TIME;
+        else if(age<GameCore.PUSH_TIME+RESCUE_RETURN)
+            amount=1f-(age-GameCore.PUSH_TIME)/RESCUE_RETURN;
+        else return 0f;
+        amount=Math.max(0f,Math.min(1f,amount));
+        amount=amount*amount*(3f-2f*amount);
+        return (L.playTop+L.enemyR*1.8f-y(L))*amount;
+    }
     float[] outline(Layout L) {
         float[] ring=home.outline(),out=new float[ring.length];
-        // Soft limits keep every wobble inside the reserved gap, even after repeated impacts.
+        int points=ring.length/2;
+        // A rounded six-sided rest path keeps the home distinct from its oval shadow. The live
+        // ring only supplies displacement, so the home retains its soft-body wobble and impacts.
         for(int i=0;i<ring.length;i+=2) {
-            out[i]=x(L)+Math.max(-1.12f,Math.min(1.12f,ring[i]/1.25f))*halfWidth(L);
-            out[i+1]=y(L)+Math.max(-1.12f,Math.min(1.12f,ring[i+1]))*halfHeight(L);
+            int point=i/2;
+            float angle=Softbody.TAU*point/points;
+            float dx=ring[i]/1.25f-(float)Math.cos(angle);
+            float dy=ring[i+1]-(float)Math.sin(angle);
+            out[i]=x(L)+Math.max(-1.12f,Math.min(1.12f,HOME_SHAPE[i]+dx*.55f))*halfWidth(L);
+            out[i+1]=y(L)+Math.max(-1.12f,Math.min(1.12f,HOME_SHAPE[i+1]+dy*.55f))*halfHeight(L);
+        }
+        return out;
+    }
+    private static float[] roundedHex() {
+        float[] out=new float[HOME_NODES*Softbody.SMOOTH*2];
+        for(int point=0;point<out.length/2;point++) {
+            float path=point*6f/(out.length/2);
+            int side=(int)path,next=(side+1)%6,after=(next+1)%6;
+            float t=path-side;
+            float ax=(float)Math.cos(side*Softbody.TAU/6f),ay=(float)Math.sin(side*Softbody.TAU/6f);
+            float bx=(float)Math.cos(next*Softbody.TAU/6f),by=(float)Math.sin(next*Softbody.TAU/6f);
+            float cx=(float)Math.cos(after*Softbody.TAU/6f),cy=(float)Math.sin(after*Softbody.TAU/6f);
+            float round=.28f;
+            float sx=ax+(bx-ax)*round,sy=ay+(by-ay)*round;
+            float ex=bx+(ax-bx)*round,ey=by+(ay-by)*round;
+            float ox=bx+(cx-bx)*round,oy=by+(cy-by)*round;
+            if(t<.5f) {
+                float u=t*2f;
+                out[point*2]=sx+(ex-sx)*u;out[point*2+1]=sy+(ey-sy)*u;
+            } else {
+                float u=(t-.5f)*2f,v=1f-u;
+                out[point*2]=v*v*ex+2*v*u*bx+u*u*ox;
+                out[point*2+1]=v*v*ey+2*v*u*by+u*u*oy;
+            }
         }
         return out;
     }
@@ -66,22 +121,41 @@ final class RunCompanion extends Draw {
         RunCompanion a=c.companion;
         boolean steamer=c.state==GameCore.BONUS && !c.starBonus && !c.bossReward
                 && !CaveInterlude.active(c);
-        if((c.state!=GameCore.PLAY && !steamer) || a.who<0 || !c.buddy.out()) return;
+        boolean over=c.state==GameCore.OVER;
+        if((c.state!=GameCore.PLAY && !steamer && !over) || a.who<0 || !c.buddy.out()) return;
         float x=x(L),y=y(L),w=halfWidth(L),h=halfHeight(L),r=radius(c,L);
+        float rescueLift=rescueLift(c,L);
+        p.save();p.translate(0,rescueLift);
         float beat=a.beat();
-        int tint=a.reaction==DAMAGE?ROSE:a.reaction==VICTORY?GOLD:Collect.BODY[a.who];
+        int tint=c.pushT>0f?GOLD:a.reaction==DAMAGE?ROSE:a.reaction==VICTORY?GOLD:Collect.BODY[a.who];
         float[] skin=a.outline(L);
+        if(c.pushT>0f) {
+            float u=1f-c.pushT/GameCore.PUSH_TIME;
+            float spread=w+(L.w*.5f-w)*(u*u*(3f-2f*u));
+            float pulse=.78f+.22f*(float)Math.sin(a.clock*24f);
+            p.fillPoly(pill(x,y,spread,h*.24f,10),Glyph.withAlpha(GOLD,(int)(42*pulse)));
+            p.fillPoly(pill(x,y,spread,h*.10f,10),Glyph.withAlpha(0xFFFFFFFF,(int)(155*pulse)));
+            for(int k=0;k<12;k++) {
+                float angle=k*Softbody.TAU/12f+a.clock*.8f;
+                float inner=r*(1.15f+.08f*(float)Math.sin(a.clock*18f+k));
+                float outer=inner+r*(.46f+.18f*(k%2));
+                p.line(x+(float)Math.cos(angle)*inner,y+(float)Math.sin(angle)*inner,
+                        x+(float)Math.cos(angle)*outer,y+(float)Math.sin(angle)*outer,
+                        Glyph.withAlpha(GOLD,180),r*.07f);
+            }
+        }
         p.fillEllipse(x,y+h*.95f,w*.8f,h*.12f,0x44302050);
         p.fillPoly(skin,Glyph.mix(0xFF352D52,tint,.16f));
         p.strokePoly(skin,Glyph.withAlpha(Glyph.mix(tint,INK,.4f),180),Math.max(1f,L.unit*.065f));
-        p.arc(x-w*.25f,y-h*.22f,w*.5f,h*.5f,205f,65f,0x55FFFFFF,L.unit*.07f);
+        p.polyline(new float[]{x-w*.42f,y-h*.22f,x-w*.24f,y-h*.52f,x+w*.02f,y-h*.62f},
+                0x55FFFFFF,L.unit*.07f);
         float hop=(a.reaction==WORD || a.reaction==POWER || a.reaction==VICTORY)?beat:0f;
         float cx=x+w*.10f*(float)Math.sin(a.clock*1.6f);
         float cy=y+r*.10f+r*.055f*(float)Math.sin(a.clock*2.3f)-r*.42f*hop;
         if(a.reaction==DAMAGE) cx+=r*.12f*(float)Math.sin(a.age*55f)*beat;
         p.fillEllipse(x,y+r*.85f,r*.7f,r*.13f,0x55302045);
-        Trinket.drawReacting(new Squash(p,cx,cy,a.squash()),a.who,cx,cy,r,a.clock,1f,a.mood(),
-                .10f*(float)Math.sin(a.clock*.9f));
+        Trinket.drawReacting(new Squash(p,cx,cy,a.squash()),a.who,cx,cy,r,a.clock,1f,a.displayMood(c),
+                .10f*(float)Math.sin(a.clock*.9f),c.flinging());
         if(a.reaction==POWER || a.reaction==VICTORY) {
             for(int i=0;i<2;i++) {
                 float sx=x+(i==0?-1:1)*w*.74f,sy=y-h*.52f;
@@ -91,6 +165,7 @@ final class RunCompanion extends Draw {
             p.line(x+w*.65f,y-h*.65f,x+w*.65f,y-h*.25f,GOLD,r*.1f);
             p.fillCircle(x+w*.65f,y-h*.05f,r*.07f,GOLD);
         }
+        p.restore();
     }
 
     /** Scale the existing collectible artwork without changing its body or accessories. */

@@ -25,6 +25,25 @@ final class TestCompanion extends Check {
         for(int i=0;i<60;i++) c.companion.update(c,DT);
         check("reaction settles without a queue",c.companion.reaction==RunCompanion.IDLE);
         check("home has genuine soft-body motion",!java.util.Arrays.equals(skin,c.companion.outline(L)) && c.companion.home.finite());
+        float[] hex=c.companion.outline(L);
+        check("home has a broad rounded hexagonal top",
+                Math.abs(hex[109]-hex[115])<RunCompanion.halfHeight(L)*.12f
+                        && Math.abs(hex[115]-hex[121])<RunCompanion.halfHeight(L)*.12f);
+        c.startFrenzy(Power.FLING,L);
+        RasterPainter masked=new RasterPainter((int)L.w,(int)L.h,1);masked.clear(0xFF010203);
+        RunCompanion.draw(masked,c,L);
+        boolean cloth=false,slit=false;
+        for(int pixel:masked.resolve()) { cloth|=pixel==0xFF211B35;slit|=pixel==0xFF615370; }
+        check("FLING gives the companion a ninja mask and eye slit",cloth && slit);
+        c.modeLeft=DT*.5f;c.update(DT,L);
+        c.pushUsed=true;c.pushT=GameCore.PUSH_TIME*.5f;c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME*.5f;
+        check("rescue swipe carries the companion upward with an intense expression",
+                RunCompanion.rescueLift(c,L)<0f && c.companion.displayMood(c)==6);
+        c.pushT=0f;c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME-RunCompanion.RESCUE_RETURN-.01f;
+        c.companion.reaction=RunCompanion.IDLE;
+        check("companion returns home tired after the rescue swipe",
+                RunCompanion.rescueLift(c,L)==0f && c.companion.displayMood(c)==7);
+        c.pushUsed=false;c.pushSlowT=0f;
         c.startFrenzy(Power.TEAM,L);
         check("TEAM grows the companion from its home",c.companion.who==11 && c.buddy.who==11
                 && c.buddy.entryLeft>0 && c.buddy.x==RunCompanion.x(L)
@@ -54,12 +73,28 @@ final class TestCompanion extends Check {
                         && StarScreen.companionY(interlude,small,targetY)==targetY
                         && StarScreen.companionR(interlude,small)==StarPath.flyerR(small));
         interlude.stars.timer=StarPath.REPORT-.01f;
-        check("Star Path report keeps the companion visible at home",
+        check("incomplete Star Path returns the companion from below the screen",
                 StarScreen.companionX(interlude,small,targetX)==RunCompanion.x(small)
-                        && StarScreen.companionY(interlude,small,targetY)==RunCompanion.y(small));
+                        && StarScreen.companionY(interlude,small,targetY)>small.h);
+        interlude.stars.timer=StarPath.REPORT-StarScreen.COMPANION_RETURN;
+        check("Star Path return settles in the companion home",
+                StarScreen.companionY(interlude,small,targetY)==RunCompanion.y(small));
         c.toTitle();check("title clears all reaction state",c.companion.who<0 && c.companion.left==0f);
         c.startGame();check("new run starts from idle",c.companion.reaction==0 && c.companion.clock==0);
-        c.lives=1;c.takeHit(0,L);check("death clears owned state before early returns",c.companion.who<0 && c.companion.left==0f);
+        c.pushT=GameCore.PUSH_TIME;c.pushSlowT=GameCore.PUSH_SLOW;c.lives=1;c.takeHit(0,L);
+        check("game over keeps the run companion crying",c.state==GameCore.OVER
+                && c.companion.who==c.runWho && c.companion.reaction==RunCompanion.CRY
+                && c.companion.mood()==5 && RunCompanion.rescueLift(c,L)==0f);
+        float cryClock=c.companion.clock;c.update(.1f,L);
+        check("crying animation continues during game over",c.companion.clock>cryClock
+                && c.companion.reaction==RunCompanion.CRY);
+        c.returnFade=GameCore.RETURN_FADE;
+        c.update(GameCore.RETURN_FADE*.25f,L);
+        check("companion remains through the summary exit fade",c.state==GameCore.OVER
+                && c.companion.who==c.runWho);
+        c.update(GameCore.RETURN_FADE*.25f+DT,L);
+        check("midpoint cover clears the game-over companion",c.state==GameCore.TITLE
+                && c.companion.who<0 && c.companion.left==0f);
         c=new GameCore(new Mem(),119L);c.beginStart();advance(c,L,Launch.PICK_TIME+Launch.TIME+.1f);
         check("shuffled run uses its resolved character",c.companion.who==c.runWho && c.companion.who>=0);
         c.boss.begin(Boss.SLIME,5,c.rnd);c.companion.update(c,DT);
@@ -78,7 +113,7 @@ final class TestCompanion extends Check {
             Layout l=new Layout();l.compute(size[0],size[1],0,size[0]*.04f,0,size[0]*.04f);
             GameCore c=new GameCore(new Mem(),118L);c.startGame();c.fullRoster=c.runFullRoster=full;
             boolean clear=true;
-            for(int event=0;event<=RunCompanion.DAMAGE;event++) {
+            for(int event=0;event<=RunCompanion.CRY;event++) {
                 c.companion.begin(c.runWho);c.companion.react(event,1f);
                 for(int frame=0;frame<60;frame++) {
                     c.companion.update(c,DT);
@@ -100,7 +135,8 @@ final class TestCompanion extends Check {
         Layout l=new Layout();l.compute(320,700,0,0,0,0);
         GameCore c=new GameCore(new Mem(),118L);c.startGame();
         boolean contained=true;
-        for(int who=0;who<Collect.COUNT;who++) for(int event:new int[]{RunCompanion.IDLE,RunCompanion.DAMAGE,RunCompanion.VICTORY}) {
+        for(int who=0;who<Collect.COUNT;who++) for(int event:new int[]{RunCompanion.IDLE,
+                RunCompanion.DAMAGE,RunCompanion.VICTORY,RunCompanion.CRY}) {
             c.companion.begin(who);c.companion.react(event,1);c.companion.update(c,.15f);
             RasterPainter p=new RasterPainter(320,700,1);p.clear(0xFF010203);
             RunCompanion.draw(p,c,l);int[] pixels=p.resolve();
@@ -114,5 +150,10 @@ final class TestCompanion extends Check {
             }
         }
         check("all collectible silhouettes and expressions stay in the reserved key gap",contained);
+        c.companion.begin(Collect.BOSS_FIRST+1);c.startFrenzy(Power.FLING,l);
+        RasterPainter masked=new RasterPainter(320,700,1);masked.clear(0xFF010203);
+        RunCompanion.draw(masked,c,l);
+        boolean bossMask=false;for(int pixel:masked.resolve()) bossMask|=pixel==0xFF211B35;
+        check("ninja mask follows special-family face placement",bossMask);
     }
 }

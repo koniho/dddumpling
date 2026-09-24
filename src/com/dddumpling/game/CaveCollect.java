@@ -35,6 +35,10 @@ final class CaveCollect extends Draw {
         draw(p,i,x,y,r,clock,known,fade,-1,0f);
     }
     static void draw(Painter p,int i,float x,float y,float r,float clock,boolean known,float fade,int mood,float look) {
+        draw(p,i,x,y,r,clock,known,fade,mood,look,false);
+    }
+    static void draw(Painter p,int i,float x,float y,float r,float clock,boolean known,float fade,
+            int mood,float look,boolean ninja) {
         boolean mole=Collect.FAMILY[i]==Collect.MOLES;
         int variant=i-(mole?Collect.MOLE_FIRST:Collect.SNAKE_FIRST);
         int fill=fadeBy(known?Collect.BODY[i]:0xFF302748,fade);
@@ -48,6 +52,7 @@ final class CaveCollect extends Draw {
         float fx=x+(mole?0:r*.15f),fy=y-r*(mole?.19f:.48f);
         float eyes=mole?.23f:.24f;
         boolean sleepy=mole && variant==2;
+        if(ninja) Trinket.ninjaMask(p,fx,fy,r*.62f,fade);
         if(mood>=0) Trinket.reactionFace(p,fx,fy,r*.62f,clock,fade,mood,look);
         else for(int side=-1;side<=1;side+=2) {
             float ex=fx+side*r*eyes;

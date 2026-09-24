@@ -11,6 +11,10 @@ final class BossCollect extends Draw {
         draw(p,boss,x,y,r,clock,known,fade,-1,0f);
     }
     static void draw(Painter p,int boss,float x,float y,float r,float clock,boolean known,float fade,int mood,float look) {
+        draw(p,boss,x,y,r,clock,known,fade,mood,look,false);
+    }
+    static void draw(Painter p,int boss,float x,float y,float r,float clock,boolean known,float fade,
+            int mood,float look,boolean ninja) {
         int i = Collect.BOSS_FIRST + boss;
         int body = fadeBy(known ? Collect.BODY[i] : 0xFF393054, fade);
         int cream = fadeBy(known ? Collect.ACCENT[i] : 0xFF393054, fade);
@@ -66,6 +70,7 @@ final class BossCollect extends Draw {
             }
         }
         if (known) {
+            if(ninja) Trinket.ninjaMask(p,x,faceY,faceR,fade);
             if(mood<0) face(p, x, faceY, faceR, clock, fade);
             else Trinket.reactionFace(p,x,faceY,faceR,clock,fade,mood,look);
         }
