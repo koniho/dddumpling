@@ -2,8 +2,8 @@ package com.dddumpling.game;
 
 /** Decorative run companion: event reactions never consume input or gameplay randomness. */
 final class RunCompanion extends Draw {
-    static final int IDLE=0, WORD=1, POWER_END=2, POWER=3, BOSS=4, DANGER=5, VICTORY=6,
-            DAMAGE=7, CRY=8;
+    static final int IDLE=0, WORD=1, POWER_END=2, POWER=3, BOSS=4, DANGER=5, BOSS_HIT=6,
+            STAGE_CLEAR=7, VICTORY=8, DAMAGE=9, CRY=10;
     static final float RESCUE_HOLD=.5f,RESCUE_RETURN=.42f,
             RESCUE_TIME=GameCore.PUSH_TIME+RESCUE_HOLD+RESCUE_RETURN;
     private static final int HOME_NODES=20;
@@ -25,7 +25,8 @@ final class RunCompanion extends Draw {
         // Repeated clears strengthen this beat instead of restarting it indefinitely.
         if(left>0f && event==reaction) { strength=Math.min(1f,strength+.12f);return; }
         reaction=event;age=0f;strength=Math.max(.3f,Math.min(1f,amount));
-        left=event==DAMAGE? .85f:event==VICTORY?1.2f:event==WORD?.6f:.8f;
+        left=event==DAMAGE? .85f:event==VICTORY?1.2f:event==STAGE_CLEAR?1.6f
+                :event==BOSS_HIT?.95f:event==WORD?.6f:.8f;
         home.squash((event==DAMAGE?.7f:.4f)*strength);
         home.impulse(event==DAMAGE?-.7f:.7f,-.6f,.18f*strength);
     }
@@ -51,6 +52,8 @@ final class RunCompanion extends Draw {
         if(reaction==CRY) return 5;
         if(reaction==DAMAGE) return 3;
         if(reaction==DANGER || reaction==BOSS) return 2;
+        if(reaction==BOSS_HIT) return 8;
+        if(reaction==STAGE_CLEAR) return 9;
         if(reaction==VICTORY || reaction==POWER) return 4;
         if(reaction==WORD || reaction==POWER_END || powered) return 1;
         return 0;
@@ -145,8 +148,26 @@ final class RunCompanion extends Draw {
         boolean rescuePowered=a.rescuePowered();
         int body=Collect.BODY[a.who];
         int tint=a.reaction==DAMAGE?Glyph.mix(body,ROSE,.25f+.75f*beat)
-                :rescuePowered?GOLD:a.reaction==VICTORY?GOLD:body;
+                :rescuePowered?GOLD:(a.reaction==VICTORY || a.reaction==BOSS_HIT)?GOLD:body;
         float[] skin=a.outline(L);
+        float stageGlow=a.reaction==STAGE_CLEAR
+                ?(float)Math.sin(Math.min(1f,a.age/1.25f)*Math.PI)*a.strength:0f;
+        if(stageGlow>0f) {
+            float[] halo=skin.clone();
+            for(int i=0;i<halo.length;i+=2) {
+                halo[i]=x+(halo[i]-x)*1.12f;
+                halo[i+1]=y+(halo[i+1]-y)*1.12f;
+            }
+            p.fillPoly(halo,Glyph.withAlpha(GOLD,(int)(105*stageGlow)));
+            p.strokePoly(skin,Glyph.withAlpha(GOLD,(int)(105*stageGlow)),Math.max(1f,L.unit*.42f));
+            p.strokePoly(skin,Glyph.withAlpha(0xFFFFFFFF,(int)(210*stageGlow)),Math.max(1f,L.unit*.16f));
+            for(int k=0;k<4;k++) {
+                float a0=k*Softbody.TAU/4f+a.clock*.32f;
+                float sx=x+(float)Math.cos(a0)*w*1.18f,sy=y+(float)Math.sin(a0)*h*1.28f;
+                p.fillPoly(star(sx,sy,r*(.08f+.06f*stageGlow),r*.035f,4,a0),
+                        Glyph.withAlpha(GOLD,(int)(230*stageGlow)));
+            }
+        }
         float barFade=a.rescueBarFade();
         if(barFade>0f) {
             float u=Math.min(1f,a.rescueAge()/GameCore.PUSH_TIME);
@@ -171,13 +192,23 @@ final class RunCompanion extends Draw {
             p.strokePoly(skin,Glyph.withAlpha(ROSE,(int)(210*beat)),Math.max(1f,L.unit*(.07f+.08f*beat)));
         p.polyline(new float[]{x-w*.42f,y-h*.22f,x-w*.24f,y-h*.52f,x+w*.02f,y-h*.62f},
                 0x55FFFFFF,L.unit*.07f);
-        float hop=(a.reaction==WORD || a.reaction==POWER || a.reaction==VICTORY)?beat:0f;
+        float hop=(a.reaction==WORD || a.reaction==POWER || a.reaction==VICTORY
+                || a.reaction==BOSS_HIT)?beat:0f;
         float cx=x+w*.10f*(float)Math.sin(a.clock*1.6f);
-        float cy=y+r*.10f+r*.055f*(float)Math.sin(a.clock*2.3f)-r*.42f*hop;
+        float cy=y+r*.10f+r*.055f*(float)Math.sin(a.clock*2.3f)
+                -r*(a.reaction==BOSS_HIT?.78f:.42f)*hop;
         if(a.reaction==DAMAGE) cx+=r*.12f*(float)Math.sin(a.age*55f)*beat;
         p.fillEllipse(x,y+r*.85f,r*.7f,r*.13f,0x55302045);
         Trinket.drawReacting(new Squash(p,cx,cy,a.squash()),a.who,cx,cy,r,a.clock,1f,a.displayMood(c),
                 .10f*(float)Math.sin(a.clock*.9f),c.flinging());
+        if(a.reaction==BOSS_HIT) {
+            float poleX=x+w*.60f,poleTop=y-h*(.94f+.18f*beat),poleBottom=y+h*.30f;
+            p.line(poleX,poleBottom,poleX,poleTop,Glyph.mix(INK,GOLD,.45f),r*.075f);
+            float wave=r*.13f*(float)Math.sin(a.clock*18f);
+            p.fillPoly(new float[]{poleX,poleTop,poleX+r*.64f,poleTop+r*.18f+wave,
+                    poleX,poleTop+r*.42f},ROSE);
+            p.fillPoly(star(poleX+r*.25f,poleTop+r*.20f+wave*.45f,r*.10f,r*.045f,4,0),GOLD);
+        }
         if(a.reaction==POWER || a.reaction==VICTORY) {
             for(int i=0;i<2;i++) {
                 float sx=x+(i==0?-1:1)*w*.74f,sy=y-h*.52f;

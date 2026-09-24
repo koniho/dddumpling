@@ -128,6 +128,14 @@ final class Trinket {
                 p.polyline(new float[]{ex-r*.16f,y-r*.01f,ex,y+r*.08f,ex+r*.16f,y+r*.04f},ink,r*.08f);
                 if(side>0)p.fillEllipse(ex+r*.13f,y-r*.20f,r*.065f,r*.13f,
                         Draw.fadeBy(0xFF79DDEB,fade));
+            } else if(mood==9) {
+                p.polyline(new float[]{ex-side*r*.18f,y-r*.04f,ex,y-r*.15f,
+                        ex+side*r*.18f,y-r*.04f},ink,r*.09f);
+            } else if(mood==8) {
+                float cheer=(float)Math.sin(clock*16f)*r*.025f;
+                p.polyline(new float[]{ex-side*r*.20f,y-r*.02f+cheer,ex,y-r*.18f+cheer,
+                        ex+side*r*.20f,y-r*.02f+cheer},ink,r*.105f);
+                p.fillCircle(ex-side*r*.02f,y-r*.16f+cheer,r*.04f,Draw.fadeBy(0xFFFFFFFF,fade));
             } else if(mood==5) {
                 p.polyline(new float[]{ex-r*.15f,y-r*.02f,ex,y+r*.08f,ex+r*.15f,y-r*.02f},ink,r*.085f);
                 p.fillEllipse(ex+side*r*.08f,y+r*(.23f+.08f*(float)Math.sin(clock*7f+side)),
@@ -145,7 +153,13 @@ final class Trinket {
             }
             p.fillEllipse(x+side*r*.60f,y+r*.18f,r*.16f,r*.09f,Draw.fadeBy(BLUSH,fade));
         }
-        if(mood==6) {
+        if(mood==9) {
+            p.polyline(new float[]{x-r*.22f,y+r*.25f,x-r*.08f,y+r*.34f,
+                    x+r*.08f,y+r*.34f,x+r*.25f,y+r*.17f},ink,r*.085f);
+        } else if(mood==8) {
+            p.fillEllipse(x,y+r*.28f,r*.25f,r*.23f,ink);
+            p.fillEllipse(x,y+r*.38f,r*.15f,r*.075f,Draw.fadeBy(0xFFFF8AAB,fade));
+        } else if(mood==6) {
             p.fillEllipse(x,y+r*.34f,r*.20f,r*.20f,ink);
             p.fillEllipse(x,y+r*.29f,r*.10f,r*.06f,Draw.fadeBy(0xFFFFD4C8,fade));
         } else if(mood==7) p.polyline(new float[]{x-r*.18f,y+r*.36f,x,y+r*.28f,

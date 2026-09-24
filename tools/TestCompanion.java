@@ -128,8 +128,15 @@ final class TestCompanion extends Check {
         check("boss arrival gets anticipation",c.companion.reaction==RunCompanion.BOSS);
         c.boss.intro=0;c.boss.blive[0]=true;c.companion.update(c,DT);
         check("live boss attack gets concern",c.companion.reaction==RunCompanion.DANGER);
+        c.companion.react(RunCompanion.BOSS_HIT,1f);
+        check("boss damage gets the stronger cheer",c.companion.reaction==RunCompanion.BOSS_HIT
+                && c.companion.mood()==8);
         c.boss.beaten=true;c.companion.update(c,DT);
         check("boss defeat gets celebration",c.companion.reaction==RunCompanion.VICTORY);
+        GameCore cleared=new GameCore(save,123L);cleared.startGame();
+        Interlude.beginStageEnd(cleared);
+        check("stage clear gives the companion an accomplished glow reaction",
+                cleared.companion.reaction==RunCompanion.STAGE_CLEAR && cleared.companion.mood()==9);
         GameCore twin=new GameCore(new Mem(),120L);c=new GameCore(new Mem(),120L);c.startGame();twin.startGame();
         for(int i=0;i<100;i++) { c.companion.react(RunCompanion.WORD,.6f);c.companion.update(c,DT); }
         check("companion never advances gameplay randomness",c.rnd.nextLong()==twin.rnd.nextLong());

@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Friendly pocket-sized boss portraits and their victory welcome. */
 final class BossCollect extends Draw {
     static final float REVEAL_TIME = 6.8f;
-    static final float FRIEND_TRAVEL=.9f,HEART_START=1.25f,HEART_TIME=1.2f;
+    static final float FRIEND_TRAVEL=.9f,FRIEND_RETURN=.8f,HEART_START=1.25f,HEART_TIME=1.2f;
 
     private BossCollect() {}
 
@@ -122,11 +122,13 @@ final class BossCollect extends Draw {
         // friendship look like another parade instead of a moment between these two characters.
         int friend=c.companion.who;
         if(friend>=0) {
-            float travel=friendProgress(age);
-            float fx=RunCompanion.x(L)+(friendTargetX(L)-RunCompanion.x(L))*travel;
-            float fy=RunCompanion.y(L)+(friendTargetY(L)-RunCompanion.y(L))*travel
-                    -(float)Math.sin(Math.min(1f,travel)*Math.PI)*r*.18f;
-            float fr=RunCompanion.radius(c,L)*(1f+.12f*(float)Math.sin(travel*Math.PI));
+            float travel=friendProgress(age),returning=friendReturnProgress(age);
+            float away=travel*(1f-returning);
+            float fx=RunCompanion.x(L)+(friendTargetX(L)-RunCompanion.x(L))*away;
+            float fy=RunCompanion.y(L)+(friendTargetY(L)-RunCompanion.y(L))*away
+                    -(float)Math.sin(travel*Math.PI)*r*.18f
+                    -(float)Math.sin(returning*Math.PI)*r*.14f;
+            float fr=RunCompanion.radius(c,L)*(1f+.12f*(float)Math.sin(away*Math.PI));
             p.fillEllipse(fx,fy+fr*.92f,fr*.72f,fr*.13f,fadeBy(0x55302045,fade));
             Trinket.drawReacting(p,friend,fx,fy,fr,c.clock,fade,4,.12f*travel);
             float heart=heartProgress(age);
@@ -144,6 +146,9 @@ final class BossCollect extends Draw {
 
     static float friendProgress(float age) {
         return ease(Math.max(0f,Math.min(1f,(age-.20f)/FRIEND_TRAVEL)));
+    }
+    static float friendReturnProgress(float age) {
+        return ease(Math.max(0f,Math.min(1f,(age-(REVEAL_TIME-FRIEND_RETURN))/FRIEND_RETURN)));
     }
     static float friendTargetX(Layout L) { return L.w*.5f; }
     static float friendTargetY(Layout L) { return L.h*.72f; }

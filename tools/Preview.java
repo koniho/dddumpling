@@ -14,7 +14,7 @@ final class Preview {
         for(int event=0;event<=RunCompanion.CRY;event++) {
             GameCore c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=11;c.startGame();
             c.stageBanner=0;c.companion.react(event,1f);
-            int steps=event==RunCompanion.DAMAGE?14:10;
+            int steps=event==RunCompanion.DAMAGE?14:event==RunCompanion.STAGE_CLEAR?36:10;
             for(int step=0;step<steps;step++) c.companion.update(c,DT);
             shot(dir,"118-companion-reaction-"+event,c,L,w,h,ss);
         }
@@ -868,6 +868,8 @@ final class Preview {
             shot(dir, "95-boss-friend-heart-" + boss, welcome, L, w, h, ss);
             welcome.bonusTimer = BossCollect.REVEAL_TIME - 2.2f;
             shot(dir, "95-boss-friend-" + boss, welcome, L, w, h, ss);
+            welcome.bonusTimer = .42f;
+            shot(dir, "95-boss-friend-return-" + boss, welcome, L, w, h, ss);
         }
         c.endCaseDrag();
         step(c, L, 0.5f);
