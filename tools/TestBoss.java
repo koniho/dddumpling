@@ -350,7 +350,10 @@ final class TestBoss extends Check {
                     BossCollect.friendProgress(.2f)==0f
                     && BossCollect.friendProgress(.2f+BossCollect.FRIEND_TRAVEL)==1f
                     && BossCollect.heartProgress(BossCollect.HEART_START)==0f
-                    && BossCollect.heartProgress(BossCollect.HEART_START+BossCollect.HEART_TIME)==1f);
+                    && BossCollect.heartProgress(BossCollect.HEART_START+BossCollect.HEART_TIME)==1f
+                    && BossCollect.friendTargetX(L)==L.w*.5f
+                    && BossCollect.friendTargetY(L)>L.h*.64f
+                    && BossCollect.friendTargetY(L)<L.deckTop);
             int stage = reward.stage;
             advance(reward, L, BossCollect.REVEAL_TIME + 0.2f);
             check("celebration advances exactly one stage and preserves the pending star course " + kind,

@@ -123,8 +123,8 @@ final class BossCollect extends Draw {
         int friend=c.companion.who;
         if(friend>=0) {
             float travel=friendProgress(age);
-            float fx=RunCompanion.x(L)+(x-r*.68f-RunCompanion.x(L))*travel;
-            float fy=RunCompanion.y(L)+(y+r*.58f-RunCompanion.y(L))*travel
+            float fx=RunCompanion.x(L)+(friendTargetX(L)-RunCompanion.x(L))*travel;
+            float fy=RunCompanion.y(L)+(friendTargetY(L)-RunCompanion.y(L))*travel
                     -(float)Math.sin(Math.min(1f,travel)*Math.PI)*r*.18f;
             float fr=RunCompanion.radius(c,L)*(1f+.12f*(float)Math.sin(travel*Math.PI));
             p.fillEllipse(fx,fy+fr*.92f,fr*.72f,fr*.13f,fadeBy(0x55302045,fade));
@@ -145,6 +145,8 @@ final class BossCollect extends Draw {
     static float friendProgress(float age) {
         return ease(Math.max(0f,Math.min(1f,(age-.20f)/FRIEND_TRAVEL)));
     }
+    static float friendTargetX(Layout L) { return L.w*.5f; }
+    static float friendTargetY(Layout L) { return L.h*.72f; }
     static float heartProgress(float age) {
         return Math.max(0f,Math.min(1f,(age-HEART_START)/HEART_TIME));
     }
