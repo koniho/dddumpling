@@ -29,6 +29,8 @@ final class TestCompanion extends Check {
         check("home has a broad rounded hexagonal top",
                 Math.abs(hex[109]-hex[115])<RunCompanion.halfHeight(L)*.12f
                         && Math.abs(hex[115]-hex[121])<RunCompanion.halfHeight(L)*.12f);
+        check("home uses an even regular-hexagon aspect",
+                Math.abs(RunCompanion.halfHeight(L)/RunCompanion.halfWidth(L)-.8660254f)<.0001f);
         c.startFrenzy(Power.FLING,L);
         RasterPainter masked=new RasterPainter((int)L.w,(int)L.h,1);masked.clear(0xFF010203);
         RunCompanion.draw(masked,c,L);
@@ -39,7 +41,13 @@ final class TestCompanion extends Check {
         c.pushUsed=true;c.pushT=GameCore.PUSH_TIME*.5f;c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME*.5f;
         check("rescue swipe carries the companion upward with an intense expression",
                 RunCompanion.rescueLift(c,L)<0f && c.companion.displayMood(c)==6);
-        c.pushT=0f;c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME-RunCompanion.RESCUE_RETURN-.01f;
+        c.pushT=0f;c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME-RunCompanion.RESCUE_HOLD*.5f;
+        check("rescue companion holds at the push-back height for half a second",
+                Math.abs(RunCompanion.rescueLift(c,L)
+                        +(L.dangerY-L.playTop)*GameCore.PUSH_LIFT)<.001f
+                        && c.companion.displayMood(c)==6);
+        c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME-RunCompanion.RESCUE_HOLD
+                -RunCompanion.RESCUE_RETURN-.01f;
         c.companion.reaction=RunCompanion.IDLE;
         check("companion returns home tired after the rescue swipe",
                 RunCompanion.rescueLift(c,L)==0f && c.companion.displayMood(c)==7);

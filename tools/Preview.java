@@ -36,13 +36,19 @@ final class Preview {
         c.stageBanner=0;c.startFrenzy(Power.FLING,L);c.companion.update(c,.18f);
         shot(dir,"118-companion-fling-mask",c,L,w,h,ss);
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();c.stageBanner=0;
-        c.pushUsed=true;c.pushSlowT=GameCore.PUSH_SLOW;c.pushT=GameCore.PUSH_TIME;
+        c.pushUsed=true;c.pushCount=3;c.pushSlowT=GameCore.PUSH_SLOW;c.pushT=GameCore.PUSH_TIME;
         for(int frame=0;frame<6;frame++) {
             c.pushT=GameCore.PUSH_TIME*(1f-frame/6f);
             c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME*(frame/6f);
             shot(dir,"118-companion-rescue-"+frame,c,L,w,h,ss);
         }
-        c.pushT=0;c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME-RunCompanion.RESCUE_RETURN-.1f;
+        c.pushT=0;c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME-RunCompanion.RESCUE_HOLD*.5f;
+        shot(dir,"118-companion-rescue-hold",c,L,w,h,ss);
+        c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME-RunCompanion.RESCUE_HOLD
+                -RunCompanion.RESCUE_RETURN*.5f;
+        shot(dir,"118-companion-rescue-return",c,L,w,h,ss);
+        c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME-RunCompanion.RESCUE_HOLD
+                -RunCompanion.RESCUE_RETURN-.1f;
         shot(dir,"118-companion-rescue-tired",c,L,w,h,ss);
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
         c.playtestSteamer(L);c.time=.7f;

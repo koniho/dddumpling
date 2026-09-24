@@ -4,7 +4,7 @@ package com.dddumpling.game;
 final class RunCompanion extends Draw {
     static final int IDLE=0, WORD=1, POWER_END=2, POWER=3, BOSS=4, DANGER=5, VICTORY=6,
             DAMAGE=7, CRY=8;
-    static final float RESCUE_RETURN=.42f;
+    static final float RESCUE_HOLD=.5f,RESCUE_RETURN=.42f;
     private static final int HOME_NODES=20;
     private static final float[] HOME_SHAPE=roundedHex();
     int who=-1, reaction;
@@ -54,14 +54,14 @@ final class RunCompanion extends Draw {
         return 0;
     }
     int displayMood(GameCore c) {
-        if(c.pushT>0f) return 6;
+        if(rescuePowered(c)) return 6;
         if(c.pushUsed && reaction==IDLE) return 7;
         return mood();
     }
     static float x(Layout L) { return (L.keyX[2]+L.keyX[3])*.5f; }
     static float y(Layout L) { return L.keyY[2]-L.keyR*1.55f; }
-    static float halfWidth(Layout L) { return L.keyR*.72f; }
-    static float halfHeight(Layout L) { return L.keyR*.50f; }
+    static float halfWidth(Layout L) { return L.keyR*.64f; }
+    static float halfHeight(Layout L) { return halfWidth(L)*.8660254f; }
     static float radius(Layout L) { return L.keyR*.55f*.84f; }
     static float radius(GameCore c,Layout L) { return LandPicker.travelerRadius(c,L)*.84f; }
     float beat() { return left>0f?(float)Math.sin(Math.min(1f,age/.48f)*Math.PI)*strength:0f; }
@@ -70,13 +70,18 @@ final class RunCompanion extends Draw {
         if(c.pushSlowT<=0f) return 0f;
         float age=GameCore.PUSH_SLOW-c.pushSlowT;
         float amount;
-        if(c.pushT>0f) amount=1f-c.pushT/GameCore.PUSH_TIME;
-        else if(age<GameCore.PUSH_TIME+RESCUE_RETURN)
-            amount=1f-(age-GameCore.PUSH_TIME)/RESCUE_RETURN;
+        if(age<GameCore.PUSH_TIME) amount=age/GameCore.PUSH_TIME;
+        else if(age<GameCore.PUSH_TIME+RESCUE_HOLD) amount=1f;
+        else if(age<GameCore.PUSH_TIME+RESCUE_HOLD+RESCUE_RETURN)
+            amount=1f-(age-GameCore.PUSH_TIME-RESCUE_HOLD)/RESCUE_RETURN;
         else return 0f;
         amount=Math.max(0f,Math.min(1f,amount));
         amount=amount*amount*(3f-2f*amount);
-        return (L.playTop+L.enemyR*1.8f-y(L))*amount;
+        return -(L.dangerY-L.playTop)*GameCore.PUSH_LIFT*amount;
+    }
+    static boolean rescuePowered(GameCore c) {
+        if(!c.pushUsed || c.pushSlowT<=0f) return false;
+        return GameCore.PUSH_SLOW-c.pushSlowT<GameCore.PUSH_TIME+RESCUE_HOLD;
     }
     float[] outline(Layout L) {
         float[] ring=home.outline(),out=new float[ring.length];
@@ -127,10 +132,11 @@ final class RunCompanion extends Draw {
         float rescueLift=rescueLift(c,L);
         p.save();p.translate(0,rescueLift);
         float beat=a.beat();
-        int tint=c.pushT>0f?GOLD:a.reaction==DAMAGE?ROSE:a.reaction==VICTORY?GOLD:Collect.BODY[a.who];
+        boolean rescuePowered=rescuePowered(c);
+        int tint=rescuePowered?GOLD:a.reaction==DAMAGE?ROSE:a.reaction==VICTORY?GOLD:Collect.BODY[a.who];
         float[] skin=a.outline(L);
-        if(c.pushT>0f) {
-            float u=1f-c.pushT/GameCore.PUSH_TIME;
+        if(rescuePowered) {
+            float u=Math.min(1f,(GameCore.PUSH_SLOW-c.pushSlowT)/GameCore.PUSH_TIME);
             float spread=w+(L.w*.5f-w)*(u*u*(3f-2f*u));
             float pulse=.78f+.22f*(float)Math.sin(a.clock*24f);
             p.fillPoly(pill(x,y,spread,h*.24f,10),Glyph.withAlpha(GOLD,(int)(42*pulse)));
