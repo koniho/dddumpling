@@ -61,7 +61,7 @@ final class RunCompanion extends Draw {
     }
     static float x(Layout L) { return (L.keyX[2]+L.keyX[3])*.5f; }
     static float y(Layout L) { return L.keyY[2]-L.keyR*1.55f; }
-    static float halfWidth(Layout L) { return L.keyR*.64f; }
+    static float halfWidth(Layout L) { return L.keyR*.736f; }
     static float halfHeight(Layout L) { return halfWidth(L)*.8660254f; }
     static float radius(Layout L) { return L.keyR*.55f*.84f; }
     static float radius(GameCore c,Layout L) { return LandPicker.travelerRadius(c,L)*.84f; }

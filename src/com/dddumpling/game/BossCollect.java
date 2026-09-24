@@ -70,9 +70,9 @@ final class BossCollect extends Draw {
             }
         }
         if (known) {
-            if(ninja) Trinket.ninjaMask(p,x,faceY,faceR,fade);
             if(mood<0) face(p, x, faceY, faceR, clock, fade);
             else Trinket.reactionFace(p,x,faceY,faceR,clock,fade,mood,look);
+            if(ninja) Trinket.ninjaMask(p,x,faceY,faceR,fade);
         }
         if (!known) p.text("?",x,y+r*.25f,type(r*.65f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
     }

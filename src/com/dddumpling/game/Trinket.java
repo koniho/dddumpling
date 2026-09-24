@@ -82,18 +82,28 @@ final class Trinket {
         Shape.draw(p, shape, cx, cy, r, Collect.BODY[i], Collect.ACCENT[i], fade, i * 1.7f, true);
         Finish.draw(p, Collect.FINISH[i], cx, cy, r, Collect.ACCENT[i], clock, fade, i);
         float faceY=cy+r*FACE_DY[shape],faceR=r*FACE_R[shape];
-        if(ninja) ninjaMask(p,cx,faceY,faceR,fade);
         if(mood<0) face(p, i % 3, cx, faceY, faceR, fade);
         else reactionFace(p,cx,faceY,faceR,clock,fade,mood,look);
+        if(ninja) ninjaMask(p,cx,faceY,faceR,fade);
     }
 
-    /** Dark wrap with a narrow eye opening, used while the companion powers a fling. */
+    /** Ninja cap and lower wrap, leaving the eyes in an uncovered horizontal opening. */
     static void ninjaMask(Painter p,float x,float y,float r,float fade) {
-        int cloth=Draw.fadeBy(0xFF211B35,fade),slit=Draw.fadeBy(0xFF615370,fade);
-        p.fillPoly(Draw.pill(x,y-r*.02f,r*.94f,r*.43f,8),cloth);
-        p.fillPoly(new float[]{x+r*.72f,y+r*.20f,x+r*1.10f,y+r*.48f,
-                x+r*.91f,y+r*.04f,x+r*1.16f,y-r*.17f},cloth);
-        p.fillPoly(Draw.pill(x,y-r*.04f,r*.68f,r*.18f,8),slit);
+        int cloth=Draw.fadeBy(0xFF211B35,fade),edge=Draw.fadeBy(0xFF615370,fade);
+        // The cap stops well above the eye line; its small band makes it read as cloth rather
+        // than dark hair on characters whose body already has a deep colour.
+        p.fillPoly(Draw.pill(x,y-r*.61f,r*.86f,r*.34f,9),cloth);
+        p.fillPoly(Draw.pill(x,y-r*.32f,r*.82f,r*.075f,6),edge);
+        // Knot and two loose ends are tied to the cap, clear of the right eye.
+        p.fillCircle(x+r*.78f,y-r*.43f,r*.13f,cloth);
+        p.fillPoly(new float[]{x+r*.82f,y-r*.44f,x+r*1.25f,y-r*.67f,
+                x+r*1.08f,y-r*.35f},cloth);
+        p.fillPoly(new float[]{x+r*.82f,y-r*.39f,x+r*1.24f,y-r*.18f,
+                x+r*.99f,y-r*.12f},cloth);
+        // The lower wrap covers the mouth while its top edge stays below every eye style.
+        p.fillPoly(Draw.pill(x,y+r*.48f,r*.88f,r*.31f,9),cloth);
+        p.polyline(new float[]{x-r*.68f,y+r*.25f,x,y+r*.34f,x+r*.68f,y+r*.25f},
+                edge,r*.055f);
     }
 
     /** Compact expressions shared by every collectible family, only in the run companion. */

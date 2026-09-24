@@ -39,7 +39,13 @@ final class TestCompanion extends Check {
         RunCompanion.draw(masked,c,L);
         boolean cloth=false,slit=false;
         for(int pixel:masked.resolve()) { cloth|=pixel==0xFF211B35;slit|=pixel==0xFF615370; }
-        check("FLING gives the companion a ninja mask and eye slit",cloth && slit);
+        check("FLING gives the companion a ninja cap and mouth wrap",cloth && slit);
+        RasterPainter maskShape=new RasterPainter(200,200,1);maskShape.clear(0xFF010203);
+        Trinket.ninjaMask(maskShape,100,100,30,1f);int[] maskPixels=maskShape.resolve();
+        check("ninja wrap leaves both eyes uncovered",
+                maskPixels[100*200+90]==0xFF010203 && maskPixels[100*200+110]==0xFF010203
+                        && maskPixels[82*200+100]==0xFF211B35
+                        && maskPixels[114*200+100]==0xFF211B35);
         c.modeLeft=DT*.5f;c.update(DT,L);
         c.pushUsed=true;c.pushT=GameCore.PUSH_TIME*.5f;c.pushSlowT=GameCore.PUSH_SLOW-GameCore.PUSH_TIME*.5f;
         check("rescue swipe carries the companion upward with an intense expression",

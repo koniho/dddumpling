@@ -52,7 +52,6 @@ final class CaveCollect extends Draw {
         float fx=x+(mole?0:r*.15f),fy=y-r*(mole?.19f:.48f);
         float eyes=mole?.23f:.24f;
         boolean sleepy=mole && variant==2;
-        if(ninja) Trinket.ninjaMask(p,fx,fy,r*.62f,fade);
         if(mood>=0) Trinket.reactionFace(p,fx,fy,r*.62f,clock,fade,mood,look);
         else for(int side=-1;side<=1;side+=2) {
             float ex=fx+side*r*eyes;
@@ -62,8 +61,9 @@ final class CaveCollect extends Draw {
                 p.fillEllipse(ex,fy,r*.058f,r*.085f,ink);
                 p.fillCircle(ex-r*.018f,fy-r*.025f,r*.022f,white);
             }
-            p.fillEllipse(fx+side*r*(eyes+.13f),fy+r*.12f,r*.11f,r*.06f,pink);
+                p.fillEllipse(fx+side*r*(eyes+.13f),fy+r*.12f,r*.11f,r*.06f,pink);
         }
+        if(ninja) Trinket.ninjaMask(p,fx,fy,r*.62f,fade);
         if(mole) {
             if(variant==3)p.fillPoly(star(fx,fy+r*.14f,r*.13f,r*.065f,6,0),pink);
             else p.fillEllipse(fx,fy+r*.13f,r*.115f,r*.075f,pink);
