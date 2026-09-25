@@ -106,13 +106,12 @@ final class HighScoreScreen extends Draw {
         p.restore();
         p.restore();
     }
-    private void score(Painter p,GameCore c,Layout L,HighScores.Run run,float y) {
-        float s=size(L);
+    private void score(Painter p,GameCore c,Layout L,HighScores.Run run,float y,float s) {
         if(run.id==c.highScores.latest) {
             for(int i=4;i>0;i--) p.fillEllipse(L.w*.5f,y-s*.42f,s*(3.2f+i*(.2f+.1f*pulse(c.clock))),s*(.65f+i*(.1f+.1f*pulse(c.clock))),
                     Glyph.withAlpha(GOLD,(int)((13-i*2)*(.4f+2f*pulse(c.clock)))));
         }
-        p.text(String.valueOf(run.score),L.w*.5f,y,type(s*.95f),INK,Painter.CENTER,true);
+        p.text(String.valueOf(run.score),L.w*.5f,y,type(s*1.08f),INK,Painter.CENTER,true);
     }
     private void bosses(Painter p,GameCore c,HighScores.Run run,float cx,float y,float r,float width) {
         int count=Integer.bitCount(run.bosses);
@@ -168,8 +167,8 @@ final class HighScoreScreen extends Draw {
         int n=used(counts);return n==0?0f:.85f+((n+1)/2)*1.55f;
     }
     private static void stat(Painter p,Layout L,float x,float y,float u,String label,String value) {
-        p.text(value,x,y,type(u*.70f),INK,Painter.CENTER,true);
-        p.text(label,x,y+u*.55f,type(u*.27f),INK_DIM,Painter.CENTER,true);
+        p.text(value,x,y,type(u*.82f),INK,Painter.CENTER,true);
+        p.text(label,x,y+u*.61f,type(u*.33f),INK_DIM,Painter.CENTER,true);
     }
     private static void portraits(Painter p,GameCore c,Layout L,int[] values,boolean boss,
             float top,float bottom,float maxR) {
@@ -191,7 +190,7 @@ final class HighScoreScreen extends Draw {
             float top,float u) {
         int used=used(counts);if(used==0)return top;
         float height=effectUnits(counts)*u;
-        p.text(title,L.w*.5f,top+u*.38f,type(u*.36f),
+        p.text(title,L.w*.5f,top+u*.38f,type(u*.43f),
                 first==0?GOLD:0xFFCDBDEA,Painter.CENTER,true);
         int slot=0;
         for(int i=0;i<counts.length;i++) {
@@ -199,8 +198,8 @@ final class HighScoreScreen extends Draw {
             int row=slot/2,col=slot%2,effect=first+i;
             float x=L.w*(col==0?.30f:.68f),y=top+u*(1.30f+row*1.55f);
             int hue=effect>=Power.COUNT?0xFF7761B8:Glyph.cycle(effect*.21f);
-            Renderer.powerIcon(p,effect,x,y-u*.18f,u*.64f,hue,1f);
-            p.text("×"+counts[i],x+u*.69f,y+u*.02f,type(u*.48f),INK,Painter.LEFT,true);
+            Renderer.powerIcon(p,effect,x,y-u*.18f,u*.78f,hue,1f);
+            p.text("×"+counts[i],x+u*.76f,y+u*.04f,type(u*.56f),INK,Painter.LEFT,true);
             slot++;
         }
         return top+height;
@@ -210,14 +209,14 @@ final class HighScoreScreen extends Draw {
         float units=6.25f+(run.bossOrder.length>0?3.05f:0f)
                 +(run.prizes.length>0?(run.prizes.length>16?4.7f:run.prizes.length>8?4f:3.2f):0f)
                 +effectUnits(run.powerUses)+effectUnits(run.debuffUses);
-        float u=Math.min(s*1.16f,(b-t)/units);
+        float u=Math.min(s*1.48f,(b-t)/units);
         float y=t+u*.18f;
 
-        float heroX=L.w*.24f,heroY=y+u*1.30f,heroR=u*1.12f;
+        float heroX=L.w*.24f,heroY=y+u*1.30f,heroR=u*1.20f;
         p.fillPoly(Glyph.hex(heroX,heroY,heroR*1.28f),Glyph.withAlpha(0xFF6E72C8,58));
         p.strokePoly(Glyph.hex(heroX,heroY,heroR*1.28f),Glyph.withAlpha(GOLD,130),u*.07f);
         Trinket.draw(p,Math.max(0,run.character),heroX,heroY,heroR,c.clock,run.character>=0,1f);
-        score(p,c,L,run,y+u*1.22f);
+        score(p,c,L,run,y+u*1.22f,u);
         y+=u*2.75f;
 
         int pct=run.accuracy();
@@ -225,18 +224,18 @@ final class HighScoreScreen extends Draw {
         stat(p,L,L.w*.50f,y+u*.45f,u,"ACCURACY",pct+"%");
         stat(p,L,L.w*.77f,y+u*.45f,u,"BEST COMBO",String.valueOf(run.combo));
         p.text(run.stages+" STAGES CLEARED   •   "+run.squishes+" SQUISHES",cx,y+u*1.65f,
-                type(u*.34f),INK_DIM,Painter.CENTER,true);
+                type(u*.41f),INK_DIM,Painter.CENTER,true);
         y+=u*2.35f;
 
         if(run.bossOrder.length>0) {
-            p.text("BOSSES DEFEATED",cx,y+u*.38f,type(u*.36f),GOLD,Painter.CENTER,true);
-            portraits(p,c,L,run.bossOrder,true,y+u*.62f,y+u*2.72f,u*.86f);
+            p.text("BOSSES DEFEATED",cx,y+u*.38f,type(u*.43f),GOLD,Painter.CENTER,true);
+            portraits(p,c,L,run.bossOrder,true,y+u*.62f,y+u*2.72f,u*1.02f);
             y+=u*3.05f;
         }
         if(run.prizes.length>0) {
             float height=(run.prizes.length>16?4.45f:run.prizes.length>8?3.75f:2.95f)*u;
-            p.text("DUMPLINGS COLLECTED",cx,y+u*.38f,type(u*.36f),GOLD,Painter.CENTER,true);
-            portraits(p,c,L,run.prizes,false,y+u*.62f,y+height-u*.10f,u*.76f);
+            p.text("DUMPLINGS COLLECTED",cx,y+u*.38f,type(u*.43f),GOLD,Painter.CENTER,true);
+            portraits(p,c,L,run.prizes,false,y+u*.62f,y+height-u*.10f,u*.90f);
             y+=height+u*.25f;
         }
         y=effects(p,c,L,"POWERUPS",0,run.powerUses,y,u);
@@ -244,6 +243,6 @@ final class HighScoreScreen extends Draw {
         y=effects(p,c,L,"DEBUFFS",Power.COUNT,run.debuffUses,y,u);
         y+=u*.72f;
         p.text("↟ "+run.swipes+" RESCUES   •   START STAGE "+(run.land*Boss.EVERY+1)
-                +(run.kids?"   •   KIDS MODE":""),cx,y,type(u*.32f),INK_DIM,Painter.CENTER,true);
+                +(run.kids?"   •   KIDS MODE":""),cx,y,type(u*.39f),INK_DIM,Painter.CENTER,true);
     }
 }
