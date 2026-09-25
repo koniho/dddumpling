@@ -457,10 +457,23 @@ final class Preview {
             for(int i=0;i<10;i++) {
                 scores.collected=Collect.MASK;scores.caseIndex=i%3==0?0:i;
                 if(i%3==0) scores.collected=0L;
-                scores.startGame();scores.score=(10-i)*1357;scores.stage=new int[]{5,10,15,20,1,6,11,16,21,25}[i];
+                scores.startGame();scores.score=(10-i)*1357;scores.stage=new int[]{21,10,15,20,1,6,11,16,21,25}[i];
                 scores.hits=123;scores.misses=7;scores.squishes=56;scores.maxCombo=48;
-                scores.highScores.stages=scores.stage-1;scores.highScores.bosses=(1<<Math.min(Boss.COUNT,(scores.stage-1)/Boss.EVERY))-1;
-                scores.highScores.dumplings=i==0?12345:14-i;scores.highScores.powers=7;scores.highScores.swipes=3;
+                scores.highScores.stages=scores.stage-1;scores.highScores.swipes=3;
+                int bossCount=Math.min(Boss.COUNT,(scores.stage-1)/Boss.EVERY);
+                for(int boss=0;boss<bossCount;boss++)scores.highScores.recordBoss(boss);
+                int prizeCount=i==0?18:Math.max(1,8-i);
+                for(int prize=0;prize<prizeCount;prize++)
+                    scores.highScores.recordPrize((i*7+prize/2)%Collect.COUNT);
+                scores.highScores.recordPower(Power.FLURRY);
+                scores.highScores.recordPower(Power.FLURRY);
+                scores.highScores.recordPower(Power.FLING);
+                scores.highScores.recordPower(Power.TEAM);
+                if(i==0) {
+                    scores.highScores.recordDebuff(Power.INCOGNITO);
+                    scores.highScores.recordDebuff(Power.INCOGNITO);
+                    scores.highScores.recordDebuff(Power.MONOCHROME);
+                }
                 scores.lives=0;scores.highScores.finish(scores);
                 if(i==0) {
                     scores.toTitle();scores.returnFade=0;scores.highScoreScreen.show(scores);scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
@@ -483,6 +496,8 @@ final class Preview {
             shot(dir,"130-high-scores-latest",scores,L,w,h,ss);
             scores.highScoreScreen.selected=0;
             shot(dir,"130-high-scores-summary",scores,L,w,h,ss);
+            scores.highScoreScreen.selected=1;
+            shot(dir,"130-high-scores-summary-no-debuff",scores,L,w,h,ss);
             scores.highScoreScreen.back(scores);scores.highScoreScreen.back(scores);
             scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME*.65f);
             shot(dir,"130-high-scores-exiting",scores,L,w,h,ss);
