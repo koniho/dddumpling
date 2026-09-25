@@ -87,7 +87,12 @@ final class HighScoreScreen extends Draw {
         }
         p.text(selected<0?"HIGH SCORES":"RUN SUMMARY",L.w*.5f,t+s*1.7f,type(s*.8f),GOLD,Painter.CENTER,true);
         p.save();p.clipRect(L.w*.07f,listTop(L),L.w*.93f,listBottom(L));
-        if(selected>=0 && selected<c.highScores.displayCount()) summary(p,c,L,c.highScores.displayRun(selected));
+        if(selected>=0 && selected<c.highScores.displayCount()) {
+            // The title screen is intentionally lively behind the glass. A summary needs a quieter
+            // inner page so its small portraits and labels do not compete with those giant figures.
+            p.fillRect(L.w*.07f,listTop(L),L.w*.93f,listBottom(L),Glyph.withAlpha(0xFF1D1935,205));
+            summary(p,c,L,c.highScores.displayRun(selected));
+        }
         else if(c.highScores.displayCount()==0) {
             Kawaii.moodDumpling(p,L.w*.5f,t+8f*s,2f*s,Glyph.COLOR[0],.7f,1f);
             p.text("Your next run starts the list.",L.w*.5f,t+12f*s,type(s*.52f),INK_DIM,Painter.CENTER,false);
@@ -159,6 +164,21 @@ final class HighScoreScreen extends Draw {
         ReleaseChange.icon(p,kind==1?ReleaseChange.SHUFFLE:ReleaseChange.SWIPE,x,y,r,clock);
     }
     private static int used(int[] counts) { int n=0;for(int count:counts)if(count>0)n++;return n; }
+    private static float effectUnits(int[] counts) {
+        int n=used(counts);return n==0?0f:1f+((n+1)/2)*1.35f;
+    }
+    private static void card(Painter p,Layout L,float top,float bottom,float u,int tint) {
+        float cy=(top+bottom)*.5f;
+        p.fillPoly(pill(L.w*.5f,cy,L.w*.405f,(bottom-top)*.5f,18),
+                Glyph.withAlpha(tint,42));
+        p.strokePoly(pill(L.w*.5f,cy,L.w*.405f,(bottom-top)*.5f,18),
+                Glyph.withAlpha(tint,85),Math.max(1f,u*.055f));
+    }
+    private static void stat(Painter p,Layout L,float x,float y,float u,String label,String value) {
+        p.fillPoly(pill(x,y,L.w*.115f,u*.78f,12),Glyph.withAlpha(0xFF74669B,58));
+        p.text(value,x,y+u*.08f,type(u*.70f),INK,Painter.CENTER,true);
+        p.text(label,x,y+u*.62f,type(u*.27f),INK_DIM,Painter.CENTER,true);
+    }
     private static void portraits(Painter p,GameCore c,Layout L,int[] values,boolean boss,
             float top,float bottom,float maxR) {
         if(values.length==0 || bottom<=top)return;
@@ -176,48 +196,71 @@ final class HighScoreScreen extends Draw {
         }
     }
     private static float effects(Painter p,GameCore c,Layout L,String title,int first,int[] counts,
-            float top,float s) {
+            float top,float u) {
         int used=used(counts);if(used==0)return top;
-        p.text(title,L.w*.5f,top+s*.38f,type(s*.40f),INK_DIM,Painter.CENTER,true);
+        float height=effectUnits(counts)*u;
+        card(p,L,top,top+height,u,first==0?0xFF6E72C8:0xFF7761B8);
+        p.text(title,L.w*.5f,top+u*.58f,type(u*.36f),
+                first==0?GOLD:0xFFCDBDEA,Painter.CENTER,true);
         int slot=0;
         for(int i=0;i<counts.length;i++) {
             if(counts[i]==0)continue;
             int row=slot/2,col=slot%2,effect=first+i;
-            float x=L.w*(col==0?.27f:.73f),y=top+s*(.85f+row*.95f);
+            float x=L.w*(col==0?.29f:.71f),y=top+u*(1.35f+row*1.35f);
             int hue=effect>=Power.COUNT?0xFF7761B8:Glyph.cycle(effect*.21f);
-            Renderer.powerIcon(p,effect,x-s*.95f,y-s*.18f,s*.42f,hue,1f);
-            p.text(Power.NAMES[effect]+"  ×"+counts[i],x-s*.35f,y,type(s*.36f),INK,
+            Renderer.powerIcon(p,effect,x-u*.92f,y-u*.18f,u*.45f,hue,1f);
+            p.text(Power.NAMES[effect]+"  ×"+counts[i],x-u*.28f,y,type(u*.34f),INK,
                     Painter.LEFT,true);
             slot++;
         }
-        return top+s*(1.15f+((used-1)/2)*.95f);
+        return top+height;
     }
     private void summary(Painter p,GameCore c,Layout L,HighScores.Run run) {
-        float s=size(L),t=listTop(L),cx=L.w*.5f;
-        score(p,c,L,run,t+s*1.3f);
-        p.text(run.score>=run.best?"NEW BEST!":"BEST "+run.best,cx,t+s*2.8f,type(s*.53f),GOLD,Painter.CENTER,true);
-        p.text(run.blurb(),cx,t+s*3.9f,type(s*.41f),INK_DIM,Painter.CENTER,false);
-        int pct=run.accuracy();float mood=Math.max(0f,Math.min(1f,(pct-60f)/30f));
-        Kawaii.moodDumpling(p,cx-s*3.2f,t+s*5.7f,s*1.25f,Glyph.COLOR[0],mood,1f);
-        p.text("ACCURACY "+pct+"%",cx-s*.5f,t+s*6f,type(s*.50f),INK,Painter.LEFT,true);
-        p.text("STAGE "+run.stage+"   SQUISHES "+run.squishes,cx,t+s*7.7f,type(s*.48f),INK_DIM,Painter.CENTER,false);
-        p.text("BEST COMBO "+run.combo,cx,t+s*8.7f,type(s*.52f),INK_DIM,Painter.CENTER,false);
-        p.text("STAGES COMPLETED "+run.stages,cx,t+s*10.1f,type(s*.48f),GOLD,Painter.CENTER,true);
-        float y=t+s*10.85f;
+        float s=size(L),t=listTop(L),b=listBottom(L),cx=L.w*.5f;
+        float units=8.25f+(run.bossOrder.length>0?3.3f:0f)
+                +(run.prizes.length>0?(run.prizes.length>16?4.7f:run.prizes.length>8?4f:3.2f):0f)
+                +effectUnits(run.powerUses)+effectUnits(run.debuffUses);
+        float u=Math.min(s*1.16f,(b-t)/units);
+        float y=t+Math.max(0f,(b-t-units*u)*.46f);
+
+        // One lively hero instead of a stack of report labels: who ran, what they scored, and why
+        // the run ended all read as a single keepsake card.
+        float heroX=L.w*.24f,heroY=y+u*1.45f,heroR=u*1.12f;
+        p.fillPoly(Glyph.hex(heroX,heroY,heroR*1.28f),Glyph.withAlpha(0xFF6E72C8,58));
+        p.strokePoly(Glyph.hex(heroX,heroY,heroR*1.28f),Glyph.withAlpha(GOLD,130),u*.07f);
+        Trinket.draw(p,Math.max(0,run.character),heroX,heroY,heroR,c.clock,run.character>=0,1f);
+        score(p,c,L,run,y+u*1.08f);
+        p.text(run.score>=run.best?"NEW BEST!":"BEST "+run.best,L.w*.61f,y+u*2.03f,
+                type(u*.42f),GOLD,Painter.CENTER,true);
+        p.text(run.blurb(),cx,y+u*3.18f,type(u*.35f),INK_DIM,Painter.CENTER,false);
+        y+=u*4.15f;
+
+        int pct=run.accuracy();
+        stat(p,L,L.w*.23f,y+u*.80f,u,"STAGE",String.valueOf(run.stage));
+        stat(p,L,L.w*.50f,y+u*.80f,u,"ACCURACY",pct+"%");
+        stat(p,L,L.w*.77f,y+u*.80f,u,"BEST COMBO",String.valueOf(run.combo));
+        p.text(run.stages+" STAGES CLEARED   •   "+run.squishes+" SQUISHES",cx,y+u*2.25f,
+                type(u*.34f),INK_DIM,Painter.CENTER,true);
+        y+=u*3.10f;
+
         if(run.bossOrder.length>0) {
-            p.text("BOSSES DEFEATED",cx,y,type(s*.40f),INK_DIM,Painter.CENTER,true);
-            portraits(p,c,L,run.bossOrder,true,y+s*.30f,y+s*1.40f,s*.62f);
-            y+=s*1.65f;
+            card(p,L,y,y+u*3.05f,u,0xFF6E72C8);
+            p.text("BOSSES DEFEATED",cx,y+u*.55f,type(u*.36f),GOLD,Painter.CENTER,true);
+            portraits(p,c,L,run.bossOrder,true,y+u*.82f,y+u*2.82f,u*.78f);
+            y+=u*3.30f;
         }
         if(run.prizes.length>0) {
-            p.text("DUMPLINGS COLLECTED",cx,y,type(s*.40f),INK_DIM,Painter.CENTER,true);
-            portraits(p,c,L,run.prizes,false,y+s*.30f,y+s*2.10f,s*.58f);
-            y+=s*2.35f;
+            float height=(run.prizes.length>16?4.45f:run.prizes.length>8?3.75f:2.95f)*u;
+            card(p,L,y,y+height,u,0xFF9276A8);
+            p.text("DUMPLINGS COLLECTED",cx,y+u*.55f,type(u*.36f),GOLD,Painter.CENTER,true);
+            portraits(p,c,L,run.prizes,false,y+u*.82f,y+height-u*.20f,u*.68f);
+            y+=height+u*.25f;
         }
-        y=effects(p,c,L,"POWERUPS USED",0,run.powerUses,y,s);
-        y=effects(p,c,L,"DEBUFFS",Power.COUNT,run.debuffUses,y,s);
-        float footer=listBottom(L)-s*.35f;
-        p.text("RESCUE SWIPES "+run.swipes+"   START STAGE "+(run.land*Boss.EVERY+1)
-                +(run.kids?"   KIDS MODE":""),cx,footer,type(s*.36f),INK_DIM,Painter.CENTER,false);
+        y=effects(p,c,L,"POWERUPS",0,run.powerUses,y,u);
+        if(used(run.powerUses)>0)y+=u*.25f;
+        y=effects(p,c,L,"DEBUFFS",Power.COUNT,run.debuffUses,y,u);
+        y+=u*.72f;
+        p.text("↟ "+run.swipes+" RESCUES   •   START STAGE "+(run.land*Boss.EVERY+1)
+                +(run.kids?"   •   KIDS MODE":""),cx,y,type(u*.32f),INK_DIM,Painter.CENTER,true);
     }
 }

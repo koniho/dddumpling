@@ -457,7 +457,7 @@ final class Preview {
             for(int i=0;i<10;i++) {
                 scores.collected=Collect.MASK;scores.caseIndex=i%3==0?0:i;
                 if(i%3==0) scores.collected=0L;
-                scores.startGame();scores.score=(10-i)*1357;scores.stage=new int[]{5,10,15,20,1,6,11,16,21,25}[i];
+                scores.startGame();scores.score=(10-i)*1357;scores.stage=new int[]{21,10,15,20,1,6,11,16,21,25}[i];
                 scores.hits=123;scores.misses=7;scores.squishes=56;scores.maxCombo=48;
                 scores.highScores.stages=scores.stage-1;scores.highScores.swipes=3;
                 int bossCount=Math.min(Boss.COUNT,(scores.stage-1)/Boss.EVERY);
