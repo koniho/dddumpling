@@ -190,6 +190,8 @@ final class GameCore {
         default void saveLandBest(int land, int value) { if (land == 0) saveBest(value); }
         default int loadPlayerSettings() { return PlayerSettings.DEFAULT; }
         default void savePlayerSettings(int value) {}
+        default int loadTutorials() { return 0; }
+        default void saveTutorials(int value) {}
         /** The collected-squishy bitmask; see {@link Collect}. */
         long loadCollected();
         void saveCollected(long owned);
@@ -335,6 +337,8 @@ final class GameCore {
          * is {@link Narration}'s business; a backend only has to speak it.
          */
         void narrate(int entry);
+        /** Short tutorial guidance; respects the same mute and lifecycle rules as stories. */
+        default void explain(String text) {}
         /** One short name call as the run character introduces itself. */
         default void announceSquishy(int entry) {}
         /** Stop talking mid-sentence: the panel has gone. */
@@ -558,6 +562,7 @@ final class GameCore {
     /** Spent for this stage once the push-back has been used. */
     boolean pushUsed;
     final PushLesson pushLesson = new PushLesson();
+    final Onboarding onboarding = new Onboarding();
     /** Counts down while the push-back shockwave is on screen. */
     float pushT;
     /** Words the last push-back shoved back, for the readout. */
@@ -1515,6 +1520,7 @@ final class GameCore {
     GameCore(Store store, long seed, boolean trackProgress) {
         this.store = store;
         pushLesson.seen = store == null || store.loadPushLessonSeen();
+        onboarding.saved = store == null ? Onboarding.SKIPPED : store.loadTutorials();
         this.progress = new Progress(store, trackProgress);
         this.rnd = new Random(seed);
         Random sr = new Random(20260803L);
@@ -1614,6 +1620,7 @@ final class GameCore {
     // ---- settings -----------------------------------------------------------
 
     void openSettings() {
+        if(onboarding.briefing && sound!=null)sound.hush();
         preferences.enterPanel();
         if (band.active && sound != null) sound.bandPause(true);
         settingsOpen = true; settingsPage = BuildFlags.DEVELOPER ? 1 : 0;
@@ -1839,6 +1846,7 @@ final class GameCore {
     }
 
     void startGame() {
+        onboarding.clear();onboarding.companionTravel=0;
         scoresSuppressed=false;
         stopLaunchVoice();
         town.leave(); townOpen=false;
@@ -1950,6 +1958,7 @@ final class GameCore {
     }
 
     void toTitle() {
+        onboarding.clear();
         if (state == PLAY || state == BONUS || state == OVER) finishTownRun();
         companion.clear();
         band.stop(this); mining.stop(); cart.stop();
@@ -2123,6 +2132,10 @@ final class GameCore {
         if (boss.fighting() && BossPlay.claims(this, g)) {
             float beforeHp = boss.hp;
             int verdict = boss.press(g, rnd, L);
+            if(boss.kind==Boss.SLIME && (verdict==Boss.PART || verdict==Boss.SPLIT)) {
+                onboarding.learn(this,TutorialSpeech.CLOSED);
+                if(verdict==Boss.SPLIT)onboarding.learn(this,TutorialSpeech.CHAIN);
+            }
             progress.bossDamage(boss.kind, beforeHp, boss.hp);
             if (verdict != Boss.NONE) return BossPlay.press(this, g, verdict, L);
         }
@@ -2193,6 +2206,7 @@ final class GameCore {
         }
         e.done++;
         if (e.done >= e.need[struck]) {
+            if(e.stacked(struck))onboarding.learn(this,TutorialSpeech.STACK);
             e.pos++;
             e.skipGone();
             e.done = 0;
@@ -2212,6 +2226,12 @@ final class GameCore {
 
         boolean kill = e.pos >= e.word.length;
         if (kill) {
+            onboarding.learn(this,TutorialSpeech.MATCH);
+            onboarding.learn(this,TutorialSpeech.DANGER);
+            if(e.word.length>1) {
+                onboarding.learn(this,TutorialSpeech.WORD);
+                onboarding.learn(this,TutorialSpeech.RETRY);
+            }
             e.dying = true;
             e.deathT = 0;
             // Doomed from this press, so it stops reading as a threat now rather than when
@@ -2600,6 +2620,7 @@ final class GameCore {
             if (town.dirty && townSaveRetry<=0f) saveTown();
             return;
         }
+        if (onboarding.update(this, dt, elapsed, L)) return;
         if (pushLesson.update(this, elapsed, L)) return;
         if(highScoreScreen.open) { highScoreScreen.update(elapsed);clock+=elapsed;return; }
         if(releaseNotes.open) {
@@ -2784,7 +2805,9 @@ final class GameCore {
             if (starBonus) {
                 int heldStars = stars.collected;
                 boolean wasFinishing = stars.won || stars.exiting() || stars.reporting();
+                int tutorialStars=stars.count();
                 stars.update(dt, L);
+                if(stars.steered && stars.count()>tutorialStars)onboarding.learn(this,TutorialSpeech.STARS);
                 starPickups = Integer.bitCount(stars.collected & ~heldStars);
                 boolean finishing = stars.won || stars.exiting() || stars.reporting();
                 if (sound != null) {

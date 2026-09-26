@@ -25,6 +25,7 @@ final class CoreTest {
         group("Companion", () -> TestCompanion.all(L));
         group("HighScores", () -> TestHighScores.all(L));
         group("Settings", () -> TestSettings.all(L));
+        group("Onboarding", () -> TestOnboarding.all(L));
         group("Cave Intro", () -> TestCaveIntro.all(L));
         group("Cave", () -> TestCave.all(L));
         group("Cave Band", () -> TestCaveBand.all(L));

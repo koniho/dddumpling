@@ -60,6 +60,7 @@ final class CaveCart {
             if(aligned<.24f)segment=SEGMENT-.00001f;
             else {
                 segment-=SEGMENT;aligned=0;progress=Math.min(TRACK,progress+1);save(c);
+                c.onboarding.learn(c,TutorialSpeech.LEAN);
                 scene.feedback=1;scene.pulse=.35f;
                 if(progress>=TRACK){finish(c,true,false);return;}
             }

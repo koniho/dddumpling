@@ -541,6 +541,29 @@ are excluded, and a spent swipe defers the lesson until a later stage. `PushLess
 prompt, freeze, and shared native gesture.
 Developer settings → Progress → **RESET SWIPE** clears the saved lesson completion flag.
 
+**Companion guidance** starts in play, with no introduction before stage 1. Incoming-word,
+wrong-key and stacked-letter hints appear when needed during stages 1–4. Steamer, Star Path,
+Cart Rush and Dumpling Mine use disposable real-game practice while the actual run waits;
+practice leaves progress and the run's random stream untouched until completion. Finishing the
+Steamer tutorial's lid swipe wins the actual minigame: its normal reward, life recovery and saved
+win count are awarded once, then its celebration leads to the next stage without a second attempt.
+Other minigame practice remains reward-free. The actual run
+companion slides to the side, explains each new control in a large speech bubble with an animated
+example, and returns after the action succeeds. Explanations pause the scene until **Let's try!**;
+game controls cannot dismiss them. Successful actions in normal play or practice permanently
+retire just that step, so already-understood actions are skipped on later encounters and launches.
+Acknowledging an explanation alone does not mark the action learned.
+
+Boss guidance is opt-in: a small **?** beside the companion offers help before the boss takes
+damage, for steps not already learned. Tapping it pauses the fight and moves the companion up
+to explain Slime, Dark Divide, Octopulse or Fly Agaric. **Next** advances a multi-part explanation;
+**Let's try!** resumes the same fight. Speech uses platform text-to-speech, follows effects volume,
+ducks music and stops on dismissal or backgrounding; text and demonstrations work without a voice.
+`Onboarding` owns lesson state and `TutorialSpeech` owns bubbles and demonstrations.
+**Skip All** suppresses remaining guidance and the desperation-swipe lesson across restarts.
+Player Settings → **Reset Tutorials** makes all steps eligible again without resetting any other
+progress or restoring the removed pre-stage intro.
+
 Octopulse plays the supplied recorded sound, low-pass filtered at 1 kHz, once when its attacking arm starts to wave.
 While an arm is vulnerable, the other intact arms ripple and flick upward in pain.
 The later strike retains its short synthesized cue. `Boss.octoWave` signals the wave's

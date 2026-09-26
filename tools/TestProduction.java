@@ -103,6 +103,7 @@ final class TestProduction extends Check {
         caveGate(L);
         TestProgress.all(L);
         TestSettings.scoreReset(L);
+        TestOnboarding.all(L);
         System.out.printf("%d passed, %d failed%n",pass,fail);
         if (fail > 0) System.exit(1);
     }

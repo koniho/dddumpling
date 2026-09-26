@@ -496,6 +496,7 @@ final class Audio implements GameCore.Sound {
     /** Queued while the engine is still waking up, or -1 for nothing waiting. */
     private int ttsPending = -1;
     private boolean ttsPendingName;
+    private String ttsPendingExplanation;
     private long speechSerial;
 
     /**
@@ -513,8 +514,16 @@ final class Audio implements GameCore.Sound {
         requestSpeech(entry, true);
     }
 
+    @Override public synchronized void explain(String text) {
+        if(effectsVolume<=0f || ttsBroken || text==null || text.isEmpty())return;
+        ttsPending=-1;ttsPendingExplanation=text;
+        prepareSpeech();
+        if(ttsReady)readPending();
+    }
+
     private void requestSpeech(int entry, boolean nameOnly) {
         if(effectsVolume<=0f || ttsBroken || entry<0 || entry>=Collect.COUNT) return;
+        ttsPendingExplanation=null;
         ttsPending = entry;
         ttsPendingName = nameOnly;
         prepareSpeech();
@@ -537,7 +546,7 @@ final class Audio implements GameCore.Sound {
                                 listen();
                                 ttsReady = true;
                                 // The panel may well have been dismissed while it started up.
-                                if (ttsPending >= 0) readPending();
+                                if (ttsPending >= 0 || ttsPendingExplanation!=null) readPending();
                             }
                         }
                     });
@@ -548,6 +557,7 @@ final class Audio implements GameCore.Sound {
 
     @Override public synchronized void hush() {
         ttsPending = -1;
+        ttsPendingExplanation=null;
         lastUtterance = null;
         try {
             if (tts != null && ttsReady) tts.stop();
@@ -624,6 +634,19 @@ final class Audio implements GameCore.Sound {
 
     /** Speech follows effects volume; ducking keeps the scene music below it. */
     private void readPending() {
+        if(ttsPendingExplanation!=null) {
+            String text=ttsPendingExplanation;ttsPendingExplanation=null;
+            if(effectsVolume<=0f)return;
+            try {
+                android.os.Bundle params=new android.os.Bundle();
+                params.putFloat(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_VOLUME,effectsVolume);
+                tts.setPitch(Narration.PITCH);tts.setSpeechRate(.9f);
+                lastUtterance="tutorial-"+(++speechSerial);duck(true);
+                if(tts.speak(text,android.speech.tts.TextToSpeech.QUEUE_FLUSH,params,lastUtterance)
+                        !=android.speech.tts.TextToSpeech.SUCCESS)duck(false);
+            } catch(Throwable t) { ttsBroken=true;duck(false); }
+            return;
+        }
         int entry=ttsPending;
         if(entry<0) return;
         if(!ttsPendingName) { read(entry); return; }

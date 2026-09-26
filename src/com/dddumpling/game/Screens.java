@@ -413,7 +413,7 @@ final class Screens extends Draw {
         // Heading swells in over the fade, overshooting and settling, so the interlude
         // announces itself instead of simply appearing.
         float intro = introScale(c.time);
-        p.text(freed ? "FREE!" : "FREE THE DUMPLING", cx, L.h * 0.235f,
+        p.text(freed ? "FREE!" : "FREE A DUMPLING", cx, L.h * 0.235f,
                 type(s * (freed ? 1.5f : 0.95f) * intro),
                 fadeBy(freed ? GOLD : INK, fade), Painter.CENTER, true);
         if (!freed && !c.steamer.swipeReady) {

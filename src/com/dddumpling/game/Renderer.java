@@ -14,6 +14,11 @@ final class Renderer extends Draw {
     static float shakeMargin(GameCore c, Layout L) { return Math.max(0f, c.shake) * .016f * L.w; }
 
     static void draw(Painter p, GameCore c, Layout L) {
+        if(c.onboarding.practice!=null) {
+            Onboarding.draw(p,c,L);
+            if(c.settingsOpen)PlayerSettings.draw(p,c,L);
+            Pause.draw(p,c,L);return;
+        }
         if (c.townOpen) {
             TownScreen.draw(p,c,L);
             Pause.draw(p,c,L);
@@ -23,6 +28,7 @@ final class Renderer extends Draw {
             if(c.mining.active) CaveMiningScreen.draw(p,c,L);
             else if(c.cart.active) CaveCartScreen.draw(p,c,L);
             else CaveBandScreen.draw(p,c,L);
+            Onboarding.draw(p,c,L);
             if(c.settingsOpen) PlayerSettings.draw(p,c,L);
             Pause.draw(p,c,L);
             return;
@@ -149,6 +155,7 @@ final class Renderer extends Draw {
         if (c.storyOpen()) Storybook.draw(p, c, L);
         if (c.settingsOpen) PlayerSettings.draw(p, c, L);
         PushLesson.draw(p, c, L);
+        Onboarding.draw(p, c, L);
         Pause.draw(p, c, L);
         ReleaseNotes.entry(p,c,L);
         c.releaseNotes.draw(p,c,L);

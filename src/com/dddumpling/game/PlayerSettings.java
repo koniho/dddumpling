@@ -4,7 +4,8 @@ package com.dddumpling.game;
 final class PlayerSettings extends Draw {
     static final int DEFAULT = 100 | (100 << 7);
     static final int MUSIC = 1, EFFECTS = 2, MUSIC_MUTE = 3, EFFECTS_MUTE = 4,
-            KIDS = 5, PRIVACY = 6, CLOSE = 7, PLAYER = 8, DEVELOPER = 9, SHARE = 10, RATE = 11;
+            KIDS = 5, PRIVACY = 6, CLOSE = 7, PLAYER = 8, DEVELOPER = 9, SHARE = 10, RATE = 11, TUTORIALS = 15;
+    float tutorialResetUntil;
     static final String PUBLIC_ANDROID_URL="https://play.google.com/store/apps/details?id=com.dddumpling.game";
     static String invitation(String url) { return "Come play DDDUMPLING with me! " + url; }
     final ScoreReset scoreReset=new ScoreReset();
@@ -82,10 +83,10 @@ final class PlayerSettings extends Draw {
     static float unit(Layout L) { return Math.min(L.unit, L.h / 46f); }
     static float left(Layout L) { return L.w * .06f; }
     static float right(Layout L) { return L.w * .94f; }
-    static float height(Layout L) { return unit(L)*(BuildFlags.DEVELOPER?39f:36f); }
+    static float height(Layout L) { return unit(L)*(BuildFlags.DEVELOPER?42f:39f); }
     static float top(Layout L) { return Math.max(L.topSafe, (L.h - height(L))*.5f); }
     static float bottom(Layout L) { return Math.min(L.h-L.padB, top(L)+height(L)); }
-    static float row(Layout L, int row) { return top(L) + unit(L)*(new float[]{7f,14.5f,22f,36f}[row]-(BuildFlags.DEVELOPER?0f:3f)); }
+    static float row(Layout L, int row) { return top(L) + unit(L)*(new float[]{7f,14.5f,22f,39f}[row]-(BuildFlags.DEVELOPER?0f:3f)); }
     static float trackL(Layout L) { return left(L)+L.keyR*Roster.STARTER_SCALE+unit(L)*.4f; }
     static float trackR(Layout L) { return right(L)-L.keyR*Roster.STARTER_SCALE-unit(L)*.4f; }
     static float volumeAt(Layout L, float x) {
@@ -109,10 +110,12 @@ final class PlayerSettings extends Draw {
         if (Math.abs(y-row(L,2))<s*1.1f) return KIDS;
         if (Math.abs(y-socialY(L))<s*2.4f) return x<L.w*.5f?SHARE:RATE;
         if (Math.abs(y-resetY(L))<s*1.2f) return ScoreReset.OPEN;
+        if (Math.abs(y-tutorialY(L))<s*1.2f) return TUTORIALS;
         if (Math.abs(y-row(L,3))<s*1.1f) return PRIVACY;
         return 0;
     }
     static float resetY(Layout L) { return top(L)+unit(L)*(BuildFlags.DEVELOPER?32f:29f); }
+    static float tutorialY(Layout L) { return resetY(L)+unit(L)*3f; }
     static float socialY(Layout L) { return top(L)+unit(L)*(BuildFlags.DEVELOPER?27.5f:24.5f); }
     static void open(GameCore c) {
         c.openSettings();c.settingsPage=0;
@@ -157,6 +160,8 @@ final class PlayerSettings extends Draw {
         social(p,c,L,true);social(p,c,L,false);
         p.fillRect(l+s,resetY(L)-s*1.2f,r-s,resetY(L)+s*1.2f,0x33F080A8);
         p.text("RESET HIGH SCORES",L.w*.5f,resetY(L)+s*.25f,type(s*.58f),INK,Painter.CENTER,true);
+        p.fillRect(l+s,tutorialY(L)-s*1.2f,r-s,tutorialY(L)+s*1.2f,0x334DCEAA);
+        p.text(c.clock<a.tutorialResetUntil?"TUTORIALS RESET":"RESET TUTORIALS",L.w*.5f,tutorialY(L)+s*.25f,type(s*.58f),INK,Painter.CENTER,true);
         p.text("PRIVACY POLICY",L.w*.5f,row(L,3)+s*.25f,type(s*.58f),GOLD,Painter.CENTER,true);
     }
     private static void social(Painter p,GameCore c,Layout L,boolean share) {
