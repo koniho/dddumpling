@@ -4,13 +4,13 @@ package com.dddumpling.game;
 final class TutorialSpeech extends Draw {
     static final int MATCH=1, WORD=2, ALTERNATE=3, LIFT=4, STARS=5, LEAN=6,
             DIG=7, CART=8, CLOSED=9, CHAIN=10, GLOB=11, DANGER=12, RETRY=13,
-            STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20;
+            STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21;
     private static final int PAPER=0xFFFFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
         {"TAP KEYS IN ORDER!", "START ON THE LEFT."},
-        {"LEFT, RIGHT!", "TAKE TURNS TAPPING."},
-        {"LIFT THE LID!", "SWIPE UP."},
+        {"GO AS FAST", "AS YOU CAN!"},
+        {"GREAT JOB! LIFT IT!", "SWIPE UP TO WIN!"},
         {"CATCH THE STARS!", "SLIDE TO STEER."},
         {"SLIDE TO STEER!", "STAY IN THE GREEN."},
         {"TAP MATCHING KEYS!", "FILL THE CART."},
@@ -26,9 +26,14 @@ final class TutorialSpeech extends Draw {
         {"MATCH THE KEY!", "SPREAD TWO FINGERS."},
         {"SAVE YOUR KEYS!", "TAP THE SHOWN KEY."},
         {"GRAB THE ARM TIP!", "PULL IT AWAY."},
-        {"GRAB THE CAP!", "SHAKE SIDE TO SIDE."}
+        {"GRAB THE CAP!", "SHAKE SIDE TO SIDE."},
+        {"WAIT FOR YOUR KEYS!", "WATCH THEM SPIN!"}
     };
     static String spoken(int message) {
+        if(message==WAIT)return "First, wait while two keys are picked at random. Watch them spin! Get ready. You can do this!";
+        if(message==ALTERNATE)return "Your keys are ready! Tap left, right, left, right. Go as fast as you can! You've got this!";
+        if(message==LIFT)return "Great job! The lid is ready. Swipe it up to win. You can do it!";
+        if(message==SUCCESS)return "Amazing! You did it! You freed a dumpling!";
         if(message==CLOSED)return "If Slime hides its face, wait until it opens. Then you can tap the matching key.";
         if(message==PINCH)return "Tap the matching key. Then put two fingers on the cube and spread them apart to split it.";
         if(message==DEFEND)return "Octopulse reaches for your keys. Tap the matching key to defend it.";
@@ -78,10 +83,13 @@ final class TutorialSpeech extends Draw {
         p.polyline(new float[]{tx,t,tx+s*.5f,t-s*1.1f,tx+s*2,t},TEXT_INK,s*.17f);
         p.text(LINES[message][0],x,t+s*2.5f,type(s*1.10f),TEXT_INK,Painter.CENTER,true);
         p.text(LINES[message][1],x,t+s*4.6f,type(s*1.00f),ACCENT,Painter.CENTER,true);
+        if(message==ALTERNATE)p.text("LEFT, RIGHT! YOU'VE GOT THIS!",x,t+s*6.2f,
+                type(s*.55f),ACCENT,Painter.CENTER,true);
         demonstrate(p,c,L,message,x,t+s*8.4f,s,age);
         if(button) {
             p.fillPoly(pill(x,buttonY(L),L.w*.32f,s*1.15f,14),0xFF387358);
-            p.text(c.onboarding.moreBossHelp(c)?"NEXT":"LET'S TRY!",x,buttonY(L)+s*.38f,type(s*.92f),0xFFFFFFFF,Painter.CENTER,true);
+            String buttonText=c.onboarding.moreBossHelp(c)?"NEXT":message==WAIT?"LET'S WATCH!":message==ALTERNATE?"LET'S GO!":"LET'S TRY!";
+            p.text(buttonText,x,buttonY(L)+s*.38f,type(s*.92f),0xFFFFFFFF,Painter.CENTER,true);
         }
     }
     static void reminder(Painter p,GameCore c,Layout L,int message) {
@@ -119,7 +127,15 @@ final class TutorialSpeech extends Draw {
         Onboarding o=c.onboarding;GameCore q=o.practice==null?c:o.practice;
         float travel=PushLesson.swipeProgress(age),handX=x,handY=y;
         int key=o.demoKey(c);
-        if(message==PINCH) {
+        if(message==WAIT) {
+            int roll=(int)(age*7f),count=Roster.count(q.playRosterFull()),half=count/2;
+            face(p,Roster.at(q.playRosterFull(),roll%half),x-s*3,y,s*1.65f);
+            face(p,Roster.at(q.playRosterFull(),half+(roll+1)%half),x+s*3,y,s*1.65f);
+            p.fillCircle(x,y,s*.9f,0xFFEAC15C);
+            for(int i=-1;i<=1;i+=2)p.line(x+i*s*.25f,y-s*.4f,x+i*s*.25f,y+s*.4f,TEXT_INK,s*.2f);
+            p.text("PICKING AT RANDOM",x,y+s*2.2f,type(s*.6f),ACCENT,Painter.CENTER,true);
+            return; // No tapping hand until the random selection has settled.
+        } else if(message==PINCH) {
             face(p,key,x,y,s*1.7f);
             float spread=s*(1+travel*3);
             arrow(p,x-s,y,-s*3,0,s*.6f);arrow(p,x+s,y,s*3,0,s*.6f);
@@ -144,7 +160,7 @@ final class TutorialSpeech extends Draw {
             handX=x+(at-1)*s*3.4f;
         } else if(message==ALTERNATE) {
             face(p,q.steamer.leftKey,x-s*3,y,s*1.65f);face(p,q.steamer.rightKey,x+s*3,y,s*1.65f);
-            handX=x+((int)(age*1.5f)%2==0?-3:3)*s;
+            handX=x+((int)(age*3f)%2==0?-3:3)*s;
         } else if(message==STARS || message==LEAN) {
             float dx=(float)Math.sin(age*1.8f)*s*3.2f;
             p.fillPoly(pill(x,y+s,L.w*.29f,s*.15f,12),0xFFC9B8CB);

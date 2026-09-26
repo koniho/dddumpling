@@ -547,6 +547,9 @@ Cart Rush and Dumpling Mine use disposable real-game practice while the actual r
 practice leaves progress and the run's random stream untouched until completion. Finishing the
 Steamer tutorial's lid swipe wins the actual minigame: its normal reward, life recovery and saved
 win count are awarded once, then its celebration leads to the next stage without a second attempt.
+The tutorial first shows a wait symbol and random key selection, then pauses on an encouraging
+**Go as fast as you can!** explanation only once the pair has settled. Spoken encouragement
+accompanies the selection, alternating taps, lid swipe and win.
 Other minigame practice remains reward-free. The actual run
 companion slides to the side, explains each new control in a large speech bubble with an animated
 example, and returns after the action succeeds. Explanations pause the scene until **Let's try!**;

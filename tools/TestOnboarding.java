@@ -103,10 +103,38 @@ final class TestOnboarding extends Check {
         learnedActions(L);
         bossHelp(L);
         steamerTutorialWin(L);
+        steamerSelection(L);
+    }
+    private static void steamerSelection(Layout L) {
+        GameCore c=fresh(L,new Mem());Ear ear=new Ear();c.sound=ear;
+        c.onboarding.begin(c,Onboarding.STEAMER,L);GameCore q=c.onboarding.practice;
+        check("Steamer first explains waiting for random keys",c.onboarding.briefing
+                && c.onboarding.speech==TutorialSpeech.WAIT && ear.explanation.contains("picked at random"));
+        acknowledge(c,L);float timer=q.bonusTimer;
+        touch(c,L,0,q.keyX(L,q.steamer.wanted()),q.keyY(L,q.steamer.wanted()));
+        touch(c,L,1,q.keyX(L,q.steamer.wanted()),q.keyY(L,q.steamer.wanted()));
+        c.update(DT,L);
+        check("selection runs while waiting and early taps cannot score",q.bonusTimer<timer
+                && q.bonusRolling() && q.steamer.hits==0 && !c.onboarding.briefing);
+        for(int i=0;i<300 && !c.onboarding.briefing;i++)c.update(DT,L);
+        check("Go cue waits for settled selection and pauses for reading",!q.bonusRolling()
+                && c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.ALTERNATE
+                && ear.explanations==2 && ear.explanation.contains("Go as fast as you can!"));
+        timer=q.bonusTimer;c.update(2f,L);
+        check("Go explanation does not consume tapping time",q.bonusTimer==timer);
+        key(c,L,q.steamer.wanted());key(c,L,q.steamer.wanted());
+        check("ready keys accept real alternating taps",q.steamer.hits==1);
+        GameCore restarted=new GameCore(c.store,114);restarted.startGame();
+        check("waiting step stays learned across restart",restarted.onboarding.learned(TutorialSpeech.WAIT));
+        GameCore ready=fresh(L,new Mem());ready.onboarding.learn(ready,TutorialSpeech.WAIT);
+        Interlude.enterBonus(ready,L);ready.bonusTimer=ready.bonusRollEnd;ready.update(DT,L);
+        check("returning to a learned selection does not spin a second time",ready.onboarding.briefing
+                && ready.onboarding.speech==TutorialSpeech.ALTERNATE && ready.onboarding.practice.bonusMashing());
     }
     private static void steamerTutorialWin(Layout L) {
         Mem store=new Mem();store.steamerOpens=3;
         GameCore c=fresh(L,store);c.lives=1;
+        Ear ear=new Ear();c.sound=ear;
         Interlude.enterBonus(c,L);c.update(DT,L);
         GameCore q=c.onboarding.practice;
         for(int i=0;i<600 && !q.bonusSwipeReady();i++) {
@@ -122,6 +150,7 @@ final class TestOnboarding extends Check {
         c.update(DT,L);
         check("tutorial lid swipe wins the actual Steamer immediately",c.onboarding.practice==null
                 && c.bonusEscape() && c.prize>=0 && c.score>=GameCore.FREE_BONUS && c.lives==2);
+        check("real tutorial win gets an encouraging spoken celebration",ear.explanation.contains("You did it!"));
         check("tutorial win persists real reward and existing difficulty",store.steamerOpens==4
                 && store.collectTotal==1 && c.collectTotal==1 && c.starNext
                 && !new GameCore(store,114).onboarding.eligible(Onboarding.STEAMER));

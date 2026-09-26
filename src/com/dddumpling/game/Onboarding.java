@@ -122,6 +122,7 @@ final class Onboarding extends Draw {
             Interlude.enterBonus(q,L);
         }
         q.update(0,L);
+        if(which==STEAMER && c.bonusMashing())q.bonusTimer=q.bonusRollEnd;
         // Recreate only the next unlearned action, never make a player repeat an earlier one.
         if(which==STEAMER && learned(TutorialSpeech.ALTERNATE)) {
             q.bonusTimer=q.bonusRollEnd;q.steamer.hits=q.steamer.goal();q.steamer.swipeReady=true;
@@ -190,7 +191,9 @@ final class Onboarding extends Draw {
             float shown=globAge<.35f?globAge:.35f+(globAge-.35f)%1.8f;
             for(int i=0;i<Boss.ELEMS;i++)if(q.boss.etype[i]==Boss.E_GLOB)q.boss.elife[i]=Boss.GLOB_TIME-shown;
         }
+        boolean picking=lesson==STEAMER && q.bonusRolling();
         q.update(dt,elapsed,L);
+        if(picking && !q.bonusRolling())learn(c,TutorialSpeech.WAIT);
         if(lesson==SLIME && q.boss.open() && (introduced&(1<<TutorialSpeech.CLOSED))!=0)
             learn(c,TutorialSpeech.CLOSED);
         if(lesson==CORE && !q.enemies.contains(word)) {
@@ -218,6 +221,7 @@ final class Onboarding extends Draw {
         c.swipeBonus();
         saved|=STEAMER;save(c);
         boolean touch=ownsTouch;clear();ownsTouch=touch;
+        speech=TutorialSpeech.SUCCESS;narrate(c);
         return true;
     }
     private int mechanic() {
@@ -225,7 +229,8 @@ final class Onboarding extends Draw {
         return mechanic(practice,lesson);
     }
     private static int mechanic(GameCore q,int lesson) {
-        if(lesson==STEAMER)return q.bonusSwipeReady()?TutorialSpeech.LIFT:TutorialSpeech.ALTERNATE;
+        if(lesson==STEAMER)return q.bonusRolling()?TutorialSpeech.WAIT:
+                q.bonusSwipeReady()?TutorialSpeech.LIFT:TutorialSpeech.ALTERNATE;
         if(lesson==STARS)return TutorialSpeech.STARS;
         if(lesson==CART)return TutorialSpeech.LEAN;
         if(lesson==MINE)return q.mining.swipeReady()?TutorialSpeech.CART:TutorialSpeech.DIG;

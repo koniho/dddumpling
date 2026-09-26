@@ -291,7 +291,11 @@ final class Screens extends Draw {
 
         // Arrow between them, leaning whichever way the sequence is going. Suppressed while
         // spinning: there is no order to point out yet.
-        if (!rolling) {
+        if (rolling) {
+            p.fillCircle(cx,cy,s*.5f,fadeBy(GOLD,fade));
+            for(int i=-1;i<=1;i+=2)p.line(cx+i*s*.14f,cy-s*.23f,cx+i*s*.14f,cy+s*.23f,
+                    fadeBy(0xFF302440,fade),s*.12f);
+        } else {
             float dir = c.steamer.expectLeft ? -1f : 1f;
             int arrow = fadeBy(Glyph.withAlpha(INK_DIM, 200), fade);
             float ax = cx + dir * s * 0.18f;
@@ -299,8 +303,9 @@ final class Screens extends Draw {
                     ax + dir * s * 0.36f, cy, ax - dir * s * 0.36f, cy + s * 0.26f}, arrow);
         }
 
-        p.text(rolling ? "PICKING YOUR PAIR" : "+1 PER PAIR", cx, cy + r * 1.9f, type(s * 0.5f),
-                fadeBy(INK_DIM, fade), Painter.CENTER, false);
+        p.text(rolling ? "WAIT - PICKING KEYS" : !c.bonusMashing()?"NICE TRY!":
+                c.steamer.hits>0?"KEEP GOING! YOU'VE GOT THIS!":"GO! LEFT, RIGHT!",
+                cx,cy+r*1.9f,type(s*.6f),fadeBy(rolling?GOLD:INK,fade),Painter.CENTER,true);
     }
 
     /** How long the interlude heading takes to swell into place. */

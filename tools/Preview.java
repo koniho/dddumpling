@@ -18,8 +18,13 @@ final class Preview {
             shot(dir,"114-"+name+"-ready",c,L,w,h,ss);
             TestOnboarding.acknowledge(c,L);
             if(lesson==Onboarding.STEAMER) {
+                step(c,L,.3f);shot(dir,"114-steamer-picking",c,L,w,h,ss);
                 step(c,L,GameCore.BONUS_ROLL+.1f);
+                shot(dir,"114-steamer-go",c,L,w,h,ss);
+                TestOnboarding.acknowledge(c,L);
                 shot(dir,"114-steamer-keys",c,L,w,h,ss);
+                q.tapBonus(q.steamer.wanted());q.tapBonus(q.steamer.wanted());step(c,L,.6f);
+                shot(dir,"114-steamer-encourage",c,L,w,h,ss);
                 for(int i=0;i<40 && !q.bonusSwipeReady();i++)q.tapBonus(q.steamer.wanted());
                 step(c,L,.6f);
                 shot(dir,"114-steamer-lid",c,L,w,h,ss);
