@@ -18,7 +18,8 @@ final class PushLesson extends Draw {
 
     boolean update(GameCore c, float dt, Layout L) {
         if (c.state != GameCore.PLAY) { reset(); return false; }
-        if (!active && !seen && c.lives == 1 && !c.pushUsed && !c.settingsOpen
+        if (!active && !seen && c.onboarding.eligible(Onboarding.SKIPPED)
+                && c.lives == 1 && !c.pushUsed && !c.settingsOpen
                 && !c.pendingBonus && !c.boss.active() && !Cave.active(c)) {
             for (GameCore.Enemy e : c.enemies) {
                 if (e.destroyed || e.dying || e.linkWaiting || e.slideT > 0) continue;

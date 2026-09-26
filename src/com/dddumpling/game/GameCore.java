@@ -190,6 +190,8 @@ final class GameCore {
         default void saveLandBest(int land, int value) { if (land == 0) saveBest(value); }
         default int loadPlayerSettings() { return PlayerSettings.DEFAULT; }
         default void savePlayerSettings(int value) {}
+        default int loadTutorials() { return 0; }
+        default void saveTutorials(int value) {}
         /** The collected-squishy bitmask; see {@link Collect}. */
         long loadCollected();
         void saveCollected(long owned);
@@ -558,6 +560,7 @@ final class GameCore {
     /** Spent for this stage once the push-back has been used. */
     boolean pushUsed;
     final PushLesson pushLesson = new PushLesson();
+    final Onboarding onboarding = new Onboarding();
     /** Counts down while the push-back shockwave is on screen. */
     float pushT;
     /** Words the last push-back shoved back, for the readout. */
@@ -1515,6 +1518,7 @@ final class GameCore {
     GameCore(Store store, long seed, boolean trackProgress) {
         this.store = store;
         pushLesson.seen = store == null || store.loadPushLessonSeen();
+        onboarding.saved = store == null ? Onboarding.SKIPPED : store.loadTutorials();
         this.progress = new Progress(store, trackProgress);
         this.rnd = new Random(seed);
         Random sr = new Random(20260803L);
@@ -1839,6 +1843,7 @@ final class GameCore {
     }
 
     void startGame() {
+        onboarding.clear();onboarding.corePending=onboarding.eligible(Onboarding.CORE);
         scoresSuppressed=false;
         stopLaunchVoice();
         town.leave(); townOpen=false;
@@ -1950,6 +1955,7 @@ final class GameCore {
     }
 
     void toTitle() {
+        onboarding.clear();onboarding.hintLeft=0;
         if (state == PLAY || state == BONUS || state == OVER) finishTownRun();
         companion.clear();
         band.stop(this); mining.stop(); cart.stop();
@@ -2600,6 +2606,7 @@ final class GameCore {
             if (town.dirty && townSaveRetry<=0f) saveTown();
             return;
         }
+        if (onboarding.update(this, dt, elapsed, L)) return;
         if (pushLesson.update(this, elapsed, L)) return;
         if(highScoreScreen.open) { highScoreScreen.update(elapsed);clock+=elapsed;return; }
         if(releaseNotes.open) {

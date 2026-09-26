@@ -630,6 +630,7 @@ public final class IOSInputTest extends Check {
     }
 
     public static void main(String[] args) {
+        onboarding();
         townNavigation();
         slowRunIntro();
         caveMining();
@@ -646,5 +647,59 @@ public final class IOSInputTest extends Check {
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");
+    }
+
+    private static void onboarding() {
+        Mem store=new Mem();store.tutorials=0;
+        IOSGame game=new IOSGame(store,new Ear(),114);game.layout(393,852,0,59,0,34);
+        GameCore c=game.core();Layout l=game.geometry();c.startGame();game.update(DT);
+        GameCore q=c.onboarding.practice;
+        tap(game,q.keyX(l,0),q.keyY(l,0));game.update(DT);
+        for(int i=0;i<60 && c.onboarding.step==0;i++)game.update(DT);
+        check("native character key advances introduction",c.onboarding.step==1 && c.hits==0);
+        game.background(true);float age=c.onboarding.age;game.update(60);
+        check("background freezes tutorial",c.paused && c.onboarding.age==age);
+        game.background(false);game.back();
+        for(int key:new int[]{1,4,0}) { tap(game,q.keyX(l,key),q.keyY(l,key));game.update(DT); }
+        for(int i=0;i<120;i++)game.update(DT);
+        check("native controls finish core lesson",(store.tutorials&Onboarding.CORE)!=0 && c.onboarding.practice==null);
+
+        c.onboarding.begin(c,Onboarding.MINE,l);q=c.onboarding.practice;
+        for(int i=0;i<600 && !q.mining.swipeReady();i++) {
+            if(q.mining.digging()) { int key=q.mining.sequence[q.mining.pos];tap(game,q.keyX(l,key),q.keyY(l,key)); }
+            game.update(DT);
+        }
+        float x=q.mining.cartX*l.w,y=CaveMiningScreen.cartY(l);
+        game.touch(one(0,19,x,y));game.background(true);game.background(false);game.back();
+        game.touch(one(2,19,x+l.w*.25f,y));
+        check("background cancels stale mine lesson drag",q.mining.carts==0 && q.mining.input.pointer<0);
+        game.touch(one(0,27,x,y));
+        game.touch(two(5,1,27,x,y,52,x,y));
+        game.touch(two(2,0,52,x-l.w*.3f,y,27,x,y));
+        check("second tutorial pointer cannot dispatch cart",q.mining.carts==0);
+        game.touch(one(2,27,x+l.w*.25f,y));game.touch(one(1,27,x+l.w*.25f,y));game.update(DT);
+        check("native mine swipe completes practice without saving a cart",c.onboarding.success>0 && store.mineCarts==0);
+
+        c.onboarding.begin(c,Onboarding.SLIME,l);q=c.onboarding.practice;
+        for(int i=0;i<600 && !q.boss.hasGlob();i++) {
+            if(q.boss.open()) { int key=q.boss.chainLetter();tap(game,q.keyX(l,key),q.keyY(l,key)); }
+            game.update(DT);
+        }
+        int glob=0;while(glob<Boss.ELEMS && q.boss.etype[glob]!=Boss.E_GLOB)glob++;
+        check("native slime chain produces glob",glob<Boss.ELEMS);
+        if(glob<Boss.ELEMS) {
+            x=q.boss.ex[glob];y=q.boss.ey[glob];game.touch(one(0,31,x,y));
+            game.touch(new IOSTouch(2,0,new int[]{31},new float[]{l.w*.5f},new float[]{y},
+                    new float[][]{{l.w*.5f},{-l.w*.2f}},new float[][]{{y},{y}}));
+            game.update(DT);
+            check("historical drag samples finish slime practice",c.onboarding.success>0);
+        }
+        c.onboarding.begin(c,Onboarding.CART,l);
+        tap(game,l.w*.84f,Onboarding.skipY(l));
+        check("native Skip consumes whole gesture",c.onboarding.practice==null && !c.onboarding.ownsTouch
+                && (store.tutorials&Onboarding.SKIPPED)!=0 && c.score==0);
+        PlayerSettings.open(c);game.update(PlayerSettings.PANEL_TIME);
+        tap(game,l.w*.5f,PlayerSettings.tutorialY(l));
+        check("native Settings resets tutorials without clearing progress",store.tutorials==0 && !store.pushLessonSeen && c.settingsOpen);
     }
 }

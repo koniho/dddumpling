@@ -75,6 +75,8 @@ final class SettingsInput {
                     c.preferences.save(c);break;
                 case PlayerSettings.EFFECTS_MUTE: c.preferences.effectsMuted=!c.preferences.effectsMuted;c.preferences.save(c);break;
                 case PlayerSettings.KIDS: c.preferences.toggleKids(c);break;
+                case PlayerSettings.TUTORIALS:
+                    c.onboarding.reset(c);c.preferences.tutorialResetUntil=c.clock+2f;break;
                 case PlayerSettings.SHARE:
                 case PlayerSettings.RATE: c.preferences.requestExternal(c,h-1000);break;
                 case PlayerSettings.PRIVACY: return true;

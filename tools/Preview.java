@@ -9,6 +9,55 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void onboardingFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("114-"))return;
+        for(int lesson:new int[]{Onboarding.CORE,Onboarding.STEAMER,Onboarding.STARS,Onboarding.CART,Onboarding.MINE,Onboarding.SLIME}) {
+            GameCore c=new GameCore(new Mem(),114);c.startGame();c.onboarding.begin(c,lesson,L);
+            c.update(DT,L);GameCore q=c.onboarding.practice;
+            String name=lesson==1?"core":lesson==2?"steamer":lesson==4?"stars":lesson==8?"cart":lesson==16?"mine":"slime";
+            shot(dir,"114-"+name+"-ready",c,L,w,h,ss);
+            if(lesson==Onboarding.CORE) {
+                q.tapKey(0,L);step(c,L,.8f);
+                shot(dir,"114-core-word",c,L,w,h,ss);
+            } else if(lesson==Onboarding.STEAMER) {
+                step(c,L,GameCore.BONUS_ROLL+.1f);
+                shot(dir,"114-steamer-keys",c,L,w,h,ss);
+                for(int i=0;i<40 && !q.bonusSwipeReady();i++)q.tapBonus(q.steamer.wanted());
+                shot(dir,"114-steamer-lid",c,L,w,h,ss);
+            } else if(lesson==Onboarding.STARS) {
+                step(c,L,StarPath.READY+.4f);
+                shot(dir,"114-stars-flight",c,L,w,h,ss);
+            } else if(lesson==Onboarding.CART) {
+                step(c,L,CaveCart.READY+.6f);
+                shot(dir,"114-cart-steer",c,L,w,h,ss);
+            } else if(lesson==Onboarding.MINE) {
+                step(c,L,CaveMining.READY+.1f);
+                shot(dir,"114-mine-keys",c,L,w,h,ss);
+                for(int i=0;i<600 && !q.mining.swipeReady();i++) {
+                    if(q.mining.digging())q.tapBonus(q.mining.sequence[q.mining.pos]);
+                    c.update(DT,L);
+                }
+                shot(dir,"114-mine-swipe",c,L,w,h,ss);
+            } else {
+                for(int i=0;i<300 && !q.boss.open();i++)c.update(DT,L);
+                step(c,L,.35f);
+                shot(dir,"114-slime-open",c,L,w,h,ss);
+                for(int i=0;i<Boss.SPLIT_HITS;i++)q.tapKey(q.boss.chainLetter(),L);
+                step(c,L,.8f);shot(dir,"114-slime-glob",c,L,w,h,ss);
+            }
+        }
+        for(int hint=0;hint<3;hint++) {
+            GameCore c=new GameCore(new Mem(),114);c.startGame();c.onboarding.saved=Onboarding.CORE;
+            if(hint==1)c.misses=1;
+            if(hint==2)c.onboarding.saved|=Onboarding.WORD_HINT;
+            Check.add(c,L,new int[]{0,1},new int[]{hint==2?2:1,1},L.playTop+L.enemyR*4);
+            c.update(DT,L);shot(dir,"114-hint-"+hint,c,L,w,h,ss);
+        }
+        GameCore settings=new GameCore(new Mem(),114);PlayerSettings.open(settings);
+        settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME);
+        shot(dir,"114-settings-reset",settings,L,w,h,ss);
+    }
+
     private static void townFrames(File dir, Layout L, int w, int h, int ss) throws Exception {
         if (!wanted("town-")) return;
         GameCore hidden = new GameCore(new Mem(), 1069L);
@@ -407,6 +456,7 @@ final class Preview {
     private static int unfitFrames;
 
     private static final class Mem implements GameCore.Store {
+        public int loadTutorials() { return 1023 & ~Onboarding.SKIPPED; }
         boolean pushLessonSeen = true; // Ordinary simulations model a player past onboarding.
         public boolean loadPushLessonSeen() { return pushLessonSeen; }
         public void savePushLessonSeen(boolean value) { pushLessonSeen = value; }
@@ -636,6 +686,7 @@ final class Preview {
         slimeFightFrames(dir,L,w,h,ss);
         companionFrames(dir,L,w,h,ss);
         scoreResetFrames(dir,L,w,h,ss);
+        onboardingFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);

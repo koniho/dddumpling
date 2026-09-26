@@ -541,6 +541,15 @@ are excluded, and a spent swipe defers the lesson until a later stage. `PushLess
 prompt, freeze, and shared native gesture.
 Developer settings → Progress → **RESET SWIPE** clears the saved lesson completion flag.
 
+**Practice lessons** introduce the character keys and left-to-right words at the start of a new
+player's run, then Steamer, Star Path, Cart Rush, Dumpling Mine and the first stage-5 Slime on
+their first encounters. `Onboarding` uses disposable real-game state while the actual run waits;
+practice cannot award persistent progress or consume the run's random stream. Each lesson saves
+its own completion. **Skip All** suppresses remaining practice, contextual hints and the desperation
+swipe lesson across restarts. Player Settings → **Reset Tutorials** restores all those lessons;
+the core introduction returns on the next run, without resetting any other progress. Short hints
+for incoming words, wrong keys and stacked letters appear once during stages 1–4.
+
 Octopulse plays the supplied recorded sound, low-pass filtered at 1 kHz, once when its attacking arm starts to wave.
 While an arm is vulnerable, the other intact arms ripple and flick upward in pain.
 The later strike retains its short synthesized cue. `Boss.octoWave` signals the wave's

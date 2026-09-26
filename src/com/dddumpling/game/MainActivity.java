@@ -220,6 +220,8 @@ public class MainActivity extends Activity implements GameCore.Store {
     }
 
     @Override public int loadPlayerSettings() { return prefs.getInt("playerSettings", PlayerSettings.DEFAULT); }
+    @Override public int loadTutorials() { return prefs.getInt("tutorials", 0); }
+    @Override public void saveTutorials(int value) { prefs.edit().putInt("tutorials", value).apply(); }
     @Override public void savePlayerSettings(int value) { prefs.edit().putInt("playerSettings", value).apply(); }
 
     @Override public long loadCollected() {

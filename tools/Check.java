@@ -33,6 +33,10 @@ abstract class Check {
     static int pass, fail;
 
     static final class Mem implements GameCore.Store {
+        int tutorials=Onboarding.CORE|Onboarding.STEAMER|Onboarding.STARS|Onboarding.CART|Onboarding.MINE|Onboarding.SLIME
+                |Onboarding.WORD_HINT|Onboarding.WRONG_HINT|Onboarding.STACK_HINT;
+        public int loadTutorials() { return tutorials; }
+        public void saveTutorials(int value) { tutorials=value; }
         boolean pushLessonSeen = true; // Ordinary simulations model a player past onboarding.
         public boolean loadPushLessonSeen() { return pushLessonSeen; }
         public void savePushLessonSeen(boolean value) { pushLessonSeen = value; }
