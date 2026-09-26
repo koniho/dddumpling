@@ -5,7 +5,7 @@ final class TutorialSpeech extends Draw {
     static final int MATCH=1, WORD=2, ALTERNATE=3, LIFT=4, STARS=5, LEAN=6,
             DIG=7, CART=8, CLOSED=9, CHAIN=10, GLOB=11, DANGER=12, RETRY=13,
             STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21;
-    private static final int PAPER=0xFFFFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
+    private static final int PAPER=0xE0FFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
         {"TAP KEYS IN ORDER!", "START ON THE LEFT."},
@@ -48,8 +48,8 @@ final class TutorialSpeech extends Draw {
     }
     static void help(Painter p,GameCore c,Layout L) {
         float s=L.unit,x=helpX(L),y=helpY(L);
-        bubble(p,x-s,y-s,x+s,y+s,s*.55f);
-        p.fillPoly(new float[]{x-s*.7f,y+s*.7f,x-s*.2f,y+s*.9f,x-s,y+s*1.6f},PAPER);
+        bubble(p,x-s,y-s,x+s,y+s,s*.55f,1,
+                new float[]{x+s*.3f,y+s,x-s*.7f,y+s*1.6f,x-s*.3f,y+s});
         p.text("?",x,y+s*.48f,type(s*1.25f),TEXT_INK,Painter.CENTER,true);
     }
     static float unit(Layout L) { return Math.min(L.unit,(L.deckTop-L.topSafe)/24f); }
@@ -59,16 +59,17 @@ final class TutorialSpeech extends Draw {
         return Math.abs(x-L.w*.5f)<L.w*.32f && Math.abs(y-buttonY(L))<unit(L)*1.3f;
     }
     static int speaker(GameCore c) { return c.companion.who>=0?c.companion.who:Math.max(0,c.runWho); }
-    private static void bubble(Painter p,float l,float t,float r,float b,float radius) {
-        float[] outline=new float[56];
+    private static void bubble(Painter p,float l,float t,float r,float b,float radius,int tailEdge,float[] tail) {
+        // One fill keeps the translucent tail from double-blending with the body.
+        float[] outline=new float[62];int at=0;
         for(int corner=0;corner<4;corner++) {
             float cx=corner==0 || corner==3?r-radius:l+radius;
             float cy=corner<2?b-radius:t+radius;
             for(int j=0;j<=6;j++) {
                 float a=(corner*90f+j*15f)*(float)Math.PI/180f;
-                int i=(corner*7+j)*2;
-                outline[i]=cx+radius*(float)Math.cos(a);outline[i+1]=cy+radius*(float)Math.sin(a);
+                outline[at++]=cx+radius*(float)Math.cos(a);outline[at++]=cy+radius*(float)Math.sin(a);
             }
+            if(corner+1==tailEdge)for(float point:tail)outline[at++]=point;
         }
         p.fillPoly(outline,PAPER);p.strokePoly(outline,TEXT_INK,radius*.14f);
     }
@@ -76,11 +77,10 @@ final class TutorialSpeech extends Draw {
         float s=unit(L),t=top(L),b=t+s*14.2f,x=L.w*.5f;
         float age=message==RESCUE?c.pushLesson.clock:c.onboarding.age;
         if(button)p.fillRect(0,0,L.w,L.h,0xB8101022);
-        bubble(p,L.w*.05f,t,L.w*.95f,b,s*1.2f);
-        // Opaque tail joins the bubble and points at this run's actual companion.
+        // The tail points at this run's actual companion.
         float tx=L.w*.13f;
-        p.fillPoly(new float[]{tx,t+s*.12f,tx+s*2,t+s*.12f,tx+s*.5f,t-s*1.1f},PAPER);
-        p.polyline(new float[]{tx,t,tx+s*.5f,t-s*1.1f,tx+s*2,t},TEXT_INK,s*.17f);
+        bubble(p,L.w*.05f,t,L.w*.95f,b,s*1.2f,3,
+                new float[]{tx,t,tx+s*.5f,t-s*1.1f,tx+s*2,t});
         p.text(LINES[message][0],x,t+s*2.5f,type(s*1.10f),TEXT_INK,Painter.CENTER,true);
         p.text(LINES[message][1],x,t+s*4.6f,type(s*1.00f),ACCENT,Painter.CENTER,true);
         if(message==ALTERNATE)p.text("LEFT, RIGHT! YOU'VE GOT THIS!",x,t+s*6.2f,
@@ -94,9 +94,8 @@ final class TutorialSpeech extends Draw {
     }
     static void reminder(Painter p,GameCore c,Layout L,int message) {
         float s=unit(L),t=L.topSafe+s*2.6f,b=t+s*4f,l=L.w*.25f;
-        bubble(p,l,t,L.w*.97f,b,s*.7f);
-        p.fillPoly(new float[]{l+s*.1f,t+s*1.2f,l-s*.9f,b-s,l+s*.1f,b-s*.5f},PAPER);
-        p.polyline(new float[]{l,t+s*1.2f,l-s*.9f,b-s,l,b-s*.5f},TEXT_INK,s*.1f);
+        bubble(p,l,t,L.w*.97f,b,s*.7f,2,
+                new float[]{l,b-s*.8f,l-s*.9f,b-s,l,t+s*1.2f});
         float x=(l+L.w*.97f)*.5f;
         p.text(LINES[message][0],x,t+s*1.5f,type(s*.70f),TEXT_INK,Painter.CENTER,true);
         p.text(LINES[message][1],x,t+s*3f,type(s*.70f),ACCENT,Painter.CENTER,true);
