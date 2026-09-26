@@ -87,6 +87,7 @@ public class MainActivity extends Activity implements GameCore.Store {
     private static final int APP_ACTION_REQUEST=110;
     @Override protected void onNewIntent(android.content.Intent intent) {
         super.onNewIntent(intent);
+        diagnostic("activity-new-intent");
         if(BuildFlags.DEVELOPER && intent.getBooleanExtra("diagnostics",false)) {
             diagnostic("diagnostics-open");
             showDiagnostics();

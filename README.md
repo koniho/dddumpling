@@ -186,7 +186,7 @@ With an adb-connected Android device:
 
 ```sh
 adb install -r hexatype.apk
-adb shell am start -n com.dddumpling.game.dev/com.dddumpling.game.MainActivity
+adb shell am start --activity-single-top -n com.dddumpling.game.dev/com.dddumpling.game.MainActivity
 ```
 
 For production, use `com.dddumpling.game/com.dddumpling.game.MainActivity` instead.

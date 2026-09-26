@@ -33,5 +33,10 @@ am start --user 0 --activity-single-top -n com.dddumpling.game.dev/com.dddumplin
 
 Use **Copy log** in the dialog and paste it into the bug report. Opening it pauses an active
 run. A different PID indicates a new process; another `activity-create` in the same PID
-indicates activity recreation; `to-title` includes the in-game caller. Exit reasons are
+indicates a new activity instance; `to-title` includes the in-game caller. Exit reasons are
 historical, so correlate their timestamps rather than treating every listed exit as new.
+
+The game activity uses `singleTop`, and deployment commands pass `--activity-single-top`,
+so launching a game already at the top of its task delivers `activity-new-intent` to that instance.
+Do not force-stop, clear the task, or relaunch with `-S` just to bring it forward: those can
+discard the current run. Verify this launch contract with `python3 tools/test-android-launch.py`.
