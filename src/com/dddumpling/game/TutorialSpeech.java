@@ -5,7 +5,7 @@ final class TutorialSpeech extends Draw {
     static final int MATCH=1, WORD=2, ALTERNATE=3, LIFT=4, STARS=5, LEAN=6,
             DIG=7, CART=8, CLOSED=9, CHAIN=10, GLOB=11, DANGER=12, RETRY=13,
             STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21;
-    private static final int PAPER=0xE0FFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
+    private static final int PAPER=0xB8FFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
         {"TAP KEYS IN ORDER!", "START ON THE LEFT."},

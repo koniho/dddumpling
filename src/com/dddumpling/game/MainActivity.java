@@ -62,6 +62,7 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        RuntimeDiagnostics.open(this,state!=null);
         Crash.install(this);
         try {
             prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
@@ -76,12 +77,29 @@ public class MainActivity extends Activity implements GameCore.Store {
             play = new PlayBridge(this, game.core());
             navigationChanged();
             goFullscreen();
+            if(BuildFlags.DEVELOPER && getIntent().getBooleanExtra("diagnostics",false))
+                game.post(this::showDiagnostics);
         } catch (Throwable t) {
             Crash.show(this, t);
         }
     }
 
     private static final int APP_ACTION_REQUEST=110;
+    @Override protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        if(BuildFlags.DEVELOPER && intent.getBooleanExtra("diagnostics",false)) {
+            diagnostic("diagnostics-open");
+            showDiagnostics();
+        }
+    }
+    private void showDiagnostics() {
+        if(game!=null)Pause.open(game.core());
+        RuntimeDiagnostics.show(this);
+    }
+    private void diagnostic(String event) {
+        if(game!=null)game.core().diagnostic(event);
+        else RuntimeDiagnostics.record(event+" no-game");
+    }
     void openAppAction(int action) {
         String url=PlayerSettings.PUBLIC_ANDROID_URL;
         android.content.Intent intent;
@@ -106,6 +124,7 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     @Override protected void onResume() {
         super.onResume();
+        diagnostic("activity-resume");
         resumed = true;
         if (play != null) play.resume();
         if (game != null) game.background(false);
@@ -116,6 +135,7 @@ public class MainActivity extends Activity implements GameCore.Store {
     }
 
     @Override protected void onPause() {
+        diagnostic("activity-pause");
         resumed = false;
         if (game != null) game.core().progress.checkpoint(game.core().score);
         if (play != null) play.pause();
@@ -130,6 +150,7 @@ public class MainActivity extends Activity implements GameCore.Store {
     }
 
     @Override protected void onDestroy() {
+        diagnostic("activity-destroy changing-config="+isChangingConfigurations()+" finishing="+isFinishing());
         if (play != null) play.close();
         if (backRegistration != null) backRegistration.close();
         super.onDestroy();

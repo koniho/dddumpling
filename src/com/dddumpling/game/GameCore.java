@@ -10,6 +10,19 @@ import java.util.Random;
  * can be driven headlessly by the test harness and the PNG preview tool.
  */
 final class GameCore {
+    interface Diagnostics { void record(String event); }
+    Diagnostics diagnostics;
+    void diagnostic(String event) {
+        if (!BuildFlags.DEVELOPER || diagnostics == null) return;
+        try {
+            String detail=event+" state="+state+" stage="+stage+" lives="+lives
+                    +" paused="+paused+" settings="+settingsOpen+" lesson="+onboarding.lesson
+                    +" speech="+onboarding.speech+" briefing="+onboarding.briefing
+                    +" hint="+onboarding.hintKind+" practice="+(onboarding.practice!=null);
+            if (event.equals("to-title")) detail+=" via="+java.util.Arrays.toString(new Throwable().getStackTrace());
+            diagnostics.record(detail);
+        } catch (RuntimeException unavailable) { /* Diagnostics must not interrupt play. */ }
+    }
 
     // ---- states -------------------------------------------------------------
     static final int TITLE = 0, PLAY = 1, OVER = 2, BONUS = 3;
@@ -1846,6 +1859,7 @@ final class GameCore {
     }
 
     void startGame() {
+        diagnostic("start-game");
         onboarding.clear();onboarding.companionTravel=0;
         scoresSuppressed=false;
         stopLaunchVoice();
@@ -1958,6 +1972,7 @@ final class GameCore {
     }
 
     void toTitle() {
+        diagnostic("to-title");
         onboarding.clear();
         if (state == PLAY || state == BONUS || state == OVER) finishTownRun();
         companion.clear();
@@ -3417,6 +3432,7 @@ final class GameCore {
      * early returns, or clear it where the early return is taken. There is no third way.
      */
     private void die() {
+        diagnostic("game-over");
         finishTownRun();
         // The run companion belongs to the summary after play stops. It cries in place until the
         // return fade reaches full cover; toTitle clears it under that cover.

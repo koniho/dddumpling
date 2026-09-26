@@ -39,6 +39,7 @@ public class GameView extends View {
         Pause.release(core);
     }
     boolean back() {
+        core.diagnostic("android-back");
         if (!handlesBack()) return false;
         cancelPointers();
         boolean handled = Pause.back(core);
@@ -56,6 +57,7 @@ public class GameView extends View {
         super(ctx);
         painter = new CanvasPainter(loadFace(ctx));
         core = new GameCore(store, SystemClock.elapsedRealtimeNanos());
+        if(BuildFlags.DEVELOPER)core.diagnostics=RuntimeDiagnostics::record;
         core.sound = sound;
         // Has to be after the sound is attached, and before the Activity resumes: the loaded
         // choice is otherwise never announced and the backend picks its own fallback.
@@ -116,6 +118,10 @@ public class GameView extends View {
     }
 
     @Override public boolean onTouchEvent(MotionEvent ev) {
+        if(BuildFlags.DEVELOPER && (core.onboarding.briefing || core.onboarding.hintKind!=0)
+                && ev.getActionMasked()!=MotionEvent.ACTION_MOVE)
+            core.diagnostic("tutorial-touch action="+ev.getActionMasked()+" fingers="+ev.getPointerCount()
+                    +" x="+ev.getX(ev.getActionIndex())+" y="+ev.getY(ev.getActionIndex()));
         try { return touch(ev); }
         finally { refreshNavigation(); }
     }

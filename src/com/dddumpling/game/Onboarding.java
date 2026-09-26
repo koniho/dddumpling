@@ -18,6 +18,7 @@ final class Onboarding extends Draw {
     void learn(GameCore c,int message) {
         if(teacher!=null) { teacher.onboarding.learn(teacher,message);return; }
         if(learned(message))return;
+        c.diagnostic("tutorial-learn "+message);
         saved|=1<<(message+9);
         if(message==TutorialSpeech.DANGER)saved|=WORD_HINT;
         if(message==TutorialSpeech.RETRY)saved|=WRONG_HINT;
@@ -55,6 +56,7 @@ final class Onboarding extends Draw {
         return false;
     }
     private void narrate(GameCore c) {
+        c.diagnostic("tutorial-explain");
         narrator=c;
         if(c.sound!=null)c.sound.explain(TutorialSpeech.spoken(speech));
     }
@@ -100,6 +102,7 @@ final class Onboarding extends Draw {
         if(practice!=null)Pause.release(practice);
     }
     void skip(GameCore c) {
+        c.diagnostic("tutorial-skip");
         if(c.sound!=null)c.sound.hush();
         clear();saved|=SKIPPED;
         c.pushLesson.reset();save(c);
@@ -245,6 +248,7 @@ final class Onboarding extends Draw {
         Pause.release(c);narrate(c);
     }
     private void acknowledge(GameCore c) {
+        c.diagnostic("tutorial-acknowledge");
         if(c.sound!=null)c.sound.hush();
         narrator=null;
         if(bossHelp && nextBossHelp(c))return;

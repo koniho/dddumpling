@@ -104,6 +104,26 @@ final class TestOnboarding extends Check {
         bossHelp(L);
         steamerTutorialWin(L);
         steamerSelection(L);
+        diagnostics(L);
+    }
+    private static void diagnostics(Layout L) {
+        GameCore c=fresh(L,new Mem());
+        java.util.ArrayList<String> events=new java.util.ArrayList<>();
+        c.diagnostics=events::add;
+        c.onboarding.begin(c,Onboarding.CORE,L);
+        acknowledge(c,L);key(c,L,0);
+        check("diagnostics capture lesson explanation and acknowledgement",!BuildFlags.DEVELOPER
+                ?events.isEmpty():events.stream().anyMatch(s->s.startsWith("tutorial-explain") && s.contains("briefing=true"))
+                && events.stream().anyMatch(s->s.startsWith("tutorial-acknowledge")));
+        check("diagnostics record successful first enemy action",!BuildFlags.DEVELOPER
+                ?events.isEmpty():events.stream().anyMatch(s->s.startsWith("tutorial-learn "+TutorialSpeech.MATCH+" ")));
+        c.toTitle();
+        check("title diagnostic retains pre-exit lesson and caller",!BuildFlags.DEVELOPER
+                ?events.isEmpty():events.stream().anyMatch(s->s.startsWith("to-title") && s.contains("practice=true")
+                && s.contains("TestOnboarding.diagnostics")));
+        c.diagnostics=event->{throw new IllegalStateException("storage unavailable");};
+        c.startGame();c.toTitle();
+        check("unavailable diagnostics cannot interrupt navigation",c.state==GameCore.TITLE);
     }
     private static void steamerSelection(Layout L) {
         GameCore c=fresh(L,new Mem());Ear ear=new Ear();c.sound=ear;

@@ -16,7 +16,7 @@ import java.io.StringWriter;
  *
  * Termux can only read logcat for its own UID, so a crash in this app is completely
  * invisible from the shell that builds it — and there is no dumpsys or adb here either.
- * The only usable channel is the screen, so render the stack trace instead of dying.
+ * Render the stack trace; developer builds also retain a private diagnostic log.
  */
 final class Crash {
 
@@ -41,6 +41,7 @@ final class Crash {
     }
 
     static void show(final Activity a, final Throwable t) {
+        try { RuntimeDiagnostics.crash(t); } catch(Throwable unavailable) { /* Keep the crash screen. */ }
         if (shown) return;
         shown = true;
         try {
