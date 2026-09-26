@@ -229,7 +229,7 @@ final class StarPath {
     int collected;
     int who = -1;
     float timer, x, vx;
-    boolean left, right, won, dragging;
+    boolean left, right, won, dragging, steered;
     /**
      * Seconds of victory tableau left. While this is running every other kind of motion here is
      * frozen — the scroll, the steering and the pickup shines all hold where the win found them.
@@ -325,7 +325,7 @@ final class StarPath {
         collected = 0;
         who = -1;
         timer = x = vx = 0f;
-        left = right = won = dragging = false;
+        left = right = won = dragging = steered = false;
         winT = 0f;
         winStar = -1;
         grabbed = launched = reported = awardPending = false;
@@ -409,7 +409,7 @@ final class StarPath {
         timer = READY + FLY + EXIT + REPORT;
         x = L.w * 0.5f;
         vx = 0f;
-        left = right = won = dragging = false;
+        left = right = won = dragging = steered = false;
         launched = reported = false;
         winT = 0f;
         winStar = -1;
@@ -476,6 +476,7 @@ final class StarPath {
 
     void hold(int key, boolean down) {
         if (key < 0 || key >= Glyph.COUNT || winning()) return;
+        if(down && (ready() || flying()))steered=true;
         if (key < Glyph.COUNT / 2) left = down;
         else right = down;
     }
@@ -486,6 +487,7 @@ final class StarPath {
     /** Places the flyer under a dragging finger while leaving the key steering available. */
     void dragTo(float targetX, Layout L) {
         if ((!ready() && !flying()) || winning()) return;
+        if(Math.abs(targetX-x)>L.w*.025f)steered=true;
         float r = flyerR(L);
         x = Math.max(L.playLeft + r, Math.min(L.playRight - r, targetX));
         // Direct manipulation owns the position for this frame. Without clearing this, momentum

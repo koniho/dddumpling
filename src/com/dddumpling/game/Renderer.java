@@ -28,6 +28,7 @@ final class Renderer extends Draw {
             if(c.mining.active) CaveMiningScreen.draw(p,c,L);
             else if(c.cart.active) CaveCartScreen.draw(p,c,L);
             else CaveBandScreen.draw(p,c,L);
+            Onboarding.draw(p,c,L);
             if(c.settingsOpen) PlayerSettings.draw(p,c,L);
             Pause.draw(p,c,L);
             return;

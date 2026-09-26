@@ -653,22 +653,35 @@ public final class IOSInputTest extends Check {
         Mem store=new Mem();store.tutorials=0;
         IOSGame game=new IOSGame(store,new Ear(),114);game.layout(393,852,0,59,0,34);
         GameCore c=game.core();Layout l=game.geometry();c.startGame();game.update(DT);
+        check("native fresh run has no upfront tutorial",c.onboarding.practice==null);
+        c.onboarding.begin(c,Onboarding.CORE,l);
         GameCore q=c.onboarding.practice;
+        tap(game,q.keyX(l,0),q.keyY(l,0));game.update(DT);
+        check("native explanation blocks gameplay keys",c.onboarding.briefing && c.onboarding.word.pos==0);
+        game.touch(one(0,42,l.w*.5f,TutorialSpeech.buttonY(l)));
+        game.background(true);game.background(false);game.back();
+        game.touch(one(1,42,l.w*.5f,TutorialSpeech.buttonY(l)));
+        check("background cancels explanation button press",c.onboarding.briefing);
+        tutorialContinue(game);
         tap(game,q.keyX(l,0),q.keyY(l,0));game.update(DT);
         for(int i=0;i<60 && c.onboarding.step==0;i++)game.update(DT);
         check("native character key advances introduction",c.onboarding.step==1 && c.hits==0);
         game.background(true);float age=c.onboarding.age;game.update(60);
         check("background freezes tutorial",c.paused && c.onboarding.age==age);
         game.background(false);game.back();
+        tutorialContinue(game);
         for(int key:new int[]{1,4,0}) { tap(game,q.keyX(l,key),q.keyY(l,key));game.update(DT); }
         for(int i=0;i<120;i++)game.update(DT);
         check("native controls finish core lesson",(store.tutorials&Onboarding.CORE)!=0 && c.onboarding.practice==null);
+        bossGuidanceInput();
 
         c.onboarding.begin(c,Onboarding.MINE,l);q=c.onboarding.practice;
         for(int i=0;i<600 && !q.mining.swipeReady();i++) {
+            tutorialContinue(game);
             if(q.mining.digging()) { int key=q.mining.sequence[q.mining.pos];tap(game,q.keyX(l,key),q.keyY(l,key)); }
             game.update(DT);
         }
+        tutorialContinue(game);
         float x=q.mining.cartX*l.w,y=CaveMiningScreen.cartY(l);
         game.touch(one(0,19,x,y));game.background(true);game.background(false);game.back();
         game.touch(one(2,19,x+l.w*.25f,y));
@@ -682,9 +695,11 @@ public final class IOSInputTest extends Check {
 
         c.onboarding.begin(c,Onboarding.SLIME,l);q=c.onboarding.practice;
         for(int i=0;i<600 && !q.boss.hasGlob();i++) {
+            tutorialContinue(game);
             if(q.boss.open()) { int key=q.boss.chainLetter();tap(game,q.keyX(l,key),q.keyY(l,key)); }
             game.update(DT);
         }
+        tutorialContinue(game);
         int glob=0;while(glob<Boss.ELEMS && q.boss.etype[glob]!=Boss.E_GLOB)glob++;
         check("native slime chain produces glob",glob<Boss.ELEMS);
         if(glob<Boss.ELEMS) {
@@ -701,5 +716,29 @@ public final class IOSInputTest extends Check {
         PlayerSettings.open(c);game.update(PlayerSettings.PANEL_TIME);
         tap(game,l.w*.5f,PlayerSettings.tutorialY(l));
         check("native Settings resets tutorials without clearing progress",store.tutorials==0 && !store.pushLessonSeen && c.settingsOpen);
+    }
+    private static void tutorialContinue(IOSGame game) {
+        if(game.core().onboarding.briefing)tap(game,game.geometry().w*.5f,TutorialSpeech.buttonY(game.geometry()));
+    }
+    private static void bossGuidanceInput() {
+        for(int kind=0;kind<Boss.COUNT;kind++) {
+            Mem store=new Mem();store.tutorials=0;Ear ear=new Ear();
+            IOSGame game=new IOSGame(store,ear,114);game.layout(393,852,0,59,0,34);
+            GameCore c=game.core();Layout l=game.geometry();c.startGame();c.stage=(kind+1)*5;
+            c.boss.begin(kind,c.stage,c.rnd);c.boss.intro=0;game.update(DT);
+            float x=TutorialSpeech.helpX(l),y=TutorialSpeech.helpY(l);
+            game.touch(one(0,42,x,y));game.background(true);game.background(false);game.back();
+            game.touch(one(1,42,x,y));
+            check("background cancels pending boss help tap "+kind,!c.onboarding.briefing);
+            tap(game,x,y);
+            float clock=c.clock,hp=c.boss.hp,phase=c.boss.phase;
+            game.update(.5f);tap(game,c.keyX(l,0),c.keyY(l,0));game.update(DT);
+            check("native question pauses and narrates boss help "+kind,c.onboarding.briefing && ear.explanations==1
+                    && c.clock==clock && c.boss.phase==phase && c.boss.hp==hp);
+            int guard=0;while(c.onboarding.briefing && guard++<5)tutorialContinue(game);
+            game.update(DT);
+            check("native explanation resumes actual fight "+kind,!c.onboarding.briefing && c.clock>clock
+                    && c.onboarding.practice==null && c.onboarding.bossGuide);
+        }
     }
 }

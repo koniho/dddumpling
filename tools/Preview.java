@@ -11,19 +11,19 @@ final class Preview {
 
     private static void onboardingFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("114-"))return;
-        for(int lesson:new int[]{Onboarding.CORE,Onboarding.STEAMER,Onboarding.STARS,Onboarding.CART,Onboarding.MINE,Onboarding.SLIME}) {
+        for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.STARS,Onboarding.CART,Onboarding.MINE}) {
             GameCore c=new GameCore(new Mem(),114);c.startGame();c.onboarding.begin(c,lesson,L);
-            c.update(DT,L);GameCore q=c.onboarding.practice;
-            String name=lesson==1?"core":lesson==2?"steamer":lesson==4?"stars":lesson==8?"cart":lesson==16?"mine":"slime";
+            step(c,L,.6f);GameCore q=c.onboarding.practice;
+            String name=lesson==2?"steamer":lesson==4?"stars":lesson==8?"cart":"mine";
             shot(dir,"114-"+name+"-ready",c,L,w,h,ss);
-            if(lesson==Onboarding.CORE) {
-                q.tapKey(0,L);step(c,L,.8f);
-                shot(dir,"114-core-word",c,L,w,h,ss);
-            } else if(lesson==Onboarding.STEAMER) {
+            TestOnboarding.acknowledge(c,L);
+            if(lesson==Onboarding.STEAMER) {
                 step(c,L,GameCore.BONUS_ROLL+.1f);
                 shot(dir,"114-steamer-keys",c,L,w,h,ss);
                 for(int i=0;i<40 && !q.bonusSwipeReady();i++)q.tapBonus(q.steamer.wanted());
+                step(c,L,.6f);
                 shot(dir,"114-steamer-lid",c,L,w,h,ss);
+                TestOnboarding.acknowledge(c,L);shot(dir,"114-steamer-lid-try",c,L,w,h,ss);
             } else if(lesson==Onboarding.STARS) {
                 step(c,L,StarPath.READY+.4f);
                 shot(dir,"114-stars-flight",c,L,w,h,ss);
@@ -37,21 +37,35 @@ final class Preview {
                     if(q.mining.digging())q.tapBonus(q.mining.sequence[q.mining.pos]);
                     c.update(DT,L);
                 }
-                shot(dir,"114-mine-swipe",c,L,w,h,ss);
-            } else {
-                for(int i=0;i<300 && !q.boss.open();i++)c.update(DT,L);
-                step(c,L,.35f);
-                shot(dir,"114-slime-open",c,L,w,h,ss);
-                for(int i=0;i<Boss.SPLIT_HITS;i++)q.tapKey(q.boss.chainLetter(),L);
-                step(c,L,.8f);shot(dir,"114-slime-glob",c,L,w,h,ss);
+                step(c,L,.6f);shot(dir,"114-mine-swipe",c,L,w,h,ss);
+                TestOnboarding.acknowledge(c,L);shot(dir,"114-mine-swipe-try",c,L,w,h,ss);
             }
         }
+        for(int kind=0;kind<Boss.COUNT;kind++) {
+            GameCore c=new GameCore(new Mem(),114);c.startGame();c.onboarding.saved=0;c.stage=(kind+1)*5;
+            c.boss.begin(kind,c.stage,c.rnd);c.boss.intro=0;c.update(DT,L);
+            shot(dir,"114-boss-"+kind+"-question",c,L,w,h,ss);
+            TestOnboarding.touch(c,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
+            TestOnboarding.touch(c,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
+            step(c,L,.2f);shot(dir,"114-boss-"+kind+"-travel",c,L,w,h,ss);
+            int page=0;
+            while(c.onboarding.briefing && page<4) {
+                step(c,L,.6f);shot(dir,"114-boss-"+kind+"-help-"+(page++),c,L,w,h,ss);
+                TestOnboarding.acknowledge(c,L);
+            }
+        }
+        GameCore rescue=new GameCore(new Mem(),114);rescue.startGame();rescue.pushLesson.active=true;
+        step(rescue,L,.6f);
+        shot(dir,"114-rescue-speech",rescue,L,w,h,ss);
+        GameCore chosen=new GameCore(new Mem(),114);chosen.collected=1L<<16;chosen.caseIndex=16;chosen.startGame();
+        chosen.onboarding.begin(chosen,Onboarding.MINE,L);step(chosen,L,.9f);
+        shot(dir,"114-chosen-companion",chosen,L,w,h,ss);
         for(int hint=0;hint<3;hint++) {
             GameCore c=new GameCore(new Mem(),114);c.startGame();c.onboarding.saved=Onboarding.CORE;
             if(hint==1)c.misses=1;
             if(hint==2)c.onboarding.saved|=Onboarding.WORD_HINT;
             Check.add(c,L,new int[]{0,1},new int[]{hint==2?2:1,1},L.playTop+L.enemyR*4);
-            c.update(DT,L);shot(dir,"114-hint-"+hint,c,L,w,h,ss);
+            step(c,L,.6f);shot(dir,"114-hint-"+hint,c,L,w,h,ss);
         }
         GameCore settings=new GameCore(new Mem(),114);PlayerSettings.open(settings);
         settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME);

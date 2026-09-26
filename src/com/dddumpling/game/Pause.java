@@ -40,6 +40,7 @@ final class Pause extends Draw {
         if (c.paused) return;
         if (c.band.active && c.sound != null) c.sound.bandPause(true);
         release(c); c.paused = true; c.confirmEnd = false;
+        if(c.sound!=null)c.sound.hush();
     }
     static void resume(GameCore c) {
         c.paused = c.confirmEnd = false;

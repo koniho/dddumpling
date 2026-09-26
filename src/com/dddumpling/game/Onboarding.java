@@ -4,30 +4,104 @@ package com.dddumpling.game;
 final class Onboarding extends Draw {
     static final int CORE=1, STEAMER=2, STARS=4, CART=8, MINE=16, SLIME=32,
             SKIPPED=64, WORD_HINT=128, WRONG_HINT=256, STACK_HINT=512;
-    int saved, lesson, step, pointer=-1;
-    GameCore practice;
+    int saved, lesson, step, pointer=-1, speech, introduced, hintKind, speechPointer=-1;
+    boolean bossHelp, bossGuide, helpArmed;
+    int helpPointer=-1;
+    GameCore practice, teacher, narrator;
     GameCore.Enemy word;
-    boolean corePending, ownsTouch, lid, starDrag;
+    boolean ownsTouch, lid, starDrag, briefing, continueArmed;
     final int[] starPointers=new int[Glyph.COUNT];
-    float age, success, startY, offsetX, hintLeft, globAge;
-    String hint="";
+    float age, success, startY, offsetX, globAge, companionTravel;
+
+    // Preserve the original ten lesson bits; successful actions have independent durable bits.
+    boolean learned(int message) { return !eligible(1<<(message+9)); }
+    void learn(GameCore c,int message) {
+        if(teacher!=null) { teacher.onboarding.learn(teacher,message);return; }
+        if(learned(message))return;
+        saved|=1<<(message+9);
+        if(message==TutorialSpeech.DANGER)saved|=WORD_HINT;
+        if(message==TutorialSpeech.RETRY)saved|=WRONG_HINT;
+        if(message==TutorialSpeech.STACK)saved|=STACK_HINT;
+        save(c);
+        if(message==speech)hintKind=0;
+    }
+    void bossDamaged(GameCore c) {
+        if(c.boss.kind==Boss.SLIME)learn(c,TutorialSpeech.GLOB);
+        else for(int message:bossSteps(c.boss.kind))learn(c,message);
+    }
+    private static int[] bossSteps(int kind) {
+        if(kind==Boss.SLIME)return new int[]{TutorialSpeech.CLOSED,TutorialSpeech.CHAIN,TutorialSpeech.GLOB};
+        if(kind==Boss.SPLITTER)return new int[]{TutorialSpeech.PINCH};
+        if(kind==Boss.OCTOPUS)return new int[]{TutorialSpeech.DEFEND,TutorialSpeech.TEAR};
+        return new int[]{TutorialSpeech.SHAKE};
+    }
+    boolean offersBossHelp(GameCore c) {
+        if(c.state!=GameCore.PLAY || !c.boss.fighting() || c.boss.hp<c.boss.hpMax
+                || practice!=null || briefing || hintKind!=0 || bossHelp || bossGuide
+                || companionTravel>0 || !eligible(SKIPPED))return false;
+        for(int message:bossSteps(c.boss.kind))if(!learned(message))return true;
+        return false;
+    }
+    private boolean nextBossHelp(GameCore c) {
+        for(int message:bossSteps(c.boss.kind))if(!learned(message) && (introduced&(1<<message))==0) {
+            speech=message;introduced|=1<<message;briefing=true;age=0;
+            Pause.release(c);narrate(c);return true;
+        }
+        return false;
+    }
+    boolean moreBossHelp(GameCore c) {
+        if(!bossHelp)return false;
+        for(int message:bossSteps(c.boss.kind))if(!learned(message) && (introduced&(1<<message))==0)return true;
+        return false;
+    }
+    private void narrate(GameCore c) {
+        narrator=c;
+        if(c.sound!=null)c.sound.explain(TutorialSpeech.spoken(speech));
+    }
+    boolean promptHit(GameCore c,Layout L,float x,float y) {
+        return offersBossHelp(c) && TutorialSpeech.helpHit(L,x,y);
+    }
+    boolean wantsTouch(GameCore c,Layout L,int action,float x,float y) {
+        return practice!=null || briefing || ownsTouch || action==0 && (promptHit(c,L,x,y)
+                || (hintKind!=0 || bossGuide || c.pushLesson.active) && skipHit(L,x,y));
+    }
+    boolean speaking(GameCore c) {
+        return briefing || (practice!=null || hintKind!=0 || bossGuide) && success<=0 && !learned(speech)
+                || c.pushLesson.active;
+    }
+    boolean movingCompanion(GameCore c) { return companionTravel>0 || speaking(c); }
+    boolean companionAway(GameCore c) {
+        return teacher==null?movingCompanion(c):teacher.onboarding.movingCompanion(teacher);
+    }
+    private void moveCompanion(GameCore c,float dt) {
+        float target=speaking(c)?1:0;
+        companionTravel+=Math.max(-dt/.45f,Math.min(dt/.45f,target-companionTravel));
+    }
 
     boolean eligible(int bit) { return (saved & (bit|SKIPPED))==0; }
     void save(GameCore c) { if(c.store!=null)c.store.saveTutorials(saved); }
     void reset(GameCore c) {
-        clear();saved=0;corePending=false;hintLeft=0;
+        clear();saved=0;companionTravel=0;
         c.pushLesson.seen=false;c.pushLesson.reset();
         if(c.store!=null)c.store.savePushLessonSeen(false);
         save(c);
     }
-    void clear() { cancelTouch();practice=null;word=null;lesson=step=0;success=0; }
+    void clear() {
+        if(narrator!=null && narrator.sound!=null)narrator.sound.hush();
+        narrator=null;
+        cancelTouch();practice=null;word=null;lesson=step=speech=introduced=hintKind=0;
+        success=0;briefing=bossHelp=bossGuide=false;
+    }
     void cancelTouch() {
         pointer=-1;ownsTouch=lid=starDrag=false;
+        speechPointer=-1;continueArmed=false;
+        helpPointer=-1;helpArmed=false;
         java.util.Arrays.fill(starPointers,-1);
         if(practice!=null)Pause.release(practice);
     }
     void skip(GameCore c) {
-        clear();saved|=SKIPPED;corePending=false;hintLeft=0;
+        if(c.sound!=null)c.sound.hush();
+        clear();saved|=SKIPPED;
         c.pushLesson.reset();save(c);
     }
     void begin(GameCore c,int which,Layout L) {
@@ -47,6 +121,21 @@ final class Onboarding extends Draw {
             q.earnedMash=GameCore.MASH_PERFECT;
             Interlude.enterBonus(q,L);
         }
+        q.update(0,L);
+        // Recreate only the next unlearned action, never make a player repeat an earlier one.
+        if(which==STEAMER && learned(TutorialSpeech.ALTERNATE)) {
+            q.bonusTimer=q.bonusRollEnd;q.steamer.hits=q.steamer.goal();q.steamer.swipeReady=true;
+        }
+        if(which==MINE && learned(TutorialSpeech.DIG)) {
+            q.mining.ready=0;q.mining.loads=CaveMining.LOADS;q.mining.phase=CaveMining.FULL;
+        }
+        if(which==SLIME && learned(TutorialSpeech.CLOSED)) {
+            q.boss.phase=1.35f;
+            if(learned(TutorialSpeech.CHAIN))
+                for(int i=0;i<Boss.SPLIT_HITS;i++)q.tapKey(q.boss.chainLetter(),L);
+        }
+        q.onboarding.teacher=c;
+        introduce(c);
     }
     private void makeWord(Layout L,int[] letters) {
         GameCore q=practice;
@@ -58,30 +147,32 @@ final class Onboarding extends Draw {
         q.enemies.add(word);
     }
     boolean update(GameCore c,float dt,float elapsed,Layout L) {
-        if(c.state!=GameCore.PLAY && c.state!=GameCore.BONUS) { clear();hintLeft=0;return false; }
+        if(c.state!=GameCore.PLAY && c.state!=GameCore.BONUS) { clear();companionTravel=0;return false; }
         if(c.settingsOpen || c.paused || c.townOpen)return false;
+        if(teacher!=null)return false;
+        if(bossGuide && (!c.boss.fighting() || learned(speech)))bossGuide=false;
+        moveCompanion(c,elapsed);
+        if(briefing) { age+=elapsed;return true; }
         if(practice==null) {
             int next=0;
-            if(corePending && eligible(CORE))next=CORE;
-            else if(c.state==GameCore.PLAY && c.stage==5 && c.boss.kind==Boss.SLIME
-                    && c.boss.fighting() && eligible(SLIME))next=SLIME;
-            else if(c.state==GameCore.BONUS && !c.bossReward) {
+            if(c.state==GameCore.BONUS && !c.bossReward) {
                 if(c.cart.active)next=CART;
                 else if(c.mining.active)next=MINE;
                 else if(c.starBonus)next=STARS;
-                else if(!c.band.active && c.bonusRolling())next=STEAMER;
+                else if(!c.band.active && (c.bonusRolling() || c.bonusMashing()))next=STEAMER;
                 if(!eligible(next))next=0;
             }
-            if(next!=0)begin(c,next,L);
+            if(next!=0 && !learned(mechanic(c,next)))begin(c,next,L);
         }
-        if(practice==null) { hints(c,elapsed,L);return false; }
+        if(practice==null) { age+=elapsed;hints(c,L);return briefing; }
         GameCore q=practice;age+=elapsed;
+        if(briefing)return true;
         if(success>0) {
             success-=elapsed;q.clock+=dt;
             if(success<=0) {
                 // The ready demonstration already ran in practice; launch the waiting course.
                 if(lesson==STARS && c.starBonus)c.stars.timer=Math.min(c.stars.timer,StarPath.FLY+StarPath.EXIT+StarPath.REPORT);
-                saved|=lesson;save(c);corePending=false;
+                saved|=lesson;save(c);
                 boolean touch=ownsTouch;clear();ownsTouch=touch;
             }
             return true;
@@ -100,6 +191,8 @@ final class Onboarding extends Draw {
             for(int i=0;i<Boss.ELEMS;i++)if(q.boss.etype[i]==Boss.E_GLOB)q.boss.elife[i]=Boss.GLOB_TIME-shown;
         }
         q.update(dt,elapsed,L);
+        if(lesson==SLIME && q.boss.open() && (introduced&(1<<TutorialSpeech.CLOSED))!=0)
+            learn(c,TutorialSpeech.CLOSED);
         if(lesson==CORE && !q.enemies.contains(word)) {
             if(step==0) { step=1;makeWord(L,new int[]{1,4,0}); }
             else complete();
@@ -107,24 +200,54 @@ final class Onboarding extends Draw {
         else if(lesson==MINE && q.mining.carts>0)complete();
         else if(lesson==CART && q.cart.progress>0)complete();
         else if(lesson==STARS) {
-            if(step>0 && q.stars.count()>0)complete();
+            if(step>0 && learned(TutorialSpeech.STARS))complete();
             else if(q.stars.reporting())q.stars.begin(q.runWho,L);
         } else if(lesson==SLIME && q.boss.hp<q.boss.hpMax)complete();
+        if(success==0)introduce(c);
         return true;
     }
+    private int mechanic() {
+        if(lesson==CORE)return step==0?TutorialSpeech.MATCH:TutorialSpeech.WORD;
+        return mechanic(practice,lesson);
+    }
+    private static int mechanic(GameCore q,int lesson) {
+        if(lesson==STEAMER)return q.bonusSwipeReady()?TutorialSpeech.LIFT:TutorialSpeech.ALTERNATE;
+        if(lesson==STARS)return TutorialSpeech.STARS;
+        if(lesson==CART)return TutorialSpeech.LEAN;
+        if(lesson==MINE)return q.mining.swipeReady()?TutorialSpeech.CART:TutorialSpeech.DIG;
+        if(q.boss.hasGlob())return TutorialSpeech.GLOB;
+        return q.boss.open()?TutorialSpeech.CHAIN:TutorialSpeech.CLOSED;
+    }
+    private void introduce(GameCore c) {
+        speech=mechanic();
+        int bit=1<<speech;
+        if((introduced&bit)!=0 || learned(speech))return;
+        introduced|=bit;briefing=true;age=0;
+        Pause.release(c);narrate(c);
+    }
+    private void acknowledge(GameCore c) {
+        if(c.sound!=null)c.sound.hush();
+        narrator=null;
+        if(bossHelp && nextBossHelp(c))return;
+        if(bossHelp)bossGuide=true;
+        briefing=false;
+        bossHelp=false;
+        // Acknowledgement resumes play; only a successful action retires the guidance.
+    }
     private void complete() { success=1f;boolean touch=ownsTouch;cancelTouch();ownsTouch=touch; }
-    private void hints(GameCore c,float dt,Layout L) {
-        hintLeft=Math.max(0,hintLeft-dt);
-        if(hintLeft>0 || c.pushLesson.active || c.state!=GameCore.PLAY || c.stage>4
+    private void hints(GameCore c,Layout L) {
+        if(hintKind!=0 || c.pushLesson.active || c.state!=GameCore.PLAY || c.stage>4
                 || c.boss.active() || !eligible(SKIPPED))return;
         int bit=0;
-        if(c.misses>0 && eligible(WRONG_HINT)) { bit=WRONG_HINT;hint="WRONG KEY? START THE WORD AGAIN"; }
+        if(c.misses>0 && eligible(WRONG_HINT)) { bit=WRONG_HINT;speech=TutorialSpeech.RETRY; }
         else for(GameCore.Enemy e:c.enemies) {
             if(!e.typeable())continue;
-            if(eligible(STACK_HINT) && e.stacked(e.pos)) { bit=STACK_HINT;hint="STACKED LETTER? TAP IT AGAIN";break; }
-            if(e.y>L.playTop+L.enemyR*2 && eligible(WORD_HINT)) { bit=WORD_HINT;hint="CLEAR WORDS BEFORE THE RED LINE";break; }
+            if(eligible(STACK_HINT) && e.stacked(e.pos)) { bit=STACK_HINT;speech=TutorialSpeech.STACK;break; }
+            if(e.y>L.playTop+L.enemyR*2 && eligible(WORD_HINT)) {
+                bit=WORD_HINT;speech=e.word.length>1?TutorialSpeech.WORD:TutorialSpeech.MATCH;break;
+            }
         }
-        if(bit!=0) { saved|=bit;save(c);hintLeft=3.5f; }
+        if(bit!=0) { hintKind=bit;briefing=true;age=0;Pause.release(c);narrate(c); }
     }
     static float skipY(Layout L) { return L.topSafe+L.unit*1.2f; }
     static boolean skipHit(Layout L,float x,float y) {
@@ -133,8 +256,34 @@ final class Onboarding extends Draw {
     // Both native hosts pass stable pointer IDs, including historical move samples.
     boolean touch(GameCore c,Layout L,int action,int id,float x,float y) {
         if(c.paused || c.settingsOpen)return false;
-        boolean visible=practice!=null || c.pushLesson.active;
+        if(action==0 && promptHit(c,L,x,y)) {
+            ownsTouch=helpArmed=true;helpPointer=id;return true;
+        }
+        if(helpPointer>=0) {
+            if(action==3) { cancelTouch();return true; }
+            if(action==2 && id==helpPointer && !TutorialSpeech.helpHit(L,x,y))helpArmed=false;
+            if(action==5 || action==6)helpArmed=false;
+            if(action==1) {
+                boolean open=helpArmed && id==helpPointer && promptHit(c,L,x,y);
+                cancelTouch();
+                if(open) { bossHelp=true;introduced=0;nextBossHelp(c); }
+            }
+            return true;
+        }
+        boolean visible=practice!=null || briefing || hintKind!=0 || bossGuide || c.pushLesson.active;
         if(action==0 && visible && skipHit(L,x,y)) { skip(c);ownsTouch=true;return true; }
+        if(briefing) {
+            ownsTouch=true;
+            if(action==0) { speechPointer=id;continueArmed=TutorialSpeech.buttonHit(L,x,y); }
+            else if(action==2 && id==speechPointer && !TutorialSpeech.buttonHit(L,x,y))continueArmed=false;
+            else if(action==3 || action==5 || action==6) { speechPointer=-1;continueArmed=false; }
+            else if(action==1) {
+                boolean advance=id==speechPointer && continueArmed && TutorialSpeech.buttonHit(L,x,y);
+                cancelTouch();
+                if(advance)acknowledge(c);
+            }
+            return true;
+        }
         if(practice==null) {
             if(!ownsTouch)return false;
             if(action==1 || action==3)ownsTouch=false;
@@ -184,37 +333,33 @@ final class Onboarding extends Draw {
         if(Math.abs(x+offsetX-q.stars.x)>L.w*.025f)step=1;
         q.stars.dragTo(x+offsetX,L);
     }
-    String prompt() {
-        GameCore q=practice;
-        if(success>0)return "NICE! LET'S PLAY";
-        if(lesson==CORE)return step==0?"TAP THE MATCHING CHARACTER KEY":"CLEAR THE WORD FROM LEFT TO RIGHT";
-        if(lesson==STEAMER)return q.bonusSwipeReady()?"SWIPE THE LID UP TO FREE A DUMPLING":"ALTERNATE LIT KEYS TO OPEN THE LID";
-        if(lesson==STARS)return q.stars.ready()?"STEER TO COLLECT THE STARS":"DRAG THE SLIDER TOWARD A STAR";
-        if(lesson==CART)return "DRAG TO LEAN INTO THE CURVE";
-        if(lesson==MINE)return q.mining.swipeReady()?"SWIPE THE FULL CART LEFT OR RIGHT":"TYPE THE LETTERS TO FILL THE CART";
-        if(q.boss.hasGlob())return "DRAG THE GLOB OFF EITHER SIDE";
-        return q.boss.open()?"TYPE THE CHAIN TO GROW A GLOB":"CLOSED! WAIT FOR THE LETTER";
-    }
-    String title() {
-        switch(lesson) {
-            case STEAMER:return "STEAMER PRACTICE";
-            case STARS:return "STAR PATH PRACTICE";
-            case CART:return "CART RUSH PRACTICE";
-            case MINE:return "DUMPLING MINE PRACTICE";
-            case SLIME:return "SLIME PRACTICE";
-            default:return "LET'S PRACTICE";
+    int demoKey(GameCore c) {
+        if(practice==null) {
+            if(c.boss.fighting())return c.boss.kind==Boss.SLIME?c.boss.chainLetter():Math.max(0,c.boss.octoTarget);
+            for(GameCore.Enemy e:c.enemies)if(e.typeable()
+                    && (hintKind!=STACK_HINT || e.stacked(e.pos)))return e.word[e.pos];
+            return 0;
         }
+        if(lesson==CORE)return word.word[Math.min(word.pos,word.word.length-1)];
+        if(lesson==STEAMER)return practice.steamer.wanted();
+        if(lesson==MINE)return practice.mining.sequence[practice.mining.pos];
+        if(lesson==SLIME)return practice.boss.chainLetter();
+        return 0;
     }
     static void draw(Painter p,GameCore c,Layout L) {
         Onboarding o=c.onboarding;
+        if(o.teacher!=null)return;
+        if(c.settingsOpen && o.practice==null)return;
         if(o.practice!=null) {
             Renderer.draw(p,o.practice,L);
-            float s=L.unit,y=L.topSafe+s*3.6f;
-            float bottom=o.lesson==SLIME?Math.max(y+s*1.3f,BossScreen.blurbY(L)+s*.3f):y+s*1.3f;
-            p.fillRect(0,L.topSafe,L.w,bottom,0xFF171426);
-            p.text(o.title(),L.w*.05f,skipY(L)+s*.25f,type(s*.42f),GOLD,Painter.LEFT,true);
-            p.text(o.prompt(),L.w*.5f,y,type(s*.44f),INK,Painter.CENTER,true);
-            if(o.lesson==CART)p.text("KEEP GREEN TO REACH CHECKPOINTS",L.w*.5f,y+s,type(s*.36f),INK_DIM,Painter.CENTER,true);
+            p.fillRect(0,0,L.w,L.topSafe+L.unit*2.4f,0xFF171426);
+            p.text("PRACTICE",L.w*.05f,skipY(L)+L.unit*.3f,type(L.unit*.65f),INK,Painter.LEFT,true);
+        }
+        if(c.settingsOpen)return;
+        if(o.offersBossHelp(c))TutorialSpeech.help(p,c,L);
+        if(o.briefing)TutorialSpeech.large(p,c,L,o.speech,true);
+        else if(o.practice!=null) {
+            if(o.speaking(c))TutorialSpeech.reminder(p,c,L,o.speech);
             int key=-1;GameCore q=o.practice;
             if(o.lesson==CORE && o.word.pos<o.word.word.length)key=o.word.word[o.word.pos];
             if(o.lesson==STEAMER && q.bonusMashing() && !q.bonusSwipeReady())key=q.steamer.wanted();
@@ -222,13 +367,13 @@ final class Onboarding extends Draw {
             if(o.lesson==SLIME && q.boss.open() && q.boss.slimePromptCover()<.3f && !q.boss.hasGlob())key=q.boss.chainLetter();
             if(key>=0 && o.success<=0)Renderer.touchHint(p,q.keyX(L,key),q.keyY(L,key),L.keyR*.65f,1f,.85f,o.age);
             if(o.success<=0)o.gesture(p,L);
-        } else if(o.hintLeft>0 && !c.pushLesson.active && !c.settingsOpen) {
-            float y=L.playTop+L.unit*1.4f;
-            p.fillRect(0,y-L.unit,L.w,y+L.unit*.5f,0xCC171426);
-            p.text(o.hint,L.w*.5f,y,type(L.unit*.42f),INK,Painter.CENTER,true);
+        } else if(c.pushLesson.active)TutorialSpeech.large(p,c,L,TutorialSpeech.RESCUE,false);
+        else if(o.hintKind!=0 || o.bossGuide)TutorialSpeech.reminder(p,c,L,o.speech);
+        if(o.movingCompanion(c))TutorialSpeech.companion(p,c,L);
+        if(o.practice!=null || o.briefing || o.hintKind!=0 || o.bossGuide || c.pushLesson.active) {
+            p.fillPoly(pill(L.w*.84f,skipY(L),L.w*.135f,L.unit*.95f,12),0xFF493953);
+            p.text("SKIP ALL",L.w*.84f,skipY(L)+L.unit*.3f,type(L.unit*.62f),INK,Painter.CENTER,true);
         }
-        if(o.practice!=null || c.pushLesson.active)
-            p.text("SKIP ALL",L.w*.84f,skipY(L)+L.unit*.25f,type(L.unit*.46f),GOLD,Painter.CENTER,true);
     }
     private void gesture(Painter p,Layout L) {
         GameCore q=practice;

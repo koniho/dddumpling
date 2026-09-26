@@ -145,6 +145,9 @@ abstract class Check {
         boolean bossMusic;
         int bossMusicCalls;
         int narrations, hushes;
+        int explanations;
+        String explanation;
+        public void explain(String text) { explanations++;explanation=text; }
         int narrated = -1;
         int nameCalls, announcedName=-1;
         public void announceSquishy(int entry) { nameCalls++; announcedName=entry; }

@@ -97,8 +97,7 @@ public final class IOSGame {
             core.saveTown();
             return true;
         }
-        if(!core.settingsOpen && (core.onboarding.practice!=null || core.onboarding.ownsTouch
-                || action==0 && core.pushLesson.active && Onboarding.skipHit(layout,ev.getX(),ev.getY()))) {
+        if(!core.settingsOpen && core.onboarding.wantsTouch(core,layout,action,ev.getX(),ev.getY())) {
             if(action==2) {
                 for(int i=0;i<ev.getPointerCount();i++) {
                     for(int h=0;h<ev.getHistorySize();h++)core.onboarding.touch(core,layout,2,ev.getPointerId(i),ev.getHistoricalX(i,h),ev.getHistoricalY(i,h));
