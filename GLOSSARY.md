@@ -544,7 +544,10 @@ Developer settings → Progress → **RESET SWIPE** clears the saved lesson comp
 **Companion guidance** starts in play, with no introduction before stage 1. Incoming-word,
 wrong-key and stacked-letter hints appear when needed during stages 1–4. Steamer, Star Path,
 Cart Rush and Dumpling Mine use disposable real-game practice while the actual run waits;
-practice cannot award persistent progress or consume the run's random stream. The actual run
+practice leaves progress and the run's random stream untouched until completion. Finishing the
+Steamer tutorial's lid swipe wins the actual minigame: its normal reward, life recovery and saved
+win count are awarded once, then its celebration leads to the next stage without a second attempt.
+Other minigame practice remains reward-free. The actual run
 companion slides to the side, explains each new control in a large speech bubble with an animated
 example, and returns after the action succeeds. Explanations pause the scene until **Let's try!**;
 game controls cannot dismiss them. Successful actions in normal play or practice permanently

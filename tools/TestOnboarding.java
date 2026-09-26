@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** Real controls must finish lessons without advancing the waiting run or writing rewards. */
+/** Real controls finish lessons; only a completed live Steamer lesson claims a reward. */
 final class TestOnboarding extends Check {
     static GameCore fresh(Layout L,Mem store) {
         store.tutorials=0;
@@ -102,6 +102,39 @@ final class TestOnboarding extends Check {
         briefingInput(L);
         learnedActions(L);
         bossHelp(L);
+        steamerTutorialWin(L);
+    }
+    private static void steamerTutorialWin(Layout L) {
+        Mem store=new Mem();store.steamerOpens=3;
+        GameCore c=fresh(L,store);c.lives=1;
+        Interlude.enterBonus(c,L);c.update(DT,L);
+        GameCore q=c.onboarding.practice;
+        for(int i=0;i<600 && !q.bonusSwipeReady();i++) {
+            acknowledge(c,L);
+            if(q.bonusMashing())key(c,L,q.steamer.wanted());
+            c.update(DT,L);
+        }
+        check("filling tutorial basket alone does not award a win",q.bonusSwipeReady()
+                && c.collectTotal==0 && store.steamerOpens==3);
+        acknowledge(c,L);
+        float y=Screens.steamerLidY(q,L);
+        touch(c,L,0,L.w*.5f,y);touch(c,L,2,L.w*.5f,y-L.unit*3);
+        c.update(DT,L);
+        check("tutorial lid swipe wins the actual Steamer immediately",c.onboarding.practice==null
+                && c.bonusEscape() && c.prize>=0 && c.score>=GameCore.FREE_BONUS && c.lives==2);
+        check("tutorial win persists real reward and existing difficulty",store.steamerOpens==4
+                && store.collectTotal==1 && c.collectTotal==1 && c.starNext
+                && !new GameCore(store,114).onboarding.eligible(Onboarding.STEAMER));
+        touch(c,L,1,L.w*.5f,y-L.unit*3);
+        check("winning tutorial consumes the rest of the swipe",!c.onboarding.ownsTouch);
+        int score=c.score,prize=c.prize;
+        for(int i=0;i<60;i++) { c.swipeBonus();c.update(DT,L); }
+        check("tutorial handoff cannot pay twice",store.steamerOpens==4 && store.collectTotal==1
+                && c.score==score && c.prize==prize && c.onboarding.practice==null);
+        int stage=c.stage;
+        for(int i=0;i<1200 && c.stage==stage;i++)c.update(DT,L);
+        check("tutorial win goes through celebration to next stage",c.stage==stage+1
+                && c.state==GameCore.PLAY && c.onboarding.practice==null);
     }
     private static void encounters(Layout L) {
         for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.STARS,Onboarding.CART,Onboarding.MINE}) {

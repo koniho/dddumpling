@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** Disposable real-game practice; the waiting run and its random stream never advance. */
+/** Guided practice freezes the waiting run; a completed Steamer claims its real win. */
 final class Onboarding extends Draw {
     static final int CORE=1, STEAMER=2, STARS=4, CART=8, MINE=16, SLIME=32,
             SKIPPED=64, WORD_HINT=128, WRONG_HINT=256, STACK_HINT=512;
@@ -196,7 +196,10 @@ final class Onboarding extends Draw {
         if(lesson==CORE && !q.enemies.contains(word)) {
             if(step==0) { step=1;makeWord(L,new int[]{1,4,0}); }
             else complete();
-        } else if(lesson==STEAMER && q.bonusPrizeWon())complete();
+        } else if(lesson==STEAMER && q.bonusPrizeWon()) {
+            if(winSteamer(c))return true;
+            complete();
+        }
         else if(lesson==MINE && q.mining.carts>0)complete();
         else if(lesson==CART && q.cart.progress>0)complete();
         else if(lesson==STARS) {
@@ -204,6 +207,17 @@ final class Onboarding extends Draw {
             else if(q.stars.reporting())q.stars.begin(q.runWho,L);
         } else if(lesson==SLIME && q.boss.hp<q.boss.hpMax)complete();
         if(success==0)introduce(c);
+        return true;
+    }
+    private boolean winSteamer(GameCore c) {
+        if(c.bonusPrizeWon() || !(c.bonusRolling() || c.bonusMashing()))return false;
+        // Reuse the real payout once, then show its celebration instead of another attempt.
+        c.bonusTimer=c.bonusRollEnd;
+        c.steamer.hits=c.steamer.goal();c.steamer.swipeReady=true;
+        c.steamer.lidDrag=practice.steamer.freedLidLift;
+        c.swipeBonus();
+        saved|=STEAMER;save(c);
+        boolean touch=ownsTouch;clear();ownsTouch=touch;
         return true;
     }
     private int mechanic() {
