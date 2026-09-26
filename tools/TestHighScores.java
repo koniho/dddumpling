@@ -9,7 +9,7 @@ final class TestHighScores extends Check {
         check("legacy best retained without invented runs",c.best==9000 && c.highScores.runs.isEmpty());
         for(int i=0;i<12;i++) {
             c.startGame();c.score=(i+1)*100;c.stage=4;c.hits=2;c.misses=1;c.maxCombo=7;c.squishes=9;
-            c.highScores.stages=3;c.highScores.dumplings=2;c.highScores.finish(c);
+            c.highScores.stages=3;c.highScores.prize(0);c.highScores.prize(0);c.highScores.finish(c);
         }
         check("only ten highest runs retained",c.highScores.runs.size()==10 && c.highScores.runs.get(9).score==300);
         check("score descending",c.highScores.runs.get(0).score==1200);
@@ -30,7 +30,7 @@ final class TestHighScores extends Check {
         check("old top-ten saves retain qualifying latest",legacy.runs.size()==10 && legacy.latestRun.id==c.highScores.latest);
         check("historical summary remains frozen",original.score==1200 && original.stage==4 && original.stages==3
                 && original.dumplings==2 && original.squishes==9 && original.combo==7 && original.accuracy()==67 && original.best==9000);
-        for(String bad:new String[]{"junk","4:1","1:-1","1:1;1,0","1:1;999999999999999999999999999999999"}) {
+        for(String bad:new String[]{"junk","6:1","1:-1","1:1;1,0","1:1;999999999999999999999999999999999"}) {
             HighScores history=new HighScores();history.load(bad);
             check("bad history safely ignored "+bad,history.runs.isEmpty() && history.latest==0);
         }
@@ -38,11 +38,15 @@ final class TestHighScores extends Check {
         check("fatal hit saves the completed run",c.highScores.runs.get(0).score==2500);
         c.startGame();
         check("new run resets counters",c.highScores.stages==0 && c.highScores.dumplings==0
-                && c.highScores.bosses==0 && c.highScores.powers==0 && c.highScores.swipes==0);
+                && c.highScores.bosses==0 && c.highScores.powers==0 && c.highScores.swipes==0
+                && c.highScores.effects[Power.FLURRY]==0 && c.highScores.effects[Power.INCOGNITO]==0
+                && c.highScores.prizes.isEmpty());
         c.startFrenzy(-1,L);c.startFrenzy(Power.TEAM,L);
         check("rejected powers do not count",c.highScores.powers==0);
         c.startFrenzy(Power.MULTI,L);
-        check("activated power counts",c.highScores.powers==1);
+        check("activated power counts",c.highScores.powers==1 && c.highScores.effects[Power.MULTI]==1);
+        c.startDebuff(Power.INCOGNITO);
+        check("activated debuff counts",c.highScores.effects[Power.INCOGNITO]==1);
         c.startGame();c.stageGap=0;c.enemies.clear();
         check("unsuccessful swipe does not count",!c.pushBack(L) && c.highScores.swipes==0);
         add(c,L,new int[]{0,1},L.dangerY-L.enemyR*2f);c.warnLevel=1f;
@@ -53,8 +57,11 @@ final class TestHighScores extends Check {
         c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.beaten=true;BossPlay.endBoss(c,L);
         check("boss defeat tracked",c.highScores.bosses==1);
         int rewards=c.highScores.dumplings;
+        int prize=c.highScores.prizes.get(c.highScores.prizes.size()-1);
         Interlude.awardBossPrize(c,Boss.SLIME);
-        check("duplicate rewards count toward run haul",c.highScores.dumplings==rewards+1);
+        check("duplicate rewards preserve exact run haul",c.highScores.dumplings==rewards+1
+                && c.highScores.prizes.size()==2 && c.highScores.prizes.get(0)==prize
+                && c.highScores.prizes.get(1)==prize);
         c.state=GameCore.TITLE;c.pendingBonus=false;c.startFade=0;c.launchT=0;c.caseOpen=false;c.caseFade=0;
         entrance(L);
         titleAttention(L);
@@ -65,7 +72,11 @@ final class TestHighScores extends Check {
     private static String legacy(String data,int version) {
         String[] rows=data.split(";");
         StringBuilder result=new StringBuilder(version+rows[0].substring(1));
-        for(int i=1;i<rows.length;i++) result.append(';').append(rows[i].substring(0,rows[i].lastIndexOf(',')));
+        int fields=version>=4?23:version>=3?17:16;
+        for(int i=1;i<rows.length;i++) {
+            String[] values=rows[i].split(",");result.append(';');
+            for(int j=0;j<fields;j++) result.append(j==0?"":",").append(values[j]);
+        }
         return result.toString();
     }
     private static void portraits() {
@@ -84,10 +95,24 @@ final class TestHighScores extends Check {
             check("legacy format has unknown portraits "+version,old.runs.size()==2
                     && old.runs.get(0).character==-1 && old.runs.get(1).character==-1);
         }
-        empty.startGame();Interlude.awardBossPrize(empty,Boss.SLIME);
+        HighScores portraits=new HighScores();portraits.load(legacy(empty.highScores.encode(),3));
+        check("portrait-only history gains empty effect counts",portraits.runs.size()==2
+                && portraits.runs.get(0).character==empty.highScores.runs.get(0).character
+                && portraits.runs.get(0).effects[Power.FLURRY]==0);
+        HighScores effects=new HighScores();effects.load(legacy(empty.highScores.encode(),4));
+        check("effect-only history gains empty prize lists",effects.runs.size()==2
+                && effects.runs.get(0).prizes.length==0);
+        empty.startGame();Interlude.awardBossPrize(empty,Boss.SLIME);int repeated=empty.prize;
+        Interlude.awardBossPrize(empty,Boss.SLIME);
         check("reward-selected character survives restart",new GameCore(mem,904L).caseIndex==empty.prize);
-        empty.highScores.finish(empty);
-        check("reward cannot change the active run portrait",empty.highScores.latestRun.character==empty.runWho);
+        int runWho=empty.runWho;empty.highScores.finish(empty);
+        HighScores.Run rewarded=empty.highScores.latestRun;
+        check("repeated rewards persist in encounter order",rewarded.prizes.length==2
+                && rewarded.prizes[0]==repeated && rewarded.prizes[1]==repeated);
+        empty.startGame();Interlude.awardBossPrize(empty,Boss.SPLITTER);
+        check("later rewards cannot rewrite saved haul",rewarded.prizes.length==2
+                && rewarded.prizes[0]==repeated);
+        check("reward cannot change the active run portrait",rewarded.character==runWho);
         mem.caseIndex=Integer.MAX_VALUE;
         check("invalid saved selection is bounded",new GameCore(mem,903L).caseIndex==0);
     }

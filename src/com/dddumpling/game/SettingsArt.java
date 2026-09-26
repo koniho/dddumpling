@@ -44,6 +44,11 @@ final class SettingsArt extends Draw {
         if(position<1f) pearFace(new OpacityPainter(p,1f-position),cx,y,r,false);
         if(position>0f) pearFace(new OpacityPainter(p,position),cx,y,r,true);
     }
+    /** The same young/old pear without the settings track, for saved Kids Mode readouts. */
+    static void kidsPear(Painter p,float x,float y,float r,boolean young) {
+        Shape.draw(p,Collect.POME,x,y,r,young?0xFFCBE06A:0xFFB9C877,0xFF8FD9A0,1f,0f,true);
+        pearFace(p,x,y,r,young);
+    }
     private static void pearFace(Painter p,float cx,float y,float r,boolean young) {
         int face=0xFF3A2E4F;
         float ey=y+r*.13f;

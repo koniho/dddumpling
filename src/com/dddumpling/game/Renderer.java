@@ -564,6 +564,16 @@ final class Renderer extends Draw {
         }
     }
 
+    /** The in-game pickup treatment, compacted for places that list the available powers. */
+    static void summaryPowerIcon(Painter p,int effect,float x,float y,float r,float clock) {
+        int hue=Glyph.cycle(clock*.7f+effect*.16f);
+        powerHalo(p,x,y,r,clock+effect*.7f,hue,1f);
+        float pulse=.85f+.15f*(float)Math.sin(clock*6f+effect*1.8f);
+        p.fillPoly(Glyph.hex(x,y,r*pulse),Glyph.withAlpha(hue,90));
+        p.strokePoly(Glyph.hex(x,y,r*pulse),Glyph.withAlpha(INK,235),r*.10f);
+        powerIcon(p,effect,x,y,r*.72f*pulse,hue,1f);
+    }
+
     /** Distinct, letter-free marks for the three player-facing powerups. */
     private static void powerIcon(Painter p, int effect, float x, float y, float r, int hue, float fade) {
         int ink = fadeBy(Glyph.withAlpha(INK, 245), fade);

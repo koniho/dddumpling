@@ -101,14 +101,6 @@ final class HighScoreScreen extends Draw {
         p.restore();
         p.restore();
     }
-    private void score(Painter p,GameCore c,Layout L,HighScores.Run run,float y) {
-        float s=size(L);
-        if(run.id==c.highScores.latest) {
-            for(int i=4;i>0;i--) p.fillEllipse(L.w*.5f,y-s*.42f,s*(3.2f+i*(.2f+.1f*pulse(c.clock))),s*(.65f+i*(.1f+.1f*pulse(c.clock))),
-                    Glyph.withAlpha(GOLD,(int)((13-i*2)*(.4f+2f*pulse(c.clock)))));
-        }
-        p.text(String.valueOf(run.score),L.w*.5f,y,type(s*.95f),INK,Painter.CENTER,true);
-    }
     private void bosses(Painter p,GameCore c,HighScores.Run run,float cx,float y,float r,float width) {
         int count=Integer.bitCount(run.bosses);
         float step=Math.min(r*1.35f,(width-2f*r)/Math.max(1,count-1));
@@ -155,30 +147,107 @@ final class HighScoreScreen extends Draw {
         float font=Math.min(type(r*.48f),r*1.45f/(value.length()*.73f));
         p.text(value,x,y+r*.18f+font*.36f,font,0xFF3A2E4F,Painter.CENTER,true);
     }
-    private static void icon(Painter p,int kind,float x,float y,float r,float clock) {
-        ReleaseChange.icon(p,kind==1?ReleaseChange.SHUFFLE:ReleaseChange.SWIPE,x,y,r,clock);
+    private static String value(int n) { return String.valueOf(n); }
+    private static void stat(Painter p,float titleX,float valueX,float y,float font,String title,String value) {
+        p.text(title,titleX,y,font,Glyph.mix(INK_DIM,INK,.18f),Painter.LEFT,false);
+        p.text(value,valueX,y,font,INK,Painter.LEFT,true);
+    }
+    private static void companion(Painter p,GameCore c,HighScores.Run run,float x,float y,float r) {
+        if(run.character<0 || run.character>=Collect.COUNT) return;
+        float breath=1f+.045f*(float)Math.sin(c.clock*2.3f);
+        float bob=r*.12f*(float)Math.sin(c.clock*1.8f);
+        float look=.14f*(float)Math.sin(c.clock*.9f);
+        p.fillEllipse(x,y+r*.88f,r*.72f,r*.12f,0x55302045);
+        Trinket.drawReacting(p,run.character,x,y+bob,r*breath,c.clock,1f,0,look);
+    }
+    private static void bossCollection(Painter p,GameCore c,int mask,float left,float y,float r,
+            float font) {
+        if(mask==0) {
+            p.text("0",left,y,font,INK,Painter.LEFT,true);
+            return;
+        }
+        int slot=0;
+        for(int boss=0;boss<Boss.COUNT;boss++) if((mask&(1<<boss))!=0)
+            BossCollect.draw(p,boss,left+r+slot++*r*1.5f,y,r,c.clock,true,1f);
+    }
+    /** Exact won characters, including repeats, overlap by 25% and wrap once. */
+    private static void prizeCollection(Painter p,GameCore c,HighScores.Run run,float left,
+            float right,float y,float r,float font) {
+        if(run.prizes.length==0) {
+            p.text(value(run.dumplings),left,y,font,INK,Painter.LEFT,true);
+            return;
+        }
+        float step=r*1.5f;
+        int perRow=Math.max(1,(int)((right-left-2f*r)/step)+1);
+        int capacity=Math.min(perRow*2,12),shown=Math.min(run.prizes.length,capacity);
+        boolean overflow=run.prizes.length>capacity;
+        if(overflow) shown=Math.min(run.prizes.length,perRow);
+        for(int i=0;i<shown;i++) {
+            int row=i/perRow,slot=i%perRow;
+            float x=left+r+slot*step;
+            float yy=y+(row-.5f*(shown>perRow?1f:0f))*r*1.25f;
+            Trinket.draw(p,run.prizes[i],x,yy,r,c.clock,true,1f);
+        }
+        if(overflow) {
+            String more="+"+(run.prizes.length-shown);
+            p.text(more,left,y+r*1.35f,font,INK,Painter.LEFT,true);
+        }
+    }
+    private static void effect(Painter p,float iconX,float titleX,float valueX,float y,float s,
+            float font,float clock,int effect,int count) {
+        Renderer.summaryPowerIcon(p,effect,iconX,y-s*.18f,s*.54f,clock);
+        stat(p,titleX,valueX,y,font,Power.NAMES[effect],value(count));
+    }
+    private static void stages(Painter p,GameCore c,Layout L,HighScores.Run run,float y,float s,
+            float font) {
+        float[] x={L.w*.29f,L.w*.71f};
+        int[] land={run.land,Lands.forStage(run.stage)},stage={run.land*Boss.EVERY+1,run.stage};
+        String[] label={"START STAGE ","STAGE REACHED "};
+        for(int i=0;i<2;i++) {
+            Lands.logo(p,land[i],x[i],y,s*.78f,255,c.clock);
+            p.text(label[i]+stage[i],x[i],y+s*1.48f,font,INK,Painter.CENTER,true);
+        }
     }
     private void summary(Painter p,GameCore c,Layout L,HighScores.Run run) {
-        float s=size(L),t=listTop(L),cx=L.w*.5f;
-        score(p,c,L,run,t+s*1.3f);
-        p.text(run.score>=run.best?"NEW BEST!":"BEST "+run.best,cx,t+s*2.8f,type(s*.53f),GOLD,Painter.CENTER,true);
-        p.text(run.blurb(),cx,t+s*3.9f,type(s*.41f),INK_DIM,Painter.CENTER,false);
-        int pct=run.accuracy();float mood=Math.max(0f,Math.min(1f,(pct-60f)/30f));
-        Kawaii.moodDumpling(p,cx-s*3.2f,t+s*5.7f,s*1.25f,Glyph.COLOR[0],mood,1f);
-        p.text("ACCURACY "+pct+"%",cx-s*.5f,t+s*6f,type(s*.50f),INK,Painter.LEFT,true);
-        p.text("STAGE "+run.stage+"   SQUISHES "+run.squishes,cx,t+s*7.7f,type(s*.48f),INK_DIM,Painter.CENTER,false);
-        p.text("BEST COMBO "+run.combo,cx,t+s*8.7f,type(s*.52f),INK_DIM,Painter.CENTER,false);
-        p.text("STAGES COMPLETED "+run.stages,cx,t+s*10.1f,type(s*.48f),GOLD,Painter.CENTER,true);
-        bosses(p,c,run,cx,t+s*12f,s*.85f,L.w*.5f);
-        String[] labels={"DUMPLINGS","POWERUPS USED","RESCUE SWIPES"};
-        int[] counts={run.dumplings,run.powers,run.swipes};
-        for(int i=0;i<3;i++) {
-            float y=t+s*(14.3f+i*1.7f);
-            if(i==0) haul(p,counts[i],L.w*.82f,y-s*.2f,s*1.25f,c.clock);
-            else icon(p,i,L.w*.17f,y-s*.2f,s*.55f,c.clock);
-            p.text(labels[i],L.w*.23f,y,type(s*.44f),INK_DIM,Painter.LEFT,false);
-            if(i!=0) p.text(String.valueOf(counts[i]),L.w*.84f,y,type(s*.53f),INK,Painter.RIGHT,true);
+        float s=Math.min(size(L)*1.15f,(listBottom(L)-listTop(L))/30f),t=listTop(L);
+        float iconX=L.w*.14f,titleX=L.w*.26f,valueX=L.w*.72f;
+        float font=type(s*.55f),y=t+s*1.45f;
+        p.fillRect(L.w*.065f,t-s*.25f,L.w*.935f,listBottom(L),0xE02A2542);
+
+        companion(p,c,run,iconX,y-s*.20f,s*1.02f);
+        p.text(run.character>=0&&run.character<Collect.COUNT?Collect.NAME[run.character]:"COMPANION SQUISHY",
+                titleX,y,font,INK,Painter.LEFT,true);
+        y+=s*2.20f;
+        p.line(titleX,y-s*.60f,L.w*.89f,y-s*.60f,0x35FFFFFF,s*.055f);
+
+        stat(p,titleX,valueX,y,font,"SCORE",value(run.score)); y+=s*1.55f;
+        stages(p,c,L,run,y+s*.35f,s,font); y+=s*3.25f;
+        p.line(titleX,y-s*.52f,L.w*.89f,y-s*.52f,0x35FFFFFF,s*.055f);
+
+        stat(p,titleX,valueX,y,font,"ACCURACY",run.accuracy()+"%"); y+=s*1.42f;
+        stat(p,titleX,valueX,y,font,"SQUISHES",value(run.squishes)); y+=s*1.42f;
+        stat(p,titleX,valueX,y,font,"BEST COMBO",value(run.combo)); y+=s*1.42f;
+        stat(p,titleX,valueX,y,font,"STAGES COMPLETED",value(run.stages)); y+=s*1.80f;
+
+        p.text("BOSSES BEATEN",titleX,y,font,Glyph.mix(INK_DIM,INK,.18f),Painter.LEFT,false);
+        bossCollection(p,c,run.bosses,valueX,y-s*.16f,s*.47f,font);
+        y+=s*2.00f;
+        p.text("DUMPLINGS COLLECTED",titleX,y,font,Glyph.mix(INK_DIM,INK,.18f),Painter.LEFT,false);
+        prizeCollection(p,c,run,valueX,L.w*.89f,y-s*.16f,s*.47f,font);
+        y+=s*2.45f;
+        p.line(titleX,y-s*.68f,L.w*.89f,y-s*.68f,0x35FFFFFF,s*.055f);
+
+        for(int effect:Power.OFFERED) {
+            effect(p,iconX,titleX,valueX,y,s,font,c.clock,effect,run.effects[effect]);
+            y+=s*1.62f;
         }
-        p.text("START STAGE "+(run.land*Boss.EVERY+1)+(run.kids?"   KIDS MODE":""),cx,t+s*20f,type(s*.4f),INK_DIM,Painter.CENTER,false);
+        for(int effect=Power.INCOGNITO;effect<=Power.MONOCHROME;effect++) {
+            effect(p,iconX,titleX,valueX,y,s,font,c.clock,effect,run.effects[effect]);
+            y+=s*1.62f;
+        }
+        ReleaseChange.icon(p,ReleaseChange.SWIPE,iconX,y-s*.20f,s*.57f,c.clock);
+        stat(p,titleX,valueX,y,font,"RESCUE SWIPES",value(run.swipes)); y+=s*1.62f;
+        SettingsArt.kidsPear(p,iconX,y-s*.18f,s*.62f,run.kids);
+        stat(p,titleX,valueX,y,font,"KIDS MODE",run.kids?"ON":"OFF");
     }
 }

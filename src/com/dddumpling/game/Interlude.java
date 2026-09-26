@@ -137,7 +137,7 @@ final class Interlude {
         c.caseSlide = c.caseSlideY = c.caseHighlightAge = 0f;
         c.caseFreePan = false;
         c.prizeNew = !Collect.has(c.collected, c.prize);
-        c.highScores.dumplings++;
+        c.highScores.prize(c.prize);
         c.roundPrizes = Collect.add(c.roundPrizes, c.prize);
         int previous = Math.max(c.collectionCounts[c.prize], c.prizeNew ? 0 : 1);
         c.collectionCounts[c.prize] = previous == Integer.MAX_VALUE ? previous : previous + 1;

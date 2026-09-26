@@ -460,7 +460,12 @@ final class Preview {
                 scores.startGame();scores.score=(10-i)*1357;scores.stage=new int[]{5,10,15,20,1,6,11,16,21,25}[i];
                 scores.hits=123;scores.misses=7;scores.squishes=56;scores.maxCombo=48;
                 scores.highScores.stages=scores.stage-1;scores.highScores.bosses=(1<<Math.min(Boss.COUNT,(scores.stage-1)/Boss.EVERY))-1;
-                scores.highScores.dumplings=i==0?12345:14-i;scores.highScores.powers=7;scores.highScores.swipes=3;
+                int prizes=i==0?18:14-i;
+                for(int prize=0;prize<prizes;prize++) scores.highScores.prize(prize%Collect.COUNT);
+                scores.highScores.powers=7;scores.highScores.swipes=3;
+                scores.highScores.effects[Power.FLURRY]=3;scores.highScores.effects[Power.FLING]=2;
+                scores.highScores.effects[Power.TEAM]=2;scores.highScores.effects[Power.INCOGNITO]=1;
+                scores.highScores.effects[Power.MONOCHROME]=2;
                 scores.lives=0;scores.highScores.finish(scores);
                 if(i==0) {
                     scores.toTitle();scores.returnFade=0;scores.highScoreScreen.show(scores);scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
@@ -473,7 +478,7 @@ final class Preview {
             scores.highScoreScreen.entrance=1f;
             shot(dir,"130-high-scores-full",scores,L,w,h,ss);
             scores.startGame();scores.score=123;scores.stage=6;scores.lives=0;
-            scores.highScores.dumplings=1;scores.highScores.bosses=1;scores.highScores.finish(scores);
+            scores.highScores.prize(0);scores.highScores.bosses=1;scores.highScores.finish(scores);
             LandPicker.recordBest(scores);scores.toTitle();scores.returnFade=0;
             scores.time=0f;shot(dir,"130-high-scores-title-glow-low",scores,L,w,h,ss);
             scores.time=(float)Math.PI/3.5f;shot(dir,"130-high-scores-title-glow-high",scores,L,w,h,ss);

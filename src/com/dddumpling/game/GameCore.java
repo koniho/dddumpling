@@ -832,6 +832,7 @@ final class GameCore {
     boolean incognito() { return state == PLAY && ((debuffLeft > 0f && debuff == Power.INCOGNITO) || incognitoMorph > 0f); }
     void startDebuff(int effect) {
         if (effect != Power.INCOGNITO && effect != Power.MONOCHROME) return;
+        highScores.effect(effect);
         debuff = effect;
         debuffLeft = Power.DEBUFF_TIME;
         if (sound != null) sound.debuffDown();
@@ -1254,6 +1255,7 @@ final class GameCore {
         else LinkedPairs.release(this, L);
         debuffLeft = monochromeFade = incognitoMorph = 0f;
         highScores.powers++;
+        highScores.effect(effect);
         mode = effect;
         modeLeft = Power.DURATION;
         companion.react(RunCompanion.POWER,.9f);
