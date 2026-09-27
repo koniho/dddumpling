@@ -39,28 +39,28 @@ final class TutorialSpeech extends Draw {
         {"TAP YOUR DUMPLING!", "DISCOVER ITS STORY!"}
     };
     static String spoken(int message) {
-        if(message==POWER_FLURRY)return "Flurry! Every key can hit any face. Tap any key to clear the falling faces. You've got this!";
-        if(message==POWER_FLING)return "Fling! Slice the Squishies! Swipe across them and try slicing a whole bunch in one swoosh!";
+        if(message==POWER_FLURRY)return "Flurry lets any key hit any face! Tap any key to clear the falling faces. You've got this!";
+        if(message==POWER_FLING)return "Fling lets you slice the Squishies! Swipe across a whole bunch in one swoosh!";
         if(message==POWER_PICKUP)return "See that glowing pickup? Tap it directly to collect it. You don't need to press a matching key. Give it a tap!";
         if(message==STACK)return "See the little pips on this Squishy? Tap its matching key once for each pip. Keep tapping until it's cleared!";
-        if(message==POWER_TEAM)return "Team Squish! I bounce around and clear whole words for you. Tap a matching key to aim me at that word. Any key can send me charging!";
-        if(message==MINIGAMES)return "Steamer! After each stage, play a minigame for a chance to collect dumplings. Let's free one from this steamer!";
+        if(message==POWER_TEAM)return "Team Squish is here to help! I bounce around and clear whole words for you. Tap a matching key to aim me at that word. Any key can send me charging!";
+        if(message==MINIGAMES)return "Steamer is a minigame! Play a minigame after each stage. You can win dumplings! Let's free one from this steamer!";
         if(message==DISPLAY_CASE)return "You collected a dumpling! Your friends live in the display case. Tap the case to visit them!";
-        if(message==STORIES)return "Every dumpling has a story! Tap your dumpling in the middle to see its story and hear it read aloud. You can explore your other friends here too!";
+        if(message==STORIES)return "Every dumpling has a story! Tap the dumpling in the middle to open its story. You can read its story or listen to it. You can explore your other friends here too!";
         if(message==RESCUE)return "An enemy is getting close! Swipe up from the glowing bar to push the Squishies back. You can do this once each stage. Give yourself some room!";
-        if(message==STARS)return "Star Path! Slide to steer your dumpling and catch the stars. Collect them all to win a new friend!";
-        if(message==LEAN)return "Cart Rush! Slide left and right to steer. Stay in the green and help your cart reach the finish!";
-        if(message==DIG)return "Dumpling Mine! Tap the matching keys in order to fill your cart. Let's dig up a new friend!";
-        if(message==WAIT)return "Steamer! First, wait while two keys are picked at random. Watch them spin! Get ready. You can do this!";
+        if(message==STARS)return "Star Path is starting! Slide to steer your dumpling and catch the stars. Collect them all to win a new friend!";
+        if(message==LEAN)return "Cart Rush is starting! Slide left and right to steer. Stay in the green and help your cart reach the finish!";
+        if(message==DIG)return "Dumpling Mine is starting! Tap the matching keys in order to fill your cart. Let's dig up a new friend!";
+        if(message==WAIT)return "Steamer is starting! Wait while two random keys are picked. Watch them spin! Get ready. You can do this!";
         if(message==ALTERNATE)return "Your keys are ready! Tap left, right, left, right. Go as fast as you can! You've got this!";
         if(message==LIFT)return "Great job! The lid is ready. Swipe it up to win. You can do it!";
         if(message==SUCCESS)return "Amazing! You did it! You freed a dumpling!";
-        if(message==CLOSED)return "Make sure the key matches Slime's face and the face is visible. Tap the wrong key, or tap while the face is hidden, and you'll get slimed! Wait until you can see it.";
+        if(message==CLOSED)return "Wait until Slime's face is visible. Tap the key that matches Slime's face. Wrong keys or hidden faces will get you slimed!";
         if(message==CHAIN)return "Tap the matching key while Slime's face is visible. Keep matching to make Slime vulnerable. Watch for the red area!";
-        if(message==GLOB)return "Now Slime is vulnerable! Touch and hold the red area, then drag it to either side of the screen to damage Slime. You've got this!";
-        if(message==PINCH)return "Tap the matching key. Then put two fingers on the cube and spread them apart to split it.";
+        if(message==GLOB)return "Now Slime is vulnerable! Touch and hold the red area. Drag it to either side of the screen. That damages Slime! You've got this!";
+        if(message==PINCH)return "Tap the matching key. Put two fingers on the cube. Spread them apart to split it.";
         if(message==DEFEND)return "Octopulse reaches for your keys. Tap the matching key to defend it.";
-        if(message==TEAR)return "When an arm tip is exposed, grab it and drag it away from Octopulse.";
+        if(message==TEAR)return "Wait for an exposed arm tip. Grab it and drag it away from Octopulse.";
         if(message==SHAKE)return "Grab Fly Agaric's cap. Keep holding it and shake it from side to side.";
         return (LINES[message][0]+" "+LINES[message][1]).toLowerCase(java.util.Locale.ROOT);
     }
@@ -87,18 +87,12 @@ final class TutorialSpeech extends Draw {
         String[][][] all=new String[STORIES+1][][];
         for(int message=MATCH;message<=STORIES;message++) {
             java.util.ArrayList<String[]> pages=new java.util.ArrayList<>();String pending="";
-            // Prefer complete sentences; only split a sentence if it cannot fit one bubble.
+            // Page boundaries are sentence boundaries; copy must fit without splitting a sentence.
             for(String sentence:spoken(message).split("(?<=[.!?]) +")) {
                 String joined=pending.isEmpty()?sentence:pending+" "+sentence;
                 if(wrap(joined).length<=PAGE_LINES) { pending=joined;continue; }
-                // Keep a short game name or greeting with the instruction that follows it.
-                boolean carry=!pending.isEmpty() && pending.length()<=LINE_CHARS;
-                if(!pending.isEmpty() && !carry)pages.add(wrap(pending));
-                String[] lines=wrap(carry?joined:sentence);int at=0;
-                while(lines.length-at>PAGE_LINES) {
-                    pages.add(java.util.Arrays.copyOfRange(lines,at,at+PAGE_LINES));at+=PAGE_LINES;
-                }
-                pending=joinLines(java.util.Arrays.copyOfRange(lines,at,lines.length));
+                if(!pending.isEmpty())pages.add(wrap(pending));
+                pending=sentence;
             }
             if(!pending.isEmpty())pages.add(wrap(pending));
             all[message]=pages.toArray(new String[0][]);

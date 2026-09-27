@@ -159,15 +159,15 @@ final class TestOnboarding extends Check {
         check("arrival touches cannot start minigame",q.steamer.hits==0 && q.bonusTimer==timer);
         c.update(Onboarding.SCENE_REVEAL,L);
         check("minigame purpose precedes control instructions",c.onboarding.briefing
-                && c.onboarding.speech==TutorialSpeech.MINIGAMES && ear.explanation.startsWith("Steamer!")
+                && c.onboarding.speech==TutorialSpeech.MINIGAMES && ear.explanation.startsWith("Steamer")
                 && ear.explanation.equals(TutorialSpeech.spokenPage(TutorialSpeech.MINIGAMES,0)) && q.bonusTimer==timer);
         reveal(c,L);
         check("overview advances to paused Steamer selection step",c.onboarding.briefing
-                && c.onboarding.speech==TutorialSpeech.WAIT && ear.explanation.startsWith("Steamer!")
+                && c.onboarding.speech==TutorialSpeech.WAIT && ear.explanation.startsWith("Steamer")
                 && new GameCore(store,115).onboarding.learned(TutorialSpeech.MINIGAMES));
         for(int message:new int[]{TutorialSpeech.STARS,TutorialSpeech.LEAN,TutorialSpeech.DIG})
             check("minigame narration names its game "+message,TutorialSpeech.spoken(message).startsWith(
-                    message==TutorialSpeech.STARS?"Star Path!":message==TutorialSpeech.LEAN?"Cart Rush!":"Dumpling Mine!"));
+                    message==TutorialSpeech.STARS?"Star Path":message==TutorialSpeech.LEAN?"Cart Rush":"Dumpling Mine"));
     }
     private static void collectionGuidance(Layout L) {
         Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;c.toTitle();
@@ -439,6 +439,7 @@ final class TestOnboarding extends Check {
                 fits&=lines.length>0 && lines.length<=3;
                 for(String line:lines)fits&=!line.isEmpty() && line.length()<=22;
                 String spoken=TutorialSpeech.spokenPage(message,page);
+                check("page ends on a complete sentence "+message+"/"+page,spoken.matches(".*[.!?]$"));
                 check("page narration equals displayed words "+message+"/"+page,spoken.equals(String.join(" ",lines)));
                 if(displayed.length()>0)displayed.append(' ');
                 displayed.append(spoken);
