@@ -33,6 +33,14 @@ abstract class Check {
     static int pass, fail;
 
     static final class Mem implements GameCore.Store {
+        int tutorials=Onboarding.CORE|Onboarding.STEAMER|Onboarding.STARS|Onboarding.CART|Onboarding.MINE|Onboarding.SLIME
+                |Onboarding.WORD_HINT|Onboarding.WRONG_HINT|Onboarding.STACK_HINT
+                |(1<<(TutorialSpeech.GLOB+9)); // Ordinary boss simulations already know the contextual drag.
+        public int loadTutorials() { return tutorials; }
+        public void saveTutorials(int value) { tutorials=value; }
+        int powerTutorials=127; // Ordinary simulations know powers, pickups and collection guidance.
+        public int loadPowerTutorials() { return powerTutorials; }
+        public void savePowerTutorials(int value) { powerTutorials=value; }
         boolean pushLessonSeen = true; // Ordinary simulations model a player past onboarding.
         public boolean loadPushLessonSeen() { return pushLessonSeen; }
         public void savePushLessonSeen(boolean value) { pushLessonSeen = value; }
@@ -141,6 +149,9 @@ abstract class Check {
         boolean bossMusic;
         int bossMusicCalls;
         int narrations, hushes;
+        int explanations;
+        String explanation;
+        public void explain(String text) { explanations++;explanation=text; }
         int narrated = -1;
         int nameCalls, announcedName=-1;
         public void announceSquishy(int entry) { nameCalls++; announcedName=entry; }

@@ -102,6 +102,7 @@ final class BossPlay {
     }
 
     static boolean press(GameCore c, int g, int verdict, Layout L) {
+        if(c.boss.kind==Boss.OCTOPUS && verdict==Boss.PART)c.onboarding.learn(c,TutorialSpeech.DEFEND);
         if (verdict == Boss.PLAYER_HIT) {
             c.keyBad[g] = 1f;
             c.misses++;
@@ -144,6 +145,7 @@ final class BossPlay {
             return true;
         }
         if (verdict == Boss.HIT) {
+            c.onboarding.bossDamaged(c);
             c.companion.react(RunCompanion.BOSS_HIT, 1f);
             c.score += GameCore.BOSS_HIT;
             c.shake = Math.max(c.shake, 0.30f);
@@ -237,6 +239,7 @@ final class BossPlay {
         if (c.boss.mushroomShakeCue && c.sound != null) c.sound.mushroomShake();
         c.boss.mushroomShakeCue = false;
         if (r != Boss.HIT) return false;
+        c.onboarding.bossDamaged(c);
         c.companion.react(RunCompanion.BOSS_HIT, 1f);
         c.score += GameCore.BOSS_HIT;
         c.hits++;
@@ -266,6 +269,7 @@ final class BossPlay {
         boolean changed = c.boss.pinch(distance, x1, y1, x2, y2, c.rnd);
         c.progress.bossDamage(c.boss.kind, beforeHp, c.boss.hp);
         if (!changed) return false;
+        c.onboarding.bossDamaged(c);
         c.companion.react(RunCompanion.BOSS_HIT, 1f);
         boolean deactivate = c.boss.divideDeactivated;
         c.shake = Math.max(c.shake, deactivate ? 1.2f : 0.85f);

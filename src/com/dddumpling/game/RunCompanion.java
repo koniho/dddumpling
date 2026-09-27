@@ -282,7 +282,7 @@ final class RunCompanion extends Draw {
         cy-=r*.12f*Math.abs(touchRock);
         if(a.reaction==DAMAGE) cx+=r*.12f*(float)Math.sin(a.age*55f)*beat;
         p.fillEllipse(x,y+r*.85f,r*.7f,r*.13f,0x55302045);
-        Trinket.drawReacting(new Squash(p,cx,cy,a.squash()),a.who,cx,cy,r,a.clock,1f,a.displayMood(c),
+        if(!c.onboarding.companionAway(c))Trinket.drawReacting(new Squash(p,cx,cy,a.squash()),a.who,cx,cy,r,a.clock,1f,a.displayMood(c),
                 .10f*(float)Math.sin(a.clock*.9f)+.18f*touchRock,c.flinging());
         if(a.reaction==CRY) cryTears(p,cx,cy,r,cryTearSize(L),a.clock);
         if(a.reaction==BOSS_HIT) {

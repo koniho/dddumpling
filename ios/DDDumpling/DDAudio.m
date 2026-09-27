@@ -538,6 +538,21 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
   } @catch (NSException *exception) { [self hush]; }
 }
 
+- (void)explainWithNSString:(NSString *)text {
+  if (!_active || _interrupted || !_playbackAllowed || _effectsVolume <= 0 || text.length == 0) return;
+  @try {
+    [self hush];
+    AVSpeechUtterance *utterance = [AVSpeechUtterance speechUtteranceWithString:text];
+    utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-US"];
+    utterance.volume = _effectsVolume;
+    utterance.pitchMultiplier = DDNarration_PITCH;
+    utterance.rate = AVSpeechUtteranceDefaultSpeechRate * .9f;
+    _narrating = YES; [self applyMusicMix];
+    _lastUtterance = utterance;
+    [_speech speakUtterance:utterance];
+  } @catch (NSException *exception) { [self hush]; }
+}
+
 - (void)narrateWithInt:(jint)entry {
   if (!_active || _interrupted || !_playbackAllowed || _effectsVolume <= 0) return;
   @try {

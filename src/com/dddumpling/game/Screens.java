@@ -291,16 +291,17 @@ final class Screens extends Draw {
 
         // Arrow between them, leaning whichever way the sequence is going. Suppressed while
         // spinning: there is no order to point out yet.
-        if (!rolling) {
+        if (rolling) {
+            p.fillCircle(cx,cy,s*.5f,fadeBy(GOLD,fade));
+            for(int i=-1;i<=1;i+=2)p.line(cx+i*s*.14f,cy-s*.23f,cx+i*s*.14f,cy+s*.23f,
+                    fadeBy(0xFF302440,fade),s*.12f);
+        } else {
             float dir = c.steamer.expectLeft ? -1f : 1f;
             int arrow = fadeBy(Glyph.withAlpha(INK_DIM, 200), fade);
             float ax = cx + dir * s * 0.18f;
             p.fillPoly(new float[] {ax - dir * s * 0.36f, cy - s * 0.26f,
                     ax + dir * s * 0.36f, cy, ax - dir * s * 0.36f, cy + s * 0.26f}, arrow);
         }
-
-        p.text(rolling ? "PICKING YOUR PAIR" : "+1 PER PAIR", cx, cy + r * 1.9f, type(s * 0.5f),
-                fadeBy(INK_DIM, fade), Painter.CENTER, false);
     }
 
     /** How long the interlude heading takes to swell into place. */
@@ -410,12 +411,9 @@ final class Screens extends Draw {
         float bw = Math.min(L.w * 0.26f, s * 5.8f);
         float bh = s * 3.4f;
 
-        // Heading swells in over the fade, overshooting and settling, so the interlude
-        // announces itself instead of simply appearing.
-        float intro = introScale(c.time);
-        p.text(freed ? "FREE!" : "FREE THE DUMPLING", cx, L.h * 0.235f,
-                type(s * (freed ? 1.5f : 0.95f) * intro),
-                fadeBy(freed ? GOLD : INK, fade), Painter.CENTER, true);
+        // The companion teaches the controls; keep only the win announcement here.
+        if (freed) p.text("FREE!", cx, L.h * 0.235f,
+                type(s * 1.5f * introScale(c.time)), fadeBy(GOLD, fade), Painter.CENTER, true);
         if (!freed && !c.steamer.swipeReady) {
             // No label: the wanted letter wears the same caret the field puts over a head tile,
             // and the arrow between the pair already says which way the sequence is going.

@@ -9,6 +9,148 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void onboardingFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("114-"))return;
+        for(int message=TutorialSpeech.MATCH;message<=TutorialSpeech.STORIES;message++) {
+            GameCore c=new GameCore(new Mem(),114);c.startGame();
+            int lesson=message==TutorialSpeech.DIG?Onboarding.MINE:
+                    message==TutorialSpeech.WAIT || message==TutorialSpeech.ALTERNATE || message==TutorialSpeech.LIFT?Onboarding.STEAMER:Onboarding.CORE;
+            c.onboarding.begin(c,lesson,L);c.onboarding.sceneWait=0;
+            c.onboarding.speech=message;c.onboarding.briefing=true;
+            c.onboarding.companionTravel=1;c.onboarding.bubbleAge=Onboarding.BUBBLE_OPEN;
+            for(int page=0;page<TutorialSpeech.pageCount(message);page++) {
+                c.onboarding.speechPage=page;
+                shot(dir,"114-script-"+message+"-page-"+page,c,L,w,h,ss);
+            }
+        }
+        GameCore pickup=TestPowerTutorials.fresh(L,new Check.Mem());
+        TestPower.place(pickup,L,Power.FLING,0);step(pickup,L,.6f);
+        shot(dir,"114-power-pickup-explain",pickup,L,w,h,ss);
+        TestOnboarding.acknowledge(pickup,L);step(pickup,L,.2f);
+        shot(dir,"114-power-pickup-try",pickup,L,w,h,ss);
+        for(int kind:Power.OFFERED) {
+            GameCore c=TestPowerTutorials.fresh(L,new Check.Mem());
+            Check.add(c,L,new int[]{0,1},L.playTop+L.enemyR*4);
+            c.startFrenzy(kind,L);step(c,L,.6f);
+            shot(dir,"114-power-"+kind+"-explain",c,L,w,h,ss);
+            TestOnboarding.acknowledge(c,L);step(c,L,.15f);
+            shot(dir,"114-power-"+kind+"-try",c,L,w,h,ss);
+            TestPowerTutorials.use(c,L,kind);step(c,L,.2f);
+            shot(dir,"114-power-"+kind+"-return",c,L,w,h,ss);
+        }
+        GameCore stars=new GameCore(new Mem(),114);stars.startGame();stars.onboarding.saved=0;
+        stars.starNext=true;Interlude.enterBonus(stars,L);step(stars,L,.6f);
+        shot(dir,"114-stars-ready",stars,L,w,h,ss);
+        TestOnboarding.acknowledge(stars,L);step(stars,L,StarPath.READY+.4f);
+        shot(dir,"114-stars-flight",stars,L,w,h,ss);
+        for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.CART,Onboarding.MINE}) {
+            GameCore c=new GameCore(new Mem(),114);c.startGame();
+            if(lesson==Onboarding.STEAMER)c.onboarding.savedPowers&=~(1<<(TutorialSpeech.MINIGAMES-TutorialSpeech.POWER_FLURRY));
+            c.onboarding.begin(c,lesson,L);
+            if(lesson==Onboarding.STEAMER) {
+                step(c,L,.5f);shot(dir,"114-steamer-arrive",c,L,w,h,ss);
+                step(c,L,.4f);TestOnboarding.awaitBubble(c,L);shot(dir,"114-steamer-minigames",c,L,w,h,ss);
+                TestOnboarding.reveal(c,L);
+            }
+            step(c,L,.6f);GameCore q=c.onboarding.practice;
+            String name=lesson==2?"steamer":lesson==4?"stars":lesson==8?"cart":"mine";
+            shot(dir,"114-"+name+"-ready",c,L,w,h,ss);
+            TestOnboarding.acknowledge(c,L);
+            if(lesson==Onboarding.STEAMER) {
+                step(c,L,.3f);shot(dir,"114-steamer-picking",c,L,w,h,ss);
+                step(c,L,GameCore.BONUS_ROLL+.1f);
+                shot(dir,"114-steamer-go",c,L,w,h,ss);
+                TestOnboarding.acknowledge(c,L);
+                shot(dir,"114-steamer-keys",c,L,w,h,ss);
+                q.tapBonus(q.steamer.wanted());q.tapBonus(q.steamer.wanted());step(c,L,.6f);
+                shot(dir,"114-steamer-encourage",c,L,w,h,ss);
+                for(int i=0;i<40 && !q.bonusSwipeReady();i++)q.tapBonus(q.steamer.wanted());
+                step(c,L,.6f);
+                shot(dir,"114-steamer-lid",c,L,w,h,ss);
+                TestOnboarding.acknowledge(c,L);shot(dir,"114-steamer-lid-try",c,L,w,h,ss);
+            } else if(lesson==Onboarding.CART) {
+                step(c,L,CaveCart.READY+.6f);
+                shot(dir,"114-cart-steer",c,L,w,h,ss);
+            } else if(lesson==Onboarding.MINE) {
+                step(c,L,CaveMining.READY+.1f);
+                shot(dir,"114-mine-keys",c,L,w,h,ss);
+                for(int i=0;i<600 && !q.mining.swipeReady();i++) {
+                    if(q.mining.digging())q.tapBonus(q.mining.sequence[q.mining.pos]);
+                    c.update(DT,L);
+                }
+                step(c,L,.6f);shot(dir,"114-mine-swipe",c,L,w,h,ss);
+                TestOnboarding.acknowledge(c,L);shot(dir,"114-mine-swipe-try",c,L,w,h,ss);
+            }
+        }
+        for(int kind=0;kind<Boss.COUNT;kind++) {
+            GameCore c=new GameCore(new Mem(),114);c.startGame();c.onboarding.saved=0;c.stage=(kind+1)*5;
+            c.boss.begin(kind,c.stage,c.rnd);c.update(DT,L);
+            shot(dir,"114-boss-"+kind+"-arrival-question",c,L,w,h,ss);
+            c.boss.intro=0;c.update(DT,L);
+            shot(dir,"114-boss-"+kind+"-question",c,L,w,h,ss);
+            float clock=c.clock;
+            c.clock=.375f;shot(dir,"114-boss-"+kind+"-question-pulse-large",c,L,w,h,ss);
+            c.clock=1.125f;shot(dir,"114-boss-"+kind+"-question-pulse-small",c,L,w,h,ss);
+            c.clock=clock;
+            TestOnboarding.touch(c,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
+            TestOnboarding.touch(c,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
+            if(kind==Boss.SLIME) {
+                for(int i=0;i<=10;i++) {
+                    c.onboarding.companionTravel=i/10f;
+                    shot(dir,"114-companion-hop-"+i,c,L,w,h,ss);
+                }
+                for(int i=0;i<=4;i++) {
+                    c.onboarding.bubbleAge=Onboarding.BUBBLE_OPEN*i/4;
+                    shot(dir,"114-companion-bubble-"+i,c,L,w,h,ss);
+                }
+                c.onboarding.companionTravel=c.onboarding.bubbleAge=0;
+            }
+            step(c,L,.2f);shot(dir,"114-boss-"+kind+"-travel",c,L,w,h,ss);
+            int page=0;
+            while(c.onboarding.briefing && page<4) {
+                step(c,L,.6f);shot(dir,"114-boss-"+kind+"-help-"+(page++),c,L,w,h,ss);
+                TestOnboarding.acknowledge(c,L);
+            }
+            if(kind==Boss.SLIME) {
+                c.stageBanner=0;
+                TestOnboarding.makeSlimeVulnerable(c,L);step(c,L,1f);
+                shot(dir,"114-boss-0-vulnerable-wait",c,L,w,h,ss);
+                step(c,L,1.2f);
+                shot(dir,"114-boss-0-vulnerable-help",c,L,w,h,ss);
+                TestOnboarding.acknowledge(c,L);step(c,L,.2f);
+                shot(dir,"114-boss-0-vulnerable-try",c,L,w,h,ss);
+            }
+        }
+        GameCore rescue=new GameCore(new Mem(),114);rescue.startGame();rescue.pushLesson.active=true;
+        rescue.onboarding.rescue(rescue);
+        step(rescue,L,.6f);
+        shot(dir,"114-rescue-speech",rescue,L,w,h,ss);
+        GameCore chosen=new GameCore(new Mem(),114);chosen.collected=1L<<16;chosen.caseIndex=16;chosen.startGame();
+        chosen.onboarding.begin(chosen,Onboarding.MINE,L);step(chosen,L,.9f);
+        shot(dir,"114-chosen-companion",chosen,L,w,h,ss);
+        for(int hint=0;hint<3;hint++) {
+            GameCore c=new GameCore(new Mem(),114);c.startGame();c.onboarding.saved=Onboarding.CORE;
+            if(hint==1)c.misses=1;
+            if(hint==2)c.onboarding.saved|=Onboarding.WORD_HINT;
+            Check.add(c,L,new int[]{0,1},new int[]{hint==2?2:1,1},L.playTop+L.enemyR*4);
+            step(c,L,.6f);shot(dir,"114-hint-"+hint,c,L,w,h,ss);
+            if(hint==2)for(int hits=0;hits<3;hits++) {
+                c.onboarding.age=hits/1.2f+.05f;
+                shot(dir,"114-stack-pips-"+(3-hits),c,L,w,h,ss);
+            }
+        }
+        GameCore collection=new GameCore(new Mem(),114);collection.startGame();collection.collected=1;
+        collection.onboarding.savedPowers=0;collection.toTitle();collection.time=2;step(collection,L,.6f);
+        shot(dir,"114-case-explain",collection,L,w,h,ss);
+        TestOnboarding.acknowledge(collection,L);shot(dir,"114-case-try",collection,L,w,h,ss);
+        collection.openCase();step(collection,L,1f);shot(dir,"114-story-explain",collection,L,w,h,ss);
+        TestOnboarding.acknowledge(collection,L);shot(dir,"114-story-try",collection,L,w,h,ss);
+        collection.openStory();step(collection,L,.6f);shot(dir,"114-story-open",collection,L,w,h,ss);
+        GameCore settings=new GameCore(new Mem(),114);PlayerSettings.open(settings);
+        settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME);
+        shot(dir,"114-settings-reset",settings,L,w,h,ss);
+    }
+
     private static void townFrames(File dir, Layout L, int w, int h, int ss) throws Exception {
         if (!wanted("town-")) return;
         GameCore hidden = new GameCore(new Mem(), 1069L);
@@ -407,6 +549,8 @@ final class Preview {
     private static int unfitFrames;
 
     private static final class Mem implements GameCore.Store {
+        public int loadTutorials() { return (1023 & ~Onboarding.SKIPPED)|(1<<(TutorialSpeech.GLOB+9)); }
+        public int loadPowerTutorials() { return 127; }
         boolean pushLessonSeen = true; // Ordinary simulations model a player past onboarding.
         public boolean loadPushLessonSeen() { return pushLessonSeen; }
         public void savePushLessonSeen(boolean value) { pushLessonSeen = value; }
@@ -636,6 +780,7 @@ final class Preview {
         slimeFightFrames(dir,L,w,h,ss);
         companionFrames(dir,L,w,h,ss);
         scoreResetFrames(dir,L,w,h,ss);
+        onboardingFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);

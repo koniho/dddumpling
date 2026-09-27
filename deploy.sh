@@ -27,7 +27,8 @@ if timeout 15 adb devices 2>/dev/null | grep -qw device; then
     echo ">> installing over adb"
     # -r keeps app data, so the best score and settings survive the update.
     timeout 180 adb install -r "$APK"
-    timeout 30 adb shell am start -n "$ACTIVITY" >/dev/null
+    # Reuse a game already opened from the installer instead of covering its run with a new title.
+    timeout 30 adb shell am start --activity-single-top -n "$ACTIVITY" >/dev/null
     echo ">> installed and launched, no taps needed"
     notify "updated and launched"
 else

@@ -88,6 +88,7 @@ final class Interlude {
 
         int hitsBefore = c.steamer.hits;
         int r = c.steamer.press(g);
+        if(c.steamer.hits>hitsBefore)c.onboarding.learn(c,TutorialSpeech.ALTERNATE);
         if (r == Steamer.WRONG) {
             // Sounds wrong but is not counted as a miss: this is not a typing test, and it
             // must not reach the accuracy readout.
@@ -115,6 +116,7 @@ final class Interlude {
     /** Claims an armed steamer lid after an upward swipe over it. */
     static void swipeBonus(GameCore c) {
         if (!c.bonusSwipeReady() || c.steamer.swipe() != Steamer.FREED) return;
+        c.onboarding.learn(c,TutorialSpeech.LIFT);
         c.progress.finishMinigame(true);
         if (c.store != null) c.store.saveSteamerOpens(c.steamer.opens);
         c.score += GameCore.FREE_BONUS;

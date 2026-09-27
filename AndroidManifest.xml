@@ -27,6 +27,7 @@
 
         <activity
             android:name="com.dddumpling.game.MainActivity"
+            android:launchMode="singleTop"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|density"
             android:exported="true"
             android:screenOrientation="portrait"

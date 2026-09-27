@@ -294,11 +294,12 @@ public final class IOSInputTest extends Check {
         game.touch(one(2,3,x,y-l.enemyR*2));
         check("lower-field upward swipe triggers panic", c.pushT>0);
         game.touch(one(1,3,x,y-l.enemyR*2));
-        c.pushUsed=false; c.pushLesson.seen=false; c.lives=1;
+        c.pushUsed=false; c.pushLesson.seen=false; c.lives=3;
         c.enemies.clear(); add(c,l,new int[] {0},l.dangerY-10); game.update(DT);
-        check("native last-life threat freezes for lesson",c.pushLesson.active);
+        check("native available rescue freezes for lesson at full lives",c.pushLesson.active);
         tap(game,l.keyX[0],l.keyY[0]);
         check("native key cannot dismiss lesson",c.pushLesson.active);
+        tutorialContinue(game);
         y=(l.dangerY+l.deckTop)*.5f;
         game.touch(one(0,3,x,y)); game.touch(one(3,3,x,y));
         game.touch(one(2,3,x,y-l.enemyR*2));
@@ -630,6 +631,8 @@ public final class IOSInputTest extends Check {
     }
 
     public static void main(String[] args) {
+        onboarding();
+        powerGuidanceInput();
         townNavigation();
         slowRunIntro();
         caveMining();
@@ -646,5 +649,208 @@ public final class IOSInputTest extends Check {
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");
+    }
+
+    private static void onboarding() {
+        Mem store=new Mem();store.tutorials=0;
+        IOSGame game=new IOSGame(store,new Ear(),114);game.layout(393,852,0,59,0,34);
+        GameCore c=game.core();Layout l=game.geometry();c.startGame();game.update(DT);
+        check("native fresh run has no upfront tutorial",c.onboarding.practice==null);
+        c.onboarding.begin(c,Onboarding.CORE,l);
+        GameCore q=c.onboarding.practice;
+        tap(game,q.keyX(l,0),q.keyY(l,0));game.update(DT);
+        check("native explanation blocks gameplay keys",c.onboarding.briefing && c.onboarding.word.pos==0);
+        tap(game,l.w*.5f,TutorialSpeech.buttonY(l));
+        check("native invisible continue cannot skip companion arrival",c.onboarding.briefing && c.onboarding.bubbleProgress()==0);
+        tutorialAwaitBubble(game);
+        game.touch(one(0,42,l.w*.5f,TutorialSpeech.buttonY(l)));
+        game.background(true);game.background(false);game.back();
+        game.touch(one(1,42,l.w*.5f,TutorialSpeech.buttonY(l)));
+        check("background cancels explanation button press",c.onboarding.briefing);
+        tutorialContinue(game);
+        tap(game,q.keyX(l,0),q.keyY(l,0));game.update(DT);
+        for(int i=0;i<60 && c.onboarding.step==0;i++)game.update(DT);
+        check("native character key advances introduction",c.onboarding.step==1 && c.hits==0);
+        game.background(true);float age=c.onboarding.age;game.update(60);
+        check("background freezes tutorial",c.paused && c.onboarding.age==age);
+        game.background(false);game.back();
+        tutorialContinue(game);
+        for(int key:new int[]{1,4,0}) { tap(game,q.keyX(l,key),q.keyY(l,key));game.update(DT); }
+        for(int i=0;i<120;i++)game.update(DT);
+        check("native controls finish core lesson",(store.tutorials&Onboarding.CORE)!=0 && c.onboarding.practice==null);
+        bossGuidanceInput();
+        starGuidanceInput();
+        collectionGuidanceInput();
+
+        c.onboarding.begin(c,Onboarding.MINE,l);q=c.onboarding.practice;
+        for(int i=0;i<600 && !q.mining.swipeReady();i++) {
+            tutorialContinue(game);
+            if(q.mining.digging()) { int key=q.mining.sequence[q.mining.pos];tap(game,q.keyX(l,key),q.keyY(l,key)); }
+            game.update(DT);
+        }
+        tutorialContinue(game);
+        float x=q.mining.cartX*l.w,y=CaveMiningScreen.cartY(l);
+        game.touch(one(0,19,x,y));game.background(true);game.background(false);game.back();
+        game.touch(one(2,19,x+l.w*.25f,y));
+        check("background cancels stale mine lesson drag",q.mining.carts==0 && q.mining.input.pointer<0);
+        game.touch(one(0,27,x,y));
+        game.touch(two(5,1,27,x,y,52,x,y));
+        game.touch(two(2,0,52,x-l.w*.3f,y,27,x,y));
+        check("second tutorial pointer cannot dispatch cart",q.mining.carts==0);
+        game.touch(one(2,27,x+l.w*.25f,y));game.touch(one(1,27,x+l.w*.25f,y));game.update(DT);
+        check("native mine swipe completes practice without saving a cart",c.onboarding.success>0 && store.mineCarts==0);
+
+        c.onboarding.begin(c,Onboarding.SLIME,l);q=c.onboarding.practice;
+        for(int i=0;i<600 && !q.boss.hasGlob();i++) {
+            tutorialContinue(game);
+            if(q.boss.open()) { int key=q.boss.chainLetter();tap(game,q.keyX(l,key),q.keyY(l,key)); }
+            game.update(DT);
+        }
+        tutorialContinue(game);
+        int glob=0;while(glob<Boss.ELEMS && q.boss.etype[glob]!=Boss.E_GLOB)glob++;
+        check("native slime chain produces glob",glob<Boss.ELEMS);
+        if(glob<Boss.ELEMS) {
+            x=q.boss.ex[glob];y=q.boss.ey[glob];game.touch(one(0,31,x,y));
+            game.touch(new IOSTouch(2,0,new int[]{31},new float[]{l.w*.5f},new float[]{y},
+                    new float[][]{{l.w*.5f},{-l.w*.2f}},new float[][]{{y},{y}}));
+            game.update(DT);
+            check("historical drag samples finish slime practice",c.onboarding.success>0);
+        }
+        c.onboarding.begin(c,Onboarding.CART,l);
+        tap(game,l.w*.84f,Onboarding.skipY(l));
+        check("native Skip consumes whole gesture",c.onboarding.practice==null && !c.onboarding.ownsTouch
+                && (store.tutorials&Onboarding.SKIPPED)!=0 && c.score==0);
+        PlayerSettings.open(c);game.update(PlayerSettings.PANEL_TIME);
+        tap(game,l.w*.5f,PlayerSettings.tutorialY(l));
+        check("native Settings resets tutorials without clearing progress",store.tutorials==0 && !store.pushLessonSeen && c.settingsOpen);
+    }
+    private static void tutorialContinue(IOSGame game) {
+        int message=game.core().onboarding.speech;
+        for(int i=0;i<12 && game.core().onboarding.briefing && game.core().onboarding.speech==message;i++) {
+            tutorialAwaitBubble(game);
+            tap(game,game.geometry().w*.5f,TutorialSpeech.buttonY(game.geometry()));
+        }
+    }
+    private static void tutorialAwaitBubble(IOSGame game) {
+        for(int i=0;i<40 && game.core().onboarding.briefing && game.core().onboarding.bubbleProgress()<1;i++)game.update(DT);
+    }
+    private static void collectionGuidanceInput() {
+        Mem store=new Mem();store.tutorials=store.powerTutorials=0;
+        Ear ear=new Ear();IOSGame game=new IOSGame(store,ear,114);game.layout(393,852,0,59,0,34);
+        GameCore c=game.core();Layout l=game.geometry();c.startGame();c.collected=store.collected=1;c.toTitle();
+        for(int i=0;i<120 && !c.onboarding.briefing;i++)game.update(DT);
+        tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(l,c.clock));
+        check("collection explanation blocks taps through to title",c.onboarding.briefing && !c.caseOpen);
+        tutorialContinue(game);tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(l,c.clock));
+        for(int i=0;i<120 && !c.onboarding.briefing;i++)game.update(DT);
+        check("real case tap advances to story instruction",c.caseOpen && c.onboarding.briefing
+                && c.onboarding.speech==TutorialSpeech.STORIES);
+        tutorialAwaitBubble(game);
+        float x=l.w*.5f,y=TutorialSpeech.buttonY(l);
+        game.touch(one(0,42,x,y));game.touch(one(3,42,x,y));game.touch(one(1,42,x,y));
+        check("cancelled collection continue stays on its instruction",c.onboarding.briefing && !c.storyOpen());
+        tutorialContinue(game);tap(game,l.w*.5f,Showcase.focusCy(l));game.update(DT);
+        check("real focused-dumpling tap opens narrated story and learns lesson",c.storyOpen()
+                && ear.narrations==1 && c.onboarding.learned(TutorialSpeech.STORIES) && !c.onboarding.titleGuide);
+    }
+    private static void starGuidanceInput() {
+        Mem store=new Mem();store.tutorials=0;
+        IOSGame game=new IOSGame(store,new Ear(),114);game.layout(393,852,0,59,0,34);
+        GameCore c=game.core();Layout l=game.geometry();c.startGame();c.starNext=true;Interlude.enterBonus(c,l);
+        game.update(DT);float timer=c.stars.timer,x=c.stars.x,y=StarScreen.sliderY(l);
+        game.touch(one(0,42,x,y));game.touch(one(2,42,x+l.unit*3,y));game.touch(one(1,42,x+l.unit*3,y));
+        game.update(.5f);
+        check("native Star Path explanation blocks flight controls",c.onboarding.briefing
+                && c.onboarding.practice==null && c.stars.timer==timer && c.stars.x==x);
+        tutorialContinue(game);
+        game.touch(one(0,42,x,y));game.touch(one(2,42,x+l.unit*3,y));
+        check("native tutorial immediately steers actual Star Path",c.stars.dragging && c.stars.x>x
+                && c.stars.steered && c.onboarding.practice==null);
+        game.background(true);game.background(false);game.back();
+        check("background releases real tutorial flyer",!c.stars.dragging && !c.stars.left && !c.stars.right);
+        game.touch(one(0,43,c.stars.x,y));
+        for(int frame=0;frame<600 && c.stars.count()==0;frame++) {
+            game.touch(one(2,43,c.stars.starX(0,l),y));game.update(DT);
+        }
+        game.update(DT);game.touch(one(1,43,c.stars.x,y));
+        check("native star pickup finishes instruction without restarting course",c.stars.count()>0
+                && c.onboarding.learned(TutorialSpeech.STARS) && !c.onboarding.starGuide
+                && c.stars.timer<timer && c.onboarding.practice==null);
+    }
+    private static void powerGuidanceInput() {
+        {
+            Mem store=new Mem();store.tutorials=store.powerTutorials=0;
+            IOSGame game=new IOSGame(store,new Ear(),114);game.layout(393,852,0,59,0,34);
+            GameCore c=game.core();Layout l=game.geometry();c.startGame();c.stage=6;c.spawnTimer=9999;
+            c.enemies.clear();Power p=c.power=new Power();p.effect=Power.FLING;
+            p.x=l.w*.5f;p.y=l.playTop+l.enemyR*4;game.update(DT);
+            tap(game,p.x,p.y);
+            check("native pickup popup prevents collecting through explanation",!p.hit
+                    && c.onboarding.briefing && !c.onboarding.learned(TutorialSpeech.POWER_PICKUP));
+            tutorialAwaitBubble(game);
+            float x=l.w*.5f,y=TutorialSpeech.buttonY(l);
+            game.touch(one(0,42,x,y));game.background(true);game.background(false);game.back();
+            game.touch(one(1,42,x,y));
+            check("background cancels pickup acknowledgement",c.onboarding.briefing && !p.hit);
+            tap(game,p.x,p.y);
+            check("native play-area tap advances without collecting underneath",c.onboarding.briefing && c.onboarding.speechPage==1 && !p.hit
+                    && !c.onboarding.learned(TutorialSpeech.POWER_PICKUP));
+            tutorialContinue(game);
+            tap(game,p.x,p.y);game.update(DT);
+            check("native direct pickup tap learns collection and introduces Fling",p.hit
+                    && c.onboarding.learned(TutorialSpeech.POWER_PICKUP) && c.onboarding.briefing
+                    && c.onboarding.speech==TutorialSpeech.POWER_FLING);
+        }
+        for(int kind:Power.OFFERED) {
+            Mem store=new Mem();store.tutorials=store.powerTutorials=0;store.collected=1;
+            IOSGame game=new IOSGame(store,new Ear(),114);game.layout(393,852,0,59,0,34);
+            GameCore c=game.core();Layout l=game.geometry();c.startGame();c.stage=6;c.spawnTimer=9999;
+            c.enemies.clear();GameCore.Enemy e=add(c,l,new int[]{0},l.playTop+l.enemyR*4);
+            c.startFrenzy(kind,l);game.update(DT);float left=c.modeLeft;
+            tap(game,c.keyX(l,0),c.keyY(l,0));game.update(.5f);
+            check("native power popup owns keys and timer "+kind,c.onboarding.briefing && e.pos==0 && c.modeLeft==left);
+            tutorialAwaitBubble(game);
+            float x=l.w*.5f,y=TutorialSpeech.buttonY(l);
+            game.touch(one(0,42,x,y));game.background(true);game.background(false);game.back();
+            game.touch(one(1,42,x,y));
+            check("interrupted power continue cannot resume gameplay "+kind,c.onboarding.briefing);
+            tutorialContinue(game);
+            if(kind==Power.FLING) {
+                x=c.tileX(e,0,l);y=e.y;
+                game.touch(one(0,42,x-l.enemyR*2,y));
+                game.touch(one(2,42,x+l.enemyR*2,y));game.touch(one(1,42,x+l.enemyR*2,y));
+            } else tap(game,c.keyX(l,kind==Power.FLURRY?1:0),c.keyY(l,kind==Power.FLURRY?1:0));
+            game.update(DT);
+            check("real native power gesture completes guidance "+kind,!c.onboarding.powerGuide
+                    && c.onboarding.learned(Onboarding.powerSpeech(kind)));
+        }
+    }
+    private static void bossGuidanceInput() {
+        for(int target=0;target<2;target++)for(int kind=0;kind<Boss.COUNT;kind++) {
+            Mem store=new Mem();store.tutorials=0;Ear ear=new Ear();
+            IOSGame game=new IOSGame(store,ear,114);game.layout(393,852,0,59,0,34);
+            GameCore c=game.core();Layout l=game.geometry();c.startGame();c.stage=(kind+1)*5;
+            c.boss.begin(kind,c.stage,c.rnd);c.boss.intro=0;game.update(DT);
+            float x=target==0?TutorialSpeech.helpX(l):RunCompanion.x(l);
+            float y=target==0?TutorialSpeech.helpY(l):RunCompanion.y(l);
+            game.touch(one(0,42,x,y));game.background(true);game.background(false);game.back();
+            game.touch(one(1,42,x,y));
+            check("background cancels pending boss help tap "+kind,!c.onboarding.briefing);
+            game.touch(one(0,42,x,y));game.touch(one(2,42,x+l.unit*.1f,y));game.touch(one(1,42,x,y));
+            float clock=c.clock,hp=c.boss.hp,phase=c.boss.phase;
+            game.update(.5f);tap(game,c.keyX(l,0),c.keyY(l,0));game.update(DT);
+            check("native question pauses and narrates boss help "+kind,c.onboarding.briefing && ear.explanations==1
+                    && c.clock==clock && c.boss.phase==phase && c.boss.hp==hp);
+            int guard=0;while(c.onboarding.briefing && guard++<5)tutorialContinue(game);
+            game.update(DT);
+            check("native explanation resumes actual fight "+kind,!c.onboarding.briefing && c.clock>clock
+                    && c.onboarding.practice==null && c.onboarding.bossGuide);
+            c.onboarding.clear();c.onboarding.companionTravel=0;
+            check("native used help stays hidden after guide clears "+kind,!c.onboarding.offersBossHelp(c));
+            c.startGame();c.stage=(kind+1)*5;c.boss.begin(kind,c.stage,c.rnd);game.update(DT);
+            int before=ear.explanations;tap(game,x,y);
+            check("native next-run arrival help opens again "+kind,c.onboarding.briefing
+                    && c.boss.intro>0 && ear.explanations==before+1);
+        }
     }
 }

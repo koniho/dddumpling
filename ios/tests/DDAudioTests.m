@@ -87,6 +87,27 @@
 @end
 
 @implementation DDAudioTests
+- (void)testTutorialSpeechRespectsMuteAndStopsOnDismissal {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  DDCountingSpeech *speech = [DDCountingSpeech new];
+  [audio setValue:speech forKey:@"speech"];
+  [audio setValue:@YES forKey:@"active"];
+  [audio setValue:@0.4f forKey:@"effectsVolume"];
+  [audio explainWithNSString:@"Grab the cap. Shake side to side."];
+  XCTAssertEqual(speech.speakCount, 1);
+  XCTAssertEqualObjects(speech.utterance.speechString, @"Grab the cap. Shake side to side.");
+  XCTAssertEqualWithAccuracy(speech.utterance.volume, .4, .001);
+  XCTAssertTrue([[audio valueForKey:@"narrating"] boolValue]);
+  [audio hush];
+  XCTAssertFalse([[audio valueForKey:@"narrating"] boolValue]);
+  [audio setValue:@0 forKey:@"effectsVolume"];
+  [audio explainWithNSString:@"Muted"];
+  [audio setValue:@1 forKey:@"effectsVolume"];
+  [audio setValue:@NO forKey:@"active"];
+  [audio explainWithNSString:@"Backgrounded"];
+  XCTAssertEqual(speech.speakCount, 1);
+}
+
 - (void)testRunNameUsesAnnouncerDeliveryAndRespectsMute {
   DDClockedAudio *audio = [DDClockedAudio new];
   DDCountingSpeech *speech = [DDCountingSpeech new];

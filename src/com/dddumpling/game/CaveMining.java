@@ -40,6 +40,7 @@ final class CaveMining {
         scene.hit(c,pos/(float)(length-1));pos++;strike=.6f;
         if(c.sound!=null)c.sound.squish(g,1);
         if(pos==length) {
+            c.onboarding.learn(c,TutorialSpeech.DIG);
             pos=0;falling[loads++]=DROP;strike=1;
             if(c.sound!=null)c.sound.clearWord();
             phase=ADVANCE;travel=0;input.release();
@@ -47,6 +48,7 @@ final class CaveMining {
     }
     void launch(GameCore c,int dir) {
         if(!accepts(c) || !swipeReady())return;
+        c.onboarding.learn(c,TutorialSpeech.CART);
         direction=dir<0?-1:1;pushStart=cartX;travel=0;phase=PUSH;input.release();
         // Save when the swipe commits, so leaving during the helpers' animation cannot lose a cart.
         carts=Math.min(CARTS,carts+1);save(c);

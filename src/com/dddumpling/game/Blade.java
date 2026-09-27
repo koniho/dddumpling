@@ -202,6 +202,7 @@ final class Blade {
                 if (!e.typeable()) break;
             }
         }
+        if(cut>0)c.onboarding.learn(c,TutorialSpeech.POWER_FLING);
         return cut;
     }
 

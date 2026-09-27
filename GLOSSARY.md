@@ -531,15 +531,72 @@ Peach Coil, Berry Boa, Moon Ribbon, and Golden Hiss. Both have dedicated display
 family stories, mystery silhouettes, and the Cave Friend tier. The catalogue has 59 entries;
 existing collectible IDs and normal reward pools stay unchanged. `CaveCollect` draws the new families.
 
-The first normal-stage threat on the last life pauses just before reaching the danger line for a **desperation swipe lesson**.
-The text-free lesson shows the shared instructional finger repeatedly swiping upward from the normal bar,
-which remains uncovered by the tutorial dimming.
+The first normal-stage enemy entering the rescue warning band pauses for a **rescue swipe lesson**,
+regardless of remaining lives. The companion explains the move in text and speech, while the shared
+instructional finger repeatedly swipes upward from the normal bar, which stays uncovered by dimming.
 Swipe upward from the highlighted bar to perform the real push-back and resume; taps cannot
 dismiss it. Any successful desperation swipe marks the lesson learned, including one used before
 the tutorial appears. Completion is saved across runs and app restarts. Boss fights and cave expeditions
 are excluded, and a spent swipe defers the lesson until a later stage. `PushLesson` owns the
 prompt, freeze, and shared native gesture.
 Developer settings → Progress → **RESET SWIPE** clears the saved lesson completion flag.
+
+**Companion guidance** starts in play, with no introduction before stage 1. Incoming-word,
+wrong-key and stacked-letter hints appear when needed during stages 1–4. The stacked-letter
+demo uses the real enemy renderer, showing remaining-hit pips counting down beside a matching key.
+Steamer, Cart Rush and Dumpling Mine use disposable real-game practice while the actual run waits;
+practice leaves progress and the run's random stream untouched until completion. Finishing the
+Steamer tutorial's lid swipe wins the actual minigame: its normal reward, life recovery and saved
+win count are awarded once, then its celebration leads to the next stage without a second attempt.
+The tutorial first shows a wait symbol and random key selection, then pauses on an encouraging
+**Go as fast as you can!** explanation only once the pair has settled. Spoken encouragement
+accompanies the selection, alternating taps, lid swipe and win.
+The Steamer basket fades in for 0.8 seconds before any popup, without advancing selection or
+gameplay timers. A one-time opening step explains post-stage minigames and collecting dumplings,
+then introduces the controls. The first instruction names each minigame in both text and speech:
+Steamer, Star Path, Cart Rush and Dumpling Mine.
+Star Path explains the actual course, then resumes its normal ready sequence and live flight.
+There is no separate practice round or restart after learning to steer: stars, sounds and rewards
+belong to that real attempt. The companion returns to its flyer position when reading ends;
+the first star caught after steering learns the step, and a completed course pays out only once.
+A first-pickup lesson pauses once a glowing powerup is fully onscreen and demonstrates tapping
+the icon directly, not a matching key. Acknowledgement resumes play with a pointing hand;
+successful collection permanently learns this step, independently of the granted power.
+Mystery pickups use the same collection control; known debuffs get no pickup tutorial.
+FLURRY, FLING and TEAM SQUISH each explain their controls on first use, pausing the live
+field and frenzy countdown while the companion speaks and demonstrates. A successful wildcard
+hit, slicing gesture or aimed buddy charge permanently learns its own step, including success
+before the prompt appears. Merely acknowledging the bubble does not mark it learned. Debuffs
+(INCOGNITO and MONOCHROME) and the retired MULTI mode do not have these prompts.
+Other minigame practice remains reward-free. The actual run
+companion slides to the side, explains each new control in a large speech bubble with an animated
+example, and returns after the action succeeds. Explanations pause the scene until **Let's try!**;
+game controls cannot dismiss them. Successful actions in normal play or practice permanently
+retire just that step, so already-understood actions are skipped on later encounters and launches.
+Acknowledging an explanation alone does not mark the action learned.
+After collecting a first dumpling and returning to title, a two-step guide introduces opening
+the display case and tapping an owned dumpling to view its narrated story. It waits for the
+return animation, focuses an owned dumpling when needed, and learns each action independently
+(including discovery before the prompt). Skip All and Reset Tutorials include these steps.
+The informational minigame overview is learned on acknowledgement rather than a gameplay action.
+
+Initial boss guidance is opt-in: a small **?** beside the companion offers help from boss-stage
+entry, including the arrival card. It is offered again each run even for learned mechanics.
+Opening help or damaging that boss removes its question bubble for the rest of the run; other
+bosses retain their own help. Tapping it or the companion while it is available pauses
+the fight and moves the companion up to explain Slime, Dark Divide, Octopulse or Fly Agaric.
+Explicitly requested help includes all of that boss's introductory pages, even if learned.
+**Next** advances a multi-part explanation;
+**Let's try!** resumes the same fight. Speech uses platform text-to-speech, follows effects volume,
+ducks music and stops on dismissal or backgrounding; text and demonstrations work without a voice.
+Slime's red-area drag is a separate contextual step: pause and explain it when the red patch
+appears, not during initial help. Matching visible faces makes Slime vulnerable; dragging the
+red area to either side damages it. Successful dragging permanently skips this step; Skip All
+also suppresses it.
+`Onboarding` owns lesson state and `TutorialSpeech` owns bubbles and demonstrations.
+**Skip All** suppresses remaining guidance and the desperation-swipe lesson across restarts.
+Player Settings → **Reset Tutorials** makes all steps eligible again without resetting any other
+progress or restoring the removed pre-stage intro.
 
 Octopulse plays the supplied recorded sound, low-pass filtered at 1 kHz, once when its attacking arm starts to wave.
 While an arm is vulnerable, the other intact arms ripple and flick upward in pain.
