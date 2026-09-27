@@ -179,6 +179,10 @@ final class Onboarding extends Draw {
         if(c.state!=GameCore.PLAY && c.state!=GameCore.BONUS) { clear();companionTravel=0;return false; }
         if(c.settingsOpen || c.paused || c.townOpen)return false;
         if(teacher!=null)return false;
+        if(hintKind==STACK_HINT && (c.flinging() || c.team())) {
+            // These powers bypass repeated taps; defer, rather than learn, an existing hint.
+            boolean touch=ownsTouch;clear();ownsTouch=touch;
+        }
         if(powerGuide && (!c.powerActive() || speech!=powerSpeech(c.mode) || learned(speech))) {
             powerGuide=false;
             if(briefing) { briefing=false;if(c.sound!=null)c.sound.hush();narrator=null; }

@@ -16,6 +16,7 @@ final class TestPowerTutorials extends Check {
         } else c.tapKey(kind==Power.FLURRY?1:0,L);
     }
     static void all(Layout L) {
+        stackHints(L);
         for(int kind:Power.OFFERED) {
             Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;
             GameCore.Enemy e=add(c,L,new int[]{0},L.playTop+L.enemyR*4);
@@ -86,5 +87,41 @@ final class TestPowerTutorials extends Check {
             check("mystery reveal introduces its actual power "+kind,c.onboarding.briefing
                     && c.onboarding.speech==Onboarding.powerSpeech(kind) && c.modeLeft==Power.DURATION);
         }
+    }
+    private static void stackHints(Layout L) {
+        for(int kind:new int[]{Power.FLING,Power.TEAM})for(int acknowledged=0;acknowledged<2;acknowledged++) {
+            Mem store=new Mem();GameCore c=fresh(L,store);c.stage=2;
+            c.onboarding.learn(c,Onboarding.powerSpeech(kind));
+            Ear ear=new Ear();c.sound=ear;
+            GameCore.Enemy e=add(c,L,new int[]{0},new int[]{2},L.playTop+L.enemyR*4);
+            c.update(DT,L);
+            check("stack lesson starts before bypass power "+kind+"/"+acknowledged,c.onboarding.hintKind==Onboarding.STACK_HINT);
+            if(acknowledged==1)TestOnboarding.acknowledge(c,L);
+            else TestOnboarding.touch(c,L,0,L.w*.5f,TutorialSpeech.buttonY(L));
+            int hushes=ear.hushes;
+            c.startFrenzy(kind,L);c.update(DT,L);
+            check("bypass power dismisses stack modal or reminder "+kind+"/"+acknowledged,
+                    c.onboarding.hintKind==0 && !c.onboarding.briefing && (acknowledged==1 || ear.hushes>hushes));
+            if(acknowledged==0) {
+                check("dismissed stack popup retains pending gesture ownership "+kind,c.onboarding.ownsTouch);
+                TestOnboarding.touch(c,L,1,c.keyX(L,0),c.keyY(L,0));
+                check("pending release cannot act on underlying enemy "+kind,e.done==0 && !c.onboarding.ownsTouch);
+            }
+            c.update(DT,L);
+            check("stack lesson stays suppressed and unlearned during power "+kind+"/"+acknowledged,
+                    !c.onboarding.briefing && c.onboarding.hintKind==0 && c.onboarding.eligible(Onboarding.STACK_HINT)
+                    && (store.tutorials&Onboarding.STACK_HINT)==0);
+            c.modeLeft=0;c.mode=-1;c.buddy.leave();c.update(DT,L);
+            check("stack lesson remains available after power ends "+kind+"/"+acknowledged,
+                    c.onboarding.briefing && c.onboarding.hintKind==Onboarding.STACK_HINT);
+        }
+        GameCore c=fresh(L,new Mem());c.stage=2;
+        add(c,L,new int[]{0},new int[]{2},L.playTop+L.enemyR*4);c.update(DT,L);
+        c.startFrenzy(Power.FLURRY,L);c.update(DT,L);
+        check("FLURRY retains an existing repeated-tap explanation",c.onboarding.briefing
+                && c.onboarding.hintKind==Onboarding.STACK_HINT);
+        c.startFrenzy(Power.FLING,L);c.update(DT,L);
+        check("unlearned bypass power still gets its own explanation",c.onboarding.hintKind==0
+                && c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.POWER_FLING);
     }
 }
