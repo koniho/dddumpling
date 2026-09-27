@@ -26,7 +26,12 @@ final class Preview {
             TestPowerTutorials.use(c,L,kind);step(c,L,.2f);
             shot(dir,"114-power-"+kind+"-return",c,L,w,h,ss);
         }
-        for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.STARS,Onboarding.CART,Onboarding.MINE}) {
+        GameCore stars=new GameCore(new Mem(),114);stars.startGame();stars.onboarding.saved=0;
+        stars.starNext=true;Interlude.enterBonus(stars,L);step(stars,L,.6f);
+        shot(dir,"114-stars-ready",stars,L,w,h,ss);
+        TestOnboarding.acknowledge(stars,L);step(stars,L,StarPath.READY+.4f);
+        shot(dir,"114-stars-flight",stars,L,w,h,ss);
+        for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.CART,Onboarding.MINE}) {
             GameCore c=new GameCore(new Mem(),114);c.startGame();c.onboarding.begin(c,lesson,L);
             step(c,L,.6f);GameCore q=c.onboarding.practice;
             String name=lesson==2?"steamer":lesson==4?"stars":lesson==8?"cart":"mine";
@@ -44,9 +49,6 @@ final class Preview {
                 step(c,L,.6f);
                 shot(dir,"114-steamer-lid",c,L,w,h,ss);
                 TestOnboarding.acknowledge(c,L);shot(dir,"114-steamer-lid-try",c,L,w,h,ss);
-            } else if(lesson==Onboarding.STARS) {
-                step(c,L,StarPath.READY+.4f);
-                shot(dir,"114-stars-flight",c,L,w,h,ss);
             } else if(lesson==Onboarding.CART) {
                 step(c,L,CaveCart.READY+.6f);
                 shot(dir,"114-cart-steer",c,L,w,h,ss);
@@ -93,6 +95,10 @@ final class Preview {
             if(hint==2)c.onboarding.saved|=Onboarding.WORD_HINT;
             Check.add(c,L,new int[]{0,1},new int[]{hint==2?2:1,1},L.playTop+L.enemyR*4);
             step(c,L,.6f);shot(dir,"114-hint-"+hint,c,L,w,h,ss);
+            if(hint==2)for(int hits=0;hits<3;hits++) {
+                c.onboarding.age=hits/1.2f+.05f;
+                shot(dir,"114-stack-pips-"+(3-hits),c,L,w,h,ss);
+            }
         }
         GameCore settings=new GameCore(new Mem(),114);PlayerSettings.open(settings);
         settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME);

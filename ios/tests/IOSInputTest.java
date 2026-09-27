@@ -675,6 +675,7 @@ public final class IOSInputTest extends Check {
         for(int i=0;i<120;i++)game.update(DT);
         check("native controls finish core lesson",(store.tutorials&Onboarding.CORE)!=0 && c.onboarding.practice==null);
         bossGuidanceInput();
+        starGuidanceInput();
 
         c.onboarding.begin(c,Onboarding.MINE,l);q=c.onboarding.practice;
         for(int i=0;i<600 && !q.mining.swipeReady();i++) {
@@ -720,6 +721,30 @@ public final class IOSInputTest extends Check {
     }
     private static void tutorialContinue(IOSGame game) {
         if(game.core().onboarding.briefing)tap(game,game.geometry().w*.5f,TutorialSpeech.buttonY(game.geometry()));
+    }
+    private static void starGuidanceInput() {
+        Mem store=new Mem();store.tutorials=0;
+        IOSGame game=new IOSGame(store,new Ear(),114);game.layout(393,852,0,59,0,34);
+        GameCore c=game.core();Layout l=game.geometry();c.startGame();c.starNext=true;Interlude.enterBonus(c,l);
+        game.update(DT);float timer=c.stars.timer,x=c.stars.x,y=StarScreen.sliderY(l);
+        game.touch(one(0,42,x,y));game.touch(one(2,42,x+l.unit*3,y));game.touch(one(1,42,x+l.unit*3,y));
+        game.update(.5f);
+        check("native Star Path explanation blocks flight controls",c.onboarding.briefing
+                && c.onboarding.practice==null && c.stars.timer==timer && c.stars.x==x);
+        tutorialContinue(game);
+        game.touch(one(0,42,x,y));game.touch(one(2,42,x+l.unit*3,y));
+        check("native tutorial immediately steers actual Star Path",c.stars.dragging && c.stars.x>x
+                && c.stars.steered && c.onboarding.practice==null);
+        game.background(true);game.background(false);game.back();
+        check("background releases real tutorial flyer",!c.stars.dragging && !c.stars.left && !c.stars.right);
+        game.touch(one(0,43,c.stars.x,y));
+        for(int frame=0;frame<600 && c.stars.count()==0;frame++) {
+            game.touch(one(2,43,c.stars.starX(0,l),y));game.update(DT);
+        }
+        game.update(DT);game.touch(one(1,43,c.stars.x,y));
+        check("native star pickup finishes instruction without restarting course",c.stars.count()>0
+                && c.onboarding.learned(TutorialSpeech.STARS) && !c.onboarding.starGuide
+                && c.stars.timer<timer && c.onboarding.practice==null);
     }
     private static void powerGuidanceInput() {
         {

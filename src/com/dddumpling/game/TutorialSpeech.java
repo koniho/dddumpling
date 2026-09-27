@@ -38,6 +38,7 @@ final class TutorialSpeech extends Draw {
         if(message==POWER_FLURRY)return "Flurry! Every key can hit any face. Tap any key to clear the falling faces. You've got this!";
         if(message==POWER_FLING)return "Fling! Slice the Squishies! Swipe across them and try slicing a whole bunch in one swoosh!";
         if(message==POWER_PICKUP)return "See that glowing pickup? Tap it directly to collect it. You don't need to press a matching key. Give it a tap!";
+        if(message==STACK)return "See the little pips on this Squishy? Tap its matching key once for each pip. Keep tapping until it's cleared!";
         if(message==POWER_TEAM)return "Team Squish! I bounce around and clear whole words for you. Tap a matching key to aim me at that word. Any key can send me charging!";
         if(message==WAIT)return "First, wait while two keys are picked at random. Watch them spin! Get ready. You can do this!";
         if(message==ALTERNATE)return "Your keys are ready! Tap left, right, left, right. Go as fast as you can! You've got this!";
@@ -191,6 +192,16 @@ final class TutorialSpeech extends Draw {
             float dx=s*(1+travel*4);
             p.line(x-s*3,y+s,x+dx,y,0xFFB87AD2,s*.8f);
             p.fillCircle(x+dx,y,s*.8f,0xFFE9B8E7);handX=x+dx;
+        } else if(message==STACK) {
+            // The same enemy renderer shows the actual stacked body and remaining-hit pips.
+            GameCore.Enemy e=new GameCore.Enemy();
+            e.word=new int[]{key};e.need=new int[]{3};e.gone=new boolean[1];
+            e.done=(int)(age*1.2f)%3;e.enterT=1;e.baseX=x+s*2.8f;e.y=y-s*.4f;
+            p.fillPoly(pill(e.baseX,e.y,s*3.2f,s*3.1f,16),0xFF252038);
+            Renderer.enemy(p,c,L,e);
+            handX=x-s*3.6f;handY=y+s*.7f;
+            face(p,key,handX,handY,s*1.25f);
+            arrow(p,handX+s*1.3f,handY,s*1.4f,-s*.7f,s*.4f);
         } else if(message==WORD || message==DIG || message==RETRY) {
             int at=(int)(age*1.3f)%3;
             for(int i=0;i<3;i++) {
@@ -239,7 +250,6 @@ final class TutorialSpeech extends Draw {
             p.fillPoly(pill(x,y+s*2,s*2.6f,s*.35f,12),0xFF77A836);
             return;
         } else {
-            if(message==STACK)face(p,key,x+s*.45f,y-s*.45f,s*1.65f);
             face(p,key,x,y,s*1.65f);
             if(message==MATCH) {
                 face(p,key,x-s*4.8f,y,s*1.1f);

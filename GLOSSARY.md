@@ -542,14 +542,19 @@ prompt, freeze, and shared native gesture.
 Developer settings → Progress → **RESET SWIPE** clears the saved lesson completion flag.
 
 **Companion guidance** starts in play, with no introduction before stage 1. Incoming-word,
-wrong-key and stacked-letter hints appear when needed during stages 1–4. Steamer, Star Path,
-Cart Rush and Dumpling Mine use disposable real-game practice while the actual run waits;
+wrong-key and stacked-letter hints appear when needed during stages 1–4. The stacked-letter
+demo uses the real enemy renderer, showing remaining-hit pips counting down beside a matching key.
+Steamer, Cart Rush and Dumpling Mine use disposable real-game practice while the actual run waits;
 practice leaves progress and the run's random stream untouched until completion. Finishing the
 Steamer tutorial's lid swipe wins the actual minigame: its normal reward, life recovery and saved
 win count are awarded once, then its celebration leads to the next stage without a second attempt.
 The tutorial first shows a wait symbol and random key selection, then pauses on an encouraging
 **Go as fast as you can!** explanation only once the pair has settled. Spoken encouragement
 accompanies the selection, alternating taps, lid swipe and win.
+Star Path explains the actual course, then resumes its normal ready sequence and live flight.
+There is no separate practice round or restart after learning to steer: stars, sounds and rewards
+belong to that real attempt. The companion returns to its flyer position when reading ends;
+the first star caught after steering learns the step, and a completed course pays out only once.
 A first-pickup lesson pauses once a glowing powerup is fully onscreen and demonstrates tapping
 the icon directly, not a matching key. Acknowledgement resumes play with a pointing hand;
 successful collection permanently learns this step, independently of the granted power.

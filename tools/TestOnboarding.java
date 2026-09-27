@@ -51,7 +51,7 @@ final class TestOnboarding extends Check {
         GameCore restart=new GameCore(store,115);restart.startGame();restart.update(DT,L);
         check("completed intro stays complete after restart",restart.onboarding.practice==null);
 
-        for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.STARS,Onboarding.CART,Onboarding.MINE,Onboarding.SLIME}) {
+        for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.CART,Onboarding.MINE,Onboarding.SLIME}) {
             c.onboarding.begin(c,lesson,L);
             GameCore q=c.onboarding.practice;
             int score=c.score,cart=store.cartTrack,mine=store.mineCarts;
@@ -78,10 +78,6 @@ final class TestOnboarding extends Check {
                     float x=StarScreen.sliderLeft(L)+(q.cart.turn+1)*.5f*(StarScreen.sliderRight(L)-StarScreen.sliderLeft(L));
                     if(q.cart.input.pointer<0)touch(c,L,0,x,StarScreen.sliderY(L));
                     else touch(c,L,2,x,StarScreen.sliderY(L));
-                } else if(lesson==Onboarding.STARS) {
-                    float x=q.stars.starX(0,L);
-                    if(c.onboarding.pointer<0)touch(c,L,0,x,StarScreen.sliderY(L));
-                    else touch(c,L,2,x,StarScreen.sliderY(L));
                 } else if(q.boss.hasGlob()) {
                     for(int g=0;g<Boss.ELEMS;g++)if(q.boss.etype[g]==Boss.E_GLOB) {
                         float y=q.boss.ey[g];
@@ -105,6 +101,7 @@ final class TestOnboarding extends Check {
         slimeVulnerableHelp(L);
         companionHelp(L);
         steamerTutorialWin(L);
+        starTutorialRun(L);
         steamerSelection(L);
         diagnostics(L);
         TestPowerTutorials.all(L);
@@ -206,6 +203,42 @@ final class TestOnboarding extends Check {
         check("tutorial win goes through celebration to next stage",c.stage==stage+1
                 && c.state==GameCore.PLAY && c.onboarding.practice==null);
     }
+    private static void starTutorialRun(Layout L) {
+        Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;c.lives=2;
+        c.starNext=true;Interlude.enterBonus(c,L);
+        float timer=c.stars.timer,x=c.stars.x;int score=c.score,stage=c.stage;
+        c.update(.6f,L);
+        check("Star Path explains the real paused course",c.onboarding.starGuide && c.onboarding.briefing
+                && c.onboarding.practice==null && c.stars.timer==timer && c.stars.x==x && ear.explanations==1);
+        acknowledge(c,L);c.update(.5f,L);
+        check("Star Path acknowledgement resumes course and returns flyer",c.stars.timer<timer
+                && !c.onboarding.briefing && c.onboarding.practice==null && c.onboarding.companionTravel==0
+                && !c.onboarding.learned(TutorialSpeech.STARS));
+        c.stars.beginDrag();boolean continuous=true;int count=0;
+        for(int frame=0;frame<1200 && c.state==GameCore.BONUS && !c.stars.won;frame++) {
+            int target=0;while(target<c.stars.total() && (c.stars.collected&(1<<target))!=0)target++;
+            if(target<c.stars.total())c.stars.dragTo(c.stars.starX(target,L),L);
+            c.update(DT,L);
+            continuous&=c.stars.count()>=count && c.onboarding.practice==null;
+            count=c.stars.count();
+        }
+        check("Star Path tutorial proceeds continuously to real win",continuous && c.stars.won
+                && c.stars.complete() && c.onboarding.learned(TutorialSpeech.STARS));
+        // The final star uses the prize fanfare instead of another pickup cue.
+        check("Star Path tutorial uses normal pickup and win audio",ear.courseStarts==1
+                && ear.stars>0 && ear.lastStar==c.stars.total()-1 && ear.achievements==1);
+        check("Star Path tutorial awards real score life prize and one saved win",c.score>=score+GameCore.FREE_BONUS
+                && c.lives==3 && c.prize>=Collect.STAR_FIRST && store.starWins==1 && store.starWinSaves==1);
+        for(int frame=0;frame<1200 && c.state==GameCore.BONUS;frame++)c.update(DT,L);
+        check("Star Path win advances without replay or duplicate award",c.state==GameCore.PLAY && c.stage==stage+1
+                && store.starWinSaves==1 && !c.onboarding.starGuide && c.onboarding.practice==null);
+        check("Star Path successful steering persists lesson",new GameCore(store,115).onboarding.learned(TutorialSpeech.STARS)
+                && (store.tutorials&Onboarding.STARS)!=0);
+        c=fresh(L,new Mem());c.starNext=true;Interlude.enterBonus(c,L);c.update(DT,L);acknowledge(c,L);
+        c.stars.timer=StarPath.REPORT;c.update(DT,L);c.update(DT,L);
+        check("incomplete real course reports without restarting tutorial",!c.onboarding.starGuide
+                && !c.onboarding.briefing && c.onboarding.practice==null && !c.onboarding.learned(TutorialSpeech.STARS));
+    }
     private static void encounters(Layout L) {
         for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.STARS,Onboarding.CART,Onboarding.MINE}) {
             Mem store=new Mem();store.tutorials=Onboarding.CORE;
@@ -226,11 +259,6 @@ final class TestOnboarding extends Check {
                     && c.onboarding.practice==null && c.score==0);
             c.update(DT,L);check("global Skip prevents encounter restart "+lesson,c.onboarding.practice==null);
         }
-        Mem store=new Mem();store.tutorials=Onboarding.CORE;
-        GameCore c=new GameCore(store,5);c.startGame();c.starNext=true;Interlude.enterBonus(c,L);c.update(DT,L);
-        acknowledge(c,L);
-        c.onboarding.success=DT;c.update(DT,L);
-        check("completed Star Path practice reuses ready lesson once",!c.stars.ready() && c.stars.collected==0 && c.stars.flying());
     }
     private static void skipResetAndHints(Layout L) {
         Mem store=new Mem();GameCore c=fresh(L,store);
@@ -290,7 +318,7 @@ final class TestOnboarding extends Check {
         check("second finger cancels continue",c.onboarding.briefing);
         acknowledge(c,L);
         check("continue consumes gesture without typing",!c.onboarding.briefing && !c.onboarding.ownsTouch && c.onboarding.word.pos==0);
-        for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.STARS,Onboarding.CART,Onboarding.MINE,Onboarding.SLIME}) {
+        for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.CART,Onboarding.MINE,Onboarding.SLIME}) {
             c.onboarding.begin(c,lesson,L);GameCore q=c.onboarding.practice;
             float timer=q.bonusTimer,phase=q.boss.phase,ready=q.cart.ready,mine=q.mining.left;
             for(int i=0;i<300;i++)c.update(DT,L);
