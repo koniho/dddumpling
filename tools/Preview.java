@@ -88,6 +88,10 @@ final class Preview {
             shot(dir,"114-boss-"+kind+"-arrival-question",c,L,w,h,ss);
             c.boss.intro=0;c.update(DT,L);
             shot(dir,"114-boss-"+kind+"-question",c,L,w,h,ss);
+            float clock=c.clock;
+            c.clock=.375f;shot(dir,"114-boss-"+kind+"-question-pulse-large",c,L,w,h,ss);
+            c.clock=1.125f;shot(dir,"114-boss-"+kind+"-question-pulse-small",c,L,w,h,ss);
+            c.clock=clock;
             TestOnboarding.touch(c,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
             TestOnboarding.touch(c,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
             if(kind==Boss.SLIME) {
@@ -109,7 +113,9 @@ final class Preview {
             }
             if(kind==Boss.SLIME) {
                 c.stageBanner=0;
-                TestOnboarding.makeSlimeVulnerable(c,L);step(c,L,.6f);
+                TestOnboarding.makeSlimeVulnerable(c,L);step(c,L,1f);
+                shot(dir,"114-boss-0-vulnerable-wait",c,L,w,h,ss);
+                step(c,L,1.2f);
                 shot(dir,"114-boss-0-vulnerable-help",c,L,w,h,ss);
                 TestOnboarding.acknowledge(c,L);step(c,L,.2f);
                 shot(dir,"114-boss-0-vulnerable-try",c,L,w,h,ss);

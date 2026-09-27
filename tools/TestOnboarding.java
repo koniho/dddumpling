@@ -113,6 +113,7 @@ final class TestOnboarding extends Check {
         briefingInput(L);
         learnedActions(L);
         companionHop();
+        bossHelpPulse(L);
         speechReveal(L);
         speechPages(L);
         bossHelp(L);
@@ -610,6 +611,15 @@ final class TestOnboarding extends Check {
             check("Skip All still suppresses optional boss help "+kind+"/"+used,!loaded.onboarding.offersBossHelp(loaded));
         }
     }
+    private static void bossHelpPulse(Layout L) {
+        float small=TutorialSpeech.helpScale(1.125f),large=TutorialSpeech.helpScale(.375f);
+        check("boss help gently grows and shrinks",small<1 && large>1 && large<1.35f);
+        check("boss help cycles its opaque border color",TutorialSpeech.helpBorder(.375f)!=TutorialSpeech.helpBorder(1.125f)
+                && (TutorialSpeech.helpBorder(.375f)>>>24)==255);
+        check("boss help animation loops deterministically",Math.abs(TutorialSpeech.helpScale(.375f)-TutorialSpeech.helpScale(1.875f))<.0001f);
+        check("largest boss bubble fits its stationary tap target",TutorialSpeech.helpHit(L,
+                TutorialSpeech.helpX(L)+L.unit*large,TutorialSpeech.helpY(L)+L.unit*large));
+    }
     private static void companionHelp(Layout L) {
         GameCore c=fresh(L,new Mem());Ear ear=new Ear();c.sound=ear;
         c.stage=5;c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;c.update(DT,L);
@@ -645,8 +655,15 @@ final class TestOnboarding extends Check {
                 check("Slime initial help ends before red-area step",!c.onboarding.briefing
                         && (c.onboarding.introduced&(1<<TutorialSpeech.GLOB))==0);
             }
-            int g=makeSlimeVulnerable(c,L);float life=c.boss.elife[g],hp=c.boss.hp,time=c.time;
-            int spoken=ear.explanations;c.update(.5f,L);
+            int g=makeSlimeVulnerable(c,L);int spoken=ear.explanations;
+            c.update(.5f,L);
+            check("Slime remains playable during vulnerability grace period "+help,!c.onboarding.briefing
+                    && ear.explanations==spoken && c.boss.elife[g]<Boss.GLOB_TIME);
+            float waiting=c.onboarding.slimeHintAge;Pause.open(c);c.update(2f,L);Pause.resume(c);
+            check("pause does not spend Slime tutorial delay "+help,c.onboarding.slimeHintAge==waiting);
+            c.update(.99f,L);
+            check("Slime drag lesson waits the full 1.5 seconds "+help,!c.onboarding.briefing);
+            float life=c.boss.elife[g],hp=c.boss.hp,time=c.time;c.update(.02f,L);
             check("vulnerable Slime introduces separate paused drag step "+help,c.onboarding.briefing
                     && c.onboarding.bossGuide && c.onboarding.speech==TutorialSpeech.GLOB
                     && c.onboarding.practice==null && ear.explanations==spoken+1
@@ -665,15 +682,24 @@ final class TestOnboarding extends Check {
         GameCore c=fresh(L,new Mem());c.stage=5;c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;c.update(DT,L);
         c.onboarding.skip(c);makeSlimeVulnerable(c,L);c.update(DT,L);
         check("skip all suppresses contextual Slime drag step",!c.onboarding.briefing);
-        c.onboarding.reset(c);c.update(DT,L);acknowledge(c,L);
+        c.onboarding.reset(c);c.update(Onboarding.SLIME_HINT_DELAY+.01f,L);acknowledge(c,L);
         for(int i=0;i<Boss.ELEMS;i++)if(c.boss.etype[i]==Boss.E_GLOB)c.boss.elife[i]=.001f;
         c.update(DT,L);c.update(DT,L);
         check("expired red area clears reminder without learning",!c.onboarding.bossGuide
                 && !c.onboarding.learned(TutorialSpeech.GLOB));
         c.onboarding.reset(c);c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;c.boss.update(0,L,c.rnd);
-        int g=makeSlimeVulnerable(c,L);c.grabBoss(c.boss.ex[g],c.boss.ey[g]);
+        int g=makeSlimeVulnerable(c,L);c.update(.75f,L);c.grabBoss(c.boss.ex[g],c.boss.ey[g]);
         c.dragBoss(L.w*.5f,c.boss.ey[g],L);c.dragBoss(-L.w*.2f,c.boss.ey[g],L);c.update(DT,L);
+        c.update(2f,L);
         check("successful drag before prompt learns without interrupting",c.onboarding.learned(TutorialSpeech.GLOB)
-                && !c.onboarding.briefing);
+                && !c.onboarding.briefing && c.onboarding.slimeHintAge==0
+                && new GameCore(c.store,114).onboarding.learned(TutorialSpeech.GLOB));
+        c.onboarding.reset(c);c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;
+        g=makeSlimeVulnerable(c,L);c.update(.8f,L);c.boss.elife[g]=.001f;c.update(DT,L);c.update(DT,L);
+        check("expired vulnerability cancels pending tutorial delay",c.onboarding.slimeHintAge==0 && !c.onboarding.briefing);
+        c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;makeSlimeVulnerable(c,L);c.update(.8f,L);
+        check("new vulnerability receives a fresh delay",!c.onboarding.briefing && c.onboarding.slimeHintAge<1);
+        c.toTitle();
+        check("leaving run clears pending Slime delay",c.onboarding.slimeHintAge==0);
     }
 }

@@ -10,8 +10,9 @@ final class Onboarding extends Draw {
     GameCore practice, teacher, narrator;
     GameCore.Enemy word;
     boolean ownsTouch, lid, briefing, continueArmed;
-    static final float SCENE_REVEAL=.8f, BUBBLE_OPEN=.14f;
+    static final float SCENE_REVEAL=.8f, BUBBLE_OPEN=.14f, SLIME_HINT_DELAY=1.5f;
     float age, success, startY, globAge, companionTravel, sceneWait, bubbleAge, speechX, speechY, celebration;
+    float slimeHintAge;
 
     // Preserve the original ten lesson bits; successful actions have independent durable bits.
     private static boolean extraMessage(int message) {
@@ -94,11 +95,15 @@ final class Onboarding extends Draw {
         for(int message:bossSteps(c.boss.kind))if((introduced&(1<<message))==0)return true;
         return false;
     }
-    private void slimeGlobHint(GameCore c) {
+    private void slimeGlobHint(GameCore c,float elapsed) {
         int message=TutorialSpeech.GLOB;
         if(c.state!=GameCore.PLAY || !c.boss.fighting() || c.boss.kind!=Boss.SLIME
-                || !c.boss.hasGlob() || learned(message) || (introduced&(1<<message))!=0
-                || briefing || practice!=null || powerGuide || c.pushLesson.active)return;
+                || !c.boss.hasGlob() || learned(message) || (introduced&(1<<message))!=0) {
+            slimeHintAge=0;return;
+        }
+        if(briefing || practice!=null || powerGuide || c.pushLesson.active)return;
+        slimeHintAge+=elapsed;
+        if(slimeHintAge<SLIME_HINT_DELAY)return;
         // Teach the drag on the real vulnerable patch, not in the upfront help pages.
         introduced|=1<<message;speech=message;bossGuide=briefing=true;hintKind=0;age=0;
         Pause.release(c);narrate(c);
@@ -155,7 +160,7 @@ final class Onboarding extends Draw {
         if(narrator!=null && narrator.sound!=null)narrator.sound.hush();
         narrator=null;
         cancelTouch();practice=null;word=null;lesson=step=speech=speechPage=introduced=hintKind=0;
-        success=sceneWait=bubbleAge=celebration=0;briefing=bossHelp=bossGuide=powerGuide=starGuide=titleGuide=false;
+        success=sceneWait=bubbleAge=celebration=slimeHintAge=0;briefing=bossHelp=bossGuide=powerGuide=starGuide=titleGuide=false;
     }
     void cancelTouch() {
         pointer=-1;ownsTouch=lid=false;
@@ -264,7 +269,7 @@ final class Onboarding extends Draw {
         if(!briefing && practice==null) { powerHint(c);if(!briefing)pickupHint(c,L); }
         if(bossGuide && (!c.boss.fighting() || learned(speech)
                 || speech==TutorialSpeech.GLOB && !c.boss.hasGlob()))bossGuide=false;
-        slimeGlobHint(c);
+        slimeGlobHint(c,elapsed);
         moveCompanion(c,elapsed);
         if(briefing) { age+=elapsed;return true; }
         if(practice==null) {

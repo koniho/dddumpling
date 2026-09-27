@@ -104,10 +104,13 @@ final class TutorialSpeech extends Draw {
     static boolean helpHit(Layout L,float x,float y) {
         return Math.abs(x-helpX(L))<L.unit*1.35f && Math.abs(y-helpY(L))<L.unit*1.35f;
     }
+    static float helpPulse(float clock) { return .5f+.5f*(float)Math.sin(clock*(float)Math.PI*2/1.5f); }
+    static float helpScale(float clock) { return .88f+.24f*helpPulse(clock); }
+    static int helpBorder(float clock) { return Glyph.mix(GOLD,ROSE,helpPulse(clock)); }
     static void help(Painter p,GameCore c,Layout L) {
-        float s=L.unit,x=helpX(L),y=helpY(L);
+        float s=L.unit*helpScale(c.clock),x=helpX(L),y=helpY(L);
         bubble(p,x-s,y-s,x+s,y+s,s*.55f,1,
-                new float[]{x+s*.3f,y+s,x-s*.7f,y+s*1.6f,x-s*.3f,y+s});
+                new float[]{x+s*.3f,y+s,x-s*.7f,y+s*1.6f,x-s*.3f,y+s},1,0,0,helpBorder(c.clock));
         speechText(p,"?",x,y+s*.48f,type(s*1.25f),0xFFFFF5DD);
     }
     static float unit(Layout L) { return Math.min(L.unit,(L.deckTop-L.topSafe)/24f); }
@@ -126,11 +129,8 @@ final class TutorialSpeech extends Draw {
         p.text(text,x,y+edge,size,TEXT_INK,Painter.CENTER,true);
         p.text(text,x,y,size,color,Painter.CENTER,true);
     }
-    private static void bubble(Painter p,float l,float t,float r,float b,float radius,int tailEdge,float[] tail) {
-        bubble(p,l,t,r,b,radius,tailEdge,tail,1,0,0);
-    }
     private static void bubble(Painter p,float l,float t,float r,float b,float radius,int tailEdge,float[] tail,
-            float growth,float originX,float originY) {
+            float growth,float originX,float originY,int border) {
         // One fill keeps the translucent tail from double-blending with the body.
         float[] outline=new float[62];int at=0;
         for(int corner=0;corner<4;corner++) {
@@ -147,7 +147,7 @@ final class TutorialSpeech extends Draw {
             outline[i]=originX+(outline[i]-originX)*scale;
             outline[i+1]=originY+(outline[i+1]-originY)*scale;
         }
-        p.fillPoly(outline,PAPER);p.strokePoly(outline,TEXT_INK,radius*.14f*scale);
+        p.fillPoly(outline,PAPER);p.strokePoly(outline,border,radius*.14f*scale);
     }
     static void large(Painter p,GameCore c,Layout L,int message,boolean button) {
         float s=unit(L),t=top(L),b=t+s*14.2f,x=L.w*.5f;
@@ -158,7 +158,7 @@ final class TutorialSpeech extends Draw {
         // The tail points at this run's actual companion.
         float tx=L.w*.13f;
         bubble(p,L.w*.05f,t,L.w*.95f,b,s*1.2f,3,
-                new float[]{tx,t,tx+s*.5f,t-s*1.1f,tx+s*2,t},growth,tx,L.topSafe+s*5.3f);
+                new float[]{tx,t,tx+s*.5f,t-s*1.1f,tx+s*2,t},growth,tx,L.topSafe+s*5.3f,TEXT_INK);
         if(growth<1)return;
         String[] lines=pageLines(message,c.onboarding.speechPage);
         for(int i=0;i<lines.length;i++)speechText(p,lines[i],x,t+s*(1.7f+i*1.4f),type(s*.90f),0xFFFFF5DD);
@@ -176,7 +176,7 @@ final class TutorialSpeech extends Draw {
         float growth=c.onboarding.bubbleProgress();
         if(growth<=0)return;
         bubble(p,l,t,L.w*.97f,b,s*.7f,2,
-                new float[]{l,b-s*.8f,l-s*.9f,b-s,l,t+s*1.2f},growth,L.w*.13f,L.topSafe+s*5.3f);
+                new float[]{l,b-s*.8f,l-s*.9f,b-s,l,t+s*1.2f},growth,L.w*.13f,L.topSafe+s*5.3f,TEXT_INK);
         if(growth<1)return;
         float x=(l+L.w*.97f)*.5f;
         speechText(p,LINES[message][0],x,t+s*1.5f,type(s*.70f),0xFFFFF5DD);
