@@ -827,6 +827,12 @@ public final class IOSInputTest extends Check {
             game.update(DT);
             check("native explanation resumes actual fight "+kind,!c.onboarding.briefing && c.clock>clock
                     && c.onboarding.practice==null && c.onboarding.bossGuide);
+            c.onboarding.clear();c.onboarding.companionTravel=0;
+            check("native used help stays hidden after guide clears "+kind,!c.onboarding.offersBossHelp(c));
+            c.startGame();c.stage=(kind+1)*5;c.boss.begin(kind,c.stage,c.rnd);game.update(DT);
+            int before=ear.explanations;tap(game,x,y);
+            check("native next-run arrival help opens again "+kind,c.onboarding.briefing
+                    && c.boss.intro>0 && ear.explanations==before+1);
         }
     }
 }

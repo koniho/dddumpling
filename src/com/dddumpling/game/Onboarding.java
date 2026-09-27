@@ -6,7 +6,7 @@ final class Onboarding extends Draw {
             SKIPPED=64, WORD_HINT=128, WRONG_HINT=256, STACK_HINT=512;
     int saved, savedPowers, lesson, step, pointer=-1, speech, introduced, hintKind, speechPointer=-1;
     boolean bossHelp, bossGuide, powerGuide, starGuide, titleGuide, helpArmed;
-    int helpPointer=-1;
+    int helpPointer=-1, bossHelpUsed;
     GameCore practice, teacher, narrator;
     GameCore.Enemy word;
     boolean ownsTouch, lid, briefing, continueArmed;
@@ -36,6 +36,7 @@ final class Onboarding extends Draw {
         if(message==speech)hintKind=0;
     }
     void bossDamaged(GameCore c) {
+        if(c.boss.kind>=0)bossHelpUsed|=1<<c.boss.kind;
         if(c.boss.kind==Boss.SLIME)learn(c,TutorialSpeech.GLOB);
         else for(int message:bossSteps(c.boss.kind))learn(c,message);
     }
@@ -75,14 +76,14 @@ final class Onboarding extends Draw {
         return new int[]{TutorialSpeech.SHAKE};
     }
     boolean offersBossHelp(GameCore c) {
-        if(c.state!=GameCore.PLAY || !c.boss.fighting() || c.boss.hp<c.boss.hpMax
+        if(c.state!=GameCore.PLAY || !c.boss.active() || c.boss.beaten || c.boss.hp<c.boss.hpMax
+                || (bossHelpUsed&(1<<c.boss.kind))!=0
                 || practice!=null || briefing || hintKind!=0 || bossHelp || bossGuide || powerGuide
                 || companionTravel>0 || !eligible(SKIPPED))return false;
-        for(int message:bossSteps(c.boss.kind))if(!learned(message))return true;
-        return false;
+        return true;
     }
     private boolean nextBossHelp(GameCore c) {
-        for(int message:bossSteps(c.boss.kind))if(!learned(message) && (introduced&(1<<message))==0) {
+        for(int message:bossSteps(c.boss.kind))if((introduced&(1<<message))==0) {
             speech=message;introduced|=1<<message;briefing=true;age=0;
             Pause.release(c);narrate(c);return true;
         }
@@ -90,7 +91,7 @@ final class Onboarding extends Draw {
     }
     boolean moreBossHelp(GameCore c) {
         if(!bossHelp)return false;
-        for(int message:bossSteps(c.boss.kind))if(!learned(message) && (introduced&(1<<message))==0)return true;
+        for(int message:bossSteps(c.boss.kind))if((introduced&(1<<message))==0)return true;
         return false;
     }
     private void slimeGlobHint(GameCore c) {
@@ -133,7 +134,7 @@ final class Onboarding extends Draw {
         if(c.store!=null) { c.store.saveTutorials(saved);c.store.savePowerTutorials(savedPowers); }
     }
     void reset(GameCore c) {
-        clear();saved=savedPowers=0;companionTravel=0;
+        clear();saved=savedPowers=bossHelpUsed=0;companionTravel=0;
         c.pushLesson.seen=false;c.pushLesson.reset();
         if(c.store!=null)c.store.savePushLessonSeen(false);
         save(c);
@@ -394,7 +395,7 @@ final class Onboarding extends Draw {
             if(action==1) {
                 boolean open=helpArmed && id==helpPointer && promptHit(c,L,x,y);
                 cancelTouch();
-                if(open) { bossHelp=true;introduced=0;nextBossHelp(c); }
+                if(open) { bossHelpUsed|=1<<c.boss.kind;bossHelp=true;introduced=0;nextBossHelp(c); }
             }
             return true;
         }

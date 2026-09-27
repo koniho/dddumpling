@@ -72,7 +72,9 @@ final class Preview {
         }
         for(int kind=0;kind<Boss.COUNT;kind++) {
             GameCore c=new GameCore(new Mem(),114);c.startGame();c.onboarding.saved=0;c.stage=(kind+1)*5;
-            c.boss.begin(kind,c.stage,c.rnd);c.boss.intro=0;c.update(DT,L);
+            c.boss.begin(kind,c.stage,c.rnd);c.update(DT,L);
+            shot(dir,"114-boss-"+kind+"-arrival-question",c,L,w,h,ss);
+            c.boss.intro=0;c.update(DT,L);
             shot(dir,"114-boss-"+kind+"-question",c,L,w,h,ss);
             TestOnboarding.touch(c,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
             TestOnboarding.touch(c,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));

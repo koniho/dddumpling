@@ -1866,7 +1866,7 @@ final class GameCore {
 
     void startGame() {
         diagnostic("start-game");
-        onboarding.clear();onboarding.companionTravel=0;
+        onboarding.clear();onboarding.companionTravel=0;onboarding.bossHelpUsed=0;
         scoresSuppressed=false;
         stopLaunchVoice();
         town.leave(); townOpen=false;

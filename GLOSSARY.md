@@ -580,9 +580,12 @@ return animation, focuses an owned dumpling when needed, and learns each action 
 (including discovery before the prompt). Skip All and Reset Tutorials include these steps.
 The informational minigame overview is learned on acknowledgement rather than a gameplay action.
 
-Initial boss guidance is opt-in: a small **?** beside the companion offers help before the boss takes
-damage, for steps not already learned. Tapping it or the companion while it is available pauses
+Initial boss guidance is opt-in: a small **?** beside the companion offers help from boss-stage
+entry, including the arrival card. It is offered again each run even for learned mechanics.
+Opening help or damaging that boss removes its question bubble for the rest of the run; other
+bosses retain their own help. Tapping it or the companion while it is available pauses
 the fight and moves the companion up to explain Slime, Dark Divide, Octopulse or Fly Agaric.
+Explicitly requested help includes all of that boss's introductory pages, even if learned.
 **Next** advances a multi-part explanation;
 **Let's try!** resumes the same fight. Speech uses platform text-to-speech, follows effects volume,
 ducks music and stops on dismissal or backgrounding; text and demonstrations work without a voice.

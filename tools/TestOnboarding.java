@@ -106,6 +106,7 @@ final class TestOnboarding extends Check {
         briefingInput(L);
         learnedActions(L);
         bossHelp(L);
+        bossHelpPerRun(L);
         slimeVulnerableHelp(L);
         companionHelp(L);
         steamerTutorialWin(L);
@@ -461,6 +462,43 @@ final class TestOnboarding extends Check {
                     && c.boss.hp==hp && ear.hushes>0);
             c.boss.hp-=1;c.onboarding.bossDamaged(c);c.update(DT,L);
             check("damaged boss retires help "+kind,!c.onboarding.offersBossHelp(c));
+        }
+    }
+    private static void bossHelpPerRun(Layout L) {
+        for(int kind=0;kind<Boss.COUNT;kind++)for(int used=0;used<2;used++) {
+            Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;
+            for(int message:new int[]{TutorialSpeech.CLOSED,TutorialSpeech.CHAIN,TutorialSpeech.GLOB,
+                    TutorialSpeech.PINCH,TutorialSpeech.DEFEND,TutorialSpeech.TEAR,TutorialSpeech.SHAKE})
+                c.onboarding.learn(c,message);
+            c.stage=(kind+1)*5;c.boss.begin(kind,c.stage,c.rnd);c.update(DT,L);
+            check("learned boss offers help during stage arrival "+kind+"/"+used,c.boss.intro>0
+                    && c.onboarding.offersBossHelp(c));
+            float x=TutorialSpeech.helpX(L),y=TutorialSpeech.helpY(L);
+            touch(c,L,0,x,y);touch(c,L,3,x,y);
+            check("cancelled boss help stays available "+kind+"/"+used,c.onboarding.offersBossHelp(c));
+            if(used==0) {
+                touch(c,L,0,x,y);touch(c,L,1,x,y);
+                float intro=c.boss.intro;c.update(.5f,L);
+                check("opening help pauses boss arrival "+kind,c.onboarding.briefing && c.boss.intro==intro);
+                int guard=0;while(c.onboarding.briefing && guard++<5)acknowledge(c,L);
+                check("requested help repeats every learned introductory page "+kind,
+                        ear.explanations==(kind==Boss.SLIME || kind==Boss.OCTOPUS?2:1));
+            } else {
+                touch(c,L,0,x,y);c.boss.hp--;c.onboarding.bossDamaged(c);touch(c,L,1,x,y);
+                check("damage cancels pending help activation "+kind,!c.onboarding.briefing);
+            }
+            c.onboarding.clear();c.onboarding.companionTravel=0;
+            c.boss.begin(kind,c.stage,c.rnd);
+            check("used or damaged boss stays dismissed for run "+kind+"/"+used,!c.onboarding.offersBossHelp(c));
+            int other=(kind+1)%Boss.COUNT;c.boss.begin(other,(other+1)*5,c.rnd);
+            check("one boss does not dismiss another boss help "+kind+"/"+used,c.onboarding.offersBossHelp(c));
+            c.startGame();c.stage=(kind+1)*5;c.boss.begin(kind,c.stage,c.rnd);
+            check("new run restores boss help "+kind+"/"+used,c.onboarding.offersBossHelp(c));
+            GameCore loaded=new GameCore(store,115);loaded.startGame();loaded.stage=(kind+1)*5;
+            loaded.boss.begin(kind,loaded.stage,loaded.rnd);
+            check("saved learning does not suppress new launch boss help "+kind+"/"+used,loaded.onboarding.offersBossHelp(loaded));
+            loaded.onboarding.skip(loaded);
+            check("Skip All still suppresses optional boss help "+kind+"/"+used,!loaded.onboarding.offersBossHelp(loaded));
         }
     }
     private static void companionHelp(Layout L) {
