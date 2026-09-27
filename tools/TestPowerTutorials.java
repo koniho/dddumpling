@@ -16,6 +16,7 @@ final class TestPowerTutorials extends Check {
         } else c.tapKey(kind==Power.FLURRY?1:0,L);
     }
     static void all(Layout L) {
+        pickup(L);
         stackHints(L);
         for(int kind:Power.OFFERED) {
             Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;
@@ -36,13 +37,13 @@ final class TestPowerTutorials extends Check {
             check("background pause preserves power explanation "+kind,c.onboarding.briefing && c.modeLeft==left);
             TestOnboarding.acknowledge(c,L);c.update(DT,L);
             check("acknowledgement resumes but does not learn power "+kind,c.modeLeft<left && c.onboarding.powerGuide
-                    && !c.onboarding.learned(message) && store.powerTutorials==0);
+                    && !c.onboarding.learned(message) && store.powerTutorials==8);
             use(c,L,kind);c.update(DT,L);
             check("successful mechanic retires power guide "+kind,c.onboarding.learned(message) && !c.onboarding.powerGuide
                     && c.onboarding.companionTravel<1 && c.onboarding.companionTravel>0);
             GameCore loaded=new GameCore(store,115);
             check("power success survives restart independently "+kind,loaded.onboarding.learned(message)
-                    && store.powerTutorials==(1<<(message-TutorialSpeech.POWER_FLURRY)));
+                    && store.powerTutorials==(8|(1<<(message-TutorialSpeech.POWER_FLURRY))));
             c.startFrenzy(kind,L);c.update(DT,L);
             check("learned power does not interrupt later pickups "+kind,!c.onboarding.briefing);
             c.onboarding.reset(c);
@@ -87,6 +88,55 @@ final class TestPowerTutorials extends Check {
             check("mystery reveal introduces its actual power "+kind,c.onboarding.briefing
                     && c.onboarding.speech==Onboarding.powerSpeech(kind) && c.modeLeft==Power.DURATION);
         }
+    }
+    private static void pickup(Layout L) {
+        for(int mystery=0;mystery<2;mystery++) {
+            Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;
+            Power p=TestPower.place(c,L,Power.FLING,0);p.mystery=mystery==1;
+            p.x=-L.enemyR;p.vx=L.unit;c.update(DT,L);
+            check("pickup guide waits for visible icon "+mystery,!c.onboarding.briefing && p.x>-L.enemyR);
+            p.x=L.w*.5f;float x=p.x,t=p.t,time=c.time;int score=c.score;
+            c.update(.5f,L);
+            check("first visible pickup pauses and narrates collect step "+mystery,c.onboarding.briefing
+                    && c.onboarding.speech==TutorialSpeech.POWER_PICKUP && ear.explanations==1
+                    && p.x==x && p.t==t && c.time==time && c.score==score && !p.hit);
+            TestOnboarding.acknowledge(c,L);c.update(DT,L);
+            check("pickup acknowledgement resumes without learning "+mystery,!c.onboarding.briefing
+                    && c.onboarding.powerGuide && p.x>x && store.powerTutorials==0);
+            check("missed tap does not learn collection "+mystery,!c.tapPower(-L.w,-L.h,L)
+                    && !c.onboarding.learned(TutorialSpeech.POWER_PICKUP));
+            c.tapPower(p.x,p.y,L);c.update(DT,L);
+            check("real collection learns and persists only pickup step "+mystery,store.powerTutorials==8
+                    && new GameCore(store,115).onboarding.learned(TutorialSpeech.POWER_PICKUP));
+            if(mystery==0)check("collection hands off to actual power lesson",c.onboarding.briefing
+                    && c.onboarding.speech==TutorialSpeech.POWER_FLING);
+            else check("mystery selection is not interrupted by pickup reminder",!c.onboarding.powerGuide
+                    && !c.onboarding.briefing && p.hitT>0);
+            c.onboarding.reset(c);
+            check("reset includes pickup instruction "+mystery,!c.onboarding.learned(TutorialSpeech.POWER_PICKUP)
+                    && store.powerTutorials==0);
+        }
+        GameCore c=fresh(L,new Mem());Power p=TestPower.place(c,L,Power.FLING,0);
+        c.tapPower(p.x,p.y,L);c.onboarding.learn(c,TutorialSpeech.POWER_FLING);c.update(DT,L);
+        check("collection before popup skips pickup instruction",c.onboarding.learned(TutorialSpeech.POWER_PICKUP)
+                && !c.onboarding.briefing);
+        c=fresh(L,new Mem());c.onboarding.savedPowers=7;TestPower.place(c,L,Power.FLING,0);c.update(DT,L);
+        check("existing power flags leave new pickup step eligible",c.onboarding.briefing
+                && c.onboarding.speech==TutorialSpeech.POWER_PICKUP);
+        TestOnboarding.acknowledge(c,L);c.power=null;c.update(DT,L);
+        check("missed pickup clears reminder without learning",!c.onboarding.powerGuide
+                && !c.onboarding.learned(TutorialSpeech.POWER_PICKUP));
+        TestPower.place(c,L,Power.FLING,0);c.update(DT,L);
+        check("missed pickup can be explained on next appearance",c.onboarding.briefing);
+        c.onboarding.skip(c);c.update(DT,L);
+        check("Skip All suppresses pickup instruction",!c.onboarding.briefing);
+        for(int effect:new int[]{Power.INCOGNITO,Power.MONOCHROME}) {
+            c=fresh(L,new Mem());TestPower.place(c,L,effect,0);c.update(DT,L);
+            check("known debuff does not get pickup tutorial "+effect,!c.onboarding.briefing);
+        }
+        c=fresh(L,new Mem());TestPower.place(c,L,Power.FLING,0);c.update(DT,L);
+        c.lives=1;c.takeHit(L.w*.5f,L);c.update(DT,L);
+        check("death clears pickup explanation",!c.onboarding.briefing && !c.onboarding.powerGuide);
     }
     private static void stackHints(Layout L) {
         for(int kind:new int[]{Power.FLING,Power.TEAM})for(int acknowledged=0;acknowledged<2;acknowledged++) {

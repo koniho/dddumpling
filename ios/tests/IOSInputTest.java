@@ -722,6 +722,24 @@ public final class IOSInputTest extends Check {
         if(game.core().onboarding.briefing)tap(game,game.geometry().w*.5f,TutorialSpeech.buttonY(game.geometry()));
     }
     private static void powerGuidanceInput() {
+        {
+            Mem store=new Mem();store.tutorials=store.powerTutorials=0;
+            IOSGame game=new IOSGame(store,new Ear(),114);game.layout(393,852,0,59,0,34);
+            GameCore c=game.core();Layout l=game.geometry();c.startGame();c.stage=6;c.spawnTimer=9999;
+            c.enemies.clear();Power p=c.power=new Power();p.effect=Power.FLING;
+            p.x=l.w*.5f;p.y=l.playTop+l.enemyR*4;game.update(DT);
+            tap(game,p.x,p.y);
+            check("native pickup popup prevents collecting through explanation",!p.hit
+                    && c.onboarding.briefing && !c.onboarding.learned(TutorialSpeech.POWER_PICKUP));
+            float x=l.w*.5f,y=TutorialSpeech.buttonY(l);
+            game.touch(one(0,42,x,y));game.background(true);game.background(false);game.back();
+            game.touch(one(1,42,x,y));
+            check("background cancels pickup acknowledgement",c.onboarding.briefing && !p.hit);
+            tutorialContinue(game);tap(game,p.x,p.y);game.update(DT);
+            check("native direct pickup tap learns collection and introduces Fling",p.hit
+                    && c.onboarding.learned(TutorialSpeech.POWER_PICKUP) && c.onboarding.briefing
+                    && c.onboarding.speech==TutorialSpeech.POWER_FLING);
+        }
         for(int kind:Power.OFFERED) {
             Mem store=new Mem();store.tutorials=store.powerTutorials=0;store.collected=1;
             IOSGame game=new IOSGame(store,new Ear(),114);game.layout(393,852,0,59,0,34);

@@ -1244,6 +1244,7 @@ final class GameCore {
     }
 
     private void catchPower(Layout L) {
+        onboarding.learn(this,TutorialSpeech.POWER_PICKUP);
         power.hit = true;
         power.hitT = 0f;
         powerBurstX=power.x;

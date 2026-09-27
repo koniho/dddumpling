@@ -5,7 +5,7 @@ final class TutorialSpeech extends Draw {
     static final int MATCH=1, WORD=2, ALTERNATE=3, LIFT=4, STARS=5, LEAN=6,
             DIG=7, CART=8, CLOSED=9, CHAIN=10, GLOB=11, DANGER=12, RETRY=13,
             STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21,
-            POWER_FLURRY=22, POWER_FLING=23, POWER_TEAM=24;
+            POWER_FLURRY=22, POWER_FLING=23, POWER_TEAM=24, POWER_PICKUP=25;
     private static final int PAPER=0xB8FFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
@@ -30,12 +30,14 @@ final class TutorialSpeech extends Draw {
         {"GRAB THE CAP!", "SHAKE SIDE TO SIDE."},
         {"WAIT FOR YOUR KEYS!", "WATCH THEM SPIN!"},
         {"FLURRY: ANY KEY!", "TAP, TAP, TAP!"},
-        {"FLING: SWIPE!", "SLICE THE FACES!"},
-        {"TEAM SQUISH!", "TAP TO AIM ME!"}
+        {"FLING: SWIPE!", "SLICE THE SQUISHIES!"},
+        {"TEAM SQUISH!", "TAP TO AIM ME!"},
+        {"A GLOWING PICKUP!", "TAP IT TO COLLECT!"}
     };
     static String spoken(int message) {
         if(message==POWER_FLURRY)return "Flurry! Every key can hit any face. Tap any key to clear the falling faces. You've got this!";
-        if(message==POWER_FLING)return "Fling! Swipe across the falling faces to slice them. Try cutting several faces in one swipe!";
+        if(message==POWER_FLING)return "Fling! Slice the Squishies! Swipe across them and try slicing a whole bunch in one swoosh!";
+        if(message==POWER_PICKUP)return "See that glowing pickup? Tap it directly to collect it. You don't need to press a matching key. Give it a tap!";
         if(message==POWER_TEAM)return "Team Squish! I bounce around and clear whole words for you. Tap a matching key to aim me at that word. Any key can send me charging!";
         if(message==WAIT)return "First, wait while two keys are picked at random. Watch them spin! Get ready. You can do this!";
         if(message==ALTERNATE)return "Your keys are ready! Tap left, right, left, right. Go as fast as you can! You've got this!";
@@ -108,7 +110,7 @@ final class TutorialSpeech extends Draw {
         float x=(l+L.w*.97f)*.5f;
         p.text(LINES[message][0],x,t+s*1.5f,type(s*.70f),TEXT_INK,Painter.CENTER,true);
         p.text(LINES[message][1],x,t+s*3f,type(s*.70f),ACCENT,Painter.CENTER,true);
-        if(c.onboarding.powerGuide) {
+        if(c.onboarding.powerGuide && message!=POWER_PICKUP) {
             float left=l+s,right=L.w*.97f-s,y=b-s*.45f;
             p.fillRect(left,y,right,y+s*.15f,0x44754070);
             p.fillRect(left,y,left+(right-left)*Math.max(0f,Math.min(1f,c.modeLeft/Power.DURATION)),y+s*.15f,ACCENT);
@@ -142,7 +144,10 @@ final class TutorialSpeech extends Draw {
         Onboarding o=c.onboarding;GameCore q=o.practice==null?c:o.practice;
         float travel=PushLesson.swipeProgress(age),handX=x,handY=y;
         int key=o.demoKey(c);
-        if(message==POWER_FLURRY) {
+        if(message==POWER_PICKUP) {
+            int effect=c.power==null?Power.FLURRY:c.power.shownEffect();
+            Renderer.summaryPowerIcon(p,effect,x,y,s*1.65f,age);
+        } else if(message==POWER_FLURRY) {
             int at=(int)(age*2.4f)%3;
             face(p,1,x,y-s*1.1f,s*1.1f);
             for(int i=0;i<3;i++)face(p,Roster.at(c.playRosterFull(),i),x+(i-1)*s*3.4f,y+s*1.5f,s*1.05f);

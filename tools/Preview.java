@@ -11,6 +11,11 @@ final class Preview {
 
     private static void onboardingFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("114-"))return;
+        GameCore pickup=TestPowerTutorials.fresh(L,new Check.Mem());
+        TestPower.place(pickup,L,Power.FLING,0);step(pickup,L,.6f);
+        shot(dir,"114-power-pickup-explain",pickup,L,w,h,ss);
+        TestOnboarding.acknowledge(pickup,L);step(pickup,L,.2f);
+        shot(dir,"114-power-pickup-try",pickup,L,w,h,ss);
         for(int kind:Power.OFFERED) {
             GameCore c=TestPowerTutorials.fresh(L,new Check.Mem());
             Check.add(c,L,new int[]{0,1},L.playTop+L.enemyR*4);
@@ -492,8 +497,8 @@ final class Preview {
     private static int unfitFrames;
 
     private static final class Mem implements GameCore.Store {
-        public int loadTutorials() { return 1023 & ~Onboarding.SKIPPED; }
-        public int loadPowerTutorials() { return 7; }
+        public int loadTutorials() { return (1023 & ~Onboarding.SKIPPED)|(1<<(TutorialSpeech.GLOB+9)); }
+        public int loadPowerTutorials() { return 15; }
         boolean pushLessonSeen = true; // Ordinary simulations model a player past onboarding.
         public boolean loadPushLessonSeen() { return pushLessonSeen; }
         public void savePushLessonSeen(boolean value) { pushLessonSeen = value; }

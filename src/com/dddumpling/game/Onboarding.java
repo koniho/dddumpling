@@ -15,7 +15,7 @@ final class Onboarding extends Draw {
 
     // Preserve the original ten lesson bits; successful actions have independent durable bits.
     private static boolean powerMessage(int message) {
-        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.POWER_TEAM;
+        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.POWER_PICKUP;
     }
     boolean learned(int message) {
         if(powerMessage(message))return !eligible(SKIPPED)
@@ -50,6 +50,22 @@ final class Onboarding extends Draw {
         if(message==0 || learned(message))return;
         hintKind=0;bossGuide=false;powerGuide=briefing=true;speech=message;age=0;
         Pause.release(c);narrate(c);
+    }
+    private void pickupHint(GameCore c,Layout L) {
+        Power p=c.power;
+        if(powerGuide || c.powerActive() || c.state!=GameCore.PLAY || c.pushLesson.active
+                || p==null || !p.catchable() || learned(TutorialSpeech.POWER_PICKUP)
+                || !p.mystery && powerSpeech(p.effect)==0)return;
+        // Pickups spawn offscreen; wait until the whole icon is visible and easy to tap.
+        float margin=L.enemyR*2.05f;
+        if(p.x<L.playLeft+margin || p.x>L.playRight-margin)return;
+        hintKind=0;bossGuide=false;powerGuide=briefing=true;speech=TutorialSpeech.POWER_PICKUP;age=0;
+        Pause.release(c);narrate(c);
+    }
+    private boolean powerGuideEnded(GameCore c) {
+        if(learned(speech))return true;
+        if(speech==TutorialSpeech.POWER_PICKUP)return c.power==null || !c.power.catchable();
+        return !c.powerActive() || speech!=powerSpeech(c.mode);
     }
     private static int[] bossSteps(int kind) {
         if(kind==Boss.SLIME)return new int[]{TutorialSpeech.CLOSED,TutorialSpeech.CHAIN};
@@ -192,11 +208,11 @@ final class Onboarding extends Draw {
             // These powers bypass repeated taps; defer, rather than learn, an existing hint.
             boolean touch=ownsTouch;clear();ownsTouch=touch;
         }
-        if(powerGuide && (!c.powerActive() || speech!=powerSpeech(c.mode) || learned(speech))) {
+        if(powerGuide && powerGuideEnded(c)) {
             powerGuide=false;
             if(briefing) { briefing=false;if(c.sound!=null)c.sound.hush();narrator=null; }
         }
-        if(!briefing && practice==null)powerHint(c);
+        if(!briefing && practice==null) { powerHint(c);if(!briefing)pickupHint(c,L); }
         if(bossGuide && (!c.boss.fighting() || learned(speech)
                 || speech==TutorialSpeech.GLOB && !c.boss.hasGlob()))bossGuide=false;
         slimeGlobHint(c);
@@ -444,6 +460,10 @@ final class Onboarding extends Draw {
             if(o.success<=0)o.gesture(p,L);
         } else if(c.pushLesson.active)TutorialSpeech.large(p,c,L,TutorialSpeech.RESCUE,false);
         else if(o.hintKind!=0 || o.bossGuide || o.powerGuide)TutorialSpeech.reminder(p,c,L,o.speech);
+        if(!o.briefing && o.powerGuide && o.speech==TutorialSpeech.POWER_PICKUP && c.power!=null) {
+            float y=c.power.y+(float)Math.sin(c.power.t*3.2f)*L.enemyR*.22f;
+            Renderer.touchHint(p,c.power.x,y,L.keyR*.65f,1f,.85f,o.age);
+        }
         if(o.movingCompanion(c))TutorialSpeech.companion(p,c,L);
         if(o.practice!=null || o.briefing || o.hintKind!=0 || o.bossGuide || o.powerGuide || c.pushLesson.active) {
             p.fillPoly(pill(L.w*.84f,skipY(L),L.w*.135f,L.unit*.95f,12),0xFF493953);
