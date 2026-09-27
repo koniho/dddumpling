@@ -139,6 +139,8 @@ final class Onboarding extends Draw {
                 for(int i=0;i<Boss.SPLIT_HITS;i++)q.tapKey(q.boss.chainLetter(),L);
         }
         q.onboarding.teacher=c;
+        // Attach after setup so practice does not replay run-start or stage-clear sounds.
+        if(which==STEAMER)q.sound=c.sound;
         introduce(c);
     }
     private void makeWord(Layout L,int[] letters) {
@@ -340,7 +342,7 @@ final class Onboarding extends Draw {
             if(id==pointer) {
                 if(lid) {
                     q.dragBonusLid(startY-y);
-                    if(Screens.steamerLidY(q,L)<=Screens.steamerReleaseY(q,L))q.swipeBonus();
+                    if(Screens.steamerLidY(q,L)<=Screens.steamerReleaseY(q,L))swipeSteamer(c,q);
                 } else if(starDrag)dragStar(q,L,x,y);
                 else q.dragBoss(x,y,L);
             }
@@ -355,6 +357,13 @@ final class Onboarding extends Draw {
     private void dragStar(GameCore q,Layout L,float x,float y) {
         if(Math.abs(x+offsetX-q.stars.x)>L.w*.025f)step=1;
         q.stars.dragTo(x+offsetX,L);
+    }
+    private void swipeSteamer(GameCore c,GameCore q) {
+        GameCore.Sound sound=q.sound;
+        // A live lesson hands its win to the waiting run, which plays the celebration once.
+        if(c.bonusRolling() || c.bonusMashing())q.sound=null;
+        try { q.swipeBonus(); }
+        finally { q.sound=sound; }
     }
     int demoKey(GameCore c) {
         if(practice==null) {

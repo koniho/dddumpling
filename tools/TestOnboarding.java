@@ -130,6 +130,10 @@ final class TestOnboarding extends Check {
         c.onboarding.begin(c,Onboarding.STEAMER,L);GameCore q=c.onboarding.practice;
         check("Steamer first explains waiting for random keys",c.onboarding.briefing
                 && c.onboarding.speech==TutorialSpeech.WAIT && ear.explanation.contains("picked at random"));
+        check("Steamer practice connects existing audio without replaying setup",q.sound==ear
+                && ear.starts==0 && ear.stageClears==0 && ear.musicCalls==0 && ear.squishes==0);
+        c.update(1f,L);
+        check("paused selection explanation has no spinner sounds",ear.squishes==0);
         acknowledge(c,L);float timer=q.bonusTimer;
         touch(c,L,0,q.keyX(L,q.steamer.wanted()),q.keyY(L,q.steamer.wanted()));
         touch(c,L,1,q.keyX(L,q.steamer.wanted()),q.keyY(L,q.steamer.wanted()));
@@ -140,10 +144,22 @@ final class TestOnboarding extends Check {
         check("Go cue waits for settled selection and pauses for reading",!q.bonusRolling()
                 && c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.ALTERNATE
                 && ear.explanations==2 && ear.explanation.contains("Go as fast as you can!"));
+        check("tutorial random selection plays ordinary spinner effects",ear.squishes>0);
         timer=q.bonusTimer;c.update(2f,L);
         check("Go explanation does not consume tapping time",q.bonusTimer==timer);
+        int squishes=ear.squishes;
         key(c,L,q.steamer.wanted());key(c,L,q.steamer.wanted());
         check("ready keys accept real alternating taps",q.steamer.hits==1);
+        check("tutorial alternating taps each play their effect",ear.squishes==squishes+2);
+        int wrongs=ear.wrongs;
+        key(c,L,q.steamer.rightKey);
+        check("tutorial wrong-key feedback uses ordinary audio",ear.wrongs==wrongs+1);
+        ear.volumes(.5f,0f);key(c,L,q.steamer.wanted());
+        check("tutorial effects retain the player's sound volume",ear.squishVolume==0f && ear.musicVolume==.5f);
+        Pause.open(c);squishes=ear.squishes;c.update(1f,L);
+        touch(c,L,0,q.keyX(L,q.steamer.wanted()),q.keyY(L,q.steamer.wanted()));
+        check("pausing tutorial prevents gameplay effects",ear.squishes==squishes);
+        Pause.resume(c);
         GameCore restarted=new GameCore(c.store,114);restarted.startGame();
         check("waiting step stays learned across restart",restarted.onboarding.learned(TutorialSpeech.WAIT));
         GameCore ready=fresh(L,new Mem());ready.onboarding.learn(ready,TutorialSpeech.WAIT);
@@ -171,6 +187,7 @@ final class TestOnboarding extends Check {
         check("tutorial lid swipe wins the actual Steamer immediately",c.onboarding.practice==null
                 && c.bonusEscape() && c.prize>=0 && c.score>=GameCore.FREE_BONUS && c.lives==2);
         check("real tutorial win gets an encouraging spoken celebration",ear.explanation.contains("You did it!"));
+        check("tutorial win plays the real celebration exactly once",ear.achievements==1);
         check("tutorial win persists real reward and existing difficulty",store.steamerOpens==4
                 && store.collectTotal==1 && c.collectTotal==1 && c.starNext
                 && !new GameCore(store,114).onboarding.eligible(Onboarding.STEAMER));
@@ -180,6 +197,7 @@ final class TestOnboarding extends Check {
         for(int i=0;i<60;i++) { c.swipeBonus();c.update(DT,L); }
         check("tutorial handoff cannot pay twice",store.steamerOpens==4 && store.collectTotal==1
                 && c.score==score && c.prize==prize && c.onboarding.practice==null);
+        check("repeated winning gestures do not replay celebration",ear.achievements==1);
         int stage=c.stage;
         for(int i=0;i<1200 && c.stage==stage;i++)c.update(DT,L);
         check("tutorial win goes through celebration to next stage",c.stage==stage+1
