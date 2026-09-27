@@ -1,12 +1,12 @@
 package com.dddumpling.game;
 
-/** The first last-life threat waits for a real desperation swipe. */
+/** The first available rescue waits for a real upward swipe. */
 final class PushLesson extends Draw {
     boolean seen, active, ownsTouch, armed;
     float clock, startX, startY;
 
-    // Stop just before the tile reaches the line; the lunge remains a fallback for crowded hits.
-    static float triggerY(Layout L) { return L.dangerY - L.enemyR * 1.4f; }
+    // Share the warning band that makes the rescue bar available, regardless of lives.
+    static float triggerY(Layout L) { return L.dangerY-Math.max(1f,(L.dangerY-L.playTop)*GameCore.WARN_BAND); }
     private static float clamp01(float t) { return Math.max(0f, Math.min(1f, t)); }
     static float swipeProgress(float clock) {
         float t = clamp01((clock % 1.8f - .25f) / .9f);
@@ -19,13 +19,14 @@ final class PushLesson extends Draw {
     boolean update(GameCore c, float dt, Layout L) {
         if (c.state != GameCore.PLAY) { reset(); return false; }
         if (!active && !seen && c.onboarding.eligible(Onboarding.SKIPPED)
-                && c.lives == 1 && !c.pushUsed && !c.settingsOpen
+                && !c.pushUsed && !c.settingsOpen
                 && !c.pendingBonus && !c.boss.active() && !Cave.active(c)) {
             for (GameCore.Enemy e : c.enemies) {
                 if (e.destroyed || e.dying || e.linkWaiting || e.slideT > 0) continue;
                 if (e.attacking || e.y >= triggerY(L)) {
                     Pause.release(c);
                     active = true;
+                    if(c.sound!=null)c.sound.explain(TutorialSpeech.spoken(TutorialSpeech.RESCUE));
                     c.warnLevel = Math.max(.5f, c.warnLevel);
                     break;
                 }

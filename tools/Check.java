@@ -38,7 +38,7 @@ abstract class Check {
                 |(1<<(TutorialSpeech.GLOB+9)); // Ordinary boss simulations already know the contextual drag.
         public int loadTutorials() { return tutorials; }
         public void saveTutorials(int value) { tutorials=value; }
-        int powerTutorials=15; // Ordinary simulations know the three powers and pickup gesture.
+        int powerTutorials=127; // Ordinary simulations know powers, pickups and collection guidance.
         public int loadPowerTutorials() { return powerTutorials; }
         public void savePowerTutorials(int value) { powerTutorials=value; }
         boolean pushLessonSeen = true; // Ordinary simulations model a player past onboarding.

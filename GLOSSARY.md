@@ -531,9 +531,9 @@ Peach Coil, Berry Boa, Moon Ribbon, and Golden Hiss. Both have dedicated display
 family stories, mystery silhouettes, and the Cave Friend tier. The catalogue has 59 entries;
 existing collectible IDs and normal reward pools stay unchanged. `CaveCollect` draws the new families.
 
-The first normal-stage threat on the last life pauses just before reaching the danger line for a **desperation swipe lesson**.
-The text-free lesson shows the shared instructional finger repeatedly swiping upward from the normal bar,
-which remains uncovered by the tutorial dimming.
+The first normal-stage enemy entering the rescue warning band pauses for a **rescue swipe lesson**,
+regardless of remaining lives. The companion explains the move in text and speech, while the shared
+instructional finger repeatedly swipes upward from the normal bar, which stays uncovered by dimming.
 Swipe upward from the highlighted bar to perform the real push-back and resume; taps cannot
 dismiss it. Any successful desperation swipe marks the lesson learned, including one used before
 the tutorial appears. Completion is saved across runs and app restarts. Boss fights and cave expeditions
@@ -551,6 +551,10 @@ win count are awarded once, then its celebration leads to the next stage without
 The tutorial first shows a wait symbol and random key selection, then pauses on an encouraging
 **Go as fast as you can!** explanation only once the pair has settled. Spoken encouragement
 accompanies the selection, alternating taps, lid swipe and win.
+The Steamer basket fades in for 0.8 seconds before any popup, without advancing selection or
+gameplay timers. A one-time opening step explains post-stage minigames and collecting dumplings,
+then introduces the controls. The first instruction names each minigame in both text and speech:
+Steamer, Star Path, Cart Rush and Dumpling Mine.
 Star Path explains the actual course, then resumes its normal ready sequence and live flight.
 There is no separate practice round or restart after learning to steer: stars, sounds and rewards
 belong to that real attempt. The companion returns to its flyer position when reading ends;
@@ -570,6 +574,11 @@ example, and returns after the action succeeds. Explanations pause the scene unt
 game controls cannot dismiss them. Successful actions in normal play or practice permanently
 retire just that step, so already-understood actions are skipped on later encounters and launches.
 Acknowledging an explanation alone does not mark the action learned.
+After collecting a first dumpling and returning to title, a two-step guide introduces opening
+the display case and tapping an owned dumpling to view its narrated story. It waits for the
+return animation, focuses an owned dumpling when needed, and learns each action independently
+(including discovery before the prompt). Skip All and Reset Tutorials include these steps.
+The informational minigame overview is learned on acknowledgement rather than a gameplay action.
 
 Initial boss guidance is opt-in: a small **?** beside the companion offers help before the boss takes
 damage, for steps not already learned. Tapping it or the companion while it is available pauses

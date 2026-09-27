@@ -783,6 +783,7 @@ final class GameCore {
             return;
         }
         story = caseIndex;
+        onboarding.learn(this,TutorialSpeech.STORIES);
         storyT = 0f;
         if (sound != null) {
             sound.achievement();
@@ -1436,6 +1437,7 @@ final class GameCore {
 
     boolean swipeUp(Layout L) {
         if (!pushBack(L)) return false;
+        if(pushLesson.active && sound!=null)sound.hush();
         pushLesson.active = false;
         if (!pushLesson.seen) {
             pushLesson.seen = true;

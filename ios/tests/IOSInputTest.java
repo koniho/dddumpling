@@ -294,9 +294,9 @@ public final class IOSInputTest extends Check {
         game.touch(one(2,3,x,y-l.enemyR*2));
         check("lower-field upward swipe triggers panic", c.pushT>0);
         game.touch(one(1,3,x,y-l.enemyR*2));
-        c.pushUsed=false; c.pushLesson.seen=false; c.lives=1;
+        c.pushUsed=false; c.pushLesson.seen=false; c.lives=3;
         c.enemies.clear(); add(c,l,new int[] {0},l.dangerY-10); game.update(DT);
-        check("native last-life threat freezes for lesson",c.pushLesson.active);
+        check("native available rescue freezes for lesson at full lives",c.pushLesson.active);
         tap(game,l.keyX[0],l.keyY[0]);
         check("native key cannot dismiss lesson",c.pushLesson.active);
         y=(l.dangerY+l.deckTop)*.5f;
@@ -676,6 +676,7 @@ public final class IOSInputTest extends Check {
         check("native controls finish core lesson",(store.tutorials&Onboarding.CORE)!=0 && c.onboarding.practice==null);
         bossGuidanceInput();
         starGuidanceInput();
+        collectionGuidanceInput();
 
         c.onboarding.begin(c,Onboarding.MINE,l);q=c.onboarding.practice;
         for(int i=0;i<600 && !q.mining.swipeReady();i++) {
@@ -721,6 +722,24 @@ public final class IOSInputTest extends Check {
     }
     private static void tutorialContinue(IOSGame game) {
         if(game.core().onboarding.briefing)tap(game,game.geometry().w*.5f,TutorialSpeech.buttonY(game.geometry()));
+    }
+    private static void collectionGuidanceInput() {
+        Mem store=new Mem();store.tutorials=store.powerTutorials=0;
+        Ear ear=new Ear();IOSGame game=new IOSGame(store,ear,114);game.layout(393,852,0,59,0,34);
+        GameCore c=game.core();Layout l=game.geometry();c.startGame();c.collected=store.collected=1;c.toTitle();
+        for(int i=0;i<120 && !c.onboarding.briefing;i++)game.update(DT);
+        tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(l,c.clock));
+        check("collection explanation blocks taps through to title",c.onboarding.briefing && !c.caseOpen);
+        tutorialContinue(game);tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(l,c.clock));
+        for(int i=0;i<120 && !c.onboarding.briefing;i++)game.update(DT);
+        check("real case tap advances to story instruction",c.caseOpen && c.onboarding.briefing
+                && c.onboarding.speech==TutorialSpeech.STORIES);
+        float x=l.w*.5f,y=TutorialSpeech.buttonY(l);
+        game.touch(one(0,42,x,y));game.touch(one(3,42,x,y));game.touch(one(1,42,x,y));
+        check("cancelled collection continue stays on its instruction",c.onboarding.briefing && !c.storyOpen());
+        tutorialContinue(game);tap(game,l.w*.5f,Showcase.focusCy(l));game.update(DT);
+        check("real focused-dumpling tap opens narrated story and learns lesson",c.storyOpen()
+                && ear.narrations==1 && c.onboarding.learned(TutorialSpeech.STORIES) && !c.onboarding.titleGuide);
     }
     private static void starGuidanceInput() {
         Mem store=new Mem();store.tutorials=0;

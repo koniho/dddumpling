@@ -5,16 +5,17 @@ final class TutorialSpeech extends Draw {
     static final int MATCH=1, WORD=2, ALTERNATE=3, LIFT=4, STARS=5, LEAN=6,
             DIG=7, CART=8, CLOSED=9, CHAIN=10, GLOB=11, DANGER=12, RETRY=13,
             STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21,
-            POWER_FLURRY=22, POWER_FLING=23, POWER_TEAM=24, POWER_PICKUP=25;
+            POWER_FLURRY=22, POWER_FLING=23, POWER_TEAM=24, POWER_PICKUP=25,
+            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28;
     private static final int PAPER=0xB8FFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
         {"TAP KEYS IN ORDER!", "START ON THE LEFT."},
         {"GO AS FAST", "AS YOU CAN!"},
         {"GREAT JOB! LIFT IT!", "SWIPE UP TO WIN!"},
-        {"CATCH THE STARS!", "SLIDE TO STEER."},
-        {"SLIDE TO STEER!", "STAY IN THE GREEN."},
-        {"TAP MATCHING KEYS!", "FILL THE CART."},
+        {"STAR PATH!", "SLIDE TO CATCH STARS!"},
+        {"CART RUSH!", "STAY IN THE GREEN."},
+        {"DUMPLING MINE!", "TAP MATCHING KEYS!"},
         {"THE CART IS FULL!", "SWIPE IT AWAY."},
         {"WRONG OR HIDDEN?", "YOU'LL GET SLIMED!"},
         {"TAP MATCHING KEYS!", "WHEN THE FACE SHOWS!"},
@@ -28,11 +29,14 @@ final class TutorialSpeech extends Draw {
         {"SAVE YOUR KEYS!", "TAP THE SHOWN KEY."},
         {"GRAB THE ARM TIP!", "PULL IT AWAY."},
         {"GRAB THE CAP!", "SHAKE SIDE TO SIDE."},
-        {"WAIT FOR YOUR KEYS!", "WATCH THEM SPIN!"},
+        {"STEAMER: WAIT!", "WATCH YOUR KEYS SPIN!"},
         {"FLURRY: ANY KEY!", "TAP, TAP, TAP!"},
         {"FLING: SWIPE!", "SLICE THE SQUISHIES!"},
         {"TEAM SQUISH!", "TAP TO AIM ME!"},
-        {"A GLOWING PICKUP!", "TAP IT TO COLLECT!"}
+        {"A GLOWING PICKUP!", "TAP IT TO COLLECT!"},
+        {"STEAMER TIME!", "COLLECT DUMPLINGS!"},
+        {"YOUR DUMPLINGS!", "OPEN THEIR CASE!"},
+        {"TAP YOUR DUMPLING!", "DISCOVER ITS STORY!"}
     };
     static String spoken(int message) {
         if(message==POWER_FLURRY)return "Flurry! Every key can hit any face. Tap any key to clear the falling faces. You've got this!";
@@ -40,7 +44,14 @@ final class TutorialSpeech extends Draw {
         if(message==POWER_PICKUP)return "See that glowing pickup? Tap it directly to collect it. You don't need to press a matching key. Give it a tap!";
         if(message==STACK)return "See the little pips on this Squishy? Tap its matching key once for each pip. Keep tapping until it's cleared!";
         if(message==POWER_TEAM)return "Team Squish! I bounce around and clear whole words for you. Tap a matching key to aim me at that word. Any key can send me charging!";
-        if(message==WAIT)return "First, wait while two keys are picked at random. Watch them spin! Get ready. You can do this!";
+        if(message==MINIGAMES)return "Steamer! After each stage, play a minigame for a chance to collect dumplings. Let's free one from this steamer!";
+        if(message==DISPLAY_CASE)return "You collected a dumpling! Your friends live in the display case. Tap the case to visit them!";
+        if(message==STORIES)return "Every dumpling has a story! Tap your dumpling in the middle to see its story and hear it read aloud. You can explore your other friends here too!";
+        if(message==RESCUE)return "An enemy is getting close! Swipe up from the glowing bar to push the Squishies back. You can do this once each stage. Give yourself some room!";
+        if(message==STARS)return "Star Path! Slide to steer your dumpling and catch the stars. Collect them all to win a new friend!";
+        if(message==LEAN)return "Cart Rush! Slide left and right to steer. Stay in the green and help your cart reach the finish!";
+        if(message==DIG)return "Dumpling Mine! Tap the matching keys in order to fill your cart. Let's dig up a new friend!";
+        if(message==WAIT)return "Steamer! First, wait while two keys are picked at random. Watch them spin! Get ready. You can do this!";
         if(message==ALTERNATE)return "Your keys are ready! Tap left, right, left, right. Go as fast as you can! You've got this!";
         if(message==LIFT)return "Great job! The lid is ready. Swipe it up to win. You can do it!";
         if(message==SUCCESS)return "Amazing! You did it! You freed a dumpling!";
@@ -100,7 +111,7 @@ final class TutorialSpeech extends Draw {
         demonstrate(p,c,L,message,x,t+s*8.4f,s,age);
         if(button) {
             p.fillPoly(pill(x,buttonY(L),L.w*.32f,s*1.15f,14),0xFF387358);
-            String buttonText=c.onboarding.moreBossHelp(c)?"NEXT":message==WAIT?"LET'S WATCH!":message==ALTERNATE?"LET'S GO!":"LET'S TRY!";
+            String buttonText=c.onboarding.moreBossHelp(c) || message==MINIGAMES?"NEXT":message==WAIT?"LET'S WATCH!":message==ALTERNATE?"LET'S GO!":"LET'S TRY!";
             p.text(buttonText,x,buttonY(L)+s*.38f,type(s*.92f),0xFFFFFFFF,Painter.CENTER,true);
         }
     }
@@ -145,7 +156,16 @@ final class TutorialSpeech extends Draw {
         Onboarding o=c.onboarding;GameCore q=o.practice==null?c:o.practice;
         float travel=PushLesson.swipeProgress(age),handX=x,handY=y;
         int key=o.demoKey(c);
-        if(message==POWER_PICKUP) {
+        if(message==MINIGAMES || message==DISPLAY_CASE || message==STORIES) {
+            int who=message==STORIES?c.caseIndex:c.prize>=0?c.prize:0;
+            if(message==DISPLAY_CASE)p.fillPoly(pill(x,y,s*3.3f,s*2.2f,16),0xFF493953);
+            if(message==STORIES) {
+                p.fillPoly(new float[]{x-s*3,y-s*1.8f,x,y-s*1.4f,x+s*3,y-s*1.8f,
+                        x+s*3,y+s*1.8f,x,y+s*2.2f,x-s*3,y+s*1.8f},0xFFFFF5DD);
+                p.line(x,y-s*1.4f,x,y+s*2.2f,ACCENT,s*.12f);
+            }
+            Trinket.drawReacting(p,who,x,y,s*1.5f,age,1f,1,0);
+        } else if(message==POWER_PICKUP) {
             int effect=c.power==null?Power.FLURRY:c.power.shownEffect();
             Renderer.summaryPowerIcon(p,effect,x,y,s*1.65f,age);
         } else if(message==POWER_FLURRY) {

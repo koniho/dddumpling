@@ -17,9 +17,17 @@ final class TestOnboarding extends Check {
         c.update(DT,L);
     }
     static void acknowledge(GameCore c,Layout L) {
+        reveal(c,L);
         if(!c.onboarding.briefing)return;
         touch(c,L,0,L.w*.5f,TutorialSpeech.buttonY(L));
         touch(c,L,1,L.w*.5f,TutorialSpeech.buttonY(L));
+    }
+    static void reveal(GameCore c,Layout L) {
+        if(c.onboarding.sceneWait>0)c.update(c.onboarding.sceneWait,L);
+        if(c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.MINIGAMES) {
+            touch(c,L,0,L.w*.5f,TutorialSpeech.buttonY(L));
+            touch(c,L,1,L.w*.5f,TutorialSpeech.buttonY(L));
+        }
     }
     static void finish(GameCore c,Layout L) { for(int i=0;i<120;i++)c.update(DT,L); }
     static void all(Layout L) {
@@ -103,6 +111,8 @@ final class TestOnboarding extends Check {
         steamerTutorialWin(L);
         starTutorialRun(L);
         steamerSelection(L);
+        steamerArrival(L);
+        collectionGuidance(L);
         diagnostics(L);
         TestPowerTutorials.all(L);
     }
@@ -125,9 +135,61 @@ final class TestOnboarding extends Check {
         c.startGame();c.toTitle();
         check("unavailable diagnostics cannot interrupt navigation",c.state==GameCore.TITLE);
     }
+    private static void steamerArrival(Layout L) {
+        Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;
+        Interlude.enterBonus(c,L);c.update(DT,L);GameCore q=c.onboarding.practice;
+        float timer=q.bonusTimer;int score=c.score;
+        check("Steamer scene appears before any speech",c.onboarding.sceneWait>0 && !c.onboarding.briefing
+                && ear.explanations==0);
+        c.update(.4f,L);
+        check("Steamer fades in without spending selection time",q.time>=.4f && q.bonusTimer==timer
+                && c.score==score && !c.onboarding.briefing);
+        touch(c,L,0,q.keyX(L,0),q.keyY(L,0));touch(c,L,1,q.keyX(L,0),q.keyY(L,0));
+        check("arrival touches cannot start minigame",q.steamer.hits==0 && q.bonusTimer==timer);
+        c.update(Onboarding.SCENE_REVEAL,L);
+        check("minigame purpose precedes control instructions",c.onboarding.briefing
+                && c.onboarding.speech==TutorialSpeech.MINIGAMES && ear.explanation.startsWith("Steamer!")
+                && ear.explanation.contains("After each stage") && q.bonusTimer==timer);
+        touch(c,L,0,L.w*.5f,TutorialSpeech.buttonY(L));touch(c,L,1,L.w*.5f,TutorialSpeech.buttonY(L));
+        check("overview advances to paused Steamer selection step",c.onboarding.briefing
+                && c.onboarding.speech==TutorialSpeech.WAIT && ear.explanation.startsWith("Steamer!")
+                && new GameCore(store,115).onboarding.learned(TutorialSpeech.MINIGAMES));
+        for(int message:new int[]{TutorialSpeech.STARS,TutorialSpeech.LEAN,TutorialSpeech.DIG})
+            check("minigame narration names its game "+message,TutorialSpeech.spoken(message).startsWith(
+                    message==TutorialSpeech.STARS?"Star Path!":message==TutorialSpeech.LEAN?"Cart Rush!":"Dumpling Mine!"));
+    }
+    private static void collectionGuidance(Layout L) {
+        Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;c.toTitle();
+        c.update(2,L);c.update(DT,L);
+        check("empty collection does not open title guidance",!c.onboarding.titleGuide);
+        c.collected=store.collected=1L<<3;c.time=2;c.update(DT,L);
+        check("first collected dumpling introduces display case on title",c.onboarding.titleGuide
+                && c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.DISPLAY_CASE);
+        acknowledge(c,L);c.openCase();
+        for(int i=0;i<90 && !c.onboarding.briefing;i++)c.update(DT,L);
+        check("case opening learns action and introduces owned dumpling story",c.onboarding.learned(TutorialSpeech.DISPLAY_CASE)
+                && c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.STORIES && c.caseIndex==3);
+        acknowledge(c,L);c.openStory();c.update(DT,L);
+        check("story opens normally and completes collection sequence",c.storyOpen() && ear.narrations==1
+                && !c.onboarding.titleGuide && !c.onboarding.briefing
+                && new GameCore(store,116).onboarding.learned(TutorialSpeech.STORIES));
+        c.closeStory();c.closeCase();c.update(DT,L);
+        check("completed collection sequence does not repeat",!c.onboarding.titleGuide);
+        c.onboarding.reset(c);c.update(DT,L);
+        check("reset makes collection guidance available without losing dumpling",c.onboarding.titleGuide
+                && c.collected==(1L<<3));
+        c.onboarding.skip(c);c.update(DT,L);
+        check("Skip All suppresses collection sequence",!c.onboarding.titleGuide);
+        c=fresh(L,new Mem());c.collected=1;c.toTitle();c.openCase();c.openStory();c.closeStory();c.closeCase();
+        c.update(2,L);c.update(DT,L);
+        check("discovering case and story early skips their instructions",!c.onboarding.titleGuide
+                && c.onboarding.learned(TutorialSpeech.DISPLAY_CASE) && c.onboarding.learned(TutorialSpeech.STORIES));
+    }
     private static void steamerSelection(Layout L) {
         GameCore c=fresh(L,new Mem());Ear ear=new Ear();c.sound=ear;
+        c.onboarding.learn(c,TutorialSpeech.MINIGAMES);
         c.onboarding.begin(c,Onboarding.STEAMER,L);GameCore q=c.onboarding.practice;
+        reveal(c,L);
         check("Steamer first explains waiting for random keys",c.onboarding.briefing
                 && c.onboarding.speech==TutorialSpeech.WAIT && ear.explanation.contains("picked at random"));
         check("Steamer practice connects existing audio without replaying setup",q.sound==ear
@@ -164,6 +226,7 @@ final class TestOnboarding extends Check {
         check("waiting step stays learned across restart",restarted.onboarding.learned(TutorialSpeech.WAIT));
         GameCore ready=fresh(L,new Mem());ready.onboarding.learn(ready,TutorialSpeech.WAIT);
         Interlude.enterBonus(ready,L);ready.bonusTimer=ready.bonusRollEnd;ready.update(DT,L);
+        reveal(ready,L);
         check("returning to a learned selection does not spin a second time",ready.onboarding.briefing
                 && ready.onboarding.speech==TutorialSpeech.ALTERNATE && ready.onboarding.practice.bonusMashing());
     }
@@ -320,9 +383,10 @@ final class TestOnboarding extends Check {
         check("continue consumes gesture without typing",!c.onboarding.briefing && !c.onboarding.ownsTouch && c.onboarding.word.pos==0);
         for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.CART,Onboarding.MINE,Onboarding.SLIME}) {
             c.onboarding.begin(c,lesson,L);GameCore q=c.onboarding.practice;
+            reveal(c,L);float presentationTime=q.time;
             float timer=q.bonusTimer,phase=q.boss.phase,ready=q.cart.ready,mine=q.mining.left;
             for(int i=0;i<300;i++)c.update(DT,L);
-            check("new mechanic freezes every gameplay clock "+lesson,c.onboarding.briefing && q.time==0
+            check("new mechanic freezes every gameplay clock "+lesson,c.onboarding.briefing && q.time==presentationTime
                     && q.bonusTimer==timer && q.boss.phase==phase && q.cart.ready==ready && q.mining.left==mine);
             if(lesson==Onboarding.STEAMER) {
                 acknowledge(c,L);q.bonusTimer=q.bonusRollEnd;
@@ -352,6 +416,7 @@ final class TestOnboarding extends Check {
         check("successful alternation before lesson skips it",c.onboarding.practice==null && c.onboarding.learned(TutorialSpeech.ALTERNATE));
         for(int i=0;i<40 && !c.bonusSwipeReady();i++)c.tapBonus(c.steamer.wanted());
         c.update(DT,L);
+        reveal(c,L);
         check("learned alternation jumps directly to unlearned lid action",c.onboarding.briefing
                 && c.onboarding.speech==TutorialSpeech.LIFT && c.onboarding.practice.bonusSwipeReady());
         c.update(.2f,L);float outward=c.onboarding.companionTravel;

@@ -32,7 +32,14 @@ final class Preview {
         TestOnboarding.acknowledge(stars,L);step(stars,L,StarPath.READY+.4f);
         shot(dir,"114-stars-flight",stars,L,w,h,ss);
         for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.CART,Onboarding.MINE}) {
-            GameCore c=new GameCore(new Mem(),114);c.startGame();c.onboarding.begin(c,lesson,L);
+            GameCore c=new GameCore(new Mem(),114);c.startGame();
+            if(lesson==Onboarding.STEAMER)c.onboarding.savedPowers&=~(1<<(TutorialSpeech.MINIGAMES-TutorialSpeech.POWER_FLURRY));
+            c.onboarding.begin(c,lesson,L);
+            if(lesson==Onboarding.STEAMER) {
+                step(c,L,.5f);shot(dir,"114-steamer-arrive",c,L,w,h,ss);
+                step(c,L,.4f);shot(dir,"114-steamer-minigames",c,L,w,h,ss);
+                TestOnboarding.reveal(c,L);
+            }
             step(c,L,.6f);GameCore q=c.onboarding.practice;
             String name=lesson==2?"steamer":lesson==4?"stars":lesson==8?"cart":"mine";
             shot(dir,"114-"+name+"-ready",c,L,w,h,ss);
@@ -100,6 +107,13 @@ final class Preview {
                 shot(dir,"114-stack-pips-"+(3-hits),c,L,w,h,ss);
             }
         }
+        GameCore collection=new GameCore(new Mem(),114);collection.startGame();collection.collected=1;
+        collection.onboarding.savedPowers=0;collection.toTitle();collection.time=2;step(collection,L,.6f);
+        shot(dir,"114-case-explain",collection,L,w,h,ss);
+        TestOnboarding.acknowledge(collection,L);shot(dir,"114-case-try",collection,L,w,h,ss);
+        collection.openCase();step(collection,L,1f);shot(dir,"114-story-explain",collection,L,w,h,ss);
+        TestOnboarding.acknowledge(collection,L);shot(dir,"114-story-try",collection,L,w,h,ss);
+        collection.openStory();step(collection,L,.6f);shot(dir,"114-story-open",collection,L,w,h,ss);
         GameCore settings=new GameCore(new Mem(),114);PlayerSettings.open(settings);
         settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME);
         shot(dir,"114-settings-reset",settings,L,w,h,ss);
@@ -504,7 +518,7 @@ final class Preview {
 
     private static final class Mem implements GameCore.Store {
         public int loadTutorials() { return (1023 & ~Onboarding.SKIPPED)|(1<<(TutorialSpeech.GLOB+9)); }
-        public int loadPowerTutorials() { return 15; }
+        public int loadPowerTutorials() { return 127; }
         boolean pushLessonSeen = true; // Ordinary simulations model a player past onboarding.
         public boolean loadPushLessonSeen() { return pushLessonSeen; }
         public void savePushLessonSeen(boolean value) { pushLessonSeen = value; }
