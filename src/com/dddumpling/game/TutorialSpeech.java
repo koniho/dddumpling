@@ -41,11 +41,11 @@ final class TutorialSpeech extends Draw {
     };
     static String spoken(int message) {
         if(message==COMPANION)return "I'm your first squishy! I'll stay by your keys. I'll show you how to play as we go. Let's find more friends!";
-        if(message==POWER_FLURRY)return "Flurry lets any key hit any face! Tap any key to clear the falling faces. You've got this!";
-        if(message==POWER_FLING)return "Fling lets you slice the Squishies! Swipe across a whole bunch in one swoosh!";
-        if(message==POWER_PICKUP)return "See that glowing pickup? Tap it directly to collect it. You don't need to press a matching key. Give it a tap!";
+        if(message==POWER_FLURRY)return "Flurry! Tap any key to clear the falling faces.";
+        if(message==POWER_FLING)return "Fling! Swipe across squishies to slice them.";
+        if(message==POWER_PICKUP)return "Tap the glowing pickup to collect its power!";
         if(message==STACK)return "See the little pips on this Squishy? Tap its matching key once for each pip. Keep tapping until it's cleared!";
-        if(message==POWER_TEAM)return "Team Squish is here to help! I bounce around and clear whole words for you. Tap a matching key to aim me at that word. Any key can send me charging!";
+        if(message==POWER_TEAM)return "Team Squish! Tap any key to aim me and clear words.";
         if(message==MINIGAMES)return "Steamer is a minigame! Play a minigame after each stage. You can win dumplings! Let's free one from this steamer!";
         if(message==DISPLAY_CASE)return "You collected a dumpling! Your friends live in the display case. Tap the case to visit them!";
         if(message==STORIES)return "Every dumpling has a story! Tap the dumpling in the middle to open its story. You can read its story or listen to it. You can explore your other friends here too!";

@@ -571,6 +571,7 @@ A first-pickup lesson pauses once a glowing powerup is fully onscreen and demons
 the icon directly, not a matching key. Acknowledgement resumes play with a pointing hand;
 successful collection permanently learns this step, independently of the granted power.
 Mystery pickups use the same collection control; known debuffs get no pickup tutorial.
+The pickup, FLURRY, FLING and TEAM SQUISH explanations each fit on one page with matching narration.
 FLURRY, FLING and TEAM SQUISH each explain their controls on first use, pausing the live
 field and frenzy countdown while the companion speaks and demonstrates. A successful wildcard
 hit, slicing gesture or aimed buddy charge permanently learns its own step, including success

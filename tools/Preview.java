@@ -25,7 +25,10 @@ final class Preview {
     }
 
     private static void onboardingFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
-        if(!wanted("114-"))return;
+        boolean selected=only==null;
+        if(only!=null)for(String tag:only)
+            selected|="114-".startsWith(tag.trim()) || tag.trim().startsWith("114-");
+        if(!selected)return;
         for(int message=TutorialSpeech.MATCH;message<=TutorialSpeech.STORIES;message++) {
             GameCore c=new GameCore(new Mem(),114);c.startGame();
             int lesson=message==TutorialSpeech.DIG?Onboarding.MINE:

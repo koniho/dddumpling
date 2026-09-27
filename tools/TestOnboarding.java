@@ -516,8 +516,8 @@ final class TestOnboarding extends Check {
             check("every spoken word appears in readable bubbles "+message,fits && displayed.toString().equals(TutorialSpeech.spoken(message)));
         }
         GameCore c=TestPowerTutorials.fresh(L,new Mem());Ear ear=new Ear();c.sound=ear;
-        c.startFrenzy(Power.TEAM,L);c.update(DT,L);
-        int message=TutorialSpeech.POWER_TEAM,pages=TutorialSpeech.pageCount(message);
+        c.onboarding.rescue(c);c.update(DT,L);
+        int message=TutorialSpeech.RESCUE,pages=TutorialSpeech.pageCount(message);
         float left=c.modeLeft,clock=c.clock;
         check("long explanation uses multiple bubbles",pages>1);
         for(int page=0;page<pages;page++) {

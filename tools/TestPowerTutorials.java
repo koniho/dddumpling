@@ -16,6 +16,8 @@ final class TestPowerTutorials extends Check {
         } else c.tapKey(kind==Power.FLURRY?1:0,L);
     }
     static void all(Layout L) {
+        for(int message=TutorialSpeech.POWER_FLURRY;message<=TutorialSpeech.POWER_PICKUP;message++)
+            check("power-up explanation fits one page "+message,TutorialSpeech.pageCount(message)==1);
         pickup(L);
         stackHints(L);
         for(int kind:Power.OFFERED) {
@@ -35,7 +37,7 @@ final class TestPowerTutorials extends Check {
             check("power explanation consumes gameplay touches "+kind,c.onboarding.briefing && e.pos==0);
             Pause.open(c);c.update(1,L);Pause.resume(c);
             check("background pause preserves power explanation "+kind,c.onboarding.briefing && c.modeLeft==left);
-            TestOnboarding.acknowledge(c,L);c.update(DT,L);
+            TestOnboarding.advancePage(c,L);c.update(DT,L);
             check("acknowledgement resumes but does not learn power "+kind,c.modeLeft<left && c.onboarding.powerGuide
                     && !c.onboarding.learned(message) && store.powerTutorials==8);
             use(c,L,kind);c.update(DT,L);
@@ -100,7 +102,7 @@ final class TestPowerTutorials extends Check {
             check("first visible pickup pauses and narrates collect step "+mystery,c.onboarding.briefing
                     && c.onboarding.speech==TutorialSpeech.POWER_PICKUP && ear.explanations==1
                     && p.x==x && p.t==t && c.time==time && c.score==score && !p.hit);
-            TestOnboarding.acknowledge(c,L);c.update(DT,L);
+            TestOnboarding.advancePage(c,L);c.update(DT,L);
             check("pickup acknowledgement resumes without learning "+mystery,!c.onboarding.briefing
                     && c.onboarding.powerGuide && p.x>x && store.powerTutorials==0);
             check("missed tap does not learn collection "+mystery,!c.tapPower(-L.w,-L.h,L)
