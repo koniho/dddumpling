@@ -7,7 +7,7 @@ final class TutorialSpeech extends Draw {
             STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21,
             POWER_FLURRY=22, POWER_FLING=23, POWER_TEAM=24, POWER_PICKUP=25,
             MINIGAMES=26, DISPLAY_CASE=27, STORIES=28;
-    private static final int PAPER=0xB8FFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
+    private static final int PAPER=0x90FFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
         {"TAP KEYS IN ORDER!", "START ON THE LEFT."},
@@ -128,9 +128,19 @@ final class TutorialSpeech extends Draw {
             p.fillRect(left,y,left+(right-left)*Math.max(0f,Math.min(1f,c.modeLeft/Power.DURATION)),y+s*.15f,ACCENT);
         }
     }
+    static float hopProgress(float travel) { return Math.max(0,(travel-.2f)/.8f); }
+    static float hopLift(float travel,float fromY,float toY,float s) {
+        // Bounce on the spot, then follow a parabola. Reversing travel retraces it without a snap.
+        if(travel<.2f) {
+            float bounce=(float)Math.sin(Math.PI*travel/.2f);
+            return s*.9f*bounce*bounce;
+        }
+        float u=hopProgress(travel),height=Math.abs(toY-fromY)*.32f+s*1.5f;
+        return 4*height*u*(1-u);
+    }
     static void companion(Painter p,GameCore c,Layout L) {
         Onboarding o=c.onboarding;GameCore q=o.practice==null?c:o.practice;
-        float u=o.companionTravel;u=u*u*(3-2*u);
+        float u=hopProgress(o.companionTravel);
         float x=RunCompanion.x(L),y=RunCompanion.y(L),r=RunCompanion.radius(c,L),s=unit(L);
         if(q.state==GameCore.BONUS && q.starBonus) {
             x=StarScreen.companionX(q,L,q.stars.flyerX(L));
@@ -138,7 +148,8 @@ final class TutorialSpeech extends Draw {
         } else if(!q.buddy.out()) {
             x=q.buddy.x;y=q.buddy.y;r=q.buddy.radius(L)*.74f;
         }
-        x+=(L.w*.13f-x)*u;y+=(L.topSafe+s*4.9f-y)*u;r+=(s*1.6f-r)*u;
+        float targetY=L.topSafe+s*4.9f,lift=hopLift(o.companionTravel,y,targetY,s);
+        x+=(L.w*.13f-x)*u;y+=(targetY-y)*u-lift;r+=(s*1.6f-r)*u;
         Trinket.drawReacting(p,speaker(c),x,y,r,o.age,1f,1,0);
     }
     private static void face(Painter p,int key,float x,float y,float r) {

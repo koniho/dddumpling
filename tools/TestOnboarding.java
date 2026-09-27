@@ -105,6 +105,7 @@ final class TestOnboarding extends Check {
         encounters(L);
         briefingInput(L);
         learnedActions(L);
+        companionHop();
         bossHelp(L);
         bossHelpPerRun(L);
         slimeVulnerableHelp(L);
@@ -401,6 +402,27 @@ final class TestOnboarding extends Check {
             Layout p=new Layout();p.compute(size[0],size[1],0,size[1]*.06f,0,size[1]*.04f);
             check("speech and companion stay above controls "+size[0],TutorialSpeech.top(p)>p.topSafe
                     && TutorialSpeech.top(p)+TutorialSpeech.unit(p)*14.2f<p.deckTop);
+        }
+    }
+    private static void companionHop() {
+        check("hop holds horizontal position through the in-place bounce",TutorialSpeech.hopProgress(0)==0
+                && TutorialSpeech.hopProgress(.1f)==0 && TutorialSpeech.hopProgress(.2f)==0);
+        check("hop reaches the exact help position",TutorialSpeech.hopProgress(1)==1);
+        for(int[] size:new int[][]{{320,568},{360,640},{393,852},{1080,2400},{768,1024}}) {
+            Layout L=new Layout();L.compute(size[0],size[1],0,size[1]*.06f,0,size[1]*.04f);
+            float s=TutorialSpeech.unit(L),home=RunCompanion.y(L),target=L.topSafe+s*4.9f;
+            check("hop endpoints have no lift "+size[0],TutorialSpeech.hopLift(0,home,target,s)==0
+                    && TutorialSpeech.hopLift(.2f,home,target,s)==0 && TutorialSpeech.hopLift(1,home,target,s)==0);
+            check("companion bounces up before leaving home "+size[0],TutorialSpeech.hopLift(.1f,home,target,s)>s*.8f);
+            check("flight curves above the straight path "+size[0],TutorialSpeech.hopLift(.6f,home,target,s)>s*2);
+            boolean visible=true,landsDownward=false;
+            for(int i=0;i<=100;i++) {
+                float t=i/100f,u=TutorialSpeech.hopProgress(t);
+                float y=home+(target-home)*u-TutorialSpeech.hopLift(t,home,target,s);
+                visible&=y-s*1.6f>=L.topSafe && y+s*1.6f<L.h;
+                if(t>.8f && y<target)landsDownward=true;
+            }
+            check("hop stays onscreen and descends into help position "+size[0],visible && landsDownward);
         }
     }
     private static void learnedActions(Layout L) {

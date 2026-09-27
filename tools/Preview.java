@@ -78,6 +78,13 @@ final class Preview {
             shot(dir,"114-boss-"+kind+"-question",c,L,w,h,ss);
             TestOnboarding.touch(c,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
             TestOnboarding.touch(c,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
+            if(kind==Boss.SLIME) {
+                for(int i=0;i<=10;i++) {
+                    c.onboarding.companionTravel=i/10f;
+                    shot(dir,"114-companion-hop-"+i,c,L,w,h,ss);
+                }
+                c.onboarding.companionTravel=0;
+            }
             step(c,L,.2f);shot(dir,"114-boss-"+kind+"-travel",c,L,w,h,ss);
             int page=0;
             while(c.onboarding.briefing && page<4) {
