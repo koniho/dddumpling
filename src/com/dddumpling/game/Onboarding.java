@@ -10,8 +10,8 @@ final class Onboarding extends Draw {
     GameCore practice, teacher, narrator;
     GameCore.Enemy word;
     boolean ownsTouch, lid, briefing, continueArmed;
-    static final float SCENE_REVEAL=.8f;
-    float age, success, startY, globAge, companionTravel, sceneWait;
+    static final float SCENE_REVEAL=.8f, BUBBLE_OPEN=.14f;
+    float age, success, startY, globAge, companionTravel, sceneWait, bubbleAge, speechX, speechY;
 
     // Preserve the original ten lesson bits; successful actions have independent durable bits.
     private static boolean extraMessage(int message) {
@@ -104,6 +104,7 @@ final class Onboarding extends Draw {
         Pause.release(c);narrate(c);
     }
     private void narrate(GameCore c) {
+        bubbleAge=0;
         c.diagnostic("tutorial-explain");
         narrator=c;
         if(c.sound!=null)c.sound.explain(TutorialSpeech.spoken(speech));
@@ -126,8 +127,12 @@ final class Onboarding extends Draw {
     }
     private void moveCompanion(GameCore c,float dt) {
         float target=speaking(c)?1:0;
+        float remaining=(1-companionTravel)*.45f;
         companionTravel+=Math.max(-dt/.45f,Math.min(dt/.45f,target-companionTravel));
+        if(target==0 || companionTravel<1)bubbleAge=0;
+        else bubbleAge=Math.min(BUBBLE_OPEN,bubbleAge+Math.max(0,dt-remaining));
     }
+    float bubbleProgress() { return companionTravel<1?0:Math.min(1,bubbleAge/BUBBLE_OPEN); }
 
     boolean eligible(int bit) { return (saved & (bit|SKIPPED))==0; }
     void save(GameCore c) {
@@ -143,7 +148,7 @@ final class Onboarding extends Draw {
         if(narrator!=null && narrator.sound!=null)narrator.sound.hush();
         narrator=null;
         cancelTouch();practice=null;word=null;lesson=step=speech=introduced=hintKind=0;
-        success=sceneWait=0;briefing=bossHelp=bossGuide=powerGuide=starGuide=titleGuide=false;
+        success=sceneWait=bubbleAge=0;briefing=bossHelp=bossGuide=powerGuide=starGuide=titleGuide=false;
     }
     void cancelTouch() {
         pointer=-1;ownsTouch=lid=false;
@@ -408,11 +413,16 @@ final class Onboarding extends Draw {
         }
         if(briefing) {
             ownsTouch=true;
-            if(action==0) { speechPointer=id;continueArmed=TutorialSpeech.buttonHit(L,x,y); }
-            else if(action==2 && id==speechPointer && !TutorialSpeech.buttonHit(L,x,y))continueArmed=false;
+            if(bubbleProgress()<1) {
+                speechPointer=-1;continueArmed=false;
+                if(action==1 || action==3)ownsTouch=false;
+                return true;
+            }
+            if(action==0) { speechPointer=id;speechX=x;speechY=y;continueArmed=continueHit(L,x,y); }
+            else if(action==2 && id==speechPointer && !continueTap(L,x,y))continueArmed=false;
             else if(action==3 || action==5 || action==6) { speechPointer=-1;continueArmed=false; }
             else if(action==1) {
-                boolean advance=id==speechPointer && continueArmed && TutorialSpeech.buttonHit(L,x,y);
+                boolean advance=id==speechPointer && continueArmed && continueTap(L,x,y);
                 cancelTouch();
                 if(advance)acknowledge(c);
             }
@@ -461,6 +471,14 @@ final class Onboarding extends Draw {
         if(c.bonusRolling() || c.bonusMashing())q.sound=null;
         try { q.swipeBonus(); }
         finally { q.sound=sound; }
+    }
+    private static boolean continueHit(Layout L,float x,float y) {
+        return x>=L.playLeft && x<=L.playRight && y>=L.playTop && y<L.deckTop
+                || TutorialSpeech.buttonHit(L,x,y);
+    }
+    private boolean continueTap(Layout L,float x,float y) {
+        float dx=x-speechX,dy=y-speechY;
+        return continueHit(L,x,y) && dx*dx+dy*dy<=L.unit*L.unit*.64f;
     }
     int demoKey(GameCore c) {
         if(practice==null) {

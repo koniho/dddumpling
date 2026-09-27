@@ -37,7 +37,7 @@ final class Preview {
             c.onboarding.begin(c,lesson,L);
             if(lesson==Onboarding.STEAMER) {
                 step(c,L,.5f);shot(dir,"114-steamer-arrive",c,L,w,h,ss);
-                step(c,L,.4f);shot(dir,"114-steamer-minigames",c,L,w,h,ss);
+                step(c,L,.4f);TestOnboarding.awaitBubble(c,L);shot(dir,"114-steamer-minigames",c,L,w,h,ss);
                 TestOnboarding.reveal(c,L);
             }
             step(c,L,.6f);GameCore q=c.onboarding.practice;
@@ -83,7 +83,11 @@ final class Preview {
                     c.onboarding.companionTravel=i/10f;
                     shot(dir,"114-companion-hop-"+i,c,L,w,h,ss);
                 }
-                c.onboarding.companionTravel=0;
+                for(int i=0;i<=4;i++) {
+                    c.onboarding.bubbleAge=Onboarding.BUBBLE_OPEN*i/4;
+                    shot(dir,"114-companion-bubble-"+i,c,L,w,h,ss);
+                }
+                c.onboarding.companionTravel=c.onboarding.bubbleAge=0;
             }
             step(c,L,.2f);shot(dir,"114-boss-"+kind+"-travel",c,L,w,h,ss);
             int page=0;

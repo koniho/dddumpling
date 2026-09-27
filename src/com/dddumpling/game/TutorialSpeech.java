@@ -7,7 +7,7 @@ final class TutorialSpeech extends Draw {
             STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21,
             POWER_FLURRY=22, POWER_FLING=23, POWER_TEAM=24, POWER_PICKUP=25,
             MINIGAMES=26, DISPLAY_CASE=27, STORIES=28;
-    private static final int PAPER=0x90FFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
+    private static final int PAPER=0x4DFFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
         {"TAP KEYS IN ORDER!", "START ON THE LEFT."},
@@ -73,7 +73,7 @@ final class TutorialSpeech extends Draw {
         float s=L.unit,x=helpX(L),y=helpY(L);
         bubble(p,x-s,y-s,x+s,y+s,s*.55f,1,
                 new float[]{x+s*.3f,y+s,x-s*.7f,y+s*1.6f,x-s*.3f,y+s});
-        p.text("?",x,y+s*.48f,type(s*1.25f),TEXT_INK,Painter.CENTER,true);
+        speechText(p,"?",x,y+s*.48f,type(s*1.25f),0xFFFFF5DD);
     }
     static float unit(Layout L) { return Math.min(L.unit,(L.deckTop-L.topSafe)/24f); }
     static float top(Layout L) { return L.topSafe+unit(L)*7f; }
@@ -82,7 +82,20 @@ final class TutorialSpeech extends Draw {
         return Math.abs(x-L.w*.5f)<L.w*.32f && Math.abs(y-buttonY(L))<unit(L)*1.3f;
     }
     static int speaker(GameCore c) { return c.companion.who>=0?c.companion.who:Math.max(0,c.runWho); }
+    private static void speechText(Painter p,String text,float x,float y,float size,int color) {
+        // Opaque lettering stays readable over the scene showing through the bubble.
+        float edge=size*.055f;
+        p.text(text,x-edge,y,size,TEXT_INK,Painter.CENTER,true);
+        p.text(text,x+edge,y,size,TEXT_INK,Painter.CENTER,true);
+        p.text(text,x,y-edge,size,TEXT_INK,Painter.CENTER,true);
+        p.text(text,x,y+edge,size,TEXT_INK,Painter.CENTER,true);
+        p.text(text,x,y,size,color,Painter.CENTER,true);
+    }
     private static void bubble(Painter p,float l,float t,float r,float b,float radius,int tailEdge,float[] tail) {
+        bubble(p,l,t,r,b,radius,tailEdge,tail,1,0,0);
+    }
+    private static void bubble(Painter p,float l,float t,float r,float b,float radius,int tailEdge,float[] tail,
+            float growth,float originX,float originY) {
         // One fill keeps the translucent tail from double-blending with the body.
         float[] outline=new float[62];int at=0;
         for(int corner=0;corner<4;corner++) {
@@ -94,20 +107,28 @@ final class TutorialSpeech extends Draw {
             }
             if(corner+1==tailEdge)for(float point:tail)outline[at++]=point;
         }
-        p.fillPoly(outline,PAPER);p.strokePoly(outline,TEXT_INK,radius*.14f);
+        float scale=1-(1-growth)*(1-growth);
+        for(int i=0;i<outline.length;i+=2) {
+            outline[i]=originX+(outline[i]-originX)*scale;
+            outline[i+1]=originY+(outline[i+1]-originY)*scale;
+        }
+        p.fillPoly(outline,PAPER);p.strokePoly(outline,TEXT_INK,radius*.14f*scale);
     }
     static void large(Painter p,GameCore c,Layout L,int message,boolean button) {
         float s=unit(L),t=top(L),b=t+s*14.2f,x=L.w*.5f;
         float age=message==RESCUE?c.pushLesson.clock:c.onboarding.age;
         if(button)p.fillRect(0,0,L.w,L.h,0xB8101022);
+        float growth=c.onboarding.bubbleProgress();
+        if(growth<=0)return;
         // The tail points at this run's actual companion.
         float tx=L.w*.13f;
         bubble(p,L.w*.05f,t,L.w*.95f,b,s*1.2f,3,
-                new float[]{tx,t,tx+s*.5f,t-s*1.1f,tx+s*2,t});
-        p.text(LINES[message][0],x,t+s*2.5f,type(s*1.10f),TEXT_INK,Painter.CENTER,true);
-        p.text(LINES[message][1],x,t+s*4.6f,type(s*1.00f),ACCENT,Painter.CENTER,true);
-        if(message==ALTERNATE)p.text("LEFT, RIGHT! YOU'VE GOT THIS!",x,t+s*6.2f,
-                type(s*.55f),ACCENT,Painter.CENTER,true);
+                new float[]{tx,t,tx+s*.5f,t-s*1.1f,tx+s*2,t},growth,tx,L.topSafe+s*5.3f);
+        if(growth<1)return;
+        speechText(p,LINES[message][0],x,t+s*2.5f,type(s*1.10f),0xFFFFF5DD);
+        speechText(p,LINES[message][1],x,t+s*4.6f,type(s*1.00f),0xFFFFC1E6);
+        if(message==ALTERNATE)speechText(p,"LEFT, RIGHT! YOU'VE GOT THIS!",x,t+s*6.2f,
+                type(s*.55f),0xFFFFC1E6);
         demonstrate(p,c,L,message,x,t+s*8.4f,s,age);
         if(button) {
             p.fillPoly(pill(x,buttonY(L),L.w*.32f,s*1.15f,14),0xFF387358);
@@ -117,11 +138,14 @@ final class TutorialSpeech extends Draw {
     }
     static void reminder(Painter p,GameCore c,Layout L,int message) {
         float s=unit(L),t=L.topSafe+s*2.6f,b=t+s*4f,l=L.w*.25f;
+        float growth=c.onboarding.bubbleProgress();
+        if(growth<=0)return;
         bubble(p,l,t,L.w*.97f,b,s*.7f,2,
-                new float[]{l,b-s*.8f,l-s*.9f,b-s,l,t+s*1.2f});
+                new float[]{l,b-s*.8f,l-s*.9f,b-s,l,t+s*1.2f},growth,L.w*.13f,L.topSafe+s*5.3f);
+        if(growth<1)return;
         float x=(l+L.w*.97f)*.5f;
-        p.text(LINES[message][0],x,t+s*1.5f,type(s*.70f),TEXT_INK,Painter.CENTER,true);
-        p.text(LINES[message][1],x,t+s*3f,type(s*.70f),ACCENT,Painter.CENTER,true);
+        speechText(p,LINES[message][0],x,t+s*1.5f,type(s*.70f),0xFFFFF5DD);
+        speechText(p,LINES[message][1],x,t+s*3f,type(s*.70f),0xFFFFC1E6);
         if(c.onboarding.powerGuide && message!=POWER_PICKUP) {
             float left=l+s,right=L.w*.97f-s,y=b-s*.45f;
             p.fillRect(left,y,right,y+s*.15f,0x44754070);

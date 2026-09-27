@@ -19,15 +19,20 @@ final class TestOnboarding extends Check {
     static void acknowledge(GameCore c,Layout L) {
         reveal(c,L);
         if(!c.onboarding.briefing)return;
+        awaitBubble(c,L);
         touch(c,L,0,L.w*.5f,TutorialSpeech.buttonY(L));
         touch(c,L,1,L.w*.5f,TutorialSpeech.buttonY(L));
     }
     static void reveal(GameCore c,Layout L) {
         if(c.onboarding.sceneWait>0)c.update(c.onboarding.sceneWait,L);
         if(c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.MINIGAMES) {
+            awaitBubble(c,L);
             touch(c,L,0,L.w*.5f,TutorialSpeech.buttonY(L));
             touch(c,L,1,L.w*.5f,TutorialSpeech.buttonY(L));
         }
+    }
+    static void awaitBubble(GameCore c,Layout L) {
+        for(int i=0;i<40 && c.onboarding.bubbleProgress()<1;i++)c.update(DT,L);
     }
     static void finish(GameCore c,Layout L) { for(int i=0;i<120;i++)c.update(DT,L); }
     static void all(Layout L) {
@@ -106,6 +111,7 @@ final class TestOnboarding extends Check {
         briefingInput(L);
         learnedActions(L);
         companionHop();
+        speechReveal(L);
         bossHelp(L);
         bossHelpPerRun(L);
         slimeVulnerableHelp(L);
@@ -152,6 +158,7 @@ final class TestOnboarding extends Check {
         check("minigame purpose precedes control instructions",c.onboarding.briefing
                 && c.onboarding.speech==TutorialSpeech.MINIGAMES && ear.explanation.startsWith("Steamer!")
                 && ear.explanation.contains("After each stage") && q.bonusTimer==timer);
+        awaitBubble(c,L);
         touch(c,L,0,L.w*.5f,TutorialSpeech.buttonY(L));touch(c,L,1,L.w*.5f,TutorialSpeech.buttonY(L));
         check("overview advances to paused Steamer selection step",c.onboarding.briefing
                 && c.onboarding.speech==TutorialSpeech.WAIT && ear.explanation.startsWith("Steamer!")
@@ -375,14 +382,26 @@ final class TestOnboarding extends Check {
     private static void briefingInput(Layout L) {
         GameCore c=fresh(L,new Mem());float x=L.w*.5f,y=TutorialSpeech.buttonY(L);
         c.onboarding.begin(c,Onboarding.CORE,L);
+        awaitBubble(c,L);
         touch(c,L,0,x,y);Pause.open(c);Pause.resume(c);touch(c,L,1,x,y);
         check("pause cancels pending continue press",c.onboarding.briefing);
         touch(c,L,0,x,y);touch(c,L,2,0,0);touch(c,L,1,x,y);
         check("dragging out cancels continue",c.onboarding.briefing);
         touch(c,L,0,x,y);c.onboarding.touch(c,L,5,99,x,y);touch(c,L,1,x,y);
         check("second finger cancels continue",c.onboarding.briefing);
+        touch(c,L,0,x,y);touch(c,L,2,x,y+L.unit*3);touch(c,L,1,x,y);
+        check("swiping within the play area does not advance",c.onboarding.briefing);
+        touch(c,L,0,c.keyX(L,0),c.keyY(L,0));touch(c,L,1,c.keyX(L,0),c.keyY(L,0));
+        check("keyboard taps do not advance the explanation",c.onboarding.briefing);
         acknowledge(c,L);
         check("continue consumes gesture without typing",!c.onboarding.briefing && !c.onboarding.ownsTouch && c.onboarding.word.pos==0);
+        for(float[] point:new float[][]{{L.playLeft+L.unit,L.playTop+L.unit},
+                {L.playRight-L.unit,L.deckTop-L.unit},{L.w*.5f,(L.playTop+L.deckTop)*.5f}}) {
+            c.onboarding.begin(c,Onboarding.CORE,L);awaitBubble(c,L);
+            touch(c,L,0,point[0],point[1]);touch(c,L,1,point[0],point[1]);
+            check("tap anywhere in play area acknowledges without learning",!c.onboarding.briefing
+                    && !c.onboarding.ownsTouch && c.onboarding.word.pos==0 && !c.onboarding.learned(TutorialSpeech.MATCH));
+        }
         for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.CART,Onboarding.MINE,Onboarding.SLIME}) {
             c.onboarding.begin(c,lesson,L);GameCore q=c.onboarding.practice;
             reveal(c,L);float presentationTime=q.time;
@@ -403,6 +422,29 @@ final class TestOnboarding extends Check {
             check("speech and companion stay above controls "+size[0],TutorialSpeech.top(p)>p.topSafe
                     && TutorialSpeech.top(p)+TutorialSpeech.unit(p)*14.2f<p.deckTop);
         }
+    }
+    private static void speechReveal(Layout L) {
+        GameCore c=fresh(L,new Mem());c.onboarding.begin(c,Onboarding.CORE,L);
+        Onboarding o=c.onboarding;float x=L.w*.5f,y=TutorialSpeech.buttonY(L),wordY=o.word.y;
+        check("speech starts hidden at home",o.bubbleProgress()==0);
+        c.update(.2f,L);
+        touch(c,L,0,x,y);touch(c,L,1,x,y);
+        check("travel hides speech and consumes invisible continue taps",o.bubbleProgress()==0 && o.briefing && !o.ownsTouch);
+        c.update(.25f,L);
+        check("bubble waits until companion lands",o.companionTravel==1 && o.bubbleProgress()<.001f);
+        c.update(Onboarding.BUBBLE_OPEN*.5f,L);
+        check("speech expands quickly after landing",o.bubbleProgress()>.49f && o.bubbleProgress()<.51f);
+        touch(c,L,0,x,y);c.update(Onboarding.BUBBLE_OPEN,L);touch(c,L,1,x,y);
+        check("press started during reveal cannot acknowledge",o.briefing && o.bubbleProgress()==1);
+        check("arrival and bubble animation keep game frozen",o.word.y==wordY && o.practice.time==0);
+        touch(c,L,0,x,y);touch(c,L,1,x,y);
+        check("visible continue works and reminder stays open",!o.briefing && o.bubbleProgress()==1);
+        o.begin(c,Onboarding.CART,L);
+        check("new explanation restarts bubble even when companion is already there",o.briefing && o.bubbleProgress()==0);
+        c.update(Onboarding.BUBBLE_OPEN,L);
+        check("stationary companion opens new bubble without another travel delay",o.bubbleProgress()==1);
+        o.clear();
+        check("clearing guidance clears bubble animation",o.bubbleProgress()==0);
     }
     private static void companionHop() {
         check("hop holds horizontal position through the in-place bounce",TutorialSpeech.hopProgress(0)==0
@@ -434,6 +476,7 @@ final class TestOnboarding extends Check {
         GameCore loaded=new GameCore(store,114);
         check("learned actions survive restart without suppressing new mechanics",loaded.onboarding.learned(TutorialSpeech.STACK)
                 && !loaded.onboarding.learned(TutorialSpeech.ALTERNATE));
+        c.onboarding.learn(c,TutorialSpeech.MINIGAMES);
         Interlude.enterBonus(c,L);c.bonusTimer=c.bonusRollEnd;
         c.tapBonus(c.steamer.wanted());c.tapBonus(c.steamer.wanted());c.update(DT,L);
         check("successful alternation before lesson skips it",c.onboarding.practice==null && c.onboarding.learned(TutorialSpeech.ALTERNATE));

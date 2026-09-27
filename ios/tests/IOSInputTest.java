@@ -659,6 +659,9 @@ public final class IOSInputTest extends Check {
         GameCore q=c.onboarding.practice;
         tap(game,q.keyX(l,0),q.keyY(l,0));game.update(DT);
         check("native explanation blocks gameplay keys",c.onboarding.briefing && c.onboarding.word.pos==0);
+        tap(game,l.w*.5f,TutorialSpeech.buttonY(l));
+        check("native invisible continue cannot skip companion arrival",c.onboarding.briefing && c.onboarding.bubbleProgress()==0);
+        tutorialAwaitBubble(game);
         game.touch(one(0,42,l.w*.5f,TutorialSpeech.buttonY(l)));
         game.background(true);game.background(false);game.back();
         game.touch(one(1,42,l.w*.5f,TutorialSpeech.buttonY(l)));
@@ -721,7 +724,11 @@ public final class IOSInputTest extends Check {
         check("native Settings resets tutorials without clearing progress",store.tutorials==0 && !store.pushLessonSeen && c.settingsOpen);
     }
     private static void tutorialContinue(IOSGame game) {
+        tutorialAwaitBubble(game);
         if(game.core().onboarding.briefing)tap(game,game.geometry().w*.5f,TutorialSpeech.buttonY(game.geometry()));
+    }
+    private static void tutorialAwaitBubble(IOSGame game) {
+        for(int i=0;i<40 && game.core().onboarding.briefing && game.core().onboarding.bubbleProgress()<1;i++)game.update(DT);
     }
     private static void collectionGuidanceInput() {
         Mem store=new Mem();store.tutorials=store.powerTutorials=0;
@@ -734,6 +741,7 @@ public final class IOSInputTest extends Check {
         for(int i=0;i<120 && !c.onboarding.briefing;i++)game.update(DT);
         check("real case tap advances to story instruction",c.caseOpen && c.onboarding.briefing
                 && c.onboarding.speech==TutorialSpeech.STORIES);
+        tutorialAwaitBubble(game);
         float x=l.w*.5f,y=TutorialSpeech.buttonY(l);
         game.touch(one(0,42,x,y));game.touch(one(3,42,x,y));game.touch(one(1,42,x,y));
         check("cancelled collection continue stays on its instruction",c.onboarding.briefing && !c.storyOpen());
@@ -775,11 +783,15 @@ public final class IOSInputTest extends Check {
             tap(game,p.x,p.y);
             check("native pickup popup prevents collecting through explanation",!p.hit
                     && c.onboarding.briefing && !c.onboarding.learned(TutorialSpeech.POWER_PICKUP));
+            tutorialAwaitBubble(game);
             float x=l.w*.5f,y=TutorialSpeech.buttonY(l);
             game.touch(one(0,42,x,y));game.background(true);game.background(false);game.back();
             game.touch(one(1,42,x,y));
             check("background cancels pickup acknowledgement",c.onboarding.briefing && !p.hit);
-            tutorialContinue(game);tap(game,p.x,p.y);game.update(DT);
+            tap(game,p.x,p.y);
+            check("native play-area tap advances without collecting underneath",!c.onboarding.briefing && !p.hit
+                    && !c.onboarding.learned(TutorialSpeech.POWER_PICKUP));
+            tap(game,p.x,p.y);game.update(DT);
             check("native direct pickup tap learns collection and introduces Fling",p.hit
                     && c.onboarding.learned(TutorialSpeech.POWER_PICKUP) && c.onboarding.briefing
                     && c.onboarding.speech==TutorialSpeech.POWER_FLING);
@@ -792,6 +804,7 @@ public final class IOSInputTest extends Check {
             c.startFrenzy(kind,l);game.update(DT);float left=c.modeLeft;
             tap(game,c.keyX(l,0),c.keyY(l,0));game.update(.5f);
             check("native power popup owns keys and timer "+kind,c.onboarding.briefing && e.pos==0 && c.modeLeft==left);
+            tutorialAwaitBubble(game);
             float x=l.w*.5f,y=TutorialSpeech.buttonY(l);
             game.touch(one(0,42,x,y));game.background(true);game.background(false);game.back();
             game.touch(one(1,42,x,y));
