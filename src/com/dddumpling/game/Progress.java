@@ -127,6 +127,11 @@ final class Progress {
         event("rewards_total"); event(fresh ? "rewards_new" : "rewards_duplicate");
         event("rewards_" + source); changed();
     }
+    void starter(int who) {
+        if (!available()) return;
+        data.increment(replica,"prize_"+who,1);
+        event("rewards_total");event("rewards_new");event("rewards_starter");changed();
+    }
     void checkpoint(int score) {
         if (!available()) return;
         recordScore(score); changed();

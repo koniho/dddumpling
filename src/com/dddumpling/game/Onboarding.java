@@ -16,7 +16,7 @@ final class Onboarding extends Draw {
 
     // Preserve the original ten lesson bits; successful actions have independent durable bits.
     private static boolean extraMessage(int message) {
-        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.STORIES;
+        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.COMPANION;
     }
     boolean learned(int message) {
         if(extraMessage(message))return !eligible(SKIPPED)
@@ -121,6 +121,9 @@ final class Onboarding extends Draw {
     void rescue(GameCore c) {
         clear();speech=TutorialSpeech.RESCUE;briefing=true;narrate(c);
     }
+    void introduceCompanion(GameCore c) {
+        clear();speech=TutorialSpeech.COMPANION;briefing=true;age=0;narrate(c);
+    }
     boolean promptHit(GameCore c,Layout L,float x,float y) {
         return offersBossHelp(c) && (TutorialSpeech.helpHit(L,x,y) || RunCompanion.hit(c,L,x,y));
     }
@@ -216,7 +219,7 @@ final class Onboarding extends Draw {
     }
     private boolean titleUpdate(GameCore c,float elapsed,Layout L) {
         if(c.settingsOpen || c.paused || c.townOpen || c.highScoreScreen.open || c.releaseNotes.open)return false;
-        if(c.starting() || c.collected==0 || learned(TutorialSpeech.STORIES) || c.storyOpen()) {
+        if(c.starting() || Starter.hideCase(c) || c.collected==0 || learned(TutorialSpeech.STORIES) || c.storyOpen()) {
             if(titleGuide)clear();
             moveCompanion(c,elapsed);
             if(c.storyOpen())companionTravel=0;
@@ -374,6 +377,10 @@ final class Onboarding extends Draw {
         if(c.sound!=null)c.sound.hush();
         narrator=null;
         if(moreSpeech()) { speechPage++;speakPage(c);return; }
+        if(speech==TutorialSpeech.COMPANION) {
+            savedPowers&=~Starter.INTRO_PENDING;
+            learn(c,TutorialSpeech.COMPANION);
+        }
         if(speech==TutorialSpeech.MINIGAMES) {
             learn(c,TutorialSpeech.MINIGAMES);briefing=false;introduce(c);return;
         }

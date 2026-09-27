@@ -6,7 +6,7 @@ final class TutorialSpeech extends Draw {
             DIG=7, CART=8, CLOSED=9, CHAIN=10, GLOB=11, DANGER=12, RETRY=13,
             STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21,
             POWER_FLURRY=22, POWER_FLING=23, POWER_TEAM=24, POWER_PICKUP=25,
-            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28;
+            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28, COMPANION=29;
     private static final int PAPER=0x4DFFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
@@ -36,9 +36,11 @@ final class TutorialSpeech extends Draw {
         {"A GLOWING PICKUP!", "TAP IT TO COLLECT!"},
         {"STEAMER TIME!", "COLLECT DUMPLINGS!"},
         {"YOUR DUMPLINGS!", "OPEN THEIR CASE!"},
-        {"TAP YOUR DUMPLING!", "DISCOVER ITS STORY!"}
+        {"TAP YOUR DUMPLING!", "DISCOVER ITS STORY!"},
+        {"YOUR FIRST FRIEND!", "LET'S PLAY TOGETHER!"}
     };
     static String spoken(int message) {
+        if(message==COMPANION)return "I'm your first squishy! I'll stay by your keys. I'll show you how to play as we go. Let's find more friends!";
         if(message==POWER_FLURRY)return "Flurry lets any key hit any face! Tap any key to clear the falling faces. You've got this!";
         if(message==POWER_FLING)return "Fling lets you slice the Squishies! Swipe across a whole bunch in one swoosh!";
         if(message==POWER_PICKUP)return "See that glowing pickup? Tap it directly to collect it. You don't need to press a matching key. Give it a tap!";
@@ -84,8 +86,8 @@ final class TutorialSpeech extends Draw {
         return lines.toArray(new String[0]);
     }
     private static String[][][] makePages() {
-        String[][][] all=new String[STORIES+1][][];
-        for(int message=MATCH;message<=STORIES;message++) {
+        String[][][] all=new String[COMPANION+1][][];
+        for(int message=MATCH;message<=COMPANION;message++) {
             java.util.ArrayList<String[]> pages=new java.util.ArrayList<>();String pending="";
             // Page boundaries are sentence boundaries; copy must fit without splitting a sentence.
             for(String sentence:spoken(message).split("(?<=[.!?]) +")) {
@@ -167,7 +169,7 @@ final class TutorialSpeech extends Draw {
         demonstrate(p,c,L,message,x,t+s*8.4f,s,age);
         if(button) {
             p.fillPoly(pill(x,buttonY(L),L.w*.32f,s*1.15f,14),0xFF387358);
-            String buttonText=c.onboarding.moreSpeech() || c.onboarding.moreBossHelp(c) || message==MINIGAMES?"NEXT":message==WAIT?"LET'S WATCH!":message==ALTERNATE?"LET'S GO!":"LET'S TRY!";
+            String buttonText=c.onboarding.moreSpeech() || c.onboarding.moreBossHelp(c) || message==MINIGAMES?"NEXT":message==COMPANION?"LET'S PLAY!":message==WAIT?"LET'S WATCH!":message==ALTERNATE?"LET'S GO!":"LET'S TRY!";
             p.text(buttonText,x,buttonY(L)+s*.38f,type(s*.92f),0xFFFFFFFF,Painter.CENTER,true);
         }
     }
@@ -226,7 +228,11 @@ final class TutorialSpeech extends Draw {
         Onboarding o=c.onboarding;GameCore q=o.practice==null?c:o.practice;
         float travel=PushLesson.swipeProgress(age),handX=x,handY=y;
         int key=o.demoKey(c);
-        if(message==MINIGAMES || message==DISPLAY_CASE || message==STORIES || message==SUCCESS) {
+        if(message==COMPANION) {
+            p.text(Collect.NAME[c.runWho],x,y,type(s*.85f),INK,Painter.CENTER,true);
+            p.text("YOUR COMPANION",x,y+s*1.8f,type(s*.6f),ROSE,Painter.CENTER,true);
+            return;
+        } else if(message==MINIGAMES || message==DISPLAY_CASE || message==STORIES || message==SUCCESS) {
             int who=message==STORIES?c.caseIndex:c.prize>=0?c.prize:0;
             if(message==DISPLAY_CASE)p.fillPoly(pill(x,y,s*3.3f,s*2.2f,16),0xFF493953);
             if(message==STORIES) {

@@ -9,6 +9,21 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void starterFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("starter-"))return;
+        Check.Mem store=new Check.Mem();store.tutorials=store.powerTutorials=0;
+        GameCore c=new GameCore(store,125);step(c,L,1);
+        shot(dir,"starter-title",c,L,w,h,ss);
+        c.beginStart();shot(dir,"starter-choices",c,L,w,h,ss);
+        c.starter.choose(c,4);step(c,L,Launch.TIME+.1f);
+        TestOnboarding.awaitBubble(c,L);
+        for(int page=0;page<TutorialSpeech.pageCount(TutorialSpeech.COMPANION);page++) {
+            shot(dir,"starter-intro-"+page,c,L,w,h,ss);
+            TestOnboarding.advancePage(c,L);TestOnboarding.awaitBubble(c,L);
+        }
+        step(c,L,.6f);shot(dir,"starter-playing",c,L,w,h,ss);
+    }
+
     private static void onboardingFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("114-"))return;
         for(int message=TutorialSpeech.MATCH;message<=TutorialSpeech.STORIES;message++) {
@@ -781,6 +796,7 @@ final class Preview {
         companionFrames(dir,L,w,h,ss);
         scoreResetFrames(dir,L,w,h,ss);
         onboardingFrames(dir,L,w,h,ss);
+        starterFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);

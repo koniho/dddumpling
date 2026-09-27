@@ -578,6 +578,7 @@ final class GameCore {
     boolean pushUsed;
     final PushLesson pushLesson = new PushLesson();
     final Onboarding onboarding = new Onboarding();
+    final Starter starter = new Starter();
     /** Counts down while the push-back shockwave is on screen. */
     float pushT;
     /** Words the last push-back shoved back, for the readout. */
@@ -1791,9 +1792,12 @@ final class GameCore {
      * is acknowledged immediately and the triad carries over into the first wave.
      */
     void beginStart() {
-        if (state != TITLE || starting() || returnFade > 0f || rosterSceneT > 0f) return;
+        if (state != TITLE || starting() || starter.open || returnFade > 0f || rosterSceneT > 0f) return;
         if (townOpen) return;
         if (landChoice == LandPicker.TOWN) { openTown(); return; }
+        if (Starter.eligible(this)) {
+            Pause.release(this);closeCase();closeStory();starter.open=true;return;
+        }
         startFade = START_FADE;
         // The entry the case was showing comes along, if it is one you own. Set before the
         // fade is under way so the send-off leaves from the badge rather than from a screen
@@ -1825,6 +1829,7 @@ final class GameCore {
     }
 
     void cancelStart() {
+        starter.clear();
         stopLaunchVoice();
         startFade = launchT = pickerT = 0; launchWho = pendingRunWho = -1; startAnnounced = false;
     }
@@ -1866,6 +1871,7 @@ final class GameCore {
 
     void startGame() {
         diagnostic("start-game");
+        starter.clear();
         onboarding.clear();onboarding.companionTravel=0;onboarding.bossHelpUsed=0;
         scoresSuppressed=false;
         stopLaunchVoice();
@@ -1965,6 +1971,7 @@ final class GameCore {
         startAnnounced = false;
         cave.begin(this);
         if (sound != null) sound.selectMusic(normalMusicChoice());
+        if (Starter.introPending(this)) onboarding.introduceCompanion(this);
     }
 
     void dismissGameOver() {
@@ -2095,7 +2102,7 @@ final class GameCore {
         // misfire rather than as an answer.
         if (state == OVER && !overReady()) return;
         // Already on the way out: further presses would restart the fade or double the tone.
-        if (starting()) return;
+        if (starting() || starter.open) return;
         keyPress[g] = 1f;
         // A story on screen swallows the first press. Without this an inner key would start a
         // run from behind the panel, which is the one thing a modal must not allow.
@@ -2643,6 +2650,7 @@ final class GameCore {
             if (town.dirty && townSaveRetry<=0f) saveTown();
             return;
         }
+        if (starter.open) { clock+=elapsed;return; }
         if (onboarding.update(this, dt, elapsed, L)) return;
         if (pushLesson.update(this, elapsed, L)) return;
         if(highScoreScreen.open) { highScoreScreen.update(elapsed);clock+=elapsed;return; }

@@ -37,7 +37,75 @@ final class TestOnboarding extends Check {
         for(int i=0;i<40 && c.onboarding.bubbleProgress()<1;i++)c.update(DT,L);
     }
     static void finish(GameCore c,Layout L) { for(int i=0;i<120;i++)c.update(DT,L); }
+    private static void starter(Layout L) {
+        long choices=0;
+        check("starter offers five friends",Starter.CHOICES.length==5);
+        for(int choice=0;choice<Starter.CHOICES.length;choice++) {
+            int who=Starter.CHOICES[choice];
+            check("starter is a distinct common "+choice,Collect.TIER[who]==Collect.COMMON && !Collect.has(choices,who));
+            choices=Collect.add(choices,who);
+            Mem store=new Mem();store.tutorials=store.powerTutorials=0;
+            GameCore c=new GameCore(store,125,true);
+            check("fresh title hides case",Starter.hideCase(c));
+            c.openCase();check("hidden case cannot open",!c.caseOpen && c.onboarding.savedPowers==0);
+            c.beginStart();c.update(5,L);
+            check("start waits for a choice",c.starter.open && c.state==GameCore.TITLE && !c.starting() && c.collected==0);
+            float x=Starter.x(L,choice),y=Starter.y(L,choice);
+            c.starter.touch(c,L,0,7,x,y);c.starter.touch(c,L,3,7,x,y);
+            c.starter.touch(c,L,1,7,x,y);
+            check("cancelled touch grants nothing",c.collected==0);
+            c.starter.touch(c,L,0,7,x,y);c.starter.touch(c,L,2,7,0,0);
+            c.starter.touch(c,L,1,7,x,y);
+            check("dragging off a card grants nothing",c.collected==0);
+            c.starter.touch(c,L,0,7,x,y);c.starter.touch(c,L,1,8,x,y);
+            check("another pointer cannot select",c.collected==0);
+            c.starter.touch(c,L,0,7,x,y);c.starter.touch(c,L,1,7,x,y);
+            c.starter.choose(c,(choice+1)%Starter.CHOICES.length);
+            check("choice is saved and launches exactly once",!c.starter.open && c.starting()
+                    && c.launchWho==who && c.collected==(1L<<who) && store.collectedSaves==1
+                    && store.collectTotal==1 && store.collectionCounts[who]==1 && c.caseIndex==who);
+            GameCore restored=new GameCore(store,125,true);
+            check("starter persists across app restart",restored.collected==(1L<<who)
+                    && restored.caseIndex==who && restored.collectionCounts[who]==1
+                    && restored.collectTotal==1 && !Starter.eligible(restored));
+            check("starter progress merges without duplicating the grant",restored.progress.count("prize_"+who)==1
+                    && restored.progress.count("rewards_total")==1 && restored.progress.count("rewards_starter")==1
+                    && restored.progress.count("runs_started")==0);
+            restored.beginStart();
+            for(int i=0;i<180 && restored.state==GameCore.TITLE;i++)restored.update(DT,L);
+            check("interrupted introduction resumes with selected companion",restored.state==GameCore.PLAY
+                    && restored.runWho==who && restored.companion.who==who
+                    && restored.onboarding.briefing && restored.onboarding.speech==TutorialSpeech.COMPANION);
+            float spawn=restored.spawnTimer,banner=restored.stageBanner;
+            restored.update(10,L);
+            check("intro freezes the first stage",restored.spawnTimer==spawn && restored.stageBanner==banner && restored.enemies.isEmpty());
+            acknowledge(restored,L);
+            check("intro acknowledgement is durable",!restored.onboarding.briefing && !Starter.introPending(restored)
+                    && new GameCore(store,125).onboarding.learned(TutorialSpeech.COMPANION));
+            restored.update(DT,L);
+            check("chosen companion guides live play",restored.spawnTimer<spawn && restored.companion.who==who);
+            restored.toTitle();finish(restored,L);
+            check("case guidance waits until returning from play",!Starter.hideCase(restored)
+                    && restored.onboarding.titleGuide && restored.onboarding.speech==TutorialSpeech.DISPLAY_CASE);
+            restored.onboarding.reset(restored);restored.beginStart();
+            check("tutorial reset with a collection grants no starter",!restored.starter.open && store.collectTotal==1);
+        }
+        Mem store=new Mem();store.tutorials=store.powerTutorials=0;
+        GameCore c=new GameCore(store,125);c.beginStart();
+        check("back cancels selection without granting",Pause.handlesBack(c) && Pause.back(c) && !c.starter.open && c.collected==0);
+        c.beginStart();check("cancelled selection can reopen",c.starter.open);c.cancelStart();
+        c.onboarding.saved=Onboarding.WORD_HINT;c.beginStart();
+        check("empty case with learned tutorials uses normal launch",!c.starter.open && c.starting());c.cancelStart();
+        c.onboarding.saved=0;c.onboarding.savedPowers=1;c.beginStart();
+        check("learned extra tutorials exclude starter",!c.starter.open && c.starting());c.cancelStart();
+        c.onboarding.reset(c);c.onboarding.skip(c);c.beginStart();
+        check("skip all excludes starter",!c.starter.open && c.starting());c.cancelStart();
+        c.onboarding.reset(c);c.beginStart();c.starter.choose(c,0);
+        c.startGame();c.onboarding.skip(c);c.toTitle();c.beginStart();c.startGame();
+        check("skip all also retires companion introduction",!c.onboarding.briefing);
+    }
     static void all(Layout L) {
+        starter(L);
         Mem store=new Mem();GameCore c=fresh(L,store);
         check("fresh run starts stage one without an intro",c.onboarding.practice==null && !c.onboarding.briefing && c.time>0);
         c.onboarding.begin(c,Onboarding.CORE,L);
@@ -433,7 +501,7 @@ final class TestOnboarding extends Check {
         }
     }
     private static void speechPages(Layout L) {
-        for(int message=TutorialSpeech.MATCH;message<=TutorialSpeech.STORIES;message++) {
+        for(int message=TutorialSpeech.MATCH;message<=TutorialSpeech.COMPANION;message++) {
             StringBuilder displayed=new StringBuilder();boolean fits=true;
             for(int page=0;page<TutorialSpeech.pageCount(message);page++) {
                 String[] lines=TutorialSpeech.pageLines(message,page);

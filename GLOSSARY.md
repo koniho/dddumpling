@@ -541,7 +541,14 @@ are excluded, and a spent swipe defers the lesson until a later stage. `PushLess
 prompt, freeze, and shared native gesture.
 Developer settings → Progress → **RESET SWIPE** clears the saved lesson completion flag.
 
-**Companion guidance** starts in play, with no introduction before stage 1. Incoming-word,
+**First squishy** selection opens at Start when the display case is empty and all tutorials
+are reset. The empty case stays hidden. Choose Cream Bao, Peach Bun, Nana, Melon Wedge or
+Groovy Glob: the common squishy is saved immediately and becomes the run companion.
+After the send-off, a short companion introduction pauses stage 1 until acknowledged;
+an interrupted introduction resumes on the next start. Existing collections do not receive
+another starter when tutorials are reset. The display-case guide waits until returning to title.
+
+**Companion guidance** continues in play. Incoming-word,
 wrong-key and stacked-letter hints appear when needed during stages 1–4. The stacked-letter
 demo uses the real enemy renderer, showing remaining-hit pips counting down beside a matching key.
 Steamer, Cart Rush and Dumpling Mine use disposable real-game practice while the actual run waits;

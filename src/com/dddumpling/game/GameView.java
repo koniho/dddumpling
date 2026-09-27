@@ -140,6 +140,11 @@ public class GameView extends View {
             return true;
         }
         int action = ev.getActionMasked();
+        if (core.starter.open) {
+            int i=action==MotionEvent.ACTION_MOVE?0:ev.getActionIndex();
+            core.starter.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));
+            return true;
+        }
         if (core.townOpen) {
             if (action == MotionEvent.ACTION_CANCEL) core.cancelTownInput();
             else if (action == MotionEvent.ACTION_MOVE) {
@@ -302,7 +307,7 @@ public class GameView extends View {
             if (screen >= 0) {
                 core.screenKey(screen);
                 tick();
-            } else if (core.state == GameCore.TITLE && !core.caseOpen
+            } else if (core.state == GameCore.TITLE && !core.caseOpen && !Starter.hideCase(core)
                     && Showcase.inIcon(layout, core.clock, x, y)) {
                 core.openCase();
                 tick();

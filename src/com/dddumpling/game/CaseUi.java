@@ -23,7 +23,7 @@ final class CaseUi {
      * case would be fading in over a screen fading out.
      */
     static void open(GameCore c) {
-        if (c.state != GameCore.TITLE || c.starting() || c.caseOpen) return;
+        if (c.state != GameCore.TITLE || c.starting() || c.caseOpen || Starter.hideCase(c)) return;
         c.caseOpen = true;
         c.onboarding.learn(c,TutorialSpeech.DISPLAY_CASE);
         c.caseSlide = c.caseSlideY = 0f;

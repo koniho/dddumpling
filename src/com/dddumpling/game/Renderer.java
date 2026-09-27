@@ -135,7 +135,8 @@ final class Renderer extends Draw {
         if (c.state == GameCore.TITLE) Screens.title(p, c, L);
         else if (c.state == GameCore.OVER) Screens.gameOver(p, c, L);
         else if (c.state == GameCore.BONUS) Screens.bonus(p, c, L);
-        else if (c.stageBanner > 0 && !(Cave.active(c) && c.cave.phase == Cave.CHOOSE)) Hud.stageBanner(p, c, L);
+        else if (c.stageBanner > 0 && !(Cave.active(c) && c.cave.phase == Cave.CHOOSE)
+                && !(c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.COMPANION)) Hud.stageBanner(p, c, L);
         // The boss's arrival card, over whatever the stage banner is doing: both are up at once,
         // since a boss starts as its stage begins, and the card sits lower than the banner.
         BossScreen.intro(p, c, L);
@@ -162,6 +163,7 @@ final class Renderer extends Draw {
         if(c.townReturnFade>0f) p.fillRect(0,0,L.w,L.h,
                 Glyph.withAlpha(0xFFCEF0D1,(int)(255*c.townReturnFade/GameCore.TOWN_FADE)));
         c.highScoreScreen.draw(p,c,L);
+        Starter.draw(p,c,L);
         if (c.returnFade > 0f) {
             float cover = 1f - Math.abs(c.returnFade / GameCore.RETURN_FADE * 2f - 1f);
             cover = cover * cover * (3f - 2f * cover);

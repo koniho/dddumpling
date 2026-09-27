@@ -57,8 +57,10 @@ final class Screens extends Draw {
         // moment, and two labelled panels through each other is illegible, not a dissolve.
         float shut = fade * caseOut(c);
         float open = fade * caseIn(c);
-        Showcase.icon(p, c, L, shut);
-        Showcase.draw(p, c, L, open);
+        if (!Starter.hideCase(c)) {
+            Showcase.icon(p, c, L, shut);
+            Showcase.draw(p, c, L, open);
+        }
         PrivacyUi.draw(p, c, L);
         LandPicker.draw(p, c, L);
 
