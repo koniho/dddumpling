@@ -422,14 +422,14 @@ final class TestOnboarding extends Check {
         GameCore loaded=new GameCore(store,4);loaded.startGame();loaded.update(DT,L);
         check("global skip survives restart and suppresses every encounter",loaded.onboarding.practice==null
                 && !loaded.onboarding.eligible(Onboarding.MINE) && !loaded.onboarding.eligible(Onboarding.SLIME));
-        loaded.lives=1;loaded.pushLesson.seen=false;
-        add(loaded,L,new int[]{0},PushLesson.triggerY(L));loaded.update(DT,L);
-        check("global skip suppresses rescue-swipe lesson",!loaded.pushLesson.active);
+        loaded.lives=1;
+        add(loaded,L,new int[]{0},Onboarding.rescueTriggerY(L));loaded.update(DT,L);
+        check("global skip suppresses rescue-swipe lesson",!loaded.onboarding.rescueGuide);
         store.best=721;store.collected=4;store.steamerOpens=3;store.starWins=4;store.cartTrack=8;store.mineCarts=2;
         loaded.preferences.kids=true;
         SettingsInput.action(loaded,L,1000+PlayerSettings.TUTORIALS);
         GameCore reset=new GameCore(store,9);
-        check("reset clears all onboarding and swipe flags",store.tutorials==0 && !store.pushLessonSeen
+        check("reset clears all onboarding and swipe flags",store.tutorials==0 && !reset.onboarding.learned(TutorialSpeech.RESCUE)
                 && reset.onboarding.eligible(Onboarding.CORE) && reset.onboarding.eligible(Onboarding.MINE));
         check("reset leaves non-tutorial progress and preferences alone",store.best==721 && store.collected==4
                 && store.steamerOpens==3 && store.starWins==4 && store.cartTrack==8 && store.mineCarts==2 && loaded.preferences.kids);

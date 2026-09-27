@@ -294,22 +294,22 @@ public final class IOSInputTest extends Check {
         game.touch(one(2,3,x,y-l.enemyR*2));
         check("lower-field upward swipe triggers panic", c.pushT>0);
         game.touch(one(1,3,x,y-l.enemyR*2));
-        c.pushUsed=false; c.pushLesson.seen=false; c.lives=3;
+        c.pushUsed=false; c.onboarding.saved&=~(1<<(TutorialSpeech.RESCUE+9)); c.lives=3;
         c.enemies.clear(); add(c,l,new int[] {0},l.dangerY-10); game.update(DT);
-        check("native available rescue freezes for lesson at full lives",c.pushLesson.active);
+        check("native available rescue freezes for lesson at full lives",c.onboarding.rescueGuide);
         tap(game,l.keyX[0],l.keyY[0]);
-        check("native key cannot dismiss lesson",c.pushLesson.active);
+        check("native key cannot dismiss lesson",c.onboarding.rescueGuide);
         tutorialContinue(game);
         y=(l.dangerY+l.deckTop)*.5f;
         game.touch(one(0,3,x,y)); game.touch(one(3,3,x,y));
         game.touch(one(2,3,x,y-l.enemyR*2));
-        check("native cancellation requires fresh swipe",c.pushLesson.active);
+        check("native cancellation requires fresh swipe",c.onboarding.rescueGuide);
         game.touch(one(0,3,x,y)); game.background(true); game.background(false);
         Pause.resume(c);
         game.touch(one(2,3,x,y-l.enemyR*2));
-        check("background cannot complete stale lesson swipe",c.pushLesson.active);
+        check("background cannot complete stale lesson swipe",c.onboarding.rescueGuide);
         game.touch(one(0,3,x,y)); game.touch(one(2,3,x,y-l.enemyR*2));
-        check("native bar swipe finishes lesson and pushes",!c.pushLesson.active && c.pushUsed);
+        check("native bar swipe finishes lesson and pushes",!c.onboarding.rescueGuide && c.pushUsed);
         game.touch(one(1,3,x,y-l.enemyR*2));
     }
 
@@ -379,10 +379,11 @@ public final class IOSInputTest extends Check {
         check("native all lands chip enables every land",LandPicker.count(c)==Lands.COUNT);
         tap(game,l.w*.5f,ui.difficultyY+ui.difficultyH/2);
         check("native reset news clears seen status without leaving settings",c.settingsOpen && c.store.loadReleaseSeen().equals(""));
-        c.pushLesson.seen=true; c.store.savePushLessonSeen(true);
-        tap(game,(ui.testChipL(0,1)+ui.testChipR(0,1))*.5f,ui.testY+ui.testH*.5f);
-        check("reset swipe clears saved lesson without leaving settings",c.settingsOpen
-                && !c.pushLesson.seen && !c.store.loadPushLessonSeen());
+        c.onboarding.learn(c,TutorialSpeech.RESCUE);
+        // The old standalone reset action is gone, including stale numeric dispatch.
+        SettingsInput.action(c,l,17);
+        check("retired swipe reset cannot change tutorial progress",c.settingsOpen
+                && c.onboarding.learned(TutorialSpeech.RESCUE));
 
         c.settingsOpen=false;
         for(int i=0;i<2;i++) {
@@ -722,7 +723,7 @@ public final class IOSInputTest extends Check {
                 && (store.tutorials&Onboarding.SKIPPED)!=0 && c.score==0);
         PlayerSettings.open(c);game.update(PlayerSettings.PANEL_TIME);
         tap(game,l.w*.5f,PlayerSettings.tutorialY(l));
-        check("native Settings resets tutorials without clearing progress",store.tutorials==0 && !store.pushLessonSeen && c.settingsOpen);
+        check("native Settings resets tutorials without clearing progress",store.tutorials==0 && !c.onboarding.learned(TutorialSpeech.RESCUE) && c.settingsOpen);
     }
     private static void tutorialContinue(IOSGame game) {
         int message=game.core().onboarding.speech;

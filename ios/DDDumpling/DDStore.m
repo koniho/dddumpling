@@ -227,12 +227,23 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 
 - (NSString *)loadReleaseSeen { return [self stringForKey:@"releaseSeen" validWriter:NO] ?: @""; }
 - (void)saveReleaseSeenWithNSString:(NSString *)value { [self setValue:value forKey:@"releaseSeen"]; }
-- (jboolean)loadPushLessonSeen { return [self intForKey:@"pushLessonSeen" defaultValue:0] != 0; }
-- (jint)loadTutorials { return [self intForKey:@"tutorials" defaultValue:0]; }
+- (jint)loadTutorials {
+  jint saved = [self intForKey:@"tutorials" defaultValue:0];
+  BOOL rescued = [self intForKey:@"pushLessonSeen" defaultValue:0] != 0;
+  [_lock lock];
+  if (_values[@"pushLessonSeen"]) {
+    // RESCUE (15) uses learned-action bit 15 + 9 in the shared tutorial save.
+    if (rescued) saved |= 1 << 24;
+    _values[@"tutorials"] = @(saved);
+    [_values removeObjectForKey:@"pushLessonSeen"];
+    [self persist];
+  }
+  [_lock unlock];
+  return saved;
+}
 - (void)saveTutorialsWithInt:(jint)value { [self setValue:@(value) forKey:@"tutorials"]; }
 - (jint)loadPowerTutorials { return [self intForKey:@"powerTutorials" defaultValue:0]; }
 - (void)savePowerTutorialsWithInt:(jint)value { [self setValue:@(value) forKey:@"powerTutorials"]; }
-- (void)savePushLessonSeenWithBoolean:(jboolean)value { [self setValue:@(value) forKey:@"pushLessonSeen"]; }
 - (jint)loadCaveChoice { return [self intForKey:@"caveChoice" defaultValue:-1]; }
 - (void)saveCaveChoiceWithInt:(jint)value { [self setValue:@(value) forKey:@"caveChoice"]; }
 - (jint)loadLandState { return [self intForKey:@"landState" defaultValue:0]; }

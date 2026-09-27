@@ -5,7 +5,7 @@ final class Onboarding extends Draw {
     static final int CORE=1, STEAMER=2, STARS=4, CART=8, MINE=16, SLIME=32,
             SKIPPED=64, WORD_HINT=128, WRONG_HINT=256, STACK_HINT=512;
     int saved, savedPowers, lesson, step, pointer=-1, speech, introduced, hintKind, speechPointer=-1;
-    boolean bossHelp, bossGuide, powerGuide, starGuide, titleGuide, helpArmed;
+    boolean bossHelp, bossGuide, powerGuide, starGuide, titleGuide, rescueGuide, helpArmed;
     int helpPointer=-1, bossHelpUsed, speechPage;
     GameCore practice, teacher, narrator;
     GameCore.Enemy word;
@@ -48,7 +48,7 @@ final class Onboarding extends Draw {
         return 0; // Debuffs and the retired MULTI mode are not offered tutorials.
     }
     private void powerHint(GameCore c) {
-        if(powerGuide || !c.powerActive() || c.state!=GameCore.PLAY || c.pushLesson.active)return;
+        if(powerGuide || !c.powerActive() || c.state!=GameCore.PLAY || rescueGuide)return;
         int message=powerSpeech(c.mode);
         if(message==0 || learned(message))return;
         hintKind=0;bossGuide=false;powerGuide=briefing=true;speech=message;age=0;
@@ -56,7 +56,7 @@ final class Onboarding extends Draw {
     }
     private void pickupHint(GameCore c,Layout L) {
         Power p=c.power;
-        if(powerGuide || c.powerActive() || c.state!=GameCore.PLAY || c.pushLesson.active
+        if(powerGuide || c.powerActive() || c.state!=GameCore.PLAY || rescueGuide
                 || p==null || !p.catchable() || learned(TutorialSpeech.POWER_PICKUP)
                 || !p.mystery && powerSpeech(p.effect)==0)return;
         // Pickups spawn offscreen; wait until the whole icon is visible and easy to tap.
@@ -101,7 +101,7 @@ final class Onboarding extends Draw {
                 || !c.boss.hasGlob() || learned(message) || (introduced&(1<<message))!=0) {
             slimeHintAge=0;return;
         }
-        if(briefing || practice!=null || powerGuide || c.pushLesson.active)return;
+        if(briefing || practice!=null || powerGuide || rescueGuide)return;
         slimeHintAge+=elapsed;
         if(slimeHintAge<SLIME_HINT_DELAY)return;
         // Teach the drag on the real vulnerable patch, not in the upfront help pages.
@@ -119,7 +119,27 @@ final class Onboarding extends Draw {
     }
     boolean moreSpeech() { return speechPage+1<TutorialSpeech.pageCount(speech); }
     void rescue(GameCore c) {
-        clear();speech=TutorialSpeech.RESCUE;briefing=true;narrate(c);
+        clear();speech=TutorialSpeech.RESCUE;rescueGuide=briefing=true;age=0;narrate(c);
+    }
+    static float rescueTriggerY(Layout L) {
+        return L.dangerY-Math.max(1f,(L.dangerY-L.playTop)*GameCore.WARN_BAND);
+    }
+    boolean rescueHint(GameCore c,Layout L) {
+        if(rescueGuide)return true;
+        if(teacher!=null || practice!=null || briefing || powerGuide || learned(TutorialSpeech.RESCUE)
+                || c.state!=GameCore.PLAY || c.paused || c.settingsOpen || c.pushUsed
+                || c.pendingBonus || c.boss.active() || Cave.active(c))return false;
+        for(GameCore.Enemy e:c.enemies) {
+            if(e.destroyed || e.dying || e.linkWaiting || e.slideT>0)continue;
+            if(e.attacking || e.y>=rescueTriggerY(L)) {
+                Pause.release(c);rescue(c);c.warnLevel=Math.max(.5f,c.warnLevel);return true;
+            }
+        }
+        return false;
+    }
+    void rescued(GameCore c) {
+        learn(c,TutorialSpeech.RESCUE);
+        if(rescueGuide)clear();
     }
     void introduceCompanion(GameCore c) {
         clear();speech=TutorialSpeech.COMPANION;briefing=true;age=0;narrate(c);
@@ -129,12 +149,12 @@ final class Onboarding extends Draw {
     }
     boolean wantsTouch(GameCore c,Layout L,int action,float x,float y) {
         return practice!=null || briefing || ownsTouch || action==0 && (promptHit(c,L,x,y)
-                || (hintKind!=0 || bossGuide || powerGuide || starGuide || titleGuide || c.pushLesson.active) && skipHit(L,x,y));
+                || (hintKind!=0 || bossGuide || powerGuide || starGuide || titleGuide || rescueGuide) && skipHit(L,x,y));
     }
     boolean speaking(GameCore c) {
         if(sceneWait>0)return false;
         return briefing || titleGuide || celebration>0 || (practice!=null || hintKind!=0 || bossGuide || powerGuide) && success<=0 && !learned(speech)
-                || c.pushLesson.active;
+                || rescueGuide;
     }
     boolean movingCompanion(GameCore c) { return companionTravel>0 || speaking(c); }
     boolean companionAway(GameCore c) {
@@ -155,15 +175,13 @@ final class Onboarding extends Draw {
     }
     void reset(GameCore c) {
         clear();saved=savedPowers=bossHelpUsed=0;companionTravel=0;
-        c.pushLesson.seen=false;c.pushLesson.reset();
-        if(c.store!=null)c.store.savePushLessonSeen(false);
         save(c);
     }
     void clear() {
         if(narrator!=null && narrator.sound!=null)narrator.sound.hush();
         narrator=null;
         cancelTouch();practice=null;word=null;lesson=step=speech=speechPage=introduced=hintKind=0;
-        success=sceneWait=bubbleAge=celebration=slimeHintAge=0;briefing=bossHelp=bossGuide=powerGuide=starGuide=titleGuide=false;
+        success=sceneWait=bubbleAge=celebration=slimeHintAge=0;briefing=bossHelp=bossGuide=powerGuide=starGuide=titleGuide=rescueGuide=false;
     }
     void cancelTouch() {
         pointer=-1;ownsTouch=lid=false;
@@ -175,7 +193,7 @@ final class Onboarding extends Draw {
         c.diagnostic("tutorial-skip");
         if(c.sound!=null)c.sound.hush();
         clear();saved|=SKIPPED;
-        c.pushLesson.reset();save(c);
+        save(c);
     }
     void begin(GameCore c,int which,Layout L) {
         Pause.release(c);clear();lesson=which;age=globAge=0;
@@ -269,12 +287,13 @@ final class Onboarding extends Draw {
             powerGuide=false;
             if(briefing) { briefing=false;if(c.sound!=null)c.sound.hush();narrator=null; }
         }
-        if(!briefing && practice==null) { powerHint(c);if(!briefing)pickupHint(c,L); }
+        if(!briefing && !rescueGuide && practice==null) { powerHint(c);if(!briefing)pickupHint(c,L); }
+        rescueHint(c,L);
         if(bossGuide && (!c.boss.fighting() || learned(speech)
                 || speech==TutorialSpeech.GLOB && !c.boss.hasGlob()))bossGuide=false;
         slimeGlobHint(c,elapsed);
         moveCompanion(c,elapsed);
-        if(briefing) { age+=elapsed;return true; }
+        if(briefing || rescueGuide) { age+=elapsed;return true; }
         if(practice==null) {
             int next=0;
             if(c.state==GameCore.BONUS && !c.bossReward) {
@@ -392,7 +411,7 @@ final class Onboarding extends Draw {
     }
     private void complete() { success=1f;boolean touch=ownsTouch;cancelTouch();ownsTouch=touch; }
     private void hints(GameCore c,Layout L) {
-        if(hintKind!=0 || powerGuide || c.powerActive() || c.pushLesson.active || c.state!=GameCore.PLAY || c.stage>4
+        if(hintKind!=0 || powerGuide || c.powerActive() || rescueGuide || c.state!=GameCore.PLAY || c.stage>4
                 || c.boss.active() || !eligible(SKIPPED))return;
         int bit=0;
         if(c.misses>0 && eligible(WRONG_HINT)) { bit=WRONG_HINT;speech=TutorialSpeech.RETRY; }
@@ -426,7 +445,7 @@ final class Onboarding extends Draw {
             }
             return true;
         }
-        boolean visible=practice!=null || briefing || hintKind!=0 || bossGuide || powerGuide || starGuide || titleGuide || c.pushLesson.active;
+        boolean visible=practice!=null || briefing || hintKind!=0 || bossGuide || powerGuide || starGuide || titleGuide || rescueGuide;
         if(action==0 && visible && skipHit(L,x,y)) { skip(c);ownsTouch=true;return true; }
         if(sceneWait>0) {
             if(action==0)ownsTouch=true;
@@ -526,6 +545,7 @@ final class Onboarding extends Draw {
         }
         if(c.settingsOpen)return;
         if(o.offersBossHelp(c))TutorialSpeech.help(p,c,L);
+        if(o.rescueGuide)TutorialSpeech.rescueGesture(p,c,L);
         if(o.briefing)TutorialSpeech.large(p,c,L,o.speech,true);
         else if(o.celebration>0)TutorialSpeech.large(p,c,L,TutorialSpeech.SUCCESS,false);
         else if(o.practice!=null) {
@@ -537,7 +557,7 @@ final class Onboarding extends Draw {
             if(o.lesson==SLIME && q.boss.open() && q.boss.slimePromptCover()<.3f && !q.boss.hasGlob())key=q.boss.chainLetter();
             if(key>=0 && o.success<=0)Renderer.touchHint(p,q.keyX(L,key),q.keyY(L,key),L.keyR*.65f,1f,.85f,o.age);
             if(o.success<=0)o.gesture(p,L);
-        } else if(c.pushLesson.active)TutorialSpeech.large(p,c,L,TutorialSpeech.RESCUE,false);
+        } else if(o.rescueGuide)TutorialSpeech.large(p,c,L,TutorialSpeech.RESCUE,false);
         else if(o.hintKind!=0 || o.bossGuide || o.powerGuide || o.starGuide || o.titleGuide)TutorialSpeech.reminder(p,c,L,o.speech);
         if(o.titleGuide && !o.briefing) {
             float x=c.caseOpen?L.w*.5f:Showcase.iconCx(L,c.clock);
@@ -549,14 +569,14 @@ final class Onboarding extends Draw {
             Renderer.touchHint(p,c.power.x,y,L.keyR*.65f,1f,.85f,o.age);
         }
         if(o.movingCompanion(c))TutorialSpeech.companion(p,c,L);
-        if(o.practice!=null || o.briefing || o.hintKind!=0 || o.bossGuide || o.powerGuide || o.starGuide || o.titleGuide || c.pushLesson.active) {
+        if(o.practice!=null || o.briefing || o.hintKind!=0 || o.bossGuide || o.powerGuide || o.starGuide || o.titleGuide || o.rescueGuide) {
             p.fillPoly(pill(L.w*.84f,skipY(L),L.w*.135f,L.unit*.95f,12),0xFF493953);
             p.text("SKIP ALL",L.w*.84f,skipY(L)+L.unit*.3f,type(L.unit*.62f),INK,Painter.CENTER,true);
         }
     }
     private void gesture(Painter p,Layout L) {
         GameCore q=practice;
-        float t=PushLesson.swipeProgress(age),x,y,angle=1f;
+        float t=TutorialSpeech.swipeProgress(age),x,y,angle=1f;
         if(lesson==STEAMER && q.bonusSwipeReady() && !lid) {
             x=L.w*.5f;y=Screens.steamerLidY(q,L)-L.unit*2.5f*t;
         } else if(lesson==MINE && q.mining.swipeReady() && q.mining.input.pointer<0) {

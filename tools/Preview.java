@@ -136,7 +136,7 @@ final class Preview {
                 shot(dir,"114-boss-0-vulnerable-try",c,L,w,h,ss);
             }
         }
-        GameCore rescue=new GameCore(new Mem(),114);rescue.startGame();rescue.pushLesson.active=true;
+        GameCore rescue=new GameCore(new Mem(),114);rescue.startGame();
         rescue.onboarding.rescue(rescue);
         step(rescue,L,.6f);
         shot(dir,"114-rescue-speech",rescue,L,w,h,ss);
@@ -564,11 +564,8 @@ final class Preview {
     private static int unfitFrames;
 
     private static final class Mem implements GameCore.Store {
-        public int loadTutorials() { return (1023 & ~Onboarding.SKIPPED)|(1<<(TutorialSpeech.GLOB+9)); }
+        public int loadTutorials() { return (1023 & ~Onboarding.SKIPPED)|(1<<(TutorialSpeech.GLOB+9))|(1<<(TutorialSpeech.RESCUE+9)); }
         public int loadPowerTutorials() { return 127; }
-        boolean pushLessonSeen = true; // Ordinary simulations model a player past onboarding.
-        public boolean loadPushLessonSeen() { return pushLessonSeen; }
-        public void savePushLessonSeen(boolean value) { pushLessonSeen = value; }
         byte[] progress;
         public byte[] loadProgress() { return progress == null ? null : progress.clone(); }
         public void saveProgress(byte[] data) { progress = data.clone(); }
@@ -1274,21 +1271,21 @@ final class Preview {
         shot(dir, "6-danger", c4, L, w, h, ss);
 
         float lessonY = near.y;
-        near.y = PushLesson.triggerY(L);
-        c4.pushLesson.seen = false;
+        near.y = Onboarding.rescueTriggerY(L);
+        c4.onboarding.saved&=~(1<<(TutorialSpeech.RESCUE+9));
         c4.update(DT, L);
-        c4.pushLesson.clock = .2f;
+        TestOnboarding.acknowledge(c4,L);
+        c4.onboarding.age = .2f;
         shot(dir, "199-push-lesson", c4, L, w, h, ss);
-        c4.pushLesson.clock = .6f;
+        c4.onboarding.age = .6f;
         shot(dir, "199-push-lesson-swipe", c4, L, w, h, ss);
-        c4.pushLesson.clock = 1.2f;
+        c4.onboarding.age = 1.2f;
         shot(dir, "199-push-lesson-lift", c4, L, w, h, ss);
         near.y = lessonY;
         GameCore reset = new GameCore(store, 18L);
         reset.settingsOpen = true; reset.settingsPage = 1; reset.settingsTab = SettingsUi.PROGRESS;
-        shot(dir, "200-swipe-reset", reset, L, w, h, ss);
-        c4.pushLesson.reset();
-        c4.pushLesson.seen = true;
+        shot(dir, "200-progress-settings", reset, L, w, h, ss);
+        c4.onboarding.rescued(c4);
 
         // The push-back offered: a word inside the warning band and the swipe strip lit.
         System.out.printf("push offered: ready=%s warn=%.2f%n", c4.pushReady(), c4.warnLevel);

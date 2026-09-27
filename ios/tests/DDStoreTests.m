@@ -10,6 +10,21 @@
 
 @implementation DDStoreTests
 
+- (void)testLegacyRescueCompletionMigratesOnceIntoTutorials {
+  NSURL *url = [self temporaryFile];
+  DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];
+  NSMutableDictionary *legacy = [store valueForKey:@"values"];
+  legacy[@"pushLessonSeen"] = @YES;
+  [store saveTutorialsWithInt:17];
+  DDIOSStore *reopened = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertEqual([reopened loadTutorials], 17 | (1 << 24));
+  XCTAssertNil([[reopened valueForKey:@"values"] objectForKey:@"pushLessonSeen"]);
+  [reopened saveTutorialsWithInt:0];
+  DDIOSStore *reset = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertEqual([reset loadTutorials], 0);
+  [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
+}
+
 - (void)testEmptyScoreResetKeepsTheStarterRoster {
   NSURL *url = [self temporaryFile];
   DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];

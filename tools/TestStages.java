@@ -218,89 +218,86 @@ final class TestStages extends Check {
     }
 
     /** The push-back: when it is offered, what it moves, and that it is once a stage. */
-    static void pushLesson(Layout L) {
-        group("desperation swipe lesson");
-        Mem mem = new Mem(); mem.pushLessonSeen = false;
+    static void rescueTutorial(Layout L) {
+        group("companion rescue tutorial");
+        Mem mem = new Mem(); mem.tutorials&=~(1<<(TutorialSpeech.RESCUE+9));
         GameCore c = new GameCore(mem, 161L);
         Ear ear=new Ear();c.sound=ear;
         c.startGame(); advance(c,L,2f); c.enemies.clear();
         GameCore.Enemy e = add(c,L,new int[] {1,2},L.playTop);
         c.update(DT,L);
-        check("distant enemy does not trigger rescue lesson", !c.pushLesson.active);
-        e.y=PushLesson.triggerY(L);c.settingsOpen=true; c.update(DT,L);
-        check("settings do not open lesson", !c.pushLesson.active);
+        check("distant enemy does not trigger rescue lesson", !c.onboarding.rescueGuide);
+        e.y=Onboarding.rescueTriggerY(L);c.settingsOpen=true; c.update(DT,L);
+        check("settings do not open lesson", !c.onboarding.rescueGuide);
         c.settingsOpen=false; c.pushUsed=true; c.update(DT,L);
-        check("spent swipe cannot trap player", !c.pushLesson.active);
+        check("spent swipe cannot trap player", !c.onboarding.rescueGuide);
         c.pushUsed=false; e.attacking=false; e.speed=0;
-        e.y=PushLesson.triggerY(L)-1f; c.update(DT,L);
-        check("lesson waits until the rescue warning band", !c.pushLesson.active);
-        e.y=PushLesson.triggerY(L); c.update(DT,L);
+        e.y=Onboarding.rescueTriggerY(L)-1f; c.update(DT,L);
+        check("lesson waits until the rescue warning band", !c.onboarding.rescueGuide);
+        e.y=Onboarding.rescueTriggerY(L); c.update(DT,L);
         check("closer threshold still precedes the lunge", !e.attacking && e.y+L.enemyR<L.dangerY);
-        check("available rescue opens lesson even with full lives", c.pushLesson.active && c.lives==3 && c.pushReady());
+        check("available rescue opens lesson even with full lives", c.onboarding.rescueGuide && c.lives==3 && c.pushReady());
         check("rescue lesson speaks its displayed first page",ear.explanations==1
                 && ear.explanation.equals(TutorialSpeech.spokenPage(TutorialSpeech.RESCUE,0)));
         TestOnboarding.acknowledge(c,L);
-        float y=e.y, time=c.time, mode=c.modeLeft, lessonClock=c.pushLesson.clock;
+        float y=e.y, time=c.time, mode=c.modeLeft, lessonClock=c.onboarding.age;
         c.update(10f,L);
-        check("instruction clock advances while play is frozen", c.pushLesson.clock>lessonClock);
+        check("instruction clock advances while play is frozen", c.onboarding.age>lessonClock);
         check("finger starts at bar and demonstrates a full upward swipe",
-                PushLesson.swipeProgress(.2f)==0f && PushLesson.swipeProgress(1.2f)==1f);
+                TutorialSpeech.swipeProgress(.2f)==0f && TutorialSpeech.swipeProgress(1.2f)==1f);
         check("lesson freezes words and simulation timers", e.y==y && c.time==time && c.modeLeft==mode);
-        check("keys cannot dismiss lesson", !c.tapKey(1,L) && c.pushLesson.active);
-        float x=L.w*.5f, bar=(L.dangerY+L.deckTop)*.5f, rise=L.enemyR*2;
-        c.pushLesson.touch(c,L,0,x,L.playTop);
-        c.pushLesson.touch(c,L,2,x,L.playTop-rise);
-        check("swipe must begin at bar", c.pushLesson.active);
-        c.pushLesson.touch(c,L,0,x,bar);
-        c.pushLesson.touch(c,L,1,x,bar);
-        check("tap does not dismiss", c.pushLesson.active);
-        c.pushLesson.touch(c,L,0,x,bar);
-        c.pushLesson.touch(c,L,2,x,bar+rise);
-        c.pushLesson.touch(c,L,2,x+rise*2,bar-rise);
-        check("downward and sideways drags do not dismiss", c.pushLesson.active);
-        c.pushLesson.touch(c,L,3,x,bar);
-        c.pushLesson.touch(c,L,2,x,bar-rise);
-        check("cancelled gesture cannot finish", c.pushLesson.active);
-        c.pushLesson.touch(c,L,0,x,bar);
-        check("upward swipe performs push", c.pushLesson.touch(c,L,2,x,bar-rise) && c.pushUsed);
-        check("completion persists and owns remaining touch", !c.pushLesson.active && mem.pushLessonSeen && c.pushLesson.ownsTouch);
+        check("keys cannot dismiss lesson", !c.tapKey(1,L) && c.onboarding.rescueGuide);
+        check("acknowledgement alone does not learn rescue",!c.onboarding.learned(TutorialSpeech.RESCUE));
+        check("normal swipe performs rescue",c.swipeUp(L) && c.pushUsed);
+        check("completion persists through unified tutorials",!c.onboarding.rescueGuide
+                && (mem.tutorials&(1<<(TutorialSpeech.RESCUE+9)))!=0);
         check("completed rescue stops its explanation",ear.hushes>0);
-        c.pushLesson.touch(c,L,1,x,bar-rise);
-        check("lift releases touch", !c.pushLesson.ownsTouch);
-        check("reload remembers completion", new GameCore(mem,1L).pushLesson.seen);
+        check("reload remembers completion", new GameCore(mem,1L).onboarding.learned(TutorialSpeech.RESCUE));
         c.startGame();
-        check("new run remembers completion", c.pushLesson.seen && !c.pushLesson.active);
-        Mem earlySave = new Mem(); earlySave.pushLessonSeen=false;
+        check("new run remembers completion", c.onboarding.learned(TutorialSpeech.RESCUE) && !c.onboarding.rescueGuide);
+        Mem earlySave = new Mem(); earlySave.tutorials&=~(1<<(TutorialSpeech.RESCUE+9));
         GameCore early = new GameCore(earlySave, 162L);
         early.startGame(); advance(early,L,2f); early.enemies.clear();
         early.warnLevel=0;
         check("unavailable swipe does not skip the lesson", !early.swipeUp(L)
-                && !early.pushLesson.seen && !earlySave.pushLessonSeen);
-        add(early,L,new int[] {1,2},PushLesson.triggerY(L));
+                && !early.onboarding.learned(TutorialSpeech.RESCUE) && (earlySave.tutorials&(1<<(TutorialSpeech.RESCUE+9)))==0);
+        add(early,L,new int[] {1,2},Onboarding.rescueTriggerY(L));
         early.warnLevel=.5f;
         check("player can discover the swipe before its lesson update",
-                !early.pushLesson.active && early.swipeUp(L));
-        check("self-taught swipe is saved", early.pushLesson.seen && earlySave.pushLessonSeen);
+                !early.onboarding.rescueGuide && early.swipeUp(L));
+        check("self-taught swipe is saved", early.onboarding.learned(TutorialSpeech.RESCUE) && (earlySave.tutorials&(1<<(TutorialSpeech.RESCUE+9)))!=0);
         early.jumpToStage(2,L); early.lives=1; early.stageBanner=0;
-        add(early,L,new int[] {1,2},PushLesson.triggerY(L));
+        add(early,L,new int[] {1,2},Onboarding.rescueTriggerY(L));
         early.update(DT,L);
         check("later last-life threat does not interrupt a player who already swiped",
-                !early.pushLesson.active && !early.pushUsed);
+                !early.onboarding.rescueGuide && !early.pushUsed);
         GameCore returned = new GameCore(earlySave,163L);
         returned.startGame(); returned.lives=1; returned.stageBanner=0;
-        add(returned,L,new int[] {1,2},PushLesson.triggerY(L));
+        add(returned,L,new int[] {1,2},Onboarding.rescueTriggerY(L));
         returned.update(DT,L);
-        check("self-taught swipe skips lesson after restarting", returned.pushLesson.seen
-                && !returned.pushLesson.active);
+        check("self-taught swipe skips lesson after restarting", returned.onboarding.learned(TutorialSpeech.RESCUE)
+                && !returned.onboarding.rescueGuide);
 
-        mem.pushLessonSeen=false;
+        mem.tutorials&=~(1<<(TutorialSpeech.RESCUE+9));
         GameCore boss=new GameCore(mem,2L); boss.startGame(); boss.jumpToStage(5,L);
         boss.lives=1; add(boss,L,new int[] {1,2},L.dangerY);
         boss.update(DT,L);
-        check("boss excluded", !boss.pushLesson.active);
+        check("boss excluded", !boss.onboarding.rescueGuide);
         boss.jumpToStage(21,L); boss.lives=1;
         add(boss,L,new int[] {1,2},L.dangerY); boss.update(DT,L);
-        check("cave excluded", !boss.pushLesson.active);
+        check("cave excluded", !boss.onboarding.rescueGuide);
+        GameCore cleanup=new GameCore(mem,164L);cleanup.startGame();cleanup.stageBanner=0;
+        add(cleanup,L,new int[]{0},Onboarding.rescueTriggerY(L));cleanup.update(DT,L);
+        cleanup.jumpToStage(2,L);
+        check("stage changes clear rescue guidance",!cleanup.onboarding.rescueGuide && !cleanup.onboarding.briefing);
+        add(cleanup,L,new int[]{0},Onboarding.rescueTriggerY(L));cleanup.update(DT,L);
+        cleanup.toTitle();
+        check("return to title clears rescue guidance",!cleanup.onboarding.rescueGuide);
+        cleanup.startGame();cleanup.stageBanner=0;cleanup.lives=1;
+        add(cleanup,L,new int[]{0},Onboarding.rescueTriggerY(L));cleanup.update(DT,L);
+        cleanup.takeHit(L.w*.5f,L);
+        check("death immediately clears rescue guidance",cleanup.state==GameCore.OVER && !cleanup.onboarding.rescueGuide);
+
     }
 
     static void pushBack(Layout L) {

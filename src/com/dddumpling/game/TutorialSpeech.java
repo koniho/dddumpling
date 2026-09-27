@@ -153,7 +153,7 @@ final class TutorialSpeech extends Draw {
     }
     static void large(Painter p,GameCore c,Layout L,int message,boolean button) {
         float s=unit(L),t=top(L),b=t+s*14.2f,x=L.w*.5f;
-        float age=message==RESCUE?c.pushLesson.clock:c.onboarding.age;
+        float age=c.onboarding.age;
         if(button)p.fillRect(0,0,L.w,L.h,0xB8101022);
         float growth=c.onboarding.bubbleProgress();
         if(growth<=0)return;
@@ -224,9 +224,35 @@ final class TutorialSpeech extends Draw {
         p.polyline(new float[]{x+dx-s*c+s*v*.6f,y+dy-s*v-s*c*.6f,x+dx,y+dy,
                 x+dx-s*c-s*v*.6f,y+dy-s*v+s*c*.6f},ACCENT,s*.16f);
     }
+    private static float clamp01(float t) { return Math.max(0f, Math.min(1f, t)); }
+    static float swipeProgress(float clock) {
+        float t = clamp01((clock % 1.8f - .25f) / .9f);
+        return t * t * (3f - 2f * t);
+    }
+
+    static void rescueGesture(Painter p, GameCore c, Layout L) {
+        Onboarding lesson = c.onboarding;
+        if (!lesson.rescueGuide) return;
+        float s = Pause.scale(L), x = L.w * .5f;
+        // Leave the real swipe bar uncovered so the lesson teaches its ordinary appearance.
+        p.fillRect(0, 0, L.w, L.dangerY, 0xCC100D20);
+        p.fillRect(0, L.deckTop, L.w, L.h, 0xCC100D20);
+        p.fillRect(0, L.dangerY, L.playLeft, L.deckTop, 0xCC100D20);
+        p.fillRect(L.playRight, L.dangerY, L.w, L.deckTop, 0xCC100D20);
+        float base = (L.dangerY + L.deckTop) * .5f;
+        float tip = base - L.enemyR * 2.7f;
+        p.polyline(new float[] {x, base, x, tip}, GOLD, s * .15f);
+        p.polyline(new float[] {x-s*.6f, tip+s*.65f, x, tip, x+s*.6f, tip+s*.65f},
+                GOLD, s*.15f);
+        float phase = lesson.age % 1.8f;
+        float fade = Math.min(clamp01(phase / .15f),
+                clamp01((1.65f - phase) / .3f));
+        Renderer.touchHint(p, x, base - L.enemyR * 2.7f * swipeProgress(lesson.age),
+                L.enemyR * 1.05f, (float) Math.PI * .5f, fade, lesson.age);
+    }
     private static void demonstrate(Painter p,GameCore c,Layout L,int message,float x,float y,float s,float age) {
         Onboarding o=c.onboarding;GameCore q=o.practice==null?c:o.practice;
-        float travel=PushLesson.swipeProgress(age),handX=x,handY=y;
+        float travel=swipeProgress(age),handX=x,handY=y;
         int key=o.demoKey(c);
         if(message==COMPANION) {
             p.text(Collect.NAME[c.runWho],x,y,type(s*.85f),INK,Painter.CENTER,true);

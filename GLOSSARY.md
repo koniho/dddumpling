@@ -531,15 +531,16 @@ Peach Coil, Berry Boa, Moon Ribbon, and Golden Hiss. Both have dedicated display
 family stories, mystery silhouettes, and the Cave Friend tier. The catalogue has 59 entries;
 existing collectible IDs and normal reward pools stay unchanged. `CaveCollect` draws the new families.
 
-The first normal-stage enemy entering the rescue warning band pauses for a **rescue swipe lesson**,
+The first normal-stage enemy entering the rescue warning band pauses for a **rescue swipe tutorial**,
 regardless of remaining lives. The companion explains the move in text and speech, while the shared
 instructional finger repeatedly swipes upward from the normal bar, which stays uncovered by dimming.
 Swipe upward from the highlighted bar to perform the real push-back and resume; taps cannot
 dismiss it. Any successful desperation swipe marks the lesson learned, including one used before
 the tutorial appears. Completion is saved across runs and app restarts. Boss fights and cave expeditions
-are excluded, and a spent swipe defers the lesson until a later stage. `PushLesson` owns the
-prompt, freeze, and shared native gesture.
-Developer settings → Progress → **RESET SWIPE** clears the saved lesson completion flag.
+are excluded, and a spent swipe defers the lesson until a later stage. `Onboarding` owns the
+prompt and freeze; the ordinary native swipe completes the tutorial. Completion uses the
+shared tutorial save, including one-time migration of older swipe-lesson completion.
+Player settings → **RESET TUTORIALS** resets this step with the other companion guidance.
 
 **First squishy** selection opens at Start when the display case is empty and all tutorials
 are reset. The empty case stays hidden. Choose Cream Bao, Peach Bun, Nana, Melon Wedge or

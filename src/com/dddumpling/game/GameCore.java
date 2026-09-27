@@ -177,8 +177,6 @@ final class GameCore {
     interface Store extends Progress.Store {
         default String loadTown() { return ""; }
         default boolean saveTown(String value) { return true; }
-        default boolean loadPushLessonSeen() { return false; }
-        default void savePushLessonSeen(boolean value) {}
         default String loadReleaseSeen() { return BuildFlags.BUILD_ID; }
         default void saveReleaseSeen(String value) {}
         default int loadCaseIndex() { return 0; }
@@ -576,7 +574,6 @@ final class GameCore {
     float warnLevel;
     /** Spent for this stage once the push-back has been used. */
     boolean pushUsed;
-    final PushLesson pushLesson = new PushLesson();
     final Onboarding onboarding = new Onboarding();
     final Starter starter = new Starter();
     /** Counts down while the push-back shockwave is on screen. */
@@ -1438,12 +1435,7 @@ final class GameCore {
 
     boolean swipeUp(Layout L) {
         if (!pushBack(L)) return false;
-        if(pushLesson.active && sound!=null)sound.hush();
-        pushLesson.active = false;
-        if (!pushLesson.seen) {
-            pushLesson.seen = true;
-            if (store != null) store.savePushLessonSeen(true);
-        }
+        onboarding.rescued(this);
         return true;
     }
 
@@ -1538,7 +1530,6 @@ final class GameCore {
 
     GameCore(Store store, long seed, boolean trackProgress) {
         this.store = store;
-        pushLesson.seen = store == null || store.loadPushLessonSeen();
         onboarding.saved = store == null ? Onboarding.SKIPPED : store.loadTutorials();
         onboarding.savedPowers = store == null ? 0 : store.loadPowerTutorials();
         this.progress = new Progress(store, trackProgress);
@@ -1933,7 +1924,6 @@ final class GameCore {
         launchWho = -1;
         launchT = 0f;
         pushUsed = false;
-        pushLesson.reset();
         pushT = 0f;
         pushSlowT = 0f;
         pushCount = 0;
@@ -2135,7 +2125,7 @@ final class GameCore {
 
     /** Player pressed key {@code g}. Returns true when it advanced a word. */
     boolean tapKey(int g, Layout L) {
-        if (paused || pushLesson.active) return false;
+        if (paused || onboarding.rescueGuide) return false;
         if (boss.kind == Boss.SLIME && boss.slimeKeyLock > 0f
                 && Roster.active(playRosterFull(), g)) {
             boss.slimeBlobPulse[g] = 0.15f;
@@ -2652,7 +2642,6 @@ final class GameCore {
         }
         if (starter.open) { clock+=elapsed;return; }
         if (onboarding.update(this, dt, elapsed, L)) return;
-        if (pushLesson.update(this, elapsed, L)) return;
         if(highScoreScreen.open) { highScoreScreen.update(elapsed);clock+=elapsed;return; }
         if(releaseNotes.open) {
             releaseNotes.update(elapsed,L);
@@ -3093,7 +3082,7 @@ final class GameCore {
                     breach(e, L);
                     // Nothing left to simulate once the run is over.
                     if (state != PLAY) return;
-                    if (pushLesson.update(this, 0f, L)) return;
+                    if (onboarding.rescueHint(this, L)) return;
                 }
                 continue;
             }
@@ -3344,7 +3333,7 @@ final class GameCore {
         }
         // One per stage, and this is where a stage begins.
         pushUsed = false;
-        pushLesson.reset();
+        if(onboarding.rescueGuide)onboarding.clear();
         spawnedThisStage = 0;
         resolvedThisStage = 0;
         stageBanner = BANNER_TIME;
@@ -3449,6 +3438,7 @@ final class GameCore {
      */
     private void die() {
         diagnostic("game-over");
+        if(onboarding.rescueGuide)onboarding.clear();
         finishTownRun();
         // The run companion belongs to the summary after play stops. It cries in place until the
         // return fade reaches full cover; toTitle clears it under that cover.

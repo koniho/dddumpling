@@ -54,7 +54,6 @@ src/com/dddumpling/game/ScoreReset.java
 src/com/dddumpling/game/HighScores.java
 src/com/dddumpling/game/HighScoreScreen.java
 src/com/dddumpling/game/OctoWaveRecording.java
-src/com/dddumpling/game/PushLesson.java
 src/com/dddumpling/game/DivideDeath.java
 src/com/dddumpling/game/SettingsArt.java
 src/com/dddumpling/game/PlayerSettings.java

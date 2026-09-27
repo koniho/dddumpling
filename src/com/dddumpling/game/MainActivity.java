@@ -226,8 +226,6 @@ public class MainActivity extends Activity implements GameCore.Store {
 
     @Override public String loadReleaseSeen() { return prefs.getString("release_seen", ""); }
     @Override public void saveReleaseSeen(String value) { prefs.edit().putString("release_seen", value).apply(); }
-    @Override public boolean loadPushLessonSeen() { return prefs.getBoolean("push_lesson_seen", false); }
-    @Override public void savePushLessonSeen(boolean value) { prefs.edit().putBoolean("push_lesson_seen", value).apply(); }
     @Override public int loadCaveChoice() { return prefs.getInt("cave_dumpling", -1); }
     @Override public void saveCaveChoice(int value) { prefs.edit().putInt("cave_dumpling", value).apply(); }
     @Override public int loadLandState() { return prefs.getInt("land_state", 0); }
@@ -242,7 +240,15 @@ public class MainActivity extends Activity implements GameCore.Store {
     }
 
     @Override public int loadPlayerSettings() { return prefs.getInt("playerSettings", PlayerSettings.DEFAULT); }
-    @Override public int loadTutorials() { return prefs.getInt("tutorials", 0); }
+    @Override public int loadTutorials() {
+        int saved=prefs.getInt("tutorials",0);
+        // Import the retired standalone lesson once; Reset Tutorials must stay authoritative.
+        if(prefs.contains("push_lesson_seen")) {
+            if(prefs.getBoolean("push_lesson_seen",false))saved|=1<<(TutorialSpeech.RESCUE+9);
+            prefs.edit().putInt("tutorials",saved).remove("push_lesson_seen").apply();
+        }
+        return saved;
+    }
     @Override public void saveTutorials(int value) { prefs.edit().putInt("tutorials", value).apply(); }
     @Override public int loadPowerTutorials() { return prefs.getInt("powerTutorials", 0); }
     @Override public void savePowerTutorials(int value) { prefs.edit().putInt("powerTutorials", value).apply(); }

@@ -30,7 +30,6 @@ public class GameView extends View {
     boolean paused() { return core.paused; }
     private void cancelPointers() {
         core.cancelTownInput();
-        core.pushLesson.cancelTouch();
         settingsInput.cancel();
         core.releaseNotes.cancelTouch();
         starDragPointer = bonusSwipePointer = bossDragPointer = -1;
@@ -170,8 +169,8 @@ public class GameView extends View {
             }
             return true;
         }
-        if (core.pushLesson.active || core.pushLesson.ownsTouch) {
-            if (core.pushLesson.touch(core, layout, action, ev.getX(), ev.getY())) tick();
+        if (core.onboarding.rescueGuide) {
+            handlePush(ev, action);
             return true;
         }
         if(action==0 && HighScoreScreen.entryHit(core,layout,ev.getX(),ev.getY())) {

@@ -7,7 +7,7 @@ keep future listing revisions aligned with the actual build.
 | --- | --- |
 | Tap character keys to clear falling sequences | src/com/dddumpling/game/GameCore.java; Words.java; Glyph.java |
 | Combos and transforming powerups | GameCore.java; Power.java; Blade.java; Buddy.java |
-| Rescue swipe and perfect rounds | GameCore.java; PushLesson.java; Hud.java |
+| Rescue swipe and perfect rounds | GameCore.java; Onboarding.java; Hud.java |
 | Linked friends in later stages | LinkedPairs.java; LinkedPairArt.java; GameCore.java |
 | Mystery pickups and visual twists | Power.java; GameCore.java; Renderer.java |
 | Boss interactions and collectible boss friends | Boss.java; BossPlay.java; BossCollect.java; BossVictory.java |
