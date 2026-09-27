@@ -631,6 +631,7 @@ public final class IOSInputTest extends Check {
 
     public static void main(String[] args) {
         onboarding();
+        powerGuidanceInput();
         townNavigation();
         slowRunIntro();
         caveMining();
@@ -719,6 +720,30 @@ public final class IOSInputTest extends Check {
     }
     private static void tutorialContinue(IOSGame game) {
         if(game.core().onboarding.briefing)tap(game,game.geometry().w*.5f,TutorialSpeech.buttonY(game.geometry()));
+    }
+    private static void powerGuidanceInput() {
+        for(int kind:Power.OFFERED) {
+            Mem store=new Mem();store.tutorials=store.powerTutorials=0;store.collected=1;
+            IOSGame game=new IOSGame(store,new Ear(),114);game.layout(393,852,0,59,0,34);
+            GameCore c=game.core();Layout l=game.geometry();c.startGame();c.stage=6;c.spawnTimer=9999;
+            c.enemies.clear();GameCore.Enemy e=add(c,l,new int[]{0},l.playTop+l.enemyR*4);
+            c.startFrenzy(kind,l);game.update(DT);float left=c.modeLeft;
+            tap(game,c.keyX(l,0),c.keyY(l,0));game.update(.5f);
+            check("native power popup owns keys and timer "+kind,c.onboarding.briefing && e.pos==0 && c.modeLeft==left);
+            float x=l.w*.5f,y=TutorialSpeech.buttonY(l);
+            game.touch(one(0,42,x,y));game.background(true);game.background(false);game.back();
+            game.touch(one(1,42,x,y));
+            check("interrupted power continue cannot resume gameplay "+kind,c.onboarding.briefing);
+            tutorialContinue(game);
+            if(kind==Power.FLING) {
+                x=c.tileX(e,0,l);y=e.y;
+                game.touch(one(0,42,x-l.enemyR*2,y));
+                game.touch(one(2,42,x+l.enemyR*2,y));game.touch(one(1,42,x+l.enemyR*2,y));
+            } else tap(game,c.keyX(l,kind==Power.FLURRY?1:0),c.keyY(l,kind==Power.FLURRY?1:0));
+            game.update(DT);
+            check("real native power gesture completes guidance "+kind,!c.onboarding.powerGuide
+                    && c.onboarding.learned(Onboarding.powerSpeech(kind)));
+        }
     }
     private static void bossGuidanceInput() {
         for(int kind=0;kind<Boss.COUNT;kind++) {

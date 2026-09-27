@@ -230,6 +230,8 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 - (jboolean)loadPushLessonSeen { return [self intForKey:@"pushLessonSeen" defaultValue:0] != 0; }
 - (jint)loadTutorials { return [self intForKey:@"tutorials" defaultValue:0]; }
 - (void)saveTutorialsWithInt:(jint)value { [self setValue:@(value) forKey:@"tutorials"]; }
+- (jint)loadPowerTutorials { return [self intForKey:@"powerTutorials" defaultValue:0]; }
+- (void)savePowerTutorialsWithInt:(jint)value { [self setValue:@(value) forKey:@"powerTutorials"]; }
 - (void)savePushLessonSeenWithBoolean:(jboolean)value { [self setValue:@(value) forKey:@"pushLessonSeen"]; }
 - (jint)loadCaveChoice { return [self intForKey:@"caveChoice" defaultValue:-1]; }
 - (void)saveCaveChoiceWithInt:(jint)value { [self setValue:@(value) forKey:@"caveChoice"]; }

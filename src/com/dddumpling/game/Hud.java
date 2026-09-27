@@ -79,6 +79,7 @@ final class Hud extends Draw {
 
     /** Active frenzy: the mode name, what it does, and how long is left. */
     static void modeBar(Painter p, GameCore c, Layout L) {
+        if(c.onboarding.powerGuide)return; // The tutorial reminder owns its label and countdown.
         if (!c.powerActive() && c.debuffLeft <= 0f) return;
         int effect = c.debuffLeft > 0f ? c.debuff : c.mode;
         float s = L.unit;

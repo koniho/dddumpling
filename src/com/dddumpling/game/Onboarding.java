@@ -4,8 +4,8 @@ package com.dddumpling.game;
 final class Onboarding extends Draw {
     static final int CORE=1, STEAMER=2, STARS=4, CART=8, MINE=16, SLIME=32,
             SKIPPED=64, WORD_HINT=128, WRONG_HINT=256, STACK_HINT=512;
-    int saved, lesson, step, pointer=-1, speech, introduced, hintKind, speechPointer=-1;
-    boolean bossHelp, bossGuide, helpArmed;
+    int saved, savedPowers, lesson, step, pointer=-1, speech, introduced, hintKind, speechPointer=-1;
+    boolean bossHelp, bossGuide, powerGuide, helpArmed;
     int helpPointer=-1;
     GameCore practice, teacher, narrator;
     GameCore.Enemy word;
@@ -14,12 +14,20 @@ final class Onboarding extends Draw {
     float age, success, startY, offsetX, globAge, companionTravel;
 
     // Preserve the original ten lesson bits; successful actions have independent durable bits.
-    boolean learned(int message) { return !eligible(1<<(message+9)); }
+    private static boolean powerMessage(int message) {
+        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.POWER_TEAM;
+    }
+    boolean learned(int message) {
+        if(powerMessage(message))return !eligible(SKIPPED)
+                || (savedPowers&(1<<(message-TutorialSpeech.POWER_FLURRY)))!=0;
+        return !eligible(1<<(message+9));
+    }
     void learn(GameCore c,int message) {
         if(teacher!=null) { teacher.onboarding.learn(teacher,message);return; }
         if(learned(message))return;
         c.diagnostic("tutorial-learn "+message);
-        saved|=1<<(message+9);
+        if(powerMessage(message))savedPowers|=1<<(message-TutorialSpeech.POWER_FLURRY);
+        else saved|=1<<(message+9);
         if(message==TutorialSpeech.DANGER)saved|=WORD_HINT;
         if(message==TutorialSpeech.RETRY)saved|=WRONG_HINT;
         if(message==TutorialSpeech.STACK)saved|=STACK_HINT;
@@ -30,6 +38,19 @@ final class Onboarding extends Draw {
         if(c.boss.kind==Boss.SLIME)learn(c,TutorialSpeech.GLOB);
         else for(int message:bossSteps(c.boss.kind))learn(c,message);
     }
+    static int powerSpeech(int kind) {
+        if(kind==Power.FLURRY)return TutorialSpeech.POWER_FLURRY;
+        if(kind==Power.FLING)return TutorialSpeech.POWER_FLING;
+        if(kind==Power.TEAM)return TutorialSpeech.POWER_TEAM;
+        return 0; // Debuffs and the retired MULTI mode are not offered tutorials.
+    }
+    private void powerHint(GameCore c) {
+        if(powerGuide || !c.powerActive() || c.state!=GameCore.PLAY || c.pushLesson.active)return;
+        int message=powerSpeech(c.mode);
+        if(message==0 || learned(message))return;
+        hintKind=0;bossGuide=false;powerGuide=briefing=true;speech=message;age=0;
+        Pause.release(c);narrate(c);
+    }
     private static int[] bossSteps(int kind) {
         if(kind==Boss.SLIME)return new int[]{TutorialSpeech.CLOSED,TutorialSpeech.CHAIN,TutorialSpeech.GLOB};
         if(kind==Boss.SPLITTER)return new int[]{TutorialSpeech.PINCH};
@@ -38,7 +59,7 @@ final class Onboarding extends Draw {
     }
     boolean offersBossHelp(GameCore c) {
         if(c.state!=GameCore.PLAY || !c.boss.fighting() || c.boss.hp<c.boss.hpMax
-                || practice!=null || briefing || hintKind!=0 || bossHelp || bossGuide
+                || practice!=null || briefing || hintKind!=0 || bossHelp || bossGuide || powerGuide
                 || companionTravel>0 || !eligible(SKIPPED))return false;
         for(int message:bossSteps(c.boss.kind))if(!learned(message))return true;
         return false;
@@ -65,10 +86,10 @@ final class Onboarding extends Draw {
     }
     boolean wantsTouch(GameCore c,Layout L,int action,float x,float y) {
         return practice!=null || briefing || ownsTouch || action==0 && (promptHit(c,L,x,y)
-                || (hintKind!=0 || bossGuide || c.pushLesson.active) && skipHit(L,x,y));
+                || (hintKind!=0 || bossGuide || powerGuide || c.pushLesson.active) && skipHit(L,x,y));
     }
     boolean speaking(GameCore c) {
-        return briefing || (practice!=null || hintKind!=0 || bossGuide) && success<=0 && !learned(speech)
+        return briefing || (practice!=null || hintKind!=0 || bossGuide || powerGuide) && success<=0 && !learned(speech)
                 || c.pushLesson.active;
     }
     boolean movingCompanion(GameCore c) { return companionTravel>0 || speaking(c); }
@@ -81,9 +102,11 @@ final class Onboarding extends Draw {
     }
 
     boolean eligible(int bit) { return (saved & (bit|SKIPPED))==0; }
-    void save(GameCore c) { if(c.store!=null)c.store.saveTutorials(saved); }
+    void save(GameCore c) {
+        if(c.store!=null) { c.store.saveTutorials(saved);c.store.savePowerTutorials(savedPowers); }
+    }
     void reset(GameCore c) {
-        clear();saved=0;companionTravel=0;
+        clear();saved=savedPowers=0;companionTravel=0;
         c.pushLesson.seen=false;c.pushLesson.reset();
         if(c.store!=null)c.store.savePushLessonSeen(false);
         save(c);
@@ -92,7 +115,7 @@ final class Onboarding extends Draw {
         if(narrator!=null && narrator.sound!=null)narrator.sound.hush();
         narrator=null;
         cancelTouch();practice=null;word=null;lesson=step=speech=introduced=hintKind=0;
-        success=0;briefing=bossHelp=bossGuide=false;
+        success=0;briefing=bossHelp=bossGuide=powerGuide=false;
     }
     void cancelTouch() {
         pointer=-1;ownsTouch=lid=starDrag=false;
@@ -156,6 +179,11 @@ final class Onboarding extends Draw {
         if(c.state!=GameCore.PLAY && c.state!=GameCore.BONUS) { clear();companionTravel=0;return false; }
         if(c.settingsOpen || c.paused || c.townOpen)return false;
         if(teacher!=null)return false;
+        if(powerGuide && (!c.powerActive() || speech!=powerSpeech(c.mode) || learned(speech))) {
+            powerGuide=false;
+            if(briefing) { briefing=false;if(c.sound!=null)c.sound.hush();narrator=null; }
+        }
+        if(!briefing && practice==null)powerHint(c);
         if(bossGuide && (!c.boss.fighting() || learned(speech)))bossGuide=false;
         moveCompanion(c,elapsed);
         if(briefing) { age+=elapsed;return true; }
@@ -261,7 +289,7 @@ final class Onboarding extends Draw {
     }
     private void complete() { success=1f;boolean touch=ownsTouch;cancelTouch();ownsTouch=touch; }
     private void hints(GameCore c,Layout L) {
-        if(hintKind!=0 || c.pushLesson.active || c.state!=GameCore.PLAY || c.stage>4
+        if(hintKind!=0 || powerGuide || c.powerActive() || c.pushLesson.active || c.state!=GameCore.PLAY || c.stage>4
                 || c.boss.active() || !eligible(SKIPPED))return;
         int bit=0;
         if(c.misses>0 && eligible(WRONG_HINT)) { bit=WRONG_HINT;speech=TutorialSpeech.RETRY; }
@@ -295,7 +323,7 @@ final class Onboarding extends Draw {
             }
             return true;
         }
-        boolean visible=practice!=null || briefing || hintKind!=0 || bossGuide || c.pushLesson.active;
+        boolean visible=practice!=null || briefing || hintKind!=0 || bossGuide || powerGuide || c.pushLesson.active;
         if(action==0 && visible && skipHit(L,x,y)) { skip(c);ownsTouch=true;return true; }
         if(briefing) {
             ownsTouch=true;
@@ -400,9 +428,9 @@ final class Onboarding extends Draw {
             if(key>=0 && o.success<=0)Renderer.touchHint(p,q.keyX(L,key),q.keyY(L,key),L.keyR*.65f,1f,.85f,o.age);
             if(o.success<=0)o.gesture(p,L);
         } else if(c.pushLesson.active)TutorialSpeech.large(p,c,L,TutorialSpeech.RESCUE,false);
-        else if(o.hintKind!=0 || o.bossGuide)TutorialSpeech.reminder(p,c,L,o.speech);
+        else if(o.hintKind!=0 || o.bossGuide || o.powerGuide)TutorialSpeech.reminder(p,c,L,o.speech);
         if(o.movingCompanion(c))TutorialSpeech.companion(p,c,L);
-        if(o.practice!=null || o.briefing || o.hintKind!=0 || o.bossGuide || c.pushLesson.active) {
+        if(o.practice!=null || o.briefing || o.hintKind!=0 || o.bossGuide || o.powerGuide || c.pushLesson.active) {
             p.fillPoly(pill(L.w*.84f,skipY(L),L.w*.135f,L.unit*.95f,12),0xFF493953);
             p.text("SKIP ALL",L.w*.84f,skipY(L)+L.unit*.3f,type(L.unit*.62f),INK,Painter.CENTER,true);
         }

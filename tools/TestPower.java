@@ -6,7 +6,7 @@ final class TestPower extends Check {
     private TestPower() {}
 
     /** Puts a catchable powerup of a known mode on the field. */
-    private static Power place(GameCore c, Layout L, int effect, int glyph) {
+    static Power place(GameCore c, Layout L, int effect, int glyph) {
         Power w = new Power();
         w.glyph = glyph;
         w.effect = effect;

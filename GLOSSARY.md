@@ -550,6 +550,11 @@ win count are awarded once, then its celebration leads to the next stage without
 The tutorial first shows a wait symbol and random key selection, then pauses on an encouraging
 **Go as fast as you can!** explanation only once the pair has settled. Spoken encouragement
 accompanies the selection, alternating taps, lid swipe and win.
+FLURRY, FLING and TEAM SQUISH each explain their controls on first use, pausing the live
+field and frenzy countdown while the companion speaks and demonstrates. A successful wildcard
+hit, slicing gesture or aimed buddy charge permanently learns its own step, including success
+before the prompt appears. Merely acknowledging the bubble does not mark it learned. Debuffs
+(INCOGNITO and MONOCHROME) and the retired MULTI mode do not have these prompts.
 Other minigame practice remains reward-free. The actual run
 companion slides to the side, explains each new control in a large speech bubble with an animated
 example, and returns after the action succeeds. Explanations pause the scene until **Let's try!**;

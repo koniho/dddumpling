@@ -205,6 +205,8 @@ final class GameCore {
         default void savePlayerSettings(int value) {}
         default int loadTutorials() { return 0; }
         default void saveTutorials(int value) {}
+        default int loadPowerTutorials() { return 0; }
+        default void savePowerTutorials(int value) {}
         /** The collected-squishy bitmask; see {@link Collect}. */
         long loadCollected();
         void saveCollected(long owned);
@@ -1534,6 +1536,7 @@ final class GameCore {
         this.store = store;
         pushLesson.seen = store == null || store.loadPushLessonSeen();
         onboarding.saved = store == null ? Onboarding.SKIPPED : store.loadTutorials();
+        onboarding.savedPowers = store == null ? 0 : store.loadPowerTutorials();
         this.progress = new Progress(store, trackProgress);
         this.rnd = new Random(seed);
         Random sr = new Random(20260803L);
@@ -2220,6 +2223,7 @@ final class GameCore {
             else sound.squish(lit, pressesLeft(e, struck));
         }
         e.done++;
+        if(flurry())onboarding.learn(this,TutorialSpeech.POWER_FLURRY);
         if (e.done >= e.need[struck]) {
             if(e.stacked(struck))onboarding.learn(this,TutorialSpeech.STACK);
             e.pos++;
@@ -2393,6 +2397,7 @@ final class GameCore {
             return false;
         }
         buddy.charge(pick);
+        onboarding.learn(this,TutorialSpeech.POWER_TEAM);
         // A hit, but no score of its own: the squish it is on its way to pays that.
         hits++;
         combo++;

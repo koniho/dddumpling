@@ -11,6 +11,16 @@ final class Preview {
 
     private static void onboardingFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("114-"))return;
+        for(int kind:Power.OFFERED) {
+            GameCore c=TestPowerTutorials.fresh(L,new Check.Mem());
+            Check.add(c,L,new int[]{0,1},L.playTop+L.enemyR*4);
+            c.startFrenzy(kind,L);step(c,L,.6f);
+            shot(dir,"114-power-"+kind+"-explain",c,L,w,h,ss);
+            TestOnboarding.acknowledge(c,L);step(c,L,.15f);
+            shot(dir,"114-power-"+kind+"-try",c,L,w,h,ss);
+            TestPowerTutorials.use(c,L,kind);step(c,L,.2f);
+            shot(dir,"114-power-"+kind+"-return",c,L,w,h,ss);
+        }
         for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.STARS,Onboarding.CART,Onboarding.MINE}) {
             GameCore c=new GameCore(new Mem(),114);c.startGame();c.onboarding.begin(c,lesson,L);
             step(c,L,.6f);GameCore q=c.onboarding.practice;
@@ -476,6 +486,7 @@ final class Preview {
 
     private static final class Mem implements GameCore.Store {
         public int loadTutorials() { return 1023 & ~Onboarding.SKIPPED; }
+        public int loadPowerTutorials() { return 7; }
         boolean pushLessonSeen = true; // Ordinary simulations model a player past onboarding.
         public boolean loadPushLessonSeen() { return pushLessonSeen; }
         public void savePushLessonSeen(boolean value) { pushLessonSeen = value; }

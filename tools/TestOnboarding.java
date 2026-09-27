@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Real controls finish lessons; only a completed live Steamer lesson claims a reward. */
 final class TestOnboarding extends Check {
     static GameCore fresh(Layout L,Mem store) {
-        store.tutorials=0;
+        store.tutorials=store.powerTutorials=0;
         GameCore c=new GameCore(store,114);c.startGame();c.update(DT,L);return c;
     }
     static void touch(GameCore c,Layout L,int action,float x,float y) {
@@ -105,6 +105,7 @@ final class TestOnboarding extends Check {
         steamerTutorialWin(L);
         steamerSelection(L);
         diagnostics(L);
+        TestPowerTutorials.all(L);
     }
     private static void diagnostics(Layout L) {
         GameCore c=fresh(L,new Mem());

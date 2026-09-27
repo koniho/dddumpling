@@ -96,6 +96,8 @@
   DDIOSStore *saved = [[DDIOSStore alloc] initWithURL:url];
   XCTAssertEqual(saved.loadCaveChoice, -1);
   XCTAssertEqual(saved.loadTutorials, 0);
+  XCTAssertEqual(saved.loadPowerTutorials, 0);
+  [saved savePowerTutorialsWithInt:5];
   [saved saveTutorialsWithInt:97];
   [saved saveCaveChoiceWithInt:4];
   [saved saveCaseIndexWithInt:17];
@@ -125,6 +127,7 @@
   XCTAssertNil(loaded.error);
   XCTAssertEqual(loaded.loadCaveChoice, 4);
   XCTAssertEqual(loaded.loadTutorials, 97);
+  XCTAssertEqual(loaded.loadPowerTutorials, 5);
   XCTAssertEqual(loaded.loadCaseIndex, 17);
   XCTAssertEqual(loaded.loadBest, 812);
   XCTAssertEqualObjects(loaded.loadTown, @"v1;t=7;lc=3;rs=3");
@@ -145,8 +148,10 @@
   XCTAssertEqual([loaded loadProgress]->buffer_[0], 9);
   XCTAssertEqual([loaded loadProgress]->buffer_[3], 6);
   [loaded saveTutorialsWithInt:0];
+  [loaded savePowerTutorialsWithInt:0];
   DDIOSStore *reset = [[DDIOSStore alloc] initWithURL:url];
   XCTAssertEqual(reset.loadTutorials, 0);
+  XCTAssertEqual(reset.loadPowerTutorials, 0);
   XCTAssertEqual(reset.loadBest, 812);
   XCTAssertEqual(reset.loadCollected, 0x12345);
   XCTAssertEqual(reset.loadStarWins, 3);

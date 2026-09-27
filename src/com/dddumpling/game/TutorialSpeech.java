@@ -4,7 +4,8 @@ package com.dddumpling.game;
 final class TutorialSpeech extends Draw {
     static final int MATCH=1, WORD=2, ALTERNATE=3, LIFT=4, STARS=5, LEAN=6,
             DIG=7, CART=8, CLOSED=9, CHAIN=10, GLOB=11, DANGER=12, RETRY=13,
-            STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21;
+            STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21,
+            POWER_FLURRY=22, POWER_FLING=23, POWER_TEAM=24;
     private static final int PAPER=0xB8FFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
@@ -27,9 +28,15 @@ final class TutorialSpeech extends Draw {
         {"SAVE YOUR KEYS!", "TAP THE SHOWN KEY."},
         {"GRAB THE ARM TIP!", "PULL IT AWAY."},
         {"GRAB THE CAP!", "SHAKE SIDE TO SIDE."},
-        {"WAIT FOR YOUR KEYS!", "WATCH THEM SPIN!"}
+        {"WAIT FOR YOUR KEYS!", "WATCH THEM SPIN!"},
+        {"FLURRY: ANY KEY!", "TAP, TAP, TAP!"},
+        {"FLING: SWIPE!", "SLICE THE FACES!"},
+        {"TEAM SQUISH!", "TAP TO AIM ME!"}
     };
     static String spoken(int message) {
+        if(message==POWER_FLURRY)return "Flurry! Every key can hit any face. Tap any key to clear the falling faces. You've got this!";
+        if(message==POWER_FLING)return "Fling! Swipe across the falling faces to slice them. Try cutting several faces in one swipe!";
+        if(message==POWER_TEAM)return "Team Squish! I bounce around and clear whole words for you. Tap a matching key to aim me at that word. Any key can send me charging!";
         if(message==WAIT)return "First, wait while two keys are picked at random. Watch them spin! Get ready. You can do this!";
         if(message==ALTERNATE)return "Your keys are ready! Tap left, right, left, right. Go as fast as you can! You've got this!";
         if(message==LIFT)return "Great job! The lid is ready. Swipe it up to win. You can do it!";
@@ -99,6 +106,11 @@ final class TutorialSpeech extends Draw {
         float x=(l+L.w*.97f)*.5f;
         p.text(LINES[message][0],x,t+s*1.5f,type(s*.70f),TEXT_INK,Painter.CENTER,true);
         p.text(LINES[message][1],x,t+s*3f,type(s*.70f),ACCENT,Painter.CENTER,true);
+        if(c.onboarding.powerGuide) {
+            float left=l+s,right=L.w*.97f-s,y=b-s*.45f;
+            p.fillRect(left,y,right,y+s*.15f,0x44754070);
+            p.fillRect(left,y,left+(right-left)*Math.max(0f,Math.min(1f,c.modeLeft/Power.DURATION)),y+s*.15f,ACCENT);
+        }
     }
     static void companion(Painter p,GameCore c,Layout L) {
         Onboarding o=c.onboarding;GameCore q=o.practice==null?c:o.practice;
@@ -107,6 +119,8 @@ final class TutorialSpeech extends Draw {
         if(q.state==GameCore.BONUS && q.starBonus) {
             x=StarScreen.companionX(q,L,q.stars.flyerX(L));
             y=StarScreen.companionY(q,L,q.stars.flyerY(L));r=StarScreen.companionR(q,L);
+        } else if(!q.buddy.out()) {
+            x=q.buddy.x;y=q.buddy.y;r=q.buddy.radius(L)*.74f;
         }
         x+=(L.w*.13f-x)*u;y+=(L.topSafe+s*4.9f-y)*u;r+=(s*1.6f-r)*u;
         Trinket.drawReacting(p,speaker(c),x,y,r,o.age,1f,1,0);
@@ -126,7 +140,28 @@ final class TutorialSpeech extends Draw {
         Onboarding o=c.onboarding;GameCore q=o.practice==null?c:o.practice;
         float travel=PushLesson.swipeProgress(age),handX=x,handY=y;
         int key=o.demoKey(c);
-        if(message==WAIT) {
+        if(message==POWER_FLURRY) {
+            int at=(int)(age*2.4f)%3;
+            face(p,1,x,y-s*1.1f,s*1.1f);
+            for(int i=0;i<3;i++)face(p,Roster.at(c.playRosterFull(),i),x+(i-1)*s*3.4f,y+s*1.5f,s*1.05f);
+            handX=x+(at-1)*s*3.4f;handY=y+s*1.5f;
+            arrow(p,handX,handY-s*1.2f,x-handX,-s*1.2f,s*.45f);
+        } else if(message==POWER_FLING) {
+            handX=x+s*(-5+travel*10);
+            for(int i=0;i<3;i++) {
+                float fx=x+(i-1)*s*3.4f;
+                face(new OpacityPainter(p,handX>fx?.25f:1f),Roster.at(c.playRosterFull(),i),fx,y,s*1.25f);
+            }
+            p.line(x-s*5,y,handX,y,0xFF387358,s*.2f);
+        } else if(message==POWER_TEAM) {
+            face(p,1,x+s*2.1f,y-s*.7f,s);
+            face(p,4,x+s*4.3f,y-s*.7f,s);
+            float bx=x+s*(-3.5f+5.6f*travel);
+            Trinket.drawReacting(p,speaker(c),bx,y-s*.7f,s*1.1f,age,1f,1,0);
+            face(p,1,x-s*3.5f,y+s*1.8f,s);
+            handX=x-s*3.5f;handY=y+s*1.8f;
+            arrow(p,x-s*2,y+s*1.4f,s*5,0,s*.5f);
+        } else if(message==WAIT) {
             int roll=(int)(age*7f),count=Roster.count(q.playRosterFull()),half=count/2;
             face(p,Roster.at(q.playRosterFull(),roll%half),x-s*3,y,s*1.65f);
             face(p,Roster.at(q.playRosterFull(),half+(roll+1)%half),x+s*3,y,s*1.65f);

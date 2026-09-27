@@ -476,7 +476,7 @@ final class Renderer extends Draw {
         p.fillEllipse(b.x - r * 0.36f, b.y - r * 0.40f, r * 0.26f, r * 0.16f,
                 Glyph.withAlpha(0xFFFFFFFF, (int) (90 + 90 * glow)));
 
-        Trinket.draw(p, b.who, b.x, b.y, r * 0.74f, c.clock, true, 1f);
+        if(!c.onboarding.companionAway(c))Trinket.draw(p, b.who, b.x, b.y, r * 0.74f, c.clock, true, 1f);
     }
 
     /**
@@ -629,7 +629,7 @@ final class Renderer extends Draw {
      * of one, which is why the trail matters more than the hand.
      */
     static void flingHint(Painter p, GameCore c, Layout L) {
-        if (!c.showFlingHint()) return;
+        if (c.onboarding.briefing || !c.showFlingHint()) return;
         touchHint(p, c.demoX, c.demoY, L.enemyR * 1.05f, 1.10f, 1f, c.clock);
     }
 

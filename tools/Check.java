@@ -37,6 +37,9 @@ abstract class Check {
                 |Onboarding.WORD_HINT|Onboarding.WRONG_HINT|Onboarding.STACK_HINT;
         public int loadTutorials() { return tutorials; }
         public void saveTutorials(int value) { tutorials=value; }
+        int powerTutorials=7; // Ordinary simulations model a player who knows the three powers.
+        public int loadPowerTutorials() { return powerTutorials; }
+        public void savePowerTutorials(int value) { powerTutorials=value; }
         boolean pushLessonSeen = true; // Ordinary simulations model a player past onboarding.
         public boolean loadPushLessonSeen() { return pushLessonSeen; }
         public void savePushLessonSeen(boolean value) { pushLessonSeen = value; }
