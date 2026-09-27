@@ -302,10 +302,6 @@ final class Screens extends Draw {
             p.fillPoly(new float[] {ax - dir * s * 0.36f, cy - s * 0.26f,
                     ax + dir * s * 0.36f, cy, ax - dir * s * 0.36f, cy + s * 0.26f}, arrow);
         }
-
-        p.text(rolling ? "WAIT - PICKING KEYS" : !c.bonusMashing()?"NICE TRY!":
-                c.steamer.hits>0?"KEEP GOING! YOU'VE GOT THIS!":"GO! LEFT, RIGHT!",
-                cx,cy+r*1.9f,type(s*.6f),fadeBy(rolling?GOLD:INK,fade),Painter.CENTER,true);
     }
 
     /** How long the interlude heading takes to swell into place. */
@@ -415,12 +411,9 @@ final class Screens extends Draw {
         float bw = Math.min(L.w * 0.26f, s * 5.8f);
         float bh = s * 3.4f;
 
-        // Heading swells in over the fade, overshooting and settling, so the interlude
-        // announces itself instead of simply appearing.
-        float intro = introScale(c.time);
-        p.text(freed ? "FREE!" : "FREE A DUMPLING", cx, L.h * 0.235f,
-                type(s * (freed ? 1.5f : 0.95f) * intro),
-                fadeBy(freed ? GOLD : INK, fade), Painter.CENTER, true);
+        // The companion teaches the controls; keep only the win announcement here.
+        if (freed) p.text("FREE!", cx, L.h * 0.235f,
+                type(s * 1.5f * introScale(c.time)), fadeBy(GOLD, fade), Painter.CENTER, true);
         if (!freed && !c.steamer.swipeReady) {
             // No label: the wanted letter wears the same caret the field puts over a head tile,
             // and the arrow between the pair already says which way the sequence is going.
