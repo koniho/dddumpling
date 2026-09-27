@@ -11,6 +11,18 @@ final class Preview {
 
     private static void onboardingFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("114-"))return;
+        for(int message=TutorialSpeech.MATCH;message<=TutorialSpeech.STORIES;message++) {
+            GameCore c=new GameCore(new Mem(),114);c.startGame();
+            int lesson=message==TutorialSpeech.DIG?Onboarding.MINE:
+                    message==TutorialSpeech.WAIT || message==TutorialSpeech.ALTERNATE || message==TutorialSpeech.LIFT?Onboarding.STEAMER:Onboarding.CORE;
+            c.onboarding.begin(c,lesson,L);c.onboarding.sceneWait=0;
+            c.onboarding.speech=message;c.onboarding.briefing=true;
+            c.onboarding.companionTravel=1;c.onboarding.bubbleAge=Onboarding.BUBBLE_OPEN;
+            for(int page=0;page<TutorialSpeech.pageCount(message);page++) {
+                c.onboarding.speechPage=page;
+                shot(dir,"114-script-"+message+"-page-"+page,c,L,w,h,ss);
+            }
+        }
         GameCore pickup=TestPowerTutorials.fresh(L,new Check.Mem());
         TestPower.place(pickup,L,Power.FLING,0);step(pickup,L,.6f);
         shot(dir,"114-power-pickup-explain",pickup,L,w,h,ss);
@@ -104,6 +116,7 @@ final class Preview {
             }
         }
         GameCore rescue=new GameCore(new Mem(),114);rescue.startGame();rescue.pushLesson.active=true;
+        rescue.onboarding.rescue(rescue);
         step(rescue,L,.6f);
         shot(dir,"114-rescue-speech",rescue,L,w,h,ss);
         GameCore chosen=new GameCore(new Mem(),114);chosen.collected=1L<<16;chosen.caseIndex=16;chosen.startGame();

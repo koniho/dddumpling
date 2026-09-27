@@ -18,6 +18,10 @@ final class TestOnboarding extends Check {
     }
     static void acknowledge(GameCore c,Layout L) {
         reveal(c,L);
+        int message=c.onboarding.speech;
+        for(int i=0;i<12 && c.onboarding.briefing && c.onboarding.speech==message;i++)advancePage(c,L);
+    }
+    static void advancePage(GameCore c,Layout L) {
         if(!c.onboarding.briefing)return;
         awaitBubble(c,L);
         touch(c,L,0,L.w*.5f,TutorialSpeech.buttonY(L));
@@ -26,9 +30,7 @@ final class TestOnboarding extends Check {
     static void reveal(GameCore c,Layout L) {
         if(c.onboarding.sceneWait>0)c.update(c.onboarding.sceneWait,L);
         if(c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.MINIGAMES) {
-            awaitBubble(c,L);
-            touch(c,L,0,L.w*.5f,TutorialSpeech.buttonY(L));
-            touch(c,L,1,L.w*.5f,TutorialSpeech.buttonY(L));
+            for(int i=0;i<12 && c.onboarding.speech==TutorialSpeech.MINIGAMES;i++)advancePage(c,L);
         }
     }
     static void awaitBubble(GameCore c,Layout L) {
@@ -112,6 +114,7 @@ final class TestOnboarding extends Check {
         learnedActions(L);
         companionHop();
         speechReveal(L);
+        speechPages(L);
         bossHelp(L);
         bossHelpPerRun(L);
         slimeVulnerableHelp(L);
@@ -157,9 +160,8 @@ final class TestOnboarding extends Check {
         c.update(Onboarding.SCENE_REVEAL,L);
         check("minigame purpose precedes control instructions",c.onboarding.briefing
                 && c.onboarding.speech==TutorialSpeech.MINIGAMES && ear.explanation.startsWith("Steamer!")
-                && ear.explanation.contains("After each stage") && q.bonusTimer==timer);
-        awaitBubble(c,L);
-        touch(c,L,0,L.w*.5f,TutorialSpeech.buttonY(L));touch(c,L,1,L.w*.5f,TutorialSpeech.buttonY(L));
+                && ear.explanation.equals(TutorialSpeech.spokenPage(TutorialSpeech.MINIGAMES,0)) && q.bonusTimer==timer);
+        reveal(c,L);
         check("overview advances to paused Steamer selection step",c.onboarding.briefing
                 && c.onboarding.speech==TutorialSpeech.WAIT && ear.explanation.startsWith("Steamer!")
                 && new GameCore(store,115).onboarding.learned(TutorialSpeech.MINIGAMES));
@@ -200,7 +202,8 @@ final class TestOnboarding extends Check {
         c.onboarding.begin(c,Onboarding.STEAMER,L);GameCore q=c.onboarding.practice;
         reveal(c,L);
         check("Steamer first explains waiting for random keys",c.onboarding.briefing
-                && c.onboarding.speech==TutorialSpeech.WAIT && ear.explanation.contains("picked at random"));
+                && c.onboarding.speech==TutorialSpeech.WAIT
+                && ear.explanation.equals(TutorialSpeech.spokenPage(TutorialSpeech.WAIT,0)));
         check("Steamer practice connects existing audio without replaying setup",q.sound==ear
                 && ear.starts==0 && ear.stageClears==0 && ear.musicCalls==0 && ear.squishes==0);
         c.update(1f,L);
@@ -214,7 +217,8 @@ final class TestOnboarding extends Check {
         for(int i=0;i<300 && !c.onboarding.briefing;i++)c.update(DT,L);
         check("Go cue waits for settled selection and pauses for reading",!q.bonusRolling()
                 && c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.ALTERNATE
-                && ear.explanations==2 && ear.explanation.contains("Go as fast as you can!"));
+                && ear.explanations==TutorialSpeech.pageCount(TutorialSpeech.WAIT)+1
+                && ear.explanation.equals(TutorialSpeech.spokenPage(TutorialSpeech.ALTERNATE,0)));
         check("tutorial random selection plays ordinary spinner effects",ear.squishes>0);
         timer=q.bonusTimer;c.update(2f,L);
         check("Go explanation does not consume tapping time",q.bonusTimer==timer);
@@ -259,6 +263,10 @@ final class TestOnboarding extends Check {
         check("tutorial lid swipe wins the actual Steamer immediately",c.onboarding.practice==null
                 && c.bonusEscape() && c.prize>=0 && c.score>=GameCore.FREE_BONUS && c.lives==2);
         check("real tutorial win gets an encouraging spoken celebration",ear.explanation.contains("You did it!"));
+        awaitBubble(c,L);
+        check("spoken win celebration has a visible matching bubble",c.onboarding.celebration>0
+                && c.onboarding.bubbleProgress()==1 && c.onboarding.speech==TutorialSpeech.SUCCESS
+                && ear.explanation.equals(TutorialSpeech.spokenPage(TutorialSpeech.SUCCESS,0)));
         check("tutorial win plays the real celebration exactly once",ear.achievements==1);
         check("tutorial win persists real reward and existing difficulty",store.steamerOpens==4
                 && store.collectTotal==1 && c.collectTotal==1 && c.starNext
@@ -423,6 +431,37 @@ final class TestOnboarding extends Check {
                     && TutorialSpeech.top(p)+TutorialSpeech.unit(p)*14.2f<p.deckTop);
         }
     }
+    private static void speechPages(Layout L) {
+        for(int message=TutorialSpeech.MATCH;message<=TutorialSpeech.STORIES;message++) {
+            StringBuilder displayed=new StringBuilder();boolean fits=true;
+            for(int page=0;page<TutorialSpeech.pageCount(message);page++) {
+                String[] lines=TutorialSpeech.pageLines(message,page);
+                fits&=lines.length>0 && lines.length<=3;
+                for(String line:lines)fits&=!line.isEmpty() && line.length()<=22;
+                String spoken=TutorialSpeech.spokenPage(message,page);
+                check("page narration equals displayed words "+message+"/"+page,spoken.equals(String.join(" ",lines)));
+                if(displayed.length()>0)displayed.append(' ');
+                displayed.append(spoken);
+            }
+            check("every spoken word appears in readable bubbles "+message,fits && displayed.toString().equals(TutorialSpeech.spoken(message)));
+        }
+        GameCore c=TestPowerTutorials.fresh(L,new Mem());Ear ear=new Ear();c.sound=ear;
+        c.startFrenzy(Power.TEAM,L);c.update(DT,L);
+        int message=TutorialSpeech.POWER_TEAM,pages=TutorialSpeech.pageCount(message);
+        float left=c.modeLeft,clock=c.clock;
+        check("long explanation uses multiple bubbles",pages>1);
+        for(int page=0;page<pages;page++) {
+            check("new page speaks only its own displayed text "+page,c.onboarding.speechPage==page
+                    && ear.explanation.equals(TutorialSpeech.spokenPage(message,page)));
+            advancePage(c,L);
+            check("reading pages does not run or learn mechanic "+page,c.modeLeft==left && c.clock==clock
+                    && !c.onboarding.learned(message) && c.onboarding.briefing==(page<pages-1));
+            if(page<pages-1)check("next page animates from stationary companion",c.onboarding.companionTravel==1
+                    && c.onboarding.bubbleProgress()==0);
+        }
+        check("one narration per page",ear.explanations==pages);
+        c.onboarding.clear();check("clear resets page state",c.onboarding.speechPage==0 && c.onboarding.celebration==0);
+    }
     private static void speechReveal(Layout L) {
         GameCore c=fresh(L,new Mem());c.onboarding.begin(c,Onboarding.CORE,L);
         Onboarding o=c.onboarding;float x=L.w*.5f,y=TutorialSpeech.buttonY(L),wordY=o.word.y;
@@ -490,7 +529,9 @@ final class TestOnboarding extends Check {
         c.update(.3f,L);acknowledge(c,L);c.update(.1f,L);
         check("companion remains beside unfinished action",c.onboarding.companionTravel==1);
         GameCore q=c.onboarding.practice;q.swipeBonus();c.update(.2f,L);
-        check("companion animates back after successful action",c.onboarding.companionTravel<1 && c.onboarding.companionTravel>0);
+        check("companion stays beside displayed win celebration",c.onboarding.companionTravel==1 && c.onboarding.celebration>0);
+        c.update(3.9f,L);c.update(.2f,L);
+        check("companion animates back after win celebration",c.onboarding.companionTravel<1 && c.onboarding.companionTravel>0);
         c.update(.3f,L);check("companion reaches home",c.onboarding.companionTravel==0);
         c.onboarding.reset(c);
         check("reset makes learned steps eligible again",!c.onboarding.learned(TutorialSpeech.ALTERNATE));
@@ -547,7 +588,9 @@ final class TestOnboarding extends Check {
                 check("opening help pauses boss arrival "+kind,c.onboarding.briefing && c.boss.intro==intro);
                 int guard=0;while(c.onboarding.briefing && guard++<5)acknowledge(c,L);
                 check("requested help repeats every learned introductory page "+kind,
-                        ear.explanations==(kind==Boss.SLIME || kind==Boss.OCTOPUS?2:1));
+                        ear.explanations==(kind==Boss.SLIME?TutorialSpeech.pageCount(TutorialSpeech.CLOSED)+TutorialSpeech.pageCount(TutorialSpeech.CHAIN):
+                                kind==Boss.OCTOPUS?TutorialSpeech.pageCount(TutorialSpeech.DEFEND)+TutorialSpeech.pageCount(TutorialSpeech.TEAR):
+                                TutorialSpeech.pageCount(kind==Boss.SPLITTER?TutorialSpeech.PINCH:TutorialSpeech.SHAKE)));
             } else {
                 touch(c,L,0,x,y);c.boss.hp--;c.onboarding.bossDamaged(c);touch(c,L,1,x,y);
                 check("damage cancels pending help activation "+kind,!c.onboarding.briefing);

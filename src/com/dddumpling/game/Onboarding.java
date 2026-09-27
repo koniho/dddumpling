@@ -6,12 +6,12 @@ final class Onboarding extends Draw {
             SKIPPED=64, WORD_HINT=128, WRONG_HINT=256, STACK_HINT=512;
     int saved, savedPowers, lesson, step, pointer=-1, speech, introduced, hintKind, speechPointer=-1;
     boolean bossHelp, bossGuide, powerGuide, starGuide, titleGuide, helpArmed;
-    int helpPointer=-1, bossHelpUsed;
+    int helpPointer=-1, bossHelpUsed, speechPage;
     GameCore practice, teacher, narrator;
     GameCore.Enemy word;
     boolean ownsTouch, lid, briefing, continueArmed;
     static final float SCENE_REVEAL=.8f, BUBBLE_OPEN=.14f;
-    float age, success, startY, globAge, companionTravel, sceneWait, bubbleAge, speechX, speechY;
+    float age, success, startY, globAge, companionTravel, sceneWait, bubbleAge, speechX, speechY, celebration;
 
     // Preserve the original ten lesson bits; successful actions have independent durable bits.
     private static boolean extraMessage(int message) {
@@ -104,10 +104,17 @@ final class Onboarding extends Draw {
         Pause.release(c);narrate(c);
     }
     private void narrate(GameCore c) {
+        speechPage=0;speakPage(c);
+    }
+    private void speakPage(GameCore c) {
         bubbleAge=0;
         c.diagnostic("tutorial-explain");
         narrator=c;
-        if(c.sound!=null)c.sound.explain(TutorialSpeech.spoken(speech));
+        if(c.sound!=null)c.sound.explain(TutorialSpeech.spokenPage(speech,speechPage));
+    }
+    boolean moreSpeech() { return speechPage+1<TutorialSpeech.pageCount(speech); }
+    void rescue(GameCore c) {
+        clear();speech=TutorialSpeech.RESCUE;briefing=true;narrate(c);
     }
     boolean promptHit(GameCore c,Layout L,float x,float y) {
         return offersBossHelp(c) && (TutorialSpeech.helpHit(L,x,y) || RunCompanion.hit(c,L,x,y));
@@ -118,7 +125,7 @@ final class Onboarding extends Draw {
     }
     boolean speaking(GameCore c) {
         if(sceneWait>0)return false;
-        return briefing || titleGuide || (practice!=null || hintKind!=0 || bossGuide || powerGuide) && success<=0 && !learned(speech)
+        return briefing || titleGuide || celebration>0 || (practice!=null || hintKind!=0 || bossGuide || powerGuide) && success<=0 && !learned(speech)
                 || c.pushLesson.active;
     }
     boolean movingCompanion(GameCore c) { return companionTravel>0 || speaking(c); }
@@ -147,8 +154,8 @@ final class Onboarding extends Draw {
     void clear() {
         if(narrator!=null && narrator.sound!=null)narrator.sound.hush();
         narrator=null;
-        cancelTouch();practice=null;word=null;lesson=step=speech=introduced=hintKind=0;
-        success=sceneWait=bubbleAge=0;briefing=bossHelp=bossGuide=powerGuide=starGuide=titleGuide=false;
+        cancelTouch();practice=null;word=null;lesson=step=speech=speechPage=introduced=hintKind=0;
+        success=sceneWait=bubbleAge=celebration=0;briefing=bossHelp=bossGuide=powerGuide=starGuide=titleGuide=false;
     }
     void cancelTouch() {
         pointer=-1;ownsTouch=lid=false;
@@ -240,6 +247,8 @@ final class Onboarding extends Draw {
         if(c.state!=GameCore.PLAY && c.state!=GameCore.BONUS) { clear();companionTravel=0;return false; }
         if(c.settingsOpen || c.paused || c.townOpen)return false;
         if(teacher!=null)return false;
+        if(practice!=null && lesson==STEAMER && practice.bonusPrizeWon() && winSteamer(c))return true;
+        if(celebration>0)celebration=Math.max(0,celebration-elapsed);
         if(starGuide && (c.state!=GameCore.BONUS || !c.starBonus || learned(TutorialSpeech.STARS)
                 || c.stars.won || c.stars.exiting() || c.stars.reporting())) {
             boolean touch=ownsTouch;clear();ownsTouch=touch;
@@ -332,7 +341,7 @@ final class Onboarding extends Draw {
         c.swipeBonus();
         saved|=STEAMER;save(c);
         boolean touch=ownsTouch;clear();ownsTouch=touch;
-        speech=TutorialSpeech.SUCCESS;narrate(c);
+        speech=TutorialSpeech.SUCCESS;celebration=4f;narrate(c);
         return true;
     }
     private int mechanic() {
@@ -359,6 +368,7 @@ final class Onboarding extends Draw {
         c.diagnostic("tutorial-acknowledge");
         if(c.sound!=null)c.sound.hush();
         narrator=null;
+        if(moreSpeech()) { speechPage++;speakPage(c);return; }
         if(speech==TutorialSpeech.MINIGAMES) {
             learn(c,TutorialSpeech.MINIGAMES);briefing=false;introduce(c);return;
         }
@@ -505,6 +515,7 @@ final class Onboarding extends Draw {
         if(c.settingsOpen)return;
         if(o.offersBossHelp(c))TutorialSpeech.help(p,c,L);
         if(o.briefing)TutorialSpeech.large(p,c,L,o.speech,true);
+        else if(o.celebration>0)TutorialSpeech.large(p,c,L,TutorialSpeech.SUCCESS,false);
         else if(o.practice!=null) {
             if(o.speaking(c))TutorialSpeech.reminder(p,c,L,o.speech);
             int key=-1;GameCore q=o.practice;

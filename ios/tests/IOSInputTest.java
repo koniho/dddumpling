@@ -299,6 +299,7 @@ public final class IOSInputTest extends Check {
         check("native available rescue freezes for lesson at full lives",c.pushLesson.active);
         tap(game,l.keyX[0],l.keyY[0]);
         check("native key cannot dismiss lesson",c.pushLesson.active);
+        tutorialContinue(game);
         y=(l.dangerY+l.deckTop)*.5f;
         game.touch(one(0,3,x,y)); game.touch(one(3,3,x,y));
         game.touch(one(2,3,x,y-l.enemyR*2));
@@ -724,8 +725,11 @@ public final class IOSInputTest extends Check {
         check("native Settings resets tutorials without clearing progress",store.tutorials==0 && !store.pushLessonSeen && c.settingsOpen);
     }
     private static void tutorialContinue(IOSGame game) {
-        tutorialAwaitBubble(game);
-        if(game.core().onboarding.briefing)tap(game,game.geometry().w*.5f,TutorialSpeech.buttonY(game.geometry()));
+        int message=game.core().onboarding.speech;
+        for(int i=0;i<12 && game.core().onboarding.briefing && game.core().onboarding.speech==message;i++) {
+            tutorialAwaitBubble(game);
+            tap(game,game.geometry().w*.5f,TutorialSpeech.buttonY(game.geometry()));
+        }
     }
     private static void tutorialAwaitBubble(IOSGame game) {
         for(int i=0;i<40 && game.core().onboarding.briefing && game.core().onboarding.bubbleProgress()<1;i++)game.update(DT);
@@ -789,8 +793,9 @@ public final class IOSInputTest extends Check {
             game.touch(one(1,42,x,y));
             check("background cancels pickup acknowledgement",c.onboarding.briefing && !p.hit);
             tap(game,p.x,p.y);
-            check("native play-area tap advances without collecting underneath",!c.onboarding.briefing && !p.hit
+            check("native play-area tap advances without collecting underneath",c.onboarding.briefing && c.onboarding.speechPage==1 && !p.hit
                     && !c.onboarding.learned(TutorialSpeech.POWER_PICKUP));
+            tutorialContinue(game);
             tap(game,p.x,p.y);game.update(DT);
             check("native direct pickup tap learns collection and introduces Fling",p.hit
                     && c.onboarding.learned(TutorialSpeech.POWER_PICKUP) && c.onboarding.briefing

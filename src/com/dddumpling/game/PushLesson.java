@@ -26,7 +26,7 @@ final class PushLesson extends Draw {
                 if (e.attacking || e.y >= triggerY(L)) {
                     Pause.release(c);
                     active = true;
-                    if(c.sound!=null)c.sound.explain(TutorialSpeech.spoken(TutorialSpeech.RESCUE));
+                    c.onboarding.rescue(c);
                     c.warnLevel = Math.max(.5f, c.warnLevel);
                     break;
                 }

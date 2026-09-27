@@ -64,6 +64,47 @@ final class TutorialSpeech extends Draw {
         if(message==SHAKE)return "Grab Fly Agaric's cap. Keep holding it and shake it from side to side.";
         return (LINES[message][0]+" "+LINES[message][1]).toLowerCase(java.util.Locale.ROOT);
     }
+    private static final int LINE_CHARS=22, PAGE_LINES=3;
+    private static final String[][][] PAGES=makePages();
+    static String[] pageLines(int message,int page) { return PAGES[message][page]; }
+    static int pageCount(int message) { return PAGES[message].length; }
+    static String spokenPage(int message,int page) { return joinLines(pageLines(message,page)); }
+    private static String joinLines(String[] lines) {
+        StringBuilder text=new StringBuilder();
+        for(String line:lines) { if(text.length()>0)text.append(' ');text.append(line); }
+        return text.toString();
+    }
+    private static String[] wrap(String text) {
+        java.util.ArrayList<String> lines=new java.util.ArrayList<>();String line="";
+        for(String word:text.split(" +")) {
+            if(!line.isEmpty() && line.length()+1+word.length()>LINE_CHARS) { lines.add(line);line=""; }
+            line+=(line.isEmpty()?"":" ")+word;
+        }
+        if(!line.isEmpty())lines.add(line);
+        return lines.toArray(new String[0]);
+    }
+    private static String[][][] makePages() {
+        String[][][] all=new String[STORIES+1][][];
+        for(int message=MATCH;message<=STORIES;message++) {
+            java.util.ArrayList<String[]> pages=new java.util.ArrayList<>();String pending="";
+            // Prefer complete sentences; only split a sentence if it cannot fit one bubble.
+            for(String sentence:spoken(message).split("(?<=[.!?]) +")) {
+                String joined=pending.isEmpty()?sentence:pending+" "+sentence;
+                if(wrap(joined).length<=PAGE_LINES) { pending=joined;continue; }
+                // Keep a short game name or greeting with the instruction that follows it.
+                boolean carry=!pending.isEmpty() && pending.length()<=LINE_CHARS;
+                if(!pending.isEmpty() && !carry)pages.add(wrap(pending));
+                String[] lines=wrap(carry?joined:sentence);int at=0;
+                while(lines.length-at>PAGE_LINES) {
+                    pages.add(java.util.Arrays.copyOfRange(lines,at,at+PAGE_LINES));at+=PAGE_LINES;
+                }
+                pending=joinLines(java.util.Arrays.copyOfRange(lines,at,lines.length));
+            }
+            if(!pending.isEmpty())pages.add(wrap(pending));
+            all[message]=pages.toArray(new String[0][]);
+        }
+        return all;
+    }
     static float helpX(Layout L) { return RunCompanion.x(L)+L.unit*2.1f; }
     static float helpY(Layout L) { return RunCompanion.y(L)-L.unit*2.5f; }
     static boolean helpHit(Layout L,float x,float y) {
@@ -125,14 +166,14 @@ final class TutorialSpeech extends Draw {
         bubble(p,L.w*.05f,t,L.w*.95f,b,s*1.2f,3,
                 new float[]{tx,t,tx+s*.5f,t-s*1.1f,tx+s*2,t},growth,tx,L.topSafe+s*5.3f);
         if(growth<1)return;
-        speechText(p,LINES[message][0],x,t+s*2.5f,type(s*1.10f),0xFFFFF5DD);
-        speechText(p,LINES[message][1],x,t+s*4.6f,type(s*1.00f),0xFFFFC1E6);
-        if(message==ALTERNATE)speechText(p,"LEFT, RIGHT! YOU'VE GOT THIS!",x,t+s*6.2f,
-                type(s*.55f),0xFFFFC1E6);
+        String[] lines=pageLines(message,c.onboarding.speechPage);
+        for(int i=0;i<lines.length;i++)speechText(p,lines[i],x,t+s*(1.7f+i*1.4f),type(s*.90f),0xFFFFF5DD);
+        if(pageCount(message)>1)speechText(p,(c.onboarding.speechPage+1)+" / "+pageCount(message),
+                L.w*.88f,t+s*.75f,type(s*.4f),0xFFFFC1E6);
         demonstrate(p,c,L,message,x,t+s*8.4f,s,age);
         if(button) {
             p.fillPoly(pill(x,buttonY(L),L.w*.32f,s*1.15f,14),0xFF387358);
-            String buttonText=c.onboarding.moreBossHelp(c) || message==MINIGAMES?"NEXT":message==WAIT?"LET'S WATCH!":message==ALTERNATE?"LET'S GO!":"LET'S TRY!";
+            String buttonText=c.onboarding.moreSpeech() || c.onboarding.moreBossHelp(c) || message==MINIGAMES?"NEXT":message==WAIT?"LET'S WATCH!":message==ALTERNATE?"LET'S GO!":"LET'S TRY!";
             p.text(buttonText,x,buttonY(L)+s*.38f,type(s*.92f),0xFFFFFFFF,Painter.CENTER,true);
         }
     }
@@ -191,7 +232,7 @@ final class TutorialSpeech extends Draw {
         Onboarding o=c.onboarding;GameCore q=o.practice==null?c:o.practice;
         float travel=PushLesson.swipeProgress(age),handX=x,handY=y;
         int key=o.demoKey(c);
-        if(message==MINIGAMES || message==DISPLAY_CASE || message==STORIES) {
+        if(message==MINIGAMES || message==DISPLAY_CASE || message==STORIES || message==SUCCESS) {
             int who=message==STORIES?c.caseIndex:c.prize>=0?c.prize:0;
             if(message==DISPLAY_CASE)p.fillPoly(pill(x,y,s*3.3f,s*2.2f,16),0xFF493953);
             if(message==STORIES) {

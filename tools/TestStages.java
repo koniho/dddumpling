@@ -237,7 +237,9 @@ final class TestStages extends Check {
         e.y=PushLesson.triggerY(L); c.update(DT,L);
         check("closer threshold still precedes the lunge", !e.attacking && e.y+L.enemyR<L.dangerY);
         check("available rescue opens lesson even with full lives", c.pushLesson.active && c.lives==3 && c.pushReady());
-        check("rescue lesson speaks its real bar gesture",ear.explanations==1 && ear.explanation.contains("Swipe up"));
+        check("rescue lesson speaks its displayed first page",ear.explanations==1
+                && ear.explanation.equals(TutorialSpeech.spokenPage(TutorialSpeech.RESCUE,0)));
+        TestOnboarding.acknowledge(c,L);
         float y=e.y, time=c.time, mode=c.modeLeft, lessonClock=c.pushLesson.clock;
         c.update(10f,L);
         check("instruction clock advances while play is frozen", c.pushLesson.clock>lessonClock);
