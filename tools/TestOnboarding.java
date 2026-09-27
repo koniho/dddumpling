@@ -102,6 +102,7 @@ final class TestOnboarding extends Check {
         briefingInput(L);
         learnedActions(L);
         bossHelp(L);
+        slimeVulnerableHelp(L);
         companionHelp(L);
         steamerTutorialWin(L);
         steamerSelection(L);
@@ -385,5 +386,54 @@ final class TestOnboarding extends Check {
         c.onboarding.clear();c.onboarding.companionTravel=0;c.boss.hp--;
         check("companion no longer opens help when question is unavailable",!c.onboarding.wantsTouch(c,L,0,x,y)
                 && c.tapCompanion(x,y,L) && !c.onboarding.briefing);
+    }
+    static int makeSlimeVulnerable(GameCore c,Layout L) {
+        for(int i=0;i<Boss.SPLIT_HITS;i++) {
+            c.boss.phase=1.35f;c.tapKey(c.boss.chainLetter(),L);
+        }
+        for(int i=0;i<Boss.ELEMS;i++)if(c.boss.etype[i]==Boss.E_GLOB)return i;
+        throw new AssertionError("Slime did not become vulnerable");
+    }
+    private static void slimeVulnerableHelp(Layout L) {
+        for(int help=0;help<2;help++) {
+            Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;
+            c.stage=5;c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;c.update(DT,L);
+            if(help==1) {
+                touch(c,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
+                touch(c,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
+                acknowledge(c,L);acknowledge(c,L);
+                check("Slime initial help ends before red-area step",!c.onboarding.briefing
+                        && (c.onboarding.introduced&(1<<TutorialSpeech.GLOB))==0);
+            }
+            int g=makeSlimeVulnerable(c,L);float life=c.boss.elife[g],hp=c.boss.hp,time=c.time;
+            int spoken=ear.explanations;c.update(.5f,L);
+            check("vulnerable Slime introduces separate paused drag step "+help,c.onboarding.briefing
+                    && c.onboarding.bossGuide && c.onboarding.speech==TutorialSpeech.GLOB
+                    && c.onboarding.practice==null && ear.explanations==spoken+1
+                    && c.boss.elife[g]==life && c.boss.hp==hp && c.time==time);
+            acknowledge(c,L);c.update(DT,L);
+            check("red-area acknowledgement resumes without relearning or reopening "+help,!c.onboarding.briefing
+                    && !c.onboarding.learned(TutorialSpeech.GLOB) && c.boss.elife[g]<life);
+            c.grabBoss(c.boss.ex[g],c.boss.ey[g]);
+            c.dragBoss(L.w*.5f,c.boss.ey[g],L);c.dragBoss(-L.w*.2f,c.boss.ey[g],L);c.update(DT,L);
+            check("real red-area drag learns step and returns companion "+help,c.boss.hp<hp
+                    && !c.onboarding.bossGuide && new GameCore(store,114).onboarding.learned(TutorialSpeech.GLOB));
+            c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;
+            makeSlimeVulnerable(c,L);c.update(DT,L);
+            check("learned red-area step stays skipped "+help,!c.onboarding.briefing);
+        }
+        GameCore c=fresh(L,new Mem());c.stage=5;c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;c.update(DT,L);
+        c.onboarding.skip(c);makeSlimeVulnerable(c,L);c.update(DT,L);
+        check("skip all suppresses contextual Slime drag step",!c.onboarding.briefing);
+        c.onboarding.reset(c);c.update(DT,L);acknowledge(c,L);
+        for(int i=0;i<Boss.ELEMS;i++)if(c.boss.etype[i]==Boss.E_GLOB)c.boss.elife[i]=.001f;
+        c.update(DT,L);c.update(DT,L);
+        check("expired red area clears reminder without learning",!c.onboarding.bossGuide
+                && !c.onboarding.learned(TutorialSpeech.GLOB));
+        c.onboarding.reset(c);c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;c.boss.update(0,L,c.rnd);
+        int g=makeSlimeVulnerable(c,L);c.grabBoss(c.boss.ex[g],c.boss.ey[g]);
+        c.dragBoss(L.w*.5f,c.boss.ey[g],L);c.dragBoss(-L.w*.2f,c.boss.ey[g],L);c.update(DT,L);
+        check("successful drag before prompt learns without interrupting",c.onboarding.learned(TutorialSpeech.GLOB)
+                && !c.onboarding.briefing);
     }
 }

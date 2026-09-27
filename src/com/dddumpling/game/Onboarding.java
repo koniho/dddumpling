@@ -52,7 +52,7 @@ final class Onboarding extends Draw {
         Pause.release(c);narrate(c);
     }
     private static int[] bossSteps(int kind) {
-        if(kind==Boss.SLIME)return new int[]{TutorialSpeech.CLOSED,TutorialSpeech.CHAIN,TutorialSpeech.GLOB};
+        if(kind==Boss.SLIME)return new int[]{TutorialSpeech.CLOSED,TutorialSpeech.CHAIN};
         if(kind==Boss.SPLITTER)return new int[]{TutorialSpeech.PINCH};
         if(kind==Boss.OCTOPUS)return new int[]{TutorialSpeech.DEFEND,TutorialSpeech.TEAR};
         return new int[]{TutorialSpeech.SHAKE};
@@ -75,6 +75,15 @@ final class Onboarding extends Draw {
         if(!bossHelp)return false;
         for(int message:bossSteps(c.boss.kind))if(!learned(message) && (introduced&(1<<message))==0)return true;
         return false;
+    }
+    private void slimeGlobHint(GameCore c) {
+        int message=TutorialSpeech.GLOB;
+        if(c.state!=GameCore.PLAY || !c.boss.fighting() || c.boss.kind!=Boss.SLIME
+                || !c.boss.hasGlob() || learned(message) || (introduced&(1<<message))!=0
+                || briefing || practice!=null || powerGuide || c.pushLesson.active)return;
+        // Teach the drag on the real vulnerable patch, not in the upfront help pages.
+        introduced|=1<<message;speech=message;bossGuide=briefing=true;hintKind=0;age=0;
+        Pause.release(c);narrate(c);
     }
     private void narrate(GameCore c) {
         c.diagnostic("tutorial-explain");
@@ -188,7 +197,9 @@ final class Onboarding extends Draw {
             if(briefing) { briefing=false;if(c.sound!=null)c.sound.hush();narrator=null; }
         }
         if(!briefing && practice==null)powerHint(c);
-        if(bossGuide && (!c.boss.fighting() || learned(speech)))bossGuide=false;
+        if(bossGuide && (!c.boss.fighting() || learned(speech)
+                || speech==TutorialSpeech.GLOB && !c.boss.hasGlob()))bossGuide=false;
+        slimeGlobHint(c);
         moveCompanion(c,elapsed);
         if(briefing) { age+=elapsed;return true; }
         if(practice==null) {

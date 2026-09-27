@@ -16,9 +16,9 @@ final class TutorialSpeech extends Draw {
         {"SLIDE TO STEER!", "STAY IN THE GREEN."},
         {"TAP MATCHING KEYS!", "FILL THE CART."},
         {"THE CART IS FULL!", "SWIPE IT AWAY."},
-        {"NO FACE SHOWING?", "WAIT FOR IT!"},
-        {"TAP THE SHOWN KEY!", "GROW A GOOEY GLOB."},
-        {"GRAB THE RED GLOB!", "DRAG IT OFFSCREEN."},
+        {"WRONG OR HIDDEN?", "YOU'LL GET SLIMED!"},
+        {"TAP MATCHING KEYS!", "WHEN THE FACE SHOWS!"},
+        {"GRAB THE RED AREA!", "DRAG TO A SIDE!"},
         {"QUICK, TAP!", "BEAT THE RED LINE."},
         {"OOPS! TRY AGAIN.", "START ON THE LEFT."},
         {"MORE THAN ONE!", "TAP THE KEY AGAIN."},
@@ -41,7 +41,9 @@ final class TutorialSpeech extends Draw {
         if(message==ALTERNATE)return "Your keys are ready! Tap left, right, left, right. Go as fast as you can! You've got this!";
         if(message==LIFT)return "Great job! The lid is ready. Swipe it up to win. You can do it!";
         if(message==SUCCESS)return "Amazing! You did it! You freed a dumpling!";
-        if(message==CLOSED)return "If Slime hides its face, wait until it opens. Then you can tap the matching key.";
+        if(message==CLOSED)return "Make sure the key matches Slime's face and the face is visible. Tap the wrong key, or tap while the face is hidden, and you'll get slimed! Wait until you can see it.";
+        if(message==CHAIN)return "Tap the matching key while Slime's face is visible. Keep matching to make Slime vulnerable. Watch for the red area!";
+        if(message==GLOB)return "Now Slime is vulnerable! Touch and hold the red area, then drag it to either side of the screen to damage Slime. You've got this!";
         if(message==PINCH)return "Tap the matching key. Then put two fingers on the cube and spread them apart to split it.";
         if(message==DEFEND)return "Octopulse reaches for your keys. Tap the matching key to defend it.";
         if(message==TEAR)return "When an arm tip is exposed, grab it and drag it away from Octopulse.";

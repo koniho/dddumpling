@@ -68,6 +68,13 @@ final class Preview {
                 step(c,L,.6f);shot(dir,"114-boss-"+kind+"-help-"+(page++),c,L,w,h,ss);
                 TestOnboarding.acknowledge(c,L);
             }
+            if(kind==Boss.SLIME) {
+                c.stageBanner=0;
+                TestOnboarding.makeSlimeVulnerable(c,L);step(c,L,.6f);
+                shot(dir,"114-boss-0-vulnerable-help",c,L,w,h,ss);
+                TestOnboarding.acknowledge(c,L);step(c,L,.2f);
+                shot(dir,"114-boss-0-vulnerable-try",c,L,w,h,ss);
+            }
         }
         GameCore rescue=new GameCore(new Mem(),114);rescue.startGame();rescue.pushLesson.active=true;
         step(rescue,L,.6f);
