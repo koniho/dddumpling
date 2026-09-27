@@ -746,16 +746,17 @@ public final class IOSInputTest extends Check {
         }
     }
     private static void bossGuidanceInput() {
-        for(int kind=0;kind<Boss.COUNT;kind++) {
+        for(int target=0;target<2;target++)for(int kind=0;kind<Boss.COUNT;kind++) {
             Mem store=new Mem();store.tutorials=0;Ear ear=new Ear();
             IOSGame game=new IOSGame(store,ear,114);game.layout(393,852,0,59,0,34);
             GameCore c=game.core();Layout l=game.geometry();c.startGame();c.stage=(kind+1)*5;
             c.boss.begin(kind,c.stage,c.rnd);c.boss.intro=0;game.update(DT);
-            float x=TutorialSpeech.helpX(l),y=TutorialSpeech.helpY(l);
+            float x=target==0?TutorialSpeech.helpX(l):RunCompanion.x(l);
+            float y=target==0?TutorialSpeech.helpY(l):RunCompanion.y(l);
             game.touch(one(0,42,x,y));game.background(true);game.background(false);game.back();
             game.touch(one(1,42,x,y));
             check("background cancels pending boss help tap "+kind,!c.onboarding.briefing);
-            tap(game,x,y);
+            game.touch(one(0,42,x,y));game.touch(one(2,42,x+l.unit*.1f,y));game.touch(one(1,42,x,y));
             float clock=c.clock,hp=c.boss.hp,phase=c.boss.phase;
             game.update(.5f);tap(game,c.keyX(l,0),c.keyY(l,0));game.update(DT);
             check("native question pauses and narrates boss help "+kind,c.onboarding.briefing && ear.explanations==1

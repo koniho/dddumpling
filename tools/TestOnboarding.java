@@ -102,6 +102,7 @@ final class TestOnboarding extends Check {
         briefingInput(L);
         learnedActions(L);
         bossHelp(L);
+        companionHelp(L);
         steamerTutorialWin(L);
         steamerSelection(L);
         diagnostics(L);
@@ -367,5 +368,22 @@ final class TestOnboarding extends Check {
             c.boss.hp-=1;c.onboarding.bossDamaged(c);c.update(DT,L);
             check("damaged boss retires help "+kind,!c.onboarding.offersBossHelp(c));
         }
+    }
+    private static void companionHelp(Layout L) {
+        GameCore c=fresh(L,new Mem());Ear ear=new Ear();c.sound=ear;
+        c.stage=5;c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;c.update(DT,L);
+        float x=RunCompanion.x(L),y=RunCompanion.y(L);
+        check("companion is a help target when question is offered",c.onboarding.wantsTouch(c,L,0,x,y));
+        touch(c,L,0,x,y);touch(c,L,2,0,0);touch(c,L,1,x,y);
+        check("leaving companion cancels help press",!c.onboarding.briefing);
+        touch(c,L,0,x,y);c.onboarding.touch(c,L,5,9,x,y);touch(c,L,1,x,y);
+        check("second finger cancels companion help press",!c.onboarding.briefing);
+        touch(c,L,0,x,y);touch(c,L,2,x+L.unit*.1f,y);touch(c,L,1,x,y);
+        check("small motion inside companion still opens narrated help",c.onboarding.briefing && ear.explanations==1);
+        float phase=c.boss.phase;c.update(.5f,L);
+        check("companion help freezes same fight and moves companion",c.boss.phase==phase && c.onboarding.companionTravel>0);
+        c.onboarding.clear();c.onboarding.companionTravel=0;c.boss.hp--;
+        check("companion no longer opens help when question is unavailable",!c.onboarding.wantsTouch(c,L,0,x,y)
+                && c.tapCompanion(x,y,L) && !c.onboarding.briefing);
     }
 }

@@ -563,8 +563,9 @@ retire just that step, so already-understood actions are skipped on later encoun
 Acknowledging an explanation alone does not mark the action learned.
 
 Boss guidance is opt-in: a small **?** beside the companion offers help before the boss takes
-damage, for steps not already learned. Tapping it pauses the fight and moves the companion up
-to explain Slime, Dark Divide, Octopulse or Fly Agaric. **Next** advances a multi-part explanation;
+damage, for steps not already learned. Tapping it or the companion while it is available pauses
+the fight and moves the companion up to explain Slime, Dark Divide, Octopulse or Fly Agaric.
+**Next** advances a multi-part explanation;
 **Let's try!** resumes the same fight. Speech uses platform text-to-speech, follows effects volume,
 ducks music and stops on dismissal or backgrounding; text and demonstrations work without a voice.
 `Onboarding` owns lesson state and `TutorialSpeech` owns bubbles and demonstrations.

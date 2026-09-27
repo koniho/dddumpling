@@ -82,7 +82,7 @@ final class Onboarding extends Draw {
         if(c.sound!=null)c.sound.explain(TutorialSpeech.spoken(speech));
     }
     boolean promptHit(GameCore c,Layout L,float x,float y) {
-        return offersBossHelp(c) && TutorialSpeech.helpHit(L,x,y);
+        return offersBossHelp(c) && (TutorialSpeech.helpHit(L,x,y) || RunCompanion.hit(c,L,x,y));
     }
     boolean wantsTouch(GameCore c,Layout L,int action,float x,float y) {
         return practice!=null || briefing || ownsTouch || action==0 && (promptHit(c,L,x,y)
@@ -318,7 +318,7 @@ final class Onboarding extends Draw {
         }
         if(helpPointer>=0) {
             if(action==3) { cancelTouch();return true; }
-            if(action==2 && id==helpPointer && !TutorialSpeech.helpHit(L,x,y))helpArmed=false;
+            if(action==2 && id==helpPointer && !promptHit(c,L,x,y))helpArmed=false;
             if(action==5 || action==6)helpArmed=false;
             if(action==1) {
                 boolean open=helpArmed && id==helpPointer && promptHit(c,L,x,y);
