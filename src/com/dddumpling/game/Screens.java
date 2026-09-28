@@ -438,7 +438,7 @@ final class Screens extends Draw {
         float steamY=rimY-rimRy*.65f;
         float steamRise=Math.min(bh*(.85f+c.steamer.steamStrength()*.95f),
                 Math.max(s,steamY-(L.h*.235f+s*4.4f)));
-        Basket.steam(p,cx,steamY,bw,steamRise,c.clock,c.steamer.steamStrength(),c.steamer.steamPulse,fade);
+        Basket.steam(p,cx,steamY,bw,steamRise,c.clock,c.steamer.steamStrength(),c.steamer.steamPulse,fade,false);
         Basket.back(p, cx, rimY, baseY, bw, rimRy, baseRx, body, c.steamer.flash, fade);
 
         // The dumpling: rainbow, and cheerier the closer it is to getting out.
@@ -505,6 +505,7 @@ final class Screens extends Draw {
             float lidScale = c.steamer.lidKeyScale();
             Basket.lid(p, cx, lidY, bw * 1.02f * lidScale, rimRy * 0.95f * lidScale,
                     lidCol, fade);
+            Basket.steam(p,cx,steamY,bw,steamRise,c.clock,c.steamer.steamStrength(),c.steamer.steamPulse,fade,true);
 
             if (c.bonusSwipeReady()) {
                 // A broad luminous arrow bounces over the armed lid. Geometry, not text, so it
@@ -545,6 +546,7 @@ final class Screens extends Draw {
             float lidFade = Math.min(1f, c.steamer.freedT / 0.28f);
             Basket.lid(p, lidX, lidY, bw * (1.02f - 0.16f * fly),
                     rimRy * (0.95f - 0.12f * fly), BAMBOO, fade * lidFade);
+            Basket.steam(p,cx,steamY,bw,steamRise,c.clock,c.steamer.steamStrength(),c.steamer.steamPulse,fade,true);
             p.text("+" + GameCore.FREE_BONUS, cx, L.h * 0.665f, type(s * 1.1f), fadeBy(GOLD, fade),
                     Painter.CENTER, true);
         }

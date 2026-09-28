@@ -957,9 +957,11 @@ final class TestStages extends Check {
         int[] footprint=new int[2];
         for(int level=0;level<2;level++) {
             RasterPainter p=new RasterPainter(320,300,1);p.clear(0xFF010203);
-            Basket.steam(p,160,230,85,110,2.3f,level==0?.1f:1f,0,1);
+            for(boolean front:new boolean[]{false,true})
+                Basket.steam(p,160,230,85,110,2.3f,level==0?.1f:1f,0,1,front);
             int[] first=p.resolve();for(int color:first)if(color!=0xFF010203)footprint[level]++;
-            p.clear(0xFF010203);Basket.steam(p,160,230,85,110,2.3f,level==0?.1f:1f,0,1);
+            p.clear(0xFF010203);for(boolean front:new boolean[]{false,true})
+                Basket.steam(p,160,230,85,110,2.3f,level==0?.1f:1f,0,1,front);
             check("steam rendering is deterministic "+level,java.util.Arrays.equals(first,p.resolve()));
         }
         check("filled pips produce visibly more steam",footprint[1]>footprint[0]*3 && footprint[0]>0);
