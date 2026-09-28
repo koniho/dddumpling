@@ -557,7 +557,7 @@ final class Renderer extends Draw {
                     fadeBy(Glyph.withAlpha(glow,18),endFade));
             p.fillPoly(Glyph.hex(w.x,y,iconR),fadeBy(debuff ? 0xFFE0D8F0 : 0xFFFFF2CE,endFade));
             p.strokePoly(Glyph.hex(w.x,y,iconR),fadeBy(glow,endFade),r*0.08f);
-            powerIcon(p,w.effect,w.x,y,iconR*0.72f,glow,endFade);
+            powerIcon(p,w.effect,w.x,y,iconR*0.72f,glow,endFade,iconR);
             return;
         }
 
@@ -577,7 +577,7 @@ final class Renderer extends Draw {
         p.fillPoly(Glyph.hex(w.x, y, r * pulse), fadeBy(Glyph.withAlpha(hue, 90), fade));
         p.strokePoly(Glyph.hex(w.x, y, r * pulse), fadeBy(Glyph.withAlpha(INK, 235), fade), r * 0.10f);
         float iconPulse = w.mystery && w.hit ? 0.85f+0.15f*(float)Math.cos(w.hitT*24f) : 1f;
-        powerIcon(p, w.shownEffect(), w.x, y, r * 0.72f*iconPulse, hue, fade);
+        powerIcon(p, w.shownEffect(), w.x, y, r * 0.72f*iconPulse, hue, fade,r*pulse);
 
         // The name is far wider than the letter it labels, and the letter drifts on from beyond one
         // edge and off past the other — so it is faded in only once the whole name is inside the
@@ -602,11 +602,11 @@ final class Renderer extends Draw {
         float pulse=.85f+.15f*(float)Math.sin(clock*6f+effect*1.8f);
         p.fillPoly(Glyph.hex(x,y,r*pulse),Glyph.withAlpha(hue,90));
         p.strokePoly(Glyph.hex(x,y,r*pulse),Glyph.withAlpha(INK,235),r*.10f);
-        powerIcon(p,effect,x,y,r*.72f*pulse,hue,1f);
+        powerIcon(p,effect,x,y,r*.72f*pulse,hue,1f,r*pulse);
     }
 
     /** Distinct, letter-free marks for the three player-facing powerups. */
-    private static void powerIcon(Painter p, int effect, float x, float y, float r, int hue, float fade) {
+    private static void powerIcon(Painter p, int effect, float x, float y, float r, int hue, float fade,float hexR) {
         int ink = fadeBy(Glyph.withAlpha(INK, 245), fade);
         if (effect == Power.FLURRY) {
             p.fillPoly(star(x, y, r * 0.78f, r * 0.30f, 6, 0f), ink);
@@ -633,11 +633,7 @@ final class Renderer extends Draw {
             for(int i=0;i<3;i++) p.fillCircle(x+(i-1)*r*0.38f,y+r*0.90f,r*0.11f,
                     fadeBy(i==0?0xFFF1F1F1:i==1?0xFFAAAAAA:0xFF555555,fade));
         } else if (effect == Power.NINJA) {
-            float maskR=r*.70f, mx=x-r*.14f, my=y-r*.07f;
-            p.fillEllipse(mx,my-maskR*.02f,maskR*.68f,maskR*.29f,fadeBy(0xFFFFF3D6,fade));
-            for(int side=-1;side<=1;side+=2)
-                p.fillEllipse(mx+side*maskR*.30f,my-maskR*.02f,maskR*.075f,maskR*.13f,ink);
-            Trinket.ninjaMask(p,mx,my,maskR,fade);
+            ninjaPowerIcon(p,x,y,Math.min(r*1.08f,hexR*.78f),hexR,fade);
         } else {
             p.fillCircle(x - r * 0.34f, y, r * 0.48f, ink);
             p.fillCircle(x + r * 0.34f, y, r * 0.48f, fadeBy(Glyph.withAlpha(0xFFFFFFFF, 235), fade));
@@ -645,6 +641,45 @@ final class Renderer extends Draw {
             p.fillCircle(x + r * 0.23f, y - r * 0.06f, r * 0.07f, fadeBy(hue, fade));
             p.strokePoly(star(x, y + r * 0.62f, r * 0.22f, r * 0.10f, 5, 0f), ink, r * 0.08f);
         }
+    }
+
+    /** Center the round hood; only the loose ties may extend into the hexagon edge. */
+    static void ninjaPowerIcon(Painter p,float x,float y,float r,float hexR,float fade) {
+        int ink=fadeBy(Glyph.withAlpha(INK,245),fade);
+        ninjaTie(p,pill(x+r*.91f,y-r*.42f,r*.14f,r*.14f,12),x,y,hexR,ink);
+        ninjaTie(p,new float[]{x+r*.93f,y-r*.48f,x+r*1.38f,y-r*.76f,
+                x+r*1.20f,y-r*.38f},x,y,hexR,ink);
+        ninjaTie(p,new float[]{x+r*.94f,y-r*.39f,x+r*1.39f,y-r*.12f,
+                x+r*1.12f,y-r*.10f},x,y,hexR,ink);
+        p.fillContours(new float[][]{pill(x,y,r,r,24),
+                pill(x,y-r*.12f,r*.65f,r*.24f,16)},ink);
+        for(int side=-1;side<=1;side+=2)
+            p.fillEllipse(x+side*r*.28f,y-r*.12f,r*.07f,r*.13f,ink);
+    }
+
+    /** Clip the tie geometry so every Painter shares the same hexagonal crop. */
+    private static void ninjaTie(Painter p,float[] pts,float x,float y,float r,int ink) {
+        float[] hex=Glyph.hex(x,y,r);
+        for(int edge=0;edge<6 && pts.length>=6;edge++) {
+            int next=(edge+1)%6;
+            float ax=hex[edge*2],ay=hex[edge*2+1];
+            float dx=hex[next*2]-ax,dy=hex[next*2+1]-ay;
+            float[] out=new float[pts.length+4];int count=0;
+            int prev=pts.length-2;
+            for(int i=0;i<pts.length;i+=2) {
+                float from=dx*(pts[prev+1]-ay)-dy*(pts[prev]-ax);
+                float to=dx*(pts[i+1]-ay)-dy*(pts[i]-ax);
+                if((from>=0)!=(to>=0)) {
+                    float t=from/(from-to);
+                    out[count++]=pts[prev]+(pts[i]-pts[prev])*t;
+                    out[count++]=pts[prev+1]+(pts[i+1]-pts[prev+1])*t;
+                }
+                if(to>=0) {out[count++]=pts[i];out[count++]=pts[i+1];}
+                prev=i;
+            }
+            pts=java.util.Arrays.copyOf(out,count);
+        }
+        if(pts.length>=6)p.fillPoly(pts,ink);
     }
 
     /**

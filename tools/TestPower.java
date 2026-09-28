@@ -1273,6 +1273,19 @@ final class TestPower extends Check {
 
     static void ninjaMode(Layout L) {
         group("NINJA");
+        RasterPainter icon=new RasterPainter(160,160,1);icon.clear(0xFF010203);
+        Renderer.ninjaPowerIcon(icon,80,80,39,50,1f);
+        int[] pixels=icon.resolve();boolean cropped=true;int count=0;
+        for(int i=0;i<pixels.length;i++)if(pixels[i]!=0xFF010203) {
+            float x=Math.abs(i%160-80),y=Math.abs(i/160-80);
+            if(x+y/(float)Math.sqrt(3)>51.5f || y>50*.8661f+1.5f)cropped=false;
+            count++;
+        }
+        int cloth=pixels[105*160+80];
+        check("Ninja pickup mask uses the shared white ink",((cloth>>16)&255)>230
+                && ((cloth>>8)&255)>230 && (cloth&255)>230 && count>100);
+        check("Ninja ties stay cropped inside the hexagon",cropped);
+
         GameCore c = new GameCore(new Mem(), 208L);
         c.startGame();
         c.enemies.clear();
