@@ -14,8 +14,8 @@ final class PowerRush {
     static int pattern(GameCore c) { return (c.powerSpawnedEnemies/4)%3; }
 
     static float spawnSpeed(GameCore c,GameCore.Enemy e,Layout L) {
-        // Match full-height arrivals without slowing Ninja to make side entrances fit.
-        if(c.ninja())return (L.dangerY+L.enemyR*2.2f)/c.travelSeconds();
+        // Lower entrances shorten the journey, never the descent speed.
+        if(e.sideEntry || c.ninja())return (L.dangerY+L.enemyR*2.2f)/c.travelSeconds();
         return (L.dangerY-e.y)/c.travelSeconds();
     }
 

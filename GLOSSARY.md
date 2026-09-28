@@ -378,8 +378,9 @@ Rules: `LinkedPairs`; visuals: `LinkedPairArt`; difficulty: `Pacing.lessonRelief
 Linked pairs keep their hands connected during NINJA, FLURRY, and TEAM SQUISH. One TEAM SQUISH collision clears both and sends them spinning around their clasp offscreen. NINJA protects their bodies and requires a cut through the joined hands to clear both. A body-only cut plays the miss sound and flexes both characters once per stroke. FLURRY accepts any two distinct buttons within 200 ms; repeating one button cannot clear a pair. Entering these powers resets a pending half-press.
 
 Power-up solo arrivals favor the sides (10 out of 12 entrance slots), starting around 28–49%
-down the playfield. A few top entries keep the approaches varied. Side words keep their existing
-approach-time budget, sweep inward, and settle by 55% of the field; they remain clearable throughout.
+down the playfield. A few top entries keep the approaches varied. Side words descend at the same
+speed as top entries in every power-up, sweep inward, and settle by 55% of the field; they remain
+clearable throughout. Lower entrances shorten their journey without reducing descent speed.
 Enemy clears immediately shorten the next spawn countdown; entrance patterns add no pauses.
 When a live threat reaches 60% of the field, new side entrances start higher (20–28%) and
 skip the arrival boost. Kids Mode slows entrance movement too. Linked pairs keep their shared
@@ -387,8 +388,6 @@ top entrance. `PowerRush` owns the entrance profiles; `EnemyEntry` reserves thei
 
 NINJA refills every 60–120 ms while fewer than six rows are active, easing off near danger.
 Blocked solo entrances try three alternate side heights; linked pairs try other top lanes.
-Ninja rows share the full-height arrival speed and retain the power-up fall-speed boost;
-there is no extra descent slowdown to accommodate the denser arrivals.
 All alternate entrances still reserve non-overlapping paths.
 
 From stage 16, each active power-up starts its own repeating spawn pattern: one linked pair, then two solo enemies. The pattern continues beyond the ordinary wave quota and uses the current power-up pacing and crowd cap.
