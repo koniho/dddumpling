@@ -925,7 +925,48 @@ final class TestStages extends Check {
         return c;
     }
 
+    private static void steamerSteam(Layout L) {
+        group("steamer steam");
+        Steamer st=new Steamer();st.reset();float idle=st.steamStrength();
+        st.press(st.leftKey);
+        check("half a pair does not emit a scoring puff",st.steamPulse==0 && st.steamStrength()==idle);
+        st.press(st.rightKey);
+        check("a filled pip emits steam and warms the basket",st.steamPulse==1 && st.steamStrength()>idle);
+        st.update(.1f);float puff=st.steamPulse;
+        check("scoring puff decays",puff>0 && puff<1);
+        st.press(st.rightKey);
+        check("wrong presses do not refresh scoring steam",st.steamPulse==puff && st.hits==1);
+        st.update(1f);
+        check("old puff fades completely",st.steamPulse==0);
+        float previous=st.steamStrength();
+        while(!st.swipeReady) {
+            st.press(st.leftKey);st.press(st.rightKey);
+            check("steam grows with each scored pip",st.steamStrength()>previous);
+            previous=st.steamStrength();
+        }
+        check("armed basket reaches full steam",st.steamStrength()==1f);
+        st.swipe();
+        check("release keeps steam despite resetting pips",st.hits==0 && st.steamStrength()==1f);
+        st.update(Steamer.FREE_TIME-.25f);
+        check("escape steam fades before leaving the scene",st.steamStrength()>0 && st.steamStrength()<.5f);
+        st.reset();
+        check("restart clears scoring steam",st.steamPulse==0 && st.steamStrength()==idle);
+        GameCore c=new GameCore(new Mem(),132L);c.startGame();c.steamer.hits=3;c.steamer.steamPulse=1;
+        c.playtestSteamer(L);
+        check("a new interlude keeps pips but drops stale steam pulses",c.steamer.hits==3 && c.steamer.steamPulse==0);
+        int[] footprint=new int[2];
+        for(int level=0;level<2;level++) {
+            RasterPainter p=new RasterPainter(320,300,1);p.clear(0xFF010203);
+            Basket.steam(p,160,230,85,110,2.3f,level==0?.1f:1f,0,1);
+            int[] first=p.resolve();for(int color:first)if(color!=0xFF010203)footprint[level]++;
+            p.clear(0xFF010203);Basket.steam(p,160,230,85,110,2.3f,level==0?.1f:1f,0,1);
+            check("steam rendering is deterministic "+level,java.util.Arrays.equals(first,p.resolve()));
+        }
+        check("filled pips produce visibly more steam",footprint[1]>footprint[0]*3 && footprint[0]>0);
+    }
+
     static void steamerBonus(Layout L) {
+        steamerSteam(L);
         group("between-stages minigame");
         Mem persistent = new Mem();
         GameCore c = new GameCore(persistent, 121L);

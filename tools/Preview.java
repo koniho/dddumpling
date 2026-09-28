@@ -608,6 +608,23 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
+        if(wanted("132-steamer")) {
+            GameCore steam=new GameCore(new Mem(),132L);steam.startGame();
+            steam.steamer.opens=5;steam.playtestSteamer(L);
+            steam.bonusTimer=steam.bonusRollEnd;steam.time=1f;steam.clock=2.3f;
+            for(int points:new int[]{0,1,10,19,20}) {
+                while(steam.steamer.hits<points) {
+                    steam.tapBonus(steam.steamer.wanted());steam.tapBonus(steam.steamer.wanted());
+                }
+                steam.steamer.update(.1f);
+                shot(dir,"132-steamer-pips-"+points,steam,L,w,h,ss);
+            }
+            steam.swipeBonus();steam.steamer.update(.15f);
+            shot(dir,"132-steamer-release",steam,L,w,h,ss);
+            steam.steamer.update(Steamer.FREE_TIME-.4f);
+            shot(dir,"132-steamer-release-fade",steam,L,w,h,ss);
+        }
+
         if(wanted("132")) {
             for(int combo:new int[]{1,4,10}) {
                 GameCore c=TestPower.ninjaCombo(L,combo,false,false);

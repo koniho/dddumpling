@@ -61,6 +61,7 @@ final class Interlude {
         c.bonusTimer = GameCore.BONUS_ROLL + c.bonusRollEnd;
         c.paradeTimer = 0f;
         c.steamer.lidPulse = 0;
+        c.steamer.steamPulse = 0;
         c.steamer.flash = 0;
         // Chosen up front, before the spinner has shown anything: the spinner animates toward
         // an answer that already exists rather than deciding when it stops.

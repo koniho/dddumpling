@@ -123,6 +123,7 @@ geometry; `Kawaii` draws the creature.
 | **countdown** | the large clock under the steamer | `Screens.countdown`, `GameCore.bonusLeft` |
 | **beat on zero** | the second after the clock runs out, before anything fades | `GameCore.bonusHolding`, `BONUS_HOLD` |
 | **rebuff** | what a wrong press gets: the basket jolts rose, the lid does not budge | `Steamer.badPulse` |
+| **steam** | rising wisps grow with filled progress pips; each scored pair adds a brief puff. Steam fades as the dumpling escapes | `Steamer.steamStrength`, `Steamer.steamPulse`, `Basket.steam` |
 | **steamer damage** | presses landed, carried across interludes | `steamer.hits` |
 | **reveal** | freeing it: the prize climbs out with its name, tier and NEW badge | `Screens.prizeLabel` |
 | **escape** | the won prize climbing out of the basket; all that is left of a won round | `GameCore.bonusEscape`, `Steamer.FREE_TIME` |

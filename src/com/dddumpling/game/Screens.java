@@ -413,9 +413,9 @@ final class Screens extends Draw {
         float bw = Math.min(L.w * 0.26f, s * 5.8f);
         float bh = s * 3.4f;
 
-        // The companion teaches the controls; keep only the win announcement here.
-        if (freed) p.text("FREE!", cx, L.h * 0.235f,
-                type(s * 1.5f * introScale(c.time)), fadeBy(GOLD, fade), Painter.CENTER, true);
+        p.text(freed ? "FREE!" : "FREE THE DUMPLING", cx, L.h * 0.235f,
+                type(s * (freed ? 1.5f : .90f) * introScale(c.time)),
+                fadeBy(GOLD, fade), Painter.CENTER, true);
         if (!freed && !c.steamer.swipeReady) {
             // No label: the wanted letter wears the same caret the field puts over a head tile,
             // and the arrow between the pair already says which way the sequence is going.
@@ -435,6 +435,10 @@ final class Screens extends Draw {
         float baseY = rimY + bh * 0.78f;
         float rimRy = bw * 0.30f;
         float baseRx = bw * 0.90f;
+        float steamY=rimY-rimRy*.65f;
+        float steamRise=Math.min(bh*(.85f+c.steamer.steamStrength()*.95f),
+                Math.max(s,steamY-(L.h*.235f+s*4.4f)));
+        Basket.steam(p,cx,steamY,bw,steamRise,c.clock,c.steamer.steamStrength(),c.steamer.steamPulse,fade);
         Basket.back(p, cx, rimY, baseY, bw, rimRy, baseRx, body, c.steamer.flash, fade);
 
         // The dumpling: rainbow, and cheerier the closer it is to getting out.
@@ -515,17 +519,6 @@ final class Screens extends Draw {
                 p.strokePoly(arrow, fadeBy(Glyph.withAlpha(GOLD, 55), fade), s * 0.48f);
                 p.strokePoly(arrow, fadeBy(Glyph.withAlpha(0xFFFFFFFF, 150), fade), s * 0.20f);
                 p.fillPoly(arrow, fadeBy(Glyph.withAlpha(GOLD, 220), fade));
-            }
-
-            // Steam escaping through the widening gap.
-            if (open > 0.05f) {
-                for (int k = 0; k < 4; k++) {
-                    float wob = (float) Math.sin(c.clock * 2.2f + k * 1.7f);
-                    float sx2 = cx + (k - 1.5f) * bw * 0.34f + wob * s * 0.25f;
-                    float sy2 = lidY - bh * 0.4f - open * s * (0.6f + 0.5f * k);
-                    p.fillPoly(pill(sx2, sy2, s * 0.34f * open, s * 0.11f * open, 6),
-                            fadeBy(Glyph.withAlpha(INK, (int) (70 * open)), fade));
-                }
             }
 
             // Progress: one pip per press needed. Below the countdown, which now owns the

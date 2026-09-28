@@ -26,6 +26,8 @@ final class Steamer {
     float freedLidLift;
     /** 1 right after a press, decaying: flashes and cycles the container colour. */
     float flash;
+    /** A completed scoring pair sends a short puff through the lid gap. */
+    float steamPulse;
     /**
      * 1 right after a <em>wrong</em> press, decaying. Its own channel, so a rebuff can look
      * nothing like a landed press — which is the whole point of it.
@@ -57,6 +59,7 @@ final class Steamer {
         lidFlash = 0;
         lidDrag = freedLidLift = 0;
         flash = 0;
+        steamPulse = 0;
         freedT = 0;
         badPulse = 0;
         leftKey = 0;
@@ -165,6 +168,7 @@ final class Steamer {
         }
         expectLeft = true;
         hits++;
+        steamPulse = 1f;
         if (hits < goal()) return SCORED;
         hits = goal();
         swipeReady = true;
@@ -180,6 +184,7 @@ final class Steamer {
         hits = 0;
         if (opens < Integer.MAX_VALUE) opens++;
         freedT = FREE_TIME;
+        steamPulse = 1f;
         return FREED;
     }
 
@@ -189,6 +194,7 @@ final class Steamer {
         swipeReady = false;
         lidDrag = 0f;
         hits = goal() - 1;
+        steamPulse = 0f;
         expectLeft = true;
     }
 
@@ -196,6 +202,11 @@ final class Steamer {
     float lidOpen() {
         float v = (float) hits / goal();
         return v < 0 ? 0 : v > 1 ? 1 : v;
+    }
+
+    /** A little idle warmth, thickening with filled pips; release fades instead of snapping off. */
+    float steamStrength() {
+        return freedT>0f ? Math.min(1f,freedT/.55f) : .10f+.90f*lidOpen();
     }
 
     /** Small visual scale-up when a key reminds the player to drag the armed lid. */
@@ -208,6 +219,7 @@ final class Steamer {
         lidPulse = decay(lidPulse, dt * 4.5f);
         lidFlash = decay(lidFlash, dt * 4.8f);
         flash = decay(flash, dt * 3.0f);
+        steamPulse = decay(steamPulse, dt * 2.8f);
         badPulse = decay(badPulse, dt * 3.4f);
         freedT = decay(freedT, dt);
     }
