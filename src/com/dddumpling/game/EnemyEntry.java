@@ -23,13 +23,15 @@ final class EnemyEntry {
         for (GameCore.Enemy other : c.enemies) {
             if (other == incoming || other.dying || other.destroyed) continue;
             if (!incoming.sideEntry && !other.sideEntry
-                    && incoming.link == null && other.link == null) continue;
+                    && incoming.link == null && other.link == null
+                    && incoming.rushSpan<=0f && other.rushSpan<=0f) continue;
             if (conflict(incoming, other, L)) return false;
         }
         return true;
     }
 
     private static boolean conflict(GameCore.Enemy a, GameCore.Enemy b, Layout L) {
+        if(a.rushSpan>0f || b.rushSpan>0f)return rushConflict(a,b,L);
         float gapY = L.enemyR * 2.7f;
         // Both velocities receive the same frenzy multiplier, so nominal fall time suffices.
         float end = Math.min((L.dangerY - a.y) / Math.max(1f, a.speed),
@@ -53,4 +55,26 @@ final class EnemyEntry {
         return Math.min(ax0, ax1) < Math.max(bx0, bx1) + gapX
                 && Math.max(ax0, ax1) > Math.min(bx0, bx1) - gapX;
     }
+    /** Bound both swept rectangles over each interval, including accelerated vertical travel. */
+    private static boolean rushConflict(GameCore.Enemy a,GameCore.Enemy b,Layout L) {
+        float end=Math.min((L.dangerY-a.y)/Math.max(1f,a.speed),
+                (L.dangerY-b.y)/Math.max(1f,b.speed));
+        float gapX=(L.wordWidth(a.word.length)+L.wordWidth(b.word.length))*.5f
+                +a.sway+b.sway+L.enemyR*.35f;
+        float ay0=a.y,by0=b.y;
+        for(int step=1;step<=32;step++) {
+            float t=Math.max(0f,end)*step/32f;
+            float ay1=PowerRush.yAfter(a,a.speed*t),by1=PowerRush.yAfter(b,b.speed*t);
+            if(ay0<L.dangerY && by0<L.dangerY
+                    && ay0<by1+L.enemyR*2.7f && by0<ay1+L.enemyR*2.7f) {
+                float ax0=xAt(a,ay0,L),ax1=xAt(a,ay1,L);
+                float bx0=xAt(b,by0,L),bx1=xAt(b,by1,L);
+                if(Math.min(ax0,ax1)<Math.max(bx0,bx1)+gapX
+                        && Math.max(ax0,ax1)>Math.min(bx0,bx1)-gapX)return true;
+            }
+            ay0=ay1;by0=by1;
+        }
+        return false;
+    }
+
 }

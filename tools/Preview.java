@@ -608,6 +608,18 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
+        if(wanted("134-power-rush")) {
+            for(int pattern=0;pattern<3;pattern++) {
+                GameCore rush=new GameCore(new Mem(),134L);rush.startGame();
+                rush.startFrenzy(Power.NINJA,L);rush.enemies.clear();rush.stageBanner=0;
+                rush.time=2f;rush.modeLeft=Power.DURATION-2f;rush.ninjaUsed=true;
+                rush.powerSpawnedEnemies=pattern*4;rush.spawnTimer=0;rush.stageGap=0;
+                for(int frame=0;frame<90;frame++)rush.update(1f/60f,L);
+                rush.flash=rush.shake=0f;
+                shot(dir,"134-power-rush-"+pattern,rush,L,w,h,ss);
+            }
+        }
+
         if(wanted("133-flurry")) {
             GameCore rings=TestPower.flurryClearScene(L);
             shot(dir,"133-flurry-clear-rings",rings,L,w,h,ss);

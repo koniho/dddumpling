@@ -140,7 +140,8 @@ final class Power {
         float refill = 0.5f - Math.min(0.3f, c.ramp() * 0.05f);
         boolean burst = c.powerRefillBurst > 0 && c.clock - c.powerLastClear < 0.8f;
         boolean emptyView = live < 2 && visiblePresses == 0;
-        return emptyView || (live < 3 && (presses == 0 || burst)) ? normal * refill : normal;
+        float delay=emptyView || (live < 3 && (presses == 0 || burst)) ? normal * refill : normal;
+        return PowerRush.phraseDelay(c,normal,delay,L);
     }
 
     static float crowdRate(float ramp) { return tapered(CROWD_RATE, ramp); }

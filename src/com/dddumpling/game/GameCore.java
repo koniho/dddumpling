@@ -384,6 +384,7 @@ final class GameCore {
         /** Frenzy side entrance: an inward arc that settles into a vertical lane. */
         boolean sideEntry;
         float pathStartX, pathEndX, pathStartY;
+        float rushEndY, rushSpan;
         boolean dying;
         float deathT;
         /** 1 right after a correct hit, decaying: drives the colour flash and scale pop. */
@@ -2511,6 +2512,7 @@ final class GameCore {
             // off the screen it has to be typed on.
             e.slideTo = Math.max(L.playTop, e.y - lift);
             e.slideT = PUSH_SLIDE;
+            e.rushSpan = 0f; // A rescue shove must not restart the entrance boost.
             taken.add(e.slideTo);
             // At its feet where it stands, not where it is going: this is the shove landing.
             Fx.explode(this, rnd, enemyCentreX(e), e.y + L.enemyR * 1.4f, L.enemyR * 1.2f, 8,
@@ -3121,7 +3123,7 @@ final class GameCore {
                 continue;
             }
 
-            e.y += e.speed * fallRate() * dt * traversalRate();
+            e.y = PowerRush.yAfter(e,e.speed * fallRate() * dt * traversalRate());
             updateSidePath(e, L);
             if (e.linkWaiting) {
                 e.warn = 0f;
@@ -3519,26 +3521,9 @@ final class GameCore {
         float hi = L.playRight - half - e.sway;
         e.baseX = hi > lo ? lo + rnd.nextFloat() * (hi - lo) : (L.playLeft + L.playRight) / 2f;
         e.phase = rnd.nextFloat() * 6.283f;
-        // Mix top rain with quick inward arcs, then keep each side word in its landing lane.
-        boolean refill = powerActive() && Power.spawnDelay(this, L)
-                < spawnInterval() / Power.spawnRate(ramp());
-        if (powerActive()
-                && (rnd.nextBoolean() || (refill && rnd.nextFloat() < 0.75f)) && hi > lo) {
-            e.sideEntry = true;
-            boolean fromLeft = rnd.nextBoolean();
-            e.pathStartX = fromLeft ? L.playLeft - half - L.enemyR
-                    : L.playRight + half + L.enemyR;
-            e.pathEndX = fromLeft ? lo + (hi - lo) * 0.25f : hi - (hi - lo) * 0.25f;
-            e.pathStartY = L.playTop + (L.dangerY - L.playTop) *
-                    (0.08f + rnd.nextFloat() * 0.24f);
-            e.y = e.pathStartY;
-            e.baseX = e.pathStartX;
-            e.sway = 0f;
-        } else {
-            // Start fully above the top edge so words visibly fly in rather than popping
-            // into existence. travelSeconds still measures spawn -> danger line.
-            e.y = -L.enemyR * 2.2f;
-        }
+        // Fully offscreen first; power formations then choose a top or side approach.
+        e.y = -L.enemyR * 2.2f;
+        PowerRush.arrange(this,e,L,lo,hi);
         e.enterT = 0f;
         e.speed = (L.dangerY - e.y) / travelSeconds();
         // Try other lanes before deferring. Existing side arcs also reserve space against

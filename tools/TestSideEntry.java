@@ -31,6 +31,9 @@ final class TestSideEntry extends Check {
         check("faster trailing words cannot catch the side row", !EnemyEntry.clear(other, c, L));
         other.speed = side.speed;
         check("vertically spaced rows may share a lane", EnemyEntry.clear(other, c, L));
+        other.rushEndY=side.y+L.enemyR*8f;other.rushSpan=other.rushEndY-other.y;
+        check("accelerated top arrivals reserve their catch-up path",!EnemyEntry.clear(other,c,L));
+        other.rushSpan=0f;
         other.y = side.y;
         other.destroyed = true;
         check("cleared words release their lane", EnemyEntry.clear(side, c, L));
@@ -77,7 +80,7 @@ final class TestSideEntry extends Check {
                     GameCore.Enemy a = run.enemies.get(i);
                     for (int j = i + 1; j < run.enemies.size(); j++) {
                         GameCore.Enemy b = run.enemies.get(j);
-                        if ((!a.sideEntry && !b.sideEntry) || a.dying || b.dying
+                        if ((!a.sideEntry && !b.sideEntry && a.rushSpan<=0f && b.rushSpan<=0f) || a.dying || b.dying
                                 || a.destroyed || b.destroyed) continue;
                         float dx = Math.abs(run.enemyCentreX(a) - run.enemyCentreX(b));
                         float dy = Math.abs(a.y - b.y);
@@ -88,6 +91,6 @@ final class TestSideEntry extends Check {
             }
         }
         check("mixed frenzy traffic includes both entrance types", sideCount > 0 && topCount > 0);
-        check("side rows do not overlap mixed traffic during entry or descent", noOverlap);
+        check("rush and side rows do not overlap mixed traffic during entry or descent", noOverlap);
     }
 }

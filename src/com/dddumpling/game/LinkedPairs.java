@@ -38,6 +38,7 @@ final class LinkedPairs {
         e.baseX = (L.playLeft + L.playRight) / 2f + (row == 0 ? -1 : 1) * L.enemyR * 1.85f;
         e.y = -L.enemyR * 2.2f;
         e.speed = (L.dangerY - e.y) / c.travelSeconds();
+        PowerRush.pair(c,e,L);
         return e;
     }
 

@@ -1379,6 +1379,57 @@ final class TestPower extends Check {
                 Math.abs(Power.spawnRate(0f) - 7.8f) < 1e-5f);
     }
 
+    private static void powerRush(Layout L) {
+        group("power rush formations");
+        GameCore c=new GameCore(new Mem(),134L);c.startGame();c.startFrenzy(Power.FLURRY,L);
+        c.enemies.clear();
+        boolean cycle=true,readable=true,fast=true,settled=true,stepStable=true;
+        int sides=0;
+        for(int slot=0;slot<12;slot++) {
+            c.powerSpawnedEnemies=slot;
+            GameCore.Enemy e=add(c,L,new int[]{0},-L.enemyR*2.2f);c.enemies.clear();
+            PowerRush.arrange(c,e,L,L.w*.20f,L.w*.80f);
+            cycle &= PowerRush.pattern(c)==slot/4;
+            sides+=e.sideEntry?1:0;
+            float start=e.y,span=e.rushEndY-start;
+            readable &= e.typeable() && e.rushEndY<=L.playTop+(L.dangerY-L.playTop)*.42f;
+            float moved=PowerRush.yAfter(e,span*.20f);
+            fast &= moved>start+span*.45f;
+            float whole=PowerRush.yAfter(e,span*.7f);
+            e.y=PowerRush.yAfter(e,span*.35f);e.y=PowerRush.yAfter(e,span*.35f);
+            stepStable &= Math.abs(e.y-whole)<.01f;
+            e.y=e.rushEndY;
+            settled &= Math.abs(PowerRush.yAfter(e,10f)-e.y-10f)<.01f;
+        }
+        c.powerSpawnedEnemies=12;
+        check("three four-arrival patterns repeat",cycle && PowerRush.pattern(c)==0 && sides==6);
+        check("arrivals are clearable and settle above the lower half",readable);
+        check("rush quickly reaches the play area then restores normal descent",fast && settled);
+        check("arrival motion is independent of frame subdivision",stepStable);
+        check("groups leave a breathing gap",PowerRush.phraseDelay(c,1f,.5f,L)==1.25f);
+        add(c,L,new int[]{1},L.dangerY-L.enemyR*2);
+        GameCore.Enemy fresh=new GameCore.Enemy();fresh.word=new int[]{0};fresh.y=-L.enemyR*2;
+        PowerRush.arrange(c,fresh,L,L.w*.2f,L.w*.8f);
+        check("dangerous field suppresses accelerated arrivals",fresh.rushSpan==0 && !fresh.sideEntry);
+        check("dangerous field restores normal spacing",PowerRush.phraseDelay(c,1f,.5f,L)==1f);
+        c.enemies.clear();c.mode=-1;c.modeLeft=0;
+        PowerRush.arrange(c,fresh,L,L.w*.2f,L.w*.8f);
+        check("ordinary waves do not gain rush entrances",fresh.rushSpan==0);
+        c.startFrenzy(Power.FLURRY,L);c.enemies.clear();c.stageGap=10f;c.kidsRun=true;
+        GameCore.Enemy kid=add(c,L,new int[]{0},-L.enemyR*2.2f);kid.speed=100f;
+        PowerRush.arrange(c,kid,L,L.w*.2f,L.w*.8f);
+        float expect=PowerRush.yAfter(kid,kid.speed*c.fallRate()*DT*.45f);
+        c.update(DT,L);
+        check("Kids Mode slows the rush movement",Math.abs(kid.y-expect)<.01f);
+        c.paused=true;float pausedY=kid.y;c.update(.2f,L);
+        check("pause freezes rush movement",kid.y==pausedY);
+        c.paused=false;kid.y=(L.playTop+L.dangerY)*.6f;c.warnLevel=1f;
+        check("rush enemy can be rescued",c.pushBack(L));
+        check("a rescue push cancels the entry boost",kid.rushSpan==0f);
+        c.startGame();
+        check("restart discards rush enemies",c.enemies.isEmpty() && !c.powerActive());
+    }
+
     /**
      * The frenzy taper: what a frenzy is allowed to ask of the player, stage by stage.
      *
@@ -1389,6 +1440,7 @@ final class TestPower extends Check {
      * 43, against a human ceiling of maybe 8.
      */
     static void frenzyTaper(Layout L) {
+        powerRush(L);
         group("frenzy taper");
 
         check("an opening-stage frenzy is untapered", Power.taper(0f) == 1f);
