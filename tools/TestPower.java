@@ -540,6 +540,7 @@ final class TestPower extends Check {
         }
         check("TEAM SQUISH mixes top and side entrances", tops > 0 && sides > 0);
         check("side entrances use both edges", lefts > 0 && rights > 0);
+        check("most solo arrivals use the sides",sides>tops*3);
         check("side words begin beyond the play area", outside);
         check("side words become fully visible early in their descent", entersQuickly);
         check("side words stay fully visible after entering", staysVisible);
@@ -1383,7 +1384,7 @@ final class TestPower extends Check {
         group("power rush formations");
         GameCore c=new GameCore(new Mem(),134L);c.startGame();c.startFrenzy(Power.FLURRY,L);
         c.enemies.clear();
-        boolean cycle=true,readable=true,fast=true,settled=true,stepStable=true;
+        boolean cycle=true,readable=true,fast=true,settled=true,stepStable=true,lower=true;
         int sides=0;
         for(int slot=0;slot<12;slot++) {
             c.powerSpawnedEnemies=slot;
@@ -1391,8 +1392,10 @@ final class TestPower extends Check {
             PowerRush.arrange(c,e,L,L.w*.20f,L.w*.80f);
             cycle &= PowerRush.pattern(c)==slot/4;
             sides+=e.sideEntry?1:0;
+            if(e.sideEntry)lower &= e.pathStartY>=L.playTop+(L.dangerY-L.playTop)*.28f-.01f
+                    && e.pathStartY<=L.playTop+(L.dangerY-L.playTop)*.49f;
             float start=e.y,span=e.rushEndY-start;
-            readable &= e.typeable() && e.rushEndY<=L.playTop+(L.dangerY-L.playTop)*.42f;
+            readable &= e.typeable() && e.rushEndY<=L.playTop+(L.dangerY-L.playTop)*.55f+.01f;
             float moved=PowerRush.yAfter(e,span*.20f);
             fast &= moved>start+span*.45f;
             float whole=PowerRush.yAfter(e,span*.7f);
@@ -1402,14 +1405,17 @@ final class TestPower extends Check {
             settled &= Math.abs(PowerRush.yAfter(e,10f)-e.y-10f)<.01f;
         }
         c.powerSpawnedEnemies=12;
-        check("three four-arrival patterns repeat",cycle && PowerRush.pattern(c)==0 && sides==6);
-        check("arrivals are clearable and settle above the lower half",readable);
+        check("ten of twelve solo entrances favor the sides",cycle && PowerRush.pattern(c)==0 && sides==10);
+        check("side entrances start around the middle of the field",lower);
+        check("arrivals remain clearable and settle well above danger",readable);
         check("rush quickly reaches the play area then restores normal descent",fast && settled);
         check("arrival motion is independent of frame subdivision",stepStable);
         add(c,L,new int[]{1},L.dangerY-L.enemyR*2);
         GameCore.Enemy fresh=new GameCore.Enemy();fresh.word=new int[]{0};fresh.y=-L.enemyR*2;
+        c.powerSpawnedEnemies=5;
         PowerRush.arrange(c,fresh,L,L.w*.2f,L.w*.8f);
-        check("dangerous field suppresses accelerated arrivals",fresh.rushSpan==0 && !fresh.sideEntry);
+        check("dangerous field keeps side entries shallow without an arrival boost",fresh.rushSpan==0
+                && fresh.sideEntry && fresh.y<L.playTop+(L.dangerY-L.playTop)*.30f);
         c.enemies.clear();c.mode=-1;c.modeLeft=0;
         PowerRush.arrange(c,fresh,L,L.w*.2f,L.w*.8f);
         check("ordinary waves do not gain rush entrances",fresh.rushSpan==0);

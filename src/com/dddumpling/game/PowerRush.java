@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** Four arrivals make a phrase: diagonal rain, alternating sides, then a center fan. */
+/** Side-heavy power entrances vary their landing lane and arrive farther down the field. */
 final class PowerRush {
     private PowerRush() {}
 
@@ -14,24 +14,28 @@ final class PowerRush {
     static int pattern(GameCore c) { return (c.powerSpawnedEnemies/4)%3; }
 
     static void arrange(GameCore c,GameCore.Enemy e,Layout L,float lo,float hi) {
-        if(!c.powerActive() || pressured(c,L))return;
+        if(!c.powerActive())return;
+        boolean danger=pressured(c,L);
         int slot=c.powerSpawnedEnemies%4,pattern=pattern(c);
         float lane=pattern==0 ? .18f+slot*.2133f
                 : pattern==1 ? (slot%2==0?.55f:.45f)
                 : slot<2 ? .42f+slot*.16f : slot==2?.22f:.78f;
         e.baseX=hi>lo ? lo+(hi-lo)*lane : (L.playLeft+L.playRight)*.5f;
         e.sway=0f;
-        boolean side=hi>lo && (pattern==1 || (pattern==2 && slot>=2));
+        boolean side=hi>lo && (pattern==1 || slot!=0);
         if(side) {
             boolean left=slot%2==0;
             float half=L.wordWidth(e.word.length)*.5f;
             e.sideEntry=true;
             e.pathStartX=left ? L.playLeft-half-L.enemyR : L.playRight+half+L.enemyR;
             e.pathEndX=e.baseX;
-            e.pathStartY=L.playTop+(L.dangerY-L.playTop)*(.12f+slot*.035f);
+            float depth=danger ? .20f+slot*.025f : .24f+pattern*.04f+slot*.055f;
+            e.pathStartY=L.playTop+(L.dangerY-L.playTop)*depth;
             e.baseX=e.pathStartX;e.y=e.pathStartY;
         }
-        float depth=pattern==0?.26f+slot*.04f:.34f+slot*.015f;
+        if(danger)return;
+        float depth=side ? Math.min(.55f,(e.y-L.playTop)/(L.dangerY-L.playTop)+.08f)
+                : .26f+slot*.04f;
         rush(c,e,L,depth);
     }
 
@@ -40,7 +44,7 @@ final class PowerRush {
     }
 
     private static void rush(GameCore c,GameCore.Enemy e,Layout L,float depth) {
-        if(c.powerRefillBurst>0)depth=Math.min(.42f,depth+.04f);
+        if(c.powerRefillBurst>0)depth=Math.min(.55f,depth+.04f);
         e.rushEndY=L.playTop+(L.dangerY-L.playTop)*depth;
         e.rushSpan=Math.max(1f,e.rushEndY-e.y);
     }

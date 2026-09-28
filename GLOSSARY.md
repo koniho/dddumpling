@@ -377,12 +377,13 @@ Rules: `LinkedPairs`; visuals: `LinkedPairArt`; difficulty: `Pacing.lessonRelief
 
 Linked pairs keep their hands connected during NINJA, FLURRY, and TEAM SQUISH. One TEAM SQUISH collision clears both and sends them spinning around their clasp offscreen. NINJA protects their bodies and requires a cut through the joined hands to clear both. A body-only cut plays the miss sound and flexes both characters once per stroke. FLURRY accepts any two distinct buttons within 200 ms; repeating one button cannot clear a pair. Entering these powers resets a pending half-press.
 
-Power-up arrivals repeat four-enemy phrases: diagonal rain, alternating side entries, then a center fan.
-They accelerate into the upper-middle field and smoothly settle into normal descent; enemies remain
-clearable throughout. Formation changes add no spawn delay; enemy clears immediately shorten the
-next spawn countdown on the faster power-up schedule. Arrivals revert to ordinary top
-entrances when a live threat reaches 60% of the field. Kids Mode slows the entrance movement too.
-`PowerRush` owns the formations and entrance curve; `EnemyEntry` reserves their swept paths.
+Power-up solo arrivals favor the sides (10 out of 12 entrance slots), starting around 28–49%
+down the playfield. A few top entries keep the approaches varied. Side words keep their existing
+approach-time budget, sweep inward, and settle by 55% of the field; they remain clearable throughout.
+Enemy clears immediately shorten the next spawn countdown; entrance patterns add no pauses.
+When a live threat reaches 60% of the field, new side entrances start higher (20–28%) and
+skip the arrival boost. Kids Mode slows entrance movement too. Linked pairs keep their shared
+top entrance. `PowerRush` owns the entrance profiles; `EnemyEntry` reserves their swept paths.
 
 From stage 16, each active power-up starts its own repeating spawn pattern: one linked pair, then two solo enemies. The pattern continues beyond the ordinary wave quota and uses the current power-up pacing and crowd cap.
 
