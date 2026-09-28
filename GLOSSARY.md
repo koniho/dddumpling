@@ -476,6 +476,12 @@ The title’s **Best Score** fades out before the display case heading appears, 
 while the case is open, and fades back in after the case heading disappears. `Screens.caseOut`
 keeps these labels from overlapping during either transition.
 
+One tap on an owned display-case dumpling centers its shelf and opens its narrated story.
+The selected dumpling lifts from the shelf to above the popup, with glow rings in its body and
+accent colors. Tapping it again makes it hop and replays the rings without restarting narration.
+Other story taps dismiss the popup. Locked entries still only center the shelf, and dragging
+continues to browse without opening a story.
+
 The settled **game-over summary** accepts a fresh tap anywhere to return to the title.
 The death and haul animations finish before dismissal becomes available. The returning gesture cannot start a new run, and the iOS pause button is hidden.
 

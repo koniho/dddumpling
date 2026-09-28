@@ -771,6 +771,7 @@ final class GameCore {
     int story = -1;
     /** Seconds the story has been open; drives the panel opening and its looping scene. */
     float storyT;
+    float storyFromColumn, storyFromRow, storyFromScale, storyPulse;
 
     boolean storyOpen() {
         return story >= 0;
@@ -788,6 +789,9 @@ final class GameCore {
         story = caseIndex;
         onboarding.learn(this,TutorialSpeech.STORIES);
         storyT = 0f;
+        storyFromColumn=caseSlide;storyFromRow=caseSlideY;
+        storyFromScale=.86f*.82f*1.16f;
+        storyPulse=0f;
         if (sound != null) {
             sound.achievement();
             sound.narrate(story);
@@ -801,6 +805,7 @@ final class GameCore {
         boolean reading = storyOpen();
         story = -1;
         storyT = 0f;
+        storyFromColumn=storyFromRow=storyFromScale=storyPulse=0f;
         if (reading && sound != null) sound.hush();
     }
 
@@ -2762,7 +2767,7 @@ final class GameCore {
                 homeLanded++;
             }
         }
-        if (storyOpen()) storyT += dt;
+        if (storyOpen()) { storyT += dt; storyPulse += dt; }
         // The title screen dissolving, and the squishy's send-off over the top of it. Play begins
         // the frame the last of them finishes, not on the press.
         // UI timing follows elapsed time even when slow frames cap gameplay physics.

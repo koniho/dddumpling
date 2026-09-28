@@ -91,6 +91,15 @@ final class CaseUi {
         if (c.sound != null) c.sound.squish(c.caseIndex % Glyph.COUNT, 1);
     }
 
+    /** A single tile tap both centers the shelf and opens an owned entry's story. */
+    static void tap(GameCore c,int index) {
+        if(!c.caseOpen || c.storyOpen())return;
+        boolean focused=index==c.caseIndex;
+        select(c,index);
+        c.openStory();
+        if(c.storyOpen() && !focused)c.storyFromScale=.67f*.82f;
+    }
+
     static void beginDrag(GameCore c, float x, float y) {
         if (!c.caseOpen || c.storyOpen()) return;
         c.caseDragging = c.caseFreePan = true;

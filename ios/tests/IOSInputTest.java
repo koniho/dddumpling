@@ -713,7 +713,7 @@ public final class IOSInputTest extends Check {
         cave();
         highScores();
         releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
-        steamerAndPanic(); caseAndSettings();
+        steamerAndPanic(); caseAndSettings(); storyDumplingInput();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");
@@ -802,6 +802,26 @@ public final class IOSInputTest extends Check {
     private static void tutorialAwaitBubble(IOSGame game) {
         for(int i=0;i<40 && game.core().onboarding.briefing && game.core().onboarding.bubbleProgress()<1;i++)game.update(DT);
     }
+    private static void storyDumplingInput() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        int chosen=Showcase.across(0,1);c.collected=1L | (1L<<chosen);c.caseIndex=0;c.openCase();
+        for(int i=0;i<60;i++)game.update(DT);
+        float x=l.w*.5f+Showcase.step(l),y=Showcase.focusCy(l);
+        game.touch(one(0,1,x,y));game.touch(one(3,1,x,y));
+        check("cancelled tile tap cannot open a story",!c.storyOpen() && c.caseIndex==0);
+        tap(game,x,y);
+        check("native neighbour tap centers and opens story in one gesture",c.story==chosen && c.caseIndex==chosen);
+        for(int i=0;i<90;i++)game.update(DT);
+        float age=c.storyT;
+        tap(game,Storybook.heroX(c,l),Storybook.heroY(c,l));
+        check("native featured-dumpling tap reacts without dismissing",c.story==chosen && c.storyPulse==0f && c.storyT==age);
+        tap(game,l.w*.5f,l.h*.7f);
+        check("native popup tap still dismisses without starting a run",!c.storyOpen() && c.caseOpen && !c.starting());
+        c.caseIndex=0;c.caseSlide=c.caseSlideY=0;
+        game.touch(one(0,2,x,y));game.touch(one(2,2,x-l.unit*2,y));game.touch(one(1,2,x-l.unit*2,y));
+        check("shelf drag does not accidentally open a story",!c.storyOpen() && !c.caseDragging);
+    }
+
     private static void collectionGuidanceInput() {
         Mem store=new Mem();store.tutorials=store.powerTutorials=0;
         Ear ear=new Ear();IOSGame game=new IOSGame(store,ear,114);game.layout(393,852,0,59,0,34);

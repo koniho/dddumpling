@@ -17,6 +17,56 @@ final class Storybook extends Draw {
 
     /** How long the panel takes to spring open. */
     private static final float OPEN_TIME = 0.28f;
+    static final float FLIGHT_TIME=.55f, GLOW_TIME=1.15f;
+
+    static float panelTop(Layout L) { return L.h*.47f-L.unit*6.2f; }
+    static float heroRadius(Layout L) {
+        return Math.min(L.unit*2.1f,(panelTop(L)-L.topSafe)/4.7f);
+    }
+    private static float flight(GameCore c) {
+        float t=Math.min(1f,c.storyT/FLIGHT_TIME);
+        return t*t*(3f-2f*t);
+    }
+    static float heroX(GameCore c,Layout L) {
+        return L.w*.5f+c.storyFromColumn*Showcase.step(L)*(1f-flight(c));
+    }
+    static float heroY(GameCore c,Layout L) {
+        float t=flight(c),from=Showcase.focusCy(L)+c.storyFromRow*Showcase.rowStep(L);
+        float to=panelTop(L)-heroRadius(L)*2.15f;
+        return from+(to-from)*t-heroRadius(L)*.4f*reaction(c);
+    }
+    private static float radius(GameCore c,Layout L) {
+        float t=flight(c);
+        return Showcase.focusR(L)*c.storyFromScale*(1f-t)+heroRadius(L)*t;
+    }
+    private static float reaction(GameCore c) {
+        return c.storyPulse<.6f?(float)Math.sin(Math.PI*c.storyPulse/.6f):0f;
+    }
+    static boolean heroHit(GameCore c,Layout L,float x,float y) {
+        float dx=x-heroX(c,L),dy=y-heroY(c,L),r=radius(c,L)*1.3f;
+        return c.storyOpen() && dx*dx+dy*dy<=r*r;
+    }
+    static void tap(GameCore c,Layout L,float x,float y) {
+        if(!c.storyOpen())return;
+        if(heroHit(c,L,x,y))c.storyPulse=0f;
+        else c.closeStory();
+    }
+    static int glowColor(int who,int ring) {
+        return Glyph.mix(Collect.BODY[who],Collect.ACCENT[who],ring/4f);
+    }
+    private static void hero(Painter p,GameCore c,Layout L) {
+        float x=heroX(c,L),y=heroY(c,L),r=radius(c,L),pulse=reaction(c);
+        for(int ring=0;ring<5;ring++) {
+            float t=(c.storyPulse-ring*.07f)/(GLOW_TIME-4*.07f);
+            if(t<0f || t>=1f)continue;
+            float rr=r*(1.05f+t*.90f),fade=(1f-t)*(1f-t);
+            int color=glowColor(c.story,ring);
+            p.strokeCircle(x,y,rr,Glyph.withAlpha(color,(int)(38*fade)),r*.22f);
+            p.strokeCircle(x,y,rr,Glyph.withAlpha(color,(int)(190*fade)),r*.065f);
+        }
+        Trinket.drawReacting(p,c.story,x,y,r*(1f+.13f*pulse),c.clock,1f,
+                pulse>.1f?4:-1,(float)Math.sin(c.storyPulse*12f)*pulse*.4f);
+    }
 
     static void draw(Painter p, GameCore c, Layout L) {
         if (!c.storyOpen()) return;
@@ -43,7 +93,7 @@ final class Storybook extends Draw {
                 cx - hw, cy + hh}, Glyph.withAlpha(tint, 200), s * 0.06f);
         // Nothing legible until the panel is most of the way open; text scaled down with it
         // just looks like a rendering fault.
-        if (open < 0.75f) return;
+        if (open < 0.75f) { hero(p,c,L);return; }
 
         // The stage sits in the top third, on its own slightly darker band so the scene reads
         // as a scene rather than as decoration behind the text.
@@ -69,8 +119,9 @@ final class Storybook extends Draw {
         }
 
         float pulse = 0.55f + 0.45f * (float) Math.sin(c.clock * 3.2f);
-        p.text("TAP TO CLOSE", cx, cy + hh - s * 0.55f, type(s * 0.54f),
+        p.text("TAP BELOW TO CLOSE", cx, cy + hh - s * 0.55f, type(s * 0.54f),
                 Glyph.withAlpha(INK_DIM, (int) (255 * pulse)), Painter.CENTER, true);
+        hero(p,c,L);
     }
 
     /** Ease-out-back, so the panel overshoots a little and settles. */

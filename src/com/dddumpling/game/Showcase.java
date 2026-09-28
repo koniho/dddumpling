@@ -386,8 +386,9 @@ final class Showcase extends Draw {
                 float sway = (float) Math.sin(phase * 0.73f) * tileR * 0.035f;
                 float breathe = 1f + (float) Math.sin(phase * 1.13f) * 0.035f;
                 float grow = focus ? 1.16f + welcome * 0.16f : 1f;
-                Trinket.draw(p, idx, xx + sway, yy + bob, tileR * 0.82f * breathe * grow,
-                        c.clock, owned, opacity);
+                if(!c.storyOpen() || c.story!=idx)
+                    Trinket.draw(p, idx, xx + sway, yy + bob, tileR * 0.82f * breathe * grow,
+                            c.clock, owned, opacity);
                 if (focus) {
                     for (int spark = 0; spark < 4; spark++) {
                         float a = -0.7f + spark * Softbody.TAU / 4f + c.caseHighlightAge * 0.32f;

@@ -48,7 +48,7 @@ final class TutorialSpeech extends Draw {
         if(message==POWER_TEAM)return "Team Squish! Tap any key to aim me and clear words.";
         if(message==MINIGAMES)return "Steamer is a minigame! Play a minigame after each stage. You can win dumplings! Let's free one from this steamer!";
         if(message==DISPLAY_CASE)return "Your friends live here! Tap the case to visit them!";
-        if(message==STORIES)return "Tap the middle dumpling to read or hear its story!";
+        if(message==STORIES)return "Tap a dumpling to read or hear its story!";
         if(message==RESCUE)return "An enemy is getting close! Swipe up from the glowing bar to push the Squishies back. You can do this once each stage. Give yourself some room!";
         if(message==STARS)return "Star Path is starting! Slide to steer your dumpling and catch the stars. Collect them all to win a new friend!";
         if(message==LEAN)return "Cart Rush is starting! Slide left and right to steer. Stay in the green and help your cart reach the finish!";

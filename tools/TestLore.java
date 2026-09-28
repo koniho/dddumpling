@@ -128,6 +128,7 @@ final class TestLore extends Check {
 
     static void popup(Layout L) {
         group("story popup");
+        featuredDumpling(L);
         Mem store = new Mem();
         store.collected = 0b101L;          // entries 0 and 2
         GameCore c = new GameCore(store, 61L);
@@ -202,6 +203,47 @@ final class TestLore extends Check {
             if (Showcase.inFocus(L, L.keyX[g], L.keyY[g])) clearOfKeys = false;
         }
         check("no key sits inside the story target", clearOfKeys);
+    }
+
+    private static void featuredDumpling(Layout L) {
+        int chosen=Showcase.across(0,1);
+        Mem store=new Mem();store.collected=1L | (1L<<chosen);
+        GameCore c=new GameCore(store,136L);Ear ear=new Ear();c.sound=ear;c.openCase();
+        c.caseIndex=0;c.caseSlide=.2f;c.caseSlideY=.1f;c.caseFreePan=true;
+        float fromX=L.w*.5f+1.2f*Showcase.step(L),fromY=Showcase.focusCy(L)+.1f*Showcase.rowStep(L);
+        CaseUi.tap(c,chosen);
+        check("one neighbouring tap focuses and opens its story",c.caseIndex==chosen && c.story==chosen
+                && ear.narrations==1 && !c.caseFreePan);
+        check("story dumpling starts at the tapped shelf position",Math.abs(Storybook.heroX(c,L)-fromX)<.01f
+                && Math.abs(Storybook.heroY(c,L)-fromY)<.01f);
+        advance(c,L,1.6f);
+        check("case centers while the dumpling arrives above its story",c.caseSlide==0 && c.caseSlideY==0
+                && Storybook.heroX(c,L)==L.w*.5f && Storybook.heroY(c,L)+Storybook.heroRadius(L)<Storybook.panelTop(L));
+        float age=c.storyT,settledY=Storybook.heroY(c,L);
+        Storybook.tap(c,L,Storybook.heroX(c,L),settledY);
+        check("tapping featured dumpling replays glow without restarting story or narration",
+                c.story==chosen && c.storyPulse==0f && c.storyT==age && ear.narrations==1 && ear.hushes==0);
+        advance(c,L,.2f);
+        check("featured dumpling reacts with a hop",Storybook.heroY(c,L)<settledY);
+        Storybook.tap(c,L,Storybook.heroX(c,L),Storybook.heroY(c,L));
+        check("repeat taps renew the same bounded glow",c.storyPulse==0f && ear.narrations==1);
+        check("rings use the collectible body and accent colors",Storybook.glowColor(1,0)==Collect.BODY[1]
+                && Storybook.glowColor(1,4)==Collect.ACCENT[1]);
+        Storybook.tap(c,L,L.w*.5f,L.h*.7f);
+        check("other story taps dismiss and clear animation state",!c.storyOpen() && ear.hushes==1
+                && c.storyPulse==0 && c.storyFromScale==0);
+        int locked=chosen==1?2:1;CaseUi.tap(c,locked);
+        check("unowned tap centers without revealing a story",c.caseIndex==locked && !c.storyOpen());
+        CaseUi.tap(c,chosen);c.startGame();
+        check("new run clears featured dumpling state",!c.storyOpen() && c.storyPulse==0 && c.storyFromScale==0);
+        boolean fits=true;
+        for(int[] size:new int[][]{{320,568},{393,852},{640,1400},{768,1024}}) {
+            Layout p=new Layout();p.compute(size[0],size[1],0,size[1]*.06f,0,size[1]*.04f);
+            c.storyT=2f;c.storyPulse=.25f;
+            float r=Storybook.heroRadius(p),y=Storybook.heroY(c,p);
+            fits &= r>0 && y-r*2.1f>=p.topSafe && y+r*2.1f<Storybook.panelTop(p);
+        }
+        check("featured dumpling and rings fit above popup on portrait screens",fits);
     }
 
     /** The story read aloud: the words, the delivery, and when it starts and stops. */

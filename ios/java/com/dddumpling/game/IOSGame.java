@@ -222,10 +222,9 @@ public final class IOSGame {
         }
 
         if (core.state != GameCore.PLAY) {
-            // A story on screen is modal: any touch anywhere dismisses it and nothing else
-            // acts on that touch.
+            // The featured dumpling reacts; other story touches dismiss the modal.
             if (core.storyOpen()) {
-                core.closeStory();
+                Storybook.tap(core,layout,x,y);
                 tick();
                 return true;
             }
@@ -424,7 +423,7 @@ public final class IOSGame {
         float x = ev.getX(i), y = ev.getY(i);
 
         if (action == IOSTouch.ACTION_DOWN || action == IOSTouch.ACTION_POINTER_DOWN) {
-            // A story is modal: the caller dismisses it and nothing else acts on that touch.
+            // Story touches go to the featured dumpling or dismiss the popup.
             if (core.storyOpen() || core.keyAt(x, y, layout) >= 0) return false;
             caseHit = Showcase.hit(core, layout, x, y);
             caseDownX = x;
@@ -461,9 +460,9 @@ public final class IOSGame {
     /** A touch that lifted without becoming a drag. */
     private void tapCase(int hit) {
         if (hit >= Showcase.HIT_ENTRY) {
-            CaseUi.select(core, hit - Showcase.HIT_ENTRY);
+            CaseUi.tap(core, hit - Showcase.HIT_ENTRY);
         } else if (hit == Showcase.HIT_FOCUS) {
-            core.openStory();
+            CaseUi.tap(core,core.caseIndex);
         } else if (hit == Showcase.HIT_PREV) {
             core.scrollCase(-1);
         } else if (hit == Showcase.HIT_NEXT) {

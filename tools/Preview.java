@@ -608,6 +608,20 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
+        if(wanted("136-story")) {
+            for(int who:new int[]{1,6,Collect.BOSS_FIRST}) {
+                Mem saved=new Mem();saved.collected=Collect.MASK;
+                GameCore story=new GameCore(saved,136L);story.openCase();story.caseFade=1f;story.time=2f;
+                story.caseIndex=Showcase.across(who,Showcase.column(who)>0?-1:1);CaseUi.tap(story,who);
+                float prior=0;
+                for(float at:new float[]{0f,.25f,.65f,1.6f}) {
+                    step(story,L,at-prior);prior=at;
+                    shot(dir,"136-story-"+who+"-"+Math.round(at*100),story,L,w,h,ss);
+                }
+                Storybook.tap(story,L,Storybook.heroX(story,L),Storybook.heroY(story,L));step(story,L,.22f);
+                shot(dir,"136-story-"+who+"-reaction",story,L,w,h,ss);
+            }
+        }
         if(wanted("134-power-rush")) {
             for(int pattern=0;pattern<3;pattern++) {
                 GameCore rush=new GameCore(new Mem(),134L);rush.startGame();
