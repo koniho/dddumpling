@@ -818,6 +818,8 @@ final class GameCore {
     float powerLastClear = -100f;
     int powerRefillBurst;
     int powerSpawnedEnemies;
+    /** Pending replacement entrances: true for side, false for top. */
+    final java.util.ArrayDeque<Boolean> powerReplacements = new java.util.ArrayDeque<>();
     /** True between the wave ending and the interlude opening. */
     boolean pendingBonus;
     /** Set when a frenzy ended the stage, so the interlude can run longer. */
@@ -1293,6 +1295,7 @@ final class GameCore {
         powerLastClear = -100f;
         powerRefillBurst = 0;
         powerSpawnedEnemies = 0;
+        powerReplacements.clear();
         spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
         ninjaUsed = false;
         Blade.resetFeedback(this);
@@ -1328,6 +1331,7 @@ final class GameCore {
         power = null;
         settingsOpen = false;
         modeLeft = 0f;
+        powerReplacements.clear();
         Blade.resetFeedback(this);
         buddy.leave();
         fingerDown = touchDown = false;
@@ -1396,6 +1400,7 @@ final class GameCore {
         boolean teamEnded=mode==Power.TEAM;
         mode = -1;
         modeLeft = 0f;
+        powerReplacements.clear();
         Blade.resetFeedback(this);
         debuffLeft = monochromeFade = incognitoMorph = 0f;
         if(teamEnded) buddy.returnHome(L); else buddy.leave();
@@ -1955,6 +1960,7 @@ final class GameCore {
         power = null;
         mode = -1;
         modeLeft = 0;
+        powerReplacements.clear();
         Blade.resetFeedback(this);
         debuffLeft = monochromeFade = incognitoMorph = 0f;
         buddy.leave();
@@ -1989,6 +1995,7 @@ final class GameCore {
 
     void toTitle() {
         diagnostic("to-title");
+        powerReplacements.clear();
         Blade.resetFeedback(this);
         onboarding.clear();
         if (state == PLAY || state == BONUS || state == OVER) finishTownRun();
@@ -3171,6 +3178,7 @@ final class GameCore {
         if (powerActive() && !e.destroyed) {
             if (clock - powerLastClear <= 0.25f) powerRefillBurst = 2;
             powerLastClear = clock;
+            powerReplacements.addLast(!e.sideEntry);
         }
         e.destroyed = true;
         e.destroyT = 0f;
@@ -3400,6 +3408,7 @@ final class GameCore {
         power = null;
         mode = -1;
         modeLeft = 0f;
+        powerReplacements.clear();
         Blade.resetFeedback(this);
         debuffLeft = monochromeFade = incognitoMorph = 0f;
         buddy.leave();
@@ -3496,6 +3505,7 @@ final class GameCore {
         if (powerActive()) {
             mode = -1;
             modeLeft = 0f;
+            powerReplacements.clear();
             Blade.resetFeedback(this);
             debuffLeft = monochromeFade = incognitoMorph = 0f;
             fingerDown = false;
@@ -3529,7 +3539,7 @@ final class GameCore {
         e.enterT = 0f;
         float preferredX = e.sideEntry ? e.pathEndX : e.baseX;
         // Ninja tries other entry heights too, keeping the word instead of wasting its spawn slot.
-        for(int entrance=0;entrance<(ninja()?4:1);entrance++) {
+        for(int entrance=0;entrance<(ninja() && !Boolean.FALSE.equals(PowerRush.replacement(this))?4:1);entrance++) {
             if(entrance>0)PowerRush.ninjaAlternative(this,e,L,entrance-1);
             e.speed=PowerRush.spawnSpeed(this,e,L);
             for (int attempt = 0; attempt < 9; attempt++) {
@@ -3537,6 +3547,7 @@ final class GameCore {
                 if (e.sideEntry) e.pathEndX = lane; else e.baseX = lane;
                 if (EnemyEntry.clear(e, this, L)) {
                     enemies.add(e);
+                    PowerRush.admitted(this,e.sideEntry);
                     return true;
                 }
             }

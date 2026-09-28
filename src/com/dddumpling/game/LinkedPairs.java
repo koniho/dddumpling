@@ -8,7 +8,8 @@ final class LinkedPairs {
 
     static boolean due(GameCore c) {
         if (c.stage < FIRST_STAGE || c.boss.active() || Cave.active(c)) return false;
-        if (c.powerActive()) return c.mode != Power.MULTI && c.powerSpawnedEnemies%4 == 0;
+        if (c.powerActive()) return c.mode != Power.MULTI && c.powerSpawnedEnemies%4 == 0
+                && !Boolean.TRUE.equals(PowerRush.replacement(c));
         return c.spawnedThisStage == 0 || c.spawnedThisStage == 3;
     }
 
@@ -36,6 +37,8 @@ final class LinkedPairs {
         if(!clear)return false;
         c.enemies.add(a);
         c.enemies.add(b);
+        PowerRush.admitted(c,false);
+        PowerRush.admitted(c,false);
         if (c.powerActive()) c.powerSpawnedEnemies += 2;
         else c.spawnedThisStage++; // One stage enemy, with two physical characters.
         return true;

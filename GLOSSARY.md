@@ -382,15 +382,19 @@ down the playfield. A few top entries keep the approaches varied. Side words des
 speed as top entries in every power-up, sweep inward, and settle by 55% of the field; they remain
 clearable throughout. Lower entrances shorten their journey without reducing descent speed.
 Enemy clears immediately shorten the next spawn countdown; entrance patterns add no pauses.
+During power-ups, each cleared side-entry enemy queues a top replacement and each cleared top-entry
+enemy queues a side replacement. Multi-clears retain their order, and blocked entrances keep their
+request until admitted. These requests take priority over the default entrance pattern.
 When a live threat reaches 60% of the field, new side entrances start higher (20–28%) and
-skip the arrival boost. Kids Mode slows entrance movement too. Linked pairs keep their shared
+skip the arrival boost; queued top replacements keep a short boost into the upper field.
+Kids Mode slows entrance movement too. Linked pairs keep their shared
 top entrance. `PowerRush` owns the entrance profiles; `EnemyEntry` reserves their swept paths.
 
 NINJA refills every 60–120 ms while fewer than six rows are active, easing off near danger.
 Blocked solo entrances try three alternate side heights; linked pairs try other top lanes.
 All alternate entrances still reserve non-overlapping paths.
 
-From stage 16, each active power-up starts its own repeating spawn pattern: one linked pair, then two solo enemies. The pattern continues beyond the ordinary wave quota and uses the current power-up pacing and crowd cap.
+From stage 16, each active power-up starts its own repeating spawn pattern: one linked pair, then two solo enemies. Queued side replacements take precedence over a due top pair; clearing a top pair requests two side replacements. The pattern continues beyond the ordinary wave quota and uses the current power-up pacing and crowd cap.
 
 ### Mystery pickups (stage 11+)
 

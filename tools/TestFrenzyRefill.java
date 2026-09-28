@@ -76,6 +76,7 @@ final class TestFrenzyRefill extends Check {
         c.enemies.get(0).y=L.dangerY-L.enemyR;
         check("Ninja relaxes its extra refill near danger",Power.spawnDelay(c,L)>ninjaDelay);
         clearSchedulesReplacement(L);
+        oppositeEntrances(L);
         rapidClears(L);
     }
 
@@ -97,7 +98,77 @@ final class TestFrenzyRefill extends Check {
         GameCore calm=new GameCore(new Mem(),1349L);calm.startGame();calm.enemies.clear();calm.spawnTimer=2f;
         GameCore.Enemy e=add(calm,L,new int[]{0},L.playTop+L.enemyR*4f);
         calm.destroyWord(e,calm.enemyCentreX(e),e.y,L);
-        check("ordinary clears keep their existing spawn schedule",calm.spawnTimer==2f);
+        check("ordinary clears keep their existing spawn schedule",calm.spawnTimer==2f && calm.powerReplacements.isEmpty());
+    }
+
+    private static void oppositeEntrances(Layout L) {
+        group("opposite power replacement entrances");
+        for(int mode:Power.OFFERED) {
+            GameCore c=new GameCore(new Mem(),13460L+mode);c.startGame();c.enemies.clear();
+            c.mode=mode;c.modeLeft=Power.DURATION;c.stageGap=0;c.powerSpawnedEnemies=4;
+            for(boolean side:new boolean[]{true,false,true}) {
+                GameCore.Enemy e=add(c,L,new int[]{1},L.playTop+L.enemyR*4);e.sideEntry=side;
+                c.destroyWord(e,c.enemyCentreX(e),e.y,L);
+                int count=c.powerReplacements.size();c.destroyWord(e,c.enemyCentreX(e),e.y,L);
+                check("duplicate clear cannot queue another replacement "+mode,c.powerReplacements.size()==count);
+            }
+            boolean ordered=true,speed=true;
+            for(boolean side:new boolean[]{false,true,false}) {
+                c.enemies.clear();c.spawnTimer=0;c.update(DT,L);
+                ordered &= c.enemies.size()==1 && c.enemies.get(0).sideEntry==side;
+                if(!c.enemies.isEmpty())speed &= Math.abs(c.enemies.get(0).speed
+                        -(L.dangerY+L.enemyR*2.2f)/c.travelSeconds())<.001f;
+            }
+            check("multi-clear replacements arrive from opposite entrances in order "+mode,ordered && c.powerReplacements.isEmpty());
+            check("alternating replacements retain full descent speed "+mode,speed);
+
+            c.enemies.clear();c.stage=19;c.powerSpawnedEnemies=0;
+            c.powerReplacements.add(false);c.powerReplacements.add(true);
+            check("power can still introduce linked pairs "+mode,LinkedPairs.spawn(c,L));
+            check("top pairs consume only matching replacement requests "+mode,
+                    c.powerReplacements.size()==1 && Boolean.TRUE.equals(c.powerReplacements.peekFirst()));
+            c.powerReplacements.clear();
+            GameCore.Enemy pair=c.enemies.get(0),mate=pair.link;
+            c.destroyWord(pair,c.enemyCentreX(pair),pair.y,L);
+            c.destroyWord(mate,c.enemyCentreX(mate),mate.y,L);
+            check("clearing a top pair queues two side replacements "+mode,
+                    c.powerReplacements.size()==2 && Boolean.TRUE.equals(c.powerReplacements.peekFirst())
+                    && Boolean.TRUE.equals(c.powerReplacements.peekLast()));
+            c.powerSpawnedEnemies=4;c.enemies.clear();c.spawnTimer=0;c.update(DT,L);
+            check("a queued side replacement takes precedence over another top pair "+mode,
+                    c.enemies.size()==1 && c.enemies.get(0).sideEntry && c.enemies.get(0).link==null
+                    && c.powerReplacements.size()==1);
+        }
+        GameCore c=new GameCore(new Mem(),13466L);c.startGame();c.startFrenzy(Power.NINJA,L);
+        c.enemies.clear();c.stageGap=0;c.spawnTimer=0;c.powerReplacements.add(false);
+        GameCore.Enemy barrier=add(c,L,new int[]{0,1,2,3,4,5,0,1},-L.enemyR*2.2f);
+        barrier.sideEntry=true;barrier.pathStartY=barrier.y;
+        barrier.pathStartX=barrier.pathEndX=barrier.baseX;
+        c.update(DT,L);
+        check("blocked top replacements stay queued instead of falling back to a side",
+                c.enemies.size()==1 && c.powerReplacements.size()==1);
+        c.enemies.clear();c.update(.12f,L);
+        check("queued top replacement enters once space opens",c.enemies.size()==1
+                && !c.enemies.get(0).sideEntry && c.powerReplacements.isEmpty());
+        c.enemies.clear();add(c,L,new int[]{1},L.dangerY-L.enemyR);
+        c.powerReplacements.add(false);
+        GameCore.Enemy entering=new GameCore.Enemy();entering.word=new int[]{0};entering.y=-L.enemyR*2.2f;
+        PowerRush.arrange(c,entering,L,L.w*.2f,L.w*.8f);
+        check("pressured top replacements still enter promptly near the top",!entering.sideEntry
+                && entering.rushSpan>0 && entering.rushEndY<L.playTop+(L.dangerY-L.playTop)*.2f);
+        c.paused=true;c.update(.2f,L);
+        check("pause holds pending replacements",c.powerReplacements.size()==1);
+        c.paused=false;c.startFrenzy(Power.NINJA,L);
+        check("a fresh power clears old replacement requests",c.powerReplacements.isEmpty());
+        c.powerReplacements.add(true);c.modeLeft=.001f;c.update(DT,L);
+        check("power expiry clears replacement requests",c.powerReplacements.isEmpty());
+        c.powerReplacements.add(true);c.startGame();
+        check("restart clears replacement requests",c.powerReplacements.isEmpty());
+        c.powerReplacements.add(true);c.toTitle();
+        check("return to title clears replacement requests",c.powerReplacements.isEmpty());
+        c.startGame();c.startFrenzy(Power.NINJA,L);c.powerReplacements.add(true);
+        c.lives=1;c.takeHit(L.w*.5f,L);
+        check("death clears replacement requests",c.powerReplacements.isEmpty());
     }
 
     private static void rapidClears(Layout L) {

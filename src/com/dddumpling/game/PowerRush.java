@@ -13,6 +13,15 @@ final class PowerRush {
 
     static int pattern(GameCore c) { return (c.powerSpawnedEnemies/4)%3; }
 
+    /** Pending replacements stay ordered through multi-clears and blocked entrances. */
+    static Boolean replacement(GameCore c) {
+        return c.powerActive()?c.powerReplacements.peekFirst():null;
+    }
+
+    static void admitted(GameCore c,boolean side) {
+        if(Boolean.valueOf(side).equals(replacement(c)))c.powerReplacements.removeFirst();
+    }
+
     static float spawnSpeed(GameCore c,GameCore.Enemy e,Layout L) {
         // Lower entrances shorten the journey, never the descent speed.
         if(e.sideEntry || c.ninja())return (L.dangerY+L.enemyR*2.2f)/c.travelSeconds();
@@ -28,7 +37,8 @@ final class PowerRush {
                 : slot<2 ? .42f+slot*.16f : slot==2?.22f:.78f;
         e.baseX=hi>lo ? lo+(hi-lo)*lane : (L.playLeft+L.playRight)*.5f;
         e.sway=0f;
-        boolean side=hi>lo && (pattern==1 || slot!=0);
+        Boolean replacement=replacement(c);
+        boolean side=replacement!=null?replacement:hi>lo && (pattern==1 || slot!=0);
         if(side) {
             boolean left=slot%2==0;
             float half=L.wordWidth(e.word.length)*.5f;
@@ -39,7 +49,10 @@ final class PowerRush {
             e.pathStartY=L.playTop+(L.dangerY-L.playTop)*depth;
             e.baseX=e.pathStartX;e.y=e.pathStartY;
         }
-        if(danger)return;
+        if(danger) {
+            if(!side && replacement!=null)rush(c,e,L,.12f);
+            return;
+        }
         float depth=side ? Math.min(.55f,(e.y-L.playTop)/(L.dangerY-L.playTop)+.08f)
                 : .26f+slot*.04f;
         rush(c,e,L,depth);
@@ -59,7 +72,9 @@ final class PowerRush {
     }
 
     static void pair(GameCore c,GameCore.Enemy e,Layout L) {
-        if(c.powerActive() && !pressured(c,L))rush(c,e,L,.30f);
+        if(!c.powerActive())return;
+        if(!pressured(c,L))rush(c,e,L,.30f);
+        else if(Boolean.FALSE.equals(replacement(c)))rush(c,e,L,.12f);
     }
 
     private static void rush(GameCore c,GameCore.Enemy e,Layout L,float depth) {
