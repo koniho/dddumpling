@@ -615,6 +615,15 @@ final class Preview {
             shot(dir,"133-flurry-clear-fade",rings,L,w,h,ss);
         }
 
+        if(wanted("135-ninja-icon")) {
+            GameCore icon=new GameCore(new Mem(),135L);icon.startGame();icon.stageBanner=0;
+            TestPower.place(icon,L,Power.NINJA,0);icon.power.x=L.w*.5f;
+            for(float phase:new float[]{0f,.25f,.75f}) {
+                icon.power.t=phase;
+                shot(dir,"135-ninja-icon-"+Math.round(phase*100),icon,L,w,h,ss);
+            }
+        }
+
         if(wanted("132-steamer")) {
             GameCore steam=new GameCore(new Mem(),132L);steam.startGame();
             steam.steamer.opens=5;steam.playtestSteamer(L);
