@@ -32,6 +32,8 @@ targets:
         buildPhase: resources
       - path: ../assets/fonts/Bungee-OFL.txt
         buildPhase: resources
+      - path: ../assets/AudioCredits.txt
+        buildPhase: resources
       - path: build/ThirdPartyNotices.txt
         buildPhase: resources
     settings:

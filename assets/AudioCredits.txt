@@ -1,0 +1,11 @@
+Ninja airy swishes
+
+Adapted from "Cartoon Swishes" (sound #497037) by Phil Strahl / PixelProphecy.
+Source: https://freesound.org/people/PixelProphecy/sounds/497037/
+Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
+License: https://creativecommons.org/licenses/by/4.0/
+
+Changes: three excerpts from the quieter opening takes of the public HQ preview;
+converted to mono, trimmed, high-pass and low-pass filtered, faded, level-adjusted,
+and resampled to 22,050 Hz. These are adaptations, not the unmodified recording.
+No endorsement by the original author is implied.

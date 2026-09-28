@@ -86,31 +86,23 @@ final class TestAudio extends Check {
         check("board brush fits inside one wipe",resetBrush.length<Sfx.RATE*ScoreReset.STROKE_TIME);
         check("board brush is textured rather than tonal",crossRate(resetBrush)>crossRate(resetConfirm)*1.5f);
 
-        // The chop fires several times per swipe, so anything with a tail would smear.
-        short[] chop = Sfx.build(Sfx.CHOP);
-        float chopLen = (float) chop.length / Sfx.RATE;
-        System.out.printf("    chop is %.0fms, squish is %.0fms%n", chopLen * 1000f,
-                1000f * Sfx.build(Sfx.SQUISH_0).length / Sfx.RATE);
-        check("the chop is short enough to repeat", chopLen < 0.09f);
-        check("and shorter than a squish",
-                chop.length < Sfx.build(Sfx.SQUISH_0).length);
-        // It has to actually decay, or a run of them builds into a wash.
-        int head = 0, tail = 0;
-        for (int i = 0; i < chop.length / 4; i++) head = Math.max(head, Math.abs(chop[i]));
-        for (int i = chop.length * 3 / 4; i < chop.length; i++) {
-            tail = Math.max(tail, Math.abs(chop[i]));
+        for (int variant=0;variant<NinjaSwishRecording.COUNT;variant++) {
+            int id=Sfx.ninjaSwishId(variant);
+            short[] swish=Sfx.build(id);
+            int peak=0,tail=0;
+            for(short sample:swish) peak=Math.max(peak,Math.abs(sample));
+            for(int i=swish.length-Sfx.RATE/200;i<swish.length;i++)
+                tail=Math.max(tail,Math.abs(swish[i]));
+            check("airy swish retains quiet audition gain "+variant,peak>1000 && peak<=.18f*32767);
+            check("airy swish finishes before its next rotation "+variant,
+                    swish.length<=Sfx.RATE*NinjaSwishRecording.DURATION+1
+                    && swish.length<Sfx.RATE*Blade.SWISH_GAP*3);
+            check("airy swish has click-free edges "+variant,swish[0]==0 && swish[swish.length-1]==0
+                    && tail<peak/5);
+            check("recorded swish stays cached "+variant,swish==Sfx.build(id));
+            if(variant>0)check("swish takes are distinct "+variant,
+                    !java.util.Arrays.equals(swish,Sfx.build(Sfx.ninjaSwishId(variant-1))));
         }
-        check("the chop dies away", tail < head / 4);
-
-        // Body, not hiss. A noise burst crosses zero constantly; a sound with a tone under it
-        // does not, so the crossing rate is the cheapest measure that tells them apart. The
-        // first chop was noise alone and audibly a hiss.
-        System.out.printf("    zero-crossings per second: chop %.0f, squish %.0f, wrong %.0f%n",
-                crossRate(chop), crossRate(Sfx.build(Sfx.SQUISH_0)),
-                crossRate(Sfx.build(Sfx.WRONG)));
-        check("the chop has body under the air", crossRate(chop) < 3500f);
-        check("but is still brighter than a squish",
-                crossRate(chop) > crossRate(Sfx.build(Sfx.SQUISH_0)));
 
         short[] bolt = Sfx.build(Sfx.BOLT_POP);
         check("the bolt explosion stays compact",
@@ -132,7 +124,6 @@ final class TestAudio extends Check {
         System.out.printf("    zap is %.0fms, peaks at %.1fms, %.0f crossings/s%n",
                 1000f * zap.length / Sfx.RATE, toPeak, crossRate(zap));
         check("the zap hits immediately", toPeak < 12f);
-        check("it is the bigger event of the two", zap.length > chop.length);
         check("it has low-end punch, not just crackle", crossRate(zap) < 3000f);
         int zTail = 0;
         for (int i = zap.length * 3 / 4; i < zap.length; i++) {
@@ -158,7 +149,7 @@ final class TestAudio extends Check {
         check("the last one is the highest", earM.lastZapHop == 4);
         check("no squishes in a chain", earM.squishes == 0);
 
-        // NINJA: one chop per letter the blade cuts, and no fanfare.
+        // NINJA: simultaneous cuts share one quiet swish, with no fanfare.
         GameCore c = new GameCore(new Mem(), 411L);
         Ear ear = new Ear();
         c.sound = ear;
@@ -167,18 +158,42 @@ final class TestAudio extends Check {
         c.target = null;
         c.startFrenzy(Power.NINJA, L);
         GameCore.Enemy e = add(c, L, new int[] {1, 2, 3, 4}, L.playTop + 300f);
-        int chops = ear.chops, cheers = ear.achievements;
+        int swishes = ear.swishes, cheers = ear.achievements;
         c.beginStroke(c.tileX(e, 0, L) - L.enemyR * 2f, e.y);
         int cut = c.sliceTo(c.tileX(e, 3, L) + L.enemyR * 2f, e.y, L);
         check("the blade cut the word", cut == 4);
-        check("one chop per letter cut", ear.chops - chops == 4);
+        check("one swish for a multi-letter cut", ear.swishes - swishes == 1 && ear.lastSwish==0);
         check("and no fanfare for a single word", ear.achievements == cheers);
-        // The chops are the word's sound. A clear tone on top lands on the last one.
+        // The swish already covers the word's destruction.
         check("a word cut by the blade rings no clear tone", ear.clears == 0);
         c.endStroke();
 
+        for(int i=0;i<5;i++) {
+            if(i>0)c.update(Blade.SWISH_GAP+.001f,L);
+            c.enemies.clear();
+            GameCore.Enemy next=add(c,L,new int[]{1},L.playTop+300f);
+            float x=c.tileX(next,0,L);
+            c.beginStroke(x-L.enemyR*2f,next.y);
+            c.sliceTo(x+L.enemyR*2f,next.y,L);c.endStroke();
+            check("rapid cuts still destroy their targets "+i,next.destroyed);
+            check("swishes rotate only after the real-time gap "+i,
+                    ear.swishes==swishes+1+i && ear.lastSwish==i%3);
+        }
+        int played=ear.swishes;
+        Pause.open(c);c.update(1f,L);
+        check("pause neither drains cooldown nor queues audio",ear.swishes==played && c.ninjaSwishWait>0);
+        Pause.resume(c);c.update(Blade.SWISH_GAP+.001f,L);
+        check("waiting does not replay skipped swishes",ear.swishes==played);
+        c.modeLeft=.001f;c.update(DT,L);
+        check("power completion clears swish state",c.ninjaSwishWait==0 && c.ninjaSwishNext==0);
+        c.startFrenzy(Power.NINJA,L);c.ninjaSwishWait=.1f;c.ninjaSwishNext=2;
+        c.lives=1;c.takeHit(L.w*.5f,L);
+        check("death clears swish state",c.ninjaSwishWait==0 && c.ninjaSwishNext==0);
+        c.ninjaSwishWait=.1f;c.ninjaSwishNext=2;c.startGame();
+        check("restart clears swish state",c.ninjaSwishWait==0 && c.ninjaSwishNext==0);
+
         // Typed, it still does — the tone is what tells you a word is finished when there is no
-        // chop to say so.
+        // swish to say so.
         GameCore t2 = new GameCore(new Mem(), 415L);
         Ear ear3 = new Ear();
         t2.sound = ear3;
@@ -189,7 +204,7 @@ final class TestAudio extends Check {
         t2.tapKey(2, L);
         advance(t2, L, 0.4f);
         check("a typed word still rings", typed.destroyed && ear3.clears == 1);
-        check("and rang no chop", ear3.chops == 0);
+        check("and rang no swish", ear3.swishes == 0);
 
         // TEAM SQUISH: a squish per word, not the achievement flourish — it fires far too often
         // for that, which is what it used to do.
@@ -264,14 +279,14 @@ final class TestAudio extends Check {
             short[] pcm = Sfx.build(id);
             int max = 0;
             for (int i = 0; i < pcm.length; i++) max = Math.max(max, Math.abs(pcm[i]));
-            // Peak-normalised: every effect tops out at the same level.
-            if (Math.abs(max - peak) > 2) allNormalised = false;
+            // Frequent Ninja swishes preserve their deliberately quieter audition level.
+            if (!Sfx.isNinjaSwish(id) && Math.abs(max - peak) > 2) allNormalised = false;
             if (max >= 32767) allClean = false;
             // Roulette ticks intentionally fit between fast icon changes.
             int minimum = id == Sfx.SHUFFLE_BLIP ? Sfx.RATE / 40 : Sfx.RATE / 20;
             if (pcm.length < minimum || pcm.length > Sfx.RATE * 2) allSane = false;
         }
-        check("every effect is normalised to the same peak", allNormalised);
+        check("other effects retain their common peak", allNormalised);
         check("no effect clips", allClean);
         check("effect lengths are sane", allSane);
 
@@ -483,7 +498,7 @@ final class TestAudio extends Check {
         advance(d, L, GameCore.HOME_TIME + 0.5f);
         check("an empty-handed run shelves nothing", quiet.collects == 0 && !d.homing());
 
-        // Short and decaying, like the chop and the crack: several land a tenth of a second apart
+        // Short and decaying, like the crack: several land a tenth of a second apart
         // and Audio gives every effect one track, so a tail would smear into the next landing.
         short[] chime = Sfx.build(Sfx.COLLECT);
         float len = (float) chime.length / Sfx.RATE;
@@ -505,7 +520,7 @@ final class TestAudio extends Check {
     /**
      * The star pickup: the most repeated effect in the game, and one note of a ladder.
      *
-     * Held to the same three properties as the chop and the shelving chime — short, decaying, and
+     * Held to the same three properties as the shelving chime — short, decaying, and
      * tonal — plus the one that is specific to it: twenty of these go off inside a five-second
      * course, the last of them a fifth of a second apart, so it has to be shorter than that gap.
      */

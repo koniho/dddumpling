@@ -136,18 +136,19 @@ final class Trailer {
             String[] names = {"clearWord","wrong","damage","achievement","bossLaugh","bossDamage",
                     "slimeDamage","bossSplit","divideDamage","divideSplit","divideDeactivate","divideSupernova",
                     "boltPop","boltDeath","shieldBounce","octoWave","octoCue","octoLock","mushroomShake",
-                    "mushroomSpore","chop","zap","collect","star","courseStart","tally",
+                    "mushroomSpore","ninjaSwish","zap","collect","star","courseStart","tally",
                     "paradeJoin","rosterJoin","gameOver","gameStart","stageClear","powerClear"};
             int[] ids = {Sfx.CLEAR,Sfx.WRONG,Sfx.DRIP,Sfx.ACHIEVEMENT,Sfx.BOSS_LAUGH,Sfx.BOSS_DAMAGE,
                     Sfx.SLIME_DAMAGE,Sfx.BOSS_SPLIT,Sfx.DIVIDE_DAMAGE,Sfx.DIVIDE_SPLIT,Sfx.DIVIDE_DEACTIVATE,Sfx.DIVIDE_SUPERNOVA,
                     Sfx.BOLT_POP,Sfx.BOLT_DEATH,Sfx.SHIELD_BOUNCE,Sfx.OCTO_WAVE,Sfx.OCTO_CUE,Sfx.OCTO_LOCK,Sfx.MUSHROOM_SHAKE,
-                    Sfx.MUSHROOM_SPORE,Sfx.CHOP,Sfx.ZAP,Sfx.COLLECT,Sfx.STAR,Sfx.COURSE,Sfx.TALLY,
+                    Sfx.MUSHROOM_SPORE,Sfx.NINJA_SWISH_0,Sfx.ZAP,Sfx.COLLECT,Sfx.STAR,Sfx.COURSE,Sfx.TALLY,
                     Sfx.JOIN,Sfx.ROSTER_JOIN,Sfx.OVER,Sfx.START,Sfx.STAGE_CLEAR,Sfx.POWER_CLEAR};
             for (int i = 0; i < names.length; i++) sounds.put(names[i], ids[i]);
         }
         public Object invoke(Object proxy, Method method, Object[] args) {
             Integer id = sounds.get(method.getName());
             if (method.getName().equals("squish")) id = Sfx.SQUISH_0 + (Integer) args[0];
+            if (method.getName().equals("ninjaSwish")) id = Sfx.ninjaSwishId((Integer) args[0]);
             if (id != null) {
                 short[] pcm = Sfx.build(id);
                 for (int i = 0; i < pcm.length && at + i < audio.length; i++)

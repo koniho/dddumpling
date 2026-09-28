@@ -303,10 +303,10 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 | Say | Means | Code |
 | --- | --- | --- |
 | **squish** | the per-letter press sound, pitched per letter | `Sfx.SQUISH_0 + n` |
-| **chop** | the cut of the NINJA blade, one per letter. Replaces the word-clear tone on a cut word | `Sfx.CHOP` |
+| **Ninja swish** | three quiet recorded airy swishes rotate on successful cuts, at most once per 100 ms. Simultaneous cuts share a cue and replace the word-clear tone | `Sfx.NINJA_SWISH_0`, `Blade.SWISH_GAP` |
 | **zap** | the lightning crack of one MULTI chain hop, climbing in pitch along the chain | `Sfx.ZAP` |
 | **drip** | taking damage | `Sfx.DRIP` |
-| **word clear** | finishing a word by typing it. A word the blade cut rings no clear tone — its chops are its sound | `Sfx.CLEAR` |
+| **word clear** | finishing a word by typing it. A word the blade cut rings no clear tone — its swishes are its sound | `Sfx.CLEAR` |
 | **thunk** | a wrong press | `Sfx.WRONG` |
 | **achievement** | catching a powerup, freeing the dumpling | `Sfx.ACHIEVEMENT` |
 | **start tone** | new game | `Sfx.START` |

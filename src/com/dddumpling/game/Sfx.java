@@ -2,10 +2,10 @@ package com.dddumpling.game;
 
 /**
  * Sound effects as 16-bit mono PCM, shared by Android, iOS and the harness.
- * Most effects are synthesised; cart, rock and Octopulse cues embed recordings.
+ * Most effects are synthesised; cart, rock, Ninja and Octopulse cues embed recordings.
  * Recording provenance and regeneration: audio/recorded/README.md.
  *
- * Every effect is peak-normalised to {@link #PEAK} by {@link #render}, so nothing is
+ * Synthesised effects are peak-normalised to {@link #PEAK} by {@link #render}, so nothing is
  * louder than anything else by accident.
  */
 final class Sfx {
@@ -17,7 +17,7 @@ final class Sfx {
 
     /** Sound ids, one preloaded buffer each. */
     static final int SQUISH_0 = 0, DRIP = 6, CLEAR = 7, WRONG = 8, ACHIEVEMENT = 9;
-    static final int START = 10, STAGE_CLEAR = 11, POWER_CLEAR = 12, CHOP = 13, ZAP = 14;
+    static final int START = 10, STAGE_CLEAR = 11, POWER_CLEAR = 12, NINJA_SWISH_0 = 13, ZAP = 14;
     static final int COLLECT = 15, STAR = 16;
     static final int COURSE = 17, TALLY = 18, JOIN = 19, OVER = 20, BOSS_LAUGH = 21;
     static final int BOSS_DAMAGE = 22, BOSS_SPLIT = 23, BOLT_POP = 24;
@@ -33,13 +33,22 @@ final class Sfx {
             CAVE_AMBUSH = CAVE_CRASH + 1, CAVE_SINK = CAVE_AMBUSH + 1, MINING_CHEER = CAVE_SINK + 1,
             CART_ROLL = MINING_CHEER + 1, CART_SQUEAL = CART_ROLL + 1, CART_TUMBLE = CART_SQUEAL + 1,
             OCTO_DAMAGE = CART_TUMBLE + 1, SCORE_RESET_CONFIRM = OCTO_DAMAGE + 1,
-            SCORE_RESET_BRUSH = SCORE_RESET_CONFIRM + 1, COUNT = SCORE_RESET_BRUSH + 1;
+            SCORE_RESET_BRUSH = SCORE_RESET_CONFIRM + 1, NINJA_SWISH_1 = SCORE_RESET_BRUSH + 1, NINJA_SWISH_2 = NINJA_SWISH_1 + 1,
+            COUNT = NINJA_SWISH_2 + 1;
     static final float OCTO_WAVE_GAIN = .66f;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
 
     private Sfx() {}
+
+    static int ninjaSwishId(int variant) {
+        return variant == 0 ? NINJA_SWISH_0 : variant == 1 ? NINJA_SWISH_1 : NINJA_SWISH_2;
+    }
+
+    static boolean isNinjaSwish(int id) {
+        return id == NINJA_SWISH_0 || id == NINJA_SWISH_1 || id == NINJA_SWISH_2;
+    }
 
     static synchronized short[] build(int id) {
         if (id < 0 || id >= COUNT) id = ACHIEVEMENT;
@@ -72,7 +81,9 @@ final class Sfx {
             case START: return start();
             case STAGE_CLEAR: return stageClear();
             case POWER_CLEAR: return powerClear();
-            case CHOP: return chop();
+            case NINJA_SWISH_0: return NinjaSwishRecording.build(0);
+            case NINJA_SWISH_1: return NinjaSwishRecording.build(1);
+            case NINJA_SWISH_2: return NinjaSwishRecording.build(2);
             case ZAP: return zap();
             case COLLECT: return collect();
             case STAR: return star();
@@ -411,43 +422,6 @@ final class Sfx {
     }
 
     /**
-     * A light chop, for a letter cut by the NINJA blade.
-     *
-     * Short and dry: this fires several times per swipe, so anything with a tail on it would
-     * smear into a wash. Bandpassed noise with a fast downward sweep on the filter — the sweep
-     * is what makes it read as a blade passing through rather than as a click.
-     */
-    static short[] chop() {
-        int n = (int) (RATE * 0.072f);
-        float[] v = new float[n];
-        int seed = 987654321;
-        float lo = 0f, hi = 0f, phase = 0f, deep = 0f;
-        for (int i = 0; i < n; i++) {
-            float t = (float) i / n;
-            seed = seed * 1103515245 + 12345;
-            float white = ((seed >> 16) & 0x7FFF) / 16383.5f - 1f;
-
-            // Two one-pole filters in series make a cheap bandpass: lowpass the noise, then
-            // subtract a slower lowpass to take the bottom out of it. The sweep on the first is
-            // what makes it read as a blade passing through rather than as a click.
-            float cut = 0.52f - 0.34f * t;
-            lo += (white - lo) * cut;
-            hi += (lo - hi) * 0.05f;
-            float air = (lo - hi) * 0.34f;
-
-            // The body: a mid tone dropping fast with a softer one an octave and a half under
-            // it. Without this the chop was air and nothing else — audibly a hiss, not a cut.
-            phase += 2f * (float) Math.PI * (620f - 420f * t) / RATE;
-            deep += 2f * (float) Math.PI * (250f - 130f * t) / RATE;
-            float body = (float) Math.sin(phase) * 0.78f * (float) Math.exp(-6f * t)
-                    + (float) Math.sin(deep) * 0.64f * (float) Math.exp(-3.5f * t);
-
-            v[i] = (air + body) * envelope(t, 0.002f, 8.5f);
-        }
-        return render(v);
-    }
-
-    /**
      * A lightning crack, for one hop of a MULTI chain.
      *
      * Three parts, and it needs all three. A bright noise crack with essentially no attack, so it
@@ -456,7 +430,7 @@ final class Sfx {
      * harmonics are what give it an edge. And a low thump underneath, which is the part that makes
      * a hop land instead of fizz.
      *
-     * Longer than the chop it sits beside, because {@link Audio} gives each effect one track and
+     * Long enough for a low punch, while {@link Audio} gives each effect one track and
      * restarts it: the hops of a chain arrive close enough together that each truncates the last,
      * so only the final hop rings out in full. That is the intended shape — a rattle of cracks,
      * then a tail.
@@ -530,7 +504,7 @@ final class Sfx {
      *
      * The most repeated effect in the game — twenty of them inside five seconds, and the last few
      * less than a fifth of a second apart — so it is shorter than the shelving chime and decays
-     * harder than anything except the chop. {@link Audio} pitches it up with the count, so what the
+     * harder than most effects. {@link Audio} pitches it up with the count, so what the
      * player hears over a course is one long ladder rather than the same note twenty times; the
      * buffer is therefore written at the bottom of that ladder.
      *

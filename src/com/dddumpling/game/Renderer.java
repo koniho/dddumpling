@@ -610,10 +610,11 @@ final class Renderer extends Draw {
             for(int i=0;i<3;i++) p.fillCircle(x+(i-1)*r*0.38f,y+r*0.90f,r*0.11f,
                     fadeBy(i==0?0xFFF1F1F1:i==1?0xFFAAAAAA:0xFF555555,fade));
         } else if (effect == Power.NINJA) {
-            p.polyline(new float[] {x - r * 0.78f, y + r * 0.38f, x - r * 0.20f, y - r * 0.28f,
-                    x + r * 0.55f, y - r * 0.18f}, ink, r * 0.22f);
-            p.fillPoly(new float[] {x + r * 0.92f, y - r * 0.10f, x + r * 0.42f, y - r * 0.52f,
-                    x + r * 0.48f, y + r * 0.18f}, ink);
+            float maskR=r*.70f, mx=x-r*.14f, my=y-r*.07f;
+            p.fillEllipse(mx,my-maskR*.02f,maskR*.68f,maskR*.29f,fadeBy(0xFFFFF3D6,fade));
+            for(int side=-1;side<=1;side+=2)
+                p.fillEllipse(mx+side*maskR*.30f,my-maskR*.02f,maskR*.075f,maskR*.13f,ink);
+            Trinket.ninjaMask(p,mx,my,maskR,fade);
         } else {
             p.fillCircle(x - r * 0.34f, y, r * 0.48f, ink);
             p.fillCircle(x + r * 0.34f, y, r * 0.48f, fadeBy(Glyph.withAlpha(0xFFFFFFFF, 235), fade));

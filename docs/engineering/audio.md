@@ -15,14 +15,13 @@ policy lives in [AGENTS.md](../../AGENTS.md).
   an `UtteranceProgressListener` on the last queued utterance since there is no queue-drained
   callback.
 
-- **A sound that repeats has to be short and has to decay.** The blade chops several times a
-  swipe and the TEAM squishy squishes every couple of seconds; anything with a tail smears into a
-  wash, and the achievement fanfare was doing exactly that. There are assertions on the chop's
-  length, on its tail being a quarter of its head, and on its zero-crossing rate — that last one
-  is a cheap stand-in for "has a tone under it rather than being a hiss", and it is the one that
-  caught the first attempt at giving it body being no better than the original. The shelving chime
-  is held to the same three, plus one more: it must be shorter than the gap between two landings,
-  since a haul shelves several a tenth of a second apart.
+- **A sound that repeats has to be short and bounded.** Ninja rotates three recorded airy
+  swishes at most once per 100 ms, grouping simultaneous cuts. The 180 ms samples preserve
+  their quiet audition level rather than using the common synthesized peak. At most two tails
+  overlap. Dropped cues are not queued; completion, death, and restart reset the cadence.
+  The shared game selects variants without consuming gameplay RNG. Source and license are in
+  [the recording notes](../../audio/recorded/README.md); both native packages carry AudioCredits.txt.
+  Other repeating cues still use short decaying envelopes to avoid a continuous wash.
 
 - **Several things landing at once is one event, however many things there are.** The haul's flight
   home staggered its departures and then had every flyer converge on the same instant, which looked

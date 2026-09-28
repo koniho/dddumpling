@@ -115,7 +115,7 @@ Support. The following `GameCore.Store` and `Progress.Store` values are wired:
 
 | Runtime content | Shared source | iOS implementation | Status |
 | --- | --- | --- | --- |
-| Six squish voices; drip, clear, wrong, achievement, start, stage-clear, power-clear, chop, zap, collect, star, course-start, tally, parade-join, roster-join, game-over | `Sfx`, `GameCore.Sound` | `DDIOSAudio` synthesises PCM through translated `Sfx` and plays overlapping `AVAudioPlayer` instances | Wired; event-by-event listening pending |
+| Six squish voices; drip, clear, wrong, achievement, start, stage-clear, power-clear, rotating Ninja swishes, zap, collect, star, course-start, tally, parade-join, roster-join, game-over | `Sfx`, `GameCore.Sound` | `DDIOSAudio` synthesises PCM through translated `Sfx` and plays overlapping `AVAudioPlayer` instances | Wired; event-by-event listening pending |
 | Slime laugh/damage/split, Dark Divide damage/split/deactivate and three boings, bolt pop/death, shield bounce, Octopulse cue/lock, Fly Agaric shake/spore, four boss taunts | `Sfx`, `BossPlay`, `GameCore.Sound` | `DDIOSAudio` | Wired; each boss sequence pending |
 | Normal, frenzy, and boss music loops; rocket and slime-charge beds | `Music`, `Sfx` | `DDIOSAudio` rebuilds/mixes AVFoundation players | Wired; transitions and background interruption pending |
 | Collectible narration and hush | `Narration`, `GameCore.Sound` | `AVSpeechSynthesizer`, with music ducking | Wired; voice/rate and dismiss pending |

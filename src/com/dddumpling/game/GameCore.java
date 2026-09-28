@@ -293,8 +293,8 @@ final class GameCore {
         void mushroomShake();
         /** Fly Agaric released a sprinkling volley. */
         void mushroomSpore();
-        /** A letter cut by the NINJA blade. Fires several times per swipe, so it is short. */
-        void chop();
+        /** One of three airy blade swishes; rapid cuts share a cue. */
+        void ninjaSwish(int variant);
         /** One hop of a MULTI chain. @param hop 1-based, so the crack can climb with the chain */
         void zap(int hop);
         /**
@@ -940,6 +940,8 @@ final class GameCore {
     float fingerX, fingerY;
     /** Cleared when a frenzy starts; set once the player first touches during NINJA. */
     boolean ninjaUsed;
+    float ninjaSwishWait;
+    int ninjaSwishNext;
     /** Where the instructional finger sits, for the renderer to follow. */
     float demoX, demoY;
     float trailAcc;
@@ -1288,6 +1290,7 @@ final class GameCore {
         powerSpawnedEnemies = 0;
         spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
         ninjaUsed = false;
+        Blade.resetSound(this);
         // A finger already resting on the field does not get a free stroke: it has to lift and
         // land again, the same as it would to start a second swipe.
         fingerDown = false;
@@ -1320,6 +1323,7 @@ final class GameCore {
         power = null;
         settingsOpen = false;
         modeLeft = 0f;
+        Blade.resetSound(this);
         buddy.leave();
         fingerDown = touchDown = false;
         strokeFade = 0f;
@@ -1387,6 +1391,7 @@ final class GameCore {
         boolean teamEnded=mode==Power.TEAM;
         mode = -1;
         modeLeft = 0f;
+        Blade.resetSound(this);
         debuffLeft = monochromeFade = incognitoMorph = 0f;
         if(teamEnded) buddy.returnHome(L); else buddy.leave();
         for (int i = enemies.size() - 1; i >= 0; i--) {
@@ -1945,6 +1950,7 @@ final class GameCore {
         power = null;
         mode = -1;
         modeLeft = 0;
+        Blade.resetSound(this);
         debuffLeft = monochromeFade = incognitoMorph = 0f;
         buddy.leave();
         // Stage 1 is never a boss stage, so this is only ever clearing one a previous run left
@@ -3382,6 +3388,7 @@ final class GameCore {
         power = null;
         mode = -1;
         modeLeft = 0f;
+        Blade.resetSound(this);
         debuffLeft = monochromeFade = incognitoMorph = 0f;
         buddy.leave();
         boolean leftBoss = boss.active();
@@ -3477,6 +3484,7 @@ final class GameCore {
         if (powerActive()) {
             mode = -1;
             modeLeft = 0f;
+            Blade.resetSound(this);
             debuffLeft = monochromeFade = incognitoMorph = 0f;
             fingerDown = false;
             if (sound != null) sound.frenzy(false);

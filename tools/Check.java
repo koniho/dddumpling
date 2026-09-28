@@ -123,7 +123,7 @@ abstract class Check {
         float musicVolume, effectsVolume, squishVolume;
         public void volumes(float music,float effects) { musicVolume=music;effectsVolume=effects; }
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeDamages, bossSplits,
-                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoDamages, octoWaves, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideSupernovas, divideBoings, chops, zaps;
+                bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoDamages, octoWaves, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideSupernovas, divideBoings, swishes, lastSwish, zaps;
         float bossCharge, maxBossCharge;
         float lastDivideBoingWeight = -1f;
         int collects;
@@ -204,7 +204,7 @@ abstract class Check {
             bossCharge = charge;
             maxBossCharge = Math.max(maxBossCharge, charge);
         }
-        public void chop() { chops++; }
+        public void ninjaSwish(int variant) { swishes++; lastSwish = variant; }
         public void zap(int hop) { zaps++; lastZapHop = hop; }
         public void collect(int nth) { collects++; shelved.add(nth); }
         public void star(int nth) { stars++; lastStar = nth; }

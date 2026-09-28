@@ -9,8 +9,14 @@ package com.dddumpling.game;
  * starts, when it ends by itself, and what one sweep cuts.
  */
 final class Blade {
+    static final float SWISH_GAP = .10f;
 
     private Blade() {}
+
+    static void resetSound(GameCore c) {
+        c.ninjaSwishWait = 0f;
+        c.ninjaSwishNext = 0;
+    }
 
     /** Cut width in tile radii. Generous: a swipe through moving targets, and the mode is the payoff. */
     static final float BLADE = 1.15f;
@@ -109,7 +115,9 @@ final class Blade {
      */
     static void updateStroke(GameCore c, float dt) {
         c.strokeFade = Math.max(0f, c.strokeFade - dt);
+        c.ninjaSwishWait = Math.max(0f, c.ninjaSwishWait - dt);
         if (!c.ninja() || c.state != GameCore.PLAY) {
+            resetSound(c);
             c.touchDown = false;
             c.fingerDown = false;
             return;
@@ -167,7 +175,6 @@ final class Blade {
                     cut += 2;
                     c.strokeCuts += 2;
                     c.strokeKills += 2;
-                    if (c.sound != null) c.sound.chop();
                     if (c.strokeKills >= SLOW_KILLS) {
                         slowdown(c);
                         c.callCuts = c.strokeCuts;
@@ -185,12 +192,10 @@ final class Blade {
                 if (segDist2(c.tileX(e, i, L), e.y, x0, y0, x, y) > r * r) continue;
                 boolean alive = !e.destroyed;
                 // Sent along the stroke, so the piece flies the way the blade went. No clear tone:
-                // the chop is this letter's sound, and a word finished here would land a chime on
-                // top of its own last chop.
+                // the airy swish covers these cuts without layering a chime on the final letter.
                 c.removeTile(e, i, x - x0, y - y0, L, false);
                 cut++;
                 c.strokeCuts++;
-                if (c.sound != null) c.sound.chop();
                 if (alive && e.destroyed) {
                     c.strokeKills++;
                     // Every word after the first refreshes the beat, so a long sweep stays slow.
@@ -202,7 +207,14 @@ final class Blade {
                 if (!e.typeable()) break;
             }
         }
-        if(cut>0)c.onboarding.learn(c,TutorialSpeech.POWER_NINJA);
+        if (cut > 0) {
+            c.onboarding.learn(c,TutorialSpeech.POWER_NINJA);
+            if (c.ninjaSwishWait <= 0f && c.sound != null) {
+                c.sound.ninjaSwish(c.ninjaSwishNext);
+                c.ninjaSwishNext = (c.ninjaSwishNext + 1) % NinjaSwishRecording.COUNT;
+                c.ninjaSwishWait = SWISH_GAP;
+            }
+        }
         return cut;
     }
 

@@ -98,3 +98,32 @@ excerpt retains both recorded sounds, with 8ms/25ms edge fades and a peak of
 The embedded PCM keeps Android, iOS, and the headless renderer identical.
 The effect plays once at the beginning of the arm sweep; the later strike
 keeps its separate short cue.
+
+# Ninja airy swishes
+
+Ninja rotates three quieter takes from **Cartoon Swishes**, sound #497037 by
+**Phil Strahl / PixelProphecy**, under **CC BY 4.0**.
+
+- Source: https://freesound.org/people/PixelProphecy/sounds/497037/
+- License: https://creativecommons.org/licenses/by/4.0/
+- Public HQ preview: https://cdn.freesound.org/previews/497/497037_9457666-hq.mp3
+- Retrieved September 28, 2026; preview SHA-256:
+  `fc09c9cbb7a56297784b663cab9db7da311197bab36c1f1ab3691ed7c0bac4b0`.
+- Required attribution and modification notice: [AudioCredits.txt](../../assets/AudioCredits.txt),
+  included in Android assets and iOS bundle resources.
+
+`ninja-swishes-source.wav` is the first 2.2 seconds of the public MP3 preview,
+folded to mono 48 kHz PCM, not the original lossless upload. The three excerpts
+start at .035, 1.115 and 1.965 seconds. They were selected in the airy cartoon
+swish audition; no impact or pop is mixed in.
+
+Run `python3 tools/prepare-ninja-swishes.py` using Python's standard library to
+regenerate the three WAVs and `NinjaSwishRecording.java`. Processing trims leading
+silence, applies two 2.3 kHz low-pass stages and a 130 Hz high-pass, adds 6 ms / 25 ms
+edge fades, and caps peaks at 17% before converting to 22,050 Hz. Each cue lasts
+180 ms. Shared embedded PCM keeps Android, iOS and harness output identical.
+
+Cuts within 100 ms share a sound; only played cues advance the three-take rotation.
+There is no deferred audio queue or gameplay RNG use. Pause holds the cooldown;
+completion, death, and restart clear it. The selected gain remains below normal
+synthesized effects to keep repeated swishes light.
