@@ -61,7 +61,7 @@ final class TestSideEntry extends Check {
 
         // Exercise actual mixed spawning and motion at several device shapes. The check uses
         // character extents, independently of the admission predictor's larger safety padding.
-        boolean noOverlap = true,sharedNinjaSpeed=true;
+        boolean noOverlap = true,originalNinjaSpeed=true;
         int sideCount = 0, topCount = 0;
         for(int stage:new int[]{1,19}) for(int mode:new int[]{Power.FLURRY,Power.NINJA})
                 for (int shape = 0; shape < 3; shape++) {
@@ -80,7 +80,9 @@ final class TestSideEntry extends Check {
                 }
                 for (int i = 0; i < run.enemies.size(); i++) {
                     GameCore.Enemy a = run.enemies.get(i);
-                    if(mode==Power.NINJA)sharedNinjaSpeed &= Math.abs(a.speed-run.enemies.get(0).speed)<.001f;
+                    if(mode==Power.NINJA) {
+                        originalNinjaSpeed &= Math.abs(a.speed-(size.dangerY+size.enemyR*2.2f)/run.travelSeconds())<.001f;
+                    }
                     for (int j = i + 1; j < run.enemies.size(); j++) {
                         GameCore.Enemy b = run.enemies.get(j);
                         if ((!a.sideEntry && !b.sideEntry && a.rushSpan<=0f && b.rushSpan<=0f) || a.dying || b.dying
@@ -94,7 +96,7 @@ final class TestSideEntry extends Check {
             }
         }
         check("mixed frenzy traffic includes both entrance types", sideCount > 0 && topCount > 0);
-        check("Ninja solos and linked pairs share a descent speed",sharedNinjaSpeed);
+        check("Ninja arrivals keep full-height speed without a slowdown",originalNinjaSpeed);
         check("rush and side rows do not overlap mixed traffic during entry or descent", noOverlap);
     }
 }

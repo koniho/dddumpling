@@ -387,8 +387,8 @@ top entrance. `PowerRush` owns the entrance profiles; `EnemyEntry` reserves thei
 
 NINJA refills every 60–120 ms while fewer than six rows are active, easing off near danger.
 Blocked solo entrances try three alternate side heights; linked pairs try other top lanes.
-Ninja rows share a gentler vertical speed so lower arrivals do not block faster rows behind them
-and players have time to build swipe combos.
+Ninja rows share the full-height arrival speed and retain the power-up fall-speed boost;
+there is no extra descent slowdown to accommodate the denser arrivals.
 All alternate entrances still reserve non-overlapping paths.
 
 From stage 16, each active power-up starts its own repeating spawn pattern: one linked pair, then two solo enemies. The pattern continues beyond the ordinary wave quota and uses the current power-up pacing and crowd cap.

@@ -19,10 +19,9 @@ package com.dddumpling.game;
  *       the whole word.
  * </ul>
  *
- * It does not use the NINJA blade and never spends the once-a-stage push-back. Those are real
- * limits, not omissions: a NINJA frenzy reaches this bot as a plain typing frenzy at full wave
- * strength, and no panic swipe ever saves it. Both are the pessimistic reading, which is the useful
- * one for a floor.
+ * NINJA uses straight swipes at the same bounded speed as boss drags, paying a reaction and a
+ * press for each gesture and keeping the usual miss chance. It never spends the once-a-stage
+ * push-back. Typing through NINJA would measure the wrong input workload as its target density grows.
  *
  * It <em>does</em> tap, drag and shove a boss, and that is not a contradiction of the above — it is
  * the difference between an ability the game offers and one the game requires. A boss has to be
@@ -188,6 +187,41 @@ final class Bot {
     }
 
     private int presses;
+    private boolean ninjaSweeping;
+    private float ninjaX,ninjaY,ninjaEndX,ninjaEndY;
+
+    /** A fixed straight swipe; moving targets are not followed once the finger lands. */
+    private void ninjaMove(GameCore c,Layout L,float dt) {
+        float dx=ninjaEndX-ninjaX,dy=ninjaEndY-ninjaY;
+        float distance=(float)Math.sqrt(dx*dx+dy*dy),step=L.w*DRAG_SPEED*dt;
+        float fraction=distance<=step?1f:step/distance;
+        ninjaX+=dx*fraction;ninjaY+=dy*fraction;
+        c.sliceTo(ninjaX,ninjaY,L);
+        if(fraction==1f) {
+            c.endStroke();ninjaSweeping=false;think=reaction;
+        }
+    }
+
+    private void ninjaStart(GameCore c,Layout L) {
+        GameCore.Enemy target=null;
+        for(GameCore.Enemy e:c.enemies) {
+            float half=L.wordWidth(e.word.length)*.5f,x=c.enemyCentreX(e);
+            if(!e.typeable() || e.y-L.enemyR<L.playTop || x-half<L.playLeft || x+half>L.playRight)continue;
+            if(target==null || e.y>target.y)target=e;
+        }
+        if(target==null)return;
+        float x=c.enemyCentreX(target),y=target.y;
+        if(target.link!=null) {
+            x=(x+c.enemyCentreX(target.link))*.5f;
+            ninjaX=ninjaEndX=x;ninjaY=y-L.enemyR;ninjaEndY=y+L.enemyR;
+            if(rnd.nextFloat()<missRate) { ninjaX+=L.enemyR*1.1f;ninjaEndX=ninjaX; }
+        } else {
+            float half=L.wordWidth(target.word.length)*.5f;
+            ninjaX=x-half;ninjaEndX=x+half;ninjaY=ninjaEndY=y;
+            if(rnd.nextFloat()<missRate) { ninjaY-=L.enemyR*3f;ninjaEndY=ninjaY; }
+        }
+        budget-=1f;presses++;ninjaSweeping=true;c.beginStroke(ninjaX,ninjaY);
+    }
 
     /**
      * One frame of this player's attention. Called by {@link #play} after the world has stepped.
@@ -197,6 +231,10 @@ final class Bot {
      * the world themselves and must not also let {@code play} do it: this does not update the core.
      */
     void step(GameCore c, Layout L, float dt) {
+        if(ninjaSweeping && (c.state!=GameCore.PLAY || !c.ninja())) {
+            c.endStroke();ninjaSweeping=false;
+        }
+        if(c.paused)return;
         // The interlude is a mash, and a bounded player mashes no faster than they type. Failing it
         // for want of hands is a legitimate outcome — it costs the prize, not the run.
         if (c.state == GameCore.BONUS) {
@@ -212,6 +250,7 @@ final class Bot {
         if (c.state != GameCore.PLAY) return;
 
         budget = Math.min(BURST, budget + dt * pps);
+        if(ninjaSweeping) { ninjaMove(c,L,dt);return; }
         if (Cave.active(c)) { cavePlay(c,L,dt); return; }
         if (c.bossFighting() && c.boss.kind == Boss.SPLITTER
                 && c.boss.vulnerablePiece() >= 0 && budget >= 1f) {
@@ -248,25 +287,7 @@ final class Bot {
         }
         if (budget < 1f) return;
 
-        // Linked NINJA enemies require a swipe through the clasp, not key presses.
-        if (c.ninja()) {
-            GameCore.Enemy pair = null;
-            for (GameCore.Enemy e : c.enemies) {
-                if (e.typeable() && e.link != null && (pair == null || e.y > pair.y)) pair = e;
-            }
-            if (pair != null) {
-                budget -= 1f;
-                presses++;
-                float x = (c.enemyCentreX(pair)+c.enemyCentreX(pair.link))*0.5f;
-                float y = (pair.y+pair.link.y)*0.5f;
-                if (rnd.nextFloat() < missRate) x += L.enemyR*1.1f;
-                c.beginStroke(x,y-L.enemyR);
-                c.sliceTo(x,y+L.enemyR,L);
-                c.endStroke();
-                think = reaction;
-                return;
-            }
-        }
+        if(c.ninja()) { ninjaStart(c,L);return; }
         int want = pick(c);
         if (want < 0) return;
         budget -= 1f;

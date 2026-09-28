@@ -79,6 +79,7 @@ final class TestSoak extends Check {
      * are held, and the last is the one that matters most.
      */
     static void boundedPlay(Layout L) {
+        ninjaHands(L);
         group("bounded play");
 
         // Somewhere around what two thumbs actually manage. Every figure here is a claim about
@@ -121,6 +122,39 @@ final class TestSoak extends Check {
     }
 
     // ---- helpers ------------------------------------------------------------
+
+    private static void ninjaHands(Layout L) {
+        group("bounded Ninja swipes");
+        GameCore c=new GameCore(new Mem(),13455L);c.startGame();c.startFrenzy(Power.NINJA,L);
+        c.enemies.clear();
+        GameCore.Enemy e=add(c,L,new int[]{0,1,2,3},L.playTop+(L.dangerY-L.playTop)*.4f);
+        e.sway=0;
+        Bot bot=new Bot(6f,.2f,0f,true,1L);
+        for(int frame=0;frame<60 && !c.touchDown;frame++)bot.step(c,L,DT);
+        check("bounded Ninja begins a swipe without instantly clearing its row",c.touchDown && !e.destroyed);
+        float x=c.fingerX,y=c.fingerY;
+        bot.step(c,L,DT);
+        check("bounded Ninja moves at two screen widths per second",
+                Math.abs(c.fingerX-x-L.w*2f*DT)<.001f && c.fingerY==y && !e.destroyed);
+        x=c.fingerX;c.paused=true;bot.step(c,L,1f);
+        check("paused bounded swipes do not advance",c.fingerX==x);
+        c.paused=false;
+        for(int frame=0;frame<60 && c.touchDown;frame++)bot.step(c,L,DT);
+        check("bounded Ninja clears through real blade input and releases",e.destroyed && !c.touchDown);
+        c.enemies.clear();e=add(c,L,new int[]{0,1,2,3},y);e.sway=0;
+        bot.step(c,L,DT);
+        check("bounded Ninja pays reaction time between swipes",!c.touchDown && !e.destroyed);
+        for(int frame=0;frame<60 && !c.touchDown;frame++)bot.step(c,L,DT);
+        c.modeLeft=0f;bot.step(c,L,DT);
+        check("bounded Ninja releases its finger when the power ends",!c.touchDown);
+
+        c.startFrenzy(Power.NINJA,L);c.enemies.clear();
+        e=add(c,L,new int[]{0,1,2,3},y);e.sway=0;
+        Bot misses=new Bot(6f,.2f,1f,true,2L);
+        for(int frame=0;frame<90;frame++)misses.step(c,L,DT);
+        check("bounded Ninja retains its chance to miss",!e.destroyed && e.pos==0);
+        c.enemies.clear();c.endStroke();
+    }
 
     /** Averaged outcome of one capability tier over several seeds. */
     private static final class Result {
