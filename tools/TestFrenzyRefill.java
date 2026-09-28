@@ -16,6 +16,14 @@ final class TestFrenzyRefill extends Check {
         float regular = calm / Power.spawnRate(c.ramp());
         check("activation shortens the old wave timer on an empty field", c.spawnTimer < regular);
         check("empty field gets a faster replacement", Power.spawnDelay(c, L) < regular);
+        float emptyDelay=Power.spawnDelay(c,L);
+        boolean noPauses=true;
+        for(int count=1;count<=24;count++) {
+            c.powerSpawnedEnemies=count;
+            noPauses &= Power.spawnDelay(c,L)==emptyDelay;
+        }
+        check("formation boundaries never delay a cleared field",noPauses);
+        c.powerSpawnedEnemies=0;
         GameCore.Enemy visible = add(c, L, new int[] {1, 2}, L.playTop + L.enemyR * 4f);
         visible.baseX = L.w / 2f;
         visible.sway = 0;
@@ -60,11 +68,33 @@ final class TestFrenzyRefill extends Check {
         check("refill timing follows the stage curve", scaled);
         c.modeLeft = 0f;
         check("ending a powerup restores ordinary spawn timing", Power.spawnDelay(c, L) == c.spawnInterval());
+        clearSchedulesReplacement(L);
         rapidClears(L);
     }
 
+    private static void clearSchedulesReplacement(Layout L) {
+        boolean immediate=true,keepsEarlier=true;
+        for(int mode:Power.OFFERED) {
+            GameCore c=new GameCore(new Mem(),1340L+mode);c.startGame();c.enemies.clear();
+            c.mode=mode;c.modeLeft=Power.DURATION;c.powerSpawnedEnemies=4;c.spawnTimer=2f;
+            GameCore.Enemy e=add(c,L,new int[]{1,2},L.playTop+L.enemyR*4f);
+            c.destroyWord(e,c.enemyCentreX(e),e.y,L);
+            immediate &= c.spawnTimer==Power.spawnDelay(c,L) && c.spawnTimer<.5f;
+            c.spawnTimer=.01f;
+            GameCore.Enemy next=add(c,L,new int[]{2},L.playTop+L.enemyR*4f);
+            c.destroyWord(next,c.enemyCentreX(next),next.y,L);
+            keepsEarlier &= c.spawnTimer==.01f;
+        }
+        check("each power schedules a replacement as soon as an enemy is destroyed",immediate);
+        check("further clears never postpone an already pending arrival",keepsEarlier);
+        GameCore calm=new GameCore(new Mem(),1349L);calm.startGame();calm.enemies.clear();calm.spawnTimer=2f;
+        GameCore.Enemy e=add(calm,L,new int[]{0},L.playTop+L.enemyR*4f);
+        calm.destroyWord(e,calm.enemyCentreX(e),e.y,L);
+        check("ordinary clears keep their existing spawn schedule",calm.spawnTimer==2f);
+    }
+
     private static void rapidClears(Layout L) {
-        for (int stage : new int[] {13, 19}) {
+        for (int stage : new int[] {1, 7, 13, 19}) {
             int cleared = 0;
             float longestGap = 0f;
             // A repeatable mass-clear workload, separate from the human-limited Bot playthroughs.
@@ -98,9 +128,10 @@ final class TestFrenzyRefill extends Check {
             }
             System.out.printf("    stage %d rapid clears: %.1f words/12s, longest gap %.2fs%n",
                     stage, cleared / 12f, longestGap);
-            // Before replenishment these averaged 9.8/9.3 words and gaps exceeded 2.1 seconds.
-            check("stage " + stage + " supplies targets after repeated mass clears", cleared / 12f >= 12f);
-            check("stage " + stage + " avoids the old two-second gaps", longestGap < 1.9f);
+            // The first rush prototype fell to 15.6/18.2 late-stage words with 1.15/1.5s gaps.
+            float minimum=stage==1?38f:stage==7?26f:stage==13?18f:21f;
+            check("stage " + stage + " supplies targets after repeated mass clears", cleared / 12f >= minimum);
+            check("stage " + stage + " refills without formation pauses", longestGap < .9f);
         }
     }
 }

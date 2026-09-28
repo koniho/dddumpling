@@ -379,7 +379,8 @@ Linked pairs keep their hands connected during NINJA, FLURRY, and TEAM SQUISH. O
 
 Power-up arrivals repeat four-enemy phrases: diagonal rain, alternating side entries, then a center fan.
 They accelerate into the upper-middle field and smoothly settle into normal descent; enemies remain
-clearable throughout. Each phrase leaves a short breathing gap. Arrivals revert to ordinary top
+clearable throughout. Formation changes add no spawn delay; enemy clears immediately shorten the
+next spawn countdown on the faster power-up schedule. Arrivals revert to ordinary top
 entrances when a live threat reaches 60% of the field. Kids Mode slows the entrance movement too.
 `PowerRush` owns the formations and entrance curve; `EnemyEntry` reserves their swept paths.
 

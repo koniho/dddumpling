@@ -13,12 +13,6 @@ final class PowerRush {
 
     static int pattern(GameCore c) { return (c.powerSpawnedEnemies/4)%3; }
 
-    static float phraseDelay(GameCore c,float normal,float refill,Layout L) {
-        if(pressured(c,L))return normal;
-        if(c.powerSpawnedEnemies>0 && c.powerSpawnedEnemies%4==0)return normal*1.25f;
-        return refill;
-    }
-
     static void arrange(GameCore c,GameCore.Enemy e,Layout L,float lo,float hi) {
         if(!c.powerActive() || pressured(c,L))return;
         int slot=c.powerSpawnedEnemies%4,pattern=pattern(c);

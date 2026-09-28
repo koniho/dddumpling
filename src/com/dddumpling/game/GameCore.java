@@ -3186,6 +3186,8 @@ final class GameCore {
         e.attacking = false;
         e.attackT = 0f;
         e.failPulse = 0f;
+        // Refill from the now-cleared field immediately, even at a formation boundary.
+        if (powerActive()) spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
         if (target == e) target = null;
         computeFlyDirs(e, L);
 

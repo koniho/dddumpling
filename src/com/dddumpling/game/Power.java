@@ -111,9 +111,9 @@ final class Power {
         return 1f + (rate - 1f) * taper(ramp);
     }
 
-    // Apply after tapering so every active powerup gets 30% more enemy spawn attempts.
+    // Apply after tapering so every active powerup gets 80% more enemy spawn attempts.
     // Pickup timing, fall speed, and the crowd cap keep their original settings.
-    static final float ENEMY_SPAWN_BOOST = 1.3f;
+    static final float ENEMY_SPAWN_BOOST = 1.8f;
     static float spawnRate(float ramp) { return tapered(SPAWN_RATE, ramp) * ENEMY_SPAWN_BOOST; }
 
     /** Refill a cleared field quickly, then return to the stage's sustained frenzy pace. */
@@ -140,8 +140,7 @@ final class Power {
         float refill = 0.5f - Math.min(0.3f, c.ramp() * 0.05f);
         boolean burst = c.powerRefillBurst > 0 && c.clock - c.powerLastClear < 0.8f;
         boolean emptyView = live < 2 && visiblePresses == 0;
-        float delay=emptyView || (live < 3 && (presses == 0 || burst)) ? normal * refill : normal;
-        return PowerRush.phraseDelay(c,normal,delay,L);
+        return emptyView || (live < 3 && (presses == 0 || burst)) ? normal * refill : normal;
     }
 
     static float crowdRate(float ramp) { return tapered(CROWD_RATE, ramp); }

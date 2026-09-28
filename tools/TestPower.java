@@ -1375,8 +1375,8 @@ final class TestPower extends Check {
         check("no ninja hint in other modes", !d.showNinjaHint());
         check("no trail in other modes", d.particles.isEmpty());
 
-        check("opening-stage frenzy enemy rate is boosted from 6x to 7.8x",
-                Math.abs(Power.spawnRate(0f) - 7.8f) < 1e-5f);
+        check("opening-stage frenzy enemy rate is boosted from 6x to 10.8x",
+                Math.abs(Power.spawnRate(0f) - 10.8f) < 1e-5f);
     }
 
     private static void powerRush(Layout L) {
@@ -1406,12 +1406,10 @@ final class TestPower extends Check {
         check("arrivals are clearable and settle above the lower half",readable);
         check("rush quickly reaches the play area then restores normal descent",fast && settled);
         check("arrival motion is independent of frame subdivision",stepStable);
-        check("groups leave a breathing gap",PowerRush.phraseDelay(c,1f,.5f,L)==1.25f);
         add(c,L,new int[]{1},L.dangerY-L.enemyR*2);
         GameCore.Enemy fresh=new GameCore.Enemy();fresh.word=new int[]{0};fresh.y=-L.enemyR*2;
         PowerRush.arrange(c,fresh,L,L.w*.2f,L.w*.8f);
         check("dangerous field suppresses accelerated arrivals",fresh.rushSpan==0 && !fresh.sideEntry);
-        check("dangerous field restores normal spacing",PowerRush.phraseDelay(c,1f,.5f,L)==1f);
         c.enemies.clear();c.mode=-1;c.modeLeft=0;
         PowerRush.arrange(c,fresh,L,L.w*.2f,L.w*.8f);
         check("ordinary waves do not gain rush entrances",fresh.rushSpan==0);
@@ -1447,18 +1445,18 @@ final class TestPower extends Check {
         float floor = (Power.LATE_RATIO - 1f) / (Power.SPAWN_RATE - 1f);
         check("it bottoms out at the ratio the target implies",
                 Math.abs(Power.taper(99f) - floor) < 1e-6f);
-        check("late frenzy enemy rate is boosted from 2x to 2.6x",
-                Math.abs(Power.spawnRate(99f) - 2.6f) < 1e-4f);
+        check("late frenzy enemy rate is boosted from 2x to 3.6x",
+                Math.abs(Power.spawnRate(99f) - 3.6f) < 1e-4f);
 
         boolean boosted = true, otherRatesUnchanged = true;
         for (float ramp = 0f; ramp <= 20f; ramp += 0.25f) {
             float originalTaper = Math.max(0.2f, 1f - ramp / 7f);
             float originalSpawn = 1f + 5f * originalTaper;
-            boosted &= Math.abs(Power.spawnRate(ramp) / originalSpawn - 1.3f) < 1e-5f;
+            boosted &= Math.abs(Power.spawnRate(ramp) / originalSpawn - 1.8f) < 1e-5f;
             otherRatesUnchanged &= Math.abs(Power.fallRate(ramp) - (1f + originalTaper)) < 1e-5f
                     && Math.abs(Power.crowdRate(ramp) - (1f + 3f * originalTaper)) < 1e-5f;
         }
-        check("enemy spawn rate is exactly 30% higher across the entire ramp", boosted);
+        check("enemy spawn rate is exactly 80% higher across the entire ramp", boosted);
         check("fall speed and crowd limits retain their original curves", otherRatesUnchanged);
 
         boolean scheduled = true;
@@ -1471,7 +1469,7 @@ final class TestPower extends Check {
             active.spawnTimer = 0f;
             active.update(DT, L);
             scheduled &= active.enemies.size() == 1
-                    && Math.abs(active.spawnTimer - active.spawnInterval() / 7.8f * 0.5f) < 1e-5f;
+                    && Math.abs(active.spawnTimer - active.spawnInterval() / 10.8f * 0.5f) < 1e-5f;
         }
         check("every active powerup promptly fills an empty view", scheduled);
         GameCore calmRun = new GameCore(new Mem(), 939L);
@@ -1503,7 +1501,7 @@ final class TestPower extends Check {
         // *ratio* — what a frenzy adds to its own stage. It cannot own the absolute number, because
         // that is the ramp's, and by stage 25 ordinary play already wants 8.8 presses a second all
         // by itself. So the absolute cap is asserted over the stretch where the ramp is still sane,
-        // and past that the assertion is only that a frenzy is no worse than 2.6 times its stage.
+        // and past that the assertion is only that a frenzy is no worse than 3.6 times its stage.
         GameCore c = new GameCore(new Mem(), 941L);
         c.startGame();
         float worst = 0f, worstFlat = 0f, worstEarly = 0f;
@@ -1534,8 +1532,8 @@ final class TestPower extends Check {
         check("a bottomed-out frenzy asks only the target multiple of its stage", withinTarget);
         System.out.printf("    worst is %.1f presses/s at stage %d, where flat rates asked %.1f%n",
                 worst, worstStage, worstFlat);
-        // The requested enemy-rate boost scales the old 12 presses/s ceiling by 30%.
-        check("early frenzy demand stays within the boosted ceiling", worstEarly < 12f * 1.3f);
+        // The requested enemy-rate boost scales the old 12 presses/s ceiling by 80%.
+        check("early frenzy demand stays within the boosted ceiling", worstEarly < 12f * 1.8f);
         check("and the worst stage of all is a real improvement on flat rates",
                 worst < worstFlat * 0.7f);
     }
