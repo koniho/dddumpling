@@ -343,6 +343,27 @@ public final class IOSInputTest extends Check {
         game.touch(one(1,3,x,y-l.enemyR*2));
     }
 
+    private static void starCompletionStorm() {
+        IOSGame game=game();Host host=new Host();game.setHost(host);
+        GameCore c=game.core();Layout l=game.geometry();
+        c.startGame();c.state=GameCore.BONUS;c.starBonus=true;
+        c.stars.begin(0,l);c.stars.won=true;c.stars.winT=StarPath.EXIT+.01f;
+        c.paradeTimer=GameCore.PARADE_TIME;
+        for(int frame=0;frame<12;frame++)game.update(DT);
+        int before=host.ticks+host.impacts;
+        check("native completion storm starts with light and heavy feedback",host.ticks>0 && host.impacts>0);
+        game.background(true);game.update(1f);game.background(false);game.update(DT);
+        check("background and paused foreground cannot replay storm pulses",host.ticks+host.impacts==before
+                && c.starBlastHaptic==0);
+        Pause.resume(c);
+        for(int frame=0;frame<80;frame++)game.update(DT);
+        check("native storm resumes and finishes exactly once",host.ticks==6 && host.impacts==4);
+        c.startGame();c.state=GameCore.BONUS;c.starBonus=true;c.stars.begin(0,l);
+        c.stars.timer=StarPath.REPORT+StarPath.EXIT;
+        for(int frame=0;frame<80;frame++)game.update(DT);
+        check("incomplete native exit does not trigger the storm",host.ticks==6 && host.impacts==4);
+    }
+
     private static void starFeedback() {
         for (boolean finalOnly : new boolean[] {false, true}) {
             IOSGame game = game(); Host host = new Host(); game.setHost(host);
@@ -676,7 +697,7 @@ public final class IOSInputTest extends Check {
         gameOverDismissal();
         cave();
         highScores();
-        releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); bossOwnership(); flingHistory();
+        releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); flingHistory();
         steamerAndPanic(); caseAndSettings();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");

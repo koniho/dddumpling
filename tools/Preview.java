@@ -1542,6 +1542,7 @@ final class Preview {
         cs.stars.vx = 0f;
         cs.stars.x = cs.stars.starX(6, L);
         shot(dir, "54d-stars-max-bends", cs, L, w, h, ss);
+        starExitFrames(dir,cs,L,w,h,ss,false);
         // The failed-course handoff: full report, midpoint of the same cross-fade used by the
         // winning parade, then the last trace over the play field beneath it.
         for(int frame=0;frame<3;frame++) {
@@ -1574,6 +1575,7 @@ final class Preview {
         shot(dir, "55-stars-won", cw, L, w, h, ss);
         step(cw, L, 1.1f);
         shot(dir, "56-stars-victory", cw, L, w, h, ss);
+        starExitFrames(dir,cw,L,w,h,ss,true);
         // And the handover: the same parade a won steamer ends on.
         for (int i = 0; i < 60 * 10 && !cw.bonusParading(); i++) cw.update(DT, L);
         step(cw, L, GameCore.PARADE_TIME * 0.45f);
@@ -2353,6 +2355,19 @@ final class Preview {
             if (name.startsWith(o.trim())) return true;
         }
         return false;
+    }
+
+    private static void starExitFrames(File dir,GameCore c,Layout L,int w,int h,int ss,boolean won)
+            throws Exception {
+        float timer=c.stars.timer,win=c.stars.winT,bonus=c.bonusTimer,clock=c.clock;
+        float[] phases={.03f,.20f,.45f,.70f,.92f,.995f};
+        for(int frame=0;frame<phases.length;frame++) {
+            float remaining=StarPath.EXIT*(1f-phases[frame]);
+            if(won) c.stars.winT=remaining;else c.stars.timer=StarPath.REPORT+remaining;
+            c.bonusTimer=c.stars.timer;c.clock=clock+StarPath.EXIT*phases[frame];
+            shot(dir,"129-stars-"+(won?"complete":"incomplete")+"-blast-"+frame,c,L,w,h,ss);
+        }
+        c.stars.timer=timer;c.stars.winT=win;c.bonusTimer=bonus;c.clock=clock;
     }
 
     private static void shot(File dir, String name, GameCore c, Layout L, int w, int h, int ss)

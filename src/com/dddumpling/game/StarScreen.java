@@ -12,6 +12,25 @@ final class StarScreen extends Draw {
 
     private StarScreen() {}
     static final float COMPANION_TRAVEL=.72f,COMPANION_RETURN=.72f;
+    private static final int[] BLAST_RINGS={0xF5FFFFFF,0xDBFFF6C7,0xC2FFD477,
+            0xA5FFAE93,0x8EE9A8DF,0x76B9A4F2,0x6093D6F7};
+
+    /** The last exit beat is shared by the report and victory-to-parade handoffs. */
+    static float blastProgress(StarPath q) {
+        if(q.winning()) return q.winT<=StarPath.EXIT ? 1f-q.winT/StarPath.EXIT : -1f;
+        return q.exiting() ? q.exitProgress() : -1f;
+    }
+    static float particleFade(StarPath q) {
+        float t=blastProgress(q);
+        // Finish fading before the owning scene disappears, including a slow final frame.
+        return 1f-ease((t-.45f)/.45f);
+    }
+    static float completionFlash(StarPath q) {
+        if(!q.winning()) return 0f;
+        float t=blastProgress(q);
+        float tail=Math.max(0f,Math.min(1f,(t-.30f)/.60f));
+        return ease(t/.10f)*(1f-tail*tail*(3f-2f*tail));
+    }
 
     static float companionX(GameCore c,Layout L,float target) {
         StarPath q=c.stars;
@@ -84,7 +103,7 @@ final class StarScreen extends Draw {
         // Catmull-Rom samples turn the checkpoints into one soft flight trail. Three strokes
         // supply depth: a broad shadow, a coloured atmosphere, and a bright central filament.
         float[] route = spline(q, L);
-        float cf = fade * lit;
+        float cf = fade * lit * particleFade(q);
         // The bright route is as wide as a star's centre pearl (2 * 0.23 of its outer radius).
         // The two broader passes sit behind it like a soft raised ribbon.
         float pearl = StarPath.starOuter(L) * 0.23f * 2f;
@@ -146,7 +165,14 @@ final class StarScreen extends Draw {
             victory(p, c, L, fade);
             // Gold, and it stays up: the number that was being counted is the thing just won.
             p.text(q.count() + " / " + q.total(), L.w / 2f, countY(L), type(s * 0.78f),
-                    fadeBy(GOLD, fade), Painter.CENTER, true);
+                    fadeBy(GOLD, fade * particleFade(q)), Painter.CENTER, true);
+            float wash=completionFlash(q);
+            if(wash>0f) {
+                float t=Math.max(0f,blastProgress(q));
+                int tint=t<.4f?Glyph.mix(0xFFFFF6C7,0xFFFFB9DD,ease(t/.4f)):
+                        Glyph.mix(0xFFFFB9DD,0xFFBFA8F4,ease((t-.4f)/.5f));
+                p.fillRect(0,0,L.w,L.h,fadeBy(Glyph.withAlpha(tint,(int)(142f*wash)),fade));
+            }
             return;
         }
 
@@ -174,7 +200,8 @@ final class StarScreen extends Draw {
             // The lesson's lean is drawn onto the position rather than steered, so its sway has to
             // be asked for separately; in flight the steering itself is the answer.
             float sway = q.ready() ? q.lessonSway(c.clock) : q.vx / (L.w * StarPath.MAX_VX);
-            wake(p, q, L, drawX, drawY, sway, c.clock, fade);
+            blastOff(p,L,q.x,L.playTop+(L.dangerY-L.playTop)*.5f,blastProgress(q),fade);
+            wake(p, q, L, drawX, drawY, sway, c.clock, fade * particleFade(q));
             flyer(p, q, drawR, drawX, drawY, c.clock, fade, c.onboarding.companionAway(c)?0:fade);
         } else if(q.reporting()) {
             flyer(p,q,drawR,drawX,drawY,c.clock,fade,c.onboarding.companionAway(c)?0:companionFade(c));
@@ -294,7 +321,7 @@ final class StarScreen extends Draw {
             float clock, float fade) {
         float rr = StarPath.flyerR(L);
         float str = q.count() / (float) q.total();
-        float exit = q.exitProgress();
+        float exit = Math.max(0f,blastProgress(q));
         int n = 10 + q.count() + (int) (18f * exit);
         float len = rr * (1.35f + 1.85f * str + 1.4f * exit);
         // A widening rocket plume: every spark falls, while its hashed side and wobble spray the
@@ -332,6 +359,19 @@ final class StarScreen extends Draw {
     /** Fractional part, for hashing an index into a phase. */
     private static float frac(float v) {
         return v - (float) Math.floor(v);
+    }
+
+    private static void blastOff(Painter p,Layout L,float x,float y,float progress,float fade) {
+        if(progress<0f || progress>=.72f) return;
+        float r=StarPath.flyerR(L),flash=Math.max(0f,1f-progress/.26f);
+        for(int k=3;k>=1;k--)
+            p.fillCircle(x,y,r*(.7f+k*.48f),
+                    fadeBy(Glyph.withAlpha(0xFFFFF6C7,(int)(160f*flash*flash/k)),fade));
+        float t=progress/.72f;
+        for(int k=BLAST_RINGS.length-1;k>=0;k--)
+            p.strokeCircle(x,y,r*(1f+t*(3.8f+k*.7f)),
+                    fadeBy(BLAST_RINGS[k],fade*(1f-t)),
+                    L.unit*(.8f-.42f*t)*(1f-k*.05f));
     }
 
     /** The climber: a soft aura, a rimmed hex, and whichever collectible is piloting it. */
@@ -379,6 +419,9 @@ final class StarScreen extends Draw {
         float podX = L.w / 2f;
         float showY = L.playTop + span * 0.38f;
         float podY = showY + big + rr * 1.4f;
+        float blast=blastProgress(q);
+        blastOff(p,L,podX,podY,blast,fade);
+        fade*=particleFade(q);
 
         float startY = q.characterY(L);
         float glide = ease(t / 0.30f);
@@ -409,6 +452,11 @@ final class StarScreen extends Draw {
         float py = wy + (showY - wy) * e;
         float pr = big * (0.12f + 0.88f * e);
         if (e >= 1f) pr = big * (1f + 0.045f * (float) Math.sin(c.clock * 3.2f));
+        if(blast>=0f) {
+            float lift=(L.h+big*4f)*blast*blast;
+            fy-=lift;py-=lift;
+            wake(p,q,L,fx,fy,0f,c.clock,fade);
+        }
 
         // Shining glow: three broad rays turning behind it, brightening as it rises. Tier-coloured,
         // so what came out is readable before the label under it is.
@@ -424,10 +472,7 @@ final class StarScreen extends Draw {
                     fadeBy(Glyph.withAlpha(0xFFFFF6C7, (int) (14 * e / k)), fade));
         }
 
-        // The flyer goes on first, so the prize it is looking up at is never behind it. No wake
-        // here, though it is the one moment a full-strength one could be shown: the tableau is a
-        // full stop, with the flyer standing still, and the prize's name sits directly under it —
-        // twenty sparks at full brightness fell straight down through the label.
+        // The wake starts only at departure, after the stationary prize-reading beat.
         flyer(p, q, rr, fx, fy - hop, c.clock, fade, fade);
         if (c.prize >= 0) Trinket.draw(p, c.prize, px, py, pr, c.clock, true, fade);
 

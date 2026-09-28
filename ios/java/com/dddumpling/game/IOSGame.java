@@ -716,6 +716,8 @@ public final class IOSGame {
         if(caveFeedback>0 && !core.paused && !core.settingsOpen)tick();
         for (int i = 0, n = core.releaseNotes.takeFeedback(); i < n; i++) tick();
         for (int i = 0; i < core.starPickups; i++) tick();
+        if(core.starBlastHaptic==2 && host!=null) host.impact();
+        else if(core.starBlastHaptic==1) tick();
         if (playing && core.boss.octoImpact) tick();
         if (playing && host != null && core.bossDeathHaptic > 0) {
             if (core.bossDeathHaptic == 2) host.impact();

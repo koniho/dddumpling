@@ -801,6 +801,9 @@ public class GameView extends View {
                     performHapticFeedback(caveFeedback>1?HapticFeedbackConstants.LONG_PRESS:HapticFeedbackConstants.KEYBOARD_TAP);
                 for (int i = 0, n = core.releaseNotes.takeFeedback(); i < n; i++) tick();
                 for (int i = 0; i < core.starPickups; i++) tick();
+                if(core.starBlastHaptic>0)
+                    performHapticFeedback(core.starBlastHaptic==2?HapticFeedbackConstants.LONG_PRESS:
+                            HapticFeedbackConstants.KEYBOARD_TAP,HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
             }
             refreshNavigation();
             if (playingBeforeUpdate && core.boss.octoImpact) bossImpactHaptic();

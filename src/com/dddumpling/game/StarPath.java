@@ -428,6 +428,14 @@ final class StarPath {
     boolean reporting() { return timer <= REPORT; }
     /** True while the victory tableau owns the screen, which is the end of a completed course. */
     boolean winning() { return winT > 0f; }
+    /** One frame-owned pulse per beat; no delayed work can outlive the celebration. */
+    int completionHaptic(float previousWinT) {
+        if(!won || !winning() || previousWinT<=0f) return 0;
+        float age=EXIT-winT,previous=EXIT-previousWinT;
+        if(age<0f || age>=.60f) return 0;
+        int beat=(int)(age/.06f),before=previous<0f?-1:(int)(previous/.06f);
+        return beat>before ? (beat%3==0?2:1) : 0;
+    }
     /** 0..1 through the victory tableau. */
     float winProgress() {
         if (winT <= 0f) return 0f;
@@ -609,7 +617,7 @@ final class StarPath {
         float middle = L.playTop + (L.dangerY - L.playTop) * 0.50f;
         if (exiting()) {
             float q = (EXIT + REPORT - timer) / EXIT;
-            return middle + (L.playTop - L.enemyR * 3f - middle) * q * q;
+            return middle + (-flyerR(L) * 3f - middle) * q * q;
         }
         return bottom + (middle - bottom) * p;
     }

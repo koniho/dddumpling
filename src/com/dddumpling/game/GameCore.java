@@ -545,6 +545,7 @@ final class GameCore {
     int settingsTab;
     /** Newly collected stars in this update, including the winning pickup. */
     int starPickups;
+    int starBlastHaptic; // Per-frame completion storm: 1 light, 2 heavy.
     boolean paused, confirmEnd;
 
     // ---- transient ----------------------------------------------------------
@@ -1912,6 +1913,7 @@ final class GameCore {
         shake = 0;
         bossDeathHaptic = 0;
         flash = 0;
+        starBlastHaptic = 0;
         skyGlow = 0;
         steamer.reset();
         bonusTimer = 0;
@@ -2622,6 +2624,7 @@ final class GameCore {
 
     void update(float dt, float elapsed, Layout L) {
         starPickups = 0;
+        starBlastHaptic = 0;
         bossDeathHaptic = 0;
         if (paused) return;
         townSaveRetry=Math.max(0f,townSaveRetry-elapsed);
@@ -2826,7 +2829,9 @@ final class GameCore {
                 int heldStars = stars.collected;
                 boolean wasFinishing = stars.won || stars.exiting() || stars.reporting();
                 int tutorialStars=stars.count();
+                float previousWinT=stars.winT;
                 stars.update(dt, L);
+                starBlastHaptic=stars.completionHaptic(previousWinT);
                 if(stars.steered && stars.count()>tutorialStars)onboarding.learn(this,TutorialSpeech.STARS);
                 starPickups = Integer.bitCount(stars.collected & ~heldStars);
                 boolean finishing = stars.won || stars.exiting() || stars.reporting();

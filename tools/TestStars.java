@@ -379,6 +379,8 @@ final class TestStars extends Check {
                 new GameCore(new Mem(), 31L).state == GameCore.TITLE);
 
         incompleteExit();
+        departureEffects();
+        completionStorm(L);
         courseIsFlyable(L);
         difficulty(L);
     }
@@ -408,6 +410,66 @@ final class TestStars extends Check {
             c.stars.x=l.playRight;StarScreen.draw(b,c,l);
             check("departed flyer cannot reappear during incomplete report " + remaining,
                     java.util.Arrays.equals(a.resolve(),b.resolve()));
+        }
+    }
+
+    private static void departureEffects() {
+        Layout l=new Layout();l.compute(240,520,0,0,0,0);
+        for(boolean won:new boolean[]{false,true}) {
+            GameCore c=new GameCore(new Mem(),85L);c.startGame();
+            c.state=GameCore.BONUS;c.starBonus=true;c.time=2f;c.prize=0;
+            StarPath q=c.stars;q.make(c.rnd);q.begin(0,l);q.won=won;
+            float previous=1f;
+            for(float progress:new float[]{0f,.45f,.7f,.93f,.999f}) {
+                q.timer=StarPath.REPORT+StarPath.EXIT*(1f-progress);
+                q.winT=won?StarPath.EXIT*(1f-progress):0f;
+                float fade=StarScreen.particleFade(q);
+                check("departure particles only fade as the handoff approaches "+won+"/"+progress,
+                        fade>=0f && fade<=previous);
+                previous=fade;
+            }
+            check("particles finish before either handoff "+won,previous==0f);
+            RasterPainter a=new RasterPainter(240,520,1),b=new RasterPainter(240,520,1);
+            StarScreen.draw(a,c,l);
+            java.util.Arrays.fill(q.burst,1f);c.clock+=.3f;
+            if(won)c.prize=12;
+            StarScreen.draw(b,c,l);
+            check("late pickup sparks and prize glows cannot survive departure "+won,
+                    java.util.Arrays.equals(a.resolve(),b.resolve()));
+            if(!won) check("the incomplete flyer clears the actual screen before reporting",
+                    q.flyerY(l)+StarPath.flyerR(l)*1.7f<0f);
+            q.update(StarPath.EXIT*.01f,l);
+            check("departure keeps the existing outcome handoff "+won,
+                    won?q.timer==0f && !q.winning():q.reporting());
+        }
+    }
+
+    private static void completionStorm(Layout L) {
+        for(float dt:new float[]{DT,.05f}) {
+            GameCore c=new GameCore(new Mem(),86L);c.startGame();c.state=GameCore.BONUS;c.starBonus=true;
+            c.stars.begin(0,L);c.stars.won=true;c.stars.winT=StarPath.EXIT+.01f;
+            c.paradeTimer=GameCore.PARADE_TIME;
+            int light=0,heavy=0;
+            for(int frame=0;frame<80;frame++) {
+                c.update(dt,L);
+                if(c.starBlastHaptic==1) light++;
+                if(c.starBlastHaptic==2) heavy++;
+                if(frame==3) {
+                    float held=c.stars.winT;c.paused=true;c.update(1f,L);
+                    check("pause clears the storm without advancing it "+dt,c.starBlastHaptic==0 && c.stars.winT==held);
+                    c.paused=false;
+                }
+            }
+            check("completion storm delivers ten mixed pulses at frame rate "+dt,light==6 && heavy==4);
+            check("storm ends before the parade "+dt,c.starBlastHaptic==0);
+            c.stars.won=false;c.stars.winT=0;c.stars.timer=StarPath.REPORT+StarPath.EXIT*.5f;
+            check("incomplete blast has no completion flash",StarScreen.completionFlash(c.stars)==0f);
+            c.stars.won=true;c.stars.winT=StarPath.EXIT*.5f;
+            check("completion screen flash lasts beyond the short ignition flash",StarScreen.completionFlash(c.stars)>.5f);
+            c.stars.winT=StarPath.EXIT*.05f;
+            check("completion flash clears before transition",StarScreen.completionFlash(c.stars)==0f);
+            c.starBlastHaptic=2;c.startGame();
+            check("new run clears completion feedback",c.starBlastHaptic==0);
         }
     }
 
