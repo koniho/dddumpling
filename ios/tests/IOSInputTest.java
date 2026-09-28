@@ -72,6 +72,36 @@ public final class IOSInputTest extends Check {
         }
     }
 
+    private static void starterInput() {
+        for(int choice=0;choice<Starter.CHOICES.length;choice++) {
+            Mem store=new Mem();store.tutorials=store.powerTutorials=0;
+            IOSGame game=new IOSGame(store,new Ear(),128);game.layout(393,852,0,59,0,34);
+            GameCore c=game.core();Layout l=game.geometry();
+            tap(game,l.w*.2f,l.h*.85f);
+            check("native fresh Start opens starter chooser "+choice,c.starter.open && !c.starting()
+                    && c.collected==0 && game.debugStatus().contains("starter=true"));
+            check("native back cancels chooser "+choice,game.back() && !c.starter.open && c.collected==0);
+            tap(game,l.w*.2f,l.h*.85f);
+            float x=Starter.x(l,choice),y=Starter.y(l,choice);
+            game.touch(one(0,42,x,y));game.touch(one(3,42,x,y));game.touch(one(1,42,x,y));
+            check("native cancellation cannot grant a starter "+choice,c.starter.open && c.collected==0);
+            game.touch(one(0,42,x,y));game.background(true);game.background(false);
+            game.touch(one(1,42,x,y));
+            check("background releases pending starter choice "+choice,c.starter.open && c.collected==0);
+            tap(game,x,y);
+            int who=Starter.CHOICES[choice];
+            check("native choice saves and launches chosen friend "+choice,!c.starter.open && c.starting()
+                    && c.launchWho==who && store.collected==(1L<<who) && store.collectTotal==1);
+            for(int i=0;i<16;i++)game.update(.2f);
+            check("native starter becomes first-run companion "+choice,c.state==GameCore.PLAY && c.runWho==who
+                    && c.companion.who==who && c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.COMPANION);
+            float spawn=c.spawnTimer;
+            tutorialContinue(game);game.update(DT);
+            check("native companion introduction resumes the first stage "+choice,!c.onboarding.briefing
+                    && c.spawnTimer<spawn && c.onboarding.learned(TutorialSpeech.COMPANION));
+        }
+    }
+
     private static void titleAndLifecycle() {
         IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
         Host host = new Host(); game.setHost(host);
@@ -636,6 +666,7 @@ public final class IOSInputTest extends Check {
         powerGuidanceInput();
         townNavigation();
         slowRunIntro();
+        starterInput();
         caveMining();
         caveCart();
 
@@ -794,9 +825,8 @@ public final class IOSInputTest extends Check {
             game.touch(one(1,42,x,y));
             check("background cancels pickup acknowledgement",c.onboarding.briefing && !p.hit);
             tap(game,p.x,p.y);
-            check("native play-area tap advances without collecting underneath",c.onboarding.briefing && c.onboarding.speechPage==1 && !p.hit
-                    && !c.onboarding.learned(TutorialSpeech.POWER_PICKUP));
-            tutorialContinue(game);
+            check("native play-area tap closes one-page explanation without collecting underneath",!c.onboarding.briefing
+                    && c.onboarding.speechPage==0 && !p.hit && !c.onboarding.learned(TutorialSpeech.POWER_PICKUP));
             tap(game,p.x,p.y);game.update(DT);
             check("native direct pickup tap learns collection and introduces Fling",p.hit
                     && c.onboarding.learned(TutorialSpeech.POWER_PICKUP) && c.onboarding.briefing

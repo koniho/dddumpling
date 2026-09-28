@@ -83,6 +83,11 @@ public final class IOSGame {
             return true;
         }
         int action = ev.getActionMasked();
+        if (core.starter.open) {
+            int i=action==IOSTouch.ACTION_MOVE?0:ev.getActionIndex();
+            core.starter.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));
+            return true;
+        }
         if (core.townOpen) {
             if (action == IOSTouch.ACTION_CANCEL) core.cancelTownInput();
             else if (action == IOSTouch.ACTION_MOVE) {
@@ -727,7 +732,7 @@ public final class IOSGame {
         if (!BuildFlags.DEVELOPER) return "";
         return "state=" + core.state + ";stage=" + core.stage + ";paused=" + core.paused
                 + ";score=" + core.score + ";lives=" + core.lives + ";case=" + core.caseOpen
-                + ";stars=" + core.starBonus + ";mode=" + core.mode;
+                + ";stars=" + core.starBonus + ";mode=" + core.mode + ";starter=" + core.starter.open;
     }
 
     public void debugScene(String scene) {

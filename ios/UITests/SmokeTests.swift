@@ -28,6 +28,13 @@ final class SmokeTests: XCTestCase {
         services.buttons["Done"].tap()
         capture(app, "title")
         game.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.85)).tap()
+        let starting = NSPredicate(format: "value CONTAINS %@ OR value CONTAINS %@", "starter=true", "state=1")
+        expectation(for: starting, evaluatedWith: game)
+        waitForExpectations(timeout: 5)
+        if (game.value as? String ?? "").contains("starter=true") {
+            capture(app, "starter-choice")
+            game.coordinate(withNormalizedOffset: CGVector(dx: 0.27, dy: 0.33)).tap()
+        }
         let playing = NSPredicate(format: "value CONTAINS %@", "state=1")
         expectation(for: playing, evaluatedWith: game)
         waitForExpectations(timeout: 5)
