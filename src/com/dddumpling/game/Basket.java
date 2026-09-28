@@ -59,6 +59,36 @@ final class Basket extends Draw {
         }
     }
 
+    /** A soft white veil clears while the existing prize animation climbs out. */
+    static float releaseWash(float age) {
+        if(age<=0f || age>=1.20f)return 0f;
+        float v=age<.28f ? age/.28f : age<.42f ? 1f : (1.20f-age)/.78f;
+        return .74f*v*v*(3f-2f*v);
+    }
+
+    static void releaseSteam(Painter p,float cx,float cy,float rx,float w,float h,float age,float fade) {
+        if(age<=0f || age>=1.5f || fade<=0f)return;
+        p.fillRect(0,0,w,h,fadeBy(Glyph.withAlpha(0xFFFFFFFF,(int)(255*releaseWash(age))),fade));
+        // Stagger broad mist rings; their feathered edges dissolve before the reveal ends.
+        for(int i=0;i<5;i++) {
+            float t=(age-i*.07f)/1.15f;
+            if(t<=0f || t>=1f)continue;
+            float ease=1f-(1f-t)*(1f-t);
+            float radius=rx*.65f+ease*h*(.58f+i*.045f);
+            float alpha=(float)Math.sin(Math.PI*t)*(1f-t)*fade;
+            float width=rx*(.18f+i*.018f)*(1f+t);
+            int white=Glyph.mix(0xFFFFF3DF,0xFFFFFFFF,i/4f);
+            p.strokeCircle(cx,cy,radius,fadeBy(Glyph.withAlpha(white,34),alpha),width*2.1f);
+            p.strokeCircle(cx,cy,radius,fadeBy(Glyph.withAlpha(white,115),alpha),width);
+            for(int k=0;k<16;k++) {
+                double a=k*Math.PI/8+i*.47;
+                float x=cx+(float)Math.cos(a)*radius,y=cy+(float)Math.sin(a)*radius;
+                p.fillEllipse(x,y,width*(.65f+.15f*(k%3)),width*.65f,
+                        fadeBy(Glyph.withAlpha(white,45),alpha));
+            }
+        }
+    }
+
     /**
      * Far wall and interior. Everything the contents should sit in front of.
      *

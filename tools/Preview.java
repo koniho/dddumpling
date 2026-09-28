@@ -619,10 +619,12 @@ final class Preview {
                 steam.steamer.update(.1f);
                 shot(dir,"132-steamer-pips-"+points,steam,L,w,h,ss);
             }
-            steam.swipeBonus();steam.steamer.update(.15f);
-            shot(dir,"132-steamer-release",steam,L,w,h,ss);
-            steam.steamer.update(Steamer.FREE_TIME-.4f);
-            shot(dir,"132-steamer-release-fade",steam,L,w,h,ss);
+            steam.swipeBonus();
+            float last=0f;
+            for(float age:new float[]{0f,.15f,.32f,.60f,.95f,1.25f,2.30f}) {
+                steam.steamer.update(age-last);last=age;
+                shot(dir,"132-steamer-release-"+Math.round(age*100),steam,L,w,h,ss);
+            }
         }
 
         if(wanted("132")) {

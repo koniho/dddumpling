@@ -927,6 +927,19 @@ final class TestStages extends Check {
 
     private static void steamerSteam(Layout L) {
         group("steamer steam");
+        check("success wash begins clear",Basket.releaseWash(0)==0);
+        check("success wash fades up to translucent white",Basket.releaseWash(.14f)>0
+                && Basket.releaseWash(.14f)<Basket.releaseWash(.32f) && Basket.releaseWash(.32f)<1);
+        check("success wash clears for the prize reveal",Basket.releaseWash(.8f)<Basket.releaseWash(.42f)
+                && Basket.releaseWash(1.2f)==0 && Basket.releaseWash(Steamer.FREE_TIME)==0);
+        RasterPainter released=new RasterPainter(320,300,1);released.clear(0xFF010203);
+        int[] clear=released.resolve();
+        Basket.releaseSteam(released,160,180,85,320,300,0,1);
+        check("no release rings before success",java.util.Arrays.equals(clear,released.resolve()));
+        Basket.releaseSteam(released,160,180,85,320,300,.32f,1);
+        check("success produces visible steam rings and wash",!java.util.Arrays.equals(clear,released.resolve()));
+        released.clear(0xFF010203);Basket.releaseSteam(released,160,180,85,320,300,1.5f,1);
+        check("release effects finish before the scene exits",java.util.Arrays.equals(clear,released.resolve()));
         Steamer st=new Steamer();st.reset();float idle=st.steamStrength();
         st.press(st.leftKey);
         check("half a pair does not emit a scoring puff",st.steamPulse==0 && st.steamStrength()==idle);

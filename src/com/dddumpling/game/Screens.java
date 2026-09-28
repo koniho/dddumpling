@@ -550,6 +550,8 @@ final class Screens extends Draw {
             p.text("+" + GameCore.FREE_BONUS, cx, L.h * 0.665f, type(s * 1.1f), fadeBy(GOLD, fade),
                     Painter.CENTER, true);
         }
+        if(freed) Basket.releaseSteam(p,cx,rimY,bw,L.w,L.h,
+                Steamer.FREE_TIME-c.steamer.freedT,fade);
 
     }
 
