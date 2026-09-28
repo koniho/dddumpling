@@ -77,6 +77,7 @@ src/com/dddumpling/game/Layout.java
 src/com/dddumpling/game/Sfx.java
 src/com/dddumpling/game/CartRecording.java
 src/com/dddumpling/game/NinjaSwishRecording.java
+src/com/dddumpling/game/NinjaSlashes.java
 src/com/dddumpling/game/RockRecording.java
 src/com/dddumpling/game/Music.java
 src/com/dddumpling/game/Words.java

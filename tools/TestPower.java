@@ -1009,6 +1009,68 @@ final class TestPower extends Check {
         return c;
     }
 
+    static GameCore ninjaCombo(Layout L,int count,boolean diagonal,boolean reverse) {
+        GameCore c=ninjaCore(L,132L);c.stageGap=0;c.stageBanner=0;c.spawnTimer=999f;
+        c.flash=c.shake=0f;
+        float x0=L.w*.12f,x1=L.w*.88f;
+        float y0=L.playTop+(L.dangerY-L.playTop)*(diagonal?.68f:.45f);
+        float y1=L.playTop+(L.dangerY-L.playTop)*(diagonal?.24f:.45f);
+        for(int i=0;i<count;i++) {
+            float t=(i+1f)/(count+1f);
+            GameCore.Enemy e=add(c,L,new int[]{i%Glyph.COUNT},y0+(y1-y0)*t);
+            e.baseX=x0+(x1-x0)*t;
+        }
+        c.beginStroke(reverse?x1:x0,reverse?y1:y0);
+        c.sliceTo(reverse?x0:x1,reverse?y0:y1,L);
+        return c;
+    }
+
+    static void ninjaSlashes(Layout L) {
+        group("Ninja combo slashes");
+        GameCore low=ninjaCombo(L,2,false,false),high=ninjaCombo(L,10,true,false);
+        check("word combos emit a directional slash burst",low.ninjaSlashes.life[0]>0
+                && low.ninjaSlashes.combo[0]==2 && low.ninjaSlashes.dx[0]>0
+                && low.ninjaSlashes.dy[0]==0);
+        check("diagonal slashes follow the cut direction",high.ninjaSlashes.dx[0]>0 && high.ninjaSlashes.dy[0]<0);
+        check("combo impact grows without extending gameplay slowdown",high.shake>low.shake
+                && high.flash>low.flash && high.slowdown==low.slowdown);
+        check("large combos add parallel ribbons",NinjaSlashes.ribbons(10)>NinjaSlashes.ribbons(2));
+        float dx=high.ninjaSlashes.dx[0],dy=high.ninjaSlashes.dy[0];
+        high.ninjaSlashes.emit(L.w*.8f,L.h*.3f,L.w*.2f,L.h*.6f,11);
+        check("turning retains the old slash direction",high.ninjaSlashes.dx[0]==dx && high.ninjaSlashes.dy[0]==dy
+                && high.ninjaSlashes.dx[1]<0 && high.ninjaSlashes.dy[1]>0);
+        high.update(DT,L);
+        check("slash fade uses real time during slowdown",Math.abs(high.ninjaSlashes.age[0]-DT)<.0001f);
+        float age=high.ninjaSlashes.age[0];Pause.open(high);high.update(1f,L);
+        check("pause holds slash animation",high.ninjaSlashes.age[0]==age);Pause.resume(high);
+        high.ninjaSlashes.update(1f);
+        boolean expired=true;for(float life:high.ninjaSlashes.life)expired &= life==0f;
+        check("all slash trails expire",expired);
+        for(int i=0;i<100;i++)high.ninjaSlashes.emit(0,0,100,50,i+1);
+        check("rapid cuts have a fixed visual budget",high.ninjaSlashes.life.length==NinjaSlashes.CAPACITY
+                && NinjaSlashes.ribbons(100)==5 && NinjaSlashes.strength(100)==1f);
+        high.lives=1;high.takeHit(L.w*.5f,L);
+        boolean clear=true;for(float life:high.ninjaSlashes.life)clear &= life==0f;
+        check("death clears every slash",clear);
+        high.ninjaSlashes.emit(0,0,100,0,4);high.startGame();
+        check("restart clears slash state",high.ninjaSlashes.life[0]==0 && high.ninjaSlashes.next==0);
+        low.modeLeft=0;low.update(DT,L);
+        check("power expiry clears slash state",low.ninjaSlashes.life[0]==0);
+        high=ninjaCombo(L,4,false,false);high.toTitle();
+        check("returning to title clears slash state",high.ninjaSlashes.life[0]==0);
+        Layout small=new Layout();small.compute(320,700,0,0,0,0);
+        int[] footprint=new int[2];
+        for(int i=0;i<2;i++) {
+            NinjaSlashes fx=new NinjaSlashes();fx.emit(30,300,290,300,i==0?1:10);
+            fx.update(fx.life[0]*.32f);
+            RasterPainter p=new RasterPainter(320,700,1);p.clear(0xFF010203);fx.draw(p,small);
+            int[] first=p.resolve();for(int color:first)if(color!=0xFF010203)footprint[i]++;
+            p.clear(0xFF010203);fx.draw(p,small);
+            check("drawing slash trails is deterministic "+i,java.util.Arrays.equals(first,p.resolve()));
+        }
+        check("higher combos visibly widen the screen effect",footprint[1]>footprint[0]*3 && footprint[0]>0);
+    }
+
     /**
      * What ends a stroke: the dwell, the cap, and what a new one starts with.
      *

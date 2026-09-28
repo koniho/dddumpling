@@ -608,6 +608,22 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
+        if(wanted("132")) {
+            for(int combo:new int[]{1,4,10}) {
+                GameCore c=TestPower.ninjaCombo(L,combo,false,false);
+                c.ninjaSlashes.update(c.ninjaSlashes.life[0]*.32f);
+                shot(dir,"132-ninja-combo-"+combo,c,L,w,h,ss);
+            }
+            for(boolean reverse:new boolean[]{false,true}) {
+                GameCore c=TestPower.ninjaCombo(L,10,true,reverse);
+                c.ninjaSlashes.update(c.ninjaSlashes.life[0]*.38f);
+                shot(dir,"132-ninja-diagonal-"+(reverse?"reverse":"forward"),c,L,w,h,ss);
+            }
+            GameCore c=TestPower.ninjaCombo(L,10,true,false);
+            c.ninjaSlashes.update(c.ninjaSlashes.life[0]*.85f);
+            shot(dir,"132-ninja-fading",c,L,w,h,ss);
+        }
+
         if(wanted("130")) {
             GameCore scores=new GameCore(new Mem(),101L);
             shot(dir,"130-high-scores-title",scores,L,w,h,ss);

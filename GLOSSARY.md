@@ -257,6 +257,7 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 | **hop** | one link of a chain, and one strike point | `GameCore.chainX`, `chainShown` |
 | **call-out** | the big "N IN ONE!" / "N CHAINED!" payoff text | `Hud.sliceCall`, `Hud.chainCall` |
 | **sparkle trail** | the rainbow ribbon following the blade during NINJA | `Fx.sparkle`, `GameCore.TRAIL_RATE` |
+| **Ninja slashes** | pastel slashes sweep across the screen in the swipe direction as words are sliced. Larger stroke combos add wider, brighter parallel slashes and a stronger camera bump; old directions fade independently | `NinjaSlashes` |
 | **ninja hint** | the instructional finger shown until you first touch | `Renderer.ninjaHint` |
 | **playtest chips** | the FLURRY/NINJA/MULTI buttons in settings | `SettingsUi.HIT_TEST` |
 

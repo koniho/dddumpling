@@ -13,9 +13,10 @@ final class Blade {
 
     private Blade() {}
 
-    static void resetSound(GameCore c) {
+    static void resetFeedback(GameCore c) {
         c.ninjaSwishWait = 0f;
         c.ninjaSwishNext = 0;
+        c.ninjaSlashes.clear();
     }
 
     /** Cut width in tile radii. Generous: a swipe through moving targets, and the mode is the payoff. */
@@ -117,11 +118,12 @@ final class Blade {
         c.strokeFade = Math.max(0f, c.strokeFade - dt);
         c.ninjaSwishWait = Math.max(0f, c.ninjaSwishWait - dt);
         if (!c.ninja() || c.state != GameCore.PLAY) {
-            resetSound(c);
+            resetFeedback(c);
             c.touchDown = false;
             c.fingerDown = false;
             return;
         }
+        c.ninjaSlashes.update(dt);
         if (!c.fingerDown) return;
         c.strokeIdle += dt;
         c.strokeAge += dt;
@@ -137,6 +139,7 @@ final class Blade {
      */
     static int sliceTo(GameCore c, float x, float y, Layout L) {
         float x0 = c.fingerX, y0 = c.fingerY;
+        int priorKills=c.strokeKills;
         c.fingerX = x;
         c.fingerY = y;
         if (!c.ninja() || !c.touchDown) return 0;
@@ -208,6 +211,7 @@ final class Blade {
             }
         }
         if (cut > 0) {
+            if(c.strokeKills>priorKills)c.ninjaSlashes.emit(x0,y0,x,y,c.strokeKills);
             c.onboarding.learn(c,TutorialSpeech.POWER_NINJA);
             if (c.ninjaSwishWait <= 0f && c.sound != null) {
                 c.sound.ninjaSwish(c.ninjaSwishNext);
@@ -234,8 +238,9 @@ final class Blade {
         c.callCuts = c.strokeCuts;
         // Restrained: each destroyed word has already flashed and flooded the sky, and a third wash
         // whited out the field at the moment there was something worth looking at.
-        c.shake = Math.max(c.shake, 0.35f);
-        c.flash = Math.max(c.flash, 0.45f);
+        float intensity=NinjaSlashes.strength(c.strokeKills);
+        c.shake = Math.max(c.shake, .35f+.45f*intensity);
+        c.flash = Math.max(c.flash, .45f+.35f*intensity);
         c.flashColor = GameCore.FLASH_CLEAR;
     }
 

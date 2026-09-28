@@ -98,6 +98,7 @@ final class Renderer extends Draw {
         // translucent of the three: it drifts over the play area and must never hide a letter.
         Sky.cloudBand(p, c, L, Sky.CLOUD_FRONT_LAYER, GameCore.CLOUD_LAYERS, hurt);
 
+        if(c.state==GameCore.PLAY && c.ninja())c.ninjaSlashes.draw(p,L);
         if (!(c.state == GameCore.BONUS && c.starBonus)) keys(p, c, L);
         p.restore();
 
@@ -727,7 +728,8 @@ final class Renderer extends Draw {
         if (!c.ninja()) return;
         float fade = c.fingerDown ? 1f : c.strokeFade / Blade.STROKE_FADE;
         if (fade <= 0f) return;
-        float r = L.enemyR * Blade.BLADE;
+        float intensity=NinjaSlashes.strength(c.strokeKills);
+        float r = L.enemyR * Blade.BLADE*(1f+.65f*intensity);
         int hue = Glyph.cycle(c.clock * 1.6f);
 
         // Three passes, widest and faintest first, so the edge has a glow around it.

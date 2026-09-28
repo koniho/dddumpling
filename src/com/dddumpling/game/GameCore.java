@@ -942,6 +942,7 @@ final class GameCore {
     boolean ninjaUsed;
     float ninjaSwishWait;
     int ninjaSwishNext;
+    final NinjaSlashes ninjaSlashes=new NinjaSlashes();
     /** Where the instructional finger sits, for the renderer to follow. */
     float demoX, demoY;
     float trailAcc;
@@ -1290,7 +1291,7 @@ final class GameCore {
         powerSpawnedEnemies = 0;
         spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
         ninjaUsed = false;
-        Blade.resetSound(this);
+        Blade.resetFeedback(this);
         // A finger already resting on the field does not get a free stroke: it has to lift and
         // land again, the same as it would to start a second swipe.
         fingerDown = false;
@@ -1323,7 +1324,7 @@ final class GameCore {
         power = null;
         settingsOpen = false;
         modeLeft = 0f;
-        Blade.resetSound(this);
+        Blade.resetFeedback(this);
         buddy.leave();
         fingerDown = touchDown = false;
         strokeFade = 0f;
@@ -1391,7 +1392,7 @@ final class GameCore {
         boolean teamEnded=mode==Power.TEAM;
         mode = -1;
         modeLeft = 0f;
-        Blade.resetSound(this);
+        Blade.resetFeedback(this);
         debuffLeft = monochromeFade = incognitoMorph = 0f;
         if(teamEnded) buddy.returnHome(L); else buddy.leave();
         for (int i = enemies.size() - 1; i >= 0; i--) {
@@ -1950,7 +1951,7 @@ final class GameCore {
         power = null;
         mode = -1;
         modeLeft = 0;
-        Blade.resetSound(this);
+        Blade.resetFeedback(this);
         debuffLeft = monochromeFade = incognitoMorph = 0f;
         buddy.leave();
         // Stage 1 is never a boss stage, so this is only ever clearing one a previous run left
@@ -1984,6 +1985,7 @@ final class GameCore {
 
     void toTitle() {
         diagnostic("to-title");
+        Blade.resetFeedback(this);
         onboarding.clear();
         if (state == PLAY || state == BONUS || state == OVER) finishTownRun();
         companion.clear();
@@ -3388,7 +3390,7 @@ final class GameCore {
         power = null;
         mode = -1;
         modeLeft = 0f;
-        Blade.resetSound(this);
+        Blade.resetFeedback(this);
         debuffLeft = monochromeFade = incognitoMorph = 0f;
         buddy.leave();
         boolean leftBoss = boss.active();
@@ -3484,7 +3486,7 @@ final class GameCore {
         if (powerActive()) {
             mode = -1;
             modeLeft = 0f;
-            Blade.resetSound(this);
+            Blade.resetFeedback(this);
             debuffLeft = monochromeFade = incognitoMorph = 0f;
             fingerDown = false;
             if (sound != null) sound.frenzy(false);
