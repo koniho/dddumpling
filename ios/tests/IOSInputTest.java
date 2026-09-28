@@ -185,6 +185,19 @@ public final class IOSInputTest extends Check {
         check("native mute keeps slider value",c.preferences.musicMuted && c.preferences.music==1f && !c.preferences.effectsMuted);
         tap(game,l.w*.5f,PlayerSettings.row(l,2));
         check("kids setting persists from native settings",new GameCore(c.store,93L).preferences.kids);
+        float kidsY=PlayerSettings.row(l,2),kidsX=PlayerSettings.right(l)-s*3.2f;
+        game.touch(one(0,17,kidsX+s,kidsY));
+        game.touch(one(2,17,kidsX-s,kidsY));game.touch(one(1,17,kidsX-s,kidsY));
+        check("native left swipe disables and saves kids mode",!c.preferences.kids
+                && !new GameCore(c.store,94L).preferences.kids);
+        game.touch(one(0,17,kidsX-s,kidsY));
+        game.touch(two(2,0,88,0,0,17,kidsX+s,kidsY));
+        game.touch(one(1,17,kidsX+s,kidsY));
+        check("native kids swipe follows its owner across pointer reorder",c.preferences.kids);
+        game.touch(one(0,17,kidsX+s,kidsY));game.touch(one(2,17,kidsX-s,kidsY));
+        game.touch(one(3,17,kidsX-s,kidsY));game.touch(one(1,17,kidsX-s,kidsY));
+        check("native cancelled swipe keeps kids mode enabled",c.preferences.kids);
+
         tap(game,l.w*.75f,PlayerSettings.top(l)+s*4);
         check("native developer tab opens",c.settingsPage==1);
         SettingsUi ui=new SettingsUi();ui.compute(l);

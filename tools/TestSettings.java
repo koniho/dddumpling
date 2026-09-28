@@ -114,6 +114,38 @@ final class TestSettings extends Check {
         check("on animation and restart settle at young pear",c.preferences.kidsPosition(c.clock)==1f
                 && c.preferences.kidsLift(c.clock)==0f && loaded.kidsPosition(0f)==1f && loaded.kidsLift(0f)==0f);
     }
+    private static void kidsSwipe(Layout L) {
+        Mem store=new Mem();GameCore c=new GameCore(store,915L);c.startGame();PlayerSettings.open(c);
+        c.update(PlayerSettings.PANEL_TIME,L);
+        SettingsInput input=new SettingsInput();float s=PlayerSettings.unit(L);
+        float center=PlayerSettings.right(L)-s*3.2f,left=center-s,right=center+s,y=PlayerSettings.row(L,2);
+        input.touch(c,L,0,7,left,y);
+        input.touch(c,L,2,99,right,y);input.touch(c,L,1,99,right,y);
+        check("another finger cannot swipe the kids switch",!c.preferences.kids);
+        input.touch(c,L,2,7,right,y);
+        check("kids swipe waits for release",!c.preferences.kids);
+        input.touch(c,L,1,7,right,y);
+        check("right swipe enables and saves kids mode for the next run",c.preferences.kids
+                && new GameCore(store,916L).preferences.kids && !c.kidsRun);
+        check("swipe uses the existing animated toggle",c.preferences.kidsPosition(c.clock)==0f);
+        input.touch(c,L,0,7,left,y);input.touch(c,L,2,7,right,y);input.touch(c,L,1,7,right,y);
+        check("another right swipe leaves kids mode enabled",c.preferences.kids);
+        input.touch(c,L,0,7,right,y);input.touch(c,L,1,7,left,y);
+        check("left swipe disables even without an intermediate move",!c.preferences.kids
+                && !new GameCore(store,917L).preferences.kids);
+        input.touch(c,L,0,7,left,y);input.touch(c,L,2,7,right,y);input.touch(c,L,3,7,right,y);
+        input.touch(c,L,1,7,right,y);
+        check("cancelled kids swipe leaves the saved choice alone",!c.preferences.kids);
+        input.touch(c,L,0,7,left,y);input.touch(c,L,2,7,left,y+s);
+        input.touch(c,L,2,7,right,y);input.touch(c,L,1,7,right,y);
+        check("vertical drag cannot become a kids swipe on release",!c.preferences.kids);
+        input.touch(c,L,0,7,left,y);input.touch(c,L,2,7,left+L.unit*.5f,y);
+        input.touch(c,L,1,7,left+L.unit*.5f,y);
+        check("short drags do not toggle kids mode",!c.preferences.kids);
+        input.touch(c,L,0,7,left,y);input.touch(c,L,1,7,left+L.unit*.1f,y);
+        check("tap with normal finger jitter still toggles kids mode",c.preferences.kids);
+    }
+
     private static void transitions(Layout L) {
         GameCore c=new GameCore(new Mem(),910L);c.startGame();
         float time=c.time,gap=c.stageGap;
@@ -239,6 +271,7 @@ final class TestSettings extends Check {
         scoreReset(L);
         panelTiming(L);
         kidsToggle(L);
+        kidsSwipe(L);
         transitions(L);
         social(L);
         kidsTiming(L);

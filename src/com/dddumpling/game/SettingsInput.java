@@ -4,7 +4,7 @@ package com.dddumpling.game;
 final class SettingsInput {
     private int pressed, pointer=-1;
     private float downX, downY, offset;
-    private boolean moved;
+    private boolean moved, kidsVertical;
     void cancel() { pressed=0; pointer=-1; }
     static boolean runAction(int hit) {
         return hit==SettingsUi.HIT_GAMEOVER || hit>=SettingsUi.HIT_TEST;
@@ -29,7 +29,7 @@ final class SettingsInput {
     boolean touch(GameCore c,Layout L,int action,int id,float x,float y) {
         if(action==3 || (c.settingsOpen && c.preferences.panelMoving())) { cancel();return false; }
         if(action==0) {
-            pointer=id; pressed=hit(c,L,x,y); downX=x;downY=y;moved=false;offset=0;
+            pointer=id; pressed=hit(c,L,x,y); downX=x;downY=y;moved=kidsVertical=false;offset=0;
             if(pressed==1000+PlayerSettings.MUSIC || pressed==1000+PlayerSettings.EFFECTS) {
                 float v=pressed==1000+PlayerSettings.MUSIC?c.preferences.music:c.preferences.effects;
                 float knob=PlayerSettings.trackL(L)+(PlayerSettings.trackR(L)-PlayerSettings.trackL(L))*v;
@@ -38,9 +38,20 @@ final class SettingsInput {
             if(slider(pressed)) drag(c,L,x+offset);
         } else if(id==pointer && action==2) {
             if(Math.abs(x-downX)+Math.abs(y-downY)>L.unit*.4f) moved=true;
+            if(pressed==1000+PlayerSettings.KIDS && Math.abs(y-downY)>L.unit*.4f
+                    && Math.abs(y-downY)>Math.abs(x-downX)) kidsVertical=true;
             if(slider(pressed)) drag(c,L,x+offset);
         } else if(id==pointer && (action==1 || action==6)) {
             int h=pressed;cancel();
+            if(h==1000+PlayerSettings.KIDS && h==hit(c,L,x,y)) {
+                float dx=x-downX,dy=Math.abs(y-downY);
+                if(!kidsVertical && Math.abs(dx)>=L.unit*.8f && Math.abs(dx)>dy*1.5f) {
+                    // Direction chooses the state; another swipe toward ON must not turn it off.
+                    if(c.preferences.kids!=(dx>0f)) return action(c,L,h);
+                    return false;
+                }
+                if(kidsVertical || Math.abs(dx)+dy>L.unit*.4f) return false;
+            }
             if(!moved && h!=0 && h==hit(c,L,x,y) && !slider(h)) return action(c,L,h);
         }
         return false;
