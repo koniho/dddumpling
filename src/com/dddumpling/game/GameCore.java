@@ -402,6 +402,9 @@ final class GameCore {
         /** Cleared and flying apart; the enemy stays listed until this finishes. */
         boolean destroyed;
         float destroyT;
+        /** A Flurry clear leaves a small rainbow at its original position. */
+        boolean flurryClear;
+        float clearX, clearY;
         /** Per-tile fly-off direction, -1 left or +1 right. */
         float[] flyDir, flyY;
         boolean radialFly;
@@ -3169,6 +3172,9 @@ final class GameCore {
         }
         e.destroyed = true;
         e.destroyT = 0f;
+        e.flurryClear = flurry();
+        e.clearX = enemyCentreX(e);
+        e.clearY = e.y;
         e.dying = false;
         // A destroyed word is no longer a threat, so it must stop looking like one. The
         // update loop skips destroyed words, so whatever warning state it held would

@@ -171,7 +171,53 @@ final class TestPower extends Check {
         return true;
     }
 
+    static GameCore flurryClearScene(Layout L) {
+        GameCore c=new GameCore(new Mem(),133L);c.startGame();
+        c.enemies.clear();c.startFrenzy(Power.FLURRY,L);
+        c.modeLeft=Power.DURATION-2f;c.stageBanner=0;c.time=2f;
+        for(int i=0;i<3;i++) {
+            GameCore.Enemy e=add(c,L,new int[]{i},L.h*(.32f+i*.13f));
+            e.baseX=L.w*(.30f+i*.20f);
+            c.destroyWord(e,c.enemyCentreX(e),e.y,L);
+            e.destroyT=.07f+i*.07f;
+        }
+        c.flash=c.shake=0f;
+        return c;
+    }
+
+    private static void flurryClearRings(Layout L) {
+        group("Flurry clear rings");
+        GameCore c=flurryClearScene(L);
+        check("each simultaneous Flurry clear owns a ring",c.enemies.size()==3
+                && c.enemies.get(0).flurryClear && c.enemies.get(1).flurryClear && c.enemies.get(2).flurryClear);
+        GameCore.Enemy e=c.enemies.get(0);float x=e.clearX,y=e.clearY,t=e.destroyT;
+        e.baseX+=30;e.y+=20;
+        c.destroyWord(e,e.baseX,e.y,L);
+        check("duplicate impacts cannot move or restart a ring",e.clearX==x && e.clearY==y && e.destroyT==t);
+        c.enemies.clear();c.enemies.add(e);
+        RasterPainter p=new RasterPainter((int)L.w,(int)L.h,1);p.clear(0xFF010203);
+        Renderer.flurryClears(p,c,L);
+        int[] pixels=p.resolve();int drawn=0;boolean bounded=true;
+        for(int i=0;i<pixels.length;i++)if(pixels[i]!=0xFF010203) {
+            drawn++;
+            if(Math.hypot(i%(int)L.w-x,i/(int)L.w-y)>L.w*.25f+2f)bounded=false;
+        }
+        check("clear rainbow is visible and limited to half-screen diameter",drawn>0 && bounded);
+        e.destroyT=GameCore.DESTROY_TIME;
+        p.clear(0xFF010203);int[] blank=p.resolve();Renderer.flurryClears(p,c,L);
+        check("clear rainbow fades out before enemy removal",java.util.Arrays.equals(blank,p.resolve()));
+        e.destroyT=t;c.deathT=.2f;
+        Renderer.flurryClears(p,c,L);
+        check("death hides remaining clear rings",java.util.Arrays.equals(blank,p.resolve()));
+        c.deathT=0;c.startGame();
+        check("restart discards clear rings with the enemies",c.enemies.isEmpty());
+        GameCore.Enemy plain=add(c,L,new int[]{0},L.h*.4f);
+        c.destroyWord(plain,c.enemyCentreX(plain),plain.y,L);
+        check("ordinary clears do not emit a rainbow",!plain.flurryClear);
+    }
+
     static void flurryMode(Layout L) {
+        flurryClearRings(L);
         group("FLURRY");
         GameCore c = new GameCore(new Mem(), 206L);
         c.startGame();
@@ -195,6 +241,7 @@ final class TestPower extends Check {
         check("a non-matching key still advances", e.pos == 2);
         advance(c, L, 0.3f);
         check("the word still finishes", e.destroyed);
+        check("a wildcard clear emits its own rainbow",e.flurryClear && e.clearY==e.y);
         check("rainbow keeps its pickup origin",c.powerBurstX==originX && c.powerBurstY==originY
                 && c.flurryBurstProgress()>0f);
         float savedMode=c.modeLeft;

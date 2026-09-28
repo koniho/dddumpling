@@ -403,6 +403,9 @@ FLURRY activation sends a translucent seven-band circular rainbow outward from t
 position for 1.6 seconds. Mystery pickups wait for their selection to finish; the origin stays
 at the original pickup. The ring ends with the power or run. `GameCore.powerBurstX/Y` preserve
 the origin and `Renderer.flurryBurst` draws it without changing gameplay timing.
+Each enemy cleared during FLURRY emits a matching local rainbow at its clear position,
+including both members of a linked pair. It fades with the 0.4-second clear animation
+and never exceeds half the screen width in diameter (`Renderer.flurryClears`).
 
 ## Release book
 

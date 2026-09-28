@@ -608,6 +608,13 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
+        if(wanted("133-flurry")) {
+            GameCore rings=TestPower.flurryClearScene(L);
+            shot(dir,"133-flurry-clear-rings",rings,L,w,h,ss);
+            for(GameCore.Enemy e:rings.enemies)e.destroyT=GameCore.DESTROY_TIME*.78f;
+            shot(dir,"133-flurry-clear-fade",rings,L,w,h,ss);
+        }
+
         if(wanted("132-steamer")) {
             GameCore steam=new GameCore(new Mem(),132L);steam.startGame();
             steam.steamer.opens=5;steam.playtestSteamer(L);

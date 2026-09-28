@@ -85,6 +85,7 @@ final class Renderer extends Draw {
         BossScreen.burst(p, c, L);
         if(c.buddy.entryLeft<=0f) buddy(p, c, L);
         flurryBurst(p,c,L);
+        flurryClears(p,c,L);
         powerup(p, c, L);
         chain(p, c, L);
         shots(p, c, L);
@@ -498,10 +499,31 @@ final class Renderer extends Draw {
         float reach=(float)Math.hypot(dx,dy)+width*7f;
         float radius=width*7f+reach*t;
         float fade=Math.min(1f,t/0.06f)*(1f-t)*(1f-t);
-        int[] colors={0xFFFF707C,0xFFFFA75E,0xFFFFE477,0xFF8FE39A,0xFF79DDEB,0xFF8D9FF3,0xFFC58DEA};
-        for(int band=0;band<colors.length;band++)
-            p.strokeCircle(c.powerBurstX,c.powerBurstY,radius-band*width,
-                    Glyph.withAlpha(colors[band],(int)(135*fade)),width);
+        rainbowRing(p,c.powerBurstX,c.powerBurstY,radius,width,fade);
+    }
+
+    private static final int[] FLURRY_RAINBOW={0xFFFF707C,0xFFFFA75E,0xFFFFE477,0xFF8FE39A,
+            0xFF79DDEB,0xFF8D9FF3,0xFFC58DEA};
+
+    private static void rainbowRing(Painter p,float x,float y,float radius,float width,float fade) {
+        for(int band=0;band<FLURRY_RAINBOW.length;band++)
+            p.strokeCircle(x,y,radius-band*width,
+                    Glyph.withAlpha(FLURRY_RAINBOW[band],(int)(135*fade)),width);
+    }
+
+    static void flurryClears(Painter p,GameCore c,Layout L) {
+        if(c.state!=GameCore.PLAY || c.dying())return;
+        float width=Math.min(L.enemyR*.10f,L.w/120f);
+        // Include the outer stroke edge in the half-screen diameter limit.
+        float limit=L.w*.25f-width*.5f;
+        for(GameCore.Enemy e:c.enemies) {
+            if(!e.destroyed || !e.flurryClear)continue;
+            float t=e.destroyT/GameCore.DESTROY_TIME;
+            if(t<0f || t>=1f)continue;
+            float radius=width*7f+(limit-width*7f)*t;
+            float fade=Math.min(1f,t/.08f)*(1f-t)*(1f-t);
+            rainbowRing(p,e.clearX,e.clearY,radius,width,fade);
+        }
     }
 
     static void powerup(Painter p, GameCore c, Layout L, Power w, float fade) {

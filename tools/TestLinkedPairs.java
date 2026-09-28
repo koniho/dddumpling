@@ -237,6 +237,8 @@ final class TestLinkedPairs extends Check {
         check("one flurry button cannot double-tap a bond",!a.destroyed && !b.destroyed && a.linkWaiting);
         c.tapKey((wildcard+1)%Glyph.COUNT,L);
         check("two distinct wildcards complete the pair",a.destroyed && b.destroyed);
+        check("both linked Flurry clears emit separate rainbows",a.flurryClear && b.flurryClear
+                && a.clearX!=b.clearX);
 
         c = wave(L,16); a = c.enemies.get(0); b = a.link;
         c.startFrenzy(Power.FLURRY,L);
