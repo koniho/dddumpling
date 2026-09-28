@@ -12,7 +12,7 @@ final class TestFrenzyRefill extends Check {
         c.spawnTimer = 2f;
         float calm = c.spawnInterval();
         check("ordinary waves keep their normal spawn delay", Power.spawnDelay(c, L) == calm);
-        c.startFrenzy(Power.FLING, L);
+        c.startFrenzy(Power.NINJA, L);
         float regular = calm / Power.spawnRate(c.ramp());
         check("activation shortens the old wave timer on an empty field", c.spawnTimer < regular);
         check("empty field gets a faster replacement", Power.spawnDelay(c, L) < regular);
@@ -73,7 +73,7 @@ final class TestFrenzyRefill extends Check {
                 c.startGame();
                 c.stage = stage;
                 c.enemies.clear();
-                c.startFrenzy(Power.FLING, L);
+                c.startFrenzy(Power.NINJA, L);
                 c.lives = 99;
                 float gap = 0f;
                 for (int frame = 0; frame < 12 * 60; frame++) {

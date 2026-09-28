@@ -15,7 +15,7 @@ POWERUPS THAT CHANGE THE RULES
 Catch a glowing powerup and the whole field transforms for a playful burst of action:
 
 • FLURRY turns rapid taps into a rainbow rush
-• FLING lets a swipe slice through falling sequences
+• NINJA lets a swipe slice through falling sequences
 • TEAM SQUISH sends a collected friend bouncing into the action
 
 Deeper runs add mystery pickups too. You might uncover another burst of power, or face a mischievous twist that disguises the characters or drains away their color. Adapt quickly and keep the run alive.

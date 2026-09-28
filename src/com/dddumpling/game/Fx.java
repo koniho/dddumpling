@@ -65,7 +65,7 @@ final class Fx {
     }
 
     /**
-     * One sparkle, for the trail that follows a finger during FLING. Slower and longer-lived
+     * One sparkle, for the trail that follows a finger during NINJA. Slower and longer-lived
      * than an explosion mote, so a drag leaves a readable ribbon rather than a puff.
      */
     static void sparkle(GameCore c, Random rnd, float x, float y, float size, int color) {

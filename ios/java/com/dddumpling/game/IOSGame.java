@@ -195,13 +195,13 @@ public final class IOSGame {
         // swipe — a finger that landed on a glob is carrying that glob, not slicing or shoving.
         if (handleBoss(ev, action)) return true;
 
-        // FLING: grab a letter and throw it. Handled before the key routing so a drag that
+        // NINJA: swipe through letters to slice them. Handled before the key routing so a drag that
         // starts on a letter is never mistaken for a key press.
-        if (core.flinging() && handleFling(ev, action)) return true;
+        if (core.ninja() && handleNinja(ev, action)) return true;
 
         // Panic swipe: an upward drag starting anywhere in the lower half of the field.
         // Needs MOVE events, so it is handled before the down-only filter. After the blade,
-        // because during a FLING frenzy a stroke through that strip is a cut and should stay one.
+        // because during a NINJA frenzy a stroke through that strip is a cut and should stay one.
         if (handlePush(ev, action)) return true;
 
         if (action != IOSTouch.ACTION_DOWN && action != IOSTouch.ACTION_POINTER_DOWN) {
@@ -635,7 +635,7 @@ public final class IOSGame {
     }
 
     /**
-     * FLING is a blade: a stroke cuts every letter it sweeps past. Returns true when the event
+     * NINJA is a blade: a stroke cuts every letter it sweeps past. Returns true when the event
      * belonged to the gesture, so the caller leaves it alone.
      *
      * This used to grab a letter and drag it, which is why the mode felt weak — one letter per
@@ -646,7 +646,7 @@ public final class IOSGame {
      * already goes to {@link GameCore#sliceTo}, which is where both decisions are made. What this
      * tracks is only whether the finger is on the glass at all, hence {@code touchDown}.
      */
-    private boolean handleFling(IOSTouch ev, int action) {
+    private boolean handleNinja(IOSTouch ev, int action) {
         int i = ev.getActionIndex();
         float x = ev.getX(i), y = ev.getY(i);
 
@@ -744,7 +744,7 @@ public final class IOSGame {
             try { stage = Integer.parseInt(scene.substring(6)); }
             catch (NumberFormatException invalid) { return; }
         } else if (!scene.equals("title") && !scene.equals("case") && !scene.equals("play")
-                && !scene.equals("stars") && !scene.equals("steamer") && !scene.equals("fling")
+                && !scene.equals("stars") && !scene.equals("steamer") && !scene.equals("ninja")
                 && !scene.equals("pause")) return;
         cancelPointers();
         Pause.resume(core);
@@ -753,7 +753,7 @@ public final class IOSGame {
         core.startGame();
         if (scene.equals("stars")) core.playtestStars(layout);
         else if (scene.equals("steamer")) core.playtestSteamer(layout);
-        else if (scene.equals("fling")) core.playtestMode(Power.FLING, layout);
+        else if (scene.equals("ninja")) core.playtestMode(Power.NINJA, layout);
         else if (scene.startsWith("stage:")) core.jumpToStage(stage, layout);
         else if (scene.equals("pause")) Pause.open(core);
     }

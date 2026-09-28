@@ -11,7 +11,7 @@ Pure (in the harness and the APK):
 | `Layout` | every screen coordinate, derived from view size + insets |
 | `GameCore` | the spine: state machine, the frame loop, the press router, and the state everything else works on |
 | `Pacing` | the stage difficulty dials. Pure functions of stage — the one file to read when tuning |
-| `Blade` | the FLING swipe: what a stroke is, when it ends, what one sweep cuts |
+| `Blade` | the NINJA swipe: what a stroke is, when it ends, what one sweep cuts |
 | `CaseUi` | browsing the display case: scroll, jump, drag, two-tap wipe |
 | `Interlude` | the between-stages round: mash, course, blind box, parade |
 | `BossPlay` | the boss fight's wiring — a press or drag turned into score, sound, shots and lives |

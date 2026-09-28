@@ -82,14 +82,14 @@ mapping for the four bosses, not an additional encounter.
 | Story dismissal | `GameCore.closeStory`, `Storybook` | `IOSGame.touch` | Wired; pending |
 | Pause button, pause choices, back, background cancellation | `Pause` | `DDGameView.navigateBack/setActive`, `IOSGame.background/back` | Wired; pending |
 | Direct powerup tap | `GameCore.tapPower`, `Power` | `IOSGame.touch` before field gestures | Wired; pending |
-| FLING blade, including coalesced move samples | `Blade`, `GameCore.beginStroke/sliceTo/endStroke` | `IOSGame.handleFling` | Wired; pending |
+| NINJA blade, including coalesced move samples | `Blade`, `GameCore.beginStroke/sliceTo/endStroke` | `IOSGame.handleNinja` | Wired; pending |
 | Panic upward PUSH | `GameCore.swipeUp`, `Layout.inPushZone` | `IOSGame.handlePush` | Wired; pending |
 | Boss element tap, drag ownership, two-finger pinch, and cancel | `BossPlay`, `Boss` | `IOSGame.handleBoss` | Wired; pending |
 | Steamer key mash and armed-lid upward drag | `Interlude`, `Steamer` | `IOSGame.touch`, `handleBonusSwipe` | Wired; pending |
 | Starpath flyer/slider direct steering and release/cancel | `StarPath`, `StarScreen` | `IOSGame.handleStarDrag` | Wired; pending |
 
 The translated `IOSInputTest` covers packet identity, lifecycle cancellation,
-land dragging, Starpath dragging, boss drag/pinch ownership, and FLING history.
+land dragging, Starpath dragging, boss drag/pinch ownership, and NINJA history.
 It is implementation evidence only until it is run as part of the iOS build.
 
 ## Saved fields

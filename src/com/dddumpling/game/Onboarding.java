@@ -43,7 +43,7 @@ final class Onboarding extends Draw {
     }
     static int powerSpeech(int kind) {
         if(kind==Power.FLURRY)return TutorialSpeech.POWER_FLURRY;
-        if(kind==Power.FLING)return TutorialSpeech.POWER_FLING;
+        if(kind==Power.NINJA)return TutorialSpeech.POWER_NINJA;
         if(kind==Power.TEAM)return TutorialSpeech.POWER_TEAM;
         return 0; // Debuffs and the retired MULTI mode are not offered tutorials.
     }
@@ -279,7 +279,7 @@ final class Onboarding extends Draw {
                 || c.stars.won || c.stars.exiting() || c.stars.reporting())) {
             boolean touch=ownsTouch;clear();ownsTouch=touch;
         }
-        if(hintKind==STACK_HINT && (c.flinging() || c.team())) {
+        if(hintKind==STACK_HINT && (c.ninja() || c.team())) {
             // These powers bypass repeated taps; defer, rather than learn, an existing hint.
             boolean touch=ownsTouch;clear();ownsTouch=touch;
         }

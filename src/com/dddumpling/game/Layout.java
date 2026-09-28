@@ -124,7 +124,7 @@ final class Layout {
      *
      * Nothing else in play claims a touch in here — the keys are all below {@link #deckTop} and the
      * settings tap is up at the HUD — so widening it takes nothing away. The one gesture it shares
-     * the field with is the FLING blade, and {@code GameView} runs the blade first for that reason.
+     * the field with is the NINJA blade, and {@code GameView} runs the blade first for that reason.
      */
     boolean inPushZone(float x, float y) {
         return y >= h / 2f && y <= deckTop;

@@ -122,7 +122,7 @@ policy lives in [AGENTS.md](../../AGENTS.md).
   thumbs take, what slow thumbs take, and what nobody-at-the-controls takes. The last one is the
   guard; see the pickup entry above for what it caught.
 
-- **A beat that fires once can be too long to fire twenty times.** The fling stroke's slow-motion is
+- **A beat that fires once can be too long to fire twenty times.** The ninja stroke's slow-motion is
   0.28s, and reusing it for a star pickup would have put the end of a good course in continuous slow
   motion — and every beat lengthens the course in real time, since the course clock is scaled too.
   `GameCore.STAR_BEAT` is a quarter of it, and there is an assertion on what a clean run costs in

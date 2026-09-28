@@ -245,7 +245,7 @@ final class Demo extends Draw {
         float age = loopTime(c) - POWER_START;
         if (age < 0f || age >= POWER_TOUCH + Power.POP_TIME) return null;
         Power power = new Power();
-        power.effect = Power.FLING;
+        power.effect = Power.NINJA;
         float travel = Math.min(1f, age / POWER_TOUCH);
         power.x = -L.enemyR * 2f + (L.w * 0.70f + L.enemyR * 2f) * travel;
         power.y = L.h * 0.395f;

@@ -91,7 +91,7 @@ final class Renderer extends Draw {
         particles(p, c);
         // In front: a bolt is the one thing on a boss stage that costs a life.
         BossScreen.bolts(p, c, L);
-        flingHint(p, c, L);
+        ninjaHint(p, c, L);
         blade(p, c, L);
 
         // ...and the nearest one in front of them, so words pass behind it. Kept the most
@@ -609,7 +609,7 @@ final class Renderer extends Draw {
             p.strokePoly(hex,ink,r*0.07f);
             for(int i=0;i<3;i++) p.fillCircle(x+(i-1)*r*0.38f,y+r*0.90f,r*0.11f,
                     fadeBy(i==0?0xFFF1F1F1:i==1?0xFFAAAAAA:0xFF555555,fade));
-        } else if (effect == Power.FLING) {
+        } else if (effect == Power.NINJA) {
             p.polyline(new float[] {x - r * 0.78f, y + r * 0.38f, x - r * 0.20f, y - r * 0.28f,
                     x + r * 0.55f, y - r * 0.18f}, ink, r * 0.22f);
             p.fillPoly(new float[] {x + r * 0.92f, y - r * 0.10f, x + r * 0.42f, y - r * 0.52f,
@@ -624,13 +624,13 @@ final class Renderer extends Draw {
     }
 
     /**
-     * Instructional finger for FLING, shown until the player first touches. A hand outline
+     * Instructional finger for NINJA, shown until the player first touches. A hand outline
      * tracing the same arc the sparkle trail follows, so the hint demonstrates the gesture
      * rather than describing it — and the gesture is a swipe through the letters, not a grab
      * of one, which is why the trail matters more than the hand.
      */
-    static void flingHint(Painter p, GameCore c, Layout L) {
-        if (c.onboarding.briefing || !c.showFlingHint()) return;
+    static void ninjaHint(Painter p, GameCore c, Layout L) {
+        if (c.onboarding.briefing || !c.showNinjaHint()) return;
         touchHint(p, c.demoX, c.demoY, L.enemyR * 1.05f, 1.10f, 1f, c.clock);
     }
 
@@ -723,7 +723,7 @@ final class Renderer extends Draw {
      * swipe rather than the readout mysteriously counting from one again.
      */
     static void blade(Painter p, GameCore c, Layout L) {
-        if (!c.flinging()) return;
+        if (!c.ninja()) return;
         float fade = c.fingerDown ? 1f : c.strokeFade / Blade.STROKE_FADE;
         if (fade <= 0f) return;
         float r = L.enemyR * Blade.BLADE;

@@ -90,7 +90,7 @@ haptics. These launch switches are diagnostic tools, not saved player settings.
 
 ## Physical-device follow-up — 2026-09-13
 
-The player reports FLING is much improved after moving audio off the main thread, but rapid
+The player reports NINJA is much improved after moving audio off the main thread, but rapid
 presses still stutter, especially during FLURRY. A 31.3-second Time Profiler attachment to
 the Debug build on iPhone 16 Pro Max / iOS 26.6.1 captured 9,784 main-thread CPU samples.
 7,139 (73%) included `DDGameView.drawRect:`, 20 included input packet handling, and three

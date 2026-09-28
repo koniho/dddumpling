@@ -1,7 +1,7 @@
 package com.dddumpling.game;
 
 /**
- * The FLING blade: a swipe that cuts every tile it sweeps past, plus its slow-motion beat and its
+ * The NINJA blade: a swipe that cuts every tile it sweeps past, plus its slow-motion beat and its
  * sparkle trail.
  *
  * Operates on {@code GameCore}'s fields rather than owning them, the same seam {@link Fx} uses — a
@@ -20,7 +20,7 @@ final class Blade {
     static final float SLOW_TIME = 0.28f;
     /**
      * The same beat for taking a star, at a quarter of the length. A course hands out up to thirty
-     * these, the last few a fifth of a second apart, so at the fling's length a good course would be
+     * these, the last few a fifth of a second apart, so at the ninja's length a good course would be
      * continuously slow rather than punctuated. Every beat also stretches the flight in real time,
      * since the course clock is scaled by it. {@code TestStars} holds the total.
      */
@@ -80,7 +80,7 @@ final class Blade {
         c.strokeIdle = 0f;
         c.strokeAge = 0f;
         c.strokeFade = 0f;
-        c.flingUsed = true;
+        c.ninjaUsed = true;
         c.strokeKills = 0;
         c.strokeCuts = 0;
         for (GameCore.Enemy e : c.enemies) e.linkSliceRejected = false;
@@ -109,7 +109,7 @@ final class Blade {
      */
     static void updateStroke(GameCore c, float dt) {
         c.strokeFade = Math.max(0f, c.strokeFade - dt);
-        if (!c.flinging() || c.state != GameCore.PLAY) {
+        if (!c.ninja() || c.state != GameCore.PLAY) {
             c.touchDown = false;
             c.fingerDown = false;
             return;
@@ -131,7 +131,7 @@ final class Blade {
         float x0 = c.fingerX, y0 = c.fingerY;
         c.fingerX = x;
         c.fingerY = y;
-        if (!c.flinging() || !c.touchDown) return 0;
+        if (!c.ninja() || !c.touchDown) return 0;
 
         // From the anchor, not along the path — see STROKE_MOVE.
         float ax = x - c.strokeAnchorX, ay = y - c.strokeAnchorY;
@@ -202,7 +202,7 @@ final class Blade {
                 if (!e.typeable()) break;
             }
         }
-        if(cut>0)c.onboarding.learn(c,TutorialSpeech.POWER_FLING);
+        if(cut>0)c.onboarding.learn(c,TutorialSpeech.POWER_NINJA);
         return cut;
     }
 
@@ -247,7 +247,7 @@ final class Blade {
     static void updateTrail(GameCore c, float dt, Layout L) {
         // The finger is released by updateStroke, not here: this runs below the PLAY return and a
         // frenzy can end on a frame that never reaches it.
-        if (!c.flinging()) return;
+        if (!c.ninja()) return;
         c.demoX = L.w * 0.5f + (float) Math.sin(c.clock * 2.2f) * L.w * 0.26f;
         c.demoY = L.h * 0.45f + (float) Math.cos(c.clock * 1.5f) * L.h * 0.04f;
 
@@ -256,7 +256,7 @@ final class Blade {
         if (c.fingerDown) {
             sx = c.fingerX;
             sy = c.fingerY;
-        } else if (!c.flingUsed) {
+        } else if (!c.ninjaUsed) {
             sx = c.demoX;
             sy = c.demoY;
         } else {

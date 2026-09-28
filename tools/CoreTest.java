@@ -137,7 +137,7 @@ final class CoreTest {
             TestPower.multiMode(L);
             TestPower.chain(L);
             TestPower.teamMode(L);
-            TestPower.flingMode(L);
+            TestPower.ninjaMode(L);
             TestPower.blade(L);
             TestPower.strokeEnd(L);
             TestPower.modeSpread(L);

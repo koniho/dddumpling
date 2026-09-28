@@ -35,7 +35,7 @@ policy lives in [AGENTS.md](../../AGENTS.md).
   was the hardest one to land. `Layout.inPushZone` is now the lower half of the field and the lit
   strip is unchanged: a hint the size of half the screen is not a hint. Nothing else claims a touch
   in there (keys are below `deckTop`, the settings tap is up at the HUD, and `GameView` runs the
-  FLING blade first), which is what makes the catchment free to be generous.
+  NINJA blade first), which is what makes the catchment free to be generous.
 
 - **A gap you open has to stay open.** The panic swipe used to shove only the words below the
   halfway mark, straight through whatever was above them, leaving two rows of letters on the same
@@ -43,7 +43,7 @@ policy lives in [AGENTS.md](../../AGENTS.md).
   lowest-first and takes anything a shoved word would land on, which cascades, so a packed board goes
   up as one. Any rule that *moves* something has to answer for what is already where it is going.
 
-- **A gesture delimited by the hardware is not a gesture.** A FLING stroke used to run from
+- **A gesture delimited by the hardware is not a gesture.** A NINJA stroke used to run from
   touch-down to touch-up, so a finger parked on the glass held one combo open for the whole frenzy
   and "N IN ONE!" was a number you waited for rather than earned. A swipe is a *motion*: the stroke
   now ends after `STROKE_DWELL` without a definite move, and the next move under the same finger

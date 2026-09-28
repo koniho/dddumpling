@@ -11,8 +11,8 @@ final class Power {
 
     /** All keys become wildcards: any press attacks the next letter. */
     static final int FLURRY = 0;
-    /** Letters can be dragged bodily off the screen. */
-    static final int FLING = 1;
+    /** A swipe slices every letter along the blade. */
+    static final int NINJA = 1;
     /** A press chains through every matching letter in every word, engaged or not. */
     static final int MULTI = 2;
     /**
@@ -34,17 +34,17 @@ final class Power {
     }
 
     /** Player-facing pool. MULTI is retired but retains its id for compatibility. */
-    static final int[] OFFERED = {FLURRY, FLING, TEAM};
+    static final int[] OFFERED = {FLURRY, NINJA, TEAM};
     static int offeredCount(boolean teamAvailable) { return teamAvailable ? 3 : 2; }
     static int offeredAt(int chip) { return OFFERED[chip]; }
 
-    static final String[] NAMES = {"FLURRY", "FLING", "MULTI", "TEAM SQUISH", "INCOGNITO", "MONOCHROME"};
+    static final String[] NAMES = {"FLURRY", "NINJA", "MULTI", "TEAM SQUISH", "INCOGNITO", "MONOCHROME"};
     /**
      * The same four for the settings panel's playtest chips, where the space is a fifth of the
      * panel each and TEAM SQUISH ran straight out of its box the moment a fifth chip was added.
      * A separate table rather than a truncation, because which word to keep is a judgement.
      */
-    static final String[] CHIP = {"FLURRY", "FLING", "MULTI", "TEAM"};
+    static final String[] CHIP = {"FLURRY", "NINJA", "MULTI", "TEAM"};
     static final String[] BLURB = {"ANY KEY HITS", "SWIPE TO SLICE", "CHAINS EVERY MATCH",
             "YOUR SQUISHY FIGHTS", "MATCH THE COLORS", "MATCH THE CHARACTERS"};
 
@@ -77,7 +77,7 @@ final class Power {
      * by stage 22 it wanted 43. Nobody has 23 presses a second. FLURRY is where this was felt worst,
      * because it is the one mode that buys accuracy rather than throughput: MULTI takes every
      * matching tile on the field with one press and so gets *better* the more crowded it is, TEAM
-     * SQUISH fields a second killer, FLING cuts several tiles a stroke, and FLURRY does exactly one
+     * SQUISH fields a second killer, NINJA cuts several tiles a stroke, and FLURRY does exactly one
      * press worth of work per press, same as ordinary play.
      */
     static final float LATE_RATIO = 2f;

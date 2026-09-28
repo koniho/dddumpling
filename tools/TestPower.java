@@ -179,7 +179,7 @@ final class TestPower extends Check {
         c.target = null;
         place(c, L, Power.FLURRY, 0);
         c.tapPower(c.power.x, c.power.y, L);
-        check("flurry is running", c.flurry() && !c.flinging() && !c.multi());
+        check("flurry is running", c.flurry() && !c.ninja() && !c.multi());
         check("flurry rainbow starts at the pickup",c.powerBurstX==c.power.x && c.powerBurstY==c.power.y
                 && c.flurryBurstProgress()==0f);
         float originX=c.powerBurstX,originY=c.powerBurstY;
@@ -222,7 +222,7 @@ final class TestPower extends Check {
         advance(mystery,L,Power.SELECT_TIME+0.05f);
         check("mystery flurry expands from the original bobbed pickup",mystery.flurryBurstProgress()>=0f
                 && mystery.powerBurstY==pickedY);
-        mystery.playtestMode(Power.FLING,L);
+        mystery.playtestMode(Power.NINJA,L);
         check("other powers do not show a flurry rainbow",mystery.flurryBurstProgress()<0f);
 
     }
@@ -275,7 +275,7 @@ final class TestPower extends Check {
                 Power.NAMES.length == Power.MONOCHROME+1 && Power.BLURB.length == Power.MONOCHROME+1);
         check("MULTI is absent from the offered pool",
                 Power.OFFERED.length == 3 && Power.OFFERED[0] == Power.FLURRY
-                        && Power.OFFERED[1] == Power.FLING && Power.OFFERED[2] == Power.TEAM);
+                        && Power.OFFERED[1] == Power.NINJA && Power.OFFERED[2] == Power.TEAM);
 
         // The draw itself, made in the same order spawnPower makes it.
         java.util.Random r = new java.util.Random(4242L);
@@ -499,30 +499,30 @@ final class TestPower extends Check {
         check("their entrance curves rather than following a straight diagonal", curved);
         check("they reach the damage line in their settled lane", lands);
 
-        // FLING shares the same mixed entrance pool. Its blade benefits from targets arcing into
+        // NINJA shares the same mixed entrance pool. Its blade benefits from targets arcing into
         // the field, but top-down words remain so the frenzy does not become one repeated motion.
-        GameCore flingPaths = new GameCore(new Mem(), 276L);
-        flingPaths.startGame();
-        flingPaths.enemies.clear();
-        flingPaths.playtestMode(Power.FLING, L);
-        int flingTops = 0, flingSides = 0;
-        boolean flingCrosses = true;
+        GameCore ninjaPaths = new GameCore(new Mem(), 276L);
+        ninjaPaths.startGame();
+        ninjaPaths.enemies.clear();
+        ninjaPaths.playtestMode(Power.NINJA, L);
+        int ninjaTops = 0, ninjaSides = 0;
+        boolean ninjaCrosses = true;
         for (int i = 0; i < 80; i++) {
-            flingPaths.enemies.clear();
-            flingPaths.spawnTimer = 0f;
-            flingPaths.modeLeft = Power.DURATION;
-            flingPaths.update(DT, L);
-            GameCore.Enemy word = flingPaths.enemies.get(0);
+            ninjaPaths.enemies.clear();
+            ninjaPaths.spawnTimer = 0f;
+            ninjaPaths.modeLeft = Power.DURATION;
+            ninjaPaths.update(DT, L);
+            GameCore.Enemy word = ninjaPaths.enemies.get(0);
             if (!word.sideEntry) {
-                flingTops++;
+                ninjaTops++;
             } else {
-                flingSides++;
-                flingCrosses &= word.pathStartX < L.playLeft
+                ninjaSides++;
+                ninjaCrosses &= word.pathStartX < L.playLeft
                         ? word.pathEndX > word.pathStartX : word.pathEndX < word.pathStartX;
             }
         }
-        check("FLING mixes top and side entrances", flingTops > 0 && flingSides > 0);
-        check("FLING side words arc into the field", flingCrosses);
+        check("NINJA mixes top and side entrances", ninjaTops > 0 && ninjaSides > 0);
+        check("NINJA side words arc into the field", ninjaCrosses);
         float small = c.buddy.radius(L), dim = c.buddy.glow();
 
         // It stays inside the field, however long it bounces around in there.
@@ -894,7 +894,7 @@ final class TestPower extends Check {
 
     /** The blade: what one stroke cuts, and the beat a multi-word stroke earns. */
     static void blade(Layout L) {
-        group("FLING blade");
+        group("NINJA blade");
         // Distance from a point to a segment, which is what decides every cut.
         check("a point on the segment is at no distance",
                 Blade.segDist2(5f, 0f, 0f, 0f, 10f, 0f) < 0.001f);
@@ -910,9 +910,9 @@ final class TestPower extends Check {
         c.startGame();
         c.enemies.clear();
         c.target = null;
-        place(c, L, Power.FLING, 0);
+        place(c, L, Power.NINJA, 0);
         c.tapPower(c.power.x, c.power.y, L);
-        check("fling is running", c.flinging());
+        check("ninja is running", c.ninja());
 
         // One stroke straight across a whole word takes every letter in it. The old model cut
         // one tile per gesture, and only if the gesture began on one.
@@ -940,7 +940,7 @@ final class TestPower extends Check {
         d.startGame();
         d.enemies.clear();
         d.target = null;
-        place(d, L, Power.FLING, 0);
+        place(d, L, Power.NINJA, 0);
         d.tapPower(d.power.x, d.power.y, L);
         float row = L.playTop + 320f;
         GameCore.Enemy a = add(d, L, new int[] {1}, row);
@@ -993,17 +993,17 @@ final class TestPower extends Check {
     }
 
     /**
-     * A core mid-FLING with an empty, quiet field.
+     * A core mid-NINJA with an empty, quiet field.
      *
      * Spawning is held off for the length of the test: these are timing tests, and a word arriving
      * of its own accord would wander into a slice and make the counts a matter of luck.
      */
-    private static GameCore flingCore(Layout L, long seed) {
+    private static GameCore ninjaCore(Layout L, long seed) {
         GameCore c = new GameCore(new Mem(), seed);
         c.startGame();
         c.enemies.clear();
         c.target = null;
-        place(c, L, Power.FLING, 0);
+        place(c, L, Power.NINJA, 0);
         c.tapPower(c.power.x, c.power.y, L);
         c.stageGap = 30f;
         return c;
@@ -1017,7 +1017,7 @@ final class TestPower extends Check {
      * for rather than earned.
      */
     static void strokeEnd(Layout L) {
-        group("what ends a fling stroke");
+        group("what ends a ninja stroke");
         check("a dwell is a beat, not a pause",
                 Blade.STROKE_DWELL >= 0.15f && Blade.STROKE_DWELL <= 0.3f);
         check("a definite move is more than jitter and less than a tile",
@@ -1031,7 +1031,7 @@ final class TestPower extends Check {
         check("staying awake asks for a crawl, not a sprint", keepAwake < L.w * 0.12f);
 
         // Holding still ends the stroke without the finger going anywhere.
-        GameCore c = flingCore(L, 241L);
+        GameCore c = ninjaCore(L, 241L);
         float row = L.playTop + 300f;
         GameCore.Enemy e = add(c, L, new int[] {1, 2, 3, 4}, row);
         c.beginStroke(c.tileX(e, 0, L) - L.enemyR * 2f, row);
@@ -1046,14 +1046,14 @@ final class TestPower extends Check {
         check("the edge goes out in its own time", c.strokeFade == 0f);
 
         // A beat shorter than the dwell is not a stop.
-        GameCore b = flingCore(L, 242L);
+        GameCore b = ninjaCore(L, 242L);
         b.beginStroke(L.w * 0.5f, row);
         advance(b, L, Blade.STROKE_DWELL - 0.06f);
         check("a shorter hesitation leaves the stroke alone", b.fingerDown);
 
         // A finger resting on a screen still reports a pixel or two a frame. Summing the path
         // would let a tremble hold a combo open, which is why the test is from an anchor.
-        GameCore j = flingCore(L, 243L);
+        GameCore j = ninjaCore(L, 243L);
         float jx = L.w * 0.5f;
         j.beginStroke(jx, row);
         for (int i = 0; i < 30; i++) {
@@ -1065,7 +1065,7 @@ final class TestPower extends Check {
 
         // The thing the mode exists for: a fast sweep through four words, in per-frame samples the
         // way a real swipe arrives, must run to the end of the motion as one stroke.
-        GameCore f = flingCore(L, 244L);
+        GameCore f = ninjaCore(L, 244L);
         float span = L.playRight - L.playLeft;
         for (int i = 0; i < 4; i++) {
             GameCore.Enemy one = add(f, L, new int[] {i + 1}, row);
@@ -1086,7 +1086,7 @@ final class TestPower extends Check {
         // technically always moving, so the dwell alone would let it hold a combo open for ever.
         // It takes a wide, fast wiggle — anything smaller than a definite move reads as the
         // tremble above and rests — which is why this is a backstop and not the main mechanism.
-        GameCore g = flingCore(L, 245L);
+        GameCore g = ninjaCore(L, 245L);
         float gx = L.w * 0.5f, amp = L.enemyR * Blade.STROKE_MOVE * 1.2f;
         g.beginStroke(gx, row);
         int frames = 0;
@@ -1102,7 +1102,7 @@ final class TestPower extends Check {
                 lived >= Blade.STROKE_MAX - 0.05f);
 
         // Waking: one touch may hold several strokes, and each counts for itself.
-        GameCore h = flingCore(L, 246L);
+        GameCore h = ninjaCore(L, 246L);
         GameCore.Enemy w1 = add(h, L, new int[] {1, 2}, row);
         h.beginStroke(h.tileX(w1, 0, L) - L.enemyR * 2f, row);
         h.sliceTo(h.tileX(w1, 1, L) + L.enemyR * 2f, row, L);
@@ -1120,7 +1120,7 @@ final class TestPower extends Check {
 
         // The readout belongs to the stroke that earned it. It outlives that stroke on purpose,
         // and a fresh stroke starting inside its 1.1s must not rewrite the number it is showing.
-        GameCore k = flingCore(L, 247L);
+        GameCore k = ninjaCore(L, 247L);
         GameCore.Enemy k1 = add(k, L, new int[] {1}, row);
         GameCore.Enemy k2 = add(k, L, new int[] {2}, row);
         k1.baseX = L.playLeft + L.enemyR * 2f;
@@ -1139,7 +1139,7 @@ final class TestPower extends Check {
 
         // A stroke has two exits, and dying mid-swipe is the one that never reaches the PLAY half
         // of the loop. The finger has to be let go there too, or a blade hangs over the summary.
-        GameCore m = flingCore(L, 248L);
+        GameCore m = ninjaCore(L, 248L);
         m.beginStroke(L.w * 0.5f, row);
         m.lives = 1;
         m.enemies.clear();
@@ -1151,7 +1151,7 @@ final class TestPower extends Check {
 
         // A rested stroke stops laying the ribbon too: that dying trail is how the end of a swipe
         // is seen rather than inferred from the readout.
-        GameCore t = flingCore(L, 249L);
+        GameCore t = ninjaCore(L, 249L);
         t.beginStroke(L.w * 0.4f, L.h * 0.4f);
         advance(t, L, Blade.STROKE_DWELL + 2 * DT);
         t.particles.clear();
@@ -1159,15 +1159,15 @@ final class TestPower extends Check {
         check("a rested stroke lays no trail", t.particles.isEmpty());
     }
 
-    static void flingMode(Layout L) {
-        group("FLING");
+    static void ninjaMode(Layout L) {
+        group("NINJA");
         GameCore c = new GameCore(new Mem(), 208L);
         c.startGame();
         c.enemies.clear();
         c.target = null;
-        place(c, L, Power.FLING, 0);
+        place(c, L, Power.NINJA, 0);
         c.tapPower(c.power.x, c.power.y, L);
-        check("fling is running", c.flinging());
+        check("ninja is running", c.ninja());
 
         GameCore.Enemy e = add(c, L, new int[] {1, 2, 3}, L.playTop + 300);
 
@@ -1191,26 +1191,26 @@ final class TestPower extends Check {
         advance(c, L, 0.3f);
         check("the word finishes normally", e.destroyed);
 
-        // Flinging the last remaining letters finishes the word directly.
+        // Slicing the last remaining letters finishes the word directly.
         c.enemies.clear();
         c.target = null;
         GameCore.Enemy f = add(c, L, new int[] {5, 5}, L.playTop + 300);
         c.removeTile(f, 1, 1f, 0f, L);
         check("still going with one letter left", !f.destroyed);
         c.removeTile(f, 0, -1f, 0f, L);
-        check("flinging the last letter destroys the word", f.destroyed);
+        check("slicing the last letter destroys the word", f.destroyed);
     }
 
     static void trail(Layout L) {
-        group("fling trail");
+        group("ninja trail");
         GameCore c = new GameCore(new Mem(), 210L);
         c.startGame();
         c.enemies.clear();
         c.particles.clear();
-        place(c, L, Power.FLING, 0);
+        place(c, L, Power.NINJA, 0);
         c.tapPower(c.power.x, c.power.y, L);
-        check("fling is running", c.flinging());
-        check("the hint shows before any touch", c.showFlingHint());
+        check("ninja is running", c.ninja());
+        check("the hint shows before any touch", c.showNinjaHint());
 
         // Untouched, the demonstration emits its own trail along a moving path.
         c.particles.clear();
@@ -1231,7 +1231,7 @@ final class TestPower extends Check {
             c.update(DT, L);
         }
         check("the stroke is still going", c.fingerDown);
-        check("the hint retires after a touch", !c.showFlingHint());
+        check("the hint retires after a touch", !c.showNinjaHint());
         check("the trail follows the finger", c.particles.size() > 3);
         boolean nearFinger = true;
         for (int i = 0; i < c.particles.size(); i++) {
@@ -1251,7 +1251,7 @@ final class TestPower extends Check {
         c.modeLeft = 0.001f;
         advance(c, L, 0.2f);
         check("the frenzy ending releases the finger", !c.fingerDown && !c.touchDown);
-        check("no trail once fling is over", !c.flinging());
+        check("no trail once ninja is over", !c.ninja());
 
         // Other modes must not emit a trail or show the hint.
         GameCore d = new GameCore(new Mem(), 211L);
@@ -1261,7 +1261,7 @@ final class TestPower extends Check {
         d.tapPower(d.power.x, d.power.y, L);
         d.particles.clear();
         advance(d, L, 0.4f);
-        check("no fling hint in other modes", !d.showFlingHint());
+        check("no ninja hint in other modes", !d.showNinjaHint());
         check("no trail in other modes", d.particles.isEmpty());
 
         check("opening-stage frenzy enemy rate is boosted from 6x to 7.8x",

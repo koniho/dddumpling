@@ -257,12 +257,12 @@ public class GameView extends View {
         // swipe — a finger that landed on a glob is carrying that glob, not slicing or shoving.
         if (handleBoss(ev, action)) return true;
 
-        // FLING: grab a letter and throw it. Handled before the key routing so a drag that
+        // NINJA: swipe through letters to slice them. Handled before the key routing so a drag that
         // starts on a letter is never mistaken for a key press.
-        if (core.flinging() && handleFling(ev, action)) return true;
+        if (core.ninja() && handleNinja(ev, action)) return true;
 
         // The companion sits inside the panic swipe's broad catchment. A direct touch on its
-        // bubble belongs to the companion; field gestures and FLING still keep precedence above.
+        // bubble belongs to the companion; field gestures and NINJA still keep precedence above.
         if ((action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN)
                 && core.tapCompanion(ev.getX(ev.getActionIndex()), ev.getY(ev.getActionIndex()),
                         layout)) {
@@ -272,7 +272,7 @@ public class GameView extends View {
 
         // Panic swipe: an upward drag starting anywhere in the lower half of the field.
         // Needs MOVE events, so it is handled before the down-only filter. After the blade,
-        // because during a FLING frenzy a stroke through that strip is a cut and should stay one.
+        // because during a NINJA frenzy a stroke through that strip is a cut and should stay one.
         if (handlePush(ev, action)) return true;
 
         if (action != MotionEvent.ACTION_DOWN && action != MotionEvent.ACTION_POINTER_DOWN) {
@@ -706,7 +706,7 @@ public class GameView extends View {
     }
 
     /**
-     * FLING is a blade: a stroke cuts every letter it sweeps past. Returns true when the event
+     * NINJA is a blade: a stroke cuts every letter it sweeps past. Returns true when the event
      * belonged to the gesture, so the caller leaves it alone.
      *
      * This used to grab a letter and drag it, which is why the mode felt weak — one letter per
@@ -717,7 +717,7 @@ public class GameView extends View {
      * already goes to {@link GameCore#sliceTo}, which is where both decisions are made. What this
      * tracks is only whether the finger is on the glass at all, hence {@code touchDown}.
      */
-    private boolean handleFling(MotionEvent ev, int action) {
+    private boolean handleNinja(MotionEvent ev, int action) {
         int i = ev.getActionIndex();
         float x = ev.getX(i), y = ev.getY(i);
 

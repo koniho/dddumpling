@@ -78,7 +78,7 @@ the Java equivalent goes into `out/ios-reference`. The baseline raster font diff
 bundled Bungee font, and Core Graphics antialiasing differs from the Java rasterizer.
 
 Debug-only launch environment `DDD_SCENE` accepts `title`, `play`, `case`, `stars`, `steamer`,
-`fling`, `pause`, and `stage:5`, `stage:10`, `stage:15`, `stage:20`. Release ignores these hooks
+`ninja`, `pause`, and `stage:5`, `stage:10`, `stage:15`, `stage:20`. Release ignores these hooks
 and compiles shared `BuildFlags.DEVELOPER=false`. Debug and Release use separate bundle IDs
 and saves (`com.dddumpling.game.ios.dev` and `com.dddumpling.game.ios`).
 

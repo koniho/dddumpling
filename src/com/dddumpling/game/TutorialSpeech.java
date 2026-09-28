@@ -5,7 +5,7 @@ final class TutorialSpeech extends Draw {
     static final int MATCH=1, WORD=2, ALTERNATE=3, LIFT=4, STARS=5, LEAN=6,
             DIG=7, CART=8, CLOSED=9, CHAIN=10, GLOB=11, DANGER=12, RETRY=13,
             STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21,
-            POWER_FLURRY=22, POWER_FLING=23, POWER_TEAM=24, POWER_PICKUP=25,
+            POWER_FLURRY=22, POWER_NINJA=23, POWER_TEAM=24, POWER_PICKUP=25,
             MINIGAMES=26, DISPLAY_CASE=27, STORIES=28, COMPANION=29;
     private static final int PAPER=0x4DFFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
@@ -31,7 +31,7 @@ final class TutorialSpeech extends Draw {
         {"GRAB THE CAP!", "SHAKE SIDE TO SIDE."},
         {"STEAMER: WAIT!", "WATCH YOUR KEYS SPIN!"},
         {"FLURRY: ANY KEY!", "TAP, TAP, TAP!"},
-        {"FLING: SWIPE!", "SLICE THE SQUISHIES!"},
+        {"NINJA: SWIPE!", "SLICE THE SQUISHIES!"},
         {"TEAM SQUISH!", "TAP TO AIM ME!"},
         {"A GLOWING PICKUP!", "TAP IT TO COLLECT!"},
         {"STEAMER TIME!", "COLLECT DUMPLINGS!"},
@@ -42,7 +42,7 @@ final class TutorialSpeech extends Draw {
     static String spoken(int message) {
         if(message==COMPANION)return "I'm your first squishy! I'll stay by your keys. I'll show you how to play as we go. Let's find more friends!";
         if(message==POWER_FLURRY)return "Flurry! Tap any key to clear the falling faces.";
-        if(message==POWER_FLING)return "Fling! Swipe across squishies to slice them.";
+        if(message==POWER_NINJA)return "Ninja! Swipe across squishies to slice them.";
         if(message==POWER_PICKUP)return "Tap the glowing pickup to collect its power!";
         if(message==STACK)return "See the little pips on this Squishy? Tap its matching key once for each pip. Keep tapping until it's cleared!";
         if(message==POWER_TEAM)return "Team Squish! Tap any key to aim me and clear words.";
@@ -276,7 +276,7 @@ final class TutorialSpeech extends Draw {
             for(int i=0;i<3;i++)face(p,Roster.at(c.playRosterFull(),i),x+(i-1)*s*3.4f,y+s*1.5f,s*1.05f);
             handX=x+(at-1)*s*3.4f;handY=y+s*1.5f;
             arrow(p,handX,handY-s*1.2f,x-handX,-s*1.2f,s*.45f);
-        } else if(message==POWER_FLING) {
+        } else if(message==POWER_NINJA) {
             handX=x+s*(-5+travel*10);
             for(int i=0;i<3;i++) {
                 float fx=x+(i-1)*s*3.4f;

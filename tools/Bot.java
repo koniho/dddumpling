@@ -19,8 +19,8 @@ package com.dddumpling.game;
  *       the whole word.
  * </ul>
  *
- * It does not use the FLING blade and never spends the once-a-stage push-back. Those are real
- * limits, not omissions: a FLING frenzy reaches this bot as a plain typing frenzy at full wave
+ * It does not use the NINJA blade and never spends the once-a-stage push-back. Those are real
+ * limits, not omissions: a NINJA frenzy reaches this bot as a plain typing frenzy at full wave
  * strength, and no panic swipe ever saves it. Both are the pessimistic reading, which is the useful
  * one for a floor.
  *
@@ -248,8 +248,8 @@ final class Bot {
         }
         if (budget < 1f) return;
 
-        // Linked FLING enemies require a swipe through the clasp, not key presses.
-        if (c.flinging()) {
+        // Linked NINJA enemies require a swipe through the clasp, not key presses.
+        if (c.ninja()) {
             GameCore.Enemy pair = null;
             for (GameCore.Enemy e : c.enemies) {
                 if (e.typeable() && e.link != null && (pair == null || e.y > pair.y)) pair = e;

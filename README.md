@@ -46,7 +46,7 @@ The full collection has 49 characters: 30 blind-box squishies, five starlings, t
 cubes, and four boss friends. Unlocked lands can be selected from the title; the fifth land,
 the cave expedition, is developer-only.
 
-FLURRY, FLING, and TEAM SQUISH frenzies change how you clear words. From stage 11, mystery
+FLURRY, NINJA, and TEAM SQUISH frenzies change how you clear words. From stage 11, mystery
 pickups can also bring INCOGNITO or MONOCHROME debuffs. From stage 16, linked friends ask for
 both partner keys within 200 ms. MULTI is retired from the offered powers.
 

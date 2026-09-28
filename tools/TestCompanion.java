@@ -49,12 +49,12 @@ final class TestCompanion extends Check {
         check("the decorative touch reaction is normal-play only",
                 !c.tapCompanion(RunCompanion.x(L),RunCompanion.y(L),L));
         c.state=GameCore.PLAY;
-        c.startFrenzy(Power.FLING,L);
+        c.startFrenzy(Power.NINJA,L);
         RasterPainter masked=new RasterPainter((int)L.w,(int)L.h,1);masked.clear(0xFF010203);
         RunCompanion.draw(masked,c,L);
         boolean cloth=false,slit=false;
         for(int pixel:masked.resolve()) { cloth|=pixel==0xFF211B35;slit|=pixel==0xFF615370; }
-        check("FLING gives the companion a ninja cap and mouth wrap",cloth && slit);
+        check("NINJA gives the companion a ninja cap and mouth wrap",cloth && slit);
         RasterPainter maskShape=new RasterPainter(200,200,1);maskShape.clear(0xFF010203);
         Trinket.ninjaMask(maskShape,100,100,30,1f);int[] maskPixels=maskShape.resolve();
         check("ninja wrap leaves both eyes uncovered",
@@ -221,7 +221,7 @@ final class TestCompanion extends Check {
         for(int y=0;y<700;y++)for(int x=0;x<320;x++)if(hurtPixels[y*320+x]!=0xFF010203)
             damageOnscreen &= y>=0 && y<l.h-l.padB;
         check("damage knockback remains on screen",damageOnscreen);
-        c.companion.begin(Collect.BOSS_FIRST+1);c.startFrenzy(Power.FLING,l);
+        c.companion.begin(Collect.BOSS_FIRST+1);c.startFrenzy(Power.NINJA,l);
         RasterPainter masked=new RasterPainter(320,700,1);masked.clear(0xFF010203);
         RunCompanion.draw(masked,c,l);
         boolean bossMask=false;for(int pixel:masked.resolve()) bossMask|=pixel==0xFF211B35;

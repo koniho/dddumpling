@@ -411,7 +411,7 @@ final class Sfx {
     }
 
     /**
-     * A light chop, for a letter cut by the FLING blade.
+     * A light chop, for a letter cut by the NINJA blade.
      *
      * Short and dry: this fires several times per swipe, so anything with a tail on it would
      * smear into a wash. Bandpassed noise with a fast downward sweep on the filter — the sweep

@@ -88,7 +88,7 @@ final class StarScreen extends Draw {
         float fade = sceneFade(c);
         Screens.scrim(p, L, (int) (175 * fade));
         // The grab beat's gold rim, redrawn here because the shared one goes on under the scrim,
-        // which is dark enough to swallow it whole. Clamped: a fling beat from the wave that opened
+        // which is dark enough to swallow it whole. Clamped: a ninja beat from the wave that opened
         // this interlude can still be running, and it is three times as long.
         if (c.slowdown > 0f) {
             Sky.vignette(p, L, GOLD,

@@ -10,7 +10,7 @@ final class TestPowerTutorials extends Check {
     static void use(GameCore c,Layout L,int kind) {
         c.enemies.clear();c.target=null;
         GameCore.Enemy e=add(c,L,new int[]{0},L.playTop+L.enemyR*4);
-        if(kind==Power.FLING) {
+        if(kind==Power.NINJA) {
             float x=c.tileX(e,0,L);
             c.beginStroke(x-L.enemyR*2,e.y);c.sliceTo(x+L.enemyR*2,e.y,L);c.endStroke();
         } else c.tapKey(kind==Power.FLURRY?1:0,L);
@@ -55,7 +55,7 @@ final class TestPowerTutorials extends Check {
             c=fresh(L,new Mem());c.startFrenzy(kind,L);use(c,L,kind);c.update(DT,L);
             check("success before popup skips power explanation "+kind,c.onboarding.learned(message) && !c.onboarding.briefing);
             c=fresh(L,new Mem());c.startFrenzy(kind,L);
-            if(kind==Power.FLING) { c.beginStroke(L.w*.5f,L.playTop);c.sliceTo(L.w*.7f,L.playTop,L);c.endStroke(); }
+            if(kind==Power.NINJA) { c.beginStroke(L.w*.5f,L.playTop);c.sliceTo(L.w*.7f,L.playTop,L);c.endStroke(); }
             else c.tapKey(0,L);
             check("empty action does not learn power "+kind,!c.onboarding.learned(message));
             c.update(DT,L);TestOnboarding.acknowledge(c,L);c.modeLeft=0;c.update(DT,L);
@@ -76,8 +76,8 @@ final class TestPowerTutorials extends Check {
         c.startFrenzy(Power.FLURRY,L);c.update(DT,L);
         check("Skip All suppresses power guidance",!c.onboarding.briefing);
         c=fresh(L,new Mem());c.startFrenzy(Power.FLURRY,L);c.update(DT,L);
-        c.startFrenzy(Power.FLING,L);c.update(DT,L);
-        check("replaced power cannot leave stale explanation",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.POWER_FLING);
+        c.startFrenzy(Power.NINJA,L);c.update(DT,L);
+        check("replaced power cannot leave stale explanation",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.POWER_NINJA);
 
         Mem store=new Mem();c=fresh(L,store);
         c.onboarding.learn(c,TutorialSpeech.WAIT);int oldFlags=store.tutorials;
@@ -94,7 +94,7 @@ final class TestPowerTutorials extends Check {
     private static void pickup(Layout L) {
         for(int mystery=0;mystery<2;mystery++) {
             Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;
-            Power p=TestPower.place(c,L,Power.FLING,0);p.mystery=mystery==1;
+            Power p=TestPower.place(c,L,Power.NINJA,0);p.mystery=mystery==1;
             p.x=-L.enemyR;p.vx=L.unit;c.update(DT,L);
             check("pickup guide waits for visible icon "+mystery,!c.onboarding.briefing && p.x>-L.enemyR);
             p.x=L.w*.5f;float x=p.x,t=p.t,time=c.time;int score=c.score;
@@ -111,24 +111,24 @@ final class TestPowerTutorials extends Check {
             check("real collection learns and persists only pickup step "+mystery,store.powerTutorials==8
                     && new GameCore(store,115).onboarding.learned(TutorialSpeech.POWER_PICKUP));
             if(mystery==0)check("collection hands off to actual power lesson",c.onboarding.briefing
-                    && c.onboarding.speech==TutorialSpeech.POWER_FLING);
+                    && c.onboarding.speech==TutorialSpeech.POWER_NINJA);
             else check("mystery selection is not interrupted by pickup reminder",!c.onboarding.powerGuide
                     && !c.onboarding.briefing && p.hitT>0);
             c.onboarding.reset(c);
             check("reset includes pickup instruction "+mystery,!c.onboarding.learned(TutorialSpeech.POWER_PICKUP)
                     && store.powerTutorials==0);
         }
-        GameCore c=fresh(L,new Mem());Power p=TestPower.place(c,L,Power.FLING,0);
-        c.tapPower(p.x,p.y,L);c.onboarding.learn(c,TutorialSpeech.POWER_FLING);c.update(DT,L);
+        GameCore c=fresh(L,new Mem());Power p=TestPower.place(c,L,Power.NINJA,0);
+        c.tapPower(p.x,p.y,L);c.onboarding.learn(c,TutorialSpeech.POWER_NINJA);c.update(DT,L);
         check("collection before popup skips pickup instruction",c.onboarding.learned(TutorialSpeech.POWER_PICKUP)
                 && !c.onboarding.briefing);
-        c=fresh(L,new Mem());c.onboarding.savedPowers=7;TestPower.place(c,L,Power.FLING,0);c.update(DT,L);
+        c=fresh(L,new Mem());c.onboarding.savedPowers=7;TestPower.place(c,L,Power.NINJA,0);c.update(DT,L);
         check("existing power flags leave new pickup step eligible",c.onboarding.briefing
                 && c.onboarding.speech==TutorialSpeech.POWER_PICKUP);
         TestOnboarding.acknowledge(c,L);c.power=null;c.update(DT,L);
         check("missed pickup clears reminder without learning",!c.onboarding.powerGuide
                 && !c.onboarding.learned(TutorialSpeech.POWER_PICKUP));
-        TestPower.place(c,L,Power.FLING,0);c.update(DT,L);
+        TestPower.place(c,L,Power.NINJA,0);c.update(DT,L);
         check("missed pickup can be explained on next appearance",c.onboarding.briefing);
         c.onboarding.skip(c);c.update(DT,L);
         check("Skip All suppresses pickup instruction",!c.onboarding.briefing);
@@ -136,12 +136,12 @@ final class TestPowerTutorials extends Check {
             c=fresh(L,new Mem());TestPower.place(c,L,effect,0);c.update(DT,L);
             check("known debuff does not get pickup tutorial "+effect,!c.onboarding.briefing);
         }
-        c=fresh(L,new Mem());TestPower.place(c,L,Power.FLING,0);c.update(DT,L);
+        c=fresh(L,new Mem());TestPower.place(c,L,Power.NINJA,0);c.update(DT,L);
         c.lives=1;c.takeHit(L.w*.5f,L);c.update(DT,L);
         check("death clears pickup explanation",!c.onboarding.briefing && !c.onboarding.powerGuide);
     }
     private static void stackHints(Layout L) {
-        for(int kind:new int[]{Power.FLING,Power.TEAM})for(int acknowledged=0;acknowledged<2;acknowledged++) {
+        for(int kind:new int[]{Power.NINJA,Power.TEAM})for(int acknowledged=0;acknowledged<2;acknowledged++) {
             Mem store=new Mem();GameCore c=fresh(L,store);c.stage=2;
             c.onboarding.learn(c,Onboarding.powerSpeech(kind));
             Ear ear=new Ear();c.sound=ear;
@@ -172,8 +172,8 @@ final class TestPowerTutorials extends Check {
         c.startFrenzy(Power.FLURRY,L);c.update(DT,L);
         check("FLURRY retains an existing repeated-tap explanation",c.onboarding.briefing
                 && c.onboarding.hintKind==Onboarding.STACK_HINT);
-        c.startFrenzy(Power.FLING,L);c.update(DT,L);
+        c.startFrenzy(Power.NINJA,L);c.update(DT,L);
         check("unlearned bypass power still gets its own explanation",c.onboarding.hintKind==0
-                && c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.POWER_FLING);
+                && c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.POWER_NINJA);
     }
 }

@@ -293,7 +293,7 @@ final class GameCore {
         void mushroomShake();
         /** Fly Agaric released a sprinkling volley. */
         void mushroomSpore();
-        /** A letter cut by the FLING blade. Fires several times per swipe, so it is short. */
+        /** A letter cut by the NINJA blade. Fires several times per swipe, so it is short. */
         void chop();
         /** One hop of a MULTI chain. @param hop 1-based, so the crack can climb with the chain */
         void zap(int hop);
@@ -867,7 +867,7 @@ final class GameCore {
     }
 
 
-    boolean flinging() { return powerActive() && mode == Power.FLING; }
+    boolean ninja() { return powerActive() && mode == Power.NINJA; }
 
     boolean multi() { return powerActive() && mode == Power.MULTI; }
 
@@ -924,7 +924,7 @@ final class GameCore {
     /** Counts down while the chain is on screen. */
     float chainT;
 
-    // ---- FLING blade --------------------------------------------------------
+    // ---- NINJA blade --------------------------------------------------------
     // The gesture itself is in Blade; these are the fields it works on, kept here because the
     // renderer, the view and the trail all read them.
 
@@ -938,8 +938,8 @@ final class GameCore {
     boolean touchDown;
     /** Live finger position, set by the view. */
     float fingerX, fingerY;
-    /** Cleared when a frenzy starts; set once the player first touches during FLING. */
-    boolean flingUsed;
+    /** Cleared when a frenzy starts; set once the player first touches during NINJA. */
+    boolean ninjaUsed;
     /** Where the instructional finger sits, for the renderer to follow. */
     float demoX, demoY;
     float trailAcc;
@@ -1122,9 +1122,9 @@ final class GameCore {
         return steamer.shownRight(rollProgress());
     }
 
-    /** True while the "drag a letter" demonstration should be on screen. */
-    boolean showFlingHint() {
-        return flinging() && !flingUsed;
+    /** True while the swipe-to-slice demonstration should be on screen. */
+    boolean showNinjaHint() {
+        return ninja() && !ninjaUsed;
     }
 
     /**
@@ -1287,7 +1287,7 @@ final class GameCore {
         powerRefillBurst = 0;
         powerSpawnedEnemies = 0;
         spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
-        flingUsed = false;
+        ninjaUsed = false;
         // A finger already resting on the field does not get a free stroke: it has to lift and
         // land again, the same as it would to start a second swipe.
         fingerDown = false;
@@ -2143,7 +2143,7 @@ final class GameCore {
         if (Cave.active(this)) return cave.press(this, g, L);
 
         if (target != null && (!target.typeable() || !enemies.contains(target)
-                || (powerActive() && mode == Power.FLING && target.link != null))) target = null;
+                || (powerActive() && mode == Power.NINJA && target.link != null))) target = null;
 
         // The boss, on the same terms the powerup gets: it outranks an *unengaged* word for the
         // letters it is asking for, and never steals a press out of a word already part-typed. The
@@ -2174,7 +2174,7 @@ final class GameCore {
             for (int i = 0; i < enemies.size(); i++) {
                 Enemy e = enemies.get(i);
                 if (!e.typeable()) continue;
-                if (powerActive() && mode == Power.FLING && e.link != null) continue;
+                if (powerActive() && mode == Power.NINJA && e.link != null) continue;
                 if (!flurry() && e.word[e.pos] != g) continue;
                 boolean guided = e.link != null && (e.link.linkWaiting || e.link.dying);
                 boolean pickedGuide = pick != null && pick.link != null
@@ -2655,7 +2655,7 @@ final class GameCore {
         releaseMascot.update(this,elapsed);
         if (state == PLAY && boss.fighting() && !settingsOpen)
             progress.bossTime(elapsed);
-        // Slow motion from a multi-word fling stroke, and the readout it earned. Both ticked
+        // Slow motion from a multi-word ninja stroke, and the readout it earned. Both ticked
         // on real time and before the scaling below, so neither is slowed by the thing the
         // beat is slowing.
         if (slowdown > 0f) slowdown = Math.max(0f, slowdown - dt);
@@ -2842,7 +2842,7 @@ final class GameCore {
                 }
                 bonusTimer = stars.timer;
                 if (stars.grabbed) {
-                    // The fling stroke's beat, briefly: a taken star lands with the same stutter and
+                    // The ninja stroke's beat, briefly: a taken star lands with the same stutter and
                     // the same gold vignette, so the two read as the same kind of moment.
                     stars.grabbed = false;
                     slowdown = Blade.STAR_BEAT;
@@ -3139,7 +3139,7 @@ final class GameCore {
 
     /**
      * Credits a finished word and starts it flying apart. Shared by the ordinary typed squish,
-     * by out-of-order removal (flinging and MULTI), and by the end of a frenzy.
+     * by out-of-order removal (NINJA and MULTI), and by the end of a frenzy.
      *
      * @param px,py where the burst originates, usually the last tile struck
      */
@@ -3193,7 +3193,7 @@ final class GameCore {
     }
 
     /**
-     * Removes tile {@code i} out of order, sending it off along dx,dy. Used by flinging and
+     * Removes tile {@code i} out of order, sending it off along dx,dy. Used by NINJA and
      * by MULTI. Finishes the word if that was the last tile left.
      */
     void removeTile(Enemy e, int i, float dx, float dy, Layout L) {

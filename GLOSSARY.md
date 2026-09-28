@@ -38,7 +38,7 @@ geometry; `Kawaii` draws the creature.
 | **caret** | the triangle above an engaged head tile | `Draw.caret` |
 | **entrance** | words sliding in from above the top edge | `e.enterT` |
 | **fly-apart** | a cleared word's letters splitting outward off screen | `e.destroyed`, `e.flyDir` |
-| **flung letter** | a letter removed out of order, by FLING or MULTI | `e.gone[i]` |
+| **flung letter** | a letter removed out of order, by NINJA or MULTI | `e.gone[i]` |
 
 ## Threat
 
@@ -154,7 +154,7 @@ The other interlude, offered after a steamer has been opened. Two thumbs steer, 
 | **tally** | the count read out at the end of an interlude nobody won — a star report or a steamer status page, pitched by how it went | `Sfx.tally`, `Sound.tally` |
 | **join chord** | the new collectible taking its place in the parade line | `Sfx.join`, `Sound.paradeJoin` |
 | **full stop** | the end of a run, played when the swirl clears rather than on the fatal breach. The only descending figure in the game | `Sfx.over`, `Sound.gameOver` |
-| **grab beat** | the flick of slow motion each taken star lands with, the fling stroke's beat at a quarter length | `GameCore.STAR_BEAT`, `StarPath.grabbed` |
+| **grab beat** | the flick of slow motion each taken star lands with, the ninja stroke's beat at a quarter length | `GameCore.STAR_BEAT`, `StarPath.grabbed` |
 | **blast-off** | one short rising exhaust cue when the flight ends or the victory tableau begins; the continuous rocket stops at that transition | `Sfx.BLAST_OFF`, `Sound.courseFinish` |
 | **ting** | the pickup note, pitched up with the count so a course is a rising ladder | `Sfx.star()`, `Audio.star` |
 | **victory tableau** | what a completed course ends on: everything stops, the prize climbs out of the last star, then the parade | `StarPath.WIN_HOLD`, `winning()`, `StarScreen.victory` |
@@ -234,7 +234,7 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 | **frenzy taper** | how much of a frenzy's extra pace survives at this point on the ramp: all of it on stage 1, down to twice the stage's own by stage 11 | `Power.taper`, `LATE_RATIO` |
 | **bounded player** | a bot with stated hands — presses a second, reaction, miss rate — that the difficulty curve is asserted against | `Bot`, `TestSoak.boundedPlay` |
 | **FLURRY** | every key is a wildcard; letters and keys go rainbow | `Power.FLURRY` |
-| **FLING** | the blade: a swipe cuts every letter it sweeps past | `Power.FLING` |
+| **NINJA** | the blade: a swipe cuts every letter it sweeps past | `Power.NINJA` |
 | **blade** | the cutting edge itself, drawn along the last stretch of the stroke | `Renderer.blade`, `GameCore.BLADE` |
 | **stroke** | one blade *motion*, not one touch: it starts where the finger starts moving and ends when it stops. One touch can hold several | `GameCore.beginStroke`, `sliceTo`, `endStroke` |
 | **dwell** | the beat of stillness that ends a stroke, so holding a finger down cannot hold a combo open | `GameCore.STROKE_DWELL`, `STROKE_MOVE`, `strokeIdle` |
@@ -245,7 +245,7 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 | **MULTI** | one press chains through every matching letter, hop by hop | `Power.MULTI` |
 | **TEAM SQUISH** | the run companion grows out of its home, flies into the field and bounces around squishing words, then shrinks back home when the power ends | `Power.TEAM`, `Buddy`, `RunCompanion` |
 | **run squishy** | display-case selection frozen at Start; without a selection, the display case shuffles through squishies, chooses from owned squishies (or the full catalog for an empty case), then slides to center and shows its name with a short greeting before the usual send-off. Shared by TEAM SQUISH, Starpath and the saved-run portrait | `GameCore.runWho`, `Launch` |
-| **run companion** | the run squishy's small, soft rounded-hexagon home between the key groups. It stays through normal play, caves, the Steamer, powers, bosses and the game-over summary, where it cries until fading out. Player damage pulses the home red and knocks both home and character back by three quarters of the home's height; damaging a boss makes it leap, cheer and wave a pennant, defeating one keeps it cheering back and forth through the death animation, and clearing a stage gives it a proud expression and glowing home. FLING adds a fixed-size tied oval hood around the forehead, mouth and both sides of an uncovered eye opening. A rescue swipe carries the companion and its glowing energy bar up by the same distance as the push-back, holds there for half a second, sends the bar beyond the screen edges, then returns it home with a tired idle face for the rest of the stage. Its animation has its own clock, so later damage cannot replay it. For TEAM SQUISH and Star Path the same character travels out of its home instead of being duplicated. After an incomplete Star Path blast-off it returns home from below the screen | `RunCompanion`, `GameCore.companion` |
+| **run companion** | the run squishy's small, soft rounded-hexagon home between the key groups. It stays through normal play, caves, the Steamer, powers, bosses and the game-over summary, where it cries until fading out. Player damage pulses the home red and knocks both home and character back by three quarters of the home's height; damaging a boss makes it leap, cheer and wave a pennant, defeating one keeps it cheering back and forth through the death animation, and clearing a stage gives it a proud expression and glowing home. NINJA adds a fixed-size tied oval hood around the forehead, mouth and both sides of an uncovered eye opening. A rescue swipe carries the companion and its glowing energy bar up by the same distance as the push-back, holds there for half a second, sends the bar beyond the screen edges, then returns it home with a tired idle face for the rest of the stage. Its animation has its own clock, so later damage cannot replay it. For TEAM SQUISH and Star Path the same character travels out of its home instead of being duplicated. After an incomplete Star Path blast-off it returns home from below the screen | `RunCompanion`, `GameCore.companion` |
 | **boss befriended** | the boss reward screen. The run companion stays opaque as its rounded home fades away, eases to the centered space beneath `A FRIEND RETURNS` or `JOINS YOUR COLLECTION`, sends a heart up to the new boss, then eases home as the bubble fades back in; the old collection lineup is omitted so the two characters own the moment | `BossCollect.celebration` |
 | **squishy** / **buddy** | the collectible fighting for you during it | `Buddy`, `GameCore.buddy` |
 | **bubble** | the glowing shell round it, brighter and bigger with every word it takes | `Buddy.radius`, `glow` |
@@ -256,9 +256,9 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 | **chain** | that run of hops: a bolt drawn between them, each hop worth more than the last | `GameCore.multiStrike`, `Renderer.chain` |
 | **hop** | one link of a chain, and one strike point | `GameCore.chainX`, `chainShown` |
 | **call-out** | the big "N IN ONE!" / "N CHAINED!" payoff text | `Hud.sliceCall`, `Hud.chainCall` |
-| **sparkle trail** | the rainbow ribbon following the blade during FLING | `Fx.sparkle`, `GameCore.TRAIL_RATE` |
-| **fling hint** | the instructional finger shown until you first touch | `Renderer.flingHint` |
-| **playtest chips** | the FLURRY/FLING/MULTI buttons in settings | `SettingsUi.HIT_TEST` |
+| **sparkle trail** | the rainbow ribbon following the blade during NINJA | `Fx.sparkle`, `GameCore.TRAIL_RATE` |
+| **ninja hint** | the instructional finger shown until you first touch | `Renderer.ninjaHint` |
+| **playtest chips** | the FLURRY/NINJA/MULTI buttons in settings | `SettingsUi.HIT_TEST` |
 
 ## Background and screen effects
 
@@ -303,7 +303,7 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 | Say | Means | Code |
 | --- | --- | --- |
 | **squish** | the per-letter press sound, pitched per letter | `Sfx.SQUISH_0 + n` |
-| **chop** | the cut of the FLING blade, one per letter. Replaces the word-clear tone on a cut word | `Sfx.CHOP` |
+| **chop** | the cut of the NINJA blade, one per letter. Replaces the word-clear tone on a cut word | `Sfx.CHOP` |
 | **zap** | the lightning crack of one MULTI chain hop, climbing in pitch along the chain | `Sfx.ZAP` |
 | **drip** | taking damage | `Sfx.DRIP` |
 | **word clear** | finishing a word by typing it. A word the blade cut rings no clear tone — its chops are its sound | `Sfx.CLEAR` |
@@ -373,7 +373,7 @@ Stage 16 gives 15% longer travel and spawn intervals and caps the field at four 
 Stage 17 retains 7.5% timing relief; stage 18 returns to the ordinary curve.
 Rules: `LinkedPairs`; visuals: `LinkedPairArt`; difficulty: `Pacing.lessonRelief`.
 
-Linked pairs keep their hands connected during FLING, FLURRY, and TEAM SQUISH. One TEAM SQUISH collision clears both and sends them spinning around their clasp offscreen. FLING protects their bodies and requires a cut through the joined hands to clear both. A body-only cut plays the miss sound and flexes both characters once per stroke. FLURRY accepts any two distinct buttons within 200 ms; repeating one button cannot clear a pair. Entering these powers resets a pending half-press.
+Linked pairs keep their hands connected during NINJA, FLURRY, and TEAM SQUISH. One TEAM SQUISH collision clears both and sends them spinning around their clasp offscreen. NINJA protects their bodies and requires a cut through the joined hands to clear both. A body-only cut plays the miss sound and flexes both characters once per stroke. FLURRY accepts any two distinct buttons within 200 ms; repeating one button cannot clear a pair. Entering these powers resets a pending half-press.
 
 From stage 16, each active power-up starts its own repeating spawn pattern: one linked pair, then two solo enemies. The pattern continues beyond the ordinary wave quota and uses the current power-up pacing and crowd cap.
 
@@ -571,8 +571,8 @@ A first-pickup lesson pauses once a glowing powerup is fully onscreen and demons
 the icon directly, not a matching key. Acknowledgement resumes play with a pointing hand;
 successful collection permanently learns this step, independently of the granted power.
 Mystery pickups use the same collection control; known debuffs get no pickup tutorial.
-The pickup, FLURRY, FLING and TEAM SQUISH explanations each fit on one page with matching narration.
-FLURRY, FLING and TEAM SQUISH each explain their controls on first use, pausing the live
+The pickup, FLURRY, NINJA and TEAM SQUISH explanations each fit on one page with matching narration.
+FLURRY, NINJA and TEAM SQUISH each explain their controls on first use, pausing the live
 field and frenzy countdown while the companion speaks and demonstrates. A successful wildcard
 hit, slicing gesture or aimed buddy charge permanently learns its own step, including success
 before the prompt appears. Merely acknowledging the bubble does not mark it learned. Debuffs

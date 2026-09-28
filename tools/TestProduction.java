@@ -62,7 +62,7 @@ final class TestProduction extends Check {
         c.startGame();
         check("policy hidden in play", !PrivacyUi.hit(c,L,L.w-L.unit,L.dangerY));
         int stage = c.stage, lives = c.lives;
-        c.playtestMode(Power.FLING,L);
+        c.playtestMode(Power.NINJA,L);
         c.playtestStars(L);
         c.playtestSteamer(L);
         CaveInterlude.playtest(c,L,false);

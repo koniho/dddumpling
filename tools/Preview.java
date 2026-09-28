@@ -42,7 +42,7 @@ final class Preview {
             }
         }
         GameCore pickup=TestPowerTutorials.fresh(L,new Check.Mem());
-        TestPower.place(pickup,L,Power.FLING,0);step(pickup,L,.6f);
+        TestPower.place(pickup,L,Power.NINJA,0);step(pickup,L,.6f);
         shot(dir,"114-power-pickup-explain",pickup,L,w,h,ss);
         TestOnboarding.acknowledge(pickup,L);step(pickup,L,.2f);
         shot(dir,"114-power-pickup-try",pickup,L,w,h,ss);
@@ -288,8 +288,8 @@ final class Preview {
             shot(dir,"118-companion-team-return-"+frame,c,L,w,h,ss);step(c,L,.09f);
         }
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
-        c.stageBanner=0;c.startFrenzy(Power.FLING,L);c.companion.update(c,.18f);
-        shot(dir,"118-companion-fling-mask",c,L,w,h,ss);
+        c.stageBanner=0;c.startFrenzy(Power.NINJA,L);c.companion.update(c,.18f);
+        shot(dir,"118-companion-ninja-mask",c,L,w,h,ss);
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=8;c.startGame();
         c.stageBanner=0;c.startFrenzy(Power.FLURRY,L);c.companion.update(c,.24f);
         shot(dir,"118-companion-flurry-bubble",c,L,w,h,ss);
@@ -622,7 +622,7 @@ final class Preview {
                 int prizes=i==0?18:14-i;
                 for(int prize=0;prize<prizes;prize++) scores.highScores.prize(prize%Collect.COUNT);
                 scores.highScores.powers=7;scores.highScores.swipes=3;
-                scores.highScores.effects[Power.FLURRY]=3;scores.highScores.effects[Power.FLING]=2;
+                scores.highScores.effects[Power.FLURRY]=3;scores.highScores.effects[Power.NINJA]=2;
                 scores.highScores.effects[Power.TEAM]=2;scores.highScores.effects[Power.INCOGNITO]=1;
                 scores.highScores.effects[Power.MONOCHROME]=2;
                 scores.lives=0;scores.highScores.finish(scores);
@@ -1690,22 +1690,22 @@ final class Preview {
             shot(dir,"18a-flurry-rainbow-"+frame,rainbow,L,w,h,ss);
         }
 
-        // FLING with the instructional finger and its sparkle trail.
+        // NINJA with the instructional finger and its sparkle trail.
         GameCore c10 = new GameCore(store, 43L);
         c10.startGame();
         c10.score = 2400;
         step(c10, L, 1.9f);
         Power fl = new Power();
         fl.glyph = 5;
-        fl.effect = Power.FLING;
+        fl.effect = Power.NINJA;
         fl.y = L.playTop + 100f;
         fl.x = L.w * 0.5f;
         c10.power = fl;
         c10.tapPower(c10.power.x, c10.power.y, L);
         step(c10, L, 1.6f);
-        System.out.printf("fling hint: showing=%s demo=(%.0f,%.0f) sparkles=%d%n",
-                c10.showFlingHint(), c10.demoX, c10.demoY, c10.particles.size());
-        shot(dir, "18-fling-hint", c10, L, w, h, ss);
+        System.out.printf("ninja hint: showing=%s demo=(%.0f,%.0f) sparkles=%d%n",
+                c10.showNinjaHint(), c10.demoX, c10.demoY, c10.particles.size());
+        shot(dir, "18-ninja-hint", c10, L, w, h, ss);
 
         // The blade mid-stroke, having just taken two words at once: the streak, the doubled
         // sparkle ribbon, the gold rim and the payoff readout.
@@ -1717,7 +1717,7 @@ final class Preview {
         c14.target = null;
         Power blade = new Power();
         blade.glyph = 4;
-        blade.effect = Power.FLING;
+        blade.effect = Power.NINJA;
         blade.y = L.playTop + 100f;
         blade.x = L.w * 0.5f;
         c14.power = blade;
@@ -1825,11 +1825,11 @@ final class Preview {
         step(traffic, L, 3.5f);
         shot(dir, "33e-side-spacing", traffic, L, w, h, ss);
 
-        // A mass clear during FLING, followed by its short replacement burst.
+        // A mass clear during NINJA, followed by its short replacement burst.
         GameCore refill = new GameCore(store, 711L);
         refill.startGame();
         refill.stage = 13;
-        refill.startFrenzy(Power.FLING, L);
+        refill.startFrenzy(Power.NINJA, L);
         step(refill, L, 2f);
         for (GameCore.Enemy word : refill.enemies) {
             if (word.typeable()) refill.destroyWord(word, refill.enemyCentreX(word), word.y, L);

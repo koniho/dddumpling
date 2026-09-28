@@ -158,14 +158,14 @@ final class TestAudio extends Check {
         check("the last one is the highest", earM.lastZapHop == 4);
         check("no squishes in a chain", earM.squishes == 0);
 
-        // FLING: one chop per letter the blade cuts, and no fanfare.
+        // NINJA: one chop per letter the blade cuts, and no fanfare.
         GameCore c = new GameCore(new Mem(), 411L);
         Ear ear = new Ear();
         c.sound = ear;
         c.startGame();
         c.enemies.clear();
         c.target = null;
-        c.startFrenzy(Power.FLING, L);
+        c.startFrenzy(Power.NINJA, L);
         GameCore.Enemy e = add(c, L, new int[] {1, 2, 3, 4}, L.playTop + 300f);
         int chops = ear.chops, cheers = ear.achievements;
         c.beginStroke(c.tileX(e, 0, L) - L.enemyR * 2f, e.y);

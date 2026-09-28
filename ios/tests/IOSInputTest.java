@@ -299,17 +299,17 @@ public final class IOSInputTest extends Check {
         check("background releases divide pinch", c.boss.pinchNode == -1 && game.paused());
     }
 
-    private static void flingHistory() {
+    private static void ninjaHistory() {
         IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
-        c.startGame(); c.playtestMode(Power.FLING,l); c.enemies.clear();
+        c.startGame(); c.playtestMode(Power.NINJA,l); c.enemies.clear();
         GameCore.Enemy e = add(c,l,new int[] {0}, l.playTop + (l.deckTop-l.playTop)*.35f);
         float x = c.tileX(e,0,l), y = e.y;
         game.touch(one(0,4,x-50,y));
         game.touch(new IOSTouch(2,0,new int[] {4},new float[] {x-50},new float[] {y},
                 new float[][] {{x+50}}, new float[][] {{y}}));
-        check("coalesced fling sample cuts despite identical final position", e.destroyed || e.gone[0]);
+        check("coalesced ninja sample cuts despite identical final position", e.destroyed || e.gone[0]);
         game.touch(one(3,4,x-50,y));
-        check("fling cancellation extinguishes held stroke", !c.touchDown);
+        check("ninja cancellation extinguishes held stroke", !c.touchDown);
     }
 
     private static void steamerAndPanic() {
@@ -465,6 +465,8 @@ public final class IOSInputTest extends Check {
         check("malformed debug scenes leave the live game intact", before.equals(game.debugStatus()));
         game.debugScene("stage:10");
         check("debug stage uses actual boss setup", game.core().stage==10 && game.core().boss.kind==Boss.SPLITTER);
+        game.debugScene("ninja");
+        check("debug ninja starts the blade power", game.core().ninja());
         game.debugScene("pause");
         check("debug status exposes scene and pause for native UI assertions",
                 game.debugStatus().contains("state=1;") && game.debugStatus().contains("paused=true;"));
@@ -710,7 +712,7 @@ public final class IOSInputTest extends Check {
         gameOverDismissal();
         cave();
         highScores();
-        releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); flingHistory();
+        releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
         steamerAndPanic(); caseAndSettings();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
@@ -848,7 +850,7 @@ public final class IOSInputTest extends Check {
             Mem store=new Mem();store.tutorials=store.powerTutorials=0;
             IOSGame game=new IOSGame(store,new Ear(),114);game.layout(393,852,0,59,0,34);
             GameCore c=game.core();Layout l=game.geometry();c.startGame();c.stage=6;c.spawnTimer=9999;
-            c.enemies.clear();Power p=c.power=new Power();p.effect=Power.FLING;
+            c.enemies.clear();Power p=c.power=new Power();p.effect=Power.NINJA;
             p.x=l.w*.5f;p.y=l.playTop+l.enemyR*4;game.update(DT);
             tap(game,p.x,p.y);
             check("native pickup popup prevents collecting through explanation",!p.hit
@@ -862,9 +864,9 @@ public final class IOSInputTest extends Check {
             check("native play-area tap closes one-page explanation without collecting underneath",!c.onboarding.briefing
                     && c.onboarding.speechPage==0 && !p.hit && !c.onboarding.learned(TutorialSpeech.POWER_PICKUP));
             tap(game,p.x,p.y);game.update(DT);
-            check("native direct pickup tap learns collection and introduces Fling",p.hit
+            check("native direct pickup tap learns collection and introduces Ninja",p.hit
                     && c.onboarding.learned(TutorialSpeech.POWER_PICKUP) && c.onboarding.briefing
-                    && c.onboarding.speech==TutorialSpeech.POWER_FLING);
+                    && c.onboarding.speech==TutorialSpeech.POWER_NINJA);
         }
         for(int kind:Power.OFFERED) {
             Mem store=new Mem();store.tutorials=store.powerTutorials=0;store.collected=1;
@@ -880,7 +882,7 @@ public final class IOSInputTest extends Check {
             game.touch(one(1,42,x,y));
             check("interrupted power continue cannot resume gameplay "+kind,c.onboarding.briefing);
             tutorialContinue(game);
-            if(kind==Power.FLING) {
+            if(kind==Power.NINJA) {
                 x=c.tileX(e,0,l);y=e.y;
                 game.touch(one(0,42,x-l.enemyR*2,y));
                 game.touch(one(2,42,x+l.enemyR*2,y));game.touch(one(1,42,x+l.enemyR*2,y));
