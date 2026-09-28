@@ -237,7 +237,6 @@ final class Blade {
         c.shake = Math.max(c.shake, 0.35f);
         c.flash = Math.max(c.flash, 0.45f);
         c.flashColor = GameCore.FLASH_CLEAR;
-        if (c.sound != null) c.sound.achievement();
     }
 
     /** Squared distance from a point to segment a-b. */

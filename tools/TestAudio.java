@@ -36,8 +36,28 @@ final class TestAudio extends Check {
                 && Launch.slide(0f)==0f && Launch.slide(Launch.NAME_START)==1f);
     }
 
+    private static void ninjaComboSound(Layout L) {
+        GameCore c=new GameCore(new Mem(),413L);Ear ear=new Ear();c.sound=ear;
+        c.startGame();c.enemies.clear();c.startFrenzy(Power.NINJA,L);
+        int cheers=ear.achievements,clears=ear.clears;
+        float y=L.playTop+300f;
+        add(c,L,new int[]{1},y);add(c,L,new int[]{2},y);
+        c.beginStroke(L.playLeft-L.enemyR*2f,y);
+        c.sliceTo(L.playRight+L.enemyR*2f,y,L);
+        check("multi-word Ninja slice keeps combo visuals and swish",
+                c.strokeKills==2 && c.callKills==2 && c.slowdown>0 && c.sliceCall>0 && ear.swishes==1);
+        check("multi-word Ninja slice rings no chime",
+                ear.achievements==cheers && ear.clears==clears);
+        add(c,L,new int[]{3},y);
+        c.sliceTo(L.playLeft-L.enemyR*2f,y,L);
+        check("extending a Ninja combo stays free of chimes",
+                c.strokeKills==3 && c.callKills==3 && ear.achievements==cheers && ear.clears==clears);
+        c.endStroke();
+    }
+
     /** What the two frenzy squish sounds are, and that they are the right shape for the job. */
     static void frenzySounds(Layout L) {
+        ninjaComboSound(L);
         runNameAnnouncement(L);
         group("frenzy sounds");
         check("mining cheer is a short voiced phrase",Sfx.build(Sfx.MINING_CHEER).length<Sfx.RATE*.6f && crossRate(Sfx.build(Sfx.MINING_CHEER))<3000);
