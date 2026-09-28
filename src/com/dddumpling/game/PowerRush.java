@@ -13,6 +13,12 @@ final class PowerRush {
 
     static int pattern(GameCore c) { return (c.powerSpawnedEnemies/4)%3; }
 
+    static float spawnSpeed(GameCore c,GameCore.Enemy e,Layout L) {
+        // Equal descent avoids catch-up jams; the gentler rate leaves room to build swipe combos.
+        if(c.ninja())return (L.dangerY+L.enemyR*2.2f)*.55f/c.travelSeconds();
+        return (L.dangerY-e.y)/c.travelSeconds();
+    }
+
     static void arrange(GameCore c,GameCore.Enemy e,Layout L,float lo,float hi) {
         if(!c.powerActive())return;
         boolean danger=pressured(c,L);
@@ -37,6 +43,19 @@ final class PowerRush {
         float depth=side ? Math.min(.55f,(e.y-L.playTop)/(L.dangerY-L.playTop)+.08f)
                 : .26f+slot*.04f;
         rush(c,e,L,depth);
+    }
+
+    /** A blocked preferred lane must not stall Ninja's whole stream. */
+    static void ninjaAlternative(GameCore c,GameCore.Enemy e,Layout L,int alternative) {
+        boolean danger=pressured(c,L),left=c.powerSpawnedEnemies%2==0;
+        float depth=danger ? .12f+alternative*.05f
+                : .18f+((alternative+c.powerSpawnedEnemies)%3)*.16f;
+        float half=L.wordWidth(e.word.length)*.5f;
+        e.sideEntry=true;e.sway=0;
+        e.pathStartX=left ? L.playLeft-half-L.enemyR : L.playRight+half+L.enemyR;
+        e.pathStartY=L.playTop+(L.dangerY-L.playTop)*depth;
+        e.y=e.pathStartY;e.baseX=e.pathStartX;e.rushSpan=0;
+        if(!danger)rush(c,e,L,Math.min(.55f,depth+.08f));
     }
 
     static void pair(GameCore c,GameCore.Enemy e,Layout L) {

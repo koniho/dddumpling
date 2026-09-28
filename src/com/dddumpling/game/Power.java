@@ -135,6 +135,8 @@ final class Power {
             if (e.y - L.enemyR >= L.playTop && x - half >= L.playLeft
                     && x + half <= L.playRight) visiblePresses += remaining;
         }
+        // Ninja clears whole rows per swipe: keep several targets arriving together.
+        if(c.ninja() && live<6)return Math.min(normal,live<4?.06f:.12f);
         // Accelerate a clear or empty view, including final hits still in flight. Two incoming
         // rows stop the empty-view boost; a multi-clear earns at most two quick replacements.
         float refill = 0.5f - Math.min(0.3f, c.ramp() * 0.05f);

@@ -12,7 +12,7 @@ final class TestFrenzyRefill extends Check {
         c.spawnTimer = 2f;
         float calm = c.spawnInterval();
         check("ordinary waves keep their normal spawn delay", Power.spawnDelay(c, L) == calm);
-        c.startFrenzy(Power.NINJA, L);
+        c.startFrenzy(Power.FLURRY, L);
         float regular = calm / Power.spawnRate(c.ramp());
         check("activation shortens the old wave timer on an empty field", c.spawnTimer < regular);
         check("empty field gets a faster replacement", Power.spawnDelay(c, L) < regular);
@@ -68,6 +68,13 @@ final class TestFrenzyRefill extends Check {
         check("refill timing follows the stage curve", scaled);
         c.modeLeft = 0f;
         check("ending a powerup restores ordinary spawn timing", Power.spawnDelay(c, L) == c.spawnInterval());
+        c.startFrenzy(Power.NINJA,L);c.enemies.clear();
+        float ninjaDelay=Power.spawnDelay(c,L);
+        add(c,L,new int[]{1,2,3},L.playTop+L.enemyR*4);
+        check("Ninja keeps its fast refill while a row is still on screen",Power.spawnDelay(c,L)==ninjaDelay
+                && ninjaDelay<=.06f);
+        c.enemies.get(0).y=L.dangerY-L.enemyR;
+        check("Ninja relaxes its extra refill near danger",Power.spawnDelay(c,L)>ninjaDelay);
         clearSchedulesReplacement(L);
         rapidClears(L);
     }
@@ -129,7 +136,7 @@ final class TestFrenzyRefill extends Check {
             System.out.printf("    stage %d rapid clears: %.1f words/12s, longest gap %.2fs%n",
                     stage, cleared / 12f, longestGap);
             // The first rush prototype fell to 15.6/18.2 late-stage words with 1.15/1.5s gaps.
-            float minimum=stage==1?38f:stage==7?26f:stage==13?18f:21f;
+            float minimum=stage==1?60f:stage==7?45f:stage==13?32f:40f;
             check("stage " + stage + " supplies targets after repeated mass clears", cleared / 12f >= minimum);
             check("stage " + stage + " refills without formation pauses", longestGap < .9f);
         }

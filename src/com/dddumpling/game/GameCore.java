@@ -3527,16 +3527,18 @@ final class GameCore {
         e.y = -L.enemyR * 2.2f;
         PowerRush.arrange(this,e,L,lo,hi);
         e.enterT = 0f;
-        e.speed = (L.dangerY - e.y) / travelSeconds();
-        // Try other lanes before deferring. Existing side arcs also reserve space against
-        // later top entries, so words cannot be admitted into a future collision.
         float preferredX = e.sideEntry ? e.pathEndX : e.baseX;
-        for (int attempt = 0; attempt < 9; attempt++) {
-            float lane = attempt == 0 ? preferredX : lo + (hi - lo) * (attempt - 1) / 7f;
-            if (e.sideEntry) e.pathEndX = lane; else e.baseX = lane;
-            if (EnemyEntry.clear(e, this, L)) {
-                enemies.add(e);
-                return true;
+        // Ninja tries other entry heights too, keeping the word instead of wasting its spawn slot.
+        for(int entrance=0;entrance<(ninja()?4:1);entrance++) {
+            if(entrance>0)PowerRush.ninjaAlternative(this,e,L,entrance-1);
+            e.speed=PowerRush.spawnSpeed(this,e,L);
+            for (int attempt = 0; attempt < 9; attempt++) {
+                float lane = attempt == 0 ? preferredX : lo + (hi - lo) * (attempt - 1) / 7f;
+                if (e.sideEntry) e.pathEndX = lane; else e.baseX = lane;
+                if (EnemyEntry.clear(e, this, L)) {
+                    enemies.add(e);
+                    return true;
+                }
             }
         }
         return false;

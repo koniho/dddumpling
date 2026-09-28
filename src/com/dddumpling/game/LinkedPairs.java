@@ -24,7 +24,16 @@ final class LinkedPairs {
         a.stageMate=b; b.stageMate=a;
         // Equal velocity keeps the two keys side by side throughout their descent.
         b.speed = a.speed;
-        if (!EnemyEntry.clear(a, c, L) || !EnemyEntry.clear(b, c, L)) return false;
+        boolean clear=EnemyEntry.clear(a,c,L) && EnemyEntry.clear(b,c,L);
+        if(!clear && c.ninja()) {
+            float lo=L.playLeft+L.enemyR*3.1f,hi=L.playRight-L.enemyR*3.1f;
+            for(int lane=0;lane<4 && !clear && hi>lo;lane++) {
+                float centre=lo+(hi-lo)*lane/3f;
+                a.baseX=centre-L.enemyR*1.85f;b.baseX=centre+L.enemyR*1.85f;
+                clear=EnemyEntry.clear(a,c,L) && EnemyEntry.clear(b,c,L);
+            }
+        }
+        if(!clear)return false;
         c.enemies.add(a);
         c.enemies.add(b);
         if (c.powerActive()) c.powerSpawnedEnemies += 2;
@@ -37,7 +46,7 @@ final class LinkedPairs {
         Words.fill(e, 1, 0f, c.rnd, c.playRosterFull());
         e.baseX = (L.playLeft + L.playRight) / 2f + (row == 0 ? -1 : 1) * L.enemyR * 1.85f;
         e.y = -L.enemyR * 2.2f;
-        e.speed = (L.dangerY - e.y) / c.travelSeconds();
+        e.speed=PowerRush.spawnSpeed(c,e,L);
         PowerRush.pair(c,e,L);
         return e;
     }
