@@ -514,8 +514,8 @@ final class Renderer extends Draw {
     static void flurryClears(Painter p,GameCore c,Layout L) {
         if(c.state!=GameCore.PLAY || c.dying())return;
         float width=Math.min(L.enemyR*.10f,L.w/120f);
-        // Include the outer stroke edge in the half-screen diameter limit.
-        float limit=L.w*.25f-width*.5f;
+        // Include the outer stroke edge in the full-screen diameter limit.
+        float limit=L.w*.5f-width*.5f;
         for(GameCore.Enemy e:c.enemies) {
             if(!e.destroyed || !e.flurryClear)continue;
             float t=e.destroyT/GameCore.DESTROY_TIME;

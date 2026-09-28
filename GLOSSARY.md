@@ -405,7 +405,7 @@ at the original pickup. The ring ends with the power or run. `GameCore.powerBurs
 the origin and `Renderer.flurryBurst` draws it without changing gameplay timing.
 Each enemy cleared during FLURRY emits a matching local rainbow at its clear position,
 including both members of a linked pair. It fades with the 0.4-second clear animation
-and never exceeds half the screen width in diameter (`Renderer.flurryClears`).
+and never exceeds the full screen width in diameter (`Renderer.flurryClears`).
 
 ## Release book
 

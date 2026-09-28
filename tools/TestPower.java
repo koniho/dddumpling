@@ -194,15 +194,17 @@ final class TestPower extends Check {
         e.baseX+=30;e.y+=20;
         c.destroyWord(e,e.baseX,e.y,L);
         check("duplicate impacts cannot move or restart a ring",e.clearX==x && e.clearY==y && e.destroyT==t);
-        c.enemies.clear();c.enemies.add(e);
+        c.enemies.clear();c.enemies.add(e);e.destroyT=GameCore.DESTROY_TIME*.65f;
         RasterPainter p=new RasterPainter((int)L.w,(int)L.h,1);p.clear(0xFF010203);
         Renderer.flurryClears(p,c,L);
-        int[] pixels=p.resolve();int drawn=0;boolean bounded=true;
+        int[] pixels=p.resolve();int drawn=0;boolean bounded=true,larger=false;
         for(int i=0;i<pixels.length;i++)if(pixels[i]!=0xFF010203) {
             drawn++;
-            if(Math.hypot(i%(int)L.w-x,i/(int)L.w-y)>L.w*.25f+2f)bounded=false;
+            double radius=Math.hypot(i%(int)L.w-x,i/(int)L.w-y);
+            if(radius>L.w*.5f+2f)bounded=false;
+            if(radius>L.w*.25f+2f)larger=true;
         }
-        check("clear rainbow is visible and limited to half-screen diameter",drawn>0 && bounded);
+        check("clear rainbow grows past half width within a full-screen diameter",drawn>0 && bounded && larger);
         e.destroyT=GameCore.DESTROY_TIME;
         p.clear(0xFF010203);int[] blank=p.resolve();Renderer.flurryClears(p,c,L);
         check("clear rainbow fades out before enemy removal",java.util.Arrays.equals(blank,p.resolve()));
