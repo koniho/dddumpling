@@ -752,6 +752,7 @@ final class GameCore {
     float pickerT;
     /** Seconds left of that send-off. Play waits for it. */
     float launchT;
+    boolean launchFromStarter;
     /**
      * The clock as the start press landed. The badge is always drifting, and this is what lets
      * the send-off leave from exactly where it was rather than from wherever it has got to.
@@ -1809,8 +1810,10 @@ final class GameCore {
         if (townOpen) return;
         titleKeyHint = 0f;
         if (landChoice == LandPicker.TOWN) { openTown(); return; }
+        if (!startAnnounced && sound != null) sound.gameStart();
+        startAnnounced = true;
         if (Starter.eligible(this)) {
-            Pause.release(this);closeCase();closeStory();starter.open=true;return;
+            Pause.release(this);closeCase();closeStory();starter.begin();return;
         }
         startFade = START_FADE;
         // The entry the case was showing comes along, if it is one you own. Set before the
@@ -1826,11 +1829,18 @@ final class GameCore {
         launchPips = 0;
         closeCase();
         closeStory();
-        startAnnounced = true;
-        if (sound != null) sound.gameStart();
+    }
+
+    void beginStarterLaunch() {
+        beginStart();
+        // The chosen friend is already enlarged at center: continue from the greeting.
+        launchFromStarter = true;
+        launchT = Launch.TIME - Launch.CENTER_TIME;
+        startFade = 0f;
     }
 
     private void beginLaunch() {
+        launchFromStarter = false;
         launchNameAnnounced = false;
         launchWho = pendingRunWho;
         launchT = Launch.TIME;
@@ -1843,7 +1853,7 @@ final class GameCore {
     }
 
     void cancelStart() {
-        starter.clear();
+        starter.clear();launchFromStarter=false;
         stopLaunchVoice();
         startFade = launchT = pickerT = 0; launchWho = pendingRunWho = -1; startAnnounced = false;
     }
@@ -1886,7 +1896,7 @@ final class GameCore {
     void startGame() {
         titleKeyHint = 0f;
         diagnostic("start-game");
-        starter.clear();
+        starter.clear();launchFromStarter=false;
         onboarding.clear();onboarding.companionTravel=0;onboarding.bossHelpUsed=0;
         scoresSuppressed=false;
         stopLaunchVoice();
@@ -2687,7 +2697,7 @@ final class GameCore {
             if (town.dirty && townSaveRetry<=0f) saveTown();
             return;
         }
-        if (starter.open) { clock+=elapsed;return; }
+        if (starter.open) { clock+=elapsed;starter.update(this,elapsed);return; }
         if (onboarding.update(this, dt, elapsed, L)) return;
         if(highScoreScreen.open) { highScoreScreen.update(elapsed);clock+=elapsed;return; }
         if(releaseNotes.open) {

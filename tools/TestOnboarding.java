@@ -72,7 +72,14 @@ final class TestOnboarding extends Check {
             GameCore c=new GameCore(store,125,true);
             check("fresh title hides case",Starter.hideCase(c));
             c.openCase();check("hidden case cannot open",!c.caseOpen && c.onboarding.savedPowers==0);
-            c.beginStart();c.update(5,L);
+            Ear ear=new Ear();c.sound=ear;
+            c.beginStart();
+            check("first Start plays the normal tone immediately",ear.starts==1);
+            check("starter begins off the left edge",c.starter.drawX(L,choice)<-Starter.rosterRadius(L));
+            c.starter.choose(c,choice);check("arrival cannot be skipped by an early tap",c.starter.selected==-1);
+            c.update(5,L);
+            check("each arrival sounds once",ear.squishes==Starter.CHOICES.length);
+            c.update(.1f,L);check("arrival sounds do not repeat",ear.squishes==Starter.CHOICES.length);
             check("start waits for a choice",c.starter.open && c.state==GameCore.TITLE && !c.starting() && c.collected==0);
             float x=Starter.x(L,choice),y=Starter.y(L,choice);
             c.starter.touch(c,L,0,7,x,y);c.starter.touch(c,L,3,7,x,y);
@@ -84,17 +91,42 @@ final class TestOnboarding extends Check {
             c.starter.touch(c,L,0,7,x,y);c.starter.touch(c,L,1,8,x,y);
             check("another pointer cannot select",c.collected==0);
             c.starter.touch(c,L,0,7,x,y);c.starter.touch(c,L,1,7,x,y);
-            c.starter.choose(c,(choice+1)%Starter.CHOICES.length);
+            check("roster tap only previews",c.starter.selected==choice && c.collected==0 && !c.starting());
+            c.starter.confirm(c);check("flying preview cannot confirm",c.collected==0);
+            c.update(Starter.FOCUS,L);
+            check("preview is enlarged below the row",c.starter.drawRadius(L,choice)>Starter.rosterRadius(L)*2
+                    && c.starter.drawY(L,choice)>Starter.y(L,choice)+Starter.rosterRadius(L)*2);
+            float heroX=c.starter.drawX(L,choice),heroY=c.starter.drawY(L,choice);
+            c.starter.touch(c,L,0,7,heroX,heroY);c.starter.touch(c,L,3,7,heroX,heroY);
+            c.starter.touch(c,L,1,7,heroX,heroY);check("cancelled hero tap does not confirm",c.collected==0);
+            c.starter.touch(c,L,0,7,heroX,heroY);c.starter.touch(c,L,1,7,heroX,heroY);
+            c.starter.choose(c,(choice+1)%Starter.CHOICES.length);c.starter.confirm(c);
+            check("confirmation saves before departure and ignores repeat taps",c.starter.exiting
+                    && !c.starting() && c.collected==(1L<<who) && store.collectedSaves==1);
+            c.update(Starter.EXIT-.01f,L);
+            boolean offscreen=true;
+            for(int i=0;i<Starter.CHOICES.length;i++)if(i!=choice)
+                offscreen&=c.starter.drawX(L,i)-c.starter.drawRadius(L,i)*2>L.w;
+            check("unselected roster leaves before the normal bounce",offscreen && !c.starting());
+            check("chosen preview settles at the launch origin",Math.abs(c.starter.drawX(L,choice)-L.w*.5f)<.01f
+                    && Math.abs(c.starter.drawY(L,choice)-L.h*.5f)<.01f
+                    && Math.abs(c.starter.drawRadius(L,choice)-Starter.heroRadius(L))<.01f);
+            c.update(.02f,L);
+            check("chooser hands off at the normal greeting",c.launchFromStarter
+                    && Math.abs(c.launchT-(Launch.TIME-Launch.CENTER_TIME))<.001f && ear.starts==1);
             check("choice is saved and launches exactly once",!c.starter.open && c.starting()
                     && c.launchWho==who && c.collected==(1L<<who) && store.collectedSaves==1
                     && store.collectTotal==1 && store.collectionCounts[who]==1 && c.caseIndex==who);
+            for(int i=0;i<180 && c.state==GameCore.TITLE;i++)c.update(DT,L);
+            check("first run keeps the confirmed friend and only one start tone",c.state==GameCore.PLAY
+                    && c.runWho==who && ear.starts==1 && !c.launchFromStarter);
             GameCore restored=new GameCore(store,125,true);
             check("starter persists across app restart",restored.collected==(1L<<who)
                     && restored.caseIndex==who && restored.collectionCounts[who]==1
                     && restored.collectTotal==1 && !Starter.eligible(restored));
             check("starter progress merges without duplicating the grant",restored.progress.count("prize_"+who)==1
                     && restored.progress.count("rewards_total")==1 && restored.progress.count("rewards_starter")==1
-                    && restored.progress.count("runs_started")==0);
+                    && restored.progress.count("runs_started")==1);
             restored.beginStart();
             for(int i=0;i<180 && restored.state==GameCore.TITLE;i++)restored.update(DT,L);
             check("interrupted introduction resumes with selected companion",restored.state==GameCore.PLAY
@@ -124,13 +156,37 @@ final class TestOnboarding extends Check {
         check("learned extra tutorials exclude starter",!c.starter.open && c.starting());c.cancelStart();
         c.onboarding.reset(c);c.onboarding.skip(c);c.beginStart();
         check("skip all excludes starter",!c.starter.open && c.starting());c.cancelStart();
-        c.onboarding.reset(c);c.beginStart();c.starter.choose(c,0);
+        c.onboarding.reset(c);c.beginStart();c.update(Starter.READY,L);c.starter.choose(c,0);
+        c.update(Starter.FOCUS,L);c.starter.confirm(c);c.update(Starter.EXIT,L);
         c.startGame();c.onboarding.skip(c);c.toTitle();c.beginStart();c.startGame();
         check("skip all also retires companion introduction",!c.onboarding.briefing);
+    }
+    private static void starterPreview(Layout L) {
+        Mem store=new Mem();store.tutorials=store.powerTutorials=0;
+        GameCore c=new GameCore(store,138);Ear ear=new Ear();c.sound=ear;c.beginStart();
+        c.update(Starter.ENTER+Starter.HOP*.25f,L);
+        check("arrival makes a small jump",c.starter.drawY(L,4)<Starter.y(L,4)
+                && Math.abs(c.starter.drawX(L,4)-Starter.x(L,4))<.01f && ear.squishes==1);
+        c.update(Starter.READY,L);c.starter.choose(c,0);c.update(Starter.FOCUS,L);
+        c.starter.choose(c,4);c.update(Starter.FOCUS,L);
+        check("changing preview returns the previous friend to the line",c.starter.selected==4
+                && c.starter.focus[0]==0f && c.starter.focus[4]==1f && c.collected==0);
+        float y=c.starter.drawY(L,4);c.update(.19f,L);
+        check("enlarged preview keeps dancing",Math.abs(c.starter.drawY(L,4)-y)>.1f);
+        check("back cancels a preview without granting",Pause.back(c) && c.collected==0 && c.starter.selected==-1);
+        c.beginStart();check("reopening chooser plays a new start tone",ear.starts==2);
+        c.update(Starter.READY,L);c.starter.choose(c,1);c.update(Starter.FOCUS,L);
+        c.starter.confirm(c);
+        check("confirmed choice survives back during departure",Pause.back(c) && !c.starter.open
+                && Collect.has(c.collected,Starter.CHOICES[1]) && Starter.introPending(c));
+        c.beginStart();check("confirmed restart bypasses chooser",!c.starter.open && c.starting() && ear.starts==3);
+        for(int i=0;i<180 && c.state==GameCore.TITLE;i++)c.update(DT,L);
+        check("normal launch completes with one tone",c.state==GameCore.PLAY && ear.starts==3 && !c.launchFromStarter);
     }
     static void all(Layout L) {
         titleKeyHint(L);
         starter(L);
+        starterPreview(L);
         Mem store=new Mem();GameCore c=fresh(L,store);
         check("fresh run starts stage one without an intro",c.onboarding.practice==null && !c.onboarding.briefing && c.time>0);
         c.onboarding.begin(c,Onboarding.CORE,L);

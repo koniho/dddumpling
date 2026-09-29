@@ -9,7 +9,7 @@ final class Pause extends Draw {
                 || c.starting() || c.starter.open || c.state != GameCore.TITLE;
     }
     static boolean back(GameCore c) {
-        if(c.starter.open) { c.starter.clear();return true; }
+        if(c.starter.open) { c.cancelStart();return true; }
         if(c.townOpen) { TownScreen.back(c); c.saveTown(); return true; }
         if(c.highScoreScreen.open) { c.highScoreScreen.back(c);return true; }
         if(c.releaseNotes.open) { c.releaseNotes.back();return true; }

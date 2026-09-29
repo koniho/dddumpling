@@ -572,7 +572,11 @@ Player settings → **RESET TUTORIALS** resets this step with the other companio
 
 **First squishy** selection opens at Start when the display case is empty and all tutorials
 are reset. The empty case stays hidden. Choose Cream Bao, Peach Bun, Nana, Melon Wedge or
-Groovy Glob: the common squishy is saved immediately and becomes the run companion.
+Groovy Glob: they slide into a single roster line with a hop, color rings and soft sounds.
+Tap a friend to bring it to center for an enlarged, playful preview; other roster friends
+remain selectable. Tap the enlarged friend to save the choice and send the others off to
+the right before the usual bounce into the run. The normal start tone plays when the chooser
+opens, once per start. Previewing alone does not grant a collectible.
 After the send-off, a short companion introduction pauses stage 1 until acknowledged;
 an interrupted introduction resumes on the next start. Existing collections do not receive
 another starter when tutorials are reset. The display-case guide waits until returning to title.

@@ -54,16 +54,19 @@ final class Storybook extends Draw {
     static int glowColor(int who,int ring) {
         return Glyph.mix(Collect.BODY[who],Collect.ACCENT[who],ring/4f);
     }
-    private static void hero(Painter p,GameCore c,Layout L) {
-        float x=heroX(c,L),y=heroY(c,L),r=radius(c,L),pulse=reaction(c);
+    static void glowRings(Painter p,int who,float x,float y,float r,float age) {
         for(int ring=0;ring<5;ring++) {
-            float t=(c.storyPulse-ring*.07f)/(GLOW_TIME-4*.07f);
+            float t=(age-ring*.07f)/(GLOW_TIME-4*.07f);
             if(t<0f || t>=1f)continue;
             float rr=r*(1.05f+t*.90f),fade=(1f-t)*(1f-t);
-            int color=glowColor(c.story,ring);
+            int color=glowColor(who,ring);
             p.strokeCircle(x,y,rr,Glyph.withAlpha(color,(int)(38*fade)),r*.22f);
             p.strokeCircle(x,y,rr,Glyph.withAlpha(color,(int)(190*fade)),r*.065f);
         }
+    }
+    private static void hero(Painter p,GameCore c,Layout L) {
+        float x=heroX(c,L),y=heroY(c,L),r=radius(c,L),pulse=reaction(c);
+        glowRings(p,c.story,x,y,r,c.storyPulse);
         Trinket.drawReacting(p,c.story,x,y,r*(1f+.13f*pulse),c.clock,1f,
                 pulse>.1f?4:-1,(float)Math.sin(c.storyPulse*12f)*pulse*.4f);
     }

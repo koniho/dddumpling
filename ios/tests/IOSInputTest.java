@@ -90,6 +90,7 @@ public final class IOSInputTest extends Check {
                     && c.collected==0 && game.debugStatus().contains("starter=true"));
             check("native back cancels chooser "+choice,game.back() && !c.starter.open && c.collected==0);
             tap(game,l.w*.2f,l.h*.85f);
+            for(int i=0;i<10;i++)game.update(.2f);
             float x=Starter.x(l,choice),y=Starter.y(l,choice);
             game.touch(one(0,42,x,y));game.touch(one(3,42,x,y));game.touch(one(1,42,x,y));
             check("native cancellation cannot grant a starter "+choice,c.starter.open && c.collected==0);
@@ -97,6 +98,15 @@ public final class IOSInputTest extends Check {
             game.touch(one(1,42,x,y));
             check("background releases pending starter choice "+choice,c.starter.open && c.collected==0);
             tap(game,x,y);
+            check("native roster tap previews without granting "+choice,c.starter.selected==choice && c.collected==0);
+            for(int i=0;i<4;i++)game.update(.2f);
+            float hx=c.starter.drawX(l,choice),hy=c.starter.drawY(l,choice);
+            game.touch(one(0,42,hx,hy));game.background(true);game.background(false);
+            game.touch(one(1,42,hx,hy));
+            check("background releases pending hero confirmation "+choice,c.collected==0);
+            tap(game,hx,hy);
+            check("native confirmation waits for roster departure "+choice,c.starter.exiting && !c.starting());
+            for(int i=0;i<5;i++)game.update(.2f);
             int who=Starter.CHOICES[choice];
             check("native choice saves and launches chosen friend "+choice,!c.starter.open && c.starting()
                     && c.launchWho==who && store.collected==(1L<<who) && store.collectTotal==1);

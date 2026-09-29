@@ -49,9 +49,9 @@ final class Launch extends Draw {
     static void draw(Painter p, GameCore c, Layout L) {
         if (c.launchT <= 0f || c.launchWho < 0) return;
         float u = progress(c);
-        float x0 = Showcase.iconCx(L, c.launchClock);
-        float y0 = Showcase.iconCy(L, c.launchClock);
-        float r0 = Showcase.iconR(L) * 0.62f;
+        float x0 = c.launchFromStarter ? L.w*.5f : Showcase.iconCx(L, c.launchClock);
+        float y0 = c.launchFromStarter ? L.h*.5f : Showcase.iconCy(L, c.launchClock);
+        float r0 = c.launchFromStarter ? Starter.heroRadius(L)/GROWN : Showcase.iconR(L) * 0.62f;
         float homeX=RunCompanion.x(L),homeY=RunCompanion.y(L);
 
         float across = slide(TIME-c.launchT);
@@ -85,7 +85,7 @@ final class Launch extends Draw {
 
         // Reaches chosen to clear the body: the stars go behind it, so a burst tucked inside the
         // silhouette is a burst nobody sees.
-        stars(p, c, L, x0, y0, u - POP * 0.55f, r0 * 3.6f, fade);
+        if(!c.launchFromStarter) stars(p, c, L, x0, y0, u - POP * 0.55f, r0 * 3.6f, fade);
         stars(p, c, L, x, y, u - LAND, r * 1.9f, fade);
         stars(p, c, L, x, y, u - HOME, r * 2.4f, fade);
         if(u>=POP && u<LAND) wave(p,c.launchWho,x,y,r,(u-POP)/(LAND-POP),fade);

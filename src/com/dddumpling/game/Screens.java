@@ -33,6 +33,7 @@ final class Screens extends Draw {
     }
 
     static void title(Painter p, GameCore c, Layout L) {
+        if(c.starter.open)return;
         // Dissolves once a start key is pressed, revealing the field it was sitting over. Every
         // element takes the same factor, so the screen leaves as one thing rather than in parts.
         // Gated on starting() rather than on the timer: the send-off holds the title state open

@@ -18,8 +18,17 @@ final class Preview {
         shot(dir,"starter-key-hint",c,L,w,h,ss);
         step(c,L,.6f);shot(dir,"starter-key-hint-fading",c,L,w,h,ss);
         step(c,L,.7f);shot(dir,"starter-key-hint-done",c,L,w,h,ss);
-        c.beginStart();shot(dir,"starter-choices",c,L,w,h,ss);
-        c.starter.choose(c,4);step(c,L,Launch.TIME+.1f);
+        c.beginStart();step(c,L,.35f);shot(dir,"starter-enter",c,L,w,h,ss);
+        step(c,L,.46f);shot(dir,"starter-arrival",c,L,w,h,ss);
+        step(c,L,Starter.READY);shot(dir,"starter-choices",c,L,w,h,ss);
+        c.starter.choose(c,4);step(c,L,Starter.FOCUS*.5f);shot(dir,"starter-focus",c,L,w,h,ss);
+        step(c,L,Starter.FOCUS);shot(dir,"starter-preview",c,L,w,h,ss);
+        step(c,L,.35f);shot(dir,"starter-dance",c,L,w,h,ss);
+        c.starter.choose(c,0);step(c,L,Starter.FOCUS);shot(dir,"starter-switch",c,L,w,h,ss);
+        c.starter.confirm(c);step(c,L,.4f);shot(dir,"starter-exit",c,L,w,h,ss);
+        step(c,L,Starter.EXIT-.41f);shot(dir,"starter-before-launch",c,L,w,h,ss);
+        step(c,L,.02f);shot(dir,"starter-launch",c,L,w,h,ss);
+        step(c,L,Launch.TIME+.1f);
         TestOnboarding.awaitBubble(c,L);
         for(int page=0;page<TutorialSpeech.pageCount(TutorialSpeech.COMPANION);page++) {
             shot(dir,"starter-intro-"+page,c,L,w,h,ss);
