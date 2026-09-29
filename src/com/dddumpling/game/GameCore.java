@@ -295,7 +295,7 @@ final class GameCore {
         void mushroomSpore();
         /** One of three airy blade swishes; rapid cuts share a cue. */
         void ninjaSwish(int variant);
-        /** One short chime when a swipe first reaches four cleared words. */
+        /** One short chime for each word cleared from the third onward in a swipe. */
         default void ninjaCombo() {}
         /** One hop of a MULTI chain. @param hop 1-based, so the crack can climb with the chain */
         void zap(int hop);

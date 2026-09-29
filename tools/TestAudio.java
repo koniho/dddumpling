@@ -47,23 +47,25 @@ final class TestAudio extends Check {
         check("multi-word Ninja slice keeps combo visuals and swish",
                 c.strokeKills==2 && c.callKills==2 && c.slowdown>0 && c.sliceCall>0 && ear.swishes==1);
         check("multi-word Ninja slice rings no chime",
-                ear.achievements==cheers && ear.clears==clears);
+                ear.ninjaChimes==0 && ear.achievements==cheers && ear.clears==clears);
         add(c,L,new int[]{3},y);
         c.sliceTo(L.playLeft-L.enemyR*2f,y,L);
-        check("three clears stay free of chimes",
-                c.strokeKills==3 && c.callKills==3 && ear.ninjaChimes==0 && ear.achievements==cheers && ear.clears==clears);
+        check("third cleared word starts the combo chimes",
+                c.strokeKills==3 && c.callKills==3 && ear.ninjaChimes==1 && ear.achievements==cheers && ear.clears==clears);
         add(c,L,new int[]{4},y);c.sliceTo(L.playRight+L.enemyR*2f,y,L);
-        check("four clears ring one Ninja combo chime",c.strokeKills==4 && ear.ninjaChimes==1 && ear.clears==clears);
+        check("fourth cleared word rings again",c.strokeKills==4 && ear.ninjaChimes==2 && ear.clears==clears);
         add(c,L,new int[]{5},y);c.sliceTo(L.playLeft-L.enemyR*2f,y,L);
-        check("extending the same combo does not repeat the chime",c.strokeKills==5 && ear.ninjaChimes==1);
+        check("fifth cleared word rings again",c.strokeKills==5 && ear.ninjaChimes==3);
+        c.sliceTo(L.playRight+L.enemyR*2f,y,L);
+        check("empty swipe movement never repeats combo chimes",ear.ninjaChimes==3);
         c.endStroke();
         for(int i=0;i<6;i++)add(c,L,new int[]{i},y);
         c.beginStroke(L.playLeft-L.enemyR*2f,y);c.sliceTo(L.playRight+L.enemyR*2f,y,L);
-        check("new swipe clearing six words rings just once",c.strokeKills==6 && ear.ninjaChimes==2);
+        check("new swipe counts every eligible word in one movement",c.strokeKills==6 && ear.ninjaChimes==7);
         c.endStroke();
         add(c,L,new int[]{1,2,3,4},y);
         c.beginStroke(L.playLeft-L.enemyR*2f,y);c.sliceTo(L.playRight+L.enemyR*2f,y,L);
-        check("four letters in one word do not count as four combo clears",c.strokeKills==1 && ear.ninjaChimes==2);
+        check("four letters in one word do not count as four combo clears",c.strokeKills==1 && ear.ninjaChimes==7);
         c.endStroke();
         short[] chime=Sfx.build(Sfx.NINJA_COMBO);
         check("Ninja combo chime is short with soft edges",chime.length<=Sfx.RATE*.13f

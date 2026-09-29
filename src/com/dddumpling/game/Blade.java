@@ -10,7 +10,7 @@ package com.dddumpling.game;
  */
 final class Blade {
     static final float SWISH_GAP = .10f;
-    static final int CHIME_KILLS = 4;
+    static final int CHIME_KILLS = 3;
 
     private Blade() {}
 
@@ -213,7 +213,8 @@ final class Blade {
         }
         if (cut > 0) {
             if(c.strokeKills>priorKills)c.ninjaSlashes.emit(x0,y0,x,y,c.strokeKills);
-            if(priorKills<CHIME_KILLS && c.strokeKills>=CHIME_KILLS && c.sound!=null)c.sound.ninjaCombo();
+            if(c.sound!=null)for(int kill=Math.max(CHIME_KILLS,priorKills+1);kill<=c.strokeKills;kill++)
+                c.sound.ninjaCombo();
             c.onboarding.learn(c,TutorialSpeech.POWER_NINJA);
             if (c.ninjaSwishWait <= 0f && c.sound != null) {
                 c.sound.ninjaSwish(c.ninjaSwishNext);
