@@ -735,7 +735,9 @@ public final class IOSGame {
         if (!BuildFlags.DEVELOPER) return "";
         return "state=" + core.state + ";stage=" + core.stage + ";paused=" + core.paused
                 + ";score=" + core.score + ";lives=" + core.lives + ";case=" + core.caseOpen
-                + ";stars=" + core.starBonus + ";mode=" + core.mode + ";starter=" + core.starter.open;
+                + ";stars=" + core.starBonus + ";mode=" + core.mode + ";starter=" + core.starter.open
+                + ";starterReady=" + (core.starter.open && !core.starter.exiting && core.starter.age>=Starter.READY)
+                + ";starterConfirm=" + core.starter.canConfirm();
     }
 
     public void debugScene(String scene) {

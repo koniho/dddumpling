@@ -88,9 +88,13 @@ public final class IOSInputTest extends Check {
             check("starting clears native title hint "+choice,c.titleKeyHint==0f);
             check("native fresh Start opens starter chooser "+choice,c.starter.open && !c.starting()
                     && c.collected==0 && game.debugStatus().contains("starter=true"));
+            check("native starter status waits for arrival "+choice,game.debugStatus().contains("starterReady=false")
+                    && game.debugStatus().contains("starterConfirm=false"));
             check("native back cancels chooser "+choice,game.back() && !c.starter.open && c.collected==0);
             tap(game,l.w*.2f,l.h*.85f);
             for(int i=0;i<10;i++)game.update(.2f);
+            check("native starter status reports settled roster "+choice,game.debugStatus().contains("starterReady=true")
+                    && game.debugStatus().contains("starterConfirm=false"));
             float x=Starter.x(l,choice),y=Starter.y(l,choice);
             game.touch(one(0,42,x,y));game.touch(one(3,42,x,y));game.touch(one(1,42,x,y));
             check("native cancellation cannot grant a starter "+choice,c.starter.open && c.collected==0);
@@ -100,12 +104,15 @@ public final class IOSInputTest extends Check {
             tap(game,x,y);
             check("native roster tap previews without granting "+choice,c.starter.selected==choice && c.collected==0);
             for(int i=0;i<4;i++)game.update(.2f);
+            check("native starter status reports confirmation ready "+choice,game.debugStatus().contains("starterConfirm=true"));
             float hx=c.starter.drawX(l,choice),hy=c.starter.drawY(l,choice);
             game.touch(one(0,42,hx,hy));game.background(true);game.background(false);
             game.touch(one(1,42,hx,hy));
             check("background releases pending hero confirmation "+choice,c.collected==0);
             tap(game,hx,hy);
             check("native confirmation waits for roster departure "+choice,c.starter.exiting && !c.starting());
+            check("native exit disables chooser status "+choice,game.debugStatus().contains("starterReady=false")
+                    && game.debugStatus().contains("starterConfirm=false"));
             for(int i=0;i<5;i++)game.update(.2f);
             int who=Starter.CHOICES[choice];
             check("native choice saves and launches chosen friend "+choice,!c.starter.open && c.starting()

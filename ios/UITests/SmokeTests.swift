@@ -32,8 +32,16 @@ final class SmokeTests: XCTestCase {
         expectation(for: starting, evaluatedWith: game)
         waitForExpectations(timeout: 5)
         if (game.value as? String ?? "").contains("starter=true") {
+            let ready = NSPredicate(format: "value CONTAINS %@", "starterReady=true")
+            expectation(for: ready, evaluatedWith: game)
+            waitForExpectations(timeout: 5)
             capture(app, "starter-choice")
-            game.coordinate(withNormalizedOffset: CGVector(dx: 0.27, dy: 0.33)).tap()
+            game.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.48)).tap()
+            let confirm = NSPredicate(format: "value CONTAINS %@", "starterConfirm=true")
+            expectation(for: confirm, evaluatedWith: game)
+            waitForExpectations(timeout: 5)
+            capture(app, "starter-preview")
+            game.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.68)).tap()
         }
         let playing = NSPredicate(format: "value CONTAINS %@", "state=1")
         expectation(for: playing, evaluatedWith: game)
