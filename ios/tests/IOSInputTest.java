@@ -871,9 +871,17 @@ public final class IOSInputTest extends Check {
         IOSGame game=new IOSGame(store,new Ear(),114);game.layout(393,852,0,59,0,34);
         GameCore c=game.core();Layout l=game.geometry();c.startGame();c.starNext=true;Interlude.enterBonus(c,l);
         game.update(DT);float timer=c.stars.timer,x=c.stars.x,y=StarScreen.sliderY(l);
+        check("native Star Path reveals its course before explanation",c.onboarding.starGuide
+                && c.onboarding.sceneWait>0 && !c.onboarding.briefing);
         game.touch(one(0,42,x,y));game.touch(one(2,42,x+l.unit*3,y));game.touch(one(1,42,x+l.unit*3,y));
-        game.update(.5f);
+        game.update(Onboarding.SCENE_REVEAL*.5f);
+        check("native Star Path reveal blocks flight controls",c.onboarding.sceneWait>0
+                && !c.onboarding.briefing && !c.stars.dragging && c.stars.timer==timer && c.stars.x==x);
+        for(int frame=0;frame<120 && c.onboarding.sceneWait>0;frame++)game.update(DT);
+        game.touch(one(0,42,x,y));game.touch(one(2,42,x+l.unit*3,y));game.touch(one(1,42,x+l.unit*3,y));
+        game.update(DT);
         check("native Star Path explanation blocks flight controls",c.onboarding.briefing
+                && c.onboarding.sceneWait==0 && !c.stars.dragging
                 && c.onboarding.practice==null && c.stars.timer==timer && c.stars.x==x);
         tutorialContinue(game);
         game.touch(one(0,42,x,y));game.touch(one(2,42,x+l.unit*3,y));
