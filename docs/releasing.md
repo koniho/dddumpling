@@ -51,7 +51,7 @@ python3 tools/release-notes.py check --version 0.1.20
 
 Confirm the Android code is unused before preparing it. Review the manifest, version-specific Play changelog, in-game JSON/generated copy, and any TestFlight notes together. Follow the platform's required build checks and commit these files before tagging. If the release scope changes during review, update the notes and check again.
 
-For TestFlight, keep the iOS marketing version unchanged and increment the build number unless preparing a public App Store version. The shared in-game release number follows the release tag; it need not equal that retained iOS marketing version.
+For TestFlight, keep the iOS marketing version unchanged and increment the build number while Apple still accepts builds for that version. If Apple closes that version after approval, advance the marketing version to the current shared release before retrying; this does not submit or activate an App Store release. The shared in-game release number follows the release tag; it need not equal a retained iOS marketing version.
 
 ## 4. Tag the verified main commit
 
