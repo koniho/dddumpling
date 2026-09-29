@@ -576,6 +576,7 @@ Groovy Glob: they slide into a single roster line with a hop, color rings and so
 The title letters and background stay live while settings slide right, the steamer slides left,
 and the score, demo, lands and keys slide down. Confirming brings the keys back up.
 The entry and selection share a chime; waiting friends take shuffled turns waving to be picked.
+Entry narrates “Choose your first squishy” once; confirmation or cancellation stops that prompt.
 Tap a friend to bring it to center for an enlarged, playful preview; other roster friends
 remain selectable. Tap the enlarged friend to save the choice and send the others off to
 the right before the usual bounce into the run. Entry and confirmation pair the selection

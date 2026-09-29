@@ -240,11 +240,29 @@ final class TestOnboarding extends Check {
         for(int i=0;i<180 && c.state==GameCore.TITLE;i++)c.update(DT,L);
         check("normal launch does not repeat its tone",c.state==GameCore.PLAY && ear.starts==4 && !c.launchFromStarter);
     }
+    private static void starterNarration(Layout L) {
+        Mem store=new Mem();store.tutorials=store.powerTutorials=0;
+        GameCore c=new GameCore(store,138);Ear ear=new Ear();c.sound=ear;
+        c.beginStart();
+        check("chooser narrates its instruction on entry",ear.explanations==1
+                && "Choose your first squishy".equals(ear.explanation));
+        c.update(Starter.READY,L);c.starter.choose(c,0);c.update(Starter.FOCUS,L);
+        check("waiting and previewing do not repeat the instruction",ear.explanations==1);
+        int hushes=ear.hushes;Pause.back(c);
+        check("leaving chooser stops its narration",ear.hushes==hushes+1);
+        c.beginStart();check("reopening chooser narrates again",ear.explanations==2);
+        c.update(Starter.READY,L);c.starter.choose(c,1);c.update(Starter.FOCUS,L);
+        hushes=ear.hushes;c.starter.confirm(c);
+        check("confirmation stops the prompt before launch",ear.hushes==hushes+1);
+        c.update(Starter.EXIT,L);
+        check("launch handoff neither repeats nor stops unrelated speech",ear.explanations==2 && ear.hushes==hushes+1);
+    }
     static void all(Layout L) {
         titleKeyHint(L);
         starter(L);
         starterPreview(L);
         starterTitleTransition(L);
+        starterNarration(L);
         starterWaves(L);
         Mem store=new Mem();GameCore c=fresh(L,store);
         check("fresh run starts stage one without an intro",c.onboarding.practice==null && !c.onboarding.briefing && c.time>0);

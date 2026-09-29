@@ -18,6 +18,7 @@ final class Starter extends Draw {
     float age, previewAge, exitAge;
     final float[] focus=new float[CHOICES.length];
     private int pointer=-1, armed=-1, arrived;
+    private GameCore.Sound narrator;
     private static final int HERO=CHOICES.length;
 
     static boolean eligible(GameCore c) {
@@ -29,9 +30,17 @@ final class Starter extends Draw {
     static boolean hideCase(GameCore c) { return eligible(c) || c.starter.open || introPending(c); }
     void begin(GameCore c) {
         clear();open=true;waveRandom.setSeed(138L^Float.floatToIntBits(c.clock));
-        if(c.sound!=null)c.sound.collect(1);
+        if(c.sound!=null) {
+            c.sound.collect(1);
+            narrator=c.sound;narrator.explain("Choose your first squishy");
+        }
+    }
+    private void stopNarration() {
+        if(narrator!=null)narrator.hush();
+        narrator=null;
     }
     void clear() {
+        stopNarration();
         open=exiting=false;selected=-1;age=previewAge=exitAge=0f;arrived=0;
         java.util.Arrays.fill(focus,0f);cancelTouch();
         waving=-1;waveAge=0f;waveWait=.3f;waveNext=CHOICES.length;
@@ -119,7 +128,7 @@ final class Starter extends Draw {
         }
         c.progress.starter(who);
         c.onboarding.savedPowers|=INTRO_PENDING;c.onboarding.save(c);
-        exiting=true;exitAge=0f;cancelTouch();
+        exiting=true;exitAge=0f;cancelTouch();stopNarration();
         // Match the entrance cue; the launch handoff does not announce Start again.
         if(c.sound!=null) { c.sound.gameStart();c.sound.collect(1); }
     }
