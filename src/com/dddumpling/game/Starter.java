@@ -120,7 +120,8 @@ final class Starter extends Draw {
         c.progress.starter(who);
         c.onboarding.savedPowers|=INTRO_PENDING;c.onboarding.save(c);
         exiting=true;exitAge=0f;cancelTouch();
-        if(c.sound!=null)c.sound.collect(1);
+        // Match the entrance cue; the launch handoff does not announce Start again.
+        if(c.sound!=null) { c.sound.gameStart();c.sound.collect(1); }
     }
     static float x(Layout L,int choice) { return L.w*(.12f+choice*.19f); }
     static float y(Layout L,int choice) { return L.h*.48f; }

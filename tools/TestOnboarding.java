@@ -113,13 +113,13 @@ final class TestOnboarding extends Check {
                     && Math.abs(c.starter.drawRadius(L,choice)-Starter.heroRadius(L))<.01f);
             c.update(.02f,L);
             check("chooser hands off at the normal greeting",c.launchFromStarter
-                    && Math.abs(c.launchT-(Launch.TIME-Launch.CENTER_TIME))<.001f && ear.starts==1);
+                    && Math.abs(c.launchT-(Launch.TIME-Launch.CENTER_TIME))<.001f && ear.starts==2);
             check("choice is saved and launches exactly once",!c.starter.open && c.starting()
                     && c.launchWho==who && c.collected==(1L<<who) && store.collectedSaves==1
                     && store.collectTotal==1 && store.collectionCounts[who]==1 && c.caseIndex==who);
             for(int i=0;i<180 && c.state==GameCore.TITLE;i++)c.update(DT,L);
-            check("first run keeps the confirmed friend and only one start tone",c.state==GameCore.PLAY
-                    && c.runWho==who && ear.starts==1 && !c.launchFromStarter);
+            check("first run keeps the friend without repeating the confirmation cue",c.state==GameCore.PLAY
+                    && c.runWho==who && ear.starts==2 && !c.launchFromStarter);
             GameCore restored=new GameCore(store,125,true);
             check("starter persists across app restart",restored.collected==(1L<<who)
                     && restored.caseIndex==who && restored.collectionCounts[who]==1
@@ -189,7 +189,9 @@ final class TestOnboarding extends Check {
         check("invitations leave gameplay randomness untouched",c.rnd.nextLong()==control.rnd.nextLong());
         c.starter.confirm(c);boolean quiet=true;
         for(int i=0;i<Starter.CHOICES.length;i++)quiet&=c.starter.waveProgress(i)<0f;
-        check("confirmation stops invitations and uses the same chime",quiet && ear.collects==3);
+        check("confirmation matches the entrance cue and stops invitations",quiet && ear.collects==3 && ear.starts==2);
+        c.starter.confirm(c);
+        check("repeated confirmation cannot replay the chime",ear.collects==3 && ear.starts==2);
         c.cancelStart();c.update(2,L);
         check("cancel clears all invitation state",c.starter.waveProgress(0)<0f && !c.starter.open);
     }
@@ -234,9 +236,9 @@ final class TestOnboarding extends Check {
         c.starter.confirm(c);
         check("confirmed choice survives back during departure",Pause.back(c) && !c.starter.open
                 && Collect.has(c.collected,Starter.CHOICES[1]) && Starter.introPending(c));
-        c.beginStart();check("confirmed restart bypasses chooser",!c.starter.open && c.starting() && ear.starts==3);
+        c.beginStart();check("confirmed restart bypasses chooser",!c.starter.open && c.starting() && ear.starts==4);
         for(int i=0;i<180 && c.state==GameCore.TITLE;i++)c.update(DT,L);
-        check("normal launch completes with one tone",c.state==GameCore.PLAY && ear.starts==3 && !c.launchFromStarter);
+        check("normal launch does not repeat its tone",c.state==GameCore.PLAY && ear.starts==4 && !c.launchFromStarter);
     }
     static void all(Layout L) {
         titleKeyHint(L);

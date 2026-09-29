@@ -578,8 +578,9 @@ and the score, demo, lands and keys slide down. Confirming brings the keys back 
 The entry and selection share a chime; waiting friends take shuffled turns waving to be picked.
 Tap a friend to bring it to center for an enlarged, playful preview; other roster friends
 remain selectable. Tap the enlarged friend to save the choice and send the others off to
-the right before the usual bounce into the run. The normal start tone plays when the chooser
-opens, once per start. Previewing alone does not grant a collectible.
+the right before the usual bounce into the run. Entry and confirmation pair the selection
+chime with the normal start tone; the launch itself does not replay it. Previewing alone
+does not grant a collectible.
 After the send-off, a short companion introduction pauses stage 1 until acknowledged;
 an interrupted introduction resumes on the next start. Existing collections do not receive
 another starter when tutorials are reset. The display-case guide waits until returning to title.
