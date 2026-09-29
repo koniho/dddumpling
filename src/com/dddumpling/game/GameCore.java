@@ -1813,7 +1813,7 @@ final class GameCore {
         if (!startAnnounced && sound != null) sound.gameStart();
         startAnnounced = true;
         if (Starter.eligible(this)) {
-            Pause.release(this);closeCase();closeStory();starter.begin();return;
+            Pause.release(this);closeCase();closeStory();starter.begin(this);return;
         }
         startFade = START_FADE;
         // The entry the case was showing comes along, if it is one you own. Set before the
@@ -1836,7 +1836,6 @@ final class GameCore {
         // The chosen friend is already enlarged at center: continue from the greeting.
         launchFromStarter = true;
         launchT = Launch.TIME - Launch.CENTER_TIME;
-        startFade = 0f;
     }
 
     private void beginLaunch() {
@@ -2697,7 +2696,12 @@ final class GameCore {
             if (town.dirty && townSaveRetry<=0f) saveTown();
             return;
         }
-        if (starter.open) { clock+=elapsed;starter.update(this,elapsed);return; }
+        if (starter.open) {
+            clock+=elapsed;time+=elapsed;skyClock+=elapsed;
+            updateTitleSprings(elapsed,L);
+            for(int i=0;i<Glyph.COUNT;i++)keyPress[i]=decay(keyPress[i],elapsed*5.5f);
+            starter.update(this,elapsed);return;
+        }
         if (onboarding.update(this, dt, elapsed, L)) return;
         if(highScoreScreen.open) { highScoreScreen.update(elapsed);clock+=elapsed;return; }
         if(releaseNotes.open) {

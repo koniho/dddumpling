@@ -161,10 +161,65 @@ final class TestOnboarding extends Check {
         c.startGame();c.onboarding.skip(c);c.toTitle();c.beginStart();c.startGame();
         check("skip all also retires companion introduction",!c.onboarding.briefing);
     }
+    private static void starterWaves(Layout L) {
+        Mem store=new Mem();store.tutorials=store.powerTutorials=0;
+        GameCore c=new GameCore(store,138),control=new GameCore(new Mem(),138);
+        Ear ear=new Ear();c.sound=ear;c.beginStart();
+        check("selection entry uses the character selection chime",ear.starts==1 && ear.collects==1);
+        int seen=0,previous=-1,turns=0;boolean solo=true,uniqueFirstRound=true;
+        for(int frame=0;frame<1000;frame++) {
+            c.update(DT,L);int active=0,current=-1;
+            for(int i=0;i<Starter.CHOICES.length;i++)if(c.starter.waveProgress(i)>=0f) { active++;current=i; }
+            solo&=active<=1;
+            if(current>=0 && current!=previous) {
+                if(turns<Starter.CHOICES.length) { uniqueFirstRound&=(seen&(1<<current))==0;seen|=1<<current; }
+                turns++;
+            }
+            previous=current;
+        }
+        check("waiting friends take individual shuffled turns",solo && uniqueFirstRound && seen==31 && turns>5);
+        c.starter.choose(c,2);c.update(Starter.FOCUS,L);
+        check("preview uses the same entry chime",ear.collects==2);
+        boolean skipsSelected=true,othersWave=false;
+        for(int frame=0;frame<500;frame++) {
+            c.update(DT,L);skipsSelected&=c.starter.waveProgress(2)<0f;
+            for(int i=0;i<Starter.CHOICES.length;i++)if(i!=2)othersWave|=c.starter.waveProgress(i)>=0f;
+        }
+        check("unselected friends keep inviting during the preview",skipsSelected && othersWave);
+        check("invitations leave gameplay randomness untouched",c.rnd.nextLong()==control.rnd.nextLong());
+        c.starter.confirm(c);boolean quiet=true;
+        for(int i=0;i<Starter.CHOICES.length;i++)quiet&=c.starter.waveProgress(i)<0f;
+        check("confirmation stops invitations and uses the same chime",quiet && ear.collects==3);
+        c.cancelStart();c.update(2,L);
+        check("cancel clears all invitation state",c.starter.waveProgress(0)<0f && !c.starter.open);
+    }
+    private static void starterTitleTransition(Layout L) {
+        Mem store=new Mem();store.tutorials=store.powerTutorials=0;
+        GameCore c=new GameCore(store,138);c.beginStart();
+        check("chooser controls start at title positions",c.starter.controlsOut()==0f && c.starter.keyOffset(L)==0f);
+        float sky=c.skyClock,time=c.time;
+        c.update(Starter.CONTROLS*.5f,L);
+        check("title controls slide through intermediate positions",c.starter.controlsOut()>0f
+                && c.starter.controlsOut()<1f && c.starter.keysOut()==c.starter.controlsOut());
+        check("title background remains animated during selection",c.skyClock>sky && c.time>time);
+        c.update(Starter.READY,L);
+        check("title controls and keys move completely offscreen",c.starter.controlsOut()==1f
+                && L.deckTop+c.starter.keyOffset(L)-L.keyR>L.h);
+        c.starter.choose(c,0);c.update(Starter.FOCUS,L);
+        check("preview leaves controls offscreen",c.starter.keysOut()==1f);
+        c.starter.confirm(c);c.update(Starter.EXIT*.5f,L);
+        check("confirmation slides only keys back up",c.starter.keysOut()>0f && c.starter.keysOut()<1f
+                && c.starter.controlsOut()==1f);
+        c.update(Starter.EXIT*.5f,L);
+        check("normal launch starts with returned keys and intact title fade",c.starting()
+                && c.starter.keyOffset(L)==0f && c.startFade==GameCore.START_FADE && Starter.controlsOut(c)==1f);
+        c.update(.1f,L);check("title then fades with the normal launch",c.startFade>0f && c.startFade<GameCore.START_FADE);
+        c.cancelStart();check("cancel resets control offsets",c.starter.controlsOut()==0f && c.starter.keysOut()==0f);
+    }
     private static void starterPreview(Layout L) {
         Mem store=new Mem();store.tutorials=store.powerTutorials=0;
         GameCore c=new GameCore(store,138);Ear ear=new Ear();c.sound=ear;c.beginStart();
-        c.update(Starter.ENTER+Starter.HOP*.25f,L);
+        c.update(Starter.ROSTER_DELAY+Starter.ENTER+Starter.HOP*.25f,L);
         check("arrival makes a small jump",c.starter.drawY(L,4)<Starter.y(L,4)
                 && Math.abs(c.starter.drawX(L,4)-Starter.x(L,4))<.01f && ear.squishes==1);
         c.update(Starter.READY,L);c.starter.choose(c,0);c.update(Starter.FOCUS,L);
@@ -187,6 +242,8 @@ final class TestOnboarding extends Check {
         titleKeyHint(L);
         starter(L);
         starterPreview(L);
+        starterTitleTransition(L);
+        starterWaves(L);
         Mem store=new Mem();GameCore c=fresh(L,store);
         check("fresh run starts stage one without an intro",c.onboarding.practice==null && !c.onboarding.briefing && c.time>0);
         c.onboarding.begin(c,Onboarding.CORE,L);

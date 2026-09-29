@@ -66,8 +66,10 @@ final class Renderer extends Draw {
 
         Lands.scenery(p, c, L);
 
+        p.save();p.translate(0,c.starter.keyOffset(L));
         dangerLine(p, c, L);
         pushHint(p, c, L);
+        p.restore();
         // The boss, behind the words: it is the backdrop of its stage and they are what is about to
         // hurt you, so they win every overlap.
         BossScreen.body(p, c, L);
@@ -100,7 +102,9 @@ final class Renderer extends Draw {
         Sky.cloudBand(p, c, L, Sky.CLOUD_FRONT_LAYER, GameCore.CLOUD_LAYERS, hurt);
 
         if(c.state==GameCore.PLAY && c.ninja())c.ninjaSlashes.draw(p,L);
+        p.save();p.translate(0,c.starter.keyOffset(L));
         if (!(c.state == GameCore.BONUS && c.starBonus)) keys(p, c, L);
+        p.restore();
         p.restore();
 
         }
@@ -159,7 +163,9 @@ final class Renderer extends Draw {
         if (c.settingsOpen) PlayerSettings.draw(p, c, L);
         Onboarding.draw(p, c, L);
         Pause.draw(p, c, L);
+        p.save();p.translate(-L.w*Starter.controlsOut(c),0);
         ReleaseNotes.entry(p,c,L);
+        p.restore();
         c.releaseNotes.draw(p,c,L);
         if(c.townReturnFade>0f) p.fillRect(0,0,L.w,L.h,
                 Glyph.withAlpha(0xFFCEF0D1,(int)(255*c.townReturnFade/GameCore.TOWN_FADE)));
@@ -903,7 +909,7 @@ final class Renderer extends Draw {
         // Opening the case puts the demo away with the badge.
         float titleHint = c.titleKeyHighlight();
         float demoLit = 0f;
-        if (c.state == GameCore.TITLE) {
+        if (c.state == GameCore.TITLE && !c.starter.open && !c.launchFromStarter) {
             demoLit = Screens.caseOut(c)
                     * (c.starting() ? c.startFade / GameCore.START_FADE : 1f);
         }

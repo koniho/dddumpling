@@ -178,7 +178,7 @@ final class Launch extends Draw {
         }
     }
 
-    private static void wave(Painter p,int who,float x,float y,float r,float u,float fade) {
+    static void wave(Painter p,int who,float x,float y,float r,float u,float fade) {
         float envelope=(float)Math.sin(u*Math.PI);
         float swing=(float)Math.sin(u*Math.PI*6f)*envelope;
         float palmX=x+r*(.92f+.16f*swing),palmY=y-r*(.20f+.44f*envelope);

@@ -18,9 +18,20 @@ final class Preview {
         shot(dir,"starter-key-hint",c,L,w,h,ss);
         step(c,L,.6f);shot(dir,"starter-key-hint-fading",c,L,w,h,ss);
         step(c,L,.7f);shot(dir,"starter-key-hint-done",c,L,w,h,ss);
-        c.beginStart();step(c,L,.35f);shot(dir,"starter-enter",c,L,w,h,ss);
-        step(c,L,.46f);shot(dir,"starter-arrival",c,L,w,h,ss);
+        c.beginStart();shot(dir,"starter-controls-start",c,L,w,h,ss);
+        step(c,L,Starter.CONTROLS*.5f);shot(dir,"starter-controls-away",c,L,w,h,ss);
+        step(c,L,.35f);shot(dir,"starter-enter",c,L,w,h,ss);
+        step(c,L,.56f);shot(dir,"starter-arrival",c,L,w,h,ss);
         step(c,L,Starter.READY);shot(dir,"starter-choices",c,L,w,h,ss);
+        for(int wave=0;wave<3;wave++) {
+            for(int frame=0;frame<180;frame++) {
+                step(c,L,1f/60f);boolean waving=false;
+                for(int friend=0;friend<Starter.CHOICES.length;friend++)
+                    waving|=c.starter.waveProgress(friend)>.35f && c.starter.waveProgress(friend)<.55f;
+                if(waving)break;
+            }
+            shot(dir,"starter-wave-"+wave,c,L,w,h,ss);step(c,L,Starter.WAVE);
+        }
         c.starter.choose(c,4);step(c,L,Starter.FOCUS*.5f);shot(dir,"starter-focus",c,L,w,h,ss);
         step(c,L,Starter.FOCUS);shot(dir,"starter-preview",c,L,w,h,ss);
         step(c,L,.35f);shot(dir,"starter-dance",c,L,w,h,ss);

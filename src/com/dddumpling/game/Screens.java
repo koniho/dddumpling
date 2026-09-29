@@ -33,7 +33,6 @@ final class Screens extends Draw {
     }
 
     static void title(Painter p, GameCore c, Layout L) {
-        if(c.starter.open)return;
         // Dissolves once a start key is pressed, revealing the field it was sitting over. Every
         // element takes the same factor, so the screen leaves as one thing rather than in parts.
         // Gated on starting() rather than on the timer: the send-off holds the title state open
@@ -43,6 +42,8 @@ final class Screens extends Draw {
         float s = L.unit;
         float cx = L.w / 2f;
         bubblyTitle(p, c, L, cx, L.h * 0.100f, fade);
+        float controlsOut=Starter.controlsOut(c);
+        p.save();p.translate(0,L.h*controlsOut);
         HighScoreScreen.titleGlow(p,c,L,fade*caseOut(c));
         p.text("BEST " + c.best, cx, L.h * 0.292f, type(s * 0.74f)*HighScoreScreen.titleTextScale(c),
                 fadeBy(HighScoreScreen.titleTextColor(c), fade * caseOut(c)),
@@ -52,6 +53,7 @@ final class Screens extends Draw {
         // types itself while the matching keys light under it. Suppressed with the case open —
         // there is one lesson on screen at a time.
         Demo.draw(p, c, L, fade * caseOut(c));
+        p.restore();
 
         // The badge and the case swap in the same place, and in series rather than on top of
         // each other: crossing them over on the raw fade drew both at half strength for a
@@ -62,8 +64,12 @@ final class Screens extends Draw {
             Showcase.icon(p, c, L, shut);
             Showcase.draw(p, c, L, open);
         }
+        p.save();p.translate(L.w*controlsOut,0);
         PrivacyUi.draw(p, c, L);
+        p.restore();
+        p.save();p.translate(0,L.h*controlsOut);
         LandPicker.draw(p, c, L);
+        p.restore();
 
         // Anchored above the danger line rather than off the deck: the dashed line shows
         // faintly through the scrim, and text sitting on it looks struck through. The lines swap
