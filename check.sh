@@ -140,6 +140,7 @@ src/com/dddumpling/game/CaveScreen.java
 src/com/dddumpling/game/Lands.java
 src/com/dddumpling/game/SeaSkits.java
 src/com/dddumpling/game/SlimeSkits.java
+src/com/dddumpling/game/CrystalSkits.java
 src/com/dddumpling/game/LandPicker.java
 src/com/dddumpling/game/LandDiscovery.java
 src/com/dddumpling/game/Slime.java

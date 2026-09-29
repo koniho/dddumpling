@@ -890,6 +890,14 @@ final class Preview {
                 shot(dir,"81-slime-"+variant+"-"+frame,slime,L,w,h,ss);
             }
         }
+        if(wanted("81-crystal-")) {
+            GameCore crystal=new GameCore(new Mem(),146L);crystal.startGame();crystal.landBlend=1f;
+            for(int variant=0;variant<3;variant++)for(int frame=0;frame<9;frame++) {
+                crystal.stage=Boss.EVERY+variant+1;
+                crystal.stageBanner=GameCore.BANNER_TIME*(1f-(.05f+frame*.10f));
+                shot(dir,"81-crystal-"+variant+"-"+frame,crystal,L,w,h,ss);
+            }
+        }
 
         caveFrames(dir,L,w,h,ss);
         cartFrames(dir,L,w,h,ss);

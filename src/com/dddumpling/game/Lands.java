@@ -229,7 +229,7 @@ final class Lands extends Draw {
         return shape;
     }
 
-    private static void crystal(Painter p, float x, float base, float w, float h,
+    static void crystal(Painter p, float x, float base, float w, float h,
             int a, float t, boolean silhouette, boolean animated) {
         float top = base - h, shoulder = top + h * 0.22f;
         float[] outline = {x - w, base - h * 0.07f, x - w, shoulder,
@@ -285,6 +285,7 @@ final class Lands extends Draw {
     static void skit(Painter p, int stage, float x, float y, float r, float t, int a) {
         int land = forStage(stage), variant = skitFor(stage);
         if (land == 0) { SlimeSkits.draw(p,variant,x,y,r,t,a); return; }
+        if (land == 1) { CrystalSkits.draw(p,variant,x,y,r,t,a); return; }
         if (land == Cave.LAND) {
             CaveArt.entrance(p,x,y,r,a,false);
             Skits.face(p,Kawaii.DUMPLING,x+r*(t-.5f),y+r*.65f,r*.36f,a,1f,.5f);
@@ -294,15 +295,14 @@ final class Lands extends Draw {
         if (land == 2 && variant == 2) { SeaSkits.trudge(p, x, y, r, t, a); return; }
         float arc = (float)Math.sin(t * Math.PI);
         float hop = Math.abs((float)Math.sin(t * Math.PI * 2f));
-        int actor = land == 0 ? Kawaii.BLOB : land == 1 ? Kawaii.SQUISHY
-                : land == 2 ? Kawaii.CAT : Kawaii.DUMPLING;
+        int actor = land == 2 ? Kawaii.CAT : Kawaii.DUMPLING;
         if (variant == 0) {
-            // Puddle bounce, block leap, bubble ride, or mushroom trampoline.
+            // Bubble ride or mushroom trampoline.
             prop(p, land, x, y + r * 0.55f, r * 0.68f, a * 3 / 4, t * 5f);
             Skits.face(p, actor, x, y - r * (0.3f + hop * 1.15f), r * 0.53f, a,
                     1.15f - hop * 0.3f, 1f);
         } else if (variant == 1) {
-            // A pair play catch with a goo pearl, jelly block, bubble garden, or tiny cap.
+            // A pair play catch with a tiny cap.
             Skits.face(p, actor, x - r * 1.25f, y + r * 0.3f, r * 0.5f, a, 1f, 1f);
             Skits.face(p, Kawaii.STRAWBERRY, x + r * 1.25f, y + r * 0.3f, r * 0.5f, a, 1f, 1f);
             prop(p, land, x + (t * 2f - 1f) * r * 1.2f, y - arc * r * 1.1f,

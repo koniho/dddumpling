@@ -693,31 +693,33 @@ final class TestVisuals extends Check {
         check("screen shake restores its drawing transform", stack.isEmpty() && offset[0] == 0f && offset[1] == 0f);
     }
 
-    private static void slimeSkits() {
-        group("Slime Hills skits");
+    private static void reactiveLandSkits() {
+        group("Slime Hills and Crystal skits");
         RasterPainter p=new RasterPainter(320,280,1);
         int background=0xFF171426;p.clear(background);int[] empty=p.resolve();
-        for(int variant=0;variant<3;variant++) {
+        for(int land=0;land<2;land++)for(int variant=0;variant<3;variant++) {
+            int stage=land*Boss.EVERY+variant+1;
+            String label="land "+land+" skit "+variant;
             boolean deterministic=true,visible=true,bounded=true;
             java.util.HashSet<Integer> frames=new java.util.HashSet<>();
             for(int frame=0;frame<=20;frame++) {
                 float t=frame/20f;
-                p.clear(background);Lands.skit(p,variant+1,160,160,40,t,235);
+                p.clear(background);Lands.skit(p,stage,160,160,40,t,235);
                 int[] pixels=p.resolve();frames.add(java.util.Arrays.hashCode(pixels));
                 visible&=!java.util.Arrays.equals(empty,pixels);
                 for(int y=0;y<280;y++)for(int x=0;x<320;x++)
                     if(pixels[y*320+x]!=background)bounded&=x>12 && x<308 && y>55 && y<220;
-                p.clear(background);Lands.skit(p,variant+1,160,160,40,t,235);
+                p.clear(background);Lands.skit(p,stage,160,160,40,t,235);
                 deterministic&=java.util.Arrays.equals(pixels,p.resolve());
             }
-            check("slime skit animates within its intro space "+variant,visible && bounded && frames.size()>15);
-            check("slime skit renders deterministically "+variant,deterministic);
-            p.clear(background);Lands.skit(p,variant+1,160,160,40,.6f,0);
-            check("slime skit respects the banner fade "+variant,java.util.Arrays.equals(empty,p.resolve()));
+            check(label+" animates within its intro space",visible && bounded && frames.size()>15);
+            check(label+" renders deterministically",deterministic);
+            p.clear(background);Lands.skit(p,stage,160,160,40,.6f,0);
+            check(label+" respects the banner fade",java.util.Arrays.equals(empty,p.resolve()));
         }
     }
     static void sky(Layout L) {
-        slimeSkits();
+        reactiveLandSkits();
         backgroundShake(L);
         group("cloud sky");
         for (int land = 0; land < Lands.COUNT; land++) {
