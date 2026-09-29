@@ -46,6 +46,8 @@ def play_upload_options(root, channel = "closed")
   UI.user_error!("Release notes must contain 1–500 characters") unless (1..500).cover?(text.length)
   aab = File.join(root, "build/DDDUMPLING.aab")
   UI.user_error!("Build or download the signed production AAB first") unless File.file?(aab)
+  status = ENV.fetch("PLAY_RELEASE_STATUS", "draft")
+  UI.user_error!("Play release status must be draft or completed") unless %w[draft completed].include?(status)
   credentials = play_credentials
   metadata = Dir.mktmpdir("play-notes-", File.join(root, "build"))
   destination = File.join(metadata, "en-US", "changelogs")
@@ -56,7 +58,7 @@ def play_upload_options(root, channel = "closed")
     json_key_data: credentials,
     aab: aab,
     track: play_test_track(channel),
-    release_status: "completed",
+    release_status: status,
     version_name: "#{name} (#{version})",
     metadata_path: metadata,
     skip_upload_apk: true,
@@ -81,6 +83,9 @@ platform :android do
       tracks.each do |track|
         versions = Array(track.releases).flat_map { |release| Array(release.version_codes) }
         UI.message("Play track #{track.track}: version codes #{versions.join(', ')}")
+        Array(track.releases).each do |release|
+          UI.message("  #{release.status}: #{Array(release.version_codes).join(', ')}")
+        end
       end
       target = play_test_track("closed")
       UI.user_error!("Closed track #{target} not found. Create it in Play Console or set PLAY_CLOSED_TRACK.") unless tracks.any? { |track| track.track == target }

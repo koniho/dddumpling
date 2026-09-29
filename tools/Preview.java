@@ -305,7 +305,7 @@ final class Preview {
             shot(dir,"118-companion-boss-victory-rock-"+frame,c,L,w,h,ss);
         }
         for(int who:new int[]{0,8,23,Collect.BOSS_FIRST,Collect.BOSS_FIRST+1,Collect.BOSS_FIRST+2,
-                Collect.BOSS_FIRST+3,Collect.MOLE_FIRST,Collect.SNAKE_FIRST}) {
+                Collect.BOSS_FIRST+3}) {
             GameCore c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=who;c.startGame();
             c.stageBanner=0;c.companion.update(c,.1f);
             shot(dir,"118-companion-character-"+who,c,L,w,h,ss);
@@ -446,24 +446,6 @@ final class Preview {
                 step(c,L,.11f);
             }
         }
-    }
-
-    private static void caveCollectFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
-        if(wanted("110")) {
-            RasterPainter p=new RasterPainter(w,h,ss);p.clear(Renderer.BG);
-            float cell=w/5f,top=h*.12f,gap=h*.21f,r=Math.min(cell*.36f,gap*.29f);
-            p.text("CAVE FRIENDS",w*.5f,h*.055f,w*.035f,Renderer.INK,Painter.CENTER,true);
-            for(int row=0;row<4;row++)for(int col=0;col<5;col++) {
-                int i=Collect.MOLE_FIRST+(row%2)*5+col;
-                float x=cell*(col+.5f),y=top+gap*row+r;
-                Trinket.draw(p,i,x,y,r,1.3f,row<2,1f);
-                p.text(row<2?Collect.NAME[i]:"???",x,y+r*1.6f,w*.014f,Renderer.INK,Painter.CENTER,true);
-            }
-            Png.write(new File(dir,"110-cave-families.png"),p.resolve(),w,h);
-        }
-        GameCore c=new GameCore(new Mem(),615L);c.collected=Collect.MASK;c.openCase();c.caseFade=1;
-        c.caseTo(Collect.MOLE_FIRST);shot(dir,"110-case-moles",c,L,w,h,ss);
-        c.caseTo(Collect.SNAKE_FIRST);shot(dir,"110-case-snakes",c,L,w,h,ss);
     }
 
     private static void miningFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
@@ -898,7 +880,6 @@ final class Preview {
         caveFrames(dir,L,w,h,ss);
         cartFrames(dir,L,w,h,ss);
         miningFrames(dir,L,w,h,ss);
-        caveCollectFrames(dir,L,w,h,ss);
         squishyEntryFrames(dir,L,w,h,ss);
         townFrames(dir,L,w,h,ss);
         slimeFightFrames(dir,L,w,h,ss);

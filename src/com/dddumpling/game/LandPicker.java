@@ -7,7 +7,7 @@ final class LandPicker extends Draw {
     // A destination, never a combat-land/save index.
     static final int TOWN = Lands.COUNT;
     static boolean townUnlocked(GameCore c) {
-        return Collect.has(c.collected, Collect.BOSS_FIRST) && (c.landSuppressed & 2) == 0;
+        return BuildFlags.DEVELOPER && Collect.has(c.collected, Collect.BOSS_FIRST) && (c.landSuppressed & 2) == 0;
     }
     static int first(GameCore c) { return townUnlocked(c) ? TOWN : 0; }
     static int order(int destination) { return destination == TOWN ? -1 : destination; }
@@ -327,7 +327,7 @@ final class LandPicker extends Draw {
             p.text("TAP A KEY TO VISIT",L.w*.5f,cy+halfHeight+L.unit*1.4f,type(L.unit*.40f),INK_DIM,Painter.CENTER,false);
         }
     }
-    private static void townIcon(Painter p,float x,float y,float r,int a) {
+    static void townIcon(Painter p,float x,float y,float r,int a) {
         p.fillEllipse(x,y+r*.35f,r*1.35f,r*.56f,Glyph.withAlpha(0xFF85BE7D,a));
         p.fillEllipse(x-r*.36f,y+r*.10f,r*.95f,r*.50f,Glyph.withAlpha(0xFFB9D99A,a));
         p.line(x-r*.75f,y-r*.5f,x-r*.75f,y+r*.30f,Glyph.withAlpha(0xFF94795B,a),r*.16f);

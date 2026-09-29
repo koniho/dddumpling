@@ -3,12 +3,24 @@ package com.dddumpling.game;
 /** Shipped highlights and their shared list/popup illustrations. */
 final class ReleaseChange extends Draw {
     static final int TRAVEL=0, STARS=1, BUGS=2, SHUFFLE=3, DISGUISE=4, SLIME=5,
-            PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11, SETTINGS=12, SWIPE=13, SCORES=14, OCTOPULSE=15;
+            PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11, SETTINGS=12, SWIPE=13, SCORES=14, OCTOPULSE=15,
+            COMPANION=16, TUTORIAL=17, TOWN=18;
     static final int[][] ITEMS=ReleaseContent.ITEMS;
     static boolean playable(int id) { return id==TRAVEL || id==SHUFFLE || id==PAIR; }
     static float artUnits(int id) { return id==TRAVEL ? 8f : id==PAIR ? 9f : id==SHUFFLE ? 9f : 5f; }
     static void icon(Painter p,int id,float x,float y,float r,float time) {
-        if(id==SCORES) {
+        if(id==COMPANION || id==TUTORIAL) {
+            float hop=(float)Math.sin(time*3f)*r*.10f;
+            Trinket.draw(p,0,x-r*.15f,y+r*.2f+hop,r*.75f,time,true,1f);
+            if(id==TUTORIAL) {
+                p.fillEllipse(x+r*.45f,y-r*.55f,r*.55f,r*.34f,0xFFF7F2E8);
+                p.fillPoly(new float[]{x+r*.15f,y-r*.38f,x+r*.15f,y-r*.12f,x+r*.4f,y-r*.35f},0xFFF7F2E8);
+                for(int dot=0;dot<3;dot++)
+                    p.fillCircle(x+r*(.22f+dot*.22f),y-r*.55f,r*.055f,INK);
+            }
+        } else if(id==TOWN) {
+            LandPicker.townIcon(p,x,y,r,255);
+        } else if(id==SCORES) {
             powerHalo(p,x,y,r*.7f,time,GOLD,1f);
             for(int row=0;row<3;row++) {
                 float yy=y+r*(row*.5f-.5f);

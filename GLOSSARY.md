@@ -553,11 +553,9 @@ it. Time running out ends the attempt without taking a life; only delivered cart
 Developer Cart Rush and Dumpling Mine chips jump an active run to the stage 21 or 22 interlude.
 They retain track progress and delivered minecarts; finishing continues into the next cave expedition.
 
-**Burrow Moles** are five kawaii minecart rewards: Cocoa Dig, Rosy Scoop, Sleepy Shovel,
-Starnose, and Golden Burrow. **Cave Snakes** are five Cart Rush rewards: Mint Noodle,
-Peach Coil, Berry Boa, Moon Ribbon, and Golden Hiss. Both have dedicated display-case rows,
-family stories, mystery silhouettes, and the Cave Friend tier. The catalogue has 59 entries;
-existing collectible IDs and normal reward pools stay unchanged. `CaveCollect` draws the new families.
+Cave minigames award existing blind-box squishies, or gelatinous cubes once their reward
+pool is unlocked. They share the normal minigame reward rules and add no collectible families.
+The catalogue contains 49 entries; boss friends remain boss rewards.
 
 The first normal-stage enemy entering the rescue warning band pauses for a **rescue swipe tutorial**,
 regardless of remaining lives. The companion explains the move in text and speech, while the shared

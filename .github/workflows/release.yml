@@ -14,6 +14,10 @@ on:
         description: Upload this build to the selected Google Play testing track
         type: boolean
         default: false
+      activate_play_release:
+        description: Activate the Google Play testing release (otherwise keep it draft)
+        type: boolean
+        default: false
       play_track:
         description: Testing destination (version tags always use closed)
         type: choice
@@ -157,7 +161,8 @@ jobs:
               "DDDUMPLING-${RELEASE_ARTIFACT}.aab" \
               "DDDUMPLING-${RELEASE_ARTIFACT}.apk" \
               "DDDUMPLING-${RELEASE_ARTIFACT}-developer.apk" \
-              --generate-notes --title "DDDUMPLING ${GITHUB_REF_NAME}"
+              --draft --notes-file "release-notes/${GITHUB_REF_NAME#v}.md" \
+              --title "DDDUMPLING ${GITHUB_REF_NAME}"
           fi
 
   upload_testing:
@@ -189,11 +194,12 @@ jobs:
           path: build/play-artifact
       - name: Select the signed production bundle
         run: cp "build/play-artifact/DDDUMPLING-${RELEASE_ARTIFACT}.aab" build/DDDUMPLING.aab
-      - name: Publish to selected testing track
+      - name: Upload to selected testing track
         env:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           FASTLANE_SKIP_UPDATE_CHECK: "1"
           FASTLANE_OPT_OUT_USAGE: "1"
           PLAY_TEST_CHANNEL: ${{ github.event_name == 'push' && 'closed' || inputs.play_track }}
           PLAY_CLOSED_TRACK: ${{ vars.PLAY_CLOSED_TRACK }}
+          PLAY_RELEASE_STATUS: ${{ inputs.activate_play_release && 'completed' || 'draft' }}
         run: bundle exec fastlane android testing

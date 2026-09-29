@@ -1,6 +1,76 @@
 {
   "releases": [
     {
+      "version": "0.1.25",
+      "changes": [
+        {
+          "icon": "companion",
+          "title": "Your squishy sidekick",
+          "autoReset": false,
+          "where": "From your very first run",
+          "why": "Choose one of five squishies to keep. Your friend waves hello, joins every part of your run, and reacts to your taps and victories."
+        },
+        {
+          "icon": "tutorial",
+          "title": "A little friendly help",
+          "autoReset": false,
+          "where": "As you discover the game",
+          "why": "Your companion teaches each new move when you need it. Enjoy shorter lessons for power-ups, minigames, your display case, and new lands."
+        },
+        {
+          "icon": "flurry",
+          "title": "Power-up rush",
+          "autoReset": false,
+          "where": "When a power-up is active",
+          "why": "Fling is now Ninja! Busier waves bring airy swishes, sweeping slashes, and chimes from your third combo clear. Flurry clears bloom with rainbows."
+        },
+        {
+          "icon": "scores",
+          "title": "Remember that run?",
+          "autoReset": false,
+          "where": "In your high score list",
+          "why": "See your run companion, prizes, and power-ups in richer summaries. Reset scores in settings without losing your squishies or unlocked progress."
+        },
+        {
+          "icon": "stars",
+          "title": "Follow the stars",
+          "autoReset": false,
+          "where": "In Star Path bonus rounds",
+          "why": "Each difficulty adds a checkpoint. Blast off with colorful flashes and rings, then enjoy a smoother exit after the last particles fade."
+        },
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "In your display case",
+              "why": "Tap a friend for its story and colorful reactions."
+            },
+            {
+              "where": "In the Steamer minigame",
+              "why": "Rising steam and a big reveal celebrate your prize."
+            },
+            {
+              "where": "Kids Mode and settings",
+              "why": "Swipe the Kids Mode slider; enjoy gentler boss projectiles and animated settings."
+            }
+          ]
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "autoReset": false,
+          "fixes": [
+            {
+              "where": "Returning to Android play",
+              "why": "Opening the app again reuses your active game instead of starting another instance."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.24",
       "changes": [
         {

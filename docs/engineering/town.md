@@ -1,9 +1,10 @@
 # Town integration
 
-DDDUMPLING Town is a title destination immediately left of Slime Hills. It appears after the
+DDDUMPLING Town is a developer-only title destination immediately left of Slime Hills. It appears after the
 first earned land unlock (Slime boss friend owned and land 1 not suppressed). Developer ALL
 LANDS does not grant town access. `LandPicker.TOWN` is a destination ID outside combat save
 slots; `order`/`destination` map its display position without renumbering combat lands.
+Production builds hide its destination and run-end ticket text while preserving saved Town data.
 
 ## Current boundary
 

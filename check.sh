@@ -118,7 +118,6 @@ src/com/dddumpling/game/CaveDumpling.java
 src/com/dddumpling/game/CaveSelection.java
 src/com/dddumpling/game/CaveRoute.java
 src/com/dddumpling/game/CaveInput.java
-src/com/dddumpling/game/CaveCollect.java
 src/com/dddumpling/game/CaveSong.java
 src/com/dddumpling/game/CaveCart.java
 src/com/dddumpling/game/CaveCartInput.java

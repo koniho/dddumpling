@@ -58,9 +58,6 @@ final class Trinket {
     private static void draw(Painter p,int i,float cx,float cy,float r,float clock,boolean known,
             float fade,int mood,float look,boolean ninja) {
         if (fade <= 0.01f || i < 0 || i >= Collect.COUNT) return;
-        if (Collect.FAMILY[i]==Collect.MOLES || Collect.FAMILY[i]==Collect.SNAKES) {
-            CaveCollect.draw(p,i,cx,cy,r,clock,known,fade,mood,look,ninja);return;
-        }
         if (i >= Collect.BOSS_FIRST && i < Collect.BOSS_FIRST + Collect.BOSS_COUNT) {
             BossCollect.draw(p, i - Collect.BOSS_FIRST, cx, cy, r, clock, known, fade,mood,look,ninja);
             return;

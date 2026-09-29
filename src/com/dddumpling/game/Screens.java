@@ -161,7 +161,7 @@ final class Screens extends Draw {
                 fadeBy(INK, fade), Painter.CENTER, true);
 
         accuracy(p, c, L, L.h * 0.475f, fade);
-        if (c.townRunTickets > 0)
+        if (BuildFlags.DEVELOPER && c.townRunTickets > 0)
             p.text("+"+c.townRunTickets+" TOWN TICKETS",L.w*.5f,L.h*.758f,
                     type(s*.58f),fadeBy(GOLD,fade),Painter.CENTER,true);
 

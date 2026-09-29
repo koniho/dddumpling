@@ -156,22 +156,26 @@ final class Interlude {
         }
     }
 
-    static void awardPrize(GameCore c) {
-        c.prize = c.cubeUnlocked && c.stage >= Boss.EVERY
+    private static int minigamePrize(GameCore c) {
+        return c.cubeUnlocked && c.stage >= Boss.EVERY
                 ? Collect.rollCube(c.rnd, c.collected) : Collect.roll(c.rnd, c.collected);
+    }
+
+    static void awardPrize(GameCore c) {
+        c.prize = minigamePrize(c);
         recordPrize(c, "steamer");
         // Scheduled, not started: it runs after the rest of the interlude has played out.
         c.paradeTimer = GameCore.PARADE_TIME;
     }
 
     static void awardMiningPrize(GameCore c) {
-        c.prize = Collect.rollCave(c.rnd, c.collected, true);
+        c.prize = minigamePrize(c);
         recordPrize(c, "cave-mining");
         c.paradeTimer = GameCore.PARADE_TIME;
     }
 
     static void awardBandPrize(GameCore c) {
-        c.prize = Collect.rollCave(c.rnd, c.collected, false);
+        c.prize = minigamePrize(c);
         recordPrize(c, "cave-band");
         c.paradeTimer = GameCore.PARADE_TIME;
     }

@@ -1811,7 +1811,10 @@ final class GameCore {
         if (state != TITLE || starting() || starter.open || returnFade > 0f || rosterSceneT > 0f) return;
         if (townOpen) return;
         titleKeyHint = 0f;
-        if (landChoice == LandPicker.TOWN) { openTown(); return; }
+        if (landChoice == LandPicker.TOWN) {
+            if (LandPicker.townUnlocked(this)) { openTown(); return; }
+            landChoice=0;best=landBests[0];
+        }
         if (!startAnnounced && sound != null) sound.gameStart();
         startAnnounced = true;
         if (Starter.eligible(this)) {

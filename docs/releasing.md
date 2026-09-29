@@ -33,7 +33,8 @@ Use the same grouping in the in-game notes and destination release summaries.
 - Generate and open the [release icon review image](#release-icon-review-image) before requesting final approval.
 - Review the popup renders and interactions. Confirm the newest in-game release has the planned shared release version.
 - Write the Play summary in `build/release-notes.txt` using the same reviewed facts; keep it within the existing 500-character limit.
-- Update `ios/store/en-US/what_to_test.txt` for TestFlight, and prepare the intended GitHub/itch release copy before tagging when those channels are in scope.
+- Update `ios/store/en-US/what_to_test.txt` for TestFlight, and save reviewed GitHub/itch copy in `release-notes/<version>.md` before tagging when those channels are in scope.
+- Uploads stay inactive by default: Play and GitHub releases are drafts, itch uses a new hidden staging channel, and TestFlight upload does not distribute externally. Activate only when the user explicitly requests it.
 
 The JSON catalog keeps historical notes. All authored releases remain available in the vertically scrollable in-game list. It does not publish store notes or bump versions.
 

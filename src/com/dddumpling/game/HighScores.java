@@ -138,14 +138,19 @@ final class HighScores {
                 int[] prizes=new int[0];
                 if(prizeHistory) {
                     int count=Integer.parseInt(fields[valueCount+1]);
-                    if(count<0 || count>1024 || fields.length!=valueCount+2+count || count!=v[3]) return;
+                    if(count<0 || count>1024 || fields.length!=valueCount+2+count || count>v[3]) return;
                     prizes=new int[count];
+                    int kept=0;
                     for(int i=0;i<count;i++) {
-                        prizes[i]=Integer.parseInt(fields[valueCount+2+i]);
-                        if(prizes[i]<0 || prizes[i]>=Collect.COUNT) return;
+                        int prize=Integer.parseInt(fields[valueCount+2+i]);
+                        if(prize<0 || prize>=59) return;
+                        // Retired cave IDs 49..58 leave the historical score and haul total intact.
+                        if(prize<Collect.COUNT) prizes[kept++]=prize;
                     }
+                    prizes=java.util.Arrays.copyOf(prizes,kept);
                 }
-                if(portraits && v[15]>=Collect.COUNT) return;
+                if(portraits && v[15]>=59) return;
+                if(portraits && v[15]>=Collect.COUNT) v[15]=-1;
                 if(v[1]<1 || v[6]>15 || v[11]<v[0] || v[12]>=Lands.COUNT || v[13]>1 || v[14]>=BLURBS.length) return;
                 parsed.add(new Run(id,v,prizes));
             }

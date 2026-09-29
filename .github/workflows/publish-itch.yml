@@ -7,6 +7,10 @@ on:
         description: Published release tag with a signed production Android APK
         type: string
         required: true
+      activate:
+        description: Update the live Android channel (otherwise create a hidden upload)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -51,11 +55,18 @@ jobs:
           unzip -q "$RUNNER_TEMP/butler.zip" -d "$RUNNER_TEMP/butler"
           chmod +x "$RUNNER_TEMP/butler/linux-amd64/butler"
 
-      - name: Publish Android channel
+      - name: Upload Android build
         env:
+          ACTIVATE: ${{ inputs.activate }}
           BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
-          "$RUNNER_TEMP/butler/linux-amd64/butler" push build/itch theorifice/dddumpling:android \
-            --userversion "${RELEASE_TAG#v}"
-          "$RUNNER_TEMP/butler/linux-amd64/butler" status theorifice/dddumpling:android
+          channel=android
+          flags=()
+          if [ "$ACTIVATE" != true ]; then
+            channel="android-staged-${RELEASE_TAG//./-}-${GITHUB_RUN_ID}"
+            flags+=(--hidden)
+          fi
+          "$RUNNER_TEMP/butler/linux-amd64/butler" push build/itch "theorifice/dddumpling:$channel" \
+            --userversion "${RELEASE_TAG#v}" "${flags[@]}"
+          "$RUNNER_TEMP/butler/linux-amd64/butler" status "theorifice/dddumpling:$channel"

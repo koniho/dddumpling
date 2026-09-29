@@ -44,7 +44,8 @@ character before moving straight to the next stage.
 
 The full collection has 49 characters: 30 blind-box squishies, five starlings, ten gelatinous
 cubes, and four boss friends. Unlocked lands can be selected from the title; the fifth land,
-the cave expedition, is developer-only.
+the cave expedition, is developer-only. DDDUMPLING Town and its ticket readout are also
+available only in developer builds.
 
 FLURRY, NINJA, and TEAM SQUISH frenzies change how you clear words. From stage 11, mystery
 pickups can also bring INCOGNITO or MONOCHROME debuffs. From stage 16, linked friends ask for

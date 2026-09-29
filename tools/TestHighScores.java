@@ -63,11 +63,25 @@ final class TestHighScores extends Check {
                 && c.highScores.prizes.size()==2 && c.highScores.prizes.get(0)==prize
                 && c.highScores.prizes.get(1)==prize);
         c.state=GameCore.TITLE;c.pendingBonus=false;c.startFade=0;c.launchT=0;c.caseOpen=false;c.caseFade=0;
+        retiredCollectibles();
         entrance(L);
         titleAttention(L);
         onePage(L);
         navigation(c,L);
         blurbs(L);
+    }
+    private static void retiredCollectibles() {
+        GameCore c=new GameCore(new Mem(),905L);
+        c.startGame();c.highScores.start(58);c.score=123;
+        for(int prize:new int[]{0,49,48,58}) c.highScores.prizes.add(prize);
+        c.highScores.dumplings=4;c.highScores.finish(c);
+        HighScores loaded=new HighScores();loaded.load(c.highScores.encode());
+        check("retired cave portraits preserve saved runs",loaded.runs.size()==1
+                && loaded.latestRun.character==-1 && loaded.latestRun.score==123);
+        check("retired prizes preserve the historical total and remaining haul",loaded.latestRun.dumplings==4
+                && java.util.Arrays.equals(loaded.latestRun.prizes,new int[]{0,48}));
+        HighScores again=new HighScores();again.load(loaded.encode());
+        check("migrated run history round trips",again.encode().equals(loaded.encode()));
     }
     private static String legacy(String data,int version) {
         String[] rows=data.split(";");

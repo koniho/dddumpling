@@ -6,9 +6,16 @@ before the developer build overwrites the intermediate APK.
 A `v*` tag also uploads that exact production AAB and release notes to Google Play's
 closed testing track through fastlane (API ID `alpha` by default). Manual runs upload only when
 **upload_to_play** is selected; **play_track** chooses `closed` (default) or `internal`.
+Uploads remain drafts by default. Manual runs activate testing only with
+**activate_play_release** selected; local lanes require `PLAY_RELEASE_STATUS=completed`.
 No lane publishes to production or edits store descriptions, images, or screenshots.
+New GitHub tag releases are drafts with reviewed copy from `release-notes/<version>.md`.
 
 ## Direct APK distribution (itch.io)
+
+The itch workflow creates a fresh hidden staging channel by default. Select **activate**
+only to update the live Android channel. Hidden uploads use a unique channel because
+butler cannot hide a new build on an existing channel.
 
 Upload `DDDUMPLING-v<version>.apk` directly to itch.io and select Android. The
 `-developer.apk` is a separate debugging app and is not the public game build.

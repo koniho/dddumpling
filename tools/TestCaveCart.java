@@ -35,7 +35,7 @@ final class TestCaveCart extends Check {
         store.cartTrack=999;c=game(L,store);check("track overflow clamps",c.cart.progress==20);
         int total=c.collectTotal;c.update(.01f,L);
         check("saved completion pays and resets",c.collectTotal==total+1 && store.cartTrack==0 && c.cart.progress==0);
-        check("ride earns snake prize",Collect.FAMILY[c.prize]==Collect.SNAKES);
+        check("ride earns an existing squishy",c.prize>=0 && c.prize<Collect.BLIND_COUNT);
         c.update(.1f,L);check("reward pays once",c.collectTotal==total+1);
         store=new Mem();c=game(L,store);m=c.cart;m.ready=0;
         for(int f=0;f<120;f++){m.steer(CaveCart.curve(m.progress+m.segment/CaveCart.SEGMENT));m.update(c,1f/120);}
