@@ -899,6 +899,15 @@ final class Preview {
             }
         }
 
+        if(wanted("81-mushroom-")) {
+            GameCore mushroom=new GameCore(new Mem(),147L);mushroom.startGame();mushroom.landBlend=1f;
+            for(int variant=0;variant<3;variant++)for(int frame=0;frame<9;frame++) {
+                mushroom.stage=3*Boss.EVERY+variant+1;
+                mushroom.stageBanner=GameCore.BANNER_TIME*(1f-(.05f+frame*.10f));
+                shot(dir,"81-mushroom-"+variant+"-"+frame,mushroom,L,w,h,ss);
+            }
+        }
+
         caveFrames(dir,L,w,h,ss);
         cartFrames(dir,L,w,h,ss);
         miningFrames(dir,L,w,h,ss);

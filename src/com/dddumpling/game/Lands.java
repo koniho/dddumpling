@@ -286,6 +286,7 @@ final class Lands extends Draw {
         int land = forStage(stage), variant = skitFor(stage);
         if (land == 0) { SlimeSkits.draw(p,variant,x,y,r,t,a); return; }
         if (land == 1) { CrystalSkits.draw(p,variant,x,y,r,t,a); return; }
+        if (land == 3) { MushroomSkits.draw(p,variant,x,y,r,t,a); return; }
         if (land == Cave.LAND) {
             CaveArt.entrance(p,x,y,r,a,false);
             Skits.face(p,Kawaii.DUMPLING,x+r*(t-.5f),y+r*.65f,r*.36f,a,1f,.5f);
@@ -293,27 +294,10 @@ final class Lands extends Draw {
         }
         if (land == 2 && variant == 1) { SeaSkits.hide(p, x, y, r, t, a); return; }
         if (land == 2 && variant == 2) { SeaSkits.trudge(p, x, y, r, t, a); return; }
-        float arc = (float)Math.sin(t * Math.PI);
         float hop = Math.abs((float)Math.sin(t * Math.PI * 2f));
-        int actor = land == 2 ? Kawaii.CAT : Kawaii.DUMPLING;
-        if (variant == 0) {
-            // Bubble ride or mushroom trampoline.
-            prop(p, land, x, y + r * 0.55f, r * 0.68f, a * 3 / 4, t * 5f);
-            Skits.face(p, actor, x, y - r * (0.3f + hop * 1.15f), r * 0.53f, a,
-                    1.15f - hop * 0.3f, 1f);
-        } else if (variant == 1) {
-            // A pair play catch with a tiny cap.
-            Skits.face(p, actor, x - r * 1.25f, y + r * 0.3f, r * 0.5f, a, 1f, 1f);
-            Skits.face(p, Kawaii.STRAWBERRY, x + r * 1.25f, y + r * 0.3f, r * 0.5f, a, 1f, 1f);
-            prop(p, land, x + (t * 2f - 1f) * r * 1.2f, y - arc * r * 1.1f,
-                    r * 0.32f, a, t * 5f);
-        } else {
-            // Peek out from a giant prop, then pop up together.
-            Skits.face(p, actor, x - r * (0.3f + arc), y - arc * r * 0.65f,
-                    r * 0.5f, a, 1f, arc);
-            Skits.face(p, Kawaii.DUMPLING, x + r * (0.3f + arc), y - arc * r * 0.65f,
-                    r * 0.5f, a, 1f, arc);
-            prop(p, land, x, y + r * 0.25f, r * 0.85f, a, t * 5f);
-        }
+        // The sea's first skit is a bubble ride.
+        prop(p, land, x, y + r * 0.55f, r * 0.68f, a * 3 / 4, t * 5f);
+        Skits.face(p, Kawaii.CAT, x, y - r * (0.3f + hop * 1.15f), r * 0.53f, a,
+                1.15f - hop * 0.3f, 1f);
     }
 }

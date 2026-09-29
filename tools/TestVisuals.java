@@ -694,10 +694,10 @@ final class TestVisuals extends Check {
     }
 
     private static void reactiveLandSkits() {
-        group("Slime Hills and Crystal skits");
+        group("Reactive land skits");
         RasterPainter p=new RasterPainter(320,280,1);
         int background=0xFF171426;p.clear(background);int[] empty=p.resolve();
-        for(int land=0;land<2;land++)for(int variant=0;variant<3;variant++) {
+        for(int land:new int[]{0,1,3})for(int variant=0;variant<3;variant++) {
             int stage=land*Boss.EVERY+variant+1;
             String label="land "+land+" skit "+variant;
             boolean deterministic=true,visible=true,bounded=true;
