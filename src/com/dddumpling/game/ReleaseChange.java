@@ -11,7 +11,7 @@ final class ReleaseChange extends Draw {
     static void icon(Painter p,int id,float x,float y,float r,float time) {
         if(id==COMPANION || id==TUTORIAL) {
             float hop=(float)Math.sin(time*3f)*r*.10f;
-            Trinket.draw(p,id==COMPANION?14:0,x-r*.15f,y+r*.2f+hop,r*.75f,time,true,1f);
+            Trinket.draw(p,14,x-r*.15f,y+r*.2f+hop,r*.75f,time,true,1f);
             if(id==TUTORIAL) {
                 p.fillEllipse(x+r*.45f,y-r*.55f,r*.55f,r*.34f,0xFFF7F2E8);
                 p.fillPoly(new float[]{x+r*.15f,y-r*.38f,x+r*.15f,y-r*.12f,x+r*.4f,y-r*.35f},0xFFF7F2E8);
