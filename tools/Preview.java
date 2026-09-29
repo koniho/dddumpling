@@ -86,6 +86,8 @@ final class Preview {
         lands.onboarding.learn(lands,TutorialSpeech.STORIES);
         step(lands,L,3f);TestOnboarding.awaitBubble(lands,L);
         shot(dir,"114-lands-intro",lands,L,w,h,ss);
+        TestOnboarding.acknowledge(lands,L);step(lands,L,.6f);
+        shot(dir,"114-lands-swipe",lands,L,w,h,ss);
         GameCore stars=new GameCore(new Mem(),114);stars.startGame();stars.onboarding.saved=0;
         stars.starNext=true;Interlude.enterBonus(stars,L);step(stars,L,.6f);
         shot(dir,"114-stars-arrival",stars,L,w,h,ss);

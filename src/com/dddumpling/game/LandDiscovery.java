@@ -32,7 +32,8 @@ final class LandDiscovery extends Draw {
         return c.landDiscoveryChained ? ease(t) : ease((t-.16f)/.68f);
     }
     static void update(GameCore c,float dt) {
-        if(!LandPicker.visible(c) || c.returnFade>0f || c.landTravelFrom>=0) return;
+        if(!LandPicker.visible(c) || c.returnFade>0f || c.landTravelFrom>=0
+                || c.onboarding.collectionPending(c) || c.onboarding.titleGuide) return;
         if(c.landDiscovery<0) {
             int destination=next(c);if(destination<0) return;
             begin(c,destination,false);

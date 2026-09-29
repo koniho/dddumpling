@@ -350,6 +350,7 @@ final class TestOnboarding extends Check {
         steamerSelection(L);
         steamerArrival(L);
         collectionGuidance(L);
+        titleGuidanceOrder(L);
         landGuidance(L);
         diagnostics(L);
         TestPowerTutorials.all(L);
@@ -421,6 +422,44 @@ final class TestOnboarding extends Check {
         check("discovering case and story early skips their instructions",!c.onboarding.titleGuide
                 && c.onboarding.learned(TutorialSpeech.DISPLAY_CASE) && c.onboarding.learned(TutorialSpeech.STORIES));
     }
+    private static void titleGuidanceOrder(Layout L) {
+        Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;
+        c.collected=store.collected=Collect.add(1L,Collect.BOSS_FIRST);c.landSeen=2;c.toTitle();
+        c.time=2;c.update(DT,L);
+        check("display case wins when both title lessons are ready",c.onboarding.briefing
+                && c.onboarding.speech==TutorialSpeech.DISPLAY_CASE);
+        acknowledge(c,L);int explanations=ear.explanations;
+        c.collected=Collect.add(c.collected,Collect.BOSS_FIRST+1);c.update(2,L);
+        check("active case action waits without new lesson or discovery",c.onboarding.titleGuide
+                && c.onboarding.speech==TutorialSpeech.DISPLAY_CASE && !c.onboarding.briefing
+                && c.landDiscovery<0 && ear.explanations==explanations);
+        c.openCase();for(int i=0;i<90 && !c.onboarding.briefing;i++)c.update(DT,L);
+        check("opening case advances only to its story lesson",c.onboarding.briefing
+                && c.onboarding.speech==TutorialSpeech.STORIES);
+        acknowledge(c,L);explanations=ear.explanations;c.closeCase();c.update(1,L);c.update(DT,L);
+        check("closing case cannot replace unfinished story with lands",c.onboarding.titleGuide
+                && c.onboarding.speech==TutorialSpeech.STORIES && !c.onboarding.briefing
+                && c.landDiscovery<0 && ear.explanations==explanations);
+        c.openCase();c.update(1,L);c.openStory();c.update(DT,L);
+        check("story action completes collection before lands",c.onboarding.learned(TutorialSpeech.STORIES)
+                && !c.onboarding.titleGuide && !c.onboarding.learned(TutorialSpeech.LANDS));
+        c.closeStory();c.closeCase();
+        for(int i=0;i<240 && !c.onboarding.briefing;i++)c.update(DT,L);
+        check("lands waits for collection and discovery to finish",c.onboarding.briefing
+                && c.onboarding.speech==TutorialSpeech.LANDS && c.landDiscovery<0);
+        acknowledge(c,L);explanations=ear.explanations;
+        c.collected=Collect.add(c.collected,Collect.BOSS_FIRST+2);c.update(1,L);
+        check("new discovery cannot interrupt active land practice",c.onboarding.titleGuide
+                && c.onboarding.speech==TutorialSpeech.LANDS && c.landDiscovery<0
+                && ear.explanations==explanations);
+        c.openCase();c.update(1,L);c.update(DT,L);
+        check("covered lands lesson stays active without replacing it",c.onboarding.titleGuide
+                && c.onboarding.speech==TutorialSpeech.LANDS && !c.onboarding.speaking(c));
+        c.closeCase();c.update(1,L);c.update(DT,L);
+        check("returning to lands restores its unfinished action",c.onboarding.titleGuide
+                && c.onboarding.speech==TutorialSpeech.LANDS && !c.onboarding.briefing
+                && ear.explanations==explanations);
+    }
     private static void landGuidance(Layout L) {
         Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;
         c.onboarding.learn(c,TutorialSpeech.STORIES);c.collected=store.collected=1;c.toTitle();
@@ -437,13 +476,26 @@ final class TestOnboarding extends Check {
         c.update(1,L);check("land intro waits for acknowledgement",c.onboarding.briefing
                 && !c.onboarding.learned(TutorialSpeech.LANDS));
         acknowledge(c,L);c.update(DT,L);
-        check("acknowledgement retires land intro without a reminder",!c.onboarding.titleGuide
+        check("acknowledgement keeps land swipe practice active",c.onboarding.titleGuide
+                && !c.onboarding.briefing && !new GameCore(store,139).onboarding.learned(TutorialSpeech.LANDS));
+        float y=LandPicker.cardY(L),x=LandPicker.cardX(c,L,0);
+        LandPicker.down(c,L,x,y);LandPicker.up(c,L,x,y);c.update(1,L);
+        check("tapping another land does not complete swipe lesson",c.landChoice==0
+                && !c.onboarding.learned(TutorialSpeech.LANDS));
+        x=L.w*.5f;
+        LandPicker.down(c,L,x,y);LandPicker.move(c,L,x-LandPicker.spacing(c,L)*.2f);LandPicker.up(c,L,x,y);
+        check("short drags do not complete land lesson",!c.onboarding.learned(TutorialSpeech.LANDS));
+        LandPicker.select(c,LandPicker.first(c));c.update(1,L);
+        LandPicker.down(c,L,x,y);LandPicker.move(c,L,x+LandPicker.spacing(c,L));LandPicker.up(c,L,x,y);
+        check("swiping past the end does not complete land lesson",!c.onboarding.learned(TutorialSpeech.LANDS));
+        LandPicker.down(c,L,x,y);LandPicker.move(c,L,x-LandPicker.spacing(c,L));LandPicker.up(c,L,x,y);c.update(DT,L);
+        check("changing lands with swipe completes and persists lesson",!c.onboarding.titleGuide
                 && !c.onboarding.briefing && new GameCore(store,139).onboarding.learned(TutorialSpeech.LANDS));
         check("learning lands does not set first-companion pending",(c.onboarding.savedPowers&Starter.INTRO_PENDING)==0);
         c.collected=store.collected=Collect.add(c.collected,Collect.BOSS_FIRST+1);
-        for(int i=0;i<180;i++)c.update(DT,L);
+        for(int i=0;i<360;i++)c.update(DT,L);
         check("later discoveries do not repeat land intro",!c.onboarding.briefing);
-        c.onboarding.reset(c);c.settingsOpen=true;c.update(DT,L);
+        c.onboarding.reset(c);c.onboarding.learn(c,TutorialSpeech.STORIES);c.settingsOpen=true;c.update(DT,L);
         check("land intro waits behind settings",!c.onboarding.briefing);
         c.settingsOpen=false;c.update(DT,L);
         check("reset reintroduces discovered lands",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.LANDS);

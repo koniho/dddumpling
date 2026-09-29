@@ -109,7 +109,9 @@ final class LandPicker extends Draw {
         if (!c.landPickerDragging || c.landPickerMoved || !visible(c)) return;
         float dx = x - c.landPickerX;
         if (Math.abs(dx) < spacing(c, L) * 0.65f) return;
+        int before=pendingLand(c);
         step(c, dx < 0 ? 1 : -1);
+        if(pendingLand(c)!=before)c.onboarding.learn(c,TutorialSpeech.LANDS);
         c.landPickerX = x; c.landPickerMoved = true;
     }
     static void up(GameCore c, Layout L, float x, float y) {

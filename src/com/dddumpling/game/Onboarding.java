@@ -157,6 +157,7 @@ final class Onboarding extends Draw {
     }
     boolean speaking(GameCore c) {
         if(sceneWait>0 || practice!=null && lesson==STEAMER && practice.bonusRolling())return false;
+        if(titleGuide && speech==TutorialSpeech.LANDS && !LandPicker.visible(c))return false;
         return briefing || titleGuide || (practice!=null || hintKind!=0 || bossGuide || powerGuide) && success<=0 && !learned(speech)
                 || rescueGuide;
     }
@@ -244,31 +245,30 @@ final class Onboarding extends Draw {
             if(LandPicker.unlocked(c,land) && (c.landSeen&(1<<land))!=0)return land;
         return -1;
     }
+    boolean collectionPending(GameCore c) {
+        return c.collected!=0 && !learned(TutorialSpeech.STORIES);
+    }
     private boolean titleUpdate(GameCore c,float elapsed,Layout L) {
         if(c.settingsOpen || c.paused || c.townOpen || c.highScoreScreen.open || c.releaseNotes.open)return false;
-        if(c.starting() || Starter.hideCase(c) || c.collected==0 || c.storyOpen()) {
+        if(c.starting() || Starter.hideCase(c) || c.collected==0) {
             if(titleGuide)clear();
             moveCompanion(c,elapsed);
-            if(c.storyOpen())companionTravel=0;
             return false;
+        }
+        if(c.storyOpen()) {
+            if(titleGuide && learned(speech))clear();
+            companionTravel=0;return false;
         }
         // Let the return animation land the first prize before introducing its home.
         if(c.returnFade>0 || c.homeT>0 || c.time<SCENE_REVEAL)return false;
         if(c.caseOpen && c.caseFade<1)return false;
-        // Finish the discovery tour before explaining the newly visible land picker.
-        if(LandPicker.visible(c) && (c.landDiscovery>=0 || LandDiscovery.next(c)>=0)) {
-            if(titleGuide)clear();
-            moveCompanion(c,elapsed);return false;
-        }
-        boolean lands=LandPicker.visible(c) && discoveredLand(c)>=0 && !learned(TutorialSpeech.LANDS);
-        if(!lands && learned(TutorialSpeech.STORIES)) {
-            if(titleGuide)clear();
-            moveCompanion(c,elapsed);return false;
-        }
-        int message=lands?TutorialSpeech.LANDS:c.caseOpen?TutorialSpeech.STORIES:TutorialSpeech.DISPLAY_CASE;
-        if(!titleGuide || speech!=message) {
-            if(narrator!=null && c.sound!=null)c.sound.hush();
-            narrator=null;
+        if(titleGuide && learned(speech) && (speech!=TutorialSpeech.DISPLAY_CASE || c.caseOpen))clear();
+        if(!titleGuide) {
+            int message;
+            if(collectionPending(c))message=c.caseOpen?TutorialSpeech.STORIES:TutorialSpeech.DISPLAY_CASE;
+            else if(LandPicker.visible(c) && c.landDiscovery<0 && LandDiscovery.next(c)<0
+                    && discoveredLand(c)>=0 && !learned(TutorialSpeech.LANDS))message=TutorialSpeech.LANDS;
+            else { moveCompanion(c,elapsed);return false; }
             if(message==TutorialSpeech.STORIES && !Collect.has(c.collected,c.caseIndex)) {
                 for(int who=0;who<Collect.COUNT;who++)if(Collect.has(c.collected,who)) { CaseUi.to(c,who);break; }
             }
@@ -421,7 +421,6 @@ final class Onboarding extends Draw {
             savedPowers&=~Starter.INTRO_PENDING;
             learn(c,TutorialSpeech.COMPANION);
         }
-        if(speech==TutorialSpeech.LANDS) { learn(c,speech);titleGuide=false; }
         if(bossHelp && nextBossHelp(c))return;
         if(bossHelp)bossGuide=true;
         briefing=false;
@@ -562,7 +561,8 @@ final class Onboarding extends Draw {
             p.fillRect(0,0,L.w,L.topSafe+L.unit*2.4f,0xFF171426);
             p.text("PRACTICE",L.w*.05f,skipY(L)+L.unit*.3f,type(L.unit*.65f),INK,Painter.LEFT,true);
         }
-        if(c.settingsOpen || o.starGuide && o.sceneWait>0)return;
+        if(c.settingsOpen || o.starGuide && o.sceneWait>0
+                || o.titleGuide && o.speech==TutorialSpeech.LANDS && !LandPicker.visible(c))return;
         if(o.offersBossHelp(c))TutorialSpeech.help(p,c,L);
         if(o.rescueGuide)TutorialSpeech.rescueGesture(p,c,L);
         if(o.briefing)TutorialSpeech.large(p,c,L,o.speech,true);
@@ -578,8 +578,11 @@ final class Onboarding extends Draw {
         } else if(o.rescueGuide)TutorialSpeech.large(p,c,L,TutorialSpeech.RESCUE,false);
         else if(o.hintKind!=0 || o.bossGuide || o.powerGuide || o.starGuide || o.titleGuide)TutorialSpeech.reminder(p,c,L,o.speech);
         if(o.titleGuide && !o.briefing) {
-            float x=c.caseOpen?L.w*.5f:Showcase.iconCx(L,c.clock);
-            float y=c.caseOpen?Showcase.focusCy(L):Showcase.iconCy(L,c.clock);
+            boolean lands=o.speech==TutorialSpeech.LANDS;
+            float direction=LandPicker.order(c.landChoice)>LandPicker.order(LandPicker.first(c))?1f:-1f;
+            float x=lands?L.w*.5f+direction*LandPicker.spacing(c,L)*(.9f*TutorialSpeech.swipeProgress(o.age)-.45f)
+                    :c.caseOpen?L.w*.5f:Showcase.iconCx(L,c.clock);
+            float y=lands?LandPicker.cardY(L):c.caseOpen?Showcase.focusCy(L):Showcase.iconCy(L,c.clock);
             Renderer.touchHint(p,x,y,L.keyR*.8f,1f,.85f,o.age);
         }
         if(!o.briefing && o.powerGuide && o.speech==TutorialSpeech.POWER_PICKUP && c.power!=null) {
