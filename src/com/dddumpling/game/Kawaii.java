@@ -133,23 +133,29 @@ final class Kawaii {
         // Grapes carry their face on the front berry; the other five use the body centre.
         float faceY = cy + (g == GRAPES ? ry * 0.24f : 0f);
         float eyeDx = g == GRAPES ? 0.16f : (g == SQUISHY ? 0.36f : 0.34f);
+        cryTears(p,cx,faceY,rx*eyeDx,rx,ry,phase,amount);
+
+        // A small animated frown laid clearly over each character's usual mouth.
+        float mouthY = faceY + ry * (g == GRAPES ? 0.19f : 0.36f);
+        float wobble = (float) Math.sin(phase * 1.7f) * ry * 0.025f;
+        mouthCurve(p, cx, mouthY + wobble, rx * 0.20f, ry * 0.16f, -1f);
+    }
+
+    /** Shared tear geometry keeps the companion and key faces at the same scale. */
+    static void cryTears(Painter p,float cx,float faceY,float eyeOffset,float rx,float ry,
+            float phase,float amount) {
         int water = Glyph.withAlpha(0xFF9BD7FF, (int) (235 * amount));
 
         for (int s = -1; s <= 1; s += 2) {
             float loop = phase * 0.34f + (s > 0 ? 0.48f : 0f);
             loop -= (float) Math.floor(loop);
-            float tx = cx + s * rx * eyeDx;
+            float tx = cx + s * eyeOffset;
             float ty = faceY + ry * (0.13f + loop * 0.55f);
             float swell = 0.75f + 0.35f * loop;
             p.fillEllipse(tx, ty, rx * 0.075f * swell, ry * 0.12f * swell, water);
             p.fillPoly(new float[] {tx - rx * 0.055f, ty - ry * 0.035f,
                     tx + rx * 0.055f, ty - ry * 0.035f, tx, ty - ry * 0.19f}, water);
         }
-
-        // A small animated frown laid clearly over each character's usual mouth.
-        float mouthY = faceY + ry * (g == GRAPES ? 0.19f : 0.36f);
-        float wobble = (float) Math.sin(phase * 1.7f) * ry * 0.025f;
-        mouthCurve(p, cx, mouthY + wobble, rx * 0.20f, ry * 0.16f, -1f);
     }
 
     // ---- characters ---------------------------------------------------------

@@ -132,8 +132,6 @@ final class TestCompanion extends Check {
         check("game over keeps the run companion crying",c.state==GameCore.OVER
                 && c.companion.who==c.runWho && c.companion.reaction==RunCompanion.CRY
                 && c.companion.mood()==5 && c.companion.rescueLift(L)==0f);
-        check("game-over tears are sized from the deck keys",
-                RunCompanion.cryTearSize(L)==L.keyR);
         float cryClock=c.companion.clock;c.update(.1f,L);
         check("crying animation continues during game over",c.companion.clock>cryClock
                 && c.companion.reaction==RunCompanion.CRY);

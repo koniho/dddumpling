@@ -70,7 +70,6 @@ final class RunCompanion extends Draw {
     static float halfHeight(Layout L) { return halfWidth(L)*.90f; }
     static float radius(Layout L) { return L.keyR*.55f*.84f; }
     static float radius(GameCore c,Layout L) { return LandPicker.travelerRadius(c,L)*.84f; }
-    static float cryTearSize(Layout L) { return L.keyR; }
     float beat() { return left>0f?(float)Math.sin(Math.min(1f,age/.48f)*Math.PI)*strength:0f; }
     float bubblePulse() { return reaction==WORD || reaction==BOSS_HIT ? beat() : 0f; }
     static int flurryRing(float clock,int band) {
@@ -284,7 +283,10 @@ final class RunCompanion extends Draw {
         p.fillEllipse(x,y+r*.85f,r*.7f,r*.13f,0x55302045);
         if(!c.onboarding.companionAway(c))Trinket.drawReacting(new Squash(p,cx,cy,a.squash()),a.who,cx,cy,r,a.clock,1f,a.displayMood(c),
                 .10f*(float)Math.sin(a.clock*.9f)+.18f*touchRock,c.ninja());
-        if(a.reaction==CRY) cryTears(p,cx,cy,r,cryTearSize(L),a.clock);
+        if(a.reaction==CRY) {
+            float keyFace=L.keyR*.60f;
+            Kawaii.cryTears(p,cx,cy,r*.36f,keyFace*1.10f,keyFace/1.10f,a.clock*4.8f,1f);
+        }
         if(a.reaction==BOSS_HIT) {
             float poleX=x+w*.60f,poleTop=y-h*(.94f+.18f*beat),poleBottom=y+h*.30f;
             p.line(poleX,poleBottom,poleX,poleTop,Glyph.mix(INK,GOLD,.45f),r*.075f);
@@ -303,23 +305,6 @@ final class RunCompanion extends Draw {
             p.fillCircle(x+w*.65f,y-h*.05f,r*.07f,GOLD);
         }
         p.restore();
-    }
-
-    /** Comically oversized game-over tears, each about the height of one of the deck keys. */
-    private static void cryTears(Painter p,float x,float y,float faceR,float size,float clock) {
-        for(int side=-1;side<=1;side+=2) {
-            float bob=.5f+.5f*(float)Math.sin(clock*7f+side);
-            float tx=x+side*faceR*.36f;
-            float top=y-faceR*.03f;
-            float bulbY=top+size*(.88f+.10f*bob);
-            float rx=size*(.38f+.035f*bob),ry=size*(.50f+.04f*bob);
-            int water=Glyph.withAlpha(0xFF79DDEB,220);
-            p.fillPoly(new float[]{tx,top,tx-rx*.70f,bulbY-ry*.50f,
-                    tx+rx*.70f,bulbY-ry*.50f},water);
-            p.fillEllipse(tx,bulbY,rx,ry,water);
-            p.fillEllipse(tx-side*rx*.20f,bulbY-ry*.18f,rx*.16f,ry*.25f,
-                    Glyph.withAlpha(0xFFFFFFFF,145));
-        }
     }
 
     /** Scale the existing collectible artwork without changing its body or accessories. */
