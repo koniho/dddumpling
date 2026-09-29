@@ -16,18 +16,22 @@ final class Onboarding extends Draw {
 
     // Preserve the original ten lesson bits; successful actions have independent durable bits.
     private static boolean extraMessage(int message) {
-        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.COMPANION;
+        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.LANDS;
+    }
+    private static int extraBit(int message) {
+        // Bit 8 is the persisted first-companion introduction pending flag.
+        return 1<<(message-TutorialSpeech.POWER_FLURRY+(message>=TutorialSpeech.LANDS?1:0));
     }
     boolean learned(int message) {
         if(extraMessage(message))return !eligible(SKIPPED)
-                || (savedPowers&(1<<(message-TutorialSpeech.POWER_FLURRY)))!=0;
+                || (savedPowers&extraBit(message))!=0;
         return !eligible(1<<(message+9));
     }
     void learn(GameCore c,int message) {
         if(teacher!=null) { teacher.onboarding.learn(teacher,message);return; }
         if(learned(message))return;
         c.diagnostic("tutorial-learn "+message);
-        if(extraMessage(message))savedPowers|=1<<(message-TutorialSpeech.POWER_FLURRY);
+        if(extraMessage(message))savedPowers|=extraBit(message);
         else saved|=1<<(message+9);
         if(message==TutorialSpeech.DANGER)saved|=WORD_HINT;
         if(message==TutorialSpeech.RETRY)saved|=WRONG_HINT;
@@ -235,9 +239,14 @@ final class Onboarding extends Draw {
         if(which==STEAMER) { sceneWait=SCENE_REVEAL;return; }
         introduce(c);
     }
+    static int discoveredLand(GameCore c) {
+        for(int land=1;land<Lands.playableCount();land++)
+            if(LandPicker.unlocked(c,land) && (c.landSeen&(1<<land))!=0)return land;
+        return -1;
+    }
     private boolean titleUpdate(GameCore c,float elapsed,Layout L) {
         if(c.settingsOpen || c.paused || c.townOpen || c.highScoreScreen.open || c.releaseNotes.open)return false;
-        if(c.starting() || Starter.hideCase(c) || c.collected==0 || learned(TutorialSpeech.STORIES) || c.storyOpen()) {
+        if(c.starting() || Starter.hideCase(c) || c.collected==0 || c.storyOpen()) {
             if(titleGuide)clear();
             moveCompanion(c,elapsed);
             if(c.storyOpen())companionTravel=0;
@@ -246,7 +255,17 @@ final class Onboarding extends Draw {
         // Let the return animation land the first prize before introducing its home.
         if(c.returnFade>0 || c.homeT>0 || c.time<SCENE_REVEAL)return false;
         if(c.caseOpen && c.caseFade<1)return false;
-        int message=c.caseOpen?TutorialSpeech.STORIES:TutorialSpeech.DISPLAY_CASE;
+        // Finish the discovery tour before explaining the newly visible land picker.
+        if(LandPicker.visible(c) && (c.landDiscovery>=0 || LandDiscovery.next(c)>=0)) {
+            if(titleGuide)clear();
+            moveCompanion(c,elapsed);return false;
+        }
+        boolean lands=LandPicker.visible(c) && discoveredLand(c)>=0 && !learned(TutorialSpeech.LANDS);
+        if(!lands && learned(TutorialSpeech.STORIES)) {
+            if(titleGuide)clear();
+            moveCompanion(c,elapsed);return false;
+        }
+        int message=lands?TutorialSpeech.LANDS:c.caseOpen?TutorialSpeech.STORIES:TutorialSpeech.DISPLAY_CASE;
         if(!titleGuide || speech!=message) {
             if(narrator!=null && c.sound!=null)c.sound.hush();
             narrator=null;
@@ -396,6 +415,7 @@ final class Onboarding extends Draw {
             savedPowers&=~Starter.INTRO_PENDING;
             learn(c,TutorialSpeech.COMPANION);
         }
+        if(speech==TutorialSpeech.LANDS) { learn(c,speech);titleGuide=false; }
         if(bossHelp && nextBossHelp(c))return;
         if(bossHelp)bossGuide=true;
         briefing=false;

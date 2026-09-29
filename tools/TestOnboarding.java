@@ -350,6 +350,7 @@ final class TestOnboarding extends Check {
         steamerSelection(L);
         steamerArrival(L);
         collectionGuidance(L);
+        landGuidance(L);
         diagnostics(L);
         TestPowerTutorials.all(L);
     }
@@ -419,6 +420,41 @@ final class TestOnboarding extends Check {
         c.update(2,L);c.update(DT,L);
         check("discovering case and story early skips their instructions",!c.onboarding.titleGuide
                 && c.onboarding.learned(TutorialSpeech.DISPLAY_CASE) && c.onboarding.learned(TutorialSpeech.STORIES));
+    }
+    private static void landGuidance(Layout L) {
+        Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;
+        c.onboarding.learn(c,TutorialSpeech.STORIES);c.collected=store.collected=1;c.toTitle();
+        c.update(2,L);c.update(DT,L);
+        check("lands are not introduced before discovery",!c.onboarding.briefing);
+        c.collected=store.collected=Collect.add(c.collected,Collect.BOSS_FIRST);
+        c.update(DT,L);
+        check("first land discovery runs before its tutorial",c.landDiscovery>=0 && !c.onboarding.briefing);
+        for(int i=0;i<180 && !c.onboarding.briefing;i++)c.update(DT,L);
+        check("first discovered land opens one narrated page",c.landDiscovery<0 && c.onboarding.titleGuide
+                && c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.LANDS
+                && TutorialSpeech.pageCount(TutorialSpeech.LANDS)==1
+                && ear.explanation.equals(TutorialSpeech.spokenPage(TutorialSpeech.LANDS,0)));
+        c.update(1,L);check("land intro waits for acknowledgement",c.onboarding.briefing
+                && !c.onboarding.learned(TutorialSpeech.LANDS));
+        acknowledge(c,L);c.update(DT,L);
+        check("acknowledgement retires land intro without a reminder",!c.onboarding.titleGuide
+                && !c.onboarding.briefing && new GameCore(store,139).onboarding.learned(TutorialSpeech.LANDS));
+        check("learning lands does not set first-companion pending",(c.onboarding.savedPowers&Starter.INTRO_PENDING)==0);
+        c.collected=store.collected=Collect.add(c.collected,Collect.BOSS_FIRST+1);
+        for(int i=0;i<180;i++)c.update(DT,L);
+        check("later discoveries do not repeat land intro",!c.onboarding.briefing);
+        c.onboarding.reset(c);c.settingsOpen=true;c.update(DT,L);
+        check("land intro waits behind settings",!c.onboarding.briefing);
+        c.settingsOpen=false;c.update(DT,L);
+        check("reset reintroduces discovered lands",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.LANDS);
+        c.onboarding.skip(c);c.update(DT,L);
+        check("skip all suppresses land intro",!c.onboarding.titleGuide && !c.onboarding.briefing);
+        c.onboarding.reset(c);c.onboarding.savedPowers=Starter.INTRO_PENDING;
+        check("existing companion pending bit does not count as learned lands",!c.onboarding.learned(TutorialSpeech.LANDS));
+        c.onboarding.learn(c,TutorialSpeech.LANDS);
+        check("learning lands preserves companion pending",(c.onboarding.savedPowers&Starter.INTRO_PENDING)!=0);
+        c.onboarding.reset(c);c.landSuppressed=LandPicker.stateMask();c.update(DT,L);
+        check("hidden lands do not trigger land intro",c.onboarding.speech!=TutorialSpeech.LANDS);
     }
     private static void steamerSelection(Layout L) {
         GameCore c=fresh(L,new Mem());Ear ear=new Ear();c.sound=ear;
@@ -657,7 +693,7 @@ final class TestOnboarding extends Check {
         }
     }
     private static void speechPages(Layout L) {
-        for(int message=TutorialSpeech.MATCH;message<=TutorialSpeech.COMPANION;message++) {
+        for(int message=TutorialSpeech.MATCH;message<=TutorialSpeech.LANDS;message++) {
             StringBuilder displayed=new StringBuilder();boolean fits=true;
             for(int page=0;page<TutorialSpeech.pageCount(message);page++) {
                 String[] lines=TutorialSpeech.pageLines(message,page);

@@ -6,7 +6,7 @@ final class TutorialSpeech extends Draw {
             DIG=7, CART=8, CLOSED=9, CHAIN=10, GLOB=11, DANGER=12, RETRY=13,
             STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21,
             POWER_FLURRY=22, POWER_NINJA=23, POWER_TEAM=24, POWER_PICKUP=25,
-            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28, COMPANION=29;
+            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28, COMPANION=29, LANDS=30;
     private static final int PAPER=0x4DFFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
@@ -37,9 +37,11 @@ final class TutorialSpeech extends Draw {
         {"STEAMER TIME!", "COLLECT DUMPLINGS!"},
         {"YOUR DUMPLINGS!", "OPEN THEIR CASE!"},
         {"TAP YOUR DUMPLING!", "DISCOVER ITS STORY!"},
-        {"YOUR FIRST FRIEND!", "LET'S PLAY TOGETHER!"}
+        {"YOUR FIRST FRIEND!", "LET'S PLAY TOGETHER!"},
+        {"NEW LANDS!", "SWIPE TO CHOOSE!"}
     };
     static String spoken(int message) {
+        if(message==LANDS)return "New lands! Swipe to choose where your next run starts.";
         if(message==COMPANION)return "I'm your first squishy! I'll stay by your keys. I'll show you how to play as we go. Let's find more friends!";
         if(message==POWER_FLURRY)return "Flurry! Tap any key to clear the falling faces.";
         if(message==POWER_NINJA)return "Ninja! Swipe across squishies to slice them.";
@@ -86,8 +88,8 @@ final class TutorialSpeech extends Draw {
         return lines.toArray(new String[0]);
     }
     private static String[][][] makePages() {
-        String[][][] all=new String[COMPANION+1][][];
-        for(int message=MATCH;message<=COMPANION;message++) {
+        String[][][] all=new String[LANDS+1][][];
+        for(int message=MATCH;message<=LANDS;message++) {
             java.util.ArrayList<String[]> pages=new java.util.ArrayList<>();String pending="";
             // Page boundaries are sentence boundaries; copy must fit without splitting a sentence.
             for(String sentence:spoken(message).split("(?<=[.!?]) +")) {
@@ -254,7 +256,12 @@ final class TutorialSpeech extends Draw {
         Onboarding o=c.onboarding;GameCore q=o.practice==null?c:o.practice;
         float travel=swipeProgress(age),handX=x,handY=y;
         int key=o.demoKey(c);
-        if(message==COMPANION) {
+        if(message==LANDS) {
+            int land=Onboarding.discoveredLand(c);
+            Lands.logo(p,0,x-s*2.5f,y-s*.4f,s*1.35f,235,age);
+            Lands.logo(p,Math.max(1,land),x+s*2.5f,y-s*.4f,s*1.35f,235,age);
+            handX=x+s*(3f-6f*travel);handY=y+s*1.4f;
+        } else if(message==COMPANION) {
             p.text(Collect.NAME[c.runWho],x,y,type(s*.85f),INK,Painter.CENTER,true);
             p.text("YOUR COMPANION",x,y+s*1.8f,type(s*.6f),ROSE,Painter.CENTER,true);
             return;

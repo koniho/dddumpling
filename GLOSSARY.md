@@ -442,7 +442,7 @@ the right as the list leaves left; Back reverses this without losing the list po
 
 The **What’s new steamer** (`ReleaseMascot`) has a cute face, no arms, rising steam, and a lid that lifts when tapped. For an unread build, a star turns behind it, the lid pops repeatedly, and extra steam rises while the normal title screen stays usable. Tapping it opens the release list and saves the build as read; until then, the animation returns on title visits. **RESET NEWS** in developer settings restores this unread state.
 
-The **land discovery tour** (`LandDiscovery`) uses the swipe traveler’s size and arc, sliding through newly unlocked lands in sequence. Each first arrival pulses that land’s color and persists its seen flag; later visits do not repeat the glow. Covered title scenes pause the tour.
+The **land discovery tour** (`LandDiscovery`) uses the swipe traveler’s size and arc, sliding through newly unlocked lands in sequence. Each first arrival pulses that land’s color and persists its seen flag; later visits do not repeat the glow. Covered title scenes pause the tour. After the first discovery tour finishes, a single tutorial page explains swiping between lands to choose where the next run starts. Acknowledging it saves completion; Reset Tutorials restores it and Skip All suppresses it.
 
 The developer settings **ALL LANDS** chip enables every land for the current session without granting collectibles. **RESET LANDS** clears that override. The dotted walking trail is fixed relative to the lands and stops outside their silhouettes. The explorer crosses between the land centres and remains in front of their artwork.
 

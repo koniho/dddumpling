@@ -80,6 +80,12 @@ final class Preview {
             TestPowerTutorials.use(c,L,kind);step(c,L,.2f);
             shot(dir,"114-power-"+kind+"-return",c,L,w,h,ss);
         }
+        GameCore lands=new GameCore(new Mem(),139);
+        lands.collected=Collect.add(1L,Collect.BOSS_FIRST);
+        lands.onboarding.saved=lands.onboarding.savedPowers=0;
+        lands.onboarding.learn(lands,TutorialSpeech.STORIES);
+        step(lands,L,3f);TestOnboarding.awaitBubble(lands,L);
+        shot(dir,"114-lands-intro",lands,L,w,h,ss);
         GameCore stars=new GameCore(new Mem(),114);stars.startGame();stars.onboarding.saved=0;
         stars.starNext=true;Interlude.enterBonus(stars,L);step(stars,L,.6f);
         TestOnboarding.awaitBubble(stars,L);
