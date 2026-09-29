@@ -390,6 +390,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)octoLock { [self playEffect:DDSfx_OCTO_LOCK rate:1 gain:.70f]; }
 - (void)mushroomShake { [self playEffect:DDSfx_MUSHROOM_SHAKE rate:1 gain:.78f]; }
 - (void)mushroomSpore { [self playEffect:DDSfx_MUSHROOM_SPORE rate:1 gain:.72f]; }
+- (void)ninjaCombo { [self playEffect:DDSfx_NINJA_COMBO rate:1 gain:DDSfx_NINJA_COMBO_GAIN]; }
 - (void)ninjaSwishWithInt:(jint)variant {
   [self playEffect:[DDSfx ninjaSwishIdWithInt:variant] rate:1 gain:1];
 }

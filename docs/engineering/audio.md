@@ -16,9 +16,10 @@ policy lives in [AGENTS.md](../../AGENTS.md).
   callback.
 
 - **A sound that repeats has to be short and bounded.** Ninja rotates three recorded airy
-  swishes at most once per 100 ms, grouping simultaneous cuts. The 180 ms samples preserve
-  their quiet audition level rather than using the common synthesized peak. At most two tails
-  overlap. Dropped cues are not queued; completion, death, and restart reset the cadence.
+  swishes at most once per 100 ms, grouping simultaneous cuts. The 180 ms samples play
+  12 dB above their audition level, retaining the filtering and soft edges. At most two tails
+  overlap. A 120 ms chime plays once when a swipe reaches four cleared words. Dropped cues
+  are not queued; completion, death, and restart reset the cadence.
   The shared game selects variants without consuming gameplay RNG. Source and license are in
   [the recording notes](../../audio/recorded/README.md); both native packages carry AudioCredits.txt.
   Other repeating cues still use short decaying envelopes to avoid a continuous wash.

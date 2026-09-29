@@ -50,9 +50,35 @@ final class TestAudio extends Check {
                 ear.achievements==cheers && ear.clears==clears);
         add(c,L,new int[]{3},y);
         c.sliceTo(L.playLeft-L.enemyR*2f,y,L);
-        check("extending a Ninja combo stays free of chimes",
-                c.strokeKills==3 && c.callKills==3 && ear.achievements==cheers && ear.clears==clears);
+        check("three clears stay free of chimes",
+                c.strokeKills==3 && c.callKills==3 && ear.ninjaChimes==0 && ear.achievements==cheers && ear.clears==clears);
+        add(c,L,new int[]{4},y);c.sliceTo(L.playRight+L.enemyR*2f,y,L);
+        check("four clears ring one Ninja combo chime",c.strokeKills==4 && ear.ninjaChimes==1 && ear.clears==clears);
+        add(c,L,new int[]{5},y);c.sliceTo(L.playLeft-L.enemyR*2f,y,L);
+        check("extending the same combo does not repeat the chime",c.strokeKills==5 && ear.ninjaChimes==1);
         c.endStroke();
+        for(int i=0;i<6;i++)add(c,L,new int[]{i},y);
+        c.beginStroke(L.playLeft-L.enemyR*2f,y);c.sliceTo(L.playRight+L.enemyR*2f,y,L);
+        check("new swipe clearing six words rings just once",c.strokeKills==6 && ear.ninjaChimes==2);
+        c.endStroke();
+        add(c,L,new int[]{1,2,3,4},y);
+        c.beginStroke(L.playLeft-L.enemyR*2f,y);c.sliceTo(L.playRight+L.enemyR*2f,y,L);
+        check("four letters in one word do not count as four combo clears",c.strokeKills==1 && ear.ninjaChimes==2);
+        c.endStroke();
+        short[] chime=Sfx.build(Sfx.NINJA_COMBO);
+        check("Ninja combo chime is short with soft edges",chime.length<=Sfx.RATE*.13f
+                && chime[0]==0 && Math.abs(chime[chime.length-1])<100);
+        int peak=0,gap=(int)(Sfx.RATE*Blade.SWISH_GAP);
+        for(int variant=0;variant<3;variant++)for(int delay=0;delay<gap;delay+=Sfx.RATE/1000) {
+            float[] mix=new float[Sfx.RATE/2];
+            for(int take=0;take<3;take++) {
+                short[] swish=Sfx.build(Sfx.ninjaSwishId((variant+take)%3));
+                for(int i=0;i<swish.length;i++)mix[gap*take+i]+=swish[i];
+            }
+            for(int i=0;i<chime.length;i++)mix[gap+delay+i]+=chime[i]*Sfx.NINJA_COMBO_GAIN;
+            for(float sample:mix)peak=Math.max(peak,(int)Math.abs(sample));
+        }
+        check("combo chime leaves headroom over rapid rotating swishes",peak<32767);
     }
 
     /** What the two frenzy squish sounds are, and that they are the right shape for the job. */
@@ -113,7 +139,7 @@ final class TestAudio extends Check {
             for(short sample:swish) peak=Math.max(peak,Math.abs(sample));
             for(int i=swish.length-Sfx.RATE/200;i<swish.length;i++)
                 tail=Math.max(tail,Math.abs(swish[i]));
-            check("airy swish retains quiet audition gain "+variant,peak>1000 && peak<=.18f*32767);
+            check("airy swish is much louder with headroom "+variant,peak>.55f*32767 && peak<.70f*32767);
             check("airy swish finishes before its next rotation "+variant,
                     swish.length<=Sfx.RATE*NinjaSwishRecording.DURATION+1
                     && swish.length<Sfx.RATE*Blade.SWISH_GAP*3);
@@ -169,7 +195,7 @@ final class TestAudio extends Check {
         check("the last one is the highest", earM.lastZapHop == 4);
         check("no squishes in a chain", earM.squishes == 0);
 
-        // NINJA: simultaneous cuts share one quiet swish, with no fanfare.
+        // NINJA: simultaneous cuts share one swish; single words have no fanfare.
         GameCore c = new GameCore(new Mem(), 411L);
         Ear ear = new Ear();
         c.sound = ear;
@@ -299,7 +325,7 @@ final class TestAudio extends Check {
             short[] pcm = Sfx.build(id);
             int max = 0;
             for (int i = 0; i < pcm.length; i++) max = Math.max(max, Math.abs(pcm[i]));
-            // Frequent Ninja swishes preserve their deliberately quieter audition level.
+            // Recorded Ninja swishes retain their relative levels instead of peak normalisation.
             if (!Sfx.isNinjaSwish(id) && Math.abs(max - peak) > 2) allNormalised = false;
             if (max >= 32767) allClean = false;
             // Roulette ticks intentionally fit between fast icon changes.

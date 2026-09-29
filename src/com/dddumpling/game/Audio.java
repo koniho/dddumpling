@@ -242,6 +242,8 @@ final class Audio implements GameCore.Sound {
         play(Sfx.SQUISH_0 + glyph, (float) Math.pow(0.92, Math.max(0, depth - 1)));
     }
 
+    @Override public void ninjaCombo() { play(Sfx.NINJA_COMBO,1f,Sfx.NINJA_COMBO_GAIN); }
+
     @Override public void ninjaSwish(int variant) {
         play(Sfx.ninjaSwishId(variant), 1f);
     }

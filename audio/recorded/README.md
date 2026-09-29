@@ -125,5 +125,5 @@ edge fades, and caps peaks at 17% before converting to 22,050 Hz. Each cue lasts
 
 Cuts within 100 ms share a sound; only played cues advance the three-take rotation.
 There is no deferred audio queue or gameplay RNG use. Pause holds the cooldown;
-completion, death, and restart clear it. The selected gain remains below normal
-synthesized effects to keep repeated swishes light.
+completion, death, and restart clear it. `Sfx` boosts the audition PCM by 4×
+(about 12 dB), preserving its filtering and fades with peaks below 70% full scale.

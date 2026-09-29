@@ -2554,13 +2554,17 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage", "score-reset-confirm", "score-reset-brush", "ninja-swish-2", "ninja-swish-3"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage", "score-reset-confirm", "score-reset-brush", "ninja-swish-2", "ninja-swish-3", "ninja-combo"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);
             int max = 0;
             for (int i = 0; i < pcm.length; i++) max = Math.max(max, Math.abs(pcm[i]));
             peak = Math.max(peak, max);
+            if(id==Sfx.NINJA_COMBO) {
+                pcm=pcm.clone();
+                for(int i=0;i<pcm.length;i++)pcm[i]=(short)(pcm[i]*Sfx.NINJA_COMBO_GAIN);
+            }
             Wav.write(new File(sfxDir, names[id] + ".wav"), pcm, Sfx.RATE);
         }
         for (int style = 0; style < Music.NAMES.length; style++) {

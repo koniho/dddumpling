@@ -34,8 +34,9 @@ final class Sfx {
             CART_ROLL = MINING_CHEER + 1, CART_SQUEAL = CART_ROLL + 1, CART_TUMBLE = CART_SQUEAL + 1,
             OCTO_DAMAGE = CART_TUMBLE + 1, SCORE_RESET_CONFIRM = OCTO_DAMAGE + 1,
             SCORE_RESET_BRUSH = SCORE_RESET_CONFIRM + 1, NINJA_SWISH_1 = SCORE_RESET_BRUSH + 1, NINJA_SWISH_2 = NINJA_SWISH_1 + 1,
-            COUNT = NINJA_SWISH_2 + 1;
+            NINJA_COMBO = NINJA_SWISH_2 + 1, COUNT = NINJA_COMBO + 1;
     static final float OCTO_WAVE_GAIN = .66f;
+    static final float NINJA_COMBO_GAIN = .25f;
 
     private static final short[][] CACHE = new short[COUNT][];
     private static short[] rocketCache, bubbleCache;
@@ -48,6 +49,20 @@ final class Sfx {
 
     static boolean isNinjaSwish(int id) {
         return id == NINJA_SWISH_0 || id == NINJA_SWISH_1 || id == NINJA_SWISH_2;
+    }
+
+    private static short[] ninjaSwish(int variant) {
+        short[] pcm=NinjaSwishRecording.build(variant);
+        // +12 dB over the audition, with its filtering and soft edges intact.
+        for(int i=0;i<pcm.length;i++)pcm[i]=(short)(pcm[i]*4);
+        return pcm;
+    }
+
+    private static short[] ninjaCombo() {
+        short[] pcm=arp(.12f,new float[]{880f,1174.66f},.025f,30f,.03f,0f);
+        int fade=RATE/100;
+        for(int i=0;i<fade;i++)pcm[pcm.length-1-i]=(short)(pcm[pcm.length-1-i]*i/(float)fade);
+        return pcm;
     }
 
     static synchronized short[] build(int id) {
@@ -81,9 +96,10 @@ final class Sfx {
             case START: return start();
             case STAGE_CLEAR: return stageClear();
             case POWER_CLEAR: return powerClear();
-            case NINJA_SWISH_0: return NinjaSwishRecording.build(0);
-            case NINJA_SWISH_1: return NinjaSwishRecording.build(1);
-            case NINJA_SWISH_2: return NinjaSwishRecording.build(2);
+            case NINJA_SWISH_0: return ninjaSwish(0);
+            case NINJA_SWISH_1: return ninjaSwish(1);
+            case NINJA_SWISH_2: return ninjaSwish(2);
+            case NINJA_COMBO: return ninjaCombo();
             case ZAP: return zap();
             case COLLECT: return collect();
             case STAR: return star();
