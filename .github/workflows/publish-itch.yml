@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: itch-android-publish
@@ -42,8 +43,16 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
           mkdir -p build/itch
-          gh release download "$RELEASE_TAG" \
-            --pattern "DDDUMPLING-${RELEASE_TAG}.apk" --dir build/itch
+          if ! gh release download "$RELEASE_TAG" \
+            --pattern "DDDUMPLING-${RELEASE_TAG}.apk" --dir build/itch; then
+            # Draft releases need push access; use the same verified CI artifact with read access.
+            sha=$(gh api "repos/$GH_REPO/commits/$RELEASE_TAG" --jq .sha)
+            run=$(gh run list --workflow release.yml --commit "$sha" --event push \
+              --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+            test -n "$run" && test "$run" != null
+            gh run download "$run" --name "DDDUMPLING-${RELEASE_TAG}" --dir build/release-artifact
+            cp "build/release-artifact/DDDUMPLING-${RELEASE_TAG}.apk" build/itch/
+          fi
           test -s "build/itch/DDDUMPLING-${RELEASE_TAG}.apk"
 
       - name: Install pinned butler
