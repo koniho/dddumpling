@@ -416,8 +416,6 @@ final class Showcase extends Draw {
         int times = known ? Math.max(1, c.collectionCounts[i]) : 0;
         p.text("COLLECTED " + times + (times == 1 ? " TIME" : " TIMES"),
                 cx, bot + s * 1.88f, type(s * 0.48f), fadeBy(INK, fade), Painter.CENTER, true);
-        p.text("COLLECTIONS: " + c.collectTotal,
-                cx, bot + s * 2.80f, type(s * 0.48f), fadeBy(INK_DIM, fade), Painter.CENTER, true);
 
     }
 
