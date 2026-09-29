@@ -1,0 +1,32 @@
+name: Activate existing closed testing release
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: Uploaded build to activate on the configured closed testing track
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: google-play-testing
+  cancel-in-progress: false
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require main
+        run: test "$GITHUB_REF" = refs/heads/main
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - name: Test activation guards
+        run: bundle exec ruby tools/test-activate-play-release.rb
+      - name: Activate and verify the existing release
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_CLOSED_TRACK: ${{ vars.PLAY_CLOSED_TRACK }}
+          PLAY_VERSION_CODE: ${{ inputs.version_code }}
+        run: bundle exec ruby tools/activate-play-release.rb

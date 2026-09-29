@@ -8,6 +8,10 @@ closed testing track through fastlane (API ID `alpha` by default). Manual runs u
 **upload_to_play** is selected; **play_track** chooses `closed` (default) or `internal`.
 Uploads remain drafts by default. Manual runs activate testing only with
 **activate_play_release** selected; local lanes require `PLAY_RELEASE_STATUS=completed`.
+To activate an already uploaded draft, run **Activate existing closed testing release**
+from main with its `version_code`. This preserves its notes, requires the current
+manifest code, supersedes older completed builds, and verifies the saved track without
+re-uploading the bundle. Activate only after explicit user authorization.
 No lane publishes to production or edits store descriptions, images, or screenshots.
 New GitHub tag releases are drafts with reviewed copy from `release-notes/<version>.md`.
 
