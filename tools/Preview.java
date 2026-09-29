@@ -14,6 +14,10 @@ final class Preview {
         Check.Mem store=new Check.Mem();store.tutorials=store.powerTutorials=0;
         GameCore c=new GameCore(store,125);step(c,L,1);
         shot(dir,"starter-title",c,L,w,h,ss);
+        c.hintTitleKeys();
+        shot(dir,"starter-key-hint",c,L,w,h,ss);
+        step(c,L,.6f);shot(dir,"starter-key-hint-fading",c,L,w,h,ss);
+        step(c,L,.7f);shot(dir,"starter-key-hint-done",c,L,w,h,ss);
         c.beginStart();shot(dir,"starter-choices",c,L,w,h,ss);
         c.starter.choose(c,4);step(c,L,Launch.TIME+.1f);
         TestOnboarding.awaitBubble(c,L);

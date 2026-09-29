@@ -77,7 +77,15 @@ public final class IOSInputTest extends Check {
             Mem store=new Mem();store.tutorials=store.powerTutorials=0;
             IOSGame game=new IOSGame(store,new Ear(),128);game.layout(393,852,0,59,0,34);
             GameCore c=game.core();Layout l=game.geometry();
+            tap(game,l.w*.5f,l.h*.35f);
+            check("native empty title tap hints without launching "+choice,c.titleKeyHighlight()>0f
+                    && !c.starting() && !c.starter.open && !c.caseOpen);
+            game.update(1.3f);
+            tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(l,c.clock));
+            check("hidden display badge also counts as empty space "+choice,c.titleKeyHighlight()>0f
+                    && !c.caseOpen && !c.starter.open);
             tap(game,l.w*.2f,l.h*.85f);
+            check("starting clears native title hint "+choice,c.titleKeyHint==0f);
             check("native fresh Start opens starter chooser "+choice,c.starter.open && !c.starting()
                     && c.collected==0 && game.debugStatus().contains("starter=true"));
             check("native back cancels chooser "+choice,game.back() && !c.starter.open && c.collected==0);

@@ -899,13 +899,9 @@ final class Renderer extends Draw {
         // The whole cast mourns over the death hold, each character crying on its own key.
         float gone = Math.min(1f, c.drained() * 1.6f);
 
-        // The title screen's demo presses the deck for you. Nothing else lights it outside play:
-        // six keys glowing and sweeping to say "press anything" read as an alarm rather than an
-        // invitation, and the demo already says it by pressing one key at a time. A key answers a
-        // press and is otherwise plain, on every screen.
-        //
-        // Faded on the same crossfade the badge uses, so opening the case puts the demo away with
-        // it: while the case is up a key only closes it again.
+        // Demo presses and a requested start hint reuse the deck's press feedback.
+        // Opening the case puts the demo away with the badge.
+        float titleHint = c.titleKeyHighlight();
         float demoLit = 0f;
         if (c.state == GameCore.TITLE) {
             demoLit = Screens.caseOut(c)
@@ -916,7 +912,7 @@ final class Renderer extends Draw {
             float rosterMix = c.rosterMix();
             boolean newcomer = g == 2 || g == 3;
             if (newcomer && rosterMix <= 0.004f) continue;
-            float press = c.keyPress[g], bad = c.keyBad[g];
+            float press = Math.max(c.keyPress[g], titleHint), bad = c.keyBad[g];
             // The demo's own press, so the deck answers the falling word. Folded into the press
             // itself rather than drawn as a glow beside it: it is the same event, so it should
             // get everything a press gets — the colour strobe, the outward ripple, the pop on

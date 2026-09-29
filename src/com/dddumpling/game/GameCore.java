@@ -493,6 +493,7 @@ final class GameCore {
 
     // ---- persistent-ish state ----------------------------------------------
     int state = TITLE;
+    float titleKeyHint;
     /** Live title-screen touch, used only to make the logo letters react under a finger. */
     boolean titleTouchDown;
     float titleTouchX, titleTouchY;
@@ -1806,6 +1807,7 @@ final class GameCore {
     void beginStart() {
         if (state != TITLE || starting() || starter.open || returnFade > 0f || rosterSceneT > 0f) return;
         if (townOpen) return;
+        titleKeyHint = 0f;
         if (landChoice == LandPicker.TOWN) { openTown(); return; }
         if (Starter.eligible(this)) {
             Pause.release(this);closeCase();closeStory();starter.open=true;return;
@@ -1882,6 +1884,7 @@ final class GameCore {
     }
 
     void startGame() {
+        titleKeyHint = 0f;
         diagnostic("start-game");
         starter.clear();
         onboarding.clear();onboarding.companionTravel=0;onboarding.bossHelpUsed=0;
@@ -1999,6 +2002,7 @@ final class GameCore {
     }
 
     void toTitle() {
+        titleKeyHint = 0f;
         diagnostic("to-title");
         powerReplacements.clear();
         Blade.resetFeedback(this);
@@ -2097,6 +2101,20 @@ final class GameCore {
         float shape = 1f + titleSpringVY[i] / Math.max(1f, L.unit * 28f);
         return Math.max(0.84f, Math.min(1.18f, shape));
     }
+
+    private boolean titleKeysAvailable() {
+        return state == TITLE && !paused && !townOpen && !settingsOpen
+                && !releaseNotes.open && !highScoreScreen.open && !starter.open
+                && !caseOpen && caseFade <= 0f && !storyOpen() && !onboarding.titleGuide
+                && !starting() && returnFade <= 0f && rosterSceneT <= 0f;
+    }
+
+    /** An unclaimed title tap points at the controls without choosing one for the player. */
+    void hintTitleKeys() {
+        if (titleKeysAvailable()) titleKeyHint = 1f;
+    }
+
+    float titleKeyHighlight() { return titleKeysAvailable() ? titleKeyHint : 0f; }
 
     /**
      * A key press on the title or game-over screen.
@@ -2651,6 +2669,7 @@ final class GameCore {
         starPickups = 0;
         starBlastHaptic = 0;
         bossDeathHaptic = 0;
+        titleKeyHint = titleKeysAvailable() ? decay(titleKeyHint, elapsed / 1.2f) : 0f;
         if (paused) return;
         townSaveRetry=Math.max(0f,townSaveRetry-elapsed);
         if (town.dirty && townSaveRetry<=0f) saveTown();

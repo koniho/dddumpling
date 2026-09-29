@@ -300,7 +300,7 @@ public class GameView extends View {
                 return true;
             }
             // Otherwise the keys act, and on the title a tap on the badge opens the display
-            // case. A tap anywhere else does nothing.
+            // case. Empty space points the player toward the keys.
             int screen = core.keyAt(x, y, layout);
             if (screen >= 0) {
                 core.screenKey(screen);
@@ -309,6 +309,8 @@ public class GameView extends View {
                     && Showcase.inIcon(layout, core.clock, x, y)) {
                 core.openCase();
                 tick();
+            } else {
+                core.hintTitleKeys();
             }
             return true;
         }

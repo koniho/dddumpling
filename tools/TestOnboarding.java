@@ -37,6 +37,30 @@ final class TestOnboarding extends Check {
         for(int i=0;i<40 && c.onboarding.bubbleProgress()<1;i++)c.update(DT,L);
     }
     static void finish(GameCore c,Layout L) { for(int i=0;i<120;i++)c.update(DT,L); }
+    private static void titleKeyHint(Layout L) {
+        Mem store=new Mem();store.tutorials=store.powerTutorials=0;
+        GameCore c=new GameCore(store,137);
+        check("fresh title has no unsolicited key hint",c.titleKeyHighlight()==0f);
+        c.hintTitleKeys();
+        check("empty title tap highlights keys without starting",c.titleKeyHighlight()==1f
+                && !c.starting() && !c.starter.open && c.collected==0);
+        c.update(.6f,L);
+        check("key hint stays readable then fades",Math.abs(c.titleKeyHighlight()-.5f)<.001f);
+        c.hintTitleKeys();
+        check("another empty tap renews the hint",c.titleKeyHighlight()==1f);
+        c.update(1.3f,L);
+        check("key hint finishes",c.titleKeyHighlight()==0f);
+        c.hintTitleKeys();c.screenKey(0);
+        check("hinted key still opens companion selection",c.starter.open && c.titleKeyHint==0f);
+        c.hintTitleKeys();check("chooser cannot highlight title keys",c.titleKeyHighlight()==0f);
+        c.cancelStart();c.settingsOpen=true;c.hintTitleKeys();
+        check("settings cannot highlight title keys",c.titleKeyHighlight()==0f);
+        c.settingsOpen=false;c.caseOpen=true;c.hintTitleKeys();
+        check("display case cannot highlight title keys",c.titleKeyHighlight()==0f);
+        c.caseOpen=false;c.hintTitleKeys();c.startGame();
+        c.hintTitleKeys();check("gameplay clears and ignores title hint",c.titleKeyHint==0f);
+        c.toTitle();check("returning to title has no stale hint",c.titleKeyHint==0f);
+    }
     private static void starter(Layout L) {
         long choices=0;
         check("starter offers five friends",Starter.CHOICES.length==5);
@@ -105,6 +129,7 @@ final class TestOnboarding extends Check {
         check("skip all also retires companion introduction",!c.onboarding.briefing);
     }
     static void all(Layout L) {
+        titleKeyHint(L);
         starter(L);
         Mem store=new Mem();GameCore c=fresh(L,store);
         check("fresh run starts stage one without an intro",c.onboarding.practice==null && !c.onboarding.briefing && c.time>0);
