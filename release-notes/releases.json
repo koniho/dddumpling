@@ -15,7 +15,7 @@
           "title": "A little friendly help",
           "autoReset": false,
           "where": "As you discover the game",
-          "why": "Your companion teaches each new move when you need it. Enjoy shorter lessons for power-ups, minigames, your display case, and new lands."
+          "why": "Your companion teaches one lesson at a time: display case first, then swipe a land. See Star Path before its guide and learn Rescue Swipe in two pages."
         },
         {
           "icon": "flurry",
@@ -45,11 +45,11 @@
           "improvements": [
             {
               "where": "In your display case",
-              "why": "Tap a friend for its story and colorful reactions."
+              "why": "A cleaner case with stories and colorful reactions."
             },
             {
-              "where": "In the Steamer minigame",
-              "why": "Rising steam and a big reveal celebrate your prize."
+              "where": "Between stages and in Steamer",
+              "why": "Playful land skits, fuller steam and big prize reveals."
             },
             {
               "where": "Kids Mode and settings",
