@@ -543,9 +543,18 @@ final class TestOnboarding extends Check {
         Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;c.lives=2;
         c.starNext=true;Interlude.enterBonus(c,L);
         float timer=c.stars.timer,x=c.stars.x;int score=c.score,stage=c.stage;
-        c.update(.6f,L);
+        c.update(.4f,L);
+        check("Star Path course appears before speech",c.onboarding.starGuide && !c.onboarding.briefing
+                && c.onboarding.sceneWait>0 && StarScreen.sceneFade(c)==1f && ear.explanations==0
+                && !c.onboarding.companionAway(c) && c.stars.timer==timer && c.stars.x==x);
+        check("Star Path arrival owns input",c.onboarding.wantsTouch(c,L,0,L.w*.8f,StarScreen.sliderY(L)));
+        touch(c,L,0,L.w*.8f,StarScreen.sliderY(L));touch(c,L,1,L.w*.8f,StarScreen.sliderY(L));
+        check("arrival touch cannot steer or learn",!c.stars.steered && c.stars.x==x
+                && !c.onboarding.learned(TutorialSpeech.STARS));
+        c.update(c.onboarding.sceneWait,L);
         check("Star Path explains the real paused course",c.onboarding.starGuide && c.onboarding.briefing
-                && c.onboarding.practice==null && c.stars.timer==timer && c.stars.x==x && ear.explanations==1);
+                && c.onboarding.practice==null && c.stars.timer==timer && c.stars.x==x && ear.explanations==1
+                && StarScreen.sceneFade(c)==1f && c.time>=StarScreen.COMPANION_TRAVEL);
         check("Star Path has exactly two instruction pages",TutorialSpeech.pageCount(TutorialSpeech.STARS)==2);
         advancePage(c,L);
         check("second Star Path page still pauses the course",c.onboarding.briefing && c.onboarding.speechPage==1
@@ -597,7 +606,7 @@ final class TestOnboarding extends Check {
             check("practice does not consume waiting RNG "+lesson,c.rnd.nextInt()==expectedRandom);
             c.onboarding.skip(c);c.update(0,L);
             check("skip preserves actual encounter "+lesson,c.bonusTimer==timer && c.boss.hp==hp
-                    && c.onboarding.practice==null && c.score==0);
+                    && c.onboarding.practice==null && c.onboarding.sceneWait==0 && c.score==0);
             c.update(DT,L);check("global Skip prevents encounter restart "+lesson,c.onboarding.practice==null);
         }
     }

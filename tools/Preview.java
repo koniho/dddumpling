@@ -88,6 +88,8 @@ final class Preview {
         shot(dir,"114-lands-intro",lands,L,w,h,ss);
         GameCore stars=new GameCore(new Mem(),114);stars.startGame();stars.onboarding.saved=0;
         stars.starNext=true;Interlude.enterBonus(stars,L);step(stars,L,.6f);
+        shot(dir,"114-stars-arrival",stars,L,w,h,ss);
+        TestOnboarding.reveal(stars,L);
         TestOnboarding.awaitBubble(stars,L);
         for(int page=0;page<TutorialSpeech.pageCount(TutorialSpeech.STARS);page++) {
             TestOnboarding.awaitBubble(stars,L);

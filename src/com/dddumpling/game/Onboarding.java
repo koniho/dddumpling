@@ -152,7 +152,7 @@ final class Onboarding extends Draw {
         return offersBossHelp(c) && (TutorialSpeech.helpHit(L,x,y) || RunCompanion.hit(c,L,x,y));
     }
     boolean wantsTouch(GameCore c,Layout L,int action,float x,float y) {
-        return practice!=null || briefing || ownsTouch || action==0 && (promptHit(c,L,x,y)
+        return sceneWait>0 || practice!=null || briefing || ownsTouch || action==0 && (promptHit(c,L,x,y)
                 || (hintKind!=0 || bossGuide || powerGuide || starGuide || titleGuide || rescueGuide) && skipHit(L,x,y));
     }
     boolean speaking(GameCore c) {
@@ -202,8 +202,8 @@ final class Onboarding extends Draw {
     void begin(GameCore c,int which,Layout L) {
         Pause.release(c);clear();lesson=which;age=globAge=0;
         if(which==STARS) {
-            // Explain the actual course, then let its normal controls, audio and rewards run.
-            starGuide=briefing=true;speech=TutorialSpeech.STARS;narrate(c);return;
+            // Let the real course fade in and its flyer arrive before explaining it.
+            starGuide=true;speech=TutorialSpeech.STARS;sceneWait=SCENE_REVEAL;return;
         }
         GameCore q=practice=new GameCore(null,114L+which);
         q.startGame();q.runFullRoster=c.runFullRoster;q.runWho=c.runWho;
@@ -324,6 +324,12 @@ final class Onboarding extends Draw {
                 if(!eligible(next))next=0;
             }
             if(next!=0 && !learned(mechanic(c,next)))begin(c,next,L);
+        }
+        if(starGuide && sceneWait>0) {
+            float reveal=Math.min(sceneWait,elapsed);
+            c.time+=reveal;c.clock+=reveal;sceneWait=Math.max(0,sceneWait-reveal);
+            if(sceneWait==0) { briefing=true;narrate(c); }
+            return true;
         }
         if(practice==null) { age+=elapsed;hints(c,L);return briefing; }
         GameCore q=practice;age+=elapsed;
@@ -556,7 +562,7 @@ final class Onboarding extends Draw {
             p.fillRect(0,0,L.w,L.topSafe+L.unit*2.4f,0xFF171426);
             p.text("PRACTICE",L.w*.05f,skipY(L)+L.unit*.3f,type(L.unit*.65f),INK,Painter.LEFT,true);
         }
-        if(c.settingsOpen)return;
+        if(c.settingsOpen || o.starGuide && o.sceneWait>0)return;
         if(o.offersBossHelp(c))TutorialSpeech.help(p,c,L);
         if(o.rescueGuide)TutorialSpeech.rescueGesture(p,c,L);
         if(o.briefing)TutorialSpeech.large(p,c,L,o.speech,true);
