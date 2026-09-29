@@ -23,7 +23,7 @@ final class TutorialSpeech extends Draw {
         {"QUICK, TAP!", "BEAT THE RED LINE."},
         {"OOPS! TRY AGAIN.", "START ON THE LEFT."},
         {"MORE THAN ONE!", "TAP THE KEY AGAIN."},
-        {"NEED SOME SPACE?", "SWIPE THE BAR UP!"},
+        {"SWIPE THE BAR UP!", "ONCE PER STAGE!"},
         {"YOU DID IT!", "LET'S PLAY!"},
         {"MATCH THE KEY!", "SPREAD TWO FINGERS."},
         {"SAVE YOUR KEYS!", "TAP THE SHOWN KEY."},
@@ -51,7 +51,7 @@ final class TutorialSpeech extends Draw {
         if(message==MINIGAMES)return "Steamer is a minigame! Play a minigame after each stage. You can win dumplings! Let's free one from this steamer!";
         if(message==DISPLAY_CASE)return "Your friends live here! Tap the case to visit them!";
         if(message==STORIES)return "Tap a dumpling to read or hear its story!";
-        if(message==RESCUE)return "An enemy is getting close! Swipe up from the glowing bar to push the Squishies back. You can do this once each stage. Give yourself some room!";
+        if(message==RESCUE)return "Swipe up from the glowing bar to push squishies back. Once per stage.";
         if(message==STARS)return "Slide left and right to steer your dumpling. Catch every star to win a new dumpling.";
         if(message==LEAN)return "Cart Rush is starting! Slide left and right to steer. Stay in the green and help your cart reach the finish!";
         if(message==DIG)return "Dumpling Mine is starting! Tap the matching keys in order to fill your cart. Let's dig up a new friend!";

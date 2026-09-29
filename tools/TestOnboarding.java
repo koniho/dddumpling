@@ -711,7 +711,7 @@ final class TestOnboarding extends Check {
         c.onboarding.rescue(c);c.update(DT,L);
         int message=TutorialSpeech.RESCUE,pages=TutorialSpeech.pageCount(message);
         float left=c.modeLeft,clock=c.clock;
-        check("long explanation uses multiple bubbles",pages>1);
+        check("rescue has only instruction and once-per-stage bubbles",pages==2);
         for(int page=0;page<pages;page++) {
             check("new page speaks only its own displayed text "+page,c.onboarding.speechPage==page
                     && ear.explanation.equals(TutorialSpeech.spokenPage(message,page)));

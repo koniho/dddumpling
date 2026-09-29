@@ -175,6 +175,8 @@ final class Preview {
         rescue.onboarding.rescue(rescue);
         step(rescue,L,.6f);
         shot(dir,"114-rescue-speech",rescue,L,w,h,ss);
+        TestOnboarding.advancePage(rescue,L);step(rescue,L,.6f);
+        shot(dir,"114-rescue-limit",rescue,L,w,h,ss);
         GameCore chosen=new GameCore(new Mem(),114);chosen.collected=1L<<16;chosen.caseIndex=16;chosen.startGame();
         chosen.onboarding.begin(chosen,Onboarding.MINE,L);step(chosen,L,.9f);
         shot(dir,"114-chosen-companion",chosen,L,w,h,ss);
