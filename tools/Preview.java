@@ -882,6 +882,14 @@ final class Preview {
                 shot(dir, "81-land-" + land + "-skit-" + variant, themed, L, w, h, ss);
             }
         }
+        if(wanted("81-slime-")) {
+            GameCore slime=new GameCore(new Mem(),145L);slime.startGame();slime.landBlend=1f;
+            for(int variant=0;variant<3;variant++)for(int frame=0;frame<9;frame++) {
+                slime.stage=variant+1;
+                slime.stageBanner=GameCore.BANNER_TIME*(1f-(.05f+frame*.10f));
+                shot(dir,"81-slime-"+variant+"-"+frame,slime,L,w,h,ss);
+            }
+        }
 
         caveFrames(dir,L,w,h,ss);
         cartFrames(dir,L,w,h,ss);

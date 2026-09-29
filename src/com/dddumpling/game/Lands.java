@@ -284,6 +284,7 @@ final class Lands extends Draw {
 
     static void skit(Painter p, int stage, float x, float y, float r, float t, int a) {
         int land = forStage(stage), variant = skitFor(stage);
+        if (land == 0) { SlimeSkits.draw(p,variant,x,y,r,t,a); return; }
         if (land == Cave.LAND) {
             CaveArt.entrance(p,x,y,r,a,false);
             Skits.face(p,Kawaii.DUMPLING,x+r*(t-.5f),y+r*.65f,r*.36f,a,1f,.5f);
