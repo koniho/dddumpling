@@ -80,12 +80,35 @@ def run_store_notes
     puts JSON.generate(platform: 'App Store', id: entry['id'], attributes: entry['attributes'])
     localizations = apple.call('get', "/appStoreVersions/#{entry['id']}/appStoreVersionLocalizations").fetch('data')
     localizations.each { |localization| puts JSON.generate(platform: 'App Store notes', version: entry['attributes']['versionString'], id: localization['id'], attributes: localization['attributes'].slice('locale', 'whatsNew')) }
+    next unless write && entry['attributes']['versionString'] == version
+    raise 'App Store version is not an editable draft' unless %w[PREPARE_FOR_SUBMISSION DEVELOPER_REJECTED REJECTED METADATA_REJECTED].include?(entry['attributes']['appStoreState'])
+    english = localizations.find { |localization| localization['attributes']['locale'] == 'en-US' }
+    raise 'App Store English localization missing' unless english
+    if english['attributes']['whatsNew'] != notes
+      apple.call('patch', "/appStoreVersionLocalizations/#{english['id']}", { data: { type: 'appStoreVersionLocalizations', id: english['id'], attributes: { whatsNew: notes } } })
+    end
+    saved = apple.call('get', "/appStoreVersionLocalizations/#{english['id']}").fetch('data')
+    raise 'App Store notes verification failed' unless saved['attributes']['whatsNew'] == notes
+    puts "App Store #{version} draft notes verified."
   end
   builds = apple.call('get', '/builds?' + URI.encode_www_form('filter[app]' => app['id'], 'sort' => '-uploadedDate', 'limit' => 5, 'include' => 'preReleaseVersion')).fetch('data')
   builds.each do |build|
     puts JSON.generate(platform: 'TestFlight', id: build['id'], attributes: build['attributes'].slice('version', 'processingState', 'uploadedDate'))
-    apple.call('get', "/builds/#{build['id']}/betaBuildLocalizations").fetch('data').each { |loc| puts JSON.generate(platform: 'TestFlight notes', build: build['attributes']['version'], id: loc['id'], attributes: loc['attributes']) }
+    localizations = apple.call('get', "/builds/#{build['id']}/betaBuildLocalizations").fetch('data')
+    localizations.each { |loc| puts JSON.generate(platform: 'TestFlight notes', build: build['attributes']['version'], id: loc['id'], attributes: loc['attributes']) }
+    next unless write && build == builds.first
+    prerelease = apple.call('get', "/builds/#{build['id']}/preReleaseVersion").fetch('data')
+    raise 'Latest TestFlight build is a different release' unless prerelease['attributes']['version'] == version
+    english = localizations.find { |loc| loc['attributes']['locale'] == 'en-US' }
+    raise 'TestFlight English localization missing' unless english
+    if english['attributes']['whatsNew'] != notes
+      apple.call('patch', "/betaBuildLocalizations/#{english['id']}", { data: { type: 'betaBuildLocalizations', id: english['id'], attributes: { whatsNew: notes } } })
+    end
+    saved = apple.call('get', "/betaBuildLocalizations/#{english['id']}").fetch('data')
+    raise 'TestFlight notes verification failed' unless saved['attributes']['whatsNew'] == notes
+    puts "TestFlight #{version} (#{build['attributes']['version']}) notes verified."
   end
+  raise "No App Store draft exists for #{version}" if write && versions.none? { |entry| entry['attributes']['versionString'] == version }
 end
 
 run_store_notes if $PROGRAM_NAME == __FILE__
