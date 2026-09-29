@@ -25,21 +25,19 @@ final class Basket extends Draw {
     static void steam(Painter p,float cx,float sourceY,float rx,float rise,float clock,
             float strength,float pulse,float fade,boolean front) {
         if(fade<=0f || strength<=0f)return;
-        for(int i=0;i<14;i++) {
-            if((i%4>=2)!=front)continue;
-            float density=Math.max(0f,Math.min(1f,strength*14f-i));
+        for(int i=0;i<42;i++) {
+            int wisp=i/3;
+            if((wisp%4>=2)!=front)continue;
+            float density=Math.max(0f,Math.min(1f,strength*14f-wisp));
             if(density<=0f)continue;
             float phase=(clock*(.42f+(i%3)*.035f)+i*.381966f)%1f;
-            float side=i%2==0?-1f:1f;
+            float side=wisp%2==0?-1f:1f;
             float vent=cx+side*rx*(.69f+.045f*(i%3));
             float drift=(float)Math.sin(phase*5f+i*1.7f)*rx*(.06f+.06f*strength);
             float y=sourceY+(front?rx*.08f:0f)-phase*rise;
             float r=rx*(.035f+.09f*strength)*(.65f+phase);
             float envelope=(float)Math.sin(phase*Math.PI);
             float opacity=fade*density*envelope*envelope;
-            int mist=fadeBy(Glyph.withAlpha(0xFFFFF1DC,(int)(25+40*strength)),opacity);
-            p.fillEllipse(vent+drift,y,r*1.4f,r*.85f,mist);
-            p.fillEllipse(vent+drift-side*r*.65f,y-r*.48f,r,r*.85f,mist);
             float[] curl=new float[16];
             for(int j=0;j<8;j++) {
                 float t=j/7f;
@@ -54,8 +52,15 @@ final class Basket extends Draw {
             float x=cx+side*rx*(.72f+age*.12f),y=sourceY-age*rise*.45f;
             float r=rx*(.055f+age*.16f)*(.65f+.35f*strength);
             int color=fadeBy(Glyph.withAlpha(0xFFFFF6E5,(int)(90*pulse)),fade);
-            p.fillEllipse(x,y,r*1.5f,r,color);
-            p.fillEllipse(x+side*r*.8f,y-r*.35f,r,r*.8f,color);
+            for(int line=0;line<3;line++) {
+                float[] curl=new float[16];
+                for(int j=0;j<8;j++) {
+                    float t=j/7f;
+                    curl[j*2]=x+(line-1)*r*.7f+(float)Math.sin(t*5f+age*4f+line)*r*.5f;
+                    curl[j*2+1]=y+t*r*2.5f-line*r*.2f;
+                }
+                p.polyline(curl,color,rx*(.010f+.015f*strength));
+            }
         }
     }
 
