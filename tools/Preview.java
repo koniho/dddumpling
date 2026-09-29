@@ -82,16 +82,21 @@ final class Preview {
         }
         GameCore stars=new GameCore(new Mem(),114);stars.startGame();stars.onboarding.saved=0;
         stars.starNext=true;Interlude.enterBonus(stars,L);step(stars,L,.6f);
+        TestOnboarding.awaitBubble(stars,L);
+        for(int page=0;page<TutorialSpeech.pageCount(TutorialSpeech.STARS);page++) {
+            TestOnboarding.awaitBubble(stars,L);
+            shot(dir,"114-stars-page-"+page,stars,L,w,h,ss);
+            if(page+1<TutorialSpeech.pageCount(TutorialSpeech.STARS))TestOnboarding.advancePage(stars,L);
+        }
         shot(dir,"114-stars-ready",stars,L,w,h,ss);
         TestOnboarding.acknowledge(stars,L);step(stars,L,StarPath.READY+.4f);
         shot(dir,"114-stars-flight",stars,L,w,h,ss);
         for(int lesson:new int[]{Onboarding.STEAMER,Onboarding.CART,Onboarding.MINE}) {
             GameCore c=new GameCore(new Mem(),114);c.startGame();
-            if(lesson==Onboarding.STEAMER)c.onboarding.savedPowers&=~(1<<(TutorialSpeech.MINIGAMES-TutorialSpeech.POWER_FLURRY));
             c.onboarding.begin(c,lesson,L);
             if(lesson==Onboarding.STEAMER) {
                 step(c,L,.5f);shot(dir,"114-steamer-arrive",c,L,w,h,ss);
-                step(c,L,.4f);TestOnboarding.awaitBubble(c,L);shot(dir,"114-steamer-minigames",c,L,w,h,ss);
+                step(c,L,.4f);shot(dir,"114-steamer-picking",c,L,w,h,ss);
                 TestOnboarding.reveal(c,L);
             }
             step(c,L,.6f);GameCore q=c.onboarding.practice;
@@ -99,15 +104,12 @@ final class Preview {
             shot(dir,"114-"+name+"-ready",c,L,w,h,ss);
             TestOnboarding.acknowledge(c,L);
             if(lesson==Onboarding.STEAMER) {
-                step(c,L,.3f);shot(dir,"114-steamer-picking",c,L,w,h,ss);
-                step(c,L,GameCore.BONUS_ROLL+.1f);
-                shot(dir,"114-steamer-go",c,L,w,h,ss);
-                TestOnboarding.acknowledge(c,L);
                 shot(dir,"114-steamer-keys",c,L,w,h,ss);
                 q.tapBonus(q.steamer.wanted());q.tapBonus(q.steamer.wanted());step(c,L,.6f);
-                shot(dir,"114-steamer-encourage",c,L,w,h,ss);
+                shot(dir,"114-steamer-progress",c,L,w,h,ss);
                 for(int i=0;i<40 && !q.bonusSwipeReady();i++)q.tapBonus(q.steamer.wanted());
                 step(c,L,.6f);
+                TestOnboarding.awaitBubble(c,L);
                 shot(dir,"114-steamer-lid",c,L,w,h,ss);
                 TestOnboarding.acknowledge(c,L);shot(dir,"114-steamer-lid-try",c,L,w,h,ss);
             } else if(lesson==Onboarding.CART) {

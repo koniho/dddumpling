@@ -11,8 +11,8 @@ final class TutorialSpeech extends Draw {
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
         {"TAP KEYS IN ORDER!", "START ON THE LEFT."},
-        {"GO AS FAST", "AS YOU CAN!"},
-        {"GREAT JOB! LIFT IT!", "SWIPE UP TO WIN!"},
+        {"TAP KEYS IN TURN!", "FILL THE METER!"},
+        {"SWIPE THE LID UP!", "FREE THE DUMPLING!"},
         {"STAR PATH!", "SLIDE TO CATCH STARS!"},
         {"CART RUSH!", "STAY IN THE GREEN."},
         {"DUMPLING MINE!", "TAP MATCHING KEYS!"},
@@ -50,12 +50,12 @@ final class TutorialSpeech extends Draw {
         if(message==DISPLAY_CASE)return "Your friends live here! Tap the case to visit them!";
         if(message==STORIES)return "Tap a dumpling to read or hear its story!";
         if(message==RESCUE)return "An enemy is getting close! Swipe up from the glowing bar to push the Squishies back. You can do this once each stage. Give yourself some room!";
-        if(message==STARS)return "Star Path is starting! Slide to steer your dumpling and catch the stars. Collect them all to win a new friend!";
+        if(message==STARS)return "Slide left and right to steer your dumpling. Catch every star to win a new dumpling.";
         if(message==LEAN)return "Cart Rush is starting! Slide left and right to steer. Stay in the green and help your cart reach the finish!";
         if(message==DIG)return "Dumpling Mine is starting! Tap the matching keys in order to fill your cart. Let's dig up a new friend!";
         if(message==WAIT)return "Steamer is starting! Wait while two random keys are picked. Watch them spin! Get ready. You can do this!";
-        if(message==ALTERNATE)return "Your keys are ready! Tap left, right, left, right. Go as fast as you can! You've got this!";
-        if(message==LIFT)return "Great job! The lid is ready. Swipe it up to win. You can do it!";
+        if(message==ALTERNATE)return "Quickly tap the two keys in turn to fill the meter.";
+        if(message==LIFT)return "Swipe the lid up to free the dumpling.";
         if(message==SUCCESS)return "Amazing! You did it! You freed a dumpling!";
         if(message==CLOSED)return "Wait until Slime's face is visible. Tap the key that matches Slime's face. Wrong keys or hidden faces will get you slimed!";
         if(message==CHAIN)return "Tap the matching key while Slime's face is visible. Keep matching to make Slime vulnerable. Watch for the red area!";

@@ -593,14 +593,12 @@ Steamer, Cart Rush and Dumpling Mine use disposable real-game practice while the
 practice leaves progress and the run's random stream untouched until completion. Finishing the
 Steamer tutorial's lid swipe wins the actual minigame: its normal reward, life recovery and saved
 win count are awarded once, then its celebration leads to the next stage without a second attempt.
-The tutorial first shows a wait symbol and random key selection, then pauses on an encouraging
-**Go as fast as you can!** explanation only once the pair has settled. Spoken encouragement
-accompanies the selection, alternating taps, lid swipe and win.
-The Steamer basket fades in for 0.8 seconds before any popup, without advancing selection or
-gameplay timers. A one-time opening step explains post-stage minigames and collecting dumplings,
-then introduces the controls. The first instruction names each minigame in both text and speech:
-Steamer, Star Path, Cart Rush and Dumpling Mine.
-Star Path explains the actual course, then resumes its normal ready sequence and live flight.
+The Steamer basket fades in for 0.8 seconds, then selects its keys without an overview or
+waiting popup. Its two instruction pages teach quickly alternating the settled keys to fill
+the meter, then swiping the lid up to free the dumpling. Text and narration contain only
+those directions; the win proceeds without an extra encouragement bubble or spoken message.
+Star Path uses two pages: slide left and right to steer, then catch every star to win a
+dumpling. It explains the actual course, then resumes its normal ready sequence and live flight.
 There is no separate practice round or restart after learning to steer: stars, sounds and rewards
 belong to that real attempt. The companion returns to its flyer position when reading ends;
 the first star caught after steering learns the step, and a completed course pays out only once.
@@ -624,7 +622,6 @@ After collecting a first dumpling and returning to title, a two-step guide intro
 the display case and tapping an owned dumpling to view its narrated story. It waits for the
 return animation, focuses an owned dumpling when needed, and learns each action independently
 (including discovery before the prompt). Skip All and Reset Tutorials include these steps.
-The informational minigame overview is learned on acknowledgement rather than a gameplay action.
 
 Initial boss guidance is opt-in: a small **?** beside the companion offers help from boss-stage
 entry, including the arrival card. It is offered again each run even for learned mechanics.
