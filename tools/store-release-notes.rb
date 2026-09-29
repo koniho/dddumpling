@@ -20,6 +20,8 @@ end
 def with_english_note(release, code, notes)
   raise 'Refusing to edit an active or different Play release' unless release['status'] == 'draft' && release['versionCodes'].map(&:to_s) == [code]
   copy = Marshal.load(Marshal.dump(release))
+  existing = Array(copy['releaseNotes']).find { |note| note['language'] == 'en-US' }
+  return copy if existing && existing['text'].to_s.strip == notes
   copy['releaseNotes'] = Array(copy['releaseNotes']).reject { |note| note['language'] == 'en-US' } + [{ 'language' => 'en-US', 'text' => notes }]
   copy
 end
@@ -34,6 +36,8 @@ def run_store_notes
   root = File.expand_path('..', __dir__)
   manifest = REXML::Document.new(File.read(File.join(root, 'AndroidManifest.xml'))).root
   version = manifest.attributes['android:versionName']
+  store_version = ENV.fetch('IOS_STORE_VERSION', '').strip
+  store_version = version if store_version.empty?
   code = manifest.attributes['android:versionCode']
   notes = File.read(File.join(root, 'app-store/google-play/en-US/changelogs', "#{code}.txt")).strip
   raise 'Notes must contain 1–500 characters' unless (1..500).cover?(notes.length)
@@ -80,7 +84,7 @@ def run_store_notes
     puts JSON.generate(platform: 'App Store', id: entry['id'], attributes: entry['attributes'])
     localizations = apple.call('get', "/appStoreVersions/#{entry['id']}/appStoreVersionLocalizations").fetch('data')
     localizations.each { |localization| puts JSON.generate(platform: 'App Store notes', version: entry['attributes']['versionString'], id: localization['id'], attributes: localization['attributes'].slice('locale', 'whatsNew')) }
-    next unless write && entry['attributes']['versionString'] == version
+    next unless write && entry['attributes']['versionString'] == store_version
     raise 'App Store version is not an editable draft' unless %w[PREPARE_FOR_SUBMISSION DEVELOPER_REJECTED REJECTED METADATA_REJECTED].include?(entry['attributes']['appStoreState'])
     english = localizations.find { |localization| localization['attributes']['locale'] == 'en-US' }
     raise 'App Store English localization missing' unless english
@@ -89,7 +93,7 @@ def run_store_notes
     end
     saved = apple.call('get', "/appStoreVersionLocalizations/#{english['id']}").fetch('data')
     raise 'App Store notes verification failed' unless saved['attributes']['whatsNew'] == notes
-    puts "App Store #{version} draft notes verified."
+    puts "App Store #{store_version} draft notes verified."
   end
   builds = apple.call('get', '/builds?' + URI.encode_www_form('filter[app]' => app['id'], 'sort' => '-uploadedDate', 'limit' => 5, 'include' => 'preReleaseVersion')).fetch('data')
   builds.each do |build|
@@ -108,7 +112,7 @@ def run_store_notes
     raise 'TestFlight notes verification failed' unless saved['attributes']['whatsNew'] == notes
     puts "TestFlight #{version} (#{build['attributes']['version']}) notes verified."
   end
-  raise "No App Store draft exists for #{version}" if write && versions.none? { |entry| entry['attributes']['versionString'] == version }
+  raise "No App Store draft exists for #{store_version}" if write && versions.none? { |entry| entry['attributes']['versionString'] == store_version }
 end
 
 run_store_notes if $PROGRAM_NAME == __FILE__

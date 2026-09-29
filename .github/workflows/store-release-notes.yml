@@ -6,6 +6,10 @@ on:
         description: Apply approved notes to the current unpublished release
         type: boolean
         default: false
+      ios_store_version:
+        description: Existing App Store draft version, if different from the shared release
+        type: string
+        default: ''
 permissions:
   contents: read
 concurrency:
@@ -24,6 +28,7 @@ jobs:
       - name: Read or update release notes without publishing
         env:
           APPLY: ${{ inputs.apply }}
+          IOS_STORE_VERSION: ${{ inputs.ios_store_version }}
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           IOS_APPSTORE_KEY_ID: ${{ secrets.IOS_APPSTORE_KEY_ID }}
           IOS_APPSTORE_ISSUER_ID: ${{ secrets.IOS_APPSTORE_ISSUER_ID }}
