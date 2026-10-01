@@ -139,6 +139,15 @@ public class GameView extends View {
             return true;
         }
         int action = ev.getActionMasked();
+        if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+            int i = ev.getActionIndex();
+            if (Pause.entryHit(core,layout,ev.getX(i),ev.getY(i))) {
+                cancelPointers();
+                Pause.open(core);
+                last = 0; tick();
+                return true;
+            }
+        }
         if (core.starter.open) {
             int i=action==MotionEvent.ACTION_MOVE?0:ev.getActionIndex();
             core.starter.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));

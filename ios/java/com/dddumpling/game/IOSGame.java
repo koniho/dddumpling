@@ -52,6 +52,7 @@ public final class IOSGame {
 
 
     public IOSGame(GameCore.Store store, GameCore.Sound sound, long seed) {
+        layout.nativePause = true;
         // iOS developer saves have their own bundle/container; exercise the real progress model.
         core = new GameCore(store, seed, true);
         core.sound = sound;
@@ -83,6 +84,15 @@ public final class IOSGame {
             return true;
         }
         int action = ev.getActionMasked();
+        if (action == IOSTouch.ACTION_DOWN || action == IOSTouch.ACTION_POINTER_DOWN) {
+            int i = ev.getActionIndex();
+            if (Pause.entryHit(core,layout,ev.getX(i),ev.getY(i))) {
+                cancelPointers();
+                Pause.open(core);
+                tick();
+                return true;
+            }
+        }
         if (core.starter.open) {
             int i=action==IOSTouch.ACTION_MOVE?0:ev.getActionIndex();
             core.starter.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));

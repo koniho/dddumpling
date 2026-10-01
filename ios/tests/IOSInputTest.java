@@ -142,6 +142,21 @@ public final class IOSInputTest extends Check {
         tap(game, l.keyX[0], l.keyY[0]);
         for (int i = 0; i < 180; i++) game.update(DT);
         check("title deck press starts real run", c.state == GameCore.PLAY);
+        check("native pause avoids duplicate shared control",game.showsBackButton()
+                && l.nativePause && !Pause.entryVisible(c,l));
+        // Exercise the shared entry route used by hosts without a native navigation strip.
+        l.nativePause=false;
+        c.beginStroke(l.w/2,l.h*.4f);
+        game.touch(two(5,1,7,l.w/2,l.h*.4f,8,Pause.entryX(l),Pause.entryY(l)));
+        float pausedClock=c.clock;
+        game.update(1f);
+        check("second finger can pause and releases active stroke",c.paused && !c.touchDown
+                && c.clock==pausedClock && !c.settingsOpen);
+        game.touch(one(1,8,l.w/2,Pause.buttonY(l,1)));
+        check("pause entry lift cannot immediately resume",c.paused);
+        tap(game,l.w/2,Pause.buttonY(l,1));
+        check("shared pause resumes same run",!c.paused && c.state==GameCore.PLAY);
+        l.nativePause=true;
         c.beginStroke(l.w/2, l.playTop + 20); c.stars.beginDrag();
         c.landPickerDragging = true; c.titleTouchDown = true; c.caseDragging = true;
         c.steamer.lidDrag = 30;

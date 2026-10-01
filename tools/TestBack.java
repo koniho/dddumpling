@@ -4,6 +4,7 @@ final class TestBack extends Check {
     static void navigation(Layout L) {
         Mem m = new Mem(); m.collected = 1;
         GameCore c = new GameCore(m, 701L);
+        check("title has no gameplay pause control",!Pause.entryVisible(c,L));
         check("title delegates back to Android", !Pause.handlesBack(c) && !Pause.back(c));
         c.openCase(); c.caseIndex = 0; c.openStory();
         Pause.back(c);
@@ -78,6 +79,25 @@ final class TestBack extends Check {
         check("back cancels a pending start transition", c.state == GameCore.TITLE && !c.starting());
         for (int width : new int[] {320,640,1080}) {
             Layout small = new Layout(); small.compute(width,width*2,0,0,0,0);
+            c.startGame();
+            float x=Pause.entryX(small), y=Pause.entryY(small);
+            check("gameplay pause has a generous target at " + width,
+                    Pause.entryHit(c,small,x+small.unit,y+small.unit)
+                    && !Pause.entryHit(c,small,small.w*.5f,small.hudY)
+                    && !small.inStageTap(x-small.unit*1.35f,y));
+            check("pause icon clears safe area and lives at " + width,
+                    y-small.unit*.57f>=small.padT
+                    && y+small.unit*.57f<small.hudY-small.unit*.78f);
+            c.state=GameCore.BONUS;
+            check("bonus keeps pause available",Pause.entryVisible(c,small));
+            c.settingsOpen=true;
+            check("settings owns input over pause",!Pause.entryHit(c,small,x,y));
+            c.settingsOpen=false;Pause.open(c);
+            check("paused panel hides entry",!Pause.entryVisible(c,small));
+            Pause.resume(c);small.nativePause=true;
+            check("native host has no duplicate pause control",!Pause.entryVisible(c,small));
+            small.nativePause=false;c.state=GameCore.OVER;
+            check("game over has no gameplay pause control",!Pause.entryVisible(c,small));
             for (int button = 1; button <= 2; button++)
                 check("pause button has its own touch target at " + width,
                         Pause.hit(small,width*.5f,Pause.buttonY(small,button)) == button);

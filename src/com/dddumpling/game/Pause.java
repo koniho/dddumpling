@@ -1,8 +1,19 @@
 package com.dddumpling.game;
 
-/** Back navigation and a modal pause panel, shared by Android and the preview harness. */
+/** Gameplay pause control, back navigation and the shared modal pause panel. */
 final class Pause extends Draw {
     private Pause() {}
+    static boolean entryVisible(GameCore c, Layout L) {
+        return !L.nativePause && (c.state == GameCore.PLAY || c.state == GameCore.BONUS)
+                && !c.paused && !c.settingsOpen && !c.townOpen && !c.highScoreScreen.open
+                && !c.releaseNotes.open && c.returnFade <= 0f;
+    }
+    static float entryX(Layout L) { return L.playRight - L.unit*1.45f; }
+    static float entryY(Layout L) { return Hud.labelY(L) - L.unit*.38f; }
+    static boolean entryHit(GameCore c, Layout L, float x, float y) {
+        return entryVisible(c,L) && Math.abs(x-entryX(L)) <= L.unit*1.35f
+                && Math.abs(y-entryY(L)) <= L.unit*1.35f;
+    }
     static boolean handlesBack(GameCore c) {
         return c.townOpen || c.highScoreScreen.open || c.releaseNotes.open || c.returnFade > 0f
                 || c.paused || c.settingsOpen || c.storyOpen() || c.caseOpen
@@ -80,6 +91,12 @@ final class Pause extends Draw {
         return 0;
     }
     static void draw(Painter p, GameCore c, Layout L) {
+        if (entryVisible(c,L)) {
+            float x=entryX(L), y=entryY(L), s=L.unit;
+            p.fillPoly(pill(x,y,s*1.05f,s*.57f,12),BG_HI);
+            p.fillRect(x-s*.37f,y-s*.36f,x-s*.13f,y+s*.36f,INK);
+            p.fillRect(x+s*.13f,y-s*.36f,x+s*.37f,y+s*.36f,INK);
+        }
         if (!c.paused) return;
         float s = scale(L), x = L.w * .5f, y = L.h * .5f;
         p.fillRect(0, 0, L.w, L.h, 0xDA100D20);

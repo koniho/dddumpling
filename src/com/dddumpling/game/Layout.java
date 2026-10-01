@@ -12,6 +12,8 @@ package com.dddumpling.game;
 final class Layout {
     float w, h;
     float padT, padB, padL, padR;
+    /** Host supplies its own accessible pause control above the game. */
+    boolean nativePause;
 
     /** Key hex radius (half-width). Hex height is sqrt(3)*r. */
     float keyR;
