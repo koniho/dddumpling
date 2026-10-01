@@ -92,10 +92,8 @@ final class Pause extends Draw {
     }
     static void draw(Painter p, GameCore c, Layout L) {
         if (entryVisible(c,L)) {
-            float x=entryX(L), y=entryY(L), s=L.unit;
-            p.fillPoly(pill(x,y,s*1.05f,s*.57f,12),BG_HI);
-            p.fillRect(x-s*.37f,y-s*.36f,x-s*.13f,y+s*.36f,INK);
-            p.fillRect(x+s*.13f,y-s*.36f,x+s*.37f,y+s*.36f,INK);
+            p.text("PAUSE",entryX(L),Hud.labelY(L),type(L.unit*.52f),
+                    INK_DIM,Painter.CENTER,false);
         }
         if (!c.paused) return;
         float s = scale(L), x = L.w * .5f, y = L.h * .5f;
