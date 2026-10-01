@@ -709,14 +709,20 @@ final class TestStages extends Check {
         check("and everything between", L.inPushZone(L.w / 2f, (L.h / 2f + L.dangerY) / 2f));
         check("but never on a key", !L.inPushZone(L.keyX[1], L.keyY[1])
                 && !L.inPushZone(L.keyX[4], L.keyY[4]));
-        check("nor above the middle", !L.inPushZone(L.w / 2f, L.h / 2f - 1f));
+        check("starts above the old halfway cutoff", L.inPushZone(L.w/2f,L.h*.36f));
+        check("starts in the gap below the old deck cutoff",L.inPushZone(L.w/2f,L.deckTop+L.unit));
+        check("starts at the companion",L.inPushZone(RunCompanion.x(L),RunCompanion.y(L)));
+        check("starts between the keys near the bottom",L.inPushZone(L.w/2f,L.h-L.padB-L.unit));
+        check("does not start in the upper field",!L.inPushZone(L.w/2f,L.h*.3f));
+        check("does not start outside safe screen bounds",!L.inPushZone(-1,L.h*.6f)
+                && !L.inPushZone(L.w/2f,L.h-L.padB+1));
         check("nor in the HUD, which has its own tap",
                 !L.inPushZone(L.w / 2f, L.hudY) && L.inStageTap(L.w / 2f, L.hudY));
         float wasStrip = L.deckTop - L.dangerY;
         System.out.printf("    swipe catchment is %.0fx the lit strip (%.0fpx of %.0f high)%n",
-                (L.deckTop - L.h / 2f) / wasStrip, L.deckTop - L.h / 2f, L.h);
+                (L.h-L.padB-L.h*.35f) / wasStrip, L.h-L.padB-L.h*.35f, L.h);
         check("it is a much bigger target than the strip",
-                L.deckTop - L.h / 2f > wasStrip * 4f);
+                L.h-L.padB-L.h*.35f > wasStrip * 4f);
 
         // 2. The drag it leaves on the field.
         GameCore c = new GameCore(new Mem(), 171L);

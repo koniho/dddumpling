@@ -33,7 +33,8 @@ public class GameView extends View {
         settingsInput.cancel();
         core.releaseNotes.cancelTouch();
         starDragPointer = bonusSwipePointer = bossDragPointer = -1;
-        bossDragging = bossPinching = pushArmed = false;
+        bossDragging = bossPinching = false;
+        pushPointer = -1;
         caseGesture = CASE_IDLE; pausePress = 0; overGesture = false;
         Pause.release(core);
     }
@@ -270,16 +271,16 @@ public class GameView extends View {
         // starts on a letter is never mistaken for a key press.
         if (core.ninja() && handleNinja(ev, action)) return true;
 
-        // The companion sits inside the panic swipe's broad catchment. A direct touch on its
-        // bubble belongs to the companion; field gestures and NINJA still keep precedence above.
+        // A companion poke reacts immediately and can continue into a rescue swipe.
         if ((action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN)
                 && core.tapCompanion(ev.getX(ev.getActionIndex()), ev.getY(ev.getActionIndex()),
                         layout)) {
+            handlePush(ev,action);
             tick();
             return true;
         }
 
-        // Panic swipe: an upward drag starting anywhere in the lower half of the field.
+        // Rescue swipe: an upward drag from the field or empty space around the keys.
         // Needs MOVE events, so it is handled before the down-only filter. After the blade,
         // because during a NINJA frenzy a stroke through that strip is a cut and should stay one.
         if (handlePush(ev, action)) return true;
@@ -672,45 +673,37 @@ public class GameView extends View {
         return action != MotionEvent.ACTION_POINTER_UP;
     }
 
-    private boolean pushArmed;
+    private int pushPointer = -1;
     private float pushStartY;
 
-    /**
-     * The push-back gesture: start anywhere in the lower half of the field above the keys, then
-     * drag up.
-     *
-     * The catchment is {@link Layout#inPushZone}, which is much wider than the strip the renderer
-     * lights — see that method for why. What has not changed is the floor: it stops at
-     * {@link Layout#deckTop}, because a swipe starting on a key would mean holding every tap back
-     * until a drag is ruled out, and that is latency this game cannot spend when every press is a
-     * keystroke.
-     */
+    /** Track the rescue finger independently of thumbs tapping keys. */
     private boolean handlePush(MotionEvent ev, int action) {
-        int i = ev.getActionIndex();
-        float y = ev.getY(i);
-
+        if (action == MotionEvent.ACTION_CANCEL) {
+            boolean owned = pushPointer >= 0;
+            pushPointer = -1;
+            return owned;
+        }
+        if (action == MotionEvent.ACTION_DOWN) pushPointer = -1;
+        int i = action == MotionEvent.ACTION_MOVE ? ev.findPointerIndex(pushPointer) : ev.getActionIndex();
+        if (i < 0) { pushPointer = -1; return false; }
+        int id = ev.getPointerId(i);
+        float x = ev.getX(i), y = ev.getY(i);
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
-            if (core.state != GameCore.PLAY || !layout.inPushZone(ev.getX(i), y)) {
-                return false;
-            }
-            pushArmed = true;
+            if (pushPointer >= 0 || core.state != GameCore.PLAY
+                    || !layout.inPushZone(x,y) || core.keyAt(x,y,layout) >= 0) return false;
+            pushPointer = id;
             pushStartY = y;
             return true;
         }
-        if (!pushArmed) return false;
-
-        if (action == MotionEvent.ACTION_MOVE) {
-            // A clear upward flick, not a twitch.
-            if (pushStartY - y >= layout.enemyR * 1.6f) {
-                // One entry point for the upward panic swipe.
-                if (core.swipeUp(layout)) tick();
-                pushArmed = false;
-            }
-            return true;
-        }
-        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL
+        if (pushPointer != id) return false;
+        // A quick flick may deliver its final travel only on lift.
+        if (action == MotionEvent.ACTION_MOVE || action == MotionEvent.ACTION_UP
                 || action == MotionEvent.ACTION_POINTER_UP) {
-            pushArmed = false;
+            if (pushStartY-y >= layout.enemyR*1.6f) {
+                if (core.swipeUp(layout)) tick();
+                pushPointer = -1;
+            }
+            if (action != MotionEvent.ACTION_MOVE) pushPointer = -1;
         }
         return true;
     }

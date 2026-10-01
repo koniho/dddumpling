@@ -396,6 +396,64 @@ public final class IOSInputTest extends Check {
         game.touch(one(1,3,x,y-l.enemyR*2));
     }
 
+    private static IOSGame rescueGame() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.startGame();c.stageGap=0;c.enemies.clear();
+        add(c,l,new int[] {5,5},l.dangerY-l.enemyR);
+        c.warnLevel=1;
+        return game;
+    }
+
+    private static void forgivingRescue() {
+        for(int start=0;start<4;start++) {
+            IOSGame game=rescueGame();GameCore c=game.core();Layout l=game.geometry();
+            float x=l.w*.5f,y=start==0?l.h*.36f:start==1?l.deckTop+l.unit
+                    :start==2?RunCompanion.y(l):l.h-l.padB-l.unit;
+            game.touch(one(0,19,x,y));
+            game.touch(one(1,19,x,y-l.enemyR*2));
+            check("quick rescue flick works from expanded start "+start,c.pushUsed && c.pushCount==1);
+            game.touch(one(0,19,x,y));game.touch(one(1,19,x,y-l.enemyR*2));
+            check("expanded rescue still fires only once per stage "+start,c.pushCount==1);
+        }
+        IOSGame game=rescueGame();GameCore c=game.core();Layout l=game.geometry();
+        float x=l.w*.5f,y=l.deckTop+l.unit,kx=c.keyX(l,0),ky=c.keyY(l,0);
+        game.touch(one(0,7,kx,ky));
+        check("key taps still react immediately",c.keyPress[0]>0 && !c.pushUsed);
+        game.touch(two(5,1,7,kx,ky,19,x,y));
+        game.touch(two(2,0,7,kx,ky,19,x,y-l.enemyR*2));
+        check("second finger can rescue while first holds a key",c.pushUsed);
+
+        game=rescueGame();c=game.core();l=game.geometry();
+        game.touch(one(0,19,x,y));
+        game.touch(two(5,1,19,x,y,7,kx,ky));
+        check("key stays responsive during an armed rescue",c.keyPress[0]>0);
+        game.touch(two(2,0,7,kx,y-l.enemyR*3,19,x,y));
+        check("moving another finger cannot trigger rescue",!c.pushUsed);
+        game.touch(two(6,0,7,kx,y-l.enemyR*3,19,x,y));
+        game.touch(one(1,19,x,y-l.enemyR*2));
+        check("pointer reorder and non-owner lift keep rescue armed",c.pushUsed);
+
+        game=rescueGame();c=game.core();l=game.geometry();
+        game.touch(one(0,19,x,y));
+        game.touch(two(5,1,19,x,y,7,x,l.h*.36f));
+        game.touch(two(2,0,19,x,y-l.enemyR*2,7,x,l.h*.36f));
+        check("another field finger cannot steal rescue ownership",c.pushUsed);
+
+        for(int direction=0;direction<3;direction++) {
+            game=rescueGame();c=game.core();l=game.geometry();
+            game.touch(one(0,19,x,y));
+            game.touch(one(1,19,x+(direction==1?l.enemyR*3:0),
+                    y+(direction==0?-l.enemyR*.5f:direction==2?l.enemyR*2:0)));
+            check("rescue rejects short sideways and downward drags "+direction,!c.pushUsed);
+        }
+        game=rescueGame();c=game.core();l=game.geometry();
+        game.touch(one(0,7,kx,ky));game.touch(one(1,7,kx,ky-l.enemyR*3));
+        check("a drag beginning on a key cannot spend rescue",!c.pushUsed);
+        game.touch(one(0,19,x,y));game.touch(one(3,19,x,y));
+        game.touch(one(1,19,x,y-l.enemyR*2));
+        check("cancelled rescue cannot fire on lift",!c.pushUsed);
+    }
+
     private static void starCompletionStorm() {
         IOSGame game=game();Host host=new Host();game.setHost(host);
         GameCore c=game.core();Layout l=game.geometry();
@@ -753,7 +811,7 @@ public final class IOSInputTest extends Check {
         cave();
         highScores();
         releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
-        steamerAndPanic(); caseAndSettings(); storyDumplingInput();
+        steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");
