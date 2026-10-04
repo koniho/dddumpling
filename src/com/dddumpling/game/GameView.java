@@ -212,7 +212,8 @@ public class GameView extends View {
         if (overGesture || core.state == GameCore.OVER || core.returnFade > 0f) {
             if (action == MotionEvent.ACTION_DOWN) {
                 overGesture = true;
-                core.dismissGameOver();
+                if(core.survival.active)core.survival.resultTap(core,layout,ev.getX(),ev.getY());
+                else core.dismissGameOver();
             } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
                 overGesture = false;
             }

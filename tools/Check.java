@@ -55,6 +55,9 @@ abstract class Check {
         int caseIndex;
         public int loadCaseIndex() { return caseIndex; }
         public void saveCaseIndex(int value) { caseIndex=value; }
+        String survival="";
+        public String loadSurvival() { return survival; }
+        public void saveSurvival(String value) { survival=value; }
         String highScores="";
         public String loadHighScores() { return highScores; }
         public void saveHighScores(String value) { highScores=value; }

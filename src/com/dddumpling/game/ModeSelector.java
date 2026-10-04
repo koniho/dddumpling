@@ -12,7 +12,7 @@ final class ModeSelector extends Draw {
     private float downX,downY;
     private boolean moved;
 
-    static boolean implemented(int mode) { return mode==ADVENTURE; } // #149 and #150 add their run rules.
+    static boolean implemented(int mode) { return mode==ADVENTURE || mode==SURVIVAL; } // #150 adds Boss Time Attack.
     static boolean unlocked(GameCore c,int mode) {
         return mode==ADVENTURE || mode==SURVIVAL && bossUnlocked(c,Boss.SLIME)
                 || mode==TIME_ATTACK && anyBoss(c);
@@ -129,14 +129,14 @@ final class ModeSelector extends Draw {
         if(transition<1)name(p,previous,L.w*.5f-direction*L.w*.6f*t,y,s,1,fadeBy(INK,1-t));
         name(p,selected,L.w*.5f+direction*L.w*.6f*(1-t),y,s,bump,confirmation>0?GOLD:INK);
         p.restore();
-        String action=playable(c)?(confirmation>0?"SELECTED":"TAP TO CONFIRM"):"COMING SOON";
+        String action=playable(c)?(confirmation>0?"SELECTED":"TAP TO CONFIRM"):implemented(selected)?"LOCKED":"COMING SOON";
         p.text(action,L.w*.5f,y+s*1.65f,type(s*.36f),unavailable>0?GOLD:INK_DIM,Painter.CENTER,false);
         if(!adventure()) {
             float alpha=Math.max(0,1-2*adventureFade);
             float x=L.w*.5f+(float)Math.sin(unavailable*20)*s*.15f*unavailable;
             p.text(selected==SURVIVAL?"ENDLESS WAVES":"TIMED BOSS CHALLENGES",x,LandPicker.cardY(L),
                     type(s*.52f),fadeBy(INK,alpha),Painter.CENTER,true);
-            p.text(unlocked(c,selected)?(selected==SURVIVAL?"LONGEST RUN + SCORE":"SINGLE BOSS + BOSS RUSH"):selected==SURVIVAL?
+            p.text(unlocked(c,selected)?(selected==SURVIVAL?Survival.profileName(c.survival.titleProfile(c))+" / TIME + SCORE":"SINGLE BOSS + BOSS RUSH"):selected==SURVIVAL?
                     "DEFEAT SLIME TO UNLOCK":"DEFEAT A BOSS TO UNLOCK",x,LandPicker.cardY(L)+s*1.15f,
                     type(s*.38f),fadeBy(INK_DIM,alpha),Painter.CENTER,false);
         }

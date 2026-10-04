@@ -41,6 +41,7 @@
   [store saveBestWithInt:9000];
   [store saveLandBestWithInt:1 withInt:12000];
   [store saveHighScoresWithNSString:@"old records"];
+  [store saveSurvivalWithNSString:@"1;1000,42;0,0;0,0"];
   [store saveCollectedWithLong:3];
   [store saveCaseIndexWithInt:1];
   [store saveLandStateWithInt:7];
@@ -52,6 +53,7 @@
   XCTAssertEqual([reopened loadBest], 0);
   XCTAssertEqual([reopened loadLandBestWithInt:1], 0);
   XCTAssertEqualObjects([reopened loadHighScores], @"");
+  XCTAssertEqualObjects([reopened loadSurvival], @"");
   XCTAssertEqual([reopened loadProgress]->buffer_[0], 11);
   XCTAssertEqual([reopened loadCollected], 3);
   XCTAssertEqual([reopened loadCaseIndex], 1);
@@ -122,6 +124,7 @@
   [saved saveLandStateWithInt:0x52];
   [saved saveReleaseSeenWithNSString:@"test-build"];
   [saved saveHighScoresWithNSString:@"3:1;1,100,2,1,0,0,0,0,4,1,3,4,100,0,0,5,17"];
+  [saved saveSurvivalWithNSString:@"1;1000,42;2000,80;3000,90"];
   [saved saveLandBestWithInt:2 withInt:900];
   [saved savePlayerSettingsWithInt:98329];
   [saved saveCollectedWithLong:0x12345];
@@ -149,6 +152,7 @@
   XCTAssertEqual(loaded.loadLandState, 0x52);
   XCTAssertEqualObjects(loaded.loadReleaseSeen, @"test-build");
   XCTAssertEqualObjects(loaded.loadHighScores, @"3:1;1,100,2,1,0,0,0,0,4,1,3,4,100,0,0,5,17");
+  XCTAssertEqualObjects(loaded.loadSurvival, @"1;1000,42;2000,80;3000,90");
   XCTAssertEqual([loaded loadLandBestWithInt:2], 900);
   XCTAssertEqual(loaded.loadPlayerSettings, 98329);
   XCTAssertEqual(loaded.loadCollected, 0x12345);

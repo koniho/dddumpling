@@ -151,7 +151,8 @@ public final class IOSGame {
         if (overGesture || core.state == GameCore.OVER || core.returnFade > 0f) {
             if (action == IOSTouch.ACTION_DOWN) {
                 overGesture = true;
-                core.dismissGameOver();
+                if(core.survival.active)core.survival.resultTap(core,layout,ev.getX(),ev.getY());
+                else core.dismissGameOver();
             } else if (action == IOSTouch.ACTION_UP || action == IOSTouch.ACTION_CANCEL) {
                 overGesture = false;
             }

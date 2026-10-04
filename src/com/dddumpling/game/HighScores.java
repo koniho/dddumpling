@@ -71,6 +71,7 @@ final class HighScores {
         dumplings++;prizes.add(entry);
     }
     void finish(GameCore c) {
+        if(c.survival.active) {c.survival.finish(c);return;}
         if(!recording) return;
         recording=false;
         if(latest==Long.MAX_VALUE) return;

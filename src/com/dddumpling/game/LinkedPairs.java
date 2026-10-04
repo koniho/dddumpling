@@ -10,7 +10,7 @@ final class LinkedPairs {
         if (c.stage < FIRST_STAGE || c.boss.active() || Cave.active(c)) return false;
         if (c.powerActive()) return c.mode != Power.MULTI && c.powerSpawnedEnemies%4 == 0
                 && !Boolean.TRUE.equals(PowerRush.replacement(c));
-        return c.spawnedThisStage == 0 || c.spawnedThisStage == 3;
+        return c.survival.active?c.spawnedThisStage%6==0:c.spawnedThisStage == 0 || c.spawnedThisStage == 3;
     }
 
     static boolean spawn(GameCore c, Layout L) {

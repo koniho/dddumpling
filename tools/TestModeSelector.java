@@ -27,21 +27,23 @@ final class TestModeSelector extends Check {
         check("Adventure records cannot be opened as Survival records",!HighScoreScreen.entryHit(c,L,L.w*.5f,L.h*.292f));
         c.highScoreScreen.show(c);
         check("record entry cannot bypass the mode guard",!c.highScoreScreen.open);
-        tap(c,L,0);c.screenKey(0);c.beginStart();c.startGame();
-        check("unfinished mode cannot confirm or start Adventure",!c.starting() && c.state==GameCore.TITLE
-                && c.modes.unavailable>0 && ear.collects==0 && ear.starts==0);
+        tap(c,L,0);
+        check("unlocked Survival confirms with a chime",c.modes.playable(c) && ear.collects==1);
         c.openCase();c.update(.5f,L);
         check("display case stays shared and covers mode selector",c.caseOpen && !c.modes.visible(c));
         c.closeCase();c.update(.5f,L);
         check("closing case restores the browsed mode",c.modes.selected==ModeSelector.SURVIVAL && c.modes.visible(c));
         tap(c,L,1);c.update(ModeSelector.CHANGE,L);
         check("Time Attack also hides lands",c.modes.selected==ModeSelector.TIME_ATTACK && !LandPicker.visible(c));
+        tap(c,L,0);c.screenKey(0);c.beginStart();c.startGame();
+        check("unfinished Time Attack cannot start Adventure",!c.starting() && c.state==GameCore.TITLE
+                && c.modes.unavailable>0 && ear.collects==1 && ear.starts==0);
         check("browsing preserves Adventure progress",c.landChoice==land && c.best==best && c.collected==collection);
         c.toTitle();
         check("returning to title retains the mode",c.modes.selected==ModeSelector.TIME_ATTACK);
         check("Back restores Adventure",Pause.back(c) && c.modes.adventure());
         c.update(ModeSelector.CHANGE,L);tap(c,L,0);
-        check("confirmation has its own chime and pulse",ear.collects==1 && c.modes.confirmation==1);
+        check("confirmation has its own chime and pulse",ear.collects==2 && c.modes.confirmation==1);
         check("returning restores lands and original record",LandPicker.visible(c) && c.best==best && c.landChoice==land);
         c.screenKey(0);
         check("normal keys still launch Adventure",c.starting());
@@ -56,7 +58,7 @@ final class TestModeSelector extends Check {
                 && !ModeSelector.allBossesUnlocked(locked));
         for(int boss=0;boss<Boss.COUNT;boss++)locked.collected|=1L<<(Collect.BOSS_FIRST+boss);
         check("boss rush requires all authored bosses",ModeSelector.allBossesUnlocked(locked));
-        check("boss unlocks do not expose unfinished gameplay",!ModeSelector.implemented(ModeSelector.SURVIVAL)
+        check("boss unlocks do not expose unfinished gameplay",ModeSelector.implemented(ModeSelector.SURVIVAL)
                 && !ModeSelector.implemented(ModeSelector.TIME_ATTACK));
 
         c=title();float x=ModeSelector.arrowX(L,1),y=ModeSelector.y(L);

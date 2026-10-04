@@ -416,8 +416,24 @@ Adventure's BEST line also shows the highest stage reached. The stage record is 
 of the best-scoring run and survives that run leaving the top-ten history. Existing saves use
 their progress maximum and retained run history; an unknown stage is shown as `--`.
 
-Survival and Boss Time Attack currently show **COMING SOON** and cannot start a run. Their
-gameplay and separate records belong to #149 and #150; boss victories determine future unlocks.
+Survival unlocks after beating Slime. Boss Time Attack remains **COMING SOON** until #150.
+
+## Survival
+
+Survival is continuous combat with no land selector, bosses, bonus games or collection rewards.
+Normal difficulty increases for five active minutes, then holds its ceiling. Cleared enemies
+are replaced promptly; power-ups keep their existing cadence and entrance patterns. Rescue
+swipes recharge 30 active seconds after use. Kids Mode retains slower traversal and a smaller crowd.
+
+The timer includes combat slow motion and excludes launch, tutorials, settings, pause, background
+and game-over presentation. Local longest-time and highest-score records are separate for Kids,
+four keys and six keys. Retry uses the companion launch; returning to the title preserves Survival
+selection and Adventure's land choice. Resetting scores also clears Survival records.
+
+Its aurora grows into a moving rainbow tunnel as difficulty rises. Word-clear particles scale
+from 1× to 10×, subject to a 4,096-particle clear-effect budget. Extra particles use a separate
+random stream so visual intensity does not change enemy generation. `Survival` owns the timer,
+difficulty, scenery and records; the shared combat loop supplies enemies, controls and power-ups.
 
 ## Land travel
 

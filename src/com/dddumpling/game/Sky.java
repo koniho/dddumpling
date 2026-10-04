@@ -79,6 +79,7 @@ final class Sky extends Draw {
     /** Draws the given layers clipped to the sky, so they slide away behind the key deck. */
     static void cloudBand(Painter p, GameCore c, Layout L, int from, int to,
             float hurt) {
+        if(c.survival.active)return;
         p.save();
         float margin = Renderer.shakeMargin(c, L);
         p.clipRect(-margin, -margin, L.w + margin, L.deckTop);

@@ -194,8 +194,8 @@ public final class IOSInputTest extends Check {
         float x=ModeSelector.arrowX(l,1),y=ModeSelector.y(l);
         tap(game,x,y);game.update(ModeSelector.CHANGE);
         check("native mode arrow selects Survival without starting",c.modes.selected==ModeSelector.SURVIVAL && !c.starting());
-        tap(game,c.keyX(l,0),c.keyY(l,0));
-        check("native keys cannot launch unfinished mode",c.state==GameCore.TITLE && !c.starting());
+        tap(game,l.w*.5f,y);
+        check("native Survival confirmation is available",c.modes.confirmation>0 && !c.starting());
         tap(game,l.w*.5f,l.h*.292f);
         check("native unavailable mode cannot open Adventure records",!c.highScoreScreen.open);
         tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(l,c.clock));game.update(.5f);
@@ -204,6 +204,8 @@ public final class IOSInputTest extends Check {
         check("native case back retains mode choice",!c.caseOpen && c.modes.selected==ModeSelector.SURVIVAL);
         tap(game,x,y);game.update(ModeSelector.CHANGE);
         check("native mode arrow selects Time Attack",c.modes.selected==ModeSelector.TIME_ATTACK);
+        tap(game,c.keyX(l,0),c.keyY(l,0));
+        check("native keys cannot launch unfinished mode",c.state==GameCore.TITLE && !c.starting());
         game.back();game.update(ModeSelector.CHANGE);
         check("native Back restores Adventure land and score",c.modes.adventure() && c.landChoice==1 && c.best==567);
         game.touch(one(0,19,x,y));game.background(true);game.background(false);
@@ -219,6 +221,29 @@ public final class IOSInputTest extends Check {
         check("native confirm animates chosen text",c.modes.confirmation>0);
         tap(game,c.keyX(l,0),c.keyY(l,0));
         check("native Adventure key starts its launch",c.starting());
+    }
+
+    private static void survival() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.collected=1L|(1L<<Collect.BOSS_FIRST);c.landSeen=LandPicker.stateMask();
+        c.onboarding.saved|=Onboarding.SKIPPED;c.modes.select(c,ModeSelector.SURVIVAL,1);
+        tap(game,c.keyX(l,0),c.keyY(l,0));
+        check("native key launches Survival",c.starting());
+        for(int i=0;i<120;i++)game.update(.05f);
+        check("native launch reaches continuous Survival",c.survival.active && c.state==GameCore.PLAY);
+        double time=c.survival.seconds;game.background(true);game.update(20);
+        check("background cannot add survival time",c.survival.seconds==time);
+        game.background(false);Pause.resume(c);
+        c.lives=1;c.takeHit(l.w*.5f,l);
+        for(int i=0;i<100;i++)game.update(.05f);
+        tap(game,l.w*.5f,Survival.resultY(l,true));
+        check("native result retry owns the touch and launches Survival",c.starting() && c.modes.selected==ModeSelector.SURVIVAL);
+        c.startGame();c.lives=1;c.takeHit(l.w*.5f,l);
+        for(int i=0;i<100;i++)game.update(.05f);
+        tap(game,l.w*.5f,Survival.resultY(l,false));
+        for(int i=0;i<30;i++)game.update(.05f);
+        check("native result title returns with Survival selected",c.state==GameCore.TITLE && !c.survival.active
+                && c.modes.selected==ModeSelector.SURVIVAL);
     }
 
     private static void appActions() {
@@ -845,7 +870,7 @@ public final class IOSInputTest extends Check {
         cave();
         highScores();
         releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
-        steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput(); modeSelector();
+        steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput(); modeSelector(); survival();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");

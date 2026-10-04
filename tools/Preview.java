@@ -9,6 +9,26 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void survivalFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("149-survival-"))return;
+        for(int age:new int[]{0,150,300}) {
+            GameCore c=TestSurvival.start(TestSurvival.store(),149);
+            c.survival.seconds=age;c.survival.skyPhase=age*(1f+1.5f*c.survival.ramp());
+            c.survival.update(c,.001f);c.clock=3;c.score=age*85;
+            for(int row=0;row<3;row++) {
+                GameCore.Enemy e=Check.add(c,L,new int[]{row%3,(row+1)%3},L.h*(.30f+row*.16f));
+                e.baseX=L.w*(.4f+row*.1f);
+            }
+            shot(dir,"149-survival-"+age,c,L,w,h,ss);
+            if(age==300) {
+                GameCore.Enemy e=c.enemies.get(1);c.destroyWord(e,e.baseX,e.y,L);
+                Fx.updateParticles(c,.08f);shot(dir,"149-survival-clear",c,L,w,h,ss);
+                c.lives=1;c.takeHit(L.w*.5f,L);step(c,L,GameCore.DEATH_TIME+1);
+                shot(dir,"149-survival-result",c,L,w,h,ss);
+            }
+        }
+    }
+
     private static void modeFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("148-mode-"))return;
         GameCore c=TestModeSelector.title();
@@ -936,6 +956,7 @@ final class Preview {
         onboardingFrames(dir,L,w,h,ss);
         starterFrames(dir,L,w,h,ss);
         modeFrames(dir,L,w,h,ss);
+        survivalFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);
