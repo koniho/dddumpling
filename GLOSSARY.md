@@ -431,7 +431,8 @@ four keys and six keys. Retry uses the companion launch; returning to the title 
 selection and Adventure's land choice. Resetting scores also clears Survival records.
 
 Its background uses downward-scrolling, round-ended rainbow bands, each 1.5 screen heights long.
-Their irregularly spaced columns overlap to cover the full width. As difficulty rises, band width
+Each incoming band gets a fresh horizontal position within overlapping regions that keep coverage
+even across the full width. Randomized layering stays stable as bands scroll. As difficulty rises, band width
 shrinks from one-third to one twenty-fourth of the screen, scrolling accelerates fourfold, and
 saturation increases from 18% to 75%. Word-clear particles scale
 from 1× to 10×, subject to a 4,096-particle clear-effect budget. Extra particles use a separate

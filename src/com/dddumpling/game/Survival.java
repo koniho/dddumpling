@@ -63,7 +63,7 @@ final class Survival extends Draw {
         float intensity=ramp(),width=L.w/(3f+21f*intensity),radius=width*.5f;
         float length=L.h*1.5f,pitch=length-width;
         float saturation=.18f+.57f*intensity,value=.30f+.08f*intensity;
-        float x=radius*scatter(0,5);
+        float x=0;
         int count=0;
         for(int column=0;;column++) {
             bandX[column]=x;
@@ -73,9 +73,9 @@ final class Survival extends Draw {
                 bandOrder[layer]=bandOrder[layer-1];layer--;
             }
             bandOrder[layer]=column;
-            if(x+radius>=L.w)break;
-            // Wide spacing variation makes clustered overlaps visible instead of a regular grid.
-            x=Math.min(L.w,x+width*(.12f+.83f*scatter(column,1)));
+            if(x>=L.w)break;
+            // Leave room for each incoming stripe to shift without opening a gap.
+            x=Math.min(L.w,x+width*(.12f+.36f*scatter(column,1)));
         }
         p.save();p.clipRect(0,0,L.w,L.deckTop);
         for(int layer=0;layer<count;layer++) {
@@ -85,13 +85,17 @@ final class Survival extends Draw {
             float offset=travel-cycle*pitch;
             // Central rectangles touch vertically; adjacent columns overlap even between caps.
             for(int row=-1;row<=Math.ceil(L.h/pitch)+1;row++) {
+                // Each vertical repeat gets a new position, held for its whole scroll.
+                float stripeX=x+width*.24f*(2f*scatter(column,7+(row-cycle)*31)-1f);
+                if(stripeX<0)stripeX=-stripeX;
+                if(stripeX>L.w)stripeX=2f*L.w-stripeX;
                 float cy=offset+row*pitch,top=cy-pitch*.5f,bottom=cy+pitch*.5f;
                 float hue=(scatter(column,4)+(row-cycle)*.137f)%1f;
                 if(hue<0)hue+=1f;
                 int color=Glyph.mix(Glyph.hsv(hue*6f,saturation,value),BG_DEATH,c.drained());
-                p.fillRect(x-radius,top,x+radius,bottom,color);
-                p.fillCircle(x,top,radius,color);
-                p.fillCircle(x,bottom,radius,color);
+                p.fillRect(stripeX-radius,top,stripeX+radius,bottom,color);
+                p.fillCircle(stripeX,top,radius,color);
+                p.fillCircle(stripeX,bottom,radius,color);
             }
         }
         p.restore();
