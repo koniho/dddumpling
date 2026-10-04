@@ -61,7 +61,7 @@ final class Survival extends Draw {
         float length=L.h*1.5f,pitch=length-width;
         float saturation=.18f+.57f*intensity,value=.30f+.08f*intensity;
         p.save();p.clipRect(0,L.playTop,L.w,L.deckTop);
-        float x=0;
+        float x=radius*scatter(0,5);
         for(int column=0;;column++) {
             float travel=skyPhase*L.h*.08f*(.8f+.4f*scatter(column,2))+scatter(column,3)*pitch;
             int cycle=(int)Math.floor(travel/pitch);
@@ -76,7 +76,7 @@ final class Survival extends Draw {
                 p.fillCircle(x,top,radius,color);
                 p.fillCircle(x,bottom,radius,color);
             }
-            if(x>=L.w)break;
+            if(x+radius>=L.w)break;
             x=Math.min(L.w,x+width*(.55f+.30f*scatter(column,1)));
         }
         p.restore();
