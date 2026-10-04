@@ -167,7 +167,8 @@ final class Showcase extends Draw {
      */
     static float iconCy(Layout L, float clock) {
         float dx = iconCx(L, clock) - L.w / 2f;
-        float radius = eyeY(L) - focusCy(L);
+        float centerY = (HighScoreScreen.titleY(L) + ModeSelector.y(L)) * .5f;
+        float radius = eyeY(L) - centerY;
         return eyeY(L) - (float) Math.sqrt(Math.max(1f, radius * radius - dx * dx));
     }
 

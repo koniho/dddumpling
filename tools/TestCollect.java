@@ -512,8 +512,10 @@ final class TestCollect extends Check {
         GameCore c = new GameCore(store, 99L);
         float cx = L.w / 2f, cy = Showcase.focusCy(L);
 
-        // At rest the badge is dead centre, where the shelf appears.
-        check("the badge is where the case will open", Showcase.inIcon(L, 0f, cx, cy));
+        // The closed badge sits between the score and mode choice; the open shelf has its own centre.
+        float badgeY=(HighScoreScreen.titleY(L)+ModeSelector.y(L))*.5f;
+        check("the badge is centered between score and mode", Math.abs(Showcase.iconCy(L,0f)-badgeY)<.01f
+                && Showcase.inIcon(L, 0f, cx, badgeY));
         check("the sky above it is not", !Showcase.inIcon(L, 0f, cx, L.topSafe + 1f));
 
         // It drifts, so everything about it has to hold all the way round the arc.
@@ -535,7 +537,7 @@ final class TestCollect extends Check {
                 Math.abs((hi - lo) - L.w * Showcase.ARC_SPAN) < L.w * 0.005f);
         check("and keeps the whole case on screen", onScreen);
         check("no key sits inside it, wherever it has drifted", clearOfKeys);
-        check("it dips as it swings out, being an arc", lowest > cy);
+        check("it dips as it swings out, being an arc", lowest > badgeY);
 
 
         c.openCase();

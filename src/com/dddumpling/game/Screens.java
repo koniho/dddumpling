@@ -46,11 +46,11 @@ final class Screens extends Draw {
         p.save();p.translate(0,L.h*controlsOut);
         if(c.modes.adventure()) {
             HighScoreScreen.titleGlow(p,c,L,fade*caseOut(c));
-            p.text("BEST " + c.best, cx, L.h * 0.292f, type(s * 0.74f)*HighScoreScreen.titleTextScale(c),
+            p.text("BEST " + c.best, cx, HighScoreScreen.titleY(L), type(s * 0.74f)*HighScoreScreen.titleTextScale(c),
                     fadeBy(HighScoreScreen.titleTextColor(c), fade * caseOut(c)),Painter.CENTER,true);
         } else {
             p.text(c.modes.selected==ModeSelector.SURVIVAL?"LONGEST RUN --":"FASTEST CLEAR --",
-                    cx,L.h*.292f,type(s*.65f),fadeBy(INK_DIM,fade*caseOut(c)),Painter.CENTER,true);
+                    cx,HighScoreScreen.titleY(L),type(s*.65f),fadeBy(INK_DIM,fade*caseOut(c)),Painter.CENTER,true);
         }
 
         // Where the two lines explaining the game used to be: the game, played. A word falls and
