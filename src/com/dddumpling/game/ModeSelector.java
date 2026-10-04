@@ -120,6 +120,17 @@ final class ModeSelector extends Draw {
             p.text("TIME ATTACK",x,y+s*.72f,font,color,Painter.CENTER,true);
         } else p.text(NAMES[mode],x,y,font,color,Painter.CENTER,true);
     }
+    private static void survivalAccent(Painter p,float x,float y,float s,float clock,float alpha) {
+        for(int side=-1;side<=1;side+=2)for(int i=0;i<4;i++) {
+            float phase=(clock*.65f+i*.27f+(side+1)*.13f)%1f;
+            float cx=x+side*s*(4.5f+i*.43f),cy=y+s*(-1.6f+phase*2.1f);
+            float r=s*.09f,length=s*(.3f+.12f*(i%2));
+            int color=fadeBy(Glyph.cycle(i*.17f+clock*.1f),alpha*(float)Math.sin(phase*Math.PI)*.75f);
+            p.line(cx,cy,cx,cy+length,color,r*2);
+            p.fillCircle(cx,cy,r,color);p.fillCircle(cx,cy+length,r,color);
+            p.line(cx+r*.35f,cy,cx+r*.35f,cy+length,fadeBy(INK,alpha*.25f*(float)Math.sin(phase*Math.PI)),r*.45f);
+        }
+    }
     void draw(Painter p,GameCore c,Layout L) {
         if(!visible(c))return;
         float s=L.unit,y=y(L),t=panelTravel(transition);
@@ -132,7 +143,15 @@ final class ModeSelector extends Draw {
         }
         p.save();p.clipRect(L.w*.20f,y-s*1.85f,L.w*.80f,y+s*.9f);
         if(transition<1)name(p,previous,L.w*.5f-direction*L.w*.6f*t,y,s,1,fadeBy(INK,1-t));
-        name(p,selected,L.w*.5f+direction*L.w*.6f*(1-t),y,s,bump,confirmation>0?GOLD:INK);
+        float selectedX=L.w*.5f+direction*L.w*.6f*(1-t),selectedY=y;
+        int selectedColor=confirmation>0?GOLD:INK;
+        if(selected==SURVIVAL) {
+            survivalAccent(p,selectedX,y,s,c.clock,t);
+            selectedY-=s*.12f*t*(.5f+.5f*(float)Math.sin(c.clock*3.5f));
+            bump*=1f+.018f*t*(float)Math.sin(c.clock*3.5f);
+            if(confirmation<=0)selectedColor=Glyph.mix(INK,Glyph.cycle(c.clock*.10f),.25f*t);
+        }
+        name(p,selected,selectedX,selectedY,s,bump,selectedColor);
         p.restore();
         String action=playable(c)?(confirmation>0?"SELECTED":"TAP TO CONFIRM"):implemented(selected)?"LOCKED":"COMING SOON";
         p.text(action,L.w*.5f,y+s*1.65f,type(s*.36f),unavailable>0?GOLD:INK_DIM,Painter.CENTER,false);

@@ -3,6 +3,7 @@ package com.dddumpling.game;
 /** Endless combat and its local records; Adventure's stage and reward flow stays separate. */
 final class Survival extends Draw {
     static final float RAMP_SECONDS=300f, RESCUE_SECONDS=30f;
+    static final float ENTRANCE_SECONDS=2f;
     final long[] bestTime=new long[3];
     final int[] bestScore=new int[3];
     boolean active,finished,newBest;
@@ -45,7 +46,11 @@ final class Survival extends Draw {
     float travel(GameCore c) { return c.kidsRun?12f:12f-4f*ramp(); }
     float spawn(GameCore c) { return c.kidsRun?1.65f:1.65f-.6f*ramp(); }
     int crowd(GameCore c) { return c.kidsRun?3:seconds<60?3:seconds<180?4:5; }
-    int background() {return Glyph.hsv(3.7f,.50f+.25f*ramp(),.18f);}
+    float entrance() {
+        float t=Math.min(1f,(float)(seconds/ENTRANCE_SECONDS));
+        return t*t*(3f-2f*t);
+    }
+    int background() {return Glyph.mix(BG,Glyph.hsv(3.7f,.50f+.25f*ramp(),.18f),entrance());}
     private static float scatter(int index,int salt) {
         int hash=(index+1)*0x45d9f3b+salt*0x119de1f3;
         hash=(hash^(hash>>>16))*0x45d9f3b;
@@ -80,11 +85,14 @@ final class Survival extends Draw {
         p.save();p.clipRect(0,0,L.w,L.deckTop);
         for(int layer=0;layer<count;layer++) {
             int column=bandOrder[layer];x=bandX[column];
-            float travel=skyPhase*L.h*.08f*(.8f+.4f*scatter(column,2))+scatter(column,3)*pitch;
+            // The first cap starts above the title sky; later stripes follow continuously.
+            float travel=skyPhase*L.h*.08f*(.8f+.4f*scatter(column,2))
+                    +L.h*(1.15f*entrance()-.12f*scatter(column,3))-pitch*.5f-radius;
             int cycle=(int)Math.floor(travel/pitch);
             float offset=travel-cycle*pitch;
             // Central rectangles touch vertically; adjacent columns overlap even between caps.
             for(int row=-1;row<=Math.ceil(L.h/pitch)+1;row++) {
+                if(row-cycle>0)continue;
                 // Each vertical repeat gets a new position, held for its whole scroll.
                 float stripeX=x+width*.24f*(2f*scatter(column,7+(row-cycle)*31)-1f);
                 if(stripeX<0)stripeX=-stripeX;

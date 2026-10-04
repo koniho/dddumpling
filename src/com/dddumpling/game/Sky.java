@@ -68,6 +68,7 @@ final class Sky extends Draw {
         }
         float scale = cloudScale(layer);
         float h = cloudHeight(L, layer);
+        if(c.survival.active)alpha=Math.round(alpha*(1f-c.survival.entrance()));
 
         for (int i = 0; i < GameCore.CLOUDS_PER_LAYER; i++) {
             float w = L.w * scale * c.cloudW[layer][i];
@@ -79,7 +80,11 @@ final class Sky extends Draw {
     /** Draws the given layers clipped to the sky, so they slide away behind the key deck. */
     static void cloudBand(Painter p, GameCore c, Layout L, int from, int to,
             float hurt) {
-        if(c.survival.active)return;
+        if(c.survival.active) {
+            if(c.survival.entrance()>=1f || from!=0)return;
+            // Keep the title clouds beneath the incoming stripes until they have covered them.
+            to=GameCore.CLOUD_LAYERS;
+        }
         p.save();
         float margin = Renderer.shakeMargin(c, L);
         p.clipRect(-margin, -margin, L.w + margin, L.deckTop);

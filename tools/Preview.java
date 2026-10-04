@@ -11,6 +11,11 @@ final class Preview {
 
     private static void survivalFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("149-survival-"))return;
+        for(float age:new float[]{0,.5f,1f,2f}) {
+            GameCore c=TestSurvival.start(TestSurvival.store(),149);
+            c.survival.update(c,age);
+            shot(dir,"149-survival-entry-"+Math.round(age*1000),c,L,w,h,ss);
+        }
         for(int age:new int[]{0,150,300}) {
             GameCore c=TestSurvival.start(TestSurvival.store(),149);
             c.survival.seconds=age;c.survival.skyPhase=age*(1f+1.5f*c.survival.ramp());
@@ -37,6 +42,7 @@ final class Preview {
         c.modes.select(c,ModeSelector.SURVIVAL,1);step(c,L,ModeSelector.CHANGE*.5f);
         shot(dir,"148-mode-changing",c,L,w,h,ss);
         step(c,L,ModeSelector.CHANGE);shot(dir,"148-mode-survival",c,L,w,h,ss);
+        step(c,L,.45f);shot(dir,"148-mode-survival-animated",c,L,w,h,ss);
         c.modes.select(c,ModeSelector.TIME_ATTACK,1);step(c,L,ModeSelector.CHANGE);
         shot(dir,"148-mode-time-attack",c,L,w,h,ss);
         c.openCase();step(c,L,.5f);shot(dir,"148-mode-shared-case",c,L,w,h,ss);

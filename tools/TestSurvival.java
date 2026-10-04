@@ -55,10 +55,33 @@ final class TestSurvival extends Check {
         c.toTitle();check("return restores Adventure progress and keeps mode choice",c.landChoice==1
                 && c.best==c.landBests[1] && !c.survival.active && c.modes.selected==ModeSelector.SURVIVAL);
         c.modes.back(c);c.startGame();check("Adventure still starts at its selected land",!c.survival.active && c.stage==6);
-        records(L);effects(L);backgroundCoverage();bounded(L);fuzz(L);
+        records(L);effects(L);backgroundEntrance(L);backgroundCoverage();bounded(L);fuzz(L);
+    }
+    private static void backgroundEntrance(Layout L) {
+        GameCore c=start(store(),157);
+        float[] bottom={-1f};
+        Painter painter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class<?>[]{Painter.class},(proxy,method,args)-> {
+                    if(method.getName().equals("fillCircle"))bottom[0]=Math.max(bottom[0],(Float)args[1]+(Float)args[2]);
+                    return null;
+                });
+        c.survival.scenery(painter,c,L);
+        check("Survival starts on the title sky with all stripe caps above screen",
+                c.survival.background()==Draw.BG && bottom[0]<0 && Lands.cloudTint(c,0)==Sky.CLOUD_TINT[0]);
+        c.survival.update(c,.5f);c.survival.scenery(painter,c,L);
+        float first=bottom[0];
+        check("stripe tips enter at the top before covering the bottom",first>0 && first<L.h*.4f);
+        Pause.open(c);float entrance=c.survival.entrance();c.update(.5f,.5f,L);
+        check("pause holds the stripe entrance",c.survival.entrance()==entrance);
+        Pause.resume(c);c.survival.update(c,.5f);bottom[0]=-1;c.survival.scenery(painter,c,L);
+        check("stripe tips progress downward through the entrance",bottom[0]>first && bottom[0]<L.deckTop);
+        c.survival.update(c,1f);
+        check("entrance settles into normal scrolling",c.survival.entrance()==1);
+        c.toTitle();c.startGame();
+        check("retry starts a fresh stripe entrance",c.survival.entrance()==0 && c.survival.skyPhase==0);
     }
     private static void backgroundCoverage() {
-        for(int[] size:new int[][]{{320,568},{640,1400}})for(int age:new int[]{0,150,300}) {
+        for(int[] size:new int[][]{{320,568},{640,1400}})for(int age:new int[]{3,150,300}) {
             Layout l=new Layout();l.compute(size[0],size[1],0,0,0,0);
             GameCore c=start(store(),156);c.survival.seconds=age;
             java.util.ArrayList<float[]> bodies=new java.util.ArrayList<>();
