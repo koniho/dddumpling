@@ -435,7 +435,7 @@ Its background uses downward-scrolling, round-ended rainbow bands, each one scre
 Each incoming band gets a fresh horizontal position within overlapping regions that keep coverage
 even across the full width. Randomized layering stays stable as bands scroll. As difficulty rises, band width
 shrinks from one-third to one twenty-fourth of the screen, scrolling accelerates fourfold, and
-saturation increases from 18% to 75%. Word-clear particles scale
+saturation increases from 50% to 75%. Word-clear particles scale
 from 1× to 10×, subject to a 4,096-particle clear-effect budget. Extra particles use a separate
 random stream so visual intensity does not change enemy generation. `Survival` owns the timer,
 difficulty, scenery and records; the shared combat loop supplies enemies, controls and power-ups.

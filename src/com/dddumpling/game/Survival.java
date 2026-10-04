@@ -45,7 +45,7 @@ final class Survival extends Draw {
     float travel(GameCore c) { return c.kidsRun?12f:12f-4f*ramp(); }
     float spawn(GameCore c) { return c.kidsRun?1.65f:1.65f-.6f*ramp(); }
     int crowd(GameCore c) { return c.kidsRun?3:seconds<60?3:seconds<180?4:5; }
-    int background() {return Glyph.hsv(3.7f,.18f+.57f*ramp(),.18f);}
+    int background() {return Glyph.hsv(3.7f,.50f+.25f*ramp(),.18f);}
     private static float scatter(int index,int salt) {
         int hash=(index+1)*0x45d9f3b+salt*0x119de1f3;
         hash=(hash^(hash>>>16))*0x45d9f3b;
@@ -62,7 +62,7 @@ final class Survival extends Draw {
     void scenery(Painter p,GameCore c,Layout L) {
         float intensity=ramp(),width=L.w/(3f+21f*intensity),radius=width*.5f;
         float length=L.h,pitch=length-width;
-        float saturation=.18f+.57f*intensity,value=.30f+.08f*intensity;
+        float saturation=.50f+.25f*intensity,value=.30f+.08f*intensity;
         float x=0;
         int count=0;
         for(int column=0;;column++) {

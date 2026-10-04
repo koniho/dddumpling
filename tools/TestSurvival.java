@@ -95,7 +95,7 @@ final class TestSurvival extends Check {
                 for(int color:colors) {
                     int r=color>>16&255,g=color>>8&255,b=color&255;
                     int max=Math.max(r,Math.max(g,b)),min=Math.min(r,Math.min(g,b));
-                    saturated &= Math.abs((max-min)/(float)max-(.18f+.57f*age/300f))<.02f;
+                    saturated &= Math.abs((max-min)/(float)max-(.50f+.25f*age/300f))<.02f;
                 }
             }
             boolean left=false,right=false;
@@ -116,7 +116,7 @@ final class TestSurvival extends Check {
             }
             check("band spacing has visible clusters and wide gaps",maxGap>minGap*2f);
             check("scrolling bands cover from the screen top through the playfield at "+size[0]+" age "+age,covered);
-            check("band saturation follows the muted-to-75-percent ramp",saturated);
+            check("band saturation ramps from 50 to 75 percent",saturated);
         }
     }
     private static void effects(Layout L) {
