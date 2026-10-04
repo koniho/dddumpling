@@ -584,6 +584,7 @@ final class GameCore {
     boolean pushUsed;
     final Onboarding onboarding = new Onboarding();
     final Starter starter = new Starter();
+    final ModeSelector modes = new ModeSelector();
     /** Counts down while the push-back shockwave is on screen. */
     float pushT;
     /** Words the last push-back shoved back, for the readout. */
@@ -1809,7 +1810,7 @@ final class GameCore {
      */
     void beginStart() {
         if (state != TITLE || starting() || starter.open || returnFade > 0f || rosterSceneT > 0f) return;
-        if (townOpen) return;
+        if (townOpen || !modes.allowStart(this)) return;
         titleKeyHint = 0f;
         if (landChoice == LandPicker.TOWN) {
             if (LandPicker.townUnlocked(this)) { openTown(); return; }
@@ -1898,6 +1899,7 @@ final class GameCore {
     }
 
     void startGame() {
+        if(!modes.playable(this))return;
         titleKeyHint = 0f;
         diagnostic("start-game");
         starter.clear();launchFromStarter=false;
@@ -2120,7 +2122,7 @@ final class GameCore {
         return state == TITLE && !paused && !townOpen && !settingsOpen
                 && !releaseNotes.open && !highScoreScreen.open && !starter.open
                 && !caseOpen && caseFade <= 0f && !storyOpen() && !onboarding.titleGuide
-                && !starting() && returnFade <= 0f && rosterSceneT <= 0f;
+                && !starting() && returnFade <= 0f && rosterSceneT <= 0f && modes.playable(this);
     }
 
     /** An unclaimed title tap points at the controls without choosing one for the player. */
@@ -2707,6 +2709,7 @@ final class GameCore {
             for(int i=0;i<Glyph.COUNT;i++)keyPress[i]=decay(keyPress[i],elapsed*5.5f);
             starter.update(this,elapsed);return;
         }
+        modes.update(this,elapsed);
         if (onboarding.update(this, dt, elapsed, L)) return;
         if(highScoreScreen.open) { highScoreScreen.update(elapsed);clock+=elapsed;return; }
         if(releaseNotes.open) {

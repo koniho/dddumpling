@@ -17,7 +17,7 @@ final class Pause extends Draw {
     static boolean handlesBack(GameCore c) {
         return c.townOpen || c.highScoreScreen.open || c.releaseNotes.open || c.returnFade > 0f
                 || c.paused || c.settingsOpen || c.storyOpen() || c.caseOpen
-                || c.starting() || c.starter.open || c.state != GameCore.TITLE;
+                || c.starting() || c.starter.open || c.state != GameCore.TITLE || !c.modes.adventure();
     }
     static boolean back(GameCore c) {
         if(c.starter.open) { c.cancelStart();return true; }
@@ -35,12 +35,14 @@ final class Pause extends Draw {
             c.cancelStart();
             return true;
         }
+        if (c.modes.back(c))return true;
         if (c.state == GameCore.OVER) { c.dismissGameOver(); return true; }
         if (c.state == GameCore.PLAY || c.state == GameCore.BONUS) { open(c); return true; }
         return false;
     }
     static void release(GameCore c) {
         c.starter.cancelTouch();
+        c.modes.cancelTouch();
         c.onboarding.cancelTouch();
         c.endStroke(); c.boss.release(); c.stars.endDrag(); c.cave.input.release(); c.cave.effects.takeFeedback(); c.mining.input.release(); c.mining.scene.takeFeedback(); c.cart.input.release(); c.cart.scene.takeFeedback();
         c.stars.left = c.stars.right = false;

@@ -224,6 +224,10 @@ public class GameView extends View {
             return true;
         }
 
+        int modePointer=action==MotionEvent.ACTION_MOVE?ev.findPointerIndex(core.modes.pointer):ev.getActionIndex();
+        if(modePointer>=0 && core.modes.touch(core,layout,action,ev.getPointerId(modePointer),
+                ev.getX(modePointer),ev.getY(modePointer)))return true;
+
         if (handleLandPicker(ev, action)) return true;
 
         if (core.state == GameCore.TITLE) {

@@ -910,7 +910,7 @@ final class Renderer extends Draw {
         float titleHint = c.titleKeyHighlight();
         float demoLit = 0f;
         if (c.state == GameCore.TITLE && !c.starter.open && !c.launchFromStarter) {
-            demoLit = Screens.caseOut(c)
+            demoLit = Screens.caseOut(c) * c.modes.adventureFade
                     * (c.starting() ? c.startFade / GameCore.START_FADE : 1f);
         }
 

@@ -24,6 +24,9 @@ final class LandPicker extends Draw {
         return n;
     }
     static boolean visible(GameCore c) {
+        return c.modes.adventure() && c.modes.transition>=1f && shown(c);
+    }
+    private static boolean shown(GameCore c) {
         return c.state == GameCore.TITLE && !c.townOpen && count(c) > 1 && !c.caseOpen && c.caseFade < 0.01f
                 && !c.storyOpen() && !c.starting() && !c.settingsOpen && c.rosterSceneT <= 0f;
     }
@@ -290,7 +293,9 @@ final class LandPicker extends Draw {
     }
 
     static void draw(Painter p, GameCore c, Layout L) {
-        if (!visible(c)) return;
+        if (!shown(c) || c.modes.adventureFade<=0f) return;
+        p=new OpacityPainter(p,Math.max(0,2*c.modes.adventureFade-1));
+        p.save();p.translate(0,(1-c.modes.adventureFade)*L.unit*2f);
         float cy = cardY(L);
         float halfHeight=Math.max(L.h*0.063f,iconRadius(c,L)*2.35f);
         p.save(); p.clipRect(0, cy-halfHeight, L.w, cy+halfHeight);
@@ -328,6 +333,7 @@ final class LandPicker extends Draw {
             p.text("DDDUMPLING TOWN",L.w*.5f,cy+halfHeight+L.unit*.55f,type(L.unit*.60f),INK,Painter.CENTER,true);
             p.text("TAP A KEY TO VISIT",L.w*.5f,cy+halfHeight+L.unit*1.4f,type(L.unit*.40f),INK_DIM,Painter.CENTER,false);
         }
+        p.restore();
     }
     static void townIcon(Painter p,float x,float y,float r,int a) {
         p.fillEllipse(x,y+r*.35f,r*1.35f,r*.56f,Glyph.withAlpha(0xFF85BE7D,a));

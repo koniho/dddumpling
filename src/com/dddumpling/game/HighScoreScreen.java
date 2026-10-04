@@ -16,11 +16,11 @@ final class HighScoreScreen extends Draw {
         return Math.min(size(L)*3.6f,(listBottom(L)-listTop(L))/Math.max(1,c.highScores.displayCount()));
     }
     static boolean entryHit(GameCore c,Layout L,float x,float y) {
-        return ReleaseNotes.available(c) && !c.releaseNotes.open
+        return c.modes.adventure() && ReleaseNotes.available(c) && !c.releaseNotes.open
                 && Math.abs(x-L.w*.5f)<L.w*.30f && Math.abs(y-L.h*.292f)<L.unit*1.1f;
     }
     void show(GameCore c) {
-        if(!ReleaseNotes.available(c) || c.releaseNotes.open) return;
+        if(!c.modes.adventure() || !ReleaseNotes.available(c) || c.releaseNotes.open) return;
         Pause.release(c);c.highScores.unread=false;open=true;selected=-1;entrance=0f;closing=false;feedback(c);
     }
     void update(float dt) {

@@ -44,15 +44,19 @@ final class Screens extends Draw {
         bubblyTitle(p, c, L, cx, L.h * 0.100f, fade);
         float controlsOut=Starter.controlsOut(c);
         p.save();p.translate(0,L.h*controlsOut);
-        HighScoreScreen.titleGlow(p,c,L,fade*caseOut(c));
-        p.text("BEST " + c.best, cx, L.h * 0.292f, type(s * 0.74f)*HighScoreScreen.titleTextScale(c),
-                fadeBy(HighScoreScreen.titleTextColor(c), fade * caseOut(c)),
-                Painter.CENTER, true);
+        if(c.modes.adventure()) {
+            HighScoreScreen.titleGlow(p,c,L,fade*caseOut(c));
+            p.text("BEST " + c.best, cx, L.h * 0.292f, type(s * 0.74f)*HighScoreScreen.titleTextScale(c),
+                    fadeBy(HighScoreScreen.titleTextColor(c), fade * caseOut(c)),Painter.CENTER,true);
+        } else {
+            p.text(c.modes.selected==ModeSelector.SURVIVAL?"LONGEST RUN --":"FASTEST CLEAR --",
+                    cx,L.h*.292f,type(s*.65f),fadeBy(INK_DIM,fade*caseOut(c)),Painter.CENTER,true);
+        }
 
         // Where the two lines explaining the game used to be: the game, played. A word falls and
         // types itself while the matching keys light under it. Suppressed with the case open —
         // there is one lesson on screen at a time.
-        Demo.draw(p, c, L, fade * caseOut(c));
+        Demo.draw(p, c, L, fade * caseOut(c) * c.modes.adventureFade);
         p.restore();
 
         // The badge and the case swap in the same place, and in series rather than on top of
@@ -69,6 +73,7 @@ final class Screens extends Draw {
         p.restore();
         p.save();p.translate(0,L.h*controlsOut);
         LandPicker.draw(p, c, L);
+        c.modes.draw(p,c,L);
         p.restore();
 
         // Anchored above the danger line rather than off the deck: the dashed line shows

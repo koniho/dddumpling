@@ -37,6 +37,7 @@ final class CoreTest {
         group("Town", () -> TestTown.all(L));
 
         group("Back", () -> TestBack.navigation(L));
+        group("Modes", () -> TestModeSelector.all(L));
         group("Rules", () -> {
             TestRules.layout(L);
             TestRules.targeting(L);

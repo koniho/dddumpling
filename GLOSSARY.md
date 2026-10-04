@@ -404,6 +404,17 @@ INCOGNITO puts pixel sunglasses on enemy and player characters, then morphs them
 
 Stage 11 introduces mystery pickups with 15% longer travel/spawn intervals; stage 12 retains 7.5% relief and stage 13 returns to the normal ramp.
 
+## Title modes
+
+The text mode selector browses **Adventure**, **Survival**, and **Boss Time Attack** with
+arrows or a horizontal swipe. Tapping the name confirms with a pulse and chime; player keys
+start the available mode. Adventure is the default. The display case and companion collection
+are shared; lands and their discovery tutorial appear only in Adventure. The choice lasts
+for the session, and Back from another mode restores Adventure without changing its progress.
+
+Survival and Boss Time Attack currently show **COMING SOON** and cannot start a run. Their
+gameplay and separate records belong to #149 and #150; boss victories determine future unlocks.
+
 ## Land travel
 
 The title land picker spaces icons apart and moves one adjacent unlocked land per swipe. Each

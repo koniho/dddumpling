@@ -47,6 +47,7 @@ fi
 python3 tools/release-notes.py check >/dev/null
 
 PURE="src/com/dddumpling/game/PowerRush.java
+src/com/dddumpling/game/ModeSelector.java
 src/com/dddumpling/game/Starter.java
 src/com/dddumpling/game/RunCompanion.java
 src/com/dddumpling/game/Onboarding.java

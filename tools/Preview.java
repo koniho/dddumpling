@@ -9,6 +9,23 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void modeFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("148-mode-"))return;
+        GameCore c=TestModeSelector.title();
+        c.onboarding.learn(c,TutorialSpeech.LANDS);
+        shot(dir,"148-mode-adventure",c,L,w,h,ss);
+        c.modes.select(c,ModeSelector.SURVIVAL,1);step(c,L,ModeSelector.CHANGE*.5f);
+        shot(dir,"148-mode-changing",c,L,w,h,ss);
+        step(c,L,ModeSelector.CHANGE);shot(dir,"148-mode-survival",c,L,w,h,ss);
+        c.modes.select(c,ModeSelector.TIME_ATTACK,1);step(c,L,ModeSelector.CHANGE);
+        shot(dir,"148-mode-time-attack",c,L,w,h,ss);
+        c.openCase();step(c,L,.5f);shot(dir,"148-mode-shared-case",c,L,w,h,ss);
+        c.closeCase();step(c,L,.5f);Pause.back(c);step(c,L,ModeSelector.CHANGE);
+        c.modes.confirm(c);step(c,L,.16f);shot(dir,"148-mode-confirmed",c,L,w,h,ss);
+        c.collected=1;c.modes.select(c,ModeSelector.SURVIVAL,1);step(c,L,ModeSelector.CHANGE);
+        shot(dir,"148-mode-locked",c,L,w,h,ss);
+    }
+
     private static void starterFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("starter-"))return;
         Check.Mem store=new Check.Mem();store.tutorials=store.powerTutorials=0;
@@ -918,6 +935,7 @@ final class Preview {
         scoreResetFrames(dir,L,w,h,ss);
         onboardingFrames(dir,L,w,h,ss);
         starterFrames(dir,L,w,h,ss);
+        modeFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);
