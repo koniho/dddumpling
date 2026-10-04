@@ -73,12 +73,13 @@ final class TestSurvival extends Check {
                         if(method.getName().equals("clipRect"))for(int i=0;i<4;i++)clip[i]=(Float)args[i];
                         return null;
                     });
-            boolean covered=true,saturated=true,stable=true,refreshed=true;
+            boolean covered=true,saturated=true,stable=true,refreshed=true,screenLength=true;
             java.util.ArrayList<Float> firstOrder=null;
             for(float phase:new float[]{0,.001f,19.5f,123.4f,901.2f}) {
                 bodies.clear();colors.clear();c.survival.skyPhase=phase;c.survival.scenery(painter,c,l);
                 java.util.ArrayList<Float> order=new java.util.ArrayList<>();
                 for(float[] b:bodies) {
+                    screenLength &= Math.abs((b[3]-b[1])+(b[2]-b[0])-l.h)<.01f;
                     float x=(b[0]+b[2])*.5f;
                     if(order.isEmpty() || x!=order.get(order.size()-1))order.add(x);
                 }
@@ -105,6 +106,7 @@ final class TestSurvival extends Check {
             check("band draw order crosses both left and right instead of sweeping columns",left && right);
             check("live stripes keep their horizontal position and depth while scrolling",stable);
             check("incoming stripes refresh horizontal positions after scrolling cycles",refreshed);
+            check("stripe length including both round caps is one screen height",screenLength);
             float previous=Float.NaN,minGap=Float.MAX_VALUE,maxGap=0;
             for(float x:new java.util.TreeSet<Float>(firstOrder)) {
                 if(!Float.isNaN(previous) && x>previous) {

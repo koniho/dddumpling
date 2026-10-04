@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** Session-only title choice; unfinished modes can be browsed but never start a run. */
+/** Saved title choice; unfinished modes can be browsed but never start a run. */
 final class ModeSelector extends Draw {
     static final int ADVENTURE=0, SURVIVAL=1, TIME_ATTACK=2;
     static final String[] NAMES={"ADVENTURE","SURVIVAL","BOSS TIME ATTACK"};
@@ -30,6 +30,10 @@ final class ModeSelector extends Draw {
     }
     boolean playable(GameCore c) { return implemented(selected) && unlocked(c,selected); }
     boolean adventure() { return selected==ADVENTURE; }
+    void restore(int mode) {
+        selected=previous=mode>=0 && mode<NAMES.length?mode:ADVENTURE;
+        transition=1;adventureFade=adventure()?1:0;
+    }
     boolean visible(GameCore c) {
         return c.state==GameCore.TITLE && !c.starting() && !Starter.hideCase(c)
                 && !c.townOpen && !c.caseOpen && c.caseFade<.01f && !c.storyOpen()
@@ -49,6 +53,7 @@ final class ModeSelector extends Draw {
     }
     private void change(GameCore c,int next,int direction) {
         previous=selected;selected=next;this.direction=direction;
+        c.preferences.save(c);
         transition=0;confirmation=unavailable=0;c.titleKeyHint=0;
         c.landPickerDragging=false;
         if(c.sound!=null)c.sound.uiBloop();

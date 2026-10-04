@@ -409,8 +409,9 @@ Stage 11 introduces mystery pickups with 15% longer travel/spawn intervals; stag
 The text mode selector browses **Adventure**, **Survival**, and **Boss Time Attack** with
 arrows or a horizontal swipe. Tapping the name confirms with a pulse and chime; player keys
 start the available mode. Adventure is the default. The display case and companion collection
-are shared; lands and their discovery tutorial appear only in Adventure. The choice lasts
-for the session, and Back from another mode restores Adventure without changing its progress.
+are shared; lands and their discovery tutorial appear only in Adventure. The choice is saved
+on the device across runs and app opens. Back from another mode saves Adventure as the selection
+without changing its progress.
 
 Adventure's BEST line also shows the highest stage reached. The stage record is independent
 of the best-scoring run and survives that run leaving the top-ten history. Existing saves use
@@ -430,7 +431,7 @@ and game-over presentation. Local longest-time and highest-score records are sep
 four keys and six keys. Retry uses the companion launch; returning to the title preserves Survival
 selection and Adventure's land choice. Resetting scores also clears Survival records.
 
-Its background uses downward-scrolling, round-ended rainbow bands, each 1.5 screen heights long.
+Its background uses downward-scrolling, round-ended rainbow bands, each one screen height long including the caps.
 Each incoming band gets a fresh horizontal position within overlapping regions that keep coverage
 even across the full width. Randomized layering stays stable as bands scroll. As difficulty rises, band width
 shrinks from one-third to one twenty-fourth of the screen, scrolling accelerates fourfold, and

@@ -61,7 +61,7 @@ final class Survival extends Draw {
     }
     void scenery(Painter p,GameCore c,Layout L) {
         float intensity=ramp(),width=L.w/(3f+21f*intensity),radius=width*.5f;
-        float length=L.h*1.5f,pitch=length-width;
+        float length=L.h,pitch=length-width;
         float saturation=.18f+.57f*intensity,value=.30f+.08f*intensity;
         float x=0;
         int count=0;

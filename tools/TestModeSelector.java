@@ -12,6 +12,7 @@ final class TestModeSelector extends Check {
         c.modes.touch(c,L,0,12,x,y);c.modes.touch(c,L,1,12,x,y);
     }
     static void all(Layout L) {
+        persistence(L);
         GameCore c=title();Ear ear=new Ear();c.sound=ear;
         check("title defaults to Adventure",c.modes.adventure() && c.modes.visible(c) && c.modes.playable(c));
         long collection=c.collected;int best=c.best,land=c.landChoice;
@@ -89,5 +90,32 @@ final class TestModeSelector extends Check {
                     ModeSelector.y(phone)+phone.unit*1.75f<LandPicker.cardY(phone)-phone.h*.05f
                     && !Showcase.inIcon(phone,c.clock,phone.w*.5f,ModeSelector.y(phone)));
         }
+    }
+    private static void persistence(Layout L) {
+        GameCore c=title();Mem saved=(Mem)c.store;
+        c.preferences.music=.35f;c.preferences.effectsMuted=true;c.preferences.kids=true;
+        tap(c,L,1);
+        GameCore reopened=new GameCore(saved,1481);
+        check("mode selection survives app reopening without a confirmation tap",
+                reopened.modes.selected==ModeSelector.SURVIVAL && reopened.modes.previous==ModeSelector.SURVIVAL
+                && reopened.modes.transition==1 && reopened.modes.adventureFade==0);
+        check("saving mode preserves audio and Kids preferences",reopened.preferences.music==.35f
+                && reopened.preferences.effectsMuted && reopened.preferences.kids);
+        reopened.preferences.music=.6f;reopened.preferences.save(reopened);
+        check("saving another preference retains the selected mode",new GameCore(saved,1482).modes.selected==ModeSelector.SURVIVAL);
+        c.startGame();c.lives=1;c.takeHit(L.w*.5f,L);c.update(10,10,L);c.toTitle();
+        check("completed run retains the mode in memory and on reopen",c.modes.selected==ModeSelector.SURVIVAL
+                && new GameCore(saved,1483).modes.selected==ModeSelector.SURVIVAL);
+        c.modes.back(c);
+        check("Back saves Adventure as the next launch mode",new GameCore(saved,1484).modes.adventure());
+        c=title();saved=(Mem)c.store;c.modes.select(c,ModeSelector.TIME_ATTACK,1);
+        reopened=new GameCore(saved,1485);
+        check("browsed unfinished modes are remembered but remain unplayable",
+                reopened.modes.selected==ModeSelector.TIME_ATTACK && !reopened.modes.playable(reopened));
+        saved.playerSettings=PlayerSettings.DEFAULT;
+        check("older preference saves default to Adventure",new GameCore(saved,1486).modes.adventure());
+        saved.playerSettings=35 | (100<<7) | (3<<17);
+        reopened=new GameCore(saved,1487);
+        check("invalid saved mode falls back without losing volume",reopened.modes.adventure() && reopened.preferences.music==.35f);
     }
 }

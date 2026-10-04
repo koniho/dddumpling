@@ -1590,6 +1590,7 @@ final class GameCore {
             for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
             landBests[0] = Math.max(landBests[0], best);
             preferences.load(store.loadPlayerSettings());
+            modes.restore(preferences.mode);
             // Masked: a store that hands back junk in the high bits must not make
             // Collect.owned() report more than there are entries.
             collected = store.loadCollected() & Collect.MASK;

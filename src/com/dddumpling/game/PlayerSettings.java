@@ -43,6 +43,7 @@ final class PlayerSettings extends Draw {
     }
     float music = 1f, effects = 1f;
     boolean musicMuted, effectsMuted, kids;
+    int mode=ModeSelector.ADVENTURE;
 
     static final float KIDS_TOGGLE_TIME=.36f;
     private float kidsToggleAt=-10f, kidsFrom, kidsLiftFrom;
@@ -64,17 +65,21 @@ final class PlayerSettings extends Draw {
     }
 
     void load(int bits) {
-        if(bits<0 || bits>0x1FFFF) bits=DEFAULT;
+        if(bits<0 || bits>0x7FFFF) bits=DEFAULT;
         music = Math.min(100, bits & 127) / 100f;
         effects = Math.min(100, (bits >>> 7) & 127) / 100f;
         musicMuted = (bits & (1 << 14)) != 0;
         effectsMuted = (bits & (1 << 15)) != 0;
         kids = (bits & (1 << 16)) != 0;
+        mode=(bits>>>17)&3;
+        if(mode>=ModeSelector.NAMES.length)mode=ModeSelector.ADVENTURE;
         kidsToggleAt=-10f;
     }
     void save(GameCore c) {
+        mode=c.modes.selected;
         if (c.store != null) c.store.savePlayerSettings(Math.round(music * 100) | (Math.round(effects * 100) << 7)
-                | (musicMuted ? 1 << 14 : 0) | (effectsMuted ? 1 << 15 : 0) | (kids ? 1 << 16 : 0));
+                | (musicMuted ? 1 << 14 : 0) | (effectsMuted ? 1 << 15 : 0) | (kids ? 1 << 16 : 0)
+                | (mode << 17));
         apply(c);
     }
     void apply(GameCore c) {
