@@ -60,7 +60,7 @@ final class Survival extends Draw {
         float intensity=ramp(),width=L.w/(3f+21f*intensity),radius=width*.5f;
         float length=L.h*1.5f,pitch=length-width;
         float saturation=.18f+.57f*intensity,value=.30f+.08f*intensity;
-        p.save();p.clipRect(0,L.playTop,L.w,L.deckTop);
+        p.save();p.clipRect(0,0,L.w,L.deckTop);
         float x=radius*scatter(0,5);
         for(int column=0;;column++) {
             float travel=skyPhase*L.h*.08f*(.8f+.4f*scatter(column,2))+scatter(column,3)*pitch;
@@ -77,7 +77,8 @@ final class Survival extends Draw {
                 p.fillCircle(x,bottom,radius,color);
             }
             if(x+radius>=L.w)break;
-            x=Math.min(L.w,x+width*(.55f+.30f*scatter(column,1)));
+            // Wide spacing variation makes clustered overlaps visible instead of a regular grid.
+            x=Math.min(L.w,x+width*(.12f+.83f*scatter(column,1)));
         }
         p.restore();
     }

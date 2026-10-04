@@ -63,22 +63,24 @@ final class TestSurvival extends Check {
             GameCore c=start(store(),156);c.survival.seconds=age;
             java.util.ArrayList<float[]> bodies=new java.util.ArrayList<>();
             java.util.ArrayList<Integer> colors=new java.util.ArrayList<>();
+            float[] clip=new float[4];
             Painter painter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                     new Class<?>[]{Painter.class},(proxy,method,args)-> {
                         if(method.getName().equals("fillRect")) {
                             bodies.add(new float[]{(Float)args[0],(Float)args[1],(Float)args[2],(Float)args[3]});
                             colors.add((Integer)args[4]);
                         }
+                        if(method.getName().equals("clipRect"))for(int i=0;i<4;i++)clip[i]=(Float)args[i];
                         return null;
                     });
             boolean covered=true,saturated=true;
             for(float phase:new float[]{0,19.5f,123.4f,901.2f}) {
                 bodies.clear();colors.clear();c.survival.skyPhase=phase;c.survival.scenery(painter,c,l);
                 for(int row=0;row<=20;row++)for(int column=0;column<=40;column++) {
-                    float x=l.w*column/40f,y=l.playTop+(l.deckTop-l.playTop)*row/20f;
+                    float x=l.w*column/40f,y=l.deckTop*row/20f;
                     boolean found=false;
                     for(float[] b:bodies)if(x>=b[0] && x<=b[2] && y>=b[1] && y<=b[3]) {found=true;break;}
-                    covered &= found;
+                    covered &= found && x>=clip[0] && y>=clip[1] && x<=clip[2] && y<=clip[3];
                 }
                 for(int color:colors) {
                     int r=color>>16&255,g=color>>8&255,b=color&255;
@@ -86,7 +88,16 @@ final class TestSurvival extends Check {
                     saturated &= Math.abs((max-min)/(float)max-(.18f+.57f*age/300f))<.02f;
                 }
             }
-            check("scrolling bands cover the full playfield at "+size[0]+" age "+age,covered);
+            float previous=Float.NaN,minGap=Float.MAX_VALUE,maxGap=0;
+            for(float[] b:bodies) {
+                float x=(b[0]+b[2])*.5f;
+                if(!Float.isNaN(previous) && x>previous) {
+                    minGap=Math.min(minGap,x-previous);maxGap=Math.max(maxGap,x-previous);
+                }
+                previous=x;
+            }
+            check("band spacing has visible clusters and wide gaps",maxGap>minGap*2f);
+            check("scrolling bands cover from the screen top through the playfield at "+size[0]+" age "+age,covered);
             check("band saturation follows the muted-to-75-percent ramp",saturated);
         }
     }
