@@ -430,7 +430,10 @@ and game-over presentation. Local longest-time and highest-score records are sep
 four keys and six keys. Retry uses the companion launch; returning to the title preserves Survival
 selection and Adventure's land choice. Resetting scores also clears Survival records.
 
-Its aurora grows into a moving rainbow tunnel as difficulty rises. Word-clear particles scale
+Its background uses downward-scrolling, round-ended rainbow bands, each 1.5 screen heights long.
+Their irregularly spaced columns overlap to cover the full width. As difficulty rises, band width
+shrinks from one-third to one twenty-fourth of the screen, scrolling accelerates fourfold, and
+saturation increases from 18% to 75%. Word-clear particles scale
 from 1× to 10×, subject to a 4,096-particle clear-effect budget. Extra particles use a separate
 random stream so visual intensity does not change enemy generation. `Survival` owns the timer,
 difficulty, scenery and records; the shared combat loop supplies enemies, controls and power-ups.

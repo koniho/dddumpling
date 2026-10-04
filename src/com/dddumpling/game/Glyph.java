@@ -63,7 +63,7 @@ final class Glyph {
     }
 
     /** @param h6 hue in 0..6 sextants */
-    private static int hsv(float h6, float s, float v) {
+    static int hsv(float h6, float s, float v) {
         int sector = (int) Math.floor(h6) % 6;
         if (sector < 0) sector += 6;
         float f = h6 - (float) Math.floor(h6);

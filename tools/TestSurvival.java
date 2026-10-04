@@ -55,7 +55,40 @@ final class TestSurvival extends Check {
         c.toTitle();check("return restores Adventure progress and keeps mode choice",c.landChoice==1
                 && c.best==c.landBests[1] && !c.survival.active && c.modes.selected==ModeSelector.SURVIVAL);
         c.modes.back(c);c.startGame();check("Adventure still starts at its selected land",!c.survival.active && c.stage==6);
-        records(L);effects(L);bounded(L);fuzz(L);
+        records(L);effects(L);backgroundCoverage();bounded(L);fuzz(L);
+    }
+    private static void backgroundCoverage() {
+        for(int[] size:new int[][]{{320,568},{640,1400}})for(int age:new int[]{0,150,300}) {
+            Layout l=new Layout();l.compute(size[0],size[1],0,0,0,0);
+            GameCore c=start(store(),156);c.survival.seconds=age;
+            java.util.ArrayList<float[]> bodies=new java.util.ArrayList<>();
+            java.util.ArrayList<Integer> colors=new java.util.ArrayList<>();
+            Painter painter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                    new Class<?>[]{Painter.class},(proxy,method,args)-> {
+                        if(method.getName().equals("fillRect")) {
+                            bodies.add(new float[]{(Float)args[0],(Float)args[1],(Float)args[2],(Float)args[3]});
+                            colors.add((Integer)args[4]);
+                        }
+                        return null;
+                    });
+            boolean covered=true,saturated=true;
+            for(float phase:new float[]{0,19.5f,123.4f,901.2f}) {
+                bodies.clear();colors.clear();c.survival.skyPhase=phase;c.survival.scenery(painter,c,l);
+                for(int row=0;row<=20;row++)for(int column=0;column<=40;column++) {
+                    float x=l.w*column/40f,y=l.playTop+(l.deckTop-l.playTop)*row/20f;
+                    boolean found=false;
+                    for(float[] b:bodies)if(x>=b[0] && x<=b[2] && y>=b[1] && y<=b[3]) {found=true;break;}
+                    covered &= found;
+                }
+                for(int color:colors) {
+                    int r=color>>16&255,g=color>>8&255,b=color&255;
+                    int max=Math.max(r,Math.max(g,b)),min=Math.min(r,Math.min(g,b));
+                    saturated &= Math.abs((max-min)/(float)max-(.18f+.57f*age/300f))<.02f;
+                }
+            }
+            check("scrolling bands cover the full playfield at "+size[0]+" age "+age,covered);
+            check("band saturation follows the muted-to-75-percent ramp",saturated);
+        }
     }
     private static void effects(Layout L) {
         GameCore calm=start(store(),155),vivid=start(store(),155);

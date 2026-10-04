@@ -42,10 +42,11 @@ final class Survival extends Draw {
     float travel(GameCore c) { return c.kidsRun?12f:12f-4f*ramp(); }
     float spawn(GameCore c) { return c.kidsRun?1.65f:1.65f-.6f*ramp(); }
     int crowd(GameCore c) { return c.kidsRun?3:seconds<60?3:seconds<180?4:5; }
-    int background() {
-        float intensity=ramp();
-        return Glyph.mix(Glyph.mix(0xFF101E32,0xFF32153F,intensity),
-                Glyph.mix(0xFF17182F,Glyph.cycle(skyPhase*.008f),.18f),intensity*intensity);
+    int background() {return Glyph.hsv(3.7f,.18f+.57f*ramp(),.18f);}
+    private static float scatter(int index,int salt) {
+        int hash=(index+1)*0x45d9f3b+salt*0x119de1f3;
+        hash=(hash^(hash>>>16))*0x45d9f3b;
+        return (hash&0xffff)/65535f;
     }
     void wordBurst(GameCore c,float x,float y,float spread,int count,int color) {
         Fx.explode(c,c.rnd,x,y,spread,count,color);
@@ -56,44 +57,27 @@ final class Survival extends Draw {
         Fx.explode(c,effects,x,y,spread*(1f+.8f*ramp()),extra,Glyph.withAlpha(color,175));
     }
     void scenery(Painter p,GameCore c,Layout L) {
-        float intensity=ramp(),phase=skyPhase,fade=1f-c.drained();
-        int cool=Glyph.mix(0xFF53DECC,0xFFFF74BE,intensity),warm=Glyph.mix(0xFF719CFA,0xFFFFC577,intensity);
+        float intensity=ramp(),width=L.w/(3f+21f*intensity),radius=width*.5f;
+        float length=L.h*1.5f,pitch=length-width;
+        float saturation=.18f+.57f*intensity,value=.30f+.08f*intensity;
         p.save();p.clipRect(0,L.playTop,L.w,L.deckTop);
-        // The late run becomes a slowly turning rainbow tunnel, behind every enemy and cue.
-        float vivid=intensity*intensity;
-        if(vivid>.001f) {
-            float cx=L.w*.5f,cy=(L.playTop+L.deckTop)*.5f;
-            for(int ring=0;ring<12;ring++) {
-                float t=(ring/12f+phase*.009f)%1f;
-                int color=Glyph.withAlpha(Glyph.cycle(phase*.012f+ring*.0833f),(int)(65*vivid*fade*Math.sin(t*Math.PI)));
-                p.arc(cx,cy,L.w*(.08f+t*.8f),L.h*(.04f+t*.55f),0,360,color,L.unit*(.25f+intensity*.6f));
+        float x=0;
+        for(int column=0;;column++) {
+            float travel=skyPhase*L.h*.08f*(.8f+.4f*scatter(column,2))+scatter(column,3)*pitch;
+            int cycle=(int)Math.floor(travel/pitch);
+            float offset=travel-cycle*pitch;
+            // Central rectangles touch vertically; adjacent columns overlap even between caps.
+            for(int row=-1;row<=Math.ceil(L.h/pitch)+1;row++) {
+                float cy=offset+row*pitch,top=cy-pitch*.5f,bottom=cy+pitch*.5f;
+                float hue=(scatter(column,4)+(row-cycle)*.137f)%1f;
+                if(hue<0)hue+=1f;
+                int color=Glyph.mix(Glyph.hsv(hue*6f,saturation,value),BG_DEATH,c.drained());
+                p.fillRect(x-radius,top,x+radius,bottom,color);
+                p.fillCircle(x,top,radius,color);
+                p.fillCircle(x,bottom,radius,color);
             }
-            for(int arm=0;arm<8;arm++) {
-                float[] points=new float[64];
-                for(int k=0;k<32;k++) {
-                    float t=k/31f,a=arm*.785398f+t*3.4f+phase*.055f;
-                    float ripple=1f+.09f*(float)Math.sin(t*18-phase*.09f);
-                    points[k*2]=cx+(float)Math.cos(a)*t*L.w*.8f*ripple;
-                    points[k*2+1]=cy+(float)Math.sin(a)*t*L.h*.53f*ripple;
-                }
-                p.polyline(points,Glyph.withAlpha(Glyph.cycle(arm/8f+phase*.01f),(int)(38*vivid*fade)),L.unit*.45f);
-            }
-        }
-        // Aurora stays near the edges, leaving the letter lanes dark at every intensity.
-        for(int side=0;side<2;side++)for(int band=0;band<6;band++) {
-            float x=side==0?-L.w*.08f:L.w*1.08f;
-            float y=L.h*(.35f+.09f*(float)Math.sin(phase*.07f+side*2+band*.35f));
-            p.fillEllipse(x,y,L.w*(.23f+band*.028f),L.h*(.22f+band*.035f),
-                    Glyph.withAlpha(side==0?cool:warm,(int)((3+intensity*5)*fade)));
-        }
-        int count=12+(int)(24*intensity);
-        for(int i=0;i<count;i++) {
-            float t=(phase*.012f+i*.618034f)%1f;
-            float edge=.035f+.15f*(.5f+.5f*(float)Math.sin(i*2.4f+phase*.04f));
-            float x=L.w*(i%2==0?edge:1f-edge),y=L.deckTop-t*(L.deckTop-L.playTop);
-            int color=Glyph.withAlpha(i%2==0?cool:warm,(int)((25+intensity*65)*Math.sin(t*Math.PI)*fade));
-            p.line(x,y,x,y+L.unit*(.3f+intensity*.9f),color,L.unit*.06f);
-            p.fillCircle(x,y,L.unit*(.045f+intensity*.035f),color);
+            if(x>=L.w)break;
+            x=Math.min(L.w,x+width*(.55f+.30f*scatter(column,1)));
         }
         p.restore();
     }
