@@ -73,9 +73,16 @@ final class TestSurvival extends Check {
                         if(method.getName().equals("clipRect"))for(int i=0;i<4;i++)clip[i]=(Float)args[i];
                         return null;
                     });
-            boolean covered=true,saturated=true;
+            boolean covered=true,saturated=true,stable=true;
+            java.util.ArrayList<Float> firstOrder=null;
             for(float phase:new float[]{0,19.5f,123.4f,901.2f}) {
                 bodies.clear();colors.clear();c.survival.skyPhase=phase;c.survival.scenery(painter,c,l);
+                java.util.ArrayList<Float> order=new java.util.ArrayList<>();
+                for(float[] b:bodies) {
+                    float x=(b[0]+b[2])*.5f;
+                    if(order.isEmpty() || x!=order.get(order.size()-1))order.add(x);
+                }
+                if(firstOrder==null)firstOrder=order;else stable &= firstOrder.equals(order);
                 for(int row=0;row<=20;row++)for(int column=0;column<=40;column++) {
                     float x=l.w*column/40f,y=l.deckTop*row/20f;
                     boolean found=false;
@@ -88,9 +95,15 @@ final class TestSurvival extends Check {
                     saturated &= Math.abs((max-min)/(float)max-(.18f+.57f*age/300f))<.02f;
                 }
             }
+            boolean left=false,right=false;
+            for(int i=1;i<firstOrder.size();i++) {
+                left |= firstOrder.get(i)<firstOrder.get(i-1);
+                right |= firstOrder.get(i)>firstOrder.get(i-1);
+            }
+            check("band draw order crosses both left and right instead of sweeping columns",left && right);
+            check("scrolling keeps band depth order stable",stable);
             float previous=Float.NaN,minGap=Float.MAX_VALUE,maxGap=0;
-            for(float[] b:bodies) {
-                float x=(b[0]+b[2])*.5f;
+            for(float x:new java.util.TreeSet<Float>(firstOrder)) {
                 if(!Float.isNaN(previous) && x>previous) {
                     minGap=Math.min(minGap,x-previous);maxGap=Math.max(maxGap,x-previous);
                 }

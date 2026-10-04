@@ -10,6 +10,9 @@ final class Survival extends Draw {
     float rescueLeft,skyPhase;
     int profile,adventureLand;
     private final java.util.Random effects=new java.util.Random(149);
+    // At minimum width and spacing, at most 201 bands cover the screen.
+    private final float[] bandX=new float[202];
+    private final int[] bandOrder=new int[202];
 
     static int profile(boolean kids,boolean full) { return kids?2:full?1:0; }
     static String profileName(int profile) { return profile==2?"KIDS":profile==1?"6 KEYS":"4 KEYS"; }
@@ -60,9 +63,23 @@ final class Survival extends Draw {
         float intensity=ramp(),width=L.w/(3f+21f*intensity),radius=width*.5f;
         float length=L.h*1.5f,pitch=length-width;
         float saturation=.18f+.57f*intensity,value=.30f+.08f*intensity;
-        p.save();p.clipRect(0,0,L.w,L.deckTop);
         float x=radius*scatter(0,5);
+        int count=0;
         for(int column=0;;column++) {
+            bandX[column]=x;
+            // Stable random depth keeps existing overlaps unchanged as new bands appear.
+            int layer=count++;
+            while(layer>0 && scatter(bandOrder[layer-1],6)>scatter(column,6)) {
+                bandOrder[layer]=bandOrder[layer-1];layer--;
+            }
+            bandOrder[layer]=column;
+            if(x+radius>=L.w)break;
+            // Wide spacing variation makes clustered overlaps visible instead of a regular grid.
+            x=Math.min(L.w,x+width*(.12f+.83f*scatter(column,1)));
+        }
+        p.save();p.clipRect(0,0,L.w,L.deckTop);
+        for(int layer=0;layer<count;layer++) {
+            int column=bandOrder[layer];x=bandX[column];
             float travel=skyPhase*L.h*.08f*(.8f+.4f*scatter(column,2))+scatter(column,3)*pitch;
             int cycle=(int)Math.floor(travel/pitch);
             float offset=travel-cycle*pitch;
@@ -76,9 +93,6 @@ final class Survival extends Draw {
                 p.fillCircle(x,top,radius,color);
                 p.fillCircle(x,bottom,radius,color);
             }
-            if(x+radius>=L.w)break;
-            // Wide spacing variation makes clustered overlaps visible instead of a regular grid.
-            x=Math.min(L.w,x+width*(.12f+.83f*scatter(column,1)));
         }
         p.restore();
     }
