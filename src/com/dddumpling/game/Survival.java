@@ -90,15 +90,29 @@ final class Survival extends Draw {
                 if(stripeX<0)stripeX=-stripeX;
                 if(stripeX>L.w)stripeX=2f*L.w-stripeX;
                 float cy=offset+row*pitch,top=cy-pitch*.5f,bottom=cy+pitch*.5f;
+                if(bottom+radius<0 || top-radius>L.deckTop)continue;
                 float hue=(scatter(column,4)+(row-cycle)*.137f)%1f;
                 if(hue<0)hue+=1f;
                 int color=Glyph.mix(Glyph.hsv(hue*6f,saturation,value),BG_DEATH,c.drained());
                 p.fillRect(stripeX-radius,top,stripeX+radius,bottom,color);
                 p.fillCircle(stripeX,top,radius,color);
                 p.fillCircle(stripeX,bottom,radius,color);
+                float shine=1f-c.drained();
+                stripeRim(p,stripeX,top,bottom,radius*.78f,radius*.18f,
+                        Glyph.mix(color,0xFF000000,.24f*shine),false);
+                stripeRim(p,stripeX,top,bottom,radius*.72f,radius*.28f,
+                        Glyph.mix(color,0xFFFFFFFF,.12f*shine),true);
+                stripeRim(p,stripeX,top,bottom,radius*.80f,radius*.08f,
+                        Glyph.mix(color,0xFFFFFFFF,.27f*shine),true);
             }
         }
         p.restore();
+    }
+    private static void stripeRim(Painter p,float x,float top,float bottom,float radius,float width,int color,boolean right) {
+        float edge=x+(right?radius:-radius);
+        p.line(edge,top,edge,bottom,color,width);
+        p.arc(x,top,radius,radius,right?270:180,90,color,width);
+        p.arc(x,bottom,radius,radius,right?0:90,90,color,width);
     }
     void finish(GameCore c) {
         if(!active || finished)return;
