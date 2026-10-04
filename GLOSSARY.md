@@ -412,6 +412,10 @@ start the available mode. Adventure is the default. The display case and compani
 are shared; lands and their discovery tutorial appear only in Adventure. The choice lasts
 for the session, and Back from another mode restores Adventure without changing its progress.
 
+Adventure's BEST line also shows the highest stage reached. The stage record is independent
+of the best-scoring run and survives that run leaving the top-ten history. Existing saves use
+their progress maximum and retained run history; an unknown stage is shown as `--`.
+
 Survival and Boss Time Attack currently show **COMING SOON** and cannot start a run. Their
 gameplay and separate records belong to #149 and #150; boss victories determine future unlocks.
 

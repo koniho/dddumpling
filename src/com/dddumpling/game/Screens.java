@@ -46,7 +46,7 @@ final class Screens extends Draw {
         p.save();p.translate(0,L.h*controlsOut);
         if(c.modes.adventure()) {
             HighScoreScreen.titleGlow(p,c,L,fade*caseOut(c));
-            p.text("BEST " + c.best, cx, HighScoreScreen.titleY(L), type(s * 0.74f)*HighScoreScreen.titleTextScale(c),
+            p.text(HighScoreScreen.titleText(c), cx, HighScoreScreen.titleY(L), HighScoreScreen.titleFont(c,L),
                     fadeBy(HighScoreScreen.titleTextColor(c), fade * caseOut(c)),Painter.CENTER,true);
         } else {
             p.text(c.modes.selected==ModeSelector.SURVIVAL?"LONGEST RUN --":"FASTEST CLEAR --",

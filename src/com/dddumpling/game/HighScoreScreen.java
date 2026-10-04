@@ -18,7 +18,7 @@ final class HighScoreScreen extends Draw {
     }
     static boolean entryHit(GameCore c,Layout L,float x,float y) {
         return c.modes.adventure() && ReleaseNotes.available(c) && !c.releaseNotes.open
-                && Math.abs(x-L.w*.5f)<L.w*.30f && Math.abs(y-titleY(L))<L.unit*1.1f;
+                && Math.abs(x-L.w*.5f)<L.w*.44f && Math.abs(y-titleY(L))<L.unit*1.1f;
     }
     void show(GameCore c) {
         if(!c.modes.adventure() || !ReleaseNotes.available(c) || c.releaseNotes.open) return;
@@ -37,11 +37,18 @@ final class HighScoreScreen extends Draw {
     }
     static float titleTextScale(GameCore c) { return titleAttention(c)?1f+.1f*pulse(c.time):1f; }
     static int titleTextColor(GameCore c) { return titleAttention(c)?Glyph.mix(ROSE,GOLD,pulse(c.time)*.8f):ROSE; }
+    static String titleText(GameCore c) {
+        long stage=Math.max(c.progress.maximum("highest_stage"),c.highScores.highestStage);
+        return "BEST "+c.best+" / STAGE "+(stage>0?Long.toString(stage):"--");
+    }
+    static float titleFont(GameCore c,Layout L) {
+        return Math.min(type(L.unit*.74f)*titleTextScale(c),L.w*.84f/(titleText(c).length()*.72f));
+    }
     static void titleGlow(Painter p,GameCore c,Layout L,float fade) {
         if(!titleAttention(c)) return;
-        float s=L.unit,font=type(s*.74f)*titleTextScale(c),y=titleY(L)-font*.36f;
+        float s=L.unit,font=titleFont(c,L),y=titleY(L)-font*.36f;
         float pulse=pulse(c.time);
-        float width=Math.min(L.w*.42f,("BEST "+c.best).length()*font*.36f+s*.3f);
+        float width=Math.min(L.w*.42f,titleText(c).length()*font*.36f+s*.3f);
         for(int i=6;i>0;i--) {
             float spread=s*i*(.09f+.04f*pulse);
             p.fillEllipse(L.w*.5f,y,width+spread,font*.55f+spread,

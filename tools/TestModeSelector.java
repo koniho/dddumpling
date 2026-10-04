@@ -84,7 +84,7 @@ final class TestModeSelector extends Check {
             Layout phone=new Layout();phone.compute(width,width*1.775f,0,0,0,0);
             c=title();
             check("mode touches clear land and case targets at "+width,
-                    ModeSelector.y(phone)+phone.unit*1.1f<LandPicker.cardY(phone)-phone.h*.05f
+                    ModeSelector.y(phone)+phone.unit*1.75f<LandPicker.cardY(phone)-phone.h*.05f
                     && !Showcase.inIcon(phone,c.clock,phone.w*.5f,ModeSelector.y(phone)));
         }
     }

@@ -355,7 +355,7 @@ final class TestVisuals extends Check {
                 Painter.class.getClassLoader(), new Class<?>[] {Painter.class}, (proxy, method, args) -> {
                     if (method.getName().equals("text")) {
                         int a = (Integer) args[4] >>> 24;
-                        if (args[0].equals("BEST 1840")) alpha[0] = Math.max(alpha[0], a);
+                        if (args[0].equals("BEST 1840 / STAGE --")) alpha[0] = Math.max(alpha[0], a);
                         if (args[0].equals("DISPLAY CASE")) alpha[1] = Math.max(alpha[1], a);
                     }
                     return null;

@@ -66,6 +66,7 @@ final class TestHighScores extends Check {
         retiredCollectibles();
         entrance(L);
         titleAttention(L);
+        titleStage(L);
         onePage(L);
         navigation(c,L);
         blurbs(L);
@@ -85,7 +86,7 @@ final class TestHighScores extends Check {
     }
     private static String legacy(String data,int version) {
         String[] rows=data.split(";");
-        StringBuilder result=new StringBuilder(version+rows[0].substring(1));
+        StringBuilder result=new StringBuilder(version+":"+rows[0].split(":")[1]);
         int fields=version>=4?23:version>=3?17:16;
         for(int i=1;i<rows.length;i++) {
             String[] values=rows[i].split(",");result.append(';');
@@ -149,6 +150,27 @@ final class TestHighScores extends Check {
         check("exit finishes above screen",!ui.open && ui.offsetY(L)==-HighScoreScreen.bottom(L));
         ui.show(c);c.update(HighScoreScreen.ENTRY_TIME*.2f,L);ui.back(c);c.update(HighScoreScreen.ENTRY_TIME,L);
         check("back during entrance closes panel",!ui.open);
+    }
+    private static void titleStage(Layout L) {
+        Mem mem=new Mem();GameCore c=new GameCore(mem,148,true);
+        check("new title does not invent a reached stage",HighScoreScreen.titleText(c).equals("BEST 0 / STAGE --"));
+        c.progress.startRun();c.progress.enterStage(23);
+        c.best=456;
+        check("title uses the recorded highest stage",HighScoreScreen.titleText(c).equals("BEST 456 / STAGE 23"));
+        c=new GameCore(mem,149,true);
+        check("title stage survives reload",HighScoreScreen.titleText(c).endsWith("STAGE 23"));
+        c=new GameCore(new Mem(),150,false);
+        for(int i=0;i<11;i++) {
+            c.startGame();c.score=1000-i*10;c.stage=i==10?30:5;c.highScores.finish(c);
+        }
+        check("title includes latest stage outside top ten",HighScoreScreen.titleText(c).endsWith("STAGE 30"));
+        c.highScores.start(0);c.score=2000;c.stage=2;c.highScores.finish(c);
+        check("highest stage survives loss of its run from history",HighScoreScreen.titleText(c).endsWith("STAGE 30"));
+        HighScores restored=new HighScores();restored.load(c.highScores.encode());
+        check("highest stage round trips independently of retained runs",restored.highestStage==30);
+        String old=c.highScores.encode().replaceFirst("6:([0-9]+):[0-9]+","5:$1");
+        restored.load(old);
+        check("older saves recover highest stage from their retained runs",restored.highestStage==5);
     }
     private static void titleAttention(Layout L) {
         GameCore c=new GameCore(new Mem(),105L);

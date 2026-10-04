@@ -20,6 +20,7 @@ final class HighScores {
     };
     final ArrayList<Run> runs=new ArrayList<>();
     long latest;
+    int highestStage;
     Run latestRun;
     int stages, dumplings, powers, swipes, bosses;
     final int[] effects=new int[Power.NAMES.length];
@@ -53,7 +54,7 @@ final class HighScores {
         }
     }
     void clear() {
-        runs.clear();latest=0;latestRun=null;unread=false;recording=false;
+        runs.clear();latest=0;highestStage=0;latestRun=null;unread=false;recording=false;
         stages=dumplings=powers=swipes=bosses=0;character=-1;
         java.util.Arrays.fill(effects,0);
         prizes.clear();
@@ -82,6 +83,7 @@ final class HighScores {
         int[] won=new int[prizes.size()];
         for(int i=0;i<won.length;i++) won[i]=prizes.get(i);
         Run run=new Run(++latest,values,won);
+        highestStage=Math.max(highestStage,run.stage);
         unread=true;
         latestRun=run;
         insert(run);
@@ -102,7 +104,7 @@ final class HighScores {
     int displayCount() { return runs.size()+(latestOutsideTopTen()?1:0); }
     Run displayRun(int row) { return row<runs.size()?runs.get(row):latestRun; }
     String encode() {
-        StringBuilder s=new StringBuilder("5:").append(latest);
+        StringBuilder s=new StringBuilder("6:").append(latest).append(':').append(highestStage);
         for(int i=0;i<displayCount();i++) {
             Run run=displayRun(i);
             s.append(';').append(run.id);
@@ -113,16 +115,21 @@ final class HighScores {
         return s.toString();
     }
     void load(String data) {
-        runs.clear();latest=0;latestRun=null;
+        runs.clear();latest=0;highestStage=0;latestRun=null;
         if(data==null || data.isEmpty() || data.length()>16000) return;
         try {
             String[] rows=data.split(";",-1);
-            boolean prizeHistory=rows[0].startsWith("5:");
+            boolean stageRecord=rows[0].startsWith("6:");
+            boolean prizeHistory=stageRecord || rows[0].startsWith("5:");
             boolean effectHistory=prizeHistory || rows[0].startsWith("4:");
             boolean portraits=effectHistory || rows[0].startsWith("3:");
             boolean current=portraits || rows[0].startsWith("2:");
             if((!current && !rows[0].startsWith("1:")) || rows.length>LIMIT+(current?2:1)) return;
-            long sequence=Long.parseLong(rows[0].substring(2));
+            String[] header=rows[0].split(":",-1);
+            if(header.length!=(stageRecord?3:2))return;
+            long sequence=Long.parseLong(header[1]);
+            int savedStage=stageRecord?Integer.parseInt(header[2]):0;
+            if(savedStage<0)return;
             if(sequence<0) return;
             ArrayList<Run> parsed=new ArrayList<>();
             for(int row=1;row<rows.length;row++) {
@@ -155,10 +162,12 @@ final class HighScores {
                 parsed.add(new Run(id,v,prizes));
             }
             latest=sequence;
+            highestStage=savedStage;
             for(Run run:parsed) {
+                highestStage=Math.max(highestStage,run.stage);
                 if(run.id==latest) latestRun=run;
                 insert(run);
             }
-        } catch(NumberFormatException ignored) { runs.clear();latest=0;latestRun=null; }
+        } catch(NumberFormatException ignored) { runs.clear();latest=0;highestStage=0;latestRun=null; }
     }
 }
