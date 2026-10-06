@@ -412,7 +412,9 @@ start the available mode. Adventure is the default. The display case and compani
 are shared; lands and their discovery tutorial appear only in Adventure. The choice is saved
 on the device across runs and app opens. Back from another mode saves Adventure as the selection
 without changing its progress.
-When Survival is selected, its label bobs and cycles color beside small drifting rainbow stripes.
+When Survival is selected, its label bobs and cycles color over bright drifting rainbow stripes.
+Below it, the selected collected squishy demonstrates left and right Ninja swipes, then removes
+the mask and fires at single-prompt enemies on either side. The skit does not affect combat or saves.
 
 Adventure's BEST line also shows the highest stage reached. The stage record is independent
 of the best-scoring run and survives that run leaving the top-ten history. Existing saves use

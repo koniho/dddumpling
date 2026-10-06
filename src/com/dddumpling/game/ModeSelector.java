@@ -42,10 +42,10 @@ final class ModeSelector extends Draw {
                 && !c.onboarding.titleGuide && !c.onboarding.briefing;
     }
     static float y(Layout L) { return L.h*.60f; }
-    static float arrowX(Layout L,int direction) { return L.w*(direction<0?.12f:.88f); }
+    static float arrowX(Layout L,int direction) { return L.w*(direction<0?.065f:.935f); }
     int hit(GameCore c,Layout L,float x,float y) {
-        if(!visible(c) || Math.abs(y-y(L))>L.unit*1.75f || x<L.padL || x>L.w-L.padR)return 0;
-        return x<L.w*.23f?1:x>L.w*.77f?3:2;
+        if(!visible(c) || Math.abs(y-y(L))>L.unit*(selected==TIME_ATTACK?2.7f:2f) || x<L.padL || x>L.w-L.padR)return 0;
+        return x<L.w*.11f?1:x>L.w*.89f?3:2;
     }
     void select(GameCore c,int next,int direction) {
         if(!visible(c) || c.landTravelFrom>=0 || next<0 || next>=NAMES.length || next==selected)return;
@@ -114,18 +114,18 @@ final class ModeSelector extends Draw {
         return true;
     }
     private static void name(Painter p,int mode,float x,float y,float s,float scale,int color) {
-        float font=type(s*1.16f)*scale;
+        float font=type(s*1.74f)*scale;
         if(mode==TIME_ATTACK) {
-            p.text("BOSS",x,y-s*.62f,font,color,Painter.CENTER,true);
-            p.text("TIME ATTACK",x,y+s*.72f,font,color,Painter.CENTER,true);
+            p.text("BOSS",x,y-s*.9f,font,color,Painter.CENTER,true);
+            p.text("TIME ATTACK",x,y+s*1.1f,font,color,Painter.CENTER,true);
         } else p.text(NAMES[mode],x,y,font,color,Painter.CENTER,true);
     }
     private static void survivalAccent(Painter p,float x,float y,float s,float clock,float alpha) {
-        for(int side=-1;side<=1;side+=2)for(int i=0;i<4;i++) {
-            float phase=(clock*.65f+i*.27f+(side+1)*.13f)%1f;
-            float cx=x+side*s*(4.5f+i*.43f),cy=y+s*(-1.6f+phase*2.1f);
-            float r=s*.09f,length=s*(.3f+.12f*(i%2));
-            int color=fadeBy(Glyph.cycle(i*.17f+clock*.1f),alpha*(float)Math.sin(phase*Math.PI)*.75f);
+        for(int i=0;i<13;i++) {
+            float phase=(clock*.5f+i*.273f)%1f;
+            float cx=x+s*((i-6)*.82f),cy=y+s*(-2.6f+phase*3.3f);
+            float r=s*.19f,length=s*(.7f+.2f*(i%3));
+            int color=fadeBy(Glyph.cycle(i*.13f+clock*.1f),alpha*(float)Math.sin(phase*Math.PI)*.9f);
             p.line(cx,cy,cx,cy+length,color,r*2);
             p.fillCircle(cx,cy,r,color);p.fillCircle(cx,cy+length,r,color);
             p.line(cx+r*.35f,cy,cx+r*.35f,cy+length,fadeBy(INK,alpha*.25f*(float)Math.sin(phase*Math.PI)),r*.45f);
@@ -135,13 +135,13 @@ final class ModeSelector extends Draw {
         if(!visible(c))return;
         float s=L.unit,y=y(L),t=panelTravel(transition);
         float bump=1f+.09f*(float)Math.sin(Math.PI*confirmation);
-        p.text("MODE",L.w*.5f,y-s*2.05f,type(s*.35f),INK_DIM,Painter.CENTER,false);
+        p.text("MODE",L.w*.5f,y-s*3.05f,type(s*.35f),INK_DIM,Painter.CENTER,false);
         for(int d=-1;d<=1;d+=2) {
             float x=arrowX(L,d),cy=y-s*.25f;
             p.line(x-d*s*.18f,cy-s*.25f,x+d*s*.18f,cy,GOLD,s*.09f);
             p.line(x+d*s*.18f,cy,x-d*s*.18f,cy+s*.25f,GOLD,s*.09f);
         }
-        p.save();p.clipRect(L.w*.20f,y-s*1.85f,L.w*.80f,y+s*.9f);
+        p.save();p.clipRect(L.w*.12f,y-s*2.8f,L.w*.88f,y+s*1.4f);
         if(transition<1)name(p,previous,L.w*.5f-direction*L.w*.6f*t,y,s,1,fadeBy(INK,1-t));
         float selectedX=L.w*.5f+direction*L.w*.6f*(1-t),selectedY=y;
         int selectedColor=confirmation>0?GOLD:INK;
@@ -154,14 +154,15 @@ final class ModeSelector extends Draw {
         name(p,selected,selectedX,selectedY,s,bump,selectedColor);
         p.restore();
         String action=playable(c)?(confirmation>0?"SELECTED":"TAP TO CONFIRM"):implemented(selected)?"LOCKED":"COMING SOON";
-        p.text(action,L.w*.5f,y+s*1.65f,type(s*.36f),unavailable>0?GOLD:INK_DIM,Painter.CENTER,false);
+        p.text(action,L.w*.5f,y+s*2.05f,type(s*.36f),unavailable>0?GOLD:INK_DIM,Painter.CENTER,false);
         if(!adventure()) {
             float alpha=Math.max(0,1-2*adventureFade);
             float x=L.w*.5f+(float)Math.sin(unavailable*20)*s*.15f*unavailable;
-            p.text(selected==SURVIVAL?"ENDLESS WAVES":"TIMED BOSS CHALLENGES",x,LandPicker.cardY(L),
-                    type(s*.52f),fadeBy(INK,alpha),Painter.CENTER,true);
+            if(selected==SURVIVAL)SurvivalDemo.draw(p,c,L,alpha);
+            p.text(selected==SURVIVAL?"ENDLESS WAVES":"TIMED BOSS CHALLENGES",x,LandPicker.cardY(L)-(selected==SURVIVAL?s*.65f:0),
+                    type(s*(selected==SURVIVAL?.35f:.52f)),fadeBy(INK,alpha),Painter.CENTER,true);
             p.text(unlocked(c,selected)?(selected==SURVIVAL?Survival.profileName(c.survival.titleProfile(c))+" / TIME + SCORE":"SINGLE BOSS + BOSS RUSH"):selected==SURVIVAL?
-                    "DEFEAT SLIME TO UNLOCK":"DEFEAT A BOSS TO UNLOCK",x,LandPicker.cardY(L)+s*1.15f,
+                    "DEFEAT SLIME TO UNLOCK":"DEFEAT A BOSS TO UNLOCK",x,LandPicker.cardY(L)+s*(selected==SURVIVAL?3.4f:1.65f),
                     type(s*.38f),fadeBy(INK_DIM,alpha),Painter.CENTER,false);
         }
     }

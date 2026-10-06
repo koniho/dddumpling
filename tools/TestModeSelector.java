@@ -13,10 +13,13 @@ final class TestModeSelector extends Check {
     }
     static void all(Layout L) {
         persistence(L);
+        skit(L);
         GameCore c=title();Ear ear=new Ear();c.sound=ear;
         check("title defaults to Adventure",c.modes.adventure() && c.modes.visible(c) && c.modes.playable(c));
         long collection=c.collected;int best=c.best,land=c.landChoice;
         check("Adventure shows its lands",LandPicker.visible(c));
+        check("enlarged label edges remain confirmation targets",c.modes.hit(c,L,L.w*.13f,ModeSelector.y(L))==2
+                && c.modes.hit(c,L,L.w*.87f,ModeSelector.y(L))==2);
         tap(c,L,1);
         check("text arrow selects Survival with sound",c.modes.selected==ModeSelector.SURVIVAL && ear.uiBloops==1);
         check("other modes immediately stop land input",!LandPicker.visible(c) && !LandPicker.down(c,L,L.w*.5f,LandPicker.cardY(L)));
@@ -117,5 +120,18 @@ final class TestModeSelector extends Check {
         saved.playerSettings=35 | (100<<7) | (3<<17);
         reopened=new GameCore(saved,1487);
         check("invalid saved mode falls back without losing volume",reopened.modes.adventure() && reopened.preferences.music==.35f);
+    }
+    private static void skit(Layout L) {
+        GameCore c=title(),control=title();c.collected|=1L<<1;c.caseIndex=1;
+        check("Survival skit uses the selected collected squishy",SurvivalDemo.companion(c)==1);
+        c.caseIndex=Collect.COUNT-1;
+        check("unowned case entries use an owned squishy for the skit",Collect.has(c.collected,SurvivalDemo.companion(c)));
+        Painter sink=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class<?>[]{Painter.class},(proxy,method,args)->null);
+        int settings=((Mem)c.store).playerSettings;
+        for(int i=0;i<160;i++) {c.clock=i*.05f;SurvivalDemo.draw(sink,c,L,1f);}
+        check("title skit leaves combat, saves and gameplay randomness untouched",c.state==GameCore.TITLE
+                && c.enemies.isEmpty() && c.particles.isEmpty() && c.shots.isEmpty() && c.target==null
+                && ((Mem)c.store).playerSettings==settings && c.rnd.nextLong()==control.rnd.nextLong());
     }
 }
