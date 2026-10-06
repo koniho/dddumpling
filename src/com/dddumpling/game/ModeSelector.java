@@ -120,10 +120,10 @@ final class ModeSelector extends Draw {
             p.text("TIME ATTACK",x,y+s*1.1f,font,color,Painter.CENTER,true);
         } else p.text(NAMES[mode],x,y,font,color,Painter.CENTER,true);
     }
-    private static void survivalAccent(Painter p,float x,float y,float s,float clock,float alpha) {
-        for(int i=0;i<13;i++) {
+    private static void survivalAccent(Painter p,float x,float y,float s,float halfSpan,float clock,float alpha) {
+        for(int i=0;i<21;i++) {
             float phase=(clock*.5f+i*.273f)%1f;
-            float cx=x+s*((i-6)*.82f),cy=y+s*(-2.6f+phase*3.3f);
+            float cx=x+(i-10)*halfSpan/10f,cy=y+s*(-2.6f+phase*3.3f);
             float r=s*.19f,length=s*(.7f+.2f*(i%3));
             int color=fadeBy(Glyph.cycle(i*.13f+clock*.1f),alpha*(float)Math.sin(phase*Math.PI)*.9f);
             p.line(cx,cy,cx,cy+length,color,r*2);
@@ -140,14 +140,14 @@ final class ModeSelector extends Draw {
             p.line(x-d*s*.18f,cy-s*.25f,x+d*s*.18f,cy,GOLD,s*.09f);
             p.line(x+d*s*.18f,cy,x-d*s*.18f,cy+s*.25f,GOLD,s*.09f);
         }
-        p.save();p.clipRect(L.w*.12f,y-s*2.8f,L.w*.88f,y+s*1.4f);
+        p.save();p.clipRect(L.w*.09f,y-s*2.8f,L.w*.91f,y+s*1.4f);
         if(transition<1)name(p,previous,L.w*.5f-direction*L.w*.6f*t,y,s,1,fadeBy(INK,1-t));
         float selectedX=L.w*.5f+direction*L.w*.6f*(1-t),selectedY=y;
         selectedX+=(float)Math.sin(unavailable*20)*s*.15f*unavailable;
         int selectedColor=confirmation>0 || unavailable>0?GOLD:INK;
         if(selected==SURVIVAL) {
             float clock=SurvivalDemo.animationClock(c);
-            survivalAccent(p,selectedX,y,s,clock,t);
+            survivalAccent(p,selectedX,y,s,L.w*.4f,clock,t);
             selectedY-=s*.12f*t*(.5f+.5f*(float)Math.sin(clock*3.5f));
             bump*=1f+.018f*t*(float)Math.sin(clock*3.5f);
             if(confirmation<=0 && unavailable<=0)selectedColor=Glyph.mix(INK,Glyph.cycle(clock*.10f),.25f*t);
