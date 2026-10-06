@@ -135,7 +135,6 @@ final class ModeSelector extends Draw {
         if(!visible(c))return;
         float s=L.unit,y=y(L),t=panelTravel(transition);
         float bump=1f+.09f*(float)Math.sin(Math.PI*confirmation);
-        p.text("MODE",L.w*.5f,y-s*3.05f,type(s*.35f),INK_DIM,Painter.CENTER,false);
         for(int d=-1;d<=1;d+=2) {
             float x=arrowX(L,d),cy=y-s*.25f;
             p.line(x-d*s*.18f,cy-s*.25f,x+d*s*.18f,cy,GOLD,s*.09f);
@@ -144,27 +143,17 @@ final class ModeSelector extends Draw {
         p.save();p.clipRect(L.w*.12f,y-s*2.8f,L.w*.88f,y+s*1.4f);
         if(transition<1)name(p,previous,L.w*.5f-direction*L.w*.6f*t,y,s,1,fadeBy(INK,1-t));
         float selectedX=L.w*.5f+direction*L.w*.6f*(1-t),selectedY=y;
-        int selectedColor=confirmation>0?GOLD:INK;
+        selectedX+=(float)Math.sin(unavailable*20)*s*.15f*unavailable;
+        int selectedColor=confirmation>0 || unavailable>0?GOLD:INK;
         if(selected==SURVIVAL) {
             float clock=SurvivalDemo.animationClock(c);
             survivalAccent(p,selectedX,y,s,clock,t);
             selectedY-=s*.12f*t*(.5f+.5f*(float)Math.sin(clock*3.5f));
             bump*=1f+.018f*t*(float)Math.sin(clock*3.5f);
-            if(confirmation<=0)selectedColor=Glyph.mix(INK,Glyph.cycle(clock*.10f),.25f*t);
+            if(confirmation<=0 && unavailable<=0)selectedColor=Glyph.mix(INK,Glyph.cycle(clock*.10f),.25f*t);
         }
         name(p,selected,selectedX,selectedY,s,bump,selectedColor);
         p.restore();
-        String action=playable(c)?(confirmation>0?"SELECTED":"TAP TO CONFIRM"):implemented(selected)?"LOCKED":"COMING SOON";
-        p.text(action,L.w*.5f,y+s*2.05f,type(s*.36f),unavailable>0?GOLD:INK_DIM,Painter.CENTER,false);
-        if(!adventure()) {
-            float alpha=Math.max(0,1-2*adventureFade);
-            float x=L.w*.5f+(float)Math.sin(unavailable*20)*s*.15f*unavailable;
-            if(selected==SURVIVAL)SurvivalDemo.draw(p,c,L,alpha);
-            p.text(selected==SURVIVAL?"ENDLESS WAVES":"TIMED BOSS CHALLENGES",x,LandPicker.cardY(L)-(selected==SURVIVAL?s*.65f:0),
-                    type(s*(selected==SURVIVAL?.35f:.52f)),fadeBy(INK,alpha),Painter.CENTER,true);
-            p.text(unlocked(c,selected)?(selected==SURVIVAL?Survival.profileName(c.survival.titleProfile(c))+" / TIME + SCORE":"SINGLE BOSS + BOSS RUSH"):selected==SURVIVAL?
-                    "DEFEAT SLIME TO UNLOCK":"DEFEAT A BOSS TO UNLOCK",x,LandPicker.cardY(L)+s*(selected==SURVIVAL?3.4f:1.65f),
-                    type(s*.38f),fadeBy(INK_DIM,alpha),Painter.CENTER,false);
-        }
+        if(selected==SURVIVAL)SurvivalDemo.draw(p,c,L,Math.max(0,1-2*adventureFade));
     }
 }
