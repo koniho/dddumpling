@@ -43,7 +43,7 @@ final class Preview {
         shot(dir,"148-mode-changing",c,L,w,h,ss);
         step(c,L,ModeSelector.CHANGE);shot(dir,"148-mode-survival",c,L,w,h,ss);
         step(c,L,.45f);shot(dir,"148-mode-survival-animated",c,L,w,h,ss);
-        for(float clock:new float[]{.86f,2.86f,4.9f,6.9f}) {
+        for(float clock:new float[]{.43f,1.43f,2.45f,3.45f}) {
             c.clock=clock;shot(dir,"148-mode-survival-skit-"+Math.round(clock*100),c,L,w,h,ss);
         }
         c.modes.select(c,ModeSelector.TIME_ATTACK,1);step(c,L,ModeSelector.CHANGE);

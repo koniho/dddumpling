@@ -3,6 +3,7 @@ package com.dddumpling.game;
 /** A clock-driven title skit; no combat state, audio, or gameplay randomness. */
 final class SurvivalDemo extends Draw {
     private SurvivalDemo() {}
+    static float animationClock(GameCore c) { return c.clock*2f; }
     static int companion(GameCore c) {
         if(Collect.has(c.collected,c.caseIndex))return c.caseIndex;
         for(int i=0;i<Collect.COUNT;i++)if(Collect.has(c.collected,i))return i;
@@ -11,7 +12,7 @@ final class SurvivalDemo extends Draw {
     static void draw(Painter painter,GameCore c,Layout L,float fade) {
         if(fade<=.004f)return;
         Painter p=new OpacityPainter(painter,fade);
-        float clock=c.clock%8f,beat=clock%2f;
+        float clock=animationClock(c)%8f,beat=clock%2f;
         int turn=(int)(clock/2f),side=turn%2==0?-1:1,g=Roster.at(c.fullRoster,turn%Roster.count(c.fullRoster));
         boolean ninja=turn<2;
         float s=L.unit,x=L.w*.5f,y=LandPicker.cardY(L)+s*1.3f,r=Math.min(s*1.35f,L.h*.029f);
@@ -50,7 +51,7 @@ final class SurvivalDemo extends Draw {
             Renderer.bullet(p,c,L,x+side*r*.6f,actorY,hitX,hitY,(beat-.7f)/(impact-.7f),g,1);
         }
         p.fillEllipse(x,y+r*.72f,r*.8f,r*.13f,0x44302045);
-        Trinket.drawReacting(p,companion(c),actorX,actorY,r*(1f+.08f*spring),c.clock,1f,
+        Trinket.drawReacting(p,companion(c),actorX,actorY,r*(1f+.08f*spring),animationClock(c),1f,
                 spring>.3f?4:1,side*.5f,ninja);
         if(turn%2==0 && beat<.3f) {
             float pop=beat/.3f;

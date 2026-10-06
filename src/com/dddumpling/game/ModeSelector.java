@@ -146,10 +146,11 @@ final class ModeSelector extends Draw {
         float selectedX=L.w*.5f+direction*L.w*.6f*(1-t),selectedY=y;
         int selectedColor=confirmation>0?GOLD:INK;
         if(selected==SURVIVAL) {
-            survivalAccent(p,selectedX,y,s,c.clock,t);
-            selectedY-=s*.12f*t*(.5f+.5f*(float)Math.sin(c.clock*3.5f));
-            bump*=1f+.018f*t*(float)Math.sin(c.clock*3.5f);
-            if(confirmation<=0)selectedColor=Glyph.mix(INK,Glyph.cycle(c.clock*.10f),.25f*t);
+            float clock=SurvivalDemo.animationClock(c);
+            survivalAccent(p,selectedX,y,s,clock,t);
+            selectedY-=s*.12f*t*(.5f+.5f*(float)Math.sin(clock*3.5f));
+            bump*=1f+.018f*t*(float)Math.sin(clock*3.5f);
+            if(confirmation<=0)selectedColor=Glyph.mix(INK,Glyph.cycle(clock*.10f),.25f*t);
         }
         name(p,selected,selectedX,selectedY,s,bump,selectedColor);
         p.restore();
