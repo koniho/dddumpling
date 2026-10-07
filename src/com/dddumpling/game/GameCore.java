@@ -145,7 +145,7 @@ final class GameCore {
     /** 0..1 fade of the summary screen, which starts once the hold is spent. */
     float overFade() {
         if (state != OVER) return 0f;
-        if (dying()) return 0f;
+        if (dying() || survival.reward.pending) return 0f;
         return Math.min(1f, (time - deathDuration()) / OVER_FADE);
     }
 
@@ -182,6 +182,8 @@ final class GameCore {
         default void saveReleaseSeen(String value) {}
         default int loadCaseIndex() { return 0; }
         default void saveCaseIndex(int value) {}
+        default String loadSurvivalAward() { return ""; }
+        default void saveSurvivalAward(String value) {}
         default String loadSurvival() { return ""; }
         default void saveSurvival(String value) {}
         default String loadHighScores() { return ""; }
@@ -190,6 +192,7 @@ final class GameCore {
         default boolean resetHighScores(byte[] progress) {
             saveHighScores("");
             saveSurvival("");
+            saveSurvivalAward("");
             for (int land=0;land<Lands.COUNT;land++) saveLandBest(land,0);
             saveBest(0);
             if (progress!=null) saveProgress(progress);
@@ -590,6 +593,7 @@ final class GameCore {
     final Starter starter = new Starter();
     final ModeSelector modes = new ModeSelector();
     final Survival survival = new Survival();
+    final DuckBodies ducks = new DuckBodies();
     /** Counts down while the push-back shockwave is on screen. */
     float pushT;
     /** Words the last push-back shoved back, for the readout. */
@@ -1597,7 +1601,8 @@ final class GameCore {
             modes.restore(preferences.mode);
             // Masked: a store that hands back junk in the high bits must not make
             // Collect.owned() report more than there are entries.
-            collected = store.loadCollected() & Collect.MASK;
+            collected = Collect.decode(store.loadCollected());
+            if (!Collect.currentSave(store.loadCollected()) && caseIndex >= Collect.DUCK_FIRST) caseIndex=0;
             // Floored at what the case holds: a store from before this counter existed has nothing
             // to hand back, and reading zero next to a part-full case would tell the player they
             // had won nothing. Their collection is the floor on how many baskets they opened.
@@ -1622,6 +1627,7 @@ final class GameCore {
         }
         progress.seed(this);
         progress.apply(this);
+        survival.reward.restore(this);
     }
 
     boolean playRosterFull() { return state == TITLE ? fullRoster : runFullRoster; }
@@ -1907,6 +1913,7 @@ final class GameCore {
         java.util.Arrays.fill(landBests,0);
         highScores.clear();
         survival.clearRecords();
+        survival.reward.pending=false;
         highScoreScreen.open=highScoreScreen.closing=false;
         highScoreScreen.selected=-1;
         scoresSuppressed=true;
@@ -2023,6 +2030,7 @@ final class GameCore {
     }
 
     void dismissGameOver() {
+        if (survival.reward.dismiss(this)) return;
         if (overReady()) returnToTitle();
     }
 
@@ -2750,6 +2758,7 @@ final class GameCore {
         if (sound != null && (settingsOpen || !boss.fighting() || boss.kind != Boss.SLIME
                 || boss.hasGlob() || boss.boltCount() > 0)) sound.bossCharge(0f);
         if (settingsOpen) { preferences.updatePanel(this,elapsed); return; }
+        ducks.update(this,dt);
         companion.update(this,dt);
         // TEAM SQUISH can finish on the same frame that schedules an interlude. Its return owns
         // the companion until it reaches home, so it keeps moving through that transition.

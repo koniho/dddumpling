@@ -8,6 +8,7 @@ final class Survival extends Draw {
     final int[] bestScore=new int[3];
     final HighScores[] histories={new HighScores(true),new HighScores(true),new HighScores(true)};
     final java.util.Random blurbs=new java.util.Random(149);
+    final DuckReward reward=new DuckReward();
     int ending;
     boolean active,finished,newBest;
     double seconds;
@@ -205,7 +206,9 @@ final class Survival extends Draw {
         bestTime[profile]=Math.max(bestTime[profile],duration);
         bestScore[profile]=Math.max(bestScore[profile],c.score);
         ending=c.lives>0?HighScores.SURVIVAL_BLURBS.length:blurbs.nextInt(HighScores.SURVIVAL_BLURBS.length);
+        if(c.lives<=0)reward.select(c);
         history().finish(c);
+        reward.commit(c);
         if(c.store!=null)c.store.saveSurvival(encode());
     }
     void leave(GameCore c) {

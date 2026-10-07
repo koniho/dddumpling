@@ -2,6 +2,7 @@ package com.dddumpling.game;
 
 /** Applies a smooth grayscale palette to every primitive without changing its opacity. */
 final class MonochromePainter implements Painter {
+    public DuckBodies ducks() { return p.ducks(); }
     final Painter p;
     final float amount;
     MonochromePainter(Painter p,float amount) { this.p=p; this.amount=amount; }

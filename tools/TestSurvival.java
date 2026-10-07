@@ -50,7 +50,7 @@ final class TestSurvival extends Check {
         check("difficulty has a bounded ceiling",c.stage==19 && c.travelSeconds()==8f && c.maxEnemies()==5);
         c.score=1234;c.lives=1;c.takeHit(L.w*.5f,L);
         check("death saves only Survival records",c.state==GameCore.OVER && c.survival.finished
-                && m.best==789 && m.highScores.equals(history) && c.collected==prizes
+                && m.best==789 && m.highScores.equals(history) && (c.collected & Collect.LEGACY_MASK)==prizes && c.survival.reward.pending
                 && c.progress.maximum("highest_stage")==0 && c.townRunTickets==0);
         c.dismissGameOver();
         check("Survival death animation cannot be dismissed early",c.state==GameCore.OVER && c.returnFade==0);
@@ -60,6 +60,7 @@ final class TestSurvival extends Check {
         GameCore loaded=new GameCore(m,150,true);
         check("Survival records persist separately",loaded.survival.bestTime[profile]==record && loaded.survival.bestScore[profile]==1234);
         c.dismissGameOver();
+        c.update(2,2,L);c.dismissGameOver();
         check("Survival dismissal begins the return fade without retry",c.returnFade>0 && !c.starting());
         c.update(GameCore.RETURN_FADE,GameCore.RETURN_FADE,L);
         check("return restores Adventure progress and keeps mode choice",c.state==GameCore.TITLE && !c.starting() && c.landChoice==1
@@ -67,7 +68,7 @@ final class TestSurvival extends Check {
         c.startGame();check("new run resets time and transient state",c.survival.active && c.survival.seconds==0 && !c.pushUsed && c.stage==1);
         c.toTitle();
         c.modes.back(c);c.startGame();check("Adventure still starts at its selected land",!c.survival.active && c.stage==6);
-        records(L);history(L);linkedAfterMinute(L);effects(L);powerRack(L);backgroundEntrance(L);backgroundCoverage();backgroundExit();endingSkits(L);bounded(L);fuzz(L);
+        ducks(L);records(L);history(L);linkedAfterMinute(L);effects(L);powerRack(L);backgroundEntrance(L);backgroundCoverage();backgroundExit();endingSkits(L);bounded(L);fuzz(L);
     }
     private static java.util.ArrayList<float[]> stripes(GameCore c,Layout L) {
         java.util.ArrayList<float[]> bodies=new java.util.ArrayList<>();
@@ -138,6 +139,81 @@ final class TestSurvival extends Check {
                 && c.survival.history().latestRun.duration==duration);
         c.toTitle();check("title no longer owns a death skit",!SurvivalEnd.ownsCompanion(c));
     }
+    private static void ducks(Layout L) {
+        group("Survival duck rewards and migration");
+        int[] base={0,2,4,5,6,7,8};
+        java.util.Random random=new java.util.Random(156);
+        for(int segment=0;segment<7;segment++) {
+            int seen=0;
+            double end=segment==6?300:(segment+1)*45;
+            for(double time:new double[]{segment*45,end-.001})for(int n=0;n<40;n++) {
+                int pick=DuckReward.choose(time,random)-Collect.DUCK_FIRST;
+                check("duck belongs to final segment "+segment,pick==base[segment] || pick==base[segment]+1);
+                seen|=1<<(pick-base[segment]);
+            }
+            check("both pool ducks can be selected "+segment,seen==3);
+        }
+        for(double time:new double[]{300,300.001,900})
+            check("five-minute champion replaces pool",DuckReward.choose(time,random)==Collect.COUNT-1);
+        Mem m=store();GameCore c=start(m,156);c.survival.seconds=300;c.score=50;
+        c.lives=1;c.takeHit(L.w*.5f,L);
+        int who=c.survival.reward.who;long sequence=c.survival.reward.sequence;
+        check("one saved duck without changing score",who==Collect.COUNT-1 && c.collectionCounts[who]==1
+                && c.score==50 && c.survival.history().latestRun.prizes.length==1);
+        String journal=m.survivalAward;
+        c.survival.finish(c);c.dismissGameOver();
+        check("early taps and repeated finish cannot reroll",m.survivalAward.equals(journal) && c.collectionCounts[who]==1);
+        // Simulate loss of all writes after the atomic journal commit.
+        m.collected=store().collected;m.collectionCounts=new int[Collect.COUNT];m.survival="";m.progress=null;
+        GameCore recovered=new GameCore(m,157,true);
+        check("journal recovers ownership record and reveal",recovered.state==GameCore.OVER
+                && recovered.survival.reward.pending && recovered.collectionCounts[who]==1
+                && recovered.survival.history().latestRun.prizes[0]==who && recovered.score==50
+                && recovered.survival.adventureLand==1);
+        GameCore again=new GameCore(m,158,true);
+        check("recovery does not duplicate the cloud reward",again.collectionCounts[who]==1
+                && again.progress.count(Collect.progressKey(who))==1 && again.survival.reward.sequence==sequence);
+        again.dismissGameOver();again.update(2,2,L);again.dismissGameOver();again.update(1,1,L);
+        GameCore done=new GameCore(m,159,true);
+        check("acknowledged reveal does not reopen",done.state==GameCore.TITLE && !done.survival.reward.pending
+                && Collect.has(done.collected,who));
+        c=start(m,160);c.survival.seconds=300;c.score=70;c.lives=1;c.takeHit(L.w*.5f,L);
+        check("duplicates count once and give no score bonus",c.collectionCounts[who]==2 && !c.survival.reward.fresh && c.score==70);
+        Mem quitStore=store();GameCore quit=start(quitStore,161);quit.survival.seconds=350;quit.toTitle();
+        check("abandoning Survival earns no duck",quit.survival.history().latestRun.prizes.length==0
+                && quitStore.survivalAward.isEmpty());
+        Mem legacy=store();legacy.collected=(1L<<59)-1;legacy.collectionCounts=new int[59];
+        legacy.collectionCounts[58]=9;legacy.caseIndex=58;
+        GameCore migrated=new GameCore(legacy,162,true);
+        check("retired cave bits never become ducks",(migrated.collected & ~Collect.LEGACY_MASK)==0
+                && migrated.collectionCounts[58]==0 && migrated.caseIndex==0);
+        try {
+            ProgressData oldCloud=new ProgressData();oldCloud.increment("old","prize_58",7);
+            migrated.progress.restore(oldCloud.encode(),migrated);
+            check("retired cloud IDs cannot resurrect as ducks",migrated.collectionCounts[58]==0);
+            ProgressData ducks=new ProgressData();ducks.increment("other","duck_10",2);
+            migrated.progress.restore(ducks.encode(),migrated);
+            GameCore cloudReload=new GameCore(legacy,163,true);
+            check("cloud ducks survive native mask round trip",cloudReload.collectionCounts[59]==2
+                    && Collect.has(cloudReload.collected,59));
+        } catch(Exception e) {check("duck cloud migration",false);}
+        c.resetHighScores();
+        GameCore reset=new GameCore(m,164,true);
+        check("score reset keeps ducks and cannot resurrect the pending record",!reset.survival.reward.pending
+                && reset.survival.histories[0].latestRun==null && reset.collectionCounts[who]==2);
+        DuckBodies bodies=c.ducks;
+        float[] before=bodies.skin[10][0].outline().clone();
+        bodies.react(who,.8f);bodies.update(c,.05f);
+        check("duck touch impulses deform actual spring skin",!java.util.Arrays.equals(before,bodies.skin[10][0].outline()));
+        float[] paused=bodies.skin[10][0].outline().clone();c.paused=true;bodies.update(c,1);
+        check("duck springs freeze while paused",java.util.Arrays.equals(paused,bodies.skin[10][0].outline()));c.paused=false;
+        for(int i=0;i<600;i++)bodies.update(c,DT);
+        boolean bounded=true;for(float value:bodies.skin[10][0].outline())bounded&=Float.isFinite(value)&&Math.abs(value)<2;
+        check("duck spring skin settles without exploding",bounded);
+        float[] frozen=bodies.skin[10][0].outline().clone();Renderer.draw((Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)->null),c,L);Renderer.draw((Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)->null),c,L);
+        check("drawing does not advance duck physics",java.util.Arrays.equals(frozen,bodies.skin[10][0].outline()));
+    }
+
     private static void linkedAfterMinute(Layout L) {
         for(int effect:new int[]{-1,Power.FLURRY,Power.NINJA,Power.TEAM}) {
             GameCore c=start(store(),168);
@@ -400,7 +476,7 @@ final class TestSurvival extends Check {
                     if(c.state==GameCore.BONUS || c.boss.active() || c.cave.running)break;
                 }
                 check("bounded Survival has no boss or minigame",c.state!=GameCore.BONUS && !c.boss.active() && !c.cave.running);
-                check("bounded Survival keeps rewards isolated",c.collected==store().collected && c.progress.maximum("highest_stage")==0);
+                check("bounded Survival keeps rewards isolated",(c.collected & Collect.LEGACY_MASK)==store().collected && c.progress.maximum("highest_stage")==0);
                 total+=c.survival.seconds;if(c.state==GameCore.OVER)deaths++;
             }
             System.out.printf("    Survival %.1f presses/s: mean %.1fs, %d/3 deaths%n",presses,total/3,deaths);

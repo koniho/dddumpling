@@ -59,7 +59,7 @@ final class Progress {
     }
     void seed(GameCore c) {
         if (!available() || data.maximum("migrated") != 0) return;
-        for (int i = 0; i < Collect.COUNT; i++) data.legacy("prize_" + i, c.collectionCounts[i]);
+        for (int i = 0; i < Collect.COUNT; i++) data.legacy(Collect.progressKey(i), c.collectionCounts[i]);
         data.legacy("rewards_total", c.collectTotal);
         data.legacy("steamer_won", c.steamer.opens);
         data.legacy("starpath_won", c.stars.wins);
@@ -122,10 +122,18 @@ final class Progress {
     }
     void reward(int who, boolean fresh, String source, int score) {
         if (!available() || !running || who < 0 || who >= Collect.COUNT) return;
-        data.increment(replica, "prize_" + who, 1);
+        data.increment(replica, Collect.progressKey(who), 1);
         recordScore(score);
         event("rewards_total"); event(fresh ? "rewards_new" : "rewards_duplicate");
         event("rewards_" + source); changed();
+    }
+    long duckSequence() { return data.component(replica,"duck_awards"); }
+    void duckReward(long sequence,int who,boolean fresh) {
+        if(!available() || sequence<=duckSequence())return;
+        data.increment(replica,"duck_awards",sequence-duckSequence());
+        data.increment(replica,Collect.progressKey(who),1);
+        event("rewards_total");event(fresh?"rewards_new":"rewards_duplicate");
+        event("rewards_survival");changed();
     }
     void starter(int who) {
         if (!available()) return;
@@ -187,7 +195,7 @@ final class Progress {
         c.best = c.landBests[c.state == GameCore.TITLE && c.landChoice < Lands.COUNT ? c.landChoice : c.runStartLand];
         long known = 0;
         for (int i = 0; i < Collect.COUNT; i++) {
-            int count = Math.max(c.collectionCounts[i], ProgressData.integer(data.total("prize_" + i)));
+            int count = Math.max(c.collectionCounts[i], ProgressData.integer(data.total(Collect.progressKey(i))));
             modified |= c.collectionCounts[i] != count; c.collectionCounts[i] = count;
             if (c.collectionCounts[i] > 0) c.collected = Collect.add(c.collected, i);
             known = ProgressData.add(known, c.collectionCounts[i]);
@@ -200,7 +208,7 @@ final class Progress {
         c.collectTotal = total; c.steamer.opens = opens; c.stars.wins = wins;
         if (c.store != null && modified) {
             for (int land = 0; land < Lands.COUNT; land++) c.store.saveLandBest(land, c.landBests[land]);
-            c.store.saveCollected(c.collected);
+            c.store.saveCollected(Collect.encode(c.collected));
             c.store.saveCollectionCounts(c.collectionCounts); c.store.saveCollectTotal(c.collectTotal);
             c.store.saveSteamerOpens(c.steamer.opens); c.store.saveStarWins(c.stars.wins);
         }

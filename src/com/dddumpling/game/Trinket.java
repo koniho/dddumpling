@@ -62,6 +62,10 @@ final class Trinket {
             BossCollect.draw(p, i - Collect.BOSS_FIRST, cx, cy, r, clock, known, fade,mood,look,ninja);
             return;
         }
+        if(i>=Collect.DUCK_FIRST) {
+            Duck.draw(p,i,cx,cy,r,clock,known,fade,mood,look,ninja);
+            return;
+        }
         int shape = Collect.SHAPE[i];
         if (!known) {
             // Drawn twice, the outer copy a little larger: that gives any of the fifteen

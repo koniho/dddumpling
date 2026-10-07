@@ -259,7 +259,11 @@ final class HighScoreScreen extends Draw {
             p.text("DUMPLINGS COLLECTED",titleX,y,font,Glyph.mix(INK_DIM,INK,.18f),Painter.LEFT,false);
             prizeCollection(p,c,run,valueX,L.w*.89f,y-s*.16f,s*.47f,font);
             y+=s*2.45f;
-        } else y+=s*.8f;
+        } else {
+            p.text("DUCK COLLECTED",titleX,y,font,INK_DIM,Painter.LEFT,false);
+            prizeCollection(p,c,run,valueX,L.w*.89f,y-s*.16f,s*.65f,font);
+            y+=s*2.45f;
+        }
         p.line(titleX,y-s*.68f,L.w*.89f,y-s*.68f,0x35FFFFFF,s*.055f);
 
         for(int effect:Power.OFFERED) {

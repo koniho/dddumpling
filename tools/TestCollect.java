@@ -24,8 +24,8 @@ final class TestCollect extends Check {
     static void catalogue(Layout L) {
         caveRewards(L);
         group("collectible catalogue");
-        check("original 49 collectibles", Collect.BLIND_COUNT == 30
-                && Collect.STAR_COUNT == 5 && Collect.CUBE_COUNT == 10 && Collect.BOSS_COUNT == Boss.COUNT && Collect.COUNT == 49);
+        check("original 49 plus 11 Survival ducks", Collect.BLIND_COUNT == 30
+                && Collect.STAR_COUNT == 5 && Collect.CUBE_COUNT == 10 && Collect.BOSS_COUNT == Boss.COUNT && Collect.COUNT == 60);
         check("every table is the same length",
                 Collect.NAME.length == Collect.COUNT && Collect.FAMILY.length == Collect.COUNT
                         && Collect.SHAPE.length == Collect.COUNT
@@ -81,7 +81,7 @@ final class TestCollect extends Check {
         boolean everyTier = true;
         for (int t = 0; t < tierCount.length; t++) if (tierCount[t] == 0) everyTier = false;
         check("every tier has entries", everyTier);
-        check("exactly one grail", tierCount[Collect.GRAIL] == 1);
+        check("blind-box grail plus Survival champion", tierCount[Collect.GRAIL] == 2);
         check("commons outnumber chases", tierCount[Collect.COMMON] > tierCount[Collect.CHASE]);
         boolean everyFamily = true;
         for (int f = 0; f < familyCount.length; f++) {
@@ -129,9 +129,9 @@ final class TestCollect extends Check {
         Mem old=new Mem();old.collected=(1L<<59)-1;old.collectionCounts=new int[59];
         old.collectionCounts[48]=3;old.collectionCounts[58]=7;old.caseIndex=58;
         GameCore loaded=new GameCore(old,614L);
-        check("retired cave ownership and selection load safely",loaded.collected==Collect.MASK
-                && loaded.collectionCounts.length==49 && loaded.collectionCounts[48]==3 && loaded.caseIndex==0);
-        check("remaining collection is still complete",Collect.complete(loaded.collected));
+        check("retired cave ownership and selection load safely",loaded.collected==Collect.LEGACY_MASK
+                && loaded.collectionCounts.length==60 && loaded.collectionCounts[48]==3 && loaded.caseIndex==0);
+        check("legacy collection does not invent new ducks",!Collect.complete(loaded.collected));
     }
 
     static void ownedSet(Layout L) {
@@ -214,7 +214,7 @@ final class TestCollect extends Check {
         check("the first one is always new", c.prizeNew);
         check("it lands in the case", Collect.has(c.collected, c.prize));
         check("the case is written straight to the store",
-                store.collected == c.collected && store.collectedSaves == 1);
+                Collect.decode(store.collected) == c.collected && store.collectedSaves == 1);
         check("the display case moves to the prize", c.caseIndex == c.prize);
         if (c.prize >= 0) {
             System.out.printf("    won %s (%s)%n", Collect.NAME[c.prize],
@@ -461,10 +461,10 @@ final class TestCollect extends Check {
         }
         check("wrap always lands inside the catalogue", wrapped);
 
-        boolean balanced = Showcase.ROW_NAME.length == 7;
+        boolean balanced = Showcase.ROW_NAME.length == 8;
         for (int row = 0; row < Showcase.ROW_NAME.length; row++)
-            balanced &= Showcase.columns(row) >= (row == 6 ? 4 : 5) && Showcase.columns(row) <= 10;
-        check("seven categories hold between four and ten collectibles each", balanced);
+            balanced &= Showcase.columns(row) >= (row == 6 ? 4 : 5) && Showcase.columns(row) <= (row==7?11:10);
+        check("eight categories include the eleven ducks", balanced);
         boolean fruitRow = true, candyRow = true;
         for (int i = 0; i < Collect.COUNT; i++) {
             if (Collect.FAMILY[i] == Collect.FRUITS && Showcase.row(i) != Showcase.FRUIT_ROW) fruitRow = false;
@@ -508,7 +508,7 @@ final class TestCollect extends Check {
     static void caseTouch(Layout L) {
         group("browsing by touch");
         Mem store = new Mem();
-        store.collected = Collect.MASK;
+        store.collected = Collect.encode(Collect.MASK);
         GameCore c = new GameCore(store, 99L);
         float cx = L.w / 2f, cy = Showcase.focusCy(L);
 
@@ -875,7 +875,7 @@ final class TestCollect extends Check {
     static void clearing(Layout L) {
         group("clearing the case");
         Mem store = new Mem();
-        store.collected = Collect.MASK;
+        store.collected = Collect.encode(Collect.MASK);
         GameCore c = new GameCore(store, 121L);
         c.startGame();
         c.openSettings();

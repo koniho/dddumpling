@@ -63,7 +63,7 @@ final class TestBack extends Check {
         Pause.open(c); Pause.action(c, 2); Pause.action(c, 2);
         check("confirmed end saves score and collected rewards", c.state == GameCore.TITLE
                 && c.best == 3210 && m.best == 3210 && c.collected == owned
-                && m.collected == owned && c.collectTotal == total);
+                && Collect.decode(m.collected) == owned && c.collectTotal == total);
         check("ending clears active boss and frenzy without counting a loss", !c.boss.active()
                 && c.mode == -1 && c.power == null && !c.paused && !c.confirmEnd && c.earlyLosses == losses);
         c.startGame(); c.lives = 1; c.takeHit(L.w*.5f, L);

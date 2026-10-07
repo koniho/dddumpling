@@ -9,6 +9,38 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void duckFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("156-ducks-"))return;
+        GameCore c=TestSurvival.start(TestSurvival.store(),156);
+        c.survival.seconds=300;c.lives=1;c.takeHit(L.w*.5f,L);
+        c.shake=c.flash=c.skyGlow=0;
+        for(int i=0;i<Collect.DUCK_COUNT;i++) {
+            int who=Collect.DUCK_FIRST+i;c.survival.reward.who=who;c.collectionCounts[who]=1;
+            c.collected=Collect.add(c.collected,who);
+            c.deathT=0;c.time=c.deathDuration()+2;
+            for(int tick=0;tick<40;tick++)c.ducks.update(c,Check.DT);
+            shot(dir,"156-ducks-reveal-"+i,c,L,w,h,ss);
+        }
+        c.survival.reward.who=Collect.DUCK_FIRST;
+        for(float t:new float[]{.15f,.48f,.75f,.99f,1f}) {
+            c.deathT=c.deathDuration()*(1-t);c.time=c.deathDuration()*t;
+            shot(dir,"156-ducks-transition-"+Math.round(t*100),c,L,w,h,ss);
+        }
+        RasterPainter raster=new RasterPainter(w,h,ss);raster.clear(Draw.BG);
+        Painter p=new OpacityPainter(raster,1) { public DuckBodies ducks() {return c.ducks;} };
+        p.text("SURVIVAL DUCKS",w*.5f,h*.055f,w*.056f,Draw.INK,Painter.CENTER,true);
+        p.text("TEN RAINBOW RIDERS + ONE CHAMPION",w*.5f,h*.083f,w*.023f,Draw.INK_DIM,Painter.CENTER,false);
+        float rowH=h*.205f;
+        for(int i=0;i<11;i++) {
+            int who=Collect.DUCK_FIRST+i;float x=w*(.18f+.32f*(i%3)),y=h*.19f+(i/3)*rowH,r=w*.103f;
+            if(i==10)x=w*.50f;
+            Trinket.draw(p,who,x,y,r,1.2f,true,1);
+            p.text(Collect.NAME[who],x,y+r*1.36f,w*.024f,Draw.INK,Painter.CENTER,true);
+            Trinket.draw(p,who,x,y+r*1.83f,r*.22f,1.2f,true,1);
+        }
+        Png.write(new File(dir,"156-ducks-review-sheet.png"),raster.resolve(),w,h);
+    }
+
     private static void survivalEndingFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("149-rainbow-end-"))return;
         GameCore c=TestSurvival.start(TestSurvival.store(),173);
@@ -1012,6 +1044,7 @@ final class Preview {
         onboardingFrames(dir,L,w,h,ss);
         starterFrames(dir,L,w,h,ss);
         modeFrames(dir,L,w,h,ss);
+        duckFrames(dir,L,w,h,ss);
         survivalFrames(dir,L,w,h,ss);
         survivalEndingFrames(dir,L,w,h,ss);
 

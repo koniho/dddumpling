@@ -146,6 +146,8 @@ final class CaseUi {
         }
         c.clearArmed = false;
         c.collected = 0L;
+        c.survival.reward.pending=false;
+        if(c.store!=null)c.store.saveSurvivalAward("");
         // The tally goes too: it counts baskets opened for entries that no longer exist, and leaving
         // it would put "COLLECTIONS: 40" over an empty case. Same for the run's haul.
         c.collectTotal = 0;

@@ -116,7 +116,7 @@ public final class IOSInputTest extends Check {
             for(int i=0;i<5;i++)game.update(.2f);
             int who=Starter.CHOICES[choice];
             check("native choice saves and launches chosen friend "+choice,!c.starter.open && c.starting()
-                    && c.launchWho==who && store.collected==(1L<<who) && store.collectTotal==1);
+                    && c.launchWho==who && Collect.decode(store.collected)==(1L<<who) && store.collectTotal==1);
             for(int i=0;i<16;i++)game.update(.2f);
             check("native starter becomes first-run companion "+choice,c.state==GameCore.PLAY && c.runWho==who
                     && c.companion.who==who && c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.COMPANION);
@@ -254,6 +254,9 @@ public final class IOSInputTest extends Check {
         tap(game,l.w*.1f,l.h*.4f);
         check("native Survival tap cannot skip death animation",c.state==GameCore.OVER && c.returnFade==0);
         for(int i=0;i<100;i++)game.update(.05f);
+        tap(game,l.w*.1f,l.h*.4f);
+        check("native Survival first tap acknowledges the duck",!c.survival.reward.pending && c.returnFade==0);
+        for(int i=0;i<30;i++)game.update(.05f);
         tap(game,l.w*.1f,l.h*.4f);
         check("native Survival tap anywhere dismisses the settled summary",c.returnFade>0 && !c.starting());
         for(int i=0;i<30;i++)game.update(.05f);

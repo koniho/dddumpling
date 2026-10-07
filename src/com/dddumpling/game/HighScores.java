@@ -118,7 +118,7 @@ final class HighScores {
         for(int i=0;i<won.length;i++) won[i]=prizes.get(i);
         if(survival) {
             values=java.util.Arrays.copyOf(values,23);values[22]=c.survival.profile;
-            values[1]=1;values[2]=values[3]=values[6]=values[12]=0;
+            values[1]=1;values[2]=values[6]=values[12]=0;
         }
         Run run=new Run(++latest,values,won,survival?c.survival.millis():0);
         if(!survival)highestStage=Math.max(highestStage,run.stage);
@@ -142,7 +142,7 @@ final class HighScores {
     int displayCount() { return runs.size()+(latestOutsideTopTen()?1:0); }
     Run displayRun(int row) { return row<runs.size()?runs.get(row):latestRun; }
     String encode() {
-        StringBuilder s=new StringBuilder(survival?"7:":"6:").append(latest).append(':').append(highestStage);
+        StringBuilder s=new StringBuilder(survival?"9:":"8:").append(latest).append(':').append(highestStage);
         for(int i=0;i<displayCount();i++) {
             Run run=displayRun(i);
             s.append(';').append(run.id);
@@ -158,9 +158,10 @@ final class HighScores {
         if(data==null || data.isEmpty() || data.length()>16000) return;
         try {
             String[] rows=data.split(";",-1);
-            boolean survivalHistory=rows[0].startsWith("7:");
+            boolean newIds=rows[0].startsWith("8:") || rows[0].startsWith("9:");
+            boolean survivalHistory=rows[0].startsWith("7:") || rows[0].startsWith("9:");
             if(survival!=survivalHistory)return;
-            boolean stageRecord=survivalHistory || rows[0].startsWith("6:");
+            boolean stageRecord=newIds || survivalHistory || rows[0].startsWith("6:");
             boolean prizeHistory=stageRecord || rows[0].startsWith("5:");
             boolean effectHistory=prizeHistory || rows[0].startsWith("4:");
             boolean portraits=effectHistory || rows[0].startsWith("3:");
@@ -195,17 +196,17 @@ final class HighScores {
                     int kept=0;
                     for(int i=0;i<count;i++) {
                         int prize=Integer.parseInt(fields[prizeStart+i]);
-                        if(prize<0 || prize>=59) return;
+                        if(prize<0 || prize>=(newIds?Collect.COUNT:59)) return;
                         // Retired cave IDs 49..58 leave the historical score and haul total intact.
-                        if(prize<Collect.COUNT) prizes[kept++]=prize;
+                        if(prize<(newIds?Collect.COUNT:Collect.DUCK_FIRST)) prizes[kept++]=prize;
                     }
                     prizes=java.util.Arrays.copyOf(prizes,kept);
                 }
-                if(portraits && v[15]>=59) return;
-                if(portraits && v[15]>=Collect.COUNT) v[15]=-1;
+                if(portraits && v[15]>=(newIds?Collect.COUNT:59)) return;
+                if(portraits && v[15]>=(newIds?Collect.COUNT:Collect.DUCK_FIRST)) v[15]=-1;
                 if(v[1]<1 || v[6]>15 || v[11]<v[0] || v[12]>=Lands.COUNT || v[13]>1
                         || v[14]>=(survivalHistory?SURVIVAL_BLURBS.length+1:BLURBS.length)) return;
-                if(survivalHistory && (v[2]!=0 || v[3]!=0 || v[6]!=0 || v[12]!=0 || v[13]!=(v[22]==2?1:0)))return;
+                if(survivalHistory && (v[2]!=0 || v[3]>1 || v[6]!=0 || v[12]!=0 || v[13]!=(v[22]==2?1:0)))return;
                 parsed.add(new Run(id,v,prizes,duration));
             }
             latest=sequence;

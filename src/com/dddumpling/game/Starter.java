@@ -122,7 +122,7 @@ final class Starter extends Draw {
         if(c.collectTotal<Integer.MAX_VALUE)c.collectTotal++;
         CaseUi.highlight(c,who);
         if(c.store!=null) {
-            c.store.saveCollected(c.collected);
+            c.store.saveCollected(Collect.encode(c.collected));
             c.store.saveCollectionCounts(c.collectionCounts);
             c.store.saveCollectTotal(c.collectTotal);
         }

@@ -309,6 +309,7 @@ final class RunCompanion extends Draw {
 
     /** Scale the existing collectible artwork without changing its body or accessories. */
     private static final class Squash implements Painter {
+        public DuckBodies ducks() { return p.ducks(); }
         final Painter p;final float cx,cy,sx,sy;
         Squash(Painter p,float x,float y,float squash) { this.p=p;cx=x;cy=y;sx=squash;sy=1f/squash; }
         float x(float x) { return cx+(x-cx)*sx; }

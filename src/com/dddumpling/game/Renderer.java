@@ -14,6 +14,7 @@ final class Renderer extends Draw {
     static float shakeMargin(GameCore c, Layout L) { return Math.max(0f, c.shake) * .016f * L.w; }
 
     static void draw(Painter p, GameCore c, Layout L) {
+        p=new OpacityPainter(p,1f) { public DuckBodies ducks() {return c.ducks;} };
         if(c.onboarding.practice!=null) {
             Onboarding.draw(p,c,L);
             if(c.settingsOpen)PlayerSettings.draw(p,c,L);
@@ -141,7 +142,10 @@ final class Renderer extends Draw {
         }
 
         if (c.state == GameCore.TITLE) Screens.title(p, c, L);
-        else if (c.state == GameCore.OVER) Screens.gameOver(p, c, L);
+        else if (c.state == GameCore.OVER) {
+            Screens.gameOver(p, c, L);
+            c.survival.reward.draw(p,c,L);
+        }
         else if (c.state == GameCore.BONUS) Screens.bonus(p, c, L);
         else if (c.stageBanner > 0 && !(Cave.active(c) && c.cave.phase == Cave.CHOOSE)
                 && !(c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.COMPANION)) Hud.stageBanner(p, c, L);
