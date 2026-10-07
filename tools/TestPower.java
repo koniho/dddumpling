@@ -656,10 +656,16 @@ final class TestPower extends Check {
         check("but pays nothing by itself", e.squishes == 0);
         check("and does not type", high.pos == 0);
 
-        // Any key works: with no match it falls back to the most urgent word.
+        low.word[0]=1;
+        check("matching key chooses the prompt nearest the damage line",e.tapKey(1,L) && e.buddy.chase==low);
+        float vx=e.buddy.vx,vy=e.buddy.vy;
+        int aimedHits=e.hits;
+        check("unmatched key cannot redirect an existing charge",!e.tapKey(5,L) && e.buddy.chase==low
+                && e.buddy.vx==vx && e.buddy.vy==vy && e.hits==aimedHits);
         e.buddy.chase = null;
-        check("a letter nobody wants still lands", e.tapKey(5, L));
-        check("and takes the most urgent word instead", e.buddy.chase == low);
+        check("unmatched key leaves free flight unchanged",!e.tapKey(5,L) && e.buddy.chase==null
+                && e.buddy.vx==vx && e.buddy.vy==vy);
+        e.tapKey(1,L);
 
         // The charge arrives, and takes the whole word.
         boolean arrived = false;
@@ -873,7 +879,7 @@ final class TestPower extends Check {
                 c.tapKey(1,L);
                 boolean picks=c.buddy.chase==other; // Matching letters still outrank lower threats.
                 c.tapKey(0,L);picks &= c.buddy.chase==low;
-                c.tapKey(5,L);picks &= c.buddy.chase==low; // Unmatched keys use the lowest word.
+                c.tapKey(5,L);picks &= c.buddy.chase==low; // Unmatched keys keep the current charge.
                 boolean inside=true;
                 for(int frame=0;frame<90 && !low.destroyed && !low.attacking;frame++) {
                     if(frame%10==0)c.tapKey(0,L);

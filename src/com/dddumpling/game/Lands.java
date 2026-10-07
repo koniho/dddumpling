@@ -23,6 +23,7 @@ final class Lands extends Draw {
     }
     static int visualStage(GameCore c) { return c.state == GameCore.TITLE ? c.landChoice * Boss.EVERY + 1 : c.stage; }
     static int background(GameCore c) {
+        if(c.survival.active)return c.survival.background();
         return c.state == GameCore.TITLE ? Draw.BG
                 : Glyph.mix(c.landFromBg, BG[forStage(visualStage(c))], blend(c));
     }
@@ -30,7 +31,7 @@ final class Lands extends Draw {
         return Glyph.mix(c.landFromTint, TINT[forStage(visualStage(c))], blend(c));
     }
     static int cloudTint(GameCore c, int layer) {
-        if (c.state == GameCore.TITLE) return Sky.CLOUD_TINT[layer];
+        if (c.state == GameCore.TITLE || c.survival.active) return Sky.CLOUD_TINT[layer];
         int target = Glyph.mix(Sky.CLOUD_TINT[layer], TINT[forStage(visualStage(c))], 0.36f);
         return Glyph.mix(c.landCloudFrom[layer], target, blend(c));
     }
@@ -52,6 +53,7 @@ final class Lands extends Draw {
     }
 
     static void scenery(Painter p, GameCore c, Layout L) {
+        if(c.survival.active) {c.survival.scenery(p,c,L);return;}
         if (c.state == GameCore.TITLE) return;
         p.save();
         float margin = Renderer.shakeMargin(c, L);

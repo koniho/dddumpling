@@ -44,12 +44,12 @@ final class Screens extends Draw {
         bubblyTitle(p, c, L, cx, L.h * 0.100f, fade);
         float controlsOut=Starter.controlsOut(c);
         p.save();p.translate(0,L.h*controlsOut);
-        if(c.modes.adventure()) {
+        if(HighScoreScreen.available(c)) {
             HighScoreScreen.titleGlow(p,c,L,fade*caseOut(c));
             p.text(HighScoreScreen.titleText(c), cx, HighScoreScreen.titleY(L), HighScoreScreen.titleFont(c,L),
                     fadeBy(HighScoreScreen.titleTextColor(c), fade * caseOut(c)),Painter.CENTER,true);
         } else {
-            p.text(c.modes.selected==ModeSelector.SURVIVAL?"LONGEST RUN --":"FASTEST CLEAR --",
+            p.text(c.modes.selected==ModeSelector.SURVIVAL?c.survival.title(c):"FASTEST CLEAR --",
                     cx,HighScoreScreen.titleY(L),type(s*.65f),fadeBy(INK_DIM,fade*caseOut(c)),Painter.CENTER,true);
         }
 
@@ -151,9 +151,9 @@ final class Screens extends Draw {
     static void gameOver(Painter p, GameCore c, Layout L) {
         float fade = c.overFade();
         if (fade <= 0.004f) return;
-        // Drained, so the green the world died into holds for the whole summary instead of being
-        // painted over by the violet one. It stays until the title screen takes the screen back.
-        scrim(p, L, (int) (220 * fade), Glyph.mix(SCRIM, DEATH_SCRIM, c.drained()));
+        // Keep Adventure's drained palette; Survival's rainbow exit reveals violet.
+        scrim(p, L, (int) (220 * fade), c.survival.active?SCRIM:Glyph.mix(SCRIM, DEATH_SCRIM, c.drained()));
+        if(c.survival.active) {c.survival.result(p,c,L,fade);return;}
         float s = L.unit;
         // Yellow rather than the rose it was: rose is the colour of every warning and every hit
         // in this game, so a rose GAME OVER read as one more of them.

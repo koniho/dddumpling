@@ -47,7 +47,7 @@ final class TutorialSpeech extends Draw {
         if(message==POWER_NINJA)return "Ninja! Swipe across squishies to slice them.";
         if(message==POWER_PICKUP)return "Tap the glowing pickup to collect its power!";
         if(message==STACK)return "See the little pips on this Squishy? Tap its matching key once for each pip. Keep tapping until it's cleared!";
-        if(message==POWER_TEAM)return "Team Squish! Tap any key to aim me and clear words.";
+        if(message==POWER_TEAM)return "Team Squish! Tap matching keys to aim me!";
         if(message==MINIGAMES)return "Steamer is a minigame! Play a minigame after each stage. You can win dumplings! Let's free one from this steamer!";
         if(message==DISPLAY_CASE)return "Your friends live here! Tap the case to visit them!";
         if(message==STORIES)return "Tap a dumpling to read or hear its story!";

@@ -244,7 +244,7 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 | **slow-motion beat** | the brief slowdown a stroke earns by taking two or more words | `GameCore.slowdown`, `SLOW_RATE` |
 | **slice call** | the "N IN ONE!" readout during that beat. Shows the counts frozen when the stroke that earned it ended, not the live ones | `Hud.sliceCall`, `GameCore.callKills` |
 | **MULTI** | one press chains through every matching letter, hop by hop | `Power.MULTI` |
-| **TEAM SQUISH** | the run companion grows out of its home, flies into the field and bounces around squishing words, then shrinks back home when the power ends | `Power.TEAM`, `Buddy`, `RunCompanion` |
+| **TEAM SQUISH** | the run companion grows out of its home, flies into the field and bounces around squishing words, then shrinks back home when the power ends. A key press targets the matching prompt nearest the damage line; an unmatched key leaves its current trajectory unchanged | `Power.TEAM`, `Buddy`, `RunCompanion` |
 | **run squishy** | display-case selection frozen at Start; without a selection, the display case shuffles through squishies, chooses from owned squishies (or the full catalog for an empty case), then slides to center and shows its name with a short greeting before the usual send-off. Shared by TEAM SQUISH, Starpath and the saved-run portrait | `GameCore.runWho`, `Launch` |
 | **run companion** | the run squishy's small, soft rounded-hexagon home between the key groups. It stays through normal play, caves, the Steamer, powers, bosses and the game-over summary, where it cries until fading out. Player damage pulses the home red and knocks both home and character back by three quarters of the home's height; damaging a boss makes it leap, cheer and wave a pennant, defeating one keeps it cheering back and forth through the death animation, and clearing a stage gives it a proud expression and glowing home. NINJA adds a fixed-size tied oval hood around the forehead, mouth and both sides of an uncovered eye opening. A rescue swipe carries the companion and its glowing energy bar up by the same distance as the push-back, holds there for half a second, sends the bar beyond the screen edges, then returns it home with a tired idle face for the rest of the stage. Its animation has its own clock, so later damage cannot replay it. For TEAM SQUISH and Star Path the same character travels out of its home instead of being duplicated. After an incomplete Star Path blast-off it returns home from below the screen | `RunCompanion`, `GameCore.companion` |
 | **boss befriended** | the boss reward screen. The run companion stays opaque as its rounded home fades away, eases to the centered space beneath `A FRIEND RETURNS` or `JOINS YOUR COLLECTION`, sends a heart up to the new boss, then eases home as the bubble fades back in; the old collection lineup is omitted so the two characters own the moment | `BossCollect.celebration` |
@@ -409,15 +409,59 @@ Stage 11 introduces mystery pickups with 15% longer travel/spawn intervals; stag
 The text mode selector browses **Adventure**, **Survival**, and **Boss Time Attack** with
 arrows or a horizontal swipe. Tapping the name confirms with a pulse and chime; player keys
 start the available mode. Adventure is the default. The display case and companion collection
-are shared; lands and their discovery tutorial appear only in Adventure. The choice lasts
-for the session, and Back from another mode restores Adventure without changing its progress.
+are shared; lands and their discovery tutorial appear only in Adventure. The choice is saved
+on the device across runs and app opens. Back from another mode saves Adventure as the selection
+without changing its progress.
+When Survival is selected, its label bobs and cycles color over bright drifting rainbow stripes.
+Below it, the selected collected squishy demonstrates left and right Ninja swipes, then removes
+the mask and fires at single-prompt enemies on either side. The skit does not affect combat or saves.
 
 Adventure's BEST line also shows the highest stage reached. The stage record is independent
 of the best-scoring run and survives that run leaving the top-ten history. Existing saves use
 their progress maximum and retained run history; an unknown stage is shown as `--`.
 
-Survival and Boss Time Attack currently show **COMING SOON** and cannot start a run. Their
-gameplay and separate records belong to #149 and #150; boss victories determine future unlocks.
+Survival unlocks after beating Slime. Boss Time Attack remains unavailable until #150.
+
+## Survival
+
+Survival is continuous combat with no land selector, bosses, bonus games or collection rewards.
+Normal difficulty increases for five active minutes, then holds its ceiling. Cleared enemies
+are replaced promptly. A left-side rack supplies one use each of Flurry, Ninja and Team Squish per run;
+tap an unused icon while no power is active to activate it. Used icons remain translucent, and
+the active icon has a duration ring. Survival never spawns random power-up pickups. Rescue
+swipes recharge 30 active seconds after use. A mint ring around the companion fills during recharge;
+when ready it pulses and the companion hops if a higher-priority reaction is not playing.
+Kids Mode retains slower traversal and a smaller crowd.
+Linked friends begin appearing after 60 seconds of active Survival play: one pair per six ordinary
+spawns, with the existing pair-and-two-solos pattern during power-ups. Paused time does not count.
+
+The timer includes combat slow motion and excludes launch, tutorials, settings, pause, background
+and game-over presentation. Local longest-time and highest-score records are separate for Kids,
+four keys and six keys. Tapping anywhere on the settled game-over screen returns to the title, preserving Survival
+selection and Adventure's land choice. Tapping the title's best record opens the shared high-score
+panel with Survival's own top ten scores and latest run, separately for each control profile.
+Summaries show time survived, score, accuracy, squishes, best combo, the three rack powers and
+Rescue Swipes used; Adventure's stages, bosses, prizes and debuffs do not appear. A death picks
+one of twenty rainbow-themed blurbs and saves it with that run. Legacy bests remain intact without
+invented past runs. Resetting scores clears all mode records and run histories.
+The chosen death blurb also selects a matching companion skit: floaties, heart splash, sprinkles, surfboard,
+rainbow curl, cloud daycare, rinse shower, purple paddling pool, runaway map, jellybean boat,
+soggy hat, polite wave, takeout carton, missed snack stop, bubble bath, forgotten towel,
+river adoption, cloud cuddle, noodle steering or technicolor wake. The companion hops out of its
+home and is carried down offscreen before the summary; replaying a saved run never rerolls its blurb.
+
+Its background uses downward-scrolling, round-ended rainbow bands, each one screen height long including the caps.
+At run start their rounded tips sweep down from above the screen over two seconds, with the title
+sky and clouds fading underneath. Pause holds the entrance; each new run starts it again.
+On game over, the visible stripes retain their colors and scroll down offscreen without replacements,
+clearing before the summary appears over the purple background instead of fading to green.
+Each incoming band gets a fresh horizontal position within overlapping regions that keep coverage
+even across the full width. Randomized layering stays stable as bands scroll. As difficulty rises, band width
+shrinks from one-third to one twenty-fourth of the screen, scrolling accelerates fourfold, and
+saturation increases from 50% to 75%. Word-clear particles scale
+from 1× to 10×, subject to a 4,096-particle clear-effect budget. Extra particles use a separate
+random stream so visual intensity does not change enemy generation. `Survival` owns the timer,
+difficulty, scenery and records; the shared combat loop supplies enemies, controls and power-ups.
 
 ## Land travel
 

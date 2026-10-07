@@ -194,16 +194,22 @@ public final class IOSInputTest extends Check {
         float x=ModeSelector.arrowX(l,1),y=ModeSelector.y(l);
         tap(game,x,y);game.update(ModeSelector.CHANGE);
         check("native mode arrow selects Survival without starting",c.modes.selected==ModeSelector.SURVIVAL && !c.starting());
-        tap(game,c.keyX(l,0),c.keyY(l,0));
-        check("native keys cannot launch unfinished mode",c.state==GameCore.TITLE && !c.starting());
+        tap(game,l.w*.5f,y);
+        check("native Survival confirmation is available",c.modes.confirmation>0 && !c.starting());
         tap(game,l.w*.5f,l.h*.292f);
-        check("native unavailable mode cannot open Adventure records",!c.highScoreScreen.open);
+        check("native Survival opens its own records",c.highScoreScreen.open
+                && HighScoreScreen.records(c)==c.survival.titleHistory(c));
+        game.back();game.update(HighScoreScreen.ENTRY_TIME);
         tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(l,c.clock));game.update(.5f);
         check("native display case opens from another mode",c.caseOpen && c.modes.selected==ModeSelector.SURVIVAL);
         game.back();game.update(.5f);
         check("native case back retains mode choice",!c.caseOpen && c.modes.selected==ModeSelector.SURVIVAL);
         tap(game,x,y);game.update(ModeSelector.CHANGE);
         check("native mode arrow selects Time Attack",c.modes.selected==ModeSelector.TIME_ATTACK);
+        tap(game,l.w*.5f,HighScoreScreen.titleY(l));
+        check("native unfinished mode cannot open Adventure records",!c.highScoreScreen.open);
+        tap(game,c.keyX(l,0),c.keyY(l,0));
+        check("native keys cannot launch unfinished mode",c.state==GameCore.TITLE && !c.starting());
         game.back();game.update(ModeSelector.CHANGE);
         check("native Back restores Adventure land and score",c.modes.adventure() && c.landChoice==1 && c.best==567);
         game.touch(one(0,19,x,y));game.background(true);game.background(false);
@@ -219,6 +225,47 @@ public final class IOSInputTest extends Check {
         check("native confirm animates chosen text",c.modes.confirmation>0);
         tap(game,c.keyX(l,0),c.keyY(l,0));
         check("native Adventure key starts its launch",c.starting());
+    }
+
+    private static void survival() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.collected=1L|(1L<<Collect.BOSS_FIRST);c.landSeen=LandPicker.stateMask();
+        c.onboarding.saved|=Onboarding.SKIPPED;c.modes.select(c,ModeSelector.SURVIVAL,1);
+        tap(game,c.keyX(l,0),c.keyY(l,0));
+        check("native key launches Survival",c.starting());
+        for(int i=0;i<120;i++)game.update(.05f);
+        check("native launch reaches continuous Survival",c.survival.active && c.state==GameCore.PLAY);
+        double time=c.survival.seconds;game.background(true);game.update(20);
+        check("background cannot add survival time",c.survival.seconds==time);
+        game.background(false);Pause.resume(c);
+        float rackX=Survival.rackX(l),ninjaY=Survival.rackY(l,1);
+        game.touch(one(0,42,rackX,ninjaY));
+        check("native rack tap activates Ninja without starting a blade",c.ninja()
+                && c.survival.powerUsed(Power.NINJA) && !c.touchDown);
+        game.touch(one(2,42,l.w*.6f,ninjaY));game.touch(one(1,42,l.w*.6f,ninjaY));
+        check("drag from the activation button cannot slice or rescue",!c.touchDown && !c.pushUsed);
+        tap(game,rackX,Survival.rackY(l,2));
+        check("native busy rack preserves Team Squish",c.ninja() && !c.survival.powerUsed(Power.TEAM));
+        c.modeLeft=.001f;game.update(DT);tap(game,rackX,ninjaY);
+        check("native spent rack tap cannot reactivate Ninja",!c.powerActive());
+        tap(game,rackX,Survival.rackY(l,0));
+        check("native rack allows the next unused power",c.flurry() && c.survival.powerUsed(Power.FLURRY));
+        c.lives=1;c.takeHit(l.w*.5f,l);
+        tap(game,l.w*.1f,l.h*.4f);
+        check("native Survival tap cannot skip death animation",c.state==GameCore.OVER && c.returnFade==0);
+        for(int i=0;i<100;i++)game.update(.05f);
+        tap(game,l.w*.1f,l.h*.4f);
+        check("native Survival tap anywhere dismisses the settled summary",c.returnFade>0 && !c.starting());
+        for(int i=0;i<30;i++)game.update(.05f);
+        check("native result title returns with Survival selected",c.state==GameCore.TITLE && !c.starting() && !c.survival.active
+                && c.modes.selected==ModeSelector.SURVIVAL);
+        tap(game,l.w*.5f,HighScoreScreen.titleY(l));
+        for(int i=0;i<15;i++)game.update(.05f);
+        check("native Survival score entry opens its own saved history",c.highScoreScreen.open
+                && HighScoreScreen.records(c)==c.survival.titleHistory(c)
+                && HighScoreScreen.records(c).latestRun!=null);
+        tap(game,l.w*.5f,HighScoreScreen.listTop(l)+HighScoreScreen.rowHeight(c,l)*.5f);
+        check("native Survival score row opens its summary",c.highScoreScreen.selected==0);
     }
 
     private static void appActions() {
@@ -845,7 +892,7 @@ public final class IOSInputTest extends Check {
         cave();
         highScores();
         releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
-        steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput(); modeSelector();
+        steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput(); modeSelector(); survival();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");

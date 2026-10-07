@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** Session-only title choice; unfinished modes can be browsed but never start a run. */
+/** Saved title choice; unfinished modes can be browsed but never start a run. */
 final class ModeSelector extends Draw {
     static final int ADVENTURE=0, SURVIVAL=1, TIME_ATTACK=2;
     static final String[] NAMES={"ADVENTURE","SURVIVAL","BOSS TIME ATTACK"};
@@ -12,7 +12,7 @@ final class ModeSelector extends Draw {
     private float downX,downY;
     private boolean moved;
 
-    static boolean implemented(int mode) { return mode==ADVENTURE; } // #149 and #150 add their run rules.
+    static boolean implemented(int mode) { return mode==ADVENTURE || mode==SURVIVAL; } // #150 adds Boss Time Attack.
     static boolean unlocked(GameCore c,int mode) {
         return mode==ADVENTURE || mode==SURVIVAL && bossUnlocked(c,Boss.SLIME)
                 || mode==TIME_ATTACK && anyBoss(c);
@@ -30,6 +30,10 @@ final class ModeSelector extends Draw {
     }
     boolean playable(GameCore c) { return implemented(selected) && unlocked(c,selected); }
     boolean adventure() { return selected==ADVENTURE; }
+    void restore(int mode) {
+        selected=previous=mode>=0 && mode<NAMES.length?mode:ADVENTURE;
+        transition=1;adventureFade=adventure()?1:0;
+    }
     boolean visible(GameCore c) {
         return c.state==GameCore.TITLE && !c.starting() && !Starter.hideCase(c)
                 && !c.townOpen && !c.caseOpen && c.caseFade<.01f && !c.storyOpen()
@@ -38,10 +42,10 @@ final class ModeSelector extends Draw {
                 && !c.onboarding.titleGuide && !c.onboarding.briefing;
     }
     static float y(Layout L) { return L.h*.60f; }
-    static float arrowX(Layout L,int direction) { return L.w*(direction<0?.12f:.88f); }
+    static float arrowX(Layout L,int direction) { return L.w*(direction<0?.065f:.935f); }
     int hit(GameCore c,Layout L,float x,float y) {
-        if(!visible(c) || Math.abs(y-y(L))>L.unit*1.75f || x<L.padL || x>L.w-L.padR)return 0;
-        return x<L.w*.23f?1:x>L.w*.77f?3:2;
+        if(!visible(c) || Math.abs(y-y(L))>L.unit*(selected==TIME_ATTACK?2.7f:2f) || x<L.padL || x>L.w-L.padR)return 0;
+        return x<L.w*.11f?1:x>L.w*.89f?3:2;
     }
     void select(GameCore c,int next,int direction) {
         if(!visible(c) || c.landTravelFrom>=0 || next<0 || next>=NAMES.length || next==selected)return;
@@ -49,6 +53,7 @@ final class ModeSelector extends Draw {
     }
     private void change(GameCore c,int next,int direction) {
         previous=selected;selected=next;this.direction=direction;
+        c.preferences.save(c);
         transition=0;confirmation=unavailable=0;c.titleKeyHint=0;
         c.landPickerDragging=false;
         if(c.sound!=null)c.sound.uiBloop();
@@ -109,36 +114,46 @@ final class ModeSelector extends Draw {
         return true;
     }
     private static void name(Painter p,int mode,float x,float y,float s,float scale,int color) {
-        float font=type(s*1.16f)*scale;
+        float font=type(s*1.74f)*scale;
         if(mode==TIME_ATTACK) {
-            p.text("BOSS",x,y-s*.62f,font,color,Painter.CENTER,true);
-            p.text("TIME ATTACK",x,y+s*.72f,font,color,Painter.CENTER,true);
+            p.text("BOSS",x,y-s*.9f,font,color,Painter.CENTER,true);
+            p.text("TIME ATTACK",x,y+s*1.1f,font,color,Painter.CENTER,true);
         } else p.text(NAMES[mode],x,y,font,color,Painter.CENTER,true);
+    }
+    private static void survivalAccent(Painter p,float x,float y,float s,float halfSpan,float clock,float alpha) {
+        for(int i=0;i<21;i++) {
+            float phase=(clock*.5f+i*.273f)%1f;
+            float cx=x+(i-10)*halfSpan/10f,cy=y+s*(-2.6f+phase*3.3f);
+            float r=s*.19f,length=s*(.7f+.2f*(i%3));
+            int color=fadeBy(Glyph.cycle(i*.13f+clock*.1f),alpha*(float)Math.sin(phase*Math.PI)*.9f);
+            p.line(cx,cy,cx,cy+length,color,r*2);
+            p.fillCircle(cx,cy,r,color);p.fillCircle(cx,cy+length,r,color);
+            p.line(cx+r*.35f,cy,cx+r*.35f,cy+length,fadeBy(INK,alpha*.25f*(float)Math.sin(phase*Math.PI)),r*.45f);
+        }
     }
     void draw(Painter p,GameCore c,Layout L) {
         if(!visible(c))return;
         float s=L.unit,y=y(L),t=panelTravel(transition);
         float bump=1f+.09f*(float)Math.sin(Math.PI*confirmation);
-        p.text("MODE",L.w*.5f,y-s*2.05f,type(s*.35f),INK_DIM,Painter.CENTER,false);
         for(int d=-1;d<=1;d+=2) {
             float x=arrowX(L,d),cy=y-s*.25f;
             p.line(x-d*s*.18f,cy-s*.25f,x+d*s*.18f,cy,GOLD,s*.09f);
             p.line(x+d*s*.18f,cy,x-d*s*.18f,cy+s*.25f,GOLD,s*.09f);
         }
-        p.save();p.clipRect(L.w*.20f,y-s*1.85f,L.w*.80f,y+s*.9f);
+        p.save();p.clipRect(L.w*.09f,y-s*2.8f,L.w*.91f,y+s*1.4f);
         if(transition<1)name(p,previous,L.w*.5f-direction*L.w*.6f*t,y,s,1,fadeBy(INK,1-t));
-        name(p,selected,L.w*.5f+direction*L.w*.6f*(1-t),y,s,bump,confirmation>0?GOLD:INK);
-        p.restore();
-        String action=playable(c)?(confirmation>0?"SELECTED":"TAP TO CONFIRM"):"COMING SOON";
-        p.text(action,L.w*.5f,y+s*1.65f,type(s*.36f),unavailable>0?GOLD:INK_DIM,Painter.CENTER,false);
-        if(!adventure()) {
-            float alpha=Math.max(0,1-2*adventureFade);
-            float x=L.w*.5f+(float)Math.sin(unavailable*20)*s*.15f*unavailable;
-            p.text(selected==SURVIVAL?"ENDLESS WAVES":"TIMED BOSS CHALLENGES",x,LandPicker.cardY(L),
-                    type(s*.52f),fadeBy(INK,alpha),Painter.CENTER,true);
-            p.text(unlocked(c,selected)?(selected==SURVIVAL?"LONGEST RUN + SCORE":"SINGLE BOSS + BOSS RUSH"):selected==SURVIVAL?
-                    "DEFEAT SLIME TO UNLOCK":"DEFEAT A BOSS TO UNLOCK",x,LandPicker.cardY(L)+s*1.15f,
-                    type(s*.38f),fadeBy(INK_DIM,alpha),Painter.CENTER,false);
+        float selectedX=L.w*.5f+direction*L.w*.6f*(1-t),selectedY=y;
+        selectedX+=(float)Math.sin(unavailable*20)*s*.15f*unavailable;
+        int selectedColor=confirmation>0 || unavailable>0?GOLD:INK;
+        if(selected==SURVIVAL) {
+            float clock=SurvivalDemo.animationClock(c);
+            survivalAccent(p,selectedX,y,s,L.w*.4f,clock,t);
+            selectedY-=s*.12f*t*(.5f+.5f*(float)Math.sin(clock*3.5f));
+            bump*=1f+.018f*t*(float)Math.sin(clock*3.5f);
+            if(confirmation<=0 && unavailable<=0)selectedColor=Glyph.mix(INK,Glyph.cycle(clock*.10f),.25f*t);
         }
+        name(p,selected,selectedX,selectedY,s,bump,selectedColor);
+        p.restore();
+        if(selected==SURVIVAL)SurvivalDemo.draw(p,c,L,Math.max(0,1-2*adventureFade));
     }
 }

@@ -12,10 +12,14 @@ final class TestModeSelector extends Check {
         c.modes.touch(c,L,0,12,x,y);c.modes.touch(c,L,1,12,x,y);
     }
     static void all(Layout L) {
+        persistence(L);
+        skit(L);
         GameCore c=title();Ear ear=new Ear();c.sound=ear;
         check("title defaults to Adventure",c.modes.adventure() && c.modes.visible(c) && c.modes.playable(c));
         long collection=c.collected;int best=c.best,land=c.landChoice;
         check("Adventure shows its lands",LandPicker.visible(c));
+        check("enlarged label edges remain confirmation targets",c.modes.hit(c,L,L.w*.13f,ModeSelector.y(L))==2
+                && c.modes.hit(c,L,L.w*.87f,ModeSelector.y(L))==2);
         tap(c,L,1);
         check("text arrow selects Survival with sound",c.modes.selected==ModeSelector.SURVIVAL && ear.uiBloops==1);
         check("other modes immediately stop land input",!LandPicker.visible(c) && !LandPicker.down(c,L,L.w*.5f,LandPicker.cardY(L)));
@@ -24,24 +28,26 @@ final class TestModeSelector extends Check {
                 && c.modes.adventureFade>0 && c.modes.adventureFade<1);
         c.update(ModeSelector.CHANGE,L);
         check("land departure finishes",c.modes.adventureFade==0);
-        check("Adventure records cannot be opened as Survival records",!HighScoreScreen.entryHit(c,L,L.w*.5f,L.h*.292f));
-        c.highScoreScreen.show(c);
-        check("record entry cannot bypass the mode guard",!c.highScoreScreen.open);
-        tap(c,L,0);c.screenKey(0);c.beginStart();c.startGame();
-        check("unfinished mode cannot confirm or start Adventure",!c.starting() && c.state==GameCore.TITLE
-                && c.modes.unavailable>0 && ear.collects==0 && ear.starts==0);
+        check("Survival has a high-score entry",HighScoreScreen.entryHit(c,L,L.w*.5f,L.h*.292f));
+        check("Survival entry uses its own records",HighScoreScreen.records(c)==c.survival.titleHistory(c)
+                && HighScoreScreen.records(c)!=c.highScores);
+        tap(c,L,0);
+        check("unlocked Survival confirms with a chime",c.modes.playable(c) && ear.collects==1);
         c.openCase();c.update(.5f,L);
         check("display case stays shared and covers mode selector",c.caseOpen && !c.modes.visible(c));
         c.closeCase();c.update(.5f,L);
         check("closing case restores the browsed mode",c.modes.selected==ModeSelector.SURVIVAL && c.modes.visible(c));
         tap(c,L,1);c.update(ModeSelector.CHANGE,L);
         check("Time Attack also hides lands",c.modes.selected==ModeSelector.TIME_ATTACK && !LandPicker.visible(c));
+        tap(c,L,0);c.screenKey(0);c.beginStart();c.startGame();
+        check("unfinished Time Attack cannot start Adventure",!c.starting() && c.state==GameCore.TITLE
+                && c.modes.unavailable>0 && ear.collects==1 && ear.starts==0);
         check("browsing preserves Adventure progress",c.landChoice==land && c.best==best && c.collected==collection);
         c.toTitle();
         check("returning to title retains the mode",c.modes.selected==ModeSelector.TIME_ATTACK);
         check("Back restores Adventure",Pause.back(c) && c.modes.adventure());
         c.update(ModeSelector.CHANGE,L);tap(c,L,0);
-        check("confirmation has its own chime and pulse",ear.collects==1 && c.modes.confirmation==1);
+        check("confirmation has its own chime and pulse",ear.collects==2 && c.modes.confirmation==1);
         check("returning restores lands and original record",LandPicker.visible(c) && c.best==best && c.landChoice==land);
         c.screenKey(0);
         check("normal keys still launch Adventure",c.starting());
@@ -56,7 +62,7 @@ final class TestModeSelector extends Check {
                 && !ModeSelector.allBossesUnlocked(locked));
         for(int boss=0;boss<Boss.COUNT;boss++)locked.collected|=1L<<(Collect.BOSS_FIRST+boss);
         check("boss rush requires all authored bosses",ModeSelector.allBossesUnlocked(locked));
-        check("boss unlocks do not expose unfinished gameplay",!ModeSelector.implemented(ModeSelector.SURVIVAL)
+        check("boss unlocks do not expose unfinished gameplay",ModeSelector.implemented(ModeSelector.SURVIVAL)
                 && !ModeSelector.implemented(ModeSelector.TIME_ATTACK));
 
         c=title();float x=ModeSelector.arrowX(L,1),y=ModeSelector.y(L);
@@ -87,5 +93,45 @@ final class TestModeSelector extends Check {
                     ModeSelector.y(phone)+phone.unit*1.75f<LandPicker.cardY(phone)-phone.h*.05f
                     && !Showcase.inIcon(phone,c.clock,phone.w*.5f,ModeSelector.y(phone)));
         }
+    }
+    private static void persistence(Layout L) {
+        GameCore c=title();Mem saved=(Mem)c.store;
+        c.preferences.music=.35f;c.preferences.effectsMuted=true;c.preferences.kids=true;
+        tap(c,L,1);
+        GameCore reopened=new GameCore(saved,1481);
+        check("mode selection survives app reopening without a confirmation tap",
+                reopened.modes.selected==ModeSelector.SURVIVAL && reopened.modes.previous==ModeSelector.SURVIVAL
+                && reopened.modes.transition==1 && reopened.modes.adventureFade==0);
+        check("saving mode preserves audio and Kids preferences",reopened.preferences.music==.35f
+                && reopened.preferences.effectsMuted && reopened.preferences.kids);
+        reopened.preferences.music=.6f;reopened.preferences.save(reopened);
+        check("saving another preference retains the selected mode",new GameCore(saved,1482).modes.selected==ModeSelector.SURVIVAL);
+        c.startGame();c.lives=1;c.takeHit(L.w*.5f,L);c.update(10,10,L);c.toTitle();
+        check("completed run retains the mode in memory and on reopen",c.modes.selected==ModeSelector.SURVIVAL
+                && new GameCore(saved,1483).modes.selected==ModeSelector.SURVIVAL);
+        c.modes.back(c);
+        check("Back saves Adventure as the next launch mode",new GameCore(saved,1484).modes.adventure());
+        c=title();saved=(Mem)c.store;c.modes.select(c,ModeSelector.TIME_ATTACK,1);
+        reopened=new GameCore(saved,1485);
+        check("browsed unfinished modes are remembered but remain unplayable",
+                reopened.modes.selected==ModeSelector.TIME_ATTACK && !reopened.modes.playable(reopened));
+        saved.playerSettings=PlayerSettings.DEFAULT;
+        check("older preference saves default to Adventure",new GameCore(saved,1486).modes.adventure());
+        saved.playerSettings=35 | (100<<7) | (3<<17);
+        reopened=new GameCore(saved,1487);
+        check("invalid saved mode falls back without losing volume",reopened.modes.adventure() && reopened.preferences.music==.35f);
+    }
+    private static void skit(Layout L) {
+        GameCore c=title(),control=title();c.collected|=1L<<1;c.caseIndex=1;
+        check("Survival skit uses the selected collected squishy",SurvivalDemo.companion(c)==1);
+        c.caseIndex=Collect.COUNT-1;
+        check("unowned case entries use an owned squishy for the skit",Collect.has(c.collected,SurvivalDemo.companion(c)));
+        Painter sink=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class<?>[]{Painter.class},(proxy,method,args)->null);
+        int settings=((Mem)c.store).playerSettings;
+        for(int i=0;i<160;i++) {c.clock=i*.05f;SurvivalDemo.draw(sink,c,L,1f);}
+        check("title skit leaves combat, saves and gameplay randomness untouched",c.state==GameCore.TITLE
+                && c.enemies.isEmpty() && c.particles.isEmpty() && c.shots.isEmpty() && c.target==null
+                && ((Mem)c.store).playerSettings==settings && c.rnd.nextLong()==control.rnd.nextLong());
     }
 }

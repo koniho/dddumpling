@@ -214,6 +214,7 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
   _values[@"roster"] = @([self loadRosterState]);
   _values[@"best"] = @0;
   _values[@"highScores"] = @"";
+  _values[@"survival"] = @"";
   for (NSString *key in [_values.allKeys copy])
     if ([key hasPrefix:@"landBest."]) _values[key] = @0;
   if (progress) _values[@"progress"] = [NSData dataWithBytes:progress->buffer_ length:progress->size_];
@@ -222,6 +223,8 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
   [_lock unlock];
   return saved;
 }
+- (NSString *)loadSurvival { return [self stringForKey:@"survival" validWriter:NO] ?: @""; }
+- (void)saveSurvivalWithNSString:(NSString *)value { [self setValue:value forKey:@"survival"]; }
 - (NSString *)loadHighScores { return [self stringForKey:@"highScores" validWriter:NO] ?: @""; }
 - (void)saveHighScoresWithNSString:(NSString *)value { [self setValue:value forKey:@"highScores"]; }
 

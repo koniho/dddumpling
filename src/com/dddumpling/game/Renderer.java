@@ -39,8 +39,7 @@ final class Renderer extends Draw {
         float hurtPulse = 0.5f + 0.5f * (float) Math.sin(c.clock * (2.6f + 5.5f * harm));
         float hurt = harm * (0.55f + 0.45f * hurtPulse);
 
-        // The sky drains to a dark green as a run ends. Mixed in after the hurt red rather than
-        // instead of it, so the last moments of a run go from panic red to something colder.
+        // Adventure drains to green; Survival's departing stripes reveal the purple title palette.
         float gone = c.drained();
 
         // Kept moderate: the red reads as a pulse at the edges, not a wash over the
@@ -57,9 +56,9 @@ final class Renderer extends Draw {
         }
         // Overscan the flat backing so camera motion cannot expose an unpainted edge.
         p.fillRect(-shakeMargin, -shakeMargin, L.w + shakeMargin, L.h + shakeMargin,
-                Glyph.mix(Glyph.mix(Lands.background(c), BG_HURT, hurt * 0.45f), BG_DEATH, gone));
+                Glyph.mix(Glyph.mix(Lands.background(c), BG_HURT, hurt * 0.45f), c.survival.active?BG:BG_DEATH, gone));
         p.fillRect(-shakeMargin, L.deckTop, L.w + shakeMargin, L.h + shakeMargin,
-                Glyph.mix(Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f), BG_DEATH, gone * 0.85f));
+                Glyph.mix(Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f), c.survival.active?BG_HI:BG_DEATH, gone * 0.85f));
 
         // Two cloud layers behind the words...
         Sky.cloudBand(p, c, L, 0, Sky.CLOUD_FRONT_LAYER, hurt);
@@ -109,7 +108,9 @@ final class Renderer extends Draw {
 
         }
 
-        if(!Cave.active(c) || c.cave.phase!=Cave.CHOOSE) RunCompanion.draw(p,c,L);
+        if(SurvivalEnd.ownsCompanion(c))SurvivalEnd.draw(p,c,L);
+        else if(!Cave.active(c) || c.cave.phase!=Cave.CHOOSE) RunCompanion.draw(p,c,L);
+        c.survival.drawRescue(p,c,L);
         // The grown TEAM form flies in front of the home while it leaves the key deck.
         if(c.buddy.entryLeft>0f) buddy(p,c,L);
 
@@ -132,6 +133,7 @@ final class Renderer extends Draw {
             Hud.sliceCall(p, c, L);
             Hud.chainCall(p, c, L);
             Hud.pushCall(p, c, L);
+            c.survival.drawPowers(p,c,L);
         }
 
         if (c.flash > 0) {
@@ -179,15 +181,17 @@ final class Renderer extends Draw {
     }
 
     static void dangerLine(Painter p, GameCore c, Layout L) {
-        float alarm = c.warnLevel;
+        boolean spent=c.state==GameCore.PLAY && c.pushUsed;
+        float alarm = spent?0:c.warnLevel;
+        int tint=spent?0xFF9693A6:ROSE;
         int bands = 5;
         for (int i = 0; i < bands; i++) {
             float t0 = L.dangerY + i * 0.010f * L.h;
             int a = (int) ((16 + 54 * alarm) * (1f - (float) i / bands));
-            p.fillRect(0, t0, L.w, t0 + 0.010f * L.h, Glyph.withAlpha(ROSE, a));
+            p.fillRect(0, t0, L.w, t0 + 0.010f * L.h, Glyph.withAlpha(tint, a));
         }
         float pulse = 0.65f + 0.35f * (float) Math.sin(c.clock * (2.2f + 6f * alarm));
-        int col = Glyph.withAlpha(ROSE, (int) ((110 + 145 * alarm) * pulse));
+        int col = Glyph.withAlpha(tint, spent?115:(int) ((110 + 145 * alarm) * pulse));
         float dash = 0.030f * L.w, gap = 0.022f * L.w;
         for (float x = L.playLeft; x < L.playRight; x += dash + gap) {
             float x2 = Math.min(x + dash, L.playRight);
@@ -355,21 +359,19 @@ final class Renderer extends Draw {
 
     /**
      * The push-back affordance: an upward chevron band in the strip between the danger line and
-     * the key deck, shown only while the swipe is available and something is closing in.
-     *
-     * Drawn exactly where the finger has to start, because that strip is narrow and nothing else
-     * would tell you it is a target. It disappears the moment the swipe is spent, which is also
-     * how you know it is gone for the rest of the stage.
+     * the key deck. Gold arrows pulse when ready and threatened; the spent band is grey with no arrows.
      */
     static void pushHint(Painter p, GameCore c, Layout L) {
         // Lit for the panic swipe, and for a boss shove, because they are the same gesture in the
         // same place — GameCore.swipeUp decides which one it is, so the affordance must not claim
         // there is nothing to swipe at just because the reason has changed.
-        if (!c.pushReady()) return;
-        float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 6.5f);
+        boolean spent=c.state==GameCore.PLAY && c.pushUsed;
+        if (!spent && !c.pushReady()) return;
+        float pulse = spent?.5f:0.5f + 0.5f * (float) Math.sin(c.clock * 6.5f);
         float top = L.dangerY, bot = L.deckTop, h = bot - top;
-        int a = (int) (80 + 100 * pulse);
-        p.fillRect(L.playLeft, top, L.playRight, bot, Glyph.withAlpha(GOLD, a / 5));
+        int a = spent?80:(int) (80 + 100 * pulse),tint=spent?0xFF9693A6:GOLD;
+        p.fillRect(L.playLeft, top, L.playRight, bot, Glyph.withAlpha(tint, a / 5));
+        if (spent) return;
 
         // Chevrons marching up with the pulse. Three a side and larger than they were, spread
         // across the middle the SWIPE UP label used to own: with the words gone these are the whole
@@ -380,7 +382,7 @@ final class Renderer extends Draw {
                 float cx = L.w / 2f + side * (L.playRight - L.playLeft) * (0.09f + 0.13f * k);
                 float y = bot - rise;
                 p.polyline(new float[] {cx - h * 0.38f, y + h * 0.32f, cx, y,
-                        cx + h * 0.38f, y + h * 0.32f}, Glyph.withAlpha(GOLD, a), h * 0.13f);
+                        cx + h * 0.38f, y + h * 0.32f}, Glyph.withAlpha(tint, a), h * 0.13f);
             }
         }
 
@@ -603,9 +605,12 @@ final class Renderer extends Draw {
 
     /** The in-game pickup treatment, compacted for places that list the available powers. */
     static void summaryPowerIcon(Painter p,int effect,float x,float y,float r,float clock) {
+        summaryPowerIcon(p,effect,x,y,r,clock,.85f+.15f*(float)Math.sin(clock*6f+effect*1.8f));
+    }
+
+    static void summaryPowerIcon(Painter p,int effect,float x,float y,float r,float clock,float pulse) {
         int hue=Glyph.cycle(clock*.7f+effect*.16f);
         powerHalo(p,x,y,r,clock+effect*.7f,hue,1f);
-        float pulse=.85f+.15f*(float)Math.sin(clock*6f+effect*1.8f);
         p.fillPoly(Glyph.hex(x,y,r*pulse),Glyph.withAlpha(hue,90));
         p.strokePoly(Glyph.hex(x,y,r*pulse),Glyph.withAlpha(INK,235),r*.10f);
         powerIcon(p,effect,x,y,r*.72f*pulse,hue,1f,r*pulse);

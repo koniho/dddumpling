@@ -128,6 +128,7 @@ final class GameCore {
     }
 
     float deathDuration() {
+        if(survival.active)return SurvivalEnd.DURATION;
         return bossVictoryKind >= 0 ? BOSS_DEATH_TIME : DEATH_TIME;
     }
 
@@ -181,11 +182,14 @@ final class GameCore {
         default void saveReleaseSeen(String value) {}
         default int loadCaseIndex() { return 0; }
         default void saveCaseIndex(int value) {}
+        default String loadSurvival() { return ""; }
+        default void saveSurvival(String value) {}
         default String loadHighScores() { return ""; }
         default void saveHighScores(String value) {}
         /** Hosts commit the reset and its sync marker together. */
         default boolean resetHighScores(byte[] progress) {
             saveHighScores("");
+            saveSurvival("");
             for (int land=0;land<Lands.COUNT;land++) saveLandBest(land,0);
             saveBest(0);
             if (progress!=null) saveProgress(progress);
@@ -585,6 +589,7 @@ final class GameCore {
     final Onboarding onboarding = new Onboarding();
     final Starter starter = new Starter();
     final ModeSelector modes = new ModeSelector();
+    final Survival survival = new Survival();
     /** Counts down while the push-back shockwave is on screen. */
     float pushT;
     /** Words the last push-back shoved back, for the readout. */
@@ -868,7 +873,7 @@ final class GameCore {
     boolean incognito() { return state == PLAY && ((debuffLeft > 0f && debuff == Power.INCOGNITO) || incognitoMorph > 0f); }
     void startDebuff(int effect) {
         if (effect != Power.INCOGNITO && effect != Power.MONOCHROME) return;
-        highScores.effect(effect);
+        runScores().effect(effect);
         debuff = effect;
         debuffLeft = Power.DEBUFF_TIME;
         if (sound != null) sound.debuffDown();
@@ -1174,6 +1179,7 @@ final class GameCore {
             modeLeft -= dt;
             if (modeLeft <= 0f) endPower(L);
         }
+        if(survival.active) {power=null;return;}
 
         if (power != null) {
             int previousIcon = power.shownEffect();
@@ -1201,7 +1207,7 @@ final class GameCore {
         // every boss window for free. One set piece at a time is both the simpler rule and the
         // better one, and it keeps the frenzy taper's arithmetic about what a stage asks intact.
         if (powerActive() || debuffLeft > 0f || boss.active() || stageGap > 0
-                || spawnedThisStage >= stageQuota()) {
+                || !survival.active && spawnedThisStage >= stageQuota()) {
             return;
         }
         powerTimer -= dt;
@@ -1250,6 +1256,7 @@ final class GameCore {
 
     /** Caught it: scores, then starts the frenzy the letter was carrying. */
     boolean tapPower(float x, float y, Layout L) {
+        if(survival.active)return survival.tapPower(this,L,x,y);
         if (paused || state != PLAY || power == null || !power.catchable()) return false;
         float bobY = power.y + (float) Math.sin(power.t * 3.2f) * L.enemyR * 0.22f;
         float dx = x - power.x, dy = y - bobY;
@@ -1294,8 +1301,8 @@ final class GameCore {
         if (effect != Power.MULTI) LinkedPairs.preparePower(this);
         else LinkedPairs.release(this, L);
         debuffLeft = monochromeFade = incognitoMorph = 0f;
-        highScores.powers++;
-        highScores.effect(effect);
+        runScores().powers++;
+        runScores().effect(effect);
         mode = effect;
         modeLeft = Power.DURATION;
         companion.react(RunCompanion.POWER,.9f);
@@ -1418,8 +1425,9 @@ final class GameCore {
             Enemy e = enemies.get(i);
             if (!e.destroyed) destroyWord(e, enemyCentreX(e), e.y, L);
         }
-        spawnedThisStage = stageQuota();
-        stageByPower = true;
+        if(!survival.active)spawnedThisStage = stageQuota();
+        else spawnTimer=Math.min(spawnTimer,.18f);
+        stageByPower = !survival.active;
         companion.react(RunCompanion.POWER_END,.6f);
         flash = Math.max(flash, 1f);
         flashColor = FLASH_CLEAR;
@@ -1560,6 +1568,7 @@ final class GameCore {
         onboarding.savedPowers = store == null ? 0 : store.loadPowerTutorials();
         this.progress = new Progress(store, trackProgress);
         this.rnd = new Random(seed);
+        survival.blurbs.setSeed(seed^0x5241494e424f57L);
         Random sr = new Random(20260803L);
         for (int l = 0; l < CLOUD_LAYERS; l++) {
             for (int i = 0; i < CLOUDS_PER_LAYER; i++) {
@@ -1578,12 +1587,14 @@ final class GameCore {
             cart.progress = Math.max(0,Math.min(CaveCart.TRACK,store.loadCartTrack()));
             caveMiningNext = store.loadCaveMiningNext();
             highScores.load(store.loadHighScores());
+            survival.load(store.loadSurvival());
             int savedCase=store.loadCaseIndex();
             caseIndex=savedCase>=0 && savedCase<Collect.COUNT?savedCase:0;
             best = store.loadBest();
             for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
             landBests[0] = Math.max(landBests[0], best);
             preferences.load(store.loadPlayerSettings());
+            modes.restore(preferences.mode);
             // Masked: a store that hands back junk in the high bits must not make
             // Collect.owned() report more than there are entries.
             collected = store.loadCollected() & Collect.MASK;
@@ -1768,11 +1779,11 @@ final class GameCore {
 
     float ramp() { return Pacing.ramp(pacingStage()); }
 
-    float travelSeconds() { return Pacing.travelSeconds(pacingStage()); }
+    float travelSeconds() { return survival.active?survival.travel(this):Pacing.travelSeconds(pacingStage()); }
 
-    float spawnInterval() { return Pacing.spawnInterval(pacingStage()); }
+    float spawnInterval() { return survival.active?survival.spawn(this):Pacing.spawnInterval(pacingStage()); }
 
-    int maxEnemies() { return Pacing.maxEnemies(pacingStage()); }
+    int maxEnemies() { return survival.active?survival.crowd(this):Pacing.maxEnemies(pacingStage()); }
 
     int maxPresses() { return kidsRun ? 6 : Pacing.MAX_PRESSES; }
 
@@ -1797,7 +1808,7 @@ final class GameCore {
      * clear while the boss is on it — only beating it satisfies the quota, see BossPlay.endBoss.
      */
     boolean stageCleared() {
-        return !boss.active() && spawnedThisStage >= stageQuota()
+        return !survival.active && !boss.active() && spawnedThisStage >= stageQuota()
                 && enemies.isEmpty() && shots.isEmpty()
                 && !(power != null && power.mystery && power.hit && !power.activated);
     }
@@ -1812,7 +1823,7 @@ final class GameCore {
         if (state != TITLE || starting() || starter.open || returnFade > 0f || rosterSceneT > 0f) return;
         if (townOpen || !modes.allowStart(this)) return;
         titleKeyHint = 0f;
-        if (landChoice == LandPicker.TOWN) {
+        if (modes.adventure() && landChoice == LandPicker.TOWN) {
             if (LandPicker.townUnlocked(this)) { openTown(); return; }
             landChoice=0;best=landBests[0];
         }
@@ -1880,6 +1891,8 @@ final class GameCore {
         starNext = starBonus = false;
     }
 
+    HighScores runScores() {return survival.active?survival.history():highScores;}
+
     boolean resetHighScores() {
         try {
             ProgressData next=progress.prepareScoreReset();
@@ -1893,6 +1906,7 @@ final class GameCore {
         best=0;
         java.util.Arrays.fill(landBests,0);
         highScores.clear();
+        survival.clearRecords();
         highScoreScreen.open=highScoreScreen.closing=false;
         highScoreScreen.selected=-1;
         scoresSuppressed=true;
@@ -1907,27 +1921,28 @@ final class GameCore {
         scoresSuppressed=false;
         stopLaunchVoice();
         town.leave(); townOpen=false;
-        townRunId=town.beginRun(); townRunTickets=0; saveTown();
+        townRunId=modes.adventure()?town.beginRun():0; townRunTickets=0; saveTown();
         runWho = pendingRunWho >= 0 ? pendingRunWho : resolveRunWho();
         pendingRunWho = -1;
         pickerT = 0f;
-        highScores.start(runWho);
+        if(modes.adventure())highScores.start(runWho);
         companion.begin(runWho);
         highScoreScreen.open=false;
         band.reset(this); mining.stop(); cart.stop();
         // Checkpoints and the pending turn belong to one main-game run. Keep only the saved
         // difficulty ladder when a fresh run begins, including after an interrupted course.
         resetStarRun();
-        runStartLand = landChoice < Lands.COUNT && LandPicker.unlocked(this, landChoice) ? landChoice : 0;
-        landChoice = runStartLand;
+        runStartLand = modes.adventure() && landChoice < Lands.COUNT && LandPicker.unlocked(this, landChoice) ? landChoice : 0;
+        if(modes.adventure())landChoice = runStartLand;
         best = landBests[runStartLand];
         landPickerDragging = false;
-        progress.startRun(runStartLand);
+        if(modes.adventure())progress.startRun(runStartLand);
         Pause.resume(this);
         state = PLAY;
         kidsRun = preferences.kids;
         stars.difficultyCap = kidsRun ? StarPath.KIDS_DIFFICULTY : StarPath.MAX_DIFFICULTY;
         runFullRoster = !kidsRun && fullRoster;
+        if(modes.selected==ModeSelector.SURVIVAL)survival.begin(this);
         time = 0;
         score = 0;
         squishes = 0;
@@ -1995,7 +2010,7 @@ final class GameCore {
         powerTimer = Power.SPAWN_MIN;
         pendingBonus = false;
         Lands.fromIntro(this);
-        stageBanner = BANNER_TIME;
+        stageBanner = survival.active?0:BANNER_TIME;
         startFade = 0f;
         if (sound != null) {
             sound.frenzy(false);
@@ -2020,6 +2035,7 @@ final class GameCore {
     void toTitle() {
         titleKeyHint = 0f;
         diagnostic("to-title");
+        survival.leave(this);
         powerReplacements.clear();
         Blade.resetFeedback(this);
         onboarding.clear();
@@ -2434,9 +2450,8 @@ final class GameCore {
      * TEAM SQUISH: sends the squishy at the word this press would have attacked, and it takes
      * the whole word rather than one letter.
      *
-     * The pressed key still means something — it picks the most urgent word wanting that letter
-     * — but any key works, falling back to whatever is most urgent, so the mode never punishes
-     * a press for being the wrong one.
+     * Pick the matching prompt nearest the damage line. An unmatched key leaves the existing
+     * charge or free-flight trajectory alone.
      */
     private boolean teamStrike(int g, Layout L) {
         Enemy pick = null;
@@ -2444,13 +2459,6 @@ final class GameCore {
             Enemy e = enemies.get(i);
             if (!e.typeable() || e.word[e.pos] != g) continue;
             if (pick == null || e.y > pick.y) pick = e;
-        }
-        if (pick == null) {
-            for (int i = 0; i < enemies.size(); i++) {
-                Enemy e = enemies.get(i);
-                if (!e.typeable()) continue;
-                if (pick == null || e.y > pick.y) pick = e;
-            }
         }
         if (pick == null || buddy.out()) {
             miss(g);
@@ -2570,7 +2578,7 @@ final class GameCore {
         // bands are ever retuned apart, the stage's one use is not silently eaten.
         if (moved == 0) return false;
 
-        highScores.swipes++;
+        runScores().swipes++;
         pushUsed = true;
         pushCount = moved;
         pushT = PUSH_TIME;
@@ -3021,6 +3029,7 @@ final class GameCore {
             return;
         }
 
+        survival.update(this,elapsed);
         updatePower(dt, L);
         Blade.updateTrail(this, dt, L);
         if (team()) buddy.update(this,dt,L);
@@ -3077,7 +3086,7 @@ final class GameCore {
         // next stage cannot start arriving until the field is completely clear.
         if (stageGap > 0) {
             stageGap -= dt;
-        } else if (powerActive() || (!boss.active() && spawnedThisStage < stageQuota())) {
+        } else if (survival.active || powerActive() || (!boss.active() && spawnedThisStage < stageQuota())) {
             if (powerActive()) spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
             spawnTimer -= dt;
             // Counted against live words only: a word already flying apart is no longer
@@ -3242,13 +3251,14 @@ final class GameCore {
         e.failPulse = 0f;
         // Refill from the now-cleared field immediately, even at a formation boundary.
         if (powerActive()) spawnTimer = Math.min(spawnTimer, Power.spawnDelay(this, L));
+        else if(survival.active)spawnTimer=Math.min(spawnTimer,.18f);
         if (target == e) target = null;
         computeFlyDirs(e, L);
 
-        Fx.explode(this, rnd, enemyCentreX(e), e.y, L.enemyR * 1.5f, e.word.length + 8,
+        survival.wordBurst(this, enemyCentreX(e), e.y, L.enemyR * 1.5f, e.word.length + 8,
                 0xFFFFFFFF);
         for (int i = 0; i < e.word.length; i++) {
-            Fx.explode(this, rnd, px, py, L.enemyR, 4, Glyph.COLOR[e.word[i]]);
+            survival.wordBurst(this, px, py, L.enemyR, 4, Glyph.COLOR[e.word[i]]);
         }
         shake = Math.max(shake, 0.30f);
         // Clearing a word flashes the screen and floods the sky yellow.
@@ -3526,7 +3536,7 @@ final class GameCore {
         resetStarRun();
         highScores.finish(this);
         progress.finishRun(score, false);
-        if (runFullRoster && fullRoster) {
+        if (!survival.active && runFullRoster && fullRoster) {
             if (stage >= 6) earlyLosses = 0;
             else if (++earlyLosses >= 3) {
                 fullRoster = false; earlyLosses = 0; rosterLeavePending = true;

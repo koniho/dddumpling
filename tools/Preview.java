@@ -9,6 +9,78 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void survivalEndingFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("149-rainbow-end-"))return;
+        GameCore c=TestSurvival.start(TestSurvival.store(),173);
+        c.survival.update(c,150);c.lives=1;c.takeHit(L.w*.5f,L);
+        c.shake=c.flash=c.skyGlow=0;
+        for(int scene=0;scene<SurvivalEnd.COUNT;scene++) {
+            c.survival.ending=scene;c.deathT=c.deathDuration()*.5f;c.time=c.deathDuration()*.5f;
+            shot(dir,"149-rainbow-end-"+scene,c,L,w,h,ss);
+        }
+    }
+
+    private static void survivalFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("149-survival-"))return;
+        GameCore rack=TestSurvival.start(TestSurvival.store(),149);
+        rack.survival.update(rack,10f);
+        shot(dir,"149-survival-rack-ready",rack,L,w,h,ss);
+        rack.tapPower(Survival.rackX(L),Survival.rackY(L,0),L);rack.flash=rack.shake=0;
+        shot(dir,"149-survival-rack-active",rack,L,w,h,ss);
+        rack.modeLeft=.001f;rack.update(Check.DT,L);rack.flash=rack.shake=0;
+        shot(dir,"149-survival-rack-used",rack,L,w,h,ss);
+        rack.pushUsed=true;rack.survival.rescueLeft=15;
+        shot(dir,"149-survival-rescue-half",rack,L,w,h,ss);
+        rack.survival.rescueLeft=29.9f;rack.survival.update(rack,.2f);
+        shot(dir,"149-survival-rescue-ready",rack,L,w,h,ss);
+        GameCore adventure=new GameCore(new Mem(),149);adventure.startGame();adventure.stageBanner=0;
+        adventure.pushUsed=true;adventure.warnLevel=1;
+        shot(dir,"149-survival-adventure-rescue-used",adventure,L,w,h,ss);
+        for(float age:new float[]{0,.5f,1f,2f}) {
+            GameCore c=TestSurvival.start(TestSurvival.store(),149);
+            c.survival.update(c,age);
+            shot(dir,"149-survival-entry-"+Math.round(age*1000),c,L,w,h,ss);
+        }
+        for(int age:new int[]{0,150,300}) {
+            GameCore c=TestSurvival.start(TestSurvival.store(),149);
+            c.survival.seconds=age;c.survival.skyPhase=age*(1f+1.5f*c.survival.ramp());
+            c.survival.update(c,.001f);c.clock=3;c.score=age*85;
+            for(int row=0;row<3;row++) {
+                GameCore.Enemy e=Check.add(c,L,new int[]{row%3,(row+1)%3},L.h*(.30f+row*.16f));
+                e.baseX=L.w*(.4f+row*.1f);
+            }
+            shot(dir,"149-survival-"+age,c,L,w,h,ss);
+            if(age==300) {
+                GameCore.Enemy e=c.enemies.get(1);c.destroyWord(e,e.baseX,e.y,L);
+                Fx.updateParticles(c,.08f);shot(dir,"149-survival-clear",c,L,w,h,ss);
+                c.lives=1;c.takeHit(L.w*.5f,L);
+                for(int frame=0;frame<=4;frame++) {
+                    if(frame>0)step(c,L,c.deathDuration()/4);
+                    shot(dir,"149-survival-exit-"+frame,c,L,w,h,ss);
+                }
+                step(c,L,1);
+                shot(dir,"149-survival-result",c,L,w,h,ss);
+            }
+        }
+        GameCore scores=TestSurvival.start(TestSurvival.store(),169);
+        scores.modes.restore(ModeSelector.SURVIVAL);
+        scores.toTitle();scores.returnFade=0;
+        scores.highScoreScreen.show(scores);scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+        shot(dir,"149-survival-scores-empty",scores,L,w,h,ss);
+        for(int i=0;i<12;i++) {
+            scores.startGame();scores.survival.seconds=310-i*20;scores.score=(12-i)*1234;
+            scores.hits=120;scores.misses=5;scores.maxCombo=18;scores.squishes=84;
+            scores.runScores().swipes=4;scores.runScores().powers=3;
+            for(int effect:Power.OFFERED)scores.runScores().effect(effect);
+            scores.lives=0;scores.survival.finish(scores);scores.toTitle();scores.returnFade=0;
+        }
+        shot(dir,"149-survival-scores-title",scores,L,w,h,ss);
+        scores.highScoreScreen.show(scores);scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+        shot(dir,"149-survival-scores-list",scores,L,w,h,ss);
+        scores.highScoreScreen.selected=0;
+        shot(dir,"149-survival-scores-summary",scores,L,w,h,ss);
+    }
+
     private static void modeFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("148-mode-"))return;
         GameCore c=TestModeSelector.title();
@@ -17,6 +89,10 @@ final class Preview {
         c.modes.select(c,ModeSelector.SURVIVAL,1);step(c,L,ModeSelector.CHANGE*.5f);
         shot(dir,"148-mode-changing",c,L,w,h,ss);
         step(c,L,ModeSelector.CHANGE);shot(dir,"148-mode-survival",c,L,w,h,ss);
+        step(c,L,.45f);shot(dir,"148-mode-survival-animated",c,L,w,h,ss);
+        for(float clock:new float[]{.43f,1.43f,2.45f,3.45f}) {
+            c.clock=clock;shot(dir,"148-mode-survival-skit-"+Math.round(clock*100),c,L,w,h,ss);
+        }
         c.modes.select(c,ModeSelector.TIME_ATTACK,1);step(c,L,ModeSelector.CHANGE);
         shot(dir,"148-mode-time-attack",c,L,w,h,ss);
         c.openCase();step(c,L,.5f);shot(dir,"148-mode-shared-case",c,L,w,h,ss);
@@ -936,6 +1012,8 @@ final class Preview {
         onboardingFrames(dir,L,w,h,ss);
         starterFrames(dir,L,w,h,ss);
         modeFrames(dir,L,w,h,ss);
+        survivalFrames(dir,L,w,h,ss);
+        survivalEndingFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);
