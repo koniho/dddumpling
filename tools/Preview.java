@@ -22,6 +22,9 @@ final class Preview {
         shot(dir,"149-survival-rescue-half",rack,L,w,h,ss);
         rack.survival.rescueLeft=29.9f;rack.survival.update(rack,.2f);
         shot(dir,"149-survival-rescue-ready",rack,L,w,h,ss);
+        GameCore adventure=new GameCore(new Mem(),149);adventure.startGame();adventure.stageBanner=0;
+        adventure.pushUsed=true;adventure.warnLevel=1;
+        shot(dir,"149-survival-adventure-rescue-used",adventure,L,w,h,ss);
         for(float age:new float[]{0,.5f,1f,2f}) {
             GameCore c=TestSurvival.start(TestSurvival.store(),149);
             c.survival.update(c,age);

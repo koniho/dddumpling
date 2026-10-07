@@ -181,15 +181,17 @@ final class Renderer extends Draw {
     }
 
     static void dangerLine(Painter p, GameCore c, Layout L) {
-        float alarm = c.warnLevel;
+        boolean spent=c.state==GameCore.PLAY && c.pushUsed;
+        float alarm = spent?0:c.warnLevel;
+        int tint=spent?0xFF9693A6:ROSE;
         int bands = 5;
         for (int i = 0; i < bands; i++) {
             float t0 = L.dangerY + i * 0.010f * L.h;
             int a = (int) ((16 + 54 * alarm) * (1f - (float) i / bands));
-            p.fillRect(0, t0, L.w, t0 + 0.010f * L.h, Glyph.withAlpha(ROSE, a));
+            p.fillRect(0, t0, L.w, t0 + 0.010f * L.h, Glyph.withAlpha(tint, a));
         }
         float pulse = 0.65f + 0.35f * (float) Math.sin(c.clock * (2.2f + 6f * alarm));
-        int col = Glyph.withAlpha(ROSE, (int) ((110 + 145 * alarm) * pulse));
+        int col = Glyph.withAlpha(tint, spent?115:(int) ((110 + 145 * alarm) * pulse));
         float dash = 0.030f * L.w, gap = 0.022f * L.w;
         for (float x = L.playLeft; x < L.playRight; x += dash + gap) {
             float x2 = Math.min(x + dash, L.playRight);
@@ -357,21 +359,18 @@ final class Renderer extends Draw {
 
     /**
      * The push-back affordance: an upward chevron band in the strip between the danger line and
-     * the key deck, shown only while the swipe is available and something is closing in.
-     *
-     * Drawn exactly where the finger has to start, because that strip is narrow and nothing else
-     * would tell you it is a target. It disappears the moment the swipe is spent, which is also
-     * how you know it is gone for the rest of the stage.
+     * the key deck. Gold arrows pulse when ready and threatened; spent arrows stay still and grey.
      */
     static void pushHint(Painter p, GameCore c, Layout L) {
         // Lit for the panic swipe, and for a boss shove, because they are the same gesture in the
         // same place — GameCore.swipeUp decides which one it is, so the affordance must not claim
         // there is nothing to swipe at just because the reason has changed.
-        if (!c.pushReady()) return;
-        float pulse = 0.5f + 0.5f * (float) Math.sin(c.clock * 6.5f);
+        boolean spent=c.state==GameCore.PLAY && c.pushUsed;
+        if (!spent && !c.pushReady()) return;
+        float pulse = spent?.5f:0.5f + 0.5f * (float) Math.sin(c.clock * 6.5f);
         float top = L.dangerY, bot = L.deckTop, h = bot - top;
-        int a = (int) (80 + 100 * pulse);
-        p.fillRect(L.playLeft, top, L.playRight, bot, Glyph.withAlpha(GOLD, a / 5));
+        int a = spent?80:(int) (80 + 100 * pulse),tint=spent?0xFF9693A6:GOLD;
+        p.fillRect(L.playLeft, top, L.playRight, bot, Glyph.withAlpha(tint, a / 5));
 
         // Chevrons marching up with the pulse. Three a side and larger than they were, spread
         // across the middle the SWIPE UP label used to own: with the words gone these are the whole
@@ -382,7 +381,7 @@ final class Renderer extends Draw {
                 float cx = L.w / 2f + side * (L.playRight - L.playLeft) * (0.09f + 0.13f * k);
                 float y = bot - rise;
                 p.polyline(new float[] {cx - h * 0.38f, y + h * 0.32f, cx, y,
-                        cx + h * 0.38f, y + h * 0.32f}, Glyph.withAlpha(GOLD, a), h * 0.13f);
+                        cx + h * 0.38f, y + h * 0.32f}, Glyph.withAlpha(tint, a), h * 0.13f);
             }
         }
 
