@@ -110,6 +110,7 @@ final class Renderer extends Draw {
         }
 
         if(!Cave.active(c) || c.cave.phase!=Cave.CHOOSE) RunCompanion.draw(p,c,L);
+        c.survival.drawRescue(p,c,L);
         // The grown TEAM form flies in front of the home while it leaves the key deck.
         if(c.buddy.entryLeft>0f) buddy(p,c,L);
 
@@ -132,6 +133,7 @@ final class Renderer extends Draw {
             Hud.sliceCall(p, c, L);
             Hud.chainCall(p, c, L);
             Hud.pushCall(p, c, L);
+            c.survival.drawPowers(p,c,L);
         }
 
         if (c.flash > 0) {

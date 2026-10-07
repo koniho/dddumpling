@@ -426,8 +426,12 @@ Survival unlocks after beating Slime. Boss Time Attack remains unavailable until
 
 Survival is continuous combat with no land selector, bosses, bonus games or collection rewards.
 Normal difficulty increases for five active minutes, then holds its ceiling. Cleared enemies
-are replaced promptly; power-ups keep their existing cadence and entrance patterns. Rescue
-swipes recharge 30 active seconds after use. Kids Mode retains slower traversal and a smaller crowd.
+are replaced promptly. A left-side rack supplies one use each of Flurry, Ninja and Team Squish per run;
+tap an unused icon while no power is active to activate it. Used icons remain translucent, and
+the active icon has a duration ring. Survival never spawns random power-up pickups. Rescue
+swipes recharge 30 active seconds after use. A mint ring around the companion fills during recharge;
+when ready it pulses and the companion hops if a higher-priority reaction is not playing.
+Kids Mode retains slower traversal and a smaller crowd.
 
 The timer includes combat slow motion and excludes launch, tutorials, settings, pause, background
 and game-over presentation. Local longest-time and highest-score records are separate for Kids,

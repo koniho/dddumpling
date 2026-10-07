@@ -234,6 +234,18 @@ public final class IOSInputTest extends Check {
         double time=c.survival.seconds;game.background(true);game.update(20);
         check("background cannot add survival time",c.survival.seconds==time);
         game.background(false);Pause.resume(c);
+        float rackX=Survival.rackX(l),ninjaY=Survival.rackY(l,1);
+        game.touch(one(0,42,rackX,ninjaY));
+        check("native rack tap activates Ninja without starting a blade",c.ninja()
+                && c.survival.powerUsed(Power.NINJA) && !c.touchDown);
+        game.touch(one(2,42,l.w*.6f,ninjaY));game.touch(one(1,42,l.w*.6f,ninjaY));
+        check("drag from the activation button cannot slice or rescue",!c.touchDown && !c.pushUsed);
+        tap(game,rackX,Survival.rackY(l,2));
+        check("native busy rack preserves Team Squish",c.ninja() && !c.survival.powerUsed(Power.TEAM));
+        c.modeLeft=.001f;game.update(DT);tap(game,rackX,ninjaY);
+        check("native spent rack tap cannot reactivate Ninja",!c.powerActive());
+        tap(game,rackX,Survival.rackY(l,0));
+        check("native rack allows the next unused power",c.flurry() && c.survival.powerUsed(Power.FLURRY));
         c.lives=1;c.takeHit(l.w*.5f,l);
         for(int i=0;i<100;i++)game.update(.05f);
         tap(game,l.w*.5f,Survival.resultY(l,true));

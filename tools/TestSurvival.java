@@ -32,8 +32,16 @@ final class TestSurvival extends Check {
         check("ordinary clear requests immediate replacement",c.spawnTimer<=.18f);
         c.startFrenzy(Power.NINJA,L);c.modeLeft=.001f;c.update(DT,L);
         check("ending power keeps Survival continuous",!c.powerActive() && !c.stageByPower && !c.pendingBonus && !c.stageCleared());
+        c.companion.left=0;
         c.pushUsed=true;c.survival.rescueLeft=29.9f;c.update(.01f,.2f,L);
         check("rescue recharges without an interlude",!c.pushUsed && c.survival.rescueLeft==0);
+        check("rescue ready glow and companion reaction announce recharge",c.survival.rescueReadyFlash==1
+                && c.survival.rescueCharge(c)==1 && c.companion.reaction==RunCompanion.WORD);
+        c.pushUsed=true;c.survival.rescueLeft=15;c.survival.update(c,.01f);
+        check("rescue ring shows partial charge and clears ready glow",Math.abs(c.survival.rescueCharge(c)-.5f)<.001f
+                && c.survival.rescueReadyFlash==0);
+        Pause.open(c);float charge=c.survival.rescueCharge(c);c.update(10,10,L);
+        check("paused rescue indicator cannot advance",c.survival.rescueCharge(c)==charge);Pause.resume(c);
         int calm=c.survival.background();float travel=c.travelSeconds(),spawn=c.spawnInterval();
         c.survival.seconds=300;c.survival.update(c,.01f);
         check("difficulty and distinct sky intensify together",c.travelSeconds()<travel && c.spawnInterval()<spawn
@@ -55,7 +63,41 @@ final class TestSurvival extends Check {
         c.toTitle();check("return restores Adventure progress and keeps mode choice",c.landChoice==1
                 && c.best==c.landBests[1] && !c.survival.active && c.modes.selected==ModeSelector.SURVIVAL);
         c.modes.back(c);c.startGame();check("Adventure still starts at its selected land",!c.survival.active && c.stage==6);
-        records(L);effects(L);backgroundEntrance(L);backgroundCoverage();bounded(L);fuzz(L);
+        records(L);effects(L);powerRack(L);backgroundEntrance(L);backgroundCoverage();bounded(L);fuzz(L);
+    }
+    private static void powerRack(Layout L) {
+        GameCore c=start(store(),158);float x=Survival.rackX(L),y=Survival.rackY(L,0);
+        check("Survival starts with all offered powers unused",c.survival.usedPowers==0);
+        Pause.open(c);
+        check("pause blocks rack activation",!c.tapPower(x,y,L) && c.survival.usedPowers==0);
+        Pause.resume(c);c.openSettings();
+        check("settings block rack activation",!c.tapPower(x,y,L) && c.survival.usedPowers==0);
+        c.closeSettings();c.onboarding.briefing=true;
+        check("tutorial briefing blocks rack activation",!c.tapPower(x,y,L));c.onboarding.clear();
+        check("rack leaves the rest of the field available",!c.tapPower(L.w*.8f,y,L));
+        int score=c.score,hits=c.hits,combo=c.combo;
+        for(int slot=0;slot<Power.OFFERED.length;slot++) {
+            int effect=Power.offeredAt(slot);y=Survival.rackY(L,slot);
+            check("rack activates offered power "+effect,c.tapPower(x,y,L) && c.mode==effect
+                    && c.powerActive() && c.survival.powerUsed(effect) && c.power==null);
+            check("activation feedback starts at the rack",c.powerBurstX==x && c.powerBurstY==y);
+            int spent=c.survival.usedPowers;
+            c.tapPower(x,Survival.rackY(L,(slot+1)%Power.OFFERED.length),L);
+            check("busy rack preserves unused powers and active duration",c.survival.usedPowers==spent
+                    && c.mode==effect && c.modeLeft==Power.DURATION);
+            c.modeLeft=.001f;c.update(DT,L);
+            check("spent rack button consumes its touch without reactivating",c.tapPower(x,y,L)
+                    && !c.powerActive() && c.survival.powerUsed(effect));
+        }
+        check("rack activation awards no free score or accuracy",c.score==score && c.hits==hits && c.combo==combo);
+        c.powerTimer=-1;boolean noPickups=true;
+        for(int i=0;i<180;i++) {c.update(DT,L);noPickups &= c.power==null;}
+        check("Survival never spawns random powerups or recharges spent powers",noPickups
+                && c.powerTimer==-1 && c.survival.usedPowers==((1<<Power.FLURRY)|(1<<Power.NINJA)|(1<<Power.TEAM)));
+        c.lives=1;c.takeHit(L.w*.5f,L);
+        check("death clears owned rack state",c.survival.usedPowers==0);
+        c.toTitle();c.startGame();
+        check("new Survival run restores every power",c.survival.usedPowers==0 && c.tapPower(x,Survival.rackY(L,0),L));
     }
     private static void backgroundEntrance(Layout L) {
         GameCore c=start(store(),157);

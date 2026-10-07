@@ -11,6 +11,17 @@ final class Preview {
 
     private static void survivalFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("149-survival-"))return;
+        GameCore rack=TestSurvival.start(TestSurvival.store(),149);
+        rack.survival.update(rack,10f);
+        shot(dir,"149-survival-rack-ready",rack,L,w,h,ss);
+        rack.tapPower(Survival.rackX(L),Survival.rackY(L,0),L);rack.flash=rack.shake=0;
+        shot(dir,"149-survival-rack-active",rack,L,w,h,ss);
+        rack.modeLeft=.001f;rack.update(Check.DT,L);rack.flash=rack.shake=0;
+        shot(dir,"149-survival-rack-used",rack,L,w,h,ss);
+        rack.pushUsed=true;rack.survival.rescueLeft=15;
+        shot(dir,"149-survival-rescue-half",rack,L,w,h,ss);
+        rack.survival.rescueLeft=29.9f;rack.survival.update(rack,.2f);
+        shot(dir,"149-survival-rescue-ready",rack,L,w,h,ss);
         for(float age:new float[]{0,.5f,1f,2f}) {
             GameCore c=TestSurvival.start(TestSurvival.store(),149);
             c.survival.update(c,age);

@@ -8,8 +8,9 @@ final class Survival extends Draw {
     final int[] bestScore=new int[3];
     boolean active,finished,newBest;
     double seconds;
-    float rescueLeft,skyPhase;
+    float rescueLeft,skyPhase,rescueReadyFlash;
     int profile,adventureLand;
+    int usedPowers;
     private final java.util.Random effects=new java.util.Random(149);
     // At minimum width and spacing, at most 201 bands cover the screen.
     private final float[] bandX=new float[202];
@@ -25,7 +26,8 @@ final class Survival extends Draw {
     }
     String title(GameCore c) { return "BEST "+time(bestTime[titleProfile(c)])+" / "+bestScore[titleProfile(c)]; }
     void begin(GameCore c) {
-        active=true;finished=newBest=false;seconds=0;rescueLeft=skyPhase=0;
+        active=true;finished=newBest=false;seconds=0;rescueLeft=skyPhase=rescueReadyFlash=0;
+        usedPowers=0;
         effects.setSeed(149);
         profile=profile(c.kidsRun,c.runFullRoster);adventureLand=c.landChoice;
         c.best=bestScore[profile];
@@ -35,17 +37,76 @@ final class Survival extends Draw {
         if(elapsed<=0 || Float.isNaN(elapsed) || Float.isInfinite(elapsed))return;
         seconds+=elapsed;
         skyPhase+=elapsed*(1f+3f*ramp());
+        rescueReadyFlash=Math.max(0,rescueReadyFlash-elapsed/1.2f);
         // Advance difficulty without stage endings, bosses, banners or clearing live enemies.
         c.stage=1+Math.min(18,(int)(seconds/20));
         if(c.pushUsed) {
+            rescueReadyFlash=0;
             rescueLeft+=elapsed;
-            if(rescueLeft>=RESCUE_SECONDS) {c.pushUsed=false;rescueLeft=0;}
+            if(rescueLeft>=RESCUE_SECONDS) {
+                c.pushUsed=false;rescueLeft=0;rescueReadyFlash=1;
+                c.companion.react(RunCompanion.WORD,1f);
+            }
         } else rescueLeft=0;
     }
     float ramp() { return Math.min(1f,(float)(seconds/RAMP_SECONDS)); }
     float travel(GameCore c) { return c.kidsRun?12f:12f-4f*ramp(); }
     float spawn(GameCore c) { return c.kidsRun?1.65f:1.65f-.6f*ramp(); }
     int crowd(GameCore c) { return c.kidsRun?3:seconds<60?3:seconds<180?4:5; }
+    float rescueCharge(GameCore c) { return c.pushUsed?Math.min(1,rescueLeft/RESCUE_SECONDS):1f; }
+    void drawRescue(Painter p,GameCore c,Layout L) {
+        if(!active || finished || c.state!=GameCore.PLAY || c.companion.who<0
+                || c.onboarding.companionAway(c))return;
+        float x=RunCompanion.x(L),y=RunCompanion.y(L)+c.companion.rescueLift(L)+c.companion.damagePush(L);
+        float rx=RunCompanion.halfWidth(L)*1.17f,ry=RunCompanion.halfHeight(L)*1.17f;
+        float charge=rescueCharge(c),stroke=L.unit*.10f;
+        int color=Glyph.COLOR[4];
+        p.arc(x,y,rx,ry,0,360,Glyph.withAlpha(INK_DIM,65),stroke);
+        if(charge>0)p.arc(x,y,rx,ry,-90,charge*360,Glyph.withAlpha(color,c.pushUsed?215:160),stroke);
+        float tip=y-ry-L.unit*.12f;
+        p.polyline(new float[]{x-L.unit*.16f,tip+L.unit*.14f,x,tip,x+L.unit*.16f,tip+L.unit*.14f},
+                Glyph.withAlpha(color,c.pushUsed?70:220),stroke);
+        if(rescueReadyFlash>0) {
+            float spread=1f+.28f*(1-rescueReadyFlash);
+            p.arc(x,y,rx*spread,ry*spread,0,360,Glyph.withAlpha(color,(int)(210*rescueReadyFlash)),stroke*1.5f);
+        }
+    }
+    static float rackX(Layout L) { return L.padL+L.unit*1.5f; }
+    static float rackY(Layout L,int slot) { return (L.playTop+L.deckTop)*.5f+(slot-1)*L.unit*3.4f; }
+    boolean powerUsed(int effect) { return (usedPowers&(1<<effect))!=0; }
+    boolean tapPower(GameCore c,Layout L,float x,float y) {
+        if(!active || finished || c.state!=GameCore.PLAY || c.paused || c.settingsOpen
+                || c.onboarding.briefing || c.onboarding.practice!=null || c.returnFade>0)return false;
+        float grab=L.unit*1.4f;
+        for(int slot=0;slot<Power.OFFERED.length;slot++) {
+            float dx=x-rackX(L),dy=y-rackY(L,slot);
+            if(dx*dx+dy*dy>grab*grab)continue;
+            // Spent and temporarily unavailable buttons still own the touch.
+            c.endStroke();
+            int effect=Power.offeredAt(slot);
+            if(powerUsed(effect) || c.powerActive() || c.debuffLeft>0)return true;
+            c.startFrenzy(effect,L);
+            if(c.powerActive() && c.mode==effect) {
+                usedPowers|=1<<effect;
+                c.powerBurstX=rackX(L);c.powerBurstY=rackY(L,slot);
+            }
+            return true;
+        }
+        return false;
+    }
+    void drawPowers(Painter p,GameCore c,Layout L) {
+        if(!active || finished || c.state!=GameCore.PLAY)return;
+        float x=rackX(L),r=L.unit;
+        for(int slot=0;slot<Power.OFFERED.length;slot++) {
+            int effect=Power.offeredAt(slot);float y=rackY(L,slot);
+            boolean spent=powerUsed(effect);
+            float alpha=spent?.22f:c.powerActive() || c.debuffLeft>0?.6f:1f;
+            p.fillPoly(Glyph.hex(x,y,r*1.2f),Glyph.withAlpha(BG,spent?65:170));
+            Renderer.summaryPowerIcon(new OpacityPainter(p,alpha),effect,x,y,r,spent?0:c.clock);
+            if(c.powerActive() && c.mode==effect)
+                p.arc(x,y,r*1.27f,r*1.27f,-90,360*c.modeLeft/Power.DURATION,GOLD,r*.07f);
+        }
+    }
     float entrance() {
         float t=Math.min(1f,(float)(seconds/ENTRANCE_SECONDS));
         return t*t*(3f-2f*t);
@@ -124,7 +185,7 @@ final class Survival extends Draw {
     }
     void finish(GameCore c) {
         if(!active || finished)return;
-        finished=true;
+        finished=true;usedPowers=0;rescueReadyFlash=0;
         if(c.scoresSuppressed)return;
         long duration=millis();
         newBest=duration>bestTime[profile];
@@ -136,7 +197,7 @@ final class Survival extends Draw {
         if(!active)return;
         finish(c);c.landChoice=adventureLand;
         c.best=c.landChoice==LandPicker.TOWN?0:c.landBests[c.landChoice];
-        active=false;rescueLeft=0;
+        active=false;rescueLeft=rescueReadyFlash=0;
     }
     void clearRecords() {java.util.Arrays.fill(bestTime,0);java.util.Arrays.fill(bestScore,0);newBest=false;}
     String encode() {

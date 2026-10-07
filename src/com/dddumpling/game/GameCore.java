@@ -1178,6 +1178,7 @@ final class GameCore {
             modeLeft -= dt;
             if (modeLeft <= 0f) endPower(L);
         }
+        if(survival.active) {power=null;return;}
 
         if (power != null) {
             int previousIcon = power.shownEffect();
@@ -1254,6 +1255,7 @@ final class GameCore {
 
     /** Caught it: scores, then starts the frenzy the letter was carrying. */
     boolean tapPower(float x, float y, Layout L) {
+        if(survival.active)return survival.tapPower(this,L,x,y);
         if (paused || state != PLAY || power == null || !power.catchable()) return false;
         float bobY = power.y + (float) Math.sin(power.t * 3.2f) * L.enemyR * 0.22f;
         float dx = x - power.x, dy = y - bobY;
