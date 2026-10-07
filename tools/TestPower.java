@@ -879,7 +879,7 @@ final class TestPower extends Check {
                 c.tapKey(1,L);
                 boolean picks=c.buddy.chase==other; // Matching letters still outrank lower threats.
                 c.tapKey(0,L);picks &= c.buddy.chase==low;
-                c.tapKey(5,L);picks &= c.buddy.chase==low; // Unmatched keys use the lowest word.
+                c.tapKey(5,L);picks &= c.buddy.chase==low; // Unmatched keys keep the current charge.
                 boolean inside=true;
                 for(int frame=0;frame<90 && !low.destroyed && !low.attacking;frame++) {
                     if(frame%10==0)c.tapKey(0,L);
