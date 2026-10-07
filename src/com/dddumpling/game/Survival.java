@@ -6,6 +6,9 @@ final class Survival extends Draw {
     static final float ENTRANCE_SECONDS=2f;
     final long[] bestTime=new long[3];
     final int[] bestScore=new int[3];
+    final HighScores[] histories={new HighScores(true),new HighScores(true),new HighScores(true)};
+    final java.util.Random blurbs=new java.util.Random(149);
+    int ending;
     boolean active,finished,newBest;
     double seconds;
     float rescueLeft,skyPhase,rescueReadyFlash;
@@ -19,6 +22,8 @@ final class Survival extends Draw {
     static int profile(boolean kids,boolean full) { return kids?2:full?1:0; }
     static String profileName(int profile) { return profile==2?"KIDS":profile==1?"6 KEYS":"4 KEYS"; }
     int titleProfile(GameCore c) { return profile(c.preferences.kids,c.fullRoster); }
+    HighScores history() {return histories[profile];}
+    HighScores titleHistory(GameCore c) {return histories[titleProfile(c)];}
     long millis() { return (long)(seconds*1000); }
     static String time(long millis) {
         long total=Math.max(0,millis)/1000;
@@ -30,6 +35,7 @@ final class Survival extends Draw {
         usedPowers=0;
         effects.setSeed(149);
         profile=profile(c.kidsRun,c.runFullRoster);adventureLand=c.landChoice;
+        history().start(c.runWho);
         c.best=bestScore[profile];
     }
     void update(GameCore c,float elapsed) {
@@ -71,13 +77,16 @@ final class Survival extends Draw {
             p.arc(x,y,rx*spread,ry*spread,0,360,Glyph.withAlpha(color,(int)(210*rescueReadyFlash)),stroke*1.5f);
         }
     }
-    static float rackX(Layout L) { return L.padL+L.unit*1.5f; }
-    static float rackY(Layout L,int slot) { return (L.playTop+L.deckTop)*.5f+(slot-1)*L.unit*3.4f; }
+    static float rackRadius(Layout L) { return L.enemyR*1.25f; }
+    static float rackX(Layout L) { return L.padL+rackRadius(L)*1.5f; }
+    static float rackY(Layout L,int slot) {
+        return L.dangerY-rackRadius(L)*(1.4f+(Power.OFFERED.length-1-slot)*3.4f)-L.unit*.8f;
+    }
     boolean powerUsed(int effect) { return (usedPowers&(1<<effect))!=0; }
     boolean tapPower(GameCore c,Layout L,float x,float y) {
         if(!active || finished || c.state!=GameCore.PLAY || c.paused || c.settingsOpen
                 || c.onboarding.briefing || c.onboarding.practice!=null || c.returnFade>0)return false;
-        float grab=L.unit*1.4f;
+        float grab=rackRadius(L)*1.4f;
         for(int slot=0;slot<Power.OFFERED.length;slot++) {
             float dx=x-rackX(L),dy=y-rackY(L,slot);
             if(dx*dx+dy*dy>grab*grab)continue;
@@ -96,13 +105,13 @@ final class Survival extends Draw {
     }
     void drawPowers(Painter p,GameCore c,Layout L) {
         if(!active || finished || c.state!=GameCore.PLAY)return;
-        float x=rackX(L),r=L.unit;
+        float x=rackX(L),r=rackRadius(L);
+        float pulse=.98f+.02f*(float)Math.sin(c.clock*6f);
         for(int slot=0;slot<Power.OFFERED.length;slot++) {
             int effect=Power.offeredAt(slot);float y=rackY(L,slot);
             boolean spent=powerUsed(effect);
             float alpha=spent?.22f:c.powerActive() || c.debuffLeft>0?.6f:1f;
-            p.fillPoly(Glyph.hex(x,y,r*1.2f),Glyph.withAlpha(BG,spent?65:170));
-            Renderer.summaryPowerIcon(new OpacityPainter(p,alpha),effect,x,y,r,spent?0:c.clock);
+            Renderer.summaryPowerIcon(new OpacityPainter(p,alpha),effect,x,y,r,spent?0:c.clock,spent?.98f:pulse);
             if(c.powerActive() && c.mode==effect)
                 p.arc(x,y,r*1.27f,r*1.27f,-90,360*c.modeLeft/Power.DURATION,GOLD,r*.07f);
         }
@@ -129,6 +138,8 @@ final class Survival extends Draw {
         float intensity=ramp(),width=L.w/(3f+21f*intensity),radius=width*.5f;
         float length=L.h,pitch=length-width;
         float saturation=.50f+.25f*intensity,value=.30f+.08f*intensity;
+        float exit=c.state==GameCore.OVER?c.deathProgress():0;
+        float exitY=(L.deckTop+L.h)*exit*(.25f+.75f*exit);
         float x=0;
         int count=0;
         for(int column=0;;column++) {
@@ -159,20 +170,22 @@ final class Survival extends Draw {
                 if(stripeX<0)stripeX=-stripeX;
                 if(stripeX>L.w)stripeX=2f*L.w-stripeX;
                 float cy=offset+row*pitch,top=cy-pitch*.5f,bottom=cy+pitch*.5f;
+                // Phase freezes at death: only the stripes already visible leave, with no replacements.
                 if(bottom+radius<0 || top-radius>L.deckTop)continue;
+                top+=exitY;bottom+=exitY;
+                if(top-radius>L.deckTop)continue;
                 float hue=(scatter(column,4)+(row-cycle)*.137f)%1f;
                 if(hue<0)hue+=1f;
-                int color=Glyph.mix(Glyph.hsv(hue*6f,saturation,value),BG_DEATH,c.drained());
+                int color=Glyph.hsv(hue*6f,saturation,value);
                 p.fillRect(stripeX-radius,top,stripeX+radius,bottom,color);
                 p.fillCircle(stripeX,top,radius,color);
                 p.fillCircle(stripeX,bottom,radius,color);
-                float shine=1f-c.drained();
                 stripeRim(p,stripeX,top,bottom,radius*.78f,radius*.18f,
-                        Glyph.mix(color,0xFF000000,.24f*shine),false);
+                        Glyph.mix(color,0xFF000000,.24f),false);
                 stripeRim(p,stripeX,top,bottom,radius*.72f,radius*.28f,
-                        Glyph.mix(color,0xFFFFFFFF,.12f*shine),true);
+                        Glyph.mix(color,0xFFFFFFFF,.12f),true);
                 stripeRim(p,stripeX,top,bottom,radius*.80f,radius*.08f,
-                        Glyph.mix(color,0xFFFFFFFF,.27f*shine),true);
+                        Glyph.mix(color,0xFFFFFFFF,.27f),true);
             }
         }
         p.restore();
@@ -191,6 +204,8 @@ final class Survival extends Draw {
         newBest=duration>bestTime[profile];
         bestTime[profile]=Math.max(bestTime[profile],duration);
         bestScore[profile]=Math.max(bestScore[profile],c.score);
+        ending=c.lives>0?HighScores.SURVIVAL_BLURBS.length:blurbs.nextInt(HighScores.SURVIVAL_BLURBS.length);
+        history().finish(c);
         if(c.store!=null)c.store.saveSurvival(encode());
     }
     void leave(GameCore c) {
@@ -199,16 +214,23 @@ final class Survival extends Draw {
         c.best=c.landChoice==LandPicker.TOWN?0:c.landBests[c.landChoice];
         active=false;rescueLeft=rescueReadyFlash=0;
     }
-    void clearRecords() {java.util.Arrays.fill(bestTime,0);java.util.Arrays.fill(bestScore,0);newBest=false;}
+    void clearRecords() {
+        java.util.Arrays.fill(bestTime,0);java.util.Arrays.fill(bestScore,0);newBest=false;
+        for(HighScores history:histories)history.clear();
+    }
     String encode() {
-        StringBuilder s=new StringBuilder("1");
+        StringBuilder s=new StringBuilder("2");
         for(int i=0;i<3;i++)s.append(';').append(bestTime[i]).append(',').append(bestScore[i]);
+        for(HighScores history:histories)s.append('|').append(history.encode());
         return s.toString();
     }
     void load(String saved) {
-        clearRecords();if(saved==null || saved.length()>256)return;
+        clearRecords();if(saved==null || saved.length()>50000)return;
         try {
-            String[] rows=saved.split(";",-1);if(rows.length!=4 || !rows[0].equals("1"))return;
+            String[] parts=saved.split("\\|",-1);
+            String[] rows=parts[0].split(";",-1);
+            if(rows.length!=4 || !(rows[0].equals("1") && parts.length==1
+                    || rows[0].equals("2") && parts.length==4))return;
             long[] times=new long[3];int[] scores=new int[3];
             for(int i=0;i<3;i++) {
                 String[] fields=rows[i+1].split(",",-1);if(fields.length!=2)return;
@@ -216,25 +238,26 @@ final class Survival extends Draw {
                 if(times[i]<0 || scores[i]<0)return;
             }
             System.arraycopy(times,0,bestTime,0,3);System.arraycopy(scores,0,bestScore,0,3);
+            if(parts.length==4)for(int i=0;i<3;i++) {
+                histories[i].load(parts[i+1]);
+                for(HighScores.Run run:histories[i].runs)if(run.profile!=i) {histories[i].clear();break;}
+                if(histories[i].latestRun!=null && histories[i].latestRun.profile!=i)histories[i].clear();
+            }
         } catch(NumberFormatException ignored) {clearRecords();}
-    }
-    static float resultY(Layout L,boolean retry) {return L.h*(retry?.73f:.80f);}
-    void resultTap(GameCore c,Layout L,float x,float y) {
-        if(!active || !c.overReady() || c.returnFade>0 || Math.abs(x-L.w*.5f)>L.w*.35f)return;
-        if(Math.abs(y-resultY(L,true))<L.unit*1.1f) {
-            c.toTitle();c.beginStart();
-        } else if(Math.abs(y-resultY(L,false))<L.unit*1.1f)c.dismissGameOver();
     }
     void result(Painter p,GameCore c,Layout L,float fade) {
         float s=L.unit,cx=L.w*.5f;
         p.text("SURVIVAL",cx,L.h*.24f,type(s*1.6f),fadeBy(YELLOW,fade),Painter.CENTER,true);
         p.text(time(millis()),cx,L.h*.345f,type(s*2f),fadeBy(INK,fade),Painter.CENTER,true);
         p.text("SCORE "+c.score+" / "+profileName(profile),cx,L.h*.40f,type(s*.68f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
+        if(history().latestRun!=null) {
+            String blurb=history().latestRun.blurb();
+            float font=Math.min(type(s*.58f),L.w*.86f/(blurb.length()*.73f));
+            p.text(blurb,cx,L.h*.45f,font,fadeBy(INK_DIM,fade),Painter.CENTER,false);
+        }
         Screens.accuracy(p,c,L,L.h*.51f,fade);
         p.text(newBest?"NEW LONGEST RUN!":"LONGEST "+time(bestTime[profile]),cx,L.h*.63f,
                 type(s*.75f),fadeBy(newBest?GOLD:INK,fade),Painter.CENTER,true);
         p.text("BEST SCORE "+bestScore[profile],cx,L.h*.67f,type(s*.58f),fadeBy(INK_DIM,fade),Painter.CENTER,false);
-        p.text("RETRY",cx,resultY(L,true),type(s*.9f),fadeBy(GOLD,fade),Painter.CENTER,true);
-        p.text("TITLE",cx,resultY(L,false),type(s*.7f),fadeBy(INK,fade),Painter.CENTER,true);
     }
 }

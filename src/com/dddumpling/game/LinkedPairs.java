@@ -1,13 +1,14 @@
 package com.dddumpling.game;
 
-/** Two linked pairs are scheduled in each ordinary wave from stage 16 onward. */
+/** Linked friends join Adventure from stage 16 and Survival after its first minute. */
 final class LinkedPairs {
     static final int FIRST_STAGE = 16;
     static final float WINDOW = 0.200f;
     private LinkedPairs() {}
 
     static boolean due(GameCore c) {
-        if (c.stage < FIRST_STAGE || c.boss.active() || Cave.active(c)) return false;
+        if ((c.survival.active?c.survival.seconds<60:c.stage<FIRST_STAGE)
+                || c.boss.active() || Cave.active(c)) return false;
         if (c.powerActive()) return c.mode != Power.MULTI && c.powerSpawnedEnemies%4 == 0
                 && !Boolean.TRUE.equals(PowerRush.replacement(c));
         return c.survival.active?c.spawnedThisStage%6==0:c.spawnedThisStage == 0 || c.spawnedThisStage == 3;

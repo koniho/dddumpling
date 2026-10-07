@@ -39,8 +39,7 @@ final class Renderer extends Draw {
         float hurtPulse = 0.5f + 0.5f * (float) Math.sin(c.clock * (2.6f + 5.5f * harm));
         float hurt = harm * (0.55f + 0.45f * hurtPulse);
 
-        // The sky drains to a dark green as a run ends. Mixed in after the hurt red rather than
-        // instead of it, so the last moments of a run go from panic red to something colder.
+        // Adventure drains to green; Survival's departing stripes reveal the purple title palette.
         float gone = c.drained();
 
         // Kept moderate: the red reads as a pulse at the edges, not a wash over the
@@ -57,9 +56,9 @@ final class Renderer extends Draw {
         }
         // Overscan the flat backing so camera motion cannot expose an unpainted edge.
         p.fillRect(-shakeMargin, -shakeMargin, L.w + shakeMargin, L.h + shakeMargin,
-                Glyph.mix(Glyph.mix(Lands.background(c), BG_HURT, hurt * 0.45f), BG_DEATH, gone));
+                Glyph.mix(Glyph.mix(Lands.background(c), BG_HURT, hurt * 0.45f), c.survival.active?BG:BG_DEATH, gone));
         p.fillRect(-shakeMargin, L.deckTop, L.w + shakeMargin, L.h + shakeMargin,
-                Glyph.mix(Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f), BG_DEATH, gone * 0.85f));
+                Glyph.mix(Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f), c.survival.active?BG_HI:BG_DEATH, gone * 0.85f));
 
         // Two cloud layers behind the words...
         Sky.cloudBand(p, c, L, 0, Sky.CLOUD_FRONT_LAYER, hurt);
@@ -109,7 +108,8 @@ final class Renderer extends Draw {
 
         }
 
-        if(!Cave.active(c) || c.cave.phase!=Cave.CHOOSE) RunCompanion.draw(p,c,L);
+        if(SurvivalEnd.ownsCompanion(c))SurvivalEnd.draw(p,c,L);
+        else if(!Cave.active(c) || c.cave.phase!=Cave.CHOOSE) RunCompanion.draw(p,c,L);
         c.survival.drawRescue(p,c,L);
         // The grown TEAM form flies in front of the home while it leaves the key deck.
         if(c.buddy.entryLeft>0f) buddy(p,c,L);
@@ -359,7 +359,7 @@ final class Renderer extends Draw {
 
     /**
      * The push-back affordance: an upward chevron band in the strip between the danger line and
-     * the key deck. Gold arrows pulse when ready and threatened; spent arrows stay still and grey.
+     * the key deck. Gold arrows pulse when ready and threatened; the spent band is grey with no arrows.
      */
     static void pushHint(Painter p, GameCore c, Layout L) {
         // Lit for the panic swipe, and for a boss shove, because they are the same gesture in the
@@ -371,6 +371,7 @@ final class Renderer extends Draw {
         float top = L.dangerY, bot = L.deckTop, h = bot - top;
         int a = spent?80:(int) (80 + 100 * pulse),tint=spent?0xFF9693A6:GOLD;
         p.fillRect(L.playLeft, top, L.playRight, bot, Glyph.withAlpha(tint, a / 5));
+        if (spent) return;
 
         // Chevrons marching up with the pulse. Three a side and larger than they were, spread
         // across the middle the SWIPE UP label used to own: with the words gone these are the whole
@@ -604,9 +605,12 @@ final class Renderer extends Draw {
 
     /** The in-game pickup treatment, compacted for places that list the available powers. */
     static void summaryPowerIcon(Painter p,int effect,float x,float y,float r,float clock) {
+        summaryPowerIcon(p,effect,x,y,r,clock,.85f+.15f*(float)Math.sin(clock*6f+effect*1.8f));
+    }
+
+    static void summaryPowerIcon(Painter p,int effect,float x,float y,float r,float clock,float pulse) {
         int hue=Glyph.cycle(clock*.7f+effect*.16f);
         powerHalo(p,x,y,r,clock+effect*.7f,hue,1f);
-        float pulse=.85f+.15f*(float)Math.sin(clock*6f+effect*1.8f);
         p.fillPoly(Glyph.hex(x,y,r*pulse),Glyph.withAlpha(hue,90));
         p.strokePoly(Glyph.hex(x,y,r*pulse),Glyph.withAlpha(INK,235),r*.10f);
         powerIcon(p,effect,x,y,r*.72f*pulse,hue,1f,r*pulse);

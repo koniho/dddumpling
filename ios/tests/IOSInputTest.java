@@ -197,13 +197,17 @@ public final class IOSInputTest extends Check {
         tap(game,l.w*.5f,y);
         check("native Survival confirmation is available",c.modes.confirmation>0 && !c.starting());
         tap(game,l.w*.5f,l.h*.292f);
-        check("native unavailable mode cannot open Adventure records",!c.highScoreScreen.open);
+        check("native Survival opens its own records",c.highScoreScreen.open
+                && HighScoreScreen.records(c)==c.survival.titleHistory(c));
+        game.back();game.update(HighScoreScreen.ENTRY_TIME);
         tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(l,c.clock));game.update(.5f);
         check("native display case opens from another mode",c.caseOpen && c.modes.selected==ModeSelector.SURVIVAL);
         game.back();game.update(.5f);
         check("native case back retains mode choice",!c.caseOpen && c.modes.selected==ModeSelector.SURVIVAL);
         tap(game,x,y);game.update(ModeSelector.CHANGE);
         check("native mode arrow selects Time Attack",c.modes.selected==ModeSelector.TIME_ATTACK);
+        tap(game,l.w*.5f,HighScoreScreen.titleY(l));
+        check("native unfinished mode cannot open Adventure records",!c.highScoreScreen.open);
         tap(game,c.keyX(l,0),c.keyY(l,0));
         check("native keys cannot launch unfinished mode",c.state==GameCore.TITLE && !c.starting());
         game.back();game.update(ModeSelector.CHANGE);
@@ -247,15 +251,21 @@ public final class IOSInputTest extends Check {
         tap(game,rackX,Survival.rackY(l,0));
         check("native rack allows the next unused power",c.flurry() && c.survival.powerUsed(Power.FLURRY));
         c.lives=1;c.takeHit(l.w*.5f,l);
+        tap(game,l.w*.1f,l.h*.4f);
+        check("native Survival tap cannot skip death animation",c.state==GameCore.OVER && c.returnFade==0);
         for(int i=0;i<100;i++)game.update(.05f);
-        tap(game,l.w*.5f,Survival.resultY(l,true));
-        check("native result retry owns the touch and launches Survival",c.starting() && c.modes.selected==ModeSelector.SURVIVAL);
-        c.startGame();c.lives=1;c.takeHit(l.w*.5f,l);
-        for(int i=0;i<100;i++)game.update(.05f);
-        tap(game,l.w*.5f,Survival.resultY(l,false));
+        tap(game,l.w*.1f,l.h*.4f);
+        check("native Survival tap anywhere dismisses the settled summary",c.returnFade>0 && !c.starting());
         for(int i=0;i<30;i++)game.update(.05f);
-        check("native result title returns with Survival selected",c.state==GameCore.TITLE && !c.survival.active
+        check("native result title returns with Survival selected",c.state==GameCore.TITLE && !c.starting() && !c.survival.active
                 && c.modes.selected==ModeSelector.SURVIVAL);
+        tap(game,l.w*.5f,HighScoreScreen.titleY(l));
+        for(int i=0;i<15;i++)game.update(.05f);
+        check("native Survival score entry opens its own saved history",c.highScoreScreen.open
+                && HighScoreScreen.records(c)==c.survival.titleHistory(c)
+                && HighScoreScreen.records(c).latestRun!=null);
+        tap(game,l.w*.5f,HighScoreScreen.listTop(l)+HighScoreScreen.rowHeight(c,l)*.5f);
+        check("native Survival score row opens its summary",c.highScoreScreen.selected==0);
     }
 
     private static void appActions() {

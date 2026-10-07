@@ -128,6 +128,7 @@ final class GameCore {
     }
 
     float deathDuration() {
+        if(survival.active)return SurvivalEnd.DURATION;
         return bossVictoryKind >= 0 ? BOSS_DEATH_TIME : DEATH_TIME;
     }
 
@@ -872,7 +873,7 @@ final class GameCore {
     boolean incognito() { return state == PLAY && ((debuffLeft > 0f && debuff == Power.INCOGNITO) || incognitoMorph > 0f); }
     void startDebuff(int effect) {
         if (effect != Power.INCOGNITO && effect != Power.MONOCHROME) return;
-        highScores.effect(effect);
+        runScores().effect(effect);
         debuff = effect;
         debuffLeft = Power.DEBUFF_TIME;
         if (sound != null) sound.debuffDown();
@@ -1300,8 +1301,8 @@ final class GameCore {
         if (effect != Power.MULTI) LinkedPairs.preparePower(this);
         else LinkedPairs.release(this, L);
         debuffLeft = monochromeFade = incognitoMorph = 0f;
-        highScores.powers++;
-        highScores.effect(effect);
+        runScores().powers++;
+        runScores().effect(effect);
         mode = effect;
         modeLeft = Power.DURATION;
         companion.react(RunCompanion.POWER,.9f);
@@ -1567,6 +1568,7 @@ final class GameCore {
         onboarding.savedPowers = store == null ? 0 : store.loadPowerTutorials();
         this.progress = new Progress(store, trackProgress);
         this.rnd = new Random(seed);
+        survival.blurbs.setSeed(seed^0x5241494e424f57L);
         Random sr = new Random(20260803L);
         for (int l = 0; l < CLOUD_LAYERS; l++) {
             for (int i = 0; i < CLOUDS_PER_LAYER; i++) {
@@ -1888,6 +1890,8 @@ final class GameCore {
         stars.resetRun();
         starNext = starBonus = false;
     }
+
+    HighScores runScores() {return survival.active?survival.history():highScores;}
 
     boolean resetHighScores() {
         try {
@@ -2446,9 +2450,8 @@ final class GameCore {
      * TEAM SQUISH: sends the squishy at the word this press would have attacked, and it takes
      * the whole word rather than one letter.
      *
-     * The pressed key still means something — it picks the most urgent word wanting that letter
-     * — but any key works, falling back to whatever is most urgent, so the mode never punishes
-     * a press for being the wrong one.
+     * Pick the matching prompt nearest the damage line. An unmatched key leaves the existing
+     * charge or free-flight trajectory alone.
      */
     private boolean teamStrike(int g, Layout L) {
         Enemy pick = null;
@@ -2456,13 +2459,6 @@ final class GameCore {
             Enemy e = enemies.get(i);
             if (!e.typeable() || e.word[e.pos] != g) continue;
             if (pick == null || e.y > pick.y) pick = e;
-        }
-        if (pick == null) {
-            for (int i = 0; i < enemies.size(); i++) {
-                Enemy e = enemies.get(i);
-                if (!e.typeable()) continue;
-                if (pick == null || e.y > pick.y) pick = e;
-            }
         }
         if (pick == null || buddy.out()) {
             miss(g);
@@ -2582,7 +2578,7 @@ final class GameCore {
         // bands are ever retuned apart, the stage's one use is not silently eaten.
         if (moved == 0) return false;
 
-        highScores.swipes++;
+        runScores().swipes++;
         pushUsed = true;
         pushCount = moved;
         pushT = PUSH_TIME;

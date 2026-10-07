@@ -9,6 +9,17 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void survivalEndingFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("149-rainbow-end-"))return;
+        GameCore c=TestSurvival.start(TestSurvival.store(),173);
+        c.survival.update(c,150);c.lives=1;c.takeHit(L.w*.5f,L);
+        c.shake=c.flash=c.skyGlow=0;
+        for(int scene=0;scene<SurvivalEnd.COUNT;scene++) {
+            c.survival.ending=scene;c.deathT=c.deathDuration()*.5f;c.time=c.deathDuration()*.5f;
+            shot(dir,"149-rainbow-end-"+scene,c,L,w,h,ss);
+        }
+    }
+
     private static void survivalFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("149-survival-"))return;
         GameCore rack=TestSurvival.start(TestSurvival.store(),149);
@@ -42,10 +53,32 @@ final class Preview {
             if(age==300) {
                 GameCore.Enemy e=c.enemies.get(1);c.destroyWord(e,e.baseX,e.y,L);
                 Fx.updateParticles(c,.08f);shot(dir,"149-survival-clear",c,L,w,h,ss);
-                c.lives=1;c.takeHit(L.w*.5f,L);step(c,L,GameCore.DEATH_TIME+1);
+                c.lives=1;c.takeHit(L.w*.5f,L);
+                for(int frame=0;frame<=4;frame++) {
+                    if(frame>0)step(c,L,c.deathDuration()/4);
+                    shot(dir,"149-survival-exit-"+frame,c,L,w,h,ss);
+                }
+                step(c,L,1);
                 shot(dir,"149-survival-result",c,L,w,h,ss);
             }
         }
+        GameCore scores=TestSurvival.start(TestSurvival.store(),169);
+        scores.modes.restore(ModeSelector.SURVIVAL);
+        scores.toTitle();scores.returnFade=0;
+        scores.highScoreScreen.show(scores);scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+        shot(dir,"149-survival-scores-empty",scores,L,w,h,ss);
+        for(int i=0;i<12;i++) {
+            scores.startGame();scores.survival.seconds=310-i*20;scores.score=(12-i)*1234;
+            scores.hits=120;scores.misses=5;scores.maxCombo=18;scores.squishes=84;
+            scores.runScores().swipes=4;scores.runScores().powers=3;
+            for(int effect:Power.OFFERED)scores.runScores().effect(effect);
+            scores.lives=0;scores.survival.finish(scores);scores.toTitle();scores.returnFade=0;
+        }
+        shot(dir,"149-survival-scores-title",scores,L,w,h,ss);
+        scores.highScoreScreen.show(scores);scores.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+        shot(dir,"149-survival-scores-list",scores,L,w,h,ss);
+        scores.highScoreScreen.selected=0;
+        shot(dir,"149-survival-scores-summary",scores,L,w,h,ss);
     }
 
     private static void modeFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
@@ -980,6 +1013,7 @@ final class Preview {
         starterFrames(dir,L,w,h,ss);
         modeFrames(dir,L,w,h,ss);
         survivalFrames(dir,L,w,h,ss);
+        survivalEndingFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);

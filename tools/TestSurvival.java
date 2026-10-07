@@ -52,18 +52,192 @@ final class TestSurvival extends Check {
         check("death saves only Survival records",c.state==GameCore.OVER && c.survival.finished
                 && m.best==789 && m.highScores.equals(history) && c.collected==prizes
                 && c.progress.maximum("highest_stage")==0 && c.townRunTickets==0);
+        c.dismissGameOver();
+        check("Survival death animation cannot be dismissed early",c.state==GameCore.OVER && c.returnFade==0);
         int profile=c.survival.profile;long record=c.survival.bestTime[profile];before=c.survival.seconds;
         c.update(10,10,L);
         check("death animation cannot increase time",c.survival.seconds==before && c.survival.bestTime[profile]==record);
         GameCore loaded=new GameCore(m,150,true);
         check("Survival records persist separately",loaded.survival.bestTime[profile]==record && loaded.survival.bestScore[profile]==1234);
-        c.survival.resultTap(c,L,L.w*.5f,Survival.resultY(L,true));
-        check("retry starts the regular launch with Survival selected",c.starting() && !c.survival.active && c.modes.selected==ModeSelector.SURVIVAL);
-        c.startGame();check("retry resets time and transient state",c.survival.active && c.survival.seconds==0 && !c.pushUsed && c.stage==1);
-        c.toTitle();check("return restores Adventure progress and keeps mode choice",c.landChoice==1
+        c.dismissGameOver();
+        check("Survival dismissal begins the return fade without retry",c.returnFade>0 && !c.starting());
+        c.update(GameCore.RETURN_FADE,GameCore.RETURN_FADE,L);
+        check("return restores Adventure progress and keeps mode choice",c.state==GameCore.TITLE && !c.starting() && c.landChoice==1
                 && c.best==c.landBests[1] && !c.survival.active && c.modes.selected==ModeSelector.SURVIVAL);
+        c.startGame();check("new run resets time and transient state",c.survival.active && c.survival.seconds==0 && !c.pushUsed && c.stage==1);
+        c.toTitle();
         c.modes.back(c);c.startGame();check("Adventure still starts at its selected land",!c.survival.active && c.stage==6);
-        records(L);effects(L);powerRack(L);backgroundEntrance(L);backgroundCoverage();bounded(L);fuzz(L);
+        records(L);history(L);linkedAfterMinute(L);effects(L);powerRack(L);backgroundEntrance(L);backgroundCoverage();backgroundExit();endingSkits(L);bounded(L);fuzz(L);
+    }
+    private static java.util.ArrayList<float[]> stripes(GameCore c,Layout L) {
+        java.util.ArrayList<float[]> bodies=new java.util.ArrayList<>();
+        Painter painter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class<?>[]{Painter.class},(proxy,method,args)-> {
+                    if(method.getName().equals("fillRect"))bodies.add(new float[]{(Float)args[0],(Float)args[1],
+                            (Float)args[2],(Float)args[3],(Integer)args[4]});
+                    return null;
+                });
+        c.survival.scenery(painter,c,L);return bodies;
+    }
+    private static void backgroundExit() {
+        for(int[] size:new int[][]{{320,568},{640,1400}})for(float age:new float[]{.5f,3,150,300}) {
+            Layout L=new Layout();L.compute(size[0],size[1],0,0,0,0);
+            GameCore c=start(store(),171);c.survival.update(c,age);
+            java.util.ArrayList<float[]> original=stripes(c,L);
+            c.lives=1;c.takeHit(L.w*.5f,L);
+            java.util.ArrayList<float[]> initial=stripes(c,L);
+            boolean continuous=initial.size()==original.size();
+            for(int i=0;i<initial.size() && i<original.size();i++)continuous &= java.util.Arrays.equals(initial.get(i),original.get(i));
+            check("Survival stripes keep position and color at death "+size[0]+"/"+age,continuous);
+            float phase=c.survival.skyPhase;double seconds=c.survival.seconds;
+            boolean departing=true;
+            for(int step=0;step<4;step++) {
+                c.update(c.deathDuration()/4,c.deathDuration()/4,L);
+                for(float[] stripe:stripes(c,L)) {
+                    boolean found=false;
+                    for(float[] old:original)if(stripe[0]==old[0] && stripe[2]==old[2] && stripe[4]==old[4]
+                            && stripe[1]>old[1] && Math.abs((stripe[3]-stripe[1])-(old[3]-old[1]))<.01f)found=true;
+                    departing &= found;
+                }
+            }
+            check("only original stripes slide down with their colors "+size[0]+"/"+age,departing);
+            check("all stripes leave before summary "+size[0]+"/"+age,stripes(c,L).isEmpty()
+                    && c.survival.skyPhase==phase && c.survival.seconds==seconds);
+            c.toTitle();c.startGame();
+            check("next Survival run clears exit progress "+size[0]+"/"+age,c.drained()==0 && c.survival.entrance()==0);
+        }
+    }
+    private static void endingSkits(Layout L) {
+        check("every rainbow blurb has a skit",SurvivalEnd.COUNT==HighScores.SURVIVAL_BLURBS.length);
+        GameCore c=start(store(),172);c.survival.update(c,90);c.lives=1;c.takeHit(L.w*.5f,L);
+        int ending=c.survival.ending;long duration=c.survival.history().latestRun.duration;
+        String saved=c.survival.encode();
+        java.util.HashSet<Integer> scenes=new java.util.HashSet<>();
+        final int[] signature={1},calls={0};
+        Painter painter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class<?>[]{Painter.class},(proxy,method,args)-> {
+                    signature[0]=31*signature[0]+method.getName().hashCode();calls[0]++;
+                    if(args!=null)for(Object arg:args)signature[0]=31*signature[0]+(arg instanceof float[]?
+                            java.util.Arrays.hashCode((float[])arg):arg==null?0:arg.hashCode());
+                    return null;
+                });
+        check("Survival skit owns the companion during game over",SurvivalEnd.ownsCompanion(c));
+        float[] home=SurvivalEnd.pose(c,L);
+        check("washed-away companion starts at its home",home[0]==RunCompanion.x(L) && home[1]==RunCompanion.y(L));
+        for(int scene=0;scene<SurvivalEnd.COUNT;scene++) {
+            c.survival.ending=scene;c.deathT=c.deathDuration()*.5f;
+            signature[0]=1;SurvivalEnd.draw(painter,c,L);int first=signature[0];scenes.add(first);
+            signature[0]=1;SurvivalEnd.draw(painter,c,L);
+            check("rainbow skit renders deterministically "+scene,signature[0]==first);
+        }
+        check("all twenty rainbow skits have distinct drawings",scenes.size()==SurvivalEnd.COUNT);
+        c.survival.ending=ending;c.deathT=0;calls[0]=0;SurvivalEnd.draw(painter,c,L);
+        float[] departed=SurvivalEnd.pose(c,L);
+        check("skit and companion are gone before the summary",calls[0]==0 && departed[1]-departed[2]*3>L.h);
+        check("skit drawing preserves the recorded run and ending",saved.equals(c.survival.encode())
+                && c.survival.history().latestRun.duration==duration);
+        c.toTitle();check("title no longer owns a death skit",!SurvivalEnd.ownsCompanion(c));
+    }
+    private static void linkedAfterMinute(Layout L) {
+        for(int effect:new int[]{-1,Power.FLURRY,Power.NINJA,Power.TEAM}) {
+            GameCore c=start(store(),168);
+            if(effect>=0)c.startFrenzy(effect,L);
+            c.enemies.clear();c.stageGap=0;c.spawnTimer=0;c.spawnedThisStage=6;
+            c.survival.seconds=59.99;
+            check("Survival holds linked pairs until one minute "+effect,!LinkedPairs.due(c));
+            c.survival.seconds=60;
+            check("Survival unlocks pairs without waiting for stage 16 "+effect,LinkedPairs.due(c) && c.stage<16);
+            c.update(DT,L);
+            check("Survival spawns linked friends after one minute "+effect,c.enemies.size()==2
+                    && c.enemies.get(0).link==c.enemies.get(1) && c.enemies.get(1).link==c.enemies.get(0));
+            check("Survival keeps solo enemies between linked pairs "+effect,!LinkedPairs.due(c));
+        }
+        GameCore paused=start(store(),170);paused.survival.seconds=59.5;Pause.open(paused);
+        paused.update(2,2,L);
+        check("paused time cannot unlock Survival linked pairs",!LinkedPairs.due(paused));
+    }
+    private static void history(Layout L) {
+        Mem m=store();GameCore c=start(m,164);
+        String adventure=c.highScores.encode();
+        c.score=456;c.hits=9;c.misses=1;c.maxCombo=4;c.squishes=12;c.survival.seconds=65.432;
+        c.tapPower(Survival.rackX(L),Survival.rackY(L,1),L);
+        add(c,L,new int[]{0},L.dangerY-L.enemyR*.4f);
+        c.warnLevel=1;
+        c.pushBack(L);
+        c.lives=1;c.takeHit(L.w*.5f,L);
+        HighScores history=c.survival.history();HighScores.Run run=history.latestRun;
+        check("Survival snapshot keeps its own score time companion and controls",run!=null && run.survival
+                && run.duration==65432 && run.profile==0 && run.score==456 && run.character==c.runWho);
+        check("Survival captures combat stats and rack usage",run.accuracy()==90 && run.combo==4
+                && run.squishes==12 && run.effects[Power.NINJA]==1 && run.powers==1 && run.swipes==1);
+        check("Survival history leaves Adventure records and counters alone",adventure.equals(c.highScores.encode())
+                && c.highScores.effects[Power.NINJA]==0 && c.highScores.swipes==0);
+        check("Survival has exactly twenty distinct rainbow endings",HighScores.SURVIVAL_BLURBS.length==20
+                && new java.util.HashSet<String>(java.util.Arrays.asList(HighScores.SURVIVAL_BLURBS)).size()==20);
+        String blurb=run.blurb(),saved=c.survival.encode();
+        c.survival.finish(c);
+        check("Survival saves a run and its random blurb only once",history.latest==1 && saved.equals(c.survival.encode()));
+        GameCore loaded=new GameCore(m,165,true);
+        check("Survival snapshots and selected blurb persist",loaded.survival.encode().equals(saved)
+                && loaded.survival.histories[0].latestRun.blurb().equals(blurb));
+        c.toTitle();c.returnFade=0;
+        check("Survival score attention uses its own unread state",HighScoreScreen.titleAttention(c));
+        c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+        check("shared score panel opens Survival history and clears attention",c.highScoreScreen.open
+                && HighScoreScreen.records(c)==history && !history.unread);
+        c.highScoreScreen.action(c,HighScoreScreen.ROW);
+        check("Survival row opens shared summary",c.highScoreScreen.selected==0);
+        java.util.ArrayList<String> labels=new java.util.ArrayList<>();
+        Painter painter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class<?>[]{Painter.class},(proxy,method,args)-> {
+                    if(method.getName().equals("text"))labels.add((String)args[0]);
+                    return null;
+                });
+        c.highScoreScreen.draw(painter,c,L);
+        check("Survival summary contains its time and controls",labels.contains("TIME SURVIVED")
+                && labels.contains("CONTROLS") && labels.contains("RESCUE SWIPES"));
+        check("Survival summary excludes Adventure-only stats",!labels.contains("STAGES COMPLETED")
+                && !labels.contains("BOSSES BEATEN") && !labels.contains("DUMPLINGS COLLECTED")
+                && !labels.contains(Power.NAMES[Power.INCOGNITO]) && !labels.contains(Power.NAMES[Power.MONOCHROME]));
+        c.highScoreScreen.back(c);c.highScoreScreen.back(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+        java.util.HashSet<String> endings=new java.util.HashSet<>();
+        for(int i=0;i<12;i++) {
+            c.startGame();c.score=i*100;c.survival.seconds=i*10;c.lives=0;c.survival.finish(c);
+            endings.add(history.latestRun.blurb());c.toTitle();
+        }
+        check("Survival death phrases vary between runs",endings.size()>1);
+        check("Survival reuses top-ten score ranking",history.runs.size()==10 && history.runs.get(0).score==1100);
+        c.startGame();c.score=1;c.survival.finish(c);c.toTitle();
+        check("latest below top ten remains reviewable",history.displayCount()==11 && history.displayRun(10).score==1);
+        check("voluntary exit uses a snack-break blurb",history.latestRun.ending==20);
+        c.fullRoster=true;c.startGame();c.score=77;c.survival.finish(c);c.toTitle();
+        check("six-key leaderboard is independent",HighScoreScreen.records(c)==c.survival.histories[1]
+                && HighScoreScreen.records(c).runs.size()==1 && history.runs.size()==10);
+        c.preferences.kids=true;c.startGame();c.score=88;c.survival.finish(c);c.toTitle();
+        check("Kids leaderboard is independent",HighScoreScreen.records(c)==c.survival.histories[2]
+                && HighScoreScreen.records(c).latestRun.profile==2 && HighScoreScreen.records(c).latestRun.kids);
+        c.modes.back(c);
+        check("Adventure selects its unchanged list",HighScoreScreen.records(c)==c.highScores
+                && adventure.equals(c.highScores.encode()));
+        Survival legacy=new Survival();legacy.load("1;12345,500;20000,600;30000,800");
+        check("legacy bests migrate without inventing run snapshots",legacy.bestTime[0]==12345
+                && legacy.bestScore[2]==800 && legacy.histories[0].runs.isEmpty());
+        HighScores rejected=new HighScores();rejected.load(history.encode());
+        check("Adventure parser cannot load Survival history",rejected.runs.isEmpty());
+        HighScores malformed=new HighScores(true);
+        String single=saved.split("\\|")[1];
+        String[] fields=single.split(";")[1].split(",");fields[24]="-1";
+        malformed.load("7:1:0;"+String.join(",",fields));
+        check("negative Survival duration is rejected",malformed.runs.isEmpty());
+        fields[24]="65432";fields[23]="3";
+        malformed.load("7:1:0;"+String.join(",",fields));
+        check("invalid Survival profile is rejected",malformed.runs.isEmpty());
+        GameCore first=start(store(),167),second=start(store(),167);first.lives=0;first.survival.finish(first);
+        check("rainbow blurb selection preserves gameplay randomness",first.rnd.nextLong()==second.rnd.nextLong());
+        c.resetHighScores();GameCore reset=new GameCore(m,166,true);
+        check("score reset clears every mode and Survival profile",reset.highScores.runs.isEmpty()
+                && reset.survival.histories[0].runs.isEmpty() && reset.survival.histories[1].runs.isEmpty()
+                && reset.survival.histories[2].runs.isEmpty());
     }
     private static void powerRack(Layout L) {
         GameCore c=start(store(),158);float x=Survival.rackX(L),y=Survival.rackY(L,0);

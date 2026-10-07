@@ -28,9 +28,9 @@ final class TestModeSelector extends Check {
                 && c.modes.adventureFade>0 && c.modes.adventureFade<1);
         c.update(ModeSelector.CHANGE,L);
         check("land departure finishes",c.modes.adventureFade==0);
-        check("Adventure records cannot be opened as Survival records",!HighScoreScreen.entryHit(c,L,L.w*.5f,L.h*.292f));
-        c.highScoreScreen.show(c);
-        check("record entry cannot bypass the mode guard",!c.highScoreScreen.open);
+        check("Survival has a high-score entry",HighScoreScreen.entryHit(c,L,L.w*.5f,L.h*.292f));
+        check("Survival entry uses its own records",HighScoreScreen.records(c)==c.survival.titleHistory(c)
+                && HighScoreScreen.records(c)!=c.highScores);
         tap(c,L,0);
         check("unlocked Survival confirms with a chime",c.modes.playable(c) && ear.collects==1);
         c.openCase();c.update(.5f,L);
