@@ -201,7 +201,12 @@ final class Buddy {
         float aim = drift;
 
         if (chase != null) {
-            float dx = c.enemyCentreX(chase) - x, dy = chase.y - y;
+            // Aim inside the bubble's bounds: an unreachable centre causes repeated wall
+            // bounces that can leave a nearby word alive until it crosses the danger line.
+            float r = radius(L);
+            float targetX = Math.max(L.playLeft + r, Math.min(L.playRight - r, c.enemyCentreX(chase)));
+            float targetY = Math.max(L.playTop + r, Math.min(L.dangerY - r, chase.y));
+            float dx = targetX - x, dy = targetY - y;
             float d = (float) Math.sqrt(dx * dx + dy * dy);
             if (d > 1f) {
                 float turn = wrapPi((float) Math.atan2(dy, dx) - head);

@@ -458,6 +458,7 @@ final class TestPower extends Check {
 
     static void teamMode(Layout L) {
         runSelectionAndEntrance(L);
+        teamNearBoundary(L);
         group("TEAM SQUISH");
         // The gate: nobody collected, nobody to field.
         GameCore empty = new GameCore(new Mem(), 271L);
@@ -837,6 +838,76 @@ final class TestPower extends Check {
         check("and so did the squishy", k.buddy.out());
         advancePastDeath(k, L);
         check("it is not back on the summary", k.buddy.out());
+    }
+
+    /** A grown fighter must steer along its bounds instead of bouncing away from low words. */
+    private static void teamNearBoundary(Layout standard) {
+        group("TEAM SQUISH near-boundary charges (#155)");
+        Layout compact = new Layout(); compact.compute(320,568,0,0,0,0);
+        Layout tall = new Layout(); tall.compute(640,1400,0,0,0,0);
+        for (Layout L : new Layout[]{standard,compact,tall}) {
+            for (int side : new int[]{-1,1}) for (int kind=0;kind<3;kind++) {
+                Mem store=new Mem();store.collected=1L;
+                GameCore c=new GameCore(store,155L);
+                c.startGame();c.enemies.clear();c.playtestMode(Power.TEAM,L);
+                c.spawnTimer=100f;c.stageBanner=0f;
+                c.buddy.entryLeft=c.buddy.pulse=0f;c.buddy.squishes=9;
+                c.buddy.x=(L.playLeft+L.playRight)*.5f;
+                c.buddy.y=L.dangerY-c.buddy.radius(L);
+                c.buddy.vx=-side*Buddy.SPEED*L.w;c.buddy.vy=0f;
+                GameCore.Enemy high=add(c,L,new int[]{0},L.playTop+L.enemyR*2f);
+                GameCore.Enemy other=add(c,L,new int[]{1},L.playTop+L.enemyR*5f);
+                GameCore.Enemy low=add(c,L,new int[]{0},L.dangerY-L.enemyR*1.4f);
+                low.baseX=c.buddy.x+side*(L.playRight-L.playLeft-L.enemyR*2f)*.25f;
+                low.speed=L.enemyR*.2f;
+                if(kind==1) {
+                    low.sideEntry=true;low.pathStartY=L.playTop;
+                    low.pathStartX=side<0?-L.enemyR:L.w+L.enemyR;low.pathEndX=low.baseX;
+                }
+                GameCore.Enemy mate=null;
+                if(kind==2) {
+                    mate=add(c,L,new int[]{2},low.y);
+                    mate.baseX=low.baseX+side*L.enemyR*3.7f;mate.speed=low.speed;
+                    low.link=mate;mate.link=low;
+                }
+                c.tapKey(1,L);
+                boolean picks=c.buddy.chase==other; // Matching letters still outrank lower threats.
+                c.tapKey(0,L);picks &= c.buddy.chase==low;
+                c.tapKey(5,L);picks &= c.buddy.chase==low; // Unmatched keys use the lowest word.
+                boolean inside=true;
+                for(int frame=0;frame<90 && !low.destroyed && !low.attacking;frame++) {
+                    if(frame%10==0)c.tapKey(0,L);
+                    c.update(DT,L);
+                    float r=c.buddy.radius(L);
+                    // A hit's growth pulse is clamped on the next movement step.
+                    if(!low.destroyed) inside &= c.buddy.x-r>=L.playLeft-.01f
+                            && c.buddy.x+r<=L.playRight+.01f && c.buddy.y+r<=L.dangerY+.01f;
+                }
+                String tag=" "+(int)L.w+"/"+side+"/"+kind;
+                check("letter choice and lower matching threat survive retargeting"+tag,picks);
+                check("charge clears falling threat before its lunge"+tag,
+                        low.destroyed && !low.attacking && c.lives==3 && !high.destroyed && !other.destroyed);
+                check("charge stays in bounds and clears linked partner"+tag,
+                        inside && (mate==null || mate.destroyed));
+            }
+            for (int side : new int[]{-1,1}) {
+                Mem store=new Mem();store.collected=1L;
+                GameCore c=new GameCore(store,155L);
+                c.startGame();c.enemies.clear();c.playtestMode(Power.TEAM,L);
+                c.buddy.entryLeft=c.buddy.pulse=0f;c.buddy.squishes=9;
+                float r=c.buddy.radius(L);
+                c.buddy.x=side<0?L.playLeft+r:L.playRight-r;
+                c.buddy.y=(L.playTop+L.dangerY)*.5f;
+                c.buddy.vx=0;c.buddy.vy=Buddy.SPEED*L.w;
+                GameCore.Enemy edge=add(c,L,new int[]{0},c.buddy.y-L.enemyR*5f);
+                edge.baseX=side<0?L.playLeft+L.enemyR:L.playRight-L.enemyR;
+                c.tapKey(0,L);
+                for(int frame=0;frame<90 && !edge.destroyed;frame++)c.buddy.update(c,DT,L);
+                check("charge reaches word beside side wall "+(int)L.w+"/"+side,
+                        edge.destroyed && c.buddy.x>=L.playLeft+r-.01f
+                                && c.buddy.x<=L.playRight-r+.01f);
+            }
+        }
     }
 
     /** The MULTI chain: what one press takes, in what order, and what it pays. */
