@@ -5,8 +5,51 @@ final class Duck extends Draw {
     private static final int EDGE=0xFF3A2E4F;
     private static final int[] RAINBOW={0xFFFF86AA,0xFFFFB454,0xFFFFE46B,0xFF88DEA6,0xFF83DDEC,0xFFBA9DE9};
     private Duck() {}
-    private static final int ROUND=0, WING=1, BILL=2, FOOT=3;
+    private static final int ROUND=0, WING=1, BILL=2, FOOT=3, BODY=4;
     private static final float[] CIRCLE=circle();
+    // Rounded shoulder, outward sweep, soft tip and concave inner return from the reference.
+    private static final float[] WING_PROFILE=trace(new float[]{
+        1f,.73f,
+        1.10f,.91f, .65f,1.03f, .17f,.88f,
+        -.45f,.71f, -.83f,.08f, -.92f,-.31f,
+        -1.09f,-.74f, -.85f,-1.09f, -.49f,-.95f,
+        .32f,-.82f, .27f,-.15f, .65f,.36f,
+        .80f,.56f, 1f,.64f, 1f,.73f});
+    // The belly rises gently between the feet, rather than ending in an oval's low point.
+    private static final float[] BODY_PROFILE=trace(new float[]{
+        1f,0f,
+        1.08f,.47f, 1.02f,.84f, .83f,1f,
+        .30f,.84f, -.30f,.84f, -.83f,1f,
+        -1.02f,.84f, -1.08f,.47f, -1f,0f,
+        -.98f,-1.25f, .98f,-1.25f, 1f,0f});
+    private static float[] trace(float[] curves) {
+        float[] out=new float[CIRCLE.length];
+        int segments=(curves.length-2)/6;
+        for(int i=0;i<out.length;i+=2) {
+            float position=(float)i/out.length*segments;
+            int segment=(int)position,base=segment*6;
+            float t=position-segment,u=1-t;
+            for(int axis=0;axis<2;axis++)out[i+axis]=u*u*u*curves[base+axis]
+                    +3*u*u*t*curves[base+2+axis]+3*u*t*t*curves[base+4+axis]
+                    +t*t*t*curves[base+6+axis];
+        }
+        return out;
+    }
+    private static float[] sculpt(float[] ring,int form) {
+        if(form==ROUND)return ring;
+        float[] out=ring.clone();
+        float[] profile=form==WING?WING_PROFILE:form==BODY?BODY_PROFILE:null;
+        for(int i=0;i<out.length;i+=2) {
+            float u=ring[i],v=ring[i+1];
+            if(profile!=null) {
+                // Carry spring displacement onto the traced contour, including all depth layers.
+                out[i]=profile[i]+u-CIRCLE[i];
+                out[i+1]=profile[i+1]+v-CIRCLE[i+1];
+            } else if(form==BILL && v<0)out[i+1]*=.68f+.32f*(float)Math.cos(u*Math.PI);
+            else if(form==FOOT && v<-.3f)out[i+1]+=.13f*(float)Math.cos(u*Math.PI*3);
+        }
+        return out;
+    }
     private static float[] circle() {
         float[] out=new float[96];
         for(int i=0;i<48;i++) {
@@ -18,7 +61,7 @@ final class Duck extends Draw {
     private static void skin(Painter p,int duck,int layer,float x,float y,float rx,float ry,
             int color,float edge,int form,float tilt) {
         DuckBodies bodies=p.ducks();
-        float[] outline=bodies==null?CIRCLE:bodies.skin[duck][layer].outline();
+        float[] outline=sculpt(bodies==null?CIRCLE:bodies.skin[duck][layer].outline(),form);
         // The sculpted silhouette and every shading layer follow the same spring ring.
         float[] points=new float[outline.length];
         float cs=(float)Math.cos(tilt),sn=(float)Math.sin(tilt);
@@ -28,9 +71,6 @@ final class Duck extends Draw {
             float shiftY=pass<2?0:pass==2?-.04f:pass==3?-.16f:-.47f;
             for(int i=0;i<outline.length;i+=2) {
                 float u=outline[i],v=outline[i+1];
-                if(form==WING)u*=.87f-.23f*v;
-                if(form==BILL && v<0)v*=.68f+.32f*(float)Math.cos(u*Math.PI);
-                if(form==FOOT && v<-.3f)v+=.13f*(float)Math.cos(u*Math.PI*3);
                 float dx=rx*(u*scale+shiftX),dy=ry*(v*scale+shiftY);
                 points[i]=x+dx*cs-dy*sn;
                 points[i+1]=y+dx*sn+dy*cs;
@@ -51,9 +91,6 @@ final class Duck extends Draw {
             for(int j=0;j<samples;j++) {
                 int i=(first+j*2)%outline.length;
                 float u=outline[i],v=outline[i+1];
-                if(form==WING)u*=.87f-.23f*v;
-                if(form==BILL && v<0)v*=.68f+.32f*(float)Math.cos(u*Math.PI);
-                if(form==FOOT && v<-.3f)v+=.13f*(float)Math.cos(u*Math.PI*3);
                 float dx=rx*u*.90f,dy=ry*v*.90f;
                 rim[j*2]=x+dx*cs-dy*sn;rim[j*2+1]=y+dx*sn+dy*cs;
             }
@@ -70,17 +107,17 @@ final class Duck extends Draw {
         float wing=(float)Math.sin(clock*(mood==RunCompanion.VICTORY?15:4)+kind)*r*.055f;
         int bill=known?(kind==3?0xFFFFB591:kind==5?0xFFFFCB78:0xFFF79867):accent;
         // Seated, front-facing silhouette: small pear body under an oversized round head.
-        skin(p,kind,0,x,y+r*.48f,r*.57f,r*.48f,body,r*.045f,ROUND,0);
+        skin(p,kind,0,x,y+r*.52f,r*.57f,r*.51f,body,r*.045f,BODY,0);
         for(int side=-1;side<=1;side+=2) {
-            float wx=x+side*r*.66f,wy=y+r*.37f+wing;
-            skin(p,kind,2,wx,wy,r*.19f,r*.37f,body,r*.044f,WING,-side*.58f);
+            float wx=x+side*r*.77f,wy=y+r*.43f+wing;
+            skin(p,kind,2,wx,wy,side*r*.25f,r*.30f,body,r*.040f,WING,0);
             if(known && kind>=9)for(int i=0;i<6;i++)
                 p.line(wx-side*r*.07f,wy-r*(.17f-i*.051f),
                         wx+side*r*.065f,wy-r*(.12f-i*.051f),RAINBOW[i],r*.035f);
         }
-        p.fillEllipse(x-r*.08f,y+r*.52f,r*.38f,r*.33f,Glyph.withAlpha(Glyph.mix(body,accent,.28f),85));
+        p.fillEllipse(x-r*.08f,y+r*.52f,r*.36f,r*.29f,Glyph.withAlpha(Glyph.mix(body,accent,.28f),85));
         for(int side=-1;side<=1;side+=2)
-            skin(p,kind,0,x+side*r*.38f,y+r*.82f,r*.205f,r*.24f,bill,r*.042f,FOOT,side*.19f);
+            skin(p,kind,0,x+side*r*.38f,y+r*.85f,r*.165f,r*.20f,bill,r*.034f,FOOT,side*.19f);
         float hx=x,hy=y-r*.28f;
         p.fillEllipse(hx,hy+r*.62f,r*.47f,r*.11f,0x22000000);
         skin(p,kind,1,hx,hy,r*.77f,r*.72f,body,r*.05f,ROUND,0);
