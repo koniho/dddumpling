@@ -2447,24 +2447,37 @@ final class GameCore {
     }
 
     /**
-     * TEAM SQUISH: sends the squishy at the word this press would have attacked, and it takes
-     * the whole word rather than one letter.
+     * TEAM SQUISH: sends the squishy toward an enemy, taking the whole word on contact
+     * rather than one letter.
      *
-     * Pick the matching prompt nearest the damage line. An unmatched key leaves the existing
-     * charge or free-flight trajectory alone.
+     * Pick the matching prompt nearest the damage line, falling back to the nearest enemy
+     * when no active prompt matches. Steering alone does not turn an unmatched key into a hit.
      */
     private boolean teamStrike(int g, Layout L) {
         Enemy pick = null;
+        Enemy nearest = null;
+        float nearestDistance = Float.POSITIVE_INFINITY;
         for (int i = 0; i < enemies.size(); i++) {
             Enemy e = enemies.get(i);
-            if (!e.typeable() || e.word[e.pos] != g) continue;
-            if (pick == null || e.y > pick.y) pick = e;
+            if (!e.typeable()) continue;
+            if (e.word[e.pos] == g && (pick == null || e.y > pick.y)) pick = e;
+            float dx = enemyCentreX(e) - buddy.x, dy = e.y - buddy.y;
+            float distance = dx * dx + dy * dy;
+            if (distance < nearestDistance) {
+                nearest = e;
+                nearestDistance = distance;
+            }
         }
+        if (pick == null) pick = nearest;
         if (pick == null || buddy.out()) {
             miss(g);
             return false;
         }
         buddy.charge(pick);
+        if (pick.word[pick.pos] != g) {
+            miss(g);
+            return false;
+        }
         onboarding.learn(this,TutorialSpeech.POWER_TEAM);
         // A hit, but no score of its own: the squish it is on its way to pays that.
         hits++;
