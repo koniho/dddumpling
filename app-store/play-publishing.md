@@ -17,14 +17,16 @@ New GitHub tag releases are drafts with reviewed copy from `release-notes/<versi
 
 ## Feature graphic uploads
 
-The **Upload Google Play feature graphic** workflow uses the existing Play service-account
-secret to inspect or replace only the `en-US` feature graphic. It uploads the checked-in
-`app-store/google-play/feature-graphic.png`, verifies Google's checksum, and saves the change
-without sending it for review. It refuses to cancel an existing review. It does not build
-or upload a release, change a track, or edit other listing fields.
+The **Upload Google Play feature graphic** workflow runs pinned `gplay` 2.1.0 with the
+existing Play service-account secret to inspect or replace only the `en-US` feature graphic.
+It validates the checked-in `app-store/google-play/feature-graphic.png`, previews the delta,
+uploads it and checks Google's saved checksum. Google applies its normal listing review
+flow; this account requires automatic review when saving, so a save cannot be kept out of
+review. The workflow refuses to cancel an existing review. It does not build or upload a
+release, change a track, or edit other listing fields.
 
 Provide the file's SHA-256 as `image_sha256`. Leave `apply` false to inspect the current
-asset; set it true for an authorized upload. The service account needs **Manage store
+delta; set it true for an authorized upload. The service account needs **Manage store
 presence** for DDDumpling in addition to its existing access.
 
 ```sh
@@ -33,10 +35,20 @@ gh workflow run play-feature-graphic.yml --ref main \
   -f image_sha256=APPROVED_SHA256 -f apply=true
 ```
 
-Locally, `bundle exec ruby tools/play-feature-graphic.rb` inspects the image; `--write`
-saves it. `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` supplies the credential and optional
-`PLAY_FEATURE_SHA256` pins the approved image. Run `ruby tools/test-play-feature-graphic.rb`
-for transaction and failure checks without credentials or network access.
+The same CLI works locally:
+
+```sh
+bash tools/install-gplay.sh
+export GPLAY_SERVICE_ACCOUNT=/absolute/private/path/service-account.json
+bash tools/play-feature-graphic.sh          # Online preview
+bash tools/play-feature-graphic.sh --write  # Upload and verify
+```
+
+The installer downloads the platform binary into ignored `build/tools/gplay/` and checks
+its pinned release checksum. It supports macOS and Linux, Intel and ARM. `GPLAY_BIN` can
+select an existing CLI; optional `PLAY_FEATURE_SHA256` pins the approved image locally.
+Only the English feature graphic is copied into an ignored metadata tree under `.private/`.
+The workflow retains the preview and saved checksum as artifacts, never the credential.
 See [image uploads](https://developers.google.com/android-publisher/api-ref/rest/v3/edits.images/upload)
 and [commit behavior](https://developers.google.com/android-publisher/api-ref/rest/v3/edits/commit).
 

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       apply:
-        description: Save the feature graphic without sending changes for review
+        description: Upload the feature graphic using Google's normal listing review flow
         type: boolean
         default: false
       image_sha256:
@@ -25,16 +25,25 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
-          bundler-cache: true
-      - name: Inspect or save English feature graphic
+      - name: Install pinned gplay CLI
+        run: bash tools/install-gplay.sh
+      - name: Preview or upload English feature graphic
         env:
           APPLY: ${{ inputs.apply }}
           PLAY_FEATURE_SHA256: ${{ inputs.image_sha256 }}
-          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          GPLAY_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
         run: |
           args=()
           if [ "$APPLY" = true ]; then args+=(--write); fi
-          bundle exec ruby tools/play-feature-graphic.rb "${args[@]}"
+          bash tools/play-feature-graphic.sh "${args[@]}"
+      - name: Preserve upload verification
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: play-feature-graphic-${{ github.run_id }}
+          if-no-files-found: ignore
+          path: |
+            .private/play-feature/preview.json
+            .private/play-feature/applied.json
+            .private/play-feature/saved.json
+          include-hidden-files: true
