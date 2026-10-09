@@ -5,12 +5,15 @@ final class ModeSelector extends Draw {
     static final int ADVENTURE=0, SURVIVAL=1, TIME_ATTACK=2;
     static final String[] NAMES={"ADVENTURE","SURVIVAL","BOSS TIME ATTACK"};
     static final float CHANGE=.32f;
+    static final float SWIPE_DISTANCE=.18f, SWIPE_RETURN=.22f;
     int selected=ADVENTURE, previous=ADVENTURE, direction=1;
     float transition=1f, adventureFade=1f, confirmation, unavailable;
+    float swipeOffset;
+    private float returnFrom,returnTime,transitionFrom;
     int pointer=-1;
     private int pressed;
     private float downX,downY;
-    private boolean moved;
+    private boolean moved,dragged;
 
     static boolean implemented(int mode) { return mode>=ADVENTURE && mode<=TIME_ATTACK; }
     static boolean unlocked(GameCore c,int mode) {
@@ -34,6 +37,7 @@ final class ModeSelector extends Draw {
     void restore(int mode) {
         selected=previous=mode>=0 && mode<NAMES.length?mode:ADVENTURE;
         transition=1;adventureFade=adventure()?1:0;
+        swipeOffset=returnTime=transitionFrom=0;
     }
     boolean visible(GameCore c) {
         return c.state==GameCore.TITLE && !c.starting() && !Starter.hideCase(c)
@@ -57,7 +61,7 @@ final class ModeSelector extends Draw {
         previous=selected;selected=next;this.direction=direction;
         if(next==TIME_ATTACK)c.timeAttack.focusUnlocked(c);
         c.preferences.save(c);
-        transition=0;confirmation=unavailable=0;c.titleKeyHint=0;
+        transition=transitionFrom=swipeOffset=returnTime=0;confirmation=unavailable=0;c.titleKeyHint=0;
         c.landPickerDragging=false;
         if(c.sound!=null)c.sound.uiBloop();
     }
@@ -79,39 +83,57 @@ final class ModeSelector extends Draw {
         if(c.state!=GameCore.TITLE || adventure())return false;
         cancelTouch();change(c,ADVENTURE,-1);return true;
     }
-    void cancelTouch() { pointer=-1;pressed=0;moved=false; }
+    private void returnSwipe() {
+        if(swipeOffset!=0 && returnTime==0) {returnFrom=swipeOffset;returnTime=SWIPE_RETURN;}
+    }
+    void cancelTouch() { pointer=-1;pressed=0;moved=dragged=false;returnSwipe(); }
     void update(GameCore c,float dt) {
+        c.timeAttack.slide=Math.min(1,c.timeAttack.slide+dt/TimeAttack.SLIDE_TIME);
+        if(returnTime>0) {
+            returnTime=Math.max(0,returnTime-dt);
+            swipeOffset=returnFrom*panelTravel(returnTime/SWIPE_RETURN);
+        }
         if(Starter.hideCase(c)) {selected=previous=ADVENTURE;transition=adventureFade=1;}
         transition=Math.min(1,transition+dt/CHANGE);
         adventureFade+=Math.max(-dt/CHANGE,Math.min(dt/CHANGE,(adventure()?1:0)-adventureFade));
         confirmation=Math.max(0,confirmation-dt/0.65f);
         unavailable=Math.max(0,unavailable-dt/0.65f);
-        if(!visible(c))cancelTouch();
+        if(!visible(c)) {cancelTouch();swipeOffset=returnTime=0;}
     }
     boolean touch(GameCore c,Layout L,int action,int id,float x,float y) {
         if(action==3) {boolean owned=pointer>=0;cancelTouch();return owned;}
         if(action==0) {
             cancelTouch();int target=hit(c,L,x,y);if(target==0)return false;
+            if(target<4) {swipeOffset=returnTime=0;}
             pointer=id;pressed=target;downX=x;downY=y;return true;
         }
         if(pointer<0)return false;
         if(!visible(c)) {cancelTouch();return true;}
-        if(action==5) {pressed=0;moved=true;return true;}
+        if(action==5) {pressed=0;moved=true;returnSwipe();return true;}
         if(id!=pointer)return true;
-        if(!moved && (action==2 || pressed>=4 && (action==1 || action==6))) {
+        if(!moved && (action==2 || action==1 || action==6)) {
             float dx=x-downX,dy=y-downY;
             boolean boss=pressed>=4;
-            if(Math.abs(dy)>(boss?L.unit*2:L.unit) && (!boss || Math.abs(dy)>Math.abs(dx))) {
-                pressed=0;moved=true;
-            } else if(Math.abs(dx)>L.unit*2 && (!boss || Math.abs(dx)>Math.abs(dy)*1.25f)) {
+            if(Math.max(Math.abs(dx),Math.abs(dy))>L.unit*.7f)dragged=true;
+            if(Math.abs(dy)>L.unit*2 && Math.abs(dy)>Math.abs(dx)) {
+                pressed=0;moved=true;returnSwipe();
+            } else if(boss && Math.abs(dx)>=L.w*.20f && Math.abs(dx)>Math.abs(dy)*1.25f) {
                 int direction=dx<0?1:-1;
-                if(boss)c.timeAttack.choose(c,direction);
-                else select(c,(selected+direction+NAMES.length)%NAMES.length,direction);
+                c.timeAttack.choose(c,direction);
                 moved=true;
+            } else if(!boss && pressed>0 && dragged) {
+                swipeOffset=Math.max(-1,Math.min(1,dx/L.w));
+                if((action==1 || action==6) && Math.abs(dx)>=L.w*SWIPE_DISTANCE
+                        && Math.abs(dx)>Math.abs(dy)*1.25f && c.landTravelFrom<0) {
+                    int direction=dx<0?1:-1;
+                    float from=Math.abs(swipeOffset);
+                    change(c,(selected+direction+NAMES.length)%NAMES.length,direction);
+                    transitionFrom=from;moved=true;
+                }
             }
         }
         if(action==1 || action==6) {
-            int target=pressed;boolean tap=!moved && hit(c,L,x,y)==target;
+            int target=pressed;boolean tap=!moved && !dragged && hit(c,L,x,y)==target;
             cancelTouch();
             if(tap && target!=0 && target!=TimeAttack.SWIPE_ONLY) {
                 if(target>=4)c.timeAttack.choose(c,target==4?-1:1);
@@ -141,7 +163,11 @@ final class ModeSelector extends Draw {
     }
     void draw(Painter p,GameCore c,Layout L) {
         if(!visible(c))return;
-        float s=L.unit,y=y(L),t=panelTravel(transition);
+        boolean peeking=swipeOffset!=0;
+        int slideDirection=peeking?(swipeOffset<0?1:-1):direction;
+        int arriving=peeking?(selected+slideDirection+NAMES.length)%NAMES.length:selected;
+        int departing=peeking?selected:previous;
+        float s=L.unit,y=y(L),t=peeking?Math.abs(swipeOffset):transitionFrom+(1-transitionFrom)*panelTravel(transition);
         float bump=1f+.09f*(float)Math.sin(Math.PI*confirmation);
         for(int d=-1;d<=1;d+=2) {
             float x=arrowX(L,d),cy=y-s*.25f;
@@ -149,18 +175,18 @@ final class ModeSelector extends Draw {
             p.line(x+d*s*.18f,cy,x-d*s*.18f,cy+s*.25f,GOLD,s*.09f);
         }
         p.save();p.clipRect(L.w*.09f,y-s*2.8f,L.w*.91f,y+s*1.4f);
-        if(transition<1)name(p,previous,L.w*.5f-direction*L.w*.6f*t,y,s,1,fadeBy(INK,1-t));
-        float selectedX=L.w*.5f+direction*L.w*.6f*(1-t),selectedY=y;
+        if(peeking || transition<1)name(p,departing,L.w*.5f-slideDirection*L.w*t,y,s,1,fadeBy(INK,1-t));
+        float selectedX=L.w*.5f+slideDirection*L.w*(1-t),selectedY=y;
         selectedX+=(float)Math.sin(unavailable*20)*s*.15f*unavailable;
         int selectedColor=confirmation>0 || unavailable>0?GOLD:INK;
-        if(selected==SURVIVAL) {
+        if(arriving==SURVIVAL) {
             float clock=SurvivalDemo.animationClock(c);
             survivalAccent(p,selectedX,y,s,L.w*.4f,clock,t);
             selectedY-=s*.12f*t*(.5f+.5f*(float)Math.sin(clock*3.5f));
             bump*=1f+.018f*t*(float)Math.sin(clock*3.5f);
             if(confirmation<=0 && unavailable<=0)selectedColor=Glyph.mix(INK,Glyph.cycle(clock*.10f),.25f*t);
         }
-        name(p,selected,selectedX,selectedY,s,bump,selectedColor);
+        name(p,arriving,selectedX,selectedY,s,bump,fadeBy(selectedColor,t));
         p.restore();
         c.timeAttack.drawSelector(p,c,L);
         if(selected==SURVIVAL)SurvivalDemo.draw(p,c,L,Math.max(0,1-2*adventureFade));

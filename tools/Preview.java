@@ -27,6 +27,16 @@ final class Preview {
             c.clock=beat*.8f+.65f;
             shot(dir,"150-skit-all-"+beat,c,L,w,h,ss);
         }
+        c.timeAttack.selected=Boss.SLIME;c.timeAttack.choose(c,-1);c.clock=.5f;
+        for(int frame=0;frame<3;frame++) {
+            c.timeAttack.slide=frame*.5f;
+            shot(dir,"150-boss-scroll-"+frame,c,L,w,h,ss);
+        }
+        GameCore mode=TestModeSelector.title();float mx=L.w*.5f,my=ModeSelector.y(L);
+        mode.modes.touch(mode,L,0,1,mx,my);mode.modes.touch(mode,L,2,1,mx-L.w*.12f,my);
+        shot(dir,"150-mode-partial",mode,L,w,h,ss);
+        mode.modes.touch(mode,L,1,1,mx-L.w*.12f,my);mode.modes.update(mode,ModeSelector.SWIPE_RETURN*.5f);
+        shot(dir,"150-mode-return",mode,L,w,h,ss);
         c.startGame();c.boss.intro=0;c.update(Check.DT,L);c.timeAttack.seconds=42.56;
         shot(dir,"150-combat",c,L,w,h,ss);
         c.timeAttack.current=Boss.COUNT-1;c.timeAttack.cleared=3;TestTimeAttack.beat(c,L);

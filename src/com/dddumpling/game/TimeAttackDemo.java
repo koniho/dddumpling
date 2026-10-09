@@ -7,21 +7,41 @@ final class TimeAttackDemo extends Draw {
     private static float hop(float t,float start,float end) {
         return t<=start || t>=end?0f:(float)Math.sin((t-start)/(end-start)*Math.PI);
     }
-    static void draw(Painter painter,GameCore c,Layout L) {
-        if(c.timeAttack.selected==TimeAttack.ALL) { drawAll(painter,c,L);return; }
-        int boss=c.timeAttack.selected,who=SurvivalDemo.companion(c);
+    private static float radius(Layout L) {return Math.min(L.unit,L.h*.017f);}
+    private static float companionX(GameCore c,Layout L) {
+        float t=c.clock%LOOP;
+        return L.w*.16f+radius(L)*(.35f*hop(t,1f,1.8f)-.25f*hop(t,.08f,.85f));
+    }
+    private static float companionY(GameCore c,Layout L) {
+        float t=c.clock%LOOP;
+        return L.h*.677f+radius(L)*(.45f-1.25f*hop(t,.18f,1f)-.45f*hop(t,1f,1.8f)-.75f*hop(t,2.25f,3.05f));
+    }
+    static void draw(Painter p,GameCore c,Layout L) {
+        float travel=panelTravel(c.timeAttack.slide),span=L.w*.85f;
+        p.save();p.clipRect(L.w*.25f,L.h*.635f,L.w,TimeAttack.selectY(L)-L.unit*.6f);
+        if(c.timeAttack.slide<1)scene(p,c,L,c.timeAttack.previousSelected,-c.timeAttack.slideDirection*span*travel);
+        scene(p,c,L,c.timeAttack.selected,c.timeAttack.slideDirection*span*(1-travel));
+        p.restore();
+        float t=c.clock%LOOP,r=radius(L);
+        p.fillEllipse(L.w*.16f,L.h*.677f+r*1.45f,r*1.1f,r*.13f,0x44302045);
+        Trinket.drawReacting(p,SurvivalDemo.companion(c),companionX(c,L),companionY(c,L),r,c.clock*3,1,
+                hop(t,.18f,1f)>.1f?5:hop(t,1f,1.8f)>.1f?4:8,.7f);
+    }
+    private static void scene(Painter p,GameCore c,Layout L,int selected,float offset) {
+        p.save();p.translate(offset,0);
+        if(selected==TimeAttack.ALL)drawAll(p,c,L);
+        else drawOne(p,c,L,selected);
+        p.restore();
+    }
+    private static void drawOne(Painter p,GameCore c,Layout L,int boss) {
         boolean known=TimeAttack.unlocked(c,boss);
-        float t=c.clock%LOOP,s=L.unit,r=Math.min(s,L.h*.017f),br=r*2;
-        float y=L.h*.677f,left=L.w*.33f,right=L.w*.65f;
-        float charge=hop(t,.08f,.85f),dodge=hop(t,.18f,1f);
-        float counter=hop(t,1f,1.8f),recoil=hop(t,1.5f,2.12f),cheer=hop(t,2.25f,3.05f);
-        float cx=left-r*.9f*charge+r*1.45f*counter;
-        float cy=y+r*.45f-r*1.25f*dodge-r*.45f*counter-r*.75f*cheer;
+        float t=c.clock%LOOP,r=radius(L),br=r*2;
+        float y=L.h*.677f,right=L.w*.65f;
+        float charge=hop(t,.08f,.85f),recoil=hop(t,1.5f,2.12f),cheer=hop(t,2.25f,3.05f);
+        float cx=companionX(c,L),cy=companionY(c,L);
         float bx=right-br*.8f*charge+br*.22f*recoil;
         float by=y-br*.14f*Math.abs((float)Math.sin(t*10))-br*.22f*cheer;
-        Painter p=painter;
         int tint=known?Collect.BODY[Collect.BOSS_FIRST+boss]:INK_DIM;
-        p.fillEllipse(left,y+r*1.45f,r*1.1f,r*.13f,0x44302045);
         p.fillEllipse(right,y+br*.92f,br*.85f,r*.15f,0x44302045);
         // Different boss signatures share one readable dodge/counter rhythm.
         if(known)signature(p,boss,bx,by,br,t,charge,tint);
@@ -46,18 +66,15 @@ final class TimeAttackDemo extends Draw {
             }
         }
         BossCollect.draw(p,boss,bx,by,br,c.clock*3,known,1,recoil>.2f?5:cheer>.1f?8:1,-.65f);
-        Trinket.drawReacting(p,who,cx,cy,r,c.clock*3,1,dodge>.1f?5:counter>.1f?4:8,.7f);
         if(cheer>0)for(int i=0;i<3;i++) {
             float xx=(cx+bx)*.5f+(i-1)*r*.5f,yy=y-r*(.6f+cheer*.9f+(i%2)*.25f);
             p.fillPoly(star(xx,yy,r*.16f*cheer,r*.07f*cheer,4,t+i),fadeBy(GOLD,cheer));
         }
     }
     private static void drawAll(Painter p,GameCore c,Layout L) {
-        float t=c.clock%.8f,beat=t/.8f,r=Math.min(L.unit*.83f,L.h*.014f),br=r*2;
-        float y=L.h*.679f,cx=L.w*.14f+r*.3f*(float)Math.sin(c.clock*9);
-        float cy=y+r*.3f-r*1.25f*hop(beat,.02f,.55f);
+        float t=c.clock%.8f,beat=t/.8f,r=radius(L),br=r*2;
+        float y=L.h*.679f,cx=companionX(c,L),cy=companionY(c,L);
         int turn=(int)(c.clock/.8f)%Boss.COUNT;
-        p.fillEllipse(L.w*.14f,y+r*1.4f,r,r*.13f,0x44302045);
         for(int boss=0;boss<Boss.COUNT;boss++) {
             boolean active=boss==turn,known=TimeAttack.unlocked(c,boss);
             float bounce=(float)Math.sin(c.clock*11+boss*1.8f);
@@ -80,7 +97,6 @@ final class TimeAttackDemo extends Draw {
             }
             BossCollect.draw(p,boss,bx,by,br,c.clock*3,known,1,recoil>.1f?5:8,-.7f);
         }
-        Trinket.drawReacting(p,SurvivalDemo.companion(c),cx,cy,r,c.clock*3,1,beat<.5f?5:4,.8f);
     }
     private static void signature(Painter p,int boss,float x,float y,float r,float t,float charge,int tint) {
         if(boss==Boss.SLIME) {

@@ -15,20 +15,29 @@ final class TestTimeAttack extends Check {
     private static void selectorSwipes(Layout L) {
         GameCore c=start(Boss.SLIME);c.toTitle();c.returnFade=0;
         Ear ear=new Ear();c.sound=ear;
-        float x=L.w*.6f,y=L.h*.677f;
+        float x=L.w*.6f,y=L.h*.677f,distance=L.w*.25f;
         check("battle skit accepts a swipe start",c.modes.touch(c,L,0,42,x,y));
-        c.modes.touch(c,L,2,42,x-L.unit*3,y+L.unit*1.2f);
-        c.modes.touch(c,L,2,42,x-L.unit*5,y);
-        c.modes.touch(c,L,1,42,x-L.unit*5,y);
+        c.modes.touch(c,L,2,42,x-distance,y+L.unit*1.2f);
+        c.modes.touch(c,L,2,42,x-distance*1.5f,y);
+        c.modes.touch(c,L,1,42,x-distance*1.5f,y);
         check("diagonal left swipe advances exactly one boss with feedback",c.timeAttack.selected==1
                 && c.modes.selected==ModeSelector.TIME_ATTACK && ear.uiBloops==1 && c.modes.pointer==-1);
-        c.modes.touch(c,L,0,42,x,y);c.modes.touch(c,L,1,42,x+L.unit*3,y);
+        c.modes.touch(c,L,0,42,x,y);c.modes.touch(c,L,1,42,x+distance,y);
         check("quick right swipe works without move events",c.timeAttack.selected==0 && ear.uiBloops==2);
-        c.modes.touch(c,L,0,42,x,y);c.modes.touch(c,L,1,42,x+L.unit*3,y);
+        c.modes.touch(c,L,0,42,x,y);c.modes.touch(c,L,1,42,x+distance,y);
         check("right swipe wraps to all bosses",c.timeAttack.selected==TimeAttack.ALL);
         float label=TimeAttack.selectY(L);
-        c.modes.touch(c,L,0,42,x,label);c.modes.touch(c,L,1,42,x-L.unit*3,label);
+        c.modes.touch(c,L,0,42,x,label);c.modes.touch(c,L,1,42,x-distance,label);
         check("boss name swipe wraps forward to slime",c.timeAttack.selected==0);
+        for(float row:new float[]{y,label})for(int direction:new int[]{-1,1}) {
+            c.modes.touch(c,L,0,42,L.w*.5f,row);
+            c.modes.touch(c,L,2,42,L.w*.5f+direction*L.w*.19f,row);
+            c.modes.touch(c,L,1,42,L.w*.5f+direction*L.w*.19f,row);
+            check("short swipe does not switch or become a tap "+row+"/"+direction,c.timeAttack.selected==0);
+        }
+        c.modes.touch(c,L,0,42,x,label);c.modes.touch(c,L,2,42,x-L.unit*2,label);
+        c.modes.touch(c,L,1,42,x,label);
+        check("short drag returning to its start is not a tap",c.timeAttack.selected==0);
         c.modes.touch(c,L,0,42,x,y);c.modes.touch(c,L,1,42,x,y);
         check("tapping the skit does not change boss or start a run",c.timeAttack.selected==0 && c.state==GameCore.TITLE);
         c.modes.touch(c,L,0,42,x,y);c.modes.touch(c,L,2,42,x,y+L.unit*3);
@@ -47,6 +56,12 @@ final class TestTimeAttack extends Check {
         RasterPainter p=new RasterPainter((int)L.w,(int)L.h,1);
         TimeAttackDemo.draw(p,c,L);
         return java.util.Arrays.hashCode(p.resolve());
+    }
+    private static int companionFrame(GameCore c,Layout L) {
+        RasterPainter p=new RasterPainter((int)L.w,(int)L.h,1);
+        TimeAttackDemo.draw(p,c,L);int[] pixels=p.resolve();int hash=1;
+        for(int y=0;y<(int)L.h;y++)for(int x=0;x<(int)(L.w*.24f);x++)hash=hash*31+pixels[y*(int)L.w+x];
+        return hash;
     }
     private static void titleSkit() {
         Layout L=new Layout();L.compute(320,700,0,0,0,0);
@@ -73,6 +88,19 @@ final class TestTimeAttack extends Check {
         check("title skits leave combat and gameplay randomness alone",c.state==GameCore.TITLE
                 && c.boss.active()==control.boss.active() && !c.timeAttack.active && c.shots.isEmpty() && c.enemies.isEmpty()
                 && c.collected==control.collected && c.rnd.nextLong()==control.rnd.nextLong());
+        c.timeAttack.selected=Boss.SLIME;c.timeAttack.slide=1;c.clock=.5f;
+        int actor=companionFrame(c,L);
+        c.timeAttack.choose(c,-1);
+        check("boss selection retains departing boss and scroll direction",c.timeAttack.selected==TimeAttack.ALL
+                && c.timeAttack.previousSelected==Boss.SLIME && c.timeAttack.slideDirection==-1 && c.timeAttack.slide==0);
+        for(float slide:new float[]{0,.25f,.5f,.75f,1}) {
+            c.timeAttack.slide=slide;
+            check("companion stays anchored through group transition "+slide,companionFrame(c,L)==actor);
+        }
+        c.timeAttack.choose(c,1);c.modes.update(c,TimeAttack.SLIDE_TIME*.5f);
+        check("boss scroll advances over time",c.timeAttack.slide>.4f && c.timeAttack.slide<.6f);
+        c.modes.update(c,TimeAttack.SLIDE_TIME);
+        check("boss scroll settles",c.timeAttack.slide==1);
     }
     static void all(Layout L) {
         titleSkit();

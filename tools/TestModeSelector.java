@@ -12,6 +12,7 @@ final class TestModeSelector extends Check {
         c.modes.touch(c,L,0,12,x,y);c.modes.touch(c,L,1,12,x,y);
     }
     static void all(Layout L) {
+        swipePreview(L);
         persistence(L);
         skit(L);
         GameCore c=title();Ear ear=new Ear();c.sound=ear;
@@ -94,6 +95,32 @@ final class TestModeSelector extends Check {
                     ModeSelector.y(phone)+phone.unit*1.75f<LandPicker.cardY(phone)-phone.h*.05f
                     && !Showcase.inIcon(phone,c.clock,phone.w*.5f,ModeSelector.y(phone)));
         }
+    }
+    private static void swipePreview(Layout L) {
+        GameCore c=title();Ear ear=new Ear();c.sound=ear;
+        float x=L.w*.5f,y=ModeSelector.y(L);
+        c.modes.touch(c,L,0,1,x,y);c.modes.touch(c,L,2,1,x-L.w*.12f,y);
+        check("partial mode swipe follows finger without selecting",c.modes.adventure()
+                && Math.abs(c.modes.swipeOffset+.12f)<.001f && ear.uiBloops==0);
+        c.modes.touch(c,L,1,1,x-L.w*.12f,y);
+        check("short mode swipe does not tap or save",c.modes.adventure() && c.modes.confirmation==0
+                && new GameCore((Mem)c.store,1483).modes.adventure() && c.modes.swipeOffset<0);
+        c.modes.update(c,ModeSelector.SWIPE_RETURN*.5f);
+        check("short swipe animates toward its starting position",c.modes.swipeOffset<0 && c.modes.swipeOffset>-.12f);
+        c.modes.update(c,ModeSelector.SWIPE_RETURN);
+        check("short swipe finishes centered",c.modes.swipeOffset==0 && c.modes.adventure());
+        c.modes.touch(c,L,0,1,x,y);c.modes.touch(c,L,2,1,x-L.w*.25f,y);
+        check("long mode swipe waits for release",c.modes.adventure());
+        c.modes.touch(c,L,1,1,x-L.w*.25f,y);
+        check("long mode swipe commits once with feedback",c.modes.selected==ModeSelector.SURVIVAL
+                && ear.uiBloops==1 && c.modes.swipeOffset==0);
+        c.modes.update(c,ModeSelector.CHANGE);
+        c.modes.touch(c,L,0,1,x,y);c.modes.touch(c,L,2,1,x+L.w*.25f,y);
+        c.modes.touch(c,L,2,1,x+L.w*.08f,y);c.modes.touch(c,L,1,1,x+L.w*.08f,y);
+        check("pulling back below threshold cancels selection",c.modes.selected==ModeSelector.SURVIVAL && ear.uiBloops==1);
+        c.modes.update(c,ModeSelector.SWIPE_RETURN);
+        c.modes.touch(c,L,0,1,x,y);c.modes.touch(c,L,1,1,x+L.w*.25f,y);
+        check("long right swipe returns to previous mode",c.modes.adventure() && ear.uiBloops==2);
     }
     private static void persistence(Layout L) {
         GameCore c=title();Mem saved=(Mem)c.store;

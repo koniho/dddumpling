@@ -4,8 +4,11 @@ package com.dddumpling.game;
 final class TimeAttack extends Draw {
     static final int ALL=Boss.COUNT, CHOICES=Boss.COUNT+1;
     static final int SWIPE_ONLY=7;
+    static final float SLIDE_TIME=.32f;
     final long[][] best=new long[3][CHOICES];
     int selected, challenge, current, profile, cleared;
+    int previousSelected,slideDirection=1;
+    float slide=1;
     boolean active, finished, won, newBest;
     double seconds;
 
@@ -15,6 +18,7 @@ final class TimeAttack extends Draw {
     }
     boolean playable(GameCore c) {return unlocked(c,selected);}
     void choose(GameCore c,int direction) {
+        previousSelected=selected;slideDirection=direction;slide=0;
         selected=(selected+direction+CHOICES)%CHOICES;
         c.modes.confirmation=1;
         if(c.sound!=null)c.sound.uiBloop();
