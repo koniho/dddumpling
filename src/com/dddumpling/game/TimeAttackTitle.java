@@ -8,7 +8,7 @@ final class TimeAttackTitle extends Draw {
         float age=c.clock%BEAT,phase=age/BEAT;
         int beat=(int)(c.clock/BEAT),end=(beat&1)==0?0:3,side=end==0?-1:1;
         int boss=c.timeAttack.selected==TimeAttack.ALL?beat%Boss.COUNT:c.timeAttack.selected;
-        float impact=(float)Math.exp(-age*10f),confirm=c.modes.confirmation;
+        float impact=(float)Math.exp(-age*4f),confirm=c.modes.confirmation;
         float pulse=Math.max(impact,confirm*.85f);
         int highlight=Glyph.mix(Collect.BODY[Collect.BOSS_FIRST+boss],INK,.35f);
         int color=fadeBy(Glyph.mix(base,highlight,pulse*.9f),fade);
