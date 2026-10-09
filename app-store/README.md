@@ -30,7 +30,9 @@ Android App Bundle. The feature graphic is a 1024×500 RGB PNG; the icon is a 51
   google-play/creative-assets/dddumpling-feature-v1-source.png --out google-play/feature-graphic.png`
   from this directory. Check the result against [Google's requirements](https://support.google.com/googleplay/android-developer/answer/9866151?hl=en):
   1024 × 500, JPEG or RGB PNG without alpha. Replace the current feature graphic in
-  Play Console's Main store listing and save the change; this directory is not auto-published.
+  Play Console's Main store listing and save the change, or use the
+  [feature graphic upload workflow](play-publishing.md#feature-graphic-uploads).
+  This directory is not auto-published.
   The provenance includes an alt-text description for the Console.
 - `tools/StoreGraphic.java` retains the previous title-and-character design as a reference.
   After compiling the harness, `java -cp build/harness com.dddumpling.game.StoreGraphic`

@@ -1,0 +1,40 @@
+name: Upload Google Play feature graphic
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Save the feature graphic without sending changes for review
+        type: boolean
+        default: false
+      image_sha256:
+        description: Approved SHA-256 of app-store/google-play/feature-graphic.png
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: google-play-testing
+  cancel-in-progress: false
+
+jobs:
+  feature:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - name: Inspect or save English feature graphic
+        env:
+          APPLY: ${{ inputs.apply }}
+          PLAY_FEATURE_SHA256: ${{ inputs.image_sha256 }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          args=()
+          if [ "$APPLY" = true ]; then args+=(--write); fi
+          bundle exec ruby tools/play-feature-graphic.rb "${args[@]}"

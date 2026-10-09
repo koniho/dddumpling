@@ -15,6 +15,31 @@ re-uploading the bundle. Activate only after explicit user authorization.
 No lane publishes to production or edits store descriptions, images, or screenshots.
 New GitHub tag releases are drafts with reviewed copy from `release-notes/<version>.md`.
 
+## Feature graphic uploads
+
+The **Upload Google Play feature graphic** workflow uses the existing Play service-account
+secret to inspect or replace only the `en-US` feature graphic. It uploads the checked-in
+`app-store/google-play/feature-graphic.png`, verifies Google's checksum, and saves the change
+without sending it for review. It refuses to cancel an existing review. It does not build
+or upload a release, change a track, or edit other listing fields.
+
+Provide the file's SHA-256 as `image_sha256`. Leave `apply` false to inspect the current
+asset; set it true for an authorized upload. The service account needs **Manage store
+presence** for DDDumpling in addition to its existing access.
+
+```sh
+shasum -a 256 app-store/google-play/feature-graphic.png
+gh workflow run play-feature-graphic.yml --ref main \
+  -f image_sha256=APPROVED_SHA256 -f apply=true
+```
+
+Locally, `bundle exec ruby tools/play-feature-graphic.rb` inspects the image; `--write`
+saves it. `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` supplies the credential and optional
+`PLAY_FEATURE_SHA256` pins the approved image. Run `ruby tools/test-play-feature-graphic.rb`
+for transaction and failure checks without credentials or network access.
+See [image uploads](https://developers.google.com/android-publisher/api-ref/rest/v3/edits.images/upload)
+and [commit behavior](https://developers.google.com/android-publisher/api-ref/rest/v3/edits/commit).
+
 ## Direct APK distribution (itch.io)
 
 The itch workflow creates a fresh hidden staging channel by default. Select **activate**
