@@ -458,6 +458,7 @@ final class TestPower extends Check {
 
     static void teamMode(Layout L) {
         runSelectionAndEntrance(L);
+        teamTargeting(L);
         teamNearBoundary(L);
         group("TEAM SQUISH");
         // The gate: nobody collected, nobody to field.
@@ -660,10 +661,10 @@ final class TestPower extends Check {
         check("matching key chooses the prompt nearest the damage line",e.tapKey(1,L) && e.buddy.chase==low);
         float vx=e.buddy.vx,vy=e.buddy.vy;
         int aimedHits=e.hits;
-        check("unmatched key cannot redirect an existing charge",!e.tapKey(5,L) && e.buddy.chase==low
+        check("unmatched key aims at the nearest enemy without adding a hit",!e.tapKey(5,L) && e.buddy.chase==low
                 && e.buddy.vx==vx && e.buddy.vy==vy && e.hits==aimedHits);
         e.buddy.chase = null;
-        check("unmatched key leaves free flight unchanged",!e.tapKey(5,L) && e.buddy.chase==null
+        check("unmatched key starts a charge without snapping velocity",!e.tapKey(5,L) && e.buddy.chase==low
                 && e.buddy.vx==vx && e.buddy.vy==vy);
         e.tapKey(1,L);
 
@@ -846,6 +847,53 @@ final class TestPower extends Check {
         check("it is not back on the summary", k.buddy.out());
     }
 
+    private static void teamTargeting(Layout L) {
+        group("TEAM SQUISH match priority and nearest fallback (#158)");
+        Mem store = new Mem(); store.collected = 1L;
+        GameCore c = new GameCore(store, 158L);
+        c.startGame(); c.enemies.clear(); c.playtestMode(Power.TEAM, L);
+        c.buddy.entryLeft = 0f;
+        c.buddy.x = L.w * .5f; c.buddy.y = (L.playTop + L.dangerY) * .5f;
+        GameCore.Enemy nearby = add(c, L, new int[]{0, 2}, c.buddy.y);
+        nearby.baseX = c.buddy.x + L.enemyR;
+        GameCore.Enemy high = add(c, L, new int[]{2}, c.buddy.y + L.enemyR * 2f);
+        GameCore.Enemy low = add(c, L, new int[]{0, 2}, L.dangerY - L.enemyR);
+        low.pos = 1;
+        check("lowest active match outranks closer matching and nonmatching enemies",
+                c.tapKey(2, L) && c.buddy.chase == low);
+        low.destroyed = true;
+        check("destroyed match is excluded", c.tapKey(2, L) && c.buddy.chase == high);
+        high.attacking = true;
+        int hits = c.hits, misses = c.misses, score = c.score;
+        float vx = c.buddy.vx, vy = c.buddy.vy;
+        check("no active match retargets a charge to the nearest eligible enemy",
+                !c.tapKey(2, L) && c.buddy.chase == nearby);
+        check("fallback preserves miss accounting and steering momentum",
+                c.hits == hits && c.misses == misses + 1 && c.combo == 0 && c.score == score
+                && c.buddy.vx == vx && c.buddy.vy == vy && nearby.pos == 0);
+
+        // Both axes and the rendered centre matter, not spawn position or lowest y.
+        GameCore.Enemy swaying = add(c, L, new int[]{1}, c.buddy.y + L.enemyR * .2f);
+        swaying.baseX = c.buddy.x + L.enemyR * 4f;
+        swaying.sway = -L.enemyR * 4f;
+        swaying.phase = (float)Math.PI * .5f - c.clock * 1.1f;
+        c.buddy.chase = null;
+        check("fallback from free flight uses the visible swaying centre",
+                !c.tapKey(5, L) && c.buddy.chase == swaying);
+        swaying.dying = true;
+        check("dying nearest enemy is excluded", !c.tapKey(5, L) && c.buddy.chase == nearby);
+        swaying.dying = false; swaying.pos = swaying.word.length;
+        check("fully resolved nearest enemy is excluded", !c.tapKey(5, L) && c.buddy.chase == nearby);
+        nearby.destroyed = true;
+        c.buddy.chase = null;
+        check("no eligible enemies leave free flight unchanged", !c.tapKey(5, L)
+                && c.buddy.chase == null && c.buddy.vx == vx && c.buddy.vy == vy);
+        nearby.destroyed = false;
+        c.buddy.leave();
+        check("an absent companion cannot begin a fallback charge",
+                !c.tapKey(5, L) && c.buddy.chase == null);
+    }
+
     /** A grown fighter must steer along its bounds instead of bouncing away from low words. */
     private static void teamNearBoundary(Layout standard) {
         group("TEAM SQUISH near-boundary charges (#155)");
@@ -879,7 +927,7 @@ final class TestPower extends Check {
                 c.tapKey(1,L);
                 boolean picks=c.buddy.chase==other; // Matching letters still outrank lower threats.
                 c.tapKey(0,L);picks &= c.buddy.chase==low;
-                c.tapKey(5,L);picks &= c.buddy.chase==low; // Unmatched keys keep the current charge.
+                c.tapKey(5,L);picks &= c.buddy.chase==low; // The lower threat is also nearest.
                 boolean inside=true;
                 for(int frame=0;frame<90 && !low.destroyed && !low.attacking;frame++) {
                     if(frame%10==0)c.tapKey(0,L);

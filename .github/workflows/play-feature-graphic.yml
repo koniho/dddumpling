@@ -1,0 +1,55 @@
+name: Upload Google Play feature graphic
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Upload the feature graphic using Google's normal listing review flow
+        type: boolean
+        default: false
+      image_sha256:
+        description: Approved SHA-256 of app-store/google-play/feature-graphic.png
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: google-play-testing
+  cancel-in-progress: false
+
+jobs:
+  feature:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install pinned gplay CLI
+        run: bash tools/install-gplay.sh
+      - name: Identify Play service account
+        env:
+          GPLAY_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          printf '%s' "$GPLAY_SERVICE_ACCOUNT" | jq -er \
+            '.client_email | select(type == "string" and length > 0) | "Play service account: \(.)"'
+      - name: Preview or upload English feature graphic
+        env:
+          APPLY: ${{ inputs.apply }}
+          PLAY_FEATURE_SHA256: ${{ inputs.image_sha256 }}
+          GPLAY_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          args=()
+          if [ "$APPLY" = true ]; then args+=(--write); fi
+          bash tools/play-feature-graphic.sh "${args[@]}"
+      - name: Preserve upload verification
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: play-feature-graphic-${{ github.run_id }}
+          if-no-files-found: ignore
+          path: |
+            .private/play-feature/preview.json
+            .private/play-feature/applied.json
+            .private/play-feature/saved.json
+          include-hidden-files: true

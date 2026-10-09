@@ -1,0 +1,23 @@
+{
+  "asset": "dddumpling-universal-v2-bosses.png",
+  "source": "dddumpling-universal-v2-bosses-source.png",
+  "date": "2026-10-08",
+  "tool": "built-in image_gen",
+  "change": "Added Slime, Octopulse and Fly Agaric from actual game reference frames",
+  "source_resolution": [
+    1672,
+    941
+  ],
+  "export_resolution": [
+    5244,
+    2950
+  ],
+  "export": "sips resample; opaque PNG; no alpha channel",
+  "references": [
+    "ios/store/creative-assets/dddumpling-universal-v1-source.png",
+    "out/60-boss-slime.png",
+    "out/76b-octopulse-settled.png",
+    "out/77-boss-fly-agaric.png"
+  ],
+  "prompt": "Use case: compositing.\nEdit target: Image 1 is the existing DDDumpling App Store universal promotional banner. Add three actual bosses from the game to this artwork. Preserve the deep purple luminous hexagon environment, the smiling golden dumpling hero's exact face and pleated shape, the joyful collectible hexagon characters, and the premium soft glossy illustrated finish.\nSupporting identity references: Image 2 is Slime in actual gameplay: broad irregular lime-green squishy puddle body, wavy upper corners, dark green big oval eyes, tiny curved friendly smile, glossy highlights and green pooled base. Image 3 is Octopulse: magenta-pink oval octopus head, round dark eyes, tiny friendly curved smile, eight long slender magenta tentacles edged dark plum with small pale pink suction dots. The tentacles bend down and curl; do NOT turn it into a spider, sea monster, squid or frightening animal. Image 4 is Fly Agaric: broad red domed mushroom cap covered with white spots, pale radial gills underneath, slender cream stalk wearing a little jagged beige skirt near its top, two tiny brown eyes and a small flat mouth on the stalk. No arms or legs.\nPrimary change: Add these three recognizable bosses as beautiful full-body illustrated character cameos around the central golden dumpling, subtly posed toward it, with energetic glowing arcs between them. Do not enclose the bosses in hexagons, their distinctive silhouettes must read clearly. Keep Slime on the left of the dumpling, Octopulse on the right, and Fly Agaric just below the left-middle of the dumpling constellation. Each boss should read larger than the small collectible faces but remain subordinate to the main golden dumpling. Reposition the small collectible hexagon faces slightly outward only if needed to avoid overlaps; retain their identities, and keep foreground faces clear. Use available surrounding background space rather than cramming every boss next to the hero.\nCRITICAL preserve crop-aware hero placement exactly: main golden dumpling remains completely inside x40%-60%, y23%-54% of the full canvas, centered x50%, y38%. Do not enlarge or move the dumpling. Put Slime around x30%, y36%, Octopulse around x68%, y37% (tentacles may sweep lower), Fly Agaric around x40%, y62%; these are supporting subjects that can be clipped by peripheral device crops. All their faces should remain clear at ordinary wide-card sizes. Central dumpling face unobstructed; keep clear silhouettes with restrained glow. Avoid an overcrowded collage.\nMatch the already-generated illustration's soft glossy polish while retaining the exact bosses' signature anatomy and colors from the game refs. Cute, exciting arcade energy; not scary. Full bleed opaque PNG, landscape16:9, highest available resolution.\nNo text, labels, logos, screenshot interface, phone frame, health bars, hands, scores, swords, armor, plates, kitchen, awards, pricing, watermarks, safety guides or rectangles. No generic replacement bosses."
+}

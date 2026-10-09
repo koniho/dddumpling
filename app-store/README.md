@@ -23,9 +23,20 @@ Android App Bundle. The feature graphic is a 1024×500 RGB PNG; the icon is a 51
 
 - The icon is exported from the actual game drawing code by tools/AppIcon.java.
   It uses the slime-green dumpling variant selected for the listing.
-- The feature graphic is exported with tools/StoreGraphic.java, using the game's
-  title lettering and character renderer. After compiling the harness, run
-  java -cp build/harness com.dddumpling.game.StoreGraphic to regenerate it.
+- The feature graphic adapts the latest App Store banner with bosses, lands and Survival's
+  rainbow curl. Built-in imagegen reframed the illustration for Google Play; the
+  [source and exact prompt](google-play/feature-graphic.provenance.json) are preserved.
+  Export the source with `sips -z 500 1024
+  google-play/creative-assets/dddumpling-feature-v1-source.png --out google-play/feature-graphic.png`
+  from this directory. Check the result against [Google's requirements](https://support.google.com/googleplay/android-developer/answer/9866151?hl=en):
+  1024 × 500, JPEG or RGB PNG without alpha. Replace the current feature graphic in
+  Play Console's Main store listing and save the change, or use the
+  [feature graphic upload workflow](play-publishing.md#feature-graphic-uploads).
+  This directory is not auto-published.
+  The provenance includes an alt-text description for the Console.
+- `tools/StoreGraphic.java` retains the previous title-and-character design as a reference.
+  After compiling the harness, `java -cp build/harness com.dddumpling.game.StoreGraphic`
+  writes `out/store-graphics/legacy-feature-graphic.png` without replacing the listing asset.
 - Screenshots are full frames from the shared game rendering harness, copied
   from the website assets. Their source frames are out/2-wave.png,
   out/76-boss-octopulse.png, out/54-stars-flight.png, and out/40k-case-bosses.png.

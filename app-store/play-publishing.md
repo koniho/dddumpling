@@ -15,6 +15,47 @@ re-uploading the bundle. Activate only after explicit user authorization.
 No lane publishes to production or edits store descriptions, images, or screenshots.
 New GitHub tag releases are drafts with reviewed copy from `release-notes/<version>.md`.
 
+## Feature graphic uploads
+
+The **Upload Google Play feature graphic** workflow runs pinned `gplay` 2.1.0 with the
+existing Play service-account secret to inspect or replace only the `en-US` feature graphic.
+It validates the checked-in `app-store/google-play/feature-graphic.png`, previews the delta,
+uploads it and checks Google's saved checksum. Google applies its normal listing review
+flow; this account requires automatic review when saving, so a save cannot be kept out of
+review. The workflow refuses to cancel an existing review. It does not build or upload a
+release, change a track, or edit other listing fields.
+
+Provide the file's SHA-256 as `image_sha256`. Leave `apply` false to inspect the current
+delta; set it true for an authorized upload. The service account needs **Manage store
+presence** for DDDumpling in addition to its existing access.
+If saving fails with HTTP 403 at `edits.commit`, open Play Console **Users and permissions**,
+select the email printed by **Identify Play service account**, and add **Manage store presence**
+under DDDumpling's app permissions. A successful preview or upload into an edit does not
+prove permission to save the listing.
+
+```sh
+shasum -a 256 app-store/google-play/feature-graphic.png
+gh workflow run play-feature-graphic.yml --ref main \
+  -f image_sha256=APPROVED_SHA256 -f apply=true
+```
+
+The same CLI works locally:
+
+```sh
+bash tools/install-gplay.sh
+export GPLAY_SERVICE_ACCOUNT=/absolute/private/path/service-account.json
+bash tools/play-feature-graphic.sh          # Online preview
+bash tools/play-feature-graphic.sh --write  # Upload and verify
+```
+
+The installer downloads the platform binary into ignored `build/tools/gplay/` and checks
+its pinned release checksum. It supports macOS and Linux, Intel and ARM. `GPLAY_BIN` can
+select an existing CLI; optional `PLAY_FEATURE_SHA256` pins the approved image locally.
+Only the English feature graphic is copied into an ignored metadata tree under `.private/`.
+The workflow retains the preview and current saved checksum as artifacts, never the credential.
+See [image uploads](https://developers.google.com/android-publisher/api-ref/rest/v3/edits.images/upload)
+and [commit behavior](https://developers.google.com/android-publisher/api-ref/rest/v3/edits/commit).
+
 ## Direct APK distribution (itch.io)
 
 The itch workflow creates a fresh hidden staging channel by default. Select **activate**

@@ -3,6 +3,13 @@
 This is the default workflow. User instructions override it. Read only the references
 needed for the current task; onboarding and historical notes are not mandatory startup reads.
 
+## Repository skills
+
+Apple and Google Play skills are checked in under [.agents/skills/](.agents/skills/README.md).
+For matching tasks, use these repository copies and read only the relevant `SKILL.md` and
+its required references. Start Google Play work with `gplay-cli-usage`; Apple category
+indexes point to their specific skills. The linked README records setup and pinned sources.
+
 ## Keep small changes small
 
 - Find the owning symbols with `rg`, then read narrow windows. Avoid whole large source files.

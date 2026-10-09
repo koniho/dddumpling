@@ -1,5 +1,8 @@
 # App Store preparation
 
+For composed Header and Search Results artwork, generation references and Asset Library
+uploads, see [Promotional artwork](promotional-assets.md).
+
 Title: DDDumpling: Tap Game. Version/build: 0.1.0 (2.1). App Store Connect app ID: `6811478003`.
 Bundle ID `com.dddumpling.game.ios` is registered under Apple Developer team `QC7LYR5635`.
 Signed archive/export and TestFlight upload passed in [release run 34732005221](https://github.com/koniho/dddumpling/actions/runs/34732005221).
