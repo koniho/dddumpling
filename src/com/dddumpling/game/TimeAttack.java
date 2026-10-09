@@ -114,9 +114,8 @@ final class TimeAttack extends Draw {
             p.line(ax-d*s*.2f,y-s*.5f,ax+d*s*.2f,y-s*.25f,GOLD,s*.09f);
             p.line(ax+d*s*.2f,y-s*.25f,ax-d*s*.2f,y,GOLD,s*.09f);
         }
-        p.text(ready?Survival.profileName(Survival.profile(c.preferences.kids,c.fullRoster))
-                :selected==ALL?"BEFRIEND ALL FOUR BOSSES":"BEFRIEND IN ADVENTURE",
-                x,y+s*1.5f,type(s*.48f),ready?GOLD:INK_DIM,Painter.CENTER,true);
+        if(!ready)p.text(selected==ALL?"BEFRIEND ALL FOUR BOSSES":"BEFRIEND IN ADVENTURE",
+                x,y+s*1.5f,type(s*.48f),INK_DIM,Painter.CENTER,true);
     }
     void result(Painter p,GameCore c,Layout L,float fade) {
         p=new OpacityPainter(p,fade);float s=L.unit,x=L.w*.5f;
