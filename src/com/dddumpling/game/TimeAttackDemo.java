@@ -4,26 +4,30 @@ package com.dddumpling.game;
 final class TimeAttackDemo extends Draw {
     private TimeAttackDemo() {}
     static final float LOOP=3.2f;
+    static final float GROUP_TURN=1.15f;
+    static float companionAnchor(Layout L) {return L.w*.38f;}
+    static float bossAnchor(Layout L) {return L.w*.62f;}
     private static float hop(float t,float start,float end) {
         return t<=start || t>=end?0f:(float)Math.sin((t-start)/(end-start)*Math.PI);
     }
     private static float radius(Layout L) {return Math.min(L.unit,L.h*.017f);}
     private static float companionX(GameCore c,Layout L) {
         float t=c.clock%LOOP;
-        return L.w*.16f+radius(L)*(.35f*hop(t,1f,1.8f)-.25f*hop(t,.08f,.85f));
+        return companionAnchor(L)+radius(L)*(.35f*hop(t,1f,1.8f)-.25f*hop(t,.08f,.85f));
     }
     private static float companionY(GameCore c,Layout L) {
         float t=c.clock%LOOP;
         return L.h*.677f+radius(L)*(.45f-1.25f*hop(t,.18f,1f)-.45f*hop(t,1f,1.8f)-.75f*hop(t,2.25f,3.05f));
     }
     static void draw(Painter p,GameCore c,Layout L) {
+        drawCompanion(p,c,L);
         float travel=panelTravel(c.timeAttack.slide),span=L.w*.85f;
-        p.save();p.clipRect(L.w*.25f,L.h*.635f,L.w,TimeAttack.selectY(L)-L.unit*.6f);
         if(c.timeAttack.slide<1)scene(p,c,L,c.timeAttack.previousSelected,-c.timeAttack.slideDirection*span*travel);
         scene(p,c,L,c.timeAttack.selected,c.timeAttack.slideDirection*span*(1-travel));
-        p.restore();
+    }
+    static void drawCompanion(Painter p,GameCore c,Layout L) {
         float t=c.clock%LOOP,r=radius(L);
-        p.fillEllipse(L.w*.16f,L.h*.677f+r*1.45f,r*1.1f,r*.13f,0x44302045);
+        p.fillEllipse(companionAnchor(L),L.h*.677f+r*1.45f,r*1.1f,r*.13f,0x44302045);
         Trinket.drawReacting(p,SurvivalDemo.companion(c),companionX(c,L),companionY(c,L),r,c.clock*3,1,
                 hop(t,.18f,1f)>.1f?5:hop(t,1f,1.8f)>.1f?4:8,.7f);
     }
@@ -36,7 +40,7 @@ final class TimeAttackDemo extends Draw {
     private static void drawOne(Painter p,GameCore c,Layout L,int boss) {
         boolean known=TimeAttack.unlocked(c,boss);
         float t=c.clock%LOOP,r=radius(L),br=r*2;
-        float y=L.h*.677f,right=L.w*.65f;
+        float y=L.h*.677f,right=bossAnchor(L);
         float charge=hop(t,.08f,.85f),recoil=hop(t,1.5f,2.12f),cheer=hop(t,2.25f,3.05f);
         float cx=companionX(c,L),cy=companionY(c,L);
         float bx=right-br*.8f*charge+br*.22f*recoil;
@@ -71,22 +75,32 @@ final class TimeAttackDemo extends Draw {
             p.fillPoly(star(xx,yy,r*.16f*cheer,r*.07f*cheer,4,t+i),fadeBy(GOLD,cheer));
         }
     }
+    private static int groupSlot(float clock,int boss) {
+        return (boss-(int)(clock/GROUP_TURN)%Boss.COUNT+Boss.COUNT)%Boss.COUNT;
+    }
+    static float groupX(Layout L,float clock,int boss) {
+        int slot=groupSlot(clock,boss),before=(slot+1)%Boss.COUNT;
+        float shuffle=panelTravel(Math.min(1,(clock%GROUP_TURN)/GROUP_TURN/.28f));
+        return bossAnchor(L)+L.w*.08f*(before+(slot-before)*shuffle);
+    }
     private static void drawAll(Painter p,GameCore c,Layout L) {
-        float t=c.clock%.8f,beat=t/.8f,r=radius(L),br=r*2;
+        float beat=(c.clock%GROUP_TURN)/GROUP_TURN,r=radius(L),br=r*2;
         float y=L.h*.679f,cx=companionX(c,L),cy=companionY(c,L);
-        int turn=(int)(c.clock/.8f)%Boss.COUNT;
-        for(int boss=0;boss<Boss.COUNT;boss++) {
-            boolean active=boss==turn,known=TimeAttack.unlocked(c,boss);
+        int turn=(int)(c.clock/GROUP_TURN)%Boss.COUNT;
+        // The returning boss hops behind the queue; the next buddy scoots to the front.
+        for(int slot=Boss.COUNT-1;slot>=0;slot--) {
+            int boss=(turn+slot)%Boss.COUNT;
+            boolean active=slot==0,known=TimeAttack.unlocked(c,boss);
             float bounce=(float)Math.sin(c.clock*11+boss*1.8f);
-            float rush=active?hop(beat,0,.55f):0,recoil=active?hop(beat,.78f,1f):0;
-            float bx=L.w*(.36f+boss*.17f)-br*.28f*rush+br*.12f*recoil;
-            float by=y-br*.15f*Math.abs(bounce);
+            float rush=active?hop(beat,.28f,.65f):0,recoil=active?hop(beat,.78f,1f):0;
+            float bx=groupX(L,c.clock,boss)-br*.28f*rush+br*.12f*recoil;
+            float by=y-br*.15f*Math.abs(bounce)-br*.4f*(slot==Boss.COUNT-1?hop(beat,0,.28f):0);
             int tint=known?Collect.BODY[Collect.BOSS_FIRST+boss]:INK_DIM;
-            p.fillEllipse(L.w*(.36f+boss*.17f),y+br*.9f,br*.72f,r*.12f,0x44302045);
-            if(known)signature(p,boss,bx,by,br,c.clock+boss*.4f,rush,tint);
-            if(active) {
+            p.fillEllipse(groupX(L,c.clock,boss),y+br*.9f,br*.72f,r*.12f,0x44302045);
+            if(known && active)signature(p,boss,bx,by,br,c.clock+boss*.4f,rush,tint);
+            if(active && beat>=.28f) {
                 boolean returning=beat>=.5f;
-                float f=returning?(beat-.5f)*2:beat*2;
+                float f=returning?(beat-.5f)*2:(beat-.28f)/.22f;
                 float startX=returning?cx+r:bx-br,endX=returning?bx-br:cx+r;
                 float px=startX+(endX-startX)*f;
                 float py=cy+(by-cy)*(returning?f:1-f)-r*.5f*(float)Math.sin(f*Math.PI);

@@ -24,9 +24,13 @@ final class Preview {
         c.timeAttack.selected=TimeAttack.ALL;
         shot(dir,"150-selector-all",c,L,w,h,ss);
         for(int beat=0;beat<4;beat++) {
-            c.clock=beat*.8f+.65f;
+            c.clock=(beat+.6f)*TimeAttackDemo.GROUP_TURN;
             shot(dir,"150-skit-all-"+beat,c,L,w,h,ss);
         }
+        c.clock=TimeAttackDemo.GROUP_TURN*1.14f;
+        shot(dir,"150-skit-queue-shuffle",c,L,w,h,ss);
+        c.timeAttack.selected=Boss.SLIME;c.timeAttack.choose(c,1);c.clock=1.3f;c.timeAttack.slide=.32f;
+        shot(dir,"150-boss-scroll-overlap",c,L,w,h,ss);
         c.timeAttack.selected=Boss.SLIME;c.timeAttack.choose(c,-1);c.clock=.5f;
         for(int frame=0;frame<3;frame++) {
             c.timeAttack.slide=frame*.5f;

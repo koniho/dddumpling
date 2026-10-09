@@ -59,9 +59,8 @@ final class TestTimeAttack extends Check {
     }
     private static int companionFrame(GameCore c,Layout L) {
         RasterPainter p=new RasterPainter((int)L.w,(int)L.h,1);
-        TimeAttackDemo.draw(p,c,L);int[] pixels=p.resolve();int hash=1;
-        for(int y=0;y<(int)L.h;y++)for(int x=0;x<(int)(L.w*.24f);x++)hash=hash*31+pixels[y*(int)L.w+x];
-        return hash;
+        TimeAttackDemo.drawCompanion(p,c,L);
+        return java.util.Arrays.hashCode(p.resolve());
     }
     private static void titleSkit() {
         Layout L=new Layout();L.compute(320,700,0,0,0,0);
@@ -101,6 +100,21 @@ final class TestTimeAttack extends Check {
         check("boss scroll advances over time",c.timeAttack.slide>.4f && c.timeAttack.slide<.6f);
         c.modes.update(c,TimeAttack.SLIDE_TIME);
         check("boss scroll settles",c.timeAttack.slide==1);
+        check("solo pair anchors are equally spaced around center",
+                Math.abs(TimeAttackDemo.companionAnchor(L)+TimeAttackDemo.bossAnchor(L)-L.w)<.001f);
+        for(int turn=0;turn<Boss.COUNT;turn++) {
+            float clock=(turn+.5f)*TimeAttackDemo.GROUP_TURN;
+            float front=TimeAttackDemo.groupX(L,clock,turn);
+            check("each boss takes the front spot "+turn,Math.abs(front-TimeAttackDemo.bossAnchor(L))<.001f);
+            for(int boss=0;boss<Boss.COUNT;boss++) {
+                float x=TimeAttackDemo.groupX(L,clock,boss);
+                check("waiting bosses form a compact queue "+turn+"/"+boss,x>=front && x<=front+L.w*.241f);
+                float boundary=(turn+1)*TimeAttackDemo.GROUP_TURN;
+                check("queue shuffle does not teleport at turn boundary "+turn+"/"+boss,
+                        Math.abs(TimeAttackDemo.groupX(L,boundary-.0001f,boss)
+                                -TimeAttackDemo.groupX(L,boundary+.0001f,boss))<L.w*.001f);
+            }
+        }
     }
     static void all(Layout L) {
         titleSkit();
