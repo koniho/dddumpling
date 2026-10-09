@@ -287,7 +287,7 @@ final class TestCave extends Check {
         check("kids reveal keeps normal timing and only approach slows",
                 Math.abs(v.timer-(Cave.REVEAL+(.5f-Cave.REVEAL)*.45f))<.001f);
         v.enemy.fire(v,L,0);v.enemy.update(c,.1f);
-        check("kids cave bolt travels slower",Math.abs(v.enemy.boltAge[0]-.045f)<.001f);
+        check("kids cave bolt keeps normal flight speed",Math.abs(v.enemy.boltAge[0]-.1f)<.001f);
         v.enemy.boltAge[0]=CaveEnemy.FLIGHT;v.enemy.update(c,.1f);
         check("kids cave bolt impact animates normally",Math.abs(v.enemy.boltAge[0]-CaveEnemy.FLIGHT-.1f)<.001f);
         v.encounter(c,Cave.SAND);v.update(c,.1f,L);

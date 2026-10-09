@@ -217,6 +217,7 @@ final class Onboarding extends Draw {
             q.stage=21;q.state=GameCore.BONUS;q.bonusTimer=1;
             if(which==MINE)q.mining.begin(q);else q.cart.begin(q);
         } else {
+            q.kidsRun=c.kidsRun;
             q.earnedMash=GameCore.MASH_PERFECT;
             Interlude.enterBonus(q,L);
         }

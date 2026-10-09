@@ -22,8 +22,7 @@ final class CaveEnemy extends Draw {
         for(int i=0;i<8;i++)dustAge[i]+=dt;
         for(int i=0;i<5;i++){
             float before=boltAge[i];
-            float flightDt=Math.min(dt,Math.max(0,FLIGHT-before)/c.traversalRate());
-            boltAge[i]+=flightDt*c.traversalRate()+(dt-flightDt);
+            boltAge[i]+=dt;
             if(before<FLIGHT && boltAge[i]>=FLIGHT){recoil=.36f;impacts++;v.effects.cue(c,Sfx.BOLT_POP,.38f);}
         }
         if(retreat>=0){

@@ -56,8 +56,9 @@ final class Interlude {
         // The mash is exactly what the round earned, and nothing else adds to it — a frenzy no
         // longer buys extra time here, because that bonus was wider than the whole earned ladder
         // and erased it. See bonusRollEnd for how the one timer carries all four phases.
-        // Kids always get the full mash, including direct playtests.
+        // Kids use a finite phase marker; update holds it after the spinner settles.
         c.bonusRollEnd = (c.kidsRun ? GameCore.MASH_PERFECT : c.earnedMash) + GameCore.MASH_END;
+        c.steamer.kids = c.kidsRun;
         c.bonusTimer = GameCore.BONUS_ROLL + c.bonusRollEnd;
         c.paradeTimer = 0f;
         c.steamer.lidPulse = 0;

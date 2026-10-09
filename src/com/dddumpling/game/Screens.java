@@ -576,6 +576,10 @@ final class Screens extends Draw {
      */
     private static void countdown(Painter p, GameCore c, Layout L, float cx, float fade) {
         float s = L.unit;
+        if(c.kidsRun) {
+            p.text("NO TIME LIMIT",cx,L.h*.625f,type(s*.8f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
+            return;
+        }
         float left = c.bonusLeft();
         boolean out = c.bonusHolding();
         int col = out || left <= 1f ? ROSE : INK;

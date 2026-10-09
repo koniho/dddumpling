@@ -8,7 +8,8 @@ package com.dddumpling.game;
  */
 final class Steamer {
     /** Extra points required after each lifetime success, up to the target cap. */
-    static final int GOAL_STEP = 2, MAX_GOAL = 20;
+    static final int GOAL_STEP = 2, MAX_GOAL = 20, KIDS_GOAL = 10;
+    boolean kids;
 
     /** Presses landed, carried across interludes so the lid is chipped open over stages. */
     int hits;
@@ -91,6 +92,7 @@ final class Steamer {
 
     /** Current target: approachable first, then steadily harder after every success. */
     int goal() {
+        if(kids)return KIDS_GOAL;
         return (int) Math.min(MAX_GOAL, GameCore.STEAMER_START
                 + (long) Math.max(0, opens) * GOAL_STEP);
     }

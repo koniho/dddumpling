@@ -1950,6 +1950,7 @@ final class GameCore {
         Pause.resume(this);
         state = PLAY;
         kidsRun = preferences.kids;
+        steamer.kids = kidsRun;
         stars.difficultyCap = kidsRun ? StarPath.KIDS_DIFFICULTY : StarPath.MAX_DIFFICULTY;
         runFullRoster = !kidsRun && fullRoster;
         if(modes.selected==ModeSelector.SURVIVAL)survival.begin(this);
@@ -2905,7 +2906,7 @@ final class GameCore {
 
         updateChain(dt);
         Fx.updateParticles(this, dt);
-        Fx.updateShots(this, dt * traversalRate(), L);
+        Fx.updateShots(this, dt, L);
 
         if (state == BONUS) {
             if (CaveInterlude.active(this)) {
@@ -3012,7 +3013,9 @@ final class GameCore {
                 time = 0;
                 return;
             }
-            bonusTimer -= dt;
+            // Keep the spinner finite, then hold the Kids mash until the lid is freed.
+            bonusTimer = kidsRun && !bonusPrizeWon()
+                    ? Math.max(bonusRollEnd, bonusTimer-dt) : bonusTimer-dt;
             if (bonusTimer <= MASH_END && steamer.swipeReady) steamer.missSwipe();
             // One tick per character the spinner steps past, so it sounds like a spin. Only
             // the left slot fires: both would double up on almost every step.
@@ -3071,7 +3074,7 @@ final class GameCore {
             boolean priorOpen=boss.open();
             float beforeDeath = boss.beaten ? boss.leaveProgress() * Boss.LEAVE : -1f;
             boolean beforeSupernova = boss.kind == Boss.SPLITTER && boss.beaten && !DivideDeath.bursting(boss);
-            int bossHits = boss.update(dt, dt * traversalRate(), L, rnd);
+            int bossHits = boss.update(dt, L, rnd);
             BossPlay.deathFeedback(this, beforeDeath);
             if (beforeSupernova && DivideDeath.bursting(boss) && sound != null) sound.divideSupernova();
             float cover=boss.slimePromptCover();

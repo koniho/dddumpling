@@ -2110,7 +2110,9 @@ final class Preview {
         kids.enemies.clear();kids.shots.clear();
         kids.starNext=false;kids.earnedMash=GameCore.MASH_PANIC;Interlude.enterBonus(kids,L);
         kids.bonusTimer=kids.bonusRollEnd;kids.time=1f;
-        shot(dir,"33h-kids-steamer-five",kids,L,w,h,ss);
+        shot(dir,"33h-kids-steamer-unlimited",kids,L,w,h,ss);
+        for(int i=0;i<Steamer.KIDS_GOAL*2;i++)kids.tapBonus(kids.steamer.wanted());
+        shot(dir,"33h-kids-steamer-ready",kids,L,w,h,ss);
         kids.stars.wins=StarPath.MAX_DIFFICULTY;kids.starNext=true;Interlude.enterBonus(kids,L);
         step(kids,L,StarPath.READY+.3f);
         shot(dir,"33i-kids-star-cap",kids,L,w,h,ss);

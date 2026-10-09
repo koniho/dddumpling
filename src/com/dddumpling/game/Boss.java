@@ -2337,7 +2337,7 @@ final class Boss {
         return update(dt, dt, L, rnd);
     }
 
-    // Action/animation time stays separate from Kids Mode projectile flight.
+    // Action/animation time can be advanced separately from projectile flight.
     int update(float dt, float projectileDt, Layout L, Random rnd) {
         if (kind < 0) return 0;
         hurt = Math.max(0f, hurt - dt * 2.6f);

@@ -56,7 +56,7 @@ final class TutorialSpeech extends Draw {
         if(message==LEAN)return "Cart Rush is starting! Slide left and right to steer. Stay in the green and help your cart reach the finish!";
         if(message==DIG)return "Dumpling Mine is starting! Tap the matching keys in order to fill your cart. Let's dig up a new friend!";
         if(message==WAIT)return "Steamer is starting! Wait while two random keys are picked. Watch them spin! Get ready. You can do this!";
-        if(message==ALTERNATE)return "Quickly tap the two keys in turn to fill the meter.";
+        if(message==ALTERNATE)return "Tap the two keys in turn to fill the meter.";
         if(message==LIFT)return "Swipe the lid up to free the dumpling.";
         if(message==SUCCESS)return "Amazing! You did it! You freed a dumpling!";
         if(message==CLOSED)return "Wait until Slime's face is visible. Tap the key that matches Slime's face. Wrong keys or hidden faces will get you slimed!";

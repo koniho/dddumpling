@@ -19,16 +19,16 @@ final class TestSettings extends Check {
         c.enemies.clear();
         GameCore.Shot shot=new GameCore.Shot();shot.dur=1f;c.shots.add(shot);
         c.update(.1f,L);
-        check("kids slows player projectile flight",Math.abs(shot.t-.045f)<.001f);
+        check("kids player projectile keeps normal flight speed",Math.abs(shot.t-.1f)<.001f);
         for(int kind=0;kind<Boss.COUNT;kind++) {
             c.boss.begin(kind,5,c.rnd);float intro=c.boss.intro;
             c.update(.1f,L);
             check("kids preserves boss introduction "+kind,Math.abs(c.boss.intro-intro+.1f)<.001f);
             c.boss.intro=0;c.boss.blive[0]=true;c.boss.bt[0]=0;
             float age=c.boss.age;c.update(.1f,L);
-            check("kids preserves boss action clock but slows bolts "+kind,
+            check("kids preserves boss action and projectile clocks "+kind,
                     Math.abs(c.boss.age-age-.1f)<.001f
-                    && Math.abs(c.boss.bt[0]-.045f/Boss.BOLT_TIME)<.001f);
+                    && Math.abs(c.boss.bt[0]-.1f/Boss.BOLT_TIME)<.001f);
         }
         c.boss.begin(Boss.MUSHROOM,5,c.rnd);c.boss.intro=0;c.boss.mushroomCharge=.5f;
         c.update(.1f,L);
@@ -51,11 +51,29 @@ final class TestSettings extends Check {
     private static void kidsMinigames(Layout L) {
         Mem store=new Mem();store.starWins=StarPath.MAX_DIFFICULTY;
         GameCore c=new GameCore(store,583L);c.preferences.kids=true;c.startGame();
+        c.steamer.opens=500;
         for(boolean panic:new boolean[]{false,true}) for(int hurt:new int[]{0,1}) for(int misses:new int[]{0,1}) {
             c.pushUsed=panic;c.hurtThisStage=hurt;c.missesThisStage=misses;c.earnedMash=1f;
             c.starNext=false;Interlude.enterBonus(c,L);
-            check("kids always earns five mash seconds",c.mashEarned()==5f && c.bonusRollEnd-GameCore.MASH_END==5f);
+            c.update(GameCore.BONUS_ROLL+60,L);
+            check("kids steamer never expires regardless of stage result",c.bonusMashing()
+                    && c.bonusTimer==c.bonusRollEnd && c.steamer.goal()==10);
         }
+        for(int opens:new int[]{0,5,500}) {
+            c.steamer.opens=opens;
+            check("kids target stays ten at lifetime wins "+opens,c.steamer.goal()==10);
+        }
+        c.onboarding.begin(c,Onboarding.STEAMER,L);
+        check("kids steamer tutorial uses the same target",c.onboarding.practice.steamer.goal()==10);
+        c.onboarding.clear();
+        for(int i=0;i<19;i++)c.tapBonus(c.steamer.wanted());
+        check("nineteen presses have not filled ten pips",c.steamer.hits==9 && !c.bonusSwipeReady());
+        c.tapBonus(c.steamer.wanted());c.update(60,L);
+        check("tenth pip waits indefinitely for the lid swipe",c.bonusSwipeReady() && c.steamer.hits==10);
+        c.swipeBonus();
+        check("kids swipe earns the normal reward",c.bonusPrizeWon() && c.steamer.opens==501);
+        c.update(Steamer.FREE_TIME+.1f,L);c.update(GameCore.PARADE_TIME+.1f,L);
+        check("unlimited time does not freeze success or the next stage",c.state==GameCore.PLAY);
         c.starNext=true;Interlude.enterBonus(c,L);
         StarPath cap=new StarPath();cap.wins=StarPath.KIDS_DIFFICULTY;
         c.stars.reroll(new java.util.Random(584L));cap.make(new java.util.Random(584L));
@@ -70,6 +88,10 @@ final class TestSettings extends Check {
         check("kids wins cannot exceed effective difficulty cap",c.stars.bendRate()==cap.bendRate());
         c.preferences.kids=false;c.startGame();c.stars.wins=StarPath.MAX_DIFFICULTY;
         check("normal run restores full star difficulty",Math.abs(c.stars.bendRate()-7f)<.001f);
+        c.starNext=false;c.earnedMash=1f;Interlude.enterBonus(c,L);
+        c.update(GameCore.BONUS_ROLL+1.01f,L);
+        check("normal steamer restores saved target and its deadline",c.steamer.goal()==Steamer.MAX_GOAL
+                && c.bonusHolding() && !c.bonusMashing());
     }
 
     private static void panelTiming(Layout L) {

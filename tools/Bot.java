@@ -52,6 +52,7 @@ final class Bot {
     private float budget;
     /** Reaction still owed before the next press. */
     private float think;
+    private float lidSwipeAge;
 
     /**
      * At most this many presses may be banked. Without a cap the bot saves up through every quiet
@@ -235,11 +236,19 @@ final class Bot {
             c.endStroke();ninjaSweeping=false;
         }
         if(c.paused)return;
+        if(!c.bonusSwipeReady())lidSwipeAge=0f;
         // The interlude is a mash, and a bounded player mashes no faster than they type. Failing it
         // for want of hands is a legitimate outcome — it costs the prize, not the run.
         if (c.state == GameCore.BONUS) {
             budget = Math.min(BURST, budget + dt * pps);
-
+            if(c.bonusSwipeReady()) {
+                lidSwipeAge+=dt;
+                float distance=Screens.steamerLidY(c,L)-Screens.steamerReleaseY(c,L);
+                if(budget>=1f && lidSwipeAge>=reaction+Math.max(0,distance)/(L.w*DRAG_SPEED)) {
+                    budget-=1f;presses++;c.swipeBonus();lidSwipeAge=0f;
+                }
+                return;
+            }
             if (budget >= 1f) {
                 budget -= 1f;
                 presses++;
