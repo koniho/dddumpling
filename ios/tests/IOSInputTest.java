@@ -207,9 +207,15 @@ public final class IOSInputTest extends Check {
         tap(game,x,y);game.update(ModeSelector.CHANGE);
         check("native mode arrow selects Time Attack",c.modes.selected==ModeSelector.TIME_ATTACK);
         tap(game,l.w*.5f,HighScoreScreen.titleY(l));
-        check("native unfinished mode cannot open Adventure records",!c.highScoreScreen.open);
+        check("native Time Attack cannot open Adventure records",!c.highScoreScreen.open);
+        tap(game,l.w*.9f,TimeAttack.selectY(l));
+        check("native boss arrow selects a locked encounter",c.timeAttack.selected==Boss.SPLITTER);
         tap(game,c.keyX(l,0),c.keyY(l,0));
-        check("native keys cannot launch unfinished mode",c.state==GameCore.TITLE && !c.starting());
+        check("native keys cannot launch locked boss",c.state==GameCore.TITLE && !c.starting());
+        tap(game,l.w*.1f,TimeAttack.selectY(l));
+        tap(game,c.keyX(l,0),c.keyY(l,0));
+        check("native keys launch unlocked boss",c.starting());
+        c.cancelStart();
         game.back();game.update(ModeSelector.CHANGE);
         check("native Back restores Adventure land and score",c.modes.adventure() && c.landChoice==1 && c.best==567);
         game.touch(one(0,19,x,y));game.background(true);game.background(false);

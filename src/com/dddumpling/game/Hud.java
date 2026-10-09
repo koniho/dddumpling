@@ -31,13 +31,13 @@ final class Hud extends Draw {
         // three pixels of collision at 1080 wide, and the exact trap AGENTS.md records for stacked
         // text. Screens was fixed for it at the time; this line was missed.
         float labelY = labelY(L);
-        p.text("SCORE", L.playLeft, labelY, type(s * 0.52f), INK_DIM, Painter.LEFT, false);
-        p.text(String.valueOf(c.score), L.playLeft, L.hudY, scoreSize(L), INK, Painter.LEFT, true);
+        p.text(c.timeAttack.active?"BOSSES":"SCORE", L.playLeft, labelY, type(s * 0.52f), INK_DIM, Painter.LEFT, false);
+        p.text(String.valueOf(c.timeAttack.active?c.timeAttack.cleared:c.score), L.playLeft, L.hudY, scoreSize(L), INK, Painter.LEFT, true);
 
-        p.text(c.survival.active?"SURVIVAL":"STAGE " + c.stage, L.w / 2f, labelY, type(s * 0.58f), INK_DIM,
+        p.text(c.timeAttack.active?"TIME ATTACK":c.survival.active?"SURVIVAL":"STAGE " + c.stage, L.w / 2f, labelY, type(s * 0.58f), INK_DIM,
                 Painter.CENTER, true);
         // Menu follows the stage label; the whole readout remains the touch target.
-        float gx = L.w / 2f + s * (c.survival.active?3.3f:2.5f), gy = labelY - type(s * 0.58f) * .36f;
+        float gx = L.w / 2f + s * (c.timeAttack.active?4.4f:c.survival.active?3.3f:2.5f), gy = labelY - type(s * 0.58f) * .36f;
         p.strokePoly(Glyph.hex(gx, gy, s * 0.30f), INK_DIM, s * 0.035f);
         for (int line = -1; line <= 1; line++)
             p.line(gx-s*.14f,gy+line*s*.09f,gx+s*.14f,gy+line*s*.09f,INK_DIM,s*.035f);
@@ -46,7 +46,9 @@ final class Hud extends Draw {
         // Left out entirely on a boss stage: there is no wave there, so the quota is never counted
         // up and the row would sit empty for the whole fight — which reads as broken rather than as
         // "not applicable". The boss's own health bar is that stage's progress readout.
-        if(c.survival.active) {
+        if(c.timeAttack.active) {
+            p.text(TimeAttack.time(c.timeAttack.millis()),L.w*.5f,L.hudY,type(s*.9f),INK,Painter.CENTER,true);
+        } else if(c.survival.active) {
             p.text(Survival.time(c.survival.millis()),L.w*.5f,L.hudY,type(s*.9f),INK,Painter.CENTER,true);
         } else if (!c.bossActive()) {
             int quota = c.stageQuota();

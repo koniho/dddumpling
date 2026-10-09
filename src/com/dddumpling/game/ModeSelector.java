@@ -12,7 +12,7 @@ final class ModeSelector extends Draw {
     private float downX,downY;
     private boolean moved;
 
-    static boolean implemented(int mode) { return mode==ADVENTURE || mode==SURVIVAL; } // #150 adds Boss Time Attack.
+    static boolean implemented(int mode) { return mode>=ADVENTURE && mode<=TIME_ATTACK; }
     static boolean unlocked(GameCore c,int mode) {
         return mode==ADVENTURE || mode==SURVIVAL && bossUnlocked(c,Boss.SLIME)
                 || mode==TIME_ATTACK && anyBoss(c);
@@ -28,7 +28,8 @@ final class ModeSelector extends Draw {
         for(int boss=0;boss<Boss.COUNT;boss++)if(!bossUnlocked(c,boss))return false;
         return true;
     }
-    boolean playable(GameCore c) { return implemented(selected) && unlocked(c,selected); }
+    boolean playable(GameCore c) { return implemented(selected) && unlocked(c,selected)
+            && (selected!=TIME_ATTACK || c.timeAttack.playable(c)); }
     boolean adventure() { return selected==ADVENTURE; }
     void restore(int mode) {
         selected=previous=mode>=0 && mode<NAMES.length?mode:ADVENTURE;
@@ -44,6 +45,7 @@ final class ModeSelector extends Draw {
     static float y(Layout L) { return L.h*.60f; }
     static float arrowX(Layout L,int direction) { return L.w*(direction<0?.065f:.935f); }
     int hit(GameCore c,Layout L,float x,float y) {
+        int bossHit=c.timeAttack.hit(c,L,x,y);if(bossHit!=0)return bossHit;
         if(!visible(c) || Math.abs(y-y(L))>L.unit*(selected==TIME_ATTACK?2.7f:2f) || x<L.padL || x>L.w-L.padR)return 0;
         return x<L.w*.11f?1:x>L.w*.89f?3:2;
     }
@@ -53,6 +55,7 @@ final class ModeSelector extends Draw {
     }
     private void change(GameCore c,int next,int direction) {
         previous=selected;selected=next;this.direction=direction;
+        if(next==TIME_ATTACK)c.timeAttack.focusUnlocked(c);
         c.preferences.save(c);
         transition=0;confirmation=unavailable=0;c.titleKeyHint=0;
         c.landPickerDragging=false;
@@ -100,14 +103,16 @@ final class ModeSelector extends Draw {
             if(Math.abs(dy)>L.unit) {pressed=0;moved=true;}
             else if(Math.abs(dx)>L.unit*2) {
                 int direction=dx<0?1:-1;
-                select(c,(selected+direction+NAMES.length)%NAMES.length,direction);
+                if(pressed>=4)c.timeAttack.choose(c,direction);
+                else select(c,(selected+direction+NAMES.length)%NAMES.length,direction);
                 moved=true;
             }
         } else if(action==1 || action==6) {
             int target=pressed;boolean tap=!moved && hit(c,L,x,y)==target;
             cancelTouch();
             if(tap && target!=0) {
-                if(target==2)confirm(c);
+                if(target>=4)c.timeAttack.choose(c,target==4?-1:1);
+                else if(target==2)confirm(c);
                 else {int direction=target==1?-1:1;select(c,(selected+direction+NAMES.length)%NAMES.length,direction);}
             }
         }
@@ -154,6 +159,7 @@ final class ModeSelector extends Draw {
         }
         name(p,selected,selectedX,selectedY,s,bump,selectedColor);
         p.restore();
+        c.timeAttack.drawSelector(p,c,L);
         if(selected==SURVIVAL)SurvivalDemo.draw(p,c,L,Math.max(0,1-2*adventureFade));
     }
 }

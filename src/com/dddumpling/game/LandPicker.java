@@ -132,7 +132,7 @@ final class LandPicker extends Draw {
         c.landPickerDragging = false;
     }
     static void recordBest(GameCore c) {
-        if (c.scoresSuppressed || c.survival.active) return;
+        if (c.scoresSuppressed || c.survival.active || c.timeAttack.active) return;
         int land = c.runStartLand;
         c.best = Math.max(c.best, c.score);
         c.landBests[land] = Math.max(c.landBests[land], c.best);

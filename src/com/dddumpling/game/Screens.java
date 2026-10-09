@@ -49,7 +49,7 @@ final class Screens extends Draw {
             p.text(HighScoreScreen.titleText(c), cx, HighScoreScreen.titleY(L), HighScoreScreen.titleFont(c,L),
                     fadeBy(HighScoreScreen.titleTextColor(c), fade * caseOut(c)),Painter.CENTER,true);
         } else {
-            p.text(c.modes.selected==ModeSelector.SURVIVAL?c.survival.title(c):"FASTEST CLEAR --",
+            p.text(c.modes.selected==ModeSelector.SURVIVAL?c.survival.title(c):c.timeAttack.title(c),
                     cx,HighScoreScreen.titleY(L),type(s*.65f),fadeBy(INK_DIM,fade*caseOut(c)),Painter.CENTER,true);
         }
 
@@ -152,7 +152,8 @@ final class Screens extends Draw {
         float fade = c.overFade();
         if (fade <= 0.004f) return;
         // Keep Adventure's drained palette; Survival's rainbow exit reveals violet.
-        scrim(p, L, (int) (220 * fade), c.survival.active?SCRIM:Glyph.mix(SCRIM, DEATH_SCRIM, c.drained()));
+        scrim(p, L, (int) (220 * fade), c.survival.active || c.timeAttack.active?SCRIM:Glyph.mix(SCRIM, DEATH_SCRIM, c.drained()));
+        if(c.timeAttack.active) {c.timeAttack.result(p,c,L,fade);return;}
         if(c.survival.active) {c.survival.result(p,c,L,fade);return;}
         float s = L.unit;
         // Yellow rather than the rose it was: rose is the colour of every warning and every hit

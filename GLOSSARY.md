@@ -420,7 +420,19 @@ Adventure's BEST line also shows the highest stage reached. The stage record is 
 of the best-scoring run and survives that run leaving the top-ten history. Existing saves use
 their progress maximum and retained run history; an unknown stage is shown as `--`.
 
-Survival unlocks after beating Slime. Boss Time Attack remains unavailable until #150.
+Survival unlocks after beating Slime. **Boss Time Attack** replays each of the four shipped bosses
+once their Adventure collectible is owned. A second selector below the mode name chooses a boss;
+all four unlock the **All Bosses** challenge in Slime, Dark Divide, Octopulse, Fly Agaric order.
+Normal player keys start the selected encounter. The shared display case remains accessible.
+
+Time Attack starts with three lives, no power-up drops, and the boss's original Adventure-stage
+difficulty. The all-boss challenge carries lives forward with one life restored per clear (capped
+at three), and gives one Rescue Swipe per encounter. Only playable combat is timed: introductions,
+defeat animations, tutorials, settings, pause/background time, and between-boss transitions are
+excluded. Successful clears save local fastest times separately for each boss/full challenge and
+4-key, 6-key, Kids profiles. Failures and early exits never set clear records. Returning to title
+keeps the chosen boss ready for another attempt. Adventure and Survival records remain separate.
+Turtle completion collectibles are pending aesthetic approval and are not integrated yet (#150).
 
 ## Survival
 

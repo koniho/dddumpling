@@ -44,6 +44,7 @@
   [store saveSurvivalWithNSString:@"1;1000,42;0,0;0,0"];
   [store saveCollectedWithLong:3];
   [store saveSurvivalAwardWithNSString:@"pending award"];
+  [store saveTimeAttackWithNSString:@"1;12000;0;0;0;0;0;0;0;0;0;0;0;0;0;0"];
   [store saveCaseIndexWithInt:1];
   [store saveLandStateWithInt:7];
   [store savePlayerSettingsWithInt:42];
@@ -56,6 +57,7 @@
   XCTAssertEqualObjects([reopened loadHighScores], @"");
   XCTAssertEqualObjects([reopened loadSurvival], @"");
   XCTAssertEqualObjects([reopened loadSurvivalAward], @"");
+  XCTAssertEqualObjects([reopened loadTimeAttack], @"");
   XCTAssertEqual([reopened loadProgress]->buffer_[0], 11);
   XCTAssertEqual([reopened loadCollected], 3);
   XCTAssertEqual([reopened loadCaseIndex], 1);

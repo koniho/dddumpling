@@ -266,8 +266,8 @@ final class Bot {
             budget -= 1f;
             presses++;
             think = reaction;
-            c.boss.beginPinch(100f);
-            c.boss.pinch(100f * (Boss.DIVIDE_SCALE + 0.01f));
+            c.beginBossPinch(100f);
+            c.pinchBoss(100f * (Boss.DIVIDE_SCALE + 0.01f), L);
             return;
         }
 

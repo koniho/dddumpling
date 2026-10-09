@@ -215,6 +215,7 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
   _values[@"best"] = @0;
   _values[@"highScores"] = @"";
   _values[@"survival"] = @"";
+  _values[@"timeAttack"] = @"";
   [_values removeObjectForKey:@"survivalAward"];
   for (NSString *key in [_values.allKeys copy])
     if ([key hasPrefix:@"landBest."]) _values[key] = @0;
@@ -226,6 +227,8 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 }
 - (NSString *)loadSurvivalAward { return [self stringForKey:@"survivalAward" validWriter:NO] ?: @""; }
 - (void)saveSurvivalAwardWithNSString:(NSString *)value { [self setValue:value forKey:@"survivalAward"]; }
+- (NSString *)loadTimeAttack { return [self stringForKey:@"timeAttack" validWriter:NO] ?: @""; }
+- (void)saveTimeAttackWithNSString:(NSString *)value { [self setValue:value forKey:@"timeAttack"]; }
 - (NSString *)loadSurvival { return [self stringForKey:@"survival" validWriter:NO] ?: @""; }
 - (void)saveSurvivalWithNSString:(NSString *)value { [self setValue:value forKey:@"survival"]; }
 - (NSString *)loadHighScores { return [self stringForKey:@"highScores" validWriter:NO] ?: @""; }

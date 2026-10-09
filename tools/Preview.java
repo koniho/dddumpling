@@ -9,6 +9,32 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void timeAttackFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("150-"))return;
+        GameCore c=TestTimeAttack.start(Boss.SLIME);c.toTitle();c.returnFade=0;
+        shot(dir,"150-selector-slime",c,L,w,h,ss);
+        c.timeAttack.selected=TimeAttack.ALL;
+        shot(dir,"150-selector-all",c,L,w,h,ss);
+        c.startGame();c.boss.intro=0;c.update(Check.DT,L);c.timeAttack.seconds=42.56;
+        shot(dir,"150-combat",c,L,w,h,ss);
+        c.timeAttack.current=Boss.COUNT-1;c.timeAttack.cleared=3;TestTimeAttack.beat(c,L);
+        c.time=c.deathDuration()+2;
+        shot(dir,"150-result",c,L,w,h,ss);
+        RasterPainter p=new RasterPainter(w,h,ss);p.clear(Draw.BG);
+        p.text("TIME ATTACK TURTLES",w*.5f,h*.05f,w*.045f,Draw.INK,Painter.CENTER,true);
+        p.text("APPEARANCE REVIEW / NOT IN GAME YET",w*.5f,h*.077f,w*.022f,Draw.INK_DIM,Painter.CENTER,false);
+        TurtleConcept.draw(p,0,w*.5f,h*.29f,w*.25f);
+        p.text(TurtleConcept.NAMES[0],w*.5f,h*.48f,w*.03f,Draw.INK,Painter.CENTER,true);
+        for(int i=0;i<5;i++) {
+            float x=w*(.1f+i*.2f),y=h*.64f;
+            TurtleConcept.draw(p,i,x,y,w*.078f);
+            TurtleConcept.draw(p,i,x,h*.82f,w*.023f);
+        }
+        p.text("DISPLAY CASE SIZE",w*.5f,h*.73f,w*.026f,Draw.INK_DIM,Painter.CENTER,true);
+        p.text("COMPANION SIZE",w*.5f,h*.88f,w*.026f,Draw.INK_DIM,Painter.CENTER,true);
+        Png.write(new File(dir,"150-turtle-review.png"),p.resolve(),w,h);
+    }
+
     private static void duckFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("156-ducks-"))return;
         GameCore c=TestSurvival.start(TestSurvival.store(),156);
@@ -1058,6 +1084,7 @@ final class Preview {
         modeFrames(dir,L,w,h,ss);
         duckFrames(dir,L,w,h,ss);
         survivalFrames(dir,L,w,h,ss);
+        timeAttackFrames(dir,L,w,h,ss);
         survivalEndingFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";

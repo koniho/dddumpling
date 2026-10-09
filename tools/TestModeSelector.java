@@ -39,8 +39,9 @@ final class TestModeSelector extends Check {
         check("closing case restores the browsed mode",c.modes.selected==ModeSelector.SURVIVAL && c.modes.visible(c));
         tap(c,L,1);c.update(ModeSelector.CHANGE,L);
         check("Time Attack also hides lands",c.modes.selected==ModeSelector.TIME_ATTACK && !LandPicker.visible(c));
+        c.timeAttack.selected=Boss.MUSHROOM;
         tap(c,L,0);c.screenKey(0);c.beginStart();c.startGame();
-        check("unfinished Time Attack cannot start Adventure",!c.starting() && c.state==GameCore.TITLE
+        check("locked Time Attack boss cannot start Adventure",!c.starting() && c.state==GameCore.TITLE
                 && c.modes.unavailable>0 && ear.collects==1 && ear.starts==0);
         check("browsing preserves Adventure progress",c.landChoice==land && c.best==best && c.collected==collection);
         c.toTitle();
@@ -62,8 +63,8 @@ final class TestModeSelector extends Check {
                 && !ModeSelector.allBossesUnlocked(locked));
         for(int boss=0;boss<Boss.COUNT;boss++)locked.collected|=1L<<(Collect.BOSS_FIRST+boss);
         check("boss rush requires all authored bosses",ModeSelector.allBossesUnlocked(locked));
-        check("boss unlocks do not expose unfinished gameplay",ModeSelector.implemented(ModeSelector.SURVIVAL)
-                && !ModeSelector.implemented(ModeSelector.TIME_ATTACK));
+        check("all shipped modes are implemented",ModeSelector.implemented(ModeSelector.SURVIVAL)
+                && ModeSelector.implemented(ModeSelector.TIME_ATTACK));
 
         c=title();float x=ModeSelector.arrowX(L,1),y=ModeSelector.y(L);
         c.modes.touch(c,L,0,8,x,y);c.modes.touch(c,L,3,8,x,y);c.modes.touch(c,L,1,8,x,y);
@@ -114,8 +115,8 @@ final class TestModeSelector extends Check {
         check("Back saves Adventure as the next launch mode",new GameCore(saved,1484).modes.adventure());
         c=title();saved=(Mem)c.store;c.modes.select(c,ModeSelector.TIME_ATTACK,1);
         reopened=new GameCore(saved,1485);
-        check("browsed unfinished modes are remembered but remain unplayable",
-                reopened.modes.selected==ModeSelector.TIME_ATTACK && !reopened.modes.playable(reopened));
+        check("unlocked Time Attack remains playable after reopening",
+                reopened.modes.selected==ModeSelector.TIME_ATTACK && reopened.modes.playable(reopened));
         saved.playerSettings=PlayerSettings.DEFAULT;
         check("older preference saves default to Adventure",new GameCore(saved,1486).modes.adventure());
         saved.playerSettings=35 | (100<<7) | (3<<17);

@@ -59,6 +59,9 @@ abstract class Check {
         public String loadSurvivalAward() {return survivalAward;}
         public void saveSurvivalAward(String value) {survivalAward=value;}
         String survival="";
+        String timeAttack="";
+        public String loadTimeAttack() {return timeAttack;}
+        public void saveTimeAttack(String value) {timeAttack=value;}
         public String loadSurvival() { return survival; }
         public void saveSurvival(String value) { survival=value; }
         String highScores="";

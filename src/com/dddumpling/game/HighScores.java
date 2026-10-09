@@ -104,6 +104,7 @@ final class HighScores {
         dumplings++;prizes.add(entry);
     }
     void finish(GameCore c) {
+        if(c.timeAttack.active) {c.timeAttack.finish(c,false);return;}
         if(!survival && c.survival.active) {c.survival.finish(c);return;}
         if(!recording) return;
         recording=false;

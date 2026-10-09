@@ -139,7 +139,7 @@ final class GameCore {
      * in — the pop was more noticeable than the drain.
      */
     float drained() {
-        return state == OVER ? deathProgress() : 0f;
+        return state == OVER && !(timeAttack.active && timeAttack.won) ? deathProgress() : 0f;
     }
 
     /** 0..1 fade of the summary screen, which starts once the hold is spent. */
@@ -185,6 +185,8 @@ final class GameCore {
         default void saveCaseIndex(int value) {}
         default String loadSurvivalAward() { return ""; }
         default void saveSurvivalAward(String value) {}
+        default String loadTimeAttack() { return ""; }
+        default void saveTimeAttack(String value) {}
         default String loadSurvival() { return ""; }
         default void saveSurvival(String value) {}
         default String loadHighScores() { return ""; }
@@ -193,6 +195,7 @@ final class GameCore {
         default boolean resetHighScores(byte[] progress) {
             saveHighScores("");
             saveSurvival("");
+            saveTimeAttack("");
             saveSurvivalAward("");
             for (int land=0;land<Lands.COUNT;land++) saveLandBest(land,0);
             saveBest(0);
@@ -596,6 +599,7 @@ final class GameCore {
     final Starter starter = new Starter();
     final ModeSelector modes = new ModeSelector();
     final Survival survival = new Survival();
+    final TimeAttack timeAttack = new TimeAttack();
     final DuckBodies ducks = new DuckBodies();
     /** Counts down while the push-back shockwave is on screen. */
     float pushT;
@@ -1595,6 +1599,7 @@ final class GameCore {
             caveMiningNext = store.loadCaveMiningNext();
             highScores.load(store.loadHighScores());
             survival.load(store.loadSurvival());
+            timeAttack.load(store.loadTimeAttack());
             int savedCase=store.loadCaseIndex();
             caseIndex=savedCase>=0 && savedCase<Collect.COUNT?savedCase:0;
             best = store.loadBest();
@@ -1817,7 +1822,7 @@ final class GameCore {
      * clear while the boss is on it — only beating it satisfies the quota, see BossPlay.endBoss.
      */
     boolean stageCleared() {
-        return !survival.active && !boss.active() && spawnedThisStage >= stageQuota()
+        return !survival.active && !timeAttack.active && !boss.active() && spawnedThisStage >= stageQuota()
                 && enemies.isEmpty() && shots.isEmpty()
                 && !(power != null && power.mystery && power.hit && !power.activated);
     }
@@ -1916,6 +1921,7 @@ final class GameCore {
         java.util.Arrays.fill(landBests,0);
         highScores.clear();
         survival.clearRecords();
+        timeAttack.clearRecords();
         survival.reward.pending=false;
         highScoreScreen.open=highScoreScreen.closing=false;
         highScoreScreen.selected=-1;
@@ -2030,6 +2036,7 @@ final class GameCore {
         startAnnounced = false;
         cave.begin(this);
         if (sound != null) sound.selectMusic(normalMusicChoice());
+        if(modes.selected==ModeSelector.TIME_ATTACK)timeAttack.begin(this);
         if (Starter.introPending(this)) onboarding.introduceCompanion(this);
     }
 
@@ -2048,6 +2055,7 @@ final class GameCore {
         titleKeyHint = 0f;
         diagnostic("to-title");
         survival.leave(this);
+        timeAttack.leave();
         powerReplacements.clear();
         Blade.resetFeedback(this);
         onboarding.clear();
@@ -2752,6 +2760,7 @@ final class GameCore {
             return;
         }
         releaseMascot.update(this,elapsed);
+        timeAttack.tick(this,elapsed);
         if (state == PLAY && boss.fighting() && !settingsOpen)
             progress.bossTime(elapsed);
         // Slow motion from a multi-word ninja stroke, and the readout it earned. Both ticked
@@ -3568,7 +3577,7 @@ final class GameCore {
         resetStarRun();
         highScores.finish(this);
         progress.finishRun(score, false);
-        if (!survival.active && runFullRoster && fullRoster) {
+        if (!survival.active && !timeAttack.active && runFullRoster && fullRoster) {
             if (stage >= 6) earlyLosses = 0;
             else if (++earlyLosses >= 3) {
                 fullRoster = false; earlyLosses = 0; rosterLeavePending = true;

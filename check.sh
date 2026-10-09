@@ -50,6 +50,7 @@ PURE="src/com/dddumpling/game/Duck.java
 src/com/dddumpling/game/DuckBodies.java
 src/com/dddumpling/game/DuckReward.java
 src/com/dddumpling/game/Survival.java
+src/com/dddumpling/game/TimeAttack.java
 src/com/dddumpling/game/SurvivalDemo.java
 src/com/dddumpling/game/SurvivalEnd.java
 src/com/dddumpling/game/PowerRush.java
