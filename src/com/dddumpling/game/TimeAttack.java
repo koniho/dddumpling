@@ -3,6 +3,7 @@ package com.dddumpling.game;
 /** Fixed boss replays. Only playable combat contributes to these local records. */
 final class TimeAttack extends Draw {
     static final int ALL=Boss.COUNT, CHOICES=Boss.COUNT+1;
+    static final int SWIPE_ONLY=7;
     final long[][] best=new long[3][CHOICES];
     int selected, challenge, current, profile, cleared;
     boolean active, finished, won, newBest;
@@ -97,8 +98,10 @@ final class TimeAttack extends Draw {
     static float selectY(Layout L) {return L.h*.735f;}
     int hit(GameCore c,Layout L,float x,float y) {
         if(c.modes.selected!=ModeSelector.TIME_ATTACK || !c.modes.visible(c)
-                || Math.abs(y-selectY(L))>L.unit*1.3f)return 0;
-        return x<L.w*.27f?4:x>L.w*.73f?6:5;
+                || x<L.padL || x>L.w-L.padR)return 0;
+        if(Math.abs(y-selectY(L))<=L.unit*1.3f)return x<L.w*.27f?4:x>L.w*.73f?6:5;
+        float top=Math.max(L.h*.635f,ModeSelector.y(L)+L.unit*2.2f);
+        return y>=top && y<selectY(L)?SWIPE_ONLY:0;
     }
     void drawSelector(Painter p,GameCore c,Layout L) {
         if(c.modes.selected!=ModeSelector.TIME_ATTACK || !c.modes.visible(c))return;

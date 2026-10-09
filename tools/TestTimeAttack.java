@@ -12,6 +12,37 @@ final class TestTimeAttack extends Check {
         c.boss.beaten=true;c.boss.leaveT=0;
         BossPlay.endBoss(c,L);
     }
+    private static void selectorSwipes(Layout L) {
+        GameCore c=start(Boss.SLIME);c.toTitle();c.returnFade=0;
+        Ear ear=new Ear();c.sound=ear;
+        float x=L.w*.6f,y=L.h*.677f;
+        check("battle skit accepts a swipe start",c.modes.touch(c,L,0,42,x,y));
+        c.modes.touch(c,L,2,42,x-L.unit*3,y+L.unit*1.2f);
+        c.modes.touch(c,L,2,42,x-L.unit*5,y);
+        c.modes.touch(c,L,1,42,x-L.unit*5,y);
+        check("diagonal left swipe advances exactly one boss with feedback",c.timeAttack.selected==1
+                && c.modes.selected==ModeSelector.TIME_ATTACK && ear.uiBloops==1 && c.modes.pointer==-1);
+        c.modes.touch(c,L,0,42,x,y);c.modes.touch(c,L,1,42,x+L.unit*3,y);
+        check("quick right swipe works without move events",c.timeAttack.selected==0 && ear.uiBloops==2);
+        c.modes.touch(c,L,0,42,x,y);c.modes.touch(c,L,1,42,x+L.unit*3,y);
+        check("right swipe wraps to all bosses",c.timeAttack.selected==TimeAttack.ALL);
+        float label=TimeAttack.selectY(L);
+        c.modes.touch(c,L,0,42,x,label);c.modes.touch(c,L,1,42,x-L.unit*3,label);
+        check("boss name swipe wraps forward to slime",c.timeAttack.selected==0);
+        c.modes.touch(c,L,0,42,x,y);c.modes.touch(c,L,1,42,x,y);
+        check("tapping the skit does not change boss or start a run",c.timeAttack.selected==0 && c.state==GameCore.TITLE);
+        c.modes.touch(c,L,0,42,x,y);c.modes.touch(c,L,2,42,x,y+L.unit*3);
+        c.modes.touch(c,L,1,42,x-L.unit*4,y+L.unit*3);
+        check("vertical skit drag cannot become boss selection",c.timeAttack.selected==0);
+        for(int action:new int[]{3,5}) {
+            c.modes.touch(c,L,0,42,x,y);c.modes.touch(c,L,action,action==5?43:42,x,y);
+            c.modes.touch(c,L,1,42,x-L.unit*4,y);
+            check("cancel or extra finger cancels boss swipe "+action,c.timeAttack.selected==0);
+        }
+        c.modes.touch(c,L,0,42,x,y);c.caseOpen=true;
+        c.modes.touch(c,L,1,42,x-L.unit*4,y);
+        check("opening another panel cancels boss swipe",c.timeAttack.selected==0 && c.modes.pointer==-1);
+    }
     private static int skitFrame(GameCore c,Layout L) {
         RasterPainter p=new RasterPainter((int)L.w,(int)L.h,1);
         TimeAttackDemo.draw(p,c,L);
@@ -45,6 +76,7 @@ final class TestTimeAttack extends Check {
     }
     static void all(Layout L) {
         titleSkit();
+        selectorSwipes(L);
         for(int boss=0;boss<Boss.COUNT;boss++) {
             GameCore played=start(boss);
             Bot.Result run=new Bot(6f,.20f,.04f,false,150+boss).play(played,L,180);

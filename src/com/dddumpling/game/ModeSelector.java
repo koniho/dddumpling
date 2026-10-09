@@ -98,19 +98,22 @@ final class ModeSelector extends Draw {
         if(!visible(c)) {cancelTouch();return true;}
         if(action==5) {pressed=0;moved=true;return true;}
         if(id!=pointer)return true;
-        if(action==2 && !moved) {
+        if(!moved && (action==2 || pressed>=4 && (action==1 || action==6))) {
             float dx=x-downX,dy=y-downY;
-            if(Math.abs(dy)>L.unit) {pressed=0;moved=true;}
-            else if(Math.abs(dx)>L.unit*2) {
+            boolean boss=pressed>=4;
+            if(Math.abs(dy)>(boss?L.unit*2:L.unit) && (!boss || Math.abs(dy)>Math.abs(dx))) {
+                pressed=0;moved=true;
+            } else if(Math.abs(dx)>L.unit*2 && (!boss || Math.abs(dx)>Math.abs(dy)*1.25f)) {
                 int direction=dx<0?1:-1;
-                if(pressed>=4)c.timeAttack.choose(c,direction);
+                if(boss)c.timeAttack.choose(c,direction);
                 else select(c,(selected+direction+NAMES.length)%NAMES.length,direction);
                 moved=true;
             }
-        } else if(action==1 || action==6) {
+        }
+        if(action==1 || action==6) {
             int target=pressed;boolean tap=!moved && hit(c,L,x,y)==target;
             cancelTouch();
-            if(tap && target!=0) {
+            if(tap && target!=0 && target!=TimeAttack.SWIPE_ONLY) {
                 if(target>=4)c.timeAttack.choose(c,target==4?-1:1);
                 else if(target==2)confirm(c);
                 else {int direction=target==1?-1:1;select(c,(selected+direction+NAMES.length)%NAMES.length,direction);}
