@@ -134,6 +134,7 @@ final class BossPlay {
         // its shot while the tile pops on the press.
         shot(c, g, L, verdict);
         if (verdict == Boss.PARRY) {
+            if(c.boss.boltDestroyed)c.timeAttack.defended();
             // Swatted, not landed on the boss: the score is the same as a hit but the boss is
             // untouched, so no shake and no flash — those read as damage.
             c.score += GameCore.BOSS_HIT;

@@ -117,6 +117,7 @@ final class TestTimeAttack extends Check {
         }
     }
     static void all(Layout L) {
+        statistics(L);
         titleSkit();
         selectorSwipes(L);
         for(int boss=0;boss<Boss.COUNT;boss++) {
@@ -203,5 +204,75 @@ final class TestTimeAttack extends Check {
         check("negative times rejected atomically",c.timeAttack.best[0][0]==999);
         check("record reset includes Time Attack",c.resetHighScores() && c.timeAttack.best[0][0]==0
                 && ((Mem)c.store).timeAttack.isEmpty());
+    }
+    private static void defend(GameCore c,Layout L,int hp) {
+        c.boss.intro=0;int g=Roster.at(c.runFullRoster,0);
+        c.boss.blive[0]=true;c.boss.bglyph[0]=g;c.boss.bt[0]=.5f;
+        c.boss.bhp[0]=c.boss.bhpMax[0]=hp;
+        c.tapKey(g,L);
+    }
+    private static void statistics(Layout L) {
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            GameCore c=start(boss);
+            defend(c,L,2);
+            check("partial projectile hits are not defended projectiles "+boss,c.timeAttack.defended==0);
+            c.tapKey(Roster.at(c.runFullRoster,0),L);
+            check("destroying a projectile counts once "+boss,c.timeAttack.defended==1 && !c.boss.blive[0]);
+            c.timeAttack.tick(c,1.25f);c.takeHit(L.w*.5f,L);
+            c.timeAttack.tick(c,2f);c.takeHit(L.w*.5f,L);
+            c.hits=3;c.misses=1;beat(c,L);
+            TimeAttackHistory.Run r=c.timeAttack.result;
+            check("each boss snapshots complete run stats "+boss,r.won && r.duration==3250 && r.damage==2
+                    && r.firstDamage==1250 && r.defended==1 && r.accuracy().equals("75%"));
+            GameCore loaded=new GameCore((Mem)c.store,1500+boss);
+            TimeAttackHistory h=loaded.timeAttack.histories[0][boss];
+            check("boss stats persist in the matching challenge "+boss,h.runs.size()==1 && h.latest.damage==2
+                    && h.latest.firstDamage==1250 && h.latest.defended==1 && h.latest.accuracy().equals("75%"));
+        }
+        GameCore c=start(TimeAttack.ALL);
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            defend(c,L,1);c.timeAttack.tick(c,2f);
+            if(boss==1)c.takeHit(L.w*.5f,L);
+            beat(c,L);
+        }
+        check("all-boss summary aggregates without resetting at encounters",c.timeAttack.result.cleared==4
+                && c.timeAttack.result.hits==4 && c.timeAttack.result.defended==4 && c.timeAttack.result.damage==1
+                && c.timeAttack.result.firstDamage==4000 && c.timeAttack.result.duration==8000);
+        check("all-boss history stays separate from individual bosses",c.timeAttack.histories[0][TimeAttack.ALL].runs.size()==1
+                && c.timeAttack.histories[0][0].displayCount()==0 && c.timeAttack.histories[1][TimeAttack.ALL].displayCount()==0);
+        c.toTitle();c.returnFade=0;
+        check("Time Attack best time opens shared score panel",HighScoreScreen.entryHit(c,L,L.w*.5f,HighScoreScreen.titleY(L)));
+        c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+        c.highScoreScreen.action(c,HighScoreScreen.ROW);
+        check("Time Attack history row opens summary",c.highScoreScreen.open && c.highScoreScreen.selected==0
+                && !c.timeAttack.titleHistory(c).unread);
+        c.highScoreScreen.back(c);
+        check("summary back returns to time list",c.highScoreScreen.open && c.highScoreScreen.selected==-1);
+        c=start(Boss.SLIME);c.boss.intro=0;c.timeAttack.tick(c,.5f);Pause.open(c);c.update(10,10,L);Pause.resume(c);
+        c.takeHit(L.w*.5f,L);c.takeHit(L.w*.5f,L);c.takeHit(L.w*.5f,L);
+        check("fatal damage is included and pause is excluded",c.timeAttack.result.damage==3 && c.timeAttack.result.firstDamage==500);
+        check("failed attempt is summarized but not ranked",c.timeAttack.histories[0][0].runs.isEmpty()
+                && c.timeAttack.histories[0][0].displayCount()==1 && !c.timeAttack.histories[0][0].latest.won);
+        c=start(Boss.SLIME);c.timeAttack.seconds=2;beat(c,L);
+        check("no-hit summary distinguishes no damage",c.timeAttack.result.firstDamage==-1
+                && c.timeAttack.result.firstDamageText().equals("NO DAMAGE"));
+        TimeAttackHistory history=new TimeAttackHistory();
+        for(int i=1;i<=12;i++)history.add(new TimeAttackHistory.Run(i,1000+i,0,1,true,i,0,i,0,-1));
+        history.add(new TimeAttackHistory.Run(13,500,0,0,false,2,1,0,1,400));
+        check("history retains fastest ten plus latest failed run",history.runs.size()==10 && history.runs.get(0).duration==1001
+                && history.runs.get(9).duration==1010 && history.displayCount()==11 && history.displayRun(10).id==13);
+        TimeAttackHistory restored=new TimeAttackHistory();
+        check("ranked history and latest attempt round trip",restored.load(history.encode(),0)
+                && restored.runs.size()==10 && restored.latest.id==13 && restored.latest.firstDamage==400);
+        StringBuilder old=new StringBuilder("1");
+        for(int i=0;i<3*TimeAttack.CHOICES;i++)old.append(';').append(i==0?1234:0);
+        TimeAttack attack=new TimeAttack();attack.load(old.toString());
+        check("old personal best migrates without invented stats",attack.best[0][0]==1234
+                && attack.histories[0][0].runs.get(0).legacy() && attack.histories[0][0].runs.get(0).accuracy().equals("--"));
+        String before=attack.encode();attack.load(before.replace(",1234,",",-1,"));
+        check("bad detailed history is rejected atomically",attack.encode().equals(before));
+        TimeAttack roundTrip=new TimeAttack();roundTrip.load(before);
+        check("migrated best saves in detailed format",roundTrip.encode().equals(before));
+        check("score reset also clears Time Attack summaries",c.resetHighScores() && c.timeAttack.histories[0][0].displayCount()==0);
     }
 }

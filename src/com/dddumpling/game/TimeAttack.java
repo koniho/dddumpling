@@ -6,11 +6,22 @@ final class TimeAttack extends Draw {
     static final int SWIPE_ONLY=7;
     static final float SLIDE_TIME=.32f;
     final long[][] best=new long[3][CHOICES];
+    final TimeAttackHistory[][] histories=new TimeAttackHistory[3][CHOICES];
+    TimeAttackHistory.Run result;
+    int defended,damage;
+    long firstDamage=-1;
     int selected, challenge, current, profile, cleared;
     int previousSelected,slideDirection=1;
     float slide=1;
     boolean active, finished, won, newBest;
     double seconds;
+    TimeAttack() {for(int p=0;p<3;p++)for(int i=0;i<CHOICES;i++)histories[p][i]=new TimeAttackHistory();}
+    TimeAttackHistory titleHistory(GameCore c) {return histories[Survival.profile(c.preferences.kids,c.fullRoster)][selected];}
+    void defended() {if(active && !finished)defended++;}
+    void damaged() {
+        if(!active || finished)return;
+        if(damage++==0)firstDamage=Math.max(0,Math.round(seconds*1000));
+    }
 
     static String name(int choice) {return choice==ALL?"ALL BOSSES":Boss.NAMES[choice];}
     static boolean unlocked(GameCore c,int choice) {
@@ -37,6 +48,7 @@ final class TimeAttack extends Draw {
     }
     void begin(GameCore c) {
         active=true;finished=won=newBest=false;seconds=0;cleared=0;
+        defended=damage=0;firstDamage=-1;result=null;
         challenge=selected;profile=Survival.profile(c.kidsRun,c.runFullRoster);
         encounter(c,challenge==ALL?0:challenge);
     }
@@ -72,32 +84,51 @@ final class TimeAttack extends Draw {
     void finish(GameCore c,boolean success) {
         if(!active || finished)return;
         finished=true;won=success;
-        if(!success || c.scoresSuppressed)return;
         long duration=millis();
-        newBest=best[profile][challenge]==0 || duration<best[profile][challenge];
+        TimeAttackHistory history=histories[profile][challenge];
+        result=new TimeAttackHistory.Run(history.sequence+1,duration,c.runWho,cleared,success,
+                c.hits,c.misses,defended,damage,firstDamage);
+        if(c.scoresSuppressed)return;
+        newBest=success && (best[profile][challenge]==0 || duration<best[profile][challenge]);
         if(newBest)best[profile][challenge]=duration;
+        history.add(result);
         if(c.store!=null)c.store.saveTimeAttack(encode());
     }
-    void leave() {active=finished=won=newBest=false;seconds=0;cleared=0;current=0;}
-    void clearRecords() {for(long[] row:best)java.util.Arrays.fill(row,0);newBest=false;}
+    void leave() {active=finished=won=newBest=false;seconds=0;cleared=current=defended=damage=0;firstDamage=-1;result=null;}
+    void clearRecords() {
+        for(long[] row:best)java.util.Arrays.fill(row,0);
+        for(TimeAttackHistory[] row:histories)for(TimeAttackHistory history:row)history.clear();
+        newBest=false;
+    }
     String encode() {
-        StringBuilder out=new StringBuilder("1");
+        StringBuilder out=new StringBuilder("2");
         for(long[] row:best)for(long value:row)out.append(';').append(value);
+        for(TimeAttackHistory[] row:histories)for(TimeAttackHistory history:row)out.append('|').append(history.encode());
         return out.toString();
     }
     void load(String saved) {
-        if(saved==null)return;
-        String[] fields=saved.split(";",-1);
-        if(fields.length!=1+3*CHOICES || !fields[0].equals("1"))return;
+        if(saved==null || saved.length()>100000)return;
+        String[] parts=saved.split("\\|",-1),fields=parts[0].split(";",-1);
+        boolean legacy=fields[0].equals("1");
+        if(fields.length!=1+3*CHOICES || !(legacy || fields[0].equals("2"))
+                || parts.length!=(legacy?1:1+3*CHOICES))return;
         long[][] parsed=new long[3][CHOICES];
+        TimeAttackHistory[][] loaded=new TimeAttackHistory[3][CHOICES];
         try {
             for(int p=0;p<3;p++)for(int i=0;i<CHOICES;i++) {
                 long value=Long.parseLong(fields[1+p*CHOICES+i]);
                 if(value<0 || value>86400000L)return;
                 parsed[p][i]=value;
+                loaded[p][i]=new TimeAttackHistory();
+                if(legacy)loaded[p][i].legacy(value,i==ALL?Boss.COUNT:1);
+                else if(!loaded[p][i].load(parts[1+p*CHOICES+i],i))return;
+                if(!loaded[p][i].runs.isEmpty() && loaded[p][i].runs.get(0).duration!=value)return;
             }
         } catch(NumberFormatException invalid) {return;}
-        for(int p=0;p<3;p++)System.arraycopy(parsed[p],0,best[p],0,CHOICES);
+        for(int p=0;p<3;p++) {
+            System.arraycopy(parsed[p],0,best[p],0,CHOICES);
+            System.arraycopy(loaded[p],0,histories[p],0,CHOICES);
+        }
     }
     static float selectY(Layout L) {return L.h*.735f;}
     int hit(GameCore c,Layout L,float x,float y) {
@@ -123,18 +154,10 @@ final class TimeAttack extends Draw {
                 x,y+s*1.5f,type(s*.48f),INK_DIM,Painter.CENTER,true);
     }
     void result(Painter p,GameCore c,Layout L,float fade) {
-        p=new OpacityPainter(p,fade);float s=L.unit,x=L.w*.5f;
-        p.text(won?"BOSS BUDDIES!":"TIME FOR A REMATCH",x,L.h*.25f,type(s*1.15f),GOLD,Painter.CENTER,true);
-        p.text(name(challenge),x,L.h*.32f,type(s*.8f),INK,Painter.CENTER,true);
-        Trinket.drawReacting(p,c.runWho,x,L.h*.425f,s*2.1f,c.clock,1,
-                won?8:5,0);
-        p.text(time(millis()),x,L.h*.535f,type(s*1.9f),INK,Painter.CENTER,true);
-        p.text(won?(newBest?"NEW PERSONAL BEST!":"CLEAR TIME"):"ATTEMPT TIME",x,L.h*.58f,
-                type(s*.65f),won?GOLD:INK_DIM,Painter.CENTER,true);
-        p.text("BEST "+time(best[profile][challenge])+" / "+Survival.profileName(profile),x,L.h*.63f,
-                type(s*.62f),INK_DIM,Painter.CENTER,true);
-        p.text("BOSSES CLEARED "+cleared+(challenge==ALL?" / "+Boss.COUNT:" / 1"),x,L.h*.68f,
-                type(s*.6f),INK_DIM,Painter.CENTER,true);
-        p.text("TAP TO RETURN",x,L.h*.75f,type(s*.6f),INK,Painter.CENTER,true);
+        if(result==null)return;
+        p=new OpacityPainter(p,fade);
+        TimeAttackScores.summary(p,c,L,result,challenge,profile,L.h*.22f,L.h*.77f);
+        p.text(newBest?"NEW PERSONAL BEST!":"TAP TO RETURN",L.w*.5f,L.h*.80f,type(L.unit*.65f),
+                newBest?GOLD:INK,Painter.CENTER,true);
     }
 }

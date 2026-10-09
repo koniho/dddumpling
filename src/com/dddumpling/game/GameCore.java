@@ -3543,6 +3543,7 @@ final class GameCore {
     }
 
     void takeHit(float px, Layout L) {
+        timeAttack.damaged();
         companion.react(RunCompanion.DAMAGE,1f);
         lives--;
         hurtThisStage++;

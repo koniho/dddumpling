@@ -432,6 +432,13 @@ defeat animations, tutorials, settings, pause/background time, and between-boss 
 excluded. Successful clears save local fastest times separately for each boss/full challenge and
 4-key, 6-key, Kids profiles. Failures and early exits never set clear records. Returning to title
 keeps the chosen boss ready for another attempt. Adventure and Survival records remain separate.
+The title's best-time entry opens the shared score panel for the selected boss and control profile.
+It retains the ten fastest completed runs and the latest attempt, including a failed attempt outside
+the rankings. Saved and run-end summaries show accuracy, projectiles fully defended (one count per
+destroyed projectile, not per hit), total damage taken, and active combat time to first damage.
+All Bosses combines the stats across every encounter; life recovery does not erase damage taken.
+Untouched runs say **NO DAMAGE**. Earlier time-only records remain visible with unavailable stats
+shown as `--`.
 Turtle completion collectibles are pending aesthetic approval and are not integrated yet (#150).
 
 ## Survival

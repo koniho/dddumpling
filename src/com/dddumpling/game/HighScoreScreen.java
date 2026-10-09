@@ -16,9 +16,11 @@ final class HighScoreScreen extends Draw {
     static HighScores records(GameCore c) {
         return c.modes.selected==ModeSelector.SURVIVAL?c.survival.titleHistory(c):c.highScores;
     }
-    static boolean available(GameCore c) {return c.modes.adventure() || c.modes.selected==ModeSelector.SURVIVAL;}
+    private static boolean timeAttack(GameCore c) {return c.modes.selected==ModeSelector.TIME_ATTACK;}
+    static boolean available(GameCore c) {return ModeSelector.implemented(c.modes.selected);}
+    static int displayCount(GameCore c) {return timeAttack(c)?c.timeAttack.titleHistory(c).displayCount():records(c).displayCount();}
     static float rowHeight(GameCore c,Layout L) {
-        return Math.min(size(L)*3.6f,(listBottom(L)-listTop(L))/Math.max(1,records(c).displayCount()));
+        return Math.min(size(L)*3.6f,(listBottom(L)-listTop(L))/Math.max(1,displayCount(c)));
     }
     static boolean entryHit(GameCore c,Layout L,float x,float y) {
         return available(c) && ReleaseNotes.available(c) && !c.releaseNotes.open
@@ -26,7 +28,9 @@ final class HighScoreScreen extends Draw {
     }
     void show(GameCore c) {
         if(!available(c) || !ReleaseNotes.available(c) || c.releaseNotes.open) return;
-        Pause.release(c);records(c).unread=false;open=true;selected=-1;entrance=0f;closing=false;feedback(c);
+        Pause.release(c);
+        if(timeAttack(c))c.timeAttack.titleHistory(c).unread=false;else records(c).unread=false;
+        open=true;selected=-1;entrance=0f;closing=false;feedback(c);
     }
     void update(float dt) {
         if(!open) return;
@@ -37,11 +41,13 @@ final class HighScoreScreen extends Draw {
     float offsetY(Layout L) { return -bottom(L)*(1f-panelTravel(entrance)); }
     static float pulse(float time) { return .5f-.5f*(float)Math.cos(time*3.5f); }
     static boolean titleAttention(GameCore c) {
-        return records(c).unread && !c.settingsOpen && !c.releaseNotes.open && !c.highScoreScreen.open && !c.storyOpen();
+        return (timeAttack(c)?c.timeAttack.titleHistory(c).unread:records(c).unread)
+                && !c.settingsOpen && !c.releaseNotes.open && !c.highScoreScreen.open && !c.storyOpen();
     }
     static float titleTextScale(GameCore c) { return titleAttention(c)?1f+.1f*pulse(c.time):1f; }
     static int titleTextColor(GameCore c) { return titleAttention(c)?Glyph.mix(ROSE,GOLD,pulse(c.time)*.8f):ROSE; }
     static String titleText(GameCore c) {
+        if(timeAttack(c))return c.timeAttack.title(c);
         if(c.modes.selected==ModeSelector.SURVIVAL)return c.survival.title(c);
         long stage=Math.max(c.progress.maximum("highest_stage"),records(c).highestStage);
         return "BEST "+c.best+" / STAGE "+(stage>0?Long.toString(stage):"--");
@@ -77,13 +83,13 @@ final class HighScoreScreen extends Draw {
         if(selected>=0) return x<L.w*.21f && y<t+2.5f*s?BACK:0;
         if(y<listTop(L) || y>listBottom(L)) return 0;
         int row=(int)((y-listTop(L))/rowHeight(c,L));
-        return row<records(c).displayCount()?ROW+row:0;
+        return row<displayCount(c)?ROW+row:0;
     }
     void action(GameCore c,int hit) {
         if(moving()) return;
         if(hit==CLOSE) close(c);
         else if(hit==BACK) back(c);
-        else if(hit>=ROW && hit<ROW+records(c).displayCount()) { selected=hit-ROW;feedback(c); }
+        else if(hit>=ROW && hit<ROW+displayCount(c)) { selected=hit-ROW;feedback(c); }
     }
     void draw(Painter p,GameCore c,Layout L) {
         if(!open) return;
@@ -98,11 +104,14 @@ final class HighScoreScreen extends Draw {
             x=L.w*.13f;
             p.polyline(new float[]{x+r,y-r,x-r,y,x+r,y+r},INK,s*.12f);
         }
-        p.text(selected<0?"HIGH SCORES":"RUN SUMMARY",L.w*.5f,t+s*1.7f,type(s*.8f),GOLD,Painter.CENTER,true);
-        if(records(c).survival)p.text("SURVIVAL / "+Survival.profileName(c.survival.titleProfile(c)),
+        p.text(selected<0?(timeAttack(c)?"BEST TIMES":"HIGH SCORES"):"RUN SUMMARY",L.w*.5f,t+s*1.7f,type(s*.8f),GOLD,Painter.CENTER,true);
+        if(timeAttack(c))p.text(TimeAttack.name(c.timeAttack.selected)+" / "+Survival.profileName(Survival.profile(c.preferences.kids,c.fullRoster)),
+                L.w*.5f,t+s*2.9f,type(s*.48f),INK_DIM,Painter.CENTER,true);
+        else if(records(c).survival)p.text("SURVIVAL / "+Survival.profileName(c.survival.titleProfile(c)),
                 L.w*.5f,t+s*2.9f,type(s*.48f),INK_DIM,Painter.CENTER,true);
         p.save();p.clipRect(L.w*.07f,listTop(L),L.w*.93f,listBottom(L));
-        if(selected>=0 && selected<records(c).displayCount()) summary(p,c,L,records(c).displayRun(selected));
+        if(timeAttack(c))TimeAttackScores.content(p,c,L,selected);
+        else if(selected>=0 && selected<records(c).displayCount()) summary(p,c,L,records(c).displayRun(selected));
         else if(records(c).displayCount()==0) {
             Kawaii.moodDumpling(p,L.w*.5f,t+8f*s,2f*s,Glyph.COLOR[0],.7f,1f);
             p.text("Your next run starts the list.",L.w*.5f,t+12f*s,type(s*.52f),INK_DIM,Painter.CENTER,false);
@@ -168,7 +177,7 @@ final class HighScoreScreen extends Draw {
         p.text(value,x,y+r*.18f+font*.36f,font,0xFF3A2E4F,Painter.CENTER,true);
     }
     private static String value(int n) { return String.valueOf(n); }
-    private static void stat(Painter p,float titleX,float valueX,float y,float font,String title,String value) {
+    static void stat(Painter p,float titleX,float valueX,float y,float font,String title,String value) {
         p.text(title,titleX,y,font,Glyph.mix(INK_DIM,INK,.18f),Painter.LEFT,false);
         p.text(value,valueX,y,font,INK,Painter.LEFT,true);
     }

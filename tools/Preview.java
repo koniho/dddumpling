@@ -46,6 +46,18 @@ final class Preview {
         c.timeAttack.current=Boss.COUNT-1;c.timeAttack.cleared=3;TestTimeAttack.beat(c,L);
         c.time=c.deathDuration()+2;
         shot(dir,"150-result",c,L,w,h,ss);
+        c.toTitle();c.returnFade=0;c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+        shot(dir,"150-records",c,L,w,h,ss);
+        c.highScoreScreen.action(c,HighScoreScreen.ROW);
+        shot(dir,"150-record-summary",c,L,w,h,ss);
+        c.highScoreScreen.open=false;
+        c.startGame();c.boss.intro=0;c.timeAttack.seconds=12.34f;c.hits=19;c.misses=3;
+        c.timeAttack.defended=7;c.lives=1;c.takeHit(L.w*.5f,L);c.time=c.deathDuration()+2;c.deathT=c.flash=c.shake=0;
+        shot(dir,"150-failed-summary",c,L,w,h,ss);
+        c.toTitle();c.returnFade=0;c.timeAttack.selected=Boss.SLIME;
+        c.timeAttack.histories[0][Boss.SLIME].legacy(12345,1);c.timeAttack.best[0][Boss.SLIME]=12345;
+        c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);c.highScoreScreen.action(c,HighScoreScreen.ROW);
+        shot(dir,"150-legacy-summary",c,L,w,h,ss);
         RasterPainter p=new RasterPainter(w,h,ss);p.clear(Draw.BG);
         p.text("TIME ATTACK TURTLES",w*.5f,h*.05f,w*.045f,Draw.INK,Painter.CENTER,true);
         p.text("APPEARANCE REVIEW / NOT IN GAME YET",w*.5f,h*.077f,w*.022f,Draw.INK_DIM,Painter.CENTER,false);
