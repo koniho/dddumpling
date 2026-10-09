@@ -121,6 +121,26 @@ final class TestModeSelector extends Check {
         c.modes.update(c,ModeSelector.SWIPE_RETURN);
         c.modes.touch(c,L,0,1,x,y);c.modes.touch(c,L,1,1,x+L.w*.25f,y);
         check("long right swipe returns to previous mode",c.modes.adventure() && ear.uiBloops==2);
+        c.modes.restore(ModeSelector.SURVIVAL);c.clock=1;
+        c.modes.touch(c,L,0,1,x,y);c.modes.touch(c,L,2,1,x-L.w*.12f,y);
+        check("Survival stripes remain while dragging its title",stripeCaps(c,L)>0);
+        c.modes.touch(c,L,1,1,x-L.w*.12f,y);c.modes.update(c,ModeSelector.SWIPE_RETURN*.5f);
+        check("Survival stripes remain while title returns",stripeCaps(c,L)>0);
+        c.modes.select(c,ModeSelector.ADVENTURE,-1);c.modes.update(c,ModeSelector.CHANGE*.3f);
+        check("Survival stripes remain on departing title",stripeCaps(c,L)>0);
+    }
+    private static int stripeCaps(GameCore c,Layout L) {
+        int[] count={0};
+        Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class<?>[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("fillCircle")) {
+                        float y=((Number)args[1]).floatValue(),r=((Number)args[2]).floatValue();
+                        if(y<ModeSelector.y(L)-L.unit && y>ModeSelector.y(L)-L.unit*3
+                                && Math.abs(r-L.unit*.19f)<.001f)count[0]++;
+                    }
+                    return null;
+                });
+        c.modes.draw(p,c,L);return count[0];
     }
     private static void persistence(Layout L) {
         GameCore c=title();Mem saved=(Mem)c.store;

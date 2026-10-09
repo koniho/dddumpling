@@ -41,6 +41,13 @@ final class Preview {
         shot(dir,"150-mode-partial",mode,L,w,h,ss);
         mode.modes.touch(mode,L,1,1,mx-L.w*.12f,my);mode.modes.update(mode,ModeSelector.SWIPE_RETURN*.5f);
         shot(dir,"150-mode-return",mode,L,w,h,ss);
+        mode.modes.restore(ModeSelector.SURVIVAL);mode.clock=1;
+        mode.modes.touch(mode,L,0,1,mx,my);mode.modes.touch(mode,L,2,1,mx-L.w*.12f,my);
+        shot(dir,"150-survival-stripes-drag",mode,L,w,h,ss);
+        mode.modes.touch(mode,L,1,1,mx-L.w*.12f,my);mode.modes.update(mode,ModeSelector.SWIPE_RETURN*.5f);
+        shot(dir,"150-survival-stripes-return",mode,L,w,h,ss);
+        mode.modes.select(mode,ModeSelector.ADVENTURE,-1);mode.modes.update(mode,ModeSelector.CHANGE*.3f);
+        shot(dir,"150-survival-stripes-exit",mode,L,w,h,ss);
         c.startGame();c.boss.intro=0;c.update(Check.DT,L);c.timeAttack.seconds=42.56;
         shot(dir,"150-combat",c,L,w,h,ss);
         c.timeAttack.current=Boss.COUNT-1;c.timeAttack.cleared=3;TestTimeAttack.beat(c,L);

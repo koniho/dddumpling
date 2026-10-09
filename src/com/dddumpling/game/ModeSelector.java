@@ -161,6 +161,17 @@ final class ModeSelector extends Draw {
             p.line(cx+r*.35f,cy,cx+r*.35f,cy+length,fadeBy(INK,alpha*.25f*(float)Math.sin(phase*Math.PI)),r*.45f);
         }
     }
+    private static void titleLabel(Painter p,GameCore c,Layout L,int mode,float x,float y,float bump,int color,float fade) {
+        float s=L.unit;
+        if(mode==SURVIVAL) {
+            float clock=SurvivalDemo.animationClock(c);
+            survivalAccent(p,x,y,s,L.w*.4f,clock,fade);
+            y-=s*.12f*fade*(.5f+.5f*(float)Math.sin(clock*3.5f));
+            bump*=1f+.018f*fade*(float)Math.sin(clock*3.5f);
+            if(color==INK)color=Glyph.mix(INK,Glyph.cycle(clock*.10f),.25f*fade);
+        }
+        name(p,mode,x,y,s,bump,fadeBy(color,fade));
+    }
     void draw(Painter p,GameCore c,Layout L) {
         if(!visible(c))return;
         boolean peeking=swipeOffset!=0;
@@ -175,18 +186,11 @@ final class ModeSelector extends Draw {
             p.line(x+d*s*.18f,cy,x-d*s*.18f,cy+s*.25f,GOLD,s*.09f);
         }
         p.save();p.clipRect(L.w*.09f,y-s*2.8f,L.w*.91f,y+s*1.4f);
-        if(peeking || transition<1)name(p,departing,L.w*.5f-slideDirection*L.w*t,y,s,1,fadeBy(INK,1-t));
-        float selectedX=L.w*.5f+slideDirection*L.w*(1-t),selectedY=y;
+        if(peeking || transition<1)titleLabel(p,c,L,departing,L.w*.5f-slideDirection*L.w*t,y,1,INK,1-t);
+        float selectedX=L.w*.5f+slideDirection*L.w*(1-t);
         selectedX+=(float)Math.sin(unavailable*20)*s*.15f*unavailable;
         int selectedColor=confirmation>0 || unavailable>0?GOLD:INK;
-        if(arriving==SURVIVAL) {
-            float clock=SurvivalDemo.animationClock(c);
-            survivalAccent(p,selectedX,y,s,L.w*.4f,clock,t);
-            selectedY-=s*.12f*t*(.5f+.5f*(float)Math.sin(clock*3.5f));
-            bump*=1f+.018f*t*(float)Math.sin(clock*3.5f);
-            if(confirmation<=0 && unavailable<=0)selectedColor=Glyph.mix(INK,Glyph.cycle(clock*.10f),.25f*t);
-        }
-        name(p,arriving,selectedX,selectedY,s,bump,fadeBy(selectedColor,t));
+        titleLabel(p,c,L,arriving,selectedX,y,bump,selectedColor,t);
         p.restore();
         c.timeAttack.drawSelector(p,c,L);
         if(selected==SURVIVAL)SurvivalDemo.draw(p,c,L,Math.max(0,1-2*adventureFade));
