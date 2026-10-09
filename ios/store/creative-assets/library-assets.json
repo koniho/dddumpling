@@ -1,0 +1,25 @@
+{
+  "app_id": "6811478003",
+  "observed_date": "2026-10-08",
+  "placement": "Universal Header and Search Results",
+  "assets": [
+    {
+      "file": "dddumpling-universal-v1.png",
+      "reference_name": "DDDumpling Universal v1",
+      "asset_id": "7c800019-5fee-87f3-8021-26fb4a1ececf",
+      "state": "PREPARE_FOR_SUBMISSION"
+    },
+    {
+      "file": "dddumpling-universal-v2-bosses.png",
+      "reference_name": "DDDumpling Universal v2 - Bosses",
+      "asset_id": "aec00019-5fee-87f3-800f-5d889ffac267",
+      "state": "PREPARE_FOR_SUBMISSION"
+    },
+    {
+      "file": "dddumpling-universal-v3-lands-survival.png",
+      "reference_name": "DDDumpling Universal v3 - Lands and Survival",
+      "asset_id": "fd000019-5fee-87f3-803a-e091a184a443",
+      "state": "WAITING_FOR_REVIEW"
+    }
+  ]
+}

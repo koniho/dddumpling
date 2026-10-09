@@ -15,6 +15,7 @@ These notes preserve past failures, including historical values that may no long
 | Boss rules, soft bodies, geometry | [Bosses and physics](bosses-physics.md) |
 | Build tools, installation, crashes | [Build](build.md), [README](../../README.md) |
 | Releases | [Release procedure](../releasing.md) |
+| Promotional illustrations and App Store Asset Library uploads | [Promotional artwork](../../ios/docs/promotional-assets.md) |
 
 Add new lessons to the relevant topic, preferably as a short explanation beside the code
 and a regression test. Keep the always-loaded instructions small.
