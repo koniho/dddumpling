@@ -443,7 +443,7 @@ time to first damage measured from that encounter's start. Unreached bosses are 
 older records without encounter data retain their overall stats and say the breakdown is unavailable.
 Untouched runs say **NO DAMAGE**. Earlier time-only records remain visible with unavailable stats
 shown as `--`.
-Turtle completion collectibles are pending aesthetic approval and are not integrated yet (#150).
+Turtle completion collectibles are pending aesthetic approval and are tracked separately in #162.
 
 ## Survival
 
