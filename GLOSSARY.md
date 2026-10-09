@@ -429,8 +429,11 @@ Every death earns one rainbow duck from the final 45-second segment's two-duck p
 The ten regular ducks use pool offsets (0/1), (2/3), (4/5), (5/6), (6/7), (7/8), (8/9).
 At 300 active seconds or later, Rainbow Champion replaces that draw. All control profiles use
 these thresholds. Pause-menu exits earn no duck; duplicates increment the collection count
-without a score bonus. The duck rides a rainbow into its collection reveal; one tap continues
-to the run summary, then another returns to the title. A durable award journal resumes an
+without a score bonus. A rainbow flows in, expands vertically to cover the screen, and fades
+through white into the earned duck's reveal. The companion is hidden during this transition.
+The reveal speaks the duck's name and shows the Survival time; after two fully visible seconds
+it advances to the collection parade, then the run summary. A tap on the summary returns to
+the title. A durable award journal resumes an
 interrupted reveal without rerolling or granting again. Ducks are exclusive to Survival rewards
 and join the shared display case, stories and companion roster. Their heads, bodies, wings and
 bills use independently simulated spring skins with layered shading.
@@ -454,11 +457,8 @@ Summaries show time survived, score, accuracy, squishes, best combo, the three r
 Rescue Swipes used, plus the earned duck; Adventure's stages, bosses and debuffs do not appear. A death picks
 one of twenty rainbow-themed blurbs and saves it with that run. Legacy bests remain intact without
 invented past runs. Resetting scores clears all mode records and run histories.
-The chosen death blurb also selects a matching companion skit: floaties, heart splash, sprinkles, surfboard,
-rainbow curl, cloud daycare, rinse shower, purple paddling pool, runaway map, jellybean boat,
-soggy hat, polite wave, takeout carton, missed snack stop, bubble bath, forgotten towel,
-river adoption, cloud cuddle, noodle steering or technicolor wake. The companion hops out of its
-home and is carried down offscreen before the summary; replaying a saved run never rerolls its blurb.
+Replaying a saved run never rerolls its blurb. A dedicated rising, bubbly sound accompanies
+the rainbow transition; the name announcement uses the existing effects-volume and mute controls.
 
 Its background uses downward-scrolling, round-ended rainbow bands, each one screen height long including the caps.
 At run start their rounded tips sweep down from above the screen over two seconds, with the title
