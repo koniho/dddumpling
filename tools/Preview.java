@@ -9,6 +9,21 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void adventureTitleFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("161-"))return;
+        GameCore c=new GameCore(new Mem(),161);c.collected=Collect.MASK;c.landSeen=LandPicker.stateMask();
+        int[] companions={0,7,Collect.BOSS_FIRST,Collect.DUCK_FIRST};
+        for(int land=0;land<Lands.COUNT;land++) {
+            c.landChoice=land;c.caseIndex=companions[land%companions.length];c.clock=1.6f;c.landWanderT=1.6f;
+            shot(dir,"161-adventure-land-"+land,c,L,w,h,ss);
+        }
+        c.landChoice=0;c.caseIndex=7;LandPicker.select(c,1);
+        LandPicker.updateTravel(c,LandPicker.TRAVEL_TIME*.5f);
+        shot(dir,"161-adventure-travel",c,L,w,h,ss);
+        c=new GameCore(new Mem(),162);c.collected=Collect.add(1,7);c.caseIndex=7;c.clock=1.4f;c.landWanderT=1.4f;
+        shot(dir,"161-adventure-first-land",c,L,w,h,ss);
+    }
+
     private static void timeAttackFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("150-"))return;
         GameCore c=TestTimeAttack.start(Boss.SLIME);c.toTitle();c.returnFade=0;
@@ -1143,6 +1158,7 @@ final class Preview {
         duckFrames(dir,L,w,h,ss);
         survivalFrames(dir,L,w,h,ss);
         timeAttackFrames(dir,L,w,h,ss);
+        adventureTitleFrames(dir,L,w,h,ss);
         survivalEndingFrames(dir,L,w,h,ss);
 
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";

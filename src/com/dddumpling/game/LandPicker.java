@@ -42,7 +42,10 @@ final class LandPicker extends Draw {
         return n;
     }
     static float spacing(GameCore c, Layout L) { return L.keyR * c.keyScale() * 2.40f; }
-    static float iconRadius(GameCore c, Layout L) { return L.keyR * c.keyScale() * 0.72f; }
+    static float iconRadius(GameCore c, Layout L) {
+        // Tall kelp/crystals must stay below the mode title on compact phones.
+        return Math.min(L.keyR*c.keyScale()*1.05f,L.h*.047f);
+    }
     static float cardX(GameCore c, Layout L, int land) {
         return L.w * 0.5f + (slot(c, land) - slot(c, c.landChoice) + c.landPickerSlide) * spacing(c, L);
     }
@@ -184,10 +187,11 @@ final class LandPicker extends Draw {
     static float explorerX(GameCore c,Layout L) { return LandDiscovery.x(c,L); }
     static float discoveryReveal(GameCore c,Layout L,int land) { return land==TOWN ? 1f : LandDiscovery.reveal(c,L,land); }
 
-    private static void adventure(Painter p,float x,float y,float r,int a,float reveal) {
-        Skits.face(p, Kawaii.DUMPLING, x, y, r * 0.60f, a, 1f, reveal);
+    private static void adventure(Painter p,GameCore c,float x,float y,float r,float look) {
+        Trinket.drawReacting(p,SurvivalDemo.companion(c),x,y,r*.85f,c.clock,1f,1,look);
+        y-=r*.30f;
         // Soft felt crown, pinched top and a wide brim: an adventure hat.
-        int felt = Glyph.withAlpha(0xFFC59A62, a), band = Glyph.withAlpha(0xFF795840, a);
+        int felt = 0xFFC59A62, band = 0xFF795840;
         p.fillPoly(new float[]{x-r*.48f,y-r*.42f,x-r*.34f,y-r*.92f,
                 x-r*.08f,y-r*.84f,x+r*.25f,y-r*.96f,x+r*.43f,y-r*.42f}, felt);
         p.fillEllipse(x, y-r*.47f, r*.46f, r*.10f, band);
@@ -231,20 +235,25 @@ final class LandPicker extends Draw {
         // Walk across the foreground of each emblem; draw after the land so the face stays visible.
         return ground+iconRadius(c,L)*.40f;
     }
-    static float travelerRadius(GameCore c,Layout L) { return L.keyR*c.keyScale()*.55f; }
+    static float travelerRadius(GameCore c,Layout L) { return Math.min(L.unit*1.3f,L.h*.024f); }
+    static float companionRadius(GameCore c,Layout L,float scale) {
+        // A readable resident grows gently while crossing between lands.
+        return travelerRadius(c,L)*(.75f+.25f*Math.max(0,Math.min(1,(scale-.42f)/.58f)));
+    }
     private static void drawTravel(Painter p,GameCore c,Layout L) {
         if(c.landDiscovery>=0) return;
         float age=c.landTravelFrom>=0 ? c.landTravelT : c.landWanderT;
         drawExplorer(p,c,L,explorerBodyX(c,L),explorerBodyY(c,L),explorerScale(c),age,c.landTravelFrom>=0);
     }
     static void drawExplorer(Painter p,GameCore c,Layout L,float x,float y,float scale,float age,boolean walking) {
-        float r=travelerRadius(c,L)*scale;
+        float r=companionRadius(c,L,scale);
         float stride=(float)Math.sin(age*Softbody.TAU*(walking ? 5f : 2f));
-        p.fillEllipse(x,y+r*.60f,r*.64f,r*.12f,Glyph.withAlpha(INK,46));
+        p.fillEllipse(x,y+r*.87f,r*.78f,r*.12f,Glyph.withAlpha(INK,46));
         for(int side=-1;side<=1;side+=2)
-            p.fillEllipse(x+side*r*.25f+stride*side*r*.12f,y+r*.53f,
+            p.fillEllipse(x+side*r*.25f+stride*side*r*.12f,y+r*.78f,
                     r*.19f,r*.10f,0xFF795840);
-        adventure(p,x,y,r,255,.7f);
+        float bob=Math.abs(stride)*r*.06f;
+        adventure(p,c,x,y-bob,r,walking?Math.signum(cardX(c,L,c.landChoice)-x)*.4f:stride*.2f);
     }
 
     static float walkingDip(float t) {

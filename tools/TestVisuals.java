@@ -309,7 +309,7 @@ final class TestVisuals extends Check {
         for(int land=1;land<Lands.COUNT;land++) c.collected=Collect.add(c.collected,Collect.BOSS_FIRST+land-1);
         store.collected=c.collected;
         LandPicker.updateDiscovery(c,0f);
-        check("discovery uses the swipe traveler size",LandPicker.travelerRadius(c,L)==L.keyR*c.keyScale()*.55f);
+        check("discovery uses the swipe traveler size",LandPicker.travelerRadius(c,L)==Math.min(L.unit*1.3f,L.h*.024f));
         check("tour begins from the current land",c.landDiscovery==1 && c.landDiscoveryFrom==0 && c.landPickerSlide==1f);
         check("tour owns its land motion",!LandPicker.down(c,L,L.w*.7f,LandPicker.cardY(L)));
         for(int land=1;land<Lands.COUNT;land++) {
@@ -419,7 +419,31 @@ final class TestVisuals extends Check {
 
     }
 
+    private static int adventureCompanionFrame(GameCore c,Layout L) {
+        RasterPainter p=new RasterPainter((int)L.w,(int)L.h,1);
+        LandPicker.drawExplorer(p,c,L,L.w*.5f,LandPicker.cardY(L),.42f,1f,false);
+        return java.util.Arrays.hashCode(p.resolve());
+    }
+    private static void adventureCompanion(Layout L) {
+        GameCore c=new GameCore(new Mem(),161);c.collected=Collect.MASK;c.caseIndex=0;
+        int original=adventureCompanionFrame(c,L);c.caseIndex=7;
+        check("Adventure explorer uses the selected collectible",original!=adventureCompanionFrame(c,L));
+        int selected=adventureCompanionFrame(c,L);
+        check("Adventure companion rendering is deterministic",selected==adventureCompanionFrame(c,L));
+        c.collected=1;c.caseIndex=7;
+        check("Adventure unowned selection falls back to owned companion",original==adventureCompanionFrame(c,L));
+        for(int[] dim:new int[][]{{320,568},{393,852},{640,1400},{768,1024}}) {
+            Layout l=new Layout();l.compute(dim[0],dim[1],0,0,0,0);
+            float radius=LandPicker.iconRadius(c,l),cy=LandPicker.cardY(l);
+            check("enlarged Adventure scenery clears mode label "+dim[0],cy-radius*1.75f>ModeSelector.y(l)+l.unit*.5f);
+            check("resident companion is readable beside other modes "+dim[0],
+                    LandPicker.companionRadius(c,l,.42f)*.85f>=Math.min(l.unit,l.h*.017f)*.8f);
+            check("travel growth stays within title margins "+dim[0],
+                    cy+radius*1.5f+LandPicker.companionRadius(c,l,1)*1.1f<l.h*.82f);
+        }
+    }
     static void titleScreen(Layout L) {
+        adventureCompanion(L);
         caseScoreFade();
         discoveryTrip(L);
         persistentExplorer(L);
