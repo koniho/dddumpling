@@ -28,6 +28,10 @@ release, change a track, or edit other listing fields.
 Provide the file's SHA-256 as `image_sha256`. Leave `apply` false to inspect the current
 delta; set it true for an authorized upload. The service account needs **Manage store
 presence** for DDDumpling in addition to its existing access.
+If saving fails with HTTP 403 at `edits.commit`, open Play Console **Users and permissions**,
+select the email printed by **Identify Play service account**, and add **Manage store presence**
+under DDDumpling's app permissions. A successful preview or upload into an edit does not
+prove permission to save the listing.
 
 ```sh
 shasum -a 256 app-store/google-play/feature-graphic.png
@@ -48,7 +52,7 @@ The installer downloads the platform binary into ignored `build/tools/gplay/` an
 its pinned release checksum. It supports macOS and Linux, Intel and ARM. `GPLAY_BIN` can
 select an existing CLI; optional `PLAY_FEATURE_SHA256` pins the approved image locally.
 Only the English feature graphic is copied into an ignored metadata tree under `.private/`.
-The workflow retains the preview and saved checksum as artifacts, never the credential.
+The workflow retains the preview and current saved checksum as artifacts, never the credential.
 See [image uploads](https://developers.google.com/android-publisher/api-ref/rest/v3/edits.images/upload)
 and [commit behavior](https://developers.google.com/android-publisher/api-ref/rest/v3/edits/commit).
 

@@ -26,8 +26,10 @@ jq -e '.package == "com.dddumpling.game" and all(.slots[]; .locale == "en-US" an
 cat .private/play-feature/preview.json
 if [[ "$feature_write" == true ]]; then
   "$gplay_bin" "${feature_args[@]}" --confirm > .private/play-feature/applied.json
-  "$gplay_bin" metadata images list --package com.dddumpling.game --type featureGraphic --output json \
-    > .private/play-feature/saved.json
+fi
+"$gplay_bin" metadata images list --package com.dddumpling.game --type featureGraphic --output json \
+  > .private/play-feature/saved.json
+if [[ "$feature_write" == true ]]; then
   jq -e --arg sha "$feature_sha" \
     'any(.slots[]; .locale == "en-US" and .imageType == "featureGraphic" and .count == 1 and .images[0].sha256 == $sha)' \
     .private/play-feature/saved.json > /dev/null
