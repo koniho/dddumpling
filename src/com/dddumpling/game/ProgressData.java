@@ -25,6 +25,7 @@ final class ProgressData {
 
     void maximum(String metric, long value) { putMax("m:" + metric, value); }
     long maximum(String metric) { return value("m:" + metric); }
+    long component(String replica,String metric) { return value("c:"+replica+":"+metric); }
     long total(String metric) {
         long total = 0;
         for (Map.Entry<String, Long> e : values.entrySet())

@@ -34,7 +34,7 @@ final class Sfx {
             CART_ROLL = MINING_CHEER + 1, CART_SQUEAL = CART_ROLL + 1, CART_TUMBLE = CART_SQUEAL + 1,
             OCTO_DAMAGE = CART_TUMBLE + 1, SCORE_RESET_CONFIRM = OCTO_DAMAGE + 1,
             SCORE_RESET_BRUSH = SCORE_RESET_CONFIRM + 1, NINJA_SWISH_1 = SCORE_RESET_BRUSH + 1, NINJA_SWISH_2 = NINJA_SWISH_1 + 1,
-            NINJA_COMBO = NINJA_SWISH_2 + 1, COUNT = NINJA_COMBO + 1;
+            NINJA_COMBO = NINJA_SWISH_2 + 1, SURVIVAL_OVER = NINJA_COMBO + 1, COUNT = SURVIVAL_OVER + 1;
     static final float OCTO_WAVE_GAIN = .66f;
     static final float NINJA_COMBO_GAIN = .25f;
 
@@ -108,6 +108,7 @@ final class Sfx {
             case TALLY: return tally();
             case JOIN: return join();
             case OVER: return over();
+            case SURVIVAL_OVER: return survivalOver();
             case BOSS_LAUGH: return bossLaugh();
             case BOSS_DAMAGE: return bossDamage();
             case BOSS_SPLIT: return bossSplit();
@@ -132,6 +133,41 @@ final class Sfx {
             case OCTO_LOCK: return octoLock();
             default: return achievement();
         }
+    }
+
+    /** Bubbly rainbow climb, airy swell, then a warm major-sixth bloom through white. */
+    private static short[] survivalOver() {
+        float length=2.8f;
+        float[] v=new float[(int)(RATE*length)];
+        float[] notes={523.25f,659.25f,783.99f,880f,1046.50f,1318.51f,1567.98f};
+        float[] chord={261.63f,329.63f,392f,440f};
+        int seed=15873;
+        float air=0;
+        for(int i=0;i<v.length;i++) {
+            float t=i/(float)RATE,s=0;
+            for(int k=0;k<notes.length;k++) {
+                float u=t-k*.18f;
+                if(u<0)continue;
+                double phase=2*Math.PI*notes[k]*(u+.0015*(1-Math.exp(-u*35)));
+                float bell=(float)(Math.sin(phase)+.14*Math.sin(phase*2)+.035*Math.sin(phase*3));
+                s+=bell*(1-(float)Math.exp(-u*55))*(float)Math.exp(-u*5.2)*.32f;
+            }
+            // The chord opens as the rainbow reaches full height; no per-frame audio events.
+            float bloom=t-1.45f;
+            if(bloom>0)for(float note:chord) {
+                double phase=2*Math.PI*note*bloom;
+                s+=(float)(Math.sin(phase)+.18*Math.sin(phase*2))*.13f
+                        *(1-(float)Math.exp(-bloom*9))*(float)Math.exp(-bloom*1.8);
+            }
+            seed=seed*1103515245+12345;
+            float noise=((seed>>>16)&32767)/16383.5f-1;
+            air+=(noise-air)*.07f;
+            float swell=(float)Math.sin(Math.PI*Math.min(1,t/2.15f));
+            s+=air*.35f*swell*swell;
+            float tail=Math.min(1,(length-t)/.45f);
+            v[i]=s*tail*tail;
+        }
+        return render(v);
     }
 
     /** Welcoming triad on a new game: soft, unhurried, no shimmer. */

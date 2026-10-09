@@ -134,6 +134,26 @@ final class CaseUi {
         c.caseDragging = false;
     }
 
+    /** Developer shortcut: fill missing entries without manufacturing duplicate rewards. */
+    static void collectAll(GameCore c) {
+        if (!BuildFlags.DEVELOPER) return;
+        c.clearArmed = false;
+        int added = 0;
+        for (int i = 0; i < Collect.COUNT; i++) {
+            if (c.collectionCounts[i] == 0) {
+                c.collectionCounts[i] = 1;
+                added++;
+            }
+        }
+        c.collected = Collect.MASK;
+        c.collectTotal = (int)Math.min(Integer.MAX_VALUE, (long)c.collectTotal + added);
+        if (c.store != null) {
+            c.store.saveCollected(Collect.encode(c.collected));
+            c.store.saveCollectTotal(c.collectTotal);
+            c.store.saveCollectionCounts(c.collectionCounts);
+        }
+    }
+
     /**
      * The clear-case button: arms on the first tap, empties on the second. The collection is the one
      * thing here that took several runs to build, so it is behind a confirmation.
@@ -146,6 +166,8 @@ final class CaseUi {
         }
         c.clearArmed = false;
         c.collected = 0L;
+        c.survival.reward.pending=false;
+        if(c.store!=null)c.store.saveSurvivalAward("");
         // The tally goes too: it counts baskets opened for entries that no longer exist, and leaving
         // it would put "COLLECTIONS: 40" over an empty case. Same for the run's haul.
         c.collectTotal = 0;

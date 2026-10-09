@@ -14,6 +14,7 @@ final class Renderer extends Draw {
     static float shakeMargin(GameCore c, Layout L) { return Math.max(0f, c.shake) * .016f * L.w; }
 
     static void draw(Painter p, GameCore c, Layout L) {
+        p=new OpacityPainter(p,1f) { public DuckBodies ducks() {return c.ducks;} };
         if(c.onboarding.practice!=null) {
             Onboarding.draw(p,c,L);
             if(c.settingsOpen)PlayerSettings.draw(p,c,L);
@@ -108,8 +109,7 @@ final class Renderer extends Draw {
 
         }
 
-        if(SurvivalEnd.ownsCompanion(c))SurvivalEnd.draw(p,c,L);
-        else if(!Cave.active(c) || c.cave.phase!=Cave.CHOOSE) RunCompanion.draw(p,c,L);
+        if(!SurvivalEnd.ownsCompanion(c) && (!Cave.active(c) || c.cave.phase!=Cave.CHOOSE)) RunCompanion.draw(p,c,L);
         c.survival.drawRescue(p,c,L);
         // The grown TEAM form flies in front of the home while it leaves the key deck.
         if(c.buddy.entryLeft>0f) buddy(p,c,L);
@@ -141,7 +141,12 @@ final class Renderer extends Draw {
         }
 
         if (c.state == GameCore.TITLE) Screens.title(p, c, L);
-        else if (c.state == GameCore.OVER) Screens.gameOver(p, c, L);
+        else if (c.state == GameCore.OVER) {
+            if(c.survival.active && c.deathProgress()>=SurvivalEnd.REVEAL)p.fillRect(0,0,L.w,L.h,BG);
+            Screens.gameOver(p, c, L);
+            c.survival.reward.draw(p,c,L);
+            SurvivalEnd.draw(p,c,L);
+        }
         else if (c.state == GameCore.BONUS) Screens.bonus(p, c, L);
         else if (c.stageBanner > 0 && !(Cave.active(c) && c.cave.phase == Cave.CHOOSE)
                 && !(c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.COMPANION)) Hud.stageBanner(p, c, L);

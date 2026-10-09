@@ -43,6 +43,7 @@
   [store saveHighScoresWithNSString:@"old records"];
   [store saveSurvivalWithNSString:@"1;1000,42;0,0;0,0"];
   [store saveCollectedWithLong:3];
+  [store saveSurvivalAwardWithNSString:@"pending award"];
   [store saveCaseIndexWithInt:1];
   [store saveLandStateWithInt:7];
   [store savePlayerSettingsWithInt:42];
@@ -54,11 +55,27 @@
   XCTAssertEqual([reopened loadLandBestWithInt:1], 0);
   XCTAssertEqualObjects([reopened loadHighScores], @"");
   XCTAssertEqualObjects([reopened loadSurvival], @"");
+  XCTAssertEqualObjects([reopened loadSurvivalAward], @"");
   XCTAssertEqual([reopened loadProgress]->buffer_[0], 11);
   XCTAssertEqual([reopened loadCollected], 3);
   XCTAssertEqual([reopened loadCaseIndex], 1);
   XCTAssertEqual([reopened loadLandState], 7);
   XCTAssertEqual([reopened loadPlayerSettings], 42);
+  [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
+}
+
+- (void)testSurvivalAwardAndVersionedCollectionPersist {
+  NSURL *url = [self temporaryFile];
+  DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];
+  jlong ducks = ((jlong)0x5000000000000000LL) | ((jlong)1 << 59) | 3;
+  [store saveCollectedWithLong:ducks];
+  [store saveSurvivalAwardWithNSString:@"1;27;59;1;3;1;0;1#snapshot"];
+  DDIOSStore *reopened = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertEqual([reopened loadCollected], ducks);
+  XCTAssertEqualObjects([reopened loadSurvivalAward], @"1;27;59;1;3;1;0;1#snapshot");
+  [reopened saveSurvivalAwardWithNSString:@"1;27"];
+  DDIOSStore *acknowledged = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertEqualObjects([acknowledged loadSurvivalAward], @"1;27");
   [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
 }
 

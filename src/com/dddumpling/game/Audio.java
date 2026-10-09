@@ -358,6 +358,7 @@ final class Audio implements GameCore.Sound {
     @Override public void gameOver() {
         play(Sfx.OVER, 1f);
     }
+    @Override public void survivalGameOver() { play(Sfx.SURVIVAL_OVER, 1f); }
 
     @Override public void clearWord() {
         play(Sfx.CLEAR, 1f);

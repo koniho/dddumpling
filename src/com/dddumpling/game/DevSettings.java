@@ -53,6 +53,7 @@ final class DevSettings extends Draw {
             chip(p,u,u.difficultyY,0,1,"RESET NEWS",s,false);
             label(p,u,u.clearLabelY,"COLLECTION: "+Collect.owned(c.collected)+" / "+Collect.COUNT,s);
             chip(p,u,u.clearY,0,1,c.clearArmed?"TAP AGAIN TO EMPTY":"EMPTY COLLECTION",s,c.clearArmed);
+            chip(p,u,u.collectAllY,0,1,"COLLECT ALL",s,Collect.complete(c.collected));
             return;
         }
         label(p,u,u.stageLabelY,"STAGE "+c.stage,s);

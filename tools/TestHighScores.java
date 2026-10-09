@@ -76,7 +76,7 @@ final class TestHighScores extends Check {
         c.startGame();c.highScores.start(58);c.score=123;
         for(int prize:new int[]{0,49,48,58}) c.highScores.prizes.add(prize);
         c.highScores.dumplings=4;c.highScores.finish(c);
-        HighScores loaded=new HighScores();loaded.load(c.highScores.encode());
+        HighScores loaded=new HighScores();loaded.load(c.highScores.encode().replaceFirst("8:","6:"));
         check("retired cave portraits preserve saved runs",loaded.runs.size()==1
                 && loaded.latestRun.character==-1 && loaded.latestRun.score==123);
         check("retired prizes preserve the historical total and remaining haul",loaded.latestRun.dumplings==4
@@ -168,7 +168,7 @@ final class TestHighScores extends Check {
         check("highest stage survives loss of its run from history",HighScoreScreen.titleText(c).endsWith("STAGE 30"));
         HighScores restored=new HighScores();restored.load(c.highScores.encode());
         check("highest stage round trips independently of retained runs",restored.highestStage==30);
-        String old=c.highScores.encode().replaceFirst("6:([0-9]+):[0-9]+","5:$1");
+        String old=c.highScores.encode().replaceFirst("8:([0-9]+):[0-9]+","5:$1");
         restored.load(old);
         check("older saves recover highest stage from their retained runs",restored.highestStage==5);
     }

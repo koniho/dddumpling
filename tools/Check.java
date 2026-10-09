@@ -55,6 +55,9 @@ abstract class Check {
         int caseIndex;
         public int loadCaseIndex() { return caseIndex; }
         public void saveCaseIndex(int value) { caseIndex=value; }
+        String survivalAward="";
+        public String loadSurvivalAward() {return survivalAward;}
+        public void saveSurvivalAward(String value) {survivalAward=value;}
         String survival="";
         public String loadSurvival() { return survival; }
         public void saveSurvival(String value) { survival=value; }
@@ -140,7 +143,7 @@ abstract class Check {
         int music = -1, musicCalls;
         int starts, stageClears, powerClears, frenzyCalls;
         /** Interlude punctuation: course launches, tallies read out, parade joins, runs ended. */
-        int courseFinishes, courseStarts, rocketCalls, tallies, joins, gameOvers, bossTaunts;
+        int courseFinishes, courseStarts, rocketCalls, tallies, joins, gameOvers, survivalGameOvers, bossTaunts;
         int lastBossTaunt = -1;
         float rocketThrust, firstRocket = -1f, maxRocket;
         int rocketStops;
@@ -225,6 +228,7 @@ abstract class Check {
         public void paradeJoin() { joins++; }
         public void rosterJoin() { achievements++; }
         public void gameOver() { gameOvers++; }
+        public void survivalGameOver() { survivalGameOvers++; }
         public void bossTaunt(int kind) { bossTaunts++; lastBossTaunt = kind; }
         public void selectMusic(int choice) { music = choice; musicCalls++; }
         public void bossMusic(boolean active) { bossMusic = active; bossMusicCalls++; }

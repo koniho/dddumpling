@@ -48,7 +48,7 @@ final class Storybook extends Draw {
     }
     static void tap(GameCore c,Layout L,float x,float y) {
         if(!c.storyOpen())return;
-        if(heroHit(c,L,x,y))c.storyPulse=0f;
+        if(heroHit(c,L,x,y)) {c.storyPulse=0f;c.ducks.react(c.story,.7f);}
         else c.closeStory();
     }
     static int glowColor(int who,int ring) {

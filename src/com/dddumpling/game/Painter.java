@@ -9,6 +9,8 @@ package com.dddumpling.game;
  * Colours are ARGB ints. Alpha is honoured.
  */
 interface Painter {
+    default DuckBodies ducks() { return null; }
+
     int LEFT = -1, CENTER = 0, RIGHT = 1;
 
     void fillPoly(float[] pts, int color);

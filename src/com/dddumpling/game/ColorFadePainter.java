@@ -2,6 +2,7 @@ package com.dddumpling.game;
 
 /** Tints and fades a complete drawing, including eyes, outlines, and highlights. */
 final class ColorFadePainter implements Painter {
+    public DuckBodies ducks() { return p.ducks(); }
     final Painter p;
     final int tint;
     final float amount, opacity;

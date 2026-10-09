@@ -145,7 +145,7 @@ final class GameCore {
     /** 0..1 fade of the summary screen, which starts once the hold is spent. */
     float overFade() {
         if (state != OVER) return 0f;
-        if (dying()) return 0f;
+        if (dying() || survival.reward.pending) return 0f;
         return Math.min(1f, (time - deathDuration()) / OVER_FADE);
     }
 
@@ -155,6 +155,7 @@ final class GameCore {
      * fade, and then the usual grace.
      */
     boolean overReady() {
+        if(survival.reward.pending && survival.reward.joining)return false;
         return state == OVER && time > deathDuration() + OVER_FADE + OVER_GRACE;
     }
     /**
@@ -182,6 +183,8 @@ final class GameCore {
         default void saveReleaseSeen(String value) {}
         default int loadCaseIndex() { return 0; }
         default void saveCaseIndex(int value) {}
+        default String loadSurvivalAward() { return ""; }
+        default void saveSurvivalAward(String value) {}
         default String loadSurvival() { return ""; }
         default void saveSurvival(String value) {}
         default String loadHighScores() { return ""; }
@@ -190,6 +193,7 @@ final class GameCore {
         default boolean resetHighScores(byte[] progress) {
             saveHighScores("");
             saveSurvival("");
+            saveSurvivalAward("");
             for (int land=0;land<Lands.COUNT;land++) saveLandBest(land,0);
             saveBest(0);
             if (progress!=null) saveProgress(progress);
@@ -336,6 +340,8 @@ final class GameCore {
         void rosterJoin();
         /** The run is over: the swirl has cleared and the summary is coming up. */
         void gameOver();
+        /** Rainbow transition at the end of Survival, after the fatal-hit sound. */
+        default void survivalGameOver() { gameOver(); }
         /** The boss that ended the run begins its boss-specific victory taunt. */
         void bossTaunt(int kind);
         /** Switch the looping background track to {@link Music#NAMES}[choice]. */
@@ -358,7 +364,7 @@ final class GameCore {
         void narrate(int entry);
         /** Short tutorial guidance; respects the same mute and lifecycle rules as stories. */
         default void explain(String text) {}
-        /** One short name call as the run character introduces itself. */
+        /** One short name call for a run greeting or collectible reveal. */
         default void announceSquishy(int entry) {}
         /** Stop talking mid-sentence: the panel has gone. */
         void hush();
@@ -590,6 +596,7 @@ final class GameCore {
     final Starter starter = new Starter();
     final ModeSelector modes = new ModeSelector();
     final Survival survival = new Survival();
+    final DuckBodies ducks = new DuckBodies();
     /** Counts down while the push-back shockwave is on screen. */
     float pushT;
     /** Words the last push-back shoved back, for the readout. */
@@ -1597,7 +1604,8 @@ final class GameCore {
             modes.restore(preferences.mode);
             // Masked: a store that hands back junk in the high bits must not make
             // Collect.owned() report more than there are entries.
-            collected = store.loadCollected() & Collect.MASK;
+            collected = Collect.decode(store.loadCollected());
+            if (!Collect.currentSave(store.loadCollected()) && caseIndex >= Collect.DUCK_FIRST) caseIndex=0;
             // Floored at what the case holds: a store from before this counter existed has nothing
             // to hand back, and reading zero next to a part-full case would tell the player they
             // had won nothing. Their collection is the floor on how many baskets they opened.
@@ -1622,6 +1630,7 @@ final class GameCore {
         }
         progress.seed(this);
         progress.apply(this);
+        survival.reward.restore(this);
     }
 
     boolean playRosterFull() { return state == TITLE ? fullRoster : runFullRoster; }
@@ -1907,6 +1916,7 @@ final class GameCore {
         java.util.Arrays.fill(landBests,0);
         highScores.clear();
         survival.clearRecords();
+        survival.reward.pending=false;
         highScoreScreen.open=highScoreScreen.closing=false;
         highScoreScreen.selected=-1;
         scoresSuppressed=true;
@@ -2023,6 +2033,7 @@ final class GameCore {
     }
 
     void dismissGameOver() {
+        if (survival.reward.dismiss(this)) return;
         if (overReady()) returnToTitle();
     }
 
@@ -2185,7 +2196,7 @@ final class GameCore {
         if (state == TITLE) {
             beginStart();
         } else {
-            returnToTitle();
+            dismissGameOver();
         }
     }
 
@@ -2763,6 +2774,7 @@ final class GameCore {
         if (sound != null && (settingsOpen || !boss.fighting() || boss.kind != Boss.SLIME
                 || boss.hasGlob() || boss.boltCount() > 0)) sound.bossCharge(0f);
         if (settingsOpen) { preferences.updatePanel(this,elapsed); return; }
+        ducks.update(this,dt);
         companion.update(this,dt);
         // TEAM SQUISH can finish on the same frame that schedules an interlude. Its return owns
         // the companion until it reaches home, so it keeps moving through that transition.
@@ -2801,7 +2813,10 @@ final class GameCore {
         // The death hold, and the flight home that follows it a screen later. Both above the PLAY
         // return: neither runs during play, and the states they do run in never reach it.
         if (deathT > 0f) {
+            float before=deathProgress();
             deathT = Math.max(0f, deathT - dt);
+            if(survival.active && before<SurvivalEnd.SOUND_START
+                    && deathProgress()>=SurvivalEnd.SOUND_START && sound!=null) sound.survivalGameOver();
             if (deathT == 0f) {
                 // The swirl is over, so the words go. Held until now because they are what the
                 // swirl is made of; the summary is drawn over an empty field from here.
@@ -2812,10 +2827,11 @@ final class GameCore {
                 // wasted, and this belongs to the summary coming up, not to the last word.
                 if (sound != null) {
                     if (bossVictoryKind >= 0) sound.bossMusic(false);
-                    sound.gameOver();
+                    if(!survival.active)sound.gameOver();
                 }
             }
         }
+        survival.reward.update(this);
         if (homeT > 0f) {
             homeT = decay(homeT, dt);
             // A chime as each one is taken in. Fired from here rather than from the drawing so it

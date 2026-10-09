@@ -216,11 +216,13 @@ public class MainActivity extends Activity implements GameCore.Store {
     @Override public boolean resetHighScores(byte[] progress) {
         // A fresh save's deck choice is inferred from the absence of score keys.
         android.content.SharedPreferences.Editor edit=prefs.edit().putInt(KEY_ROSTER,loadRosterState())
-                .putString("high_scores", "").putString("survival_records", "").putInt(KEY_BEST,0);
+                .putString("high_scores", "").putString("survival_records", "").remove("survival_award").putInt(KEY_BEST,0);
         for(int land=1;land<Lands.COUNT;land++) edit.putInt("best_land_"+land,0);
         if(progress!=null) edit.putString("progress_v1",android.util.Base64.encodeToString(progress,android.util.Base64.NO_WRAP));
         return edit.commit();
     }
+    @Override public String loadSurvivalAward() { return prefs.getString("survival_award", ""); }
+    @Override public void saveSurvivalAward(String value) { prefs.edit().putString("survival_award", value).commit(); }
     @Override public String loadSurvival() { return prefs.getString("survival_records", ""); }
     @Override public void saveSurvival(String value) { prefs.edit().putString("survival_records", value).apply(); }
     @Override public String loadHighScores() { return prefs.getString("high_scores", ""); }

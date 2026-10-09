@@ -424,7 +424,20 @@ Survival unlocks after beating Slime. Boss Time Attack remains unavailable until
 
 ## Survival
 
-Survival is continuous combat with no land selector, bosses, bonus games or collection rewards.
+Survival is continuous combat with no land selector, bosses or bonus games.
+Every death earns one rainbow duck from the final 45-second segment's two-duck pool.
+The ten regular ducks use pool offsets (0/1), (2/3), (4/5), (5/6), (6/7), (7/8), (8/9).
+At 300 active seconds or later, Rainbow Champion replaces that draw. All control profiles use
+these thresholds. Pause-menu exits earn no duck; duplicates increment the collection count
+without a score bonus. A rainbow flows in, expands vertically to cover the screen, and fades
+through white into the earned duck's reveal. The companion is hidden during this transition.
+The reveal speaks the duck's name and shows the Survival time; after two fully visible seconds
+it advances to the collection parade, then the run summary. A tap on the summary returns to
+the title. A durable award journal resumes an
+interrupted reveal without rerolling or granting again. Ducks are exclusive to Survival rewards
+and join the shared display case, stories and companion roster. Their heads, bodies, wings and
+bills use independently simulated spring skins with layered shading.
+
 Normal difficulty increases for five active minutes, then holds its ceiling. Cleared enemies
 are replaced promptly. A left-side rack supplies one use each of Flurry, Ninja and Team Squish per run;
 tap an unused icon while no power is active to activate it. Used icons remain translucent, and
@@ -441,14 +454,11 @@ four keys and six keys. Tapping anywhere on the settled game-over screen returns
 selection and Adventure's land choice. Tapping the title's best record opens the shared high-score
 panel with Survival's own top ten scores and latest run, separately for each control profile.
 Summaries show time survived, score, accuracy, squishes, best combo, the three rack powers and
-Rescue Swipes used; Adventure's stages, bosses, prizes and debuffs do not appear. A death picks
+Rescue Swipes used, plus the earned duck; Adventure's stages, bosses and debuffs do not appear. A death picks
 one of twenty rainbow-themed blurbs and saves it with that run. Legacy bests remain intact without
 invented past runs. Resetting scores clears all mode records and run histories.
-The chosen death blurb also selects a matching companion skit: floaties, heart splash, sprinkles, surfboard,
-rainbow curl, cloud daycare, rinse shower, purple paddling pool, runaway map, jellybean boat,
-soggy hat, polite wave, takeout carton, missed snack stop, bubble bath, forgotten towel,
-river adoption, cloud cuddle, noodle steering or technicolor wake. The companion hops out of its
-home and is carried down offscreen before the summary; replaying a saved run never rerolls its blurb.
+Replaying a saved run never rerolls its blurb. A dedicated rising, bubbly sound accompanies
+the rainbow transition; the name announcement uses the existing effects-volume and mute controls.
 
 Its background uses downward-scrolling, round-ended rainbow bands, each one screen height long including the caps.
 At run start their rounded tips sweep down from above the screen over two seconds, with the title
@@ -614,7 +624,10 @@ They retain track progress and delivered minecarts; finishing continues into the
 
 Cave minigames award existing blind-box squishies, or gelatinous cubes once their reward
 pool is unlocked. They share the normal minigame reward rules and add no collectible families.
-The catalogue contains 49 entries; boss friends remain boss rewards.
+The catalogue contains 60 entries, including 11 Survival ducks; boss friends remain boss rewards.
+Saved ownership uses a tagged 60-bit ID map. Untagged legacy saves retain only IDs 0–48;
+retired cave IDs 49–58 never become ducks. Duck cloud counts use a separate `duck_` namespace,
+and high-score formats 8/9 distinguish current IDs from legacy Adventure/Survival histories.
 
 The first normal-stage enemy entering the rescue warning band pauses for a **rescue swipe tutorial**,
 regardless of remaining lives. The companion explains the move in text and speech, while the shared

@@ -1,7 +1,8 @@
 package com.dddumpling.game;
 
 /** A light translucency for overlay art, shared by both drawing backends. */
-final class OpacityPainter implements Painter {
+class OpacityPainter implements Painter {
+    public DuckBodies ducks() { return p.ducks(); }
     final Painter p;
     final float amount;
     OpacityPainter(Painter p,float amount) { this.p=p; this.amount=amount; }
