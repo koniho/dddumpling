@@ -106,7 +106,8 @@ final class TestModeSelector extends Check {
                 && reopened.preferences.effectsMuted && reopened.preferences.kids);
         reopened.preferences.music=.6f;reopened.preferences.save(reopened);
         check("saving another preference retains the selected mode",new GameCore(saved,1482).modes.selected==ModeSelector.SURVIVAL);
-        c.startGame();c.lives=1;c.takeHit(L.w*.5f,L);c.update(10,10,L);c.dismissGameOver();c.toTitle();
+        c.startGame();c.lives=1;c.takeHit(L.w*.5f,L);c.update(10,10,L);c.dismissGameOver();
+        c.update(GameCore.PARADE_TIME,GameCore.PARADE_TIME,L);c.toTitle();
         check("completed run retains the mode in memory and on reopen",c.modes.selected==ModeSelector.SURVIVAL
                 && new GameCore(saved,1483).modes.selected==ModeSelector.SURVIVAL);
         c.modes.back(c);

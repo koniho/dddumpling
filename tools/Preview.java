@@ -17,15 +17,27 @@ final class Preview {
         for(int i=0;i<Collect.DUCK_COUNT;i++) {
             int who=Collect.DUCK_FIRST+i;c.survival.reward.who=who;c.collectionCounts[who]=1;
             c.collected=Collect.add(c.collected,who);
+            c.survival.seconds=new int[]{30,30,60,60,100,140,185,230,275,290,300}[i];
             c.deathT=0;c.time=c.deathDuration()+2;
             for(int tick=0;tick<40;tick++)c.ducks.update(c,Check.DT);
             shot(dir,"156-ducks-reveal-"+i,c,L,w,h,ss);
         }
         c.survival.reward.who=Collect.DUCK_FIRST;
-        for(float t:new float[]{.15f,.48f,.75f,.99f,1f}) {
+        c.survival.seconds=30;
+        for(float t:new float[]{.15f,.30f,.48f,.60f,.70f,.78f,.88f,.99f,1f}) {
             c.deathT=c.deathDuration()*(1-t);c.time=c.deathDuration()*t;
             shot(dir,"156-ducks-transition-"+Math.round(t*100),c,L,w,h,ss);
         }
+        c.deathT=0;c.time=c.deathDuration()+2;
+        c.prize=c.survival.reward.who;c.prizeNew=true;
+        c.dismissGameOver();
+        for(float t:new float[]{.15f,.48f,.65f,.90f}) {
+            c.time=c.survival.reward.joinAt+GameCore.PARADE_TIME*t;
+            shot(dir,"156-ducks-joins-"+Math.round(t*100),c,L,w,h,ss);
+        }
+        c.time=c.survival.reward.joinAt+GameCore.PARADE_TIME+.01f;c.survival.reward.update(c);
+        c.time=c.deathDuration()+2;
+        shot(dir,"156-ducks-summary",c,L,w,h,ss);
         RasterPainter raster=new RasterPainter(w,h,ss);raster.clear(Draw.BG);
         Painter p=new OpacityPainter(raster,1) { public DuckBodies ducks() {return c.ducks;} };
         p.text("SURVIVAL DUCKS",w*.5f,h*.055f,w*.056f,Draw.INK,Painter.CENTER,true);
@@ -46,9 +58,9 @@ final class Preview {
         GameCore c=TestSurvival.start(TestSurvival.store(),173);
         c.survival.update(c,150);c.lives=1;c.takeHit(L.w*.5f,L);
         c.shake=c.flash=c.skyGlow=0;
-        for(int scene=0;scene<SurvivalEnd.COUNT;scene++) {
-            c.survival.ending=scene;c.deathT=c.deathDuration()*.5f;c.time=c.deathDuration()*.5f;
-            shot(dir,"149-rainbow-end-"+scene,c,L,w,h,ss);
+        for(float t:new float[]{.15f,.30f,.48f,.60f,.78f,.88f,1f}) {
+            c.deathT=c.deathDuration()*(1-t);c.time=c.deathDuration()*t;
+            shot(dir,"149-rainbow-end-"+Math.round(t*100),c,L,w,h,ss);
         }
     }
 
@@ -2695,7 +2707,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage", "score-reset-confirm", "score-reset-brush", "ninja-swish-2", "ninja-swish-3", "ninja-combo"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage", "score-reset-confirm", "score-reset-brush", "ninja-swish-2", "ninja-swish-3", "ninja-combo", "survival-game-over"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

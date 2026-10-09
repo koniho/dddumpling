@@ -155,6 +155,7 @@ final class GameCore {
      * fade, and then the usual grace.
      */
     boolean overReady() {
+        if(survival.reward.pending && survival.reward.joining)return false;
         return state == OVER && time > deathDuration() + OVER_FADE + OVER_GRACE;
     }
     /**
@@ -339,6 +340,8 @@ final class GameCore {
         void rosterJoin();
         /** The run is over: the swirl has cleared and the summary is coming up. */
         void gameOver();
+        /** Rainbow transition at the end of Survival, after the fatal-hit sound. */
+        default void survivalGameOver() { gameOver(); }
         /** The boss that ended the run begins its boss-specific victory taunt. */
         void bossTaunt(int kind);
         /** Switch the looping background track to {@link Music#NAMES}[choice]. */
@@ -361,7 +364,7 @@ final class GameCore {
         void narrate(int entry);
         /** Short tutorial guidance; respects the same mute and lifecycle rules as stories. */
         default void explain(String text) {}
-        /** One short name call as the run character introduces itself. */
+        /** One short name call for a run greeting or collectible reveal. */
         default void announceSquishy(int entry) {}
         /** Stop talking mid-sentence: the panel has gone. */
         void hush();
@@ -2193,7 +2196,7 @@ final class GameCore {
         if (state == TITLE) {
             beginStart();
         } else {
-            returnToTitle();
+            dismissGameOver();
         }
     }
 
@@ -2797,7 +2800,10 @@ final class GameCore {
         // The death hold, and the flight home that follows it a screen later. Both above the PLAY
         // return: neither runs during play, and the states they do run in never reach it.
         if (deathT > 0f) {
+            float before=deathProgress();
             deathT = Math.max(0f, deathT - dt);
+            if(survival.active && before<SurvivalEnd.SOUND_START
+                    && deathProgress()>=SurvivalEnd.SOUND_START && sound!=null) sound.survivalGameOver();
             if (deathT == 0f) {
                 // The swirl is over, so the words go. Held until now because they are what the
                 // swirl is made of; the summary is drawn over an empty field from here.
@@ -2808,10 +2814,11 @@ final class GameCore {
                 // wasted, and this belongs to the summary coming up, not to the last word.
                 if (sound != null) {
                     if (bossVictoryKind >= 0) sound.bossMusic(false);
-                    sound.gameOver();
+                    if(!survival.active)sound.gameOver();
                 }
             }
         }
+        survival.reward.update(this);
         if (homeT > 0f) {
             homeT = decay(homeT, dt);
             // A chime as each one is taken in. Fired from here rather than from the drawing so it

@@ -3,6 +3,30 @@ package com.dddumpling.game;
 /** Effect normalisation and which sound fires on which event. */
 final class TestAudio extends Check {
 
+    private static void survivalEndingSound(Layout L) {
+        group("Survival rainbow sound");
+        short[] pcm=Sfx.build(Sfx.SURVIVAL_OVER);
+        check("rainbow cue fits its transition",Math.abs(pcm.length/(float)Sfx.RATE-2.8f)<.001f
+                && pcm.length/(float)Sfx.RATE<SurvivalEnd.DURATION*(1-SurvivalEnd.SOUND_START));
+        check("rainbow cue starts and ends softly",pcm[0]==0 && Math.abs(pcm[pcm.length-1])<5);
+        GameCore c=TestSurvival.start(TestSurvival.store(),158);
+        Ear ear=new Ear();c.sound=ear;c.lives=1;c.takeHit(L.w*.5f,L);
+        check("fatal hit does not stack the rainbow cue on damage",ear.survivalGameOvers==0 && ear.gameOvers==0);
+        float onset=c.deathDuration()*SurvivalEnd.SOUND_START;
+        c.update(onset*.5f,L);
+        c.openSettings();c.update(5,5,L);c.closeSettings();
+        check("settings pause the cue with the transition",ear.survivalGameOvers==0);
+        c.update(onset*.6f,L);
+        check("rainbow expansion sounds once",ear.survivalGameOvers==1 && ear.gameOvers==0);
+        c.update(5,5,L);c.dismissGameOver();c.update(GameCore.PARADE_TIME,L);c.update(5,5,L);
+        check("reveal parade and summary do not repeat or layer game-over cues",ear.survivalGameOvers==1 && ear.gameOvers==0);
+        c.toTitle();c.startGame();c.lives=1;c.takeHit(L.w*.5f,L);c.update(5,5,L);
+        check("next run and a skipped animation frame still fire exactly once",ear.survivalGameOvers==2 && ear.gameOvers==0);
+        GameCore restored=new GameCore(c.store,159);Ear recovered=new Ear();restored.sound=recovered;
+        restored.update(5,5,L);
+        check("restored collectible does not replay the transition sound",recovered.survivalGameOvers==0);
+    }
+
     private static void runNameAnnouncement(Layout L) {
         group("run name announcement");
         for(boolean selected:new boolean[]{true,false}) {
@@ -85,6 +109,7 @@ final class TestAudio extends Check {
 
     /** What the two frenzy squish sounds are, and that they are the right shape for the job. */
     static void frenzySounds(Layout L) {
+        survivalEndingSound(L);
         ninjaComboSound(L);
         runNameAnnouncement(L);
         group("frenzy sounds");
@@ -332,7 +357,9 @@ final class TestAudio extends Check {
             if (max >= 32767) allClean = false;
             // Roulette ticks intentionally fit between fast icon changes.
             int minimum = id == Sfx.SHUFFLE_BLIP ? Sfx.RATE / 40 : Sfx.RATE / 20;
-            if (pcm.length < minimum || pcm.length > Sfx.RATE * 2) allSane = false;
+            // Survival's one-shot cue spans its full rainbow transition.
+            float maximum = id == Sfx.SURVIVAL_OVER ? SurvivalEnd.DURATION : 2f;
+            if (pcm.length < minimum || pcm.length > Sfx.RATE * maximum) allSane = false;
         }
         check("other effects retain their common peak", allNormalised);
         check("no effect clips", allClean);

@@ -60,6 +60,7 @@ final class TestSurvival extends Check {
         GameCore loaded=new GameCore(m,150,true);
         check("Survival records persist separately",loaded.survival.bestTime[profile]==record && loaded.survival.bestScore[profile]==1234);
         c.dismissGameOver();
+        c.update(GameCore.PARADE_TIME,GameCore.PARADE_TIME,L);
         c.update(2,2,L);c.dismissGameOver();
         check("Survival dismissal begins the return fade without retry",c.returnFade>0 && !c.starting());
         c.update(GameCore.RETURN_FADE,GameCore.RETURN_FADE,L);
@@ -68,7 +69,7 @@ final class TestSurvival extends Check {
         c.startGame();check("new run resets time and transient state",c.survival.active && c.survival.seconds==0 && !c.pushUsed && c.stage==1);
         c.toTitle();
         c.modes.back(c);c.startGame();check("Adventure still starts at its selected land",!c.survival.active && c.stage==6);
-        ducks(L);records(L);history(L);linkedAfterMinute(L);effects(L);powerRack(L);backgroundEntrance(L);backgroundCoverage();backgroundExit();endingSkits(L);bounded(L);fuzz(L);
+        ducks(L);records(L);history(L);linkedAfterMinute(L);effects(L);powerRack(L);backgroundEntrance(L);backgroundCoverage();backgroundExit();endingTransition(L);bounded(L);fuzz(L);
     }
     private static java.util.ArrayList<float[]> stripes(GameCore c,Layout L) {
         java.util.ArrayList<float[]> bodies=new java.util.ArrayList<>();
@@ -108,37 +109,91 @@ final class TestSurvival extends Check {
             check("next Survival run clears exit progress "+size[0]+"/"+age,c.drained()==0 && c.survival.entrance()==0);
         }
     }
-    private static void endingSkits(Layout L) {
-        check("every rainbow blurb has a skit",SurvivalEnd.COUNT==HighScores.SURVIVAL_BLURBS.length);
+    private static void endingTransition(Layout L) {
+        rewardNarration(L);
+        group("Survival rainbow handoff");
         GameCore c=start(store(),172);c.survival.update(c,90);c.lives=1;c.takeHit(L.w*.5f,L);
-        int ending=c.survival.ending;long duration=c.survival.history().latestRun.duration;
         String saved=c.survival.encode();
-        java.util.HashSet<Integer> scenes=new java.util.HashSet<>();
-        final int[] signature={1},calls={0};
+        final int[] signature={1},bands={0};
+        final boolean[] shapesOnly={true};
+        final float[] bounds={Float.MAX_VALUE,Float.MAX_VALUE,-Float.MAX_VALUE,-Float.MAX_VALUE};
         Painter painter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class<?>[]{Painter.class},(proxy,method,args)-> {
-                    signature[0]=31*signature[0]+method.getName().hashCode();calls[0]++;
+                    String name=method.getName();
+                    shapesOnly[0] &= name.equals("fillPoly") || name.equals("fillRect");
+                    signature[0]=31*signature[0]+name.hashCode();
                     if(args!=null)for(Object arg:args)signature[0]=31*signature[0]+(arg instanceof float[]?
                             java.util.Arrays.hashCode((float[])arg):arg==null?0:arg.hashCode());
+                    if(name.equals("fillPoly")) {
+                        bands[0]++;float[] pts=(float[])args[0];
+                        for(int i=0;i<pts.length;i+=2) {
+                            bounds[0]=Math.min(bounds[0],pts[i]);bounds[1]=Math.min(bounds[1],pts[i+1]);
+                            bounds[2]=Math.max(bounds[2],pts[i]);bounds[3]=Math.max(bounds[3],pts[i+1]);
+                        }
+                    }
                     return null;
                 });
-        check("Survival skit owns the companion during game over",SurvivalEnd.ownsCompanion(c));
-        float[] home=SurvivalEnd.pose(c,L);
-        check("washed-away companion starts at its home",home[0]==RunCompanion.x(L) && home[1]==RunCompanion.y(L));
-        for(int scene=0;scene<SurvivalEnd.COUNT;scene++) {
-            c.survival.ending=scene;c.deathT=c.deathDuration()*.5f;
-            signature[0]=1;SurvivalEnd.draw(painter,c,L);int first=signature[0];scenes.add(first);
-            signature[0]=1;SurvivalEnd.draw(painter,c,L);
-            check("rainbow skit renders deterministically "+scene,signature[0]==first);
-        }
-        check("all twenty rainbow skits have distinct drawings",scenes.size()==SurvivalEnd.COUNT);
-        c.survival.ending=ending;c.deathT=0;calls[0]=0;SurvivalEnd.draw(painter,c,L);
-        float[] departed=SurvivalEnd.pose(c,L);
-        check("skit and companion are gone before the summary",calls[0]==0 && departed[1]-departed[2]*3>L.h);
-        check("skit drawing preserves the recorded run and ending",saved.equals(c.survival.encode())
-                && c.survival.history().latestRun.duration==duration);
-        c.toTitle();check("title no longer owns a death skit",!SurvivalEnd.ownsCompanion(c));
+        check("Survival suppresses the normal companion",SurvivalEnd.ownsCompanion(c));
+        c.deathT=c.deathDuration()*.4f;
+        SurvivalEnd.draw(painter,c,L);int first=signature[0];
+        check("rainbow expands beyond all screen edges",bands[0]==7 && bounds[0]<0 && bounds[1]<0
+                && bounds[2]>L.w && bounds[3]>L.h);
+        check("transition draws only rainbow bands and white, no character",shapesOnly[0]);
+        signature[0]=1;SurvivalEnd.draw(painter,c,L);
+        check("transition rendering is deterministic",signature[0]==first && saved.equals(c.survival.encode()));
+        check("white cover peaks at the reveal handoff",SurvivalEnd.white(.60f)==0
+                && SurvivalEnd.white(SurvivalEnd.REVEAL)==1 && SurvivalEnd.white(1)==0);
+        c.deathT=0;c.time=c.deathDuration()+2;
+        DuckReward reward=c.survival.reward;int count=c.collectionCounts[reward.who];
+        Ear ear=new Ear();c.sound=ear;
+        c.screenKey(0);
+        check("earned card key advances to the collection parade, not title",reward.joining && reward.pending
+                && !c.overReady() && c.overFade()==0 && c.returnFade==0);
+        c.dismissGameOver();
+        check("repeated taps cannot skip the collection scene",reward.joining && c.returnFade==0);
+        GameCore recovered=new GameCore(c.store,173,true);
+        check("restart during parade resumes the earned card without another award",
+                recovered.survival.reward.pending && !recovered.survival.reward.joining
+                && recovered.survival.reward.who==reward.who && recovered.collectionCounts[reward.who]==count);
+        c.openSettings();float at=c.time;c.update(10,10,L);
+        check("settings freeze the collection parade",c.time==at && reward.joining);c.closeSettings();
+        c.update(GameCore.PARADE_TIME*.7f,L);
+        check("collection landing plays its chord once",ear.joins==1 && reward.pending);
+        c.update(GameCore.PARADE_TIME*.31f,L);
+        check("parade automatically hands off to summary",!reward.pending && !reward.joining
+                && c.overFade()==0 && !c.overReady() && ear.joins==1 && c.collectionCounts[reward.who]==count);
+        c.dismissGameOver();check("summary gets its own tap grace",c.returnFade==0);
+        c.update(2,2,L);c.dismissGameOver();
+        check("settled summary exits to title",c.returnFade>0);
     }
+    private static void rewardNarration(Layout L) {
+        group("spoken collectible and automatic parade");
+        GameCore c=start(store(),175);Ear ear=new Ear();c.sound=ear;
+        c.lives=1;c.takeHit(L.w*.5f,L);
+        c.update(c.deathDuration()-.01f,L);
+        check("name waits until white fade clears",ear.nameCalls==0);
+        c.update(.02f,L);
+        int who=c.survival.reward.who;
+        check("fully revealed collectible speaks its own name once",ear.nameCalls==1 && ear.announcedName==who);
+        c.openSettings();float at=c.time;c.update(5,5,L);c.closeSettings();
+        check("settings freeze the two-second reading window",c.time==at && !c.survival.reward.joining);
+        c.update(DuckReward.REVEAL_HOLD-.01f,L);
+        check("card remains for two full visible seconds",!c.survival.reward.joining && ear.nameCalls==1);
+        c.update(.02f,L);
+        check("card automatically advances without another name call",c.survival.reward.joining
+                && c.returnFade==0 && ear.nameCalls==1 && ear.hushes>0);
+        GameCore recovered=new GameCore(c.store,176,true);Ear voice=new Ear();recovered.sound=voice;
+        recovered.update(.01f,L);
+        check("recovered card announces the saved collectible",voice.nameCalls==1 && voice.announcedName==who);
+        recovered.update(DuckReward.REVEAL_HOLD-.01f,L);
+        check("recovery grants a fresh two-second window",!recovered.survival.reward.joining);
+        recovered.update(.02f,L);
+        check("recovery auto-advances without awarding a duplicate",recovered.survival.reward.joining
+                && recovered.collectionCounts[who]==1 && voice.nameCalls==1);
+        c.update(GameCore.PARADE_TIME+.01f,L);
+        check("automatic parade finishes on summary without repeating voice",!c.survival.reward.pending && ear.nameCalls==1);
+    }
+
     private static void ducks(Layout L) {
         group("Survival duck rewards and migration");
         int[] base={0,2,4,5,6,7,8};
@@ -173,7 +228,8 @@ final class TestSurvival extends Check {
         GameCore again=new GameCore(m,158,true);
         check("recovery does not duplicate the cloud reward",again.collectionCounts[who]==1
                 && again.progress.count(Collect.progressKey(who))==1 && again.survival.reward.sequence==sequence);
-        again.dismissGameOver();again.update(2,2,L);again.dismissGameOver();again.update(1,1,L);
+        again.dismissGameOver();again.update(GameCore.PARADE_TIME,GameCore.PARADE_TIME,L);
+        again.update(2,2,L);again.dismissGameOver();again.update(1,1,L);
         GameCore done=new GameCore(m,159,true);
         check("acknowledged reveal does not reopen",done.state==GameCore.TITLE && !done.survival.reward.pending
                 && Collect.has(done.collected,who));

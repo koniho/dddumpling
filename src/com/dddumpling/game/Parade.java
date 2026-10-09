@@ -30,10 +30,13 @@ final class Parade extends Draw {
     private static final float LINE_Y = 0.47f;
 
     static void draw(Painter p, GameCore c, Layout L, float fade) {
+        draw(p,c,L,fade,c.paradeProgress(),false);
+    }
+
+    static void draw(Painter p, GameCore c, Layout L, float fade, float t, boolean survival) {
         float s = L.unit;
         float cx = L.w / 2f;
         float cy = L.h * LINE_Y;
-        float t = c.paradeProgress();
 
         // Sized so a full line of LINE figures spans most of the width and still leaves a
         // margin — at any more than this the newcomer at the right end runs off the screen.
@@ -90,17 +93,17 @@ final class Parade extends Draw {
         p.fillPoly(pill(cx, cy + r * 1.34f, step * (slots - 1) / 2f + r * 1.2f, r * 0.05f, 6),
                 fadeBy(Glyph.withAlpha(INK, 45), fade * ground));
 
-        captions(p, c, L, cx, cy, r, t, n, fade);
+        captions(p, c, L, cx, cy, r, t, n, fade, survival);
     }
 
     private static void captions(Painter p, GameCore c, Layout L, float cx, float cy, float r,
-            float t, int n, float fade) {
+            float t, int n, float fade, boolean survival) {
         float s = L.unit;
         int tint = Collect.TIER_COLOR[Collect.TIER[c.prize]];
 
         // The parade closes a winning round, so it carries the stage announcement the status
         // report would otherwise have made.
-        p.text("STAGE " + c.stage + " CLEAR", cx, L.h * 0.23f, type(s * 0.86f), fadeBy(GOLD, fade),
+        p.text(survival?"SURVIVAL REWARD":"STAGE " + c.stage + " CLEAR", cx, L.h * 0.23f, type(s * 0.86f), fadeBy(GOLD, fade),
                 Painter.CENTER, true);
 
         // The name arrives with the figure, not before: until it has landed there is nothing

@@ -1,12 +1,13 @@
 package com.dddumpling.game;
 
-/** Durable one-award journal and the continuous rainbow ride into the collection reveal. */
+/** Durable one-award journal, earned collectible card, and collection parade. */
 final class DuckReward extends Draw {
+    static final float REVEAL_HOLD=2f;
     private static final int[] POOLS={0,2,4,5,6,7,8};
-    private static final int[] COLORS={0xFFFF8EA9,0xFFFFBC82,0xFFFFE993,0xFFA6EBAD,0xFF8EDDEB,0xFFABA6F3,0xFFE3A4EF};
     int who=-1,targetCount,total,profile;
     long sequence;
-    boolean pending,fresh;
+    boolean pending,fresh,joining,joinRung;
+    float joinAt,revealAt=-1f;
 
     static int choose(double seconds,java.util.Random random) {
         if(seconds>=300)return Collect.DUCK_FIRST+10;
@@ -20,7 +21,8 @@ final class DuckReward extends Draw {
         total=(int)Math.min(Integer.MAX_VALUE,(long)c.collectTotal+1);
         profile=c.survival.profile;
         sequence=Math.max(sequence,c.progress.duckSequence())+1;
-        pending=true;
+        pending=true;joining=joinRung=false;
+        revealAt=-1f;
         c.ducks.react(who,.7f);
         c.survival.history().prize(who);
     }
@@ -66,6 +68,7 @@ final class DuckReward extends Draw {
             HighScores.Run run=snapshot.histories[savedProfile].latestRun;
             if(run==null || run.prizes.length!=1 || run.prizes[0]!=entry)return;
             sequence=seq;who=entry;targetCount=count;total=sum;fresh=isNew==1;profile=savedProfile;pending=true;
+            joining=joinRung=false;revealAt=-1f;
             c.survival.load(parts[1]);
             c.survival.profile=profile;c.survival.active=c.survival.finished=true;
             c.survival.seconds=run.duration/1000.0;c.survival.ending=run.ending;
@@ -80,48 +83,65 @@ final class DuckReward extends Draw {
         } catch(NumberFormatException ignored) { }
     }
     boolean dismiss(GameCore c) {
-        if(!pending || !c.overReady())return false;
-        pending=false;
-        if(c.store!=null)c.store.saveSurvivalAward(journal(c));
-        c.time=c.deathDuration();
-        if(c.sound!=null)c.sound.achievement();
+        if(!pending)return false;
+        // Consume every tap while this flow owns the screen, including during its animations.
+        if(!joining && c.overReady()) {
+            beginJoin(c);
+        }
         return true;
     }
-    static float ease(float t) {t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);}
-    float[] pose(GameCore c,Layout L) {
-        float t=c.deathProgress(),enter=ease((t-.10f)/.38f),settle=ease((t-.55f)/.45f);
-        float x=L.w*(1.18f-.43f*enter-.25f*settle);
-        float y=L.h*(.55f-.09f*settle);
-        float r=L.w*(.07f+.065f*settle);
-        return new float[]{x,y,r};
-    }
-    void draw(Painter p,GameCore c,Layout L) {
-        if(!pending || !c.survival.active || c.state!=GameCore.OVER)return;
-        float t=c.deathProgress(),reveal=ease((t-.72f)/.28f);
-        float[] pose=pose(c,L);float x=pose[0],y=pose[1],r=pose[2];
-        // The same rider and wave settle into the reveal while the companion sails away.
-        for(int k=6;k>=0;k--) {
-            float[] pts=new float[50];
-            for(int j=0;j<25;j++) {
-                float dx=(j/24f-.5f)*L.w*1.4f;
-                pts[j*2]=x+dx;
-                pts[j*2+1]=y+r*.86f+k*L.unit*.12f+(float)Math.sin(dx/L.w*8+c.clock*2)*L.unit*.20f;
-            }
-            p.polyline(pts,Glyph.withAlpha(COLORS[k],210),L.unit*.18f);
+    private void beginJoin(GameCore c) {
+        joining=true;joinRung=false;joinAt=c.time;
+        if(c.sound!=null) {
+            c.sound.hush();
+            c.sound.achievement();
         }
+    }
+    float joinProgress(GameCore c) {
+        return Math.max(0,Math.min(1,(c.time-joinAt)/GameCore.PARADE_TIME));
+    }
+    void update(GameCore c) {
+        if(!pending || c.state!=GameCore.OVER)return;
+        if(!joining) {
+            // Give the fully uncovered card two seconds, including after journal recovery.
+            if(c.dying())return;
+            if(revealAt<0) {
+                revealAt=c.time;
+                if(c.sound!=null)c.sound.announceSquishy(who);
+            }
+            if(c.time-revealAt>=REVEAL_HOLD)beginJoin(c);
+            return;
+        }
+        float t=joinProgress(c);
+        if(!joinRung && t>=Parade.JOIN_END) {
+            joinRung=true;
+            if(c.sound!=null)c.sound.paradeJoin();
+        }
+        if(t<1)return;
+        pending=joining=false;
+        if(c.store!=null)c.store.saveSurvivalAward(journal(c));
+        c.time=c.deathDuration();
+    }
+    static float ease(float t) {t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);}
+    void draw(Painter p,GameCore c,Layout L) {
+        if(!pending || !c.survival.active || c.state!=GameCore.OVER
+                || c.deathProgress()<SurvivalEnd.REVEAL)return;
+        p.fillRect(0,0,L.w,L.h,BG);
+        if(joining) {
+            float t=joinProgress(c);
+            Parade.draw(p,c,L,1-ease((t-.90f)/.10f),t,true);
+            return;
+        }
+        float x=L.w*.5f,y=L.h*.46f,r=L.w*.135f;
         Storybook.glowRings(p,who,x,y,r,(c.clock%1.8f));
         float bounce=1f+.045f*(float)Math.sin(c.clock*4);
         Trinket.drawReacting(p,who,x,y,r*bounce,c.clock,1,RunCompanion.VICTORY,0);
-        if(reveal>0) {
-            p.text(who==Collect.COUNT-1?"FIVE-MINUTE CHAMPION!":"A RAINBOW RIDER!",L.w*.5f,L.h*.23f,
-                    type(L.unit*.79f),fadeBy(GOLD,reveal),Painter.CENTER,true);
-            float font=Math.min(type(L.unit*1.02f),L.w*.86f/(Collect.NAME[who].length()*.73f));
-            p.text(Collect.NAME[who],L.w*.5f,L.h*.30f,font,fadeBy(INK,reveal),Painter.CENTER,true);
-            p.text(fresh?"JOINS THE COLLECTION":"BACK IN THE LINE",L.w*.5f,L.h*.65f,
-                    type(L.unit*.67f),fadeBy(Collect.TIER_COLOR[Collect.TIER[who]],reveal),Painter.CENTER,true);
-            p.text("COLLECTED "+c.collectionCounts[who],L.w*.5f,L.h*.70f,type(L.unit*.53f),
-                    fadeBy(INK_DIM,reveal),Painter.CENTER,false);
-            if(c.overReady())p.text("TAP TO CONTINUE",L.w*.5f,L.h*.75f,type(L.unit*.57f),INK_DIM,Painter.CENTER,false);
-        }
+        p.text("SURVIVAL REWARD",x,L.h*.23f,type(L.unit*.79f),GOLD,Painter.CENTER,true);
+        float font=Math.min(type(L.unit*1.02f),L.w*.86f/(Collect.NAME[who].length()*.73f));
+        p.text(Collect.NAME[who],x,L.h*.30f,font,INK,Painter.CENTER,true);
+        p.text("YOU SURVIVED "+Survival.time(c.survival.millis())+"!",x,L.h*.64f,
+                type(L.unit*.72f),INK,Painter.CENTER,true);
+        p.text(who==Collect.COUNT-1?"FIVE MINUTES EARNS THE CHAMPION":
+                "A DUCK FROM YOUR SURVIVAL TIME",x,L.h*.69f,type(L.unit*.53f),INK_DIM,Painter.CENTER,false);
     }
 }

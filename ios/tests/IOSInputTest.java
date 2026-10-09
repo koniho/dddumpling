@@ -254,9 +254,13 @@ public final class IOSInputTest extends Check {
         tap(game,l.w*.1f,l.h*.4f);
         check("native Survival tap cannot skip death animation",c.state==GameCore.OVER && c.returnFade==0);
         for(int i=0;i<100;i++)game.update(.05f);
+        check("native collectible waits for its full reading window",c.survival.reward.pending && !c.survival.reward.joining);
+        for(int i=0;i<8;i++)game.update(.05f);
+        check("native Survival automatically starts the collection parade",c.survival.reward.pending
+                && c.survival.reward.joining && c.returnFade==0);
         tap(game,l.w*.1f,l.h*.4f);
-        check("native Survival first tap acknowledges the duck",!c.survival.reward.pending && c.returnFade==0);
-        for(int i=0;i<30;i++)game.update(.05f);
+        check("native taps cannot skip the parade",c.survival.reward.joining && c.returnFade==0);
+        for(int i=0;i<120;i++)game.update(.05f);
         tap(game,l.w*.1f,l.h*.4f);
         check("native Survival tap anywhere dismisses the settled summary",c.returnFade>0 && !c.starting());
         for(int i=0;i<30;i++)game.update(.05f);

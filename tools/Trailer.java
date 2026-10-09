@@ -137,12 +137,12 @@ final class Trailer {
                     "slimeDamage","bossSplit","divideDamage","divideSplit","divideDeactivate","divideSupernova",
                     "boltPop","boltDeath","shieldBounce","octoWave","octoCue","octoLock","mushroomShake",
                     "mushroomSpore","ninjaSwish","ninjaCombo","zap","collect","star","courseStart","tally",
-                    "paradeJoin","rosterJoin","gameOver","gameStart","stageClear","powerClear"};
+                    "paradeJoin","rosterJoin","gameOver","gameStart","stageClear","powerClear","survivalGameOver"};
             int[] ids = {Sfx.CLEAR,Sfx.WRONG,Sfx.DRIP,Sfx.ACHIEVEMENT,Sfx.BOSS_LAUGH,Sfx.BOSS_DAMAGE,
                     Sfx.SLIME_DAMAGE,Sfx.BOSS_SPLIT,Sfx.DIVIDE_DAMAGE,Sfx.DIVIDE_SPLIT,Sfx.DIVIDE_DEACTIVATE,Sfx.DIVIDE_SUPERNOVA,
                     Sfx.BOLT_POP,Sfx.BOLT_DEATH,Sfx.SHIELD_BOUNCE,Sfx.OCTO_WAVE,Sfx.OCTO_CUE,Sfx.OCTO_LOCK,Sfx.MUSHROOM_SHAKE,
                     Sfx.MUSHROOM_SPORE,Sfx.NINJA_SWISH_0,Sfx.NINJA_COMBO,Sfx.ZAP,Sfx.COLLECT,Sfx.STAR,Sfx.COURSE,Sfx.TALLY,
-                    Sfx.JOIN,Sfx.ROSTER_JOIN,Sfx.OVER,Sfx.START,Sfx.STAGE_CLEAR,Sfx.POWER_CLEAR};
+                    Sfx.JOIN,Sfx.ROSTER_JOIN,Sfx.OVER,Sfx.START,Sfx.STAGE_CLEAR,Sfx.POWER_CLEAR,Sfx.SURVIVAL_OVER};
             for (int i = 0; i < names.length; i++) sounds.put(names[i], ids[i]);
         }
         public Object invoke(Object proxy, Method method, Object[] args) {
