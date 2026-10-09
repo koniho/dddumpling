@@ -463,8 +463,14 @@ final class TestCollect extends Check {
 
         boolean balanced = Showcase.ROW_NAME.length == 8;
         for (int row = 0; row < Showcase.ROW_NAME.length; row++)
-            balanced &= Showcase.columns(row) >= (row == 6 ? 4 : 5) && Showcase.columns(row) <= (row==7?11:10);
+            balanced &= Showcase.columns(row) >= (row == Showcase.BOSS_ROW ? 4 : 5) && Showcase.columns(row) <= (row==7?11:10);
         check("eight categories include the eleven ducks", balanced);
+        check("bosses are the first display case category", Showcase.BOSS_ROW == 0
+                && Showcase.ROW_NAME[0].equals("BOSSES")
+                && Showcase.columns(0) == Collect.BOSS_COUNT);
+        for (int boss = 0; boss < Collect.BOSS_COUNT; boss++)
+            check("boss IDs keep their order on the top shelf",
+                    Showcase.entry(0, boss) == Collect.BOSS_FIRST + boss);
         boolean fruitRow = true, candyRow = true;
         for (int i = 0; i < Collect.COUNT; i++) {
             if (Collect.FAMILY[i] == Collect.FRUITS && Showcase.row(i) != Showcase.FRUIT_ROW) fruitRow = false;
@@ -488,9 +494,13 @@ final class TestCollect extends Check {
         check("rows and columns reach the entire collection", all);
         c.caseTo(0);
         c.scrollCaseRow(-1);
+        check("up from bao reaches bosses", c.caseIndex == Collect.BOSS_FIRST);
+        c.scrollCaseRow(-1);
         check("up wraps to the final character row", Showcase.row(c.caseIndex) == Showcase.ROW_NAME.length - 1);
         c.scrollCaseRow(1);
-        check("down wraps to the first row", c.caseIndex == 0);
+        check("down wraps to the boss row", c.caseIndex == Collect.BOSS_FIRST);
+        c.scrollCaseRow(1);
+        check("down from bosses reaches bao", c.caseIndex == 0);
         c.caseTo(12);
         c.scrollCaseRow(1);
         check("shorter rows clamp to their last valid variant", c.caseIndex == 10);
@@ -586,7 +596,7 @@ final class TestCollect extends Check {
         float panX = Showcase.column(c.caseIndex) - c.caseSlide;
         float panY = Showcase.row(c.caseIndex) - c.caseSlideY;
         check("diagonal panning moves both axes continuously",
-                Math.abs(panX - 1.7f) < 0.01f && Math.abs(panY - 0.25f) < 0.01f);
+                Math.abs(panX - 1.7f) < 0.01f && Math.abs(panY - (Showcase.row(3) + 0.25f)) < 0.01f);
         c.endCaseDrag();
         advance(c, L, 1f);
         check("release does not snap to a row or column",
@@ -596,7 +606,7 @@ final class TestCollect extends Check {
         c.caseDragTo(cx - step * 0.2f, cy + rowStep * 0.1f, L);
         check("a second pan continues from the released position",
                 Math.abs(Showcase.column(c.caseIndex) - c.caseSlide - 1.9f) < 0.01f
-                && Math.abs(Showcase.row(c.caseIndex) - c.caseSlideY - 0.15f) < 0.01f);
+                && Math.abs(Showcase.row(c.caseIndex) - c.caseSlideY - (Showcase.row(3) + 0.15f)) < 0.01f);
         c.endCaseDrag();
         panX = Showcase.column(c.caseIndex) - c.caseSlide;
         panY = Showcase.row(c.caseIndex) - c.caseSlideY;
