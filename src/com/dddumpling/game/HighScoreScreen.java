@@ -6,7 +6,7 @@ final class HighScoreScreen extends Draw {
     static final float ENTRY_TIME=PANEL_SLIDE_TIME;
     static float titleY(Layout L) { return L.h*.292f; }
     boolean open,closing;
-    float entrance;
+    float entrance,scroll;
     int selected=-1;
     static float size(Layout L) { return Math.min(ReleaseNotes.size(L),(L.dangerY-L.topSafe)/27f); }
     static float top(Layout L) { return L.topSafe+size(L); }
@@ -30,7 +30,7 @@ final class HighScoreScreen extends Draw {
         if(!available(c) || !ReleaseNotes.available(c) || c.releaseNotes.open) return;
         Pause.release(c);
         if(timeAttack(c))c.timeAttack.titleHistory(c).unread=false;else records(c).unread=false;
-        open=true;selected=-1;entrance=0f;closing=false;feedback(c);
+        open=true;selected=-1;scroll=0;entrance=0f;closing=false;feedback(c);
     }
     void update(float dt) {
         if(!open) return;
@@ -73,7 +73,7 @@ final class HighScoreScreen extends Draw {
     }
     void back(GameCore c) {
         if(closing) return;
-        if(selected>=0) { selected=-1;feedback(c); } else close(c);
+        if(selected>=0) { selected=-1;scroll=0;feedback(c); } else close(c);
     }
     int hit(GameCore c,Layout L,float x,float y) {
         if(moving()) return 0;
@@ -89,8 +89,13 @@ final class HighScoreScreen extends Draw {
         if(moving()) return;
         if(hit==CLOSE) close(c);
         else if(hit==BACK) back(c);
-        else if(hit>=ROW && hit<ROW+displayCount(c)) { selected=hit-ROW;feedback(c); }
+        else if(hit>=ROW && hit<ROW+displayCount(c)) { selected=hit-ROW;scroll=0;feedback(c); }
     }
+    float maxScroll(GameCore c,Layout L) {
+        if(!open || !timeAttack(c) || selected<0 || selected>=displayCount(c))return 0;
+        return TimeAttackScores.maxScroll(L,c.timeAttack.titleHistory(c).displayRun(selected),c.timeAttack.selected);
+    }
+    void scrollTo(GameCore c,Layout L,float value) {scroll=Math.max(0,Math.min(maxScroll(c,L),value));}
     void draw(Painter p,GameCore c,Layout L) {
         if(!open) return;
         float s=size(L),t=top(L),b=bottom(L);

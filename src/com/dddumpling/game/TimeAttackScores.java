@@ -9,7 +9,17 @@ final class TimeAttackScores extends Draw {
         float top=HighScoreScreen.listTop(L),bottom=HighScoreScreen.listBottom(L);
         if(selected>=0 && selected<history.displayCount()) {
             p.fillRect(L.w*.065f,top,L.w*.935f,bottom,0xE02A2542);
-            summary(p,c,L,history.displayRun(selected),challenge,profile,top,bottom);return;
+            TimeAttackHistory.Run run=history.displayRun(selected);
+            if(challenge==TimeAttack.ALL && run.encounters.length>0) {
+                float s=HighScoreScreen.size(L),offset=Math.min(c.highScoreScreen.scroll,maxScroll(L,run,challenge));
+                summary(p,c,L,run,challenge,profile,top-offset,top-offset+s*18);
+                for(int boss=0;boss<Boss.COUNT;boss++)bossSummary(p,c,L,run,boss,top-offset+s*(18+boss*13),s);
+                float total=contentHeight(L),view=bottom-top,thumb=view*view/total;
+                float sy=top+(view-thumb)*offset/Math.max(1,maxScroll(L,run,challenge));
+                p.line(L.w*.918f,top,L.w*.918f,bottom,0x20FFFFFF,s*.06f);
+                p.line(L.w*.918f,sy,L.w*.918f,sy+thumb,INK_DIM,s*.10f);
+            } else summary(p,c,L,run,challenge,profile,top,bottom);
+            return;
         }
         if(history.displayCount()==0) {
             Trinket.drawReacting(p,SurvivalDemo.companion(c),L.w*.5f,top+(bottom-top)*.25f,L.unit*2,c.clock,1,8,0);
@@ -29,6 +39,25 @@ final class TimeAttackScores extends Draw {
             p.line(L.w*.10f,y+height*.48f,L.w*.90f,y+height*.48f,0x25FFFFFF,s*.05f);
         }
     }
+    private static float contentHeight(Layout L) {return HighScoreScreen.size(L)*(19+Boss.COUNT*13);}
+    static float maxScroll(Layout L,TimeAttackHistory.Run run,int challenge) {
+        return challenge==TimeAttack.ALL && run.encounters.length>0?
+                Math.max(0,contentHeight(L)-(HighScoreScreen.listBottom(L)-HighScoreScreen.listTop(L))):0;
+    }
+    private static void bossSummary(Painter p,GameCore c,Layout L,TimeAttackHistory.Run run,int boss,float top,float s) {
+        TimeAttackHistory.Encounter e=null;
+        for(TimeAttackHistory.Encounter encounter:run.encounters)if(encounter.boss==boss)e=encounter;
+        BossCollect.draw(p,boss,L.w*.16f,top+s*1.5f,s*.9f,c.clock,true,1);
+        String name=Boss.NAMES[boss];
+        p.text(name,L.w*.24f,top+s*1.8f,Math.min(type(s*.8f),L.w*.62f/(name.length()*.73f)),GOLD,Painter.LEFT,true);
+        float font=Math.min(type(s*.5f),L.w*.026f);
+        p.text(e==null?"NOT REACHED":e.cleared?"CLEARED":"ATTEMPT",L.w*.24f,top+s*3f,font,INK_DIM,Painter.LEFT,true);
+        String[] labels={"COMBAT TIME","ACCURACY","PROJECTILES DEFENDED","DAMAGE TAKEN","TIME TO FIRST DAMAGE"};
+        String[] values=e==null?new String[]{"--","--","--","--","--"}:new String[]{TimeAttack.time(Math.max(1,e.duration)),
+                e.accuracy(),Integer.toString(e.defended),Integer.toString(e.damage),e.firstDamageText()};
+        for(int i=0;i<labels.length;i++)HighScoreScreen.stat(p,L.w*.13f,L.w*.73f,top+s*(4.5f+i*1.6f),font,labels[i],values[i]);
+        p.line(L.w*.12f,top+s*12f,L.w*.88f,top+s*12f,0x35FFFFFF,s*.04f);
+    }
     static void summary(Painter p,GameCore c,Layout L,TimeAttackHistory.Run run,int challenge,int profile,float top,float bottom) {
         float s=(bottom-top)/18f,x=L.w*.5f,font=Math.min(type(s*.5f),L.w*.026f);
         String name=TimeAttack.name(challenge);
@@ -44,7 +73,7 @@ final class TimeAttackScores extends Draw {
         String[] values={run.accuracy(),run.legacy()?"--":Integer.toString(run.defended),run.legacy()?"--":Integer.toString(run.damage),
                 run.firstDamageText(),run.cleared+" / "+(challenge==TimeAttack.ALL?Boss.COUNT:1)};
         for(int i=0;i<labels.length;i++)HighScoreScreen.stat(p,L.w*.13f,L.w*.73f,top+s*(8.5f+i*1.6f),font,labels[i],values[i]);
-        String note=run.legacy()?"Earlier record: detailed stats unavailable.":challenge==TimeAttack.ALL?"OVERALL RUN STATS":"";
+        String note=run.legacy()?"Earlier record: detailed stats unavailable.":challenge==TimeAttack.ALL?(run.encounters.length==0?"Earlier record: per-boss stats unavailable.":"OVERALL RUN STATS"):"";
         if(!note.isEmpty())p.text(note,x,top+s*17f,Math.min(font,L.w*.78f/(note.length()*.73f)),INK_DIM,Painter.CENTER,false);
     }
 }

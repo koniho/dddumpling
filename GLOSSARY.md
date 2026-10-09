@@ -437,6 +437,10 @@ It retains the ten fastest completed runs and the latest attempt, including a fa
 the rankings. Saved and run-end summaries show accuracy, projectiles fully defended (one count per
 destroyed projectile, not per hit), total damage taken, and active combat time to first damage.
 All Bosses combines the stats across every encounter; life recovery does not erase damage taken.
+Its saved run summary scrolls from overall stats through each boss, with a collectible portrait beside
+its heading. Each encounter records combat time, accuracy, projectiles defended, damage taken, and
+time to first damage measured from that encounter's start. Unreached bosses are labelled **NOT REACHED**;
+older records without encounter data retain their overall stats and say the breakdown is unavailable.
 Untouched runs say **NO DAMAGE**. Earlier time-only records remain visible with unavailable stats
 shown as `--`.
 Turtle completion collectibles are pending aesthetic approval and are not integrated yet (#150).

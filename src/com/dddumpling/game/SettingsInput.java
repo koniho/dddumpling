@@ -3,9 +3,9 @@ package com.dddumpling.game;
 /** One gesture owner and action router for both native settings panels. */
 final class SettingsInput {
     private int pressed, pointer=-1;
-    private float downX, downY, offset;
-    private boolean moved, kidsVertical;
-    void cancel() { pressed=0; pointer=-1; }
+    private float downX, downY, offset,scrollStart;
+    private boolean moved, kidsVertical,scoreScroll;
+    void cancel() { pressed=0; pointer=-1;scoreScroll=false; }
     static boolean runAction(int hit) {
         return hit==SettingsUi.HIT_GAMEOVER || hit>=SettingsUi.HIT_TEST;
     }
@@ -27,9 +27,14 @@ final class SettingsInput {
     }
     // Android and IOSTouch share action numbers. Only the owning finger may drag or release.
     boolean touch(GameCore c,Layout L,int action,int id,float x,float y) {
+        if(action==5 && c.highScoreScreen.open) {cancel();return false;}
         if(action==3 || (c.settingsOpen && c.preferences.panelMoving())) { cancel();return false; }
         if(action==0) {
             pointer=id; pressed=hit(c,L,x,y); downX=x;downY=y;moved=kidsVertical=false;offset=0;
+            scoreScroll=c.highScoreScreen.open && !c.highScoreScreen.moving() && c.highScoreScreen.maxScroll(c,L)>0
+                    && y>=HighScoreScreen.listTop(L) && y<=HighScoreScreen.listBottom(L)
+                    && x>=L.w*.07f && x<=L.w*.93f;
+            scrollStart=c.highScoreScreen.scroll;
             if(pressed==1000+PlayerSettings.MUSIC || pressed==1000+PlayerSettings.EFFECTS) {
                 float v=pressed==1000+PlayerSettings.MUSIC?c.preferences.music:c.preferences.effects;
                 float knob=PlayerSettings.trackL(L)+(PlayerSettings.trackR(L)-PlayerSettings.trackL(L))*v;
@@ -41,7 +46,10 @@ final class SettingsInput {
             if(pressed==1000+PlayerSettings.KIDS && Math.abs(y-downY)>L.unit*.4f
                     && Math.abs(y-downY)>Math.abs(x-downX)) kidsVertical=true;
             if(slider(pressed)) drag(c,L,x+offset);
+            if(scoreScroll && moved && Math.abs(y-downY)>Math.abs(x-downX))c.highScoreScreen.scrollTo(c,L,scrollStart+downY-y);
         } else if(id==pointer && (action==1 || action==6)) {
+            if(Math.abs(x-downX)+Math.abs(y-downY)>L.unit*.4f)moved=true;
+            if(scoreScroll && moved && Math.abs(y-downY)>Math.abs(x-downX))c.highScoreScreen.scrollTo(c,L,scrollStart+downY-y);
             int h=pressed;cancel();
             if(h==1000+PlayerSettings.KIDS && h==hit(c,L,x,y)) {
                 float dx=x-downX,dy=Math.abs(y-downY);

@@ -54,13 +54,22 @@ final class Preview {
         shot(dir,"150-survival-stripes-exit",mode,L,w,h,ss);
         c.startGame();c.boss.intro=0;c.update(Check.DT,L);c.timeAttack.seconds=42.56;
         shot(dir,"150-combat",c,L,w,h,ss);
-        c.timeAttack.current=Boss.COUNT-1;c.timeAttack.cleared=3;TestTimeAttack.beat(c,L);
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            c.boss.intro=0;c.timeAttack.tick(c,10+boss*3);
+            c.hits+=12+boss;c.misses+=boss;c.timeAttack.defended();
+            if(boss==1)c.takeHit(L.w*.5f,L);
+            TestTimeAttack.beat(c,L);
+        }
         c.time=c.deathDuration()+2;
         shot(dir,"150-result",c,L,w,h,ss);
         c.toTitle();c.returnFade=0;c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
         shot(dir,"150-records",c,L,w,h,ss);
         c.highScoreScreen.action(c,HighScoreScreen.ROW);
         shot(dir,"150-record-summary",c,L,w,h,ss);
+        c.highScoreScreen.scrollTo(c,L,c.highScoreScreen.maxScroll(c,L)*.5f);
+        shot(dir,"150-record-bosses-middle",c,L,w,h,ss);
+        c.highScoreScreen.scrollTo(c,L,c.highScoreScreen.maxScroll(c,L));
+        shot(dir,"150-record-bosses-bottom",c,L,w,h,ss);
         c.highScoreScreen.open=false;
         c.startGame();c.boss.intro=0;c.timeAttack.seconds=12.34f;c.hits=19;c.misses=3;
         c.timeAttack.defended=7;c.lives=1;c.takeHit(L.w*.5f,L);c.time=c.deathDuration()+2;c.deathT=c.flash=c.shake=0;

@@ -9,6 +9,9 @@ final class TimeAttack extends Draw {
     final TimeAttackHistory[][] histories=new TimeAttackHistory[3][CHOICES];
     TimeAttackHistory.Run result;
     int defended,damage;
+    private final java.util.ArrayList<TimeAttackHistory.Encounter> encounters=new java.util.ArrayList<>();
+    private long encounterStart,encounterFirstDamage=-1;
+    private int startHits,startMisses,startDefended,startDamage;
     long firstDamage=-1;
     int selected, challenge, current, profile, cleared;
     int previousSelected,slideDirection=1;
@@ -20,7 +23,9 @@ final class TimeAttack extends Draw {
     void defended() {if(active && !finished)defended++;}
     void damaged() {
         if(!active || finished)return;
-        if(damage++==0)firstDamage=Math.max(0,Math.round(seconds*1000));
+        long now=Math.max(0,Math.round(seconds*1000));
+        if(damage++==0)firstDamage=now;
+        if(encounterFirstDamage<0)encounterFirstDamage=now-encounterStart;
     }
 
     static String name(int choice) {return choice==ALL?"ALL BOSSES":Boss.NAMES[choice];}
@@ -48,11 +53,13 @@ final class TimeAttack extends Draw {
     }
     void begin(GameCore c) {
         active=true;finished=won=newBest=false;seconds=0;cleared=0;
-        defended=damage=0;firstDamage=-1;result=null;
+        defended=damage=0;firstDamage=-1;result=null;encounters.clear();
         challenge=selected;profile=Survival.profile(c.kidsRun,c.runFullRoster);
         encounter(c,challenge==ALL?0:challenge);
     }
     private void encounter(GameCore c,int which) {
+        encounterStart=Math.round(seconds*1000);encounterFirstDamage=-1;
+        startHits=c.hits;startMisses=c.misses;startDefended=defended;startDamage=damage;
         current=which;c.stage=(which+1)*Boss.EVERY;
         c.enemies.clear();c.shots.clear();c.target=null;c.power=null;
         c.pendingBonus=c.bossReward=c.bossPrizePending=false;
@@ -69,6 +76,7 @@ final class TimeAttack extends Draw {
     void bossEnded(GameCore c,boolean beaten) {
         c.boss.leave();
         if(!beaten) {finish(c,false);return;}
+        snapshot(c,true,challenge!=ALL || current+1==Boss.COUNT);
         cleared++;
         if(challenge==ALL && current+1<Boss.COUNT) {
             c.lives=Math.min(GameCore.START_LIVES,c.lives+1);
@@ -81,36 +89,44 @@ final class TimeAttack extends Draw {
         c.pushT=c.pushSlowT=c.shake=c.flash=0;
         if(c.sound!=null)c.sound.collect(4);
     }
+    private void snapshot(GameCore c,boolean beaten,boolean last) {
+        if(!encounters.isEmpty() && encounters.get(encounters.size()-1).boss==current)return;
+        long end=last?millis():Math.round(seconds*1000);
+        encounters.add(new TimeAttackHistory.Encounter(current,end-encounterStart,beaten,
+                c.hits-startHits,c.misses-startMisses,defended-startDefended,damage-startDamage,encounterFirstDamage));
+    }
     void finish(GameCore c,boolean success) {
         if(!active || finished)return;
+        snapshot(c,success,true);
         finished=true;won=success;
         long duration=millis();
         TimeAttackHistory history=histories[profile][challenge];
         result=new TimeAttackHistory.Run(history.sequence+1,duration,c.runWho,cleared,success,
-                c.hits,c.misses,defended,damage,firstDamage);
+                c.hits,c.misses,defended,damage,firstDamage,encounters.toArray(new TimeAttackHistory.Encounter[0]));
         if(c.scoresSuppressed)return;
         newBest=success && (best[profile][challenge]==0 || duration<best[profile][challenge]);
         if(newBest)best[profile][challenge]=duration;
         history.add(result);
         if(c.store!=null)c.store.saveTimeAttack(encode());
     }
-    void leave() {active=finished=won=newBest=false;seconds=0;cleared=current=defended=damage=0;firstDamage=-1;result=null;}
+    void leave() {active=finished=won=newBest=false;seconds=0;cleared=current=defended=damage=0;firstDamage=encounterFirstDamage=-1;encounterStart=0;
+        startHits=startMisses=startDefended=startDamage=0;result=null;encounters.clear();}
     void clearRecords() {
         for(long[] row:best)java.util.Arrays.fill(row,0);
         for(TimeAttackHistory[] row:histories)for(TimeAttackHistory history:row)history.clear();
         newBest=false;
     }
     String encode() {
-        StringBuilder out=new StringBuilder("2");
+        StringBuilder out=new StringBuilder("3");
         for(long[] row:best)for(long value:row)out.append(';').append(value);
         for(TimeAttackHistory[] row:histories)for(TimeAttackHistory history:row)out.append('|').append(history.encode());
         return out.toString();
     }
     void load(String saved) {
-        if(saved==null || saved.length()>100000)return;
+        if(saved==null || saved.length()>400000)return;
         String[] parts=saved.split("\\|",-1),fields=parts[0].split(";",-1);
         boolean legacy=fields[0].equals("1");
-        if(fields.length!=1+3*CHOICES || !(legacy || fields[0].equals("2"))
+        if(fields.length!=1+3*CHOICES || !(legacy || fields[0].equals("2") || fields[0].equals("3"))
                 || parts.length!=(legacy?1:1+3*CHOICES))return;
         long[][] parsed=new long[3][CHOICES];
         TimeAttackHistory[][] loaded=new TimeAttackHistory[3][CHOICES];

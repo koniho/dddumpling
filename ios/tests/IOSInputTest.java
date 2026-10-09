@@ -250,6 +250,29 @@ public final class IOSInputTest extends Check {
         check("native boss scene starts run",c.starting());
     }
 
+    private static void bossSummaryScroll() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.collected=Collect.MASK;c.landSeen=LandPicker.stateMask();c.modes.restore(ModeSelector.TIME_ATTACK);
+        c.timeAttack.selected=TimeAttack.ALL;c.startGame();
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            c.boss.intro=0;c.timeAttack.tick(c,boss+1);c.hits+=boss+1;
+            c.boss.beaten=true;c.boss.leaveT=0;BossPlay.endBoss(c,l);
+        }
+        c.toTitle();c.returnFade=0;
+        tap(game,l.w*.5f,HighScoreScreen.titleY(l));game.update(HighScoreScreen.ENTRY_TIME);
+        tap(game,l.w*.5f,HighScoreScreen.listTop(l)+HighScoreScreen.rowHeight(c,l)*.5f);
+        check("native All Bosses record opens scrollable breakdown",c.highScoreScreen.selected==0 && c.highScoreScreen.maxScroll(c,l)>0);
+        float x=l.w*.5f,y=(HighScoreScreen.listTop(l)+HighScoreScreen.listBottom(l))*.5f;
+        game.touch(one(0,42,x,y));game.touch(one(2,42,x,y-l.unit*5));game.touch(one(1,42,x,y-l.unit*5));
+        check("native swipe scrolls boss summaries",c.highScoreScreen.scroll>0 && c.highScoreScreen.selected==0);
+        float scroll=c.highScoreScreen.scroll;
+        game.touch(one(0,42,x,y));game.background(true);game.background(false);
+        game.touch(one(1,42,x,y-l.unit*5));
+        check("background releases score scroll gesture",c.highScoreScreen.scroll==scroll);
+        tap(game,l.w*.13f,HighScoreScreen.top(l)+HighScoreScreen.size(l)*1.25f);
+        check("fixed back control returns from scrolled details",c.highScoreScreen.selected==-1 && c.highScoreScreen.scroll==0);
+    }
+
     private static void survival() {
         IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
         c.collected=1L|(1L<<Collect.BOSS_FIRST);c.landSeen=LandPicker.stateMask();
@@ -907,6 +930,7 @@ public final class IOSInputTest extends Check {
     }
 
     public static void main(String[] args) {
+        bossSummaryScroll();
         onboarding();
         powerGuidanceInput();
         townNavigation();

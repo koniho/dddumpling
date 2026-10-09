@@ -118,6 +118,7 @@ final class TestTimeAttack extends Check {
         }
     }
     static void all(Layout L) {
+        encounterStatistics(L);
         statistics(L);
         titleSkit();
         selectorSwipes(L);
@@ -211,6 +212,66 @@ final class TestTimeAttack extends Check {
         c.boss.blive[0]=true;c.boss.bglyph[0]=g;c.boss.bt[0]=.5f;
         c.boss.bhp[0]=c.boss.bhpMax[0]=hp;
         c.tapKey(g,L);
+    }
+    private static void encounterStatistics(Layout L) {
+        GameCore c=start(TimeAttack.ALL);
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            c.boss.intro=0;
+            c.timeAttack.tick(c,.25f);
+            if(boss==1)c.takeHit(L.w*.5f,L);
+            c.timeAttack.tick(c,boss+1);
+            c.hits+=boss+2;c.misses+=boss;
+            for(int i=0;i<=boss;i++)c.timeAttack.defended();
+            beat(c,L);
+        }
+        TimeAttackHistory.Run run=c.timeAttack.result;
+        check("all boss run stores each encounter",run.encounters.length==Boss.COUNT);
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            TimeAttackHistory.Encounter e=run.encounters[boss];
+            check("encounter counters are local "+boss,e.boss==boss && e.cleared && e.duration==1250+boss*1000
+                    && e.hits==boss+2 && e.misses==boss && e.defended==boss+1 && e.damage==(boss==1?1:0));
+            check("first damage restarts its clock per boss "+boss,e.firstDamage==(boss==1?250:-1));
+        }
+        TimeAttack loaded=new TimeAttack();loaded.load(c.timeAttack.encode());
+        check("encounter breakdown survives reopening",loaded.histories[0][TimeAttack.ALL].latest.encounters.length==Boss.COUNT
+                && loaded.histories[0][TimeAttack.ALL].latest.encounters[1].firstDamage==250);
+        String saved=loaded.encode();
+        loaded.load(saved.replace("~0,1250,","~0,1251,"));
+        check("inconsistent encounter totals rejected atomically",loaded.encode().equals(saved));
+        String old=c.timeAttack.encode().replaceAll("~[^;|~]+", "").replaceFirst("^3;","2;");
+        TimeAttack migrated=new TimeAttack();migrated.load(old);
+        check("version two records retain totals without inventing encounters",migrated.histories[0][TimeAttack.ALL].latest!=null
+                && migrated.histories[0][TimeAttack.ALL].latest.encounters.length==0
+                && migrated.histories[0][TimeAttack.ALL].latest.hits==run.hits);
+        c.toTitle();c.returnFade=0;c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+        c.highScoreScreen.action(c,HighScoreScreen.ROW);
+        HighScoreScreen ui=c.highScoreScreen;SettingsInput input=new SettingsInput();
+        float x=L.w*.5f,y=(HighScoreScreen.listTop(L)+HighScoreScreen.listBottom(L))*.5f;
+        check("per-boss summary has scrollable content",ui.maxScroll(c,L)>0);
+        input.touch(c,L,0,5,x,y);input.touch(c,L,2,9,x,y-100);
+        check("another finger cannot scroll summary",ui.scroll==0);
+        input.touch(c,L,2,5,x,y-100);input.touch(c,L,1,5,x,y-100);
+        check("vertical drag reviews details without leaving summary",ui.scroll==100 && ui.selected==0 && ui.open);
+        input.touch(c,L,0,5,x,y);input.touch(c,L,1,5,x,y-L.h*10);
+        check("scroll clamps at final boss",ui.scroll==ui.maxScroll(c,L));
+        ui.scrollTo(c,L,0);input.touch(c,L,0,5,x,y);input.touch(c,L,3,5,x,y);
+        input.touch(c,L,2,5,x,y-100);input.touch(c,L,1,5,x,y-100);
+        check("cancelled scrolling is inert",ui.scroll==0);
+        ui.scrollTo(c,L,100);ui.back(c);ui.action(c,HighScoreScreen.ROW);
+        check("reopening summary resets scroll",ui.scroll==0 && ui.selected==0);
+        c=start(TimeAttack.ALL);c.boss.intro=0;c.timeAttack.tick(c,.1235f);beat(c,L);
+        c.boss.intro=0;c.timeAttack.tick(c,.4565f);
+        c.takeHit(L.w*.5f,L);c.takeHit(L.w*.5f,L);c.takeHit(L.w*.5f,L);
+        run=c.timeAttack.result;
+        check("failed rush keeps completed boss and fatal encounter",run.encounters.length==2
+                && run.encounters[0].cleared && !run.encounters[1].cleared && run.encounters[1].damage==3
+                && run.encounters[1].firstDamage==run.encounters[1].duration);
+        loaded=new TimeAttack();loaded.load(c.timeAttack.encode());
+        check("rounded encounter times and fatal damage persist",loaded.histories[0][TimeAttack.ALL].latest!=null
+                && loaded.histories[0][TimeAttack.ALL].latest.encounters.length==2);
+        c=start(TimeAttack.ALL);c.timeAttack.finish(c,false);loaded=new TimeAttack();loaded.load(c.timeAttack.encode());
+        check("immediate exit still saves a valid partial encounter",loaded.histories[0][TimeAttack.ALL].latest!=null
+                && loaded.histories[0][TimeAttack.ALL].latest.encounters[0].duration==1);
     }
     private static void statistics(Layout L) {
         for(int boss=0;boss<Boss.COUNT;boss++) {
