@@ -105,9 +105,7 @@ final class TimeAttack extends Draw {
         float s=L.unit,x=L.w*.5f,y=selectY(L);
         boolean ready=playable(c);
         int color=ready?INK:INK_DIM;
-        if(selected<ALL)Trinket.draw(p,Collect.BOSS_FIRST+selected,x,y-s*3.5f,s*1.6f,c.clock,ready,1);
-        else for(int i=0;i<Boss.COUNT;i++)Trinket.draw(p,Collect.BOSS_FIRST+i,
-                x+(i-1.5f)*s*2.6f,y-s*3.3f,s*1.15f,c.clock,unlocked(c,i),1);
+        TimeAttackDemo.draw(p,c,L);
         p.text(name(selected),x,y,type(s*.85f),color,Painter.CENTER,true);
         for(int d=-1;d<=1;d+=2) {
             float ax=x+d*L.w*.36f;

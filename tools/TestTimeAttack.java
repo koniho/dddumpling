@@ -12,7 +12,39 @@ final class TestTimeAttack extends Check {
         c.boss.beaten=true;c.boss.leaveT=0;
         BossPlay.endBoss(c,L);
     }
+    private static int skitFrame(GameCore c,Layout L) {
+        RasterPainter p=new RasterPainter((int)L.w,(int)L.h,1);
+        TimeAttackDemo.draw(p,c,L);
+        return java.util.Arrays.hashCode(p.resolve());
+    }
+    private static void titleSkit() {
+        Layout L=new Layout();L.compute(320,700,0,0,0,0);
+        GameCore c=start(Boss.SLIME),control=start(Boss.SLIME);
+        c.toTitle();control.toTitle();c.returnFade=0;c.clock=.5f;c.caseIndex=7;
+        int first=skitFrame(c,L);
+        check("title battle rendering is deterministic",first==skitFrame(c,L));
+        c.clock=1.6f;check("title battle advances through dodge and counter",first!=skitFrame(c,L));
+        c.clock=.5f;c.caseIndex=8;
+        check("title battle uses current display case companion",first!=skitFrame(c,L));
+        c.caseIndex=7;
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            c.timeAttack.selected=boss;
+            if(boss>0)check("bosses have distinct skit frames "+boss,first!=skitFrame(c,L));
+        }
+        c.timeAttack.selected=TimeAttack.ALL;
+        int group=skitFrame(c,L);
+        check("all bosses uses a distinct group battle",group!=first);
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            c.collected &= ~(1L << (Collect.BOSS_FIRST+boss));
+            check("group battle includes boss "+boss,group!=skitFrame(c,L));
+            c.collected=control.collected;
+        }
+        check("title skits leave combat and gameplay randomness alone",c.state==GameCore.TITLE
+                && c.boss.active()==control.boss.active() && !c.timeAttack.active && c.shots.isEmpty() && c.enemies.isEmpty()
+                && c.collected==control.collected && c.rnd.nextLong()==control.rnd.nextLong());
+    }
     static void all(Layout L) {
+        titleSkit();
         for(int boss=0;boss<Boss.COUNT;boss++) {
             GameCore played=start(boss);
             Bot.Result run=new Bot(6f,.20f,.04f,false,150+boss).play(played,L,180);

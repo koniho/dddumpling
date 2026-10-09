@@ -12,9 +12,21 @@ final class Preview {
     private static void timeAttackFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("150-"))return;
         GameCore c=TestTimeAttack.start(Boss.SLIME);c.toTitle();c.returnFade=0;
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            c.timeAttack.selected=boss;c.caseIndex=boss==Boss.MUSHROOM?Collect.DUCK_FIRST:7;
+            for(int beat=0;beat<3;beat++) {
+                c.clock=new float[]{.5f,1.6f,2.65f}[beat];
+                shot(dir,"150-skit-"+boss+"-"+beat,c,L,w,h,ss);
+            }
+        }
+        c.timeAttack.selected=Boss.SLIME;c.clock=.5f;
         shot(dir,"150-selector-slime",c,L,w,h,ss);
         c.timeAttack.selected=TimeAttack.ALL;
         shot(dir,"150-selector-all",c,L,w,h,ss);
+        for(int beat=0;beat<4;beat++) {
+            c.clock=beat*.8f+.65f;
+            shot(dir,"150-skit-all-"+beat,c,L,w,h,ss);
+        }
         c.startGame();c.boss.intro=0;c.update(Check.DT,L);c.timeAttack.seconds=42.56;
         shot(dir,"150-combat",c,L,w,h,ss);
         c.timeAttack.current=Boss.COUNT-1;c.timeAttack.cleared=3;TestTimeAttack.beat(c,L);
