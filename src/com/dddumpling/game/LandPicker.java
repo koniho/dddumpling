@@ -27,7 +27,7 @@ final class LandPicker extends Draw {
         return c.modes.adventure() && c.modes.transition>=1f && shown(c);
     }
     private static boolean shown(GameCore c) {
-        return c.state == GameCore.TITLE && !c.townOpen && count(c) > 1 && !c.caseOpen && c.caseFade < 0.01f
+        return c.state == GameCore.TITLE && !c.townOpen && !c.caseOpen && c.caseFade < 0.01f
                 && !c.storyOpen() && !c.starting() && !c.settingsOpen && c.rosterSceneT <= 0f;
     }
     static float cardY(Layout L) { return L.h * 0.705f; }
@@ -103,7 +103,7 @@ final class LandPicker extends Draw {
             if (unlocked(c, destination(i))) { select(c, destination(i)); return; }
     }
     static boolean down(GameCore c, Layout L, float x, float y) {
-        if (!visible(c) || c.returnFade > 0f || c.landDiscovery>=0) return false;
+        if (!visible(c) || count(c)<=1 || c.returnFade > 0f || c.landDiscovery>=0) return false;
         if (Math.abs(y - cardY(L)) > L.h * 0.05f) return false;
         c.landPickerDragging = true; c.landPickerMoved = false; c.landPickerX = x;
         return true;

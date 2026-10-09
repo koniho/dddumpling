@@ -399,6 +399,8 @@ final class TestOnboarding extends Check {
         Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;c.toTitle();
         c.update(2,L);c.update(DT,L);
         check("empty collection does not open title guidance",!c.onboarding.titleGuide);
+        check("fresh Slime Hills scene needs no discovery or swipe lesson",LandPicker.visible(c)
+                && c.landChoice==0 && c.landSeen==0 && LandDiscovery.next(c)<0 && !c.onboarding.briefing);
         c.collected=store.collected=1L<<3;c.time=2;c.update(DT,L);
         check("first collected dumpling introduces display case on title",c.onboarding.titleGuide
                 && c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.DISPLAY_CASE);

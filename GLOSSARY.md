@@ -475,6 +475,8 @@ difficulty, scenery and records; the shared combat loop supplies enemies, contro
 
 ## Land travel
 
+Adventure shows Slime Hills on the title screen even before another land is unlocked. With only
+that starting land available, the scene does not consume selection gestures or introduce a swipe lesson.
 The title land picker spaces icons apart and moves one adjacent unlocked land per swipe. Each
 change takes 0.85 seconds. The Adventure Dumpling wanders within the selected land at a small,
 fully visible size, grows while walking to the next land, and shrinks into its new home on arrival.

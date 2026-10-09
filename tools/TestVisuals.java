@@ -458,7 +458,13 @@ final class TestVisuals extends Check {
         Mem landStore = new Mem();
         landStore.best = 123;
         GameCore lands = new GameCore(landStore, 717L);
-        check("new players have no land picker", !LandPicker.visible(lands));
+        check("new players see Slime Hills as their only starting land", LandPicker.visible(lands)
+                && LandPicker.count(lands)==1 && lands.landChoice==0);
+        check("a single land does not consume title taps", !LandPicker.down(lands,L,L.w*.5f,LandPicker.cardY(L)));
+        LandPicker.step(lands,1);LandPicker.step(lands,-1);
+        LandPicker.updateDiscovery(lands,2f);
+        check("showing Slime Hills leaves progress and discovery unchanged", lands.landChoice==0
+                && lands.collected==0 && lands.landSeen==0 && lands.landDiscovery<0 && landStore.landState==0);
         check("locked land cannot be selected", !LandPicker.unlocked(lands, 1));
         landStore.collected = lands.collected = Collect.add(lands.collected, Collect.BOSS_FIRST);
         check("a boss friend unlocks its next land and town", LandPicker.visible(lands) && LandPicker.count(lands) == 3);
@@ -569,7 +575,8 @@ final class TestVisuals extends Check {
         long collection = seen.collected;
         LandPicker.reset(seen);
         GameCore reset = new GameCore(landStore, 720L);
-        check("reset lands persists without clearing collection or scores", !LandPicker.visible(reset)
+        check("reset lands keeps Slime Hills without clearing collection or scores", LandPicker.visible(reset)
+                && LandPicker.count(reset)==1 && reset.landChoice==0
                 && reset.collected == collection && reset.best == 123 && reset.landBests[1] == 456);
         LandPicker.reward(reset, Collect.BOSS_FIRST);
         LandPicker.updateDiscovery(reset, 0.1f);
