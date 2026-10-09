@@ -104,6 +104,7 @@ final class SettingsInput {
         else if(h==SettingsUi.HIT_PROGRESS) c.settingsTab=SettingsUi.PROGRESS;
         else if(h==SettingsUi.HIT_EASIER || h==SettingsUi.HIT_HARDER) c.setStarDifficulty(c.stars.wins+(h==SettingsUi.HIT_EASIER?-1:1));
         else if(h==SettingsUi.HIT_CLEAR) c.tapClearCase();
+        else if(h==SettingsUi.HIT_COLLECT_ALL) CaseUi.collectAll(c);
         else if(h==SettingsUi.HIT_ROSTER) c.setNextRoster(!c.fullRoster);
         else if(h==SettingsUi.HIT_GAMEOVER) c.endCurrentRun();
         else if(h==SettingsUi.HIT_RESET_NEWS) c.releaseMascot.reset(c);

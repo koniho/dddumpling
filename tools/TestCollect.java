@@ -873,6 +873,30 @@ final class TestCollect extends Check {
     }
 
     static void clearing(Layout L) {
+        group("developer collect all");
+        Mem allStore = new Mem();
+        GameCore all = new GameCore(allStore, 120L);
+        all.collected = 1L;
+        all.collectionCounts[0] = 3;
+        all.collectTotal = 3;
+        all.clearArmed = true;
+        SettingsUi ui = new SettingsUi();
+        ui.compute(L, SettingsUi.PROGRESS);
+        int hit = ui.hit((ui.optionL()+ui.optionR())*.5f, ui.collectAllY+ui.testH*.5f);
+        check("collect all chip fits the panel", hit == SettingsUi.HIT_COLLECT_ALL
+                && ui.collectAllY+ui.testH < ui.panelB);
+        SettingsInput.action(all, L, hit);
+        check("collect all fills the catalog and preserves duplicates", Collect.complete(all.collected)
+                && all.collectionCounts[0] == 3 && all.collectTotal == Collect.COUNT+2);
+        check("collect all disarms pending clear", !all.clearArmed);
+        SettingsInput.action(all, L, hit);
+        check("collect all is idempotent", all.collectTotal == Collect.COUNT+2);
+        GameCore restored = new GameCore(allStore, 120L);
+        boolean counts = true;
+        for (int i=1;i<Collect.COUNT;i++) counts &= restored.collectionCounts[i] == 1;
+        check("full catalog including ducks survives reload", Collect.complete(restored.collected)
+                && counts && restored.collectionCounts[0] == 3 && restored.collectTotal == Collect.COUNT+2);
+
         group("clearing the case");
         Mem store = new Mem();
         store.collected = Collect.encode(Collect.MASK);
