@@ -195,7 +195,8 @@ public final class IOSInputTest extends Check {
         tap(game,x,y);game.update(ModeSelector.CHANGE);
         check("native mode arrow selects Survival without starting",c.modes.selected==ModeSelector.SURVIVAL && !c.starting());
         tap(game,l.w*.5f,y);
-        check("native Survival confirmation is available",c.modes.confirmation>0 && !c.starting());
+        check("native Survival title starts the run",c.modes.confirmation>0 && c.starting());
+        c.cancelStart();
         tap(game,l.w*.5f,l.h*.292f);
         check("native Survival opens its own records",c.highScoreScreen.open
                 && HighScoreScreen.records(c)==c.survival.titleHistory(c));
@@ -207,7 +208,8 @@ public final class IOSInputTest extends Check {
         tap(game,x,y);game.update(ModeSelector.CHANGE);
         check("native mode arrow selects Time Attack",c.modes.selected==ModeSelector.TIME_ATTACK);
         tap(game,l.w*.5f,HighScoreScreen.titleY(l));
-        check("native Time Attack cannot open Adventure records",!c.highScoreScreen.open);
+        check("native Time Attack opens its own records",c.highScoreScreen.open && HighScoreScreen.displayCount(c)==0);
+        game.back();game.update(HighScoreScreen.ENTRY_TIME);
         tap(game,l.w*.9f,TimeAttack.selectY(l));
         check("native boss arrow selects a locked encounter",c.timeAttack.selected==Boss.SPLITTER);
         tap(game,c.keyX(l,0),c.keyY(l,0));
@@ -224,13 +226,28 @@ public final class IOSInputTest extends Check {
         game.touch(one(0,19,x,y));game.touch(two(5,1,19,x,y,20,x,y));
         game.touch(one(1,19,x,y));
         check("native second finger cancels mode selection",c.modes.adventure());
-        game.touch(one(0,19,l.w*.5f,y));game.touch(one(2,19,l.w*.5f-l.unit*3,y));
-        game.touch(one(1,19,l.w*.5f-l.unit*3,y));
+        game.touch(one(0,19,l.w*.5f,y));game.touch(one(2,19,l.w*.5f-l.w*.25f,y));
+        game.touch(one(1,19,l.w*.5f-l.w*.25f,y));
         check("native swipe changes mode once",c.modes.selected==ModeSelector.SURVIVAL);
         game.back();game.update(ModeSelector.CHANGE);tap(game,l.w*.5f,y);
-        check("native confirm animates chosen text",c.modes.confirmation>0);
+        check("native confirm animates chosen text and starts",c.modes.confirmation>0 && c.starting());
+        c.cancelStart();
         tap(game,c.keyX(l,0),c.keyY(l,0));
         check("native Adventure key starts its launch",c.starting());
+        c.cancelStart();
+        float sceneY=LandPicker.cardY(l);
+        game.touch(one(0,19,l.w*.5f,sceneY));
+        game.touch(one(2,19,l.w*.5f,sceneY+l.unit));
+        game.touch(one(1,19,l.w*.5f,sceneY));
+        check("native short land drag cannot launch",!c.starting());
+        tap(game,l.w*.5f,sceneY);
+        check("native selected Adventure scene starts run",c.starting());
+        c.cancelStart();c.modes.restore(ModeSelector.SURVIVAL);
+        tap(game,l.w*.5f,sceneY+l.unit*1.3f);
+        check("native Survival scene starts run",c.starting());
+        c.cancelStart();c.modes.restore(ModeSelector.TIME_ATTACK);
+        tap(game,l.w*.5f,l.h*.677f);
+        check("native boss scene starts run",c.starting());
     }
 
     private static void survival() {

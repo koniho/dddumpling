@@ -521,8 +521,8 @@ final class GameCore {
     int landChoice, runStartLand;
     boolean scoresSuppressed;
     final int[] landBests = new int[Lands.COUNT];
-    boolean landPickerDragging, landPickerMoved;
-    float landPickerSlide, landPickerX;
+    boolean landPickerDragging, landPickerMoved, landPickerDragged;
+    float landPickerSlide, landPickerX, landPickerY;
     int landTravelFrom = -1;
     float landTravelT, landWanderT, landTravelStartX, landTravelStartY;
     float landTravelRegrowT=-1f, landTravelRegrowScale;

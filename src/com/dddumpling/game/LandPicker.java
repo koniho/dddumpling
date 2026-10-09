@@ -105,12 +105,15 @@ final class LandPicker extends Draw {
     static boolean down(GameCore c, Layout L, float x, float y) {
         if (!visible(c) || count(c)<=1 || c.returnFade > 0f || c.landDiscovery>=0) return false;
         if (Math.abs(y - cardY(L)) > L.h * 0.05f) return false;
-        c.landPickerDragging = true; c.landPickerMoved = false; c.landPickerX = x;
+        c.landPickerDragging = true; c.landPickerMoved = c.landPickerDragged = false;
+        c.landPickerX = x; c.landPickerY = y;
         return true;
     }
-    static void move(GameCore c, Layout L, float x) {
+    static void move(GameCore c, Layout L, float x) { move(c,L,x,c.landPickerY); }
+    static void move(GameCore c, Layout L, float x, float y) {
         if (!c.landPickerDragging || c.landPickerMoved || !visible(c)) return;
         float dx = x - c.landPickerX;
+        if(Math.max(Math.abs(dx),Math.abs(y-c.landPickerY))>L.unit*.7f)c.landPickerDragged=true;
         if (Math.abs(dx) < spacing(c, L) * 0.65f) return;
         int before=pendingLand(c);
         step(c, dx < 0 ? 1 : -1);
@@ -118,7 +121,8 @@ final class LandPicker extends Draw {
         c.landPickerX = x; c.landPickerMoved = true;
     }
     static void up(GameCore c, Layout L, float x, float y) {
-        if (c.landPickerDragging && !c.landPickerMoved && visible(c)
+        if (c.landPickerDragging && !c.landPickerMoved && !c.landPickerDragged && visible(c)
+                && Math.max(Math.abs(x-c.landPickerX),Math.abs(y-c.landPickerY))<=L.unit*.7f
                 && Math.abs(y - cardY(L)) < L.h * 0.05f) {
             int nearest = -1;
             float distance = spacing(c, L) * 0.65f;
@@ -127,6 +131,7 @@ final class LandPicker extends Draw {
                 if (unlocked(c, land) && dx < distance) { nearest = land; distance = dx; }
             }
             if (nearest == TOWN && c.landChoice == TOWN && c.landTravelFrom < 0) c.openTown();
+            else if(nearest>=0 && nearest==c.landChoice)c.modes.start(c);
             else if (nearest >= 0) select(c, nearest);
         }
         c.landPickerDragging = false;

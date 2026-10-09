@@ -408,7 +408,7 @@ public class GameView extends View {
         int index = ev.findPointerIndex(landPointer);
         if (index < 0) { core.landPickerDragging = false; landPointer = -1; return true; }
         int before = core.landChoice;
-        if (action == MotionEvent.ACTION_MOVE) LandPicker.move(core, layout, ev.getX(index));
+        if (action == MotionEvent.ACTION_MOVE) LandPicker.move(core, layout, ev.getX(index), ev.getY(index));
         else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP
                 && ev.getPointerId(ev.getActionIndex()) == landPointer) {
             LandPicker.up(core, layout, ev.getX(index), ev.getY(index)); landPointer = -1;

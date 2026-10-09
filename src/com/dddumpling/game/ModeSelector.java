@@ -5,6 +5,7 @@ final class ModeSelector extends Draw {
     static final int ADVENTURE=0, SURVIVAL=1, TIME_ATTACK=2;
     static final String[] NAMES={"ADVENTURE","SURVIVAL","BOSS TIME ATTACK"};
     static final float CHANGE=.32f;
+    private static final int SCENE=8;
     static final float SWIPE_DISTANCE=.18f, SWIPE_RETURN=.22f;
     int selected=ADVENTURE, previous=ADVENTURE, direction=1;
     float transition=1f, adventureFade=1f, confirmation, unavailable;
@@ -50,8 +51,14 @@ final class ModeSelector extends Draw {
     static float arrowX(Layout L,int direction) { return L.w*(direction<0?.065f:.935f); }
     int hit(GameCore c,Layout L,float x,float y) {
         int bossHit=c.timeAttack.hit(c,L,x,y);if(bossHit!=0)return bossHit;
-        if(!visible(c) || Math.abs(y-y(L))>L.unit*(selected==TIME_ATTACK?2.7f:2f) || x<L.padL || x>L.w-L.padR)return 0;
-        return x<L.w*.11f?1:x>L.w*.89f?3:2;
+        if(!visible(c) || x<L.padL || x>L.w-L.padR)return 0;
+        if(Math.abs(y-y(L))<=L.unit*(selected==TIME_ATTACK?2.7f:2f))
+            return x<L.w*.11f?1:x>L.w*.89f?3:2;
+        if(selected==SURVIVAL && Math.abs(y-(LandPicker.cardY(L)+L.unit*1.3f))<L.h*.055f
+                && x>L.w*.08f && x<L.w*.92f)return SCENE;
+        if(adventure() && LandPicker.visible(c) && LandPicker.count(c)==1
+                && Math.abs(y-LandPicker.cardY(L))<L.h*.05f && Math.abs(x-L.w*.5f)<L.w*.24f)return SCENE;
+        return 0;
     }
     void select(GameCore c,int next,int direction) {
         if(!visible(c) || c.landTravelFrom>=0 || next<0 || next>=NAMES.length || next==selected)return;
@@ -70,6 +77,9 @@ final class ModeSelector extends Draw {
         confirmation=1;
         if(c.sound!=null)c.sound.collect(1);
         return true;
+    }
+    void start(GameCore c) {
+        if(visible(c) && c.landTravelFrom<0 && confirm(c))c.beginStart();
     }
     private void reject(GameCore c) {
         unavailable=1;
@@ -113,7 +123,7 @@ final class ModeSelector extends Draw {
         if(id!=pointer)return true;
         if(!moved && (action==2 || action==1 || action==6)) {
             float dx=x-downX,dy=y-downY;
-            boolean boss=pressed>=4;
+            boolean boss=pressed>=4 && pressed<=TimeAttack.SCENE;
             if(Math.max(Math.abs(dx),Math.abs(dy))>L.unit*.7f)dragged=true;
             if(Math.abs(dy)>L.unit*2 && Math.abs(dy)>Math.abs(dx)) {
                 pressed=0;moved=true;returnSwipe();
@@ -121,7 +131,7 @@ final class ModeSelector extends Draw {
                 int direction=dx<0?1:-1;
                 c.timeAttack.choose(c,direction);
                 moved=true;
-            } else if(!boss && pressed>0 && dragged) {
+            } else if(pressed>0 && pressed<4 && dragged) {
                 swipeOffset=Math.max(-1,Math.min(1,dx/L.w));
                 if((action==1 || action==6) && Math.abs(dx)>=L.w*SWIPE_DISTANCE
                         && Math.abs(dx)>Math.abs(dy)*1.25f && c.landTravelFrom<0) {
@@ -135,9 +145,9 @@ final class ModeSelector extends Draw {
         if(action==1 || action==6) {
             int target=pressed;boolean tap=!moved && !dragged && hit(c,L,x,y)==target;
             cancelTouch();
-            if(tap && target!=0 && target!=TimeAttack.SWIPE_ONLY) {
-                if(target>=4)c.timeAttack.choose(c,target==4?-1:1);
-                else if(target==2)confirm(c);
+            if(tap && target!=0) {
+                if(target==4 || target==6)c.timeAttack.choose(c,target==4?-1:1);
+                else if(target==2 || target==5 || target==TimeAttack.SCENE || target==SCENE)start(c);
                 else {int direction=target==1?-1:1;select(c,(selected+direction+NAMES.length)%NAMES.length,direction);}
             }
         }
@@ -145,10 +155,7 @@ final class ModeSelector extends Draw {
     }
     private static void name(Painter p,int mode,float x,float y,float s,float scale,int color) {
         float font=type(s*1.74f)*scale;
-        if(mode==TIME_ATTACK) {
-            p.text("BOSS",x,y-s*.9f,font,color,Painter.CENTER,true);
-            p.text("TIME ATTACK",x,y+s*1.1f,font,color,Painter.CENTER,true);
-        } else p.text(NAMES[mode],x,y,font,color,Painter.CENTER,true);
+        p.text(NAMES[mode],x,y,font,color,Painter.CENTER,true);
     }
     private static void survivalAccent(Painter p,float x,float y,float s,float halfSpan,float clock,float alpha) {
         for(int i=0;i<21;i++) {
@@ -163,6 +170,7 @@ final class ModeSelector extends Draw {
     }
     private static void titleLabel(Painter p,GameCore c,Layout L,int mode,float x,float y,float bump,int color,float fade) {
         float s=L.unit;
+        if(mode==TIME_ATTACK) {TimeAttackTitle.draw(p,c,x,y,s,bump,color,fade);return;}
         if(mode==SURVIVAL) {
             float clock=SurvivalDemo.animationClock(c);
             survivalAccent(p,x,y,s,L.w*.4f,clock,fade);

@@ -39,7 +39,8 @@ final class TestTimeAttack extends Check {
         c.modes.touch(c,L,1,42,x,label);
         check("short drag returning to its start is not a tap",c.timeAttack.selected==0);
         c.modes.touch(c,L,0,42,x,y);c.modes.touch(c,L,1,42,x,y);
-        check("tapping the skit does not change boss or start a run",c.timeAttack.selected==0 && c.state==GameCore.TITLE);
+        check("tapping the skit starts the selected boss",c.timeAttack.selected==0 && c.starting());
+        c.cancelStart();
         c.modes.touch(c,L,0,42,x,y);c.modes.touch(c,L,2,42,x,y+L.unit*3);
         c.modes.touch(c,L,1,42,x-L.unit*4,y+L.unit*3);
         check("vertical skit drag cannot become boss selection",c.timeAttack.selected==0);

@@ -12,6 +12,10 @@ final class Preview {
     private static void timeAttackFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("150-"))return;
         GameCore c=TestTimeAttack.start(Boss.SLIME);c.toTitle();c.returnFade=0;
+        for(int frame=0;frame<4;frame++) {
+            c.clock=new float[]{.06f,TimeAttackTitle.BEAT*.5f,TimeAttackTitle.BEAT+.06f,TimeAttackTitle.BEAT*1.5f}[frame];
+            shot(dir,"150-title-cradle-"+frame,c,L,w,h,ss);
+        }
         for(int boss=0;boss<Boss.COUNT;boss++) {
             c.timeAttack.selected=boss;c.caseIndex=boss==Boss.MUSHROOM?Collect.DUCK_FIRST:7;
             for(int beat=0;beat<3;beat++) {

@@ -11,7 +11,31 @@ final class TestModeSelector extends Check {
         float x=direction==0?L.w*.5f:ModeSelector.arrowX(L,direction),y=ModeSelector.y(L);
         c.modes.touch(c,L,0,12,x,y);c.modes.touch(c,L,1,12,x,y);
     }
+    private static void sceneStarts(Layout L) {
+        for(int mode=0;mode<ModeSelector.NAMES.length;mode++) {
+            GameCore c=title();c.modes.restore(mode);
+            if(mode==ModeSelector.ADVENTURE) {c.collected=1;c.landChoice=0;}
+            float x=L.w*.5f,y=mode==ModeSelector.TIME_ATTACK?L.h*.677f:
+                    LandPicker.cardY(L)+(mode==ModeSelector.SURVIVAL?L.unit*1.3f:0);
+            check("mode scene captures tap "+mode,c.modes.touch(c,L,0,7,x,y));
+            c.modes.touch(c,L,2,7,x+L.unit*2,y);
+            c.modes.touch(c,L,1,7,x,y);
+            check("scene short drag cannot launch "+mode,!c.starting());
+            c.modes.touch(c,L,0,7,x,y);c.modes.touch(c,L,1,7,x,y);
+            check("scene tap starts selected mode "+mode,c.starting() && c.modes.selected==mode);
+        }
+        GameCore c=title();float x=LandPicker.cardX(c,L,c.landChoice),y=LandPicker.cardY(L);
+        check("multi-land scene captures touch",LandPicker.down(c,L,x,y));
+        LandPicker.move(c,L,x,y+L.unit);LandPicker.up(c,L,x,y);
+        check("land drag returning home cannot launch",!c.starting());
+        LandPicker.down(c,L,x,y);LandPicker.up(c,L,x,y);
+        check("selected land tap launches Adventure",c.starting());
+        c.cancelStart();c.onboarding.titleGuide=true;
+        LandPicker.down(c,L,x,y);LandPicker.up(c,L,x,y);
+        check("land tutorial cannot be bypassed with a scene tap",!c.starting());
+    }
     static void all(Layout L) {
+        sceneStarts(L);
         swipePreview(L);
         persistence(L);
         skit(L);
@@ -33,7 +57,8 @@ final class TestModeSelector extends Check {
         check("Survival entry uses its own records",HighScoreScreen.records(c)==c.survival.titleHistory(c)
                 && HighScoreScreen.records(c)!=c.highScores);
         tap(c,L,0);
-        check("unlocked Survival confirms with a chime",c.modes.playable(c) && ear.collects==1);
+        check("unlocked Survival confirms with a chime",c.modes.playable(c) && ear.collects==1 && c.starting());
+        c.cancelStart();
         c.openCase();c.update(.5f,L);
         check("display case stays shared and covers mode selector",c.caseOpen && !c.modes.visible(c));
         c.closeCase();c.update(.5f,L);
@@ -43,13 +68,14 @@ final class TestModeSelector extends Check {
         c.timeAttack.selected=Boss.MUSHROOM;
         tap(c,L,0);c.screenKey(0);c.beginStart();c.startGame();
         check("locked Time Attack boss cannot start Adventure",!c.starting() && c.state==GameCore.TITLE
-                && c.modes.unavailable>0 && ear.collects==1 && ear.starts==0);
+                && c.modes.unavailable>0 && ear.collects==1 && ear.starts==1);
         check("browsing preserves Adventure progress",c.landChoice==land && c.best==best && c.collected==collection);
         c.toTitle();
         check("returning to title retains the mode",c.modes.selected==ModeSelector.TIME_ATTACK);
         check("Back restores Adventure",Pause.back(c) && c.modes.adventure());
         c.update(ModeSelector.CHANGE,L);tap(c,L,0);
-        check("confirmation has its own chime and pulse",ear.collects==2 && c.modes.confirmation==1);
+        check("confirmation has its own chime and pulse",ear.collects==2 && c.modes.confirmation==1 && c.starting());
+        c.cancelStart();
         check("returning restores lands and original record",LandPicker.visible(c) && c.best==best && c.landChoice==land);
         c.screenKey(0);
         check("normal keys still launch Adventure",c.starting());
