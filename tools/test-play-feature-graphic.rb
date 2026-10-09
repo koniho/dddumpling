@@ -99,4 +99,11 @@ class PlayFeatureTests < Minitest::Test
     assert_raises(RuntimeError) { feature_png(@content.byteslice(0, 16)) }
     assert_raises(RuntimeError) { feature_png(@content.byteslice(0, 33)) }
   end
+
+  def test_error_message_preserves_diagnostic_and_redacts_token
+    client = PlayFeatureClient.new('private-token')
+    message = client.error_message(JSON.generate(error: { message: 'Denied private-token for this app' }))
+    assert_equal 'Denied [redacted] for this app', message
+    assert_equal 'Non-JSON API error', client.error_message('error html')
+  end
 end

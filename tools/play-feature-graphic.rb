@@ -22,9 +22,15 @@ class PlayFeatureClient
     request.body = media || (JSON.generate(body) if body)
     response = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 30, read_timeout: 120) { |http| http.request(request) }
     unless response.is_a?(Net::HTTPSuccess)
-      raise "Google Play HTTP #{response.code} for #{method} #{uri.path}"
+      raise "Google Play HTTP #{response.code} for #{method} #{uri.path}: #{error_message(response.body)}"
     end
     response.body.to_s.empty? ? {} : JSON.parse(response.body)
+  end
+
+  def error_message(body)
+    JSON.parse(body).dig('error', 'message').to_s.gsub(@token, '[redacted]')[0, 800]
+  rescue JSON::ParserError
+    'Non-JSON API error'
   end
 end
 
