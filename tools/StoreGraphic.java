@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 import java.io.File;
 
-/** Google Play feature artwork using the game's title face and character renderer. */
+/** Legacy feature-art reference using the game's title face and character renderer. */
 final class StoreGraphic extends Draw {
     public static void main(String[] args) throws Exception {
         RasterPainter p = new RasterPainter(1024, 500, 4);
@@ -22,7 +22,9 @@ final class StoreGraphic extends Draw {
         tile(p, Kawaii.STRAWBERRY, 775, 149, 78, Glyph.COLOR[Kawaii.STRAWBERRY]);
         tile(p, Kawaii.DUMPLING, 708, 330, 86, 0xFF9EE65B);
         tile(p, Kawaii.CAT, 904, 302, 76, Glyph.COLOR[Kawaii.CAT]);
-        Png.write(new File("app-store/google-play/feature-graphic.png"), p.resolve(), 1024, 500);
+        File dir = new File("out/store-graphics");
+        dir.mkdirs();
+        Png.write(new File(dir, "legacy-feature-graphic.png"), p.resolve(), 1024, 500);
     }
 
     private static void tile(Painter p, int g, float x, float y, float r, int color) {

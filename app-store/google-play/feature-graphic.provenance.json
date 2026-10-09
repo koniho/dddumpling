@@ -1,0 +1,23 @@
+{
+  "asset": "feature-graphic.png",
+  "source": "creative-assets/dddumpling-feature-v1-source.png",
+  "date": "2026-10-08",
+  "tool": "built-in image_gen",
+  "change": "Reframed the v3 App Store banner for Google Play's wider feature graphic, retaining the flat golden dumpling, three bosses, four lands and Survival rainbow curl.",
+  "source_resolution": [
+    1794,
+    876
+  ],
+  "export_resolution": [
+    1024,
+    500
+  ],
+  "export": "sips -z 500 1024; downsampled opaque RGB PNG",
+  "references": [
+    "ios/store/creative-assets/dddumpling-universal-v3-lands-survival-source.png",
+    "ios/store/creative-assets/references/game-art-and-lands.png"
+  ],
+  "requirements_source": "https://support.google.com/googleplay/android-developer/answer/9866151?hl=en",
+  "alt_text": "Smiling golden dumpling with Slime, Octopulse, Fly Agaric, colorful lands, and the Survival rainbow curl.",
+  "prompt": "Use case: compositing.\nAsset type: DDDumpling Google Play feature graphic, opaque landscape artwork with aspect ratio 1024:500 (2.048:1).\nPrimary request: Adapt the supplied latest lands-and-Survival banner into the wider Google Play feature-graphic composition. This is a faithful reframe of existing artwork, not a redesign.\nInput images: Image 1 is the banner edit target. Image 2 is strict native-game style reference ONLY, especially its top golden dumpling. Never reproduce the reference board itself.\nKEEP: The exact flat pale-golden central bao hero with slightly angular silhouette, three pleat strokes, inverted-V happy eyes, W mouth, round coral cheeks and one simple oval highlight; green Slime boss left, pink eight-armed Octopulse right, red-spotted Fly Agaric lower-left, collectible faces in outlined hexagons; green hills, lavender crystal towers, sea kelp/bubble rings and pink mushroom lands; seven-band pastel Survival rainbow crossing the foreground and curling into a C on the lower right with its small cream companion. Retain their actual identities and the source's palette, face geometry and anatomy.\nCHANGE ONLY: Recompose to a wider 2.048:1 canvas, slightly tighten unnecessary sky and lower foreground and adjust peripheral scenery so all three bosses, the hero, and the rainbow companion remain complete and legible. The hero should be around 18%-22% of image width, centered horizontally with its smiling face above the vertical midpoint, clear of the outer edges. Keep Slime, Octopulse and Fly Agaric in the inner 80% of the frame; leave generous margins around key faces. Reduce tiny confetti and hexagon clutter just enough for readability when reduced to 1024 by 500, while retaining the source's recognizable arcade energy. Edge terrain may bleed off canvas.\nStyle: Match source, use the native reference to preserve the main hero's flat 2D graphic style. Crisp simple fills, small cel-shadow accents, dark plum background, pastel supporting scenery. Do not make the hero glossy, rendered plastic, gummy or photorealistic.\nText: none. Do not add the old wordmark or tagline.\nConstraints: no new characters or environments, no UI, scores, phone frames, play button, borders, watermarks or badges. No stretching faces or bodies. Keep the main hero and all requested motifs recognizably from the existing banner. Full-bleed opaque PNG. Aim for a large source at the exact 2.048:1 aspect ratio so it can be exported cleanly at 1024 by 500."
+}
