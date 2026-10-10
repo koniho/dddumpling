@@ -48,17 +48,18 @@ final class AdventureTitle extends Draw {
             int alpha=(int)(255*fade*(front?.92f:.8f));
             if(!front)p.fillEllipse(x,ground,span,s*.15f,
                     fadeBy(Lands.TINT[land],fade*rise*.25f));
-            p.save();p.clipRect(x-span-s*.3f,y-s*2.65f,x+span+s*.3f,ground);
             for(int i=0;i<9;i++) {
-                float jitter=(float)Math.sin(i*7.3f+land)*.12f;
+                float phase=i*7.3f+land+(front?2.4f:0);
+                float jitter=(float)Math.sin(phase)*.12f;
                 float px=x+span*((i-4)/4.3f+jitter*.25f);
-                float size=s*(front?.35f+.16f*(i%3):1.25f+.33f*((i*7)%4));
-                // Front plants only brush the feet of the letters.
+                float size=s*(1.25f+.33f*((i*7)%4));
+                float root=ground+s*(front?.25f:.08f)*(float)Math.sin(phase+1.3f);
                 float height=land==0?.36f:land==2?1.08f:land==3?1.05f:1.20f;
-                float base=ground+(1-rise)*size*height;
-                prop(p,land,px,base,size,alpha,now+i*1.7f,front,i);
+                float base=root+(1-rise)*size*height;
+                p.save();p.clipRect(x-span-s*.3f,y-s*2.75f,x+span+s*.3f,root);
+                prop(p,land,px,base,size,alpha,now+i*1.7f,i);
+                p.restore();
             }
-            p.restore();
         }
         for(int i=0;i<8;i++) {
             if((i%3==0)!=front)continue;
@@ -73,15 +74,16 @@ final class AdventureTitle extends Draw {
             p.arc(bx,by,r*.66f,r*.66f,205,80,fadeBy(0xFFF0FFD7,alpha*.9f),s*.035f);
         }
     }
-    private static void prop(Painter p,int land,float x,float base,float size,int a,float t,boolean front,int variant) {
+    private static void prop(Painter p,int land,float x,float base,float size,int a,float t,int variant) {
         if(land==0) {
             float wobble=1+.09f*(float)Math.sin(t*2);
             p.fillEllipse(x,base,size*.67f*wobble,size*.31f/wobble,Glyph.withAlpha(0xFF76B984,a));
             p.arc(x,base,size*.50f*wobble,size*.23f/wobble,195,110,
                     Glyph.withAlpha(0xFFD2F7AE,a/2),size*.07f);
         } else if(land==1 || land==Cave.LAND) {
-            Lands.crystal(p,x,base,size*.24f,size*(front?.82f:1.15f),a,t,false,true);
-            if(!front)Lands.crystal(p,x+size*.29f,base,size*.17f,size*.62f,a,t+1.8f,false,true);
+            int glass=(int)(a*.48f);
+            Lands.crystal(p,x,base,size*.24f,size*1.15f,glass,t,false,true);
+            Lands.crystal(p,x+size*.29f,base,size*.17f,size*.62f,glass,t+1.8f,false,true);
         } else if(land==2) {
             for(int blade=0;blade<5;blade++) {
                 float h=size*(.50f+.13f*((blade*3)%5)),root=x+(blade-2)*size*.13f;

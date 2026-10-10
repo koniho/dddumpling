@@ -41,10 +41,11 @@ final class LandPicker extends Draw {
         for (int i = 0; i < land; i++) if (unlocked(c, i)) n++;
         return n;
     }
-    static float spacing(GameCore c, Layout L) { return L.keyR * c.keyScale() * 2.40f; }
+    static float spacing(GameCore c, Layout L) { return Math.max(L.keyR*c.keyScale()*2.40f,iconRadius(c,L)*2.65f); }
     static float iconRadius(GameCore c, Layout L) {
         // Tall kelp/crystals must stay below the mode title on compact phones.
-        return Math.min(L.keyR*c.keyScale()*1.05f,L.h*.047f);
+        float headroom=(cardY(L)-ModeSelector.y(L)-L.unit*.6f)/1.75f;
+        return Math.min(L.keyR*c.keyScale()*1.24f,Math.min(L.h*.053f,headroom));
     }
     static float cardX(GameCore c, Layout L, int land) {
         return L.w * 0.5f + (slot(c, land) - slot(c, c.landChoice) + c.landPickerSlide) * spacing(c, L);
@@ -338,7 +339,7 @@ final class LandPicker extends Draw {
             Lands.logo(p, land, x, y, r * 1.12f, haze / 5, c.clock, true);
             Lands.logo(p, land, x, y, r * 1.05f, haze / 3, c.clock, true);
             Lands.logo(p, land, x, y, r, haze / 2, c.clock, true);
-            if (focus > 0f) Lands.logo(p, land, x, y, r, (int)(235 * focus * reveal), c.clock);
+            if (focus > 0f) Lands.logo(p, land, x, y, r, (int)((land==1?150:235) * focus * reveal), c.clock);
         }
         p.restore();
         LandDiscovery.draw(p,c,L);
