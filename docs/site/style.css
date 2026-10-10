@@ -17,3 +17,4 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{font-weight:900}h1{font-size:clamp(
 .hero-art{overflow:clip;overflow-clip-margin:12px;min-width:0}.hero-copy,.friends-copy,.video-copy{min-width:0}.friends-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 @media(max-width:760px){.friends-layout{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:380px){.hero-art .phone{width:170px}.hero-art .phone-back{right:20px}.hero-art .phone-front{left:20px}}
+.ribbon{transform:none}
