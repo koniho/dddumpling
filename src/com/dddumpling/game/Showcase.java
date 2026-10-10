@@ -166,9 +166,12 @@ final class Showcase extends Draw {
      * The badge rides a circle centred on the eye, so it dips as it swings out rather than
      * sliding along a line — and it stays the same distance away, so it needs no scaling.
      */
-    static float iconCy(Layout L, float clock) {
+    static float iconCy(GameCore c, Layout L, float clock) {
         float dx = iconCx(L, clock) - L.w / 2f;
-        float centerY = (HighScoreScreen.titleY(L) + ModeSelector.y(L)) * .5f;
+        // Centre the heading, glass and count between the visible score and mode text.
+        // Uppercase glyphs occupy roughly three quarters of their font size above baseline.
+        float groupMid = (-L.unit - type(L.unit * .62f) * .75f + L.unit * 1.15f) * .5f;
+        float centerY = (HighScoreScreen.titleY(L) + c.modes.titleTop(L)) * .5f - groupMid;
         float radius = eyeY(L) - centerY;
         return eyeY(L) - (float) Math.sqrt(Math.max(1f, radius * radius - dx * dx));
     }
@@ -211,9 +214,9 @@ final class Showcase extends Draw {
      * reason, and it has to stay clear of the keys wherever it is — there is an assertion on
      * both ends of the arc.
      */
-    static boolean inIcon(Layout L, float clock, float x, float y) {
+    static boolean inIcon(GameCore c, Layout L, float clock, float x, float y) {
         return Math.abs(x - iconCx(L, clock)) <= iconHalfW(L) * 1.30f
-                && Math.abs(y - iconCy(L, clock)) <= iconHalfH(L) * 1.45f;
+                && Math.abs(y - iconCy(c, L, clock)) <= iconHalfH(L) * 1.45f;
     }
 
     /**
@@ -272,7 +275,7 @@ final class Showcase extends Draw {
         // Frozen on a start press, at the same instant the send-off reads: the squishy has to
         // leave from where the case is, not from where the case has drifted on to.
         float t = c.starting() ? c.launchClock : c.clock;
-        float cx = iconCx(L, t), cy = iconCy(L, t);
+        float cx = iconCx(L, t), cy = iconCy(c, L, t);
         float r = iconR(L);
         int i = c.pickerT > 0f ? c.pickerWho() : c.launchWho >= 0 ? c.launchWho : c.caseIndex;
         boolean known = c.starting() || Collect.has(c.collected, i);

@@ -49,6 +49,14 @@ final class ModeSelector extends Draw {
                 && !c.onboarding.titleGuide && !c.onboarding.briefing;
     }
     static float y(Layout L) { return L.h*.60f; }
+    float titleTop(Layout L) {
+        boolean peeking=swipeOffset!=0;
+        int next=peeking?(selected+(swipeOffset<0?1:-1)+NAMES.length)%NAMES.length:selected;
+        int from=peeking?selected:previous;
+        float t=peeking?Math.abs(swipeOffset):transitionFrom+(1-transitionFrom)*panelTravel(transition);
+        float boss=(from==TIME_ATTACK?1f-t:0)+(next==TIME_ATTACK?t:0);
+        return y(L)-type(L.unit*1.74f)*.75f-L.unit*.9f*boss;
+    }
     static float arrowX(Layout L,int direction) { return L.w*(direction<0?.065f:.935f); }
     int hit(GameCore c,Layout L,float x,float y) {
         int bossHit=c.timeAttack.hit(c,L,x,y);if(bossHit!=0)return bossHit;

@@ -199,7 +199,7 @@ final class RoundEnd extends Draw {
         int count = hauled(c);
         if (count == 0) return;
         float u = c.homeProgress();
-        float tx = Showcase.iconCx(L, c.clock), ty = Showcase.iconCy(L, c.clock);
+        float tx = Showcase.iconCx(L, c.clock), ty = Showcase.iconCy(c, L, c.clock);
         float r0 = rowR(L, count), y0 = rowY(L);
 
         int n = 0;

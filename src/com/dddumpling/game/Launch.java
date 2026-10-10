@@ -50,7 +50,7 @@ final class Launch extends Draw {
         if (c.launchT <= 0f || c.launchWho < 0) return;
         float u = progress(c);
         float x0 = c.launchFromStarter ? L.w*.5f : Showcase.iconCx(L, c.launchClock);
-        float y0 = c.launchFromStarter ? L.h*.5f : Showcase.iconCy(L, c.launchClock);
+        float y0 = c.launchFromStarter ? L.h*.5f : Showcase.iconCy(c, L, c.launchClock);
         float r0 = c.launchFromStarter ? Starter.heroRadius(L)/GROWN : Showcase.iconR(L) * 0.62f;
         float homeX=RunCompanion.x(L),homeY=RunCompanion.y(L);
 

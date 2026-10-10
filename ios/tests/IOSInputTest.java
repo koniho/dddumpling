@@ -81,7 +81,7 @@ public final class IOSInputTest extends Check {
             check("native empty title tap hints without launching "+choice,c.titleKeyHighlight()>0f
                     && !c.starting() && !c.starter.open && !c.caseOpen);
             game.update(1.3f);
-            tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(l,c.clock));
+            tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(c, l,c.clock));
             check("hidden display badge also counts as empty space "+choice,c.titleKeyHighlight()>0f
                     && !c.caseOpen && !c.starter.open);
             tap(game,l.w*.2f,l.h*.85f);
@@ -201,7 +201,7 @@ public final class IOSInputTest extends Check {
         check("native Survival opens its own records",c.highScoreScreen.open
                 && HighScoreScreen.records(c)==c.survival.titleHistory(c));
         game.back();game.update(HighScoreScreen.ENTRY_TIME);
-        tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(l,c.clock));game.update(.5f);
+        tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(c, l,c.clock));game.update(.5f);
         check("native display case opens from another mode",c.caseOpen && c.modes.selected==ModeSelector.SURVIVAL);
         game.back();game.update(.5f);
         check("native case back retains mode choice",!c.caseOpen && c.modes.selected==ModeSelector.SURVIVAL);
@@ -639,7 +639,7 @@ public final class IOSInputTest extends Check {
 
     private static void caseAndSettings() {
         IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
-        tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(l,c.clock));
+        tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(c, l,c.clock));
         check("collection badge opens display case", c.caseOpen);
         game.touch(one(0,3,l.w/2,Showcase.focusCy(l)));
         game.touch(one(2,3,l.w/2-l.unit*2,Showcase.focusCy(l)));
@@ -1060,9 +1060,9 @@ public final class IOSInputTest extends Check {
         Ear ear=new Ear();IOSGame game=new IOSGame(store,ear,114);game.layout(393,852,0,59,0,34);
         GameCore c=game.core();Layout l=game.geometry();c.startGame();c.collected=store.collected=1;c.toTitle();
         for(int i=0;i<120 && !c.onboarding.briefing;i++)game.update(DT);
-        tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(l,c.clock));
+        tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(c, l,c.clock));
         check("collection explanation blocks taps through to title",c.onboarding.briefing && !c.caseOpen);
-        tutorialContinue(game);tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(l,c.clock));
+        tutorialContinue(game);tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(c, l,c.clock));
         for(int i=0;i<120 && !c.onboarding.briefing;i++)game.update(DT);
         check("real case tap advances to story instruction",c.caseOpen && c.onboarding.briefing
                 && c.onboarding.speech==TutorialSpeech.STORIES);

@@ -583,7 +583,7 @@ final class Onboarding extends Draw {
             float direction=LandPicker.order(c.landChoice)>LandPicker.order(LandPicker.first(c))?1f:-1f;
             float x=lands?L.w*.5f+direction*LandPicker.spacing(c,L)*(.9f*TutorialSpeech.swipeProgress(o.age)-.45f)
                     :c.caseOpen?L.w*.5f:Showcase.iconCx(L,c.clock);
-            float y=lands?LandPicker.cardY(L):c.caseOpen?Showcase.focusCy(L):Showcase.iconCy(L,c.clock);
+            float y=lands?LandPicker.cardY(L):c.caseOpen?Showcase.focusCy(L):Showcase.iconCy(c, L,c.clock);
             Renderer.touchHint(p,x,y,L.keyR*.8f,1f,.85f,o.age);
         }
         if(!o.briefing && o.powerGuide && o.speech==TutorialSpeech.POWER_PICKUP && c.power!=null) {

@@ -119,7 +119,7 @@ final class TestModeSelector extends Check {
             c=title();
             check("mode touches clear land and case targets at "+width,
                     ModeSelector.y(phone)+phone.unit*1.75f<LandPicker.cardY(phone)-phone.h*.05f
-                    && !Showcase.inIcon(phone,c.clock,phone.w*.5f,ModeSelector.y(phone)));
+                    && !Showcase.inIcon(c, phone,c.clock,phone.w*.5f,ModeSelector.y(phone)));
         }
     }
     private static void swipePreview(Layout L) {

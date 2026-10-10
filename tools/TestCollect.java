@@ -523,10 +523,22 @@ final class TestCollect extends Check {
         float cx = L.w / 2f, cy = Showcase.focusCy(L);
 
         // The closed badge sits between the score and mode choice; the open shelf has its own centre.
-        float badgeY=(HighScoreScreen.titleY(L)+ModeSelector.y(L))*.5f;
-        check("the badge is centered between score and mode", Math.abs(Showcase.iconCy(L,0f)-badgeY)<.01f
-                && Showcase.inIcon(L, 0f, cx, badgeY));
-        check("the sky above it is not", !Showcase.inIcon(L, 0f, cx, L.topSafe + 1f));
+        float badgeY=Showcase.iconCy(c,L,0f);
+        for(int mode=0;mode<ModeSelector.NAMES.length;mode++) {
+            c.modes.restore(mode);
+            float y=Showcase.iconCy(c,L,0f),hh=Showcase.iconHalfH(L);
+            float top=y-hh-L.unit-Draw.type(L.unit*.62f)*.75f;
+            float bottom=y+hh+L.unit*1.15f;
+            float modeTop=ModeSelector.y(L)-Draw.type(L.unit*1.74f)*.75f
+                    -(mode==ModeSelector.TIME_ATTACK?L.unit*.9f:0);
+            check("whole case group balances visible text gaps in mode "+mode,
+                    Math.abs((top-HighScoreScreen.titleY(L))-(modeTop-bottom))<.01f);
+            check("case tap follows its mode position",Showcase.inIcon(c,L,0,cx,y));
+        }
+        c.modes.restore(ModeSelector.ADVENTURE);
+        check("the badge is centered between score and mode", Math.abs(Showcase.iconCy(c, L,0f)-badgeY)<.01f
+                && Showcase.inIcon(c, L, 0f, cx, badgeY));
+        check("the sky above it is not", !Showcase.inIcon(c, L, 0f, cx, L.topSafe + 1f));
 
         // It drifts, so everything about it has to hold all the way round the arc.
         float lo = L.w, hi = 0f, lowest = 0f;
@@ -535,12 +547,12 @@ final class TestCollect extends Check {
             float ix = Showcase.iconCx(L, t);
             lo = Math.min(lo, ix);
             hi = Math.max(hi, ix);
-            lowest = Math.max(lowest, Showcase.iconCy(L, t));
+            lowest = Math.max(lowest, Showcase.iconCy(c, L, t));
             if (ix - Showcase.iconHalfW(L) < 0 || ix + Showcase.iconHalfW(L) > L.w) {
                 onScreen = false;
             }
             for (int g = 0; g < Glyph.COUNT; g++) {
-                if (Showcase.inIcon(L, t, L.keyX[g], L.keyY[g])) clearOfKeys = false;
+                if (Showcase.inIcon(c, L, t, L.keyX[g], L.keyY[g])) clearOfKeys = false;
             }
         }
         check("the arc spans 30% of the width",

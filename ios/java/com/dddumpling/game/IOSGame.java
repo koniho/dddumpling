@@ -258,7 +258,7 @@ public final class IOSGame {
                 core.screenKey(screen);
                 tick();
             } else if (core.state == GameCore.TITLE && !core.caseOpen && !Starter.hideCase(core)
-                    && Showcase.inIcon(layout, core.clock, x, y)) {
+                    && Showcase.inIcon(core, layout, core.clock, x, y)) {
                 core.openCase();
                 tick();
             } else {
