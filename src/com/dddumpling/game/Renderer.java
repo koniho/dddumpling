@@ -518,7 +518,7 @@ final class Renderer extends Draw {
     private static final int[] FLURRY_RAINBOW={0xFFFF707C,0xFFFFA75E,0xFFFFE477,0xFF8FE39A,
             0xFF79DDEB,0xFF8D9FF3,0xFFC58DEA};
 
-    private static void rainbowRing(Painter p,float x,float y,float radius,float width,float fade) {
+    static void rainbowRing(Painter p,float x,float y,float radius,float width,float fade) {
         for(int band=0;band<FLURRY_RAINBOW.length;band++)
             p.strokeCircle(x,y,radius-band*width,
                     Glyph.withAlpha(FLURRY_RAINBOW[band],(int)(135*fade)),width);

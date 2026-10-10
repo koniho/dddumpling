@@ -1412,7 +1412,13 @@ final class Preview {
             freshTitle.clock=beat*.6f;
             shot(dir,"164-first-title-"+beat,freshTitle,L,w,h,ss);
         }
-        freshTitle.beginStart();freshTitle.starter.age=.4f;
+        freshTitle.beginStart();
+        for(int frame=0;frame<5;frame++) {
+            freshTitle.starter.age=new float[]{0,.20f,TitleStart.SQUEEZE,.46f,.72f}[frame];
+            freshTitle.clock=1.2f+freshTitle.starter.age;
+            shot(dir,"164-start-transition-"+frame,freshTitle,L,w,h,ss);
+        }
+        freshTitle.starter.age=TitleStart.TRANSITION;freshTitle.clock=1.2f+freshTitle.starter.age;
         shot(dir,"164-first-selection",freshTitle,L,w,h,ss);
         GameCore returningTitle=new GameCore(store,164);returningTitle.clock=2.4f;
         shot(dir,"164-returning-title",returningTitle,L,w,h,ss);

@@ -195,10 +195,10 @@ final class Starter extends Draw {
     static void draw(Painter p,GameCore c,Layout L) {
         Starter a=c.starter;if(!a.open)return;
         float s=L.unit,cx=L.w*.5f;
-        float heading=a.exiting?1f-ease(a.exitAge/.3f):ease((a.age-.2f)/.3f);
+        float heading=a.exiting?1f-ease(a.exitAge/.3f):ease((a.age-TitleStart.SQUEEZE)/.3f);
         p.text("CHOOSE YOUR FIRST SQUISHY",cx,L.h*.355f,type(s*.66f),fadeBy(ROSE,heading),Painter.CENTER,true);
         p.text("A friend to guide you!",cx,L.h*.395f,type(s*.48f),fadeBy(INK_DIM,heading),Painter.CENTER,false);
-        float rowFade=a.exiting?1f-ease(a.exitAge/.4f):ease(a.age/.5f);
+        float rowFade=a.exiting?1f-ease(a.exitAge/.4f):ease((a.age-TitleStart.SQUEEZE)/.5f);
         p.line(x(L,0),y(L,0)+rosterRadius(L)*1.6f,x(L,4),y(L,4)+rosterRadius(L)*1.6f,
                 fadeBy(INK_DIM,rowFade*.3f),s*.045f);
         for(int i=0;i<CHOICES.length;i++) {

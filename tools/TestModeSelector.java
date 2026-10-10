@@ -45,7 +45,14 @@ final class TestModeSelector extends Check {
         check("cancelled invitation cannot start",!c.starter.open);
         c.modes.touch(c,L,0,5,x,y);c.modes.touch(c,L,1,5,x,y);
         check("invitation starts first squishy flow and disappears",c.starter.open && !TitleStart.visible(c));
-        c.cancelStart();c.settingsOpen=true;
+        check("first start retains letters for the transition",TitleStart.transitioning(c));
+        c.update(TitleStart.SQUEEZE,L);
+        check("compressed invitation is no longer tappable",TitleStart.transitioning(c) && !TitleStart.hit(c,L,x,y));
+        c.update(TitleStart.BURST+.01f,L);
+        check("burst finishes while selection stays open",!TitleStart.transitioning(c) && c.starter.open);
+        c.cancelStart();
+        check("cancel restores the idle invitation",!TitleStart.transitioning(c) && TitleStart.visible(c));
+        c.settingsOpen=true;
         check("settings owns invitation touches",!TitleStart.hit(c,L,x,y));
         c.settingsOpen=false;c.onboarding.titleGuide=true;
         check("tutorial owns invitation touches",!TitleStart.hit(c,L,x,y));
