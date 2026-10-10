@@ -68,7 +68,43 @@ final class TestModeSelector extends Check {
         LandPicker.down(c,L,x,landY);LandPicker.up(c,L,x,landY);
         check("single land starts returning Adventure run",c.starting());
     }
+    private static void letterSprings(Layout L) {
+        Mem save=new Mem();save.tutorials=save.powerTutorials=0;
+        GameCore a=new GameCore(save,164),b=new GameCore(save,164);
+        a.titleStart.ox[0]=b.titleStart.ox[0]=.5f;
+        a.titleStart.ox[1]=b.titleStart.ox[1]=-.5f;
+        b.titleStart.oy[1]=2f; // Same tethers, but no contact between these two letters.
+        a.titleStart.update(a,1f/120,L);b.titleStart.update(b,1f/120,L);
+        check("letters push neighbors with equal opposite contact",a.titleStart.vx[0]<b.titleStart.vx[0]
+                && a.titleStart.vx[1]>b.titleStart.vx[1]);
+        boolean bounded=true,moved=false;
+        for(int frame=0;frame<2400;frame++) {
+            float dt=frame%120==0?3f:frame%2==0?1f/30:1f/120;
+            a.update(dt,L);
+            for(int i=0;i<TitleStart.COUNT;i++) {
+                bounded &= Float.isFinite(a.titleStart.ox[i]) && Float.isFinite(a.titleStart.oy[i])
+                        && Math.abs(a.titleStart.ox[i])<=TitleStart.MAX_OFFSET && Math.abs(a.titleStart.oy[i])<=TitleStart.MAX_OFFSET
+                        && Math.abs(a.titleStart.vx[i])<=TitleStart.MAX_SPEED && Math.abs(a.titleStart.vy[i])<=TitleStart.MAX_SPEED
+                        && Math.abs(a.titleStart.squash[i])<=.24f;
+                moved |= Math.abs(a.titleStart.ox[i])+Math.abs(a.titleStart.oy[i])>.01f;
+            }
+        }
+        check("spring bodies remain bounded through long idle and hitches",bounded && moved);
+        a.beginStart();
+        for(int frame=0;frame<60;frame++)a.update(1f/120,L);
+        check("squeeze contacts keep spring shapes finite",Float.isFinite(a.titleStart.squash[0])
+                && Math.abs(a.titleStart.ox[0])<=TitleStart.MAX_OFFSET);
+        a.cancelStart();
+        boolean clear=true;
+        for(int i=0;i<TitleStart.COUNT;i++)clear &= a.titleStart.ox[i]==0 && a.titleStart.oy[i]==0
+                && a.titleStart.vx[i]==0 && a.titleStart.vy[i]==0 && a.titleStart.squash[i]==0 && a.titleStart.squashV[i]==0;
+        check("cancel clears all letter momentum",clear);
+        a.titleStart.ox[0]=.4f;a.settingsOpen=true;a.update(.1f,L);
+        check("hidden invitation retains no spring motion",a.titleStart.ox[0]==0);
+        check("letter physics leaves gameplay random sequence alone",a.rnd.nextLong()==b.rnd.nextLong());
+    }
     static void all(Layout L) {
+        letterSprings(L);
         firstEntry(L);
         sceneStarts(L);
         swipePreview(L);

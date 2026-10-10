@@ -600,6 +600,7 @@ final class GameCore {
     boolean pushUsed;
     final Onboarding onboarding = new Onboarding();
     final Starter starter = new Starter();
+    final TitleStart titleStart = new TitleStart();
     final ModeSelector modes = new ModeSelector();
     final Survival survival = new Survival();
     final TimeAttack timeAttack = new TimeAttack();
@@ -1890,7 +1891,7 @@ final class GameCore {
     }
 
     void cancelStart() {
-        starter.clear();launchFromStarter=false;
+        starter.clear();titleStart.reset();launchFromStarter=false;
         stopLaunchVoice();
         startFade = launchT = pickerT = 0; launchWho = pendingRunWho = -1; startAnnounced = false;
     }
@@ -2736,6 +2737,7 @@ final class GameCore {
         bossDeathHaptic = 0;
         titleKeyHint = titleKeysAvailable() ? decay(titleKeyHint, elapsed / 1.2f) : 0f;
         if (paused) return;
+        if(!starter.open)titleStart.update(this,elapsed,L);
         townSaveRetry=Math.max(0f,townSaveRetry-elapsed);
         if (town.dirty && townSaveRetry<=0f) saveTown();
         townReturnFade=Math.max(0f,townReturnFade-dt);
@@ -2756,7 +2758,7 @@ final class GameCore {
             clock+=elapsed;time+=elapsed;skyClock+=elapsed;
             updateTitleSprings(elapsed,L);
             for(int i=0;i<Glyph.COUNT;i++)keyPress[i]=decay(keyPress[i],elapsed*5.5f);
-            starter.update(this,elapsed);return;
+            starter.update(this,elapsed);titleStart.update(this,elapsed,L);return;
         }
         modes.update(this,elapsed);
         if (onboarding.update(this, dt, elapsed, L)) return;

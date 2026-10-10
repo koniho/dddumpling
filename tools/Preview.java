@@ -1409,16 +1409,16 @@ final class Preview {
         Check.Mem freshStore=new Check.Mem();freshStore.tutorials=freshStore.powerTutorials=0;freshStore.rosterState=0;
         GameCore freshTitle=new GameCore(freshStore,164);
         for(int beat=0;beat<3;beat++) {
-            freshTitle.clock=beat*.6f;
+            if(beat>0)step(freshTitle,L,.6f);
             shot(dir,"164-first-title-"+beat,freshTitle,L,w,h,ss);
         }
         freshTitle.beginStart();
         for(int frame=0;frame<5;frame++) {
-            freshTitle.starter.age=new float[]{0,.20f,TitleStart.SQUEEZE,.46f,.72f}[frame];
-            freshTitle.clock=1.2f+freshTitle.starter.age;
+            float at=new float[]{0,.20f,TitleStart.SQUEEZE,.46f,.72f}[frame];
+            step(freshTitle,L,Math.max(0,at-freshTitle.starter.age));
             shot(dir,"164-start-transition-"+frame,freshTitle,L,w,h,ss);
         }
-        freshTitle.starter.age=TitleStart.TRANSITION;freshTitle.clock=1.2f+freshTitle.starter.age;
+        step(freshTitle,L,Math.max(0,TitleStart.TRANSITION-freshTitle.starter.age));
         shot(dir,"164-first-selection",freshTitle,L,w,h,ss);
         GameCore returningTitle=new GameCore(store,164);returningTitle.clock=2.4f;
         shot(dir,"164-returning-title",returningTitle,L,w,h,ss);
