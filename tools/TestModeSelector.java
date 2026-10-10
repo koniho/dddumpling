@@ -12,9 +12,8 @@ final class TestModeSelector extends Check {
         c.modes.touch(c,L,0,12,x,y);c.modes.touch(c,L,1,12,x,y);
     }
     private static void sceneStarts(Layout L) {
-        for(int mode=0;mode<ModeSelector.NAMES.length;mode++) {
+        for(int mode=1;mode<ModeSelector.NAMES.length;mode++) {
             GameCore c=title();c.modes.restore(mode);
-            if(mode==ModeSelector.ADVENTURE) {c.collected=1;c.landChoice=0;}
             float x=L.w*.5f,y=mode==ModeSelector.TIME_ATTACK?L.h*.677f:
                     LandPicker.cardY(L)+(mode==ModeSelector.SURVIVAL?L.unit*1.3f:0);
             check("mode scene captures tap "+mode,c.modes.touch(c,L,0,7,x,y));
@@ -34,7 +33,36 @@ final class TestModeSelector extends Check {
         LandPicker.down(c,L,x,y);LandPicker.up(c,L,x,y);
         check("land tutorial cannot be bypassed with a scene tap",!c.starting());
     }
+    private static void firstEntry(Layout L) {
+        Mem save=new Mem();save.tutorials=save.powerTutorials=0;save.rosterState=0;
+        GameCore c=new GameCore(save,164);float x=L.w*.5f,y=TitleStart.y(L);
+        check("fresh title shows invitation before regular controls",TitleStart.visible(c) && !c.modes.visible(c));
+        c.modes.touch(c,L,0,5,x,y);c.modes.touch(c,L,2,5,x+L.unit*2,y);
+        c.modes.touch(c,L,1,5,x,y);
+        check("dragging invitation cannot start",!c.starter.open);
+        c.modes.touch(c,L,0,5,x,y);c.modes.touch(c,L,3,5,x,y);
+        c.modes.touch(c,L,1,5,x,y);
+        check("cancelled invitation cannot start",!c.starter.open);
+        c.modes.touch(c,L,0,5,x,y);c.modes.touch(c,L,1,5,x,y);
+        check("invitation starts first squishy flow and disappears",c.starter.open && !TitleStart.visible(c));
+        c.cancelStart();c.settingsOpen=true;
+        check("settings owns invitation touches",!TitleStart.hit(c,L,x,y));
+        c.settingsOpen=false;c.onboarding.titleGuide=true;
+        check("tutorial owns invitation touches",!TitleStart.hit(c,L,x,y));
+        c.onboarding.clear();
+        float landY=LandPicker.cardY(L)-LandPicker.sceneHalfHeight(c,L)*.9f;
+        check("single land captures visible upper scenery",LandPicker.down(c,L,x,landY));
+        LandPicker.up(c,L,x,landY);
+        check("fresh land tap also starts selection",c.starter.open);
+        c.cancelStart();c.collected=1;c.onboarding.saved=Onboarding.CORE;
+        check("returning player has no first-play prompt",!TitleStart.visible(c));
+        LandPicker.down(c,L,x,landY);LandPicker.move(c,L,x+L.unit,landY);LandPicker.up(c,L,x,landY);
+        check("single land drag does not start",!c.starting());
+        LandPicker.down(c,L,x,landY);LandPicker.up(c,L,x,landY);
+        check("single land starts returning Adventure run",c.starting());
+    }
     static void all(Layout L) {
+        firstEntry(L);
         sceneStarts(L);
         swipePreview(L);
         persistence(L);

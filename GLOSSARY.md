@@ -65,8 +65,8 @@ geometry; `Kawaii` draws the creature.
 | **chevron** / **cluster** | the three-key group under one thumb | left = keys 0,1,2; right = 3,4,5 |
 | **hint pulse** | the ring on the key you need next | `Renderer.keys` |
 | **press ripple** | the ring expanding off a key as its press decays | same |
-| **demo** | the title screen typing a word to itself, in place of the two lines that explained it: a key lights, a bullet leaves it, a letter goes | `Demo` |
-| **bullet** / **shot** | what a press fires from a key at the tile it struck. The demo fires the same one | `Renderer.bullet` |
+| **first-play invitation** | the bouncy “LET'S SQUISH” title prompt; tapping it opens first-squishy selection | `TitleStart` |
+| **bullet** / **shot** | what a press fires from a key at the tile it struck | `Renderer.bullet` |
 | **caret** | the triangle over the thing to press next — the field's head tile and the interlude's wanted letter draw the same one | `Draw.caret` |
 | **case gestures** | the only drag targets outside play: tap either side of the shelf, swipe it, or drag the position bar | `GameView.handleCase`, `GameCore.caseDragTo` |
 

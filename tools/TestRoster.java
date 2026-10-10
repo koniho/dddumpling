@@ -41,7 +41,6 @@ final class TestRoster extends Check {
         Mem safe = new Mem(); safe.rosterState = 1 | (2 << 1);
         GameCore reached = new GameCore(safe, 100); reached.startGame(); reached.jumpToStage(6, L);
         check("reaching stage six resets early losses", reached.earlyLosses == 0);
-        for (int i = 0; i < 24; i++) check("title demo follows next roster", Roster.active(false, Demo.letter(farewell, i)));
 
         GameCore choice = new GameCore(new Mem(), 101); choice.startGame();
         boolean current = choice.runFullRoster;

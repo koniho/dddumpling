@@ -53,10 +53,6 @@ final class Screens extends Draw {
                     cx,HighScoreScreen.titleY(L),type(s*.65f),fadeBy(INK_DIM,fade*caseOut(c)),Painter.CENTER,true);
         }
 
-        // Where the two lines explaining the game used to be: the game, played. A word falls and
-        // types itself while the matching keys light under it. Suppressed with the case open —
-        // there is one lesson on screen at a time.
-        Demo.draw(p, c, L, fade * caseOut(c) * c.modes.adventureFade);
         p.restore();
 
         // The badge and the case swap in the same place, and in series rather than on top of
@@ -76,17 +72,7 @@ final class Screens extends Draw {
         c.modes.draw(p,c,L);
         p.restore();
 
-        // Anchored above the danger line rather than off the deck: the dashed line shows
-        // faintly through the scrim, and text sitting on it looks struck through. The lines swap
-        // with the case, because with it open every key only puts it away again. Nothing here
-        // points at the badge — it carries its own TAP TO OPEN, and saying it twice on one screen
-        // made the case look like the thing to do rather than something off to the side.
-        // Nothing says "press a key to start" any more. The demo says it, by pressing one: a key
-        // lights, a bullet leaves it, and a letter goes — which points at the thing you have to
-        // touch and shows what touching it does. Six keys glowing at once said the same thing
-        // louder and read as an alarm. See Renderer.keys and Demo.
-        // The case explains itself: arrows either side of the shelf, and the focused entry throbs
-        // when it first comes up if there is a story behind it. See Showcase.
+        TitleStart.draw(p,c,L);
 
     }
 

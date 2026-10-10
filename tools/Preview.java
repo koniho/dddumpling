@@ -1406,35 +1406,16 @@ final class Preview {
         Pause.action(paused, 2);
         shot(dir, "97-confirm-end", paused, L, w, h, ss);
 
-        // The title lesson identifying its second target and matching key before pressing it.
-        GameCore c21 = new GameCore(store, 87L);
-        step(c21, L, Demo.ACQUIRE[1] + 0.28f);
-        System.out.printf("title demo: lit key=%d amount=%.2f%n", Demo.litKey(c21),
-                Demo.litAmount(c21));
-        shot(dir, "49-title-demo", c21, L, w, h, ss);
-        c21.clock = Demo.POWER_START + Demo.POWER_APPROACH + 0.85f;
-        shot(dir, "49b-title-touch-approach", c21, L, w, h, ss);
-        c21.clock = Demo.POWER_START + Demo.POWER_TOUCH + 0.08f;
-        shot(dir, "49c-title-touch-collect", c21, L, w, h, ss);
-
-        // After the third press: the finishing bullet visibly travelling from its actual key.
-        GameCore c22 = new GameCore(store, 87L);
-        step(c22, L, Demo.fireAt(2) + Demo.SHOT * 0.48f);
-        System.out.printf("title last shot: lit key=%d amount=%.2f%n", Demo.litKey(c22),
-                Demo.litAmount(c22));
-        shot(dir, "50-title-shot", c22, L, w, h, ss);
-
-        // The demo word arriving. It fades and swells up on enterT, the same field a real word's
-        // entrance rides, rather than appearing whole.
-        GameCore c23 = new GameCore(store, 87L);
-        step(c23, L, 0.48f);
-        shot(dir, "51-title-arriving", c23, L, w, h, ss);
-
-        // And coming apart once that bullet lands: the field's own fly-apart, outer tiles splitting
-        // left and right off Renderer.enemy's destroy path.
-        GameCore c24 = new GameCore(store, 87L);
-        step(c24, L, Demo.impactAt(2) + GameCore.DESTROY_TIME * 0.55f);
-        shot(dir, "52-title-destroyed", c24, L, w, h, ss);
+        Check.Mem freshStore=new Check.Mem();freshStore.tutorials=freshStore.powerTutorials=0;freshStore.rosterState=0;
+        GameCore freshTitle=new GameCore(freshStore,164);
+        for(int beat=0;beat<3;beat++) {
+            freshTitle.clock=beat*.6f;
+            shot(dir,"164-first-title-"+beat,freshTitle,L,w,h,ss);
+        }
+        freshTitle.beginStart();freshTitle.starter.age=.4f;
+        shot(dir,"164-first-selection",freshTitle,L,w,h,ss);
+        GameCore returningTitle=new GameCore(store,164);returningTitle.clock=2.4f;
+        shot(dir,"164-returning-title",returningTitle,L,w,h,ss);
 
         // Adaptive roster: the first-run deck, friends bouncing in, and their sad farewell.
         Mem joinStore = new Mem(); joinStore.rosterState = 0;

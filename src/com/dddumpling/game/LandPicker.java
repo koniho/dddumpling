@@ -30,6 +30,9 @@ final class LandPicker extends Draw {
         return c.state == GameCore.TITLE && !c.townOpen && !c.caseOpen && c.caseFade < 0.01f
                 && !c.storyOpen() && !c.starting() && !c.settingsOpen && c.rosterSceneT <= 0f;
     }
+    static float sceneHalfHeight(GameCore c,Layout L) {
+        return Math.max(L.h*.063f,iconRadius(c,L)*2.35f);
+    }
     static float cardY(Layout L) { return L.h * 0.705f; }
     // Adjacent centres differ by 30% of the full icon height.
     static float cardY(GameCore c, Layout L, int land) {
@@ -107,8 +110,8 @@ final class LandPicker extends Draw {
             if (unlocked(c, destination(i))) { select(c, destination(i)); return; }
     }
     static boolean down(GameCore c, Layout L, float x, float y) {
-        if (!visible(c) || count(c)<=1 || c.returnFade > 0f || c.landDiscovery>=0) return false;
-        if (Math.abs(y - cardY(L)) > L.h * 0.05f) return false;
+        if (!visible(c) || c.returnFade > 0f || c.landDiscovery>=0) return false;
+        if (x<L.padL || x>L.w-L.padR || Math.abs(y-cardY(L))>sceneHalfHeight(c,L)) return false;
         c.landPickerDragging = true; c.landPickerMoved = c.landPickerDragged = false;
         c.landPickerX = x; c.landPickerY = y;
         return true;
@@ -127,7 +130,7 @@ final class LandPicker extends Draw {
     static void up(GameCore c, Layout L, float x, float y) {
         if (c.landPickerDragging && !c.landPickerMoved && !c.landPickerDragged && visible(c)
                 && Math.max(Math.abs(x-c.landPickerX),Math.abs(y-c.landPickerY))<=L.unit*.7f
-                && Math.abs(y - cardY(L)) < L.h * 0.05f) {
+                && Math.abs(y-cardY(L))<=sceneHalfHeight(c,L)) {
             int nearest = -1;
             float distance = spacing(c, L) * 0.65f;
             for (int land = 0; land <= TOWN; land++) {
@@ -316,7 +319,7 @@ final class LandPicker extends Draw {
         p=new OpacityPainter(p,Math.max(0,2*c.modes.adventureFade-1));
         p.save();p.translate(0,(1-c.modes.adventureFade)*L.unit*2f);
         float cy = cardY(L);
-        float halfHeight=Math.max(L.h*0.063f,iconRadius(c,L)*2.35f);
+        float halfHeight=sceneHalfHeight(c,L);
         p.save(); p.clipRect(0, cy-halfHeight, L.w, cy+halfHeight);
         drawTrail(p,c,L);
         // Back to front: the focused emblem covers the inner edges of its neighbours.

@@ -5,7 +5,7 @@ final class ModeSelector extends Draw {
     static final int ADVENTURE=0, SURVIVAL=1, TIME_ATTACK=2;
     static final String[] NAMES={"ADVENTURE","SURVIVAL","BOSS TIME ATTACK"};
     static final float CHANGE=.32f;
-    private static final int SCENE=8;
+    private static final int SCENE=8, FIRST_START=9;
     static final float SWIPE_DISTANCE=.18f, SWIPE_RETURN=.22f;
     final AdventureTitle adventureTitle=new AdventureTitle();
     int selected=ADVENTURE, previous=ADVENTURE, direction=1;
@@ -41,8 +41,9 @@ final class ModeSelector extends Draw {
         transition=1;adventureFade=adventure()?1:0;
         swipeOffset=returnTime=transitionFrom=0;
     }
-    boolean visible(GameCore c) {
-        return c.state==GameCore.TITLE && !c.starting() && !Starter.hideCase(c)
+    boolean visible(GameCore c) { return entryAvailable(c) && !Starter.hideCase(c); }
+    boolean entryAvailable(GameCore c) {
+        return c.state==GameCore.TITLE && !c.starting()
                 && !c.townOpen && !c.caseOpen && c.caseFade<.01f && !c.storyOpen()
                 && !c.settingsOpen && !c.releaseNotes.open && !c.highScoreScreen.open
                 && c.returnFade<=0 && c.rosterSceneT<=0 && c.landDiscovery<0
@@ -59,14 +60,13 @@ final class ModeSelector extends Draw {
     }
     static float arrowX(Layout L,int direction) { return L.w*(direction<0?.065f:.935f); }
     int hit(GameCore c,Layout L,float x,float y) {
+        if(TitleStart.hit(c,L,x,y))return FIRST_START;
         int bossHit=c.timeAttack.hit(c,L,x,y);if(bossHit!=0)return bossHit;
         if(!visible(c) || x<L.padL || x>L.w-L.padR)return 0;
         if(Math.abs(y-y(L))<=L.unit*(selected==TIME_ATTACK?2.7f:2f))
             return x<L.w*.11f?1:x>L.w*.89f?3:2;
         if(selected==SURVIVAL && Math.abs(y-(LandPicker.cardY(L)+L.unit*1.3f))<L.h*.055f
                 && x>L.w*.08f && x<L.w*.92f)return SCENE;
-        if(adventure() && LandPicker.visible(c) && LandPicker.count(c)==1
-                && Math.abs(y-LandPicker.cardY(L))<L.h*.05f && Math.abs(x-L.w*.5f)<L.w*.24f)return SCENE;
         return 0;
     }
     void select(GameCore c,int next,int direction) {
@@ -88,7 +88,9 @@ final class ModeSelector extends Draw {
         return true;
     }
     void start(GameCore c) {
-        if(visible(c) && c.landTravelFrom<0 && confirm(c))c.beginStart();
+        if(c.landTravelFrom>=0)return;
+        if(TitleStart.visible(c))c.beginStart();
+        else if(visible(c) && confirm(c))c.beginStart();
     }
     private void reject(GameCore c) {
         unavailable=1;
@@ -118,7 +120,7 @@ final class ModeSelector extends Draw {
         adventureFade+=Math.max(-dt/CHANGE,Math.min(dt/CHANGE,(adventure()?1:0)-adventureFade));
         confirmation=Math.max(0,confirmation-dt/0.65f);
         unavailable=Math.max(0,unavailable-dt/0.65f);
-        if(!visible(c)) {cancelTouch();swipeOffset=returnTime=0;}
+        if(!visible(c) && !TitleStart.visible(c)) {cancelTouch();swipeOffset=returnTime=0;}
     }
     boolean touch(GameCore c,Layout L,int action,int id,float x,float y) {
         if(action==3) {boolean owned=pointer>=0;cancelTouch();return owned;}
@@ -128,7 +130,7 @@ final class ModeSelector extends Draw {
             pointer=id;pressed=target;downX=x;downY=y;return true;
         }
         if(pointer<0)return false;
-        if(!visible(c)) {cancelTouch();return true;}
+        if(!visible(c) && !TitleStart.visible(c)) {cancelTouch();return true;}
         if(action==5) {pressed=0;moved=true;returnSwipe();return true;}
         if(id!=pointer)return true;
         if(!moved && (action==2 || action==1 || action==6)) {
@@ -157,7 +159,7 @@ final class ModeSelector extends Draw {
             cancelTouch();
             if(tap && target!=0) {
                 if(target==4 || target==6)c.timeAttack.choose(c,target==4?-1:1);
-                else if(target==2 || target==5 || target==TimeAttack.SCENE || target==SCENE)start(c);
+                else if(target==2 || target==5 || target==TimeAttack.SCENE || target==SCENE || target==FIRST_START)start(c);
                 else {int direction=target==1?-1:1;select(c,(selected+direction+NAMES.length)%NAMES.length,direction);}
             }
         }

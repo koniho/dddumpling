@@ -167,7 +167,7 @@ src/com/dddumpling/game/Trinket.java
 src/com/dddumpling/game/Cabinet.java
 src/com/dddumpling/game/Launch.java
 src/com/dddumpling/game/RoundEnd.java
-src/com/dddumpling/game/Demo.java
+src/com/dddumpling/game/TitleStart.java
 src/com/dddumpling/game/Lore.java
 src/com/dddumpling/game/Narration.java
 src/com/dddumpling/game/Showcase.java

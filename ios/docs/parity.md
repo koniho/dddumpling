@@ -48,7 +48,7 @@ per-land best scores are saved.
 
 | Production screen or scene | Shared implementation | Native adapter | Status and required simulator exercise |
 | --- | --- | --- | --- |
-| Title: animated logo, self-playing lesson, deck, privacy affordance, launch transition | `Screens.title`, `TitleBubbleFont`, `Demo`, `Launch`, `PrivacyUi`, `Renderer` | `DDGameView`, `IOSGame`, `DDPainter`, `DDHost` | Wired; start a run, touch the logo, and open the privacy URL |
+| Title: animated logo, first-play invitation, tappable Adventure land, deck, privacy affordance, launch transition | `Screens.title`, `TitleBubbleFont`, `TitleStart`, `LandPicker`, `Launch`, `PrivacyUi`, `Renderer` | `DDGameView`, `IOSGame`, `DDPainter`, `DDHost` | Wired; start a run, touch the logo, and open the privacy URL |
 | Land picker and first-visit discovery card | `LandPicker`, `Lands` | `IOSGame` stable-pointer drag routing | Wired; unlock each available card and tap/drag-select it |
 | Main play: sky, scenery, falling words, six-key deck, HUD, shots, particles, powerups, stage banners | `GameCore`, `Renderer`, `Sky`, `Words`, `EnemyEntry`, `Hud`, `Fx`, `Power`, `Kawaii`, `Shape`, `Draw` | `DDGameView` frame loop; `DDIOSPainter`; `IOSGame` key/power routing | Wired; play a normal stage through a clear and a loss |
 | Pause, end-run confirmation, background pause and return | `Pause`, `GameCore`, `Screens` | UIKit pause button in `DDGameView`, app lifecycle callbacks, `IOSGame.back/background` | Wired; button, app switch, background/foreground, and back navigation |

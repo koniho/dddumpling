@@ -543,7 +543,8 @@ final class TestVisuals extends Check {
         GameCore lands = new GameCore(landStore, 717L);
         check("new players see Slime Hills as their only starting land", LandPicker.visible(lands)
                 && LandPicker.count(lands)==1 && lands.landChoice==0);
-        check("a single land does not consume title taps", !LandPicker.down(lands,L,L.w*.5f,LandPicker.cardY(L)));
+        check("a single land accepts title taps", LandPicker.down(lands,L,L.w*.5f,LandPicker.cardY(L)));
+        lands.landPickerDragging=false;
         LandPicker.step(lands,1);LandPicker.step(lands,-1);
         LandPicker.updateDiscovery(lands,2f);
         check("showing Slime Hills leaves progress and discovery unchanged", lands.landChoice==0
@@ -559,7 +560,8 @@ final class TestVisuals extends Check {
         check("land selection leaves the title palette unchanged", Lands.background(lands) == titleColor);
         for (int layer = 0; layer < GameCore.CLOUD_LAYERS; layer++)
             check("selection preserves intro clouds " + layer, Lands.cloudTint(lands, layer) == Sky.CLOUD_TINT[layer]);
-        check("the removed play button has no hit target", !LandPicker.down(lands, L, L.w * 0.5f, L.h * 0.62f));
+        check("land hit area stops above its scenery", !LandPicker.down(lands, L, L.w * 0.5f,
+                LandPicker.cardY(L)-LandPicker.sceneHalfHeight(lands,L)-L.unit));
         lands.screenKey(Kawaii.DUMPLING);
         check("a character key starts the chosen land", lands.starting());
         for (int frame = 0; frame < 180 && lands.state == GameCore.TITLE; frame++) lands.update(DT, L);
@@ -683,45 +685,10 @@ final class TestVisuals extends Check {
                 (resetUi.testChipL(1, 2) + resetUi.testChipR(1, 2)) / 2f,
                 resetUi.debuffY + resetUi.testH / 2f) == SettingsUi.HIT_RESET_LANDS);
 
-        boolean ordered = true;
-        for (int i = 0; i < Demo.LEN; i++) {
-            ordered &= Demo.ACQUIRE[i] < Demo.PRESS[i]
-                    && Demo.PRESS[i] < Demo.fireAt(i)
-                    && Demo.fireAt(i) < Demo.impactAt(i);
-            if (i + 1 < Demo.LEN) ordered &= Demo.impactAt(i) < Demo.ACQUIRE[i + 1];
-        }
-        check("each lesson separates acquire, press, fire, impact and advance", ordered);
-        check("the loop leaves a readable rest after the final impact",
-                Demo.LOOP - Demo.impactAt(Demo.LEN - 1) > GameCore.DESTROY_TIME + 0.8f);
         check("the open case keeps its margin above the play-field floor",
                 Showcase.panelBot(L) <= L.dangerY - Showcase.FIELD_MARGIN * L.unit + 0.5f);
 
         GameCore c = new GameCore(new Mem(), 73L);
-        check("the powerup appears after the enemy has finished breaking apart",
-                Demo.POWER_START > Demo.impactAt(Demo.LEN - 1) + GameCore.DESTROY_TIME);
-        check("the collection burst finishes before the loop restarts",
-                Demo.LOOP > Demo.POWER_START + Demo.POWER_TOUCH + Power.POP_TIME + 0.5f);
-        c.clock = Demo.POWER_START - 0.01f;
-        check("the powerup waits for its lesson", Demo.lessonPower(c, L) == null);
-        c.clock = Demo.POWER_START + Demo.POWER_APPROACH;
-        Power drifting = Demo.lessonPower(c, L);
-        c.clock = Demo.POWER_START + Demo.POWER_TOUCH + 0.05f;
-        Power caught = Demo.lessonPower(c, L);
-        check("the powerup drifts across before the touch collects it",
-                !drifting.hit && caught.hit && caught.x > drifting.x);
-        check("the title powerup is only a demonstration", c.power == null && !c.powerActive());
-        GameCore.Enemy demo = new GameCore.Enemy();
-        demo.word = new int[Demo.LEN];
-        demo.baseX = (L.playLeft + L.playRight) / 2f;
-        demo.sway = 0f;
-        c.clock = Demo.impactAt(0);
-        float from = Demo.caretX(c, demo, L);
-        c.clock += 0.08f;
-        float moving = Demo.caretX(c, demo, L);
-        float to = c.tileX(demo, 1, L);
-        check("the demo chevron eases toward the next letter after impact",
-                from < moving && moving < to);
-
         float ax = Screens.titleAnchorX(2, L), ay = Screens.titleAnchorY(2, L);
         c.titleTouchDown = true;
         c.titleTouchX = ax;

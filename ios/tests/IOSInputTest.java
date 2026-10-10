@@ -81,8 +81,8 @@ public final class IOSInputTest extends Check {
             check("native empty title tap hints without launching "+choice,c.titleKeyHighlight()>0f
                     && !c.starting() && !c.starter.open && !c.caseOpen);
             game.update(1.3f);
-            tap(game,Showcase.iconCx(l,c.clock),Showcase.iconCy(c, l,c.clock));
-            check("hidden display badge also counts as empty space "+choice,c.titleKeyHighlight()>0f
+            tap(game,l.w*.02f,Showcase.iconCy(c, l,c.clock));
+            check("space beside the first-play invitation still hints "+choice,c.titleKeyHighlight()>0f
                     && !c.caseOpen && !c.starter.open);
             tap(game,l.w*.2f,l.h*.85f);
             check("starting clears native title hint "+choice,c.titleKeyHint==0f);
@@ -185,6 +185,21 @@ public final class IOSInputTest extends Check {
         check("second back resumes", !game.paused());
         clock = c.clock; game.update(Float.NaN); game.update(-1); game.update(Float.POSITIVE_INFINITY);
         check("invalid frame intervals do not poison simulation", c.clock == clock);
+    }
+
+    private static void firstTitleEntry() {
+        Mem save=new Mem();save.tutorials=save.powerTutorials=0;save.rosterState=0;
+        IOSGame game=new IOSGame(save,new Ear(),164);game.layout(393,852,0,59,0,34);
+        GameCore c=game.core();Layout l=game.geometry();float x=l.w*.5f,y=TitleStart.y(l);
+        game.touch(one(0,19,x,y));game.touch(one(2,19,x+l.unit,y));game.touch(one(1,19,x,y));
+        check("native first prompt ignores drags",!c.starter.open);
+        tap(game,x,y);check("native first prompt starts squishy selection",c.starter.open);
+        c.cancelStart();
+        tap(game,x,LandPicker.cardY(l)-LandPicker.sceneHalfHeight(c,l)*.9f);
+        check("native fresh land scenery starts selection",c.starter.open);
+        c.cancelStart();c.collected=1;c.onboarding.saved=Onboarding.CORE;
+        tap(game,x,LandPicker.cardY(l)+LandPicker.sceneHalfHeight(c,l)*.9f);
+        check("native returning single land starts run",c.starting());
     }
 
     private static void modeSelector() {
@@ -946,7 +961,7 @@ public final class IOSInputTest extends Check {
         cave();
         highScores();
         releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
-        steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput(); modeSelector(); survival();
+        steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput(); firstTitleEntry(); modeSelector(); survival();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");
