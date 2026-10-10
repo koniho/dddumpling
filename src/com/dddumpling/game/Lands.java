@@ -176,12 +176,39 @@ final class Lands extends Draw {
                 }
             }
             p.fillPoly(pill(x, y + r * 0.48f, r * 0.24f, r * 0.8f, 8), silhouette ? col : light);
+            if(animated) {
+                mushroomCap(p,x,y+r*.13f,r*1.12f,r*.43f,t,col,light);
+                return;
+            }
             p.fillEllipse(x, y, r * 1.12f, r * 0.65f, col);
             p.fillEllipse(x, y + r * 0.21f, r, r * 0.15f,
                     (silhouette ? col : Glyph.withAlpha(0xFF775968, a)));
             for (int k = 0; k < 3; k++)
                 p.fillCircle(x + (k - 1) * r * 0.51f, y - r * (k == 1 ? 0.31f : 0.12f),
                         r * 0.12f, light);
+        }
+    }
+
+    /** A thin, uneven brim under an asymmetric dome; width and height vary independently. */
+    static void mushroomCap(Painter p,float x,float y,float w,float h,float t,int color,int spots) {
+        float[] cap=new float[100],rim=new float[100];
+        for(int i=0;i<=24;i++) {
+            float u=i/12f-1,round=(float)Math.sqrt(Math.max(0,1-u*u));
+            float brim=y+h*(.12f*(float)Math.sin(t*.8f)*u+.065f*(float)Math.sin(u*7+.4f)*round);
+            float dome=h*(float)Math.pow(Math.max(0,1-u*u),.72f)*(1+.12f*u);
+            int top=i*2,bottom=(49-i)*2;
+            cap[top]=cap[bottom]=rim[top]=rim[bottom]=x+u*w;
+            cap[top+1]=brim-dome;cap[bottom+1]=brim+h*.06f*round;
+            rim[top+1]=brim-h*.045f*round;rim[bottom+1]=cap[bottom+1];
+        }
+        p.fillPoly(cap,color);
+        if(spots==0)return;
+        p.fillPoly(rim,Glyph.withAlpha(0xFF87556E,(color>>>24)*3/4));
+        for(int i=-1;i<=1;i++) {
+            float u=i*.52f,round=(float)Math.sqrt(1-u*u);
+            float brim=y+h*(.12f*(float)Math.sin(t*.8f)*u+.065f*(float)Math.sin(u*7+.4f)*round);
+            float dome=h*(float)Math.pow(1-u*u,.72f)*(1+.12f*u);
+            p.fillEllipse(x+u*w,brim-dome*(i==0?.65f:.46f),Math.min(w*.12f,h*.23f),h*.09f,spots);
         }
     }
 

@@ -130,14 +130,15 @@ final class AdventureTitle extends Draw {
                 p.fillPoly(ribbon,Glyph.withAlpha(blade%2==0?0xFF70C6A5:0xFF91D8B5,a));
             }
         } else {
+            int shape=variant%4;
+            float width=size*(shape==0?.55f:shape==1?.30f:shape==2?.45f:.22f);
+            float height=size*(shape==0?.15f:shape==1?.29f:shape==2?.21f:.43f);
             float sway=(float)Math.sin(t*2.2f)*size*.16f;
-            float capY=base-size*.72f,capX=x+sway;
-            p.polyline(new float[]{x,base,x+sway*.3f,base-size*.36f,capX,capY},
-                    Glyph.withAlpha(0xFFF3D8AE,a),size*.15f);
-            p.fillEllipse(capX,capY,size*.48f,size*.27f,Glyph.withAlpha(variant%3==0?0xFFCC839D:variant%3==1?0xFFCBA071:0xFFA78ACD,a));
-            p.fillEllipse(capX,capY+size*.06f,size*.45f,size*.09f,Glyph.withAlpha(0xFF87556E,a));
-            for(int k=-1;k<=1;k++)p.fillCircle(capX+k*size*.24f,capY-size*(k==0?.13f:.06f),
-                    size*(k==0?.064f:.048f),Glyph.withAlpha(0xFFFFE2B7,a));
+            float capY=base-size*(shape==3?.58f:.68f),capX=x+sway;
+            p.polyline(new float[]{x,base,x+sway*.3f,base-size*.32f,capX,capY},
+                    Glyph.withAlpha(0xFFF3D8AE,a),size*.12f);
+            int color=Glyph.withAlpha(variant%3==0?0xFFCC839D:variant%3==1?0xFFCBA071:0xFFA78ACD,a);
+            Lands.mushroomCap(p,capX,capY,width,height,t,color,Glyph.withAlpha(0xFFFFE2B7,a));
         }
     }
 }
