@@ -45,6 +45,7 @@ final class AdventureTitle extends Draw {
             float amount=initialized?growth[land]:land==land(c)?1:0;
             if(amount<=0)continue;
             float rise=amount*amount*(3-2*amount),ground=y+s*(front?.12f:.025f);
+            if(land==0) {slimePool(p,x,y,s,span,rise,now,fade,front);continue;}
             int alpha=(int)(255*fade*(front?.92f:.8f));
             if(!front)p.fillEllipse(x,ground,span,s*.15f,
                     fadeBy(Lands.TINT[land],fade*rise*.25f));
@@ -54,7 +55,7 @@ final class AdventureTitle extends Draw {
                 float px=x+span*((i-4)/4.3f+jitter*.25f);
                 float size=s*(1.25f+.33f*((i*7)%4));
                 float root=ground+s*(front?.25f:.08f)*(float)Math.sin(phase+1.3f);
-                float height=land==0?.36f:land==2?1.08f:land==3?1.05f:1.20f;
+                float height=land==2?1.08f:land==3?1.05f:1.20f;
                 float base=root+(1-rise)*size*height;
                 p.save();p.clipRect(x-span-s*.3f,y-s*2.75f,x+span+s*.3f,root);
                 prop(p,land,px,base,size,alpha,now+i*1.7f,i);
@@ -65,22 +66,27 @@ final class AdventureTitle extends Draw {
             if((i%3==0)!=front)continue;
             float age=initialized?bubbles[i]:land(c)==0?(now+i*BUBBLE_PERIOD/8f)%BUBBLE_PERIOD:-1;
             if(age<0 || age>=BUBBLE_LIFE)continue;
-            float t=age/BUBBLE_LIFE,r=s*(.12f+.055f*(i%3))*(.55f+t*.45f);
+            float t=age/BUBBLE_LIFE,r=s*(.30f+.135f*(i%3))*(.55f+t*.45f);
             float bx=x+span*((i-3.5f)/4.2f)+(float)Math.sin(age*2.3f+i)*s*.17f;
-            float by=y+s*.03f-t*s*2.35f;
+            float by=y+s*.03f-t*s*2.15f;
             float alpha=fade*Math.min(1,age*5)*Math.min(1,(BUBBLE_LIFE-age)*3);
             p.fillCircle(bx,by,r,fadeBy(0xFF87DB91,alpha*.32f));
             p.strokeCircle(bx,by,r,fadeBy(0xFFAFEAA4,alpha*.8f),s*.025f);
             p.arc(bx,by,r*.66f,r*.66f,205,80,fadeBy(0xFFF0FFD7,alpha*.9f),s*.035f);
         }
     }
+    private static void slimePool(Painter p,float x,float y,float s,float span,float rise,float clock,float fade,boolean front) {
+        float depth=s*(.42f+.025f*(float)Math.sin(clock*1.8f));
+        float cy=y+s*(.03f+(1-rise)*.92f),edge=y-s*.10f;
+        // Two complementary clips put one continuous pool around the lettering.
+        p.save();p.clipRect(x-span*1.06f,front?edge:y-s*.5f,x+span*1.06f,front?y+s*.48f:edge);
+        p.fillEllipse(x,cy,span*1.04f,depth,fadeBy(0xFF76B984,fade*.82f));
+        p.arc(x,cy,span*1.01f,depth*.85f,190,155,fadeBy(0xFFD2F7AE,fade*.65f),s*.05f);
+        p.arc(x,cy,span*1.01f,depth*.87f,8,160,fadeBy(0xFF478865,fade*.65f),s*.055f);
+        p.restore();
+    }
     private static void prop(Painter p,int land,float x,float base,float size,int a,float t,int variant) {
-        if(land==0) {
-            float wobble=1+.09f*(float)Math.sin(t*2);
-            p.fillEllipse(x,base,size*.67f*wobble,size*.31f/wobble,Glyph.withAlpha(0xFF76B984,a));
-            p.arc(x,base,size*.50f*wobble,size*.23f/wobble,195,110,
-                    Glyph.withAlpha(0xFFD2F7AE,a/2),size*.07f);
-        } else if(land==1 || land==Cave.LAND) {
+        if(land==1 || land==Cave.LAND) {
             int glass=(int)(a*.48f);
             Lands.crystal(p,x,base,size*.24f,size*1.15f,glass,t,false,true);
             Lands.crystal(p,x+size*.29f,base,size*.17f,size*.62f,glass,t+1.8f,false,true);
