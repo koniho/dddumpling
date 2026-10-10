@@ -103,7 +103,32 @@ final class TestModeSelector extends Check {
         check("hidden invitation retains no spring motion",a.titleStart.ox[0]==0);
         check("letter physics leaves gameplay random sequence alone",a.rnd.nextLong()==b.rnd.nextLong());
     }
+    private static void lockedPresentation(Layout L) {
+        GameCore c=title();c.collected=1;
+        for(int mode:new int[]{ModeSelector.SURVIVAL,ModeSelector.TIME_ATTACK}) {
+            c.modes.restore(mode);
+            java.util.ArrayList<String> labels=new java.util.ArrayList<>();
+            Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                    new Class<?>[]{Painter.class},(proxy,method,args)->{
+                        if(method.getName().equals("text"))labels.add((String)args[0]);
+                        return null;
+                    });
+            c.modes.draw(p,c,L);
+            check("locked mode explains Adventure requirement "+mode,labels.contains("LOCKED")
+                    && labels.contains(mode==ModeSelector.SURVIVAL?"BEAT THE STAGE 5 BOSS":"BEAT YOUR FIRST BOSS")
+                    && labels.contains("IN ADVENTURE TO UNLOCK"));
+            check("locked mode has no boss selection controls "+mode,c.timeAttack.hit(c,L,L.w*.15f,TimeAttack.selectY(L))==0);
+            check("locked mode has no rainbow invitation "+mode,stripeCaps(c,L)==0);
+            tap(c,L,0);check("locked title cannot start "+mode,!c.starting() && c.modes.unavailable>0);
+            c.beginStart();check("keys cannot bypass locked mode "+mode,!c.starting());
+            c.collected|=1L<<Collect.BOSS_FIRST;
+            labels.clear();c.modes.draw(p,c,L);
+            check("boss reward replaces lock immediately "+mode,!labels.contains("LOCKED") && c.modes.playable(c));
+            c.collected=1;
+        }
+    }
     static void all(Layout L) {
+        lockedPresentation(L);
         letterSprings(L);
         firstEntry(L);
         sceneStarts(L);

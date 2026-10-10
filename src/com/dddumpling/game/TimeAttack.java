@@ -148,14 +148,14 @@ final class TimeAttack extends Draw {
     }
     static float selectY(Layout L) {return L.h*.735f;}
     int hit(GameCore c,Layout L,float x,float y) {
-        if(c.modes.selected!=ModeSelector.TIME_ATTACK || !c.modes.visible(c)
+        if(c.modes.selected!=ModeSelector.TIME_ATTACK || !ModeSelector.unlocked(c,ModeSelector.TIME_ATTACK) || !c.modes.visible(c)
                 || x<L.padL || x>L.w-L.padR)return 0;
         if(Math.abs(y-selectY(L))<=L.unit*1.3f)return x<L.w*.27f?4:x>L.w*.73f?6:5;
         float top=Math.max(L.h*.635f,ModeSelector.y(L)+L.unit*2.2f);
         return y>=top && y<selectY(L)?SCENE:0;
     }
     void drawSelector(Painter p,GameCore c,Layout L) {
-        if(c.modes.selected!=ModeSelector.TIME_ATTACK || !c.modes.visible(c))return;
+        if(c.modes.selected!=ModeSelector.TIME_ATTACK || !ModeSelector.unlocked(c,ModeSelector.TIME_ATTACK) || !c.modes.visible(c))return;
         float s=L.unit,x=L.w*.5f,y=selectY(L);
         boolean ready=playable(c);
         int color=ready?INK:INK_DIM;

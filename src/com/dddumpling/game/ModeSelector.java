@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** Saved title choice; unfinished modes can be browsed but never start a run. */
+/** Saved title choice; locked modes explain their Adventure unlock requirement. */
 final class ModeSelector extends Draw {
     static final int ADVENTURE=0, SURVIVAL=1, TIME_ATTACK=2;
     static final String[] NAMES={"ADVENTURE","SURVIVAL","BOSS TIME ATTACK"};
@@ -65,7 +65,7 @@ final class ModeSelector extends Draw {
         if(!visible(c) || x<L.padL || x>L.w-L.padR)return 0;
         if(Math.abs(y-y(L))<=L.unit*(selected==TIME_ATTACK?2.7f:2f))
             return x<L.w*.11f?1:x>L.w*.89f?3:2;
-        if(selected==SURVIVAL && Math.abs(y-(LandPicker.cardY(L)+L.unit*1.3f))<L.h*.055f
+        if((selected==SURVIVAL || !unlocked(c,selected)) && Math.abs(y-(LandPicker.cardY(L)+L.unit*1.3f))<L.h*.055f
                 && x>L.w*.08f && x<L.w*.92f)return SCENE;
         return 0;
     }
@@ -182,6 +182,13 @@ final class ModeSelector extends Draw {
     }
     private static void titleLabel(Painter p,GameCore c,Layout L,int mode,float x,float y,float bump,int color,float fade) {
         float s=L.unit;
+        if(!unlocked(c,mode)) {
+            if(mode==TIME_ATTACK) {
+                p.text("BOSS",x,y-s*.9f,type(s*1.74f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
+                p.text("TIME ATTACK",x,y+s*1.1f,type(s*1.74f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
+            } else name(p,mode,x,y,s,1,fadeBy(INK_DIM,fade));
+            return;
+        }
         if(mode==TIME_ATTACK) {TimeAttackTitle.draw(p,c,x,y,s,bump,color,fade);return;}
         if(mode==SURVIVAL) {
             float clock=SurvivalDemo.animationClock(c);
@@ -214,7 +221,22 @@ final class ModeSelector extends Draw {
         int selectedColor=confirmation>0 || unavailable>0?GOLD:INK;
         titleLabel(p,c,L,arriving,selectedX,y,bump,selectedColor,t);
         p.restore();
+        if(!unlocked(c,selected)) {drawLocked(p,c,L);return;}
         c.timeAttack.drawSelector(p,c,L);
         if(selected==SURVIVAL)SurvivalDemo.draw(p,c,L,Math.max(0,1-2*adventureFade));
     }
+    private void drawLocked(Painter p,GameCore c,Layout L) {
+        float s=L.unit,x=L.w*.5f,y=L.h*.682f;
+        int color=unavailable>0?GOLD:INK;
+        p.arc(x,y-s*.25f,s*.4f,s*.45f,180,180,color,s*.14f);
+        p.fillPoly(new float[]{x-s*.6f,y-s*.25f,x+s*.6f,y-s*.25f,
+                x+s*.6f,y+s*.6f,x-s*.6f,y+s*.6f},color);
+        p.fillCircle(x,y+s*.12f,s*.10f,BG);
+        p.line(x,y+s*.12f,x,y+s*.35f,BG,s*.10f);
+        p.text("LOCKED",x,y+s*1.7f,type(s*.7f),color,Painter.CENTER,true);
+        p.text(selected==SURVIVAL?"BEAT THE STAGE 5 BOSS":"BEAT YOUR FIRST BOSS",
+                x,y+s*3f,type(s*.57f),INK,Painter.CENTER,true);
+        p.text("IN ADVENTURE TO UNLOCK",x,y+s*4.05f,type(s*.5f),INK_DIM,Painter.CENTER,true);
+    }
+
 }
