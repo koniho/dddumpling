@@ -46,15 +46,25 @@ final class AdventureTitle extends Draw {
             if(amount<=0)continue;
             float rise=amount*amount*(3-2*amount),ground=y+s*(front?.12f:.025f);
             if(land==0) {slimePool(p,x,y,s,span,rise,now,fade,front);continue;}
-            int alpha=(int)(255*fade*(front?.92f:.8f));
+            boolean crystal=land==1 || land==Cave.LAND;
+            int alpha=(int)(255*fade*(crystal?(front?.98f:.58f):(front?.92f:.8f)));
             if(!front)p.fillEllipse(x,ground,span,s*.15f,
                     fadeBy(Lands.TINT[land],fade*rise*.25f));
-            for(int i=0;i<9;i++) {
+            int count=crystal?(front?3:4):9;
+            for(int i=0;i<count;i++) {
                 float phase=i*7.3f+land+(front?2.4f:0);
                 float jitter=(float)Math.sin(phase)*.12f;
                 float px=x+span*((i-4)/4.3f+jitter*.25f);
                 float size=s*(1.25f+.33f*((i*7)%4));
                 float root=ground+s*(front?.25f:.08f)*(float)Math.sin(phase+1.3f);
+                if(crystal) {
+                    px=x+span*((i+.5f)*2/count-1+jitter*.45f);
+                    size=s*(1.20f+.26f*((i*7)%4));
+                    root=y+s*(front?.55f+.36f*(float)Math.sin(phase+1.3f)
+                            :-.28f+.20f*(float)Math.sin(phase+1.3f));
+                    p.fillEllipse(px,root,size*.32f,s*.065f,
+                            fadeBy(Lands.TINT[land],fade*rise*(front?.22f:.10f)));
+                }
                 float height=land==2?1.08f:land==3?1.05f:1.20f;
                 float base=root+(1-rise)*size*height;
                 p.save();p.clipRect(x-span-s*.3f,y-s*2.75f,x+span+s*.3f,root);
@@ -106,7 +116,7 @@ final class AdventureTitle extends Draw {
         if(land==1 || land==Cave.LAND) {
             int glass=(int)(a*.48f);
             Lands.crystal(p,x,base,size*.24f,size*1.15f,glass,t,false,true);
-            Lands.crystal(p,x+size*.29f,base,size*.17f,size*.62f,glass,t+1.8f,false,true);
+            if(variant==1)Lands.crystal(p,x+size*.29f,base,size*.17f,size*.62f,glass,t+1.8f,false,true);
         } else if(land==2) {
             for(int blade=0;blade<5;blade++) {
                 float h=size*(.50f+.13f*((blade*3)%5)),root=x+(blade-2)*size*.13f;
