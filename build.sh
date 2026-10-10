@@ -41,7 +41,7 @@ if [ ! -f "$SDK" ] && [ -n "${ANDROID_HOME:-}" ]; then
 fi
 OUT=build
 APK=hexatype.apk
-MIN=21
+MIN=24
 TGT=36
 KS=${HEXATYPE_KEYSTORE:-$OUT/debug.keystore}
 KS_ALIAS=${HEXATYPE_KEY_ALIAS:-hexatype}
@@ -151,6 +151,7 @@ apksigner sign --ks "$KS" --ks-key-alias "$KS_ALIAS" \
     --out "$APK" "$OUT/base.apk"
 apksigner verify "$APK" && echo ">> signature ok"
 aapt2 dump badging "$APK" > "$OUT/apk-info.txt"
+grep -Fxq "sdkVersion:'$MIN'" "$OUT/apk-info.txt"
 grep -Fq "package: name='$APP_ID'" "$OUT/apk-info.txt"
 grep -Fq "application-label:'$APP_LABEL'" "$OUT/apk-info.txt"
 grep -Fq "launchable-activity: name='com.dddumpling.game.MainActivity'" "$OUT/apk-info.txt"

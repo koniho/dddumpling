@@ -127,7 +127,7 @@ be compared selectively; see the [rendering notes](docs/engineering/rendering.md
 
 ## Android requirements
 
-The build targets API 36 and supports Android API 21+. Desktop builds need a JDK (Java 17
+The build targets API 36 and supports Android 7.0+ (API 24+). Desktop builds need a JDK (Java 17
 works), Python 3, current Bash, `zip`/`unzip`, and Android command-line tools. Set
 `ANDROID_HOME` to the SDK directory and install the platform and tools used by CI:
 
