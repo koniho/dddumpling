@@ -73,15 +73,15 @@ final class AdventureTitle extends Draw {
             }
         }
         for(int i=0;i<8;i++) {
-            if((i%3==0)!=front)continue;
+            if(((i&1)==0)!=front)continue;
             float age=initialized?bubbles[i]:land(c)==0?(now+i*BUBBLE_PERIOD/8f)%BUBBLE_PERIOD:-1;
             if(age<0 || age>=BUBBLE_LIFE)continue;
-            float t=age/BUBBLE_LIFE,r=s*(.30f+.135f*(i%3))*(.55f+t*.45f);
+            float t=age/BUBBLE_LIFE,r=s*(.30f+.135f*(i%3))*(.55f+t*.45f)*(front?1.12f:1f);
             float bx=x+span*((i-3.5f)/4.2f)+(float)Math.sin(age*2.3f+i)*s*.17f;
             float by=y+s*.03f-t*s*2.15f;
             float alpha=fade*Math.min(1,age*5)*Math.min(1,(BUBBLE_LIFE-age)*3);
-            p.fillCircle(bx,by,r,fadeBy(0xFF87DB91,alpha*.32f));
-            p.strokeCircle(bx,by,r,fadeBy(0xFFAFEAA4,alpha*.8f),s*.025f);
+            p.fillCircle(bx,by,r,fadeBy(0xFF87DB91,alpha*(front?.60f:.26f)));
+            p.strokeCircle(bx,by,r,fadeBy(front?0xFF58AB76:0xFFAFEAA4,alpha*.85f),s*(front?.04f:.025f));
             p.arc(bx,by,r*.66f,r*.66f,205,80,fadeBy(0xFFF0FFD7,alpha*.9f),s*.035f);
         }
     }
