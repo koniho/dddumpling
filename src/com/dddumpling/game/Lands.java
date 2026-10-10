@@ -175,11 +175,14 @@ final class Lands extends Draw {
                             Glyph.withAlpha(0xFFFFE3C6, alpha));
                 }
             }
-            p.fillPoly(pill(x, y + r * 0.48f, r * 0.24f, r * 0.8f, 8), silhouette ? col : light);
             if(animated) {
-                mushroomCap(p,x,y+r*.13f,r*1.12f,r*.43f,t,col,light);
+                float[] stem=mushroomLogoStem(x,y,r,t);
+                p.fillPoly(stem,silhouette?col:Glyph.withAlpha(0xFFE5D5C2,a));
+                if(!silhouette)p.fillPoly(BossScreen.mushroomStemHighlight(stem),Glyph.withAlpha(0xFFFFF5F0,a*4/5));
+                mushroomCap(p,x+r*.10f*(float)Math.sin(t*1.3f),y+r*.13f,r*1.12f,r*.28f,t,col,light);
                 return;
             }
+            p.fillPoly(pill(x, y + r * 0.48f, r * 0.24f, r * 0.8f, 8), silhouette ? col : light);
             p.fillEllipse(x, y, r * 1.12f, r * 0.65f, col);
             p.fillEllipse(x, y + r * 0.21f, r, r * 0.15f,
                     (silhouette ? col : Glyph.withAlpha(0xFF775968, a)));
@@ -187,6 +190,21 @@ final class Lands extends Draw {
                 p.fillCircle(x + (k - 1) * r * 0.51f, y - r * (k == 1 ? 0.31f : 0.12f),
                         r * 0.12f, light);
         }
+    }
+
+    static float[] mushroomLogoStem(float x,float y,float r,float clock) {
+        float[] stem=new float[96];
+        float lean=r*.10f*(float)Math.sin(clock*1.3f);
+        for(int i=0;i<48;i++) {
+            float angle=i*Softbody.TAU/48f,side=(float)Math.cos(angle);
+            float u=(1-(float)Math.sin(angle))*.5f,v=1-u;
+            // The boss's planted, gently bent spine and taper, at landscape scale.
+            float spine=x+2*v*u*lean*.27f+u*u*lean;
+            float half=r*.19f*(1.22f-u*.32f);
+            stem[i*2]=spine+Math.signum(side)*half*(float)Math.pow(Math.abs(side),.30f);
+            stem[i*2+1]=y+r*(1.10f-.97f*u);
+        }
+        return stem;
     }
 
     /** A thin, uneven brim under an asymmetric dome; width and height vary independently. */

@@ -478,6 +478,13 @@ final class TestVisuals extends Check {
         check("return to title starts with current land scenery",title.growth[3]==1 && title.growth[0]==0);
     }
     static void titleScreen(Layout L) {
+        float[] mushroomStem=Lands.mushroomLogoStem(0,0,100,1.3f);
+        float minX=Float.MAX_VALUE,maxX=-Float.MAX_VALUE,minY=Float.MAX_VALUE,maxY=-Float.MAX_VALUE;
+        for(int i=0;i<mushroomStem.length;i+=2) {
+            minX=Math.min(minX,mushroomStem[i]);maxX=Math.max(maxX,mushroomStem[i]);
+            minY=Math.min(minY,mushroomStem[i+1]);maxY=Math.max(maxY,mushroomStem[i+1]);
+        }
+        check("mushroom land icon has a slender upright stalk",maxX-minX<(maxY-minY)*.55f);
         adventureTitleScenery(L);
         adventureCompanion(L);
         caseScoreFade();
