@@ -10,7 +10,7 @@ final class SettingsUi {
             HIT_CLEAR = 4, HIT_ROSTER = 5, HIT_GAMEOVER = 6, HIT_RESET_DIFFICULTY = 7, HIT_RESET_LANDS = 8,
             HIT_GENERAL = 9, HIT_MINIGAMES = 10, HIT_EASIER = 11, HIT_HARDER = 12, HIT_RESET_NEWS = 13, HIT_ALL_LANDS = 14;
     static final int GENERAL = 0, MINIGAMES = 1, POWERS = 2, PROGRESS = 3;
-    static final int HIT_POWERS = 15, HIT_PROGRESS = 16, HIT_COLLECT_ALL = 17;
+    static final int HIT_POWERS = 15, HIT_PROGRESS = 16, HIT_COLLECT_ALL = 17, HIT_RESET_PROGRESS = 18;
     static final String[] TABS = {"RUN", "MINIGAMES", "POWERS", "PROGRESS"};
     /** Power shortcuts and minigame shortcuts share action IDs, not a row. */
     static final int HIT_TEST = 200;
@@ -49,7 +49,7 @@ final class SettingsUi {
     /** Reset for persistent difficulty progression. */
     float difficultyLabelY, difficultyY, difficultyH;
     /** Empty-the-display-case button, at the foot of the panel. */
-    float clearLabelY, clearY, clearH, collectAllY;
+    float clearLabelY, clearY, clearH, collectAllY, resetProgressY;
 
     private int tab;
 
@@ -76,7 +76,7 @@ final class SettingsUi {
             debuffY=testY;
             difficultyLabelY=panelT+s*14f;difficultyY=difficultyLabelY+s*.5f;
             clearLabelY=panelT+s*19f;clearY=clearLabelY+s*.5f;
-            collectAllY=clearY+s*3f;
+            collectAllY=clearY+s*3f;resetProgressY=collectAllY+s*3f;
         }
         if(tab==MINIGAMES) {
             testY=panelT+s*16f; testLabelY=testY-s*.6f; caveY=testY+s*3f;
@@ -136,6 +136,7 @@ final class SettingsUi {
             }
             if(y>=difficultyY && y<=difficultyY+difficultyH) return HIT_RESET_NEWS;
             if(y>=clearY && y<=clearY+clearH) return HIT_CLEAR;
+            if(y>=resetProgressY && y<=resetProgressY+testH && inChip(x,0,1)) return HIT_RESET_PROGRESS;
             if(y>=collectAllY && y<=collectAllY+testH && inChip(x,0,1)) return HIT_COLLECT_ALL;
         } else {
             if(y>=stageY && y<=stageY+stageH) for(int i=0;i<STAGE_STEP.length;i++)

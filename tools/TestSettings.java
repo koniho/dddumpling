@@ -289,7 +289,56 @@ final class TestSettings extends Check {
         check("live reset does not restart gameplay",reopened.state==GameCore.PLAY && reopened.score==44 && reopened.stage==stage);
     }
 
+    private static void developerReset(Layout L) {
+        group("developer fresh player reset");
+        for(boolean tracked:new boolean[]{false,true}) for(int mode=0;mode<ModeSelector.NAMES.length;mode++) {
+            Mem save=new Mem();save.collected=Collect.encode(Collect.MASK);
+            java.util.Arrays.fill(save.collectionCounts,2);save.collectTotal=120;
+            save.best=999;java.util.Arrays.fill(save.landBests,999);
+            save.landState=LandPicker.stateMask();save.steamerOpens=9;save.starWins=8;
+            save.cartTrack=2;save.mineCarts=2;save.caveChoice=1;save.caveMiningNext=true;
+            Town town=new Town();town.tickets=20;town.visits=4;town.archBuilt=true;save.townState=town.save();
+            GameCore c=new GameCore(save,170,tracked);c.preferences.music=.35f;c.preferences.kids=true;
+            c.modes.restore(mode);c.preferences.save(c);c.startGame();
+            if(mode==ModeSelector.ADVENTURE)c.playtestSteamer(L);
+            if(mode==ModeSelector.SURVIVAL)c.playtestMode(Power.NINJA,L);
+            int oldState=c.state;
+            c.score=123;c.openSettings();c.settingsTab=SettingsUi.PROGRESS;
+            SettingsUi ui=new SettingsUi();ui.compute(L,SettingsUi.PROGRESS);
+            check("fresh start chip has its own target",ui.hit(L.w*.5f,ui.resetProgressY+ui.testH*.5f)==SettingsUi.HIT_RESET_PROGRESS
+                    && ui.resetProgressY+ui.testH<ui.panelB);
+            SettingsInput.action(c,L,SettingsUi.HIT_RESET_PROGRESS);
+            check("first tap only arms the reset",c.resetProgressArmed && c.collected==Collect.MASK && c.state==oldState);
+            SettingsInput.action(c,L,SettingsUi.HIT_GENERAL);
+            check("changing tab cancels reset confirmation",!c.resetProgressArmed);
+            SettingsInput.action(c,L,SettingsUi.HIT_RESET_PROGRESS);c.closeSettings();
+            check("closing settings cancels confirmation",!c.resetProgressArmed);
+            c.openSettings();c.settingsTab=SettingsUi.PROGRESS;
+            SettingsInput.action(c,L,SettingsUi.HIT_RESET_PROGRESS);
+            SettingsInput.action(c,L,SettingsUi.HIT_RESET_PROGRESS);
+            check("reset exits the run to a fresh title",c.state==GameCore.TITLE && !c.settingsOpen
+                    && !c.survival.active && !c.timeAttack.active && !c.boss.active() && !c.powerActive()
+                    && !c.pendingBonus && c.modes.adventure() && !c.fullRoster);
+            for(GameCore fresh:new GameCore[]{c,new GameCore(save,171,tracked)}) {
+                check("empty collection and tutorials restore starter flow",Starter.eligible(fresh)
+                        && fresh.collected==0 && fresh.collectTotal==0 && fresh.onboarding.saved==0 && fresh.onboarding.savedPowers==0);
+                check("other modes relock",!ModeSelector.unlocked(fresh,ModeSelector.SURVIVAL)
+                        && !ModeSelector.unlocked(fresh,ModeSelector.TIME_ATTACK));
+                check("lands and scores reset",fresh.landSeen==0 && fresh.landSuppressed==0 && fresh.best==0
+                        && fresh.highScores.runs.isEmpty() && fresh.progress.maximum("highest_stage")==0);
+                check("difficulty and cave progress reset",fresh.steamer.opens==0 && fresh.stars.wins==0
+                        && fresh.cart.progress==0 && fresh.mining.carts==0 && fresh.caveChoice==-1 && !fresh.caveMiningNext);
+                check("town and roster reset",fresh.town.tickets==0 && fresh.town.visits==0 && !fresh.town.archBuilt && !fresh.fullRoster);
+                check("sound retained and kids mode restored to default",Math.abs(fresh.preferences.music-.35f)<.001f && !fresh.preferences.kids);
+                fresh.beginStart();check("first play opens choose your squishy",fresh.starter.open);
+            }
+            check("all score stores and pending rewards cleared",save.highScores.isEmpty() && save.survival.isEmpty()
+                    && save.timeAttack.isEmpty() && save.survivalAward.isEmpty());
+        }
+    }
+
     static void all(Layout L) {
+        developerReset(L);
         scoreReset(L);
         panelTiming(L);
         kidsToggle(L);

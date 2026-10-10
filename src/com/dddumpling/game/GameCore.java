@@ -1690,14 +1690,14 @@ final class GameCore {
         if (band.active && sound != null) sound.bandPause(true);
         settingsOpen = true; settingsPage = BuildFlags.DEVELOPER ? 1 : 0;
         Pause.release(this);
-        clearArmed = false;
+        clearArmed = resetProgressArmed = false;
     }
 
     void closeSettings() {
         preferences.panelClosing=false;preferences.panelEntrance=1f;
         if (band.active && sound != null) sound.bandPause(paused);
         settingsOpen = false;
-        clearArmed = false;
+        clearArmed = resetProgressArmed = false;
     }
 
     void setStarDifficulty(int level) {
@@ -1709,7 +1709,7 @@ final class GameCore {
     }
 
     /** True once the clear-case button has been tapped and is waiting for a second. */
-    boolean clearArmed;
+    boolean clearArmed, resetProgressArmed;
 
     // ---- display case -------------------------------------------------------
     // Delegations; the browsing lives in CaseUi.

@@ -2614,6 +2614,9 @@ final class Preview {
             settings.settingsTab=tab;
             shot(dir,"122-settings-active-"+tab,settings,L,w,h,ss);
         }
+        settings.resetProgressArmed=true;
+        shot(dir,"122a-settings-reset-progress-confirm",settings,L,w,h,ss);
+        settings.resetProgressArmed=false;
 
         for (int kind = 0; kind < Boss.COUNT; kind++) {
             if (kind == Boss.SPLITTER) continue; // Its seven supernova frames include the impact.

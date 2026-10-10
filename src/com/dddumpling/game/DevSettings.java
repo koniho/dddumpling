@@ -54,6 +54,7 @@ final class DevSettings extends Draw {
             label(p,u,u.clearLabelY,"COLLECTION: "+Collect.owned(c.collected)+" / "+Collect.COUNT,s);
             chip(p,u,u.clearY,0,1,c.clearArmed?"TAP AGAIN TO EMPTY":"EMPTY COLLECTION",s,c.clearArmed);
             chip(p,u,u.collectAllY,0,1,"COLLECT ALL",s,Collect.complete(c.collected));
+            chip(p,u,u.resetProgressY,0,1,c.resetProgressArmed?"TAP AGAIN: START FRESH":"CLEAR ALL PROGRESS",s,c.resetProgressArmed);
             return;
         }
         label(p,u,u.stageLabelY,"STAGE "+c.stage,s);
@@ -65,4 +66,44 @@ final class DevSettings extends Draw {
         chip(p,u,u.runY,0,2,c.fullRoster?"NEXT RUN: 6 KEYS":"NEXT RUN: 4 KEYS",s,false);
         chip(actions,u,u.runY,1,2,"END RUN",s,false);
     }
+    static void resetProgress(GameCore c) {
+        if(!BuildFlags.DEVELOPER)return;
+        if(!c.resetProgressArmed) {c.resetProgressArmed=true;return;}
+        // Finish live activities before clearing their saved rewards and checkpoints.
+        c.toTitle();
+        if(!c.resetHighScores()) {c.resetProgressArmed=false;return;}
+        c.closeSettings();c.boss.leave();c.starter.clear();
+        c.progress.resetForDeveloper();
+        c.clearArmed=true;CaseUi.tapClear(c);
+        c.resetDifficultyScaling();
+        c.onboarding.reset(c);
+        LandPicker.reset(c);c.landSuppressed=0;LandPicker.save(c);
+        c.modes.restore(ModeSelector.ADVENTURE);c.preferences.kids=false;c.preferences.save(c);
+        c.fullRoster=c.runFullRoster=c.rosterLeavePending=false;
+        c.earlyLosses=c.rosterScene=0;c.rosterSceneT=0;
+        c.caveChoice=-1;c.caveMiningNext=false;c.cart.progress=c.mining.carts=0;
+        c.town.leave();c.town.load(new Town().save());c.townOpen=false;
+        c.townRunId=0;c.townRunTickets=0;
+        c.survival.reward.sequence=0;c.survival.reward.who=-1;
+        c.survival.reward.joining=c.survival.reward.joinRung=false;
+        c.runWho=0;c.pickerT=0;
+        c.stage=1;c.score=0;c.lives=GameCore.START_LIVES;c.runStartLand=0;
+        c.pendingBonus=false;c.returnFade=0;c.launchFromStarter=false;
+        c.power=null;c.mode=-1;c.modeLeft=0;c.buddy.leave();
+        c.debuffLeft=c.monochromeFade=c.incognitoMorph=0;
+        c.flash=c.skyGlow=c.shake=c.bossDeathHaptic=c.starBlastHaptic=0;
+        c.bossPrizePending=c.bossReward=false;c.prizeNew=false;
+        c.steamer.reset();c.bonusTimer=c.paradeTimer=0;
+        c.particles.clear();c.pushImpacts.clear();
+        c.releaseNotes.close();c.releaseMascot.read(c);
+        if(c.store!=null) {
+            c.store.saveCaseIndex(0);c.store.saveRosterState(0);
+            c.store.saveCaveChoice(-1);c.store.saveCaveMiningNext(false);
+            c.store.saveCartTrack(0);c.store.saveMineCarts(0);
+            c.store.saveTown(c.town.save());
+        }
+        c.progress.seed(c);
+        c.startMusic();
+    }
+
 }

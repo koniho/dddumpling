@@ -40,6 +40,13 @@ final class Progress {
             fail("Progress save capacity reached");
         return enabled && healthy;
     }
+    void resetForDeveloper() {
+        if (!BuildFlags.DEVELOPER) return;
+        data=new ProgressData();
+        running=stageDone=firstHit=scoresSuppressed=false;
+        stage=startLand=0;boss=-1;minigame=null;bossSeconds=0;
+        if (store!=null) store.saveProgress(data.encode());
+    }
     void attach(Sink sink) { this.sink = available() ? sink : null; }
     long count(String name) { return data.total(name); }
     long maximum(String name) { return data.maximum(name); }
