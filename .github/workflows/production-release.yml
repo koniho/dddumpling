@@ -1,0 +1,76 @@
+name: Promote uploaded builds to production
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Publish Play production and submit Apple for automatic release after approval
+        type: boolean
+        default: false
+      platform:
+        description: Store to process
+        type: choice
+        options: [both, google, apple]
+        default: both
+      version_code:
+        description: Existing Play build code matching main
+        type: string
+        required: true
+      ios_version:
+        description: Uploaded Apple marketing version matching main
+        type: string
+        required: true
+      ios_build:
+        description: Exact uploaded Apple build number
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+jobs:
+  google:
+    if: inputs.platform != 'apple'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require main
+        run: test "$GITHUB_REF" = refs/heads/main
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - name: Check promotion guards
+        run: bundle exec ruby tools/test-promote-play-production.rb
+      - name: Inspect or promote existing bundle
+        env:
+          APPLY: ${{ inputs.apply }}
+          PLAY_VERSION_CODE: ${{ inputs.version_code }}
+          PLAY_CLOSED_TRACK: ${{ vars.PLAY_CLOSED_TRACK }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: bundle exec ruby tools/promote-play-production.rb
+  apple:
+    if: inputs.platform != 'google'
+    runs-on: ubuntu-latest
+    environment: ios-release
+    steps:
+      - name: Require main
+        run: test "$GITHUB_REF" = refs/heads/main
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - name: Check publishing configuration
+        run: bundle exec ruby tools/test-fastlane.rb
+      - name: Inspect or submit existing Apple build
+        env:
+          APPLY: ${{ inputs.apply }}
+          IOS_RELEASE_VERSION: ${{ inputs.ios_version }}
+          IOS_BUILD_NUMBER: ${{ inputs.ios_build }}
+          IOS_APPSTORE_KEY_ID: ${{ secrets.IOS_APPSTORE_KEY_ID }}
+          IOS_APPSTORE_ISSUER_ID: ${{ secrets.IOS_APPSTORE_ISSUER_ID }}
+          IOS_APPSTORE_KEY_BASE64: ${{ secrets.IOS_APPSTORE_KEY_BASE64 }}
+          FASTLANE_SKIP_UPDATE_CHECK: '1'
+          FASTLANE_OPT_OUT_USAGE: '1'
+        run: bundle exec fastlane ios production

@@ -4,6 +4,7 @@ require "fileutils"
 require "tmpdir"
 
 import("./ios.rb")
+import("./production.rb")
 
 def play_credentials
   credentials = ENV.fetch("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON", "")

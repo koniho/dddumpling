@@ -12,7 +12,7 @@ To activate an already uploaded draft, run **Activate existing closed testing re
 from main with its `version_code`. This preserves its notes, requires the current
 manifest code, supersedes older completed builds, and verifies the saved track without
 re-uploading the bundle. Activate only after explicit user authorization.
-No lane publishes to production or edits store descriptions, images, or screenshots.
+Testing lanes do not publish to production or edit store descriptions, images, or screenshots.
 New GitHub tag releases are drafts with reviewed copy from `release-notes/<version>.md`.
 
 ## Feature graphic uploads
@@ -113,7 +113,7 @@ format before contacting Google. Google enforces version-code uniqueness.
 
 If Google accepted an upload but a later operation failed, inspect Play Console before retrying:
 re-uploading an already used version code is rejected. Complete the existing release in the console
-or prepare a new version. Public rollout remains a manual Play Console action.
+or prepare a new version. Public rollout requires an explicitly authorized production promotion.
 
 ## Local configuration checks
 
@@ -212,3 +212,13 @@ version already retained by Play.
 Fastlane stages only the selected English changelog into a temporary metadata
 folder. The store-assets root also contains `screenshots`, which must never be
 passed to Fastlane as a language directory.
+
+## Promote uploaded builds to production
+
+After explicit user authorization, run **Promote uploaded builds to production** from main.
+Select the store(s), existing Play version code, Apple marketing version and exact Apple
+build number. Leave `apply` false for a read-only preflight; set it true to promote the
+existing Play bundle to production and/or submit the existing Apple build for automatic
+release after approval. No binaries are rebuilt or uploaded. The workflow checks the
+manifest and approved notes, preserves existing store assets, and verifies saved state.
+Store review and processing may still delay public availability.
