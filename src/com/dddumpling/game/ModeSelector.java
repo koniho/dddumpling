@@ -222,25 +222,24 @@ final class ModeSelector extends Draw {
         float s=L.unit,x=L.w*.5f,y=L.h*.682f;
         int color=unavailable>0?GOLD:INK;
         boolean inFront=unavailable>0;
-        if(!inFront)lockedBoss(p,L,0);
+        if(!inFront)lockedBoss(p,c,L,0);
         p.arc(x,y-s*.25f,s*.4f,s*.45f,180,180,color,s*.14f);
         p.fillPoly(new float[]{x-s*.6f,y-s*.25f,x+s*.6f,y-s*.25f,
                 x+s*.6f,y+s*.6f,x-s*.6f,y+s*.6f},color);
         p.fillCircle(x,y+s*.12f,s*.10f,BG);
         p.line(x,y+s*.12f,x,y+s*.35f,BG,s*.10f);
-        if(inFront)lockedBoss(p,L,unavailable);
         p.text("LOCKED",x,y+s*1.7f,type(s*.7f),color,Painter.CENTER,true);
+        if(inFront)lockedBoss(p,c,L,unavailable);
         p.text(selected==SURVIVAL?"BEAT THE STAGE 5 BOSS":"BEAT YOUR FIRST BOSS",
                 x,y+s*3f,type(s*.57f),INK,Painter.CENTER,true);
         p.text("IN ADVENTURE TO UNLOCK",x,y+s*4.05f,type(s*.5f),INK_DIM,Painter.CENTER,true);
     }
-    private static void lockedBoss(Painter p,Layout L,float reaction) {
+    private static void lockedBoss(Painter p,GameCore c,Layout L,float reaction) {
         float s=L.unit,bounce=(float)Math.sin((1-reaction)*Math.PI);
-        float r=s*2.1f*(1+.08f*bounce);
+        float r=s*1.4f*(1+.08f*bounce);
         float x=L.w*.5f+s*.18f*(float)Math.sin(reaction*18)*reaction;
-        // Anchor the scalloped base above the copy as the silhouette hops toward the player.
-        float y=L.h*.682f+s*.8f-r*.82f-s*.3f*bounce;
-        BossCollect.slimeSilhouette(p,x,y,r);
+        float y=L.h*.682f+s*.15f-s*.12f*bounce;
+        BossScreen.slimePortrait(new MonochromePainter(new ColorFadePainter(p,BG,.25f,1f),.72f),x,y,r,c.clock);
     }
 
 }

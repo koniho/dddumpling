@@ -107,19 +107,22 @@ final class TestModeSelector extends Check {
         java.util.ArrayList<String> order=new java.util.ArrayList<>();
         Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class<?>[]{Painter.class},(proxy,method,args)->{
-                    if(method.getName().equals("fillEllipse") && ((Integer)args[4])==0xFF393054)order.add("boss");
+                    if(method.getName().equals("fillPoly") && ((float[])args[0]).length>100)order.add("boss");
+                    if(method.getName().equals("text") && args[0].equals("LOCKED"))order.add("label");
                     if(method.getName().equals("arc"))order.add("lock");
                     return null;
                 });
         c.modes.draw(p,c,L);
-        check("locked scene draws both silhouette and padlock",order.contains("boss") && order.contains("lock"));
+        check("locked scene draws the boss, padlock and label",order.contains("boss") && order.contains("lock") && order.contains("label"));
+        check("boss and lock text share the correct depth",(order.indexOf("boss")>order.indexOf("label"))
+                ==(order.indexOf("boss")>order.indexOf("lock")));
         return order.indexOf("boss")>order.indexOf("lock");
     }
     private static void lockedPresentation(Layout L) {
         GameCore c=title();c.collected=1;
         for(int mode:new int[]{ModeSelector.SURVIVAL,ModeSelector.TIME_ATTACK}) {
             c.modes.restore(mode);c.modes.update(c,.7f);
-            check("Slime silhouette rests behind the lock "+mode,!lockedBossInFront(c,L));
+            check("Slime boss rests behind the lock "+mode,!lockedBossInFront(c,L));
             java.util.ArrayList<String> labels=new java.util.ArrayList<>();
             Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                     new Class<?>[]{Painter.class},(proxy,method,args)->{

@@ -241,12 +241,21 @@ final class BossScreen extends Draw {
     /** Reference-led first boss: a bright jelly dome settled into a low rippled puddle. */
     private static void drawSlimeBoss(Painter p, GameCore c, Layout L, Boss b, int col, float mood,
             float fade) {
-        float[] skin = slimePromptOutline(L,b);
-        float cx = b.body.centreX(), cy = b.body.centreY();
-        float rx = b.body.radiusX(), ry = b.body.radiusY();
+        drawSlimeSkin(p,slimePromptOutline(L,b),b.body.centreX(),b.body.centreY(),
+                b.body.radiusX(),b.body.radiusY(),b.body.radius(),col,c.clock,b.hasGlob(),fade);
+    }
+
+    static void slimePortrait(Painter p,float x,float y,float radius,float clock) {
+        Softbody body=new Softbody();
+        body.reset(x,y,radius,2f);
+        drawSlimeSkin(p,slimeBossOutline(body),x,y,body.radiusX(),body.radiusY(),body.radius(),
+                0xFF83E51C,clock,false,1f);
+    }
+
+    private static void drawSlimeSkin(Painter p,float[] skin,float cx,float cy,float rx,float ry,
+            float radius,int col,float clock,boolean vulnerable,float fade) {
         int lime = Glyph.mix(col, 0xFFA8F02B, 0.32f);
         int edge = Glyph.mix(0xFF176A24, col, 0.16f);
-        boolean vulnerable = b.hasGlob();
 
         // The puddle sits behind the skirt, with the two darker body layers thickest at its foot.
         p.fillEllipse(cx, cy + ry * 1.34f, rx * 1.12f, ry * 0.30f,
@@ -258,10 +267,10 @@ final class BossScreen extends Draw {
         p.fillPoly(slimeInset(middle, cx, cy, rx, ry, 0.922f, 0.907f, -0.062f, -0.128f),
                 Glyph.withAlpha(lime, (int) (245 * fade)));
         p.strokePoly(skin, Glyph.withAlpha(edge, (int) (255 * fade)),
-                b.body.radius() * 0.055f);
+                radius * 0.055f);
 
         // Broad tilted wet highlight, matching the reference's upper-left shoulder.
-        float gleam = 0.96f + 0.05f * (float) Math.sin(c.clock * 2.1f);
+        float gleam = 0.96f + 0.05f * (float) Math.sin(clock * 2.1f);
         float[] reflection = new float[48];
         for (int i = 0; i < 24; i++) {
             float a = Softbody.TAU * i / 24f;
@@ -310,7 +319,7 @@ final class BossScreen extends Draw {
         }
         if (vulnerable) {
             // A trembling open gasp replaces the content smile while the glob can be pulled.
-            float gasp = 1f + 0.07f * (float) Math.sin(c.clock * 9f);
+            float gasp = 1f + 0.07f * (float) Math.sin(clock * 9f);
             p.fillEllipse(cx, cy + ry * 0.18f, rx * 0.105f * gasp, ry * 0.145f / gasp, ink);
             p.fillEllipse(cx, cy + ry * 0.225f, rx * 0.060f, ry * 0.050f,
                     Glyph.withAlpha(0xFFFF8099, (int) (225 * fade)));

@@ -64,7 +64,11 @@ final class BossCollect extends Draw {
                     known ? fade : 0f, clock, known, rim);
             faceR = r * 0.56f;
         } else {
-            slimeBody(p,x,y,r,body,cream);
+            p.fillEllipse(x, y + r * 0.05f, r * 0.86f, r * 0.82f, body);
+            if (boss == Boss.SLIME) {
+                for (int k = 0; k < 5; k++) p.fillCircle(x+(k-2)*r*.34f,y+r*.60f,r*.22f,body);
+                p.fillEllipse(x-r*.30f,y-r*.42f,r*.22f,r*.13f,cream);
+            }
         }
         if (known) {
             if(mood<0) face(p, x, faceY, faceR, clock, fade);
@@ -72,15 +76,6 @@ final class BossCollect extends Draw {
             if(ninja) Trinket.ninjaMask(p,x,faceY,r*.82f,fade);
         }
         if (!known) p.text("?",x,y+r*.25f,type(r*.65f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
-    }
-
-    static void slimeSilhouette(Painter p,float x,float y,float r) {
-        slimeBody(p,x,y,r,0xFF393054,0xFF393054);
-    }
-    private static void slimeBody(Painter p,float x,float y,float r,int body,int cream) {
-        p.fillEllipse(x,y+r*.05f,r*.86f,r*.82f,body);
-        for(int k=0;k<5;k++)p.fillCircle(x+(k-2)*r*.34f,y+r*.60f,r*.22f,body);
-        p.fillEllipse(x-r*.30f,y-r*.42f,r*.22f,r*.13f,cream);
     }
 
     private static void face(Painter p, float x, float y, float r, float clock, float fade) {
