@@ -25,7 +25,7 @@ final class RunCompanion extends Draw {
         // Repeated clears strengthen this beat instead of restarting it indefinitely.
         if(left>0f && event==reaction) { strength=Math.min(1f,strength+.12f);return; }
         reaction=event;age=0f;strength=Math.max(.3f,Math.min(1f,amount));
-        left=event==DAMAGE? .85f:event==VICTORY?Boss.LEAVE:event==STAGE_CLEAR?1.6f
+        left=event==DAMAGE? GameCore.DAMAGE_HOLD:event==VICTORY?Boss.LEAVE:event==STAGE_CLEAR?1.6f
                 :event==BOSS_HIT?.95f:event==WORD?.6f:.8f;
         home.squash((event==DAMAGE?.7f:.4f)*strength);
         home.impulse(event==DAMAGE?-.7f:.7f,-.6f,.18f*strength);

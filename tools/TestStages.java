@@ -4,6 +4,7 @@ package com.dddumpling.game;
 final class TestStages extends Check {
 
     static void waves(Layout L) {
+        damageEnding(L);
         group("stage waves");
         GameCore c = new GameCore(new Mem(), 41L);
         c.startGame();
@@ -93,6 +94,52 @@ final class TestStages extends Check {
         check("the interlude opens after a breach", advanceToBonus(b, L));
         advancePastBonus(b, L);
         check("stage still advances after a breach", b.stage == stageWas + 1);
+    }
+
+    private static void damageEnding(Layout L) {
+        group("last-enemy damage ending");
+        for(boolean stars:new boolean[]{false,true}) {
+            GameCore c=new GameCore(new Mem(),163);Ear ear=new Ear();c.sound=ear;c.startGame();
+            c.starNext=stars;c.spawnedThisStage=c.stageQuota();c.lives=2;
+            c.enemies.clear();c.shots.clear();
+            GameCore.Enemy last=add(c,L,new int[]{0},L.dangerY);
+            last.attacking=true;last.attackT=GameCore.ATTACK_TIME-DT/2;
+            c.update(DT,L);
+            check("last enemy lands one surviving hit "+stars,c.lives==1 && c.enemies.isEmpty() && ear.damages==1);
+            Power pickup=TestPower.place(c,L,Power.FLURRY,0);
+            check("empty-field damage hold cannot restart combat with a pickup "+stars,
+                    !c.tapPower(pickup.x,pickup.y,L) && !c.powerActive());
+            int misses=c.misses;
+            c.tapKey(0,L);
+            check("damage hold cannot spend rescue or count empty-field misses "+stars,
+                    !c.pushBack(L) && !c.pushUsed && c.misses==misses);
+            advance(c,L,.3f);
+            check("damage finishes before the stage-ending flow "+stars,
+                    c.state==GameCore.PLAY && !c.pendingBonus && c.highScores.stages==0 && ear.stageClears==0);
+            check("normal interlude follows the damage hold "+stars,advanceToBonus(c,L)
+                    && c.starBonus==stars && c.highScores.stages==1 && ear.stageClears==1);
+            check("damaged ending keeps its earned tier without a perfect award "+stars,
+                    c.earnedMash==GameCore.MASH_HURT && c.perfectBanner==0);
+            check("stage-clear reaction is not swallowed by the hit reaction "+stars,
+                    c.companion.reaction==RunCompanion.STAGE_CLEAR);
+        }
+        for(boolean survival:new boolean[]{false,true}) {
+            GameCore c=survival?TestSurvival.start(TestSurvival.store(),163):new GameCore(new Mem(),163);
+            if(!survival)c.startGame();
+            c.lives=1;c.spawnTimer=100;c.spawnedThisStage=c.stageQuota();c.enemies.clear();c.shots.clear();
+            GameCore.Enemy last=add(c,L,new int[]{0},L.dangerY);
+            last.attacking=true;last.attackT=GameCore.ATTACK_TIME-DT/2;
+            c.update(DT,L);
+            check("fatal last enemy starts normal game over "+survival,
+                    c.state==GameCore.OVER && c.dying() && !c.pendingBonus && c.highScores.stages==0 && c.stageDamageHold==0);
+            check("Survival fatal enemy retains collectible flow "+survival,
+                    !survival || c.survival.reward.pending);
+        }
+        GameCore reset=new GameCore(new Mem(),163);reset.startGame();reset.takeHit(L.w*.5f,L);
+        reset.toTitle();
+        check("leaving play clears the damage transition hold",reset.stageDamageHold==0);
+        reset.startGame();reset.takeHit(L.w*.5f,L);reset.startGame();
+        check("restarting clears the damage transition hold",reset.stageDamageHold==0);
     }
 
     static int quotaAt(GameCore c, int stage) {

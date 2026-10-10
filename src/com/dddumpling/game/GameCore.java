@@ -545,6 +545,9 @@ final class GameCore {
     int missesThisStage;
     /** Lives lost in the current stage. Zero is what "no damage" means to the interlude's verdict. */
     int hurtThisStage;
+    static final float DAMAGE_HOLD=.85f;
+    /** Let the final enemy hit finish before a stage clear replaces the playfield. */
+    float stageDamageHold;
     /**
      * Mash seconds the finished round earned, settled by {@link #beginStageEnd} rather than read
      * when the interlude opens — by then {@link #missesThisStage} has already been zeroed, and the
@@ -612,7 +615,7 @@ final class GameCore {
      * free tempo reset to be spent the moment a wave starts.
      */
     boolean pushReady() {
-        return state == PLAY && !pushUsed && !settingsOpen && !pendingBonus && warnLevel > 0f;
+        return state == PLAY && !pushUsed && !settingsOpen && !pendingBonus && !holdingStageDamage() && warnLevel > 0f;
     }
 
     // ---- between-stages minigame -------------------------------------------
@@ -1268,7 +1271,7 @@ final class GameCore {
     /** Caught it: scores, then starts the frenzy the letter was carrying. */
     boolean tapPower(float x, float y, Layout L) {
         if(survival.active)return survival.tapPower(this,L,x,y);
-        if (paused || state != PLAY || power == null || !power.catchable()) return false;
+        if (paused || state != PLAY || holdingStageDamage() || power == null || !power.catchable()) return false;
         float bobY = power.y + (float) Math.sin(power.t * 3.2f) * L.enemyR * 0.22f;
         float dx = x - power.x, dy = y - bobY;
         float grab = L.enemyR * 2.05f;
@@ -1827,6 +1830,10 @@ final class GameCore {
                 && !(power != null && power.mystery && power.hit && !power.activated);
     }
 
+    private boolean holdingStageDamage() {
+        return stageDamageHold>0f && !powerActive() && stageCleared();
+    }
+
     // ---- lifecycle ----------------------------------------------------------
 
     /**
@@ -2006,7 +2013,7 @@ final class GameCore {
         // This run's haul starts empty, and no death or flight can be left running into it.
         roundPrizes = 0L;
         cubeUnlocked = false;
-        deathT = 0f;
+        deathT = stageDamageHold = 0f;
         bossVictoryKind = -1;
         bossVictory = null;
         homeT = 0f;
@@ -2071,7 +2078,7 @@ final class GameCore {
         if (sound != null) sound.selectMusic(normalMusicChoice());
         progress.apply(this);
         time = 0;
-        deathT = 0f;
+        deathT = stageDamageHold = 0f;
         bossVictoryKind = -1;
         bossVictory = null;
         // The run's haul carries itself to the case rather than simply being in it next time the
@@ -2234,6 +2241,7 @@ final class GameCore {
             return false;
         }
         keyPress[g] = 1f;
+        if(holdingStageDamage())return false;
         if (Cave.active(this)) return cave.press(this, g, L);
 
         if (target != null && (!target.typeable() || !enemies.contains(target)
@@ -2811,6 +2819,7 @@ final class GameCore {
         float stageIntroLeft = stageBanner;
         stageBanner = decay(stageBanner, dt);
         perfectBanner = decay(perfectBanner, dt);
+        stageDamageHold = decay(stageDamageHold, dt);
         pushT = decay(pushT, dt);
         for (int i = pushImpacts.size() - 1; i >= 0; i--) {
             PushImpact hit = pushImpacts.get(i);
@@ -3151,7 +3160,7 @@ final class GameCore {
                 }
             }
         } else if (stageCleared()) {
-            Interlude.beginStageEnd(this);
+            if(stageDamageHold<=0f)Interlude.beginStageEnd(this);
             return;
         }
 
@@ -3456,6 +3465,7 @@ final class GameCore {
         Lands.transition(this, Math.max(1, n));
         stage = Math.max(1, n);
         progress.enterStage(stage);
+        stageDamageHold=0f;
         if (fullRoster && stage >= 6 && earlyLosses != 0) {
             earlyLosses = 0; saveRoster();
         }
@@ -3554,7 +3564,10 @@ final class GameCore {
         flashColor = FLASH_DAMAGE;
         Fx.explode(this, rnd, px, L.dangerY, L.enemyR * 2f, 16, 0xFFFF7A9E);
         if (lives <= 0) die();
-        else pushSlowT = PUSH_SLOW;
+        else {
+            stageDamageHold=DAMAGE_HOLD;
+            pushSlowT = PUSH_SLOW;
+        }
     }
 
     /**
@@ -3591,7 +3604,7 @@ final class GameCore {
         state = OVER;
         time = 0;
         deathT = deathDuration();
-        pushT = pushSlowT = 0f;
+        pushT = pushSlowT = stageDamageHold = 0f;
         // The words are deliberately left standing: they swirl away over the death hold, and
         // the field is cleared when it ends, before the summary is drawn over it. Only the
         // shots go now — a kill landing after the run is over would credit a squish.
