@@ -1,6 +1,66 @@
 {
   "releases": [
     {
+      "version": "0.1.26",
+      "changes": [
+        {
+          "icon": "survival",
+          "title": "Ride the rainbow",
+          "autoReset": false,
+          "where": "After beating the Stage 5 boss",
+          "why": "Try Survival! Waves grow wilder, power-ups wait in your rack, and each run earns a duck. Last five minutes for a special friend. Chase your own Survival record!"
+        },
+        {
+          "icon": "time_attack",
+          "title": "Boss Time Attack",
+          "autoReset": false,
+          "where": "After your first Adventure boss",
+          "why": "Race bosses you have befriended, or tackle All Bosses once all four are yours. Save best times and explore each battle's accuracy, defense, and damage stats."
+        },
+        {
+          "icon": "travel",
+          "title": "Pick your next adventure",
+          "autoReset": false,
+          "where": "On the title screen",
+          "why": "Swipe modes and tap a title or scene to play. Adventure scenery follows your land and companion. A springy LET'S SQUISH welcomes new players; locks explain your next goal."
+        },
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "During Adventure",
+              "why": "Tap to pause. Rescue Swipes are easier to start and show when spent."
+            },
+            {
+              "where": "In Kids Mode",
+              "why": "Steamer needs 10 pips with no timer. Projectiles keep their normal speed."
+            },
+            {
+              "where": "In your display case",
+              "why": "Boss friends sit on the top shelf."
+            }
+          ]
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "autoReset": false,
+          "fixes": [
+            {
+              "where": "During Team Squish",
+              "why": "Matching prompts nearest the damage line take priority; no match sends your team to the nearest enemy."
+            },
+            {
+              "where": "At the end of a stage",
+              "why": "A final enemy hit now finishes its damage reaction before the next scene."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.25",
       "changes": [
         {

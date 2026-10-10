@@ -4,12 +4,26 @@ package com.dddumpling.game;
 final class ReleaseChange extends Draw {
     static final int TRAVEL=0, STARS=1, BUGS=2, SHUFFLE=3, DISGUISE=4, SLIME=5,
             PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11, SETTINGS=12, SWIPE=13, SCORES=14, OCTOPULSE=15,
-            COMPANION=16, TUTORIAL=17, TOWN=18;
+            COMPANION=16, TUTORIAL=17, TOWN=18, SURVIVAL=19, TIME_ATTACK=20;
     static final int[][] ITEMS=ReleaseContent.ITEMS;
     static boolean playable(int id) { return id==TRAVEL || id==SHUFFLE || id==PAIR; }
     static float artUnits(int id) { return id==TRAVEL ? 8f : id==PAIR ? 9f : id==SHUFFLE ? 9f : 5f; }
     static void icon(Painter p,int id,float x,float y,float r,float time) {
-        if(id==COMPANION || id==TUTORIAL) {
+        if(id==SURVIVAL) {
+            for(int i=0;i<7;i++) {
+                float xx=x+(i-3)*r*.26f,yy=y-r*.8f+r*.25f*(float)Math.sin(time*3+i);
+                int color=Glyph.cycle(i*.8f);
+                p.line(xx,yy,xx,yy+r*1.4f,color,r*.21f);
+                p.fillCircle(xx,yy,r*.105f,color);p.fillCircle(xx,yy+r*1.4f,r*.105f,color);
+            }
+            Duck.draw(p,Collect.DUCK_FIRST,x,y+r*.18f,r*.68f,time,true,1f,8,0,false);
+        } else if(id==TIME_ATTACK) {
+            BossScreen.slimePortrait(p,x-r*.18f,y+r*.12f,r*.48f,time);
+            float tx=x+r*.53f,ty=y-r*.42f,hand=time*3;
+            p.fillCircle(tx,ty,r*.46f,BG);p.strokeCircle(tx,ty,r*.43f,GOLD,r*.07f);
+            p.line(tx,ty,tx+(float)Math.sin(hand)*r*.29f,ty-(float)Math.cos(hand)*r*.29f,INK,r*.06f);
+            p.line(tx-r*.12f,ty-r*.54f,tx+r*.12f,ty-r*.54f,GOLD,r*.08f);
+        } else if(id==COMPANION || id==TUTORIAL) {
             float hop=(float)Math.sin(time*3f)*r*.10f;
             Trinket.draw(p,14,x-r*.15f,y+r*.2f+hop,r*.75f,time,true,1f);
             if(id==TUTORIAL) {

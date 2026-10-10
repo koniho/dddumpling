@@ -100,6 +100,8 @@ Keep a separate entry only when it communicates a distinct change the player nee
 
 | `icon` value | Use for | Illustration |
 | --- | --- | --- |
+| `survival` | Survival runs and duck rewards | Duck riding rainbow stripes |
+| `time_attack` | Boss Time Attack runs | Slime boss and ticking stopwatch |
 | `scores` | Saved high-score runs | Glowing score rows and a gold star |
 | `octopulse` | Octopulse battle changes | Waving Octopulse portrait |
 | `companion` | Starter choice and run companions | Bouncing Melon Wedge collectible |
