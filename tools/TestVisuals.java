@@ -442,7 +442,43 @@ final class TestVisuals extends Check {
                     cy+radius*1.5f+LandPicker.companionRadius(c,l,1)*1.1f<l.h*.82f);
         }
     }
+    private static void adventureTitleScenery(Layout L) {
+        GameCore c=new GameCore(new Mem(),161);c.landChoice=0;
+        AdventureTitle title=c.modes.adventureTitle;title.update(c,0);
+        float[] bubbles=title.bubbles.clone();
+        c.landChoice=1;title.update(c,.2f);
+        check("Adventure old ground sinks while new ground rises",title.growth[0]>0 && title.growth[0]<1
+                && title.growth[1]>0 && title.growth[1]<1);
+        boolean continuous=true;
+        for(int i=0;i<bubbles.length;i++)if(bubbles[i]>=0 && bubbles[i]+.2f<AdventureTitle.BUBBLE_LIFE)
+            continuous &= Math.abs(title.bubbles[i]-bubbles[i]-.2f)<.0001f;
+        check("outgoing slime bubbles continue their original flight",continuous);
+        c.landChoice=2;title.update(c,.1f);
+        check("rapid land changes preserve all outgoing scenery",title.growth[0]>0 && title.growth[1]>0 && title.growth[2]>0);
+        title.update(c,AdventureTitle.BUBBLE_LIFE);
+        boolean empty=true;for(float age:title.bubbles)empty &= age<0;
+        check("slime stops emitting after departure and all bubbles finish",empty);
+        check("only the selected land remains after transition",title.growth[0]==0 && title.growth[1]==0 && title.growth[2]==1);
+        c.landChoice=0;title.update(c,.1f);
+        empty=true;for(float age:title.bubbles)empty &= age<0;
+        check("returning to slime does not resurrect old floating bubbles",empty);
+        title.update(c,.3f);
+        boolean fresh=false;for(float age:title.bubbles)fresh |= age>=0 && age<.1f;
+        check("returning slime emits fresh bubbles from the ground",fresh);
+        RasterPainter first=new RasterPainter((int)L.w,(int)L.h,1),second=new RasterPainter((int)L.w,(int)L.h,1);
+        for(boolean front:new boolean[]{false,true}) {
+            title.draw(first,c,L,L.w*.5f,ModeSelector.y(L),1,1,front);
+            title.draw(second,c,L,L.w*.5f,ModeSelector.y(L),1,1,front);
+        }
+        check("Adventure scenery rendering is deterministic",java.util.Arrays.equals(first.resolve(),second.resolve()));
+        c.state=GameCore.PLAY;title.update(c,.1f);
+        empty=true;for(float age:title.bubbles)empty &= age<0;
+        check("Adventure scenery clears on run start",!title.initialized && empty);
+        c.state=GameCore.TITLE;c.landChoice=3;title.update(c,0);
+        check("return to title starts with current land scenery",title.growth[3]==1 && title.growth[0]==0);
+    }
     static void titleScreen(Layout L) {
+        adventureTitleScenery(L);
         adventureCompanion(L);
         caseScoreFade();
         discoveryTrip(L);

@@ -53,6 +53,7 @@ src/com/dddumpling/game/Survival.java
 src/com/dddumpling/game/TimeAttack.java
 src/com/dddumpling/game/TimeAttackDemo.java
 src/com/dddumpling/game/TimeAttackTitle.java
+src/com/dddumpling/game/AdventureTitle.java
 src/com/dddumpling/game/TimeAttackHistory.java
 src/com/dddumpling/game/TimeAttackScores.java
 src/com/dddumpling/game/SurvivalDemo.java

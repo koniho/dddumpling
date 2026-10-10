@@ -17,6 +17,12 @@ final class Preview {
             c.landChoice=land;c.caseIndex=companions[land%companions.length];c.clock=1.6f;c.landWanderT=1.6f;
             shot(dir,"161-adventure-land-"+land,c,L,w,h,ss);
         }
+        c.landChoice=0;c.modes.adventureTitle.update(c,0);c.landChoice=1;
+        c.modes.adventureTitle.update(c,.24f);
+        shot(dir,"161-adventure-scenery-changing",c,L,w,h,ss);
+        c.modes.adventureTitle.update(c,.6f);
+        shot(dir,"161-adventure-slime-bubbles-finishing",c,L,w,h,ss);
+        c=new GameCore(new Mem(),161);c.collected=Collect.MASK;c.landSeen=LandPicker.stateMask();
         c.landChoice=0;c.caseIndex=7;LandPicker.select(c,1);
         LandPicker.updateTravel(c,LandPicker.TRAVEL_TIME*.5f);
         shot(dir,"161-adventure-travel",c,L,w,h,ss);

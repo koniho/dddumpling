@@ -7,6 +7,7 @@ final class ModeSelector extends Draw {
     static final float CHANGE=.32f;
     private static final int SCENE=8;
     static final float SWIPE_DISTANCE=.18f, SWIPE_RETURN=.22f;
+    final AdventureTitle adventureTitle=new AdventureTitle();
     int selected=ADVENTURE, previous=ADVENTURE, direction=1;
     float transition=1f, adventureFade=1f, confirmation, unavailable;
     float swipeOffset;
@@ -98,6 +99,7 @@ final class ModeSelector extends Draw {
     }
     void cancelTouch() { pointer=-1;pressed=0;moved=dragged=false;returnSwipe(); }
     void update(GameCore c,float dt) {
+        adventureTitle.update(c,dt);
         c.timeAttack.slide=Math.min(1,c.timeAttack.slide+dt/TimeAttack.SLIDE_TIME);
         if(returnTime>0) {
             returnTime=Math.max(0,returnTime-dt);
@@ -178,7 +180,9 @@ final class ModeSelector extends Draw {
             bump*=1f+.018f*fade*(float)Math.sin(clock*3.5f);
             if(color==INK)color=Glyph.mix(INK,Glyph.cycle(clock*.10f),.25f*fade);
         }
+        if(mode==ADVENTURE)c.modes.adventureTitle.draw(p,c,L,x,y,bump,fade,false);
         name(p,mode,x,y,s,bump,fadeBy(color,fade));
+        if(mode==ADVENTURE)c.modes.adventureTitle.draw(p,c,L,x,y,bump,fade,true);
     }
     void draw(Painter p,GameCore c,Layout L) {
         if(!visible(c))return;
