@@ -182,13 +182,6 @@ final class ModeSelector extends Draw {
     }
     private static void titleLabel(Painter p,GameCore c,Layout L,int mode,float x,float y,float bump,int color,float fade) {
         float s=L.unit;
-        if(!unlocked(c,mode)) {
-            if(mode==TIME_ATTACK) {
-                p.text("BOSS",x,y-s*.9f,type(s*1.74f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
-                p.text("TIME ATTACK",x,y+s*1.1f,type(s*1.74f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
-            } else name(p,mode,x,y,s,1,fadeBy(INK_DIM,fade));
-            return;
-        }
         if(mode==TIME_ATTACK) {TimeAttackTitle.draw(p,c,x,y,s,bump,color,fade);return;}
         if(mode==SURVIVAL) {
             float clock=SurvivalDemo.animationClock(c);

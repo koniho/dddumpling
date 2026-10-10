@@ -118,7 +118,7 @@ final class TestModeSelector extends Check {
                     && labels.contains(mode==ModeSelector.SURVIVAL?"BEAT THE STAGE 5 BOSS":"BEAT YOUR FIRST BOSS")
                     && labels.contains("IN ADVENTURE TO UNLOCK"));
             check("locked mode has no boss selection controls "+mode,c.timeAttack.hit(c,L,L.w*.15f,TimeAttack.selectY(L))==0);
-            check("locked mode has no rainbow invitation "+mode,stripeCaps(c,L)==0);
+            if(mode==ModeSelector.SURVIVAL)check("locked Survival keeps animated title stripes",stripeCaps(c,L)>0);
             tap(c,L,0);check("locked title cannot start "+mode,!c.starting() && c.modes.unavailable>0);
             c.beginStart();check("keys cannot bypass locked mode "+mode,!c.starting());
             c.collected|=1L<<Collect.BOSS_FIRST;
