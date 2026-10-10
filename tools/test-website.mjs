@@ -8,7 +8,8 @@ const issues=[];
 await mkdir('build/site-preview', {recursive:true});
 try {
   for (const width of [320,390,768,1440]) {
-    const page = await browser.newPage({viewport:{width,height:width === 1440 ? 1600 : 1000},reducedMotion:'reduce'});
+    const context = await browser.newContext({viewport:{width,height:width === 1440 ? 1600 : 1000},reducedMotion:'reduce'});
+    const page = await context.newPage();
     const errors=[];
     page.on('pageerror', e=>errors.push(e.message));
     await page.goto('http://127.0.0.1:8765', {waitUntil:'networkidle'});
@@ -38,7 +39,7 @@ try {
       await page.locator('.friends-section').screenshot({path:`build/site-preview/friends-${width}.png`});
     }
     console.log(`${width}px: browser review completed`);
-    await page.close();
+    await context.close();
   }
   if(issues.length) throw Error(issues.join("\n"));
 } finally {await browser.close();}
