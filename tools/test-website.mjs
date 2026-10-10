@@ -41,5 +41,14 @@ try {
     console.log(`${width}px: browser review completed`);
     await context.close();
   }
+  const motion=await browser.newContext({viewport:{width:390,height:1000},reducedMotion:'no-preference'});
+  const movingPage=await motion.newPage();
+  await movingPage.goto('http://127.0.0.1:8765',{waitUntil:'networkidle'});
+  for(let sample=0;sample<4;sample++){
+    await movingPage.waitForTimeout(500);
+    if(await movingPage.evaluate(()=>document.documentElement.scrollWidth>innerWidth)) issues.push('Animated hero overflows at 390px');
+  }
+  await movingPage.locator('.hero').screenshot({path:'build/site-preview/hero-motion-390.png'});
+  await motion.close();
   if(issues.length) throw Error(issues.join("\n"));
 } finally {await browser.close();}
