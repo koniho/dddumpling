@@ -179,7 +179,7 @@ final class Lands extends Draw {
                 float[] stem=mushroomLogoStem(x,y,r,t);
                 p.fillPoly(stem,silhouette?col:Glyph.withAlpha(0xFFE5D5C2,a));
                 if(!silhouette)p.fillPoly(BossScreen.mushroomStemHighlight(stem),Glyph.withAlpha(0xFFFFF5F0,a*4/5));
-                mushroomCap(p,x+r*.10f*(float)Math.sin(t*1.3f),y+r*.13f,r*1.12f,r*.28f,t,col,light);
+                mushroomCap(p,x+r*.10f*(float)Math.sin(t*1.3f),y+r*.13f,r*1.12f,r*.38f,t,silhouette?col:Glyph.withAlpha(0xFFD898BA,a),light);
                 return;
             }
             p.fillPoly(pill(x, y + r * 0.48f, r * 0.24f, r * 0.8f, 8), silhouette ? col : light);
@@ -207,26 +207,28 @@ final class Lands extends Draw {
         return stem;
     }
 
-    /** A thin, uneven brim under an asymmetric dome; width and height vary independently. */
+    /** Soft rolled edges and a glossy dome; width and height vary independently. */
     static void mushroomCap(Painter p,float x,float y,float w,float h,float t,int color,int spots) {
         float[] cap=new float[100],rim=new float[100];
         for(int i=0;i<=24;i++) {
             float u=i/12f-1,round=(float)Math.sqrt(Math.max(0,1-u*u));
-            float brim=y+h*(.12f*(float)Math.sin(t*.8f)*u+.065f*(float)Math.sin(u*7+.4f)*round);
-            float dome=h*(float)Math.pow(Math.max(0,1-u*u),.72f)*(1+.12f*u);
+            float brim=y+h*.055f*(float)Math.sin(t*.8f)*u;
+            float dome=h*round*(1+.06f*u);
             int top=i*2,bottom=(49-i)*2;
             cap[top]=cap[bottom]=rim[top]=rim[bottom]=x+u*w;
-            cap[top+1]=brim-dome;cap[bottom+1]=brim+h*.06f*round;
-            rim[top+1]=brim-h*.045f*round;rim[bottom+1]=cap[bottom+1];
+            cap[top+1]=brim-dome;cap[bottom+1]=brim+h*.18f*round;
+            rim[top+1]=brim-h*.02f*round;rim[bottom+1]=cap[bottom+1];
         }
         p.fillPoly(cap,color);
         if(spots==0)return;
-        p.fillPoly(rim,Glyph.withAlpha(0xFF87556E,(color>>>24)*3/4));
+        p.fillPoly(rim,Glyph.withAlpha(0xFFFFD4CA,(color>>>24)*2/5));
+        p.arc(x,y,w*.76f,h*.72f,214,43,Glyph.withAlpha(0xFFFFFAEA,(color>>>24)/2),h*.065f);
         for(int i=-1;i<=1;i++) {
             float u=i*.52f,round=(float)Math.sqrt(1-u*u);
-            float brim=y+h*(.12f*(float)Math.sin(t*.8f)*u+.065f*(float)Math.sin(u*7+.4f)*round);
-            float dome=h*(float)Math.pow(1-u*u,.72f)*(1+.12f*u);
-            p.fillEllipse(x+u*w,brim-dome*(i==0?.65f:.46f),Math.min(w*.12f,h*.23f),h*.09f,spots);
+            float brim=y+h*.055f*(float)Math.sin(t*.8f)*u;
+            float dome=h*round*(1+.06f*u);
+            float spot=Math.min(w*.13f,h*.21f);
+            p.fillEllipse(x+u*w,brim-dome*(i==0?.65f:.46f),spot,spot*.84f,spots);
         }
     }
 
