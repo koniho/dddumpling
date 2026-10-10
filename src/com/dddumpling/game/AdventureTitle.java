@@ -76,14 +76,31 @@ final class AdventureTitle extends Draw {
         }
     }
     private static void slimePool(Painter p,float x,float y,float s,float span,float rise,float clock,float fade,boolean front) {
-        float depth=s*(.42f+.025f*(float)Math.sin(clock*1.8f));
-        float cy=y+s*(.03f+(1-rise)*.92f),edge=y-s*.10f;
-        // Two complementary clips put one continuous pool around the lettering.
-        p.save();p.clipRect(x-span*1.06f,front?edge:y-s*.5f,x+span*1.06f,front?y+s*.48f:edge);
-        p.fillEllipse(x,cy,span*1.04f,depth,fadeBy(0xFF76B984,fade*.82f));
-        p.arc(x,cy,span*1.01f,depth*.85f,190,155,fadeBy(0xFFD2F7AE,fade*.65f),s*.05f);
-        p.arc(x,cy,span*1.01f,depth*.87f,8,160,fadeBy(0xFF478865,fade*.65f),s*.055f);
+        float cy=y+s*(.03f+(1-rise)*2f),edge=y-s*.10f;
+        // Complementary clips keep a single puddle behind and in front of the letters.
+        p.save();p.clipRect(x-span*1.06f,front?edge:y-s*.95f,x+span*1.06f,front?y+s*.8f:edge);
+        p.fillPoly(poolOutline(x,cy,span*1.04f,s,clock,1),fadeBy(0xFF478865,fade*.88f));
+        p.fillPoly(poolOutline(x,cy-s*.07f,span*1.035f,s,clock,.80f),fadeBy(0xFF87C58A,fade*.80f));
+        float[] rim=poolOutline(x,cy-s*.05f,span*1.015f,s,clock,.69f);
+        p.polyline(java.util.Arrays.copyOfRange(rim,12,34),fadeBy(0xFFD9F4B7,fade*.58f),s*.06f);
+        p.polyline(java.util.Arrays.copyOfRange(rim,62,82),fadeBy(0xFFD9F4B7,fade*.38f),s*.045f);
+        p.polyline(java.util.Arrays.copyOfRange(rim,120,146),fadeBy(0xFFB9E59B,fade*.32f),s*.045f);
         p.restore();
+    }
+    private static float[] poolOutline(float x,float y,float span,float s,float clock,float depth) {
+        float[] outline=new float[196];
+        for(int side=0;side<2;side++)for(int i=0;i<=48;i++) {
+            float u=(side==0?i:48-i)/24f-1;
+            float taper=(float)Math.sqrt(Math.max(0,1-u*u));
+            float lobe=.48f+.13f*(float)Math.sin(u*8.2f+side*2.1f)
+                    +.075f*(float)Math.sin(u*17.4f+side*.8f);
+            float swell=.025f*(float)Math.sin(clock*1.35f+u*6+side);
+            float drift=.085f*(float)Math.sin(u*5+.7f)*taper;
+            int k=(side*49+i)*2;
+            outline[k]=x+span*u;
+            outline[k+1]=y+s*(drift+(side==0?-1:1)*taper*(lobe+swell)*depth);
+        }
+        return outline;
     }
     private static void prop(Painter p,int land,float x,float base,float size,int a,float t,int variant) {
         if(land==1 || land==Cave.LAND) {
