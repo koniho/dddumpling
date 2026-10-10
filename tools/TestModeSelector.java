@@ -118,6 +118,20 @@ final class TestModeSelector extends Check {
                 ==(order.indexOf("boss")>order.indexOf("lock")));
         return order.indexOf("boss")>order.indexOf("lock");
     }
+    private static int lockAlpha(GameCore c,Layout L) {
+        java.util.ArrayList<Integer> alphas=new java.util.ArrayList<>();
+        Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class<?>[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("arc"))alphas.add(((Integer)args[6])>>>24);
+                    if(method.getName().equals("text") && (args[0].equals("LOCKED")
+                            || args[0].equals("IN ADVENTURE TO UNLOCK")))alphas.add(((Integer)args[4])>>>24);
+                    return null;
+                });
+        c.modes.draw(p,c,L);
+        check("lock and copy fade together",alphas.size()==3 && alphas.get(0).equals(alphas.get(1))
+                && alphas.get(1).equals(alphas.get(2)));
+        return alphas.get(0);
+    }
     private static void lockedPresentation(Layout L) {
         GameCore c=title();c.collected=1;
         for(int mode:new int[]{ModeSelector.SURVIVAL,ModeSelector.TIME_ATTACK}) {
@@ -137,8 +151,15 @@ final class TestModeSelector extends Check {
             if(mode==ModeSelector.SURVIVAL)check("locked Survival keeps animated title stripes",stripeCaps(c,L)>0);
             tap(c,L,0);check("locked title cannot start "+mode,!c.starting() && c.modes.unavailable>0);
             c.beginStart();check("keys cannot bypass locked mode "+mode,!c.starting());
-            check("blocked start brings Slime in front of lock "+mode,lockedBossInFront(c,L));
-            c.modes.update(c,.7f);
+            check("reaction starts with visible lock "+mode,lockAlpha(c,L)==255);
+            c.modes.update(c,.05f);
+            check("lock fades out smoothly "+mode,lockAlpha(c,L)>0 && lockAlpha(c,L)<255);
+            c.modes.update(c,.11f);
+            check("blocked start brings Slime in front of lock "+mode,lockedBossInFront(c,L) && lockAlpha(c,L)==0);
+            c.modes.update(c,.4f);
+            check("lock fades back smoothly "+mode,lockAlpha(c,L)>0 && lockAlpha(c,L)<255);
+            c.modes.update(c,.2f);
+            check("settled lock is fully visible "+mode,lockAlpha(c,L)==255);
             check("Slime returns behind lock after reaction "+mode,!lockedBossInFront(c,L));
             c.collected|=1L<<Collect.BOSS_FIRST;
             labels.clear();c.modes.draw(p,c,L);

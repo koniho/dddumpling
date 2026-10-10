@@ -249,9 +249,11 @@ final class Preview {
         c.modes.confirm(c);step(c,L,.16f);shot(dir,"148-mode-confirmed",c,L,w,h,ss);
         c.collected=1;c.modes.select(c,ModeSelector.SURVIVAL,1);step(c,L,ModeSelector.CHANGE);
         shot(dir,"148-mode-locked",c,L,w,h,ss);
-        c.modes.confirm(c);step(c,L,.16f);
-        shot(dir,"148-mode-locked-reaction",c,L,w,h,ss);
-        step(c,L,.6f);
+        c.modes.confirm(c);step(c,L,.05f);
+        shot(dir,"148-mode-locked-fade-out",c,L,w,h,ss);
+        step(c,L,.11f);shot(dir,"148-mode-locked-reaction",c,L,w,h,ss);
+        step(c,L,.4f);shot(dir,"148-mode-locked-fade-in",c,L,w,h,ss);
+        step(c,L,.2f);
         shot(dir,"148-mode-locked-settled",c,L,w,h,ss);
         c.modes.select(c,ModeSelector.TIME_ATTACK,1);step(c,L,ModeSelector.CHANGE);
         shot(dir,"148-mode-locked-time-attack",c,L,w,h,ss);

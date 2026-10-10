@@ -221,18 +221,22 @@ final class ModeSelector extends Draw {
     private void drawLocked(Painter p,GameCore c,Layout L) {
         float s=L.unit,x=L.w*.5f,y=L.h*.682f;
         int color=unavailable>0?GOLD:INK;
-        boolean inFront=unavailable>0;
-        if(!inFront)lockedBoss(p,c,L,0);
-        p.arc(x,y-s*.25f,s*.4f,s*.45f,180,180,color,s*.14f);
-        p.fillPoly(new float[]{x-s*.6f,y-s*.25f,x+s*.6f,y-s*.25f,
+        float opacity=Math.max(0,Math.min(1,Math.max((unavailable-.82f)/.18f,(.28f-unavailable)/.28f)));
+        opacity=opacity*opacity*(3-2*opacity);
+        // Change depth while the lock is invisible, so it never pops through the translucent skin.
+        boolean inFront=unavailable>0 && opacity==0;
+        Painter lock=new OpacityPainter(p,opacity);
+        if(!inFront)lockedBoss(p,c,L,unavailable);
+        lock.arc(x,y-s*.25f,s*.4f,s*.45f,180,180,color,s*.14f);
+        lock.fillPoly(new float[]{x-s*.6f,y-s*.25f,x+s*.6f,y-s*.25f,
                 x+s*.6f,y+s*.6f,x-s*.6f,y+s*.6f},color);
-        p.fillCircle(x,y+s*.12f,s*.10f,BG);
-        p.line(x,y+s*.12f,x,y+s*.35f,BG,s*.10f);
-        p.text("LOCKED",x,y+s*1.7f,type(s*.7f),color,Painter.CENTER,true);
+        lock.fillCircle(x,y+s*.12f,s*.10f,BG);
+        lock.line(x,y+s*.12f,x,y+s*.35f,BG,s*.10f);
+        lock.text("LOCKED",x,y+s*1.7f,type(s*.7f),color,Painter.CENTER,true);
         if(inFront)lockedBoss(p,c,L,unavailable);
-        p.text(selected==SURVIVAL?"BEAT THE STAGE 5 BOSS":"BEAT YOUR FIRST BOSS",
+        lock.text(selected==SURVIVAL?"BEAT THE STAGE 5 BOSS":"BEAT YOUR FIRST BOSS",
                 x,y+s*3f,type(s*.57f),INK,Painter.CENTER,true);
-        p.text("IN ADVENTURE TO UNLOCK",x,y+s*4.05f,type(s*.5f),INK_DIM,Painter.CENTER,true);
+        lock.text("IN ADVENTURE TO UNLOCK",x,y+s*4.05f,type(s*.5f),INK_DIM,Painter.CENTER,true);
     }
     private static void lockedBoss(Painter p,GameCore c,Layout L,float reaction) {
         float s=L.unit,bounce=(float)Math.sin((1-reaction)*Math.PI);
