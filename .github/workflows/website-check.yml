@@ -1,0 +1,31 @@
+name: Website checks
+on:
+  pull_request:
+    paths: ['docs/site/**', 'tools/test-website.mjs', '.github/workflows/website-check.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  website:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser checks
+        run: |
+          npm install --prefix "$RUNNER_TEMP/site-check" --no-package-lock playwright@1.55.0 @axe-core/playwright@4.10.2
+          "$RUNNER_TEMP/site-check/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Check responsive website
+        env:
+          SITE_TEST_DEPS: ${{ runner.temp }}/site-check
+        run: |
+          python3 -m http.server 8765 --directory docs/site > /tmp/site-server.log 2>&1 &
+          node tools/test-website.mjs
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: website-preview
+          path: build/site-preview/

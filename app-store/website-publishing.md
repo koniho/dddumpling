@@ -18,5 +18,14 @@ the corresponding Actions secret in the private source repository. Private keys
 are not checked into any repository.
 
 The static website uses no scripts, analytics, cookies, or external fonts.
-Screenshots come from the shared game rendering harness. Replace the playtest
-preparation message with the real Play Store link when the listing is accessible.
+Screenshots come from the shared game rendering harness. Store buttons link to the
+public Google Play, App Store and itch listings. The trailer opens on YouTube.
+
+The Survival, Time Attack and Sunny Duck screenshots come from the approved 0.1.26
+render output: `149-survival-150`, `150-combat` and `156-ducks-reveal-0`. They are
+copied unchanged; the webpage crops the duck frame with CSS.
+
+**Website checks** renders four responsive widths with Chromium, checks image loading,
+navigation and overflow, and runs axe accessibility checks. Download its
+`website-preview` artifact to review the hero, collection section and full pages
+before merging visual changes. Reduced-motion preferences disable all decorative animation.
