@@ -222,3 +222,11 @@ existing Play bundle to production and/or submit the existing Apple build for au
 release after approval. No binaries are rebuilt or uploaded. The workflow checks the
 manifest and approved notes, preserves existing store assets, and verifies saved state.
 Store review and processing may still delay public availability.
+
+## Update listing text
+
+**Update Google Play listing text** previews or publishes the checked-in `en-US` title,
+short description and full description. It stages only those three fields, reads the
+current listing before applying, and verifies other text and the video URL are preserved.
+Run with `apply=false` to review the live diff, then `apply=true` for an authorized update.
+The workflow uses normal Google review and refuses to cancel a review already in progress.

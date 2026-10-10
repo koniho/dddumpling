@@ -1,0 +1,40 @@
+name: Update Google Play listing text
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Publish the checked-in English title and descriptions
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: google-play-testing
+  cancel-in-progress: false
+jobs:
+  listing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Require main
+        run: test "$GITHUB_REF" = refs/heads/main
+      - uses: actions/checkout@v6
+      - name: Install pinned gplay CLI
+        run: bash tools/install-gplay.sh
+      - name: Preview or publish listing text
+        env:
+          APPLY: ${{ inputs.apply }}
+          GPLAY_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          mkdir -p .private
+          args=()
+          if [ "$APPLY" = true ]; then args+=(--write); fi
+          bash tools/play-listing-text.sh "${args[@]}"
+      - name: Preserve listing comparison
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: play-listing-text-${{ github.run_id }}
+          if-no-files-found: ignore
+          path: .private/play-listing-*/
+          include-hidden-files: true

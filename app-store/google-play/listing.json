@@ -1,5 +1,5 @@
 {
-  "app_name": "DDDumpling: Tap Game",
+  "app_name": "DDDumpling: Tap & Swipe Game",
   "package_name": "com.dddumpling.game",
   "default_language": "en-US",
   "support_email": "dddumpling.play@gmail.com",
@@ -10,6 +10,6 @@
   "full_description_file": "en-US/full-description.txt",
   "icon_file": "icon.png",
   "screenshots_directory": "screenshots",
-  "scope": "Initial offline release; excludes unmerged Play Games cloud saves and events",
+  "scope": "Offline Adventure, Survival and Boss Time Attack; excludes development-only features and unmerged content",
   "feature_graphic_file": "feature-graphic.png"
 }
