@@ -103,10 +103,23 @@ final class TestModeSelector extends Check {
         check("hidden invitation retains no spring motion",a.titleStart.ox[0]==0);
         check("letter physics leaves gameplay random sequence alone",a.rnd.nextLong()==b.rnd.nextLong());
     }
+    private static boolean lockedBossInFront(GameCore c,Layout L) {
+        java.util.ArrayList<String> order=new java.util.ArrayList<>();
+        Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class<?>[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("fillEllipse") && ((Integer)args[4])==0xFF393054)order.add("boss");
+                    if(method.getName().equals("arc"))order.add("lock");
+                    return null;
+                });
+        c.modes.draw(p,c,L);
+        check("locked scene draws both silhouette and padlock",order.contains("boss") && order.contains("lock"));
+        return order.indexOf("boss")>order.indexOf("lock");
+    }
     private static void lockedPresentation(Layout L) {
         GameCore c=title();c.collected=1;
         for(int mode:new int[]{ModeSelector.SURVIVAL,ModeSelector.TIME_ATTACK}) {
-            c.modes.restore(mode);
+            c.modes.restore(mode);c.modes.update(c,.7f);
+            check("Slime silhouette rests behind the lock "+mode,!lockedBossInFront(c,L));
             java.util.ArrayList<String> labels=new java.util.ArrayList<>();
             Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                     new Class<?>[]{Painter.class},(proxy,method,args)->{
@@ -121,6 +134,9 @@ final class TestModeSelector extends Check {
             if(mode==ModeSelector.SURVIVAL)check("locked Survival keeps animated title stripes",stripeCaps(c,L)>0);
             tap(c,L,0);check("locked title cannot start "+mode,!c.starting() && c.modes.unavailable>0);
             c.beginStart();check("keys cannot bypass locked mode "+mode,!c.starting());
+            check("blocked start brings Slime in front of lock "+mode,lockedBossInFront(c,L));
+            c.modes.update(c,.7f);
+            check("Slime returns behind lock after reaction "+mode,!lockedBossInFront(c,L));
             c.collected|=1L<<Collect.BOSS_FIRST;
             labels.clear();c.modes.draw(p,c,L);
             check("boss reward replaces lock immediately "+mode,!labels.contains("LOCKED") && c.modes.playable(c));
