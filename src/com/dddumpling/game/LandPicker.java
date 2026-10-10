@@ -45,7 +45,7 @@ final class LandPicker extends Draw {
     static float iconRadius(GameCore c, Layout L) {
         // Tall kelp/crystals must stay below the mode title on compact phones.
         float headroom=(cardY(L)-ModeSelector.y(L)-L.unit*.6f)/1.75f;
-        return Math.min(L.keyR*c.keyScale()*1.24f,Math.min(L.h*.053f,headroom));
+        return .75f*Math.min(L.keyR*c.keyScale()*1.24f,Math.min(L.h*.053f,headroom));
     }
     static float cardX(GameCore c, Layout L, int land) {
         return L.w * 0.5f + (slot(c, land) - slot(c, c.landChoice) + c.landPickerSlide) * spacing(c, L);
@@ -236,7 +236,7 @@ final class LandPicker extends Draw {
         // Walk across the foreground of each emblem; draw after the land so the face stays visible.
         return ground+iconRadius(c,L)*.40f;
     }
-    static float travelerRadius(GameCore c,Layout L) { return Math.min(L.unit*1.3f,L.h*.024f); }
+    static float travelerRadius(GameCore c,Layout L) { return .75f*Math.min(L.unit*1.3f,L.h*.024f); }
     static float companionRadius(GameCore c,Layout L,float scale) {
         // A readable resident grows gently while crossing between lands.
         return travelerRadius(c,L)*(.75f+.25f*Math.max(0,Math.min(1,(scale-.42f)/.58f)));
@@ -281,7 +281,11 @@ final class LandPicker extends Draw {
                 && y>=cardY(c,L,land)-r*1.8f-dot
                 && y<=cardY(c,L,land)+r*bottom+dot;
     }
-    private static void drawTrail(Painter p,GameCore c,Layout L) {
+    static void drawTrail(Painter p,GameCore c,Layout L) {
+        int shown=0;
+        for(int land=0;land<=TOWN;land++)
+            if(unlocked(c,land) && discoveryReveal(c,L,land)>0)shown++;
+        if(shown<=1)return;
         float gap=spacing(c,L),r=iconRadius(c,L);
         int n=count(c);
         for(int segment=0;segment<n;segment++) {

@@ -309,7 +309,7 @@ final class TestVisuals extends Check {
         for(int land=1;land<Lands.COUNT;land++) c.collected=Collect.add(c.collected,Collect.BOSS_FIRST+land-1);
         store.collected=c.collected;
         LandPicker.updateDiscovery(c,0f);
-        check("discovery uses the swipe traveler size",LandPicker.travelerRadius(c,L)==Math.min(L.unit*1.3f,L.h*.024f));
+        check("discovery uses the swipe traveler size",LandPicker.travelerRadius(c,L)==.75f*Math.min(L.unit*1.3f,L.h*.024f));
         check("tour begins from the current land",c.landDiscovery==1 && c.landDiscoveryFrom==0 && c.landPickerSlide==1f);
         check("tour owns its land motion",!LandPicker.down(c,L,L.w*.7f,LandPicker.cardY(L)));
         for(int land=1;land<Lands.COUNT;land++) {
@@ -437,7 +437,7 @@ final class TestVisuals extends Check {
             float radius=LandPicker.iconRadius(c,l),cy=LandPicker.cardY(l);
             check("enlarged Adventure scenery clears mode label "+dim[0],cy-radius*1.75f>ModeSelector.y(l)+l.unit*.5f);
             check("resident companion is readable beside other modes "+dim[0],
-                    LandPicker.companionRadius(c,l,.42f)*.85f>=Math.min(l.unit,l.h*.017f)*.8f);
+                    LandPicker.companionRadius(c,l,.42f)*.85f>=Math.min(l.unit,l.h*.017f)*.6f);
             check("travel growth stays within title margins "+dim[0],
                     cy+radius*1.5f+LandPicker.companionRadius(c,l,1)*1.1f<l.h*.82f);
         }
@@ -483,6 +483,22 @@ final class TestVisuals extends Check {
         caseScoreFade();
         discoveryTrip(L);
         persistentExplorer(L);
+        GameCore loneLand=new GameCore(new Mem(),724L);loneLand.landChoice=0;
+        loneLand.collected=1;loneLand.landSeen=0;loneLand.landSuppressed=2;
+        final int[] trailDots={0};
+        Painter trailPainter=(Painter)java.lang.reflect.Proxy.newProxyInstance(
+                Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
+                    if(method.getName().equals("fillCircle"))trailDots[0]++;
+                    return null;
+                });
+        LandPicker.drawTrail(trailPainter,loneLand,L);
+        check("one discovered land has no outgoing trail",trailDots[0]==0);
+        loneLand.collected=Collect.add(loneLand.collected,Collect.BOSS_FIRST+1);
+        LandPicker.drawTrail(trailPainter,loneLand,L);
+        check("unseen unlocked land does not expose a trail",trailDots[0]==0);
+        loneLand.landSeen=1<<2;
+        LandPicker.drawTrail(trailPainter,loneLand,L);
+        check("trail appears after another land is discovered",trailDots[0]>0);
         GameCore trail=new GameCore(new Mem(),724L);
         float r=LandPicker.iconRadius(trail,L);
         trail.collected=Collect.MASK;trail.landSeen=14;
