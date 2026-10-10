@@ -15,7 +15,11 @@ try {
     await page.evaluate(async()=>Promise.all([...document.images].map(i=>i.decode())));
     await page.evaluate(()=>scrollTo(0,0));
     const geometry=await page.evaluate(()=>({viewport:innerWidth,content:document.documentElement.scrollWidth}));
-    if(geometry.content>geometry.viewport) throw Error(`Horizontal overflow at ${width}: ${JSON.stringify(geometry)}`);
+    if(geometry.content>geometry.viewport) {
+      await page.screenshot({path:`build/site-preview/overflow-${width}.png`,fullPage:true});
+      const elements=await page.locator('body *').evaluateAll(nodes=>nodes.filter(n=>n.getBoundingClientRect().right>innerWidth+1).map(n=>({tag:n.tagName,css:n.className,right:n.getBoundingClientRect().right,width:n.getBoundingClientRect().width})));
+      throw Error(`Horizontal overflow at ${width}: ${JSON.stringify({geometry,elements})}`);
+    }
     const badImages=await page.locator('img').evaluateAll(imgs=>imgs.filter(i=>!i.complete||!i.naturalWidth).map(i=>i.src));
     if(badImages.length||errors.length) throw Error(JSON.stringify({badImages,errors}));
     const audit=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
