@@ -9,6 +9,10 @@ repository-scoped deploy keys. GitHub Pages then serves the updated main branche
 of koniho/dddumpling-game and koniho/dddumpling-privacy. No game source is copied.
 The workflow can also be run manually from main.
 
+TikTok URL-prefix verification files live in `docs/privacy-verification/`.
+Keep the downloaded `tiktok*.txt` filenames and contents unchanged; publishing
+copies them to the privacy site's root, where TikTok checks ownership.
+
 Secrets in the private game repository:
 - WEBSITE_DEPLOY_KEY: write access only to the public website repository.
 - PRIVACY_DEPLOY_KEY: write access only to the public privacy repository.

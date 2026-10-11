@@ -43,6 +43,12 @@ else
     echo 'Policy contains unfinished draft content'; exit 1
   fi
   cp docs/privacy.html "$publish_tmp/repo/index.html"
+  # Keep URL ownership proofs alongside the published privacy policy.
+  for verification in docs/privacy-verification/tiktok*.txt; do
+    [ -f "$verification" ] || continue
+    [ ! -L "$verification" ] || { echo 'Verification file is a symlink'; exit 1; }
+    cp "$verification" "$publish_tmp/repo/"
+  done
 fi
 touch "$publish_tmp/repo/.nojekyll"
 git -C "$publish_tmp/repo" config user.name 'DDDUMPLING website bot'

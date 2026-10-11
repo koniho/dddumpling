@@ -5,6 +5,7 @@ on:
     paths:
       - 'docs/site/**'
       - 'docs/privacy.html'
+      - 'docs/privacy-verification/**'
       - '.github/workflows/publish-pages.yml'
       - '.github/github_known_hosts'
       - 'tools/publish-pages.sh'
