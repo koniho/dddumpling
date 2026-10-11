@@ -1,6 +1,37 @@
 import XCTest
 
 final class SmokeTests: XCTestCase {
+    func testPhysicalKeyboardFourKeys() { checkKeyboard(full: false) }
+    func testPhysicalKeyboardSixKeys() { checkKeyboard(full: true) }
+
+    private func checkKeyboard(full: Bool) {
+        let app = launch(full ? "keyboard:6" : "keyboard:4")
+        let game = app.otherElements["game"]
+        let keys = full ? ["s", "d", "f", "j", "k", "l"] : ["s", "d", "k", "l"]
+        let glyphs = full ? [0, 1, 2, 3, 4, 5] : [0, 1, 4, 5]
+        for (index, key) in keys.enumerated() {
+            app.typeKey(XCUIKeyboardKey(rawValue: key), modifierFlags: [])
+            XCTAssertTrue((game.value as? String ?? "").contains("keyboardPresses=\(index + 1);keyboardGlyph=\(glyphs[index])"))
+        }
+        app.typeKey("x", modifierFlags: [])
+        XCTAssertTrue((game.value as? String ?? "").contains("keyboardPresses=\(keys.count);"), "After X: \(game.value ?? "missing")")
+        // Native tests cover modifiers: this simulator's typeKey sometimes drops them.
+        if !full {
+            app.typeKey("f", modifierFlags: [])
+            app.typeKey("j", modifierFlags: [])
+        }
+        XCTAssertTrue((game.value as? String ?? "").contains("keyboardPresses=\(keys.count);"))
+        XCTAssertEqual(app.keyboards.count, 0)
+        app.buttons["pause"].tap()
+        app.typeKey("s", modifierFlags: [])
+        XCTAssertTrue((game.value as? String ?? "").contains("keyboardPresses=\(keys.count);"))
+        app.buttons["pause"].tap()
+        app.typeKey("s", modifierFlags: [])
+        XCTAssertTrue((game.value as? String ?? "").contains("keyboardPresses=\(keys.count + 1);keyboardGlyph=0"))
+        XCTAssertEqual(app.keyboards.count, 0)
+        capture(app, full ? "keyboard-six-keys" : "keyboard-four-keys")
+    }
+
     private func launch(_ scene: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["DDD_GAME_CENTER_DISABLED"] = "1"

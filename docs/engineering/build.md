@@ -18,6 +18,35 @@ prove an update is compatible: compare the actual installed certificate and vers
 The local developer build floors its generated version code at the installed Dev version;
 tracked production/release metadata is unchanged.
 
+## ADB developer signing
+
+The Mac and phone originally had different locally generated debug keys. On October 11,
+2026, the phone's `~/dev/dddumpling/build/debug.keystore` was copied from Termux and verified
+against the installed `com.dddumpling.game.dev` certificate. The Mac now uses that same key
+at `build/debug.keystore`, which is the normal developer build default.
+
+The recovery copy is `.private/android/phone-debug.keystore`, with owner-only permissions.
+The previous Mac key is retained at `.private/android/mac-debug-before-phone.keystore`.
+Both directories are ignored by Git; never commit or upload these keystores.
+
+Expected developer certificate SHA-256:
+`c28736f13af28ac7674aca3adb20f1dbdf269f65c38be124cd91da90c25f2027`.
+The alias is `hexatype`, using the build script's normal debug-key password defaults.
+
+If the build key is missing or differs, restore the verified recovery copy before building:
+
+```sh
+cp .private/android/phone-debug.keystore build/debug.keystore
+chmod 600 build/debug.keystore
+```
+
+Use `bash ./deploy.sh --developer` with the Android SDK tools and Java on `PATH`.
+For a separately built APK, `adb -s <serial> install -r hexatype.apk` preserves app data.
+Do not use a Play signing key, generate another key, or uninstall the existing Dev app
+to resolve a certificate mismatch. If neither local copy exists, recover the original
+keystore from the phone's Termux build workspace; an installed APK contains only its
+public certificate, not the private signing key.
+
 Termux cannot normally read the game's crash logcat. For a reported crash, ask for the
 stack trace shown by `Crash.java` on the device. Without paired adb, the package installer
 needs a tap; `termux-open` also needs `allow-external-apps = true` in Termux settings.

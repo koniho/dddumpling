@@ -82,6 +82,20 @@ Debug-only launch environment `DDD_SCENE` accepts `title`, `play`, `case`, `star
 and compiles shared `BuildFlags.DEVELOPER=false`. Debug and Release use separate bundle IDs
 and saves (`com.dddumpling.game.ios.dev` and `com.dddumpling.game.ios`).
 
+External keyboard controls use **SDF / JKL** for six keys and **SD / KL** for four keys,
+ordered left to right within each hand. They act on the gameplay deck, including key-based
+bonus games; use touch for menus and gestures. No software keyboard is opened. In Simulator,
+enable **I/O → Keyboard → Connect Hardware Keyboard**. Debug scenes `keyboard:4` and
+`keyboard:6` start a run with the corresponding deck for input testing.
+On Android, `scrcpy --keyboard=uhid` can present a computer keyboard as a physical keyboard;
+ordinary `adb shell input keyevent` injection is rejected.
+UHID may report `isExternal=false` on Android, so the host checks for a non-virtual,
+alphabetic keyboard rather than relying on that flag. Developer builds log accepted
+inputs with `adb logcat -s DDDKeyboard:D '*:S'` (press count and glyph only).
+If scrcpy's default video decoder fails, the Pixel test setup worked with
+`scrcpy --keyboard=uhid --no-audio --video-codec=h265 --max-size=1280 --max-fps=30`.
+Use `--serial SERIAL` when both USB and wireless ADB are connected.
+
 Set `DDD_PROFILE=1` in the Xcode scheme's launch environment to log bounded 600-draw windows:
 mean/p95/max update and draw-submission CPU time, display-link callback intervals, missed 60 Hz callback
 slots, and resident memory. It is quiet by default and resets on lifecycle/navigation changes.

@@ -64,6 +64,7 @@ targets:
         basedOnDependencyAnalysis: false
     dependencies:
       - sdk: UIKit.framework
+      - sdk: GameController.framework
       - sdk: CoreGraphics.framework
       - sdk: CoreText.framework
       - sdk: AVFoundation.framework

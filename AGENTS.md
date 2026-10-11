@@ -83,6 +83,9 @@ read failures and the tally rather than dumping the full log.
 Local installs target **DDDUMPLING Dev** (`com.dddumpling.game.dev`) and reuse the existing
 `build/debug.keystore`. Use the normal developer build/install flow; do not substitute the
 Play upload key or uninstall the app to work around an update failure.
+For Mac-to-phone ADB installs, the verified phone signing key is backed up at
+`.private/android/phone-debug.keystore`; restore that copy to `build/debug.keystore` if needed.
+Keep both files untracked. See [signing recovery](docs/engineering/build.md#adb-developer-signing).
 
 An older checkout can produce a version-code downgrade even when its signing certificate
 matches the installed Dev app. This caused the code-23 APK versus installed code-24 failure;
