@@ -16,7 +16,9 @@ final class BossCollect extends Draw {
     }
     static void draw(Painter p,int boss,float x,float y,float r,float clock,boolean known,float fade,
             int mood,float look,boolean ninja) {
-        int i = Collect.BOSS_FIRST + boss;
+        if(boss==Boss.ALLIGATOR) {AlligatorArt.portrait(p,x,y,r,clock,known,fade);
+            if(ninja)Trinket.ninjaMask(p,x,y-r*.2f,r*.82f,fade);return;}
+        int i = Collect.bossPrize(boss);
         int body = fadeBy(known ? Collect.BODY[i] : 0xFF393054, fade);
         int cream = fadeBy(known ? Collect.ACCENT[i] : 0xFF393054, fade);
         int ink = fadeBy(0xFF382841, fade);
@@ -114,7 +116,7 @@ final class BossCollect extends Draw {
         Trinket.draw(p,c.prize,x,y+(1f-pop)*r*1.5f-(float)Math.sin(age*2f)*r*.035f,
                 r*scale,c.clock,true,fade);
         p.text("BOSS BEFRIENDED!",x,L.h*.22f,type(L.unit*1.02f),fadeBy(GOLD,fade),Painter.CENTER,true);
-        p.text(Boss.NAMES[c.prize-Collect.BOSS_FIRST],x,L.h*.27f,type(L.unit*.69f),fadeBy(INK,fade),Painter.CENTER,true);
+        p.text(Boss.NAMES[Collect.bossKind(c.prize)],x,L.h*.27f,type(L.unit*.69f),fadeBy(INK,fade),Painter.CENTER,true);
         p.text(Collect.NAME[c.prize],x,L.h*.60f,type(L.unit*1.08f),fadeBy(INK,fade),Painter.CENTER,true);
         p.text(c.prizeNew ? "JOINS YOUR COLLECTION" : "A FRIEND RETURNS",x,L.h*.64f,
                 type(L.unit*.62f),fadeBy(GOLD,fade),Painter.CENTER,true);

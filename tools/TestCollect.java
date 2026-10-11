@@ -24,8 +24,8 @@ final class TestCollect extends Check {
     static void catalogue(Layout L) {
         caveRewards(L);
         group("collectible catalogue");
-        check("original 49 plus 11 Survival ducks", Collect.BLIND_COUNT == 30
-                && Collect.STAR_COUNT == 5 && Collect.CUBE_COUNT == 10 && Collect.BOSS_COUNT == Boss.COUNT && Collect.COUNT == 60);
+        check("original catalog, 11 Survival ducks and Mossy Bud", Collect.BLIND_COUNT == 30
+                && Collect.STAR_COUNT == 5 && Collect.CUBE_COUNT == 10 && Collect.BOSS_COUNT == Boss.COUNT && Collect.COUNT == 61);
         check("every table is the same length",
                 Collect.NAME.length == Collect.COUNT && Collect.FAMILY.length == Collect.COUNT
                         && Collect.SHAPE.length == Collect.COUNT
@@ -130,7 +130,7 @@ final class TestCollect extends Check {
         old.collectionCounts[48]=3;old.collectionCounts[58]=7;old.caseIndex=58;
         GameCore loaded=new GameCore(old,614L);
         check("retired cave ownership and selection load safely",loaded.collected==Collect.LEGACY_MASK
-                && loaded.collectionCounts.length==60 && loaded.collectionCounts[48]==3 && loaded.caseIndex==0);
+                && loaded.collectionCounts.length==61 && loaded.collectionCounts[48]==3 && loaded.caseIndex==0);
         check("legacy collection does not invent new ducks",!Collect.complete(loaded.collected));
     }
 
@@ -470,7 +470,7 @@ final class TestCollect extends Check {
                 && Showcase.columns(0) == Collect.BOSS_COUNT);
         for (int boss = 0; boss < Collect.BOSS_COUNT; boss++)
             check("boss IDs keep their order on the top shelf",
-                    Showcase.entry(0, boss) == Collect.BOSS_FIRST + boss);
+                    Showcase.entry(0, boss) == Collect.bossPrize(boss));
         boolean fruitRow = true, candyRow = true;
         for (int i = 0; i < Collect.COUNT; i++) {
             if (Collect.FAMILY[i] == Collect.FRUITS && Showcase.row(i) != Showcase.FRUIT_ROW) fruitRow = false;

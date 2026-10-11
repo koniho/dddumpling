@@ -783,13 +783,13 @@ final class TestVisuals extends Check {
             int first = land * Boss.EVERY + 1, bossStage = first + Boss.EVERY - 1;
             for (int stage = first; stage <= bossStage; stage++)
                 check("land stays consistent through stage " + stage, Lands.forStage(stage) == land);
-            check("land previews its upcoming boss " + land, Boss.kindFor(bossStage) == (land < Boss.COUNT ? land : -1));
+            check("land previews its upcoming boss " + land, Boss.kindFor(bossStage) == (land==Lands.SWAMP?Boss.ALLIGATOR:land<Cave.LAND?land:-1));
             check("each land has three skits " + land,
                     Lands.skitFor(first) != Lands.skitFor(first + 1)
                     && Lands.skitFor(first + 1) != Lands.skitFor(first + 2)
                     && Lands.skitFor(first) != Lands.skitFor(first + 2));
         }
-        check("endless stages reuse scenery", Lands.forStage(26) == Lands.forStage(1));
+        check("endless stages reuse scenery", Lands.forStage(Lands.playableCount()*Boss.EVERY+1) == Lands.forStage(1));
         check("title uses the original palette", Lands.background(new GameCore(new Mem(), 1L)) == Draw.BG);
         GameCore c = new GameCore(new Mem(), 111L);
         c.startGame();

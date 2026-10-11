@@ -13,7 +13,7 @@ final class Progress {
         void event(String name, int amount);
         void changed();
     }
-    static final String[] BOSSES = {"slime", "dark_divide", "octopulse", "fly_agaric"};
+    static final String[] BOSSES = {"slime", "dark_divide", "octopulse", "fly_agaric", "mossy_maw"};
     private final Store store;
     private final String replica;
     private final boolean enabled;
@@ -83,7 +83,7 @@ final class Progress {
         scoresSuppressed = false;
         startLand = land;
         running = true; stage = 0; boss = -1; minigame = null;
-        event("runs_started"); enterStage(land * Boss.EVERY + 1);
+        event("runs_started"); enterStage(Lands.firstStage(land));
     }
     void enterStage(int next) {
         if (!available() || !running || next == stage) return;

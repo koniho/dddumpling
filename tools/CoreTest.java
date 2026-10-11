@@ -66,6 +66,7 @@ final class CoreTest {
         group("Stars", () -> {
             TestStars.game(L);
         });
+        group("Alligator", () -> TestAlligator.all(L));
         group("TimeAttack", () -> TestTimeAttack.all(L));
         group("Boss", () -> {
             TestBoss.cadence(L);

@@ -45,7 +45,7 @@ final class TimeAttackDemo extends Draw {
         float cx=companionX(c,L),cy=companionY(c,L);
         float bx=right-br*.8f*charge+br*.22f*recoil;
         float by=y-br*.14f*Math.abs((float)Math.sin(t*10))-br*.22f*cheer;
-        int tint=known?Collect.BODY[Collect.BOSS_FIRST+boss]:INK_DIM;
+        int tint=known?Collect.BODY[Collect.bossPrize(boss)]:INK_DIM;
         p.fillEllipse(right,y+br*.92f,br*.85f,r*.15f,0x44302045);
         // Different boss signatures share one readable dodge/counter rhythm.
         if(known)signature(p,boss,bx,by,br,t,charge,tint);
@@ -81,7 +81,7 @@ final class TimeAttackDemo extends Draw {
     static float groupX(Layout L,float clock,int boss) {
         int slot=groupSlot(clock,boss),before=(slot+1)%Boss.COUNT;
         float shuffle=panelTravel(Math.min(1,(clock%GROUP_TURN)/GROUP_TURN/.28f));
-        return bossAnchor(L)+L.w*.08f*(before+(slot-before)*shuffle);
+        return bossAnchor(L)+L.w*(.24f/Math.max(1,Boss.COUNT-1))*(before+(slot-before)*shuffle);
     }
     private static void drawAll(Painter p,GameCore c,Layout L) {
         float beat=(c.clock%GROUP_TURN)/GROUP_TURN,r=radius(L),br=r*2;
@@ -95,7 +95,7 @@ final class TimeAttackDemo extends Draw {
             float rush=active?hop(beat,.28f,.65f):0,recoil=active?hop(beat,.78f,1f):0;
             float bx=groupX(L,c.clock,boss)-br*.28f*rush+br*.12f*recoil;
             float by=y-br*.15f*Math.abs(bounce)-br*.4f*(slot==Boss.COUNT-1?hop(beat,0,.28f):0);
-            int tint=known?Collect.BODY[Collect.BOSS_FIRST+boss]:INK_DIM;
+            int tint=known?Collect.BODY[Collect.bossPrize(boss)]:INK_DIM;
             p.fillEllipse(groupX(L,c.clock,boss),y+br*.9f,br*.72f,r*.12f,0x44302045);
             if(known && active)signature(p,boss,bx,by,br,c.clock+boss*.4f,rush,tint);
             if(active && beat>=.28f) {
@@ -113,7 +113,9 @@ final class TimeAttackDemo extends Draw {
         }
     }
     private static void signature(Painter p,int boss,float x,float y,float r,float t,float charge,int tint) {
-        if(boss==Boss.SLIME) {
+        if(boss==Boss.ALLIGATOR) {
+            AlligatorArt.limb(p,x+r*.4f,y+r*.3f,x-r*(.8f+charge),y+r*.55f,r*.18f,false,tint,t);
+        } else if(boss==Boss.SLIME) {
             for(int i=0;i<5;i++) {
                 float f=(t*1.6f+i*.19f)%1f;
                 p.fillEllipse(x-r*(.6f+f*1.4f),y+r*(.7f-.5f*(float)Math.sin(f*Math.PI)),
@@ -129,7 +131,7 @@ final class TimeAttackDemo extends Draw {
                 float reach=r*(.55f+charge*.9f),yy=y+r*(.5f+i*.13f);
                 float[] arm={x,yy,x-reach*.6f,yy-r*(.2f+.25f*i),x-reach,yy-r*(.3f+.2f*(float)Math.sin(t*14+i))};
                 p.polyline(arm,tint,r*.12f);
-                p.fillCircle(arm[4],arm[5],r*.09f,Collect.ACCENT[Collect.BOSS_FIRST+boss]);
+                p.fillCircle(arm[4],arm[5],r*.09f,Collect.ACCENT[Collect.bossPrize(boss)]);
             }
         } else {
             for(int i=0;i<6;i++) {

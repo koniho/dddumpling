@@ -23,7 +23,7 @@ final class ModeSelector extends Draw {
                 || mode==TIME_ATTACK && anyBoss(c);
     }
     static boolean bossUnlocked(GameCore c,int boss) {
-        return boss>=0 && boss<Boss.COUNT && Collect.has(c.collected,Collect.BOSS_FIRST+boss);
+        return boss>=0 && boss<Boss.COUNT && Collect.has(c.collected,Collect.bossPrize(boss));
     }
     private static boolean anyBoss(GameCore c) {
         for(int boss=0;boss<Boss.COUNT;boss++)if(bossUnlocked(c,boss))return true;

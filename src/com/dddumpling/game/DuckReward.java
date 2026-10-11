@@ -62,7 +62,7 @@ final class DuckReward extends Draw {
             if(f.length==2) {sequence=seq;return;}
             int entry=Integer.parseInt(f[2]),count=Integer.parseInt(f[3]),sum=Integer.parseInt(f[4]);
             int isNew=Integer.parseInt(f[5]),savedProfile=Integer.parseInt(f[6]),land=Integer.parseInt(f[7]);
-            if(entry<Collect.DUCK_FIRST || entry>=Collect.COUNT || count<1 || sum<count
+            if(entry<Collect.DUCK_FIRST || entry>=Collect.DUCK_FIRST+Collect.DUCK_COUNT || count<1 || sum<count
                     || isNew<0 || isNew>1 || savedProfile<0 || savedProfile>2 || land<0 || land>Lands.COUNT)return;
             Survival snapshot=new Survival();snapshot.load(parts[1]);
             HighScores.Run run=snapshot.histories[savedProfile].latestRun;
@@ -141,7 +141,7 @@ final class DuckReward extends Draw {
         p.text(Collect.NAME[who],x,L.h*.30f,font,INK,Painter.CENTER,true);
         p.text("YOU SURVIVED "+Survival.time(c.survival.millis())+"!",x,L.h*.64f,
                 type(L.unit*.72f),INK,Painter.CENTER,true);
-        p.text(who==Collect.COUNT-1?"FIVE MINUTES EARNS THE CHAMPION":
+        p.text(who==Collect.DUCK_FIRST+Collect.DUCK_COUNT-1?"FIVE MINUTES EARNS THE CHAMPION":
                 "A DUCK FROM YOUR SURVIVAL TIME",x,L.h*.69f,type(L.unit*.53f),INK_DIM,Painter.CENTER,false);
     }
 }

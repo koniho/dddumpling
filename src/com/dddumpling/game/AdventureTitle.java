@@ -113,6 +113,7 @@ final class AdventureTitle extends Draw {
         return outline;
     }
     private static void prop(Painter p,int land,float x,float base,float size,int a,float t,int variant) {
+        if(land==Lands.SWAMP) {Swamp.prop(p,x,base-size*.4f,size*.65f,a,t,false);return;}
         if(land==1 || land==Cave.LAND) {
             int glass=(int)(a*.48f);
             Lands.crystal(p,x,base,size*.24f,size*1.15f,glass,t,false,true);

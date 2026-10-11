@@ -14,9 +14,9 @@ final class LandPicker extends Draw {
     static int destination(int order) { return order < 0 ? TOWN : order; }
     static boolean unlocked(GameCore c, int land) {
         if (land == TOWN) return townUnlocked(c);
-        return land == 0 || land > 0 && land < Lands.playableCount()
+        return land == 0 || land > 0 && Lands.playable(land)
                 && (BuildFlags.DEVELOPER && c.allLandsEnabled || (c.landSuppressed & (1 << land)) == 0
-                && Collect.has(c.collected, Collect.BOSS_FIRST + land - 1));
+                && Collect.has(c.collected, Collect.bossPrize(Lands.unlockBoss(land))));
     }
     static int count(GameCore c) {
         int n = townUnlocked(c) ? 1 : 0;
@@ -178,9 +178,10 @@ final class LandPicker extends Draw {
         save(c);
     }
     static void reward(GameCore c, int character) {
-        int land = character - Collect.BOSS_FIRST + 1;
-        if (land <= 0 || land >= Lands.COUNT) return;
-        c.landSuppressed &= ~(1 << land);
+        int boss=Collect.bossKind(character);
+        if(boss<0)return;
+        for(int land=1;land<Lands.COUNT;land++)if(Lands.unlockBoss(land)==boss)
+            c.landSuppressed &= ~(1 << land);
         save(c);
     }
     static void updateDiscovery(GameCore c,float dt) { LandDiscovery.update(c,dt); }

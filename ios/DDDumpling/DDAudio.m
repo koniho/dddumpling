@@ -6,6 +6,7 @@
 #import <math.h>
 
 #import "com/dddumpling/game/Sfx.h"
+#import "com/dddumpling/game/Boss.h"
 #import "com/dddumpling/game/Music.h"
 #import "com/dddumpling/game/CaveSong.h"
 #import "com/dddumpling/game/Narration.h"
@@ -404,7 +405,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)rosterJoin { [self playEffect:DDSfx_ROSTER_JOIN rate:1 gain:1]; }
 - (void)gameOver { [self playEffect:DDSfx_OVER rate:1 gain:1]; }
 - (void)survivalGameOver { [self playEffect:DDSfx_SURVIVAL_OVER rate:1 gain:1]; }
-- (void)bossTauntWithInt:(jint)kind { if (kind >= 0 && kind < 4) [self playEffect:DDSfx_BOSS_TAUNT_0 + kind rate:1 gain:.78f]; }
+- (void)bossTauntWithInt:(jint)kind { if (kind >= 0 && kind < DDBoss_COUNT) [self playEffect:DDSfx_BOSS_TAUNT_0 + kind rate:1 gain:.78f]; }
 - (void)gameStart { [self playEffect:DDSfx_START rate:1 gain:.72f]; }
 - (void)stageClear { [self playEffect:DDSfx_STAGE_CLEAR rate:1 gain:1]; }
 - (void)powerClear { [self playEffect:DDSfx_POWER_CLEAR rate:1 gain:1]; }

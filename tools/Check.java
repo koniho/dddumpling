@@ -258,6 +258,14 @@ abstract class Check {
     static boolean bossPlay(GameCore c, Layout L) {
         if (!c.bossFighting()) return false;
         Boss b = c.boss;
+        if(b.kind==Boss.ALLIGATOR && !b.open()) {
+            Alligator a=b.alligator;
+            if(a.limb>=0 && !a.blocked && a.attack>.15f) {
+                a.touch(c,L,0,168,a.tipX-L.w*.12f,a.tipY);
+                a.touch(c,L,1,168,a.tipX+L.w*.12f,a.tipY);
+            }
+            return true;
+        }
         if (b.kind == Boss.OCTOPUS && b.octoVulnerableArm >= 0) {
             if (b.held == -3) {
                 if (!b.octoDragStarted || !b.octoDragCanDamage)

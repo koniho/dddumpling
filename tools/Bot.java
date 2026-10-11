@@ -52,6 +52,8 @@ final class Bot {
     private float budget;
     /** Reaction still owed before the next press. */
     private float think;
+    private float gatorX,gatorY,gatorEnd;
+    private boolean gatorSwipe;
     private float lidSwipeAge;
 
     /**
@@ -259,6 +261,19 @@ final class Bot {
         if (c.state != GameCore.PLAY) return;
 
         budget = Math.min(BURST, budget + dt * pps);
+        if(c.bossFighting() && c.boss.kind==Boss.ALLIGATOR && c.boss.alligator.daze<=0) {
+            Alligator a=c.boss.alligator;
+            if(gatorSwipe) {
+                gatorX=Math.min(gatorEnd,gatorX+L.w*DRAG_SPEED*dt);
+                a.touch(c,L,gatorX>=gatorEnd?1:2,168,gatorX,gatorY);
+                if(gatorX>=gatorEnd)gatorSwipe=false;
+            } else if(a.limb>=0 && !a.blocked && a.attack>=reaction+.12f && budget>=1f) {
+                budget-=1f;presses++;gatorX=a.tipX-L.w*.12f;gatorEnd=a.tipX+L.w*.12f;gatorY=a.tipY;
+                gatorSwipe=true;a.touch(c,L,0,168,gatorX,gatorY);
+            }
+            return;
+        }
+        gatorSwipe=false;
         if(ninjaSweeping) { ninjaMove(c,L,dt);return; }
         if (Cave.active(c)) { cavePlay(c,L,dt); return; }
         if (c.bossFighting() && c.boss.kind == Boss.SPLITTER

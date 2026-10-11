@@ -41,6 +41,7 @@ final class Pause extends Draw {
         return false;
     }
     static void release(GameCore c) {
+        c.boss.alligator.pointer=-1;
         c.starter.cancelTouch();
         c.modes.cancelTouch();
         c.onboarding.cancelTouch();

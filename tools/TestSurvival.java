@@ -209,11 +209,11 @@ final class TestSurvival extends Check {
             check("both pool ducks can be selected "+segment,seen==3);
         }
         for(double time:new double[]{300,300.001,900})
-            check("five-minute champion replaces pool",DuckReward.choose(time,random)==Collect.COUNT-1);
+            check("five-minute champion replaces pool",DuckReward.choose(time,random)==Collect.DUCK_FIRST+Collect.DUCK_COUNT-1);
         Mem m=store();GameCore c=start(m,156);c.survival.seconds=300;c.score=50;
         c.lives=1;c.takeHit(L.w*.5f,L);
         int who=c.survival.reward.who;long sequence=c.survival.reward.sequence;
-        check("one saved duck without changing score",who==Collect.COUNT-1 && c.collectionCounts[who]==1
+        check("one saved duck without changing score",who==Collect.DUCK_FIRST+Collect.DUCK_COUNT-1 && c.collectionCounts[who]==1
                 && c.score==50 && c.survival.history().latestRun.prizes.length==1);
         String journal=m.survivalAward;
         c.survival.finish(c);c.dismissGameOver();

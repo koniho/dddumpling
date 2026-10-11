@@ -92,6 +92,7 @@ final class Lore {
         "THE LITTLE DIPPER, LITERALLY",
         "THE RAINBOW SORTING OFFICE",
         "THE TOP OF THE FIVE-MINUTE WAVE",
+        "THE LILY-PAD PICNIC CLUB",
     };
 
     static final String[][] STORY = {
@@ -323,6 +324,7 @@ final class Lore {
         {"SHE COUNTS THE STARS FOR BEDTIME.", "HER BROTHER KEEPS SAYING QUACK.", "SHE STARTS AGAIN FROM NUMBER ONE.", "THEY STAY UP UNTIL BREAKFAST."},
         {"HE SORTS THE RAINBOW INTO PILES.", "HIS COUSINS JUMP THROUGH EVERY ONE.", "THE COLOURS GET ALL MIXED AGAIN.", "HE PROMOTES THEM TO CONFETTI."},
         {"FIVE MINUTES RIDING EVERY COLOUR.", "HER COUSINS MAKE A TINY CROWN.", "SHE SHARES THE THRONE WITH THEM.", "IT IS A VERY CROWDED RUBBER RING."},
+        {"HIS COUSINS BRING NINE LILY PADS.", "THEN FALLS ASLEEP ON NUMBER TEN.", "HIS TAIL STIRS ALL THE LEMONADE.", "THE DUCKS ASK FOR ANOTHER ROUND."},
     };
 
     /** Which vignette plays over each story. */
@@ -335,6 +337,7 @@ final class Lore {
         BOUNCE, STACK, PEEK, CARRY, CHEER, SEEK, BOUNCE, HANDOFF, STACK, PICNIC,
         BOUNCE, TUMBLE, HANDOFF, PICNIC,
         CHEER, BOUNCE, PICNIC, HANDOFF, TUMBLE, PEEK, STACK, CARRY, SEEK, PUSH, CHEER,
+        TUMBLE,
     };
 
     /**
@@ -350,6 +353,7 @@ final class Lore {
         36, 35, 38, 37, 40, 39, 42, 41, 44, 43,
         46, 47, 48, 45,
         50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 49,
+        45,
     };
 
     /**
@@ -368,6 +372,7 @@ final class Lore {
         37, 38, 39, 40, 41, 42, 43, 44, 35, 36,
         47, 48, 45, 46,
         51, 52, 53, 54, 55, 56, 57, 58, 59, 49, 50,
+        48,
     };
 
     static int third(int i) {

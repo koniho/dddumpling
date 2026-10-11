@@ -12,6 +12,7 @@ These notes preserve past failures, including historical values that may no long
 | Input routing, gestures, RNG, state cleanup | [Input and state](input-state.md) |
 | Difficulty, timing, bots, star courses | [Pacing](pacing.md) |
 | Sound effects or narration | [Audio](audio.md) |
+| Adding a land or boss | [Integration checklist](adding-lands-and-bosses.md) |
 | Boss rules, soft bodies, geometry | [Bosses and physics](bosses-physics.md) |
 | Build tools, installation, crashes | [Build](build.md), [README](../../README.md) |
 | Releases | [Release procedure](../releasing.md) |

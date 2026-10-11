@@ -32,6 +32,23 @@ public final class IOSInputTest extends Check {
         game.touch(one(IOSTouch.ACTION_UP, 42, x, y));
     }
 
+    private static void alligatorSwipes() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.onboarding.saved=Onboarding.SKIPPED;c.startGame();c.enemies.clear();
+        c.boss.begin(Boss.ALLIGATOR,Lands.firstStage(Lands.SWAMP)+4,c.rnd,c.playRosterFull());
+        c.boss.intro=0;
+        for(int i=0;i<35;i++)game.update(DT);
+        Alligator a=c.boss.alligator;float x=a.tipX,y=a.tipY;
+        game.touch(one(0,168,x-l.w*.12f,y));
+        game.touch(one(1,168,x+l.w*.12f,y));
+        check("alligator blocks on final lift sample through native router",a.blocks==1 && a.pointer==-1);
+        game.touch(one(0,168,x,y));game.touch(one(3,168,x,y));
+        check("native cancellation releases alligator gesture",a.pointer==-1);
+        a.daze=Alligator.DAZE;float hp=c.boss.hp;
+        tap(game,c.keyX(l,0),c.keyY(l,0));
+        check("native deck taps still damage a dazed alligator",c.boss.hp==hp-1);
+    }
+
     private static void packets() {
         int[] ids = {9, 42};
         float[] xs = {10, 20}, ys = {30, 40};
@@ -945,6 +962,7 @@ public final class IOSInputTest extends Check {
     }
 
     public static void main(String[] args) {
+        alligatorSwipes();
         keyboardInput();
         bossSummaryScroll();
         onboarding();

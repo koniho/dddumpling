@@ -76,7 +76,8 @@ final class TimeAttackHistory {
         }
         return s.toString();
     }
-    boolean load(String data,int challenge) {
+    boolean load(String data,int challenge) {return load(data,challenge,challenge==TimeAttack.ALL?Boss.COUNT:1);}
+    boolean load(String data,int challenge,int goal) {
         try {
             String[] rows=data.split(";",-1);
             if(rows.length>LIMIT+2)return false;
@@ -88,7 +89,6 @@ final class TimeAttackHistory {
                 long id=Long.parseLong(f[0]),duration=Long.parseLong(f[1]),first=Long.parseLong(f[9]);
                 int character=Integer.parseInt(f[2]),cleared=Integer.parseInt(f[3]),won=Integer.parseInt(f[4]);
                 int hits=Integer.parseInt(f[5]),misses=Integer.parseInt(f[6]),defended=Integer.parseInt(f[7]),damage=Integer.parseInt(f[8]);
-                int goal=challenge==TimeAttack.ALL?Boss.COUNT:1;
                 if(id<0 || id>seq || ids.contains(id) || duration<1 || duration>86400000L || character< -1
                         || character>=Collect.COUNT || cleared<0 || cleared>goal || won<0 || won>1
                         || hits<0 || misses<0 || defended<0 || damage<0 || first< -1 || first>duration

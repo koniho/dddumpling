@@ -335,7 +335,7 @@ final class TestBoss extends Check {
             reward.starNext = true;
             reward.boss.beaten = true;
             BossPlay.endBoss(reward, L);
-            int entry = Collect.BOSS_FIRST + kind;
+            int entry = Collect.bossPrize(kind);
             check("boss defeat awards its own portrait " + kind,
                     reward.prize == entry && reward.collected == Collect.add(before, entry)
                     && Collect.has(reward.roundPrizes, entry));

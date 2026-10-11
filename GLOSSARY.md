@@ -166,16 +166,17 @@ The other interlude, offered after a steamer has been opened. Two thumbs steer, 
 
 ## Boss
 
-Every fifth stage is a boss instead of a wave. It has to be beaten for the stage to end — there is
-no way past one. No boss can be beaten by typing alone: each asks for at least two of the three
-things a player can do, which are pressing a key, tapping something and dragging something.
+Authored land finales replace the wave with a boss, which must be beaten to finish the stage.
+The original encounters are stages 5, 10, 15 and 20; Swampland ends with Mossy Maw at stage 30
+in developer builds or 25 in production. The developer cave has no boss. Each encounter asks
+for direct touch gestures as well as, or instead of, key presses.
 
 A boss stage releases **no falling words at all** — the fight is the stage. A dragging fight reddens
 past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss's visible mechanics.
 
 | Say | Means | Code |
 | --- | --- | --- |
-| **boss** | the set piece on stages 5, 10, 15, 20, 25… | `Boss`, `GameCore.boss` |
+| **boss** | the encounter at an authored land finale | `Boss`, `GameCore.boss` |
 | **boss stage** | a stage that has one | `Boss.isBossStage`, `EVERY` |
 | **arrival card** | the name over the field before the fight starts | `Boss.INTRO`, `BossScreen.intro` |
 | **window** | the stretch during which a boss can be hurt. Shut, it can only be rebuffed | `Boss.open()` |
@@ -201,7 +202,10 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **dark divide** | stage 10. Split the gelatinous cube with a two-finger pinch | `Boss.SPLITTER` |
 | **octopulse** | stage 15. Defend keys and drag exposed arm tips away | `Boss.OCTOPUS` |
 | **fly agaric** | stage 20. Shake the cap to defeat the spore-throwing mushroom | `Boss.MUSHROOM` |
-| **boss friends** | four collectible boss portraits, awarded only by defeating their matching bosses | `BossCollect`, `Interlude.awardBossPrize` |
+| **boss friends** | five collectible boss portraits, awarded only by defeating their matching bosses | `BossCollect`, `Interlude.awardBossPrize` |
+| **Mossy Maw** | Swampland's forest-green alligator boss. Swipe across a glowing arm or tail to block it; nine blocks open an any-key damage window. Unblocked limbs hurt only when they reach the companion | `Alligator`, `AlligatorArt`, `Boss.ALLIGATOR` |
+| **Swampland** | lily pads, cattails and fireflies; land ID 5, stages 26–30 in developer builds and 21–25 in production | `Swamp`, `Lands.SWAMP`, `Lands.firstStage` |
+| **Mossy Bud** | Mossy Maw's collectible boss friend, appended after the ducks without shifting their saved IDs | `Collect.ALLIGATOR_FRIEND`, `Collect.bossPrize` |
 | **soft body** | how every boss's body is built: a ring of sprung nodes under pressure, so it dents where you hit it | `Softbody`, `Boss.body` |
 | **burst** | what a beaten boss goes out on | `BossScreen.burst`, `Boss.LEAVE` |
 

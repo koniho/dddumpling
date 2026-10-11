@@ -207,9 +207,9 @@ final class TestHighScores extends Check {
         group("saved death blurbs");
         GameCore c=new GameCore(new Mem(),103L);
         for(int kind=0;kind<Boss.COUNT;kind++) {
-            c.startGame();c.stage=(kind+1)*Boss.EVERY;c.lives=1;c.takeHit(L.w*.5f,L);
+            c.startGame();c.stage=kind==Boss.ALLIGATOR?Lands.firstStage(Lands.SWAMP)+4:(kind+1)*Boss.EVERY;c.lives=1;c.takeHit(L.w*.5f,L);
             HighScores.Run run=c.highScores.runs.get(0);
-            check("boss death names its form "+kind,run.ending==kind+1 && run.blurb().equals(HighScores.BLURBS[kind+1]));
+            check("boss death names its form "+kind,run.ending==(kind==Boss.ALLIGATOR?11:kind+1) && run.blurb().equals(HighScores.BLURBS[kind==Boss.ALLIGATOR?11:kind+1]));
         }
         for(int land=0;land<Lands.playableCount();land++) {
             c.startGame();c.stage=land*Boss.EVERY+1;c.lives=1;c.takeHit(L.w*.5f,L);

@@ -2,26 +2,32 @@ package com.dddumpling.game;
 
 /** Five-stage scenery chapters. Cosmetic clocks never consume gameplay randomness. */
 final class Lands extends Draw {
-    static final int COUNT = 5;
+    static final int SWAMP = 5, COUNT = 6;
     static final float FADE_TIME = 2.4f;
     static final int[] BG = {
         Glyph.mix(Draw.BG, 0xFF142A29, 0.5f), Glyph.mix(Draw.BG, 0xFF21182F, 0.5f),
-        Glyph.mix(Draw.BG, 0xFF102735, 0.5f), Glyph.mix(Draw.BG, 0xFF241F2A, 0.5f), CaveArt.DARK
+        Glyph.mix(Draw.BG, 0xFF102735, 0.5f), Glyph.mix(Draw.BG, 0xFF241F2A, 0.5f), CaveArt.DARK, 0xFF182F32
     };
-    static final int[] TINT = {0xFF79C99D, 0xFFB18CDB, 0xFF62BEC5, 0xFFE4A19C, CaveArt.LIGHT};
+    static final int[] TINT = {0xFF79C99D, 0xFFB18CDB, 0xFF62BEC5, 0xFFE4A19C, CaveArt.LIGHT, 0xFF74B99C};
     private Lands() {}
 
     // Keep catalog/save slots stable while production cycles through its original four lands.
-    static int playableCount() { return BuildFlags.DEVELOPER ? COUNT : Cave.LAND; }
+    static int playableCount() { return BuildFlags.DEVELOPER ? COUNT : COUNT-1; }
+    static boolean playable(int land) {return land>=0 && land<COUNT && (land!=Cave.LAND || BuildFlags.DEVELOPER);}
+    static int firstStage(int land) {return (land==SWAMP && !BuildFlags.DEVELOPER?land-1:land)*Boss.EVERY+1;}
+    static int unlockBoss(int land) {return land==SWAMP?Boss.MUSHROOM:land-1;}
 
     // Beyond the authored bosses, scenery repeats without adding encounters.
-    static int forStage(int stage) { return (Math.max(1, stage) - 1) / Boss.EVERY % playableCount(); }
+    static int forStage(int stage) {
+        int chapter=(Math.max(1,stage)-1)/Boss.EVERY%playableCount();
+        return !BuildFlags.DEVELOPER && chapter==Cave.LAND?SWAMP:chapter;
+    }
     static int skitFor(int stage) { return (Math.max(1, stage) - 1) % Boss.EVERY % 3; }
     static float blend(GameCore c) {
         float t = c.landBlend;
         return t * t * (3f - 2f * t);
     }
-    static int visualStage(GameCore c) { return c.state == GameCore.TITLE ? c.landChoice * Boss.EVERY + 1 : c.stage; }
+    static int visualStage(GameCore c) { return c.state == GameCore.TITLE ? firstStage(c.landChoice) : c.stage; }
     static int background(GameCore c) {
         if(c.survival.active)return c.survival.background();
         return c.state == GameCore.TITLE ? Draw.BG
@@ -113,6 +119,7 @@ final class Lands extends Draw {
 
     private static void prop(Painter p, int land, float x, float y, float r, int a, float t,
             boolean silhouette, boolean animated) {
+        if (land == SWAMP) {Swamp.prop(p,x,y,r,a,t,silhouette);return;}
         if (land == Cave.LAND) { CaveArt.entrance(p, x, y, r, a, silhouette); return; }
         int col = Glyph.withAlpha(silhouette ? 0xFF9A8FAF : Glyph.mix(Sky.CLOUD_TINT[1], TINT[land], 0.5f), a);
         int light = silhouette ? 0 : Glyph.withAlpha(0xFFE6FFE5, a * 2 / 3);
@@ -333,6 +340,7 @@ final class Lands extends Draw {
 
     static void skit(Painter p, int stage, float x, float y, float r, float t, int a) {
         int land = forStage(stage), variant = skitFor(stage);
+        if (land == SWAMP) {Swamp.skit(p,variant,x,y,r,t,a);return;}
         if (land == 0) { SlimeSkits.draw(p,variant,x,y,r,t,a); return; }
         if (land == 1) { CrystalSkits.draw(p,variant,x,y,r,t,a); return; }
         if (land == 3) { MushroomSkits.draw(p,variant,x,y,r,t,a); return; }

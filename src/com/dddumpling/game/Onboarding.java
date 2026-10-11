@@ -16,7 +16,7 @@ final class Onboarding extends Draw {
 
     // Preserve the original ten lesson bits; successful actions have independent durable bits.
     private static boolean extraMessage(int message) {
-        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.LANDS;
+        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.ALLIGATOR;
     }
     private static int extraBit(int message) {
         // Bit 8 is the persisted first-companion introduction pending flag.
@@ -75,6 +75,7 @@ final class Onboarding extends Draw {
         return !c.powerActive() || speech!=powerSpeech(c.mode);
     }
     private static int[] bossSteps(int kind) {
+        if(kind==Boss.ALLIGATOR)return new int[]{TutorialSpeech.ALLIGATOR};
         if(kind==Boss.SLIME)return new int[]{TutorialSpeech.CLOSED,TutorialSpeech.CHAIN};
         if(kind==Boss.SPLITTER)return new int[]{TutorialSpeech.PINCH};
         if(kind==Boss.OCTOPUS)return new int[]{TutorialSpeech.DEFEND,TutorialSpeech.TEAR};

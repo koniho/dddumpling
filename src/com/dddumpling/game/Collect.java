@@ -19,8 +19,8 @@ import java.util.Random;
 final class Collect {
 
     static final int BLIND_COUNT = 30, STAR_FIRST = 30, STAR_COUNT = 5,
-            CUBE_FIRST = 35, CUBE_COUNT = 10, BOSS_FIRST = 45, BOSS_COUNT = 4,
-            DUCK_FIRST = 49, DUCK_COUNT = 11, COUNT = 60;
+            CUBE_FIRST = 35, CUBE_COUNT = 10, BOSS_FIRST = 45, BOSS_COUNT = 5,
+            DUCK_FIRST = 49, DUCK_COUNT = 11, ALLIGATOR_FRIEND = 60, COUNT = 61;
 
     // ---- families -----------------------------------------------------------
     static final int DUMPLINGS = 0, FRUITS = 1, GLOBS = 2, STARLINGS = 3, GEL_CUBES = 4, BOSSES = 5, DUCKS = 6;
@@ -73,6 +73,7 @@ final class Collect {
         "GRAPE GLITCH", "AQUA WOBBLE", "SUNSET SLAB", "ROYAL GEL", "JELLO JULEP",
         "SLIME BUD", "DIVIDE CUB", "OCTO PIP", "AGARIC BUD",
         "SUNNY DUCK", "BUBBLE DUCK", "STRAWBERRY DUCK", "MINT DUCK", "TANGERINE DUCK", "LAVENDER DUCK", "CLOUD DUCK", "SUNSET DUCK", "STARLIGHT DUCK", "PRISM DUCK", "RAINBOW CHAMPION",
+        "MOSSY BUD",
     };
 
     static final int[] FAMILY = {
@@ -83,6 +84,7 @@ final class Collect {
         4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
         5, 5, 5, 5,
         DUCKS, DUCKS, DUCKS, DUCKS, DUCKS, DUCKS, DUCKS, DUCKS, DUCKS, DUCKS, DUCKS,
+        BOSSES,
     };
 
     static final int[] SHAPE = {
@@ -94,6 +96,7 @@ final class Collect {
         GEL_CUBE, GEL_CUBE, GEL_CUBE, GEL_CUBE, GEL_CUBE,
         GLOB, GEL_CUBE, GLOB, BAO,
         BAO, BAO, BAO, BAO, BAO, BAO, BAO, BAO, BAO, BAO, BAO,
+        GLOB,
     };
 
     static final int[] FINISH = {
@@ -105,6 +108,7 @@ final class Collect {
         CLEAR, GLITTER, MATTE, HOLO, CLEAR, GALAXY, GLOW, TIEDYE, METALLIC, CONFETTI,
         MATTE, MATTE, MATTE, MATTE,
         MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, MATTE, MATTE,
+        CLEAR,
     };
 
     static final int[] TIER = {
@@ -117,6 +121,7 @@ final class Collect {
         CUBE_TIER, CUBE_TIER, CUBE_TIER, CUBE_TIER, CUBE_TIER,
         BOSS_TIER, BOSS_TIER, BOSS_TIER, BOSS_TIER,
         COMMON, COMMON, UNCOMMON, UNCOMMON, UNCOMMON, RARE, RARE, RARE, CHASE, CHASE, GRAIL,
+        BOSS_TIER,
     };
 
     /** Body fill. */
@@ -133,6 +138,7 @@ final class Collect {
         0xFFA98AF3, 0xFF79DDF2, 0xFFFF8D72, 0xFFE9D45B, 0xFFFFD36E,
         0xFF96E6A2, 0xFF46265F, 0xFFD967DC, 0xFFEE2928,
         0xFFFFDA58, 0xFF71DDEA, 0xFFFF86AA, 0xFF9EE6BD, 0xFFFFA74D, 0xFFC3A2ED, 0xFFFFF5E5, 0xFFFFB396, 0xFF8571C8, 0xFFE6EDFF, 0xFFFFEBA4,
+        0xFF398F77,
     };
 
     /**
@@ -152,6 +158,7 @@ final class Collect {
         0xFFE1D8FF, 0xFFD8F8FF, 0xFFFFD65C, 0xFFFFF1A8, 0xFFFFF3C4,
         0xFFD8FFE3, 0xFF823A78, 0xFFFFC7AB, 0xFFFFF0D5,
         0xFFFFAF40, 0xFFFFF0CA, 0xFF70CA82, 0xFF54B78F, 0xFFFFE9AF, 0xFF9374CB, 0xFF9ADBF4, 0xFFFFD45E, 0xFFFFDD76, 0xFFFFA2CF, 0xFFFFC55B,
+        0xFFB9E1B3,
     };
 
     private Collect() {}
@@ -162,15 +169,19 @@ final class Collect {
     /** Every valid bit. Guards against a store handing back junk in the high bits. */
     static final long MASK = (1L << COUNT) - 1L;
 
-    // Upper nibble versions the compact ID map. Legacy cave IDs 49..58 are retired.
+    // The top three bits version the 61-entry map; old tags used four. Cave IDs 49..58 are retired.
     static final long LEGACY_MASK = (1L << DUCK_FIRST) - 1L;
-    static final long SAVE_TAG = 0x5000000000000000L;
-    static boolean currentSave(long saved) { return (saved & ~MASK) == SAVE_TAG; }
-    static long decode(long saved) { return saved & (currentSave(saved) ? MASK : LEGACY_MASK); }
+    static final long OLD_MASK = (1L << 60)-1L, OLD_TAG = 0x5000000000000000L;
+    static final long SAVE_TAG = 0x6000000000000000L;
+    static boolean currentSave(long saved) { return (saved & ~MASK) == SAVE_TAG || (saved & ~OLD_MASK) == OLD_TAG; }
+    static long decode(long saved) { return saved & ((saved & ~MASK)==SAVE_TAG?MASK:(saved & ~OLD_MASK)==OLD_TAG?OLD_MASK:LEGACY_MASK); }
     static long encode(long owned) { return SAVE_TAG | (owned & MASK); }
     static String progressKey(int who) {
-        return who >= DUCK_FIRST ? "duck_" + (who-DUCK_FIRST) : "prize_" + who;
+        return who >= DUCK_FIRST && who < DUCK_FIRST+DUCK_COUNT ? "duck_" + (who-DUCK_FIRST) : "prize_" + who;
     }
+
+    static int bossPrize(int kind) {return kind==Boss.ALLIGATOR?ALLIGATOR_FRIEND:BOSS_FIRST+kind;}
+    static int bossKind(int who) {return who==ALLIGATOR_FRIEND?Boss.ALLIGATOR:who>=BOSS_FIRST && who<DUCK_FIRST?who-BOSS_FIRST:-1;}
 
     static boolean has(long owned, int i) {
         return i >= 0 && i < COUNT && (owned & (1L << i)) != 0L;

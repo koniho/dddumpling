@@ -183,7 +183,7 @@ final class Interlude {
 
     /** Boss portraits are deterministic trophies, never random minigame drops. */
     static void awardBossPrize(GameCore c, int kind) {
-        c.prize = Collect.BOSS_FIRST + kind;
+        c.prize = Collect.bossPrize(kind);
         recordPrize(c, "boss");
         c.paradeTimer = 0f;
         c.bossPrizePending = true;

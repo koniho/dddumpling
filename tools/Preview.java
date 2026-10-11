@@ -9,6 +9,22 @@ import java.io.File;
  */
 final class Preview {
 
+    private static void alligatorFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("168-"))return;
+        GameCore c=TestAlligator.fight(L);c.stageBanner=0;c.landBlend=1;c.landSeen=LandPicker.stateMask();
+        TestAlligator.ready(c,L);
+        shot(dir,"168-alligator-arm",c,L,w,h,ss);
+        TestAlligator.block(c,L);TestAlligator.block(c,L);TestAlligator.ready(c,L);
+        TestAlligator.advance(c,L,.60f);
+        shot(dir,"168-alligator-tail",c,L,w,h,ss);
+        for(int i=c.boss.alligator.blocks;i<9;i++)TestAlligator.block(c,L);
+        shot(dir,"168-alligator-dazed",c,L,w,h,ss);
+        c.boss.damage(c.boss.hp);TestAlligator.advance(c,L,1.3f);
+        shot(dir,"168-alligator-defeated",c,L,w,h,ss);
+        c.boss.leave();c.toTitle();c.returnFade=0;c.landChoice=Lands.SWAMP;c.caseIndex=Collect.ALLIGATOR_FRIEND;
+        shot(dir,"168-swamp-title",c,L,w,h,ss);
+    }
+
     private static void adventureTitleFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("161-"))return;
         GameCore c=new GameCore(new Mem(),161);c.collected=Collect.MASK;c.landSeen=LandPicker.stateMask();
@@ -1172,6 +1188,7 @@ final class Preview {
         duckFrames(dir,L,w,h,ss);
         survivalFrames(dir,L,w,h,ss);
         timeAttackFrames(dir,L,w,h,ss);
+        alligatorFrames(dir,L,w,h,ss);
         adventureTitleFrames(dir,L,w,h,ss);
         survivalEndingFrames(dir,L,w,h,ss);
 
@@ -2263,8 +2280,12 @@ final class Preview {
         // Each of the six, mid-fight, with its window open so the ornament is showing the thing it
         // is asking for.
         String[] tag = {"60-boss-slime", "70-boss-dark-divide", "76-boss-octopulse",
-                "77-boss-fly-agaric"};
+                "77-boss-fly-agaric", "168-alligator-overview"};
         for (int k = 0; k < Boss.COUNT; k++) {
+            if(k==Boss.ALLIGATOR) {
+                GameCore gator=TestAlligator.fight(L);gator.stageBanner=0;
+                TestAlligator.ready(gator,L);shot(dir,tag[k],gator,L,w,h,ss);continue;
+            }
             GameCore c = toBoss(L, k, 510L + k, true);
             // Land a couple of hits so the health bar is part-spent and the body is dented, and so
             // the bosses that shed things have shed them.

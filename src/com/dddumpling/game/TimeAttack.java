@@ -7,6 +7,9 @@ final class TimeAttack extends Draw {
     static final float SLIDE_TIME=.32f;
     final long[][] best=new long[3][CHOICES];
     final TimeAttackHistory[][] histories=new TimeAttackHistory[3][CHOICES];
+    // Four-boss records remain archived; five-boss runs have a distinct comparable best.
+    final long[] classicBest=new long[3];
+    final TimeAttackHistory[] classicHistory={new TimeAttackHistory(),new TimeAttackHistory(),new TimeAttackHistory()};
     TimeAttackHistory.Run result;
     int defended,damage;
     private final java.util.ArrayList<TimeAttackHistory.Encounter> encounters=new java.util.ArrayList<>();
@@ -60,7 +63,7 @@ final class TimeAttack extends Draw {
     private void encounter(GameCore c,int which) {
         encounterStart=Math.round(seconds*1000);encounterFirstDamage=-1;
         startHits=c.hits;startMisses=c.misses;startDefended=defended;startDamage=damage;
-        current=which;c.stage=(which+1)*Boss.EVERY;
+        current=which;c.stage=which==Boss.ALLIGATOR?Lands.firstStage(Lands.SWAMP)+Boss.EVERY-1:(which+1)*Boss.EVERY;
         c.enemies.clear();c.shots.clear();c.target=null;c.power=null;
         c.pendingBonus=c.bossReward=c.bossPrizePending=false;
         c.stageGap=c.stageBanner=0;c.spawnedThisStage=c.resolvedThisStage=0;
@@ -112,38 +115,53 @@ final class TimeAttack extends Draw {
     void leave() {active=finished=won=newBest=false;seconds=0;cleared=current=defended=damage=0;firstDamage=encounterFirstDamage=-1;encounterStart=0;
         startHits=startMisses=startDefended=startDamage=0;result=null;encounters.clear();}
     void clearRecords() {
+        java.util.Arrays.fill(classicBest,0);for(TimeAttackHistory h:classicHistory)h.clear();
         for(long[] row:best)java.util.Arrays.fill(row,0);
         for(TimeAttackHistory[] row:histories)for(TimeAttackHistory history:row)history.clear();
         newBest=false;
     }
     String encode() {
-        StringBuilder out=new StringBuilder("3");
+        StringBuilder out=new StringBuilder("4");
         for(long[] row:best)for(long value:row)out.append(';').append(value);
         for(TimeAttackHistory[] row:histories)for(TimeAttackHistory history:row)out.append('|').append(history.encode());
+        for(int p=0;p<3;p++)out.append('|').append(classicBest[p]).append(':').append(classicHistory[p].encode());
         return out.toString();
     }
     void load(String saved) {
-        if(saved==null || saved.length()>400000)return;
+        if(saved==null || saved.length()>500000)return;
         String[] parts=saved.split("\\|",-1),fields=parts[0].split(";",-1);
-        boolean legacy=fields[0].equals("1");
-        if(fields.length!=1+3*CHOICES || !(legacy || fields[0].equals("2") || fields[0].equals("3"))
-                || parts.length!=(legacy?1:1+3*CHOICES))return;
+        boolean modern=fields[0].equals("4"),legacy=fields[0].equals("1");
+        int width=modern?CHOICES:5;
+        if(fields.length!=1+3*width || !(modern || legacy || fields[0].equals("2") || fields[0].equals("3"))
+                || parts.length!=(legacy?1:1+3*width+(modern?3:0)))return;
         long[][] parsed=new long[3][CHOICES];
         TimeAttackHistory[][] loaded=new TimeAttackHistory[3][CHOICES];
+        long[] archived=new long[3];
+        TimeAttackHistory[] history={new TimeAttackHistory(),new TimeAttackHistory(),new TimeAttackHistory()};
+        for(int p=0;p<3;p++)for(int i=0;i<CHOICES;i++)loaded[p][i]=new TimeAttackHistory();
         try {
-            for(int p=0;p<3;p++)for(int i=0;i<CHOICES;i++) {
-                long value=Long.parseLong(fields[1+p*CHOICES+i]);
+            for(int p=0;p<3;p++)for(int i=0;i<width;i++) {
+                long value=Long.parseLong(fields[1+p*width+i]);
                 if(value<0 || value>86400000L)return;
-                parsed[p][i]=value;
-                loaded[p][i]=new TimeAttackHistory();
-                if(legacy)loaded[p][i].legacy(value,i==ALL?Boss.COUNT:1);
-                else if(!loaded[p][i].load(parts[1+p*CHOICES+i],i))return;
-                if(!loaded[p][i].runs.isEmpty() && loaded[p][i].runs.get(0).duration!=value)return;
+                boolean classic=!modern && i==4;
+                TimeAttackHistory target=classic?history[p]:loaded[p][i];
+                if(legacy)target.legacy(value,classic?4:1);
+                else if(!target.load(parts[1+p*width+i],classic?ALL:i,classic?4:i==ALL?Boss.COUNT:1))return;
+                if(!target.runs.isEmpty() && target.runs.get(0).duration!=value)return;
+                if(classic)archived[p]=value;else parsed[p][i]=value;
+            }
+            if(modern)for(int p=0;p<3;p++) {
+                String[] record=parts[1+3*width+p].split(":",2);
+                if(record.length!=2)return;
+                archived[p]=Long.parseLong(record[0]);
+                if(archived[p]<0 || archived[p]>86400000L || !history[p].load(record[1],ALL,4))return;
+                if(!history[p].runs.isEmpty() && history[p].runs.get(0).duration!=archived[p])return;
             }
         } catch(NumberFormatException invalid) {return;}
         for(int p=0;p<3;p++) {
             System.arraycopy(parsed[p],0,best[p],0,CHOICES);
             System.arraycopy(loaded[p],0,histories[p],0,CHOICES);
+            classicBest[p]=archived[p];classicHistory[p]=history[p];
         }
     }
     static float selectY(Layout L) {return L.h*.735f;}

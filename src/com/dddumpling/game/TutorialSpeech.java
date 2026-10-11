@@ -6,7 +6,7 @@ final class TutorialSpeech extends Draw {
             DIG=7, CART=8, CLOSED=9, CHAIN=10, GLOB=11, DANGER=12, RETRY=13,
             STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21,
             POWER_FLURRY=22, POWER_NINJA=23, POWER_TEAM=24, POWER_PICKUP=25,
-            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28, COMPANION=29, LANDS=30;
+            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28, COMPANION=29, LANDS=30, ALLIGATOR=31;
     private static final int PAPER=0x4DFFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
@@ -38,9 +38,11 @@ final class TutorialSpeech extends Draw {
         {"YOUR DUMPLINGS!", "OPEN THEIR CASE!"},
         {"TAP YOUR DUMPLING!", "DISCOVER ITS STORY!"},
         {"YOUR FIRST FRIEND!", "LET'S PLAY TOGETHER!"},
-        {"NEW LANDS!", "SWIPE TO CHOOSE!"}
+        {"NEW LANDS!", "SWIPE TO CHOOSE!"},
+        {"SWIPE TO BLOCK!", "DAZED? TAP ANY KEY!"}
     };
     static String spoken(int message) {
+        if(message==ALLIGATOR)return "Swipe across glowing arms and tail. Protect your companion. Nine blocks make Mossy Maw dizzy. Then tap any key!";
         if(message==LANDS)return "New lands! Swipe to choose where your next run starts.";
         if(message==COMPANION)return "I'm your first squishy! I'll stay by your keys. I'll show you how to play as we go. Let's find more friends!";
         if(message==POWER_FLURRY)return "Flurry! Tap any key to clear the falling faces.";
@@ -88,8 +90,8 @@ final class TutorialSpeech extends Draw {
         return lines.toArray(new String[0]);
     }
     private static String[][][] makePages() {
-        String[][][] all=new String[LANDS+1][][];
-        for(int message=MATCH;message<=LANDS;message++) {
+        String[][][] all=new String[ALLIGATOR+1][][];
+        for(int message=MATCH;message<=ALLIGATOR;message++) {
             java.util.ArrayList<String[]> pages=new java.util.ArrayList<>();String pending="";
             // Page boundaries are sentence boundaries; copy must fit without splitting a sentence.
             for(String sentence:spoken(message).split("(?<=[.!?]) +")) {
@@ -312,6 +314,10 @@ final class TutorialSpeech extends Draw {
             arrow(p,x-s,y,-s*3,0,s*.6f);arrow(p,x+s,y,s*3,0,s*.6f);
             Renderer.touchHint(p,x-spread,y,s*1.1f,1f,.95f,age);
             handX=x+spread;
+        } else if(message==ALLIGATOR) {
+            AlligatorArt.portrait(p,x,y,s*2.1f,age,true,1);
+            handX=x+s*(travel*8-4);handY=y+s*2;
+            arrow(p,x-s*4,handY,s*8,0,s*.6f);
         } else if(message==SHAKE) {
             float dx=(float)Math.sin(age*6f)*s*2.4f;
             p.fillRect(x-s*.45f,y,x+s*.45f,y+s*2,0xFFE8CD9D);

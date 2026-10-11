@@ -223,7 +223,7 @@ final class TestModeSelector extends Check {
                 && !ModeSelector.unlocked(locked,ModeSelector.SURVIVAL)
                 && ModeSelector.bossUnlocked(locked,Boss.OCTOPUS) && !ModeSelector.bossUnlocked(locked,Boss.SLIME)
                 && !ModeSelector.allBossesUnlocked(locked));
-        for(int boss=0;boss<Boss.COUNT;boss++)locked.collected|=1L<<(Collect.BOSS_FIRST+boss);
+        for(int boss=0;boss<Boss.COUNT;boss++)locked.collected|=1L<<(Collect.bossPrize(boss));
         check("boss rush requires all authored bosses",ModeSelector.allBossesUnlocked(locked));
         check("all shipped modes are implemented",ModeSelector.implemented(ModeSelector.SURVIVAL)
                 && ModeSelector.implemented(ModeSelector.TIME_ATTACK));

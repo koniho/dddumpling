@@ -46,7 +46,10 @@ fi
 # compile while the APK builds fine.
 python3 tools/release-notes.py check >/dev/null
 
-PURE="src/com/dddumpling/game/KeyboardInput.java
+PURE="src/com/dddumpling/game/Alligator.java
+src/com/dddumpling/game/AlligatorArt.java
+src/com/dddumpling/game/Swamp.java
+src/com/dddumpling/game/KeyboardInput.java
 src/com/dddumpling/game/Duck.java
 src/com/dddumpling/game/DuckBodies.java
 src/com/dddumpling/game/DuckReward.java

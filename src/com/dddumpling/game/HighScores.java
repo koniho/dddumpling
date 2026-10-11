@@ -16,7 +16,9 @@ final class HighScores {
         "Crystal sparkle nap. Very shiny.",
         "Kelp tucked you in. Bubble blanket!",
         "Mushroom cap became your pillow.",
-        "Pebble adopted its own dumpling."
+        "Pebble adopted its own dumpling.",
+        "Lily pad booked you a swamp nap.",
+        "Mossy Maw gave you a tummy hug."
     };
     static final String[] SURVIVAL_BLURBS={
         "Rainbow tide stole your floaties.",
@@ -110,7 +112,7 @@ final class HighScores {
         recording=false;
         if(latest==Long.MAX_VALUE) return;
         int boss=Boss.kindFor(c.stage);
-        int ending=survival?c.survival.ending:c.lives>0?0:boss>=0?1+boss:5+Lands.forStage(c.stage);
+        int ending=survival?c.survival.ending:c.lives>0?0:boss==Boss.ALLIGATOR?11:boss>=0?1+boss:5+Lands.forStage(c.stage);
         int[] values={Math.max(0,c.score),c.stage,stages,dumplings,powers,swipes,bosses,c.hits,
                 c.misses,c.squishes,c.maxCombo,Math.max(c.best,c.score),c.runStartLand,
                 c.kidsRun?1:0,ending,character,0,0,0,0,0,0};

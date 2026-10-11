@@ -1971,7 +1971,7 @@ final class GameCore {
         time = 0;
         score = 0;
         squishes = 0;
-        stage = runStartLand * Boss.EVERY + 1;
+        stage = Lands.firstStage(runStartLand);
         spawnedThisStage = 0;
         resolvedThisStage = 0;
         stageGap = 0;
@@ -3094,6 +3094,7 @@ final class GameCore {
             boolean priorOpen=boss.open();
             float beforeDeath = boss.beaten ? boss.leaveProgress() * Boss.LEAVE : -1f;
             boolean beforeSupernova = boss.kind == Boss.SPLITTER && boss.beaten && !DivideDeath.bursting(boss);
+            if(boss.kind==Boss.ALLIGATOR)boss.alligator.target(this,L);
             int bossHits = boss.update(dt, L, rnd);
             BossPlay.deathFeedback(this, beforeDeath);
             if (beforeSupernova && DivideDeath.bursting(boss) && sound != null) sound.divideSupernova();
@@ -3121,6 +3122,7 @@ final class GameCore {
                 if (boss.mushroomSporeCue) sound.mushroomSpore();
                 if (boss.boingWeight >= 0f) sound.divideBoing(boss.boingWeight);
                 if (boss.octoWave) sound.octoWave();
+                if(boss.kind==Boss.ALLIGATOR && boss.alligator.warningCue)sound.octoCue();
                 if (boss.octoCue) sound.octoCue();
                 if (boss.octoLock) sound.octoLock();
                 if (boss.defeatChime) sound.squish(Boss.FACE[boss.kind], boss.defeatBeat);

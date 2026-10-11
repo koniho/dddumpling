@@ -81,7 +81,7 @@ final class TestTimeAttack extends Check {
         int group=skitFrame(c,L);
         check("all bosses uses a distinct group battle",group!=first);
         for(int boss=0;boss<Boss.COUNT;boss++) {
-            c.collected &= ~(1L << (Collect.BOSS_FIRST+boss));
+            c.collected &= ~(1L << (Collect.bossPrize(boss)));
             check("group battle includes boss "+boss,group!=skitFrame(c,L));
             c.collected=control.collected;
         }
@@ -181,8 +181,8 @@ final class TestTimeAttack extends Check {
             if(boss+1<Boss.COUNT)check("boss clear carries lives and reloads rescue "+boss,
                     c.lives==Math.min(GameCore.START_LIVES,boss+2) && !c.pushUsed && c.state==GameCore.PLAY);
         }
-        check("all-boss saves only full challenge record",c.timeAttack.won && c.timeAttack.cleared==4
-                && c.timeAttack.best[0][TimeAttack.ALL]==20000 && c.timeAttack.best[0][0]==0);
+        check("all-boss saves only full challenge record",c.timeAttack.won && c.timeAttack.cleared==Boss.COUNT
+                && c.timeAttack.best[0][TimeAttack.ALL]==Boss.COUNT*5000 && c.timeAttack.best[0][0]==0);
         for(int profile=0;profile<3;profile++) {
             c=new GameCore(store(),152);c.preferences.kids=profile==2;c.fullRoster=profile==1;
             c.modes.restore(ModeSelector.TIME_ATTACK);c.timeAttack.selected=Boss.OCTOPUS;c.startGame();
@@ -297,9 +297,9 @@ final class TestTimeAttack extends Check {
             if(boss==1)c.takeHit(L.w*.5f,L);
             beat(c,L);
         }
-        check("all-boss summary aggregates without resetting at encounters",c.timeAttack.result.cleared==4
-                && c.timeAttack.result.hits==4 && c.timeAttack.result.defended==4 && c.timeAttack.result.damage==1
-                && c.timeAttack.result.firstDamage==4000 && c.timeAttack.result.duration==8000);
+        check("all-boss summary aggregates without resetting at encounters",c.timeAttack.result.cleared==Boss.COUNT
+                && c.timeAttack.result.hits==Boss.COUNT && c.timeAttack.result.defended==Boss.COUNT && c.timeAttack.result.damage==1
+                && c.timeAttack.result.firstDamage==4000 && c.timeAttack.result.duration==Boss.COUNT*2000);
         check("all-boss history stays separate from individual bosses",c.timeAttack.histories[0][TimeAttack.ALL].runs.size()==1
                 && c.timeAttack.histories[0][0].displayCount()==0 && c.timeAttack.histories[1][TimeAttack.ALL].displayCount()==0);
         c.toTitle();c.returnFade=0;
@@ -327,7 +327,7 @@ final class TestTimeAttack extends Check {
         check("ranked history and latest attempt round trip",restored.load(history.encode(),0)
                 && restored.runs.size()==10 && restored.latest.id==13 && restored.latest.firstDamage==400);
         StringBuilder old=new StringBuilder("1");
-        for(int i=0;i<3*TimeAttack.CHOICES;i++)old.append(';').append(i==0?1234:0);
+        for(int i=0;i<3*5;i++)old.append(';').append(i==0?1234:0);
         TimeAttack attack=new TimeAttack();attack.load(old.toString());
         check("old personal best migrates without invented stats",attack.best[0][0]==1234
                 && attack.histories[0][0].runs.get(0).legacy() && attack.histories[0][0].runs.get(0).accuracy().equals("--"));

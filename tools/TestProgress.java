@@ -110,7 +110,7 @@ final class TestProgress extends Check {
     private static void firstHit() {
         for (int kind = 0; kind < Boss.COUNT; kind++) {
             Progress p = new Progress(new Storage("timer"), true); Events e = new Events(); p.attach(e);
-            p.startRun(); p.enterStage((kind + 1) * 5); p.bossTime(12.345);
+            p.startRun(); p.enterStage(kind==Boss.ALLIGATOR?Lands.firstStage(Lands.SWAMP)+4:(kind + 1) * 5); p.bossTime(12.345);
             p.bossDamage(kind, 10, 10); p.bossDamage(kind, 10, 11);
             String prefix = "boss_" + Progress.BOSSES[kind] + "_first_hit_";
             check("setup and shield hits do not count for boss " + kind, p.count(prefix + "count") == 0);
@@ -121,7 +121,7 @@ final class TestProgress extends Check {
             p.finishRun(0, false);
             check("damaged boss does not enter no-damage count " + kind,
                     p.count("boss_" + Progress.BOSSES[kind] + "_no_damage") == 0);
-            p.startRun(); p.enterStage((kind + 1) * 5); p.bossTime(60); p.finishRun(0, false);
+            p.startRun(); p.enterStage(kind==Boss.ALLIGATOR?Lands.firstStage(Lands.SWAMP)+4:(kind + 1) * 5); p.bossTime(60); p.finishRun(0, false);
             check("failed attempt without damage is counted for boss " + kind,
                     p.count("boss_" + Progress.BOSSES[kind] + "_no_damage") == 1);
         }

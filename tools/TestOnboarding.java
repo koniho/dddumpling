@@ -756,7 +756,7 @@ final class TestOnboarding extends Check {
         }
     }
     private static void speechPages(Layout L) {
-        for(int message=TutorialSpeech.MATCH;message<=TutorialSpeech.LANDS;message++) {
+        for(int message=TutorialSpeech.MATCH;message<=TutorialSpeech.ALLIGATOR;message++) {
             StringBuilder displayed=new StringBuilder();boolean fits=true;
             for(int page=0;page<TutorialSpeech.pageCount(message);page++) {
                 String[] lines=TutorialSpeech.pageLines(message,page);

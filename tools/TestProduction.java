@@ -113,7 +113,7 @@ final class TestProduction extends Check {
         Mem store=new Mem();store.collected=Collect.MASK;store.caveChoice=CaveDumpling.GOLDEN;
         GameCore c=new GameCore(store,981L);
         c.allLandsEnabled=true;
-        check("production exposes only original combat lands",LandPicker.count(c)==4);
+        check("production exposes original lands and swamp",LandPicker.count(c)==5);
         check("town stays hidden with all rewards and developer override",!LandPicker.townUnlocked(c));
         LandPicker.select(c,LandPicker.TOWN);c.openTown();
         check("production cannot select or enter town",c.landChoice==0 && !c.townOpen);
@@ -126,16 +126,17 @@ final class TestProduction extends Check {
         check("production hides run-end town ticket text",Arrays.equals(tickets.resolve(),without.resolve()));
         c=new GameCore(store,981L);
         check("cave stays locked with all rewards and developer override",!LandPicker.unlocked(c,Cave.LAND));
-        c.landSeen=14;LandPicker.updateDiscovery(c,1f);
+        c.landSeen=14|(1<<Lands.SWAMP);LandPicker.updateDiscovery(c,1f);
         check("production never tours the cave",c.landDiscovery<0);
         LandPicker.select(c,Cave.LAND);
         check("production cannot select cave from picker",c.landChoice==0);
         c.landChoice=Cave.LAND;c.startGame();
         check("stale cave selection starts a normal run",c.stage==1 && !Cave.active(c));
+        check("production swamp starts at 21 and boss ends chapter at 25",Lands.firstStage(Lands.SWAMP)==21 && Boss.kindFor(25)==Boss.ALLIGATOR);
         boolean original=true;
         for(int stage=1;stage<=120;stage++)
-            original &= Lands.forStage(stage)==(stage-1)/Boss.EVERY%4 && !Cave.stage(stage);
-        check("production retains original endless scenery cycle",original);
+            original &= Lands.forStage(stage)==(((stage-1)/Boss.EVERY%5)==4?Lands.SWAMP:(stage-1)/Boss.EVERY%5) && !Cave.stage(stage);
+        check("production scenery cycle includes swamp and skips cave",original);
         c.stage=20;Interlude.enterBonus(c,L);c.bonusTimer=.001f;
         c.update(DT,L);c.update(DT,L);
         check("leaving stage 20 enters ordinary stage 21",c.stage==21 && c.state==GameCore.PLAY && !c.cave.running);

@@ -38,6 +38,7 @@ final class BossScreen extends Draw {
 
     /** Tint per boss, taken from the letter each one is a giant version of. */
     private static int tint(Boss b) {
+        if (b.kind == Boss.ALLIGATOR) return AlligatorArt.LIGHT;
         if (b.kind == Boss.SLIME) return 0xFF83E51C;
         if (b.kind == Boss.SPLITTER) return DIVIDE_COLOR[0];
         if (b.kind == Boss.OCTOPUS) return OCTO_SKIN;
@@ -114,6 +115,7 @@ final class BossScreen extends Draw {
     /** Draws either the live boss or a retained victory snapshot through the identical renderer. */
     static void body(Painter p, GameCore c, Layout L, Boss b, float alpha) {
         if (!b.active() || b.body == null) return;
+        if(b.kind==Boss.ALLIGATOR) {AlligatorArt.draw(p,c,L,b,alpha);return;}
 
         if (b.beaten && b.kind == Boss.MUSHROOM) {
             drawMushroom(p, c, L, b, tint(b), alpha);
