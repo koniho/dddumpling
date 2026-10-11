@@ -124,7 +124,7 @@ final class TestModeSelector extends Check {
                 new Class<?>[]{Painter.class},(proxy,method,args)->{
                     if(method.getName().equals("arc"))alphas.add(((Integer)args[6])>>>24);
                     if(method.getName().equals("text") && (args[0].equals("LOCKED")
-                            || args[0].equals("IN ADVENTURE TO UNLOCK")))alphas.add(((Integer)args[4])>>>24);
+                            || args[0].equals("BEAT YOUR FIRST BOSS")))alphas.add(((Integer)args[4])>>>24);
                     return null;
                 });
         c.modes.draw(p,c,L);
@@ -144,9 +144,8 @@ final class TestModeSelector extends Check {
                         return null;
                     });
             c.modes.draw(p,c,L);
-            check("locked mode explains Adventure requirement "+mode,labels.contains("LOCKED")
-                    && labels.contains(mode==ModeSelector.SURVIVAL?"BEAT THE STAGE 5 BOSS":"BEAT YOUR FIRST BOSS")
-                    && labels.contains("IN ADVENTURE TO UNLOCK"));
+            check("locked modes share the first boss instruction "+mode,labels.contains("LOCKED")
+                    && labels.contains("BEAT YOUR FIRST BOSS"));
             check("locked mode has no boss selection controls "+mode,c.timeAttack.hit(c,L,L.w*.15f,TimeAttack.selectY(L))==0);
             if(mode==ModeSelector.SURVIVAL)check("locked Survival keeps animated title stripes",stripeCaps(c,L)>0);
             tap(c,L,0);check("locked title cannot start "+mode,!c.starting() && c.modes.unavailable>0);

@@ -234,9 +234,8 @@ final class ModeSelector extends Draw {
         lock.line(x,y+s*.12f,x,y+s*.35f,BG,s*.10f);
         lock.text("LOCKED",x,y+s*1.7f,type(s*.7f),color,Painter.CENTER,true);
         if(inFront)lockedBoss(p,c,L,unavailable);
-        lock.text(selected==SURVIVAL?"BEAT THE STAGE 5 BOSS":"BEAT YOUR FIRST BOSS",
+        lock.text("BEAT YOUR FIRST BOSS",
                 x,y+s*3f,type(s*.57f),INK,Painter.CENTER,true);
-        lock.text("IN ADVENTURE TO UNLOCK",x,y+s*4.05f,type(s*.5f),INK_DIM,Painter.CENTER,true);
     }
     private static void lockedBoss(Painter p,GameCore c,Layout L,float reaction) {
         float s=L.unit,bounce=(float)Math.sin((1-reaction)*Math.PI);
