@@ -2,8 +2,10 @@
 
 Website: https://koniho.github.io/dddumpling-game/
 Privacy: https://koniho.github.io/dddumpling-privacy/
+Terms: https://koniho.github.io/dddumpling-privacy/terms.html
 
-Edit docs/site/ for the website, or docs/privacy.html for the policy. Push changes
+Edit docs/site/ for the website, docs/privacy.html for the policy, or docs/terms.html
+for the terms. Push changes
 to main. The Publish public pages workflow publishes both sites using separate,
 repository-scoped deploy keys. GitHub Pages then serves the updated main branches
 of koniho/dddumpling-game and koniho/dddumpling-privacy. No game source is copied.

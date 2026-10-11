@@ -43,6 +43,7 @@ else
     echo 'Policy contains unfinished draft content'; exit 1
   fi
   cp docs/privacy.html "$publish_tmp/repo/index.html"
+  cp docs/terms.html "$publish_tmp/repo/terms.html"
   # Keep URL ownership proofs alongside the published privacy policy.
   for verification in docs/privacy-verification/tiktok*.txt; do
     [ -f "$verification" ] || continue
