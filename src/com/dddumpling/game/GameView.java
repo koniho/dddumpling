@@ -88,17 +88,22 @@ public class GameView extends View implements InputManager.InputDeviceListener {
 
     boolean keyboardEvent(KeyEvent event) {
         InputDevice device = event.getDevice();
+        // UHID keyboards (including scrcpy) can report isExternal() == false.
+        // Require a non-virtual alphabetic keyboard and reject IME events instead.
         if (background || !hasWindowFocus() || device == null || device.isVirtual()
                 || !device.supportsSource(InputDevice.SOURCE_KEYBOARD)
                 || device.getKeyboardType() != InputDevice.KEYBOARD_TYPE_ALPHABETIC
-                || Build.VERSION.SDK_INT >= 29 && !device.isExternal()
                 || (event.getFlags() & KeyEvent.FLAG_SOFT_KEYBOARD) != 0) return false;
         int letter = event.getKeyCode() - KeyEvent.KEYCODE_A + 'a';
         if (event.getAction() == KeyEvent.ACTION_UP) return keyboard.up(letter);
         if (event.getAction() != KeyEvent.ACTION_DOWN || event.isCtrlPressed()
                 || event.isAltPressed() || event.isMetaPressed() || event.isFunctionPressed()) return false;
         int result = keyboard.down(core, layout, letter, event.getRepeatCount() > 0);
-        if (result > 0) { tick(); invalidate(); }
+        if (result > 0) {
+            if (BuildFlags.DEVELOPER) android.util.Log.d("DDDKeyboard",
+                    "press=" + keyboard.presses + " glyph=" + keyboard.lastGlyph);
+            tick(); invalidate();
+        }
         return result >= 0;
     }
 
