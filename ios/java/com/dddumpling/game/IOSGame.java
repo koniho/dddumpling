@@ -12,6 +12,7 @@ public final class IOSGame {
     private final GameCore core;
     private final Layout layout = new Layout();
     private final SettingsInput settingsInput = new SettingsInput();
+    private final KeyboardInput keyboard = new KeyboardInput();
 
     private Host host;
     private float elapsedClock, delayedHaptic;
@@ -28,6 +29,7 @@ public final class IOSGame {
         return BuildFlags.DEVELOPER && (core.state == GameCore.TITLE || core.settingsOpen || core.paused);
     }
     private void cancelPointers() {
+        keyboard.clear();
         core.cancelTownInput();
         settingsInput.cancel();
         core.releaseNotes.cancelTouch();
@@ -69,6 +71,14 @@ public final class IOSGame {
         if (width > 0 && height > 0) layout.compute(width, height, left, top, right, bottom);
     }
     public boolean touch(IOSTouch ev) { return touch(ev,0f); }
+    public boolean keyDown(int letter, boolean repeat) {
+        if (background) return false;
+        int result = keyboard.down(core, layout, letter, repeat);
+        if (result > 0) tick();
+        return result >= 0;
+    }
+    public boolean keyUp(int letter) { return keyboard.up(letter); }
+    public void cancelKeyboard() { keyboard.clear(); }
     public boolean touch(IOSTouch ev,float inputAge) {
         if (background) return true;
         if (ev.getActionMasked() == IOSTouch.ACTION_CANCEL) { cancelPointers(); return true; }
@@ -723,6 +733,7 @@ public final class IOSGame {
         }
         boolean playing = core.state == GameCore.PLAY && !core.paused;
         core.update(Math.min(elapsed, .05f), elapsed, layout);
+        if (!KeyboardInput.available(core)) keyboard.clear();
         int external=core.preferences.takeExternal(core);
         if(external!=0) {
             if(host!=null) host.openAppAction(external==PlayerSettings.SHARE);
@@ -752,7 +763,8 @@ public final class IOSGame {
                 + ";score=" + core.score + ";lives=" + core.lives + ";case=" + core.caseOpen
                 + ";stars=" + core.starBonus + ";mode=" + core.mode + ";starter=" + core.starter.open
                 + ";starterReady=" + (core.starter.open && !core.starter.exiting && core.starter.age>=Starter.READY)
-                + ";starterConfirm=" + core.starter.canConfirm();
+                + ";starterConfirm=" + core.starter.canConfirm()
+                + ";keyboardPresses=" + keyboard.presses + ";keyboardGlyph=" + keyboard.lastGlyph;
     }
 
     public void debugScene(String scene) {
@@ -762,6 +774,7 @@ public final class IOSGame {
             try { stage = Integer.parseInt(scene.substring(6)); }
             catch (NumberFormatException invalid) { return; }
         } else if (!scene.equals("title") && !scene.equals("case") && !scene.equals("play")
+                && !scene.equals("keyboard:4") && !scene.equals("keyboard:6")
                 && !scene.equals("stars") && !scene.equals("steamer") && !scene.equals("ninja")
                 && !scene.equals("pause")) return;
         cancelPointers();
@@ -769,7 +782,13 @@ public final class IOSGame {
         if (scene.equals("title")) { core.toTitle(); return; }
         if (scene.equals("case")) { core.toTitle(); core.openCase(); return; }
         core.startGame();
-        if (scene.equals("stars")) core.playtestStars(layout);
+        if (scene.startsWith("keyboard:")) {
+            core.runFullRoster = core.fullRoster = scene.equals("keyboard:6");
+            core.rosterSceneT = core.stageBanner = 0;
+            core.onboarding.clear();
+            core.onboarding.saved |= Onboarding.SKIPPED;
+        }
+        else if (scene.equals("stars")) core.playtestStars(layout);
         else if (scene.equals("steamer")) core.playtestSteamer(layout);
         else if (scene.equals("ninja")) core.playtestMode(Power.NINJA, layout);
         else if (scene.startsWith("stage:")) core.jumpToStage(stage, layout);

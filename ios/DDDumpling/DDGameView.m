@@ -12,6 +12,7 @@
 #import "IOSObjectArray.h"
 #import "IOSClass.h"
 #import <QuartzCore/QuartzCore.h>
+#import <GameController/GameController.h>
 
 @class DDGameView;
 @interface DDHost : NSObject <DDIOSGame_Host>
@@ -98,8 +99,56 @@
 @end
 
 @implementation DDGameView
+- (BOOL)canBecomeFirstResponder { return YES; }
+- (BOOL)resignFirstResponder {
+    [self.game cancelKeyboard];
+    return [super resignFirstResponder];
+}
+- (void)keyboardDisconnected:(NSNotification *)notification { [self.game cancelKeyboard]; }
+- (void)dealloc { [NSNotificationCenter.defaultCenter removeObserver:self]; }
+
+// UIPress.key is supplied only for hardware keyboard events. This view is not a text input.
+- (int)letterForKey:(UIKey *)key {
+    switch (key.keyCode) {
+        case UIKeyboardHIDUsageKeyboardS: return 's';
+        case UIKeyboardHIDUsageKeyboardD: return 'd';
+        case UIKeyboardHIDUsageKeyboardF: return 'f';
+        case UIKeyboardHIDUsageKeyboardJ: return 'j';
+        case UIKeyboardHIDUsageKeyboardK: return 'k';
+        case UIKeyboardHIDUsageKeyboardL: return 'l';
+        default: return 0;
+    }
+}
+- (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event {
+    NSMutableSet *unhandled = [presses mutableCopy];
+    BOOL playable = self.active && !self.storeAlertVisible && !self.gameCenterVisible
+            && !self.window.rootViewController.presentedViewController;
+    for (UIPress *press in presses) {
+        UIKey *key = press.key;
+        if (!playable || !key || ((key.modifierFlags | event.modifierFlags) & (UIKeyModifierCommand | UIKeyModifierControl
+                | UIKeyModifierAlternate))) continue;
+        if ([self.game keyDownWithInt:[self letterForKey:key] withBoolean:NO])
+            [unhandled removeObject:press];
+    }
+    if (unhandled.count) [super pressesBegan:unhandled withEvent:event];
+    [self refreshNavigation];
+    [self setNeedsDisplay];
+}
+- (void)pressesEnded:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event {
+    NSMutableSet *unhandled = [presses mutableCopy];
+    for (UIPress *press in presses)
+        if (press.key && [self.game keyUpWithInt:[self letterForKey:press.key]])
+            [unhandled removeObject:press];
+    if (unhandled.count) [super pressesEnded:unhandled withEvent:event];
+}
+- (void)pressesCancelled:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event {
+    [self.game cancelKeyboard];
+    [super pressesCancelled:presses withEvent:event];
+}
 - (void)didMoveToWindow {
     [super didMoveToWindow];
+    if (self.window) [self becomeFirstResponder];
+    else [self.game cancelKeyboard];
 #if DEBUG || DDDUMPLING_GAME_CENTER
     if (self.window && !self.gameCenter) {
         self.gameCenter = [[DDGameCenter alloc] initWithPresenter:self.window.rootViewController];
@@ -143,6 +192,8 @@
         DDHost *host = [DDHost new];
         host.view = self;
         [_game setHostWithDDIOSGame_Host:host];
+        [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(keyboardDisconnected:)
+                name:GCKeyboardDidDisconnectNotification object:nil];
         _haptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
         _heavyHaptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
         _frameMetrics = [[DDFrameMetrics alloc]
@@ -271,6 +322,7 @@
     [self.frameMetrics reset];
     BOOL playable = self.active && !self.storeAlertVisible && !self.gameCenterVisible;
     [self.game backgroundWithBoolean:!playable];
+    if (playable && self.window) [self becomeFirstResponder];
     [self clearPointers];
     [self.audio setActive:playable];
     self.displayLink.paused = !self.active;

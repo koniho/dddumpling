@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.view.KeyEvent;
 import android.view.Window;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
@@ -121,6 +122,10 @@ public class MainActivity extends Activity implements GameCore.Store {
     @Override protected void onActivityResult(int request,int result,android.content.Intent data) {
         super.onActivityResult(request,result,data);
         if(request==APP_ACTION_REQUEST && game!=null) game.core().preferences.externalFinished(game.core());
+    }
+
+    @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        return game != null && game.keyboardEvent(event) || super.dispatchKeyEvent(event);
     }
 
     @Override protected void onResume() {

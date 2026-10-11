@@ -2,20 +2,24 @@ package com.dddumpling.game;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.hardware.input.InputManager;
 import android.os.Build;
 import android.os.SystemClock;
 import android.view.HapticFeedbackConstants;
+import android.view.InputDevice;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowInsets;
 
 /** Input, insets and the frame loop. All drawing is delegated to {@link Renderer}. */
-public class GameView extends View {
+public class GameView extends View implements InputManager.InputDeviceListener {
 
     private final GameCore core;
     private final Layout layout = new Layout();
     private final CanvasPainter painter;
     private final SettingsInput settingsInput = new SettingsInput();
+    private final KeyboardInput keyboard = new KeyboardInput();
 
     private float padL, padT, padR, padB;
     private long last;
@@ -29,6 +33,7 @@ public class GameView extends View {
     boolean handlesBack() { return Pause.handlesBack(core); }
     boolean paused() { return core.paused; }
     private void cancelPointers() {
+        keyboard.clear();
         core.cancelTownInput();
         settingsInput.cancel();
         core.releaseNotes.cancelTouch();
@@ -81,6 +86,41 @@ public class GameView extends View {
 
     GameCore core() { return core; }
 
+    boolean keyboardEvent(KeyEvent event) {
+        InputDevice device = event.getDevice();
+        if (background || !hasWindowFocus() || device == null || device.isVirtual()
+                || !device.supportsSource(InputDevice.SOURCE_KEYBOARD)
+                || device.getKeyboardType() != InputDevice.KEYBOARD_TYPE_ALPHABETIC
+                || Build.VERSION.SDK_INT >= 29 && !device.isExternal()
+                || (event.getFlags() & KeyEvent.FLAG_SOFT_KEYBOARD) != 0) return false;
+        int letter = event.getKeyCode() - KeyEvent.KEYCODE_A + 'a';
+        if (event.getAction() == KeyEvent.ACTION_UP) return keyboard.up(letter);
+        if (event.getAction() != KeyEvent.ACTION_DOWN || event.isCtrlPressed()
+                || event.isAltPressed() || event.isMetaPressed() || event.isFunctionPressed()) return false;
+        int result = keyboard.down(core, layout, letter, event.getRepeatCount() > 0);
+        if (result > 0) { tick(); invalidate(); }
+        return result >= 0;
+    }
+
+    @Override protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        last = 0;
+        ((InputManager)getContext().getSystemService(Context.INPUT_SERVICE))
+                .registerInputDeviceListener(this, null);
+    }
+    @Override protected void onDetachedFromWindow() {
+        ((InputManager)getContext().getSystemService(Context.INPUT_SERVICE)).unregisterInputDeviceListener(this);
+        keyboard.clear();
+        super.onDetachedFromWindow();
+    }
+    @Override public void onWindowFocusChanged(boolean focused) {
+        super.onWindowFocusChanged(focused);
+        if (!focused) keyboard.clear();
+    }
+    @Override public void onInputDeviceAdded(int id) { keyboard.clear(); }
+    @Override public void onInputDeviceChanged(int id) { keyboard.clear(); }
+    @Override public void onInputDeviceRemoved(int id) { keyboard.clear(); }
+
     private void relayout() {
         if (getWidth() > 0 && getHeight() > 0) {
             layout.compute(getWidth(), getHeight(), padL, padT, padR, padB);
@@ -110,11 +150,6 @@ public class GameView extends View {
     private static float[] legacyInsets(WindowInsets in) {
         return new float[] {in.getSystemWindowInsetLeft(), in.getSystemWindowInsetTop(),
                 in.getSystemWindowInsetRight(), in.getSystemWindowInsetBottom()};
-    }
-
-    @Override protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        last = 0;
     }
 
     @Override public boolean onTouchEvent(MotionEvent ev) {
@@ -801,6 +836,7 @@ public class GameView extends View {
             boolean playingBeforeUpdate = core.state == GameCore.PLAY && !core.paused && !background;
             if (!background) {
                 core.update(dt, elapsed, layout);
+                if (!KeyboardInput.available(core)) keyboard.clear();
                 int external=core.preferences.takeExternal(core);
                 if(external!=0) ((MainActivity)getContext()).openAppAction(external);
                 int caveFeedback=Math.max(core.cart.scene.takeFeedback(),Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback()));

@@ -945,6 +945,7 @@ public final class IOSInputTest extends Check {
     }
 
     public static void main(String[] args) {
+        keyboardInput();
         bossSummaryScroll();
         onboarding();
         powerGuidanceInput();
@@ -965,6 +966,65 @@ public final class IOSInputTest extends Check {
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");
         if (fail != 0) throw new AssertionError("iOS input regressions");
+    }
+
+    private static void keyboardInput() {
+        for (boolean full : new boolean[]{false, true}) {
+            for (int g = 0; g < 6; g++) {
+                IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
+                c.startGame(); c.onboarding.clear(); c.runFullRoster = full; c.stageBanner = 0;
+                c.enemies.clear();
+                GameCore.Enemy word = add(c, l, new int[]{g, g}, l.playTop + 80);
+                char key = "sdfjkl".charAt(g);
+                boolean active = Roster.active(full, g);
+                check("hardware mapping consumes only visible keys " + full + ":" + key,
+                        game.keyDown(key, false) == active);
+                check("hardware press advances the matching word " + full + ":" + key,
+                        word.pos == (active ? 1 : 0));
+                game.keyDown(key, false); game.keyDown(key, true);
+                check("held key cannot advance twice " + full + ":" + key, word.pos == (active ? 1 : 0));
+                game.keyUp(key); game.keyDown(key, false);
+                check("release permits next press " + full + ":" + key, word.pos == (active ? 2 : 0));
+            }
+        }
+        IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
+        Host host = new Host(); game.setHost(host);
+        c.startGame(); c.onboarding.clear(); c.runFullRoster = false;
+        check("unrelated keys pass through", !game.keyDown('x', false));
+        check("four-key deck excludes F and J", !game.keyDown('f', false) && !game.keyDown('j', false));
+        c.runFullRoster = true;
+        check("new roster mapping applies immediately", game.keyDown('f', false) && host.ticks == 1);
+        game.keyUp('f');
+        for (int gate = 0; gate < 9; gate++) {
+            switch (gate) {
+                case 0: c.paused = true; break;
+                case 1: c.settingsOpen = true; break;
+                case 2: c.releaseNotes.open = true; break;
+                case 3: c.highScoreScreen.open = true; break;
+                case 4: c.onboarding.briefing = true; break;
+                case 5: c.onboarding.rescueGuide = true; break;
+                case 6: c.rosterSceneT = 1; break;
+                case 7: c.state = GameCore.OVER; break;
+                case 8: game.background(true); break;
+            }
+            game.keyDown('s', false); game.keyUp('s');
+            check("blocked keyboard cannot reach gameplay " + gate, host.ticks == 1);
+            c.paused = c.settingsOpen = c.releaseNotes.open = c.highScoreScreen.open = false;
+            c.onboarding.clear(); c.rosterSceneT = 0; c.state = GameCore.PLAY;
+            game.background(false);
+        }
+        c.paused = false;
+        game.keyDown('s', false); game.cancelKeyboard(); game.keyDown('s', false);
+        check("disconnect releases held keys", host.ticks == 3);
+        game.background(true); game.background(false); Pause.resume(c);
+        game.keyDown('s', false);
+        check("background releases held keys", host.ticks == 4);
+        game.keyUp('s');
+        game.keyDown('d', true);
+        check("repeat after lifecycle reset stays ignored", host.ticks == 4);
+        game.debugScene("steamer"); c.onboarding.clear();
+        game.keyDown('k', false);
+        check("steamer accepts physical deck key", host.ticks == 5);
     }
 
     private static void onboarding() {
