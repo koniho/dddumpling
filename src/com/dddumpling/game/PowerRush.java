@@ -64,7 +64,7 @@ final class PowerRush {
         float depth=danger ? .12f+alternative*.05f
                 : .18f+((alternative+c.powerSpawnedEnemies)%3)*.16f;
         float half=L.wordWidth(e.word.length)*.5f;
-        e.sideEntry=true;e.sway=0;
+        e.sideEntry=true;e.sway=0;e.headerRush=false;
         e.pathStartX=left ? L.playLeft-half-L.enemyR : L.playRight+half+L.enemyR;
         e.pathStartY=L.playTop+(L.dangerY-L.playTop)*depth;
         e.y=e.pathStartY;e.baseX=e.pathStartX;e.rushSpan=0;

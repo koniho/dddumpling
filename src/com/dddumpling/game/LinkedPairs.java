@@ -52,6 +52,7 @@ final class LinkedPairs {
         e.y = -L.enemyR * 2.2f;
         e.speed=PowerRush.spawnSpeed(c,e,L);
         PowerRush.pair(c,e,L);
+        EnemyEntry.top(e,L);
         return e;
     }
 

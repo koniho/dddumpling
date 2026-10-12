@@ -103,6 +103,9 @@ final class Layout {
         return (n - 1) * enemyStep + 2f * HEAD_SCALE * enemyR;
     }
 
+    /** Lower edge of the header readouts and their touch target. */
+    float hudBottom() { return hudY + 0.6f * unit; }
+
     /**
      * True inside the stage readout in the HUD, which opens settings. Sized generously —
      * the text itself is small, and a mis-tap here costs nothing.
@@ -110,7 +113,7 @@ final class Layout {
     boolean inStageTap(float x, float y) {
         return Math.abs(x - w / 2f) <= 0.24f * w
                 && y >= topSafe - 0.01f * h
-                && y <= hudY + 0.6f * unit;
+                && y <= hudBottom();
     }
 
     /** Rescue starts across the lower two thirds, including empty space around the keys.

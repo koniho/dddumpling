@@ -400,6 +400,8 @@ final class GameCore {
         boolean sideEntry;
         float pathStartX, pathEndX, pathStartY;
         float rushEndY, rushSpan;
+        /** Header-only boost keeps ordinary top-spawn admission unchanged. */
+        boolean headerRush;
         boolean dying;
         float deathT;
         /** 1 right after a correct hit, decaying: drives the colour flash and scale pop. */
@@ -3649,6 +3651,7 @@ final class GameCore {
         // Fully offscreen first; power formations then choose a top or side approach.
         e.y = -L.enemyR * 2.2f;
         PowerRush.arrange(this,e,L,lo,hi);
+        EnemyEntry.top(e,L);
         e.enterT = 0f;
         float preferredX = e.sideEntry ? e.pathEndX : e.baseX;
         // Ninja tries other entry heights too, keeping the word instead of wasting its spawn slot.

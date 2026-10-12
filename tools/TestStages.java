@@ -3,7 +3,76 @@ package com.dddumpling.game;
 /** Stage waves, the between-stages minigame, accuracy and danger warnings. */
 final class TestStages extends Check {
 
+    private static void headerEntry() {
+        group("top entry clears the header");
+        for (int[] size : new int[][]{{360,640,0},{1080,2400,0},{768,1024,96}}) {
+            Layout L=new Layout();L.compute(size[0],size[1],0,size[2],0,0);
+            for (boolean survival : new boolean[]{false,true}) {
+                GameCore c=survival?TestSurvival.start(TestSurvival.store(),171L)
+                        :new GameCore(new Mem(),171L);
+                if(!survival)c.startGame();
+                c.spawnTimer=0;c.powerTimer=100;c.update(DT,L);
+                GameCore.Enemy e=c.enemies.get(0);
+                String tag=" "+size[0]+" survival="+survival;
+                float start=-L.enemyR*2.2f,normal=(L.dangerY-start)/c.travelSeconds();
+                check("top entry accelerates without changing its approach speed"+tag,
+                        e.headerRush && e.y>start+normal*DT*4f && Math.abs(e.speed-normal)<.01f);
+                check("whole leading tile clears the HUD at normal speed"+tag,
+                        e.rushEndY-L.enemyR*Layout.HEAD_SCALE>=L.hudBottom()-.01f
+                        && e.rushEndY<L.playTop+L.enemyR*3f);
+                c.stageGap=100;
+                c.paused=true;float before=e.y;c.update(.1f,L);
+                check("pause holds the fast entry"+tag,e.y==before);c.paused=false;
+                c.kidsRun=true;before=e.y;c.update(DT,L);
+                check("Kids Mode still slows the fast entry"+tag,
+                        e.y>before && e.y-before<normal*DT*5f*.45f);
+                c.kidsRun=false;
+                e.y=e.rushEndY-L.enemyR*.001f;before=e.y;
+                c.update(DT,L);
+                check("boundary crossing settles continuously"+tag,
+                        e.y>e.rushEndY && Math.abs(e.y-before-normal*DT)<L.enemyR*.001f);
+                before=e.y;c.update(DT,L);
+                check("descent below the header stays at normal speed"+tag,
+                        Math.abs(e.y-before-normal*DT)<.01f);
+                e.y=start;float span=e.rushSpan;
+                float together=PowerRush.yAfter(e,span*.6f);
+                e.y=PowerRush.yAfter(e,span*.3f);e.y=PowerRush.yAfter(e,span*.3f);
+                check("split frames agree across the header boundary"+tag,Math.abs(e.y-together)<.01f);
+                GameCore.Enemy next=add(c,L,new int[]{0},start);
+                EnemyEntry.top(next,L);next.baseX=e.baseX;next.speed=e.speed;
+                check("ordinary top admission stays unchanged"+tag,EnemyEntry.clear(next,c,L));
+            }
+            GameCore pair=new GameCore(new Mem(),172L);pair.startGame();pair.stage=16;
+            check("header pair spawns",LinkedPairs.spawn(pair,L));
+            pair.stageGap=100;
+            GameCore.Enemy a=pair.enemies.get(0),b=pair.enemies.get(1);
+            advance(pair,L,1f);
+            check("linked friends share the fast entry",a.headerRush && b.headerRush && a.y==b.y
+                    && a.rushEndY==b.rushEndY && a.y>-L.enemyR*2.2f+a.speed);
+            for (int mode : new int[]{Power.NINJA,Power.FLURRY,Power.TEAM}) {
+                Mem store=new Mem();store.collected=1L;
+                GameCore c=new GameCore(store,173L);c.startGame();c.startFrenzy(mode,L);
+                c.enemies.clear();
+                for (int slot : new int[]{0,1}) {
+                    c.powerSpawnedEnemies=slot;
+                    GameCore.Enemy e=add(c,L,new int[]{0},-L.enemyR*2.2f);c.enemies.clear();
+                    PowerRush.arrange(c,e,L,L.w*.2f,L.w*.8f);
+                    float end=e.rushEndY,span=e.rushSpan,y=e.y;
+                    EnemyEntry.top(e,L);
+                    check("existing power entrance stays intact "+mode+"/"+slot,
+                            !e.headerRush && e.rushEndY==end && e.rushSpan==span && e.y==y);
+                }
+                add(c,L,new int[]{0},L.dangerY-L.enemyR*2f);c.powerSpawnedEnemies=1;
+                GameCore.Enemy side=new GameCore.Enemy();side.word=new int[]{0};side.y=-L.enemyR*2.2f;
+                PowerRush.arrange(c,side,L,L.w*.2f,L.w*.8f);EnemyEntry.top(side,L);
+                check("lower side entrance retains unboosted descent "+mode,side.sideEntry
+                        && side.rushSpan==0 && PowerRush.yAfter(side,10f)==side.y+10f);
+            }
+        }
+    }
+
     static void waves(Layout L) {
+        headerEntry();
         damageEnding(L);
         group("stage waves");
         GameCore c = new GameCore(new Mem(), 41L);

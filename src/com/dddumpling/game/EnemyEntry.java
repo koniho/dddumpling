@@ -1,10 +1,20 @@
 package com.dddumpling.game;
 
-/** Side entrances and room for their full rows, including future crossings. */
+/** Top and side entrances, with room for full rows including future crossings. */
 final class EnemyEntry {
     private EnemyEntry() {}
 
     static final float ARC_FRACTION = 0.15f;
+
+    /** Use the existing smooth rush for the hidden top stretch; keep power entrances intact. */
+    static void top(GameCore.Enemy e, Layout L) {
+        if (e.sideEntry || e.rushSpan > 0f) return;
+        float end = Math.max(L.playTop, L.hudBottom()) + L.enemyR * Layout.HEAD_SCALE;
+        if (e.y >= end) return;
+        e.headerRush = true;
+        e.rushEndY = end;
+        e.rushSpan = end - e.y;
+    }
 
     static float progress(GameCore.Enemy e, float y, Layout L) {
         float span = Math.max(1f, L.dangerY - L.enemyR - e.pathStartY);
@@ -24,7 +34,9 @@ final class EnemyEntry {
             if (other == incoming || other.dying || other.destroyed) continue;
             if (!incoming.sideEntry && !other.sideEntry
                     && incoming.link == null && other.link == null
-                    && incoming.rushSpan<=0f && other.rushSpan<=0f) continue;
+                    // Ordinary top rows retain their existing admission rules.
+                    && (incoming.rushSpan<=0f || incoming.headerRush)
+                    && (other.rushSpan<=0f || other.headerRush)) continue;
             if (conflict(incoming, other, L)) return false;
         }
         return true;
