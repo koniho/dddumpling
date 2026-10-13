@@ -1,0 +1,36 @@
+{
+  "apple_provider_token": "129450082",
+  "created": "2026-10-12",
+  "campaigns": [
+    {
+      "campaign": "youtube_profile",
+      "placement": "YouTube profile",
+      "android_url": "https://play.google.com/store/apps/details?id=com.dddumpling.game&utm_source=youtube&utm_medium=organic&utm_campaign=youtube_profile",
+      "ios_url": "https://apps.apple.com/app/apple-store/id6811478003?pt=129450082&ct=youtube_profile&mt=8"
+    },
+    {
+      "campaign": "tiktok_profile",
+      "placement": "TikTok profile",
+      "android_url": "https://play.google.com/store/apps/details?id=com.dddumpling.game&utm_source=tiktok&utm_medium=organic&utm_campaign=tiktok_profile",
+      "ios_url": "https://apps.apple.com/app/apple-store/id6811478003?pt=129450082&ct=tiktok_profile&mt=8"
+    },
+    {
+      "campaign": "itch_page",
+      "placement": "itch.io game page",
+      "android_url": "https://play.google.com/store/apps/details?id=com.dddumpling.game&utm_source=itchio&utm_medium=organic&utm_campaign=itch_page",
+      "ios_url": "https://apps.apple.com/app/apple-store/id6811478003?pt=129450082&ct=itch_page&mt=8"
+    },
+    {
+      "campaign": "reddit_organic",
+      "placement": "Organic Reddit posts",
+      "android_url": "https://play.google.com/store/apps/details?id=com.dddumpling.game&utm_source=reddit&utm_medium=organic&utm_campaign=reddit_organic",
+      "ios_url": "https://apps.apple.com/app/apple-store/id6811478003?pt=129450082&ct=reddit_organic&mt=8"
+    },
+    {
+      "campaign": "github_pages",
+      "placement": "https://koniho.github.io/dddumpling-game/",
+      "android_url": "https://play.google.com/store/apps/details?id=com.dddumpling.game&utm_source=github_pages&utm_medium=organic&utm_campaign=github_pages",
+      "ios_url": "https://apps.apple.com/app/apple-store/id6811478003?pt=129450082&ct=github_pages&mt=8"
+    }
+  ]
+}

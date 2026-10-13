@@ -36,10 +36,96 @@ final class TestVisuals extends Check {
     }
 
     private static void releaseBook(Layout L) {
-        releaseHistory();
+        releaseHistory();releaseEntryBounds();
         releaseOutside(L);
         releaseFeedback(L);
-        try(ReleaseExamples examples=new ReleaseExamples()) { releaseBookExamples(L); }
+        try(ReleaseExamples examples=new ReleaseExamples()) { releaseNavigation(L);releaseBookExamples(L); }
+    }
+    private static void releaseNavigation(Layout L) {
+        GameCore c=new GameCore(new Mem(),7210L);Ear ear=new Ear();c.sound=ear;
+        ReleaseNotes n=c.releaseNotes;n.show(c,L);n.update(ReleaseTransition.DURATION,L);
+        n.listScroll=Math.min(ReleaseNotes.maxScroll(L),ReleaseNotes.size(L)*2f);
+        float scroll=n.listScroll;
+        n.select(0,0,L);n.update(ReleaseNotes.PAGE_TIME,L);n.takeFeedback();
+        GameCore outgoing=n.demo;int land=outgoing.landChoice;
+        float y=(n.demoTop(L)+n.demoBottom(L))*.5f;
+        n.handleTouch(c,L,0,L.w*.7f,y);
+        check("demo waits for lift before acting",n.demo.landChoice==land);
+        n.handleTouch(c,L,2,L.w*.4f,y);n.handleTouch(c,L,1,L.w*.4f,y);
+        check("entry swipe starts without activating outgoing demo",n.pageMoving() && outgoing.landChoice==land && n.takeFeedback()==1);
+        n.update(ReleaseNotes.PAGE_TIME*.25f,L);
+        check("next entry slides old content left",n.feature==0 && n.entryOffset(L)<0f && !n.listing);
+        n.handleTouch(c,L,0,L.w*.7f,y);n.handleTouch(c,L,1,L.w*.7f,y);
+        check("entry slide ignores repeated input",n.takeFeedback()==0);
+        n.update(ReleaseNotes.PAGE_TIME*.5f,L);
+        check("new entry enters from right with fresh demo state",n.feature==1 && n.page==0 && n.demo==null && n.entryOffset(L)>0f);
+        n.update(ReleaseNotes.PAGE_TIME,L);
+        check("entry slide settles without exposing list",!n.pageMoving() && !n.listing && n.entryOffset(L)==0f);
+        n.handleTouch(c,L,0,L.w*.7f,n.navigationY(L));n.handleTouch(c,L,1,L.w*.7f,n.navigationY(L));
+        n.update(ReleaseNotes.PAGE_TIME,L);
+        check("next arrow reaches last entry in this version",n.feature==2 && n.page==0 && !n.canStep(1) && n.canStep(-1));
+        n.takeFeedback();n.touch(c,L,L.w*.7f,n.navigationY(L));
+        check("last arrow neither wraps nor plays feedback",!n.pageMoving() && n.feature==2 && n.takeFeedback()==0);
+        n.touch(c,L,L.w*.3f,n.navigationY(L));n.update(ReleaseNotes.PAGE_TIME*.25f,L);
+        check("previous arrow reverses the slide",n.entryOffset(L)>0f);
+        n.update(ReleaseNotes.PAGE_TIME,L);
+        y=(n.demoTop(L)+n.demoBottom(L))*.5f;
+        n.handleTouch(c,L,0,L.w*.3f,y);n.handleTouch(c,L,1,L.w*.6f,y);n.update(ReleaseNotes.PAGE_TIME,L);
+        check("right swipe returns to first entry",n.feature==0 && !n.canStep(-1) && n.canStep(1));
+        outgoing=n.demo;land=outgoing.landChoice;n.takeFeedback();
+        n.touch(c,L,L.w*.3f,n.navigationY(L));
+        check("first arrow does not leave the version",n.feature==0 && !n.pageMoving() && n.takeFeedback()==0);
+        y=(n.demoTop(L)+n.demoBottom(L))*.5f;
+        n.handleTouch(c,L,0,L.w*.6f,y);n.handleTouch(c,L,1,L.w*.55f,y);
+        check("short drag neither browses nor activates demo",n.feature==0 && !n.pageMoving() && outgoing.landChoice==land);
+        n.handleTouch(c,L,0,L.w*.6f,y);n.handleTouch(c,L,2,L.w*.6f,y+L.w*.2f);
+        n.handleTouch(c,L,1,L.w*.3f,y);
+        check("vertical gesture cannot turn into a page swipe",n.feature==0 && !n.pageMoving());
+        n.handleTouch(c,L,0,L.w*.6f,y);n.handleTouch(c,L,2,L.w*.3f,y);n.handleTouch(c,L,3,L.w*.3f,y);
+        check("cancelled swipe leaves demo untouched",n.feature==0 && !n.pageMoving() && outgoing.landChoice==land);
+        n.handleTouch(c,L,0,L.w*.6f,y);n.handleTouch(c,L,5,L.w*.6f,y);n.handleTouch(c,L,1,L.w*.3f,y);
+        check("extra finger cancels detail navigation",n.feature==0 && !n.pageMoving() && outgoing.landChoice==land);
+        n.handleTouch(c,L,0,L.w*.75f,y);n.handleTouch(c,L,1,L.w*.75f,y);
+        check("travel demo still responds to a tap",outgoing.landChoice!=land);
+        n.touch(c,L,L.w*.7f,n.navigationY(L));n.update(ReleaseNotes.PAGE_TIME,L);
+        n.back();n.update(ReleaseNotes.PAGE_TIME,L);
+        check("back after browsing restores list scroll and clears demo",n.listing && n.listScroll==scroll && n.demo==null);
+        n.select(2,0,L);n.update(ReleaseNotes.PAGE_TIME,L);
+        GameCore.Enemy pair=n.demo.enemies.get(0),partner=pair.link;
+        y=n.demoTop(L)+pair.y;
+        n.handleTouch(c,L,0,L.w*.08f+n.demo.enemyCentreX(pair),y);n.update(.1f,L);
+        n.handleTouch(c,L,5,L.w*.08f+n.demo.enemyCentreX(partner),y);
+        check("linked demo retains simultaneous two-finger play",pair.destroyed && partner.destroyed && !n.pageMoving());
+        n.handleTouch(c,L,3,L.w*.5f,y);
+        y=n.demoBottom(L)+ReleaseNotes.size(L);
+        n.handleTouch(c,L,0,L.w*.7f,y);n.handleTouch(c,L,1,L.w*.3f,y);
+        check("single-entry version cannot swipe out of its version",n.page==2 && n.feature==0 && !n.canStep(-1) && !n.canStep(1) && !n.pageMoving());
+        int first=ReleaseChange.ITEMS[0][0];
+        try {
+            ReleaseChange.ITEMS[0][0]=ReleaseChange.ITEMS[2][0];
+            n.select(0,0,L);n.update(ReleaseNotes.PAGE_TIME,L);
+            y=n.demoBottom(L)+ReleaseNotes.size(L);
+            n.handleTouch(c,L,0,L.w*.7f,y);n.handleTouch(c,L,1,L.w*.3f,y);
+            n.update(ReleaseNotes.PAGE_TIME,L);
+            check("linked demo copy supports browsing to next entry",n.page==0 && n.feature==1 && n.demo==null);
+        } finally { ReleaseChange.ITEMS[0][0]=first; }
+        n.select(0,0,L);n.update(ReleaseNotes.PAGE_TIME,L);
+        n.touch(c,L,L.w*.7f,n.navigationY(L));n.close();n.update(ReleaseTransition.DURATION,L);
+        n.show(c,L);n.update(ReleaseTransition.DURATION,L);
+        check("close while browsing clears pending entry and reopens list",n.listing && n.feature==0 && n.demo==null);
+    }
+    private static void releaseEntryBounds() {
+        GameCore c=new GameCore(new Mem(),7211L);ReleaseNotes n=c.releaseNotes;
+        for(int[] dimensions:new int[][]{{320,568},{393,852},{1080,2400}}) {
+            Layout small=new Layout();small.compute(dimensions[0],dimensions[1],0,0,0,0);
+            for(int version=0;version<ReleaseChange.ITEMS.length;version++)
+                for(int entry=0;entry<ReleaseChange.ITEMS[version].length;entry++) {
+                    n.select(version,entry,small);
+                    check("entry and footer fit portrait "+dimensions[0]+"/"+version+"/"+entry,
+                            n.windowTop(small)>=small.topSafe && n.windowBottom(small)<=small.h-small.padB
+                            && n.navigationY(small)-ReleaseNotes.size(small)>.5f*(n.demoTop(small)+n.demoBottom(small)));
+                }
+        }
     }
     private static void releaseFeedback(Layout L) {
         GameCore c=new GameCore(new Mem(),7205L);Ear ear=new Ear();c.sound=ear;ReleaseNotes n=c.releaseNotes;

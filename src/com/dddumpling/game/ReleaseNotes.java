@@ -19,6 +19,10 @@ final class ReleaseNotes extends Draw {
     private float listDownY,listStartScroll,age;
     private int pressedRow=-1;
     private boolean listDragging,listMoved;
+    private boolean detailTracking,detailMoved,detailVertical,demoGesture;
+    private float detailDownX,detailDownY;
+    private float entrySlide=1f;
+    private int entryDirection,pendingFeature=-1;
 
     static boolean available(GameCore c) {
         return !c.highScoreScreen.open && c.state==GameCore.TITLE && !c.starting() && !c.caseOpen && c.caseFade<0.01f
@@ -71,11 +75,21 @@ final class ReleaseNotes extends Draw {
             if(ReleaseContent.CONTEXT[item()][line]) extra+=.4f;
         return extra;
     }
-    float windowHeight(Layout L) { return (ReleaseChange.artUnits(change())+6f+copyExtra())*size(L); }
+    float windowHeight(Layout L) { return (ReleaseChange.artUnits(change())+8f+copyExtra())*size(L); }
     float windowTop(Layout L) { return L.topSafe+(L.h-L.topSafe-L.padB-windowHeight(L))*.5f; }
     float windowBottom(Layout L) { return windowTop(L)+windowHeight(L); }
     float demoTop(Layout L) { return windowTop(L)+3.6f*size(L); }
     float demoBottom(Layout L) { return demoTop(L)+ReleaseChange.artUnits(change())*size(L); }
+    float navigationY(Layout L) { return windowBottom(L)-size(L); }
+    boolean canStep(int direction) { return feature+direction>=0 && feature+direction<ReleaseChange.ITEMS[page].length; }
+    private void step(int direction,Layout L) {
+        if(listing || pageMoving() || !canStep(direction)) return;
+        cancelTouch();feedback();restartIn=-1f;
+        entryDirection=direction;pendingFeature=feature+direction;entrySlide=0f;
+    }
+    float entryOffset(Layout L) {
+        return entryDirection*L.w*(entrySlide<.5f ? -panelTravel(entrySlide*2f) : 1f-panelTravel(entrySlide*2f-1f));
+    }
     float closeY(Layout L) { return (listing?top(L):windowTop(L))+1.25f*size(L); }
     private void geometry(Layout L) {
         mini.compute(L.w*.84f,14f*size(L),0,0,0,0);
@@ -87,6 +101,7 @@ final class ReleaseNotes extends Draw {
     }
     void show(GameCore c,Layout L) {
         if(open || !available(c)) return;
+        cancelTouch();entrySlide=1f;pendingFeature=-1;
         feedbackSound=c.sound;
         feedback();
         transition.begin(c.releaseMascot,L,c.clock);
@@ -100,9 +115,9 @@ final class ReleaseNotes extends Draw {
     int takeFeedback() { int count=feedbackPending;feedbackPending=0;return count; }
     void close() {
         if(!open || transition.closing) return;
-        feedback();transition.close();
+        feedback();transition.close();detailTracking=false;pendingFeature=-1;entrySlide=1f;
     }
-    void cancelTouch() { gesture=false;listDragging=false;pressedRow=-1; }
+    void cancelTouch() { gesture=false;listDragging=false;pressedRow=-1;detailTracking=demoGesture=false; }
     private int rowAt(Layout L,float x,float y) {
         if(y<listTop(L) || y>listBottom(L)) return -1;
         for(int r=0;r<VERSIONS.length;r++) for(int i=0;i<ReleaseChange.ITEMS[r].length;i++)
@@ -125,12 +140,14 @@ final class ReleaseNotes extends Draw {
     void select(int release,int item,Layout L) {
         if(release<0 || release>=VERSIONS.length || item<0 || item>=ReleaseChange.ITEMS[release].length) return;
         if(open && listing && !transition.moving()) feedback();
+        cancelTouch();entrySlide=1f;pendingFeature=-1;
         page=release;feature=item;listing=false;pageSlide=0f;pageReturning=false;reset(L);
     }
-    boolean pageMoving() { return !listing && (pageReturning || pageSlide<1f); }
+    boolean pageMoving() { return !listing && (pageReturning || pageSlide<1f || entrySlide<1f); }
     float pageTravel() { return panelTravel(pageSlide); }
     void back() {
         if(transition.moving()) { close();return; }
+        cancelTouch();entrySlide=1f;pendingFeature=-1;
         if(listing) close();else pageReturning=true;
     }
     private void activated() { restartIn=ReleaseContent.AUTO_RESET[item()] ? RESTART_DELAY : -1f; }
@@ -156,6 +173,12 @@ final class ReleaseNotes extends Draw {
         if(!listing && !transition.moving()) {
             pageSlide=Math.max(0f,Math.min(1f,pageSlide+(pageReturning?-dt:dt)/PAGE_TIME));
             if(pageReturning && pageSlide==0f) { listing=true;pageReturning=false;demo=null; }
+        }
+        if(entrySlide<1f && !transition.moving() && !pageReturning) {
+            entrySlide=Math.min(1f,entrySlide+dt/PAGE_TIME);
+            if(entrySlide>=.5f && pendingFeature>=0) {
+                feature=pendingFeature;pendingFeature=-1;reset(L);
+            }
         }
         if(restartIn>=0f && !listing && !transition.moving() && !pageMoving()) {
             restartIn-=dt;
@@ -199,6 +222,38 @@ final class ReleaseNotes extends Draw {
             }
             return true;
         }
+        if(open && !listing) {
+            // Defer demo taps until lift, so browsing never activates the outgoing demo.
+            if(action==0) {
+                detailTracking=x>=L.w*.04f && x<=L.w*.96f && y>=windowTop(L) && y<=windowBottom(L);
+                detailMoved=detailVertical=demoGesture=false;detailDownX=x;detailDownY=y;gesture=true;
+                boolean header=Math.abs(y-closeY(L))<size(L)
+                        && ((x>L.w*.04f && x<L.w*.21f) || (x>L.w*.82f && x<L.w*.96f));
+                // The linked-pair demo owns its art region for simultaneous two-finger play.
+                demoGesture=demo!=null && change()==ReleaseChange.PAIR
+                        && x>=L.w*.08f && x<=L.w*.92f && y>=demoTop(L) && y<=demoBottom(L);
+                if(header || demoGesture) { detailTracking=false;touch(c,L,x,y); }
+            } else if(action==5 && demoGesture) {
+                touch(c,L,x,y);
+            } else if(action==5 || action==3) {
+                detailTracking=false;
+                if(action==3) cancelTouch();
+            } else if(detailTracking && (action==2 || action==1)) {
+                float dx=x-detailDownX,dy=y-detailDownY;
+                if(Math.max(Math.abs(dx),Math.abs(dy))>size(L)*.7f) detailMoved=true;
+                if(Math.abs(dy)>size(L)*2f && Math.abs(dy)>Math.abs(dx)) detailVertical=true;
+                if(action==1) {
+                    boolean swipe=!detailVertical && Math.abs(dx)>=L.w*ModeSelector.SWIPE_DISTANCE
+                            && Math.abs(dx)>Math.abs(dy)*1.25f;
+                    boolean tap=!detailMoved;
+                    cancelTouch();
+                    if(swipe) step(dx<0?1:-1,L);
+                    else if(tap) touch(c,L,x,y);
+                }
+            }
+            if(action==1) cancelTouch();
+            return true;
+        }
         if(action==0 || action==5) {
             if(open || !gesture) touch(c,L,x,y);
             gesture=true;
@@ -219,6 +274,11 @@ final class ReleaseNotes extends Draw {
             return true;
         }
         if(x<L.w*.21f && x>L.w*.04f && Math.abs(y-closeY(L))<s) { back();return true; }
+        if(Math.abs(y-navigationY(L))<s && ReleaseChange.ITEMS[page].length>1) {
+            if(Math.abs(x-L.w*.3f)<s) step(-1,L);
+            else if(Math.abs(x-L.w*.7f)<s) step(1,L);
+            return true;
+        }
         if(y<demoTop(L) || y>demoBottom(L) || x<L.w*.08f || x>L.w*.92f) return true;
         if(demo==null) { age=0f;activated();return true; }
         float dx=x-L.w*.08f,dy=y-demoTop(L);
@@ -266,7 +326,7 @@ final class ReleaseNotes extends Draw {
                 p.save();p.translate(-L.w*travel,0);drawPanel(glass,c,L,true);p.restore();
             }
             if(travel>0f) {
-                p.save();p.translate(L.w*(1f-travel),0);drawPanel(glass,c,L,false);p.restore();
+                p.save();p.translate(L.w*(1f-travel)+entryOffset(L),0);drawPanel(glass,c,L,false);p.restore();
             }
         }
         p.restore();
@@ -307,6 +367,12 @@ final class ReleaseNotes extends Draw {
             textY+=s*1.1f;
         }
 
+        if(ReleaseChange.ITEMS[page].length>1) {
+            float y=navigationY(L);
+            arrow(canStep(-1)?p:new OpacityPainter(p,.25f),L.w*.3f,y,-1,s);
+            arrow(canStep(1)?p:new OpacityPainter(p,.25f),L.w*.7f,y,1,s);
+            p.text((feature+1)+" / "+ReleaseChange.ITEMS[page].length,cx,y+s*.2f,type(s*.48f),INK_DIM,Painter.CENTER,false);
+        }
     }
     private void drawList(Painter p,GameCore c,Layout L) {
         float s=size(L);
