@@ -42,7 +42,7 @@ final class TestStages extends Check {
                 EnemyEntry.top(next,L);next.baseX=e.baseX;next.speed=e.speed;
                 check("ordinary top admission stays unchanged"+tag,EnemyEntry.clear(next,c,L));
             }
-            GameCore pair=new GameCore(new Mem(),172L);pair.startGame();pair.stage=16;
+            GameCore pair=new GameCore(new Mem(),172L);pair.startGame();pair.jumpToStage(16,L);
             check("header pair spawns",LinkedPairs.spawn(pair,L));
             pair.stageGap=100;
             GameCore.Enemy a=pair.enemies.get(0),b=pair.enemies.get(1);

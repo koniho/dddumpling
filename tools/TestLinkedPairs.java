@@ -1,6 +1,48 @@
 package com.dddumpling.game;
 
 final class TestLinkedPairs extends Check {
+    private static void schedules(Layout L) {
+        int positions=0;boolean soloOpening=false,pairOpening=false;
+        java.util.Set<Integer> schedules=new java.util.HashSet<Integer>();
+        for(int seed=0;seed<32;seed++) {
+            GameCore c=new GameCore(new Mem(),seed),same=new GameCore(new Mem(),seed);
+            c.startGame();same.startGame();
+            for(int stage:new int[]{16,17,18,21,26}) {
+                c.jumpToStage(stage,L);same.jumpToStage(stage,L);
+                int slots=c.pairSpawnSlots;
+                check("pair schedule is seeded "+seed+":"+stage,slots==same.pairSpawnSlots);
+                check("two distinct slots inside wave "+seed+":"+stage,
+                        Integer.bitCount(slots)==2 && (slots >>> c.stageQuota())==0);
+                if(stage==16)check("intro retains first and fourth pair "+seed,slots==9);
+                else {
+                    positions|=slots;schedules.add(slots);
+                    soloOpening|=(slots&1)==0;pairOpening|=(slots&1)!=0;
+                }
+            }
+        }
+        check("later waves vary both openings and pair placement",
+                soloOpening && pairOpening && schedules.size()>8 && Integer.bitCount(positions)==8);
+        GameCore c=wave(L,17);int slots=c.pairSpawnSlots;
+        c.enemies.clear();c.spawnedThisStage=Integer.numberOfTrailingZeros(slots);
+        for(int i=0;i<c.crowdCap();i++)add(c,L,new int[]{0},L.playTop);
+        for(int i=0;i<20;i++) {
+            check("crowded pair cannot reroll its schedule "+i,
+                    LinkedPairs.due(c) && !LinkedPairs.spawn(c,L) && c.pairSpawnSlots==slots);
+        }
+        c.enemies.clear();
+        check("reserved randomized pair spawns once room is available",
+                LinkedPairs.spawn(c,L) && c.enemies.size()==2 && c.enemies.get(0).link==c.enemies.get(1));
+        c.jumpToStage(10,L);
+        check("boss stage clears ordinary pair schedule",c.pairSpawnSlots==0 && !LinkedPairs.due(c));
+        c.jumpToStage(17,L);c.toTitle();
+        check("title clears pair schedule",c.pairSpawnSlots==0);
+        c.startGame();
+        check("new early run cannot reuse a late pair schedule",c.pairSpawnSlots==0 && !LinkedPairs.due(c));
+        c.toTitle();c.collected=Collect.MASK;c.landChoice=Lands.SWAMP;c.startGame();
+        check("starting directly in a later land plans two pairs",
+                c.stage==Lands.firstStage(Lands.SWAMP) && Integer.bitCount(c.pairSpawnSlots)==2);
+    }
+
     private static GameCore wave(Layout L, int stage) {
         GameCore c = new GameCore(new Mem(), 1601L);
         c.startGame();
@@ -14,6 +56,7 @@ final class TestLinkedPairs extends Check {
     }
 
     static void all(Layout L) {
+        schedules(L);
         RasterPainter mask = new RasterPainter(100, 60, 1);
         mask.clear(0xFF000000);
         mask.save();
@@ -77,7 +120,7 @@ final class TestLinkedPairs extends Check {
         check("pair uses opposite thumbs", a.word[0] < 3 && b.word[0] >= 3);
         check("paired keys do not overlap", b.baseX - a.baseX > L.enemyR * 3f && a.speed == b.speed);
         check("second pair is not due immediately after the first", !LinkedPairs.spawn(c, L));
-        check("later normal stages keep the pair", wave(L, 26).enemies.get(0).link != null);
+        check("later normal stages keep two scheduled pairs", Integer.bitCount(wave(L, 26).pairSpawnSlots) == 2);
         check("stage 16 gives slower falls than stage 14", Pacing.travelSeconds(16) > Pacing.travelSeconds(14));
         check("lesson has wider arrival spacing", Pacing.spawnInterval(16) > Pacing.spawnInterval(15));
         check("first lesson limits crowd to four", c.maxEnemies() == 4);
@@ -183,7 +226,7 @@ final class TestLinkedPairs extends Check {
         a.attackT = b.attackT = GameCore.ATTACK_TIME;
         c.update(DT, L);
         check("fatal pair breach ends run with exactly one hit", c.state == GameCore.OVER
-                && c.lives == 0 && c.enemies.isEmpty() && ((Ear)c.sound).damages == 1);
+                && c.lives == 0 && c.enemies.isEmpty() && c.pairSpawnSlots == 0 && ((Ear)c.sound).damages == 1);
 
 
         for (int mode = 0; mode < Power.COUNT; mode++) {

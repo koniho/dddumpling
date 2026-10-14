@@ -357,8 +357,9 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 
 ## Linked friends (stage 16 onward)
 
-Each ordinary wave from stage 16 contains two linked pairs: one opens the wave, and another
-arrives after three stage enemies have spawned (the opening pair and two solos). Each pair has one key from each thumb's keyboard
+Each ordinary wave from stage 16 contains two linked pairs. Stage 16 introduces them in the
+first and fourth spawn slots. Later waves choose two distinct random slots once when the stage
+begins; retrying a blocked entrance never rerolls them. Each pair has one key from each thumb's keyboard
 group. Each pair occupies one stage slot and two physical crowd slots; a blocked entrance defers the pair rather
 than replacing it with an ordinary enemy. Fruit keys grow curling vines; the cat and blue creature
 have padded paws, while the other characters have soft hands. Key-colored limbs intertwine at the center, with vines passing

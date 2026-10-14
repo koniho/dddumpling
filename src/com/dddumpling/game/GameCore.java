@@ -539,6 +539,8 @@ final class GameCore {
     int squishes;
     /** Stage enemies released; a linked pair occupies one quota slot. */
     int spawnedThisStage;
+    /** Two reserved linked-pair slots in this ordinary Adventure wave. */
+    int pairSpawnSlots;
     /** Stage enemies resolved, after both halves of a pair clear or breach. */
     int resolvedThisStage;
     /** Correct and incorrect presses over the whole run, for the accuracy readout. */
@@ -2048,6 +2050,7 @@ final class GameCore {
         cave.begin(this);
         if (sound != null) sound.selectMusic(normalMusicChoice());
         if(modes.selected==ModeSelector.TIME_ATTACK)timeAttack.begin(this);
+        LinkedPairs.beginStage(this);
         if (Starter.introPending(this)) onboarding.introduceCompanion(this);
     }
 
@@ -2063,6 +2066,7 @@ final class GameCore {
     }
 
     void toTitle() {
+        pairSpawnSlots = 0;
         titleKeyHint = 0f;
         diagnostic("to-title");
         survival.leave(this);
@@ -3501,6 +3505,7 @@ final class GameCore {
         else boss.leave();
         if (sound != null && hadBoss != (bk >= 0)) sound.bossMusic(bk >= 0);
         cave.begin(this);
+        LinkedPairs.beginStage(this);
         if (sound != null && bk < 0) sound.selectMusic(normalMusicChoice());
     }
 
@@ -3598,6 +3603,7 @@ final class GameCore {
      * early returns, or clear it where the early return is taken. There is no third way.
      */
     private void die() {
+        pairSpawnSlots = 0;
         diagnostic("game-over");
         if(onboarding.rescueGuide)onboarding.clear();
         finishTownRun();

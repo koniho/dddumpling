@@ -6,12 +6,29 @@ final class LinkedPairs {
     static final float WINDOW = 0.200f;
     private LinkedPairs() {}
 
+    static void beginStage(GameCore c) {
+        c.pairSpawnSlots = 0;
+        if (c.stage < FIRST_STAGE || c.survival.active || c.timeAttack.active
+                || c.boss.active() || Cave.active(c)) return;
+        int first = 0, second = 3;
+        if (c.stage > FIRST_STAGE) {
+            int quota = c.stageQuota();
+            first = c.rnd.nextInt(quota);
+            second = c.rnd.nextInt(quota - 1);
+            if (second >= first) second++;
+        }
+        // Choose once: crowded entrances must retry the same scheduled pair.
+        c.pairSpawnSlots = (1 << first) | (1 << second);
+    }
+
     static boolean due(GameCore c) {
         if ((c.survival.active?c.survival.seconds<60:c.stage<FIRST_STAGE)
                 || c.boss.active() || Cave.active(c)) return false;
         if (c.powerActive()) return c.mode != Power.MULTI && c.powerSpawnedEnemies%4 == 0
                 && !Boolean.TRUE.equals(PowerRush.replacement(c));
-        return c.survival.active?c.spawnedThisStage%6==0:c.spawnedThisStage == 0 || c.spawnedThisStage == 3;
+        return c.survival.active ? c.spawnedThisStage%6==0
+                : c.spawnedThisStage < c.stageQuota()
+                && (c.pairSpawnSlots & (1 << c.spawnedThisStage)) != 0;
     }
 
     static boolean spawn(GameCore c, Layout L) {

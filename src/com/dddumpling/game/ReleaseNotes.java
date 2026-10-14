@@ -166,7 +166,7 @@ final class ReleaseNotes extends Draw {
             Power w=new Power();w.mystery=true;w.teamAvailable=true;
             w.x=mini.w*.5f;w.y=(demoBottom(L)-demoTop(L))*.5f;demo.power=w;
         } else {
-            demo.stage=16;LinkedPairs.spawn(demo,mini);
+            demo.stage=16;LinkedPairs.beginStage(demo);LinkedPairs.spawn(demo,mini);
             for(GameCore.Enemy e:demo.enemies) { e.y=(demoBottom(L)-demoTop(L))*.48f;e.enterT=1f; }
         }
     }
