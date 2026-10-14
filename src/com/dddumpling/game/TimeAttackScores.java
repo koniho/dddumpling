@@ -52,9 +52,9 @@ final class TimeAttackScores extends Draw {
         p.text(name,L.w*.24f,top+s*1.8f,Math.min(type(s*.8f),L.w*.62f/(name.length()*.73f)),GOLD,Painter.LEFT,true);
         float font=Math.min(type(s*.5f),L.w*.026f);
         p.text(e==null?"NOT REACHED":e.cleared?"CLEARED":"ATTEMPT",L.w*.24f,top+s*3f,font,INK_DIM,Painter.LEFT,true);
-        String[] labels={"COMBAT TIME","ACCURACY","PROJECTILES DEFENDED","DAMAGE TAKEN","TIME TO FIRST DAMAGE"};
+        String[] labels={"COMBAT TIME","ACCURACY","PROJECTILES DEFENDED","DAMAGE TAKEN","FIRST HIT ON BOSS"};
         String[] values=e==null?new String[]{"--","--","--","--","--"}:new String[]{TimeAttack.time(Math.max(1,e.duration)),
-                e.accuracy(),Integer.toString(e.defended),Integer.toString(e.damage),e.firstDamageText()};
+                e.accuracy(),Integer.toString(e.defended),Integer.toString(e.damage),e.firstBossHitText()};
         for(int i=0;i<labels.length;i++)HighScoreScreen.stat(p,L.w*.13f,L.w*.73f,top+s*(4.5f+i*1.6f),font,labels[i],values[i]);
         p.line(L.w*.12f,top+s*12f,L.w*.88f,top+s*12f,0x35FFFFFF,s*.04f);
     }
@@ -69,11 +69,11 @@ final class TimeAttackScores extends Draw {
         p.text(duration,L.w*.63f,top+s*4.7f,Math.min(type(s*1.25f),L.w*.53f/(duration.length()*.73f)),INK,Painter.CENTER,true);
         p.text(run.won?"CLEAR TIME":"ATTEMPT TIME",L.w*.63f,top+s*6f,font,INK_DIM,Painter.CENTER,true);
         p.line(L.w*.12f,top+s*7f,L.w*.88f,top+s*7f,0x35FFFFFF,s*.04f);
-        String[] labels={"ACCURACY","PROJECTILES DEFENDED","DAMAGE TAKEN","TIME TO FIRST DAMAGE","BOSSES CLEARED"};
+        String[] labels={"ACCURACY","PROJECTILES DEFENDED","DAMAGE TAKEN","FIRST HIT ON BOSS","BOSSES CLEARED"};
         String[] values={run.accuracy(),run.legacy()?"--":Integer.toString(run.defended),run.legacy()?"--":Integer.toString(run.damage),
-                run.firstDamageText(),run.cleared+" / "+(challenge==TimeAttack.ALL?Boss.COUNT:1)};
+                run.firstBossHitText(),run.cleared+" / "+(challenge==TimeAttack.ALL?Boss.COUNT:1)};
         for(int i=0;i<labels.length;i++)HighScoreScreen.stat(p,L.w*.13f,L.w*.73f,top+s*(8.5f+i*1.6f),font,labels[i],values[i]);
-        String note=run.legacy()?"Earlier record: detailed stats unavailable.":challenge==TimeAttack.ALL?(run.encounters.length==0?"Earlier record: per-boss stats unavailable.":"OVERALL RUN STATS"):"";
+        String note=run.legacy()?"Earlier record: detailed stats unavailable.":run.firstBossHit==-2?"Earlier record: first boss hit unavailable.":challenge==TimeAttack.ALL?(run.encounters.length==0?"Earlier record: per-boss stats unavailable.":"OVERALL RUN STATS"):"";
         if(!note.isEmpty())p.text(note,x,top+s*17f,Math.min(font,L.w*.78f/(note.length()*.73f)),INK_DIM,Painter.CENTER,false);
     }
 }

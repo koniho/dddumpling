@@ -2262,6 +2262,7 @@ final class GameCore {
                 if(verdict==Boss.SPLIT)onboarding.learn(this,TutorialSpeech.CHAIN);
             }
             progress.bossDamage(boss.kind, beforeHp, boss.hp);
+            timeAttack.bossDamaged(beforeHp, boss.hp);
             if (verdict != Boss.NONE) return BossPlay.press(this, g, verdict, L);
         }
 
@@ -3106,6 +3107,7 @@ final class GameCore {
                 else if(priorCover==0f && cover>0f && boss.open()) sound.slimeCover(false);
             }
             progress.bossDamage(boss.kind, beforeHp, boss.hp);
+            timeAttack.bossDamaged(beforeHp, boss.hp);
             if (boss.octoPlayerHit && state == PLAY) BossPlay.octoWhipHit(this, L);
             if (boss.octoImpact) {
                 shake = Math.max(shake, 1.12f);

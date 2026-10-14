@@ -118,6 +118,7 @@ final class TestTimeAttack extends Check {
         }
     }
     static void all(Layout L) {
+        bossHitStatistics(L);
         encounterStatistics(L);
         statistics(L);
         titleSkit();
@@ -127,6 +128,7 @@ final class TestTimeAttack extends Check {
             Bot.Result run=new Bot(6f,.20f,.04f,false,150+boss).play(played,L,180);
             check("bounded player completes or loses real encounter "+boss,
                     played.state==GameCore.OVER && played.timeAttack.finished && played.timeAttack.seconds>0);
+            check("real boss clears record damage dealt "+boss,played.timeAttack.cleared==0 || played.timeAttack.result.firstBossHit>=0);
             check("only successful bounded clears set records "+boss,
                     (played.timeAttack.best[0][boss]>0)==played.timeAttack.won);
             System.out.println("    Time Attack "+Boss.NAMES[boss]+": "+TimeAttack.time(played.timeAttack.millis())
@@ -238,9 +240,9 @@ final class TestTimeAttack extends Check {
         String saved=loaded.encode();
         loaded.load(saved.replace("~0,1250,","~0,1251,"));
         check("inconsistent encounter totals rejected atomically",loaded.encode().equals(saved));
-        String old=c.timeAttack.encode().replaceAll("~[^;|~]+", "").replaceFirst("^3;","2;");
+        String old=c.timeAttack.encode().replaceAll("~[^;|~]+", "");
         TimeAttack migrated=new TimeAttack();migrated.load(old);
-        check("version two records retain totals without inventing encounters",migrated.histories[0][TimeAttack.ALL].latest!=null
+        check("records without encounters retain totals without inventing encounters",migrated.histories[0][TimeAttack.ALL].latest!=null
                 && migrated.histories[0][TimeAttack.ALL].latest.encounters.length==0
                 && migrated.histories[0][TimeAttack.ALL].latest.hits==run.hits);
         c.toTitle();c.returnFade=0;c.highScoreScreen.show(c);c.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
@@ -272,6 +274,63 @@ final class TestTimeAttack extends Check {
         c=start(TimeAttack.ALL);c.timeAttack.finish(c,false);loaded=new TimeAttack();loaded.load(c.timeAttack.encode());
         check("immediate exit still saves a valid partial encounter",loaded.histories[0][TimeAttack.ALL].latest!=null
                 && loaded.histories[0][TimeAttack.ALL].latest.encounters[0].duration==1);
+    }
+    private static void bossHitStatistics(Layout L) {
+        GameCore c=start(Boss.SLIME);
+        c.timeAttack.tick(c,10); // Arrival is excluded.
+        c.boss.intro=0;c.timeAttack.tick(c,2);
+        c.takeHit(L.w*.5f,L);
+        c.tapKey(Roster.at(c.runFullRoster,0),L);
+        c.timeAttack.bossDamaged(10,10);c.timeAttack.bossDamaged(10,11);
+        check("damage taken and blocked inputs do not start the boss-hit statistic",c.timeAttack.firstBossHit==-1);
+        Pause.open(c);c.timeAttack.tick(c,10);Pause.resume(c);
+        c.timeAttack.tick(c,3);
+        c.boss.etype[0]=Boss.E_GLOB;c.boss.ex[0]=L.w*.5f;
+        c.boss.ey[0]=L.h*.45f;c.boss.er[0]=L.enemyR;
+        float hp=c.boss.hp;c.boss.grab(0);
+        check("actual glob damage records the boss hit through gesture handling",
+                BossPlay.dragTo(c,0,c.boss.ey[0],L) && c.boss.hp<hp && c.timeAttack.firstBossHit==5000);
+        c.timeAttack.tick(c,1);c.timeAttack.bossDamaged(9,8);
+        c.timeAttack.finish(c,false);
+        check("first boss hit uses combat time and ignores subsequent hits",c.timeAttack.result.firstBossHit==5000
+                && c.timeAttack.result.damage==1 && c.timeAttack.result.firstBossHitText().equals("0:05.00"));
+        TimeAttack loaded=new TimeAttack();loaded.load(c.timeAttack.encode());
+        check("boss-hit timing round trips separately from damage taken",loaded.histories[0][Boss.SLIME].latest!=null
+                && loaded.histories[0][Boss.SLIME].latest.firstBossHit==5000
+                && loaded.histories[0][Boss.SLIME].latest.firstDamage==2000);
+        c.timeAttack.bossDamaged(8,7);
+        check("finished result cannot gain another hit",c.timeAttack.firstBossHit==5000);
+        c.timeAttack.leave();c.timeAttack.bossDamaged(8,7);
+        check("leaving clears and disables boss-hit timing",c.timeAttack.firstBossHit==-1);
+        c=start(TimeAttack.ALL);
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            c.boss.intro=0;c.timeAttack.tick(c,boss+1);
+            c.timeAttack.bossDamaged(10,9);c.timeAttack.tick(c,1);beat(c,L);
+        }
+        check("overall first boss hit uses run origin",c.timeAttack.result.firstBossHit==1000);
+        for(int boss=0;boss<Boss.COUNT;boss++)check("each boss hit uses encounter origin "+boss,
+                c.timeAttack.result.encounters[boss].firstBossHit==(boss+1)*1000);
+        loaded=new TimeAttack();loaded.load(c.timeAttack.encode());
+        check("all boss hit times persist",loaded.histories[0][TimeAttack.ALL].latest!=null
+                && loaded.histories[0][TimeAttack.ALL].latest.encounters[Boss.COUNT-1].firstBossHit==Boss.COUNT*1000);
+        String saved=loaded.encode();
+        loaded.load(saved.replace("~0,2000,1,0,0,0,0,-1,1000","~0,2000,1,0,0,0,0,-1,1500"));
+        check("inconsistent overall and encounter boss-hit times rejected",loaded.encode().equals(saved));
+        for(int version:new int[]{2,3}) {
+            TimeAttack old=new TimeAttack();
+            StringBuilder data=new StringBuilder(Integer.toString(version));
+            for(int i=0;i<3*TimeAttack.CHOICES;i++)data.append(';').append(i==0?6000:0);
+            for(int i=0;i<3*TimeAttack.CHOICES;i++)data.append('|').append(i==0?
+                    "1;1,6000,0,1,1,3,1,2,1,2000"+(version==3?"~0,6000,1,3,1,2,1,2000":""):"0");
+            old.load(data.toString());
+            TimeAttackHistory.Run r=old.histories[0][0].latest;
+            check("earlier player-damage timing is unavailable as a boss hit v"+version,r!=null
+                    && r.firstBossHit==-2 && r.firstBossHitText().equals("N/A") && r.firstDamage==2000 && r.damage==1);
+            if(version==3)check("earlier encounter timing remains unavailable",r.encounters[0].firstBossHitText().equals("N/A"));
+            TimeAttack again=new TimeAttack();again.load(old.encode());
+            check("resaving earlier records never reinterprets their timing v"+version,
+                    again.histories[0][0].latest!=null && again.histories[0][0].latest.firstBossHit==-2 && again.best[0][0]==6000);
+        }
     }
     private static void statistics(Layout L) {
         for(int boss=0;boss<Boss.COUNT;boss++) {
@@ -316,8 +375,8 @@ final class TestTimeAttack extends Check {
         check("failed attempt is summarized but not ranked",c.timeAttack.histories[0][0].runs.isEmpty()
                 && c.timeAttack.histories[0][0].displayCount()==1 && !c.timeAttack.histories[0][0].latest.won);
         c=start(Boss.SLIME);c.timeAttack.seconds=2;beat(c,L);
-        check("no-hit summary distinguishes no damage",c.timeAttack.result.firstDamage==-1
-                && c.timeAttack.result.firstDamageText().equals("NO DAMAGE"));
+        check("no-hit summary distinguishes no boss damage",c.timeAttack.result.firstBossHit==-1
+                && c.timeAttack.result.firstBossHitText().equals("NO HIT"));
         TimeAttackHistory history=new TimeAttackHistory();
         for(int i=1;i<=12;i++)history.add(new TimeAttackHistory.Run(i,1000+i,0,1,true,i,0,i,0,-1));
         history.add(new TimeAttackHistory.Run(13,500,0,0,false,2,1,0,1,400));
