@@ -19,7 +19,7 @@ final class ReleaseNotes extends Draw {
     private float listDownY,listStartScroll,age;
     private int pressedRow=-1;
     private boolean listDragging,listMoved;
-    private boolean detailTracking,detailMoved,detailVertical,demoGesture;
+    private boolean detailTracking,detailMoved,detailVertical,detailOutside,demoGesture;
     private float detailDownX,detailDownY;
     private float entrySlide=1f;
     private int entryDirection,pendingFeature=-1;
@@ -78,6 +78,9 @@ final class ReleaseNotes extends Draw {
     float windowHeight(Layout L) { return (ReleaseChange.artUnits(change())+8f+copyExtra())*size(L); }
     float windowTop(Layout L) { return L.topSafe+(L.h-L.topSafe-L.padB-windowHeight(L))*.5f; }
     float windowBottom(Layout L) { return windowTop(L)+windowHeight(L); }
+    private boolean detailHit(Layout L,float x,float y) {
+        return x>=L.w*.04f && x<=L.w*.96f && y>=windowTop(L) && y<=windowBottom(L);
+    }
     float demoTop(Layout L) { return windowTop(L)+3.6f*size(L); }
     float demoBottom(Layout L) { return demoTop(L)+ReleaseChange.artUnits(change())*size(L); }
     float navigationY(Layout L) { return windowBottom(L)-size(L); }
@@ -117,7 +120,7 @@ final class ReleaseNotes extends Draw {
         if(!open || transition.closing) return;
         feedback();transition.close();detailTracking=false;pendingFeature=-1;entrySlide=1f;
     }
-    void cancelTouch() { gesture=false;listDragging=false;pressedRow=-1;detailTracking=demoGesture=false; }
+    void cancelTouch() { gesture=false;listDragging=false;pressedRow=-1;detailTracking=detailOutside=demoGesture=false; }
     private int rowAt(Layout L,float x,float y) {
         if(y<listTop(L) || y>listBottom(L)) return -1;
         for(int r=0;r<VERSIONS.length;r++) for(int i=0;i<ReleaseChange.ITEMS[r].length;i++)
@@ -225,7 +228,7 @@ final class ReleaseNotes extends Draw {
         if(open && !listing) {
             // Defer demo taps until lift, so browsing never activates the outgoing demo.
             if(action==0) {
-                detailTracking=x>=L.w*.04f && x<=L.w*.96f && y>=windowTop(L) && y<=windowBottom(L);
+                detailTracking=true;detailOutside=!detailHit(L,x,y);
                 detailMoved=detailVertical=demoGesture=false;detailDownX=x;detailDownY=y;gesture=true;
                 boolean header=Math.abs(y-closeY(L))<size(L)
                         && ((x>L.w*.04f && x<L.w*.21f) || (x>L.w*.82f && x<L.w*.96f));
@@ -245,10 +248,12 @@ final class ReleaseNotes extends Draw {
                 if(action==1) {
                     boolean swipe=!detailVertical && Math.abs(dx)>=L.w*ModeSelector.SWIPE_DISTANCE
                             && Math.abs(dx)>Math.abs(dy)*1.25f;
-                    boolean tap=!detailMoved;
+                    boolean tap=!detailMoved,outside=detailOutside;
                     cancelTouch();
-                    if(swipe) step(dx<0?1:-1,L);
-                    else if(tap) touch(c,L,x,y);
+                    if(outside) {
+                        if(tap && !detailHit(L,x,y)) back();
+                    } else if(swipe) step(dx<0?1:-1,L);
+                    else if(tap && detailHit(L,x,y)) touch(c,L,x,y);
                 }
             }
             if(action==1) cancelTouch();

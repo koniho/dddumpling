@@ -813,6 +813,17 @@ public final class IOSInputTest extends Check {
         check("native feature back keeps release list open",c.releaseNotes.listing && c.releaseNotes.open);
         tap(game,ReleaseNotes.iconX(l,2,0),ReleaseNotes.rowY(l,2)-c.releaseNotes.listScroll);
         for(int i=0;i<24;i++) game.update(DT);
+        float scroll=c.releaseNotes.listScroll;
+        game.touch(one(0,7,0,0));game.touch(one(3,7,0,0));game.touch(one(1,7,0,0));
+        check("native cancelled outside detail tap stays put",!c.releaseNotes.pageMoving());
+        game.touch(one(0,7,0,0));
+        check("native outside detail press waits for lift",!c.releaseNotes.pageReturning);
+        game.touch(one(1,7,0,0));
+        check("native outside detail tap reverses page only",c.releaseNotes.pageReturning && !c.releaseNotes.transition.closing && !c.starting());
+        for(int i=0;i<24;i++) game.update(DT);
+        check("native outside detail tap preserves list and scroll",c.releaseNotes.listing && c.releaseNotes.page==2 && c.releaseNotes.listScroll==scroll);
+        tap(game,ReleaseNotes.iconX(l,2,0),ReleaseNotes.rowY(l,2)-scroll);
+        for(int i=0;i<24;i++) game.update(DT);
         game.touch(one(0,8,l.w*0.9f,c.releaseNotes.closeY(l)));
         game.touch(two(5,1,8,l.w*0.9f,ReleaseNotes.top(l),9,l.keyX[0],l.keyY[0]));
         game.touch(one(1,8,l.keyX[0],l.keyY[0]));
