@@ -11,6 +11,7 @@ final class SettingsUi {
             HIT_GENERAL = 9, HIT_MINIGAMES = 10, HIT_EASIER = 11, HIT_HARDER = 12, HIT_RESET_NEWS = 13, HIT_ALL_LANDS = 14;
     static final int GENERAL = 0, MINIGAMES = 1, POWERS = 2, PROGRESS = 3;
     static final int HIT_POWERS = 15, HIT_PROGRESS = 16, HIT_COLLECT_ALL = 17, HIT_RESET_PROGRESS = 18;
+    static final int HIT_COMPLETE_BOSSES = 19;
     static final String[] TABS = {"RUN", "MINIGAMES", "POWERS", "PROGRESS"};
     /** Power shortcuts and minigame shortcuts share action IDs, not a row. */
     static final int HIT_TEST = 200;
@@ -49,7 +50,7 @@ final class SettingsUi {
     /** Reset for persistent difficulty progression. */
     float difficultyLabelY, difficultyY, difficultyH;
     /** Empty-the-display-case button, at the foot of the panel. */
-    float clearLabelY, clearY, clearH, collectAllY, resetProgressY;
+    float clearLabelY, clearY, clearH, collectAllY, resetProgressY, completeBossesY;
 
     private int tab;
 
@@ -74,8 +75,9 @@ final class SettingsUi {
         clearLabelY=panelT+s*24f; clearY=clearLabelY+s*.5f;
         if(tab==PROGRESS) {
             debuffY=testY;
-            difficultyLabelY=panelT+s*14f;difficultyY=difficultyLabelY+s*.5f;
-            clearLabelY=panelT+s*19f;clearY=clearLabelY+s*.5f;
+            completeBossesY=debuffY+s*3f;
+            difficultyLabelY=panelT+s*17f;difficultyY=difficultyLabelY+s*.5f;
+            clearLabelY=panelT+s*22f;clearY=clearLabelY+s*.5f;
             collectAllY=clearY+s*3f;resetProgressY=collectAllY+s*3f;
         }
         if(tab==MINIGAMES) {
@@ -135,6 +137,7 @@ final class SettingsUi {
                 if(inChip(x,1,2)) return HIT_RESET_LANDS;
             }
             if(y>=difficultyY && y<=difficultyY+difficultyH) return HIT_RESET_NEWS;
+            if(y>=completeBossesY && y<=completeBossesY+testH && inChip(x,0,1)) return HIT_COMPLETE_BOSSES;
             if(y>=clearY && y<=clearY+clearH) return HIT_CLEAR;
             if(y>=resetProgressY && y<=resetProgressY+testH && inChip(x,0,1)) return HIT_RESET_PROGRESS;
             if(y>=collectAllY && y<=collectAllY+testH && inChip(x,0,1)) return HIT_COLLECT_ALL;

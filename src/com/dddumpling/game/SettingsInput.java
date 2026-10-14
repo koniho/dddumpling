@@ -115,6 +115,7 @@ final class SettingsInput {
         else if(h==SettingsUi.HIT_CLEAR) c.tapClearCase();
         else if(h==SettingsUi.HIT_RESET_PROGRESS) DevSettings.resetProgress(c);
         else if(h==SettingsUi.HIT_COLLECT_ALL) CaseUi.collectAll(c);
+        else if(h==SettingsUi.HIT_COMPLETE_BOSSES) DevSettings.completeBosses(c);
         else if(h==SettingsUi.HIT_ROSTER) c.setNextRoster(!c.fullRoster);
         else if(h==SettingsUi.HIT_GAMEOVER) c.endCurrentRun();
         else if(h==SettingsUi.HIT_RESET_NEWS) c.releaseMascot.reset(c);

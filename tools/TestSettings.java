@@ -289,6 +289,44 @@ final class TestSettings extends Check {
         check("live reset does not restart gameplay",reopened.state==GameCore.PLAY && reopened.score==44 && reopened.stage==stage);
     }
 
+    private static void developerBossCompletion(Layout L) {
+        group("developer boss completion");
+        for(boolean tracked:new boolean[]{false,true}) {
+            Mem save=new Mem();
+            int slime=Collect.bossPrize(Boss.SLIME);
+            save.collected=Collect.encode(Collect.add(1L,slime));
+            save.collectionCounts[0]=2;save.collectionCounts[slime]=3;save.collectTotal=5;
+            GameCore c=new GameCore(save,179,tracked);
+            LandPicker.reset(c);
+            c.clearArmed=c.resetProgressArmed=true;
+            SettingsUi ui=new SettingsUi();ui.compute(L,SettingsUi.PROGRESS);
+            int hit=ui.hit(L.w*.5f,ui.completeBossesY+ui.testH*.5f);
+            check("boss completion chip fits between land and news controls",hit==SettingsUi.HIT_COMPLETE_BOSSES
+                    && ui.completeBossesY>ui.debuffY+ui.testH
+                    && ui.completeBossesY+ui.testH<ui.difficultyLabelY
+                    && ui.resetProgressY+ui.testH<ui.panelB);
+            SettingsInput.action(c,L,hit);
+            long expected=Collect.add(1L,slime);
+            for(int boss=0;boss<Boss.COUNT;boss++)expected=Collect.add(expected,Collect.bossPrize(boss));
+            check("completion preserves existing collectibles and only adds boss friends",c.collected==expected
+                    && c.collectionCounts[0]==2 && c.collectionCounts[slime]==3
+                    && c.collectTotal==5+Boss.COUNT-1 && !c.clearArmed && !c.resetProgressArmed);
+            SettingsInput.action(c,L,hit);
+            check("completing bosses twice does not add duplicate rewards",c.collectTotal==5+Boss.COUNT-1);
+            for(GameCore restored:new GameCore[]{c,new GameCore(save,180,tracked)}) {
+                check("boss completion unlocks modes persistently",ModeSelector.allBossesUnlocked(restored)
+                        && ModeSelector.unlocked(restored,ModeSelector.SURVIVAL)
+                        && ModeSelector.unlocked(restored,ModeSelector.TIME_ATTACK));
+                boolean lands=true;
+                for(int land=0;land<Lands.COUNT;land++)
+                    if(Lands.playable(land))lands &= LandPicker.unlocked(restored,land);
+                check("completion restores boss land unlocks after reset lands",lands);
+                check("completion leaves run and records alone",restored.state==GameCore.TITLE
+                        && restored.score==0 && restored.best==0 && restored.highScores.runs.isEmpty()
+                        && restored.progress.count("boss_slime_won")==0);
+            }
+        }
+    }
     private static void developerReset(Layout L) {
         group("developer fresh player reset");
         for(boolean tracked:new boolean[]{false,true}) for(int mode=0;mode<ModeSelector.NAMES.length;mode++) {
@@ -338,6 +376,7 @@ final class TestSettings extends Check {
     }
 
     static void all(Layout L) {
+        developerBossCompletion(L);
         developerReset(L);
         scoreReset(L);
         panelTiming(L);

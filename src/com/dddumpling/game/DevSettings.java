@@ -49,6 +49,7 @@ final class DevSettings extends Draw {
             label(p,u,u.debuffY-s*.6f,"LAND DISCOVERY",s);
             chip(p,u,u.debuffY,0,2,"ALL LANDS",s,false);
             chip(p,u,u.debuffY,1,2,"RESET LANDS",s,false);
+            chip(p,u,u.completeBossesY,0,1,"COMPLETE ALL BOSSES",s,ModeSelector.allBossesUnlocked(c));
             label(p,u,u.difficultyLabelY,"RELEASE BOOK",s);
             chip(p,u,u.difficultyY,0,1,"RESET NEWS",s,false);
             label(p,u,u.clearLabelY,"COLLECTION: "+Collect.owned(c.collected)+" / "+Collect.COUNT,s);
@@ -65,6 +66,23 @@ final class DevSettings extends Draw {
         label(p,u,u.runLabelY,"RUN CONTROLS",s);
         chip(p,u,u.runY,0,2,c.fullRoster?"NEXT RUN: 6 KEYS":"NEXT RUN: 4 KEYS",s,false);
         chip(actions,u,u.runY,1,2,"END RUN",s,false);
+    }
+    static void completeBosses(GameCore c) {
+        if(!BuildFlags.DEVELOPER)return;
+        c.clearArmed=c.resetProgressArmed=false;
+        int added=0;
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            int prize=Collect.bossPrize(boss);
+            if(c.collectionCounts[prize]==0) {c.collectionCounts[prize]=1;added++;}
+            c.collected=Collect.add(c.collected,prize);
+            LandPicker.reward(c,prize);
+        }
+        c.collectTotal=(int)Math.min(Integer.MAX_VALUE,(long)c.collectTotal+added);
+        if(c.store!=null) {
+            c.store.saveCollected(Collect.encode(c.collected));
+            c.store.saveCollectionCounts(c.collectionCounts);
+            c.store.saveCollectTotal(c.collectTotal);
+        }
     }
     static void resetProgress(GameCore c) {
         if(!BuildFlags.DEVELOPER)return;
