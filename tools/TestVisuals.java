@@ -39,7 +39,7 @@ final class TestVisuals extends Check {
         releaseHistory();releaseEntryBounds();
         releaseOutside(L);
         releaseFeedback(L);
-        try(ReleaseExamples examples=new ReleaseExamples()) { releaseNavigation(L);releaseBookExamples(L); }
+        try(ReleaseExamples examples=new ReleaseExamples()) { releaseNavigation(L);releaseDetailOutside(L);releaseBookExamples(L); }
     }
     private static void releaseNavigation(Layout L) {
         GameCore c=new GameCore(new Mem(),7210L);Ear ear=new Ear();c.sound=ear;
@@ -114,6 +114,40 @@ final class TestVisuals extends Check {
         n.show(c,L);n.update(ReleaseTransition.DURATION,L);
         check("close while browsing clears pending entry and reopens list",n.listing && n.feature==0 && n.demo==null);
     }
+    private static void releaseDetailOutside(Layout L) {
+        GameCore c=new GameCore(new Mem(),7212L);ReleaseNotes n=c.releaseNotes;
+        n.show(c,L);n.update(ReleaseTransition.DURATION,L);
+        n.listScroll=Math.min(ReleaseNotes.maxScroll(L),ReleaseNotes.size(L)*2f);
+        float scroll=n.listScroll;
+        for(int side=0;side<4;side++) {
+            n.select(0,0,L);n.update(ReleaseNotes.PAGE_TIME,L);
+            float x=side==0?L.w*.02f:side==1?L.w*.98f:L.w*.5f;
+            float y=side==2?n.windowTop(L)-1f:side==3?n.windowBottom(L)+1f:(n.windowTop(L)+n.windowBottom(L))*.5f;
+            n.handleTouch(c,L,0,x,y);
+            check("outside detail waits for tap lift "+side,!n.pageReturning);
+            n.handleTouch(c,L,1,x,y);
+            check("outside detail starts back slide "+side,n.pageReturning && n.open && !n.transition.closing);
+            n.update(ReleaseNotes.PAGE_TIME,L);
+            check("outside detail restores version list "+side,n.listing && n.page==0 && n.listScroll==scroll && n.demo==null);
+        }
+        n.select(0,0,L);n.update(ReleaseNotes.PAGE_TIME,L);
+        float x=L.w*.02f,y=(n.windowTop(L)+n.windowBottom(L))*.5f;
+        n.handleTouch(c,L,0,x,y);n.handleTouch(c,L,2,x,y+L.unit*3f);n.handleTouch(c,L,1,x,y);
+        check("outside drag returning to start does not go back",!n.pageMoving());
+        n.handleTouch(c,L,0,x,y);n.handleTouch(c,L,1,L.w*.8f,y);
+        check("outside swipe cannot browse or dismiss",!n.pageMoving() && n.feature==0);
+        n.handleTouch(c,L,0,x,y);n.handleTouch(c,L,3,x,y);n.handleTouch(c,L,1,x,y);
+        check("cancelled outside tap does not go back",!n.pageMoving());
+        n.handleTouch(c,L,0,x,y);n.handleTouch(c,L,5,x,y);n.handleTouch(c,L,1,x,y);
+        check("second finger cancels outside tap",!n.pageMoving());
+        n.handleTouch(c,L,0,x,y);n.cancelTouch();n.handleTouch(c,L,1,x,y);
+        check("lifecycle cancellation clears outside tap",!n.pageMoving());
+        x=L.w*.04f;y=n.demoBottom(L)+ReleaseNotes.size(L);
+        n.handleTouch(c,L,0,x,y);n.handleTouch(c,L,1,x-1f,y);
+        check("inside tap ending outside cannot return to list",!n.pageMoving());
+        n.handleTouch(c,L,0,x-1f,y);n.handleTouch(c,L,1,x+1f,y);
+        check("outside tap ending inside cannot return to list",!n.pageMoving());
+    }
     private static void releaseEntryBounds() {
         GameCore c=new GameCore(new Mem(),7211L);ReleaseNotes n=c.releaseNotes;
         for(int[] dimensions:new int[][]{{320,568},{393,852},{1080,2400}}) {
@@ -177,7 +211,7 @@ final class TestVisuals extends Check {
         n.listScroll=0f;n.handleTouch(c,L,0,x,y);n.handleTouch(c,L,1,x,y);
         n.update(ReleaseNotes.PAGE_TIME,L);
         n.handleTouch(c,L,0,0,0);n.handleTouch(c,L,1,0,0);
-        check("feature outside taps retain existing behavior",!n.listing && !n.transition.closing);
+        check("feature outside tap returns without closing book",n.pageReturning && !n.transition.closing);
     }
     private static void releaseHistory() {
         for(int[] dimensions:new int[][]{{320,568},{393,852},{640,1400},{1080,2400},{852,393}}) {
