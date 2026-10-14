@@ -238,6 +238,7 @@ final class BossPlay {
         float beforeHp = c.boss.hp;
         int r = c.boss.dragTo(x, y, L);
         c.progress.bossDamage(c.boss.kind, beforeHp, c.boss.hp);
+        c.timeAttack.bossDamaged(beforeHp, c.boss.hp);
         if (c.boss.mushroomShakeCue && c.sound != null) c.sound.mushroomShake();
         c.boss.mushroomShakeCue = false;
         if (r != Boss.HIT) return false;
@@ -270,6 +271,7 @@ final class BossPlay {
         float beforeHp = c.boss.hp;
         boolean changed = c.boss.pinch(distance, x1, y1, x2, y2, c.rnd);
         c.progress.bossDamage(c.boss.kind, beforeHp, c.boss.hp);
+        c.timeAttack.bossDamaged(beforeHp, c.boss.hp);
         if (!changed) return false;
         c.onboarding.bossDamaged(c);
         c.companion.react(RunCompanion.BOSS_HIT, 1f);

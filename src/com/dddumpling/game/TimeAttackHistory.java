@@ -12,20 +12,28 @@ final class TimeAttackHistory {
 
     static final class Encounter {
         final int boss,hits,misses,defended,damage;
-        final long duration,firstDamage;
+        final long duration,firstDamage,firstBossHit;
         final boolean cleared;
         Encounter(int boss,long duration,boolean cleared,int hits,int misses,int defended,int damage,long firstDamage) {
+            this(boss,duration,cleared,hits,misses,defended,damage,firstDamage,-2);
+        }
+        Encounter(int boss,long duration,boolean cleared,int hits,int misses,int defended,int damage,long firstDamage,long firstBossHit) {
+            this.firstBossHit=firstBossHit;
             this.boss=boss;this.duration=duration;this.cleared=cleared;this.hits=hits;this.misses=misses;
             this.defended=defended;this.damage=damage;this.firstDamage=firstDamage;
         }
         String accuracy() {return TimeAttackHistory.accuracy(hits,misses);}
-        String firstDamageText() {return damage==0?"NO DAMAGE":TimeAttack.time(Math.max(1,firstDamage));}
+        String firstBossHitText() {return bossHitText(firstBossHit);}
+    }
+    // -2 means an earlier record that did not measure damage dealt to the boss.
+    private static String bossHitText(long time) {
+        return time==-2?"N/A":time<0?"NO HIT":TimeAttack.time(Math.max(1,time));
     }
     private static String accuracy(int hits,int misses) {
         return (long)hits+misses==0?"--":Math.round(100.0*hits/((long)hits+misses))+"%";
     }
     static final class Run {
-        final long id,duration,firstDamage;
+        final long id,duration,firstDamage,firstBossHit;
         final int character,cleared,hits,misses,defended,damage;
         final boolean won;
         final Encounter[] encounters;
@@ -35,13 +43,18 @@ final class TimeAttackHistory {
         }
         Run(long id,long duration,int character,int cleared,boolean won,int hits,int misses,
                 int defended,int damage,long firstDamage,Encounter[] encounters) {
+            this(id,duration,character,cleared,won,hits,misses,defended,damage,firstDamage,-2,encounters);
+        }
+        Run(long id,long duration,int character,int cleared,boolean won,int hits,int misses,
+                int defended,int damage,long firstDamage,long firstBossHit,Encounter[] encounters) {
+            this.firstBossHit=firstBossHit;
             this.encounters=encounters.clone();
             this.id=id;this.duration=duration;this.character=character;this.cleared=cleared;this.won=won;
             this.hits=hits;this.misses=misses;this.defended=defended;this.damage=damage;this.firstDamage=firstDamage;
         }
         boolean legacy() {return id==0;}
         String accuracy() {return legacy()?"--":TimeAttackHistory.accuracy(hits,misses);}
-        String firstDamageText() {return legacy()?"--":damage==0?"NO DAMAGE":TimeAttack.time(Math.max(1,firstDamage));}
+        String firstBossHitText() {return bossHitText(firstBossHit);}
     }
     void clear() {runs.clear();latest=null;sequence=0;unread=false;}
     void legacy(long duration,int cleared) {
@@ -69,10 +82,10 @@ final class TimeAttackHistory {
             s.append(';').append(r.id).append(',').append(r.duration).append(',').append(r.character)
                     .append(',').append(r.cleared).append(',').append(r.won?1:0).append(',').append(r.hits)
                     .append(',').append(r.misses).append(',').append(r.defended).append(',').append(r.damage)
-                    .append(',').append(r.firstDamage);
+                    .append(',').append(r.firstDamage).append(',').append(r.firstBossHit);
             for(Encounter e:r.encounters)s.append('~').append(e.boss).append(',').append(e.duration)
                     .append(',').append(e.cleared?1:0).append(',').append(e.hits).append(',').append(e.misses)
-                    .append(',').append(e.defended).append(',').append(e.damage).append(',').append(e.firstDamage);
+                    .append(',').append(e.defended).append(',').append(e.damage).append(',').append(e.firstDamage).append(',').append(e.firstBossHit);
         }
         return s.toString();
     }
@@ -85,36 +98,41 @@ final class TimeAttackHistory {
             ArrayList<Long> ids=new ArrayList<>();
             for(int i=1;i<rows.length;i++) {
                 String[] sections=rows[i].split("~",-1);if(sections.length>Boss.COUNT+1)return false;
-                String[] f=sections[0].split(",",-1);if(f.length!=10)return false;
+                String[] f=sections[0].split(",",-1);if(f.length!=10 && f.length!=11)return false;
+                long bossHit=f.length==11?Long.parseLong(f[10]):-2;
                 long id=Long.parseLong(f[0]),duration=Long.parseLong(f[1]),first=Long.parseLong(f[9]);
                 int character=Integer.parseInt(f[2]),cleared=Integer.parseInt(f[3]),won=Integer.parseInt(f[4]);
                 int hits=Integer.parseInt(f[5]),misses=Integer.parseInt(f[6]),defended=Integer.parseInt(f[7]),damage=Integer.parseInt(f[8]);
                 if(id<0 || id>seq || ids.contains(id) || duration<1 || duration>86400000L || character< -1
                         || character>=Collect.COUNT || cleared<0 || cleared>goal || won<0 || won>1
-                        || hits<0 || misses<0 || defended<0 || damage<0 || first< -1 || first>duration
+                        || bossHit< -2 || bossHit>duration || hits<0 || misses<0 || defended<0 || damage<0 || first< -1 || first>duration
                         || won==1 && cleared!=goal || won==0 && (cleared==goal || id!=seq)
-                        || id==0 && (character!=-1 || won!=1 || hits!=0 || misses!=0 || defended!=0 || damage!=0 || first!=-1)
+                        || id==0 && (character!=-1 || won!=1 || hits!=0 || misses!=0 || defended!=0 || damage!=0 || first!=-1 || bossHit!=-2)
                         || id>0 && (character<0 || (damage==0)!=(first==-1)))return false;
                 ids.add(id);
                 Encounter[] encounters=new Encounter[sections.length-1];
-                long totalTime=0,totalHits=0,totalMisses=0,totalDefended=0,totalDamage=0,firstHit=-1;
+                long totalTime=0,totalHits=0,totalMisses=0,totalDefended=0,totalDamage=0,firstHit=-1,firstBossHit=-1;
                 int totalCleared=0;
                 for(int j=0;j<encounters.length;j++) {
-                    String[] e=sections[j+1].split(",",-1);if(e.length!=8)return false;
+                    String[] e=sections[j+1].split(",",-1);if(e.length!=8 && e.length!=9)return false;
+                    long bossTime=e.length==9?Long.parseLong(e[8]):-2;
                     int boss=Integer.parseInt(e[0]),clear=Integer.parseInt(e[2]);
                     long time=Long.parseLong(e[1]),hurt=Long.parseLong(e[7]);
                     int h=Integer.parseInt(e[3]),m=Integer.parseInt(e[4]),d=Integer.parseInt(e[5]),taken=Integer.parseInt(e[6]);
                     if(boss!=(challenge==TimeAttack.ALL?j:challenge) || time<0 || time>duration || clear<0 || clear>1
                             || clear==0 && j<encounters.length-1 || h<0 || m<0 || d<0 || taken<0
+                            || bossTime< -2 || bossTime>time || (bossHit==-2)!=(bossTime==-2)
                             || hurt< -1 || hurt>time || (taken==0)!=(hurt==-1))return false;
-                    encounters[j]=new Encounter(boss,time,clear==1,h,m,d,taken,hurt);
+                    encounters[j]=new Encounter(boss,time,clear==1,h,m,d,taken,hurt,bossTime);
+                    if(firstBossHit<0 && bossTime>=0)firstBossHit=totalTime+bossTime;
                     if(firstHit<0 && hurt>=0)firstHit=totalTime+hurt;
                     totalTime+=time;totalHits+=h;totalMisses+=m;totalDefended+=d;totalDamage+=taken;totalCleared+=clear;
                 }
                 if(encounters.length>0 && (id==0 || encounters.length!=(challenge==TimeAttack.ALL?cleared+(won==1?0:1):1)
                         || totalTime!=duration || totalHits!=hits || totalMisses!=misses || totalDefended!=defended
-                        || totalDamage!=damage || totalCleared!=cleared || firstHit!=first))return false;
-                Run run=new Run(id,duration,character,cleared,won==1,hits,misses,defended,damage,first,encounters);
+                        || totalDamage!=damage || totalCleared!=cleared || firstHit!=first
+                        || bossHit!=-2 && firstBossHit!=bossHit))return false;
+                Run run=new Run(id,duration,character,cleared,won==1,hits,misses,defended,damage,first,bossHit,encounters);
                 if(run.won)runs.add(run);
                 if(id==seq && id>0)latest=run;
             }

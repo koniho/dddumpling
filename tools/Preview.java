@@ -252,6 +252,7 @@ final class Preview {
         for(int boss=0;boss<Boss.COUNT;boss++) {
             c.boss.intro=0;c.timeAttack.tick(c,10+boss*3);
             c.hits+=12+boss;c.misses+=boss;c.timeAttack.defended();
+            c.timeAttack.bossDamaged(c.boss.hp,c.boss.hp-1);
             if(boss==1)c.takeHit(L.w*.5f,L);
             TestTimeAttack.beat(c,L);
         }
