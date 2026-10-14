@@ -255,6 +255,8 @@ final class Renderer extends Draw {
                 * (1f - 0.30f * destroy);
         int fade = (int) ((90 + 165 * e.enterT) * (1f - destroy));
         SwampEnemies.fog(p,c,e,L,jx,jy,swell,fade,false);
+        if(e.typeable())SwampEnemies.diveWake(p,c,e,c.tileX(e,e.pos,L)+jx,e.y+jy,
+                L.enemyR*Layout.HEAD_SCALE*swell,fade);
 
         for (int i = 0; i < e.word.length; i++) {
             int g = e.word[i];

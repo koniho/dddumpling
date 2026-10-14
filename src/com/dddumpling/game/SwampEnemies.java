@@ -89,8 +89,9 @@ final class SwampEnemies {
         }
         ribbon(p,left,right,y+r*.36f,r*.42f,clock*1.5f,0xFFDBF4E8,alpha*45/255);
         ribbon(p,left-r*.08f,right+r*.12f,y-r*.38f,r*.32f,-clock*1.2f,0xFFEDF1FF,alpha*38/255);
-        // A thin veil crosses the active key while keeping its face and stack pips readable.
-        ribbon(p,x-r*1.12f,x+r*1.25f,y+r*.04f,r*.65f,clock*1.8f,0xFFE5FFF4,alpha*30/255);
+        // One foreground sheet covers every remaining key, including the readable head.
+        ribbon(p,left-r*.5f,right+r*.25f,y,r*1.25f,clock*.65f,0xFFD9EDE8,alpha*64/255);
+        ribbon(p,x-r*1.45f,x+r*1.6f,y+r*.04f,r*1.05f,clock*1.1f,0xFFE5FFF4,alpha*86/255);
         if(reveal>0 && head>0) {
             float t=1-reveal,oldX=c.tileX(e,head-1,L)+jx;
             for(int k=0;k<3;k++) {
@@ -137,20 +138,25 @@ final class SwampEnemies {
         float pulse=.65f+.35f*(float)Math.sin(c.clock*19);
         int col=Glyph.withAlpha(AMBER,(int)(fade*pulse));
         p.strokeCircle(x,y,r*1.09f,col,r*.12f);
-        for(int k=0;k<7;k++) {
-            float t=(c.clock*(2.5f+k*.13f)+k*.37f)%1;
-            float tx=x+(k-3)*r*.37f;
-            float tip=y-r*(1.1f+t*.9f);
-            int a=(int)(fade*(1-t)*.75f);
-            p.line(tx,tip,tx,tip-r*(1.3f+(k%3)*.5f),Glyph.withAlpha(AMBER,a),r*.13f);
-            p.line(tx,tip,tx,tip-r*.8f,Glyph.withAlpha(0xFFFFF6DC,a),r*.045f);
-        }
         if(e.diveBurst>0) {
             float t=1-e.diveBurst/DIVE_BURST;
             int a=(int)(fade*(1-t));
             for(int k=0;k<3;k++)p.strokeCircle(x,y,r*(1.1f+t*(2.7f-k*.5f)),
-                    Glyph.withAlpha(k==1?0xFFFFF6DC:AMBER,a*(180-k*35)/255),r*(.15f-k*.03f));
-            if(t<.3f)p.fillCircle(x,y,r*1.1f,Glyph.withAlpha(0xFFFFF6DC,(int)(a*(1-t/.3f)*.4f)));
+                    Glyph.withAlpha(k==1?0xFFFFF6DC:AMBER,a*(230-k*35)/255),r*(.27f-k*.045f));
+            if(t<.48f) {
+                float flash=1-t/.48f;
+                p.fillCircle(x,y,r*(2.6f+t*2),Glyph.withAlpha(AMBER,(int)(a*flash*.25f)));
+                p.fillCircle(x,y,r*1.7f,Glyph.withAlpha(0xFFFFEAB3,(int)(a*flash*.52f)));
+                float[] star=new float[32];
+                for(int k=0;k<16;k++) {
+                    double angle=k*Math.PI/8+e.phase*.2f;
+                    float reach=r*(k%2==0?2.9f+t*2:1.1f);
+                    star[k*2]=x+(float)Math.cos(angle)*reach;
+                    star[k*2+1]=y+(float)Math.sin(angle)*reach;
+                }
+                p.fillPoly(star,Glyph.withAlpha(0xFFFFF9E9,(int)(a*flash*.9f)));
+                p.fillCircle(x,y,r*1.12f,Glyph.withAlpha(0xFFFFFFFF,(int)(a*flash)));
+            }
             for(int k=0;k<10;k++) {
                 double angle=k*Math.PI/5+e.phase;
                 float dx=(float)Math.cos(angle),dy=(float)Math.sin(angle);
@@ -159,5 +165,45 @@ final class SwampEnemies {
                         Glyph.withAlpha(k%2==0?AMBER:0xFFFFF6DC,a),r*.11f*(1-t));
             }
         }
+    }
+
+    /** Layered swept wedges stay attached to the diving key instead of floating like rain. */
+    static void diveWake(Painter p,GameCore c,GameCore.Enemy e,float x,float y,float r,int fade) {
+        if(e.swampKind!=DIVE || !e.diving || !e.typeable())return;
+        float flutter=(float)Math.sin(c.clock*18+e.phase);
+        speedBlade(p,x,y-r*.4f,r*(4.2f+flutter*.3f),r*.34f,r*flutter*.18f,0xFFFFBC58,fade*130/255);
+        speedBlade(p,x,y-r*.4f,r*(3.8f+flutter*.3f),r*.14f,r*flutter*.14f,0xFFFFF6D8,fade*215/255);
+        for(int side=-1;side<=1;side+=2)for(int k=0;k<2;k++) {
+            float wave=(float)Math.sin(c.clock*(16+k*3)+e.phase+k*2+side);
+            float length=r*(3.4f+k*.9f+wave*.26f+side*.24f);
+            float base=x+side*r*(.72f+k*.33f);
+            float width=r*(k==0?.34f:.18f);
+            float bend=side*r*(.6f+k*.25f);
+            speedBlade(p,base,y-r*(.15f+k*.25f),length,width*1.6f,bend,0xFFFFA34F,fade*65/255);
+            speedBlade(p,base,y-r*(.15f+k*.25f),length,width,bend,0xFFFFCF69,fade*205/255);
+            speedBlade(p,base,y-r*(.15f+k*.25f),length*.86f,width*.42f,bend*.86f,0xFFFFF6D8,fade*235/255);
+        }
+        // Small tapered flecks peel away from the outer wake.
+        for(int k=0;k<4;k++) {
+            float t=(c.clock*2.5f+k*.27f)%1;
+            int side=k%2==0?-1:1;
+            float px=x+side*r*(1.2f+t*.7f),py=y-r*(1+t*3.4f);
+            p.fillPoly(new float[]{px,py+r*.25f,px-r*.09f,py,px+side*r*.12f,py-r*.55f,px+r*.09f,py},
+                    Glyph.withAlpha(0xFFFFE8A8,(int)(fade*(1-t)*.8f)));
+        }
+    }
+
+    private static void speedBlade(Painter p,float x,float y,float length,float width,float bend,int color,int alpha) {
+        final int steps=16;
+        float[] points=new float[(steps+1)*4];
+        for(int i=0;i<=steps;i++) {
+            float t=i/(float)steps;
+            float at=x+bend*(float)Math.sin(t*Math.PI*.85f);
+            float half=width*(1-t)*(.35f+.9f*(float)Math.sin(t*Math.PI));
+            points[i*2]=at-half;points[i*2+1]=y-length*t;
+            int back=(steps*2+1-i)*2;
+            points[back]=at+half;points[back+1]=y-length*t;
+        }
+        p.fillPoly(points,Glyph.withAlpha(color,alpha));
     }
 }

@@ -31,6 +31,12 @@ final class Preview {
             step(c,L,.16f);
             shot(dir,"175-176-fog-recede-"+cleared,c,L,w,h,ss);
         }
+        for(float time:new float[]{.035f,.28f,.65f}) {
+            GameCore c=TestSwampEnemies.scene(L,176);
+            GameCore.Enemy dive=TestSwampEnemies.word(c,L,SwampEnemies.DIVE,L.h*.43f);
+            c.tapKey(0,L);c.tapKey(1,L);step(c,L,time);
+            shot(dir,"175-176-dive-launch-"+Math.round(time*1000),c,L,w,h,ss);
+        }
     }
 
     private static void alligatorFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
