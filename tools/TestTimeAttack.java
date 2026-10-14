@@ -117,7 +117,34 @@ final class TestTimeAttack extends Check {
             }
         }
     }
+    private static void gatorSilhouette() {
+        for(boolean springs:new boolean[]{false,true}) {
+            RasterPainter unknown=new RasterPainter(240,260,1),known=new RasterPainter(240,260,1);
+            unknown.clear(0xFFFF00FF);known.clear(0xFFFF00FF);
+            GatorCompanion body=new GatorCompanion();
+            java.util.Set<Integer> colors=new java.util.HashSet<Integer>();
+            Painter hidden=new OpacityPainter(unknown,1) {
+                public GatorCompanion gator(){return springs?body:null;}
+                int color(int c){colors.add(c);return c;}
+            };
+            Painter visible=new OpacityPainter(known,1) {public GatorCompanion gator(){return springs?body:null;}};
+            GatorCompanion.draw(hidden,120,120,65,1,false,1,0,0,false);
+            GatorCompanion.draw(visible,120,120,65,1,true,1,0,0,false);
+            int[] silhouette=unknown.resolve(),art=known.resolve();
+            int contour=0,different=0;
+            for(int i=0;i<silhouette.length;i++) {
+                int color=silhouette[i]&0xFFFFFF;
+                if((color!=0xFF00FF)!=((art[i]&0xFFFFFF)!=0xFF00FF))contour++;
+                if(silhouette[i]!=art[i])different++;
+            }
+            check("unknown gator has a flat silhouette and question mark, springs="+springs,colors.size()==2
+                    && colors.contains(0xFF393054) && colors.contains(Draw.INK_DIM));
+            check("gator silhouette retains the complete artwork contour, springs="+springs,contour<12);
+            check("known gator keeps its shaded colorful artwork, springs="+springs,different>1000);
+        }
+    }
     static void all(Layout L) {
+        gatorSilhouette();
         bossHitStatistics(L);
         encounterStatistics(L);
         statistics(L);

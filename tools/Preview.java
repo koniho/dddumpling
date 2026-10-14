@@ -225,6 +225,16 @@ final class Preview {
         shot(dir,"161-adventure-first-land",c,L,w,h,ss);
     }
 
+    private static void gatorSilhouetteFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("179-"))return;
+        GameCore c=TestTimeAttack.start(Boss.ALLIGATOR);c.toTitle();c.returnFade=0;c.clock=1.6f;
+        shot(dir,"179-gator-unlocked",c,L,w,h,ss);
+        c.collected &= ~(1L<<Collect.ALLIGATOR_FRIEND);
+        shot(dir,"179-gator-silhouette",c,L,w,h,ss);
+        c.timeAttack.selected=TimeAttack.ALL;
+        c.clock=(Boss.ALLIGATOR+.46f)*TimeAttackDemo.GROUP_TURN;
+        shot(dir,"179-gator-group-silhouette",c,L,w,h,ss);
+    }
     private static void timeAttackFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("150-"))return;
         GameCore c=TestTimeAttack.start(Boss.SLIME);c.toTitle();c.returnFade=0;
@@ -1368,6 +1378,7 @@ final class Preview {
         duckFrames(dir,L,w,h,ss);
         survivalFrames(dir,L,w,h,ss);
         timeAttackFrames(dir,L,w,h,ss);
+        gatorSilhouetteFrames(dir,L,w,h,ss);
         alligatorFrames(dir,L,w,h,ss);
         gatorCompanionFrames(dir,L,w,h,ss);
         adventureTitleFrames(dir,L,w,h,ss);

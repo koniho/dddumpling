@@ -48,7 +48,7 @@ final class GatorCompanion extends Draw {
         GatorCompanion a=painter.gator();
         float clock=a==null?fallbackClock:a.clock;
         Painter p=new OpacityPainter(painter,fade);
-        if(!known)p=new MonochromePainter(p,1);
+        if(!known)p=new Silhouette(p);
         float bob=(float)Math.sin(clock*2.6f),wag=(float)Math.sin(clock*4.1f);
         float bx=x+r*(a==null?bob*.025f:a.body.centreX()*.45f),by=y+r*.33f;
         float sx=a==null?1:a.body.radiusX(),sy=a==null?1:a.body.radiusY();
@@ -97,7 +97,13 @@ final class GatorCompanion extends Draw {
             float maskY=hy-hh*.43f;
             Trinket.ninjaMask(new MaskFit(p,maskY,hh/hw*1.15f),hx-hw*.10f,maskY,hw*.76f,1);
         }
-        if(!known)p.text("?",x,y+r*.25f,type(r*.55f),INK,Painter.CENTER,true);
+        if(!known)painter.text("?",x,y+r*.25f,type(r*.55f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
+    }
+    /** Flatten the real contour; translucent highlights must not reveal interior features. */
+    private static final class Silhouette extends OpacityPainter {
+        Silhouette(Painter p) {super(p,1);}
+        int color(int c) {return (c>>>24)==0?0:0xFF393054;}
+        public ArtStamp stamps() {return null;}
     }
     private static final class MaskFit extends OpacityPainter {
         public ArtStamp stamps() {return null;}
