@@ -41,7 +41,8 @@ public final class IOSInputTest extends Check {
         Alligator a=c.boss.alligator;float x=a.tipX,y=a.tipY;
         game.touch(one(0,168,x-l.w*.12f,y));
         game.touch(one(1,168,x+l.w*.12f,y));
-        check("alligator blocks on final lift sample through native router",a.blocks==1 && a.pointer==-1);
+        check("alligator parry on final lift opens a short vulnerability through native router",
+                a.blocked && a.daze>0 && !a.longWindow && a.pointer==-1);
         game.touch(one(0,168,x,y));game.touch(one(3,168,x,y));
         check("native cancellation releases alligator gesture",a.pointer==-1);
         a.daze=Alligator.DAZE;float hp=c.boss.hp;
@@ -736,6 +737,29 @@ public final class IOSInputTest extends Check {
                 game.debugStatus().contains("state=1;") && game.debugStatus().contains("paused=true;"));
         game.debugScene("title");
         check("debug title clears pause", !game.paused() && game.core().state==GameCore.TITLE);
+        for(boolean full:new boolean[]{false,true}) {
+            game=game();GameCore c=game.core();
+            game.debugScene(full?"keyboard:6":"keyboard:4");
+            int lives=c.lives,presses=0;
+            for(char key:(full?"sdfjkl":"sdkl").toCharArray()) {
+                // XCTest can spend seconds waiting for app idleness between events.
+                for(int frame=0;frame<60*30;frame++)game.update(DT);
+                game.keyDown(key,false);game.keyUp(key);presses++;
+                check("keyboard fixture accepts delayed input "+full+":"+key,
+                        game.debugStatus().contains("keyboardPresses="+presses+";"));
+            }
+            check("keyboard fixture stays alive without enemies or pickups "+full,
+                    c.state==GameCore.PLAY && c.lives==lives && c.enemies.isEmpty() && c.power==null);
+            Pause.open(c);game.keyDown('s',false);game.keyUp('s');
+            check("keyboard fixture retains pause gating "+full,
+                    game.debugStatus().contains("keyboardPresses="+presses+";"));
+            Pause.resume(c);game.keyDown('s',false);game.keyUp('s');
+            check("keyboard fixture resumes input "+full,
+                    game.debugStatus().contains("keyboardPresses="+(presses+1)+";"));
+            game.debugScene("play");
+            for(int frame=0;frame<120;frame++)game.update(DT);
+            check("normal play restores enemy spawning after keyboard fixture "+full,!c.enemies.isEmpty());
+        }
     }
 
     private static void linkedChord() {

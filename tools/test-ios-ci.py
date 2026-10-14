@@ -55,6 +55,15 @@ class Selection(unittest.TestCase):
             self.assertEqual(result['tests'], ['DDDumplingTests', 'DDDumplingUITests'])
             self.assertFalse(result['archive'])
 
+    def test_input_selection_includes_physical_keyboard_coverage(self):
+        targets = {'DDDumplingUITests/SmokeTests/testPhysicalKeyboardFourKeys',
+                   'DDDumplingUITests/SmokeTests/testPhysicalKeyboardSixKeys',
+                   'DDDumplingTests/DDKeyboardTests'}
+        for path in ['ios/java/com/dddumpling/game/IOSGame.java', 'ios/tests/IOSInputTest.java',
+                     'src/com/dddumpling/game/KeyboardInput.java', 'ios/tests/DDKeyboardTests.m']:
+            self.assertTrue(targets.issubset(ci.plan([path])['tests']), path)
+        self.assertTrue(targets.issubset(ci.plan([], requested='input')['tests']))
+
     def test_full_main_and_focused_manual(self):
         result = ci.plan(['README.md'], full=True)
         self.assertTrue(result['archive'])

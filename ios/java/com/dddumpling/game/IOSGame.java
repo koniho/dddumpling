@@ -797,6 +797,8 @@ public final class IOSGame {
             core.rosterSceneT = core.stageBanner = 0;
             core.onboarding.clear();
             core.onboarding.saved |= Onboarding.SKIPPED;
+            // Test native input without racing enemies while XCTest waits for app idleness.
+            core.spawnTimer = core.powerTimer = Float.POSITIVE_INFINITY;
         }
         else if (scene.equals("stars")) core.playtestStars(layout);
         else if (scene.equals("steamer")) core.playtestSteamer(layout);

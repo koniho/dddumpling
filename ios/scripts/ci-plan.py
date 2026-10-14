@@ -11,7 +11,10 @@ SUITES = {
     'storage': ['DDDumplingTests/DDStoreTests'],
     'render': ['DDDumplingTests/DDPainterTests', 'DDDumplingUITests/SmokeTests/testProductionScenesRender'],
     'input': ['DDDumplingUITests/SmokeTests/testTitleStartsGameAndBackgroundPauses',
-              'DDDumplingUITests/SmokeTests/testBossAcceptsPinchAndSwipeWithoutCrashing'],
+              'DDDumplingUITests/SmokeTests/testBossAcceptsPinchAndSwipeWithoutCrashing',
+              'DDDumplingUITests/SmokeTests/testPhysicalKeyboardFourKeys',
+              'DDDumplingUITests/SmokeTests/testPhysicalKeyboardSixKeys',
+              'DDDumplingTests/DDKeyboardTests'],
 }
 
 
@@ -38,7 +41,8 @@ def plan(paths, full=False, requested='auto'):
             selected.add('audio')
         elif p.name in ('DDStore.m', 'DDStore.h', 'DDStoreTests.m', 'Progress.java', 'ProgressData.java'):
             selected.add('storage')
-        elif p.name in ('IOSGame.java', 'IOSTouch.java', 'IOSInputTest.java', 'GameView.java', 'SettingsUi.java') or p.name.startswith('Release') and p.suffix == '.java':
+        elif p.name in ('IOSGame.java', 'IOSTouch.java', 'IOSInputTest.java', 'KeyboardInput.java',
+                         'DDKeyboardTests.m', 'GameView.java', 'SettingsUi.java') or p.name.startswith('Release') and p.suffix == '.java':
             selected.add('input')
         elif name.startswith('src/com/dddumpling/game/') and p.suffix == '.java' and p.name not in ('GameCore.java', 'MainActivity.java', 'Pause.java', 'CanvasPainter.java'):
             pass  # Shared gameplay is tested on Linux and compiled through J2ObjC.
