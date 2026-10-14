@@ -3,13 +3,13 @@ package com.dddumpling.game;
 /** Swamp word variants share ordinary targeting, clears, rescue, and damage. */
 final class SwampEnemies {
     static final int NONE=0, FOG=1, DIVE=2;
-    static final float REVEAL=.32f, WINDUP=.35f;
+    static final float REVEAL=.32f;
     static final int MIST=0xFFB9D9CC, AMBER=0xFFFFCA68;
     private SwampEnemies() {}
 
     static void reset(GameCore.Enemy e) {
         e.swampKind=NONE;e.fogHead=0;e.fogReveal=0;
-        e.diving=false;e.diveAge=e.diveSpeed=e.diveGrace=0;
+        e.diving=false;e.diveSpeed=0;
     }
 
     static void assign(GameCore c,GameCore.Enemy e) {
@@ -20,6 +20,14 @@ final class SwampEnemies {
         float pick=e.phase/6.283f;
         boolean intro=(c.stage-1)%Boss.EVERY==0;
         e.swampKind=pick<(intro?.20f:.25f)?FOG:pick<(intro?.35f:.45f)?DIVE:NONE;
+        if(e.swampKind==DIVE) {
+            // Keep the generated key order and RNG stream, but make the quick charge a short word.
+            int length=Math.min(3,e.word.length);
+            e.word=java.util.Arrays.copyOf(e.word,length);
+            e.need=new int[length];java.util.Arrays.fill(e.need,1);
+            e.gone=new boolean[length];e.goneT=new float[length];
+            e.goneDx=new float[length];e.goneDy=new float[length];
+        }
     }
 
     static boolean hidden(GameCore.Enemy e,int i) {
@@ -38,31 +46,15 @@ final class SwampEnemies {
             e.fogHead=e.pos;
         }
         if(e.swampKind!=DIVE || e.diving || !e.typeable() || unresolved(e)!=1) return;
-        e.diving=true;e.diveAge=0;
+        e.diving=true;
         e.diveSpeed=Math.max(e.speed*3.4f,Math.max(0,L.dangerY-L.enemyR-e.y)/1.6f);
-        e.diveGrace=WINDUP+.85f+.20f*Math.max(0,e.need[e.pos]-e.done-1);
         if(c.sound!=null)c.sound.octoCue();
     }
 
     static float fall(GameCore c,GameCore.Enemy e,Layout L,float dt) {
         float elapsed=dt*c.traversalRate();
         if(!e.diving)return PowerRush.yAfter(e,e.speed*c.fallRate()*elapsed);
-        e.diveAge+=elapsed;
-        if(e.diveAge<WINDUP)return e.y;
-        float ramp=Math.min(1,(e.diveAge-WINDUP)/.3f);
-        float speed=e.speed+(e.diveSpeed-e.speed)*ramp*ramp;
-        float move=speed*c.fallRate()*elapsed;
-        // Near-line triggers still leave a real response window, without teleporting upward.
-        if(e.diveAge<e.diveGrace) {
-            float room=Math.max(0,L.dangerY-L.enemyR-.05f-e.y);
-            move=Math.min(move,room*elapsed/Math.max(elapsed,e.diveGrace-e.diveAge+elapsed));
-        }
-        return e.y+move;
-    }
-
-    static float squash(GameCore.Enemy e) {
-        if(!e.diving || e.diveAge>=WINDUP)return 1;
-        return 1-.20f*(float)Math.sin(Math.PI*e.diveAge/WINDUP);
+        return e.y+e.diveSpeed*c.fallRate()*elapsed;
     }
 
     static void cloud(Painter p,float x,float y,float r,float clock,int fade) {
@@ -91,7 +83,7 @@ final class SwampEnemies {
         p.line(x,marker+r*.10f,x+r*.24f,marker-r*.10f,col,r*.12f);
         if(!e.diving)return;
         p.strokeCircle(x,y,r*1.07f,col,r*.09f);
-        if(e.diveAge>WINDUP)for(int k=0;k<3;k++) {
+        for(int k=0;k<3;k++) {
             float tx=x+(k-1)*r*.62f;
             p.line(tx,y-r*(1.3f+k*.22f),tx,y-r*(2.1f+k*.4f),
                     Glyph.withAlpha(AMBER,fade*(95-k*20)/255),r*(.16f-k*.025f));

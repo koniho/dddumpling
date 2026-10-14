@@ -25,6 +25,15 @@ final class TestSwampEnemies extends Check {
         check("dive variant has its own selection band",e.swampKind==SwampEnemies.DIVE);
         c.rnd.setSeed(175);SwampEnemies.assign(c,e);
         check("variant selection consumes no extra random draws",c.rnd.nextLong()==new java.util.Random(175).nextLong());
+        for(int length=2;length<=9;length++) {
+            GameCore.Enemy shortWord=add(c,L,new int[length],L.h*.4f);
+            java.util.Arrays.fill(shortWord.need,4);shortWord.phase=1.6f;
+            SwampEnemies.assign(c,shortWord);
+            int presses=0;for(int need:shortWord.need)presses+=need;
+            check("dive words cap length and total presses at three "+length,
+                    shortWord.swampKind==SwampEnemies.DIVE && shortWord.word.length==Math.min(3,length)
+                    && presses==shortWord.word.length && shortWord.gone.length==shortWord.word.length);
+        }
         for(int gate=0;gate<3;gate++) {
             c.survival.active=gate==0;c.timeAttack.active=gate==1;
             c.mode=gate==2?Power.NINJA:-1;c.modeLeft=gate==2?5:0;
@@ -79,25 +88,26 @@ final class TestSwampEnemies extends Check {
         c.tapKey(1,L);
         check("last unresolved prompt triggers one cue",e.diving && ear.octoCues==1 && e.typeable());
         float y=e.y;c.update(.1f,L);
-        check("dive wind-up holds position and accepts input",e.y==y && e.typeable());
-        c.paused=true;float age=e.diveAge;c.update(.2f,L);
-        check("pause freezes wind-up",e.diveAge==age);c.paused=false;
+        check("dive immediately charges at full speed and accepts input",e.y-y>e.speed*.1f*3 && e.typeable());
+        c.paused=true;y=e.y;c.update(.2f,L);
+        check("pause freezes dive movement",e.y==y);c.paused=false;
         advance(c,L,.6f);y=e.y;c.update(DT,L);
         check("dive accelerates beyond normal approach",e.y-y>e.speed*DT*2);
-        c.tapKey(5,L);float after=e.diveAge;
+        c.tapKey(5,L);float speed=e.diveSpeed;
         check("wrong key resets word but cannot restart dive",e.pos==0 && e.diving && ear.octoCues==1);
         c.tapKey(0,L);c.tapKey(1,L);c.tapKey(1,L);
-        check("returning to final prompt cannot compound acceleration",e.diveAge==after && ear.octoCues==1);
+        check("returning to final prompt cannot compound acceleration",e.diveSpeed==speed && ear.octoCues==1);
         c.tapKey(4,L);advance(c,L,1);
         check("last prompt still defeats diving word",e.destroyed && c.resolvedThisStage==1 && c.lives==GameCore.START_LIVES);
         c=scene(L,176);e=word(c,L,SwampEnemies.DIVE,L.dangerY-L.enemyR-3);
-        e.need[2]=4;c.tapKey(0,L);c.tapKey(1,L);
-        advance(c,L,e.diveGrace-.1f);
-        check("near-line stacked final prompt retains response window",e.typeable() && c.lives==GameCore.START_LIVES);
+        c.tapKey(0,L);c.tapKey(1,L);
+        check("dive does not brake or wait at the damage line",SwampEnemies.fall(c,e,L,.1f)>L.dangerY-L.enemyR);
+        c=scene(L,176);e=word(c,L,SwampEnemies.DIVE,L.h*.6f);
+        c.tapKey(0,L);c.tapKey(1,L);
         c.warnLevel=1;
         check("rescue swipe can push a diving enemy",c.pushBack(L) && e.slideT>0);
-        age=e.diveAge;advance(c,L,GameCore.PUSH_SLIDE*.5f);
-        check("rescue push is not opposed by dive movement",e.diveAge==age);
+        y=e.y;advance(c,L,GameCore.PUSH_SLIDE*.5f);
+        check("rescue push is not opposed by dive movement",e.y<y && e.diving);
         c=scene(L,176);e=word(c,L,SwampEnemies.DIVE,L.h*.4f);
         c.removeTile(e,2,1,0,L);
         check("removing tail tile with two left cannot trigger dive",!e.diving);

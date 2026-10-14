@@ -338,7 +338,6 @@ final class Renderer extends Draw {
             float charR = cellR * 0.60f * (1f + 0.045f * (float) Math.sin(wobble))
                     * (1f + 0.34f * pop);
             float squash = 1f + 0.16f * pop - 0.05f * (float) Math.sin(wobble);
-            if(head)squash*=SwampEnemies.squash(e);
             int charCol = cleared ? Glyph.withAlpha(Glyph.mix(col, INK_DIM, 0.42f), 180) : col;
             if (c.incognito()) {
                 Kawaii.incognito(p,g,x,y,charR,charCol,c.incognitoMorph);
