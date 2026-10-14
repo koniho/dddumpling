@@ -46,6 +46,7 @@ final class AdventureTitle extends Draw {
             if(amount<=0)continue;
             float rise=amount*amount*(3-2*amount),ground=y+s*(front?.12f:.025f);
             if(land==0) {slimePool(p,x,y,s,span,rise,now,fade,front);continue;}
+            if(land==Lands.SWAMP) {swamp(p,x,y,s,span,rise,now,fade,front);continue;}
             boolean crystal=land==1 || land==Cave.LAND;
             int alpha=(int)(255*fade*(crystal?(front?.98f:.58f):(front?.92f:.8f)));
             if(!front)p.fillEllipse(x,ground,span,s*.15f,
@@ -85,6 +86,53 @@ final class AdventureTitle extends Draw {
             p.arc(bx,by,r*.66f,r*.66f,205,80,fadeBy(0xFFF0FFD7,alpha*.9f),s*.035f);
         }
     }
+    private static void swamp(Painter p,float x,float y,float s,float span,float rise,float clock,float fade,boolean front) {
+        float sink=(1-rise)*s*2.2f,base=y+s*.12f+sink;
+        // One low waterline frames the word; only small pads sit in front of its feet.
+        p.save();p.clipRect(x-span*1.08f,y-s*2.6f,x+span*1.08f,y+s*.42f);
+        if(!front) {
+            p.fillPoly(poolOutline(x,base,span*1.04f,s*.55f,clock,1),fadeBy(0xFF315F64,fade*.86f));
+            p.fillPoly(poolOutline(x,base-s*.035f,span*1.02f,s*.48f,clock,.83f),fadeBy(0xFF57978D,fade*.78f));
+            p.arc(x-span*.14f,base,span*.66f,s*.13f,8,152,fadeBy(0xFF9DD8BD,fade*.50f),s*.035f);
+            for(int i=0;i<4;i++) {
+                float px=x+span*(i==0?-.94f:i==1?-.64f:i==2?.65f:.93f);
+                float height=s*(i%2==0?2.1f:2.65f),root=base+s*.025f;
+                for(int reed=0;reed<2;reed++) {
+                    float rx=px+(reed-.5f)*s*.16f,h=height*(reed==0?1:.77f);
+                    float lean=s*(.12f*(float)Math.sin(clock*1.3f+i+reed)-.06f);
+                    float top=root-h;
+                    float[] stem={rx,root,rx+lean*.35f,root-h*.46f,rx+lean,top};
+                    p.polyline(stem,fadeBy(0xFF4C967A,fade*.85f),s*.045f);
+                    p.line(rx+lean,top+s*.18f,rx+lean,top-s*.05f,fadeBy(0xFFB58D75,fade*.94f),s*.11f);
+                    p.line(rx+lean-s*.018f,top+s*.13f,rx+lean-s*.018f,top,fadeBy(0xFFE0BE93,fade*.70f),s*.026f);
+                    p.polyline(new float[]{rx,root,rx-s*.12f,root-h*.26f,rx-s*.24f+lean*.5f,root-h*.49f},
+                            fadeBy(0xFF76B58B,fade*.85f),s*.045f);
+                }
+            }
+            for(int i=0;i<5;i++) {
+                float fx=x+span*(float)Math.sin(i*2.4f+clock*.10f);
+                float fy=y-s*(.72f+.82f*(.5f+.5f*(float)Math.sin(i*1.8f+clock*.5f)))+sink;
+                float glow=(.5f+.5f*(float)Math.sin(clock*2+i))*fade*rise;
+                p.fillCircle(fx,fy,s*.10f,fadeBy(0xFFE7F7B1,glow*.12f));
+                p.fillCircle(fx,fy,s*.023f,fadeBy(0xFFF5FBCB,glow*.85f));
+            }
+        } else {
+            for(int i=0;i<3;i++) {
+                float px=x+span*(i==0?-.77f:i==1?.30f:.84f);
+                float py=base+s*(i==1?.065f:.015f),r=s*(i==1?.60f:.46f);
+                float[] pad=new float[50];pad[0]=px;pad[1]=py;
+                for(int n=0;n<24;n++) {
+                    float a=.24f+n/23f*(Softbody.TAU-.55f);
+                    pad[2+n*2]=px+(float)Math.cos(a)*r;
+                    pad[3+n*2]=py+(float)Math.sin(a)*r*.34f;
+                }
+                p.fillPoly(pad,fadeBy(i==1?0xFF85B98E:0xFF68A58A,fade*.96f));
+                p.arc(px-r*.07f,py-r*.035f,r*.75f,r*.19f,195,115,fadeBy(0xFFC0DFA7,fade*.65f),s*.032f);
+                p.line(px,py,px-r*.55f,py-r*.11f,fadeBy(0xFF47896F,fade*.7f),s*.028f);
+            }
+        }
+        p.restore();
+    }
     private static void slimePool(Painter p,float x,float y,float s,float span,float rise,float clock,float fade,boolean front) {
         float cy=y+s*(.03f+(1-rise)*2f),edge=y-s*.10f;
         // Complementary clips keep a single puddle behind and in front of the letters.
@@ -113,7 +161,6 @@ final class AdventureTitle extends Draw {
         return outline;
     }
     private static void prop(Painter p,int land,float x,float base,float size,int a,float t,int variant) {
-        if(land==Lands.SWAMP) {Swamp.prop(p,x,base-size*.4f,size*.65f,a,t,false);return;}
         if(land==1 || land==Cave.LAND) {
             int glass=(int)(a*.48f);
             Lands.crystal(p,x,base,size*.24f,size*1.15f,glass,t,false,true);

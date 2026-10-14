@@ -10,19 +10,40 @@ import java.io.File;
 final class Preview {
 
     private static void alligatorFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
-        for(float at:new float[]{.08f,.22f,1.70f}) {
+        for(float at:new float[]{.08f,.16f,.22f,.30f,.41f,.66f,.90f,1.70f}) {
             GameCore parry=TestAlligator.fight(L);parry.stageBanner=0;parry.landBlend=1;parry.companion.begin(6);
             TestAlligator.block(parry,L);TestAlligator.advance(parry,L,at);
             shot(dir,"168-companion-parry-"+Math.round(at*100),parry,L,w,h,ss);
         }
         GameCore dazed=TestAlligator.fight(L);dazed.stageBanner=0;dazed.landBlend=1;dazed.companion.begin(6);
+        for(int limb=0;limb<3;limb++)for(float at:new float[]{.16f,.23f,.55f}) {
+            GameCore recoil=TestAlligator.fight(L);recoil.stageBanner=0;recoil.landBlend=1;recoil.companion.begin(6);
+            recoil.boss.alligator.next=limb;recoil.boss.alligator.timer=0;
+            TestAlligator.block(recoil,L);TestAlligator.advance(recoil,L,at);
+            shot(dir,"168-limb-recoil-"+limb+"-"+Math.round(at*100),recoil,L,w,h,ss);
+        }
         TestAlligator.longOpening(dazed,L);TestAlligator.advance(dazed,L,.35f);
         shot(dir,"168-companion-daze-impact",dazed,L,w,h,ss);
+        for(int who:new int[]{Collect.DUCK_FIRST,Collect.ALLIGATOR_FRIEND}) {
+            GameCore fighter=TestAlligator.fight(L);fighter.stageBanner=0;fighter.landBlend=1;fighter.companion.begin(who);
+            TestAlligator.block(fighter,L);TestAlligator.advance(fighter,L,.40f);
+            shot(dir,"168-companion-fighting-"+who,fighter,L,w,h,ss);
+        }
+        GameCore crossing=TestAlligator.fight(L);crossing.stageBanner=0;crossing.landBlend=1;crossing.companion.begin(6);
+        crossing.boss.alligator.next=0;TestAlligator.block(crossing,L);
+        crossing.boss.alligator.next=1;TestAlligator.block(crossing,L);TestAlligator.advance(crossing,L,.08f);
+        shot(dir,"168-companion-parry-crossing",crossing,L,w,h,ss);
         for(int phase=0;phase<3;phase++) {
             GameCore warm=TestAlligator.fight(L);warm.stageBanner=0;warm.landBlend=1;
             warm.boss.hp=warm.boss.hpMax*(phase==0?1:phase==1?.49f:.24f);
             warm.boss.alligator.timer=10;TestAlligator.advance(warm,L,.3f);
             shot(dir,"168-gator-phase-color-"+phase,warm,L,w,h,ss);
+        }
+        for(float at:new float[]{.04f,.32f,.62f,.94f}) {
+            GameCore flex=TestAlligator.fight(L);flex.stageBanner=0;flex.landBlend=1;
+            flex.boss.alligator.daze=Alligator.DAZE;flex.boss.alligator.longWindow=true;
+            flex.boss.hp=flex.boss.hpMax*.5f;flex.boss.damage(1);TestAlligator.advance(flex,L,at);
+            shot(dir,"168-gator-cancel-flex-"+Math.round(at*100),flex,L,w,h,ss);
         }
         for(int count:new int[]{2,3})for(int beat=0;beat<count;beat++) {
             GameCore demo=TestAlligator.fight(L);demo.stageBanner=0;demo.landBlend=1;

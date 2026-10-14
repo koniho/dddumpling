@@ -25,9 +25,12 @@ final class CanvasPainter implements Painter, ArtStamp {
         artStamps.warm();
     }
     public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount) {
+        return greenStamp(art,x,y,w,h,angle,tint,amount,0);
+    }
+    public boolean greenStamp(int art,float x,float y,float w,float h,float angle,int tint,float amount,float phase) {
         if(stamps()==null || art<0 || art>=ArtStamp.COUNT)return false;
         if(artStamps==null)artStamps=new CanvasArtStamps();
-        artStamps.draw(canvas,art,x,y,w,h,angle,tint,amount);return true;
+        artStamps.draw(canvas,art,x,y,w,h,angle,tint,amount,phase);return true;
     }
 
     /**

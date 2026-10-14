@@ -30,11 +30,20 @@ final class Alligator {
     boolean comboActive;
     int comboLaunched,comboCount,comboParried;
     float comboAge,comboNextAt;
-    static final float SHOWOFF_LEAD=.35f, SHOWOFF_BEAT=.55f, SHOWOFF_HOLD=.35f;
+    static final float SHOWOFF_LEAD=1.05f, SHOWOFF_BEAT=.55f, SHOWOFF_HOLD=.35f;
     int showoffCount,showoffBeat=-1,showoffImpact=-1,shownCombos;
     float showoffAge,pendingShake;
     float takeShake() {float amount=pendingShake;pendingShake=0;return amount;}
     boolean showoff() {return showoffCount>0;}
+    float showoffFlex() {
+        if(!showoff())return 0;
+        return AlligatorArrival.ramp(showoffAge,0,.24f)*(1-AlligatorArrival.ramp(showoffAge,.68f,SHOWOFF_LEAD));
+    }
+    float cancelFlash() {
+        if(!showoff())return 0;
+        float pulse=showoffAge<.10f?.85f:showoffAge<.18f?.30f:.72f;
+        return pulse*(1-AlligatorArrival.ramp(showoffAge,.24f,.44f));
+    }
     int showoffLimb() {
         int beat=(int)((showoffAge-SHOWOFF_LEAD)/SHOWOFF_BEAT);
         return showoffAge<SHOWOFF_LEAD || beat>=showoffCount?-1:beat;
@@ -56,6 +65,7 @@ final class Alligator {
         daze=recoil=closing=windowDamage=retaliation=shotDelay=counterCooldown=taunt=0;
         longWindow=windowHit=windowDamaged=dazeCue=false;roundStreak=0;
         pendingShots=retaliationShots=pendingAttackCues=0;guard.reset();
+        pendingShake=Math.max(pendingShake,.85f);jolt(.6f);
         return true;
     }
     void updateShowoff(Boss b,float dt) {
@@ -183,7 +193,7 @@ final class Alligator {
             float side=L.playTop+h*(.73f+.20f*Math.max(0,-tailPosition));
             return side+(L.h+L.unit*3-side)*(1-AlligatorArrival.ramp(Math.abs(tailPosition),.78f,1));
         }
-        return L.playTop+h*(.41f+.025f*vulnerablePose)+L.unit*.18f*(float)Math.sin(motionClock*2.1f+which);
+        return L.playTop+h*(.41f+.025f*vulnerablePose-.035f*showoffFlex())+L.unit*.18f*(float)Math.sin(motionClock*2.1f+which);
     }
     float restX(Layout L,int which) {
         float idle=L.w*(which==2?.5f+tailPosition*.37f:(which==0?.27f:.73f)
@@ -204,10 +214,12 @@ final class Alligator {
     float elbowX(Layout L,int which,float tx) {
         Strike s=strikeFor(which);
         float extend=s!=null?strikeProgress(s.attack,s.tempo):limb==which?strikeProgress():0;
-        return (rootX(L,which)+tx)*.5f+(which==0?-1:1)*L.w*.085f*(1-extend*.6f)*(1-.8f*vulnerablePose);
+        float rest=(rootX(L,which)+tx)*.5f+(which==0?-1:1)*L.w*.085f*(1-extend*.6f)*(1-.8f*vulnerablePose);
+        return rest+(L.w*(which==0?.10f:.90f)-rest)*showoffFlex();
     }
     float elbowY(Layout L,int which,float ty) {
-        return (rootY(L,which)+ty)*.5f+(L.dangerY-L.playTop)*.035f;
+        float rest=(rootY(L,which)+ty)*.5f+(L.dangerY-L.playTop)*.035f;
+        return rest+(rootY(L,which)+(L.dangerY-L.playTop)*.065f-rest)*showoffFlex();
     }
     int mood(Boss b) {
         if(b.beaten)return 8;
@@ -262,6 +274,7 @@ final class Alligator {
     float drawnX(Layout L,int which) {
         if(showoff()) {
             float rest=restX(L,which),aim=L.w*(which==0?.43f:which==1?.57f:.5f);
+            if(which<2)rest+=(L.w*(which==0?.17f:.83f)-rest)*showoffFlex();
             return rest+(aim-rest)*showoffReach(which);
         }
         Strike s=strikeFor(which);
@@ -269,11 +282,13 @@ final class Alligator {
         if(which<2)x+=(restX(L,which)-x)*vulnerablePose;
         float blend=which==2?tailFlick():crossedArms();
         float target=which==2?counterTailX(L):L.w*(which==0?.65f:.35f);
-        return x+(target-x)*blend;
+        x+=(target-x)*blend;
+        return guard.drawnLimbX(L,which,x);
     }
     float drawnY(Layout L,int which) {
         if(showoff()) {
             float rest=restY(L,which),aim=L.playTop+(L.dangerY-L.playTop)*(which==2?.60f:.45f);
+            if(which<2)rest+=(L.playTop+(L.dangerY-L.playTop)*(.20f+.012f*(float)Math.sin(showoffAge*18))-rest)*showoffFlex();
             return rest+(aim-rest)*showoffReach(which);
         }
         Strike s=strikeFor(which);
@@ -281,7 +296,8 @@ final class Alligator {
         if(which<2)y+=(restY(L,which)-y)*vulnerablePose;
         float blend=which==2?tailFlick():crossedArms();
         float target=which==2?counterTailY(L):L.playTop+(L.dangerY-L.playTop)*(which==0?.38f:.42f);
-        return y+(target-y)*blend;
+        y+=(target-y)*blend;
+        return guard.drawnLimbY(L,which,y);
     }
     boolean showGuide() {return dazes==0;}
     void retireLimb() {if(limb==2)tailSide=-tailSide;limb=-1;placed=false;}
@@ -504,13 +520,11 @@ final class Alligator {
     boolean parry(Boss b,Layout L,float x0,float y0,float x1,float y1) {
         if(limb<0 || blocked || attack<.12f)return false;
         if(distance(tipX,tipY,x0,y0,x1,y1)>tipRadius(L)+L.w*.07f)return false;
-        blocked=true;recoil=RETURN/tempo;flash=1;pointer=-1;
+        blocked=true;recoil=RETURN/tempo;pointer=-1;
         if(!comboActive || ++comboParried==comboCount) {
             daze=OPEN;longWindow=windowHit=windowDamaged=false;windowDamage=closing=0;dazeCue=true;
         }
         strokeX=x0;strokeY=y0;strokeEndX=x1;strokeEndY=y1;strokeFade=.3f;
-        jolt(.27f);
-        if(b.body!=null)b.body.squash(.35f);
         return true;
     }
     int press(Boss b,Layout L) {
@@ -558,9 +572,7 @@ final class Alligator {
                 guard.emit(c,L,anchorX,anchorY,x,y,defended);
                 if(defended) {
                     c.timeAttack.defended();c.score+=GameCore.BOSS_HIT;
-                    c.shake=Math.max(c.shake,guard.impactScale>1.5f?.7f:.38f);c.bossDeathHaptic=1;
-                    Fx.explode(c,c.rnd,tipX,tipY,L.enemyR,12,guard.primary);
-                    if(c.sound!=null) {c.sound.boltPop();if(dazeCue)c.sound.uiBloop();}
+                    guard.prepareImpact(c,L);
                 }
                 anchorX=x;anchorY=y;
             }

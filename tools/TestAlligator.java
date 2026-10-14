@@ -57,26 +57,60 @@ final class TestAlligator extends Check {
             GameCore c=fight(L);c.companion.begin(6);Alligator a=c.boss.alligator;
             a.next=limb;a.timer=0;block(c,L);AlligatorGuard g=a.guard;
             check("parry starts at companion home "+limb,g.flying() && g.companionX(L)==RunCompanion.x(L)
-                    && g.companionY(L)==RunCompanion.y(L) && c.shake>=.38f);
-            float x=g.hitX,y=g.hitY;
-            g.update(AlligatorGuard.TRAVEL);
-            check("companion reaches struck limb "+limb,Math.abs(g.companionX(L)-x)<.01f && Math.abs(g.companionY(L)-y)<.01f);
+                    && g.companionY(L)==RunCompanion.y(L) && g.pendingImpact);
+            check("parry begins at normal companion size "+limb,g.companionScale()==1);
+            float x=RunCompanion.x(L)+g.toX*L.w,y=RunCompanion.y(L)+g.toY*L.h;
+            g.update(AlligatorGuard.TRAVEL*.5f);
+            check("companion grows smoothly during flight "+limb,g.companionScale()>1 && g.companionScale()<1.68f);
+            g.update(AlligatorGuard.TRAVEL*.5f);
+            check("companion reaches contact pose "+limb,Math.abs(g.companionX(L)-x)<.01f && Math.abs(g.companionY(L)-y)<.01f);
+            check("companion edge meets impact without overlapping limb centre "+limb,
+                    Math.abs(Math.hypot(x-g.hitX,y-g.hitY)-RunCompanion.radius(c,L)*g.companionScale())<.01f
+                    && Math.hypot(x-g.limbX,y-g.limbY)>RunCompanion.radius(c,L)*g.companionScale()+L.w*.04f);
+            check("limb stays at contact until companion arrives "+limb,
+                    Math.abs(a.drawnX(L,limb)-g.limbX)<.01f && Math.abs(a.drawnY(L,limb)-g.limbY)<.01f);
+            check("contact starts companion color pulse "+limb,Math.abs(g.colorPulse()-.65f)<.001f);
             float before=g.flightAge;c.paused=true;c.update(.2f,L);c.paused=false;
             check("pause freezes parry excursion "+limb,g.flightAge==before);
-            g.update(AlligatorGuard.HOME_AT-AlligatorGuard.TRAVEL);
-            check("companion stays at impact until 1.5 seconds "+limb,Math.abs(g.companionY(L)-y)<.01f);
+            g.update(.14f);
+            check("contact color fades smoothly "+limb,g.colorPulse()>0 && g.colorPulse()<.65f);
+            float backX=g.companionX(L)-x,backY=g.companionY(L)-y;
+            check("impact bounces companion back along its approach "+limb,
+                    backX*(RunCompanion.x(L)-x)+backY*(RunCompanion.y(L)-y)>0
+                    && Math.hypot(backX,backY)>L.w*.07f && Math.hypot(backX,backY)<L.w*.16f);
+            g.update(.6f);float bobX=g.companionX(L),bobY=g.companionY(L);
+            check("companion color restored after half second "+limb,g.colorPulse()==0);
+            g.update(.2f);
+            check("companion keeps moving after initial recoil "+limb,
+                    Math.hypot(g.companionX(L)-bobX,g.companionY(L)-bobY)>L.w*.003f);
+            g.update(AlligatorGuard.HOME_AT-g.flightAge);
+            float returnY=g.companionY(L);
+            check("companion stays near impact until return "+limb,Math.hypot(g.companionX(L)-x,returnY-y)<L.w*.16f);
+            check("companion holds its large fighting size "+limb,Math.abs(g.companionScale()-1.68f)<.001f);
             g.update(AlligatorGuard.RETURN*.5f);
-            check("return interpolates toward home "+limb,Math.abs(g.companionY(L)-(y+RunCompanion.y(L))*.5f)<.01f);
+            check("return interpolates toward home "+limb,Math.abs(g.companionY(L)-(returnY+RunCompanion.y(L))*.5f)<.01f);
+            check("return smoothly shrinks the companion "+limb,Math.abs(g.companionScale()-1.34f)<.001f);
             g.update(AlligatorGuard.RETURN*.5f+.001f);
             check("return finishes at home "+limb,!g.flying() && g.companionY(L)==RunCompanion.y(L));
+            check("return restores normal size "+limb,g.companionScale()==1);
         }
         GameCore c=fight(L);c.companion.begin(6);block(c,L);Alligator a=c.boss.alligator;AlligatorGuard g=a.guard;
-        g.update(.08f);float x=g.companionX(L),y=g.companionY(L);
+        g.update(.30f);float x=g.companionX(L),y=g.companionY(L),size=g.companionScale();
         a.tipX=L.w*.8f;a.tipY=L.h*.5f;g.emit(c,L,0,0,1,1,true);
         check("successive parries retarget without jumping home",Math.abs(g.companionX(L)-x)<.01f && Math.abs(g.companionY(L)-y)<.01f);
+        check("successive parries preserve current growth",Math.abs(g.companionScale()-size)<.001f);
+        g.update(.34f);x=g.companionX(L);y=g.companionY(L);size=g.companionScale();
         a.playerDamaged();check("damage begins a return without jumping",g.flightAge==AlligatorGuard.HOME_AT
                 && Math.abs(g.companionX(L)-x)<.01f && Math.abs(g.companionY(L)-y)<.01f);
-        c.boss.leave();check("leaving clears parry excursion",!g.flying());
+        check("interrupted growth returns without a size jump",Math.abs(g.companionScale()-size)<.001f);
+        check("travel stores a visible trail",g.moves>1);
+        g.update(AlligatorGuard.FLIGHT+AlligatorGuard.TRAIL_TIME);
+        check("travel trail expires after return",g.moves==0);
+        for(int i=0;i<60;i++) {
+            a.tipX=(i%2==0?.2f:.8f)*L.w;g.emit(c,L,0,0,1,1,true);g.update(.015f);
+        }
+        check("rapid parry trails use bounded storage",g.moves>1 && g.moves<=AlligatorGuard.TRAIL_POINTS);
+        c.boss.leave();check("leaving clears parry excursion and trail",!g.flying() && g.moves==0);
         c=fight(L);c.companion.begin(6);a=c.boss.alligator;
         for(int i=0;i<3;i++)exchange(c,L);
         block(c,L);g=a.guard;
@@ -91,6 +125,64 @@ final class TestAlligator extends Check {
         check("hanging arms swing while dazed",max-min>L.w*.04f);
         c.boss.damage(c.boss.hp);advance(c,L,DT);
         check("boss defeat clears excursion and daze pulse",!g.flying() && !g.dazeImpact);
+    }
+    static void contactFeedback(Layout L) {
+        group("parry contact feedback");
+        for(int hz:new int[]{30,60,120}) {
+            GameCore c=fight(L);c.companion.begin(6);Ear ear=new Ear();c.sound=ear;
+            ready(c,L);int score=c.score,particles=c.particles.size();c.shake=0;c.bossDeathHaptic=0;
+            block(c,L);AlligatorGuard g=c.boss.alligator.guard;
+            check("swipe protects and scores immediately but waits for visible contact "+hz,
+                    c.score>score && c.boss.alligator.blocked && ear.boltPops==0 && c.shake==0
+                    && c.bossDeathHaptic==0 && c.particles.size()==particles && g.impactAge==g.impactDuration && g.colorPulse()==0);
+            for(int tick=0;tick<hz;tick++) {
+                g.update(1f/hz);g.feedback(c);
+                if(g.flightAge<AlligatorGuard.TRAVEL)check("no feedback before arrival "+hz+"/"+tick,
+                        ear.boltPops==0 && c.particles.size()==particles && g.colorPulse()==0);
+                if(g.flightAge>=AlligatorGuard.TRAVEL && g.flightAge<AlligatorGuard.TRAVEL+1f/hz)
+                    check("color flash starts on collision frame "+hz,g.colorPulse()>.6f);
+                if(g.flightAge>=AlligatorGuard.TRAVEL+AlligatorGuard.CONTACT_FLASH)
+                    check("color flash ends after half second "+hz+"/"+tick,g.colorPulse()==0);
+            }
+            check("contact releases sound shake haptic and particles exactly once "+hz,
+                    ear.boltPops==1 && ear.uiBloops==1 && c.shake>=.38f && c.bossDeathHaptic==1
+                    && c.particles.size()==particles+12);
+            for(boolean damage:new boolean[]{false,true}) {
+                c=fight(L);ear=new Ear();c.sound=ear;block(c,L);g=c.boss.alligator.guard;
+                if(damage)g.returnHome();else c.boss.leave();
+                g.update(1);g.feedback(c);
+                check("interrupted flight drops delayed feedback "+damage+"/"+hz,ear.boltPops==0 && c.particles.isEmpty());
+            }
+        }
+    }
+    static void limbRecoil(Layout L) {
+        group("limb recoil on companion contact");
+        for(int limb=0;limb<3;limb++) {
+            GameCore c=fight(L);c.companion.begin(6);Alligator a=c.boss.alligator;
+            a.next=limb;a.timer=0;block(c,L);AlligatorGuard g=a.guard;
+            float x=g.limbX,y=g.limbY;
+            g.update(AlligatorGuard.TRAVEL);
+            check("limb recoil waits for contact "+limb,Math.hypot(a.drawnX(L,limb)-x,a.drawnY(L,limb)-y)<.01f);
+            float companionX=g.companionX(L),companionY=g.companionY(L);
+            g.update(.065f);
+            float kickX=a.drawnX(L,limb)-x,kickY=a.drawnY(L,limb)-y;
+            check("claw or tail kicks away from incoming companion "+limb,
+                    kickX*(companionX-x)+kickY*(companionY-y)<0
+                    && Math.hypot(kickX,kickY)>L.w*.10f && Math.hypot(kickX,kickY)<L.w*.16f);
+            check("companion and limb separate in opposite directions "+limb,
+                    kickX*(g.companionX(L)-companionX)+kickY*(g.companionY(L)-companionY)<0);
+            float beforeX=a.drawnX(L,limb),beforeY=a.drawnY(L,limb);
+            a.limb=(limb+1)%3;a.tipX=L.w*.5f;a.tipY=L.h*.4f;
+            g.emit(c,L,0,0,1,1,true);
+            check("next combo parry preserves prior limb recoil "+limb,
+                    Math.hypot(a.drawnX(L,limb)-beforeX,a.drawnY(L,limb)-beforeY)<.01f);
+            g.update(AlligatorGuard.LIMB_RETURN);
+            check("recoil settles exactly to normal pose "+limb,
+                    g.drawnLimbX(L,limb,123)==123 && g.drawnLimbY(L,limb,456)==456);
+            c.boss.leave();
+            boolean clear=true;for(int i=0;i<3;i++)clear &= g.limbAge[i]==AlligatorGuard.LIMB_RETURN;
+            check("leaving clears all limb recoil clocks "+limb,clear);
+        }
     }
     static void bodyMotion(Layout L) {
         GameCore c=fight(L),idle=fight(L);Alligator a=c.boss.alligator;
@@ -685,17 +777,25 @@ final class TestAlligator extends Check {
             check("crossing threshold interrupts daze for the matching demo "+count+"/"+hz,
                     a.showoffCount==count && a.daze==0 && !a.longWindow && a.roundStreak==0
                     && !a.comboActive && b.boltCount()==0);
+            check("daze cancel flashes and shakes before combo demo",a.cancelFlash()>.8f && a.takeShake()>=.85f && a.showoffLimb()<0);
             float hp=b.hp,clock=a.showoffAge;c.paused=true;c.update(.2f,L);c.paused=false;
             check("pause freezes combo demonstration",a.showoffAge==clock);
-            int hits=0,cues=0,limbs=0,shakes=0;boolean inputSafe=true;
+            int hits=0,cues=0,limbs=0,shakes=0;boolean inputSafe=true,flexed=false;
             for(int frame=0;frame<hz*4 && a.showoff();frame++) {
                 int limb=a.showoffLimb();if(limb>=0)limbs|=1<<limb;
+                if(a.showoffFlex()>.98f) {
+                    flexed=true;
+                    inputSafe &= limb<0 && a.drawnY(L,0)<a.rootY(L,0) && a.drawnY(L,1)<a.rootY(L,1)
+                            && a.elbowX(L,0,a.drawnX(L,0))<a.drawnX(L,0)
+                            && a.elbowX(L,1,a.drawnX(L,1))>a.drawnX(L,1);
+                }
                 inputSafe &= b.press(0,c.rnd,L)==Boss.REBUFF && b.hp==hp && a.pendingShots==0 && a.retaliation==0;
                 inputSafe &= !a.swipe(b,L,0,L.h*.5f,L.w,L.h*.5f);
                 hits+=b.update(dt,L,c.rnd);cues+=a.takeAttackCues();
                 if(a.takeShake()>0)shakes++;
             }
             check("demo ignores attack input without retaliation",inputSafe);
+            check("arms flex up before the combo then settle",flexed && a.showoffFlex()==0 && a.cancelFlash()==0);
             check("demo shows ordered claws then optional tail with one cue each",!a.showoff()
                     && limbs==(count==2?3:7) && cues==count && hits==0 && a.daze==0);
             check("each demonstration move shakes once "+count+"/"+hz,shakes==count && a.takeShake()==0);
@@ -721,6 +821,7 @@ final class TestAlligator extends Check {
         }
         GameCore c=fight(L);Alligator a=c.boss.alligator;
         c.boss.hp=c.boss.hpMax*.5f;c.boss.damage(1);
+        check("threshold has immediate cancel shake",a.takeShake()>=.85f);
         a.showoffAge=Alligator.SHOWOFF_LEAD+Alligator.SHOWOFF_BEAT*.5f-DT*.5f;
         c.shake=0;c.paused=true;c.update(DT,L);
         check("paused demonstration does not shake",c.shake==0 && a.takeShake()==0);
@@ -737,6 +838,8 @@ final class TestAlligator extends Check {
     static void all(Layout L) {
         TestGatorRendering.all(L);
         parryCompanion(L);
+        contactFeedback(L);
+        limbRecoil(L);
         impactFeedback(L);
         comboShowoff(L);
         comboAudio(L);

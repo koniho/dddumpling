@@ -13,6 +13,7 @@ package com.dddumpling.game;
  * than a generic placeholder.
  */
 final class Trinket {
+    static final int FIGHT=15;
 
     private static final int INK = 0xFF3A2E4F;        // face lines
     private static final int BLUSH = 0x66FF7C9E;
@@ -116,12 +117,21 @@ final class Trinket {
     }
 
     /** Compact expressions shared by every collectible family, only in the run companion. */
+    static void fightingEyes(Painter p,float x,float y,float r,int side,float clock,float fade) {
+        int ink=Draw.fadeBy(INK,fade);
+        float effort=.5f+.5f*(float)Math.sin(clock*9),brow=r*(.04f+.05f*effort);
+        p.fillEllipse(x,y,r*.14f,r*(.13f-.045f*effort),ink);
+        p.fillCircle(x-side*r*.035f,y-r*.025f,r*.043f,Draw.fadeBy(0xFFFFF5E8,fade));
+        p.line(x-side*r*.17f,y-r*.15f+brow,x+side*r*.17f,y-r*.31f+brow,ink,r*.085f);
+    }
     static void reactionFace(Painter p,float x,float y,float r,float clock,float fade,int mood,float look) {
         int ink=Draw.fadeBy(INK,fade);
         boolean blink=Math.sin(clock*1.7f)>.985f;
         for(int side=-1;side<=1;side+=2) {
             float ex=x+side*r*.35f+look*r;
-            if(mood==6) {
+            if(mood==FIGHT) {
+                fightingEyes(p,ex,y,r,side,clock,fade);
+            } else if(mood==6) {
                 p.polyline(new float[]{ex-side*r*.20f,y-r*.26f,ex+side*r*.16f,y-r*.12f},ink,r*.09f);
                 p.fillEllipse(ex,y,r*.16f,r*.075f,ink);
                 p.fillCircle(ex-side*r*.04f,y-r*.015f,r*.035f,Draw.fadeBy(0xFFFFFFFF,fade));
@@ -152,7 +162,11 @@ final class Trinket {
             }
             p.fillEllipse(x+side*r*.60f,y+r*.18f,r*.16f,r*.09f,Draw.fadeBy(BLUSH,fade));
         }
-        if(mood==9) {
+        if(mood==FIGHT) {
+            float h=r*(.065f+.05f*(.5f+.5f*(float)Math.sin(clock*9)));
+            p.fillEllipse(x,y+r*.32f,r*.17f,h,ink);
+            p.fillEllipse(x,y+r*.35f,r*.08f,h*.32f,Draw.fadeBy(0xFFFFA6BD,fade));
+        } else if(mood==9) {
             p.polyline(new float[]{x-r*.22f,y+r*.25f,x-r*.08f,y+r*.34f,
                     x+r*.08f,y+r*.34f,x+r*.25f,y+r*.17f},ink,r*.085f);
         } else if(mood==8) {

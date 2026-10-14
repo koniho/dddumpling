@@ -3103,6 +3103,7 @@ final class GameCore {
             boolean beforeSupernova = boss.kind == Boss.SPLITTER && boss.beaten && !DivideDeath.bursting(boss);
             if(boss.kind==Boss.ALLIGATOR)boss.alligator.target(this,L);
             int bossHits = boss.update(dt, L, rnd);
+            if(boss.kind==Boss.ALLIGATOR)boss.alligator.guard.feedback(this);
             if(boss.kind==Boss.ALLIGATOR)shake=Math.max(shake,Math.max(boss.alligator.takeShake(),
                     AlligatorArrival.shake(beforeIntro,boss.introProgress())));
             BossPlay.deathFeedback(this, beforeDeath);

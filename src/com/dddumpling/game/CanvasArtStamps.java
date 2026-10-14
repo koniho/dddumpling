@@ -17,7 +17,7 @@ final class CanvasArtStamps {
     private final float[] values=new float[20];
     private final ColorMatrix matrix=new ColorMatrix();
     private int priorTint;
-    private float priorAmount=-1;
+    private float priorAmount=-1,priorPhase=-1;
 
     void warm() {for(int art=0;art<images.length;art++)image(art);}
     private Bitmap image(int art) {
@@ -28,16 +28,14 @@ final class CanvasArtStamps {
         AlligatorArt.stampArt(painter,art,UNIT);
         bitmap.prepareToDraw();images[art]=bitmap;return bitmap;
     }
-    void draw(Canvas canvas,int art,float x,float y,float w,float h,float angle,int tint,float amount) {
-        if(amount!=priorAmount || tint!=priorTint) {
-            if(amount==0)paint.setColorFilter(null);
+    void draw(Canvas canvas,int art,float x,float y,float w,float h,float angle,int tint,float amount,float phase) {
+        if(amount!=priorAmount || tint!=priorTint || phase!=priorPhase) {
+            if(amount==0 && phase==0)paint.setColorFilter(null);
             else {
-                values[0]=values[6]=values[12]=1-amount;values[18]=1;
-                values[4]=((tint>>>16)&255)*amount;
-                values[9]=((tint>>>8)&255)*amount;values[14]=(tint&255)*amount;
+                GatorPalette.matrix(values,tint,amount,phase);
                 matrix.set(values);paint.setColorFilter(new ColorMatrixColorFilter(matrix));
             }
-            priorAmount=amount;priorTint=tint;
+            priorAmount=amount;priorTint=tint;priorPhase=phase;
         }
         bounds.set(-w*EXTENT,-h*EXTENT,w*EXTENT,h*EXTENT);
         canvas.save();canvas.translate(x,y);canvas.rotate(angle*180/(float)Math.PI);

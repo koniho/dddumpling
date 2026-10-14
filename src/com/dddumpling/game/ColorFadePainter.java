@@ -13,6 +13,13 @@ final class ColorFadePainter implements Painter, ArtStamp {
         return cache.stamp(art,x,y,w,h,angle,color,combined);
     }
     final Painter p;
+    public boolean greenStamp(int art,float x,float y,float w,float h,float angle,int inner,float mix,float phase) {
+        ArtStamp cache=stamps()==null?null:p.stamps();
+        if(cache==null)return false;
+        float combined=amount+(1-amount)*mix;
+        int color=combined==0?0:Glyph.mix(inner,tint,amount/combined);
+        return cache.greenStamp(art,x,y,w,h,angle,color,combined,phase);
+    }
     final int tint;
     final float amount, opacity;
     ColorFadePainter(Painter p,int tint,float amount,float opacity) {

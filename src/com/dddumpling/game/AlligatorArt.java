@@ -26,10 +26,10 @@ final class AlligatorArt extends Draw {
         return t<.095f?0xFFFF786E:0xFFE84064;
     }
     private static float phaseTint(Boss b) {
-        float tint=b.hp<b.hpMax*.25f?.44f:b.hp<b.hpMax*.5f?.22f:0;
+        float tint=b.hp<b.hpMax*.25f?1:b.hp<b.hpMax*.5f?.75f:0;
         Alligator a=b.alligator;
         if(a.showoff()) {
-            float before=a.showoffCount==3?.22f:0;
+            float before=a.showoffCount==3?.75f:0;
             tint=before+(tint-before)*AlligatorArrival.ramp(a.showoffAge,0,.45f);
         }
         return tint;
@@ -43,10 +43,9 @@ final class AlligatorArt extends Draw {
         AlligatorArrival.particles(scene,L,arrival,false);
         scene.save();
         scene.translate(0,entryY+L.h*end*end);
-        float flash=damageFlash(b.hurt),phase=phaseTint(b),tint=phase+(1-phase)*flash;
-        // Compose phase warmth and brief damage flashes in one color pass.
-        int tintColor=tint==0?0:Glyph.mix(0xFFF26E65,damageColor(b.hurt),flash/tint);
-        Painter creature=tint==0?scene:new ColorFadePainter(scene,tintColor,tint,1);
+        float cancel=a.cancelFlash(),flash=Math.max(damageFlash(b.hurt),cancel),phase=phaseTint(b);
+        Painter creature=flash==0?scene:new ColorFadePainter(scene,cancel>0?0xFFFFB5A0:damageColor(b.hurt),flash,1);
+        if(phase>0)creature=new GatorPalette(creature,phase);
         Painter p=creature;
         boolean bodyVisible=L.playTop+(L.dangerY-L.playTop)*.28f+entryY<L.h;
         if(bodyVisible && a.tummy!=null) {
@@ -144,10 +143,10 @@ final class AlligatorArt extends Draw {
     }
     private static Painter attackGlow(Painter p,float[] outline,float width,float pulse) {
         if(pulse<=0)return p;
-        p.strokePoly(outline,fadeBy(0x26FFE34A,pulse),width*.30f);
-        p.strokePoly(outline,fadeBy(0x65FFE96B,pulse),width*.12f);
-        p.strokePoly(outline,fadeBy(0x95FFF3A6,pulse),width*.045f);
-        return new ColorFadePainter(p,0xFFFFA052,.20f+.38f*pulse,1);
+        p.strokePoly(outline,fadeBy(0x26FFFFAA,pulse),width*.30f);
+        p.strokePoly(outline,fadeBy(0x65FFFFCD,pulse),width*.12f);
+        p.strokePoly(outline,fadeBy(0xB5FFFFFF,pulse),width*.045f);
+        return new ColorFadePainter(p,0xFFFFFFFF,.25f+.42f*pulse,1);
     }
     /** Rounded, traced outlines; every layer shares the same bent centreline. */
     static void limb(Painter p,float x,float y,float tx,float ty,float width,boolean tail,int color,float clock) {
@@ -414,6 +413,7 @@ final class AlligatorArt extends Draw {
             p.fillEllipse(ex-w*.016f,ey-h*.045f,w*.170f*scale,h*.47f*scale*(eyes==null?1:1-eyes.closed()*.60f),0xFFDAF2BF);
             boolean blink=mood==0 && Math.sin(clock*1.7f)>.985f;
             if(eyes!=null)animatedEyes(p,ex,ey,w,h,scale,eyes,clock);
+            else if(mood==Trinket.FIGHT)Trinket.fightingEyes(p,ex,ey,w*.85f*scale,side==0?-1:1,clock,1);
             else if(mood>=Alligator.WINDUP_EYES)bossEyes(p,ex,ey,w,h,scale,mood,look,lookY,clock);
             else if(mood==3) p.polyline(new float[]{ex-w*.09f,ey-h*.14f,ex+w*.035f,ey,ex-w*.09f,ey+h*.14f},DARK,w*.030f);
             else if(mood==5 || mood==7) p.arc(ex,ey+h*.10f,w*.105f*scale,h*.19f*scale,194,151,DARK,w*.028f);

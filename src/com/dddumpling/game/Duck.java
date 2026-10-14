@@ -205,7 +205,8 @@ final class Duck extends Draw {
         boolean blink=Math.sin(clock*1.7f+kind)>.985f;
         for(int side=-1;side<=1;side+=2) {
             float ex=hx+side*r*.34f+look*r*.10f,ey=hy-r*.01f;
-            if(blink || mood==RunCompanion.VICTORY)p.arc(ex,ey,r*.12f,r*.09f,195,150,EDGE,r*.048f);
+            if(mood==Trinket.FIGHT)Trinket.fightingEyes(p,ex,ey,r*.9f,side,clock,1);
+            else if(blink || mood==RunCompanion.VICTORY)p.arc(ex,ey,r*.12f,r*.09f,195,150,EDGE,r*.048f);
             else {
                 p.fillEllipse(ex,ey,r*.125f,r*.137f,EDGE);
                 p.fillCircle(ex-r*.030f,ey-r*.045f,r*.038f,0xFFFFFFFF);
