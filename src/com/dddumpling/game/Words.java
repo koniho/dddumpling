@@ -61,5 +61,6 @@ final class Words {
 
         e.pos = 0;
         e.done = 0;
+        SwampEnemies.reset(e);
     }
 }

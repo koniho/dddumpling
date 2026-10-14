@@ -355,6 +355,28 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
   different things. A **skit** plays under a stage banner, runs once, and uses the six letters
   (`Skits`). A **beat** loops inside a story popup and uses the collectibles (`Storybook`).
 
+## Swampland word variants
+
+Normal Adventure waves in Swampland (stages 21–24, and later Swampland visits) mix ordinary
+words with **fog words** and **divebomb words**. The first stage of a swamp visit gives each
+solo word a 20% fog chance and 15% divebomb chance; later stages use 25% and 20%.
+Linked pairs and newly spawned power-up words stay ordinary. These variants do not spawn in
+Survival, Boss Time Attack, or boss encounters. One word cannot have both variants.
+
+- Fog keeps the current head readable and replaces future characters, colors, and stack
+  details with anonymous mist. Fully clearing a prompt immediately reveals the next, with
+  outward wisps that never delay input. A wrong key re-covers the reset word.
+- An amber chevron marks a divebomb word. Reaching one unresolved tile triggers one sound,
+  a 0.35-second squash/wind-up, then accelerating descent with an amber ring and trails.
+  Stacked final prompts still require their normal presses. Near-line triggers allow at least
+  1.2 seconds before crossing the damage line, plus 0.2 seconds per extra final-stack press;
+  Kids Mode slows this movement and timing. The normal final lunge/damage flow follows.
+  A wrong key resets the word but does not restart or multiply its dive. Rescue swipes still
+  push it back, and correct keys and power-ups can clear it normally.
+
+Code: `SwampEnemies`, per-enemy state on `GameCore.Enemy`. Spawn-phase selection adds no
+new generation RNG calls. The bounded player pays a fresh reaction delay for each fog reveal.
+
 ## Linked friends (stage 16 onward)
 
 Each ordinary wave from stage 16 contains two linked pairs. Stage 16 introduces them in the

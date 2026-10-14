@@ -52,6 +52,7 @@ final class Bot {
     private float budget;
     /** Reaction still owed before the next press. */
     private float think;
+    private float fogThink;
     private float gatorX,gatorY,gatorEnd;
     private boolean gatorSwipe;
     private float lidSwipeAge;
@@ -311,6 +312,11 @@ final class Bot {
         // find first — unless FLURRY has made every key the right one, which is the whole of what
         // that mode does for you.
         boolean engaged = c.target != null && c.enemies.contains(c.target) && c.target.typeable();
+        if(!engaged || c.target.swampKind!=SwampEnemies.FOG || c.flurry() || c.ninja())fogThink=0;
+        if(fogThink>0) {
+            fogThink=Math.max(0,fogThink-dt);
+            if(fogThink>0)return;
+        }
         if (!engaged && pendingPartner(c) == null && !c.flurry()) {
             think -= dt;
             if (think > 0f) return;
@@ -327,6 +333,8 @@ final class Bot {
         int g = rnd.nextFloat() < missRate ? (want + 1 + rnd.nextInt(Glyph.COUNT - 1))
                 % Glyph.COUNT : want;
         c.tapKey(g, L);
+        if(c.target!=null && c.target.swampKind==SwampEnemies.FOG
+                && c.target.pos>0 && c.target.done==0 && !c.flurry())fogThink=reaction;
 
         // Whatever that press did, if nothing is engaged now the next one has to be found.
         if (!(c.target != null && c.enemies.contains(c.target) && c.target.typeable())) {

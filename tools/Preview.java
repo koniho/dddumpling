@@ -8,6 +8,22 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void swampEnemyFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("175-176-"))return;
+        for(int beat=0;beat<3;beat++) {
+            GameCore c=TestSwampEnemies.scene(L,175);
+            GameCore.Enemy fog=TestSwampEnemies.word(c,L,SwampEnemies.FOG,L.h*.32f);
+            GameCore.Enemy dive=TestSwampEnemies.word(c,L,SwampEnemies.DIVE,L.h*.54f);
+            TestSwampEnemies.word(c,L,SwampEnemies.NONE,L.h*.68f);
+            if(beat>0) {
+                c.target=fog;c.tapKey(0,L);
+                c.target=dive;c.tapKey(0,L);c.tapKey(1,L);
+                if(beat==2)step(c,L,.75f);
+                else step(c,L,.15f);
+            }
+            shot(dir,"175-176-swamp-words-"+beat,c,L,w,h,ss);
+        }
+    }
 
     private static void alligatorFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         for(float at:new float[]{.08f,.16f,.22f,.30f,.41f,.66f,.90f,1.70f}) {
@@ -1380,6 +1396,7 @@ final class Preview {
         timeAttackFrames(dir,L,w,h,ss);
         gatorSilhouetteFrames(dir,L,w,h,ss);
         alligatorFrames(dir,L,w,h,ss);
+        swampEnemyFrames(dir,L,w,h,ss);
         gatorCompanionFrames(dir,L,w,h,ss);
         adventureTitleFrames(dir,L,w,h,ss);
         survivalEndingFrames(dir,L,w,h,ss);

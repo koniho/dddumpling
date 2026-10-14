@@ -396,6 +396,9 @@ final class GameCore {
         /** Presses landed on the current tile so far. */
         int done;
         float baseX, y, speed, phase, sway;
+        int swampKind, fogHead;
+        float fogReveal, diveAge, diveSpeed, diveGrace;
+        boolean diving;
         /** Frenzy side entrance: an inward arc that settles into a vertical lane. */
         boolean sideEntry;
         float pathStartX, pathEndX, pathStartY;
@@ -2307,6 +2310,8 @@ final class GameCore {
             Enemy missed = target;
             missed.pos = 0;
             missed.done = 0;
+            missed.skipGone();
+            SwampEnemies.progressed(this,missed,L);
             missed.hitPulse = 0f;
             missed.hitIndex = -1;
             missed.failPulse = 1f;
@@ -2343,6 +2348,7 @@ final class GameCore {
             e.pos++;
             e.skipGone();
             e.done = 0;
+            SwampEnemies.progressed(this,e,L);
         }
         e.hitPulse = 1f;
         e.hitIndex = struck;
@@ -3196,6 +3202,7 @@ final class GameCore {
             Enemy e = enemies.get(i);
             e.hitPulse = decay(e.hitPulse, dt * 6.5f);
             e.failPulse = decay(e.failPulse, dt * 2.8f);
+            e.fogReveal = decay(e.fogReveal, dt);
             for (int k = 0; k < e.word.length; k++) {
                 if (e.gone[k] && e.goneT[k] < 1f) e.goneT[k] = Math.min(1f, e.goneT[k] + dt * 3.2f);
             }
@@ -3255,7 +3262,7 @@ final class GameCore {
                 continue;
             }
 
-            e.y = PowerRush.yAfter(e,e.speed * fallRate() * dt * traversalRate());
+            e.y = SwampEnemies.fall(this,e,L,dt);
             updateSidePath(e, L);
             if (e.linkWaiting) {
                 e.warn = 0f;
@@ -3366,6 +3373,7 @@ final class GameCore {
         skyGlowColor = Glyph.COLOR[e.word[i]];
 
         e.skipGone();
+        SwampEnemies.progressed(this,e,L);
         if (e.pos >= e.word.length) destroyWord(e, tx, e.y, L, chime);
     }
 
@@ -3681,6 +3689,7 @@ final class GameCore {
                 float lane = attempt == 0 ? preferredX : lo + (hi - lo) * (attempt - 1) / 7f;
                 if (e.sideEntry) e.pathEndX = lane; else e.baseX = lane;
                 if (EnemyEntry.clear(e, this, L)) {
+                    SwampEnemies.assign(this,e);
                     enemies.add(e);
                     PowerRush.admitted(this,e.sideEntry);
                     return true;
