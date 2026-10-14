@@ -254,6 +254,7 @@ final class Renderer extends Draw {
         float swell = (1f + 0.26f * attack + 0.08f * e.warn) * enter
                 * (1f - 0.30f * destroy);
         int fade = (int) ((90 + 165 * e.enterT) * (1f - destroy));
+        SwampEnemies.fog(p,c,e,L,jx,jy,swell,fade,false);
 
         for (int i = 0; i < e.word.length; i++) {
             int g = e.word[i];
@@ -298,10 +299,7 @@ final class Renderer extends Draw {
             float scale = head ? Layout.HEAD_SCALE : cleared ? Layout.TILE_SCALE * 0.84f
                     : Layout.TILE_SCALE;
             float cellR = L.enemyR * scale * swell;
-            if(SwampEnemies.hidden(e,i)) {
-                SwampEnemies.cloud(p,x,y,cellR,c.clock,fade);
-                continue;
-            }
+            if(SwampEnemies.hidden(e,i)) continue;
 
             // FLURRY recolours every letter on one upward-travelling rainbow wave.
             int col = c.flurry() ? rainbowAt(y, L, c.clock) : Glyph.COLOR[g];
@@ -359,6 +357,8 @@ final class Renderer extends Draw {
                 }
             }
 
+            if(e.swampKind==SwampEnemies.DIVE && i==e.word.length-1 && !e.destroyed && !e.dying && !e.gone[i])
+                SwampEnemies.hardhat(p,x,y,cellR,fade);
             if(head)SwampEnemies.accent(p,c,e,x,y,cellR,fade);
             if (head && locked) {
                 // Thicker white outline plus a caret, drawn at the smoothed position so the
@@ -370,6 +370,7 @@ final class Renderer extends Draw {
                 caret(p, ix, y, cellR, Glyph.withAlpha(INK, 225));
             }
         }
+        SwampEnemies.fog(p,c,e,L,jx,jy,swell,fade,true);
     }
 
     /**

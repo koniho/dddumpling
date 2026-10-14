@@ -87,16 +87,19 @@ final class TestSwampEnemies extends Check {
         check("dive waits until penultimate stack fully clears",!e.diving);
         c.tapKey(1,L);
         check("last unresolved prompt triggers one cue",e.diving && ear.octoCues==1 && e.typeable());
+        check("charge starts its visual burst immediately",e.diveBurst==SwampEnemies.DIVE_BURST);
         float y=e.y;c.update(.1f,L);
         check("dive immediately charges at full speed and accepts input",e.y-y>e.speed*.1f*3 && e.typeable());
-        c.paused=true;y=e.y;c.update(.2f,L);
-        check("pause freezes dive movement",e.y==y);c.paused=false;
+        c.paused=true;y=e.y;float burst=e.diveBurst;c.update(.2f,L);
+        check("pause freezes dive movement and launch burst",e.y==y && e.diveBurst==burst);c.paused=false;
         advance(c,L,.6f);y=e.y;c.update(DT,L);
         check("dive accelerates beyond normal approach",e.y-y>e.speed*DT*2);
+        check("launch burst fades while the dive continues",e.diveBurst==0 && e.diving);
         c.tapKey(5,L);float speed=e.diveSpeed;
         check("wrong key resets word but cannot restart dive",e.pos==0 && e.diving && ear.octoCues==1);
         c.tapKey(0,L);c.tapKey(1,L);c.tapKey(1,L);
-        check("returning to final prompt cannot compound acceleration",e.diveSpeed==speed && ear.octoCues==1);
+        check("returning to final prompt cannot compound acceleration or restart burst",
+                e.diveSpeed==speed && ear.octoCues==1 && e.diveBurst==0);
         c.tapKey(4,L);advance(c,L,1);
         check("last prompt still defeats diving word",e.destroyed && c.resolvedThisStage==1 && c.lives==GameCore.START_LIVES);
         c=scene(L,176);e=word(c,L,SwampEnemies.DIVE,L.dangerY-L.enemyR-3);
@@ -119,7 +122,7 @@ final class TestSwampEnemies extends Check {
         c.lives=1;c.tapKey(0,L);c.tapKey(1,L);advance(c,L,4);
         check("dive breach follows normal fatal damage flow",c.state==GameCore.OVER && c.lives==0 && c.resolvedThisStage==1);
         Words.fill(e,3,0,new java.util.Random(1));
-        check("reused words clear variant state",e.swampKind==0 && !e.diving && e.fogReveal==0);
+        check("reused words clear variant state",e.swampKind==0 && !e.diving && e.fogReveal==0 && e.diveBurst==0);
     }
     private static void bounded(Layout L) {
         int completed=0,lost=0;int[] variants=new int[3];

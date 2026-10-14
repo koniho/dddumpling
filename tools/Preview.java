@@ -23,6 +23,14 @@ final class Preview {
             }
             shot(dir,"175-176-swamp-words-"+beat,c,L,w,h,ss);
         }
+        for(int cleared:new int[]{0,1,3,4}) {
+            GameCore c=TestSwampEnemies.scene(L,175);c.clock=2;
+            GameCore.Enemy fog=Check.add(c,L,new int[]{0,1,4,2,3},L.h*.45f);
+            fog.swampKind=SwampEnemies.FOG;fog.enterT=1;fog.speed=0;
+            for(int i=0;i<cleared;i++)c.tapKey(fog.word[i],L);
+            step(c,L,.16f);
+            shot(dir,"175-176-fog-recede-"+cleared,c,L,w,h,ss);
+        }
     }
 
     private static void alligatorFrames(File dir,Layout L,int w,int h,int ss) throws Exception {

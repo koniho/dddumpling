@@ -397,7 +397,7 @@ final class GameCore {
         int done;
         float baseX, y, speed, phase, sway;
         int swampKind, fogHead;
-        float fogReveal, diveSpeed;
+        float fogReveal, diveSpeed, diveBurst;
         boolean diving;
         /** Frenzy side entrance: an inward arc that settles into a vertical lane. */
         boolean sideEntry;
@@ -3203,6 +3203,7 @@ final class GameCore {
             e.hitPulse = decay(e.hitPulse, dt * 6.5f);
             e.failPulse = decay(e.failPulse, dt * 2.8f);
             e.fogReveal = decay(e.fogReveal, dt);
+            e.diveBurst = decay(e.diveBurst, dt);
             for (int k = 0; k < e.word.length; k++) {
                 if (e.gone[k] && e.goneT[k] < 1f) e.goneT[k] = Math.min(1f, e.goneT[k] + dt * 3.2f);
             }
