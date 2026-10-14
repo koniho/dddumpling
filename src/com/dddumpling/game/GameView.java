@@ -20,6 +20,23 @@ public class GameView extends View implements InputManager.InputDeviceListener {
     private final CanvasPainter painter;
     private final SettingsInput settingsInput = new SettingsInput();
     private final KeyboardInput keyboard = new KeyboardInput();
+    private GatorReplay gatorReplay;
+    private String replayMode,replayToken;
+    private int replayLoops;
+    private boolean replayReady;
+    void gatorProfile(String mode) {
+        gatorProfile(mode,"");
+    }
+    void gatorProfile(String mode,String token) {
+        if(!BuildFlags.DEVELOPER)return;
+        if(!"cached".equals(mode) && !"vector".equals(mode) && !"stop".equals(mode))return;
+        cancelPointers();
+        painter.cacheArt=!"vector".equals(mode);
+        gatorReplay="stop".equals(mode)?null:new GatorReplay();
+        replayMode=mode;replayToken=token;replayReady=false;replayLoops=0;
+        if(gatorReplay!=null)painter.warmArt();
+        last=0;refreshNavigation();invalidate();
+    }
 
     private float padL, padT, padR, padB;
     private long last;
@@ -30,7 +47,7 @@ public class GameView extends View implements InputManager.InputDeviceListener {
     private Runnable navigationChanged;
     void navigationChanged(Runnable listener) { navigationChanged = listener; }
     private void refreshNavigation() { if (navigationChanged != null) navigationChanged.run(); }
-    boolean handlesBack() { return Pause.handlesBack(core); }
+    boolean handlesBack() { return gatorReplay!=null || Pause.handlesBack(core); }
     boolean paused() { return core.paused; }
     private void cancelPointers() {
         keyboard.clear();
@@ -44,6 +61,7 @@ public class GameView extends View implements InputManager.InputDeviceListener {
         Pause.release(core);
     }
     boolean back() {
+        if(gatorReplay!=null) {gatorProfile("stop");return true;}
         core.diagnostic("android-back");
         if (!handlesBack()) return false;
         cancelPointers();
@@ -69,6 +87,8 @@ public class GameView extends View implements InputManager.InputDeviceListener {
         core.startMusic();
         setKeepScreenOn(true);
         setClickable(true);
+        // Allocate/upload the small immutable textures before a boss can enter.
+        post(painter::warmArt);
     }
 
     /**
@@ -87,6 +107,8 @@ public class GameView extends View implements InputManager.InputDeviceListener {
     GameCore core() { return core; }
 
     boolean keyboardEvent(KeyEvent event) {
+        if(gatorReplay!=null && event.getKeyCode()>=KeyEvent.KEYCODE_A
+                && event.getKeyCode()<=KeyEvent.KEYCODE_Z)return true;
         InputDevice device = event.getDevice();
         // UHID keyboards (including scrcpy) can report isExternal() == false.
         // Require a non-virtual alphabetic keyboard and reject IME events instead.
@@ -158,6 +180,7 @@ public class GameView extends View implements InputManager.InputDeviceListener {
     }
 
     @Override public boolean onTouchEvent(MotionEvent ev) {
+        if(gatorReplay!=null)return true;
         if(BuildFlags.DEVELOPER && (core.onboarding.briefing || core.onboarding.hintKind!=0)
                 && ev.getActionMasked()!=MotionEvent.ACTION_MOVE)
             core.diagnostic("tutorial-touch action="+ev.getActionMasked()+" fingers="+ev.getPointerCount()
@@ -848,6 +871,21 @@ public class GameView extends View implements InputManager.InputDeviceListener {
         if (dt > 0.05f) dt = 0.05f;   // a backgrounded app must not teleport the wave
 
         try {
+            if(gatorReplay!=null) {
+                if(!background)gatorReplay.update(elapsed,layout);
+                painter.bind(c);Renderer.draw(painter,gatorReplay.core,layout);
+                if(!background && c.isHardwareAccelerated()) {
+                    if(!replayReady) {
+                        android.util.Log.i("GatorProfile","ready="+replayMode+" token="+replayToken);
+                        replayReady=true;
+                    }
+                    if(gatorReplay.loops!=replayLoops) {
+                        replayLoops=gatorReplay.loops;
+                        android.util.Log.i("GatorProfile","loop="+replayLoops+" token="+replayToken);
+                    }
+                }
+                postInvalidateOnAnimation();return;
+            }
             boolean playingBeforeUpdate = core.state == GameCore.PLAY && !core.paused && !background;
             if (!background) {
                 core.update(dt, elapsed, layout);

@@ -58,7 +58,7 @@ final class TestCaveBand extends Check {
         int stage=c.stage,lives=c.lives;
         c.update(100,L);c.update(CaveBand.REPORT+.1f,L);
         check("idle performance advances with no free reward or damage",c.stage==stage+1 && c.lives==lives && c.collectTotal==0);
-        c.jumpToStage(21,L);Interlude.enterBonus(c,L);c.cart.stop();c.band.begin(c);
+        enterCave(c,21,L);Interlude.enterBonus(c,L);c.cart.stop();c.band.begin(c);
         c.band.position=CaveSong.at(c.band.song,0);
         c.tapBonus((c.band.glyph[0]+1)%6);c.tapBonus(c.band.glyph[0]);
         check("wrong key consumes cue to prevent all-key mashing",c.band.hits==0 && c.band.result[0]==-2);

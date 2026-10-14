@@ -7,7 +7,7 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 
 /** {@link Painter} backed by an Android {@link Canvas}. */
-final class CanvasPainter implements Painter {
+final class CanvasPainter implements Painter, ArtStamp {
 
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -17,6 +17,18 @@ final class CanvasPainter implements Painter {
     private final Typeface heavy;
 
     private Canvas canvas;
+    private CanvasArtStamps artStamps;
+    boolean cacheArt=true;
+    public ArtStamp stamps() {return cacheArt && canvas!=null && canvas.isHardwareAccelerated()?this:null;}
+    void warmArt() {
+        if(artStamps==null)artStamps=new CanvasArtStamps();
+        artStamps.warm();
+    }
+    public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount) {
+        if(stamps()==null || art<0 || art>=ArtStamp.COUNT)return false;
+        if(artStamps==null)artStamps=new CanvasArtStamps();
+        artStamps.draw(canvas,art,x,y,w,h,angle,tint,amount);return true;
+    }
 
     /**
      * @param face the game face, or null to fall back to the platform sans-serif.

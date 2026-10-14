@@ -261,13 +261,19 @@ final class Bot {
         if (c.state != GameCore.PLAY) return;
 
         budget = Math.min(BURST, budget + dt * pps);
-        if(c.bossFighting() && c.boss.kind==Boss.ALLIGATOR && c.boss.alligator.daze<=0) {
+        if(c.bossFighting() && c.boss.kind==Boss.ALLIGATOR && c.boss.alligator.showoff()) {
+            gatorSwipe=false;return;
+        }
+        if(c.bossFighting() && c.boss.kind==Boss.ALLIGATOR && c.boss.boltCount()==0
+                && (c.boss.alligator.daze<=0 || (c.boss.alligator.comboActive
+                    && !c.boss.alligator.longWindow && (c.boss.alligator.windowHit
+                    || c.boss.alligator.attack*c.boss.alligator.tempo>=Alligator.WARN)))) {
             Alligator a=c.boss.alligator;
             if(gatorSwipe) {
                 gatorX=Math.min(gatorEnd,gatorX+L.w*DRAG_SPEED*dt);
                 a.touch(c,L,gatorX>=gatorEnd?1:2,168,gatorX,gatorY);
                 if(gatorX>=gatorEnd)gatorSwipe=false;
-            } else if(a.limb>=0 && !a.blocked && a.attack>=reaction+.12f && budget>=1f) {
+            } else if(a.retaliation==0 && a.limb>=0 && !a.blocked && a.attack>=reaction+.12f && budget>=1f) {
                 budget-=1f;presses++;gatorX=a.tipX-L.w*.12f;gatorEnd=a.tipX+L.w*.12f;gatorY=a.tipY;
                 gatorSwipe=true;a.touch(c,L,0,168,gatorX,gatorY);
             }

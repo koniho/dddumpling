@@ -235,7 +235,7 @@ final class HighScoreScreen extends Draw {
     private static void stages(Painter p,GameCore c,Layout L,HighScores.Run run,float y,float s,
             float font) {
         float[] x={L.w*.29f,L.w*.71f};
-        int[] land={run.land,Lands.forStage(run.stage)},stage={run.land*Boss.EVERY+1,run.stage};
+        int[] land={run.land,Lands.forStage(run.stage)},stage={Lands.firstStage(run.land),run.stage};
         String[] label={"START STAGE ","STAGE REACHED "};
         for(int i=0;i<2;i++) {
             Lands.logo(p,land[i],x[i],y,s*.78f,255,c.clock);

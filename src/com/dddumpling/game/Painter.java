@@ -10,6 +10,8 @@ package com.dddumpling.game;
  */
 interface Painter {
     default DuckBodies ducks() { return null; }
+    default GatorCompanion gator() { return null; }
+    default ArtStamp stamps() { return null; }
 
     int LEFT = -1, CENTER = 0, RIGHT = 1;
 

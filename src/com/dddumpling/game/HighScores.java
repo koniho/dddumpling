@@ -18,7 +18,7 @@ final class HighScores {
         "Mushroom cap became your pillow.",
         "Pebble adopted its own dumpling.",
         "Lily pad booked you a swamp nap.",
-        "Mossy Maw gave you a tummy hug."
+        "Gummy Gator gave you a tummy hug."
     };
     static final String[] SURVIVAL_BLURBS={
         "Rainbow tide stole your floaties.",

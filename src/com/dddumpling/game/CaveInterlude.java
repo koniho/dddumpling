@@ -7,6 +7,7 @@ final class CaveInterlude {
         c.closeSettings();
         // Stage entry clears boss, frenzy and gestures before the real interlude opens.
         c.jumpToStage(mining?22:21,L);
+        c.cave.begin(c,true);
         c.bossPrizePending=false;
         c.spawnedThisStage=c.resolvedThisStage=c.stageQuota();
         select(c,mining);
@@ -18,7 +19,7 @@ final class CaveInterlude {
         if(c.store!=null)c.store.saveCaveMiningNext(mining);
     }
     static boolean enter(GameCore c) {
-        if(!Cave.stage(c.stage))return false;
+        if(!BuildFlags.DEVELOPER || !c.cave.running)return false;
         c.band.stop(c);c.mining.stop();c.cart.stop();
         c.starBonus=false;c.bossReward=false;c.paradeTimer=0;c.bonusTimer=1;
         c.target=c.caretOwner=null;c.power=null;c.stageByPower=false;

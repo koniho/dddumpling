@@ -40,6 +40,9 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 
 @implementation DDIOSPainter
 
+// Android uses optional bitmap stamps; Core Graphics retains the vector fallback.
+- (id)stamps { return nil; }
+
 - (instancetype)init {
   if ((self = [super init])) _colorSpace = CGColorSpaceCreateDeviceRGB();
   return self;

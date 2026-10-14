@@ -119,6 +119,33 @@ policy lives in [AGENTS.md](../../AGENTS.md).
 
 ## Deterministic comparison
 
+### Automated Gator device profiling
+
+With a current developer APK installed and the phone unlocked, run
+`sh tools/profile-gator.sh` on Termux/Shizuku, or use `GATOR_TRANSPORT=adb` from an
+ADB host. No playthrough, save reset, or boss unlock is needed. The command checks
+that the installed binary acknowledges a unique replay token, warms each renderer,
+then captures Android `gfxinfo` for the same 36-second seeded scene using vectors
+and cached artwork. Logs and thermal conditions go under `build/gator-profile-*`.
+Use `vector` or `cached` as the argument to capture just one path; repeat in reverse
+order when checking for thermal bias. The raw frame list is Android's recent-frame
+ring buffer; its aggregate histograms cover the capture, not just those last frames.
+
+The developer-only `gator_profile` Activity extra accepts `vector`, `cached`, or
+`stop`. The replay has an independent core with no store or rewards, fixed 60 Hz
+steps, scripted defenses/damage, both combo demonstrations, and a long opening.
+Touch/letter input is ignored; Back or `stop` returns to the real game. The script
+stops the replay on exit. Production builds ignore the hook. Wall-clock pacing may
+slip during stalls longer than 100 ms; do not treat CPU-only harness timing as GPU
+performance or as evidence of a device frame-rate improvement.
+
+Android caches only two immutable Gator assets (palms and skin texture), totaling
+1.125 MiB of bitmap pixels. Pose, body springs, limb silhouettes, eyes, and attack
+effects stay live. Tints reuse those assets. Unsupported painters, grayscale, and
+per-primitive fades keep the vector fallback so layered transparency stays correct.
+
+### Frame comparisons
+
 For a rendering-sensitive refactor expected to preserve visuals, compare only affected
 frames before and after. Do not run full exports for an ordinary nonvisual edit.
 Save checksums outside `out/` (for example under `$TMPDIR`), rerun the same frame selection,

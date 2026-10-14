@@ -24,9 +24,9 @@ final class Boss {
     static final int COUNT = 5;
     final Alligator alligator = new Alligator();
 
-    static final String[] NAMES = {"SLIME", "DARK DIVIDE", "OCTOPULSE", "FLY AGARIC", "MOSSY MAW"};
+    static final String[] NAMES = {"SLIME", "DARK DIVIDE", "OCTOPULSE", "FLY AGARIC", "GUMMY GATOR"};
     /** One line each, in the mode bar. Held to the width of the longest frenzy blurb. */
-    static final String[] BLURB = {"HIT THE MARK, DRAG GLOBS", "HIT THE MARK, THEN PINCH OUT", "BEAT THE REACH", "DRAG BACK AND FORTH", "SWIPE TO BLOCK, TAP WHEN DAZED"};
+    static final String[] BLURB = {"HIT THE MARK, DRAG GLOBS", "HIT THE MARK, THEN PINCH OUT", "BEAT THE REACH", "DRAG BACK AND FORTH", "PARRY, TAP, THEN STOP"};
     /**
      * Which of the six characters each boss is a giant version of.
      *
@@ -59,7 +59,7 @@ final class Boss {
     private static final float[] CYCLE = {5.0f, 1f, 1f, 1f, 1f};
     private static final float[] SHOW = {4.0f, 1f, 1f, 1f, 1f};
 
-    private static final float[] HP = {4f, 8f, 8f, 3f, 12f};
+    private static final float[] HP = {4f, 8f, 8f, 3f, 72f};
     /**
      * Extra health per later visit, capped by {@link #TOUGH_MAX}. A boss met at stage 30 should be
      * more than the same boss at stage 5 — but the cap matters far more than the slope now that
@@ -313,9 +313,11 @@ final class Boss {
 
     float hitX, hitY;
 
+    float introDuration() {return kind==ALLIGATOR?INTRO*3f:INTRO;}
+
     /** 0..1 through the arrival card. */
     float introProgress() {
-        return intro <= 0f ? 1f : 1f - intro / INTRO;
+        return intro <= 0f ? 1f : 1f - intro / introDuration();
     }
 
     /** 0..1 through the exit. */
@@ -343,7 +345,7 @@ final class Boss {
         hpMax = HP[which] + (which == OCTOPUS || which == ALLIGATOR ? 0f : TOUGH * visit);
         hp = hpMax;
         age = 0f;
-        intro = INTRO;
+        intro = introDuration();
         leaveT = 0f;
         // Starts shut, so the first thing a boss does is arrive rather than be vulnerable. The
         // opening breather is also where the blurb gets read.
@@ -507,7 +509,7 @@ final class Boss {
      * which is what keeps the header column above it — see {@link #BODY_DROP} — a single derivation
      * instead of one per boss.
      */
-    private static final float[] WIDE = {2f, 1.65f, 1.35f, 1.45f, 2.2f};
+    private static final float[] WIDE = {2f, 1.65f, 1.35f, 1.45f, 2.7f};
 
     /**
      * How springy each boss is; see {@link Softbody#jiggle}.
@@ -1245,6 +1247,10 @@ final class Boss {
     int damage(float n) {
         hp -= n;
         hurt = 1f;
+        if(kind==ALLIGATOR) {
+            alligator.jolt(hp<=0?1f:.55f);
+            if(alligator.damageThreshold(this,hp+n))clearBolts();
+        }
         if (kind == SLIME) promptT = Math.min(promptT, promptDelay());
         // Dented where it was struck, from above, and harder for a bigger hit. The last blow gets a
         // full-strength punch, which is what makes the burst look earned.
@@ -2177,6 +2183,8 @@ final class Boss {
         piece.squash(0.28f / divideVolleySize());
     }
 
+    int tailBolt(Random rnd,float x,float y) {return singleBolt(rnd,x,y);}
+
     private int singleBolt(Random rnd, float x, float y) {
         int slot = -1;
         for (int i = 0; i < MAX_BOLTS; i++) if (!blive[i]) { slot = i; break; }
@@ -2475,7 +2483,7 @@ final class Boss {
         }
 
         age += dt;
-        if(kind==ALLIGATOR)return hits+alligator.update(this,dt,L);
+        if(kind==ALLIGATOR)return hits+alligator.update(this,dt,L,rnd);
         if (kind == MUSHROOM) {
             for (int i = 0; i < MUSHROOM_DUST; i++) {
                 if (mushroomDustLife[i] <= 0f) continue;

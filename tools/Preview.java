@@ -10,19 +10,177 @@ import java.io.File;
 final class Preview {
 
     private static void alligatorFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
-        if(!wanted("168-"))return;
+        for(float at:new float[]{.08f,.22f,1.70f}) {
+            GameCore parry=TestAlligator.fight(L);parry.stageBanner=0;parry.landBlend=1;parry.companion.begin(6);
+            TestAlligator.block(parry,L);TestAlligator.advance(parry,L,at);
+            shot(dir,"168-companion-parry-"+Math.round(at*100),parry,L,w,h,ss);
+        }
+        GameCore dazed=TestAlligator.fight(L);dazed.stageBanner=0;dazed.landBlend=1;dazed.companion.begin(6);
+        TestAlligator.longOpening(dazed,L);TestAlligator.advance(dazed,L,.35f);
+        shot(dir,"168-companion-daze-impact",dazed,L,w,h,ss);
+        for(int phase=0;phase<3;phase++) {
+            GameCore warm=TestAlligator.fight(L);warm.stageBanner=0;warm.landBlend=1;
+            warm.boss.hp=warm.boss.hpMax*(phase==0?1:phase==1?.49f:.24f);
+            warm.boss.alligator.timer=10;TestAlligator.advance(warm,L,.3f);
+            shot(dir,"168-gator-phase-color-"+phase,warm,L,w,h,ss);
+        }
+        for(int count:new int[]{2,3})for(int beat=0;beat<count;beat++) {
+            GameCore demo=TestAlligator.fight(L);demo.stageBanner=0;demo.landBlend=1;
+            demo.boss.hp=demo.boss.hpMax*(count==2?.5f:.25f);demo.boss.damage(1);
+            for(float t=0;t<Alligator.SHOWOFF_LEAD+Alligator.SHOWOFF_BEAT*(beat+.5f);t+=DT)
+                demo.update(DT,L);
+            shot(dir,"168-combo-showoff-"+count+"-"+(beat+1),demo,L,w,h,ss);
+        }
+        for(float at:new float[]{0,.15f,.35f,.55f,.75f,1}) {
+            GameCore entry=TestAlligator.fight(L);entry.stageBanner=0;entry.landBlend=1;
+            entry.boss.begin(Boss.ALLIGATOR,entry.stage,entry.rnd,entry.playRosterFull());
+            TestAlligator.advance(entry,L,Math.max(DT,entry.boss.introDuration()*at));
+            shot(dir,"168-gator-rise-"+Math.round(at*100),entry,L,w,h,ss);
+        }
+        for(float at:new float[]{.12f,.38f,.70f}) {
+            GameCore laugh=TestAlligator.fight(L);laugh.stageBanner=0;laugh.landBlend=1;
+            laugh.boss.alligator.timer=10;laugh.boss.alligator.playerDamaged();
+            TestAlligator.advance(laugh,L,at);
+            shot(dir,"168-gator-laugh-"+Math.round(at*100),laugh,L,w,h,ss);
+        }
+        for(int side:new int[]{-1,1})for(float at:new float[]{0,.9f,1.3f}) {
+            GameCore tail=TestAlligator.fight(L);tail.stageBanner=0;tail.landBlend=1;
+            Alligator a=tail.boss.alligator;a.tailPosition=a.tailSide=side;a.timer=100;
+            if(at>0) {a.next=2;a.timer=0;TestAlligator.advance(tail,L,at);}
+            else TestAlligator.advance(tail,L,.3f);
+            shot(dir,"168-tail-detail-"+(side<0?"left":"right")+"-"+Math.round(at*100),tail,L,w,h,ss);
+        }
+        for(int limb=0;limb<3;limb++)for(int phase=0;phase<2;phase++) {
+            GameCore cue=TestAlligator.fight(L);cue.stageBanner=0;cue.landBlend=1;
+            Alligator a=cue.boss.alligator;a.next=limb;a.timer=0;
+            TestAlligator.advance(cue,L,.7f);cue.boss.age=phase==0?.1f:.3f;
+            shot(dir,"168-attack-glow-"+limb+"-"+phase,cue,L,w,h,ss);
+        }
+        for(int side:new int[]{-1,1}) {
+            GameCore curved=TestAlligator.fight(L);curved.stageBanner=0;curved.landBlend=1;
+            curved.boss.alligator.timer=100;curved.boss.alligator.tailSide=side;
+            TestAlligator.advance(curved,L,1.5f);
+            shot(dir,"168-gator-body-curve-"+(side<0?"left":"right"),curved,L,w,h,ss);
+        }
+        for(boolean longer:new boolean[]{false,true}) {
+            GameCore opening=TestAlligator.fight(L);opening.stageBanner=0;opening.landBlend=1;
+            if(longer)TestAlligator.longOpening(opening,L);
+            else TestAlligator.block(opening,L);
+            TestAlligator.advance(opening,L,longer?.45f:.24f);
+            shot(dir,"168-gator-vulnerable-"+(longer?"long":"short"),opening,L,w,h,ss);
+        }
+        for(int count:new int[]{2,3})for(float at:new float[]{.48f,.72f,.95f}) {
+            GameCore combo=TestAlligator.fight(L);combo.stageBanner=0;combo.landBlend=1;
+            combo.boss.hp=combo.boss.hpMax*(count==2?.49f:.24f);combo.boss.alligator.timer=0;
+            TestAlligator.advance(combo,L,at);
+            shot(dir,"168-gator-combo-"+count+"-"+Math.round(at*100),combo,L,w,h,ss);
+        }
+        for(float at:new float[]{.08f,.65f,.91f}) {
+            GameCore opening=TestAlligator.fight(L);opening.stageBanner=0;opening.landBlend=1;
+            TestAlligator.block(opening,L);opening.boss.press(0,opening.rnd,L);
+            TestAlligator.advance(opening,L,at);
+            shot(dir,"168-gator-short-window-"+Math.round(at*100),opening,L,w,h,ss);
+        }
+        for(float at:new float[]{.10f,.31f,.49f,.62f}) {
+            GameCore counter=TestAlligator.fight(L);counter.stageBanner=0;counter.landBlend=1;
+            counter.boss.press(0,counter.rnd,L);TestAlligator.advance(counter,L,at);
+            shot(dir,"168-gator-counter-"+Math.round(at*100),counter,L,w,h,ss);
+        }
+        for(float at:new float[]{.12f,.34f,.56f,.78f,.94f}) {
+            GameCore entry=TestAlligator.fight(L);entry.stageBanner=0;entry.landBlend=1;
+            entry.boss.begin(Boss.ALLIGATOR,entry.stage,entry.rnd,entry.playRosterFull());
+            TestAlligator.advance(entry,L,entry.boss.introDuration()*at);
+            shot(dir,"168-gator-water-entry-"+Math.round(at*100),entry,L,w,h,ss);
+        }
+        for(int frame=0;frame<4;frame++) {
+            GameCore eyes=TestAlligator.fight(L);eyes.stageBanner=0;eyes.landBlend=1;
+            eyes.boss.alligator.daze=Alligator.DAZE;eyes.boss.alligator.longWindow=true;TestAlligator.advance(eyes,L,.30f);
+            eyes.boss.damage(1);TestAlligator.advance(eyes,L,new float[]{0,.05f,.14f,.48f}[frame]);
+            shot(dir,"168-gator-eye-morph-"+frame,eyes,L,w,h,ss);
+        }
+        for(int limb=0;limb<3;limb++) {
+            GameCore eyes=TestAlligator.fight(L);eyes.stageBanner=0;eyes.landBlend=1;
+            eyes.boss.alligator.next=limb;eyes.boss.alligator.timer=0;eyes.boss.alligator.dazes=1;
+            TestAlligator.advance(eyes,L,.20f);
+            shot(dir,"168-gator-eye-tell-"+limb,eyes,L,w,h,ss);
+        }
+        for(int frame=0;frame<2;frame++) {
+            GameCore hurt=TestAlligator.fight(L);hurt.stageBanner=0;hurt.landBlend=1;
+            hurt.boss.alligator.daze=Alligator.DAZE;hurt.boss.alligator.longWindow=true;hurt.boss.alligator.roundStreak=Alligator.ROUNDS_FOR_DAZE;
+            hurt.boss.damage(1);TestAlligator.advance(hurt,L,frame==0?.03f:.12f);
+            shot(dir,"168-gator-red-flash-"+frame,hurt,L,w,h,ss);
+        }
+        for(int n=0;n<3;n++) {
+            GameCore idle=TestAlligator.fight(L);idle.stageBanner=0;idle.landBlend=1;
+            idle.boss.alligator.timer=10;TestAlligator.advance(idle,L,n*1.7f);
+            shot(dir,"168-gator-idle-"+n,idle,L,w,h,ss);
+        }
+        GameCore motion=TestAlligator.fight(L);motion.stageBanner=0;motion.landBlend=1;
+        for(int n=0;n<Alligator.ROUNDS_FOR_DAZE-1;n++)TestAlligator.exchange(motion,L);
+        TestAlligator.advance(motion,L,Alligator.OPEN+.04f);
+        motion.boss.alligator.next=2;motion.boss.alligator.tailPosition=motion.boss.alligator.tailSide=1;
+        TestAlligator.exchange(motion,L);
+        TestAlligator.advance(motion,L,motion.boss.alligator.recoil);
+        for(int n=0;n<3;n++) {
+            TestAlligator.advance(motion,L,.20f);
+            shot(dir,"168-gator-tail-crossing-"+n,motion,L,w,h,ss);
+        }
+        TestAlligator.advance(motion,L,Alligator.DAZE);TestAlligator.ready(motion,L);
+        shot(dir,"168-gator-limb-tell",motion,L,w,h,ss);
         GameCore c=TestAlligator.fight(L);c.stageBanner=0;c.landBlend=1;c.landSeen=LandPicker.stateMask();
-        TestAlligator.ready(c,L);
+        c.boss.alligator.next=0;TestAlligator.ready(c,L);
         shot(dir,"168-alligator-arm",c,L,w,h,ss);
-        TestAlligator.block(c,L);TestAlligator.block(c,L);TestAlligator.ready(c,L);
+        TestAlligator.block(c,L);TestAlligator.advance(c,L,Alligator.RETURN+.04f);
+        c.boss.alligator.next=2;TestAlligator.ready(c,L);
         TestAlligator.advance(c,L,.60f);
         shot(dir,"168-alligator-tail",c,L,w,h,ss);
-        for(int i=c.boss.alligator.blocks;i<9;i++)TestAlligator.block(c,L);
+        TestAlligator.block(c,L);TestAlligator.advance(c,L,Alligator.RETURN+.90f);
+        c.boss.alligator.limb=-1;c.boss.alligator.placed=false;c.boss.alligator.blocked=false;
+        c.boss.alligator.next=2;c.boss.alligator.tailPosition=c.boss.alligator.tailSide=-1;
+        TestAlligator.ready(c,L);TestAlligator.advance(c,L,.60f);
+        shot(dir,"168-alligator-tail-left",c,L,w,h,ss);
+        TestAlligator.longOpening(c,L);
         shot(dir,"168-alligator-dazed",c,L,w,h,ss);
+        TestAlligator.advance(c,L,.18f);shot(dir,"168-gator-daze-wriggle",c,L,w,h,ss);
+        c.boss.press(0,c.rnd,L);TestAlligator.advance(c,L,.22f);
+        shot(dir,"168-alligator-tummy-hit",c,L,w,h,ss);
         c.boss.damage(c.boss.hp);TestAlligator.advance(c,L,1.3f);
         shot(dir,"168-alligator-defeated",c,L,w,h,ss);
         c.boss.leave();c.toTitle();c.returnFade=0;c.landChoice=Lands.SWAMP;c.caseIndex=Collect.ALLIGATOR_FRIEND;
         shot(dir,"168-swamp-title",c,L,w,h,ss);
+        c=TestAlligator.fight(L);c.stageBanner=0;c.landBlend=1;TestAlligator.ready(c,L);
+        float sy=L.playTop+(L.dangerY-L.playTop)*.65f;
+        Alligator a=c.boss.alligator;
+        a.touch(c,L,0,168,L.w*.30f,sy);
+        for(int n=1;n<=8;n++)a.touch(c,L,2,168,L.w*(.30f+n*.055f),sy-L.w*.12f*(float)Math.sin(n*.25f));
+        TestAlligator.advance(c,L,.08f);shot(dir,"168-guard-swipe",c,L,w,h,ss);
+        for(int who:new int[]{6,7}) {
+            c=TestAlligator.fight(L);c.stageBanner=0;c.landBlend=1;c.runWho=who;c.companion.begin(who);
+            TestAlligator.block(c,L);TestAlligator.advance(c,L,.10f);
+            shot(dir,who==6?"168-guard-companion-block":"168-guard-yellow-block",c,L,w,h,ss);
+        }
+
+    }
+
+    private static void gatorCompanionFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("168-"))return;
+        GameCore c=TestAlligator.fight(L);c.stageBanner=0;c.landBlend=1;
+        c.runWho=Collect.ALLIGATOR_FRIEND;c.companion.begin(c.runWho);
+        for(int n=0;n<36;n++){c.companion.update(c,DT);c.gator.update(c,DT);}
+        shot(dir,"168-gator-companion-play",c,L,w,h,ss);
+        RasterPainter raster=new RasterPainter(w,h,ss);raster.clear(Draw.BG);
+        Painter p=new OpacityPainter(raster,1) {public GatorCompanion gator(){return c.gator;}};
+        p.text("GUMMY GATOR FRIEND",w*.5f,h*.065f,w*.055f,Draw.INK,Painter.CENTER,true);
+        String[] labels={"HELLO!","BOING!","YAY!","NINJA","OUCH!","SLEEPY"};
+        int[] moods={0,0,4,6,3,5};
+        for(int i=0;i<6;i++) {
+            c.gator.reset();c.gator.react(i==0?.15f:.65f);
+            for(int tick=0;tick<8+i*6;tick++)c.gator.update(c,DT);
+            float x=w*(.26f+.48f*(i%2)),y=h*(.23f+.265f*(i/2)),r=w*.19f;
+            BossCollect.draw(p,Boss.ALLIGATOR,x,y,r,c.gator.clock,true,1,moods[i],i%2==0?-.15f:.15f,i==3);
+            p.text(labels[i],x,y+r*1.25f,w*.035f,Draw.INK,Painter.CENTER,true);
+        }
+        Png.write(new File(dir,"168-gator-companion-sheet.png"),raster.resolve(),w,h);
     }
 
     private static void adventureTitleFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
@@ -64,8 +222,8 @@ final class Preview {
         shot(dir,"150-selector-slime",c,L,w,h,ss);
         c.timeAttack.selected=TimeAttack.ALL;
         shot(dir,"150-selector-all",c,L,w,h,ss);
-        for(int beat=0;beat<4;beat++) {
-            c.clock=(beat+.6f)*TimeAttackDemo.GROUP_TURN;
+        for(int beat=0;beat<Boss.COUNT;beat++) {
+            c.clock=(beat+.46f)*TimeAttackDemo.GROUP_TURN;
             shot(dir,"150-skit-all-"+beat,c,L,w,h,ss);
         }
         c.clock=TimeAttackDemo.GROUP_TURN*1.14f;
@@ -649,7 +807,7 @@ final class Preview {
         c.returnFade=GameCore.RETURN_FADE*.75f;
         shot(dir,"118-companion-gameover-exit",c,L,w,h,ss);
         c=new GameCore(new Mem(),118L);c.collected=Collect.MASK;c.caseIndex=49;c.caveChoice=0;
-        c.startGame();c.jumpToStage(21,L);c.stageBanner=0;
+        c.startGame();Check.enterCave(c,21,L);c.stageBanner=0;
         shot(dir,"118-companion-cave",c,L,w,h,ss);
     }
 
@@ -780,7 +938,7 @@ final class Preview {
     }
 
     private static void caveFrames(File dir, Layout L, int w, int h, int ss) throws Exception {
-        GameCore c=new GameCore(new Mem(),921L);c.caveChoice=0;c.startGame();c.jumpToStage(21,L);
+        GameCore c=new GameCore(new Mem(),921L);c.caveChoice=0;c.startGame();Check.enterCave(c,21,L);
         c.landBlend=1f;c.update(.6f,L);
         shot(dir,"106-cave-stage-introduction",c,L,w,h,ss);
         c.stageBanner=0f;Cave v=c.cave;
@@ -834,7 +992,7 @@ final class Preview {
         v.z=v.cameraZ=Cave.LENGTH;v.phase=Cave.EXIT;v.focus=0;
         shot(dir,"106-cave-exit",c,L,w,h,ss);
         for(int finish=0;finish<CaveDumpling.COUNT;finish++) {
-            GameCore pick=new GameCore(new Mem(),973L);pick.startGame();pick.jumpToStage(21,L);
+            GameCore pick=new GameCore(new Mem(),973L);pick.startGame();Check.enterCave(pick,21,L);
             step(pick,L,.7f);
             if(finish==0)shot(dir,"107-cave-choose-explorer",pick,L,w,h,ss);
             pick.cave.selection.pick(pick,finish);step(pick,L,.4f);
@@ -1137,13 +1295,13 @@ final class Preview {
         for (int land = 0; land < Lands.COUNT; land++) {
             GameCore themed = new GameCore(new Mem(), 810L);
             themed.startGame();
-            if (land == Cave.LAND) { themed.caveChoice=0; themed.jumpToStage(land * Boss.EVERY + 1, L); }
-            else themed.stage = land * Boss.EVERY + 1;
+            if (!Lands.playable(land)) continue;
+            themed.stage = Lands.firstStage(land);
             step(themed, L, 5f);
             themed.stageBanner = 0f;
             shot(dir, "80-land-" + land + "-play", themed, L, w, h, ss);
             for (int variant = 0; variant < 3; variant++) {
-                themed.stage = land * Boss.EVERY + variant + 1;
+                themed.stage = Lands.firstStage(land) + variant;
                 themed.stageBanner = GameCore.BANNER_TIME * 0.55f;
                 shot(dir, "81-land-" + land + "-skit-" + variant, themed, L, w, h, ss);
             }
@@ -1189,6 +1347,7 @@ final class Preview {
         survivalFrames(dir,L,w,h,ss);
         timeAttackFrames(dir,L,w,h,ss);
         alligatorFrames(dir,L,w,h,ss);
+        gatorCompanionFrames(dir,L,w,h,ss);
         adventureTitleFrames(dir,L,w,h,ss);
         survivalEndingFrames(dir,L,w,h,ss);
 

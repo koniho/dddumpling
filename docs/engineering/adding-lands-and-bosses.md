@@ -1,20 +1,22 @@
 # Adding lands and bosses
 
 Implementation map from [issue #168](https://github.com/koniho/dddumpling/issues/168),
-Swampland / Mossy Maw. This lists the actual integration points; adding art and a
+Swampland / Gummy Gator. This lists the actual integration points; adding art and a
 `Boss` constant alone does not make a playable, persistent encounter.
 
 ## Stable identities and progression
 
 - Append land and boss IDs. `Lands` owns colors, scenery dispatch, stage mapping,
-  production availability, starting stage and the boss whose friend unlocks a land.
+  availability, starting stage and the boss whose friend unlocks a land.
 - Do not assume land ID equals chapter index. Cave keeps land/save slot 4 and is
-  developer-only; Swampland keeps slot 5. It occupies stages 26–30 in developer
-  builds and 21–25 in production. Mossy Maw appears once, on that chapter's last stage.
+  unreachable while its introduction is reworked; Swampland keeps slot 5 and occupies
+  stages 21–25 in every build. Gummy Gator appears once, on that chapter's last stage.
 - Use `Lands.firstStage`, `Lands.forStage`, `Lands.playable` and `Lands.unlockBoss`.
   `GameCore.startGame`, title scenery and `Progress.beginRun` must agree on the mapping.
 - `LandPicker` owns unlocks, suppression after resets, discovery and saved land scores.
-  Awarding Agaric Bud unlocks Swampland (and the developer cave); preserve old land bits.
+  Awarding Agaric Bud unlocks Swampland; preserve old land bits.
+- Display names can change without migrating persisted analytics IDs: Gummy Gator keeps
+  the original `mossy_maw` event ID in `Progress.BOSSES`.
 - Boss constants index parallel arrays in `Boss`: names, blurbs, faces, health, cycles,
   width and jiggle. Add the `kindFor` encounter and a realistic enrage warning.
 
@@ -30,11 +32,40 @@ Swampland / Mossy Maw. This lists the actual integration points; adding art and 
 - Route touch input in **both** `GameView` and `ios/java/.../IOSGame`, after overlay/pause
   handling and before competing field gestures. Track pointer IDs, historical move
   samples, final lift movement and cancellation. Preserve key-deck input and keyboard taps.
-- Alligator tuning: alternate left arm, right arm, tail; 0.60s tell, 0.85s reach, 0.38s
-  recoil, 0.25s gap. Swipe at least 8% of screen width in any direction across the glowing
+- Alligator tuning: choose a random left arm, right arm or tail attack, excluding the previous
+  limb. Choose once during the gap so the eye tell matches the committed attack. 0.60s tell, 0.85s reach, 0.38s
+  recoil, 0.25s gap at full health. The tell coils and holds the limb; cubic strike
+  progress accelerates into contact without changing those durations. All four durations shorten with damage, using
+  speed `1 + 0.85 * (1 - max(0.75, healthFraction)³)` (up to 1.4914×, reached at 75% health);
+  each attack keeps its starting speed. Later difficulty comes from overlapping combos.
+  Swipe at least 8% of screen width in any direction across the glowing
   tip, with 7% width of extra catch tolerance. Unblocked tip contact damages the companion.
-  Nine successful blocks open a 3.4s any-key window, capped at six hits. Twelve HP requires
-  two windows. Misses preserve accumulated blocks; an expired window resets block progress.
+  Every parry opens a 0.85s attack window with a slumped head, loose arms and dizzy eyes.
+  Four separate parry-and-hit rounds without taking player damage extend the opening to 3.4s,
+  capped at 25% of maximum health (18 hits including the triggering hit). Only the first hit
+  in each short opening counts. Player damage resets the streak and invalidates the current
+  opening; a fresh parry is needed to start earning rounds again. Long-window completion
+  resets the streak, which has no pip display. The first
+  cycle shows a swipe marker; later attacks use
+  a limb wind-up and brighter palm/tail scales. Jointed arms idle independently; the tail
+  sweeps below the screen between sides during rest and daze, with pose shared by drawing
+  and collision. Wandering paws commit their attack origin at the tell and blend back on recoil.
+  The long torso continues below the screen; segment springs curve its lower half toward
+  the tail's current side and follow smoothly as it crosses. Daze
+  and damage trigger wriggling plus bounded, clock-driven splash bursts without gameplay RNG.
+  An early key press crosses the existing arms, pauses the current limb (without cancelling
+  its progress), then fires one random one-letter bolt after 0.30s. Further blocked presses
+  during the counter or 1.5s after its projectile launches only bounce; they neither queue
+  replies nor extend the cooldown. The block/tail animation takes 0.65s.
+  Matching bolts have input priority. At most one reply waits for a free live-bolt slot;
+  death and leaving clear the reply and cooldown. The entrance lasts 4.8s; other bosses retain 1.6s.
+  His eyes narrow and focus on the companion in the final 0.28s (or final two long-window
+  hits); no countdown or stop text is shown. Late key presses trigger counter projectiles.
+  Below half health, each new attack is a shuffled two-limb combo, increasing to three
+  limbs strictly below quarter health, with 0.52s between
+  starts. Limbs keep independent wind-up, contact and recoil; the entire combo can damage
+  the player only once. Parries still open short windows while other limbs continue, and
+  earning the long dizzy window staggers remaining limbs and cancels queued strikes.
 - Do not add a mandatory mechanic without updating both `Check.bossPlay` (reachability)
   and `Bot` (limited reaction, input speed and errors). An ignorant bot can silently stall
   every later-stage pacing test.
@@ -44,6 +75,10 @@ Swampland / Mossy Maw. This lists the actual integration points; adding art and 
 - `AlligatorArt` uses the shared `Softbody` solver for head and tummy, layered green skin,
   pale belly plates and the same limb endpoints used by collision. Shared portraits feed
   display case, companion, boss selector, summaries and rewards.
+- Collectible physics live in `GameCore` (`GatorCompanion`), update on the game clock,
+  and reach every portrait through `Painter.gator()`. Forward that accessor through
+  painter wrappers. Drawing must not step springs; forward mood, look and Ninja state
+  from `BossCollect` and trigger reactions from run events and story taps.
 - `Lands.prop`, `Lands.skit` and `AdventureTitle` need scenery/title dispatch; reuse a
   land helper such as `Swamp`. Do not consume gameplay RNG from drawing.
 - Add `BossScreen` tint/body dispatch, intro text and defeat visuals. `BossVictory` also

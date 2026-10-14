@@ -1,8 +1,31 @@
 package com.dddumpling.game;
 
 final class TestCave extends Check {
+    static void hiddenLand(Layout L) {
+        GameCore c=new GameCore(new Mem(),168L);c.collected=Collect.MASK;c.allLandsEnabled=true;
+        check("all lands override cannot expose cave",!LandPicker.unlocked(c,Cave.LAND));
+        c.landSeen=1<<Lands.SWAMP;
+        c.landSuppressed=14;c.allLandsEnabled=false;
+        check("swamp discovery is eligible for lands tutorial",Onboarding.discoveredLand(c)==Lands.SWAMP);
+        c.landSuppressed=0;c.allLandsEnabled=true;
+        c.landSeen=14|(1<<Lands.SWAMP);LandPicker.updateDiscovery(c,1f);
+        check("discovery skips reserved cave",c.landDiscovery<0);
+        LandPicker.select(c,Cave.LAND);
+        check("picker refuses reserved cave",c.landChoice==0);
+        boolean skipped=true;
+        for(int stage=1;stage<=120;stage++)skipped &= Lands.forStage(stage)!=Cave.LAND && !Cave.stage(stage);
+        check("all repeated chapters skip cave",skipped);
+        check("swamp takes chapter five",Lands.firstStage(Lands.SWAMP)==21 && Boss.kindFor(25)==Boss.ALLIGATOR);
+        c.startGame();c.jumpToStage(21,L);
+        check("stage jump cannot enter cave",!c.cave.running && Lands.forStage(c.stage)==Lands.SWAMP);
+        for(int i=0;i<240;i++)c.update(DT,L);
+        check("swamp begins ordinary waves",c.spawnedThisStage>0);
+        c.landChoice=Lands.SWAMP;c.startGame();
+        check("swamp picker uses stage 21",c.stage==21 && !c.cave.running);
+    }
+
     static GameCore game(Layout L) {
-        GameCore c=new GameCore(new Mem(),921L);c.caveChoice=0;c.startGame();c.jumpToStage(21,L);c.stageBanner=0f;
+        GameCore c=new GameCore(new Mem(),921L);c.caveChoice=0;c.startGame();enterCave(c,21,L);c.stageBanner=0f;
         return c;
     }
     static void feedback(Layout L) {
@@ -57,7 +80,7 @@ final class TestCave extends Check {
         java.util.HashSet<String> maps=new java.util.HashSet<>(),hazards=new java.util.HashSet<>(),keys=new java.util.HashSet<>();
         boolean lengthOkay=true,balanced=true,distinct=true,safe=true;
         for(int seed=0;seed<256;seed++) {
-            GameCore c=new GameCore(new Mem(),seed);c.caveChoice=0;c.startGame();c.jumpToStage(21+seed%5,L);
+            GameCore c=new GameCore(new Mem(),seed);c.caveChoice=0;c.startGame();enterCave(c,21+seed%5,L);
             Cave v=c.cave;CaveRoute r=v.route;
             maps.add(r.centre(2)+":"+r.y(5)+":"+r.centre(8));
             float length=0;
@@ -84,7 +107,7 @@ final class TestCave extends Check {
         check("generated rocks leave reachable escape space after human reaction",safe);
         check("runs vary map hazard order and keys",maps.size()==256 && hazards.size()>40 && keys.size()>30);
         GameCore c=game(L);long first=c.cave.runSeed;float x=c.cave.route.centre(2);
-        c.startGame();c.jumpToStage(21,L);
+        c.startGame();enterCave(c,21,L);
         check("replaying same stage rerolls seed and layout",first!=c.cave.runSeed && x!=c.cave.route.centre(2));
         CaveRoute a=new CaveRoute(),b=new CaveRoute();a.make(new java.util.Random(57));b.make(new java.util.Random(57));
         boolean same=true;for(int i=0;i<7;i++)same&=a.encounter(i,new int[]{1,-1,1})==b.encounter(i,new int[]{1,-1,1});
@@ -117,19 +140,21 @@ final class TestCave extends Check {
     }
     static void all(Layout L) {
         group("cave expedition");
+        hiddenLand(L);
         enemyAnimation(L);
         generated(L);
         zoomTransition(L);
         feedback(L);
         selection(L);
         GameCore c=game(L);Cave v=c.cave;
-        check("cave follows mushroom land",Lands.forStage(20)==3 && Lands.forStage(21)==Cave.LAND);
-        check("mushroom reward unlocks cave",!LandPicker.unlocked(c,Cave.LAND));
+        check("swamp follows mushroom land",Lands.forStage(20)==3 && Lands.forStage(21)==Lands.SWAMP);
+        check("cave starts locked",!LandPicker.unlocked(c,Cave.LAND));
         c.collected=Collect.add(c.collected,Collect.BOSS_FIRST+3);
-        check("mushroom friend is cave entry",LandPicker.unlocked(c,Cave.LAND));
-        check("stage jump enters expedition",Cave.active(c) && c.enemies.isEmpty());
+        check("mushroom friend skips cave",!LandPicker.unlocked(c,Cave.LAND) && LandPicker.unlocked(c,Lands.SWAMP));
+        check("explicit fixture enters expedition",Cave.active(c) && c.enemies.isEmpty());
         c.landChoice=Cave.LAND;c.startGame();
-        check("picker and jump enter same cave",c.stage==21 && Cave.active(c) && c.cave.z==0f);
+        check("stale cave choice falls back safely",c.stage==1 && !Cave.active(c));
+        enterCave(c,21,L);
         c.stageBanner=0f;c.update(.2f,L);check("camera follows without jumping",v.z>v.cameraZ);
         c.update(.2f,L);check("camera advances toward walker",v.cameraZ>0f && v.cameraZ<v.z);
         float at=v.z;c.paused=true;c.update(1f,L);check("pause freezes expedition",v.z==at);c.paused=false;
@@ -176,7 +201,7 @@ final class TestCave extends Check {
         check("route has no healing pickups",c.lives==1 && v.phase==Cave.EXIT);
         c=game(L);v=c.cave;c.lives=1;v.encounter(c,Cave.SAND);v.traps.update(c,10f,L);
         check("fatal trap clears cave and touch state",c.state==GameCore.OVER && !v.running && v.traps.kind==-1);
-        c.startGame();c.jumpToStage(21,L);c.jumpToStage(16,L);
+        c.startGame();enterCave(c,21,L);c.jumpToStage(16,L);
         check("jumping away restores ordinary game",!Cave.active(c) && !c.cave.running);
         c=game(L);v=c.cave;v.phase=Cave.EXIT;v.z=Cave.LENGTH;v.update(c,1.5f,L);
         check("exit completes the stage",c.pendingBonus);
@@ -202,14 +227,14 @@ final class TestCave extends Check {
         migrated=new GameCore(legacy,924L);
         check("reset suppresses new cave across restart",!LandPicker.unlocked(migrated,Cave.LAND));
         LandPicker.reward(migrated,Collect.BOSS_FIRST+3);
-        check("mushroom reward restores reset cave",LandPicker.unlocked(migrated,Cave.LAND));
+        check("mushroom reward keeps cave hidden",!LandPicker.unlocked(migrated,Cave.LAND));
         gauntlet(L);
         bounded(L);
     }
     static void selection(Layout L) {
         for(int finish=0;finish<CaveDumpling.COUNT;finish++) {
             Mem store=new Mem();GameCore c=new GameCore(store,950L+finish);
-            c.startGame();c.jumpToStage(20,L);c.jumpToStage(21,L);
+            c.startGame();c.jumpToStage(20,L);enterCave(c,21,L);
             check("first cave entry opens choice "+finish,c.cave.phase==Cave.CHOOSE && c.caveChoice==-1);
             c.update(.7f,L);
             check("selection scene keeps expedition still "+finish,c.cave.z==0f && c.lives==GameCore.START_LIVES);
@@ -219,13 +244,13 @@ final class TestCave extends Check {
             check("departure cannot change selected finish "+finish,c.caveChoice==finish);
             c.update(.9f,L);
             check("selected explorer enters walking "+finish,c.cave.phase==Cave.WALK && c.cave.z==0f);
-            c.jumpToStage(22,L);
+            enterCave(c,22,L);
             check("next cave keeps finish without asking again "+finish,c.cave.phase==Cave.WALK && c.caveChoice==finish);
-            GameCore reload=new GameCore(store,960L);reload.startGame();reload.jumpToStage(21,L);
+            GameCore reload=new GameCore(store,960L);reload.startGame();enterCave(reload,21,L);
             check("finish survives restart "+finish,reload.caveChoice==finish && reload.cave.phase==Cave.WALK);
         }
         Mem invalid=new Mem();invalid.caveChoice=999;
-        GameCore c=new GameCore(invalid,971L);c.startGame();c.jumpToStage(21,L);
+        GameCore c=new GameCore(invalid,971L);c.startGame();enterCave(c,21,L);
         check("invalid saved finish asks for a valid choice",c.cave.phase==Cave.CHOOSE && c.caveChoice==-1);
         c.paused=true;c.update(2f,L);
         check("pause freezes entrance scene",c.cave.selection.age==0f);c.paused=false;
@@ -244,7 +269,7 @@ final class TestCave extends Check {
         check("walking excites restrained physical squash",peakShape>.015f && peakShape<.16f);
         float prior=c.cave.walker.lift();c.paused=true;c.update(1f,L);
         check("pause freezes walker physics",c.cave.walker.lift()==prior);c.paused=false;
-        c.jumpToStage(22,L);
+        enterCave(c,22,L);
         check("new expedition resets walker physics",Math.abs(c.cave.walker.lift())<.0001f);
     }
     static void gauntlet(Layout L) {
@@ -300,7 +325,7 @@ final class TestCave extends Check {
             int survived=0;float total=0,maxGap=0;int totalEvents=0;
             int runs=320;
             for(int attempt=0;attempt<32;attempt++)for(int stage=21;stage<=25;stage++)for(int side:new int[]{-1,1}) {
-                GameCore c=new GameCore(new Mem(),977L+attempt*37);c.caveChoice=0;c.startGame();c.jumpToStage(stage,L);c.stageBanner=0;
+                GameCore c=new GameCore(new Mem(),977L+attempt*37);c.caveChoice=0;c.startGame();enterCave(c,stage,L);c.stageBanner=0;
                 Bot b=new Bot(pps,.25f,.04f,true,977L+stage+attempt*71);b.caveSide=side;
                 float t=0,gap=0;int events=0;
                 while(t<60 && c.state==GameCore.PLAY && !c.pendingBonus) {

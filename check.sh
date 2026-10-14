@@ -46,7 +46,12 @@ fi
 # compile while the APK builds fine.
 python3 tools/release-notes.py check >/dev/null
 
-PURE="src/com/dddumpling/game/Alligator.java
+PURE="src/com/dddumpling/game/ArtStamp.java
+src/com/dddumpling/game/GatorReplay.java
+src/com/dddumpling/game/GatorCompanion.java
+src/com/dddumpling/game/AlligatorArrival.java
+src/com/dddumpling/game/AlligatorGuard.java
+src/com/dddumpling/game/Alligator.java
 src/com/dddumpling/game/AlligatorArt.java
 src/com/dddumpling/game/Swamp.java
 src/com/dddumpling/game/KeyboardInput.java

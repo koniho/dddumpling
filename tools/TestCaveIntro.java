@@ -5,7 +5,7 @@ final class TestCaveIntro extends Check {
         group("cave stage introduction");
         GameCore c=new GameCore(new Mem(),956L);c.caveChoice=0;c.startGame();
         for(int stage:new int[]{21,22,25}) {
-            c.jumpToStage(stage,L);
+            enterCave(c,stage,L);
             c.update(GameCore.BANNER_TIME-.1f,L);
             check("intro keeps expedition still "+stage,c.cave.z==0 && c.cave.cameraZ==0
                     && c.cave.timer==0 && c.stageBanner>0 && c.cave.phase==Cave.WALK);
@@ -21,7 +21,7 @@ final class TestCaveIntro extends Check {
             check("only time after intro advances cave "+stage,c.stageBanner==0
                     && Math.abs(c.cave.z-Cave.WALK_SPEED*.05f)<.0001f && c.stageGap==0);
         }
-        c=new GameCore(new Mem(),959L);c.startGame();c.jumpToStage(21,L);
+        c=new GameCore(new Mem(),959L);c.startGame();enterCave(c,21,L);
         c.update(CaveSelection.INTRO+.01f,L);c.cave.selection.pick(c,0);
         c.update(CaveSelection.DEPART+.01f,L);
         check("first explorer choice is followed by full introduction",c.cave.phase==Cave.WALK

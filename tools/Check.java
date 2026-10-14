@@ -8,6 +8,10 @@ package com.dddumpling.game;
  * resolve unqualified — it keeps the assertions terse, which is the whole point of them.
  */
 abstract class Check {
+    /** Explicit fixture: caves are retained for rework but absent from Adventure routing. */
+    static void enterCave(GameCore c,int stage,Layout L) {
+        c.jumpToStage(stage,L);c.boss.leave();c.cave.begin(c,true);c.startMusic();
+    }
     /** Stable interaction examples, independent of release-list ordering. */
     static final class ReleaseExamples implements AutoCloseable {
         final int[][] saved=ReleaseChange.ITEMS.clone();
@@ -258,9 +262,11 @@ abstract class Check {
     static boolean bossPlay(GameCore c, Layout L) {
         if (!c.bossFighting()) return false;
         Boss b = c.boss;
-        if(b.kind==Boss.ALLIGATOR && !b.open()) {
+        if(b.kind==Boss.ALLIGATOR && b.boltCount()==0 && (!b.open()
+                || (b.alligator.comboActive && !b.alligator.longWindow && (b.alligator.windowHit
+                    || b.alligator.attack*b.alligator.tempo>=Alligator.WARN)))) {
             Alligator a=b.alligator;
-            if(a.limb>=0 && !a.blocked && a.attack>.15f) {
+            if(a.retaliation==0 && a.limb>=0 && !a.blocked && a.attack>.15f) {
                 a.touch(c,L,0,168,a.tipX-L.w*.12f,a.tipY);
                 a.touch(c,L,1,168,a.tipX+L.w*.12f,a.tipY);
             }

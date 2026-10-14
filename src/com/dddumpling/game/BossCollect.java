@@ -16,8 +16,7 @@ final class BossCollect extends Draw {
     }
     static void draw(Painter p,int boss,float x,float y,float r,float clock,boolean known,float fade,
             int mood,float look,boolean ninja) {
-        if(boss==Boss.ALLIGATOR) {AlligatorArt.portrait(p,x,y,r,clock,known,fade);
-            if(ninja)Trinket.ninjaMask(p,x,y-r*.2f,r*.82f,fade);return;}
+        if(boss==Boss.ALLIGATOR) {GatorCompanion.draw(p,x,y,r,clock,known,fade,mood,look,ninja);return;}
         int i = Collect.bossPrize(boss);
         int body = fadeBy(known ? Collect.BODY[i] : 0xFF393054, fade);
         int cream = fadeBy(known ? Collect.ACCENT[i] : 0xFF393054, fade);

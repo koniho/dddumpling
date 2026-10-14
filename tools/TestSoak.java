@@ -94,9 +94,10 @@ final class TestSoak extends Check {
         check("even casual hands get well past the opening stages", casual.stage >= 6f);
 
         // 2. Clear side-entry lanes remove overlapping threats. Most casual runs still end,
-        //    but surviving the cap is allowed; skilled hands must still reach the deep game.
+        //    but surviving the cap is allowed; skilled hands must reach the final chapter
+        //    approach, now that five lower-pressure cave stages no longer pad progression.
         check("most casual runs end while skilled hands reach the deep game",
-                casual.deaths > casual.runs / 2 && steady.stage >= 20f && quick.stage >= 25f);
+                casual.deaths > casual.runs / 2 && steady.stage >= 20f && quick.stage >= Lands.firstStage(Lands.SWAMP)+Boss.EVERY-2);
 
         // 3. Monotonic in capability. Faster hands must not do *worse* — if they do, something in
         //    here punishes engagement, and that is a bug rather than a difficulty setting.

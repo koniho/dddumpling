@@ -704,7 +704,7 @@ public final class IOSInputTest extends Check {
         check("settings close resumes play", !c.settingsOpen);
         c.settingsOpen=true;c.settingsTab=SettingsUi.PROGRESS;ui.compute(l,c.settingsTab);
         tap(game,(ui.testChipL(0,2)+ui.testChipR(0,2))/2,ui.debuffY+ui.testH/2);
-        check("native all lands chip enables every land",LandPicker.count(c)==Lands.COUNT);
+        check("native all lands chip enables reachable lands only",LandPicker.count(c)==Lands.playableCount() && !LandPicker.unlocked(c,Cave.LAND));
         tap(game,l.w*.5f,ui.difficultyY+ui.difficultyH/2);
         check("native reset news clears seen status without leaving settings",c.settingsOpen && c.store.loadReleaseSeen().equals(""));
         c.onboarding.learn(c,TutorialSpeech.RESCUE);
@@ -861,7 +861,7 @@ public final class IOSInputTest extends Check {
 
     private static void cave() {
         IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
-        c.startGame();c.jumpToStage(21,l);for(int i=0;i<45;i++)game.update(DT);
+        c.startGame();c.jumpToStage(21,l);c.cave.begin(c,true);for(int i=0;i<45;i++)game.update(DT);
         tap(game,CaveSelection.x(l,2),CaveSelection.y(l,2));
         check("native cave selection saves chosen explorer",c.caveChoice==2 && ((Mem)c.store).caveChoice==2);
         for(int i=0;i<55;i++)game.update(DT);
@@ -886,7 +886,7 @@ public final class IOSInputTest extends Check {
 
     private static void caveMining() {
         IOSGame game=game();GameCore c=game.core();Layout L=game.geometry();
-        c.startGame();c.jumpToStage(22,L);CaveInterlude.select(c,true);Interlude.enterBonus(c,L);CaveMining m=c.mining;m.ready=0;
+        c.startGame();c.jumpToStage(22,L);c.cave.begin(c,true);CaveInterlude.select(c,true);Interlude.enterBonus(c,L);CaveMining m=c.mining;m.ready=0;
         check("iOS selects requested cave game without rhythm",m.active && !c.band.active);
         for(int load=0;load<5;load++) {
             for(int i=0;i<m.length;i++){int g=m.sequence[i];tap(game,c.keyX(L,g),c.keyY(L,g));}
@@ -910,7 +910,7 @@ public final class IOSInputTest extends Check {
 
     private static void caveCart() {
         IOSGame game=game();GameCore c=game.core();Layout L=game.geometry();
-        c.startGame();c.jumpToStage(21,L);Interlude.enterBonus(c,L);CaveCart m=c.cart;m.ready=0;
+        c.startGame();c.jumpToStage(21,L);c.cave.begin(c,true);Interlude.enterBonus(c,L);CaveCart m=c.cart;m.ready=0;
         check("iOS selects requested cave game without rhythm",m.active && !c.band.active);
         float x=L.w*.22f,y=StarScreen.sliderY(L);
         game.touch(one(IOSTouch.ACTION_DOWN,42,x,y));

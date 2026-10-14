@@ -1,8 +1,15 @@
 package com.dddumpling.game;
 
 /** A light translucency for overlay art, shared by both drawing backends. */
-class OpacityPainter implements Painter {
+class OpacityPainter implements Painter, ArtStamp {
     public DuckBodies ducks() { return p.ducks(); }
+    public GatorCompanion gator() { return p.gator(); }
+    // Per-primitive fading is intentionally retained during transitions.
+    public ArtStamp stamps() { return amount==1 && p.stamps()!=null?this:null; }
+    public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float mix) {
+        ArtStamp cache=stamps()==null?null:p.stamps();
+        return cache!=null && cache.stamp(art,x,y,w,h,angle,tint,mix);
+    }
     final Painter p;
     final float amount;
     OpacityPainter(Painter p,float amount) { this.p=p; this.amount=amount; }

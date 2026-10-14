@@ -13,6 +13,7 @@ final class Progress {
         void event(String name, int amount);
         void changed();
     }
+    // Persisted event IDs stay stable when a boss's display name changes.
     static final String[] BOSSES = {"slime", "dark_divide", "octopulse", "fly_agaric", "mossy_maw"};
     private final Store store;
     private final String replica;

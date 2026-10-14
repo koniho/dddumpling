@@ -281,7 +281,7 @@ final class RunCompanion extends Draw {
         cy-=r*.12f*Math.abs(touchRock);
         if(a.reaction==DAMAGE) cx+=r*.12f*(float)Math.sin(a.age*55f)*beat;
         p.fillEllipse(x,y+r*.85f,r*.7f,r*.13f,0x55302045);
-        if(!c.onboarding.companionAway(c))Trinket.drawReacting(new Squash(p,cx,cy,a.squash()),a.who,cx,cy,r,a.clock,1f,a.displayMood(c),
+        if(!c.onboarding.companionAway(c) && !c.boss.alligator.guard.carries(c))Trinket.drawReacting(new Squash(p,cx,cy,a.squash()),a.who,cx,cy,r,a.clock,1f,a.displayMood(c),
                 .10f*(float)Math.sin(a.clock*.9f)+.18f*touchRock,c.ninja());
         if(a.reaction==CRY) {
             float keyFace=L.keyR*.60f;
@@ -310,6 +310,7 @@ final class RunCompanion extends Draw {
     /** Scale the existing collectible artwork without changing its body or accessories. */
     private static final class Squash implements Painter {
         public DuckBodies ducks() { return p.ducks(); }
+        public GatorCompanion gator() { return p.gator(); }
         final Painter p;final float cx,cy,sx,sy;
         Squash(Painter p,float x,float y,float squash) { this.p=p;cx=x;cy=y;sx=squash;sy=1f/squash; }
         float x(float x) { return cx+(x-cx)*sx; }

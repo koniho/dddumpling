@@ -426,14 +426,16 @@ final class TestVisuals extends Check {
 
     private static void discoveryTrip(Layout L) {
         Mem store=new Mem();GameCore c=new GameCore(store,723L);Ear ear=new Ear();c.sound=ear;
-        for(int land=1;land<Lands.COUNT;land++) c.collected=Collect.add(c.collected,Collect.BOSS_FIRST+land-1);
+        for(int land=1;land<Lands.COUNT;land++)
+            if(Lands.playable(land)) c.collected=Collect.add(c.collected,Collect.bossPrize(Lands.unlockBoss(land)));
         store.collected=c.collected;
         LandPicker.updateDiscovery(c,0f);
         check("discovery uses the swipe traveler size",LandPicker.travelerRadius(c,L)==.75f*Math.min(L.unit*1.3f,L.h*.024f));
         check("tour begins from the current land",c.landDiscovery==1 && c.landDiscoveryFrom==0 && c.landPickerSlide==1f);
         check("tour owns its land motion",!LandPicker.down(c,L,L.w*.7f,LandPicker.cardY(L)));
         for(int land=1;land<Lands.COUNT;land++) {
-            check("tour visits each new land in order "+land,c.landDiscovery==land && c.landDiscoveryFrom==land-1);
+            if(!Lands.playable(land))continue;
+            check("tour visits each new land in order "+land,c.landDiscovery==land && c.landDiscoveryFrom==(land==Lands.SWAMP?3:land-1));
             check("no glow or seen flag before arrival "+land,LandDiscovery.glow(c,land)==0f && (c.landSeen&(1<<land))==0);
             LandPicker.updateDiscovery(c,LandDiscovery.arrival(c)*.5f);
             check("discovery follows the trail meander "+land,Math.abs(LandDiscovery.arc(c,L)
@@ -450,11 +452,11 @@ final class TestVisuals extends Check {
                     c.landDiscoveryChained && Math.abs(LandDiscovery.x(c,L)-x)<.01f
                     && Math.abs(LandDiscovery.ground(c,L)-ground)<.01f);
         }
-        check("tour ends on the final land",c.landDiscovery==-1 && c.landChoice==Lands.COUNT-1 && c.landSeen==(1<<Lands.COUNT)-2 && ear.landShuffles==Lands.COUNT-1);
+        check("tour ends on the final land",c.landDiscovery==-1 && c.landChoice==Lands.COUNT-1 && c.landSeen==((1<<Lands.COUNT)-2 & ~(1<<Cave.LAND)) && ear.landShuffles==Lands.playableCount()-1);
         LandPicker.step(c,-1);LandPicker.updateTravel(c,LandPicker.TRAVEL_TIME);LandPicker.updateDiscovery(c,1f);
         check("revisiting a discovered land does not glow again",c.landDiscovery==-1 && LandDiscovery.glow(c,2)==0f);
         GameCore reload=new GameCore(store,724L);LandPicker.updateDiscovery(reload,1f);
-        check("all discovered lands stay seen after restart",reload.landSeen==(1<<Lands.COUNT)-2 && reload.landDiscovery==-1);
+        check("all discovered lands stay seen after restart",reload.landSeen==((1<<Lands.COUNT)-2 & ~(1<<Cave.LAND)) && reload.landDiscovery==-1);
         GameCore gap=new GameCore(new Mem(),725L);gap.collected=c.collected;gap.landSeen=4;
         LandPicker.updateDiscovery(gap,0f);LandPicker.updateDiscovery(gap,LandDiscovery.arrival(gap)+LandDiscovery.HOLD);
         check("tour traverses an already-seen intermediate land",gap.landDiscovery==2 && !gap.landDiscoveryFresh);
@@ -791,7 +793,7 @@ final class TestVisuals extends Check {
         long beforeUnlock=allLands.collected;
         LandPicker.enableAll(allLands);
         check("all lands chip enables every land without granting collectibles",
-                LandPicker.count(allLands)==Lands.COUNT && allLands.collected==beforeUnlock);
+                LandPicker.count(allLands)==Lands.playableCount() && allLands.collected==beforeUnlock);
         LandPicker.reset(allLands);
         check("reset lands clears the developer unlock",LandPicker.count(allLands)==1);
         check("trail leaves to the right before dipping toward the next land",
@@ -900,7 +902,8 @@ final class TestVisuals extends Check {
         backgroundShake(L);
         group("cloud sky");
         for (int land = 0; land < Lands.COUNT; land++) {
-            int first = land * Boss.EVERY + 1, bossStage = first + Boss.EVERY - 1;
+            if(!Lands.playable(land))continue;
+            int first = Lands.firstStage(land), bossStage = first + Boss.EVERY - 1;
             for (int stage = first; stage <= bossStage; stage++)
                 check("land stays consistent through stage " + stage, Lands.forStage(stage) == land);
             check("land previews its upcoming boss " + land, Boss.kindFor(bossStage) == (land==Lands.SWAMP?Boss.ALLIGATOR:land<Cave.LAND?land:-1));

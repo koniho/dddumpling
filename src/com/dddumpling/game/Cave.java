@@ -22,8 +22,10 @@ final class Cave {
     boolean running,lessonSeen;
     static boolean stage(int n){return BuildFlags.DEVELOPER && Lands.forStage(n)==LAND;}
     static boolean active(GameCore c){return BuildFlags.DEVELOPER && c.state==GameCore.PLAY && c.cave.running;}
-    void begin(GameCore c) {
-        running=stage(c.stage);phase=WALK;z=cameraZ=timer=pulse=focus=aimHold=0;
+    void begin(GameCore c) { begin(c,stage(c.stage)); }
+    // Explicit entry keeps the expedition available for playtests while its land is hidden.
+    void begin(GameCore c,boolean expedition) {
+        running=BuildFlags.DEVELOPER && expedition;phase=WALK;z=cameraZ=timer=pulse=focus=aimHold=0;
         if(running){runSeed=c.rnd.nextLong();random.setSeed(runSeed);route.make(random);}
         aim=route.heading(0);fork=responsePos=nextEvent=0;lessonSeen=c.stage!=21;
         seed=c.stage;exitTime=returnTime=zoomAge=zoomFromCamera=zoomFromFocus=0;

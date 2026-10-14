@@ -399,7 +399,7 @@ final class TestStages extends Check {
         boss.lives=1; add(boss,L,new int[] {1,2},L.dangerY);
         boss.update(DT,L);
         check("boss excluded", !boss.onboarding.rescueGuide);
-        boss.jumpToStage(21,L); boss.lives=1;
+        enterCave(boss,21,L); boss.lives=1;
         add(boss,L,new int[] {1,2},L.dangerY); boss.update(DT,L);
         check("cave excluded", !boss.onboarding.rescueGuide);
         GameCore cleanup=new GameCore(mem,164L);cleanup.startGame();cleanup.stageBanner=0;

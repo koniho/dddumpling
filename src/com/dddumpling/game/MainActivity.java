@@ -80,6 +80,9 @@ public class MainActivity extends Activity implements GameCore.Store {
             goFullscreen();
             if(BuildFlags.DEVELOPER && getIntent().getBooleanExtra("diagnostics",false))
                 game.post(this::showDiagnostics);
+            if(BuildFlags.DEVELOPER && getIntent().hasExtra("gator_profile"))
+                game.post(() -> game.gatorProfile(getIntent().getStringExtra("gator_profile"),
+                        getIntent().getStringExtra("gator_profile_token")));
         } catch (Throwable t) {
             Crash.show(this, t);
         }
@@ -89,6 +92,8 @@ public class MainActivity extends Activity implements GameCore.Store {
     @Override protected void onNewIntent(android.content.Intent intent) {
         super.onNewIntent(intent);
         diagnostic("activity-new-intent");
+        if(BuildFlags.DEVELOPER && intent.hasExtra("gator_profile"))
+            game.gatorProfile(intent.getStringExtra("gator_profile"),intent.getStringExtra("gator_profile_token"));
         if(BuildFlags.DEVELOPER && intent.getBooleanExtra("diagnostics",false)) {
             diagnostic("diagnostics-open");
             showDiagnostics();

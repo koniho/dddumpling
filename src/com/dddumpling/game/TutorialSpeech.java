@@ -39,10 +39,10 @@ final class TutorialSpeech extends Draw {
         {"TAP YOUR DUMPLING!", "DISCOVER ITS STORY!"},
         {"YOUR FIRST FRIEND!", "LET'S PLAY TOGETHER!"},
         {"NEW LANDS!", "SWIPE TO CHOOSE!"},
-        {"SWIPE TO BLOCK!", "DAZED? TAP ANY KEY!"}
+        {"PARRY, THEN TAP!", "WATCH HIS EYES!"}
     };
     static String spoken(int message) {
-        if(message==ALLIGATOR)return "Swipe across glowing arms and tail. Protect your companion. Nine blocks make Mossy Maw dizzy. Then tap any key!";
+        if(message==ALLIGATOR)return "Swipe to parry, then tap while Gummy Gator is dizzy. Watch his eyes narrow, then stop before his guard returns! Four parry-and-hit rounds make him dizzy for longer. Taking damage resets your streak.";
         if(message==LANDS)return "New lands! Swipe to choose where your next run starts.";
         if(message==COMPANION)return "I'm your first squishy! I'll stay by your keys. I'll show you how to play as we go. Let's find more friends!";
         if(message==POWER_FLURRY)return "Flurry! Tap any key to clear the falling faces.";

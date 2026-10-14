@@ -243,7 +243,7 @@ final class Onboarding extends Draw {
         introduce(c);
     }
     static int discoveredLand(GameCore c) {
-        for(int land=1;land<Lands.playableCount();land++)
+        for(int land=1;land<Lands.COUNT;land++)
             if(LandPicker.unlocked(c,land) && (c.landSeen&(1<<land))!=0)return land;
         return -1;
     }

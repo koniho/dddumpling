@@ -1,8 +1,17 @@
 package com.dddumpling.game;
 
 /** Tints and fades a complete drawing, including eyes, outlines, and highlights. */
-final class ColorFadePainter implements Painter {
+final class ColorFadePainter implements Painter, ArtStamp {
     public DuckBodies ducks() { return p.ducks(); }
+    public GatorCompanion gator() { return p.gator(); }
+    public ArtStamp stamps() { return opacity==1 && p.stamps()!=null?this:null; }
+    public boolean stamp(int art,float x,float y,float w,float h,float angle,int inner,float mix) {
+        ArtStamp cache=stamps()==null?null:p.stamps();
+        if(cache==null)return false;
+        float combined=amount+(1-amount)*mix;
+        int color=combined==0?0:Glyph.mix(inner,tint,amount/combined);
+        return cache.stamp(art,x,y,w,h,angle,color,combined);
+    }
     final Painter p;
     final int tint;
     final float amount, opacity;

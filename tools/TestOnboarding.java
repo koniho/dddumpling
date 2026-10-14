@@ -915,7 +915,8 @@ final class TestOnboarding extends Check {
                 check("requested help repeats every learned introductory page "+kind,
                         ear.explanations==(kind==Boss.SLIME?TutorialSpeech.pageCount(TutorialSpeech.CLOSED)+TutorialSpeech.pageCount(TutorialSpeech.CHAIN):
                                 kind==Boss.OCTOPUS?TutorialSpeech.pageCount(TutorialSpeech.DEFEND)+TutorialSpeech.pageCount(TutorialSpeech.TEAR):
-                                TutorialSpeech.pageCount(kind==Boss.SPLITTER?TutorialSpeech.PINCH:TutorialSpeech.SHAKE)));
+                                TutorialSpeech.pageCount(kind==Boss.SPLITTER?TutorialSpeech.PINCH:
+                                        kind==Boss.ALLIGATOR?TutorialSpeech.ALLIGATOR:TutorialSpeech.SHAKE)));
             } else {
                 touch(c,L,0,x,y);c.boss.hp--;c.onboarding.bossDamaged(c);touch(c,L,1,x,y);
                 check("damage cancels pending help activation "+kind,!c.onboarding.briefing);

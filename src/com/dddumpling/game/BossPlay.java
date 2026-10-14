@@ -112,15 +112,15 @@ final class BossPlay {
             return true;
         }
         if (verdict == Boss.REBUFF) {
-            boolean slimeShield = c.boss.kind == Boss.SLIME && !c.boss.open();
-            if (slimeShield) {
+            boolean shield = (c.boss.kind == Boss.SLIME || c.boss.kind == Boss.ALLIGATOR) && !c.boss.open();
+            if (shield) {
                 shot(c, g, L, verdict);
                 if (c.sound != null) c.sound.shieldBounce();
             }
             c.keyBad[g] = 1f;
             c.combo = 0;
             c.shake = Math.max(c.shake, 0.22f);
-            if (!slimeShield && c.sound != null) c.sound.wrong();
+            if (!shield && c.sound != null) c.sound.wrong();
             return false;
         }
         c.hits++;
@@ -150,7 +150,7 @@ final class BossPlay {
             c.onboarding.bossDamaged(c);
             c.companion.react(RunCompanion.BOSS_HIT, 1f);
             c.score += GameCore.BOSS_HIT;
-            c.shake = Math.max(c.shake, 0.30f);
+            c.shake = Math.max(c.shake, c.boss.kind==Boss.ALLIGATOR?.55f:.30f);
             c.flash = Math.max(c.flash, 0.4f);
             boolean divide = c.boss.kind == Boss.SPLITTER;
             c.flashColor = divide ? 0xFF7D45D6 : GameCore.FLASH_CLEAR;
@@ -192,8 +192,8 @@ final class BossPlay {
      * — see {@link GameCore.Shot#atBoss}. No {@code target} and no {@code kill}, so {@link #impact} does the
      * one thing wanted at the far end: a burst of that letter's colour where it struck.
      *
-     * A normal rebuff fires nothing, just like a wrong word press. The Slime is the exception:
-     * its closed-state shield physically returns the shot, making the refusal visible.
+     * A normal rebuff fires nothing. Slime shields and crossed Gator arms return the shot,
+     * making their refusal visible.
      */
     private static void shot(GameCore c, int g, Layout L, int verdict) {
         if (c.boss.body == null) return;

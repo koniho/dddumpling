@@ -607,6 +607,7 @@ final class GameCore {
     final Survival survival = new Survival();
     final TimeAttack timeAttack = new TimeAttack();
     final DuckBodies ducks = new DuckBodies();
+    final GatorCompanion gator = new GatorCompanion();
     /** Counts down while the push-back shockwave is on screen. */
     float pushT;
     /** Words the last push-back shoved back, for the readout. */
@@ -1782,7 +1783,7 @@ final class GameCore {
     }
 
     private int normalMusicChoice() {
-        return state != TITLE && Cave.stage(stage) ? Music.DRIFT : Music.SWING_STYLE;
+        return state != TITLE && cave.running ? Music.DRIFT : Music.SWING_STYLE;
     }
 
     // ---- stage pacing -------------------------------------------------------
@@ -2256,6 +2257,7 @@ final class GameCore {
         // into an engaged word, because the player does not have that key at all.
         if (boss.fighting() && BossPlay.claims(this, g)) {
             float beforeHp = boss.hp;
+            float beforeIntro=boss.introProgress();
             int verdict = boss.press(g, rnd, L);
             if(boss.kind==Boss.SLIME && (verdict==Boss.PART || verdict==Boss.SPLIT)) {
                 onboarding.learn(this,TutorialSpeech.CLOSED);
@@ -2798,6 +2800,7 @@ final class GameCore {
         if (settingsOpen) { preferences.updatePanel(this,elapsed); return; }
         ducks.update(this,dt);
         companion.update(this,dt);
+        gator.update(this,dt);
         // TEAM SQUISH can finish on the same frame that schedules an interlude. Its return owns
         // the companion until it reaches home, so it keeps moving through that transition.
         if(buddy.returning()) buddy.update(this,dt,L);
@@ -3092,12 +3095,15 @@ final class GameCore {
         if (boss.active()) {
             // Visible projectiles reaching the deck cost lives; elapsed fight time alone does not.
             float beforeHp = boss.hp;
+            float beforeIntro=boss.introProgress();
             float priorCover=boss.slimePromptCover();
             boolean priorOpen=boss.open();
             float beforeDeath = boss.beaten ? boss.leaveProgress() * Boss.LEAVE : -1f;
             boolean beforeSupernova = boss.kind == Boss.SPLITTER && boss.beaten && !DivideDeath.bursting(boss);
             if(boss.kind==Boss.ALLIGATOR)boss.alligator.target(this,L);
             int bossHits = boss.update(dt, L, rnd);
+            if(boss.kind==Boss.ALLIGATOR)shake=Math.max(shake,Math.max(boss.alligator.takeShake(),
+                    AlligatorArrival.shake(beforeIntro,boss.introProgress())));
             BossPlay.deathFeedback(this, beforeDeath);
             if (beforeSupernova && DivideDeath.bursting(boss) && sound != null) sound.divideSupernova();
             float cover=boss.slimePromptCover();
@@ -3113,6 +3119,7 @@ final class GameCore {
                 flash = Math.max(flash, 1f);
                 flashColor = 0xFFFF355F;
             }
+            int gatorAttackCues=boss.kind==Boss.ALLIGATOR?boss.alligator.takeAttackCues():0;
             if (sound != null) {
                 float brew = boss.kind == Boss.SLIME && !boss.hasGlob()
                         && boss.boltCount() == 0 && boss.open()
@@ -3124,7 +3131,7 @@ final class GameCore {
                 if (boss.mushroomSporeCue) sound.mushroomSpore();
                 if (boss.boingWeight >= 0f) sound.divideBoing(boss.boingWeight);
                 if (boss.octoWave) sound.octoWave();
-                if(boss.kind==Boss.ALLIGATOR && boss.alligator.warningCue)sound.octoCue();
+                for(int cue=0;cue<gatorAttackCues;cue++)sound.octoCue();
                 if (boss.octoCue) sound.octoCue();
                 if (boss.octoLock) sound.octoLock();
                 if (boss.defeatChime) sound.squish(Boss.FACE[boss.kind], boss.defeatBeat);
@@ -3559,12 +3566,13 @@ final class GameCore {
     }
 
     void takeHit(float px, Layout L) {
+        if(boss.kind==Boss.ALLIGATOR && boss.fighting())boss.alligator.playerDamaged();
         timeAttack.damaged();
         companion.react(RunCompanion.DAMAGE,1f);
         lives--;
         hurtThisStage++;
         combo = 0;
-        shake = 1f;
+        shake = boss.kind==Boss.ALLIGATOR && boss.fighting()?1.2f:1f;
         if (sound != null) sound.damage();
         flash = 1f;
         flashColor = FLASH_DAMAGE;

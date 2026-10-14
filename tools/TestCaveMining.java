@@ -3,7 +3,7 @@ package com.dddumpling.game;
 final class TestCaveMining extends Check {
     static GameCore game(Layout L,Mem store) {
         store.caveMiningNext=true;
-        GameCore c=new GameCore(store,957L);c.caveChoice=0;c.startGame();c.jumpToStage(22,L);
+        GameCore c=new GameCore(store,957L);c.caveChoice=0;c.startGame();enterCave(c,22,L);
         c.stageBanner=0;Interlude.enterBonus(c,L);return c;
     }
     static void fill(GameCore c) {
@@ -73,8 +73,8 @@ final class TestCaveMining extends Check {
         check("reward resets saved cart progress",m.carts==0 && store.mineCarts==0);
         c.update(.1f,L);check("reward cannot repeat",c.collectTotal==1);
         c.update(CaveMining.REPORT_TIME+GameCore.PARADE_TIME+1,L);
-        check("mining parade returns to next cave stage",c.state==GameCore.PLAY && c.stage==23 && !m.active);
-        Interlude.enterBonus(c,L);check("next cave interlude starts cart ride",c.cart.active && !m.active);
+        check("mining parade returns to next adventure stage",c.state==GameCore.PLAY && c.stage==23 && !m.active);
+        enterCave(c,c.stage,L);Interlude.enterBonus(c,L);check("next explicit cave interlude starts cart ride",c.cart.active && !m.active);
         store.mineCarts=5;c=game(L,store);int prior=c.collectTotal;c.update(.01f,L);
         check("restart after fifth swipe still grants pending reward",c.mining.won && c.collectTotal==prior+1 && store.mineCarts==0);
         store.mineCarts=2;c=game(L,store);m=c.mining;m.ready=0;fill(c);
@@ -91,7 +91,7 @@ final class TestCaveMining extends Check {
         check("lantern visibly dims over attempt",CaveMiningScreen.light(m)<bright*.6f);
         c.toTitle();c.startGame();c.jumpToStage(19,L);Interlude.enterBonus(c,L);
         check("ordinary lands retain ordinary games",!CaveInterlude.active(c));
-        c=game(L,new Mem());c.preferences.kids=true;c.startGame();c.jumpToStage(22,L);Interlude.enterBonus(c,L);
+        c=game(L,new Mem());c.preferences.kids=true;c.startGame();enterCave(c,22,L);Interlude.enterBonus(c,L);
         m=c.mining;m.carts=3;m.begin(c);m.ready=0;
         boolean starters=true;for(int g:m.sequence)starters &= Roster.active(false,g);
         check("four-key mode has an achievable four-long sequence",starters && m.length==4);

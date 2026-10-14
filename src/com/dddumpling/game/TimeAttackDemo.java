@@ -69,7 +69,7 @@ final class TimeAttackDemo extends Draw {
                         r*.20f*(1-pop),r*.08f*(1-pop),4,a+t),fadeBy(i%2==0?GOLD:tint,1-pop));
             }
         }
-        BossCollect.draw(p,boss,bx,by,br,c.clock*3,known,1,recoil>.2f?5:cheer>.1f?8:1,-.65f);
+        portrait(p,boss,bx,by,br,c.clock*3,known,recoil>.2f?5:cheer>.1f?8:1,-.65f,charge);
         if(cheer>0)for(int i=0;i<3;i++) {
             float xx=(cx+bx)*.5f+(i-1)*r*.5f,yy=y-r*(.6f+cheer*.9f+(i%2)*.25f);
             p.fillPoly(star(xx,yy,r*.16f*cheer,r*.07f*cheer,4,t+i),fadeBy(GOLD,cheer));
@@ -109,12 +109,17 @@ final class TimeAttackDemo extends Draw {
                 p.fillPoly(star(px,py,r*.3f,r*.14f,returning?5:4,c.clock*12),color);
                 if(recoil>0)p.strokeCircle(bx-br*.4f,by,br*(.6f+recoil*.3f),fadeBy(GOLD,recoil*.7f),r*.1f);
             }
-            BossCollect.draw(p,boss,bx,by,br,c.clock*3,known,1,recoil>.1f?5:8,-.7f);
+            portrait(p,boss,bx,by,br,c.clock*3,known,recoil>.1f?5:8,-.7f,rush);
         }
+    }
+    private static void portrait(Painter p,int boss,float x,float y,float r,float clock,boolean known,
+            int mood,float look,float punch) {
+        if(boss==Boss.ALLIGATOR)GatorCompanion.draw(p,x,y,r,clock,known,1,mood,look,false,punch);
+        else BossCollect.draw(p,boss,x,y,r,clock,known,1,mood,look);
     }
     private static void signature(Painter p,int boss,float x,float y,float r,float t,float charge,int tint) {
         if(boss==Boss.ALLIGATOR) {
-            AlligatorArt.limb(p,x+r*.4f,y+r*.3f,x-r*(.8f+charge),y+r*.55f,r*.18f,false,tint,t);
+            return; // The portrait animates its existing paw.
         } else if(boss==Boss.SLIME) {
             for(int i=0;i<5;i++) {
                 float f=(t*1.6f+i*.19f)%1f;

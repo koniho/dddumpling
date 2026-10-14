@@ -167,8 +167,8 @@ The other interlude, offered after a steamer has been opened. Two thumbs steer, 
 ## Boss
 
 Authored land finales replace the wave with a boss, which must be beaten to finish the stage.
-The original encounters are stages 5, 10, 15 and 20; Swampland ends with Mossy Maw at stage 30
-in developer builds or 25 in production. The developer cave has no boss. Each encounter asks
+The original encounters are stages 5, 10, 15 and 20; Swampland ends with Gummy Gator at stage 25
+in all builds. The reserved cave land has no boss. Each encounter asks
 for direct touch gestures as well as, or instead of, key presses.
 
 A boss stage releases **no falling words at all** — the fight is the stage. A dragging fight reddens
@@ -203,9 +203,9 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **octopulse** | stage 15. Defend keys and drag exposed arm tips away | `Boss.OCTOPUS` |
 | **fly agaric** | stage 20. Shake the cap to defeat the spore-throwing mushroom | `Boss.MUSHROOM` |
 | **boss friends** | five collectible boss portraits, awarded only by defeating their matching bosses | `BossCollect`, `Interlude.awardBossPrize` |
-| **Mossy Maw** | Swampland's forest-green alligator boss. Swipe across a glowing arm or tail to block it; nine blocks open an any-key damage window. Unblocked limbs hurt only when they reach the companion | `Alligator`, `AlligatorArt`, `Boss.ALLIGATOR` |
-| **Swampland** | lily pads, cattails and fireflies; land ID 5, stages 26–30 in developer builds and 21–25 in production | `Swamp`, `Lands.SWAMP`, `Lands.firstStage` |
-| **Mossy Bud** | Mossy Maw's collectible boss friend, appended after the ducks without shifting their saved IDs | `Collect.ALLIGATOR_FRIEND`, `Collect.bossPrize` |
+| **Gummy Gator** | Swampland's forest-green alligator boss, with a downward three-quarter head and a playfield-sized body. Six shaded tummy segments have independent springs that react to breathing, attacks and damage; the thick tail alternates entry from the lower sides. Swipe across a glowing arm or tail to parry it; completing a defense opens a short any-key damage window. Four clean parry-and-hit rounds open a longer daze. Unblocked limbs hurt only when they reach the companion | `Alligator`, `AlligatorArt`, `Boss.ALLIGATOR` |
+| **Swampland** | lily pads, cattails and fireflies; land ID 5, stages 21–25 | `Swamp`, `Lands.SWAMP`, `Lands.firstStage` |
+| **Mossy Bud** | Gummy Gator's gummy baby companion, with independent head, tummy and tail springs, waving paws, blinking eyes and reactions to play and story taps; appended after the ducks without shifting their saved IDs | `Collect.ALLIGATOR_FRIEND`, `Collect.bossPrize` |
 | **soft body** | how every boss's body is built: a ring of sprung nodes under pressure, so it dents where you hit it | `Softbody`, `Boss.body` |
 | **burst** | what a beaten boss goes out on | `BossScreen.burst`, `Boss.LEAVE` |
 
@@ -551,8 +551,8 @@ The developer settings **ALL LANDS** chip enables every land for the current ses
 
 ## Cave expedition
 
-The developer-only fifth land, after Mushroom Land, begins at stage 21. Production retains
-its original four-land progression. The **explorer dumpling** runs through a winding gauntlet
+The cave land retains save slot 4 but is unreachable in Adventure and the land picker while
+its introduction is reworked. Swampland follows Mushroom Fields in every build. The **explorer dumpling** runs through a winding gauntlet
 at 1.15 route units per second. Arc-length sampling keeps travel speed steady through lateral
 bends and downward turns; the camera follows both axes. Seven encounters are spaced about
 1–2 seconds of travel apart. Forks give a short 0.55-second choice, then follow the lantern.

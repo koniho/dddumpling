@@ -213,7 +213,7 @@ final class TestBoss extends Check {
         check("stage 10 is the split slime", Boss.kindFor(10) == Boss.SPLITTER);
         check("stage 15 is the octopus and stage 20 is the mushroom",
                 Boss.kindFor(15) == Boss.OCTOPUS && Boss.kindFor(20) == Boss.MUSHROOM
-                        && Boss.kindFor(25) == -1
+                        && Boss.kindFor(25) == Boss.ALLIGATOR
                 && Boss.kindFor(500) == -1);
 
         // The harness font is an ASCII subset and silently draws nothing for a character it lacks,

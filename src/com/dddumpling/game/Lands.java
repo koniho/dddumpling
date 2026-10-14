@@ -11,16 +11,16 @@ final class Lands extends Draw {
     static final int[] TINT = {0xFF79C99D, 0xFFB18CDB, 0xFF62BEC5, 0xFFE4A19C, CaveArt.LIGHT, 0xFF74B99C};
     private Lands() {}
 
-    // Keep catalog/save slots stable while production cycles through its original four lands.
-    static int playableCount() { return BuildFlags.DEVELOPER ? COUNT : COUNT-1; }
-    static boolean playable(int land) {return land>=0 && land<COUNT && (land!=Cave.LAND || BuildFlags.DEVELOPER);}
-    static int firstStage(int land) {return (land==SWAMP && !BuildFlags.DEVELOPER?land-1:land)*Boss.EVERY+1;}
+    // Keep the reserved cave save slot while Adventure skips its unfinished introduction.
+    static int playableCount() { return COUNT-1; }
+    static boolean playable(int land) {return land>=0 && land<COUNT && land!=Cave.LAND;}
+    static int firstStage(int land) {return (land==SWAMP?land-1:land)*Boss.EVERY+1;}
     static int unlockBoss(int land) {return land==SWAMP?Boss.MUSHROOM:land-1;}
 
     // Beyond the authored bosses, scenery repeats without adding encounters.
     static int forStage(int stage) {
         int chapter=(Math.max(1,stage)-1)/Boss.EVERY%playableCount();
-        return !BuildFlags.DEVELOPER && chapter==Cave.LAND?SWAMP:chapter;
+        return chapter==Cave.LAND?SWAMP:chapter;
     }
     static int skitFor(int stage) { return (Math.max(1, stage) - 1) % Boss.EVERY % 3; }
     static float blend(GameCore c) {

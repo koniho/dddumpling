@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 final class TestCaveCart extends Check {
     static GameCore game(Layout L,Mem store){
-        GameCore c=new GameCore(store,957L);c.caveChoice=0;c.startGame();c.jumpToStage(21,L);
+        GameCore c=new GameCore(store,957L);c.caveChoice=0;c.startGame();enterCave(c,21,L);
         c.stageBanner=0;Interlude.enterBonus(c,L);return c;
     }
     static void all(Layout L){
@@ -102,17 +102,18 @@ final class TestCaveCart extends Check {
     private static void rotation(Layout L){
         Mem saved=new Mem();GameCore c=game(L,saved);
         c.cart.ready=0;c.update(2,L);c.update(3,L);
+        enterCave(c,c.stage,L);
         Interlude.enterBonus(c,L);
         check("failed ride retries ride on the next stage",c.cart.active && !c.mining.active && !saved.caveMiningNext);
         c.cart.progress=CaveCart.TRACK;c.cart.begin(c);c.update(.01f,L);
         check("ride success switches to mining durably",c.caveMiningNext && saved.caveMiningNext);
-        c=new GameCore(saved,77);c.caveChoice=0;c.startGame();c.jumpToStage(23,L);Interlude.enterBonus(c,L);
+        c=new GameCore(saved,77);c.caveChoice=0;c.startGame();enterCave(c,23,L);Interlude.enterBonus(c,L);
         check("restart remembers mining despite stage parity",c.mining.active && !c.cart.active);
-        c.mining.ready=0;c.update(CaveMining.TIME+1,L);c.update(CaveMining.REPORT_TIME+1,L);Interlude.enterBonus(c,L);
+        c.mining.ready=0;c.update(CaveMining.TIME+1,L);c.update(CaveMining.REPORT_TIME+1,L);enterCave(c,c.stage,L);Interlude.enterBonus(c,L);
         check("failed mining retries mining",c.mining.active && saved.caveMiningNext);
         c.mining.carts=CaveMining.CARTS;c.mining.begin(c);c.update(.01f,L);
         check("mining success switches back to ride durably",!c.caveMiningNext && !saved.caveMiningNext);
-        c.toTitle();c.startGame();c.jumpToStage(24,L);Interlude.enterBonus(c,L);
+        c.toTitle();c.startGame();enterCave(c,24,L);Interlude.enterBonus(c,L);
         check("new run remembers ride despite stage parity",c.cart.active && !c.mining.active);
     }
     private static void bounded(Layout L){

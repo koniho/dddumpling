@@ -327,21 +327,21 @@ final class TestAudio extends Check {
         c.startMusic();
         check("title automatically uses MOOG SWING",ear.music==Music.SWING_STYLE && ear.musicCalls==1);
         new GameCore(new Mem(),302L).startMusic();
-        c.state=GameCore.PLAY; c.jumpToStage(21,L);
+        c.state=GameCore.PLAY; enterCave(c,21,L);
         check("cave entry selects LOFI DRIFT",ear.music==Music.DRIFT);
         c.preferences.music=.35f;c.preferences.musicMuted=true;c.preferences.save(c);
-        c.jumpToStage(24,L);c.startMusic();
+        enterCave(c,24,L);c.startMusic();
         check("cave resume preserves mute and automatic track",ear.music==Music.DRIFT && ear.musicVolume==0f);
         c.preferences.musicMuted=false;c.preferences.save(c);
         check("unmute restores volume without restarting music",ear.musicVolume==.35f && ear.music==Music.DRIFT);
         c.jumpToStage(19,L);
         check("leaving caves restores MOOG SWING",ear.music==Music.SWING_STYLE);
         c.jumpToStage(20,L);check("ordinary bosses retain boss music",ear.bossMusic);
-        c.jumpToStage(21,L);
+        enterCave(c,21,L);
         check("boss to cave switches to LOFI DRIFT",!ear.bossMusic && ear.music==Music.DRIFT);
         c.toTitle();check("title restores MOOG SWING",ear.music==Music.SWING_STYLE);
         c.allLandsEnabled=true;c.landChoice=Cave.LAND;c.startGame();
-        check("starting directly in caves selects LOFI DRIFT",ear.music==Music.DRIFT);
+        check("stale cave choice uses ordinary music",ear.music==Music.SWING_STYLE);
     }
 
     static void audio(Layout L) {

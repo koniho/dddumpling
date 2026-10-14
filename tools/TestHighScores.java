@@ -211,11 +211,12 @@ final class TestHighScores extends Check {
             HighScores.Run run=c.highScores.runs.get(0);
             check("boss death names its form "+kind,run.ending==(kind==Boss.ALLIGATOR?11:kind+1) && run.blurb().equals(HighScores.BLURBS[kind==Boss.ALLIGATOR?11:kind+1]));
         }
-        for(int land=0;land<Lands.playableCount();land++) {
-            c.startGame();c.stage=land*Boss.EVERY+1;c.lives=1;c.takeHit(L.w*.5f,L);
+        for(int land=0;land<Lands.COUNT;land++) {
+            if(!Lands.playable(land))continue;
+            c.startGame();c.stage=Lands.firstStage(land);c.lives=1;c.takeHit(L.w*.5f,L);
             check("land death keeps cute scenery detail "+land,c.highScores.runs.get(0).ending==land+5);
         }
-        c.startGame();c.stage=25;c.lives=1;c.takeHit(L.w*.5f,L);
+        c.startGame();c.stage=30;c.lives=1;c.takeHit(L.w*.5f,L);
         check("later fifth stages without bosses use land blurb",c.highScores.runs.get(0).ending>=5);
         HighScores saved=new HighScores();saved.load(c.highScores.encode());
         check("death context survives reload",saved.runs.get(0).blurb().equals(c.highScores.runs.get(0).blurb()));
