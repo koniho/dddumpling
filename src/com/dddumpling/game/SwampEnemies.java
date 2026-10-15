@@ -72,9 +72,9 @@ final class SwampEnemies {
         float retreat=reveal*reveal*(3-2*reveal);
         float r=L.enemyR*swell;
         float x=c.tileX(e,head,L)+jx;
-        float left=x-r*.95f;
+        float left=x-r*2.5f;
         if(head>0)left-=(x-jx-c.tileX(e,head-1,L))*retreat;
-        float right=c.tileX(e,e.word.length-1,L)+jx+r*.9f;
+        float right=c.tileX(e,e.word.length-1,L)+jx+r*2.5f;
         float y=e.y+jy-r*vanish*.9f;
         float clock=c.clock+e.phase;
         int alpha=(int)(fade*(1-vanish));
