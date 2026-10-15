@@ -365,14 +365,19 @@ Survival, Boss Time Attack, or boss encounters. One word cannot have both varian
 
 - Fog keeps the current head readable and replaces future characters, colors, and stack
   details with anonymous mist. Fully clearing a prompt immediately reveals the next, with
-  outward wisps that never delay input. A wrong key re-covers the reset word.
-- An amber chevron marks a divebomb word. Reaching one unresolved tile triggers one sound,
-  a 0.35-second squash/wind-up, then accelerating descent with an amber ring and trails.
-  Stacked final prompts still require their normal presses. Near-line triggers allow at least
-  1.2 seconds before crossing the damage line, plus 0.2 seconds per extra final-stack press;
-  Kids Mode slows this movement and timing. The normal final lunge/damage flow follows.
-  A wrong key resets the word but does not restart or multiply its dive. Rescue swipes still
-  push it back, and correct keys and power-ups can clear it normally.
+  long, thin layered wisps extending past both ends of the remaining word. The readable key
+  also has translucent cover. A wrong key restarts typing but keeps revealed prompts visible
+  and does not reset the receding fog.
+- A hardhat on the final key marks a divebomb word, capped at three single-press keys.
+  Reaching one unresolved tile immediately starts the dive, with one airy whoosh and a brief
+  ring burst in that key's color at the launch point. There is no wind-up or near-line slowdown.
+  Kids Mode slows traversal; the normal final lunge/damage flow follows. A wrong key preserves
+  typing progress and does not restart the sound, burst, or dive. Rescue swipes still push it
+  back, and correct keys and power-ups can clear it normally.
+
+The shared enemy-word budget is seven total presses, including stacked pips; Kids Mode keeps
+its six-press cap. Developer Settings → Progress has a **Complete all bosses** chip that grants
+boss collectibles and their mode/land unlocks without changing scores.
 
 Code: `SwampEnemies`, per-enemy state on `GameCore.Enemy`. Spawn-phase selection adds no
 new generation RNG calls. The bounded player pays a fresh reaction delay for each fog reveal.
