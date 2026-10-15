@@ -1647,6 +1647,7 @@ final class GameCore {
         }
         progress.seed(this);
         progress.apply(this);
+        LandPicker.restoreSelection(this);
         survival.reward.restore(this);
     }
 

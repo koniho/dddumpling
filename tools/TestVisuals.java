@@ -696,8 +696,8 @@ final class TestVisuals extends Check {
         LandPicker.recordBest(lands);
         check("land scores stay out of the full-run record", landStore.best == 123 && landStore.landBests[1] == 456);
         GameCore fresh = new GameCore(landStore, 718L);
-        check("app launch defaults to full run while retaining unlocks and records", fresh.landChoice == 0
-                && fresh.best == 123 && fresh.landBests[1] == 456 && LandPicker.visible(fresh));
+        check("app launch restores the selected land and its record", fresh.landChoice == 1
+                && fresh.best == 456 && fresh.landBests[1] == 456 && LandPicker.visible(fresh));
         LandPicker.down(fresh, L, L.w * 0.6f, LandPicker.cardY(L));
         LandPicker.move(fresh, L, L.w * 0.3f);
         LandPicker.up(fresh, L, L.w * 0.3f, LandPicker.cardY(L));

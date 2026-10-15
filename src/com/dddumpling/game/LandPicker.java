@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** Session-only starting-land selection; boss friends are the persistent unlocks. */
+/** Device-local starting-land selection; boss friends are the persistent unlocks. */
 final class LandPicker extends Draw {
     private LandPicker() {}
     static final float TRAVEL_TIME = 0.85f;
@@ -67,6 +67,7 @@ final class LandPicker extends Draw {
         for(int next=order(from)+direction;next!=order(land)+direction;next+=direction)
             if(unlocked(c,destination(next))) c.landTravelQueue.add(destination(next));
         if(c.landTravelFrom<0) beginTravel(c,false);
+        save(c);
     }
     private static void beginTravel(GameCore c,boolean chained) {
         if(c.landTravelQueue.isEmpty()) return;
@@ -81,9 +82,10 @@ final class LandPicker extends Draw {
         if(c.sound!=null) c.sound.landShuffle();
     }
     static void updateTravel(GameCore c,float dt) {
-        if (c.landChoice == TOWN && !townUnlocked(c)) {
+        if (!unlocked(c,c.landChoice)) {
             c.landChoice=0; c.best=c.landBests[0];
             c.landTravelFrom=-1; c.landTravelQueue.clear(); c.landPickerSlide=0f;
+            save(c);
         }
         if(!visible(c)) {
             c.landTravelFrom=-1;c.landTravelQueue.clear();c.landPickerSlide=0f;
@@ -158,8 +160,20 @@ final class LandPicker extends Draw {
         c.landSeen = value & (modern ? stateMask() : 14);
         c.landSuppressed = (value >> (modern ? 8 : 4)) & (modern ? stateMask() : 14);
     }
+    static void restoreSelection(GameCore c) {
+        // Unlocks may come from either the local collection or merged progress.
+        int value=c.store==null?0:c.store.loadLandState();
+        int selected=(value & STATE_V2)!=0 ? (value>>>16)&255 : 0;
+        c.landChoice=Lands.playable(selected) && unlocked(c,selected) ? selected : 0;
+        c.best=c.landBests[c.landChoice];
+        if(selected!=c.landChoice)save(c);
+    }
     static void save(GameCore c) {
-        if (c.store != null) c.store.saveLandState(STATE_V2 | c.landSeen | (c.landSuppressed << 8));
+        int selected=pendingLand(c);
+        // Town is a developer destination, not a saved Adventure starting land.
+        if(!Lands.playable(selected))selected=0;
+        if (c.store != null) c.store.saveLandState(STATE_V2 | c.landSeen | (c.landSuppressed << 8)
+                | (selected << 16));
     }
     static void enableAll(GameCore c) {
         if (BuildFlags.DEVELOPER) c.allLandsEnabled=true;

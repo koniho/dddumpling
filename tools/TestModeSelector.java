@@ -173,6 +173,7 @@ final class TestModeSelector extends Check {
         sceneStarts(L);
         swipePreview(L);
         persistence(L);
+        landPersistence(L);
         skit(L);
         GameCore c=title();Ear ear=new Ear();c.sound=ear;
         check("title defaults to Adventure",c.modes.adventure() && c.modes.visible(c) && c.modes.playable(c));
@@ -330,6 +331,56 @@ final class TestModeSelector extends Check {
         saved.playerSettings=35 | (100<<7) | (3<<17);
         reopened=new GameCore(saved,1487);
         check("invalid saved mode falls back without losing volume",reopened.modes.adventure() && reopened.preferences.music==.35f);
+    }
+    private static void landPersistence(Layout L) {
+        Mem saved=new Mem();saved.collected=Collect.MASK;saved.best=123;saved.landBests[2]=789;
+        GameCore c=new GameCore(saved,181);c.landSeen=LandPicker.stateMask();
+        LandPicker.select(c,2);
+        check("land travel queues a distant selection",c.landChoice==1 && !c.landTravelQueue.isEmpty());
+        GameCore reopened=new GameCore(saved,182);
+        check("reopen restores requested destination even during travel",reopened.landChoice==2 && reopened.best==789
+                && reopened.landTravelFrom<0 && reopened.landTravelQueue.isEmpty() && reopened.landPickerSlide==0);
+        LandPicker.updateDiscovery(reopened,.1f);
+        check("restoring a seen land does not replay its discovery",reopened.landDiscovery<0);
+        for(int mode=ModeSelector.SURVIVAL;mode<=ModeSelector.TIME_ATTACK;mode++) {
+            reopened.modes.select(reopened,mode,1);
+            reopened=new GameCore(saved,183+mode);
+            check("other mode preserves saved Adventure destination "+mode,reopened.landChoice==2);
+            reopened.modes.select(reopened,ModeSelector.ADVENTURE,-1);
+            reopened.modes.update(reopened,ModeSelector.CHANGE);
+            check("returning to Adventure restores selected land record "+mode,reopened.landChoice==2
+                    && reopened.best==789 && LandPicker.visible(reopened));
+        }
+        reopened.startGame();reopened.toTitle();
+        check("playthrough retains Adventure selection",new GameCore(saved,186).landChoice==2);
+        int seen=LandPicker.stateMask();
+        for(int invalid:new int[]{Cave.LAND,LandPicker.TOWN,255}) {
+            saved.landState=(1<<30)|seen|(invalid<<16);
+            reopened=new GameCore(saved,187);
+            check("invalid or unavailable destination falls back "+invalid,reopened.landChoice==0
+                    && reopened.best==123 && reopened.landSeen==seen && (saved.landState>>>16&255)==0);
+        }
+        saved.collected=0;saved.landState=(1<<30)|seen|(2<<16);
+        reopened=new GameCore(saved,188);
+        check("locked saved land cannot bypass boss unlock",reopened.landChoice==0 && (saved.landState>>>16&255)==0);
+        saved.collected=Collect.MASK;saved.landState=(1<<30)|seen|(2<<16)|(4<<8);
+        reopened=new GameCore(saved,189);
+        check("suppressed saved land falls back without clearing suppression",reopened.landChoice==0 && reopened.landSuppressed==4);
+        for(int legacy:new int[]{0,14|(2<<4),(1<<30)|seen}) {
+            saved.landState=legacy;reopened=new GameCore(saved,190);
+            check("older land saves start on Slime Hills "+legacy,reopened.landChoice==0);
+        }
+        if(BuildFlags.DEVELOPER) {
+            saved.landState=(1<<30)|seen|(2<<16);reopened=new GameCore(saved,191);
+            LandPicker.reset(reopened);
+            check("land reset persists Slime Hills",new GameCore(saved,192).landChoice==0 && (saved.landState>>>16&255)==0);
+            LandPicker.enableAll(reopened);LandPicker.select(reopened,2);
+            DevSettings.resetProgress(reopened);DevSettings.resetProgress(reopened);
+            GameCore fresh=new GameCore(saved,193);
+            check("progress reset clears saved land and unlocks",fresh.landChoice==0 && fresh.collected==0 && LandPicker.count(fresh)==1);
+            LandPicker.enableAll(fresh);fresh.landSeen=seen;LandPicker.select(fresh,2);
+            check("temporary developer unlock cannot survive restart",new GameCore(saved,194).landChoice==0);
+        }
     }
     private static void skit(Layout L) {
         GameCore c=title(),control=title();c.collected|=1L<<1;c.caseIndex=1;

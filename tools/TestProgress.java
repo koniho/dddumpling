@@ -165,12 +165,12 @@ final class TestProgress extends Check {
         check("production land scores do not contaminate full runs", landRun.progress.maximum("best_score") == 500
                 && landRun.progress.maximum("best_score_land_1") == 900 && landStore.best == 500);
         GameCore reopened = new GameCore(landStore, 620L);
-        check("production app launch keeps unlocks but resets selection", reopened.landChoice == 0
-                && reopened.best == 500 && reopened.landBests[1] == 900 && LandPicker.visible(reopened));
+        check("production app launch restores land and its record", reopened.landChoice == 1
+                && reopened.best == 900 && reopened.landBests[1] == 900 && LandPicker.visible(reopened));
         try {
             ProgressData remoteLand = new ProgressData(); remoteLand.maximum("best_score_land_1", 1200);
             reopened.progress.restore(remoteLand.encode(), reopened);
-            check("merged land records remain separate", reopened.best == 500 && reopened.landBests[1] == 1200);
+            check("merged land records remain separate", reopened.best == 1200 && reopened.landBests[0] == 500);
         } catch (IOException e) { check("land score merge succeeds", false); }
         Mem fresh = new Mem(); new GameCore(fresh, 12);
         check("fresh tracking does not write a fake legacy score or unlock the tutorial roster", fresh.saves == 0);
