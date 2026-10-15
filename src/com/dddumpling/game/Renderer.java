@@ -324,7 +324,7 @@ final class Renderer extends Draw {
             float bondFlex = e.link == null ? 0f : e.linkFlex;
             edgeA += (int)(65f*bondFlex);
 
-            FastEnemies.trail(p,c,e,x,y,cellR,col,fade);
+            FastEnemies.trail(p,c,e,L,x,y,cellR,col,fade);
 
             // Stacked tiles sit on a pile of offset copies, one per press still owed, so the
             // depth is legible before you even count the pips.

@@ -360,7 +360,7 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 Normal Adventure waves in Swampland (stages 21–24, and later Swampland visits) mix ordinary
 words with **fog words** and **divebomb words**. The first stage of a swamp visit gives each
 solo word a 20% fog chance and 15% divebomb chance; later stages use 25% and 20%.
-Linked pairs and newly spawned power-up words stay ordinary. These variants do not spawn in
+Linked pairs stay ordinary. Power-up spawns retain the stage’s fog and divebomb variants. These variants do not spawn in
 Survival, Boss Time Attack, or boss encounters. One word cannot have both variants.
 
 - Fog keeps the current head readable and shows future characters as muted silhouettes under mist, masking their colors
@@ -396,7 +396,9 @@ pips, fog, or divebomb behavior. Their initial header-entry peak stays comparabl
 enemies; entrance checks keep faster runners from overtaking words in the same lane.
 
 Runners use normal targeting, rescue, power clear, damage, and stage accounting. They are not
-generated during powers, boss encounters, caves, Survival, or Boss Time Attack.
+generated during boss encounters, caves, Survival, or Boss Time Attack. Power-up spawns from
+stage 16 include runners in 40% of solo candidates, retaining each power’s refill timing and
+entrance patterns; normal Adventure’s shortened follow-up interval does not replace power pacing.
 Code: `FastEnemies`, `EnemyEntry`, `PowerRush`.
 
 ## Linked friends (stage 16 onward)

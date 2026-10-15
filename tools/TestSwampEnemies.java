@@ -38,7 +38,7 @@ final class TestSwampEnemies extends Check {
             c.survival.active=gate==0;c.timeAttack.active=gate==1;
             c.mode=gate==2?Power.NINJA:-1;c.modeLeft=gate==2?5:0;
             SwampEnemies.assign(c,e);
-            check("other modes and new power enemies stay ordinary "+gate,e.swampKind==0);
+            check("swamp power eligibility "+gate,gate==2?e.swampKind==SwampEnemies.DIVE:e.swampKind==0);
         }
         c=scene(L,175);e=add(c,L,new int[]{0},L.h*.4f);e.phase=.1f;SwampEnemies.assign(c,e);
         check("single prompts stay ordinary",e.swampKind==0);

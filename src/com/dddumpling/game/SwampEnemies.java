@@ -33,7 +33,8 @@ final class SwampEnemies {
     static void assign(GameCore c,GameCore.Enemy e) {
         reset(e);
         if(c.survival.active || c.timeAttack.active || c.boss.active() || Cave.active(c)
-                || c.powerActive() || Lands.forStage(c.stage)!=Lands.SWAMP || e.word.length<2) return;
+                || Boss.isBossStage(c.stage) || Lands.forStage(c.stage)!=Lands.SWAMP
+                || e.link!=null || e.word.length<2) return;
         // Reuse the uniform spawn phase: adding a variant does not shuffle future words.
         float pick=e.phase/6.283f;
         boolean intro=(c.stage-1)%Boss.EVERY==0;

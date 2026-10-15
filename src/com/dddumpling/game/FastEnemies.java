@@ -8,14 +8,15 @@ final class FastEnemies {
 
     private static boolean eligible(GameCore c) {
         return c.stage>=FIRST_STAGE && !Boss.isBossStage(c.stage) && !c.boss.active() && !Cave.active(c)
-                && !c.survival.active && !c.timeAttack.active && !c.powerActive();
+                && !c.survival.active && !c.timeAttack.active;
     }
 
     static void assign(GameCore c,GameCore.Enemy e) {
         e.fastSingle=false;
         if(!eligible(c) || e.link!=null)return;
         // The first pair gets its introduction before the third spawn becomes a runner.
-        boolean chosen=c.stage==FIRST_STAGE?c.spawnedThisStage==2:c.fastEnemyNext;
+        boolean chosen=c.powerActive()?e.phase>=6.283f*.60f
+                :c.stage==FIRST_STAGE?c.spawnedThisStage==2:c.fastEnemyNext;
         if(!chosen)return;
         e.fastSingle=true;
         e.word=new int[]{e.word[0]};e.need=new int[]{1};
@@ -26,7 +27,7 @@ final class FastEnemies {
     static float nextDelay(GameCore c,Layout L) {
         float normal=Power.spawnDelay(c,L);
         c.fastEnemyNext=false;
-        if(!eligible(c) || c.spawnedThisStage>=c.stageQuota() || LinkedPairs.due(c)
+        if(!eligible(c) || c.powerActive() || c.spawnedThisStage>=c.stageQuota() || LinkedPairs.due(c)
                 || c.enemies.isEmpty())return normal;
         GameCore.Enemy previous=c.enemies.get(c.enemies.size()-1);
         if(previous.link!=null || previous.fastSingle || previous.word.length<2)return normal;
@@ -35,7 +36,7 @@ final class FastEnemies {
         return c.fastEnemyNext?normal*.25f:normal;
     }
 
-    static void trail(Painter p,GameCore c,GameCore.Enemy e,float x,float y,float r,int color,int fade) {
+    static void trail(Painter p,GameCore c,GameCore.Enemy e,Layout L,float x,float y,float r,int color,int fade) {
         if(!e.fastSingle || !e.typeable())return;
         int shade=Glyph.mix(color,0xFF25364C,.45f),light=Glyph.mix(color,0xFFFFFFFF,.65f);
         float spacing=Math.min(r*.65f,e.speed*.10f);
@@ -45,6 +46,7 @@ final class FastEnemies {
             float tx=x+e.sway*((float)Math.sin((c.clock-age)*1.1f+e.phase)
                     -(float)Math.sin(c.clock*1.1f+e.phase));
             float ty=y-spacing*k,rr=r*(1-k*.025f);
+            if(e.sideEntry)tx=x+EnemyEntry.xAt(e,e.y-spacing*k,L)-e.baseX;
             int alpha=(int)(fade*.38f*(1-k/7f));
             float[] hex=Glyph.hex(tx,ty,rr);
             p.fillPoly(hex,Glyph.withAlpha(color,alpha/3));

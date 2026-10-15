@@ -82,7 +82,7 @@ final class TestSideEntry extends Check {
                 }
                 for (int i = 0; i < run.enemies.size(); i++) {
                     GameCore.Enemy a = run.enemies.get(i);
-                    fullDescentSpeed &= Math.abs(a.speed-(size.dangerY+size.enemyR*2.2f)/run.travelSeconds())<.001f;
+                    fullDescentSpeed &= Math.abs(a.speed-(size.dangerY+size.enemyR*2.2f)/run.travelSeconds()*(a.fastSingle?FastEnemies.SPEED:1f))<.001f;
                     for (int j = i + 1; j < run.enemies.size(); j++) {
                         GameCore.Enemy b = run.enemies.get(j);
                         if ((!a.sideEntry && !b.sideEntry && a.rushSpan<=0f && b.rushSpan<=0f) || a.dying || b.dying

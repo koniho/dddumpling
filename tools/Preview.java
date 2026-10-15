@@ -19,6 +19,14 @@ final class Preview {
             step(c,L,time);
             shot(dir,"180-fast-single-key-"+Math.round(time*100),c,L,w,h,ss);
         }
+        for(int mode:new int[]{Power.FLURRY,Power.NINJA,Power.TEAM}) {
+            GameCore c=TestSwampEnemies.scene(L,180);c.clock=2;c.collected=1L;c.runWho=0;
+            c.playtestMode(mode,L);c.flash=c.skyGlow=c.shake=0;c.spawnTimer=Float.POSITIVE_INFINITY;
+            TestSwampEnemies.word(c,L,SwampEnemies.FOG,L.h*.35f);
+            TestSwampEnemies.word(c,L,SwampEnemies.DIVE,L.h*.51f);
+            GameCore.Enemy runner=TestFastEnemies.runner(c,L,L.h*.63f);runner.baseX=L.w*.72f;
+            shot(dir,"180-power-mix-"+mode,c,L,w,h,ss);
+        }
     }
     private static void swampEnemyFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("175-176-"))return;

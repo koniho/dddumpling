@@ -32,13 +32,14 @@ final class TestFastEnemies extends Check {
             c.mode=gate==2?Power.NINJA:-1;c.modeLeft=gate==2?5:0;
             GameCore.Enemy e=add(c,L,new int[]{0,1},L.h*.3f);e.phase=5.5f;
             if(gate==3)e.link=new GameCore.Enemy();
-            FastEnemies.assign(c,e);check("runner exclusions "+gate,!e.fastSingle && e.word.length==2);
+            FastEnemies.assign(c,e);
+            check("runner mode eligibility "+gate,gate==2?e.fastSingle && e.word.length==1:!e.fastSingle && e.word.length==2);
         }
         c=scene(L,17,180);GameCore.Enemy e=runner(c,L,L.h*.3f);
         c.rnd.setSeed(180);FastEnemies.assign(c,e);
         check("selection consumes no gameplay randomness",c.rnd.nextLong()==new java.util.Random(180).nextLong());
         Words.fill(e,3,0,new java.util.Random(180));check("reused word loses runner identity",!e.fastSingle);
-        cadence(L);movement(L);completion(L);waves(L);
+        cadence(L);movement(L);completion(L);powerMix(L);waves(L);
     }
     private static void cadence(Layout L) {
         GameCore c=scene(L,16,180);c.spawnedThisStage=1;c.spawnTimer=0;
@@ -82,6 +83,9 @@ final class TestFastEnemies extends Check {
         float fastEntry=PowerRush.yAfter(fast,fast.speed*tiny)-fast.y;
         float plainEntry=PowerRush.yAfter(plain,plain.speed*tiny)-plain.y;
         check("header boost does not double its peak arrival speed",Math.abs(fastEntry/plainEntry-1)<.02f);
+        fast.headerRush=false;
+        float fastPowerEntry=PowerRush.yAfter(fast,fast.speed*tiny)-fast.y;
+        check("power entrance boost also avoids doubled peak speed",Math.abs(fastPowerEntry/plainEntry-1)<.02f);
         fast.y=plain.y=Math.max(fast.rushEndY,plain.rushEndY)+L.enemyR;
         for(boolean kids:new boolean[]{false,true}) {
             c.kidsRun=kids;
@@ -112,6 +116,37 @@ final class TestFastEnemies extends Check {
         advance(c,L,2);check("runner breach follows normal fatal flow",c.state==GameCore.OVER && c.lives==0 && c.resolvedThisStage==1);
         c=scene(L,17,180);e=runner(c,L,L.h*.4f);c.destroyWord(e,e.baseX,e.y,L);advance(c,L,1);
         check("power clearing a runner resolves once",c.resolvedThisStage==1 && c.lives==GameCore.START_LIVES);
+    }
+    private static void powerMix(Layout L) {
+        for(int mode:new int[]{Power.FLURRY,Power.NINJA,Power.TEAM})for(int stage:new int[]{1,16,21}) {
+            GameCore c=scene(L,stage,180+mode);c.collected=1L;c.runWho=0;
+            c.playtestMode(mode,L);c.modeLeft=1000;
+            // Power spawning must keep working after the ordinary quota is exhausted.
+            c.spawnedThisStage=c.stageQuota();
+            int ordinary=0,rush=0,fog=0,dive=0,pairs=0;
+            boolean speed=true,exclusive=true;
+            for(int frame=0;frame<250;frame++) {
+                c.spawnTimer=0;c.update(.02f,L);
+                for(GameCore.Enemy e:new java.util.ArrayList<GameCore.Enemy>(c.enemies)) {
+                    if(e.destroyed || e.dying)continue;
+                    if(e.link!=null)pairs++;
+                    else if(e.fastSingle)rush++;
+                    else if(e.swampKind==SwampEnemies.FOG)fog++;
+                    else if(e.swampKind==SwampEnemies.DIVE)dive++;
+                    else ordinary++;
+                    exclusive&=!(e.fastSingle && (e.swampKind!=0 || e.link!=null));
+                    speed&=Math.abs(e.speed-(L.dangerY+L.enemyR*2.2f)/c.travelSeconds()*(e.fastSingle?2:1))<.01f;
+                }
+                for(GameCore.Enemy e:new java.util.ArrayList<GameCore.Enemy>(c.enemies))
+                    if(!e.destroyed)c.destroyWord(e,c.enemyCentreX(e),e.y,L);
+                c.enemies.clear();
+            }
+            check("power keeps stage enemy pool "+mode+"/"+stage,ordinary>0
+                    && (stage>=16?rush>0 && pairs>0:rush==0 && pairs==0)
+                    && (stage==21?fog>0 && dive>0:fog==0 && dive==0));
+            check("power variant speed and identity "+mode+"/"+stage,speed && exclusive);
+            check("power replacement stream remains live "+mode+"/"+stage,c.powerActive() && c.powerSpawnedEnemies>150);
+        }
     }
     private static void waves(Layout L) {
         int completed=0,lost=0,fast=0,longWords=0,pairs=0;
