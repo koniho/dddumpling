@@ -318,6 +318,8 @@ final class Renderer extends Draw {
             float bondFlex = e.link == null ? 0f : e.linkFlex;
             edgeA += (int)(65f*bondFlex);
 
+            FastEnemies.trail(p,c,e,x,y,cellR,col,fade);
+
             // Stacked tiles sit on a pile of offset copies, one per press still owed, so the
             // depth is legible before you even count the pips.
             int left = c.pressesLeft(e, i);
@@ -359,7 +361,7 @@ final class Renderer extends Draw {
 
             if(e.swampKind==SwampEnemies.DIVE && i==e.word.length-1 && !e.destroyed && !e.dying && !e.gone[i])
                 SwampEnemies.hardhat(p,x,y,cellR,fade);
-            FastEnemies.draw(p,c,e,x,y,cellR,fade);
+            FastEnemies.draw(p,c,e,x,y,cellR,col,fade);
             if(head)SwampEnemies.burst(p,e,cellR,fade);
             if (head && locked) {
                 // Thicker white outline plus a caret, drawn at the smoothed position so the
