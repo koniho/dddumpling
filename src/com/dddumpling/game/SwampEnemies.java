@@ -3,10 +3,27 @@ package com.dddumpling.game;
 /** Swamp word variants share ordinary targeting, clears, rescue, and damage. */
 final class SwampEnemies {
     static final int NONE=0, FOG=1, DIVE=2;
-    static final float REVEAL=.32f;
+    static final float REVEAL=.45f;
     static final float DIVE_BURST=.5f;
     static final int MIST=0xFFB9D9CC, AMBER=0xFFFFCA68;
+    static final int FOG_INK=0xFF53636F;
     private SwampEnemies() {}
+
+    static float tintAmount(GameCore.Enemy e,int i) {
+        if(e.swampKind!=FOG || i!=e.fogHead || e.destroyed || e.dying)return 0;
+        float t=Math.max(0,Math.min(1,e.fogReveal/REVEAL));
+        return t*t*(3-2*t);
+    }
+
+    static void silhouette(Painter p,int glyph,float x,float y,float r,int fade) {
+        p.strokePoly(Glyph.hex(x,y,r),Glyph.withAlpha(FOG_INK,fade*95/255),r*.055f);
+        Kawaii.draw(new FogSilhouette(p),glyph,x,y,r*.60f,FOG_INK,1f,0.1f);
+    }
+    private static final class FogSilhouette extends OpacityPainter {
+        FogSilhouette(Painter p) {super(p,1);}
+        int color(int c) {return (c>>>24)==0?0:FOG_INK;}
+        public ArtStamp stamps() {return null;}
+    }
 
     static void reset(GameCore.Enemy e) {
         e.swampKind=NONE;e.fogHead=0;e.fogReveal=0;
@@ -76,28 +93,28 @@ final class SwampEnemies {
         if(head>0)left-=(x-jx-c.tileX(e,head-1,L))*retreat;
         float right=c.tileX(e,e.word.length-1,L)+jx+r*2.5f;
         float y=e.y+jy-r*vanish*.9f;
-        float clock=c.clock+e.phase;
+        float clock=c.clock*2.2f+e.phase;
         int alpha=(int)(fade*(1-vanish));
         if(!front) {
             ribbon(p,left-r*.5f,right+r*.65f,y+r*.24f,r*.46f,clock*.7f,0xFF8ABDC4,alpha*42/255);
             ribbon(p,left-r*.2f,right+r*.85f,y-r*.24f,r*.38f,-clock*.9f,0xFFB6E3D5,alpha*52/255);
             return;
         }
-        // Future glyphs are omitted, so the fog can stay airy without leaking their colors.
+        // Silhouettes show the future shapes while the sliding veil masks color and stack details.
         if(head<e.word.length-1) {
             float denseLeft=x+r*.25f-r*retreat*.6f;
             for(int k=0;k<4;k++) {
-                float drift=(float)Math.sin(clock*.85f+k*2)*r*.32f;
+                float drift=(float)Math.sin(clock*(.85f+k*.13f)+k*2)*r*.90f;
                 ribbon(p,denseLeft-r*.18f+drift,right+r*(.45f+k*.15f)+drift,
-                        y+r*(-.49f+k*.31f),r*(.24f+(k%2)*.06f),clock*(k%2==0?.85f:-.7f)+k,
+                        y+r*(-.49f+k*.31f+.12f*(float)Math.sin(clock*1.3f+k)),r*(.24f+(k%2)*.06f),clock*(k%2==0?.85f:-.7f)+k,
                         k%2==0?0xFFD8E9E6:0xFFD8E1F2,alpha*(64+k*6)/255);
             }
         }
         // Long overlapping striations keep the veil visible without a thick cloud silhouette.
         for(int k=0;k<5;k++) {
-            float drift=(float)Math.sin(clock*(.65f+k*.12f)+k*1.7f)*r*.3f;
+            float drift=(float)Math.sin(clock*(.65f+k*.12f)+k*1.7f)*r*.95f;
             ribbon(p,left-r*(.55f+k*.06f)+drift,right+r*(.4f+(k%3)*.22f)+drift,
-                    y+r*(-.62f+k*.30f),r*(.16f+(k%2)*.07f),clock*(k%2==0?1.1f:-.9f)+k*.8f,
+                    y+r*(-.62f+k*.30f+.12f*(float)Math.sin(clock*.9f+k*2)),r*(.16f+(k%2)*.07f),clock*(k%2==0?1.1f:-.9f)+k*.8f,
                     k%2==0?0xFFE5FFF4:0xFFEDF1FF,alpha*(45+(k%3)*8)/255);
         }
         for(int k=0;k<3;k++)ribbon(p,x-r*1.6f,x+r*(2.2f+k*.25f),

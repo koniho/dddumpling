@@ -53,7 +53,7 @@ final class TestFastEnemies extends Check {
         check("runner restores normal following gap",!c.fastEnemyNext && c.spawnTimer>c.spawnInterval()*.8f);
 
         c=scene(L,17,180);c.pairSpawnSlots=0;c.spawnedThisStage=1;
-        GameCore.Enemy previous=add(c,L,new int[]{0,1,4},L.h*.3f);previous.phase=5.5f;
+        GameCore.Enemy previous=add(c,L,new int[]{0,1,4},L.h*.3f);previous.phase=3f;
         check("later longer word schedules early runner",FastEnemies.nextDelay(c,L)==c.spawnInterval()*.25f && c.fastEnemyNext);
         c.enemies.clear();
         GameCore.Enemy next=new GameCore.Enemy();Words.fill(next,3,0,c.rnd);next.phase=0;

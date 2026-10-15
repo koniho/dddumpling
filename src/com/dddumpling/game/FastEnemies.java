@@ -30,29 +30,28 @@ final class FastEnemies {
                 || c.enemies.isEmpty())return normal;
         GameCore.Enemy previous=c.enemies.get(c.enemies.size()-1);
         if(previous.link!=null || previous.fastSingle || previous.word.length<2)return normal;
-        // One-third of longer solo words yields roughly one runner in four solo arrivals.
-        c.fastEnemyNext=c.stage==FIRST_STAGE?c.spawnedThisStage==2:previous.phase>=6.283f*2f/3f;
+        // Two-thirds of longer solo words yields roughly two runners in five solo arrivals.
+        c.fastEnemyNext=c.stage==FIRST_STAGE?c.spawnedThisStage==2:previous.phase>=6.283f/3f;
         return c.fastEnemyNext?normal*.25f:normal;
     }
 
     static void trail(Painter p,GameCore c,GameCore.Enemy e,float x,float y,float r,int color,int fade) {
         if(!e.fastSingle || !e.typeable())return;
-        int shade=Glyph.mix(color,0xFF25364C,.48f),light=Glyph.mix(color,0xFFFFFFFF,.65f);
-        // Tapered, shaded ribbons stream upward behind the descending key.
-        for(int lane=-1;lane<=1;lane++) {
-            float length=r*(lane==0?3.6f:2.8f);
-            float rootY=y-r*(lane==0?.65f:.20f),rootX=x+lane*r*.83f;
-            for(int j=0;j<7;j++) {
-                float t=j/7f,u=(j+1)/7f;
-                float ax=rootX+lane*r*t*.40f+r*.13f*t*(float)Math.sin(c.clock*13+e.phase+t*7+lane);
-                float bx=rootX+lane*r*u*.40f+r*.13f*u*(float)Math.sin(c.clock*13+e.phase+u*7+lane);
-                float ay=rootY-length*t,by=rootY-length*u;
-                float aw=r*.22f*(1-t),bw=r*.22f*(1-u);
-                int alpha=(int)(fade*.65f*(1-t)*(1-t));
-                p.fillPoly(new float[]{ax-aw,ay,ax+aw,ay,bx+bw,by,bx-bw,by},Glyph.withAlpha(shade,alpha));
-                p.fillPoly(new float[]{ax-aw*.7f,ay,ax+aw*.65f,ay,bx+bw*.65f,by,bx-bw*.7f,by},Glyph.withAlpha(color,alpha));
-                p.fillPoly(new float[]{ax-aw*.55f,ay,ax-aw*.15f,ay,bx-bw*.15f,by,bx-bw*.55f,by},Glyph.withAlpha(light,alpha));
-            }
+        int shade=Glyph.mix(color,0xFF25364C,.45f),light=Glyph.mix(color,0xFFFFFFFF,.65f);
+        float spacing=Math.min(r*.65f,e.speed*.10f);
+        // Fading copies follow the hexagon's path, with lit upper edges and shaded undersides.
+        for(int k=6;k>=1;k--) {
+            float age=spacing*k/Math.max(1,e.speed);
+            float tx=x+e.sway*((float)Math.sin((c.clock-age)*1.1f+e.phase)
+                    -(float)Math.sin(c.clock*1.1f+e.phase));
+            float ty=y-spacing*k,rr=r*(1-k*.025f);
+            int alpha=(int)(fade*.38f*(1-k/7f));
+            float[] hex=Glyph.hex(tx,ty,rr);
+            p.fillPoly(hex,Glyph.withAlpha(color,alpha/3));
+            p.strokePoly(hex,Glyph.withAlpha(shade,alpha),rr*.16f);
+            p.strokePoly(hex,Glyph.withAlpha(color,alpha),rr*.09f);
+            p.polyline(new float[]{tx-rr,ty,tx-rr*.5f,ty-rr*.866f,
+                    tx+rr*.5f,ty-rr*.866f,tx+rr,ty},Glyph.withAlpha(light,alpha),rr*.035f);
         }
     }
 

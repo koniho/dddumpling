@@ -299,7 +299,12 @@ final class Renderer extends Draw {
             float scale = head ? Layout.HEAD_SCALE : cleared ? Layout.TILE_SCALE * 0.84f
                     : Layout.TILE_SCALE;
             float cellR = L.enemyR * scale * swell;
-            if(SwampEnemies.hidden(e,i)) continue;
+            if(SwampEnemies.hidden(e,i)) {
+                SwampEnemies.silhouette(p,g,x,y,cellR,fade);
+                continue;
+            }
+            float fogTint=SwampEnemies.tintAmount(e,i);
+            Painter characterPainter=fogTint>0?new ColorFadePainter(p,SwampEnemies.FOG_INK,fogTint,1):p;
 
             // FLURRY recolours every letter on one upward-travelling rainbow wave.
             int col = c.flurry() ? rainbowAt(y, L, c.clock) : Glyph.COLOR[g];
@@ -310,6 +315,7 @@ final class Renderer extends Draw {
             }
             if (e.failPulse > 0) col = Glyph.mix(col, ROSE, e.failPulse * 0.75f);
             if (attack > 0) col = Glyph.mix(col, ROSE, attack * 0.35f);
+            col=Glyph.mix(col,SwampEnemies.FOG_INK,fogTint);
 
             // Cleared letters stay put — the word only leaves once it is fully typed — but
             // recede so the remaining letters are what the eye lands on.
@@ -340,11 +346,11 @@ final class Renderer extends Draw {
             float squash = 1f + 0.16f * pop - 0.05f * (float) Math.sin(wobble);
             int charCol = cleared ? Glyph.withAlpha(Glyph.mix(col, INK_DIM, 0.42f), 180) : col;
             if (c.incognito()) {
-                Kawaii.incognito(p,g,x,y,charR,charCol,c.incognitoMorph);
+                Kawaii.incognito(characterPainter,g,x,y,charR,charCol,c.incognitoMorph);
             } else if (e.link != null && (e.linkWaiting || e.link.linkWaiting || e.linkStrain > 0f)) {
-                Kawaii.determined(p, g, x, y, charR, charCol, squash);
+                Kawaii.determined(characterPainter, g, x, y, charR, charCol, squash);
             } else {
-                Kawaii.draw(p, g, x, y, charR, charCol, squash,
+                Kawaii.draw(characterPainter, g, x, y, charR, charCol, squash,
                         cleared ? 1f : head ? 0.4f : 0.1f);
             }
 

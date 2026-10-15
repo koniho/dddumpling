@@ -363,9 +363,10 @@ solo word a 20% fog chance and 15% divebomb chance; later stages use 25% and 20%
 Linked pairs and newly spawned power-up words stay ordinary. These variants do not spawn in
 Survival, Boss Time Attack, or boss encounters. One word cannot have both variants.
 
-- Fog keeps the current head readable and replaces future characters, colors, and stack
-  details with anonymous mist. Fully clearing a prompt immediately reveals the next, with
-  long, thin layered wisps extending past both ends of the remaining word. The readable key
+- Fog keeps the current head readable and shows future characters as muted silhouettes under mist, masking their colors
+  and stack details. Fully clearing a prompt immediately reveals the next, with
+  long, thin layered wisps sliding at varied speeds past both ends of the remaining word.
+  Revealed keys gain their color and facial detail over 0.45 seconds without delaying input. The readable key
   also has translucent cover. A wrong key restarts typing but keeps revealed prompts visible
   and does not reset the receding fog.
 - A hardhat on the final key marks a divebomb word, capped at three single-press keys.
@@ -385,11 +386,11 @@ new generation RNG calls. The bounded player pays a fresh reaction delay for eac
 ## Fast single-key enemies (stage 16 onward)
 
 Adventure stage 16 introduces a one-press runner in its third spawn slot, between the linked
-pair introductions. Later ordinary waves schedule a runner after roughly one-third of longer
-solo words, yielding about one runner in four solo arrivals. A scheduled runner follows at
+pair introductions. Later ordinary waves schedule a runner after roughly two-thirds of longer
+solo words, yielding about two runners in five solo arrivals. A scheduled runner follows at
 one-quarter of the usual spawn interval; the interval after it returns to normal. Pair slots,
 quotas and entrance-spacing checks still apply. Runners have
-soft aviator caps with oversized goggles and shaded speed ribbons matching their hexagon color and approach at twice ordinary speed, creating a choice
+soft aviator caps with oversized goggles and shaded hexagon afterimages matching their color and approach at twice ordinary speed, creating a choice
 between clearing the urgent single key and finishing a longer word. They never carry stacked
 pips, fog, or divebomb behavior. Their initial header-entry peak stays comparable to ordinary
 enemies; entrance checks keep faster runners from overtaking words in the same lane.
