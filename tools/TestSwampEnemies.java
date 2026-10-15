@@ -34,6 +34,17 @@ final class TestSwampEnemies extends Check {
                     shortWord.swampKind==SwampEnemies.DIVE && shortWord.word.length==Math.min(3,length)
                     && presses==shortWord.word.length && shortWord.gone.length==shortWord.word.length);
         }
+        for(int mode:new int[]{-1,Power.FLURRY,Power.NINJA,Power.TEAM})for(int length=2;length<=7;length++) {
+            GameCore run=scene(L,175);run.mode=mode;run.modeLeft=mode<0?0:5;
+            GameCore.Enemy fog=add(run,L,new int[length],L.h*.3f);fog.phase=.1f;
+            fog.word[1]=1;fog.need[0]=2;
+            SwampEnemies.assign(run,fog);
+            check("fog caps keys and preserves pips "+mode+"/"+length,fog.swampKind==SwampEnemies.FOG
+                    && fog.word.length==Math.min(3,length) && fog.word[1]==1 && fog.need[0]==2
+                    && fog.need.length==fog.word.length && fog.gone.length==fog.word.length
+                    && fog.goneT.length==fog.word.length && fog.goneDx.length==fog.word.length
+                    && fog.goneDy.length==fog.word.length);
+        }
         for(int gate=0;gate<3;gate++) {
             c.survival.active=gate==0;c.timeAttack.active=gate==1;
             c.mode=gate==2?Power.NINJA:-1;c.modeLeft=gate==2?5:0;

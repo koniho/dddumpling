@@ -39,7 +39,7 @@ final class TestFastEnemies extends Check {
         c.rnd.setSeed(180);FastEnemies.assign(c,e);
         check("selection consumes no gameplay randomness",c.rnd.nextLong()==new java.util.Random(180).nextLong());
         Words.fill(e,3,0,new java.util.Random(180));check("reused word loses runner identity",!e.fastSingle);
-        cadence(L);movement(L);completion(L);powerMix(L);waves(L);
+        cadence(L);movement(L);completion(L);teamRush();powerMix(L);waves(L);
     }
     private static void cadence(Layout L) {
         GameCore c=scene(L,16,180);c.spawnedThisStage=1;c.spawnTimer=0;
@@ -116,6 +116,25 @@ final class TestFastEnemies extends Check {
         advance(c,L,2);check("runner breach follows normal fatal flow",c.state==GameCore.OVER && c.lives==0 && c.resolvedThisStage==1);
         c=scene(L,17,180);e=runner(c,L,L.h*.4f);c.destroyWord(e,e.baseX,e.y,L);advance(c,L,1);
         check("power clearing a runner resolves once",c.resolvedThisStage==1 && c.lives==GameCore.START_LIVES);
+    }
+    private static void teamRush() {
+        for(int shape=0;shape<2;shape++)for(int side:new int[]{-1,1}) {
+            Layout L=new Layout();L.compute(shape==0?393:1080,shape==0?852:2340,0,30,0,20);
+            GameCore c=scene(L,21,180);c.collected=1L;c.runWho=0;c.playtestMode(Power.TEAM,L);
+            c.buddy.entryLeft=0;c.spawnTimer=Float.POSITIVE_INFINITY;
+            float span=L.dangerY-L.playTop;
+            c.buddy.x=L.w*(side<0?.2f:.8f);c.buddy.y=L.playTop+span*.40f;
+            c.buddy.vx=side*Buddy.SPEED*L.w;c.buddy.vy=0;
+            GameCore.Enemy e=runner(c,L,L.playTop+span*.68f);e.baseX=L.w*(side<0?.8f:.2f);e.sway=0;
+            c.tapKey(0,L);
+            check("Team keeps matching rush target "+shape+"/"+side,c.buddy.chase==e);
+            float beforeX=c.buddy.x,beforeY=c.buddy.y;
+            c.update(DT,L);
+            check("rush interception accelerates without teleporting "+shape+"/"+side,
+                    Math.hypot(c.buddy.x-beforeX,c.buddy.y-beforeY)<L.w*.05f);
+            for(int frame=0;frame<180 && !e.destroyed && c.lives==GameCore.START_LIVES;frame++)c.update(DT,L);
+            check("Team catches cross-field rush before damage "+shape+"/"+side,e.destroyed && c.lives==GameCore.START_LIVES);
+        }
     }
     private static void powerMix(Layout L) {
         for(int mode:new int[]{Power.FLURRY,Power.NINJA,Power.TEAM})for(int stage:new int[]{1,16,21}) {

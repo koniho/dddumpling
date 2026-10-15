@@ -363,7 +363,7 @@ solo word a 20% fog chance and 15% divebomb chance; later stages use 25% and 20%
 Linked pairs stay ordinary. Power-up spawns retain the stage’s fog and divebomb variants. These variants do not spawn in
 Survival, Boss Time Attack, or boss encounters. One word cannot have both variants.
 
-- Fog keeps the current head readable and shows future characters as muted silhouettes under mist, masking their colors
+- Fog words contain at most three keys, retaining their stacked pips. Fog keeps the current head readable and shows future characters as muted silhouettes under mist, masking their colors
   and stack details. Fully clearing a prompt immediately reveals the next, with
   long, thin layered wisps sliding at varied speeds past both ends of the remaining word.
   Revealed keys gain their color and facial detail over 0.225 seconds without delaying input. The readable key
@@ -395,7 +395,9 @@ between clearing the urgent single key and finishing a longer word. They never c
 pips, fog, or divebomb behavior. Their initial header-entry peak stays comparable to ordinary
 enemies; entrance checks keep faster runners from overtaking words in the same lane.
 
-Runners use normal targeting, rescue, power clear, damage, and stage accounting. They are not
+TEAM SQUISH leads a selected runner’s motion, with quicker turns and acceleration to intercept
+it; matching-key target selection is unchanged. Runners use normal targeting, rescue, power clear,
+damage, and stage accounting. They are not
 generated during boss encounters, caves, Survival, or Boss Time Attack. Power-up spawns from
 stage 16 include runners in 40% of solo candidates, retaining each power’s refill timing and
 entrance patterns; normal Adventure’s shortened follow-up interval does not replace power pacing.

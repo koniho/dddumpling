@@ -199,13 +199,23 @@ final class Buddy {
         float head = (float) Math.atan2(vy, vx);
         float have = (float) Math.sqrt(vx * vx + vy * vy);
         float aim = drift;
+        boolean rushChase=chase!=null && chase.fastSingle;
+        float chargeRate=CHARGE_RATE*(rushChase?1.4f:1f);
 
         if (chase != null) {
             // Aim inside the bubble's bounds: an unreachable centre causes repeated wall
             // bounces that can leave a nearby word alive until it crosses the danger line.
             float r = radius(L);
-            float targetX = Math.max(L.playLeft + r, Math.min(L.playRight - r, c.enemyCentreX(chase)));
-            float targetY = Math.max(L.playTop + r, Math.min(L.dangerY - r, chase.y));
+            float targetX=c.enemyCentreX(chase),targetY=chase.y;
+            if(rushChase && chase.slideT<=0 && !chase.attacking) {
+                float distance=(float)Math.hypot(targetX-x,targetY-y);
+                float lead=Math.min(.45f,distance/(drift*chargeRate));
+                targetY=SwampEnemies.fall(c,chase,L,lead);
+                targetX=EnemyEntry.xAt(chase,targetY,L)
+                        +chase.sway*(float)Math.sin((c.clock+lead)*1.1f+chase.phase);
+            }
+            targetX=Math.max(L.playLeft+r,Math.min(L.playRight-r,targetX));
+            targetY=Math.max(L.playTop+r,Math.min(L.dangerY-r,targetY));
             float dx = targetX - x, dy = targetY - y;
             float d = (float) Math.sqrt(dx * dx + dy * dy);
             if (d > 1f) {
@@ -214,8 +224,8 @@ final class Buddy {
                 // scaled by it before the turn is clamped, so the slowdown reflects the whole
                 // turn still to come rather than this frame's slice of it.
                 float off = Math.abs(turn) / 3.14159f;
-                aim = drift * CHARGE_RATE * (1f - CORNER * off);
-                float mostTurn = TURN_RATE * dt;
+                aim = drift * chargeRate * (1f - (rushChase?.55f:CORNER) * off);
+                float mostTurn = TURN_RATE * (rushChase?1.6f:1f) * dt;
                 if (turn > mostTurn) turn = mostTurn;
                 else if (turn < -mostTurn) turn = -mostTurn;
                 head += turn;
@@ -224,7 +234,7 @@ final class Buddy {
 
         // Same rate up and down, measured over the whole drift-to-charge range, so SPIN_UP means
         // the same thing whichever way the speed is going.
-        float mostSpeed = drift * (CHARGE_RATE - 1f) / SPIN_UP * dt;
+        float mostSpeed = drift * (chargeRate - 1f) / SPIN_UP * (rushChase?1.8f:1f) * dt;
         if (have < aim) have = Math.min(aim, have + mostSpeed);
         else have = Math.max(aim, have - mostSpeed);
         vx = (float) Math.cos(head) * have;

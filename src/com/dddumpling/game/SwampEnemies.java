@@ -39,11 +39,12 @@ final class SwampEnemies {
         float pick=e.phase/6.283f;
         boolean intro=(c.stage-1)%Boss.EVERY==0;
         e.swampKind=pick<(intro?.20f:.25f)?FOG:pick<(intro?.35f:.45f)?DIVE:NONE;
-        if(e.swampKind==DIVE) {
-            // Keep the generated key order and RNG stream, but make the quick charge a short word.
+        if(e.swampKind==FOG || e.swampKind==DIVE) {
+            // Both variants keep at most three generated keys; only dives strip stacked pips.
             int length=Math.min(3,e.word.length);
             e.word=java.util.Arrays.copyOf(e.word,length);
-            e.need=new int[length];java.util.Arrays.fill(e.need,1);
+            e.need=java.util.Arrays.copyOf(e.need,length);
+            if(e.swampKind==DIVE)java.util.Arrays.fill(e.need,1);
             e.gone=new boolean[length];e.goneT=new float[length];
             e.goneDx=new float[length];e.goneDy=new float[length];
         }
