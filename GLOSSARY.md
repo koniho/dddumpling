@@ -385,8 +385,11 @@ new generation RNG calls. The bounded player pays a fresh reaction delay for eac
 ## Fast single-key enemies (stage 16 onward)
 
 Adventure stage 16 introduces a one-press runner in its third spawn slot, between the linked
-pair introductions. Later ordinary waves give solo enemies a 25% runner chance. Runners have
-bouncing backward baseball caps and shaded speed ribbons matching their hexagon color and approach at twice ordinary speed, creating a choice
+pair introductions. Later ordinary waves schedule a runner after roughly one-third of longer
+solo words, yielding about one runner in four solo arrivals. A scheduled runner follows at
+one-quarter of the usual spawn interval; the interval after it returns to normal. Pair slots,
+quotas and entrance-spacing checks still apply. Runners have
+soft aviator caps with oversized goggles and shaded speed ribbons matching their hexagon color and approach at twice ordinary speed, creating a choice
 between clearing the urgent single key and finishing a longer word. They never carry stacked
 pips, fog, or divebomb behavior. Their initial header-entry peak stays comparable to ordinary
 enemies; entrance checks keep faster runners from overtaking words in the same lane.

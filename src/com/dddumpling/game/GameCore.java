@@ -543,6 +543,7 @@ final class GameCore {
     int squishes;
     /** Stage enemies released; a linked pair occupies one quota slot. */
     int spawnedThisStage;
+    boolean fastEnemyNext;
     /** Two reserved linked-pair slots in this ordinary Adventure wave. */
     int pairSpawnSlots;
     /** Stage enemies resolved, after both halves of a pair clear or breach. */
@@ -1327,6 +1328,7 @@ final class GameCore {
         debuffLeft = monochromeFade = incognitoMorph = 0f;
         runScores().powers++;
         runScores().effect(effect);
+        fastEnemyNext = false;
         mode = effect;
         modeLeft = Power.DURATION;
         companion.react(RunCompanion.POWER,.9f);
@@ -1983,6 +1985,7 @@ final class GameCore {
         squishes = 0;
         stage = Lands.firstStage(runStartLand);
         spawnedThisStage = 0;
+        fastEnemyNext = false;
         resolvedThisStage = 0;
         stageGap = 0;
         perfectBanner = 0;
@@ -3179,12 +3182,12 @@ final class GameCore {
             if (spawnTimer <= 0 && liveEnemies() < crowdCap()) {
                 if (LinkedPairs.spawn(this, L)) {
                     if (powerActive() && powerRefillBurst > 0) powerRefillBurst--;
-                    spawnTimer = Power.spawnDelay(this, L);
+                    spawnTimer = FastEnemies.nextDelay(this, L);
                 } else if (!LinkedPairs.due(this) && spawn(L)) {
                     if (powerActive() && powerRefillBurst > 0) powerRefillBurst--;
                     if (powerActive()) powerSpawnedEnemies++;
                     else spawnedThisStage++;
-                    spawnTimer = Power.spawnDelay(this, L);
+                    spawnTimer = FastEnemies.nextDelay(this, L);
                 } else {
                     spawnTimer = 0.1f; // No clear entrance yet; keep the wave quota outstanding.
                 }
@@ -3506,6 +3509,7 @@ final class GameCore {
         pushUsed = false;
         if(onboarding.rescueGuide)onboarding.clear();
         spawnedThisStage = 0;
+        fastEnemyNext = false;
         resolvedThisStage = 0;
         stageBanner = BANNER_TIME;
         stageGap = STAGE_GAP;
@@ -3618,6 +3622,7 @@ final class GameCore {
     private void die() {
         pairSpawnSlots = 0;
         diagnostic("game-over");
+        fastEnemyNext = false;
         if(onboarding.rescueGuide)onboarding.clear();
         finishTownRun();
         // The run companion belongs to the summary after play stops. It cries in place until the

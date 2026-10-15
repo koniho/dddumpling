@@ -9,7 +9,7 @@ final class TestFastEnemies extends Check {
     }
     static GameCore.Enemy runner(GameCore c,Layout L,float y) {
         GameCore.Enemy e=add(c,L,new int[]{0,1,4},new int[]{3,2,1},y);
-        e.phase=5.5f;FastEnemies.assign(c,e);e.enterT=1;
+        c.fastEnemyNext=true;e.phase=5.5f;FastEnemies.assign(c,e);e.enterT=1;
         e.speed=2*(L.dangerY+L.enemyR*2.2f)/c.travelSeconds();return e;
     }
     static void all(Layout L) {
@@ -38,7 +38,37 @@ final class TestFastEnemies extends Check {
         c.rnd.setSeed(180);FastEnemies.assign(c,e);
         check("selection consumes no gameplay randomness",c.rnd.nextLong()==new java.util.Random(180).nextLong());
         Words.fill(e,3,0,new java.util.Random(180));check("reused word loses runner identity",!e.fastSingle);
-        movement(L);completion(L);waves(L);
+        cadence(L);movement(L);completion(L);waves(L);
+    }
+    private static void cadence(Layout L) {
+        GameCore c=scene(L,16,180);c.spawnedThisStage=1;c.spawnTimer=0;
+        c.update(.001f,L);
+        check("intro word schedules an early runner",c.fastEnemyNext && c.enemies.size()==1
+                && !c.enemies.get(0).fastSingle && c.spawnTimer<=c.spawnInterval()*.251f);
+        float gap=c.spawnTimer;
+        advance(c,L,gap+.12f);
+        boolean found=false;
+        for(GameCore.Enemy e:c.enemies)found|=e.fastSingle;
+        check("runner follows its word before the ordinary interval",found && c.spawnedThisStage==3);
+        check("runner restores normal following gap",!c.fastEnemyNext && c.spawnTimer>c.spawnInterval()*.8f);
+
+        c=scene(L,17,180);c.pairSpawnSlots=0;c.spawnedThisStage=1;
+        GameCore.Enemy previous=add(c,L,new int[]{0,1,4},L.h*.3f);previous.phase=5.5f;
+        check("later longer word schedules early runner",FastEnemies.nextDelay(c,L)==c.spawnInterval()*.25f && c.fastEnemyNext);
+        c.enemies.clear();
+        GameCore.Enemy next=new GameCore.Enemy();Words.fill(next,3,0,c.rnd);next.phase=0;
+        FastEnemies.assign(c,next);
+        check("runner choice survives preceding word clearing and candidate phase",next.fastSingle);
+        c.enemies.add(next);c.spawnedThisStage++;
+        check("runners cannot chain more runners",FastEnemies.nextDelay(c,L)==c.spawnInterval() && !c.fastEnemyNext);
+        c.enemies.clear();c.enemies.add(previous);c.pairSpawnSlots=1<<c.spawnedThisStage;
+        check("pair slot retains ordinary timing",FastEnemies.nextDelay(c,L)==c.spawnInterval() && !c.fastEnemyNext);
+        c.pairSpawnSlots=0;c.spawnedThisStage=c.stageQuota();
+        check("quota end cannot schedule extra runner",FastEnemies.nextDelay(c,L)==c.spawnInterval() && !c.fastEnemyNext);
+        c.fastEnemyNext=true;c.jumpToStage(18,L);
+        check("new stage clears scheduled runner",!c.fastEnemyNext);
+        c.fastEnemyNext=true;c.playtestMode(Power.NINJA,L);
+        check("power activation clears scheduled runner",!c.fastEnemyNext);
     }
     private static void movement(Layout L) {
         GameCore c=scene(L,16,180);c.spawnedThisStage=2;c.spawnTimer=0;c.update(.001f,L);

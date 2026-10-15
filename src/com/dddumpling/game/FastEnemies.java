@@ -6,16 +6,33 @@ final class FastEnemies {
     static final float SPEED=2f;
     private FastEnemies() {}
 
+    private static boolean eligible(GameCore c) {
+        return c.stage>=FIRST_STAGE && !Boss.isBossStage(c.stage) && !c.boss.active() && !Cave.active(c)
+                && !c.survival.active && !c.timeAttack.active && !c.powerActive();
+    }
+
     static void assign(GameCore c,GameCore.Enemy e) {
         e.fastSingle=false;
-        if(c.stage<FIRST_STAGE || Boss.isBossStage(c.stage) || c.boss.active() || Cave.active(c)
-                || c.survival.active || c.timeAttack.active || c.powerActive() || e.link!=null) return;
+        if(!eligible(c) || e.link!=null)return;
         // The first pair gets its introduction before the third spawn becomes a runner.
-        boolean chosen=c.stage==FIRST_STAGE?c.spawnedThisStage==2:e.phase>=6.283f*.75f;
+        boolean chosen=c.stage==FIRST_STAGE?c.spawnedThisStage==2:c.fastEnemyNext;
         if(!chosen)return;
         e.fastSingle=true;
         e.word=new int[]{e.word[0]};e.need=new int[]{1};
         e.gone=new boolean[1];e.goneT=new float[1];e.goneDx=new float[1];e.goneDy=new float[1];
+    }
+
+    /** Decide the next runner when its preceding word arrives, so only that gap shortens. */
+    static float nextDelay(GameCore c,Layout L) {
+        float normal=Power.spawnDelay(c,L);
+        c.fastEnemyNext=false;
+        if(!eligible(c) || c.spawnedThisStage>=c.stageQuota() || LinkedPairs.due(c)
+                || c.enemies.isEmpty())return normal;
+        GameCore.Enemy previous=c.enemies.get(c.enemies.size()-1);
+        if(previous.link!=null || previous.fastSingle || previous.word.length<2)return normal;
+        // One-third of longer solo words yields roughly one runner in four solo arrivals.
+        c.fastEnemyNext=c.stage==FIRST_STAGE?c.spawnedThisStage==2:previous.phase>=6.283f*2f/3f;
+        return c.fastEnemyNext?normal*.25f:normal;
     }
 
     static void trail(Painter p,GameCore c,GameCore.Enemy e,float x,float y,float r,int color,int fade) {
@@ -41,21 +58,29 @@ final class FastEnemies {
 
     static void draw(Painter p,GameCore c,GameCore.Enemy e,float x,float y,float r,int color,int fade) {
         if(!e.fastSingle || !e.typeable())return;
-        int cap=Glyph.withAlpha(Glyph.mix(color,0xFF324663,.28f),fade);
-        int shadow=Glyph.withAlpha(Glyph.mix(color,0xFF25364C,.58f),fade);
-        int light=Glyph.withAlpha(Glyph.mix(color,0xFFFFFFFF,.50f),fade);
-        float cy=y-r*(.59f+.035f*(float)Math.sin(c.clock*16+e.phase));
-        // A tilted backward cap: the brim sticks out to the side, clear of the face.
-        float[] brim={x+r*.20f,cy-r*.13f,x+r*.61f,cy-r*.28f,
-            x+r*.92f,cy-r*.22f,x+r*.99f,cy-r*.12f,x+r*.82f,cy-r*.05f,x+r*.30f,cy+r*.02f};
-        p.fillPoly(brim,shadow);
-        p.line(x+r*.51f,cy-r*.20f,x+r*.86f,cy-r*.18f,cap,r*.10f);
-        float[] crown={x-r*.55f,cy+r*.05f,x-r*.55f,cy-r*.16f,
-            x-r*.44f,cy-r*.40f,x-r*.24f,cy-r*.54f,x+r*.02f,cy-r*.56f,
-            x+r*.27f,cy-r*.43f,x+r*.43f,cy-r*.22f,x+r*.47f,cy-r*.02f};
-        p.fillPoly(crown,cap);p.strokePoly(crown,shadow,r*.055f);
-        p.polyline(new float[]{x-r*.24f,cy-r*.48f,x-r*.10f,cy-r*.30f,x-r*.07f,cy-r*.08f},light,r*.045f);
-        p.line(x-r*.47f,cy,x+r*.38f,cy-r*.06f,shadow,r*.075f);
-        p.fillEllipse(x+r*.02f,cy-r*.57f,r*.09f,r*.045f,light);
+        int leather=Glyph.withAlpha(0xFFA97450,fade),shade=Glyph.withAlpha(0xFF624734,fade);
+        int trim=Glyph.withAlpha(0xFFEACDA4,fade),shine=Glyph.withAlpha(0xFFF1FCFF,fade);
+        float cy=y-r*.035f*(float)Math.sin(c.clock*16+e.phase);
+        // Soft leather cap with rounded ear flaps; the goggles sit above the character's eyes.
+        float[] cap={x-r*.66f,cy-r*.26f,x-r*.61f,cy-r*.78f,
+            x-r*.45f,cy-r*1.02f,x-r*.19f,cy-r*1.14f,x+r*.17f,cy-r*1.14f,
+            x+r*.44f,cy-r*1.02f,x+r*.60f,cy-r*.78f,x+r*.66f,cy-r*.26f,
+            x+r*.62f,cy+r*.10f,x+r*.48f,cy+r*.15f,x+r*.40f,cy-r*.35f,
+            x+r*.23f,cy-r*.45f,x-r*.23f,cy-r*.45f,x-r*.40f,cy-r*.35f,
+            x-r*.48f,cy+r*.15f,x-r*.62f,cy+r*.10f};
+        p.fillPoly(cap,leather);p.strokePoly(cap,shade,r*.06f);
+        p.polyline(new float[]{x-r*.17f,cy-r*1.06f,x-r*.07f,cy-r*.91f,x-r*.05f,cy-r*.78f},trim,r*.045f);
+        p.line(x-r*.55f,cy-r*.29f,x-r*.55f,cy+r*.02f,trim,r*.07f);
+        p.line(x+r*.55f,cy-r*.29f,x+r*.55f,cy+r*.02f,trim,r*.07f);
+        p.line(x-r*.54f,cy-r*.67f,x+r*.54f,cy-r*.67f,shade,r*.15f);
+        for(int side=-1;side<=1;side+=2) {
+            float gx=x+side*r*.25f,gy=cy-r*.67f;
+            p.fillEllipse(gx,gy,r*.255f,r*.215f,shade);
+            p.fillEllipse(gx,gy-r*.015f,r*.22f,r*.18f,trim);
+            p.fillEllipse(gx,gy-r*.01f,r*.17f,r*.135f,Glyph.withAlpha(Glyph.mix(color,0xFF73BDDA,.7f),fade));
+            p.fillEllipse(gx,gy+r*.04f,r*.15f,r*.065f,Glyph.withAlpha(0xFF397994,fade/2));
+            p.line(gx-r*.09f,gy-r*.055f,gx+r*.035f,gy-r*.08f,shine,r*.045f);
+        }
+        p.line(x-r*.035f,cy-r*.68f,x+r*.035f,cy-r*.68f,trim,r*.075f);
     }
 }
