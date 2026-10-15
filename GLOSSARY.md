@@ -390,7 +390,7 @@ pair introductions. Later ordinary waves schedule a runner after roughly two-thi
 solo words, yielding about two runners in five solo arrivals. A scheduled runner follows at
 one-quarter of the usual spawn interval; the interval after it returns to normal. Pair slots,
 quotas and entrance-spacing checks still apply. Runners have
-soft aviator caps with oversized goggles and shaded hexagon afterimages matching their color and approach at twice ordinary speed, creating a choice
+puffy aviator caps with oversized round goggles and rotating, shaded hexagon afterimages matching their color and approach at twice ordinary speed, creating a choice
 between clearing the urgent single key and finishing a longer word. They never carry stacked
 pips, fog, or divebomb behavior. Their initial header-entry peak stays comparable to ordinary
 enemies; entrance checks keep faster runners from overtaking words in the same lane.

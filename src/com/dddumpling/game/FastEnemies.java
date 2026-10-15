@@ -49,39 +49,42 @@ final class FastEnemies {
             if(e.sideEntry)tx=x+EnemyEntry.xAt(e,e.y-spacing*k,L)-e.baseX;
             int alpha=(int)(fade*.38f*(1-k/7f));
             float[] hex=Glyph.hex(tx,ty,rr);
+            float angle=c.clock*.9f+e.phase+k*.20f;
+            float cs=(float)Math.cos(angle),sn=(float)Math.sin(angle);
+            for(int i=0;i<hex.length;i+=2) {
+                float dx=hex[i]-tx,dy=hex[i+1]-ty;
+                hex[i]=tx+dx*cs-dy*sn;hex[i+1]=ty+dx*sn+dy*cs;
+            }
             p.fillPoly(hex,Glyph.withAlpha(color,alpha/3));
             p.strokePoly(hex,Glyph.withAlpha(shade,alpha),rr*.16f);
             p.strokePoly(hex,Glyph.withAlpha(color,alpha),rr*.09f);
-            p.polyline(new float[]{tx-rr,ty,tx-rr*.5f,ty-rr*.866f,
-                    tx+rr*.5f,ty-rr*.866f,tx+rr,ty},Glyph.withAlpha(light,alpha),rr*.035f);
+            p.polyline(new float[]{hex[6],hex[7],hex[8],hex[9],hex[10],hex[11],hex[0],hex[1]},
+                    Glyph.withAlpha(light,alpha),rr*.035f);
         }
     }
 
     static void draw(Painter p,GameCore c,GameCore.Enemy e,float x,float y,float r,int color,int fade) {
         if(!e.fastSingle || !e.typeable())return;
-        int leather=Glyph.withAlpha(0xFFA97450,fade),shade=Glyph.withAlpha(0xFF624734,fade);
-        int trim=Glyph.withAlpha(0xFFEACDA4,fade),shine=Glyph.withAlpha(0xFFF1FCFF,fade);
-        float cy=y-r*.035f*(float)Math.sin(c.clock*16+e.phase);
-        // Soft leather cap with rounded ear flaps; the goggles sit above the character's eyes.
-        float[] cap={x-r*.66f,cy-r*.26f,x-r*.61f,cy-r*.78f,
-            x-r*.45f,cy-r*1.02f,x-r*.19f,cy-r*1.14f,x+r*.17f,cy-r*1.14f,
-            x+r*.44f,cy-r*1.02f,x+r*.60f,cy-r*.78f,x+r*.66f,cy-r*.26f,
-            x+r*.62f,cy+r*.10f,x+r*.48f,cy+r*.15f,x+r*.40f,cy-r*.35f,
-            x+r*.23f,cy-r*.45f,x-r*.23f,cy-r*.45f,x-r*.40f,cy-r*.35f,
-            x-r*.48f,cy+r*.15f,x-r*.62f,cy+r*.10f};
-        p.fillPoly(cap,leather);p.strokePoly(cap,shade,r*.06f);
-        p.polyline(new float[]{x-r*.17f,cy-r*1.06f,x-r*.07f,cy-r*.91f,x-r*.05f,cy-r*.78f},trim,r*.045f);
-        p.line(x-r*.55f,cy-r*.29f,x-r*.55f,cy+r*.02f,trim,r*.07f);
-        p.line(x+r*.55f,cy-r*.29f,x+r*.55f,cy+r*.02f,trim,r*.07f);
-        p.line(x-r*.54f,cy-r*.67f,x+r*.54f,cy-r*.67f,shade,r*.15f);
+        int cap=Glyph.withAlpha(0xFFD3A184,fade),shade=Glyph.withAlpha(0xFF987060,fade);
+        int cream=Glyph.withAlpha(0xFFFFEBD0,fade),shine=Glyph.withAlpha(0xFFF6FDFF,fade);
+        int lens=Glyph.withAlpha(Glyph.mix(color,0xFF9CDDEB,.75f),fade);
+        float bounce=(float)Math.sin(c.clock*12+e.phase);
+        float cy=y-r*.04f*bounce;
+        // A puffy dome, floppy ear pads and big candy-like goggles keep the face readable.
+        p.fillEllipse(x,cy-r*.73f,r*.67f,r*.48f,shade);
+        p.fillEllipse(x-r*.015f,cy-r*.76f,r*.63f,r*.43f,cap);
         for(int side=-1;side<=1;side+=2) {
-            float gx=x+side*r*.25f,gy=cy-r*.67f;
-            p.fillEllipse(gx,gy,r*.255f,r*.215f,shade);
-            p.fillEllipse(gx,gy-r*.015f,r*.22f,r*.18f,trim);
-            p.fillEllipse(gx,gy-r*.01f,r*.17f,r*.135f,Glyph.withAlpha(Glyph.mix(color,0xFF73BDDA,.7f),fade));
-            p.fillEllipse(gx,gy+r*.04f,r*.15f,r*.065f,Glyph.withAlpha(0xFF397994,fade/2));
-            p.line(gx-r*.09f,gy-r*.055f,gx+r*.035f,gy-r*.08f,shine,r*.045f);
+            float ex=x+side*r*(.53f+.025f*bounce),ey=cy-r*.29f+side*r*.035f*bounce;
+            p.fillEllipse(ex,ey,r*.17f,r*.31f,shade);
+            p.fillEllipse(ex,ey-r*.025f,r*.13f,r*.27f,cap);
         }
-        p.line(x-r*.035f,cy-r*.68f,x+r*.035f,cy-r*.68f,trim,r*.075f);
+        p.line(x-r*.10f,cy-r*.69f,x+r*.10f,cy-r*.69f,cream,r*.10f);
+        for(int side=-1;side<=1;side+=2) {
+            float gx=x+side*r*.27f,gy=cy-r*.70f;
+            p.fillCircle(gx,gy,r*.28f,shade);
+            p.fillCircle(gx,gy-r*.015f,r*.245f,cream);
+            p.fillCircle(gx,gy-r*.015f,r*.18f,lens);
+            p.fillCircle(gx-r*.055f,gy-r*.075f,r*.055f,shine);
+        }
     }
 }
