@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Swamp word variants share ordinary targeting, clears, rescue, and damage. */
 final class SwampEnemies {
     static final int NONE=0, FOG=1, DIVE=2;
-    static final float REVEAL=.45f;
+    static final float REVEAL=.225f;
     static final float DIVE_BURST=.5f;
     static final int MIST=0xFFB9D9CC, AMBER=0xFFFFCA68;
     static final int FOG_INK=0xFF53636F;

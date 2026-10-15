@@ -366,7 +366,7 @@ Survival, Boss Time Attack, or boss encounters. One word cannot have both varian
 - Fog keeps the current head readable and shows future characters as muted silhouettes under mist, masking their colors
   and stack details. Fully clearing a prompt immediately reveals the next, with
   long, thin layered wisps sliding at varied speeds past both ends of the remaining word.
-  Revealed keys gain their color and facial detail over 0.45 seconds without delaying input. The readable key
+  Revealed keys gain their color and facial detail over 0.225 seconds without delaying input. The readable key
   also has translucent cover. A wrong key restarts typing but keeps revealed prompts visible
   and does not reset the receding fog.
 - A hardhat on the final key marks a divebomb word, capped at three single-press keys.
