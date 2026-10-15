@@ -382,6 +382,19 @@ boss collectibles and their mode/land unlocks without changing scores.
 Code: `SwampEnemies`, per-enemy state on `GameCore.Enemy`. Spawn-phase selection adds no
 new generation RNG calls. The bounded player pays a fresh reaction delay for each fog reveal.
 
+## Fast single-key enemies (stage 16 onward)
+
+Adventure stage 16 introduces a one-press runner in its third spawn slot, between the linked
+pair introductions. Later ordinary waves give solo enemies a 25% runner chance. Runners wear
+a fluttering white racing headband and approach at twice ordinary speed, creating a choice
+between clearing the urgent single key and finishing a longer word. They never carry stacked
+pips, fog, or divebomb behavior. Their initial header-entry peak stays comparable to ordinary
+enemies; entrance checks keep faster runners from overtaking words in the same lane.
+
+Runners use normal targeting, rescue, power clear, damage, and stage accounting. They are not
+generated during powers, boss encounters, caves, Survival, or Boss Time Attack.
+Code: `FastEnemies`, `EnemyEntry`, `PowerRush`.
+
 ## Linked friends (stage 16 onward)
 
 Each ordinary wave from stage 16 contains two linked pairs. Stage 16 introduces them in the

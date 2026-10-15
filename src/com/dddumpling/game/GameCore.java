@@ -399,6 +399,7 @@ final class GameCore {
         int swampKind, fogHead;
         float fogReveal, diveSpeed, diveBurst, diveStartX, diveStartY;
         boolean diving;
+        boolean fastSingle;
         /** Frenzy side entrance: an inward arc that settles into a vertical lane. */
         boolean sideEntry;
         float pathStartX, pathEndX, pathStartY;
@@ -3679,6 +3680,13 @@ final class GameCore {
         float hi = L.playRight - half - e.sway;
         e.baseX = hi > lo ? lo + rnd.nextFloat() * (hi - lo) : (L.playLeft + L.playRight) / 2f;
         e.phase = rnd.nextFloat() * 6.283f;
+        FastEnemies.assign(this,e);
+        if(e.fastSingle) {
+            float lane=hi>lo?(e.baseX-lo)/(hi-lo):.5f;
+            half=L.wordWidth(1)*.5f;e.sway=L.w*.035f;
+            lo=L.playLeft+half+e.sway;hi=L.playRight-half-e.sway;
+            e.baseX=lo+(hi-lo)*lane;
+        }
         // Fully offscreen first; power formations then choose a top or side approach.
         e.y = -L.enemyR * 2.2f;
         PowerRush.arrange(this,e,L,lo,hi);
@@ -3688,7 +3696,7 @@ final class GameCore {
         // Ninja tries other entry heights too, keeping the word instead of wasting its spawn slot.
         for(int entrance=0;entrance<(ninja() && !Boolean.FALSE.equals(PowerRush.replacement(this))?4:1);entrance++) {
             if(entrance>0)PowerRush.ninjaAlternative(this,e,L,entrance-1);
-            e.speed=PowerRush.spawnSpeed(this,e,L);
+            e.speed=PowerRush.spawnSpeed(this,e,L)*(e.fastSingle?FastEnemies.SPEED:1f);
             for (int attempt = 0; attempt < 9; attempt++) {
                 float lane = attempt == 0 ? preferredX : lo + (hi - lo) * (attempt - 1) / 7f;
                 if (e.sideEntry) e.pathEndX = lane; else e.baseX = lane;

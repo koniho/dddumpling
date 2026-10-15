@@ -359,6 +359,7 @@ final class Renderer extends Draw {
 
             if(e.swampKind==SwampEnemies.DIVE && i==e.word.length-1 && !e.destroyed && !e.dying && !e.gone[i])
                 SwampEnemies.hardhat(p,x,y,cellR,fade);
+            FastEnemies.draw(p,c,e,x,y,cellR,fade);
             if(head)SwampEnemies.burst(p,e,cellR,fade);
             if (head && locked) {
                 // Thicker white outline plus a caret, drawn at the smoothed position so the

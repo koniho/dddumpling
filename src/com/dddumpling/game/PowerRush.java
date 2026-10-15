@@ -86,7 +86,8 @@ final class PowerRush {
     /** Integrate the entrance boost exactly; velocity settles continuously to normal at the join. */
     static float yAfter(GameCore.Enemy e,float distance) {
         if(e.rushSpan<=0f || e.y>=e.rushEndY)return e.y+distance;
-        float k=4f/e.rushSpan;
+        // Runners share the ordinary peak entry speed, then settle at twice its approach speed.
+        float k=(e.fastSingle && e.headerRush?1.5f:4f)/e.rushSpan;
         float toJoin=(float)Math.log1p(k*(e.rushEndY-e.y))/k;
         if(distance>=toJoin)return e.rushEndY+distance-toJoin;
         return e.y+(e.rushEndY+1f/k-e.y)*(float)-Math.expm1(-k*distance);

@@ -71,7 +71,9 @@ final class TestSideEntry extends Check {
             run.startGame();
             run.stage=stage;
             run.enemies.clear();
+            run.collected=1L;run.runWho=0;
             run.playtestMode(mode, size);
+            check("mixed traffic activates requested power "+stage+"/"+mode+"/"+shape,run.mode==mode && run.powerActive());
             for (int frame = 0; frame < 240; frame++) {
                 int before = run.enemies.size();
                 run.update(DT, size);

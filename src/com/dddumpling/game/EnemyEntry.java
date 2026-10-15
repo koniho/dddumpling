@@ -34,6 +34,7 @@ final class EnemyEntry {
             if (other == incoming || other.dying || other.destroyed) continue;
             if (!incoming.sideEntry && !other.sideEntry
                     && incoming.link == null && other.link == null
+                    && !incoming.fastSingle && !other.fastSingle
                     // Ordinary top rows retain their existing admission rules.
                     && (incoming.rushSpan<=0f || incoming.headerRush)
                     && (other.rushSpan<=0f || other.headerRush)) continue;

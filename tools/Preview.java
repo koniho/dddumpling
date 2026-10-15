@@ -8,6 +8,18 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void fastEnemyFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wanted("180-"))return;
+        for(float time:new float[]{0,.3f,.8f}) {
+            GameCore c=TestFastEnemies.scene(L,17,180);c.clock=2;
+            GameCore.Enemy ordinary=Check.add(c,L,new int[]{0,1,4},new int[]{2,1,2},L.h*.44f);
+            ordinary.baseX=L.w*.35f;ordinary.enterT=1;
+            ordinary.speed=(L.dangerY+L.enemyR*2.2f)/c.travelSeconds();
+            GameCore.Enemy runner=TestFastEnemies.runner(c,L,L.h*.32f);runner.baseX=L.w*.80f;
+            step(c,L,time);
+            shot(dir,"180-fast-single-key-"+Math.round(time*100),c,L,w,h,ss);
+        }
+    }
     private static void swampEnemyFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("175-176-"))return;
         for(int beat=0;beat<3;beat++) {
@@ -1415,6 +1427,7 @@ final class Preview {
         gatorSilhouetteFrames(dir,L,w,h,ss);
         alligatorFrames(dir,L,w,h,ss);
         swampEnemyFrames(dir,L,w,h,ss);
+        fastEnemyFrames(dir,L,w,h,ss);
         gatorCompanionFrames(dir,L,w,h,ss);
         adventureTitleFrames(dir,L,w,h,ss);
         survivalEndingFrames(dir,L,w,h,ss);
