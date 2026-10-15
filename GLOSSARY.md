@@ -385,8 +385,8 @@ new generation RNG calls. The bounded player pays a fresh reaction delay for eac
 ## Fast single-key enemies (stage 16 onward)
 
 Adventure stage 16 introduces a one-press runner in its third spawn slot, between the linked
-pair introductions. Later ordinary waves give solo enemies a 25% runner chance. Runners wear
-a fluttering white racing headband and approach at twice ordinary speed, creating a choice
+pair introductions. Later ordinary waves give solo enemies a 25% runner chance. Runners have
+animated speed streaks beside their keys and approach at twice ordinary speed, creating a choice
 between clearing the urgent single key and finishing a longer word. They never carry stacked
 pips, fog, or divebomb behavior. Their initial header-entry peak stays comparable to ordinary
 enemies; entrance checks keep faster runners from overtaking words in the same lane.

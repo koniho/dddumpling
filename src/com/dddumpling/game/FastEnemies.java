@@ -20,22 +20,15 @@ final class FastEnemies {
 
     static void draw(Painter p,GameCore c,GameCore.Enemy e,float x,float y,float r,int fade) {
         if(!e.fastSingle || !e.typeable())return;
-        int white=Glyph.withAlpha(0xFFF7FBFF,fade),edge=Glyph.withAlpha(0xFF364B60,fade);
-        float bandY=y-r*.36f,wave=(float)Math.sin(c.clock*18+e.phase);
-        // A fluttering racing headband leaves the character's eyes and key shape clear.
-        p.fillPoly(new float[]{x+r*.36f,bandY,x+r*.95f,bandY-r*(.18f+wave*.08f),
-                x+r*.79f,bandY+r*.02f,x+r*.43f,bandY+r*.10f},white);
-        p.fillPoly(new float[]{x+r*.38f,bandY+r*.06f,x+r*.77f,bandY+r*(.30f-wave*.08f),
-                x+r*.53f,bandY+r*.24f},Glyph.withAlpha(0xFFBCD7E6,fade));
-        p.line(x-r*.48f,bandY,x+r*.43f,bandY+r*.05f,edge,r*.18f);
-        p.line(x-r*.48f,bandY-r*.025f,x+r*.43f,bandY+r*.025f,white,r*.12f);
-        p.fillCircle(x+r*.43f,bandY+r*.025f,r*.10f,white);
-        for(int side=-1;side<=1;side+=2)for(int k=0;k<2;k++) {
-            float t=(c.clock*2.5f+k*.5f+side*.12f+e.phase)%1;
+        // Streaming air beside the key signals speed without covering the character.
+        for(int side=-1;side<=1;side+=2)for(int k=0;k<3;k++) {
+            float t=(c.clock*2.5f+k/3f+side*.12f+e.phase)%1;
             if(t<0)t+=1;
-            float px=x+side*r*(.9f+k*.25f),py=y-r*(.5f+t*1.2f);
-            p.line(px,py,px+side*r*.10f,py-r*.45f,
-                    Glyph.withAlpha(0xFFE7F6FF,(int)(fade*(1-t)*.7f)),r*.065f);
+            float px=x+side*r*(1.12f+k*.22f),py=y+r*(.25f-t*1.3f);
+            float endX=px+side*r*.08f,endY=py-r*(.8f-k*.12f);
+            int alpha=(int)(fade*(1-t)*.85f);
+            p.line(px,py,endX,endY,Glyph.withAlpha(0xFF496C85,alpha/2),r*.17f);
+            p.line(px,py,endX,endY,Glyph.withAlpha(0xFFF1FAFF,alpha),r*.09f);
         }
     }
 }
