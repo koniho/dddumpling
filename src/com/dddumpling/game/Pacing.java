@@ -28,7 +28,7 @@ final class Pacing {
     }
 
     /** Hard ceiling on the presses any single word can demand. */
-    static final int MAX_PRESSES = 8;
+    static final int MAX_PRESSES = 7;
 
     /** 0 on the opening stage. */
     static float ramp(int stage) {

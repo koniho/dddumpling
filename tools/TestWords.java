@@ -73,7 +73,7 @@ final class TestWords extends Check {
         g.startGame();
         int worst = 0, maxNeed = 0, stacksSeen = 0, words = 0, plainTwins = 0;
         boolean overCap = false, badNeed = false, stackBesideTwin = false;
-        for (int stage = 1; stage <= 14; stage++) {
+        for (int stage : new int[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,21,24,46,80}) {
             g.stage = stage;
             for (int n = 0; n < 400; n++) {
                 g.enemies.clear();
@@ -85,7 +85,7 @@ final class TestWords extends Check {
                 GameCore.Enemy w = g.enemies.get(0);
                 words++;
                 int total = w.totalPresses();
-                if (total > Pacing.MAX_PRESSES) overCap = true;
+                if (total > 7) overCap = true;
                 if (total > worst) worst = total;
                 for (int i = 0; i < w.need.length; i++) {
                     if (w.need[i] < 1 || w.need[i] > 4) badNeed = true;
@@ -108,7 +108,8 @@ final class TestWords extends Check {
         System.out.printf("    %d words generated, worst total = %d presses, deepest stack = %d,"
                 + " %d stacked tiles, %d plain twin pairs%n", words, worst, maxNeed, stacksSeen,
                 plainTwins);
-        check("no word ever exceeds " + Pacing.MAX_PRESSES + " presses", !overCap);
+        check("no word exceeds seven total presses including stacked pips", !overCap);
+        check("later words can still use the full seven-press budget", worst == 7);
         check("every tile needs 1..4 presses", !badNeed);
         check("stacks do get generated", stacksSeen > 0);
         check("stacks reach depth 4 somewhere", maxNeed == 4);
