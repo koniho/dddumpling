@@ -46,7 +46,7 @@ geometry; `Kawaii` draws the creature.
 | --- | --- | --- |
 | **danger line** | the dashed rose line above the key deck | `Layout.dangerY` |
 | **closing in** | a word entering the warning band; it agitates and the sky reddens | `e.warn`, `warnLevel` |
-| **lunge** / **attack** | the final dive a word makes on crossing the line | `e.attacking` |
+| **lunge** / **attack** | the final dive on crossing the line; remains attackable until damage lands | `e.attacking` |
 | **breach** | a word landing and costing a life | `GameCore.breach` |
 | **squish** (a word) | clearing a word; the game-over screen counts them | `GameCore.squishes` |
 | **harm** | how far health has fallen; drives the red tint and pulse. Squared, so it bites on the last life rather than the first | `GameCore.harm()` |
@@ -354,6 +354,11 @@ sequence. `BossPlay.deathFeedback` produces shared cues consumed by Android and 
 - **skit** vs **beat** — both are little vignettes of characters interacting, and they are
   different things. A **skit** plays under a stage banner, runs once, and uses the six letters
   (`Skits`). A **beat** loops inside a story popup and uses the collectibles (`Storybook`).
+
+Enemies remain attackable throughout their final lunge. A completed word, Ninja slice or
+Team Squish collision cancels the lunge before damage; a linked pair still requires its full
+chord. Partial typing retains its target. The damage shake and screen flash occur only when
+the enemy actually hits the player.
 
 ## Swampland word variants
 

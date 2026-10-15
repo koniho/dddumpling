@@ -224,8 +224,44 @@ final class TestRules extends Check {
         }
     }
 
+    private static void lastMomentDefense(Layout L) {
+        for(int mode:new int[]{-1,Power.FLURRY,Power.NINJA,Power.TEAM})for(int kind=0;kind<4;kind++) {
+            GameCore c=TestFastEnemies.scene(L,21,180);c.collected=1L;c.runWho=0;
+            if(mode>=0)c.playtestMode(mode,L);
+            c.spawnTimer=Float.POSITIVE_INFINITY;c.sound=new Ear();c.flash=c.shake=0;
+            GameCore.Enemy e=add(c,L,kind==1?new int[]{0}:new int[]{0,1,4},L.dangerY-L.enemyR);
+            e.fastSingle=kind==1;e.swampKind=kind==2?SwampEnemies.FOG:kind==3?SwampEnemies.DIVE:0;
+            e.attacking=true;e.attackT=GameCore.ATTACK_TIME-.001f;
+            if(mode==Power.NINJA) {
+                c.beginStroke(L.playLeft,e.y);c.sliceTo(L.playRight,e.y,L);c.endStroke();
+            } else if(mode==Power.TEAM) {
+                c.buddy.entryLeft=0;c.buddy.x=c.enemyCentreX(e);c.buddy.y=e.y;
+                c.buddy.vx=c.buddy.vy=0;c.tapKey(0,L);c.buddy.update(c,.0001f,L);
+            } else {
+                for(int key:e.word)c.tapKey(mode==Power.FLURRY?5:key,L);
+            }
+            check("last-moment clear cancels lunge "+mode+"/"+kind,(e.dying || e.destroyed) && !e.attacking);
+            advance(c,L,.8f);
+            check("saved lunge never damages later "+mode+"/"+kind,c.lives==GameCore.START_LIVES
+                    && ((Ear)c.sound).damages==0 && c.resolvedThisStage==1);
+        }
+        GameCore c=TestFastEnemies.scene(L,17,180);c.sound=new Ear();c.flash=c.shake=0;
+        GameCore.Enemy e=add(c,L,new int[]{0,1},L.dangerY-L.enemyR+1);
+        c.tapKey(0,L);c.update(.01f,L);
+        check("lunge keeps in-progress word targeted",e.attacking && c.target==e && e.pos==1);
+        c.update(.01f,L);
+        check("lunge alone does not play damage shake or flash",c.shake==0 && c.flash==0 && c.lives==GameCore.START_LIVES);
+        e.attackT=GameCore.ATTACK_TIME-.001f;c.update(.01f,L);
+        check("impact applies shake and damage together",c.lives==GameCore.START_LIVES-1 && c.shake==1 && c.flash==1
+                && ((Ear)c.sound).damages==1 && !e.typeable() && !c.enemies.contains(e));
+        check("breached word cannot be hit afterward",!c.tapKey(1,L));
+        advance(c,L,.5f);
+        check("breach damage remains once only",((Ear)c.sound).damages==1);
+    }
+
     static void breachAndGameOver(Layout L) {
         group("breach and game over");
+        lastMomentDefense(L);
         Mem store = new Mem();
         GameCore c = new GameCore(store, 3L);
         c.startGame();
@@ -237,7 +273,7 @@ final class TestRules extends Check {
             GameCore.Enemy e = add(c, L, new int[] {0, 0}, L.dangerY - L.enemyR + 1);
             c.update(DT, L);
             check("crossing the line starts the attack lunge", e.attacking);
-            check("a lunging word cannot be typed", !e.typeable());
+            check("a lunging word stays typeable until damage", e.typeable());
             check("lunge holds the life for now", c.lives == GameCore.START_LIVES - i + 1);
             advance(c, L, GameCore.ATTACK_TIME + DT);
             check("breach " + i + " costs a life", c.lives == GameCore.START_LIVES - i);

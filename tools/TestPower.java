@@ -864,6 +864,8 @@ final class TestPower extends Check {
         low.destroyed = true;
         check("destroyed match is excluded", c.tapKey(2, L) && c.buddy.chase == high);
         high.attacking = true;
+        check("lunging match stays targetable until impact",c.tapKey(2,L) && c.buddy.chase==high);
+        high.dying = true;
         int hits = c.hits, misses = c.misses, score = c.score;
         float vx = c.buddy.vx, vy = c.buddy.vy;
         check("no active match retargets a charge to the nearest eligible enemy",

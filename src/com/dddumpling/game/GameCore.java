@@ -460,7 +460,7 @@ final class GameCore {
         }
 
         boolean typeable() {
-            return !dying && !attacking && !destroyed && pos < word.length;
+            return !dying && !destroyed && !stageResolved && pos < word.length;
         }
 
         /** Presses needed to clear this whole word from scratch. */
@@ -2380,6 +2380,8 @@ final class GameCore {
             }
             e.dying = true;
             e.deathT = 0;
+            e.attacking = false;
+            e.attackT = 0;
             // Doomed from this press, so it stops reading as a threat now rather than when
             // the shot lands: the update loop skips dying words, freezing whatever warning
             // state they held for the shot's whole flight.
@@ -3230,14 +3232,11 @@ final class GameCore {
             }
 
             if (e.attacking) {
-                // Committed lunge: it dives at the player, and the screen reacts.
+                // The lunge stays interruptible until breach applies damage.
                 e.attackT += dt * traversalRate();
                 e.y += e.speed * 3.2f * dt * traversalRate();
                 e.warn = 1f;
                 warnLevel = 1f;
-                flash = Math.max(flash, 0.35f + 0.5f * (e.attackT / ATTACK_TIME));
-                flashColor = FLASH_DAMAGE;
-                shake = Math.max(shake, 0.35f * (e.attackT / ATTACK_TIME));
                 if (e.attackT >= ATTACK_TIME) {
                     // A breach also removes its partner; skip that lower slot without replaying others.
                     // Unlist before damage: a fatal hit clears the whole field.
@@ -3283,7 +3282,6 @@ final class GameCore {
             if (e.y + L.enemyR >= L.dangerY) {
                 e.attacking = true;
                 e.attackT = 0;
-                if (target == e) target = null;
             }
         }
     }

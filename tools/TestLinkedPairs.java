@@ -187,6 +187,12 @@ final class TestLinkedPairs extends Check {
         check("pointed partner wins matching-target selection", a.destroyed && b.destroyed && distraction.pos == 0);
 
         c = wave(L, 16); a = c.enemies.get(0); b = a.link;
+        a.attacking=b.attacking=true;a.attackT=b.attackT=GameCore.ATTACK_TIME-.001f;
+        c.tapKey(a.word[0],L);c.tapKey(b.word[0],L);advance(c,L,.5f);
+        check("last-moment chord cancels both lunges",a.destroyed && b.destroyed
+                && c.lives==GameCore.START_LIVES && c.resolvedThisStage==1);
+
+        c = wave(L, 16); a = c.enemies.get(0); b = a.link;
         c.tapKey(a.word[0], L);
         b.attacking = true; b.attackT = GameCore.ATTACK_TIME;
         c.update(DT, L);
