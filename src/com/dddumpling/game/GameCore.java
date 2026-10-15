@@ -397,7 +397,7 @@ final class GameCore {
         int done;
         float baseX, y, speed, phase, sway;
         int swampKind, fogHead;
-        float fogReveal, diveSpeed, diveBurst;
+        float fogReveal, diveSpeed, diveBurst, diveStartX, diveStartY;
         boolean diving;
         /** Frenzy side entrance: an inward arc that settles into a vertical lane. */
         boolean sideEntry;
@@ -2303,14 +2303,16 @@ final class GameCore {
             }
             target = pick;
         } else if (!flurry() && target.word[target.pos] != g) {
-            // Engaged word, wrong letter: the whole word has to be retyped from scratch,
-            // which also resets every stack count. The lock is dropped rather than held —
+            // Ordinary words restart on a miss; divebombs keep their short-word progress.
+            // The lock is dropped rather than held —
             // re-engaging is a deliberate press, so the next press is free to pick whatever
             // word is now most urgent instead of being stuck on this one.
             Enemy missed = target;
-            missed.pos = 0;
-            missed.done = 0;
-            missed.skipGone();
+            if(missed.swampKind!=SwampEnemies.DIVE) {
+                missed.pos = 0;
+                missed.done = 0;
+                missed.skipGone();
+            }
             SwampEnemies.progressed(this,missed,L);
             missed.hitPulse = 0f;
             missed.hitIndex = -1;

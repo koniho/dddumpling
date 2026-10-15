@@ -10,7 +10,7 @@ final class SwampEnemies {
 
     static void reset(GameCore.Enemy e) {
         e.swampKind=NONE;e.fogHead=0;e.fogReveal=0;
-        e.diving=false;e.diveSpeed=e.diveBurst=0;
+        e.diving=false;e.diveSpeed=e.diveBurst=e.diveStartX=e.diveStartY=0;
     }
 
     static void assign(GameCore c,GameCore.Enemy e) {
@@ -32,7 +32,7 @@ final class SwampEnemies {
     }
 
     static boolean hidden(GameCore.Enemy e,int i) {
-        return e.swampKind==FOG && !e.destroyed && !e.dying && i>e.pos && !e.gone[i];
+        return e.swampKind==FOG && !e.destroyed && !e.dying && i>e.fogHead && !e.gone[i];
     }
 
     static int unresolved(GameCore.Enemy e) {
@@ -42,14 +42,16 @@ final class SwampEnemies {
     }
 
     static void progressed(GameCore c,GameCore.Enemy e,Layout L) {
-        if(e.swampKind==FOG && e.pos!=e.fogHead) {
-            e.fogReveal=e.pos>e.fogHead && e.pos<e.word.length?REVEAL:0;
+        // Revealed prompts stay visible when a miss restarts the word.
+        if(e.swampKind==FOG && e.pos>e.fogHead) {
+            e.fogReveal=e.pos<e.word.length?REVEAL:0;
             e.fogHead=e.pos;
         }
         if(e.swampKind!=DIVE || e.diving || !e.typeable() || unresolved(e)!=1) return;
         e.diving=true;e.diveBurst=DIVE_BURST;
+        e.diveStartX=c.tileX(e,e.pos,L);e.diveStartY=e.y;
         e.diveSpeed=Math.max(e.speed*3.4f,Math.max(0,L.dangerY-L.enemyR-e.y)/1.6f);
-        if(c.sound!=null)c.sound.octoCue();
+        if(c.sound!=null)c.sound.ninjaSwish(0);
     }
 
     static float fall(GameCore c,GameCore.Enemy e,Layout L,float dt) {
@@ -65,7 +67,7 @@ final class SwampEnemies {
         float vanish=e.destroyed?Math.min(1,e.destroyT/GameCore.DESTROY_TIME)
                 :e.dying?Math.min(1,e.deathT/GameCore.SHOT_TIME):0;
         if(vanish>=1)return;
-        int head=Math.min(e.pos,e.word.length-1);
+        int head=Math.min(e.fogHead,e.word.length-1);
         float reveal=e.fogReveal/REVEAL;
         float retreat=reveal*reveal*(3-2*reveal);
         float r=L.enemyR*swell;
@@ -77,28 +79,35 @@ final class SwampEnemies {
         float clock=c.clock+e.phase;
         int alpha=(int)(fade*(1-vanish));
         if(!front) {
-            ribbon(p,left-r*.22f,right+r*.22f,y+r*.08f,r*1.45f,clock*.7f,0xFF8ABDC4,alpha*42/255);
-            ribbon(p,left,right,y-r*.13f,r*1.12f,-clock*.9f,0xFFB6E3D5,alpha*60/255);
+            ribbon(p,left-r*.5f,right+r*.65f,y+r*.24f,r*.46f,clock*.7f,0xFF8ABDC4,alpha*42/255);
+            ribbon(p,left-r*.2f,right+r*.85f,y-r*.24f,r*.38f,-clock*.9f,0xFFB6E3D5,alpha*52/255);
             return;
         }
         // Future glyphs are omitted, so the fog can stay airy without leaking their colors.
         if(head<e.word.length-1) {
             float denseLeft=x+r*.25f-r*retreat*.6f;
-            ribbon(p,denseLeft,right,y-r*.06f,r*1.05f,clock*.8f,0xFFD8E9E6,alpha*100/255);
-            ribbon(p,denseLeft+r*.2f,right-r*.12f,y+r*.19f,r*.72f,-clock,0xFFD8E1F2,alpha*60/255);
+            for(int k=0;k<4;k++) {
+                float drift=(float)Math.sin(clock*.85f+k*2)*r*.32f;
+                ribbon(p,denseLeft-r*.18f+drift,right+r*(.45f+k*.15f)+drift,
+                        y+r*(-.49f+k*.31f),r*(.24f+(k%2)*.06f),clock*(k%2==0?.85f:-.7f)+k,
+                        k%2==0?0xFFD8E9E6:0xFFD8E1F2,alpha*(64+k*6)/255);
+            }
         }
-        ribbon(p,left,right,y+r*.36f,r*.42f,clock*1.5f,0xFFDBF4E8,alpha*45/255);
-        ribbon(p,left-r*.08f,right+r*.12f,y-r*.38f,r*.32f,-clock*1.2f,0xFFEDF1FF,alpha*38/255);
-        // One foreground sheet covers every remaining key, including the readable head.
-        ribbon(p,left-r*.5f,right+r*.25f,y,r*1.25f,clock*.65f,0xFFD9EDE8,alpha*64/255);
-        ribbon(p,x-r*1.45f,x+r*1.6f,y+r*.04f,r*1.05f,clock*1.1f,0xFFE5FFF4,alpha*86/255);
+        // Long overlapping striations keep the veil visible without a thick cloud silhouette.
+        for(int k=0;k<5;k++) {
+            float drift=(float)Math.sin(clock*(.65f+k*.12f)+k*1.7f)*r*.3f;
+            ribbon(p,left-r*(.55f+k*.06f)+drift,right+r*(.4f+(k%3)*.22f)+drift,
+                    y+r*(-.62f+k*.30f),r*(.16f+(k%2)*.07f),clock*(k%2==0?1.1f:-.9f)+k*.8f,
+                    k%2==0?0xFFE5FFF4:0xFFEDF1FF,alpha*(45+(k%3)*8)/255);
+        }
+        for(int k=0;k<3;k++)ribbon(p,x-r*1.6f,x+r*(2.2f+k*.25f),
+                y+r*(-.38f+k*.38f),r*.25f,clock*(.9f+k*.1f)+k*1.5f,0xFFE5FFF4,alpha*76/255);
         if(reveal>0 && head>0) {
             float t=1-reveal,oldX=c.tileX(e,head-1,L)+jx;
             for(int k=0;k<3;k++) {
                 float drift=r*(.3f+t*(1.2f+k*.35f));
-                p.fillEllipse(oldX+drift,y-r*(.15f+k*.23f+t*.7f),
-                        r*(.6f+t*.4f),r*(.22f-t*.1f),
-                        Glyph.withAlpha(k==1?0xFFEAF9F4:MIST,(int)(alpha*reveal*.32f)));
+                ribbon(p,oldX+drift-r,oldX+drift+r*(1.5f+t),y-r*(.15f+k*.23f+t*.7f),
+                        r*(.13f-t*.06f),clock+k,k==1?0xFFEAF9F4:MIST,(int)(alpha*reveal*.32f));
             }
         }
     }
@@ -132,78 +141,30 @@ final class SwampEnemies {
         p.fillEllipse(x,top+r*.12f,r*.73f,r*.12f,Glyph.withAlpha(0xFFFFDA7A,fade));
     }
 
-    static void accent(Painter p,GameCore c,GameCore.Enemy e,float x,float y,float r,int fade) {
-        if(!e.typeable())return;
-        if(e.swampKind!=DIVE || !e.diving)return;
-        float pulse=.65f+.35f*(float)Math.sin(c.clock*19);
-        int col=Glyph.withAlpha(AMBER,(int)(fade*pulse));
-        p.strokeCircle(x,y,r*1.09f,col,r*.12f);
-        if(e.diveBurst>0) {
-            float t=1-e.diveBurst/DIVE_BURST;
-            int a=(int)(fade*(1-t));
-            for(int k=0;k<3;k++)p.strokeCircle(x,y,r*(1.1f+t*(2.7f-k*.5f)),
-                    Glyph.withAlpha(k==1?0xFFFFF6DC:AMBER,a*(230-k*35)/255),r*(.27f-k*.045f));
-            if(t<.48f) {
-                float flash=1-t/.48f;
-                p.fillCircle(x,y,r*(2.6f+t*2),Glyph.withAlpha(AMBER,(int)(a*flash*.25f)));
-                p.fillCircle(x,y,r*1.7f,Glyph.withAlpha(0xFFFFEAB3,(int)(a*flash*.52f)));
-                float[] star=new float[32];
-                for(int k=0;k<16;k++) {
-                    double angle=k*Math.PI/8+e.phase*.2f;
-                    float reach=r*(k%2==0?2.9f+t*2:1.1f);
-                    star[k*2]=x+(float)Math.cos(angle)*reach;
-                    star[k*2+1]=y+(float)Math.sin(angle)*reach;
-                }
-                p.fillPoly(star,Glyph.withAlpha(0xFFFFF9E9,(int)(a*flash*.9f)));
-                p.fillCircle(x,y,r*1.12f,Glyph.withAlpha(0xFFFFFFFF,(int)(a*flash)));
-            }
-            for(int k=0;k<10;k++) {
-                double angle=k*Math.PI/5+e.phase;
-                float dx=(float)Math.cos(angle),dy=(float)Math.sin(angle);
-                float inner=r*(1.3f+t*1.8f),outer=inner+r*(.65f+(k%3)*.2f)*(1-t);
-                p.line(x+dx*inner,y+dy*inner,x+dx*outer,y+dy*outer,
-                        Glyph.withAlpha(k%2==0?AMBER:0xFFFFF6DC,a),r*.11f*(1-t));
-            }
-        }
-    }
-
-    /** Layered swept wedges stay attached to the diving key instead of floating like rain. */
-    static void diveWake(Painter p,GameCore c,GameCore.Enemy e,float x,float y,float r,int fade) {
-        if(e.swampKind!=DIVE || !e.diving || !e.typeable())return;
-        float flutter=(float)Math.sin(c.clock*18+e.phase);
-        speedBlade(p,x,y-r*.4f,r*(4.2f+flutter*.3f),r*.34f,r*flutter*.18f,0xFFFFBC58,fade*130/255);
-        speedBlade(p,x,y-r*.4f,r*(3.8f+flutter*.3f),r*.14f,r*flutter*.14f,0xFFFFF6D8,fade*215/255);
-        for(int side=-1;side<=1;side+=2)for(int k=0;k<2;k++) {
-            float wave=(float)Math.sin(c.clock*(16+k*3)+e.phase+k*2+side);
-            float length=r*(3.4f+k*.9f+wave*.26f+side*.24f);
-            float base=x+side*r*(.72f+k*.33f);
-            float width=r*(k==0?.34f:.18f);
-            float bend=side*r*(.6f+k*.25f);
-            speedBlade(p,base,y-r*(.15f+k*.25f),length,width*1.6f,bend,0xFFFFA34F,fade*65/255);
-            speedBlade(p,base,y-r*(.15f+k*.25f),length,width,bend,0xFFFFCF69,fade*205/255);
-            speedBlade(p,base,y-r*(.15f+k*.25f),length*.86f,width*.42f,bend*.86f,0xFFFFF6D8,fade*235/255);
-        }
-        // Small tapered flecks peel away from the outer wake.
+    static void burst(Painter p,GameCore.Enemy e,float r,int fade) {
+        if(e.swampKind!=DIVE || !e.diving || !e.typeable() || e.diveBurst<=0)return;
+        float x=e.diveStartX,y=e.diveStartY;
+        float t=1-e.diveBurst/DIVE_BURST;
+        int color=Glyph.COLOR[e.word[e.pos]],light=Glyph.mix(color,0xFFFFFFFF,.72f);
+        int alpha=(int)(fade*(1-t));
         for(int k=0;k<4;k++) {
-            float t=(c.clock*2.5f+k*.27f)%1;
-            int side=k%2==0?-1:1;
-            float px=x+side*r*(1.2f+t*.7f),py=y-r*(1+t*3.4f);
-            p.fillPoly(new float[]{px,py+r*.25f,px-r*.09f,py,px+side*r*.12f,py-r*.55f,px+r*.09f,py},
-                    Glyph.withAlpha(0xFFFFE8A8,(int)(fade*(1-t)*.8f)));
+            float radius=r*(.8f+t*(4.2f-k*.65f));
+            int tint=k%2==0?color:light;
+            p.strokeCircle(x,y,radius,Glyph.withAlpha(tint,alpha*(220-k*25)/255),r*(.28f-k*.035f));
+            p.strokeCircle(x,y,radius-r*.06f,Glyph.withAlpha(light,alpha*100/255),r*.055f);
         }
-    }
-
-    private static void speedBlade(Painter p,float x,float y,float length,float width,float bend,int color,int alpha) {
-        final int steps=16;
-        float[] points=new float[(steps+1)*4];
-        for(int i=0;i<=steps;i++) {
-            float t=i/(float)steps;
-            float at=x+bend*(float)Math.sin(t*Math.PI*.85f);
-            float half=width*(1-t)*(.35f+.9f*(float)Math.sin(t*Math.PI));
-            points[i*2]=at-half;points[i*2+1]=y-length*t;
-            int back=(steps*2+1-i)*2;
-            points[back]=at+half;points[back+1]=y-length*t;
+        if(t<.42f) {
+            float flash=1-t/.42f;
+            p.fillCircle(x,y,r*(2.3f+t*2),Glyph.withAlpha(color,(int)(alpha*flash*.35f)));
+            p.fillCircle(x,y,r*1.5f,Glyph.withAlpha(light,(int)(alpha*flash*.75f)));
+            p.fillCircle(x,y,r,Glyph.withAlpha(0xFFFFFFFF,(int)(alpha*flash*.9f)));
         }
-        p.fillPoly(points,Glyph.withAlpha(color,alpha));
+        for(int k=0;k<8;k++) {
+            double angle=k*Math.PI/4+e.phase;
+            float dx=(float)Math.cos(angle),dy=(float)Math.sin(angle);
+            float inner=r*(1.5f+t*3.1f),outer=inner+r*.65f*(1-t);
+            p.line(x+dx*inner,y+dy*inner,x+dx*outer,y+dy*outer,
+                    Glyph.withAlpha(k%2==0?color:light,alpha),r*.12f*(1-t));
+        }
     }
 }

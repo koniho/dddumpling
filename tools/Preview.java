@@ -30,6 +30,10 @@ final class Preview {
             for(int i=0;i<cleared;i++)c.tapKey(fog.word[i],L);
             step(c,L,.16f);
             shot(dir,"175-176-fog-recede-"+cleared,c,L,w,h,ss);
+            if(cleared==3) {
+                c.tapKey(5,L);
+                shot(dir,"175-176-fog-after-miss",c,L,w,h,ss);
+            }
         }
         for(float time:new float[]{.035f,.28f,.65f}) {
             GameCore c=TestSwampEnemies.scene(L,176);
