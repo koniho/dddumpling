@@ -262,17 +262,11 @@ final class BossScreen extends Draw {
 
     static void drawSlimeSkin(Painter p,float[] skin,float cx,float cy,float rx,float ry,
             float radius,int col,float clock,boolean vulnerable,float fade,boolean defeated) {
-        if(defeated) {
-            p.fillPoly(skin,Glyph.withAlpha(0xFF83E51C,(int)(255*fade)));
-            p.strokePoly(skin,Glyph.withAlpha(0xFF387D24,(int)(255*fade)),radius*.04f);
-            slimeEmblem(p,skin,cx,cy,fade);
-            return; // One continuous green sheet; layered shading tears under the drip warp.
-        }
         int lime = Glyph.mix(col, 0xFFA8F02B, 0.32f);
         int edge = Glyph.mix(0xFF176A24, col, 0.16f);
 
         // The puddle sits behind the skirt, with the two darker body layers thickest at its foot.
-        p.fillEllipse(cx, cy + ry * 1.34f, rx * 1.12f, ry * 0.30f,
+        if(!defeated)p.fillEllipse(cx, cy + ry * 1.34f, rx * 1.12f, ry * 0.30f,
                 Glyph.withAlpha(0xFF86C52D, (int) (150 * fade)));
         p.fillPoly(skin, Glyph.withAlpha(Glyph.mix(lime, 0xFF185C23, 0.58f), (int) (245 * fade)));
         float[] middle = slimeInset(skin, cx, cy, rx, ry, 0.965f, 0.97f, -0.025f, -0.035f);
@@ -316,6 +310,7 @@ final class BossScreen extends Draw {
         }
 
         slimeEmblem(p,skin,cx,cy,fade);
+        if(defeated)return; // The defeat pass positions its dizzy face within the splat.
 
         // The reference face: two deep green button eyes with crisp reflected light.
         float eyeY = cy - ry * (vulnerable ? 0.07f : 0.10f), eyeDX = rx * 0.35f;
@@ -1372,7 +1367,7 @@ final class BossScreen extends Draw {
                 slimePromptBubbles(p,L,b,cx,fade);
                 float cover=b.slimePromptCover();
                 float visibility=1f-cover*cover*cover*cover;
-                if(visibility>0f) {
+                if(visibility>0f && b.slimePromptVisible()) {
                     float y=slimeBadgeY(L,b)-L.unit*0.65f*cover;
                     float radius=slimeBoltR(c,L,b.promptProgress());
                     int g=b.chainLetter();

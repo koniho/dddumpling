@@ -232,7 +232,7 @@ final class Onboarding extends Draw {
             q.mining.ready=0;q.mining.loads=CaveMining.LOADS;q.mining.phase=CaveMining.FULL;
         }
         if(which==SLIME && learned(TutorialSpeech.CLOSED)) {
-            q.boss.phase=1.35f;
+            q.boss.age=q.boss.phase=1.35f;
             if(learned(TutorialSpeech.CHAIN))
                 for(int i=0;i<Boss.SPLIT_HITS;i++)q.tapKey(q.boss.chainLetter(),L);
         }

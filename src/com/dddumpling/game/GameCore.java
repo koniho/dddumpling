@@ -3129,6 +3129,7 @@ final class GameCore {
             float beforeIntro=boss.introProgress();
             float priorCover=boss.slimePromptCover();
             boolean priorOpen=boss.open();
+            boolean priorSlimeOpening=boss.slimeOpening();
             float beforeDeath = boss.beaten ? boss.leaveProgress() * Boss.LEAVE : -1f;
             boolean beforeSupernova = boss.kind == Boss.SPLITTER && boss.beaten && !DivideDeath.bursting(boss);
             if(boss.kind==Boss.ALLIGATOR)boss.alligator.target(this,L);
@@ -3139,10 +3140,10 @@ final class GameCore {
             BossPlay.deathFeedback(this, beforeDeath);
             if (beforeSupernova && DivideDeath.bursting(boss) && sound != null) sound.divideSupernova();
             float cover=boss.slimePromptCover();
-            if(sound!=null && boss.kind==Boss.SLIME && boss.fighting() && boss.slimePromptHits>=2
+            if(sound!=null && boss.kind==Boss.SLIME && boss.fighting() && (priorSlimeOpening || boss.slimePromptHits>=2)
                     && !boss.hasGlob() && boss.boltCount()==0 && !boss.slimeRetaliating) {
                 if(!priorOpen && boss.open()) sound.slimeCover(true);
-                else if(priorCover==0f && cover>0f && boss.open()) sound.slimeCover(false);
+                else if(priorCover==0f && cover>0f && (boss.open() || boss.slimeOpening())) sound.slimeCover(false);
             }
             progress.bossDamage(boss.kind, beforeHp, boss.hp);
             timeAttack.bossDamaged(beforeHp, boss.hp);

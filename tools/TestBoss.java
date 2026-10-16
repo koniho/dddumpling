@@ -23,8 +23,8 @@ final class TestBoss extends Check {
         c.enemies.clear();
         c.boss.begin(kind, c.stage, c.rnd);
         for (int i = 0; i < 60 * 10 && !c.boss.fighting(); i++) c.update(DT, L);
-        // Let the arrival wobble settle before tests measure dragging distances.
-        if(kind==Boss.SLIME) for(int i=0;i<60;i++) c.update(DT,L);
+        // Finish the opening cover cycle and arrival wobble before testing the active fight.
+        if(kind==Boss.SLIME) for(int i=0;i<61;i++) c.update(DT,L);
         return c;
     }
 
@@ -291,6 +291,29 @@ final class TestBoss extends Check {
         check("stage 0 is not a boss stage", !Boss.isBossStage(0));
 
         check("the enabled boss is the slime", Boss.kindFor(5) == Boss.SLIME);
+
+        GameCore opening=new GameCore(new Mem(),193L);opening.startGame();
+        opening.boss.begin(Boss.SLIME,5,opening.rnd);
+        check("slime arrival has no prompt",!opening.boss.slimePromptVisible());
+        opening.boss.intro=0;opening.update(0,L);
+        Ear openingEar=new Ear();opening.sound=openingEar;
+        for(int i=0;i<27;i++)opening.update(DT,L);
+        check("first cover hides and protects the initial prompt",
+                !opening.boss.open() && !opening.boss.slimePromptVisible()
+                && opening.boss.slimePromptCover()==1f);
+        opening.tapKey(opening.boss.chainLetter(),L);
+        check("hidden first prompt cannot advance or time out",
+                opening.boss.chainAt==0 && opening.boss.promptT==Boss.PROMPT_MAX && opening.boss.boltCount()==0);
+        for(int i=0;i<24;i++)opening.update(DT,L);
+        check("first uncover reveals an actionable prompt",
+                opening.boss.open() && opening.boss.slimePromptVisible()
+                && opening.boss.slimePromptCover()>0 && opening.boss.slimePromptCover()<1);
+        for(int i=0;i<15;i++)opening.update(DT,L);
+        check("opening cycle completes with the ordinary exposed prompt",
+                !opening.boss.slimeOpening() && opening.boss.open() && opening.boss.slimePromptCover()==0);
+        check("opening cover and uncover each play once",openingEar.slimeCovers==1 && openingEar.slimeReleases==1);
+        opening.boss.begin(Boss.SLIME,5,opening.rnd);
+        check("next slime fight repeats the opening cycle",opening.boss.slimeOpening() && !opening.boss.slimePromptVisible());
 
         GameCore unlock = enterBoss(L, Boss.SLIME, 9L);
         unlock.boss.beaten = true;

@@ -713,6 +713,7 @@ final class Boss {
 
     boolean open() {
         if (!fighting()) return false;
+        if (slimeOpening()) return age >= SLIME_OPENING_RELEASE;
         if (kind == ALLIGATOR) return alligator.daze > 0;
         if (kind == SLIME && (!slimeCoverLearned || slimeRetaliating)) return true;
         if (kind == SPLITTER) return true;
@@ -721,9 +722,21 @@ final class Boss {
     }
 
     static final float SLIME_PROMPT_TRANSITION = 0.30f;
+    static final float SLIME_OPENING_RELEASE = 0.70f;
+
+    boolean slimeOpening() {
+        return kind==SLIME && age<SLIME_OPENING_RELEASE+SLIME_PROMPT_TRANSITION;
+    }
+
+    boolean slimePromptVisible() {return !slimeOpening() || open();}
 
     /** The same curve runs backward on release; hit eligibility starts at open(), not its end. */
     float slimePromptCover() {
+        if(slimeOpening() && fighting()) {
+            float t=age<SLIME_OPENING_RELEASE ? Math.min(1f,age/SLIME_PROMPT_TRANSITION)
+                    : Math.max(0f,1f-(age-SLIME_OPENING_RELEASE)/SLIME_PROMPT_TRANSITION);
+            return t*t*(3f-2f*t);
+        }
         if (kind != SLIME || !slimeCoverLearned || !fighting() || hasGlob() || boltCount() > 0 || slimeRetaliating) return 0f;
         if (!open()) return 1f;
         float sinceOpen = phase-(CYCLE[kind]-SHOW[kind]);
@@ -736,6 +749,7 @@ final class Boss {
     /** Bubble trails finish just after the skirt closes, before the release starts. */
     float slimeCoverBubbleTime() {
         if(slimePromptCover()<=0f) return -1f;
+        if(slimeOpening())return age<SLIME_OPENING_RELEASE ? age : -1f;
         float start=CYCLE[SLIME]-SLIME_PROMPT_TRANSITION;
         if(phase>=start) return phase-start;
         return phase<0.35f ? phase+SLIME_PROMPT_TRANSITION : -1f;

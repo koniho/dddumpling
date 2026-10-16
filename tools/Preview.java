@@ -8,6 +8,15 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void slimeOpeningFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("193-slime-opening-"))return;
+        for(float time:new float[]{0,.15f,.45f,.85f,1.1f}) {
+            GameCore c=new GameCore(new Check.Mem(),193L);c.startGame();c.stage=5;c.stageBanner=0;
+            c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;c.update(0,L);
+            step(c,L,time);
+            shot(dir,"193-slime-opening-"+Math.round(time*1000),c,L,w,h,ss);
+        }
+    }
     private static void slimeDeathFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("193-slime-death-"))return;
         for(int shape=0;shape<3;shape++)for(float time:new float[]{0,.3f,.8f,1.4f,2.1f,2.8f,3.4f}) {
@@ -1569,6 +1578,7 @@ final class Preview {
         bossImpactFrames(dir,L,w,h,ss);
         slimeSprayFrames(dir,L,w,h,ss);
         slimeDeathFrames(dir,L,w,h,ss);
+        slimeOpeningFrames(dir,L,w,h,ss);
         clearSpreadFrames(dir,L,w,h,ss);
         clearIntensityFrames(dir,L,w,h,ss);
         diveStarFrames(dir,L,w,h,ss);

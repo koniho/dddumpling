@@ -962,6 +962,7 @@ final class TestOnboarding extends Check {
                 && c.tapCompanion(x,y,L) && !c.onboarding.briefing);
     }
     static int makeSlimeVulnerable(GameCore c,Layout L) {
+        for(int i=0;i<90 && c.boss.slimeOpening();i++)c.boss.update(DT,L,c.rnd);
         for(int i=0;i<Boss.SPLIT_HITS;i++) {
             c.boss.phase=1.35f;c.tapKey(c.boss.chainLetter(),L);
         }
