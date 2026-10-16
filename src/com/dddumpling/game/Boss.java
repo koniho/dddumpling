@@ -1256,6 +1256,7 @@ final class Boss {
         // full-strength punch, which is what makes the burst look earned.
         if (body != null) {
             float k = hp <= 0f ? 1f : HIT_PUNCH * n;
+            if(kind==SLIME && hp>0f)k*=1.4f+.8f*(1f-health());
             body.impulse(body.centreX(), body.centreY() - body.radiusY() * 0.65f, k);
         }
         if (hp <= 0f) {
@@ -2430,7 +2431,7 @@ final class Boss {
             body.shapeMemory=0f;
             if (kind == SLIME && !beaten) {
                 float health=Math.max(0f,Math.min(1f,health()));
-                body.jiggle = JIGGLE[kind] * (1f + (1f - health) * 1.25f);
+                body.jiggle = JIGGLE[kind] * (1f + (1f - health) * 1.8f);
                 // Healthy slime remembers its silhouette; later damage leaves a looser wobble.
                 body.shapeMemory=.15f+.85f*health*health;
                 if(held>=0 && etype[held]==E_GLOB)body.shapeMemory*=.12f;
