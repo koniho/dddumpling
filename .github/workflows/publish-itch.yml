@@ -7,6 +7,10 @@ on:
         description: Published release tag with a signed production Android APK
         type: string
         required: true
+      inspect_only:
+        description: Only inspect channel versions; do not upload
+        type: boolean
+        default: false
       activate:
         description: Update the live Android channel (otherwise create a hidden upload)
         type: boolean
@@ -37,6 +41,7 @@ jobs:
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
 
       - name: Download signed release APK
+        if: inputs.inspect_only != true
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -64,7 +69,14 @@ jobs:
           unzip -q "$RUNNER_TEMP/butler.zip" -d "$RUNNER_TEMP/butler"
           chmod +x "$RUNNER_TEMP/butler/linux-amd64/butler"
 
+      - name: Inspect channels
+        if: inputs.inspect_only == true
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: '"$RUNNER_TEMP/butler/linux-amd64/butler" status theorifice/dddumpling'
+
       - name: Upload Android build
+        if: inputs.inspect_only != true
         env:
           ACTIVATE: ${{ inputs.activate }}
           BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
