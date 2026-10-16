@@ -1138,6 +1138,14 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
+        if(wanted("settings-gear-")) {
+            GameCore gear=TestTimeAttack.start(Boss.SLIME);gear.toTitle();gear.returnFade=0;
+            for(int frame=0;frame<3;frame++) {
+                gear.preferences.notificationPending=frame>0;
+                gear.clock=frame==2?.42f:1.2f;
+                shot(dir,"settings-gear-"+frame,gear,L,w,h,ss);
+            }
+        }
         if(wanted("136-story")) {
             for(int who:new int[]{1,6,Collect.BOSS_FIRST}) {
                 Mem saved=new Mem();saved.collected=Collect.MASK;
