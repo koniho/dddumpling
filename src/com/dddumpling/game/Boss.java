@@ -169,7 +169,7 @@ final class Boss {
     /** A damaged slime stays open while returning home, then answers with a three-bolt volley. */
     boolean slimeRetaliating;
     boolean slimeCoverLearned;
-    int slimePromptHits;
+    int slimePromptHits, slimeSoundSequence;
     /** Set by swat() for the press frame so audio can distinguish a hit from a destroyed bolt. */
     boolean boltDestroyed;
 
@@ -362,7 +362,7 @@ final class Boss {
         slimeDeath=null;
         slimeRetaliating = boltDestroyed = false;
         slimeCoverLearned = false;
-        slimePromptHits = 0;
+        slimePromptHits = slimeSoundSequence = 0;
         mushroomShakes = mushroomDirection = 0;
         mushroomLastX = mushroomShakeWindow = mushroomCharge = mushroomAngry = mushroomSweepFlash = 0f;
         mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
@@ -445,7 +445,7 @@ final class Boss {
         slimeDeath=null;
         slimeRetaliating = boltDestroyed = false;
         slimeCoverLearned = false;
-        slimePromptHits = 0;
+        slimePromptHits = slimeSoundSequence = 0;
         mushroomShakes = mushroomDirection = 0;
         mushroomLastX = mushroomShakeWindow = mushroomAttackT = mushroomCharge = mushroomAngry = mushroomSweepFlash = 0f;
         mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;

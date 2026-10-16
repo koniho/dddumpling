@@ -29,6 +29,24 @@ final class TestBoss extends Check {
     }
 
     static void promptImpactTiming(Layout L) {
+        group("recorded Slime squish rotation");
+        GameCore sounds=enterBoss(L,Boss.SLIME,195);Ear recorded=new Ear();sounds.sound=recorded;
+        sounds.rnd.setSeed(195);java.util.Random expectedSoundRng=new java.util.Random(195);
+        for(int first:new int[]{0,2,4,3}) {
+            int count=first==3?3:2,seen=0,previous=-1;
+            for(int i=0;i<count*2;i++) {
+                BossPlay.slimeSquish(sounds,first,count);
+                int take=recorded.lastSlimeSquish;
+                check("squish stays in its intensity group and alternates",take>=first && take<first+count && take!=previous);
+                seen|=1<<take;previous=take;
+            }
+            check("each take in the intensity group is heard",Integer.bitCount(seen)==count);
+        }
+        check("squish selection preserves gameplay randomness",sounds.rnd.nextLong()==expectedSoundRng.nextLong());
+        sounds.boss.leave();
+        check("leaving resets recorded sound rotation",sounds.boss.slimeSoundSequence==0);
+        sounds.boss.slimeSoundSequence=17;sounds.boss.begin(Boss.SLIME,Boss.EVERY,sounds.rnd);
+        check("new encounter resets recorded sound rotation",sounds.boss.slimeSoundSequence==0);
         group("boss prompt reactions follow projectile contact");
         for(int kind:new int[]{Boss.SLIME,Boss.SPLITTER}) {
             GameCore c=enterBoss(L,kind,193);if(kind==Boss.SLIME)toOpen(c,L);
@@ -42,7 +60,7 @@ final class TestBoss extends Check {
                     (kind==Boss.SLIME?b.chainAt:b.pieceCharge(0))==before+1);
             check("key press has no early hit flash, shake, particles or sound "+kind,
                     b.hurt==0 && b.slimeKeyPulse==0 && b.slimeEyeHit==0 && c.shake==0 && c.flash==0 && c.particles.isEmpty()
-                    && ear.boltPops==0 && ear.divideDamages==0);
+                    && ear.slimeHits==0 && ear.boltPops==0 && ear.divideDamages==0);
             GameCore.Shot shot=c.shots.get(0);
             c.paused=true;c.update(.3f,L);
             check("pause holds the pending reaction "+kind,shot.t==0 && b.hurt==0);
@@ -54,10 +72,10 @@ final class TestBoss extends Check {
             check("contact starts body feedback and the complete particle burst "+kind,
                     b.hurt>0 && c.shake>0 && c.particles.size()==(kind==Boss.SLIME?13+SlimeSpray.HIT_DROPS:16));
             check("contact plays the matching hit sound once "+kind,
-                    (kind==Boss.SLIME?ear.boltPops:ear.divideDamages)==1);
+                    (kind==Boss.SLIME?ear.slimeHits:ear.divideDamages)==1);
             if(kind==Boss.SLIME)check("projectile contact starts the eye wince",b.slimeEyeHit==Boss.SLIME_EYE_HIT);
             Fx.updateShots(c,.5f,L);
-            check("completed flight cannot replay the sound "+kind,(kind==Boss.SLIME?ear.boltPops:ear.divideDamages)==1);
+            check("completed flight cannot replay the sound "+kind,(kind==Boss.SLIME?ear.slimeHits:ear.divideDamages)==1);
             c.particles.clear();java.util.Arrays.fill(b.blive,false);if(kind==Boss.SLIME)toOpen(c,L);
             c.tapKey(kind==Boss.SLIME?b.chainLetter():b.pieceWant(0),L);
             GameCore expected=new GameCore(new Mem(),193);expected.rnd.setSeed(193);c.rnd.setSeed(193);
@@ -66,7 +84,7 @@ final class TestBoss extends Check {
             check("discarding a stale reaction preserves the arrival RNG sequence "+kind,
                     c.rnd.nextLong()==expected.rnd.nextLong());
             check("leaving cancels stale impact feedback "+kind,c.particles.isEmpty()
-                    && b.slimeEyeHit==0 && (kind==Boss.SLIME?ear.boltPops:ear.divideDamages)==1);
+                    && b.slimeEyeHit==0 && (kind==Boss.SLIME?ear.slimeHits:ear.divideDamages)==1);
         }
         GameCore pair=enterBoss(L,Boss.SPLITTER,194);chargeDivide(pair,0,L);
         Fx.updateShots(pair,GameCore.SHOT_TIME,L);
@@ -964,7 +982,7 @@ final class TestBoss extends Check {
         boolean early = true;
         for (int i = 0; i < Boss.ELEMS; i++) if (c.boss.etype[i] == Boss.E_GLOB) early = false;
         check("and nothing has split off yet", early);
-        check("and the split sound waits for the glob", splitEar.bossSplits == 0);
+        check("and the split sound waits for the glob", splitEar.slimeSplits == 0);
 
         // The last press of the five is the one that tears a glob out.
         c.tapKey(c.boss.chainLetter(), L);
@@ -976,11 +994,11 @@ final class TestBoss extends Check {
         check("the vulnerable slime color pulse reaches both ends of its cycle",
                 BossScreen.vulnerabilityPulse((float) (-Math.PI / 2 / 6.4)) < 0.001f
                         && BossScreen.vulnerabilityPulse((float) (Math.PI / 2 / 6.4)) > 0.999f);
-        check("split feedback waits for its projectile",splitEar.bossSplits==0);
+        check("split feedback waits for its projectile",splitEar.slimeSplits==0);
         Fx.updateShots(c,GameCore.SHOT_TIME,L);
-        check("and lands one satisfying split pop", splitEar.bossSplits == 1);
-        check("each charged bolt character dies with its own low bloop",
-                splitEar.boltPops == Boss.SPLIT_HITS - 1);
+        check("and lands one satisfying split pop", splitEar.slimeSplits == 1);
+        check("each charged prompt impact plays a light recorded squish",
+                splitEar.slimeHits == Boss.SPLIT_HITS - 1);
         check("and the split gauge starts again", c.boss.split == 0);
         check("still without hurting it", c.boss.hp == hpWas);
 
@@ -1302,10 +1320,10 @@ final class TestBoss extends Check {
         c.tapKey(shown, L);
         check("attacking the shown character resets its deadline",
                 c.boss.promptT > beforeAnswer && c.boss.boltCount() == 0);
-        check("slime hit particles and sound wait for the shot",c.particles.size()==particlesBefore && ear.boltPops==0);
+        check("slime hit particles and sound wait for the shot",c.particles.size()==particlesBefore && ear.slimeHits==0);
         Fx.updateShots(c,GameCore.SHOT_TIME,L);
         check("contact gives the slime a smaller impact",
-                c.shake >= 0.12f && c.particles.size() > particlesBefore && ear.boltPops == 1);
+                c.shake >= 0.12f && c.particles.size() > particlesBefore && ear.slimeHits == 1);
         shown = c.boss.chainLetter();
         float fullDelay = c.boss.promptDelay();
         check("a healthy slime gives the full prompt window",
@@ -1324,7 +1342,8 @@ final class TestBoss extends Check {
         check("the shown character leads the volley", c.boss.bglyph[0] == shown);
         check("the bubbling builds toward launch", ear.maxBossCharge > 0.75f);
         check("and stops when the volley fires", ear.bossCharge == 0f);
-        check("the launch laughs exactly once", ear.bossLaughs == 1);
+        check("the launch plays one heavier recorded squish", ear.slimeSquishes == 2
+                && ear.lastSlimeSquish>=3 && ear.bossLaughs==0);
         check("and starts a visible recoil", c.boss.launchT > 0f);
         boolean below = true;
         for (int i = 0; i < Boss.BOLTS; i++)

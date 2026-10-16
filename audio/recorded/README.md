@@ -192,3 +192,24 @@ demonstration begins 180ms after its last tail. A baked 10ms RMS envelope drives
 the mouth opening and head bob/tilt, with a spring squash at each growl onset.
 Pause freezes the shared clock. Leave, restart and defeat clear queued growls;
 muted events are consumed rather than deferred. Audio does not use gameplay RNG.
+
+# Super Slime squishes
+
+Source: user-supplied `Squish .m4a` in Downloads on 2026-10-16, explicitly requested
+for Super Slime's damage and attacks (#195). It is not a CC0 library asset. Original
+SHA-256: `208290c9f76b0499698433c71774cac6e6411ea59cae76983a69b8b86cc48847`.
+The source and review WAVs stay local; only generated shared PCM is included in the game.
+
+Run `python3 tools/prepare-slime-squishes.py '/path/to/Squish .m4a'` to regenerate
+`SlimeSquishRecording.java` and six audition WAVs in `build/slime-squishes/`.
+Source cuts in recording order: 0.69–1.19, 1.38–1.84, 2.83–3.58, 4.17–5.05,
+5.35–6.74 and 7.10–8.91 seconds. Trim and reset timestamps before the 3 ms/20 ms
+edge fades. The requested two-pole 4 kHz low-pass is applied at 48 kHz mono,
+then resampled to 22,050 Hz PCM16. A common 2x gain (+6 dB) preserves the takes'
+relative intensity while bringing them into the effects mix. Pitch and speed are unchanged.
+
+Light takes 1–2 rotate at projectile impact, medium takes 3–4 at a glob-splitting
+impact, heavy takes 5–6 on drag damage, and takes 4–6 on attack-volley launch.
+Selection uses a resettable cosmetic counter, not gameplay RNG. Android and iOS
+use the same PCM, native rate and 90% effect gain. Existing cover/charge cues and
+death audio remain unchanged; a separate splat recording is planned for death.

@@ -15,3 +15,6 @@ https://freesound.org/people/qubodup/sounds/442773/
 https://creativecommons.org/publicdomain/zero/1.0/
 Adapted to mono with a 4 kHz low-pass filter, edge fades and peak normalization;
 entry plays at 70% speed.
+
+Super Slime squishes: user-supplied Squish .m4a, provided for use in DDDUMPLING.
+Six excerpts, mono conversion, edge fades, 4 kHz low-pass, resampling and shared gain.

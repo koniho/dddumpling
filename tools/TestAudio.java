@@ -352,8 +352,8 @@ final class TestAudio extends Check {
             short[] pcm = Sfx.build(id);
             int max = 0;
             for (int i = 0; i < pcm.length; i++) max = Math.max(max, Math.abs(pcm[i]));
-            // Recorded Ninja swishes retain their relative levels instead of peak normalisation.
-            if (!Sfx.isNinjaSwish(id) && Math.abs(max - peak) > 2) allNormalised = false;
+            // Recorded Ninja swishes and Slime squishes retain their relative levels.
+            if (!Sfx.isNinjaSwish(id) && id<Sfx.SLIME_SQUISH_0 && Math.abs(max - peak) > 2) allNormalised = false;
             if (max >= 32767) allClean = false;
             // Roulette ticks intentionally fit between fast icon changes.
             int minimum = id == Sfx.SHUFFLE_BLIP ? Sfx.RATE / 40 : Sfx.RATE / 20;
@@ -393,6 +393,20 @@ final class TestAudio extends Check {
             if(variant>0)check("growl retains its own performance "+variant,
                     !java.util.Arrays.equals(growl,Sfx.build(Sfx.gatorTauntId(variant-1))));
         }
+        float[] slimeDurations={.5f,.46f,.75f,.88f,1.39f,1.81f};
+        int[] slimePeaks=new int[6];
+        for(int variant=0;variant<6;variant++) {
+            short[] squish=Sfx.build(Sfx.slimeSquishId(variant));
+            for(short sample:squish)slimePeaks[variant]=Math.max(slimePeaks[variant],Math.abs((int)sample));
+            check("Slime recording retains its cut duration "+variant,
+                    Math.abs(squish.length/(float)Sfx.RATE-slimeDurations[variant])<.003f);
+            check("Slime recording is audible with headroom "+variant,slimePeaks[variant]>1000 && slimePeaks[variant]<30000);
+            check("Slime recording edges are click-free "+variant,squish[0]==0 && squish[squish.length-1]==0);
+            if(variant>0)check("Slime takes remain distinct "+variant,
+                    !java.util.Arrays.equals(squish,Sfx.build(Sfx.slimeSquishId(variant-1))));
+        }
+        check("strong Slime takes preserve their greater intensity",slimePeaks[4]>slimePeaks[0]*1.5f && slimePeaks[5]>slimePeaks[1]*1.3f);
+        check("Slime variant lookup stays in range",Sfx.slimeSquishId(-1)==Sfx.SLIME_SQUISH_0 && Sfx.slimeSquishId(99)==Sfx.SLIME_SQUISH_0+5);
         short[] thud = Sfx.build(Sfx.GATOR_PARRY);
         check("recorded parry is a short impact without recording silence",
                 thud.length>Sfx.RATE*.3f && thud.length<Sfx.RATE*.36f);

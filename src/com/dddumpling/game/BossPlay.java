@@ -172,6 +172,11 @@ final class BossPlay {
         return true;
     }
 
+    static void slimeSquish(GameCore c,int first,int count) {
+        int variant=first+(c.boss.slimeSoundSequence++ & 0x7fffffff)%count;
+        if(c.sound!=null)c.sound.slimeSquish(variant);
+    }
+
     static boolean promptImpact(GameCore c,GameCore.Shot s) {
         Boss b=c.boss;
         if(c.state!=GameCore.PLAY || c.dying() || !b.fighting() || b.kind!=s.promptKind
@@ -188,8 +193,7 @@ final class BossPlay {
         if(!divide)SlimeSpray.emit(c,s.tx,s.ty,s.tx-s.sx,s.ty-s.sy,b.body.rest*.5f,false);
         if(c.sound!=null) {
             if(divide)c.sound.divideDamage();
-            else if(s.promptSplit)c.sound.bossSplit();
-            else c.sound.boltPop();
+            else slimeSquish(c,s.promptSplit?2:0,2);
         }
         return true;
     }
@@ -283,7 +287,7 @@ final class BossPlay {
         if(c.boss.kind==Boss.SLIME)
             SlimeSpray.emit(c,x,y,sprayDX,sprayDY,L.enemyR*1.2f,true);
         if (c.sound != null) {
-            if (c.boss.kind == Boss.SLIME) c.sound.slimeDamage();
+            if (c.boss.kind == Boss.SLIME) slimeSquish(c,4,2);
             else if (c.boss.kind == Boss.OCTOPUS) c.sound.octoDamage();
             else c.sound.bossDamage();
         }

@@ -135,8 +135,10 @@ abstract class Check {
     static class Ear implements GameCore.Sound {
         float musicVolume, effectsVolume, squishVolume;
         public void volumes(float music,float effects) { musicVolume=music;effectsVolume=effects; }
-        int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeDamages, bossSplits,
+        int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeSquishes, slimeHits, slimeSplits, slimeDamages, bossSplits,
                 bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoDamages, octoWaves, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideSupernovas, divideBoings, swishes, lastSwish, ninjaChimes, zaps;
+        int lastSlimeSquish=-1;
+        final int[] slimeSquishCounts=new int[6];
         float bossCharge, maxBossCharge;
         float lastDivideBoingWeight = -1f;
         int collects;
@@ -193,7 +195,7 @@ abstract class Check {
         public void achievement() { achievements++; }
         public void bossLaugh() { bossLaughs++; }
         public void bossDamage() { bossDamages++; }
-        public void slimeDamage() { slimeDamages++; }
+        public void slimeSquish(int variant) { slimeSquishes++;lastSlimeSquish=variant;slimeSquishCounts[variant]++;if(variant<2)slimeHits++;else if(variant<4)slimeSplits++;else slimeDamages++; }
         public void bossSplit() { bossSplits++; }
         public void divideDamage() { divideDamages++; }
         public void divideSplit() { divideSplits++; }

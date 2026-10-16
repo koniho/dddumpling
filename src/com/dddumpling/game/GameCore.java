@@ -276,8 +276,8 @@ final class GameCore {
         void bossCharge(float charge);
         /** A damaging blow landed on a boss: a single large, wet bubble burst. */
         void bossDamage();
-        /** A Slime glob carried free: bright, cute bubbles instead of a heavy body hit. */
-        void slimeDamage();
+        /** A recorded Super Slime squish, from light contact through heavy damage and attacks. */
+        void slimeSquish(int variant);
         /** The slime chain tore a glob free: a taut, wet pop distinct from damage. */
         void bossSplit();
         /** Dark Divide was struck: a rounded bloop distinct from every other boss. */
@@ -3162,7 +3162,10 @@ final class GameCore {
                         : boss.kind == Boss.MUSHROOM && boss.mushroomCharge > 0f
                         ? 1f - boss.mushroomCharge / Boss.MUSHROOM_CHARGE_TIME : 0f;
                 sound.bossCharge(brew);
-                if (boss.launched && boss.kind != Boss.MUSHROOM) sound.bossLaugh();
+                if (boss.launched) {
+                    if(boss.kind==Boss.SLIME)BossPlay.slimeSquish(this,3,3);
+                    else if(boss.kind!=Boss.MUSHROOM)sound.bossLaugh();
+                }
                 if (boss.mushroomSporeCue) sound.mushroomSpore();
                 if (boss.boingWeight >= 0f) sound.divideBoing(boss.boingWeight);
                 if (boss.octoWave) sound.octoWave();

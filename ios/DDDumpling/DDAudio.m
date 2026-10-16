@@ -366,7 +366,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)achievement { [self playEffect:DDSfx_ACHIEVEMENT rate:1 gain:1]; }
 - (void)bossLaugh { [self playEffect:DDSfx_BOSS_LAUGH rate:1 gain:1]; }
 - (void)bossDamage { [self playEffect:DDSfx_BOSS_DAMAGE rate:.92f gain:.72f]; }
-- (void)slimeDamage { [self playEffect:DDSfx_SLIME_DAMAGE rate:1 gain:.76f]; }
+- (void)slimeSquishWithInt:(jint)variant { [self playEffect:[DDSfx slimeSquishIdWithInt:variant] rate:1 gain:DDSfx_SLIME_SQUISH_GAIN]; }
 - (void)bossSplit { [self playEffect:DDSfx_BOSS_SPLIT rate:1.08f gain:.68f]; }
 - (void)divideDamage { [self playEffect:DDSfx_DIVIDE_DAMAGE rate:1 gain:.76f]; }
 - (void)divideSplit { [self playEffect:DDSfx_DIVIDE_SPLIT rate:1 gain:.78f]; }
