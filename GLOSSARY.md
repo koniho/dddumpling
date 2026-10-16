@@ -370,10 +370,11 @@ Survival, Boss Time Attack, or boss encounters. One word cannot have both varian
 
 - Fog words contain at most three keys, retaining their stacked pips. Fog keeps the current head readable and shows future characters as muted silhouettes under mist, masking their colors
   and stack details. Fully clearing a prompt immediately reveals the next, with
-  long, thin layered wisps sliding at varied speeds past both ends of the remaining word.
-  Revealed keys gain their color and facial detail over 0.225 seconds without delaying input. The readable key
-  also has translucent cover. A wrong key restarts typing but keeps revealed prompts visible
-  and does not reset the receding fog.
+  long, thin layered wisps sliding at varied speeds past both ends of the whole word.
+  Revealed keys gain their color and facial detail over 0.225 seconds without delaying input, appearing
+  above the dense middle fog but beneath its lighter foreground veil. Revealing keys does not change
+  the fog bank; clearing the word pushes those existing strands sideways until they fade.
+  A wrong key restarts typing but keeps revealed prompts visible.
 - A glowing star around the final key marks a divebomb word, capped at three single-press keys.
   Reaching one unresolved tile immediately starts the dive, with one airy whoosh and a brief
   ring burst in that key's color at the launch point. There is no wind-up or near-line slowdown.

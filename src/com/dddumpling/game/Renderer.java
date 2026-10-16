@@ -255,9 +255,13 @@ final class Renderer extends Draw {
                 * (1f - 0.30f * destroy);
         int fade = (int) ((90 + 165 * e.enterT) * (1f - destroy));
         FastEnemies.clearBurst(p,c,e,L);
-        SwampEnemies.fog(p,c,e,L,jx,jy,swell,fade,false);
+        SwampEnemies.fog(p,c,e,L,0);
 
+        boolean fogWord=e.swampKind==SwampEnemies.FOG;
+        for(int depth=0;depth<(fogWord?2:1);depth++) {
+            if(depth==1)SwampEnemies.fog(p,c,e,L,1);
         for (int i = 0; i < e.word.length; i++) {
+            if(fogWord && (SwampEnemies.hidden(e,i)?0:1)!=depth)continue;
             int g = e.word[i];
             boolean starTile=FastEnemies.starTile(e,i);
             boolean head = (i == e.pos || e.linkWaiting) && destroy == 0f;
@@ -383,7 +387,8 @@ final class Renderer extends Draw {
                 caret(p, ix, y, cellR, Glyph.withAlpha(INK, 225));
             }
         }
-        SwampEnemies.fog(p,c,e,L,jx,jy,swell,fade,true);
+        }
+        SwampEnemies.fog(p,c,e,L,2);
     }
 
     /**

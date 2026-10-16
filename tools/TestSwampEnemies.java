@@ -11,6 +11,11 @@ final class TestSwampEnemies extends Check {
         GameCore.Enemy e=add(c,L,new int[]{0,1,4},y);
         e.swampKind=kind;e.speed=L.h*.08f;e.enterT=1;return e;
     }
+    private static int[] fogPixels(GameCore c,GameCore.Enemy e,Layout L) {
+        RasterPainter p=new RasterPainter((int)L.w,(int)L.h,1);p.clear(0);
+        for(int layer=0;layer<3;layer++)SwampEnemies.fog(p,c,e,L,layer);
+        return p.resolve();
+    }
     static void all(Layout L) {
         group("Swamp fog and divebomb words");
         GameCore c=scene(L,175);
@@ -85,7 +90,7 @@ final class TestSwampEnemies extends Check {
         check("retyping known prompts preserves the remaining fog",e.pos==1 && e.fogHead==1
                 && e.fogReveal==0 && SwampEnemies.hidden(e,2) && SwampEnemies.hidden(e,3));
         c.tapKey(1,L);
-        check("new progress resumes fog recession",e.fogHead==2 && e.fogReveal==SwampEnemies.REVEAL
+        check("new progress reveals the next key",e.fogHead==2 && e.fogReveal==SwampEnemies.REVEAL
                 && !SwampEnemies.hidden(e,2) && SwampEnemies.hidden(e,3));
         Layout small=new Layout();small.compute(393,852,0,30,0,20);
         GameCore render=scene(small,175);GameCore.Enemy a=word(render,small,SwampEnemies.FOG,300);
@@ -97,12 +102,26 @@ final class TestSwampEnemies extends Check {
         a.word[1]=5;a.word[2]=2;
         RasterPainter silhouettes=new RasterPainter(393,852,1);silhouettes.clear(0);Renderer.enemy(silhouettes,render,small,a);
         check("masked keys retain distinct silhouettes",!java.util.Arrays.equals(first,silhouettes.resolve()));
+        int[] unchangedFog=fogPixels(render,a,small);
         a.fogHead=1;a.fogReveal=SwampEnemies.REVEAL;
+        check("revealing a key does not replace or reshape fog layers",
+                java.util.Arrays.equals(unchangedFog,fogPixels(render,a,small)));
         check("new reveal begins in silhouette color",SwampEnemies.tintAmount(a,1)==1 && SwampEnemies.tintAmount(a,0)==0);
         a.fogReveal=SwampEnemies.REVEAL*.5f;
         check("reveal smoothly blends through color",Math.abs(SwampEnemies.tintAmount(a,1)-.5f)<.001f);
         a.fogReveal=0;
         check("reveal ends in full key color",SwampEnemies.tintAmount(a,1)==0);
+        check("completed reveal retains the full fog bank",
+                java.util.Arrays.equals(unchangedFog,fogPixels(render,a,small)));
+        a.clearX=render.enemyCentreX(a);a.clearY=a.y;a.destroyed=true;a.destroyT=0;
+        check("clear begins with the exact existing fog layers",
+                java.util.Arrays.equals(unchangedFog,fogPixels(render,a,small)));
+        a.destroyT=GameCore.DESTROY_TIME*.5f;
+        check("existing fog visibly disperses during clear",
+                !java.util.Arrays.equals(unchangedFog,fogPixels(render,a,small)));
+        a.destroyT=GameCore.DESTROY_TIME;
+        boolean empty=true;for(int pixel:fogPixels(render,a,small))empty&=(pixel&0xFFFFFF)==0;
+        check("dispersed fog leaves no residual layer",empty);
         GameCore botGame=scene(L,175);GameCore.Enemy fog=word(botGame,L,SwampEnemies.FOG,L.h*.4f);
         Bot bot=new Bot(10,.3f,0,false,175);
         for(int i=0;i<7;i++)bot.step(botGame,L,DT);

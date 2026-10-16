@@ -5,7 +5,6 @@ final class SwampEnemies {
     static final int NONE=0, FOG=1, DIVE=2;
     static final float REVEAL=.225f;
     static final float DIVE_BURST=.5f;
-    static final int MIST=0xFFB9D9CC;
     static final int FOG_INK=0xFF53636F;
     private SwampEnemies() {}
 
@@ -79,74 +78,51 @@ final class SwampEnemies {
         return e.y+e.diveSpeed*c.fallRate()*elapsed;
     }
 
-    /** One drifting bank wraps the word; its leading edge retreats after each clear. */
-    static void fog(Painter p,GameCore c,GameCore.Enemy e,Layout L,float jx,float jy,
-            float swell,int fade,boolean front) {
+    /** The same bank surrounds the whole row; keys reveal between its depth layers. */
+    static void fog(Painter p,GameCore c,GameCore.Enemy e,Layout L,int layer) {
         if(e.swampKind!=FOG)return;
-        if(e.destroyed) {disperse(p,e,L,front);return;}
-        int head=Math.min(e.fogHead,e.word.length-1);
-        float reveal=e.fogReveal/REVEAL;
-        float retreat=reveal*reveal*(3-2*reveal);
-        float r=L.enemyR*swell;
-        float x=c.tileX(e,head,L)+jx;
-        float left=x-r*2.5f;
-        if(head>0)left-=(x-jx-c.tileX(e,head-1,L))*retreat;
-        float right=c.tileX(e,e.word.length-1,L)+jx+r*2.5f;
-        float y=e.y+jy;
-        float clock=c.clock*2.2f+e.phase;
-        int alpha=fade;
-        if(!front) {
-            ribbon(p,left-r*.5f,right+r*.65f,y+r*.24f,r*.46f,clock*.7f,0xFF8ABDC4,alpha*42/255);
-            ribbon(p,left-r*.2f,right+r*.85f,y-r*.24f,r*.38f,-clock*.9f,0xFFB6E3D5,alpha*52/255);
-            return;
-        }
-        // Silhouettes show the future shapes while the sliding veil masks color and stack details.
-        if(head<e.word.length-1) {
-            float denseLeft=x+r*.25f-r*retreat*.6f;
+        float r=L.enemyR*(.62f+.38f*e.enterT);
+        float centre=e.destroyed?e.clearX:c.enemyCentreX(e);
+        float x=centre-(e.word.length-1)*L.enemyStep*.5f;
+        float left=x-r*2.5f,right=centre+(e.word.length-1)*L.enemyStep*.5f+r*2.5f;
+        float y=e.destroyed?e.clearY:e.y,clock=c.clock*2.2f+e.phase;
+        int alpha=(int)(90+165*e.enterT);
+        if(layer==0) {
+            fogRibbon(p,e,r,0,left-r*.5f,right+r*.65f,y+r*.24f,r*.46f,clock*.7f,0xFF8ABDC4,alpha*42/255);
+            fogRibbon(p,e,r,1,left-r*.2f,right+r*.85f,y-r*.24f,r*.38f,-clock*.9f,0xFFB6E3D5,alpha*52/255);
+        } else if(layer==1) {
+            // These denser strands sit over hidden silhouettes, beneath revealed keys.
             for(int k=0;k<4;k++) {
                 float drift=(float)Math.sin(clock*(.85f+k*.13f)+k*2)*r*.90f;
-                ribbon(p,denseLeft-r*.18f+drift,right+r*(.45f+k*.15f)+drift,
+                fogRibbon(p,e,r,2+k,left+r*.5f+drift,right+r*(.45f+k*.15f)+drift,
                         y+r*(-.49f+k*.31f+.12f*(float)Math.sin(clock*1.3f+k)),r*(.24f+(k%2)*.06f),clock*(k%2==0?.85f:-.7f)+k,
                         k%2==0?0xFFD8E9E6:0xFFD8E1F2,alpha*(64+k*6)/255);
             }
-        }
-        // Long overlapping striations keep the veil visible without a thick cloud silhouette.
-        for(int k=0;k<5;k++) {
-            float drift=(float)Math.sin(clock*(.65f+k*.12f)+k*1.7f)*r*.95f;
-            ribbon(p,left-r*(.55f+k*.06f)+drift,right+r*(.4f+(k%3)*.22f)+drift,
-                    y+r*(-.62f+k*.30f+.12f*(float)Math.sin(clock*.9f+k*2)),r*(.16f+(k%2)*.07f),clock*(k%2==0?1.1f:-.9f)+k*.8f,
-                    k%2==0?0xFFE5FFF4:0xFFEDF1FF,alpha*(45+(k%3)*8)/255);
-        }
-        for(int k=0;k<3;k++)ribbon(p,x-r*1.6f,x+r*(2.2f+k*.25f),
-                y+r*(-.38f+k*.38f),r*.25f,clock*(.9f+k*.1f)+k*1.5f,0xFFE5FFF4,alpha*76/255);
-        if(reveal>0 && head>0) {
-            float t=1-reveal,oldX=c.tileX(e,head-1,L)+jx;
-            for(int k=0;k<3;k++) {
-                float drift=r*(.3f+t*(1.2f+k*.35f));
-                ribbon(p,oldX+drift-r,oldX+drift+r*(1.5f+t),y-r*(.15f+k*.23f+t*.7f),
-                        r*(.13f-t*.06f),clock+k,k==1?0xFFEAF9F4:MIST,(int)(alpha*reveal*.32f));
+        } else {
+            // A lighter foreground veil stays above even the readable keys.
+            for(int k=0;k<5;k++) {
+                float drift=(float)Math.sin(clock*(.65f+k*.12f)+k*1.7f)*r*.95f;
+                fogRibbon(p,e,r,6+k,left-r*(.55f+k*.06f)+drift,right+r*(.4f+(k%3)*.22f)+drift,
+                        y+r*(-.62f+k*.30f+.12f*(float)Math.sin(clock*.9f+k*2)),r*(.16f+(k%2)*.07f),clock*(k%2==0?1.1f:-.9f)+k*.8f,
+                        k%2==0?0xFFE5FFF4:0xFFEDF1FF,alpha*(45+(k%3)*8)/255);
             }
+            for(int k=0;k<3;k++)fogRibbon(p,e,r,11+k,left+r*.9f,right-r*(.3f-k*.25f),
+                    y+r*(-.38f+k*.38f),r*.25f,clock*(.9f+k*.1f)+k*1.5f,0xFFE5FFF4,alpha*76/255);
         }
     }
 
-    private static void disperse(Painter p,GameCore.Enemy e,Layout L,boolean front) {
-        float t=e.destroyT/GameCore.DESTROY_TIME;
-        if(t<0 || t>=1)return;
-        float ease=1-(1-t)*(1-t),fade=(1-t)*(1-t),r=L.enemyR;
-        float half=L.wordWidth(e.word.length)*.5f+r*1.8f;
-        for(int side:new int[]{-1,1})for(int k=0;k<(front?5:2);k++) {
-            float drift=r*ease*(2.8f+k*.38f);
-            float centre=e.clearX+side*(half*.48f+drift);
-            float span=half*.55f+r*ease*(.8f+k*.12f);
-            // Open a clear gap at the impact while the outer wisps stretch and lift.
-            float inner=e.clearX+side*r*ease*(1.5f+k*.12f);
-            float left=side<0?centre-span:Math.max(inner,centre-span);
-            float right=side<0?Math.min(inner,centre+span):centre+span;
-            float y=e.clearY+r*((k-(front?2:.5f))*.32f-ease*(.4f+k*.14f));
-            ribbon(p,left,right,y,r*(front?.24f:.42f)*(1+ease*.6f),
-                    e.phase+k*1.7f+side*t*5,k%2==0?0xFFE5FFF4:0xFFBDDDEB,
-                    Math.min(255,(int)((front?100:65)*Fx.CLEAR_INTENSITY*fade)));
+    private static void fogRibbon(Painter p,GameCore.Enemy e,float r,int id,float left,float right,
+            float y,float radius,float phase,int color,int alpha) {
+        if(e.destroyed) {
+            float t=Math.min(1,e.destroyT/GameCore.DESTROY_TIME);
+            if(t>=1)return;
+            float ease=1-(1-t)*(1-t);
+            // Move the original strand intact, keeping its shape, phase and depth.
+            float drift=(id%2==0?-1:1)*r*ease*(4f+(id%3)*.65f);
+            left+=drift;right+=drift;y-=r*ease*(.25f+(id%4)*.12f);
+            alpha=(int)(alpha*(1-t)*(1-t));
         }
+        ribbon(p,left,right,y,radius,phase,color,alpha);
     }
 
     private static void ribbon(Painter p,float left,float right,float y,float radius,float phase,int color,int alpha) {
