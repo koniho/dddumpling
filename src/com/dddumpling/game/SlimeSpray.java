@@ -60,9 +60,9 @@ final class SlimeSpray {
                 d.shape[i*2]=q.x+(float)Math.cos(a)*r*lobe*inset*(1f+sin*drip*.22f);
                 d.shape[i*2+1]=q.y+sin*r*lobe*stretch*inset-(layer==1?r*.14f:0);
             }
-            p.fillPoly(d.shape,Glyph.withAlpha(layer==0?0xFF347D29:q.color,(int)((layer==0?210:235)*fade)));
+            p.fillPoly(d.shape,Glyph.withAlpha(layer==0?0xFF347D29:q.color,(int)((layer==0?70:110)*fade)));
         }
         p.fillEllipse(q.x-r*.27f,q.y-r*.34f*stretch,r*.24f,r*.13f,
-                Glyph.withAlpha(0xFFE8FFAE,(int)(200*fade)));
+                Glyph.withAlpha(0xFFE8FFAE,(int)(125*fade)));
     }
 }

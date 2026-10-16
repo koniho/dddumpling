@@ -75,6 +75,7 @@ final class Renderer extends Draw {
         p.restore();
         // The boss, behind the words: it is the backdrop of its stage and they are what is about to
         // hurt you, so they win every overlap.
+        for(GameCore.Particle q:c.particles)if(q.slime!=null)SlimeSpray.draw(p,q);
         BossScreen.body(p, c, L);
         // Dying, the words are the swirl instead of standing where they were.
         if (c.dying()) {
@@ -931,7 +932,7 @@ final class Renderer extends Draw {
     static void particles(Painter p, GameCore c) {
         for (int i = 0; i < c.particles.size(); i++) {
             GameCore.Particle q = c.particles.get(i);
-            if(q.slime!=null) {SlimeSpray.draw(p,q);continue;}
+            if(q.slime!=null)continue;
             float k = q.life / q.max;
             p.fillCircle(q.x, q.y, q.size * (0.4f + k * 0.6f),
                     Glyph.withAlpha(q.color, (int) (235 * k)));
