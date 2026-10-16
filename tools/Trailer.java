@@ -134,12 +134,12 @@ final class Trailer {
         final Map<String,Integer> sounds = new HashMap<String,Integer>();
         Mixer() {
             String[] names = {"clearWord","wrong","damage","achievement","bossLaugh","bossDamage",
-                    "slimeDamage","bossSplit","divideDamage","divideSplit","divideDeactivate","divideSupernova",
+                    "slimeSquish","bossSplit","divideDamage","divideSplit","divideDeactivate","divideSupernova",
                     "boltPop","boltDeath","shieldBounce","octoWave","octoCue","octoLock","mushroomShake",
                     "mushroomSpore","ninjaSwish","ninjaCombo","zap","collect","star","courseStart","tally",
                     "paradeJoin","rosterJoin","gameOver","gameStart","stageClear","powerClear","survivalGameOver","gatorParry"};
             int[] ids = {Sfx.CLEAR,Sfx.WRONG,Sfx.DRIP,Sfx.ACHIEVEMENT,Sfx.BOSS_LAUGH,Sfx.BOSS_DAMAGE,
-                    Sfx.SLIME_DAMAGE,Sfx.BOSS_SPLIT,Sfx.DIVIDE_DAMAGE,Sfx.DIVIDE_SPLIT,Sfx.DIVIDE_DEACTIVATE,Sfx.DIVIDE_SUPERNOVA,
+                    Sfx.SLIME_SQUISH_0,Sfx.BOSS_SPLIT,Sfx.DIVIDE_DAMAGE,Sfx.DIVIDE_SPLIT,Sfx.DIVIDE_DEACTIVATE,Sfx.DIVIDE_SUPERNOVA,
                     Sfx.BOLT_POP,Sfx.BOLT_DEATH,Sfx.SHIELD_BOUNCE,Sfx.OCTO_WAVE,Sfx.OCTO_CUE,Sfx.OCTO_LOCK,Sfx.MUSHROOM_SHAKE,
                     Sfx.MUSHROOM_SPORE,Sfx.NINJA_SWISH_0,Sfx.NINJA_COMBO,Sfx.ZAP,Sfx.COLLECT,Sfx.STAR,Sfx.COURSE,Sfx.TALLY,
                     Sfx.JOIN,Sfx.ROSTER_JOIN,Sfx.OVER,Sfx.START,Sfx.STAGE_CLEAR,Sfx.POWER_CLEAR,Sfx.SURVIVAL_OVER,Sfx.GATOR_PARRY};
@@ -149,12 +149,14 @@ final class Trailer {
             Integer id = sounds.get(method.getName());
             if (method.getName().equals("squish")) id = Sfx.SQUISH_0 + (Integer) args[0];
             if (method.getName().equals("ninjaSwish")) id = Sfx.ninjaSwishId((Integer) args[0]);
+            if (method.getName().equals("slimeSquish")) id = Sfx.slimeSquishId((Integer)args[0]);
             if (method.getName().equals("gatorTaunt")) id = Sfx.gatorTauntId((Integer)args[0]);
             if (method.getName().equals("gatorPrompt")) id = Sfx.gatorPromptId((Integer)args[0]);
             if (method.getName().equals("gatorSplash")) id = Sfx.GATOR_SPLASH;
             float gain=method.getName().equals("gatorPrompt")?Sfx.GATOR_PROMPT_GAIN
                     :method.getName().equals("gatorSplash")?Sfx.GATOR_SPLASH_GAIN
-                    :method.getName().equals("gatorTaunt")?Sfx.GATOR_TAUNT_GAIN:1f;
+                    :method.getName().equals("gatorTaunt")?Sfx.GATOR_TAUNT_GAIN
+                    :method.getName().equals("slimeSquish")?Sfx.SLIME_SQUISH_GAIN:1f;
             float rate=method.getName().equals("gatorSplash") && (Boolean)args[0]?Sfx.GATOR_ENTRY_RATE:1f;
             if (id != null) {
                 short[] pcm = Sfx.build(id);
