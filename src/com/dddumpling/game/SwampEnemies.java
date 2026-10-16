@@ -145,7 +145,7 @@ final class SwampEnemies {
             float y=e.clearY+r*((k-(front?2:.5f))*.32f-ease*(.4f+k*.14f));
             ribbon(p,left,right,y,r*(front?.24f:.42f)*(1+ease*.6f),
                     e.phase+k*1.7f+side*t*5,k%2==0?0xFFE5FFF4:0xFFBDDDEB,
-                    (int)((front?100:65)*fade));
+                    Math.min(255,(int)((front?100:65)*Fx.CLEAR_INTENSITY*fade)));
         }
     }
 

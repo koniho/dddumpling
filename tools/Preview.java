@@ -8,6 +8,17 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void clearIntensityFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("clear-intensity-"))return;
+        for(int age:new int[]{-1,0,300}) {
+            GameCore c=age<0?TestSwampEnemies.scene(L,149):TestSurvival.start(TestSurvival.store(),149);
+            c.survival.seconds=Math.max(0,age);c.clock=2;
+            GameCore.Enemy e=Check.add(c,L,new int[]{0,1,2},L.h*.44f);e.baseX=L.w*.5f;
+            c.destroyWord(e,c.enemyCentreX(e),e.y,L);e.destroyT=.12f;
+            Fx.updateParticles(c,.12f);
+            shot(dir,"clear-intensity-"+(age<0?"adventure":age),c,L,w,h,ss);
+        }
+    }
     private static void diveStarFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("dive-star-"))return;
         for(int state=0;state<4;state++) {
@@ -1500,6 +1511,7 @@ final class Preview {
         gatorSilhouetteFrames(dir,L,w,h,ss);
         alligatorFrames(dir,L,w,h,ss);
         swampEnemyFrames(dir,L,w,h,ss);
+        clearIntensityFrames(dir,L,w,h,ss);
         diveStarFrames(dir,L,w,h,ss);
         enemyClearFrames(dir,L,w,h,ss);
         fastEnemyFrames(dir,L,w,h,ss);

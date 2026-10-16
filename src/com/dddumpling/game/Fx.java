@@ -7,6 +7,7 @@ import java.util.Random;
  * rather than owning them, since a shot has to home in on a live enemy.
  */
 final class Fx {
+    static final int CLEAR_INTENSITY=3;
 
     private Fx() {}
 

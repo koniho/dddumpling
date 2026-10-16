@@ -3306,7 +3306,8 @@ final class GameCore {
         if (s.kill && e != null && enemies.contains(e) && !e.destroyed) {
             destroyWord(e, s.tx, s.ty, L);
         } else {
-            Fx.explode(this, rnd, s.tx, s.ty, L.enemyR * 0.7f, 7, Glyph.COLOR[s.glyph]);
+            if(e!=null)survival.wordBurst(this,s.tx,s.ty,L.enemyR*.7f,7,Glyph.COLOR[s.glyph]);
+            else Fx.explode(this,rnd,s.tx,s.ty,L.enemyR*.7f,7,Glyph.COLOR[s.glyph]);
         }
     }
 
@@ -3389,7 +3390,7 @@ final class GameCore {
         e.goneDx[i] = len > 1e-4f ? dx / len : 0f;
         e.goneDy[i] = len > 1e-4f ? dy / len : -1f;
         float tx = tileX(e, i, L);
-        Fx.explode(this, rnd, tx, e.y, L.enemyR * 0.9f, 6, Glyph.COLOR[e.word[i]]);
+        survival.wordBurst(this,tx,e.y,L.enemyR*.9f,6,Glyph.COLOR[e.word[i]]);
         skyGlow = Math.max(skyGlow, GLOW_HIT);
         skyGlowColor = Glyph.COLOR[e.word[i]];
 

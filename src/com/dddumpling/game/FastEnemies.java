@@ -114,8 +114,10 @@ final class FastEnemies {
         p.fillCircle(x,y,r*(1.5f+ease*2),Glyph.withAlpha(color,(int)(80*flash)));
         p.fillPoly(Draw.star(x,y,r*(1+ease*2.7f),r*(.3f+ease*.6f),5,-1.57f),
                 Glyph.withAlpha(light,(int)(200*flash)));
-        p.strokePoly(outline(x,y,r*(1+ease*2.5f)),Glyph.withAlpha(color,(int)(155*fade)),r*.16f*(1-t));
-        for(int i=0;i<14;i++) {
+        for(int ring=0;ring<Fx.CLEAR_INTENSITY;ring++)
+            p.strokePoly(outline(x,y,r*(1+ease*(2.5f+ring*.55f))),
+                    Glyph.withAlpha(ring%2==0?color:light,(int)(155*fade)),r*.16f*(1-t));
+        for(int i=0;i<14*Fx.CLEAR_INTENSITY;i++) {
             float angle=phase+i*2.39996f;
             float reach=r*(.65f+ease*(2.5f+(i%3)*.7f));
             float xx=x+(float)Math.cos(angle)*reach,yy=y+(float)Math.sin(angle)*reach;

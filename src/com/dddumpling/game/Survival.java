@@ -129,10 +129,12 @@ final class Survival extends Draw {
     }
     void wordBurst(GameCore c,float x,float y,float spread,int count,int color) {
         Fx.explode(c,c.rnd,x,y,spread,count,color);
-        if(!active)return;
+        // Cosmetic amplification must not consume gameplay randomness.
         if(c.particles.size()>4096)c.particles.subList(0,c.particles.size()-4096).clear();
-        // Extra spectacle has its own RNG so difficulty does not change with particle density.
-        int extra=Math.min(Math.round(count*9*ramp()),Math.max(0,4096-c.particles.size()));
+        int baseline=Math.min(count*(Fx.CLEAR_INTENSITY-1),Math.max(0,4096-c.particles.size()));
+        Fx.explode(c,effects,x,y,spread,baseline,color);
+        if(!active)return;
+        int extra=Math.min(Math.round(count*Fx.CLEAR_INTENSITY*9*ramp()),Math.max(0,4096-c.particles.size()));
         Fx.explode(c,effects,x,y,spread*(1f+.8f*ramp()),extra,Glyph.withAlpha(color,175));
     }
     void scenery(Painter p,GameCore c,Layout L) {

@@ -496,6 +496,15 @@ final class TestSurvival extends Check {
         GameCore.Enemy a=add(calm,L,new int[]{0,1,2},L.h*.4f);
         GameCore.Enemy b=add(vivid,L,new int[]{0,1,2},L.h*.4f);
         calm.destroyWord(a,a.baseX,a.y,L);vivid.destroyWord(b,b.baseX,b.y,L);
+        check("Survival starts with triple the original clear particles",calm.particles.size()==(3+8+3*4)*3);
+        GameCore adventure=new GameCore(new Mem(),155);adventure.startGame();adventure.particles.clear();
+        GameCore.Enemy ordinary=add(adventure,L,new int[]{0,1,2},L.h*.4f);
+        adventure.destroyWord(ordinary,ordinary.baseX,ordinary.y,L);
+        check("Adventure and fresh Survival share the amplified baseline",adventure.particles.size()==calm.particles.size());
+        GameCore baseline=new GameCore(new Mem(),155);baseline.rnd.setSeed(900);adventure.rnd.setSeed(900);
+        Fx.explode(baseline,baseline.rnd,0,0,L.enemyR,7,Draw.GOLD);
+        adventure.survival.wordBurst(adventure,0,0,L.enemyR,7,Draw.GOLD);
+        check("baseline amplification preserves the original gameplay RNG sequence",baseline.rnd.nextLong()==adventure.rnd.nextLong());
         check("maximum Survival clears emit ten times the particles",vivid.particles.size()==calm.particles.size()*10);
         check("explosion intensity cannot alter gameplay RNG",vivid.rnd.nextLong()==calm.rnd.nextLong());
         for(int i=0;i<60;i++)vivid.survival.wordBurst(vivid,L.w*.5f,L.h*.5f,L.enemyR,20,Draw.GOLD);
