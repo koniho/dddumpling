@@ -310,7 +310,7 @@ final class BossScreen extends Draw {
         }
 
         slimeEmblem(p,skin,cx,cy,fade);
-        if(defeated) {slimeDizzyFace(p,cx,cy,rx,ry,clock,fade);return;}
+        if(defeated)return; // The defeat pass places its face within the settled frame.
 
         // The reference face: two deep green button eyes with crisp reflected light.
         float eyeY = cy - ry * (vulnerable ? 0.07f : 0.10f), eyeDX = rx * 0.35f;
@@ -349,7 +349,7 @@ final class BossScreen extends Draw {
         }
     }
 
-    private static void slimeDizzyFace(Painter p,float cx,float cy,float rx,float ry,float clock,float fade) {
+    static void slimeDizzyFace(Painter p,float cx,float cy,float rx,float ry,float clock,float fade) {
         int ink=Glyph.withAlpha(0xFF154F19,(int)(245*fade));
         for(int side=-1;side<=1;side+=2) {
             float ex=cx+side*rx*.35f,ey=cy-ry*.12f;

@@ -155,6 +155,29 @@ final class TestBoss extends Check {
         check("the splayed emblem remains within the splat width",attached);
         check("the body is fully faded by reward handoff",SlimeDeath.opacity(Boss.LEAVE)==0f);
         b.leave();check("leaving releases the saved death skin",b.slimeDeath==null);
+        for(int shape=0;shape<3;shape++) {
+            GameCore stretchedGame=shape==0?slimeAfterDrag(L,0f):enterBoss(L,Boss.SLIME,193);
+            Boss boss=stretchedGame.boss;
+            if(shape!=0) {
+                boss.body.reset(L.w*.5f,L.h*.3f,L.enemyR*2,shape==1?.15f:5f);
+                boss.damage(boss.hp);
+            }
+            boss.leaveT=Boss.LEAVE-SlimeDeath.SPLAT_AT;
+            SlimeDeath frame=new SlimeDeath(null,boss,L,1);
+            float[] outline=frame.points(frame.pose.skin);
+            float center=L.playTop+(L.dangerY-L.playTop)*.36f;
+            for(float offset:new float[]{-.1f,0,.1f}) {
+                float row=center+L.h*offset,left=Float.MAX_VALUE,right=-left;
+                for(int i=0;i<outline.length;i+=2) {
+                    int j=(i+2)%outline.length;
+                    if((outline[i+1]>row)==(outline[j+1]>row))continue;
+                    float x=outline[i]+(outline[j]-outline[i])*(row-outline[i+1])/(outline[j+1]-outline[i+1]);
+                    left=Math.min(left,x);right=Math.max(right,x);
+                }
+                check("stretched death fills the frame through its middle "+shape+" / "+offset,
+                        right-left>L.w*.52f && right-left<L.w*.62f);
+            }
+        }
     }
 
     static void renderEffects(Layout L) {

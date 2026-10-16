@@ -10,12 +10,14 @@ import java.io.File;
 final class Preview {
     private static void slimeDeathFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("193-slime-death-"))return;
-        for(boolean drag:new boolean[]{false,true})for(float time:new float[]{0,.3f,.8f,1.4f,2.1f,2.8f,3.4f}) {
+        for(int shape=0;shape<3;shape++)for(float time:new float[]{0,.3f,.8f,1.4f,2.1f,2.8f,3.4f}) {
+            boolean drag=shape==1;
             GameCore c=drag?TestBoss.slimeAfterDrag(L,0f):TestBoss.enterBoss(L,Boss.SLIME,193);
             c.stageBanner=0;
+            if(shape==2)c.boss.body.reset(L.w*.5f,L.h*.3f,L.enemyR*2,.15f);
             if(!drag)c.boss.damage(c.boss.hp);
             step(c,L,time);
-            shot(dir,"193-slime-death-"+(drag?"drag-":"")+Math.round(time*1000),c,L,w,h,ss);
+            shot(dir,"193-slime-death-"+(drag?"drag-":shape==2?"skinny-":"")+Math.round(time*1000),c,L,w,h,ss);
         }
     }
 
