@@ -374,6 +374,11 @@ final class TestAudio extends Check {
         check("arm spring decays cleanly", armTail < armHead / 4 && Math.abs(arm[arm.length-1]) < 10);
         check("arm damage is distinct from the attack recording", arm != Sfx.build(Sfx.OCTO_WAVE));
 
+        short[] thud = Sfx.build(Sfx.GATOR_PARRY);
+        check("recorded parry is a short impact without recording silence",
+                thud.length>Sfx.RATE*.3f && thud.length<Sfx.RATE*.36f);
+        check("recorded parry edges avoid clicks",thud[0]==0 && thud[thud.length-1]==0);
+        check("Gator parry does not replace projectile interception",thud!=Sfx.build(Sfx.BOLT_POP));
         short[] wave = Sfx.build(Sfx.OCTO_WAVE);
         check("recorded wave keeps both sounds within two seconds",
                 wave.length > Sfx.RATE * 1.9f && wave.length <= Sfx.RATE * 2);

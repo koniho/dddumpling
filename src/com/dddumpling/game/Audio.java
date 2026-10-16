@@ -416,6 +416,7 @@ final class Audio implements GameCore.Sound {
     }
 
     @Override public void shieldBounce() { play(Sfx.SHIELD_BOUNCE, 1f, 0.72f); }
+    @Override public void gatorParry() { play(Sfx.GATOR_PARRY, 1f); }
     @Override public void slimeDamage() { play(Sfx.SLIME_DAMAGE, 1f, 0.76f); }
     @Override public void octoWave() { play(Sfx.OCTO_WAVE, 1f, Sfx.OCTO_WAVE_GAIN); }
     @Override public void octoDamage() { play(Sfx.OCTO_DAMAGE, 1f, .82f); }

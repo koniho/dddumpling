@@ -127,3 +127,17 @@ Cuts within 100 ms share a sound; only played cues advance the three-take rotati
 There is no deferred audio queue or gameplay RNG use. Pause holds the cooldown;
 completion, death, and restart clear it. `Sfx` boosts the audition PCM by 4×
 (about 12 dB), preserving its filtering and fades with peaks below 70% full scale.
+
+# Gummy Gator parry impact
+
+Source: user-supplied `Thud.m4a` from Downloads on 2026-10-15, explicitly requested
+for Gummy Gator's parry impact. This is not a CC0 library asset. Original SHA-256:
+`005a0a0ab7899377e0c89a192adc3d28f2779e4358ec24fcbb861ae1798478f9`.
+The original remains in Downloads and is not checked into the repository.
+
+Run `python3 tools/prepare-gator-parry.py /path/to/Thud.m4a` to regenerate
+`GatorParryRecording.java` and the local audition `build/gator-parry.wav`.
+The 0.685–1.015s excerpt removes the silent lead and tail, with 2ms/15ms edge fades,
+mono 22,050 Hz PCM and an 85% peak. Pitch and playback speed are unchanged.
+The shared PCM plays once at visible companion/limb contact on Android and iOS;
+interrupted flights drop the pending sound. Other projectile impacts retain their cues.

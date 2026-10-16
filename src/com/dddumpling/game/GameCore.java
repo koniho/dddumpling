@@ -296,6 +296,8 @@ final class GameCore {
         void boltDeath();
         /** A player projectile ricocheted from the Slime boss shield. */
         void shieldBounce();
+        /** Recorded impact at the companion's contact with Gummy Gator's limb. */
+        void gatorParry();
         default void octoWave() {}
         default void octoDamage() {}
         void octoCue();

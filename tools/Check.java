@@ -206,6 +206,8 @@ abstract class Check {
         public void boltPop() { boltPops++; }
         public void boltDeath() { boltDeaths++; }
         public void shieldBounce() { shieldBounces++; }
+        int gatorParries;
+        public void gatorParry() { gatorParries++; }
         public void octoDamage() { octoDamages++; }
         public void octoWave() { octoWaves++; }
         public void octoCue() { octoCues++; }

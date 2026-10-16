@@ -127,7 +127,7 @@ final class AlligatorGuard extends Draw {
         for(int i=0;i<impactParticles.length;i++)if(impactParticles[i]!=null) {
             c.particles.add(impactParticles[i]);impactParticles[i]=null;
         }
-        if(c.sound!=null) {c.sound.boltPop();if(openingCue)c.sound.uiBloop();}
+        if(c.sound!=null) {c.sound.gatorParry();if(openingCue)c.sound.uiBloop();}
         openingCue=false;
     }
     void beginGesture() {newStroke=true;}

@@ -34,7 +34,8 @@ final class Sfx {
             CART_ROLL = MINING_CHEER + 1, CART_SQUEAL = CART_ROLL + 1, CART_TUMBLE = CART_SQUEAL + 1,
             OCTO_DAMAGE = CART_TUMBLE + 1, SCORE_RESET_CONFIRM = OCTO_DAMAGE + 1,
             SCORE_RESET_BRUSH = SCORE_RESET_CONFIRM + 1, NINJA_SWISH_1 = SCORE_RESET_BRUSH + 1, NINJA_SWISH_2 = NINJA_SWISH_1 + 1,
-            NINJA_COMBO = NINJA_SWISH_2 + 1, SURVIVAL_OVER = NINJA_COMBO + 1, COUNT = SURVIVAL_OVER + 1;
+            NINJA_COMBO = NINJA_SWISH_2 + 1, SURVIVAL_OVER = NINJA_COMBO + 1,
+            GATOR_PARRY = SURVIVAL_OVER + 1, COUNT = GATOR_PARRY + 1;
     static final float OCTO_WAVE_GAIN = .66f;
     static final float NINJA_COMBO_GAIN = .25f;
 
@@ -109,6 +110,7 @@ final class Sfx {
             case JOIN: return join();
             case OVER: return over();
             case SURVIVAL_OVER: return survivalOver();
+            case GATOR_PARRY: return GatorParryRecording.build();
             case BOSS_LAUGH: return bossLaugh();
             case BOSS_DAMAGE: return bossDamage();
             case BOSS_SPLIT: return bossSplit();

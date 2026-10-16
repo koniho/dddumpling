@@ -133,25 +133,25 @@ final class TestAlligator extends Check {
             ready(c,L);int score=c.score,particles=c.particles.size();c.shake=0;c.bossDeathHaptic=0;
             block(c,L);AlligatorGuard g=c.boss.alligator.guard;
             check("swipe protects and scores immediately but waits for visible contact "+hz,
-                    c.score>score && c.boss.alligator.blocked && ear.boltPops==0 && c.shake==0
+                    c.score>score && c.boss.alligator.blocked && ear.gatorParries==0 && c.shake==0
                     && c.bossDeathHaptic==0 && c.particles.size()==particles && g.impactAge==g.impactDuration && g.colorPulse()==0);
             for(int tick=0;tick<hz;tick++) {
                 g.update(1f/hz);g.feedback(c);
                 if(g.flightAge<AlligatorGuard.TRAVEL)check("no feedback before arrival "+hz+"/"+tick,
-                        ear.boltPops==0 && c.particles.size()==particles && g.colorPulse()==0);
+                        ear.gatorParries==0 && c.particles.size()==particles && g.colorPulse()==0);
                 if(g.flightAge>=AlligatorGuard.TRAVEL && g.flightAge<AlligatorGuard.TRAVEL+1f/hz)
                     check("color flash starts on collision frame "+hz,g.colorPulse()>.6f);
                 if(g.flightAge>=AlligatorGuard.TRAVEL+AlligatorGuard.CONTACT_FLASH)
                     check("color flash ends after half second "+hz+"/"+tick,g.colorPulse()==0);
             }
             check("contact releases sound shake haptic and particles exactly once "+hz,
-                    ear.boltPops==1 && ear.uiBloops==1 && c.shake>=.38f && c.bossDeathHaptic==1
+                    ear.gatorParries==1 && ear.boltPops==0 && ear.uiBloops==1 && c.shake>=.38f && c.bossDeathHaptic==1
                     && c.particles.size()==particles+12);
             for(boolean damage:new boolean[]{false,true}) {
                 c=fight(L);ear=new Ear();c.sound=ear;block(c,L);g=c.boss.alligator.guard;
                 if(damage)g.returnHome();else c.boss.leave();
                 g.update(1);g.feedback(c);
-                check("interrupted flight drops delayed feedback "+damage+"/"+hz,ear.boltPops==0 && c.particles.isEmpty());
+                check("interrupted flight drops delayed feedback "+damage+"/"+hz,ear.gatorParries==0 && c.particles.isEmpty());
             }
         }
     }
