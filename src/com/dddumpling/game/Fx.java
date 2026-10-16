@@ -33,10 +33,14 @@ final class Fx {
 
     static void explode(GameCore c, Random rnd, float x, float y, float spread, int n,
             int color) {
+        explode(c,rnd,x,y,spread,n,color,1f);
+    }
+
+    static void explode(GameCore c,Random rnd,float x,float y,float spread,int n,int color,float travel) {
         for (int i = 0; i < n; i++) {
             GameCore.Particle p = new GameCore.Particle();
             double a = rnd.nextFloat() * 6.283f;
-            float v = spread * (2.5f + rnd.nextFloat() * 4f);
+            float v = spread * travel * (2.5f + rnd.nextFloat() * 4f);
             p.x = x;
             p.y = y;
             p.vx = v * (float) Math.cos(a);

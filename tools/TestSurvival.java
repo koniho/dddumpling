@@ -491,6 +491,23 @@ final class TestSurvival extends Check {
         }
     }
     private static void effects(Layout L) {
+        for(boolean survival:new boolean[]{false,true}) {
+            float previous=0;
+            for(int length:new int[]{1,3,7}) {
+                GameCore c=start(store(),155);c.survival.active=survival;
+                int[] word=new int[length];for(int i=0;i<length;i++)word[i]=i%6;
+                GameCore.Enemy e=add(c,L,word,L.h*.4f);
+                c.destroyWord(e,e.baseX,e.y,L);
+                float speed=0;
+                for(int i=0;i<length+8;i++) {
+                    GameCore.Particle p=c.particles.get(i);
+                    speed+=Math.hypot(p.vx,p.vy);
+                }
+                speed/=length+8;
+                check("longer words spread clear particles farther "+survival+"/"+length,speed>previous*1.15f);
+                previous=speed;
+            }
+        }
         GameCore calm=start(store(),155),vivid=start(store(),155);
         vivid.survival.seconds=Survival.RAMP_SECONDS;
         GameCore.Enemy a=add(calm,L,new int[]{0,1,2},L.h*.4f);

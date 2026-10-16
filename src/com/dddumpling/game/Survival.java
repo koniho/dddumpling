@@ -128,14 +128,17 @@ final class Survival extends Draw {
         return (hash&0xffff)/65535f;
     }
     void wordBurst(GameCore c,float x,float y,float spread,int count,int color) {
-        Fx.explode(c,c.rnd,x,y,spread,count,color);
+        wordBurst(c,x,y,spread,count,color,1f);
+    }
+    void wordBurst(GameCore c,float x,float y,float spread,int count,int color,float travel) {
+        Fx.explode(c,c.rnd,x,y,spread,count,color,travel);
         // Cosmetic amplification must not consume gameplay randomness.
         if(c.particles.size()>4096)c.particles.subList(0,c.particles.size()-4096).clear();
         int baseline=Math.min(count*(Fx.CLEAR_INTENSITY-1),Math.max(0,4096-c.particles.size()));
-        Fx.explode(c,effects,x,y,spread,baseline,color);
+        Fx.explode(c,effects,x,y,spread,baseline,color,travel);
         if(!active)return;
         int extra=Math.min(Math.round(count*Fx.CLEAR_INTENSITY*9*ramp()),Math.max(0,4096-c.particles.size()));
-        Fx.explode(c,effects,x,y,spread*(1f+.8f*ramp()),extra,Glyph.withAlpha(color,175));
+        Fx.explode(c,effects,x,y,spread*(1f+.8f*ramp()),extra,Glyph.withAlpha(color,175),travel);
     }
     void scenery(Painter p,GameCore c,Layout L) {
         float intensity=ramp(),width=L.w/(3f+21f*intensity),radius=width*.5f;

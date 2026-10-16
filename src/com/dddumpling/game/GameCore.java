@@ -3354,10 +3354,12 @@ final class GameCore {
         if (target == e) target = null;
         computeFlyDirs(e, L);
 
+        // Longer rows throw their clear particles farther without inflating every mote.
+        float clearTravel=1f+.25f*Math.min(6,e.word.length-1);
         survival.wordBurst(this, enemyCentreX(e), e.y, L.enemyR * 1.5f, e.word.length + 8,
-                0xFFFFFFFF);
+                0xFFFFFFFF,clearTravel);
         for (int i = 0; i < e.word.length; i++) {
-            survival.wordBurst(this, px, py, L.enemyR, 4, Glyph.COLOR[e.word[i]]);
+            survival.wordBurst(this, px, py, L.enemyR, 4, Glyph.COLOR[e.word[i]],clearTravel);
         }
         shake = Math.max(shake, 0.30f);
         // Clearing a word flashes the screen and floods the sky yellow.

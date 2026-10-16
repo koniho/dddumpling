@@ -8,6 +8,17 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void clearSpreadFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("clear-spread-"))return;
+        for(int length:new int[]{1,3,7}) {
+            GameCore c=TestSwampEnemies.scene(L,149);c.clock=2;
+            int[] word=new int[length];for(int i=0;i<length;i++)word[i]=i%6;
+            GameCore.Enemy e=Check.add(c,L,word,L.h*.44f);e.baseX=L.w*.5f;
+            c.destroyWord(e,c.enemyCentreX(e),e.y,L);e.destroyT=.2f;
+            for(int i=0;i<12;i++)Fx.updateParticles(c,1f/60);
+            shot(dir,"clear-spread-"+length,c,L,w,h,ss);
+        }
+    }
     private static void clearIntensityFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("clear-intensity-"))return;
         for(int age:new int[]{-1,0,300}) {
@@ -1511,6 +1522,7 @@ final class Preview {
         gatorSilhouetteFrames(dir,L,w,h,ss);
         alligatorFrames(dir,L,w,h,ss);
         swampEnemyFrames(dir,L,w,h,ss);
+        clearSpreadFrames(dir,L,w,h,ss);
         clearIntensityFrames(dir,L,w,h,ss);
         diveStarFrames(dir,L,w,h,ss);
         enemyClearFrames(dir,L,w,h,ss);
