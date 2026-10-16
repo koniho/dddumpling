@@ -1727,7 +1727,7 @@ final class BossScreen extends Draw {
     static void burst(Painter p, GameCore c, Layout L) {
         Boss b = c.boss;
         if (!b.active() || !b.beaten || b.body == null || b.kind == Boss.SPLITTER
-                || b.kind == Boss.MUSHROOM) return;
+                || b.kind == Boss.MUSHROOM || b.kind == Boss.ALLIGATOR) return;
         float t = b.leaveProgress();
         float cx = b.body.centreX(), cy = b.body.centreY();
         float r = b.body.radius();

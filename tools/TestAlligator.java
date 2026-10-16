@@ -1,6 +1,34 @@
 package com.dddumpling.game;
 
 final class TestAlligator extends Check {
+    private static void endingPresentation(Layout L) {
+        group("gator victory and water exit");
+        for(int arm=0;arm<2;arm++) {
+            float minX=L.w,maxX=0,minY=L.h,maxY=0;
+            for(int frame=0;frame<120;frame++) {
+                float x=AlligatorAtmosphere.waveX(L,arm,frame/60f);
+                float y=AlligatorAtmosphere.waveY(L,arm,frame/60f);
+                minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
+            }
+            check("victory arm sweeps broadly without leaving the screen "+arm,
+                    maxX-minX>L.w*.22f && maxY-minY>(L.dangerY-L.playTop)*.26f
+                    && minX>=L.w*.09f && maxX<=L.w*.91f);
+        }
+        check("defeated pose holds before the fall",AlligatorAtmosphere.offset(L,.5f)==0);
+        check("fall accelerates into the water",AlligatorAtmosphere.offset(L,1.6f)-AlligatorAtmosphere.offset(L,1.2f)
+                >AlligatorAtmosphere.offset(L,1.2f)-AlligatorAtmosphere.offset(L,.8f));
+        check("body is submerged before the last splash fades",
+                AlligatorAtmosphere.offset(L,AlligatorAtmosphere.SUBMERGED_AT)>AlligatorAtmosphere.waterY(L));
+        GameCore c=fight(L),same=fight(L);c.lives=same.lives=1;
+        c.takeHit(L.w*.5f,L);same.takeHit(L.w*.5f,L);
+        Boss b=c.bossVictory;float tip=b.alligator.tipX,age=b.age,cx=b.body.centreX();
+        RasterPainter p=new RasterPainter((int)L.w,(int)L.h,1);
+        c.clock=1;c.deathT=c.deathDuration()-1;
+        BossVictory.draw(p,c,L);
+        check("victory art leaves the retained fight and gameplay RNG untouched",
+                b.alligator.tipX==tip && b.age==age && b.body.centreX()==cx
+                && c.rnd.nextLong()==same.rnd.nextLong());
+    }
     static GameCore fight(Layout L) {
         GameCore c=new GameCore(TestTimeAttack.store(),168,true);c.startGame();
         c.enemies.clear();c.power=null;c.modeLeft=0;
@@ -809,6 +837,7 @@ final class TestAlligator extends Check {
         check("boss defeat cancels demonstration immediately",!a.showoff() && a.takeAttackCues()==0 && a.takeShake()==0);
     }
     static void impactFeedback(Layout L) {
+        endingPresentation(L);
         group("gator screen impacts");
         for(int hz:new int[]{30,60,120}) {
             GameCore c=fight(L);c.boss.intro=c.boss.introDuration();c.shake=0;

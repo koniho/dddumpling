@@ -52,6 +52,7 @@ src/com/dddumpling/game/SwampEnemies.java
 src/com/dddumpling/game/GatorReplay.java
 src/com/dddumpling/game/GatorCompanion.java
 src/com/dddumpling/game/AlligatorArrival.java
+src/com/dddumpling/game/AlligatorAtmosphere.java
 src/com/dddumpling/game/AlligatorGuard.java
 src/com/dddumpling/game/Alligator.java
 src/com/dddumpling/game/AlligatorArt.java

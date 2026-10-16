@@ -64,6 +64,23 @@ final class Preview {
     }
 
     private static void alligatorFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(wanted("gator-final-")) {
+            for(float at:new float[]{.25f,.7f,1.2f,1.65f,2.05f,2.5f,3.3f}) {
+                GameCore ending=TestAlligator.fight(L);ending.stageBanner=0;ending.landBlend=1;
+                ending.boss.damage(ending.boss.hp);TestAlligator.advance(ending,L,at);ending.clock=at;
+                shot(dir,"gator-final-defeat-"+Math.round(at*100),ending,L,w,h,ss);
+            }
+            GameCore win=TestAlligator.fight(L);win.stageBanner=0;win.landBlend=1;win.lives=1;
+            win.takeHit(L.w*.5f,L);
+            for(float at:new float[]{.4f,.7f,1f,1.4f}) {
+                win.clock=at;win.deathT=win.deathDuration()-at;
+                shot(dir,"gator-final-taunt-"+Math.round(at*100),win,L,w,h,ss);
+            }
+            GameCore flies=TestAlligator.fight(L);flies.stageBanner=0;flies.landBlend=1;
+            for(float at:new float[]{0f,1.2f,2.4f}) {
+                flies.clock=at;shot(dir,"gator-final-fireflies-"+Math.round(at*100),flies,L,w,h,ss);
+            }
+        }
         for(float at:new float[]{.08f,.16f,.22f,.30f,.41f,.66f,.90f,1.70f}) {
             GameCore parry=TestAlligator.fight(L);parry.stageBanner=0;parry.landBlend=1;parry.companion.begin(6);
             TestAlligator.block(parry,L);TestAlligator.advance(parry,L,at);

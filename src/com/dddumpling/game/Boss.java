@@ -2417,7 +2417,7 @@ final class Boss {
                 // Shared death morph: gravity wins while the body is carried toward the player.
                 // Pulling below its travelling centre makes the silhouette neck, sag and melt.
                 float melt = defeatMelt();
-                if (kind == OCTOPUS || kind == MUSHROOM) body.letGo();
+                if (kind == OCTOPUS || kind == MUSHROOM || kind == ALLIGATOR) body.letGo();
                 else if (melt > 0f) body.pull(body.centreX(), L.h + bodyR(L) * 2.5f,
                         0.11f + melt * 0.29f);
                 body.jiggle = kind == MUSHROOM ? JIGGLE[kind] * (1f - leaveProgress())
@@ -2454,7 +2454,7 @@ final class Boss {
                 else mushroomStem.letGo();
                 mushroomStem.update(dt);
             }
-            if (beaten && kind != OCTOPUS && kind != MUSHROOM) {
+            if (beaten && kind != OCTOPUS && kind != MUSHROOM && kind != ALLIGATOR) {
                 float from = defeatStartW > 0f ? defeatStartW : body.spanX();
                 body.fitWidth(from + (L.w * 0.90f - from) * defeatStretch());
             }
