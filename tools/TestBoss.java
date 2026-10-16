@@ -136,9 +136,13 @@ final class TestBoss extends Check {
         b.leaveT=Boss.LEAVE-SlimeDeath.SPLAT_AT;
         SlimeDeath wide=new SlimeDeath(null,b,L,1f);
         float[] spread=wide.points(pose.skin);
-        float min=Float.MAX_VALUE,max=-min;
-        for(int i=0;i<spread.length;i+=2) {min=Math.min(min,spread[i]);max=Math.max(max,spread[i]);}
-        check("splat covers nearly the full playfield width",max-min>(L.playRight-L.playLeft)*.85f);
+        float min=Float.MAX_VALUE,max=-min,top=min,bottom=max;
+        for(int i=0;i<spread.length;i+=2) {
+            min=Math.min(min,spread[i]);max=Math.max(max,spread[i]);
+            top=Math.min(top,spread[i+1]);bottom=Math.max(bottom,spread[i+1]);
+        }
+        check("death blob fills about sixty percent of screen width",max-min>L.w*.57f && max-min<L.w*.63f);
+        check("death blob retains about forty percent of screen height",bottom-top>L.h*.34f && bottom-top<L.h*.42f);
         float lower=wide.y(pose.mx,pose.my+pose.halfH);
         b.leaveT=Boss.LEAVE-2.8f;
         SlimeDeath drip=new SlimeDeath(null,b,L,1f);

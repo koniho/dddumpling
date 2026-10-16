@@ -35,8 +35,8 @@ final class SlimeDeath extends OpacityPainter {
 
     float x(float x,float y) {
         float u=(x-pose.mx)/pose.halfW,v=(y-pose.my)/pose.halfH;
-        float target=layout.w*.5f+u*(layout.playRight-layout.playLeft)*.47f
-                *(1f+.035f*(float)Math.sin(v*8f+u*4f))*(1f-drip*.04f);
+        float target=layout.w*.5f+u*layout.w*.30f
+                *(1f+.02f*(float)Math.sin(v*8f+u*4f))*(1f-drip*.02f);
         return x+(target-x)*spread;
     }
 
@@ -45,9 +45,9 @@ final class SlimeDeath extends OpacityPainter {
         float height=layout.dangerY-layout.playTop;
         float lower=Math.max(0f,Math.min(1f,(v+.1f)/1.1f));
         float finger=(float)Math.pow(.5f+.5f*Math.sin(u*10f+1f),3);
-        float target=layout.playTop+height*.36f+v*height*.13f
-                +height*.025f*(float)Math.sin(u*9f)*lower
-                +height*drip*(.07f+.28f*finger)*lower*lower+height*.12f*drip*drip;
+        float target=layout.playTop+height*.36f+v*layout.h*.185f
+                +layout.h*.005f*(float)Math.sin(u*9f)*lower
+                +layout.h*drip*(.006f+.032f*finger)*lower*lower+layout.h*.025f*drip*drip;
         return y+(target-y)*spread;
     }
 
