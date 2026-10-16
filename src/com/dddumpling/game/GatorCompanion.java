@@ -50,52 +50,89 @@ final class GatorCompanion extends Draw {
         Painter p=new OpacityPainter(painter,fade);
         if(!known)p=new Silhouette(p);
         float bob=(float)Math.sin(clock*2.6f),wag=(float)Math.sin(clock*4.1f);
-        float bx=x+r*(a==null?bob*.025f:a.body.centreX()*.45f),by=y+r*.33f;
+        int edge=0xFF347D67,mint=0xFF71D5A0,light=0xFFB7F0BF;
+        float bx=x+r*(a==null?bob*.025f:a.body.centreX()*.45f),by=y+r*.39f;
         float sx=a==null?1:a.body.radiusX(),sy=a==null?1:a.body.radiusY();
         float tailBounce=a==null?wag*.10f:a.tail.centreY()+(.95f-a.tail.radiusY())*.2f;
-        AlligatorArt.limb(p,bx+r*.27f,by+r*.12f,x+r*.89f,y+r*(.44f+tailBounce),r*.115f,true,
-                0xFF65BD87,clock);
-        // Small feet, soft round torso, and translucent jelly layers with a bright wet rim.
+        float tailY=y+r*(.44f+tailBounce);
+        float[] tailShape={-.7f,.1f,-.2f,.60f,.5f,.51f,.96f,.12f,1.05f,-.60f,.76f,-.31f,.31f,-.05f,-.22f,-.28f};
+        p.fillPoly(AlligatorArt.form(x+r*.50f,tailY,r*.43f,r*.30f,tailShape),edge);
+        p.fillPoly(AlligatorArt.form(x+r*.50f,tailY-r*.015f,r*.40f,r*.26f,tailShape),mint);
+        p.arc(x+r*.61f,tailY-r*.025f,r*.25f,r*.14f,12,130,0xA3D8FFCD,r*.04f);
+        for(int i=0;i<3;i++) {
+            float tx=x+r*(.45f+i*.15f),ty=tailY-r*(.12f+i*.08f);
+            p.fillPoly(AlligatorArt.form(tx,ty,r*(.075f-i*.01f),r*.085f,
+                    -1,.4f,-.8f,-.2f,0,-1,.8f,-.2f,1,.4f),0xFFB5E9A0);
+        }
+        // Bean feet and a single jelly belly replace the little boss's armored plates.
         for(int side=-1;side<=1;side+=2) {
-            float fx=bx+side*r*.29f*sx,fy=y+r*(.79f+.035f*bob*side);
-            p.fillEllipse(fx,fy,r*.21f,r*.125f,AlligatorArt.DARK);
-            p.fillEllipse(fx-r*.018f,fy-r*.025f,r*.19f,r*.108f,0xFF70C895);
-            p.arc(fx,fy-r*.015f,r*.15f,r*.07f,203,120,0xB4D3F6CA,r*.024f);
+            float fx=bx+side*r*.28f*sx,fy=y+r*(.79f+.025f*bob*side);
+            p.fillEllipse(fx,fy,r*.19f,r*.13f,edge);
+            p.fillEllipse(fx-r*.014f,fy-r*.024f,r*.17f,r*.11f,mint);
+            p.arc(fx,fy-r*.015f,r*.12f,r*.065f,205,115,0xC4E7FFD8,r*.028f);
         }
         if(a==null) {
-            p.fillEllipse(bx,by,r*.49f,r*.51f,AlligatorArt.DARK);
-            p.fillEllipse(bx,by-r*.018f,r*.47f,r*.49f,0xDB68BF86);
+            p.fillEllipse(bx,by,r*.47f,r*.45f,edge);
+            p.fillEllipse(bx-r*.012f,by-r*.018f,r*.44f,r*.42f,mint);
+            p.fillEllipse(bx-r*.07f,by-r*.09f,r*.36f,r*.33f,0x809DEBAA);
         } else {
-            p.fillPoly(skin(a.body,x,y+r*.33f,r*.49f,r*.51f),AlligatorArt.DARK);
-            p.fillPoly(skin(a.body,x,y+r*.31f,r*.475f,r*.49f),0xEE65B985);
-            p.fillPoly(skin(a.body,x-r*.055f,y+r*.25f,r*.41f,r*.42f),0x8097E6A3);
+            p.fillPoly(skin(a.body,x,y+r*.39f,r*.47f,r*.45f),edge);
+            p.fillPoly(skin(a.body,x-r*.012f,y+r*.37f,r*.44f,r*.42f),mint);
+            p.fillPoly(skin(a.body,x-r*.07f,y+r*.30f,r*.36f,r*.33f),0x809DEBAA);
         }
+        p.fillEllipse(bx,by+r*.065f,r*.31f*sx,r*.31f*sy,0xFFB8DB94);
+        p.fillEllipse(bx-r*.015f,by+r*.035f,r*.28f*sx,r*.29f*sy,0xFFF0F5BD);
+        for(int i=0;i<2;i++)p.arc(bx,by+r*(.02f+i*.14f),r*.24f*sx,r*.075f*sy,
+                30,120,0x639FBF7C,r*.024f);
+        p.arc(bx-r*.20f,by-r*.02f,r*.17f*sx,r*.29f*sy,142,82,0xB5ECFFE1,r*.04f);
+        float hx=x+r*(a==null?.04f*bob:a.head.centreX()*.6f);
+        float hy=y-r*.19f+r*(a==null?.035f*bob:a.head.centreY()*.6f);
+        float hw=r*.80f*(a==null?1:Math.max(.84f,Math.min(1.17f,a.head.radiusX())));
+        float hh=r*.63f*(a==null?1:Math.max(.84f,Math.min(1.17f,a.head.radiusY())));
+        // One rounded head contour incorporates the eye bumps and short, broad snout.
+        float[] outline={-.96f,.03f,-.86f,-.50f,-.63f,-.83f,-.37f,-.87f,-.12f,-.67f,
+                .15f,-.68f,.39f,-.86f,.66f,-.80f,.87f,-.48f,.98f,.05f,
+                .88f,.49f,.53f,.70f,0,.77f,-.55f,.68f,-.88f,.45f};
         for(int i=0;i<3;i++) {
-            float yy=by+r*(.01f+i*.15f)*sy;
-            p.fillEllipse(bx,yy,r*(.36f-i*.035f)*sx,r*.098f*sy,0xB083AD68);
-            p.fillEllipse(bx-r*.015f,yy-r*.024f,r*(.34f-i*.035f)*sx,r*.080f*sy,0xDDDCECAF);
-            p.arc(bx-r*.04f,yy-r*.025f,r*(.26f-i*.028f)*sx,r*.042f*sy,190,127,0xC0F3FFDC,r*.023f);
+            float tx=hx+hw*(i-1)*.18f,ty=hy-hh*(.70f+(i==1?.06f:0));
+            p.fillPoly(AlligatorArt.form(tx,ty,hw*.10f,hh*.18f,
+                    -1,.50f,-.85f,-.12f,0,-1,.85f,-.12f,1,.50f),edge);
+            p.fillPoly(AlligatorArt.form(tx,ty-hh*.02f,hw*.065f,hh*.13f,
+                    -1,.50f,-.85f,-.12f,0,-1,.85f,-.12f,1,.50f),0xFFD8EFA5);
         }
+        p.fillPoly(AlligatorArt.form(hx,hy,hw,hh,outline),edge);
+        p.fillPoly(AlligatorArt.form(hx,hy-hh*.018f,hw*.965f,hh*.95f,outline),mint);
+        p.fillPoly(AlligatorArt.form(hx-hw*.055f,hy-hh*.10f,hw*.88f,hh*.80f,outline),0x8AC0F5BD);
+        p.fillEllipse(hx,hy+hh*.27f,hw*.77f,hh*.42f,0xA34CB68A);
+        p.fillEllipse(hx-hw*.018f,hy+hh*.22f,hw*.74f,hh*.37f,0xFFAFF0B4);
+        p.arc(hx-hw*.05f,hy+hh*.20f,hw*.59f,hh*.27f,190,104,0xADDEFFCF,r*.025f);
+        p.arc(hx-hw*.39f,hy-hh*.37f,hw*.27f,hh*.30f,205,104,0xD9EFFFF0,r*.045f);
+        p.fillEllipse(hx-hw*.62f,hy-hh*.31f,hw*.065f,hh*.09f,0xE6F4FFF0);
+        for(int side=-1;side<=1;side+=2) {
+            p.fillEllipse(hx+side*hw*.20f,hy+hh*.13f,hw*.033f,hh*.04f,0xFF4D9677);
+            p.fillEllipse(hx+side*hw*.66f,hy+hh*.27f,hw*.13f,hh*.10f,0xA8FFA3BB);
+        }
+        float faceR=hw*1.03f,faceY=hy-hh*.08f;
+        Trinket.reactionFace(p,hx,faceY,faceR,clock,1,mood<0?0:mood,look*.25f);
+        if(mood<=1 || mood==4 || mood==8 || mood==9) {
+            float tx=hx+hw*.095f,ty=faceY+faceR*.35f;
+            p.fillPoly(AlligatorArt.form(tx,ty,r*.045f,r*.060f,
+                    -1,-.42f,1,-.42f,.80f,.45f,0,1,-.80f,.45f),0xFFFFFDE8);
+        }
+        if(ninja)Trinket.ninjaMask(new MaskFit(p,faceY,.64f),hx,faceY,hw*.92f,1);
+        // Tiny mitten paws wave in front of the cheeks; title punches retain their reach.
         for(int side=-1;side<=1;side+=2) {
             float wave=(float)Math.sin(clock*4.2f+side*.8f);
-            float lift=(mood==4 || mood==8)?-.15f:0;
+            float lift=(mood==4 || mood==8)?-.16f:0;
             float reach=side<0 && known?Math.max(0,Math.min(1,punch)):0;
-            float tx=bx+side*r*(.65f+.04f*wave),ty=y+r*(.33f+lift+.12f*wave);
+            float tx=bx+side*r*(.53f+.04f*wave),ty=y+r*(.36f+lift+.08f*wave);
             tx+=(bx-r*1.8f-tx)*reach;ty+=(y+r*.55f-ty)*reach;
-            AlligatorArt.limb(p,bx+side*r*.38f*sx,by-r*.10f,
-                    tx,ty,r*.13f,false,0xFF6FCB98,clock);
-        }
-        float hx=x+r*(a==null?.04f*bob:a.head.centreX()*.6f),hy=y-r*.30f+r*(a==null?.035f*bob:a.head.centreY()*.6f);
-        float hw=r*.79f*(a==null?1:Math.max(.84f,Math.min(1.17f,a.head.radiusX())));
-        float hh=r*.46f*(a==null?1:Math.max(.84f,Math.min(1.17f,a.head.radiusY())));
-        // Round cheeks and a shorter snout keep the friend baby-like at companion size.
-        Painter jelly=new ColorFadePainter(p,0xFF95E7AB,.23f,1);
-        AlligatorArt.head(jelly,null,hx,hy,hw,hh,clock,false,0,mood<0?0:mood,look);
-        p.fillEllipse(hx-hw*.67f,hy+hh*.36f,hw*.115f,hh*.12f,0x85FFABBF);
-        p.arc(hx-hw*.38f,hy-hh*.26f,hw*.32f,hh*.65f,213,80,0xA5F0FFE7,r*.026f);
-        if(ninja) {
-            float maskY=hy-hh*.43f;
-            Trinket.ninjaMask(new MaskFit(p,maskY,hh/hw*1.15f),hx-hw*.10f,maskY,hw*.76f,1);
+            p.line(bx+side*r*.34f,by-r*.06f,tx,ty,edge,r*.21f);
+            p.line(bx+side*r*.34f,by-r*.08f,tx,ty-r*.015f,mint,r*.17f);
+            p.fillEllipse(tx,ty,r*.16f,r*.19f,edge);
+            p.fillEllipse(tx-r*.01f,ty-r*.02f,r*.14f,r*.16f,mint);
+            p.fillEllipse(tx-r*.04f,ty-r*.07f,r*.06f,r*.07f,0xB9D4FFD3);
+            for(int toe=-1;toe<=1;toe++)p.fillCircle(tx+toe*r*.065f,ty+r*.06f,r*.018f,0xFFECF8CB);
         }
         if(!known)painter.text("?",x,y+r*.25f,type(r*.55f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
     }

@@ -205,7 +205,7 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **boss friends** | five collectible boss portraits, awarded only by defeating their matching bosses | `BossCollect`, `Interlude.awardBossPrize` |
 | **Gummy Gator** | Swampland's forest-green alligator boss, with a downward three-quarter head and a playfield-sized body. Six shaded tummy segments have independent springs that react to breathing, attacks and damage; the thick tail alternates entry from the lower sides. Swipe across a glowing arm or tail to parry it; completing a defense opens a short any-key damage window. Four clean parry-and-hit rounds open a longer daze. Unblocked limbs hurt only when they reach the companion | `Alligator`, `AlligatorArt`, `Boss.ALLIGATOR` |
 | **Swampland** | lily pads, cattails and fireflies; land ID 5, stages 21–25 | `Swamp`, `Lands.SWAMP`, `Lands.firstStage` |
-| **Mossy Bud** | Gummy Gator's gummy baby companion, with independent head, tummy and tail springs, waving paws, blinking eyes and reactions to play and story taps; appended after the ducks without shifting their saved IDs | `Collect.ALLIGATOR_FRIEND`, `Collect.bossPrize` |
+| **Lil Chomp** | Gummy Gator's gummy baby companion, with independent head, tummy and tail springs, waving paws, blinking eyes and reactions to play and story taps; appended after the ducks without shifting their saved IDs | `Collect.ALLIGATOR_FRIEND`, `Collect.bossPrize` |
 | **soft body** | how every boss's body is built: a ring of sprung nodes under pressure, so it dents where you hit it | `Softbody`, `Boss.body` |
 | **burst** | what a beaten boss goes out on | `BossScreen.burst`, `Boss.LEAVE` |
 
@@ -395,7 +395,7 @@ pair introductions. Later ordinary waves schedule a runner after roughly two-thi
 solo words, yielding about two runners in five solo arrivals. A scheduled runner follows at
 one-quarter of the usual spawn interval; the interval after it returns to normal. Pair slots,
 quotas and entrance-spacing checks still apply. Runners have
-puffy aviator caps with oversized round goggles and rotating, shaded hexagon afterimages matching their color and approach at twice ordinary speed, creating a choice
+glowing shooting-star silhouettes with layered light streaks and twinkling star particles matching their color and approach at twice ordinary speed, creating a choice
 between clearing the urgent single key and finishing a longer word. They never carry stacked
 pips, fog, or divebomb behavior. Their initial header-entry peak stays comparable to ordinary
 enemies; entrance checks keep faster runners from overtaking words in the same lane.

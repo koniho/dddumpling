@@ -36,55 +36,63 @@ final class FastEnemies {
         return c.fastEnemyNext?normal*.25f:normal;
     }
 
+    static float[] outline(float x,float y,float r) {
+        return Draw.star(x,y,r*1.22f,r*.72f,5,-(float)Math.PI*.5f);
+    }
+
+    private static float pastX(GameCore c,GameCore.Enemy e,Layout L,float x,float distance) {
+        if(e.sideEntry)return x+EnemyEntry.xAt(e,e.y-distance,L)-e.baseX;
+        float age=distance/Math.max(1,e.speed);
+        return x+e.sway*((float)Math.sin((c.clock-age)*1.1f+e.phase)
+                -(float)Math.sin(c.clock*1.1f+e.phase));
+    }
+
     static void trail(Painter p,GameCore c,GameCore.Enemy e,Layout L,float x,float y,float r,int color,int fade) {
         if(!e.fastSingle || !e.typeable())return;
-        int shade=Glyph.mix(color,0xFF25364C,.45f),light=Glyph.mix(color,0xFFFFFFFF,.65f);
-        float spacing=Math.min(r*.65f,e.speed*.10f);
-        // Fading copies follow the hexagon's path, with lit upper edges and shaded undersides.
-        for(int k=6;k>=1;k--) {
-            float age=spacing*k/Math.max(1,e.speed);
-            float tx=x+e.sway*((float)Math.sin((c.clock-age)*1.1f+e.phase)
-                    -(float)Math.sin(c.clock*1.1f+e.phase));
-            float ty=y-spacing*k,rr=r*(1-k*.025f);
-            if(e.sideEntry)tx=x+EnemyEntry.xAt(e,e.y-spacing*k,L)-e.baseX;
-            int alpha=(int)(fade*.38f*(1-k/7f));
-            float[] hex=Glyph.hex(tx,ty,rr);
-            float angle=c.clock*.9f+e.phase+k*.20f;
-            float cs=(float)Math.cos(angle),sn=(float)Math.sin(angle);
-            for(int i=0;i<hex.length;i+=2) {
-                float dx=hex[i]-tx,dy=hex[i+1]-ty;
-                hex[i]=tx+dx*cs-dy*sn;hex[i+1]=ty+dx*sn+dy*cs;
+        int light=Glyph.mix(color,0xFFFFF6C4,.62f);
+        float pulse=.85f+.15f*(float)Math.sin(c.clock*5+e.phase);
+        // Layered translucent shapes glow without a full-screen blur or extra particle state.
+        p.fillCircle(x,y,r*1.65f,Glyph.withAlpha(color,(int)(fade*.06f*pulse)));
+        p.fillCircle(x,y,r*1.40f,Glyph.withAlpha(light,(int)(fade*.09f*pulse)));
+        p.strokePoly(outline(x,y,r),Glyph.withAlpha(color,fade/6),r*.32f);
+        p.strokePoly(outline(x,y,r),Glyph.withAlpha(light,fade/4),r*.16f);
+        float length=Math.max(r*3.2f,Math.min(r*6,e.speed*.48f));
+        for(int lane=-1;lane<=1;lane++) {
+            float[] streak=new float[14];
+            for(int k=0;k<7;k++) {
+                float u=k/6f,distance=length*u;
+                streak[k*2]=pastX(c,e,L,x,distance)+lane*r*.25f*(1-u);
+                streak[k*2+1]=y-distance;
             }
-            p.fillPoly(hex,Glyph.withAlpha(color,alpha/3));
-            p.strokePoly(hex,Glyph.withAlpha(shade,alpha),rr*.16f);
-            p.strokePoly(hex,Glyph.withAlpha(color,alpha),rr*.09f);
-            p.polyline(new float[]{hex[6],hex[7],hex[8],hex[9],hex[10],hex[11],hex[0],hex[1]},
-                    Glyph.withAlpha(light,alpha),rr*.035f);
+            p.polyline(streak,Glyph.withAlpha(color,fade/9),r*.24f);
+            p.polyline(streak,Glyph.withAlpha(light,fade/5),r*.065f);
+        }
+        // Staggered lifetimes scatter stars behind the actual top/side-entry trajectory.
+        for(int i=0;i<14;i++) {
+            float u=(c.clock*.95f+i*.618034f+e.phase*.13f)%1f;
+            float distance=r*.75f+length*u;
+            float spread=(float)Math.sin(i*17.13f+e.phase)*r*(.25f+u*.65f);
+            float tx=pastX(c,e,L,x,distance)+spread,ty=y-distance;
+            float twinkle=.6f+.4f*(float)Math.sin(c.clock*8+i*2.4f);
+            float rr=r*(.11f+.11f*(.5f+.5f*(float)Math.sin(i*7.4f)))*(1-u*.5f);
+            int alpha=(int)(fade*(1-u)*(1-u)*(.60f+.30f*twinkle));
+            p.fillCircle(tx,ty,rr*3.1f,Glyph.withAlpha(color,alpha/9));
+            p.fillCircle(tx,ty,rr*1.9f,Glyph.withAlpha(light,alpha/5));
+            float angle=c.clock*.65f+i*2.4f;
+            p.fillPoly(Draw.star(tx,ty,rr,rr*.43f,i%3==0?5:4,angle),Glyph.withAlpha(light,alpha));
+            p.fillPoly(Draw.star(tx,ty,rr*.52f,rr*.22f,4,angle),Glyph.withAlpha(0xFFFFFDE6,alpha));
         }
     }
 
-    static void draw(Painter p,GameCore c,GameCore.Enemy e,float x,float y,float r,int color,int fade) {
-        if(!e.fastSingle || !e.typeable())return;
-        int cap=Glyph.withAlpha(0xFFD3A184,fade),shade=Glyph.withAlpha(0xFF987060,fade);
-        int cream=Glyph.withAlpha(0xFFFFEBD0,fade),shine=Glyph.withAlpha(0xFFF6FDFF,fade);
-        int lens=Glyph.withAlpha(Glyph.mix(color,0xFF9CDDEB,.75f),fade);
-        float bounce=(float)Math.sin(c.clock*12+e.phase);
-        float cy=y-r*.04f*bounce;
-        // A puffy dome, floppy ear pads and big candy-like goggles keep the face readable.
-        p.fillEllipse(x,cy-r*.73f,r*.67f,r*.48f,shade);
-        p.fillEllipse(x-r*.015f,cy-r*.76f,r*.63f,r*.43f,cap);
-        for(int side=-1;side<=1;side+=2) {
-            float ex=x+side*r*(.53f+.025f*bounce),ey=cy-r*.29f+side*r*.035f*bounce;
-            p.fillEllipse(ex,ey,r*.17f,r*.31f,shade);
-            p.fillEllipse(ex,ey-r*.025f,r*.13f,r*.27f,cap);
-        }
-        p.line(x-r*.10f,cy-r*.69f,x+r*.10f,cy-r*.69f,cream,r*.10f);
-        for(int side=-1;side<=1;side+=2) {
-            float gx=x+side*r*.27f,gy=cy-r*.70f;
-            p.fillCircle(gx,gy,r*.28f,shade);
-            p.fillCircle(gx,gy-r*.015f,r*.245f,cream);
-            p.fillCircle(gx,gy-r*.015f,r*.18f,lens);
-            p.fillCircle(gx-r*.055f,gy-r*.075f,r*.055f,shine);
+    static void body(Painter p,float x,float y,float r,int color,int fade,boolean cleared) {
+        int light=Glyph.mix(color,0xFFFFF0B1,.55f);
+        float[] shape=outline(x,y,r);
+        p.fillPoly(shape,Glyph.withAlpha(color,(cleared?26:95)*fade/255));
+        p.strokePoly(shape,Glyph.withAlpha(color,(cleared?58:230)*fade/255),r*.10f);
+        p.strokePoly(shape,Glyph.withAlpha(light,(cleared?40:245)*fade/255),r*.045f);
+        if(!cleared) {
+            float sx=x-r*.14f,sy=y-r*.92f;
+            p.fillPoly(Draw.star(sx,sy,r*.14f,r*.04f,4,0),Glyph.withAlpha(0xFFFFFDE6,fade));
         }
     }
 }

@@ -92,7 +92,7 @@ Swampland / Gummy Gator. This lists the actual integration points; adding art an
   `BossCollect` / `Trinket`; award through `Interlude`; and collection tests.
   Duck reward bounds must use `DUCK_FIRST + DUCK_COUNT`, never the end of the catalog.
   Use `Collect.bossPrize` / `bossKind`, never `BOSS_FIRST + boss`: ducks occupy IDs 49–59,
-  so Mossy Bud is appended at 60 while the original boss friends stay at 45–48.
+  so Lil Chomp is appended at 60 while the original boss friends stay at 45–48.
 - Collection ID 60 required a save-tag migration: old 60-bit data tagged `0x5...` decodes
   without interpreting its tag as ownership. New 61-bit data uses `0x6...`. Future catalog
   expansion must revisit this packed representation before allocating additional bits.

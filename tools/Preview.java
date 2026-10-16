@@ -9,7 +9,7 @@ import java.io.File;
  */
 final class Preview {
     private static void fastEnemyFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
-        if(!wanted("180-"))return;
+        if(!wantedGroup("180-"))return;
         for(float time:new float[]{0,.3f,.8f}) {
             GameCore c=TestFastEnemies.scene(L,17,180);c.clock=2;
             GameCore.Enemy ordinary=Check.add(c,L,new int[]{0,1,4},new int[]{2,1,2},L.h*.44f);
@@ -18,6 +18,13 @@ final class Preview {
             GameCore.Enemy runner=TestFastEnemies.runner(c,L,L.h*.32f);runner.baseX=L.w*.80f;
             step(c,L,time);
             shot(dir,"180-fast-single-key-"+Math.round(time*100),c,L,w,h,ss);
+        }
+        if(wanted("180-shooting-star-side")) {
+            GameCore c=TestFastEnemies.scene(L,21,180);c.clock=2;
+            GameCore.Enemy e=TestFastEnemies.runner(c,L,L.h*.48f);e.word[0]=2;
+            e.sideEntry=true;e.pathStartY=L.h*.44f;e.pathStartX=-L.enemyR*2;e.pathEndX=L.w*.7f;
+            e.baseX=EnemyEntry.xAt(e,e.y,L);e.sway=0;
+            shot(dir,"180-shooting-star-side",c,L,w,h,ss);
         }
         for(int mode:new int[]{Power.FLURRY,Power.NINJA,Power.TEAM}) {
             GameCore c=TestSwampEnemies.scene(L,180);c.clock=2;c.collected=1L;c.runWho=0;
@@ -262,14 +269,14 @@ final class Preview {
     }
 
     private static void gatorCompanionFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
-        if(!wanted("168-"))return;
+        if(!wantedGroup("168-gator-companion"))return;
         GameCore c=TestAlligator.fight(L);c.stageBanner=0;c.landBlend=1;
         c.runWho=Collect.ALLIGATOR_FRIEND;c.companion.begin(c.runWho);
         for(int n=0;n<36;n++){c.companion.update(c,DT);c.gator.update(c,DT);}
         shot(dir,"168-gator-companion-play",c,L,w,h,ss);
         RasterPainter raster=new RasterPainter(w,h,ss);raster.clear(Draw.BG);
         Painter p=new OpacityPainter(raster,1) {public GatorCompanion gator(){return c.gator;}};
-        p.text("GUMMY GATOR FRIEND",w*.5f,h*.065f,w*.055f,Draw.INK,Painter.CENTER,true);
+        p.text(Collect.NAME[Collect.ALLIGATOR_FRIEND],w*.5f,h*.065f,w*.055f,Draw.INK,Painter.CENTER,true);
         String[] labels={"HELLO!","BOING!","YAY!","NINJA","OUCH!","SLEEPY"};
         int[] moods={0,0,4,6,3,5};
         for(int i=0;i<6;i++) {
@@ -3051,6 +3058,11 @@ final class Preview {
     }
 
     /** True when this frame is wanted. Checked before rendering, since that is the cost. */
+    private static boolean wantedGroup(String prefix) {
+        if(only==null)return true;
+        for(String filter:only)if(prefix.startsWith(filter.trim()) || filter.trim().startsWith(prefix))return true;
+        return false;
+    }
     static boolean wanted(String name) {
         if (only == null) return true;
         for (String o : only) {

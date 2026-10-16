@@ -337,9 +337,12 @@ final class Renderer extends Draw {
                         Glyph.withAlpha(col, (95 - k * 18) * fade / 255), cellR * 0.055f);
             }
 
-            p.fillPoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, fillA * fade / 255));
-            p.strokePoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, edgeA * fade / 255),
-                    cellR * (0.075f+0.045f*bondFlex));
+            if(e.fastSingle)FastEnemies.body(p,x,y,cellR,col,fade,cleared);
+            else {
+                p.fillPoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, fillA * fade / 255));
+                p.strokePoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, edgeA * fade / 255),
+                        cellR * (0.075f+0.045f*bondFlex));
+            }
 
             float charR = cellR * 0.60f * (1f + 0.045f * (float) Math.sin(wobble))
                     * (1f + 0.34f * pop);
@@ -367,14 +370,13 @@ final class Renderer extends Draw {
 
             if(e.swampKind==SwampEnemies.DIVE && i==e.word.length-1 && !e.destroyed && !e.dying && !e.gone[i])
                 SwampEnemies.hardhat(p,x,y,cellR,fade);
-            FastEnemies.draw(p,c,e,x,y,cellR,col,fade);
             if(head)SwampEnemies.burst(p,e,cellR,fade);
             if (head && locked) {
                 // Thicker white outline plus a caret, drawn at the smoothed position so the
                 // indicator slides between letters instead of teleporting.
                 float ix = c.caretXFor(e, L) + jx;
                 float pulse = 0.6f + 0.4f * (float) Math.sin(c.clock * 7f);
-                p.strokePoly(Glyph.hex(ix, y, cellR), Glyph.withAlpha(INK, (int) (215 * pulse)),
+                p.strokePoly(e.fastSingle?FastEnemies.outline(ix,y,cellR):Glyph.hex(ix, y, cellR), Glyph.withAlpha(INK, (int) (215 * pulse)),
                         cellR * 0.13f);
                 caret(p, ix, y, cellR, Glyph.withAlpha(INK, 225));
             }

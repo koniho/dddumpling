@@ -380,7 +380,7 @@ final class AlligatorArt extends Draw {
         }
         return out;
     }
-    private static float[] form(float x,float y,float w,float h,float... points) {
+    static float[] form(float x,float y,float w,float h,float... points) {
         float[] out=smooth(points);
         for(int i=0;i<out.length;i+=2){out[i]=x+out[i]*w;out[i+1]=y+out[i+1]*h;}
         return out;

@@ -24,7 +24,7 @@ final class TestCollect extends Check {
     static void catalogue(Layout L) {
         caveRewards(L);
         group("collectible catalogue");
-        check("original catalog, 11 Survival ducks and Mossy Bud", Collect.BLIND_COUNT == 30
+        check("original catalog, 11 Survival ducks and Lil Chomp", Collect.BLIND_COUNT == 30
                 && Collect.STAR_COUNT == 5 && Collect.CUBE_COUNT == 10 && Collect.BOSS_COUNT == Boss.COUNT && Collect.COUNT == 61);
         check("every table is the same length",
                 Collect.NAME.length == Collect.COUNT && Collect.FAMILY.length == Collect.COUNT
