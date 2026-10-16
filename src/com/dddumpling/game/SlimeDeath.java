@@ -80,6 +80,12 @@ final class SlimeDeath extends OpacityPainter {
         return x+(target-x)*spread;
     }
 
+    float fallAt(float u,float v) {
+        float depth=Math.max(0f,Math.min(1f,(v+1f)*.5f));
+        // Lower jelly runs ahead; smooth lateral variation keeps the sheet connected.
+        return fall*(1f+depth*(.65f+.18f*(float)Math.sin(u*7f+.8f)));
+    }
+
     float y(float x,float y) {
         float u=basicX(x,y),v=(y-pose.my)/pose.halfH;
         float height=layout.dangerY-layout.playTop;
@@ -87,7 +93,7 @@ final class SlimeDeath extends OpacityPainter {
         float finger=(float)Math.pow(.5f+.5f*Math.sin(u*10f+1f),3);
         float target=layout.playTop+height*.36f+v*layout.h*.185f
                 +layout.h*.005f*(float)Math.sin(u*9f)*lower
-                +layout.h*drip*(.02f+.17f*finger)*lower*lower+fall;
+                +layout.h*drip*(.02f+.17f*finger)*lower*lower+fallAt(u,v);
         return y+(target-y)*spread;
     }
 
@@ -100,7 +106,7 @@ final class SlimeDeath extends OpacityPainter {
         // The face settles within the frame rather than inheriting a stretched neck's shear.
         float center=L.playTop+(L.dangerY-L.playTop)*.36f;
         BossScreen.slimeDizzyFace(p,s.x+(L.w*.5f-s.x)*warp.spread,
-                s.y+(center-s.y)*warp.spread+warp.fall,
+                s.y+(center-s.y)*warp.spread+warp.fallAt(0f,0f),
                 s.rx+(L.w*.30f-s.rx)*warp.spread,s.ry+(L.h*.10f-s.ry)*warp.spread,c.clock,warp.amount);
     }
 

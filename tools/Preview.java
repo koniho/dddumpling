@@ -51,7 +51,7 @@ final class Preview {
 
     private static void bossImpactFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("193-impact-"))return;
-        for(int kind:new int[]{Boss.SLIME,Boss.SPLITTER})for(float time:new float[]{0,.067f,.134f,.20f}) {
+        for(int kind:new int[]{Boss.SLIME,Boss.SPLITTER})for(float time:new float[]{0,.067f,.134f,.20f,.34f,.65f}) {
             GameCore c=TestBoss.enterBoss(L,kind,193);
             for(int i=0;i<600 && !c.boss.open();i++)c.update(DT,L);
             java.util.Arrays.fill(c.boss.blive,false);c.shots.clear();c.particles.clear();

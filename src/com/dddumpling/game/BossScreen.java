@@ -244,8 +244,10 @@ final class BossScreen extends Draw {
     /** Reference-led first boss: a bright jelly dome settled into a low rippled puddle. */
     private static void drawSlimeBoss(Painter p, GameCore c, Layout L, Boss b, int col, float mood,
             float fade) {
+        float elapsed=Boss.SLIME_EYE_HIT-b.slimeEyeHit;
+        float hit=MushroomDeath.ease(elapsed,0f,.035f)*(1f-MushroomDeath.ease(elapsed,.10f,Boss.SLIME_EYE_HIT));
         drawSlimeSkin(p,slimePromptOutline(L,b),b.body.centreX(),b.body.centreY(),
-                b.body.radiusX(),b.body.radiusY(),b.body.radius(),col,c.clock,b.hasGlob(),fade);
+                b.body.radiusX(),b.body.radiusY(),b.body.radius(),col,c.clock,b.hasGlob(),fade,false,hit);
     }
 
     static void slimePortrait(Painter p,float x,float y,float radius,float clock) {
@@ -262,6 +264,11 @@ final class BossScreen extends Draw {
 
     static void drawSlimeSkin(Painter p,float[] skin,float cx,float cy,float rx,float ry,
             float radius,int col,float clock,boolean vulnerable,float fade,boolean defeated) {
+        drawSlimeSkin(p,skin,cx,cy,rx,ry,radius,col,clock,vulnerable,fade,defeated,0f);
+    }
+
+    private static void drawSlimeSkin(Painter p,float[] skin,float cx,float cy,float rx,float ry,
+            float radius,int col,float clock,boolean vulnerable,float fade,boolean defeated,float hit) {
         int lime = Glyph.mix(col, 0xFFA8F02B, 0.32f);
         int edge = Glyph.mix(0xFF176A24, col, 0.16f);
 
@@ -317,10 +324,19 @@ final class BossScreen extends Draw {
         float eyeRX = ry * 0.225f, eyeRY = ry * (vulnerable ? 0.29f : 0.265f);
         int ink = Glyph.withAlpha(0xFF154F19, (int) (255 * fade));
         for (int side = -1; side <= 1; side += 2) {
-            float ex = cx + side * eyeDX;
-            p.fillEllipse(ex, eyeY, eyeRX, eyeRY, ink);
-            p.fillCircle(ex - eyeRX * 0.25f, eyeY - eyeRY * 0.34f, eyeRX * 0.25f,
+            float ex = cx + side * eyeDX*(1f-hit*.06f);
+            float ey=eyeY+ry*.035f*hit;
+            float squint=eyeRY*(1f-hit*(side<0?.88f:.78f));
+            p.fillEllipse(ex, ey, eyeRX*(1f+hit*.12f), squint, ink);
+            p.fillEllipse(ex - eyeRX * 0.25f, ey - squint * 0.34f, eyeRX * 0.25f,
+                    eyeRX*.25f*(1f-hit*.85f),
                     Glyph.withAlpha(0xFFFFFFFF, (int) (245 * fade)));
+            if(hit>0f) {
+                // Inner corners lift into a soft, asymmetric "oof" wince, then relax.
+                int brow=Glyph.withAlpha(0xFF154F19,(int)(255*fade*hit));
+                p.line(ex-side*eyeRX,ey-eyeRY*.95f-ry*.07f*hit,
+                        ex+side*eyeRX,ey-eyeRY*.75f,brow,ry*.055f);
+            }
             if (vulnerable) {
                 // Pinched, raised inner brows make the face read as worried even at phone scale.
                 float innerY = eyeY - eyeRY * 1.18f;

@@ -160,7 +160,8 @@ final class Boss {
     float phase;
     /** Decaying flashes: hurt on damage, rage on a rebuff. Separate channels, on purpose. */
     float hurt, rage;
-    float slimeDragPulse, slimeKeyPulse, slimeKeyLock;
+    float slimeDragPulse, slimeKeyPulse, slimeKeyLock, slimeEyeHit;
+    static final float SLIME_EYE_HIT=.46f;
     int promptNode=-1;
     final float[] slimeBlobPulse = new float[Glyph.COUNT];
     boolean beaten;
@@ -354,7 +355,7 @@ final class Boss {
         // Starts shut, so the first thing a boss does is arrive rather than be vulnerable. The
         // opening breather is also where the blurb gets read.
         phase = 0f;
-        hurt = rage = slimeDragPulse = slimeKeyPulse = slimeKeyLock = 0f;
+        hurt = rage = slimeDragPulse = slimeKeyPulse = slimeKeyLock = slimeEyeHit = 0f;
         promptNode=-1;
         for (int g = 0; g < slimeBlobPulse.length; g++) slimeBlobPulse[g] = 0f;
         beaten = false;
@@ -437,7 +438,7 @@ final class Boss {
         hp = hpMax = 0f;
         age = intro = leaveT = 0f;
         phase = 0f;
-        hurt = rage = slimeDragPulse = slimeKeyPulse = slimeKeyLock = 0f;
+        hurt = rage = slimeDragPulse = slimeKeyPulse = slimeKeyLock = slimeEyeHit = 0f;
         promptNode=-1;
         for (int g = 0; g < slimeBlobPulse.length; g++) slimeBlobPulse[g] = 0f;
         beaten = false;
@@ -1272,6 +1273,7 @@ final class Boss {
         if (hp <= 0f) {
             hp = 0f;
             beaten = true;
+            slimeEyeHit=0f;
             if(kind==SLIME && body!=null)slimeDeath=new SlimeDeath.Pose(body);
             OctoThrow.reset(this);
             leaveT = LEAVE;
@@ -1329,6 +1331,7 @@ final class Boss {
         hurt=Math.max(hurt,.55f);
         if(kind==SLIME) {
             slimeKeyPulse=.11f;
+            slimeEyeHit=SLIME_EYE_HIT;
             body.impulse(x,y,HIT_PUNCH*.7f);
             if(splitHit && node>=0 && etype[node]==E_GLOB) {
                 hurt=1f;
@@ -2389,6 +2392,7 @@ final class Boss {
             slimeBlobPulse[g] = Math.max(0f, slimeBlobPulse[g] - dt);
         slimeDragPulse = Math.max(0f, slimeDragPulse - dt);
         slimeKeyPulse = Math.max(0f, slimeKeyPulse - dt);
+        slimeEyeHit = Math.max(0f, slimeEyeHit - dt);
         slimeKeyLock = Math.max(0f, slimeKeyLock - dt);
         octoWave = octoCue = octoLock = mushroomShakeCue = mushroomSporeCue = false;
         divideBurst = Math.max(0f, divideBurst - dt * 1.35f);

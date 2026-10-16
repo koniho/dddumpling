@@ -41,7 +41,7 @@ final class TestBoss extends Check {
             check("prompt progress remains immediate "+kind,
                     (kind==Boss.SLIME?b.chainAt:b.pieceCharge(0))==before+1);
             check("key press has no early hit flash, shake, particles or sound "+kind,
-                    b.hurt==0 && b.slimeKeyPulse==0 && c.shake==0 && c.flash==0 && c.particles.isEmpty()
+                    b.hurt==0 && b.slimeKeyPulse==0 && b.slimeEyeHit==0 && c.shake==0 && c.flash==0 && c.particles.isEmpty()
                     && ear.boltPops==0 && ear.divideDamages==0);
             GameCore.Shot shot=c.shots.get(0);
             c.paused=true;c.update(.3f,L);
@@ -55,6 +55,7 @@ final class TestBoss extends Check {
                     b.hurt>0 && c.shake>0 && c.particles.size()==(kind==Boss.SLIME?13+SlimeSpray.HIT_DROPS:16));
             check("contact plays the matching hit sound once "+kind,
                     (kind==Boss.SLIME?ear.boltPops:ear.divideDamages)==1);
+            if(kind==Boss.SLIME)check("projectile contact starts the eye wince",b.slimeEyeHit==Boss.SLIME_EYE_HIT);
             Fx.updateShots(c,.5f,L);
             check("completed flight cannot replay the sound "+kind,(kind==Boss.SLIME?ear.boltPops:ear.divideDamages)==1);
             c.particles.clear();java.util.Arrays.fill(b.blive,false);if(kind==Boss.SLIME)toOpen(c,L);
@@ -65,7 +66,7 @@ final class TestBoss extends Check {
             check("discarding a stale reaction preserves the arrival RNG sequence "+kind,
                     c.rnd.nextLong()==expected.rnd.nextLong());
             check("leaving cancels stale impact feedback "+kind,c.particles.isEmpty()
-                    && (kind==Boss.SLIME?ear.boltPops:ear.divideDamages)==1);
+                    && b.slimeEyeHit==0 && (kind==Boss.SLIME?ear.boltPops:ear.divideDamages)==1);
         }
         GameCore pair=enterBoss(L,Boss.SPLITTER,194);chargeDivide(pair,0,L);
         Fx.updateShots(pair,GameCore.SHOT_TIME,L);
@@ -151,6 +152,18 @@ final class TestBoss extends Check {
         check("splat eases from opaque to half transparent",
                 SlimeDeath.opacity(0)==1f && SlimeDeath.opacity(.7f)<1f
                 && SlimeDeath.opacity(.7f)>.5f && SlimeDeath.opacity(SlimeDeath.SPLAT_AT)==.5f);
+        b.leaveT=Boss.LEAVE-2f;
+        SlimeDeath falling=new SlimeDeath(null,b,L,1f);
+        b.leaveT=Boss.LEAVE-2.1f;
+        SlimeDeath later=new SlimeDeath(null,b,L,1f);
+        float upperY=pose.my-pose.halfH*.6f,lowerY=pose.my+pose.halfH*.6f;
+        float upperStep=later.y(pose.mx,upperY)-falling.y(pose.mx,upperY);
+        float lowerStep=later.y(pose.mx,lowerY)-falling.y(pose.mx,lowerY);
+        check("lower slime segments drip faster than upper ones",upperStep>0 && lowerStep>upperStep*1.2f);
+        float left=pose.mx-pose.halfW*.4f,right=pose.mx+pose.halfW*.4f;
+        float leftStep=later.y(left,pose.my)-falling.y(left,pose.my);
+        float rightStep=later.y(right,pose.my)-falling.y(right,pose.my);
+        check("neighboring drips have varied downward speeds",leftStep>0 && rightStep>0 && Math.abs(leftStep-rightStep)>L.h*.0001f);
         float[] emblem=BossScreen.slimeEmblemPath(pose.skin,pose.x,pose.y,BossScreen.SUPER_SHIELD,.86f);
         float[] stretched=wide.points(emblem);
         boolean attached=true;
