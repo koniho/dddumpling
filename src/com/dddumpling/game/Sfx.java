@@ -38,7 +38,7 @@ final class Sfx {
             GATOR_PARRY = SURVIVAL_OVER + 1, GATOR_PROMPT_0 = GATOR_PARRY + 1,
             GATOR_PROMPT_1 = GATOR_PROMPT_0 + 1, GATOR_PROMPT_2 = GATOR_PROMPT_1 + 1,
             GATOR_SPLASH = GATOR_PROMPT_2 + 1, COUNT = GATOR_SPLASH + 1;
-    static final float GATOR_ENTRY_RATE=.70f;
+    static final float GATOR_ENTRY_RATE=.70f, GATOR_PROMPT_GAIN=.55f;
     static final float OCTO_WAVE_GAIN = .66f;
     static final float NINJA_COMBO_GAIN = .25f;
 

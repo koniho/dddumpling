@@ -151,11 +151,12 @@ final class Trailer {
             if (method.getName().equals("ninjaSwish")) id = Sfx.ninjaSwishId((Integer) args[0]);
             if (method.getName().equals("gatorPrompt")) id = Sfx.gatorPromptId((Integer)args[0]);
             if (method.getName().equals("gatorSplash")) id = Sfx.GATOR_SPLASH;
+            float gain=method.getName().equals("gatorPrompt")?Sfx.GATOR_PROMPT_GAIN:1f;
             float rate=method.getName().equals("gatorSplash") && (Boolean)args[0]?Sfx.GATOR_ENTRY_RATE:1f;
             if (id != null) {
                 short[] pcm = Sfx.build(id);
                 for (int i = 0; i*rate < pcm.length && at + i < audio.length; i++)
-                    audio[at + i] += pcm[(int)(i*rate)] * 0.32f * (id==Sfx.NINJA_COMBO?Sfx.NINJA_COMBO_GAIN:1f);
+                    audio[at + i] += pcm[(int)(i*rate)] * 0.32f * gain * (id==Sfx.NINJA_COMBO?Sfx.NINJA_COMBO_GAIN:1f);
             }
             return null;
         }

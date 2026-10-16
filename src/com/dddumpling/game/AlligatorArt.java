@@ -87,6 +87,13 @@ final class AlligatorArt extends Draw {
                         sx+rx*.62f,sy+ry*.60f,sx+rx*.82f,sy+ry*.43f},0x6074844D,L.unit*.09f);
             }
         }
+        // Hands cross over the face when guarding, striking or celebrating.
+        if(b.body!=null && b.body.centreY()-b.body.radiusY()*1.8f+entryY<L.h)head(creature,
+                null,b.body.centreX(),b.body.centreY()+Boss.bodyR(L)*.18f*defeated,
+                b.body.radiusX(),b.body.radiusY(),victory?c.clock:b.age,
+                a.daze>0,0,b.beaten?Alligator.DAZED_EYES:victory?Alligator.CHEEKY_EYES:a.mood(b),
+                a.gazeX(),a.gazeY(),b.beaten || victory?null:a.eyes,
+                b.beaten?defeated:a.vulnerablePose,victory?.5f+.5f*(float)Math.sin(c.clock*11):a.laugh());
         if(bodyVisible)for(int i=0;i<3;i++) {
             float tx=a.drawnX(L,i),ty=a.drawnY(L,i);
             float rx=a.rootX(L,i),ry=a.rootY(L,i);
@@ -121,12 +128,6 @@ final class AlligatorArt extends Draw {
                 p.line(tx+d,ty,tx+d*.4f,ty+d*.42f,0xDDFFFFFF,L.unit*.10f);
             }
         }
-        if(b.body!=null && b.body.centreY()-b.body.radiusY()*1.8f+entryY<L.h)head(creature,
-                null,b.body.centreX(),b.body.centreY()+Boss.bodyR(L)*.18f*defeated,
-                b.body.radiusX(),b.body.radiusY(),victory?c.clock:b.age,
-                a.daze>0,0,b.beaten?Alligator.DAZED_EYES:victory?Alligator.CHEEKY_EYES:a.mood(b),
-                a.gazeX(),a.gazeY(),b.beaten || victory?null:a.eyes,
-                b.beaten?defeated:a.vulnerablePose,victory?.5f+.5f*(float)Math.sin(c.clock*11):a.laugh());
         p=scene;
         float y=b.bodyY(L)+Boss.bodyR(L)*1.70f;
         if(!b.beaten && !victory && b.intro<=0) {
