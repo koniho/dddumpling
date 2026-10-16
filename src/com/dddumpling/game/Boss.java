@@ -250,13 +250,15 @@ final class Boss {
     boolean octoPlaced, octoWave, octoCue, octoLock, octoImpact, octoPlayerHit, octoLashLanded;
     boolean octoWrongLash, octoDragStarted, octoDragCanDamage;
 
+    static int lastStage() {return Lands.firstStage(Lands.SWAMP)+EVERY-1;}
+
     /** Stage 5 teaches boss play; stage 10 adds the first two-finger fight. */
     static int kindFor(int stage) {
         if (stage == EVERY) return SLIME;
         if (stage == EVERY * 2) return SPLITTER;
         if (stage == EVERY * 3) return OCTOPUS;
         if (stage == EVERY * 4) return MUSHROOM;
-        if (stage == Lands.firstStage(Lands.SWAMP)+EVERY-1) return ALLIGATOR;
+        if (stage == lastStage()) return ALLIGATOR;
         return -1;
     }
 

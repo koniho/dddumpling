@@ -79,7 +79,7 @@ final class TestStages extends Check {
         c.startGame();
         check("stage starts with nothing released", c.spawnedThisStage == 0);
         check("quota grows with stage", quotaAt(c, 8) > quotaAt(c, 1));
-        check("quota is capped", quotaAt(c, 99) <= 10);
+        check("post-boss quota is capped", quotaAt(c, 99) == 32);
         c.stage = 1;
 
         int frames = 0, stageChanges = 0;
