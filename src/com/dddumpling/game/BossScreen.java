@@ -342,35 +342,64 @@ final class BossScreen extends Draw {
         }
     }
 
-    private static final float[] SUPER_SHIELD={-.65f,-1f,.65f,-1f,1f,-.5f,0f,1f,-1f,-.5f};
-    private static final float[] SUPER_S={
-        .52f,-.55f,.15f,-.70f,-.38f,-.58f,-.58f,-.25f,-.36f,.02f,
-        .22f,.14f,.15f,.32f,-.16f,.38f,-.40f,.22f,-.53f,.43f,
-        -.17f,.65f,.35f,.48f,.52f,.13f,.29f,-.16f,-.28f,-.28f,
-        -.20f,-.42f,.09f,-.47f,.37f,-.33f
-    };
+    static final float[] SUPER_SHIELD=roundEmblem(new float[]{
+        -.65f,-1f,.65f,-1f,1f,-.5f,0f,1f,-1f,-.5f
+    });
+    private static final float[] SUPER_S=roundEmblem(new float[]{
+        .48f,-.50f,.30f,-.70f,0f,-.77f,-.30f,-.70f,-.52f,-.50f,-.58f,-.25f,
+        -.48f,-.04f,-.26f,.12f,.10f,.18f,.26f,.28f,.20f,.43f,0f,.49f,
+        -.23f,.44f,-.40f,.28f,-.56f,.49f,-.36f,.68f,0f,.77f,.33f,.67f,
+        .53f,.48f,.58f,.23f,.46f,.02f,.20f,-.14f,-.15f,-.21f,-.26f,-.30f,
+        -.20f,-.43f,0f,-.49f,.20f,-.42f,.33f,-.28f
+    });
+
+    private static float[] roundEmblem(float[] points) {
+        for(int pass=0;pass<2;pass++) {
+            float[] rounded=new float[points.length*2];
+            for(int i=0;i<points.length;i+=2) {
+                int next=(i+2)%points.length;
+                for(int axis=0;axis<2;axis++) {
+                    rounded[i*2+axis]=points[i+axis]*.75f+points[next+axis]*.25f;
+                    rounded[i*2+2+axis]=points[i+axis]*.25f+points[next+axis]*.75f;
+                }
+            }
+            points=rounded;
+        }
+        return points;
+    }
 
     private static void slimeEmblem(Painter p,float[] skin,float cx,float cy,float fade) {
         p.fillPoly(slimeEmblemPath(skin,cx,cy,SUPER_SHIELD,1f),
-                Glyph.withAlpha(0xFF922747,(int)(245*fade)));
+                Glyph.withAlpha(0xFF195D37,(int)(245*fade)));
         p.fillPoly(slimeEmblemPath(skin,cx,cy,SUPER_SHIELD,.86f),
-                Glyph.withAlpha(0xFFFFD85D,(int)(245*fade)));
+                Glyph.withAlpha(0xFFBDEFA0,(int)(245*fade)));
         p.fillPoly(slimeEmblemPath(skin,cx,cy,SUPER_S,.86f),
-                Glyph.withAlpha(0xFFE94862,(int)(255*fade)));
+                Glyph.withAlpha(0xFF2C8050,(int)(255*fade)));
     }
 
     /** Attach every emblem vertex to the live skin's radial spokes, including local dents. */
     static float[] slimeEmblemPath(float[] skin,float cx,float cy,float[] shape,float scale) {
         float[] out=new float[shape.length];int count=skin.length/2;
         for(int i=0;i<shape.length;i+=2) {
-            float u=shape[i]*.32f*scale,v=.60f+shape[i+1]*.23f*scale;
+            float u=shape[i]*.30f*scale,v=.56f+shape[i+1]*.21f*scale;
             float radius=(float)Math.sqrt(u*u+v*v);
             float angle=(float)Math.atan2(v,u);
             if(angle<0f)angle+=Softbody.TAU;
             float at=angle/Softbody.TAU*count;int node=(int)at;float mix=at-node;
             int a=node*2,b=((node+1)%count)*2;
-            out[i]=cx+(skin[a]+(skin[b]-skin[a])*mix-cx)*radius;
-            out[i+1]=cy+(skin[a+1]+(skin[b+1]-skin[a+1])*mix-cy)*radius;
+            float dx=(skin[a]+(skin[b]-skin[a])*mix-cx)*radius;
+            float dy=(skin[a+1]+(skin[b+1]-skin[a+1])*mix-cy)*radius;
+            // Deep local dents can cross a spoke. Stop short of the first skin intersection.
+            float limit=1f;
+            for(int j=0;j<skin.length;j+=2) {
+                int k=(j+2)%skin.length;
+                float ex=skin[k]-skin[j],ey=skin[k+1]-skin[j+1];
+                float px=skin[j]-cx,py=skin[j+1]-cy,cross=dx*ey-dy*ex;
+                if(Math.abs(cross)<1e-6f)continue;
+                float reach=(px*ey-py*ex)/cross,along=(px*dy-py*dx)/cross;
+                if(reach>0f && along>=0f && along<=1f)limit=Math.min(limit,reach*.92f);
+            }
+            out[i]=cx+dx*limit;out[i+1]=cy+dy*limit;
         }
         return out;
     }

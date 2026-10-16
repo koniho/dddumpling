@@ -612,6 +612,15 @@ final class TestBoss extends Check {
 
     // ---- each boss ----------------------------------------------------------
 
+    private static boolean withinSkin(float[] skin,float x,float y) {
+        boolean inside=false;
+        for(int i=0,j=skin.length-2;i<skin.length;j=i,i+=2) {
+            float ax=skin[i],ay=skin[i+1],bx=skin[j],by=skin[j+1];
+            if((ay>y)!=(by>y) && x<(bx-ax)*(y-ay)/(by-ay)+ax)inside=!inside;
+        }
+        return inside;
+    }
+
     static void slime(Layout L) {
         group("boss: slime");
         Softbody emblemBody=new Softbody();emblemBody.idle=0f;emblemBody.reset(100f,100f,60f,2f);
@@ -627,6 +636,22 @@ final class TestBoss extends Check {
         boolean finiteEmblem=true;
         for(float point:emblemAfter)finiteEmblem&=Float.isFinite(point);
         check("stretched Super Slime emblem stays finite",finiteEmblem);
+        for(int pose=0;pose<4;pose++) {
+            Softbody rubber=new Softbody();rubber.reset(100f,100f,60f,2f);
+            if(pose==0)rubber.squash(.9f);
+            else rubber.pull(pose==1?-80f:pose==2?280f:100f,pose==3?220f:160f,1f);
+            boolean inside=true;
+            for(int frame=0;frame<60;frame++) {
+                rubber.update(DT);if(frame%6!=0)continue;
+                float[] skin=BossScreen.slimeBossOutline(rubber);
+                float[] shield=BossScreen.slimeEmblemPath(skin,rubber.centreX(),rubber.centreY(),BossScreen.SUPER_SHIELD,1f);
+                for(int i=0;i<shield.length;i+=2)for(int sample=0;sample<4;sample++) {
+                    int next=(i+2)%shield.length;float t=sample/4f;
+                    inside&=withinSkin(skin,shield[i]*(1-t)+shield[next]*t,shield[i+1]*(1-t)+shield[next+1]*t);
+                }
+            }
+            check("rounded shield stays inside the deformed skin "+pose,inside);
+        }
 
         GameCore c = enterBoss(L, Boss.SLIME, 41L);
         // Twice as wide as it is tall, in the physics and not only in the drawing — the hit-test, the
