@@ -147,7 +147,10 @@ final class TestBoss extends Check {
         b.leaveT=Boss.LEAVE-2.8f;
         SlimeDeath drip=new SlimeDeath(null,b,L,1f);
         check("the lower skin drips downward before disappearing",
-                drip.y(pose.mx,pose.my+pose.halfH)>lower && drip.amount==1);
+                drip.y(pose.mx,pose.my+pose.halfH)>lower && drip.amount==.5f);
+        check("splat eases from opaque to half transparent",
+                SlimeDeath.opacity(0)==1f && SlimeDeath.opacity(.7f)<1f
+                && SlimeDeath.opacity(.7f)>.5f && SlimeDeath.opacity(SlimeDeath.SPLAT_AT)==.5f);
         float[] emblem=BossScreen.slimeEmblemPath(pose.skin,pose.x,pose.y,BossScreen.SUPER_SHIELD,.86f);
         float[] stretched=wide.points(emblem);
         boolean attached=true;

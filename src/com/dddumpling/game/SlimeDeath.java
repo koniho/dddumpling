@@ -61,7 +61,10 @@ final class SlimeDeath extends OpacityPainter {
         fall=drain*drain*L.h*.95f;
     }
 
-    static float opacity(float time) {return 1f-MushroomDeath.ease(time,DRAIN_END,Boss.LEAVE);}
+    static float opacity(float time) {
+        float translucent=1f-.5f*MushroomDeath.ease(time,.15f,SPLAT_AT);
+        return translucent*(1f-MushroomDeath.ease(time,DRAIN_END,Boss.LEAVE));
+    }
 
     float basicX(float x,float y) {
         float u=pose.across(x,y),v=Math.max(-1f,Math.min(1f,(y-pose.my)/pose.halfH));
