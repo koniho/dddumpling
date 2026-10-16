@@ -59,9 +59,11 @@ final class TestVisuals extends Check {
         n.handleTouch(c,L,0,L.w*.7f,y);n.handleTouch(c,L,1,L.w*.7f,y);
         check("entry slide ignores repeated input",n.takeFeedback()==0);
         n.update(ReleaseNotes.PAGE_TIME*.5f,L);
-        check("new entry enters from right with fresh demo state",n.feature==1 && n.page==0 && n.demo==null && n.entryOffset(L)>0f);
+        check("old content remains alive while the next card enters",n.feature==0 && n.demo==outgoing && n.entryOffset(L)<0f);
         n.update(ReleaseNotes.PAGE_TIME,L);
         check("entry slide settles without exposing list",!n.pageMoving() && !n.listing && n.entryOffset(L)==0f);
+        check("cards have a clear gap",ReleaseNotes.pageSpacing(L)>L.w*.8f);
+        check("card content cannot trigger an edge",n.edgeAt(L,L.w*.11f,n.edgeY(L))==0 && n.edgeAt(L,L.w*.89f,n.edgeY(L))==0);
         check("middle entry exposes both page edges",n.edgeAt(L,L.w*.03f,n.edgeY(L))==-1 && n.edgeAt(L,L.w*.97f,n.edgeY(L))==1);
         n.handleTouch(c,L,0,L.w*.97f,n.edgeY(L));n.handleTouch(c,L,1,L.w*.97f,n.edgeY(L));
         n.update(ReleaseNotes.PAGE_TIME,L);
@@ -96,8 +98,8 @@ final class TestVisuals extends Check {
         check("single entry has no page edges",n.edgeAt(L,L.w*.03f,n.edgeY(L))==0 && n.edgeAt(L,L.w*.97f,n.edgeY(L))==0);
         GameCore.Enemy pair=n.demo.enemies.get(0),partner=pair.link;
         y=n.demoTop(L)+pair.y;
-        n.handleTouch(c,L,0,L.w*.08f+n.demo.enemyCentreX(pair),y);n.update(.1f,L);
-        n.handleTouch(c,L,5,L.w*.08f+n.demo.enemyCentreX(partner),y);
+        n.handleTouch(c,L,0,L.w*.14f+n.demo.enemyCentreX(pair),y);n.update(.1f,L);
+        n.handleTouch(c,L,5,L.w*.14f+n.demo.enemyCentreX(partner),y);
         check("linked demo retains simultaneous two-finger play",pair.destroyed && partner.destroyed && !n.pageMoving());
         n.handleTouch(c,L,3,L.w*.5f,y);
         y=n.demoBottom(L)+ReleaseNotes.size(L);
@@ -124,7 +126,7 @@ final class TestVisuals extends Check {
         float scroll=n.listScroll;
         for(int side=0;side<4;side++) {
             n.select(0,0,L);n.update(ReleaseNotes.PAGE_TIME,L);
-            float x=side==0?L.w*.02f:side==1?L.w*.98f:L.w*.5f;
+            float x=side==0?L.w*.09f:side==1?L.w*.91f:L.w*.5f;
             float y=side==2?n.windowTop(L)-1f:side==3?n.windowBottom(L)+1f:n.windowTop(L)+ReleaseNotes.size(L)*2f;
             n.handleTouch(c,L,0,x,y);
             check("outside detail waits for tap lift "+side,!n.pageReturning);
@@ -145,7 +147,7 @@ final class TestVisuals extends Check {
         check("second finger cancels outside tap",!n.pageMoving());
         n.handleTouch(c,L,0,x,y);n.cancelTouch();n.handleTouch(c,L,1,x,y);
         check("lifecycle cancellation clears outside tap",!n.pageMoving());
-        x=L.w*.04f;y=n.demoBottom(L)+ReleaseNotes.size(L);
+        x=L.w*.10f;y=n.demoBottom(L)+ReleaseNotes.size(L);
         n.handleTouch(c,L,0,x,y);n.handleTouch(c,L,1,x-1f,y);
         check("inside tap ending outside cannot return to list",!n.pageMoving());
         n.handleTouch(c,L,0,x-1f,y);n.handleTouch(c,L,1,x+1f,y);
@@ -321,6 +323,12 @@ final class TestVisuals extends Check {
                 check("feature selection starts a horizontal slide "+release+"/"+feature,n.pageMoving() && n.pageSlide==0f);
                 n.update(ReleaseNotes.PAGE_TIME,L);
                 check("feature slide settles before interaction "+release+"/"+feature,!n.pageMoving() && n.pageSlide==1f);
+                boolean copyFits=true;
+                for(int line=0;line<ReleaseContent.TEXT[n.item()].length;line++) {
+                    float font=Draw.type(ReleaseNotes.size(L)*(ReleaseContent.CONTEXT[n.item()][line]?.48f:.55f));
+                    copyFits&=RasterPainter.textWidth(ReleaseContent.TEXT[n.item()][line],font)<=L.w*.76f;
+                }
+                check("copy fits narrower card "+release+"/"+feature,copyFits);
                 if(!ReleaseChange.playable(n.change()) && !ReleaseContent.AUTO_RESET[n.item()]) {
                     n.touch(c,L,L.w*.5f,(n.demoTop(L)+n.demoBottom(L))*.5f);
                     n.update(ReleaseNotes.RESTART_DELAY+.1f,L);
@@ -342,8 +350,10 @@ final class TestVisuals extends Check {
         for(int[] dimensions:new int[][]{{393,852},{918,2048},{1080,2400},{852,393}}) {
             Layout box=new Layout();box.compute(dimensions[0],dimensions[1],0,0,0,0);
             n.select(0,1,box);float small=n.windowHeight(box);
+            n.select(0,0,box);
+            check("neighboring cards share dimensions "+dimensions[0],n.windowHeight(box)==small);
             n.select(2,box);
-            check("feature window follows content "+dimensions[0],n.windowHeight(box)>small
+            check("feature window fits its content "+dimensions[0],n.windowHeight(box)>0
                     && n.windowTop(box)>=box.topSafe && n.windowBottom(box)<=box.h-box.padB
                     && n.demoBottom(box)<n.windowBottom(box)-ReleaseNotes.size(box)*3f);
         }
@@ -374,7 +384,7 @@ final class TestVisuals extends Check {
 
         n.select(2,L);n.update(ReleaseNotes.PAGE_TIME,L);n.select(ReleaseNotes.VERSIONS.length,L);check("invalid release cannot replace the selected page",n.page==2);
         GameCore.Enemy a=n.demo.enemies.get(0),b=a.link;
-        float ax=L.w*0.08f+n.demo.enemyCentreX(a),bx=L.w*0.08f+n.demo.enemyCentreX(b);
+        float ax=L.w*.14f+n.demo.enemyCentreX(a),bx=L.w*.14f+n.demo.enemyCentreX(b);
         float y=n.demoTop(L)+a.y;
         n.touch(c,L,ax,y);n.update(0.1f,L);
         check("one illustrated key flexes the bond",a.linkWaiting && a.linkStrain>0f);

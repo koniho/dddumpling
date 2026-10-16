@@ -1526,9 +1526,9 @@ final class Preview {
         book.releaseNotes.reset(L);
         GameCore.Enemy bookA=book.releaseNotes.demo.enemies.get(0),bookB=bookA.link;
         float bookY=book.releaseNotes.demoTop(L)+bookA.y;
-        book.releaseNotes.touch(book,L,L.w*0.08f+book.releaseNotes.demo.enemyCentreX(bookA),bookY);
+        book.releaseNotes.touch(book,L,L.w*.14f+book.releaseNotes.demo.enemyCentreX(bookA),bookY);
         book.releaseNotes.update(0.1f,L);
-        book.releaseNotes.touch(book,L,L.w*0.08f+book.releaseNotes.demo.enemyCentreX(bookB),bookY);
+        book.releaseNotes.touch(book,L,L.w*.14f+book.releaseNotes.demo.enemyCentreX(bookB),bookY);
         book.releaseNotes.update(0.15f,L);
         shot(dir,"103-release-book-pair-clear",book,L,w,h,ss);
         }

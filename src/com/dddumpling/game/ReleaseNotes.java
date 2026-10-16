@@ -23,6 +23,7 @@ final class ReleaseNotes extends Draw {
     private float detailDownX,detailDownY;
     private float entrySlide=1f;
     private int entryDirection,pendingFeature=-1,detailEdge;
+    private ReleaseNotes previous,next,far;
 
     static boolean available(GameCore c) {
         return !c.highScoreScreen.open && c.state==GameCore.TITLE && !c.starting() && !c.caseOpen && c.caseFade<0.01f
@@ -69,42 +70,55 @@ final class ReleaseNotes extends Draw {
     }
     int item() { return ReleaseChange.ITEMS[page][feature]; }
     int change() { return ReleaseContent.ICONS[item()]; }
-    float copyExtra() {
-        float extra=(ReleaseContent.TEXT[item()].length-1)*1.1f;
-        for(int line=1;line<ReleaseContent.CONTEXT[item()].length;line++)
-            if(ReleaseContent.CONTEXT[item()][line]) extra+=.4f;
-        return extra;
+    float windowHeight(Layout L) {
+        // One card size throughout the version, including the neighboring pages.
+        float units=0f;
+        for(int id:ReleaseChange.ITEMS[page]) {
+            float extra=(ReleaseContent.TEXT[id].length-1)*1.1f;
+            for(int line=1;line<ReleaseContent.CONTEXT[id].length;line++)
+                if(ReleaseContent.CONTEXT[id][line])extra+=.4f;
+            units=Math.max(units,ReleaseChange.artUnits(ReleaseContent.ICONS[id])+8f+extra);
+        }
+        return units*size(L);
     }
-    float windowHeight(Layout L) { return (ReleaseChange.artUnits(change())+8f+copyExtra())*size(L); }
     float windowTop(Layout L) { return L.topSafe+(L.h-L.topSafe-L.padB-windowHeight(L))*.5f; }
     float windowBottom(Layout L) { return windowTop(L)+windowHeight(L); }
     private boolean detailHit(Layout L,float x,float y) {
-        return x>=L.w*.04f && x<=L.w*.96f && y>=windowTop(L) && y<=windowBottom(L);
+        return x>=L.w*.10f && x<=L.w*.90f && y>=windowTop(L) && y<=windowBottom(L);
     }
     float demoTop(Layout L) { return windowTop(L)+3.6f*size(L); }
     float demoBottom(Layout L) { return demoTop(L)+ReleaseChange.artUnits(change())*size(L); }
     float navigationY(Layout L) { return windowBottom(L)-size(L); }
-    float edgeTop(Layout L) { return windowTop(L)+size(L)*3.4f; }
-    float edgeBottom(Layout L) { return windowBottom(L)-size(L)*2.4f; }
+    float edgeTop(Layout L) { return windowTop(L); }
+    float edgeBottom(Layout L) { return windowBottom(L); }
     float edgeY(Layout L) { return (edgeTop(L)+edgeBottom(L))*.5f; }
     int edgeAt(Layout L,float x,float y) {
         if(y<edgeTop(L) || y>edgeBottom(L) || x<0f || x>L.w) return 0;
-        if(x<L.w*.11f && canStep(-1)) return -1;
-        if(x>L.w*.89f && canStep(1)) return 1;
+        if(x<L.w*.08f && canStep(-1)) return -1;
+        if(x>L.w*.92f && canStep(1)) return 1;
         return 0;
     }
     boolean canStep(int direction) { return feature+direction>=0 && feature+direction<ReleaseChange.ITEMS[page].length; }
     private void step(int direction,Layout L) {
         if(listing || pageMoving() || !canStep(direction)) return;
         cancelTouch();feedback();restartIn=-1f;
-        entryDirection=direction;pendingFeature=feature+direction;entrySlide=0f;
+        entryDirection=direction;pendingFeature=feature+direction;entrySlide=0f;far=neighbor(direction*2,L);
     }
     float entryOffset(Layout L) {
-        return entryDirection*L.w*(entrySlide<.5f ? -panelTravel(entrySlide*2f) : 1f-panelTravel(entrySlide*2f-1f));
+        return entrySlide>=1f?0f:-entryDirection*pageSpacing(L)*panelTravel(entrySlide);
+    }
+    static float pageSpacing(Layout L) { return L.w*.84f; }
+    private ReleaseNotes neighbor(int direction,Layout L) {
+        if(!canStep(direction))return null;
+        ReleaseNotes card=new ReleaseNotes();card.page=page;card.feature=feature+direction;
+        card.reset(L);return card;
+    }
+    private void prepareNeighbors(Layout L) {
+        far=null;previous=neighbor(-1,L);next=neighbor(1,L);
     }
     float closeY(Layout L) { return (listing?top(L):windowTop(L))+1.25f*size(L); }
     private void geometry(Layout L) {
-        mini.compute(L.w*.84f,14f*size(L),0,0,0,0);
+        mini.compute(L.w*.72f,14f*size(L),0,0,0,0);
         float artH=demoBottom(L)-demoTop(L);
         // Leave room for the pickup's expanding bloom, including its bob.
         mini.enemyR=change()==ReleaseChange.SHUFFLE ? Math.min(mini.enemyR,artH/8.5f)
@@ -113,7 +127,7 @@ final class ReleaseNotes extends Draw {
     }
     void show(GameCore c,Layout L) {
         if(open || !available(c)) return;
-        cancelTouch();entrySlide=1f;pendingFeature=-1;
+        cancelTouch();entrySlide=1f;pendingFeature=-1;far=null;
         feedbackSound=c.sound;
         feedback();
         transition.begin(c.releaseMascot,L,c.clock);
@@ -127,7 +141,7 @@ final class ReleaseNotes extends Draw {
     int takeFeedback() { int count=feedbackPending;feedbackPending=0;return count; }
     void close() {
         if(!open || transition.closing) return;
-        feedback();transition.close();detailTracking=false;pendingFeature=-1;entrySlide=1f;
+        feedback();transition.close();detailTracking=false;pendingFeature=-1;entrySlide=1f;far=null;
     }
     void cancelTouch() { gesture=false;listDragging=false;pressedRow=-1;detailTracking=detailOutside=demoGesture=false;detailEdge=0; }
     private int rowAt(Layout L,float x,float y) {
@@ -152,14 +166,14 @@ final class ReleaseNotes extends Draw {
     void select(int release,int item,Layout L) {
         if(release<0 || release>=VERSIONS.length || item<0 || item>=ReleaseChange.ITEMS[release].length) return;
         if(open && listing && !transition.moving()) feedback();
-        cancelTouch();entrySlide=1f;pendingFeature=-1;
-        page=release;feature=item;listing=false;pageSlide=0f;pageReturning=false;reset(L);
+        cancelTouch();entrySlide=1f;pendingFeature=-1;far=null;
+        page=release;feature=item;listing=false;pageSlide=0f;pageReturning=false;reset(L);prepareNeighbors(L);
     }
     boolean pageMoving() { return !listing && (pageReturning || pageSlide<1f || entrySlide<1f); }
     float pageTravel() { return panelTravel(pageSlide); }
     void back() {
         if(transition.moving()) { close();return; }
-        cancelTouch();entrySlide=1f;pendingFeature=-1;
+        cancelTouch();entrySlide=1f;pendingFeature=-1;far=null;
         if(listing) close();else pageReturning=true;
     }
     private void activated() { restartIn=ReleaseContent.AUTO_RESET[item()] ? RESTART_DELAY : -1f; }
@@ -181,22 +195,32 @@ final class ReleaseNotes extends Draw {
     }
     void update(float dt,Layout L) {
         if(!open) return;
-        if(transition.update(dt)) { open=false;demo=null;return; }
+        if(transition.update(dt)) { open=false;demo=null;previous=next=far=null;return; }
         if(!listing && !transition.moving()) {
             pageSlide=Math.max(0f,Math.min(1f,pageSlide+(pageReturning?-dt:dt)/PAGE_TIME));
-            if(pageReturning && pageSlide==0f) { listing=true;pageReturning=false;demo=null; }
+            if(pageReturning && pageSlide==0f) { listing=true;pageReturning=false;demo=null;previous=next=far=null; }
         }
         if(entrySlide<1f && !transition.moving() && !pageReturning) {
             entrySlide=Math.min(1f,entrySlide+dt/PAGE_TIME);
-            if(entrySlide>=.5f && pendingFeature>=0) {
-                feature=pendingFeature;pendingFeature=-1;reset(L);
+            if(entrySlide>=1f && pendingFeature>=0) {
+                ReleaseNotes incoming=entryDirection<0?previous:next;
+                feature=pendingFeature;pendingFeature=-1;entryDirection=0;
+                demo=incoming.demo;age=incoming.age;replay=incoming.replay;restartIn=incoming.restartIn;
+                prepareNeighbors(L);
             }
         }
         if(restartIn>=0f && !listing && !transition.moving() && !pageMoving()) {
             restartIn-=dt;
             if(restartIn<=0f) { reset(L);return; }
         }
-        age+=dt;listScroll=Math.max(0f,Math.min(maxScroll(L),listScroll));
+        listScroll=Math.max(0f,Math.min(maxScroll(L),listScroll));
+        advanceContent(dt,L);
+        if(previous!=null)previous.advanceContent(dt,L);
+        if(next!=null)next.advanceContent(dt,L);
+        if(far!=null)far.advanceContent(dt,L);
+    }
+    private void advanceContent(float dt,Layout L) {
+        age+=dt;
         if(demo==null) return;
         geometry(L);demo.clock+=dt;
         if(change()==ReleaseChange.TRAVEL) LandPicker.updateTravel(demo,dt);
@@ -240,10 +264,10 @@ final class ReleaseNotes extends Draw {
                 detailTracking=true;detailEdge=edgeAt(L,x,y);detailOutside=detailEdge==0 && !detailHit(L,x,y);
                 detailMoved=detailVertical=demoGesture=false;detailDownX=x;detailDownY=y;gesture=true;
                 boolean header=Math.abs(y-closeY(L))<size(L)
-                        && ((x>L.w*.04f && x<L.w*.21f) || (x>L.w*.82f && x<L.w*.96f));
+                        && ((x>L.w*.10f && x<L.w*.26f) || (x>L.w*.74f && x<L.w*.90f));
                 // The linked-pair demo owns its art region for simultaneous two-finger play.
                 demoGesture=detailEdge==0 && demo!=null && change()==ReleaseChange.PAIR
-                        && x>=L.w*.08f && x<=L.w*.92f && y>=demoTop(L) && y<=demoBottom(L);
+                        && x>=L.w*.14f && x<=L.w*.86f && y>=demoTop(L) && y<=demoBottom(L);
                 if(header || demoGesture) { detailTracking=false;touch(c,L,x,y); }
             } else if(action==5 && demoGesture) {
                 touch(c,L,x,y);
@@ -283,17 +307,17 @@ final class ReleaseNotes extends Draw {
         }
         if(transition.moving() || pageMoving()) return true;
         float s=size(L);
-        if(x>L.w*.82f && x<L.w*.96f && Math.abs(y-closeY(L))<s) { close();return true; }
+        if(x>L.w*(listing?.82f:.74f) && x<L.w*(listing?.96f:.90f) && Math.abs(y-closeY(L))<s) { close();return true; }
         if(listing) {
             if(x<L.w*.04f || x>L.w*.96f || y<top(L) || y>bottom(L)) close();
             return true;
         }
-        if(x<L.w*.21f && x>L.w*.04f && Math.abs(y-closeY(L))<s) { back();return true; }
+        if(x<L.w*.26f && x>L.w*.10f && Math.abs(y-closeY(L))<s) { back();return true; }
         int edge=edgeAt(L,x,y);
         if(edge!=0) { step(edge,L);return true; }
-        if(y<demoTop(L) || y>demoBottom(L) || x<L.w*.08f || x>L.w*.92f) return true;
+        if(y<demoTop(L) || y>demoBottom(L) || x<L.w*.14f || x>L.w*.86f) return true;
         if(demo==null) { age=0f;activated();return true; }
-        float dx=x-L.w*.08f,dy=y-demoTop(L);
+        float dx=x-L.w*.14f,dy=y-demoTop(L);
         if(change()==ReleaseChange.TRAVEL) {
             int before=demo.landChoice;
             LandPicker.step(demo,dx<mini.w*.5f ? -1 : 1);
@@ -338,28 +362,38 @@ final class ReleaseNotes extends Draw {
                 p.save();p.translate(-L.w*travel,0);drawPanel(glass,c,L,true);p.restore();
             }
             if(travel>0f) {
-                p.save();p.translate(L.w*(1f-travel)+entryOffset(L),0);drawPanel(glass,c,L,false);p.restore();
+                p.save();p.translate(L.w*(1f-travel)+entryOffset(L),0);
+                drawPanel(glass,c,L,false);
+                if(previous!=null) {
+                    p.save();p.translate(-pageSpacing(L),0);previous.drawPanel(glass,c,L,false);p.restore();
+                }
+                if(next!=null) {
+                    p.save();p.translate(pageSpacing(L),0);next.drawPanel(glass,c,L,false);p.restore();
+                }
+                if(far!=null) {
+                    p.save();p.translate(entryDirection*pageSpacing(L)*2f,0);far.drawPanel(glass,c,L,false);p.restore();
+                }
+                p.restore();
             }
         }
         p.restore();
     }
     private void drawPanel(Painter p,GameCore c,Layout L,boolean list) {
         float s=size(L),cx=L.w*.5f,t=list?top(L):windowTop(L),b=list?bottom(L):windowBottom(L);
-        glassPanel(p,L.w*.04f,t,L.w*.96f,b,s);
-        float closeX=L.w*.89f,closeY=t+1.25f*s,r=s*.3f;
+        glassPanel(p,L.w*(list?.04f:.10f),t,L.w*(list?.96f:.90f),b,s);
+        float closeX=L.w*(list?.89f:.82f),closeY=t+1.25f*s,r=s*.3f;
         p.line(closeX-r,closeY-r,closeX+r,closeY+r,INK,s*.12f);
         p.line(closeX-r,closeY+r,closeX+r,closeY-r,INK,s*.12f);
         if(list) { drawList(p,c,L);return; }
-        drawEdges(p,L);
-        arrow(p,L.w*.13f,closeY,-1,s);
+        arrow(p,L.w*.18f,closeY,-1,s);
         p.text(VERSIONS[page],cx,t+s*1.5f,type(s*.55f),INK_DIM,Painter.CENTER,false);
         p.text(ReleaseContent.TITLES[item()],cx,t+s*2.9f,type(s*.75f),GOLD,Painter.CENTER,true);
-        p.save();p.clipRect(L.w*.08f,demoTop(L),L.w*.92f,demoBottom(L));
-        p.translate(L.w*.08f,demoTop(L));
+        p.save();p.clipRect(L.w*.14f,demoTop(L),L.w*.86f,demoBottom(L));
+        p.translate(L.w*.14f,demoTop(L));
         float artH=demoBottom(L)-demoTop(L);
         if(demo==null) {
             float bounce=(float)Math.sin(Math.min(1f,age/.5f)*Math.PI)*s*.35f;
-            ReleaseChange.icon(p,change(),L.w*.42f,artH*.5f-bounce,s*1.7f,c.clock+age);
+            ReleaseChange.icon(p,change(),L.w*.36f,artH*.5f-bounce,s*1.7f,c.clock+age);
         } else if(change()==ReleaseChange.TRAVEL) {
             p.translate(0,artH*.5f-LandPicker.cardY(mini));LandPicker.draw(p,demo,mini);
         } else if(change()==ReleaseChange.SHUFFLE) {
@@ -385,20 +419,6 @@ final class ReleaseNotes extends Draw {
             p.text((feature+1)+" / "+ReleaseChange.ITEMS[page].length,cx,y+s*.2f,type(s*.48f),INK_DIM,Painter.CENTER,false);
         }
     }
-    private void drawEdges(Painter p,Layout L) {
-        float s=size(L),t=edgeTop(L),b=edgeBottom(L);
-        for(int direction=-1;direction<=1;direction+=2) {
-            if(!canStep(direction)) continue;
-            float x=direction<0?0f:L.w,in=-direction,r=x+in*L.w*.065f;
-            // A neighboring sheet peeks into the margin, with its folded inner corner.
-            p.fillPoly(pageShape(direction<0?-s:r,t,direction<0?r:L.w+s,b,s*.45f),0xFF716087);
-            p.line(r-in*s*.12f,t+s*.5f,r-in*s*.12f,b-s*.5f,0xFFBBA6CF,s*.07f);
-            p.line(r-in*s*.32f,t+s*.7f,r-in*s*.32f,b-s*.7f,0xFF8E7BA4,s*.05f);
-            p.fillPoly(new float[]{r,t+s*.7f,r-in*s*.55f,t,r,t},0xFFD1BFDF);
-            arrow(p,x+in*L.w*.028f,edgeY(L),direction,s*.55f);
-        }
-    }
-
     private void drawList(Painter p,GameCore c,Layout L) {
         float s=size(L);
         p.text("WHAT'S COOKING?",L.w*.46f,top(L)+s*1.8f,type(s*.8f),GOLD,Painter.CENTER,true);
