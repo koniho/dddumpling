@@ -614,6 +614,19 @@ final class TestBoss extends Check {
 
     static void slime(Layout L) {
         group("boss: slime");
+        Softbody emblemBody=new Softbody();emblemBody.idle=0f;emblemBody.reset(100f,100f,60f,2f);
+        float[] emblemShape={-1f,-.5f,1f,-.5f,0f,1f};
+        float[] emblemBefore=BossScreen.slimeEmblemPath(BossScreen.slimeBossOutline(emblemBody),
+                emblemBody.centreX(),emblemBody.centreY(),emblemShape,1f);
+        emblemBody.pull(260f,180f,1f);
+        for(int i=0;i<30;i++)emblemBody.update(DT);
+        float[] emblemAfter=BossScreen.slimeEmblemPath(BossScreen.slimeBossOutline(emblemBody),
+                emblemBody.centreX(),emblemBody.centreY(),emblemShape,1f);
+        float beforeWidth=emblemBefore[2]-emblemBefore[0],afterWidth=emblemAfter[2]-emblemAfter[0];
+        check("Super Slime emblem stretches with the spring body",Math.abs(afterWidth-beforeWidth)>1f);
+        boolean finiteEmblem=true;
+        for(float point:emblemAfter)finiteEmblem&=Float.isFinite(point);
+        check("stretched Super Slime emblem stays finite",finiteEmblem);
 
         GameCore c = enterBoss(L, Boss.SLIME, 41L);
         // Twice as wide as it is tall, in the physics and not only in the drawing — the hit-test, the

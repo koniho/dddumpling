@@ -2536,6 +2536,15 @@ final class Preview {
             step(c,L,c.boss.introDuration()*at);
             shot(dir,"182-boss-header-"+kind+"-"+Math.round(at*100),c,L,w,h,ss);
         }
+        if(wanted("182-"))for(int pose=0;pose<3;pose++) {
+            GameCore hero=TestTimeAttack.start(Boss.SLIME);hero.stageBanner=0;
+            step(hero,L,hero.boss.introDuration()+.1f);
+            Softbody body=hero.boss.body;
+            if(pose==1)body.squash(.7f);
+            if(pose==2)body.pull(body.centreX()+body.radiusX()*1.4f,body.centreY()+body.radiusY(),1f);
+            if(pose>0)for(int frame=0;frame<18;frame++)body.update(DT);
+            shot(dir,"182-super-slime-"+pose,hero,L,w,h,ss);
+        }
         // The arrival card, part way in.
         GameCore ci = toBoss(L, Boss.SLIME, 501L, false);
         step(ci, L, Boss.INTRO * 0.45f);

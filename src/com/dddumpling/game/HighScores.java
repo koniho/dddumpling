@@ -8,7 +8,7 @@ final class HighScores {
     // Persist the context index so a build's scenery cycle cannot rewrite a past death.
     static final String[] BLURBS={
         "Called it a snack break.",
-        "Slime gave you a goo hug.",
+        "Super Slime gave you a goo hug.",
         "Dark Divide cubed your cuteness.",
         "Octopulse: eight hugs too many.",
         "Fly Agaric made you a spore snack.",

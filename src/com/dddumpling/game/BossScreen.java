@@ -303,6 +303,8 @@ final class BossScreen extends Draw {
                             (int) ((48 + 42 * hash(i + 19)) * fade)));
         }
 
+        slimeEmblem(p,skin,cx,cy,fade);
+
         // The reference face: two deep green button eyes with crisp reflected light.
         float eyeY = cy - ry * (vulnerable ? 0.07f : 0.10f), eyeDX = rx * 0.35f;
         float eyeRX = ry * 0.225f, eyeRY = ry * (vulnerable ? 0.29f : 0.265f);
@@ -338,6 +340,39 @@ final class BossScreen extends Draw {
             }
             p.polyline(smile, ink, ry * 0.075f);
         }
+    }
+
+    private static final float[] SUPER_SHIELD={-.65f,-1f,.65f,-1f,1f,-.5f,0f,1f,-1f,-.5f};
+    private static final float[] SUPER_S={
+        .52f,-.55f,.15f,-.70f,-.38f,-.58f,-.58f,-.25f,-.36f,.02f,
+        .22f,.14f,.15f,.32f,-.16f,.38f,-.40f,.22f,-.53f,.43f,
+        -.17f,.65f,.35f,.48f,.52f,.13f,.29f,-.16f,-.28f,-.28f,
+        -.20f,-.42f,.09f,-.47f,.37f,-.33f
+    };
+
+    private static void slimeEmblem(Painter p,float[] skin,float cx,float cy,float fade) {
+        p.fillPoly(slimeEmblemPath(skin,cx,cy,SUPER_SHIELD,1f),
+                Glyph.withAlpha(0xFF922747,(int)(245*fade)));
+        p.fillPoly(slimeEmblemPath(skin,cx,cy,SUPER_SHIELD,.86f),
+                Glyph.withAlpha(0xFFFFD85D,(int)(245*fade)));
+        p.fillPoly(slimeEmblemPath(skin,cx,cy,SUPER_S,.86f),
+                Glyph.withAlpha(0xFFE94862,(int)(255*fade)));
+    }
+
+    /** Attach every emblem vertex to the live skin's radial spokes, including local dents. */
+    static float[] slimeEmblemPath(float[] skin,float cx,float cy,float[] shape,float scale) {
+        float[] out=new float[shape.length];int count=skin.length/2;
+        for(int i=0;i<shape.length;i+=2) {
+            float u=shape[i]*.32f*scale,v=.60f+shape[i+1]*.23f*scale;
+            float radius=(float)Math.sqrt(u*u+v*v);
+            float angle=(float)Math.atan2(v,u);
+            if(angle<0f)angle+=Softbody.TAU;
+            float at=angle/Softbody.TAU*count;int node=(int)at;float mix=at-node;
+            int a=node*2,b=((node+1)%count)*2;
+            out[i]=cx+(skin[a]+(skin[b]-skin[a])*mix-cx)*radius;
+            out[i+1]=cy+(skin[a+1]+(skin[b+1]-skin[a+1])*mix-cy)*radius;
+        }
+        return out;
     }
 
     private static float[] slimeInset(float[] skin, float cx, float cy, float rx, float ry,
@@ -1568,9 +1603,16 @@ final class BossScreen extends Draw {
 
         float s = L.unit;
         float y = L.h * 0.30f;
-        int col = tint(b);
-        p.text(b.name(), L.w / 2f, y, type(s * 1.8f), Glyph.withAlpha(col, (int) (255 * a)),
-                Painter.CENTER, true);
+        float titleSize=type(s*1.8f),edge=s*.10f;
+        int outline=Glyph.withAlpha(0xFF24162F,(int)(245*a));
+        // Pale lettering and a dark rim stay readable over every boss's body.
+        for(int side=0;side<4;side++) {
+            float dx=side==0?-edge:side==1?edge:0f;
+            float dy=side==2?-edge:side==3?edge:0f;
+            p.text(b.name(),L.w*.5f+dx,y+dy,titleSize,outline,Painter.CENTER,true);
+        }
+        p.text(b.name(),L.w*.5f,y,titleSize,Glyph.withAlpha(0xFFFFF1C9,(int)(255*a)),
+                Painter.CENTER,true);
         p.text(Boss.BLURB[b.kind], L.w / 2f, y + type(s * 1.35f), type(s * 0.62f),
                 Glyph.withAlpha(INK, (int) (225 * a)), Painter.CENTER, false);
     }
