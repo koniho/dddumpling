@@ -842,7 +842,7 @@ public final class IOSInputTest extends Check {
         check("native feature selection slides in",c.releaseNotes.pageMoving());
         for(int i=0;i<24;i++) game.update(DT);
         GameCore.Enemy a=c.releaseNotes.demo.enemies.get(0),b=a.link;
-        float ax=l.w*0.08f+c.releaseNotes.demo.enemyCentreX(a),bx=l.w*0.08f+c.releaseNotes.demo.enemyCentreX(b);
+        float ax=l.w*.14f+c.releaseNotes.demo.enemyCentreX(a),bx=l.w*.14f+c.releaseNotes.demo.enemyCentreX(b);
         float y=c.releaseNotes.demoTop(l)+a.y;
         game.touch(one(0,3,ax,y));game.update(0.1f);
         game.touch(two(5,1,3,ax,y,4,bx,y));
@@ -865,8 +865,8 @@ public final class IOSInputTest extends Check {
         check("native outside detail tap preserves list and scroll",c.releaseNotes.listing && c.releaseNotes.page==2 && c.releaseNotes.listScroll==scroll);
         tap(game,ReleaseNotes.iconX(l,2,0),ReleaseNotes.rowY(l,2)-scroll);
         for(int i=0;i<24;i++) game.update(DT);
-        game.touch(one(0,8,l.w*0.9f,c.releaseNotes.closeY(l)));
-        game.touch(two(5,1,8,l.w*0.9f,ReleaseNotes.top(l),9,l.keyX[0],l.keyY[0]));
+        game.touch(one(0,8,l.w*.82f,c.releaseNotes.closeY(l)));
+        game.touch(two(5,1,8,l.w*.82f,c.releaseNotes.closeY(l),9,l.keyX[0],l.keyY[0]));
         game.touch(one(1,8,l.keyX[0],l.keyY[0]));
         check("book closing gesture cannot start a run",c.releaseNotes.open && c.releaseNotes.transition.closing && !c.starting());
         for(int i=0;i<72;i++) game.update(DT);
