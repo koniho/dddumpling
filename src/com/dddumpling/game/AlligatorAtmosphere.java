@@ -24,6 +24,12 @@ final class AlligatorAtmosphere extends Draw {
     static float waveY(Layout L,int arm,float time) {
         return L.playTop+(L.dangerY-L.playTop)*(.28f+.14f*(float)Math.cos(time*5.5f+arm*Math.PI));
     }
+    static float tailWaveX(Layout L,int side,float time) {
+        return L.w*(.5f+side*(.18f+.17f*(float)Math.sin(time*4)));
+    }
+    static float tailWaveY(Layout L,float time) {
+        return L.playTop+(L.dangerY-L.playTop)*(.68f+.13f*(float)Math.sin(time*3.8f+1.1f));
+    }
     static void fireflies(Painter p,Layout L,float time,float fade,boolean front) {
         if(fade<=0)return;
         for(int i=0;i<FIREFLIES;i++) {

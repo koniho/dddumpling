@@ -101,6 +101,11 @@ final class AlligatorArt extends Draw {
                 float blend=AlligatorArrival.ramp(c.deathProgress(),0,.12f);
                 tx+=(AlligatorAtmosphere.waveX(L,i,c.clock)-tx)*blend;
                 ty+=(AlligatorAtmosphere.waveY(L,i,c.clock)-ty)*blend;
+            } else if(i==2 && victory) {
+                float blend=AlligatorArrival.ramp(c.deathProgress(),0,.12f);
+                int side=a.tailPosition<0?-1:1;
+                tx+=(AlligatorAtmosphere.tailWaveX(L,side,c.clock)-tx)*blend;
+                ty+=(AlligatorAtmosphere.tailWaveY(L,c.clock)-ty)*blend;
             } else if(i<2 && b.beaten) {
                 tx+=(rx+L.w*.06f*(float)Math.sin(seconds*6f+i*2f)-tx)*defeated;
                 ty+=(ry+(L.dangerY-L.playTop)*.35f-ty)*defeated;
@@ -110,7 +115,7 @@ final class AlligatorArt extends Draw {
             float pulse=.35f+.65f*(.5f+.5f*(float)Math.sin(b.age*Softbody.TAU*2.5f));
             float tell=live?pulse:0;
             if(i==2 && !b.beaten && !victory)tell=Math.max(tell,pulse*a.tailFlick());
-            if(i==2)limb(p,rx,ry,tx,ty,L.w*.12f,true,SKIN,b.age,tell);
+            if(i==2)limb(p,rx,ry,tx,ty,L.w*.12f,true,SKIN,victory?c.clock:b.age,tell);
             else {
                 float ex=a.elbowX(L,i,tx),ey=a.elbowY(L,i,ty);
                 if(victory || b.beaten) {
@@ -189,6 +194,7 @@ final class AlligatorArt extends Draw {
             shape[(33-i)*2]=cx-nx*w;shape[(33-i)*2+1]=cy-ny*w;
         }
         float[] contour=smooth(shape);
+        Painter edge=p;
         if(tail)p=attackGlow(p,contour,width,tell);
         p.fillPoly(contour,DARK);
         p.fillPoly(inset(contour,(x+tx)*.5f,(y+ty)*.5f,.94f,.96f),color);
@@ -227,6 +233,21 @@ final class AlligatorArt extends Draw {
             }
             p.fillCircle(tx,ty,width*.40f,Glyph.mix(color,LIGHT,tell*.15f));
             p.fillCircle(tx-width*.08f,ty-width*.12f,width*.16f,0x608BDAA7);
+            // Trace the exposed tip, leaving its join to the tail open.
+            float[] rim=new float[58];
+            for(int i=0;i<8;i++) {
+                float u=.84f+.16f*i/7,w=limbWidth(width,u,true),bow=bend*(float)Math.sin(u*Math.PI);
+                rim[i*2]=x+dx*u+nx*(bow+w);rim[i*2+1]=y+dy*u+ny*(bow+w);
+                rim[(28-i)*2]=x+dx*u+nx*(bow-w);rim[(28-i)*2+1]=y+dy*u+ny*(bow-w);
+            }
+            for(int i=0;i<13;i++) {
+                float angle=(i+1)*(float)Math.PI/14,across=width*.4f*(float)Math.cos(angle);
+                float along=width*.4f*(float)Math.sin(angle);
+                rim[(8+i)*2]=tx+nx*across+dx/d*along;
+                rim[(8+i)*2+1]=ty+ny*across+dy/d*along;
+            }
+            edge.polyline(rim,DARK,width*.10f);
+            edge.polyline(rim,0xB0D3F1B8,width*.026f);
         } else {
             palm(p,tx,ty,dx/d,dy/d,width,color,0);
             for(int i=0;i<3;i++) {

@@ -14,6 +14,17 @@ final class TestAlligator extends Check {
                     maxX-minX>L.w*.22f && maxY-minY>(L.dangerY-L.playTop)*.26f
                     && minX>=L.w*.09f && maxX<=L.w*.91f);
         }
+        for(int side:new int[]{-1,1}) {
+            float minX=L.w,maxX=0,minY=L.h,maxY=0;
+            for(int frame=0;frame<180;frame++) {
+                float x=AlligatorAtmosphere.tailWaveX(L,side,frame/60f);
+                float y=AlligatorAtmosphere.tailWaveY(L,frame/60f);
+                minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
+            }
+            check("victory tail sweeps visibly within the lower play area "+side,
+                    maxX-minX>L.w*.30f && maxY-minY>(L.dangerY-L.playTop)*.24f
+                    && minX>=L.w*.14f && maxX<=L.w*.86f && minY>L.playTop && maxY<L.dangerY);
+        }
         check("defeated pose holds before the fall",AlligatorAtmosphere.offset(L,.5f)==0);
         check("fall accelerates into the water",AlligatorAtmosphere.offset(L,1.6f)-AlligatorAtmosphere.offset(L,1.2f)
                 >AlligatorAtmosphere.offset(L,1.2f)-AlligatorAtmosphere.offset(L,.8f));
@@ -21,12 +32,12 @@ final class TestAlligator extends Check {
                 AlligatorAtmosphere.offset(L,AlligatorAtmosphere.SUBMERGED_AT)>AlligatorAtmosphere.waterY(L));
         GameCore c=fight(L),same=fight(L);c.lives=same.lives=1;
         c.takeHit(L.w*.5f,L);same.takeHit(L.w*.5f,L);
-        Boss b=c.bossVictory;float tip=b.alligator.tipX,age=b.age,cx=b.body.centreX();
+        Boss b=c.bossVictory;float tip=b.alligator.tipX,age=b.age,cx=b.body.centreX(),tail=b.alligator.tailPosition;
         RasterPainter p=new RasterPainter((int)L.w,(int)L.h,1);
         c.clock=1;c.deathT=c.deathDuration()-1;
         BossVictory.draw(p,c,L);
         check("victory art leaves the retained fight and gameplay RNG untouched",
-                b.alligator.tipX==tip && b.age==age && b.body.centreX()==cx
+                b.alligator.tipX==tip && b.alligator.tailPosition==tail && b.age==age && b.body.centreX()==cx
                 && c.rnd.nextLong()==same.rnd.nextLong());
     }
     static GameCore fight(Layout L) {

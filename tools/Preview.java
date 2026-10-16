@@ -78,17 +78,20 @@ final class Preview {
             TestAlligator.advance(c,L,at);c.clock=at;
             shot(dir,"gator-growl-"+(phase+1)+"-"+(beat+1),c,L,w,h,ss);
         }
-        if(wanted("gator-final-")) {
+        if(wantedGroup("gator-final-")) {
             for(float at:new float[]{.25f,.7f,1.2f,1.65f,2.05f,2.5f,3.3f}) {
                 GameCore ending=TestAlligator.fight(L);ending.stageBanner=0;ending.landBlend=1;
                 ending.boss.damage(ending.boss.hp);TestAlligator.advance(ending,L,at);ending.clock=at;
                 shot(dir,"gator-final-defeat-"+Math.round(at*100),ending,L,w,h,ss);
             }
-            GameCore win=TestAlligator.fight(L);win.stageBanner=0;win.landBlend=1;win.lives=1;
-            win.takeHit(L.w*.5f,L);
-            for(float at:new float[]{.4f,.7f,1f,1.4f}) {
-                win.clock=at;win.deathT=win.deathDuration()-at;
-                shot(dir,"gator-final-taunt-"+Math.round(at*100),win,L,w,h,ss);
+            for(int side:new int[]{-1,1}) {
+                GameCore win=TestAlligator.fight(L);win.stageBanner=0;win.landBlend=1;win.lives=1;
+                win.boss.alligator.tailPosition=win.boss.alligator.tailSide=side;
+                win.takeHit(L.w*.5f,L);
+                for(float at:new float[]{.4f,.7f,1f,1.4f}) {
+                    win.clock=at;win.deathT=win.deathDuration()-at;
+                    shot(dir,"gator-final-taunt-"+(side<0?"left-":"")+Math.round(at*100),win,L,w,h,ss);
+                }
             }
             GameCore flies=TestAlligator.fight(L);flies.stageBanner=0;flies.landBlend=1;
             for(float at:new float[]{0f,1.2f,2.4f}) {
