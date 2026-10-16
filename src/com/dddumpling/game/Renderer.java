@@ -254,6 +254,7 @@ final class Renderer extends Draw {
         float swell = (1f + 0.26f * attack + 0.08f * e.warn) * enter
                 * (1f - 0.30f * destroy);
         int fade = (int) ((90 + 165 * e.enterT) * (1f - destroy));
+        FastEnemies.clearBurst(p,e,L);
         SwampEnemies.fog(p,c,e,L,jx,jy,swell,fade,false);
 
         for (int i = 0; i < e.word.length; i++) {

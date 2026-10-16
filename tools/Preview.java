@@ -8,6 +8,18 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void enemyClearFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("enemy-clear-"))return;
+        for(boolean fog:new boolean[]{false,true})for(float time:new float[]{0,.08f,.18f,.30f}) {
+            GameCore c=TestSwampEnemies.scene(L,180);c.clock=2;
+            GameCore.Enemy e=fog?TestSwampEnemies.word(c,L,SwampEnemies.FOG,L.h*.44f)
+                    :TestFastEnemies.runner(c,L,L.h*.44f);
+            e.baseX=L.w*.5f;e.sway=0;e.word[0]=2;
+            c.destroyWord(e,c.enemyCentreX(e),e.y,L);
+            e.destroyT=time;
+            shot(dir,"enemy-clear-"+(fog?"fog-":"star-")+Math.round(time*100),c,L,w,h,ss);
+        }
+    }
     private static void fastEnemyFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("180-"))return;
         for(float time:new float[]{0,.3f,.8f}) {
@@ -1477,6 +1489,7 @@ final class Preview {
         gatorSilhouetteFrames(dir,L,w,h,ss);
         alligatorFrames(dir,L,w,h,ss);
         swampEnemyFrames(dir,L,w,h,ss);
+        enemyClearFrames(dir,L,w,h,ss);
         fastEnemyFrames(dir,L,w,h,ss);
         gatorCompanionFrames(dir,L,w,h,ss);
         adventureTitleFrames(dir,L,w,h,ss);

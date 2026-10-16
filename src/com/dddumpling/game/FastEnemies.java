@@ -84,6 +84,32 @@ final class FastEnemies {
         }
     }
 
+    static void clearBurst(Painter p,GameCore.Enemy e,Layout L) {
+        if(!e.fastSingle || !e.destroyed)return;
+        float t=e.destroyT/GameCore.DESTROY_TIME;
+        if(t<0 || t>=1)return;
+        float ease=1-(1-t)*(1-t),fade=(1-t)*(1-t),r=L.enemyR;
+        float x=e.clearX,y=e.clearY;
+        int color=Glyph.COLOR[e.word[0]],light=Glyph.mix(color,0xFFFFF4C6,.65f);
+        float flash=Math.max(0,1-t*4);
+        p.fillCircle(x,y,r*(1.5f+ease*2),Glyph.withAlpha(color,(int)(80*flash)));
+        p.fillPoly(Draw.star(x,y,r*(1+ease*2.7f),r*(.3f+ease*.6f),5,-1.57f),
+                Glyph.withAlpha(light,(int)(200*flash)));
+        p.strokePoly(outline(x,y,r*(1+ease*2.5f)),Glyph.withAlpha(color,(int)(155*fade)),r*.16f*(1-t));
+        for(int i=0;i<14;i++) {
+            float angle=e.phase+i*2.39996f;
+            float reach=r*(.65f+ease*(2.5f+(i%3)*.7f));
+            float xx=x+(float)Math.cos(angle)*reach,yy=y+(float)Math.sin(angle)*reach;
+            float size=r*(.16f+(i%3)*.055f)*(1-t*.6f);
+            int alpha=(int)(255*fade);
+            p.line(xx-(float)Math.cos(angle)*r*ease*.9f,yy-(float)Math.sin(angle)*r*ease*.9f,
+                    xx,yy,Glyph.withAlpha(color,alpha/3),size*.7f);
+            p.fillCircle(xx,yy,size*3,Glyph.withAlpha(color,alpha/8));
+            p.fillCircle(xx,yy,size*1.8f,Glyph.withAlpha(light,alpha/4));
+            p.fillPoly(Draw.star(xx,yy,size,size*.42f,i%2==0?5:4,angle+t*3),Glyph.withAlpha(light,alpha));
+        }
+    }
+
     static void body(Painter p,float x,float y,float r,int color,int fade,boolean cleared) {
         int light=Glyph.mix(color,0xFFFFF0B1,.55f);
         float[] shape=outline(x,y,r);

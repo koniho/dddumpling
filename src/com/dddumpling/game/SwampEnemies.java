@@ -83,9 +83,7 @@ final class SwampEnemies {
     static void fog(Painter p,GameCore c,GameCore.Enemy e,Layout L,float jx,float jy,
             float swell,int fade,boolean front) {
         if(e.swampKind!=FOG)return;
-        float vanish=e.destroyed?Math.min(1,e.destroyT/GameCore.DESTROY_TIME)
-                :e.dying?Math.min(1,e.deathT/GameCore.SHOT_TIME):0;
-        if(vanish>=1)return;
+        if(e.destroyed) {disperse(p,e,L,front);return;}
         int head=Math.min(e.fogHead,e.word.length-1);
         float reveal=e.fogReveal/REVEAL;
         float retreat=reveal*reveal*(3-2*reveal);
@@ -94,9 +92,9 @@ final class SwampEnemies {
         float left=x-r*2.5f;
         if(head>0)left-=(x-jx-c.tileX(e,head-1,L))*retreat;
         float right=c.tileX(e,e.word.length-1,L)+jx+r*2.5f;
-        float y=e.y+jy-r*vanish*.9f;
+        float y=e.y+jy;
         float clock=c.clock*2.2f+e.phase;
-        int alpha=(int)(fade*(1-vanish));
+        int alpha=fade;
         if(!front) {
             ribbon(p,left-r*.5f,right+r*.65f,y+r*.24f,r*.46f,clock*.7f,0xFF8ABDC4,alpha*42/255);
             ribbon(p,left-r*.2f,right+r*.85f,y-r*.24f,r*.38f,-clock*.9f,0xFFB6E3D5,alpha*52/255);
@@ -128,6 +126,26 @@ final class SwampEnemies {
                 ribbon(p,oldX+drift-r,oldX+drift+r*(1.5f+t),y-r*(.15f+k*.23f+t*.7f),
                         r*(.13f-t*.06f),clock+k,k==1?0xFFEAF9F4:MIST,(int)(alpha*reveal*.32f));
             }
+        }
+    }
+
+    private static void disperse(Painter p,GameCore.Enemy e,Layout L,boolean front) {
+        float t=e.destroyT/GameCore.DESTROY_TIME;
+        if(t<0 || t>=1)return;
+        float ease=1-(1-t)*(1-t),fade=(1-t)*(1-t),r=L.enemyR;
+        float half=L.wordWidth(e.word.length)*.5f+r*1.8f;
+        for(int side:new int[]{-1,1})for(int k=0;k<(front?5:2);k++) {
+            float drift=r*ease*(2.8f+k*.38f);
+            float centre=e.clearX+side*(half*.48f+drift);
+            float span=half*.55f+r*ease*(.8f+k*.12f);
+            // Open a clear gap at the impact while the outer wisps stretch and lift.
+            float inner=e.clearX+side*r*ease*(1.5f+k*.12f);
+            float left=side<0?centre-span:Math.max(inner,centre-span);
+            float right=side<0?Math.min(inner,centre+span):centre+span;
+            float y=e.clearY+r*((k-(front?2:.5f))*.32f-ease*(.4f+k*.14f));
+            ribbon(p,left,right,y,r*(front?.24f:.42f)*(1+ease*.6f),
+                    e.phase+k*1.7f+side*t*5,k%2==0?0xFFE5FFF4:0xFFBDDDEB,
+                    (int)((front?100:65)*fade));
         }
     }
 
