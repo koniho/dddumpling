@@ -2427,8 +2427,15 @@ final class Boss {
                 if (wart >= 0) body.pull(ex[wart], ey[wart], WART_PULL, er[wart] * WART_SKIN);
                 else body.letGo();
             }
-            if (kind == SLIME && !beaten)
-                body.jiggle = JIGGLE[kind] * (1f + (1f - health()) * 1.25f);
+            body.shapeMemory=0f;
+            if (kind == SLIME && !beaten) {
+                float health=Math.max(0f,Math.min(1f,health()));
+                body.jiggle = JIGGLE[kind] * (1f + (1f - health) * 1.25f);
+                // Healthy slime remembers its silhouette; later damage leaves a looser wobble.
+                body.shapeMemory=.15f+.85f*health*health;
+                if(held>=0 && etype[held]==E_GLOB)body.shapeMemory*=.12f;
+                else if(hasGlob())body.shapeMemory*=.45f;
+            }
             body.update(dt);
             if (kind == MUSHROOM && mushroomStem != null) {
                 float sr = bodyR(L) * 1.08f;

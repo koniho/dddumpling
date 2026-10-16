@@ -2545,6 +2545,11 @@ final class Preview {
             if(pose>0)for(int frame=0;frame<18;frame++)body.update(DT);
             shot(dir,"182-super-slime-"+pose,hero,L,w,h,ss);
         }
+        if(wanted("182-"))for(float health:new float[]{.75f,.25f})for(float elapsed:new float[]{0f,.3f,.9f}) {
+            GameCore slime=TestBoss.slimeAfterDrag(L,health);
+            for(float time=0;time<elapsed;time+=DT)slime.boss.update(DT,L,slime.rnd);
+            shot(dir,"182-slime-recovery-"+Math.round(health*100)+"-"+Math.round(elapsed*100),slime,L,w,h,ss);
+        }
         // The arrival card, part way in.
         GameCore ci = toBoss(L, Boss.SLIME, 501L, false);
         step(ci, L, Boss.INTRO * 0.45f);
