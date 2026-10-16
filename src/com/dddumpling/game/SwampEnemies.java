@@ -80,12 +80,16 @@ final class SwampEnemies {
 
     /** The same bank surrounds the whole row; keys reveal between its depth layers. */
     static void fog(Painter p,GameCore c,GameCore.Enemy e,Layout L,int layer) {
+        fog(p,e,L.enemyR,L.enemyStep,c.enemyCentreX(e),c.clock,layer);
+    }
+
+    static void fog(Painter p,GameCore.Enemy e,float baseRadius,float step,float centre,float time,int layer) {
         if(e.swampKind!=FOG)return;
-        float r=L.enemyR*(.62f+.38f*e.enterT);
-        float centre=e.destroyed?e.clearX:c.enemyCentreX(e);
-        float x=centre-(e.word.length-1)*L.enemyStep*.5f;
-        float left=x-r*2.5f,right=centre+(e.word.length-1)*L.enemyStep*.5f+r*2.5f;
-        float y=e.destroyed?e.clearY:e.y,clock=c.clock*2.2f+e.phase;
+        float r=baseRadius*(.62f+.38f*e.enterT);
+        if(e.destroyed)centre=e.clearX;
+        float x=centre-(e.word.length-1)*step*.5f;
+        float left=x-r*2.5f,right=centre+(e.word.length-1)*step*.5f+r*2.5f;
+        float y=e.destroyed?e.clearY:e.y,clock=time*2.2f+e.phase;
         int alpha=(int)(90+165*e.enterT);
         if(layer==0) {
             fogRibbon(p,e,r,0,left-r*.5f,right+r*.65f,y+r*.24f,r*.46f,clock*.7f,0xFF8ABDC4,alpha*42/255);

@@ -4,12 +4,39 @@ package com.dddumpling.game;
 final class ReleaseChange extends Draw {
     static final int TRAVEL=0, STARS=1, BUGS=2, SHUFFLE=3, DISGUISE=4, SLIME=5,
             PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11, SETTINGS=12, SWIPE=13, SCORES=14, OCTOPULSE=15,
-            COMPANION=16, TUTORIAL=17, TOWN=18, SURVIVAL=19, TIME_ATTACK=20;
+            COMPANION=16, TUTORIAL=17, TOWN=18, SURVIVAL=19, TIME_ATTACK=20, SWAMP=21, RUSH=22, FOG=23;
+    private static final class FogIcon {
+        static final GameCore.Enemy WORD=new GameCore.Enemy();
+        static {WORD.word=new int[]{0,1,2};WORD.enterT=1f;WORD.swampKind=SwampEnemies.FOG;}
+    }
     static final int[][] ITEMS=ReleaseContent.ITEMS;
     static boolean playable(int id) { return id==TRAVEL || id==SHUFFLE || id==PAIR; }
     static float artUnits(int id) { return id==TRAVEL ? 8f : id==PAIR ? 9f : id==SHUFFLE ? 9f : 5f; }
     static void icon(Painter p,int id,float x,float y,float r,float time) {
-        if(id==SURVIVAL) {
+        if(id==FOG) {
+            p.save();p.translate(x,y);
+            float rr=r*.28f,step=r*.6f;
+            SwampEnemies.fog(p,FogIcon.WORD,rr,step,0,time,0);
+            for(int i=1;i<3;i++)SwampEnemies.silhouette(p,i,(i-1)*step,0,rr,255);
+            SwampEnemies.fog(p,FogIcon.WORD,rr,step,0,time,1);
+            p.fillPoly(Glyph.hex(-step,0,rr),Glyph.COLOR[0]);
+            Skits.face(p,Kawaii.DUMPLING,-step,0,rr*.7f,255,1f,1f);
+            SwampEnemies.fog(p,FogIcon.WORD,rr,step,0,time,2);
+            p.restore();
+        } else if(id==SWAMP) {
+            Swamp.prop(p,x,y+r*.28f,r*.8f,255,time,false);
+            BossCollect.draw(p,Boss.ALLIGATOR,x-r*.12f,y-r*.15f,r*.78f,time,true,1f);
+        } else if(id==RUSH) {
+            float bob=r*.08f*(float)Math.sin(time*4f);
+            for(int i=0;i<5;i++) {
+                float t=(time*.8f+i*.2f)%1f;
+                float xx=x-r*.38f+t*r*.75f,yy=y-r*.25f-t*r*.65f;
+                p.fillPoly(star(xx,yy,r*.13f*(1-t*.5f),r*.05f,5,time+i),Glyph.withAlpha(GOLD,(int)(180*(1-t))));
+            }
+            FastEnemies.glow(p,x,y+bob,r*.65f,Glyph.COLOR[0],255,1f);
+            FastEnemies.body(p,x,y+bob,r*.65f,Glyph.COLOR[0],255,false);
+            Skits.face(p,Kawaii.DUMPLING,x,y+bob,r*.42f,255,1f,1f);
+        } else if(id==SURVIVAL) {
             for(int i=0;i<7;i++) {
                 float xx=x+(i-3)*r*.26f,yy=y-r*.8f+r*.25f*(float)Math.sin(time*3+i);
                 int color=Glyph.cycle(i*.8f);
@@ -98,7 +125,7 @@ final class ReleaseChange extends Draw {
             Kawaii.incognito(p,Kawaii.STRAWBERRY,x-r*.42f,y,r*.63f,Glyph.COLOR[1],1f);
             Kawaii.incognito(p,Kawaii.CAT,x+r*.42f,y,r*.63f,Glyph.COLOR[2],1f);
         } else if(id==SLIME) {
-            Kawaii.draw(p,Kawaii.BLOB,x,y,r*.8f,0xFF99C48E,1.1f,.7f);
+            BossScreen.slimePortrait(p,x-r*.08f,y,r*.58f,time);
             p.fillPoly(Glyph.hex(x+r*.45f,y+r*.42f,r*.42f),Glyph.COLOR[0]);
             Skits.face(p,Kawaii.DUMPLING,x+r*.45f,y+r*.42f,r*.26f,255,1f,0f);
         } else if(id==FLEX) {

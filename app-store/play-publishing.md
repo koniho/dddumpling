@@ -225,6 +225,12 @@ Store review and processing may still delay public availability.
 
 ## Update listing text
 
+For an authorized open-testing rollout, dispatch `production-release.yml` with
+`platform=google`, `google_track=beta`, and the exact uploaded `version_code`.
+Preview with `apply=false`, then use `apply=true` to promote that same bundle.
+The default `google_track=production` retains the production path. Each destination
+is verified separately; neither promotion uploads the bundle again.
+
 **Update Google Play listing text** previews or publishes the checked-in `en-US` title,
 short description and full description. It stages only those three fields, reads the
 current listing before applying, and verifies other text and the video URL are preserved.

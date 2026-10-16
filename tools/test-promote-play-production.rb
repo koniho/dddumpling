@@ -23,3 +23,12 @@ rejects { production_release(source, production.merge('releases' => [prior.merge
 rejects { production_release(source, production.merge('releases' => [prior.merge('versionCodes' => ['29'])]), '28', notes) }
 rejects { production_release(source.merge('releases' => [target, target]), production, '28', notes) }
 puts 'Production promotion guards passed'
+beta = {'track' => 'beta', 'releases' => []}
+open_release = production_release(source, beta, '28', notes, 'beta')
+raise 'Wrong open testing build' unless open_release == result.merge('track' => 'beta')
+raise 'Open testing not idempotent' unless production_release(source, open_release, '28', notes, 'beta') == open_release
+rejects { production_release(source, beta, '28', notes, 'internal') }
+rejects { production_release(source, production, '28', notes, 'beta') }
+rejects { production_release(source, beta, '28', 'Unapproved notes', 'beta') }
+rejects { production_release(source, beta.merge('releases' => [prior.merge('versionCodes' => ['29'])]), '28', notes, 'beta') }
+puts 'Open testing promotion guards passed'

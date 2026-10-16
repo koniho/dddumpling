@@ -11,6 +11,11 @@ on:
         type: choice
         options: [both, google, apple]
         default: both
+      google_track:
+        description: Google Play destination (beta is open testing)
+        type: choice
+        options: [production, beta]
+        default: production
       version_code:
         description: Existing Play build code matching main
         type: string
@@ -47,6 +52,7 @@ jobs:
           APPLY: ${{ inputs.apply }}
           PLAY_VERSION_CODE: ${{ inputs.version_code }}
           PLAY_CLOSED_TRACK: ${{ vars.PLAY_CLOSED_TRACK }}
+          PLAY_DESTINATION_TRACK: ${{ inputs.google_track }}
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
         run: bundle exec ruby tools/promote-play-production.rb
   apple:

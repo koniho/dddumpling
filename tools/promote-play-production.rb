@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
-def production_release(source, production, code, notes)
-  raise 'Expected production destination' unless production['track'] == 'production'
+def production_release(source, production, code, notes, destination = 'production')
+  raise 'Expected production or open testing destination' unless %w[production beta].include?(destination) && production['track'] == destination
   matches = Array(source['releases']).select { |r| Array(r['versionCodes']).map(&:to_s) == [code] }
   raise 'Expected exactly one uploaded release' unless matches.length == 1
   target = matches.first
@@ -11,7 +11,7 @@ def production_release(source, production, code, notes)
   Array(production['releases']).each do |release|
     raise 'Refusing to replace a newer or unfinished production release' unless release['status'] == 'completed' && !Array(release['versionCodes']).empty? && release['versionCodes'].all? { |v| Integer(v) <= Integer(code) }
   end
-  {'track' => 'production', 'releases' => [target.merge('status' => 'completed')]}
+  {'track' => destination, 'releases' => [target.merge('status' => 'completed')]}
 end
 
 def promote_play_production
@@ -28,14 +28,16 @@ def promote_play_production
   source_track = ENV.fetch('PLAY_CLOSED_TRACK', '').strip
   source_track = 'alpha' if source_track.empty?
   raise 'Expected a closed source track' if %w[production beta internal].include?(source_track) || source_track.include?(':')
+  destination = ENV.fetch('PLAY_DESTINATION_TRACK', 'production')
+  raise 'Expected production or open testing destination' unless %w[production beta].include?(destination)
   edit = google.call('post', '/edits', {}).fetch('id')
   begin
     source = google.call('get', "/edits/#{edit}/tracks/#{URI.encode_www_form_component(source_track)}")
-    before = google.call('get', "/edits/#{edit}/tracks/production")
-    after = production_release(source, before, code, notes)
+    before = google.call('get', "/edits/#{edit}/tracks/#{destination}")
+    after = production_release(source, before, code, notes, destination)
     puts JSON.generate(before: before, requested: after, apply: ENV['APPLY'] == 'true')
     if ENV['APPLY'] == 'true' && before != after
-      google.call('put', "/edits/#{edit}/tracks/production", after)
+      google.call('put', "/edits/#{edit}/tracks/#{destination}", after)
       google.call('post', "/edits/#{edit}:validate", {})
       google.call('post', "/edits/#{edit}:commit?changesNotSentForReview=false", {})
       edit = nil
@@ -46,9 +48,9 @@ def promote_play_production
   return unless ENV['APPLY'] == 'true'
   edit = google.call('post', '/edits', {}).fetch('id')
   begin
-    saved = google.call('get', "/edits/#{edit}/tracks/production")
-    raise 'Production readback differs' unless saved == after
-    puts JSON.generate(verified_production: saved)
+    saved = google.call('get', "/edits/#{edit}/tracks/#{destination}")
+    raise 'Destination readback differs' unless saved == after
+    puts JSON.generate(verified_track: saved)
   ensure
     google.call('delete', "/edits/#{edit}")
   end
