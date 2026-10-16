@@ -47,6 +47,7 @@ final class TestVisuals extends Check {
         n.listScroll=Math.min(ReleaseNotes.maxScroll(L),ReleaseNotes.size(L)*2f);
         float scroll=n.listScroll;
         n.select(0,0,L);n.update(ReleaseNotes.PAGE_TIME,L);n.takeFeedback();
+        check("first entry exposes only next page",n.edgeAt(L,L.w*.03f,n.edgeY(L))==0 && n.edgeAt(L,L.w*.97f,n.edgeY(L))==1);
         GameCore outgoing=n.demo;int land=outgoing.landChoice;
         float y=(n.demoTop(L)+n.demoBottom(L))*.5f;
         n.handleTouch(c,L,0,L.w*.7f,y);
@@ -61,20 +62,21 @@ final class TestVisuals extends Check {
         check("new entry enters from right with fresh demo state",n.feature==1 && n.page==0 && n.demo==null && n.entryOffset(L)>0f);
         n.update(ReleaseNotes.PAGE_TIME,L);
         check("entry slide settles without exposing list",!n.pageMoving() && !n.listing && n.entryOffset(L)==0f);
-        n.handleTouch(c,L,0,L.w*.7f,n.navigationY(L));n.handleTouch(c,L,1,L.w*.7f,n.navigationY(L));
+        check("middle entry exposes both page edges",n.edgeAt(L,L.w*.03f,n.edgeY(L))==-1 && n.edgeAt(L,L.w*.97f,n.edgeY(L))==1);
+        n.handleTouch(c,L,0,L.w*.97f,n.edgeY(L));n.handleTouch(c,L,1,L.w*.97f,n.edgeY(L));
         n.update(ReleaseNotes.PAGE_TIME,L);
-        check("next arrow reaches last entry in this version",n.feature==2 && n.page==0 && !n.canStep(1) && n.canStep(-1));
-        n.takeFeedback();n.touch(c,L,L.w*.7f,n.navigationY(L));
-        check("last arrow neither wraps nor plays feedback",!n.pageMoving() && n.feature==2 && n.takeFeedback()==0);
-        n.touch(c,L,L.w*.3f,n.navigationY(L));n.update(ReleaseNotes.PAGE_TIME*.25f,L);
-        check("previous arrow reverses the slide",n.entryOffset(L)>0f);
+        check("next page edge reaches last entry in this version",n.feature==2 && n.page==0 && !n.canStep(1) && n.canStep(-1));
+        n.takeFeedback();n.touch(c,L,L.w*.97f,n.edgeY(L));
+        check("last page edge neither wraps nor plays feedback",!n.pageMoving() && n.feature==2 && n.takeFeedback()==0);
+        n.handleTouch(c,L,0,L.w*.03f,n.edgeY(L));n.handleTouch(c,L,1,L.w*.03f,n.edgeY(L));n.update(ReleaseNotes.PAGE_TIME*.25f,L);
+        check("previous page edge reverses the slide",n.entryOffset(L)>0f);
         n.update(ReleaseNotes.PAGE_TIME,L);
         y=(n.demoTop(L)+n.demoBottom(L))*.5f;
         n.handleTouch(c,L,0,L.w*.3f,y);n.handleTouch(c,L,1,L.w*.6f,y);n.update(ReleaseNotes.PAGE_TIME,L);
         check("right swipe returns to first entry",n.feature==0 && !n.canStep(-1) && n.canStep(1));
         outgoing=n.demo;land=outgoing.landChoice;n.takeFeedback();
-        n.touch(c,L,L.w*.3f,n.navigationY(L));
-        check("first arrow does not leave the version",n.feature==0 && !n.pageMoving() && n.takeFeedback()==0);
+        n.touch(c,L,L.w*.03f,n.edgeY(L));
+        check("first page edge does not leave the version",n.feature==0 && !n.pageMoving() && n.takeFeedback()==0);
         y=(n.demoTop(L)+n.demoBottom(L))*.5f;
         n.handleTouch(c,L,0,L.w*.6f,y);n.handleTouch(c,L,1,L.w*.55f,y);
         check("short drag neither browses nor activates demo",n.feature==0 && !n.pageMoving() && outgoing.landChoice==land);
@@ -87,10 +89,11 @@ final class TestVisuals extends Check {
         check("extra finger cancels detail navigation",n.feature==0 && !n.pageMoving() && outgoing.landChoice==land);
         n.handleTouch(c,L,0,L.w*.75f,y);n.handleTouch(c,L,1,L.w*.75f,y);
         check("travel demo still responds to a tap",outgoing.landChoice!=land);
-        n.touch(c,L,L.w*.7f,n.navigationY(L));n.update(ReleaseNotes.PAGE_TIME,L);
+        n.touch(c,L,L.w*.97f,n.edgeY(L));n.update(ReleaseNotes.PAGE_TIME,L);
         n.back();n.update(ReleaseNotes.PAGE_TIME,L);
         check("back after browsing restores list scroll and clears demo",n.listing && n.listScroll==scroll && n.demo==null);
         n.select(2,0,L);n.update(ReleaseNotes.PAGE_TIME,L);
+        check("single entry has no page edges",n.edgeAt(L,L.w*.03f,n.edgeY(L))==0 && n.edgeAt(L,L.w*.97f,n.edgeY(L))==0);
         GameCore.Enemy pair=n.demo.enemies.get(0),partner=pair.link;
         y=n.demoTop(L)+pair.y;
         n.handleTouch(c,L,0,L.w*.08f+n.demo.enemyCentreX(pair),y);n.update(.1f,L);
@@ -110,7 +113,7 @@ final class TestVisuals extends Check {
             check("linked demo copy supports browsing to next entry",n.page==0 && n.feature==1 && n.demo==null);
         } finally { ReleaseChange.ITEMS[0][0]=first; }
         n.select(0,0,L);n.update(ReleaseNotes.PAGE_TIME,L);
-        n.touch(c,L,L.w*.7f,n.navigationY(L));n.close();n.update(ReleaseTransition.DURATION,L);
+        n.touch(c,L,L.w*.97f,n.edgeY(L));n.close();n.update(ReleaseTransition.DURATION,L);
         n.show(c,L);n.update(ReleaseTransition.DURATION,L);
         check("close while browsing clears pending entry and reopens list",n.listing && n.feature==0 && n.demo==null);
     }
@@ -122,7 +125,7 @@ final class TestVisuals extends Check {
         for(int side=0;side<4;side++) {
             n.select(0,0,L);n.update(ReleaseNotes.PAGE_TIME,L);
             float x=side==0?L.w*.02f:side==1?L.w*.98f:L.w*.5f;
-            float y=side==2?n.windowTop(L)-1f:side==3?n.windowBottom(L)+1f:(n.windowTop(L)+n.windowBottom(L))*.5f;
+            float y=side==2?n.windowTop(L)-1f:side==3?n.windowBottom(L)+1f:n.windowTop(L)+ReleaseNotes.size(L)*2f;
             n.handleTouch(c,L,0,x,y);
             check("outside detail waits for tap lift "+side,!n.pageReturning);
             n.handleTouch(c,L,1,x,y);

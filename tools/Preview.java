@@ -1475,7 +1475,7 @@ final class Preview {
         book.releaseNotes.update(2.5f,L);
         shot(dir,"103-release-current-first-held",book,L,w,h,ss);
         if(ReleaseChange.ITEMS[0].length>1) {
-            book.releaseNotes.touch(book,L,L.w*.7f,book.releaseNotes.navigationY(L));
+            book.releaseNotes.touch(book,L,L.w*.97f,book.releaseNotes.edgeY(L));
             book.releaseNotes.update(ReleaseNotes.PAGE_TIME*.25f,L);
             shot(dir,"103-release-navigation-out",book,L,w,h,ss);
             book.releaseNotes.update(ReleaseNotes.PAGE_TIME*.5f,L);

@@ -22,7 +22,7 @@ final class ReleaseNotes extends Draw {
     private boolean detailTracking,detailMoved,detailVertical,detailOutside,demoGesture;
     private float detailDownX,detailDownY;
     private float entrySlide=1f;
-    private int entryDirection,pendingFeature=-1;
+    private int entryDirection,pendingFeature=-1,detailEdge;
 
     static boolean available(GameCore c) {
         return !c.highScoreScreen.open && c.state==GameCore.TITLE && !c.starting() && !c.caseOpen && c.caseFade<0.01f
@@ -84,6 +84,15 @@ final class ReleaseNotes extends Draw {
     float demoTop(Layout L) { return windowTop(L)+3.6f*size(L); }
     float demoBottom(Layout L) { return demoTop(L)+ReleaseChange.artUnits(change())*size(L); }
     float navigationY(Layout L) { return windowBottom(L)-size(L); }
+    float edgeTop(Layout L) { return windowTop(L)+size(L)*3.4f; }
+    float edgeBottom(Layout L) { return windowBottom(L)-size(L)*2.4f; }
+    float edgeY(Layout L) { return (edgeTop(L)+edgeBottom(L))*.5f; }
+    int edgeAt(Layout L,float x,float y) {
+        if(y<edgeTop(L) || y>edgeBottom(L) || x<0f || x>L.w) return 0;
+        if(x<L.w*.11f && canStep(-1)) return -1;
+        if(x>L.w*.89f && canStep(1)) return 1;
+        return 0;
+    }
     boolean canStep(int direction) { return feature+direction>=0 && feature+direction<ReleaseChange.ITEMS[page].length; }
     private void step(int direction,Layout L) {
         if(listing || pageMoving() || !canStep(direction)) return;
@@ -120,7 +129,7 @@ final class ReleaseNotes extends Draw {
         if(!open || transition.closing) return;
         feedback();transition.close();detailTracking=false;pendingFeature=-1;entrySlide=1f;
     }
-    void cancelTouch() { gesture=false;listDragging=false;pressedRow=-1;detailTracking=detailOutside=demoGesture=false; }
+    void cancelTouch() { gesture=false;listDragging=false;pressedRow=-1;detailTracking=detailOutside=demoGesture=false;detailEdge=0; }
     private int rowAt(Layout L,float x,float y) {
         if(y<listTop(L) || y>listBottom(L)) return -1;
         for(int r=0;r<VERSIONS.length;r++) for(int i=0;i<ReleaseChange.ITEMS[r].length;i++)
@@ -228,12 +237,12 @@ final class ReleaseNotes extends Draw {
         if(open && !listing) {
             // Defer demo taps until lift, so browsing never activates the outgoing demo.
             if(action==0) {
-                detailTracking=true;detailOutside=!detailHit(L,x,y);
+                detailTracking=true;detailEdge=edgeAt(L,x,y);detailOutside=detailEdge==0 && !detailHit(L,x,y);
                 detailMoved=detailVertical=demoGesture=false;detailDownX=x;detailDownY=y;gesture=true;
                 boolean header=Math.abs(y-closeY(L))<size(L)
                         && ((x>L.w*.04f && x<L.w*.21f) || (x>L.w*.82f && x<L.w*.96f));
                 // The linked-pair demo owns its art region for simultaneous two-finger play.
-                demoGesture=demo!=null && change()==ReleaseChange.PAIR
+                demoGesture=detailEdge==0 && demo!=null && change()==ReleaseChange.PAIR
                         && x>=L.w*.08f && x<=L.w*.92f && y>=demoTop(L) && y<=demoBottom(L);
                 if(header || demoGesture) { detailTracking=false;touch(c,L,x,y); }
             } else if(action==5 && demoGesture) {
@@ -248,9 +257,10 @@ final class ReleaseNotes extends Draw {
                 if(action==1) {
                     boolean swipe=!detailVertical && Math.abs(dx)>=L.w*ModeSelector.SWIPE_DISTANCE
                             && Math.abs(dx)>Math.abs(dy)*1.25f;
-                    boolean tap=!detailMoved,outside=detailOutside;
+                    boolean tap=!detailMoved,outside=detailOutside;int edge=detailEdge;
                     cancelTouch();
-                    if(outside) {
+                    if(tap && edge!=0 && edge==edgeAt(L,x,y)) step(edge,L);
+                    else if(outside) {
                         if(tap && !detailHit(L,x,y)) back();
                     } else if(swipe) step(dx<0?1:-1,L);
                     else if(tap && detailHit(L,x,y)) touch(c,L,x,y);
@@ -279,11 +289,8 @@ final class ReleaseNotes extends Draw {
             return true;
         }
         if(x<L.w*.21f && x>L.w*.04f && Math.abs(y-closeY(L))<s) { back();return true; }
-        if(Math.abs(y-navigationY(L))<s && ReleaseChange.ITEMS[page].length>1) {
-            if(Math.abs(x-L.w*.3f)<s) step(-1,L);
-            else if(Math.abs(x-L.w*.7f)<s) step(1,L);
-            return true;
-        }
+        int edge=edgeAt(L,x,y);
+        if(edge!=0) { step(edge,L);return true; }
         if(y<demoTop(L) || y>demoBottom(L) || x<L.w*.08f || x>L.w*.92f) return true;
         if(demo==null) { age=0f;activated();return true; }
         float dx=x-L.w*.08f,dy=y-demoTop(L);
@@ -343,6 +350,7 @@ final class ReleaseNotes extends Draw {
         p.line(closeX-r,closeY-r,closeX+r,closeY+r,INK,s*.12f);
         p.line(closeX-r,closeY+r,closeX+r,closeY-r,INK,s*.12f);
         if(list) { drawList(p,c,L);return; }
+        drawEdges(p,L);
         arrow(p,L.w*.13f,closeY,-1,s);
         p.text(VERSIONS[page],cx,t+s*1.5f,type(s*.55f),INK_DIM,Painter.CENTER,false);
         p.text(ReleaseContent.TITLES[item()],cx,t+s*2.9f,type(s*.75f),GOLD,Painter.CENTER,true);
@@ -374,11 +382,23 @@ final class ReleaseNotes extends Draw {
 
         if(ReleaseChange.ITEMS[page].length>1) {
             float y=navigationY(L);
-            arrow(canStep(-1)?p:new OpacityPainter(p,.25f),L.w*.3f,y,-1,s);
-            arrow(canStep(1)?p:new OpacityPainter(p,.25f),L.w*.7f,y,1,s);
             p.text((feature+1)+" / "+ReleaseChange.ITEMS[page].length,cx,y+s*.2f,type(s*.48f),INK_DIM,Painter.CENTER,false);
         }
     }
+    private void drawEdges(Painter p,Layout L) {
+        float s=size(L),t=edgeTop(L),b=edgeBottom(L);
+        for(int direction=-1;direction<=1;direction+=2) {
+            if(!canStep(direction)) continue;
+            float x=direction<0?0f:L.w,in=-direction,r=x+in*L.w*.065f;
+            // A neighboring sheet peeks into the margin, with its folded inner corner.
+            p.fillPoly(pageShape(direction<0?-s:r,t,direction<0?r:L.w+s,b,s*.45f),0xFF716087);
+            p.line(r-in*s*.12f,t+s*.5f,r-in*s*.12f,b-s*.5f,0xFFBBA6CF,s*.07f);
+            p.line(r-in*s*.32f,t+s*.7f,r-in*s*.32f,b-s*.7f,0xFF8E7BA4,s*.05f);
+            p.fillPoly(new float[]{r,t+s*.7f,r-in*s*.55f,t,r,t},0xFFD1BFDF);
+            arrow(p,x+in*L.w*.028f,edgeY(L),direction,s*.55f);
+        }
+    }
+
     private void drawList(Painter p,GameCore c,Layout L) {
         float s=size(L);
         p.text("WHAT'S COOKING?",L.w*.46f,top(L)+s*1.8f,type(s*.8f),GOLD,Painter.CENTER,true);
