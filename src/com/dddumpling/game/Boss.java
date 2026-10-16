@@ -164,6 +164,7 @@ final class Boss {
     int promptNode=-1;
     final float[] slimeBlobPulse = new float[Glyph.COUNT];
     boolean beaten;
+    SlimeDeath.Pose slimeDeath;
     /** A damaged slime stays open while returning home, then answers with a three-bolt volley. */
     boolean slimeRetaliating;
     boolean slimeCoverLearned;
@@ -357,6 +358,7 @@ final class Boss {
         promptNode=-1;
         for (int g = 0; g < slimeBlobPulse.length; g++) slimeBlobPulse[g] = 0f;
         beaten = false;
+        slimeDeath=null;
         slimeRetaliating = boltDestroyed = false;
         slimeCoverLearned = false;
         slimePromptHits = 0;
@@ -439,6 +441,7 @@ final class Boss {
         promptNode=-1;
         for (int g = 0; g < slimeBlobPulse.length; g++) slimeBlobPulse[g] = 0f;
         beaten = false;
+        slimeDeath=null;
         slimeRetaliating = boltDestroyed = false;
         slimeCoverLearned = false;
         slimePromptHits = 0;
@@ -1255,6 +1258,7 @@ final class Boss {
         if (hp <= 0f) {
             hp = 0f;
             beaten = true;
+            if(kind==SLIME && body!=null)slimeDeath=new SlimeDeath.Pose(body);
             OctoThrow.reset(this);
             leaveT = LEAVE;
             defeatBeat = 0;

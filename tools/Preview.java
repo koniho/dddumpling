@@ -8,6 +8,17 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void slimeDeathFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("193-slime-death-"))return;
+        for(boolean drag:new boolean[]{false,true})for(float time:new float[]{0,.3f,.8f,1.4f,2.1f,2.8f,3.4f}) {
+            GameCore c=drag?TestBoss.slimeAfterDrag(L,0f):TestBoss.enterBoss(L,Boss.SLIME,193);
+            c.stageBanner=0;
+            if(!drag)c.boss.damage(c.boss.hp);
+            step(c,L,time);
+            shot(dir,"193-slime-death-"+(drag?"drag-":"")+Math.round(time*1000),c,L,w,h,ss);
+        }
+    }
+
     private static void slimeSprayFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("193-goo-"))return;
         for(boolean drag:new boolean[]{false,true})for(float time:new float[]{.18f,.48f,.56f,.95f,1.35f}) {
@@ -1555,6 +1566,7 @@ final class Preview {
         swampEnemyFrames(dir,L,w,h,ss);
         bossImpactFrames(dir,L,w,h,ss);
         slimeSprayFrames(dir,L,w,h,ss);
+        slimeDeathFrames(dir,L,w,h,ss);
         clearSpreadFrames(dir,L,w,h,ss);
         clearIntensityFrames(dir,L,w,h,ss);
         diveStarFrames(dir,L,w,h,ss);
@@ -3041,7 +3053,7 @@ final class Preview {
         for (int kind = 0; kind < Boss.COUNT; kind++) {
             if (kind == Boss.SPLITTER) continue; // Its seven supernova frames include the impact.
             GameCore death = toBoss(L, kind, 590L + kind, true);
-            death.boss.beaten = true; death.boss.hp = 0f; death.boss.leaveT = Boss.LEAVE;
+            death.boss.damage(death.boss.hp);
             step(death, L, death.boss.deathImpactTime() + .04f);
             System.out.printf("boss death %s: shake %.2f%n", death.boss.name(), death.shake);
             shot(dir, "66b-boss-death-impact-" + kind, death, L, w, h, ss);

@@ -116,6 +116,7 @@ final class BossScreen extends Draw {
     static void body(Painter p, GameCore c, Layout L, Boss b, float alpha) {
         if (!b.active() || b.body == null) return;
         if(b.kind==Boss.ALLIGATOR) {AlligatorArt.draw(p,c,L,b,alpha);return;}
+        if(b.beaten && b.kind==Boss.SLIME) {SlimeDeath.draw(p,c,L,b,alpha);return;}
 
         if (b.beaten && b.kind == Boss.MUSHROOM) {
             drawMushroom(p, c, L, b, tint(b), alpha);
@@ -256,11 +257,16 @@ final class BossScreen extends Draw {
 
     private static void drawSlimeSkin(Painter p,float[] skin,float cx,float cy,float rx,float ry,
             float radius,int col,float clock,boolean vulnerable,float fade) {
+        drawSlimeSkin(p,skin,cx,cy,rx,ry,radius,col,clock,vulnerable,fade,false);
+    }
+
+    static void drawSlimeSkin(Painter p,float[] skin,float cx,float cy,float rx,float ry,
+            float radius,int col,float clock,boolean vulnerable,float fade,boolean defeated) {
         int lime = Glyph.mix(col, 0xFFA8F02B, 0.32f);
         int edge = Glyph.mix(0xFF176A24, col, 0.16f);
 
         // The puddle sits behind the skirt, with the two darker body layers thickest at its foot.
-        p.fillEllipse(cx, cy + ry * 1.34f, rx * 1.12f, ry * 0.30f,
+        if(!defeated)p.fillEllipse(cx, cy + ry * 1.34f, rx * 1.12f, ry * 0.30f,
                 Glyph.withAlpha(0xFF86C52D, (int) (150 * fade)));
         p.fillPoly(skin, Glyph.withAlpha(Glyph.mix(lime, 0xFF185C23, 0.58f), (int) (245 * fade)));
         float[] middle = slimeInset(skin, cx, cy, rx, ry, 0.965f, 0.97f, -0.025f, -0.035f);
@@ -304,6 +310,7 @@ final class BossScreen extends Draw {
         }
 
         slimeEmblem(p,skin,cx,cy,fade);
+        if(defeated) {slimeDizzyFace(p,cx,cy,rx,ry,clock,fade);return;}
 
         // The reference face: two deep green button eyes with crisp reflected light.
         float eyeY = cy - ry * (vulnerable ? 0.07f : 0.10f), eyeDX = rx * 0.35f;
@@ -340,6 +347,28 @@ final class BossScreen extends Draw {
             }
             p.polyline(smile, ink, ry * 0.075f);
         }
+    }
+
+    private static void slimeDizzyFace(Painter p,float cx,float cy,float rx,float ry,float clock,float fade) {
+        int ink=Glyph.withAlpha(0xFF154F19,(int)(245*fade));
+        for(int side=-1;side<=1;side+=2) {
+            float ex=cx+side*rx*.35f,ey=cy-ry*.12f;
+            p.fillEllipse(ex,ey,ry*.25f,ry*.25f,Glyph.withAlpha(0xFFD9F593,(int)(180*fade)));
+            float[] spiral=new float[66];
+            for(int i=0;i<=32;i++) {
+                float t=i/32f,a=t*Softbody.TAU*1.65f+clock*side*2.5f;
+                spiral[i*2]=ex+(float)Math.cos(a)*ry*(.025f+.20f*t);
+                spiral[i*2+1]=ey+(float)Math.sin(a)*ry*(.025f+.20f*t);
+            }
+            p.polyline(spiral,ink,ry*.055f);
+        }
+        float[] frown=new float[26];
+        for(int i=0;i<=12;i++) {
+            float u=-1f+i/6f;
+            frown[i*2]=cx+rx*.17f*u;
+            frown[i*2+1]=cy+ry*(.32f-.19f*(1f-u*u));
+        }
+        p.polyline(frown,ink,ry*.065f);
     }
 
     static final float[] SUPER_SHIELD=roundEmblem(new float[]{
@@ -1727,7 +1756,7 @@ final class BossScreen extends Draw {
     static void burst(Painter p, GameCore c, Layout L) {
         Boss b = c.boss;
         if (!b.active() || !b.beaten || b.body == null || b.kind == Boss.SPLITTER
-                || b.kind == Boss.MUSHROOM || b.kind == Boss.ALLIGATOR) return;
+                || b.kind == Boss.MUSHROOM || b.kind == Boss.ALLIGATOR || b.kind == Boss.SLIME) return;
         float t = b.leaveProgress();
         float cx = b.body.centreX(), cy = b.body.centreY();
         float r = b.body.radius();

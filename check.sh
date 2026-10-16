@@ -48,6 +48,7 @@ python3 tools/release-notes.py check >/dev/null
 
 PURE="src/com/dddumpling/game/ArtStamp.java
 src/com/dddumpling/game/SlimeSpray.java
+src/com/dddumpling/game/SlimeDeath.java
 src/com/dddumpling/game/FastEnemies.java
 src/com/dddumpling/game/SwampEnemies.java
 src/com/dddumpling/game/GatorReplay.java

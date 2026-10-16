@@ -122,6 +122,37 @@ final class TestBoss extends Check {
         }
     }
 
+    static void slimeDeath(Layout L) {
+        group("slime defeat splats and drips");
+        GameCore c=enterBoss(L,Boss.SLIME,193);Boss b=c.boss;
+        b.damage(b.hp);
+        SlimeDeath.Pose pose=b.slimeDeath;
+        check("lethal damage captures the skin for the splat",pose!=null && b.beaten);
+        SlimeDeath first=new SlimeDeath(null,b,L,1f);
+        float[] start=first.points(pose.skin);
+        boolean continuous=true;
+        for(int i=0;i<start.length;i++)continuous&=Math.abs(start[i]-pose.skin[i])<.001f;
+        check("splat starts from the actual defeated silhouette",continuous);
+        b.leaveT=Boss.LEAVE-SlimeDeath.SPLAT_AT;
+        SlimeDeath wide=new SlimeDeath(null,b,L,1f);
+        float[] spread=wide.points(pose.skin);
+        float min=Float.MAX_VALUE,max=-min;
+        for(int i=0;i<spread.length;i+=2) {min=Math.min(min,spread[i]);max=Math.max(max,spread[i]);}
+        check("splat covers nearly the full playfield width",max-min>(L.playRight-L.playLeft)*.85f);
+        float lower=wide.y(pose.mx,pose.my+pose.halfH);
+        b.leaveT=Boss.LEAVE-2.8f;
+        SlimeDeath drip=new SlimeDeath(null,b,L,1f);
+        check("the lower skin drips downward before disappearing",
+                drip.y(pose.mx,pose.my+pose.halfH)>lower && drip.amount>0 && drip.amount<1);
+        float[] emblem=BossScreen.slimeEmblemPath(pose.skin,pose.x,pose.y,BossScreen.SUPER_SHIELD,.86f);
+        float[] stretched=wide.points(emblem);
+        boolean attached=true;
+        for(int i=0;i<stretched.length;i+=2)attached&=stretched[i]>=min && stretched[i]<=max;
+        check("the splayed emblem remains within the splat width",attached);
+        check("the body is fully faded by reward handoff",SlimeDeath.opacity(Boss.LEAVE)==0f);
+        b.leave();check("leaving releases the saved death skin",b.slimeDeath==null);
+    }
+
     static void renderEffects(Layout L) {
         GameCore c = enterBoss(L, Boss.SPLITTER, 885L);
         Boss b = c.boss;

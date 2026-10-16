@@ -76,6 +76,7 @@ final class CoreTest {
             TestBoss.renderEffects(L);
             TestBoss.promptImpactTiming(L);
             TestBoss.slimeSpray(L);
+            TestBoss.slimeDeath(L);
             TestBoss.winning(L);
             TestBoss.precedence(L);
             TestBoss.slime(L);
