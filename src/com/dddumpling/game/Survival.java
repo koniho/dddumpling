@@ -131,6 +131,7 @@ final class Survival extends Draw {
         wordBurst(c,x,y,spread,count,color,1f);
     }
     void wordBurst(GameCore c,float x,float y,float spread,int count,int color,float travel) {
+        travel*=Fx.CLEAR_SPREAD;
         Fx.explode(c,c.rnd,x,y,spread,count,color,travel);
         // Cosmetic amplification must not consume gameplay randomness.
         if(c.particles.size()>4096)c.particles.subList(0,c.particles.size()-4096).clear();

@@ -202,7 +202,7 @@ final class LinkedPairArt {
         p.fillPoly(new float[]{x-slash*.42f,y-slash,x+width,y-width*.4f,
                 x+slash*.42f,y+slash,x-width,y+width*.4f},Glyph.withAlpha(GLOVE,(int)(255*fade)));
         for(int i=0;i<6*Fx.CLEAR_INTENSITY;i++) {
-            float angle=i*2.39996f,reach=r*(.22f+open*(1.6f+(i%3)*.42f));
+            float angle=i*2.39996f,reach=r*(.22f+open*(1.6f+(i%3)*.42f)*Fx.CLEAR_SPREAD);
             float xx=x+(float)Math.cos(angle)*reach,yy=y+(float)Math.sin(angle)*reach*.7f;
             int color=i%2==0?left:right;
             p.line(xx-(float)Math.cos(angle)*r*.25f,yy-(float)Math.sin(angle)*r*.18f,

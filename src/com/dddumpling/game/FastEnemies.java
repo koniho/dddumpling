@@ -119,7 +119,7 @@ final class FastEnemies {
                     Glyph.withAlpha(ring%2==0?color:light,(int)(155*fade)),r*.16f*(1-t));
         for(int i=0;i<14*Fx.CLEAR_INTENSITY;i++) {
             float angle=phase+i*2.39996f;
-            float reach=r*(.65f+ease*(2.5f+(i%3)*.7f));
+            float reach=r*(.65f+ease*(2.5f+(i%3)*.7f)*Fx.CLEAR_SPREAD);
             float xx=x+(float)Math.cos(angle)*reach,yy=y+(float)Math.sin(angle)*reach;
             float size=r*(.16f+(i%3)*.055f)*(1-t*.6f);
             int alpha=(int)(255*fade);

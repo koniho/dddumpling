@@ -520,7 +520,15 @@ final class TestSurvival extends Check {
         check("Adventure and fresh Survival share the amplified baseline",adventure.particles.size()==calm.particles.size());
         GameCore baseline=new GameCore(new Mem(),155);baseline.rnd.setSeed(900);adventure.rnd.setSeed(900);
         Fx.explode(baseline,baseline.rnd,0,0,L.enemyR,7,Draw.GOLD);
+        adventure.particles.clear();
         adventure.survival.wordBurst(adventure,0,0,L.enemyR,7,Draw.GOLD);
+        boolean doubled=true;
+        for(int i=0;i<7;i++) {
+            GameCore.Particle before=baseline.particles.get(i),after=adventure.particles.get(i);
+            doubled&=Math.abs(after.vx-before.vx*2)<.001f && Math.abs(after.vy-before.vy*2)<.001f
+                    && after.size==before.size && after.life==before.life;
+        }
+        check("clear spread doubles travel without inflating particles or extending their lives",doubled);
         check("baseline amplification preserves the original gameplay RNG sequence",baseline.rnd.nextLong()==adventure.rnd.nextLong());
         check("maximum Survival clears emit ten times the particles",vivid.particles.size()==calm.particles.size()*10);
         check("explosion intensity cannot alter gameplay RNG",vivid.rnd.nextLong()==calm.rnd.nextLong());

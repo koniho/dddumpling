@@ -8,6 +8,7 @@ import java.util.Random;
  */
 final class Fx {
     static final int CLEAR_INTENSITY=3;
+    static final float CLEAR_SPREAD=2f;
 
     private Fx() {}
 
