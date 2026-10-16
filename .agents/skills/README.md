@@ -21,6 +21,7 @@ Read only the skill that matches the task and any references it requires.
 | Play reviews or app quality | [gplay-reviews](gplay-reviews/SKILL.md), [gplay-vitals](gplay-vitals/SKILL.md) |
 | App Store marketing and assets | [app-store](app-store/SKILL.md), [app-store-assets](generators/app-store-assets/SKILL.md) |
 | Apple Ads | [apple-search-ads](app-store/apple-search-ads/SKILL.md) |
+| Extract recorded sound effects | [found-sounds-extraction](found-sounds-extraction/SKILL.md) |
 | DDDumpling promotional illustrations | [Project generation workflow](../../ios/docs/promotional-assets.md) |
 
 The Play skills instruct an agent how to use the separate
