@@ -35,7 +35,10 @@ final class Sfx {
             OCTO_DAMAGE = CART_TUMBLE + 1, SCORE_RESET_CONFIRM = OCTO_DAMAGE + 1,
             SCORE_RESET_BRUSH = SCORE_RESET_CONFIRM + 1, NINJA_SWISH_1 = SCORE_RESET_BRUSH + 1, NINJA_SWISH_2 = NINJA_SWISH_1 + 1,
             NINJA_COMBO = NINJA_SWISH_2 + 1, SURVIVAL_OVER = NINJA_COMBO + 1,
-            GATOR_PARRY = SURVIVAL_OVER + 1, COUNT = GATOR_PARRY + 1;
+            GATOR_PARRY = SURVIVAL_OVER + 1, GATOR_PROMPT_0 = GATOR_PARRY + 1,
+            GATOR_PROMPT_1 = GATOR_PROMPT_0 + 1, GATOR_PROMPT_2 = GATOR_PROMPT_1 + 1,
+            GATOR_SPLASH = GATOR_PROMPT_2 + 1, COUNT = GATOR_SPLASH + 1;
+    static final float GATOR_ENTRY_RATE=.70f;
     static final float OCTO_WAVE_GAIN = .66f;
     static final float NINJA_COMBO_GAIN = .25f;
 
@@ -43,6 +46,8 @@ final class Sfx {
     private static short[] rocketCache, bubbleCache;
 
     private Sfx() {}
+
+    static int gatorPromptId(int variant) {return GATOR_PROMPT_0+Math.max(0,Math.min(2,variant));}
 
     static int ninjaSwishId(int variant) {
         return variant == 0 ? NINJA_SWISH_0 : variant == 1 ? NINJA_SWISH_1 : NINJA_SWISH_2;
@@ -111,6 +116,10 @@ final class Sfx {
             case OVER: return over();
             case SURVIVAL_OVER: return survivalOver();
             case GATOR_PARRY: return GatorParryRecording.build();
+            case GATOR_PROMPT_0: return GatorCueRecording.build(0);
+            case GATOR_PROMPT_1: return GatorCueRecording.build(1);
+            case GATOR_PROMPT_2: return GatorCueRecording.build(2);
+            case GATOR_SPLASH: return GatorCueRecording.build(3);
             case BOSS_LAUGH: return bossLaugh();
             case BOSS_DAMAGE: return bossDamage();
             case BOSS_SPLIT: return bossSplit();

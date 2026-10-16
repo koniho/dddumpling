@@ -141,3 +141,30 @@ The 0.685–1.015s excerpt removes the silent lead and tail, with 2ms/15ms edge 
 mono 22,050 Hz PCM and an 85% peak. Pitch and playback speed are unchanged.
 The shared PCM plays once at visible companion/limb contact on Android and iOS;
 interrupted flights drop the pending sound. Other projectile impacts retain their cues.
+
+# Gummy Gator attack prompts and water splash
+
+Three prompt takes come from user-supplied `prompt.m4a` in Downloads, explicitly
+requested on 2026-10-15. This recording is not a CC0 library asset. Source SHA-256:
+`775011c90f6d50c2350036952cdccc0be12656f104acd542ab7f667b60c88a16`.
+The excerpts are 1.505–1.730s, 2.192–2.430s and 2.977–3.225s, preserving their
+original pitch and speed. Each attack chooses randomly, without repeating a take
+within a two/three-hit combo or demonstration. A separate seeded audio generator
+preserves gameplay RNG. Pending cues are discarded when leaving or defeated.
+
+Splash: **Big Water Splash** by **qubodup**, published October 12, 2018.
+- Source: https://freesound.org/people/qubodup/sounds/442773/
+- License: **CC0 1.0 Universal**, https://creativecommons.org/publicdomain/zero/1.0/
+- Public HQ preview: https://cdn.freesound.org/previews/442/442773_71257-hq.mp3
+- Retrieved October 15, 2026; SHA-256:
+  `b8227adae409996ceee3481c7057ceda717575fa7569cec5d9d0ee1b94a8fe33`.
+- Author describes a large splash mixed from four CC0 recordings; source links
+  are retained on the source page. Commercial use and modification are permitted.
+
+Run `python3 tools/prepare-gator-cues.py /path/to/prompt.m4a /path/to/442773_71257-hq.mp3`
+to reproduce `GatorCueRecording.java` and the four audition WAVs in `build/`.
+The originals remain outside source control. PCM is mono 22,050 Hz, normalized
+per take to 85%, with 2ms leading fades and 12ms prompt / 45ms splash trailing
+fades. The complete 2.172-second splash is retained. Android and iOS play the same
+embedded PCM: normal speed at the defeat splash, 70% speed (lower pitch, 3.10s)
+at the first entry droplets. No repeated water loop or added synthesis.

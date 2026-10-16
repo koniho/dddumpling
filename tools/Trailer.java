@@ -149,10 +149,13 @@ final class Trailer {
             Integer id = sounds.get(method.getName());
             if (method.getName().equals("squish")) id = Sfx.SQUISH_0 + (Integer) args[0];
             if (method.getName().equals("ninjaSwish")) id = Sfx.ninjaSwishId((Integer) args[0]);
+            if (method.getName().equals("gatorPrompt")) id = Sfx.gatorPromptId((Integer)args[0]);
+            if (method.getName().equals("gatorSplash")) id = Sfx.GATOR_SPLASH;
+            float rate=method.getName().equals("gatorSplash") && (Boolean)args[0]?Sfx.GATOR_ENTRY_RATE:1f;
             if (id != null) {
                 short[] pcm = Sfx.build(id);
-                for (int i = 0; i < pcm.length && at + i < audio.length; i++)
-                    audio[at + i] += pcm[i] * 0.32f * (id==Sfx.NINJA_COMBO?Sfx.NINJA_COMBO_GAIN:1f);
+                for (int i = 0; i*rate < pcm.length && at + i < audio.length; i++)
+                    audio[at + i] += pcm[(int)(i*rate)] * 0.32f * (id==Sfx.NINJA_COMBO?Sfx.NINJA_COMBO_GAIN:1f);
             }
             return null;
         }

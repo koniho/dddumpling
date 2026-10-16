@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** Clock-driven fireflies and a bounded splash; no combat state or gameplay randomness. */
 final class AlligatorAtmosphere extends Draw {
-    static final float FALL_AT=.65f, SUBMERGED_AT=2.1f;
+    static final float FALL_AT=.65f, SUBMERGED_AT=2.1f, SPLASH_AT=1.25f;
     static final int FIREFLIES=24, DROPLETS=128;
     private static final int[] WATER={0xFF368E99,0xFF56C4CB,0xFF91DFCC,0xFF72B5DA,0xFFB7F1DE};
     private AlligatorAtmosphere() {}
@@ -48,7 +48,7 @@ final class AlligatorAtmosphere extends Draw {
             p.fillEllipse(x,y+L.unit*.6f,L.w*.58f,L.unit*2,fadeBy(0xFF286B73,fade*.64f));
             p.fillEllipse(x,y+L.unit*.2f,L.w*.48f,L.unit*1.1f,fadeBy(0xFF56B5B4,fade*.42f));
         } else for(int i=0;i<4;i++) {
-            float age=seconds-1.25f-i*.17f;
+            float age=seconds-SPLASH_AT-i*.17f;
             if(age<0 || age>1.45f)continue;
             float u=age/1.45f;
             p.arc(x,y+L.unit*(.25f+i*.12f),L.w*(.10f+u*.61f),L.unit*(.3f+u*1.9f),
@@ -56,7 +56,7 @@ final class AlligatorAtmosphere extends Draw {
         }
         for(int i=0;i<DROPLETS;i++) {
             if((i%3!=0)!=front)continue;
-            float u=(seconds-1.25f-sample(i,1)*.35f)/(.7f+sample(i,2)*.55f);
+            float u=(seconds-SPLASH_AT-sample(i,1)*.35f)/(.7f+sample(i,2)*.55f);
             if(u<=0 || u>=1)continue;
             float side=sample(i,3)-.5f;
             float xx=x+L.w*side*(.65f+u*.65f);

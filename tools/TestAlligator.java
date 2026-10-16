@@ -775,11 +775,48 @@ final class TestAlligator extends Check {
         AlligatorArt.draw(p,c,L,c.boss,1);
         check("yellow glow follows the whole attacking claw",strokes[0]==3 && attached[0]);
     }
+    static void recordedAudio(Layout L) {
+        group("recorded Gator cues");
+        GameCore c=fight(L),same=fight(L);Alligator a=c.boss.alligator;
+        int variants=0;
+        for(int group=0;group<30;group++) {
+            int mask=0;
+            for(int i=0;i<3;i++)a.queueAttackCue(i==0);
+            int count=a.takeAttackCues();
+            check("batched three-hit cues survive until playback",count==3);
+            for(int i=0;i<count;i++)mask|=1<<a.attackCues[i];
+            check("batched combo draws all three recordings",mask==7);
+            variants|=1<<a.attackCues[0];
+        }
+        check("new attack groups randomly start with all three takes",variants==7);
+        check("cue choices leave gameplay randomness untouched",c.rnd.nextLong()==same.rnd.nextLong());
+        Ear ear=new Ear();c.sound=ear;
+        c.boss.intro=c.boss.introDuration()*(1-AlligatorArrival.SPLASH_AT)+.001f;
+        c.paused=true;c.update(DT,L);
+        check("pause cannot start the entry splash",ear.gatorEntries==0);
+        c.paused=false;c.update(DT,L);
+        check("entry crossing plays the slowed splash once",ear.gatorEntries==1 && ear.gatorSplashes==0);
+        c.update(DT,L);check("entry splash does not retrigger",ear.gatorEntries==1);
+        c.boss.intro=0;c.boss.damage(c.boss.hp);
+        c.boss.leaveT=Boss.LEAVE-AlligatorAtmosphere.SPLASH_AT+.001f;
+        c.paused=true;c.update(DT,L);
+        check("pause holds defeat splash",ear.gatorSplashes==0);
+        c.paused=false;c.update(DT,L);
+        check("defeat splash coincides with water particles",ear.gatorSplashes==1);
+        c.update(DT,L);check("defeat splash does not loop",ear.gatorSplashes==1);
+        c=fight(L);c.sound=null;c.boss.alligator.timer=0;c.update(DT,L);
+        ear=new Ear();c.sound=ear;c.update(DT,L);
+        check("muted attack cue is discarded instead of played late",ear.gatorCues==0);
+        c=fight(L);ear=new Ear();c.sound=ear;
+        c.boss.intro=c.boss.introDuration()*(1-AlligatorArrival.SPLASH_AT)+.001f;
+        c.sound=null;c.update(DT,L);c.sound=ear;c.update(DT,L);
+        check("muted splash is never replayed on sound attachment",ear.gatorEntries==0);
+    }
     static void comboAudio(Layout L) {
         for(int count:new int[]{2,3}) {
             GameCore c=fight(L);Alligator a=c.boss.alligator;Ear ear=new Ear();c.sound=ear;
             c.boss.hp=c.boss.hpMax*(count==2?.49f:.24f);a.timer=0;c.update(DT,L);
-            check("first combo strike sounds once "+count,ear.octoCues==1);
+            check("first combo strike sounds once "+count,ear.gatorCues==1);
             for(int i=0;i<count;i++) {
                 for(int frame=0;frame<30 && a.combo[i].attack<.15f;frame++)c.update(DT,L);
                 Alligator.Strike strike=a.combo[i];
@@ -787,10 +824,12 @@ final class TestAlligator extends Check {
                 a.touch(c,L,1,168,strike.tipX+L.w*.12f,strike.tipY);
                 c.update(DT,L);
                 check("immediate follow-up strike sounds exactly once "+count+"/"+i,
-                        ear.octoCues==Math.min(count,i+2));
+                        ear.gatorCues==Math.min(count,i+2));
                 c.update(DT,L);
-                check("attack cue does not repeat on next frame",ear.octoCues==Math.min(count,i+2));
+                check("attack cue does not repeat on next frame",ear.gatorCues==Math.min(count,i+2));
             }
+            check("combo takes never repeat "+count,!ear.gatorCueRepeated && Integer.bitCount(ear.gatorCueMask)==count);
+            check("Gator no longer borrows Octopulse rising tone",ear.octoCues==0);
             a.pendingAttackCues=1;c.boss.leave();check("leaving clears pending attack sounds",a.takeAttackCues()==0);
         }
     }
@@ -808,7 +847,7 @@ final class TestAlligator extends Check {
             check("daze cancel flashes and shakes before combo demo",a.cancelFlash()>.8f && a.takeShake()>=.85f && a.showoffLimb()<0);
             float hp=b.hp,clock=a.showoffAge;c.paused=true;c.update(.2f,L);c.paused=false;
             check("pause freezes combo demonstration",a.showoffAge==clock);
-            int hits=0,cues=0,limbs=0,shakes=0;boolean inputSafe=true,flexed=false;
+            int cueMask=0;int hits=0,cues=0,limbs=0,shakes=0;boolean inputSafe=true,flexed=false;
             for(int frame=0;frame<hz*4 && a.showoff();frame++) {
                 int limb=a.showoffLimb();if(limb>=0)limbs|=1<<limb;
                 if(a.showoffFlex()>.98f) {
@@ -819,7 +858,13 @@ final class TestAlligator extends Check {
                 }
                 inputSafe &= b.press(0,c.rnd,L)==Boss.REBUFF && b.hp==hp && a.pendingShots==0 && a.retaliation==0;
                 inputSafe &= !a.swipe(b,L,0,L.h*.5f,L.w,L.h*.5f);
-                hits+=b.update(dt,L,c.rnd);cues+=a.takeAttackCues();
+                hits+=b.update(dt,L,c.rnd);
+                int cueCount=a.takeAttackCues();
+                for(int i=0;i<cueCount;i++) {
+                    check("showoff prompt takes do not repeat",(cueMask&(1<<a.attackCues[i]))==0);
+                    cueMask|=1<<a.attackCues[i];
+                }
+                cues+=cueCount;
                 if(a.takeShake()>0)shakes++;
             }
             check("demo ignores attack input without retaliation",inputSafe);
@@ -872,6 +917,7 @@ final class TestAlligator extends Check {
         impactFeedback(L);
         comboShowoff(L);
         comboAudio(L);
+        recordedAudio(L);
         clawGlow(L);
         laughingTaunt(L);
         group("gator body follows tail side");

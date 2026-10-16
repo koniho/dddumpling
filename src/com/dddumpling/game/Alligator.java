@@ -21,6 +21,19 @@ final class Alligator {
     float tipX,tipY,previousX,previousY,targetX,targetY,targetR,strikeX,strikeY;
     float fingerX,fingerY,anchorX,anchorY,strokeX,strokeY,strokeEndX,strokeEndY,strokeFade;
     int pendingAttackCues;
+    // Audio randomness never advances the gameplay generator.
+    final java.util.Random cueRandom=new java.util.Random(0);
+    final int[] attackCues=new int[3];
+    int usedCueMask;
+    void queueAttackCue(boolean first) {
+        if(first)usedCueMask=0;
+        int pick=cueRandom.nextInt(3-Integer.bitCount(usedCueMask));
+        for(int variant=0;variant<3;variant++)if((usedCueMask&(1<<variant))==0 && pick--==0) {
+            usedCueMask|=1<<variant;
+            if(pendingAttackCues<attackCues.length)attackCues[pendingAttackCues++]=variant;
+            break;
+        }
+    }
     boolean placed, blocked, dazeCue, hitPlayer, longWindow, windowHit, windowDamaged;
     float closing,vulnerablePose;
     Softbody tummy;
@@ -72,7 +85,7 @@ final class Alligator {
         showoffAge+=dt;
         int beat=Math.min(showoffCount-1,(int)((showoffAge-SHOWOFF_LEAD)/SHOWOFF_BEAT));
         if(showoffAge>=SHOWOFF_LEAD)while(showoffBeat<beat) {
-            showoffBeat++;pendingAttackCues++;jolt(.15f);
+            showoffBeat++;queueAttackCue(showoffBeat==0);jolt(.15f);
             if(b.body!=null)b.body.squash(.16f);
         }
         float impacts=(showoffAge-SHOWOFF_LEAD-SHOWOFF_BEAT*.5f)/SHOWOFF_BEAT;
@@ -412,7 +425,7 @@ final class Alligator {
     int takeAttackCues() {int count=pendingAttackCues;pendingAttackCues=0;return count;}
     void beginStrike(Boss b,Layout L,int which) {
         limb=lastLimb=which;tempo=speed(b);attack=0;blocked=false;placed=false;hitPlayer=false;
-        pendingAttackCues++;jolt(.075f);pose(L);
+        queueAttackCue(!comboActive);jolt(.075f);pose(L);
     }
     void beginCombo(Boss b,java.util.Random rnd) {
         clearCombo();comboActive=true;comboCount=b.hp<b.hpMax*.25f?3:2;
