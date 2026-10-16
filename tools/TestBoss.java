@@ -165,19 +165,30 @@ final class TestBoss extends Check {
             boss.leaveT=Boss.LEAVE-SlimeDeath.SPLAT_AT;
             SlimeDeath frame=new SlimeDeath(null,boss,L,1);
             float[] outline=frame.points(frame.pose.skin);
+            boss.slimeDeath=SlimeDeath.BASIC;
+            SlimeDeath basic=new SlimeDeath(null,boss,L,1);
+            float[] reference=basic.points(SlimeDeath.BASIC.skin);
             float center=L.playTop+(L.dangerY-L.playTop)*.36f;
             for(float offset:new float[]{-.1f,0,.1f}) {
-                float row=center+L.h*offset,left=Float.MAX_VALUE,right=-left;
-                for(int i=0;i<outline.length;i+=2) {
-                    int j=(i+2)%outline.length;
-                    if((outline[i+1]>row)==(outline[j+1]>row))continue;
-                    float x=outline[i]+(outline[j]-outline[i])*(row-outline[i+1])/(outline[j+1]-outline[i+1]);
-                    left=Math.min(left,x);right=Math.max(right,x);
-                }
-                check("stretched death fills the frame through its middle "+shape+" / "+offset,
-                        right-left>L.w*.52f && right-left<L.w*.62f);
+                float row=center+L.h*offset;
+                float width=skinRowWidth(outline,row),expected=skinRowWidth(reference,row);
+                check("stretched death settles into the basic silhouette "+shape+" / "+offset,
+                        expected>L.w*.2f && Math.abs(width-expected)<L.w*.06f);
             }
+            boss.leaveT=Boss.LEAVE-2.1f;
+            check("drips finish stretching sooner "+shape,new SlimeDeath(null,boss,L,1).drip==1f);
         }
+    }
+
+    private static float skinRowWidth(float[] outline,float row) {
+        float left=Float.MAX_VALUE,right=-left;
+        for(int i=0;i<outline.length;i+=2) {
+            int j=(i+2)%outline.length;
+            if((outline[i+1]>row)==(outline[j+1]>row))continue;
+            float x=outline[i]+(outline[j]-outline[i])*(row-outline[i+1])/(outline[j+1]-outline[i+1]);
+            left=Math.min(left,x);right=Math.max(right,x);
+        }
+        return Math.max(0f,right-left);
     }
 
     static void renderEffects(Layout L) {

@@ -3,6 +3,11 @@ package com.dddumpling.game;
 /** Spreads the actual slime skin, face and emblem into one dripping sheet of jelly. */
 final class SlimeDeath extends OpacityPainter {
     static final float SPLAT_AT=Boss.LEAVE*.38f;
+    static final Pose BASIC=basicPose();
+    private static Pose basicPose() {
+        Softbody body=new Softbody();body.reset(0,0,100f,2f);
+        return new Pose(body);
+    }
     static final class Pose {
         static final int ROWS=128;
         final float[] skin;
@@ -50,16 +55,19 @@ final class SlimeDeath extends OpacityPainter {
         layout=L;time=b.leaveProgress()*Boss.LEAVE;
         float u=Math.max(0f,Math.min(1f,(time-.15f)/(SPLAT_AT-.15f)));
         spread=1f-(1f-u)*(1f-u)*(1f-u);
-        drip=MushroomDeath.ease(time,SPLAT_AT,Boss.LEAVE);
+        drip=MushroomDeath.ease(time,SPLAT_AT*.6f,2.1f);
     }
 
     static float opacity(float time) {return 1f-MushroomDeath.ease(time,2.25f,Boss.LEAVE);}
 
     float x(float x,float y) {
         float u=pose.across(x,y),v=Math.max(-1f,Math.min(1f,(y-pose.my)/pose.halfH));
-        float round=(float)Math.pow(Math.max(0f,1f-v*v*v*v),.25f);
-        float target=layout.w*.5f+u*layout.w*.30f
-                *round*(1f-drip*.02f);
+        float at=(v+1f)*.5f*Pose.ROWS;
+        int row=Math.min(Pose.ROWS-1,(int)at);float t=at-row;
+        float left=BASIC.leftEdge[row]+(BASIC.leftEdge[row+1]-BASIC.leftEdge[row])*t;
+        float right=BASIC.rightEdge[row]+(BASIC.rightEdge[row+1]-BASIC.rightEdge[row])*t;
+        float basicX=((left+right)*.5f+u*(right-left)*.5f-BASIC.mx)/BASIC.halfW;
+        float target=layout.w*.5f+basicX*layout.w*.30f*(1f-drip*.02f);
         return x+(target-x)*spread;
     }
 
