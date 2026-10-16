@@ -59,14 +59,16 @@ final class LinkedPairArt {
         }
     }
 
-    /** One collision sends both bodies orbiting their still-joined hands offscreen. */
+    /** A collision cleaves the clasp, then the separated friends tumble offscreen. */
     private static void spin(Painter p, GameCore c, Layout L, GameCore.Enemy a, GameCore.Enemy b) {
         float t = Math.min(1f,a.destroyT/SPIN_TIME), r = L.enemyR;
         float direction = a.linkReleaseX < L.w*0.5f ? -1f : 1f;
         float mx = a.linkReleaseX+direction*t*t*(L.w+r*4f);
         float my = a.linkReleaseY-t*t*L.h*0.45f;
         float angle = t*(float)Math.PI*3.5f*direction;
-        float reach = Math.abs(a.baseX-b.baseX)*0.5f;
+        float peel=1f-(1f-t)*(1f-t);
+        float separation=r*1.6f*peel;
+        float reach = Math.abs(a.baseX-b.baseX)*0.5f+separation;
         Painter q = new TurnPainter(p,mx,my,angle);
         GameCore.Enemy[] pair = {a,b};
         q.save();
@@ -74,7 +76,7 @@ final class LinkedPairArt {
         q.clipOutCircle(reach,0f,r*Layout.HEAD_SCALE*0.965f);
         for (int i = 0; i < 2; i++) {
             float sign = i == 0 ? 1f : -1f, cx = -sign*reach;
-            float hx = -sign*r*0.30f;
+            float hx = -sign*(r*.30f+separation);
             int g = pair[i].word[0], col = Glyph.COLOR[g];
             limb(q,g,cx+sign*r*0.9f,0f,hx,0f,r,sign,col,false,0.08f,new Pulse(0f,r,0f));
             if (!fruit(g)) extremity(q,g,hx,0f,r,sign,col,false);
@@ -88,6 +90,8 @@ final class LinkedPairArt {
             q.strokePoly(hex,Glyph.withAlpha(col,200),r*0.08f);
             Kawaii.draw(q,g,x,0f,r*Layout.HEAD_SCALE*0.60f,col,1f,1f);
         }
+        cleave(p,a.linkReleaseX,a.linkReleaseY,r,a.destroyT/GameCore.DESTROY_TIME,
+                Glyph.COLOR[a.word[0]],Glyph.COLOR[b.word[0]]);
     }
 
     /** Rotates the complete code-drawn pair, including faces, clasp and clipping masks. */
@@ -152,24 +156,27 @@ final class LinkedPairArt {
 
     /** The clasp opens, each hand recoils with its character, and paired swooshes fade. */
     private static void release(Painter p, GameCore c, Layout L, GameCore.Enemy e) {
-        float t = Math.min(1f,e.destroyT/0.32f);
+        float t = Math.min(1f,e.destroyT/GameCore.DESTROY_TIME);
         if (t >= 1f) return;
         float r = L.enemyR, dir = e.linkReleaseDir, travel = releaseTravel(e,L);
         float cy = e.y+releaseLift(e,L), cx = c.enemyCentreX(e)+travel;
         float peel = 1f-(1f-t)*(1f-t);
-        float hx = e.linkReleaseX+travel+dir*r*(0.30f+0.55f*peel);
+        float hx = e.linkReleaseX+travel+dir*r*(0.30f+1.05f*peel);
         float hy = e.linkReleaseY+releaseLift(e,L)-r*0.22f*peel;
-        float size = r*(1f-t*t);
+        float size = r*(1f-.25f*t);
         int col = Glyph.COLOR[e.word[0]];
         int glyph = c.incognito() ? 0 : e.word[0];
         Pulse quiet = new Pulse(hx,r,0f);
-        p.save();
-        p.clipRect(L.playLeft,0f,L.playRight,L.dangerY);
-        p.clipOutCircle(cx,cy,maskRadius(e,r)*(1f-0.30f*e.destroyT/GameCore.DESTROY_TIME));
-        limb(p,glyph,cx-dir*r*0.9f,cy,hx,hy,size,-dir,col,false,0.18f,quiet);
-        if (!fruit(glyph)) extremity(p,glyph,hx,hy,size,-dir,col,false);
-        p.restore();
+        Painter fading=new OpacityPainter(p,1-t*t*t);
+        fading.save();
+        fading.clipRect(L.playLeft,0f,L.playRight,L.dangerY);
+        fading.clipOutCircle(cx,cy,maskRadius(e,r)*(1f-0.30f*e.destroyT/GameCore.DESTROY_TIME));
+        limb(fading,glyph,cx-dir*r*0.9f,cy,hx,hy,size,-dir,col,false,0.18f,quiet);
+        if (!fruit(glyph)) extremity(fading,glyph,hx,hy,size,-dir,col,false);
+        fading.restore();
         if (dir > 0f) return; // One burst for the bond, not one per character.
+        int partner=e.stageMate==null?GOLD:Glyph.COLOR[e.stageMate.word[0]];
+        cleave(p,e.linkReleaseX,e.linkReleaseY,r,t,col,partner);
         int ink = Glyph.withAlpha(GLOVE,(int)(210f*(1f-t)));
         for (int side = -1; side <= 1; side += 2) {
             for (int streak = 0; streak < 3; streak++) {
@@ -182,6 +189,24 @@ final class LinkedPairArt {
                 }
                 p.polyline(path,ink,r*0.055f*(1f-t*0.6f));
             }
+        }
+    }
+
+    private static void cleave(Painter p,float x,float y,float r,float t,int left,int right) {
+        if(t<0 || t>=1)return;
+        float fade=(1-t)*(1-t),open=1-(1-t)*(1-t);
+        float slash=r*(1.2f+open*1.4f),width=r*.22f*(1-t);
+        int light=Glyph.mix(left,right,.5f);
+        p.line(x-slash*.42f,y-slash,x+slash*.42f,y+slash,
+                Glyph.withAlpha(light,(int)(85*fade)),width*3);
+        p.fillPoly(new float[]{x-slash*.42f,y-slash,x+width,y-width*.4f,
+                x+slash*.42f,y+slash,x-width,y+width*.4f},Glyph.withAlpha(GLOVE,(int)(255*fade)));
+        for(int i=0;i<6*Fx.CLEAR_INTENSITY;i++) {
+            float angle=i*2.39996f,reach=r*(.22f+open*(1.6f+(i%3)*.42f));
+            float xx=x+(float)Math.cos(angle)*reach,yy=y+(float)Math.sin(angle)*reach*.7f;
+            int color=i%2==0?left:right;
+            p.line(xx-(float)Math.cos(angle)*r*.25f,yy-(float)Math.sin(angle)*r*.18f,
+                    xx,yy,Glyph.withAlpha(color,(int)(220*fade)),r*.075f*(1-t));
         }
     }
 
