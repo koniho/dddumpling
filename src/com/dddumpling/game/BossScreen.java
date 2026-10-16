@@ -1525,6 +1525,10 @@ final class BossScreen extends Draw {
                     Glyph.withAlpha(0xFFFFFFFF, (int) (110 * b.hurt * fade)));
         }
 
+        // Hand the name and hint over from the large arrival card during its fade-out.
+        if(b.intro>0f)fade*=1f-introExitFade(b);
+        if(fade<=.01f)return;
+
         String name = b.enrage() > 0.35f ? b.name() + "!" : b.name();
         p.text(name, L.w / 2f, nameY(L), nameSize(L),
                 Glyph.withAlpha(col, (int) (255 * fade)), Painter.CENTER, true);
@@ -1550,19 +1554,21 @@ final class BossScreen extends Draw {
      * Its own thing rather than a reuse of the stage banner, because both are on screen at once — the
      * boss starts as the stage begins — and they have to sit apart or they overlap.
      */
+    private static float introExitFade(Boss b) {
+        return Math.min(1f,(1f-b.introProgress())*3f);
+    }
+
     static void intro(Painter p, GameCore c, Layout L) {
         Boss b = c.boss;
         if (!b.active() || b.intro <= 0f) return;
         float t = b.introProgress();
         // Up quickly, and out over the last third, so the card is gone before the fight starts.
-        float a = Math.min(1f, t * 4f) * Math.min(1f, (1f - t) * 3f);
+        float a = Math.min(1f, t * 4f) * introExitFade(b);
         if (a <= 0.01f) return;
 
         float s = L.unit;
         float y = L.h * 0.30f;
         int col = tint(b);
-        p.text("BOSS", L.w / 2f, y - s * 1.5f, type(s * 0.8f),
-                Glyph.withAlpha(ROSE, (int) (235 * a)), Painter.CENTER, true);
         p.text(b.name(), L.w / 2f, y, type(s * 1.8f), Glyph.withAlpha(col, (int) (255 * a)),
                 Painter.CENTER, true);
         p.text(Boss.BLURB[b.kind], L.w / 2f, y + type(s * 1.35f), type(s * 0.62f),

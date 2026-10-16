@@ -2530,6 +2530,12 @@ final class Preview {
      * them — and a mechanic nobody has looked at is a mechanic nobody has checked.
      */
     private static void bossFrames(File dir, Layout L, int w, int h, int ss) throws Exception {
+        if(wanted("182-"))for(int kind=0;kind<Boss.COUNT;kind++)for(float at:new float[]{.45f,.83f,1f}) {
+            GameCore c=TestTimeAttack.start(kind);
+            c.stageBanner=0;
+            step(c,L,c.boss.introDuration()*at);
+            shot(dir,"182-boss-header-"+kind+"-"+Math.round(at*100),c,L,w,h,ss);
+        }
         // The arrival card, part way in.
         GameCore ci = toBoss(L, Boss.SLIME, 501L, false);
         step(ci, L, Boss.INTRO * 0.45f);
