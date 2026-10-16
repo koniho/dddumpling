@@ -26,7 +26,7 @@ final class TestTimeAttack extends Check {
         check("quick right swipe works without move events",c.timeAttack.selected==0 && ear.uiBloops==2);
         c.modes.touch(c,L,0,42,x,y);c.modes.touch(c,L,1,42,x+distance,y);
         check("right swipe wraps to all bosses",c.timeAttack.selected==TimeAttack.ALL);
-        float label=TimeAttack.selectY(L);
+        float label=TimeAttack.nameY(L);
         c.modes.touch(c,L,0,42,x,label);c.modes.touch(c,L,1,42,x-distance,label);
         check("boss name swipe wraps forward to slime",c.timeAttack.selected==0);
         for(float row:new float[]{y,label})for(int direction:new int[]{-1,1}) {

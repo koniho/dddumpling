@@ -11,13 +11,14 @@ final class TimeAttackDemo extends Draw {
         return t<=start || t>=end?0f:(float)Math.sin((t-start)/(end-start)*Math.PI);
     }
     private static float radius(Layout L) {return Math.min(L.unit,L.h*.017f);}
+    private static float sceneY(Layout L) {return TimeAttack.selectY(L)-L.unit;}
     private static float companionX(GameCore c,Layout L) {
         float t=c.clock%LOOP;
         return companionAnchor(L)+radius(L)*(.35f*hop(t,1f,1.8f)-.25f*hop(t,.08f,.85f));
     }
     private static float companionY(GameCore c,Layout L) {
         float t=c.clock%LOOP;
-        return L.h*.677f+radius(L)*(.45f-1.25f*hop(t,.18f,1f)-.45f*hop(t,1f,1.8f)-.75f*hop(t,2.25f,3.05f));
+        return sceneY(L)+radius(L)*(.45f-1.25f*hop(t,.18f,1f)-.45f*hop(t,1f,1.8f)-.75f*hop(t,2.25f,3.05f));
     }
     static void draw(Painter p,GameCore c,Layout L) {
         drawCompanion(p,c,L);
@@ -27,7 +28,7 @@ final class TimeAttackDemo extends Draw {
     }
     static void drawCompanion(Painter p,GameCore c,Layout L) {
         float t=c.clock%LOOP,r=radius(L);
-        p.fillEllipse(companionAnchor(L),L.h*.677f+r*1.45f,r*1.1f,r*.13f,0x44302045);
+        p.fillEllipse(companionAnchor(L),sceneY(L)+r*1.45f,r*1.1f,r*.13f,0x44302045);
         Trinket.drawReacting(p,SurvivalDemo.companion(c),companionX(c,L),companionY(c,L),r,c.clock*3,1,
                 hop(t,.18f,1f)>.1f?5:hop(t,1f,1.8f)>.1f?4:8,.7f);
     }
@@ -40,7 +41,7 @@ final class TimeAttackDemo extends Draw {
     private static void drawOne(Painter p,GameCore c,Layout L,int boss) {
         boolean known=TimeAttack.unlocked(c,boss);
         float t=c.clock%LOOP,r=radius(L),br=r*2;
-        float y=L.h*.677f,right=bossAnchor(L);
+        float y=sceneY(L),right=bossAnchor(L);
         float charge=hop(t,.08f,.85f),recoil=hop(t,1.5f,2.12f),cheer=hop(t,2.25f,3.05f);
         float cx=companionX(c,L),cy=companionY(c,L);
         float bx=right-br*.8f*charge+br*.22f*recoil;
@@ -85,7 +86,7 @@ final class TimeAttackDemo extends Draw {
     }
     private static void drawAll(Painter p,GameCore c,Layout L) {
         float beat=(c.clock%GROUP_TURN)/GROUP_TURN,r=radius(L),br=r*2;
-        float y=L.h*.679f,cx=companionX(c,L),cy=companionY(c,L);
+        float y=sceneY(L)+L.h*.002f,cx=companionX(c,L),cy=companionY(c,L);
         int turn=(int)(c.clock/GROUP_TURN)%Boss.COUNT;
         // The returning boss hops behind the queue; the next buddy scoots to the front.
         for(int slot=Boss.COUNT-1;slot>=0;slot--) {
