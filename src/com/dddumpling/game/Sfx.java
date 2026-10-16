@@ -37,8 +37,9 @@ final class Sfx {
             NINJA_COMBO = NINJA_SWISH_2 + 1, SURVIVAL_OVER = NINJA_COMBO + 1,
             GATOR_PARRY = SURVIVAL_OVER + 1, GATOR_PROMPT_0 = GATOR_PARRY + 1,
             GATOR_PROMPT_1 = GATOR_PROMPT_0 + 1, GATOR_PROMPT_2 = GATOR_PROMPT_1 + 1,
-            GATOR_SPLASH = GATOR_PROMPT_2 + 1, COUNT = GATOR_SPLASH + 1;
+            GATOR_SPLASH = GATOR_PROMPT_2 + 1, GATOR_TAUNT_0 = GATOR_SPLASH + 1, COUNT = GATOR_TAUNT_0 + 6;
     static final float GATOR_ENTRY_RATE=.70f, GATOR_PROMPT_GAIN=.42f, GATOR_SPLASH_GAIN=.60f;
+    static final float GATOR_TAUNT_GAIN=.55f;
     static final float OCTO_WAVE_GAIN = .66f;
     static final float NINJA_COMBO_GAIN = .25f;
 
@@ -46,6 +47,8 @@ final class Sfx {
     private static short[] rocketCache, bubbleCache;
 
     private Sfx() {}
+
+    static int gatorTauntId(int variant) {return GATOR_TAUNT_0+Math.max(0,Math.min(5,variant));}
 
     static int gatorPromptId(int variant) {return GATOR_PROMPT_0+Math.max(0,Math.min(2,variant));}
 
@@ -78,6 +81,7 @@ final class Sfx {
     }
 
     private static short[] renderEffect(int id) {
+        if(id>=GATOR_TAUNT_0 && id<GATOR_TAUNT_0+6)return GatorTauntRecording.build(id-GATOR_TAUNT_0);
         if (id >= SQUISH_0 && id < SQUISH_0 + Glyph.COUNT) return squish(id - SQUISH_0);
         if (id >= BOSS_TAUNT_0 && id < BOSS_TAUNT_0 + Boss.COUNT)
             return bossTaunt(id - BOSS_TAUNT_0);

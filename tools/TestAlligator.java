@@ -775,6 +775,49 @@ final class TestAlligator extends Check {
         AlligatorArt.draw(p,c,L,c.boss,1);
         check("yellow glow follows the whole attacking claw",strokes[0]==3 && attached[0]);
     }
+    static void growlAudio(Layout L) {
+        group("recorded daze-cancel growls");
+        for(int phase=0;phase<2;phase++)for(int hz:new int[]{30,60,120}) {
+            GameCore c=fight(L);Boss b=c.boss;Alligator a=b.alligator;Ear ear=new Ear();c.sound=ear;
+            b.hp=b.hpMax*(phase==0?.5f:.25f);a.daze=Alligator.DAZE;a.longWindow=true;b.damage(1);
+            check("combo demo waits for final growl tail",a.showoffLead()>=GatorTauntRecording.end(phase)+.17f);
+            float dt=1f/hz;int played=0;
+            for(int frame=0;frame<hz*4 && a.showoff();frame++) {
+                c.update(dt,L);
+                if(ear.gatorGrowls.size()>played) {
+                    int id=ear.gatorGrowls.get(played);
+                    check("growls keep file order and original spacing "+phase+"/"+hz+"/"+played,
+                            id==phase*3+played && ear.gatorGrowls.size()==played+1
+                            && Math.abs(a.showoffAge-GatorTauntRecording.onset(phase,played))<=dt+.001f);
+                    played++;
+                }
+                if(a.showoff() && a.showoffAge<GatorTauntRecording.end(phase))
+                    check("no demonstration strikes over recorded growls",a.showoffLimb()<0 && ear.gatorCues==0);
+                if(frame==hz/4) {
+                    float age=a.showoffAge,mouth=a.laugh();int cues=ear.gatorGrowls.size();
+                    c.paused=true;c.update(.2f,L);c.paused=false;
+                    check("pause freezes growl mouth and cue schedule",age==a.showoffAge && mouth==a.laugh() && cues==ear.gatorGrowls.size());
+                }
+            }
+            check("phase growls and demonstration complete once",played==3 && !a.showoff() && a.takeGrowls()==0 && a.laugh()==0);
+            for(int beat=0;beat<3;beat++) {
+                float start=GatorTauntRecording.onset(phase,beat);
+                check("recorded envelope opens mouth on each growl",GatorTauntRecording.mouth(phase,start+.09f)>.2f);
+                check("mouth closes before next growl",GatorTauntRecording.mouth(phase,start-.005f)==0);
+            }
+            b.leave();check("leaving clears growl history",a.growlBeat==-1 && a.takeGrowls()==0);
+        }
+        GameCore c=fight(L);Boss b=c.boss;Alligator a=b.alligator;
+        b.hp=b.hpMax*.5f;b.damage(1);c.sound=null;
+        while(a.showoffAge<GatorTauntRecording.onset(0,0)+DT)c.update(DT,L);
+        Ear ear=new Ear();c.sound=ear;c.update(DT,L);
+        check("muted growls do not play late",ear.gatorGrowls.isEmpty());
+        b.damage(b.hp);c.update(DT,L);
+        check("defeat cancels growl queue and mouth",a.takeGrowls()==0 && a.growlBeat==-1 && a.growlMouth()==0);
+        c=fight(L);b=c.boss;a=b.alligator;b.hp=b.hpMax*.5f;b.damage(1);
+        c.update(.2f,L);c.startGame();
+        check("restart clears pending growls",a.takeGrowls()==0 && !a.showoff() && a.growlBeat==-1);
+    }
     static void recordedAudio(Layout L) {
         group("recorded Gator cues");
         GameCore c=fight(L),same=fight(L);Alligator a=c.boss.alligator;
@@ -896,7 +939,7 @@ final class TestAlligator extends Check {
         GameCore c=fight(L);Alligator a=c.boss.alligator;
         c.boss.hp=c.boss.hpMax*.5f;c.boss.damage(1);
         check("threshold has immediate cancel shake",a.takeShake()>=.85f);
-        a.showoffAge=Alligator.SHOWOFF_LEAD+Alligator.SHOWOFF_BEAT*.5f-DT*.5f;
+        a.showoffAge=a.showoffLead()+Alligator.SHOWOFF_BEAT*.5f-DT*.5f;
         c.shake=0;c.paused=true;c.update(DT,L);
         check("paused demonstration does not shake",c.shake==0 && a.takeShake()==0);
         c.paused=false;c.update(DT,L);
@@ -918,6 +961,7 @@ final class TestAlligator extends Check {
         comboShowoff(L);
         comboAudio(L);
         recordedAudio(L);
+        growlAudio(L);
         clawGlow(L);
         laughingTaunt(L);
         group("gator body follows tail side");

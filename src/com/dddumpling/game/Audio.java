@@ -417,6 +417,7 @@ final class Audio implements GameCore.Sound {
 
     @Override public void shieldBounce() { play(Sfx.SHIELD_BOUNCE, 1f, 0.72f); }
     @Override public void gatorParry() { play(Sfx.GATOR_PARRY, 1f); }
+    @Override public void gatorTaunt(int variant) { play(Sfx.gatorTauntId(variant), 1f, Sfx.GATOR_TAUNT_GAIN); }
     @Override public void gatorPrompt(int variant) { play(Sfx.gatorPromptId(variant), 1f, Sfx.GATOR_PROMPT_GAIN); }
     @Override public void gatorSplash(boolean entry) { play(Sfx.GATOR_SPLASH, entry?Sfx.GATOR_ENTRY_RATE:1f, Sfx.GATOR_SPLASH_GAIN); }
     @Override public void slimeDamage() { play(Sfx.SLIME_DAMAGE, 1f, 0.76f); }

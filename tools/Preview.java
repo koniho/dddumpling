@@ -64,6 +64,13 @@ final class Preview {
     }
 
     private static void alligatorFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(wanted("gator-growl-"))for(int phase=0;phase<2;phase++)for(int beat=0;beat<3;beat++) {
+            GameCore c=TestAlligator.fight(L);c.stageBanner=0;c.landBlend=1;
+            c.boss.hp=c.boss.hpMax*(phase==0?.5f:.25f);c.boss.damage(1);
+            float at=GatorTauntRecording.onset(phase,beat)+.09f;
+            TestAlligator.advance(c,L,at);c.clock=at;
+            shot(dir,"gator-growl-"+(phase+1)+"-"+(beat+1),c,L,w,h,ss);
+        }
         if(wanted("gator-final-")) {
             for(float at:new float[]{.25f,.7f,1.2f,1.65f,2.05f,2.5f,3.3f}) {
                 GameCore ending=TestAlligator.fight(L);ending.stageBanner=0;ending.landBlend=1;
@@ -119,7 +126,7 @@ final class Preview {
         for(int count:new int[]{2,3})for(int beat=0;beat<count;beat++) {
             GameCore demo=TestAlligator.fight(L);demo.stageBanner=0;demo.landBlend=1;
             demo.boss.hp=demo.boss.hpMax*(count==2?.5f:.25f);demo.boss.damage(1);
-            for(float t=0;t<Alligator.SHOWOFF_LEAD+Alligator.SHOWOFF_BEAT*(beat+.5f);t+=DT)
+            for(float t=0;t<demo.boss.alligator.showoffLead()+Alligator.SHOWOFF_BEAT*(beat+.5f);t+=DT)
                 demo.update(DT,L);
             shot(dir,"168-combo-showoff-"+count+"-"+(beat+1),demo,L,w,h,ss);
         }
@@ -3140,7 +3147,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "taunt-gator", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage", "score-reset-confirm", "score-reset-brush", "ninja-swish-2", "ninja-swish-3", "ninja-combo", "survival-game-over", "gator-parry", "gator-prompt-1", "gator-prompt-2", "gator-prompt-3", "gator-splash"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage", "score-reset-confirm", "score-reset-brush", "ninja-swish-2", "ninja-swish-3", "ninja-combo", "survival-game-over", "gator-parry", "gator-prompt-1", "gator-prompt-2", "gator-prompt-3", "gator-splash", "gator-taunt-1-1", "gator-taunt-1-2", "gator-taunt-1-3", "gator-taunt-2-1", "gator-taunt-2-2", "gator-taunt-2-3"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

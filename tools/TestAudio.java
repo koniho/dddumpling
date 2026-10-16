@@ -386,6 +386,13 @@ final class TestAudio extends Check {
         check("splash edges avoid clicks",splash[0]==0 && splash[splash.length-1]==0);
         check("entry splash is lower and finishes within arrival",Sfx.GATOR_ENTRY_RATE<1
                 && splash.length/(Sfx.RATE*Sfx.GATOR_ENTRY_RATE)<Boss.INTRO*3);
+        for(int variant=0;variant<6;variant++) {
+            short[] growl=Sfx.build(Sfx.gatorTauntId(variant));
+            check("growl is individually trimmed "+variant,growl.length>Sfx.RATE*.2f && growl.length<Sfx.RATE*.7f);
+            check("growl cut fades avoid clicks "+variant,growl[0]==0 && growl[growl.length-1]==0);
+            if(variant>0)check("growl retains its own performance "+variant,
+                    !java.util.Arrays.equals(growl,Sfx.build(Sfx.gatorTauntId(variant-1))));
+        }
         short[] thud = Sfx.build(Sfx.GATOR_PARRY);
         check("recorded parry is a short impact without recording silence",
                 thud.length>Sfx.RATE*.3f && thud.length<Sfx.RATE*.36f);

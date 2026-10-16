@@ -208,6 +208,8 @@ abstract class Check {
         public void shieldBounce() { shieldBounces++; }
         int gatorParries, gatorCues, gatorEntries, gatorSplashes, gatorCueMask;
         boolean gatorCueRepeated;
+        final java.util.List<Integer> gatorGrowls=new java.util.ArrayList<>();
+        public void gatorTaunt(int variant) {gatorGrowls.add(variant);}
         public void gatorPrompt(int variant) {
             gatorCues++;gatorCueRepeated|=(gatorCueMask&(1<<variant))!=0;gatorCueMask|=1<<variant;
         }

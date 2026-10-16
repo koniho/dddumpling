@@ -299,6 +299,7 @@ final class GameCore {
         /** Recorded impact at the companion's contact with Gummy Gator's limb. */
         void gatorParry();
         void gatorPrompt(int variant);
+        void gatorTaunt(int variant);
         void gatorSplash(boolean entry);
         default void octoWave() {}
         default void octoDamage() {}
@@ -3147,6 +3148,7 @@ final class GameCore {
                 flashColor = 0xFFFF355F;
             }
             int gatorAttackCues=boss.kind==Boss.ALLIGATOR?boss.alligator.takeAttackCues():0;
+            int gatorGrowls=boss.kind==Boss.ALLIGATOR?boss.alligator.takeGrowls():0;
             if (sound != null) {
                 float brew = boss.kind == Boss.SLIME && !boss.hasGlob()
                         && boss.boltCount() == 0 && boss.open()
@@ -3158,6 +3160,7 @@ final class GameCore {
                 if (boss.mushroomSporeCue) sound.mushroomSpore();
                 if (boss.boingWeight >= 0f) sound.divideBoing(boss.boingWeight);
                 if (boss.octoWave) sound.octoWave();
+                for(int cue=0;cue<6;cue++)if((gatorGrowls&(1<<cue))!=0)sound.gatorTaunt(cue);
                 for(int cue=0;cue<gatorAttackCues;cue++)sound.gatorPrompt(boss.alligator.attackCues[cue]);
                 if(boss.kind==Boss.ALLIGATOR) {
                     if(beforeIntro<AlligatorArrival.SPLASH_AT && boss.introProgress()>=AlligatorArrival.SPLASH_AT)

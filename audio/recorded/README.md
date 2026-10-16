@@ -169,3 +169,26 @@ fades. The complete 2.172-second splash is retained. Android and iOS play the sa
 embedded PCM: normal speed at the defeat splash, 70% speed (lower pitch, 3.10s)
 at the first entry droplets. Playback gain is 42% for prompts and 60% for both
 splashes. No repeated water loop or added synthesis.
+
+# Gummy Gator daze-cancel growls
+
+User-supplied `Taunt1.m4a` and `Taunt2.m4a`, requested October 16, 2026. These
+are user recordings, not CC0 library assets; originals remain in Downloads.
+- Taunt1 SHA-256: `182ab421be485e7c71549749ae3af748cc7eb74620d2b119585aabe1cf4097a5`.
+- Taunt2 SHA-256: `3ff1c0e7b4819f519d3f7c4db8bc8fd05b2593a754a4bdf19b444b62d313bbba`.
+
+`python3 tools/prepare-gator-taunts.py /path/to/Taunt1.m4a /path/to/Taunt2.m4a`
+regenerates `GatorTauntRecording.java` and six local audition WAVs in `build/`.
+Cuts: Taunt1 0.845–1.105s, 1.150–1.440s, 1.480–2.145s;
+Taunt2 1.010–1.230s, 1.305–1.525s, 1.635–1.860s. The last Taunt1 growl retains
+its quieter articulation, rather than splitting breath valleys into extra cues.
+Both use a two-pole 4 kHz low-pass, mono 22,050 Hz PCM, 3ms/15ms edge fades,
+85% peak normalization and 55% playback gain. Pitch and speed are unchanged.
+
+Taunt1 plays on the two-hit transition; Taunt2 on the three-hit transition.
+The first growl starts 120ms after daze cancel. Remaining starts preserve the
+original recording's spacing. The flex holds through the performance; the combo
+demonstration begins 180ms after its last tail. A baked 10ms RMS envelope drives
+the mouth opening and head bob/tilt, with a spring squash at each growl onset.
+Pause freezes the shared clock. Leave, restart and defeat clear queued growls;
+muted events are consumed rather than deferred. Audio does not use gameplay RNG.
