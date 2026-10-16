@@ -20,9 +20,9 @@ final class Fx {
                 s.tx = s.kill ? c.enemyCentreX(s.target) : c.tileX(s.target, s.tileIndex, L);
                 s.ty = s.target.y;
             } else if (s.atBoss && c.boss.body != null) {
-                // The same homing for a shot at the boss, which drifts and wobbles just as much.
-                s.tx = c.boss.body.centreX() + s.bossDx;
-                s.ty = c.boss.body.centreY() + s.bossDy;
+                Softbody body=s.promptBody==null?c.boss.body:s.promptBody;
+                s.tx = body.centreX() + s.bossDx;
+                s.ty = body.centreY() + s.bossDy;
             }
             s.t += dt / s.dur;
             if (s.t >= 1f) {
@@ -38,6 +38,11 @@ final class Fx {
     }
 
     static void explode(GameCore c,Random rnd,float x,float y,float spread,int n,int color,float travel) {
+        explode(c.particles,rnd,x,y,spread,n,color,travel);
+    }
+
+    static void explode(java.util.List<GameCore.Particle> particles,Random rnd,float x,float y,
+            float spread,int n,int color,float travel) {
         for (int i = 0; i < n; i++) {
             GameCore.Particle p = new GameCore.Particle();
             double a = rnd.nextFloat() * 6.283f;
@@ -50,7 +55,7 @@ final class Fx {
             p.life = p.max;
             p.size = spread * (0.10f + rnd.nextFloat() * 0.16f);
             p.color = color;
-            c.particles.add(p);
+            particles.add(p);
         }
     }
 

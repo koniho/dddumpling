@@ -161,6 +161,7 @@ final class Boss {
     /** Decaying flashes: hurt on damage, rage on a rebuff. Separate channels, on purpose. */
     float hurt, rage;
     float slimeDragPulse, slimeKeyPulse, slimeKeyLock;
+    int promptNode=-1;
     final float[] slimeBlobPulse = new float[Glyph.COUNT];
     boolean beaten;
     /** A damaged slime stays open while returning home, then answers with a three-bolt volley. */
@@ -353,6 +354,7 @@ final class Boss {
         // opening breather is also where the blurb gets read.
         phase = 0f;
         hurt = rage = slimeDragPulse = slimeKeyPulse = slimeKeyLock = 0f;
+        promptNode=-1;
         for (int g = 0; g < slimeBlobPulse.length; g++) slimeBlobPulse[g] = 0f;
         beaten = false;
         slimeRetaliating = boltDestroyed = false;
@@ -434,6 +436,7 @@ final class Boss {
         age = intro = leaveT = 0f;
         phase = 0f;
         hurt = rage = slimeDragPulse = slimeKeyPulse = slimeKeyLock = 0f;
+        promptNode=-1;
         for (int g = 0; g < slimeBlobPulse.length; g++) slimeBlobPulse[g] = 0f;
         beaten = false;
         slimeRetaliating = boltDestroyed = false;
@@ -954,21 +957,12 @@ final class Boss {
                 chainAt++;
                 slimePromptHits=Math.min(2,slimePromptHits+1);
                 split++;
-                slimeKeyPulse = 0.11f;
+                promptNode=-1;
                 promptT = promptDelay();
-                // Felt where the chain is being worked, even though nothing is being taken off the
-                // bar yet. A press with no answer at all reads as a press that missed.
-                hurt = Math.max(hurt, 0.55f);
-                if (body != null) {
-                    // On the top of the goo rather than in the middle of it, so the dent and the
-                    // bullet that plays the press back agree about where the press landed. An
-                    // impulse at the centroid has no direction to dent in and just shrinks it.
-                    hitY = body.centreY() - body.radiusY() * 0.6f;
-                    body.impulse(hitX, hitY, HIT_PUNCH * 0.7f);
-                }
+                if(body!=null)hitY=body.centreY()-body.radiusY()*.6f;
                 if (split < SPLIT_HITS) return PART;
                 split = 0;
-                shedGlob(rnd);
+                promptNode=shedGlob(rnd);
                 return SPLIT;
             }
 
@@ -978,12 +972,9 @@ final class Boss {
                 hitX = divideX[part];
                 hitY = divideY[part];
                 halfIdle[part] = 0f;
-                halfHurt[part] = 1f;
+                promptNode=part;
                 pieceHits[part] = Math.min(DIVIDE_HITS, pieceHits[part] + 1);
                 divideHits = pieceHits[part];
-                hurt = Math.max(hurt, 0.55f);
-                Softbody pb = divideBody[part];
-                if (pb != null) pb.impulse(hitX, hitY - pb.radiusY() * 0.45f, HIT_PUNCH * 0.7f);
                 if (pieceHits[part] < DIVIDE_HITS) {
                     rerollPiece(part, rnd);
                     return PART;
@@ -1299,9 +1290,9 @@ final class Boss {
     }
 
     /** {@link #SLIME} tears a glob loose every {@link #SPLIT_HITS} presses. Left alone it fades. */
-    private void shedGlob(Random rnd) {
+    private int shedGlob(Random rnd) {
         int i = freeElem();
-        if (i < 0) return;
+        if (i < 0) return -1;
         etype[i] = E_GLOB;
         elife[i] = GLOB_TIME;
         // Placed by the layout pass on the frame it appears; these are the offsets it uses. Cleared
@@ -1312,12 +1303,25 @@ final class Boss {
         moved[i] = false;
         returning[i] = false;
         seed(i);
-        // The hit tears the silhouette outward before the loose patch settles into it.
-        hurt = 1f;
-        if (body != null) {
-            float woundX = lastBX + globSide[i] * lastBR * wide();
-            body.impulse(woundX, lastBY, HIT_PUNCH * 1.25f);
-            body.squash(0.82f);
+        return i;
+    }
+
+    /** Cosmetic feedback waits for the key projectile; prompt progress is already recorded. */
+    void promptImpact(int node,boolean splitHit,float x,float y) {
+        hurt=Math.max(hurt,.55f);
+        if(kind==SLIME) {
+            slimeKeyPulse=.11f;
+            body.impulse(x,y,HIT_PUNCH*.7f);
+            if(splitHit && node>=0 && etype[node]==E_GLOB) {
+                hurt=1f;
+                float woundX=lastBX+globSide[node]*lastBR*wide();
+                body.impulse(woundX,lastBY,HIT_PUNCH*1.25f);
+                body.squash(.82f);
+            }
+        } else if(kind==SPLITTER) {
+            halfHurt[node]=1f;
+            Softbody pb=divideBody[node];
+            pb.impulse(x,y-pb.radiusY()*.45f,HIT_PUNCH*.7f);
         }
     }
 

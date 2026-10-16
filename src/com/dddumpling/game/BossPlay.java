@@ -126,12 +126,15 @@ final class BossPlay {
         c.hits++;
         c.combo++;
         if (c.combo > c.maxCombo) c.maxCombo = c.combo;
-        c.skyGlow = Math.max(c.skyGlow, GameCore.GLOW_HIT);
-        c.skyGlowColor = Glyph.COLOR[g];
+        boolean slimePrompt=c.boss.kind==Boss.SLIME && (verdict==Boss.PART || verdict==Boss.SPLIT);
+        boolean dividePrompt=c.boss.kind==Boss.SPLITTER && verdict==Boss.PART;
+        if(!slimePrompt && !dividePrompt) {
+            c.skyGlow = Math.max(c.skyGlow, GameCore.GLOW_HIT);
+            c.skyGlowColor = Glyph.COLOR[g];
+        }
         // A bullet, from the key that was pressed to the part of the boss it landed on — the same
         // shot a press at a word fires, so a press means the same thing wherever it is aimed. The
-        // damage is already done: this is playback, exactly as a word's own destruction waits for
-        // its shot while the tile pops on the press.
+        // prompt progress is immediate; Slime and Divide hit feedback travels with this shot.
         shot(c, g, L, verdict);
         if (verdict == Boss.PARRY) {
             if(c.boss.boltDestroyed)c.timeAttack.defended();
@@ -162,26 +165,31 @@ final class BossPlay {
                 else c.sound.bossDamage();
             }
         }
-        boolean dividePrompt = c.boss.kind == Boss.SPLITTER && verdict == Boss.PART;
-        if (dividePrompt) {
-            c.shake = Math.max(c.shake, 0.18f);
-            c.flash = Math.max(c.flash, 0.28f);
-            c.flashColor = 0xFF7D45D6;
-            Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR, 9, 0xFF9B62FF);
-            if (c.sound != null) c.sound.divideDamage();
-        }
-        boolean slimePrompt = c.boss.kind == Boss.SLIME
-                && (verdict == Boss.PART || verdict == Boss.SPLIT);
-        if (slimePrompt) {
-            // Killing the charged character bruises the slime without claiming real boss health.
-            c.shake = Math.max(c.shake, 0.12f);
-            Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR * 0.72f, 6, Glyph.COLOR[g]);
-            if (verdict != Boss.SPLIT && c.sound != null) c.sound.boltPop();
-        }
-        if (verdict == Boss.SPLIT && c.sound != null) c.sound.bossSplit();
+        if (verdict == Boss.SPLIT && !slimePrompt && c.sound != null) c.sound.bossSplit();
         // Pitched by how much of the boss is left, except the charged bolt which owns its bloop.
         if (!slimePrompt && c.boss.kind != Boss.SPLITTER && c.sound != null)
             c.sound.squish(g, 1 + (int) (3f * (1f - c.boss.health())));
+        return true;
+    }
+
+    static boolean promptImpact(GameCore c,GameCore.Shot s) {
+        Boss b=c.boss;
+        if(c.state!=GameCore.PLAY || c.dying() || !b.fighting() || b.kind!=s.promptKind
+                || b.body!=s.promptRoot)return false;
+        if(s.promptKind==Boss.SPLITTER && (!b.nodeActive(s.promptNode)
+                || b.divideBody[s.promptNode]!=s.promptBody))return false;
+        b.promptImpact(s.promptNode,s.promptSplit,s.tx,s.ty);
+        c.skyGlow=Math.max(c.skyGlow,GameCore.GLOW_HIT);c.skyGlowColor=Glyph.COLOR[s.glyph];
+        boolean divide=s.promptKind==Boss.SPLITTER;
+        c.shake=Math.max(c.shake,divide?.18f:.12f);
+        if(divide) {c.flash=Math.max(c.flash,.28f);c.flashColor=0xFF7D45D6;}
+        for(GameCore.Particle p:s.promptParticles) {p.x+=s.tx;p.y+=s.ty;c.particles.add(p);}
+        s.promptParticles.clear();
+        if(c.sound!=null) {
+            if(divide)c.sound.divideDamage();
+            else if(s.promptSplit)c.sound.bossSplit();
+            else c.sound.boltPop();
+        }
         return true;
     }
 
@@ -189,8 +197,8 @@ final class BossPlay {
      * Fires the bullet a boss press earns, from key {@code g} to wherever that press landed.
      *
      * Held as an offset from the body's centre rather than as a point, so it homes as the boss drifts
-     * — see {@link GameCore.Shot#atBoss}. No {@code target} and no {@code kill}, so {@link #impact} does the
-     * one thing wanted at the far end: a burst of that letter's colour where it struck.
+     * — see {@link GameCore.Shot#atBoss}. Slime and Divide prompt shots carry their body reaction,
+     * sound and particles to the struck body, in addition to the ordinary arrival burst.
      *
      * A normal rebuff fires nothing. Slime shields and crossed Gator arms return the shot,
      * making their refusal visible.
@@ -208,6 +216,18 @@ final class BossPlay {
         s.shieldBounce = verdict == Boss.REBUFF;
         s.bossDx = c.boss.hitX - c.boss.body.centreX();
         s.bossDy = c.boss.hitY - c.boss.body.centreY();
+        if((c.boss.kind==Boss.SLIME && (verdict==Boss.PART || verdict==Boss.SPLIT))
+                || (c.boss.kind==Boss.SPLITTER && verdict==Boss.PART)) {
+            boolean divide=c.boss.kind==Boss.SPLITTER;
+            s.promptKind=c.boss.kind;s.promptNode=c.boss.promptNode;s.promptSplit=verdict==Boss.SPLIT;
+            s.promptRoot=c.boss.body;
+            s.promptBody=divide?c.boss.divideBody[s.promptNode]:c.boss.body;
+            s.bossDx=s.tx-s.promptBody.centreX();s.bossDy=s.ty-s.promptBody.centreY();
+            // Reserve the existing cosmetic random draws now, but emit only on arrival.
+            s.promptParticles=new java.util.ArrayList<>();
+            Fx.explode(s.promptParticles,c.rnd,0,0,L.enemyR*(divide?1f:.72f),
+                    divide?9:6,divide?0xFF9B62FF:Glyph.COLOR[g],1f);
+        }
         s.glyph = g;
         s.dur = s.shieldBounce ? GameCore.SHOT_TIME * 3f : GameCore.SHOT_TIME;
         c.shots.add(s);

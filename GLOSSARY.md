@@ -213,6 +213,10 @@ Fly Agaric’s final shake starts its death: the cap and mycelium brown and shri
 then the cap flattens against its planted roots, spreads into a thin horizontal brown smear,
 melts into the ground, and fades away.
 
+Super Slime and Dark Divide accept prompt input immediately, but their hit particles, body reactions,
+flashes, shake, and hit sounds wait for the key projectile to arrive. Divide shots follow the specific
+cube they struck. Projectile interceptions still react immediately.
+
 Dark Divide answers successful key hits and intercepted projectiles with a short rounded bloop. Firing gives the cube
 a springy jiggle and a slight recoil opposite its projectile; disabling a cube plays a softer
 falling bubble-pop. Recoil settles back without changing the cube’s roaming speed.

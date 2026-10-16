@@ -495,6 +495,10 @@ final class GameCore {
          * heads still arrives at that head rather than at the middle of the boss.
          */
         boolean atBoss;
+        int promptKind=-1,promptNode=-1;
+        boolean promptSplit;
+        Softbody promptRoot,promptBody;
+        java.util.ArrayList<Particle> promptParticles;
         /** Rejected by the Slime shield: reaches the body, then ricochets back out. */
         boolean shieldBounce;
         float bossDx, bossDy;
@@ -3302,6 +3306,13 @@ final class GameCore {
     }
 
     void impact(Shot s, Layout L) {
+        if(s.promptKind>=0 && !BossPlay.promptImpact(this,s)) {
+            // The old arrival still consumed its seven motes even after the target vanished.
+            s.promptParticles.clear();
+            Fx.explode(s.promptParticles,rnd,s.tx,s.ty,L.enemyR*.7f,7,Glyph.COLOR[s.glyph],1f);
+            s.promptParticles.clear();
+            return;
+        }
         Enemy e = s.target;
         if (s.kill && e != null && enemies.contains(e) && !e.destroyed) {
             destroyWord(e, s.tx, s.ty, L);

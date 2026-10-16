@@ -8,6 +8,18 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void bossImpactFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("193-impact-"))return;
+        for(int kind:new int[]{Boss.SLIME,Boss.SPLITTER})for(float time:new float[]{0,.067f,.134f,.20f}) {
+            GameCore c=TestBoss.enterBoss(L,kind,193);
+            for(int i=0;i<600 && !c.boss.open();i++)c.update(DT,L);
+            java.util.Arrays.fill(c.boss.blive,false);c.shots.clear();c.particles.clear();
+            c.stageBanner=c.shake=c.flash=c.skyGlow=c.boss.hurt=c.boss.slimeKeyPulse=0;
+            c.tapKey(kind==Boss.SLIME?c.boss.chainLetter():c.boss.pieceWant(0),L);
+            step(c,L,time);
+            shot(dir,"193-impact-"+(kind==Boss.SLIME?"slime-":"divide-")+Math.round(time*1000),c,L,w,h,ss);
+        }
+    }
     private static void clearSpreadFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("clear-spread-"))return;
         for(int length:new int[]{1,3,7}) {
@@ -1522,6 +1534,7 @@ final class Preview {
         gatorSilhouetteFrames(dir,L,w,h,ss);
         alligatorFrames(dir,L,w,h,ss);
         swampEnemyFrames(dir,L,w,h,ss);
+        bossImpactFrames(dir,L,w,h,ss);
         clearSpreadFrames(dir,L,w,h,ss);
         clearIntensityFrames(dir,L,w,h,ss);
         diveStarFrames(dir,L,w,h,ss);

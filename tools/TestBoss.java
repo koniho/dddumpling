@@ -28,6 +28,59 @@ final class TestBoss extends Check {
         return c;
     }
 
+    static void promptImpactTiming(Layout L) {
+        group("boss prompt reactions follow projectile contact");
+        for(int kind:new int[]{Boss.SLIME,Boss.SPLITTER}) {
+            GameCore c=enterBoss(L,kind,193);if(kind==Boss.SLIME)toOpen(c,L);
+            Boss b=c.boss;java.util.Arrays.fill(b.blive,false);c.shots.clear();c.particles.clear();
+            c.shake=c.flash=c.skyGlow=b.hurt=b.slimeKeyPulse=0;
+            Ear ear=new Ear();c.sound=ear;
+            int glyph=kind==Boss.SLIME?b.chainLetter():b.pieceWant(0);
+            int before=kind==Boss.SLIME?b.chainAt:b.pieceCharge(0);
+            c.tapKey(glyph,L);
+            check("prompt progress remains immediate "+kind,
+                    (kind==Boss.SLIME?b.chainAt:b.pieceCharge(0))==before+1);
+            check("key press has no early hit flash, shake, particles or sound "+kind,
+                    b.hurt==0 && b.slimeKeyPulse==0 && c.shake==0 && c.flash==0 && c.particles.isEmpty()
+                    && ear.boltPops==0 && ear.divideDamages==0);
+            GameCore.Shot shot=c.shots.get(0);
+            c.paused=true;c.update(.3f,L);
+            check("pause holds the pending reaction "+kind,shot.t==0 && b.hurt==0);
+            c.paused=false;Fx.updateShots(c,GameCore.SHOT_TIME*.5f,L);
+            check("reaction waits while projectile is in flight "+kind,b.hurt==0 && c.particles.isEmpty());
+            shot.promptBody.moveTo(shot.promptBody.centreX()+L.unit,shot.promptBody.centreY());
+            Fx.updateShots(c,GameCore.SHOT_TIME*.51f,L);
+            check("impact follows the struck body "+kind,Math.abs(shot.tx-shot.promptBody.centreX()-shot.bossDx)<.001f);
+            check("contact starts body feedback and the complete particle burst "+kind,
+                    b.hurt>0 && c.shake>0 && c.particles.size()==(kind==Boss.SLIME?13:16));
+            check("contact plays the matching hit sound once "+kind,
+                    (kind==Boss.SLIME?ear.boltPops:ear.divideDamages)==1);
+            Fx.updateShots(c,.5f,L);
+            check("completed flight cannot replay the sound "+kind,(kind==Boss.SLIME?ear.boltPops:ear.divideDamages)==1);
+            c.particles.clear();java.util.Arrays.fill(b.blive,false);if(kind==Boss.SLIME)toOpen(c,L);
+            c.tapKey(kind==Boss.SLIME?b.chainLetter():b.pieceWant(0),L);
+            GameCore expected=new GameCore(new Mem(),193);expected.rnd.setSeed(193);c.rnd.setSeed(193);
+            Fx.explode(expected,expected.rnd,0,0,L.enemyR*.7f,7,Glyph.COLOR[glyph]);
+            b.leave();Fx.updateShots(c,1f,L);
+            check("discarding a stale reaction preserves the arrival RNG sequence "+kind,
+                    c.rnd.nextLong()==expected.rnd.nextLong());
+            check("leaving cancels stale impact feedback "+kind,c.particles.isEmpty()
+                    && (kind==Boss.SLIME?ear.boltPops:ear.divideDamages)==1);
+        }
+        GameCore pair=enterBoss(L,Boss.SPLITTER,194);chargeDivide(pair,0,L);
+        Fx.updateShots(pair,GameCore.SHOT_TIME,L);
+        pair.boss.beginPinch(100f);pair.boss.pinch(100f*(Boss.DIVIDE_SCALE+.01f));
+        Boss b=pair.boss;int left=b.pieceNodeIndex(0),right=b.pieceNodeIndex(1);
+        b.halfWant[left]=0;b.halfWant[right]=1;
+        java.util.Arrays.fill(b.blive,false);java.util.Arrays.fill(b.halfHurt,0);
+        pair.particles.clear();pair.tapKey(1,L);
+        GameCore.Shot shot=pair.shots.get(0);
+        check("split Divide shot belongs to the matched cube",shot.promptNode==right && shot.promptBody==b.divideBody[right]);
+        b.divideBody[right].moveTo(b.divideBody[right].centreX()+L.unit*2,b.divideBody[right].centreY());
+        Fx.updateShots(pair,GameCore.SHOT_TIME,L);
+        check("only the struck split cube gets its hit pulse",b.halfHurt[right]==1 && b.halfHurt[left]==0);
+    }
+
     static void renderEffects(Layout L) {
         GameCore c = enterBoss(L, Boss.SPLITTER, 885L);
         Boss b = c.boss;
@@ -766,6 +819,8 @@ final class TestBoss extends Check {
         check("the vulnerable slime color pulse reaches both ends of its cycle",
                 BossScreen.vulnerabilityPulse((float) (-Math.PI / 2 / 6.4)) < 0.001f
                         && BossScreen.vulnerabilityPulse((float) (Math.PI / 2 / 6.4)) > 0.999f);
+        check("split feedback waits for its projectile",splitEar.bossSplits==0);
+        Fx.updateShots(c,GameCore.SHOT_TIME,L);
         check("and lands one satisfying split pop", splitEar.bossSplits == 1);
         check("each charged bolt character dies with its own low bloop",
                 splitEar.boltPops == Boss.SPLIT_HITS - 1);
@@ -1088,7 +1143,9 @@ final class TestBoss extends Check {
         c.tapKey(shown, L);
         check("attacking the shown character resets its deadline",
                 c.boss.promptT > beforeAnswer && c.boss.boltCount() == 0);
-        check("and gives the slime a smaller prelaunch impact",
+        check("slime hit particles and sound wait for the shot",c.particles.size()==particlesBefore && ear.boltPops==0);
+        Fx.updateShots(c,GameCore.SHOT_TIME,L);
+        check("contact gives the slime a smaller impact",
                 c.shake >= 0.12f && c.particles.size() > particlesBefore && ear.boltPops == 1);
         shown = c.boss.chainLetter();
         float fullDelay = c.boss.promptDelay();
@@ -1778,6 +1835,8 @@ final class TestBoss extends Check {
         check("only a marked character charges it", c.boss.pieceCharge(0) == 0);
         chargeDivide(c, 0, L);
         check("six marked hits make it vulnerable", c.boss.pieceCharge(0) == Boss.DIVIDE_HITS);
+        check("charge sound waits for projectile contact",ear.divideDamages==0);
+        Fx.updateShots(c,GameCore.SHOT_TIME,L);
         check("charge hits have their own damage sound", ear.divideDamages == Boss.DIVIDE_HITS);
         check("a pinch can begin once vulnerable", c.beginBossPinch(100f));
         float beforeSpan = c.boss.pieceBody(0).spanY();
