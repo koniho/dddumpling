@@ -335,6 +335,8 @@ final class BossScreen extends Draw {
                 int brow=Glyph.withAlpha(0xFF154F19,(int)(255*fade*worry));
                 p.line(ex - side * eyeRX * 0.82f, innerY - eyeRY * 0.24f*worry,
                         ex + side * eyeRX * 0.70f, innerY + eyeRY * 0.05f*worry, brow, ry * 0.050f);
+                p.fillEllipse(cx + side * rx * 0.38f, cy + ry * 0.14f, rx * 0.075f, ry * 0.045f,
+                        Glyph.withAlpha(0xFFFF7291, (int) (115 * fade * worry)));
             }
         }
         if (vulnerable) {
@@ -343,10 +345,6 @@ final class BossScreen extends Draw {
             p.fillEllipse(cx, cy + ry * 0.18f, rx * 0.105f * gasp, ry * 0.145f / gasp, ink);
             p.fillEllipse(cx, cy + ry * 0.225f, rx * 0.060f, ry * 0.050f,
                     Glyph.withAlpha(0xFFFF8099, (int) (225 * fade)));
-            p.fillEllipse(cx - rx * 0.38f, cy + ry * 0.14f, rx * 0.075f, ry * 0.045f,
-                    Glyph.withAlpha(0xFFFF7291, (int) (115 * fade)));
-            p.fillEllipse(cx + rx * 0.38f, cy + ry * 0.14f, rx * 0.075f, ry * 0.045f,
-                    Glyph.withAlpha(0xFFFF7291, (int) (115 * fade)));
         } else {
             float[] smile = new float[18];
             for (int i = 0; i < 9; i++) {
