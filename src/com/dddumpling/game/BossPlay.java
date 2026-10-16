@@ -257,6 +257,15 @@ final class BossPlay {
         if (c.boss.held < 0 && c.boss.held != -2 && c.boss.held != -3) return false;
         c.boss.mushroomShakeCue = false;
         float beforeHp = c.boss.hp;
+        // Capture the last drag segment before the damaged glob is cleared.
+        float sprayDX=0f,sprayDY=0f;
+        if(c.boss.kind==Boss.SLIME && c.boss.held>=0) {
+            sprayDX=c.boss.ex[c.boss.held]-x;
+            sprayDY=c.boss.ey[c.boss.held]-y;
+            if(sprayDX*sprayDX+sprayDY*sprayDY<.001f) {
+                sprayDX=c.boss.body.centreX()-x;sprayDY=c.boss.body.centreY()-y;
+            }
+        }
         int r = c.boss.dragTo(x, y, L);
         c.progress.bossDamage(c.boss.kind, beforeHp, c.boss.hp);
         c.timeAttack.bossDamaged(beforeHp, c.boss.hp);
@@ -272,7 +281,7 @@ final class BossPlay {
         c.shake = Math.max(c.shake, 0.28f);
         Fx.explode(c, c.rnd, x, y, L.enemyR * 1.5f, 14, GameCore.INK_SPARK);
         if(c.boss.kind==Boss.SLIME)
-            SlimeSpray.emit(c,x,y,c.boss.body.centreX()-x,-L.h*.4f,L.enemyR*1.2f,true);
+            SlimeSpray.emit(c,x,y,sprayDX,sprayDY,L.enemyR*1.2f,true);
         if (c.sound != null) {
             if (c.boss.kind == Boss.SLIME) c.sound.slimeDamage();
             else if (c.boss.kind == Boss.OCTOPUS) c.sound.octoDamage();

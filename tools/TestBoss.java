@@ -100,6 +100,26 @@ final class TestBoss extends Check {
         check("goo drips vertically after hanging",drop.x==x && drop.y>y);
         Fx.updateParticles(c,2f);
         check("faded slime leaves no live particles",c.particles.isEmpty());
+        for(int direction=0;direction<4;direction++) {
+            GameCore drag=enterBoss(L,Boss.SLIME,193);
+            Boss b=drag.boss;
+            float startX=b.body.centreX(),startY=b.body.centreY();
+            b.etype[0]=Boss.E_GLOB;b.elife[0]=Boss.GLOB_TIME;b.er[0]=L.enemyR;
+            b.ex[0]=startX;b.ey[0]=startY;b.grab(0);
+            // Move within the field first; the final segment owns the spray direction.
+            float lastX=startX+L.enemyR,lastY=startY+L.enemyR;
+            drag.dragBoss(lastX,lastY,L);
+            float endX=direction==0?L.playLeft:direction==1 || direction==3?L.playRight:lastX;
+            float endY=direction>=2?L.playTop:lastY;
+            drag.particles.clear();drag.dragBoss(endX,endY,L);
+            int drops=0;boolean opposite=true;
+            for(GameCore.Particle p:drag.particles)if(p.slime!=null) {
+                drops++;
+                opposite&=p.vx*(endX-lastX)+p.vy*(endY-lastY)<0;
+            }
+            check("drag cone opposes the final gesture segment "+direction,
+                    drops==SlimeSpray.DRAG_DROPS && opposite);
+        }
     }
 
     static void renderEffects(Layout L) {
