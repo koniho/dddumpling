@@ -514,6 +514,7 @@ final class GameCore {
     static final class Particle {
         float x, y, vx, vy, life, max, size;
         int color;
+        SlimeSpray.Drop slime;
     }
 
     static final class PushImpact {

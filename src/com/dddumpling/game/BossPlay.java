@@ -185,6 +185,7 @@ final class BossPlay {
         if(divide) {c.flash=Math.max(c.flash,.28f);c.flashColor=0xFF7D45D6;}
         for(GameCore.Particle p:s.promptParticles) {p.x+=s.tx;p.y+=s.ty;c.particles.add(p);}
         s.promptParticles.clear();
+        if(!divide)SlimeSpray.emit(c,s.tx,s.ty,s.tx-s.sx,s.ty-s.sy,b.body.rest*.5f,false);
         if(c.sound!=null) {
             if(divide)c.sound.divideDamage();
             else if(s.promptSplit)c.sound.bossSplit();
@@ -270,6 +271,8 @@ final class BossPlay {
         if (c.combo > c.maxCombo) c.maxCombo = c.combo;
         c.shake = Math.max(c.shake, 0.28f);
         Fx.explode(c, c.rnd, x, y, L.enemyR * 1.5f, 14, GameCore.INK_SPARK);
+        if(c.boss.kind==Boss.SLIME)
+            SlimeSpray.emit(c,x,y,c.boss.body.centreX()-x,-L.h*.4f,L.enemyR*1.2f,true);
         if (c.sound != null) {
             if (c.boss.kind == Boss.SLIME) c.sound.slimeDamage();
             else if (c.boss.kind == Boss.OCTOPUS) c.sound.octoDamage();

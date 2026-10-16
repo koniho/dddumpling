@@ -8,6 +8,25 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void slimeSprayFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("193-goo-"))return;
+        for(boolean drag:new boolean[]{false,true})for(float time:new float[]{.18f,.48f,.56f,.95f,1.35f}) {
+            GameCore c=TestBoss.enterBoss(L,Boss.SLIME,193);
+            for(int i=0;i<600 && !c.boss.open();i++)c.update(DT,L);
+            java.util.Arrays.fill(c.boss.blive,false);c.stageBanner=0;
+            for(int i=0;i<(drag?Boss.SPLIT_HITS:1);i++)c.tapKey(c.boss.chainLetter(),L);
+            c.update(GameCore.SHOT_TIME,L);
+            if(drag) {
+                c.particles.clear();
+                int glob=-1;for(int i=0;i<Boss.ELEMS;i++)if(c.boss.etype[i]==Boss.E_GLOB)glob=i;
+                c.grabBoss(c.boss.ex[glob],c.boss.ey[glob]);
+                c.dragBoss(L.playLeft+c.boss.er[glob]*1.5f,c.boss.body.centreY(),L);
+            }
+            step(c,L,time);
+            shot(dir,"193-goo-"+(drag?"drag-":"shot-")+Math.round(time*1000),c,L,w,h,ss);
+        }
+    }
+
     private static void bossImpactFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("193-impact-"))return;
         for(int kind:new int[]{Boss.SLIME,Boss.SPLITTER})for(float time:new float[]{0,.067f,.134f,.20f}) {
@@ -1535,6 +1554,7 @@ final class Preview {
         alligatorFrames(dir,L,w,h,ss);
         swampEnemyFrames(dir,L,w,h,ss);
         bossImpactFrames(dir,L,w,h,ss);
+        slimeSprayFrames(dir,L,w,h,ss);
         clearSpreadFrames(dir,L,w,h,ss);
         clearIntensityFrames(dir,L,w,h,ss);
         diveStarFrames(dir,L,w,h,ss);

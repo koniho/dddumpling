@@ -52,7 +52,7 @@ final class TestBoss extends Check {
             Fx.updateShots(c,GameCore.SHOT_TIME*.51f,L);
             check("impact follows the struck body "+kind,Math.abs(shot.tx-shot.promptBody.centreX()-shot.bossDx)<.001f);
             check("contact starts body feedback and the complete particle burst "+kind,
-                    b.hurt>0 && c.shake>0 && c.particles.size()==(kind==Boss.SLIME?13:16));
+                    b.hurt>0 && c.shake>0 && c.particles.size()==(kind==Boss.SLIME?13+SlimeSpray.HIT_DROPS:16));
             check("contact plays the matching hit sound once "+kind,
                     (kind==Boss.SLIME?ear.boltPops:ear.divideDamages)==1);
             Fx.updateShots(c,.5f,L);
@@ -79,6 +79,27 @@ final class TestBoss extends Check {
         b.divideBody[right].moveTo(b.divideBody[right].centreX()+L.unit*2,b.divideBody[right].centreY());
         Fx.updateShots(pair,GameCore.SHOT_TIME,L);
         check("only the struck split cube gets its hit pulse",b.halfHurt[right]==1 && b.halfHurt[left]==0);
+    }
+
+    static void slimeSpray(Layout L) {
+        group("slime spray arcs, hangs and drips");
+        GameCore c=new GameCore(new Mem(),193),control=new GameCore(new Mem(),193);
+        SlimeSpray.emit(c,100,200,0,-1,L.enemyR,false);
+        check("slime cosmetics leave gameplay randomness alone",c.rnd.nextLong()==control.rnd.nextLong());
+        boolean cone=true;
+        for(GameCore.Particle p:c.particles)
+            cone&=p.slime!=null && p.x==100 && p.y==200 && p.vy<0 && Math.abs(p.vx/-p.vy)<.66f;
+        check("projectile spray starts at contact and follows its forward cone",cone && c.particles.size()==SlimeSpray.HIT_DROPS);
+        GameCore.Particle drop=c.particles.get(0);
+        Fx.updateParticles(c,SlimeSpray.FLIGHT);
+        float x=drop.x,y=drop.y;
+        check("goo flies outward before arresting",Math.abs(x-100)>1 || Math.abs(y-200)>1);
+        Fx.updateParticles(c,SlimeSpray.HANG*.5f);
+        check("goo hangs after its arc",Math.abs(drop.x-x)<.001f && Math.abs(drop.y-y)<.001f);
+        Fx.updateParticles(c,.35f);
+        check("goo drips vertically after hanging",drop.x==x && drop.y>y);
+        Fx.updateParticles(c,2f);
+        check("faded slime leaves no live particles",c.particles.isEmpty());
     }
 
     static void renderEffects(Layout L) {
@@ -937,6 +958,8 @@ final class TestBoss extends Check {
         check("carrying it to the edge lands before the screen edge does",
                 c.boss.held < 0);
         check("which is the only thing that hurts a slime", c.boss.hp < hpBefore);
+        int goo=0;for(GameCore.Particle p:c.particles)if(p.slime!=null)goo++;
+        check("drag damage throws a generous slime spray",goo>=SlimeSpray.DRAG_DROPS);
         check("and the skin is let go, so it springs back", !c.boss.body.pulled());
         check("the wounded slime stays damageable while returning",
                 c.boss.slimeRetaliating && c.boss.open());
