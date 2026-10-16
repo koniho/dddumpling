@@ -12,10 +12,9 @@ if [ ! -f "$archive" ]; then
     curl --fail --location --retry 3 "https://github.com/google/j2objc/archive/refs/tags/$version.tar.gz" -o "$archive"
 fi
 echo "$checksum  $archive" | shasum -a 256 -c -
-if [ ! -d "$IOS_ROOT/vendor/j2objc-$version" ]; then tar -xzf "$archive" -C "$IOS_ROOT/vendor"; fi
-cd "$IOS_ROOT/vendor/j2objc-$version"
 case "$(uname -m)" in arm64) architectures='simulator64 iphone64 macosx64' ;; *) architectures='simulator iphone64 macosx' ;; esac
 # Xcode 26 adds a warning for Java's specified float rounding in Hashtable.
 # Keep upstream warnings, demoting only that diagnostic; never edit generated sources.
 warnings='-Wall -Werror -Wshorten-64-to-32 -Wimplicit-function-declaration -Wmissing-field-initializers -Wduplicate-method-match -Wno-unused-variable -Wno-nullability-completeness -Wno-unused-but-set-variable -Wno-error=implicit-const-int-float-conversion'
-make -j"${JOBS:-8}" translator_dist jre_emul_dist J2OBJC_ARCHS="$architectures" "CC_WARNINGS=$warnings"
+python3 "$IOS_ROOT/scripts/runtime-cache.py" build "$IOS_ROOT/vendor/j2objc-$version/dist" "$archive" \
+    make -j"${JOBS:-8}" translator_dist jre_emul_dist J2OBJC_ARCHS="$architectures" "CC_WARNINGS=$warnings"

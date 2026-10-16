@@ -37,11 +37,12 @@ runs:
         mvn -version
         xcodegen --version
         echo "xcode=$(xcodebuild -version | shasum | cut -c1-12)" >> "$GITHUB_OUTPUT"
+        echo "runtime=$(python3 ios/scripts/runtime-cache.py key)" >> "$GITHUB_OUTPUT"
     - uses: actions/cache/restore@v4
       id: runtime-cache
       with:
         path: ios/vendor
-        key: j2objc-3.1-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.xcode }}-${{ hashFiles('ios/scripts/bootstrap.sh') }}
+        key: j2objc-verified-v1-${{ runner.os }}-${{ steps.toolchain.outputs.runtime }}
     - name: Build native Java runtime
       shell: bash
       env:

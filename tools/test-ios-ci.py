@@ -8,6 +8,7 @@ import subprocess
 import shutil
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -21,6 +22,7 @@ def module(name):
 
 ci = module('ci-plan')
 cache = module('translate-cache')
+runtime = module('runtime-cache')
 
 
 class Selection(unittest.TestCase):
@@ -206,6 +208,93 @@ class Translation(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError):
                 cache.translate(root, 'Release', translator, ['v2'])
             self.assertFalse(stamp.exists())
+
+
+class RuntimeCache(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.dist = Path(self.temp.name) / 'j2objc-3.1/dist'
+        self.dist.parent.mkdir()
+        self.archive = Path(self.temp.name) / 'j2objc-3.1.tar.gz'
+        self.stamp = self.dist.parent / '.dddumpling-runtime.json'
+        self.files = ['j2objc', 'lib/j2objc.jar', 'include/JreEmulation.h',
+                      'lib/iphone/libjre_emul.a', 'lib/simulator/libjre_emul.a',
+                      'lib/macosx/libjre_emul.a']
+
+    def populate(self, *args, **kwargs):
+        if args and args[0][0] == 'tar':
+            self.dist.parent.mkdir(parents=True, exist_ok=True)
+            return
+        for name in self.files:
+            path = self.dist / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('built ' + name)
+        (self.dist / 'j2objc').chmod(0o755)
+
+    def test_build_reuse_and_timestamp_only_changes(self):
+        with patch.object(runtime.subprocess, 'run', side_effect=self.populate) as make:
+            runtime.build(self.dist, 'one', self.archive, ['make'])
+            self.assertEqual(make.call_args_list[-1].args, (['make'],))
+            self.assertEqual(make.call_args_list[-1].kwargs, dict(cwd=self.dist.parent, check=True))
+            for path in self.dist.rglob('*'):
+                os.utime(path, (1, 1))
+            runtime.build(self.dist, 'one', self.archive, ['make'])
+            self.assertEqual(make.call_count, 2)
+
+    def test_rebuild_on_changed_key_missing_corrupt_or_nonexecutable_output(self):
+        with patch.object(runtime.subprocess, 'run', side_effect=self.populate) as make:
+            runtime.build(self.dist, 'one', self.archive, ['make'])
+            runtime.build(self.dist, 'two', self.archive, ['make'])
+            self.assertEqual(make.call_count, 4)
+            for name in self.files:
+                with self.subTest(missing=name):
+                    (self.dist / name).unlink()
+                    before = make.call_count
+                    runtime.build(self.dist, 'two', self.archive, ['make'])
+                    self.assertEqual(make.call_count, before + 2)
+            (self.dist / 'lib/iphone/libjre_emul.a').write_text('corrupt')
+            before = make.call_count
+            runtime.build(self.dist, 'two', self.archive, ['make'])
+            self.assertEqual(make.call_count, before + 2)
+            (self.dist / 'j2objc').chmod(0o644)
+            runtime.build(self.dist, 'two', self.archive, ['make'])
+            self.assertEqual(make.call_count, before + 4)
+
+    def test_invalid_stamp_and_failed_or_incomplete_build_cannot_be_reused(self):
+        with patch.object(runtime.subprocess, 'run', side_effect=self.populate) as make:
+            for invalid in ('broken json', '[]', '{}'):
+                self.stamp.write_text(invalid)
+                before = make.call_count
+                runtime.build(self.dist, 'one', self.archive, ['make'])
+                self.assertEqual(make.call_count, before + 2)
+        with patch.object(runtime.subprocess, 'run', side_effect=subprocess.CalledProcessError(1, 'make')):
+            with self.assertRaises(subprocess.CalledProcessError):
+                runtime.build(self.dist, 'two', self.archive, ['make'])
+        self.assertFalse(self.stamp.exists())
+        with patch.object(runtime.subprocess, 'run'):
+            with self.assertRaises(ValueError):
+                runtime.build(self.dist, 'two', self.archive, ['make'])
+        self.assertFalse(self.stamp.exists())
+
+    def test_fingerprint_tracks_scripts_and_native_toolchain(self):
+        root = Path(self.temp.name)
+        scripts = root / 'ios/scripts'
+        scripts.mkdir(parents=True)
+        for name in ('bootstrap.sh', 'env.sh', 'runtime-cache.py'):
+            (scripts / name).write_text('original')
+        versions = {'uname': b'arm64', 'xcodebuild': b'Xcode 26.6 build 17F', 'java': b'Java 21'}
+        with patch.object(runtime.subprocess, 'check_output', side_effect=lambda cmd, **kw: versions[cmd[0]]):
+            key = runtime.fingerprint(root)
+            for name in versions:
+                original = versions[name]
+                versions[name] += b'changed'
+                self.assertNotEqual(runtime.fingerprint(root), key, name)
+                versions[name] = original
+            for script in scripts.iterdir():
+                script.write_text('changed')
+                self.assertNotEqual(runtime.fingerprint(root), key, script.name)
+                script.write_text('original')
 
 
 if __name__ == '__main__':

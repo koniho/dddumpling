@@ -18,8 +18,12 @@ the app target. The corrected local and hosted suites pass.
 
 GitHub Actions uses `macos-26` and explicitly selects Xcode 26.6. Java 21, Maven and
 XcodeGen build the pinned J2ObjC 3.1 runtime; a cache keyed by runner architecture,
-Xcode build and bootstrap script avoids rebuilding it cold. Runtime compilation is
-limited to three workers to fit the standard runner. See GitHub's
+Xcode build, Java version and bootstrap/cache scripts avoids rebuilding it cold.
+Bootstrap verifies the distribution against recorded file hashes and skips `make` for
+a complete matching runtime. Missing or modified files, configuration changes and failed
+builds invalidate that record. Invalid builds start again from the checksum-verified source
+archive; a record is written only after a successful complete build. Runtime compilation
+is limited to three workers to fit the standard runner. See GitHub's
 [runner inventory](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md).
 The completed runtime is cached before app tests begin, so a later test failure can
 reuse it. Simulator test targets run serially to limit memory use on the hosted runner.
