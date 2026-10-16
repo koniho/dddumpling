@@ -64,6 +64,30 @@ final class Preview {
     }
 
     private static void alligatorFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(wanted("gator-growl-"))for(int phase=0;phase<2;phase++)for(int beat=0;beat<3;beat++) {
+            GameCore c=TestAlligator.fight(L);c.stageBanner=0;c.landBlend=1;
+            c.boss.hp=c.boss.hpMax*(phase==0?.5f:.25f);c.boss.damage(1);
+            float at=GatorTauntRecording.onset(phase,beat)+.09f;
+            TestAlligator.advance(c,L,at);c.clock=at;
+            shot(dir,"gator-growl-"+(phase+1)+"-"+(beat+1),c,L,w,h,ss);
+        }
+        if(wanted("gator-final-")) {
+            for(float at:new float[]{.25f,.7f,1.2f,1.65f,2.05f,2.5f,3.3f}) {
+                GameCore ending=TestAlligator.fight(L);ending.stageBanner=0;ending.landBlend=1;
+                ending.boss.damage(ending.boss.hp);TestAlligator.advance(ending,L,at);ending.clock=at;
+                shot(dir,"gator-final-defeat-"+Math.round(at*100),ending,L,w,h,ss);
+            }
+            GameCore win=TestAlligator.fight(L);win.stageBanner=0;win.landBlend=1;win.lives=1;
+            win.takeHit(L.w*.5f,L);
+            for(float at:new float[]{.4f,.7f,1f,1.4f}) {
+                win.clock=at;win.deathT=win.deathDuration()-at;
+                shot(dir,"gator-final-taunt-"+Math.round(at*100),win,L,w,h,ss);
+            }
+            GameCore flies=TestAlligator.fight(L);flies.stageBanner=0;flies.landBlend=1;
+            for(float at:new float[]{0f,1.2f,2.4f}) {
+                flies.clock=at;shot(dir,"gator-final-fireflies-"+Math.round(at*100),flies,L,w,h,ss);
+            }
+        }
         for(float at:new float[]{.08f,.16f,.22f,.30f,.41f,.66f,.90f,1.70f}) {
             GameCore parry=TestAlligator.fight(L);parry.stageBanner=0;parry.landBlend=1;parry.companion.begin(6);
             TestAlligator.block(parry,L);TestAlligator.advance(parry,L,at);
@@ -102,7 +126,7 @@ final class Preview {
         for(int count:new int[]{2,3})for(int beat=0;beat<count;beat++) {
             GameCore demo=TestAlligator.fight(L);demo.stageBanner=0;demo.landBlend=1;
             demo.boss.hp=demo.boss.hpMax*(count==2?.5f:.25f);demo.boss.damage(1);
-            for(float t=0;t<Alligator.SHOWOFF_LEAD+Alligator.SHOWOFF_BEAT*(beat+.5f);t+=DT)
+            for(float t=0;t<demo.boss.alligator.showoffLead()+Alligator.SHOWOFF_BEAT*(beat+.5f);t+=DT)
                 demo.update(DT,L);
             shot(dir,"168-combo-showoff-"+count+"-"+(beat+1),demo,L,w,h,ss);
         }
@@ -1138,6 +1162,14 @@ final class Preview {
         System.out.printf("layout %dx%d  keyR=%.1f  keyTop=%.0f  dangerY=%.0f  enemyR=%.1f%n",
                 w, h, L.keyR, L.keyTop, L.dangerY, L.enemyR);
 
+        if(wanted("settings-gear-")) {
+            GameCore gear=TestTimeAttack.start(Boss.SLIME);gear.toTitle();gear.returnFade=0;
+            for(int frame=0;frame<3;frame++) {
+                gear.preferences.notificationPending=frame>0;
+                gear.clock=frame==2?.42f:1.2f;
+                shot(dir,"settings-gear-"+frame,gear,L,w,h,ss);
+            }
+        }
         if(wanted("136-story")) {
             for(int who:new int[]{1,6,Collect.BOSS_FIRST}) {
                 Mem saved=new Mem();saved.collected=Collect.MASK;
@@ -2530,6 +2562,26 @@ final class Preview {
      * them — and a mechanic nobody has looked at is a mechanic nobody has checked.
      */
     private static void bossFrames(File dir, Layout L, int w, int h, int ss) throws Exception {
+        if(wanted("182-"))for(int kind=0;kind<Boss.COUNT;kind++)for(float at:new float[]{.45f,.83f,1f}) {
+            GameCore c=TestTimeAttack.start(kind);
+            c.stageBanner=0;
+            step(c,L,c.boss.introDuration()*at);
+            shot(dir,"182-boss-header-"+kind+"-"+Math.round(at*100),c,L,w,h,ss);
+        }
+        if(wanted("182-"))for(int pose=0;pose<3;pose++) {
+            GameCore hero=TestTimeAttack.start(Boss.SLIME);hero.stageBanner=0;
+            step(hero,L,hero.boss.introDuration()+.1f);
+            Softbody body=hero.boss.body;
+            if(pose==1)body.squash(.7f);
+            if(pose==2)body.pull(body.centreX()+body.radiusX()*1.4f,body.centreY()+body.radiusY(),1f);
+            if(pose>0)for(int frame=0;frame<18;frame++)body.update(DT);
+            shot(dir,"182-super-slime-"+pose,hero,L,w,h,ss);
+        }
+        if(wanted("182-"))for(float health:new float[]{.75f,.25f})for(float elapsed:new float[]{0f,.3f,.9f}) {
+            GameCore slime=TestBoss.slimeAfterDrag(L,health);
+            for(float time=0;time<elapsed;time+=DT)slime.boss.update(DT,L,slime.rnd);
+            shot(dir,"182-slime-recovery-"+Math.round(health*100)+"-"+Math.round(elapsed*100),slime,L,w,h,ss);
+        }
         // The arrival card, part way in.
         GameCore ci = toBoss(L, Boss.SLIME, 501L, false);
         step(ci, L, Boss.INTRO * 0.45f);
@@ -3094,8 +3146,8 @@ final class Preview {
                 "achievement", "game-start", "stage-clear", "power-clear", "ninja-swish-1", "zap",
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
-                "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage", "score-reset-confirm", "score-reset-brush", "ninja-swish-2", "ninja-swish-3", "ninja-combo", "survival-game-over"};
+                "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "taunt-gator", "bolt-death",
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage", "score-reset-confirm", "score-reset-brush", "ninja-swish-2", "ninja-swish-3", "ninja-combo", "survival-game-over", "gator-parry", "gator-prompt-1", "gator-prompt-2", "gator-prompt-3", "gator-splash", "gator-taunt-1-1", "gator-taunt-1-2", "gator-taunt-1-3", "gator-taunt-2-1", "gator-taunt-2-2", "gator-taunt-2-3"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

@@ -146,6 +146,8 @@ final class Softbody {
      * change to how much a body moves and how long for, not to what shape it believes in.
      */
     float jiggle = 1f;
+    /** Optional recovery toward original node positions; zero keeps the ordinary goo response. */
+    float shapeMemory;
     /** Accumulated from {@code dt}, never from a clock. Drives the idle breath. */
     private float clock;
 
@@ -398,6 +400,12 @@ final class Softbody {
                 if (idle > 0f) radial += idle * WOBBLE * jiggle * rest * breath(i);
                 ax += radial * dx / d;
                 ay += radial * dy / d;
+            }
+            if(shapeMemory>0f) {
+                float restX=rest*wide*(float)Math.cos(theta[i]);
+                float restY=rest*(float)Math.sin(theta[i]);
+                ax+=shapeMemory*(80f*(restX-dx)-8f*(vx[i]-mvx));
+                ay+=shapeMemory*(80f*(restY-dy)-8f*(vy[i]-mvy));
             }
             vx[i] += ax * h;
             vy[i] += ay * h;

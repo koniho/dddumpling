@@ -52,6 +52,7 @@ src/com/dddumpling/game/SwampEnemies.java
 src/com/dddumpling/game/GatorReplay.java
 src/com/dddumpling/game/GatorCompanion.java
 src/com/dddumpling/game/AlligatorArrival.java
+src/com/dddumpling/game/AlligatorAtmosphere.java
 src/com/dddumpling/game/AlligatorGuard.java
 src/com/dddumpling/game/Alligator.java
 src/com/dddumpling/game/AlligatorArt.java
@@ -79,6 +80,9 @@ src/com/dddumpling/game/ScoreReset.java
 src/com/dddumpling/game/HighScores.java
 src/com/dddumpling/game/HighScoreScreen.java
 src/com/dddumpling/game/OctoWaveRecording.java
+src/com/dddumpling/game/GatorParryRecording.java
+src/com/dddumpling/game/GatorCueRecording.java
+src/com/dddumpling/game/GatorTauntRecording.java
 src/com/dddumpling/game/DivideDeath.java
 src/com/dddumpling/game/SettingsArt.java
 src/com/dddumpling/game/PlayerSettings.java

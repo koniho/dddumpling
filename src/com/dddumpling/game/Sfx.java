@@ -34,7 +34,12 @@ final class Sfx {
             CART_ROLL = MINING_CHEER + 1, CART_SQUEAL = CART_ROLL + 1, CART_TUMBLE = CART_SQUEAL + 1,
             OCTO_DAMAGE = CART_TUMBLE + 1, SCORE_RESET_CONFIRM = OCTO_DAMAGE + 1,
             SCORE_RESET_BRUSH = SCORE_RESET_CONFIRM + 1, NINJA_SWISH_1 = SCORE_RESET_BRUSH + 1, NINJA_SWISH_2 = NINJA_SWISH_1 + 1,
-            NINJA_COMBO = NINJA_SWISH_2 + 1, SURVIVAL_OVER = NINJA_COMBO + 1, COUNT = SURVIVAL_OVER + 1;
+            NINJA_COMBO = NINJA_SWISH_2 + 1, SURVIVAL_OVER = NINJA_COMBO + 1,
+            GATOR_PARRY = SURVIVAL_OVER + 1, GATOR_PROMPT_0 = GATOR_PARRY + 1,
+            GATOR_PROMPT_1 = GATOR_PROMPT_0 + 1, GATOR_PROMPT_2 = GATOR_PROMPT_1 + 1,
+            GATOR_SPLASH = GATOR_PROMPT_2 + 1, GATOR_TAUNT_0 = GATOR_SPLASH + 1, COUNT = GATOR_TAUNT_0 + 6;
+    static final float GATOR_ENTRY_RATE=.70f, GATOR_PROMPT_GAIN=.42f, GATOR_SPLASH_GAIN=.60f;
+    static final float GATOR_TAUNT_GAIN=.55f;
     static final float OCTO_WAVE_GAIN = .66f;
     static final float NINJA_COMBO_GAIN = .25f;
 
@@ -42,6 +47,10 @@ final class Sfx {
     private static short[] rocketCache, bubbleCache;
 
     private Sfx() {}
+
+    static int gatorTauntId(int variant) {return GATOR_TAUNT_0+Math.max(0,Math.min(5,variant));}
+
+    static int gatorPromptId(int variant) {return GATOR_PROMPT_0+Math.max(0,Math.min(2,variant));}
 
     static int ninjaSwishId(int variant) {
         return variant == 0 ? NINJA_SWISH_0 : variant == 1 ? NINJA_SWISH_1 : NINJA_SWISH_2;
@@ -72,6 +81,7 @@ final class Sfx {
     }
 
     private static short[] renderEffect(int id) {
+        if(id>=GATOR_TAUNT_0 && id<GATOR_TAUNT_0+6)return GatorTauntRecording.build(id-GATOR_TAUNT_0);
         if (id >= SQUISH_0 && id < SQUISH_0 + Glyph.COUNT) return squish(id - SQUISH_0);
         if (id >= BOSS_TAUNT_0 && id < BOSS_TAUNT_0 + Boss.COUNT)
             return bossTaunt(id - BOSS_TAUNT_0);
@@ -109,6 +119,11 @@ final class Sfx {
             case JOIN: return join();
             case OVER: return over();
             case SURVIVAL_OVER: return survivalOver();
+            case GATOR_PARRY: return GatorParryRecording.build();
+            case GATOR_PROMPT_0: return GatorCueRecording.build(0);
+            case GATOR_PROMPT_1: return GatorCueRecording.build(1);
+            case GATOR_PROMPT_2: return GatorCueRecording.build(2);
+            case GATOR_SPLASH: return GatorCueRecording.build(3);
             case BOSS_LAUGH: return bossLaugh();
             case BOSS_DAMAGE: return bossDamage();
             case BOSS_SPLIT: return bossSplit();

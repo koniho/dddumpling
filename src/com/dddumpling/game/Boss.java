@@ -24,7 +24,7 @@ final class Boss {
     static final int COUNT = 5;
     final Alligator alligator = new Alligator();
 
-    static final String[] NAMES = {"SLIME", "DARK DIVIDE", "OCTOPULSE", "FLY AGARIC", "GUMMY GATOR"};
+    static final String[] NAMES = {"SUPER SLIME", "DARK DIVIDE", "OCTOPULSE", "FLY AGARIC", "GUMMY GATOR"};
     /** One line each, in the mode bar. Held to the width of the longest frenzy blurb. */
     static final String[] BLURB = {"HIT THE MARK, DRAG GLOBS", "HIT THE MARK, THEN PINCH OUT", "BEAT THE REACH", "DRAG BACK AND FORTH", "PARRY, TAP, THEN STOP"};
     /**
@@ -250,13 +250,15 @@ final class Boss {
     boolean octoPlaced, octoWave, octoCue, octoLock, octoImpact, octoPlayerHit, octoLashLanded;
     boolean octoWrongLash, octoDragStarted, octoDragCanDamage;
 
+    static int lastStage() {return Lands.firstStage(Lands.SWAMP)+EVERY-1;}
+
     /** Stage 5 teaches boss play; stage 10 adds the first two-finger fight. */
     static int kindFor(int stage) {
         if (stage == EVERY) return SLIME;
         if (stage == EVERY * 2) return SPLITTER;
         if (stage == EVERY * 3) return OCTOPUS;
         if (stage == EVERY * 4) return MUSHROOM;
-        if (stage == Lands.firstStage(Lands.SWAMP)+EVERY-1) return ALLIGATOR;
+        if (stage == lastStage()) return ALLIGATOR;
         return -1;
     }
 
@@ -1256,6 +1258,7 @@ final class Boss {
         // full-strength punch, which is what makes the burst look earned.
         if (body != null) {
             float k = hp <= 0f ? 1f : HIT_PUNCH * n;
+            if(kind==SLIME && hp>0f)k*=2.8f+1.6f*(1f-health());
             body.impulse(body.centreX(), body.centreY() - body.radiusY() * 0.65f, k);
         }
         if (hp <= 0f) {
@@ -2414,7 +2417,7 @@ final class Boss {
                 // Shared death morph: gravity wins while the body is carried toward the player.
                 // Pulling below its travelling centre makes the silhouette neck, sag and melt.
                 float melt = defeatMelt();
-                if (kind == OCTOPUS || kind == MUSHROOM) body.letGo();
+                if (kind == OCTOPUS || kind == MUSHROOM || kind == ALLIGATOR) body.letGo();
                 else if (melt > 0f) body.pull(body.centreX(), L.h + bodyR(L) * 2.5f,
                         0.11f + melt * 0.29f);
                 body.jiggle = kind == MUSHROOM ? JIGGLE[kind] * (1f - leaveProgress())
@@ -2427,8 +2430,15 @@ final class Boss {
                 if (wart >= 0) body.pull(ex[wart], ey[wart], WART_PULL, er[wart] * WART_SKIN);
                 else body.letGo();
             }
-            if (kind == SLIME && !beaten)
-                body.jiggle = JIGGLE[kind] * (1f + (1f - health()) * 1.25f);
+            body.shapeMemory=0f;
+            if (kind == SLIME && !beaten) {
+                float health=Math.max(0f,Math.min(1f,health()));
+                body.jiggle = JIGGLE[kind] * (1f + (1f - health) * 3.6f);
+                // Healthy slime remembers its silhouette; later damage leaves a looser wobble.
+                body.shapeMemory=.15f+.85f*health*health;
+                if(held>=0 && etype[held]==E_GLOB)body.shapeMemory*=.12f;
+                else if(hasGlob())body.shapeMemory*=.45f;
+            }
             body.update(dt);
             if (kind == MUSHROOM && mushroomStem != null) {
                 float sr = bodyR(L) * 1.08f;
@@ -2444,7 +2454,7 @@ final class Boss {
                 else mushroomStem.letGo();
                 mushroomStem.update(dt);
             }
-            if (beaten && kind != OCTOPUS && kind != MUSHROOM) {
+            if (beaten && kind != OCTOPUS && kind != MUSHROOM && kind != ALLIGATOR) {
                 float from = defeatStartW > 0f ? defeatStartW : body.spanX();
                 body.fitWidth(from + (L.w * 0.90f - from) * defeatStretch());
             }

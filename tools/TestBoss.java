@@ -612,8 +612,86 @@ final class TestBoss extends Check {
 
     // ---- each boss ----------------------------------------------------------
 
+    private static boolean withinSkin(float[] skin,float x,float y) {
+        boolean inside=false;
+        for(int i=0,j=skin.length-2;i<skin.length;j=i,i+=2) {
+            float ax=skin[i],ay=skin[i+1],bx=skin[j],by=skin[j+1];
+            if((ay>y)!=(by>y) && x<(bx-ax)*(y-ay)/(by-ay)+ax)inside=!inside;
+        }
+        return inside;
+    }
+
+    static GameCore slimeAfterDrag(Layout L,float remaining) {
+        GameCore c=TestTimeAttack.start(Boss.SLIME);c.stageBanner=0;
+        Boss b=c.boss;b.intro=0f;b.hp=b.hpMax*remaining+1f;
+        for(int frame=0;frame<120;frame++)b.update(DT,L,c.rnd);
+        b.etype[0]=Boss.E_GLOB;b.elife[0]=Boss.GLOB_TIME;b.held=0;
+        b.er[0]=Boss.bodyR(L)*.30f;
+        float x=Math.min(b.body.centreX()+b.bodyW(L)*1.35f,
+                Boss.globSideEdge(L,b.er[0],true)-b.er[0]),y=b.body.centreY();
+        b.dragTo(x,y,L);
+        for(int frame=0;frame<45;frame++)b.update(DT,L,c.rnd);
+        b.dragTo(L.playRight,y,L);
+        return c;
+    }
+
+    private static float slimeShapeError(Softbody body) {
+        float error=0f;
+        for(int node=0;node<body.nodes();node++) {
+            float angle=Softbody.TAU*node/body.nodes();
+            float dx=body.nodeX(node)-body.centreX()-body.rest*body.wide()*(float)Math.cos(angle);
+            float dy=body.nodeY(node)-body.centreY()-body.rest*(float)Math.sin(angle);
+            error+=dx*dx+dy*dy;
+        }
+        return (float)Math.sqrt(error/body.nodes())/body.rest;
+    }
+
     static void slime(Layout L) {
         group("boss: slime");
+        GameCore healthyRecovery=slimeAfterDrag(L,.75f),hurtRecovery=slimeAfterDrag(L,.25f);
+        check("recovery follows a completed damaging drag",healthyRecovery.boss.held<0
+                && Math.abs(healthyRecovery.boss.health()-.75f)<.001f);
+        float initialError=slimeShapeError(healthyRecovery.boss.body);
+        for(int frame=0;frame<54;frame++) {
+            healthyRecovery.boss.update(DT,L,healthyRecovery.rnd);
+            hurtRecovery.boss.update(DT,L,hurtRecovery.rnd);
+        }
+        float healthyError=slimeShapeError(healthyRecovery.boss.body),hurtError=slimeShapeError(hurtRecovery.boss.body);
+        System.out.printf("    slime shape after drag: initial %.3f, healthy %.3f, damaged %.3f%n",initialError,healthyError,hurtError);
+        check("healthy slime recovers its original shape after dragging",healthyError<.18f && healthyError<initialError*.45f);
+        check("low-health slime keeps more distortion",hurtError>healthyError*1.2f);
+        healthyRecovery.boss.damage(healthyRecovery.boss.hp);healthyRecovery.boss.update(DT,L,healthyRecovery.rnd);
+        check("defeat releases slime shape recovery",healthyRecovery.boss.body.shapeMemory==0f);
+
+        Softbody emblemBody=new Softbody();emblemBody.idle=0f;emblemBody.reset(100f,100f,60f,2f);
+        float[] emblemShape={-1f,-.5f,1f,-.5f,0f,1f};
+        float[] emblemBefore=BossScreen.slimeEmblemPath(BossScreen.slimeBossOutline(emblemBody),
+                emblemBody.centreX(),emblemBody.centreY(),emblemShape,1f);
+        emblemBody.pull(260f,180f,1f);
+        for(int i=0;i<30;i++)emblemBody.update(DT);
+        float[] emblemAfter=BossScreen.slimeEmblemPath(BossScreen.slimeBossOutline(emblemBody),
+                emblemBody.centreX(),emblemBody.centreY(),emblemShape,1f);
+        float beforeWidth=emblemBefore[2]-emblemBefore[0],afterWidth=emblemAfter[2]-emblemAfter[0];
+        check("Super Slime emblem stretches with the spring body",Math.abs(afterWidth-beforeWidth)>1f);
+        boolean finiteEmblem=true;
+        for(float point:emblemAfter)finiteEmblem&=Float.isFinite(point);
+        check("stretched Super Slime emblem stays finite",finiteEmblem);
+        for(int pose=0;pose<4;pose++) {
+            Softbody rubber=new Softbody();rubber.reset(100f,100f,60f,2f);
+            if(pose==0)rubber.squash(.9f);
+            else rubber.pull(pose==1?-80f:pose==2?280f:100f,pose==3?220f:160f,1f);
+            boolean inside=true;
+            for(int frame=0;frame<60;frame++) {
+                rubber.update(DT);if(frame%6!=0)continue;
+                float[] skin=BossScreen.slimeBossOutline(rubber);
+                float[] shield=BossScreen.slimeEmblemPath(skin,rubber.centreX(),rubber.centreY(),BossScreen.SUPER_SHIELD,1f);
+                for(int i=0;i<shield.length;i+=2)for(int sample=0;sample<4;sample++) {
+                    int next=(i+2)%shield.length;float t=sample/4f;
+                    inside&=withinSkin(skin,shield[i]*(1-t)+shield[next]*t,shield[i+1]*(1-t)+shield[next+1]*t);
+                }
+            }
+            check("rounded shield stays inside the deformed skin "+pose,inside);
+        }
 
         GameCore c = enterBoss(L, Boss.SLIME, 41L);
         // Twice as wide as it is tall, in the physics and not only in the drawing — the hit-test, the

@@ -31,11 +31,12 @@ final class ReleaseMascot extends Draw {
     void draw(Painter p,GameCore c,Layout L) {
         p=new OpacityPainter(p,.96f);
         float x=x(L),y=y(L),r=radius(L);
-        if(unread) {
-            float pulse=1f+.09f*(float)Math.sin(c.clock*3f);
-            powerHalo(p,x,y,r*1.2f*pulse,c.clock,Glyph.cycle(c.clock*.7f),1f);
-        }
+        if(unread) notificationGlow(p,x,y,r,c.clock);
         steamer(p,x,y,r,c.clock,attentionLift(c.clock),unread?1f:0f);
+    }
+    static void notificationGlow(Painter p,float x,float y,float r,float time) {
+        float pulse=1f+.09f*(float)Math.sin(time*3f);
+        powerHalo(p,x,y,r*1.2f*pulse,time,Glyph.cycle(time*.7f),1f);
     }
     static float steamPhase(float time,int curl) { return (time*.55f+(curl+1)*.31f)%1f; }
     static void steamer(Painter p,float x,float y,float r,float time) { steamer(p,x,y,r,time,0f); }

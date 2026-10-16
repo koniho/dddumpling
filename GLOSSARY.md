@@ -187,7 +187,7 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | **rebuff** | the right thing at the wrong moment, or a held key. Sounds wrong, never counted as a miss, and fires no bullet | `Boss.REBUFF` |
 | **boss bullet** | the shot a landed key press fires at the boss, the same one a press at a word fires. Homes toward the boss as it drifts | `GameCore.bossShot`, `Shot.atBoss`, `Boss.hitX` |
 | **enrage** | the visual warning on a dragging fight: it reddens, but does no damage by itself | `Boss.enrageAt`, `ENRAGE_RAMP` |
-| **slime** | boss 1. A wide, twice-as-jiggly mass of goo. A chain of letters to type, and the only thing that hurts it is a glob carried off the screen | `Boss.SLIME`, `WIDE`, `JIGGLE` |
+| **Super Slime** | boss 1. A wide, twice-as-jiggly mass of goo. A chain of letters to type, and the only thing that hurts it is a glob carried off the screen | `Boss.SLIME`, `WIDE`, `JIGGLE` |
 | **split** | working a glob loose: five presses of the chain. The presses themselves take no health off it | `Boss.SPLIT_HITS`, `split`, `splitProgress` |
 | **prompt** | the character on the slime. After the first two successful prompt hits, the whole lower edge folds over it while invulnerable; the surprised prompt blends into the slime color and fades away in front of the skin, then reverses that fade over 0.3 seconds as the skin relaxes. It accepts hits from the start of reappearance. Three bubbles rise in pitch on covering and descend on release. Answer it while exposed before its two-to-one-second deadline or it leads a volley | `promptT`, `promptDelay` |
 | **volley** / **bolt** | three projectiles launched by a missed prompt. They take one to three presses as the slime weakens; the next prompt waits until all three are gone | `Boss.BOLTS`, `bhp`, `boltWants`, `PARRY` |
@@ -483,9 +483,9 @@ Adventure's BEST line also shows the highest stage reached. The stage record is 
 of the best-scoring run and survives that run leaving the top-ten history. Existing saves use
 their progress maximum and retained run history; an unknown stage is shown as `--`.
 
-Survival unlocks after beating Slime. **Boss Time Attack** replays each of the four shipped bosses
+Survival unlocks after beating Super Slime. **Boss Time Attack** replays each of the four shipped bosses
 once their Adventure collectible is owned. A second selector below the mode name chooses a boss;
-all four unlock the **All Bosses** challenge in Slime, Dark Divide, Octopulse, Fly Agaric order.
+all four unlock the **All Bosses** challenge in Super Slime, Dark Divide, Octopulse, Fly Agaric order.
 Normal player keys start the selected encounter. The shared display case remains accessible.
 
 Time Attack starts with three lives, no power-up drops, and the boss's original Adventure-stage
@@ -786,13 +786,13 @@ Initial boss guidance is opt-in: a small **?** beside the companion offers help 
 entry, including the arrival card. It is offered again each run even for learned mechanics.
 Opening help or damaging that boss removes its question bubble for the rest of the run; other
 bosses retain their own help. Tapping it or the companion while it is available pauses
-the fight and moves the companion up to explain Slime, Dark Divide, Octopulse or Fly Agaric.
+the fight and moves the companion up to explain Super Slime, Dark Divide, Octopulse or Fly Agaric.
 Explicitly requested help includes all of that boss's introductory pages, even if learned.
 **Next** advances a multi-part explanation;
 **Let's try!** resumes the same fight. Speech uses platform text-to-speech, follows effects volume,
 ducks music and stops on dismissal or backgrounding; text and demonstrations work without a voice.
-Slime's red-area drag is a separate contextual step: pause and explain it when the red patch
-appears, not during initial help. Matching visible faces makes Slime vulnerable; dragging the
+Super Slime's red-area drag is a separate contextual step: pause and explain it when the red patch
+appears, not during initial help. Matching visible faces makes Super Slime vulnerable; dragging the
 red area to either side damages it. Successful dragging permanently skips this step; Skip All
 also suppresses it.
 `Onboarding` owns lesson state and `TutorialSpeech` owns bubbles and demonstrations.

@@ -206,6 +206,15 @@ abstract class Check {
         public void boltPop() { boltPops++; }
         public void boltDeath() { boltDeaths++; }
         public void shieldBounce() { shieldBounces++; }
+        int gatorParries, gatorCues, gatorEntries, gatorSplashes, gatorCueMask;
+        boolean gatorCueRepeated;
+        final java.util.List<Integer> gatorGrowls=new java.util.ArrayList<>();
+        public void gatorTaunt(int variant) {gatorGrowls.add(variant);}
+        public void gatorPrompt(int variant) {
+            gatorCues++;gatorCueRepeated|=(gatorCueMask&(1<<variant))!=0;gatorCueMask|=1<<variant;
+        }
+        public void gatorSplash(boolean entry) {if(entry)gatorEntries++;else gatorSplashes++;}
+        public void gatorParry() { gatorParries++; }
         public void octoDamage() { octoDamages++; }
         public void octoWave() { octoWaves++; }
         public void octoCue() { octoCues++; }

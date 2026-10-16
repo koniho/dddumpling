@@ -358,7 +358,7 @@ final class TestAudio extends Check {
             // Roulette ticks intentionally fit between fast icon changes.
             int minimum = id == Sfx.SHUFFLE_BLIP ? Sfx.RATE / 40 : Sfx.RATE / 20;
             // Survival's one-shot cue spans its full rainbow transition.
-            float maximum = id == Sfx.SURVIVAL_OVER ? SurvivalEnd.DURATION : 2f;
+            float maximum = id == Sfx.SURVIVAL_OVER ? SurvivalEnd.DURATION : id == Sfx.GATOR_SPLASH ? 2.3f : 2f;
             if (pcm.length < minimum || pcm.length > Sfx.RATE * maximum) allSane = false;
         }
         check("other effects retain their common peak", allNormalised);
@@ -374,6 +374,30 @@ final class TestAudio extends Check {
         check("arm spring decays cleanly", armTail < armHead / 4 && Math.abs(arm[arm.length-1]) < 10);
         check("arm damage is distinct from the attack recording", arm != Sfx.build(Sfx.OCTO_WAVE));
 
+        for(int variant=0;variant<3;variant++) {
+            short[] prompt=Sfx.build(Sfx.gatorPromptId(variant));
+            check("Gator prompt keeps a single trimmed take "+variant,prompt.length>Sfx.RATE*.2f && prompt.length<Sfx.RATE*.27f);
+            check("Gator prompt cut edges avoid clicks "+variant,prompt[0]==0 && prompt[prompt.length-1]==0);
+            for(int other=0;other<variant;other++)check("Gator prompt takes are distinct "+variant+"/"+other,
+                    !java.util.Arrays.equals(prompt,Sfx.build(Sfx.gatorPromptId(other))));
+        }
+        short[] splash=Sfx.build(Sfx.GATOR_SPLASH);
+        check("splash retains its natural tail",splash.length>Sfx.RATE*2.1f && splash.length<Sfx.RATE*2.3f);
+        check("splash edges avoid clicks",splash[0]==0 && splash[splash.length-1]==0);
+        check("entry splash is lower and finishes within arrival",Sfx.GATOR_ENTRY_RATE<1
+                && splash.length/(Sfx.RATE*Sfx.GATOR_ENTRY_RATE)<Boss.INTRO*3);
+        for(int variant=0;variant<6;variant++) {
+            short[] growl=Sfx.build(Sfx.gatorTauntId(variant));
+            check("growl is individually trimmed "+variant,growl.length>Sfx.RATE*.2f && growl.length<Sfx.RATE*.7f);
+            check("growl cut fades avoid clicks "+variant,growl[0]==0 && growl[growl.length-1]==0);
+            if(variant>0)check("growl retains its own performance "+variant,
+                    !java.util.Arrays.equals(growl,Sfx.build(Sfx.gatorTauntId(variant-1))));
+        }
+        short[] thud = Sfx.build(Sfx.GATOR_PARRY);
+        check("recorded parry is a short impact without recording silence",
+                thud.length>Sfx.RATE*.3f && thud.length<Sfx.RATE*.36f);
+        check("recorded parry edges avoid clicks",thud[0]==0 && thud[thud.length-1]==0);
+        check("Gator parry does not replace projectile interception",thud!=Sfx.build(Sfx.BOLT_POP));
         short[] wave = Sfx.build(Sfx.OCTO_WAVE);
         check("recorded wave keeps both sounds within two seconds",
                 wave.length > Sfx.RATE * 1.9f && wave.length <= Sfx.RATE * 2);

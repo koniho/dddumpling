@@ -127,3 +127,68 @@ Cuts within 100 ms share a sound; only played cues advance the three-take rotati
 There is no deferred audio queue or gameplay RNG use. Pause holds the cooldown;
 completion, death, and restart clear it. `Sfx` boosts the audition PCM by 4×
 (about 12 dB), preserving its filtering and fades with peaks below 70% full scale.
+
+# Gummy Gator parry impact
+
+Source: user-supplied `Thud.m4a` from Downloads on 2026-10-15, explicitly requested
+for Gummy Gator's parry impact. This is not a CC0 library asset. Original SHA-256:
+`005a0a0ab7899377e0c89a192adc3d28f2779e4358ec24fcbb861ae1798478f9`.
+The original remains in Downloads and is not checked into the repository.
+
+Run `python3 tools/prepare-gator-parry.py /path/to/Thud.m4a` to regenerate
+`GatorParryRecording.java` and the local audition `build/gator-parry.wav`.
+The 0.685–1.015s excerpt removes the silent lead and tail, with 2ms/15ms edge fades,
+mono 22,050 Hz PCM and an 85% peak. Pitch and playback speed are unchanged.
+The shared PCM plays once at visible companion/limb contact on Android and iOS;
+interrupted flights drop the pending sound. Other projectile impacts retain their cues.
+
+# Gummy Gator attack prompts and water splash
+
+Three prompt takes come from user-supplied `prompt.m4a` in Downloads, explicitly
+requested on 2026-10-15. This recording is not a CC0 library asset. Source SHA-256:
+`775011c90f6d50c2350036952cdccc0be12656f104acd542ab7f667b60c88a16`.
+The excerpts are 1.505–1.730s, 2.192–2.430s and 2.977–3.225s, preserving their
+original pitch and speed. Each attack chooses randomly, without repeating a take
+within a two/three-hit combo or demonstration. A separate seeded audio generator
+preserves gameplay RNG. Pending cues are discarded when leaving or defeated.
+
+Splash: **Big Water Splash** by **qubodup**, published October 12, 2018.
+- Source: https://freesound.org/people/qubodup/sounds/442773/
+- License: **CC0 1.0 Universal**, https://creativecommons.org/publicdomain/zero/1.0/
+- Public HQ preview: https://cdn.freesound.org/previews/442/442773_71257-hq.mp3
+- Retrieved October 15, 2026; SHA-256:
+  `b8227adae409996ceee3481c7057ceda717575fa7569cec5d9d0ee1b94a8fe33`.
+- Author describes a large splash mixed from four CC0 recordings; source links
+  are retained on the source page. Commercial use and modification are permitted.
+
+Run `python3 tools/prepare-gator-cues.py /path/to/prompt.m4a /path/to/442773_71257-hq.mp3`
+to reproduce `GatorCueRecording.java` and the four audition WAVs in `build/`.
+The originals remain outside source control. Both recordings pass through a
+two-pole 4 kHz low-pass filter. PCM is mono 22,050 Hz, normalized per take to 85%, with 2ms leading fades and 12ms prompt / 45ms splash trailing
+fades. The complete 2.172-second splash is retained. Android and iOS play the same
+embedded PCM: normal speed at the defeat splash, 70% speed (lower pitch, 3.10s)
+at the first entry droplets. Playback gain is 42% for prompts and 60% for both
+splashes. No repeated water loop or added synthesis.
+
+# Gummy Gator daze-cancel growls
+
+User-supplied `Taunt1.m4a` and `Taunt2.m4a`, requested October 16, 2026. These
+are user recordings, not CC0 library assets; originals remain in Downloads.
+- Taunt1 SHA-256: `182ab421be485e7c71549749ae3af748cc7eb74620d2b119585aabe1cf4097a5`.
+- Taunt2 SHA-256: `3ff1c0e7b4819f519d3f7c4db8bc8fd05b2593a754a4bdf19b444b62d313bbba`.
+
+`python3 tools/prepare-gator-taunts.py /path/to/Taunt1.m4a /path/to/Taunt2.m4a`
+regenerates `GatorTauntRecording.java` and six local audition WAVs in `build/`.
+Cuts: Taunt1 0.845–1.105s, 1.150–1.440s, 1.480–2.145s;
+Taunt2 1.010–1.230s, 1.305–1.525s, 1.635–1.860s. The last Taunt1 growl retains
+its quieter articulation, rather than splitting breath valleys into extra cues.
+Both use a two-pole 4 kHz low-pass, mono 22,050 Hz PCM, 3ms/15ms edge fades,
+85% peak normalization and 55% playback gain. Pitch and speed are unchanged.
+
+Taunt1 plays on the two-hit transition; Taunt2 on the three-hit transition.
+The first growl starts 120ms after daze cancel. Remaining starts preserve the
+original recording's spacing. The flex holds through the performance; the combo
+demonstration begins 180ms after its last tail. A baked 10ms RMS envelope drives
+the mouth opening and head bob/tilt, with a spring squash at each growl onset.
+Pause freezes the shared clock. Leave, restart and defeat clear queued growls;
+muted events are consumed rather than deferred. Audio does not use gameplay RNG.

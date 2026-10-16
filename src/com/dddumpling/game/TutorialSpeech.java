@@ -61,9 +61,9 @@ final class TutorialSpeech extends Draw {
         if(message==ALTERNATE)return "Tap the two keys in turn to fill the meter.";
         if(message==LIFT)return "Swipe the lid up to free the dumpling.";
         if(message==SUCCESS)return "Amazing! You did it! You freed a dumpling!";
-        if(message==CLOSED)return "Wait until Slime's face is visible. Tap the key that matches Slime's face. Wrong keys or hidden faces will get you slimed!";
-        if(message==CHAIN)return "Tap the matching key while Slime's face is visible. Keep matching to make Slime vulnerable. Watch for the red area!";
-        if(message==GLOB)return "Now Slime is vulnerable! Touch and hold the red area. Drag it to either side of the screen. That damages Slime! You've got this!";
+        if(message==CLOSED)return "Wait until Super Slime's face is visible. Tap the key that matches Super Slime's face. Wrong keys or hidden faces will get you slimed!";
+        if(message==CHAIN)return "Tap the matching key while Super Slime's face is visible. Keep matching to make Super Slime vulnerable. Watch for the red area!";
+        if(message==GLOB)return "Now Super Slime is vulnerable! Touch and hold the red area. Drag it to either side of the screen. That damages Super Slime! You've got this!";
         if(message==PINCH)return "Tap the matching key. Put two fingers on the cube. Spread them apart to split it.";
         if(message==DEFEND)return "Octopulse reaches for your keys. Tap the matching key to defend it.";
         if(message==TEAR)return "Wait for an exposed arm tip. Grab it and drag it away from Octopulse.";

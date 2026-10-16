@@ -9,3 +9,9 @@ Changes: three excerpts from the quieter opening takes of the public HQ preview;
 converted to mono, trimmed, high-pass and low-pass filtered, faded, level-adjusted,
 and resampled to 22,050 Hz. These are adaptations, not the unmodified recording.
 No endorsement by the original author is implied.
+
+Gummy Gator water splash: Big Water Splash by qubodup (Freesound), CC0 1.0.
+https://freesound.org/people/qubodup/sounds/442773/
+https://creativecommons.org/publicdomain/zero/1.0/
+Adapted to mono with a 4 kHz low-pass filter, edge fades and peak normalization;
+entry plays at 70% speed.

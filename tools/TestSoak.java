@@ -80,6 +80,7 @@ final class TestSoak extends Check {
      */
     static void boundedPlay(Layout L) {
         ninjaHands(L);
+        postBossWaves(L);
         group("bounded play");
 
         // Somewhere around what two thumbs actually manage. Every figure here is a claim about
@@ -123,6 +124,31 @@ final class TestSoak extends Check {
     }
 
     // ---- helpers ------------------------------------------------------------
+
+    private static void postBossWaves(Layout L) {
+        group("bounded post-boss waves");
+        for(int extra:new int[]{1,5,11})for(int pps:new int[]{6,9}) {
+            int cleared=0,lost=0;
+            for(int seed=0;seed<4;seed++) {
+                GameCore c=new GameCore(new Mem(),1860L+seed);c.startGame();
+                c.jumpToStage(Boss.lastStage()+extra,L);c.powerTimer=1000f;
+                Bot bot=new Bot(pps,pps==6?.20f:.13f,pps==6?.04f:.02f,false,2860L+seed);
+                for(int frame=0;frame<60*120 && c.state==GameCore.PLAY && !c.pendingBonus && !c.dying();frame++) {
+                    c.update(DT,L);bot.step(c,L,DT);
+                }
+                boolean complete=c.pendingBonus || c.state==GameCore.BONUS;
+                if(complete)cleared++;
+                lost+=GameCore.START_LIVES-c.lives;
+                check("post-boss wave resolves or defeats bounded hands "+extra+"/"+pps+"/"+seed,
+                        complete || c.dying() || c.state==GameCore.OVER);
+                check("post-boss wave respects its release quota "+extra+"/"+pps+"/"+seed,
+                        c.spawnedThisStage<=c.stageQuota());
+            }
+            System.out.printf("    post-boss stage %d, %d presses/s: %d/4 waves cleared, %d lives lost%n",
+                    Boss.lastStage()+extra,pps,cleared,lost);
+            if(extra==1 && pps==9)check("quick hands can handle the first post-boss wave",cleared>=3);
+        }
+    }
 
     private static void ninjaHands(Layout L) {
         group("bounded Ninja swipes");

@@ -7,12 +7,12 @@ final class TestLinkedPairs extends Check {
         for(int seed=0;seed<32;seed++) {
             GameCore c=new GameCore(new Mem(),seed),same=new GameCore(new Mem(),seed);
             c.startGame();same.startGame();
-            for(int stage:new int[]{16,17,18,21,26}) {
+            for(int stage:new int[]{16,17,18,21,26,37}) {
                 c.jumpToStage(stage,L);same.jumpToStage(stage,L);
                 int slots=c.pairSpawnSlots;
                 check("pair schedule is seeded "+seed+":"+stage,slots==same.pairSpawnSlots);
                 check("two distinct slots inside wave "+seed+":"+stage,
-                        Integer.bitCount(slots)==2 && (slots >>> c.stageQuota())==0);
+                        Integer.bitCount(slots)==2 && (c.stageQuota()==32 || (slots >>> c.stageQuota())==0));
                 if(stage==16)check("intro retains first and fourth pair "+seed,slots==9);
                 else {
                     positions|=slots;schedules.add(slots);
@@ -21,7 +21,8 @@ final class TestLinkedPairs extends Check {
             }
         }
         check("later waves vary both openings and pair placement",
-                soloOpening && pairOpening && schedules.size()>8 && Integer.bitCount(positions)==8);
+                soloOpening && pairOpening && schedules.size()>8
+                && (positions&0xFF)==0xFF && (positions&~0xFF)!=0);
         GameCore c=wave(L,17);int slots=c.pairSpawnSlots;
         c.enemies.clear();c.spawnedThisStage=Integer.numberOfTrailingZeros(slots);
         for(int i=0;i<c.crowdCap();i++)add(c,L,new int[]{0},L.playTop);
@@ -71,13 +72,13 @@ final class TestLinkedPairs extends Check {
         mask.restore();
         mask.fillCircle(20, 30, 2, 0xFFFF0000);
         check("restoring mask allows characters and later layers to draw", mask.resolve()[30*100+20] == 0xFFFF0000);
-        for (int stage = 16; stage <= 31; stage++) {
-            if (stage % Boss.EVERY == 0 || Cave.stage(stage)) continue;
+        for (int stage = 16; stage <= 37; stage++) {
+            if (Boss.isBossStage(stage) || Cave.stage(stage)) continue;
             GameCore wave = wave(L, stage);
             java.util.Set<GameCore.Enemy> seen = new java.util.HashSet<GameCore.Enemy>();
             java.util.Set<GameCore.Enemy> characters = new java.util.HashSet<GameCore.Enemy>();
             int pairs = 0;
-            for (int frame = 0; frame < 1800 && wave.state == GameCore.PLAY && !wave.pendingBonus; frame++) {
+            for (int frame = 0; frame < 3600 && wave.state == GameCore.PLAY && !wave.pendingBonus; frame++) {
                 for (GameCore.Enemy e : wave.enemies) {
                     characters.add(e);
                     if (e.link != null && seen.add(e)) {

@@ -36,13 +36,21 @@ final class AlligatorArt extends Draw {
     }
     static void draw(Painter painter,GameCore c,Layout L,Boss b,float alpha) {
         Alligator a=b.alligator;
+        boolean victory=c.dying() && c.bossVictory==b;
         float arrival=b.introProgress();
-        float end=b.beaten?b.leaveProgress():0;
-        float opacity=alpha*(1-end*end),entryY=AlligatorArrival.offset(L,arrival);
+        float seconds=b.beaten?b.leaveProgress()*Boss.LEAVE:0;
+        float defeated=b.beaten?AlligatorArrival.ramp(seconds,0,.25f):0;
+        float opacity=alpha,entryY=AlligatorArrival.offset(L,arrival)
+                +(b.beaten?AlligatorAtmosphere.offset(L,seconds):0);
+        float flies=alpha*AlligatorArrival.ramp(arrival,.55f,1)
+                *(1-AlligatorArrival.ramp(seconds,.5f,1.6f));
+        AlligatorAtmosphere.fireflies(painter,L,c.clock,flies,false);
+        if(b.beaten)AlligatorAtmosphere.water(painter,L,seconds,alpha,false);
         Painter scene=opacity==1?painter:new OpacityPainter(painter,opacity);
         AlligatorArrival.particles(scene,L,arrival,false);
         scene.save();
-        scene.translate(0,entryY+L.h*end*end);
+        if(b.beaten)scene.clipRect(0,0,L.w,AlligatorAtmosphere.waterY(L));
+        scene.translate(b.beaten?L.unit*.6f*defeated*(float)Math.sin(seconds*7f):0,entryY);
         float cancel=a.cancelFlash(),flash=Math.max(damageFlash(b.hurt),cancel),phase=phaseTint(b);
         Painter creature=flash==0?scene:new ColorFadePainter(scene,cancel>0?0xFFFFB5A0:damageColor(b.hurt),flash,1);
         if(phase>0)creature=new GatorPalette(creature,phase);
@@ -79,16 +87,38 @@ final class AlligatorArt extends Draw {
                         sx+rx*.62f,sy+ry*.60f,sx+rx*.82f,sy+ry*.43f},0x6074844D,L.unit*.09f);
             }
         }
+        // Hands cross over the face when guarding, striking or celebrating.
+        if(b.body!=null && b.body.centreY()-b.body.radiusY()*1.8f+entryY<L.h)head(creature,
+                null,b.body.centreX(),b.body.centreY()+Boss.bodyR(L)*.18f*defeated,
+                b.body.radiusX(),b.body.radiusY(),victory?c.clock:b.age,
+                a.daze>0,0,b.beaten?Alligator.DAZED_EYES:victory?Alligator.CHEEKY_EYES:a.mood(b),
+                a.gazeX(),a.gazeY(),b.beaten || victory?null:a.eyes,
+                b.beaten?defeated:a.vulnerablePose,victory?.5f+.5f*(float)Math.sin(c.clock*11):a.laugh());
         if(bodyVisible)for(int i=0;i<3;i++) {
             float tx=a.drawnX(L,i),ty=a.drawnY(L,i);
             float rx=a.rootX(L,i),ry=a.rootY(L,i);
+            if(i<2 && victory) {
+                float blend=AlligatorArrival.ramp(c.deathProgress(),0,.12f);
+                tx+=(AlligatorAtmosphere.waveX(L,i,c.clock)-tx)*blend;
+                ty+=(AlligatorAtmosphere.waveY(L,i,c.clock)-ty)*blend;
+            } else if(i<2 && b.beaten) {
+                tx+=(rx+L.w*.06f*(float)Math.sin(seconds*6f+i*2f)-tx)*defeated;
+                ty+=(ry+(L.dangerY-L.playTop)*.35f-ty)*defeated;
+            }
             if(Math.min(ry,ty)-L.w*.30f+entryY>L.h)continue;
-            boolean live=a.retaliation==0 && a.attacking(i) && !b.beaten;
+            boolean live=a.retaliation==0 && a.attacking(i) && !b.beaten && !victory;
             float pulse=.35f+.65f*(.5f+.5f*(float)Math.sin(b.age*Softbody.TAU*2.5f));
             float tell=live?pulse:0;
-            if(i==2 && !b.beaten)tell=Math.max(tell,pulse*a.tailFlick());
+            if(i==2 && !b.beaten && !victory)tell=Math.max(tell,pulse*a.tailFlick());
             if(i==2)limb(p,rx,ry,tx,ty,L.w*.12f,true,SKIN,b.age,tell);
-            else arm(p,rx,ry,a.elbowX(L,i,tx),a.elbowY(L,i,ty),tx,ty,L.w*.09f,tell);
+            else {
+                float ex=a.elbowX(L,i,tx),ey=a.elbowY(L,i,ty);
+                if(victory || b.beaten) {
+                    ex=(rx+tx)*.5f+(i==0?-1:1)*L.w*(victory?.10f:.025f);
+                    ey=(ry+ty)*.5f;
+                }
+                arm(p,rx,ry,ex,ey,tx,ty,L.w*.09f,tell);
+            }
             if(live && a.showGuide() && !a.showoff()) {
                 float r=L.w*.115f*(1+.08f*(float)Math.sin(b.age*12));
                 p.strokeCircle(tx,ty,r,0xC3E5FFD5,L.unit*.12f);
@@ -98,31 +128,25 @@ final class AlligatorArt extends Draw {
                 p.line(tx+d,ty,tx+d*.4f,ty+d*.42f,0xDDFFFFFF,L.unit*.10f);
             }
         }
-        if(b.body!=null && b.body.centreY()-b.body.radiusY()*1.8f+entryY<L.h)head(creature,
-                null,b.body.centreX(),b.body.centreY(),b.body.radiusX(),b.body.radiusY(),b.age,
-                a.daze>0,0,a.mood(b),a.gazeX(),a.gazeY(),a.eyes,a.vulnerablePose,a.laugh());
         p=scene;
         float y=b.bodyY(L)+Boss.bodyR(L)*1.70f;
-        if(!b.beaten && b.intro<=0) {
+        if(!b.beaten && !victory && b.intro<=0) {
             if(a.daze<=0 && a.closing<=0 && a.showGuide() && a.retaliation==0 && !a.showoff())
                 p.text("SWIPE TO PARRY",L.w*.5f,y+L.unit*1.5f,type(L.unit*.65f),DARK,Painter.CENTER,true);
         }
-        if(a.showoff() && a.showoffLimb()>=0) {
+        if(!b.beaten && !victory && a.showoff() && a.showoffLimb()>=0) {
             int beat=a.showoffLimb();float reach=a.showoffReach(beat);
             float x=a.drawnX(L,beat),yy=a.drawnY(L,beat)-L.unit*(2.6f+reach*.5f);
             float size=type(L.unit*(1.1f+.3f*reach));
             p.text(""+(beat+1),x+L.unit*.06f,yy+L.unit*.08f,size,DARK,Painter.CENTER,true);
             p.text(""+(beat+1),x,yy,size,0xFFFFE993,Painter.CENTER,true);
         }
-        if(a.strokeFade>0)p.line(a.strokeX,a.strokeY,a.strokeEndX,a.strokeEndY,
+        if(!b.beaten && !victory && a.strokeFade>0)p.line(a.strokeX,a.strokeY,a.strokeEndX,a.strokeEndY,
                 fadeBy(a.guard.secondary,a.strokeFade/.3f),L.unit*.4f);
         scene.restore();
         AlligatorArrival.particles(scene,L,arrival,true);
-        if(b.beaten)for(int i=0;i<12;i++) {
-            float angle=i*Softbody.TAU/12,travel=L.w*end;
-            p.strokeCircle(L.w*.5f+(float)Math.cos(angle)*travel,L.h*.55f+(float)Math.sin(angle)*travel,
-                    L.unit*(.6f+end),fadeBy(LIGHT,(1-end)*.7f),L.unit*.10f);
-        }
+        if(b.beaten)AlligatorAtmosphere.water(painter,L,seconds,alpha,true);
+        AlligatorAtmosphere.fireflies(painter,L,c.clock,flies,true);
     }
     private static float[] bellyPlate(Softbody segment) {
         float[] pad=segment.outline();

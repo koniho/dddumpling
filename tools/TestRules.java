@@ -159,7 +159,7 @@ final class TestRules extends Check {
         check("later stages use longer words", c.maxWordLen() > w1);
         check("word length is capped at 5", c.maxWordLen() <= 5);
         c.stage = 40;
-        check("pacing floors out", c.travelSeconds() >= 4.2f && c.spawnInterval() >= 1.35f);
+        check("pacing floors out", c.travelSeconds() >= 4.2f && c.spawnInterval() >= .75f);
         check("enemy count is capped at a readable five", c.maxEnemies() <= 5);
         c.stage = 10;
         check("late stages stop adding simultaneous words", c.maxEnemies() == 5);
@@ -172,7 +172,7 @@ final class TestRules extends Check {
         c.stage = 11;
         check("stage 11 provides more breathing room", Math.abs(c.spawnInterval() - 2.05f*Pacing.lessonRelief(11)) < 0.001f);
         float previous = spawn10;
-        for (int stage = 11; stage <= 40; stage++) {
+        for (int stage = 11; stage <= Boss.lastStage(); stage++) {
             float interval = Pacing.spawnInterval(stage) / Pacing.lessonRelief(stage);
             check("late releases ease smoothly and stay capped at stage " + stage,
                     interval >= previous && interval <= 2.751f);
@@ -183,7 +183,7 @@ final class TestRules extends Check {
             float fall = Pacing.travelSeconds(stage) / Pacing.lessonRelief(stage);
             check("late speed rises gradually at stage " + stage,
                     fall <= previousFall && previousFall - fall <= 0.195f && fall >= 7.5f);
-            check("late stages keep the stage-ten word budget at stage " + stage,
+            if(stage<=Boss.lastStage())check("authored chapters keep the stage-ten word budget at stage " + stage,
                     Pacing.stageQuota(stage) == Pacing.stageQuota(10));
             previousFall = fall;
         }
@@ -198,7 +198,25 @@ final class TestRules extends Check {
         check("stage 16 adds lesson relief to the late release cap",
                 Math.abs(c.spawnInterval() - 2.75f * 1.15f) < 0.001f);
         c.stage = 40;
-        check("late release relief is capped", Math.abs(c.spawnInterval() - 2.75f) < 0.001f);
+        check("post-boss release interval reaches its floor", Math.abs(c.spawnInterval() - .75f) < 0.001f);
+        check("endless ramp starts after the final authored boss",Boss.kindFor(Boss.lastStage())==Boss.ALLIGATOR
+                && !Boss.isBossStage(Boss.lastStage()+1) && Pacing.stageQuota(Boss.lastStage())==8);
+        for(int extra=1;extra<=30;extra++) {
+            int stage=Boss.lastStage()+extra;
+            check("post-boss releases accelerate then stay bounded "+stage,
+                    Pacing.spawnInterval(stage)<=Pacing.spawnInterval(stage-1)
+                    && Pacing.spawnInterval(stage)>=.75f);
+            check("post-boss waves grow by two until capped "+stage,
+                    Pacing.stageQuota(stage)==Math.min(32,8+2*extra));
+        }
+        check("first post-boss stage immediately increases pressure",
+                Math.abs(Pacing.spawnInterval(Boss.lastStage()+1)-2.2f)<.001f);
+        check("five stages past the boss more than doubles release rate",
+                Pacing.spawnInterval(Boss.lastStage()+5)<Pacing.spawnInterval(Boss.lastStage())*.5f);
+        c.kidsRun=true;
+        check("Kids Mode retains opening-stage pace and quota after the final boss",
+                c.spawnInterval()==Pacing.spawnInterval(1) && c.stageQuota()==Pacing.stageQuota(1));
+        c.kidsRun=false;
 
         // The ramp was stretched, because the game hit a wall at stage 6: every dial arrived at
         // once and the once-a-stage panic swipe could not carry it. What landed at 6 lands at 10.
@@ -216,7 +234,7 @@ final class TestRules extends Check {
 
         // Printed because tuning a curve means reading it, and the numbers are the whole story.
         System.out.println("    stage  fall  spawn  len  crowd  quota  stack");
-        for (int s : new int[] {1, 2, 4, 6, 8, 10, 11, 12, 14, 16, 20}) {
+        for (int s : new int[] {1, 2, 4, 6, 8, 10, 11, 12, 14, 16, 20, 25, 26, 30, 36, 40}) {
             c.stage = s;
             System.out.printf("    %5d %5.1f %6.2f %4d %6d %6d %6.0f%%%n", s, c.travelSeconds(),
                     c.spawnInterval(), c.maxWordLen(), c.maxEnemies(), c.stageQuota(),

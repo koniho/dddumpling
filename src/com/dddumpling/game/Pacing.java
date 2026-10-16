@@ -4,8 +4,8 @@ package com.dddumpling.game;
  * The stage difficulty dials. Pure functions of stage, so this is
  * the one file to read when tuning the curve.
  *
- * Every dial reads its position off {@link #ramp} rather than off stage directly, so the whole curve
- * stretches from one constant. {@code GameCore} keeps one-line delegations to these.
+ * The authored chapters use {@link #ramp}; after the final boss, releases and wave sizes
+ * climb separately. {@code GameCore} keeps one-line delegations to these.
  */
 final class Pacing {
 
@@ -49,6 +49,8 @@ final class Pacing {
     }
 
     static float spawnInterval(int stage) {
+        int extra=postBossStages(stage);
+        if(extra>0)return Math.max(.75f,2.75f/(1f+.25f*extra));
         float r = ramp(stage);
         // Past stage 10, faster falls and longer words supply the pressure. Give stage 11
         // more breathing room immediately, easing releases out to a 2.75-second cap.
@@ -73,8 +75,11 @@ final class Pacing {
 
     /** Words this stage releases in total. */
     static int stageQuota(int stage) {
-        return Math.min(8, 5 + step(stage));
+        int extra=postBossStages(stage);
+        return extra>0?8+2*Math.min(12,extra):Math.min(8, 5 + step(stage));
     }
+
+    private static int postBossStages(int stage) {return Math.max(0,stage-Boss.lastStage());}
 
     /** Odds a tile becomes a stack. Stacks stay out of the opening stage. */
     static float stackChance(int stage) {

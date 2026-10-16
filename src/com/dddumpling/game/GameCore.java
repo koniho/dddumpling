@@ -296,6 +296,11 @@ final class GameCore {
         void boltDeath();
         /** A player projectile ricocheted from the Slime boss shield. */
         void shieldBounce();
+        /** Recorded impact at the companion's contact with Gummy Gator's limb. */
+        void gatorParry();
+        void gatorPrompt(int variant);
+        void gatorTaunt(int variant);
+        void gatorSplash(boolean entry);
         default void octoWave() {}
         default void octoDamage() {}
         void octoCue();
@@ -1594,6 +1599,7 @@ final class GameCore {
         onboarding.savedPowers = store == null ? 0 : store.loadPowerTutorials();
         this.progress = new Progress(store, trackProgress);
         this.rnd = new Random(seed);
+        boss.alligator.cueRandom.setSeed(seed^0x4741544f52L);
         survival.blurbs.setSeed(seed^0x5241494e424f57L);
         Random sr = new Random(20260803L);
         for (int l = 0; l < CLOUD_LAYERS; l++) {
@@ -3142,6 +3148,7 @@ final class GameCore {
                 flashColor = 0xFFFF355F;
             }
             int gatorAttackCues=boss.kind==Boss.ALLIGATOR?boss.alligator.takeAttackCues():0;
+            int gatorGrowls=boss.kind==Boss.ALLIGATOR?boss.alligator.takeGrowls():0;
             if (sound != null) {
                 float brew = boss.kind == Boss.SLIME && !boss.hasGlob()
                         && boss.boltCount() == 0 && boss.open()
@@ -3153,7 +3160,15 @@ final class GameCore {
                 if (boss.mushroomSporeCue) sound.mushroomSpore();
                 if (boss.boingWeight >= 0f) sound.divideBoing(boss.boingWeight);
                 if (boss.octoWave) sound.octoWave();
-                for(int cue=0;cue<gatorAttackCues;cue++)sound.octoCue();
+                for(int cue=0;cue<6;cue++)if((gatorGrowls&(1<<cue))!=0)sound.gatorTaunt(cue);
+                for(int cue=0;cue<gatorAttackCues;cue++)sound.gatorPrompt(boss.alligator.attackCues[cue]);
+                if(boss.kind==Boss.ALLIGATOR) {
+                    if(beforeIntro<AlligatorArrival.SPLASH_AT && boss.introProgress()>=AlligatorArrival.SPLASH_AT)
+                        sound.gatorSplash(true);
+                    if(beforeDeath>=0 && beforeDeath<AlligatorAtmosphere.SPLASH_AT
+                            && boss.leaveProgress()*Boss.LEAVE>=AlligatorAtmosphere.SPLASH_AT)
+                        sound.gatorSplash(false);
+                }
                 if (boss.octoCue) sound.octoCue();
                 if (boss.octoLock) sound.octoLock();
                 if (boss.defeatChime) sound.squish(Boss.FACE[boss.kind], boss.defeatBeat);

@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** Gather, charge, then a deterministic radial burst; no falling bodies or gameplay RNG. */
+/** Gather, charge, then tumbling debris and ring bursts without gameplay RNG. */
 final class DivideDeath extends Draw {
     static final float GATHER = 0.9f, SHAKE = 1f;
     static final float BURST_AT = GATHER + SHAKE;
@@ -48,18 +48,48 @@ final class DivideDeath extends Draw {
         if (t < BURST_AT) {
             if (q > 0f) p.fillCircle(x, y, Boss.bodyR(L) * (.3f + q * .55f),
                     Glyph.withAlpha(0xFFE0BAFF, (int) (100 * q * q * fade)));
+            for (int i = 0; i < 3; i++) {
+                float pulse = q * 2f - i * .38f;
+                if (pulse <= 0f || pulse >= 1f) continue;
+                float width = L.unit * .045f;
+                Renderer.rainbowRing(p, x, y, width * 7f + Boss.bodyR(L) * 1.7f * (1f-pulse),
+                        width, fade * (float)Math.sin(pulse * Math.PI) * .7f);
+            }
             return;
         }
         float seconds = t - BURST_AT, progress = seconds / (Boss.LEAVE - BURST_AT);
         float light = Math.max(0f, 1f - seconds / .32f);
         p.fillCircle(x, y, Boss.bodyR(L) * (1f + seconds * 4f),
                 Glyph.withAlpha(0xFFEBD5FF, (int) (180 * light * fade)));
+        for (int i = 0; i < 5; i++) {
+            float age = seconds - i * .15f;
+            if (age < 0f || age > 1.05f) continue;
+            float width = L.unit * (.10f - i * .009f);
+            float radius = width * 7f + L.w * age * (.85f + i * .09f);
+            float drift = Boss.bodyR(L) * i * .09f;
+            Renderer.rainbowRing(p, x + drift * (float)Math.cos(angle(i)),
+                    y + drift * (float)Math.sin(angle(i)), radius, width,
+                    fade * (1f - age / 1.05f));
+        }
+        for (int i = 0; i < 8; i++) {
+            float age = seconds - .12f - i * .075f;
+            if (age < 0f || age > .65f) continue;
+            float a = angle(i), distance = Boss.bodyR(L) * (1.1f + variation(i) * 2.6f);
+            float width = L.unit * .045f;
+            Renderer.rainbowRing(p, x + (float)Math.cos(a) * distance,
+                    y + (float)Math.sin(a) * distance, width * 7f + L.w * age * .40f,
+                    width, fade * (1f - age / .65f));
+        }
         for (int i = 0; i < SHARDS; i++) {
-            float a = angle(i), distance = travel(i, seconds, L);
+            float spin = (i % 2 == 0 ? 1f : -1f) * (.35f + variation(i) * 1.2f);
+            float a = angle(i) + spin * seconds, distance = travel(i, seconds, L);
+            float flutter = L.unit * .55f * (float)Math.sin(seconds * (9f + variation(i) * 12f))
+                    * Math.min(1f, seconds * 5f);
             float radius = L.unit * (.10f + .14f * variation((i + 41) % SHARDS));
             float alpha = fade * Math.min(1f, (1f - progress) * 2.5f);
-            cube(p, x + (float) Math.cos(a) * distance, y + (float) Math.sin(a) * distance,
-                    radius, a + seconds * (3f + variation(i) * 6f), COLORS[i % COLORS.length], alpha);
+            cube(p, x + (float) Math.cos(a) * distance - (float)Math.sin(a) * flutter,
+                    y + (float) Math.sin(a) * distance + (float)Math.cos(a) * flutter,
+                    radius, a + seconds * spin * 12f, COLORS[i % COLORS.length], alpha);
         }
     }
 

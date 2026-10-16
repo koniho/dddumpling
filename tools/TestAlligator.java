@@ -1,6 +1,34 @@
 package com.dddumpling.game;
 
 final class TestAlligator extends Check {
+    private static void endingPresentation(Layout L) {
+        group("gator victory and water exit");
+        for(int arm=0;arm<2;arm++) {
+            float minX=L.w,maxX=0,minY=L.h,maxY=0;
+            for(int frame=0;frame<120;frame++) {
+                float x=AlligatorAtmosphere.waveX(L,arm,frame/60f);
+                float y=AlligatorAtmosphere.waveY(L,arm,frame/60f);
+                minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
+            }
+            check("victory arm sweeps broadly without leaving the screen "+arm,
+                    maxX-minX>L.w*.22f && maxY-minY>(L.dangerY-L.playTop)*.26f
+                    && minX>=L.w*.09f && maxX<=L.w*.91f);
+        }
+        check("defeated pose holds before the fall",AlligatorAtmosphere.offset(L,.5f)==0);
+        check("fall accelerates into the water",AlligatorAtmosphere.offset(L,1.6f)-AlligatorAtmosphere.offset(L,1.2f)
+                >AlligatorAtmosphere.offset(L,1.2f)-AlligatorAtmosphere.offset(L,.8f));
+        check("body is submerged before the last splash fades",
+                AlligatorAtmosphere.offset(L,AlligatorAtmosphere.SUBMERGED_AT)>AlligatorAtmosphere.waterY(L));
+        GameCore c=fight(L),same=fight(L);c.lives=same.lives=1;
+        c.takeHit(L.w*.5f,L);same.takeHit(L.w*.5f,L);
+        Boss b=c.bossVictory;float tip=b.alligator.tipX,age=b.age,cx=b.body.centreX();
+        RasterPainter p=new RasterPainter((int)L.w,(int)L.h,1);
+        c.clock=1;c.deathT=c.deathDuration()-1;
+        BossVictory.draw(p,c,L);
+        check("victory art leaves the retained fight and gameplay RNG untouched",
+                b.alligator.tipX==tip && b.age==age && b.body.centreX()==cx
+                && c.rnd.nextLong()==same.rnd.nextLong());
+    }
     static GameCore fight(Layout L) {
         GameCore c=new GameCore(TestTimeAttack.store(),168,true);c.startGame();
         c.enemies.clear();c.power=null;c.modeLeft=0;
@@ -133,25 +161,25 @@ final class TestAlligator extends Check {
             ready(c,L);int score=c.score,particles=c.particles.size();c.shake=0;c.bossDeathHaptic=0;
             block(c,L);AlligatorGuard g=c.boss.alligator.guard;
             check("swipe protects and scores immediately but waits for visible contact "+hz,
-                    c.score>score && c.boss.alligator.blocked && ear.boltPops==0 && c.shake==0
+                    c.score>score && c.boss.alligator.blocked && ear.gatorParries==0 && c.shake==0
                     && c.bossDeathHaptic==0 && c.particles.size()==particles && g.impactAge==g.impactDuration && g.colorPulse()==0);
             for(int tick=0;tick<hz;tick++) {
                 g.update(1f/hz);g.feedback(c);
                 if(g.flightAge<AlligatorGuard.TRAVEL)check("no feedback before arrival "+hz+"/"+tick,
-                        ear.boltPops==0 && c.particles.size()==particles && g.colorPulse()==0);
+                        ear.gatorParries==0 && c.particles.size()==particles && g.colorPulse()==0);
                 if(g.flightAge>=AlligatorGuard.TRAVEL && g.flightAge<AlligatorGuard.TRAVEL+1f/hz)
                     check("color flash starts on collision frame "+hz,g.colorPulse()>.6f);
                 if(g.flightAge>=AlligatorGuard.TRAVEL+AlligatorGuard.CONTACT_FLASH)
                     check("color flash ends after half second "+hz+"/"+tick,g.colorPulse()==0);
             }
             check("contact releases sound shake haptic and particles exactly once "+hz,
-                    ear.boltPops==1 && ear.uiBloops==1 && c.shake>=.38f && c.bossDeathHaptic==1
+                    ear.gatorParries==1 && ear.boltPops==0 && ear.uiBloops==1 && c.shake>=.38f && c.bossDeathHaptic==1
                     && c.particles.size()==particles+12);
             for(boolean damage:new boolean[]{false,true}) {
                 c=fight(L);ear=new Ear();c.sound=ear;block(c,L);g=c.boss.alligator.guard;
                 if(damage)g.returnHome();else c.boss.leave();
                 g.update(1);g.feedback(c);
-                check("interrupted flight drops delayed feedback "+damage+"/"+hz,ear.boltPops==0 && c.particles.isEmpty());
+                check("interrupted flight drops delayed feedback "+damage+"/"+hz,ear.gatorParries==0 && c.particles.isEmpty());
             }
         }
     }
@@ -747,11 +775,91 @@ final class TestAlligator extends Check {
         AlligatorArt.draw(p,c,L,c.boss,1);
         check("yellow glow follows the whole attacking claw",strokes[0]==3 && attached[0]);
     }
+    static void growlAudio(Layout L) {
+        group("recorded daze-cancel growls");
+        for(int phase=0;phase<2;phase++)for(int hz:new int[]{30,60,120}) {
+            GameCore c=fight(L);Boss b=c.boss;Alligator a=b.alligator;Ear ear=new Ear();c.sound=ear;
+            b.hp=b.hpMax*(phase==0?.5f:.25f);a.daze=Alligator.DAZE;a.longWindow=true;b.damage(1);
+            check("combo demo waits for final growl tail",a.showoffLead()>=GatorTauntRecording.end(phase)+.17f);
+            float dt=1f/hz;int played=0;
+            for(int frame=0;frame<hz*4 && a.showoff();frame++) {
+                c.update(dt,L);
+                if(ear.gatorGrowls.size()>played) {
+                    int id=ear.gatorGrowls.get(played);
+                    check("growls keep file order and original spacing "+phase+"/"+hz+"/"+played,
+                            id==phase*3+played && ear.gatorGrowls.size()==played+1
+                            && Math.abs(a.showoffAge-GatorTauntRecording.onset(phase,played))<=dt+.001f);
+                    played++;
+                }
+                if(a.showoff() && a.showoffAge<GatorTauntRecording.end(phase))
+                    check("no demonstration strikes over recorded growls",a.showoffLimb()<0 && ear.gatorCues==0);
+                if(frame==hz/4) {
+                    float age=a.showoffAge,mouth=a.laugh();int cues=ear.gatorGrowls.size();
+                    c.paused=true;c.update(.2f,L);c.paused=false;
+                    check("pause freezes growl mouth and cue schedule",age==a.showoffAge && mouth==a.laugh() && cues==ear.gatorGrowls.size());
+                }
+            }
+            check("phase growls and demonstration complete once",played==3 && !a.showoff() && a.takeGrowls()==0 && a.laugh()==0);
+            for(int beat=0;beat<3;beat++) {
+                float start=GatorTauntRecording.onset(phase,beat);
+                check("recorded envelope opens mouth on each growl",GatorTauntRecording.mouth(phase,start+.09f)>.2f);
+                check("mouth closes before next growl",GatorTauntRecording.mouth(phase,start-.005f)==0);
+            }
+            b.leave();check("leaving clears growl history",a.growlBeat==-1 && a.takeGrowls()==0);
+        }
+        GameCore c=fight(L);Boss b=c.boss;Alligator a=b.alligator;
+        b.hp=b.hpMax*.5f;b.damage(1);c.sound=null;
+        while(a.showoffAge<GatorTauntRecording.onset(0,0)+DT)c.update(DT,L);
+        Ear ear=new Ear();c.sound=ear;c.update(DT,L);
+        check("muted growls do not play late",ear.gatorGrowls.isEmpty());
+        b.damage(b.hp);c.update(DT,L);
+        check("defeat cancels growl queue and mouth",a.takeGrowls()==0 && a.growlBeat==-1 && a.growlMouth()==0);
+        c=fight(L);b=c.boss;a=b.alligator;b.hp=b.hpMax*.5f;b.damage(1);
+        c.update(.2f,L);c.startGame();
+        check("restart clears pending growls",a.takeGrowls()==0 && !a.showoff() && a.growlBeat==-1);
+    }
+    static void recordedAudio(Layout L) {
+        group("recorded Gator cues");
+        GameCore c=fight(L),same=fight(L);Alligator a=c.boss.alligator;
+        int variants=0;
+        for(int group=0;group<30;group++) {
+            int mask=0;
+            for(int i=0;i<3;i++)a.queueAttackCue(i==0);
+            int count=a.takeAttackCues();
+            check("batched three-hit cues survive until playback",count==3);
+            for(int i=0;i<count;i++)mask|=1<<a.attackCues[i];
+            check("batched combo draws all three recordings",mask==7);
+            variants|=1<<a.attackCues[0];
+        }
+        check("new attack groups randomly start with all three takes",variants==7);
+        check("cue choices leave gameplay randomness untouched",c.rnd.nextLong()==same.rnd.nextLong());
+        Ear ear=new Ear();c.sound=ear;
+        c.boss.intro=c.boss.introDuration()*(1-AlligatorArrival.SPLASH_AT)+.001f;
+        c.paused=true;c.update(DT,L);
+        check("pause cannot start the entry splash",ear.gatorEntries==0);
+        c.paused=false;c.update(DT,L);
+        check("entry crossing plays the slowed splash once",ear.gatorEntries==1 && ear.gatorSplashes==0);
+        c.update(DT,L);check("entry splash does not retrigger",ear.gatorEntries==1);
+        c.boss.intro=0;c.boss.damage(c.boss.hp);
+        c.boss.leaveT=Boss.LEAVE-AlligatorAtmosphere.SPLASH_AT+.001f;
+        c.paused=true;c.update(DT,L);
+        check("pause holds defeat splash",ear.gatorSplashes==0);
+        c.paused=false;c.update(DT,L);
+        check("defeat splash coincides with water particles",ear.gatorSplashes==1);
+        c.update(DT,L);check("defeat splash does not loop",ear.gatorSplashes==1);
+        c=fight(L);c.sound=null;c.boss.alligator.timer=0;c.update(DT,L);
+        ear=new Ear();c.sound=ear;c.update(DT,L);
+        check("muted attack cue is discarded instead of played late",ear.gatorCues==0);
+        c=fight(L);ear=new Ear();c.sound=ear;
+        c.boss.intro=c.boss.introDuration()*(1-AlligatorArrival.SPLASH_AT)+.001f;
+        c.sound=null;c.update(DT,L);c.sound=ear;c.update(DT,L);
+        check("muted splash is never replayed on sound attachment",ear.gatorEntries==0);
+    }
     static void comboAudio(Layout L) {
         for(int count:new int[]{2,3}) {
             GameCore c=fight(L);Alligator a=c.boss.alligator;Ear ear=new Ear();c.sound=ear;
             c.boss.hp=c.boss.hpMax*(count==2?.49f:.24f);a.timer=0;c.update(DT,L);
-            check("first combo strike sounds once "+count,ear.octoCues==1);
+            check("first combo strike sounds once "+count,ear.gatorCues==1);
             for(int i=0;i<count;i++) {
                 for(int frame=0;frame<30 && a.combo[i].attack<.15f;frame++)c.update(DT,L);
                 Alligator.Strike strike=a.combo[i];
@@ -759,10 +867,12 @@ final class TestAlligator extends Check {
                 a.touch(c,L,1,168,strike.tipX+L.w*.12f,strike.tipY);
                 c.update(DT,L);
                 check("immediate follow-up strike sounds exactly once "+count+"/"+i,
-                        ear.octoCues==Math.min(count,i+2));
+                        ear.gatorCues==Math.min(count,i+2));
                 c.update(DT,L);
-                check("attack cue does not repeat on next frame",ear.octoCues==Math.min(count,i+2));
+                check("attack cue does not repeat on next frame",ear.gatorCues==Math.min(count,i+2));
             }
+            check("combo takes never repeat "+count,!ear.gatorCueRepeated && Integer.bitCount(ear.gatorCueMask)==count);
+            check("Gator no longer borrows Octopulse rising tone",ear.octoCues==0);
             a.pendingAttackCues=1;c.boss.leave();check("leaving clears pending attack sounds",a.takeAttackCues()==0);
         }
     }
@@ -780,7 +890,7 @@ final class TestAlligator extends Check {
             check("daze cancel flashes and shakes before combo demo",a.cancelFlash()>.8f && a.takeShake()>=.85f && a.showoffLimb()<0);
             float hp=b.hp,clock=a.showoffAge;c.paused=true;c.update(.2f,L);c.paused=false;
             check("pause freezes combo demonstration",a.showoffAge==clock);
-            int hits=0,cues=0,limbs=0,shakes=0;boolean inputSafe=true,flexed=false;
+            int cueMask=0;int hits=0,cues=0,limbs=0,shakes=0;boolean inputSafe=true,flexed=false;
             for(int frame=0;frame<hz*4 && a.showoff();frame++) {
                 int limb=a.showoffLimb();if(limb>=0)limbs|=1<<limb;
                 if(a.showoffFlex()>.98f) {
@@ -791,7 +901,13 @@ final class TestAlligator extends Check {
                 }
                 inputSafe &= b.press(0,c.rnd,L)==Boss.REBUFF && b.hp==hp && a.pendingShots==0 && a.retaliation==0;
                 inputSafe &= !a.swipe(b,L,0,L.h*.5f,L.w,L.h*.5f);
-                hits+=b.update(dt,L,c.rnd);cues+=a.takeAttackCues();
+                hits+=b.update(dt,L,c.rnd);
+                int cueCount=a.takeAttackCues();
+                for(int i=0;i<cueCount;i++) {
+                    check("showoff prompt takes do not repeat",(cueMask&(1<<a.attackCues[i]))==0);
+                    cueMask|=1<<a.attackCues[i];
+                }
+                cues+=cueCount;
                 if(a.takeShake()>0)shakes++;
             }
             check("demo ignores attack input without retaliation",inputSafe);
@@ -809,6 +925,7 @@ final class TestAlligator extends Check {
         check("boss defeat cancels demonstration immediately",!a.showoff() && a.takeAttackCues()==0 && a.takeShake()==0);
     }
     static void impactFeedback(Layout L) {
+        endingPresentation(L);
         group("gator screen impacts");
         for(int hz:new int[]{30,60,120}) {
             GameCore c=fight(L);c.boss.intro=c.boss.introDuration();c.shake=0;
@@ -822,7 +939,7 @@ final class TestAlligator extends Check {
         GameCore c=fight(L);Alligator a=c.boss.alligator;
         c.boss.hp=c.boss.hpMax*.5f;c.boss.damage(1);
         check("threshold has immediate cancel shake",a.takeShake()>=.85f);
-        a.showoffAge=Alligator.SHOWOFF_LEAD+Alligator.SHOWOFF_BEAT*.5f-DT*.5f;
+        a.showoffAge=a.showoffLead()+Alligator.SHOWOFF_BEAT*.5f-DT*.5f;
         c.shake=0;c.paused=true;c.update(DT,L);
         check("paused demonstration does not shake",c.shake==0 && a.takeShake()==0);
         c.paused=false;c.update(DT,L);
@@ -843,6 +960,8 @@ final class TestAlligator extends Check {
         impactFeedback(L);
         comboShowoff(L);
         comboAudio(L);
+        recordedAudio(L);
+        growlAudio(L);
         clawGlow(L);
         laughingTaunt(L);
         group("gator body follows tail side");

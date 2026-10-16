@@ -6,6 +6,8 @@ final class PlayerSettings extends Draw {
     static final int MUSIC = 1, EFFECTS = 2, MUSIC_MUTE = 3, EFFECTS_MUTE = 4,
             KIDS = 5, PRIVACY = 6, CLOSE = 7, PLAYER = 8, DEVELOPER = 9, SHARE = 10, RATE = 11, TUTORIALS = 15;
     float tutorialResetUntil;
+    // Future settings features own setting and clearing this attention flag.
+    boolean notificationPending;
     static final String PUBLIC_ANDROID_URL="https://play.google.com/store/apps/details?id=com.dddumpling.game";
     static String invitation(String url) { return "Come play DDDUMPLING with me! " + url; }
     final ScoreReset scoreReset=new ScoreReset();

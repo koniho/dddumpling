@@ -388,6 +388,7 @@ final class TestSettings extends Check {
         kidsMinigames(L);
         group("player settings");
         GameCore title=new GameCore(new Mem(),203L);
+        check("settings attention starts off until a feature requests it",!title.preferences.notificationPending);
         check("title settings hit target follows danger line",PrivacyUi.hit(title,L,L.w-2f*L.unit,L.dangerY));
         check("old settings position no longer opens settings",!PrivacyUi.hit(title,L,L.w-2f*L.unit,L.dangerY-2f*L.unit));
         check("release steamer sits on danger line",ReleaseMascot.y(L)==L.dangerY

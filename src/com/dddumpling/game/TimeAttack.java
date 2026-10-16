@@ -176,12 +176,13 @@ final class TimeAttack extends Draw {
         }
     }
     static float selectY(Layout L) {return L.h*.735f;}
+    static float nameY(Layout L) {return selectY(L)+L.unit*2.3f;}
     int hit(GameCore c,Layout L,float x,float y) {
         if(c.modes.selected!=ModeSelector.TIME_ATTACK || !ModeSelector.unlocked(c,ModeSelector.TIME_ATTACK) || !c.modes.visible(c)
                 || x<L.padL || x>L.w-L.padR)return 0;
         if(Math.abs(y-selectY(L))<=L.unit*1.3f)return x<L.w*.27f?4:x>L.w*.73f?6:5;
         float top=Math.max(L.h*.635f,ModeSelector.y(L)+L.unit*2.2f);
-        return y>=top && y<selectY(L)?SCENE:0;
+        return y>=top && y<nameY(L)+L.unit*.4f?SCENE:0;
     }
     void drawSelector(Painter p,GameCore c,Layout L) {
         if(c.modes.selected!=ModeSelector.TIME_ATTACK || !ModeSelector.unlocked(c,ModeSelector.TIME_ATTACK) || !c.modes.visible(c))return;
@@ -189,14 +190,14 @@ final class TimeAttack extends Draw {
         boolean ready=playable(c);
         int color=ready?INK:INK_DIM;
         TimeAttackDemo.draw(p,c,L);
-        p.text(name(selected),x,y,type(s*.85f),color,Painter.CENTER,true);
+        p.text(name(selected),x,nameY(L),type(s*.85f),color,Painter.CENTER,true);
         for(int d=-1;d<=1;d+=2) {
             float ax=x+d*L.w*.36f;
             p.line(ax-d*s*.2f,y-s*.5f,ax+d*s*.2f,y-s*.25f,GOLD,s*.09f);
             p.line(ax+d*s*.2f,y-s*.25f,ax-d*s*.2f,y,GOLD,s*.09f);
         }
         if(!ready)p.text(selected==ALL?"BEFRIEND ALL FOUR BOSSES":"BEFRIEND IN ADVENTURE",
-                x,y+s*1.5f,type(s*.48f),INK_DIM,Painter.CENTER,true);
+                x,nameY(L)+s*1.5f,type(s*.48f),INK_DIM,Painter.CENTER,true);
     }
     void result(Painter p,GameCore c,Layout L,float fade) {
         if(result==null)return;

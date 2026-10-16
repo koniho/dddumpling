@@ -4,6 +4,15 @@ Historical failure notes, moved from `AGENTS.md`. Read only entries relevant to 
 Values and file ownership may have changed; verify against current code. Current workflow
 policy lives in [AGENTS.md](../../AGENTS.md).
 
+Adventure's post-boss ramp starts after `Boss.lastStage()` (currently Gummy Gator at
+stage 25). For each stage beyond it, the ordinary spawn interval is
+`max(0.75, 2.75 / (1 + 0.25 * extraStages))` seconds, and the wave quota grows by two
+from eight to a maximum of 32. The five-word live cap, fall speed and word budgets
+retain their existing curves. Kids Mode retains its stage-one pacing; Survival uses
+its own spawn and crowd curves. Power-ups retain their tapered rates and dynamic refill.
+`TestSoak.postBossWaves` samples stages 26, 30 and 36 with bounded six- and nine-press
+players, alongside the full-run bounded simulation.
+
 - **Tune against the real firing rate.** The per-press sky glow looked right in one frame and
   strobed in play; the 4s minigame let a masher finish it in one go, defeating the
   accumulation it was built for.

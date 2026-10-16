@@ -21,6 +21,19 @@ final class Alligator {
     float tipX,tipY,previousX,previousY,targetX,targetY,targetR,strikeX,strikeY;
     float fingerX,fingerY,anchorX,anchorY,strokeX,strokeY,strokeEndX,strokeEndY,strokeFade;
     int pendingAttackCues;
+    // Audio randomness never advances the gameplay generator.
+    final java.util.Random cueRandom=new java.util.Random(0);
+    final int[] attackCues=new int[3];
+    int usedCueMask;
+    void queueAttackCue(boolean first) {
+        if(first)usedCueMask=0;
+        int pick=cueRandom.nextInt(3-Integer.bitCount(usedCueMask));
+        for(int variant=0;variant<3;variant++)if((usedCueMask&(1<<variant))==0 && pick--==0) {
+            usedCueMask|=1<<variant;
+            if(pendingAttackCues<attackCues.length)attackCues[pendingAttackCues++]=variant;
+            break;
+        }
+    }
     boolean placed, blocked, dazeCue, hitPlayer, longWindow, windowHit, windowDamaged;
     float closing,vulnerablePose;
     Softbody tummy;
@@ -33,11 +46,15 @@ final class Alligator {
     static final float SHOWOFF_LEAD=1.05f, SHOWOFF_BEAT=.55f, SHOWOFF_HOLD=.35f;
     int showoffCount,showoffBeat=-1,showoffImpact=-1,shownCombos;
     float showoffAge,pendingShake;
+    int growlBeat=-1,pendingGrowls;
+    int takeGrowls() {int cues=pendingGrowls;pendingGrowls=0;return cues;}
+    float showoffLead() {return showoff()?Math.max(SHOWOFF_LEAD,GatorTauntRecording.end(showoffCount-2)+.18f):SHOWOFF_LEAD;}
+    float growlMouth() {return showoff()?GatorTauntRecording.mouth(showoffCount-2,showoffAge):0;}
     float takeShake() {float amount=pendingShake;pendingShake=0;return amount;}
     boolean showoff() {return showoffCount>0;}
     float showoffFlex() {
         if(!showoff())return 0;
-        return AlligatorArrival.ramp(showoffAge,0,.24f)*(1-AlligatorArrival.ramp(showoffAge,.68f,SHOWOFF_LEAD));
+        return AlligatorArrival.ramp(showoffAge,0,.24f)*(1-AlligatorArrival.ramp(showoffAge,showoffLead()-.37f,showoffLead()));
     }
     float cancelFlash() {
         if(!showoff())return 0;
@@ -45,12 +62,12 @@ final class Alligator {
         return pulse*(1-AlligatorArrival.ramp(showoffAge,.24f,.44f));
     }
     int showoffLimb() {
-        int beat=(int)((showoffAge-SHOWOFF_LEAD)/SHOWOFF_BEAT);
-        return showoffAge<SHOWOFF_LEAD || beat>=showoffCount?-1:beat;
+        int beat=(int)((showoffAge-showoffLead())/SHOWOFF_BEAT);
+        return showoffAge<showoffLead() || beat>=showoffCount?-1:beat;
     }
     float showoffReach(int which) {
         if(!showoff() || showoffLimb()!=which)return 0;
-        float u=(showoffAge-SHOWOFF_LEAD)/SHOWOFF_BEAT-which;
+        float u=(showoffAge-showoffLead())/SHOWOFF_BEAT-which;
         float reach=(float)Math.sin(Math.PI*u);
         return reach*reach;
     }
@@ -60,7 +77,7 @@ final class Alligator {
                 :before>=b.hpMax*.5f && b.hp<b.hpMax*.5f?2:0;
         if(count==0 || (shownCombos&(1<<count))!=0)return false;
         shownCombos|=count==3?12:4;
-        showoffCount=count;showoffBeat=showoffImpact=-1;showoffAge=0;
+        showoffCount=count;showoffBeat=showoffImpact=growlBeat=-1;showoffAge=0;pendingGrowls=0;
         clearCombo();limb=next=pointer=-1;placed=blocked=hitPlayer=false;
         daze=recoil=closing=windowDamage=retaliation=shotDelay=counterCooldown=taunt=0;
         longWindow=windowHit=windowDamaged=dazeCue=false;roundStreak=0;
@@ -70,18 +87,23 @@ final class Alligator {
     }
     void updateShowoff(Boss b,float dt) {
         showoffAge+=dt;
-        int beat=Math.min(showoffCount-1,(int)((showoffAge-SHOWOFF_LEAD)/SHOWOFF_BEAT));
-        if(showoffAge>=SHOWOFF_LEAD)while(showoffBeat<beat) {
-            showoffBeat++;pendingAttackCues++;jolt(.15f);
+        int phase=showoffCount-2;
+        while(growlBeat<2 && showoffAge>=GatorTauntRecording.onset(phase,growlBeat+1)) {
+            growlBeat++;pendingGrowls|=1<<(phase*3+growlBeat);
+            if(b.body!=null)b.body.squash(.11f);
+        }
+        int beat=Math.min(showoffCount-1,(int)((showoffAge-showoffLead())/SHOWOFF_BEAT));
+        if(showoffAge>=showoffLead())while(showoffBeat<beat) {
+            showoffBeat++;queueAttackCue(showoffBeat==0);jolt(.15f);
             if(b.body!=null)b.body.squash(.16f);
         }
-        float impacts=(showoffAge-SHOWOFF_LEAD-SHOWOFF_BEAT*.5f)/SHOWOFF_BEAT;
+        float impacts=(showoffAge-showoffLead()-SHOWOFF_BEAT*.5f)/SHOWOFF_BEAT;
         if(impacts>=0) {
             int impact=Math.min(showoffCount-1,(int)impacts);
             if(impact>showoffImpact) {showoffImpact=impact;pendingShake=Math.max(pendingShake,.45f+.10f*impact);}
         }
-        if(showoffAge>=SHOWOFF_LEAD+showoffCount*SHOWOFF_BEAT+SHOWOFF_HOLD) {
-            showoffCount=0;showoffAge=0;showoffBeat=-1;timer=.55f;limb=next=-1;
+        if(showoffAge>=showoffLead()+showoffCount*SHOWOFF_BEAT+SHOWOFF_HOLD) {
+            showoffCount=0;showoffAge=0;showoffBeat=growlBeat=-1;pendingGrowls=0;timer=.55f;limb=next=-1;
         }
     }
 
@@ -125,7 +147,7 @@ final class Alligator {
     }
 
     void reset() {
-        clearCombo();showoffCount=shownCombos=0;showoffBeat=showoffImpact=-1;showoffAge=pendingShake=0;
+        clearCombo();showoffCount=shownCombos=0;showoffBeat=showoffImpact=growlBeat=-1;showoffAge=pendingShake=0;pendingGrowls=0;
         guard.reset();eyes.reset();wriggle=retaliation=taunt=0;retaliationShots=pendingShots=0;shotDelay=counterCooldown=0;
         limb=pointer=next=lastLimb=-1;roundStreak=dazes=0;
         timer=GAP;attack=daze=recoil=flash=strokeFade=windowDamage=0;tempo=1;motionClock=0;tailPosition=1;
@@ -173,6 +195,7 @@ final class Alligator {
         taunt=TAUNT_TIME;jolt(.20f);
     }
     float laugh() {
+        if(showoff())return growlMouth();
         if(taunt<=0)return 0;
         float age=TAUNT_TIME-taunt;
         float envelope=Math.min(1,age/.10f)*Math.min(1,taunt/.22f);
@@ -403,7 +426,7 @@ final class Alligator {
         guard.update(dt);
         if(b.beaten)guard.reset();
         flash=Math.max(0,flash-dt*3);strokeFade=Math.max(0,strokeFade-dt);
-        if(b.beaten) {pendingShake=0;showoffCount=0;showoffAge=0;showoffBeat=showoffImpact=-1;pendingAttackCues=0;clearCombo();limb=pointer=-1;daze=retaliation=closing=vulnerablePose=0;longWindow=windowHit=windowDamaged=false;roundStreak=0;retaliationShots=pendingShots=0;shotDelay=counterCooldown=0;}
+        if(b.beaten) {pendingShake=0;showoffCount=0;showoffAge=0;showoffBeat=showoffImpact=growlBeat=-1;pendingGrowls=0;pendingAttackCues=0;clearCombo();limb=pointer=-1;daze=retaliation=closing=vulnerablePose=0;longWindow=windowHit=windowDamaged=false;roundStreak=0;retaliationShots=pendingShots=0;shotDelay=counterCooldown=0;}
         if(comboActive) {
             for(Strike s:combo)if(s.limb>=0) {s.load(this);pose(L);s.save(this);}
             selectComboLead();
@@ -412,7 +435,7 @@ final class Alligator {
     int takeAttackCues() {int count=pendingAttackCues;pendingAttackCues=0;return count;}
     void beginStrike(Boss b,Layout L,int which) {
         limb=lastLimb=which;tempo=speed(b);attack=0;blocked=false;placed=false;hitPlayer=false;
-        pendingAttackCues++;jolt(.075f);pose(L);
+        queueAttackCue(!comboActive);jolt(.075f);pose(L);
     }
     void beginCombo(Boss b,java.util.Random rnd) {
         clearCombo();comboActive=true;comboCount=b.hp<b.hpMax*.25f?3:2;
