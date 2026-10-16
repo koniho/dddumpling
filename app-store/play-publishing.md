@@ -58,6 +58,12 @@ and [commit behavior](https://developers.google.com/android-publisher/api-ref/re
 
 ## Direct APK distribution (itch.io)
 
+Set the repository variable `ITCH_ANDROID_CHANNEL` to the channel backing the public
+Android download (defaults to `android`). A formerly staged channel can become the public
+slot; keep publishing to that channel so its download and update history stay together.
+Use `publish-itch.yml` with `inspect_only=true` to map channels to upload IDs without
+uploading. Compare that ID with the public page before activating a release.
+
 The itch workflow creates a fresh hidden staging channel by default. Select **activate**
 only to update the live Android channel. Hidden uploads use a unique channel because
 butler cannot hide a new build on an existing channel.

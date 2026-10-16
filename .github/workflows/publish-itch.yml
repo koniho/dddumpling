@@ -79,10 +79,12 @@ jobs:
         if: inputs.inspect_only != true
         env:
           ACTIVATE: ${{ inputs.activate }}
+          LIVE_CHANNEL: ${{ vars.ITCH_ANDROID_CHANNEL || 'android' }}
           BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
-          channel=android
+          channel="$LIVE_CHANNEL"
+          [[ "$channel" =~ ^[a-z0-9][a-z0-9-]*$ ]] || exit 1
           flags=()
           if [ "$ACTIVATE" != true ]; then
             channel="android-staged-${RELEASE_TAG//./-}-${GITHUB_RUN_ID}"
