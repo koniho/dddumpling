@@ -24,9 +24,12 @@ final class SlimeSpray {
             Drop d=p.slime=new Drop();
             d.x=p.x=x;d.y=p.y=y;d.phase=random.nextFloat()*6.283f;
             d.gravity=scale*9f;
-            float angle=heading+(random.nextFloat()-.5f)*(drag?2.9f:1.15f);
+            float angle=(random.nextFloat()-.5f)*(drag?2.9f:1.15f);
             float speed=scale*(6f+random.nextFloat()*10f)*(drag?1.3f:1f);
-            p.vx=(float)Math.cos(angle)*speed;p.vy=(float)Math.sin(angle)*speed;
+            float forward=(float)Math.cos(angle)*speed;
+            float sideways=(float)Math.sin(angle)*speed*(drag?4f:2f);
+            p.vx=(float)Math.cos(heading)*forward-(float)Math.sin(heading)*sideways;
+            p.vy=(float)Math.sin(heading)*forward+(float)Math.cos(heading)*sideways;
             p.size=scale*(.16f+random.nextFloat()*.26f);
             p.life=p.max=1.15f+random.nextFloat()*.5f;
             p.color=i%3==0?0xFFB9EF43:i%3==1?0xFF80DB2B:0xFF55B941;

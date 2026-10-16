@@ -88,7 +88,7 @@ final class TestBoss extends Check {
         check("slime cosmetics leave gameplay randomness alone",c.rnd.nextLong()==control.rnd.nextLong());
         boolean cone=true;
         for(GameCore.Particle p:c.particles)
-            cone&=p.slime!=null && p.x==100 && p.y==200 && p.vy<0 && Math.abs(p.vx/-p.vy)<.66f;
+            cone&=p.slime!=null && p.x==100 && p.y==200 && p.vy<0 && Math.abs(p.vx/-p.vy)<1.32f;
         check("projectile spray starts at contact and follows its forward cone",cone && c.particles.size()==SlimeSpray.HIT_DROPS);
         GameCore.Particle drop=c.particles.get(0);
         Fx.updateParticles(c,SlimeSpray.FLIGHT);
