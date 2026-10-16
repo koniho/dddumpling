@@ -90,7 +90,9 @@
         sheet.popoverPresentationController.sourceRect=CGRectMake(CGRectGetMidX(view.bounds),CGRectGetMidY(view.bounds),1,1);
         [presenter presentViewController:sheet animated:YES completion:nil];
     } else {
-        [UIApplication.sharedApplication openURL:url options:@{} completionHandler:^(BOOL success) {
+        NSURLComponents *review=[NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+        review.queryItems=@[[NSURLQueryItem queryItemWithName:@"action" value:@"write-review"]];
+        [UIApplication.sharedApplication openURL:review.URL options:@{} completionHandler:^(BOOL success) {
             if(success) finished(); else message(@"The App Store could not be opened. Please try again later.");
         }];
     }

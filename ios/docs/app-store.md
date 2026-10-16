@@ -31,5 +31,7 @@ runtime; product-metadata, age-rating, and accessibility review. Reviewer contac
 notes are now saved and verified in both App Store and TestFlight sections.
 
 Settings sharing and rating use `DDPublicAppStoreURL` in `DDDumpling/Info.plist`.
-Set it to the public HTTPS `apps.apple.com` listing once the App Store ID is assigned.
-An empty value shows an availability message; it never substitutes the Android or TestFlight link.
+It points to the public [DDDumpling listing](https://apps.apple.com/app/id6811478003).
+Share includes that link in the native share sheet. Rate appends `action=write-review`
+to open Apple's review page. An empty or invalid value still shows an availability message;
+it never substitutes the Android or TestFlight link.
