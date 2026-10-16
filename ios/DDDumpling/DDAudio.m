@@ -388,7 +388,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)gatorParry { [self playEffect:DDSfx_GATOR_PARRY rate:1 gain:1]; }
 - (void)gatorPromptWithInt:(jint)variant { [self playEffect:[DDSfx gatorPromptIdWithInt:variant] rate:1 gain:DDSfx_GATOR_PROMPT_GAIN]; }
 - (void)gatorSplashWithBoolean:(jboolean)entry {
-  [self playEffect:DDSfx_GATOR_SPLASH rate:entry ? DDSfx_GATOR_ENTRY_RATE : 1 gain:1];
+  [self playEffect:DDSfx_GATOR_SPLASH rate:entry ? DDSfx_GATOR_ENTRY_RATE : 1 gain:DDSfx_GATOR_SPLASH_GAIN];
 }
 - (void)octoWave { [self playEffect:DDSfx_OCTO_WAVE rate:1 gain:DDSfx_OCTO_WAVE_GAIN]; }
 - (void)octoDamage { [self playEffect:DDSfx_OCTO_DAMAGE rate:1 gain:.82f]; }

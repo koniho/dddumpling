@@ -13,4 +13,5 @@ No endorsement by the original author is implied.
 Gummy Gator water splash: Big Water Splash by qubodup (Freesound), CC0 1.0.
 https://freesound.org/people/qubodup/sounds/442773/
 https://creativecommons.org/publicdomain/zero/1.0/
-Adapted to mono with edge fades and peak normalization; entry plays at 70% speed.
+Adapted to mono with a 4 kHz low-pass filter, edge fades and peak normalization;
+entry plays at 70% speed.

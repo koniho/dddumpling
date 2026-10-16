@@ -163,8 +163,9 @@ Splash: **Big Water Splash** by **qubodup**, published October 12, 2018.
 
 Run `python3 tools/prepare-gator-cues.py /path/to/prompt.m4a /path/to/442773_71257-hq.mp3`
 to reproduce `GatorCueRecording.java` and the four audition WAVs in `build/`.
-The originals remain outside source control. PCM is mono 22,050 Hz, normalized
-per take to 85%, with 2ms leading fades and 12ms prompt / 45ms splash trailing
+The originals remain outside source control. Both recordings pass through a
+two-pole 4 kHz low-pass filter. PCM is mono 22,050 Hz, normalized per take to 85%, with 2ms leading fades and 12ms prompt / 45ms splash trailing
 fades. The complete 2.172-second splash is retained. Android and iOS play the same
 embedded PCM: normal speed at the defeat splash, 70% speed (lower pitch, 3.10s)
-at the first entry droplets. No repeated water loop or added synthesis.
+at the first entry droplets. Playback gain is 42% for prompts and 60% for both
+splashes. No repeated water loop or added synthesis.

@@ -17,7 +17,8 @@ if termux.exists():
 
 def decode(path):
     raw = subprocess.check_output(['ffmpeg', '-v', 'error', '-i', str(path),
-        '-map', '0:a:0', '-ac', '1', '-ar', str(rate), '-f', 's16le', '-'], env=env)
+        '-map', '0:a:0', '-af', 'lowpass=f=4000:p=2',
+        '-ac', '1', '-ar', str(rate), '-f', 's16le', '-'], env=env)
     samples = array.array('h', raw)
     if sys.byteorder != 'little':
         samples.byteswap()
