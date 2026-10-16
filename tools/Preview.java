@@ -8,6 +8,17 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void diveStarFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("dive-star-"))return;
+        for(int state=0;state<4;state++) {
+            GameCore c=TestSwampEnemies.scene(L,176);c.clock=2;
+            GameCore.Enemy e=TestSwampEnemies.word(c,L,SwampEnemies.DIVE,L.h*.44f);e.sway=0;
+            if(state==1) {c.tapKey(0,L);c.tapKey(1,L);step(c,L,.12f);}
+            if(state==2) {c.destroyWord(e,c.tileX(e,2,L),e.y,L);e.destroyT=.12f;}
+            if(state==3) {c.removeTile(e,2,0,-1,L);e.goneT[2]=.3f;}
+            shot(dir,"dive-star-"+state,c,L,w,h,ss);
+        }
+    }
     private static void enemyClearFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("enemy-clear-"))return;
         for(boolean fog:new boolean[]{false,true})for(float time:new float[]{0,.08f,.18f,.30f}) {
@@ -1489,6 +1500,7 @@ final class Preview {
         gatorSilhouetteFrames(dir,L,w,h,ss);
         alligatorFrames(dir,L,w,h,ss);
         swampEnemyFrames(dir,L,w,h,ss);
+        diveStarFrames(dir,L,w,h,ss);
         enemyClearFrames(dir,L,w,h,ss);
         fastEnemyFrames(dir,L,w,h,ss);
         gatorCompanionFrames(dir,L,w,h,ss);

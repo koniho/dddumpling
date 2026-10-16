@@ -5,7 +5,7 @@ final class SwampEnemies {
     static final int NONE=0, FOG=1, DIVE=2;
     static final float REVEAL=.225f;
     static final float DIVE_BURST=.5f;
-    static final int MIST=0xFFB9D9CC, AMBER=0xFFFFCA68;
+    static final int MIST=0xFFB9D9CC;
     static final int FOG_INK=0xFF53636F;
     private SwampEnemies() {}
 
@@ -164,18 +164,6 @@ final class SwampEnemies {
             points[back]=x;points[back+1]=middle+radius*taper*(.72f+.19f*(float)Math.cos(t*17+phase));
         }
         p.fillPoly(points,Glyph.withAlpha(color,alpha));
-    }
-
-    static void hardhat(Painter p,float x,float y,float r,int fade) {
-        float top=y-r*.54f;
-        p.fillEllipse(x,top,r*.61f,r*.42f,Glyph.withAlpha(0xFF936127,fade));
-        p.fillEllipse(x-r*.025f,top-r*.045f,r*.55f,r*.36f,Glyph.withAlpha(AMBER,fade));
-        p.fillEllipse(x-r*.20f,top-r*.14f,r*.22f,r*.10f,Glyph.withAlpha(0xFFFFF4C4,fade*190/255));
-        p.line(x,top-r*.34f,x,top+r*.02f,Glyph.withAlpha(0xFFFFE89B,fade),r*.13f);
-        p.line(x-r*.35f,top-r*.18f,x-r*.38f,top+r*.08f,Glyph.withAlpha(0xFFD69A3E,fade),r*.055f);
-        p.line(x+r*.35f,top-r*.18f,x+r*.38f,top+r*.08f,Glyph.withAlpha(0xFFD69A3E,fade),r*.055f);
-        p.fillEllipse(x,top+r*.18f,r*.72f,r*.13f,Glyph.withAlpha(0xFF936127,fade));
-        p.fillEllipse(x,top+r*.12f,r*.73f,r*.12f,Glyph.withAlpha(0xFFFFDA7A,fade));
     }
 
     static void burst(Painter p,GameCore.Enemy e,float r,int fade) {

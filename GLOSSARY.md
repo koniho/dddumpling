@@ -374,7 +374,7 @@ Survival, Boss Time Attack, or boss encounters. One word cannot have both varian
   Revealed keys gain their color and facial detail over 0.225 seconds without delaying input. The readable key
   also has translucent cover. A wrong key restarts typing but keeps revealed prompts visible
   and does not reset the receding fog.
-- A hardhat on the final key marks a divebomb word, capped at three single-press keys.
+- A glowing star around the final key marks a divebomb word, capped at three single-press keys.
   Reaching one unresolved tile immediately starts the dive, with one airy whoosh and a brief
   ring burst in that key's color at the launch point. There is no wind-up or near-line slowdown.
   Kids Mode slows traversal; the normal final lunge/damage flow follows. A wrong key preserves

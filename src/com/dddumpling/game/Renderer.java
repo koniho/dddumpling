@@ -254,11 +254,12 @@ final class Renderer extends Draw {
         float swell = (1f + 0.26f * attack + 0.08f * e.warn) * enter
                 * (1f - 0.30f * destroy);
         int fade = (int) ((90 + 165 * e.enterT) * (1f - destroy));
-        FastEnemies.clearBurst(p,e,L);
+        FastEnemies.clearBurst(p,c,e,L);
         SwampEnemies.fog(p,c,e,L,jx,jy,swell,fade,false);
 
         for (int i = 0; i < e.word.length; i++) {
             int g = e.word[i];
+            boolean starTile=FastEnemies.starTile(e,i);
             boolean head = (i == e.pos || e.linkWaiting) && destroy == 0f;
             boolean cleared = i < e.pos && !e.linkWaiting && destroy == 0f;
             float x = c.tileX(e, i, L) + jx;
@@ -273,7 +274,7 @@ final class Renderer extends Draw {
                 y += e.goneDy[i] * ease * L.h * 0.30f;
                 float r = L.enemyR * Layout.TILE_SCALE * (1f - 0.5f * t);
                 int col = Glyph.withAlpha(Glyph.COLOR[g], (int) (200 * (1f - t)));
-                p.strokePoly(Glyph.hex(x, y, r), col, r * 0.09f);
+                p.strokePoly(starTile?FastEnemies.outline(x,y,r):Glyph.hex(x, y, r), col, r * 0.09f);
                 if (c.incognito()) Kawaii.incognito(p,g,x,y,r*0.60f,col,c.incognitoMorph);
                 else Kawaii.draw(p, g, x, y, r * 0.60f, col, 1f, 0.6f);
                 continue;
@@ -338,7 +339,9 @@ final class Renderer extends Draw {
                         Glyph.withAlpha(col, (95 - k * 18) * fade / 255), cellR * 0.055f);
             }
 
-            if(e.fastSingle)FastEnemies.body(p,x,y,cellR,col,fade,cleared);
+            if(starTile && !e.fastSingle && !e.destroyed && !e.dying)
+                FastEnemies.glow(p,x,y,cellR,col,fade,.85f+.15f*(float)Math.sin(c.clock*5+e.phase));
+            if(starTile)FastEnemies.body(p,x,y,cellR,col,fade,cleared);
             else {
                 p.fillPoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, fillA * fade / 255));
                 p.strokePoly(Glyph.hex(x, y, cellR), Glyph.withAlpha(col, edgeA * fade / 255),
@@ -369,15 +372,13 @@ final class Renderer extends Draw {
                 }
             }
 
-            if(e.swampKind==SwampEnemies.DIVE && i==e.word.length-1 && !e.destroyed && !e.dying && !e.gone[i])
-                SwampEnemies.hardhat(p,x,y,cellR,fade);
             if(head)SwampEnemies.burst(p,e,cellR,fade);
             if (head && locked) {
                 // Thicker white outline plus a caret, drawn at the smoothed position so the
                 // indicator slides between letters instead of teleporting.
                 float ix = c.caretXFor(e, L) + jx;
                 float pulse = 0.6f + 0.4f * (float) Math.sin(c.clock * 7f);
-                p.strokePoly(e.fastSingle?FastEnemies.outline(ix,y,cellR):Glyph.hex(ix, y, cellR), Glyph.withAlpha(INK, (int) (215 * pulse)),
+                p.strokePoly(starTile?FastEnemies.outline(ix,y,cellR):Glyph.hex(ix, y, cellR), Glyph.withAlpha(INK, (int) (215 * pulse)),
                         cellR * 0.13f);
                 caret(p, ix, y, cellR, Glyph.withAlpha(INK, 225));
             }

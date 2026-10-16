@@ -40,6 +40,18 @@ final class FastEnemies {
         return Draw.star(x,y,r*1.22f,r*.72f,5,-(float)Math.PI*.5f);
     }
 
+    static boolean starTile(GameCore.Enemy e,int i) {
+        return e.fastSingle || (e.swampKind==SwampEnemies.DIVE && i==e.word.length-1);
+    }
+
+    static void glow(Painter p,float x,float y,float r,int color,int fade,float pulse) {
+        int light=Glyph.mix(color,0xFFFFF6C4,.62f);
+        p.fillCircle(x,y,r*1.65f,Glyph.withAlpha(color,(int)(fade*.06f*pulse)));
+        p.fillCircle(x,y,r*1.40f,Glyph.withAlpha(light,(int)(fade*.09f*pulse)));
+        p.strokePoly(outline(x,y,r),Glyph.withAlpha(color,fade/6),r*.32f);
+        p.strokePoly(outline(x,y,r),Glyph.withAlpha(light,fade/4),r*.16f);
+    }
+
     private static float pastX(GameCore c,GameCore.Enemy e,Layout L,float x,float distance) {
         if(e.sideEntry)return x+EnemyEntry.xAt(e,e.y-distance,L)-e.baseX;
         float age=distance/Math.max(1,e.speed);
@@ -52,10 +64,7 @@ final class FastEnemies {
         int light=Glyph.mix(color,0xFFFFF6C4,.62f);
         float pulse=.85f+.15f*(float)Math.sin(c.clock*5+e.phase);
         // Layered translucent shapes glow without a full-screen blur or extra particle state.
-        p.fillCircle(x,y,r*1.65f,Glyph.withAlpha(color,(int)(fade*.06f*pulse)));
-        p.fillCircle(x,y,r*1.40f,Glyph.withAlpha(light,(int)(fade*.09f*pulse)));
-        p.strokePoly(outline(x,y,r),Glyph.withAlpha(color,fade/6),r*.32f);
-        p.strokePoly(outline(x,y,r),Glyph.withAlpha(light,fade/4),r*.16f);
+        glow(p,x,y,r,color,fade,pulse);
         float length=Math.max(r*3.2f,Math.min(r*6,e.speed*.48f));
         for(int lane=-1;lane<=1;lane++) {
             float[] streak=new float[14];
@@ -84,20 +93,30 @@ final class FastEnemies {
         }
     }
 
-    static void clearBurst(Painter p,GameCore.Enemy e,Layout L) {
-        if(!e.fastSingle || !e.destroyed)return;
-        float t=e.destroyT/GameCore.DESTROY_TIME;
+    static void clearBurst(Painter p,GameCore c,GameCore.Enemy e,Layout L) {
+        if(e.fastSingle && e.destroyed)
+            starBurst(p,e.clearX,e.clearY,L.enemyR,Glyph.COLOR[e.word[0]],e.phase,e.destroyT/GameCore.DESTROY_TIME);
+        if(e.swampKind!=SwampEnemies.DIVE)return;
+        int last=e.word.length-1;
+        // NINJA/MULTI can clear the marked key before the rest of its word.
+        if(e.gone[last])
+            starBurst(p,c.tileX(e,last,L),e.y,L.enemyR,Glyph.COLOR[e.word[last]],e.phase,e.goneT[last]);
+        else if(e.destroyed)
+            starBurst(p,e.clearX+(last*.5f)*L.enemyStep,e.clearY,L.enemyR,
+                    Glyph.COLOR[e.word[last]],e.phase,e.destroyT/GameCore.DESTROY_TIME);
+    }
+
+    private static void starBurst(Painter p,float x,float y,float r,int color,float phase,float t) {
         if(t<0 || t>=1)return;
-        float ease=1-(1-t)*(1-t),fade=(1-t)*(1-t),r=L.enemyR;
-        float x=e.clearX,y=e.clearY;
-        int color=Glyph.COLOR[e.word[0]],light=Glyph.mix(color,0xFFFFF4C6,.65f);
+        float ease=1-(1-t)*(1-t),fade=(1-t)*(1-t);
+        int light=Glyph.mix(color,0xFFFFF4C6,.65f);
         float flash=Math.max(0,1-t*4);
         p.fillCircle(x,y,r*(1.5f+ease*2),Glyph.withAlpha(color,(int)(80*flash)));
         p.fillPoly(Draw.star(x,y,r*(1+ease*2.7f),r*(.3f+ease*.6f),5,-1.57f),
                 Glyph.withAlpha(light,(int)(200*flash)));
         p.strokePoly(outline(x,y,r*(1+ease*2.5f)),Glyph.withAlpha(color,(int)(155*fade)),r*.16f*(1-t));
         for(int i=0;i<14;i++) {
-            float angle=e.phase+i*2.39996f;
+            float angle=phase+i*2.39996f;
             float reach=r*(.65f+ease*(2.5f+(i%3)*.7f));
             float xx=x+(float)Math.cos(angle)*reach,yy=y+(float)Math.sin(angle)*reach;
             float size=r*(.16f+(i%3)*.055f)*(1-t*.6f);
