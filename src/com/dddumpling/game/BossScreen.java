@@ -245,7 +245,7 @@ final class BossScreen extends Draw {
     private static void drawSlimeBoss(Painter p, GameCore c, Layout L, Boss b, int col, float mood,
             float fade) {
         float elapsed=Boss.SLIME_EYE_HIT-b.slimeEyeHit;
-        float hit=MushroomDeath.ease(elapsed,0f,.035f)*(1f-MushroomDeath.ease(elapsed,.10f,Boss.SLIME_EYE_HIT));
+        float hit=MushroomDeath.ease(elapsed,0f,.08f)*(1f-MushroomDeath.ease(elapsed,.16f,Boss.SLIME_EYE_HIT));
         drawSlimeSkin(p,slimePromptOutline(L,b),b.body.centreX(),b.body.centreY(),
                 b.body.radiusX(),b.body.radiusY(),b.body.radius(),col,c.clock,b.hasGlob(),fade,false,hit);
     }
@@ -320,28 +320,21 @@ final class BossScreen extends Draw {
         if(defeated)return; // The defeat pass positions its dizzy face within the splat.
 
         // The reference face: two deep green button eyes with crisp reflected light.
-        float eyeY = cy - ry * (vulnerable ? 0.07f : 0.10f), eyeDX = rx * 0.35f;
-        float eyeRX = ry * 0.225f, eyeRY = ry * (vulnerable ? 0.29f : 0.265f);
+        float worry=vulnerable?1f:hit;
+        float eyeY = cy - ry * (0.10f-0.03f*worry), eyeDX = rx * 0.35f;
+        float eyeRX = ry * 0.225f, eyeRY = ry * (0.265f+0.025f*worry);
         int ink = Glyph.withAlpha(0xFF154F19, (int) (255 * fade));
         for (int side = -1; side <= 1; side += 2) {
-            float ex = cx + side * eyeDX*(1f-hit*.06f);
-            float ey=eyeY+ry*.035f*hit;
-            float squint=eyeRY*(1f-hit*(side<0?.88f:.78f));
-            p.fillEllipse(ex, ey, eyeRX*(1f+hit*.12f), squint, ink);
-            p.fillEllipse(ex - eyeRX * 0.25f, ey - squint * 0.34f, eyeRX * 0.25f,
-                    eyeRX*.25f*(1f-hit*.85f),
+            float ex = cx + side * eyeDX;
+            p.fillEllipse(ex, eyeY, eyeRX, eyeRY, ink);
+            p.fillCircle(ex - eyeRX * 0.25f, eyeY - eyeRY * 0.34f, eyeRX * 0.25f,
                     Glyph.withAlpha(0xFFFFFFFF, (int) (245 * fade)));
-            if(hit>0f) {
-                // Inner corners lift into a soft, asymmetric "oof" wince, then relax.
-                int brow=Glyph.withAlpha(0xFF154F19,(int)(255*fade*hit));
-                p.line(ex-side*eyeRX,ey-eyeRY*.95f-ry*.07f*hit,
-                        ex+side*eyeRX,ey-eyeRY*.75f,brow,ry*.055f);
-            }
-            if (vulnerable) {
-                // Pinched, raised inner brows make the face read as worried even at phone scale.
+            if (worry>0f) {
+                // Hits ease into the same raised-inner-brow worry as the vulnerable pose.
                 float innerY = eyeY - eyeRY * 1.18f;
-                p.line(ex - side * eyeRX * 0.82f, innerY - eyeRY * 0.24f,
-                        ex + side * eyeRX * 0.70f, innerY + eyeRY * 0.05f, ink, ry * 0.050f);
+                int brow=Glyph.withAlpha(0xFF154F19,(int)(255*fade*worry));
+                p.line(ex - side * eyeRX * 0.82f, innerY - eyeRY * 0.24f*worry,
+                        ex + side * eyeRX * 0.70f, innerY + eyeRY * 0.05f*worry, brow, ry * 0.050f);
             }
         }
         if (vulnerable) {
