@@ -142,12 +142,12 @@ final class TestBoss extends Check {
             top=Math.min(top,spread[i+1]);bottom=Math.max(bottom,spread[i+1]);
         }
         check("death blob fills about sixty percent of screen width",max-min>L.w*.57f && max-min<L.w*.63f);
-        check("death blob retains about forty percent of screen height",bottom-top>L.h*.34f && bottom-top<L.h*.42f);
+        check("death blob keeps its full body while pronounced drips extend below it",bottom-top>L.h*.34f && bottom-top<L.h*.62f);
         float lower=wide.y(pose.mx,pose.my+pose.halfH);
         b.leaveT=Boss.LEAVE-2.8f;
         SlimeDeath drip=new SlimeDeath(null,b,L,1f);
         check("the lower skin drips downward before disappearing",
-                drip.y(pose.mx,pose.my+pose.halfH)>lower && drip.amount>0 && drip.amount<1);
+                drip.y(pose.mx,pose.my+pose.halfH)>lower && drip.amount==1);
         float[] emblem=BossScreen.slimeEmblemPath(pose.skin,pose.x,pose.y,BossScreen.SUPER_SHIELD,.86f);
         float[] stretched=wide.points(emblem);
         boolean attached=true;
@@ -175,8 +175,16 @@ final class TestBoss extends Check {
                 check("stretched death settles into the basic silhouette "+shape+" / "+offset,
                         expected>L.w*.2f && Math.abs(width-expected)<L.w*.06f);
             }
-            boss.leaveT=Boss.LEAVE-2.1f;
+            boss.leaveT=Boss.LEAVE-1.7f;
             check("drips finish stretching sooner "+shape,new SlimeDeath(null,boss,L,1).drip==1f);
+            boss.leaveT=Boss.LEAVE-SlimeDeath.DRAIN_END;
+            boss.slimeDeath=frame.pose;
+            SlimeDeath drained=new SlimeDeath(null,boss,L,1);
+            float[] gone=drained.points(drained.pose.skin);
+            boolean offscreen=true;
+            for(int i=1;i<gone.length;i+=2)offscreen&=gone[i]>L.h;
+            check("slime physically leaves the screen before rewards "+shape,
+                    offscreen && boss.leaveT>0f && !boss.gone());
         }
     }
 

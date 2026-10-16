@@ -3,6 +3,7 @@ package com.dddumpling.game;
 /** Spreads the actual slime skin, face and emblem into one dripping sheet of jelly. */
 final class SlimeDeath extends OpacityPainter {
     static final float SPLAT_AT=Boss.LEAVE*.38f;
+    static final float DRAIN_END=3.3f;
     static final Pose BASIC=basicPose();
     private static Pose basicPose() {
         Softbody body=new Softbody();body.reset(0,0,100f,2f);
@@ -48,37 +49,42 @@ final class SlimeDeath extends OpacityPainter {
 
     final Pose pose;
     final Layout layout;
-    final float spread,drip,time;
+    final float spread,drip,fall,time;
     SlimeDeath(Painter p,Boss b,Layout L,float alpha) {
         super(p,alpha*opacity(b.leaveProgress()*Boss.LEAVE));
         pose=b.slimeDeath==null?new Pose(b.body):b.slimeDeath;
         layout=L;time=b.leaveProgress()*Boss.LEAVE;
         float u=Math.max(0f,Math.min(1f,(time-.15f)/(SPLAT_AT-.15f)));
         spread=1f-(1f-u)*(1f-u)*(1f-u);
-        drip=MushroomDeath.ease(time,SPLAT_AT*.6f,2.1f);
+        drip=MushroomDeath.ease(time,SPLAT_AT*.6f,1.65f);
+        float drain=MushroomDeath.ease(time,1.45f,DRAIN_END);
+        fall=drain*drain*L.h*.95f;
     }
 
-    static float opacity(float time) {return 1f-MushroomDeath.ease(time,2.25f,Boss.LEAVE);}
+    static float opacity(float time) {return 1f-MushroomDeath.ease(time,DRAIN_END,Boss.LEAVE);}
 
-    float x(float x,float y) {
+    float basicX(float x,float y) {
         float u=pose.across(x,y),v=Math.max(-1f,Math.min(1f,(y-pose.my)/pose.halfH));
         float at=(v+1f)*.5f*Pose.ROWS;
         int row=Math.min(Pose.ROWS-1,(int)at);float t=at-row;
         float left=BASIC.leftEdge[row]+(BASIC.leftEdge[row+1]-BASIC.leftEdge[row])*t;
         float right=BASIC.rightEdge[row]+(BASIC.rightEdge[row+1]-BASIC.rightEdge[row])*t;
-        float basicX=((left+right)*.5f+u*(right-left)*.5f-BASIC.mx)/BASIC.halfW;
-        float target=layout.w*.5f+basicX*layout.w*.30f*(1f-drip*.02f);
+        return ((left+right)*.5f+u*(right-left)*.5f-BASIC.mx)/BASIC.halfW;
+    }
+
+    float x(float x,float y) {
+        float target=layout.w*.5f+basicX(x,y)*layout.w*.30f*(1f-drip*.02f);
         return x+(target-x)*spread;
     }
 
     float y(float x,float y) {
-        float u=pose.across(x,y),v=(y-pose.my)/pose.halfH;
+        float u=basicX(x,y),v=(y-pose.my)/pose.halfH;
         float height=layout.dangerY-layout.playTop;
         float lower=Math.max(0f,Math.min(1f,(v+.1f)/1.1f));
         float finger=(float)Math.pow(.5f+.5f*Math.sin(u*10f+1f),3);
         float target=layout.playTop+height*.36f+v*layout.h*.185f
                 +layout.h*.005f*(float)Math.sin(u*9f)*lower
-                +layout.h*drip*(.006f+.032f*finger)*lower*lower+layout.h*.025f*drip*drip;
+                +layout.h*drip*(.02f+.17f*finger)*lower*lower+fall;
         return y+(target-y)*spread;
     }
 
@@ -87,11 +93,11 @@ final class SlimeDeath extends OpacityPainter {
         if(warp.amount<=.001f)return;
         Pose s=warp.pose;
         BossScreen.drawSlimeSkin(warp,s.skin,s.x,s.y,s.rx,s.ry,s.radius,
-                Glyph.mix(0xFF83E51C,0xFFB5ED62,warp.drip*.5f),c.clock,false,1f,true);
+                0xFF83E51C,c.clock,false,1f,true);
         // The face settles within the frame rather than inheriting a stretched neck's shear.
         float center=L.playTop+(L.dangerY-L.playTop)*.36f;
         BossScreen.slimeDizzyFace(p,s.x+(L.w*.5f-s.x)*warp.spread,
-                s.y+(center-s.y)*warp.spread+L.h*.025f*warp.drip*warp.drip,
+                s.y+(center-s.y)*warp.spread+warp.fall,
                 s.rx+(L.w*.30f-s.rx)*warp.spread,s.ry+(L.h*.10f-s.ry)*warp.spread,c.clock,warp.amount);
     }
 
