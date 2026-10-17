@@ -1,6 +1,41 @@
 {
   "releases": [
     {
+      "version": "0.1.29",
+      "changes": [
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "After Survival and Time Attack",
+              "why": "Larger summary text makes your stats easier to read."
+            },
+            {
+              "where": "During Octopulse battles",
+              "why": "Companion speech bubbles explain early, wrong and late taps."
+            },
+            {
+              "where": "Beside your companion",
+              "why": "Bigger props and a waving cheer rod celebrate the action."
+            }
+          ]
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "autoReset": false,
+          "fixes": [
+            {
+              "where": "During Gummy Gator parries",
+              "why": "Companion props follow your squishy through every leap and size change."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.28",
       "changes": [
         {

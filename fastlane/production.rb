@@ -1,4 +1,10 @@
 # Promote only already-uploaded, explicitly selected builds.
+def ios_production_version!(root, version)
+  project = File.read(File.join(root, "ios/project.yml"))
+  marketing = project[/^\s*MARKETING_VERSION:\s*([0-9]+\.[0-9]+\.[0-9]+)\s*$/, 1]
+  UI.user_error!("Release version must match iOS marketing version") unless marketing && version == marketing
+  version
+end
 platform :ios do
   desc 'Inspect or submit the selected uploaded build for automatic App Store release'
   lane :production do
@@ -7,7 +13,7 @@ platform :ios do
     root = File.expand_path('..', __dir__)
     manifest = REXML::Document.new(File.read(File.join(root, 'AndroidManifest.xml'))).root
     version = ENV.fetch('IOS_RELEASE_VERSION')
-    UI.user_error!('Release version must match manifest') unless version == manifest.attributes['android:versionName']
+    ios_production_version!(root, version)
     build_number = ios_build_number!
     notes = File.read(File.join(root, 'ios/store/en-US/what_to_test.txt')).strip
     play_notes = File.read(File.join(root, "app-store/google-play/en-US/changelogs/#{manifest.attributes['android:versionCode']}.txt")).strip
@@ -26,7 +32,7 @@ platform :ios do
         api_key: api_key, app_identifier: IOS_BUNDLE_ID, app_version: version,
         build_number: build_number, skip_binary_upload: true, skip_screenshots: true,
         release_notes: {'en-US' => notes}, force: true,
-        submit_for_review: true, automatic_release: true,
+        submit_for_review: true, automatic_release: true, reject_if_possible: true,
         precheck_include_in_app_purchases: false
       )
       saved = app.get_app_store_versions(filter: {platform: 'IOS', versionString: version}).first

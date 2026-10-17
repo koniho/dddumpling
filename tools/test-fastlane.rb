@@ -72,4 +72,12 @@ Dir.mktmpdir do |root|
   ENV["GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"] = '{}'
   rejects("service-account JSON key") { play_upload_options(root) }
 end
+Dir.mktmpdir do |root|
+  FileUtils.mkdir_p("#{root}/ios")
+  File.write("#{root}/ios/project.yml", "        MARKETING_VERSION: 0.1.27\n")
+  assert(ios_production_version!(root, "0.1.27") == "0.1.27", "retained iOS version is accepted independently of Android")
+  rejects("iOS marketing version") { ios_production_version!(root, "0.1.29") }
+  File.write("#{root}/ios/project.yml", "missing version\n")
+  rejects("iOS marketing version") { ios_production_version!(root, "0.1.27") }
+end
 puts "Fastlane configuration checks passed"
