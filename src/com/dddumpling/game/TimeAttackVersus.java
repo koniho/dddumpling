@@ -102,6 +102,7 @@ final class TimeAttackVersus extends Draw {
             float length=w*(.05f+.10f*sweep);
             p.line(x-side*length,y,x,y-h*.018f,fadeBy(color,.22f),w*(.003f+(i%3)*.002f));
         }
+        shimmer(p,shape,w,h,right,color);
         float entry=arrival(time,right?.18f:0),x=w*(right?.75f:.25f)+side*w*.8f*(1-entry);
         float bounce=entry>1?(entry-1)*w*.16f:0;
         float beat=Math.max(0,time-CLASH),hop=time>=CLASH?w*.02f*(float)Math.sin(beat*11)* (float)Math.exp(-beat*2):0;
@@ -117,6 +118,40 @@ final class TimeAttackVersus extends Draw {
         } else Trinket.drawReacting(p,who,x,y,r,time*2,1,mood,.7f);
         name(p,right?Boss.NAMES[boss]:Collect.NAME[who],x,h*.61f,w,color);
         p.restore();
+    }
+
+    private void shimmer(Painter p,float[] panel,float w,float h,boolean right,int color) {
+        float phase=(time-(right?.28f:.10f))/.78f;
+        if(phase<=0 || phase>=1)return;
+        float slope=.38f,half=w*.16f;
+        float first=right?w*.47f:0,last=(right?w:w*.53f)+slope*h;
+        float center=first-half+(last-first+half*2)*phase;
+        float glow=(float)Math.sin(phase*Math.PI);
+        // Nested translucent bands make a soft glint with a narrow bright leading edge.
+        for(int layer=0;layer<4;layer++) {
+            float width=half*(1-layer*.24f),offset=layer==3?half*.24f:0;
+            float[] band=shimmerClip(panel,slope,center+offset-width,false);
+            band=shimmerClip(band,slope,center+offset+width,true);
+            if(band.length>=6)p.fillPoly(band,fadeBy(Glyph.mix(color,INK,.85f),glow*(layer==3?.22f:.10f)));
+        }
+    }
+
+    /** Intersect the glint with the slanted panel without requiring a native path clip. */
+    private static float[] shimmerClip(float[] points,float slope,float edge,boolean below) {
+        if(points.length==0)return points;
+        float[] out=new float[points.length+4];int count=0;
+        float px=points[points.length-2],py=points[points.length-1],pd=px+slope*py-edge;
+        for(int i=0;i<points.length;i+=2) {
+            float x=points[i],y=points[i+1],d=x+slope*y-edge;
+            boolean inside=below?d<=0:d>=0,previous=below?pd<=0:pd>=0;
+            if(inside!=previous) {
+                float mix=pd/(pd-d);
+                out[count++]=px+(x-px)*mix;out[count++]=py+(y-py)*mix;
+            }
+            if(inside) {out[count++]=x;out[count++]=y;}
+            px=x;py=y;pd=d;
+        }
+        return java.util.Arrays.copyOf(out,count);
     }
 
     private static void name(Painter p,String label,float x,float y,float w,int color) {
