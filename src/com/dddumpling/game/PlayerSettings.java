@@ -154,7 +154,7 @@ final class PlayerSettings extends Draw {
             float y=row(L,i),v=i==0?a.music:a.effects;
             boolean muted=i==0?a.musicMuted:a.effectsMuted;
             p.text(i==0?"MUSIC":"SOUND EFFECTS",trackL(L),y+s*.25f,type(s*.57f),INK,Painter.LEFT,true);
-            p.fillRect(r-s*5f,y-s*.8f,r-s,y+s*.8f,muted?0x55444066:0x554DCEAA);
+            p.fillRect(r-s*5f,y-s*.8f,r-s,y+s*.8f,muted?0xBBDF4054:0x554DCEAA);
             p.text(muted?"MUTED":"ON",r-s*3f,y+s*.25f,type(s*.48f),INK,Painter.CENTER,true);
             float sy=y+s*3f,x=trackL(L)+(trackR(L)-trackL(L))*v;
             p.fillRect(trackL(L),sy-s*.12f,trackR(L),sy+s*.12f,0x55FFFFFF);

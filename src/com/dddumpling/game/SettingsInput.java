@@ -69,9 +69,11 @@ final class SettingsInput {
         if(pressed==1000+PlayerSettings.MUSIC) {
             if(c.preferences.music==v) return;
             c.preferences.music=v;
+            c.preferences.musicMuted=false;
         } else {
             if(c.preferences.effects==v) return;
             c.preferences.effects=v;
+            c.preferences.effectsMuted=false;
         }
         c.preferences.save(c);
         if(pressed==1000+PlayerSettings.EFFECTS && !c.preferences.effectsMuted && v>0f && c.sound!=null)

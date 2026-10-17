@@ -490,12 +490,32 @@ final class TestSettings extends Check {
         check("drag previews the new gain",sample.squishes==2 && sample.squishVolume==.75f);
         slider.touch(preview,L,2,1,left,effectY);
         check("zero effects volume stays silent",sample.squishes==2 && sample.effectsVolume==0f);
-        preview.preferences.effectsMuted=true;
+        preview.preferences.musicMuted=preview.preferences.effectsMuted=true;
+        preview.preferences.save(preview);
+        slider.touch(preview,L,2,1,left,effectY);
+        check("unchanged slider leaves mute enabled",preview.preferences.effectsMuted && sample.squishes==2);
         slider.touch(preview,L,2,1,left+span*.5f,effectY);
-        check("muted effects retain level without preview",sample.squishes==2 && preview.preferences.effects==.5f && sample.effectsVolume==0f);
+        check("effects adjustment unmutes and previews at new volume",!preview.preferences.effectsMuted
+                && preview.preferences.effects==.5f && sample.effectsVolume==.5f && sample.squishes==3
+                && sample.squishVolume==.5f);
+        check("effects adjustment preserves music mute",preview.preferences.musicMuted && sample.musicVolume==0f);
+        GameCore restored=new GameCore(preview.store,207L);
+        check("effects adjustment persists volume and mute",!restored.preferences.effectsMuted
+                && restored.preferences.effects==.5f && restored.preferences.musicMuted);
+        preview.preferences.effectsMuted=true;preview.preferences.save(preview);
         slider.cancel();
-        slider.touch(preview,L,0,1,left+span*.5f,PlayerSettings.row(L,0)+PlayerSettings.unit(L)*3f);
-        check("music slider does not preview effects",sample.squishes==2);
+        float musicY=PlayerSettings.row(L,0)+PlayerSettings.unit(L)*3f;
+        slider.touch(preview,L,0,1,left+span*.5f,musicY);
+        check("music adjustment unmutes only music without effects preview",!preview.preferences.musicMuted
+                && sample.musicVolume==.5f && preview.preferences.effectsMuted && sample.effectsVolume==0f
+                && sample.squishes==3);
+        restored=new GameCore(preview.store,208L);
+        check("music adjustment persists volume and mute",!restored.preferences.musicMuted
+                && restored.preferences.music==.5f && restored.preferences.effectsMuted);
+        preview.preferences.musicMuted=true;preview.preferences.save(preview);
+        slider.touch(preview,L,2,1,left,musicY);
+        check("setting muted music to zero unmutes but stays silent",!preview.preferences.musicMuted
+                && preview.preferences.music==0f && sample.musicVolume==0f);
         group("kids bounded play");
         float normalStages=0,kidsStages=0;int kidsSurvived=0;
         for(int seed=0;seed<4;seed++) for(int mode=0;mode<2;mode++) {
