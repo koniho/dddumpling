@@ -72,8 +72,13 @@ final class TimeAttackVersus extends Draw {
                     p.fillPoly(star(w*.5f+(float)Math.cos(a)*dist,cy+(float)Math.sin(a)*dist,
                             w*.018f*pop,w*.007f*pop,4,a+time),fadeBy(i%2==0?GOLD:INK,fade*pop));
                 }
-                TitleBubbleFont.draw(p,'V',w*.5f-size*.48f,cy,size,GOLD,fade,time,1);
-                TitleBubbleFont.draw(p,'S',w*.5f+size*.48f,cy,size,INK,fade,time+.3f,1);
+                for(int letter=0;letter<2;letter++) {
+                    float phase=impact*19-letter*.9f;
+                    float jiggle=(.19f*(float)Math.exp(-impact*3.5f)+.045f)*(float)Math.sin(phase);
+                    float x=w*.5f+(letter==0?-.48f:.48f)*size+size*jiggle*.24f;
+                    TitleBubbleFont.draw(p,letter==0?'V':'S',x,cy-size*jiggle*.45f,size,GOLD,fade,
+                            time+letter*.3f,1+jiggle);
+                }
             }
             if(time>=READY) {
                 float jump=(float)Math.sin(Math.min(1,(time-READY)/.27f)*Math.PI);

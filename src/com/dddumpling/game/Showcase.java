@@ -301,7 +301,8 @@ final class Showcase extends Draw {
         // badge is the squishy going past in a box, not a button with a picture on it.
         float shufflePop=c.pickerT>Launch.PICK_TIME*.35f
                 ? .08f*(float)Math.sin((Launch.PICK_TIME-c.pickerT)*32f) : 0f;
-        Trinket.draw(p, i, cx, cy + hh * 0.10f, r * (.62f+shufflePop), c.clock, known, fade);
+        if(!(Launch.versus(c) && c.launchT>0f))
+            Trinket.draw(p, i, cx, cy + hh * 0.10f, r * (.62f+shufflePop), c.clock, known, fade);
         // A tier-tinted glow behind the glass, so a chase entry still catches the eye closed.
         if (known) {
             p.strokePoly(new float[] {cx - hw, cy - hh, cx + hw, cy - hh, cx + hw, cy + hh,

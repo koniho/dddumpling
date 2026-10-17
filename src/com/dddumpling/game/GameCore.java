@@ -1887,10 +1887,10 @@ final class GameCore {
         // that has already gone.
         boolean selected = Collect.has(collected, caseIndex);
         pendingRunWho = resolveRunWho();
-        pickerT = selected ? 0f : Launch.PICK_TIME;
+        pickerT = selected || Launch.versus(this) ? 0f : Launch.PICK_TIME;
         launchWho = -1;
         launchT = 0f;
-        if (selected) beginLaunch();
+        if (pickerT==0f) beginLaunch();
         launchClock = clock;
         launchPips = 0;
         closeCase();
@@ -1908,7 +1908,7 @@ final class GameCore {
         launchFromStarter = false;
         launchNameAnnounced = false;
         launchWho = pendingRunWho;
-        launchT = Launch.TIME;
+        launchT = Launch.duration(this);
         launchPips = 0;
     }
 
@@ -2924,15 +2924,15 @@ final class GameCore {
                 if (launchT > 0f) {
                     launchT = Math.max(0f, launchT - elapsed);
                     float u = Launch.progress(this);
-                    if (!launchNameAnnounced && Launch.TIME-launchT >= Launch.NAME_START) {
+                    if (!Launch.versus(this) && !launchNameAnnounced && Launch.TIME-launchT >= Launch.NAME_START) {
                         launchNameAnnounced = true;
                         if (sound != null) sound.announceSquishy(launchWho);
                     }
                     // The greeting landing and arrival home each get one soft punctuation.
-                    if (launchPips == 0 && u >= Launch.LAND) {
+                    if (!Launch.versus(this) && launchPips == 0 && u >= Launch.LAND) {
                         launchPips = 1;
                         bounceTick();
-                    } else if (launchPips == 1 && u >= Launch.HOME) {
+                    } else if (!Launch.versus(this) && launchPips == 1 && u >= Launch.HOME) {
                         launchPips = 2;
                         bounceTick();
                     }

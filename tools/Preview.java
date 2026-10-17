@@ -423,6 +423,11 @@ final class Preview {
     }
     private static void versusFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("196-versus-"))return;
+        for(float fraction:new float[]{0f,.35f,.7f,.95f}) {
+            GameCore c=TestTimeAttack.start(Boss.SLIME);c.toTitle();c.returnFade=0;c.beginStart();
+            step(c,L,GameCore.START_FADE*fraction);
+            shot(dir,"196-versus-depart-"+Math.round(fraction*100),c,L,w,h,ss);
+        }
         for(int boss=0;boss<Boss.COUNT;boss++) {
             GameCore c=TestTimeAttack.start(boss);
             c.runWho=Collect.COUNT-2;c.companion.begin(c.runWho);c.timeAttack.versus.begin(c,boss);

@@ -497,6 +497,8 @@ Normal player keys start the selected encounter. The shared display case remains
 
 Before each Time Attack encounter, a short **versus intro** announces the run's selected
 squishy and current boss side by side, with a voiced matchup and a pause before “versus.”
+Time Attack skips the usual squishy greeting: the squishy slides left out of the display
+case, and the versus screen introduces it. Both gold VS letters jiggle.
 Opposing color panels slide in, a VS burst and
 ready cue play, and the panels sweep out into the normal boss arrival. All Bosses announces
 each opponent separately. This sequence ignores combat input, pauses with the game or

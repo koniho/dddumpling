@@ -35,9 +35,12 @@ final class Launch extends Draw {
     /** Size it swells to, as a multiple of the size it sat at in the badge. */
     private static final float GROWN = 2.1f;
 
+    static boolean versus(GameCore c) {return c.modes.selected==ModeSelector.TIME_ATTACK;}
+    static float duration(GameCore c) {return versus(c)?GameCore.START_FADE:TIME;}
+
     /** 0..1 through the send-off. */
     static float progress(GameCore c) {
-        return 1f - c.launchT / TIME;
+        return 1f - c.launchT / duration(c);
     }
 
     /** Arrive gently and stop before the name and voice begin. */
@@ -52,6 +55,13 @@ final class Launch extends Draw {
         float x0 = c.launchFromStarter ? L.w*.5f : Showcase.iconCx(L, c.launchClock);
         float y0 = c.launchFromStarter ? L.h*.5f : Showcase.iconCy(c, L, c.launchClock);
         float r0 = c.launchFromStarter ? Starter.heroRadius(L)/GROWN : Showcase.iconR(L) * 0.62f;
+        if(versus(c)) {
+            // Keep the introduction for the face-off; leave directly from the display case.
+            float travel=ease(u),x=x0+(-r0*2-x0)*travel;
+            float y=y0-r0*.35f*(float)Math.sin(u*Math.PI);
+            Trinket.drawReacting(p,c.launchWho,x,y,r0,c.clock,1,8,-.7f);
+            return;
+        }
         float homeX=RunCompanion.x(L),homeY=RunCompanion.y(L);
 
         float across = slide(TIME-c.launchT);
