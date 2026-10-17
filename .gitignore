@@ -33,3 +33,7 @@ fastlane/.env*
 *.p8
 *.p12
 *.mobileprovision
+
+# Local files parked outside active work.
+/.local-stash/
+.DS_Store
