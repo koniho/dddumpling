@@ -298,23 +298,45 @@ final class RunCompanion extends Draw {
             float keyFace=L.keyR*.60f*scale;
             Kawaii.cryTears(p,x,y,r*.36f,keyFace*1.10f,keyFace/1.10f,a.clock*4.8f,1f);
         }
-        if(a.reaction==BOSS_HIT) {
-            float poleX=x+w*.60f,poleTop=y-h*(.94f+.18f*beat),poleBottom=y+h*.30f;
-            p.line(poleX,poleBottom,poleX,poleTop,Glyph.mix(INK,GOLD,.45f),r*.075f);
-            float wave=r*.13f*(float)Math.sin(a.clock*18f);
-            p.fillPoly(new float[]{poleX,poleTop,poleX+r*.64f,poleTop+r*.18f+wave,
-                    poleX,poleTop+r*.42f},ROSE);
-            p.fillPoly(star(poleX+r*.25f,poleTop+r*.20f+wave*.45f,r*.10f,r*.045f,4,0),GOLD);
-        }
+        if(a.reaction==BOSS_HIT) foamFinger(p,x+r*.9f,y+r*.45f,r*1.2f,a.clock,beat);
         if(a.reaction==POWER || a.reaction==VICTORY) {
             for(int i=0;i<2;i++) {
-                float sx=x+(i==0?-1:1)*w*.74f,sy=y-h*.52f;
-                p.fillPoly(star(sx,sy,r*(.12f+.13f*beat),r*.06f,4,a.clock),GOLD);
+                float sx=x+(i==0?-1:1)*w*1.15f,sy=y-h*.72f;
+                p.fillPoly(star(sx,sy,r*(.36f+.39f*beat),r*.18f,4,a.clock),GOLD);
             }
         } else if(a.reaction==DANGER || a.reaction==BOSS) {
-            p.line(x+w*.65f,y-h*.65f,x+w*.65f,y-h*.25f,GOLD,r*.1f);
-            p.fillCircle(x+w*.65f,y-h*.05f,r*.07f,GOLD);
+            p.line(x+w*.85f,y-h*1.5f,x+w*.85f,y-h*.3f,GOLD,r*.3f);
+            p.fillCircle(x+w*.85f,y+h*.3f,r*.21f,GOLD);
         }
+    }
+
+    private static final float[] FOAM_FINGER=AlligatorArt.form(0,0,1,1,
+            -.33f,.12f,-.4f,-.32f,-.65f,-.55f,-.72f,-.82f,-.64f,-.98f,-.48f,-1f,
+            -.28f,-.82f,-.28f,-2.15f,-.23f,-2.32f,-.08f,-2.4f,.08f,-2.37f,.2f,-2.24f,
+            .2f,-1.18f,.35f,-1.25f,.52f,-1.18f,.58f,-1.02f,.72f,-1f,.82f,-.83f,
+            .83f,-.42f,.6f,-.05f,.5f,.12f);
+    private static void foamFinger(Painter p,float x,float y,float r,float clock,float beat) {
+        float angle=.30f*(float)Math.sin(clock*12f)+.10f*beat;
+        float[] shape=propPoints(x,y,r,angle,FOAM_FINGER);
+        int edge=Glyph.mix(ROSE,INK,.60f),shine=Glyph.mix(ROSE,0xFFFFFFFF,.55f);
+        p.fillPoly(shape,ROSE);p.strokePoly(shape,edge,r*.075f);
+        p.polyline(propPoints(x,y,r,angle,-.14f,-1.1f,-.14f,-2.14f,-.08f,-2.25f),shine,r*.10f);
+        for(int i=0;i<3;i++)p.polyline(propPoints(x,y,r,angle,.27f,-1.02f+i*.22f,
+                .48f,-1.02f+i*.22f,.58f,-.94f+i*.22f),edge,r*.045f);
+        p.polyline(propPoints(x,y,r,angle,-.48f,-.78f,-.25f,-.55f,-.1f,-.53f),edge,r*.05f);
+        // A stitched cuff and a bright number one make the oversized mitt read as a foam finger.
+        p.polyline(propPoints(x,y,r,angle,-.3f,-.12f,.51f,-.12f),shine,r*.09f);
+        p.polyline(propPoints(x,y,r,angle,.02f,-.75f,.18f,-.86f,.18f,-.34f),GOLD,r*.10f);
+        p.polyline(propPoints(x,y,r,angle,-.02f,-.32f,.38f,-.32f),GOLD,r*.10f);
+    }
+    private static float[] propPoints(float x,float y,float r,float angle,float... points) {
+        float cs=(float)Math.cos(angle),sn=(float)Math.sin(angle);
+        float[] out=new float[points.length];
+        for(int i=0;i<out.length;i+=2) {
+            out[i]=x+r*(points[i]*cs-points[i+1]*sn);
+            out[i+1]=y+r*(points[i]*sn+points[i+1]*cs);
+        }
+        return out;
     }
 
     /** Scale the existing collectible artwork without changing its body or accessories. */

@@ -94,34 +94,38 @@ final class TestAlligator extends Check {
         group("companion reaction props follow parry pose");
         GameCore c=fight(L);c.companion.begin(6);block(c,L);
         AlligatorGuard g=c.boss.alligator.guard;
-        final java.util.ArrayList<float[]> flags=new java.util.ArrayList<>();
+        final java.util.ArrayList<float[]> hands=new java.util.ArrayList<>();
         Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class[]{Painter.class},(proxy,method,args)->{
-                    if(method.getName().equals("fillPoly") && ((float[])args[0]).length==6
-                            && (Integer)args[1]==Draw.ROSE)flags.add(((float[])args[0]).clone());
+                    if(method.getName().equals("fillPoly") && ((float[])args[0]).length>6
+                            && (Integer)args[1]==Draw.ROSE)hands.add(((float[])args[0]).clone());
                     return null;
                 });
+        float[] normalized=null;
         for(float at:new float[]{0,.08f,.66f,1.5f}) {
             g.flightAge=at;c.companion.reaction=RunCompanion.BOSS_HIT;
-            flags.clear();RunCompanion.draw(p,c,L);
-            check("no flag remains at home during parry "+at,flags.isEmpty());
+            hands.clear();RunCompanion.draw(p,c,L);
+            check("no foam finger remains at home during parry "+at,hands.isEmpty());
             g.drawCompanion(p,c,L);
-            check("exactly one carried flag "+at,flags.size()==1);
-            if(flags.size()==1) {
-                float[] flag=flags.get(0);float scale=g.companionScale();
-                check("flag follows live companion position "+at,
-                        Math.abs(flag[0]-(g.companionX(L)+RunCompanion.halfWidth(L)*scale*.60f))<.01f);
-                check("flag follows live companion scale "+at,
-                        Math.abs(flag[2]-flag[0]-RunCompanion.radius(c,L)*scale*.64f)<.01f);
-                check("flag follows live companion height "+at,
-                        Math.abs(flag[1]-(g.companionY(L)-RunCompanion.halfHeight(L)*scale
-                        *(.94f+.18f*c.companion.beat())))<.01f);
+            check("exactly one carried foam finger "+at,hands.size()==1);
+            if(hands.size()==1) {
+                float[] hand=hands.get(0);float radius=RunCompanion.radius(c,L)*g.companionScale();
+                float[] pose=new float[hand.length];
+                for(int n=0;n<hand.length;n+=2) {
+                    pose[n]=(hand[n]-g.companionX(L))/radius;
+                    pose[n+1]=(hand[n+1]-g.companionY(L))/radius;
+                }
+                if(normalized==null)normalized=pose;
+                boolean follows=true;
+                for(int n=0;n<pose.length;n++)follows &= Math.abs(pose[n]-normalized[n])<.001f;
+                check("whole foam finger follows companion position and scale "+at,follows);
+
             }
         }
-        g.reset();flags.clear();RunCompanion.draw(p,c,L);
-        check("flag returns to ordinary companion rendering",flags.size()==1);
-        c.onboarding.companionTravel=1;flags.clear();RunCompanion.draw(p,c,L);
-        check("hidden companion leaves no floating props",flags.isEmpty());
+        g.reset();hands.clear();RunCompanion.draw(p,c,L);
+        check("foam finger returns to ordinary companion rendering",hands.size()==1);
+        c.onboarding.companionTravel=1;hands.clear();RunCompanion.draw(p,c,L);
+        check("hidden companion leaves no floating props",hands.isEmpty());
     }
 
     static void parryCompanion(Layout L) {
