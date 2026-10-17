@@ -14,9 +14,9 @@ source = Path(sys.argv[1])
 expected = '208290c9f76b0499698433c71774cac6e6411ea59cae76983a69b8b86cc48847'
 if hashlib.sha256(source.read_bytes()).hexdigest() != expected:
     raise SystemExit('Source differs from the reviewed Squish .m4a recording')
-# Audited attack boundaries: discard preparation noise, retain the wet decay.
-cuts = [(0.82,1.19),(1.48,1.84),(3.10,3.58),(4.43,5.05),(6.10,6.74),(7.98,8.91)]
-pitch_rate = round(48000 * 2 ** (4 / 12))  # Four semitones up, with a shorter tail.
+# Audited attacks; the heavy takes end before their second squeeze.
+cuts = [(0.82,1.19),(1.48,1.84),(3.10,3.58),(4.43,5.05),(6.10,6.36),(7.98,8.16)]
+pitch_rate = round(48000 * 2 ** (7 / 12))  # Seven semitones up, with a shorter tail.
 env = os.environ.copy()
 if env.get('PREFIX', '').startswith('/data/data/com.termux/'):
     env.pop('LD_LIBRARY_PATH', None)
@@ -35,14 +35,15 @@ for index, (start,end) in enumerate(cuts):
     # One common +6 dB adjustment brings the quiet recording into the game's effects mix.
     shaped = []
     # A short, rounded falling bubble adds a playful attack without a sharp click.
-    # Keep it subordinate to the recording and slightly fuller for stronger takes.
+    # One decaying attack, with a rubbery pitch wobble but no second beat.
     phase = 0.0
     for frame, sample in enumerate(pcm):
         t = frame/22050
-        frequency = 190 + (530-index*25)*math.exp(-t/.035)
+        frequency = 210 + (800-index*30)*math.exp(-t/.04)
+        frequency += 65*math.sin(2*math.pi*18*t)*math.exp(-t/.07)
         phase += 2*math.pi*frequency/22050
-        envelope = min(1,t/.002)*math.exp(-t/.035)
-        boip = (1100+index*100)*envelope*(math.sin(phase)+.12*math.sin(phase*2))
+        envelope = min(1,t/.002)*math.exp(-t/.045)*min(1,(duration-t)/.015)
+        boip = (2500+index*250)*envelope*(math.sin(phase)+.18*math.sin(phase*2))
         shaped.append(round(sample*2+boip))
     pcm = array.array('h',shaped)
     pcm[0] = pcm[-1] = 0

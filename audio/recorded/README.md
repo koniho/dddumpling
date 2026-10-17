@@ -203,17 +203,19 @@ The source and review WAVs stay local; only generated shared PCM is included in 
 Run `python3 tools/prepare-slime-squishes.py '/path/to/Squish .m4a'` to regenerate
 `SlimeSquishRecording.java` and six audition WAVs in `build/slime-squishes/`.
 Impact-aligned source cuts in recording order: 0.82–1.19, 1.48–1.84, 3.10–3.58,
-4.43–5.05, 6.10–6.74 and 7.98–8.91 seconds. These remove preparation noise,
+4.43–5.05, 6.10–6.36 and 7.98–8.16 seconds. The heavy drag-damage takes end
+before the second squeeze, so each damage event has only one beat. These remove preparation noise,
 including roughly 0.8 seconds before the heavier squishes. Trim and reset timestamps
-before processing. Raise playback pitch four semitones (48,000 → 60,476 Hz rate
+before processing. Raise playback pitch seven semitones (48,000 → 71,919 Hz rate
 reinterpretation), resample to 48 kHz, add 3 ms/20 ms edge fades, and apply the
 two-pole 4 kHz low-pass before resampling to 22,050 Hz PCM16. This also shortens
-the clips to approximately 0.29–0.74 seconds. A common 2x gain (+6 dB) preserves
+the clips to approximately 0.12–0.41 seconds (drag damage: 0.12–0.17 seconds). A common 2x gain (+6 dB) preserves
 the recordings' relative intensity.
 
-Layer a quiet synthesized falling bubble at the attack: roughly 720–595 Hz down
-toward 190 Hz, with a 35 ms exponential decay, 2 ms onset and a soft second harmonic.
-This adds a rounded cartoon “boip” while the recorded squish remains dominant.
+Layer a synthesized falling bubble at the attack: roughly 1,010–860 Hz down
+toward 210 Hz, with a decaying 18 Hz pitch wobble, 45 ms amplitude decay,
+2 ms onset, soft second harmonic and a final 15 ms fade. The stronger cartoon
+“boip” shares the same onset as the recording; there is no echo or second attack.
 Validate an audible onset within 30 ms, click-free edges and clipping headroom.
 
 Light takes 1–2 rotate at projectile impact, medium takes 3–4 at a glob-splitting

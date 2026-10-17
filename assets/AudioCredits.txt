@@ -17,5 +17,5 @@ Adapted to mono with a 4 kHz low-pass filter, edge fades and peak normalization;
 entry plays at 70% speed.
 
 Super Slime squishes: user-supplied Squish .m4a, provided for use in DDDUMPLING.
-Six impact-trimmed excerpts, mono conversion, four-semitone pitch lift, edge fades,
+Six impact-trimmed excerpts, mono conversion, seven-semitone pitch lift, edge fades,
 4 kHz low-pass, resampling, shared gain and a synthesized cartoon bubble layer.
