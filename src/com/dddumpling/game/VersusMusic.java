@@ -2,14 +2,15 @@ package com.dddumpling.game;
 
 /** Soft synth fanfare with melody and beatbox rhythm from the user's Oct 16 voice memos. */
 final class VersusMusic {
-    static final float BPM=224f, DURATION=4.3f;
+    static final float DURATION=4.3f;
     static final float ANNOUNCER_GAIN=.65f;
     private static final float MASTER_PEAK=19000f,MASTER_RMS=4600f;
-    static final float GLIDE_START=9f*60f/BPM;
-    // Eighth-note repeated-note contour, excluding the unpitched count-in and handling noise.
-    private static final int[] MELODY={71,71,69,72,72,69,71,71,69,71};
+    // Measured beatbox attacks relative to its first thump; retain the performed spacing.
+    static final float[] KICKS={0,.605f,1.200f,1.765f,2.335f,2.940f,3.495f,3.770f,4.080f};
+    static final float[] SNAPS={.435f,.875f,1.600f,2.035f,2.775f,3.215f};
+    static final float GLIDE_START=KICKS[6];
+    private static final int[][] MELODY={{71,71,69,71},{72,72,69,71},{71,71,69,71}};
     private static final int KICK=0,SNAP=1;
-    // Beatbox: accented thumps on 1/3, dry snaps on 2-and/4. Softer kicks fill 2/4.
     private static short[] cached;
     private VersusMusic() {}
 
@@ -25,28 +26,20 @@ final class VersusMusic {
     static synchronized short[] clip() {
         if(cached!=null)return cached;
         float[] mix=new float[(int)(Sfx.RATE*DURATION)];
-        float beat=60f/BPM;
-        // Two quick synth calls preserve the memo's contour at double tempo.
-        for(int call=0;call<2;call++)for(int n=0;n<(call==0?9:10);n++) {
-            float start=(call*4.5f+n*.5f)*beat;
-            boolean glide=call==1 && n==9;
-            float duration=glide?DURATION-start:beat*.49f;
-            float accent=n%3==0?1.16f:1;
-            synth(mix,start,duration,MELODY[n],(call==0?.22f:.25f)*accent,glide?52:MELODY[n]);
-            synth(mix,start,duration,MELODY[n]-12,.11f*accent,glide?40:MELODY[n]-12);
-            // A minor, C major and E major; the final E chord resolves into boss A minor.
-            int third=MELODY[n]==69?60:64,fifth=MELODY[n]==69?64:MELODY[n]==72?67:68;
-            synth(mix,start,duration,third,.10f*accent,glide?44:third);
-            synth(mix,start,duration,fifth,.09f*accent,glide?47:fifth);
+        // Each synth phrase follows the four actual attacks: thump, snap, thump, snap.
+        for(int phrase=0;phrase<3;phrase++) {
+            float[] starts={KICKS[phrase*2],SNAPS[phrase*2],KICKS[phrase*2+1],SNAPS[phrase*2+1]};
+            for(int n=0;n<4;n++) {
+                float next=n<3?starts[n+1]:KICKS[phrase*2+2];
+                chord(mix,starts[n],next-starts[n]-.018f,MELODY[phrase][n],n%2==0?1.08f:1,false);
+            }
+            // Low chords stay within their phrase, leaving the final kicks to the gliss.
+            for(int midi:phrase<2?new int[]{45,52,57,60}:new int[]{52,59,64,68})
+                synth(mix,starts[0],starts[2]-starts[0],midi,.05f,midi);
         }
-        // Warm lower chords keep the fanfare full without the trumpet edge.
-        for(int bar=0;bar<3;bar++)for(int midi:bar<2?new int[]{45,52,57,60}:new int[]{52,59,64,68})
-            synth(mix,bar*4*beat,beat*1.5f,midi,.05f,midi);
-        for(int step=0;step<32;step++) {
-            float start=step*.5f*beat;
-            if(step%2==0)drum(mix,start,KICK,step%4==0?1.65f:1.15f,step);
-            if(step%8==3 || step%8==6)drum(mix,start,SNAP,.48f,step);
-        }
+        chord(mix,GLIDE_START,DURATION-GLIDE_START,71,1,true);
+        for(int i=0;i<KICKS.length;i++)drum(mix,KICKS[i],KICK,1.65f,i);
+        for(int i=0;i<SNAPS.length;i++)drum(mix,SNAPS[i],SNAP,.48f,32+i);
         float peak=0;
         for(float value:mix)peak=Math.max(peak,Math.abs(value));
         // Lower average level leaves room for the kick transients.
@@ -68,6 +61,15 @@ final class VersusMusic {
         }
         cached[cached.length-1]=0;
         return cached;
+    }
+
+    private static void chord(float[] mix,float start,float duration,int midi,float accent,boolean glide) {
+        synth(mix,start,duration,midi,.25f*accent,glide?52:midi);
+        synth(mix,start,duration,midi-12,.11f*accent,glide?40:midi-12);
+        // A minor, C major and E major; the final E chord resolves into boss A minor.
+        int third=midi==69?60:64,fifth=midi==69?64:midi==72?67:68;
+        synth(mix,start,duration,third,.10f*accent,glide?44:third);
+        synth(mix,start,duration,fifth,.09f*accent,glide?47:fifth);
     }
 
     private static void synth(float[] mix,float start,float duration,int midi,float gain,int endMidi) {

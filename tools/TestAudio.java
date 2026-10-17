@@ -371,6 +371,13 @@ final class TestAudio extends Check {
         check("fanfare lands on E to lead into the boss A minor opening",
                 VersusMusic.finalMidi(VersusMusic.GLIDE_START)==71
                 && VersusMusic.finalMidi(VersusMusic.DURATION)==52);
+        check("beatbox arrangement has only its nine thumps and six snaps",
+                VersusMusic.KICKS.length==9 && VersusMusic.SNAPS.length==6);
+        check("gliss covers the three final kick-only beats",
+                VersusMusic.GLIDE_START==VersusMusic.KICKS[6]
+                && VersusMusic.SNAPS[5]+.1f<VersusMusic.GLIDE_START
+                && VersusMusic.KICKS[8]<VersusMusic.DURATION
+                && VersusMusic.finalMidi(VersusMusic.SNAPS[5])==71);
         GameCore c=TestTimeAttack.start(Boss.SLIME);c.toTitle();Ear ear=new Ear();c.sound=ear;c.startGame();
         check("time attack starts with its own fanfare",ear.versusMusicCalls==1 && !ear.bossMusic);
         for(float t=0;t<TimeAttackVersus.DURATION-.1f;t+=DT)c.update(DT,L);
