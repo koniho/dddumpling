@@ -11,11 +11,18 @@ candidate was 218 BPM / 109 half time (filtered: 210 / 105); the percussive
 lead-in and handling noise are not pitched melody. The stable phrase starts
 around 2.17 seconds, repeats F-sharp and G with dips to E, and ends in a long
 fall. The arrangement preserves that contour, straightened to eighth notes at
-112 BPM to fit the 4.3-second versus screen. Lower brass supports E minor;
-kick/snare alternate quarter notes with eighth-note closed hats.
+224 BPM (double the initial arrangement), with two quick statements filling the
+same 4.3-second versus screen. The trumpet lead is an octave higher, with crisp
+attacks, octave doubling and short E-minor brass-section stabs.
+
+A heavy kick lands on every quarter note throughout four bars. Separate goblet-drum
+voices play Saidi `D T - D D - T -` on eighth notes, with the distinctive middle
+pair of dum strokes. There are no hi-hats or cymbals. Rhythm reference:
+[MaqamWorld: Saidi](https://www.maqamworld.com/en/iqaa/saidi.php) and
+[Saidi notation](https://rythm.organology.net/rhythms/saidi).
 
 `VersusMusic.clip()` synthesizes the actual playback PCM. The final note begins
-on beat 4.5 and continuously slides down two octaves through the end, with a
+on beat 9 and continuously slides down two octaves through the end, with a
 45 ms edge fade. This is a one-shot cue, not a loop. Both native backends use
 the music slider, narration ducking, and the existing lifecycle controls; boss
 music resumes after the versus screen. Rendering is deterministic and cached.

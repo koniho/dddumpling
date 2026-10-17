@@ -366,7 +366,7 @@ final class TestAudio extends Check {
             float pitch=VersusMusic.finalMidi(t);descending &= pitch<previous;previous=pitch;
         }
         check("last trumpet note keeps descending audibly to the end",descending
-                && previous<45 && Math.sqrt(tail/(Sfx.RATE/5))>250);
+                && previous<57 && Math.sqrt(tail/(Sfx.RATE/5))>250);
         GameCore c=TestTimeAttack.start(Boss.SLIME);c.toTitle();Ear ear=new Ear();c.sound=ear;c.startGame();
         check("time attack starts with its own fanfare",ear.versusMusicCalls==1 && !ear.bossMusic);
         for(float t=0;t<TimeAttackVersus.DURATION-.1f;t+=DT)c.update(DT,L);
