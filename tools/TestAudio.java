@@ -360,13 +360,13 @@ final class TestAudio extends Check {
         check("versus fanfare is cached and fits the complete face-off",pcm==VersusMusic.clip()
                 && Math.abs(pcm.length/(float)Sfx.RATE-TimeAttackVersus.DURATION)<.001f);
         check("versus fanfare has headroom and clean endpoints",peak<=19000 && peak>15000
-                && pcm[0]==0 && pcm[pcm.length-1]==0 && Math.sqrt(energy/pcm.length)>6200 && Math.sqrt(energy/pcm.length)<7000);
-        check("versus brass remains present under the announcer",Math.sqrt(energy/pcm.length)*VersusMusic.ANNOUNCER_GAIN>4000);
+                && pcm[0]==0 && pcm[pcm.length-1]==0 && Math.sqrt(energy/pcm.length)>4300 && Math.sqrt(energy/pcm.length)<4800);
+        check("versus synth remains present under the announcer",Math.sqrt(energy/pcm.length)*VersusMusic.ANNOUNCER_GAIN>2700);
         boolean descending=true;float previous=VersusMusic.finalMidi(VersusMusic.GLIDE_START);
         for(float t=VersusMusic.GLIDE_START+.05f;t<VersusMusic.DURATION;t+=.05f) {
             float pitch=VersusMusic.finalMidi(t);descending &= pitch<previous;previous=pitch;
         }
-        check("last trumpet note keeps descending audibly to the end",descending
+        check("last synth note keeps descending audibly to the end",descending
                 && previous<57 && Math.sqrt(tail/(Sfx.RATE/5))>250);
         check("fanfare lands on E to lead into the boss A minor opening",
                 VersusMusic.finalMidi(VersusMusic.GLIDE_START)==71
