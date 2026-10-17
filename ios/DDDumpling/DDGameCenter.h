@@ -15,4 +15,5 @@ typedef void (^DDGameCenterAuthentication)(UIViewController *, NSString *, NSErr
 - (instancetype)initWithPresenter:(UIViewController *)presenter
                            player:(id<DDGameCenterPlayer>)player enabled:(BOOL)enabled;
 - (void)refreshActive:(BOOL)active;
+- (void)requestSignIn;
 @end

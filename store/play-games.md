@@ -30,7 +30,13 @@ The pinned Games SDK 21.0.0 retains Android 5 / API 21 support. SDK 22 raises it
 The build merges all library manifests/resources, generates their R classes, and packages all dex
 files. It fails on unsupported native dependencies instead of silently dropping them.
 
-No real project/event IDs are available in this workspace yet. `build/play-compile-only.json` and
+Production setup (2026-10-14): linked Play Games Services to the existing Cloud project
+`dddumpling-5695b`, project number/application ID `56613446939`. This reuses the Firebase
+project's underlying Cloud project; it does not add a Firebase SDK or link Firebase to PGS.
+The PGS configuration is still draft: OAuth consent, Android credentials, Saved Games,
+event IDs, and production publication remain unfinished. Do not enable a release build yet.
+
+Real event IDs are not available in this workspace yet. `build/play-compile-only.json` and
 `build/play-sdk-compile-only.apk` are **packaging fixtures only**: do not distribute or install them.
 A successful compilation does not establish authentication or prove server-side reporting.
 

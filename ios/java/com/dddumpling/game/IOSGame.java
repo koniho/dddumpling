@@ -22,8 +22,15 @@ public final class IOSGame {
     private int settingsPointer=-1;
     public void setHost(Host host) { this.host = host; }
     public void externalFinished() { core.preferences.externalFinished(core); }
+    public void cloudStatus(int status) { core.cloudUi.status(status); }
+    public void cloudReduceMotion(boolean value) { core.cloudUi.reduceMotion=value; }
+    public int takeCloudAction() { return core.cloudUi.takeAction(); }
+    public boolean cloudOpen() { return core.cloudUi.open; }
+    public String cloudSummary() { return core.cloudUi.summary(); }
+    public String cloudPrimary() { return core.cloudUi.primary(); }
+    public void cloudChoose(boolean primary) { core.cloudUi.choose(core,primary?1:2); }
     public boolean handlesBack() { return Pause.handlesBack(core); }
-    public boolean showsBackButton() { return core.state != GameCore.OVER && core.returnFade <= 0f && handlesBack(); }
+    public boolean showsBackButton() { return !core.cloudUi.open && core.state != GameCore.OVER && core.returnFade <= 0f && handlesBack(); }
     public boolean paused() { return core.paused; }
     public boolean developerServicesVisible() {
         return BuildFlags.DEVELOPER && (core.state == GameCore.TITLE || core.settingsOpen || core.paused);
@@ -43,6 +50,7 @@ public final class IOSGame {
         Pause.release(core);
     }
     public boolean back() {
+        if(core.cloudUi.open) {core.cloudUi.close(core);return true;}
         if (!handlesBack()) return false;
         cancelPointers();
         boolean handled = Pause.back(core);
@@ -72,6 +80,7 @@ public final class IOSGame {
     }
     public boolean touch(IOSTouch ev) { return touch(ev,0f); }
     public boolean keyDown(int letter, boolean repeat) {
+        if(core.cloudUi.open)return true;
         if (background) return false;
         int result = keyboard.down(core, layout, letter, repeat);
         if (result > 0) tick();
@@ -81,6 +90,12 @@ public final class IOSGame {
     public void cancelKeyboard() { keyboard.clear(); }
     public boolean touch(IOSTouch ev,float inputAge) {
         if (background) return true;
+        if(core.cloudUi.open) {
+            int i=ev.getActionIndex();
+            return core.cloudUi.touch(core,layout,ev.getActionMasked(),ev.getPointerId(i),ev.getX(i),ev.getY(i));
+        }
+        int cloudIndex=ev.getActionIndex();
+        if(core.cloudUi.noticeTouch(core,layout,ev.getActionMasked(),ev.getPointerId(cloudIndex),ev.getX(cloudIndex),ev.getY(cloudIndex)))return true;
         if (ev.getActionMasked() == IOSTouch.ACTION_CANCEL) { cancelPointers(); return true; }
         if (core.paused) {
             int action = ev.getActionMasked();
@@ -742,7 +757,8 @@ public final class IOSGame {
             if (delayedHaptic <= 0f) tick();
         }
         boolean playing = core.state == GameCore.PLAY && !core.paused;
-        core.update(Math.min(elapsed, .05f), elapsed, layout);
+        if(core.cloudUi.update(core,elapsed)) {cancelPointers();core.clock+=Math.min(elapsed,.1f);}
+        else core.update(Math.min(elapsed, .05f), elapsed, layout);
         if (!KeyboardInput.available(core)) keyboard.clear();
         int external=core.preferences.takeExternal(core);
         if(external!=0) {
@@ -763,7 +779,7 @@ public final class IOSGame {
     }
 
     public void draw(Painter painter) {
-        if (layout.w > 0) Renderer.draw(painter, core, layout);
+        if (layout.w > 0) {Renderer.draw(painter, core, layout);core.cloudUi.draw(painter,core,layout);}
     }
 
     /** Simulator scenes use the same setup methods as the developer panel. */

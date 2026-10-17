@@ -1,0 +1,78 @@
+{
+  "status": "published",
+  "youtube_targets": [
+    {
+      "account": "koniho@gmail.com",
+      "channel": "@theorifice"
+    },
+    {
+      "account": "dddumpling.play@gmail.com",
+      "channel": "@dddumplingplay"
+    }
+  ],
+  "tiktok_target": "@dddumpling.play",
+  "visibility": "public",
+  "youtube_audience": "not made for kids (existing user-confirmed channel convention)",
+  "tiktok_disclosure": "Your brand",
+  "description_suffix": "\n\nDDDumpling on Android: https://play.google.com/store/apps/details?id=com.dddumpling.game\niPhone: https://apps.apple.com/us/app/dddumpling-tap-and-swipe-game/id6811478003\n\nCaptured with the game renderer and scripted inputs, using game music and sound effects.\n\n#DDDumpling #Shorts #IndieGame #MobileGaming",
+  "videos": [
+    {
+      "file": "build/steamer-clips/steamer-success-1.mp4",
+      "title": "Pear Drop pops out of the steamer #DDDumpling #Shorts",
+      "description": "A steamer win adds Pear Drop to the squishy collection.",
+      "tiktok_caption": "Pear Drop pops out of the steamer 🥟 A new squishy for the collection. Game-renderer capture with scripted inputs and game audio. #DDDumpling #Squishy #IndieGame #MobileGaming",
+      "youtube_dddumpling": {
+        "id": "Bu6_1dYNKhY",
+        "visibility": "public",
+        "publication_confirmed": true
+      },
+      "youtube_theorifice": {
+        "id": "DVYT_LTrQ9g",
+        "status": "published_public"
+      },
+      "tiktok": {
+        "url": "https://www.tiktok.com/@dddumpling.play/video/7696904653509758238",
+        "verified_visibility": "Everyone"
+      }
+    },
+    {
+      "file": "build/steamer-clips/steamer-success-2.mp4",
+      "title": "Nice Cube joins the squishy collection #DDDumpling #Shorts",
+      "description": "Tap through the steamer minigame, lift the lid, and meet Nice Cube.",
+      "tiktok_caption": "Nice Cube was waiting under the lid 🧊 A steamer win in DDDumpling. Game-renderer capture with scripted inputs and game audio. #DDDumpling #Squishy #IndieGame #MobileGaming",
+      "youtube_dddumpling": {
+        "id": "3MbFiN5EzNc",
+        "visibility": "public",
+        "publication_confirmed": true
+      },
+      "youtube_theorifice": {
+        "id": "yWUP7OUOsEM",
+        "status": "published_public"
+      },
+      "tiktok": {
+        "url": "https://www.tiktok.com/@dddumpling.play/video/7696905347386166558",
+        "verified_visibility": "Everyone"
+      }
+    },
+    {
+      "file": "build/steamer-clips/steamer-success-3.mp4",
+      "title": "Cream Bao is fresh from the steamer #DDDumpling #Shorts",
+      "description": "Cream Bao joins the collection after a successful steamer minigame.",
+      "tiktok_caption": "Fresh from the steamer: Cream Bao 🥟 Another squishy joins the collection. Game-renderer capture with scripted inputs and game audio. #DDDumpling #Squishy #IndieGame #MobileGaming",
+      "youtube_dddumpling": {
+        "id": "BARqBUA5A3U",
+        "visibility": "public",
+        "publication_confirmed": true
+      },
+      "youtube_theorifice": {
+        "id": "lpZi7i5TrRE",
+        "status": "published_public"
+      },
+      "tiktok": {
+        "url": "https://www.tiktok.com/@dddumpling.play/video/7696905886073113886",
+        "verified_visibility": "Everyone"
+      }
+    }
+  ],
+  "verified_at": "2026-10-15"
+}

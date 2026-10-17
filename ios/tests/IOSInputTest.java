@@ -16,6 +16,25 @@ public final class IOSInputTest extends Check {
         game.layout(393, 852, 0, 59, 0, 34);
         return game;
     }
+    private static void cloudSaveUi() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        game.cloudStatus(CloudSaveUi.DRIVE);c.cloudUi.collected(Collect.STAR_FIRST);
+        c.state=GameCore.BONUS;game.update(DT);
+        check("cloud introduction waits for reward",!c.cloudUi.open);
+        c.state=GameCore.TITLE;game.update(DT);
+        check("cloud introduction appears at safe title",c.cloudUi.open);
+        for(int i=0;i<30;i++)game.update(DT);
+        float time=c.time;
+        game.keyDown(0,false);game.update(.05f);
+        check("cloud modal freezes gameplay and consumes keys",c.time==time && c.cloudUi.open);
+        float x=l.w*.5f,y=CloudSaveUi.top(l)+CloudSaveUi.unit(l)*23.5f;
+        tap(game,x,y);
+        check("cloud setup requests native action once",game.takeCloudAction()==1 && game.takeCloudAction()==0);
+        check("cloud setup opens guidance and remembers intro",c.cloudUi.open && !c.cloudUi.introduction && c.cloudUi.seen);
+        check("back dismisses cloud panel",game.back() && !c.cloudUi.open);
+        game.cloudStatus(CloudSaveUi.OFF);
+        check("disabled service hides cloud settings",!c.cloudUi.enabled);
+    }
 
     private static IOSTouch one(int action, int id, float x, float y) {
         return new IOSTouch(action, 0, new int[] {id}, new float[] {x}, new float[] {y});
@@ -997,6 +1016,7 @@ public final class IOSInputTest extends Check {
     }
 
     public static void main(String[] args) {
+        cloudSaveUi();
         alligatorSwipes();
         keyboardInput();
         bossSummaryScroll();

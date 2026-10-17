@@ -90,6 +90,7 @@ src/com/dddumpling/game/GatorTauntRecording.java
 src/com/dddumpling/game/DivideDeath.java
 src/com/dddumpling/game/SettingsArt.java
 src/com/dddumpling/game/PlayerSettings.java
+src/com/dddumpling/game/CloudSaveUi.java
 src/com/dddumpling/game/DevSettings.java
 src/com/dddumpling/game/SettingsInput.java
 src/com/dddumpling/game/ProgressData.java

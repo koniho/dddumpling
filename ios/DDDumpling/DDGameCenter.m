@@ -24,7 +24,7 @@
 @property(nonatomic, readwrite) NSString *status;
 @property(nonatomic, readwrite) NSString *lastError;
 @property(nonatomic, readwrite) NSString *playerID;
-@property(nonatomic) BOOL enabled, started, active, presenting;
+@property(nonatomic) BOOL enabled, started, active, presenting, promptRequested;
 @end
 
 @implementation DDGameCenter
@@ -55,6 +55,7 @@
     if (self.presented && !self.presenting && !self.presented.presentingViewController
             && !self.presented.isBeingDismissed) {
         self.presented = nil;
+        self.promptRequested = NO;
         if (self.presentationChanged) self.presentationChanged(NO);
     }
     if (!active) return;
@@ -78,9 +79,14 @@
     }
     [self presentIfReady];
 }
+- (void)requestSignIn {
+    self.promptRequested = YES;
+    if (!self.playerID.length && !self.presented && !self.pending) self.started = NO;
+    [self refreshActive:YES];
+}
 - (void)presentIfReady {
     UIViewController *host = self.presenter;
-    if (!self.active || !self.pending || self.presented || !host.view.window
+    if (!self.promptRequested || !self.active || !self.pending || self.presented || !host.view.window
             || host.presentedViewController || host.isBeingDismissed || host.isBeingPresented) return;
     self.presented = self.pending;
     self.pending = nil;

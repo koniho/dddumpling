@@ -40,3 +40,19 @@ MP4 or inspect several consecutive frames for key mechanics.
 
 This directory is not part of automatic website publishing. Publishing or uploading
 the video is a separate action from rendering it.
+
+## Steamer success clips
+
+`tools/SteamerClips.java` captures three staged successful rounds with different seeds,
+using normal alternating-key and lid-swipe inputs. Each portrait clip ends on the
+collection celebration. Sources, WAVs, and final H.264/AAC clips stay in ignored
+`build/steamer-clips/`; they are not automatically published. The renderer uses the
+harness font, and audio reuses the trailer's game sound effects and generated music.
+
+After refreshing `build/harness` with the relevant checks:
+
+```sh
+mkdir -p build/steamer-clips/classes
+javac -cp build/harness -d build/steamer-clips/classes tools/Trailer.java tools/SteamerClips.java
+java -Xmx512m -cp build/steamer-clips/classes:build/harness com.dddumpling.game.SteamerClips
+```

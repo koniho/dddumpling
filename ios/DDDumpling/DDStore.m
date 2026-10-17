@@ -269,6 +269,8 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 }
 
 - (jint)loadPlayerSettings { return [self intForKey:@"playerSettings" defaultValue:(100 | (100 << 7))]; }
+- (jboolean)loadCloudIntro { return [self intForKey:@"cloudIntro" defaultValue:0] != 0; }
+- (void)saveCloudIntroWithBoolean:(jboolean)seen { [self setValue:@(seen) forKey:@"cloudIntro"]; }
 - (void)savePlayerSettingsWithInt:(jint)value { [self setValue:@(value) forKey:@"playerSettings"]; }
 
 - (jlong)loadCollected {

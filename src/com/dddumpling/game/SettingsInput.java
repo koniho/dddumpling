@@ -88,6 +88,7 @@ final class SettingsInput {
                 case ScoreReset.CONFIRM:
                 case ScoreReset.CANCEL: c.preferences.scoreReset.action(c,h-1000);break;
                 case PlayerSettings.CLOSE: PlayerSettings.close(c);break;
+                case PlayerSettings.CLOUD: c.cloudUi.show(false);break;
                 case PlayerSettings.PLAYER: c.settingsPage=0;c.clearArmed=false;break;
                 case PlayerSettings.DEVELOPER: if(BuildFlags.DEVELOPER) { c.settingsPage=1;c.clearArmed=false; } break;
                 case PlayerSettings.MUSIC_MUTE:

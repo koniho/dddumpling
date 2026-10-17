@@ -377,6 +377,7 @@ final class TestSettings extends Check {
 
     static void all(Layout L) {
         developerBossCompletion(L);
+        TestCloudSaveUi.all(L);
         developerReset(L);
         scoreReset(L);
         panelTiming(L);

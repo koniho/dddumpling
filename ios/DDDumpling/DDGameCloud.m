@@ -53,6 +53,20 @@
     return @"Disabled";
 #endif
 }
+- (NSInteger)uiStatus {
+#if DDDUMPLING_GAME_CENTER
+    // CloudSaveUi states; a GameKit save callback does not prove server upload.
+    if ([self.center.status isEqualToString:@"Disabled"]) return 0;
+    if (!self.center.playerID.length) return 1;
+    if (!self.identity) return 2;
+    if (self.lastError || self.store.error) return 5;
+    if ([[self.cloud status] hasPrefix:@"Cloud save unreadable"]) return 5;
+    if (self.availability) return 6;
+    return [[self.cloud status] isEqualToString:@"Synced"] ? 4 : 3;
+#else
+    return 0;
+#endif
+}
 - (instancetype)initWithGame:(DDIOSGame *)game store:(DDIOSStore *)store center:(DDGameCenter *)center {
     if ((self = [super init])) {
 #if DDDUMPLING_GAME_CENTER

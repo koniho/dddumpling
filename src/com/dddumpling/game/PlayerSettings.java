@@ -4,7 +4,7 @@ package com.dddumpling.game;
 final class PlayerSettings extends Draw {
     static final int DEFAULT = 100 | (100 << 7);
     static final int MUSIC = 1, EFFECTS = 2, MUSIC_MUTE = 3, EFFECTS_MUTE = 4,
-            KIDS = 5, PRIVACY = 6, CLOSE = 7, PLAYER = 8, DEVELOPER = 9, SHARE = 10, RATE = 11, TUTORIALS = 15;
+            KIDS = 5, PRIVACY = 6, CLOSE = 7, PLAYER = 8, DEVELOPER = 9, SHARE = 10, RATE = 11, TUTORIALS = 15, CLOUD = 16;
     float tutorialResetUntil;
     // Future settings features own setting and clearing this attention flag.
     boolean notificationPending;
@@ -118,7 +118,7 @@ final class PlayerSettings extends Draw {
         if (Math.abs(y-socialY(L))<s*2.4f) return x<L.w*.5f?SHARE:RATE;
         if (Math.abs(y-resetY(L))<s*1.2f) return ScoreReset.OPEN;
         if (Math.abs(y-tutorialY(L))<s*1.2f) return TUTORIALS;
-        if (Math.abs(y-row(L,3))<s*1.1f) return PRIVACY;
+        if (Math.abs(y-row(L,3))<s*1.1f) return c.cloudUi.enabled && x<L.w*.5f?CLOUD:PRIVACY;
         return 0;
     }
     static float resetY(Layout L) { return top(L)+unit(L)*(BuildFlags.DEVELOPER?32f:29f); }
@@ -169,7 +169,10 @@ final class PlayerSettings extends Draw {
         p.text("RESET HIGH SCORES",L.w*.5f,resetY(L)+s*.25f,type(s*.58f),INK,Painter.CENTER,true);
         p.fillRect(l+s,tutorialY(L)-s*1.2f,r-s,tutorialY(L)+s*1.2f,0x334DCEAA);
         p.text(c.clock<a.tutorialResetUntil?"TUTORIALS RESET":"RESET TUTORIALS",L.w*.5f,tutorialY(L)+s*.25f,type(s*.58f),INK,Painter.CENTER,true);
-        p.text("PRIVACY POLICY",L.w*.5f,row(L,3)+s*.25f,type(s*.58f),GOLD,Painter.CENTER,true);
+        if(c.cloudUi.enabled) {
+            p.text("CLOUD SAVES",L.w*.28f,row(L,3)+s*.25f,type(s*.48f),GOLD,Painter.CENTER,true);
+            p.text("PRIVACY POLICY",L.w*.72f,row(L,3)+s*.25f,type(s*.48f),GOLD,Painter.CENTER,true);
+        } else p.text("PRIVACY POLICY",L.w*.5f,row(L,3)+s*.25f,type(s*.58f),GOLD,Painter.CENTER,true);
     }
     private static void social(Painter p,GameCore c,Layout L,boolean share) {
         float s=unit(L),x=L.w*(share?.28f:.72f),y=socialY(L),r=s*1.05f;

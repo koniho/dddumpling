@@ -1,0 +1,43 @@
+{
+  "status": "published",
+  "date": "2026-10-15",
+  "devlog": {
+    "url": "https://theorifice.itch.io/dddumpling/devlog/1708976/i-made-a-gummy-alligator-fight-now-i-cant-tell-how-hard-it-is",
+    "title": "I made a gummy alligator fight. Now I can't tell how hard it is."
+  },
+  "forumReplies": [
+    {
+      "board": "Devlogs",
+      "url": "https://itch.io/post/17611891",
+      "html": "<p>I've been working on a gummy alligator with a Punch-Out!! sort of rhythm. Your squishy is down in the fight now: read the attack, swipe the glowing arm or tail, then hit back while Gummy Gator is dazed.</p><p>A clean defensive sequence gives you a longer opening. I like that little reward, but I've practised the fight enough that I'm losing track of how much a new player can actually read. Knowing the next swing is coming makes a rather unfair playtester.</p><p><img src=\"https://img.itch.zone/aW1nLzMwOTE0MjczLmdpZg==/original/ExRvNZ.gif\" width=\"240\" alt=\"Gummy Gator parry sequence and counterattack opening\"></p><p>I've put together three short clips with game audio: a parry and opening, a combo and counterattack, and the finish. These are development renderer captures with scripted inputs, so the clean run doesn't tell me whether the cues are clear to a person. This is a preview of work in progress, not a new public build.</p><p><a href=\"https://theorifice.itch.io/dddumpling/devlog/1708976/i-made-a-gummy-alligator-fight-now-i-cant-tell-how-hard-it-is\">Gummy Gator devlog and clips</a></p><p>I'm tuning the handoff from defending to attacking next. I want that opening to be something you spot in the fight, without needing to stop and read instructions.</p>"
+    },
+    {
+      "board": "Get Feedback",
+      "url": "https://itch.io/post/17611895",
+      "html": "<p>I've got a more specific readability problem to test now: Gummy Gator switches between swiping away attacks and pressing keys to hit back. I'd like feedback on whether that change is visible before you know the fight.</p><p><img src=\"https://img.itch.zone/aW1nLzMwOTE0MjczLmdpZg==/original/ExRvNZ.gif\" width=\"240\" alt=\"Gummy Gator attack tells, parries and an opening to hit back\"></p><p>On your first viewing, where would you swipe, and when would you start pressing the keys? If the glow or dazed animation only makes sense after watching it twice, that's useful to know too. A timestamp or a description of the confusing moment would help me tune it.</p><p>The intended sequence is to swipe the glowing arm or tail, defend through the combo, then press any key during the opening. A clean defensive sequence earns more time to hit back.</p><p><a href=\"https://theorifice.itch.io/dddumpling/devlog/1708976/i-made-a-gummy-alligator-fight-now-i-cant-tell-how-hard-it-is\">Three short clips with audio and the development notes</a>. The GIF here is silent. These are development renderer captures with scripted inputs, not a first-time player's run. Gummy Gator is still work in progress; this post doesn't announce a new public build.</p><p>I'd especially like to hear whether you can follow the attack cues while also keeping an eye on the squishy at the bottom.</p>"
+    }
+  ],
+  "clips": [
+    {
+      "path": "build/gator-clips/01-parry-and-opening.mp4",
+      "uploadId": 19781655,
+      "seconds": 12
+    },
+    {
+      "path": "build/gator-clips/02-combo-and-counterattack.mp4",
+      "uploadId": 19781656,
+      "seconds": 12
+    },
+    {
+      "path": "build/gator-clips/03-gator-victory.mp4",
+      "uploadId": 19781657,
+      "seconds": 12.7667
+    }
+  ],
+  "capture": {
+    "source": "tools/GatorClips.java",
+    "format": "540x960, 30 fps, H.264/AAC",
+    "provenance": "Development game renderer, scripted inputs, game music and sound effects. Not phone footage or a public build release.",
+    "verification": "865 Alligator checks passed; all three clips decoded successfully; published devlog and forum bodies read back and GIFs verified loaded."
+  }
+}

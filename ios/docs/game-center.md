@@ -122,7 +122,83 @@ CI/cache contract tests passed. Both unsigned Release device archives built succ
 Binary inspection found no GameKit linkage or service symbols in the default Debug/Release
 builds; the enabled Release binary links GameKit. Resolved Release settings omit entitlements
 by default and select `GameCenter.entitlements` with the production bundle ID on opt-in.
-Two-device sync and production provisioning remain unverified; issue #63 tracks that work.
+Two-device sync and production provisioning remain unverified; issue #75 tracks that work.
+
+Production setup inspection (2026-10-14, issue #75): enabled `GAME_CENTER` and `ICLOUD`
+(`XCODE_6`) through the App Store Connect API for production bundle resource `LW49Y2G84A`
+(`com.dddumpling.game.ios`), then verified both capabilities by API and in the Developer portal.
+Created and attached `iCloud.com.dddumpling.game.ios` (DDDumpling Production Saves), without
+assigning the development container. Regenerated `match AppStore com.dddumpling.game.ios`
+using the existing distribution certificate `8F45S3FDPB`. Apple reports profile `CZAHQAA639`
+(UUID `ff1cbba2-6b20-4629-bddf-a015b6683f1a`) as `ACTIVE`.
+The encrypted profile is committed and remotely verified in the private signing repository
+at `18d32e5ed98c58f2b6b5e4bfb93ca2b912d7d980`. Its CI deploy key remains read-only.
+
+Built the signed Release archive at `ios/build/GameServicesProduction.xcarchive` from
+`0d5c81c` with `DDDUMPLING_GAME_CENTER=1`, manual Apple Distribution signing and the
+regenerated profile. `xcodebuild archive` succeeded and `codesign --verify --deep --strict`
+passed. The signed app contains `com.apple.developer.game-center = true`, `CloudDocuments`,
+and only `iCloud.com.dddumpling.game.ios` in both iCloud and ubiquity container arrays.
+Its application identifier is `QC7LYR5635.com.dddumpling.game.ios`; no development container
+is present. Evidence and build logs are local under `.private/game-services/`.
+
+App Store Connect currently has Game Center disabled for the released iOS version `0.1.17`;
+enable it for the next version when that version is prepared. No new store version, upload
+or release was created.
+
+Physical iPhone 12 validation (2026-10-14): installed a production-ID Release build with
+Game Center enabled and Apple Development signing, without uninstalling. The existing save
+was backed up and remained byte-for-byte identical immediately after installation.
+`devicectl` confirmed launch (PID 944). After launch, the save contains `cloudPlayer` and
+`cloudIdentity` bindings that were absent in the backup. The code only writes these after
+checking authenticated Game Center identity and iCloud availability, confirming account
+binding on this device. Console output did not capture the authentication callback and
+debugger inspection did not complete. Successful cloud transfer, two-device synchronization
+and the remaining physical-device failure/recovery matrix are unverified. Issue #75 remains open.
+
+Only one physical device is available. The agreed remaining sync test uses that iPhone
+and the iPhone 17 Pro Max simulator (iOS 26.5), with the same Game Center and iCloud accounts.
+Two-physical-device synchronization remains an explicit release limitation. The enabled
+production-ID Release simulator build succeeded with `ARCHS=arm64 ONLY_ACTIVE_ARCH=YES`
+to match the local J2ObjC library. Installation preserved the existing simulator data,
+which was backed up first. The app launched and rendered its title screen; Apple requested
+account verification in Settings. After verification, the runtime log confirmed
+`Game Center: Connected`. LLDB inspection of `gameCloud.status` returned
+`iCloud Drive unavailable`; the simulator save still has no cloud account bindings.
+After enabling iCloud Drive, both the simulator and physical iPhone reported `Synced`
+through runtime inspection. Their Game Center player identifiers and production container
+configuration match; the user confirmed the same iCloud account. Their authoritative progress
+records remain different after repeated foreground sync cycles. The phone retains best score
+15875/stage 7 and the simulator 19183/stage 5. The user reports that iCloud storage is full,
+which can prevent uploads and is the current suspected blocker. Cross-device transfer remains
+unverified. The current `Synced` status only reflects a successful GameKit save callback;
+it must not be presented as proof of server upload or cross-device convergence.
+
+After the user freed storage, an explicit Simulator iCloud sync still showed no convergence.
+Inspection of the saved-game package initially returned `NSURLUbiquitousItemIsUploadedKey = 0`
+and upload error `NSCocoaErrorDomain 4355` (iCloud account inaccessible). After relaunching
+the simulator app and triggering sync again, the error cleared but the package still reported
+uploading, not uploaded. The physical app was also relaunched successfully and authenticated.
+Local progress was preserved; cross-device transfer is not yet established.
+The phone's saved-game package subsequently reported uploaded (`IsUploaded = 1`,
+`IsUploading = 0`) after relaunch. The simulator was restarted without erasing its data
+and authenticated again; progress had not converged at the first post-restart check.
 
 References: [initialization/configuration](https://developer.apple.com/documentation/gamekit/initializing-and-configuring-game-center),
 [GameKit saved games](https://developer.apple.com/documentation/gamekit/saving-the-player-s-game-data-to-an-icloud-account).
+
+Player UI (2026-10-15): enabled iOS builds expose Cloud saves beside Privacy policy in
+player Settings. A newly collected squishy queues a one-time introduction featuring that
+character. It waits until the reward celebration and tutorials have finished, then uses an
+empty stage break or the title screen. Existing collections alone do not prompt at launch.
+Not now and Set up cloud saves remember the introduction locally; already available cloud
+saves suppress it. Setup retries Game Center sign-in on explicit request and explains the
+iCloud Drive settings path. Reduce Motion keeps the character and panel stationary.
+Interactive Game Center sign-in waits for an explicit setup action; authentication of an
+already signed-in player can proceed automatically without presenting a controller.
+
+Routine pending status stays in the Cloud saves panel. Reported failures or account mismatch
+can show a nonblocking title-screen notice, dismissed for the session after viewing the panel.
+The panel describes GameKit saves as pending rather than claiming verified server upload.
+System-level upload failures that GameKit does not report still require upload-state monitoring;
+the full-storage case above remains a release validation item.
