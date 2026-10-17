@@ -455,7 +455,7 @@ final class Preview {
         }
     }
     private static void timeAttackFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
-        if(!wanted("150-"))return;
+        if(!wantedGroup("150-"))return;
         GameCore c=TestTimeAttack.start(Boss.SLIME);c.toTitle();c.returnFade=0;
         for(int frame=0;frame<4;frame++) {
             c.clock=new float[]{.06f,TimeAttackTitle.BEAT*.5f,TimeAttackTitle.BEAT+.06f,TimeAttackTitle.BEAT*1.5f}[frame];
@@ -540,7 +540,7 @@ final class Preview {
     }
 
     private static void duckFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
-        if(!wanted("156-ducks-"))return;
+        if(!wantedGroup("156-ducks-"))return;
         GameCore c=TestSurvival.start(TestSurvival.store(),156);
         c.survival.seconds=300;c.lives=1;c.takeHit(L.w*.5f,L);
         c.shake=c.flash=c.skyGlow=0;
@@ -595,7 +595,7 @@ final class Preview {
     }
 
     private static void survivalFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
-        if(!wanted("149-survival-"))return;
+        if(!wantedGroup("149-survival-"))return;
         GameCore rack=TestSurvival.start(TestSurvival.store(),149);
         rack.survival.update(rack,10f);
         shot(dir,"149-survival-rack-ready",rack,L,w,h,ss);

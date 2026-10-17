@@ -255,18 +255,19 @@ final class Survival extends Draw {
         } catch(NumberFormatException ignored) {clearRecords();}
     }
     void result(Painter p,GameCore c,Layout L,float fade) {
-        float s=L.unit,cx=L.w*.5f;
-        p.text("SURVIVAL",cx,L.h*.24f,type(s*1.6f),fadeBy(YELLOW,fade),Painter.CENTER,true);
-        p.text(time(millis()),cx,L.h*.345f,type(s*2f),fadeBy(INK,fade),Painter.CENTER,true);
-        p.text("SCORE "+c.score+" / "+profileName(profile),cx,L.h*.40f,type(s*.68f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
+        float s=L.unit,cx=L.w*.5f,scale=HighScoreScreen.SUMMARY_TEXT_SCALE;
+        p.text("SURVIVAL",cx,L.h*.24f,type(s*1.6f)*scale,fadeBy(YELLOW,fade),Painter.CENTER,true);
+        p.text(time(millis()),cx,L.h*.345f,HighScoreScreen.summaryText(time(millis()),type(s*2f),L.w*.86f),fadeBy(INK,fade),Painter.CENTER,true);
+        String score="SCORE "+c.score+" / "+profileName(profile);
+        p.text(score,cx,L.h*.40f,HighScoreScreen.summaryText(score,type(s*.68f),L.w*.86f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
         if(history().latestRun!=null) {
             String blurb=history().latestRun.blurb();
-            float font=Math.min(type(s*.58f),L.w*.86f/(blurb.length()*.73f));
+            float font=HighScoreScreen.summaryText(blurb,type(s*.58f),L.w*.86f);
             p.text(blurb,cx,L.h*.45f,font,fadeBy(INK_DIM,fade),Painter.CENTER,false);
         }
-        Screens.accuracy(p,c,L,L.h*.51f,fade);
+        Screens.accuracy(p,c,L,L.h*.51f,fade,scale);
         p.text(newBest?"NEW LONGEST RUN!":"LONGEST "+time(bestTime[profile]),cx,L.h*.63f,
-                type(s*.75f),fadeBy(newBest?GOLD:INK,fade),Painter.CENTER,true);
-        p.text("BEST SCORE "+bestScore[profile],cx,L.h*.67f,type(s*.58f),fadeBy(INK_DIM,fade),Painter.CENTER,false);
+                type(s*.75f)*scale,fadeBy(newBest?GOLD:INK,fade),Painter.CENTER,true);
+        p.text("BEST SCORE "+bestScore[profile],cx,L.h*.67f,type(s*.58f)*scale,fadeBy(INK_DIM,fade),Painter.CENTER,false);
     }
 }

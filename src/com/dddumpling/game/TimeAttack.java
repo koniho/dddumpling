@@ -205,7 +205,7 @@ final class TimeAttack extends Draw {
         if(result==null)return;
         p=new OpacityPainter(p,fade);
         TimeAttackScores.summary(p,c,L,result,challenge,profile,L.h*.22f,L.h*.77f);
-        p.text(newBest?"NEW PERSONAL BEST!":"TAP TO RETURN",L.w*.5f,L.h*.80f,type(L.unit*.65f),
+        p.text(newBest?"NEW PERSONAL BEST!":"TAP TO RETURN",L.w*.5f,L.h*.80f,type(L.unit*.65f)*HighScoreScreen.SUMMARY_TEXT_SCALE,
                 newBest?GOLD:INK,Painter.CENTER,true);
     }
 }

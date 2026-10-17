@@ -8,6 +8,19 @@ final class HighScoreScreen extends Draw {
     boolean open,closing;
     float entrance,scroll;
     int selected=-1;
+    static final float SUMMARY_TEXT_SCALE=1.25f;
+    static float summaryText(String text,float font,float width) {
+        return Math.min(font*SUMMARY_TEXT_SCALE,width/(Math.max(1,text.length())*.73f));
+    }
+    static void summaryStat(Painter p,Layout L,float titleX,float valueX,float y,float font,String title,String value) {
+        boundedStat(p,L,titleX,valueX,y,font*SUMMARY_TEXT_SCALE,title,value);
+    }
+    private static void boundedStat(Painter p,Layout L,float titleX,float valueX,float y,float font,String title,String value) {
+        float labelFont=Math.min(font,(valueX-titleX-L.w*.025f)/(Math.max(1,title.length())*.73f));
+        float valueFont=Math.min(font,(L.w*.91f-valueX)/(Math.max(1,value.length())*.73f));
+        p.text(title,titleX,y,labelFont,Glyph.mix(INK_DIM,INK,.18f),Painter.LEFT,false);
+        p.text(value,valueX,y,valueFont,INK,Painter.LEFT,true);
+    }
     static float size(Layout L) { return Math.min(ReleaseNotes.size(L),(L.dangerY-L.topSafe)/27f); }
     static float top(Layout L) { return L.topSafe+size(L); }
     static float bottom(Layout L) { return L.h-L.padB-size(L); }
@@ -227,10 +240,10 @@ final class HighScoreScreen extends Draw {
             p.text(more,left,y+r*1.35f,font,INK,Painter.LEFT,true);
         }
     }
-    private static void effect(Painter p,float iconX,float titleX,float valueX,float y,float s,
+    private static void effect(Painter p,Layout L,float iconX,float titleX,float valueX,float y,float s,
             float font,float clock,int effect,int count) {
         Renderer.summaryPowerIcon(p,effect,iconX,y-s*.18f,s*.54f,clock);
-        stat(p,titleX,valueX,y,font,Power.NAMES[effect],value(count));
+        boundedStat(p,L,titleX,valueX,y,font,Power.NAMES[effect],value(count));
     }
     private static void stages(Painter p,GameCore c,Layout L,HighScores.Run run,float y,float s,
             float font) {
@@ -245,27 +258,27 @@ final class HighScoreScreen extends Draw {
     private void summary(Painter p,GameCore c,Layout L,HighScores.Run run) {
         float s=Math.min(size(L)*1.15f,(listBottom(L)-listTop(L))/30f),t=listTop(L);
         float iconX=L.w*.14f,titleX=L.w*.26f,valueX=L.w*.72f;
-        float font=type(s*.55f),y=t+s*1.45f;
+        float font=type(s*.55f)*(run.survival?SUMMARY_TEXT_SCALE:1),y=t+s*1.45f;
         p.fillRect(L.w*.065f,t-s*.25f,L.w*.935f,listBottom(L),0xE02A2542);
 
         companion(p,c,run,iconX,y-s*.20f,s*1.02f);
-        p.text(run.character>=0&&run.character<Collect.COUNT?Collect.NAME[run.character]:"COMPANION SQUISHY",
-                titleX,y,font,INK,Painter.LEFT,true);
+        String name=run.character>=0&&run.character<Collect.COUNT?Collect.NAME[run.character]:"COMPANION SQUISHY";
+        p.text(name,titleX,y,Math.min(font,L.w*.63f/(name.length()*.73f)),INK,Painter.LEFT,true);
         y+=s*2.20f;
-        p.line(titleX,y-s*.60f,L.w*.89f,y-s*.60f,0x35FFFFFF,s*.055f);
+        p.line(titleX,y-s*(run.survival?.85f:.60f),L.w*.89f,y-s*(run.survival?.85f:.60f),0x35FFFFFF,s*.055f);
 
-        stat(p,titleX,valueX,y,font,"SCORE",value(run.score)); y+=s*1.55f;
+        boundedStat(p,L,titleX,valueX,y,font,"SCORE",value(run.score)); y+=s*1.55f;
         if(run.survival) {
-            stat(p,titleX,valueX,y,font,"TIME SURVIVED",Survival.time(run.duration));y+=s*1.55f;
-            stat(p,titleX,valueX,y,font,"CONTROLS",Survival.profileName(run.profile));y+=s*1.70f;
+            boundedStat(p,L,titleX,valueX,y,font,"TIME SURVIVED",Survival.time(run.duration));y+=s*1.55f;
+            boundedStat(p,L,titleX,valueX,y,font,"CONTROLS",Survival.profileName(run.profile));y+=s*1.70f;
         } else {stages(p,c,L,run,y+s*.35f,s,font); y+=s*3.25f;}
-        p.line(titleX,y-s*.52f,L.w*.89f,y-s*.52f,0x35FFFFFF,s*.055f);
+        p.line(titleX,y-s*(run.survival?.82f:.52f),L.w*.89f,y-s*(run.survival?.82f:.52f),0x35FFFFFF,s*.055f);
 
-        stat(p,titleX,valueX,y,font,"ACCURACY",run.accuracy()+"%"); y+=s*1.42f;
-        stat(p,titleX,valueX,y,font,"SQUISHES",value(run.squishes)); y+=s*1.42f;
-        stat(p,titleX,valueX,y,font,"BEST COMBO",value(run.combo)); y+=s*1.42f;
+        boundedStat(p,L,titleX,valueX,y,font,"ACCURACY",run.accuracy()+"%"); y+=s*1.42f;
+        boundedStat(p,L,titleX,valueX,y,font,"SQUISHES",value(run.squishes)); y+=s*1.42f;
+        boundedStat(p,L,titleX,valueX,y,font,"BEST COMBO",value(run.combo)); y+=s*1.42f;
         if(!run.survival) {
-            stat(p,titleX,valueX,y,font,"STAGES COMPLETED",value(run.stages)); y+=s*1.80f;
+            boundedStat(p,L,titleX,valueX,y,font,"STAGES COMPLETED",value(run.stages)); y+=s*1.80f;
 
             p.text("BOSSES BEATEN",titleX,y,font,Glyph.mix(INK_DIM,INK,.18f),Painter.LEFT,false);
             bossCollection(p,c,run.bosses,valueX,y-s*.16f,s*.47f,font);
@@ -278,20 +291,20 @@ final class HighScoreScreen extends Draw {
             prizeCollection(p,c,run,valueX,L.w*.89f,y-s*.16f,s*.65f,font);
             y+=s*2.45f;
         }
-        p.line(titleX,y-s*.68f,L.w*.89f,y-s*.68f,0x35FFFFFF,s*.055f);
+        p.line(titleX,y-s*(run.survival?.88f:.68f),L.w*.89f,y-s*(run.survival?.88f:.68f),0x35FFFFFF,s*.055f);
 
         for(int effect:Power.OFFERED) {
-            effect(p,iconX,titleX,valueX,y,s,font,c.clock,effect,run.effects[effect]);
+            effect(p,L,iconX,titleX,valueX,y,s,font,c.clock,effect,run.effects[effect]);
             y+=s*1.62f;
         }
         if(!run.survival)for(int effect=Power.INCOGNITO;effect<=Power.MONOCHROME;effect++) {
-            effect(p,iconX,titleX,valueX,y,s,font,c.clock,effect,run.effects[effect]);
+            effect(p,L,iconX,titleX,valueX,y,s,font,c.clock,effect,run.effects[effect]);
             y+=s*1.62f;
         }
         ReleaseChange.icon(p,ReleaseChange.SWIPE,iconX,y-s*.20f,s*.57f,c.clock);
-        stat(p,titleX,valueX,y,font,"RESCUE SWIPES",value(run.swipes)); y+=s*1.62f;
+        boundedStat(p,L,titleX,valueX,y,font,"RESCUE SWIPES",value(run.swipes)); y+=s*1.62f;
         SettingsArt.kidsPear(p,iconX,y-s*.18f,s*.62f,run.kids);
-        stat(p,titleX,valueX,y,font,"KIDS MODE",run.kids?"ON":"OFF");
+        boundedStat(p,L,titleX,valueX,y,font,"KIDS MODE",run.kids?"ON":"OFF");
         if(run.survival) {
             y+=s*2.5f;
             float blurbFont=Math.min(font,L.w*.80f/(run.blurb().length()*.73f));

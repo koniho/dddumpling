@@ -177,6 +177,9 @@ final class Screens extends Draw {
 
     /** @param fade 0..1, for the summary screen fading up after a death */
     static void accuracy(Painter p, GameCore c, Layout L, float cy, float fade) {
+        accuracy(p,c,L,cy,fade,1f);
+    }
+    static void accuracy(Painter p,GameCore c,Layout L,float cy,float fade,float textScale) {
         float s = L.unit;
         float mood = c.accuracyMood();
         int pct = c.accuracyPercent();
@@ -192,12 +195,14 @@ final class Screens extends Draw {
         Kawaii.moodDumpling(p, L.w / 2f - s * 3.2f + dx, cy - bob, r, fadeBy(tint, fade), mood,
                 squash);
 
-        p.text("ACCURACY", L.w / 2f + s * 1.5f, cy - type(s * 0.75f), type(s * 0.58f),
+        p.text("ACCURACY", L.w / 2f + s * 1.5f, cy - type(s * 0.75f), type(s * 0.58f)*textScale,
                 fadeBy(INK_DIM, fade), Painter.LEFT, true);
-        p.text(pct + "%", L.w / 2f + s * 1.5f, cy + type(s * 0.95f), type(s * 1.55f), fadeBy(tint, fade),
+        p.text(pct + "%", L.w / 2f + s * 1.5f, cy + type(s * 0.95f), type(s * 1.55f)*textScale, fadeBy(tint, fade),
                 Painter.LEFT, true);
-        p.text(c.hits + " HIT   " + c.misses + " MISS", L.w / 2f + s * 1.5f, cy + type(s * 1.75f),
-                type(s * 0.5f), fadeBy(INK_DIM, fade), Painter.LEFT, false);
+        String detail=c.hits+" HIT   "+c.misses+" MISS";
+        float detailFont=type(s*.5f)*textScale;
+        if(textScale>1)detailFont=Math.min(detailFont,(L.w*.42f-s*1.5f)/(detail.length()*.73f));
+        p.text(detail,L.w/2f+s*1.5f,cy+type(s*1.75f),detailFont,fadeBy(INK_DIM,fade),Painter.LEFT,false);
     }
 
 

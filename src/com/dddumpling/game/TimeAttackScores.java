@@ -49,31 +49,31 @@ final class TimeAttackScores extends Draw {
         for(TimeAttackHistory.Encounter encounter:run.encounters)if(encounter.boss==boss)e=encounter;
         BossCollect.draw(p,boss,L.w*.16f,top+s*1.5f,s*.9f,c.clock,true,1);
         String name=Boss.NAMES[boss];
-        p.text(name,L.w*.24f,top+s*1.8f,Math.min(type(s*.8f),L.w*.62f/(name.length()*.73f)),GOLD,Painter.LEFT,true);
+        p.text(name,L.w*.24f,top+s*1.8f,HighScoreScreen.summaryText(name,type(s*.8f),L.w*.62f),GOLD,Painter.LEFT,true);
         float font=Math.min(type(s*.5f),L.w*.026f);
-        p.text(e==null?"NOT REACHED":e.cleared?"CLEARED":"ATTEMPT",L.w*.24f,top+s*3f,font,INK_DIM,Painter.LEFT,true);
+        p.text(e==null?"NOT REACHED":e.cleared?"CLEARED":"ATTEMPT",L.w*.24f,top+s*3f,font*HighScoreScreen.SUMMARY_TEXT_SCALE,INK_DIM,Painter.LEFT,true);
         String[] labels={"COMBAT TIME","ACCURACY","PROJECTILES DEFENDED","DAMAGE TAKEN","FIRST HIT ON BOSS"};
         String[] values=e==null?new String[]{"--","--","--","--","--"}:new String[]{TimeAttack.time(Math.max(1,e.duration)),
                 e.accuracy(),Integer.toString(e.defended),Integer.toString(e.damage),e.firstBossHitText()};
-        for(int i=0;i<labels.length;i++)HighScoreScreen.stat(p,L.w*.13f,L.w*.73f,top+s*(4.5f+i*1.6f),font,labels[i],values[i]);
+        for(int i=0;i<labels.length;i++)HighScoreScreen.summaryStat(p,L,L.w*.13f,L.w*.73f,top+s*(4.5f+i*1.6f),font,labels[i],values[i]);
         p.line(L.w*.12f,top+s*12f,L.w*.88f,top+s*12f,0x35FFFFFF,s*.04f);
     }
     static void summary(Painter p,GameCore c,Layout L,TimeAttackHistory.Run run,int challenge,int profile,float top,float bottom) {
         float s=(bottom-top)/18f,x=L.w*.5f,font=Math.min(type(s*.5f),L.w*.026f);
         String name=TimeAttack.name(challenge);
-        p.text(name,x,top+s*1.2f,Math.min(type(s*.85f),L.w*.8f/(name.length()*.73f)),GOLD,Painter.CENTER,true);
-        p.text(Survival.profileName(profile),x,top+s*2.3f,font,INK_DIM,Painter.CENTER,true);
+        p.text(name,x,top+s*1.2f,HighScoreScreen.summaryText(name,type(s*.85f),L.w*.8f),GOLD,Painter.CENTER,true);
+        p.text(Survival.profileName(profile),x,top+s*2.3f,font*HighScoreScreen.SUMMARY_TEXT_SCALE,INK_DIM,Painter.CENTER,true);
         if(run.character>=0)Trinket.drawReacting(p,run.character,L.w*.25f,top+s*4.5f,s*1.25f,c.clock,1,run.won?8:5,0);
         else Trinket.draw(p,0,L.w*.25f,top+s*4.5f,s*1.25f,c.clock,false,1);
         String duration=TimeAttack.time(run.duration);
-        p.text(duration,L.w*.63f,top+s*4.7f,Math.min(type(s*1.25f),L.w*.53f/(duration.length()*.73f)),INK,Painter.CENTER,true);
-        p.text(run.won?"CLEAR TIME":"ATTEMPT TIME",L.w*.63f,top+s*6f,font,INK_DIM,Painter.CENTER,true);
+        p.text(duration,L.w*.63f,top+s*4.7f,HighScoreScreen.summaryText(duration,type(s*1.25f),L.w*.53f),INK,Painter.CENTER,true);
+        p.text(run.won?"CLEAR TIME":"ATTEMPT TIME",L.w*.63f,top+s*6f,font*HighScoreScreen.SUMMARY_TEXT_SCALE,INK_DIM,Painter.CENTER,true);
         p.line(L.w*.12f,top+s*7f,L.w*.88f,top+s*7f,0x35FFFFFF,s*.04f);
         String[] labels={"ACCURACY","PROJECTILES DEFENDED","DAMAGE TAKEN","FIRST HIT ON BOSS","BOSSES CLEARED"};
         String[] values={run.accuracy(),run.legacy()?"--":Integer.toString(run.defended),run.legacy()?"--":Integer.toString(run.damage),
                 run.firstBossHitText(),run.cleared+" / "+(challenge==TimeAttack.ALL?Boss.COUNT:1)};
-        for(int i=0;i<labels.length;i++)HighScoreScreen.stat(p,L.w*.13f,L.w*.73f,top+s*(8.5f+i*1.6f),font,labels[i],values[i]);
+        for(int i=0;i<labels.length;i++)HighScoreScreen.summaryStat(p,L,L.w*.13f,L.w*.73f,top+s*(8.5f+i*1.6f),font,labels[i],values[i]);
         String note=run.legacy()?"Earlier record: detailed stats unavailable.":run.firstBossHit==-2?"Earlier record: first boss hit unavailable.":challenge==TimeAttack.ALL?(run.encounters.length==0?"Earlier record: per-boss stats unavailable.":"OVERALL RUN STATS"):"";
-        if(!note.isEmpty())p.text(note,x,top+s*17f,Math.min(font,L.w*.78f/(note.length()*.73f)),INK_DIM,Painter.CENTER,false);
+        if(!note.isEmpty())p.text(note,x,top+s*17f,HighScoreScreen.summaryText(note,font,L.w*.78f),INK_DIM,Painter.CENTER,false);
     }
 }
