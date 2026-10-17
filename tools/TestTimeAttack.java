@@ -235,7 +235,14 @@ final class TestTimeAttack extends Check {
         for(int boss=0;boss<Boss.COUNT;boss++) {
             GameCore c=start(boss),control=start(boss);
             float intro=c.boss.intro;
+            RasterPainter firstFrame=new RasterPainter((int)L.w,(int)L.h,1);
+            // Android can draw immediately after startGame, before any update has laid out the portrait.
+            c.timeAttack.versus.draw(firstFrame,c,L);
+            c.timeAttack.versus.update(c,0,L);
+            c.timeAttack.versus.draw(firstFrame,c,L);
+            check("first draw before update is safe "+boss,!c.timeAttack.versus.prepared);
             c.update(DT,L);
+            c.timeAttack.versus.draw(firstFrame,c,L);
             Boss portrait=c.timeAttack.versus.portrait;
             check("portrait has independent battle geometry "+boss,portrait!=c.boss
                     && portrait.body!=c.boss.body && portrait.kind==boss && portrait.body!=null);

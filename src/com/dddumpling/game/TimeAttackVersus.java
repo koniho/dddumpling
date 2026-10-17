@@ -131,7 +131,8 @@ final class TimeAttackVersus extends Draw {
             p.strokeCircle(x,y,r*(1.15f+ring*.12f),fadeBy(color,.2f+ring*.05f),w*.013f);
         int mood=time>=CLASH && time<CLASH+.3f?5:8;
         if(right) {
-            BossScreen.versusPortrait(p,c,L,portrait,x,y,r,time*2);
+            // Launch can enter PLAY and draw before the first versus update lays out the body.
+            if(prepared)BossScreen.versusPortrait(p,c,L,portrait,x,y,r,time*2);
         } else Trinket.drawReacting(p,who,x,y,r,time*2,1,mood,.7f);
         name(p,right?Boss.NAMES[boss]:Collect.NAME[who],x,h*.61f,w,color);
         p.restore();
