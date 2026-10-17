@@ -1,0 +1,429 @@
+{
+  "folder": {
+    "success": true,
+    "id": "1f4XlNBDr4aVOKcMooBNo37q4SHUKNDiC",
+    "url": "https://drive.google.com/drive/folders/1f4XlNBDr4aVOKcMooBNo37q4SHUKNDiC",
+    "title": "DDDumpling Marketing",
+    "parent_id": "root"
+  },
+  "folders": [
+    {
+      "success": true,
+      "id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q",
+      "url": "https://drive.google.com/drive/folders/1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q",
+      "title": "Videos",
+      "parent_id": "1f4XlNBDr4aVOKcMooBNo37q4SHUKNDiC"
+    },
+    {
+      "success": true,
+      "id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ",
+      "url": "https://drive.google.com/drive/folders/1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ",
+      "title": "Artwork",
+      "parent_id": "1f4XlNBDr4aVOKcMooBNo37q4SHUKNDiC"
+    },
+    {
+      "success": true,
+      "id": "1eSqtGlzGOYhdGq_60IwJEnjik5mrFYvW",
+      "url": "https://drive.google.com/drive/folders/1eSqtGlzGOYhdGq_60IwJEnjik5mrFYvW",
+      "title": "Archive",
+      "parent_id": "1f4XlNBDr4aVOKcMooBNo37q4SHUKNDiC"
+    }
+  ],
+  "campaign_sheet": "https://docs.google.com/spreadsheets/d/1SZaO3L4jtVPkQWcSoCDYu9b7ZT3_SieuWzajplJZ4ok/edit",
+  "files": [
+    {
+      "local_path": "out/videos/survival-full-audio/survival-full-audio.mp4",
+      "folder": "Videos",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1k9CPnHjq-f7iowyVLSUAJ4jz7dkfsJxG",
+      "title": "Survival - four minutes - music and effects.mp4",
+      "file_name": "Survival - four minutes - music and effects.mp4",
+      "mime_type": "video/mp4",
+      "url": "https://drive.google.com/file/d/1k9CPnHjq-f7iowyVLSUAJ4jz7dkfsJxG/view?usp=drivesdk",
+      "parent_id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1k9CPnHjq-f7iowyVLSUAJ4jz7dkfsJxG",
+        "title": "Survival - four minutes - music and effects.mp4",
+        "file_name": "Survival - four minutes - music and effects.mp4",
+        "mime_type": "video/mp4",
+        "url": "https://drive.google.com/file/d/1k9CPnHjq-f7iowyVLSUAJ4jz7dkfsJxG/view?usp=drivesdk",
+        "parent_id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q"
+      }
+    },
+    {
+      "local_path": "out/videos/youtube-shorts-audio/octopulse.mp4",
+      "folder": "Videos",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1vBUSd4TFblmRFf-wxZBAZAXtQ7PSDKM_",
+      "title": "octopulse - music only.mp4",
+      "file_name": "octopulse - music only.mp4",
+      "mime_type": "video/mp4",
+      "url": "https://drive.google.com/file/d/1vBUSd4TFblmRFf-wxZBAZAXtQ7PSDKM_/view?usp=drivesdk",
+      "parent_id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1vBUSd4TFblmRFf-wxZBAZAXtQ7PSDKM_",
+        "title": "octopulse - music only.mp4",
+        "file_name": "octopulse - music only.mp4",
+        "mime_type": "video/mp4",
+        "url": "https://drive.google.com/file/d/1vBUSd4TFblmRFf-wxZBAZAXtQ7PSDKM_/view?usp=drivesdk",
+        "parent_id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q"
+      }
+    },
+    {
+      "local_path": "out/videos/youtube-shorts-audio/slime.mp4",
+      "folder": "Videos",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1y0qkIWlIMR-pop4D7v_Dlz7JRPtPi38U",
+      "title": "slime - music only.mp4",
+      "file_name": "slime - music only.mp4",
+      "mime_type": "video/mp4",
+      "url": "https://drive.google.com/file/d/1y0qkIWlIMR-pop4D7v_Dlz7JRPtPi38U/view?usp=drivesdk",
+      "parent_id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1y0qkIWlIMR-pop4D7v_Dlz7JRPtPi38U",
+        "title": "slime - music only.mp4",
+        "file_name": "slime - music only.mp4",
+        "mime_type": "video/mp4",
+        "url": "https://drive.google.com/file/d/1y0qkIWlIMR-pop4D7v_Dlz7JRPtPi38U/view?usp=drivesdk",
+        "parent_id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q"
+      }
+    },
+    {
+      "local_path": "out/videos/youtube-shorts-audio/dark-divide.mp4",
+      "folder": "Videos",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1bp0r5V6udRZd9t44RMQAsZK6dpj-Mzb5",
+      "title": "dark-divide - music only.mp4",
+      "file_name": "dark-divide - music only.mp4",
+      "mime_type": "video/mp4",
+      "url": "https://drive.google.com/file/d/1bp0r5V6udRZd9t44RMQAsZK6dpj-Mzb5/view?usp=drivesdk",
+      "parent_id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1bp0r5V6udRZd9t44RMQAsZK6dpj-Mzb5",
+        "title": "dark-divide - music only.mp4",
+        "file_name": "dark-divide - music only.mp4",
+        "mime_type": "video/mp4",
+        "url": "https://drive.google.com/file/d/1bp0r5V6udRZd9t44RMQAsZK6dpj-Mzb5/view?usp=drivesdk",
+        "parent_id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q"
+      }
+    },
+    {
+      "local_path": "out/videos/youtube-shorts-audio/fly-agaric.mp4",
+      "folder": "Videos",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1tKNXh5jVzUPlVhoRIq0GNg54L6ioEy6l",
+      "title": "fly-agaric - music only.mp4",
+      "file_name": "fly-agaric - music only.mp4",
+      "mime_type": "video/mp4",
+      "url": "https://drive.google.com/file/d/1tKNXh5jVzUPlVhoRIq0GNg54L6ioEy6l/view?usp=drivesdk",
+      "parent_id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1tKNXh5jVzUPlVhoRIq0GNg54L6ioEy6l",
+        "title": "fly-agaric - music only.mp4",
+        "file_name": "fly-agaric - music only.mp4",
+        "mime_type": "video/mp4",
+        "url": "https://drive.google.com/file/d/1tKNXh5jVzUPlVhoRIq0GNg54L6ioEy6l/view?usp=drivesdk",
+        "parent_id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q"
+      }
+    },
+    {
+      "local_path": "out/videos/mode-shorts/titles-audio.mp4",
+      "folder": "Videos",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1hGD75u60f8Nmdi7UFEQfu7J9t1uvRSiJ",
+      "title": "Animated mode titles - music only.mp4",
+      "file_name": "Animated mode titles - music only.mp4",
+      "mime_type": "video/mp4",
+      "url": "https://drive.google.com/file/d/1hGD75u60f8Nmdi7UFEQfu7J9t1uvRSiJ/view?usp=drivesdk",
+      "parent_id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1hGD75u60f8Nmdi7UFEQfu7J9t1uvRSiJ",
+        "title": "Animated mode titles - music only.mp4",
+        "file_name": "Animated mode titles - music only.mp4",
+        "mime_type": "video/mp4",
+        "url": "https://drive.google.com/file/d/1hGD75u60f8Nmdi7UFEQfu7J9t1uvRSiJ/view?usp=drivesdk",
+        "parent_id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q"
+      }
+    },
+    {
+      "local_path": "out/videos/mode-shorts/scores-audio.mp4",
+      "folder": "Videos",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1Pnw_r9DN4Trcv6p7ATK1b5s3JdIfiUuE",
+      "title": "High score walkthrough - music only.mp4",
+      "file_name": "High score walkthrough - music only.mp4",
+      "mime_type": "video/mp4",
+      "url": "https://drive.google.com/file/d/1Pnw_r9DN4Trcv6p7ATK1b5s3JdIfiUuE/view?usp=drivesdk",
+      "parent_id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1Pnw_r9DN4Trcv6p7ATK1b5s3JdIfiUuE",
+        "title": "High score walkthrough - music only.mp4",
+        "file_name": "High score walkthrough - music only.mp4",
+        "mime_type": "video/mp4",
+        "url": "https://drive.google.com/file/d/1Pnw_r9DN4Trcv6p7ATK1b5s3JdIfiUuE/view?usp=drivesdk",
+        "parent_id": "1hsHOLXxtFTvvZcFmpm6XMnkFTe_Lc98q"
+      }
+    },
+    {
+      "local_path": "out/videos/mode-shorts/survival-audio.mp4",
+      "folder": "Archive",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1ydKnlomkuuyoOKq0rONM-sneQVI5EAei",
+      "title": "Superseded - early Survival - music only.mp4",
+      "file_name": "Superseded - early Survival - music only.mp4",
+      "mime_type": "video/mp4",
+      "url": "https://drive.google.com/file/d/1ydKnlomkuuyoOKq0rONM-sneQVI5EAei/view?usp=drivesdk",
+      "parent_id": "1eSqtGlzGOYhdGq_60IwJEnjik5mrFYvW",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1ydKnlomkuuyoOKq0rONM-sneQVI5EAei",
+        "title": "Superseded - early Survival - music only.mp4",
+        "file_name": "Superseded - early Survival - music only.mp4",
+        "mime_type": "video/mp4",
+        "url": "https://drive.google.com/file/d/1ydKnlomkuuyoOKq0rONM-sneQVI5EAei/view?usp=drivesdk",
+        "parent_id": "1eSqtGlzGOYhdGq_60IwJEnjik5mrFYvW"
+      }
+    },
+    {
+      "local_path": "out/videos/survival-four-minutes/survival-four-minutes-audio.mp4",
+      "folder": "Archive",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "15W9VDcATFAeYMjnzjzSh3kSY-yYR8KsA",
+      "title": "Superseded - four minute Survival - music only.mp4",
+      "file_name": "Superseded - four minute Survival - music only.mp4",
+      "mime_type": "video/mp4",
+      "url": "https://drive.google.com/file/d/15W9VDcATFAeYMjnzjzSh3kSY-yYR8KsA/view?usp=drivesdk",
+      "parent_id": "1eSqtGlzGOYhdGq_60IwJEnjik5mrFYvW",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "15W9VDcATFAeYMjnzjzSh3kSY-yYR8KsA",
+        "title": "Superseded - four minute Survival - music only.mp4",
+        "file_name": "Superseded - four minute Survival - music only.mp4",
+        "mime_type": "video/mp4",
+        "url": "https://drive.google.com/file/d/15W9VDcATFAeYMjnzjzSh3kSY-yYR8KsA/view?usp=drivesdk",
+        "parent_id": "1eSqtGlzGOYhdGq_60IwJEnjik5mrFYvW"
+      }
+    },
+    {
+      "local_path": "app-store/youtube/channel-banner.png",
+      "folder": "Artwork",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1kZDLKJ-bmnuVCTfCHt-5oOKswC1q9c9i",
+      "title": "YouTube channel banner.png",
+      "file_name": "YouTube channel banner.png",
+      "mime_type": "image/png",
+      "url": "https://drive.google.com/file/d/1kZDLKJ-bmnuVCTfCHt-5oOKswC1q9c9i/view?usp=drivesdk",
+      "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1kZDLKJ-bmnuVCTfCHt-5oOKswC1q9c9i",
+        "title": "YouTube channel banner.png",
+        "file_name": "YouTube channel banner.png",
+        "mime_type": "image/png",
+        "url": "https://drive.google.com/file/d/1kZDLKJ-bmnuVCTfCHt-5oOKswC1q9c9i/view?usp=drivesdk",
+        "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ"
+      }
+    },
+    {
+      "local_path": "app-store/google-play/feature-graphic.png",
+      "folder": "Artwork",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1wS4EqM9vumhY47HWEyT77Qfqf221CM0d",
+      "title": "Google Play feature graphic.png",
+      "file_name": "Google Play feature graphic.png",
+      "mime_type": "image/png",
+      "url": "https://drive.google.com/file/d/1wS4EqM9vumhY47HWEyT77Qfqf221CM0d/view?usp=drivesdk",
+      "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1wS4EqM9vumhY47HWEyT77Qfqf221CM0d",
+        "title": "Google Play feature graphic.png",
+        "file_name": "Google Play feature graphic.png",
+        "mime_type": "image/png",
+        "url": "https://drive.google.com/file/d/1wS4EqM9vumhY47HWEyT77Qfqf221CM0d/view?usp=drivesdk",
+        "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ"
+      }
+    },
+    {
+      "local_path": "app-store/google-play/icon.png",
+      "folder": "Artwork",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1icZSw699ZNtncBC6KGw3H04G7vuAw8Hw",
+      "title": "DDDumpling icon.png",
+      "file_name": "DDDumpling icon.png",
+      "mime_type": "image/png",
+      "url": "https://drive.google.com/file/d/1icZSw699ZNtncBC6KGw3H04G7vuAw8Hw/view?usp=drivesdk",
+      "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1icZSw699ZNtncBC6KGw3H04G7vuAw8Hw",
+        "title": "DDDumpling icon.png",
+        "file_name": "DDDumpling icon.png",
+        "mime_type": "image/png",
+        "url": "https://drive.google.com/file/d/1icZSw699ZNtncBC6KGw3H04G7vuAw8Hw/view?usp=drivesdk",
+        "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ"
+      }
+    },
+    {
+      "local_path": "app-store/itch/screenshots/01-octopulse-key-theft.png",
+      "folder": "Artwork",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1cPi9RItaPM_AfJ8vbjEi_bQPxj03zysh",
+      "title": "01-octopulse-key-theft.png",
+      "file_name": "01-octopulse-key-theft.png",
+      "mime_type": "image/png",
+      "url": "https://drive.google.com/file/d/1cPi9RItaPM_AfJ8vbjEi_bQPxj03zysh/view?usp=drivesdk",
+      "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1cPi9RItaPM_AfJ8vbjEi_bQPxj03zysh",
+        "title": "01-octopulse-key-theft.png",
+        "file_name": "01-octopulse-key-theft.png",
+        "mime_type": "image/png",
+        "url": "https://drive.google.com/file/d/1cPi9RItaPM_AfJ8vbjEi_bQPxj03zysh/view?usp=drivesdk",
+        "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ"
+      }
+    },
+    {
+      "local_path": "app-store/itch/screenshots/02-survival-powerups.png",
+      "folder": "Artwork",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1jSFswLwgWwuC6wcbFXpl3q4O1GWfXsnu",
+      "title": "02-survival-powerups.png",
+      "file_name": "02-survival-powerups.png",
+      "mime_type": "image/png",
+      "url": "https://drive.google.com/file/d/1jSFswLwgWwuC6wcbFXpl3q4O1GWfXsnu/view?usp=drivesdk",
+      "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1jSFswLwgWwuC6wcbFXpl3q4O1GWfXsnu",
+        "title": "02-survival-powerups.png",
+        "file_name": "02-survival-powerups.png",
+        "mime_type": "image/png",
+        "url": "https://drive.google.com/file/d/1jSFswLwgWwuC6wcbFXpl3q4O1GWfXsnu/view?usp=drivesdk",
+        "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ"
+      }
+    },
+    {
+      "local_path": "app-store/itch/screenshots/03-slime-drag.png",
+      "folder": "Artwork",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1B3YHW6IQ7xbzvBFuuSWY6xxwK3ztfoAR",
+      "title": "03-slime-drag.png",
+      "file_name": "03-slime-drag.png",
+      "mime_type": "image/png",
+      "url": "https://drive.google.com/file/d/1B3YHW6IQ7xbzvBFuuSWY6xxwK3ztfoAR/view?usp=drivesdk",
+      "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1B3YHW6IQ7xbzvBFuuSWY6xxwK3ztfoAR",
+        "title": "03-slime-drag.png",
+        "file_name": "03-slime-drag.png",
+        "mime_type": "image/png",
+        "url": "https://drive.google.com/file/d/1B3YHW6IQ7xbzvBFuuSWY6xxwK3ztfoAR/view?usp=drivesdk",
+        "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ"
+      }
+    },
+    {
+      "local_path": "app-store/itch/screenshots/04-fly-agaric.png",
+      "folder": "Artwork",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1CaC2TDN3WvNM5Z1_kJ3q1fG-jqUXYQPn",
+      "title": "04-fly-agaric.png",
+      "file_name": "04-fly-agaric.png",
+      "mime_type": "image/png",
+      "url": "https://drive.google.com/file/d/1CaC2TDN3WvNM5Z1_kJ3q1fG-jqUXYQPn/view?usp=drivesdk",
+      "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1CaC2TDN3WvNM5Z1_kJ3q1fG-jqUXYQPn",
+        "title": "04-fly-agaric.png",
+        "file_name": "04-fly-agaric.png",
+        "mime_type": "image/png",
+        "url": "https://drive.google.com/file/d/1CaC2TDN3WvNM5Z1_kJ3q1fG-jqUXYQPn/view?usp=drivesdk",
+        "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ"
+      }
+    },
+    {
+      "local_path": "app-store/itch/screenshots/05-dark-divide.png",
+      "folder": "Artwork",
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1_Duk4pG41pD5LCWL6nrvVUNMgzllypOG",
+      "title": "05-dark-divide.png",
+      "file_name": "05-dark-divide.png",
+      "mime_type": "image/png",
+      "url": "https://drive.google.com/file/d/1_Duk4pG41pD5LCWL6nrvVUNMgzllypOG/view?usp=drivesdk",
+      "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ",
+      "structuredContent": {
+        "accepted_input": "file_uri",
+        "success": true,
+        "id": "1_Duk4pG41pD5LCWL6nrvVUNMgzllypOG",
+        "title": "05-dark-divide.png",
+        "file_name": "05-dark-divide.png",
+        "mime_type": "image/png",
+        "url": "https://drive.google.com/file/d/1_Duk4pG41pD5LCWL6nrvVUNMgzllypOG/view?usp=drivesdk",
+        "parent_id": "1J-5htV2uAOLcWW91gNFTlrYtld_7YhSQ"
+      }
+    }
+  ],
+  "records": {
+    "accepted_input": "file_uri",
+    "success": true,
+    "id": "1yv_3V0r4m2Iaqx8OtmpwGeBzRMF3zisz",
+    "title": "DDDumpling-marketing-copy-and-records.zip",
+    "file_name": "DDDumpling-marketing-copy-and-records.zip",
+    "mime_type": "application/zip",
+    "url": "https://drive.google.com/file/d/1yv_3V0r4m2Iaqx8OtmpwGeBzRMF3zisz/view?usp=drivesdk",
+    "parent_id": "1f4XlNBDr4aVOKcMooBNo37q4SHUKNDiC",
+    "structuredContent": {
+      "accepted_input": "file_uri",
+      "success": true,
+      "id": "1yv_3V0r4m2Iaqx8OtmpwGeBzRMF3zisz",
+      "title": "DDDumpling-marketing-copy-and-records.zip",
+      "file_name": "DDDumpling-marketing-copy-and-records.zip",
+      "mime_type": "application/zip",
+      "url": "https://drive.google.com/file/d/1yv_3V0r4m2Iaqx8OtmpwGeBzRMF3zisz/view?usp=drivesdk",
+      "parent_id": "1f4XlNBDr4aVOKcMooBNo37q4SHUKNDiC"
+    }
+  }
+}

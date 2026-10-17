@@ -109,6 +109,11 @@ Use [docs/release-notes.md](docs/release-notes.md) for the catalog and required 
 
 ## Repository hygiene
 
+For marketing work that needs Google Drive, verify access first. If the current
+environment lacks Drive tools or account access, prompt the user to connect or
+restore Google Drive access. Do not silently skip the Drive step or claim files
+have been uploaded. The archive locations are in `app-store/marketing/google-drive.json`.
+
 When merging changes into local `main`, always push `main` to `origin/main` and verify the remote
 advanced before reporting the merge complete.
 
