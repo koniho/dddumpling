@@ -231,3 +231,6 @@ signed Debug build installed successfully and its developer save was byte-identi
 before and immediately after the update. Physical UI tests could not initialize:
 iOS returned “Authentication canceled. Canceled by user.” Unlocking the phone and
 authorizing UI testing is still required; installation is not a physical UI test pass.
+The follow-up run in `ios/build/CloudUI-iphone16-retry-20261017.xcresult` hit the same
+authentication cancellation before either UI test ran. Retry after the device authorizes
+UI automation; the passing simulator results above remain the UI evidence.

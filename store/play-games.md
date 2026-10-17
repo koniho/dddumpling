@@ -34,12 +34,28 @@ Production setup (2026-10-14): linked Play Games Services to the existing Cloud 
 `dddumpling-5695b`, project number/application ID `56613446939`. This reuses the Firebase
 project's underlying Cloud project; it does not add a Firebase SDK or link Firebase to PGS.
 The PGS configuration is still draft. On 2026-10-17, Saved Games was enabled and saved;
-Console confirmed the Google Drive API is enabled. OAuth consent creation is paused at
-the required Google API Services User Data Policy acknowledgement, pending explicit user
-approval. Android credentials and production publication remain unfinished. Do not enable
-a release build yet.
-The tester list contains `koniho@gmail.com` (verified with the account filter). Console
-still reports changes not ready to test while OAuth and credentials are incomplete.
+Console confirmed the Google Drive API is enabled. After explicit approval of the Google
+API Services User Data Policy acknowledgement, OAuth consent was created with an External,
+Testing audience. The saved scopes are `games`, `games_lite`, and `drive.appdata`.
+Both OAuth and PGS tester lists contain `koniho@gmail.com` and `dddumpling.play@gmail.com`.
+
+The Android OAuth client `DDDumpling Play signing` is linked to a saved draft PGS credential:
+
+- Package: `com.dddumpling.game`
+- Client ID: `56613446939-9fm7ajevtkeg2c7kinlb0k4vef5p9vv5.apps.googleusercontent.com`
+- Play deployment certificate SHA-1: `48:EA:AB:E1:8D:76:BF:00:2D:B2:86:36:F7:CA:24:2B:39:90:16:AA`
+
+The SHA-1 was read from Play Console's downloaded `deployment_cert.der`; its SHA-256
+matches the certificate in Console's Digital Asset Links JSON. This is not the upload key.
+The draft properties reuse the store title, short description, icon and feature graphic,
+with Arcade as the category. Console reports credentials and events ready to publish with
+no remaining property warnings. Saved changes are available to authorized testers; the PGS
+project and OAuth consent are not publicly published. No Firebase SDK was added.
+
+Real Android sign-in, event delivery and cross-device save validation remain unverified.
+No Android device was attached at the 2026-10-17 check. Before a public release, complete
+that validation, prepare the listing/privacy disclosures below, and publish both the OAuth
+consent audience and PGS configuration. A draft-ready console is not a runtime test pass.
 
 All 90 hidden draft events were created and read back on 2026-10-17; Console shows 90
 events. Their non-secret IDs are in `play-games.draft.json`, with a local copy in ignored
