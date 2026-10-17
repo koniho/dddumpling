@@ -285,6 +285,7 @@ final class AlligatorGuard extends Draw {
         Painter sprite=tint==0?p:new ColorFadePainter(p,Glyph.mix(accent,0xFFFFFFFF,.45f),tint,1);
         Trinket.drawReacting(sprite,who,x,y,r,c.companion.clock,1,
                 c.companion.reaction==RunCompanion.DAMAGE?3:Trinket.FIGHT,rock*.35f,c.ninja());
+        RunCompanion.drawProps(sprite,c,L,x,y,r);
     }
     private void drawTrail(Painter p,GameCore c,Layout L,int body,int accent) {
         if(moves<2)return;

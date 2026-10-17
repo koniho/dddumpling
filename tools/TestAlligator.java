@@ -90,6 +90,40 @@ final class TestAlligator extends Check {
         check("long swipe trail has bounded storage",g.points==AlligatorGuard.POINTS);
         c.boss.leave();check("leaving clears defense cue and trail",!g.active() && g.points==0);
     }
+    static void companionProps(Layout L) {
+        group("companion reaction props follow parry pose");
+        GameCore c=fight(L);c.companion.begin(6);block(c,L);
+        AlligatorGuard g=c.boss.alligator.guard;
+        final java.util.ArrayList<float[]> flags=new java.util.ArrayList<>();
+        Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("fillPoly") && ((float[])args[0]).length==6
+                            && (Integer)args[1]==Draw.ROSE)flags.add(((float[])args[0]).clone());
+                    return null;
+                });
+        for(float at:new float[]{0,.08f,.66f,1.5f}) {
+            g.flightAge=at;c.companion.reaction=RunCompanion.BOSS_HIT;
+            flags.clear();RunCompanion.draw(p,c,L);
+            check("no flag remains at home during parry "+at,flags.isEmpty());
+            g.drawCompanion(p,c,L);
+            check("exactly one carried flag "+at,flags.size()==1);
+            if(flags.size()==1) {
+                float[] flag=flags.get(0);float scale=g.companionScale();
+                check("flag follows live companion position "+at,
+                        Math.abs(flag[0]-(g.companionX(L)+RunCompanion.halfWidth(L)*scale*.60f))<.01f);
+                check("flag follows live companion scale "+at,
+                        Math.abs(flag[2]-flag[0]-RunCompanion.radius(c,L)*scale*.64f)<.01f);
+                check("flag follows live companion height "+at,
+                        Math.abs(flag[1]-(g.companionY(L)-RunCompanion.halfHeight(L)*scale
+                        *(.94f+.18f*c.companion.beat())))<.01f);
+            }
+        }
+        g.reset();flags.clear();RunCompanion.draw(p,c,L);
+        check("flag returns to ordinary companion rendering",flags.size()==1);
+        c.onboarding.companionTravel=1;flags.clear();RunCompanion.draw(p,c,L);
+        check("hidden companion leaves no floating props",flags.isEmpty());
+    }
+
     static void parryCompanion(Layout L) {
         group("companion parry travel and hanging arms");
         for(int limb=0;limb<3;limb++) {
@@ -966,6 +1000,7 @@ final class TestAlligator extends Check {
     static void all(Layout L) {
         TestGatorRendering.all(L);
         parryCompanion(L);
+        companionProps(L);
         contactFeedback(L);
         limbRecoil(L);
         impactFeedback(L);

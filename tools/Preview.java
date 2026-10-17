@@ -201,6 +201,12 @@ final class Preview {
             TestAlligator.block(parry,L);TestAlligator.advance(parry,L,at);
             shot(dir,"168-companion-parry-"+Math.round(at*100),parry,L,w,h,ss);
         }
+        for(float at:new float[]{.16f,.66f,1.5f}) {
+            GameCore props=TestAlligator.fight(L);props.stageBanner=0;props.landBlend=1;props.companion.begin(6);
+            TestAlligator.block(props,L);TestAlligator.advance(props,L,at);
+            props.companion.react(RunCompanion.BOSS_HIT,1);
+            shot(dir,"168-companion-props-"+Math.round(at*100),props,L,w,h,ss);
+        }
         GameCore dazed=TestAlligator.fight(L);dazed.stageBanner=0;dazed.landBlend=1;dazed.companion.begin(6);
         for(int limb=0;limb<3;limb++)for(float at:new float[]{.16f,.23f,.55f}) {
             GameCore recoil=TestAlligator.fight(L);recoil.stageBanner=0;recoil.landBlend=1;recoil.companion.begin(6);

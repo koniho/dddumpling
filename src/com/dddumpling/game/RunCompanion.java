@@ -281,11 +281,22 @@ final class RunCompanion extends Draw {
         cy-=r*.12f*Math.abs(touchRock);
         if(a.reaction==DAMAGE) cx+=r*.12f*(float)Math.sin(a.age*55f)*beat;
         p.fillEllipse(x,y+r*.85f,r*.7f,r*.13f,0x55302045);
-        if(!c.onboarding.companionAway(c) && !c.boss.alligator.guard.carries(c))Trinket.drawReacting(new Squash(p,cx,cy,a.squash()),a.who,cx,cy,r,a.clock,1f,a.displayMood(c),
-                .10f*(float)Math.sin(a.clock*.9f)+.18f*touchRock,c.ninja());
+        if(!c.onboarding.companionAway(c) && !c.boss.alligator.guard.carries(c)) {
+            Painter sprite=new Squash(p,cx,cy,a.squash());
+            Trinket.drawReacting(sprite,a.who,cx,cy,r,a.clock,1f,a.displayMood(c),
+                    .10f*(float)Math.sin(a.clock*.9f)+.18f*touchRock,c.ninja());
+            drawProps(sprite,c,L,cx,cy,r);
+        }
+        p.restore();
+    }
+
+    /** Reaction props travel and grow with the character, not its home bubble. */
+    static void drawProps(Painter p,GameCore c,Layout L,float x,float y,float r) {
+        RunCompanion a=c.companion;
+        float scale=r/radius(c,L),w=halfWidth(L)*scale,h=halfHeight(L)*scale,beat=a.beat();
         if(a.reaction==CRY) {
-            float keyFace=L.keyR*.60f;
-            Kawaii.cryTears(p,cx,cy,r*.36f,keyFace*1.10f,keyFace/1.10f,a.clock*4.8f,1f);
+            float keyFace=L.keyR*.60f*scale;
+            Kawaii.cryTears(p,x,y,r*.36f,keyFace*1.10f,keyFace/1.10f,a.clock*4.8f,1f);
         }
         if(a.reaction==BOSS_HIT) {
             float poleX=x+w*.60f,poleTop=y-h*(.94f+.18f*beat),poleBottom=y+h*.30f;
@@ -304,7 +315,6 @@ final class RunCompanion extends Draw {
             p.line(x+w*.65f,y-h*.65f,x+w*.65f,y-h*.25f,GOLD,r*.1f);
             p.fillCircle(x+w*.65f,y-h*.05f,r*.07f,GOLD);
         }
-        p.restore();
     }
 
     /** Scale the existing collectible artwork without changing its body or accessories. */
