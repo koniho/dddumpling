@@ -112,8 +112,7 @@ final class TimeAttackVersus extends Draw {
         float w=L.w,h=L.h,side=right?1:-1;
         float[] shape=right?new float[]{w*.47f,0,w,0,w,h,w*.53f,h}
                 :new float[]{0,0,w*.47f,0,w*.53f,h,0,h};
-        float entry=arrival(time,right?.18f:0);
-        float slide=side*w*.72f*(1-Math.min(1,entry));
+        float slide=side*w*.72f*(1-panelTravel(time/ANNOUNCE));
         p.save();p.translate(travel+slide,0);
         p.fillPoly(shape,Glyph.mix(right?0xFF12395C:0xFF402270,color,.20f));
         p.line(w*.47f,0,w*.53f,h,Glyph.mix(color,INK,.4f),w*.012f);
@@ -125,7 +124,9 @@ final class TimeAttackVersus extends Draw {
             p.line(x-side*length,y,x,y-h*.018f,fadeBy(color,.22f),w*(.003f+(i%3)*.002f));
         }
         shimmer(p,shape,w,h,right,color);
-        float x=w*(right?.75f:.25f);
+        // Both panels arrive together; portraits follow once their backgrounds are in place.
+        float entry=arrival(time,ANNOUNCE);
+        float x=w*(right?.75f:.25f)+side*w*.8f*(1-entry);
         float bounce=entry>1?(entry-1)*w*.16f:0;
         float beat=Math.max(0,time-CLASH),hop=time>=CLASH?w*.02f*(float)Math.sin(beat*11)* (float)Math.exp(-beat*2):0;
         float y=h*.435f-bounce-hop,r=w*(right?.17f:.145f);
