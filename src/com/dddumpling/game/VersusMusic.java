@@ -20,6 +20,8 @@ final class VersusMusic {
         return times;
     }
 
+    static float noteDuration(float gap) {return gap*.58f;}
+
     static float finalMidi(float seconds) {
         return glideMidi(71,52,seconds);
     }
@@ -37,11 +39,11 @@ final class VersusMusic {
             float[] starts={KICKS[phrase*2],SNAPS[phrase*2],KICKS[phrase*2+1],SNAPS[phrase*2+1]};
             for(int n=0;n<4;n++) {
                 float next=n<3?starts[n+1]:KICKS[phrase*2+2];
-                chord(mix,starts[n],next-starts[n]-.018f,MELODY[phrase][n],n%2==0?1.08f:1,false);
+                chord(mix,starts[n],noteDuration(next-starts[n]),MELODY[phrase][n],n%2==0?1.08f:1,false);
             }
             // Low chords stay within their phrase, leaving the final kicks to the gliss.
             for(int midi:phrase<2?new int[]{45,52,57,60}:new int[]{52,59,64,68})
-                synth(mix,starts[0],starts[2]-starts[0],midi,.05f,midi);
+                synth(mix,starts[0],noteDuration(starts[1]-starts[0]),midi,.05f,midi);
         }
         chord(mix,GLIDE_START,DURATION-GLIDE_START,71,1,true);
         for(int i=0;i<KICKS.length;i++)drum(mix,KICKS[i],KICK,1.65f,i);
@@ -70,7 +72,7 @@ final class VersusMusic {
     }
 
     private static void chord(float[] mix,float start,float duration,int midi,float accent,boolean glide) {
-        synth(mix,start,duration,midi,.25f*accent,glide?52:midi);
+        airyVoice(mix,start,duration,midi,.25f*accent,glide?52:midi);
         synth(mix,start,duration,midi-12,.11f*accent,glide?40:midi-12);
         // A minor, C major and E major; the final E chord resolves into boss A minor.
         int third=midi==69?60:64,fifth=midi==69?64:midi==72?67:68;
@@ -79,6 +81,40 @@ final class VersusMusic {
         // Airy chord tones above the lead, following the same attacks and final descent.
         synth(mix,start,duration,third+12,.075f*accent,glide?56:third+12);
         synth(mix,start,duration,fifth+12,.055f*accent,glide?59:fifth+12);
+    }
+
+    /** Original ARR1-style breathy ah voice; no sampled recording. */
+    private static void airyVoice(float[] mix,float start,float duration,int midi,float gain,int endMidi) {
+        int first=(int)(start*Sfx.RATE),count=Math.min((int)(duration*Sfx.RATE),mix.length-first);
+        float[] weights=new float[12];float energy=0;
+        // Fixed spectral shape follows pitch like a transposed vocal sample.
+        for(int h=1;h<=weights.length;h++) {
+            float hz=h*493.88f;
+            float a=(hz-850)/300,b=(hz-1350)/380,c=(hz-2700)/600;
+            float weight=.12f/h+.85f*(float)Math.exp(-a*a)
+                    +.65f*(float)Math.exp(-b*b)+.22f*(float)Math.exp(-c*c);
+            weights[h-1]=weight;energy+=weight*weight;
+        }
+        float normal=(float)Math.sqrt(energy),airLow=0,airHigh=0;
+        int noise=137+first*31+midi*7919;double phase=0;
+        for(int i=0;i<count;i++) {
+            float t=i/(float)Sfx.RATE;
+            float pitch=midi==endMidi?midi:glideMidi(midi,endMidi,start+t);
+            pitch+=.06f*(float)Math.sin(t*Softbody.TAU*4.8f);
+            phase+=Softbody.TAU*440*Math.pow(2,(pitch-69)/12f)/Sfx.RATE;
+            float voice=0;
+            for(int h=1;h<=weights.length;h++)voice+=(float)Math.sin(phase*h)*weights[h-1];
+            voice/=normal;
+            // A little sampler grain and filtered breath keep the vowel airy, not buzzy.
+            voice=voice*.6f+Math.round(voice*128)/128f*.4f;
+            noise=noise*1664525+1013904223;
+            float white=(noise>>>8)/8388608f-1;
+            airLow+=(white-airLow)*.42f;airHigh+=(white-airHigh)*.10f;
+            float breath=(airLow-airHigh)*(.36f+.28f*(float)Math.exp(-t*35));
+            float attack=Math.min(1,t/.020f),release=Math.min(1,(duration-t)/.025f);
+            float swell=.82f+.18f*(float)Math.exp(-t*8);
+            mix[first+i]+=(voice+breath)*gain*attack*release*swell;
+        }
     }
 
     private static void synth(float[] mix,float start,float duration,int midi,float gain,int endMidi) {

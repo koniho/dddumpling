@@ -375,6 +375,16 @@ final class TestAudio extends Check {
                 VersusMusic.BPM-VersusMusic.SOURCE_BPM==20
                 && Math.abs(VersusMusic.KICKS[8]/4.080f-VersusMusic.SNAPS[5]/3.215f)<.00001f
                 && Math.abs(VersusMusic.DURATION-4.3f*206f/226f)<.00001f);
+        boolean spaced=true;
+        for(int phrase=0;phrase<3;phrase++) {
+            float[] hits={VersusMusic.KICKS[phrase*2],VersusMusic.SNAPS[phrase*2],
+                    VersusMusic.KICKS[phrase*2+1],VersusMusic.SNAPS[phrase*2+1],VersusMusic.KICKS[phrase*2+2]};
+            for(int i=0;i<4;i++) {
+                float gap=hits[i+1]-hits[i],length=VersusMusic.noteDuration(gap);
+                spaced &= length>=.08f && gap-length>=.06f && length<=gap*.6f;
+            }
+        }
+        check("short vocal notes leave audible gaps throughout the beatbox phrases",spaced);
         check("beatbox arrangement has only its nine thumps and six snaps",
                 VersusMusic.KICKS.length==9 && VersusMusic.SNAPS.length==6);
         check("gliss covers the three final kick-only beats",

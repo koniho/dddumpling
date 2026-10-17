@@ -32,13 +32,18 @@ the original offsets before this uniform speed-up.
 
 This gives three thump/snap/thump/snap phrases, followed by three kick-only
 beats. No filler kicks, cymbals or hi-hats are added. The synth notes share the
-first twelve drum attack times and sustain almost to the next attack. Only the
+first twelve drum attack times and sound for 58% of each gap, leaving 42% clear.
+Lower chords and higher harmonies release with the lead. Only the
 final three kicks carry the continuous downward gliss, now from about 3.186 to
 3.919 seconds. The ready cue and panel exit also move earlier so the boss music
 starts as the gliss ends.
 
-The trumpet has been replaced by a rounded sine-based synth with a soft octave,
-very quiet upper partials, slight doubling, and 18 ms attacks. Chord voices stay
+The lead uses an original procedural ARR1-style breathy ah voice: three vowel
+formant peaks, filtered breath noise, subtle pitch motion and light sampler
+grain, with a 20 ms attack. This is a synthesized approximation, with no imported
+vocal sample. [NFSA reference for ARR1/SARARR](https://www.nfsa.gov.au/collection/item/sampling-sounds-fairlight-cmi).
+The backing voices retain the rounded sine-based synth, soft octave and quiet
+upper partials. Chord voices stay
 behind the lead, with two softer harmony voices an octave above the inner
 chord tones (C/E above A, E/G above C, and E/G-sharp above B). They share the
 beatbox attacks and glide down into G-sharp3/B3 at the ending. The kick has a
