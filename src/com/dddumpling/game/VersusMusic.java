@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** Soft synth fanfare with melody and beatbox rhythm from the user's Oct 16 voice memos. */
 final class VersusMusic {
-    static final float SOURCE_BPM=206f, BPM=SOURCE_BPM+20f;
+    static final float SOURCE_BPM=206f, BPM=(SOURCE_BPM+20f)*1.25f;
     static final float TEMPO_SCALE=SOURCE_BPM/BPM, DURATION=4.3f*TEMPO_SCALE;
     static final float ANNOUNCER_GAIN=.65f;
     private static final float MASTER_PEAK=19000f,MASTER_RMS=4600f;
@@ -72,7 +72,7 @@ final class VersusMusic {
     }
 
     private static void chord(float[] mix,float start,float duration,int midi,float accent,boolean glide) {
-        float lead=.25f*.8f*accent;
+        float lead=.25f*.8f*.7f*accent;
         // Share the quieter lead level across the original voice and its upper octave.
         airyVoice(mix,start,duration,midi,lead*.8f,glide?52:midi);
         airyVoice(mix,start,duration,midi+12,lead*.6f,glide?64:midi+12);

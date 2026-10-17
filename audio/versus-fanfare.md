@@ -21,8 +21,9 @@ suggests 210 BPM / 105 half time; measured quarter-note spacing is roughly
 0.29 seconds (about 206 BPM / 103 half time). The recording is the timing source:
 remove the lead-in before the first thump near 1.225 seconds and preserve the
 relative attack spacing. The requested 20 BPM increase takes the arrangement
-from approximately 206 to 226 BPM: every attack and the clip duration is
-multiplied by 206/226, preserving the performed groove. The table below records
+from approximately 206 to 226 BPM, followed by a 25% speed-up to 282.5 BPM.
+Every attack and the clip duration is multiplied by 206/282.5, preserving the
+performed groove. The table below records
 the original offsets before this uniform speed-up.
 
 | Voice | Original attack offsets before tempo scaling (seconds) |
@@ -34,8 +35,8 @@ This gives three thump/snap/thump/snap phrases, followed by three kick-only
 beats. No filler kicks, cymbals or hi-hats are added. The synth notes share the
 first twelve drum attack times and sound for 58% of each gap, leaving 42% clear.
 Lower chords and higher harmonies release with the lead. Only the
-final three kicks carry the continuous downward gliss, now from about 3.186 to
-3.919 seconds. The ready cue and panel exit also move earlier so the boss music
+final three kicks carry the continuous downward gliss, now from about 2.549 to
+3.136 seconds. The ready cue and panel exit also move earlier so the boss music
 starts as the gliss ends.
 
 The lead uses an original procedural ARR1-style breathy ah voice: three vowel
@@ -43,7 +44,8 @@ formant peaks, filtered breath noise, subtle pitch motion and light sampler
 grain, with a 20 ms attack. This is a synthesized approximation, with no imported
 vocal sample. [NFSA reference for ARR1/SARARR](https://www.nfsa.gov.au/collection/item/sampling-sounds-fairlight-cmi).
 A second airy lead follows the melody one octave higher, including the final
-gliss from B5 to E4. Both voices share a 20% lower lead gain, with 0.8/0.6
+gliss from B5 to E4. Both voices share the earlier 20% lead reduction plus
+another 30% reduction (0.8 × 0.7 of the original gain), with 0.8/0.6
 equal-power weighting favoring the original register. High partials are limited
 below Nyquist as the upper voice rises. Note spacing and kick levels stay fixed.
 The backing voices retain the rounded sine-based synth, soft octave and quiet
@@ -59,8 +61,8 @@ brief bright attack, higher gain and a slightly longer filtered tail for impact.
 kick-only section the lead continuously slides down from B4
 to E3, and the other voices land on E2/G-sharp2/B2. This E-major dominant leads
 into the boss track's opening A-minor chord. A 45 ms edge fade prevents clicks.
-Before a title-screen start, its music fades out over 350 ms of the companion
-departure, then stays silent for the final 200 ms before the versus cue begins.
+Before a title-screen start, its music fades out over 0.5 seconds of the companion
+departure, then stays silent for another 0.5 seconds before the versus cue begins.
 Canceling restores the title volume; the fade never changes saved preferences
 or effect volume, and music mute remains authoritative.
 

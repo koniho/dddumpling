@@ -354,23 +354,23 @@ final class TestAudio extends Check {
     private static void versusTitleFade(Layout L) {
         GameCore c=TestTimeAttack.start(Boss.SLIME);c.toTitle();c.returnFade=0;
         Ear ear=new Ear();c.sound=ear;c.preferences.music=.7f;c.preferences.effects=.4f;c.preferences.apply(c);
-        c.beginStart();c.update(.175f,.175f,L);
+        c.beginStart();c.update(.25f,.25f,L);
         check("title music eases halfway down during versus departure",
                 Math.abs(ear.musicVolume-.35f)<.001f && ear.effectsVolume==.4f);
-        c.update(.18f,.18f,L);
+        c.update(.25f,.25f,L);
         check("title music fades to silence before the versus cue",ear.musicVolume==0 && ear.versusMusicCalls==0);
-        c.update(.10f,.10f,L);
-        check("the title-to-versus handoff has a silent gap",c.state==GameCore.TITLE && ear.musicVolume==0);
+        c.update(.49f,.49f,L);
+        check("the title-to-versus handoff stays silent for half a second",c.state==GameCore.TITLE && ear.musicVolume==0);
         c.startMusic();int titleCalls=ear.musicCalls;
         check("reattaching audio during the gap stays silent",ear.musicVolume==0);
-        c.update(.10f,.10f,L);
+        c.update(.02f,.02f,L);
         check("versus restores selected volume without restarting title music",
                 c.state==GameCore.PLAY && ear.versusMusicCalls==1 && ear.musicVolume==.7f
                 && ear.musicCalls==titleCalls && c.preferences.music==.7f);
-        c.toTitle();c.beginStart();c.update(.4f,.4f,L);Pause.back(c);
+        c.toTitle();c.beginStart();c.update(.6f,.6f,L);Pause.back(c);
         check("canceling a faded start restores title volume",!c.starting() && ear.musicVolume==.7f);
         c.preferences.musicMuted=true;c.preferences.apply(c);c.beginStart();
-        c.update(.6f,.6f,L);
+        c.update(1.01f,1.01f,L);
         check("muted music remains muted after the silent handoff",ear.musicVolume==0 && ear.effectsVolume==.4f);
         c.toTitle();c.preferences.musicMuted=false;c.modes.selected=ModeSelector.ADVENTURE;
         c.preferences.apply(c);c.beginStart();c.update(.2f,.2f,L);
@@ -397,17 +397,17 @@ final class TestAudio extends Check {
         check("fanfare lands on E to lead into the boss A minor opening",
                 VersusMusic.finalMidi(VersusMusic.GLIDE_START)==71
                 && VersusMusic.finalMidi(VersusMusic.DURATION)==52);
-        check("twenty BPM increase preserves the beatbox spacing and cue length",
-                VersusMusic.BPM-VersusMusic.SOURCE_BPM==20
+        check("25 percent faster cue preserves the beatbox spacing",
+                VersusMusic.BPM==282.5f
                 && Math.abs(VersusMusic.KICKS[8]/4.080f-VersusMusic.SNAPS[5]/3.215f)<.00001f
-                && Math.abs(VersusMusic.DURATION-4.3f*206f/226f)<.00001f);
+                && Math.abs(VersusMusic.DURATION-4.3f*206f/226f/1.25f)<.00001f);
         boolean spaced=true;
         for(int phrase=0;phrase<3;phrase++) {
             float[] hits={VersusMusic.KICKS[phrase*2],VersusMusic.SNAPS[phrase*2],
                     VersusMusic.KICKS[phrase*2+1],VersusMusic.SNAPS[phrase*2+1],VersusMusic.KICKS[phrase*2+2]};
             for(int i=0;i<4;i++) {
                 float gap=hits[i+1]-hits[i],length=VersusMusic.noteDuration(gap);
-                spaced &= length>=.08f && gap-length>=.06f && length<=gap*.6f;
+                spaced &= length>=.06f && gap-length>=.045f && length<=gap*.6f;
             }
         }
         check("short vocal notes leave audible gaps throughout the beatbox phrases",spaced);

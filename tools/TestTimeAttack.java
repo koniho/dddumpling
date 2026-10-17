@@ -152,11 +152,11 @@ final class TestTimeAttack extends Check {
             c.collected=(1L<<4)|(1L<<Collect.bossPrize(Boss.SLIME));c.caseIndex=selected?4:0;
             Ear ear=new Ear();c.sound=ear;c.beginStart();int chosen=c.launchWho;
             check("time attack skips the pre-match picker and greeting "+selected,c.pickerT==0
-                    && c.launchT==GameCore.START_FADE && chosen>=0 && Launch.progress(c)==0);
-            c.update(GameCore.START_FADE*.5f,GameCore.START_FADE*.5f,L);
+                    && c.launchT==Launch.duration(c) && chosen>=0 && Launch.progress(c)==0);
+            c.update(Launch.duration(c)*.5f,Launch.duration(c)*.5f,L);
             check("companion departure progresses before face-off",c.state==GameCore.TITLE
                     && Math.abs(Launch.progress(c)-.5f)<.001f && ear.nameCalls==0 && ear.versusCalls==0);
-            for(float t=0;t<GameCore.START_FADE+.3f;t+=DT)c.update(DT,L);
+            for(float t=0;t<Launch.duration(c)+.3f;t+=DT)c.update(DT,L);
             check("only the versus screen announces the chosen companion "+selected,c.timeAttack.versus.active(c)
                     && c.timeAttack.versus.who==chosen && ear.nameCalls==0 && ear.versusCalls==1);
         }

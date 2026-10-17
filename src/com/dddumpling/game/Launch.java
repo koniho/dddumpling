@@ -35,13 +35,15 @@ final class Launch extends Draw {
     /** Size it swells to, as a multiple of the size it sat at in the badge. */
     private static final float GROWN = 2.1f;
 
+    static final float VERSUS_FADE=.5f,VERSUS_SILENCE=.5f;
+
     static boolean versus(GameCore c) {return c.modes.selected==ModeSelector.TIME_ATTACK;}
-    static float duration(GameCore c) {return versus(c)?GameCore.START_FADE:TIME;}
+    static float duration(GameCore c) {return versus(c)?VERSUS_FADE+VERSUS_SILENCE:TIME;}
 
     /** Fade the title loop during departure, then leave a short breath before versus music. */
     static float musicGain(GameCore c) {
         if(c.state!=GameCore.TITLE || !versus(c) || c.launchWho<0)return 1f;
-        float u=Math.max(0f,Math.min(1f,(GameCore.START_FADE-c.startFade)/.35f));
+        float u=Math.max(0f,Math.min(1f,(duration(c)-c.launchT)/VERSUS_FADE));
         return 1f-u*u*(3f-2f*u);
     }
 
