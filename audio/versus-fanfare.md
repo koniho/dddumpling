@@ -59,6 +59,11 @@ brief bright attack, higher gain and a slightly longer filtered tail for impact.
 kick-only section the lead continuously slides down from B4
 to E3, and the other voices land on E2/G-sharp2/B2. This E-major dominant leads
 into the boss track's opening A-minor chord. A 45 ms edge fade prevents clicks.
+Before a title-screen start, its music fades out over 350 ms of the companion
+departure, then stays silent for the final 200 ms before the versus cue begins.
+Canceling restores the title volume; the fade never changes saved preferences
+or effect volume, and music mute remains authoritative.
+
 This is a one-shot cue, not a loop. Both native backends use
 the music slider, narration ducking, and the existing lifecycle controls; boss
 music resumes after the versus screen. The master targets 4600 PCM RMS with a

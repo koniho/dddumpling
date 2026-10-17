@@ -85,7 +85,7 @@ final class PlayerSettings extends Draw {
         apply(c);
     }
     void apply(GameCore c) {
-        if (c.sound != null) c.sound.volumes(musicMuted ? 0f : music, effectsMuted ? 0f : effects);
+        if (c.sound != null) c.sound.volumes(musicMuted ? 0f : music*Launch.musicGain(c), effectsMuted ? 0f : effects);
     }
     static float unit(Layout L) { return Math.min(L.unit, L.h / 46f); }
     static float left(Layout L) { return L.w * .06f; }

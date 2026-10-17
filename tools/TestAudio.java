@@ -351,6 +351,32 @@ final class TestAudio extends Check {
         check("stale cave choice uses ordinary music",ear.music==Music.SWING_STYLE);
     }
 
+    private static void versusTitleFade(Layout L) {
+        GameCore c=TestTimeAttack.start(Boss.SLIME);c.toTitle();c.returnFade=0;
+        Ear ear=new Ear();c.sound=ear;c.preferences.music=.7f;c.preferences.effects=.4f;c.preferences.apply(c);
+        c.beginStart();c.update(.175f,.175f,L);
+        check("title music eases halfway down during versus departure",
+                Math.abs(ear.musicVolume-.35f)<.001f && ear.effectsVolume==.4f);
+        c.update(.18f,.18f,L);
+        check("title music fades to silence before the versus cue",ear.musicVolume==0 && ear.versusMusicCalls==0);
+        c.update(.10f,.10f,L);
+        check("the title-to-versus handoff has a silent gap",c.state==GameCore.TITLE && ear.musicVolume==0);
+        c.startMusic();int titleCalls=ear.musicCalls;
+        check("reattaching audio during the gap stays silent",ear.musicVolume==0);
+        c.update(.10f,.10f,L);
+        check("versus restores selected volume without restarting title music",
+                c.state==GameCore.PLAY && ear.versusMusicCalls==1 && ear.musicVolume==.7f
+                && ear.musicCalls==titleCalls && c.preferences.music==.7f);
+        c.toTitle();c.beginStart();c.update(.4f,.4f,L);Pause.back(c);
+        check("canceling a faded start restores title volume",!c.starting() && ear.musicVolume==.7f);
+        c.preferences.musicMuted=true;c.preferences.apply(c);c.beginStart();
+        c.update(.6f,.6f,L);
+        check("muted music remains muted after the silent handoff",ear.musicVolume==0 && ear.effectsVolume==.4f);
+        c.toTitle();c.preferences.musicMuted=false;c.modes.selected=ModeSelector.ADVENTURE;
+        c.preferences.apply(c);c.beginStart();c.update(.2f,.2f,L);
+        check("ordinary adventure launch retains its music",ear.musicVolume==.7f);
+    }
+
     private static void versusMusic(Layout L) {
         short[] pcm=VersusMusic.clip();int peak=0;double energy=0,tail=0;
         for(int i=0;i<pcm.length;i++) {
@@ -404,6 +430,7 @@ final class TestAudio extends Check {
     }
 
     static void audio(Layout L) {
+        versusTitleFade(L);
         versusMusic(L);
         group("audio");
         int peak = (int) (Sfx.PEAK * 32767f);

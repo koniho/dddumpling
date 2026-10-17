@@ -1926,6 +1926,7 @@ final class GameCore {
         starter.clear();titleStart.reset();launchFromStarter=false;
         stopLaunchVoice();
         startFade = launchT = pickerT = 0; launchWho = pendingRunWho = -1; startAnnounced = false;
+        preferences.apply(this);
     }
 
     int pickerWho() {
@@ -2076,8 +2077,9 @@ final class GameCore {
         }
         startAnnounced = false;
         cave.begin(this);
-        if (sound != null) sound.selectMusic(normalMusicChoice());
         if(modes.selected==ModeSelector.TIME_ATTACK)timeAttack.begin(this);
+        else if (sound != null) sound.selectMusic(normalMusicChoice());
+        preferences.apply(this);
         LinkedPairs.beginStage(this);
         if (Starter.introPending(this)) onboarding.introduceCompanion(this);
     }
@@ -2943,6 +2945,7 @@ final class GameCore {
                     }
                 }
             }
+            if(Launch.versus(this))preferences.apply(this);
             if (startFade == 0f && launchT == 0f && pickerT == 0f) {
                 startGame();
                 return;

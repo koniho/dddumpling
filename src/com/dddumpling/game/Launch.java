@@ -38,6 +38,13 @@ final class Launch extends Draw {
     static boolean versus(GameCore c) {return c.modes.selected==ModeSelector.TIME_ATTACK;}
     static float duration(GameCore c) {return versus(c)?GameCore.START_FADE:TIME;}
 
+    /** Fade the title loop during departure, then leave a short breath before versus music. */
+    static float musicGain(GameCore c) {
+        if(c.state!=GameCore.TITLE || !versus(c) || c.launchWho<0)return 1f;
+        float u=Math.max(0f,Math.min(1f,(GameCore.START_FADE-c.startFade)/.35f));
+        return 1f-u*u*(3f-2f*u);
+    }
+
     /** 0..1 through the send-off. */
     static float progress(GameCore c) {
         return 1f - c.launchT / duration(c);
