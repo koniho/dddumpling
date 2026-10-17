@@ -2698,6 +2698,16 @@ final class Preview {
             for(float time=0;time<elapsed;time+=DT)slime.boss.update(DT,L,slime.rnd);
             shot(dir,"182-slime-recovery-"+Math.round(health*100)+"-"+Math.round(elapsed*100),slime,L,w,h,ss);
         }
+        if(wanted("195-slime-boip")) {
+            GameCore boip=TestBoss.enterBoss(L,Boss.SLIME,195);boip.stageBanner=0;
+            boip.boss.etype[0]=Boss.E_GLOB;boip.boss.elife[0]=Boss.GLOB_TIME;
+            boip.update(DT,L);
+            String[] poses={"rest","first","gap","second"};float[] times={-1f,.02f,.12f,Boss.SLIME_BOIP_GAP+.02f};
+            for(int i=0;i<times.length;i++) {
+                boip.boss.slimeBoipTime=times[i];
+                shot(dir,"195-slime-boip-"+poses[i],boip,L,w,h,ss);
+            }
+        }
         // The arrival card, part way in.
         GameCore ci = toBoss(L, Boss.SLIME, 501L, false);
         step(ci, L, Boss.INTRO * 0.45f);
@@ -3268,7 +3278,7 @@ final class Preview {
                 "collect", "star", "course-start", "tally", "parade-join", "game-over", "boss-laugh", "boss-damage", "boss-split", "bolt-pop", "divide-damage", "divide-split",
                 "divide-boing-heavy", "divide-boing-medium", "divide-boing-light", "roster-join", "divide-deactivate", "shield-bounce", "slime-damage", "octo-cue", "octo-lock",
                 "taunt-slime", "taunt-divide", "taunt-octopus", "taunt-mushroom", "taunt-gator", "bolt-death",
-                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage", "score-reset-confirm", "score-reset-brush", "ninja-swish-2", "ninja-swish-3", "ninja-combo", "survival-game-over", "gator-parry", "gator-prompt-1", "gator-prompt-2", "gator-prompt-3", "gator-splash", "gator-taunt-1-1", "gator-taunt-1-2", "gator-taunt-1-3", "gator-taunt-2-1", "gator-taunt-2-2", "gator-taunt-2-3", "slime-squish-1", "slime-squish-2", "slime-squish-3", "slime-squish-4", "slime-squish-5", "slime-squish-6"};
+                "mushroom-shake", "mushroom-spore", "linked-thud", "shuffle-blip", "debuff-down", "slime-cover", "slime-release", "land-shuffle", "ui-bloop", "blast-off", "divide-supernova", "octo-wave", "cave-rumble", "cave-crash", "cave-ambush", "cave-sink", "mining-cheer", "cart-roll", "cart-squeal", "cart-tumble", "octo-damage", "score-reset-confirm", "score-reset-brush", "ninja-swish-2", "ninja-swish-3", "ninja-combo", "survival-game-over", "gator-parry", "gator-prompt-1", "gator-prompt-2", "gator-prompt-3", "gator-splash", "gator-taunt-1-1", "gator-taunt-1-2", "gator-taunt-1-3", "gator-taunt-2-1", "gator-taunt-2-2", "gator-taunt-2-3", "slime-squish-1", "slime-squish-2", "slime-squish-3", "slime-squish-4", "slime-squish-5", "slime-squish-6", "slime-vulnerable"};
         int peak = 0;
         for (int id = 0; id < Sfx.COUNT; id++) {
             short[] pcm = Sfx.build(id);

@@ -170,6 +170,8 @@ final class Boss {
     boolean slimeRetaliating;
     boolean slimeCoverLearned;
     int slimePromptHits, slimeSoundSequence;
+    static final float SLIME_BOIP_GAP=.14f, SLIME_BOIP_LENGTH=.11f, SLIME_BOIP_DURATION=.26f;
+    float slimeVulnerableSoundT=-1f, slimeBoipTime=-1f;
     /** Set by swat() for the press frame so audio can distinguish a hit from a destroyed bolt. */
     boolean boltDestroyed;
 
@@ -363,6 +365,7 @@ final class Boss {
         slimeRetaliating = boltDestroyed = false;
         slimeCoverLearned = false;
         slimePromptHits = slimeSoundSequence = 0;
+        slimeVulnerableSoundT=slimeBoipTime=-1f;
         mushroomShakes = mushroomDirection = 0;
         mushroomLastX = mushroomShakeWindow = mushroomCharge = mushroomAngry = mushroomSweepFlash = 0f;
         mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
@@ -446,6 +449,7 @@ final class Boss {
         slimeRetaliating = boltDestroyed = false;
         slimeCoverLearned = false;
         slimePromptHits = slimeSoundSequence = 0;
+        slimeVulnerableSoundT=slimeBoipTime=-1f;
         mushroomShakes = mushroomDirection = 0;
         mushroomLastX = mushroomShakeWindow = mushroomAttackT = mushroomCharge = mushroomAngry = mushroomSweepFlash = 0f;
         mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
@@ -771,6 +775,15 @@ final class Boss {
         if (!open()) return false;
 
         return asksFor(g);
+    }
+
+    float slimeBoipPulse() {
+        if(slimeBoipTime<0f)return 0f;
+        int beat=slimeBoipTime>=SLIME_BOIP_GAP?1:0;
+        float t=slimeBoipTime-beat*SLIME_BOIP_GAP;
+        if(t>=SLIME_BOIP_LENGTH)return 0f;
+        return (beat==0?.75f:1f)*Math.min(1f,t/.012f)
+                *(float)Math.exp(-t/.06f)*Math.min(1f,(SLIME_BOIP_LENGTH-t)/.02f);
     }
 
     /** The next letter of {@link #SLIME}'s chain. */
@@ -1274,6 +1287,7 @@ final class Boss {
             hp = 0f;
             beaten = true;
             slimeEyeHit=0f;
+            slimeVulnerableSoundT=slimeBoipTime=-1f;
             if(kind==SLIME && body!=null)slimeDeath=new SlimeDeath.Pose(body);
             OctoThrow.reset(this);
             leaveT = LEAVE;
@@ -1314,6 +1328,7 @@ final class Boss {
         int i = freeElem();
         if (i < 0) return -1;
         etype[i] = E_GLOB;
+        slimeVulnerableSoundT=.4f;
         elife[i] = GLOB_TIME;
         // Placed by the layout pass on the frame it appears; these are the offsets it uses. Cleared
         // of any earlier drag in this slot, or a fresh glob would appear wherever the last one in

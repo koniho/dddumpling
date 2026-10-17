@@ -172,6 +172,25 @@ final class BossPlay {
         return true;
     }
 
+    static void slimeVulnerableSound(GameCore c,float dt) {
+        Boss b=c.boss;
+        if(b.kind!=Boss.SLIME || !b.fighting() || !b.hasGlob()) {
+            b.slimeVulnerableSoundT=b.slimeBoipTime=-1f;
+            return;
+        }
+        if(b.slimeBoipTime>=0f) {
+            b.slimeBoipTime+=dt;
+            if(b.slimeBoipTime>=Boss.SLIME_BOIP_DURATION)b.slimeBoipTime=-1f;
+        }
+        if(b.slimeVulnerableSoundT<0f)return;
+        b.slimeVulnerableSoundT-=dt;
+        if(b.slimeVulnerableSoundT<=0f) {
+            b.slimeVulnerableSoundT=-1f;
+            b.slimeBoipTime=0f;
+            if(c.sound!=null)c.sound.slimeVulnerable();
+        }
+    }
+
     static void slimeSquish(GameCore c,int first,int count) {
         int variant=first+(c.boss.slimeSoundSequence++ & 0x7fffffff)%count;
         if(c.sound!=null)c.sound.slimeSquish(variant);

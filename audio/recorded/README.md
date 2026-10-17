@@ -223,3 +223,10 @@ impact, heavy takes 5–6 on drag damage, and takes 4–6 on attack-volley launc
 Selection uses a resettable cosmetic counter, not gameplay RNG. Android and iOS
 use the same baked PCM at native playback rate and 90% effect gain. Existing cover/charge cues and
 death audio remain unchanged; a separate splat recording is planned for death.
+
+A separate synthesized, higher two-beat boip plays 0.4 seconds after the loose glob
+makes Super Slime vulnerable to drag damage. Beats are 140 ms apart, with a higher
+second note and soft falling pitch. Pause holds the delay; losing vulnerability,
+defeat and leaving cancel it. Muted cues are consumed without replaying later.
+The eyes, brows and open mouth pulse on the same shared 140 ms beat clock, with a
+larger second reaction. The expression clock pauses and cancels with the cue.

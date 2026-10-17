@@ -262,6 +262,7 @@ final class GameCore {
         void shuffleBlip();
         void debuffDown();
         void slimeCover(boolean release);
+        void slimeVulnerable();
         void landShuffle();
         void uiBloop();
         /** A high-score reset was accepted and the board is about to be cleaned. */
@@ -3134,6 +3135,7 @@ final class GameCore {
             boolean beforeSupernova = boss.kind == Boss.SPLITTER && boss.beaten && !DivideDeath.bursting(boss);
             if(boss.kind==Boss.ALLIGATOR)boss.alligator.target(this,L);
             int bossHits = boss.update(dt, L, rnd);
+            BossPlay.slimeVulnerableSound(this,dt);
             if(boss.kind==Boss.ALLIGATOR)boss.alligator.guard.feedback(this);
             if(boss.kind==Boss.ALLIGATOR)shake=Math.max(shake,Math.max(boss.alligator.takeShake(),
                     AlligatorArrival.shake(beforeIntro,boss.introProgress())));

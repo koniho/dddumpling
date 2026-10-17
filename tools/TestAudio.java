@@ -353,7 +353,7 @@ final class TestAudio extends Check {
             int max = 0;
             for (int i = 0; i < pcm.length; i++) max = Math.max(max, Math.abs(pcm[i]));
             // Recorded Ninja swishes and Slime squishes retain their relative levels.
-            if (!Sfx.isNinjaSwish(id) && id<Sfx.SLIME_SQUISH_0 && Math.abs(max - peak) > 2) allNormalised = false;
+            if (!Sfx.isNinjaSwish(id) && !(id>=Sfx.SLIME_SQUISH_0 && id<Sfx.SLIME_SQUISH_0+6) && Math.abs(max - peak) > 2) allNormalised = false;
             if (max >= 32767) allClean = false;
             // Roulette ticks intentionally fit between fast icon changes.
             int minimum = id == Sfx.SHUFFLE_BLIP ? Sfx.RATE / 40 : Sfx.RATE / 20;
@@ -393,6 +393,15 @@ final class TestAudio extends Check {
             if(variant>0)check("growl retains its own performance "+variant,
                     !java.util.Arrays.equals(growl,Sfx.build(Sfx.gatorTauntId(variant-1))));
         }
+        short[] ready=Sfx.build(Sfx.SLIME_VULNERABLE);
+        int firstBoip=0,secondBoip=0,gap=0;
+        for(int i=0;i<ready.length;i++) {
+            int level=Math.abs((int)ready[i]);
+            if(i<Sfx.RATE*.11f)firstBoip=Math.max(firstBoip,level);
+            else if(i<Sfx.RATE*.14f)gap=Math.max(gap,level);
+            else secondBoip=Math.max(secondBoip,level);
+        }
+        check("Slime vulnerability has two distinct audible boips",firstBoip>1000 && secondBoip>1000 && gap==0);
         float[] slimeDurations={.247f,.240f,.320f,.414f,.174f,.120f};
         int[] slimePeaks=new int[6];
         for(int variant=0;variant<6;variant++) {

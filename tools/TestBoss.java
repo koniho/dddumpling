@@ -29,6 +29,39 @@ final class TestBoss extends Check {
     }
 
     static void promptImpactTiming(Layout L) {
+        group("delayed Slime vulnerability boip");
+        GameCore ready=enterBoss(L,Boss.SLIME,196);toOpen(ready,L);
+        Ear readyEar=new Ear();ready.sound=readyEar;
+        for(int i=0;i<Boss.SPLIT_HITS;i++)ready.tapKey(ready.boss.chainLetter(),L);
+        check("loose glob schedules its vulnerability cue",ready.boss.hasGlob() && ready.boss.slimeVulnerableSoundT==.4f);
+        for(int i=0;i<23;i++)ready.update(DT,L);
+        check("vulnerability cue waits four tenths",readyEar.slimeVulnerables==0);
+        ready.paused=true;ready.update(1f,L);
+        check("pause holds the delayed cue",readyEar.slimeVulnerables==0 && ready.boss.slimeVulnerableSoundT>0f);
+        ready.paused=false;ready.update(DT,L);ready.update(DT,L);
+        check("vulnerability cue fires after four tenths",readyEar.slimeVulnerables==1);
+        check("expression clock starts with the boip",ready.boss.slimeBoipTime>=0f && ready.boss.slimeBoipTime<DT*2);
+        ready.boss.slimeBoipTime=.02f;float firstExpression=ready.boss.slimeBoipPulse();
+        ready.boss.slimeBoipTime=.12f;check("expression settles between boips",ready.boss.slimeBoipPulse()==0f);
+        ready.boss.slimeBoipTime=Boss.SLIME_BOIP_GAP+.02f;
+        check("higher second boip has a bigger expression",ready.boss.slimeBoipPulse()>firstExpression && firstExpression>0f);
+        ready.paused=true;float heldExpression=ready.boss.slimeBoipTime;ready.update(.2f,L);
+        check("pause holds the expression with its sound",ready.boss.slimeBoipTime==heldExpression);ready.paused=false;
+        for(int i=0;i<30;i++)ready.update(DT,L);
+        check("vulnerability cue does not repeat",readyEar.slimeVulnerables==1);
+        ready.boss.slimeVulnerableSoundT=.1f;
+        java.util.Arrays.fill(ready.boss.etype,Boss.E_OFF);
+        ready.update(DT,L);ready.update(.2f,L);
+        check("losing the glob cancels the delayed cue",readyEar.slimeVulnerables==1 && ready.boss.slimeVulnerableSoundT<0f && ready.boss.slimeBoipTime<0f);
+        ready.boss.slimeVulnerableSoundT=.1f;ready.boss.leave();
+        check("leaving cancels the delayed cue",ready.boss.slimeVulnerableSoundT<0f && ready.boss.slimeBoipTime<0f);
+        ready.boss.slimeVulnerableSoundT=.1f;ready.boss.begin(Boss.SLIME,Boss.EVERY,ready.rnd);
+        check("new encounter clears the delayed cue",ready.boss.slimeVulnerableSoundT<0f && ready.boss.slimeBoipTime<0f);
+        ready.boss.etype[0]=Boss.E_GLOB;ready.boss.elife[0]=Boss.GLOB_TIME;
+        ready.boss.slimeVulnerableSoundT=.01f;ready.boss.intro=0f;ready.sound=null;
+        BossPlay.slimeVulnerableSound(ready,.02f);ready.sound=readyEar;
+        BossPlay.slimeVulnerableSound(ready,.1f);
+        check("a muted vulnerability cue is consumed",readyEar.slimeVulnerables==1 && ready.boss.slimeVulnerableSoundT<0f);
         group("recorded Slime squish rotation");
         GameCore sounds=enterBoss(L,Boss.SLIME,195);Ear recorded=new Ear();sounds.sound=recorded;
         sounds.rnd.setSeed(195);java.util.Random expectedSoundRng=new java.util.Random(195);

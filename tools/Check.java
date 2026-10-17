@@ -181,7 +181,8 @@ abstract class Check {
         public void scoreResetBrush(int stroke) { scoreResetBrushes++;lastScoreResetBrush=stroke; }
         int landShuffles;
         public void landShuffle() { landShuffles++; }
-        int slimeCovers, slimeReleases;
+        int slimeCovers, slimeReleases, slimeVulnerables;
+        public void slimeVulnerable() { slimeVulnerables++; }
         public void slimeCover(boolean release) { if(release) slimeReleases++; else slimeCovers++; }
         int shuffleBlips, debuffDowns;
         public void shuffleBlip() { shuffleBlips++; }

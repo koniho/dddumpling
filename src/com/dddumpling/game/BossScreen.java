@@ -247,7 +247,7 @@ final class BossScreen extends Draw {
         float elapsed=Boss.SLIME_EYE_HIT-b.slimeEyeHit;
         float hit=MushroomDeath.ease(elapsed,0f,.08f)*(1f-MushroomDeath.ease(elapsed,.16f,Boss.SLIME_EYE_HIT));
         drawSlimeSkin(p,slimePromptOutline(L,b),b.body.centreX(),b.body.centreY(),
-                b.body.radiusX(),b.body.radiusY(),b.body.radius(),col,c.clock,b.hasGlob(),fade,false,hit);
+                b.body.radiusX(),b.body.radiusY(),b.body.radius(),col,c.clock,b.hasGlob(),fade,false,hit,b.slimeBoipPulse());
     }
 
     static void slimePortrait(Painter p,float x,float y,float radius,float clock) {
@@ -264,11 +264,11 @@ final class BossScreen extends Draw {
 
     static void drawSlimeSkin(Painter p,float[] skin,float cx,float cy,float rx,float ry,
             float radius,int col,float clock,boolean vulnerable,float fade,boolean defeated) {
-        drawSlimeSkin(p,skin,cx,cy,rx,ry,radius,col,clock,vulnerable,fade,defeated,0f);
+        drawSlimeSkin(p,skin,cx,cy,rx,ry,radius,col,clock,vulnerable,fade,defeated,0f,0f);
     }
 
     private static void drawSlimeSkin(Painter p,float[] skin,float cx,float cy,float rx,float ry,
-            float radius,int col,float clock,boolean vulnerable,float fade,boolean defeated,float hit) {
+            float radius,int col,float clock,boolean vulnerable,float fade,boolean defeated,float hit,float boip) {
         int lime = Glyph.mix(col, 0xFFA8F02B, 0.32f);
         int edge = Glyph.mix(0xFF176A24, col, 0.16f);
 
@@ -321,8 +321,8 @@ final class BossScreen extends Draw {
 
         // The reference face: two deep green button eyes with crisp reflected light.
         float worry=vulnerable?1f:hit;
-        float eyeY = cy - ry * (0.10f-0.03f*worry), eyeDX = rx * 0.35f;
-        float eyeRX = ry * 0.225f, eyeRY = ry * (0.265f+0.025f*worry);
+        float eyeY = cy - ry * (0.10f-0.03f*worry+boip*.055f), eyeDX = rx * 0.35f;
+        float eyeRX = ry * .225f*(1f-.15f*boip), eyeRY = ry * (.265f+.025f*worry)*(1f+.30f*boip);
         int ink = Glyph.withAlpha(0xFF154F19, (int) (255 * fade));
         for (int side = -1; side <= 1; side += 2) {
             float ex = cx + side * eyeDX;
@@ -331,7 +331,7 @@ final class BossScreen extends Draw {
                     Glyph.withAlpha(0xFFFFFFFF, (int) (245 * fade)));
             if (worry>0f) {
                 // Hits ease into the same raised-inner-brow worry as the vulnerable pose.
-                float innerY = eyeY - eyeRY * 1.18f;
+                float innerY = eyeY - eyeRY * (1.18f+.16f*boip);
                 int brow=Glyph.withAlpha(0xFF154F19,(int)(255*fade*worry));
                 p.line(ex - side * eyeRX * 0.82f, innerY - eyeRY * 0.24f*worry,
                         ex + side * eyeRX * 0.70f, innerY + eyeRY * 0.05f*worry, brow, ry * 0.050f);
@@ -342,7 +342,7 @@ final class BossScreen extends Draw {
         if (vulnerable) {
             // A trembling open gasp replaces the content smile while the glob can be pulled.
             float gasp = 1f + 0.07f * (float) Math.sin(clock * 9f);
-            p.fillEllipse(cx, cy + ry * 0.18f, rx * 0.105f * gasp, ry * 0.145f / gasp, ink);
+            p.fillEllipse(cx, cy + ry * 0.18f, rx * .105f * gasp*(1f-.15f*boip), ry * .145f / gasp*(1f+.85f*boip), ink);
             p.fillEllipse(cx, cy + ry * 0.225f, rx * 0.060f, ry * 0.050f,
                     Glyph.withAlpha(0xFFFF8099, (int) (225 * fade)));
         } else {
