@@ -39,7 +39,7 @@ final class TestFastEnemies extends Check {
         c.rnd.setSeed(180);FastEnemies.assign(c,e);
         check("selection consumes no gameplay randomness",c.rnd.nextLong()==new java.util.Random(180).nextLong());
         Words.fill(e,3,0,new java.util.Random(180));check("reused word loses runner identity",!e.fastSingle);
-        cadence(L);movement(L);completion(L);teamRush();powerMix(L);waves(L);
+        cadence(L);movement(L);completion(L);teamRush();powerRate(L);powerMix(L);waves(L);
     }
     private static void cadence(Layout L) {
         GameCore c=scene(L,16,180);c.spawnedThisStage=1;c.spawnTimer=0;
@@ -134,6 +134,26 @@ final class TestFastEnemies extends Check {
                     Math.hypot(c.buddy.x-beforeX,c.buddy.y-beforeY)<L.w*.05f);
             for(int frame=0;frame<180 && !e.destroyed && c.lives==GameCore.START_LIVES;frame++)c.update(DT,L);
             check("Team catches cross-field rush before damage "+shape+"/"+side,e.destroyed && c.lives==GameCore.START_LIVES);
+        }
+    }
+    private static void powerRate(Layout L) {
+        for(int mode:new int[]{Power.FLURRY,Power.NINJA,Power.MULTI,Power.TEAM}) {
+            GameCore c=scene(L,21,197);c.mode=mode;c.modeLeft=5;
+            c.rnd.setSeed(197);
+            int rush=0;
+            for(int sample=0;sample<1000;sample++) {
+                GameCore.Enemy e=new GameCore.Enemy();
+                e.word=new int[]{0,1,4};e.phase=6.283f*(sample+.5f)/1000;
+                FastEnemies.assign(c,e);
+                if(e.fastSingle)rush++;
+            }
+            check("power rush share reduced 35 percent "+mode,rush==260);
+            check("power rush selection preserves RNG "+mode,
+                    c.rnd.nextLong()==new java.util.Random(197).nextLong());
+            c.modeLeft=0;c.fastEnemyNext=true;
+            GameCore.Enemy e=new GameCore.Enemy();e.word=new int[]{0,1};e.phase=0;
+            FastEnemies.assign(c,e);
+            check("expired power restores scheduled normal runner "+mode,e.fastSingle);
         }
     }
     private static void powerMix(Layout L) {

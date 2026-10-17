@@ -15,7 +15,8 @@ final class FastEnemies {
         e.fastSingle=false;
         if(!eligible(c) || e.link!=null)return;
         // The first pair gets its introduction before the third spawn becomes a runner.
-        boolean chosen=c.powerActive()?e.phase>=6.283f*.60f
+        // Power-up runners use 26% of solo candidates: 35% fewer than the former 40%.
+        boolean chosen=c.powerActive()?e.phase>=6.283f*.74f
                 :c.stage==FIRST_STAGE?c.spawnedThisStage==2:c.fastEnemyNext;
         if(!chosen)return;
         e.fastSingle=true;
