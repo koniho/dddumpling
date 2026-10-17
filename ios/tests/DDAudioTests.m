@@ -178,6 +178,24 @@
   XCTAssertEqual([[audio valueForKey:@"musicGeneration"] unsignedIntegerValue], generation);
 }
 
+- (void)testVersusMusicIsDistinctAndRestoresBossMusic {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  [audio selectMusicWithInt:DDMusic_DRIFT];
+  [audio versusMusic];
+  XCTAssertTrue([[audio valueForKey:@"playingVersus"] boolValue]);
+  XCTAssertFalse([[audio valueForKey:@"playingBoss"] boolValue]);
+  NSUInteger generation = [[audio valueForKey:@"musicGeneration"] unsignedIntegerValue];
+  [audio versusMusic];
+  XCTAssertEqual([[audio valueForKey:@"musicGeneration"] unsignedIntegerValue], generation);
+  [audio bossMusicWithBoolean:YES];
+  XCTAssertFalse([[audio valueForKey:@"playingVersus"] boolValue]);
+  XCTAssertTrue([[audio valueForKey:@"playingBoss"] boolValue]);
+  XCTAssertEqual([[audio valueForKey:@"selectedStyle"] intValue], DDMusic_DRIFT);
+  [audio versusMusic];
+  [audio selectMusicWithInt:DDMusic_SWING_STYLE];
+  XCTAssertFalse([[audio valueForKey:@"playingVersus"] boolValue]);
+}
+
 - (void)testDuplicateSelectionsKeepThePendingInitialRender {
   DDClockedAudio *audio = [DDClockedAudio new];
   dispatch_queue_t queue = [audio valueForKey:@"renderQueue"];

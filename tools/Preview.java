@@ -1840,6 +1840,7 @@ final class Preview {
         if (wanted("skits")) skitSheet(dir, L, w, h, ss);
         if (wanted("collect")) collectSheet(dir, w, h, ss);
         if (wanted("sfx")) sounds(dir);
+        if (wanted("versus-music")) Wav.write(new File(dir,"versus-trumpet-fanfare.wav"),VersusMusic.clip(),Sfx.RATE);
 
         Mem store = new Mem();
         store.best = 1840;
@@ -3330,6 +3331,7 @@ final class Preview {
         for(int song=0;song<CaveSong.COUNT;song++) {
             Wav.write(new File(sfxDir,"cave-band-"+song+".wav"),CaveSong.performance(song),Sfx.RATE);
         }
+        Wav.write(new File(sfxDir,"bgm-versus-trumpet.wav"),VersusMusic.clip(),Sfx.RATE);
         short[] fren = Music.loop(Music.SWING_STYLE, true);
         short[] boss = Music.bossLoop(Music.SWING_STYLE);
         Wav.write(new File(sfxDir, "bgm-frenzy.wav"), fren, Sfx.RATE);

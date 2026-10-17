@@ -159,7 +159,8 @@ abstract class Check {
         int lastTally = -1;
         boolean frenzyOn;
         boolean bossMusic;
-        int bossMusicCalls;
+        int bossMusicCalls,versusMusicCalls;
+        public void versusMusic() {versusMusicCalls++;bossMusic=false;}
         int narrations, hushes;
         int explanations;
         String explanation;

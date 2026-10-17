@@ -37,8 +37,9 @@ final class Audio implements GameCore.Sound {
     private boolean frenzyPlaying;
     private boolean bossPlaying;
     private long boltPopUntil;
-    /** -1 none, 0 selected track, 1 boss arrangement. Prevents same-track restarts. */
+    /** -1 none, 0 selected track, 1 boss arrangement, 2 versus fanfare. Prevents same-track restarts. */
     private int musicMode = -1, playingStyle = -1;
+    private volatile int musicGeneration;
 
     Audio(Context ctx) {
         this.ctx = ctx;
@@ -48,6 +49,7 @@ final class Audio implements GameCore.Sound {
                 for (int id = 0; id < Sfx.COUNT; id++) Sfx.build(id);
                 Sfx.rocket();
                 Sfx.bubble();
+                VersusMusic.clip();
                 Music.preRender(Music.SWING_STYLE);
             }
         }, "hexatype-audio-prerender").start();
@@ -81,9 +83,10 @@ final class Audio implements GameCore.Sound {
         playingStyle = style;
         bossPlaying = false;
         stopMusic();
+        final int generation=musicGeneration;
         new Thread(new Runnable() {
             @Override public void run() {
-                playSynthMusic(Music.isSynth(style) ? style : Music.SWING_STYLE, frenzyPlaying);
+                playSynthMusic(Music.isSynth(style) ? style : Music.SWING_STYLE, frenzyPlaying,generation);
             }
         }, "hexatype-bgm").start();
     }
@@ -102,20 +105,33 @@ final class Audio implements GameCore.Sound {
         playingStyle = choice;
         stopMusic();
         bgmStarted = true;
+        final int generation=musicGeneration;
         new Thread(new Runnable() {
              public void run() {
                 int style = Music.isSynth(choice) ? choice : Music.SWING_STYLE;
                 try {
                     short[] pcm = Music.bossLoop(style);
-                    AudioTrack t = musicTrack(pcm);
+                    AudioTrack t = musicTrack(pcm,true);
                     if (!bossPlaying) { t.release(); return; }
-                    startPreparedMusic(t);
+                    startPreparedMusic(t,generation);
                 } catch (Throwable ignored) {}
             }
         }, "hexatype-boss-bgm").start();
     }
 
-    private AudioTrack musicTrack(short[] pcm) {
+    @Override public void versusMusic() {
+        if(musicMode==2)return;
+        musicMode=2;bossPlaying=frenzyPlaying=false;bgmStarted=true;
+        stopMusic();final int generation=musicGeneration;
+        new Thread(new Runnable() {
+            public void run() {
+                try {startPreparedMusic(musicTrack(VersusMusic.clip(),false),generation);}
+                catch(Throwable ignored) {}
+            }
+        },"hexatype-versus-bgm").start();
+    }
+
+    private AudioTrack musicTrack(short[] pcm,boolean loop) {
         AudioTrack t = new AudioTrack(
                 new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME)
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build(),
@@ -123,11 +139,12 @@ final class Audio implements GameCore.Sound {
                         .setSampleRate(Sfx.RATE).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build(),
                 pcm.length * 2, AudioTrack.MODE_STATIC, AudioManager.AUDIO_SESSION_ID_GENERATE);
         t.write(pcm, 0, pcm.length);
-        t.setLoopPoints(0, pcm.length, -1);
+        if(loop)t.setLoopPoints(0, pcm.length, -1);
         return t;
     }
 
-    private void stopMusic() {
+    private synchronized void stopMusic() {
+        musicGeneration++;
         try {
             if (bgmTrack != null) {
                 bgmTrack.stop();
@@ -139,33 +156,14 @@ final class Audio implements GameCore.Sound {
         }
     }
 
-    private void playSynthMusic(int style, boolean frenzy) {
-        try {
-            short[] pcm = Music.loop(style, frenzy);
-            AudioTrack t = new AudioTrack(
-                    new AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_GAME)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                            .build(),
-                    new AudioFormat.Builder()
-                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .setSampleRate(Sfx.RATE)
-                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                            .build(),
-                    pcm.length * 2, AudioTrack.MODE_STATIC,
-                    AudioManager.AUDIO_SESSION_ID_GENERATE);
-            t.write(pcm, 0, pcm.length);
-            // -1 repeats forever; the loop is written to wrap cleanly.
-            t.setLoopPoints(0, pcm.length, -1);
-            startPreparedMusic(t);
-        } catch (Throwable ignored) {
-            // No music on this device; the game is perfectly playable silent.
-        }
+    private void playSynthMusic(int style, boolean frenzy,int generation) {
+        try {startPreparedMusic(musicTrack(Music.loop(style,frenzy),true),generation);}
+        catch(Throwable ignored) {}
     }
 
     /** A track prepared in the background must honor a pause that happened while it was loading. */
-    private synchronized void startPreparedMusic(AudioTrack track) {
-        if (band.active()) { track.release(); return; }
+    private synchronized void startPreparedMusic(AudioTrack track,int generation) {
+        if (generation!=musicGeneration || band.active()) { track.release(); return; }
         bgmTrack = track;
         applyMusicMix();
         if (!musicPaused) track.play();
@@ -491,9 +489,10 @@ final class Audio implements GameCore.Sound {
         stopMusic();
         final int style = Music.isSynth(choice) ? choice : Music.SWING_STYLE;
         final boolean fast = on;
+        final int generation=musicGeneration;
         new Thread(new Runnable() {
             @Override public void run() {
-                playSynthMusic(style, fast);
+                playSynthMusic(style, fast,generation);
             }
         }, "hexatype-bgm").start();
     }

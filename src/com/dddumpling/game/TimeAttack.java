@@ -80,7 +80,7 @@ final class TimeAttack extends Draw {
         c.pushUsed=false;c.pushT=c.pushSlowT=0;
         c.boss.begin(which,c.stage,c.rnd,c.playRosterFull());
         versus.begin(c,which);
-        if(c.sound!=null)c.sound.bossMusic(true);
+        if(c.sound!=null)c.sound.versusMusic();
     }
     void tick(GameCore c,float elapsed) {
         if(!active || finished || c.state!=GameCore.PLAY || !c.boss.fighting()

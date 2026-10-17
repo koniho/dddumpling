@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** A cosmetic face-off before the normal boss arrival; it never advances combat. */
 final class TimeAttackVersus extends Draw {
-    static final float CLASH=.66f, READY=3.45f, EXIT=3.7f, DURATION=4.3f;
+    static final float CLASH=.66f, READY=3.45f, EXIT=3.7f, DURATION=VersusMusic.DURATION;
     static final float SHIMMER=.78f, ANNOUNCE=.24f;
     float time=DURATION,leftShimmer=-1,rightShimmer=-1;
     int who,boss;
@@ -17,7 +17,14 @@ final class TimeAttackVersus extends Draw {
                 && !c.boss.beaten && c.boss.kind==boss && c.boss.intro>0 && time<DURATION;
     }
     boolean update(GameCore c,float elapsed,Layout L) {
-        if(!active(c))return false;
+        if(!active(c)) {
+            if(time<DURATION && c.state==GameCore.PLAY && c.timeAttack.active && !c.timeAttack.finished
+                    && c.boss.kind==boss && c.boss.intro<=0) {
+                time=DURATION;
+                if(c.sound!=null) {c.sound.hush();c.sound.bossMusic(true);}
+            }
+            return false;
+        }
         if(c.paused || c.settingsOpen)return true;
         if(!Float.isFinite(elapsed) || elapsed<=0)return true;
         if(!prepared) {
@@ -35,7 +42,7 @@ final class TimeAttackVersus extends Draw {
             if(before<CLASH && time>=CLASH)c.sound.linkedThud();
             if(before<READY && time>=READY)c.sound.courseStart();
             // Cancel a slow or still-warming speech engine before normal boss/tutorial audio.
-            if(time>=DURATION)c.sound.hush();
+            if(time>=DURATION) {c.sound.hush();c.sound.bossMusic(true);}
         }
         if(leftShimmer<0 && time>=ANNOUNCE)leftShimmer=time;
         if(rightShimmer<0 && leftShimmer>=0 && time>=leftShimmer+SHIMMER) {

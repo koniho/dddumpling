@@ -8,6 +8,7 @@
 #import "com/dddumpling/game/Sfx.h"
 #import "com/dddumpling/game/Boss.h"
 #import "com/dddumpling/game/Music.h"
+#import "com/dddumpling/game/VersusMusic.h"
 #import "com/dddumpling/game/CaveSong.h"
 #import "com/dddumpling/game/Narration.h"
 #import "IOSPrimitiveArray.h"
@@ -48,6 +49,8 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 @property(nonatomic) BOOL playbackAllowed;
 @property(nonatomic) BOOL needsResume;
 @property(nonatomic) BOOL boss;
+@property(nonatomic) BOOL versus;
+@property(nonatomic) BOOL playingVersus;
 @property(nonatomic) BOOL frenzy;
 @property(nonatomic) BOOL rocketOn;
 @property(nonatomic) BOOL bubbleOn;
@@ -112,6 +115,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
         [self bufferForEffect:i];
       }
       [DDSfx rocket]; [DDSfx bubble];
+      [DDVersusMusic clip];
       [DDMusic preRenderWithInt:DDStyleSwing];
     }
   });
@@ -289,17 +293,17 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 
 - (void)rebuildMusic {
   if (_bandActive) return;
-  BOOL boss = _boss, frenzy = !boss && _frenzy;
+  BOOL versus = _versus, boss = !versus && _boss, frenzy = !versus && !boss && _frenzy;
   jint style = [DDMusic isSynthWithInt:(jint)_selectedStyle] ? (jint)_selectedStyle : DDStyleSwing;
   // Track pending renders too; repeated selections must not cancel the first load.
-  if (_musicRequested && _playingStyle == style && _playingBoss == boss && _playingFrenzy == frenzy) return;
-  _musicRequested = YES; _playingStyle = style; _playingBoss = boss; _playingFrenzy = frenzy;
+  if (_musicRequested && _playingStyle == style && _playingBoss == boss && _playingFrenzy == frenzy && _playingVersus == versus) return;
+  _musicRequested = YES; _playingStyle = style; _playingBoss = boss; _playingFrenzy = frenzy; _playingVersus = versus;
   NSUInteger generation = ++_musicGeneration;
   [_music stop]; _music = nil;
   dispatch_async(_renderQueue, ^{
     IOSShortArray *pcm = nil;
     @try {
-      pcm = boss ? [DDMusic bossLoopWithInt:style]
+      pcm = versus ? [DDVersusMusic clip] : boss ? [DDMusic bossLoopWithInt:style]
                  : [DDMusic loopWithInt:style withBoolean:frenzy];
     } @catch (NSException *exception) {
       dispatch_async(dispatch_get_main_queue(), ^{
@@ -309,7 +313,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
     }
     dispatch_async(dispatch_get_main_queue(), ^{
       if (generation != self.musicGeneration) return;
-      AVAudioPlayer *player = [self playerForPCM:pcm loop:YES];
+      AVAudioPlayer *player = [self playerForPCM:pcm loop:!versus];
       if (!player) { self.musicRequested = NO; return; }
       self.music = player; [self applyMusicMix];
       if (self.active && !self.interrupted && self.playbackAllowed) [player play];
@@ -533,8 +537,9 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
   if (_bandActive && player == _music) _bandFinished = YES;
 }
 
-- (void)selectMusicWithInt:(jint)style { _selectedStyle = style; if (_bandActive) return; _boss = NO; [self rebuildMusic]; }
-- (void)bossMusicWithBoolean:(jboolean)active { if (_boss == active) return; _boss = active; [self rebuildMusic]; }
+- (void)versusMusic { _versus = YES; [self rebuildMusic]; }
+- (void)selectMusicWithInt:(jint)style { _versus = NO; _selectedStyle = style; if (_bandActive) return; _boss = NO; [self rebuildMusic]; }
+- (void)bossMusicWithBoolean:(jboolean)active { if (_boss == active && !_versus) return; _versus = NO; _boss = active; [self rebuildMusic]; }
 - (void)frenzyWithBoolean:(jboolean)on { if (_frenzy == on) return; _frenzy = on; [self rebuildMusic]; }
 
 - (void)announceSquishyWithInt:(jint)entry {

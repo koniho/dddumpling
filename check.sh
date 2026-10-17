@@ -113,6 +113,7 @@ src/com/dddumpling/game/NinjaSwishRecording.java
 src/com/dddumpling/game/NinjaSlashes.java
 src/com/dddumpling/game/RockRecording.java
 src/com/dddumpling/game/Music.java
+src/com/dddumpling/game/VersusMusic.java
 src/com/dddumpling/game/Words.java
 src/com/dddumpling/game/Fx.java
 src/com/dddumpling/game/Steamer.java

@@ -503,7 +503,9 @@ Opposing color panels slide in, a VS burst and
 ready cue play, and the panels sweep out into the normal boss arrival. All Bosses announces
 each opponent separately. This sequence ignores combat input, pauses with the game or
 settings, and does not count toward run time or combat statistics. Its art and sounds
-reuse the existing collectibles and effects (`TimeAttackVersus`).
+reuse the existing collectibles and effects (`TimeAttackVersus`). A dedicated 4.3-second
+trumpet-synth fanfare plays once during the face-off, ending in a downward glissando;
+normal boss music takes over afterward (`VersusMusic`).
 
 Time Attack starts with three lives, no power-up drops, and the boss's original Adventure-stage
 difficulty. The all-boss challenge carries lives forward with one life restored per clear (capped

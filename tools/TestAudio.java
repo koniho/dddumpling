@@ -351,7 +351,35 @@ final class TestAudio extends Check {
         check("stale cave choice uses ordinary music",ear.music==Music.SWING_STYLE);
     }
 
+    private static void versusMusic(Layout L) {
+        short[] pcm=VersusMusic.clip();int peak=0;double energy=0,tail=0;
+        for(int i=0;i<pcm.length;i++) {
+            peak=Math.max(peak,Math.abs(pcm[i]));energy+=(double)pcm[i]*pcm[i];
+            if(i>pcm.length-Sfx.RATE/5)tail+=(double)pcm[i]*pcm[i];
+        }
+        check("versus fanfare is cached and fits the complete face-off",pcm==VersusMusic.clip()
+                && Math.abs(pcm.length/(float)Sfx.RATE-TimeAttackVersus.DURATION)<.001f);
+        check("versus fanfare has headroom and clean endpoints",peak<=11000 && peak>9000
+                && pcm[0]==0 && pcm[pcm.length-1]==0 && Math.sqrt(energy/pcm.length)>1000);
+        boolean descending=true;float previous=VersusMusic.finalMidi(VersusMusic.GLIDE_START);
+        for(float t=VersusMusic.GLIDE_START+.05f;t<VersusMusic.DURATION;t+=.05f) {
+            float pitch=VersusMusic.finalMidi(t);descending &= pitch<previous;previous=pitch;
+        }
+        check("last trumpet note keeps descending audibly to the end",descending
+                && previous<45 && Math.sqrt(tail/(Sfx.RATE/5))>250);
+        GameCore c=TestTimeAttack.start(Boss.SLIME);c.toTitle();Ear ear=new Ear();c.sound=ear;c.startGame();
+        check("time attack starts with its own fanfare",ear.versusMusicCalls==1 && !ear.bossMusic);
+        for(float t=0;t<TimeAttackVersus.DURATION-.1f;t+=DT)c.update(DT,L);
+        check("boss music waits through versus",ear.bossMusicCalls==0);
+        for(int i=0;i<20;i++)c.update(DT,L);
+        check("normal boss music takes over exactly once",ear.bossMusicCalls==1 && ear.bossMusic);
+        c.toTitle();c.startGame();int calls=ear.bossMusicCalls;c.boss.intro=0;c.update(DT,L);
+        check("skipping intro cannot leave fanfare in the fight",ear.bossMusicCalls==calls+1);
+        c.toTitle();check("leaving restores title music",ear.music==Music.SWING_STYLE);
+    }
+
     static void audio(Layout L) {
+        versusMusic(L);
         group("audio");
         int peak = (int) (Sfx.PEAK * 32767f);
         boolean allNormalised = true, allClean = true, allSane = true;

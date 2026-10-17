@@ -358,6 +358,8 @@ final class GameCore {
         void selectMusic(int choice);
         /** Switches the selected instruments into or out of their faster boss arrangement. */
         void bossMusic(boolean active);
+        /** One-shot music for the versus face-off, using music volume and narration ducking. */
+        default void versusMusic() {}
 
         void gameStart();
         /** Stage cleared normally. Suppressed when {@link #powerClear()} fires instead. */
@@ -1803,7 +1805,8 @@ final class GameCore {
         preferences.apply(this);
         if (band.active) return;
         if (sound != null) {
-            if (boss.active()) sound.bossMusic(true);
+            if(timeAttack.versus.active(this))sound.versusMusic();
+            else if (boss.active()) sound.bossMusic(true);
             else sound.selectMusic(normalMusicChoice());
         }
     }
