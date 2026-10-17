@@ -2935,6 +2935,12 @@ final class Preview {
         for (int i = 0; i < 60 && pulseDemo.boss.octoCaptured < 0; i++)
             pulseDemo.boss.update(DT, L, pulseDemo.rnd);
         for (int i = 0; i < 8; i++) pulseDemo.boss.update(DT, L, pulseDemo.rnd);
+        pulseDemo.companion.begin(6);
+        for(int feedback=Boss.OCTO_LATE;feedback<=Boss.OCTO_WRONG;feedback++) {
+            pulseDemo.boss.octoFeedback=feedback;
+            shot(dir,"octopulse-feedback-"+feedback,pulseDemo,L,w,h,ss);
+        }
+        pulseDemo.boss.octoFeedback=Boss.OCTO_LATE;
         shot(dir, "76j-octopulse-too-slow-taunt", pulseDemo, L, w, h, ss);
 
         GameCore pulsePain = toBoss(L, Boss.OCTOPUS, 538L, true);

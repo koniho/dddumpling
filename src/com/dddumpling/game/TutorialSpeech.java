@@ -155,6 +155,20 @@ final class TutorialSpeech extends Draw {
         }
         p.fillPoly(outline,PAPER);p.strokePoly(outline,border,radius*.14f*scale);
     }
+    static void companionFeedback(Painter p,Layout L,float cx,float cy,float r,String text,float left,int accent) {
+        float half=L.w*.21f,height=L.w*.09f;
+        float x=Math.max(half+L.w*.03f,Math.min(L.w-half-L.w*.03f,cx));
+        float bottom=Math.min(cy-r*1.55f,helpY(L)-L.unit*1.65f),top=bottom-height;
+        float growth=Math.min(1,(1-left)*9),fade=Math.min(1,left*4);
+        if(growth<=0 || fade<=0)return;
+        Painter ink=new OpacityPainter(p,fade);
+        bubble(ink,x-half,top,x+half,bottom,height*.26f,1,
+                new float[]{cx+r*.45f,bottom,cx,cy-r*.65f,cx-r*.25f,bottom},
+                growth,cx,cy-r*.65f,TEXT_INK);
+        if(growth>=.8f)speechText(ink,text,x,top+height*.64f,type(L.w*.026f),
+                Glyph.mix(accent,0xFFFFFFFF,.75f));
+    }
+
     static void large(Painter p,GameCore c,Layout L,int message,boolean button) {
         float s=unit(L),t=top(L),b=t+s*14.2f,x=L.w*.5f;
         float age=c.onboarding.age;

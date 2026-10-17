@@ -243,6 +243,8 @@ final class Boss {
     final float[][] octoVY = new float[OCTO_ARMS][OCTO_NODES];
     int octoArms, octoTarget = -1, octoAttackArm = -1, octoCaptured = -1, disabledKeys;
     int octoLashArm = -1, octoDyingArm = -1, octoVulnerableArm = -1, octoEscapeArm = -1;
+    static final int OCTO_LATE=0, OCTO_EARLY=1, OCTO_WRONG=2;
+    int octoFeedback;
     int octoFlurryLeft;
     int octoThrowsLeft, octoThrowArm = -1, octoThrowGlyph = -1;
     int octoThrowArm2 = -1, octoThrowGlyph2 = -1;
@@ -403,6 +405,7 @@ final class Boss {
         OctoThrow.reset(this);
         octoPlaced = octoWave = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
         octoDragStarted = octoDragCanDamage = false;
+        octoFeedback = OCTO_LATE;
         resetDividePieces(rnd);
         if (which != SPLITTER) { randomGlyph(rnd); randomGlyph(rnd); }
         followX = followY = 0f;
@@ -482,6 +485,7 @@ final class Boss {
         OctoThrow.reset(this);
         octoPlaced = octoWave = octoCue = octoLock = octoImpact = octoPlayerHit = octoLashLanded = octoWrongLash = false;
         octoDragStarted = octoDragCanDamage = false;
+        octoFeedback = OCTO_LATE;
         for (int i = 0; i < DIVIDE_NODES; i++) {
             halfWant[i] = -1;
             halfIdle[i] = halfHurt[i] = 0f;
@@ -935,6 +939,7 @@ final class Boss {
             octoLashArm = arm;
             octoLashLanded = false;
             octoWrongLash = true;
+            octoFeedback = OCTO_WRONG;
             octoTaunt = 0f;
             octoTarget = octoAttackArm = -1;
             octoReach = 0f;
@@ -959,6 +964,7 @@ final class Boss {
             hitY = octoY[arm][OCTO_NODES - 1];
             // The key defense only forces a recoil. Damage is earned by grabbing the
             // exposed tip and tearing this arm to an edge of the play area.
+            octoFeedback = OCTO_LATE;octoTaunt = 0f;
             octoVulnerableArm = arm;
             octoCoil = 0.001f;
             // The escape clock starts with the successful defense, not when the player finds it.
@@ -1421,6 +1427,10 @@ final class Boss {
     /** All player input is locked while a wrong-key retaliation whip is in flight. */
     boolean playerLocked() {
         return kind == OCTOPUS && octoLash > 0f || kind == SLIME && slimeKeyLock > 0f;
+    }
+
+    String octoFeedbackText() {
+        return octoFeedback==OCTO_EARLY?"TOO EARLY!":octoFeedback==OCTO_WRONG?"WRONG CHOICE!":"TOO LATE!";
     }
 
     private void updateOctopus(float dt, Layout L, Random rnd) {
@@ -1913,6 +1923,7 @@ final class Boss {
         octoCharge = 0f;
         octoCoil = 0f;
         octoWave = true;
+        octoFeedback = OCTO_LATE;octoTaunt = 0f;
     }
 
     // ---- bolts --------------------------------------------------------------

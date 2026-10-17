@@ -1627,6 +1627,45 @@ final class TestBoss extends Check {
                 flurryPlayable);
         check("Octopulse keeps all three flurry shots even with only two keys left", flurryComplete);
 
+        for(boolean retry:new boolean[]{false,true}) {
+            GameCore early=enterBoss(L,Boss.OCTOPUS,153L);early.enemies.clear();early.target=null;
+            for(int i=0;i<300 && early.boss.octoTarget<0;i++)early.update(DT,L);
+            int key=early.boss.octoTarget,health=early.lives;
+            early.tapKey(key,L);
+            check("early Octopulse press gets timing feedback "+retry,
+                    early.boss.octoTaunt>0 && early.boss.octoFeedbackText().equals("TOO EARLY!"));
+            check("early feedback does not add a penalty or defend the arm "+retry,
+                    early.lives==health && early.boss.octoVulnerableArm<0 && early.boss.octoLash==0);
+            early.boss.release();
+            check("lifting the finger preserves early feedback "+retry,early.boss.octoFeedback==Boss.OCTO_EARLY);
+            if(retry) {
+                for(int i=0;i<120 && early.boss.octoReach<0;i++)early.update(DT,L);
+                early.tapKey(key,L);
+                check("a successful retry clears early feedback",early.boss.octoVulnerableArm>=0
+                        && early.boss.octoTaunt==0 && early.boss.octoFeedback==Boss.OCTO_LATE);
+            } else {
+                for(int i=0;i<240 && !early.boss.keyDisabled(key);i++)early.update(DT,L);
+                check("missed defense retains the early input explanation",early.boss.keyDisabled(key)
+                        && early.boss.octoFeedbackText().equals("TOO EARLY!"));
+                early.boss.leave();
+                check("leaving clears Octopulse feedback",early.boss.octoFeedback==Boss.OCTO_LATE);
+            }
+        }
+
+        GameCore bubble=enterBoss(L,Boss.OCTOPUS,153L);bubble.companion.begin(6);
+        bubble.boss.octoTaunt=.7f;bubble.boss.octoFeedback=Boss.OCTO_WRONG;
+        final float[] feedbackY={-1};
+        Painter feedbackPainter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("text") && args[0].equals("WRONG CHOICE!"))feedbackY[0]=(Float)args[2];
+                    return null;
+                });
+        RunCompanion.draw(feedbackPainter,bubble,L);
+        check("Octopulse feedback is spoken beside the companion",feedbackY[0]>L.h*.7f
+                && feedbackY[0]<RunCompanion.y(L));
+        bubble.boss.octoTaunt=0;feedbackY[0]=-1;RunCompanion.draw(feedbackPainter,bubble,L);
+        check("companion feedback disappears when its timer ends",feedbackY[0]==-1);
+
         GameCore wrong = enterBoss(L, Boss.OCTOPUS, 153L);
         wrong.enemies.clear(); wrong.target = null;
         for (int i = 0; i < 300 && wrong.boss.octoTarget < 0; i++) wrong.update(DT, L);
@@ -1651,7 +1690,8 @@ final class TestBoss extends Check {
         check("the whip emits an impact for haptics and shake", impactSeen && wrong.shake > 0f);
         for (int i = 0; i < 60 && wrong.boss.playerLocked(); i++) wrong.update(DT, L);
         check("player keys return when the retaliation ends", wrong.keyActive(wanted));
-        check("Octopulse taunts after the all-arm retaliation", wrong.boss.octoTaunt > 0f);
+        check("Octopulse explains a wrong choice after retaliation", wrong.boss.octoTaunt > 0f
+                && wrong.boss.octoFeedbackText().equals("WRONG CHOICE!"));
         check("the lash cancels the reach without stealing a key",
                 wrong.boss.octoTarget < 0 && !wrong.boss.keyDisabled(wanted));
 
@@ -1662,7 +1702,8 @@ final class TestBoss extends Check {
         for (int i = 0; i < 300 && !miss.boss.keyDisabled(missed); i++) miss.update(DT, L);
         check("a tentacle reaching its key disables it", missed >= 0 && miss.boss.keyDisabled(missed));
         check("a disabled key no longer accepts touches", !miss.keyActive(missed));
-        check("a successful key steal triggers a quick taunt", miss.boss.octoTaunt > 0f);
+        check("a missed defense explains late timing", miss.boss.octoTaunt > 0f
+                && miss.boss.octoFeedbackText().equals("TOO LATE!"));
         for (int i = 0; i < 60 * 20; i++) miss.update(DT, L);
         check("it disables no more than two keys per side",
                 Integer.bitCount(miss.boss.disabledKeys & 0x07) <= 2

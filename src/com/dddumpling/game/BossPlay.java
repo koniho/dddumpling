@@ -76,6 +76,14 @@ final class BossPlay {
                 L.keyR * 1.8f, 18, 0xFFFF355F);
     }
 
+    static void octoTimingFeedback(GameCore c,int g) {
+        Boss b=c.boss;
+        if(b.kind!=Boss.OCTOPUS || !b.fighting() || b.octoTarget<0 || b.octoReach>=0
+                || b.boltWants(g) || anyWordWants(c,g))return;
+        // Remember an early attempt through a missed window, but leave input and damage rules alone.
+        b.octoFeedback=Boss.OCTO_EARLY;b.octoTaunt=1f;
+    }
+
     static boolean claims(GameCore c, int g) {
         // A bolt in the air outranks everything, engaged word included: it is the only thing here
         // that costs a life.

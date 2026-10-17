@@ -2290,6 +2290,7 @@ final class GameCore {
         // letters it is asking for, and never steals a press out of a word already part-typed. The
         // one exception is a key it is holding — that is refused wherever it is pressed, including
         // into an engaged word, because the player does not have that key at all.
+        BossPlay.octoTimingFeedback(this,g);
         if (boss.fighting() && BossPlay.claims(this, g)) {
             float beforeHp = boss.hp;
             float beforeIntro=boss.introProgress();

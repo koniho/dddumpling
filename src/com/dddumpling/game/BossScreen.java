@@ -1042,9 +1042,6 @@ final class BossScreen extends Draw {
             float appear = Math.min(1f, (1f - b.octoTaunt) * 9f);
             float vanish = Math.min(1f, b.octoTaunt * 4f);
             float taunt = appear * vanish * fade;
-            float bounce = (float) Math.sin(c.clock * 11f) * ry * 0.08f;
-            p.text("TOO SLOW!", cx, cy - ry * 1.62f + bounce, type(rx * 0.26f),
-                    Glyph.withAlpha(0xFFFFD83D, (int) (255 * taunt)), Painter.CENTER, true);
             p.arc(cx, mouthY - ry * 0.02f, rx * 0.22f, ry * 0.15f, 8f, 164f,
                     Glyph.withAlpha(0xFFFFD83D, (int) (235 * taunt)), rx * 0.055f);
         }
