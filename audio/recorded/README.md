@@ -202,14 +202,22 @@ The source and review WAVs stay local; only generated shared PCM is included in 
 
 Run `python3 tools/prepare-slime-squishes.py '/path/to/Squish .m4a'` to regenerate
 `SlimeSquishRecording.java` and six audition WAVs in `build/slime-squishes/`.
-Source cuts in recording order: 0.69–1.19, 1.38–1.84, 2.83–3.58, 4.17–5.05,
-5.35–6.74 and 7.10–8.91 seconds. Trim and reset timestamps before the 3 ms/20 ms
-edge fades. The requested two-pole 4 kHz low-pass is applied at 48 kHz mono,
-then resampled to 22,050 Hz PCM16. A common 2x gain (+6 dB) preserves the takes'
-relative intensity while bringing them into the effects mix. Pitch and speed are unchanged.
+Impact-aligned source cuts in recording order: 0.82–1.19, 1.48–1.84, 3.10–3.58,
+4.43–5.05, 6.10–6.74 and 7.98–8.91 seconds. These remove preparation noise,
+including roughly 0.8 seconds before the heavier squishes. Trim and reset timestamps
+before processing. Raise playback pitch four semitones (48,000 → 60,476 Hz rate
+reinterpretation), resample to 48 kHz, add 3 ms/20 ms edge fades, and apply the
+two-pole 4 kHz low-pass before resampling to 22,050 Hz PCM16. This also shortens
+the clips to approximately 0.29–0.74 seconds. A common 2x gain (+6 dB) preserves
+the recordings' relative intensity.
+
+Layer a quiet synthesized falling bubble at the attack: roughly 720–595 Hz down
+toward 190 Hz, with a 35 ms exponential decay, 2 ms onset and a soft second harmonic.
+This adds a rounded cartoon “boip” while the recorded squish remains dominant.
+Validate an audible onset within 30 ms, click-free edges and clipping headroom.
 
 Light takes 1–2 rotate at projectile impact, medium takes 3–4 at a glob-splitting
 impact, heavy takes 5–6 on drag damage, and takes 4–6 on attack-volley launch.
 Selection uses a resettable cosmetic counter, not gameplay RNG. Android and iOS
-use the same PCM, native rate and 90% effect gain. Existing cover/charge cues and
+use the same baked PCM at native playback rate and 90% effect gain. Existing cover/charge cues and
 death audio remain unchanged; a separate splat recording is planned for death.

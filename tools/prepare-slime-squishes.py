@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Bake the six user squishes with the reviewed cuts and 4 kHz low-pass; retain relative levels."""
+"""Bake impact-aligned, pitched squishes with a soft cartoon boip and 4 kHz low-pass."""
 import array
 import hashlib
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -13,24 +14,37 @@ source = Path(sys.argv[1])
 expected = '208290c9f76b0499698433c71774cac6e6411ea59cae76983a69b8b86cc48847'
 if hashlib.sha256(source.read_bytes()).hexdigest() != expected:
     raise SystemExit('Source differs from the reviewed Squish .m4a recording')
-cuts = [(0.69,1.19),(1.38,1.84),(2.83,3.58),(4.17,5.05),(5.35,6.74),(7.10,8.91)]
+# Audited attack boundaries: discard preparation noise, retain the wet decay.
+cuts = [(0.82,1.19),(1.48,1.84),(3.10,3.58),(4.43,5.05),(6.10,6.74),(7.98,8.91)]
+pitch_rate = round(48000 * 2 ** (4 / 12))  # Four semitones up, with a shorter tail.
 env = os.environ.copy()
 if env.get('PREFIX', '').startswith('/data/data/com.termux/'):
     env.pop('LD_LIBRARY_PATH', None)
 output = root/'build/slime-squishes'; output.mkdir(parents=True, exist_ok=True)
 pcms = []
 for index, (start,end) in enumerate(cuts):
-    duration = end-start
+    duration = (end-start)*48000/pitch_rate
     # Reset timestamps before the clip-relative fades; retain the original intensity ladder.
     filters = (f'atrim=start={start}:end={end},asetpts=PTS-STARTPTS,'
-               f'aformat=channel_layouts=mono,aresample=48000,afade=t=in:d=0.003,'
+               f'aformat=channel_layouts=mono,aresample=48000,asetrate={pitch_rate},aresample=48000,afade=t=in:d=0.003,'
                f'afade=t=out:st={duration-.02:.6f}:d=0.02,lowpass=f=4000:p=2,aresample=22050')
     raw = subprocess.check_output(['ffmpeg','-v','error','-i',str(source),'-map','0:a:0',
         '-af',filters,'-f','s16le','-'],env=env)
     pcm = array.array('h',raw)
     if sys.byteorder != 'little': pcm.byteswap()
     # One common +6 dB adjustment brings the quiet recording into the game's effects mix.
-    pcm = array.array('h',(v*2 for v in pcm))
+    shaped = []
+    # A short, rounded falling bubble adds a playful attack without a sharp click.
+    # Keep it subordinate to the recording and slightly fuller for stronger takes.
+    phase = 0.0
+    for frame, sample in enumerate(pcm):
+        t = frame/22050
+        frequency = 190 + (530-index*25)*math.exp(-t/.035)
+        phase += 2*math.pi*frequency/22050
+        envelope = min(1,t/.002)*math.exp(-t/.035)
+        boip = (1100+index*100)*envelope*(math.sin(phase)+.12*math.sin(phase*2))
+        shaped.append(round(sample*2+boip))
+    pcm = array.array('h',shaped)
     pcm[0] = pcm[-1] = 0
     peak = max(map(abs,pcm))
     assert 100 < peak < 32767 and abs(len(pcm)/22050-duration)<.003

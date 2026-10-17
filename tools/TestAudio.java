@@ -393,14 +393,21 @@ final class TestAudio extends Check {
             if(variant>0)check("growl retains its own performance "+variant,
                     !java.util.Arrays.equals(growl,Sfx.build(Sfx.gatorTauntId(variant-1))));
         }
-        float[] slimeDurations={.5f,.46f,.75f,.88f,1.39f,1.81f};
+        float[] slimeDurations={.294f,.286f,.381f,.492f,.508f,.738f};
         int[] slimePeaks=new int[6];
         for(int variant=0;variant<6;variant++) {
             short[] squish=Sfx.build(Sfx.slimeSquishId(variant));
             for(short sample:squish)slimePeaks[variant]=Math.max(slimePeaks[variant],Math.abs((int)sample));
-            check("Slime recording retains its cut duration "+variant,
+            check("Slime recording retains its shortened cartoon duration "+variant,
                     Math.abs(squish.length/(float)Sfx.RATE-slimeDurations[variant])<.003f);
             check("Slime recording is audible with headroom "+variant,slimePeaks[variant]>1000 && slimePeaks[variant]<30000);
+            int attackPeak=0;double attackEnergy=0;int attackSamples=Sfx.RATE*30/1000;
+            for(int i=0;i<attackSamples;i++) {
+                attackPeak=Math.max(attackPeak,Math.abs((int)squish[i]));
+                attackEnergy+=(double)squish[i]*squish[i];
+            }
+            check("Slime squish is audible at impact, without recorded preparation "+variant,
+                    attackPeak>slimePeaks[variant]*.25f && Math.sqrt(attackEnergy/attackSamples)>1000);
             check("Slime recording edges are click-free "+variant,squish[0]==0 && squish[squish.length-1]==0);
             if(variant>0)check("Slime takes remain distinct "+variant,
                     !java.util.Arrays.equals(squish,Sfx.build(Sfx.slimeSquishId(variant-1))));
