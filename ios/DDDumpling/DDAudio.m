@@ -285,7 +285,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)applyMusicMix {
   float gain = _boss ? DDMusic_BOSS_GAIN : 1.f;
   if (_rocketOn) gain *= 0.68f;
-  if (_narrating) gain *= 0.22f;
+  if (_narrating) gain *= _versus ? DDVersusMusic_ANNOUNCER_GAIN : 0.22f;
   _music.volume = _bandActive ? (_bandMuted ? 0 : _musicVolume) : gain * _musicVolume;
   float bandGain = _bandMuted ? 0 : _musicVolume;
   dispatch_async(_effectsQueue, ^{ self.bandMixer.volume = bandGain; });

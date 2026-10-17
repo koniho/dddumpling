@@ -331,7 +331,7 @@ final class Audio implements GameCore.Sound {
     }
     private void applyMusicMix() {
         band.volume(musicVolume);
-        float gain=musicVolume*(rocketDucked?.68f:1f)*(ducked?.22f:1f);
+        float gain=musicVolume*(rocketDucked?.68f:1f)*(ducked?(musicMode==2?VersusMusic.ANNOUNCER_GAIN:.22f):1f);
         try {
             if(bgmTrack!=null) bgmTrack.setVolume((bossPlaying?Music.BOSS_GAIN:1f)*gain);
         } catch(Throwable ignored) {}

@@ -6,6 +6,7 @@
 #import "DDEffectMixer.h"
 #import "com/dddumpling/game/Sfx.h"
 #import "com/dddumpling/game/Music.h"
+#import "com/dddumpling/game/VersusMusic.h"
 #import "com/dddumpling/game/Narration.h"
 #import "IOSPrimitiveArray.h"
 
@@ -176,6 +177,22 @@
   XCTAssertEqual(player.currentTimeWrites, 0);
   XCTAssertEqual(player.playCount, 0);
   XCTAssertEqual([[audio valueForKey:@"musicGeneration"] unsignedIntegerValue], generation);
+}
+
+- (void)testVersusMusicKeepsBodyUnderNarrationAndStillMutes {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  DDCountingPlayer *player = [DDCountingPlayer new];
+  [audio setValue:player forKey:@"music"];
+  [audio setValue:@YES forKey:@"versus"];
+  [audio setValue:@YES forKey:@"narrating"];
+  [audio volumesWithFloat:.8f withFloat:1];
+  XCTAssertEqualWithAccuracy(player.volume, .8f * DDVersusMusic_ANNOUNCER_GAIN, .001f);
+  [audio setValue:@NO forKey:@"versus"];
+  [audio volumesWithFloat:.8f withFloat:1];
+  XCTAssertEqualWithAccuracy(player.volume, .8f * .22f, .001f);
+  [audio setValue:@YES forKey:@"versus"];
+  [audio volumesWithFloat:0 withFloat:1];
+  XCTAssertEqualWithAccuracy(player.volume, 0, .001f);
 }
 
 - (void)testVersusMusicIsDistinctAndRestoresBossMusic {
