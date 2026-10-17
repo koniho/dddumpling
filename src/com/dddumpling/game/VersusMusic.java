@@ -47,7 +47,7 @@ final class VersusMusic {
         }
         chord(mix,GLIDE_START,DURATION-GLIDE_START,71,1,true);
         for(int i=0;i<KICKS.length;i++)drum(mix,KICKS[i],KICK,1.65f,i);
-        for(int i=0;i<SNAPS.length;i++)drum(mix,SNAPS[i],SNAP,.48f,32+i);
+        for(int i=0;i<SNAPS.length;i++)drum(mix,SNAPS[i],SNAP,.80f,32+i);
         float peak=0;
         for(float value:mix)peak=Math.max(peak,Math.abs(value));
         // Lower average level leaves room for the kick transients.
@@ -72,7 +72,10 @@ final class VersusMusic {
     }
 
     private static void chord(float[] mix,float start,float duration,int midi,float accent,boolean glide) {
-        airyVoice(mix,start,duration,midi,.25f*accent,glide?52:midi);
+        float lead=.25f*.8f*accent;
+        // Share the quieter lead level across the original voice and its upper octave.
+        airyVoice(mix,start,duration,midi,lead*.8f,glide?52:midi);
+        airyVoice(mix,start,duration,midi+12,lead*.6f,glide?64:midi+12);
         synth(mix,start,duration,midi-12,.11f*accent,glide?40:midi-12);
         // A minor, C major and E major; the final E chord resolves into boss A minor.
         int third=midi==69?60:64,fifth=midi==69?64:midi==72?67:68;
@@ -101,9 +104,11 @@ final class VersusMusic {
             float t=i/(float)Sfx.RATE;
             float pitch=midi==endMidi?midi:glideMidi(midi,endMidi,start+t);
             pitch+=.06f*(float)Math.sin(t*Softbody.TAU*4.8f);
-            phase+=Softbody.TAU*440*Math.pow(2,(pitch-69)/12f)/Sfx.RATE;
+            float hz=440f*(float)Math.pow(2,(pitch-69)/12f);
+            phase+=Softbody.TAU*hz/Sfx.RATE;
             float voice=0;
-            for(int h=1;h<=weights.length;h++)voice+=(float)Math.sin(phase*h)*weights[h-1];
+            int harmonics=Math.min(weights.length,(int)(Sfx.RATE*.45f/hz));
+            for(int h=1;h<=harmonics;h++)voice+=(float)Math.sin(phase*h)*weights[h-1];
             voice/=normal;
             // A little sampler grain and filtered breath keep the vowel airy, not buzzy.
             voice=voice*.6f+Math.round(voice*128)/128f*.4f;
@@ -137,7 +142,7 @@ final class VersusMusic {
     /** Heavy rounded kick and short beatbox-like snare snaps. No cymbals or hi-hats. */
     private static void drum(float[] mix,float start,int kind,float gain,int seed) {
         int first=(int)(start*Sfx.RATE);
-        float length=(kind==KICK?.25f:.10f)*TEMPO_SCALE;
+        float length=(kind==KICK?.25f:.14f)*TEMPO_SCALE;
         int count=Math.min((int)(length*Sfx.RATE),mix.length-first),noise=137+seed*7919;
         float phase=0,sub=0,previous=0,filtered=0;
         for(int i=0;i<count;i++) {
@@ -152,9 +157,10 @@ final class VersusMusic {
             filtered+=(white-filtered)*.36f;
             if(kind==KICK) voice=(float)Math.sin(phase)*.90f+(float)Math.sin(sub)*.45f
                     +(float)Math.sin(phase*2)*.22f+high*.08f*(float)Math.exp(-t*95);
-            else voice=(float)Math.sin(phase)*.48f+(float)Math.sin(phase*1.59f)*.18f
-                    +filtered*.90f;
-            mix[first+i]+=voice*gain*Math.min(1,t/.002f)*(float)Math.exp(-u*(kind==KICK?4.5f:6f));
+            else voice=(float)Math.sin(phase)*.85f+(float)Math.sin(phase*1.59f)*.27f
+                    +filtered*1.15f+high*.35f*(float)Math.exp(-t*70);
+            float attack=kind==KICK?.002f:.001f;
+            mix[first+i]+=voice*gain*Math.min(1,t/attack)*(float)Math.exp(-u*(kind==KICK?4.5f:5f));
         }
     }
 }

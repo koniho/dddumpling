@@ -42,13 +42,18 @@ The lead uses an original procedural ARR1-style breathy ah voice: three vowel
 formant peaks, filtered breath noise, subtle pitch motion and light sampler
 grain, with a 20 ms attack. This is a synthesized approximation, with no imported
 vocal sample. [NFSA reference for ARR1/SARARR](https://www.nfsa.gov.au/collection/item/sampling-sounds-fairlight-cmi).
+A second airy lead follows the melody one octave higher, including the final
+gliss from B5 to E4. Both voices share a 20% lower lead gain, with 0.8/0.6
+equal-power weighting favoring the original register. High partials are limited
+below Nyquist as the upper voice rises. Note spacing and kick levels stay fixed.
 The backing voices retain the rounded sine-based synth, soft octave and quiet
 upper partials. Chord voices stay
 behind the lead, with two softer harmony voices an octave above the inner
 chord tones (C/E above A, E/G above C, and E/G-sharp above B). They share the
 beatbox attacks and glide down into G-sharp3/B3 at the ending. The kick has a
-stronger 58 Hz body and a second harmonic to keep its punch audible on phone speakers; short filtered snare snaps follow
-the beatbox rhythm.
+stronger 58 Hz body and a second harmonic to keep its punch audible on phone
+speakers. Snare snaps follow the beatbox rhythm with a stronger pitched body, a
+brief bright attack, higher gain and a slightly longer filtered tail for impact.
 
 `VersusMusic.clip()` synthesizes the actual playback PCM. During the final
 kick-only section the lead continuously slides down from B4
