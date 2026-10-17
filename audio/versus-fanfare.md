@@ -38,8 +38,10 @@ final three kicks carry the continuous downward gliss, now from about 2.880 to
 starts as the gliss ends.
 
 A rounded bass line lands on all nine kick hits: E3, A2, C3, A2, E3, A2,
-then E2/B2/E2 under the final gliss. Low/high bongo fills sit in the gaps between
-the beatbox attacks, with a quieter pickup at each phrase ending. Bongos finish
+then E2/B2/E2 under the final gliss. Bongo fills sit in the gaps between
+the beatbox attacks: deep open strokes, higher ringing strokes, and dry muted
+pickups. Pitch changes across the three phrases (260/420/340, 295/455/375, and
+275/395/490 Hz), with different decay and overtone balances for each stroke. Bongos finish
 before the gliss, leaving only kicks and bass beneath that closing descent.
 
 The lead uses an original procedural ARR1-style breathy ah voice: three vowel

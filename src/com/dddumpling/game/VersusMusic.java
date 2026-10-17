@@ -55,11 +55,12 @@ final class VersusMusic {
             bass(mix,KICKS[i],Math.min(.24f,(next-KICKS[i])*.7f),bassNotes[i],.55f);
         }
         // Alternating hand-drum fills in the phrase gaps; the final gliss keeps only kicks/bass.
+        float[][] bongoHz={{260,420,340},{295,455,375},{275,395,490}};
         for(int p=0;p<3;p++) {
             int i=p*2;
-            bongo(mix,(KICKS[i]+SNAPS[i])*.5f,false,.25f,p*3);
-            bongo(mix,KICKS[i+1]+(SNAPS[i+1]-KICKS[i+1])*.6f,true,.20f,p*3+1);
-            bongo(mix,(SNAPS[i+1]+KICKS[i+2])*.5f,true,.13f,p*3+2);
+            bongo(mix,(KICKS[i]+SNAPS[i])*.5f,bongoHz[p][0],.052f,.25f,p*3);
+            bongo(mix,KICKS[i+1]+(SNAPS[i+1]-KICKS[i+1])*.6f,bongoHz[p][1],.034f,.20f,p*3+1);
+            bongo(mix,(SNAPS[i+1]+KICKS[i+2])*.5f,bongoHz[p][2],.018f,.13f,p*3+2);
         }
         float peak=0;
         for(float value:mix)peak=Math.max(peak,Math.abs(value));
@@ -96,21 +97,24 @@ final class VersusMusic {
         }
     }
 
-    private static void bongo(float[] mix,float start,boolean high,float gain,int seed) {
-        float duration=Math.min(high?.12f:.17f,GLIDE_START-start);
+    private static void bongo(float[] mix,float start,float pitch,float decay,float gain,int seed) {
+        float duration=Math.min(decay*4,GLIDE_START-start);
         int first=(int)(start*Sfx.RATE),count=Math.min((int)(duration*Sfx.RATE),mix.length-first);
         double phase=0;int noise=911+seed*7919;float air=0;
         for(int i=0;i<count;i++) {
             float t=i/(float)Sfx.RATE;
-            float hz=(high?420f:285f)*(1+.18f*(float)Math.exp(-t*90));
+            float hz=pitch*(1+.18f*(float)Math.exp(-t*90));
             phase+=Softbody.TAU*hz/Sfx.RATE;
             noise=noise*1664525+1013904223;
             float white=(noise>>>8)/8388608f-1;
             air+=(white-air)*.5f;
-            float voice=(float)(Math.sin(phase)+.40*Math.sin(phase*1.59)+.18*Math.sin(phase*2.14))
-                    +air*.35f*(float)Math.exp(-t*100);
+            // Open strokes ring; muted pickups emphasize the hand attack and dry out quickly.
+            float open=Math.min(1,decay/.052f);
+            float voice=(float)(Math.sin(phase)+(.25+.25*open)*Math.sin(phase*1.59)
+                    +(.10+.12*open)*Math.sin(phase*2.14))
+                    +air*(.55f-.25f*open)*(float)Math.exp(-t*100);
             float envelope=Math.min(1,t/.0015f)*Math.min(1,(duration-t)/.01f)
-                    *(float)Math.exp(-t/(high?.027f:.045f));
+                    *(float)Math.exp(-t/decay);
             mix[first+i]+=voice*gain*envelope;
         }
     }
