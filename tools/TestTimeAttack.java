@@ -231,7 +231,27 @@ final class TestTimeAttack extends Check {
         check("muted entrance cues are not queued for later",later.swishes==0 && later.linkedThuds==0 && later.courseStarts==1 && later.versusCalls==0);
     }
 
+    private static void versusPortraits(Layout L) {
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            GameCore c=start(boss),control=start(boss);
+            float intro=c.boss.intro;
+            c.update(DT,L);
+            Boss portrait=c.timeAttack.versus.portrait;
+            check("portrait has independent battle geometry "+boss,portrait!=c.boss
+                    && portrait.body!=c.boss.body && portrait.kind==boss && portrait.body!=null);
+            if(boss==Boss.OCTOPUS) {
+                check("tentacles start attached in their idle pose",portrait.octoY[3][Boss.OCTO_NODES-1]
+                        >portrait.body.centreY()+Boss.bodyR(L)*2);
+            }
+            for(int i=0;i<60;i++)c.update(DT,L);
+            check("portrait animation leaves encounter and RNG untouched "+boss,c.boss.intro==intro
+                    && c.boss.age==0 && c.boss.hp==c.boss.hpMax && c.boss.boltCount()==0
+                    && c.rnd.nextLong()==control.rnd.nextLong());
+        }
+    }
+
     static void all(Layout L) {
+        versusPortraits(L);
         versusShimmers(L);
         versusLaunch(L);
         versusIntro(L);

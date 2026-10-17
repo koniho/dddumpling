@@ -1548,7 +1548,13 @@ final class Boss {
         OctoThrow.release(this);
     }
 
-    private void poseOctopus(float dt, Layout L) {
+    void poseOctopusPortrait(float dt, Layout L) {
+        poseOctopus(dt,L,!octoPlaced);
+        octoPlaced=true;
+    }
+
+    private void poseOctopus(float dt, Layout L) {poseOctopus(dt,L,false);}
+    private void poseOctopus(float dt, Layout L, boolean initialPose) {
         float cx = body.centreX(), cy = body.centreY();
         float brace = 0f;
         int reachingArm = octoAttackArm;
@@ -1864,7 +1870,7 @@ final class Boss {
                 }
                 // A living arm is physically rooted in the moving soft body. Do not spring the
                 // first node toward it: that produces a visible gap whenever the head rebounds.
-                if (n == 0 && ((octoArms & (1 << a)) != 0 || beaten) && (beaten || a != octoDyingArm)) {
+                if (initialPose || n == 0 && ((octoArms & (1 << a)) != 0 || beaten) && (beaten || a != octoDyingArm)) {
                     octoX[a][n] = tx;
                     octoY[a][n] = ty;
                     octoVX[a][n] = octoVY[a][n] = 0f;

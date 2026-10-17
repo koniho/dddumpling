@@ -257,6 +257,57 @@ final class BossScreen extends Draw {
                 0xFF83E51C,clock,false,1f);
     }
 
+    /** Battle artwork, fitted to a face-off panel using an isolated cosmetic boss. */
+    static void versusPortrait(Painter p,GameCore c,Layout L,Boss b,float x,float y,float r,float clock) {
+        if(b.kind==Boss.SLIME) {slimePortrait(p,x,y,r*.58f,clock);return;}
+        if(b.kind==Boss.ALLIGATOR) {AlligatorArt.portrait(p,x,y,r,clock,true,1);return;}
+        if(b.body==null)return;
+        float br=Boss.bodyR(L),cx=b.body.centreX(),cy=b.body.centreY();
+        float scale,centerY;
+        if(b.kind==Boss.MUSHROOM) {
+            scale=Math.min(r*1.12f/Math.min(L.w*.47f,b.body.radiusX()*3.45f),r*2.8f/(br*5.6f));
+            centerY=cy+br*1.65f;
+        } else if(b.kind==Boss.OCTOPUS) {
+            scale=r*1.12f/(br*3.5f);centerY=cy+br*.9f;
+        } else {
+            Softbody piece=b.pieceBody(0);
+            float core=Math.min(piece.radiusX(),piece.radiusY());
+            scale=r*.97f/(piece.radiusX()+core*.14f);
+            cx=piece.centreX()+core*.14f;centerY=piece.centreY()-core*.14f;
+        }
+        Painter q=new PortraitFit(p,cx,centerY,x,y,scale);
+        if(b.kind==Boss.MUSHROOM)drawMushroom(q,c,L,b,tint(b),1);
+        else if(b.kind==Boss.OCTOPUS) {
+            drawOctopusArms(q,c,L,b,tint(b),1);
+            drawOctopusHead(q,c,b,tint(b),8,1);
+        } else drawDividePieces(q,c,L,b,1);
+    }
+
+    /** Uniform scaling keeps the actual boss outlines, shading and stroke weights together. */
+    private static final class PortraitFit implements Painter {
+        final Painter p;final float ox,oy,s;
+        PortraitFit(Painter p,float cx,float cy,float x,float y,float scale) {
+            this.p=p;s=scale;ox=x-cx*s;oy=y-cy*s;
+        }
+        float x(float v){return ox+v*s;} float y(float v){return oy+v*s;}
+        float[] points(float[] a){float[] b=a.clone();for(int i=0;i<b.length;i+=2){b[i]=x(b[i]);b[i+1]=y(b[i+1]);}return b;}
+        public void fillPoly(float[] a,int c){p.fillPoly(points(a),c);}
+        public void fillContours(float[][] a,int c){float[][] b=new float[a.length][];for(int i=0;i<a.length;i++)b[i]=points(a[i]);p.fillContours(b,c);}
+        public void strokePoly(float[] a,int c,float w){p.strokePoly(points(a),c,w*s);}
+        public void polyline(float[] a,int c,float w){p.polyline(points(a),c,w*s);}
+        public void fillCircle(float x,float y,float r,int c){p.fillCircle(x(x),y(y),r*s,c);}
+        public void strokeCircle(float x,float y,float r,int c,float w){p.strokeCircle(x(x),y(y),r*s,c,w*s);}
+        public void fillEllipse(float x,float y,float rx,float ry,int c){p.fillEllipse(x(x),y(y),rx*s,ry*s,c);}
+        public void arc(float x,float y,float rx,float ry,float a,float sweep,int c,float w){p.arc(x(x),y(y),rx*s,ry*s,a,sweep,c,w*s);}
+        public void fillRect(float l,float t,float r,float b,int c){p.fillRect(x(l),y(t),x(r),y(b),c);}
+        public void line(float a,float b,float c,float d,int ink,float w){p.line(x(a),y(b),x(c),y(d),ink,w*s);}
+        public void text(String a,float x,float y,float size,int c,int align,boolean bold){p.text(a,x(x),y(y),size*s,c,align,bold);}
+        public void clipRect(float l,float t,float r,float b){p.clipRect(x(l),y(t),x(r),y(b));}
+        public void clipOutCircle(float x,float y,float r){p.clipOutCircle(x(x),y(y),r*s);}
+        public void save(){p.save();} public void restore(){p.restore();}
+        public void translate(float x,float y){p.translate(x*s,y*s);}
+    }
+
     private static void drawSlimeSkin(Painter p,float[] skin,float cx,float cy,float rx,float ry,
             float radius,int col,float clock,boolean vulnerable,float fade) {
         drawSlimeSkin(p,skin,cx,cy,rx,ry,radius,col,clock,vulnerable,fade,false);

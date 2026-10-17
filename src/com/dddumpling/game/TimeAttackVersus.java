@@ -8,9 +8,11 @@ final class TimeAttackVersus extends Draw {
     float time=DURATION,leftShimmer=-1,rightShimmer=-1;
     int who,boss;
     boolean prepared;
+    final Boss portrait=new Boss();
 
     void begin(GameCore c,int opponent) {
         time=0;who=c.runWho;boss=opponent;prepared=false;leftShimmer=rightShimmer=-1;
+        portrait.begin(opponent,c.stage,new java.util.Random(196+opponent),c.playRosterFull());
     }
     void clear() {time=DURATION;prepared=false;leftShimmer=rightShimmer=-1;}
     boolean active(GameCore c) {
@@ -30,8 +32,11 @@ final class TimeAttackVersus extends Draw {
         if(!Float.isFinite(elapsed) || elapsed<=0)return true;
         if(!prepared) {
             // Establish the arrival geometry behind the departing panels without aging the fight.
-            c.boss.update(0,L,c.rnd);prepared=true;
+            c.boss.update(0,L,c.rnd);
+            portrait.update(0,L,new java.util.Random(196+boss));prepared=true;
         }
+        portrait.age+=Math.min(.1f,elapsed);
+        if(boss==Boss.OCTOPUS)portrait.poseOctopusPortrait(Math.min(.1f,elapsed),L);
         float before=time;
         time=Math.min(DURATION,time+Math.min(.1f,elapsed));
         if(c.sound!=null) {
@@ -126,9 +131,7 @@ final class TimeAttackVersus extends Draw {
             p.strokeCircle(x,y,r*(1.15f+ring*.12f),fadeBy(color,.2f+ring*.05f),w*.013f);
         int mood=time>=CLASH && time<CLASH+.3f?5:8;
         if(right) {
-            if(boss==Boss.ALLIGATOR)GatorCompanion.draw(p,x,y,r,time*2,true,1,mood,-.7f,false,Math.max(0,hop/w*20));
-            else if(boss==Boss.SLIME)BossScreen.slimePortrait(p,x,y,r*.58f,time*2);
-            else BossCollect.draw(p,boss,x,y,r,time*2,true,1,mood,-.7f);
+            BossScreen.versusPortrait(p,c,L,portrait,x,y,r,time*2);
         } else Trinket.drawReacting(p,who,x,y,r,time*2,1,mood,.7f);
         name(p,right?Boss.NAMES[boss]:Collect.NAME[who],x,h*.61f,w,color);
         p.restore();

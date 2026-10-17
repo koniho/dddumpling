@@ -431,7 +431,9 @@ final class Preview {
         for(int boss=0;boss<Boss.COUNT;boss++) {
             GameCore c=TestTimeAttack.start(boss);
             c.runWho=Collect.COUNT-2;c.companion.begin(c.runWho);c.timeAttack.versus.begin(c,boss);
-            step(c,L,1.2f);
+            step(c,L,.35f);
+            shot(dir,"196-versus-boss-"+boss+"-entry",c,L,w,h,ss);
+            step(c,L,.85f);
             shot(dir,"196-versus-boss-"+boss,c,L,w,h,ss);
         }
         for(int who:new int[]{2,Collect.DUCK_FIRST+2}) {
