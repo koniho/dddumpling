@@ -394,13 +394,13 @@ final class TestAudio extends Check {
                     !java.util.Arrays.equals(growl,Sfx.build(Sfx.gatorTauntId(variant-1))));
         }
         short[] dragBoip=Sfx.build(Sfx.SLIME_DRAG_BOIP);
-        check("drag boip sustains longer than the short boips",Math.abs(dragBoip.length/(float)Sfx.RATE-.46f)<.001f);
+        check("drag boip sustains longer than the short boips",Math.abs(dragBoip.length/(float)Sfx.RATE-.92f)<.001f);
         check("drag boip has soft edges",dragBoip[0]==0 && dragBoip[dragBoip.length-1]==0);
         int dragAttack=0,dragTail=0;
         for(int i=0;i<dragBoip.length;i++) {
             int level=Math.abs((int)dragBoip[i]);
             if(i<Sfx.RATE*.03f)dragAttack=Math.max(dragAttack,level);
-            if(i>Sfx.RATE*.25f && i<Sfx.RATE*.35f)dragTail=Math.max(dragTail,level);
+            if(i>Sfx.RATE*.50f && i<Sfx.RATE*.70f)dragTail=Math.max(dragTail,level);
         }
         check("drag boip starts on impact and has an audible decaying tail",dragAttack>1000 && dragTail>1000 && dragTail<dragAttack*.5f);
         short[] ready=Sfx.build(Sfx.SLIME_VULNERABLE);
