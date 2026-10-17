@@ -20,11 +20,9 @@ It remains unchanged and local. Decoded to mono 16 kHz PCM, its onset analyzer
 suggests 210 BPM / 105 half time; measured quarter-note spacing is roughly
 0.29 seconds (about 206 BPM / 103 half time). The recording is the timing source:
 remove the lead-in before the first thump near 1.225 seconds and preserve the
-relative attack spacing. The requested 20 BPM increase takes the arrangement
-from approximately 206 to 226 BPM, followed by a 25% speed-up to 282.5 BPM.
-Every attack and the clip duration is multiplied by 206/282.5, preserving the
-performed groove. The table below records
-the original offsets before this uniform speed-up.
+relative attack spacing. The selected arrangement is 250 BPM: every attack and
+the clip duration is multiplied by 206/250, preserving the performed groove.
+The table below records the original offsets before this uniform speed-up.
 
 | Voice | Original attack offsets before tempo scaling (seconds) |
 | --- | --- |
@@ -35,9 +33,14 @@ This gives three thump/snap/thump/snap phrases, followed by three kick-only
 beats. No filler kicks, cymbals or hi-hats are added. The synth notes share the
 first twelve drum attack times and sound for 58% of each gap, leaving 42% clear.
 Lower chords and higher harmonies release with the lead. Only the
-final three kicks carry the continuous downward gliss, now from about 2.549 to
-3.136 seconds. The ready cue and panel exit also move earlier so the boss music
+final three kicks carry the continuous downward gliss, now from about 2.880 to
+3.543 seconds. The ready cue and panel exit also move earlier so the boss music
 starts as the gliss ends.
+
+A rounded bass line lands on all nine kick hits: E3, A2, C3, A2, E3, A2,
+then E2/B2/E2 under the final gliss. Low/high bongo fills sit in the gaps between
+the beatbox attacks, with a quieter pickup at each phrase ending. Bongos finish
+before the gliss, leaving only kicks and bass beneath that closing descent.
 
 The lead uses an original procedural ARR1-style breathy ah voice: three vowel
 formant peaks, filtered breath noise, subtle pitch motion and light sampler

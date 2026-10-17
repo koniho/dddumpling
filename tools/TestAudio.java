@@ -397,10 +397,10 @@ final class TestAudio extends Check {
         check("fanfare lands on E to lead into the boss A minor opening",
                 VersusMusic.finalMidi(VersusMusic.GLIDE_START)==71
                 && VersusMusic.finalMidi(VersusMusic.DURATION)==52);
-        check("25 percent faster cue preserves the beatbox spacing",
-                VersusMusic.BPM==282.5f
+        check("selected 250 BPM cue preserves the beatbox spacing",
+                VersusMusic.BPM==250f
                 && Math.abs(VersusMusic.KICKS[8]/4.080f-VersusMusic.SNAPS[5]/3.215f)<.00001f
-                && Math.abs(VersusMusic.DURATION-4.3f*206f/226f/1.25f)<.00001f);
+                && Math.abs(VersusMusic.DURATION-4.3f*206f/250f)<.00001f);
         boolean spaced=true;
         for(int phrase=0;phrase<3;phrase++) {
             float[] hits={VersusMusic.KICKS[phrase*2],VersusMusic.SNAPS[phrase*2],

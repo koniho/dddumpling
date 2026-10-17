@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** Soft synth fanfare with melody and beatbox rhythm from the user's Oct 16 voice memos. */
 final class VersusMusic {
-    static final float SOURCE_BPM=206f, BPM=(SOURCE_BPM+20f)*1.25f;
+    static final float SOURCE_BPM=206f, BPM=250f;
     static final float TEMPO_SCALE=SOURCE_BPM/BPM, DURATION=4.3f*TEMPO_SCALE;
     static final float ANNOUNCER_GAIN=.65f;
     private static final float MASTER_PEAK=19000f,MASTER_RMS=4600f;
@@ -48,6 +48,19 @@ final class VersusMusic {
         chord(mix,GLIDE_START,DURATION-GLIDE_START,71,1,true);
         for(int i=0;i<KICKS.length;i++)drum(mix,KICKS[i],KICK,1.65f,i);
         for(int i=0;i<SNAPS.length;i++)drum(mix,SNAPS[i],SNAP,.80f,32+i);
+        // Bass follows only the recorded kicks, ending on the E dominant for boss A minor.
+        int[] bassNotes={52,45,48,45,52,45,40,47,40};
+        for(int i=0;i<KICKS.length;i++) {
+            float next=i+1<KICKS.length?KICKS[i+1]:DURATION;
+            bass(mix,KICKS[i],Math.min(.24f,(next-KICKS[i])*.7f),bassNotes[i],.55f);
+        }
+        // Alternating hand-drum fills in the phrase gaps; the final gliss keeps only kicks/bass.
+        for(int p=0;p<3;p++) {
+            int i=p*2;
+            bongo(mix,(KICKS[i]+SNAPS[i])*.5f,false,.25f,p*3);
+            bongo(mix,KICKS[i+1]+(SNAPS[i+1]-KICKS[i+1])*.6f,true,.20f,p*3+1);
+            bongo(mix,(SNAPS[i+1]+KICKS[i+2])*.5f,true,.13f,p*3+2);
+        }
         float peak=0;
         for(float value:mix)peak=Math.max(peak,Math.abs(value));
         // Lower average level leaves room for the kick transients.
@@ -69,6 +82,37 @@ final class VersusMusic {
         }
         cached[cached.length-1]=0;
         return cached;
+    }
+
+    private static void bass(float[] mix,float start,float duration,int midi,float gain) {
+        int first=(int)(start*Sfx.RATE),count=Math.min((int)(duration*Sfx.RATE),mix.length-first);
+        double phase=0,hz=440*Math.pow(2,(midi-69)/12.0);
+        for(int i=0;i<count;i++) {
+            float t=i/(float)Sfx.RATE;
+            phase+=Softbody.TAU*hz/Sfx.RATE;
+            float voice=(float)(.75*Math.sin(phase)+.28*Math.sin(phase*2)+.10*Math.sin(phase*3));
+            float envelope=Math.min(1,t/.004f)*Math.min(1,(duration-t)/.03f)*(float)Math.exp(-t*4);
+            mix[first+i]+=voice*gain*envelope;
+        }
+    }
+
+    private static void bongo(float[] mix,float start,boolean high,float gain,int seed) {
+        float duration=Math.min(high?.12f:.17f,GLIDE_START-start);
+        int first=(int)(start*Sfx.RATE),count=Math.min((int)(duration*Sfx.RATE),mix.length-first);
+        double phase=0;int noise=911+seed*7919;float air=0;
+        for(int i=0;i<count;i++) {
+            float t=i/(float)Sfx.RATE;
+            float hz=(high?420f:285f)*(1+.18f*(float)Math.exp(-t*90));
+            phase+=Softbody.TAU*hz/Sfx.RATE;
+            noise=noise*1664525+1013904223;
+            float white=(noise>>>8)/8388608f-1;
+            air+=(white-air)*.5f;
+            float voice=(float)(Math.sin(phase)+.40*Math.sin(phase*1.59)+.18*Math.sin(phase*2.14))
+                    +air*.35f*(float)Math.exp(-t*100);
+            float envelope=Math.min(1,t/.0015f)*Math.min(1,(duration-t)/.01f)
+                    *(float)Math.exp(-t/(high?.027f:.045f));
+            mix[first+i]+=voice*gain*envelope;
+        }
     }
 
     private static void chord(float[] mix,float start,float duration,int midi,float accent,boolean glide) {
