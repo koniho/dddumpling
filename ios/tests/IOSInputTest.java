@@ -34,6 +34,21 @@ public final class IOSInputTest extends Check {
         check("back dismisses cloud panel",game.back() && !c.cloudUi.open);
         game.cloudStatus(CloudSaveUi.OFF);
         check("disabled service hides cloud settings",!c.cloudUi.enabled);
+        game.debugScene("cloud:intro");
+        game.cloudStatus(CloudSaveUi.OFF);
+        check("developer cloud preview survives native status refresh",game.cloudOpen() && c.cloudUi.status==CloudSaveUi.SIGN_IN);
+        game.cloudChoose(true);
+        check("preview setup cannot request native authentication",game.takeCloudAction()==0 && !c.cloudUi.introduction);
+        for(String state:new String[]{"drive","pending","failed","account"}) {
+            game.debugScene("cloud:"+state);
+            check("developer cloud panel "+state,game.cloudOpen() && !game.cloudSummary().isEmpty());
+            game.cloudChoose(false);
+            check("developer cloud panel dismisses "+state,!game.cloudOpen());
+        }
+        game.debugScene("cloud:notice");
+        check("developer failure notice starts without modal",!game.cloudOpen() && c.cloudUi.noticeVisible(c));
+        game.debugScene("title");game.cloudStatus(CloudSaveUi.OFF);
+        check("leaving preview restores native status",!c.cloudUi.enabled);
     }
 
     private static IOSTouch one(int action, int id, float x, float y) {

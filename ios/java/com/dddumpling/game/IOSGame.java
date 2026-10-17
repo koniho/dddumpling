@@ -20,11 +20,12 @@ public final class IOSGame {
     private int pausePress;
     private boolean overGesture;
     private int settingsPointer=-1;
+    private boolean cloudPreview;
     public void setHost(Host host) { this.host = host; }
     public void externalFinished() { core.preferences.externalFinished(core); }
-    public void cloudStatus(int status) { core.cloudUi.status(status); }
+    public void cloudStatus(int status) { if(!cloudPreview)core.cloudUi.status(status); }
     public void cloudReduceMotion(boolean value) { core.cloudUi.reduceMotion=value; }
-    public int takeCloudAction() { return core.cloudUi.takeAction(); }
+    public int takeCloudAction() { int action=core.cloudUi.takeAction();return cloudPreview?0:action; }
     public boolean cloudOpen() { return core.cloudUi.open; }
     public String cloudSummary() { return core.cloudUi.summary(); }
     public String cloudPrimary() { return core.cloudUi.primary(); }
@@ -795,6 +796,30 @@ public final class IOSGame {
 
     public void debugScene(String scene) {
         if (!BuildFlags.DEVELOPER || scene == null || layout.w <= 0) return;
+        if(scene.startsWith("cloud:")) {
+            String state=scene.substring(6);
+            int status;
+            switch(state) {
+                case "intro":case "sign-in":status=CloudSaveUi.SIGN_IN;break;
+                case "drive":status=CloudSaveUi.DRIVE;break;
+                case "pending":status=CloudSaveUi.PENDING;break;
+                case "failed":case "notice":status=CloudSaveUi.FAILED;break;
+                case "account":status=CloudSaveUi.ACCOUNT;break;
+                default:return;
+            }
+            cancelPointers();Pause.resume(core);core.toTitle();
+            core.releaseNotes.open=false;core.onboarding.clear();
+            core.onboarding.saved|=Onboarding.SKIPPED;
+            cloudPreview=true;
+            core.cloudUi.status(status);core.cloudUi.failureShown=false;
+            core.cloudUi.notice=state.equals("notice");
+            core.cloudUi.character=Collect.STAR_FIRST;
+            core.cloudUi.pending=-1;
+            core.cloudUi.show(state.equals("intro"));
+            if(state.equals("notice"))core.cloudUi.open=false;
+            return;
+        }
+        cloudPreview=false;
         int stage = 0;
         if (scene.startsWith("stage:")) {
             try { stage = Integer.parseInt(scene.substring(6)); }

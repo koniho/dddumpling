@@ -4,6 +4,9 @@ public final class IOSCloudProductionTest extends Check {
     public static void main(String[] args) {
         check("iOS production flag is off", !BuildFlags.DEVELOPER);
         IOSGame game = new IOSGame(new Mem(), new Ear(), 9);
+        game.layout(393,852,0,59,0,34);
+        game.debugScene("cloud:intro");
+        check("Release ignores simulated cloud scenes",!game.cloudOpen() && !game.core().cloudUi.enabled);
         IOSCloud cloud = new IOSCloud(game, new IOSCloud.Host() {
             public void fetch(int token) { throw new AssertionError("Release fetched cloud data"); }
             public void save(byte[] data, int token) { throw new AssertionError("Release uploaded cloud data"); }

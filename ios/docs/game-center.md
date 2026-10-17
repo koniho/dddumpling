@@ -202,3 +202,22 @@ can show a nonblocking title-screen notice, dismissed for the session after view
 The panel describes GameKit saves as pending rather than claiming verified server upload.
 System-level upload failures that GameKit does not report still require upload-state monitoring;
 the full-storage case above remains a release validation item.
+
+### Repeatable cloud UI checks
+
+Debug builds accept `DDD_SCENE=cloud:intro`, `cloud:sign-in`, `cloud:drive`,
+`cloud:pending`, `cloud:failed`, `cloud:account`, or `cloud:notice`. Launch with
+`DDD_GAME_CENTER_DISABLED=1` to isolate presentation from live services. These scenes
+pin the displayed status across native refreshes and discard authentication actions.
+Release builds ignore the scenes. They exercise the real panel, input routing and
+device-local introduction dismissal; they do not prove cloud transfer. There is no
+simulated “uploaded” state because upload monitoring is still separate work.
+
+`SmokeTests.testCloudOnboardingAndStatusPanels` checks all six panels, setup navigation
+and dismissal, retaining native screenshots. `testCloudFailureNoticeOpensStatus`
+checks the title notice's link to the failure panel. Run these through
+`ios/scripts/test-simulator.sh --selected` with `IOS_TEST_TARGETS` set to their full
+`DDDumplingUITests/SmokeTests/…` identifiers. The shared Settings suite covers
+celebration timing, collected-character selection, dismissal persistence, pointer
+ownership and once-per-session failure notices. `ios/scripts/test-input.sh` checks
+preview isolation and verifies that Release cannot activate the simulated scenes.
