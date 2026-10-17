@@ -20,9 +20,12 @@ It remains unchanged and local. Decoded to mono 16 kHz PCM, its onset analyzer
 suggests 210 BPM / 105 half time; measured quarter-note spacing is roughly
 0.29 seconds (about 206 BPM / 103 half time). The recording is the timing source:
 remove the lead-in before the first thump near 1.225 seconds and preserve the
-relative attack times, rather than forcing it to the previous 224 BPM grid.
+relative attack spacing. The requested 20 BPM increase takes the arrangement
+from approximately 206 to 226 BPM: every attack and the clip duration is
+multiplied by 206/226, preserving the performed groove. The table below records
+the original offsets before this uniform speed-up.
 
-| Voice | Attack times in the arranged clip (seconds) |
+| Voice | Original attack offsets before tempo scaling (seconds) |
 | --- | --- |
 | Kick | 0, 0.605, 1.200, 1.765, 2.335, 2.940, 3.495, 3.770, 4.080 |
 | Snap | 0.435, 0.875, 1.600, 2.035, 2.775, 3.215 |
@@ -30,12 +33,16 @@ relative attack times, rather than forcing it to the previous 224 BPM grid.
 This gives three thump/snap/thump/snap phrases, followed by three kick-only
 beats. No filler kicks, cymbals or hi-hats are added. The synth notes share the
 first twelve drum attack times and sustain almost to the next attack. Only the
-final three kicks carry the continuous downward gliss, from 3.495 to 4.3 seconds.
+final three kicks carry the continuous downward gliss, now from about 3.186 to
+3.919 seconds. The ready cue and panel exit also move earlier so the boss music
+starts as the gliss ends.
 
 The trumpet has been replaced by a rounded sine-based synth with a soft octave,
 very quiet upper partials, slight doubling, and 18 ms attacks. Chord voices stay
-behind the lead. The kick has a stronger 58 Hz body and a second harmonic to
-keep its punch audible on phone speakers; short filtered snare snaps follow
+behind the lead, with two softer harmony voices an octave above the inner
+chord tones (C/E above A, E/G above C, and E/G-sharp above B). They share the
+beatbox attacks and glide down into G-sharp3/B3 at the ending. The kick has a
+stronger 58 Hz body and a second harmonic to keep its punch audible on phone speakers; short filtered snare snaps follow
 the beatbox rhythm.
 
 `VersusMusic.clip()` synthesizes the actual playback PCM. During the final

@@ -371,6 +371,10 @@ final class TestAudio extends Check {
         check("fanfare lands on E to lead into the boss A minor opening",
                 VersusMusic.finalMidi(VersusMusic.GLIDE_START)==71
                 && VersusMusic.finalMidi(VersusMusic.DURATION)==52);
+        check("twenty BPM increase preserves the beatbox spacing and cue length",
+                VersusMusic.BPM-VersusMusic.SOURCE_BPM==20
+                && Math.abs(VersusMusic.KICKS[8]/4.080f-VersusMusic.SNAPS[5]/3.215f)<.00001f
+                && Math.abs(VersusMusic.DURATION-4.3f*206f/226f)<.00001f);
         check("beatbox arrangement has only its nine thumps and six snaps",
                 VersusMusic.KICKS.length==9 && VersusMusic.SNAPS.length==6);
         check("gliss covers the three final kick-only beats",

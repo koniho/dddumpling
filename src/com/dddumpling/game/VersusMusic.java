@@ -2,17 +2,23 @@ package com.dddumpling.game;
 
 /** Soft synth fanfare with melody and beatbox rhythm from the user's Oct 16 voice memos. */
 final class VersusMusic {
-    static final float DURATION=4.3f;
+    static final float SOURCE_BPM=206f, BPM=SOURCE_BPM+20f;
+    static final float TEMPO_SCALE=SOURCE_BPM/BPM, DURATION=4.3f*TEMPO_SCALE;
     static final float ANNOUNCER_GAIN=.65f;
     private static final float MASTER_PEAK=19000f,MASTER_RMS=4600f;
-    // Measured beatbox attacks relative to its first thump; retain the performed spacing.
-    static final float[] KICKS={0,.605f,1.200f,1.765f,2.335f,2.940f,3.495f,3.770f,4.080f};
-    static final float[] SNAPS={.435f,.875f,1.600f,2.035f,2.775f,3.215f};
+    // Measured beatbox attacks relative to its first thump; scale every gap equally to retain the performed groove.
+    static final float[] KICKS=atTempo(0,.605f,1.200f,1.765f,2.335f,2.940f,3.495f,3.770f,4.080f);
+    static final float[] SNAPS=atTempo(.435f,.875f,1.600f,2.035f,2.775f,3.215f);
     static final float GLIDE_START=KICKS[6];
     private static final int[][] MELODY={{71,71,69,71},{72,72,69,71},{71,71,69,71}};
     private static final int KICK=0,SNAP=1;
     private static short[] cached;
     private VersusMusic() {}
+
+    private static float[] atTempo(float... times) {
+        for(int i=0;i<times.length;i++)times[i]*=TEMPO_SCALE;
+        return times;
+    }
 
     static float finalMidi(float seconds) {
         return glideMidi(71,52,seconds);
@@ -70,6 +76,9 @@ final class VersusMusic {
         int third=midi==69?60:64,fifth=midi==69?64:midi==72?67:68;
         synth(mix,start,duration,third,.10f*accent,glide?44:third);
         synth(mix,start,duration,fifth,.09f*accent,glide?47:fifth);
+        // Airy chord tones above the lead, following the same attacks and final descent.
+        synth(mix,start,duration,third+12,.075f*accent,glide?56:third+12);
+        synth(mix,start,duration,fifth+12,.055f*accent,glide?59:fifth+12);
     }
 
     private static void synth(float[] mix,float start,float duration,int midi,float gain,int endMidi) {
@@ -92,7 +101,7 @@ final class VersusMusic {
     /** Heavy rounded kick and short beatbox-like snare snaps. No cymbals or hi-hats. */
     private static void drum(float[] mix,float start,int kind,float gain,int seed) {
         int first=(int)(start*Sfx.RATE);
-        float length=kind==KICK?.25f:.10f;
+        float length=(kind==KICK?.25f:.10f)*TEMPO_SCALE;
         int count=Math.min((int)(length*Sfx.RATE),mix.length-first),noise=137+seed*7919;
         float phase=0,sub=0,previous=0,filtered=0;
         for(int i=0;i<count;i++) {

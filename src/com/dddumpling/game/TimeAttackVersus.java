@@ -2,7 +2,8 @@ package com.dddumpling.game;
 
 /** A cosmetic face-off before the normal boss arrival; it never advances combat. */
 final class TimeAttackVersus extends Draw {
-    static final float CLASH=.66f, READY=3.45f, EXIT=3.7f, DURATION=VersusMusic.DURATION;
+    static final float CLASH=.66f, READY=3.45f*VersusMusic.TEMPO_SCALE,
+            EXIT=3.7f*VersusMusic.TEMPO_SCALE, DURATION=VersusMusic.DURATION;
     static final float SHIMMER=.78f, ANNOUNCE=.24f;
     float time=DURATION,leftShimmer=-1,rightShimmer=-1;
     int who,boss;
@@ -71,7 +72,6 @@ final class TimeAttackVersus extends Draw {
         panel(p,c,L,true,opponent,out*w*.72f);
         float fade=1-Math.min(1,out*2);
         if(fade>0) {
-            p.text("BOSS TIME ATTACK",w*.5f,h*.17f,type(w*.027f),fadeBy(INK,fade),Painter.CENTER,true);
             if(c.timeAttack.challenge==TimeAttack.ALL)
                 p.text("ROUND "+(boss+1)+" / "+Boss.COUNT,w*.5f,h*.215f,type(w*.019f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
             if(time>=CLASH) {
