@@ -1,6 +1,6 @@
 # Play Games events and cross-device progress
 
-Branch: `feature/play-games-progress`. This integration is opt-in at build time. Ordinary builds,
+Branch: `feat/75-games-integration`. This integration is opt-in at build time. Ordinary builds,
 including the first Play test release, have **no Play SDK, sign-in, or network reporting**.
 Developer builds exclude the SDK even if a configuration file is supplied. Production builds
 record progress locally, independently of whether Play integration is configured.
@@ -12,7 +12,7 @@ record progress locally, independently of whether Play integration is configured
    SHA-1 for installs from a Play track, and the local certificate for sideloaded test builds.
    The upload certificate is not necessarily the app-signing certificate.
 3. Add tester accounts or the intended release track to Play Games testing access.
-4. Create the 76 events listed in `play-games.example.json`. Copy that file to
+4. Create the 90 events listed in `play-games.example.json`. Copy that file to
    `.private/play-games.json`, fill the numeric `project_id` and every event's Console-generated ID.
    IDs are configuration, not credentials; the validation rejects blank or duplicate event IDs.
 5. Install Java 17+ and Gradle (validated here with Gradle 9.7.1). Gradle resolves dependencies only;
@@ -33,10 +33,24 @@ files. It fails on unsupported native dependencies instead of silently dropping 
 Production setup (2026-10-14): linked Play Games Services to the existing Cloud project
 `dddumpling-5695b`, project number/application ID `56613446939`. This reuses the Firebase
 project's underlying Cloud project; it does not add a Firebase SDK or link Firebase to PGS.
-The PGS configuration is still draft: OAuth consent, Android credentials, Saved Games,
-event IDs, and production publication remain unfinished. Do not enable a release build yet.
+The PGS configuration is still draft. On 2026-10-17, Saved Games was enabled and saved;
+Console confirmed the Google Drive API is enabled. OAuth consent creation is paused at
+the required Google API Services User Data Policy acknowledgement, pending explicit user
+approval. Android credentials and production publication remain unfinished. Do not enable
+a release build yet.
+The tester list contains `koniho@gmail.com` (verified with the account filter). Console
+still reports changes not ready to test while OAuth and credentials are incomplete.
 
-Real event IDs are not available in this workspace yet. `build/play-compile-only.json` and
+All 90 hidden draft events were created and read back on 2026-10-17; Console shows 90
+events. Their non-secret IDs are in `play-games.draft.json`, with a local copy in ignored
+`.private/play-games.json`. The complete mapping passes the build configuration validator.
+These IDs do not enable a release build or publish the PGS project. The catalog includes
+Gummy Gator's 12 counters under the persisted `mossy_maw` prefix; that prefix must not be
+renamed when changing player-facing text. `python3 tools/test-prepare-play.py` checks that
+all runtime bosses and directly emitted events have definitions and the example matches
+the build validator. Starter and Survival rewards have their own source counters too.
+
+`build/play-compile-only.json` and
 `build/play-sdk-compile-only.apk` are **packaging fixtures only**: do not distribute or install them.
 A successful compilation does not establish authentication or prove server-side reporting.
 

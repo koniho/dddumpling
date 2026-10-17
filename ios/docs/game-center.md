@@ -221,3 +221,13 @@ checks the title notice's link to the failure panel. Run these through
 celebration timing, collected-character selection, dismissal persistence, pointer
 ownership and once-per-session failure notices. `ios/scripts/test-input.sh` checks
 preview isolation and verifies that Release cannot activate the simulated scenes.
+
+2026-10-17 validation: 337 Settings checks, 569 iOS input checks, 28 cloud checks in
+each configuration, and six production gates passed. The six-panel native UI test
+passed setup and dismissal; the separate failure-notice test passed after isolating
+the developer fixture from stored tutorial state. Five native Game Center tests passed.
+Portrait simulator screenshots were inspected. On the paired iPhone 16 Pro Max, the
+signed Debug build installed successfully and its developer save was byte-identical
+before and immediately after the update. Physical UI tests could not initialize:
+iOS returned “Authentication canceled. Canceled by user.” Unlocking the phone and
+authorizing UI testing is still required; installation is not a physical UI test pass.

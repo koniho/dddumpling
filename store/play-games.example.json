@@ -63,6 +63,18 @@
     "boss_fly_agaric_first_hit_15_30s": "",
     "boss_fly_agaric_first_hit_30_60s": "",
     "boss_fly_agaric_first_hit_60s_plus": "",
+    "boss_mossy_maw_started": "",
+    "boss_mossy_maw_won": "",
+    "boss_mossy_maw_failed": "",
+    "boss_mossy_maw_abandoned": "",
+    "boss_mossy_maw_no_damage": "",
+    "boss_mossy_maw_first_hit_count": "",
+    "boss_mossy_maw_first_hit_ms_total": "",
+    "boss_mossy_maw_first_hit_under_5s": "",
+    "boss_mossy_maw_first_hit_5_15s": "",
+    "boss_mossy_maw_first_hit_15_30s": "",
+    "boss_mossy_maw_first_hit_30_60s": "",
+    "boss_mossy_maw_first_hit_60s_plus": "",
     "steamer_started": "",
     "steamer_won": "",
     "steamer_failed": "",
@@ -76,6 +88,8 @@
     "rewards_duplicate": "",
     "rewards_steamer": "",
     "rewards_starpath": "",
-    "rewards_boss": ""
+    "rewards_boss": "",
+    "rewards_survival": "",
+    "rewards_starter": ""
   }
 }

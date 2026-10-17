@@ -15,14 +15,14 @@ def catalog():
     keys = ['runs_started', 'runs_finished', 'runs_abandoned', 'stages_completed']
     for group in ['stage_reached', 'run_end']:
         keys += [group + '_' + bucket for bucket in ['1_4', '5_9', '10_14', '15_19', '20_plus']]
-    for boss in ['slime', 'dark_divide', 'octopulse', 'fly_agaric']:
+    for boss in ['slime', 'dark_divide', 'octopulse', 'fly_agaric', 'mossy_maw']:
         keys += ['boss_' + boss + '_' + suffix for suffix in [
             'started', 'won', 'failed', 'abandoned', 'no_damage', 'first_hit_count',
             'first_hit_ms_total', 'first_hit_under_5s', 'first_hit_5_15s',
             'first_hit_15_30s', 'first_hit_30_60s', 'first_hit_60s_plus']]
     for game in ['steamer', 'starpath']:
         keys += [game + '_' + suffix for suffix in ['started', 'won', 'failed', 'abandoned']]
-    keys += ['rewards_' + suffix for suffix in ['total', 'new', 'duplicate', 'steamer', 'starpath', 'boss']]
+    keys += ['rewards_' + suffix for suffix in ['total', 'new', 'duplicate', 'steamer', 'starpath', 'boss', 'survival', 'starter']]
     return keys
 
 
