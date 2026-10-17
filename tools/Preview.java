@@ -440,7 +440,7 @@ final class Preview {
             step(c,L,1.2f);
             shot(dir,"196-versus-name-"+who,c,L,w,h,ss);
         }
-        for(float time:new float[]{.25f,.45f,.69f,TimeAttackVersus.READY+.12f,TimeAttackVersus.EXIT+.3f,TimeAttackVersus.DURATION-.01f,TimeAttackVersus.DURATION+.15f}) {
+        for(float time:new float[]{.25f,.45f,.69f,1.25f,1.95f,2.2f,TimeAttackVersus.READY+.12f,TimeAttackVersus.EXIT+.3f,TimeAttackVersus.DURATION-.01f,TimeAttackVersus.DURATION+.15f}) {
             GameCore c=TestTimeAttack.start(TimeAttack.ALL);
             step(c,L,time);
             shot(dir,"196-versus-phase-"+Math.round(time*100),c,L,w,h,ss);

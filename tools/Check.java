@@ -164,7 +164,8 @@ abstract class Check {
         int explanations;
         String explanation;
         public void explain(String text) { explanations++;explanation=text; }
-        int versusCalls,versusWho=-1,versusBoss=-1;
+        int versusCalls,versusWho=-1,versusBoss=-1,versusOffset=-1;
+        public int versusSpeechOffset() {return versusOffset;}
         public void announceVersus(int entry,int boss) {versusCalls++;versusWho=entry;versusBoss=boss;}
         int narrated = -1;
         int nameCalls, announcedName=-1;

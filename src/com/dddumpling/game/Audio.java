@@ -507,6 +507,9 @@ final class Audio implements GameCore.Sound {
     private boolean ttsPendingName,ttsPendingVersus;
     private String ttsPendingExplanation;
     private long speechSerial;
+    private volatile String versusUtterance;
+    private volatile int versusOffset=-1;
+    @Override public int versusSpeechOffset() {return versusOffset;}
 
     /**
      * The story popup, read aloud. Requests wait if the title-screen speech warmup has not
@@ -533,12 +536,14 @@ final class Audio implements GameCore.Sound {
 
     private void requestExplanation(String text,boolean versus) {
         if(effectsVolume<=0f || ttsBroken || text==null || text.isEmpty())return;
+        versusUtterance=null;versusOffset=-1;
         ttsPending=-1;ttsPendingExplanation=text;ttsPendingVersus=versus;
         prepareSpeech();
         if(ttsReady)readPending();
     }
 
     private void requestSpeech(int entry, boolean nameOnly) {
+        versusUtterance=null;versusOffset=-1;
         if(effectsVolume<=0f || ttsBroken || entry<0 || entry>=Collect.COUNT) return;
         ttsPendingExplanation=null;
         ttsPending = entry;
@@ -573,6 +578,7 @@ final class Audio implements GameCore.Sound {
     }
 
     @Override public synchronized void hush() {
+        versusUtterance=null;versusOffset=-1;
         ttsPending = -1;
         ttsPendingExplanation=null;
         lastUtterance = null;
@@ -596,6 +602,12 @@ final class Audio implements GameCore.Sound {
             tts.setOnUtteranceProgressListener(
                     new android.speech.tts.UtteranceProgressListener() {
                         @Override public void onStart(String id) { }
+
+                        @Override public void onRangeStart(String id,int start,int end,int frame) {
+                            synchronized(Audio.this) {
+                                if(id!=null && id.equals(versusUtterance))versusOffset=start;
+                            }
+                        }
 
                         @Override public void onDone(String id) {
                             if (id != null && id.equals(lastUtterance)) duck(false);
@@ -659,7 +671,8 @@ final class Audio implements GameCore.Sound {
                 params.putFloat(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_VOLUME,effectsVolume);
                 tts.setPitch(ttsPendingVersus?Narration.VERSUS_PITCH:Narration.PITCH);
                 tts.setSpeechRate(ttsPendingVersus?Narration.VERSUS_RATE:.9f);
-                lastUtterance="tutorial-"+(++speechSerial);duck(true);
+                lastUtterance="tutorial-"+(++speechSerial);
+                versusUtterance=ttsPendingVersus?lastUtterance:null;duck(true);
                 if(tts.speak(text,android.speech.tts.TextToSpeech.QUEUE_FLUSH,params,lastUtterance)
                         !=android.speech.tts.TextToSpeech.SUCCESS)duck(false);
             } catch(Throwable t) { ttsBroken=true;duck(false); }

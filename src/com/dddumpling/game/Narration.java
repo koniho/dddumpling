@@ -49,6 +49,8 @@ final class Narration {
 
     /** Keep the matchup together so the voice can shape the lead-in and emphatic finish. */
     static final float VERSUS_PITCH = 1.35f, VERSUS_RATE = .94f;
+    static int versusOpponentOffset(int entry) {return Collect.NAME[entry].length()+"... versus ".length();}
+    static float versusOpponentFallback(int entry) {return .24f+.85f+Collect.NAME[entry].length()*.065f;}
     static String versus(int entry,int boss) {
         return (Collect.NAME[entry]+"... versus "+Boss.NAMES[boss]+"!").toLowerCase(java.util.Locale.US);
     }

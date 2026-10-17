@@ -33,6 +33,8 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 @property(nonatomic) AVAudioUnitVarispeed *rocketPitch;
 @property(nonatomic) AVSpeechSynthesizer *speech;
 @property(nonatomic) AVSpeechUtterance *lastUtterance;
+@property(nonatomic) AVSpeechUtterance *versusUtterance;
+@property(atomic) jint versusOffset;
 @property(nonatomic) dispatch_queue_t renderQueue;
 @property(nonatomic) dispatch_queue_t effectsQueue;
 @property(nonatomic) dispatch_semaphore_t effectSlots;
@@ -552,8 +554,19 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 }
 
 - (void)announceVersusWithInt:(jint)entry withInt:(jint)boss {
+  if (!_active || _interrupted || !_playbackAllowed || _effectsVolume <= 0) return;
   [self speakText:[DDNarration versusWithInt:entry withInt:boss]
            pitch:DDNarration_VERSUS_PITCH rate:DDNarration_VERSUS_RATE];
+  _versusUtterance = _lastUtterance;
+  self.versusOffset = -1;
+}
+
+- (jint)versusSpeechOffset { return _versusUtterance ? self.versusOffset : -1; }
+
+- (void)speechSynthesizer:(AVSpeechSynthesizer *)synthesizer
+    willSpeakRangeOfSpeechString:(NSRange)range utterance:(AVSpeechUtterance *)utterance {
+  (void)synthesizer;
+  if (utterance == _versusUtterance) self.versusOffset = (jint)range.location;
 }
 
 - (void)explainWithNSString:(NSString *)text {
@@ -597,6 +610,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 }
 
 - (void)hush {
+  _versusUtterance = nil; self.versusOffset = -1;
   _lastUtterance = nil;
   [_speech stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
   _narrating = NO; [self applyMusicMix];

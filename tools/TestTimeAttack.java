@@ -162,6 +162,26 @@ final class TestTimeAttack extends Check {
         }
     }
 
+    private static void versusShimmers(Layout L) {
+        GameCore c=start(Boss.SLIME);Ear ear=new Ear();c.sound=ear;ear.versusOffset=0;
+        for(int i=0;i<150;i++)c.update(DT,L);
+        TimeAttackVersus v=c.timeAttack.versus;
+        check("left shimmer completes without starting the opponent shimmer",v.leftShimmer>=0
+                && v.time>v.leftShimmer+TimeAttackVersus.SHIMMER && v.rightShimmer<0);
+        ear.versusOffset=Narration.versusOpponentOffset(c.runWho)-1;c.update(DT,L);
+        check("versus word alone does not light opponent panel",v.rightShimmer<0);
+        Pause.open(c);ear.versusOffset=Narration.versusOpponentOffset(c.runWho);c.update(DT,L);
+        check("paused scene does not consume speech shimmer cue",v.rightShimmer<0);
+        Pause.resume(c);c.update(DT,L);float started=v.rightShimmer;
+        check("opponent word starts a distinct shimmer",started==v.time && started>v.leftShimmer+TimeAttackVersus.SHIMMER);
+        c.update(DT,L);check("opponent shimmer does not restart for subsequent words",v.rightShimmer==started);
+        v.clear();check("clearing resets both shimmer cues",v.leftShimmer<0 && v.rightShimmer<0);
+        GameCore silent=start(Boss.SLIME);
+        for(int i=0;i<180;i++)silent.update(DT,L);
+        v=silent.timeAttack.versus;
+        check("mute or unsupported speech uses separated fallback sweeps",v.rightShimmer>v.leftShimmer+TimeAttackVersus.SHIMMER);
+    }
+
     private static void versusIntro(Layout L) {
         GameCore c=start(Boss.SLIME),control=start(Boss.SLIME);
         Ear ear=new Ear();c.sound=ear;
@@ -212,6 +232,7 @@ final class TestTimeAttack extends Check {
     }
 
     static void all(Layout L) {
+        versusShimmers(L);
         versusLaunch(L);
         versusIntro(L);
         gatorSilhouette();

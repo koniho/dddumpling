@@ -3,14 +3,15 @@ package com.dddumpling.game;
 /** A cosmetic face-off before the normal boss arrival; it never advances combat. */
 final class TimeAttackVersus extends Draw {
     static final float CLASH=.66f, READY=3.45f, EXIT=3.7f, DURATION=4.3f;
-    float time=DURATION;
+    static final float SHIMMER=.78f, ANNOUNCE=.24f;
+    float time=DURATION,leftShimmer=-1,rightShimmer=-1;
     int who,boss;
     boolean prepared;
 
     void begin(GameCore c,int opponent) {
-        time=0;who=c.runWho;boss=opponent;prepared=false;
+        time=0;who=c.runWho;boss=opponent;prepared=false;leftShimmer=rightShimmer=-1;
     }
-    void clear() {time=DURATION;prepared=false;}
+    void clear() {time=DURATION;prepared=false;leftShimmer=rightShimmer=-1;}
     boolean active(GameCore c) {
         return c.state==GameCore.PLAY && c.timeAttack.active && !c.timeAttack.finished
                 && !c.boss.beaten && c.boss.kind==boss && c.boss.intro>0 && time<DURATION;
@@ -27,7 +28,7 @@ final class TimeAttackVersus extends Draw {
         time=Math.min(DURATION,time+Math.min(.1f,elapsed));
         if(c.sound!=null) {
             if(before<.06f && time>=.06f)c.sound.ninjaSwish(0);
-            if(before<.24f && time>=.24f) {
+            if(before<ANNOUNCE && time>=ANNOUNCE) {
                 c.sound.ninjaSwish(1);
                 c.sound.announceVersus(who,boss);
             }
@@ -35,6 +36,12 @@ final class TimeAttackVersus extends Draw {
             if(before<READY && time>=READY)c.sound.courseStart();
             // Cancel a slow or still-warming speech engine before normal boss/tutorial audio.
             if(time>=DURATION)c.sound.hush();
+        }
+        if(leftShimmer<0 && time>=ANNOUNCE)leftShimmer=time;
+        if(rightShimmer<0 && leftShimmer>=0 && time>=leftShimmer+SHIMMER) {
+            int offset=c.sound==null?-1:c.sound.versusSpeechOffset();
+            if(offset>=Narration.versusOpponentOffset(who)
+                    || (offset<0 && time>=Narration.versusOpponentFallback(who)))rightShimmer=time;
         }
         return time<DURATION;
     }
@@ -121,7 +128,9 @@ final class TimeAttackVersus extends Draw {
     }
 
     private void shimmer(Painter p,float[] panel,float w,float h,boolean right,int color) {
-        float phase=(time-(right?.28f:.10f))/.78f;
+        float start=right?rightShimmer:leftShimmer;
+        if(start<0)return;
+        float phase=(time-start)/SHIMMER;
         if(phase<=0 || phase>=1)return;
         float slope=.38f,half=w*.16f;
         float first=right?w*.47f:0,last=(right?w:w*.53f)+slope*h;

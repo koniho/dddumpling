@@ -144,6 +144,16 @@
   XCTAssertEqualWithAccuracy(speech.utterance.pitchMultiplier, DDNarration_VERSUS_PITCH, .001);
   XCTAssertEqualWithAccuracy(speech.utterance.rate, AVSpeechUtteranceDefaultSpeechRate * DDNarration_VERSUS_RATE, .001);
   XCTAssertEqualWithAccuracy(speech.utterance.volume, .4, .001);
+  XCTAssertEqual([audio versusSpeechOffset], -1);
+  id<AVSpeechSynthesizerDelegate> delegate = (id<AVSpeechSynthesizerDelegate>)audio;
+  [delegate speechSynthesizer:nil willSpeakRangeOfSpeechString:NSMakeRange(0, 3) utterance:speech.utterance];
+  XCTAssertEqual([audio versusSpeechOffset], 0);
+  jint bossOffset = [DDNarration versusOpponentOffsetWithInt:11];
+  [delegate speechSynthesizer:nil willSpeakRangeOfSpeechString:NSMakeRange(bossOffset, 5) utterance:speech.utterance];
+  XCTAssertEqual([audio versusSpeechOffset], bossOffset);
+  [audio hush];
+  [delegate speechSynthesizer:nil willSpeakRangeOfSpeechString:NSMakeRange(bossOffset, 5) utterance:speech.utterance];
+  XCTAssertEqual([audio versusSpeechOffset], -1);
   [audio setValue:@0 forKey:@"effectsVolume"];
   [audio announceVersusWithInt:4 withInt:1];
   [audio setValue:@1 forKey:@"effectsVolume"];
