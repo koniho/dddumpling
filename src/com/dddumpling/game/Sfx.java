@@ -37,10 +37,10 @@ final class Sfx {
             NINJA_COMBO = NINJA_SWISH_2 + 1, SURVIVAL_OVER = NINJA_COMBO + 1,
             GATOR_PARRY = SURVIVAL_OVER + 1, GATOR_PROMPT_0 = GATOR_PARRY + 1,
             GATOR_PROMPT_1 = GATOR_PROMPT_0 + 1, GATOR_PROMPT_2 = GATOR_PROMPT_1 + 1,
-            GATOR_SPLASH = GATOR_PROMPT_2 + 1, GATOR_TAUNT_0 = GATOR_SPLASH + 1, SLIME_SQUISH_0 = GATOR_TAUNT_0 + 6, SLIME_VULNERABLE = SLIME_SQUISH_0 + 6, COUNT = SLIME_VULNERABLE + 1;
+            GATOR_SPLASH = GATOR_PROMPT_2 + 1, GATOR_TAUNT_0 = GATOR_SPLASH + 1, SLIME_SQUISH_0 = GATOR_TAUNT_0 + 6, SLIME_VULNERABLE = SLIME_SQUISH_0 + 6, SLIME_DRAG_BOIP = SLIME_VULNERABLE + 1, COUNT = SLIME_DRAG_BOIP + 1;
     static final float GATOR_ENTRY_RATE=.70f, GATOR_PROMPT_GAIN=.42f, GATOR_SPLASH_GAIN=.60f;
     static final float GATOR_TAUNT_GAIN=.55f;
-    static final float SLIME_SQUISH_GAIN=.9f, SLIME_VULNERABLE_GAIN=.45f;
+    static final float SLIME_SQUISH_GAIN=.9f, SLIME_VULNERABLE_GAIN=.45f, SLIME_DRAG_BOIP_GAIN=.35f;
     static final float OCTO_WAVE_GAIN = .66f;
     static final float NINJA_COMBO_GAIN = .25f;
 
@@ -85,6 +85,7 @@ final class Sfx {
 
     private static short[] renderEffect(int id) {
         if(id==SLIME_VULNERABLE)return slimeVulnerable();
+        if(id==SLIME_DRAG_BOIP)return slimeDragBoip();
         if(id>=SLIME_SQUISH_0 && id<SLIME_SQUISH_0+6)return SlimeSquishRecording.build(id-SLIME_SQUISH_0);
         if(id>=GATOR_TAUNT_0 && id<GATOR_TAUNT_0+6)return GatorTauntRecording.build(id-GATOR_TAUNT_0);
         if (id >= SQUISH_0 && id < SQUISH_0 + Glyph.COUNT) return squish(id - SQUISH_0);
@@ -832,7 +833,22 @@ final class Sfx {
         return render(v);
     }
 
-    /** Three rounded bubbles, rising into the fold and falling back out on release. */
+    /** A single elastic impact, with a longer rounded pitch fall. */
+    static short[] slimeDragBoip() {
+        float[] v=new float[(int)(RATE*.46f)];float phase=0f;
+        for(int i=0;i<v.length;i++) {
+            float t=i/(float)RATE;
+            float frequency=190f+750f*(float)Math.exp(-t/.085f)
+                    +45f*(float)Math.sin(TAU*14f*t)*(float)Math.exp(-t/.14f);
+            phase+=TAU*frequency/RATE;
+            float envelope=Math.min(1f,t/.003f)*(float)Math.exp(-t/.15f)
+                    *Math.min(1f,(v.length-1-i)/(RATE*.045f));
+            v[i]=((float)Math.sin(phase)+.14f*(float)Math.sin(phase*2f))*envelope;
+        }
+        return render(v);
+    }
+
+    /** Two higher boips announce the vulnerable glob. */
     static short[] slimeVulnerable() {
         float[] v=new float[(int)(RATE*Boss.SLIME_BOIP_DURATION)];
         for(int beat=0;beat<2;beat++) {
@@ -849,6 +865,7 @@ final class Sfx {
         return render(v);
     }
 
+    /** Three rounded bubbles, rising into the fold and falling back out on release. */
     static short[] slimeCover(boolean release) {
         float[] v=new float[(int)(RATE*0.30f)];
         float[] notes={260f,360f,490f};

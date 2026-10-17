@@ -306,7 +306,10 @@ final class BossPlay {
         if(c.boss.kind==Boss.SLIME)
             SlimeSpray.emit(c,x,y,sprayDX,sprayDY,L.enemyR*1.2f,true);
         if (c.sound != null) {
-            if (c.boss.kind == Boss.SLIME) slimeSquish(c,4,2);
+            if (c.boss.kind == Boss.SLIME) {
+                slimeSquish(c,4,2);
+                c.sound.slimeDragBoip();
+            }
             else if (c.boss.kind == Boss.OCTOPUS) c.sound.octoDamage();
             else c.sound.bossDamage();
         }

@@ -263,6 +263,7 @@ final class GameCore {
         void debuffDown();
         void slimeCover(boolean release);
         void slimeVulnerable();
+        void slimeDragBoip();
         void landShuffle();
         void uiBloop();
         /** A high-score reset was accepted and the board is about to be cleaned. */

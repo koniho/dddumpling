@@ -149,6 +149,7 @@ final class Trailer {
             Integer id = sounds.get(method.getName());
             if (method.getName().equals("squish")) id = Sfx.SQUISH_0 + (Integer) args[0];
             if (method.getName().equals("ninjaSwish")) id = Sfx.ninjaSwishId((Integer) args[0]);
+            if (method.getName().equals("slimeDragBoip")) id = Sfx.SLIME_DRAG_BOIP;
             if (method.getName().equals("slimeVulnerable")) id = Sfx.SLIME_VULNERABLE;
             if (method.getName().equals("slimeSquish")) id = Sfx.slimeSquishId((Integer)args[0]);
             if (method.getName().equals("gatorTaunt")) id = Sfx.gatorTauntId((Integer)args[0]);
@@ -158,7 +159,8 @@ final class Trailer {
                     :method.getName().equals("gatorSplash")?Sfx.GATOR_SPLASH_GAIN
                     :method.getName().equals("gatorTaunt")?Sfx.GATOR_TAUNT_GAIN
                     :method.getName().equals("slimeSquish")?Sfx.SLIME_SQUISH_GAIN
-                    :method.getName().equals("slimeVulnerable")?Sfx.SLIME_VULNERABLE_GAIN:1f;
+                    :method.getName().equals("slimeVulnerable")?Sfx.SLIME_VULNERABLE_GAIN
+                    :method.getName().equals("slimeDragBoip")?Sfx.SLIME_DRAG_BOIP_GAIN:1f;
             float rate=method.getName().equals("gatorSplash") && (Boolean)args[0]?Sfx.GATOR_ENTRY_RATE:1f;
             if (id != null) {
                 short[] pcm = Sfx.build(id);

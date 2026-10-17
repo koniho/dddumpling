@@ -230,3 +230,9 @@ second note and soft falling pitch. Pause holds the delay; losing vulnerability,
 defeat and leaving cancel it. Muted cues are consumed without replaying later.
 The eyes, brows and open mouth pulse on the same shared 140 ms beat clock, with a
 larger second reaction. The expression clock pauses and cancels with the cue.
+
+Successful drag damage also plays one synthesized 460 ms boip at the damage event,
+layered with the single-beat recorded squish. It falls from about 940 Hz toward
+190 Hz with a soft pitch wobble, 150 ms amplitude decay and 45 ms ending fade,
+at 35% effect gain. Holding or continuing an already-completed drag does not
+retrigger it; attack volleys retain their existing shorter squishes.

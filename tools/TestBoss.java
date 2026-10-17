@@ -1217,12 +1217,16 @@ final class TestBoss extends Check {
                 d.grabBoss(d.boss.ex[glob], d.boss.ey[glob]));
         Ear damageEar = new Ear();
         d.sound = damageEar;
+        d.dragBoss(d.boss.ex[glob],d.boss.ey[glob],L);
+        check("holding the glob does not play the drag boip",damageEar.slimeDragBoips==0);
         d.boss.hp = 1f;
         float deathFrom = d.boss.bodyY(L);
         boolean done = d.dragBoss(L.playRight + 1f, d.boss.ey[glob], L);
         check("dragging it off the play area finishes it", done);
-        check("a damaging slime blow makes one bubbly hit", damageEar.slimeDamages == 1
+        check("a damaging slime blow makes one squish and one long boip", damageEar.slimeDamages == 1 && damageEar.slimeDragBoips==1
                 && damageEar.bossDamages == 0);
+        d.dragBoss(L.playRight+1f,grabProbeY,L);
+        check("continuing the drag does not repeat the impact boip",damageEar.slimeDragBoips==1);
         check("without layering the achievement twinkle", damageEar.achievements == 0);
         check("the killing blow starts the shared defeat exit", d.boss.beaten);
         check("its prompts begin their quick defeat fade", d.boss.defeatPromptFade() == 1f);
