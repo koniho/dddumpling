@@ -79,10 +79,10 @@ final class TimeAttackVersus extends Draw {
         float fade=1-Math.min(1,out*2);
         if(fade>0) {
             if(c.timeAttack.challenge==TimeAttack.ALL) {
-                String run="RUN "+(boss+1)+"/"+Boss.COUNT;
-                float font=type(w*.048f);
-                p.text(run,w*.503f,h*.215f+w*.004f,font,fadeBy(0x99201632,fade),Painter.CENTER,true);
-                p.text(run,w*.5f,h*.215f,font,fadeBy(0xFFFFFFFF,fade),Painter.CENTER,true);
+                String round="ROUND "+(boss+1)+"/"+Boss.COUNT;
+                float font=type(w*.056f);
+                p.text(round,w*.503f,h*.215f+w*.004f,font,fadeBy(0x99201632,fade),Painter.CENTER,true);
+                p.text(round,w*.5f,h*.215f,font,fadeBy(0xFFFFFFFF,fade),Painter.CENTER,true);
             }
             if(time>=CLASH) {
                 float pop=(float)Math.exp(-impact*7),size=w*.095f*(1+.55f*pop);
