@@ -94,38 +94,47 @@ final class TestAlligator extends Check {
         group("companion reaction props follow parry pose");
         GameCore c=fight(L);c.companion.begin(6);block(c,L);
         AlligatorGuard g=c.boss.alligator.guard;
-        final java.util.ArrayList<float[]> hands=new java.util.ArrayList<>();
+        final java.util.ArrayList<float[]> rods=new java.util.ArrayList<>();
         Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class[]{Painter.class},(proxy,method,args)->{
-                    if(method.getName().equals("fillPoly") && ((float[])args[0]).length>6
-                            && (Integer)args[1]==Draw.ROSE)hands.add(((float[])args[0]).clone());
+                    if(method.getName().equals("polyline") && ((float[])args[0]).length>6
+                            && (Integer)args[1]==Draw.ROSE)rods.add(((float[])args[0]).clone());
                     return null;
                 });
         float[] normalized=null;
         for(float at:new float[]{0,.08f,.66f,1.5f}) {
             g.flightAge=at;c.companion.reaction=RunCompanion.BOSS_HIT;
-            hands.clear();RunCompanion.draw(p,c,L);
-            check("no foam finger remains at home during parry "+at,hands.isEmpty());
+            rods.clear();RunCompanion.draw(p,c,L);
+            check("no foam rod remains at home during parry "+at,rods.isEmpty());
             g.drawCompanion(p,c,L);
-            check("exactly one carried foam finger "+at,hands.size()==1);
-            if(hands.size()==1) {
-                float[] hand=hands.get(0);float radius=RunCompanion.radius(c,L)*g.companionScale();
-                float[] pose=new float[hand.length];
-                for(int n=0;n<hand.length;n+=2) {
-                    pose[n]=(hand[n]-g.companionX(L))/radius;
-                    pose[n+1]=(hand[n+1]-g.companionY(L))/radius;
+            check("exactly one carried foam rod "+at,rods.size()==1);
+            if(rods.size()==1) {
+                float[] rod=rods.get(0);float radius=RunCompanion.radius(c,L)*g.companionScale();
+                float[] pose=new float[rod.length];
+                for(int n=0;n<rod.length;n+=2) {
+                    pose[n]=(rod[n]-g.companionX(L))/radius;
+                    pose[n+1]=(rod[n+1]-g.companionY(L))/radius;
                 }
                 if(normalized==null)normalized=pose;
                 boolean follows=true;
                 for(int n=0;n<pose.length;n++)follows &= Math.abs(pose[n]-normalized[n])<.001f;
-                check("whole foam finger follows companion position and scale "+at,follows);
+                check("whole foam rod follows companion position and scale "+at,follows);
 
             }
         }
-        g.reset();hands.clear();RunCompanion.draw(p,c,L);
-        check("foam finger returns to ordinary companion rendering",hands.size()==1);
-        c.onboarding.companionTravel=1;hands.clear();RunCompanion.draw(p,c,L);
-        check("hidden companion leaves no floating props",hands.isEmpty());
+        c.companion.clock=.12f;rods.clear();g.drawCompanion(p,c,L);
+        float[] bent=rods.get(0);int tip=bent.length-2;
+        float dx=bent[tip]-bent[0],dy=bent[tip+1]-bent[1];
+        float cross=(bent[12]-bent[0])*dy-(bent[13]-bent[1])*dx;
+        check("rod visibly bends instead of rotating rigidly",Math.abs(cross)>20);
+        c.companion.clock=.32f;rods.clear();g.drawCompanion(p,c,L);
+        float[] waved=rods.get(0);
+        check("rod waves while its grip stays attached",waved[0]==bent[0] && waved[1]==bent[1]
+                && Math.hypot(waved[tip]-bent[tip],waved[tip+1]-bent[tip+1])>10);
+        g.reset();rods.clear();RunCompanion.draw(p,c,L);
+        check("foam rod returns to ordinary companion rendering",rods.size()==1);
+        c.onboarding.companionTravel=1;rods.clear();RunCompanion.draw(p,c,L);
+        check("hidden companion leaves no floating props",rods.isEmpty());
     }
 
     static void parryCompanion(Layout L) {

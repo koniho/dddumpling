@@ -298,7 +298,7 @@ final class RunCompanion extends Draw {
             float keyFace=L.keyR*.60f*scale;
             Kawaii.cryTears(p,x,y,r*.36f,keyFace*1.10f,keyFace/1.10f,a.clock*4.8f,1f);
         }
-        if(a.reaction==BOSS_HIT) foamFinger(p,x+r*.9f,y+r*.45f,r*1.2f,a.clock,beat);
+        if(a.reaction==BOSS_HIT) foamRod(p,x+r*.9f,y+r*.45f,r*1.2f,a.clock,beat);
         if(a.reaction==POWER || a.reaction==VICTORY) {
             for(int i=0;i<2;i++) {
                 float sx=x+(i==0?-1:1)*w*1.15f,sy=y-h*.72f;
@@ -310,31 +310,37 @@ final class RunCompanion extends Draw {
         }
     }
 
-    private static final float[] FOAM_FINGER=AlligatorArt.form(0,0,1,1,
-            -.33f,.12f,-.4f,-.32f,-.65f,-.55f,-.72f,-.82f,-.64f,-.98f,-.48f,-1f,
-            -.28f,-.82f,-.28f,-2.15f,-.23f,-2.32f,-.08f,-2.4f,.08f,-2.37f,.2f,-2.24f,
-            .2f,-1.18f,.35f,-1.25f,.52f,-1.18f,.58f,-1.02f,.72f,-1f,.82f,-.83f,
-            .83f,-.42f,.6f,-.05f,.5f,.12f);
-    private static void foamFinger(Painter p,float x,float y,float r,float clock,float beat) {
-        float angle=.30f*(float)Math.sin(clock*12f)+.10f*beat;
-        float[] shape=propPoints(x,y,r,angle,FOAM_FINGER);
-        int edge=Glyph.mix(ROSE,INK,.60f),shine=Glyph.mix(ROSE,0xFFFFFFFF,.55f);
-        p.fillPoly(shape,ROSE);p.strokePoly(shape,edge,r*.075f);
-        p.polyline(propPoints(x,y,r,angle,-.14f,-1.1f,-.14f,-2.14f,-.08f,-2.25f),shine,r*.10f);
-        for(int i=0;i<3;i++)p.polyline(propPoints(x,y,r,angle,.27f,-1.02f+i*.22f,
-                .48f,-1.02f+i*.22f,.58f,-.94f+i*.22f),edge,r*.045f);
-        p.polyline(propPoints(x,y,r,angle,-.48f,-.78f,-.25f,-.55f,-.1f,-.53f),edge,r*.05f);
-        // A stitched cuff and a bright number one make the oversized mitt read as a foam finger.
-        p.polyline(propPoints(x,y,r,angle,-.3f,-.12f,.51f,-.12f),shine,r*.09f);
-        p.polyline(propPoints(x,y,r,angle,.02f,-.75f,.18f,-.86f,.18f,-.34f),GOLD,r*.10f);
-        p.polyline(propPoints(x,y,r,angle,-.02f,-.32f,.38f,-.32f),GOLD,r*.10f);
+    private static void foamRod(Painter p,float x,float y,float r,float clock,float beat) {
+        int segments=12;
+        float[] spine=new float[(segments+1)*2];spine[0]=x;spine[1]=y;
+        // The grip leads; the tip lags and bends through each reversal. Segment length stays fixed.
+        for(int i=1;i<=segments;i++) {
+            float u=(i-.5f)/segments;
+            float angle=.45f*(float)Math.sin(clock*10f)+.85f*u*(float)Math.sin(clock*10f-u*1.5f)+.08f*beat;
+            spine[i*2]=spine[(i-1)*2]+r*2.5f/segments*(float)Math.sin(angle);
+            spine[i*2+1]=spine[(i-1)*2+1]-r*2.5f/segments*(float)Math.cos(angle);
+        }
+        p.polyline(spine,Glyph.mix(ROSE,INK,.58f),r*.64f);
+        p.polyline(spine,ROSE,r*.54f);
+        // Offset highlights follow the curved surface, including the rounded end caps.
+        p.polyline(rodStripe(spine,-r*.045f),Glyph.mix(ROSE,0xFFFFFFFF,.24f),r*.38f);
+        p.polyline(rodStripe(spine,-r*.095f),Glyph.mix(ROSE,0xFFFFFFFF,.53f),r*.20f);
+        p.polyline(rodStripe(spine,-r*.12f),Glyph.mix(ROSE,0xFFFFFFFF,.80f),r*.065f);
+        for(int i=1;i<=2;i++) {
+            float dx=spine[(i+1)*2]-spine[(i-1)*2],dy=spine[(i+1)*2+1]-spine[(i-1)*2+1];
+            float length=(float)Math.hypot(dx,dy),nx=-dy/length,ny=dx/length;
+            p.line(spine[i*2]-nx*r*.23f,spine[i*2+1]-ny*r*.23f,
+                    spine[i*2]+nx*r*.23f,spine[i*2+1]+ny*r*.23f,GOLD,r*.06f);
+        }
     }
-    private static float[] propPoints(float x,float y,float r,float angle,float... points) {
-        float cs=(float)Math.cos(angle),sn=(float)Math.sin(angle);
-        float[] out=new float[points.length];
-        for(int i=0;i<out.length;i+=2) {
-            out[i]=x+r*(points[i]*cs-points[i+1]*sn);
-            out[i+1]=y+r*(points[i]*sn+points[i+1]*cs);
+    private static float[] rodStripe(float[] spine,float offset) {
+        float[] out=new float[spine.length];
+        for(int i=0;i<spine.length;i+=2) {
+            int before=Math.max(0,i-2),after=Math.min(spine.length-2,i+2);
+            float dx=spine[after]-spine[before],dy=spine[after+1]-spine[before+1];
+            float length=(float)Math.hypot(dx,dy);
+            out[i]=spine[i]-dy/length*offset;
+            out[i+1]=spine[i+1]+dx/length*offset;
         }
         return out;
     }
