@@ -1,6 +1,84 @@
 {
   "releases": [
     {
+      "version": "0.1.28",
+      "changes": [
+        {
+          "icon": "time_attack",
+          "title": "Ready, set, squish!",
+          "autoReset": false,
+          "where": "Before Boss Time Attack",
+          "why": "Your squishy faces off against the boss with sliding portraits, spoken names and a bouncy new music cue. All-boss runs show your round."
+        },
+        {
+          "icon": "swamp",
+          "title": "Welcome to Swampland",
+          "autoReset": false,
+          "where": "Adventure, stages 21-25",
+          "why": "Meet Gummy Gator! Parry claws and tails, then tap during his opening. Star-marked divebomb words charge when just their final key remains."
+        },
+        {
+          "icon": "fog",
+          "title": "Peek through the fog",
+          "autoReset": false,
+          "where": "Normal waves in Swampland",
+          "why": "Foggy words reveal one key at a time. Clear the visible key to uncover the next. Revealed keys stay visible after a miss, so keep going!"
+        },
+        {
+          "icon": "rush",
+          "title": "Shooting stars",
+          "autoReset": false,
+          "where": "Adventure, stage 16 onward",
+          "why": "One-key shooting stars race in at double speed. Team Squish can intercept them! They appear 35% less often during power-ups, leaving room for other enemies."
+        },
+        {
+          "icon": "slime",
+          "title": "Super squishy Slime",
+          "autoReset": false,
+          "where": "In the Super Slime battle",
+          "why": "Meet Super Slime! His first prompt follows a cover cycle. Hits bring worried eyes, gooey sprays and cartoony squishes and boips. Victory leaves a big, dripping splat."
+        },
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "During normal waves",
+              "why": "Bigger clear bursts and parting pair hands celebrate each pop."
+            },
+            {
+              "where": "Between runs",
+              "why": "Remembered lands and swipeable release pages keep things moving."
+            },
+            {
+              "where": "With a physical keyboard",
+              "why": "Use SDF / JKL, or SD / KL for four keys."
+            }
+          ]
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "autoReset": false,
+          "fixes": [
+            {
+              "where": "At the damage line",
+              "why": "Last-second hits count until damage lands."
+            },
+            {
+              "where": "During boss battles",
+              "why": "Hits react on impact. Time Attack tracks your first hit."
+            },
+            {
+              "where": "In iPhone Settings",
+              "why": "Share and review open the App Store."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.27",
       "changes": [
         {
