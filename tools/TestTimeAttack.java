@@ -65,6 +65,9 @@ final class TestTimeAttack extends Check {
     }
     private static void titleSkit() {
         Layout L=new Layout();L.compute(320,700,0,0,0,0);
+        GameCore picked=start(Boss.ALLIGATOR);picked.toTitle();picked.caseIndex=Collect.DUCK_FIRST+2;picked.startGame();
+        check("versus uses the selected display-case squishy",picked.runWho==Collect.DUCK_FIRST+2
+                && picked.timeAttack.versus.who==picked.runWho && picked.timeAttack.versus.boss==Boss.ALLIGATOR);
         GameCore c=start(Boss.SLIME),control=start(Boss.SLIME);
         c.toTitle();control.toTitle();c.returnFade=0;c.clock=.5f;c.caseIndex=7;
         int first=skitFrame(c,L);
@@ -143,7 +146,57 @@ final class TestTimeAttack extends Check {
             check("known gator keeps its shaded colorful artwork, springs="+springs,different>1000);
         }
     }
+    private static void versusIntro(Layout L) {
+        GameCore c=start(Boss.SLIME),control=start(Boss.SLIME);
+        Ear ear=new Ear();c.sound=ear;
+        float intro=c.boss.intro;int who=c.runWho;
+        check("versus captures the chosen companion and opponent",c.timeAttack.versus.active(c)
+                && c.timeAttack.versus.who==who && c.timeAttack.versus.boss==Boss.SLIME);
+        int hits=c.hits,misses=c.misses;
+        check("versus blocks key input",!c.tapKey(Roster.at(c.runFullRoster,0),L)
+                && c.hits==hits && c.misses==misses && c.shots.isEmpty());
+        check("versus blocks rescue and boss gestures",!c.swipeUp(L) && !c.pushUsed
+                && !c.grabBoss(L.w*.5f,L.h*.4f) && !c.onboarding.offersBossHelp(c));
+        for(int i=0;i<60;i++)c.update(DT,L);
+        check("versus holds the boss entrance and combat timer",c.boss.intro==intro && c.timeAttack.seconds==0
+                && c.enemies.isEmpty() && c.boss.hp==c.boss.hpMax);
+        check("face-off entrances and clash sound once",ear.swishes==2 && ear.linkedThuds==1 && ear.courseStarts==0);
+        check("matchup announced once with the captured names",ear.versusCalls==1 && ear.versusWho==who
+                && ear.versusBoss==Boss.SLIME);
+        check("versus does not consume gameplay randomness",c.rnd.nextLong()==control.rnd.nextLong());
+        float time=c.timeAttack.versus.time;
+        Pause.open(c);c.update(1,L);Pause.resume(c);
+        check("pause holds the versus sequence",c.timeAttack.versus.time==time);
+        PlayerSettings.open(c);c.update(1,L);c.closeSettings();
+        check("settings hold the versus sequence",c.timeAttack.versus.time==time);
+        c.caseIndex=(who+1)%Collect.COUNT;
+        check("changing title selection cannot replace the announced run companion",c.timeAttack.versus.who==who);
+        int hushes=ear.hushes;
+        for(float t=0;t<TimeAttackVersus.DURATION-1+.2f;t+=DT)c.update(DT,L);
+        check("announcement stops before handing over to combat",ear.hushes==hushes+1 && ear.versusCalls==1);
+        check("versus hands off to normal boss arrival",!c.timeAttack.versus.active(c) && c.boss.intro>0
+                && c.boss.intro<intro && c.timeAttack.seconds==0);
+        check("ready cue and prior effects do not replay",ear.courseStarts==1 && ear.swishes==2 && ear.linkedThuds==1);
+        c.toTitle();check("leaving clears versus state",c.timeAttack.versus.time==TimeAttackVersus.DURATION);
+        c.startGame();check("restarting starts a fresh face-off",c.timeAttack.versus.active(c) && c.timeAttack.versus.time==0);
+        c.update(.1f,L);c.update(.1f,L);c.update(.1f,L);hushes=ear.hushes;c.toTitle();
+        check("leaving mid-announcement cancels speech",ear.hushes==hushes+1 && !c.timeAttack.versus.active(c));
+        GameCore all=start(TimeAttack.ALL);who=all.runWho;
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            check("all-boss face-off announces the current opponent "+boss,all.timeAttack.versus.boss==boss
+                    && all.timeAttack.versus.who==who && all.timeAttack.versus.active(all));
+            beat(all,L);
+        }
+        check("finished all-boss run has no stale versus scene",!all.timeAttack.versus.active(all));
+        GameCore muted=start(Boss.SLIME);
+        for(int i=0;i<60;i++)muted.update(DT,L);
+        Ear later=new Ear();muted.sound=later;
+        for(float t=0;t<TimeAttackVersus.DURATION;t+=DT)muted.update(DT,L);
+        check("muted entrance cues are not queued for later",later.swishes==0 && later.linkedThuds==0 && later.courseStarts==1 && later.versusCalls==0);
+    }
+
     static void all(Layout L) {
+        versusIntro(L);
         gatorSilhouette();
         bossHitStatistics(L);
         encounterStatistics(L);

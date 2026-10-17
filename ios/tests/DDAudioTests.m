@@ -132,6 +132,26 @@
   XCTAssertEqual(speech.speakCount, 1);
 }
 
+- (void)testVersusAnnouncementDeliveryAndMute {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  DDCountingSpeech *speech = [DDCountingSpeech new];
+  [audio setValue:speech forKey:@"speech"];
+  [audio setValue:@YES forKey:@"active"];
+  [audio setValue:@0.4f forKey:@"effectsVolume"];
+  [audio announceVersusWithInt:11 withInt:0];
+  XCTAssertEqual(speech.speakCount, 1);
+  XCTAssertEqualObjects(speech.utterance.speechString, [DDNarration versusWithInt:11 withInt:0]);
+  XCTAssertEqualWithAccuracy(speech.utterance.pitchMultiplier, DDNarration_VERSUS_PITCH, .001);
+  XCTAssertEqualWithAccuracy(speech.utterance.rate, AVSpeechUtteranceDefaultSpeechRate * DDNarration_VERSUS_RATE, .001);
+  XCTAssertEqualWithAccuracy(speech.utterance.volume, .4, .001);
+  [audio setValue:@0 forKey:@"effectsVolume"];
+  [audio announceVersusWithInt:4 withInt:1];
+  [audio setValue:@1 forKey:@"effectsVolume"];
+  [audio setValue:@NO forKey:@"active"];
+  [audio announceVersusWithInt:4 withInt:1];
+  XCTAssertEqual(speech.speakCount, 1);
+}
+
 - (void)testRepeatedMusicSelectionPreservesPlayerAndPausedPosition {
   DDClockedAudio *audio = [DDClockedAudio new];
   [audio selectMusicWithInt:DDMusic_SWING_STYLE];

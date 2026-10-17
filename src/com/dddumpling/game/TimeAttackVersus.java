@@ -1,0 +1,127 @@
+package com.dddumpling.game;
+
+/** A cosmetic face-off before the normal boss arrival; it never advances combat. */
+final class TimeAttackVersus extends Draw {
+    static final float CLASH=.66f, READY=3.45f, EXIT=3.7f, DURATION=4.3f;
+    float time=DURATION;
+    int who,boss;
+    boolean prepared;
+
+    void begin(GameCore c,int opponent) {
+        time=0;who=c.runWho;boss=opponent;prepared=false;
+    }
+    void clear() {time=DURATION;prepared=false;}
+    boolean active(GameCore c) {
+        return c.state==GameCore.PLAY && c.timeAttack.active && !c.timeAttack.finished
+                && !c.boss.beaten && c.boss.kind==boss && c.boss.intro>0 && time<DURATION;
+    }
+    boolean update(GameCore c,float elapsed,Layout L) {
+        if(!active(c))return false;
+        if(c.paused || c.settingsOpen)return true;
+        if(!Float.isFinite(elapsed) || elapsed<=0)return true;
+        if(!prepared) {
+            // Establish the arrival geometry behind the departing panels without aging the fight.
+            c.boss.update(0,L,c.rnd);prepared=true;
+        }
+        float before=time;
+        time=Math.min(DURATION,time+Math.min(.1f,elapsed));
+        if(c.sound!=null) {
+            if(before<.06f && time>=.06f)c.sound.ninjaSwish(0);
+            if(before<.24f && time>=.24f) {
+                c.sound.ninjaSwish(1);
+                c.sound.announceVersus(who,boss);
+            }
+            if(before<CLASH && time>=CLASH)c.sound.linkedThud();
+            if(before<READY && time>=READY)c.sound.courseStart();
+            // Cancel a slow or still-warming speech engine before normal boss/tutorial audio.
+            if(time>=DURATION)c.sound.hush();
+        }
+        return time<DURATION;
+    }
+
+    static float arrival(float time,float delay) {
+        float t=Math.max(0,Math.min(1,(time-delay)/.52f));
+        float back=t-1;
+        return 1+2.2f*back*back*back+1.2f*back*back;
+    }
+    float exit() {return panelTravel((time-EXIT)/(DURATION-EXIT));}
+
+    void draw(Painter p,GameCore c,Layout L) {
+        if(!active(c))return;
+        float w=L.w,h=L.h,out=exit();
+        float impact=Math.max(0,time-CLASH),shake=time>=CLASH?(float)Math.exp(-impact*12)*w*.009f:0;
+        int friend=Collect.BODY[who],opponent=Collect.BODY[Collect.bossPrize(boss)];
+        p.save();p.clipRect(0,0,w,h);
+        p.translate(shake*(float)Math.sin(impact*65),shake*.5f*(float)Math.cos(impact*53));
+        panel(p,c,L,false,friend,-out*w*.72f);
+        panel(p,c,L,true,opponent,out*w*.72f);
+        float fade=1-Math.min(1,out*2);
+        if(fade>0) {
+            p.text("BOSS TIME ATTACK",w*.5f,h*.17f,type(w*.027f),fadeBy(INK,fade),Painter.CENTER,true);
+            if(c.timeAttack.challenge==TimeAttack.ALL)
+                p.text("ROUND "+(boss+1)+" / "+Boss.COUNT,w*.5f,h*.215f,type(w*.019f),fadeBy(INK_DIM,fade),Painter.CENTER,true);
+            if(time>=CLASH) {
+                float pop=(float)Math.exp(-impact*7),size=w*.095f*(1+.55f*pop);
+                float cy=h*.435f;
+                for(int ring=0;ring<3;ring++) {
+                    float radius=w*(.06f+impact*.22f+ring*.025f);
+                    p.strokeCircle(w*.5f,cy,radius,fadeBy(ring==1?friend:opponent,pop*.65f*fade),w*.012f*(3-ring));
+                }
+                for(int i=0;i<10;i++) {
+                    float a=i*Softbody.TAU/10,dist=w*(.08f+impact*.26f);
+                    p.fillPoly(star(w*.5f+(float)Math.cos(a)*dist,cy+(float)Math.sin(a)*dist,
+                            w*.018f*pop,w*.007f*pop,4,a+time),fadeBy(i%2==0?GOLD:INK,fade*pop));
+                }
+                TitleBubbleFont.draw(p,'V',w*.5f-size*.48f,cy,size,GOLD,fade,time,1);
+                TitleBubbleFont.draw(p,'S',w*.5f+size*.48f,cy,size,INK,fade,time+.3f,1);
+            }
+            if(time>=READY) {
+                float jump=(float)Math.sin(Math.min(1,(time-READY)/.27f)*Math.PI);
+                p.text("LET'S SQUISH!",w*.5f,h*.76f-jump*w*.025f,type(w*.047f),fadeBy(GOLD,fade),Painter.CENTER,true);
+            }
+        }
+        p.restore();
+    }
+
+    private void panel(Painter p,GameCore c,Layout L,boolean right,int color,float travel) {
+        float w=L.w,h=L.h,side=right?1:-1;
+        float[] shape=right?new float[]{w*.47f,0,w,0,w,h,w*.53f,h}
+                :new float[]{0,0,w*.47f,0,w*.53f,h,0,h};
+        p.save();p.translate(travel,0);
+        p.fillPoly(shape,Glyph.mix(right?0xFF12395C:0xFF402270,color,.20f));
+        p.line(w*.47f,0,w*.53f,h,Glyph.mix(color,INK,.4f),w*.012f);
+        // Seeded-looking streaks and confetti stay independent of gameplay randomness.
+        for(int i=0;i<15;i++) {
+            float y=h*((i*.137f+.07f)%1),x=(right?w*.66f:w*.16f)+w*((i*.071f)% .22f);
+            float sweep=(time*(.2f+i%3*.04f)+i*.19f)%1;
+            float length=w*(.05f+.10f*sweep);
+            p.line(x-side*length,y,x,y-h*.018f,fadeBy(color,.22f),w*(.003f+(i%3)*.002f));
+        }
+        float entry=arrival(time,right?.18f:0),x=w*(right?.75f:.25f)+side*w*.8f*(1-entry);
+        float bounce=entry>1?(entry-1)*w*.16f:0;
+        float beat=Math.max(0,time-CLASH),hop=time>=CLASH?w*.02f*(float)Math.sin(beat*11)* (float)Math.exp(-beat*2):0;
+        float y=h*.435f-bounce-hop,r=w*(right?.17f:.145f);
+        p.fillEllipse(x,y+r*1.1f,r*1.02f,r*.14f,0x5530264C);
+        for(int ring=2;ring>=0;ring--)
+            p.strokeCircle(x,y,r*(1.15f+ring*.12f),fadeBy(color,.2f+ring*.05f),w*.013f);
+        int mood=time>=CLASH && time<CLASH+.3f?5:8;
+        if(right) {
+            if(boss==Boss.ALLIGATOR)GatorCompanion.draw(p,x,y,r,time*2,true,1,mood,-.7f,false,Math.max(0,hop/w*20));
+            else if(boss==Boss.SLIME)BossScreen.slimePortrait(p,x,y,r*.58f,time*2);
+            else BossCollect.draw(p,boss,x,y,r,time*2,true,1,mood,-.7f);
+        } else Trinket.drawReacting(p,who,x,y,r,time*2,1,mood,.7f);
+        name(p,right?Boss.NAMES[boss]:Collect.NAME[who],x,h*.61f,w,color);
+        p.restore();
+    }
+
+    private static void name(Painter p,String label,float x,float y,float w,int color) {
+        String[] words=label.split(" ");
+        float font=type(w*.034f),line=font*1.15f;
+        for(int i=0;i<words.length;i++) {
+            float yy=y+(i+(3-words.length)*.5f)*line;
+            p.text(words[i],x+w*.003f,yy+w*.004f,font,0x99201632,Painter.CENTER,true);
+            p.text(words[i],x,yy,font,INK,Painter.CENTER,true);
+        }
+        p.line(x-w*.13f,y+2.75f*line,x+w*.13f,y+2.75f*line,color,w*.009f);
+    }
+}

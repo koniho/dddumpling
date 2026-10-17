@@ -54,6 +54,13 @@ final class TestAudio extends Check {
         boolean names=true;
         for(int i=0;i<Collect.COUNT;i++) names &= Narration.name(i).equals(Collect.NAME[i].toLowerCase(java.util.Locale.US)+"!");
         check("announcer speaks only the whole name with emphasis",names);
+        boolean matchups=true;
+        for(int entry=0;entry<Collect.COUNT;entry++)for(int boss=0;boss<Boss.COUNT;boss++)
+            matchups &= Narration.versus(entry,boss).equals((Collect.NAME[entry]+"... versus "+Boss.NAMES[boss]+"!")
+                    .toLowerCase(java.util.Locale.US));
+        check("versus announcement keeps names and pause in one emphatic phrase",matchups);
+        check("versus announcer is lower and measured",Narration.VERSUS_PITCH<Narration.NAME_PITCH
+                && Narration.VERSUS_PITCH>1 && Narration.VERSUS_RATE>=.9f && Narration.VERSUS_RATE<=1);
         check("run name is higher than the display-case voice",Narration.NAME_PITCH>Narration.PITCH
                 && Narration.NAME_RATE==Narration.rate(0));
         check("name and voice wait until the slide has settled",Launch.NAME_START>Launch.CENTER_TIME

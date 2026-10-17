@@ -551,15 +551,24 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
   } @catch (NSException *exception) { [self hush]; }
 }
 
+- (void)announceVersusWithInt:(jint)entry withInt:(jint)boss {
+  [self speakText:[DDNarration versusWithInt:entry withInt:boss]
+           pitch:DDNarration_VERSUS_PITCH rate:DDNarration_VERSUS_RATE];
+}
+
 - (void)explainWithNSString:(NSString *)text {
+  [self speakText:text pitch:DDNarration_PITCH rate:.9f];
+}
+
+- (void)speakText:(NSString *)text pitch:(float)pitch rate:(float)rate {
   if (!_active || _interrupted || !_playbackAllowed || _effectsVolume <= 0 || text.length == 0) return;
   @try {
     [self hush];
     AVSpeechUtterance *utterance = [AVSpeechUtterance speechUtteranceWithString:text];
     utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-US"];
     utterance.volume = _effectsVolume;
-    utterance.pitchMultiplier = DDNarration_PITCH;
-    utterance.rate = AVSpeechUtteranceDefaultSpeechRate * .9f;
+    utterance.pitchMultiplier = pitch;
+    utterance.rate = AVSpeechUtteranceDefaultSpeechRate * rate;
     _narrating = YES; [self applyMusicMix];
     _lastUtterance = utterance;
     [_speech speakUtterance:utterance];

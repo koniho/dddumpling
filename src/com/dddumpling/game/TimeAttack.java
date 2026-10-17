@@ -5,6 +5,7 @@ final class TimeAttack extends Draw {
     static final int ALL=Boss.COUNT, CHOICES=Boss.COUNT+1;
     static final int SCENE=7;
     static final float SLIDE_TIME=.32f;
+    final TimeAttackVersus versus=new TimeAttackVersus();
     final long[][] best=new long[3][CHOICES];
     final TimeAttackHistory[][] histories=new TimeAttackHistory[3][CHOICES];
     // Four-boss records remain archived; five-boss runs have a distinct comparable best.
@@ -78,6 +79,7 @@ final class TimeAttack extends Draw {
         c.stageGap=c.stageBanner=0;c.spawnedThisStage=c.resolvedThisStage=0;
         c.pushUsed=false;c.pushT=c.pushSlowT=0;
         c.boss.begin(which,c.stage,c.rnd,c.playRosterFull());
+        versus.begin(c,which);
         if(c.sound!=null)c.sound.bossMusic(true);
     }
     void tick(GameCore c,float elapsed) {
@@ -110,7 +112,7 @@ final class TimeAttack extends Draw {
     void finish(GameCore c,boolean success) {
         if(!active || finished)return;
         snapshot(c,success,true);
-        finished=true;won=success;
+        versus.clear();finished=true;won=success;
         long duration=millis();
         TimeAttackHistory history=histories[profile][challenge];
         result=new TimeAttackHistory.Run(history.sequence+1,duration,c.runWho,cleared,success,
@@ -121,7 +123,7 @@ final class TimeAttack extends Draw {
         history.add(result);
         if(c.store!=null)c.store.saveTimeAttack(encode());
     }
-    void leave() {active=finished=won=newBest=false;seconds=0;cleared=current=defended=damage=0;firstDamage=encounterFirstDamage=firstBossHit=encounterFirstBossHit=-1;encounterStart=0;
+    void leave() {versus.clear();active=finished=won=newBest=false;seconds=0;cleared=current=defended=damage=0;firstDamage=encounterFirstDamage=firstBossHit=encounterFirstBossHit=-1;encounterStart=0;
         startHits=startMisses=startDefended=startDamage=0;result=null;encounters.clear();}
     void clearRecords() {
         java.util.Arrays.fill(classicBest,0);for(TimeAttackHistory h:classicHistory)h.clear();

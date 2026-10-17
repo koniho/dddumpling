@@ -421,6 +421,26 @@ final class Preview {
         c.clock=(Boss.ALLIGATOR+.46f)*TimeAttackDemo.GROUP_TURN;
         shot(dir,"179-gator-group-silhouette",c,L,w,h,ss);
     }
+    private static void versusFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("196-versus-"))return;
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            GameCore c=TestTimeAttack.start(boss);
+            c.runWho=Collect.COUNT-2;c.companion.begin(c.runWho);c.timeAttack.versus.begin(c,boss);
+            step(c,L,1.2f);
+            shot(dir,"196-versus-boss-"+boss,c,L,w,h,ss);
+        }
+        for(int who:new int[]{2,Collect.DUCK_FIRST+2}) {
+            GameCore c=TestTimeAttack.start(Boss.SLIME);
+            c.runWho=who;c.companion.begin(who);c.timeAttack.versus.begin(c,Boss.SLIME);
+            step(c,L,1.2f);
+            shot(dir,"196-versus-name-"+who,c,L,w,h,ss);
+        }
+        for(float time:new float[]{.25f,.69f,TimeAttackVersus.READY+.12f,TimeAttackVersus.EXIT+.3f,TimeAttackVersus.DURATION-.01f,TimeAttackVersus.DURATION+.15f}) {
+            GameCore c=TestTimeAttack.start(TimeAttack.ALL);
+            step(c,L,time);
+            shot(dir,"196-versus-phase-"+Math.round(time*100),c,L,w,h,ss);
+        }
+    }
     private static void timeAttackFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wanted("150-"))return;
         GameCore c=TestTimeAttack.start(Boss.SLIME);c.toTitle();c.returnFade=0;
@@ -1571,6 +1591,7 @@ final class Preview {
         modeFrames(dir,L,w,h,ss);
         duckFrames(dir,L,w,h,ss);
         survivalFrames(dir,L,w,h,ss);
+        versusFrames(dir,L,w,h,ss);
         timeAttackFrames(dir,L,w,h,ss);
         gatorSilhouetteFrames(dir,L,w,h,ss);
         alligatorFrames(dir,L,w,h,ss);

@@ -47,6 +47,12 @@ final class Narration {
         return (Collect.NAME[entry]+"!").toLowerCase(java.util.Locale.US);
     }
 
+    /** Keep the matchup together so the voice can shape the lead-in and emphatic finish. */
+    static final float VERSUS_PITCH = 1.35f, VERSUS_RATE = .94f;
+    static String versus(int entry,int boss) {
+        return (Collect.NAME[entry]+"... versus "+Boss.NAMES[boss]+"!").toLowerCase(java.util.Locale.US);
+    }
+
     /**
      * What to say, in order: the name, where it lives, and the story in one piece.
      *

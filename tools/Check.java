@@ -164,6 +164,8 @@ abstract class Check {
         int explanations;
         String explanation;
         public void explain(String text) { explanations++;explanation=text; }
+        int versusCalls,versusWho=-1,versusBoss=-1;
+        public void announceVersus(int entry,int boss) {versusCalls++;versusWho=entry;versusBoss=boss;}
         int narrated = -1;
         int nameCalls, announcedName=-1;
         public void announceSquishy(int entry) { nameCalls++; announcedName=entry; }

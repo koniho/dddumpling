@@ -504,7 +504,7 @@ final class Audio implements GameCore.Sound {
     private boolean ttsReady, ttsBroken;
     /** Queued while the engine is still waking up, or -1 for nothing waiting. */
     private int ttsPending = -1;
-    private boolean ttsPendingName;
+    private boolean ttsPendingName,ttsPendingVersus;
     private String ttsPendingExplanation;
     private long speechSerial;
 
@@ -523,9 +523,17 @@ final class Audio implements GameCore.Sound {
         requestSpeech(entry, true);
     }
 
+    @Override public synchronized void announceVersus(int entry,int boss) {
+        requestExplanation(Narration.versus(entry,boss),true);
+    }
+
     @Override public synchronized void explain(String text) {
+        requestExplanation(text,false);
+    }
+
+    private void requestExplanation(String text,boolean versus) {
         if(effectsVolume<=0f || ttsBroken || text==null || text.isEmpty())return;
-        ttsPending=-1;ttsPendingExplanation=text;
+        ttsPending=-1;ttsPendingExplanation=text;ttsPendingVersus=versus;
         prepareSpeech();
         if(ttsReady)readPending();
     }
@@ -649,7 +657,8 @@ final class Audio implements GameCore.Sound {
             try {
                 android.os.Bundle params=new android.os.Bundle();
                 params.putFloat(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_VOLUME,effectsVolume);
-                tts.setPitch(Narration.PITCH);tts.setSpeechRate(.9f);
+                tts.setPitch(ttsPendingVersus?Narration.VERSUS_PITCH:Narration.PITCH);
+                tts.setSpeechRate(ttsPendingVersus?Narration.VERSUS_RATE:.9f);
                 lastUtterance="tutorial-"+(++speechSerial);duck(true);
                 if(tts.speak(text,android.speech.tts.TextToSpeech.QUEUE_FLUSH,params,lastUtterance)
                         !=android.speech.tts.TextToSpeech.SUCCESS)duck(false);

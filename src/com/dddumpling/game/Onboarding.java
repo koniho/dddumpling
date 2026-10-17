@@ -82,7 +82,7 @@ final class Onboarding extends Draw {
         return new int[]{TutorialSpeech.SHAKE};
     }
     boolean offersBossHelp(GameCore c) {
-        if(c.state!=GameCore.PLAY || !c.boss.active() || c.boss.beaten || c.boss.hp<c.boss.hpMax
+        if(c.state!=GameCore.PLAY || c.timeAttack.versus.active(c) || !c.boss.active() || c.boss.beaten || c.boss.hp<c.boss.hpMax
                 || (bossHelpUsed&(1<<c.boss.kind))!=0
                 || practice!=null || briefing || hintKind!=0 || bossHelp || bossGuide || powerGuide
                 || companionTravel>0 || !eligible(SKIPPED))return false;

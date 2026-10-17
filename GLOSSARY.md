@@ -490,10 +490,18 @@ Adventure's BEST line also shows the highest stage reached. The stage record is 
 of the best-scoring run and survives that run leaving the top-ten history. Existing saves use
 their progress maximum and retained run history; an unknown stage is shown as `--`.
 
-Survival unlocks after beating Super Slime. **Boss Time Attack** replays each of the four shipped bosses
+Survival unlocks after beating Super Slime. **Boss Time Attack** replays each boss
 once their Adventure collectible is owned. A second selector below the mode name chooses a boss;
-all four unlock the **All Bosses** challenge in Super Slime, Dark Divide, Octopulse, Fly Agaric order.
+owning every boss collectible unlocks **All Bosses**, played in Adventure order.
 Normal player keys start the selected encounter. The shared display case remains accessible.
+
+Before each Time Attack encounter, a short **versus intro** announces the run's selected
+squishy and current boss side by side, with a voiced matchup and a pause before “versus.”
+Opposing color panels slide in, a VS burst and
+ready cue play, and the panels sweep out into the normal boss arrival. All Bosses announces
+each opponent separately. This sequence ignores combat input, pauses with the game or
+settings, and does not count toward run time or combat statistics. Its art and sounds
+reuse the existing collectibles and effects (`TimeAttackVersus`).
 
 Time Attack starts with three lives, no power-up drops, and the boss's original Adventure-stage
 difficulty. The all-boss challenge carries lives forward with one life restored per clear (capped

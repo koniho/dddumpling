@@ -172,9 +172,10 @@ final class Renderer extends Draw {
 
         if (c.state == GameCore.PLAY && c.perfectBanner > 0) Hud.perfectStage(p, c, L);
         // Over the title screen and its display case, under nothing: the story is modal.
+        c.timeAttack.versus.draw(p,c,L);
         if (c.storyOpen()) Storybook.draw(p, c, L);
         if (c.settingsOpen) PlayerSettings.draw(p, c, L);
-        Onboarding.draw(p, c, L);
+        if(!c.timeAttack.versus.active(c))Onboarding.draw(p, c, L);
         Pause.draw(p, c, L);
         p.save();p.translate(-L.w*Starter.controlsOut(c),0);
         ReleaseNotes.entry(p,c,L);

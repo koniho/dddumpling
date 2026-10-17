@@ -376,6 +376,8 @@ final class GameCore {
         default void explain(String text) {}
         /** One short name call for a run greeting or collectible reveal. */
         default void announceSquishy(int entry) {}
+        /** A whole matchup, with a dramatic pause and an emphatic opponent name. */
+        default void announceVersus(int entry,int boss) {}
         /** Stop talking mid-sentence: the panel has gone. */
         void hush();
     }
@@ -638,7 +640,7 @@ final class GameCore {
      * free tempo reset to be spent the moment a wave starts.
      */
     boolean pushReady() {
-        return state == PLAY && !pushUsed && !settingsOpen && !pendingBonus && !holdingStageDamage() && warnLevel > 0f;
+        return state == PLAY && !timeAttack.versus.active(this) && !pushUsed && !settingsOpen && !pendingBonus && !holdingStageDamage() && warnLevel > 0f;
     }
 
     // ---- between-stages minigame -------------------------------------------
@@ -1711,7 +1713,7 @@ final class GameCore {
     // ---- settings -----------------------------------------------------------
 
     void openSettings() {
-        if(onboarding.briefing && sound!=null)sound.hush();
+        if((onboarding.briefing || timeAttack.versus.active(this)) && sound!=null)sound.hush();
         preferences.enterPanel();
         if (band.active && sound != null) sound.bandPause(true);
         settingsOpen = true; settingsPage = BuildFlags.DEVELOPER ? 1 : 0;
@@ -2091,6 +2093,7 @@ final class GameCore {
         titleKeyHint = 0f;
         diagnostic("to-title");
         survival.leave(this);
+        if(timeAttack.versus.active(this) && sound!=null)sound.hush();
         timeAttack.leave();
         powerReplacements.clear();
         Blade.resetFeedback(this);
@@ -2249,7 +2252,7 @@ final class GameCore {
 
     /** Tap the decorative run companion without turning the touch into a gameplay action. */
     boolean tapCompanion(float x,float y,Layout L) {
-        if(state!=PLAY || paused || settingsOpen || Cave.active(this)
+        if(state!=PLAY || paused || settingsOpen || timeAttack.versus.active(this) || Cave.active(this)
                 || !RunCompanion.hit(this,L,x,y)) return false;
         companion.touch(x-RunCompanion.x(L));
         return true;
@@ -2257,7 +2260,7 @@ final class GameCore {
 
     /** Player pressed key {@code g}. Returns true when it advanced a word. */
     boolean tapKey(int g, Layout L) {
-        if (paused || onboarding.rescueGuide) return false;
+        if (paused || onboarding.rescueGuide || timeAttack.versus.active(this)) return false;
         if (boss.kind == Boss.SLIME && boss.slimeKeyLock > 0f
                 && Roster.active(playRosterFull(), g)) {
             boss.slimeBlobPulse[g] = 0.15f;
@@ -2798,6 +2801,10 @@ final class GameCore {
             starter.update(this,elapsed);titleStart.update(this,elapsed,L);return;
         }
         modes.update(this,elapsed);
+        if(timeAttack.versus.update(this,elapsed,L)) {
+            if(settingsOpen)preferences.updatePanel(this,elapsed);
+            return;
+        }
         if (onboarding.update(this, dt, elapsed, L)) return;
         if(highScoreScreen.open) { highScoreScreen.update(elapsed);clock+=elapsed;return; }
         if(releaseNotes.open) {
