@@ -129,7 +129,7 @@ final class BossCollect extends Draw {
         Trinket.draw(p,c.prize,x,y+(1f-pop)*r*1.5f-(float)Math.sin(age*2f)*r*.035f,
                 r*scale,c.clock,true,fade);
         p.text("BOSS BEFRIENDED!",x,L.h*.22f,type(L.unit*1.02f),fadeBy(GOLD,fade),Painter.CENTER,true);
-        p.text(Boss.NAMES[Collect.bossKind(c.prize)],x,L.h*.27f,type(L.unit*.69f),fadeBy(INK,fade),Painter.CENTER,true);
+        p.text(Skins.bossName(p.skin(),Collect.bossKind(c.prize)),x,L.h*.27f,type(L.unit*.69f),fadeBy(INK,fade),Painter.CENTER,true);
         p.text(Collect.NAME[c.prize],x,L.h*.60f,type(L.unit*1.08f),fadeBy(INK,fade),Painter.CENTER,true);
         p.text(c.prizeNew ? "JOINS YOUR COLLECTION" : "A FRIEND RETURNS",x,L.h*.64f,
                 type(L.unit*.62f),fadeBy(GOLD,fade),Painter.CENTER,true);

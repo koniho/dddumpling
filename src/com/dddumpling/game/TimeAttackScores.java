@@ -48,7 +48,7 @@ final class TimeAttackScores extends Draw {
         TimeAttackHistory.Encounter e=null;
         for(TimeAttackHistory.Encounter encounter:run.encounters)if(encounter.boss==boss)e=encounter;
         BossCollect.draw(p,boss,L.w*.16f,top+s*1.5f,s*.9f,c.clock,true,1);
-        String name=Boss.NAMES[boss];
+        String name=Skins.bossName(p.skin(),boss);
         p.text(name,L.w*.24f,top+s*1.8f,HighScoreScreen.summaryText(name,type(s*.8f),L.w*.62f),GOLD,Painter.LEFT,true);
         float font=Math.min(type(s*.5f),L.w*.026f);
         p.text(e==null?"NOT REACHED":e.cleared?"CLEARED":"ATTEMPT",L.w*.24f,top+s*3f,font*HighScoreScreen.SUMMARY_TEXT_SCALE,INK_DIM,Painter.LEFT,true);
@@ -60,7 +60,7 @@ final class TimeAttackScores extends Draw {
     }
     static void summary(Painter p,GameCore c,Layout L,TimeAttackHistory.Run run,int challenge,int profile,float top,float bottom) {
         float s=(bottom-top)/18f,x=L.w*.5f,font=Math.min(type(s*.5f),L.w*.026f);
-        String name=TimeAttack.name(challenge);
+        String name=TimeAttack.name(challenge,p.skin());
         p.text(name,x,top+s*1.2f,HighScoreScreen.summaryText(name,type(s*.85f),L.w*.8f),GOLD,Painter.CENTER,true);
         p.text(Survival.profileName(profile),x,top+s*2.3f,font*HighScoreScreen.SUMMARY_TEXT_SCALE,INK_DIM,Painter.CENTER,true);
         if(run.character>=0)Trinket.drawReacting(p,run.character,L.w*.25f,top+s*4.5f,s*1.25f,c.clock,1,run.won?8:5,0);

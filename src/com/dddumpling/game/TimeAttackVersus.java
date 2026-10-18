@@ -170,7 +170,7 @@ final class TimeAttackVersus extends Draw {
             // Launch can enter PLAY and draw before the first versus update lays out the body.
             if(prepared)BossScreen.versusPortrait(p,c,L,portrait,x,y,r,time*2);
         } else Trinket.drawReacting(p,who,x,y,r,time*2,1,mood,.7f);
-        name(p,right?Boss.NAMES[boss]:Collect.NAME[who],x,h*.61f,w,color);
+        name(p,right?Skins.bossName(p.skin(),boss):Collect.NAME[who],x,h*.61f,w,color);
         p.restore();
     }
 

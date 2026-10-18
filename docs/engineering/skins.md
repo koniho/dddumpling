@@ -19,7 +19,10 @@ prompt palette. Gameplay RNG, matching, collision geometry and progress do not d
 Boss skins reuse the existing spring-body geometry and animation entry points in `BossScreen`,
 `BossCollect` and `AlligatorArt`. Local palette wrappers preserve shading, transparency and
 flashes; decorations follow the body pose. Palette wrappers disable cached art stamps where
-recoloring each primitive is required. Super Ghost is a display/narration alias: boss IDs,
+recoloring each primitive is required. `Skins.bossName(skin, boss)` is the sole live boss-name registry. Resolve names before measuring,
+wrapping or drawing text; painters must never replace text. Title selection, VS text/narration,
+battle titles, tutorials, rewards, score headings and death blurbs all use this resolver. Null seasonal overrides inherit
+the default name. Super Ghost is a display/narration alias: boss IDs,
 unlocks and score records stay shared with Super Slime. Both native sound backends support the
 skin-aware versus announcement while retaining the older default-skin overload.
 

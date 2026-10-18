@@ -24,7 +24,6 @@ final class Boss {
     static final int COUNT = 5;
     final Alligator alligator = new Alligator();
 
-    static final String[] NAMES = {"SUPER SLIME", "DARK DIVIDE", "OCTOPULSE", "FLY AGARIC", "GUMMY GATOR"};
     /** One line each, in the mode bar. Held to the width of the longest frenzy blurb. */
     static final String[] BLURB = {"HIT THE MARK, DRAG GLOBS", "HIT THE MARK, THEN PINCH OUT", "BEAT THE REACH", "DRAG BACK AND FORTH", "PARRY, TAP, THEN STOP"};
     /**
@@ -340,8 +339,8 @@ final class Boss {
         return Math.max(0f, 1f - leaveProgress() * LEAVE / DEFEAT_PROMPT_FADE);
     }
 
-    String name() {
-        return kind < 0 ? "" : NAMES[kind];
+    String name(int skin) {
+        return Skins.bossName(skin,kind);
     }
 
     void begin(int which, int stage, Random rnd) { begin(which, stage, rnd, true); }

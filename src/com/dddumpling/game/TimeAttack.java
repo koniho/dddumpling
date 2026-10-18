@@ -41,7 +41,7 @@ final class TimeAttack extends Draw {
         if(encounterFirstBossHit<0)encounterFirstBossHit=now-encounterStart;
     }
 
-    static String name(int choice) {return choice==ALL?"ALL BOSSES":Boss.NAMES[choice];}
+    static String name(int choice,int skin) {return choice==ALL?"ALL BOSSES":Skins.bossName(skin,choice);}
     static boolean unlocked(GameCore c,int choice) {
         return choice==ALL?ModeSelector.allBossesUnlocked(c):ModeSelector.bossUnlocked(c,choice);
     }
@@ -192,7 +192,7 @@ final class TimeAttack extends Draw {
         boolean ready=playable(c);
         int color=ready?INK:INK_DIM;
         TimeAttackDemo.draw(p,c,L);
-        p.text(name(selected),x,nameY(L),type(s*.85f),color,Painter.CENTER,true);
+        p.text(name(selected,p.skin()),x,nameY(L),type(s*.85f),color,Painter.CENTER,true);
         for(int d=-1;d<=1;d+=2) {
             float ax=x+d*L.w*.36f;
             p.line(ax-d*s*.2f,y-s*.5f,ax+d*s*.2f,y-s*.25f,GOLD,s*.09f);

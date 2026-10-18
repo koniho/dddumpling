@@ -1700,7 +1700,7 @@ final class BossScreen extends Draw {
         if(b.intro>0f)fade*=1f-introExitFade(b);
         if(fade<=.01f)return;
 
-        String name = b.enrage() > 0.35f ? b.name() + "!" : b.name();
+        String name = b.enrage() > 0.35f ? b.name(p.skin()) + "!" : b.name(p.skin());
         p.text(name, L.w / 2f, nameY(L), nameSize(L),
                 Glyph.withAlpha(col, (int) (255 * fade)), Painter.CENTER, true);
 
@@ -1745,9 +1745,9 @@ final class BossScreen extends Draw {
         for(int side=0;side<4;side++) {
             float dx=side==0?-edge:side==1?edge:0f;
             float dy=side==2?-edge:side==3?edge:0f;
-            p.text(b.name(),L.w*.5f+dx,y+dy,titleSize,outline,Painter.CENTER,true);
+            p.text(b.name(p.skin()),L.w*.5f+dx,y+dy,titleSize,outline,Painter.CENTER,true);
         }
-        p.text(b.name(),L.w*.5f,y,titleSize,Glyph.withAlpha(0xFFFFF1C9,(int)(255*a)),
+        p.text(b.name(p.skin()),L.w*.5f,y,titleSize,Glyph.withAlpha(0xFFFFF1C9,(int)(255*a)),
                 Painter.CENTER,true);
         p.text(Boss.BLURB[b.kind], L.w / 2f, y + type(s * 1.35f), type(s * 0.62f),
                 Glyph.withAlpha(INK, (int) (225 * a)), Painter.CENTER, false);

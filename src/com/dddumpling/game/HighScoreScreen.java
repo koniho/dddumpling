@@ -123,7 +123,7 @@ final class HighScoreScreen extends Draw {
             p.polyline(new float[]{x+r,y-r,x-r,y,x+r,y+r},INK,s*.12f);
         }
         p.text(selected<0?(timeAttack(c)?"BEST TIMES":"HIGH SCORES"):"RUN SUMMARY",L.w*.5f,t+s*1.7f,type(s*.8f),GOLD,Painter.CENTER,true);
-        if(timeAttack(c))p.text(TimeAttack.name(c.timeAttack.selected)+" / "+Survival.profileName(Survival.profile(c.preferences.kids,c.fullRoster)),
+        if(timeAttack(c))p.text(TimeAttack.name(c.timeAttack.selected,p.skin())+" / "+Survival.profileName(Survival.profile(c.preferences.kids,c.fullRoster)),
                 L.w*.5f,t+s*2.9f,type(s*.48f),INK_DIM,Painter.CENTER,true);
         else if(records(c).survival)p.text("SURVIVAL / "+Survival.profileName(c.survival.titleProfile(c)),
                 L.w*.5f,t+s*2.9f,type(s*.48f),INK_DIM,Painter.CENTER,true);
@@ -169,7 +169,7 @@ final class HighScoreScreen extends Draw {
         java.util.ArrayList<String> lines=new java.util.ArrayList<>();
         int limit=Math.max(1,(int)(L.w*.27f/(font*.73f)));
         String line="";
-        for(String word:run.blurb().split(" ")) {
+        for(String word:run.blurb(p.skin()).split(" ")) {
             if(!line.isEmpty() && line.length()+word.length()+1>limit) { lines.add(line);line=""; }
             line+=line.isEmpty()?word:" "+word;
         }
@@ -307,8 +307,8 @@ final class HighScoreScreen extends Draw {
         boundedStat(p,L,titleX,valueX,y,font,"KIDS MODE",run.kids?"ON":"OFF");
         if(run.survival) {
             y+=s*2.5f;
-            float blurbFont=Math.min(font,L.w*.80f/(run.blurb().length()*.73f));
-            p.text(run.blurb(),L.w*.5f,y,blurbFont,INK_DIM,Painter.CENTER,false);
+            float blurbFont=Math.min(font,L.w*.80f/(run.blurb(p.skin()).length()*.73f));
+            p.text(run.blurb(p.skin()),L.w*.5f,y,blurbFont,INK_DIM,Painter.CENTER,false);
         }
     }
 }

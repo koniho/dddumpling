@@ -6,19 +6,22 @@ import java.util.ArrayList;
 final class HighScores {
     static final int LIMIT=10;
     // Persist the context index so a build's scenery cycle cannot rewrite a past death.
+    private static final String[] BOSS_BLURBS={" gave you a goo hug."," cubed your cuteness.",
+            ": eight hugs too many."," made you a spore snack."," gave you a tummy hug."};
+    private static String bossBlurb(int skin,int boss) {return Skins.bossTitle(skin,boss)+BOSS_BLURBS[boss];}
     static final String[] BLURBS={
         "Called it a snack break.",
-        "Super Slime gave you a goo hug.",
-        "Dark Divide cubed your cuteness.",
-        "Octopulse: eight hugs too many.",
-        "Fly Agaric made you a spore snack.",
+        bossBlurb(Skins.DEFAULT,Boss.SLIME),
+        bossBlurb(Skins.DEFAULT,Boss.SPLITTER),
+        bossBlurb(Skins.DEFAULT,Boss.OCTOPUS),
+        bossBlurb(Skins.DEFAULT,Boss.MUSHROOM),
         "Slime hills hugged back.",
         "Crystal sparkle nap. Very shiny.",
         "Kelp tucked you in. Bubble blanket!",
         "Mushroom cap became your pillow.",
         "Pebble adopted its own dumpling.",
         "Lily pad booked you a swamp nap.",
-        "Gummy Gator gave you a tummy hug."
+        bossBlurb(Skins.DEFAULT,Boss.ALLIGATOR)
     };
     static final String[] SURVIVAL_BLURBS={
         "Rainbow tide stole your floaties.",
@@ -78,7 +81,11 @@ final class HighScores {
             this.prizes=prizes;
             survival=v.length>22;profile=survival?v[22]:0;this.duration=duration;
         }
-        String blurb() { return survival?(ending==SURVIVAL_BLURBS.length?"Took a rainbow snack break.":SURVIVAL_BLURBS[ending]):BLURBS[ending]; }
+        String blurb() {return blurb(Skins.DEFAULT);}
+        String blurb(int skin) {
+            if(!survival && (ending>=1 && ending<=4 || ending==11))
+                return bossBlurb(skin,ending==11?Boss.ALLIGATOR:ending-1);
+            return survival?(ending==SURVIVAL_BLURBS.length?"Took a rainbow snack break.":SURVIVAL_BLURBS[ending]):BLURBS[ending]; }
         int accuracy() { long n=(long)hits+misses;return n==0?0:(int)Math.round(100.0*hits/n); }
         int[] values() {
             int[] v={score,stage,stages,dumplings,powers,swipes,bosses,hits,misses,squishes,

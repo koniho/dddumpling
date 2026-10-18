@@ -209,6 +209,8 @@ final class TestHighScores extends Check {
         for(int kind=0;kind<Boss.COUNT;kind++) {
             c.startGame();c.stage=kind==Boss.ALLIGATOR?Lands.firstStage(Lands.SWAMP)+4:(kind+1)*Boss.EVERY;c.lives=1;c.takeHit(L.w*.5f,L);
             HighScores.Run run=c.highScores.runs.get(0);
+            check("boss death blurb follows selected skin "+kind,
+                    run.blurb(Skins.HALLOWEEN).startsWith(Skins.bossTitle(Skins.HALLOWEEN,kind)));
             check("boss death names its form "+kind,run.ending==(kind==Boss.ALLIGATOR?11:kind+1) && run.blurb().equals(HighScores.BLURBS[kind==Boss.ALLIGATOR?11:kind+1]));
         }
         for(int land=0;land<Lands.COUNT;land++) {

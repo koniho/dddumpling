@@ -293,7 +293,7 @@ final class TestTimeAttack extends Check {
             check("real boss clears record damage dealt "+boss,played.timeAttack.cleared==0 || played.timeAttack.result.firstBossHit>=0);
             check("only successful bounded clears set records "+boss,
                     (played.timeAttack.best[0][boss]>0)==played.timeAttack.won);
-            System.out.println("    Time Attack "+Boss.NAMES[boss]+": "+TimeAttack.time(played.timeAttack.millis())
+            System.out.println("    Time Attack "+Skins.bossName(Skins.DEFAULT,boss)+": "+TimeAttack.time(played.timeAttack.millis())
                     +(played.timeAttack.won?" clear":" loss")+", "+run.presses+" presses");
         }
         GameCore c=start(Boss.SLIME);Mem m=(Mem)c.store;

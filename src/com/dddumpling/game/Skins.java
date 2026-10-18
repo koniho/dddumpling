@@ -11,15 +11,29 @@ final class Skins {
     static boolean halloween(Painter p) { return p.skin()==HALLOWEEN; }
     static int keyColor(Painter p,int glyph) { return halloween(p)?HALLOWEEN_COLORS[glyph]:Glyph.COLOR[glyph]; }
     static Painter painter(Painter p,int skin) { return new Theme(p,valid(skin)); }
-    static String bossName(int skin,int boss) { return skin==HALLOWEEN && boss==Boss.SLIME?"SUPER GHOST":Boss.NAMES[boss]; }
+    // Null overrides inherit the default name; boss IDs and records never change with a skin.
+    private static final String[][] BOSS_NAMES={
+        {"SUPER SLIME","DARK DIVIDE","OCTOPULSE","FLY AGARIC","GUMMY GATOR"},
+        {"SUPER GHOST",null,null,null,null}
+    };
+    static String bossName(int skin,int boss) {
+        if(boss<0 || boss>=Boss.COUNT)return "";
+        String name=BOSS_NAMES[valid(skin)][boss];
+        return name==null?BOSS_NAMES[DEFAULT][boss]:name;
+    }
+    static String bossTitle(int skin,int boss) {
+        StringBuilder title=new StringBuilder();
+        for(String word:bossName(skin,boss).toLowerCase(java.util.Locale.ROOT).split(" ")) {
+            if(word.isEmpty())continue;
+            if(title.length()>0)title.append(' ');
+            title.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+        }
+        return title.toString();
+    }
     private static final class Theme extends OpacityPainter {
         final int selected;
         Theme(Painter p,int selected) {super(p,1);this.selected=selected;}
         public int skin() {return selected;}
-        public void text(String s,float x,float y,float z,int col,int align,boolean bold) {
-            if(selected==HALLOWEEN)s=s.replace("SUPER SLIME","SUPER GHOST").replace("Super Slime","Super Ghost");
-            super.text(s,x,y,z,col,align,bold);
-        }
     }
     static Painter ghost(Painter p) { return halloween(p)?new BossPalette(p,0):p; }
     static Painter candy(Painter p) { return halloween(p)?new BossPalette(p,1):p; }

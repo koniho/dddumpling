@@ -41,8 +41,9 @@ final class TutorialSpeech extends Draw {
         {"NEW LANDS!", "SWIPE TO CHOOSE!"},
         {"PARRY, THEN TAP!", "WATCH HIS EYES!"}
     };
-    static String spoken(int message) {
-        if(message==ALLIGATOR)return "Swipe to parry, then tap while Gummy Gator is dizzy. Watch his eyes narrow, then stop before his guard returns! Four parry-and-hit rounds make him dizzy for longer. Taking damage resets your streak.";
+    static String spoken(int message) { return spoken(message,Skins.DEFAULT); }
+    static String spoken(int message,int skin) {
+        if(message==ALLIGATOR)return "Swipe to parry, then tap while "+Skins.bossTitle(skin,Boss.ALLIGATOR)+" is dizzy. Watch his eyes narrow, then stop before his guard returns! Four parry-and-hit rounds make him dizzy for longer. Taking damage resets your streak.";
         if(message==LANDS)return "New lands! Swipe to choose where your next run starts.";
         if(message==COMPANION)return "I'm your first squishy! I'll stay by your keys. I'll show you how to play as we go. Let's find more friends!";
         if(message==POWER_FLURRY)return "Flurry! Tap any key to clear the falling faces.";
@@ -61,20 +62,28 @@ final class TutorialSpeech extends Draw {
         if(message==ALTERNATE)return "Tap the two keys in turn to fill the meter.";
         if(message==LIFT)return "Swipe the lid up to free the dumpling.";
         if(message==SUCCESS)return "Amazing! You did it! You freed a dumpling!";
-        if(message==CLOSED)return "Wait until Super Slime's face is visible. Tap the key that matches Super Slime's face. Wrong keys or hidden faces will get you slimed!";
-        if(message==CHAIN)return "Tap the matching key while Super Slime's face is visible. Keep matching to make Super Slime vulnerable. Watch for the red area!";
-        if(message==GLOB)return "Now Super Slime is vulnerable! Touch and hold the red area. Drag it to either side of the screen. That damages Super Slime! You've got this!";
+        if(message==CLOSED)return "Wait until "+Skins.bossTitle(skin,Boss.SLIME)+"'s face is visible. Tap the key that matches "+Skins.bossTitle(skin,Boss.SLIME)+"'s face. Wrong keys or hidden faces will get you slimed!";
+        if(message==CHAIN)return "Tap the matching key while "+Skins.bossTitle(skin,Boss.SLIME)+"'s face is visible. Keep matching to make "+Skins.bossTitle(skin,Boss.SLIME)+" vulnerable. Watch for the red area!";
+        if(message==GLOB)return "Now "+Skins.bossTitle(skin,Boss.SLIME)+" is vulnerable! Touch and hold the red area. Drag it to either side of the screen. That damages "+Skins.bossTitle(skin,Boss.SLIME)+"! You've got this!";
         if(message==PINCH)return "Tap the matching key. Put two fingers on the cube. Spread them apart to split it.";
-        if(message==DEFEND)return "Octopulse reaches for your keys. Tap the matching key to defend it.";
-        if(message==TEAR)return "Wait for an exposed arm tip. Grab it and drag it away from Octopulse.";
-        if(message==SHAKE)return "Grab Fly Agaric's cap. Keep holding it and shake it from side to side.";
+        if(message==DEFEND)return Skins.bossTitle(skin,Boss.OCTOPUS)+" reaches for your keys. Tap the matching key to defend it.";
+        if(message==TEAR)return "Wait for an exposed arm tip. Grab it and drag it away from "+Skins.bossTitle(skin,Boss.OCTOPUS)+".";
+        if(message==SHAKE)return "Grab "+Skins.bossTitle(skin,Boss.MUSHROOM)+"'s cap. Keep holding it and shake it from side to side.";
         return (LINES[message][0]+" "+LINES[message][1]).toLowerCase(java.util.Locale.ROOT);
     }
     private static final int LINE_CHARS=22, PAGE_LINES=3;
-    private static final String[][][] PAGES=makePages();
-    static String[] pageLines(int message,int page) { return PAGES[message][page]; }
-    static int pageCount(int message) { return PAGES[message].length; }
-    static String spokenPage(int message,int page) { return joinLines(pageLines(message,page)); }
+    private static final String[][][][] PAGES=makeSkinPages();
+    static String[] pageLines(int message,int page) { return pageLines(message,page,Skins.DEFAULT); }
+    static String[] pageLines(int message,int page,int skin) { return PAGES[Skins.valid(skin)][message][page]; }
+    static int pageCount(int message) { return pageCount(message,Skins.DEFAULT); }
+    static int pageCount(int message,int skin) { return PAGES[Skins.valid(skin)][message].length; }
+    static String spokenPage(int message,int page) { return spokenPage(message,page,Skins.DEFAULT); }
+    static String spokenPage(int message,int page,int skin) { return joinLines(pageLines(message,page,skin)); }
+    private static String[][][][] makeSkinPages() {
+        String[][][][] pages=new String[Skins.COUNT][][][];
+        for(int skin=0;skin<Skins.COUNT;skin++)pages[skin]=makePages(skin);
+        return pages;
+    }
     private static String joinLines(String[] lines) {
         StringBuilder text=new StringBuilder();
         for(String line:lines) { if(text.length()>0)text.append(' ');text.append(line); }
@@ -89,12 +98,12 @@ final class TutorialSpeech extends Draw {
         if(!line.isEmpty())lines.add(line);
         return lines.toArray(new String[0]);
     }
-    private static String[][][] makePages() {
+    private static String[][][] makePages(int skin) {
         String[][][] all=new String[ALLIGATOR+1][][];
         for(int message=MATCH;message<=ALLIGATOR;message++) {
             java.util.ArrayList<String[]> pages=new java.util.ArrayList<>();String pending="";
             // Page boundaries are sentence boundaries; copy must fit without splitting a sentence.
-            for(String sentence:spoken(message).split("(?<=[.!?]) +")) {
+            for(String sentence:spoken(message,skin).split("(?<=[.!?]) +")) {
                 String joined=pending.isEmpty()?sentence:pending+" "+sentence;
                 if(wrap(joined).length<=PAGE_LINES) { pending=joined;continue; }
                 if(!pending.isEmpty())pages.add(wrap(pending));
@@ -180,14 +189,14 @@ final class TutorialSpeech extends Draw {
         bubble(p,L.w*.05f,t,L.w*.95f,b,s*1.2f,3,
                 new float[]{tx,t,tx+s*.5f,t-s*1.1f,tx+s*2,t},growth,tx,L.topSafe+s*5.3f,TEXT_INK);
         if(growth<1)return;
-        String[] lines=pageLines(message,c.onboarding.speechPage);
+        String[] lines=pageLines(message,c.onboarding.speechPage,p.skin());
         for(int i=0;i<lines.length;i++)speechText(p,lines[i],x,t+s*(1.7f+i*1.4f),type(s*.90f),0xFFFFF5DD);
-        if(pageCount(message)>1)speechText(p,(c.onboarding.speechPage+1)+" / "+pageCount(message),
+        if(pageCount(message,p.skin())>1)speechText(p,(c.onboarding.speechPage+1)+" / "+pageCount(message,p.skin()),
                 L.w*.88f,t+s*.75f,type(s*.4f),0xFFFFC1E6);
         demonstrate(p,c,L,message,x,t+s*8.4f,s,age);
         if(button) {
             p.fillPoly(pill(x,buttonY(L),L.w*.32f,s*1.15f,14),0xFF387358);
-            String buttonText=c.onboarding.moreSpeech() || c.onboarding.moreBossHelp(c) || message==MINIGAMES?"NEXT":message==COMPANION?"LET'S PLAY!":message==WAIT?"LET'S WATCH!":message==ALTERNATE?"LET'S GO!":"LET'S TRY!";
+            String buttonText=c.onboarding.moreSpeech(c) || c.onboarding.moreBossHelp(c) || message==MINIGAMES?"NEXT":message==COMPANION?"LET'S PLAY!":message==WAIT?"LET'S WATCH!":message==ALTERNATE?"LET'S GO!":"LET'S TRY!";
             p.text(buttonText,x,buttonY(L)+s*.38f,type(s*.92f),0xFFFFFFFF,Painter.CENTER,true);
         }
     }

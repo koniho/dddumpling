@@ -56,7 +56,7 @@ final class TestAudio extends Check {
         check("announcer speaks only the whole name with emphasis",names);
         boolean matchups=true;
         for(int entry=0;entry<Collect.COUNT;entry++)for(int boss=0;boss<Boss.COUNT;boss++)
-            matchups &= Narration.versus(entry,boss).equals((Collect.NAME[entry]+"... versus "+Boss.NAMES[boss]+"!")
+            matchups &= Narration.versus(entry,boss).equals((Collect.NAME[entry]+"... versus "+Skins.bossName(Skins.DEFAULT,boss)+"!")
                     .toLowerCase(java.util.Locale.US));
         check("versus announcement keeps names and pause in one emphatic phrase",matchups);
         check("versus announcer is lower and measured",Narration.VERSUS_PITCH<Narration.NAME_PITCH

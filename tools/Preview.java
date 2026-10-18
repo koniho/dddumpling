@@ -10,6 +10,15 @@ import java.io.File;
 final class Preview {
     private static void skinFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("200-"))return;
+        GameCore names=TestTimeAttack.start(Boss.SLIME);names.preferences.skin=Skins.HALLOWEEN;
+        names.toTitle();names.returnFade=0;
+        shot(dir,"200-name-title",names,L,w,h,ss);
+        names.startGame();names.timeAttack.versus.update(names,.01f,L);names.timeAttack.versus.time=1.4f;
+        shot(dir,"200-name-versus",names,L,w,h,ss);
+        names.timeAttack.versus.time=TimeAttackVersus.DURATION;names.boss.intro=Boss.INTRO*.5f;
+        shot(dir,"200-name-arrival",names,L,w,h,ss);
+        names.boss.intro=0;
+        shot(dir,"200-name-battle",names,L,w,h,ss);
         RasterPainter raster=new RasterPainter(w,h,ss);raster.clear(Draw.BG);
         raster.text("HALLOWEEN KEYS",w*.5f,h*.055f,w*.055f,Draw.INK,Painter.CENTER,true);
         for(int g=0;g<6;g++) {
@@ -2791,7 +2800,7 @@ final class Preview {
         // The arrival card, part way in.
         GameCore ci = toBoss(L, Boss.SLIME, 501L, false);
         step(ci, L, Boss.INTRO * 0.45f);
-        System.out.printf("boss intro: %s, %.2f through%n", ci.boss.name(),
+        System.out.printf("boss intro: %s, %.2f through%n", ci.boss.name(ci.preferences.skin),
                 ci.boss.introProgress());
         shot(dir, "59-boss-intro", ci, L, w, h, ss);
 
@@ -2822,7 +2831,7 @@ final class Preview {
             // Held part way through the window, so the open glow and the caret are both up.
             for (int i = 0; i < 60 * 8 && !c.boss.open(); i++) c.update(DT, L);
             step(c, L, 0.10f);
-            System.out.printf("boss %s: hp %.0f/%.0f, open=%s, elements=%d%n", c.boss.name(),
+            System.out.printf("boss %s: hp %.0f/%.0f, open=%s, elements=%d%n", c.boss.name(c.preferences.skin),
                     c.boss.hp, c.boss.hpMax, c.boss.open(), liveElems(c.boss));
             shot(dir, tag[k], c, L, w, h, ss);
 
@@ -3095,7 +3104,7 @@ final class Preview {
         cj.openSettings();cj.preferences.updatePanel(cj,PlayerSettings.PANEL_TIME);
         step(cj, L, 0.3f);
         System.out.printf("stage jump: on stage %d, boss %s%n", cj.stage,
-                Boss.NAMES[cj.boss.kind]);
+                Skins.bossName(Skins.DEFAULT,cj.boss.kind));
         shot(dir, "67-settings-stage-jump", cj, L, w, h, ss);
         GameCore settings=new GameCore(new Mem(),819L);
         PlayerSettings.open(settings);
@@ -3163,7 +3172,7 @@ final class Preview {
             GameCore death = toBoss(L, kind, 590L + kind, true);
             death.boss.damage(death.boss.hp);
             step(death, L, death.boss.deathImpactTime() + .04f);
-            System.out.printf("boss death %s: shake %.2f%n", death.boss.name(), death.shake);
+            System.out.printf("boss death %s: shake %.2f%n", death.boss.name(death.preferences.skin), death.shake);
             shot(dir, "66b-boss-death-impact-" + kind, death, L, w, h, ss);
         }
 

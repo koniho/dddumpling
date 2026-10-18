@@ -376,6 +376,7 @@ final class TestSettings extends Check {
     }
 
     private static void seasonalSkins(Layout L) {
+        bossNames(L);
         group("seasonal skins");
         Mem save=new Mem();GameCore c=new GameCore(save,200L);Ear ear=new Ear();c.sound=ear;
         check("old saves use default skin",c.preferences.skin==Skins.DEFAULT);
@@ -402,7 +403,40 @@ final class TestSettings extends Check {
                 && new MonochromePainter(themed,1).skin()==Skins.HALLOWEEN);
         check("render skin selection does not leak to another painter",raster.skin()==Skins.DEFAULT && Skins.painter(themed,Skins.DEFAULT).skin()==Skins.DEFAULT);
         check("Super Ghost has a seasonal display name",Skins.bossName(Skins.HALLOWEEN,Boss.SLIME).equals("SUPER GHOST")
-                && Boss.NAMES[Boss.SLIME].equals("SUPER SLIME"));
+                && Skins.bossName(Skins.DEFAULT,Boss.SLIME).equals("SUPER SLIME"));
+    }
+    private static final class NamePainter extends OpacityPainter {
+        final java.util.List<String> labels=new java.util.ArrayList<>();
+        NamePainter(int skin) {super(Skins.painter(new RasterPainter(1,1,1),skin),1);}
+        public void text(String text,float x,float y,float size,int color,int align,boolean bold) {labels.add(text);}
+    }
+    private static void bossNames(Layout L) {
+        group("skin-aware boss names across screens");
+        for(int skin=0;skin<Skins.COUNT;skin++)for(int boss=0;boss<Boss.COUNT;boss++) {
+            String expected=Skins.bossName(skin,boss);
+            GameCore c=TestTimeAttack.start(boss);c.preferences.skin=skin;
+            NamePainter p=new NamePainter(skin);
+            c.toTitle();c.timeAttack.drawSelector(p,c,L);
+            check("title resolves boss name before drawing "+skin+"/"+boss,p.labels.contains(expected));
+            c.startGame();c.timeAttack.versus.time=1.4f;
+            p.labels.clear();c.timeAttack.versus.draw(p,c,L);
+            boolean words=true;for(String word:expected.split(" "))words &= p.labels.contains(word);
+            check("VS resolves the name before splitting it into words "+skin+"/"+boss,words);
+            check("announcer agrees with displayed opponent "+skin+"/"+boss,
+                    Narration.versus(c.runWho,boss,skin).endsWith(expected.toLowerCase(java.util.Locale.ROOT)+"!"));
+            c.boss.intro=Boss.INTRO*.5f;
+            p.labels.clear();BossScreen.intro(p,c,L);
+            check("arrival title agrees with selection "+skin+"/"+boss,p.labels.contains(expected));
+            c.boss.intro=0;
+            p.labels.clear();BossScreen.bar(p,c,L);
+            check("combat header agrees with selection "+skin+"/"+boss,p.labels.contains(expected));
+        }
+        check("unknown skin inherits default boss names",Skins.bossName(99,Boss.SLIME).equals("SUPER SLIME"));
+        check("inactive boss has no name",Skins.bossName(Skins.HALLOWEEN,-1).isEmpty());
+        check("tutorial uses the same seasonal boss name",TutorialSpeech.spoken(TutorialSpeech.CLOSED,Skins.HALLOWEEN).contains("Super Ghost"));
+        NamePainter literal=new NamePainter(Skins.DEFAULT);
+        Skins.painter(literal,Skins.HALLOWEEN).text("SUPER SLIME",0,0,1,0,0,false);
+        check("skin painter never rewrites authored text",literal.labels.contains("SUPER SLIME"));
     }
     private static void skinGameplayParity(Layout L) {
         group("cosmetic skin gameplay parity");

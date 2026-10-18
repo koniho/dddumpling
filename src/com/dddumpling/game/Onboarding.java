@@ -120,9 +120,9 @@ final class Onboarding extends Draw {
         bubbleAge=0;
         c.diagnostic("tutorial-explain");
         narrator=c;
-        if(c.sound!=null)c.sound.explain(TutorialSpeech.spokenPage(speech,speechPage));
+        if(c.sound!=null)c.sound.explain(TutorialSpeech.spokenPage(speech,speechPage,c.preferences.skin));
     }
-    boolean moreSpeech() { return speechPage+1<TutorialSpeech.pageCount(speech); }
+    boolean moreSpeech(GameCore c) { return speechPage+1<TutorialSpeech.pageCount(speech,c.preferences.skin); }
     void rescue(GameCore c) {
         clear();speech=TutorialSpeech.RESCUE;rescueGuide=briefing=true;age=0;narrate(c);
     }
@@ -419,7 +419,7 @@ final class Onboarding extends Draw {
         c.diagnostic("tutorial-acknowledge");
         if(c.sound!=null)c.sound.hush();
         narrator=null;
-        if(moreSpeech()) { speechPage++;speakPage(c);return; }
+        if(moreSpeech(c)) { speechPage++;speakPage(c);return; }
         if(speech==TutorialSpeech.COMPANION) {
             savedPowers&=~Starter.INTRO_PENDING;
             learn(c,TutorialSpeech.COMPANION);

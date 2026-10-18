@@ -483,11 +483,11 @@ final class TestBoss extends Check {
         // anybody checked.
         boolean printable = true;
         for (int i = 0; i < Boss.COUNT; i++) {
-            if (!printable(Boss.NAMES[i]) || !printable(Boss.BLURB[i])) printable = false;
+            if (!printable(Skins.bossName(Skins.DEFAULT,i)) || !printable(Boss.BLURB[i])) printable = false;
         }
         check("every name and blurb is in the harness font", printable);
         check("there is a name, a blurb and a face for each",
-                Boss.NAMES.length == Boss.COUNT && Boss.BLURB.length == Boss.COUNT
+                Boss.BLURB.length == Boss.COUNT
                         && Boss.FACE.length == Boss.COUNT);
         boolean faces = true;
         for (int i = 0; i < Boss.COUNT; i++) {
@@ -719,7 +719,7 @@ final class TestBoss extends Check {
                 bossPlay(g, L);
                 g.update(DT, L);
             }
-            check(Boss.NAMES[k] + " can be beaten", !g.boss.active());
+            check(Skins.bossName(Skins.DEFAULT,k) + " can be beaten", !g.boss.active());
         }
 
         // And beaten by a hand with limits, inside the enrage warning. The loop above proves
@@ -734,8 +734,8 @@ final class TestBoss extends Check {
         for (int k = 0; k < Boss.COUNT; k++) {
             float took = fightSeconds(L, k, 800L + k);
             System.out.printf("    %-10s takes a steady hand %.0fs of its %.0fs enrage warning%n",
-                    Boss.NAMES[k], took, Boss.enrageAt(k));
-            check(Boss.NAMES[k] + " falls to a hand with limits", took >= 0f);
+                    Skins.bossName(Skins.DEFAULT,k), took, Boss.enrageAt(k));
+            check(Skins.bossName(Skins.DEFAULT,k) + " falls to a hand with limits", took >= 0f);
             check("well inside the enrage warning", took >= 0f && took < Boss.enrageAt(k));
         }
     }
@@ -2384,11 +2384,11 @@ final class TestBoss extends Check {
                 victory.boss.octoLashLanded = true;
             }
             victory.takeHit(victory.boss.bodyX(L), L);
-            check(Boss.NAMES[k] + ": announces one boss-specific taunt",
+            check(Skins.bossName(Skins.DEFAULT,k) + ": announces one boss-specific taunt",
                     victoryEar.bossTaunts == 1 && victoryEar.lastBossTaunt == k);
-            check(Boss.NAMES[k] + ": leaves its victory performance for the green transition",
+            check(Skins.bossName(Skins.DEFAULT,k) + ": leaves its victory performance for the green transition",
                     victory.dying() && victory.bossVictoryKind == k && !victory.boss.active());
-            check(Boss.NAMES[k] + ": retains its exact combat body for that performance",
+            check(Skins.bossName(Skins.DEFAULT,k) + ": retains its exact combat body for that performance",
                     victory.bossVictory != null && victory.bossVictory.kind == k
                             && victory.bossVictory.body != null);
             float vr = Boss.bodyR(L);
@@ -2400,7 +2400,7 @@ final class TestBoss extends Check {
                 minX = Math.min(minX, tx); maxX = Math.max(maxX, tx);
                 minY = Math.min(minY, ty); maxY = Math.max(maxY, ty);
             }
-            check(Boss.NAMES[k] + ": visibly moves while taunting",
+            check(Skins.bossName(Skins.DEFAULT,k) + ": visibly moves while taunting",
                     maxX - minX + maxY - minY > vr * 0.12f);
             if (k == Boss.MUSHROOM) {
                 check("victory mushroom repeatedly reverses its shake",
@@ -2422,11 +2422,11 @@ final class TestBoss extends Check {
                                 && !victory.boss.octoImpact && !victory.boss.octoPlayerHit
                                 && !victory.boss.octoLashLanded);
             }
-            check(Boss.NAMES[k] + ": its victory performance is the extended death hold",
+            check(Skins.bossName(Skins.DEFAULT,k) + ": its victory performance is the extended death hold",
                     victory.deathT == GameCore.BOSS_DEATH_TIME
                             && GameCore.BOSS_DEATH_TIME == GameCore.DEATH_TIME * 3f - 2f);
             advance(victory, L, GameCore.BOSS_DEATH_TIME + DT);
-            check(Boss.NAMES[k] + ": restores normal music when game over appears",
+            check(Skins.bossName(Skins.DEFAULT,k) + ": restores normal music when game over appears",
                     !victoryEar.bossMusic && victoryEar.bossMusicCalls == 1);
 
             GameCore d = enterBoss(L, k, 100L + k);
@@ -2447,7 +2447,7 @@ final class TestBoss extends Check {
             add(d, L, new int[] {0, 1}, L.dangerY - L.enemyR);
             for (int i = 0; i < 60 * 10 && d.state == GameCore.PLAY; i++) d.update(DT, L);
 
-            String who = Boss.NAMES[k];
+            String who = Skins.bossName(Skins.DEFAULT,k);
             check(who + ": dying sends it home", d.state == GameCore.OVER && !d.boss.active());
 
             check(who + ": no element is left on the field", noElems(d.boss));
