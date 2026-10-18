@@ -14,7 +14,7 @@ final class TestRainbowCat extends Check {
         a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.cageX,a.cageY);
     }
     static void all(Layout L) {
-        catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);
+        catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat touch ownership, cage and yarn");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(25)==Lands.SWAMP && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));
@@ -157,6 +157,34 @@ final class TestRainbowCat extends Check {
         rainbow.survival.wordBurst(rainbow,100,200,20,12,original);
         boolean survival=true;for(GameCore.Particle p:rainbow.particles)survival&=p.color==original;
         check("Survival retains its own clear palette",survival);
+    }
+
+    private static void guidance(Layout L) {
+        group("Rainbow Cat companion guidance");
+        GameCore c=fight(L);RainbowCat a=c.boss.cat;
+        check("skipped tutorials still offer cat help",c.onboarding.offersBossHelp(c));
+        check("chase explains catching",a.companionHint().equals("CATCH THE CAT!"));
+        a.ballVY=10;check("incoming yarn takes priority",a.companionHint().equals("DRAG YARN AWAY!"));
+        a.held=RainbowCat.YARN;check("held yarn explains safe direction",a.companionHint().equals("MOVE THE YARN UP!"));
+        a.held=RainbowCat.CAT;check("held cat explains destination",a.companionHint().equals("DRAG CAT TO CAGE!"));
+        a.held=RainbowCat.NONE;a.ballVY=0;a.phase=RainbowCat.RECOVER;
+        check("resting cat advertises catch opportunity",a.companionHint().equals("CATCH HIM NOW!"));
+        a.phase=RainbowCat.CAGED;a.pointer=7;
+        check("capture explains releasing gesture",a.companionHint().equals("LIFT, THEN TAP!"));
+        a.release();check("cage explains keys",a.companionHint().equals("MATCH THE KEYS!"));
+        a.phase=RainbowCat.CHASE;
+        TestOnboarding.touch(c,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
+        TestOnboarding.touch(c,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
+        check("help opens yarn lesson despite skipped tutorials",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.CAT_YARN);
+        float time=c.time,escape=a.timer;
+        c.update(.2f,L);
+        check("help pauses live fight",c.time==time && a.timer==escape);
+        TestOnboarding.acknowledge(c,L);
+        check("help advances to catching",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.CAT_CATCH);
+        TestOnboarding.acknowledge(c,L);
+        check("help advances to cage keys",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.CAT_CAGE);
+        TestOnboarding.acknowledge(c,L);
+        check("help resumes without resetting tutorial preferences",!c.onboarding.briefing && (c.onboarding.saved&Onboarding.SKIPPED)!=0);
     }
 
     private static int[] backdropPixels(GameCore c,Layout L) {

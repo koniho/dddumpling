@@ -932,7 +932,7 @@ final class TestOnboarding extends Check {
             loaded.boss.begin(kind,loaded.stage,loaded.rnd);
             check("saved learning does not suppress new launch boss help "+kind+"/"+used,loaded.onboarding.offersBossHelp(loaded));
             loaded.onboarding.skip(loaded);
-            check("Skip All still suppresses optional boss help "+kind+"/"+used,!loaded.onboarding.offersBossHelp(loaded));
+            check("Rainbow Cat help stays discoverable after Skip All "+kind+"/"+used,loaded.onboarding.offersBossHelp(loaded)==(kind==Boss.RAINBOW_CAT));
         }
     }
     private static void bossHelpPulse(Layout L) {

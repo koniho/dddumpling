@@ -116,6 +116,14 @@ final class RainbowCat {
         if(action==1 || action==6)release();
         return true;
     }
+    String companionHint() {
+        if(phase==CAGED)return pointer>=0?"LIFT, THEN TAP!":"MATCH THE KEYS!";
+        if(held==CAT)return "DRAG CAT TO CAGE!";
+        if(held==YARN)return "MOVE THE YARN UP!";
+        if(ballVY>0)return "DRAG YARN AWAY!";
+        if(phase==WINDUP || phase==RECOVER)return "CATCH HIM NOW!";
+        return "CATCH THE CAT!";
+    }
     int press(Boss b,int glyph) {
         if(phase!=CAGED)return Boss.REBUFF;
         if(prompt[at]!=glyph) {flash=1;return Boss.REBUFF;}

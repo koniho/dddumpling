@@ -87,7 +87,7 @@ final class Onboarding extends Draw {
         if(c.state!=GameCore.PLAY || c.timeAttack.versus.active(c) || !c.boss.active() || c.boss.beaten || c.boss.hp<c.boss.hpMax
                 || (bossHelpUsed&(1<<c.boss.kind))!=0
                 || practice!=null || briefing || hintKind!=0 || bossHelp || bossGuide || powerGuide
-                || companionTravel>0 || !eligible(SKIPPED))return false;
+                || companionTravel>0 || !eligible(SKIPPED) && c.boss.kind!=Boss.RAINBOW_CAT)return false;
         return true;
     }
     private boolean nextBossHelp(GameCore c) {

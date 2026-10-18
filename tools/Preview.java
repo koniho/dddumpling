@@ -19,6 +19,14 @@ final class Preview {
         TestRainbowCat.capture(c,L);
         for(int i=0;i<16;i++)c.boss.update(1f/60,L,c.rnd);
         shot(dir,"151-caged",c,L,w,h,ss);
+        GameCore help=TestRainbowCat.fight(L);
+        TestOnboarding.touch(help,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
+        TestOnboarding.touch(help,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
+        for(int message=TutorialSpeech.CAT_YARN;message<=TutorialSpeech.CAT_CAGE;message++) {
+            TestOnboarding.awaitBubble(help,L);
+            shot(dir,"151-help-"+message,help,L,w,h,ss);
+            TestOnboarding.acknowledge(help,L);
+        }
         c.boss.damage(c.boss.hp);
         c.boss.update(.5f,L,c.rnd);
         shot(dir,"151-defeat",c,L,w,h,ss);

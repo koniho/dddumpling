@@ -48,7 +48,7 @@ final class TutorialSpeech extends Draw {
     static String spoken(int message,int skin) {
         if(message==CAT_YARN)return "Drag the yarn away from your keys. Rainbow Cat will try to bat it back!";
         if(message==CAT_CATCH)return "Catch Rainbow Cat while he swings his paw. Drag him into the cage!";
-        if(message==CAT_CAGE)return "Lift your finger, then tap the matching keys before Rainbow Cat escapes. The yarn rests while he is in the cage.";
+        if(message==CAT_CAGE)return "Lift your finger, then match the keys before he escapes. The yarn rests while he is in the cage.";
         if(message==ALLIGATOR)return "Swipe to parry, then tap while "+Skins.bossTitle(skin,Boss.ALLIGATOR)+" is dizzy. Watch his eyes narrow, then stop before his guard returns! Four parry-and-hit rounds make him dizzy for longer. Taking damage resets your streak.";
         if(message==LANDS)return "New lands! Swipe to choose where your next run starts.";
         if(message==COMPANION)return "I'm your first squishy! I'll stay by your keys. I'll show you how to play as we go. Let's find more friends!";
@@ -343,6 +343,24 @@ final class TutorialSpeech extends Draw {
             arrow(p,x-s,y,-s*3,0,s*.6f);arrow(p,x+s,y,s*3,0,s*.6f);
             Renderer.touchHint(p,x-spread,y,s*1.1f,1f,.95f,age);
             handX=x+spread;
+        } else if(message==CAT_YARN) {
+            RainbowCatArt.portrait(p,x-s*3,y-s,s*1.1f,age,true,1);
+            face(p,0,x+s*2.3f,y+s*2,s*.8f);
+            handX=x+s*2.3f;handY=y+s*(1-3.5f*travel);
+            RainbowCatArt.yarn(p,handX,handY,s*.7f,age,true);
+            arrow(p,x+s*4,y+s,-s,-s*3.2f,s*.5f);
+        } else if(message==CAT_CATCH || message==CAT_CAGE) {
+            boolean caged=message==CAT_CAGE;
+            float cageX=x+s*2.3f,cageY=y-s*.7f;
+            RainbowCatArt.cage(p,cageX,cageY,s*1.6f,caged,age,false);
+            handX=caged?cageX:x+s*(-3+travel*5.3f);handY=cageY;
+            RainbowCatArt.cat(p,handX,handY,s*.9f,age,1,null,null,caged,1);
+            RainbowCatArt.cage(p,cageX,cageY,s*1.6f,caged,age,true);
+            if(caged) {
+                int at=(int)(age*1.4f)%3;
+                for(int i=0;i<3;i++)face(p,i,x+(i-1)*s*2.5f,y+s*2,s*.8f);
+                handX=x+(at-1)*s*2.5f;handY=y+s*2;
+            } else arrow(p,x-s*3,y+s*1.7f,s*5.3f,0,s*.5f);
         } else if(message==ALLIGATOR) {
             AlligatorArt.portrait(p,x,y,s*2.1f,age,true,1);
             handX=x+s*(travel*8-4);handY=y+s*2;

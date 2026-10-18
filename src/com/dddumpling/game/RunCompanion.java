@@ -286,6 +286,10 @@ final class RunCompanion extends Draw {
             Trinket.drawReacting(sprite,a.who,cx,cy,r,a.clock,1f,a.displayMood(c),
                     .10f*(float)Math.sin(a.clock*.9f)+.18f*touchRock,c.ninja());
             drawProps(sprite,c,L,cx,cy,r);
+            if(c.state==GameCore.PLAY && c.boss.kind==Boss.RAINBOW_CAT && c.boss.fighting()
+                    && !c.timeAttack.versus.active(c))
+                TutorialSpeech.companionFeedback(p,L,cx,cy,r,c.boss.cat.companionHint(),
+                        .5f,Collect.ACCENT[a.who]);
             if(c.state==GameCore.PLAY && c.boss.kind==Boss.OCTOPUS && c.boss.fighting()
                     && c.boss.octoTaunt>0)
                 TutorialSpeech.companionFeedback(p,L,cx,cy,r,c.boss.octoFeedbackText(),
