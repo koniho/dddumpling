@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Ordered closed-path tracing. Crossings never advance to an unrelated part of the path. */
 final class TraceGesture {
     static final int SHAPE_COUNT=5;
-    private static final float TOLERANCE=.38f;
+    private static final float TOLERANCE=.52f;
     private float[] points,distances;
     float length,start,position,travel,lastX,lastY;
     boolean active;
@@ -69,7 +69,7 @@ final class TraceGesture {
             float nearest=nearest(px,py,true);
             if(Float.isNaN(nearest)) {clear();return false;}
             travel+=wrapped(nearest-position);position=nearest;
-            if(progress()>=1 && Math.hypot(px-coordinate(start,0),py-coordinate(start,1))<.48f) {lastX=x;lastY=y;return true;}
+            if(progress()>=1 && Math.hypot(px-coordinate(start,0),py-coordinate(start,1))<TOLERANCE+.10f) {lastX=x;lastY=y;return true;}
         }
         lastX=x;lastY=y;return false;
     }

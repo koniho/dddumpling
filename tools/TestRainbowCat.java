@@ -179,6 +179,17 @@ final class TestRainbowCat extends Check {
             }
             check("five straight strokes complete star "+direction,complete);
         }
+        for(int direction:new int[]{-1,1}) {
+            TraceGesture loose=new TraceGesture();
+            check("trace can start beyond old tolerance "+direction,loose.begin(1.48f,0));
+            boolean done=false;
+            for(int i=1;i<=96 && !done;i++) {
+                float angle=direction*Softbody.TAU*i/96;
+                done=loose.move((float)Math.cos(angle)*1.48f,(float)Math.sin(angle)*1.48f);
+            }
+            check("loose trace closes in either direction "+direction,done);
+            check("starting far from path is still rejected "+direction,!loose.begin(1.65f,0));
+        }
         TraceGesture trace=new TraceGesture();trace.begin(1,0);
         check("straight chord cannot replace circle",!trace.move(-1,0) && !trace.active);
         trace.begin(1,0);
