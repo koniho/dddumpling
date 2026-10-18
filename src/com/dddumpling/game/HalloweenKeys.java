@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** One softly outlined, layered silhouette per seasonal key; all poses share the same face. */
+/** One softly shaded, layered silhouette per seasonal key; all poses share the same face. */
 final class HalloweenKeys {
     private static final int INK=0xFF392C4F;
     private static final float[][] FORMS={
@@ -34,7 +34,7 @@ final class HalloweenKeys {
             float flutter=.05f*(float)Math.sin(clock*7+happy*3);
             float[] wing=shape(x,y,rx*side,ry,new float[]{.45f,-.15f,1.08f,-.51f,1.30f,-.36f,1.19f,.06f,.97f,-.01f,.89f,.29f,.64f,.17f,.46f,.34f});
             for(int i=1;i<wing.length;i+=2)wing[i]+=ry*flutter;
-            q.fillPoly(wing,Glyph.mix(base,0xFF792B55,.30f));q.strokePoly(wing,0xFFFFACB8,r*.04f);
+            q.fillPoly(wing,Glyph.mix(base,0xFF792B55,.30f));
             q.polyline(new float[]{x+rx*side*.5f,y,x+rx*side*.96f,y-ry*.2f,x+rx*side*1.2f,y-ry*.32f},0xFFFF8DAB,r*.035f);
         }
         if(g==Kawaii.SQUISHY)for(int side=-1;side<=1;side+=2) {
@@ -45,7 +45,6 @@ final class HalloweenKeys {
         q.fillPoly(body,Glyph.mix(base,INK,.26f));
         q.fillPoly(shape(x-rx*.025f,y-ry*.045f,rx*.95f,ry*.94f,FORMS[g]),base);
         q.fillPoly(shape(x-rx*.10f,y-ry*.14f,rx*.77f,ry*.70f,FORMS[g]),Glyph.mix(base,0xFFFFFFFF,.20f));
-        q.strokePoly(body,Glyph.mix(base,0xFFFFFFFF,g==Kawaii.BLOB?.55f:.44f),r*.045f);
         q.fillEllipse(x-rx*.36f,y-ry*.43f,rx*.15f,ry*.075f,0xA6FFFFFF);
         q.fillCircle(x-rx*.53f,y-ry*.25f,r*.047f,0x90FFFFFF);
         if(g==Kawaii.CAT) {
@@ -60,7 +59,7 @@ final class HalloweenKeys {
         }
         if(g==Kawaii.GRAPES) {
             float[] hat=shape(x,y,rx,ry,new float[]{-.80f,-.48f,-.48f,-.63f,-.28f,-1.08f,.06f,-1.38f,.32f,-1.27f,.09f,-1.08f,.50f,-.64f,.78f,-.48f,.12f,-.36f});
-            q.fillPoly(hat,0xFF5B3D7E);q.strokePoly(hat,0xFFCCACE9,r*.045f);
+            q.fillPoly(hat,0xFF5B3D7E);
             q.polyline(new float[]{x-rx*.42f,y-ry*.69f,x,y-ry*.61f,x+rx*.39f,y-ry*.69f},0xFFF3AE62,r*.11f);
             q.fillCircle(x+rx*.08f,y-ry*.66f,r*.09f,0xFFFFE5A1);
         }
