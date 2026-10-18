@@ -824,7 +824,7 @@ final class Boss {
 
     private boolean asksFor(int g) {
         switch (kind) {
-            case RAINBOW_CAT: return cat.phase==RainbowCat.OPEN && cat.count>0 && cat.prompt[cat.at]==g;
+            case RAINBOW_CAT: return cat.phase==RainbowCat.OPEN && cat.promptKey>=0 && cat.promptKey==g;
             case ALLIGATOR: return Roster.active(rosterFull,g);
             case SLIME: return g == chainLetter();
             case OCTOPUS: return octoReach >= 0f && g == octoTarget;

@@ -168,8 +168,8 @@ final class BossPlay {
             c.onboarding.bossDamaged(c);
             c.companion.react(RunCompanion.BOSS_HIT, 1f);
             c.score += GameCore.BOSS_HIT;
-            c.shake = Math.max(c.shake, c.boss.kind==Boss.ALLIGATOR?.55f:.30f);
-            c.flash = Math.max(c.flash, 0.4f);
+            c.shake = Math.max(c.shake, c.boss.kind==Boss.ALLIGATOR?.55f:c.boss.kind==Boss.RAINBOW_CAT?.20f:.30f);
+            c.flash = Math.max(c.flash, c.boss.kind==Boss.RAINBOW_CAT?.08f:.4f);
             boolean divide = c.boss.kind == Boss.SPLITTER;
             c.flashColor = divide ? 0xFF7D45D6 : GameCore.FLASH_CLEAR;
             Fx.explode(c, c.rnd, divide ? c.boss.hitX : c.boss.bodyX(L),
@@ -177,7 +177,7 @@ final class BossPlay {
                     Glyph.COLOR[g]);
             if (c.sound != null) {
                 if (divide) c.sound.divideDamage();
-                else if(c.boss.kind==Boss.RAINBOW_CAT)c.boss.cat.meow(c,CatMeowRecording.HURT,true);
+                else if(c.boss.kind==Boss.RAINBOW_CAT)c.boss.cat.meow(c,CatMeowRecording.HURT,c.boss.cat.windowHits==1 || c.boss.cat.escapeSequence);
                 else c.sound.bossDamage();
             }
         }

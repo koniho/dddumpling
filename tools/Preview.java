@@ -10,10 +10,18 @@ import java.io.File;
 final class Preview {
     private static void rainbowFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("151-"))return;
+        GameCore vulnerable=TestRainbowCat.fight(L);TestRainbowCat.challenge(vulnerable,L);
+        for(int frame=0;frame<20;frame++)vulnerable.update(1f/60,L);
+        shot(dir,"151-random-key-struggle",vulnerable,L,w,h,ss);
+        vulnerable.tapKey(vulnerable.boss.cat.promptKey,L);
+        vulnerable.update(.045f,L);
+        shot(dir,"151-random-key-hit",vulnerable,L,w,h,ss);
+        vulnerable.update(.12f,L);
+        shot(dir,"151-random-key-recover",vulnerable,L,w,h,ss);
         for(final boolean left:new boolean[]{false,true}) {
             GameCore sweep=TestRainbowCat.fight(L);TestRainbowCat.challenge(sweep,L);RainbowCat dancer=sweep.boss.cat;
             java.util.Random direction=new java.util.Random(151) {public boolean nextBoolean(){return left;}};
-            while(dancer.phase==RainbowCat.OPEN)sweep.boss.press(dancer.prompt[dancer.at],direction,L);
+            while(dancer.phase==RainbowCat.OPEN)sweep.boss.press(dancer.promptKey,direction,L);
             for(int frame=1;frame<=180;frame++) {
                 sweep.update(1f/60,L);
                 if(frame==40 || frame==95 || frame==125 || frame==155)
@@ -22,7 +30,7 @@ final class Preview {
         }
         GameCore freed=TestRainbowCat.fight(L);TestRainbowCat.challenge(freed,L);
         RainbowCat escaping=freed.boss.cat;
-        for(int key=0;key<6 && escaping.phase==RainbowCat.OPEN;key++)freed.tapKey(escaping.prompt[escaping.at],L);
+        for(int key=0;key<6 && escaping.phase==RainbowCat.OPEN;key++)freed.tapKey(escaping.promptKey,L);
         for(int frame=1;frame<=66;frame++) {
             freed.update(1f/60,L);
             if(frame==5 || frame==12 || frame==28 || frame==55)
@@ -36,7 +44,7 @@ final class Preview {
         rays.boss.update(.18f,L,rays.rnd);
         shot(dir,"151-second-tap-rays",rays,L,w,h,ss);
         for(int capture:new int[]{0,1,4}) {
-            GameCore dance=TestRainbowCat.fight(L);RainbowCat dancer=dance.boss.cat;dancer.captures=capture;
+            GameCore dance=TestRainbowCat.fight(L);RainbowCat dancer=dance.boss.cat;dance.boss.hp=dance.boss.hpMax-capture;
             TestRainbowCat.readyToCircle(dance,L);
             for(int frame=0;frame<75;frame++)dance.boss.update(1f/60,L,dance.rnd);
             shot(dir,"151-shape-dance-"+capture,dance,L,w,h,ss);
@@ -91,7 +99,7 @@ final class Preview {
         GameCore starGame=TestRainbowCat.fight(L);RainbowCat starCat=starGame.boss.cat;
         for(int capture=0;capture<4;capture++) {
             TestRainbowCat.challenge(starGame,L);
-            for(int i=0;i<6 && starCat.phase==RainbowCat.OPEN;i++)starGame.boss.press(starCat.prompt[starCat.at],starGame.rnd,L);
+            for(int i=0;i<6 && starCat.phase==RainbowCat.OPEN;i++)starGame.boss.press(starCat.promptKey,starGame.rnd,L);
         }
         TestRainbowCat.readyToCircle(starGame,L);
         shot(dir,"151-star",starGame,L,w,h,ss);
@@ -112,7 +120,7 @@ final class Preview {
             TestRainbowCat.readyToCircle(shapes,L);
             shot(dir,"151-shape-"+shapeNames[capture],shapes,L,w,h,ss);
             TestRainbowCat.challenge(shapes,L);
-            for(int key=0;key<6 && shape.phase==RainbowCat.OPEN;key++)shapes.boss.press(shape.prompt[shape.at],shapes.rnd,L);
+            for(int key=0;key<6 && shape.phase==RainbowCat.OPEN;key++)shapes.boss.press(shape.promptKey,shapes.rnd,L);
             if(capture==0 || capture==4) {
                 for(int frame=0;frame<24;frame++)shapes.boss.update(1f/60,L,shapes.rnd);
                 shot(dir,capture==0?"151-damage-flurry":"151-final-flurry",shapes,L,w,h,ss);

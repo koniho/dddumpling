@@ -39,7 +39,7 @@ final class WorldCatalog {
         new BossEntry(2,47,Kawaii.BLOB,3,"OCTOPULSE","GHASTLY SQUID","octopulse","BEAT THE REACH",": eight hugs too many.",8,1.35f,2.2f,1,1,150,new float[]{1,1.06f,.89f,1.12f}),
         new BossEntry(3,48,Kawaii.DUMPLING,4,"FLY AGARIC","POISON CAP","fly_agaric","DRAG BACK AND FORTH"," made you a spore snack.",3,1.45f,1.9f,1,1,205,new float[]{1,.76f,1.34f,.63f}),
         new BossEntry(5,60,Kawaii.SQUISHY,11,"GUMMY GATOR","COSTUMED CROC","mossy_maw","PARRY, TAP, THEN STOP"," gave you a tummy hug.",72,2.7f,1.6f,1,1,180,new float[]{1,1.33f,1.12f,.84f}),
-        new BossEntry(6,61,Kawaii.CAT,12,"RAINBOW CAT",null,"rainbow_cat","TAP TWICE, TRACE, THEN MATCH"," washed you away in rainbow stars.",TraceGesture.SHAPE_COUNT,1.15f,1.6f,1,1,420,new float[]{1,1.5f,1.25f,1.8f})
+        new BossEntry(6,61,Kawaii.CAT,12,"RAINBOW CAT",null,"rainbow_cat","TAP TWICE, TRACE, THEN HIT"," washed you away in rainbow stars.",TraceGesture.SHAPE_COUNT,1.15f,1.6f,1,1,420,new float[]{1,1.5f,1.25f,1.8f})
     };
     static int bossStage(int boss) {return (boss+1)*STAGES_PER_CHAPTER;}
     static int bossForLand(int land) {

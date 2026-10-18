@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** Two taps and a traced shape let the companion net the cat for a key challenge; failure releases a star flurry. */
+/** Tap, trace, then hit changing random keys; each net can damage only the current health band. */
 final class RainbowCat {
     static final int CHASE=0, DASH=1, OPEN=2, CIRCLE=3, CATCH=4, ESCAPE=5;
     static final float TAP_FLASH=.60f, SCARE_HOLD=.70f, SHAKE_OFF=.40f;
@@ -9,9 +9,11 @@ final class RainbowCat {
     static final float DASH_TIME=.34f, TRAIL_TIME=2.2f, TRAIL_LENGTH=2.9f*4;
     final Softbody pastry=new Softbody(18,151), head=new Softbody(14,152);
     final float[] route=new float[8],trailX=new float[136],trailY=new float[136],trailAge=new float[136];
-    int phase,pointer=-1,taps,trailCount,at,count,captures,cue;
+    int phase,pointer=-1,taps,trailCount,captures,cue,promptKey=-1,windowHits;
     final TraceGesture gesture=new TraceGesture();
-    final int[] prompt=new int[Glyph.COUNT];
+    float damageFloor,keyFlash;
+    int hitColor;
+    boolean fullRoster;
     float x,y,vx,vy,r,left,right,top,bottom,clock,flash,turn=1;
     float routeTime,routeDuration,launchLeft,trailTick,timer;
     float circleSweep,netAge,netReturn,catchX,catchY,windUp,releaseWind,netAimX,netAimY,tapFlash,scared,scaredAge;
@@ -19,18 +21,19 @@ final class RainbowCat {
     int traceHaptic,nextMeow;
     float voiceLeft;
     float traceClock,traceX,traceY,shapeBurst,burstX,burstY,burstRadius;
-    float[] burstShape;
+    float[] burstShape,burstWork;
+    int burstKind,burstStep;
     float escapeLeft,escapeX,escapeY,escapeAge;
     int flurryCount;
     boolean escapeSequence,flurryFromLeft;
     boolean circling;
     boolean placed,kids,escaping;
     void reset() {
-        phase=CHASE;pointer=-1;taps=trailCount=at=count=captures=cue=0;placed=escaping=escapeSequence=flurryFromLeft=false;flurryCount=0;turn=1;
+        phase=CHASE;pointer=-1;taps=trailCount=captures=cue=windowHits=0;promptKey=-1;damageFloor=keyFlash=0;hitColor=0;fullRoster=false;placed=escaping=escapeSequence=flurryFromLeft=false;flurryCount=0;turn=1;
         circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=netAimX=netAimY=tapFlash=scared=scaredAge=0;circling=false;gesture.clear();
         x=y=vx=vy=clock=flash=routeTime=routeDuration=trailTick=timer=0;launchLeft=1.3f;
         traceLost=lostStart=lostTravel=traceBeat=traceProgress=voiceLeft=0;traceHaptic=0;nextMeow=1;
-        traceClock=traceX=traceY=shapeBurst=escapeLeft=escapeX=escapeY=escapeAge=0;burstShape=null;
+        traceClock=traceX=traceY=shapeBurst=escapeLeft=escapeX=escapeY=escapeAge=0;burstShape=burstWork=null;
     }
     private void endStroke() {pointer=-1;circling=false;circleSweep=0;gesture.clear();}
     void release() {endStroke();traceLost=traceBeat=traceProgress=0;traceHaptic=0;}
@@ -60,11 +63,11 @@ final class RainbowCat {
         }
     }
     void animate(Boss b,float dt,Layout L) {
-        voiceLeft=Math.max(0,voiceLeft-dt);
+        voiceLeft=Math.max(0,voiceLeft-dt);keyFlash=Math.max(0,keyFlash-dt);
         escapeLeft=Math.max(0,escapeLeft-dt);
         traceLost=Math.max(0,traceLost-dt);traceBeat=Math.max(0,traceBeat-dt);
         shapeBurst=Math.max(0,shapeBurst-dt);
-        if(shapeBurst==0)burstShape=null;
+        if(shapeBurst==0)burstShape=burstWork=null;
         place(L);clock+=dt;netReturn=Math.max(0,netReturn-dt);flash=Math.max(0,flash-dt*3);
         for(int i=trailCount-1;i>=0;i--) {
             trailAge[i]+=dt;
@@ -97,9 +100,9 @@ final class RainbowCat {
         float facing=phase==CIRCLE || phase==CATCH || phase==OPEN || (escapeSequence && escapeAge<ESCAPE_TIME)?-1:Math.abs(vx)<1?turn:vx<0?-1:1;
         turn+=(facing-turn)*(1-(float)Math.exp(-dt*14));
         float struggle=phase==OPEN?1:phase==CATCH?clamp(netAge/NET_TIME,0,1):0;
-        float wiggle=(float)Math.sin(clock*18)*r*.065f*struggle+shakeOffset();
-        pastry.moveTo(x+traceX+wiggle,y+traceY);pastry.pull((float)Math.sin(clock*15),.5f,.13f*struggle);pastry.update(dt);
-        head.moveTo(x+traceX+turn*r*.88f-wiggle+(float)Math.sin(clock*31)*r*.025f*scared,y+traceY+r*.02f+(float)Math.sin(clock*21)*r*.055f*struggle);head.update(dt);
+        float wiggle=struggleX()+shakeOffset();
+        pastry.moveTo(x+traceX+wiggle,y+traceY+struggleY());pastry.pull(x+r*(float)Math.sin(clock*23),y+r*.6f*(float)Math.cos(clock*19),.36f*struggle);pastry.update(dt);
+        head.moveTo(x+traceX+turn*r*.88f-wiggle+(float)Math.sin(clock*31)*r*.025f*scared,y+traceY+r*.02f+struggleY()+(float)Math.sin(clock*27)*r*.10f*struggle);head.update(dt);
     }
     private void chooseRoute(Layout L,java.util.Random rnd,boolean dash) {
         float targetX=x,targetY=y,bestDistance=-1;
@@ -155,9 +158,7 @@ final class RainbowCat {
         }
         if(phase==OPEN) {
             timer-=dt;
-            if(timer<=0) {
-                flurry(b,rnd,false);resume(L,rnd);launchLeft=4.4f;
-            }
+            if(timer<=0)escape(b,L,rnd);
             return 0;
         }
         // Let the tap reaction read in place, then finish the escape before accepting another tap.
@@ -165,7 +166,7 @@ final class RainbowCat {
         float remaining=phase==CIRCLE?0:dt;
         while(remaining>0) {
             if(routeDuration==0 || routeTime>=routeDuration) {
-                if(phase==DASH && taps==2) {if(reactionReady()) {phase=CIRCLE;traceClock=0;gesture.setShape(TraceGesture.shape(captures),starShape());}vx=vy=0;break;}
+                if(phase==DASH && taps==2) {if(reactionReady()) {phase=CIRCLE;captures=damagePhase(b);traceClock=0;gesture.setShape(TraceGesture.shape(captures),starShape());}vx=vy=0;break;}
                 phase=CHASE;chooseRoute(L,rnd,false);
             }
             float step=Math.min(remaining,routeDuration-routeTime);
@@ -180,12 +181,12 @@ final class RainbowCat {
         }
         return 0;
     }
-    private void flurry(Boss b,java.util.Random rnd,boolean afterDamage) {
+    private void flurry(Boss b,java.util.Random rnd) {
         b.clearBolts();
         boolean fromLeft=rnd.nextBoolean();int keys=Roster.count(b.rosterFull);
-        if(afterDamage) {flurryFromLeft=fromLeft;flurryCount=keys;}
+        flurryFromLeft=fromLeft;flurryCount=keys;
         // Six keys need a readable cadence after a successful prompt, including at 30 FPS.
-        float lead=afterDamage?(ESCAPE_TIME+SWEEP_SETUP+SWEEP_LEAD)/(Boss.BOLT_TIME*.5f):0,stagger=afterDamage?.24f:.16f;
+        float lead=(ESCAPE_TIME+SWEEP_SETUP+SWEEP_LEAD)/(Boss.BOLT_TIME*.5f),stagger=SWEEP_STEP/(Boss.BOLT_TIME*.5f);
         for(int i=0;i<keys;i++) {
             int slot=b.tailBolt(rnd,x,y+r*.45f);
             if(slot>=0) {b.bglyph[slot]=Roster.at(b.rosterFull,fromLeft?i:keys-1-i);b.bfast[slot]=true;b.bt[slot]=-lead-i*stagger;}
@@ -194,25 +195,44 @@ final class RainbowCat {
     }
     float attackInterval() {return kids?2.3f:1.6f;}
     static float trailFade(float progress) {return clamp((1-progress)*4,0,1);}
-    float promptTime() {return (count==6?6f:4.8f)*(kids?1.4f:1);}
+    float promptTime() {return (fullRoster?6f:4.8f)*(kids?1.4f:1);}
     private void open(Boss b) {
         phase=OPEN;vx=vy=0;b.clearBolts();timer=promptTime();cue=1;flash=1;
+        captures=damagePhase(b);damageFloor=b.hpMax*(TraceGesture.SHAPE_COUNT-captures-1)/TraceGesture.SHAPE_COUNT;
     }
     private void resume(Layout L,java.util.Random rnd) {
-        netReturn=NET_RETURN;windUp=tapFlash=scared=scaredAge=0;release();taps=at=count=0;phase=DASH;chooseRoute(L,rnd,true);launchLeft=attackInterval();
+        netReturn=NET_RETURN;windUp=tapFlash=scared=scaredAge=0;release();taps=0;promptKey=-1;phase=DASH;chooseRoute(L,rnd,true);launchLeft=attackInterval();
+    }
+    static int damagePhase(Boss b) {
+        return Math.min(TraceGesture.SHAPE_COUNT,Math.max(0,(int)Math.floor((b.hpMax-b.hp)/b.hpMax*TraceGesture.SHAPE_COUNT+.0001f)));
+    }
+    private void nextKey(java.util.Random rnd) {
+        int n=Roster.count(fullRoster),choice=rnd.nextInt(promptKey<0?n:n-1);
+        for(int i=0;i<n;i++) {
+            int g=Roster.at(fullRoster,i);if(g==promptKey)continue;
+            if(choice--==0) {promptKey=g;return;}
+        }
     }
     int press(Boss b,int glyph,Layout L,java.util.Random rnd) {
-        if(phase!=OPEN || count==0)return Boss.REBUFF;
-        if(prompt[at]!=glyph) {flash=.5f;return Boss.REBUFF;}
-        b.hitX=x;b.hitY=y;head.squash(.3f);
-        if(++at<count)return Boss.PART;
-        captures++;int result=b.damage(1);
-        flurry(b,rnd,true);resume(L,rnd);launchLeft=4.4f;
+        if(phase!=OPEN || promptKey<0 || timer<=0)return Boss.REBUFF;
+        if(promptKey!=glyph)return Boss.REBUFF;
+        b.hitX=x;b.hitY=y;head.squash(.45f);pastry.squash(.35f);
+        keyFlash=.22f;hitColor=Glyph.COLOR[glyph];flash=1;windowHits++;
+        float remaining=Math.max(0,b.hp-damageFloor),step=b.hpMax/TraceGesture.SHAPE_COUNT/5;
+        float amount=remaining<=step+.0001f?remaining:step;
+        int result=b.damage(amount);captures=damagePhase(b);
+        if(b.beaten || b.hp<=damageFloor+.0001f)escape(b,L,rnd);
+        else nextKey(rnd);
+        return result;
+    }
+    private void escape(Boss b,Layout L,java.util.Random rnd) {
+        flurry(b,rnd);resume(L,rnd);launchLeft=4.4f;
         escapeLeft=ESCAPE_TIME;escapeAge=0;escapeX=x;escapeY=y;escapeSequence=true;phase=ESCAPE;vx=vy=0;
         pastry.squash(.85f);head.squash(.55f);
         if(b.beaten)escaping=true;
-        return result;
     }
+    float struggleX() {return ((float)Math.sin(clock*25)*.17f+(float)Math.sin(clock*39)*.05f)*r*caughtStrength();}
+    float struggleY() {return (float)Math.sin(clock*31)*r*.075f*caughtStrength();}
     float sweepDuration() {return SWEEP_LEAD*2+Math.max(0,flurryCount-1)*SWEEP_STEP;}
     float angry() {
         if(!escapeSequence)return 0;
@@ -265,8 +285,8 @@ final class RainbowCat {
     float caughtStrength() {
         return phase==OPEN?1:phase==CATCH?clamp((netAge-.34f)/.20f,0,1):0;
     }
-    float pouchSway() {return (float)Math.sin(clock*6)*.38f*caughtStrength();}
-    float hoopShift() {return r*.16f*(float)Math.sin(clock*6+.6f)*caughtStrength();}
+    float pouchSway() {return ((float)Math.sin(clock*10)*.66f+(float)Math.sin(clock*17)*.12f)*caughtStrength();}
+    float hoopShift() {return r*.25f*(float)Math.sin(clock*10+.6f)*caughtStrength();}
     boolean starShape() {return captures==4;}
     float circleRadius() {return r*(captures==0?2.2f:2.7f);}
     boolean carries(GameCore c) {
@@ -289,12 +309,12 @@ final class RainbowCat {
         }
         if(complete) {
             traceHaptic=2;traceLost=0;
-            shapeBurst=1.25f;burstShape=TraceGesture.shape(captures);
+            shapeBurst=1.25f;burstKind=captures;burstShape=TraceGesture.shape(captures);
+            burstStep=Math.max(1,(burstShape.length/2-1)/32);
+            burstWork=new float[((burstShape.length/2-1)/burstStep+1)*2];
             burstX=circleX();burstY=circleY();burstRadius=circleRadius();
             phase=CATCH;catchX=x;catchY=y;releaseWind=windUp;timer=netAge=netReturn=0;circling=false;c.boss.clearBolts();
-            count=Roster.count(c.boss.rosterFull);at=0;
-            for(int i=0;i<count;i++)prompt[i]=Roster.at(c.boss.rosterFull,i);
-            for(int i=count-1;i>0;i--) {int j=c.rnd.nextInt(i+1),swap=prompt[i];prompt[i]=prompt[j];prompt[j]=swap;}
+            fullRoster=c.boss.rosterFull;windowHits=0;promptKey=-1;nextKey(c.rnd);
             c.companion.react(RunCompanion.BOSS_HIT,1);
             meow(c,CatMeowRecording.SURPRISED,true);
             if(c.sound!=null)c.sound.ninjaSwish(1);
@@ -339,7 +359,7 @@ final class RainbowCat {
     }
     String companionHint() {
         if(phase==ESCAPE)return "RAINBOW INCOMING!";
-        if(phase==OPEN)return "MATCH IN ORDER!";
+        if(phase==OPEN)return "HIT THE KEY!";
         if(phase==CATCH)return "GOT YOU!";
         if(phase==CIRCLE) {
             if(traceLost>0)return "TRACE LOST! TRY AGAIN!";

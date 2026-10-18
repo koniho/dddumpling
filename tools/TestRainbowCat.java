@@ -40,7 +40,7 @@ final class TestRainbowCat extends Check {
             check("net animation cannot consume prompt time "+direction,!c.boss.open() && a.timer==0);
             c.boss.update(RainbowCat.NET_TIME*.5f,L,c.rnd);
             check("net catch opens full duration challenge "+direction,c.boss.open() && a.timer==a.promptTime());
-            while(a.phase==RainbowCat.OPEN)c.boss.press(a.prompt[a.at],c.rnd,L);
+            while(a.phase==RainbowCat.OPEN)c.boss.press(a.promptKey,c.rnd,L);
             check("companion returns after escape "+direction,a.netReturn>0 && a.carries(c));
             c.boss.update(RainbowCat.ESCAPE_TIME+.01f,L,c.rnd);
             check("return completes and clears companion ownership "+direction,!a.carries(c));
@@ -79,7 +79,7 @@ final class TestRainbowCat extends Check {
                 circle(c,L,direction);
                 check("shape catches in either direction "+direction+"/"+capture,a.phase==RainbowCat.CATCH);
                 c.boss.update(RainbowCat.NET_TIME,L,c.rnd);
-                for(int key=0;key<6 && a.phase==RainbowCat.OPEN;key++)c.boss.press(a.prompt[a.at],c.rnd,L);
+                for(int key=0;key<6 && a.phase==RainbowCat.OPEN;key++)c.boss.press(a.promptKey,c.rnd,L);
                 check("one damage per completed capture "+direction+"/"+capture,c.boss.hp==4-capture
                         && c.boss.beaten==(capture==4));
                 check("each damage launches rainbow flurry "+direction+"/"+capture,c.boss.boltCount()==6 && a.cue==2 && a.launchLeft==4.4f);
@@ -95,15 +95,15 @@ final class TestRainbowCat extends Check {
         group("Rainbow flurry sweeps keyboard in order");
         for(boolean full:new boolean[]{false,true})for(final boolean fromLeft:new boolean[]{false,true})for(boolean success:new boolean[]{false,true}) {
             GameCore c=fight(L);c.boss.rosterFull=full;challenge(c,L);
-            RainbowCat a=c.boss.cat;int n=a.count;
+            RainbowCat a=c.boss.cat;int n=Roster.count(full);
             java.util.Random direction=new java.util.Random(151) {public boolean nextBoolean(){return fromLeft;}};
-            if(success) {for(int key=0;key<n;key++)c.boss.press(a.prompt[a.at],direction,L);}
+            if(success) {while(a.phase==RainbowCat.OPEN)c.boss.press(a.promptKey,direction,L);}
             else {a.timer=.01f;c.boss.update(.02f,L,direction);}
             boolean ordered=c.boss.boltCount()==n;float previous=fromLeft?-1:Float.MAX_VALUE;
             for(int i=0;i<n;i++) {
                 float x=Roster.keyX(L,c.boss.bglyph[i],full?1:0);
                 ordered&=fromLeft?x>previous:x<previous;previous=x;
-                ordered&=Math.abs(c.boss.bt[i]+(success?(RainbowCat.ESCAPE_TIME+RainbowCat.SWEEP_SETUP+RainbowCat.SWEEP_LEAD)/(Boss.BOLT_TIME*.5f):0)+i*(success?.24f:.16f))<.00001f && c.boss.bfast[i];
+                ordered&=Math.abs(c.boss.bt[i]+(RainbowCat.ESCAPE_TIME+RainbowCat.SWEEP_SETUP+RainbowCat.SWEEP_LEAD)/(Boss.BOLT_TIME*.5f)+i*.24f)<.00001f && c.boss.bfast[i];
             }
             check("flurry preserves left/right order and stagger "+full+"/"+fromLeft+"/"+success,ordered);
         }
@@ -116,7 +116,7 @@ final class TestRainbowCat extends Check {
             check("first capture stays a circle "+direction,!a.starShape());
             for(int capture=0;capture<4;capture++) {
                 challenge(c,L);
-                for(int i=0;i<6 && a.phase==RainbowCat.OPEN;i++)c.boss.press(a.prompt[a.at],c.rnd,L);
+                for(int i=0;i<6 && a.phase==RainbowCat.OPEN;i++)c.boss.press(a.promptKey,c.rnd,L);
             }
             readyToCircle(c,L);
             check("fourth damage selects star "+direction,a.captures==4 && a.starShape() && a.phase==RainbowCat.CIRCLE);
@@ -137,7 +137,7 @@ final class TestRainbowCat extends Check {
             a.timer=.01f;c.boss.update(.02f,L,c.rnd);readyToCircle(c,L);
             check("missed prompt keeps star "+direction,a.captures==4 && a.starShape());
             challenge(c,L);
-            for(int i=0;i<6 && a.phase==RainbowCat.OPEN;i++)c.boss.press(a.prompt[a.at],c.rnd,L);
+            for(int i=0;i<6 && a.phase==RainbowCat.OPEN;i++)c.boss.press(a.promptKey,c.rnd,L);
             check("fifth damage completes star round "+direction,a.captures==5 && c.boss.beaten);
         }
     }
@@ -233,12 +233,12 @@ final class TestRainbowCat extends Check {
         check("caught cat uses retained meow instead of spoken aside",ear.lastCatMeow==CatMeowRecording.STRUGGLE);
         int before=ear.catMeows;
         while(a.phase==RainbowCat.OPEN) {
-            int key=a.prompt[a.at],verdict=c.boss.press(key,c.rnd,L);
+            int key=a.promptKey,verdict=c.boss.press(key,c.rnd,L);
             BossPlay.press(c,key,verdict,L);
         }
-        check("damage overrides chatter with annotated hurt",ear.catMeows==before+1 && ear.lastCatMeow==CatMeowRecording.HURT);
+        check("damage overrides chatter with annotated hurt",ear.catMeows==before+2 && ear.lastCatMeow==CatMeowRecording.HURT);
         c.update(.01f,L);
-        check("damage flurry does not mask hurt with extra meow",ear.catMeows==before+1);
+        check("damage flurry does not mask hurt with extra meow",ear.catMeows==before+2);
         a.voiceLeft=0;c.rnd.setSeed(151);java.util.Random expected=new java.util.Random(151);
         java.util.HashSet<Integer> takes=new java.util.HashSet<>();
         for(int i=0;i<CatMeowRecording.SHORT_COUNT;i++) {
@@ -367,13 +367,65 @@ final class TestRainbowCat extends Check {
         for(int i=0;i<140;i++)c.boss.update(1f/60,L,c.rnd);
         check("motion trail expires while cat holds prompt pose",a.trailCount==0);
     }
+    private static final class RingBudget extends OpacityPainter {
+        int paths,circles,batches,vertices;
+        RingBudget() {super(null,1);}
+        public void polyline(float[] xy,int color,float width) {paths++;}
+        public void fastPolyline(float[] xy,int color,float width) {batches++;vertices+=xy.length/2;}
+        public void strokeCircle(float x,float y,float radius,int color,float width) {circles++;}
+    }
+    private static void ringBudget(Layout L) {
+        group("Shape rings use bounded reusable primitive geometry");
+        for(int shape=0;shape<TraceGesture.SHAPE_COUNT;shape++) {
+            GameCore c=fight(L);c.boss.hp=c.boss.hpMax-shape;readyToCircle(c,L);circle(c,L,1);
+            RainbowCat a=c.boss.cat;c.boss.update(.36f,L,c.rnd);float[] work=a.burstWork;
+            RingBudget budget=new RingBudget();RainbowCatArt.shapeRings(new OpacityPainter(budget,.7f),a);
+            check("no dynamic stroked paths for shape "+shape,budget.paths==0);
+            check("at most two primitive layers per rainbow ring "+shape,budget.circles+budget.batches<=12 && budget.circles+budget.batches>0);
+            check("circle uses native circles; other shapes batch segments "+shape,shape==0?budget.circles==12:budget.batches==12 && budget.vertices<=396);
+            RainbowCatArt.shapeRings(budget,a);
+            check("reuse ring geometry across frames "+shape,a.burstWork==work);
+            a.reset();check("reset releases ring geometry "+shape,a.burstWork==null);
+        }
+    }
+    private static void damageWindows(Layout L) {
+        group("Random changing keys deal capped persistent damage");
+        for(boolean full:new boolean[]{false,true}) {
+            GameCore c=fight(L);c.boss.rosterFull=full;challenge(c,L);RainbowCat a=c.boss.cat;
+            float timer=a.timer;int previous=-1;
+            for(int hit=0;hit<2;hit++) {
+                int key=a.promptKey;boolean active=false;
+                for(int i=0;i<Roster.count(full);i++)active|=key==Roster.at(full,i);
+                check("random prompt stays in roster and changes "+full+hit,active && key!=previous);
+                float hp=c.boss.hp;
+                check("each hit deals immediate damage "+full+hit,c.boss.press(key,c.rnd,L)==Boss.HIT && Math.abs(c.boss.hp-(hp-.2f))<.0001f);
+                check("hit flashes and changes key without resetting timer "+full+hit,a.keyFlash>0 && a.promptKey!=key && a.timer==timer);
+                hp=c.boss.hp;c.boss.press(key,c.rnd,L);
+                check("repeating previous key cannot damage "+full+hit,c.boss.hp==hp && a.timer==timer);
+                previous=key;
+            }
+            float partial=c.boss.hp;a.timer=.01f;c.boss.update(.02f,L,c.rnd);
+            check("timeout retains partial damage and current shape "+full,c.boss.hp==partial && a.captures==0 && a.escapeSequence);
+            challenge(c,L);check("recapture retains band floor "+full,a.captures==0 && a.damageFloor==4);
+            int hits=0;
+            while(a.phase==RainbowCat.OPEN && hits<20) {c.boss.press(a.promptKey,c.rnd,L);hits++;}
+            check("only remaining band damage is available "+full,hits==3 && c.boss.hp==4 && a.captures==1);
+            for(int key=0;key<Glyph.COUNT;key++)c.boss.press(key,c.rnd,L);
+            check("extra keys cannot skip shape phase "+full,c.boss.hp==4);
+            readyToCircle(c,L);
+            check("next trace follows health band "+full,a.captures==1 && !a.starShape());
+        }
+        GameCore c=fight(L);c.boss.hp=1.4f;readyToCircle(c,L);
+        check("shape derives from sustained damage ",c.boss.cat.captures==3);
+        c.boss.cat.reset();check("reset clears damage window state",c.boss.cat.promptKey<0 && c.boss.cat.windowHits==0 && c.boss.cat.keyFlash==0);
+    }
     private static void escapeSweep(Layout L) {
         group("Cat waits for net then sweeps with its ordered flurry");
         for(boolean full:new boolean[]{false,true})for(final boolean left:new boolean[]{false,true})for(boolean last:new boolean[]{false,true}) {
             GameCore c=fight(L);c.boss.rosterFull=full;challenge(c,L);RainbowCat a=c.boss.cat;
-            if(last)c.boss.hp=1;
+            if(last) {c.boss.hp=1;a.damageFloor=0;a.captures=4;}
             java.util.Random rnd=new java.util.Random(151) {public boolean nextBoolean(){return left;}};
-            while(a.phase==RainbowCat.OPEN)c.boss.press(a.prompt[a.at],rnd,L);
+            while(a.phase==RainbowCat.OPEN)c.boss.press(a.promptKey,rnd,L);
             float x=a.x,y=a.y;
             for(int frame=0;frame<60;frame++)c.boss.update(1f/60,L,c.rnd);
             boolean queued=true;for(int i=0;i<a.flurryCount;i++)queued&=c.boss.bt[i]<0;
@@ -399,10 +451,10 @@ final class TestRainbowCat extends Check {
         group("Completed cat prompt bursts net and recoils companion");
         for(boolean finalHit:new boolean[]{false,true}) {
             GameCore c=fight(L);RainbowCat a=c.boss.cat;challenge(c,L);
-            if(finalHit)c.boss.hp=1;
+            if(finalHit) {c.boss.hp=1;a.damageFloor=0;a.captures=4;}
             int lives=c.lives;float x=a.x,y=a.y;
-            for(int i=0,n=a.count;i<n;i++) {
-                c.boss.press(a.prompt[a.at],c.rnd,L);
+            for(int i=0,n=5;i<n;i++) {
+                c.boss.press(a.promptKey,c.rnd,L);
                 check("escape only after final correct key "+finalHit+"/"+i,(a.escapeLeft>0)==(i==n-1));
             }
             check("escape keeps companion owned and anchors burst "+finalHit,a.carries(c) && a.escapeX==x && a.escapeY==y);
@@ -413,15 +465,15 @@ final class TestRainbowCat extends Check {
             a.escapeLeft=1;c.boss.leave();check("leaving clears escape "+finalHit,a.escapeLeft==0 && !a.escapeSequence);
         }
         GameCore miss=fight(L);challenge(miss,L);RainbowCat a=miss.boss.cat;
-        miss.boss.press((a.prompt[a.at]+1)%Glyph.COUNT,miss.rnd,L);
+        miss.boss.press((a.promptKey+1)%Glyph.COUNT,miss.rnd,L);
         check("wrong key does not burst net",a.escapeLeft==0);
         a.timer=.01f;miss.boss.update(.02f,L,miss.rnd);
-        check("timeout keeps ordinary net return",a.escapeLeft==0 && a.netReturn>0);
+        check("timeout also plays net escape",a.escapeLeft>0 && a.escapeSequence);
     }
     private static void traceCelebration(Layout L) {
         group("Rainbow Cat miniature shape dance and capture rings");
         for(int shape=0;shape<5;shape++) {
-            GameCore c=fight(L);RainbowCat a=c.boss.cat;a.captures=shape;
+            GameCore c=fight(L);RainbowCat a=c.boss.cat;c.boss.hp=c.boss.hpMax-shape;
             readyToCircle(c,L);float x=a.circleX(),y=a.circleY();
             for(int frame=0;frame<75;frame++)c.boss.update(1f/60,L,c.rnd);
             check("waiting cat moves inside fixed guide "+shape,a.circleX()==x && a.circleY()==y
@@ -439,7 +491,7 @@ final class TestRainbowCat extends Check {
         }
     }
     static void all(Layout L) {
-        escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));
@@ -458,31 +510,25 @@ final class TestRainbowCat extends Check {
         a.touch(c,L,0,2,L.playLeft,a.y);a.touch(c,L,2,2,a.x,a.y);a.touch(c,L,1,2,a.x,a.y);
         check("swiping across cat does not substitute for tap",a.taps==1);
         challenge(c,L);
-        check("two taps and circle open net challenge without damage",a.phase==RainbowCat.OPEN && a.taps==2 && a.count==6 && c.boss.open() && c.boss.hp==hp);
-        int mask=0;for(int i=0;i<a.count;i++)mask|=1<<a.prompt[i];
-        check("challenge includes each full roster key exactly once",Integer.bitCount(mask)==6);
-        float deadline=a.timer;int wrong=(a.prompt[0]+1)%Glyph.COUNT;
-        check("wrong key preserves progress and timer",c.boss.press(wrong,c.rnd,L)==Boss.REBUFF && a.at==0 && a.timer==deadline && c.boss.hp==hp);
-        while(a.phase==RainbowCat.OPEN)c.boss.press(a.prompt[a.at],c.rnd,L);
-        check("completed sequence damages one point and resumes chase",c.boss.hp==hp-1 && a.captures==1 && a.count==0 && a.taps==0);
-        challenge(c,L);int expected=a.count;a.timer=.01f;c.boss.update(.02f,L,c.rnd);
-        check("timeout launches one star per key without instant damage",c.boss.boltCount()==expected && c.boss.hp==hp-1 && a.phase==RainbowCat.DASH);
+        check("two taps and circle open net challenge without damage",a.phase==RainbowCat.OPEN && a.taps==2 && a.promptKey>=0 && c.boss.open() && c.boss.hp==hp);
+        float deadline=a.timer;int wrong=(a.promptKey+1)%Glyph.COUNT;
+        check("wrong key preserves progress and timer",c.boss.press(wrong,c.rnd,L)==Boss.REBUFF && a.windowHits==0 && a.timer==deadline && c.boss.hp==hp);
+        while(a.phase==RainbowCat.OPEN)c.boss.press(a.promptKey,c.rnd,L);
+        check("completed sequence damages one point and resumes chase",c.boss.hp==hp-1 && a.captures==1 && a.promptKey<0 && a.taps==0);
+        challenge(c,L);int expected=Roster.count(c.boss.rosterFull);a.timer=.01f;c.boss.update(.02f,L,c.rnd);
+        check("timeout launches one star per key without instant damage",c.boss.boltCount()==expected && c.boss.hp==hp-1 && a.phase==RainbowCat.ESCAPE);
         boolean fast=true;float previous=1;
         for(int i=0;i<expected;i++) {fast&=c.boss.bfast[i] && c.boss.bt[i]<previous;previous=c.boss.bt[i];}
         check("rainbow flurry is fast and staggered",fast);
+        while(c.boss.bt[0]<0)c.boss.update(1f/120,L,c.rnd);
         int glyph=c.boss.bglyph[0];c.boss.press(glyph,c.rnd,L);
         check("matching key defends rush projectile",!c.boss.blive[0] && c.boss.hp==hp-1);
-        c.boss.clearBolts();a.phase=RainbowCat.CHASE;a.launchLeft=0;c.boss.update(.01f,L,c.rnd);
+        c.boss.clearBolts();a.escapeSequence=false;a.phase=RainbowCat.CHASE;a.launchLeft=0;c.boss.update(.01f,L,c.rnd);
         check("running cat launches rush stars",c.boss.boltCount()==1 && c.boss.bfast[0]);
         int hits=0;for(int i=0;i<85;i++) {a.launchLeft=99;hits+=c.boss.update(1f/60,L,c.rnd);}
         check("unanswered star costs one heart",hits==1);
         a.touch(c,L,0,7,L.playLeft,a.y);Pause.release(c);check("pause clears pointer",a.pointer==-1);
-        c.boss.leave();check("leaving clears encounter and trails",!a.placed && a.pointer==-1 && a.count==0 && a.trailCount==0);
-        for(boolean full:new boolean[]{false,true}) {
-            c=fight(L);c.boss.rosterFull=full;challenge(c,L);a=c.boss.cat;mask=0;
-            for(int i=0;i<a.count;i++)mask|=1<<a.prompt[i];
-            check("challenge uses each active key once "+full,a.count==Roster.count(full) && Integer.bitCount(mask)==a.count);
-        }
+        c.boss.leave();check("leaving clears encounter and trails",!a.placed && a.pointer==-1 && a.promptKey<0 && a.trailCount==0);
         c=fight(L);a=c.boss.cat;float travelled=0;
         for(int i=0;i<180;i++) {
             oldX=a.x;oldY=a.y;c.boss.update(1f/60,L,c.rnd);
@@ -638,7 +684,7 @@ final class TestRainbowCat extends Check {
         a.taps=1;check("companion counts remaining taps",a.companionHint().equals("ONE MORE TAP!"));
         a.phase=RainbowCat.CIRCLE;check("circle hint explains capture",a.companionHint().equals("CIRCLE THE CAT!"));
         a.phase=RainbowCat.DASH;check("dash hint tracks the trail",a.companionHint().equals("FOLLOW RAINBOW!"));
-        a.phase=RainbowCat.OPEN;check("challenge explains order",a.companionHint().equals("MATCH IN ORDER!"));
+        a.phase=RainbowCat.OPEN;check("challenge explains changing key",a.companionHint().equals("HIT THE KEY!"));
         a.phase=RainbowCat.CHASE;
         TestOnboarding.touch(c,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
         TestOnboarding.touch(c,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));

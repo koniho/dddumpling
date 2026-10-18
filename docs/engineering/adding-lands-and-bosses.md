@@ -139,8 +139,8 @@ that escape finishes.
 Only pointer-down can score a tap. Moves, historical
 samples and held fingers cannot score extra hits; lift/cancel/pause release ownership.
 After two taps, the cat waits centrally for a closed shape traced in either direction.
-Five successful captures use circle, heart, diamond, figure eight and a crossed five-point star,
-in that order. The final star uses five straight crossing strokes, accepts rounded or
+Five health bands use circle, heart, diamond, figure eight and a crossed five-point star,
+in that order. Shape selection derives from sustained damage, not capture count. The final star uses five straight crossing strokes, accepts rounded or
 shortened tips, and highlights the next tip; all five strokes are still required.
 Both face and pastry tap targets have a 15% extra margin.
 The companion rises while a small waving net mimics the drawing on a duplicate path
@@ -150,25 +150,29 @@ and pouch sway together while the companion braces against the moving pole.
 of the circle, retracing, additional fingers and cancelled strokes cannot complete it.
 Its local path matching supports self-intersecting shapes such as five-stroke stars without
 jumping ahead at crossings. All five shapes share the tracker and progress-driven animation;
-timeouts keep the same shape until that capture succeeds.
-The catch animation finishes before opening a timed word containing each active roster
-key once, shuffled into a four- or six-key sequence. Completing the word removes one of
-her five health points and launches a staggered rainbow flurry from the cat, with a
-0.3-second reaction window before the successful-hit volley moves and 0.288 seconds
-between its shots (missed-prompt volleys retain 0.192 seconds). A wrong key
-preserves progress; timeout also releases a flurry. Each volley targets active keys in
-left-to-right or right-to-left order (random per flurry), delaying ordinary shots for 4.4 seconds.
-The fifth damage emits the same flurry during the exit, without player damage after victory. Five completed words win; the enrage warning begins
+timeouts retain the current health band's shape.
+The catch animation opens a timed vulnerability window with one random active-roster key.
+Each correct press immediately removes 0.2 health, flashes the cat and selects a different
+random key. Wrong keys do not damage the cat or reset the timer. Partial damage persists;
+a window cannot cross the next one-health boundary. At that boundary or timer expiry,
+the net bursts while the cat holds angrily in place, then she sweeps across a curved slash
+arc in the same direction as the left-to-right or right-to-left flurry. Queued stars remain
+invisible and untargetable until launched from the moving cat, 0.288 seconds apart.
+Ordinary shots wait 4.4 seconds after the sweep. The final flurry is harmless and the exit
+waits for the net animation. Reaching all five health boundaries wins; the enrage warning begins
 at 45 seconds. Chase projectiles reuse boss bolts with Rush star
 art and fast flight, so matching keys defend them and the existing boss damage/score
 and Time Attack statistics paths remain authoritative. The prompt phase clears airborne
-bolts to give the sequence sole ownership of matching keys. Kids Mode slows wandering,
+bolts to give the changing prompt sole ownership of matching keys. Kids Mode slows wandering,
 spaces launches further apart and extends the prompt timer; projectile flight stays fast.
 The original yarn and cage mechanics are removed. Companion hints, narrated demos,
 bounded players and native input checks teach/exercise the tap-circle-and-match loop.
 
 `RainbowCatArt` traces a frosted pastry body, pointed ears, paws and tail with shaded
 vector shapes. Body and head use separate `Softbody` instances advanced on the game clock.
+Capture rings reuse reduced geometry with two layers per band. Circles use native circle
+strokes; other shapes use `Painter.fastPolyline`, batched `Canvas.drawLines` on Android
+and the existing vector fallback elsewhere. No ring path arrays are allocated per frame.
 The user's Nyan Cat sprite sheet (Pictures/file_00000000a3c081f7894ea924c0332460.png)
 was inspected as an appearance/pose reference; no raster sprites are included or rendered.
 `RainbowLand` supplies scenery, title arches, picker artwork and stage vignettes.

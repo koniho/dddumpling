@@ -18,7 +18,7 @@ final class RainbowCatArt extends Draw {
         shapeRings(q,a);
         escapeBurst(q,a);
         boolean caught=a.phase==RainbowCat.OPEN || (a.phase==RainbowCat.CATCH && a.netAge>=.34f);
-        float struggle=caught?(float)Math.sin(a.clock*18)*a.r*.065f:a.shakeOffset();
+        float struggle=caught?a.struggleX():a.shakeOffset();
         if(a.carries(c))net(q,c,L,false);
         Painter sprite=q;
         if(a.tapFlash>0) {
@@ -31,12 +31,13 @@ final class RainbowCatArt extends Draw {
             }
             sprite=new ColorFadePainter(q,color,.78f*end,1);
         }
+        if(a.keyFlash>0)sprite=new ColorFadePainter(sprite,Glyph.mix(a.hitColor,0xFFFFFFFF,.8f),.90f*a.keyFlash/.22f,1);
         sprite.save();
         // The cat rides inside the same swinging pouch as the mesh, including its spring shapes.
         float pouch=a.pouchSway()*.43f;
         sprite.translate(a.hoopShift()+a.r*1.17f*(float)Math.sin(pouch),
                 a.r*1.17f*((float)Math.cos(pouch)-1));
-        cat(sprite,a.x+a.traceX+struggle,a.y+a.traceY,a.r,a.clock*(caught?1:2),a.turn,a.pastry,a.head,caught,1,caught?0:a.scared,a.angry());
+        cat(sprite,a.x+a.traceX+struggle,a.y+a.traceY+a.struggleY(),a.r,a.clock*(caught?1:2),a.turn,a.pastry,a.head,caught,1,caught?0:a.scared,a.angry());
         sprite.restore();
         if(a.phase==RainbowCat.CIRCLE)circleGuide(q,a);
         if(a.carries(c))net(q,c,L,true);
@@ -45,19 +46,17 @@ final class RainbowCatArt extends Draw {
                     Glyph.withAlpha(COLORS[(a.taps+band)%COLORS.length],(int)(a.flash*170)),a.r*.12f);
         q.restore();
         if(a.phase==RainbowCat.OPEN && !b.beaten) {
-            float s=L.enemyR*.72f,yy=a.y+a.r*3.5f;
-            for(int i=0;i<a.count;i++) {
-                int g=a.prompt[i];float xx=L.w*.5f+(i-(a.count-1)*.5f)*s*2.25f;
-                float done=i<a.at?.25f:1;
-                FastEnemies.body(q,xx,yy,s,Skins.keyColor(p,g),(int)(255*done),false);
-                Kawaii.draw(q,g,xx,yy,s*.70f,Skins.keyColor(p,g),done,0);
-                if(i==a.at)q.strokeCircle(xx,yy,s*1.35f,0xFFFFF1BD,s*.12f);
-            }
+            float s=L.enemyR*1.05f,yy=a.y+a.r*3.5f,xx=L.w*.5f;
+            int g=a.promptKey;float pulse=1+.12f*a.keyFlash/.22f;
+            FastEnemies.glow(q,xx,yy,s*1.1f,Skins.keyColor(p,g),220,1);
+            FastEnemies.body(q,xx,yy,s*pulse,Skins.keyColor(p,g),255,false);
+            Kawaii.draw(q,g,xx,yy,s*.70f*pulse,Skins.keyColor(p,g),1,0);
+            q.strokeCircle(xx,yy,s*1.35f,0xFFFFF1BD,s*.12f);
             float fraction=Math.max(0,a.timer/a.promptTime()),width=L.w*.60f;
             for(int band=0;band<COLORS.length;band++) {
-                float xx=L.w*.5f-width*.5f+width*band/COLORS.length;
+                float bandX=L.w*.5f-width*.5f+width*band/COLORS.length;
                 float fill=Math.max(0,Math.min(1,fraction*COLORS.length-band));
-                if(fill>0)q.line(xx,yy+s*1.8f,xx+width/COLORS.length*fill,yy+s*1.8f,COLORS[band],s*.16f);
+                if(fill>0)q.line(bandX,yy+s*1.8f,bandX+width/COLORS.length*fill,yy+s*1.8f,COLORS[band],s*.16f);
             }
         }
     }
@@ -100,18 +99,29 @@ final class RainbowCatArt extends Draw {
                     Glyph.withAlpha(Glyph.mix(color,0xFFFFFFFF,.7f),(int)(190*fade)),a.r*.055f);
         }
     }
-    private static void shapeRings(Painter p,RainbowCat a) {
+    static void shapeRings(Painter p,RainbowCat a) {
         if(a.shapeBurst<=0 || a.burstShape==null)return;
         float age=1.25f-a.shapeBurst;
         for(int ring=0;ring<6;ring++) {
             float u=(age-ring*.065f)/.92f;if(u<0 || u>=1)continue;
             float radius=a.burstRadius*(.65f+3.3f*(1-(1-u)*(1-u)));
             float fade=(1-u)*(1-u)*Math.min(1,u/.05f);
-            float[] path=points(a.burstShape,a.burstX,a.burstY,radius,radius);
+            if(fade<.015f)continue;
             int color=RainbowLand.CLEAR_COLORS[ring%RainbowLand.CLEAR_COLORS.length];
-            p.polyline(path,Glyph.withAlpha(color,(int)(60*fade)),a.r*.43f);
-            p.polyline(path,Glyph.withAlpha(color,(int)(235*fade)),a.r*.19f);
-            p.polyline(path,Glyph.withAlpha(Glyph.mix(color,0xFFFFFFFF,.65f),(int)(155*fade)),a.r*.055f);
+            int rim=Glyph.withAlpha(color,(int)(235*fade));
+            int light=Glyph.withAlpha(Glyph.mix(color,0xFFFFFFFF,.65f),(int)(155*fade));
+            if(a.burstKind==0) {
+                p.strokeCircle(a.burstX,a.burstY,radius,rim,a.r*.19f);
+                p.strokeCircle(a.burstX,a.burstY,radius,light,a.r*.055f);
+            } else {
+                // Reuse geometry and avoid large dynamically stroked Paths on Android.
+                for(int i=0;i<a.burstWork.length;i+=2) {
+                    a.burstWork[i]=a.burstX+a.burstShape[i*a.burstStep]*radius;
+                    a.burstWork[i+1]=a.burstY+a.burstShape[i*a.burstStep+1]*radius;
+                }
+                p.fastPolyline(a.burstWork,rim,a.r*.19f);
+                p.fastPolyline(a.burstWork,light,a.r*.055f);
+            }
         }
     }
     static int tapColor(RainbowCat a) {

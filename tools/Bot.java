@@ -281,7 +281,7 @@ final class Bot {
                     && (bolt<0 || c.boss.bt[i]>c.boss.bt[bolt]))bolt=i;
             if(budget>=1f && (bolt>=0 || a.phase==RainbowCat.OPEN)) {
                 budget-=1;presses++;think=reaction;
-                int glyph=bolt>=0?c.boss.bglyph[bolt]:a.prompt[a.at];
+                int glyph=bolt>=0?c.boss.bglyph[bolt]:a.promptKey;
                 if(rnd.nextFloat()<missRate)glyph=Roster.randomExcept(c.playRosterFull(),glyph,rnd);
                 c.tapKey(glyph,L);
             } else if(budget>=1f && a.phase==RainbowCat.CIRCLE) {

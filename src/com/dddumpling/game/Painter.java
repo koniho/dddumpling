@@ -35,6 +35,9 @@ interface Painter {
     /** Strokes an open path through the points (x0,y0,x1,y1,...). */
     void polyline(float[] pts, int color, float width);
 
+    /** Connected round segments; hosts may batch these without rebuilding a stroked path. */
+    default void fastPolyline(float[] pts,int color,float width) {polyline(pts,color,width);}
+
     void fillRect(float l, float t, float r, float b, int color);
 
     void line(float x1, float y1, float x2, float y2, int color, float width);

@@ -300,7 +300,7 @@ abstract class Check {
             RainbowCat a=b.cat;
             int bolt=-1;for(int i=0;i<Boss.MAX_BOLTS;i++)if(b.blive[i]){bolt=i;break;}
             if(bolt>=0)c.tapKey(b.bglyph[bolt],L);
-            else if(a.phase==RainbowCat.OPEN)c.tapKey(a.prompt[a.at],L);
+            else if(a.phase==RainbowCat.OPEN)c.tapKey(a.promptKey,L);
             else if(a.phase==RainbowCat.CIRCLE)rainbowCircle(c,L,1);
             else if(a.phase==RainbowCat.CHASE) {a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);}
             return true;
