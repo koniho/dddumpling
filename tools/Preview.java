@@ -16,6 +16,8 @@ final class Preview {
         RainbowCat a=c.boss.cat;
         a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
         c.boss.update(.17f,L,c.rnd);
+        shot(dir,"151-tap-hold",c,L,w,h,ss);
+        for(int i=0;i<40;i++)c.boss.update(1f/60,L,c.rnd);
         shot(dir,"151-dash",c,L,w,h,ss);
         TestRainbowCat.readyToCircle(c,L);
         shot(dir,"151-circle",c,L,w,h,ss);

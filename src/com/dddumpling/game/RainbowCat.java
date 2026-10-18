@@ -123,6 +123,8 @@ final class RainbowCat {
             }
             return 0;
         }
+        // Let the tap reaction read in place, then finish the escape before accepting another tap.
+        if(phase==DASH && taps>0 && !reactionReady())return 0;
         float remaining=phase==CIRCLE?0:dt;
         while(remaining>0) {
             if(routeDuration==0 || routeTime>=routeDuration) {
@@ -218,7 +220,7 @@ final class RainbowCat {
             if(pointer>=0 || py>=L.deckTop || py<L.playTop)return false;
             pointer=id;
             if(canTap() && hit(px,py)) {
-                taps++;flash=1;tapFlash=TAP_FLASH;scared=scaredAge=0;phase=DASH;pastry.squash(.5f);head.squash(.3f);
+                taps++;flash=1;tapFlash=TAP_FLASH;scared=scaredAge=0;phase=DASH;vx=vy=0;pastry.squash(.5f);head.squash(.3f);
                 if(taps==2)routeTo(L.w*.5f,top+(bottom-top)*.32f,DASH_TIME,c.rnd);
                 else chooseRoute(L,c.rnd,true);
                 BossPlay.catTap(c,L);

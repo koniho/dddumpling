@@ -17,7 +17,7 @@ final class TestRainbowCat extends Check {
     }
     static void readyToCircle(GameCore c,Layout L) {
         RainbowCat a=c.boss.cat;a.release();
-        for(int i=0;i<120 && a.phase!=RainbowCat.CIRCLE;i++) {
+        for(int i=0;i<180 && a.phase!=RainbowCat.CIRCLE;i++) {
             if(a.phase==RainbowCat.CHASE) {a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);}
             c.boss.update(1f/60,L,c.rnd);
         }
@@ -95,26 +95,31 @@ final class TestRainbowCat extends Check {
         group("Cat rainbow flash gates repeat taps until scared");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
+        float tappedX=a.x,tappedY=a.y;
         java.util.HashSet<Integer> colors=new java.util.HashSet<Integer>();
         for(int i=0;i<35;i++) {
             colors.add(RainbowCatArt.tapColor(a));
             c.boss.update(1f/60,L,c.rnd);
             a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
         }
+        check("tap reaction stays at impact position",a.x==tappedX && a.y==tappedY && a.routeTime==0 && a.vx==0 && a.vy==0);
         check("flash visits every rainbow color",colors.size()==RainbowLand.CLEAR_COLORS.length);
         check("spam cannot tap through rainbow flash",a.taps==1 && a.tapFlash>0 && !a.canTap() && a.scared==0);
         for(int i=0;i<10;i++)c.boss.update(1f/60,L,c.rnd);
-        check("scared expression appears before next tap is enabled",a.tapFlash==0 && a.scared>=.65f && a.canTap());
+        check("scared reaction launches dash while taps remain locked",a.tapFlash==0 && a.scared>=.65f && a.phase==RainbowCat.DASH && !a.canTap() && a.routeTime>0);
+        a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
+        check("tap during escape cannot score another hit",a.taps==1);
         float shake=0;
         for(int i=0;i<38;i++) {c.boss.update(1f/60,L,c.rnd);shake=Math.max(shake,Math.abs(a.shakeOffset()));}
         check("cat visibly shakes off fright",a.scared>0 && a.scared<1 && shake>a.r*.05f && a.canTap());
         for(int i=0;i<30;i++)c.boss.update(1f/60,L,c.rnd);
+        check("escape reaches another location before reopening taps",a.canTap() && RainbowCat.distance(tappedX,tappedY,a.route[0],a.route[1])>a.r*2);
         check("normal expression returns without relocking taps",a.scared==0 && Math.abs(a.shakeOffset())<.001f && a.canTap());
         a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
         check("second tap restarts color flash",a.taps==2 && a.tapFlash==RainbowCat.TAP_FLASH && a.scared==0);
         for(int i=0;i<24;i++)c.boss.update(1f/60,L,c.rnd);
         check("circle waits for second color cycle",a.phase==RainbowCat.DASH && a.tapFlash>0);
-        for(int i=0;i<24;i++)c.boss.update(1f/60,L,c.rnd);
+        for(int i=0;i<60 && a.phase!=RainbowCat.CIRCLE;i++)c.boss.update(1f/60,L,c.rnd);
         check("scared cat invites circling",a.phase==RainbowCat.CIRCLE && a.scared==1);
         c.boss.leave();check("encounter exit clears tap reaction",a.tapFlash==0 && a.scared==0);
     }
@@ -239,7 +244,7 @@ final class TestRainbowCat extends Check {
         check("tap starts dash without teleport or premature damage",a.phase==RainbowCat.DASH && a.taps==1 && a.x==oldX && a.y==oldY && c.boss.hp==hp);
         a.touch(c,L,5,2,a.x,a.y);a.touch(c,L,2,1,a.x,a.y);
         check("held touch and extra finger cannot earn more taps",a.taps==1 && a.pointer==1);
-        for(int i=0;i<24;i++)c.boss.update(1f/60,L,c.rnd);
+        for(int i=0;i<90 && a.phase==RainbowCat.DASH;i++)c.boss.update(1f/60,L,c.rnd);
         check("dash crosses field with a rainbow trail",RainbowCat.distance(oldX,oldY,a.x,a.y)>L.w*.35f && a.trailCount>0);
         a.touch(c,L,2,1,a.x,a.y);check("holding through dash never auto hits",a.taps==1);
         a.touch(c,L,3,1,a.x,a.y);check("cancel releases pointer",a.pointer==-1);

@@ -133,8 +133,9 @@ its unreachable ID 4. Scenery repeats after stage 30 and the post-boss ramp star
 
 `RainbowCat` owns a single-pointer tap chase. The battle sprite is 50% larger than
 its initial implementation and follows bounded cubic curves; a tap preserves position
-and starts a faster rainbow dash. Each tap flashes through all rainbow colors before
-settling into a scared expression; repeat taps remain locked until that expression appears.
+and starts a faster rainbow dash. Each tap holds the cat in place while flashing through all rainbow colors and
+settling into a scared expression. She then dashes away; repeat taps remain locked until
+that escape finishes.
 Only pointer-down can score a tap. Moves, historical
 samples and held fingers cannot score extra hits; lift/cancel/pause release ownership.
 After two taps, the cat waits centrally for a clockwise or counterclockwise circle.
