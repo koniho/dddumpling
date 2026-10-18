@@ -958,18 +958,14 @@ final class BossScreen extends Draw {
             float width = sn < 0f ? 0.74f - 0.38f * sn + 0.05f * sn * sn
                     : 0.74f + 0.20f * sn;
             float height = sn < 0f ? (Skins.halloween(p)?1.92f:1.45f) : 0.82f;
-            if(Skins.halloween(p) && sn<-.45f)width*=.68f;
+            if(Skins.halloween(p))width=Skins.squidWidth(sn);
             float px = cs * rx * width * elastic;
             float py = sn * ry * height * elastic - ry * 0.11f;
             mantle[i] = cx + px * ca - py * sa;
             mantle[i + 1] = cy + px * sa + py * ca;
         }
-        if(Skins.halloween(p))for(int side=-1;side<=1;side+=2) {
-            float[] fin=HalloweenKeys.shape(cx,cy,rx*side,ry,new float[]{.45f,-.23f,.62f,-1.08f,1.36f,-.38f,1.45f,-.06f,.92f,.12f});
-            p.fillPoly(fin,Glyph.withAlpha(OCTO_SKIN,(int)(210*fade)));
-            p.strokePoly(fin,Glyph.withAlpha(OCTO_GLEAM,(int)(180*fade)),rx*.035f);
-        }
-        p.fillPoly(mantle, Glyph.withAlpha(col, (int) (250 * fade)));
+        if(Skins.halloween(p))Skins.squidHead(p,mantle,cx,cy,ca,sa,col,fade);
+        else p.fillPoly(mantle, Glyph.withAlpha(col, (int) (250 * fade)));
         p.strokePoly(mantle, Glyph.withAlpha(OCTO_INK,
                 (int) (255 * fade)), b.body.radius() * 0.06f);
 

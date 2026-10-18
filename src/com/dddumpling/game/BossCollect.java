@@ -40,11 +40,14 @@ final class BossCollect extends Draw {
                 p.fillCircle(endX, endY - r * 0.035f, r * 0.042f, cream);
             }
             if(Skins.halloween(p) && known) {
-                float[] squid=HalloweenKeys.shape(x,y,r,r,new float[]{-.58f,.1f,-.48f,-.58f,0,-1.22f,.48f,-.58f,.58f,.1f});
-                p.fillPoly(squid,body);p.strokePoly(squid,cream,r*.035f);
-                for(int side=-1;side<=1;side+=2)p.fillPoly(HalloweenKeys.shape(x,y,r*side,r,new float[]{.34f,-.7f,.92f,-.25f,.97f,.03f,.48f,.16f}),body);
-            } else p.fillEllipse(x, y - r * 0.34f, r * 0.61f, r * 0.66f, body);
-            p.fillEllipse(x, y + r * 0.05f, r * 0.46f, r * 0.40f, body);
+                float headY=y-r*.05f;
+                float[] squid=Skins.squidOutline(x,headY,r*.64f,r*.57f);
+                Skins.squidHead(p,squid,x,headY,1,0,Collect.BODY[i],fade);
+                p.strokePoly(squid,cream,r*.035f);
+            } else {
+                p.fillEllipse(x, y - r * 0.34f, r * 0.61f, r * 0.66f, body);
+                p.fillEllipse(x, y + r * 0.05f, r * 0.46f, r * 0.40f, body);
+            }
             faceY -= r * 0.25f;
             faceR = r * 0.45f;
         } else if (boss == Boss.MUSHROOM) {

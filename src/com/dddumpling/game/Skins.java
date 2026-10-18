@@ -44,6 +44,31 @@ final class Skins {
             return (c&0xFF000000)|(mapped&0xFFFFFF);
         }
     }
+    static float squidWidth(float sn) {
+        // One mantle widens into the side fins, then tucks back under the face.
+        return sn<-.15f?.74f+.85f*(1+sn):.80f+.6625f*Math.max(0,1-(sn+.15f)/.60f);
+    }
+    static float[] squidOutline(float x,float y,float rx,float ry) {
+        float[] outline=new float[96];
+        for(int i=0;i<48;i++) {
+            float a=i*Softbody.TAU/48f,sn=(float)Math.sin(a),cs=(float)Math.cos(a);
+            outline[i*2]=x+rx*cs*squidWidth(sn);
+            outline[i*2+1]=y+ry*(sn*(sn<0?1.92f:.82f)-.11f);
+        }
+        return outline;
+    }
+    static void squidHead(Painter p,float[] outline,float x,float y,float ca,float sa,int col,float fade) {
+        p.fillPoly(outline,Glyph.withAlpha(Glyph.mix(col,0xFF324A65,.22f),(int)(250*fade)));
+        // Broad side planes stay inside the same silhouette, with no separate fin outlines.
+        float[] face=outline.clone();
+        for(int i=0;i<face.length;i+=2) {
+            float dx=outline[i]-x,dy=outline[i+1]-y;
+            float localX=(dx*ca+dy*sa)*.72f,localY=-dx*sa+dy*ca;
+            face[i]=x+localX*ca-localY*sa;
+            face[i+1]=y+localX*sa+localY*ca;
+        }
+        p.fillPoly(face,Glyph.withAlpha(Glyph.mix(col,0xFFFFFFFF,.12f),(int)(230*fade)));
+    }
     static void candyWrap(Painter p,float x,float y,float rx,float ry,float clock,float alpha) {
         if(!halloween(p))return;
         for(int side=-1;side<=1;side+=2) {
