@@ -16,7 +16,8 @@ final class FastEnemies {
         if(!eligible(c) || e.link!=null)return;
         // The first pair gets its introduction before the third spawn becomes a runner.
         // Power-up runners use 26% of solo candidates: 35% fewer than the former 40%.
-        boolean chosen=c.powerActive()?e.phase>=6.283f*.74f
+        boolean rainbow=Lands.forStage(c.stage)==Lands.RAINBOW;
+        boolean chosen=c.powerActive()?e.phase>=6.283f*(rainbow?.61f:.74f)
                 :c.stage==FIRST_STAGE?c.spawnedThisStage==2:c.fastEnemyNext;
         if(!chosen)return;
         e.fastSingle=true;
@@ -33,7 +34,7 @@ final class FastEnemies {
         GameCore.Enemy previous=c.enemies.get(c.enemies.size()-1);
         if(previous.link!=null || previous.fastSingle || previous.word.length<2)return normal;
         // Two-thirds of longer solo words yields roughly two runners in five solo arrivals.
-        c.fastEnemyNext=c.stage==FIRST_STAGE?c.spawnedThisStage==2:previous.phase>=6.283f/3f;
+        c.fastEnemyNext=c.stage==FIRST_STAGE?c.spawnedThisStage==2:previous.phase>=6.283f*(Lands.forStage(c.stage)==Lands.RAINBOW?.08f:1f/3f);
         return c.fastEnemyNext?normal*.25f:normal;
     }
 

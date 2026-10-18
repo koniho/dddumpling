@@ -283,6 +283,12 @@ abstract class Check {
     static boolean bossPlay(GameCore c, Layout L) {
         if (!c.bossFighting()) return false;
         Boss b = c.boss;
+        if(b.kind==Boss.RAINBOW_CAT) {
+            RainbowCat a=b.cat;
+            if(a.phase==RainbowCat.CAGED) {a.release();c.tapKey(a.prompt[a.at],L);}
+            else {a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.cageX,a.cageY);}
+            return true;
+        }
         if(b.kind==Boss.ALLIGATOR && b.boltCount()==0 && (!b.open()
                 || (b.alligator.comboActive && !b.alligator.longWindow && (b.alligator.windowHit
                     || b.alligator.attack*b.alligator.tempo>=Alligator.WARN)))) {

@@ -76,7 +76,7 @@ final class TestHighScores extends Check {
         c.startGame();c.highScores.start(58);c.score=123;
         for(int prize:new int[]{0,49,48,58}) c.highScores.prizes.add(prize);
         c.highScores.dumplings=4;c.highScores.finish(c);
-        HighScores loaded=new HighScores();loaded.load(c.highScores.encode().replaceFirst("8:","6:"));
+        HighScores loaded=new HighScores();loaded.load(c.highScores.encode().replaceFirst("10:([0-9]+):([0-9]+):[0-9]+","6:$1:$2"));
         check("retired cave portraits preserve saved runs",loaded.runs.size()==1
                 && loaded.latestRun.character==-1 && loaded.latestRun.score==123);
         check("retired prizes preserve the historical total and remaining haul",loaded.latestRun.dumplings==4
@@ -168,7 +168,7 @@ final class TestHighScores extends Check {
         check("highest stage survives loss of its run from history",HighScoreScreen.titleText(c).endsWith("STAGE 30"));
         HighScores restored=new HighScores();restored.load(c.highScores.encode());
         check("highest stage round trips independently of retained runs",restored.highestStage==30);
-        String old=c.highScores.encode().replaceFirst("8:([0-9]+):[0-9]+","5:$1");
+        String old=c.highScores.encode().replaceFirst("10:([0-9]+):[0-9]+:[0-9]+","5:$1");
         restored.load(old);
         check("older saves recover highest stage from their retained runs",restored.highestStage==5);
     }
@@ -211,14 +211,14 @@ final class TestHighScores extends Check {
             HighScores.Run run=c.highScores.runs.get(0);
             check("boss death blurb follows selected skin "+kind,
                     run.blurb(Skins.HALLOWEEN).startsWith(Skins.bossTitle(Skins.HALLOWEEN,kind)));
-            check("boss death names its form "+kind,run.ending==(kind==Boss.ALLIGATOR?11:kind+1) && run.blurb().equals(HighScores.BLURBS[kind==Boss.ALLIGATOR?11:kind+1]));
+            check("boss death names its form "+kind,run.ending==(kind==Boss.RAINBOW_CAT?12:kind==Boss.ALLIGATOR?11:kind+1) && run.blurb().equals(HighScores.BLURBS[kind==Boss.RAINBOW_CAT?12:kind==Boss.ALLIGATOR?11:kind+1]));
         }
         for(int land=0;land<Lands.COUNT;land++) {
             if(!Lands.playable(land))continue;
             c.startGame();c.stage=Lands.firstStage(land);c.lives=1;c.takeHit(L.w*.5f,L);
-            check("land death keeps cute scenery detail "+land,c.highScores.runs.get(0).ending==land+5);
+            check("land death keeps cute scenery detail "+land,c.highScores.runs.get(0).ending==(land==Lands.RAINBOW?13:land+5));
         }
-        c.startGame();c.stage=30;c.lives=1;c.takeHit(L.w*.5f,L);
+        c.startGame();c.stage=35;c.lives=1;c.takeHit(L.w*.5f,L);
         check("later fifth stages without bosses use land blurb",c.highScores.runs.get(0).ending>=5);
         HighScores saved=new HighScores();saved.load(c.highScores.encode());
         check("death context survives reload",saved.runs.get(0).blurb().equals(c.highScores.runs.get(0).blurb()));

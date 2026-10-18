@@ -221,6 +221,7 @@ public final class IOSGame {
         // The boss.s own elements: taps and drags on the things it puts on the field. Needs MOVE
         // events, so it comes before the down-only filter, and before both the blade and the panic
         // swipe — a finger that landed on a glob is carrying that glob, not slicing or shoving.
+        if (handleRainbowCat(ev, action)) return true;
         if (handleAlligator(ev, action)) return true;
         if (handleBoss(ev, action)) return true;
 
@@ -538,6 +539,15 @@ public final class IOSGame {
      * Elements sit in the upper field, clear of the panic swipe's catchment in the lower half, so the
      * two gestures cannot be confused either.
      */
+    private boolean handleRainbowCat(IOSTouch ev,int action) {
+        RainbowCat a=core.boss.cat;
+        int i=action==IOSTouch.ACTION_MOVE && a.pointer>=0?ev.findPointerIndex(a.pointer):ev.getActionIndex();
+        if(i<0)return false;
+        if(action==IOSTouch.ACTION_MOVE)for(int h=0;h<ev.getHistorySize();h++)
+            a.touch(core,layout,action,ev.getPointerId(i),ev.getHistoricalX(i,h),ev.getHistoricalY(i,h));
+        return a.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));
+    }
+
     private boolean handleAlligator(IOSTouch ev,int action) {
         Alligator a=core.boss.alligator;
         int i=action==IOSTouch.ACTION_MOVE && a.pointer>=0?ev.findPointerIndex(a.pointer):ev.getActionIndex();

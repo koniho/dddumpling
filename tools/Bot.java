@@ -262,6 +262,29 @@ final class Bot {
         if (c.state != GameCore.PLAY) return;
 
         budget = Math.min(BURST, budget + dt * pps);
+        if(c.bossFighting() && c.boss.kind==Boss.RAINBOW_CAT) {
+            RainbowCat a=c.boss.cat;
+            if(a.phase==RainbowCat.CAGED) {
+                a.release();
+                if(budget>=1f && a.timer<(a.kids?9f:RainbowCat.ESCAPE)-reaction) {
+                    budget-=1;presses++;int glyph=a.prompt[a.at];
+                    if(rnd.nextFloat()<missRate)glyph=Roster.randomExcept(c.playRosterFull(),glyph,rnd);
+                    c.tapKey(glyph,L);
+                }
+            } else if(a.held==RainbowCat.CAT) {
+                float dx=a.cageX-a.x,dy=a.cageY-a.y,d=(float)Math.hypot(dx,dy),step=L.w*DRAG_SPEED*dt;
+                a.touch(c,L,d<=step?1:2,151,a.x+dx*Math.min(1,step/Math.max(1,d)),a.y+dy*Math.min(1,step/Math.max(1,d)));
+            } else if(a.held==RainbowCat.YARN) {
+                float yy=Math.max(a.top+a.cageR*2,a.ballY-L.w*DRAG_SPEED*dt);
+                a.touch(c,L,yy<=a.top+a.cageR*2?1:2,151,a.ballX,yy);
+            } else if(budget>=1f) {
+                budget-=1;presses++;
+                if(a.ballY>L.dangerY-L.w*.25f)a.touch(c,L,0,151,a.ballX,a.ballY);
+                else if(a.phase==RainbowCat.RECOVER || a.phase==RainbowCat.WINDUP && a.timer<RainbowCat.WIND-reaction)
+                    a.touch(c,L,0,151,a.x,a.y);
+            }
+            return;
+        }
         if(c.bossFighting() && c.boss.kind==Boss.ALLIGATOR && c.boss.alligator.showoff()) {
             gatorSwipe=false;return;
         }

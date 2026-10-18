@@ -7,6 +7,7 @@
 
 #import "com/dddumpling/game/Sfx.h"
 #import "com/dddumpling/game/Boss.h"
+#import "com/dddumpling/game/Glyph.h"
 #import "com/dddumpling/game/Music.h"
 #import "com/dddumpling/game/VersusMusic.h"
 #import "com/dddumpling/game/CaveSong.h"
@@ -111,7 +112,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)warmBuffers {
   dispatch_async(_renderQueue, ^{
     @autoreleasepool {
-      for (jint i = 0; i < DDSfx_COUNT; ++i) {
+      for (jint i = 0; i < [DDSfx count]; ++i) {
         [self bufferForEffect:i];
       }
       [DDSfx rocket]; [DDSfx bubble];
@@ -352,7 +353,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 // GameCore.Sound -----------------------------------------------------------
 
 - (void)squishWithInt:(jint)glyph withInt:(jint)depth {
-  [self playEffect:DDSfx_SQUISH_0 + MAX(0, MIN(5, glyph))
+  [self playEffect:[DDSfx squishIdWithInt:MAX(0, MIN([DDGlyph count]-1, glyph))]
                rate:powf(.92f, MAX(0, depth - 1)) gain:1.f];
 }
 - (void)clearWord { [self playEffect:DDSfx_CLEAR rate:1 gain:1]; }
@@ -419,7 +420,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)rosterJoin { [self playEffect:DDSfx_ROSTER_JOIN rate:1 gain:1]; }
 - (void)gameOver { [self playEffect:DDSfx_OVER rate:1 gain:1]; }
 - (void)survivalGameOver { [self playEffect:DDSfx_SURVIVAL_OVER rate:1 gain:1]; }
-- (void)bossTauntWithInt:(jint)kind { if (kind >= 0 && kind < DDBoss_COUNT) [self playEffect:DDSfx_BOSS_TAUNT_0 + kind rate:1 gain:.78f]; }
+- (void)bossTauntWithInt:(jint)kind { if (kind >= 0 && kind < [DDBoss count]) [self playEffect:[DDSfx bossTauntIdWithInt:kind] rate:1 gain:.78f]; }
 - (void)gameStart { [self playEffect:DDSfx_START rate:1 gain:.72f]; }
 - (void)stageClear { [self playEffect:DDSfx_STAGE_CLEAR rate:1 gain:1]; }
 - (void)powerClear { [self playEffect:DDSfx_POWER_CLEAR rate:1 gain:1]; }

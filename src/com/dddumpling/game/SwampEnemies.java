@@ -32,12 +32,12 @@ final class SwampEnemies {
     static void assign(GameCore c,GameCore.Enemy e) {
         reset(e);
         if(c.survival.active || c.timeAttack.active || c.boss.active() || Cave.active(c)
-                || Boss.isBossStage(c.stage) || Lands.forStage(c.stage)!=Lands.SWAMP
+                || Boss.isBossStage(c.stage) || (Lands.forStage(c.stage)!=Lands.SWAMP && Lands.forStage(c.stage)!=Lands.RAINBOW)
                 || e.link!=null || e.word.length<2) return;
         // Reuse the uniform spawn phase: adding a variant does not shuffle future words.
         float pick=e.phase/6.283f;
         boolean intro=(c.stage-1)%Boss.EVERY==0;
-        e.swampKind=pick<(intro?.20f:.25f)?FOG:pick<(intro?.35f:.45f)?DIVE:NONE;
+        e.swampKind=Lands.forStage(c.stage)==Lands.RAINBOW?(pick<.36f?DIVE:NONE):pick<(intro?.20f:.25f)?FOG:pick<(intro?.35f:.45f)?DIVE:NONE;
         if(e.swampKind==FOG || e.swampKind==DIVE) {
             // Both variants keep at most three generated keys; only dives strip stacked pips.
             int length=Math.min(3,e.word.length);

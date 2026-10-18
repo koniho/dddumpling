@@ -8,6 +8,41 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void rainbowFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("151-"))return;
+        GameCore c=TestRainbowCat.fight(L);
+        for(int i=0;i<60;i++)c.boss.update(1f/60,L,c.rnd);
+        shot(dir,"151-chase",c,L,w,h,ss);
+        RainbowCat a=c.boss.cat;
+        a.phase=RainbowCat.WINDUP;a.timer=.35f;
+        shot(dir,"151-paw-windup",c,L,w,h,ss);
+        TestRainbowCat.capture(c,L);
+        for(int i=0;i<16;i++)c.boss.update(1f/60,L,c.rnd);
+        shot(dir,"151-caged",c,L,w,h,ss);
+        c.boss.damage(c.boss.hp);
+        c.boss.update(.5f,L,c.rnd);
+        shot(dir,"151-defeat",c,L,w,h,ss);
+        GameCore field=TestFastEnemies.scene(L,26,151);field.clock=3;
+        GameCore.Enemy normal=Check.add(field,L,new int[]{0,1,4},L.h*.34f);normal.enterT=1;
+        GameCore.Enemy rush=TestFastEnemies.runner(field,L,L.h*.53f);rush.baseX=L.w*.25f;
+        GameCore.Enemy dive=Check.add(field,L,new int[]{2,3},L.h*.68f);dive.baseX=L.w*.65f;
+        dive.enterT=1;dive.swampKind=SwampEnemies.DIVE;dive.diving=true;
+        shot(dir,"151-enemy-trails",field,L,w,h,ss);
+        for(GameCore.Enemy e:field.enemies){field.destroyWord(e,field.enemyCentreX(e),e.y,L);e.destroyT=.15f;}
+        field.clock+=.15f;
+        shot(dir,"151-trail-dispersal",field,L,w,h,ss);
+        GameCore title=new GameCore(TestTimeAttack.store(),151,true);
+        title.collected=Collect.MASK;title.landSuppressed=0;title.landChoice=Lands.RAINBOW;
+        title.landDiscovery=-1;title.clock=3;title.landSeen=LandPicker.stateMask();
+        shot(dir,"151-title",title,L,w,h,ss);
+        RasterPainter sheet=new RasterPainter(w,h,ss);sheet.clear(Draw.BG);
+        sheet.text("RAINBOW CAT",w*.5f,h*.07f,w*.06f,Draw.INK,Painter.CENTER,true);
+        for(int row=0;row<4;row++) {
+            float x=w*.5f,y=h*(.22f+row*.20f),r=w*.16f;
+            RainbowCatArt.cat(sheet,x,y,r,row*.52f,row%2==0?1:-1,null,null,row==2,1);
+        }
+        Png.write(new File(dir,"151-cat-sheet.png"),sheet.resolve(),w,h);
+    }
     private static void skinFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("200-"))return;
         for(int boss=0;boss<Boss.COUNT;boss++) {
@@ -1669,6 +1704,7 @@ final class Preview {
         slimeSprayFrames(dir,L,w,h,ss);
         slimeDeathFrames(dir,L,w,h,ss);
         slimeOpeningFrames(dir,L,w,h,ss);
+        rainbowFrames(dir,L,w,h,ss);
         skinFrames(dir,L,w,h,ss);
         clearSpreadFrames(dir,L,w,h,ss);
         clearIntensityFrames(dir,L,w,h,ss);
@@ -2837,7 +2873,7 @@ final class Preview {
         for (int k = 0; k < Boss.COUNT; k++) {
             if(k==Boss.ALLIGATOR) {
                 GameCore gator=TestAlligator.fight(L);gator.stageBanner=0;
-                TestAlligator.ready(gator,L);shot(dir,tag[k],gator,L,w,h,ss);continue;
+                TestAlligator.ready(gator,L);shot(dir,k<tag.length?tag[k]:"boss-"+WorldCatalog.BOSSES[k].analytics,gator,L,w,h,ss);continue;
             }
             GameCore c = toBoss(L, k, 510L + k, true);
             // Land a couple of hits so the health bar is part-spent and the body is dented, and so
@@ -2859,7 +2895,7 @@ final class Preview {
             step(c, L, 0.10f);
             System.out.printf("boss %s: hp %.0f/%.0f, open=%s, elements=%d%n", c.boss.name(c.preferences.skin),
                     c.boss.hp, c.boss.hpMax, c.boss.open(), liveElems(c.boss));
-            shot(dir, tag[k], c, L, w, h, ss);
+            shot(dir, k<tag.length?tag[k]:"boss-"+WorldCatalog.BOSSES[k].analytics, c, L, w, h, ss);
 
             // The slime gets three more: a split still sitting inside it, the skin stretched out
             // after a drag, and the rebound the moment the glob comes free.

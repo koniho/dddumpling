@@ -25,7 +25,9 @@ final class Sfx {
     static final int DIVIDE_BOING_HEAVY = 27, DIVIDE_BOING_MEDIUM = 28,
             DIVIDE_BOING_LIGHT = 29, ROSTER_JOIN = 30, DIVIDE_DEACTIVATE = 31,
             SHIELD_BOUNCE = 32, SLIME_DAMAGE = 33, OCTO_CUE = 34, OCTO_LOCK = 35;
-    static final int BOSS_TAUNT_0 = 36, BOLT_DEATH = BOSS_TAUNT_0 + Boss.COUNT,
+    // Preserve existing sound IDs; future boss voices append after the fixed bank.
+    static final int LEGACY_BOSS_VOICES=5;
+    static final int BOSS_TAUNT_0 = 36, BOLT_DEATH = BOSS_TAUNT_0 + LEGACY_BOSS_VOICES,
             MUSHROOM_SHAKE = BOLT_DEATH + 1, MUSHROOM_SPORE = MUSHROOM_SHAKE + 1,
             LINKED_THUD = MUSHROOM_SPORE + 1, SHUFFLE_BLIP = LINKED_THUD + 1, DEBUFF_DOWN = SHUFFLE_BLIP + 1,
             SLIME_COVER = DEBUFF_DOWN + 1, SLIME_RELEASE = SLIME_COVER + 1,
@@ -37,7 +39,13 @@ final class Sfx {
             NINJA_COMBO = NINJA_SWISH_2 + 1, SURVIVAL_OVER = NINJA_COMBO + 1,
             GATOR_PARRY = SURVIVAL_OVER + 1, GATOR_PROMPT_0 = GATOR_PARRY + 1,
             GATOR_PROMPT_1 = GATOR_PROMPT_0 + 1, GATOR_PROMPT_2 = GATOR_PROMPT_1 + 1,
-            GATOR_SPLASH = GATOR_PROMPT_2 + 1, GATOR_TAUNT_0 = GATOR_SPLASH + 1, SLIME_SQUISH_0 = GATOR_TAUNT_0 + 6, SLIME_VULNERABLE = SLIME_SQUISH_0 + 6, SLIME_DRAG_BOIP = SLIME_VULNERABLE + 1, COUNT = SLIME_DRAG_BOIP + 1;
+            GATOR_SPLASH = GATOR_PROMPT_2 + 1, GATOR_TAUNT_0 = GATOR_SPLASH + 1, SLIME_SQUISH_0 = GATOR_TAUNT_0 + 6, SLIME_VULNERABLE = SLIME_SQUISH_0 + 6, SLIME_DRAG_BOIP = SLIME_VULNERABLE + 1, EXTRA_BOSS_VOICES = SLIME_DRAG_BOIP + 1;
+    static final int LEGACY_KEYS=6;
+    static final int EXTRA_KEYS=EXTRA_BOSS_VOICES+Math.max(0,Boss.COUNT-LEGACY_BOSS_VOICES);
+    static final int COUNT=EXTRA_KEYS+Math.max(0,Glyph.COUNT-LEGACY_KEYS);
+    static int squishId(int glyph) {return glyph<LEGACY_KEYS?SQUISH_0+glyph:EXTRA_KEYS+glyph-LEGACY_KEYS;}
+    static int count() {return COUNT;}
+    static int bossTauntId(int boss) {return boss<LEGACY_BOSS_VOICES?BOSS_TAUNT_0+boss:EXTRA_BOSS_VOICES+boss-LEGACY_BOSS_VOICES;}
     static final float GATOR_ENTRY_RATE=.70f, GATOR_PROMPT_GAIN=.42f, GATOR_SPLASH_GAIN=.60f;
     static final float GATOR_TAUNT_GAIN=.55f;
     static final float SLIME_SQUISH_GAIN=.9f, SLIME_VULNERABLE_GAIN=.45f, SLIME_DRAG_BOIP_GAIN=.60f;
@@ -88,8 +96,10 @@ final class Sfx {
         if(id==SLIME_DRAG_BOIP)return slimeDragBoip();
         if(id>=SLIME_SQUISH_0 && id<SLIME_SQUISH_0+6)return SlimeSquishRecording.build(id-SLIME_SQUISH_0);
         if(id>=GATOR_TAUNT_0 && id<GATOR_TAUNT_0+6)return GatorTauntRecording.build(id-GATOR_TAUNT_0);
-        if (id >= SQUISH_0 && id < SQUISH_0 + Glyph.COUNT) return squish(id - SQUISH_0);
-        if (id >= BOSS_TAUNT_0 && id < BOSS_TAUNT_0 + Boss.COUNT)
+        if (id >= SQUISH_0 && id < SQUISH_0 + Math.min(LEGACY_KEYS,Glyph.COUNT)) return squish(id - SQUISH_0);
+        if(id>=EXTRA_KEYS && id<COUNT)return squish(id-EXTRA_KEYS+LEGACY_KEYS);
+        if(id>=EXTRA_BOSS_VOICES && id<EXTRA_KEYS)return bossTaunt(id-EXTRA_BOSS_VOICES+LEGACY_BOSS_VOICES);
+        if (id >= BOSS_TAUNT_0 && id < BOSS_TAUNT_0 + Math.min(LEGACY_BOSS_VOICES,Boss.COUNT))
             return bossTaunt(id - BOSS_TAUNT_0);
         if(id==CAVE_RUMBLE)return RockRecording.rumble();
         if(id==CAVE_CRASH)return RockRecording.crash();
@@ -414,21 +424,14 @@ final class Sfx {
         return arp(1.55f, OVER_NOTES, 0.16f, 2.4f, 0.07f, 0.14f);
     }
 
-    /** Four short victory voices, one for each active boss. */
+    /** Short victory voices from the boss catalog. */
     static short[] bossTaunt(int kind) {
-        float[] base = {330f, 275f, 150f, 205f, 180f};
-        float[][] shape = {
-                {1f, 1.26f, 0.92f, 1.38f},       // slime: bubbly cackle
-                {1f, 0.71f, 1.41f, 0.59f},       // divide: split, opposed pitches
-                {1f, 1.06f, 0.89f, 1.12f},       // octopus: close writhing warble
-                {1f, 0.76f, 1.34f, 0.63f},       // mushroom: hollow spore cough
-                {1f, 1.33f, 1.12f, .84f}         // alligator: sleepy marsh chuckle
-        };
         kind = Math.max(0, Math.min(Boss.COUNT - 1, kind));
+        WorldCatalog.BossEntry voice=WorldCatalog.BOSSES[kind];
         int n = (int) (RATE * 0.82f);
         float[] v = new float[n];
         int seed = 0x7a17 + kind * 7919;
-        for (int k = 0; k < shape[kind].length; k++) {
+        for (int k = 0; k < voice.voice.length; k++) {
             int at = (int) (RATE * (0.035f + k * (0.14f)));
             int len = (int) (RATE * (0.22f));
             float phase = 0f;
@@ -436,7 +439,7 @@ final class Sfx {
                 float u = j / (float) len;
                 float wobble = kind == Boss.OCTOPUS ? 1f + 0.08f * (float) Math.sin(u * 8f * Math.PI)
                         : kind == Boss.SLIME ? 1f + 0.12f * u : 1f - 0.04f * u;
-                phase += TAU * base[kind] * shape[kind][k] * wobble / RATE;
+                phase += TAU * voice.taunt * voice.voice[k] * wobble / RATE;
                 seed = seed * 1103515245 + 12345;
                 float noise = ((seed >>> 16) & 0x7fff) / 16383.5f - 1f;
                 float tone = (float) Math.sin(phase)

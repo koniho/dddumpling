@@ -88,6 +88,7 @@ final class BossPlay {
         // A bolt in the air outranks everything, engaged word included: it is the only thing here
         // that costs a life.
         if (c.boss.boltWants(g)) return true;
+        if(c.boss.kind==Boss.RAINBOW_CAT)return true;
 
         // A shielded Slime rejects every press, including one made during a word. While open it
         // only owns genuinely stray presses, so starting a valid enemy word still works.

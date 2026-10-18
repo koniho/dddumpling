@@ -46,7 +46,12 @@ fi
 # compile while the APK builds fine.
 python3 tools/release-notes.py check >/dev/null
 
-PURE="src/com/dddumpling/game/ArtStamp.java
+PURE="src/com/dddumpling/game/TimeAttackRecords.java
+src/com/dddumpling/game/WorldCatalog.java
+src/com/dddumpling/game/RainbowCat.java
+src/com/dddumpling/game/RainbowCatArt.java
+src/com/dddumpling/game/RainbowLand.java
+src/com/dddumpling/game/ArtStamp.java
 src/com/dddumpling/game/SlimeSpray.java
 src/com/dddumpling/game/SlimeDeath.java
 src/com/dddumpling/game/FastEnemies.java

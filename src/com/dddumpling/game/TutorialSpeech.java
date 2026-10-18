@@ -6,7 +6,7 @@ final class TutorialSpeech extends Draw {
             DIG=7, CART=8, CLOSED=9, CHAIN=10, GLOB=11, DANGER=12, RETRY=13,
             STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21,
             POWER_FLURRY=22, POWER_NINJA=23, POWER_TEAM=24, POWER_PICKUP=25,
-            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28, COMPANION=29, LANDS=30, ALLIGATOR=31;
+            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28, COMPANION=29, LANDS=30, ALLIGATOR=31, CAT_YARN=32, CAT_CATCH=33, CAT_CAGE=34;
     private static final int PAPER=0x4DFFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
@@ -39,10 +39,16 @@ final class TutorialSpeech extends Draw {
         {"TAP YOUR DUMPLING!", "DISCOVER ITS STORY!"},
         {"YOUR FIRST FRIEND!", "LET'S PLAY TOGETHER!"},
         {"NEW LANDS!", "SWIPE TO CHOOSE!"},
-        {"PARRY, THEN TAP!", "WATCH HIS EYES!"}
+        {"PARRY, THEN TAP!", "WATCH HIS EYES!"},
+        {"SAVE YOUR KEYS!", "DRAG THE YARN AWAY!"},
+        {"CATCH THAT CAT!", "DRAG HIM TO THE CAGE!"},
+        {"TAP THE MATCHING KEYS!", "BEFORE HE ESCAPES!"}
     };
     static String spoken(int message) { return spoken(message,Skins.DEFAULT); }
     static String spoken(int message,int skin) {
+        if(message==CAT_YARN)return "Drag the yarn away from your keys. Rainbow Cat will try to bat it back!";
+        if(message==CAT_CATCH)return "Catch Rainbow Cat while he swings his paw. Drag him into the cage!";
+        if(message==CAT_CAGE)return "Lift your finger, then tap the matching keys before Rainbow Cat escapes. The yarn rests while he is in the cage.";
         if(message==ALLIGATOR)return "Swipe to parry, then tap while "+Skins.bossTitle(skin,Boss.ALLIGATOR)+" is dizzy. Watch his eyes narrow, then stop before his guard returns! Four parry-and-hit rounds make him dizzy for longer. Taking damage resets your streak.";
         if(message==LANDS)return "New lands! Swipe to choose where your next run starts.";
         if(message==COMPANION)return "I'm your first squishy! I'll stay by your keys. I'll show you how to play as we go. Let's find more friends!";
@@ -99,8 +105,8 @@ final class TutorialSpeech extends Draw {
         return lines.toArray(new String[0]);
     }
     private static String[][][] makePages(int skin) {
-        String[][][] all=new String[ALLIGATOR+1][][];
-        for(int message=MATCH;message<=ALLIGATOR;message++) {
+        String[][][] all=new String[CAT_CAGE+1][][];
+        for(int message=MATCH;message<=CAT_CAGE;message++) {
             java.util.ArrayList<String[]> pages=new java.util.ArrayList<>();String pending="";
             // Page boundaries are sentence boundaries; copy must fit without splitting a sentence.
             for(String sentence:spoken(message,skin).split("(?<=[.!?]) +")) {

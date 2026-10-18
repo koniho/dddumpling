@@ -14,7 +14,8 @@ final class Progress {
         void changed();
     }
     // Persisted event IDs stay stable when a boss's display name changes.
-    static final String[] BOSSES = {"slime", "dark_divide", "octopulse", "fly_agaric", "mossy_maw"};
+    static final String[] BOSSES = new String[Boss.COUNT];
+    static {for(int i=0;i<BOSSES.length;i++)BOSSES[i]=WorldCatalog.BOSSES[i].analytics;}
     private final Store store;
     private final String replica;
     private final boolean enabled;

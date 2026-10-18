@@ -923,7 +923,7 @@ final class TestVisuals extends Check {
             int first = Lands.firstStage(land), bossStage = first + Boss.EVERY - 1;
             for (int stage = first; stage <= bossStage; stage++)
                 check("land stays consistent through stage " + stage, Lands.forStage(stage) == land);
-            check("land previews its upcoming boss " + land, Boss.kindFor(bossStage) == (land==Lands.SWAMP?Boss.ALLIGATOR:land<Cave.LAND?land:-1));
+            check("land previews its upcoming boss " + land, Boss.kindFor(bossStage) == (land==Lands.RAINBOW?Boss.RAINBOW_CAT:land==Lands.SWAMP?Boss.ALLIGATOR:land<Cave.LAND?land:-1));
             check("each land has three skits " + land,
                     Lands.skitFor(first) != Lands.skitFor(first + 1)
                     && Lands.skitFor(first + 1) != Lands.skitFor(first + 2)

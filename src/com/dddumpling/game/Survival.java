@@ -4,9 +4,11 @@ package com.dddumpling.game;
 final class Survival extends Draw {
     static final float RAMP_SECONDS=300f, RESCUE_SECONDS=30f;
     static final float ENTRANCE_SECONDS=2f;
-    final long[] bestTime=new long[3];
-    final int[] bestScore=new int[3];
-    final HighScores[] histories={new HighScores(true),new HighScores(true),new HighScores(true)};
+    static final int STARTER_PROFILE=0,FULL_PROFILE=1,KIDS_PROFILE=2,PROFILE_COUNT=KIDS_PROFILE+1;
+    final long[] bestTime=new long[PROFILE_COUNT];
+    final int[] bestScore=new int[PROFILE_COUNT];
+    final HighScores[] histories=new HighScores[PROFILE_COUNT];
+    Survival() {for(int i=0;i<histories.length;i++)histories[i]=new HighScores(true);}
     final java.util.Random blurbs=new java.util.Random(149);
     final DuckReward reward=new DuckReward();
     int ending;
@@ -20,8 +22,8 @@ final class Survival extends Draw {
     private final float[] bandX=new float[202];
     private final int[] bandOrder=new int[202];
 
-    static int profile(boolean kids,boolean full) { return kids?2:full?1:0; }
-    static String profileName(int profile) { return profile==2?"KIDS":profile==1?"6 KEYS":"4 KEYS"; }
+    static int profile(boolean kids,boolean full) { return kids?KIDS_PROFILE:full?FULL_PROFILE:STARTER_PROFILE; }
+    static String profileName(int profile) { return profile==KIDS_PROFILE?"KIDS":Roster.count(profile==FULL_PROFILE)+" KEYS"; }
     int titleProfile(GameCore c) { return profile(c.preferences.kids,c.fullRoster); }
     HighScores history() {return histories[profile];}
     HighScores titleHistory(GameCore c) {return histories[titleProfile(c)];}
@@ -228,8 +230,8 @@ final class Survival extends Draw {
         for(HighScores history:histories)history.clear();
     }
     String encode() {
-        StringBuilder s=new StringBuilder("2");
-        for(int i=0;i<3;i++)s.append(';').append(bestTime[i]).append(',').append(bestScore[i]);
+        StringBuilder s=new StringBuilder("3;").append(PROFILE_COUNT);
+        for(int i=0;i<PROFILE_COUNT;i++)s.append(';').append(bestTime[i]).append(',').append(bestScore[i]);
         for(HighScores history:histories)s.append('|').append(history.encode());
         return s.toString();
     }
@@ -238,21 +240,24 @@ final class Survival extends Draw {
         try {
             String[] parts=saved.split("\\|",-1);
             String[] rows=parts[0].split(";",-1);
-            if(rows.length!=4 || !(rows[0].equals("1") && parts.length==1
-                    || rows[0].equals("2") && parts.length==4))return;
-            long[] times=new long[3];int[] scores=new int[3];
-            for(int i=0;i<3;i++) {
-                String[] fields=rows[i+1].split(",",-1);if(fields.length!=2)return;
+            boolean sized=rows[0].equals("3"),history=!rows[0].equals("1");
+            int profiles=sized?Integer.parseInt(rows[1]):3,start=sized?2:1;
+            if(!sized && !rows[0].equals("1") && !rows[0].equals("2"))return;
+            if(profiles<1 || profiles>PROFILE_COUNT || rows.length!=start+profiles
+                    || parts.length!=(history?1+profiles:1))return;
+            long[] times=new long[PROFILE_COUNT];int[] scores=new int[PROFILE_COUNT];
+            for(int i=0;i<profiles;i++) {
+                String[] fields=rows[i+start].split(",",-1);if(fields.length!=2)return;
                 times[i]=Long.parseLong(fields[0]);scores[i]=Integer.parseInt(fields[1]);
                 if(times[i]<0 || scores[i]<0)return;
             }
-            System.arraycopy(times,0,bestTime,0,3);System.arraycopy(scores,0,bestScore,0,3);
-            if(parts.length==4)for(int i=0;i<3;i++) {
+            System.arraycopy(times,0,bestTime,0,times.length);System.arraycopy(scores,0,bestScore,0,scores.length);
+            if(history)for(int i=0;i<profiles;i++) {
                 histories[i].load(parts[i+1]);
                 for(HighScores.Run run:histories[i].runs)if(run.profile!=i) {histories[i].clear();break;}
                 if(histories[i].latestRun!=null && histories[i].latestRun.profile!=i)histories[i].clear();
             }
-        } catch(NumberFormatException ignored) {clearRecords();}
+        } catch(NumberFormatException | IndexOutOfBoundsException ignored) {clearRecords();}
     }
     void result(Painter p,GameCore c,Layout L,float fade) {
         float s=L.unit,cx=L.w*.5f,scale=HighScoreScreen.SUMMARY_TEXT_SCALE;

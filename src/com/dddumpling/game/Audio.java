@@ -265,7 +265,7 @@ final class Audio implements GameCore.Sound {
 
     @Override public void squish(int glyph, int depth) {
         // Deeper remaining stacks sound lower and rounder, so a stack audibly counts down.
-        play(Sfx.SQUISH_0 + glyph, (float) Math.pow(0.92, Math.max(0, depth - 1)));
+        play(Sfx.squishId(glyph), (float) Math.pow(0.92, Math.max(0, depth - 1)));
     }
 
     @Override public void ninjaCombo() { play(Sfx.NINJA_COMBO,1f,Sfx.NINJA_COMBO_GAIN); }
@@ -408,7 +408,7 @@ final class Audio implements GameCore.Sound {
     }
 
     @Override public void bossTaunt(int kind) {
-        if (kind >= 0 && kind < Boss.COUNT) play(Sfx.BOSS_TAUNT_0 + kind, 1f, 0.78f);
+        if (kind >= 0 && kind < Boss.COUNT) play(Sfx.bossTauntId(kind), 1f, 0.78f);
     }
 
     @Override public void bossDamage() {

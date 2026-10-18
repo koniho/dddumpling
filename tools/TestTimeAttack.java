@@ -494,7 +494,7 @@ final class TestTimeAttack extends Check {
                     again.histories[0][0].latest!=null && again.histories[0][0].latest.firstBossHit==-2 && again.best[0][0]==6000);
         }
         for(boolean gatorLayout:new boolean[]{false,true}) {
-            int width=gatorLayout?TimeAttack.CHOICES:5;
+            int width=gatorLayout?6:5;
             StringBuilder data=new StringBuilder("4");
             for(int i=0;i<3*width;i++)data.append(';').append(i==0?6000:0);
             String row="1;1,6000,0,1,1,3,1,2,1,2000";
@@ -509,7 +509,7 @@ final class TestTimeAttack extends Check {
                     && r.firstBossHit==(gatorLayout?-2:1000) && r.firstDamage==2000 && r.damage==1
                     && migrated.classicBest[0]==(gatorLayout?42000:0));
             TimeAttack again=new TimeAttack();again.load(migrated.encode());
-            check("merged v5 save retains migrated records "+gatorLayout,migrated.encode().startsWith("5;")
+            check("current save retains migrated records "+gatorLayout,migrated.encode().startsWith("7;")
                     && again.encode().equals(migrated.encode()) && again.best[0][0]==6000);
         }
     }

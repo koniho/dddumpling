@@ -16,6 +16,7 @@ final class BossCollect extends Draw {
     }
     static void draw(Painter p,int boss,float x,float y,float r,float clock,boolean known,float fade,
             int mood,float look,boolean ninja) {
+        if(boss==Boss.RAINBOW_CAT) {RainbowCatArt.portrait(p,x,y,r,clock,known,fade);return;}
         if(boss==Boss.ALLIGATOR) {GatorCompanion.draw(p,x,y,r,clock,known,fade,mood,look,ninja);return;}
         if(known) {
             if(boss==Boss.SLIME)p=Skins.ghost(p);

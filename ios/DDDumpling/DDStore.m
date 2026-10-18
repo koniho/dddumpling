@@ -286,10 +286,10 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 - (void)saveCollectedWithLong:(jlong)owned { [self setValue:@(owned) forKey:@"collected"]; }
 
 - (IOSIntArray *)loadCollectionCounts {
-  IOSIntArray *out = [IOSIntArray arrayWithLength:DDCollect_COUNT];
+  IOSIntArray *out = [IOSIntArray arrayWithLength:[DDCollect count]];
   [_lock lock];
   NSArray *saved = [_values[@"collectionCounts"] isKindOfClass:NSArray.class] ? _values[@"collectionCounts"] : nil;
-  for (NSUInteger i = 0; i < MIN(saved.count, (NSUInteger)DDCollect_COUNT); ++i) {
+  for (NSUInteger i = 0; i < MIN(saved.count, (NSUInteger)[DDCollect count]); ++i) {
     id item = saved[i];
     if ([item isKindOfClass:NSNumber.class]) out->buffer_[i] = MAX(0, [(NSNumber *)item intValue]);
   }

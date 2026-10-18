@@ -5,7 +5,7 @@ import java.util.Random;
 final class Boss {
 
     /** Stages between bosses. Stage 5, 10, 15... */
-    static final int EVERY = 5;
+    static final int EVERY = WorldCatalog.STAGES_PER_CHAPTER;
 
     /**
      * A soft-body slime. Keys whittle its chain down, and every hit sheds a glob that is worth
@@ -21,11 +21,13 @@ final class Boss {
     static final int OCTOPUS = 2;
     static final int MUSHROOM = 3;
     static final int ALLIGATOR = 4;
-    static final int COUNT = 5;
+    static final int RAINBOW_CAT = 5;
+    static final int COUNT = WorldCatalog.BOSSES.length;
+    final RainbowCat cat = new RainbowCat();
     final Alligator alligator = new Alligator();
 
     /** One line each, in the mode bar. Held to the width of the longest frenzy blurb. */
-    static final String[] BLURB = {"HIT THE MARK, DRAG GLOBS", "HIT THE MARK, THEN PINCH OUT", "BEAT THE REACH", "DRAG BACK AND FORTH", "PARRY, TAP, THEN STOP"};
+    static final String[] BLURB = new String[COUNT];
     /**
      * Which of the six characters each boss is a giant version of.
      *
@@ -33,7 +35,7 @@ final class Boss {
      * is plainly an enormous one of the things you have been typing all game is funnier, and it
      * arrives already legible.
      */
-    static final int[] FACE = {Kawaii.SQUISHY, Kawaii.SQUISHY, Kawaii.BLOB, Kawaii.DUMPLING, Kawaii.SQUISHY};
+    static final int[] FACE = new int[COUNT];
 
     /** How long the arrival card holds the field before the fight starts. */
     static final float INTRO = 1.6f;
@@ -55,10 +57,10 @@ final class Boss {
     static final float ENRAGE_AT = 26f;
     static final float ENRAGE_RAMP = 8f;
 
-    private static final float[] CYCLE = {5.0f, 1f, 1f, 1f, 1f};
-    private static final float[] SHOW = {4.0f, 1f, 1f, 1f, 1f};
+    private static final float[] CYCLE = new float[COUNT];
+    private static final float[] SHOW = new float[COUNT];
 
-    private static final float[] HP = {4f, 8f, 8f, 3f, 72f};
+    private static final float[] HP = new float[COUNT];
     /**
      * Extra health per later visit, capped by {@link #TOUGH_MAX}. A boss met at stage 30 should be
      * more than the same boss at stage 5 — but the cap matters far more than the slope now that
@@ -256,16 +258,15 @@ final class Boss {
     boolean octoPlaced, octoWave, octoCue, octoLock, octoImpact, octoPlayerHit, octoLashLanded;
     boolean octoWrongLash, octoDragStarted, octoDragCanDamage;
 
-    static int lastStage() {return Lands.firstStage(Lands.SWAMP)+EVERY-1;}
+    static int count() {return COUNT;}
+
+    static int lastStage() {return WorldCatalog.bossStage(COUNT-1);}
 
     /** Stage 5 teaches boss play; stage 10 adds the first two-finger fight. */
     static int kindFor(int stage) {
-        if (stage == EVERY) return SLIME;
-        if (stage == EVERY * 2) return SPLITTER;
-        if (stage == EVERY * 3) return OCTOPUS;
-        if (stage == EVERY * 4) return MUSHROOM;
-        if (stage == lastStage()) return ALLIGATOR;
-        return -1;
+        if(stage<EVERY || stage%EVERY!=0)return -1;
+        int boss=stage/EVERY-1;
+        return boss<COUNT?boss:-1;
     }
 
     static boolean isBossStage(int stage) {
@@ -348,9 +349,10 @@ final class Boss {
     void begin(int which, int stage, Random rnd, boolean fullRoster) {
         rosterFull = fullRoster;
         alligator.reset();
+        cat.reset();
         kind = which;
         int visit = Math.max(0, Math.min(TOUGH_MAX, stage / EVERY - 1));
-        hpMax = HP[which] + (which == OCTOPUS || which == ALLIGATOR ? 0f : TOUGH * visit);
+        hpMax = HP[which] + (which == OCTOPUS || which == ALLIGATOR || which == RAINBOW_CAT ? 0f : TOUGH * visit);
         hp = hpMax;
         age = 0f;
         intro = introDuration();
@@ -409,7 +411,7 @@ final class Boss {
         if (which != SPLITTER) { randomGlyph(rnd); randomGlyph(rnd); }
         followX = followY = 0f;
         clearBolts();
-        // Seeded off the kind, so the six bosses do not all breathe on the same phase. Placed on
+        // Seeded off the kind, so the bosses do not all breathe on the same phase. Placed on
         // the first update, which is the first time there is a Layout to place it in.
         body = new Softbody(Softbody.NODES, which + 1);
         mushroomStem = which == MUSHROOM ? new Softbody(Softbody.NODES, 91) : null;
@@ -439,6 +441,7 @@ final class Boss {
      */
     void leave() {
         alligator.reset();
+        cat.reset();
         kind = -1;
         hp = hpMax = 0f;
         age = intro = leaveT = 0f;
@@ -525,7 +528,7 @@ final class Boss {
      * which is what keeps the header column above it — see {@link #BODY_DROP} — a single derivation
      * instead of one per boss.
      */
-    private static final float[] WIDE = {2f, 1.65f, 1.35f, 1.45f, 2.7f};
+    private static final float[] WIDE = new float[COUNT];
 
     /**
      * How springy each boss is; see {@link Softbody#jiggle}.
@@ -535,7 +538,15 @@ final class Boss {
      * because its own mechanic no longer hits it every second — five presses work a glob loose and
      * only the drag scores, so the body has time to actually finish a wobble.
      */
-    private static final float[] JIGGLE = {2f, 1.7f, 2.2f, 1.9f, 1.6f};
+    private static final float[] JIGGLE = new float[COUNT];
+
+    static {
+        for(int i=0;i<COUNT;i++) {
+            WorldCatalog.BossEntry b=WorldCatalog.BOSSES[i];
+            BLURB[i]=b.blurb;FACE[i]=b.face;CYCLE[i]=b.cycle;SHOW[i]=b.show;HP[i]=b.hp;
+            WIDE[i]=b.wide;JIGGLE[i]=b.jiggle;
+        }
+    }
 
     /** Rest width over rest height for this boss. */
     float wide() {
@@ -570,7 +581,7 @@ final class Boss {
 
     /** Body centre x, drag follow included. What everything reads. */
     float bodyX(Layout L) {
-        return kind==ALLIGATOR?L.w*.5f:baseX(L) + followX;
+        return kind==RAINBOW_CAT?cat.x:kind==ALLIGATOR?L.w*.5f:baseX(L) + followX;
     }
 
     /**
@@ -587,6 +598,7 @@ final class Boss {
     private static final float BODY_DROP = 6.5f;
 
     float bodyY(Layout L) {
+        if(kind==RAINBOW_CAT)return cat.y;
         if(kind==ALLIGATOR)return L.playTop+L.unit*6.5f+bodyR(L)*.9f;
         if (beaten) return defeatY(L);
         return baseY(L) + followY;
@@ -722,6 +734,7 @@ final class Boss {
     boolean open() {
         if (!fighting()) return false;
         if (slimeOpening()) return age >= SLIME_OPENING_RELEASE;
+        if (kind == RAINBOW_CAT) return cat.phase == RainbowCat.CAGED;
         if (kind == ALLIGATOR) return alligator.daze > 0;
         if (kind == SLIME && (!slimeCoverLearned || slimeRetaliating)) return true;
         if (kind == SPLITTER) return true;
@@ -810,6 +823,7 @@ final class Boss {
 
     private boolean asksFor(int g) {
         switch (kind) {
+            case RAINBOW_CAT: return cat.phase==RainbowCat.CAGED && cat.count>0 && cat.prompt[cat.at]==g;
             case ALLIGATOR: return Roster.active(rosterFull,g);
             case SLIME: return g == chainLetter();
             case OCTOPUS: return octoReach >= 0f && g == octoTarget;
@@ -916,6 +930,7 @@ final class Boss {
             if (swatted != NONE) return swatted;
         }
         if (!fighting()) return NONE;
+        if (kind == RAINBOW_CAT) return cat.press(this,g);
         if (kind == ALLIGATOR) return alligator.press(this,L);
         if (kind == SLIME && (!open() || !asksFor(g))) {
             slimeKeyLock = 1f;
@@ -1263,6 +1278,7 @@ final class Boss {
     /** The finger lifted without finishing. A glob flows back; a stolen key stays dropped. */
     void release() {
         alligator.pointer=-1;
+        cat.release();
         if (held >= 0 && etype[held] == E_GLOB) returning[held] = true;
         held = -1;
         mushroomShakes = mushroomDirection = 0;
@@ -1291,6 +1307,7 @@ final class Boss {
         if (hp <= 0f) {
             hp = 0f;
             beaten = true;
+            cat.release();
             slimeEyeHit=0f;
             slimeVulnerableSoundT=slimeBoipTime=-1f;
             if(kind==SLIME && body!=null)slimeDeath=new SlimeDeath.Pose(body);
@@ -2417,6 +2434,7 @@ final class Boss {
     // Action/animation time can be advanced separately from projectile flight.
     int update(float dt, float projectileDt, Layout L, Random rnd) {
         if (kind < 0) return 0;
+        if(kind==RAINBOW_CAT)cat.animate(dt,L);
         if(kind==ALLIGATOR)alligator.animate(this,dt,L);
         hurt = Math.max(0f, hurt - dt * 2.6f);
         for (int g = 0; g < slimeBlobPulse.length; g++)
@@ -2550,6 +2568,7 @@ final class Boss {
         }
 
         age += dt;
+        if(kind==RAINBOW_CAT)return hits+cat.update(this,dt,L,rnd);
         if(kind==ALLIGATOR)return hits+alligator.update(this,dt,L,rnd);
         if (kind == MUSHROOM) {
             for (int i = 0; i < MUSHROOM_DUST; i++) {

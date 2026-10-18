@@ -444,7 +444,7 @@ final class GameCore {
         float destroyT;
         /** A Flurry clear leaves a small rainbow at its original position. */
         boolean flurryClear;
-        float clearX, clearY;
+        float clearX, clearY, clearClock;
         /** Per-tile fly-off direction, -1 left or +1 right. */
         float[] flyDir, flyY;
         boolean radialFly;
@@ -3160,6 +3160,7 @@ final class GameCore {
             boolean priorSlimeOpening=boss.slimeOpening();
             float beforeDeath = boss.beaten ? boss.leaveProgress() * Boss.LEAVE : -1f;
             boolean beforeSupernova = boss.kind == Boss.SPLITTER && boss.beaten && !DivideDeath.bursting(boss);
+            if(boss.kind==Boss.RAINBOW_CAT)boss.cat.kids=kidsRun;
             if(boss.kind==Boss.ALLIGATOR)boss.alligator.target(this,L);
             int bossHits = boss.update(dt, L, rnd);
             BossPlay.slimeVulnerableSound(this,dt);
@@ -3181,6 +3182,12 @@ final class GameCore {
                 shake = Math.max(shake, 1.12f);
                 flash = Math.max(flash, 1f);
                 flashColor = 0xFFFF355F;
+            }
+            int catCue=boss.kind==Boss.RAINBOW_CAT?boss.cat.cue:0;
+            boss.cat.cue=0;
+            if(sound!=null && catCue>0) {
+                if(catCue==2)sound.boltPop();else if(catCue==3)sound.wrong();
+                else if(catCue==6)sound.uiBloop();else sound.squish(Kawaii.CAT,1);
             }
             int gatorAttackCues=boss.kind==Boss.ALLIGATOR?boss.alligator.takeAttackCues():0;
             int gatorGrowls=boss.kind==Boss.ALLIGATOR?boss.alligator.takeGrowls():0;
@@ -3384,6 +3391,7 @@ final class GameCore {
         e.flurryClear = flurry();
         e.clearX = enemyCentreX(e);
         e.clearY = e.y;
+        e.clearClock = clock;
         e.dying = false;
         // A destroyed word is no longer a threat, so it must stop looking like one. The
         // update loop skips destroyed words, so whatever warning state it held would

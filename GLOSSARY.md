@@ -833,3 +833,7 @@ punishment projectiles retain their 2.4-second flight. The final three throws ha
 The next arm-wave attack waits until every thrown enemy is destroyed or reaches the player.
 The final arm tear ends the fight without another throw.
 Octopulse’s visual enrage warning starts at 40 seconds to allow for the added wind-ups and throws.
+
+- **Rainbow Land** — Adventure stages 26–30, after Swampland; floating clouds and rainbow arches.
+- **Rainbow Cat** — Rainbow Land boss. Drag away his yarn, catch him, then complete cage prompts.
+- **Sprinkle Paws** — Rainbow Cat's collectible boss friend.

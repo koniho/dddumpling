@@ -27,15 +27,16 @@ final class Power {
     static final int INCOGNITO = 4, MONOCHROME = 5;
     static final int MYSTERY_STAGE = 11;
     static final float DEBUFF_TIME = 8f, SELECT_TIME = 0.55f, REVEAL_TIME = 1f;
-    static int mysteryCount(boolean team) { return offeredCount(team)+2; }
+    static final int[] DEBUFFS={INCOGNITO,MONOCHROME};
+    static int mysteryCount(boolean team) { return offeredCount(team)+DEBUFFS.length; }
     static int mysteryAt(boolean team,int i) {
         int powers = offeredCount(team);
-        return i < powers ? offeredAt(i) : INCOGNITO+i-powers;
+        return i < powers ? offeredAt(i) : DEBUFFS[i-powers];
     }
 
     /** Player-facing pool. MULTI is retired but retains its id for compatibility. */
     static final int[] OFFERED = {FLURRY, NINJA, TEAM};
-    static int offeredCount(boolean teamAvailable) { return teamAvailable ? 3 : 2; }
+    static int offeredCount(boolean teamAvailable) { return OFFERED.length-(teamAvailable?0:1); }
     static int offeredAt(int chip) { return OFFERED[chip]; }
 
     static final String[] NAMES = {"FLURRY", "NINJA", "MULTI", "TEAM SQUISH", "INCOGNITO", "MONOCHROME"};

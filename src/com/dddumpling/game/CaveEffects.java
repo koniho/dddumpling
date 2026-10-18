@@ -6,20 +6,20 @@ final class CaveEffects {
     int cursor,feedback;
     float rumble,clock;
     CaveEffects(){reset();}
-    void reset(){for(int i=0;i<6;i++)age[i]=2;cursor=feedback=0;rumble=clock=0;}
+    void reset(){for(int i=0;i<age.length;i++)age[i]=2;cursor=feedback=0;rumble=clock=0;}
     void cue(GameCore c,int sound,float strength){
         rumble=Math.max(rumble,strength);feedback=Math.max(feedback,strength>.7f?2:1);
         if(c.sound!=null)c.sound.caveEvent(sound);
     }
     int takeFeedback(){int n=feedback;feedback=0;return n;}
-    void update(float dt){clock+=dt;rumble=Math.max(0,rumble-dt*3.5f);for(int i=0;i<6;i++)age[i]+=dt;}
+    void update(float dt){clock+=dt;rumble=Math.max(0,rumble-dt*3.5f);for(int i=0;i<age.length;i++)age[i]+=dt;}
     void impact(GameCore c,Layout L,float lane){
-        Cave v=c.cave;int i=cursor++%6;age[i]=0;
+        Cave v=c.cave;int i=cursor++%age.length;age[i]=0;
         x[i]=v.pathX(v.z)+(lane-.5f)*L.w/(Cave.scale(L)*v.zoom());y[i]=v.pathY(v.z);
         cue(c,Sfx.CAVE_CRASH,1);
     }
     void draw(Painter p,Cave v,Layout L){
-        for(int i=0;i<6;i++){
+        for(int i=0;i<age.length;i++){
             float t=age[i];if(t>=.65f)continue;
             float px=v.screenX(x[i],L),py=v.worldScreenY(y[i],L),s=Cave.scale(L)*v.zoom();
             int alpha=(int)(220*(1-t/.65f));

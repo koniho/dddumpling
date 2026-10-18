@@ -124,3 +124,58 @@ Swampland / Gummy Gator. This lists the actual integration points; adding art an
 - For requested install after shared changes use `./build.sh --developer --rules-checks`:
   one full rules/bounded/fuzz gate, then packaging. Reuse `build/debug.keystore` and install
   `com.dddumpling.game.dev` with data preserved. Never commit generated APK/audio/frames.
+
+## Rainbow Land (#151)
+
+Rainbow Land appends land ID 6 after Swampland: stages 26–30, unlocked by Lil Chomp.
+Rainbow Cat appends boss ID 5; Sprinkle Paws appends collectible ID 61. Cave retains
+its unreachable ID 4. Scenery repeats after stage 30 and the post-boss ramp starts there.
+
+`RainbowCat` owns the single-pointer chase, yarn and cage state. Yarn wins overlapping
+hit targets; an existing grab cannot transfer objects. Historical and final-lift samples
+route through the same pure touch method on Android and iOS. Cage latching consumes the
+capture gesture through lift, while other fingers can answer its prompt. Yarn rests during
+cage prompts. Three captures finish the fight; prompts grow from three to five keys.
+Wrong keys do not reset progress. Escape returns to chase without damage. Yarn contact
+costs one heart, resets safely and cannot repeatedly damage across frames. Kids Mode uses
+slower pursuit, larger catches, longer yarn travel and a nine-second cage deadline.
+
+`RainbowCatArt` traces a frosted pastry body, pointed ears, paws and tail with shaded
+vector shapes. Body and head use separate `Softbody` instances advanced on the game clock.
+The user's Nyan Cat sprite sheet (Pictures/file_00000000a3c081f7894ea924c0332460.png)
+was inspected as an appearance/pose reference; no raster sprites are included or rendered.
+`RainbowLand` supplies scenery, title arches, picker artwork and stage vignettes.
+
+The 62-entry collection uses tag `0x8...`, preserving the older 61-entry `0x6...` and
+60-entry `0x5...` decoders. Their tag bits must never become Rainbow Cat ownership.
+Time Attack save v7 carries its boss/profile counts and archives old all-boss records by roster size;
+six-boss records start empty. Existing individual records keep their IDs. Transient
+onboarding introduction bits use a long now that lesson IDs extend past 31; persisted
+extra lesson bits retain their original positions.
+
+
+## Authoritative content counts
+
+`WorldCatalog` owns chapter order, boss metadata and skin names, land colors, friend IDs,
+and saved death IDs. Append rows without renumbering existing IDs. `Boss.COUNT` and
+`Lands.COUNT` derive from those rows; stages, unlocks, rewards, analytics and death blurbs
+use catalog lookups. Visual dispatch and bespoke mechanics still need implementation.
+`Collect.NAME`, `Glyph.NAME`, `Skins.NAMES`, `Power.OFFERED`/`DEBUFFS` and the named
+Survival profiles own their respective counts. Fixed geometry and authored effect tuning
+are not catalog sizes.
+
+Time Attack v7, Survival v3 and run-history v10/v11 store their dimensions. Older decoders
+retain historical widths on purpose. New all-boss runs cannot inherit a shorter roster's
+record. Audio preserves the original five-boss/six-key ID banks and appends extra voices;
+native iOS callers use runtime getters rather than translated constant macros.
+
+Storage is still bounded: collectibles have 63 bits beneath their tag, land state has
+eight-bit visit/suppression fields, and tutorial introductions have 64 transient bits.
+Catalog regression checks fail before the first two capacities overflow; widen/migrate
+these formats before exceeding them. Do not simply increase a count and shift saved bits.
+
+Rainbow Land uses more Rush followers (92% of eligible preceding words, 39% of eligible
+power-up spawns) and Divebomb words (36% of eligible multi-key candidates). Existing
+spawn phases choose variants without extra RNG draws. All descending Rainbow enemies,
+including linked and power-up enemies, draw a fading translucent rainbow wake. On clear,
+the existing wake freezes at its impact position, widens and fades before enemy cleanup.
