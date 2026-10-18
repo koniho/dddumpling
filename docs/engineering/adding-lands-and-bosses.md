@@ -139,8 +139,8 @@ Only pointer-down can score a tap. Moves, historical
 samples and held fingers cannot score extra hits; lift/cancel/pause release ownership.
 After two taps, the cat waits centrally for a clockwise or counterclockwise circle.
 The second capture instead uses a larger five-point star drawn as five crossing strokes.
-The companion rises while a small net follows the drawing, then enlarges it into a deep
-mesh fishing net on completion. The caught cat and pouch sway together while the companion
+The companion rises while a small waving net mimics the drawing on a duplicate path
+above its head, then enlarges into a deep mesh fishing net on completion. The caught cat and pouch sway together while the companion
 braces against the moving pole.
 `TraceGesture` follows an ordered closed polyline in either direction; crossing the centre
 of the circle, retracing, additional fingers and cancelled strokes cannot complete it.

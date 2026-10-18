@@ -71,29 +71,32 @@ final class RainbowCatArt extends Draw {
                     Glyph.withAlpha(COLORS[i],(int)(130+65*pulse)),a.r*.11f);
         } else for(int i=0;i<12;i++)p.arc(a.circleX(),a.circleY(),radius,radius,i*30,17,
                 Glyph.withAlpha(COLORS[i%COLORS.length],(int)(100+65*pulse)),a.r*.085f);
+        tracedPath(p,a,a.circleX(),a.circleY(),radius,a.r);
+        float angle=a.clock*1.7f;
+        p.fillPoly(star(a.circleX()+a.gesture.coordinate(angle,0)*radius,a.circleY()+a.gesture.coordinate(angle,1)*radius,
+                a.r*.20f,a.r*.08f,4,angle),0xFFFFF5CB);
+    }
+    private static void tracedPath(Painter p,RainbowCat a,float x,float y,float radius,float stroke) {
         if(a.circling && Math.abs(a.circleSweep)>.01f) {
             float[] traced=new float[130];
             for(int i=0;i<=64;i++) {
                 float at=a.gesture.start+a.gesture.travel*i/64;
-                traced[i*2]=a.circleX()+a.gesture.coordinate(at,0)*radius;
-                traced[i*2+1]=a.circleY()+a.gesture.coordinate(at,1)*radius;
+                traced[i*2]=x+a.gesture.coordinate(at,0)*radius;
+                traced[i*2+1]=y+a.gesture.coordinate(at,1)*radius;
             }
             float beat=.5f+.5f*(float)Math.sin(a.clock*7);
-            p.polyline(traced,Glyph.withAlpha(0xFFFFD98C,(int)(28+25*beat)),a.r*(.48f+.12f*beat));
-            p.polyline(traced,Glyph.withAlpha(0xFFFFE6A3,(int)(80+45*beat)),a.r*(.28f+.06f*beat));
-            p.polyline(traced,Glyph.withAlpha(0xFFFFF2B6,(int)(185+60*beat)),a.r*(.13f+.045f*beat));
+            p.polyline(traced,Glyph.withAlpha(0xFFFFD98C,(int)(28+25*beat)),stroke*(.48f+.12f*beat));
+            p.polyline(traced,Glyph.withAlpha(0xFFFFE6A3,(int)(80+45*beat)),stroke*(.28f+.06f*beat));
+            p.polyline(traced,Glyph.withAlpha(0xFFFFF2B6,(int)(185+60*beat)),stroke*(.13f+.045f*beat));
             // Light travels along the completed stroke without revealing the untraced path.
             for(int section=0;section<8;section++) {
                 float light=.5f+.5f*(float)Math.sin(section*.9f-a.clock*9);
                 if(light<.45f)continue;
                 float[] highlight=new float[18];
                 System.arraycopy(traced,section*16,highlight,0,18);
-                p.polyline(highlight,Glyph.withAlpha(0xFFFFFFFF,(int)(150*(light-.45f)/.55f)),a.r*.075f);
+                p.polyline(highlight,Glyph.withAlpha(0xFFFFFFFF,(int)(150*(light-.45f)/.55f)),stroke*.075f);
             }
         }
-        float angle=a.clock*1.7f;
-        p.fillPoly(star(a.circleX()+a.gesture.coordinate(angle,0)*radius,a.circleY()+a.gesture.coordinate(angle,1)*radius,
-                a.r*.20f,a.r*.08f,4,angle),0xFFFFF5CB);
     }
     private static void net(Painter p,GameCore c,Layout L,boolean front) {
         RainbowCat a=c.boss.cat;float r=a.r,u=a.netAmount();
@@ -103,15 +106,22 @@ final class RainbowCatArt extends Draw {
         float targetX=a.catchX+r*2.45f,targetY=a.catchY+r*2.15f;
         float rise=winding?wind*.80f:a.phase==RainbowCat.CATCH?wind*.80f+(1-wind*.80f)*u:u;
         float cx=homeX+(targetX-homeX)*rise,cy=homeY+(targetY-homeY)*rise;
-        float loadedX=a.catchX+a.netAimX*a.circleRadius();
-        float loadedY=a.catchY+a.netAimY*a.circleRadius();
+        // Repeat the player's shape in a small stage above the companion's head.
+        float mimicRadius=r*.92f;
+        float loadedCompanionX=homeX+(targetX-homeX)*wind*.80f;
+        float loadedCompanionY=homeY+(targetY-homeY)*wind*.80f;
+        float mimicX=loadedCompanionX-r*.45f,mimicY=loadedCompanionY-r*2.6f;
+        float loadedX=mimicX+a.netAimX*mimicRadius;
+        float loadedY=mimicY+a.netAimY*mimicRadius;
+        float waveClock=a.phase==RainbowCat.CATCH?a.clock-a.netAge:a.clock;
+        float waveTilt=-.25f+a.netAimX*.55f+.16f*(float)Math.sin(waveClock*8);
         float nx,ny,tilt,size;
         if(winding) {
-            nx=loadedX;ny=loadedY;tilt=-.25f+a.netAimX*.35f;size=.32f;
+            nx=loadedX;ny=loadedY;tilt=waveTilt;size=.32f;
         } else {
             nx=loadedX+(a.catchX-loadedX)*u;
             ny=loadedY+(a.catchY-r*1.05f-loadedY)*u-r*.9f*(float)Math.sin(u*Math.PI);
-            tilt=(-.25f+a.netAimX*.35f)*(1-u)-.13f*u;size=.32f+.68f*u;
+            tilt=waveTilt*(1-u)-.13f*u;size=.32f+.68f*u;
             if(a.phase==RainbowCat.CATCH) {
                 // Scoop around the cat's left side, turning the entire hoop and pouch through the swing.
                 float sweep=(float)Math.sin(u*Math.PI);
@@ -124,7 +134,9 @@ final class RainbowCatArt extends Draw {
         nx+=a.hoopShift();
         cx-=a.hoopShift()*.45f;cy+=r*.04f*struggle*(float)Math.cos(a.clock*12);
         float rx=r*2.15f*size,ry=r*.52f*size,depth=r*2.72f*size;
-        float sway=a.pouchSway();
+        // Rock the hoop in depth as it is waved; the loose mesh lags behind the frame.
+        if(winding)ry*=.95f+.4f*(float)Math.sin(a.clock*8+a.netAimY);
+        float sway=winding?-.28f*a.netAimX-.22f*(float)Math.sin(a.clock*8-.7f):a.pouchSway();
         if(a.phase==RainbowCat.CATCH) {
             if(a.netAge<.34f)sway=-.42f*(float)Math.sin(u*Softbody.TAU)*(1-u*.25f);
             else {
@@ -136,6 +148,7 @@ final class RainbowCatArt extends Draw {
         Painter q=new OpacityPainter(p,fade);
         float[] grip=new float[2];netPoint(grip,0,1,0,nx,ny,rx,ry,depth,tilt,a.clock,0,sway,true);
         if(!front) {
+            if(winding)tracedPath(q,a,mimicX,mimicY,mimicRadius,r*.55f);
             // Deep hanging pouch and tilted hoop follow the fishing-net reference.
             float[] outline=new float[130];
             for(int i=0;i<=32;i++)netPoint(outline,i*2,-1,i/32f,nx,ny,rx,ry,depth,tilt,a.clock,struggle,sway,true);
