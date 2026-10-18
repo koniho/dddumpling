@@ -1,49 +1,21 @@
 {
   "releases": [
     {
-      "version": "0.1.29",
+      "version": "0.1.30",
       "changes": [
         {
-          "icon": "misc",
-          "title": "Little improvements",
+          "icon": "halloween",
+          "title": "Halloween dress-up",
           "autoReset": false,
-          "improvements": [
-            {
-              "where": "After Survival and Time Attack",
-              "why": "Larger summary text makes your stats easier to read."
-            },
-            {
-              "where": "During Octopulse battles",
-              "why": "Companion speech bubbles explain early, wrong and late taps."
-            },
-            {
-              "where": "Beside your companion",
-              "why": "Bigger props and a waving cheer rod celebrate the action."
-            }
-          ]
+          "where": "In Settings > Skins",
+          "why": "Try the Halloween skin! Spooky keys and dressed-up bosses bring a new look with the same squishy gameplay."
         },
-        {
-          "icon": "bugs",
-          "title": "Happy little fixes",
-          "autoReset": false,
-          "fixes": [
-            {
-              "where": "During Gummy Gator parries",
-              "why": "Companion props follow your squishy through every leap and size change."
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "0.1.28",
-      "changes": [
         {
           "icon": "time_attack",
           "title": "Ready, set, squish!",
           "autoReset": false,
           "where": "Before Boss Time Attack",
-          "why": "Your squishy faces off against the boss with sliding portraits, spoken names and a bouncy new music cue. All-boss runs show your round."
+          "why": "Your squishy faces the boss with sliding panels, bouncy portraits, spoken names and new music. All-boss runs show the round."
         },
         {
           "icon": "swamp",
@@ -80,86 +52,19 @@
           "improvements": [
             {
               "where": "During normal waves",
-              "why": "Bigger clear bursts and parting pair hands celebrate each pop."
+              "why": "Bigger pops and parting hands."
             },
             {
               "where": "Between runs",
-              "why": "Remembered lands and swipeable release pages keep things moving."
+              "why": "Remembered lands, swipeable news and bigger summaries."
             },
             {
-              "where": "With a physical keyboard",
-              "why": "Use SDF / JKL, or SD / KL for four keys."
-            }
-          ]
-        },
-        {
-          "icon": "bugs",
-          "title": "Happy little fixes",
-          "autoReset": false,
-          "fixes": [
-            {
-              "where": "At the damage line",
-              "why": "Last-second hits count until damage lands."
+              "where": "With your companion",
+              "why": "Props follow every leap. Octopulse explains tap mistakes."
             },
             {
-              "where": "During boss battles",
-              "why": "Hits react on impact. Time Attack tracks your first hit."
-            },
-            {
-              "where": "In iPhone Settings",
-              "why": "Share and review open the App Store."
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "0.1.27",
-      "changes": [
-        {
-          "icon": "swamp",
-          "title": "Welcome to Swampland",
-          "autoReset": false,
-          "where": "Adventure, stages 21-25",
-          "why": "Meet Gummy Gator! Parry claws and tails, then tap during his opening. Star-marked divebomb words charge when just their final key remains."
-        },
-        {
-          "icon": "fog",
-          "title": "Peek through the fog",
-          "autoReset": false,
-          "where": "Normal waves in Swampland",
-          "why": "Foggy words reveal one key at a time. Clear the visible key to uncover the next. Revealed keys stay visible after a miss, so keep going!"
-        },
-        {
-          "icon": "rush",
-          "title": "Shooting stars",
-          "autoReset": false,
-          "where": "Adventure, stage 16 onward",
-          "why": "One-key shooting stars race in at double speed. Catch them quickly or finish your longer word first. Team Squish can intercept them, too!"
-        },
-        {
-          "icon": "slime",
-          "title": "Super squishy Slime",
-          "autoReset": false,
-          "where": "In the Super Slime battle",
-          "why": "Meet Super Slime! His first prompt peeks out after a cover cycle. Hits bring worried eyes and gooey sprays; victory leaves a big, dripping splat."
-        },
-        {
-          "icon": "misc",
-          "title": "Little improvements",
-          "autoReset": false,
-          "improvements": [
-            {
-              "where": "During normal waves",
-              "why": "Bigger clear bursts and parting pair hands celebrate each pop."
-            },
-            {
-              "where": "Between runs",
-              "why": "Remembered lands and swipeable release pages keep things moving."
-            },
-            {
-              "where": "With a physical keyboard",
-              "why": "Use SDF / JKL, or SD / KL for four keys."
+              "where": "Settings and keyboards",
+              "why": "Red mute icons; sliders unmute. Keyboard: SDF / JKL or SD / KL."
             }
           ]
         },
