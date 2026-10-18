@@ -52,7 +52,10 @@ final class HalloweenKeys {
         // Center the whole silhouette: crown at -1.30, chin at +.76.
         if(g==Kawaii.GRAPES)y+=ry*.27f;
         int base=Skins.HALLOWEEN_COLORS[g],alpha=incoming>>>24;
-        if((incoming&0xFFFFFF)!=(Glyph.COLOR[g]&0xFFFFFF) && (incoming&0xFFFFFF)!=(base&0xFFFFFF))base=Glyph.mix(base,incoming,.22f);
+        // The black cat has a lighter key backing; it is not a flash tint on its fur.
+        int keyColor=g==Kawaii.BLOB?Skins.HALLOWEEN_CAT_KEY:base;
+        if((incoming&0xFFFFFF)!=(Glyph.COLOR[g]&0xFFFFFF) && (incoming&0xFFFFFF)!=(base&0xFFFFFF)
+                && (incoming&0xFFFFFF)!=(keyColor&0xFFFFFF))base=Glyph.mix(base,incoming,.22f);
         Painter q=new OpacityPainter(p,alpha/255f);
         if(g==Kawaii.STRAWBERRY)for(int side=-1;side<=1;side+=2) {
             float flutter=.05f*(float)Math.sin(clock*7+happy*3);
