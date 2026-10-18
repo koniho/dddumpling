@@ -12,7 +12,7 @@ final class SkinSettings extends Draw {
     static float backY(Layout L) {return PlayerSettings.bottom(L)-PlayerSettings.unit(L)*1.8f;}
     static int hit(Layout L,float x,float y) {
         float s=PlayerSettings.unit(L);
-        for(int i=0;i<Skins.COUNT;i++)if(x>=PlayerSettings.left(L)+s && x<=PlayerSettings.right(L)-s
+        for(int i=0;i<Skins.COUNT;i++)if(x>=PlayerSettings.contentL(L) && x<=PlayerSettings.contentR(L)
                 && y>=cardTop(L,i) && y<=cardTop(L,i)+cardHeight(L))return DEFAULT+i;
         if(Math.abs(y-backY(L))<s*1.3f)return BACK;
         return 0;
@@ -31,7 +31,7 @@ final class SkinSettings extends Draw {
         p.fillRect(l,t,r,b,color);
     }
     static void chip(Painter p,GameCore c,Layout L) {
-        float s=PlayerSettings.unit(L),y=buttonY(L),l=PlayerSettings.left(L)+s,r=PlayerSettings.right(L)-s;
+        float s=PlayerSettings.unit(L),y=buttonY(L),l=PlayerSettings.contentL(L),r=PlayerSettings.contentR(L);
         int skin=c.preferences.skin;
         card(p,l,y-s*2.25f,r,y+s*2.25f,s,skin,false);
         p.text("SKINS",l+s,y-s*.52f,type(s*.72f),INK,Painter.LEFT,true);
@@ -44,7 +44,7 @@ final class SkinSettings extends Draw {
         p.polyline(new float[]{r-s*.95f,y-s*.36f,r-s*.58f,y,r-s*.95f,y+s*.36f},INK,s*.1f);
     }
     static void draw(Painter p,GameCore c,Layout L) {
-        float s=PlayerSettings.unit(L),l=PlayerSettings.left(L)+s,r=PlayerSettings.right(L)-s;
+        float s=PlayerSettings.unit(L),l=PlayerSettings.contentL(L),r=PlayerSettings.contentR(L);
         p.text("DRESS UP YOUR KEYS",L.w*.5f,PlayerSettings.top(L)+s*4.3f,type(s*.68f),GOLD,Painter.CENTER,true);
         for(int i=0;i<Skins.COUNT;i++) {
             float top=cardTop(L,i),height=cardHeight(L),bottom=top+height;

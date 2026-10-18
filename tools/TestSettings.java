@@ -525,8 +525,8 @@ final class TestSettings extends Check {
             Layout l=new Layout();l.compute(size[0],size[1],0,0,0,0);
             PlayerSettings.open(c);c.update(PlayerSettings.PANEL_TIME,l);
             float s=PlayerSettings.unit(l), r=PlayerSettings.knobR(c,l);
-            check("sliding characters fit at both endpoints "+size[0],PlayerSettings.trackL(l)-r>=PlayerSettings.left(l)
-                    && PlayerSettings.trackR(l)+r<=PlayerSettings.right(l));
+            check("sliding characters fit at both endpoints "+size[0],PlayerSettings.trackL(l)-r>=PlayerSettings.contentL(l)-.001f
+                    && PlayerSettings.trackR(l)+r<=PlayerSettings.contentR(l)+.001f);
             check("audio handles clear labels and next rows "+size[0],PlayerSettings.row(l,0)+s*3-r>PlayerSettings.row(l,0)+s*.3f
                     && PlayerSettings.row(l,1)+s*3+r+s*.8f<PlayerSettings.row(l,2));
             check("mute and slider have distinct hit areas "+size[0],PlayerSettings.hit(c,l,PlayerSettings.right(l)-s*3,PlayerSettings.row(l,0))==PlayerSettings.MUSIC_MUTE

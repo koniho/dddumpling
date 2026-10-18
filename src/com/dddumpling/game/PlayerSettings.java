@@ -95,13 +95,15 @@ final class PlayerSettings extends Draw {
     static float unit(Layout L) { return Math.min(L.unit, L.h / 48f); }
     static float left(Layout L) { return L.w * .06f; }
     static float right(Layout L) { return L.w * .94f; }
+    static float contentL(Layout L) {return left(L)+unit(L);}
+    static float contentR(Layout L) {return right(L)-unit(L);}
     static float height(Layout L) { return unit(L)*(BuildFlags.DEVELOPER?44f:41f); }
     static float top(Layout L) { return Math.max(L.topSafe, (L.h - height(L))*.5f); }
     static float bottom(Layout L) { return Math.min(L.h-L.padB, top(L)+height(L)); }
     static float row(Layout L, int row) { return top(L) + unit(L)*(new float[]{7f,13.5f,20.5f,40.5f}[row]-(BuildFlags.DEVELOPER?0f:3f)); }
     static float knobR(GameCore c,Layout L) {return Math.min(L.keyR*c.keyScale(),unit(L)*1.65f);}
-    static float trackL(Layout L) { return left(L)+L.keyR*Roster.STARTER_SCALE+unit(L)*.4f; }
-    static float trackR(Layout L) { return right(L)-L.keyR*Roster.STARTER_SCALE-unit(L)*.4f; }
+    static float trackL(Layout L) { return contentL(L)+unit(L)*1.65f; }
+    static float trackR(Layout L) { return contentR(L)-unit(L)*1.65f; }
     static float volumeAt(Layout L, float x) {
         return Math.round(Math.max(0f, Math.min(1f, (x-trackL(L))/(trackR(L)-trackL(L))))*20f)/20f;
     }
@@ -111,14 +113,15 @@ final class PlayerSettings extends Draw {
         if (x<left(L) || x>right(L) || y<t || y>bottom(L)) return CLOSE;
         if (x>right(L)-s*2.5f && y<t+s*2.7f) return CLOSE;
         if(c.preferences.skinsOpen) return SkinSettings.hit(L,x,y);
+        if(x<contentL(L) || x>contentR(L))return 0;
         if (BuildFlags.DEVELOPER && y>=t+s*3f && y<=t+s*5f) {
             if (x<L.w*.5f) return PLAYER;
             return DEVELOPER;
         }
         if (c.settingsPage==1 && BuildFlags.DEVELOPER) return 0;
         for (int i=0;i<2;i++) {
-            if (Math.abs(y-row(L,i))<s && x>right(L)-s*5f) return i==0?MUSIC_MUTE:EFFECTS_MUTE;
-            if (Math.abs(y-(row(L,i)+s*3f))<knobR(c,L) && x>=trackL(L)-L.keyR && x<=trackR(L)+L.keyR)
+            if (Math.abs(y-row(L,i))<s && x>contentR(L)-s*4f) return i==0?MUSIC_MUTE:EFFECTS_MUTE;
+            if (Math.abs(y-(row(L,i)+s*3f))<knobR(c,L) && x>=contentL(L) && x<=contentR(L))
                 return i==0?MUSIC:EFFECTS;
         }
         if (Math.abs(y-row(L,2))<s*1.1f) return KIDS;
@@ -142,18 +145,18 @@ final class PlayerSettings extends Draw {
         p.restore();
     }
     private static void panel(Painter p, GameCore c, Layout L) {
-        float s=unit(L), t=top(L), l=left(L), r=right(L);
+        float s=unit(L), t=top(L), l=left(L), r=right(L),cl=contentL(L),cr=contentR(L);
         p=new OpacityPainter(p,PANEL_OPACITY);
         glassPanel(p,l,t,r,bottom(L),s);
-        p.text("SETTINGS",l+s*1.5f,t+s*2f,type(s*.85f),INK,Painter.LEFT,true);
-        float cx=r-s*1.3f,cy=t+s*1.5f;
+        p.text("SETTINGS",cl,t+s*2f,type(s*.85f),INK,Painter.LEFT,true);
+        float cx=cr-s*.4f,cy=t+s*1.5f;
         p.line(cx-s*.4f,cy-s*.4f,cx+s*.4f,cy+s*.4f,INK,s*.1f);
         p.line(cx+s*.4f,cy-s*.4f,cx-s*.4f,cy+s*.4f,INK,s*.1f);
         if(c.preferences.scoreReset.active()) { c.preferences.scoreReset.draw(p,c,L);return; }
         if(c.preferences.skinsOpen) {SkinSettings.draw(p,c,L);return;}
         int tabs=BuildFlags.DEVELOPER?2:0;
         for(int i=0;i<tabs;i++) {
-            float a=l+(r-l)*i/tabs,b=l+(r-l)*(i+1)/tabs;
+            float a=cl+(cr-cl)*i/tabs,b=cl+(cr-cl)*(i+1)/tabs;
             p.fillRect(a,t+s*3f,b,t+s*5f,i==(BuildFlags.DEVELOPER?c.settingsPage:0)?0x554DCEAA:0x18FFFFFF);
             p.text(i==0?"PLAYER":"DEVELOPER",(a+b)*.5f,t+s*4.3f,type(s*.56f),INK,Painter.CENTER,true);
         }
@@ -162,31 +165,32 @@ final class PlayerSettings extends Draw {
         for(int i=0;i<2;i++) {
             float y=row(L,i),v=i==0?a.music:a.effects;
             boolean muted=i==0?a.musicMuted:a.effectsMuted;
-            p.text(i==0?"MUSIC":"SOUND EFFECTS",trackL(L),y+s*.25f,type(s*.57f),INK,Painter.LEFT,true);
-            p.fillRect(r-s*5f,y-s*.8f,r-s,y+s*.8f,muted?0xBBDF4054:0x554DCEAA);
-            p.text(muted?"MUTED":"ON",r-s*3f,y+s*.25f,type(s*.48f),INK,Painter.CENTER,true);
+            p.text(i==0?"MUSIC":"SOUND EFFECTS",cl,y+s*.25f,type(s*.57f),INK,Painter.LEFT,true);
+            p.fillRect(cr-s*4f,y-s*.8f,cr,y+s*.8f,muted?0xBBDF4054:0x554DCEAA);
+            p.text(muted?"MUTED":"ON",cr-s*2f,y+s*.25f,type(s*.48f),INK,Painter.CENTER,true);
             float sy=y+s*3f,x=trackL(L)+(trackR(L)-trackL(L))*v;
-            p.fillRect(trackL(L),sy-s*.12f,trackR(L),sy+s*.12f,0x55FFFFFF);
-            p.fillRect(trackL(L),sy-s*.12f,x,sy+s*.12f,GOLD);
+            p.fillRect(cl,sy-s*.12f,cr,sy+s*.12f,0x55FFFFFF);
+            p.fillRect(cl,sy-s*.12f,cl+(cr-cl)*v,sy+s*.12f,GOLD);
             SettingsArt.draw(p,i==0,x,sy,knobR(c,L),v,muted||v==0f,c.clock);
         }
-        p.text("KIDS MODE",trackL(L),row(L,2)+s*.25f,type(s*.57f),INK,Painter.LEFT,true);
-        SettingsArt.kidsToggle(p,r-s*3.2f,row(L,2),s,a.kidsPosition(c.clock),a.kidsLift(c.clock));
+        p.text("KIDS MODE",cl,row(L,2)+s*.25f,type(s*.57f),INK,Painter.LEFT,true);
+        SettingsArt.kidsToggle(p,cr-s*2.05f,row(L,2),s,a.kidsPosition(c.clock),a.kidsLift(c.clock));
         SkinSettings.chip(p,c,L);
         social(p,c,L,true);social(p,c,L,false);
-        p.fillRect(l+s,resetY(L)-s*1.2f,r-s,resetY(L)+s*1.2f,0x33F080A8);
+        p.fillRect(cl,resetY(L)-s*1.2f,cr,resetY(L)+s*1.2f,0x33F080A8);
         p.text("RESET HIGH SCORES",L.w*.5f,resetY(L)+s*.25f,type(s*.58f),INK,Painter.CENTER,true);
-        p.fillRect(l+s,tutorialY(L)-s*1.2f,r-s,tutorialY(L)+s*1.2f,0x334DCEAA);
+        p.fillRect(cl,tutorialY(L)-s*1.2f,cr,tutorialY(L)+s*1.2f,0x334DCEAA);
         p.text(c.clock<a.tutorialResetUntil?"TUTORIALS RESET":"RESET TUTORIALS",L.w*.5f,tutorialY(L)+s*.25f,type(s*.58f),INK,Painter.CENTER,true);
         p.text("PRIVACY POLICY",L.w*.5f,row(L,3)+s*.25f,type(s*.58f),GOLD,Painter.CENTER,true);
     }
     private static void social(Painter p,GameCore c,Layout L,boolean share) {
-        float s=unit(L),x=L.w*(share?.28f:.72f),y=socialY(L),r=s*1.05f;
+        float s=unit(L),y=socialY(L),r=s*1.05f;
         float age=c.clock-c.preferences.externalAt;
         float tap=c.preferences.animatedAction==(share?SHARE:RATE) && age<.7f
                 ?(float)Math.sin(Math.max(0f,age)/.7f*Math.PI):0f;
-        float l=share?left(L)+s*.5f:L.w*.5f+s*.3f;
-        float right=share?L.w*.5f-s*.3f:right(L)-s*.5f;
+        float l=share?contentL(L):L.w*.5f+s*.3f;
+        float right=share?L.w*.5f-s*.3f:contentR(L);
+        float x=(l+right)*.5f;
         p.fillRect(l,y-s*2.1f,right,y+s*2.1f,share?0x334DCEAA:0x33F4C552);
         if(share) {
             // Ease the handoff there and back so the four-second loop has no reset snap.
