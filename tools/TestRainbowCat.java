@@ -73,6 +73,11 @@ final class TestRainbowCat extends Check {
         check("spam cannot tap through rainbow flash",a.taps==1 && a.tapFlash>0 && !a.canTap() && a.scared==0);
         for(int i=0;i<10;i++)c.boss.update(1f/60,L,c.rnd);
         check("scared expression appears before next tap is enabled",a.tapFlash==0 && a.scared>=.65f && a.canTap());
+        float shake=0;
+        for(int i=0;i<38;i++) {c.boss.update(1f/60,L,c.rnd);shake=Math.max(shake,Math.abs(a.shakeOffset()));}
+        check("cat visibly shakes off fright",a.scared>0 && a.scared<1 && shake>a.r*.05f && a.canTap());
+        for(int i=0;i<30;i++)c.boss.update(1f/60,L,c.rnd);
+        check("normal expression returns without relocking taps",a.scared==0 && Math.abs(a.shakeOffset())<.001f && a.canTap());
         a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
         check("second tap restarts color flash",a.taps==2 && a.tapFlash==RainbowCat.TAP_FLASH && a.scared==0);
         for(int i=0;i<24;i++)c.boss.update(1f/60,L,c.rnd);

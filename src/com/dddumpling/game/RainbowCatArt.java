@@ -15,7 +15,7 @@ final class RainbowCatArt extends Draw {
         motionTrail(q,a);
         q.save();q.translate((1-enter)*(1-enter)*-L.w,0);
         boolean caught=a.phase==RainbowCat.OPEN || (a.phase==RainbowCat.CATCH && a.netAge>=.34f);
-        float struggle=caught?(float)Math.sin(a.clock*18)*a.r*.065f:0;
+        float struggle=caught?(float)Math.sin(a.clock*18)*a.r*.065f:a.shakeOffset();
         if(a.phase==RainbowCat.CIRCLE)circleGuide(q,a);
         if(a.carries(c))net(q,c,L,false);
         Painter sprite=q;
@@ -285,10 +285,13 @@ final class RainbowCatArt extends Draw {
             p.fillEllipse(hx,hy+hr*.48f,hr*.13f,hr*(.12f+.035f*(float)Math.sin(t*18)),INK);
             p.fillEllipse(hx,hy+hr*.54f,hr*.085f,hr*.045f,0xFFFFB4CB);
             p.fillEllipse(hx+hr*.89f,hy-hr*.25f,hr*.07f,hr*.13f,0xBBBEF6FF);
-        } else if(scared>0) {
-            p.fillEllipse(hx,hy+hr*.45f,hr*(.08f+.03f*scared),hr*(.08f+.09f*scared),INK);
-            p.fillEllipse(hx+hr*.91f,hy-hr*.25f,hr*.06f*scared,hr*.13f*scared,0xCCB6F5FF);
-        } else p.polyline(points(new float[]{-.25f,.34f,-.19f,.43f,-.10f,.45f,0,.34f,.10f,.45f,.19f,.43f,.25f,.34f},hx,hy,hr,hr),INK,hr*.055f);
+        } else {
+            if(scared>0) {
+                p.fillEllipse(hx,hy+hr*.45f,hr*(.08f+.03f*scared),hr*(.08f+.09f*scared),fadeBy(INK,scared));
+                p.fillEllipse(hx+hr*.91f,hy-hr*.25f,hr*.06f*scared,hr*.13f*scared,0xCCB6F5FF);
+            }
+            p.polyline(points(new float[]{-.25f,.34f,-.19f,.43f,-.10f,.45f,0,.34f,.10f,.45f,.19f,.43f,.25f,.34f},hx,hy,hr,hr),fadeBy(INK,1-scared),hr*.055f);
+        }
     }
     static float[] pastry(Softbody b,float x,float y,float r) {
         float[] src=b==null?null:b.outline(),out=new float[src==null?72:src.length];

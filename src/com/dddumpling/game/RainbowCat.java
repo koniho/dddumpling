@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Two taps and a circle let the companion net the cat for a key challenge; failure releases a star flurry. */
 final class RainbowCat {
     static final int CHASE=0, DASH=1, OPEN=2, CIRCLE=3, CATCH=4;
-    static final float TAP_FLASH=.60f;
+    static final float TAP_FLASH=.60f, SCARE_HOLD=.70f, SHAKE_OFF=.40f;
     static final float NET_TIME=.75f, NET_RETURN=.45f;
     static final float DASH_TIME=.34f, TRAIL_TIME=2.2f, TRAIL_LENGTH=2.9f*4;
     final Softbody pastry=new Softbody(18,151), head=new Softbody(14,152);
@@ -13,12 +13,12 @@ final class RainbowCat {
     final int[] prompt=new int[Glyph.COUNT];
     float x,y,vx,vy,r,left,right,top,bottom,clock,flash,turn=1;
     float routeTime,routeDuration,launchLeft,trailTick,timer;
-    float circleSweep,netAge,netReturn,catchX,catchY,windUp,releaseWind,tapFlash,scared;
+    float circleSweep,netAge,netReturn,catchX,catchY,windUp,releaseWind,tapFlash,scared,scaredAge;
     boolean circling;
     boolean placed,kids,escaping;
     void reset() {
         phase=CHASE;pointer=-1;taps=trailCount=at=count=captures=cue=0;placed=escaping=false;turn=1;
-        circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=tapFlash=scared=0;circling=false;gesture.clear();
+        circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=tapFlash=scared=scaredAge=0;circling=false;gesture.clear();
         x=y=vx=vy=clock=flash=routeTime=routeDuration=trailTick=timer=0;launchLeft=1.3f;
     }
     void release() {pointer=-1;circling=false;circleSweep=0;gesture.clear();}
@@ -39,7 +39,10 @@ final class RainbowCat {
             if(trailAge[i]>=TRAIL_TIME)trailCount=i;
         }
         tapFlash=Math.max(0,tapFlash-dt);
-        if(taps>0 && tapFlash==0 && phase!=OPEN && phase!=CATCH)scared=Math.min(1,scared+dt/ .12f);
+        if(taps>0 && tapFlash==0 && phase!=OPEN && phase!=CATCH) {
+            scaredAge=Math.min(SCARE_HOLD+SHAKE_OFF,scaredAge+dt);
+            scared=Math.min(clamp(scaredAge/.12f,0,1),clamp(1-(scaredAge-SCARE_HOLD)/SHAKE_OFF,0,1));
+        }
         float target=phase==CIRCLE && circling?gesture.progress():0;
         if(phase==CIRCLE)windUp+=(target-windUp)*(1-(float)Math.exp(-dt*12));
         if(escaping && routeTime<routeDuration)advance(dt);
@@ -49,7 +52,7 @@ final class RainbowCat {
         float facing=phase==CIRCLE || phase==CATCH || phase==OPEN?-1:Math.abs(vx)<1?turn:vx<0?-1:1;
         turn+=(facing-turn)*(1-(float)Math.exp(-dt*14));
         float struggle=phase==OPEN?1:phase==CATCH?clamp(netAge/NET_TIME,0,1):0;
-        float wiggle=(float)Math.sin(clock*18)*r*.065f*struggle;
+        float wiggle=(float)Math.sin(clock*18)*r*.065f*struggle+shakeOffset();
         pastry.moveTo(x+wiggle,y);pastry.pull((float)Math.sin(clock*15),.5f,.13f*struggle);pastry.update(dt);
         head.moveTo(x+turn*r*.88f-wiggle+(float)Math.sin(clock*31)*r*.025f*scared,y+r*.02f+(float)Math.sin(clock*21)*r*.055f*struggle);head.update(dt);
     }
@@ -119,7 +122,7 @@ final class RainbowCat {
         float remaining=phase==CIRCLE?0:dt;
         while(remaining>0) {
             if(routeDuration==0 || routeTime>=routeDuration) {
-                if(phase==DASH && taps==2) {if(tapFlash==0 && scared>=.65f)phase=CIRCLE;vx=vy=0;break;}
+                if(phase==DASH && taps==2) {if(reactionReady())phase=CIRCLE;vx=vy=0;break;}
                 phase=CHASE;chooseRoute(L,rnd,false);
             }
             float step=Math.min(remaining,routeDuration-routeTime);
@@ -141,7 +144,7 @@ final class RainbowCat {
         phase=OPEN;vx=vy=0;b.clearBolts();timer=promptTime();cue=1;flash=1;
     }
     private void resume(Layout L,java.util.Random rnd) {
-        netReturn=NET_RETURN;windUp=tapFlash=scared=0;release();taps=at=count=0;phase=DASH;chooseRoute(L,rnd,true);launchLeft=attackInterval();
+        netReturn=NET_RETURN;windUp=tapFlash=scared=scaredAge=0;release();taps=at=count=0;phase=DASH;chooseRoute(L,rnd,true);launchLeft=attackInterval();
     }
     int press(Boss b,int glyph,Layout L,java.util.Random rnd) {
         if(phase!=OPEN || count==0)return Boss.REBUFF;
@@ -153,7 +156,13 @@ final class RainbowCat {
         if(b.beaten) {escaping=true;routeTo(L.w+r*3,top-r*2,.48f,rnd);}
         return result;
     }
-    boolean canTap() {return phase==CHASE && tapFlash==0 && (taps==0 || scared>=.65f);}
+    boolean reactionReady() {return tapFlash==0 && (taps==0 || scaredAge>=.12f*.65f);}
+    boolean canTap() {return phase==CHASE && reactionReady();}
+    float shakeOffset() {
+        if(phase==OPEN || phase==CATCH || scaredAge<=SCARE_HOLD)return 0;
+        float u=clamp((scaredAge-SCARE_HOLD)/SHAKE_OFF,0,1);
+        return (float)(Math.sin(u*Math.PI*6)*Math.sin(u*Math.PI))*r*.18f;
+    }
     boolean hit(float px,float py) {
         // The face and pastry are both valid targets, with a small forgiving margin.
         float dx=(px-x)/(r*1.28f),dy=(py-y)/(r*1.16f);
@@ -199,7 +208,7 @@ final class RainbowCat {
             if(pointer>=0 || py>=L.deckTop || py<L.playTop)return false;
             pointer=id;
             if(canTap() && hit(px,py)) {
-                taps++;flash=1;tapFlash=TAP_FLASH;scared=0;phase=DASH;pastry.squash(.5f);head.squash(.3f);
+                taps++;flash=1;tapFlash=TAP_FLASH;scared=scaredAge=0;phase=DASH;pastry.squash(.5f);head.squash(.3f);
                 if(taps==2)routeTo(L.w*.5f,top+(bottom-top)*.32f,DASH_TIME,c.rnd);
                 else chooseRoute(L,c.rnd,true);
                 BossPlay.catTap(c,L);

@@ -47,6 +47,10 @@ final class Preview {
         }
         for(int frame=0;frame<10;frame++)tap.boss.update(1f/60,L,tap.rnd);
         shot(dir,"151-tap-scared",tap,L,w,h,ss);
+        for(int frame=0;frame<38;frame++)tap.boss.update(1f/60,L,tap.rnd);
+        shot(dir,"151-tap-shake-off",tap,L,w,h,ss);
+        for(int frame=0;frame<30;frame++)tap.boss.update(1f/60,L,tap.rnd);
+        shot(dir,"151-tap-recovered",tap,L,w,h,ss);
         GameCore sky=TestRainbowCat.fight(L);sky.devInfiniteLives=true;
         shot(dir,"151-battle-sky-0",sky,L,w,h,ss);
         for(int frame=0;frame<120;frame++)sky.update(1f/60,L);
