@@ -65,7 +65,7 @@ final class HalloweenGeometricPreview extends Draw {
         }
     }
     public static void main(String[] args) throws Exception {
-        int w=760,h=1480;
+        int w=760,h=1600;
         RasterPainter p=new RasterPainter(w,h,2);p.clear(BG);
         p.text("HALLOWEEN / GEOMETRIC",w*.5f,64,32,INK,Painter.CENTER,true);
         p.text("ART PROTOTYPE - NOT IN GAME",w*.5f,101,17,INK_DIM,Painter.CENTER,false);
@@ -74,14 +74,14 @@ final class HalloweenGeometricPreview extends Draw {
         p.text("PROMPT",650,163,17,INK_DIM,Painter.CENTER,true);
         Painter current=Skins.painter(p,Skins.HALLOWEEN);
         for(int g=0;g<6;g++) {
-            float y=255+g*202;
+            float y=255+g*220;
             Kawaii.draw(current,g,145,y,65,Skins.HALLOWEEN_COLORS[g],1,.4f);
             draw(p,g,430,y,80);
             int color=Skins.HALLOWEEN_COLORS[g];
             p.fillPoly(Glyph.hex(650,y,43),Glyph.withAlpha(color,40));
             p.strokePoly(Glyph.hex(650,y,43),Glyph.withAlpha(color,200),3);
             draw(p,g,650,y,28);
-            p.text(Skins.HALLOWEEN_NAMES[g],430,y+113,19,INK,Painter.CENTER,true);
+            p.text(Skins.HALLOWEEN_NAMES[g],430,y+104,19,INK,Painter.CENTER,true);
         }
         Png.write(new File(args[0]),p.resolve(),w,h);
     }
