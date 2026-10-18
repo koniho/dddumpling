@@ -22,6 +22,19 @@ final class Preview {
         shot(dir,"151-prompt",c,L,w,h,ss);
         a.timer=.01f;c.boss.update(.02f,L,c.rnd);c.boss.update(.45f,L,c.rnd);
         shot(dir,"151-flurry",c,L,w,h,ss);
+        GameCore roam=TestRainbowCat.fight(L);
+        for(int side=0;side<4;side++) {
+            RainbowCat runner=roam.boss.cat;
+            for(int frame=0;frame<2400;frame++) {
+                roam.boss.update(1f/60,L,roam.rnd);
+                boolean edge=side==0?runner.x<runner.left+(runner.right-runner.left)*.1f
+                        :side==1?runner.x>runner.right-(runner.right-runner.left)*.1f
+                        :side==2?runner.y<runner.top+(runner.bottom-runner.top)*.1f
+                        :runner.y>runner.bottom-(runner.bottom-runner.top)*.1f;
+                if(edge)break;
+            }
+            shot(dir,"151-roam-edge-"+side,roam,L,w,h,ss);
+        }
         GameCore help=TestRainbowCat.fight(L);
         TestOnboarding.touch(help,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
         TestOnboarding.touch(help,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));

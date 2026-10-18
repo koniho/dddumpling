@@ -66,6 +66,26 @@ final class TestRainbowCat extends Check {
             if(a.x<a.left-.01f || a.x>a.right+.01f || a.y<a.top-.01f || a.y>a.bottom+.01f)break;
         }
         check("fast curved movement stays within arena",travelled>L.w*1.8f && a.x>=a.left && a.x<=a.right && a.y>=a.top && a.y<=a.bottom);
+        group("Rainbow Cat uses the whole arena without alternating corners");
+        c=fight(L);a=c.boss.cat;
+        check("roaming reaches the sides and both ends of the play area",a.left<L.w*.15f && a.right>L.w*.85f
+                && a.top<L.playTop+L.h*.08f && a.bottom>L.dangerY-L.h*.06f);
+        float minX=a.x,maxX=a.x,minY=a.y,maxY=a.y,minDuration=99,maxDuration=0;
+        int sameSide=0,sameHeight=0,routes=0;float previousTime=0;
+        for(int frame=0;frame<60*90;frame++) {
+            c.boss.update(1f/60,L,c.rnd);
+            minX=Math.min(minX,a.x);maxX=Math.max(maxX,a.x);minY=Math.min(minY,a.y);maxY=Math.max(maxY,a.y);
+            if(a.routeTime<previousTime || frame==0) {
+                routes++;minDuration=Math.min(minDuration,a.routeDuration);maxDuration=Math.max(maxDuration,a.routeDuration);
+                if((a.route[0]<(a.left+a.right)*.5f)==(a.route[6]<(a.left+a.right)*.5f))sameSide++;
+                if((a.route[1]<(a.top+a.bottom)*.5f)==(a.route[7]<(a.top+a.bottom)*.5f))sameHeight++;
+            }
+            previousTime=a.routeTime;
+        }
+        check("paths visit all four outer regions",minX<a.left+(a.right-a.left)*.12f && maxX>a.right-(a.right-a.left)*.12f
+                && minY<a.top+(a.bottom-a.top)*.12f && maxY>a.bottom-(a.bottom-a.top)*.12f);
+        check("routes include same-side and same-height runs",sameSide>routes/6 && sameHeight>routes/6);
+        check("travel durations vary instead of repeating one beat",maxDuration>minDuration*2);
         group("Rainbow reward save migration");
         long oldOwned=(1L<<60)|1L;
         long oldSave=Collect.PREVIOUS_TAG|oldOwned;

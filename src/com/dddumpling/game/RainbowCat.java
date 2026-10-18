@@ -18,8 +18,8 @@ final class RainbowCat {
     void release() {pointer=-1;}
     void place(Layout L) {
         r=L.w*.073f*1.5f;
-        left=L.playLeft+r*1.7f;right=L.playRight-r*1.7f;
-        top=L.playTop+L.unit*6.1f+r;bottom=L.dangerY-r*1.55f;
+        left=L.playLeft+r*.95f;right=L.playRight-r*.95f;
+        top=L.playTop+r*1.15f;bottom=L.dangerY-r*1.10f;
         if(!placed) {
             x=left+(right-left)*.25f;y=top+(bottom-top)*.45f;
             pastry.reset(x,y,r,1.15f);head.reset(x+r,y+r*.1f,r*.65f);
@@ -42,9 +42,18 @@ final class RainbowCat {
         head.moveTo(x+turn*r*.96f,y+r*.1f);head.update(dt);
     }
     private void chooseRoute(Layout L,java.util.Random rnd,boolean dash) {
-        float targetX=x<(left+right)*.5f?right-(right-left)*rnd.nextFloat()*.28f:left+(right-left)*rnd.nextFloat()*.28f;
-        float targetY=y<(top+bottom)*.5f?bottom-(bottom-top)*rnd.nextFloat()*.38f:top+(bottom-top)*rnd.nextFloat()*.38f;
-        float duration=dash?DASH_TIME:Math.max(.42f,distance(x,y,targetX,targetY)/(L.w*(kids?.82f:1.2f)));
+        float targetX=x,targetY=y,bestDistance=-1;
+        float minimum=L.w*(dash?.48f:.18f+rnd.nextFloat()*.25f);
+        // Sample the whole arena, including runs along the same side, instead of alternating corners.
+        for(int attempt=0;attempt<12;attempt++) {
+            float tx=left+(right-left)*rnd.nextFloat(),ty=top+(bottom-top)*rnd.nextFloat();
+            float distance=distance(x,y,tx,ty);
+            if(distance>bestDistance) {targetX=tx;targetY=ty;bestDistance=distance;}
+            if(distance>=minimum) {targetX=tx;targetY=ty;break;}
+        }
+        float speed=L.w*(kids?.82f:1.2f)*(.75f+rnd.nextFloat()*.80f);
+        float duration=dash?DASH_TIME*(.82f+rnd.nextFloat()*.30f)
+                :Math.max(.26f+rnd.nextFloat()*.16f,distance(x,y,targetX,targetY)/speed);
         routeTo(targetX,targetY,duration,rnd);
     }
     private void routeTo(float tx,float ty,float duration,java.util.Random rnd) {
