@@ -78,7 +78,18 @@ final class RainbowCatArt extends Draw {
                 traced[i*2]=a.circleX()+a.gesture.coordinate(at,0)*radius;
                 traced[i*2+1]=a.circleY()+a.gesture.coordinate(at,1)*radius;
             }
-            p.polyline(traced,0xFFFFF2B6,a.r*.16f);
+            float beat=.5f+.5f*(float)Math.sin(a.clock*7);
+            p.polyline(traced,Glyph.withAlpha(0xFFFFD98C,(int)(28+25*beat)),a.r*(.48f+.12f*beat));
+            p.polyline(traced,Glyph.withAlpha(0xFFFFE6A3,(int)(80+45*beat)),a.r*(.28f+.06f*beat));
+            p.polyline(traced,Glyph.withAlpha(0xFFFFF2B6,(int)(185+60*beat)),a.r*(.13f+.045f*beat));
+            // Light travels along the completed stroke without revealing the untraced path.
+            for(int section=0;section<8;section++) {
+                float light=.5f+.5f*(float)Math.sin(section*.9f-a.clock*9);
+                if(light<.45f)continue;
+                float[] highlight=new float[18];
+                System.arraycopy(traced,section*16,highlight,0,18);
+                p.polyline(highlight,Glyph.withAlpha(0xFFFFFFFF,(int)(150*(light-.45f)/.55f)),a.r*.075f);
+            }
         }
         float angle=a.clock*1.7f;
         p.fillPoly(star(a.circleX()+a.gesture.coordinate(angle,0)*radius,a.circleY()+a.gesture.coordinate(angle,1)*radius,
