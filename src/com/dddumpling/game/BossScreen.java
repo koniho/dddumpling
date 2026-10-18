@@ -967,7 +967,7 @@ final class BossScreen extends Draw {
         if(Skins.halloween(p))Skins.squidHead(p,mantle,cx,cy,ca,sa,col,fade);
         else p.fillPoly(mantle, Glyph.withAlpha(col, (int) (250 * fade)));
         p.strokePoly(mantle, Glyph.withAlpha(OCTO_INK,
-                (int) (255 * fade)), b.body.radius() * 0.06f);
+                (int) ((Skins.halloween(p)?105:255) * fade)), b.body.radius() * 0.06f);
 
         // Wet sticker-like highlight from the reference, kept translucent to match the slime family.
         orientedEllipse(p, cx - rx * 0.35f * ca + ry * 0.43f * sa,
@@ -1106,6 +1106,8 @@ final class BossScreen extends Draw {
     private static void drawOctopusArms(Painter p, GameCore c, Layout L, Boss b, int col, float fade) {
         p=Skins.squid(p);
         boolean victory = c.dying() && c.bossVictory == b;
+        if(b.body!=null)Skins.squidFrill(p,b.body.centreX(),b.body.centreY(),
+                b.body.radiusX(),b.body.radiusY(),b.octoLean,c.clock,fade);
         float thick = Boss.bodyR(L) * 0.52f;
         // Paint outside-in so the central arms sit in front at every crossing.
         for (int layer = 0; layer < Boss.OCTO_ARMS; layer++) {
@@ -1135,7 +1137,9 @@ final class BossScreen extends Draw {
                 float variety = 0.88f + 0.16f * (float) Math.sin(a * 2.17f);
                 int steps = curve.length / 2 - 1;
                 // Complete each coat before the next, so dark segment caps cannot stripe the arm.
-                for (int coat = 0; coat < 4; coat++) {
+                if(Skins.halloween(p))Skins.squidArm(p,curve,thick*variety*1.18f
+                        *(dying?1f-death*.72f:1f),armCol,fade);
+                else for (int coat = 0; coat < 4; coat++) {
                     for (int s = 0; s < steps; s++) {
                         float u = s / (float) steps;
                         float width = thick * variety * (1.18f - 0.76f * u)
@@ -1170,12 +1174,12 @@ final class BossScreen extends Draw {
                     // Twice the old footprint, stretched along the local tentacle direction.
                     orientedEllipse(p, suckerX, suckerY, dx / len, dy / len,
                             suckerR * 2.0f, suckerR * 1.12f,
-                            Glyph.withAlpha(OCTO_SHADE, (int) (245 * fade)));
+                            Glyph.withAlpha(OCTO_SHADE, (int) ((Skins.halloween(p)?95:245) * fade)));
                     // A smaller inset cup gives every sucker a visible recessed centre.
                     orientedEllipse(p, suckerX - nx * suckerR * 0.10f,
                             suckerY - ny * suckerR * 0.10f, dx / len, dy / len,
                             suckerR * 1.18f, suckerR * 0.56f,
-                            Glyph.withAlpha(OCTO_SUCKER, (int) (238 * fade)));
+                            Glyph.withAlpha(OCTO_SUCKER, (int) ((Skins.halloween(p)?95:238) * fade)));
                 }
                 float tipX = curve[curve.length - 2], tipY = curve[curve.length - 1];
                 if (dying) {
@@ -1192,7 +1196,7 @@ final class BossScreen extends Draw {
                 }
                 p.fillCircle(tipX, tipY, thick * variety * 0.22f
                                 * (dying ? 1f - death * 0.72f : 1f),
-                        Glyph.withAlpha(armCol, (int) (255 * fade)));
+                        Glyph.withAlpha(armCol, (int) ((Skins.halloween(p)?130:255) * fade)));
                 if (!victory && a == b.octoAttackArm) drawOctoCharge(p, b, curve, thick, fade);
                 if (vulnerable && b.octoCoil >= 0.72f) {
                     float grabPulse = 0.86f + 0.14f * (float) Math.sin(c.clock * 8f);

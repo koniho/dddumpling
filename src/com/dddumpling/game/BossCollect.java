@@ -29,21 +29,27 @@ final class BossCollect extends Draw {
         int ink = fadeBy(0xFF382841, fade);
         float faceY = y, faceR = r * 0.6f;
         if (boss == Boss.OCTOPUS) {
+            boolean ghost=Skins.halloween(p) && known;
+            if(ghost)Skins.squidFrill(p,x,y-r*.05f,r*.64f,r*.57f,0,clock,fade);
             for (int layer = 0; layer < Boss.OCTO_ARMS; layer++) {
                 int arm = layer % 2 == 0 ? layer / 2 : Boss.OCTO_ARMS - 1 - layer / 2;
                 float endX = x + (arm - 3.5f) * r * 0.28f;
                 float endY = y + r * (0.64f + 0.14f * (float) Math.sin(clock * 2f + arm));
                 float startX = x + (arm - 3.5f) * r * 0.10f;
-                p.line(startX, y + r * 0.15f, endX, endY, ink, r * 0.23f);
-                p.line(startX, y + r * 0.15f, endX, endY, body, r * 0.18f);
-                p.fillCircle(endX, endY, r * 0.095f, body);
-                p.fillCircle(endX, endY - r * 0.035f, r * 0.042f, cream);
+                if(ghost)Skins.squidArm(p,new float[]{startX,y+r*.15f,
+                        (startX+endX)*.5f,y+r*.48f,endX,endY},r*.20f,Collect.BODY[i],fade);
+                else {
+                    p.line(startX, y + r * 0.15f, endX, endY, ink, r * 0.23f);
+                    p.line(startX, y + r * 0.15f, endX, endY, body, r * 0.18f);
+                    p.fillCircle(endX, endY, r * 0.095f, body);
+                }
+                p.fillCircle(endX, endY - r * 0.035f, r * 0.042f, ghost?fadeBy(cream,.45f):cream);
             }
             if(Skins.halloween(p) && known) {
                 float headY=y-r*.05f;
                 float[] squid=Skins.squidOutline(x,headY,r*.64f,r*.57f);
                 Skins.squidHead(p,squid,x,headY,1,0,Collect.BODY[i],fade);
-                p.strokePoly(squid,cream,r*.035f);
+                p.strokePoly(squid,fadeBy(cream,.45f),r*.035f);
             } else {
                 p.fillEllipse(x, y - r * 0.34f, r * 0.61f, r * 0.66f, body);
                 p.fillEllipse(x, y + r * 0.05f, r * 0.46f, r * 0.40f, body);

@@ -133,10 +133,12 @@ final class TimeAttackDemo extends Draw {
                 BossCollect.draw(p,boss,x+side*spread,y-r*.08f,r,t*4,true,.22f,1,-.5f);
             }
         } else if(boss==Boss.OCTOPUS) {
+            p=Skins.squid(p);
             for(int i=0;i<3;i++) {
                 float reach=r*(.55f+charge*.9f),yy=y+r*(.5f+i*.13f);
                 float[] arm={x,yy,x-reach*.6f,yy-r*(.2f+.25f*i),x-reach,yy-r*(.3f+.2f*(float)Math.sin(t*14+i))};
-                p.polyline(arm,tint,r*.12f);
+                if(Skins.halloween(p))Skins.squidArm(p,arm,r*.18f,tint,1);
+                else p.polyline(arm,tint,r*.12f);
                 p.fillCircle(arm[4],arm[5],r*.09f,Collect.ACCENT[Collect.bossPrize(boss)]);
             }
         } else {

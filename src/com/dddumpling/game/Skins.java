@@ -72,7 +72,7 @@ final class Skins {
         return outline;
     }
     static void squidHead(Painter p,float[] outline,float x,float y,float ca,float sa,int col,float fade) {
-        p.fillPoly(outline,Glyph.withAlpha(Glyph.mix(col,0xFF324A65,.22f),(int)(250*fade)));
+        p.fillPoly(outline,Glyph.withAlpha(Glyph.mix(col,0xFF324A65,.22f),(int)(105*fade)));
         // Broad side planes stay inside the same silhouette, with no separate fin outlines.
         float[] face=outline.clone();
         for(int i=0;i<face.length;i+=2) {
@@ -81,7 +81,43 @@ final class Skins {
             face[i]=x+localX*ca-localY*sa;
             face[i+1]=y+localX*sa+localY*ca;
         }
-        p.fillPoly(face,Glyph.withAlpha(Glyph.mix(col,0xFFFFFFFF,.12f),(int)(230*fade)));
+        p.fillPoly(face,Glyph.withAlpha(Glyph.mix(col,0xFFFFFFFF,.12f),(int)(90*fade)));
+    }
+    /** A single tapered ribbon avoids dark overlap seams in translucent tentacles. */
+    static void squidArm(Painter p,float[] curve,float width,int col,float fade) {
+        int count=curve.length/2;
+        for(int layer=0;layer<2;layer++) {
+            float[] ribbon=new float[count*4];
+            for(int i=0;i<count;i++) {
+                int before=Math.max(0,i-1),after=Math.min(count-1,i+1);
+                float dx=curve[after*2]-curve[before*2],dy=curve[after*2+1]-curve[before*2+1];
+                float len=Math.max(.001f,(float)Math.sqrt(dx*dx+dy*dy));
+                float u=i/(float)(count-1),thick=width*(1-.91f*u);
+                float offset=layer==0?0:-thick*.19f,half=thick*(layer==0?.5f:.14f);
+                float nx=-dy/len,ny=dx/len,x=curve[i*2],y=curve[i*2+1];
+                ribbon[i*2]=x+nx*(offset+half);ribbon[i*2+1]=y+ny*(offset+half);
+                int back=(count*2-1-i)*2;
+                ribbon[back]=x+nx*(offset-half);ribbon[back+1]=y+ny*(offset-half);
+            }
+            p.fillPoly(ribbon,Glyph.withAlpha(layer==0?col:Glyph.mix(col,0xFFF1FFF9,.65f),(int)((layer==0?130:65)*fade)));
+        }
+    }
+    /** Ten non-interactive wisps: no arm IDs, prompts, hit regions or gameplay state. */
+    static void squidFrill(Painter p,float x,float y,float rx,float ry,float angle,float clock,float fade) {
+        if(!halloween(p))return;
+        float ca=(float)Math.cos(angle),sa=(float)Math.sin(angle);
+        for(int i=0;i<10;i++) {
+            float spread=(i-4.5f)/4.5f,phase=clock*1.7f+i*2.4f;
+            float length=1.55f+.42f*(float)Math.sin(i*2.1f);
+            float[] curve=new float[26];
+            for(int n=0;n<13;n++) {
+                float u=n/12f;
+                float dx=rx*(spread*(.40f+u*.82f)+.15f*u*(float)Math.sin(phase+u*4.5f));
+                float dy=ry*(.38f+u*length+.12f*u*(float)Math.cos(phase+u*3));
+                curve[n*2]=x+dx*ca-dy*sa;curve[n*2+1]=y+dx*sa+dy*ca;
+            }
+            squidArm(p,curve,rx*(.14f+.04f*(i%3)),i%2==0?0xFFBFEFDB:0xFFACDDE9,fade*.58f);
+        }
     }
     static void candyWrap(Painter p,float x,float y,float rx,float ry,float clock,float alpha) {
         if(!halloween(p))return;

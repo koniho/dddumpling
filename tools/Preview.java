@@ -13,6 +13,7 @@ final class Preview {
         for(int boss=0;boss<Boss.COUNT;boss++) {
             GameCore names=TestTimeAttack.start(boss);names.preferences.skin=Skins.HALLOWEEN;
             names.toTitle();names.returnFade=0;
+            if(boss==Boss.OCTOPUS)names.clock=.45f;
             shot(dir,"200-name-title"+(boss==0?"":"-"+boss),names,L,w,h,ss);
             names.startGame();names.timeAttack.versus.update(names,.01f,L);names.timeAttack.versus.time=1.4f;
             shot(dir,"200-name-versus"+(boss==0?"":"-"+boss),names,L,w,h,ss);
