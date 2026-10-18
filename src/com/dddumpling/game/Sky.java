@@ -99,13 +99,13 @@ final class Sky extends Draw {
      *
      * Two things make it read as cloud rather than as a row of separate shapes. The puffs
      * are much wider than the gap between them, so they merge into one mass; and each is
-     * drawn three times at increasing size with the outermost barely visible, so the
+     * drawn in six translucent depth layers with the outermost barely visible, so the
      * accumulated alpha falls off gradually instead of ending at a hard edge.
      */
     static void cloud(Painter p, float cx, float cy, float w, float h, int tint,
             int alpha, int seed) {
         p.fillPoly(pill(cx, cy, w * 0.5f, h * 0.40f, 10),
-                Glyph.withAlpha(tint, alpha * 40 / 100));
+                Glyph.withAlpha(tint, alpha * 22 / 100));
 
         int puffs = 4;
         for (int k = 0; k < puffs; k++) {
@@ -118,12 +118,13 @@ final class Sky extends Draw {
             float rx = ry * (2.3f + 0.8f * hash(seed + k * 57));
             float py = cy - h * 0.12f * bump + h * 0.10f * (hash(seed + k * 91) - 0.5f);
 
-            // Outermost first, faintest: the overlap builds the falloff.
-            p.fillPoly(pill(px, py, rx * 1.42f, ry * 1.42f, 8),
-                    Glyph.withAlpha(tint, alpha / 5));
-            p.fillPoly(pill(px, py, rx * 1.20f, ry * 1.20f, 8),
-                    Glyph.withAlpha(tint, alpha / 3));
-            p.fillPoly(pill(px, py, rx, ry, 8), Glyph.withAlpha(tint, alpha));
+            // More gradual edges with less accumulated opacity, including over the words.
+            for(int depth=0;depth<6;depth++) {
+                float spread=1.45f-depth*.09f;
+                float density=.045f+.009f*depth*depth;
+                p.fillPoly(pill(px,py,rx*spread,ry*spread,8),
+                        Glyph.withAlpha(tint,Math.round(alpha*density)));
+            }
         }
     }
 
