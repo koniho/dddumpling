@@ -66,13 +66,22 @@ final class RainbowLand extends Draw {
     }
     static void title(Painter p,float x,float y,float s,float span,float rise,float clock,float fade,boolean front) {
         if(!front)return;
-        float root=y+s*.30f+(1-rise)*s*3f;
-        int alpha=(int)(fade*rise*148);
-        p.save();p.clipRect(x-span-s*.3f,y-s*3.1f,x+span+s*.3f,y+s*.65f);
-        // The crest clears the letter tops while translucent lower bands cross their faces.
-        for(int i=0;i<RainbowCatArt.COLORS.length;i++)
-            RainbowCatArt.arch(p,x,root,span*.96f-i*s*.16f,s*(2.65f-i*.17f),
-                    Glyph.withAlpha(RainbowCatArt.COLORS[i],alpha),s*.19f);
+        float root=y-s*.10f+(1-rise)*s*4f;
+        int alpha=(int)(fade*rise*148),bands=RainbowCatArt.COLORS.length;
+        float half=span*.96f,bandWidth=s*.36f;
+        p.save();p.clipRect(x-span-s*.65f,y-s*3.1f,x+span+s*.65f,y+s*1.35f);
+        // A broad parabolic ribbon keeps a gentle slope at both ends and even band thickness.
+        for(int band=0;band<bands;band++) {
+            float[] ribbon=new float[100];
+            for(int i=0;i<=24;i++) {
+                float u=i/12f-1,cy=root-s*1.8f*(1-u*u),slope=s*3.6f*u/half;
+                float ny=1f/(float)Math.sqrt(1+slope*slope),nx=-slope*ny;
+                float outer=(band-bands*.5f)*bandWidth,inner=outer+bandWidth;
+                ribbon[i*2]=x+u*half+nx*outer;ribbon[i*2+1]=cy+ny*outer;
+                ribbon[(49-i)*2]=x+u*half+nx*inner;ribbon[(49-i)*2+1]=cy+ny*inner;
+            }
+            p.fillPoly(ribbon,Glyph.withAlpha(RainbowCatArt.COLORS[band],alpha));
+        }
         p.restore();
     }
     static final int[] CLEAR_COLORS={0xFFFF3C80,0xFFFF8C28,0xFFFFE33C,0xFF38E884,0xFF39CFFF,0xFFAE64FF};
