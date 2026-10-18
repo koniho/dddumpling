@@ -10,15 +10,17 @@ import java.io.File;
 final class Preview {
     private static void skinFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("200-"))return;
-        GameCore names=TestTimeAttack.start(Boss.SLIME);names.preferences.skin=Skins.HALLOWEEN;
-        names.toTitle();names.returnFade=0;
-        shot(dir,"200-name-title",names,L,w,h,ss);
-        names.startGame();names.timeAttack.versus.update(names,.01f,L);names.timeAttack.versus.time=1.4f;
-        shot(dir,"200-name-versus",names,L,w,h,ss);
-        names.timeAttack.versus.time=TimeAttackVersus.DURATION;names.boss.intro=Boss.INTRO*.5f;
-        shot(dir,"200-name-arrival",names,L,w,h,ss);
-        names.boss.intro=0;
-        shot(dir,"200-name-battle",names,L,w,h,ss);
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            GameCore names=TestTimeAttack.start(boss);names.preferences.skin=Skins.HALLOWEEN;
+            names.toTitle();names.returnFade=0;
+            shot(dir,"200-name-title"+(boss==0?"":"-"+boss),names,L,w,h,ss);
+            names.startGame();names.timeAttack.versus.update(names,.01f,L);names.timeAttack.versus.time=1.4f;
+            shot(dir,"200-name-versus"+(boss==0?"":"-"+boss),names,L,w,h,ss);
+            names.timeAttack.versus.time=TimeAttackVersus.DURATION;names.boss.intro=Boss.INTRO*.5f;
+            shot(dir,"200-name-arrival"+(boss==0?"":"-"+boss),names,L,w,h,ss);
+            names.boss.intro=0;
+            shot(dir,"200-name-battle"+(boss==0?"":"-"+boss),names,L,w,h,ss);
+        }
         RasterPainter raster=new RasterPainter(w,h,ss);raster.clear(Draw.BG);
         raster.text("HALLOWEEN KEYS",w*.5f,h*.055f,w*.055f,Draw.INK,Painter.CENTER,true);
         for(int g=0;g<6;g++) {

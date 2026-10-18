@@ -22,8 +22,9 @@ flashes; decorations follow the body pose. Palette wrappers disable cached art s
 recoloring each primitive is required. `Skins.bossName(skin, boss)` is the sole live boss-name registry. Resolve names before measuring,
 wrapping or drawing text; painters must never replace text. Title selection, VS text/narration,
 battle titles, tutorials, rewards, score headings and death blurbs all use this resolver. Null seasonal overrides inherit
-the default name. Super Ghost is a display/narration alias: boss IDs,
-unlocks and score records stay shared with Super Slime. Both native sound backends support the
+the default name. Halloween uses Super Ghost, Bubble Gum, Ghastly Squid, Poison Cap and
+Costumed Croc. These are display/narration aliases: boss IDs, unlocks and score records stay
+shared with the default forms. Costumed Croc’s bow tie follows the head’s pose and scale. Both native sound backends support the
 skin-aware versus announcement while retaining the older default-skin overload.
 
 To extend: add a stable skin ID/name and key palette, add artwork at these shared entry points,

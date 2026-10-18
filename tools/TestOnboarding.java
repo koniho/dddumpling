@@ -756,19 +756,19 @@ final class TestOnboarding extends Check {
         }
     }
     private static void speechPages(Layout L) {
-        for(int message=TutorialSpeech.MATCH;message<=TutorialSpeech.ALLIGATOR;message++) {
+        for(int skin=0;skin<Skins.COUNT;skin++)for(int message=TutorialSpeech.MATCH;message<=TutorialSpeech.ALLIGATOR;message++) {
             StringBuilder displayed=new StringBuilder();boolean fits=true;
-            for(int page=0;page<TutorialSpeech.pageCount(message);page++) {
-                String[] lines=TutorialSpeech.pageLines(message,page);
+            for(int page=0;page<TutorialSpeech.pageCount(message,skin);page++) {
+                String[] lines=TutorialSpeech.pageLines(message,page,skin);
                 fits&=lines.length>0 && lines.length<=3;
                 for(String line:lines)fits&=!line.isEmpty() && line.length()<=22;
-                String spoken=TutorialSpeech.spokenPage(message,page);
+                String spoken=TutorialSpeech.spokenPage(message,page,skin);
                 check("page ends on a complete sentence "+message+"/"+page,spoken.matches(".*[.!?]$"));
                 check("page narration equals displayed words "+message+"/"+page,spoken.equals(String.join(" ",lines)));
                 if(displayed.length()>0)displayed.append(' ');
                 displayed.append(spoken);
             }
-            check("every spoken word appears in readable bubbles "+message,fits && displayed.toString().equals(TutorialSpeech.spoken(message)));
+            check("every spoken word appears in readable bubbles "+message,fits && displayed.toString().equals(TutorialSpeech.spoken(message,skin)));
         }
         GameCore c=TestPowerTutorials.fresh(L,new Mem());Ear ear=new Ear();c.sound=ear;
         c.onboarding.rescue(c);c.update(DT,L);

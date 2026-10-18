@@ -14,7 +14,7 @@ final class Skins {
     // Null overrides inherit the default name; boss IDs and records never change with a skin.
     private static final String[][] BOSS_NAMES={
         {"SUPER SLIME","DARK DIVIDE","OCTOPULSE","FLY AGARIC","GUMMY GATOR"},
-        {"SUPER GHOST",null,null,null,null}
+        {"SUPER GHOST","BUBBLE GUM","GHASTLY SQUID","POISON CAP","COSTUMED CROC"}
     };
     static String bossName(int skin,int boss) {
         if(boss<0 || boss>=Boss.COUNT)return "";
@@ -117,5 +117,19 @@ final class Skins {
         }
         p.fillEllipse(x-w*.08f,y-h*.21f,w*.14f,h*.18f,0xFFFFB66A);
         p.fillEllipse(x-w*.12f,y-h*.25f,w*.045f,h*.04f,0xFFFFE6BA);
+        // The bow rides with the tilted head, just below the chin in every portrait and pose.
+        float bx=x-w*.05f,by=y+h*1.28f,bw=w*.36f,bh=h*.31f;
+        for(int side=-1;side<=1;side+=2) {
+            float flutter=(float)Math.sin(clock*4+side*.6f)*.10f;
+            float[] wing=HalloweenKeys.shape(bx,by,bw*side,bh,
+                    new float[]{.06f,-.23f,.92f,-.94f+flutter,1.08f,-.58f,1.04f,.65f+flutter,.83f,.86f,.08f,.23f});
+            p.fillPoly(wing,0xFF704093);
+            p.fillPoly(HalloweenKeys.shape(bx,by-bh*.10f,bw*side*.87f,bh*.72f,
+                    new float[]{.12f,-.12f,1,-.84f+flutter,1.05f,.50f,.84f,.68f,.10f,.16f}),0xFFB889DF);
+            p.line(bx+side*bw*.26f,by,bx+side*bw*.72f,by-bh*.38f,0xFFDDB8F1,w*.025f);
+        }
+        p.fillEllipse(bx,by,w*.11f,h*.24f,0xFFDB793F);
+        p.fillEllipse(bx-w*.015f,by-h*.035f,w*.085f,h*.18f,0xFFFFBC70);
+        p.fillEllipse(bx-w*.03f,by-h*.10f,w*.03f,h*.055f,0xFFFFE5B3);
     }
 }

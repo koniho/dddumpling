@@ -1739,15 +1739,16 @@ final class BossScreen extends Draw {
 
         float s = L.unit;
         float y = L.h * 0.30f;
-        float titleSize=type(s*1.8f),edge=s*.10f;
+        String name=b.name(p.skin());
+        float titleSize=Math.min(type(s*1.8f),L.w*.9f/(name.length()*.73f)),edge=s*.10f;
         int outline=Glyph.withAlpha(0xFF24162F,(int)(245*a));
         // Pale lettering and a dark rim stay readable over every boss's body.
         for(int side=0;side<4;side++) {
             float dx=side==0?-edge:side==1?edge:0f;
             float dy=side==2?-edge:side==3?edge:0f;
-            p.text(b.name(p.skin()),L.w*.5f+dx,y+dy,titleSize,outline,Painter.CENTER,true);
+            p.text(name,L.w*.5f+dx,y+dy,titleSize,outline,Painter.CENTER,true);
         }
-        p.text(b.name(p.skin()),L.w*.5f,y,titleSize,Glyph.withAlpha(0xFFFFF1C9,(int)(255*a)),
+        p.text(name,L.w*.5f,y,titleSize,Glyph.withAlpha(0xFFFFF1C9,(int)(255*a)),
                 Painter.CENTER,true);
         p.text(Boss.BLURB[b.kind], L.w / 2f, y + type(s * 1.35f), type(s * 0.62f),
                 Glyph.withAlpha(INK, (int) (225 * a)), Painter.CENTER, false);
