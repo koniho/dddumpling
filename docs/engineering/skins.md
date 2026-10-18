@@ -12,8 +12,8 @@ render different skins in the same process. Tutorial practice copies the prefere
 and follows a selection change while it is open.
 
 Halloween key artwork lives in `HalloweenKeys`, reached through `Kawaii` for normal, surprised,
-determined and crying states. Key IDs and input positions remain unchanged: 0 ghost, 1 apple,
-2 Jack-o'-lantern, 3 witch, 4 Frankenstein, 5 bat. `Skins.keyColor` supplies the matching key and
+determined and crying states. Key IDs and input positions remain unchanged: 0 ghost, 1 red bat,
+2 Jack-o'-lantern, 3 witch, 4 Frankenstein, 5 black cat. `Skins.keyColor` supplies the matching key and
 prompt palette. Gameplay RNG, matching, collision geometry and progress do not depend on skins.
 
 Boss skins reuse the existing spring-body geometry and animation entry points in `BossScreen`,

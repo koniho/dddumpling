@@ -5,8 +5,8 @@ final class Skins {
     static final int DEFAULT=0, HALLOWEEN=1, COUNT=2;
     static final String[] NAMES={"DEFAULT","HALLOWEEN"};
     // Preserve familiar key positions: cream, red, orange, purple, green, then black.
-    static final int[] HALLOWEEN_COLORS={0xFFF2F2FF,0xFFF26B78,0xFFFFA64F,0xFFBA8BE8,0xFF8DD48B,0xFF51475F};
-    static final String[] HALLOWEEN_NAMES={"GHOST","APPLE","PUMPKIN","WITCH","FRANKENSTEIN","BAT"};
+    static final int[] HALLOWEEN_COLORS={0xFFF2F2FF,0xFFF26B78,0xFFFFA64F,0xFFBA8BE8,0xFF8DD48B,0xFF302A40};
+    static final String[] HALLOWEEN_NAMES={"GHOST","RED BAT","PUMPKIN","WITCH","FRANKENSTEIN","BLACK CAT"};
     static int valid(int skin) { return skin>=0 && skin<COUNT?skin:DEFAULT; }
     static boolean halloween(Painter p) { return p.skin()==HALLOWEEN; }
     static int keyColor(Painter p,int glyph) { return halloween(p)?HALLOWEEN_COLORS[glyph]:Glyph.COLOR[glyph]; }

@@ -92,13 +92,14 @@ final class PlayerSettings extends Draw {
     void apply(GameCore c) {
         if (c.sound != null) c.sound.volumes(musicMuted ? 0f : music*Launch.musicGain(c), effectsMuted ? 0f : effects);
     }
-    static float unit(Layout L) { return Math.min(L.unit, L.h / 46f); }
+    static float unit(Layout L) { return Math.min(L.unit, L.h / 48f); }
     static float left(Layout L) { return L.w * .06f; }
     static float right(Layout L) { return L.w * .94f; }
-    static float height(Layout L) { return unit(L)*(BuildFlags.DEVELOPER?42f:39f); }
+    static float height(Layout L) { return unit(L)*(BuildFlags.DEVELOPER?44f:41f); }
     static float top(Layout L) { return Math.max(L.topSafe, (L.h - height(L))*.5f); }
     static float bottom(Layout L) { return Math.min(L.h-L.padB, top(L)+height(L)); }
-    static float row(Layout L, int row) { return top(L) + unit(L)*(new float[]{7f,14.5f,22f,39f}[row]-(BuildFlags.DEVELOPER?0f:3f)); }
+    static float row(Layout L, int row) { return top(L) + unit(L)*(new float[]{7f,13.5f,20.5f,40.5f}[row]-(BuildFlags.DEVELOPER?0f:3f)); }
+    static float knobR(GameCore c,Layout L) {return Math.min(L.keyR*c.keyScale(),unit(L)*1.65f);}
     static float trackL(Layout L) { return left(L)+L.keyR*Roster.STARTER_SCALE+unit(L)*.4f; }
     static float trackR(Layout L) { return right(L)-L.keyR*Roster.STARTER_SCALE-unit(L)*.4f; }
     static float volumeAt(Layout L, float x) {
@@ -117,20 +118,20 @@ final class PlayerSettings extends Draw {
         if (c.settingsPage==1 && BuildFlags.DEVELOPER) return 0;
         for (int i=0;i<2;i++) {
             if (Math.abs(y-row(L,i))<s && x>right(L)-s*5f) return i==0?MUSIC_MUTE:EFFECTS_MUTE;
-            if (Math.abs(y-(row(L,i)+s*3f))<L.keyR*c.keyScale() && x>=trackL(L)-L.keyR && x<=trackR(L)+L.keyR)
+            if (Math.abs(y-(row(L,i)+s*3f))<knobR(c,L) && x>=trackL(L)-L.keyR && x<=trackR(L)+L.keyR)
                 return i==0?MUSIC:EFFECTS;
         }
         if (Math.abs(y-row(L,2))<s*1.1f) return KIDS;
-        if (Math.abs(y-SkinSettings.buttonY(L))<s*.9f) return SkinSettings.OPEN;
-        if (Math.abs(y-socialY(L))<s*2.4f) return x<L.w*.5f?SHARE:RATE;
+        if (Math.abs(y-SkinSettings.buttonY(L))<s*2.25f) return SkinSettings.OPEN;
+        if (Math.abs(y-socialY(L))<s*2.1f) return x<L.w*.5f?SHARE:RATE;
         if (Math.abs(y-resetY(L))<s*1.2f) return ScoreReset.OPEN;
         if (Math.abs(y-tutorialY(L))<s*1.2f) return TUTORIALS;
         if (Math.abs(y-row(L,3))<s*1.1f) return PRIVACY;
         return 0;
     }
-    static float resetY(Layout L) { return top(L)+unit(L)*(BuildFlags.DEVELOPER?32f:29f); }
+    static float resetY(Layout L) { return top(L)+unit(L)*(BuildFlags.DEVELOPER?34f:31f); }
     static float tutorialY(Layout L) { return resetY(L)+unit(L)*3f; }
-    static float socialY(Layout L) { return top(L)+unit(L)*(BuildFlags.DEVELOPER?27.5f:24.5f); }
+    static float socialY(Layout L) { return top(L)+unit(L)*(BuildFlags.DEVELOPER?29.5f:26.5f); }
     static void open(GameCore c) {
         c.openSettings();c.settingsPage=0;
     }
@@ -167,8 +168,8 @@ final class PlayerSettings extends Draw {
             float sy=y+s*3f,x=trackL(L)+(trackR(L)-trackL(L))*v;
             p.fillRect(trackL(L),sy-s*.12f,trackR(L),sy+s*.12f,0x55FFFFFF);
             p.fillRect(trackL(L),sy-s*.12f,x,sy+s*.12f,GOLD);
-            SettingsArt.draw(p,i==0,x,sy,L.keyR*c.keyScale(),v,muted||v==0f,c.clock);
-            p.text(Math.round(v*100)+"%",r-s*1.5f,sy+L.keyR+s*.8f,type(s*.43f),INK_DIM,Painter.RIGHT,false);
+            SettingsArt.draw(p,i==0,x,sy,knobR(c,L),v,muted||v==0f,c.clock);
+            p.text(Math.round(v*100)+"%",r-s*1.5f,sy+knobR(c,L)+s*.8f,type(s*.43f),INK_DIM,Painter.RIGHT,false);
         }
         p.text("KIDS MODE",trackL(L),row(L,2)+s*.25f,type(s*.57f),INK,Painter.LEFT,true);
         SettingsArt.kidsToggle(p,r-s*3.2f,row(L,2),s,a.kidsPosition(c.clock),a.kidsLift(c.clock));
@@ -187,7 +188,7 @@ final class PlayerSettings extends Draw {
                 ?(float)Math.sin(Math.max(0f,age)/.7f*Math.PI):0f;
         float l=share?left(L)+s*.5f:L.w*.5f+s*.3f;
         float right=share?L.w*.5f-s*.3f:right(L)-s*.5f;
-        p.fillRect(l,y-s*2.4f,right,y+s*2.4f,share?0x334DCEAA:0x33F4C552);
+        p.fillRect(l,y-s*2.1f,right,y+s*2.1f,share?0x334DCEAA:0x33F4C552);
         if(share) {
             // Ease the handoff there and back so the four-second loop has no reset snap.
             float give=.5f-.5f*(float)Math.cos(c.clock*Softbody.TAU/4f);

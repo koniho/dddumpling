@@ -524,13 +524,23 @@ final class TestSettings extends Check {
         for(int[] size:new int[][]{{320,568},{393,852},{640,960},{1080,2400}}) {
             Layout l=new Layout();l.compute(size[0],size[1],0,0,0,0);
             PlayerSettings.open(c);c.update(PlayerSettings.PANEL_TIME,l);
-            float s=PlayerSettings.unit(l), r=l.keyR;
+            float s=PlayerSettings.unit(l), r=PlayerSettings.knobR(c,l);
             check("sliding characters fit at both endpoints "+size[0],PlayerSettings.trackL(l)-r>=PlayerSettings.left(l)
                     && PlayerSettings.trackR(l)+r<=PlayerSettings.right(l));
             check("audio handles clear labels and next rows "+size[0],PlayerSettings.row(l,0)+s*3-r>PlayerSettings.row(l,0)+s*.3f
                     && PlayerSettings.row(l,1)+s*3+r+s*.8f<PlayerSettings.row(l,2));
             check("mute and slider have distinct hit areas "+size[0],PlayerSettings.hit(c,l,PlayerSettings.right(l)-s*3,PlayerSettings.row(l,0))==PlayerSettings.MUSIC_MUTE
                     && PlayerSettings.hit(c,l,l.w*.5f,PlayerSettings.row(l,0)+s*3)==PlayerSettings.MUSIC);
+            float skins=SkinSettings.buttonY(l);
+            check("skin preview has clear space between kids and social cards "+size[0],
+                    skins-s*2.25f>PlayerSettings.row(l,2)+s*1.1f
+                    && skins+s*2.25f<PlayerSettings.socialY(l)-s*2.1f);
+            check("whole skin card opens its picker "+size[0],
+                    PlayerSettings.hit(c,l,l.w*.5f,skins-s*2.1f)==SkinSettings.OPEN
+                    && PlayerSettings.hit(c,l,l.w*.5f,skins+s*2.1f)==SkinSettings.OPEN);
+            check("gallery clears footer and settings bottom "+size[0],
+                    SkinSettings.cardTop(l,1)+SkinSettings.cardHeight(l)<SkinSettings.backY(l)-s*1.3f
+                    && SkinSettings.backY(l)+s*.8f<PlayerSettings.bottom(l));
             SettingsInput input=new SettingsInput();float y=PlayerSettings.row(l,1)+s*3;
             input.touch(c,l,0,7,PlayerSettings.trackL(l),y);
             input.touch(c,l,2,99,PlayerSettings.trackR(l),y);

@@ -38,7 +38,7 @@ final class SettingsInput {
             if(pressed==1000+PlayerSettings.MUSIC || pressed==1000+PlayerSettings.EFFECTS) {
                 float v=pressed==1000+PlayerSettings.MUSIC?c.preferences.music:c.preferences.effects;
                 float knob=PlayerSettings.trackL(L)+(PlayerSettings.trackR(L)-PlayerSettings.trackL(L))*v;
-                if(Math.abs(x-knob)<=L.keyR*c.keyScale()) offset=knob-x;
+                if(Math.abs(x-knob)<=PlayerSettings.knobR(c,L)) offset=knob-x;
             }
             if(slider(pressed)) drag(c,L,x+offset);
         } else if(id==pointer && action==2) {
