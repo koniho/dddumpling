@@ -117,6 +117,7 @@ final class StarScreen extends Draw {
         p.polyline(route, fadeBy(Glyph.withAlpha(0xFFBDEBFF,
                 (int) (115 * (q.flying() ? beat : 1f))), cf), pearl * beat);
         if (q.flying()) pulse(p, q, route, L, c.clock, cf, pearl);
+        pickupRings(p, q, L, fade * particleFade(q));
         for (int i = 0; i < q.total(); i++) {
             float y = q.starY(i, L);
             if (y < L.playTop - s * 2f || y > L.dangerY + s * 2f) continue;
@@ -141,24 +142,6 @@ final class StarScreen extends Draw {
             p.fillCircle(xStar, y, outer * StarPath.HEART, fadeBy(orb, cf));
             p.fillCircle(xStar - outer * 0.065f, y - outer * 0.075f, outer * 0.065f,
                     fadeBy(Glyph.withAlpha(0xFFFFFFFF, got ? 45 : 210), cf));
-
-            float b = q.burst[i];
-            if (b > 0f) {
-                float out = (1f - b) * s * 2.4f;
-                int shine = fadeBy(Glyph.withAlpha(0xFFFFFFFF, (int) (255 * b)), cf);
-                // A white glint crosses the star while eight sparks burst away from it.
-                p.line(xStar - outer * 0.75f, y, xStar + outer * 0.75f, y, shine,
-                        s * 0.12f * b);
-                p.line(xStar, y - outer * 0.75f, xStar, y + outer * 0.75f, shine,
-                        s * 0.12f * b);
-                for (int k = 0; k < 8; k++) {
-                    double a = k * Math.PI / 4 + i * 0.19f;
-                    float ux = (float) Math.cos(a), uy = (float) Math.sin(a);
-                    float x0 = xStar + ux * outer * 0.65f;
-                    float y0 = y + uy * outer * 0.65f;
-                    p.line(x0, y0, x0 + ux * out, y0 + uy * out, shine, s * 0.09f * b);
-                }
-            }
         }
 
         if (q.winning()) {
@@ -216,6 +199,40 @@ final class StarScreen extends Draw {
             p.text(q.won ? "ALL STARS!" : count + " STARS", L.w / 2f, L.h * 0.38f,
                     type(s * 1.15f), fadeBy(q.won ? GOLD : INK, fade), Painter.CENTER, true);
         }
+    }
+
+    /** Open gold halos and star sparks leave the flyer and the next checkpoint readable. */
+    private static void pickupRings(Painter p, StarPath q, Layout L, float fade) {
+        float outer = StarPath.starOuter(L);
+        for (int i = 0; i < q.total(); i++) {
+            float life = q.burst[i];
+            if (life <= 0f) continue;
+            float age = 1f - life, expand = 1f - life * life;
+            float x = q.burstX[i] * L.w, y = q.burstY[i] * L.h;
+            float radius = outer * (0.70f + 1.65f * expand);
+            float alpha = fade * life * life;
+            pickupRing(p, x, y, radius, fadeBy(0x70FFAD4F, alpha), L.unit * .52f);
+            pickupRing(p, x, y, radius, fadeBy(0xFFFFF6C7, alpha), L.unit * .19f);
+            pickupRing(p, x, y, radius * .78f, fadeBy(0xCBFFD477, alpha), L.unit * .11f);
+            for (int k = 0; k < 8; k++) {
+                float angle = i * .37f + k * StarPath.TAU / 8f + age * .28f;
+                float reach = radius * (k % 2 == 0 ? 1f : 1.13f);
+                float px = x + (float) Math.cos(angle) * reach;
+                float py = y + (float) Math.sin(angle) * reach;
+                float r = outer * .24f * (1f - age * .65f);
+                int tint = k % 2 == 0 ? 0xFFFFF6C7 : 0xFFFFB9DD;
+                p.fillPoly(star(px, py, r * 1.6f, r * .58f, 4, angle),
+                        fadeBy(Glyph.withAlpha(tint, 55), alpha));
+                p.fillPoly(star(px, py, r, r * .38f, 4, angle), fadeBy(tint, alpha));
+            }
+        }
+    }
+
+    private static void pickupRing(Painter p, float x, float y, float radius, int color, float width) {
+        // Filled contours avoid doubled alpha at the joints of a translucent circle stroke.
+        float outer = radius + width * .5f, inner = radius - width * .5f;
+        p.fillContours(new float[][] {pill(x, y, outer, outer, 32),
+                pill(x, y, inner, inner, 32)}, color);
     }
 
     /** Enters softly; an incomplete report leaves through the parade's cross-fade into play. */

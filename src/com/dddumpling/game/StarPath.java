@@ -222,8 +222,11 @@ final class StarPath {
     private static final float DT = 1f / 60f;
 
     final float[] sx = new float[MAX_COUNT];
-    /** 1 on pickup, decaying to zero; drives the shine and burst without spawning objects. */
+    /** Independent pickup rings, anchored where each star was caught. */
+    static final float BURST_TIME = 0.65f;
     final float[] burst = new float[MAX_COUNT];
+    /** Pickup positions as view fractions, so resizing keeps the effects in place. */
+    final float[] burstX = new float[MAX_COUNT], burstY = new float[MAX_COUNT];
     /** Frozen for one course so recording its win cannot move its finish line. */
     int courseCount = COUNT;
     int collected;
@@ -232,7 +235,7 @@ final class StarPath {
     boolean left, right, won, dragging, steered;
     /**
      * Seconds of victory tableau left. While this is running every other kind of motion here is
-     * frozen — the scroll, the steering and the pickup shines all hold where the win found them.
+     * frozen except for the pickup rings, which finish where the win found them.
      */
     float winT;
     /** Which checkpoint completed the course, so the prize can climb out of that one. */
@@ -297,7 +300,7 @@ final class StarPath {
             sx[i] = at;
         }
         collected = 0;
-        for (int i = 0; i < MAX_COUNT; i++) burst[i] = 0f;
+        clearBursts();
     }
 
     /**
@@ -329,10 +332,8 @@ final class StarPath {
         winT = 0f;
         winStar = -1;
         grabbed = launched = reported = awardPending = false;
-        for (int i = 0; i < MAX_COUNT; i++) {
-            sx[i] = 0f;
-            burst[i] = 0f;
-        }
+        for (int i = 0; i < MAX_COUNT; i++) sx[i] = 0f;
+        clearBursts();
     }
 
     /**
@@ -414,7 +415,7 @@ final class StarPath {
         winT = 0f;
         winStar = -1;
         awardPending = false;
-        for (int i = 0; i < courseCount; i++) burst[i] = 0f;
+        clearBursts();
     }
 
     boolean ready() { return timer > FLY + EXIT + REPORT; }
@@ -503,15 +504,18 @@ final class StarPath {
         vx = 0f;
     }
 
+    private void clearBursts() {
+        for (int i = 0; i < MAX_COUNT; i++) burst[i] = burstX[i] = burstY[i] = 0f;
+    }
+
     void update(float dt, Layout L) {
+        for (int i = 0; i < courseCount; i++) {
+            burst[i] = Math.max(0f, burst[i] - dt / BURST_TIME);
+            if (burst[i] == 0f) burstX[i] = burstY[i] = 0f;
+        }
         if (winning()) {
             // The course stops: no scroll, no steering, no further pickups. The tableau is drawn
             // over a still frame rather than over a course still sliding out from under it.
-            //
-            // The shines are the exception, and deliberately: a pickup burst frozen part-way
-            // through leaves a white glint stuck beside the last star for the whole tableau, which
-            // reads as a drawing fault. It is the pickup that just landed, so it finishes.
-            for (int i = 0; i < courseCount; i++) burst[i] = Math.max(0f, burst[i] - dt * 1.8f);
             winT -= dt;
             if (winT <= 0f) {
                 winT = 0f;
@@ -532,7 +536,6 @@ final class StarPath {
         // a number arriving without a prize behind it.
         reported = !won && !wasReporting && reporting();
         grabbed = false;
-        for (int i = 0; i < courseCount; i++) burst[i] = Math.max(0f, burst[i] - dt * 1.8f);
         if (!flying()) return;
         float dir = left == right ? 0f : left ? -1f : 1f;
         float max = L.w * MAX_VX;
@@ -554,6 +557,8 @@ final class StarPath {
             if (dx * dx + dy * dy <= 1f) {
                 collected |= 1 << i;
                 burst[i] = 1f;
+                burstX[i] = starX(i, L) / L.w;
+                burstY[i] = starY(i, L) / L.h;
                 if (complete()) {
                     // The last one. The course is over here rather than when the clock runs out,
                     // so the win is announced where it happened.
