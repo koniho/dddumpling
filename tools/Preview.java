@@ -28,9 +28,13 @@ final class Preview {
             if(i==30)shot(dir,"151-net-windup-full",c,L,w,h,ss);
         }
         a.touch(c,L,1,151,a.x+a.circleRadius(),a.y);
-        c.boss.update(.16f,L,c.rnd);
+        c.boss.update(.08f,L,c.rnd);
+        shot(dir,"151-net-swing-start",c,L,w,h,ss);
+        c.boss.update(.08f,L,c.rnd);
         shot(dir,"151-net-release",c,L,w,h,ss);
-        c.boss.update(.18f,L,c.rnd);
+        c.boss.update(.10f,L,c.rnd);
+        shot(dir,"151-net-swing-wrap",c,L,w,h,ss);
+        c.boss.update(.08f,L,c.rnd);
         shot(dir,"151-net-catch",c,L,w,h,ss);
         c.boss.update(RainbowCat.NET_TIME-.34f,L,c.rnd);
         for(int i=0;i<16;i++)c.boss.update(1f/60,L,c.rnd);

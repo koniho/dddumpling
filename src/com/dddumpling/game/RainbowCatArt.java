@@ -90,6 +90,13 @@ final class RainbowCatArt extends Draw {
             nx=loadedX+(a.catchX-loadedX)*u;
             ny=loadedY+(a.catchY-r*1.05f-loadedY)*u-r*.9f*(float)Math.sin(u*Math.PI);
             tilt=(-.25f-.65f*wind)*(1-u)-.13f*u;size=.45f+.55f*u;
+            if(a.phase==RainbowCat.CATCH) {
+                // Scoop around the cat's left side, turning the entire hoop and pouch through the swing.
+                float sweep=(float)Math.sin(u*Math.PI);
+                nx-=r*1.7f*sweep;ny-=r*.45f*sweep;tilt-=1.8f*sweep;
+                float settle=RainbowCat.clamp((a.netAge-.34f)/(RainbowCat.NET_TIME-.34f),0,1);
+                tilt+=.16f*(float)Math.sin(settle*Softbody.TAU*1.2f)*(1-settle);
+            }
         }
         float struggle=a.phase==RainbowCat.OPEN || (a.phase==RainbowCat.CATCH && a.netAge>=.34f)?1:0;
         float rx=r*2.15f*size,ry=r*.52f*size,depth=r*2.72f*size;
@@ -131,7 +138,7 @@ final class RainbowCatArt extends Draw {
         if(a.phase==RainbowCat.CATCH && a.netAge<.34f) {
             float burst=(float)Math.sin(u*Math.PI);
             for(int band=0;band<3;band++)q.arc(cx,cy,r*(1.5f+band*.30f),r*(1.5f+band*.30f),
-                    185+u*80,70,fadeBy(COLORS[band+2],burst*.6f),r*.10f);
+                    175+u*170,110,fadeBy(COLORS[band+2],burst*.6f),r*.10f);
         }
         int who=c.companion.who;
         if(who>=0) {
