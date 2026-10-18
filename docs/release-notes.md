@@ -112,6 +112,7 @@ Keep a separate entry only when it communicates a distinct change the player nee
 | `town` | Town visits and attractions | The title screen's meadow and slide |
 | `swipe` | Rescue-swipe lesson | Shared instruction hand swiping up from a pulsing bar |
 | `settings` | Player settings | Hexagon with three menu lines |
+| `halloween` | Halloween cosmetic skins | Bouncing pumpkin, floating ghost, black cat and fluttering red bat using the actual skin artwork |
 | `news` | Exploring release notes | Little steamer |
 | `flurry` | Flurry pickup feedback | Circular rainbow |
 | `travel` | Choosing or traveling between lands | Interactive land travel |

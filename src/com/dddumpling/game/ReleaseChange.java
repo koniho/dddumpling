@@ -4,7 +4,7 @@ package com.dddumpling.game;
 final class ReleaseChange extends Draw {
     static final int TRAVEL=0, STARS=1, BUGS=2, SHUFFLE=3, DISGUISE=4, SLIME=5,
             PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11, SETTINGS=12, SWIPE=13, SCORES=14, OCTOPULSE=15,
-            COMPANION=16, TUTORIAL=17, TOWN=18, SURVIVAL=19, TIME_ATTACK=20, SWAMP=21, RUSH=22, FOG=23;
+            COMPANION=16, TUTORIAL=17, TOWN=18, SURVIVAL=19, TIME_ATTACK=20, SWAMP=21, RUSH=22, FOG=23, HALLOWEEN=24;
     private static final class FogIcon {
         static final GameCore.Enemy WORD=new GameCore.Enemy();
         static {WORD.word=new int[]{0,1,2};WORD.enterT=1f;WORD.swampKind=SwampEnemies.FOG;}
@@ -12,8 +12,29 @@ final class ReleaseChange extends Draw {
     static final int[][] ITEMS=ReleaseContent.ITEMS;
     static boolean playable(int id) { return id==TRAVEL || id==SHUFFLE || id==PAIR; }
     static float artUnits(int id) { return id==TRAVEL ? 8f : id==PAIR ? 9f : id==SHUFFLE ? 9f : 5f; }
+    private static void halloween(Painter p,float x,float y,float r,float time) {
+        p=Skins.painter(p,Skins.HALLOWEEN);
+        // Real costume art stays recognizable in both the small list and the roomy popup.
+        p.fillEllipse(x,y+r*.12f,r*.94f,r*.70f,0x224E397F);
+        for(int side=-1;side<=1;side+=2) {
+            float twinkle=.75f+.25f*(float)Math.sin(time*3+side);
+            p.fillPoly(star(x+side*r*.73f,y-r*.55f,r*.14f*twinkle,r*.045f,4,.15f*side),
+                    Glyph.withAlpha(side<0?0xFFFFBE70:0xFFC3A1F0,(int)(210*twinkle)));
+        }
+        float bob=(float)Math.sin(time*3),hop=Math.max(0,(float)Math.sin(time*3+.9f));
+        HalloweenKeys.draw(p,Kawaii.STRAWBERRY,x+r*.15f*(float)Math.sin(time*1.6f),
+                y-r*(.64f+.07f*bob),r*.28f,Skins.HALLOWEEN_COLORS[1],1,.4f,0,time);
+        HalloweenKeys.draw(p,Kawaii.DUMPLING,x-r*.54f,y-r*.02f+r*.10f*bob,
+                r*.47f,Skins.HALLOWEEN_COLORS[0],1+.04f*bob,.8f,0,time);
+        HalloweenKeys.draw(p,Kawaii.BLOB,x+r*.53f,y+r*.02f-r*.08f*bob,
+                r*.47f,Skins.HALLOWEEN_COLORS[5],1-.04f*bob,.3f,0,time);
+        HalloweenKeys.draw(p,Kawaii.CAT,x,y+r*(.32f-.10f*hop),r*.55f,
+                Skins.HALLOWEEN_COLORS[2],1+.07f*bob,.5f,0,time);
+    }
     static void icon(Painter p,int id,float x,float y,float r,float time) {
-        if(id==FOG) {
+        if(id==HALLOWEEN) {
+            halloween(p,x,y,r,time);
+        } else if(id==FOG) {
             p.save();p.translate(x,y);
             float rr=r*.28f,step=r*.6f;
             SwampEnemies.fog(p,FogIcon.WORD,rr,step,0,time,0);

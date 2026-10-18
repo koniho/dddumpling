@@ -25,6 +25,13 @@ class ReleaseNotes(unittest.TestCase):
         data['releases'][0]['changes'][0]['autoReset'] = False
         self.assertIn('ReleaseChange.SETTINGS', notes.render(data))
 
+    def test_halloween_icon_generates_matching_game_identifier(self):
+        data = copy.deepcopy(self.data)
+        data['releases'][0]['changes'][0]['icon'] = 'halloween'
+        data['releases'][0]['changes'][0]['autoReset'] = False
+        notes.validate(data)
+        self.assertIn('ReleaseChange.HALLOWEEN', notes.render(data))
+
     def test_review_image_uses_draft_without_changing_catalog_and_opens_android(self):
         draft = {'version': '1.0.0', 'changes': [{'icon': 'swipe', 'title': 'Swipe',
                  'autoReset': False, 'where': 'Last life', 'why': 'Swipe up.'}]}
