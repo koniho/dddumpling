@@ -38,7 +38,10 @@ final class RainbowCatArt extends Draw {
         }
     }
     static void portrait(Painter p,float x,float y,float r,float t,boolean known,float fade) {
-        cat(new OpacityPainter(p,fade),x-r*.12f,y,r*.67f,t,1,null,null,false,known?1:0);
+        portrait(p,x,y,r,t,known,fade,1);
+    }
+    static void portrait(Painter p,float x,float y,float r,float t,boolean known,float fade,int facing) {
+        cat(new OpacityPainter(p,fade),x-facing*r*.12f,y,r*.67f,t,facing,null,null,false,known?1:0);
     }
     static void cat(Painter p,float x,float y,float r,float t,int facing,Softbody body,Softbody skull,boolean caught,float known) {
         int crust=known>0?0xFFFFD49A:0xFF49425F,fur=known>0?FUR:0xFF49425F;

@@ -116,6 +116,7 @@ final class TimeAttackDemo extends Draw {
     private static void portrait(Painter p,int boss,float x,float y,float r,float clock,boolean known,
             int mood,float look,float punch) {
         if(boss==Boss.ALLIGATOR)GatorCompanion.draw(p,x,y,r,clock,known,1,mood,look,false,punch);
+        else if(boss==Boss.RAINBOW_CAT)RainbowCatArt.portrait(p,x,y,r,clock,known,1,-1);
         else BossCollect.draw(p,boss,x,y,r,clock,known,1,mood,look);
     }
     private static void signature(Painter p,int boss,float x,float y,float r,float t,float charge,int tint) {

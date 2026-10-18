@@ -274,7 +274,7 @@ final class BossScreen extends Draw {
                     body.radiusX(),body.radiusY(),body.radius(),0xFF83E51C,clock,false,1);
             return;
         }
-        if(b.kind==Boss.RAINBOW_CAT) {RainbowCatArt.portrait(p,x,y,r,clock,true,1);return;}
+        if(b.kind==Boss.RAINBOW_CAT) {RainbowCatArt.portrait(p,x,y,r,clock,true,1,-1);return;}
         if(b.kind==Boss.ALLIGATOR) {AlligatorArt.portrait(p,x,y,r,clock,true,1,true);return;}
         if(b.body==null)return;
         float br=Boss.bodyR(L),cx=b.body.centreX(),cy=b.body.centreY();
