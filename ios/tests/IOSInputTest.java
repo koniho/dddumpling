@@ -61,6 +61,18 @@ public final class IOSInputTest extends Check {
         check("native key deck advances challenge",a.at==1);
         game.touch(one(0,152,l.playLeft,a.y));game.touch(one(3,152,l.playLeft,a.y));
         check("native cancellation releases cat touch",a.pointer==-1);
+        for(int i=0;i<6 && a.phase==RainbowCat.OPEN;i++) {
+            g=a.prompt[a.at];tap(game,c.keyX(l,g),c.keyY(l,g));
+        }
+        for(int i=0;i<160 && a.phase!=RainbowCat.CIRCLE;i++) {
+            game.update(DT);if(a.canTap())tap(game,a.x,a.y);
+        }
+        check("native second capture shows star",a.starShape() && a.phase==RainbowCat.CIRCLE);
+        float[] star=TraceGesture.star();float radius=a.circleRadius();
+        game.touch(one(0,151,a.x+star[0]*radius,a.y+star[1]*radius));
+        for(int i=1;i<=5;i++)game.touch(one(2,151,a.x+star[i*2]*radius,a.y+star[i*2+1]*radius));
+        game.touch(one(1,151,a.x+star[0]*radius,a.y+star[1]*radius));
+        check("native five crossing strokes catch cat",a.phase==RainbowCat.CATCH);
 
     }
 

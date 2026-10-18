@@ -55,7 +55,7 @@ final class Bot {
     private float fogThink;
     private float gatorX,gatorY,gatorEnd;
     private boolean gatorSwipe;
-    private float lidSwipeAge,catCircleAngle;
+    private float lidSwipeAge,catTraceDistance;
     private boolean catCircling;
 
     /**
@@ -266,11 +266,11 @@ final class Bot {
         if(c.bossFighting() && c.boss.kind==Boss.RAINBOW_CAT) {
             RainbowCat a=c.boss.cat;
             if(catCircling) {
-                catCircleAngle+=dt*DRAG_SPEED*L.w/a.circleRadius();
-                float px=a.circleX()+(float)Math.cos(catCircleAngle)*a.circleRadius();
-                float py=a.circleY()+(float)Math.sin(catCircleAngle)*a.circleRadius();
+                catTraceDistance+=dt*DRAG_SPEED*L.w/a.circleRadius();
+                float px=a.circleX()+a.gesture.coordinate(catTraceDistance,0)*a.circleRadius();
+                float py=a.circleY()+a.gesture.coordinate(catTraceDistance,1)*a.circleRadius();
                 a.touch(c,L,2,151,px,py);
-                if(a.phase!=RainbowCat.CIRCLE || catCircleAngle>=Softbody.TAU) {
+                if(a.phase!=RainbowCat.CIRCLE || catTraceDistance>=a.gesture.length) {
                     a.touch(c,L,1,151,px,py);catCircling=false;think=reaction;
                 }
                 return;
@@ -285,8 +285,8 @@ final class Bot {
                 if(rnd.nextFloat()<missRate)glyph=Roster.randomExcept(c.playRosterFull(),glyph,rnd);
                 c.tapKey(glyph,L);
             } else if(budget>=1f && a.phase==RainbowCat.CIRCLE) {
-                budget-=1;presses++;catCircleAngle=0;catCircling=true;
-                a.touch(c,L,0,151,a.circleX()+a.circleRadius(),a.circleY());
+                budget-=1;presses++;catTraceDistance=0;catCircling=true;
+                a.touch(c,L,0,151,a.circleX()+a.gesture.coordinate(0,0)*a.circleRadius(),a.circleY()+a.gesture.coordinate(0,1)*a.circleRadius());
             } else if(budget>=1f && a.canTap()) {
                 budget-=1;presses++;think=reaction;
                 // A bounded tap with aim error; holding a finger never earns another hit.

@@ -835,5 +835,5 @@ The final arm tear ends the fight without another throw.
 Octopulse’s visual enrage warning starts at 40 seconds to allow for the added wind-ups and throws.
 
 - **Rainbow Land** — Adventure stages 26–30, after Swampland; floating clouds and rainbow arches.
-- **Rainbow Cat** — Rainbow Land boss. Tap him twice, circle him for your companion to catch him in a fishing net, then match each active key in order before his rainbow flurry.
+- **Rainbow Cat** — Rainbow Land boss. Tap him twice, trace a circle (a large five-point star on the second capture) for your companion to catch him in a fishing net, then match each active key in order before his rainbow flurry.
 - **Sprinkle Paws** — Rainbow Cat's collectible boss friend.

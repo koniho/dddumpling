@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** Two taps and a circle let the companion net the cat for a key challenge; failure releases a star flurry. */
+/** Two taps and a traced shape let the companion net the cat for a key challenge; failure releases a star flurry. */
 final class RainbowCat {
     static final int CHASE=0, DASH=1, OPEN=2, CIRCLE=3, CATCH=4;
     static final float TAP_FLASH=.60f, SCARE_HOLD=.70f, SHAKE_OFF=.40f;
@@ -13,12 +13,12 @@ final class RainbowCat {
     final int[] prompt=new int[Glyph.COUNT];
     float x,y,vx,vy,r,left,right,top,bottom,clock,flash,turn=1;
     float routeTime,routeDuration,launchLeft,trailTick,timer;
-    float circleSweep,netAge,netReturn,catchX,catchY,windUp,releaseWind,tapFlash,scared,scaredAge;
+    float circleSweep,netAge,netReturn,catchX,catchY,windUp,releaseWind,netAimX,netAimY,tapFlash,scared,scaredAge;
     boolean circling;
     boolean placed,kids,escaping;
     void reset() {
         phase=CHASE;pointer=-1;taps=trailCount=at=count=captures=cue=0;placed=escaping=false;turn=1;
-        circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=tapFlash=scared=scaredAge=0;circling=false;gesture.clear();
+        circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=netAimX=netAimY=tapFlash=scared=scaredAge=0;circling=false;gesture.clear();
         x=y=vx=vy=clock=flash=routeTime=routeDuration=trailTick=timer=0;launchLeft=1.3f;
     }
     void release() {pointer=-1;circling=false;circleSweep=0;gesture.clear();}
@@ -44,7 +44,11 @@ final class RainbowCat {
             scared=Math.min(clamp(scaredAge/.12f,0,1),clamp(1-(scaredAge-SCARE_HOLD)/SHAKE_OFF,0,1));
         }
         float target=phase==CIRCLE && circling?gesture.progress():0;
-        if(phase==CIRCLE)windUp+=(target-windUp)*(1-(float)Math.exp(-dt*12));
+        if(phase==CIRCLE) {
+            float follow=1-(float)Math.exp(-dt*18);
+            windUp+=(target-windUp)*(1-(float)Math.exp(-dt*12));
+            if(circling) {netAimX+=(gesture.lastX-netAimX)*follow;netAimY+=(gesture.lastY-netAimY)*follow;}
+        }
         if(escaping && routeTime<routeDuration)advance(dt);
         pose(dt);
     }
@@ -122,7 +126,7 @@ final class RainbowCat {
         float remaining=phase==CIRCLE?0:dt;
         while(remaining>0) {
             if(routeDuration==0 || routeTime>=routeDuration) {
-                if(phase==DASH && taps==2) {if(reactionReady())phase=CIRCLE;vx=vy=0;break;}
+                if(phase==DASH && taps==2) {if(reactionReady()) {phase=CIRCLE;gesture.setShape(starShape()?TraceGesture.star():TraceGesture.circle());}vx=vy=0;break;}
                 phase=CHASE;chooseRoute(L,rnd,false);
             }
             float step=Math.min(remaining,routeDuration-routeTime);
@@ -170,7 +174,13 @@ final class RainbowCat {
     }
     float circleX() {return x;}
     float circleY() {return y;}
-    float circleRadius() {return r*2.2f;}
+    float caughtStrength() {
+        return phase==OPEN?1:phase==CATCH?clamp((netAge-.34f)/.20f,0,1):0;
+    }
+    float pouchSway() {return (float)Math.sin(clock*6)*.38f*caughtStrength();}
+    float hoopShift() {return r*.16f*(float)Math.sin(clock*6+.6f)*caughtStrength();}
+    boolean starShape() {return captures==1;}
+    float circleRadius() {return r*(starShape()?2.7f:2.2f);}
     boolean carries(GameCore c) {
         return c.state==GameCore.PLAY && !c.dying() && c.boss.kind==Boss.RAINBOW_CAT
                 && (phase==CATCH || phase==OPEN || netReturn>0 || (phase==CIRCLE && windUp>.002f));
@@ -214,6 +224,7 @@ final class RainbowCat {
                 BossPlay.catTap(c,L);
             } else if(phase==CIRCLE) {
                 circling=gesture.begin((px-circleX())/circleRadius(),(py-circleY())/circleRadius());
+                if(circling && windUp<.01f) {netAimX=gesture.lastX;netAimY=gesture.lastY;}
                 circleSweep=0;catchX=x;catchY=y;
             }
             return true;
@@ -224,7 +235,7 @@ final class RainbowCat {
     String companionHint() {
         if(phase==OPEN)return "MATCH IN ORDER!";
         if(phase==CATCH)return "GOT YOU!";
-        if(phase==CIRCLE)return "CIRCLE THE CAT!";
+        if(phase==CIRCLE)return starShape()?"TRACE THE STAR!":"CIRCLE THE CAT!";
         return phase==DASH || tapFlash>0?"FOLLOW RAINBOW!":taps==0?"TAP CAT TWICE!":"ONE MORE TAP!";
     }
     static float clamp(float v,float low,float high){return Math.max(low,Math.min(high,v));}

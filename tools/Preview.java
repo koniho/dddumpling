@@ -41,8 +41,23 @@ final class Preview {
         shot(dir,"151-prompt",c,L,w,h,ss);
         c.boss.update(.12f,L,c.rnd);
         shot(dir,"151-net-struggle",c,L,w,h,ss);
+        c.boss.update(.4f,L,c.rnd);
+        shot(dir,"151-net-struggle-other",c,L,w,h,ss);
         a.timer=.01f;c.boss.update(.02f,L,c.rnd);c.boss.update(.45f,L,c.rnd);
         shot(dir,"151-flurry",c,L,w,h,ss);
+        GameCore starGame=TestRainbowCat.fight(L);RainbowCat starCat=starGame.boss.cat;
+        TestRainbowCat.challenge(starGame,L);
+        for(int i=0;i<6 && starCat.phase==RainbowCat.OPEN;i++)starGame.boss.press(starCat.prompt[starCat.at],starGame.rnd,L);
+        TestRainbowCat.readyToCircle(starGame,L);
+        shot(dir,"151-star",starGame,L,w,h,ss);
+        starCat.touch(starGame,L,0,151,starCat.x,starCat.y-starCat.circleRadius());
+        for(int i=1;i<=48;i++) {
+            float along=starCat.gesture.length*i/80f;
+            starCat.touch(starGame,L,2,151,starCat.x+starCat.gesture.coordinate(along,0)*starCat.circleRadius(),
+                    starCat.y+starCat.gesture.coordinate(along,1)*starCat.circleRadius());
+            starGame.boss.update(.025f,L,starGame.rnd);
+        }
+        shot(dir,"151-star-progress",starGame,L,w,h,ss);
         GameCore tap=TestRainbowCat.fight(L);RainbowCat tapped=tap.boss.cat;
         tapped.touch(tap,L,0,151,tapped.x,tapped.y);tapped.touch(tap,L,1,151,tapped.x,tapped.y);
         for(int band=0;band<6;band++) {

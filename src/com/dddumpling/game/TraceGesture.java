@@ -12,6 +12,14 @@ final class TraceGesture {
         for(int i=0;i<=32;i++) {float a=Softbody.TAU*i/32;out[i*2]=(float)Math.cos(a);out[i*2+1]=(float)Math.sin(a);}
         return out;
     }
+    static float[] star() {
+        float[] out=new float[12];
+        for(int i=0;i<=5;i++) {
+            float angle=-Softbody.TAU*.25f+Softbody.TAU*(i*2%5)/5;
+            out[i*2]=(float)Math.cos(angle);out[i*2+1]=(float)Math.sin(angle);
+        }
+        return out;
+    }
     void setShape(float[] shape) {
         points=shape.clone();distances=new float[points.length/2];length=0;
         for(int i=1;i<distances.length;i++) {

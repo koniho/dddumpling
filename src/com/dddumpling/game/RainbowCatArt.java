@@ -29,7 +29,13 @@ final class RainbowCatArt extends Draw {
             }
             sprite=new ColorFadePainter(q,color,.78f*end,1);
         }
+        sprite.save();
+        // The cat rides inside the same swinging pouch as the mesh, including its spring shapes.
+        float pouch=a.pouchSway()*.43f;
+        sprite.translate(a.hoopShift()+a.r*1.17f*(float)Math.sin(pouch),
+                a.r*1.17f*((float)Math.cos(pouch)-1));
         cat(sprite,a.x+struggle,a.y,a.r,a.clock*(caught?1:2),a.turn,a.pastry,a.head,caught,1,caught?0:a.scared);
+        sprite.restore();
         if(a.carries(c))net(q,c,L,true);
         if(a.flash>0)for(int band=0;band<3;band++)
             q.strokeCircle(a.x,a.y,a.r*(1.1f+(1-a.flash)*(1.5f+band*.3f)),
@@ -58,7 +64,12 @@ final class RainbowCatArt extends Draw {
     }
     private static void circleGuide(Painter p,RainbowCat a) {
         float radius=a.circleRadius(),pulse=.7f+.3f*(float)Math.sin(a.clock*3);
-        for(int i=0;i<12;i++)p.arc(a.circleX(),a.circleY(),radius,radius,i*30,17,
+        if(a.starShape()) {
+            float[] points=TraceGesture.star();
+            for(int i=0;i<5;i++)p.polyline(new float[]{a.x+points[i*2]*radius,a.y+points[i*2+1]*radius,
+                    a.x+points[i*2+2]*radius,a.y+points[i*2+3]*radius},
+                    Glyph.withAlpha(COLORS[i],(int)(130+65*pulse)),a.r*.11f);
+        } else for(int i=0;i<12;i++)p.arc(a.circleX(),a.circleY(),radius,radius,i*30,17,
                 Glyph.withAlpha(COLORS[i%COLORS.length],(int)(100+65*pulse)),a.r*.085f);
         if(a.circling && Math.abs(a.circleSweep)>.01f) {
             float[] traced=new float[130];
@@ -70,7 +81,7 @@ final class RainbowCatArt extends Draw {
             p.polyline(traced,0xFFFFF2B6,a.r*.16f);
         }
         float angle=a.clock*1.7f;
-        p.fillPoly(star(a.circleX()+(float)Math.cos(angle)*radius,a.circleY()+(float)Math.sin(angle)*radius,
+        p.fillPoly(star(a.circleX()+a.gesture.coordinate(angle,0)*radius,a.circleY()+a.gesture.coordinate(angle,1)*radius,
                 a.r*.20f,a.r*.08f,4,angle),0xFFFFF5CB);
     }
     private static void net(Painter p,GameCore c,Layout L,boolean front) {
@@ -81,15 +92,15 @@ final class RainbowCatArt extends Draw {
         float targetX=a.catchX+r*2.45f,targetY=a.catchY+r*2.15f;
         float rise=winding?wind*.80f:a.phase==RainbowCat.CATCH?wind*.80f+(1-wind*.80f)*u:u;
         float cx=homeX+(targetX-homeX)*rise,cy=homeY+(targetY-homeY)*rise;
-        float loadedX=homeX+(targetX-homeX)*wind*.80f-r*(.4f+.8f*wind);
-        float loadedY=homeY+(targetY-homeY)*wind*.80f-r*(2.3f+.8f*wind);
+        float loadedX=a.catchX+a.netAimX*a.circleRadius();
+        float loadedY=a.catchY+a.netAimY*a.circleRadius();
         float nx,ny,tilt,size;
         if(winding) {
-            nx=cx-r*(.4f+.8f*wind);ny=cy-r*(2.3f+.8f*wind);tilt=-.25f-.65f*wind;size=.45f+.45f*wind;
+            nx=loadedX;ny=loadedY;tilt=-.25f+a.netAimX*.35f;size=.32f;
         } else {
             nx=loadedX+(a.catchX-loadedX)*u;
             ny=loadedY+(a.catchY-r*1.05f-loadedY)*u-r*.9f*(float)Math.sin(u*Math.PI);
-            tilt=(-.25f-.65f*wind)*(1-u)-.13f*u;size=.45f+.55f*u;
+            tilt=(-.25f+a.netAimX*.35f)*(1-u)-.13f*u;size=.32f+.68f*u;
             if(a.phase==RainbowCat.CATCH) {
                 // Scoop around the cat's left side, turning the entire hoop and pouch through the swing.
                 float sweep=(float)Math.sin(u*Math.PI);
@@ -98,14 +109,16 @@ final class RainbowCatArt extends Draw {
                 tilt+=.16f*(float)Math.sin(settle*Softbody.TAU*1.2f)*(1-settle);
             }
         }
-        float struggle=a.phase==RainbowCat.OPEN || (a.phase==RainbowCat.CATCH && a.netAge>=.34f)?1:0;
+        float struggle=a.caughtStrength();
+        nx+=a.hoopShift();
+        cx-=a.hoopShift()*.45f;cy+=r*.04f*struggle*(float)Math.cos(a.clock*12);
         float rx=r*2.15f*size,ry=r*.52f*size,depth=r*2.72f*size;
-        float sway=0;
+        float sway=a.pouchSway();
         if(a.phase==RainbowCat.CATCH) {
             if(a.netAge<.34f)sway=-.42f*(float)Math.sin(u*Softbody.TAU)*(1-u*.25f);
             else {
                 float settle=RainbowCat.clamp((a.netAge-.34f)/(RainbowCat.NET_TIME-.34f),0,1);
-                sway=-.22f*(float)Math.sin(settle*Softbody.TAU*1.5f)*(1-settle)*(1-settle);
+                sway+=-.22f*(float)Math.sin(settle*Softbody.TAU*1.5f)*(1-settle)*(1-settle);
             }
         }
         float fade=winding?Math.min(1,wind*6):a.netReturn>0?u:1;
@@ -151,8 +164,13 @@ final class RainbowCatArt extends Draw {
         int who=c.companion.who;
         if(who>=0) {
             float cr=RunCompanion.radius(c,L)*(1+rise*.55f);
-            float rock=winding?-.34f*wind:a.phase==RainbowCat.CATCH?.34f*(float)Math.sin(u*Math.PI):.08f*(float)Math.sin(a.clock*9);
-            Trinket.drawReacting(p,who,cx,cy,cr,c.companion.clock,1,Trinket.FIGHT,rock,c.ninja());
+            float rock=winding?a.netAimX*.22f:a.phase==RainbowCat.CATCH?.34f*(float)Math.sin(u*Math.PI):-.20f*(float)Math.sin(a.clock*6);
+            Trinket.drawReacting(p,who,cx,cy,cr,c.companion.clock,1,struggle>0?3:Trinket.FIGHT,rock,c.ninja());
+            if(struggle>0) {
+                float sweat=(a.clock*1.8f)%1;
+                p.fillEllipse(cx-cr*.85f,cy-cr*.4f+cr*sweat*.65f,cr*.08f,cr*.14f,
+                        fadeBy(0xFF8ED9F5,struggle*(1-sweat)));
+            }
             // Both hands hold the pole; reaction props would obscure the grip.
             int color=Collect.BODY[who];
             p.fillEllipse(cx-r*.05f,cy-r*.08f,cr*.20f,cr*.17f,color);
@@ -194,10 +212,18 @@ final class RainbowCatArt extends Draw {
             float d=Math.max(.01f,(float)Math.hypot(dx,dy));nx[i]=-dy/d;ny[i]=dx/d;
         }
         // Shared vertex normals keep the ribbon joined through turns. Batch equal-opacity sections.
+        int[] buckets=new int[COLORS.length];
         for(int start=0;start<n-1;) {
-            int bucket=(int)(RainbowCat.trailFade(progress[start+1])*16),end=start+1;
-            while(end<n-1 && (int)(RainbowCat.trailFade(progress[end+1])*16)==bucket)end++;
-            if(bucket>0)for(int band=0;band<COLORS.length;band++) {
+            for(int band=0;band<COLORS.length;band++)buckets[band]=trailOpacity(progress[start+1],band);
+            int end=start+1;
+            while(end<n-1) {
+                boolean same=true;
+                for(int band=0;band<COLORS.length;band++)same&=trailOpacity(progress[end+1],band)==buckets[band];
+                if(!same)break;
+                end++;
+            }
+            for(int band=0;band<COLORS.length;band++) {
+                int bucket=buckets[band];if(bucket<=0)continue;
                 int count=end-start+1;float[] strip=new float[count*4];
                 float low=(band-3)*a.r*.23f,high=low+a.r*.24f;
                 for(int j=0;j<count;j++) {
@@ -209,6 +235,11 @@ final class RainbowCatArt extends Draw {
             }
             start=end;
         }
+    }
+    private static int trailOpacity(float progress,int band) {
+        // Outer colors disappear first; the two middle bands form the rounded end of the ribbon.
+        float edge=(Math.abs(band-(COLORS.length-1)*.5f)-.5f)/2;
+        return (int)(RainbowCat.trailFade(progress+.16f*edge*edge)*16);
     }
     static void rushProjectile(Painter p,GameCore c,Layout L,Boss b,int i,float x,float y,float r,int color) {
         float dx=x-b.bsx[i],dy=y-b.bsy[i],d=Math.max(1,(float)Math.hypot(dx,dy));

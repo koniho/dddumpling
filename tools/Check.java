@@ -270,12 +270,13 @@ abstract class Check {
 
     static void rainbowCircle(GameCore c,Layout L,int direction) {
         RainbowCat a=c.boss.cat;float radius=a.circleRadius();
-        a.touch(c,L,0,151,a.circleX()+radius,a.circleY());
-        for(int i=1;i<=40;i++) {
-            float angle=direction*Softbody.TAU*i/40f;
-            a.touch(c,L,2,151,a.circleX()+(float)Math.cos(angle)*radius,a.circleY()+(float)Math.sin(angle)*radius);
+        float sx=a.circleX()+a.gesture.coordinate(0,0)*radius,sy=a.circleY()+a.gesture.coordinate(0,1)*radius;
+        a.touch(c,L,0,151,sx,sy);
+        for(int i=1;i<=80;i++) {
+            float along=direction*a.gesture.length*i/80f;
+            a.touch(c,L,2,151,a.circleX()+a.gesture.coordinate(along,0)*radius,a.circleY()+a.gesture.coordinate(along,1)*radius);
         }
-        a.touch(c,L,1,151,a.circleX()+radius,a.circleY());
+        a.touch(c,L,1,151,sx,sy);
     }
 
     /**

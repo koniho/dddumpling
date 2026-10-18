@@ -138,12 +138,15 @@ settling into a scared expression; repeat taps remain locked until that expressi
 Only pointer-down can score a tap. Moves, historical
 samples and held fingers cannot score extra hits; lift/cancel/pause release ownership.
 After two taps, the cat waits centrally for a clockwise or counterclockwise circle.
-The companion rises and winds up as the trace advances, then swings a deep mesh fishing net.
+The second capture instead uses a larger five-point star drawn as five crossing strokes.
+The companion rises while a small net follows the drawing, then enlarges it into a deep
+mesh fishing net on completion. The caught cat and pouch sway together while the companion
+braces against the moving pole.
 `TraceGesture` follows an ordered closed polyline in either direction; crossing the centre
 of the circle, retracing, additional fingers and cancelled strokes cannot complete it.
 Its local path matching supports self-intersecting shapes such as five-stroke stars without
-jumping ahead at crossings. Gameplay currently uses only the circle; future shapes can use
-the same tracker and progress-driven animation.
+jumping ahead at crossings. Circle and star share the tracker and progress-driven animation;
+timeouts keep the same shape until that capture succeeds.
 The catch animation finishes before opening a timed word containing each active roster
 key once, shuffled into a four- or six-key sequence. Completing the word removes one third of his health. A wrong
 key preserves progress, while timeout resumes the chase and launches a staggered rainbow
