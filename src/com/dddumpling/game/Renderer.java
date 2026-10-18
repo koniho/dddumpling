@@ -182,6 +182,7 @@ final class Renderer extends Draw {
         ReleaseNotes.entry(p,c,L);
         p.restore();
         c.releaseNotes.draw(p,c,L);
+        c.updatePrompt.draw(p,c,L);
         if(c.townReturnFade>0f) p.fillRect(0,0,L.w,L.h,
                 Glyph.withAlpha(0xFFCEF0D1,(int)(255*c.townReturnFade/GameCore.TOWN_FADE)));
         c.highScoreScreen.draw(p,c,L);

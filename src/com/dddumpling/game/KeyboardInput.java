@@ -20,7 +20,7 @@ final class KeyboardInput {
     static boolean available(GameCore c) {
         return (c.state == GameCore.PLAY || c.state == GameCore.BONUS && !c.starBonus)
                 && !c.paused && !c.settingsOpen && !c.starter.open && !c.townOpen
-                && !c.highScoreScreen.open && !c.releaseNotes.open && !c.storyOpen()
+                && !c.highScoreScreen.open && !c.releaseNotes.open && !c.updatePrompt.open && !c.storyOpen()
                 && c.returnFade <= 0 && c.rosterSceneT <= 0
                 && c.onboarding.sceneWait <= 0 && c.onboarding.practice == null
                 && !c.onboarding.briefing && !c.onboarding.ownsTouch && !c.onboarding.rescueGuide;

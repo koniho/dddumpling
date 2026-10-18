@@ -240,6 +240,15 @@ public class MainActivity extends Activity implements GameCore.Store {
     @Override public String loadHighScores() { return prefs.getString("high_scores", ""); }
     @Override public void saveHighScores(String value) { prefs.edit().putString("high_scores", value).apply(); }
 
+    @Override public String appVersion() {
+        try {
+            android.content.pm.PackageInfo info=getPackageManager().getPackageInfo(getPackageName(),0);
+            long build=Build.VERSION.SDK_INT>=28?info.getLongVersionCode():info.versionCode;
+            return "android:"+info.versionName+":"+build;
+        } catch(android.content.pm.PackageManager.NameNotFoundException unavailable) { return "android:unknown"; }
+    }
+    @Override public String loadUpdateState() { return prefs.getString("update_prompt", ""); }
+    @Override public void saveUpdateState(String value) { prefs.edit().putString("update_prompt", value).apply(); }
     @Override public String loadReleaseSeen() { return prefs.getString("release_seen", ""); }
     @Override public void saveReleaseSeen(String value) { prefs.edit().putString("release_seen", value).apply(); }
     @Override public int loadCaveChoice() { return prefs.getInt("cave_dumpling", -1); }

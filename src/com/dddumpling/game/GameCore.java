@@ -179,6 +179,10 @@ final class GameCore {
     interface Store extends Progress.Store {
         default String loadTown() { return ""; }
         default boolean saveTown(String value) { return true; }
+        /** Native marketing version and build number, independent of the shared news catalog. */
+        default String appVersion() { return BuildFlags.BUILD_ID; }
+        default String loadUpdateState() { return ""; }
+        default void saveUpdateState(String value) {}
         default String loadReleaseSeen() { return BuildFlags.BUILD_ID; }
         default void saveReleaseSeen(String value) {}
         default int loadCaseIndex() { return 0; }
@@ -592,6 +596,7 @@ final class GameCore {
     final HighScores highScores=new HighScores();
     final HighScoreScreen highScoreScreen=new HighScoreScreen();
     final ReleaseNotes releaseNotes=new ReleaseNotes();
+    final UpdatePrompt updatePrompt=new UpdatePrompt();
     final ReleaseMascot releaseMascot=new ReleaseMascot();
     int settingsTab;
     /** Newly collected stars in this update, including the winning pickup. */
@@ -1609,6 +1614,7 @@ final class GameCore {
 
     GameCore(Store store, long seed, boolean trackProgress) {
         this.store = store;
+        updatePrompt.launch(this);
         onboarding.saved = store == null ? Onboarding.SKIPPED : store.loadTutorials();
         onboarding.savedPowers = store == null ? 0 : store.loadPowerTutorials();
         this.progress = new Progress(store, trackProgress);
@@ -1875,7 +1881,7 @@ final class GameCore {
      * is acknowledged immediately and the triad carries over into the first wave.
      */
     void beginStart() {
-        if (state != TITLE || starting() || starter.open || returnFade > 0f || rosterSceneT > 0f) return;
+        if (state != TITLE || updatePrompt.open || starting() || starter.open || returnFade > 0f || rosterSceneT > 0f) return;
         if (townOpen || !modes.allowStart(this)) return;
         titleKeyHint = 0f;
         if (modes.adventure() && landChoice == LandPicker.TOWN) {
@@ -2203,7 +2209,7 @@ final class GameCore {
 
     private boolean titleKeysAvailable() {
         return state == TITLE && !paused && !townOpen && !settingsOpen
-                && !releaseNotes.open && !highScoreScreen.open && !starter.open
+                && !releaseNotes.open && !updatePrompt.open && !highScoreScreen.open && !starter.open
                 && !caseOpen && caseFade <= 0f && !storyOpen() && !onboarding.titleGuide
                 && !starting() && returnFade <= 0f && rosterSceneT <= 0f && modes.playable(this);
     }
@@ -2227,7 +2233,7 @@ final class GameCore {
     void screenKey(int g) {
         if (townOpen) return;
         if (settingsOpen) return;
-        if(releaseNotes.open || highScoreScreen.open) return;
+        if(releaseNotes.open || updatePrompt.open || highScoreScreen.open) return;
         if (returnFade > 0f) return;
         if (!keyActive(g) || rosterSceneT > 0f) return;
         // Nothing is dismissable until the summary is up and settled — the death sequence is not
@@ -2823,6 +2829,9 @@ final class GameCore {
             return;
         }
         releaseMascot.update(this,elapsed);
+        if(updatePrompt.update(this,elapsed,L)) {
+            clock+=elapsed;time+=elapsed;skyClock+=elapsed;updateTitleSprings(elapsed,L);return;
+        }
         timeAttack.tick(this,elapsed);
         if (state == PLAY && boss.fighting() && !settingsOpen)
             progress.bossTime(elapsed);

@@ -234,6 +234,14 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 - (NSString *)loadHighScores { return [self stringForKey:@"highScores" validWriter:NO] ?: @""; }
 - (void)saveHighScoresWithNSString:(NSString *)value { [self setValue:value forKey:@"highScores"]; }
 
+- (NSString *)appVersion {
+  NSBundle *bundle = NSBundle.mainBundle;
+  return [NSString stringWithFormat:@"ios:%@:%@",
+          [bundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"unknown",
+          [bundle objectForInfoDictionaryKey:@"CFBundleVersion"] ?: @"unknown"];
+}
+- (NSString *)loadUpdateState { return [self stringForKey:@"updatePrompt" validWriter:NO] ?: @""; }
+- (void)saveUpdateStateWithNSString:(NSString *)value { [self setValue:value forKey:@"updatePrompt"]; }
 - (NSString *)loadReleaseSeen { return [self stringForKey:@"releaseSeen" validWriter:NO] ?: @""; }
 - (void)saveReleaseSeenWithNSString:(NSString *)value { [self setValue:value forKey:@"releaseSeen"]; }
 - (jint)loadTutorials {

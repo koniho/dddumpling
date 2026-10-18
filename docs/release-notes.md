@@ -177,3 +177,28 @@ Do this immediately after generation, before approval.
 Use `--no-open` only for CI or when opening applications is unavailable. On other systems,
 open the printed PNG path. The sheet shows artwork samples; also check interactive demos
 in the release book and wait more than two seconds to verify their reset choices.
+
+## Update prompt and installation history
+
+Android records the installed marketing version and version code; iOS records
+`CFBundleShortVersionString` and `CFBundleVersion`. The local update-prompt record
+keeps that identity, the latest shared catalog version, and pending/forced-attention
+flags separately from the release book's read marker. It is local installation
+state, not synced gameplay progress.
+
+A missing record establishes a silent baseline, both on a fresh install and on
+older saves that predate this feature. Old saves therefore receive no migration
+popup; their first later installed-version change with a new catalog prompts once.
+Missing or stale news-read data alone never proves an update. Several skipped
+versions produce one prompt leading to the newest illustrated release. A build-only
+hotfix with the same catalog does not re-arm the prompt or create duplicate notes.
+New read markers use the shared catalog version so a read catalog stays read across
+hotfixes. Legacy build-based read markers retain attention until the book is read.
+
+The prompt waits for title-screen onboarding, other overlays and return animations.
+**Skip** acknowledges the prompt without marking news read. **See what's new** opens
+the newest release through the existing book navigation. Developer Settings →
+Progress → **Reset update prompt** persists a re-arm and forced highlight, including
+on an already acknowledged catalog, without changing installation history, read
+markers, tutorials, progress or scores. On a fresh/reset game it still waits for
+first-squishy onboarding. **Reset news** remains the independent unread-book control.

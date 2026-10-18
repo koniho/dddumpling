@@ -36,7 +36,7 @@ final class HighScoreScreen extends Draw {
         return Math.min(size(L)*3.6f,(listBottom(L)-listTop(L))/Math.max(1,displayCount(c)));
     }
     static boolean entryHit(GameCore c,Layout L,float x,float y) {
-        return available(c) && ReleaseNotes.available(c) && !c.releaseNotes.open
+        return !c.updatePrompt.open && available(c) && ReleaseNotes.available(c) && !c.releaseNotes.open
                 && Math.abs(x-L.w*.5f)<L.w*.44f && Math.abs(y-titleY(L))<L.unit*1.1f;
     }
     void show(GameCore c) {

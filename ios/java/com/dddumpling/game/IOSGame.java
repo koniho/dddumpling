@@ -33,6 +33,7 @@ public final class IOSGame {
         core.cancelTownInput();
         settingsInput.cancel();
         core.releaseNotes.cancelTouch();
+        core.updatePrompt.cancelTouch();
         core.cave.input.release();
         landPointer = starDragPointer = bonusSwipePointer = bossDragPointer = -1;
         bossDragging = bossPinching = false;
@@ -104,6 +105,8 @@ public final class IOSGame {
                 return true;
             }
         }
+        if(core.updatePrompt.touch(core,layout,action,ev.getPointerId(ev.getActionIndex()),
+                ev.getX(ev.getActionIndex()),ev.getY(ev.getActionIndex())))return true;
         if (core.starter.open) {
             int i=action==IOSTouch.ACTION_MOVE?0:ev.getActionIndex();
             core.starter.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));

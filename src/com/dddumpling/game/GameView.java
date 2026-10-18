@@ -54,6 +54,7 @@ public class GameView extends View implements InputManager.InputDeviceListener {
         core.cancelTownInput();
         settingsInput.cancel();
         core.releaseNotes.cancelTouch();
+        core.updatePrompt.cancelTouch();
         starDragPointer = bonusSwipePointer = bossDragPointer = -1;
         bossDragging = bossPinching = false;
         pushPointer = -1;
@@ -212,6 +213,8 @@ public class GameView extends View implements InputManager.InputDeviceListener {
                 return true;
             }
         }
+        if(core.updatePrompt.touch(core,layout,action,ev.getPointerId(ev.getActionIndex()),
+                ev.getX(ev.getActionIndex()),ev.getY(ev.getActionIndex())))return true;
         if (core.starter.open) {
             int i=action==MotionEvent.ACTION_MOVE?0:ev.getActionIndex();
             core.starter.touch(core,layout,action,ev.getPointerId(i),ev.getX(i),ev.getY(i));
