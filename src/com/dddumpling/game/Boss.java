@@ -2010,6 +2010,7 @@ final class Boss {
     private int boltNearest(int g) {
         int best = -1;
         for (int i = 0; i < MAX_BOLTS; i++) {
+            if(kind==RAINBOW_CAT && cat.escapeSequence && bt[i]<0)continue;
             if (blive[i] && bglyph[i] == g && (best < 0 || bt[i] > bt[best])) best = i;
         }
         return best;
@@ -2435,7 +2436,7 @@ final class Boss {
     // Action/animation time can be advanced separately from projectile flight.
     int update(float dt, float projectileDt, Layout L, Random rnd) {
         if (kind < 0) return 0;
-        if(kind==RAINBOW_CAT)cat.animate(dt,L);
+        if(kind==RAINBOW_CAT)cat.animate(this,dt,L);
         if(kind==ALLIGATOR)alligator.animate(this,dt,L);
         hurt = Math.max(0f, hurt - dt * 2.6f);
         for (int g = 0; g < slimeBlobPulse.length; g++)
@@ -2541,7 +2542,10 @@ final class Boss {
         if(beaten && kind==RAINBOW_CAT)hits=0;
 
         if (beaten) {
-            leaveT = Math.max(0f, leaveT - dt);
+            // Keep the final net break intact before the celebratory sweep and exit fade.
+            float leaveDt=kind==RAINBOW_CAT && cat.escapeSequence
+                    ? Math.min(dt,Math.max(0,cat.escapeAge-RainbowCat.ESCAPE_TIME)):dt;
+            leaveT = Math.max(0f, leaveT - leaveDt);
             if (kind == MUSHROOM) {
                 mushroomCapDX *= Math.max(0f, 1f - dt * 8f);
                 mushroomCapDY *= Math.max(0f, 1f - dt * 8f);

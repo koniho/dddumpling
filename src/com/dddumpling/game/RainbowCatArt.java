@@ -36,7 +36,7 @@ final class RainbowCatArt extends Draw {
         float pouch=a.pouchSway()*.43f;
         sprite.translate(a.hoopShift()+a.r*1.17f*(float)Math.sin(pouch),
                 a.r*1.17f*((float)Math.cos(pouch)-1));
-        cat(sprite,a.x+a.traceX+struggle,a.y+a.traceY,a.r,a.clock*(caught?1:2),a.turn,a.pastry,a.head,caught,1,caught?0:a.scared);
+        cat(sprite,a.x+a.traceX+struggle,a.y+a.traceY,a.r,a.clock*(caught?1:2),a.turn,a.pastry,a.head,caught,1,caught?0:a.scared,a.angry());
         sprite.restore();
         if(a.phase==RainbowCat.CIRCLE)circleGuide(q,a);
         if(a.carries(c))net(q,c,L,true);
@@ -370,6 +370,7 @@ final class RainbowCatArt extends Draw {
         return (int)(RainbowCat.trailFade(progress+.16f*edge*edge)*16);
     }
     static void rushProjectile(Painter p,GameCore c,Layout L,Boss b,int i,float x,float y,float r,int color) {
+        if(b.cat.escapeSequence && b.bt[i]<0)return;
         float dx=x-b.bsx[i],dy=y-b.bsy[i],d=Math.max(1,(float)Math.hypot(dx,dy));
         float ux=dx/d,uy=dy/d,length=Math.min(d,r*5);
         for(int lane=-1;lane<=1;lane++) {
@@ -395,9 +396,9 @@ final class RainbowCatArt extends Draw {
         cat(new OpacityPainter(p,fade),x-facing*r*.12f,y,r*.67f,t,facing,null,null,false,known?1:0);
     }
     static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known) {
-        cat(p,x,y,r,t,facing,body,skull,caught,known,0);
+        cat(p,x,y,r,t,facing,body,skull,caught,known,0,0);
     }
-    private static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known,float scared) {
+    private static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known,float scared,float angry) {
         int crust=known>0?0xFFFFD49A:0xFF49425F,fur=known>0?FUR:0xFF49425F;
         float step=(float)Math.sin(t*(caught?15:7));
         // Static portraits retain their decorative ribbon; battle uses recorded motion.
@@ -433,14 +434,14 @@ final class RainbowCatArt extends Draw {
         for(int side=-1;side<=1;side+=2) {
             p.fillPoly(points(new float[]{side*.45f,-.62f,side*.73f,-.92f,side*.77f,-.43f},hx,hy,hr,hr),0xFFFFB4CB);
             float ex=hx+side*hr*.40f,ey=hy+hr*.02f;
-            boolean blink=scared==0 && Math.sin(t*1.7f)>.985;
+            boolean blink=scared==0 && angry==0 && Math.sin(t*1.7f)>.985;
             if(caught) {
                 float squeeze=.05f*(float)Math.sin(t*18);
                 p.polyline(points(new float[]{side*.62f,-.08f-squeeze,side*.28f,.04f,side*.61f,.17f+squeeze},
                         hx,hy,hr,hr),INK,hr*.075f);
                 p.polyline(points(new float[]{side*.27f,-.28f,side*.43f,-.34f,side*.62f,-.30f},hx,hy,hr,hr),INK,hr*.055f);
             } else {
-                p.fillEllipse(ex,ey,hr*(.18f+.045f*scared),hr*(blink?.045f:.235f+.025f*scared),INK);
+                p.fillEllipse(ex,ey,hr*(.18f+.045f*scared),hr*(blink?.045f:.235f+.025f*scared-.09f*angry),INK);
                 if(scared>0) {
                     p.fillEllipse(ex,ey,hr*.18f*scared,hr*.215f*scared,0xFFFFFAFF);
                     p.fillEllipse(ex,ey-hr*.025f,hr*(.13f-.055f*scared),hr*(.18f-.06f*scared),INK);
@@ -453,6 +454,7 @@ final class RainbowCatArt extends Draw {
                     p.fillCircle(ex+hr*.065f,ey+hr*.08f,hr*.034f,0xFFFFFAFF);
                 }
             }
+            if(angry>0)p.polyline(points(new float[]{side*.19f,-.12f,side*.40f,-.25f,side*.65f,-.30f},hx,hy,hr,hr),fadeBy(INK,angry),hr*.09f);
             p.fillEllipse(hx+side*hr*.71f,hy+hr*.31f,hr*.19f,hr*.105f,0xAFFF83BD);
             p.line(hx+side*hr*.71f,hy+hr*.38f,hx+side*hr*.93f,hy+hr*.35f,0x88766891,hr*.035f);
         }
@@ -466,7 +468,8 @@ final class RainbowCatArt extends Draw {
                 p.fillEllipse(hx,hy+hr*.45f,hr*(.08f+.03f*scared),hr*(.08f+.09f*scared),fadeBy(INK,scared));
                 p.fillEllipse(hx+hr*.91f,hy-hr*.25f,hr*.06f*scared,hr*.13f*scared,0xCCB6F5FF);
             }
-            p.polyline(points(new float[]{-.25f,.34f,-.19f,.43f,-.10f,.45f,0,.34f,.10f,.45f,.19f,.43f,.25f,.34f},hx,hy,hr,hr),fadeBy(INK,1-scared),hr*.055f);
+            p.polyline(points(new float[]{-.25f,.34f,-.19f,.43f,-.10f,.45f,0,.34f,.10f,.45f,.19f,.43f,.25f,.34f},hx,hy,hr,hr),fadeBy(INK,(1-scared)*(1-angry)),hr*.055f);
+            if(angry>0)p.polyline(points(new float[]{-.23f,.47f,0,.37f,.23f,.47f},hx,hy,hr,hr),fadeBy(INK,angry),hr*.075f);
         }
     }
     static float[] pastry(Softbody b,float x,float y,float r) {

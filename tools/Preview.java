@@ -10,6 +10,16 @@ import java.io.File;
 final class Preview {
     private static void rainbowFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("151-"))return;
+        for(final boolean left:new boolean[]{false,true}) {
+            GameCore sweep=TestRainbowCat.fight(L);TestRainbowCat.challenge(sweep,L);RainbowCat dancer=sweep.boss.cat;
+            java.util.Random direction=new java.util.Random(151) {public boolean nextBoolean(){return left;}};
+            while(dancer.phase==RainbowCat.OPEN)sweep.boss.press(dancer.prompt[dancer.at],direction,L);
+            for(int frame=1;frame<=180;frame++) {
+                sweep.update(1f/60,L);
+                if(frame==40 || frame==95 || frame==125 || frame==155)
+                    shot(dir,"151-escape-sweep-"+(left?"right":"left")+"-"+frame,sweep,L,w,h,ss);
+            }
+        }
         GameCore freed=TestRainbowCat.fight(L);TestRainbowCat.challenge(freed,L);
         RainbowCat escaping=freed.boss.cat;
         for(int key=0;key<6 && escaping.phase==RainbowCat.OPEN;key++)freed.tapKey(escaping.prompt[escaping.at],L);

@@ -2,9 +2,10 @@ package com.dddumpling.game;
 
 /** Two taps and a traced shape let the companion net the cat for a key challenge; failure releases a star flurry. */
 final class RainbowCat {
-    static final int CHASE=0, DASH=1, OPEN=2, CIRCLE=3, CATCH=4;
+    static final int CHASE=0, DASH=1, OPEN=2, CIRCLE=3, CATCH=4, ESCAPE=5;
     static final float TAP_FLASH=.60f, SCARE_HOLD=.70f, SHAKE_OFF=.40f;
     static final float NET_TIME=.75f, NET_RETURN=.45f, ESCAPE_TIME=1.1f;
+    static final float SWEEP_SETUP=.25f, SWEEP_LEAD=.08f, SWEEP_STEP=.288f;
     static final float DASH_TIME=.34f, TRAIL_TIME=2.2f, TRAIL_LENGTH=2.9f*4;
     final Softbody pastry=new Softbody(18,151), head=new Softbody(14,152);
     final float[] route=new float[8],trailX=new float[136],trailY=new float[136],trailAge=new float[136];
@@ -19,15 +20,17 @@ final class RainbowCat {
     float voiceLeft;
     float traceClock,traceX,traceY,shapeBurst,burstX,burstY,burstRadius;
     float[] burstShape;
-    float escapeLeft,escapeX,escapeY;
+    float escapeLeft,escapeX,escapeY,escapeAge;
+    int flurryCount;
+    boolean escapeSequence,flurryFromLeft;
     boolean circling;
     boolean placed,kids,escaping;
     void reset() {
-        phase=CHASE;pointer=-1;taps=trailCount=at=count=captures=cue=0;placed=escaping=false;turn=1;
+        phase=CHASE;pointer=-1;taps=trailCount=at=count=captures=cue=0;placed=escaping=escapeSequence=flurryFromLeft=false;flurryCount=0;turn=1;
         circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=netAimX=netAimY=tapFlash=scared=scaredAge=0;circling=false;gesture.clear();
         x=y=vx=vy=clock=flash=routeTime=routeDuration=trailTick=timer=0;launchLeft=1.3f;
         traceLost=lostStart=lostTravel=traceBeat=traceProgress=voiceLeft=0;traceHaptic=0;nextMeow=1;
-        traceClock=traceX=traceY=shapeBurst=escapeLeft=escapeX=escapeY=0;burstShape=null;
+        traceClock=traceX=traceY=shapeBurst=escapeLeft=escapeX=escapeY=escapeAge=0;burstShape=null;
     }
     private void endStroke() {pointer=-1;circling=false;circleSweep=0;gesture.clear();}
     void release() {endStroke();traceLost=traceBeat=traceProgress=0;traceHaptic=0;}
@@ -56,7 +59,7 @@ final class RainbowCat {
             pastry.shapeMemory=head.shapeMemory=12;placed=true;
         }
     }
-    void animate(float dt,Layout L) {
+    void animate(Boss b,float dt,Layout L) {
         voiceLeft=Math.max(0,voiceLeft-dt);
         escapeLeft=Math.max(0,escapeLeft-dt);
         traceLost=Math.max(0,traceLost-dt);traceBeat=Math.max(0,traceBeat-dt);
@@ -86,11 +89,12 @@ final class RainbowCat {
             float settle=(float)Math.exp(-dt*16);
             traceX*=settle;traceY*=settle;
         }
-        if(escaping && routeTime<routeDuration)advance(dt);
+        if(escapeSequence)escapeMotion(b,dt,L);
+        else if(escaping && routeTime<routeDuration)advance(dt);
         pose(dt);
     }
     private void pose(float dt) {
-        float facing=phase==CIRCLE || phase==CATCH || phase==OPEN?-1:Math.abs(vx)<1?turn:vx<0?-1:1;
+        float facing=phase==CIRCLE || phase==CATCH || phase==OPEN || (escapeSequence && escapeAge<ESCAPE_TIME)?-1:Math.abs(vx)<1?turn:vx<0?-1:1;
         turn+=(facing-turn)*(1-(float)Math.exp(-dt*14));
         float struggle=phase==OPEN?1:phase==CATCH?clamp(netAge/NET_TIME,0,1):0;
         float wiggle=(float)Math.sin(clock*18)*r*.065f*struggle+shakeOffset();
@@ -142,6 +146,7 @@ final class RainbowCat {
     }
     int update(Boss b,float dt,Layout L,java.util.Random rnd) {
         place(L);
+        if(escapeSequence)return 0;
         if(phase==CATCH) {
             float before=netAge;netAge+=dt;
             if(before<.34f && netAge>=.34f) {cue=3;flash=1;pastry.squash(.65f);head.squash(.25f);}
@@ -178,8 +183,9 @@ final class RainbowCat {
     private void flurry(Boss b,java.util.Random rnd,boolean afterDamage) {
         b.clearBolts();
         boolean fromLeft=rnd.nextBoolean();int keys=Roster.count(b.rosterFull);
+        if(afterDamage) {flurryFromLeft=fromLeft;flurryCount=keys;}
         // Six keys need a readable cadence after a successful prompt, including at 30 FPS.
-        float lead=afterDamage?.30f/(Boss.BOLT_TIME*.5f):0,stagger=afterDamage?.24f:.16f;
+        float lead=afterDamage?(ESCAPE_TIME+SWEEP_SETUP+SWEEP_LEAD)/(Boss.BOLT_TIME*.5f):0,stagger=afterDamage?.24f:.16f;
         for(int i=0;i<keys;i++) {
             int slot=b.tailBolt(rnd,x,y+r*.45f);
             if(slot>=0) {b.bglyph[slot]=Roster.at(b.rosterFull,fromLeft?i:keys-1-i);b.bfast[slot]=true;b.bt[slot]=-lead-i*stagger;}
@@ -202,10 +208,44 @@ final class RainbowCat {
         if(++at<count)return Boss.PART;
         captures++;int result=b.damage(1);
         flurry(b,rnd,true);resume(L,rnd);launchLeft=4.4f;
-        escapeLeft=ESCAPE_TIME;escapeX=x;escapeY=y;
+        escapeLeft=ESCAPE_TIME;escapeAge=0;escapeX=x;escapeY=y;escapeSequence=true;phase=ESCAPE;vx=vy=0;
         pastry.squash(.85f);head.squash(.55f);
-        if(b.beaten) {escaping=true;routeTo(L.w+r*3,top-r*2,.48f,rnd);}
+        if(b.beaten)escaping=true;
         return result;
+    }
+    float sweepDuration() {return SWEEP_LEAD*2+Math.max(0,flurryCount-1)*SWEEP_STEP;}
+    float angry() {
+        if(!escapeSequence)return 0;
+        return Math.min(clamp(escapeAge/.15f,0,1),clamp((ESCAPE_TIME+SWEEP_SETUP+sweepDuration()-escapeAge)/.2f,0,1));
+    }
+    private void straightRoute(float tx,float ty,float duration) {
+        routeTime=0;routeDuration=duration;
+        for(int i=0;i<4;i++) {route[i*2]=x+(tx-x)*i/3;route[i*2+1]=y+(ty-y)*i/3;}
+    }
+    private void escapeMotion(Boss b,float dt,Layout L) {
+        float before=escapeAge,start=ESCAPE_TIME+SWEEP_SETUP,end=start+sweepDuration();
+        escapeAge=Math.min(end,escapeAge+dt);
+        if(escapeAge>ESCAPE_TIME) {
+            if(before<=ESCAPE_TIME)straightRoute(flurryFromLeft?left:right,escapeY,SWEEP_SETUP);
+            float setup=Math.min(escapeAge,start)-Math.max(before,ESCAPE_TIME);
+            if(setup>0)advance(setup);
+        }
+        if(escapeAge>start) {
+            if(before<=start) {
+                straightRoute(flurryFromLeft?right:left,escapeY,sweepDuration());
+                float span=route[6]-x,bow=Math.min(escapeY-top,L.w*.27f);
+                // A broad rising slash: soft ends, fast middle, mirrored for either direction.
+                route[2]=x+span*.02f;route[4]=x+span*.98f;
+                route[3]=route[5]=escapeY-bow*4/3;
+            }
+            advance(escapeAge-Math.max(before,start));
+        }
+        // Each queued star starts at the moving cat when its turn in the sweep arrives.
+        for(int i=0;i<b.bt.length;i++)if(b.bt[i]<0) {b.bsx[i]=x;b.bsy[i]=y+r*.45f;}
+        if(escapeAge>=end) {
+            escapeSequence=false;phase=DASH;routeDuration=routeTime=0;
+            if(b.beaten)straightRoute(flurryFromLeft?L.w+r*3:-r*3,y,.38f);
+        }
     }
     boolean reactionReady() {return tapFlash==0 && (taps==0 || scaredAge>=.12f*.65f);}
     boolean canTap() {return phase==CHASE && reactionReady();}
@@ -298,6 +338,7 @@ final class RainbowCat {
         return id==pointer;
     }
     String companionHint() {
+        if(phase==ESCAPE)return "RAINBOW INCOMING!";
         if(phase==OPEN)return "MATCH IN ORDER!";
         if(phase==CATCH)return "GOT YOU!";
         if(phase==CIRCLE) {
