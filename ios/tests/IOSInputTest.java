@@ -67,7 +67,19 @@ public final class IOSInputTest extends Check {
         for(int i=0;i<200 && a.phase!=RainbowCat.CIRCLE;i++) {
             game.update(DT);if(a.canTap())tap(game,a.x,a.y);
         }
-        check("native second capture shows star",a.starShape() && a.phase==RainbowCat.CIRCLE);
+        for(int capture=1;capture<4;capture++) {
+            float radius=a.circleRadius();
+            game.touch(one(0,151,a.x+a.gesture.coordinate(0,0)*radius,a.y+a.gesture.coordinate(0,1)*radius));
+            for(int step=1;step<=80;step++) {
+                float at=a.gesture.length*step/80;
+                game.touch(one(2,151,a.x+a.gesture.coordinate(at,0)*radius,a.y+a.gesture.coordinate(at,1)*radius));
+            }
+            game.touch(one(1,151,a.x,a.y));
+            for(int frame=0;frame<50;frame++)game.update(DT);
+            for(int key=0;key<6 && a.phase==RainbowCat.OPEN;key++) {g=a.prompt[a.at];tap(game,c.keyX(l,g),c.keyY(l,g));}
+            for(int frame=0;frame<200 && a.phase!=RainbowCat.CIRCLE;frame++) {game.update(DT);if(a.canTap())tap(game,a.x,a.y);}
+        }
+        check("native final capture shows star",a.starShape() && a.phase==RainbowCat.CIRCLE);
         float[] star=TraceGesture.star();float radius=a.circleRadius();
         game.touch(one(0,151,a.x+star[0]*radius,a.y+star[1]*radius));
         for(int i=1;i<=5;i++)game.touch(one(2,151,a.x+star[i*2]*radius,a.y+star[i*2+1]*radius));

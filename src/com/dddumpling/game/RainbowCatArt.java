@@ -73,6 +73,13 @@ final class RainbowCatArt extends Draw {
             }
         } else for(int i=0;i<12;i++)p.arc(a.circleX(),a.circleY(),radius,radius,i*30,17,
                 Glyph.withAlpha(COLORS[i%COLORS.length],(int)(100+65*pulse)),a.r*.085f);
+        if(a.starShape()) {
+            float edge=a.gesture.length/5;
+            int next=!a.circling?0:a.gesture.travel<0?(int)Math.ceil(a.gesture.position/edge)-1:(int)Math.floor(a.gesture.position/edge)+1;
+            float tx=a.x+a.gesture.coordinate(next*edge,0)*radius,ty=a.y+a.gesture.coordinate(next*edge,1)*radius;
+            p.fillCircle(tx,ty,a.r*(.24f+.05f*pulse),Glyph.withAlpha(0xFFFFE6A3,(int)(65+45*pulse)));
+            p.fillCircle(tx,ty,a.r*.10f,0xFFFFF5CB);
+        }
         tracedPath(p,a,a.circleX(),a.circleY(),radius,a.r);
         float angle=a.clock*1.7f;
         p.fillPoly(star(a.circleX()+a.gesture.coordinate(angle,0)*radius,a.circleY()+a.gesture.coordinate(angle,1)*radius,

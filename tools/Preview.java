@@ -48,8 +48,10 @@ final class Preview {
         a.timer=.01f;c.boss.update(.02f,L,c.rnd);c.boss.update(.45f,L,c.rnd);
         shot(dir,"151-flurry",c,L,w,h,ss);
         GameCore starGame=TestRainbowCat.fight(L);RainbowCat starCat=starGame.boss.cat;
-        TestRainbowCat.challenge(starGame,L);
-        for(int i=0;i<6 && starCat.phase==RainbowCat.OPEN;i++)starGame.boss.press(starCat.prompt[starCat.at],starGame.rnd,L);
+        for(int capture=0;capture<4;capture++) {
+            TestRainbowCat.challenge(starGame,L);
+            for(int i=0;i<6 && starCat.phase==RainbowCat.OPEN;i++)starGame.boss.press(starCat.prompt[starCat.at],starGame.rnd,L);
+        }
         TestRainbowCat.readyToCircle(starGame,L);
         shot(dir,"151-star",starGame,L,w,h,ss);
         starCat.touch(starGame,L,0,151,starCat.x,starCat.y-starCat.circleRadius());
@@ -61,7 +63,7 @@ final class Preview {
         }
         shot(dir,"151-star-progress",starGame,L,w,h,ss);
         GameCore shapes=TestRainbowCat.fight(L);RainbowCat shape=shapes.boss.cat;
-        String[] shapeNames={"circle","star","heart","diamond","eight"};
+        String[] shapeNames={"circle","heart","diamond","eight","star"};
         for(int capture=0;capture<5;capture++) {
             TestRainbowCat.readyToCircle(shapes,L);
             shot(dir,"151-shape-"+shapeNames[capture],shapes,L,w,h,ss);

@@ -129,7 +129,7 @@ final class RainbowCat {
         float remaining=phase==CIRCLE?0:dt;
         while(remaining>0) {
             if(routeDuration==0 || routeTime>=routeDuration) {
-                if(phase==DASH && taps==2) {if(reactionReady()) {phase=CIRCLE;gesture.setShape(TraceGesture.shape(captures));}vx=vy=0;break;}
+                if(phase==DASH && taps==2) {if(reactionReady()) {phase=CIRCLE;gesture.setShape(TraceGesture.shape(captures),starShape());}vx=vy=0;break;}
                 phase=CHASE;chooseRoute(L,rnd,false);
             }
             float step=Math.min(remaining,routeDuration-routeTime);
@@ -183,7 +183,7 @@ final class RainbowCat {
     }
     float pouchSway() {return (float)Math.sin(clock*6)*.38f*caughtStrength();}
     float hoopShift() {return r*.16f*(float)Math.sin(clock*6+.6f)*caughtStrength();}
-    boolean starShape() {return captures==1;}
+    boolean starShape() {return captures==4;}
     float circleRadius() {return r*(captures==0?2.2f:2.7f);}
     boolean carries(GameCore c) {
         return c.state==GameCore.PLAY && !c.dying() && c.boss.kind==Boss.RAINBOW_CAT
@@ -242,10 +242,10 @@ final class RainbowCat {
         if(phase==CIRCLE) {
             switch(captures) {
                 case 0:return "CIRCLE THE CAT!";
-                case 1:return "TRACE THE STAR!";
-                case 2:return "TRACE THE HEART!";
-                case 3:return "TRACE THE DIAMOND!";
-                default:return "TRACE THE EIGHT!";
+                case 1:return "TRACE THE HEART!";
+                case 2:return "TRACE THE DIAMOND!";
+                case 3:return "TRACE THE EIGHT!";
+                default:return "TRACE THE STAR!";
             }
         }
         return phase==DASH || tapFlash>0?"FOLLOW RAINBOW!":taps==0?"TAP CAT TWICE!":"ONE MORE TAP!";

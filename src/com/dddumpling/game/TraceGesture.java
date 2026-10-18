@@ -6,7 +6,7 @@ final class TraceGesture {
     private static final float TOLERANCE=.52f;
     private float[] points,distances;
     float length,start,position,travel,lastX,lastY;
-    boolean active;
+    boolean active,straightStar;
     TraceGesture() {setShape(circle());}
     static float[] circle() {
         float[] out=new float[66];
@@ -23,12 +23,12 @@ final class TraceGesture {
     }
     static float[] shape(int capture) {
         if(capture<=0)return circle();
-        if(capture==1)return star();
-        if(capture==3)return new float[]{0,-1,1,0,0,1,-1,0,0,-1};
+        if(capture==4)return star();
+        if(capture==2)return new float[]{0,-1,1,0,0,1,-1,0,0,-1};
         float[] out=new float[130];
         for(int i=0;i<=64;i++) {
-            double t=(capture==2?Math.PI:Math.PI*.5)+Softbody.TAU*i/64;
-            if(capture==2) {
+            double t=(capture==1?Math.PI:Math.PI*.5)+Softbody.TAU*i/64;
+            if(capture==1) {
                 out[i*2]=(float)Math.pow(Math.sin(t),3);
                 out[i*2+1]=-(float)((13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)+2.5)/14.5);
             } else {
@@ -37,7 +37,9 @@ final class TraceGesture {
         }
         return out;
     }
-    void setShape(float[] shape) {
+    void setShape(float[] shape) {setShape(shape,false);}
+    void setShape(float[] shape,boolean forgivingStar) {
+        straightStar=forgivingStar;
         points=shape.clone();distances=new float[points.length/2];length=0;
         for(int i=1;i<distances.length;i++) {
             length+=(float)Math.hypot(points[i*2]-points[(i-1)*2],points[i*2+1]-points[(i-1)*2+1]);distances[i]=length;
@@ -45,7 +47,7 @@ final class TraceGesture {
         clear();
     }
     void clear() {active=false;travel=0;}
-    float progress() {return Math.min(1,Math.abs(travel)/(length*.94f));}
+    float progress() {return Math.min(1,Math.abs(travel)/(length*(straightStar?.90f:.94f)));}
     float coordinate(float at,int axis) {
         at=(at%length+length)%length;
         for(int i=1;i<distances.length;i++)if(at<=distances[i]) {
@@ -69,7 +71,7 @@ final class TraceGesture {
             float nearest=nearest(px,py,true);
             if(Float.isNaN(nearest)) {clear();return false;}
             travel+=wrapped(nearest-position);position=nearest;
-            if(progress()>=1 && Math.hypot(px-coordinate(start,0),py-coordinate(start,1))<TOLERANCE+.10f) {lastX=x;lastY=y;return true;}
+            if(progress()>=1 && Math.hypot(px-coordinate(start,0),py-coordinate(start,1))<(straightStar?.80f:TOLERANCE+.10f)) {lastX=x;lastY=y;return true;}
         }
         lastX=x;lastY=y;return false;
     }
@@ -79,13 +81,15 @@ final class TraceGesture {
         return distance;
     }
     private float nearest(float x,float y,boolean ordered) {
-        float best=TOLERANCE*TOLERANCE,result=Float.NaN;
+        float tolerance=straightStar?.70f:TOLERANCE;
+        float best=tolerance*tolerance,result=Float.NaN;
         for(int i=1;i<distances.length;i++) {
             float sx=points[(i-1)*2],sy=points[(i-1)*2+1],dx=points[i*2]-sx,dy=points[i*2+1]-sy;
             float squared=dx*dx+dy*dy;if(squared<.00001f)continue;
             float f=RainbowCat.clamp(((x-sx)*dx+(y-sy)*dy)/squared,0,1);
             float at=distances[i-1]+(distances[i]-distances[i-1])*f;
-            if(ordered && Math.abs(wrapped(at-position))>.45f)continue;
+            // Allow rounded star tips while still excluding unrelated edges at crossings.
+            if(ordered && Math.abs(wrapped(at-position))>(straightStar?.85f:.45f))continue;
             float ex=x-sx-dx*f,ey=y-sy-dy*f,error=ex*ex+ey*ey;
             if(error<best) {best=error;result=at;}
         }

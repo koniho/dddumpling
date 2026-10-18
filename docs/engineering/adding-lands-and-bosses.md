@@ -139,8 +139,10 @@ that escape finishes.
 Only pointer-down can score a tap. Moves, historical
 samples and held fingers cannot score extra hits; lift/cancel/pause release ownership.
 After two taps, the cat waits centrally for a closed shape traced in either direction.
-Five successful captures use circle, crossed five-point star, heart, diamond and figure eight,
-in that order. Both face and pastry tap targets have a 15% extra margin.
+Five successful captures use circle, heart, diamond, figure eight and a crossed five-point star,
+in that order. The final star uses five straight crossing strokes, accepts rounded or
+shortened tips, and highlights the next tip; all five strokes are still required.
+Both face and pastry tap targets have a 15% extra margin.
 The companion rises while a small waving net mimics the drawing on a duplicate path
 above its head, then enlarges into a deep mesh fishing net on completion. The caught cat
 and pouch sway together while the companion braces against the moving pole.

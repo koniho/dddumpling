@@ -99,16 +99,18 @@ final class TestRainbowCat extends Check {
             check("flurry preserves left/right order and stagger "+full+"/"+fromLeft,ordered);
         }
     }
-    private static void secondCaptureStar(Layout L) {
-        group("Second Rainbow Cat capture uses a large crossed star");
+    private static void finalCaptureStar(Layout L) {
+        group("Final Rainbow Cat capture uses a large crossed star");
         for(int direction:new int[]{-1,1}) {
             GameCore c=fight(L);RainbowCat a=c.boss.cat;readyToCircle(c,L);
             float circleRadius=a.circleRadius();
             check("first capture stays a circle "+direction,!a.starShape());
-            challenge(c,L);
-            for(int i=0;i<6 && a.phase==RainbowCat.OPEN;i++)c.boss.press(a.prompt[a.at],c.rnd,L);
+            for(int capture=0;capture<4;capture++) {
+                challenge(c,L);
+                for(int i=0;i<6 && a.phase==RainbowCat.OPEN;i++)c.boss.press(a.prompt[a.at],c.rnd,L);
+            }
             readyToCircle(c,L);
-            check("first damage selects star "+direction,a.captures==1 && a.starShape() && a.phase==RainbowCat.CIRCLE);
+            check("fourth damage selects star "+direction,a.captures==4 && a.starShape() && a.phase==RainbowCat.CIRCLE);
             check("star is larger and fits play area "+direction,a.circleRadius()>circleRadius
                     && a.x-a.circleRadius()>L.playLeft && a.x+a.circleRadius()<L.playRight
                     && a.y-a.circleRadius()>L.playTop && a.y+a.circleRadius()<L.deckTop);
@@ -124,11 +126,10 @@ final class TestRainbowCat extends Check {
             check("star catches cat "+direction,a.phase==RainbowCat.CATCH);
             c.boss.update(RainbowCat.NET_TIME,L,c.rnd);
             a.timer=.01f;c.boss.update(.02f,L,c.rnd);readyToCircle(c,L);
-            check("missed prompt keeps star "+direction,a.captures==1 && a.starShape());
+            check("missed prompt keeps star "+direction,a.captures==4 && a.starShape());
             challenge(c,L);
             for(int i=0;i<6 && a.phase==RainbowCat.OPEN;i++)c.boss.press(a.prompt[a.at],c.rnd,L);
-            readyToCircle(c,L);
-            check("second damage completes star round "+direction,a.captures==2 && !a.starShape());
+            check("fifth damage completes star round "+direction,a.captures==5 && c.boss.beaten);
         }
     }
     private static void tapFlash(Layout L) {
@@ -189,6 +190,18 @@ final class TestRainbowCat extends Check {
             }
             check("loose trace closes in either direction "+direction,done);
             check("starting far from path is still rejected "+direction,!loose.begin(1.65f,0));
+        }
+        for(int tip=0;tip<5;tip++)for(int direction:new int[]{-1,1}) {
+            TraceGesture rough=new TraceGesture();rough.setShape(TraceGesture.star(),true);
+            int first=tip*2;float scale=.70f;
+            rough.begin(star[first]*scale,star[first+1]*scale);
+            boolean done=false;
+            for(int edge=1;edge<=5;edge++) {
+                int next=Math.floorMod(tip+direction*edge,5)*2;
+                done=rough.move(star[next]*scale,star[next+1]*scale);
+                if(edge<5)check("rough star still needs all five lines "+tip+"/"+direction+"/"+edge,!done);
+            }
+            check("short rounded star tips finish "+tip+"/"+direction,done);
         }
         TraceGesture trace=new TraceGesture();trace.begin(1,0);
         check("straight chord cannot replace circle",!trace.move(-1,0) && !trace.active);
@@ -283,7 +296,7 @@ final class TestRainbowCat extends Check {
         check("motion trail expires while cat holds prompt pose",a.trailCount==0);
     }
     static void all(Layout L) {
-        fiveShapes(L);secondCaptureStar(L);tapFlash(L);traceShapes(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));
