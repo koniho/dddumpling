@@ -2869,9 +2869,9 @@ final class GameCore {
             returnFade = Math.max(0f, returnFade - dt);
             if (state == OVER && returnFade <= RETURN_FADE * 0.5f) toTitle();
         }
-        // Accumulated, not derived from clock, so the frenzy's faster drift does not make the
-        // sky jump when it starts or stops.
-        skyClock += dt * (powerActive() ? Power.SKY_RATE : 1f);
+        // Accumulate speed changes so the scenery never jumps at battle or frenzy boundaries.
+        float skyRate=state==PLAY && boss.active() && boss.kind==Boss.RAINBOW_CAT?RainbowLand.BATTLE_SKY_RATE:1f;
+        skyClock += dt * (powerActive() ? Power.SKY_RATE : skyRate);
         landBlend = Math.min(1f, landBlend + dt / Lands.FADE_TIME);
         LandPicker.updateDiscovery(this, dt);
         LandPicker.updateTravel(this, dt);

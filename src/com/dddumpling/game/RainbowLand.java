@@ -2,6 +2,7 @@ package com.dddumpling.game;
 
 /** Translucent rainbow bands, with shared arches for the title and land icon. */
 final class RainbowLand extends Draw {
+    static final float BATTLE_SKY_RATE=3f;
     static boolean active(GameCore c) {
         return !c.survival.active && !c.timeAttack.active && Lands.forStage(c.stage)==Lands.RAINBOW;
     }

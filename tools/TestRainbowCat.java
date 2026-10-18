@@ -14,6 +14,30 @@ final class TestRainbowCat extends Check {
             c.boss.update(1f/60,L,c.rnd);
         }
     }
+    private static void battleBackground(Layout L) {
+        group("Rainbow Cat accelerated background");
+        GameCore normal=TestFastEnemies.scene(L,26,151);
+        normal.skyClock=10;normal.update(.1f,L);
+        check("ordinary Rainbow Land retains normal drift",Math.abs(normal.skyClock-10.1f)<.001f);
+        for(boolean timeAttack:new boolean[]{false,true}) {
+            GameCore c=fight(L);c.timeAttack.active=timeAttack;c.skyClock=10;
+            for(int phase:new int[]{RainbowCat.CHASE,RainbowCat.DASH,RainbowCat.OPEN}) {
+                c.boss.cat.phase=phase;c.boss.cat.timer=10;
+                float before=c.skyClock;c.update(.1f,L);
+                check("battle scenery advances threefold in phase "+phase+" time attack "+timeAttack,
+                        Math.abs(c.skyClock-before-.3f)<.001f);
+            }
+            float before=c.skyClock;c.paused=true;c.update(.1f,L);
+            check("pause holds battle scenery "+timeAttack,c.skyClock==before);
+            c.paused=false;c.settingsOpen=true;c.update(.1f,L);
+            check("settings holds battle scenery "+timeAttack,c.skyClock==before);
+            c.settingsOpen=false;c.boss.leave();c.update(.1f,L);
+            check("leaving battle restores normal drift without resetting position "+timeAttack,
+                    Math.abs(c.skyClock-before-.1f)<.001f);
+        }
+        GameCore other=fight(L);other.boss.kind=Boss.SLIME;other.skyClock=10;other.update(.1f,L);
+        check("other bosses retain normal drift",Math.abs(other.skyClock-10.1f)<.001f);
+    }
     static void trailAndCadence(Layout L) {
         group("Rainbow Cat attack pacing and motion trail");
         for(boolean kids:new boolean[]{false,true}) {
@@ -44,7 +68,7 @@ final class TestRainbowCat extends Check {
         check("motion trail expires while cat holds prompt pose",a.trailCount==0);
     }
     static void all(Layout L) {
-        trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));

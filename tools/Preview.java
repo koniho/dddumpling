@@ -22,6 +22,10 @@ final class Preview {
         shot(dir,"151-prompt",c,L,w,h,ss);
         a.timer=.01f;c.boss.update(.02f,L,c.rnd);c.boss.update(.45f,L,c.rnd);
         shot(dir,"151-flurry",c,L,w,h,ss);
+        GameCore sky=TestRainbowCat.fight(L);sky.devInfiniteLives=true;
+        shot(dir,"151-battle-sky-0",sky,L,w,h,ss);
+        for(int frame=0;frame<120;frame++)sky.update(1f/60,L);
+        shot(dir,"151-battle-sky-2s",sky,L,w,h,ss);
         GameCore roam=TestRainbowCat.fight(L);
         for(int side=0;side<4;side++) {
             RainbowCat runner=roam.boss.cat;
