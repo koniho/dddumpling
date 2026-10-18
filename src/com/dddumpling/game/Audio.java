@@ -9,7 +9,7 @@ import android.media.AudioTrack;
 /**
  * Plays the {@link Sfx} buffers through {@link AudioTrack}.
  *
- * One static-mode track per sound, built lazily on first use and replayed with
+ * A bounded cache of static-mode tracks, built lazily and replayed with
  * stop/reload/play. Stack depth is handled by nudging the playback rate rather than
  * synthesising a variant per depth, which keeps the track count down.
  *
@@ -18,7 +18,11 @@ import android.media.AudioTrack;
 final class Audio implements GameCore.Sound {
 
     private final AudioTrack[] tracks = new AudioTrack[Sfx.COUNT];
-    private boolean broken;
+    // Leave headroom below Android's per-UID track limit for music, loops and band voices.
+    private static final int MAX_EFFECT_TRACKS = 24;
+    private final long[] effectUse = new long[Sfx.COUNT];
+    private long useSerial, lastFailureLog;
+    private boolean released, musicLoading;
 
     private final CaveBandAudio band = new CaveBandAudio();
     private final Context ctx;
@@ -58,180 +62,204 @@ final class Audio implements GameCore.Sound {
     private int choice = -1;
 
     /** Starts the loop for the current choice if it is not already playing, off the calling thread. */
-    void startMusic() {
-        if (bgmStarted || broken) return;
-        bgmStarted = true;
-        selectMusic(choice < 0 ? Music.SWING_STYLE : choice);
+    synchronized void startMusic() {
+        if (released || bgmStarted) return;
+        if (choice < 0) choice = Music.SWING_STYLE;
+        requestMusic(musicMode < 0 ? 0 : musicMode, choice);
     }
 
-    @Override public void bandStart(int song, boolean muted) {
+    @Override public synchronized void bandStart(int song, boolean muted) {
+        if (released) return;
         musicMode = -1; bossPlaying = frenzyPlaying = false;
-        band.start(song,muted); stopMusic(); band.volume(musicVolume);
+        stopMusic(); band.start(song,muted); band.volume(musicVolume);
     }
     @Override public float bandTime() { return band.time(); }
     @Override public void bandNote(int song,int note) { band.note(note); }
     @Override public void bandPause(boolean paused) { band.pause(paused,false); }
-    @Override public void bandStop() { band.stop(); musicMode = -1; }
+    @Override public synchronized void bandStop() { band.stop(); musicMode = -1; }
     @Override public void bandMuted(boolean muted) { band.muted(muted); }
 
-    @Override public void selectMusic(final int style) {
+    @Override public synchronized void selectMusic(final int style) {
         choice = style;
-        if (band.active()) return;
-        bgmStarted = true;
-        if (musicMode == 0 && playingStyle == style) return;
-        musicMode = 0;
-        playingStyle = style;
-        bossPlaying = false;
+        requestMusic(0, style);
+    }
+
+    @Override public synchronized void bossMusic(final boolean active) {
+        requestMusic(active ? 1 : 0, choice);
+    }
+
+    @Override public synchronized void versusMusic() { requestMusic(2, choice); }
+
+    private void requestMusic(final int mode, final int style) {
+        if (released || band.active()) return;
+        if (musicMode == mode && playingStyle == style && (musicLoading || usable(bgmTrack))) return;
         stopMusic();
-        final int generation=musicGeneration;
+        musicMode = mode; playingStyle = style;
+        bossPlaying = mode == 1;
+        if (mode == 2) frenzyPlaying = false;
+        bgmStarted = musicLoading = true;
+        final boolean fast = frenzyPlaying;
+        final int generation = musicGeneration;
         new Thread(new Runnable() {
-            @Override public void run() {
-                playSynthMusic(Music.isSynth(style) ? style : Music.SWING_STYLE, frenzyPlaying,generation);
+            public void run() {
+                try {
+                    int synth = Music.isSynth(style) ? style : Music.SWING_STYLE;
+                    short[] pcm = mode == 2 ? VersusMusic.clip()
+                            : mode == 1 ? Music.bossLoop(synth) : Music.loop(synth, fast);
+                    startPreparedMusic(pcm, mode != 2, generation);
+                } catch (Throwable failure) {
+                    synchronized (Audio.this) {
+                        if (generation == musicGeneration) {
+                            musicLoading = bgmStarted = false;
+                            audioFailure(failure);
+                        }
+                    }
+                }
             }
         }, "hexatype-bgm").start();
     }
 
-    @Override public void bossMusic(final boolean active) {
-        if (!active) {
-            if (musicMode == 0 && playingStyle == choice) return;
-            bossPlaying = false;
-            musicMode = -1;
-            selectMusic(choice);
-            return;
-        }
-        if (musicMode == 1 && playingStyle == choice) return;
-        bossPlaying = true;
-        musicMode = 1;
-        playingStyle = choice;
-        stopMusic();
-        bgmStarted = true;
-        final int generation=musicGeneration;
-        new Thread(new Runnable() {
-             public void run() {
-                int style = Music.isSynth(choice) ? choice : Music.SWING_STYLE;
-                try {
-                    short[] pcm = Music.bossLoop(style);
-                    AudioTrack t = musicTrack(pcm,true);
-                    if (!bossPlaying) { t.release(); return; }
-                    startPreparedMusic(t,generation);
-                } catch (Throwable ignored) {}
-            }
-        }, "hexatype-boss-bgm").start();
+    private static boolean usable(AudioTrack track) {
+        return track != null && track.getState() == AudioTrack.STATE_INITIALIZED;
     }
 
-    @Override public void versusMusic() {
-        if(musicMode==2)return;
-        musicMode=2;bossPlaying=frenzyPlaying=false;bgmStarted=true;
-        stopMusic();final int generation=musicGeneration;
-        new Thread(new Runnable() {
-            public void run() {
-                try {startPreparedMusic(musicTrack(VersusMusic.clip(),false),generation);}
-                catch(Throwable ignored) {}
-            }
-        },"hexatype-versus-bgm").start();
+    private static void releaseTrack(AudioTrack track) {
+        if (track == null) return;
+        try { track.stop(); } catch (Throwable ignored) {}
+        try { track.release(); } catch (Throwable ignored) {}
     }
 
-    private AudioTrack musicTrack(short[] pcm,boolean loop) {
-        AudioTrack t = new AudioTrack(
+    private AudioTrack createTrack(short[] pcm, boolean loop, boolean music) {
+        AudioTrack track = new AudioTrack(
                 new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build(),
+                        .setContentType(music ? AudioAttributes.CONTENT_TYPE_MUSIC
+                                : AudioAttributes.CONTENT_TYPE_SONIFICATION).build(),
                 new AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT)
                         .setSampleRate(Sfx.RATE).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build(),
                 pcm.length * 2, AudioTrack.MODE_STATIC, AudioManager.AUDIO_SESSION_ID_GENERATE);
-        t.write(pcm, 0, pcm.length);
-        if(loop)t.setLoopPoints(0, pcm.length, -1);
-        return t;
+        try {
+            if (track.getState() == AudioTrack.STATE_UNINITIALIZED
+                    || track.write(pcm, 0, pcm.length) != pcm.length || !usable(track))
+                throw new IllegalStateException("AudioTrack initialization/write failed");
+            if (loop && track.setLoopPoints(0, pcm.length, -1) != AudioTrack.SUCCESS)
+                throw new IllegalStateException("AudioTrack loop setup failed");
+            return track;
+        } catch (Throwable failure) { releaseTrack(track); throw failure; }
     }
 
     private synchronized void stopMusic() {
         musicGeneration++;
-        try {
-            if (bgmTrack != null) {
-                bgmTrack.stop();
-                bgmTrack.release();
-                bgmTrack = null;
+        musicLoading = false;
+        AudioTrack old = bgmTrack; bgmTrack = null;
+        releaseTrack(old);
+    }
+
+    /** Allocate only the latest request, serialized with disposal and SFX allocations. */
+    private synchronized void startPreparedMusic(short[] pcm, boolean loop, int generation) {
+        if (released || generation != musicGeneration || band.active()) return;
+        musicLoading = false;
+        for (int attempt = 0; attempt < 2; attempt++) {
+            try {
+                bgmTrack = createTrack(pcm, loop, true);
+                applyMusicMix();
+                if (!musicPaused) bgmTrack.play();
+                return;
+            } catch (Throwable failure) {
+                releaseTrack(bgmTrack); bgmTrack = null;
+                evictEffect(); audioFailure(failure);
             }
-        } catch (Throwable ignored) {
-            // Already gone.
         }
-    }
-
-    private void playSynthMusic(int style, boolean frenzy,int generation) {
-        try {startPreparedMusic(musicTrack(Music.loop(style,frenzy),true),generation);}
-        catch(Throwable ignored) {}
-    }
-
-    /** A track prepared in the background must honor a pause that happened while it was loading. */
-    private synchronized void startPreparedMusic(AudioTrack track,int generation) {
-        if (generation!=musicGeneration || band.active()) { track.release(); return; }
-        bgmTrack = track;
-        applyMusicMix();
-        if (!musicPaused) track.play();
+        bgmStarted = false;
     }
 
     synchronized void pauseMusic() {
         musicPaused = true;
         band.pause(true,true);
-        try {
-            if (bgmTrack != null) bgmTrack.pause();
-            if (rocketTrack != null) rocketTrack.pause();
-        } catch (Throwable ignored) {
-            // Nothing to pause.
+        try { if (bgmTrack != null) bgmTrack.pause(); } catch (Throwable failure) {
+            stopMusic(); audioFailure(failure);
         }
+        try { if (rocketTrack != null) rocketTrack.pause(); } catch (Throwable failure) {
+            releaseTrack(rocketTrack); rocketTrack = null; rocketActive = false;
+            mixRocket(false); audioFailure(failure);
+        }
+        try { if (bubbleTrack != null) bubbleTrack.pause(); } catch (Throwable failure) {
+            releaseTrack(bubbleTrack); bubbleTrack = null; audioFailure(failure);
+        }
+        bubbleActive = false;
     }
 
     synchronized void resumeMusic() {
+        if (released) return;
         musicPaused = false;
         band.pause(false,true);
-        try {
-            if (bgmTrack != null) bgmTrack.play();
-            if (rocketTrack != null && rocketActive) rocketTrack.play();
-        } catch (Throwable ignored) {
-            // Nothing to resume.
+        try { if (bgmTrack != null) bgmTrack.play(); } catch (Throwable failure) {
+            stopMusic(); audioFailure(failure);
+        }
+        if (!usable(bgmTrack) && !musicLoading && musicMode >= 0) requestMusic(musicMode, playingStyle);
+        try { if (rocketTrack != null && rocketActive) rocketTrack.play(); } catch (Throwable failure) {
+            releaseTrack(rocketTrack); rocketTrack = null; rocketActive = false;
+            mixRocket(false); audioFailure(failure);
         }
     }
 
+    private void discardEffect(int id) {
+        AudioTrack old = tracks[id]; tracks[id] = null;
+        releaseTrack(old);
+    }
+
+    /** Prefer finished sounds; if every voice is busy, retire the oldest one. */
+    private void evictEffect() {
+        int oldest = -1, idle = -1;
+        for (int i = 0; i < tracks.length; i++) {
+            AudioTrack track = tracks[i];
+            if (track == null) continue;
+            if (oldest < 0 || effectUse[i] < effectUse[oldest]) oldest = i;
+            boolean finished = !usable(track);
+            try { finished |= track.getPlayState() != AudioTrack.PLAYSTATE_PLAYING
+                    || track.getPlaybackHeadPosition() >= Sfx.build(i).length; }
+            catch (Throwable ignored) { finished = true; }
+            if (finished && (idle < 0 || effectUse[i] < effectUse[idle])) idle = i;
+        }
+        if (idle >= 0 || oldest >= 0) discardEffect(idle >= 0 ? idle : oldest);
+    }
+
     private AudioTrack track(int id) {
-        if (broken || id < 0 || id >= Sfx.COUNT) return null;
-        if (tracks[id] != null) return tracks[id];
-        try {
-            short[] pcm = Sfx.build(id);
-            AudioTrack t = new AudioTrack(
-                    new AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_GAME)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .build(),
-                    new AudioFormat.Builder()
-                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .setSampleRate(Sfx.RATE)
-                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                            .build(),
-                    pcm.length * 2, AudioTrack.MODE_STATIC,
-                    AudioManager.AUDIO_SESSION_ID_GENERATE);
-            t.write(pcm, 0, pcm.length);
-            tracks[id] = t;
-            return t;
-        } catch (Throwable e) {
-            // A device that will not give us a track just plays silently.
-            broken = true;
-            return null;
+        if (usable(tracks[id])) return tracks[id];
+        discardEffect(id);
+        int count = 0;
+        for (AudioTrack track : tracks) if (track != null) count++;
+        if (count >= MAX_EFFECT_TRACKS) evictEffect();
+        tracks[id] = createTrack(Sfx.build(id), false, false);
+        return tracks[id];
+    }
+
+    private void audioFailure(Throwable failure) {
+        long now = System.nanoTime();
+        if (lastFailureLog == 0 || now - lastFailureLog > 5000000000L) {
+            lastFailureLog = now;
+            android.util.Log.w("DDDumplingAudio", "Recoverable playback failure", failure);
         }
     }
 
     private void play(int id, float rate) { play(id, rate, 1f); }
 
-    private void play(int id, float rate, float gain) {
-        AudioTrack t = track(id);
-        if (t == null) return;
-        try {
-            t.stop();
-            t.reloadStaticData();
-            t.setPlaybackRate((int) (Sfx.RATE * rate));
-            effectGains[id]=gain;
-            t.setVolume(gain * effectsVolume);
-            t.play();
-        } catch (Throwable ignored) {
-            // Mid-playback state races are not worth crashing over.
+    private synchronized void play(int id, float rate, float gain) {
+        if (released || id < 0 || id >= Sfx.COUNT) return;
+        for (int attempt = 0; attempt < 2; attempt++) {
+            try {
+                AudioTrack track = track(id);
+                track.stop();
+                if (track.reloadStaticData() != AudioTrack.SUCCESS
+                        || track.setPlaybackRate((int)(Sfx.RATE * rate)) != AudioTrack.SUCCESS)
+                    throw new IllegalStateException("AudioTrack replay failed");
+                effectGains[id] = gain;
+                track.setVolume(gain * effectsVolume);
+                track.play();
+                effectUse[id] = ++useSerial;
+                return;
+            } catch (Throwable failure) {
+                discardEffect(id); evictEffect(); audioFailure(failure);
+            }
         }
     }
 
@@ -277,7 +305,8 @@ final class Audio implements GameCore.Sound {
         play(Sfx.BLAST_OFF, 1f);
     }
 
-    @Override public void rocket(float thrust) {
+    @Override public synchronized void rocket(float thrust) {
+        if (released) return;
         try {
             if (thrust <= 0f) {
                 if (rocketActive) mixRocket(false);
@@ -287,39 +316,27 @@ final class Audio implements GameCore.Sound {
             }
             if (rocketTrack == null) {
                 short[] pcm = Sfx.rocket();
-                rocketTrack = new AudioTrack(
-                        new AudioAttributes.Builder()
-                                .setUsage(AudioAttributes.USAGE_GAME)
-                                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                                .build(),
-                        new AudioFormat.Builder()
-                                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                                .setSampleRate(Sfx.RATE)
-                                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                                .build(),
-                        pcm.length * 2, AudioTrack.MODE_STATIC,
-                        AudioManager.AUDIO_SESSION_ID_GENERATE);
-                rocketTrack.write(pcm, 0, pcm.length);
-                rocketTrack.setLoopPoints(0, pcm.length, -1);
+                rocketTrack = createTrack(pcm, true, false);
             }
             float p = Math.max(0f, Math.min(1f, thrust));
             rocketGain=0.16f + 0.28f * p;
             rocketTrack.setVolume(rocketGain * effectsVolume);
             rocketTrack.setPlaybackRate((int) (Sfx.RATE * (0.82f + 0.43f * p)));
-            if (!rocketActive) {
+            if (!rocketActive && !musicPaused) {
                 mixRocket(true);
                 rocketTrack.play();
                 rocketActive = true;
             }
-        } catch (Throwable ignored) {
-            rocketActive = false;
+        } catch (Throwable failure) {
+            releaseTrack(rocketTrack); rocketTrack = null; rocketActive = false;
+            mixRocket(false); audioFailure(failure);
         }
     }
 
     /** Leaves a little headroom for the engine without muting the scene music. */
     private void mixRocket(boolean on) { rocketDucked=on; applyMusicMix(); }
 
-    @Override public void volumes(float music,float effects) {
+    @Override public synchronized void volumes(float music,float effects) {
         musicVolume=music; effectsVolume=effects;
         applyMusicMix();
         try {
@@ -438,20 +455,13 @@ final class Audio implements GameCore.Sound {
 
     @Override public void boltDeath() { play(Sfx.BOLT_DEATH, 1f, 0.82f); }
 
-    @Override public void bossCharge(float charge) {
+    @Override public synchronized void bossCharge(float charge) {
+        if (released) return;
         try {
             if (bubbleTrack == null && charge <= 0f) return;
             if (bubbleTrack == null) {
                 short[] pcm = Sfx.bubble();
-                bubbleTrack = new AudioTrack(
-                        new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME)
-                                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build(),
-                        new AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                                .setSampleRate(Sfx.RATE)
-                                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build(),
-                        pcm.length * 2, AudioTrack.MODE_STATIC, AudioManager.AUDIO_SESSION_ID_GENERATE);
-                bubbleTrack.write(pcm, 0, pcm.length);
-                bubbleTrack.setLoopPoints(0, pcm.length, -1);
+                bubbleTrack = createTrack(pcm, true, false);
             }
             float p = Math.max(0f, Math.min(1f, charge));
             float target = p * 0.10f;
@@ -459,13 +469,14 @@ final class Audio implements GameCore.Sound {
             bubbleTrack.setVolume(bubbleVolume * effectsVolume);
             // Fixed-rate playback avoids resampler zipper noise. Once created, the zero-ended loop
             // keeps running silently between charges so no waveform is ever paused mid-cycle.
-            if (!bubbleActive) {
+            if (!bubbleActive && !musicPaused) {
                 bubbleTrack.setPlaybackRate(Sfx.RATE);
                 bubbleTrack.play();
                 bubbleActive = true;
             }
-        } catch (Throwable ignored) {
-            bubbleActive = false;
+        } catch (Throwable failure) {
+            releaseTrack(bubbleTrack); bubbleTrack = null; bubbleActive = false;
+            audioFailure(failure);
         }
     }
 
@@ -482,19 +493,12 @@ final class Audio implements GameCore.Sound {
     }
 
     /** Swaps the looping track for the driven variant of the current scene. */
-    @Override public void frenzy(boolean on) {
-        if (frenzyPlaying == on) return;
+    @Override public synchronized void frenzy(boolean on) {
+        if (released || frenzyPlaying == on) return;
         frenzyPlaying = on;
         if (!bgmStarted) return;
         stopMusic();
-        final int style = Music.isSynth(choice) ? choice : Music.SWING_STYLE;
-        final boolean fast = on;
-        final int generation=musicGeneration;
-        new Thread(new Runnable() {
-            @Override public void run() {
-                playSynthMusic(style, fast,generation);
-            }
-        }, "hexatype-bgm").start();
+        requestMusic(musicMode < 0 ? 0 : musicMode, choice);
     }
 
     // ---- narration ----------------------------------------------------------
@@ -739,40 +743,17 @@ final class Audio implements GameCore.Sound {
      * stream it plays on, so it cannot be pushed past what the music is already using — the way to
      * make a voice louder is to make everything else quieter.
      */
-    private void duck(boolean on) { ducked=on; applyMusicMix(); }
+    private synchronized void duck(boolean on) { ducked=on; applyMusicMix(); }
 
     synchronized void release() {
-        ttsBroken=true;
-        hush();
-        band.stop();
-        stopMusic();
-        try {
-            if (rocketTrack != null) rocketTrack.release();
-            rocketTrack = null;
-            rocketActive = false;
-            if (bubbleTrack != null) bubbleTrack.release();
-            bubbleTrack = null;
-            bubbleActive = false;
-        } catch (Throwable ignored) {
-            // Already gone.
-        }
-        try {
-            if (tts != null) {
-                tts.stop();
-                tts.shutdown();
-                tts = null;
-            }
-        } catch (Throwable ignored) {
-            // Going away regardless.
-        }
-        for (int i = 0; i < tracks.length; i++) {
-            if (tracks[i] == null) continue;
-            try {
-                tracks[i].release();
-            } catch (Throwable ignored) {
-                // Already gone.
-            }
-            tracks[i] = null;
-        }
+        released = true;
+        ttsBroken = true;
+        hush(); band.stop(); stopMusic();
+        releaseTrack(rocketTrack); rocketTrack = null; rocketActive = false;
+        releaseTrack(bubbleTrack); bubbleTrack = null; bubbleActive = false;
+        try { if (tts != null) tts.stop(); } catch (Throwable ignored) {}
+        try { if (tts != null) tts.shutdown(); } catch (Throwable ignored) {}
+        tts = null;
+        for (int i = 0; i < tracks.length; i++) discardEffect(i);
     }
 }

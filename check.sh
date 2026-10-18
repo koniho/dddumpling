@@ -228,6 +228,8 @@ fi
 java -cp build/harness com.dddumpling.game.CoreTest "$SUITE" | filter
 if [ -z "$SUITE" ] || [[ "CaveBand Audio" == *"$SUITE"* ]]; then python3 tools/test-band-audio.py; fi
 
+if [ -z "$SUITE" ] || [ "$SUITE" = Audio ]; then python3 tools/test-audio-lifecycle.py; fi
+
 if [ "$RULES_ONLY" = 1 ]; then exit 0; fi
 
 [ "$QUIET" = 1 ] || printf '\n=== frames ===\n'
