@@ -67,6 +67,7 @@ final class DevSettings extends Draw {
         label(p,u,u.runLabelY,"RUN CONTROLS",s);
         chip(p,u,u.runY,0,2,c.fullRoster?"NEXT RUN: 6 KEYS":"NEXT RUN: 4 KEYS",s,false);
         chip(actions,u,u.runY,1,2,"END RUN",s,false);
+        chip(p,u,u.infiniteLivesY,0,1,"INFINITE LIVES: "+(c.devInfiniteLives?"ON":"OFF"),s,c.devInfiniteLives);
     }
     static void completeBosses(GameCore c) {
         if(!BuildFlags.DEVELOPER)return;
@@ -91,7 +92,7 @@ final class DevSettings extends Draw {
         // Finish live activities before clearing their saved rewards and checkpoints.
         c.toTitle();
         if(!c.resetHighScores()) {c.resetProgressArmed=false;return;}
-        c.closeSettings();c.boss.leave();c.starter.clear();
+        c.closeSettings();c.boss.leave();c.starter.clear();c.devInfiniteLives=false;
         c.progress.resetForDeveloper();
         c.clearArmed=true;CaseUi.tapClear(c);
         c.resetDifficultyScaling();

@@ -3193,6 +3193,8 @@ final class Preview {
         System.out.printf("stage jump: on stage %d, boss %s%n", cj.stage,
                 Skins.bossName(Skins.DEFAULT,cj.boss.kind));
         shot(dir, "67-settings-stage-jump", cj, L, w, h, ss);
+        cj.settingsPage=1;cj.settingsTab=SettingsUi.GENERAL;cj.devInfiniteLives=true;
+        shot(dir,"151-settings-infinite-lives",cj,L,w,h,ss);
         GameCore settings=new GameCore(new Mem(),819L);
         PlayerSettings.open(settings);
         settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME*.5f);

@@ -599,6 +599,8 @@ final class GameCore {
     final UpdatePrompt updatePrompt=new UpdatePrompt();
     final ReleaseMascot releaseMascot=new ReleaseMascot();
     int settingsTab;
+    /** Session-only developer aid; damage feedback still plays normally. */
+    boolean devInfiniteLives;
     /** Newly collected stars in this update, including the winning pickup. */
     int starPickups;
     int starBlastHaptic; // Per-frame completion storm: 1 light, 2 heavy.
@@ -3661,7 +3663,7 @@ final class GameCore {
         if(boss.kind==Boss.ALLIGATOR && boss.fighting())boss.alligator.playerDamaged();
         timeAttack.damaged();
         companion.react(RunCompanion.DAMAGE,1f);
-        lives--;
+        if(!(BuildFlags.DEVELOPER && devInfiniteLives))lives--;
         hurtThisStage++;
         combo = 0;
         shake = boss.kind==Boss.ALLIGATOR && boss.fighting()?1.2f:1f;
