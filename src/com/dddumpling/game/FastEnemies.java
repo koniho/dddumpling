@@ -109,10 +109,15 @@ final class FastEnemies {
     }
 
     private static void starBurst(Painter p,float x,float y,float r,int color,float phase,float t,boolean rainbow) {
-        starBurst(p,x,y,r,color,phase,t,rainbow,1);
+        if(rainbow)rainbowBurst(p,x,y,r,phase,t);
+        else starBurst(p,x,y,r,color,phase,t,false,1);
     }
 
-    static void starBurst(Painter p,float x,float y,float r,int color,float phase,float t,boolean rainbow,int intensity) {
+    static void rainbowBurst(Painter p,float x,float y,float r,float phase,float t) {
+        starBurst(p,x,y,r*1.25f,RainbowLand.CLEAR_COLORS[0],phase,t,true,2);
+    }
+
+    private static void starBurst(Painter p,float x,float y,float r,int color,float phase,float t,boolean rainbow,int intensity) {
         if(t<0 || t>=1)return;
         float ease=1-(1-t)*(1-t),fade=(1-t)*(1-t);
         int light=Glyph.mix(color,0xFFFFF4C6,.65f);

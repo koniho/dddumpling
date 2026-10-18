@@ -131,7 +131,10 @@ final class Preview {
         dive.enterT=1;dive.swampKind=SwampEnemies.DIVE;dive.diving=true;
         shot(dir,"151-enemies",field,L,w,h,ss);
         field.skyClock=8;shot(dir,"151-bands-scrolling",field,L,w,h,ss);field.skyClock=0;
-        for(GameCore.Enemy e:field.enemies){field.destroyWord(e,field.enemyCentreX(e),e.y,L);e.destroyT=.15f;}
+        for(GameCore.Enemy e:field.enemies) {
+            field.destroyWord(e,field.enemyCentreX(e),e.y,L);e.destroyT=.15f;
+            for(int key=0;key<e.gone.length;key++)if(e.gone[key])e.goneT[key]=.15f*3.2f;
+        }
         field.clock+=.15f;Fx.updateParticles(field,.15f);
         shot(dir,"151-clear-bursts",field,L,w,h,ss);
         GameCore title=new GameCore(TestTimeAttack.store(),151,true);

@@ -940,7 +940,7 @@ final class Renderer extends Draw {
             if(q.slime!=null)continue;
             float k = q.life / q.max;
             if(q.rainbowStar) {
-                FastEnemies.starBurst(p,q.x,q.y,q.size,q.color,q.x+q.y,1-k,true,2);
+                FastEnemies.rainbowBurst(p,q.x,q.y,q.size,q.x+q.y,1-k);
                 continue;
             }
             p.fillCircle(q.x, q.y, q.size * (0.4f + k * 0.6f),

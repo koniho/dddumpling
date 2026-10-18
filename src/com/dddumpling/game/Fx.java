@@ -94,7 +94,7 @@ final class Fx {
 
     static void rainbowStarBurst(GameCore c,float x,float y,float radius) {
         GameCore.Particle p=new GameCore.Particle();
-        p.x=x;p.y=y;p.size=radius*1.25f;p.life=p.max=.85f;p.rainbowStar=true;
+        p.x=x;p.y=y;p.size=radius;p.life=p.max=.85f;p.rainbowStar=true;
         p.color=RainbowLand.CLEAR_COLORS[0];c.particles.add(p);
     }
 
