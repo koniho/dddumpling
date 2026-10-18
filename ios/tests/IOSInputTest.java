@@ -43,10 +43,10 @@ public final class IOSInputTest extends Check {
         game.touch(one(2,151,a.x,a.y));game.touch(one(1,151,a.x,a.y));
         check("native move and lift do not double tap",a.taps==1 && a.pointer==-1);
         for(int hit=1;hit<2;hit++) {
-            for(int i=0;i<25;i++)game.update(DT);
+            for(int i=0;i<45;i++)game.update(DT);
             tap(game,a.x,a.y);
         }
-        for(int i=0;i<25;i++)game.update(DT);
+        for(int i=0;i<45;i++)game.update(DT);
         check("two native taps wait for circle",a.phase==RainbowCat.CIRCLE && c.boss.hp==hp);
         game.touch(one(0,151,a.circleX()+a.circleRadius(),a.circleY()));
         for(int i=1;i<=40;i++) {

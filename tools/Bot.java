@@ -287,7 +287,7 @@ final class Bot {
             } else if(budget>=1f && a.phase==RainbowCat.CIRCLE) {
                 budget-=1;presses++;catCircleAngle=0;catCircling=true;
                 a.touch(c,L,0,151,a.circleX()+a.circleRadius(),a.circleY());
-            } else if(budget>=1f && a.phase==RainbowCat.CHASE) {
+            } else if(budget>=1f && a.canTap()) {
                 budget-=1;presses++;think=reaction;
                 // A bounded tap with aim error; holding a finger never earns another hit.
                 float error=rnd.nextFloat()<missRate?a.r*2:0;

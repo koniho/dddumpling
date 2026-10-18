@@ -3,6 +3,10 @@ package com.dddumpling.game;
 /** Frosting, paws and pointed ears traced over moving spring outlines; no sprite textures. */
 final class RainbowCatArt extends Draw {
     static final int[] COLORS={0xFFFF7B9B,0xFFFFB36B,0xFFFFE488,0xFF91E2BA,0xFF8ED9F5,0xFFBBA4EE};
+    private static final float[] FACE={-1.02f,.02f,-.99f,-.28f,-.88f,-.48f,-.86f,-.98f,-.72f,-1.06f,
+                -.34f,-.66f,0,-.60f,.34f,-.66f,.72f,-1.06f,.86f,-.98f,.88f,-.48f,
+                .99f,-.28f,1.02f,.02f,.99f,.35f,.87f,.60f,.66f,.79f,.34f,.89f,
+                0,.92f,-.34f,.89f,-.66f,.79f,-.87f,.60f,-.99f,.35f};
     static final int FUR=0xFFA9A7BE, INK=0xFF49425F;
     static void draw(Painter p,GameCore c,Layout L,Boss b,float alpha) {
         RainbowCat a=b.cat;if(!a.placed)return;
@@ -10,11 +14,22 @@ final class RainbowCatArt extends Draw {
         Painter q=new OpacityPainter(p,fade);
         motionTrail(q,a);
         q.save();q.translate((1-enter)*(1-enter)*-L.w,0);
-        boolean caught=a.phase==RainbowCat.OPEN;
+        boolean caught=a.phase==RainbowCat.OPEN || (a.phase==RainbowCat.CATCH && a.netAge>=.34f);
         float struggle=caught?(float)Math.sin(a.clock*18)*a.r*.065f:0;
         if(a.phase==RainbowCat.CIRCLE)circleGuide(q,a);
         if(a.carries(c))net(q,c,L,false);
-        cat(q,a.x+struggle,a.y,a.r,a.clock*(caught?1:2),a.turn,a.pastry,a.head,caught,1);
+        Painter sprite=q;
+        if(a.tapFlash>0) {
+            int color=tapColor(a);float end=Math.min(1,a.tapFlash/.10f);
+            float[] body=pastry(a.pastry,a.x,a.y,a.r);
+            float[] face=points(FACE,a.head.centreX(),a.head.centreY(),a.head.radiusY()*1.13f,a.head.radiusY()*1.13f);
+            for(int layer=3;layer>=1;layer--) {
+                int glow=Glyph.withAlpha(color,(int)(end*(layer==1?180:45)));
+                q.strokePoly(body,glow,a.r*layer*.19f);q.strokePoly(face,glow,a.r*layer*.19f);
+            }
+            sprite=new ColorFadePainter(q,color,.78f*end,1);
+        }
+        cat(sprite,a.x+struggle,a.y,a.r,a.clock*(caught?1:2),a.turn,a.pastry,a.head,caught,1,caught?0:a.scared);
         if(a.carries(c))net(q,c,L,true);
         if(a.flash>0)for(int band=0;band<3;band++)
             q.strokeCircle(a.x,a.y,a.r*(1.1f+(1-a.flash)*(1.5f+band*.3f)),
@@ -37,63 +52,109 @@ final class RainbowCatArt extends Draw {
             }
         }
     }
+    static int tapColor(RainbowCat a) {
+        int band=Math.min(RainbowLand.CLEAR_COLORS.length-1,(int)((1-a.tapFlash/RainbowCat.TAP_FLASH)*RainbowLand.CLEAR_COLORS.length));
+        return RainbowLand.CLEAR_COLORS[Math.max(0,band)];
+    }
     private static void circleGuide(Painter p,RainbowCat a) {
         float radius=a.circleRadius(),pulse=.7f+.3f*(float)Math.sin(a.clock*3);
         for(int i=0;i<12;i++)p.arc(a.circleX(),a.circleY(),radius,radius,i*30,17,
                 Glyph.withAlpha(COLORS[i%COLORS.length],(int)(100+65*pulse)),a.r*.085f);
         if(a.circling && Math.abs(a.circleSweep)>.01f) {
-            float start=(a.circleAngle-a.circleSweep)*180/(float)Math.PI;
-            p.arc(a.circleX(),a.circleY(),radius,radius,start,a.circleSweep*180/(float)Math.PI,
-                    0xFFFFF2B6,a.r*.16f);
+            float[] traced=new float[130];
+            for(int i=0;i<=64;i++) {
+                float at=a.gesture.start+a.gesture.travel*i/64;
+                traced[i*2]=a.circleX()+a.gesture.coordinate(at,0)*radius;
+                traced[i*2+1]=a.circleY()+a.gesture.coordinate(at,1)*radius;
+            }
+            p.polyline(traced,0xFFFFF2B6,a.r*.16f);
         }
         float angle=a.clock*1.7f;
         p.fillPoly(star(a.circleX()+(float)Math.cos(angle)*radius,a.circleY()+(float)Math.sin(angle)*radius,
                 a.r*.20f,a.r*.08f,4,angle),0xFFFFF5CB);
     }
     private static void net(Painter p,GameCore c,Layout L,boolean front) {
-        RainbowCat a=c.boss.cat;float u=a.netAmount();
-        float homeX=RunCompanion.x(L),homeY=RunCompanion.y(L),r=a.r;
+        RainbowCat a=c.boss.cat;float r=a.r,u=a.netAmount();
+        boolean winding=a.phase==RainbowCat.CIRCLE;
+        float wind=winding?a.windUp:a.phase==RainbowCat.CATCH?a.releaseWind:1;
+        float homeX=RunCompanion.x(L),homeY=RunCompanion.y(L);
         float targetX=a.catchX+r*2.45f,targetY=a.catchY+r*2.15f;
-        float cx=homeX+(targetX-homeX)*u,cy=homeY+(targetY-homeY)*u-(float)Math.sin(u*Math.PI)*r*1.2f;
-        float shake=a.phase==RainbowCat.OPEN?(float)Math.sin(a.clock*18)*r*.045f:0;
-        float nx=homeX+(a.catchX-homeX)*u+shake,ny=homeY-r*2+(a.catchY-homeY+r*2)*u;
-        float rx=r*(.55f+1.45f*u),ry=r*(.4f+1.12f*u),fade=Math.min(1,u*3);
+        float rise=winding?wind*.80f:a.phase==RainbowCat.CATCH?wind*.80f+(1-wind*.80f)*u:u;
+        float cx=homeX+(targetX-homeX)*rise,cy=homeY+(targetY-homeY)*rise;
+        float loadedX=homeX+(targetX-homeX)*wind*.80f-r*(.4f+.8f*wind);
+        float loadedY=homeY+(targetY-homeY)*wind*.80f-r*(2.3f+.8f*wind);
+        float nx,ny,tilt,size;
+        if(winding) {
+            nx=cx-r*(.4f+.8f*wind);ny=cy-r*(2.3f+.8f*wind);tilt=-.25f-.65f*wind;size=.45f+.45f*wind;
+        } else {
+            nx=loadedX+(a.catchX-loadedX)*u;
+            ny=loadedY+(a.catchY-r*1.05f-loadedY)*u-r*.9f*(float)Math.sin(u*Math.PI);
+            tilt=(-.25f-.65f*wind)*(1-u)-.13f*u;size=.45f+.55f*u;
+        }
+        float struggle=a.phase==RainbowCat.OPEN || (a.phase==RainbowCat.CATCH && a.netAge>=.34f)?1:0;
+        float rx=r*2.15f*size,ry=r*.52f*size,depth=r*2.72f*size;
+        float fade=winding?Math.min(1,wind*6):a.netReturn>0?u:1;
         Painter q=new OpacityPainter(p,fade);
+        float[] grip=new float[2];netPoint(grip,0,1,0,nx,ny,rx,ry,depth,tilt,a.clock,0,true);
         if(!front) {
-            q.fillEllipse(nx,ny,rx,ry,0x304BE6CF);
-            return;
+            // Deep hanging pouch and tilted hoop follow the fishing-net reference.
+            float[] outline=new float[130];
+            for(int i=0;i<=32;i++)netPoint(outline,i*2,-1,i/32f,nx,ny,rx,ry,depth,tilt,a.clock,struggle,true);
+            for(int i=0;i<32;i++)netPoint(outline,(33+i)*2,1,1-i/31f,nx,ny,rx,ry,depth,tilt,a.clock,struggle,true);
+            q.fillPoly(outline,0x208CCAE8);q.strokePoly(outline,0x996995BF,r*.045f);
+            q.line(grip[0],grip[1],cx+r*.27f,cy+r*.30f,0xFF3F4578,r*.20f);
+            q.line(grip[0],grip[1],cx+r*.27f,cy+r*.30f,0xFFD8EEFF,r*.12f);
+            q.line(grip[0]-r*.025f,grip[1]-r*.025f,cx+r*.24f,cy+r*.28f,0xFFFFFFFF,r*.035f);
         }
-        q.line(nx+rx*.60f,ny+ry*.80f,cx,cy,0xFF7660A0,r*.21f);
-        q.line(nx+rx*.60f,ny+ry*.80f,cx,cy,0xFFFFD89F,r*.14f);
-        q.line(nx+rx*.60f-r*.03f,ny+ry*.80f,cx-r*.03f,cy,0xFFFFF1CD,r*.045f);
-        // Diagonal mesh clipped analytically to the oval, leaving the cat visible through it.
-        for(int direction=-1;direction<=1;direction+=2)for(int i=-5;i<=5;i++) {
-            float k=i*.24f,root=(float)Math.sqrt(2-k*k);
-            float x0=(direction*k-root)*.5f,x1=(direction*k+root)*.5f;
-            float[] strand=new float[26];
-            for(int sample=0;sample<=12;sample++) {
-                float px=x0+(x1-x0)*sample/12f,py=k-direction*px;
-                float slack=Math.max(0,1-px*px-py*py);
-                float struggle=a.phase==RainbowCat.OPEN?1:0;
-                // One deformation field keeps crossing threads joined while the belly flexes.
-                float tug=(float)Math.sin(a.clock*18+py*2)*.13f*struggle;
-                strand[sample*2]=nx+rx*(px+slack*tug);
-                strand[sample*2+1]=ny+ry*(py+slack*(.14f+.10f*struggle*(float)Math.sin(a.clock*15+px*3)));
+        // Actual diagonal strands share a deformation field, so every mesh junction stays tied.
+        for(int direction=-1;direction<=1;direction+=2)for(int i=-7;i<=7;i++) {
+            float k=i*.25f,va=(k+direction-1)/(2*direction),vb=(k+direction+1)/(2*direction);
+            float from=Math.max(0,Math.min(va,vb)),to=Math.min(1,Math.max(va,vb));
+            if(to<=from)continue;
+            float[] strand=new float[34];
+            for(int j=0;j<=16;j++) {
+                float v=from+(to-from)*j/16;
+                netPoint(strand,j*2,k-direction*(2*v-1),v,nx,ny,rx,ry,depth,tilt,a.clock,struggle,front);
             }
-            q.polyline(strand,0x99E6FFF7,r*.032f);
+            q.polyline(strand,front?0xBCDAF4FF:0x447DA6D6,r*(front?.038f:.025f));
         }
-        q.arc(nx,ny,rx,ry,0,360,0xFF486D9B,r*.15f);
-        q.arc(nx,ny,rx,ry,0,360,0xFFA7F7DD,r*.105f);
-        q.arc(nx,ny,rx,ry,205,115,0xFFEEFFF7,r*.045f);
+        float[] rim=new float[130];
+        for(int i=0;i<=64;i++) {
+            float angle=(front?0:(float)Math.PI)+i*(float)Math.PI/64;
+            float px=(float)Math.cos(angle)*rx,py=(float)Math.sin(angle)*ry;
+            rim[i*2]=nx+px*(float)Math.cos(tilt)-py*(float)Math.sin(tilt);
+            rim[i*2+1]=ny+px*(float)Math.sin(tilt)+py*(float)Math.cos(tilt);
+        }
+        q.polyline(rim,0xFF343E77,r*.20f);q.polyline(rim,0xFF54CDED,r*.125f);
+        q.polyline(rim,0xBBD4F9FF,r*.045f);
+        if(!front)return;
+        if(a.phase==RainbowCat.CATCH && a.netAge<.34f) {
+            float burst=(float)Math.sin(u*Math.PI);
+            for(int band=0;band<3;band++)q.arc(cx,cy,r*(1.5f+band*.30f),r*(1.5f+band*.30f),
+                    185+u*80,70,fadeBy(COLORS[band+2],burst*.6f),r*.10f);
+        }
         int who=c.companion.who;
         if(who>=0) {
-            float cr=RunCompanion.radius(c,L)*(1+u*.55f);
-            Trinket.drawReacting(p,who,cx,cy,cr,c.companion.clock,1,Trinket.FIGHT,
-                    .13f*(float)Math.sin(a.clock*9)*u,c.ninja());
-            RunCompanion.drawProps(p,c,L,cx,cy,cr);
+            float cr=RunCompanion.radius(c,L)*(1+rise*.55f);
+            float rock=winding?-.34f*wind:a.phase==RainbowCat.CATCH?.34f*(float)Math.sin(u*Math.PI):.08f*(float)Math.sin(a.clock*9);
+            Trinket.drawReacting(p,who,cx,cy,cr,c.companion.clock,1,Trinket.FIGHT,rock,c.ninja());
+            // Both hands hold the pole; reaction props would obscure the grip.
+            int color=Collect.BODY[who];
+            p.fillEllipse(cx-r*.05f,cy-r*.08f,cr*.20f,cr*.17f,color);
+            p.fillEllipse(cx+r*.22f,cy+r*.15f,cr*.20f,cr*.17f,color);
             if(a.phase==RainbowCat.OPEN)TutorialSpeech.companionFeedback(p,L,cx,cy,cr,
                     a.companionHint(),.5f,Collect.ACCENT[who]);
         }
+    }
+    private static void netPoint(float[] out,int at,float u,float v,float nx,float ny,float rx,float ry,float depth,
+            float tilt,float clock,float struggle,boolean front) {
+        float cross=(float)Math.sqrt(Math.max(0,1-u*u)),width=(float)Math.sqrt(Math.max(0,1-v));
+        float slack=(float)Math.sin(v*Math.PI)*(1-u*u);
+        float px=u*rx*width+rx*slack*.12f*struggle*(float)Math.sin(clock*18+v*2);
+        float py=depth*v+(front?1:-1)*ry*cross*(1-v)
+                +ry*slack*.4f*struggle*(float)Math.sin(clock*15+u*3);
+        out[at]=nx+px*(float)Math.cos(tilt)-py*(float)Math.sin(tilt);
+        out[at+1]=ny+px*(float)Math.sin(tilt)+py*(float)Math.cos(tilt);
     }
     private static void motionTrail(Painter p,RainbowCat a) {
         int capacity=a.trailCount+1,n=1;
@@ -158,6 +219,9 @@ final class RainbowCatArt extends Draw {
         cat(new OpacityPainter(p,fade),x-facing*r*.12f,y,r*.67f,t,facing,null,null,false,known?1:0);
     }
     static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known) {
+        cat(p,x,y,r,t,facing,body,skull,caught,known,0);
+    }
+    private static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known,float scared) {
         int crust=known>0?0xFFFFD49A:0xFF49425F,fur=known>0?FUR:0xFF49425F;
         float step=(float)Math.sin(t*(caught?15:7));
         // Static portraits retain their decorative ribbon; battle uses recorded motion.
@@ -184,11 +248,8 @@ final class RainbowCatArt extends Draw {
         float hy=skull==null?y+r*.1f:skull.centreY();
         float hr=(skull==null?r*.66f:skull.radiusY())*1.13f;
         // Plush cheeks, small pointed ears and a wide round chin share one silhouette.
-        float[] face={-1.02f,.02f,-.99f,-.28f,-.88f,-.48f,-.86f,-.98f,-.72f,-1.06f,
-                -.34f,-.66f,0,-.60f,.34f,-.66f,.72f,-1.06f,.86f,-.98f,.88f,-.48f,
-                .99f,-.28f,1.02f,.02f,.99f,.35f,.87f,.60f,.66f,.79f,.34f,.89f,
-                0,.92f,-.34f,.89f,-.66f,.79f,-.87f,.60f,-.99f,.35f};
-        float[] shape=points(face,hx,hy,hr,hr);
+
+        float[] shape=points(FACE,hx,hy,hr,hr);
         p.fillPoly(shape,INK);p.fillPoly(inset(shape,hx,hy,.93f,.92f),fur);
         p.fillPoly(inset(shape,hx-hr*.08f,hy-hr*.1f,.80f,.72f),known>0?0xFFC4C2D3:fur);
         if(known<=0)return;
@@ -196,15 +257,21 @@ final class RainbowCatArt extends Draw {
         for(int side=-1;side<=1;side+=2) {
             p.fillPoly(points(new float[]{side*.45f,-.62f,side*.73f,-.92f,side*.77f,-.43f},hx,hy,hr,hr),0xFFFFB4CB);
             float ex=hx+side*hr*.40f,ey=hy+hr*.02f;
-            boolean blink=Math.sin(t*1.7f)>.985;
+            boolean blink=scared==0 && Math.sin(t*1.7f)>.985;
             if(caught) {
                 float squeeze=.05f*(float)Math.sin(t*18);
                 p.polyline(points(new float[]{side*.62f,-.08f-squeeze,side*.28f,.04f,side*.61f,.17f+squeeze},
                         hx,hy,hr,hr),INK,hr*.075f);
                 p.polyline(points(new float[]{side*.27f,-.28f,side*.43f,-.34f,side*.62f,-.30f},hx,hy,hr,hr),INK,hr*.055f);
             } else {
-                p.fillEllipse(ex,ey,hr*.18f,hr*(blink?.045f:.235f),INK);
-                if(!blink) {
+                p.fillEllipse(ex,ey,hr*(.18f+.045f*scared),hr*(blink?.045f:.235f+.025f*scared),INK);
+                if(scared>0) {
+                    p.fillEllipse(ex,ey,hr*.18f*scared,hr*.215f*scared,0xFFFFFAFF);
+                    p.fillEllipse(ex,ey-hr*.025f,hr*(.13f-.055f*scared),hr*(.18f-.06f*scared),INK);
+                    p.polyline(points(new float[]{side*.21f,-.35f,side*.40f,-.43f,side*.62f,-.32f},hx,hy,hr,hr),
+                            fadeBy(INK,scared),hr*.055f);
+                }
+                if(!blink && scared<.5f) {
                     p.fillEllipse(ex,ey+hr*.09f,hr*.12f,hr*.10f,0xFF7668A1);
                     p.fillCircle(ex-hr*.055f,ey-hr*.08f,hr*.075f,0xFFFFFAFF);
                     p.fillCircle(ex+hr*.065f,ey+hr*.08f,hr*.034f,0xFFFFFAFF);
@@ -218,6 +285,9 @@ final class RainbowCatArt extends Draw {
             p.fillEllipse(hx,hy+hr*.48f,hr*.13f,hr*(.12f+.035f*(float)Math.sin(t*18)),INK);
             p.fillEllipse(hx,hy+hr*.54f,hr*.085f,hr*.045f,0xFFFFB4CB);
             p.fillEllipse(hx+hr*.89f,hy-hr*.25f,hr*.07f,hr*.13f,0xBBBEF6FF);
+        } else if(scared>0) {
+            p.fillEllipse(hx,hy+hr*.45f,hr*(.08f+.03f*scared),hr*(.08f+.09f*scared),INK);
+            p.fillEllipse(hx+hr*.91f,hy-hr*.25f,hr*.06f*scared,hr*.13f*scared,0xCCB6F5FF);
         } else p.polyline(points(new float[]{-.25f,.34f,-.19f,.43f,-.10f,.45f,0,.34f,.10f,.45f,.19f,.43f,.25f,.34f},hx,hy,hr,hr),INK,hr*.055f);
     }
     static float[] pastry(Softbody b,float x,float y,float r) {

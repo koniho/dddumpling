@@ -59,6 +59,76 @@ final class TestRainbowCat extends Check {
         circle(c,L,1);c.boss.leave();
         check("leaving clears net and circle",!a.carries(c) && a.netReturn==0 && !a.circling);
     }
+    private static void tapFlash(Layout L) {
+        group("Cat rainbow flash gates repeat taps until scared");
+        GameCore c=fight(L);RainbowCat a=c.boss.cat;
+        a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
+        java.util.HashSet<Integer> colors=new java.util.HashSet<Integer>();
+        for(int i=0;i<35;i++) {
+            colors.add(RainbowCatArt.tapColor(a));
+            c.boss.update(1f/60,L,c.rnd);
+            a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
+        }
+        check("flash visits every rainbow color",colors.size()==RainbowLand.CLEAR_COLORS.length);
+        check("spam cannot tap through rainbow flash",a.taps==1 && a.tapFlash>0 && !a.canTap() && a.scared==0);
+        for(int i=0;i<10;i++)c.boss.update(1f/60,L,c.rnd);
+        check("scared expression appears before next tap is enabled",a.tapFlash==0 && a.scared>=.65f && a.canTap());
+        a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
+        check("second tap restarts color flash",a.taps==2 && a.tapFlash==RainbowCat.TAP_FLASH && a.scared==0);
+        for(int i=0;i<24;i++)c.boss.update(1f/60,L,c.rnd);
+        check("circle waits for second color cycle",a.phase==RainbowCat.DASH && a.tapFlash>0);
+        for(int i=0;i<24;i++)c.boss.update(1f/60,L,c.rnd);
+        check("scared cat invites circling",a.phase==RainbowCat.CIRCLE && a.scared==1);
+        c.boss.leave();check("encounter exit clears tap reaction",a.tapFlash==0 && a.scared==0);
+    }
+    private static void traceShapes(Layout L) {
+        group("Ordered shape tracing supports crossed paths");
+        float[] star=new float[12];
+        for(int i=0;i<=5;i++) {float angle=-Softbody.TAU*.25f+Softbody.TAU*(i*2%5)/5;
+            star[i*2]=(float)Math.cos(angle);star[i*2+1]=(float)Math.sin(angle);}
+        for(int direction:new int[]{-1,1}) {
+            TraceGesture trace=new TraceGesture();trace.setShape(star);
+            check("star begins at tip "+direction,trace.begin(star[0],star[1]));
+            boolean complete=false;
+            for(int edge=1;edge<=5;edge++) {
+                int point=direction>0?edge:5-edge;
+                complete=trace.move(star[point*2],star[point*2+1]);
+                if(edge<5)check("crossing cannot skip star edge "+direction+"/"+edge,!complete);
+            }
+            check("five straight strokes complete star "+direction,complete);
+        }
+        TraceGesture trace=new TraceGesture();trace.begin(1,0);
+        check("straight chord cannot replace circle",!trace.move(-1,0) && !trace.active);
+        trace.begin(1,0);
+        for(int i=0;i<12;i++)trace.move((float)Math.cos(i%2*.6f),(float)Math.sin(i%2*.6f));
+        check("reversing direction subtracts progress",trace.progress()<.2f);
+        trace.setShape(star);trace.begin(star[0],star[1]);
+        trace.move(star[2],star[3]);float before=trace.progress();trace.move(star[0],star[1]);
+        check("retracing star edge does not count twice",trace.progress()<before*.1f);
+    }
+    private static void windUp(Layout L) {
+        group("Companion winds up with drawing progress");
+        GameCore c=fight(L);RainbowCat a=c.boss.cat;readyToCircle(c,L);
+        float radius=a.circleRadius();a.touch(c,L,0,151,a.x+radius,a.y);
+        for(int i=1;i<=10;i++) {
+            float angle=Softbody.TAU*i/40;
+            a.touch(c,L,2,151,a.x+(float)Math.cos(angle)*radius,a.y+(float)Math.sin(angle)*radius);
+            c.boss.update(.03f,L,c.rnd);
+        }
+        float first=a.windUp;
+        check("companion rises during first part of circle",first>.1f && a.carries(c));
+        for(int i=11;i<=30;i++) {
+            float angle=Softbody.TAU*i/40;
+            a.touch(c,L,2,151,a.x+(float)Math.cos(angle)*radius,a.y+(float)Math.sin(angle)*radius);
+            c.boss.update(.03f,L,c.rnd);
+        }
+        check("wind-up increases as player traces",a.windUp>first*2 && a.phase==RainbowCat.CIRCLE);
+        a.touch(c,L,3,151,a.x,a.y);
+        for(int i=0;i<30;i++)c.boss.update(.03f,L,c.rnd);
+        check("cancel smoothly returns companion home",a.windUp<.002f && !a.carries(c));
+        circle(c,L,1);c.boss.update(.35f,L,c.rnd);
+        check("big release lands before the prompt opens",a.cue==3 && a.phase==RainbowCat.CATCH && a.netAmount()==1);
+    }
     private static void battleBackground(Layout L) {
         group("Rainbow Cat accelerated background");
         GameCore normal=TestFastEnemies.scene(L,26,151);
@@ -113,7 +183,7 @@ final class TestRainbowCat extends Check {
         check("motion trail expires while cat holds prompt pose",a.trailCount==0);
     }
     static void all(Layout L) {
-        circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        tapFlash(L);traceShapes(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));

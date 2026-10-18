@@ -3186,7 +3186,11 @@ final class GameCore {
                 flashColor = 0xFFFF355F;
             }
             if(boss.kind==Boss.RAINBOW_CAT && boss.cat.cue>0) {
-                if(sound!=null) {if(boss.cat.cue==1)sound.uiBloop();else sound.ninjaSwish(2);}
+                if(boss.cat.cue==3) {
+                    shake=Math.max(shake,.65f);flash=Math.max(flash,.22f);
+                    flashColor=companion.who>=0?Collect.ACCENT[companion.who]:0xFFA7F7DD;
+                    if(sound!=null)sound.squish(Kawaii.CAT,3);
+                } else if(sound!=null) {if(boss.cat.cue==1)sound.uiBloop();else sound.ninjaSwish(2);}
                 boss.cat.cue=0;
             }
             int gatorAttackCues=boss.kind==Boss.ALLIGATOR?boss.alligator.takeAttackCues():0;

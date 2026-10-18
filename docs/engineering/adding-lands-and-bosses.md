@@ -133,11 +133,17 @@ its unreachable ID 4. Scenery repeats after stage 30 and the post-boss ramp star
 
 `RainbowCat` owns a single-pointer tap chase. The battle sprite is 50% larger than
 its initial implementation and follows bounded cubic curves; a tap preserves position
-and starts a faster rainbow dash. Only pointer-down can score a tap. Moves, historical
+and starts a faster rainbow dash. Each tap flashes through all rainbow colors before
+settling into a scared expression; repeat taps remain locked until that expression appears.
+Only pointer-down can score a tap. Moves, historical
 samples and held fingers cannot score extra hits; lift/cancel/pause release ownership.
 After two taps, the cat waits centrally for a clockwise or counterclockwise circle.
-A near-complete loop around the cat triggers the companion’s fishing-net catch; crossing
-the centre, backtracking, additional fingers and cancelled strokes cannot complete it.
+The companion rises and winds up as the trace advances, then swings a deep mesh fishing net.
+`TraceGesture` follows an ordered closed polyline in either direction; crossing the centre
+of the circle, retracing, additional fingers and cancelled strokes cannot complete it.
+Its local path matching supports self-intersecting shapes such as five-stroke stars without
+jumping ahead at crossings. Gameplay currently uses only the circle; future shapes can use
+the same tracker and progress-driven animation.
 The catch animation finishes before opening a timed word containing each active roster
 key once, shuffled into a four- or six-key sequence. Completing the word removes one third of his health. A wrong
 key preserves progress, while timeout resumes the chase and launches a staggered rainbow

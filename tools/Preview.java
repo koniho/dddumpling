@@ -19,16 +19,34 @@ final class Preview {
         shot(dir,"151-dash",c,L,w,h,ss);
         TestRainbowCat.readyToCircle(c,L);
         shot(dir,"151-circle",c,L,w,h,ss);
-        TestRainbowCat.circle(c,L,1);
-        c.boss.update(RainbowCat.NET_TIME*.5f,L,c.rnd);
+        a.touch(c,L,0,151,a.x+a.circleRadius(),a.y);
+        for(int i=1;i<=40;i++) {
+            float angle=Softbody.TAU*i/40;
+            a.touch(c,L,2,151,a.x+(float)Math.cos(angle)*a.circleRadius(),a.y+(float)Math.sin(angle)*a.circleRadius());
+            if(a.phase==RainbowCat.CIRCLE)c.boss.update(.025f,L,c.rnd);
+            if(i==10)shot(dir,"151-net-windup-start",c,L,w,h,ss);
+            if(i==30)shot(dir,"151-net-windup-full",c,L,w,h,ss);
+        }
+        a.touch(c,L,1,151,a.x+a.circleRadius(),a.y);
+        c.boss.update(.16f,L,c.rnd);
+        shot(dir,"151-net-release",c,L,w,h,ss);
+        c.boss.update(.18f,L,c.rnd);
         shot(dir,"151-net-catch",c,L,w,h,ss);
-        c.boss.update(RainbowCat.NET_TIME*.5f,L,c.rnd);
+        c.boss.update(RainbowCat.NET_TIME-.34f,L,c.rnd);
         for(int i=0;i<16;i++)c.boss.update(1f/60,L,c.rnd);
         shot(dir,"151-prompt",c,L,w,h,ss);
         c.boss.update(.12f,L,c.rnd);
         shot(dir,"151-net-struggle",c,L,w,h,ss);
         a.timer=.01f;c.boss.update(.02f,L,c.rnd);c.boss.update(.45f,L,c.rnd);
         shot(dir,"151-flurry",c,L,w,h,ss);
+        GameCore tap=TestRainbowCat.fight(L);RainbowCat tapped=tap.boss.cat;
+        tapped.touch(tap,L,0,151,tapped.x,tapped.y);tapped.touch(tap,L,1,151,tapped.x,tapped.y);
+        for(int band=0;band<6;band++) {
+            for(int frame=0;frame<6;frame++)tap.boss.update(1f/60,L,tap.rnd);
+            shot(dir,"151-tap-flash-"+band,tap,L,w,h,ss);
+        }
+        for(int frame=0;frame<10;frame++)tap.boss.update(1f/60,L,tap.rnd);
+        shot(dir,"151-tap-scared",tap,L,w,h,ss);
         GameCore sky=TestRainbowCat.fight(L);sky.devInfiniteLives=true;
         shot(dir,"151-battle-sky-0",sky,L,w,h,ss);
         for(int frame=0;frame<120;frame++)sky.update(1f/60,L);
