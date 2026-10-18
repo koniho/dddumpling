@@ -939,6 +939,10 @@ final class Renderer extends Draw {
             GameCore.Particle q = c.particles.get(i);
             if(q.slime!=null)continue;
             float k = q.life / q.max;
+            if(q.rainbowStar) {
+                FastEnemies.starBurst(p,q.x,q.y,q.size,q.color,q.x+q.y,1-k,true,2);
+                continue;
+            }
             p.fillCircle(q.x, q.y, q.size * (0.4f + k * 0.6f),
                     Glyph.withAlpha(q.color, (int) (235 * k)));
         }

@@ -150,7 +150,13 @@ final class BossPlay {
             // Swatted, not landed on the boss: the score is the same as a hit but the boss is
             // untouched, so no shake and no flash — those read as damage.
             c.score += GameCore.BOSS_HIT;
+            int firstParticle=c.particles.size();
             Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR * 1.2f, 10, Glyph.COLOR[g]);
+            if(c.boss.kind==Boss.RAINBOW_CAT && c.boss.boltDestroyed) {
+                for(int i=firstParticle;i<c.particles.size();i++)
+                    c.particles.get(i).color=RainbowLand.CLEAR_COLORS[(i-firstParticle)%RainbowLand.CLEAR_COLORS.length];
+                Fx.rainbowStarBurst(c,c.boss.hitX,c.boss.hitY,L.enemyR);
+            }
             if (c.sound != null) {
                 if (c.boss.kind == Boss.SPLITTER) c.sound.divideDamage();
                 else if (c.boss.boltDestroyed) c.sound.boltDeath();

@@ -528,6 +528,7 @@ final class GameCore {
         float x, y, vx, vy, life, max, size;
         int color;
         SlimeSpray.Drop slime;
+        boolean rainbowStar;
     }
 
     static final class PushImpact {

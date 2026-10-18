@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Ordered closed-path tracing. Crossings never advance to an unrelated part of the path. */
 final class TraceGesture {
     static final int SHAPE_COUNT=5;
-    private static final float TOLERANCE=.52f;
+    private static final float TOLERANCE=.68f;
     private float[] points,distances;
     float length,start,position,travel,lastX,lastY;
     boolean active,straightStar;
@@ -71,7 +71,7 @@ final class TraceGesture {
             float nearest=nearest(px,py,true);
             if(Float.isNaN(nearest)) {clear();return false;}
             travel+=wrapped(nearest-position);position=nearest;
-            if(progress()>=1 && Math.hypot(px-coordinate(start,0),py-coordinate(start,1))<(straightStar?.80f:TOLERANCE+.10f)) {lastX=x;lastY=y;return true;}
+            if(progress()>=1 && Math.hypot(px-coordinate(start,0),py-coordinate(start,1))<(straightStar?.95f:TOLERANCE+.10f)) {lastX=x;lastY=y;return true;}
         }
         lastX=x;lastY=y;return false;
     }
@@ -81,7 +81,7 @@ final class TraceGesture {
         return distance;
     }
     private float nearest(float x,float y,boolean ordered) {
-        float tolerance=straightStar?.70f:TOLERANCE;
+        float tolerance=straightStar?.85f:TOLERANCE;
         float best=tolerance*tolerance,result=Float.NaN;
         for(int i=1;i<distances.length;i++) {
             float sx=points[(i-1)*2],sy=points[(i-1)*2+1],dx=points[i*2]-sx,dy=points[i*2+1]-sy;

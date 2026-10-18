@@ -16,7 +16,6 @@ final class RainbowCatArt extends Draw {
         q.save();q.translate((1-enter)*(1-enter)*-L.w,0);
         boolean caught=a.phase==RainbowCat.OPEN || (a.phase==RainbowCat.CATCH && a.netAge>=.34f);
         float struggle=caught?(float)Math.sin(a.clock*18)*a.r*.065f:a.shakeOffset();
-        if(a.phase==RainbowCat.CIRCLE)circleGuide(q,a);
         if(a.carries(c))net(q,c,L,false);
         Painter sprite=q;
         if(a.tapFlash>0) {
@@ -36,6 +35,7 @@ final class RainbowCatArt extends Draw {
                 a.r*1.17f*((float)Math.cos(pouch)-1));
         cat(sprite,a.x+struggle,a.y,a.r,a.clock*(caught?1:2),a.turn,a.pastry,a.head,caught,1,caught?0:a.scared);
         sprite.restore();
+        if(a.phase==RainbowCat.CIRCLE)circleGuide(q,a);
         if(a.carries(c))net(q,c,L,true);
         if(a.flash>0)for(int band=0;band<3;band++)
             q.strokeCircle(a.x,a.y,a.r*(1.1f+(1-a.flash)*(1.5f+band*.3f)),

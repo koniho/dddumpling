@@ -191,14 +191,14 @@ final class TestRainbowCat extends Check {
         }
         for(int direction:new int[]{-1,1}) {
             TraceGesture loose=new TraceGesture();
-            check("trace can start beyond old tolerance "+direction,loose.begin(1.48f,0));
+            check("trace can start beyond old tolerance "+direction,loose.begin(1.62f,0));
             boolean done=false;
             for(int i=1;i<=96 && !done;i++) {
                 float angle=direction*Softbody.TAU*i/96;
-                done=loose.move((float)Math.cos(angle)*1.48f,(float)Math.sin(angle)*1.48f);
+                done=loose.move((float)Math.cos(angle)*1.62f,(float)Math.sin(angle)*1.62f);
             }
             check("loose trace closes in either direction "+direction,done);
-            check("starting far from path is still rejected "+direction,!loose.begin(1.65f,0));
+            check("starting far from path is still rejected "+direction,!loose.begin(1.80f,0));
         }
         for(int tip=0;tip<5;tip++)for(int direction:new int[]{-1,1}) {
             TraceGesture rough=new TraceGesture();rough.setShape(TraceGesture.star(),true);
@@ -459,6 +459,20 @@ final class TestRainbowCat extends Check {
     }
 
     private static void clearParticles(Layout L) {
+        group("Rainbow projectile clear uses stronger rush burst");
+        GameCore cat=fight(L);cat.boss.cat.launchLeft=0;cat.boss.update(.01f,L,cat.rnd);
+        cat.boss.bt[0]=.4f;cat.particles.clear();
+        cat.tapKey(cat.boss.bglyph[0],L);
+        GameCore.Particle burst=null;
+        for(GameCore.Particle p:cat.particles)if(p.rainbowStar)burst=p;
+        check("clearing cat projectile creates star burst",burst!=null && cat.boss.boltDestroyed);
+        if(burst!=null) {
+            check("burst starts at cleared projectile",burst.x==cat.boss.hitX && burst.y==cat.boss.hitY);
+            float y=burst.y;Fx.updateParticles(cat,.2f);
+            check("burst expands in place without particle gravity",burst.y==y && burst.life<burst.max);
+            Fx.updateParticles(cat,1);
+            check("burst expires with other particles",!cat.particles.contains(burst));
+        }
         group("Rainbow clear colors preserve particle behavior");
         GameCore rainbow=TestFastEnemies.scene(L,26,151),ordinary=TestFastEnemies.scene(L,21,151);
         rainbow.particles.clear();ordinary.particles.clear();rainbow.rnd.setSeed(151);ordinary.rnd.setSeed(151);

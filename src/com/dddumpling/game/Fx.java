@@ -92,6 +92,12 @@ final class Fx {
         c.particles.add(p);
     }
 
+    static void rainbowStarBurst(GameCore c,float x,float y,float radius) {
+        GameCore.Particle p=new GameCore.Particle();
+        p.x=x;p.y=y;p.size=radius*1.25f;p.life=p.max=.85f;p.rainbowStar=true;
+        p.color=RainbowLand.CLEAR_COLORS[0];c.particles.add(p);
+    }
+
     static void updateParticles(GameCore c, float dt) {
         for (int i = c.particles.size() - 1; i >= 0; i--) {
             GameCore.Particle p = c.particles.get(i);
@@ -100,6 +106,7 @@ final class Fx {
                 c.particles.remove(i);
                 continue;
             }
+            if(p.rainbowStar)continue;
             if(p.slime!=null) {SlimeSpray.update(p);continue;}
             p.x += p.vx * dt;
             p.y += p.vy * dt;

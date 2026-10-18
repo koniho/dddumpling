@@ -10,6 +10,13 @@ import java.io.File;
 final class Preview {
     private static void rainbowFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("151-"))return;
+        GameCore clear=TestRainbowCat.fight(L);
+        clear.boss.cat.launchLeft=0;clear.boss.update(.01f,L,clear.rnd);clear.boss.bt[0]=.4f;
+        clear.tapKey(clear.boss.bglyph[0],L);
+        Fx.updateParticles(clear,.08f);
+        shot(dir,"151-projectile-clear",clear,L,w,h,ss);
+        Fx.updateParticles(clear,.16f);
+        shot(dir,"151-projectile-clear-spread",clear,L,w,h,ss);
         GameCore c=TestRainbowCat.fight(L);
         for(int i=0;i<60;i++)c.boss.update(1f/60,L,c.rnd);
         shot(dir,"151-chase",c,L,w,h,ss);
