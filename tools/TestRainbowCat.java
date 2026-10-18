@@ -14,7 +14,7 @@ final class TestRainbowCat extends Check {
         a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.cageX,a.cageY);
     }
     static void all(Layout L) {
-        catalog();enemies(L);clearParticles(L);titleRainbow(L);
+        catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);
         group("Rainbow Cat touch ownership, cage and yarn");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(25)==Lands.SWAMP && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));
@@ -157,6 +157,40 @@ final class TestRainbowCat extends Check {
         rainbow.survival.wordBurst(rainbow,100,200,20,12,original);
         boolean survival=true;for(GameCore.Particle p:rainbow.particles)survival&=p.color==original;
         check("Survival retains its own clear palette",survival);
+    }
+
+    private static int[] backdropPixels(GameCore c,Layout L) {
+        RasterPainter p=new RasterPainter((int)L.w,(int)L.h,1);p.clear(0);Lands.backdrop(p,c,L);return p.resolve();
+    }
+    private static boolean painted(int[] pixels) {
+        for(int pixel:pixels)if((pixel&0xFFFFFF)!=0)return true;return false;
+    }
+    private static void background(Layout L) {
+        group("Rainbow bands behind clouds");
+        GameCore c=TestFastEnemies.scene(L,26,151);c.landFrom=Lands.SWAMP;c.landBlend=1;c.skyClock=0;
+        c.rnd.setSeed(151);int[] first=backdropPixels(c,L);
+        check("rainbow backdrop is already visible at time zero",painted(first));
+        check("rainbow backdrop does not consume gameplay randomness",c.rnd.nextLong()==new java.util.Random(151).nextLong());
+        check("rainbow backdrop is deterministic",java.util.Arrays.equals(first,backdropPixels(c,L)));
+        c.skyClock=8;check("bands scroll with the scenery clock",!java.util.Arrays.equals(first,backdropPixels(c,L)));
+        c.landBlend=0;check("incoming bands respect land transition",!painted(backdropPixels(c,L)));
+        c.landBlend=1;c.stage=21;check("other lands keep their backdrops",!painted(backdropPixels(c,L)));
+        c.stage=26;c.survival.active=true;check("Survival retains its own background",!painted(backdropPixels(c,L)));
+        c.survival.active=false;c.state=GameCore.TITLE;check("title keeps its existing background",!painted(backdropPixels(c,L)));
+        c.state=GameCore.PLAY;c.skyGlow=0;
+        final boolean[] seen={false,false,true,true};
+        Painter recorder=new OpacityPainter(new RasterPainter((int)L.w,(int)L.h,1),1) {
+            public void fillPoly(float[] points,int color) {
+                for(int band:RainbowLand.CLEAR_COLORS)if((color&0xFFFFFF)==(band&0xFFFFFF)) {
+                    seen[0]=true;seen[2]&=!seen[1];seen[3]&=(color>>>24)>0 && (color>>>24)<128;
+                }
+                for(int layer=0;layer<GameCore.CLOUD_LAYERS;layer++)if((color&0xFFFFFF)==(Lands.cloudTint(c,layer)&0xFFFFFF))seen[1]=true;
+                super.fillPoly(points,color);
+            }
+        };
+        Renderer.draw(recorder,c,L);
+        check("every cloud layer is drawn after the rainbow bands",seen[0] && seen[1] && seen[2]);
+        check("vibrant bands remain translucent",seen[3]);
     }
 
     private static void titleRainbow(Layout L) {

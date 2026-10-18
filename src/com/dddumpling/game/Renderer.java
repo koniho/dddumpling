@@ -65,6 +65,8 @@ final class Renderer extends Draw {
         p.fillRect(-shakeMargin, L.deckTop, L.w + shakeMargin, L.h + shakeMargin,
                 Glyph.mix(Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f), c.survival.active?BG_HI:BG_DEATH, gone * 0.85f));
 
+        Lands.backdrop(p,c,L);
+
         // Two cloud layers behind the words...
         Sky.cloudBand(p, c, L, 0, Sky.CLOUD_FRONT_LAYER, hurt);
 

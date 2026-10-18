@@ -52,6 +52,14 @@ final class Lands extends Draw {
         c.landBlend = 0f;
     }
 
+    /** Land backdrops sit beneath every cloud layer. */
+    static void backdrop(Painter p,GameCore c,Layout L) {
+        if(c.survival.active || c.state==GameCore.TITLE)return;
+        float mix=blend(c),fade=(c.landFrom==RAINBOW?1-mix:0)
+                +(forStage(visualStage(c))==RAINBOW?mix:0);
+        if(fade>0)RainbowLand.backdrop(p,c,L,fade*(1-c.drained()));
+    }
+
     static void scenery(Painter p, GameCore c, Layout L) {
         if(c.survival.active) {c.survival.scenery(p,c,L);return;}
         if (c.state == GameCore.TITLE) return;
@@ -65,6 +73,7 @@ final class Lands extends Draw {
     }
 
     private static void sceneryLayer(Painter p, GameCore c, Layout L, int land, float fade) {
+        if(land==RAINBOW)return; // Its scrolling bands are drawn before the clouds.
         for (int layer = 0; layer < 2; layer++) {
             for (int i = 0; i < 8; i++) {
                 // Stable jitter breaks the rows without changing positions every frame or drawing RNG.

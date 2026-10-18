@@ -1,9 +1,53 @@
 package com.dddumpling.game;
 
-/** Floating sherbet islands and layered rainbow arches. */
+/** Translucent rainbow bands, with shared arches for the title and land icon. */
 final class RainbowLand extends Draw {
     static boolean active(GameCore c) {
         return !c.survival.active && !c.timeAttack.active && Lands.forStage(c.stage)==Lands.RAINBOW;
+    }
+    private static final int[] BAND_ORDER=bandOrder();
+    private static int[] bandOrder() {
+        int[] order=new int[8];
+        for(int i=0;i<order.length;i++) {
+            int at=i;
+            while(at>0 && hash(order[at-1]*719+151)>hash(i*719+151)){order[at]=order[at-1];at--;}
+            order[at]=i;
+        }
+        return order;
+    }
+    static void backdrop(Painter p,GameCore c,Layout L,float fade) {
+        if(fade<=0)return;
+        float margin=Renderer.shakeMargin(c,L),spacing=L.w/(BAND_ORDER.length-2);
+        p.save();p.clipRect(-margin,-margin,L.w+margin,L.deckTop);
+        for(int column:BAND_ORDER) {
+            float radius=L.w*(.155f+.045f*hash(column*89+7));
+            float straight=L.h*1.12f-radius*2,pitch=straight*.90f;
+            float travel=c.skyClock*L.h*.035f*(.85f+.30f*hash(column*41+5))+hash(column*61+3)*pitch;
+            int cycle=(int)Math.floor(travel/pitch);
+            float offset=travel-cycle*pitch;
+            for(int row=-1;row<=2;row++) {
+                int generation=cycle-row,seed=column*719+generation*977+151;
+                float x=(column-.5f+(hash(seed)-.5f)*.8f)*spacing;
+                float top=offset+row*pitch-straight*.5f,bottom=top+straight;
+                if(bottom+radius*1.2f<-margin || top-radius*1.2f>L.deckTop)continue;
+                int color=CLEAR_COLORS[Math.floorMod(column*5+generation,CLEAR_COLORS.length)];
+                // Layer faint concentric silhouettes to feather both sides and rounded ends.
+                for(int feather=0;feather<8;feather++)
+                    band(p,x,top,bottom,radius*(1.20f-feather*.065f),
+                            Glyph.withAlpha(color,(int)((4+feather*1.2f)*fade)));
+            }
+        }
+        p.restore();
+    }
+    private static void band(Painter p,float x,float top,float bottom,float r,int color) {
+        // One continuous capsule avoids dark overlap seams between the body and end caps.
+        int steps=16;float[] shape=new float[(steps+1)*4];
+        for(int i=0;i<=steps;i++) {
+            float a=(float)Math.PI+i*(float)Math.PI/steps,dx=(float)Math.cos(a)*r,dy=(float)Math.sin(a)*r;
+            shape[i*2]=x+dx;shape[i*2+1]=top+dy;
+            shape[(steps+1+i)*2]=x-dx;shape[(steps+1+i)*2+1]=bottom-dy;
+        }
+        p.fillPoly(shape,color);
     }
     static void prop(Painter p,float x,float y,float r,int alpha,float t,boolean silhouette) {
         float bob=(float)Math.sin(t*1.8f)*r*.10f;
