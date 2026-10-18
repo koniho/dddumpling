@@ -42,13 +42,13 @@ final class TutorialSpeech extends Draw {
         {"PARRY, THEN TAP!", "WATCH HIS EYES!"},
         {"RUSHING STARS!", "TAP THEIR MATCHING KEYS!"},
         {"TAP CAT TWICE!", "THEN TRACE SHAPE!"},
-        {"HIT THE CHANGING KEY!", "LAND HITS BEFORE ESCAPE!"}
+        {"LEFT, RIGHT, REPEAT!", "TAP THE PAIR FAST!"}
     };
     static String spoken(int message) { return spoken(message,Skins.DEFAULT); }
     static String spoken(int message,int skin) {
         if(message==CAT_RUSH)return "Tap matching keys to stop his rushing stars.";
         if(message==CAT_TAPS)return "Tap Rainbow Cat twice, then trace the shape to catch him in a net. As the cat takes damage, the shape changes!";
-        if(message==CAT_PROMPT)return "Hit the matching key! It changes after every hit. Land as many hits as you can before the cat escapes!";
+        if(message==CAT_PROMPT)return "One key for each hand! Alternate left and right as fast as you can before the cat escapes!";
         if(message==ALLIGATOR)return "Swipe to parry, then tap while "+Skins.bossTitle(skin,Boss.ALLIGATOR)+" is dizzy. Watch his eyes narrow, then stop before his guard returns! Four parry-and-hit rounds make him dizzy for longer. Taking damage resets your streak.";
         if(message==LANDS)return "New lands! Swipe to choose where your next run starts.";
         if(message==COMPANION)return "I'm your first squishy! I'll stay by your keys. I'll show you how to play as we go. Let's find more friends!";
@@ -362,10 +362,13 @@ final class TutorialSpeech extends Draw {
                 p.arc(x,y,s*2.4f,s*2.4f,0,angle*180/(float)Math.PI,GOLD,s*.13f);
             }
         } else if(message==CAT_PROMPT) {
-            int n=Roster.count(c.playRosterFull()),at=(int)(age*2.5f)%n;
-            face(p,Roster.at(c.playRosterFull(),at),x,y,s*1.3f);
-            p.strokeCircle(x,y,s*1.65f,fadeBy(GOLD,1-travel),s*.12f);
-            handX=x;handY=y+s*.7f;
+            int n=Roster.count(c.playRosterFull()),at=(int)(age*5)%2;
+            for(int side=0;side<2;side++) {
+                float xx=x+(side==0?-1:1)*s*1.7f;
+                face(p,Roster.at(c.playRosterFull(),side==0?0:n-1),xx,y,s);
+                if(side==at)p.strokeCircle(xx,y,s*1.3f,GOLD,s*.12f);
+            }
+            handX=x+(at==0?-1:1)*s*1.7f;handY=y+s*.7f;
         } else if(message==ALLIGATOR) {
             AlligatorArt.portrait(p,x,y,s*2.1f,age,true,1);
             handX=x+s*(travel*8-4);handY=y+s*2;

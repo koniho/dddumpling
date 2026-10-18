@@ -151,19 +151,19 @@ of the circle, retracing, additional fingers and cancelled strokes cannot comple
 Its local path matching supports self-intersecting shapes such as five-stroke stars without
 jumping ahead at crossings. All five shapes share the tracker and progress-driven animation;
 timeouts retain the current health band's shape.
-The catch animation opens a timed vulnerability window with one random active-roster key.
-Each correct press immediately removes 0.2 health, flashes the cat and selects a different
-random key. Wrong keys do not damage the cat or reset the timer. Partial damage persists;
+The catch animation opens a timed vulnerability window with a fixed pair of random active-roster keys, one from each hand.
+Both remain visible; the highlighted target alternates left/right after each hit. Each correct
+press removes 0.05 health and flashes the cat: twenty rapid alternating hits fill one health band. Wrong keys do not damage the cat or reset the timer. Partial damage persists;
 a window cannot cross the next one-health boundary. At that boundary or timer expiry,
 the net bursts while the cat holds angrily in place, then she sweeps across a curved slash
 arc in the same direction as the left-to-right or right-to-left flurry. Queued stars remain
 invisible and untargetable until launched from the moving cat, 0.288 seconds apart.
 Ordinary shots wait 4.4 seconds after the sweep. The final flurry is harmless and the exit
 waits for the net animation. Reaching all five health boundaries wins; the enrage warning begins
-at 45 seconds. Chase projectiles reuse boss bolts with Rush star
+at 75 seconds. Chase projectiles reuse boss bolts with Rush star
 art and fast flight, so matching keys defend them and the existing boss damage/score
 and Time Attack statistics paths remain authoritative. The prompt phase clears airborne
-bolts to give the changing prompt sole ownership of matching keys. Kids Mode slows wandering,
+bolts to give the alternating pair sole ownership of matching keys. Kids Mode slows wandering,
 spaces launches further apart and extends the prompt timer; projectile flight stays fast.
 The original yarn and cage mechanics are removed. Companion hints, narrated demos,
 bounded players and native input checks teach/exercise the tap-circle-and-match loop.

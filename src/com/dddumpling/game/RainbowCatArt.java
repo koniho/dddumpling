@@ -46,12 +46,16 @@ final class RainbowCatArt extends Draw {
                     Glyph.withAlpha(COLORS[(a.taps+band)%COLORS.length],(int)(a.flash*170)),a.r*.12f);
         q.restore();
         if(a.phase==RainbowCat.OPEN && !b.beaten) {
-            float s=L.enemyR*1.05f,yy=a.y+a.r*3.5f,xx=L.w*.5f;
-            int g=a.promptKey;float pulse=1+.12f*a.keyFlash/.22f;
-            FastEnemies.glow(q,xx,yy,s*1.1f,Skins.keyColor(p,g),220,1);
-            FastEnemies.body(q,xx,yy,s*pulse,Skins.keyColor(p,g),255,false);
-            Kawaii.draw(q,g,xx,yy,s*.70f*pulse,Skins.keyColor(p,g),1,0);
-            q.strokeCircle(xx,yy,s*1.35f,0xFFFFF1BD,s*.12f);
+            float s=L.enemyR*1.05f,yy=a.y+a.r*3.5f;
+            for(int side=0;side<2;side++) {
+                int g=side==0?a.leftKey:a.rightKey;boolean active=g==a.promptKey;
+                float xx=L.w*.5f+(side==0?-1:1)*s*1.65f;
+                float pulse=active?1+.10f*a.keyFlash/.22f:1;
+                if(active)FastEnemies.glow(q,xx,yy,s*1.1f,Skins.keyColor(p,g),220,1);
+                FastEnemies.body(q,xx,yy,s*pulse,Skins.keyColor(p,g),active?255:190,false);
+                Kawaii.draw(q,g,xx,yy,s*.70f*pulse,Skins.keyColor(p,g),active?1:.78f,0);
+                if(active)q.strokeCircle(xx,yy,s*1.35f,0xFFFFF1BD,s*.12f);
+            }
             float fraction=Math.max(0,a.timer/a.promptTime()),width=L.w*.60f;
             for(int band=0;band<COLORS.length;band++) {
                 float bandX=L.w*.5f-width*.5f+width*band/COLORS.length;

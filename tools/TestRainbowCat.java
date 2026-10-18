@@ -79,7 +79,7 @@ final class TestRainbowCat extends Check {
                 circle(c,L,direction);
                 check("shape catches in either direction "+direction+"/"+capture,a.phase==RainbowCat.CATCH);
                 c.boss.update(RainbowCat.NET_TIME,L,c.rnd);
-                for(int key=0;key<6 && a.phase==RainbowCat.OPEN;key++)c.boss.press(a.promptKey,c.rnd,L);
+                for(int key=0;key<RainbowCat.HITS_PER_BAND && a.phase==RainbowCat.OPEN;key++)c.boss.press(a.promptKey,c.rnd,L);
                 check("one damage per completed capture "+direction+"/"+capture,c.boss.hp==4-capture
                         && c.boss.beaten==(capture==4));
                 check("each damage launches rainbow flurry "+direction+"/"+capture,c.boss.boltCount()==6 && a.cue==2 && a.launchLeft==4.4f);
@@ -116,7 +116,7 @@ final class TestRainbowCat extends Check {
             check("first capture stays a circle "+direction,!a.starShape());
             for(int capture=0;capture<4;capture++) {
                 challenge(c,L);
-                for(int i=0;i<6 && a.phase==RainbowCat.OPEN;i++)c.boss.press(a.promptKey,c.rnd,L);
+                for(int i=0;i<RainbowCat.HITS_PER_BAND && a.phase==RainbowCat.OPEN;i++)c.boss.press(a.promptKey,c.rnd,L);
             }
             readyToCircle(c,L);
             check("fourth damage selects star "+direction,a.captures==4 && a.starShape() && a.phase==RainbowCat.CIRCLE);
@@ -137,7 +137,7 @@ final class TestRainbowCat extends Check {
             a.timer=.01f;c.boss.update(.02f,L,c.rnd);readyToCircle(c,L);
             check("missed prompt keeps star "+direction,a.captures==4 && a.starShape());
             challenge(c,L);
-            for(int i=0;i<6 && a.phase==RainbowCat.OPEN;i++)c.boss.press(a.promptKey,c.rnd,L);
+            for(int i=0;i<RainbowCat.HITS_PER_BAND && a.phase==RainbowCat.OPEN;i++)c.boss.press(a.promptKey,c.rnd,L);
             check("fifth damage completes star round "+direction,a.captures==5 && c.boss.beaten);
         }
     }
@@ -389,17 +389,19 @@ final class TestRainbowCat extends Check {
         }
     }
     private static void damageWindows(Layout L) {
-        group("Random changing keys deal capped persistent damage");
+        group("Fixed left/right pair deals small capped persistent damage");
         for(boolean full:new boolean[]{false,true}) {
             GameCore c=fight(L);c.boss.rosterFull=full;challenge(c,L);RainbowCat a=c.boss.cat;
-            float timer=a.timer;int previous=-1;
+            float timer=a.timer;int previous=-1,left=a.leftKey,right=a.rightKey;
+            check("pair uses opposite hands "+full,Roster.keyX(L,left,full?1:0)<L.w*.5f && Roster.keyX(L,right,full?1:0)>L.w*.5f);
+            check("left key starts alternating pair "+full,a.promptKey==left);
             for(int hit=0;hit<2;hit++) {
                 int key=a.promptKey;boolean active=false;
                 for(int i=0;i<Roster.count(full);i++)active|=key==Roster.at(full,i);
-                check("random prompt stays in roster and changes "+full+hit,active && key!=previous);
+                check("random prompt stays in roster and changes "+full+hit,active && key!=previous && key==(hit%2==0?left:right));
                 float hp=c.boss.hp;
-                check("each hit deals immediate damage "+full+hit,c.boss.press(key,c.rnd,L)==Boss.HIT && Math.abs(c.boss.hp-(hp-.2f))<.0001f);
-                check("hit flashes and changes key without resetting timer "+full+hit,a.keyFlash>0 && a.promptKey!=key && a.timer==timer);
+                check("each hit deals immediate damage "+full+hit,c.boss.press(key,c.rnd,L)==Boss.HIT && Math.abs(c.boss.hp-(hp-.05f))<.0001f);
+                check("hit flashes and changes key without resetting timer "+full+hit,a.keyFlash>0 && a.promptKey!=key && a.timer==timer && a.leftKey==left && a.rightKey==right);
                 hp=c.boss.hp;c.boss.press(key,c.rnd,L);
                 check("repeating previous key cannot damage "+full+hit,c.boss.hp==hp && a.timer==timer);
                 previous=key;
@@ -408,12 +410,21 @@ final class TestRainbowCat extends Check {
             check("timeout retains partial damage and current shape "+full,c.boss.hp==partial && a.captures==0 && a.escapeSequence);
             challenge(c,L);check("recapture retains band floor "+full,a.captures==0 && a.damageFloor==4);
             int hits=0;
-            while(a.phase==RainbowCat.OPEN && hits<20) {c.boss.press(a.promptKey,c.rnd,L);hits++;}
-            check("only remaining band damage is available "+full,hits==3 && c.boss.hp==4 && a.captures==1);
+            while(a.phase==RainbowCat.OPEN && hits<RainbowCat.HITS_PER_BAND) {c.boss.press(a.promptKey,c.rnd,L);hits++;}
+            check("only remaining band damage is available "+full,hits==RainbowCat.HITS_PER_BAND-2 && c.boss.hp==4 && a.captures==1);
             for(int key=0;key<Glyph.COUNT;key++)c.boss.press(key,c.rnd,L);
             check("extra keys cannot skip shape phase "+full,c.boss.hp==4);
             readyToCircle(c,L);
             check("next trace follows health band "+full,a.captures==1 && !a.starShape());
+        }
+        for(boolean full:new boolean[]{false,true})for(float rate:new float[]{2,6}) {
+            GameCore paced=fight(L);paced.boss.rosterFull=full;challenge(paced,L);RainbowCat a=paced.boss.cat;
+            while(a.phase==RainbowCat.OPEN) {
+                paced.boss.update(1/rate,L,paced.rnd);
+                if(a.phase==RainbowCat.OPEN)paced.boss.press(a.promptKey,paced.rnd,L);
+            }
+            check("fast alternating taps fill band; slower taps preserve partial damage "+full+rate,
+                    rate==6?paced.boss.hp==4:paced.boss.hp>4 && paced.boss.hp<5);
         }
         GameCore c=fight(L);c.boss.hp=1.4f;readyToCircle(c,L);
         check("shape derives from sustained damage ",c.boss.cat.captures==3);
@@ -453,7 +464,7 @@ final class TestRainbowCat extends Check {
             GameCore c=fight(L);RainbowCat a=c.boss.cat;challenge(c,L);
             if(finalHit) {c.boss.hp=1;a.damageFloor=0;a.captures=4;}
             int lives=c.lives;float x=a.x,y=a.y;
-            for(int i=0,n=5;i<n;i++) {
+            for(int i=0,n=RainbowCat.HITS_PER_BAND;i<n;i++) {
                 c.boss.press(a.promptKey,c.rnd,L);
                 check("escape only after final correct key "+finalHit+"/"+i,(a.escapeLeft>0)==(i==n-1));
             }
@@ -574,7 +585,7 @@ final class TestRainbowCat extends Check {
         group("bounded Rainbow Cat one-finger play");
         for(float fps:new float[]{30,60,120}) {
             c=fight(L);Bot bot=new Bot(4,.30f,.08f,false,151);
-            for(int frame=0;frame<fps*75 && !c.boss.beaten && c.state==GameCore.PLAY;frame++) {
+            for(int frame=0;frame<fps*150 && !c.boss.beaten && c.state==GameCore.PLAY;frame++) {
                 bot.step(c,L,1/fps);c.update(1/fps,L);
             }
             check("bounded one-finger cat fight completes at "+fps,c.boss.beaten && c.lives>0);
@@ -684,7 +695,7 @@ final class TestRainbowCat extends Check {
         a.taps=1;check("companion counts remaining taps",a.companionHint().equals("ONE MORE TAP!"));
         a.phase=RainbowCat.CIRCLE;check("circle hint explains capture",a.companionHint().equals("CIRCLE THE CAT!"));
         a.phase=RainbowCat.DASH;check("dash hint tracks the trail",a.companionHint().equals("FOLLOW RAINBOW!"));
-        a.phase=RainbowCat.OPEN;check("challenge explains changing key",a.companionHint().equals("HIT THE KEY!"));
+        a.phase=RainbowCat.OPEN;check("challenge explains changing key",a.companionHint().equals("LEFT, RIGHT!"));
         a.phase=RainbowCat.CHASE;
         TestOnboarding.touch(c,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
         TestOnboarding.touch(c,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));

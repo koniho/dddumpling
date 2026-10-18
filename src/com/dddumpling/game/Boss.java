@@ -310,8 +310,8 @@ final class Boss {
 
     static float enrageAt(int kind) {
         // Eleven authored throws add recovery time to the eight-arm fight.
-        // Five tap-and-trace captures need room before the cat's warning ramps up.
-        return kind==RAINBOW_CAT?45f:kind==ALLIGATOR?65f:kind == OCTOPUS ? 40f : ENRAGE_AT;
+        // Five tap-and-trace phases now require twenty alternating hits each.
+        return kind==RAINBOW_CAT?75f:kind==ALLIGATOR?65f:kind == OCTOPUS ? 40f : ENRAGE_AT;
     }
 
     /** 0..1 of the visual enrage warning after this fight's time allowance. */
