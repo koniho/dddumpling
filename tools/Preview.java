@@ -10,6 +10,14 @@ import java.io.File;
 final class Preview {
     private static void rainbowFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("151-"))return;
+        GameCore freed=TestRainbowCat.fight(L);TestRainbowCat.challenge(freed,L);
+        RainbowCat escaping=freed.boss.cat;
+        for(int key=0;key<6 && escaping.phase==RainbowCat.OPEN;key++)freed.tapKey(escaping.prompt[escaping.at],L);
+        for(int frame=1;frame<=66;frame++) {
+            freed.update(1f/60,L);
+            if(frame==5 || frame==12 || frame==28 || frame==55)
+                shot(dir,"151-net-escape-"+frame,freed,L,w,h,ss);
+        }
         GameCore rays=TestRainbowCat.fight(L);RainbowCat ray=rays.boss.cat;
         for(int frame=0;frame<180 && ray.taps<2;frame++) {
             if(ray.canTap()) {ray.touch(rays,L,0,151,ray.x,ray.y);ray.touch(rays,L,1,151,ray.x,ray.y);}

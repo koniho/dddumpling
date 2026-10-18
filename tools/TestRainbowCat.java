@@ -42,7 +42,7 @@ final class TestRainbowCat extends Check {
             check("net catch opens full duration challenge "+direction,c.boss.open() && a.timer==a.promptTime());
             while(a.phase==RainbowCat.OPEN)c.boss.press(a.prompt[a.at],c.rnd,L);
             check("companion returns after escape "+direction,a.netReturn>0 && a.carries(c));
-            c.boss.update(RainbowCat.NET_RETURN+.01f,L,c.rnd);
+            c.boss.update(RainbowCat.ESCAPE_TIME+.01f,L,c.rnd);
             check("return completes and clears companion ownership "+direction,!a.carries(c));
         }
         GameCore c=fight(L);RainbowCat a=c.boss.cat;readyToCircle(c,L);float r=a.circleRadius();
@@ -367,6 +367,29 @@ final class TestRainbowCat extends Check {
         for(int i=0;i<140;i++)c.boss.update(1f/60,L,c.rnd);
         check("motion trail expires while cat holds prompt pose",a.trailCount==0);
     }
+    private static void netEscape(Layout L) {
+        group("Completed cat prompt bursts net and recoils companion");
+        for(boolean finalHit:new boolean[]{false,true}) {
+            GameCore c=fight(L);RainbowCat a=c.boss.cat;challenge(c,L);
+            if(finalHit)c.boss.hp=1;
+            int lives=c.lives;float x=a.x,y=a.y;
+            for(int i=0,n=a.count;i<n;i++) {
+                c.boss.press(a.prompt[a.at],c.rnd,L);
+                check("escape only after final correct key "+finalHit+"/"+i,(a.escapeLeft>0)==(i==n-1));
+            }
+            check("escape keeps companion owned and anchors burst "+finalHit,a.carries(c) && a.escapeX==x && a.escapeY==y);
+            c.boss.update(.2f,L,c.rnd);
+            check("cat breaks out during companion recoil "+finalHit,a.carries(c) && Math.hypot(a.x-x,a.y-y)>a.r*.1f && c.lives==lives);
+            c.boss.update(RainbowCat.ESCAPE_TIME,L,c.rnd);
+            check("escape finishes on normal and final capture "+finalHit,a.escapeLeft==0 && !a.carries(c));
+            a.escapeLeft=1;c.boss.leave();check("leaving clears escape "+finalHit,a.escapeLeft==0);
+        }
+        GameCore miss=fight(L);challenge(miss,L);RainbowCat a=miss.boss.cat;
+        miss.boss.press((a.prompt[a.at]+1)%Glyph.COUNT,miss.rnd,L);
+        check("wrong key does not burst net",a.escapeLeft==0);
+        a.timer=.01f;miss.boss.update(.02f,L,miss.rnd);
+        check("timeout keeps ordinary net return",a.escapeLeft==0 && a.netReturn>0);
+    }
     private static void traceCelebration(Layout L) {
         group("Rainbow Cat miniature shape dance and capture rings");
         for(int shape=0;shape<5;shape++) {
@@ -388,7 +411,7 @@ final class TestRainbowCat extends Check {
         }
     }
     static void all(Layout L) {
-        traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));

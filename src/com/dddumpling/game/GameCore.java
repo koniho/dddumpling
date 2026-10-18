@@ -3195,6 +3195,10 @@ final class GameCore {
                     flashColor=companion.who>=0?Collect.ACCENT[companion.who]:0xFFA7F7DD;
                     if(sound!=null)sound.squish(Kawaii.CAT,3);
                 } else if(sound!=null) {if(boss.cat.cue==1)sound.uiBloop();else sound.ninjaSwish(2);}
+                if(boss.cat.cue==2 && boss.cat.escapeLeft>0) {
+                    shake=Math.max(shake,1.05f);flash=Math.max(flash,.42f);flashColor=0xFFFFD5FA;
+                    bossDeathHaptic=Math.max(bossDeathHaptic,2);
+                }
                 if(boss.cat.cue==1)boss.cat.meow(this,CatMeowRecording.STRUGGLE,false);
                 else if(boss.cat.cue==2)boss.cat.shortMeow(this);
                 boss.cat.cue=0;

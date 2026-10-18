@@ -4,7 +4,7 @@ package com.dddumpling.game;
 final class RainbowCat {
     static final int CHASE=0, DASH=1, OPEN=2, CIRCLE=3, CATCH=4;
     static final float TAP_FLASH=.60f, SCARE_HOLD=.70f, SHAKE_OFF=.40f;
-    static final float NET_TIME=.75f, NET_RETURN=.45f;
+    static final float NET_TIME=.75f, NET_RETURN=.45f, ESCAPE_TIME=1.1f;
     static final float DASH_TIME=.34f, TRAIL_TIME=2.2f, TRAIL_LENGTH=2.9f*4;
     final Softbody pastry=new Softbody(18,151), head=new Softbody(14,152);
     final float[] route=new float[8],trailX=new float[136],trailY=new float[136],trailAge=new float[136];
@@ -19,6 +19,7 @@ final class RainbowCat {
     float voiceLeft;
     float traceClock,traceX,traceY,shapeBurst,burstX,burstY,burstRadius;
     float[] burstShape;
+    float escapeLeft,escapeX,escapeY;
     boolean circling;
     boolean placed,kids,escaping;
     void reset() {
@@ -26,7 +27,7 @@ final class RainbowCat {
         circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=netAimX=netAimY=tapFlash=scared=scaredAge=0;circling=false;gesture.clear();
         x=y=vx=vy=clock=flash=routeTime=routeDuration=trailTick=timer=0;launchLeft=1.3f;
         traceLost=lostStart=lostTravel=traceBeat=traceProgress=voiceLeft=0;traceHaptic=0;nextMeow=1;
-        traceClock=traceX=traceY=shapeBurst=0;burstShape=null;
+        traceClock=traceX=traceY=shapeBurst=escapeLeft=escapeX=escapeY=0;burstShape=null;
     }
     private void endStroke() {pointer=-1;circling=false;circleSweep=0;gesture.clear();}
     void release() {endStroke();traceLost=traceBeat=traceProgress=0;traceHaptic=0;}
@@ -57,6 +58,7 @@ final class RainbowCat {
     }
     void animate(float dt,Layout L) {
         voiceLeft=Math.max(0,voiceLeft-dt);
+        escapeLeft=Math.max(0,escapeLeft-dt);
         traceLost=Math.max(0,traceLost-dt);traceBeat=Math.max(0,traceBeat-dt);
         shapeBurst=Math.max(0,shapeBurst-dt);
         if(shapeBurst==0)burstShape=null;
@@ -200,6 +202,8 @@ final class RainbowCat {
         if(++at<count)return Boss.PART;
         captures++;int result=b.damage(1);
         flurry(b,rnd,true);resume(L,rnd);launchLeft=4.4f;
+        escapeLeft=ESCAPE_TIME;escapeX=x;escapeY=y;
+        pastry.squash(.85f);head.squash(.55f);
         if(b.beaten) {escaping=true;routeTo(L.w+r*3,top-r*2,.48f,rnd);}
         return result;
     }
@@ -227,7 +231,7 @@ final class RainbowCat {
     float circleRadius() {return r*(captures==0?2.2f:2.7f);}
     boolean carries(GameCore c) {
         return c.state==GameCore.PLAY && !c.dying() && c.boss.kind==Boss.RAINBOW_CAT
-                && (phase==CATCH || phase==OPEN || netReturn>0 || (phase==CIRCLE && windUp>.002f));
+                && (phase==CATCH || phase==OPEN || netReturn>0 || escapeLeft>0 || (phase==CIRCLE && windUp>.002f));
     }
     float netAmount() {
         float u=phase==CATCH?clamp(netAge/.34f,0,1):netReturn>0?netReturn/NET_RETURN:1;

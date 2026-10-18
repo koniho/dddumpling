@@ -16,6 +16,7 @@ final class RainbowCatArt extends Draw {
         q.save();q.translate((1-enter)*(1-enter)*-L.w,0);
         secondTapRays(q,a,L);
         shapeRings(q,a);
+        escapeBurst(q,a);
         boolean caught=a.phase==RainbowCat.OPEN || (a.phase==RainbowCat.CATCH && a.netAge>=.34f);
         float struggle=caught?(float)Math.sin(a.clock*18)*a.r*.065f:a.shakeOffset();
         if(a.carries(c))net(q,c,L,false);
@@ -59,6 +60,27 @@ final class RainbowCatArt extends Draw {
                 if(fill>0)q.line(xx,yy+s*1.8f,xx+width/COLORS.length*fill,yy+s*1.8f,COLORS[band],s*.16f);
             }
         }
+    }
+    private static void escapeBurst(Painter p,RainbowCat a) {
+        if(a.escapeLeft<=0)return;
+        float age=RainbowCat.ESCAPE_TIME-a.escapeLeft;
+        for(int ring=0;ring<6;ring++) {
+            float u=(age-ring*.035f)/.65f;if(u<0 || u>=1)continue;
+            int color=RainbowLand.CLEAR_COLORS[ring];float fade=(1-u)*(1-u);
+            float radius=a.r*(.5f+7*(1-(1-u)*(1-u)));
+            p.strokeCircle(a.escapeX,a.escapeY,radius,Glyph.withAlpha(color,(int)(75*fade)),a.r*.55f);
+            p.strokeCircle(a.escapeX,a.escapeY,radius,Glyph.withAlpha(color,(int)(240*fade)),a.r*.24f);
+        }
+        for(int i=0;i<42;i++) {
+            float u=age/(.55f+(i%5)*.1f);if(u>=1)continue;
+            float angle=i*2.399963f,dx=(float)Math.cos(angle),dy=(float)Math.sin(angle);
+            float distance=a.r*(.6f+(3+i%7)*u),xx=a.escapeX+dx*distance,yy=a.escapeY+dy*distance+a.r*u*u;
+            int color=RainbowLand.CLEAR_COLORS[i%6],alpha=(int)(255*(1-u));
+            p.line(xx-dx*a.r*.65f*(1-u),yy-dy*a.r*.65f*(1-u),xx,yy,Glyph.withAlpha(color,alpha/2),a.r*.13f);
+            p.fillCircle(xx,yy,a.r*.24f*(1-u),Glyph.withAlpha(color,alpha/4));
+            p.fillPoly(star(xx,yy,a.r*(.12f+i%3*.055f)*(1-u),a.r*.045f*(1-u),4,angle+u*5),Glyph.withAlpha(color,alpha));
+        }
+        if(age<.18f)p.fillCircle(a.escapeX,a.escapeY,a.r*(1+age*9),Glyph.withAlpha(0xFFFFFFFF,(int)(210*(1-age/.18f))));
     }
     private static void secondTapRays(Painter p,RainbowCat a,Layout L) {
         if(a.taps!=2 || a.tapFlash<=0)return;
@@ -155,13 +177,22 @@ final class RainbowCatArt extends Draw {
         }
     }
     private static void net(Painter p,GameCore c,Layout L,boolean front) {
-        RainbowCat a=c.boss.cat;float r=a.r,u=a.netAmount();
+        RainbowCat a=c.boss.cat;float r=a.r,u=a.escapeLeft>0?1:a.netAmount();
+        float escape=a.escapeLeft>0?1-a.escapeLeft/RainbowCat.ESCAPE_TIME:0;
         boolean winding=a.phase==RainbowCat.CIRCLE;
         float wind=winding?a.windUp:a.phase==RainbowCat.CATCH?a.releaseWind:1;
         float homeX=RunCompanion.x(L),homeY=RunCompanion.y(L);
         float targetX=a.catchX+r*2.45f,targetY=a.catchY+r*2.15f;
         float rise=winding?wind*.80f:a.phase==RainbowCat.CATCH?wind*.80f+(1-wind*.80f)*u:u;
         float cx=homeX+(targetX-homeX)*rise,cy=homeY+(targetY-homeY)*rise;
+        if(a.escapeLeft>0) {
+            float kick=1-(float)Math.pow(1-Math.min(1,escape/.18f),3);
+            float back=RainbowCat.clamp((escape-.22f)/.78f,0,1);back=back*back*(3-2*back);
+            float kickedX=Math.min(L.w-r*.55f,targetX+r*.85f*kick),kickedY=targetY+r*1.65f*kick;
+            cx=kickedX+(homeX-kickedX)*back;
+            cy=kickedY+(homeY-kickedY)*back-r*.45f*(float)Math.sin(back*Math.PI*2)*(1-back);
+            rise=1-back;
+        }
         // Repeat the player's shape in a small stage above the companion's head.
         float mimicRadius=r*.92f;
         float loadedCompanionX=homeX+(targetX-homeX)*wind*.80f;
@@ -186,6 +217,11 @@ final class RainbowCatArt extends Draw {
                 tilt+=.16f*(float)Math.sin(settle*Softbody.TAU*1.2f)*(1-settle);
             }
         }
+        if(a.escapeLeft>0) {
+            float snap=1-(float)Math.pow(1-Math.min(1,escape/.24f),3);
+            nx+=(cx-targetX)*.85f;ny+=(cy-targetY)*.85f;
+            tilt+=snap*1.25f;size*=1-.20f*snap;
+        }
         float struggle=a.caughtStrength();
         nx+=a.hoopShift();
         cx-=a.hoopShift()*.45f;cy+=r*.04f*struggle*(float)Math.cos(a.clock*12);
@@ -200,7 +236,7 @@ final class RainbowCatArt extends Draw {
                 sway+=-.22f*(float)Math.sin(settle*Softbody.TAU*1.5f)*(1-settle)*(1-settle);
             }
         }
-        float fade=winding?Math.min(1,wind*6):a.netReturn>0?u:1;
+        float fade=a.escapeLeft>0?RainbowCat.clamp(1-escape/.82f,0,1):winding?Math.min(1,wind*6):a.netReturn>0?u:1;
         Painter q=new OpacityPainter(p,fade);
         float[] grip=new float[2];netPoint(grip,0,1,0,nx,ny,rx,ry,depth,tilt,a.clock,0,sway,true);
         if(!front) {
@@ -209,7 +245,7 @@ final class RainbowCatArt extends Draw {
             float[] outline=new float[130];
             for(int i=0;i<=32;i++)netPoint(outline,i*2,-1,i/32f,nx,ny,rx,ry,depth,tilt,a.clock,struggle,sway,true);
             for(int i=0;i<32;i++)netPoint(outline,(33+i)*2,1,1-i/31f,nx,ny,rx,ry,depth,tilt,a.clock,struggle,sway,true);
-            q.fillPoly(outline,0x208CCAE8);q.strokePoly(outline,0x996995BF,r*.045f);
+            if(a.escapeLeft==0) {q.fillPoly(outline,0x208CCAE8);q.strokePoly(outline,0x996995BF,r*.045f);}
             q.line(grip[0],grip[1],cx+r*.27f,cy+r*.30f,0xFF3F4578,r*.20f);
             q.line(grip[0],grip[1],cx+r*.27f,cy+r*.30f,0xFFD8EEFF,r*.12f);
             q.line(grip[0]-r*.025f,grip[1]-r*.025f,cx+r*.24f,cy+r*.28f,0xFFFFFFFF,r*.035f);
@@ -224,7 +260,18 @@ final class RainbowCatArt extends Draw {
                 float v=from+(to-from)*j/16;
                 netPoint(strand,j*2,k-direction*(2*v-1),v,nx,ny,rx,ry,depth,tilt,a.clock,struggle,sway,front);
             }
-            q.polyline(strand,front?0xBCDAF4FF:0x447DA6D6,r*(front?.038f:.025f));
+            if(a.escapeLeft>0) {
+                // Each half pulls away from the torn seam; loose ends whip and fall.
+                for(int half=0;half<2;half++) {
+                    float[] torn=new float[16];float side=half==0?-1:1;
+                    for(int j=0;j<8;j++) {
+                        int at=half*9+j;float loose=half==0?j/7f:1-j/7f;
+                        torn[j*2]=strand[at*2]+side*r*escape*(1.6f+loose*2);
+                        torn[j*2+1]=strand[at*2+1]+r*(escape*escape*3+loose*(float)Math.sin(escape*18+i)*escape);
+                    }
+                    q.polyline(torn,front?0xEEDAF4FF:0x887DA6D6,r*(front?.045f:.03f));
+                }
+            } else q.polyline(strand,front?0xBCDAF4FF:0x447DA6D6,r*(front?.038f:.025f));
         }
         float[] rim=new float[130];
         for(int i=0;i<=64;i++) {
@@ -245,7 +292,8 @@ final class RainbowCatArt extends Draw {
         if(who>=0) {
             float cr=RunCompanion.radius(c,L)*(1+rise*.55f);
             float rock=winding?a.netAimX*.22f:a.phase==RainbowCat.CATCH?.34f*(float)Math.sin(u*Math.PI):-.20f*(float)Math.sin(a.clock*6);
-            Trinket.drawReacting(p,who,cx,cy,cr,c.companion.clock,1,struggle>0?3:Trinket.FIGHT,rock,c.ninja());
+            if(a.escapeLeft>0)rock=.85f*(float)Math.sin(escape*Math.PI)* (float)Math.cos(escape*8);
+            Trinket.drawReacting(p,who,cx,cy,cr,c.companion.clock,1,a.escapeLeft>0?3:struggle>0?3:Trinket.FIGHT,rock,c.ninja());
             if(struggle>0) {
                 float sweat=(a.clock*1.8f)%1;
                 p.fillEllipse(cx-cr*.85f,cy-cr*.4f+cr*sweat*.65f,cr*.08f,cr*.14f,
