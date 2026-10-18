@@ -18,6 +18,9 @@ final class Preview {
         shot(dir,"151-paired-keys-hit",vulnerable,L,w,h,ss);
         vulnerable.update(.12f,L);
         shot(dir,"151-paired-keys-recover",vulnerable,L,w,h,ss);
+        vulnerable.tapKey(vulnerable.boss.cat.promptKey,L);
+        vulnerable.update(.055f,L);
+        shot(dir,"151-paired-keys-overlap",vulnerable,L,w,h,ss);
         for(final boolean left:new boolean[]{false,true}) {
             GameCore sweep=TestRainbowCat.fight(L);TestRainbowCat.challenge(sweep,L);RainbowCat dancer=sweep.boss.cat;
             java.util.Random direction=new java.util.Random(151) {public boolean nextBoolean(){return left;}};

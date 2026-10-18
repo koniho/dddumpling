@@ -17,6 +17,7 @@ final class RainbowCatArt extends Draw {
         secondTapRays(q,a,L);
         shapeRings(q,a);
         escapeBurst(q,a);
+        hitCones(q,a,L);
         boolean caught=a.phase==RainbowCat.OPEN || (a.phase==RainbowCat.CATCH && a.netAge>=.34f);
         float struggle=caught?a.struggleX():a.shakeOffset();
         if(a.carries(c))net(q,c,L,false);
@@ -46,10 +47,10 @@ final class RainbowCatArt extends Draw {
                     Glyph.withAlpha(COLORS[(a.taps+band)%COLORS.length],(int)(a.flash*170)),a.r*.12f);
         q.restore();
         if(a.phase==RainbowCat.OPEN && !b.beaten) {
-            float s=L.enemyR*1.05f,yy=a.y+a.r*3.5f;
+            float s=L.enemyR*1.05f,yy=a.promptY();
             for(int side=0;side<2;side++) {
                 int g=side==0?a.leftKey:a.rightKey;boolean active=g==a.promptKey;
-                float xx=L.w*.5f+(side==0?-1:1)*s*1.65f;
+                float xx=a.promptX(L,g);
                 float pulse=active?1+.10f*a.keyFlash/.22f:1;
                 if(active)FastEnemies.glow(q,xx,yy,s*1.1f,Skins.keyColor(p,g),220,1);
                 FastEnemies.body(q,xx,yy,s*pulse,Skins.keyColor(p,g),active?255:190,false);
@@ -63,6 +64,50 @@ final class RainbowCatArt extends Draw {
                 if(fill>0)q.line(bandX,yy+s*1.8f,bandX+width/COLORS.length*fill,yy+s*1.8f,COLORS[band],s*.16f);
             }
         }
+    }
+    static void hitCones(Painter p,RainbowCat a,Layout L) {
+        float sway=a.pouchSway()*.43f;
+        float tx=a.x+a.traceX+a.struggleX()+a.hoopShift()+a.r*1.17f*(float)Math.sin(sway);
+        float ty=a.y+a.traceY+a.struggleY()+a.r*1.17f*((float)Math.cos(sway)-1);
+        for(int i=0;i<a.hitConeLife.length;i++) {
+            if(a.hitConeLife[i]<=0)continue;
+            float age=1-a.hitConeLife[i]/RainbowCat.HIT_CONE_TIME;
+            float fade=(1-age)*(1-age),reach=Math.min(1,.35f+age*5);
+            float sx=a.hitConeX[i],sy=a.hitConeY[i],dx=tx-sx,dy=ty-sy;
+            float len=(float)Math.sqrt(dx*dx+dy*dy);if(len<1)continue;
+            float nx=-dy/len,ny=dx/len,width=a.r*(.72f+age*.28f);
+            int color=Skins.keyColor(p,a.hitConeKey[i]),light=Glyph.mix(color,0xFFFFFFFF,.72f);
+            // Small reusable filled quads: no blur, dynamic strokes or per-frame allocations.
+            for(int layer=0;layer<3;layer++) {
+                float scale=1-layer*.27f;
+                coneSlice(p,a.hitConeWork,sx,sy,dx,dy,nx,ny,0,reach,L.enemyR*.10f,width*scale,
+                        Glyph.withAlpha(layer==2?light:color,(int)((layer==0?35:layer==1?50:65)*fade)));
+            }
+            for(int band=0;band<3;band++) {
+                float along=(age*1.8f+band*.31f)%1;
+                if(along>reach)continue;
+                coneSlice(p,a.hitConeWork,sx,sy,dx,dy,nx,ny,Math.max(0,along-.045f),along,L.enemyR*.10f,width*.86f,
+                        Glyph.withAlpha(light,(int)(155*fade*(.5f+along*.5f))));
+            }
+            for(int spark=0;spark<7;spark++) {
+                float along=(age*1.9f+spark*.137f)%1;if(along>reach)continue;
+                float cross=(float)Math.sin(spark*2.4f)*width*along*.85f;
+                float xx=sx+dx*along+nx*cross,yy=sy+dy*along+ny*cross;
+                float size=L.enemyR*(.045f+.065f*(float)Math.pow(Math.sin(age*15+spark),2));
+                int glint=Glyph.withAlpha(light,(int)(235*fade));
+                p.line(xx-size,yy,xx+size,yy,glint,size*.65f);
+                p.line(xx,yy-size*1.6f,xx,yy+size*1.6f,glint,size*.65f);
+            }
+        }
+    }
+    private static void coneSlice(Painter p,float[] xy,float x,float y,float dx,float dy,float nx,float ny,
+                                  float from,float to,float startWidth,float endWidth,int color) {
+        float lo=startWidth+(endWidth-startWidth)*from,hi=startWidth+(endWidth-startWidth)*to;
+        xy[0]=x+dx*from-nx*lo;xy[1]=y+dy*from-ny*lo;
+        xy[2]=x+dx*to-nx*hi;xy[3]=y+dy*to-ny*hi;
+        xy[4]=x+dx*to+nx*hi;xy[5]=y+dy*to+ny*hi;
+        xy[6]=x+dx*from+nx*lo;xy[7]=y+dy*from+ny*lo;
+        p.fillPoly(xy,color);
     }
     private static void escapeBurst(Painter p,RainbowCat a) {
         if(a.escapeLeft<=0)return;

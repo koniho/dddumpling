@@ -388,6 +388,22 @@ final class TestRainbowCat extends Check {
             a.reset();check("reset releases ring geometry "+shape,a.burstWork==null);
         }
     }
+    private static void hitCones(Layout L) {
+        group("Prompt cones preserve hit origin and overlap without affecting damage");
+        GameCore c=fight(L);challenge(c,L);RainbowCat a=c.boss.cat;
+        int left=a.leftKey,right=a.rightKey;
+        c.boss.press(left,c.rnd,L);c.boss.update(.08f,L,c.rnd);c.boss.press(right,c.rnd,L);
+        check("alternating hits retain both prompt colors",a.hitConeKey[0]==left && a.hitConeKey[1]==right && a.hitConeLife[0]>0 && a.hitConeLife[1]>0);
+        check("cones originate on opposite displayed prompts",a.hitConeX[0]==a.promptX(L,left) && a.hitConeX[1]==a.promptX(L,right) && a.hitConeX[0]<a.hitConeX[1]);
+        int next=a.nextHitCone;c.boss.press(right,c.rnd,L);
+        check("wrong key does not emit a cone",a.nextHitCone==next);
+        a.timer=.01f;c.boss.update(.02f,L,c.rnd);
+        check("last cones survive net escape",a.escapeSequence && a.hitConeLife[1]>0);
+        c.boss.update(RainbowCat.HIT_CONE_TIME,L,c.rnd);
+        boolean clear=true;for(float life:a.hitConeLife)clear&=life==0;
+        check("cones expire during escape",clear);
+        a.hitConeLife[0]=1;a.reset();check("reset clears cones",a.hitConeLife[0]==0 && a.nextHitCone==0);
+    }
     private static void damageWindows(Layout L) {
         group("Fixed left/right pair deals small capped persistent damage");
         for(boolean full:new boolean[]{false,true}) {
@@ -502,7 +518,7 @@ final class TestRainbowCat extends Check {
         }
     }
     static void all(Layout L) {
-        ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));

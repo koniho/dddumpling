@@ -12,6 +12,10 @@ final class RainbowCat {
     final float[] route=new float[8],trailX=new float[136],trailY=new float[136],trailAge=new float[136];
     int phase,pointer=-1,taps,trailCount,captures,cue,promptKey=-1,windowHits;
     final TraceGesture gesture=new TraceGesture();
+    static final float HIT_CONE_TIME=.34f;
+    final float[] hitConeLife=new float[4],hitConeX=new float[4],hitConeY=new float[4],hitConeWork=new float[8];
+    final int[] hitConeKey=new int[4];
+    int nextHitCone;
     float damageFloor,keyFlash;
     int hitColor,leftKey=-1,rightKey=-1;
     boolean fullRoster;
@@ -31,6 +35,7 @@ final class RainbowCat {
     boolean placed,kids,escaping;
     void reset() {
         phase=CHASE;pointer=-1;taps=trailCount=captures=cue=windowHits=0;promptKey=leftKey=rightKey=-1;damageFloor=keyFlash=0;hitColor=0;fullRoster=false;placed=escaping=escapeSequence=flurryFromLeft=false;flurryCount=0;turn=1;
+        java.util.Arrays.fill(hitConeLife,0);nextHitCone=0;
         circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=netAimX=netAimY=tapFlash=scared=scaredAge=0;circling=false;gesture.clear();
         x=y=vx=vy=clock=flash=routeTime=routeDuration=trailTick=timer=0;launchLeft=1.3f;
         traceLost=lostStart=lostTravel=traceBeat=traceProgress=voiceLeft=0;traceHaptic=0;nextMeow=1;
@@ -65,6 +70,7 @@ final class RainbowCat {
     }
     void animate(Boss b,float dt,Layout L) {
         voiceLeft=Math.max(0,voiceLeft-dt);keyFlash=Math.max(0,keyFlash-dt);
+        for(int i=0;i<hitConeLife.length;i++)hitConeLife[i]=Math.max(0,hitConeLife[i]-dt);
         escapeLeft=Math.max(0,escapeLeft-dt);
         traceLost=Math.max(0,traceLost-dt);traceBeat=Math.max(0,traceBeat-dt);
         shapeBurst=Math.max(0,shapeBurst-dt);
@@ -213,10 +219,15 @@ final class RainbowCat {
         rightKey=Roster.at(fullRoster,half+rnd.nextInt(n-half));
         promptKey=leftKey;
     }
+    float promptX(Layout L,int glyph) {return L.w*.5f+(glyph==leftKey?-1:1)*L.enemyR*1.05f*1.65f;}
+    float promptY() {return y+r*3.5f;}
     int press(Boss b,int glyph,Layout L,java.util.Random rnd) {
         if(phase!=OPEN || promptKey<0 || timer<=0)return Boss.REBUFF;
         if(promptKey!=glyph)return Boss.REBUFF;
         b.hitX=x;b.hitY=y;head.squash(.45f);pastry.squash(.35f);
+        int cone=nextHitCone;nextHitCone=(cone+1)%hitConeLife.length;
+        hitConeLife[cone]=HIT_CONE_TIME;hitConeKey[cone]=glyph;
+        hitConeX[cone]=promptX(L,glyph);hitConeY[cone]=promptY();
         keyFlash=.22f;hitColor=Glyph.COLOR[glyph];flash=1;windowHits++;
         float remaining=Math.max(0,b.hp-damageFloor),step=b.hpMax/TraceGesture.SHAPE_COUNT/HITS_PER_BAND;
         float amount=remaining<=step+.0001f?remaining:step;
