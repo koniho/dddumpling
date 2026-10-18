@@ -7,7 +7,7 @@ final class HalloweenBlendPreview extends Draw {
         {-.85f,.48f,-.79f,-.22f,-.51f,-.73f,0,-.87f,.53f,-.67f,.80f,-.13f,.80f,.55f,.53f,.76f,.30f,.58f,.04f,.82f,-.22f,.62f,-.55f,.80f},
         {-.72f,-.26f,-.61f,-.84f,-.25f,-.61f,.24f,-.62f,.61f,-.85f,.73f,-.27f,.71f,.41f,.35f,.72f,-.34f,.72f,-.73f,.37f},
         {-.85f,-.31f,-.47f,-.74f,0,-.72f,.49f,-.70f,.88f,-.24f,.86f,.38f,.45f,.77f,0,.80f,-.48f,.74f,-.88f,.27f},
-        {-.75f,-.35f,-.40f,-.66f,.12f,-.67f,.65f,-.38f,.79f,.14f,.58f,.66f,0,.82f,-.57f,.64f,-.79f,.13f},
+        {-.70f,-.27f,-.67f,-.32f,.67f,-.32f,.70f,-.27f,.62f,.17f,.29f,.63f,0,.76f,-.29f,.63f,-.62f,.17f},
         {-.79f,-.47f,-.58f,-.79f,.55f,-.78f,.79f,-.48f,.82f,.32f,.50f,.74f,-.50f,.75f,-.81f,.33f},
         {-.72f,-.26f,-.61f,-.84f,-.25f,-.61f,.24f,-.62f,.61f,-.85f,.73f,-.27f,.71f,.41f,.35f,.72f,-.34f,.72f,-.73f,.37f}
     };
@@ -39,6 +39,8 @@ final class HalloweenBlendPreview extends Draw {
     static void draw(Painter p,int g,float x,float y,float r,int incoming,float squash,float happy,int mood,float clock) {
         if(g<0 || g>=Glyph.COUNT)return;
         float rx=r*squash,ry=r/squash;
+        // Center the whole silhouette: crown at -1.30, chin at +.76.
+        if(g==Kawaii.GRAPES)y+=ry*.27f;
         int base=Skins.HALLOWEEN_COLORS[g],alpha=incoming>>>24;
         if((incoming&0xFFFFFF)!=(Glyph.COLOR[g]&0xFFFFFF) && (incoming&0xFFFFFF)!=(base&0xFFFFFF))base=Glyph.mix(base,incoming,.22f);
         Painter q=new OpacityPainter(p,alpha/255f);
@@ -55,7 +57,7 @@ final class HalloweenBlendPreview extends Draw {
         float[] body=body(g,x,y,rx,ry);
         q.fillPoly(body,base);
         q.fillPoly(body(g,x-rx*.055f,y-ry*.10f,rx*.86f,ry*.79f),Glyph.mix(base,0xFFFFFFFF,g==Kawaii.BLOB?.20f:.13f));
-        q.fillEllipse(x-rx*.36f,y-ry*.43f,rx*.15f,ry*.075f,0xA6FFFFFF);
+        if(g!=Kawaii.GRAPES)q.fillEllipse(x-rx*.36f,y-ry*.43f,rx*.15f,ry*.075f,0xA6FFFFFF);
         if(g==Kawaii.CAT) {
             q.fillPoly(points(x,y,rx,ry,-.08f,-.68f,-.13f,-.98f,.09f,-1.03f,.05f,-.68f),0xFF68945A);
         }
@@ -66,25 +68,26 @@ final class HalloweenBlendPreview extends Draw {
             }
         }
         if(g==Kawaii.GRAPES) {
-            q.fillPoly(points(x,y,rx,ry,-.91f,-.42f,-.42f,-.61f,-.13f,-1.30f,.35f,-1.19f,.13f,-1.03f,.43f,-.61f,.91f,-.42f),0xFF5B3D7E);
+            q.fillPoly(points(x,y,rx,ry,-.94f,-.24f,-.42f,-.61f,-.13f,-1.30f,.35f,-1.19f,.13f,-1.03f,.43f,-.61f,.94f,-.24f),0xFF5B3D7E);
             q.fillPoly(points(x,y,rx,ry,-.36f,-.70f,.35f,-.70f,.43f,-.57f,-.42f,-.57f),0xFFF2AE67);
         }
         if(g==Kawaii.SQUISHY) {
-            q.fillPoly(points(x,y,rx,ry,-.76f,-.40f,-.52f,-.73f,.52f,-.73f,.76f,-.40f,.34f,-.40f,.16f,-.22f,-.02f,-.40f,-.28f,-.27f,-.43f,-.40f),0xFF454554);
+            q.fillPoly(points(x,y,rx,ry,-.76f,-.19f,-.76f,-.48f,-.52f,-.73f,.52f,-.73f,.76f,-.48f,.76f,-.19f,.57f,-.27f,.35f,-.35f,.16f,-.20f,-.02f,-.35f,-.28f,-.22f,-.45f,-.35f),0xFF454554);
         }
         face(q,g,x,y,rx,ry,r,happy,mood,clock);
     }
     private static void face(Painter p,int g,float x,float y,float rx,float ry,float r,float happy,int mood,float clock) {
         int ink=g==Kawaii.BLOB?0xFFFFE9AF:INK;
+        int eyes=g==Kawaii.BLOB?0xFFCCEFA3:ink;
         for(int side=-1;side<=1;side+=2) {
             float ex=x+side*rx*.29f,ey=y+ry*.035f;
-            if(mood==2 || happy>.7f)p.arc(ex,ey+ry*.07f,rx*.15f,ry*.14f,200,140,ink,r*.07f);
+            if(mood==2 || happy>.7f)p.arc(ex,ey+ry*.07f,rx*.15f,ry*.14f,200,140,eyes,r*.07f);
             else if(g==Kawaii.CAT && mood==0) {
                 p.fillPoly(shape(ex,ey,rx*.19f,ry*.21f,new float[]{-1,.6f,-.2f,-1,1,.6f}),ink);
                 p.fillCircle(ex,ey-ry*.025f,r*.025f,0xFFFFE4A3);
-            } else {p.fillEllipse(ex,ey,rx*.145f,ry*(mood==1?.22f:.185f),ink);p.fillCircle(ex-rx*.025f,ey-ry*.055f,r*.045f,g==Kawaii.BLOB?INK:0xFFFFFFFF);}
+            } else {p.fillEllipse(ex,ey,rx*.145f,ry*(mood==1?.22f:.185f),eyes);p.fillCircle(ex-rx*.025f,ey-ry*.055f,r*.045f,g==Kawaii.BLOB?INK:0xFFFFFFFF);}
             if(mood==2)p.line(ex-side*rx*.14f,ey-ry*.20f,ex+side*rx*.07f,ey-ry*.12f,ink,r*.045f);
-            p.fillEllipse(x+side*rx*.48f,y+ry*.26f,rx*.13f,ry*.08f,0x99F278A2);
+            p.fillEllipse(x+side*rx*(g==Kawaii.GRAPES?.41f:.48f),y+ry*.26f,rx*(g==Kawaii.GRAPES?.10f:.13f),ry*.08f,0x99F278A2);
         }
         if(g==Kawaii.CAT && mood==0) {
             p.fillPoly(shape(x,y+ry*.24f,rx*.055f,ry*.065f,new float[]{0,-1,1,1,-1,1}),ink);
