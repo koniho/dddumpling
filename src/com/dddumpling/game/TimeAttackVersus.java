@@ -35,8 +35,7 @@ final class TimeAttackVersus extends Draw {
             c.boss.update(0,L,c.rnd);
             portrait.update(0,L,new java.util.Random(196+boss));prepared=true;
         }
-        portrait.age+=Math.min(.1f,elapsed);
-        if(boss==Boss.OCTOPUS)portrait.poseOctopusPortrait(Math.min(.1f,elapsed),L);
+        animatePortrait(Math.min(.1f,elapsed),L);
         float before=time;
         time=Math.min(DURATION,time+Math.min(.1f,elapsed));
         if(c.sound!=null) {
@@ -57,6 +56,35 @@ final class TimeAttackVersus extends Draw {
                     || (offset<0 && time>=Narration.versusOpponentFallback(who)))rightShimmer=time;
         }
         return time<DURATION;
+    }
+
+    /** Only the isolated portrait's springs run here; no attacks, timers or gameplay RNG. */
+    private void animatePortrait(float dt,Layout L) {
+        float before=portrait.age;
+        portrait.age+=dt;
+        float t=portrait.age,period=boss==Boss.SLIME?.78f:1.08f;
+        boolean bounce=before<CLASH && t>=CLASH
+                || (int)(Math.max(0,before-CLASH)/period)<(int)(Math.max(0,t-CLASH)/period);
+        if(portrait.body!=null && boss!=Boss.SPLITTER && boss!=Boss.ALLIGATOR) {
+            if(bounce)portrait.body.squash(boss==Boss.SLIME?.65f:.32f);
+            portrait.body.update(dt);
+        }
+        if(boss==Boss.SPLITTER)for(int i=0;i<portrait.pieceCount();i++) {
+            Softbody piece=portrait.pieceBody(i);
+            if(bounce)piece.squash(.65f);
+            piece.update(dt);
+        }
+        if(boss==Boss.MUSHROOM) {
+            float r=Boss.bodyR(L);
+            portrait.mushroomCapDX=r*.38f*(float)Math.sin(t*4.8f);
+            portrait.mushroomCapDY=r*.12f*(float)Math.sin(t*9.6f);
+            if(portrait.mushroomStem!=null) {
+                portrait.mushroomStem.pull(portrait.body.centreX()+portrait.mushroomCapDX,
+                        portrait.body.centreY()+portrait.mushroomCapDY,.22f);
+                portrait.mushroomStem.update(dt);
+            }
+        }
+        if(boss==Boss.OCTOPUS)portrait.poseOctopusPortrait(dt,L);
     }
 
     static float arrival(float time,float delay) {

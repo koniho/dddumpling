@@ -250,11 +250,28 @@ final class TestTimeAttack extends Check {
                 check("tentacles start attached in their idle pose",portrait.octoY[3][Boss.OCTO_NODES-1]
                         >portrait.body.centreY()+Boss.bodyR(L)*2);
             }
+            int[] first=portraitPixels(c,L);
             for(int i=0;i<60;i++)c.update(DT,L);
+            int[] later=portraitPixels(c,L);
+            check("boss artwork animates beyond the moving panels "+boss,!java.util.Arrays.equals(first,later));
+            check("repeated portrait draws do not step springs "+boss,java.util.Arrays.equals(later,portraitPixels(c,L)));
+            float portraitAge=portrait.age;
+            float[] outline=portrait.body.outline().clone();
+            Pause.open(c);c.update(DT,L);
+            check("pause freezes cosmetic boss springs "+boss,portrait.age==portraitAge
+                    && java.util.Arrays.equals(outline,portrait.body.outline()));
+            Pause.resume(c);
             check("portrait animation leaves encounter and RNG untouched "+boss,c.boss.intro==intro
                     && c.boss.age==0 && c.boss.hp==c.boss.hpMax && c.boss.boltCount()==0
                     && c.rnd.nextLong()==control.rnd.nextLong());
         }
+    }
+
+    private static int[] portraitPixels(GameCore c,Layout L) {
+        RasterPainter p=new RasterPainter(220,260,1);
+        BossScreen.versusPortrait(p,c,L,c.timeAttack.versus.portrait,110,120,68,
+                c.timeAttack.versus.time*2);
+        return p.resolve();
     }
 
     static void all(Layout L) {

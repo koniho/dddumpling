@@ -605,13 +605,26 @@ final class AlligatorArt extends Draw {
         }
     }
     static void portrait(Painter p,float x,float y,float r,float clock,boolean known,float fade) {
+        portrait(p,x,y,r,clock,known,fade,false);
+    }
+    static void portrait(Painter p,float x,float y,float r,float clock,boolean known,float fade,boolean versus) {
         Painter q=new OpacityPainter(p,fade);
         if(!known)q=new MonochromePainter(q,1f);
         q.fillEllipse(x,y+r*.33f,r*.57f,r*.60f,SKIN);
         q.fillEllipse(x,y+r*.41f,r*.40f,r*.46f,BELLY);
-        for(int side=-1;side<=1;side+=2)limb(q,x+side*r*.43f,y+r*.18f,x+side*r*.78f,y+r*.46f,r*.13f,false,SKIN,clock);
-        float hh=r*.44f*(1+.035f*(float)Math.sin(clock*2));
-        head(q,null,x,y-r*.20f,r,hh,clock,false,0);
+        if(!versus)portraitArms(q,x,y,r,clock,false);
+        float hh=r*.44f*(1+(versus?.075f:.035f)*(float)Math.sin(clock*2));
+        Painter face=versus?new HeadTilt(q,x,y-r*.20f,.07f*(float)Math.sin(clock*2.6f)):q;
+        head(face,null,x,y-r*.20f,r,hh,clock,false,0);
+        if(versus)portraitArms(q,x,y,r,clock,true);
         if(!known)q.text("?",x,y+r*.25f,type(r*.55f),INK,Painter.CENTER,true);
     }
+    private static void portraitArms(Painter q,float x,float y,float r,float clock,boolean versus) {
+        for(int side=-1;side<=1;side+=2) {
+            float wave=versus?(float)Math.sin(clock*3+side*.85f):0;
+            limb(q,x+side*r*.43f,y+r*.18f,x+side*r*(.78f+wave*.10f),
+                    y+r*(.46f-(versus?.25f:0)+wave*.34f),r*.13f,false,SKIN,clock);
+        }
+    }
+
 }

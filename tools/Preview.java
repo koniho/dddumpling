@@ -441,6 +441,8 @@ final class Preview {
             shot(dir,"196-versus-boss-"+boss+"-entry",c,L,w,h,ss);
             step(c,L,.85f);
             shot(dir,"196-versus-boss-"+boss,c,L,w,h,ss);
+            step(c,L,.23f);
+            shot(dir,"196-versus-boss-"+boss+"-jiggle",c,L,w,h,ss);
         }
         for(int who:new int[]{2,Collect.DUCK_FIRST+2}) {
             GameCore c=TestTimeAttack.start(Boss.SLIME);

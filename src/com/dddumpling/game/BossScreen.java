@@ -259,8 +259,14 @@ final class BossScreen extends Draw {
 
     /** Battle artwork, fitted to a face-off panel using an isolated cosmetic boss. */
     static void versusPortrait(Painter p,GameCore c,Layout L,Boss b,float x,float y,float r,float clock) {
-        if(b.kind==Boss.SLIME) {slimePortrait(p,x,y,r*.58f,clock);return;}
-        if(b.kind==Boss.ALLIGATOR) {AlligatorArt.portrait(p,x,y,r,clock,true,1);return;}
+        if(b.kind==Boss.SLIME && b.body!=null) {
+            Softbody body=b.body;
+            Painter q=new PortraitFit(p,body.homeX,body.homeY,x,y,r*.58f/body.rest);
+            drawSlimeSkin(q,slimeBossOutline(body),body.centreX(),body.centreY(),
+                    body.radiusX(),body.radiusY(),body.radius(),0xFF83E51C,clock,false,1);
+            return;
+        }
+        if(b.kind==Boss.ALLIGATOR) {AlligatorArt.portrait(p,x,y,r,clock,true,1,true);return;}
         if(b.body==null)return;
         float br=Boss.bodyR(L),cx=b.body.centreX(),cy=b.body.centreY();
         float scale,centerY;
@@ -271,9 +277,8 @@ final class BossScreen extends Draw {
             scale=r*1.12f/(br*3.5f);centerY=cy+br*.9f;
         } else {
             Softbody piece=b.pieceBody(0);
-            float core=Math.min(piece.radiusX(),piece.radiusY());
-            scale=r*.97f/(piece.radiusX()+core*.14f);
-            cx=piece.centreX()+core*.14f;centerY=piece.centreY()-core*.14f;
+            scale=r*.97f/(piece.rest*1.14f);
+            cx=piece.homeX+piece.rest*.14f;centerY=piece.homeY-piece.rest*.14f;
         }
         Painter q=new PortraitFit(p,cx,centerY,x,y,scale);
         if(b.kind==Boss.MUSHROOM)drawMushroom(q,c,L,b,tint(b),1);
@@ -286,6 +291,9 @@ final class BossScreen extends Draw {
     /** Uniform scaling keeps the actual boss outlines, shading and stroke weights together. */
     private static final class PortraitFit implements Painter {
         final Painter p;final float ox,oy,s;
+        public DuckBodies ducks(){return p.ducks();}
+        public GatorCompanion gator(){return p.gator();}
+        // Native stamps are intentionally disabled: they would bypass this fitted transform.
         PortraitFit(Painter p,float cx,float cy,float x,float y,float scale) {
             this.p=p;s=scale;ox=x-cx*s;oy=y-cy*s;
         }
