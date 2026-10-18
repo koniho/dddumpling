@@ -100,14 +100,22 @@ final class RainbowCatArt extends Draw {
         }
         float struggle=a.phase==RainbowCat.OPEN || (a.phase==RainbowCat.CATCH && a.netAge>=.34f)?1:0;
         float rx=r*2.15f*size,ry=r*.52f*size,depth=r*2.72f*size;
+        float sway=0;
+        if(a.phase==RainbowCat.CATCH) {
+            if(a.netAge<.34f)sway=-.42f*(float)Math.sin(u*Softbody.TAU)*(1-u*.25f);
+            else {
+                float settle=RainbowCat.clamp((a.netAge-.34f)/(RainbowCat.NET_TIME-.34f),0,1);
+                sway=-.22f*(float)Math.sin(settle*Softbody.TAU*1.5f)*(1-settle)*(1-settle);
+            }
+        }
         float fade=winding?Math.min(1,wind*6):a.netReturn>0?u:1;
         Painter q=new OpacityPainter(p,fade);
-        float[] grip=new float[2];netPoint(grip,0,1,0,nx,ny,rx,ry,depth,tilt,a.clock,0,true);
+        float[] grip=new float[2];netPoint(grip,0,1,0,nx,ny,rx,ry,depth,tilt,a.clock,0,sway,true);
         if(!front) {
             // Deep hanging pouch and tilted hoop follow the fishing-net reference.
             float[] outline=new float[130];
-            for(int i=0;i<=32;i++)netPoint(outline,i*2,-1,i/32f,nx,ny,rx,ry,depth,tilt,a.clock,struggle,true);
-            for(int i=0;i<32;i++)netPoint(outline,(33+i)*2,1,1-i/31f,nx,ny,rx,ry,depth,tilt,a.clock,struggle,true);
+            for(int i=0;i<=32;i++)netPoint(outline,i*2,-1,i/32f,nx,ny,rx,ry,depth,tilt,a.clock,struggle,sway,true);
+            for(int i=0;i<32;i++)netPoint(outline,(33+i)*2,1,1-i/31f,nx,ny,rx,ry,depth,tilt,a.clock,struggle,sway,true);
             q.fillPoly(outline,0x208CCAE8);q.strokePoly(outline,0x996995BF,r*.045f);
             q.line(grip[0],grip[1],cx+r*.27f,cy+r*.30f,0xFF3F4578,r*.20f);
             q.line(grip[0],grip[1],cx+r*.27f,cy+r*.30f,0xFFD8EEFF,r*.12f);
@@ -121,7 +129,7 @@ final class RainbowCatArt extends Draw {
             float[] strand=new float[34];
             for(int j=0;j<=16;j++) {
                 float v=from+(to-from)*j/16;
-                netPoint(strand,j*2,k-direction*(2*v-1),v,nx,ny,rx,ry,depth,tilt,a.clock,struggle,front);
+                netPoint(strand,j*2,k-direction*(2*v-1),v,nx,ny,rx,ry,depth,tilt,a.clock,struggle,sway,front);
             }
             q.polyline(strand,front?0xBCDAF4FF:0x447DA6D6,r*(front?.038f:.025f));
         }
@@ -154,11 +162,13 @@ final class RainbowCatArt extends Draw {
         }
     }
     private static void netPoint(float[] out,int at,float u,float v,float nx,float ny,float rx,float ry,float depth,
-            float tilt,float clock,float struggle,boolean front) {
+            float tilt,float clock,float struggle,float sway,boolean front) {
         float cross=(float)Math.sqrt(Math.max(0,1-u*u)),width=(float)Math.sqrt(Math.max(0,1-v));
         float slack=(float)Math.sin(v*Math.PI)*(1-u*u);
-        float px=u*rx*width+rx*slack*.12f*struggle*(float)Math.sin(clock*18+v*2);
-        float py=depth*v+(front?1:-1)*ry*cross*(1-v)
+        // The mouth stays fixed to the hoop; hanging mesh trails, reverses and settles below it.
+        float bend=sway*v;
+        float px=u*rx*width+depth*v*(float)Math.sin(bend)+rx*slack*.12f*struggle*(float)Math.sin(clock*18+v*2);
+        float py=depth*v*(float)Math.cos(bend)+(front?1:-1)*ry*cross*(1-v)
                 +ry*slack*.4f*struggle*(float)Math.sin(clock*15+u*3);
         out[at]=nx+px*(float)Math.cos(tilt)-py*(float)Math.sin(tilt);
         out[at+1]=ny+px*(float)Math.sin(tilt)+py*(float)Math.cos(tilt);
