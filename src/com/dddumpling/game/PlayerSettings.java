@@ -169,7 +169,6 @@ final class PlayerSettings extends Draw {
             p.fillRect(trackL(L),sy-s*.12f,trackR(L),sy+s*.12f,0x55FFFFFF);
             p.fillRect(trackL(L),sy-s*.12f,x,sy+s*.12f,GOLD);
             SettingsArt.draw(p,i==0,x,sy,knobR(c,L),v,muted||v==0f,c.clock);
-            p.text(Math.round(v*100)+"%",r-s*1.5f,sy+knobR(c,L)+s*.8f,type(s*.43f),INK_DIM,Painter.RIGHT,false);
         }
         p.text("KIDS MODE",trackL(L),row(L,2)+s*.25f,type(s*.57f),INK,Painter.LEFT,true);
         SettingsArt.kidsToggle(p,r-s*3.2f,row(L,2),s,a.kidsPosition(c.clock),a.kidsLift(c.clock));

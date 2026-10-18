@@ -26,11 +26,9 @@ final class SkinSettings extends Draw {
         if(c.sound!=null)c.sound.uiBloop();
     }
     private static void card(Painter p,float l,float t,float r,float b,float s,int skin,boolean selected) {
-        float[] outline=pageShape(l,t,r,b,s*.85f);
-        p.fillPoly(pageShape(l,t+s*.20f,r,b+s*.20f,s*.85f),0x80211C34);
-        p.fillPoly(outline,skin==Skins.HALLOWEEN?0xFF44305F:0xFF285D61);
-        p.fillPoly(pageShape(l+s*.18f,t+s*.15f,r-s*.18f,t+(b-t)*.55f,s*.7f),skin==Skins.HALLOWEEN?0x555F4D91:0x554DAD9C);
-        p.strokePoly(outline,selected?(skin==Skins.HALLOWEEN?0xFFFFBF78:0xFF9AE9C0):0x888D83B2,s*(selected?.09f:.045f));
+        int color=skin==Skins.HALLOWEEN?(selected?0x665E497F:0x335E497F)
+                :(selected?0x554DCEAA:0x334DCEAA);
+        p.fillRect(l,t,r,b,color);
     }
     static void chip(Painter p,GameCore c,Layout L) {
         float s=PlayerSettings.unit(L),y=buttonY(L),l=PlayerSettings.left(L)+s,r=PlayerSettings.right(L)-s;
@@ -64,7 +62,7 @@ final class SkinSettings extends Draw {
             p.text(Skins.NAMES[i],l+s,top+s*1.8f,type(s*.80f),INK,Painter.LEFT,true);
             if(selected) {
                 float cx=r-s*1.5f,cy=top+s*1.4f;
-                p.fillCircle(cx,cy,s*.70f,i==1?0xFFFFBF78:0xFF9AE9C0);
+                p.fillRect(cx-s*.70f,cy-s*.70f,cx+s*.70f,cy+s*.70f,i==1?0xFFFFBF78:0xFF9AE9C0);
                 p.polyline(new float[]{cx-s*.32f,cy,cx-s*.08f,cy+s*.25f,cx+s*.35f,cy-s*.28f},0xFF302442,s*.12f);
             }
             Painter preview=Skins.painter(p,i);
