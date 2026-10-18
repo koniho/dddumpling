@@ -107,7 +107,7 @@ final class FastEnemies {
                     Skins.keyColor(p,e.word[last]),e.phase,e.destroyT/GameCore.DESTROY_TIME);
     }
 
-    private static void starBurst(Painter p,float x,float y,float r,int color,float phase,float t) {
+    static void starBurst(Painter p,float x,float y,float r,int color,float phase,float t) {
         if(t<0 || t>=1)return;
         float ease=1-(1-t)*(1-t),fade=(1-t)*(1-t);
         int light=Glyph.mix(color,0xFFFFF4C6,.65f);

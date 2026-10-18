@@ -15,7 +15,6 @@ final class TestStars extends Check {
         c.stars.grabbed = c.stars.launched = c.stars.reported = c.stars.awardPending = true;
         c.stars.sx[0] = .4f;
         c.stars.burst[0] = 1f;
-        c.stars.burstX[0] = c.stars.burstY[0] = .5f;
     }
 
     private static boolean cleanRun(GameCore c) {
@@ -112,7 +111,7 @@ final class TestStars extends Check {
 
     private static boolean cleanBursts(StarPath q) {
         for (int i = 0; i < StarPath.MAX_COUNT; i++)
-            if (q.burst[i] != 0f || q.burstX[i] != 0f || q.burstY[i] != 0f) return false;
+            if (q.burst[i] != 0f) return false;
         return true;
     }
 
@@ -121,8 +120,8 @@ final class TestStars extends Check {
         c.startGame();c.state = GameCore.BONUS;c.starBonus = true;
         StarPath q = c.stars;q.make(new java.util.Random(202L));q.begin(0, L);
         int emitted = 0;
-        boolean overlap = false, anchored = true, single = true;
-        float[] bx = new float[StarPath.MAX_COUNT], by = new float[StarPath.MAX_COUNT];
+        boolean overlap = false, single = true;
+        int maxLive = 0;
         for (int frame = 0; frame < 600 && !q.won; frame++) {
             int next = 0;
             while (next < q.total() && (q.collected & (1 << next)) != 0) next++;
@@ -134,35 +133,74 @@ final class TestStars extends Check {
                 boolean picked = (before & (1 << i)) == 0 && (q.collected & (1 << i)) != 0;
                 if (picked) {
                     emitted++;
-                    bx[i] = q.starX(i, L) / L.w;by[i] = q.starY(i, L) / L.h;
                     single &= q.burst[i] == 1f;
                     for (int j = 0; j < q.total(); j++)
                         if (j != i && life[j] > DT / StarPath.BURST_TIME) overlap = true;
                 } else single &= q.burst[i] <= life[i];
-                if (q.burst[i] > 0f)
-                    anchored &= q.burstX[i] == bx[i] && q.burstY[i] == by[i];
             }
+            int live = 0;for (float lifeLeft : q.burst) if (lifeLeft > 0f) live++;
+            maxLive = Math.max(maxLive, live);
         }
-        check("each newly collected star emits exactly one ring, including the final star",
+        check("each newly collected star emits exactly one burst, including the final star",
                 q.won && emitted == q.total() && single && q.burst[q.winStar] == 1f);
-        check("rapid pickup rings coexist at their original catch positions", overlap && anchored);
+        check("rapid pickups coexist with bounded burst overlap", overlap && maxLive <= 10);
+        System.out.println("    pickup bursts: max overlap " + maxLive);
         float held = q.burst[q.winStar], win = q.winT;
         c.paused = true;c.update(1f, L);
-        check("pause freezes pickup rings and the victory clock", q.burst[q.winStar] == held && q.winT == win);
+        check("pause freezes pickup bursts and the victory clock", q.burst[q.winStar] == held && q.winT == win);
         c.paused = false;q.update(StarPath.BURST_TIME * .5f, L);
-        check("the final ring keeps fading through the victory handoff",
+        check("the final burst keeps fading through the victory handoff",
                 q.winning() && q.burst[q.winStar] > 0f && q.burst[q.winStar] < held);
         q.update(StarPath.BURST_TIME, L);
-        check("pickup rings expire cleanly before the completion blast-off", cleanBursts(q) && q.winning());
-        q.burst[0] = 1f;q.burstX[0] = q.burstY[0] = .5f;q.begin(0, L);
-        check("retry clears every ring and its anchor", cleanBursts(q));
-        q.burst[0] = 1f;q.burstX[0] = q.burstY[0] = .5f;q.reroll(new java.util.Random(203L));
-        check("a new course clears every ring and its anchor", cleanBursts(q));
+        check("pickup bursts expire cleanly before the completion blast-off", cleanBursts(q) && q.winning());
+        q.burst[0] = 1f;q.begin(0, L);
+        check("retry clears every burst and its anchor", cleanBursts(q));
+        q.burst[0] = 1f;q.reroll(new java.util.Random(203L));
+        check("a new course clears every burst and its anchor", cleanBursts(q));
+    }
+
+    private static final class BurstPainter extends OpacityPainter {
+        float x, y;int calls;
+        BurstPainter() { super(null, 1f); }
+        public void fillCircle(float x,float y,float r,int color) {
+            if (calls == 0) { this.x=x;this.y=y; }calls++;
+        }
+        public void fillPoly(float[] xy,int color) { calls++; }
+        public void strokePoly(float[] xy,int color,float width) { calls++; }
+        public void line(float x,float y,float a,float b,int color,float width) { calls++; }
+    }
+
+    private static void scrollingBursts(Layout L) {
+        StarPath q = new StarPath();q.make(new java.util.Random(205L));q.begin(0,L);
+        int last=q.total()-1;q.collected=q.fullMask() & ~1;
+        q.timer=StarPath.REPORT+StarPath.EXIT+.03f;q.burst[last]=1f;
+        BurstPainter before=new BurstPainter();StarScreen.pickupBursts(before,q,L,1f);
+        float starBefore=q.starY(last,L);
+        q.update(.08f,L);
+        BurstPainter after=new BurstPainter();StarScreen.pickupBursts(after,q,L,1f);
+        check("pickup burst rides its checkpoint from flight into exit",q.exiting()
+                && before.calls>0 && after.calls>0 && after.y>before.y
+                && Math.abs((after.y-before.y)-(q.starY(last,L)-starBefore))<.001f
+                && after.x==q.starX(last,L));
+        float exitY=after.y;q.update(.05f,L);
+        after=new BurstPainter();StarScreen.pickupBursts(after,q,L,1f);
+        check("pickup burst continues scrolling during blast-off",after.calls>0 && after.y>exitY
+                && after.y==q.starY(last,L));
+        BurstPainter rush=new BurstPainter();
+        FastEnemies.starBurst(rush,q.starX(last,L),q.starY(last,L),StarPath.starOuter(L)/1.22f,
+                0xFFFFD166,last*.37f,1f-q.burst[last]);
+        check("one pickup reuses the Rush star burst draw budget",after.calls==rush.calls && after.calls<200);
+        q.timer=StarPath.REPORT;q.burst[last]=1f;
+        BurstPainter departed=new BurstPainter();StarScreen.pickupBursts(departed,q,L,1f);
+        check("departed bursts cost no drawing operations",departed.calls==0);
+        q.update(StarPath.BURST_TIME,L);
+        check("exit bursts expire independently of gameplay",cleanBursts(q));
     }
 
     static void game(Layout L) {
         group("star path minigame");
         pickupBursts(L);
+        scrollingBursts(L);
         selectedPilot(L);
         interruptedWin(L, false);
         interruptedWin(L, true);

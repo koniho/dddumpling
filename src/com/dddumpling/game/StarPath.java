@@ -222,11 +222,9 @@ final class StarPath {
     private static final float DT = 1f / 60f;
 
     final float[] sx = new float[MAX_COUNT];
-    /** Independent pickup rings, anchored where each star was caught. */
+    /** Independent bursts anchored by checkpoint index, so they ride the course scroll. */
     static final float BURST_TIME = 0.65f;
     final float[] burst = new float[MAX_COUNT];
-    /** Pickup positions as view fractions, so resizing keeps the effects in place. */
-    final float[] burstX = new float[MAX_COUNT], burstY = new float[MAX_COUNT];
     /** Frozen for one course so recording its win cannot move its finish line. */
     int courseCount = COUNT;
     int collected;
@@ -505,13 +503,12 @@ final class StarPath {
     }
 
     private void clearBursts() {
-        for (int i = 0; i < MAX_COUNT; i++) burst[i] = burstX[i] = burstY[i] = 0f;
+        for (int i = 0; i < MAX_COUNT; i++) burst[i] = 0f;
     }
 
     void update(float dt, Layout L) {
         for (int i = 0; i < courseCount; i++) {
             burst[i] = Math.max(0f, burst[i] - dt / BURST_TIME);
-            if (burst[i] == 0f) burstX[i] = burstY[i] = 0f;
         }
         if (winning()) {
             // The course stops: no scroll, no steering, no further pickups. The tableau is drawn
@@ -557,8 +554,6 @@ final class StarPath {
             if (dx * dx + dy * dy <= 1f) {
                 collected |= 1 << i;
                 burst[i] = 1f;
-                burstX[i] = starX(i, L) / L.w;
-                burstY[i] = starY(i, L) / L.h;
                 if (complete()) {
                     // The last one. The course is over here rather than when the clock runs out,
                     // so the win is announced where it happened.

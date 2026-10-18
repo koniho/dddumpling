@@ -117,7 +117,7 @@ final class StarScreen extends Draw {
         p.polyline(route, fadeBy(Glyph.withAlpha(0xFFBDEBFF,
                 (int) (115 * (q.flying() ? beat : 1f))), cf), pearl * beat);
         if (q.flying()) pulse(p, q, route, L, c.clock, cf, pearl);
-        pickupRings(p, q, L, fade * particleFade(q));
+        pickupBursts(p, q, L, fade * particleFade(q));
         for (int i = 0; i < q.total(); i++) {
             float y = q.starY(i, L);
             if (y < L.playTop - s * 2f || y > L.dangerY + s * 2f) continue;
@@ -201,38 +201,18 @@ final class StarScreen extends Draw {
         }
     }
 
-    /** Open gold halos and star sparks leave the flyer and the next checkpoint readable. */
-    private static void pickupRings(Painter p, StarPath q, Layout L, float fade) {
-        float outer = StarPath.starOuter(L);
+    /** The same shooting-star burst as Rush clears, carried by its collected checkpoint. */
+    static void pickupBursts(Painter p, StarPath q, Layout L, float fade) {
+        if (fade <= 0f) return;
+        float r = StarPath.starOuter(L) / 1.22f;
+        Painter tinted = fade == 1f ? p : new OpacityPainter(p, fade);
         for (int i = 0; i < q.total(); i++) {
-            float life = q.burst[i];
-            if (life <= 0f) continue;
-            float age = 1f - life, expand = 1f - life * life;
-            float x = q.burstX[i] * L.w, y = q.burstY[i] * L.h;
-            float radius = outer * (0.70f + 1.65f * expand);
-            float alpha = fade * life * life;
-            pickupRing(p, x, y, radius, fadeBy(0x70FFAD4F, alpha), L.unit * .52f);
-            pickupRing(p, x, y, radius, fadeBy(0xFFFFF6C7, alpha), L.unit * .19f);
-            pickupRing(p, x, y, radius * .78f, fadeBy(0xCBFFD477, alpha), L.unit * .11f);
-            for (int k = 0; k < 8; k++) {
-                float angle = i * .37f + k * StarPath.TAU / 8f + age * .28f;
-                float reach = radius * (k % 2 == 0 ? 1f : 1.13f);
-                float px = x + (float) Math.cos(angle) * reach;
-                float py = y + (float) Math.sin(angle) * reach;
-                float r = outer * .24f * (1f - age * .65f);
-                int tint = k % 2 == 0 ? 0xFFFFF6C7 : 0xFFFFB9DD;
-                p.fillPoly(star(px, py, r * 1.6f, r * .58f, 4, angle),
-                        fadeBy(Glyph.withAlpha(tint, 55), alpha));
-                p.fillPoly(star(px, py, r, r * .38f, 4, angle), fadeBy(tint, alpha));
-            }
+            if (q.burst[i] <= 0f) continue;
+            float x = q.starX(i, L), y = q.starY(i, L);
+            // Rush sparks reach less than ten radii; skip fully departed bursts before drawing.
+            if (y + r * 10f < 0f || y - r * 10f > L.h) continue;
+            FastEnemies.starBurst(tinted, x, y, r, GOLD, i * .37f, 1f - q.burst[i]);
         }
-    }
-
-    private static void pickupRing(Painter p, float x, float y, float radius, int color, float width) {
-        // Filled contours avoid doubled alpha at the joints of a translucent circle stroke.
-        float outer = radius + width * .5f, inner = radius - width * .5f;
-        p.fillContours(new float[][] {pill(x, y, outer, outer, 32),
-                pill(x, y, inner, inner, 32)}, color);
     }
 
     /** Enters softly; an incomplete report leaves through the parade's cross-fade into play. */

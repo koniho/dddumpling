@@ -2421,8 +2421,6 @@ final class Preview {
         // Offsets into the flight, kept where they were as fractions of it now that FLY is 3.6.
         cs.stars.timer = StarPath.FLY + StarPath.EXIT + StarPath.REPORT - 2.35f;
         cs.stars.x = cs.stars.starX(10, L);
-        cs.stars.burstX[10] = cs.stars.starX(10, L) / L.w;
-        cs.stars.burstY[10] = cs.stars.starY(10, L) / L.h;
         cs.bonusTimer = cs.stars.timer;
         shot(dir, "54-stars-flight", cs, L, w, h, ss);
         // And the top of the sweep, where the course turns back on itself: the two moments say
@@ -3313,7 +3311,7 @@ final class Preview {
 
     private static void starPickupFrames(File dir, Layout L, int w, int h, int ss)
             throws Exception {
-        if (!wantedGroup("202-stars-")) return;
+        if (!wantedGroup("202-stars-") && !wantedGroup("205-stars-")) return;
         GameCore c = new GameCore(new Mem(), 202L);
         c.startGame();c.state = GameCore.BONUS;c.starBonus = true;
         StarPath q = c.stars;q.make(new java.util.Random(202L));q.begin(0, L);
@@ -3326,11 +3324,24 @@ final class Preview {
             step(c, L, .08f);
             shot(dir, "202-stars-" + (target == 1 ? "single" : target == 6 ? "rapid" : "final"),
                     c, L, w, h, ss);
+            if (target == 6) {
+                shot(dir, "205-stars-overlap", c, L, w, h, ss);
+                step(c, L, .12f);
+                shot(dir, "205-stars-scroll", c, L, w, h, ss);
+            }
         }
         step(c, L, .30f);
         shot(dir, "202-stars-final-fade", c, L, w, h, ss);
         step(c, L, StarPath.WIN_HOLD - StarPath.EXIT - .38f + .15f);
         shot(dir, "202-stars-final-blast", c, L, w, h, ss);
+        q.begin(0, L);c.time=2f;
+        q.collected = q.fullMask() & ~1;
+        q.timer = StarPath.REPORT + StarPath.EXIT + .03f;
+        q.burst[q.total()-1] = 1f;
+        step(c, L, .08f);
+        shot(dir, "205-stars-exit", c, L, w, h, ss);
+        step(c, L, .14f);
+        shot(dir, "205-stars-exit-scroll", c, L, w, h, ss);
     }
 
     private static void starExitFrames(File dir,GameCore c,Layout L,int w,int h,int ss,boolean won)
