@@ -10,6 +10,22 @@ import java.io.File;
 final class Preview {
     private static void rainbowFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("151-"))return;
+        GameCore rays=TestRainbowCat.fight(L);RainbowCat ray=rays.boss.cat;
+        for(int frame=0;frame<180 && ray.taps<2;frame++) {
+            if(ray.canTap()) {ray.touch(rays,L,0,151,ray.x,ray.y);ray.touch(rays,L,1,151,ray.x,ray.y);}
+            rays.boss.update(1f/60,L,rays.rnd);
+        }
+        rays.boss.update(.18f,L,rays.rnd);
+        shot(dir,"151-second-tap-rays",rays,L,w,h,ss);
+        for(int capture:new int[]{0,1,4}) {
+            GameCore dance=TestRainbowCat.fight(L);RainbowCat dancer=dance.boss.cat;dancer.captures=capture;
+            TestRainbowCat.readyToCircle(dance,L);
+            for(int frame=0;frame<75;frame++)dance.boss.update(1f/60,L,dance.rnd);
+            shot(dir,"151-shape-dance-"+capture,dance,L,w,h,ss);
+            TestRainbowCat.circle(dance,L,1);
+            for(int frame=0;frame<15;frame++)dance.boss.update(1f/60,L,dance.rnd);
+            shot(dir,"151-shape-burst-"+capture,dance,L,w,h,ss);
+        }
         GameCore clear=TestRainbowCat.fight(L);
         clear.boss.cat.launchLeft=0;clear.boss.update(.01f,L,clear.rnd);clear.boss.bt[0]=.4f;
         clear.tapKey(clear.boss.bglyph[0],L);

@@ -14,6 +14,8 @@ final class RainbowCatArt extends Draw {
         Painter q=new OpacityPainter(p,fade);
         motionTrail(q,a);
         q.save();q.translate((1-enter)*(1-enter)*-L.w,0);
+        secondTapRays(q,a,L);
+        shapeRings(q,a);
         boolean caught=a.phase==RainbowCat.OPEN || (a.phase==RainbowCat.CATCH && a.netAge>=.34f);
         float struggle=caught?(float)Math.sin(a.clock*18)*a.r*.065f:a.shakeOffset();
         if(a.carries(c))net(q,c,L,false);
@@ -33,7 +35,7 @@ final class RainbowCatArt extends Draw {
         float pouch=a.pouchSway()*.43f;
         sprite.translate(a.hoopShift()+a.r*1.17f*(float)Math.sin(pouch),
                 a.r*1.17f*((float)Math.cos(pouch)-1));
-        cat(sprite,a.x+struggle,a.y,a.r,a.clock*(caught?1:2),a.turn,a.pastry,a.head,caught,1,caught?0:a.scared);
+        cat(sprite,a.x+a.traceX+struggle,a.y+a.traceY,a.r,a.clock*(caught?1:2),a.turn,a.pastry,a.head,caught,1,caught?0:a.scared);
         sprite.restore();
         if(a.phase==RainbowCat.CIRCLE)circleGuide(q,a);
         if(a.carries(c))net(q,c,L,true);
@@ -56,6 +58,38 @@ final class RainbowCatArt extends Draw {
                 float fill=Math.max(0,Math.min(1,fraction*COLORS.length-band));
                 if(fill>0)q.line(xx,yy+s*1.8f,xx+width/COLORS.length*fill,yy+s*1.8f,COLORS[band],s*.16f);
             }
+        }
+    }
+    private static void secondTapRays(Painter p,RainbowCat a,Layout L) {
+        if(a.taps!=2 || a.tapFlash<=0)return;
+        float age=1-a.tapFlash/RainbowCat.TAP_FLASH;
+        float grow=(float)Math.sin(Math.min(1,age*3)*Math.PI*.5);
+        float fade=Math.min(1,(1-age)*2.5f),reach=Math.max(L.w,L.h)*.72f*grow;
+        for(int i=0;i<18;i++) {
+            float angle=Softbody.TAU*i/18+age*.22f,dx=(float)Math.cos(angle),dy=(float)Math.sin(angle);
+            float near=a.r*.6f,far=reach*(.72f+.28f*(float)Math.sin(i*2.4f)* (float)Math.sin(i*2.4f));
+            float width=a.r*(.19f+.13f*(i%3));
+            int color=RainbowLand.CLEAR_COLORS[i%RainbowLand.CLEAR_COLORS.length];
+            p.fillPoly(new float[]{a.x+dx*near,a.y+dy*near,
+                    a.x+dx*far-dy*width,a.y+dy*far+dx*width,
+                    a.x+dx*(far+a.r),a.y+dy*(far+a.r),
+                    a.x+dx*far+dy*width,a.y+dy*far-dx*width},Glyph.withAlpha(color,(int)(155*fade)));
+            p.line(a.x+dx*a.r,a.y+dy*a.r,a.x+dx*far,a.y+dy*far,
+                    Glyph.withAlpha(Glyph.mix(color,0xFFFFFFFF,.7f),(int)(190*fade)),a.r*.055f);
+        }
+    }
+    private static void shapeRings(Painter p,RainbowCat a) {
+        if(a.shapeBurst<=0 || a.burstShape==null)return;
+        float age=1.25f-a.shapeBurst;
+        for(int ring=0;ring<6;ring++) {
+            float u=(age-ring*.065f)/.92f;if(u<0 || u>=1)continue;
+            float radius=a.burstRadius*(.65f+3.3f*(1-(1-u)*(1-u)));
+            float fade=(1-u)*(1-u)*Math.min(1,u/.05f);
+            float[] path=points(a.burstShape,a.burstX,a.burstY,radius,radius);
+            int color=RainbowLand.CLEAR_COLORS[ring%RainbowLand.CLEAR_COLORS.length];
+            p.polyline(path,Glyph.withAlpha(color,(int)(60*fade)),a.r*.43f);
+            p.polyline(path,Glyph.withAlpha(color,(int)(235*fade)),a.r*.19f);
+            p.polyline(path,Glyph.withAlpha(Glyph.mix(color,0xFFFFFFFF,.65f),(int)(155*fade)),a.r*.055f);
         }
     }
     static int tapColor(RainbowCat a) {

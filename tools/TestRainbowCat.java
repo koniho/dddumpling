@@ -367,8 +367,28 @@ final class TestRainbowCat extends Check {
         for(int i=0;i<140;i++)c.boss.update(1f/60,L,c.rnd);
         check("motion trail expires while cat holds prompt pose",a.trailCount==0);
     }
+    private static void traceCelebration(Layout L) {
+        group("Rainbow Cat miniature shape dance and capture rings");
+        for(int shape=0;shape<5;shape++) {
+            GameCore c=fight(L);RainbowCat a=c.boss.cat;a.captures=shape;
+            readyToCircle(c,L);float x=a.circleX(),y=a.circleY();
+            for(int frame=0;frame<75;frame++)c.boss.update(1f/60,L,c.rnd);
+            check("waiting cat moves inside fixed guide "+shape,a.circleX()==x && a.circleY()==y
+                    && Math.hypot(a.traceX,a.traceY)>a.r*.1f && Math.hypot(a.traceX,a.traceY)<a.r*.8f);
+            circle(c,L,1);
+            check("moving cat still accepts anchored trace "+shape,a.phase==RainbowCat.CATCH && a.shapeBurst>0
+                    && java.util.Arrays.equals(a.burstShape,TraceGesture.shape(shape)));
+            float[] snapshot=a.burstShape;a.captures++;
+            c.boss.update(.34f,L,c.rnd);
+            check("capture rings keep completed shape and cat settles into net "+shape,a.burstShape==snapshot
+                    && Math.hypot(a.traceX,a.traceY)<a.r*.01f);
+            c.boss.update(1,L,c.rnd);
+            check("capture rings expire "+shape,a.shapeBurst==0 && a.burstShape==null);
+            a.reset();check("reset clears miniature motion "+shape,a.traceX==0 && a.traceY==0 && a.traceClock==0);
+        }
+    }
     static void all(Layout L) {
-        fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));

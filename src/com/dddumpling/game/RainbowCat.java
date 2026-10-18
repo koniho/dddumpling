@@ -17,6 +17,8 @@ final class RainbowCat {
     float traceLost,lostStart,lostTravel,traceBeat,traceProgress;
     int traceHaptic,nextMeow;
     float voiceLeft;
+    float traceClock,traceX,traceY,shapeBurst,burstX,burstY,burstRadius;
+    float[] burstShape;
     boolean circling;
     boolean placed,kids,escaping;
     void reset() {
@@ -24,6 +26,7 @@ final class RainbowCat {
         circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=netAimX=netAimY=tapFlash=scared=scaredAge=0;circling=false;gesture.clear();
         x=y=vx=vy=clock=flash=routeTime=routeDuration=trailTick=timer=0;launchLeft=1.3f;
         traceLost=lostStart=lostTravel=traceBeat=traceProgress=voiceLeft=0;traceHaptic=0;nextMeow=1;
+        traceClock=traceX=traceY=shapeBurst=0;burstShape=null;
     }
     private void endStroke() {pointer=-1;circling=false;circleSweep=0;gesture.clear();}
     void release() {endStroke();traceLost=traceBeat=traceProgress=0;traceHaptic=0;}
@@ -55,6 +58,8 @@ final class RainbowCat {
     void animate(float dt,Layout L) {
         voiceLeft=Math.max(0,voiceLeft-dt);
         traceLost=Math.max(0,traceLost-dt);traceBeat=Math.max(0,traceBeat-dt);
+        shapeBurst=Math.max(0,shapeBurst-dt);
+        if(shapeBurst==0)burstShape=null;
         place(L);clock+=dt;netReturn=Math.max(0,netReturn-dt);flash=Math.max(0,flash-dt*3);
         for(int i=trailCount-1;i>=0;i--) {
             trailAge[i]+=dt;
@@ -67,9 +72,17 @@ final class RainbowCat {
         }
         float target=phase==CIRCLE && circling?gesture.progress():0;
         if(phase==CIRCLE) {
+            // The guide stays anchored while the cat demonstrates a miniature copy inside it.
+            traceClock+=dt;
+            float size=r*.52f*clamp(traceClock/.4f,0,1),along=traceClock/3.2f*gesture.length;
+            traceX=gesture.coordinate(along,0)*size;traceY=gesture.coordinate(along,1)*size;
             float follow=1-(float)Math.exp(-dt*18);
             windUp+=(target-windUp)*(1-(float)Math.exp(-dt*12));
             if(circling) {netAimX+=(gesture.lastX-netAimX)*follow;netAimY+=(gesture.lastY-netAimY)*follow;}
+        }
+        if(phase!=CIRCLE) {
+            float settle=(float)Math.exp(-dt*16);
+            traceX*=settle;traceY*=settle;
         }
         if(escaping && routeTime<routeDuration)advance(dt);
         pose(dt);
@@ -79,8 +92,8 @@ final class RainbowCat {
         turn+=(facing-turn)*(1-(float)Math.exp(-dt*14));
         float struggle=phase==OPEN?1:phase==CATCH?clamp(netAge/NET_TIME,0,1):0;
         float wiggle=(float)Math.sin(clock*18)*r*.065f*struggle+shakeOffset();
-        pastry.moveTo(x+wiggle,y);pastry.pull((float)Math.sin(clock*15),.5f,.13f*struggle);pastry.update(dt);
-        head.moveTo(x+turn*r*.88f-wiggle+(float)Math.sin(clock*31)*r*.025f*scared,y+r*.02f+(float)Math.sin(clock*21)*r*.055f*struggle);head.update(dt);
+        pastry.moveTo(x+traceX+wiggle,y+traceY);pastry.pull((float)Math.sin(clock*15),.5f,.13f*struggle);pastry.update(dt);
+        head.moveTo(x+traceX+turn*r*.88f-wiggle+(float)Math.sin(clock*31)*r*.025f*scared,y+traceY+r*.02f+(float)Math.sin(clock*21)*r*.055f*struggle);head.update(dt);
     }
     private void chooseRoute(Layout L,java.util.Random rnd,boolean dash) {
         float targetX=x,targetY=y,bestDistance=-1;
@@ -145,7 +158,7 @@ final class RainbowCat {
         float remaining=phase==CIRCLE?0:dt;
         while(remaining>0) {
             if(routeDuration==0 || routeTime>=routeDuration) {
-                if(phase==DASH && taps==2) {if(reactionReady()) {phase=CIRCLE;gesture.setShape(TraceGesture.shape(captures),starShape());}vx=vy=0;break;}
+                if(phase==DASH && taps==2) {if(reactionReady()) {phase=CIRCLE;traceClock=0;gesture.setShape(TraceGesture.shape(captures),starShape());}vx=vy=0;break;}
                 phase=CHASE;chooseRoute(L,rnd,false);
             }
             float step=Math.min(remaining,routeDuration-routeTime);
@@ -232,6 +245,8 @@ final class RainbowCat {
         }
         if(complete) {
             traceHaptic=2;traceLost=0;
+            shapeBurst=1.25f;burstShape=TraceGesture.shape(captures);
+            burstX=circleX();burstY=circleY();burstRadius=circleRadius();
             phase=CATCH;catchX=x;catchY=y;releaseWind=windUp;timer=netAge=netReturn=0;circling=false;c.boss.clearBolts();
             count=Roster.count(c.boss.rosterFull);at=0;
             for(int i=0;i<count;i++)prompt[i]=Roster.at(c.boss.rosterFull,i);
