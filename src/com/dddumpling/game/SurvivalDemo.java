@@ -34,7 +34,7 @@ final class SurvivalDemo extends Draw {
             for(int i=0;i<8;i++) {
                 float a=i*(float)Math.PI/4f,dist=s*(.3f+pop*1.5f);
                 p.fillCircle(hitX+(float)Math.cos(a)*dist,hitY+(float)Math.sin(a)*dist,
-                        s*.12f*(1-pop),fadeBy(Glyph.COLOR[g],1-pop));
+                        s*.12f*(1-pop),fadeBy(Skins.keyColor(p,g),1-pop));
             }
         }
         if(ninja && beat>=.7f && beat<1.25f) {
@@ -45,7 +45,7 @@ final class SurvivalDemo extends Draw {
                 path[i*2]=x+side*L.w*(.035f+.29f*t);
                 path[i*2+1]=y+s*(.48f-.85f*t-.3f*(float)Math.sin(t*Math.PI));
             }
-            p.polyline(path,fadeBy(Glyph.COLOR[g],alpha*.45f),s*.35f);
+            p.polyline(path,fadeBy(Skins.keyColor(p,g),alpha*.45f),s*.35f);
             p.polyline(path,fadeBy(INK,alpha),s*.09f);
         } else if(!ninja && beat>=.7f && beat<impact) {
             Renderer.bullet(p,c,L,x+side*r*.6f,actorY,hitX,hitY,(beat-.7f)/(impact-.7f),g,1);
@@ -56,7 +56,7 @@ final class SurvivalDemo extends Draw {
         if(turn%2==0 && beat<.3f) {
             float pop=beat/.3f;
             p.arc(x,y,r*(.8f+pop*.7f),r*(.8f+pop*.7f),0,360,
-                    fadeBy(ninja?Glyph.COLOR[3]:GOLD,(1-pop)*.6f),s*.06f);
+                    fadeBy(ninja?Skins.keyColor(p,3):GOLD,(1-pop)*.6f),s*.06f);
         }
     }
 }

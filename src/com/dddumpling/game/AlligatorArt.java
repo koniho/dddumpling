@@ -472,6 +472,7 @@ final class AlligatorArt extends Draw {
             }
             p.arc(ex-w*.025f,ey-h*.15f,w*.19f*scale,h*.49f*scale,208,96,0x99D3F3C0,w*.025f);
         }
+        Skins.crocMask(p,x,y,w,h,clock);
         // Nostrils and a soft cheek dimple follow the descending snout rather than a frontal face.
         for(int i=0;i<2;i++) {
             float nx=x+w*(.45f+i*.33f),ny=y+h*(.50f+i*.06f);

@@ -2,6 +2,7 @@ package com.dddumpling.game;
 
 /** Tints and fades a complete drawing, including eyes, outlines, and highlights. */
 final class ColorFadePainter implements Painter, ArtStamp {
+    public int skin() { return p.skin(); }
     public DuckBodies ducks() { return p.ducks(); }
     public GatorCompanion gator() { return p.gator(); }
     public ArtStamp stamps() { return opacity==1 && p.stamps()!=null?this:null; }

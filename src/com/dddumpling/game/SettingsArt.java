@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Character controls for the player settings: musical handles and the pear age toggle. */
 final class SettingsArt extends Draw {
     static void draw(Painter p,boolean music,float x,float y,float keyR,float volume,boolean muted,float clock) {
-        int glyph=music?Kawaii.CAT:Kawaii.BLOB, col=Glyph.COLOR[glyph];
+        int glyph=music?Kawaii.CAT:Kawaii.BLOB, col=Skins.keyColor(p,glyph);
         float r=keyR*.60f;
         float pulse=(float)Math.sin(clock*(4f+volume*10f));
         if(!muted) {
@@ -77,7 +77,7 @@ final class SettingsArt extends Draw {
         for(int i=0;i<3;i++) {
             float phase=(clock*(1.2f+v*2f)+i/3f)%1f;
             float radius=r*(.30f+.65f*phase)*(.3f+.7f*v);
-            int color=Glyph.withAlpha(Glyph.COLOR[Kawaii.BLOB],Math.round(225f*v*(1f-phase)));
+            int color=Glyph.withAlpha(Skins.keyColor(p,Kawaii.BLOB),Math.round(225f*v*(1f-phase)));
             for(int side=-1;side<=1;side+=2)
                 p.arc(x+side*r*.5f,y,radius,radius*.9f,side>0?-50f:130f,100f,color,r*(.025f+.04f*v));
         }
@@ -88,7 +88,7 @@ final class SettingsArt extends Draw {
             float side=i%2==0?-1f:1f;
             float nx=x+side*r*(1f+.1f*(float)Math.sin(clock*2f+i));
             float ny=y+r*(.25f-phase*.95f),h=r*(.16f+.55f*v);
-            int color=Glyph.withAlpha(i==1?GOLD:Glyph.COLOR[3],Math.round(235f*(1f-phase)*(.4f+.6f*v)));
+            int color=Glyph.withAlpha(i==1?GOLD:Skins.keyColor(p,3),Math.round(235f*(1f-phase)*(.4f+.6f*v)));
             p.fillEllipse(nx,ny,h*.23f,h*.16f,color);
             p.line(nx+h*.16f,ny,nx+h*.16f,ny-h,color,h*.10f);
             p.line(nx+h*.16f,ny-h,nx+h*.48f,ny-h*.77f,color,h*.13f);

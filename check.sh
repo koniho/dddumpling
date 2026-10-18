@@ -105,6 +105,9 @@ src/com/dddumpling/game/ReleaseMascot.java
 src/com/dddumpling/game/Pause.java
 src/com/dddumpling/game/Glyph.java
 src/com/dddumpling/game/Roster.java
+src/com/dddumpling/game/Skins.java
+src/com/dddumpling/game/HalloweenKeys.java
+src/com/dddumpling/game/SkinSettings.java
 src/com/dddumpling/game/Kawaii.java
 src/com/dddumpling/game/Layout.java
 src/com/dddumpling/game/Sfx.java

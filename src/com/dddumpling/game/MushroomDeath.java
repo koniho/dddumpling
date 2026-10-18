@@ -2,6 +2,7 @@ package com.dddumpling.game;
 
 /** Warps the existing mushroom art toward its planted roots, keeping every detail attached. */
 final class MushroomDeath implements Painter {
+    public int skin() { return p.skin(); }
     static final float WITHER_END = .85f, FLATTEN_END = 2.2f, SPREAD_END = 2.9f, FADE_START = 2.95f;
     final Painter p;
     final float cx, ground, radius, shrink, flat, spread, melt, brown, opacity;

@@ -28,7 +28,7 @@ final class PlayerSettings extends Draw {
     static final float PANEL_TIME=PANEL_SLIDE_TIME;
     float panelEntrance=1f;
     boolean panelClosing;
-    void enterPanel() { panelEntrance=0f;panelClosing=false;scoreReset.cancel(); }
+    void enterPanel() { panelEntrance=0f;panelClosing=false;skinsOpen=false;scoreReset.cancel(); }
     boolean panelMoving() { return panelClosing || panelEntrance<1f; }
     float panelOffset(Layout L) {
         return L.w*(1f-panelTravel(panelEntrance));
@@ -39,6 +39,7 @@ final class PlayerSettings extends Draw {
         if(panelClosing && panelEntrance==0f) c.closeSettings();
     }
     static void close(GameCore c) {
+        if(c.preferences.skinsOpen) {c.preferences.skinsOpen=false;return;}
         if(c.preferences.scoreReset.left>0f) return;
         if(c.preferences.scoreReset.active()) { c.preferences.scoreReset.cancel();return; }
         if(c.settingsOpen) c.preferences.panelClosing=true;
@@ -46,6 +47,9 @@ final class PlayerSettings extends Draw {
     float music = 1f, effects = 1f;
     boolean musicMuted, effectsMuted, kids;
     int mode=ModeSelector.ADVENTURE;
+    int skin=Skins.DEFAULT;
+    boolean skinsOpen;
+    float skinAt=-10f;
 
     static final float KIDS_TOGGLE_TIME=.36f;
     private float kidsToggleAt=-10f, kidsFrom, kidsLiftFrom;
@@ -67,13 +71,14 @@ final class PlayerSettings extends Draw {
     }
 
     void load(int bits) {
-        if(bits<0 || bits>0x7FFFF) bits=DEFAULT;
+        if(bits<0 || bits>0x7FFFFF) bits=DEFAULT;
         music = Math.min(100, bits & 127) / 100f;
         effects = Math.min(100, (bits >>> 7) & 127) / 100f;
         musicMuted = (bits & (1 << 14)) != 0;
         effectsMuted = (bits & (1 << 15)) != 0;
         kids = (bits & (1 << 16)) != 0;
         mode=(bits>>>17)&3;
+        skin=Skins.valid((bits>>>19)&15);
         if(mode>=ModeSelector.NAMES.length)mode=ModeSelector.ADVENTURE;
         kidsToggleAt=-10f;
     }
@@ -81,7 +86,7 @@ final class PlayerSettings extends Draw {
         mode=c.modes.selected;
         if (c.store != null) c.store.savePlayerSettings(Math.round(music * 100) | (Math.round(effects * 100) << 7)
                 | (musicMuted ? 1 << 14 : 0) | (effectsMuted ? 1 << 15 : 0) | (kids ? 1 << 16 : 0)
-                | (mode << 17));
+                | (mode << 17) | (skin << 19));
         apply(c);
     }
     void apply(GameCore c) {
@@ -104,6 +109,7 @@ final class PlayerSettings extends Draw {
         if(c.preferences.scoreReset.active()) return c.preferences.scoreReset.hit(L,x,y);
         if (x<left(L) || x>right(L) || y<t || y>bottom(L)) return CLOSE;
         if (x>right(L)-s*2.5f && y<t+s*2.7f) return CLOSE;
+        if(c.preferences.skinsOpen) return SkinSettings.hit(L,x,y);
         if (BuildFlags.DEVELOPER && y>=t+s*3f && y<=t+s*5f) {
             if (x<L.w*.5f) return PLAYER;
             return DEVELOPER;
@@ -115,6 +121,7 @@ final class PlayerSettings extends Draw {
                 return i==0?MUSIC:EFFECTS;
         }
         if (Math.abs(y-row(L,2))<s*1.1f) return KIDS;
+        if (Math.abs(y-SkinSettings.buttonY(L))<s*.9f) return SkinSettings.OPEN;
         if (Math.abs(y-socialY(L))<s*2.4f) return x<L.w*.5f?SHARE:RATE;
         if (Math.abs(y-resetY(L))<s*1.2f) return ScoreReset.OPEN;
         if (Math.abs(y-tutorialY(L))<s*1.2f) return TUTORIALS;
@@ -142,6 +149,7 @@ final class PlayerSettings extends Draw {
         p.line(cx-s*.4f,cy-s*.4f,cx+s*.4f,cy+s*.4f,INK,s*.1f);
         p.line(cx+s*.4f,cy-s*.4f,cx-s*.4f,cy+s*.4f,INK,s*.1f);
         if(c.preferences.scoreReset.active()) { c.preferences.scoreReset.draw(p,c,L);return; }
+        if(c.preferences.skinsOpen) {SkinSettings.draw(p,c,L);return;}
         int tabs=BuildFlags.DEVELOPER?2:0;
         for(int i=0;i<tabs;i++) {
             float a=l+(r-l)*i/tabs,b=l+(r-l)*(i+1)/tabs;
@@ -164,6 +172,7 @@ final class PlayerSettings extends Draw {
         }
         p.text("KIDS MODE",trackL(L),row(L,2)+s*.25f,type(s*.57f),INK,Painter.LEFT,true);
         SettingsArt.kidsToggle(p,r-s*3.2f,row(L,2),s,a.kidsPosition(c.clock),a.kidsLift(c.clock));
+        SkinSettings.chip(p,c,L);
         social(p,c,L,true);social(p,c,L,false);
         p.fillRect(l+s,resetY(L)-s*1.2f,r-s,resetY(L)+s*1.2f,0x33F080A8);
         p.text("RESET HIGH SCORES",L.w*.5f,resetY(L)+s*.25f,type(s*.58f),INK,Painter.CENTER,true);

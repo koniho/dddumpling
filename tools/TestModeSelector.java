@@ -107,6 +107,7 @@ final class TestModeSelector extends Check {
         java.util.ArrayList<String> order=new java.util.ArrayList<>();
         Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class<?>[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("fillPoly") && ((float[])args[0]).length>100)order.add("boss");
                     if(method.getName().equals("text") && args[0].equals("LOCKED"))order.add("label");
                     if(method.getName().equals("arc"))order.add("lock");
@@ -122,6 +123,7 @@ final class TestModeSelector extends Check {
         java.util.ArrayList<Integer> alphas=new java.util.ArrayList<>();
         Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class<?>[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("arc"))alphas.add(((Integer)args[6])>>>24);
                     if(method.getName().equals("text") && (args[0].equals("LOCKED")
                             || args[0].equals("BEAT YOUR FIRST BOSS")))alphas.add(((Integer)args[4])>>>24);
@@ -140,6 +142,7 @@ final class TestModeSelector extends Check {
             java.util.ArrayList<String> labels=new java.util.ArrayList<>();
             Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                     new Class<?>[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
                         if(method.getName().equals("text"))labels.add((String)args[0]);
                         return null;
                     });
@@ -295,6 +298,7 @@ final class TestModeSelector extends Check {
         int[] count={0};
         Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class<?>[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("fillCircle")) {
                         float y=((Number)args[1]).floatValue(),r=((Number)args[2]).floatValue();
                         if(y<ModeSelector.y(L)-L.unit && y>ModeSelector.y(L)-L.unit*3
@@ -388,7 +392,7 @@ final class TestModeSelector extends Check {
         c.caseIndex=Collect.COUNT-1;
         check("unowned case entries use an owned squishy for the skit",Collect.has(c.collected,SurvivalDemo.companion(c)));
         Painter sink=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
-                new Class<?>[]{Painter.class},(proxy,method,args)->null);
+                new Class<?>[]{Painter.class},(proxy,method,args)->method.getName().equals("skin")?Skins.DEFAULT:null);
         int settings=((Mem)c.store).playerSettings;
         for(int i=0;i<160;i++) {c.clock=i*.05f;SurvivalDemo.draw(sink,c,L,1f);}
         check("title skit leaves combat, saves and gameplay randomness untouched",c.state==GameCore.TITLE

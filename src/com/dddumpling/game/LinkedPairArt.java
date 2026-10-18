@@ -21,7 +21,7 @@ final class LinkedPairArt {
             float mx = (ax + bx) * 0.5f, my = (ay + by) * 0.5f;
             if (my < -r*2f) continue;
             float wiggle = (float) Math.sin(c.clock * 1.4f) * r * 0.012f;
-            int ac = Glyph.COLOR[a.word[0]], bc = Glyph.COLOR[b.word[0]];
+            int ac = Skins.keyColor(p,a.word[0]), bc = Skins.keyColor(p,b.word[0]);
             int ag = c.incognito() ? 0 : a.word[0], bg = c.incognito() ? 0 : b.word[0];
             GameCore.Enemy waiting = a.linkWaiting ? a : b.linkWaiting ? b : null;
             float ahx = mx - r * 0.30f, bhx = mx + r * 0.30f;
@@ -77,13 +77,13 @@ final class LinkedPairArt {
         for (int i = 0; i < 2; i++) {
             float sign = i == 0 ? 1f : -1f, cx = -sign*reach;
             float hx = -sign*(r*.30f+separation);
-            int g = pair[i].word[0], col = Glyph.COLOR[g];
+            int g = pair[i].word[0], col = Skins.keyColor(p,g);
             limb(q,g,cx+sign*r*0.9f,0f,hx,0f,r,sign,col,false,0.08f,new Pulse(0f,r,0f));
             if (!fruit(g)) extremity(q,g,hx,0f,r,sign,col,false);
         }
         q.restore();
         for (int i = 0; i < 2; i++) {
-            int g = pair[i].word[0], col = Glyph.COLOR[g];
+            int g = pair[i].word[0], col = Skins.keyColor(p,g);
             float x = (i == 0 ? -1f : 1f)*reach;
             float[] hex = Glyph.hex(x,0f,r*Layout.HEAD_SCALE);
             q.fillPoly(hex,Glyph.withAlpha(col,52));
@@ -91,11 +91,12 @@ final class LinkedPairArt {
             Kawaii.draw(q,g,x,0f,r*Layout.HEAD_SCALE*0.60f,col,1f,1f);
         }
         cleave(p,a.linkReleaseX,a.linkReleaseY,r,a.destroyT/GameCore.DESTROY_TIME,
-                Glyph.COLOR[a.word[0]],Glyph.COLOR[b.word[0]]);
+                Skins.keyColor(p,a.word[0]),Skins.keyColor(p,b.word[0]));
     }
 
     /** Rotates the complete code-drawn pair, including faces, clasp and clipping masks. */
     static final class TurnPainter implements Painter {
+        public int skin() { return p.skin(); }
         final Painter p;
         final float cx,cy,cos,sin;
         TurnPainter(Painter p,float cx,float cy,float angle) {
@@ -164,7 +165,7 @@ final class LinkedPairArt {
         float hx = e.linkReleaseX+travel+dir*r*(0.30f+1.05f*peel);
         float hy = e.linkReleaseY+releaseLift(e,L)-r*0.22f*peel;
         float size = r*(1f-.25f*t);
-        int col = Glyph.COLOR[e.word[0]];
+        int col = Skins.keyColor(p,e.word[0]);
         int glyph = c.incognito() ? 0 : e.word[0];
         Pulse quiet = new Pulse(hx,r,0f);
         Painter fading=new OpacityPainter(p,1-t*t*t);
@@ -175,7 +176,7 @@ final class LinkedPairArt {
         if (!fruit(glyph)) extremity(fading,glyph,hx,hy,size,-dir,col,false);
         fading.restore();
         if (dir > 0f) return; // One burst for the bond, not one per character.
-        int partner=e.stageMate==null?GOLD:Glyph.COLOR[e.stageMate.word[0]];
+        int partner=e.stageMate==null?GOLD:Skins.keyColor(p,e.stageMate.word[0]);
         cleave(p,e.linkReleaseX,e.linkReleaseY,r,t,col,partner);
         int ink = Glyph.withAlpha(GLOVE,(int)(210f*(1f-t)));
         for (int side = -1; side <= 1; side += 2) {

@@ -17,6 +17,12 @@ final class BossCollect extends Draw {
     static void draw(Painter p,int boss,float x,float y,float r,float clock,boolean known,float fade,
             int mood,float look,boolean ninja) {
         if(boss==Boss.ALLIGATOR) {GatorCompanion.draw(p,x,y,r,clock,known,fade,mood,look,ninja);return;}
+        if(known) {
+            if(boss==Boss.SLIME)p=Skins.ghost(p);
+            else if(boss==Boss.SPLITTER)p=Skins.candy(p);
+            else if(boss==Boss.OCTOPUS)p=Skins.squid(p);
+            else if(boss==Boss.MUSHROOM)p=Skins.mushroom(p);
+        }
         int i = Collect.bossPrize(boss);
         int body = fadeBy(known ? Collect.BODY[i] : 0xFF393054, fade);
         int cream = fadeBy(known ? Collect.ACCENT[i] : 0xFF393054, fade);
@@ -33,7 +39,11 @@ final class BossCollect extends Draw {
                 p.fillCircle(endX, endY, r * 0.095f, body);
                 p.fillCircle(endX, endY - r * 0.035f, r * 0.042f, cream);
             }
-            p.fillEllipse(x, y - r * 0.34f, r * 0.61f, r * 0.66f, body);
+            if(Skins.halloween(p) && known) {
+                float[] squid=HalloweenKeys.shape(x,y,r,r,new float[]{-.58f,.1f,-.48f,-.58f,0,-1.22f,.48f,-.58f,.58f,.1f});
+                p.fillPoly(squid,body);p.strokePoly(squid,cream,r*.035f);
+                for(int side=-1;side<=1;side+=2)p.fillPoly(HalloweenKeys.shape(x,y,r*side,r,new float[]{.34f,-.7f,.92f,-.25f,.97f,.03f,.48f,.16f}),body);
+            } else p.fillEllipse(x, y - r * 0.34f, r * 0.61f, r * 0.66f, body);
             p.fillEllipse(x, y + r * 0.05f, r * 0.46f, r * 0.40f, body);
             faceY -= r * 0.25f;
             faceR = r * 0.45f;
@@ -61,6 +71,7 @@ final class BossCollect extends Draw {
         } else if (boss == Boss.SPLITTER) {
             // Match Dark Divide's pale rim so the purple body clears dark backgrounds.
             int rim = known ? fadeBy(Glyph.mix(Collect.BODY[i], 0xFFFFFFFF, .52f), fade) : 0;
+            if(known)Skins.candyWrap(p,x,y,r*.85f,r*.8f,clock,fade);
             Shape.gelCube(p, x, y, r * 0.95f, body, cream,
                     known ? fade : 0f, clock, known, rim);
             faceR = r * 0.56f;

@@ -8,6 +8,48 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void skinFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("200-"))return;
+        RasterPainter raster=new RasterPainter(w,h,ss);raster.clear(Draw.BG);
+        raster.text("HALLOWEEN KEYS",w*.5f,h*.055f,w*.055f,Draw.INK,Painter.CENTER,true);
+        for(int g=0;g<6;g++) {
+            float y=h*(.17f+g*.145f),r=w*.08f;
+            Kawaii.draw(raster,g,w*.19f,y,r,Glyph.COLOR[g],1,.4f);
+            Painter p=Skins.painter(raster,Skins.HALLOWEEN);
+            Kawaii.draw(p,g,w*.47f,y,r*1.15f,Skins.keyColor(p,g),1,.4f);
+            Kawaii.crying(p,g,w*.72f,y,r*.8f,Skins.keyColor(p,g),1,1,1);
+            raster.text(Skins.HALLOWEEN_NAMES[g],w*.48f,y+r*1.50f,w*.026f,Draw.INK,Painter.CENTER,true);
+        }
+        Png.write(new File(dir,"200-keys-sheet.png"),raster.resolve(),w,h);
+        GameCore settings=new GameCore(new Check.Mem(),200L);settings.preferences.skin=Skins.HALLOWEEN;
+        PlayerSettings.open(settings);step(settings,L,.4f);
+        shot(dir,"200-settings",settings,L,w,h,ss);
+        settings.preferences.skinsOpen=true;shot(dir,"200-gallery",settings,L,w,h,ss);
+        for(boolean full:new boolean[]{false,true}) {
+            GameCore words=TestSwampEnemies.scene(L,200L);words.preferences.skin=Skins.HALLOWEEN;words.runFullRoster=full;
+            words.enemies.clear();
+            for(int row=0;row<3;row++) {
+                GameCore.Enemy e=TestSwampEnemies.word(words,L,row==1?SwampEnemies.FOG:0,L.h*(.30f+row*.18f));
+                e.word=full?new int[]{row*2,(row*2+1)%6}:new int[]{Roster.STARTERS[row],Roster.STARTERS[(row+1)%4],Roster.STARTERS[(row+2)%4]};
+                e.gone=new boolean[e.word.length];e.goneT=new float[e.word.length];
+            }
+            shot(dir,"200-words-"+(full?6:4),words,L,w,h,ss);
+        }
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            GameCore c=TestBoss.enterBoss(L,boss,200L);c.preferences.skin=Skins.HALLOWEEN;c.stageBanner=0;
+            shot(dir,"200-boss-"+boss,c,L,w,h,ss);
+        }
+        RasterPainter bosses=new RasterPainter(w,h,ss);bosses.clear(Draw.BG);
+        for(int boss=0;boss<Boss.COUNT;boss++) {
+            float x=w*(boss%2==0?.26f:.74f),y=h*(.19f+(boss/2)*.30f),r=w*.19f;
+            GameCore c=TestBoss.enterBoss(L,boss,200L);c.preferences.skin=Skins.HALLOWEEN;
+            if(boss==Boss.OCTOPUS)c.boss.poseOctopusPortrait(.08f,L);
+            Painter p=Skins.painter(bosses,Skins.HALLOWEEN);
+            BossScreen.versusPortrait(p,c,L,c.boss,x,y,r,2);
+            p.text(Skins.bossName(Skins.HALLOWEEN,boss),x,y+r*1.7f,w*.027f,Draw.INK,Painter.CENTER,true);
+        }
+        Png.write(new File(dir,"200-boss-sheet.png"),bosses.resolve(),w,h);
+    }
     private static void slimeOpeningFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("193-slime-opening-"))return;
         for(float time:new float[]{0,.15f,.45f,.85f,1.1f}) {
@@ -1615,6 +1657,7 @@ final class Preview {
         slimeSprayFrames(dir,L,w,h,ss);
         slimeDeathFrames(dir,L,w,h,ss);
         slimeOpeningFrames(dir,L,w,h,ss);
+        skinFrames(dir,L,w,h,ss);
         clearSpreadFrames(dir,L,w,h,ss);
         clearIntensityFrames(dir,L,w,h,ss);
         diveStarFrames(dir,L,w,h,ss);

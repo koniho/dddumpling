@@ -52,7 +52,10 @@ final class Narration {
     static int versusOpponentOffset(int entry) {return Collect.NAME[entry].length()+"... versus ".length();}
     static float versusOpponentFallback(int entry) {return .24f+.85f+Collect.NAME[entry].length()*.065f;}
     static String versus(int entry,int boss) {
-        return (Collect.NAME[entry]+"... versus "+Boss.NAMES[boss]+"!").toLowerCase(java.util.Locale.US);
+        return versus(entry,boss,Skins.DEFAULT);
+    }
+    static String versus(int entry,int boss,int skin) {
+        return (Collect.NAME[entry]+"... versus "+Skins.bossName(skin,boss)+"!").toLowerCase(java.util.Locale.US);
     }
 
     /**

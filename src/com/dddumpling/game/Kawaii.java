@@ -31,6 +31,7 @@ final class Kawaii {
      */
     static void draw(Painter p, int g, float cx, float cy, float r, int body, float squash,
             float happy) {
+        if(Skins.halloween(p)) {HalloweenKeys.draw(p,g,cx,cy,r,body,squash,happy,0,0);return;}
         float rx = r * squash;
         float ry = r / squash;
         switch (g) {
@@ -77,6 +78,7 @@ final class Kawaii {
 
     /** Wide eyes and a tiny gasp when the Slime scoops up its prompt. */
     static void surprised(Painter p,int g,float cx,float cy,float r,int body) {
+        if(Skins.halloween(p)) {HalloweenKeys.draw(p,g,cx,cy,r,body,1,0,1,0);return;}
         draw(p,g,cx,cy,r,body,1f,0f);
         float fy=cy+(g==GRAPES ? r*0.24f : 0f);
         float scale=g==GRAPES ? 0.5f : 1f;
@@ -96,6 +98,7 @@ final class Kawaii {
 
     /** Braced faces for a linked pair resisting a single press. */
     static void determined(Painter p, int g, float cx, float cy, float size, int body, float squash) {
+        if(Skins.halloween(p)) {HalloweenKeys.draw(p,g,cx,cy,size,body,squash,0,2,0);return;}
         draw(p, g, cx, cy, size, body, squash, 0f);
         float rx = size*squash, ry = size/squash;
         float fy = cy + (g == GRAPES ? ry*0.24f : 0f);
@@ -126,6 +129,7 @@ final class Kawaii {
     /** Draws the original character with a trembling frown and two looping falling tears. */
     static void crying(Painter p, int g, float cx, float cy, float r, int body, float squash,
             float phase, float amount) {
+        if(Skins.halloween(p)) {HalloweenKeys.draw(p,g,cx,cy,r,body,squash,0,amount>0?3:0,phase);return;}
         draw(p, g, cx, cy, r, body, squash, 0f);
         if (amount <= 0f) return;
 

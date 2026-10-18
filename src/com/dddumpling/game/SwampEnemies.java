@@ -150,7 +150,7 @@ final class SwampEnemies {
         if(e.swampKind!=DIVE || !e.diving || !e.typeable() || e.diveBurst<=0)return;
         float x=e.diveStartX,y=e.diveStartY;
         float t=1-e.diveBurst/DIVE_BURST;
-        int color=Glyph.COLOR[e.word[e.pos]],light=Glyph.mix(color,0xFFFFFFFF,.72f);
+        int color=Skins.keyColor(p,e.word[e.pos]),light=Glyph.mix(color,0xFFFFFFFF,.72f);
         int alpha=(int)(fade*(1-t));
         for(int k=0;k<4;k++) {
             float radius=r*(.8f+t*(4.2f-k*.65f));

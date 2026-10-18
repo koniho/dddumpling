@@ -42,7 +42,7 @@ final class TimeAttackVersus extends Draw {
             if(before<.06f && time>=.06f)c.sound.ninjaSwish(0);
             if(before<ANNOUNCE && time>=ANNOUNCE) {
                 c.sound.ninjaSwish(1);
-                c.sound.announceVersus(who,boss);
+                c.sound.announceVersus(who,boss,c.preferences.skin);
             }
             if(before<CLASH && time>=CLASH)c.sound.linkedThud();
             if(before<READY && time>=READY)c.sound.courseStart();

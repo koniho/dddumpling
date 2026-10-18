@@ -526,7 +526,10 @@ final class Audio implements GameCore.Sound {
     }
 
     @Override public synchronized void announceVersus(int entry,int boss) {
-        requestExplanation(Narration.versus(entry,boss),true);
+        announceVersus(entry,boss,Skins.DEFAULT);
+    }
+    @Override public synchronized void announceVersus(int entry,int boss,int skin) {
+        requestExplanation(Narration.versus(entry,boss,skin),true);
     }
 
     @Override public synchronized void explain(String text) {

@@ -559,8 +559,12 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 }
 
 - (void)announceVersusWithInt:(jint)entry withInt:(jint)boss {
+  [self announceVersusWithInt:entry withInt:boss withInt:0];
+}
+
+- (void)announceVersusWithInt:(jint)entry withInt:(jint)boss withInt:(jint)skin {
   if (!_active || _interrupted || !_playbackAllowed || _effectsVolume <= 0) return;
-  [self speakText:[DDNarration versusWithInt:entry withInt:boss]
+  [self speakText:[DDNarration versusWithInt:entry withInt:boss withInt:skin]
            pitch:DDNarration_VERSUS_PITCH rate:DDNarration_VERSUS_RATE];
   _versusUtterance = _lastUtterance;
   self.versusOffset = -1;

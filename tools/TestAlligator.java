@@ -97,6 +97,7 @@ final class TestAlligator extends Check {
         final java.util.ArrayList<float[]> rods=new java.util.ArrayList<>();
         Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("polyline") && ((float[])args[0]).length>6
                             && (Integer)args[1]==Draw.ROSE)rods.add(((float[])args[0]).clone());
                     return null;
@@ -309,6 +310,7 @@ final class TestAlligator extends Check {
         final int[] calls={0};final boolean[] circlesOnly={true},translucent={true};
         Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
                     calls[0]++;circlesOnly[0] &= method.getName().equals("fillCircle");
                     if(method.getName().equals("fillCircle"))translucent[0] &= ((Integer)args[3]>>>24)<128;
                     return null;
@@ -621,6 +623,7 @@ final class TestAlligator extends Check {
         final int[] calls={0};
         Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().startsWith("fill") || method.getName().equals("polyline")
                             || method.getName().equals("arc") || method.getName().equals("line"))calls[0]++;
                     return null;
@@ -821,6 +824,7 @@ final class TestAlligator extends Check {
         final int[] strokes={0};final boolean[] attached={true};
         Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("strokePoly")) {
                         strokes[0]++;
                         float[] points=(float[])args[0];

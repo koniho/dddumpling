@@ -294,6 +294,7 @@ final class TestBoss extends Check {
         float cx = c.boss.body.centreX(), cy = c.boss.body.centreY();
         Painter p = (Painter) java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class<?>[] {Painter.class}, (proxy, method, args) -> {
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if (method.getName().equals(shape) && Math.abs((Float) args[0] - cx) < 0.01f
                             && Math.abs((Float) args[1] - cy) < 0.01f) count[0]++;
                     return null;
@@ -1657,6 +1658,7 @@ final class TestBoss extends Check {
         final float[] feedbackY={-1};
         Painter feedbackPainter=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("text") && args[0].equals("WRONG CHOICE!"))feedbackY[0]=(Float)args[2];
                     return null;
                 });

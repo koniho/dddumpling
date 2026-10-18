@@ -232,9 +232,9 @@ final class TutorialSpeech extends Draw {
         Trinket.drawReacting(p,speaker(c),x,y,r,o.age,1f,1,0);
     }
     private static void face(Painter p,int key,float x,float y,float r) {
-        p.fillPoly(Glyph.hex(x,y,r),Glyph.mix(Glyph.COLOR[key],0xFFFFFFFF,.65f));
-        p.strokePoly(Glyph.hex(x,y,r),Glyph.COLOR[key],r*.09f);
-        Kawaii.draw(p,key,x,y,r*.68f,Glyph.COLOR[key],1f,.6f);
+        p.fillPoly(Glyph.hex(x,y,r),Glyph.mix(Skins.keyColor(p,key),0xFFFFFFFF,.65f));
+        p.strokePoly(Glyph.hex(x,y,r),Skins.keyColor(p,key),r*.09f);
+        Kawaii.draw(p,key,x,y,r*.68f,Skins.keyColor(p,key),1f,.6f);
     }
     private static void arrow(Painter p,float x,float y,float dx,float dy,float s) {
         p.line(x,y,x+dx,y+dy,ACCENT,s*.16f);

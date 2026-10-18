@@ -5,7 +5,7 @@ final class TestGatorRendering extends Check {
         int palms,pebbles,tint;float mix,x,y,angle,phase;
         final float[] palmX=new float[2],palmY=new float[2];
         Cache() {super((Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
-                new Class[]{Painter.class},(p,m,a)->null),1);}
+                new Class[]{Painter.class},(p,m,a)->m.getName().equals("skin")?Skins.DEFAULT:null),1);}
         public ArtStamp stamps(){return this;}
         public boolean greenStamp(int art,float x,float y,float w,float h,float angle,int tint,float mix,float phase) {
             this.phase=phase;return stamp(art,x,y,w,h,angle,tint,mix);

@@ -89,6 +89,10 @@ final class SettingsInput {
                 case ScoreReset.OPEN:
                 case ScoreReset.CONFIRM:
                 case ScoreReset.CANCEL: c.preferences.scoreReset.action(c,h-1000);break;
+                case SkinSettings.OPEN: c.preferences.skinsOpen=true;break;
+                case SkinSettings.BACK: c.preferences.skinsOpen=false;break;
+                case SkinSettings.DEFAULT:
+                case SkinSettings.HALLOWEEN: SkinSettings.choose(c,h-1000-SkinSettings.DEFAULT);break;
                 case PlayerSettings.CLOSE: PlayerSettings.close(c);break;
                 case PlayerSettings.PLAYER: c.settingsPage=0;c.clearArmed=false;break;
                 case PlayerSettings.DEVELOPER: if(BuildFlags.DEVELOPER) { c.settingsPage=1;c.clearArmed=false; } break;

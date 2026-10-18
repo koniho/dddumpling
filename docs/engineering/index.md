@@ -9,6 +9,7 @@ These notes preserve past failures, including historical values that may no long
 | Find the owning file | [Code map](code-map.md), [glossary](../../GLOSSARY.md) |
 | Town integration, scoped checks, refactor priorities | [Town](town.md) |
 | Drawing, text, layout, previews | [Rendering](rendering.md) |
+| Seasonal skins, key artwork, boss visual variants | [Skins](skins.md) |
 | Input routing, gestures, RNG, state cleanup | [Input and state](input-state.md) |
 | Difficulty, timing, bots, star courses | [Pacing](pacing.md) |
 | Sound effects or narration | [Audio](audio.md) |

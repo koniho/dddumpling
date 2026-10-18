@@ -208,6 +208,7 @@ final class Onboarding extends Draw {
             starGuide=true;speech=TutorialSpeech.STARS;sceneWait=SCENE_REVEAL;return;
         }
         GameCore q=practice=new GameCore(null,114L+which);
+        q.preferences.skin=c.preferences.skin;
         q.startGame();q.runFullRoster=c.runFullRoster;q.runWho=c.runWho;
         q.stageBanner=0;q.spawnTimer=9999f;q.companion.begin(q.runWho);
         if(which==CORE) makeWord(L,new int[]{0});

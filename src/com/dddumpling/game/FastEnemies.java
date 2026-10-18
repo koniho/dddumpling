@@ -96,15 +96,15 @@ final class FastEnemies {
 
     static void clearBurst(Painter p,GameCore c,GameCore.Enemy e,Layout L) {
         if(e.fastSingle && e.destroyed)
-            starBurst(p,e.clearX,e.clearY,L.enemyR,Glyph.COLOR[e.word[0]],e.phase,e.destroyT/GameCore.DESTROY_TIME);
+            starBurst(p,e.clearX,e.clearY,L.enemyR,Skins.keyColor(p,e.word[0]),e.phase,e.destroyT/GameCore.DESTROY_TIME);
         if(e.swampKind!=SwampEnemies.DIVE)return;
         int last=e.word.length-1;
         // NINJA/MULTI can clear the marked key before the rest of its word.
         if(e.gone[last])
-            starBurst(p,c.tileX(e,last,L),e.y,L.enemyR,Glyph.COLOR[e.word[last]],e.phase,e.goneT[last]);
+            starBurst(p,c.tileX(e,last,L),e.y,L.enemyR,Skins.keyColor(p,e.word[last]),e.phase,e.goneT[last]);
         else if(e.destroyed)
             starBurst(p,e.clearX+(last*.5f)*L.enemyStep,e.clearY,L.enemyR,
-                    Glyph.COLOR[e.word[last]],e.phase,e.destroyT/GameCore.DESTROY_TIME);
+                    Skins.keyColor(p,e.word[last]),e.phase,e.destroyT/GameCore.DESTROY_TIME);
     }
 
     private static void starBurst(Painter p,float x,float y,float r,int color,float phase,float t) {

@@ -488,6 +488,7 @@ final class TestVisuals extends Check {
         final int[] alpha = new int[2];
         Painter p = (Painter) java.lang.reflect.Proxy.newProxyInstance(
                 Painter.class.getClassLoader(), new Class<?>[] {Painter.class}, (proxy, method, args) -> {
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if (method.getName().equals("text")) {
                         int a = (Integer) args[4] >>> 24;
                         if (args[0].equals("BEST 1840 / STAGE --")) alpha[0] = Math.max(alpha[0], a);
@@ -630,6 +631,7 @@ final class TestVisuals extends Check {
         final int[] trailDots={0};
         Painter trailPainter=(Painter)java.lang.reflect.Proxy.newProxyInstance(
                 Painter.class.getClassLoader(),new Class<?>[]{Painter.class},(proxy,method,args)-> {
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
                     if(method.getName().equals("fillCircle"))trailDots[0]++;
                     return null;
                 });
@@ -852,6 +854,7 @@ final class TestVisuals extends Check {
         final boolean[] seen = new boolean[4];
         Painter p = (Painter) java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
                 new Class<?>[] {Painter.class}, (proxy, method, args) -> {
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
             String name = method.getName();
             if (name.equals("save")) stack.add(offset.clone());
             else if (name.equals("restore")) {

@@ -37,7 +37,13 @@ final class BossScreen extends Draw {
     }
 
     /** Tint per boss, taken from the letter each one is a giant version of. */
-    private static int tint(Boss b) {
+    private static int tint(Painter p,Boss b) {
+        if(Skins.halloween(p)) {
+            if(b.kind==Boss.SLIME)return 0xFFF2F2FF;
+            if(b.kind==Boss.SPLITTER)return 0xFFFFA6D5;
+            if(b.kind==Boss.OCTOPUS)return 0xFFC7F4E2;
+            if(b.kind==Boss.MUSHROOM)return 0xFFC48BEE;
+        }
         if (b.kind == Boss.ALLIGATOR) return AlligatorArt.LIGHT;
         if (b.kind == Boss.SLIME) return 0xFF83E51C;
         if (b.kind == Boss.SPLITTER) return DIVIDE_COLOR[0];
@@ -119,7 +125,7 @@ final class BossScreen extends Draw {
         if(b.beaten && b.kind==Boss.SLIME) {SlimeDeath.draw(p,c,L,b,alpha);return;}
 
         if (b.beaten && b.kind == Boss.MUSHROOM) {
-            drawMushroom(p, c, L, b, tint(b), alpha);
+            drawMushroom(p, c, L, b, tint(p,b), alpha);
             return;
         }
 
@@ -129,7 +135,7 @@ final class BossScreen extends Draw {
         fade *= alpha;
         if (fade <= 0.01f) return;
 
-        int col = tint(b);
+        int col = tint(p,b);
         // Rage reddens it; the enrage reddens it further and permanently, so a fight going badly
         // looks like one.
         boolean wounded = b.kind == Boss.SLIME && b.hasGlob();
@@ -281,15 +287,16 @@ final class BossScreen extends Draw {
             cx=piece.homeX+piece.rest*.14f;centerY=piece.homeY-piece.rest*.14f;
         }
         Painter q=new PortraitFit(p,cx,centerY,x,y,scale);
-        if(b.kind==Boss.MUSHROOM)drawMushroom(q,c,L,b,tint(b),1);
+        if(b.kind==Boss.MUSHROOM)drawMushroom(q,c,L,b,tint(p,b),1);
         else if(b.kind==Boss.OCTOPUS) {
-            drawOctopusArms(q,c,L,b,tint(b),1);
-            drawOctopusHead(q,c,b,tint(b),8,1);
+            drawOctopusArms(q,c,L,b,tint(p,b),1);
+            drawOctopusHead(q,c,b,tint(p,b),8,1);
         } else drawDividePieces(q,c,L,b,1);
     }
 
     /** Uniform scaling keeps the actual boss outlines, shading and stroke weights together. */
     private static final class PortraitFit implements Painter {
+        public int skin() { return p.skin(); }
         final Painter p;final float ox,oy,s;
         public DuckBodies ducks(){return p.ducks();}
         public GatorCompanion gator(){return p.gator();}
@@ -328,6 +335,7 @@ final class BossScreen extends Draw {
 
     private static void drawSlimeSkin(Painter p,float[] skin,float cx,float cy,float rx,float ry,
             float radius,int col,float clock,boolean vulnerable,float fade,boolean defeated,float hit,float boip) {
+        p=Skins.ghost(p);
         int lime = Glyph.mix(col, 0xFFA8F02B, 0.32f);
         int edge = Glyph.mix(0xFF176A24, col, 0.16f);
 
@@ -645,6 +653,7 @@ final class BossScreen extends Draw {
 
     /** A fly-agaric silhouette built around the same live soft-body ring as every other boss. */
     private static void drawMushroom(Painter p, GameCore c, Layout L, Boss b, int col, float fade) {
+        p=Skins.mushroom(p);
         MushroomDeath death = b.beaten ? new MushroomDeath(p, b, L, fade) : null;
         if (death != null) { p = death; fade = 1f; }
         float rootX = b.body.centreX(), cy = b.body.centreY();
@@ -932,6 +941,7 @@ final class BossScreen extends Draw {
     }
 
     private static void drawOctopusHead(Painter p, GameCore c, Boss b, int col, float mood, float fade) {
+        p=Skins.squid(p);
         float[] raw = b.body.outline();
         float cx = b.body.centreX(), cy = b.body.centreY();
         float rx = Math.max(1f, b.body.radiusX()), ry = Math.max(1f, b.body.radiusY());
@@ -947,11 +957,17 @@ final class BossScreen extends Draw {
             // Round crown over a shallow lower lobe, with the live mantle's elastic motion.
             float width = sn < 0f ? 0.74f - 0.38f * sn + 0.05f * sn * sn
                     : 0.74f + 0.20f * sn;
-            float height = sn < 0f ? 1.45f : 0.82f;
+            float height = sn < 0f ? (Skins.halloween(p)?1.92f:1.45f) : 0.82f;
+            if(Skins.halloween(p) && sn<-.45f)width*=.68f;
             float px = cs * rx * width * elastic;
             float py = sn * ry * height * elastic - ry * 0.11f;
             mantle[i] = cx + px * ca - py * sa;
             mantle[i + 1] = cy + px * sa + py * ca;
+        }
+        if(Skins.halloween(p))for(int side=-1;side<=1;side+=2) {
+            float[] fin=HalloweenKeys.shape(cx,cy,rx*side,ry,new float[]{.45f,-.23f,.62f,-1.08f,1.36f,-.38f,1.45f,-.06f,.92f,.12f});
+            p.fillPoly(fin,Glyph.withAlpha(OCTO_SKIN,(int)(210*fade)));
+            p.strokePoly(fin,Glyph.withAlpha(OCTO_GLEAM,(int)(180*fade)),rx*.035f);
         }
         p.fillPoly(mantle, Glyph.withAlpha(col, (int) (250 * fade)));
         p.strokePoly(mantle, Glyph.withAlpha(OCTO_INK,
@@ -1092,6 +1108,7 @@ final class BossScreen extends Draw {
     }
 
     private static void drawOctopusArms(Painter p, GameCore c, Layout L, Boss b, int col, float fade) {
+        p=Skins.squid(p);
         boolean victory = c.dying() && c.bossVictory == b;
         float thick = Boss.bodyR(L) * 0.52f;
         // Paint outside-in so the central arms sit in front at every crossing.
@@ -1238,7 +1255,7 @@ final class BossScreen extends Draw {
         float progress = octoPulseProgress(b);
         if (progress < 0f) return;
         float alpha = fade * (b.octoCharge < 1f ? 1f : Math.max(0f, 1f - b.octoReach / 0.15f));
-        int color = Glyph.COLOR[b.octoTarget];
+        int color = Skins.keyColor(p,b.octoTarget);
         // A short bright wake makes the direction readable even on the quick charge.
         for (int i = 0; i < 6; i++) {
             float at = progress - i * 0.025f;
@@ -1265,7 +1282,7 @@ final class BossScreen extends Draw {
         int tip = Boss.OCTO_NODES - 1;
         float x = b.octoX[arm][tip], y = b.octoY[arm][tip];
         float r = standardBoltR(L, 0f);
-        int col = Glyph.COLOR[g];
+        int col = Skins.keyColor(p,g);
         p.fillPoly(Glyph.hex(x, y, r), Glyph.withAlpha(col, (int)(96 * fade)));
         p.strokePoly(Glyph.hex(x, y, r), Glyph.withAlpha(col, (int)(255 * fade)), r * .13f);
         Kawaii.draw(p, g, x, y, r * .58f, Glyph.withAlpha(col, (int)(255 * fade)), 1f, .1f);
@@ -1276,7 +1293,7 @@ final class BossScreen extends Draw {
         int tip = Boss.OCTO_NODES - 1;
         float tipX = b.octoX[b.octoAttackArm][tip];
         float tipY = b.octoY[b.octoAttackArm][tip];
-        int g = b.octoCaptured, keyCol = Glyph.COLOR[g];
+        int g = b.octoCaptured, keyCol = Skins.keyColor(p,g);
         float swallowed = Math.max(0f, Math.min(1f, (b.octoReturn - 0.68f) / 0.32f));
         float keyR = L.keyR * (1f - swallowed * 0.72f);
         p.fillCircle(tipX, tipY, keyR * 1.18f,
@@ -1293,6 +1310,7 @@ final class BossScreen extends Draw {
     }
 
     private static void drawDividePieces(Painter p, GameCore c, Layout L, Boss b, float fade) {
+        p=Skins.candy(p);
         if (b.beaten && DivideDeath.bursting(b)) {
             DivideDeath.draw(p, L, b, fade);
             return;
@@ -1310,6 +1328,7 @@ final class BossScreen extends Draw {
             if (vulnerable)
                 halfCol = Glyph.mix(halfCol, YELLOW, vulnerabilityPulse(c.clock) * 0.78f);
             halfCol = Glyph.mix(halfCol, 0xFFFFFFFF, hurt * 0.65f);
+            Skins.candyWrap(p,x,y,piece.radiusX(),piece.radiusY(),c.clock+i,fade);
             Slime.cube(p, piece, c.clock + i * 0.31f, halfCol,
                     b.pieceNodeIndex(i) == b.pinchNode, fade);
             divideSkin(p, c, L, b, i, piece, x, y, piece.radiusX(), piece.radiusY(),
@@ -1434,10 +1453,10 @@ final class BossScreen extends Draw {
                     float y=slimeBadgeY(L,b)-L.unit*0.65f*cover;
                     float radius=slimeBoltR(c,L,b.promptProgress());
                     int g=b.chainLetter();
-                    int slime=Glyph.mix(tint(b),0xFFA8F02B,0.32f);
+                    int slime=Glyph.mix(tint(p,b),0xFFA8F02B,0.32f);
                     Painter prompt=new ColorFadePainter(p,slime,cover,fade*visibility);
                     if(cover>0.02f) {
-                        int color=Glyph.COLOR[g];
+                        int color=Skins.keyColor(p,g);
                         prompt.fillPoly(Glyph.hex(cx,y,radius),Glyph.withAlpha(color,60));
                         prompt.strokePoly(Glyph.hex(cx,y,radius),Glyph.withAlpha(color,220),radius*0.10f);
                         Kawaii.surprised(prompt,g,cx,y,radius*0.60f,color);
@@ -1469,7 +1488,7 @@ final class BossScreen extends Draw {
         float time=b.slimeCoverBubbleTime();
         if(time<0f) return;
         float r=L.unit,y=slimeBadgeY(L,b)-r*0.45f;
-        int green=Glyph.mix(tint(b),0xFFCBFF73,0.45f);
+        int green=Glyph.mix(tint(p,b),0xFFCBFF73,0.45f);
         for(int i=0;i<7;i++) {
             float age=time-i*0.027f;
             if(age<=0f || age>=0.44f) continue;
@@ -1536,7 +1555,7 @@ final class BossScreen extends Draw {
     private static void letterBadge(Painter p, GameCore c, Layout L, int g, float x, float y,
             float rr, float fade, boolean live) {
         if (g < 0) return;
-        int col = Glyph.COLOR[g];
+        int col = Skins.keyColor(p,g);
         int a = (int) (fade * (live ? 255 : 130));
         float pulse = live ? 1f + 0.07f * (float) Math.sin(c.clock * 7f) : 1f;
         rr *= pulse;
@@ -1669,7 +1688,7 @@ final class BossScreen extends Draw {
 
         float y = barY(L), bh = barH(L);
         float left = L.playLeft, right = L.playRight;
-        int col = Glyph.mix(tint(b), ROSE, b.enrage() * 0.6f);
+        int col = Glyph.mix(tint(p,b), ROSE, b.enrage() * 0.6f);
 
         p.fillRect(left, y, right, y + bh, Glyph.withAlpha(INK, (int) (40 * fade)));
         float frac = b.health();
@@ -1758,7 +1777,7 @@ final class BossScreen extends Draw {
             float rr = b.kind == Boss.SLIME
                     ? slimeBoltR(c, L, 1f)
                     : standardBoltR(L, at);
-            int col = Glyph.COLOR[g];
+            int col = Skins.keyColor(p,g);
             float sporeMorph = b.kind == Boss.MUSHROOM ? Math.min(1f, at / 0.30f) : 1f;
             if (b.kind == Boss.MUSHROOM) {
                 float sporeR = rr * (0.34f + 0.66f * sporeMorph);
@@ -1832,7 +1851,7 @@ final class BossScreen extends Draw {
         for (int k = 4; k >= 1; k--) {
             float rr = r * (1f + melt * (1.6f + k * 0.8f));
             p.fillPoly(star(cx, cy, rr, rr * 0.42f, 9, c.clock * 0.9f + k),
-                    Glyph.withAlpha(k % 2 == 0 ? GOLD : tint(b),
+                    Glyph.withAlpha(k % 2 == 0 ? GOLD : tint(p,b),
                             (int) (90 * (1f - melt) / k)));
         }
         // Hearts hop out on the three squishy sound beats before gravity takes the boss.

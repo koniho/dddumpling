@@ -375,7 +375,73 @@ final class TestSettings extends Check {
         }
     }
 
+    private static void seasonalSkins(Layout L) {
+        group("seasonal skins");
+        Mem save=new Mem();GameCore c=new GameCore(save,200L);Ear ear=new Ear();c.sound=ear;
+        check("old saves use default skin",c.preferences.skin==Skins.DEFAULT);
+        c.startGame();c.score=123;c.preferences.music=.35f;c.preferences.effectsMuted=true;
+        int stage=c.stage;PlayerSettings.open(c);c.update(PlayerSettings.PANEL_TIME,L);
+        settingsTap(c,L,L.w*.5f,SkinSettings.buttonY(L));
+        check("skin gallery opens from player settings",c.preferences.skinsOpen);
+        settingsTap(c,L,L.w*.5f,SkinSettings.cardTop(L,1)+PlayerSettings.unit(L)*6);
+        check("gallery selects Halloween without altering run",c.preferences.skin==Skins.HALLOWEEN && c.score==123 && c.stage==stage);
+        GameCore restored=new GameCore(save,201L);
+        check("skin and other preferences persist together",restored.preferences.skin==Skins.HALLOWEEN
+                && restored.preferences.music==.35f && restored.preferences.effectsMuted);
+        c.onboarding.begin(c,Onboarding.CORE,L);
+        check("tutorial practice inherits selected skin",c.onboarding.practice.preferences.skin==Skins.HALLOWEEN);
+        SkinSettings.choose(c,Skins.DEFAULT);
+        check("changing skin updates an existing practice",c.onboarding.practice.preferences.skin==Skins.DEFAULT);
+        check("switching back preserves progress",c.score==123 && c.stage==stage);
+        PlayerSettings prefs=new PlayerSettings();prefs.load(PlayerSettings.DEFAULT|(7<<19));
+        check("unknown saved skin falls back safely",prefs.skin==Skins.DEFAULT && prefs.music==1f);
+        check("Halloween narration uses the selected boss name",Narration.versus(0,Boss.SLIME,Skins.HALLOWEEN).contains("super ghost"));
+        RasterPainter raster=new RasterPainter(80,80,1);
+        Painter themed=Skins.painter(raster,Skins.HALLOWEEN);
+        check("skin context survives opacity and color effects",new OpacityPainter(new ColorFadePainter(themed,0xFFFFFFFF,.3f,1),.5f).skin()==Skins.HALLOWEEN
+                && new MonochromePainter(themed,1).skin()==Skins.HALLOWEEN);
+        check("render skin selection does not leak to another painter",raster.skin()==Skins.DEFAULT && Skins.painter(themed,Skins.DEFAULT).skin()==Skins.DEFAULT);
+        check("Super Ghost has a seasonal display name",Skins.bossName(Skins.HALLOWEEN,Boss.SLIME).equals("SUPER GHOST")
+                && Boss.NAMES[Boss.SLIME].equals("SUPER SLIME"));
+    }
+    private static void skinGameplayParity(Layout L) {
+        group("cosmetic skin gameplay parity");
+        for(int scene=0;scene<3+Boss.COUNT;scene++) {
+            GameCore[] runs=new GameCore[2];
+            for(int skin=0;skin<2;skin++) {
+                GameCore c=new GameCore(TestTimeAttack.store(),200L+scene,true);
+                c.preferences.skin=skin;c.fullRoster=false;c.landSeen=LandPicker.stateMask();
+                if(scene==1)c.modes.restore(ModeSelector.SURVIVAL);
+                if(scene==2){c.modes.restore(ModeSelector.TIME_ATTACK);c.timeAttack.selected=TimeAttack.ALL;}
+                c.startGame();
+                if(scene>=3){c.stage=Boss.EVERY;c.boss.begin(scene-3,c.stage,c.rnd);}
+                runs[skin]=c;
+            }
+            boolean same=true;
+            for(int frame=0;frame<1200;frame++) {
+                for(GameCore c:runs) {
+                    if(frame%12==0)c.tapKey(Roster.STARTERS[(frame/12)%4],L);
+                    c.update(DT,L);
+                }
+                GameCore a=runs[0],b=runs[1];
+                same &= a.state==b.state && a.score==b.score && a.stage==b.stage
+                        && a.lives==b.lives && a.hits==b.hits && a.misses==b.misses
+                        && a.combo==b.combo && a.boss.hp==b.boss.hp && a.boss.intro==b.boss.intro
+                        && a.collected==b.collected && a.spawnTimer==b.spawnTimer
+                        && a.survival.seconds==b.survival.seconds && a.enemies.size()==b.enemies.size();
+                if(a.enemies.size()==b.enemies.size())for(int i=0;i<a.enemies.size();i++) {
+                    GameCore.Enemy x=a.enemies.get(i),y=b.enemies.get(i);
+                    same &= x.y==y.y && x.speed==y.speed && java.util.Arrays.equals(x.word,y.word)
+                            && java.util.Arrays.equals(x.gone,y.gone);
+                }
+            }
+            check("same inputs preserve gameplay, rewards and RNG in scene "+scene,
+                    same && runs[0].rnd.nextLong()==runs[1].rnd.nextLong());
+        }
+    }
     static void all(Layout L) {
+        seasonalSkins(L);
+        skinGameplayParity(L);
         developerBossCompletion(L);
         developerReset(L);
         scoreReset(L);

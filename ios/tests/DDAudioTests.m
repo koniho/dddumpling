@@ -163,6 +163,17 @@
   XCTAssertEqual(speech.speakCount, 1);
 }
 
+- (void)testHalloweenVersusUsesSeasonalName {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  DDCountingSpeech *speech = [DDCountingSpeech new];
+  [audio setValue:speech forKey:@"speech"];
+  [audio setValue:@YES forKey:@"active"];
+  [audio setValue:@0.4f forKey:@"effectsVolume"];
+  [audio announceVersusWithInt:11 withInt:0 withInt:1];
+  XCTAssertTrue([speech.utterance.speechString containsString:@"super ghost"]);
+  XCTAssertEqualWithAccuracy(speech.utterance.pitchMultiplier, DDNarration_VERSUS_PITCH, .001);
+}
+
 - (void)testRepeatedMusicSelectionPreservesPlayerAndPausedPosition {
   DDClockedAudio *audio = [DDClockedAudio new];
   [audio selectMusicWithInt:DDMusic_SWING_STYLE];

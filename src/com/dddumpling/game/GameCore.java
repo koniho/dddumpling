@@ -380,6 +380,7 @@ final class GameCore {
         default void announceSquishy(int entry) {}
         /** A whole matchup, with a dramatic pause and an emphatic opponent name. */
         default void announceVersus(int entry,int boss) {}
+        default void announceVersus(int entry,int boss,int skin) {announceVersus(entry,boss);}
         /** Current word offset in the matchup, or -1 when the voice supplies no word timing. */
         default int versusSpeechOffset() {return -1;}
         /** Stop talking mid-sentence: the panel has gone. */

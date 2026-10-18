@@ -9,6 +9,7 @@ package com.dddumpling.game;
  * Colours are ARGB ints. Alpha is honoured.
  */
 interface Painter {
+    default int skin() { return Skins.DEFAULT; }
     default DuckBodies ducks() { return null; }
     default GatorCompanion gator() { return null; }
     default ArtStamp stamps() { return null; }

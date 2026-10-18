@@ -14,6 +14,7 @@ final class Renderer extends Draw {
     static float shakeMargin(GameCore c, Layout L) { return Math.max(0f, c.shake) * .016f * L.w; }
 
     static void draw(Painter p, GameCore c, Layout L) {
+        p=Skins.painter(p,c.preferences.skin);
         p=new OpacityPainter(p,1f) {
             public DuckBodies ducks() {return c.ducks;}
             public GatorCompanion gator() {return c.gator;}
@@ -279,7 +280,7 @@ final class Renderer extends Draw {
                 x += e.goneDx[i] * ease * L.w * 0.55f;
                 y += e.goneDy[i] * ease * L.h * 0.30f;
                 float r = L.enemyR * Layout.TILE_SCALE * (1f - 0.5f * t);
-                int col = Glyph.withAlpha(Glyph.COLOR[g], (int) (200 * (1f - t)));
+                int col = Glyph.withAlpha(Skins.keyColor(p,g), (int) (200 * (1f - t)));
                 p.strokePoly(starTile?FastEnemies.outline(x,y,r):Glyph.hex(x, y, r), col, r * 0.09f);
                 if (c.incognito()) Kawaii.incognito(p,g,x,y,r*0.60f,col,c.incognitoMorph);
                 else Kawaii.draw(p, g, x, y, r * 0.60f, col, 1f, 0.6f);
@@ -315,7 +316,7 @@ final class Renderer extends Draw {
             Painter characterPainter=fogTint>0?new ColorFadePainter(p,SwampEnemies.FOG_INK,fogTint,1):p;
 
             // FLURRY recolours every letter on one upward-travelling rainbow wave.
-            int col = c.flurry() ? rainbowAt(y, L, c.clock) : Glyph.COLOR[g];
+            int col = c.flurry() ? rainbowAt(y, L, c.clock) : Skins.keyColor(p,g);
             // Only the tile actually struck takes the full colour strobe and pop.
             float pop = (e.link == null && e.hitIndex == i) ? e.hitPulse : 0f;
             if (pop > 0) {
@@ -858,7 +859,7 @@ final class Renderer extends Draw {
         if (c.chainT <= 0f || c.chainLen < 1) return;
         // Full strength while it is being revealed, then out over the tail.
         float fade = Math.min(1f, c.chainT / (GameCore.CHAIN_TIME * (1f - GameCore.CHAIN_REVEAL)));
-        int col = Glyph.COLOR[c.chainGlyph];
+        int col = Skins.keyColor(p,c.chainGlyph);
         float w = L.enemyR * 0.16f;
 
         for (int i = 1; i < c.chainShown; i++) {
@@ -968,7 +969,7 @@ final class Renderer extends Draw {
 
             // Activated keys strobe through the palette rather than merely brightening.
             boolean bossDisabled = c.boss.keyDisabled(g) || c.boss.playerLocked();
-            int col = c.flurry() ? rainbowAt(cy, L, c.clock) : Glyph.COLOR[g];
+            int col = c.flurry() ? rainbowAt(cy, L, c.clock) : Skins.keyColor(p,g);
             if (bossDisabled) {
                 float gray = 1f;
                 if (c.boss.kind == Boss.SLIME && c.boss.slimeKeyLock > 0f) {
