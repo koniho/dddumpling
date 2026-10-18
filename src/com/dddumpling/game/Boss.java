@@ -2536,9 +2536,9 @@ final class Boss {
             }
         }
 
-        // Above both early returns: a volley already in the air still arrives. Cleared on the frame
-        // the boss is beaten, so nothing lands after the burst.
+        // Age volleys through the exit too; the cat's final rainbow flurry is celebratory.
         int hits = ageBolts(projectileDt);
+        if(beaten && kind==RAINBOW_CAT)hits=0;
 
         if (beaten) {
             leaveT = Math.max(0f, leaveT - dt);

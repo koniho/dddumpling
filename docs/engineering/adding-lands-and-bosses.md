@@ -153,9 +153,12 @@ jumping ahead at crossings. All five shapes share the tracker and progress-drive
 timeouts keep the same shape until that capture succeeds.
 The catch animation finishes before opening a timed word containing each active roster
 key once, shuffled into a four- or six-key sequence. Completing the word removes one of
-her five health points. A wrong key preserves progress, while timeout resumes the chase
-and launches a staggered rainbow flurry targeting each active key in left-to-right or
-right-to-left order (random per flurry). Five completed words win; the enrage warning begins
+her five health points and launches a staggered rainbow flurry from the cat, with a
+0.3-second reaction window before the successful-hit volley moves and 0.288 seconds
+between its shots (missed-prompt volleys retain 0.192 seconds). A wrong key
+preserves progress; timeout also releases a flurry. Each volley targets active keys in
+left-to-right or right-to-left order (random per flurry), delaying ordinary shots for 4.4 seconds.
+The fifth damage emits the same flurry during the exit, without player damage after victory. Five completed words win; the enrage warning begins
 at 45 seconds. Chase projectiles reuse boss bolts with Rush star
 art and fast flight, so matching keys defend them and the existing boss damage/score
 and Time Attack statistics paths remain authoritative. The prompt phase clears airborne

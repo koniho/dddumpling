@@ -35,6 +35,8 @@ public final class IOSInputTest extends Check {
     private static void rainbowCatGestures() {
         IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
         c.onboarding.saved=Onboarding.SKIPPED;c.startGame();c.enemies.clear();
+        // Exercise all capture gestures without requiring the router test to defend damage flurries.
+        c.devInfiniteLives=true;
         c.stage=30;c.stageBanner=0;c.boss.begin(Boss.RAINBOW_CAT,30,c.rnd,c.playRosterFull());
         c.boss.intro=0;game.update(DT);RainbowCat a=c.boss.cat;
         float hp=c.boss.hp;

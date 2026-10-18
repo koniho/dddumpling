@@ -69,6 +69,10 @@ final class Preview {
             shot(dir,"151-shape-"+shapeNames[capture],shapes,L,w,h,ss);
             TestRainbowCat.challenge(shapes,L);
             for(int key=0;key<6 && shape.phase==RainbowCat.OPEN;key++)shapes.boss.press(shape.prompt[shape.at],shapes.rnd,L);
+            if(capture==0 || capture==4) {
+                for(int frame=0;frame<24;frame++)shapes.boss.update(1f/60,L,shapes.rnd);
+                shot(dir,capture==0?"151-damage-flurry":"151-final-flurry",shapes,L,w,h,ss);
+            }
         }
         GameCore tap=TestRainbowCat.fight(L);RainbowCat tapped=tap.boss.cat;
         tapped.touch(tap,L,0,151,tapped.x,tapped.y);tapped.touch(tap,L,1,151,tapped.x,tapped.y);

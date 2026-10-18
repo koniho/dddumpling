@@ -114,13 +114,7 @@ final class RainbowCat {
         if(phase==OPEN) {
             timer-=dt;
             if(timer<=0) {
-                b.clearBolts();
-                boolean fromLeft=rnd.nextBoolean();
-                for(int i=0;i<count;i++) {
-                    int slot=b.tailBolt(rnd,x,y+r*.45f);
-                    if(slot>=0) {b.bglyph[slot]=Roster.at(b.rosterFull,fromLeft?i:count-1-i);b.bfast[slot]=true;b.bt[slot]=-i*.16f;}
-                }
-                cue=2;resume(L,rnd);launchLeft=4.4f;
+                flurry(b,rnd,false);resume(L,rnd);launchLeft=4.4f;
             }
             return 0;
         }
@@ -144,6 +138,17 @@ final class RainbowCat {
         }
         return 0;
     }
+    private void flurry(Boss b,java.util.Random rnd,boolean afterDamage) {
+        b.clearBolts();
+        boolean fromLeft=rnd.nextBoolean();int keys=Roster.count(b.rosterFull);
+        // Six keys need a readable cadence after a successful prompt, including at 30 FPS.
+        float lead=afterDamage?.30f/(Boss.BOLT_TIME*.5f):0,stagger=afterDamage?.24f:.16f;
+        for(int i=0;i<keys;i++) {
+            int slot=b.tailBolt(rnd,x,y+r*.45f);
+            if(slot>=0) {b.bglyph[slot]=Roster.at(b.rosterFull,fromLeft?i:keys-1-i);b.bfast[slot]=true;b.bt[slot]=-lead-i*stagger;}
+        }
+        cue=2;
+    }
     float attackInterval() {return kids?2.3f:1.6f;}
     static float trailFade(float progress) {return clamp((1-progress)*4,0,1);}
     float promptTime() {return (count==6?6f:4.8f)*(kids?1.4f:1);}
@@ -158,8 +163,8 @@ final class RainbowCat {
         if(prompt[at]!=glyph) {flash=.5f;return Boss.REBUFF;}
         b.hitX=x;b.hitY=y;head.squash(.3f);
         if(++at<count)return Boss.PART;
-        captures++;resume(L,rnd);
-        int result=b.damage(1);
+        captures++;int result=b.damage(1);
+        flurry(b,rnd,true);resume(L,rnd);launchLeft=4.4f;
         if(b.beaten) {escaping=true;routeTo(L.w+r*3,top-r*2,.48f,rnd);}
         return result;
     }

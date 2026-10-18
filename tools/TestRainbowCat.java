@@ -82,21 +82,30 @@ final class TestRainbowCat extends Check {
                 for(int key=0;key<6 && a.phase==RainbowCat.OPEN;key++)c.boss.press(a.prompt[a.at],c.rnd,L);
                 check("one damage per completed capture "+direction+"/"+capture,c.boss.hp==4-capture
                         && c.boss.beaten==(capture==4));
+                check("each damage launches rainbow flurry "+direction+"/"+capture,c.boss.boltCount()==6 && a.cue==2 && a.launchLeft==4.4f);
+                boolean origin=true;
+                for(int bolt=0;bolt<6;bolt++)origin&=c.boss.bsx[bolt]==a.x && c.boss.bsy[bolt]==a.y+a.r*.45f;
+                check("damage flurry comes from cat "+direction+"/"+capture,origin);
             }
             check("all five shapes differ "+direction,shapes.size()==5);
+            int exitHits=0;for(int frame=0;frame<240;frame++)exitHits+=c.boss.update(1f/60,L,c.rnd);
+            check("final flurry animates away without hurting player "+direction,exitHits==0 && c.boss.boltCount()==0);
+            c.boss.leave();check("exit clears flurry cue "+direction,a.cue==0);
         }
         group("Rainbow flurry sweeps keyboard in order");
-        for(boolean full:new boolean[]{false,true})for(final boolean fromLeft:new boolean[]{false,true}) {
+        for(boolean full:new boolean[]{false,true})for(final boolean fromLeft:new boolean[]{false,true})for(boolean success:new boolean[]{false,true}) {
             GameCore c=fight(L);c.boss.rosterFull=full;challenge(c,L);
-            RainbowCat a=c.boss.cat;int n=a.count;a.timer=.01f;
-            c.boss.update(.02f,L,new java.util.Random(151) {public boolean nextBoolean(){return fromLeft;}});
+            RainbowCat a=c.boss.cat;int n=a.count;
+            java.util.Random direction=new java.util.Random(151) {public boolean nextBoolean(){return fromLeft;}};
+            if(success) {for(int key=0;key<n;key++)c.boss.press(a.prompt[a.at],direction,L);}
+            else {a.timer=.01f;c.boss.update(.02f,L,direction);}
             boolean ordered=c.boss.boltCount()==n;float previous=fromLeft?-1:Float.MAX_VALUE;
             for(int i=0;i<n;i++) {
                 float x=Roster.keyX(L,c.boss.bglyph[i],full?1:0);
                 ordered&=fromLeft?x>previous:x<previous;previous=x;
-                ordered&=c.boss.bt[i]==-i*.16f && c.boss.bfast[i];
+                ordered&=Math.abs(c.boss.bt[i]+(success?.25f:0)+i*(success?.24f:.16f))<.00001f && c.boss.bfast[i];
             }
-            check("flurry preserves left/right order and stagger "+full+"/"+fromLeft,ordered);
+            check("flurry preserves left/right order and stagger "+full+"/"+fromLeft+"/"+success,ordered);
         }
     }
     private static void finalCaptureStar(Layout L) {
