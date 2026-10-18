@@ -14,7 +14,7 @@ final class TestRainbowCat extends Check {
         a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.cageX,a.cageY);
     }
     static void all(Layout L) {
-        catalog();enemies(L);
+        catalog();enemies(L);clearParticles(L);
         group("Rainbow Cat touch ownership, cage and yarn");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(25)==Lands.SWAMP && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));
@@ -155,6 +155,30 @@ final class TestRainbowCat extends Check {
         p=new RasterPainter((int)L.w,(int)L.h,1);p.clear(0);c.stage=21;RainbowLand.enemyTrail(p,c,e,L,255);
         boolean empty=true;for(int pixel:p.resolve())empty&=(pixel&0xFFFFFF)==0;
         check("other lands keep their existing trails",empty);
+    }
+
+    private static void clearParticles(Layout L) {
+        group("Rainbow clear colors preserve particle behavior");
+        GameCore rainbow=TestFastEnemies.scene(L,26,151),ordinary=TestFastEnemies.scene(L,21,151);
+        rainbow.particles.clear();ordinary.particles.clear();rainbow.rnd.setSeed(151);ordinary.rnd.setSeed(151);
+        int original=Glyph.COLOR[0];
+        rainbow.survival.wordBurst(rainbow,100,200,20,12,original);
+        ordinary.survival.wordBurst(ordinary,100,200,20,12,original);
+        check("rainbow clears preserve particle count",rainbow.particles.size()==ordinary.particles.size());
+        boolean motion=true,plain=true,colors=true;java.util.HashSet<Integer> palette=new java.util.HashSet<>();
+        for(int i=0;i<rainbow.particles.size();i++) {
+            GameCore.Particle a=rainbow.particles.get(i),b=ordinary.particles.get(i);
+            motion&=a.x==b.x && a.y==b.y && a.vx==b.vx && a.vy==b.vy && a.max==b.max && a.size==b.size;
+            plain&=b.color==original;palette.add(a.color);
+            boolean found=false;for(int color:RainbowLand.CLEAR_COLORS)found|=a.color==color;colors&=found;
+        }
+        check("rainbow clears use every vibrant band",colors && palette.size()==RainbowLand.CLEAR_COLORS.length);
+        check("other lands preserve original particle colors",plain);
+        check("recoloring preserves motion and gameplay randomness",motion && rainbow.rnd.nextLong()==ordinary.rnd.nextLong());
+        rainbow.particles.clear();rainbow.survival.active=true;
+        rainbow.survival.wordBurst(rainbow,100,200,20,12,original);
+        boolean survival=true;for(GameCore.Particle p:rainbow.particles)survival&=p.color==original;
+        check("Survival retains its own clear palette",survival);
     }
 
     private static int litWidth(int[] pixels,int width) {

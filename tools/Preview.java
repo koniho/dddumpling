@@ -29,7 +29,7 @@ final class Preview {
         dive.enterT=1;dive.swampKind=SwampEnemies.DIVE;dive.diving=true;
         shot(dir,"151-enemy-trails",field,L,w,h,ss);
         for(GameCore.Enemy e:field.enemies){field.destroyWord(e,field.enemyCentreX(e),e.y,L);e.destroyT=.15f;}
-        field.clock+=.15f;
+        field.clock+=.15f;Fx.updateParticles(field,.15f);
         shot(dir,"151-trail-dispersal",field,L,w,h,ss);
         GameCore title=new GameCore(TestTimeAttack.store(),151,true);
         title.collected=Collect.MASK;title.landSuppressed=0;title.landChoice=Lands.RAINBOW;

@@ -97,18 +97,18 @@ final class FastEnemies {
 
     static void clearBurst(Painter p,GameCore c,GameCore.Enemy e,Layout L) {
         if(e.fastSingle && e.destroyed)
-            starBurst(p,e.clearX,e.clearY,L.enemyR,Skins.keyColor(p,e.word[0]),e.phase,e.destroyT/GameCore.DESTROY_TIME);
+            starBurst(p,e.clearX,e.clearY,L.enemyR,Skins.keyColor(p,e.word[0]),e.phase,e.destroyT/GameCore.DESTROY_TIME,RainbowLand.active(c));
         if(e.swampKind!=SwampEnemies.DIVE)return;
         int last=e.word.length-1;
         // NINJA/MULTI can clear the marked key before the rest of its word.
         if(e.gone[last])
-            starBurst(p,c.tileX(e,last,L),e.y,L.enemyR,Skins.keyColor(p,e.word[last]),e.phase,e.goneT[last]);
+            starBurst(p,c.tileX(e,last,L),e.y,L.enemyR,Skins.keyColor(p,e.word[last]),e.phase,e.goneT[last],RainbowLand.active(c));
         else if(e.destroyed)
             starBurst(p,e.clearX+(last*.5f)*L.enemyStep,e.clearY,L.enemyR,
-                    Skins.keyColor(p,e.word[last]),e.phase,e.destroyT/GameCore.DESTROY_TIME);
+                    Skins.keyColor(p,e.word[last]),e.phase,e.destroyT/GameCore.DESTROY_TIME,RainbowLand.active(c));
     }
 
-    private static void starBurst(Painter p,float x,float y,float r,int color,float phase,float t) {
+    private static void starBurst(Painter p,float x,float y,float r,int color,float phase,float t,boolean rainbow) {
         if(t<0 || t>=1)return;
         float ease=1-(1-t)*(1-t),fade=(1-t)*(1-t);
         int light=Glyph.mix(color,0xFFFFF4C6,.65f);
@@ -118,18 +118,20 @@ final class FastEnemies {
                 Glyph.withAlpha(light,(int)(200*flash)));
         for(int ring=0;ring<Fx.CLEAR_INTENSITY;ring++)
             p.strokePoly(outline(x,y,r*(1+ease*(2.5f+ring*.55f))),
-                    Glyph.withAlpha(ring%2==0?color:light,(int)(155*fade)),r*.16f*(1-t));
+                    Glyph.withAlpha(rainbow?RainbowLand.CLEAR_COLORS[ring%RainbowLand.CLEAR_COLORS.length]:ring%2==0?color:light,(int)(155*fade)),r*.16f*(1-t));
         for(int i=0;i<14*Fx.CLEAR_INTENSITY;i++) {
             float angle=phase+i*2.39996f;
             float reach=r*(.65f+ease*(2.5f+(i%3)*.7f)*Fx.CLEAR_SPREAD);
             float xx=x+(float)Math.cos(angle)*reach,yy=y+(float)Math.sin(angle)*reach;
             float size=r*(.16f+(i%3)*.055f)*(1-t*.6f);
             int alpha=(int)(255*fade);
+            int particle=rainbow?RainbowLand.CLEAR_COLORS[i%RainbowLand.CLEAR_COLORS.length]:color;
+            int shine=rainbow?Glyph.mix(particle,0xFFFFFFFF,.18f):light;
             p.line(xx-(float)Math.cos(angle)*r*ease*.9f,yy-(float)Math.sin(angle)*r*ease*.9f,
-                    xx,yy,Glyph.withAlpha(color,alpha/3),size*.7f);
-            p.fillCircle(xx,yy,size*3,Glyph.withAlpha(color,alpha/8));
-            p.fillCircle(xx,yy,size*1.8f,Glyph.withAlpha(light,alpha/4));
-            p.fillPoly(Draw.star(xx,yy,size,size*.42f,i%2==0?5:4,angle+t*3),Glyph.withAlpha(light,alpha));
+                    xx,yy,Glyph.withAlpha(particle,alpha/3),size*.7f);
+            p.fillCircle(xx,yy,size*3,Glyph.withAlpha(particle,alpha/8));
+            p.fillCircle(xx,yy,size*1.8f,Glyph.withAlpha(shine,alpha/4));
+            p.fillPoly(Draw.star(xx,yy,size,size*.42f,i%2==0?5:4,angle+t*3),Glyph.withAlpha(shine,alpha));
         }
     }
 

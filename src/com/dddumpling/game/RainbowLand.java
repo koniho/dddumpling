@@ -65,19 +65,19 @@ final class RainbowLand extends Draw {
         RainbowCatArt.yarn(new OpacityPainter(p,a),x+r*(float)Math.cos(loop),y+r*.12f,r*.22f,t,false);
     }
     static void title(Painter p,float x,float y,float s,float span,float rise,float clock,float fade,boolean front) {
-        float root=y+s*.30f+(1-rise)*s*2.2f;
-        int alpha=(int)(fade*rise*220);
-        p.save();p.clipRect(x-span-s*.65f,y-s*2.5f,x+span+s*.65f,y+s*.65f);
-        if(!front) {
-            // One continuous arch spans the lettering; its feet nest in the foreground clouds.
-            for(int i=0;i<RainbowCatArt.COLORS.length;i++)
-                RainbowCatArt.arch(p,x,root,span*.96f-i*s*.16f,s*(1.65f-i*.17f),
-                        Glyph.withAlpha(RainbowCatArt.COLORS[i],alpha),s*.19f);
-        }
-        for(int side=-1;side<=1;side+=2) {
-            float bob=(float)Math.sin(clock*1.3f+side)*s*.055f;
-            cloud(p,x+side*span*.86f,root+bob,s*1.04f,s*.55f,alpha,false,front?2:0,front?4:2);
-        }
+        if(!front)return;
+        float root=y+s*.30f+(1-rise)*s*3f;
+        int alpha=(int)(fade*rise*148);
+        p.save();p.clipRect(x-span-s*.3f,y-s*3.1f,x+span+s*.3f,y+s*.65f);
+        // The crest clears the letter tops while translucent lower bands cross their faces.
+        for(int i=0;i<RainbowCatArt.COLORS.length;i++)
+            RainbowCatArt.arch(p,x,root,span*.96f-i*s*.16f,s*(2.65f-i*.17f),
+                    Glyph.withAlpha(RainbowCatArt.COLORS[i],alpha),s*.19f);
         p.restore();
+    }
+    static final int[] CLEAR_COLORS={0xFFFF3C80,0xFFFF8C28,0xFFFFE33C,0xFF38E884,0xFF39CFFF,0xFFAE64FF};
+    static void clearColors(GameCore c,int from) {
+        if(!active(c))return;
+        for(int i=from;i<c.particles.size();i++)c.particles.get(i).color=CLEAR_COLORS[i%CLEAR_COLORS.length];
     }
 }
