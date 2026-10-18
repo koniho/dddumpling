@@ -207,7 +207,9 @@ final class ModeSelector extends Draw {
             p.line(x-d*s*.18f,cy-s*.25f,x+d*s*.18f,cy,GOLD,s*.09f);
             p.line(x+d*s*.18f,cy,x-d*s*.18f,cy+s*.25f,GOLD,s*.09f);
         }
-        p.save();p.clipRect(L.w*.09f,y-s*2.8f,L.w*.91f,y+s*1.4f);
+        boolean adventureVisible=arriving==ADVENTURE || (peeking || transition<1) && departing==ADVENTURE;
+        float headroom=adventureVisible?3.5f*bump:2.8f;
+        p.save();p.clipRect(L.w*.09f,y-s*headroom,L.w*.91f,y+s*1.4f);
         if(peeking || transition<1)titleLabel(p,c,L,departing,L.w*.5f-slideDirection*L.w*t,y,1,INK,1-t);
         float selectedX=L.w*.5f+slideDirection*L.w*(1-t);
         selectedX+=(float)Math.sin(unavailable*20)*s*.15f*unavailable;

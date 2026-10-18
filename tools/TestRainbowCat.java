@@ -14,7 +14,7 @@ final class TestRainbowCat extends Check {
         a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.cageX,a.cageY);
     }
     static void all(Layout L) {
-        catalog();enemies(L);clearParticles(L);
+        catalog();enemies(L);clearParticles(L);titleRainbow(L);
         group("Rainbow Cat touch ownership, cage and yarn");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(25)==Lands.SWAMP && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));
@@ -118,7 +118,7 @@ final class TestRainbowCat extends Check {
         for(int key=0;key<Glyph.COUNT;key++)check("key voice identity "+key,sounds.add(Sfx.squishId(key)) && Sfx.squishId(key)<Sfx.COUNT && Sfx.squishId(key)!=Sfx.DRIP);
     }
     private static void enemies(Layout L) {
-        group("Rainbow Land enemy mix and trails");
+        group("Rainbow Land enemy mix");
         for(int mode:new int[]{-1,Power.FLURRY,Power.NINJA,Power.TEAM}) {
             GameCore c=TestFastEnemies.scene(L,26,151);c.pairSpawnSlots=0;c.spawnedThisStage=1;
             c.mode=mode;c.modeLeft=mode<0?0:100;
@@ -133,28 +133,6 @@ final class TestRainbowCat extends Check {
             check("increased rush chance "+mode,rush==(mode<0?920:390));
             check("increased dive chance "+mode,dive==360);
         }
-        GameCore c=TestFastEnemies.scene(L,26,151);
-        GameCore.Enemy e=add(c,L,new int[]{0,1,4},L.h*.4f);e.enterT=1;
-        RasterPainter p=new RasterPainter((int)L.w,(int)L.h,1);p.clear(0);
-        c.rnd.setSeed(151);RainbowLand.enemyTrail(p,c,e,L,255);
-        int[] first=p.resolve();boolean visible=false;for(int pixel:first)visible|=(pixel&0xFFFFFF)!=0;
-        check("ordinary word has rainbow trail",visible);
-        check("trail rendering preserves gameplay RNG",c.rnd.nextLong()==new java.util.Random(151).nextLong());
-        e.destroyed=true;e.clearX=c.enemyCentreX(e);e.clearY=e.y;e.clearClock=c.clock;
-        p=new RasterPainter((int)L.w,(int)L.h,1);p.clear(0);RainbowLand.enemyTrail(p,c,e,L,255);
-        check("trail clear starts from existing rainbow shape",java.util.Arrays.equals(first,p.resolve()));
-        e.destroyT=GameCore.DESTROY_TIME*.4f;c.clock+=e.destroyT;
-        p=new RasterPainter((int)L.w,(int)L.h,1);p.clear(0);RainbowLand.enemyTrail(p,c,e,L,255);
-        int[] dispersed=p.resolve();
-        check("clear spreads trail beyond original width",litWidth(dispersed,(int)L.w)>litWidth(first,(int)L.w));
-        check("clear fades rainbow brightness",brightest(dispersed)<brightest(first));
-        e.destroyT=GameCore.DESTROY_TIME;
-        p=new RasterPainter((int)L.w,(int)L.h,1);p.clear(0);RainbowLand.enemyTrail(p,c,e,L,255);
-        check("trail fully gone before enemy removed",brightest(p.resolve())==0);
-        e.destroyed=false;
-        p=new RasterPainter((int)L.w,(int)L.h,1);p.clear(0);c.stage=21;RainbowLand.enemyTrail(p,c,e,L,255);
-        boolean empty=true;for(int pixel:p.resolve())empty&=(pixel&0xFFFFFF)==0;
-        check("other lands keep their existing trails",empty);
     }
 
     private static void clearParticles(Layout L) {
@@ -181,13 +159,23 @@ final class TestRainbowCat extends Check {
         check("Survival retains its own clear palette",survival);
     }
 
-    private static int litWidth(int[] pixels,int width) {
-        int left=width,right=-1;
-        for(int i=0;i<pixels.length;i++)if((pixels[i]&0xFFFFFF)!=0){left=Math.min(left,i%width);right=Math.max(right,i%width);}
-        return Math.max(0,right-left+1);
+    private static void titleRainbow(Layout L) {
+        group("Rainbow title ground and headroom");
+        GameCore c=new GameCore(TestTimeAttack.store(),151,true);
+        c.collected=Collect.MASK;c.landSuppressed=0;c.landChoice=Lands.RAINBOW;
+        c.landDiscovery=-1;c.landSeen=LandPicker.stateMask();
+        int w=(int)L.w,h=(int)L.h;
+        RasterPainter p=new RasterPainter(w,h,1);p.clear(0);c.modes.draw(p,c,L);
+        int crestY=(int)(ModeSelector.y(L)-L.unit*2.9f);
+        check("mode viewport preserves the rainbow crest above old clip",(p.resolve()[crestY*w+w/2]&0xFFFFFF)!=0);
+        p=new RasterPainter(w,h,1);p.clear(0);
+        float x=L.w*.5f,y=ModeSelector.y(L),s=L.unit,span=Math.min(L.w*.36f,Draw.type(s*1.74f)*3.22f);
+        RainbowLand.title(p,x,y,s,span,1,0,1,true);
+        int[] pixels=p.resolve();int ground=(int)Math.ceil(y+s*.30f);boolean below=false;
+        for(int row=ground+1;row<h;row++)for(int column=0;column<w;column++)below|=(pixels[row*w+column]&0xFFFFFF)!=0;
+        check("rainbow stops at a flat ground plane",!below);
+        int left=-1,right=-1,row=ground-2;
+        for(int column=0;column<w;column++)if((pixels[row*w+column]&0xFFFFFF)!=0){if(left<0)left=column;right=column;}
+        check("both rainbow feet reach the ground beyond the text",left>=0 && left<x-span*.90f && right>x+span*.90f);
     }
-    private static int brightest(int[] pixels) {
-        int value=0;for(int pixel:pixels)value=Math.max(value,((pixel>>16)&255)+((pixel>>8)&255)+(pixel&255));return value;
-    }
-
 }

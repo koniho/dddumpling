@@ -219,7 +219,6 @@ final class Renderer extends Draw {
     // ---- enemies ------------------------------------------------------------
 
     static void enemy(Painter p, GameCore c, Layout L, GameCore.Enemy e) {
-        RainbowLand.enemyTrail(p,c,e,L,(int)(90+165*e.enterT));
         if (e.spinMate != null) return; // Drawn as one connected spinning pair.
         float destroy = e.destroyed
                 ? Math.min(1f, e.destroyT / GameCore.DESTROY_TIME) : 0f;

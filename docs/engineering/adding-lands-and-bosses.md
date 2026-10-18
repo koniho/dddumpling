@@ -176,6 +176,5 @@ these formats before exceeding them. Do not simply increase a count and shift sa
 
 Rainbow Land uses more Rush followers (92% of eligible preceding words, 39% of eligible
 power-up spawns) and Divebomb words (36% of eligible multi-key candidates). Existing
-spawn phases choose variants without extra RNG draws. All descending Rainbow enemies,
-including linked and power-up enemies, draw a fading translucent rainbow wake. On clear,
-the existing wake freezes at its impact position, widens and fades before enemy cleanup.
+spawn phases choose variants without extra RNG draws. Enemy clears use vibrant rainbow
+particles and star bursts. The experimental rainbow wakes have been removed.
