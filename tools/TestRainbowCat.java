@@ -14,8 +14,37 @@ final class TestRainbowCat extends Check {
             c.boss.update(1f/60,L,c.rnd);
         }
     }
+    static void trailAndCadence(Layout L) {
+        group("Rainbow Cat attack pacing and motion trail");
+        for(boolean kids:new boolean[]{false,true}) {
+            GameCore c=fight(L);RainbowCat a=c.boss.cat;a.kids=kids;a.launchLeft=0;
+            c.boss.update(.01f,L,c.rnd);float interval=kids?2.3f:1.6f;
+            check("chase launch interval doubled "+kids,Math.abs(a.launchLeft-interval)<.001f);
+            c.boss.clearBolts();
+            for(int i=0;i<(int)(interval*60)-1;i++)c.boss.update(1f/60,L,c.rnd);
+            check("no early chase shot "+kids,c.boss.boltCount()==0);
+            c.boss.update(.04f,L,c.rnd);
+            check("next shot arrives at slower cadence "+kids,c.boss.boltCount()==1);
+        }
+        GameCore c=fight(L);RainbowCat a=c.boss.cat;
+        float[] historyX=new float[120],historyY=new float[120];
+        for(int i=0;i<120;i++) {
+            c.boss.update(1f/60,L,c.rnd);historyX[i]=a.x;historyY[i]=a.y;
+        }
+        boolean follows=a.trailCount>=119;
+        for(int i=0;i<Math.min(119,a.trailCount);i++)
+            follows &= RainbowCat.distance(a.trailX[i],a.trailY[i],historyX[119-i],historyY[119-i])<.01f;
+        check("continuous chase ribbon records the actual path",follows);
+        check("ribbon is four times longer",Math.abs(RainbowCat.TRAIL_LENGTH-11.6f)<.001f
+                && Math.abs(RainbowCat.TRAIL_TIME-2.2f)<.001f);
+        check("only final quarter fades",RainbowCat.trailFade(.74f)==1
+                && Math.abs(RainbowCat.trailFade(.875f)-.5f)<.001f && RainbowCat.trailFade(1)==0);
+        a.phase=RainbowCat.OPEN;a.timer=99;
+        for(int i=0;i<140;i++)c.boss.update(1f/60,L,c.rnd);
+        check("motion trail expires while cat holds prompt pose",a.trailCount==0);
+    }
     static void all(Layout L) {
-        catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));

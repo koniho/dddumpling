@@ -8,7 +8,7 @@ final class RainbowCatArt extends Draw {
         RainbowCat a=b.cat;if(!a.placed)return;
         float fade=alpha*(b.beaten?1-b.leaveProgress():1),enter=b.intro>0?b.introProgress():1;
         Painter q=new OpacityPainter(p,fade);
-        dashTrail(q,a);
+        motionTrail(q,a);
         q.save();q.translate((1-enter)*(1-enter)*-L.w,0);
         cat(q,a.x,a.y,a.r,a.clock*(a.phase==RainbowCat.OPEN?1:2),a.turn,a.pastry,a.head,a.phase==RainbowCat.OPEN,1);
         if(a.flash>0)for(int band=0;band<3;band++)
@@ -32,21 +32,41 @@ final class RainbowCatArt extends Draw {
             }
         }
     }
-    private static void dashTrail(Painter p,RainbowCat a) {
-        for(int i=a.trailCount-1;i>0;i--) {
-            float dx=a.trailX[i-1]-a.trailX[i],dy=a.trailY[i-1]-a.trailY[i];
-            float d=(float)Math.hypot(dx,dy);if(d<.01f)continue;
-            float nx=-dy/d,ny=dx/d,fade=1-a.trailAge[i]/RainbowCat.TRAIL_TIME;
-            float width=a.r*(.16f+.07f*fade);
-            for(int band=0;band<COLORS.length;band++) {
-                float low=(band-3)*width,high=low+width*1.1f;
-                p.fillPoly(new float[]{a.trailX[i]+nx*low,a.trailY[i]+ny*low,
-                        a.trailX[i-1]+nx*low,a.trailY[i-1]+ny*low,
-                        a.trailX[i-1]+nx*high,a.trailY[i-1]+ny*high,
-                        a.trailX[i]+nx*high,a.trailY[i]+ny*high},Glyph.withAlpha(COLORS[band],(int)(160*fade*fade)));
+    private static void motionTrail(Painter p,RainbowCat a) {
+        int capacity=a.trailCount+1,n=1;
+        float[] x=new float[capacity],y=new float[capacity],progress=new float[capacity];
+        x[0]=a.x;y[0]=a.y;
+        float length=0,limit=a.r*RainbowCat.TRAIL_LENGTH;
+        for(int i=0;i<a.trailCount;i++) {
+            float dx=a.trailX[i]-x[n-1],dy=a.trailY[i]-y[n-1];
+            float d=(float)Math.hypot(dx,dy);if(d<.05f)continue;
+            float step=Math.min(d,limit-length);
+            x[n]=x[n-1]+dx*step/d;y[n]=y[n-1]+dy*step/d;length+=step;
+            progress[n]=Math.max(length/limit,a.trailAge[i]/RainbowCat.TRAIL_TIME);n++;
+            if(length>=limit)break;
+        }
+        if(n<2)return;
+        float[] nx=new float[n],ny=new float[n];
+        for(int i=0;i<n;i++) {
+            int before=Math.max(0,i-1),after=Math.min(n-1,i+1);
+            float dx=x[before]-x[after],dy=y[before]-y[after];
+            float d=Math.max(.01f,(float)Math.hypot(dx,dy));nx[i]=-dy/d;ny[i]=dx/d;
+        }
+        // Shared vertex normals keep the ribbon joined through turns. Batch equal-opacity sections.
+        for(int start=0;start<n-1;) {
+            int bucket=(int)(RainbowCat.trailFade(progress[start+1])*16),end=start+1;
+            while(end<n-1 && (int)(RainbowCat.trailFade(progress[end+1])*16)==bucket)end++;
+            if(bucket>0)for(int band=0;band<COLORS.length;band++) {
+                int count=end-start+1;float[] strip=new float[count*4];
+                float low=(band-3)*a.r*.23f,high=low+a.r*.24f;
+                for(int j=0;j<count;j++) {
+                    int at=start+j,back=count*2-1-j;
+                    strip[j*2]=x[at]+nx[at]*low;strip[j*2+1]=y[at]+ny[at]*low;
+                    strip[back*2]=x[at]+nx[at]*high;strip[back*2+1]=y[at]+ny[at]*high;
+                }
+                p.fillPoly(strip,Glyph.withAlpha(COLORS[band],160*bucket/16));
             }
-            if(i%6==0)p.fillPoly(star(a.trailX[i],a.trailY[i],a.r*.17f*fade,a.r*.07f*fade,4,a.clock*3+i),
-                    Glyph.withAlpha(0xFFFFFFFF,(int)(210*fade)));
+            start=end;
         }
     }
     static void rushProjectile(Painter p,GameCore c,Layout L,Boss b,int i,float x,float y,float r,int color) {
@@ -77,8 +97,8 @@ final class RainbowCatArt extends Draw {
     static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known) {
         int crust=known>0?0xFFFFD49A:0xFF49425F,fur=known>0?FUR:0xFF49425F;
         float step=(float)Math.sin(t*(caught?15:7));
-        // Layered rainbow ribbon tapers behind the pastry and bends with flight.
-        for(int band=0;band<COLORS.length;band++) {
+        // Static portraits retain their decorative ribbon; battle uses recorded motion.
+        if(body==null)for(int band=0;band<COLORS.length;band++) {
             float[] trail=new float[36];
             for(int i=0;i<9;i++){float u=i/8f;trail[i*2]=x-facing*r*(.8f+u*2.9f);trail[i*2+1]=y+r*((band-2.5f)*.24f+(float)Math.sin(t*4-u*3)*u*.30f)-r*.12f;trail[(17-i)*2]=trail[i*2];trail[(17-i)*2+1]=trail[i*2+1]+r*.24f;}
             p.fillPoly(trail,fadeBy(COLORS[band],.48f*known));

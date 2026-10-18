@@ -3,9 +3,9 @@ package com.dddumpling.game;
 /** A fast three-tap chase opens a shuffled key challenge; failure releases a star flurry. */
 final class RainbowCat {
     static final int CHASE=0, DASH=1, OPEN=2;
-    static final float DASH_TIME=.34f, TRAIL_TIME=.55f;
+    static final float DASH_TIME=.34f, TRAIL_TIME=2.2f, TRAIL_LENGTH=2.9f*4;
     final Softbody pastry=new Softbody(18,151), head=new Softbody(14,152);
-    final float[] route=new float[8],trailX=new float[36],trailY=new float[36],trailAge=new float[36];
+    final float[] route=new float[8],trailX=new float[136],trailY=new float[136],trailAge=new float[136];
     int phase,pointer=-1,taps,trailCount,at,count,captures,cue;
     final int[] prompt=new int[Glyph.COUNT];
     float x,y,vx,vy,r,left,right,top,bottom,clock,flash,turn=1;
@@ -13,7 +13,7 @@ final class RainbowCat {
     boolean placed,kids,escaping;
     void reset() {
         phase=CHASE;pointer=-1;taps=trailCount=at=count=captures=cue=0;placed=escaping=false;turn=1;
-        x=y=vx=vy=clock=flash=routeTime=routeDuration=trailTick=timer=0;launchLeft=.65f;
+        x=y=vx=vy=clock=flash=routeTime=routeDuration=trailTick=timer=0;launchLeft=1.3f;
     }
     void release() {pointer=-1;}
     void place(Layout L) {
@@ -72,7 +72,7 @@ final class RainbowCat {
         y=v*v*v*route[1]+3*v*v*u*route[3]+3*v*u*u*route[5]+u*u*u*route[7];
         vx=3*(v*v*(route[2]-route[0])+2*v*u*(route[4]-route[2])+u*u*(route[6]-route[4]))/routeDuration;
         vy=3*(v*v*(route[3]-route[1])+2*v*u*(route[5]-route[3])+u*u*(route[7]-route[5]))/routeDuration;
-        if(phase==DASH || escaping) {
+        if(distance(ox,oy,x,y)>.001f) {
             trailTick+=dt;
             while(trailTick>=1f/60) {
                 trailTick-=1f/60;
@@ -94,7 +94,7 @@ final class RainbowCat {
                     int slot=b.tailBolt(rnd,x,y+r*.45f);
                     if(slot>=0) {b.bglyph[slot]=prompt[i];b.bfast[slot]=true;b.bt[slot]=-i*.16f;}
                 }
-                cue=2;resume(L,rnd);launchLeft=2.2f;
+                cue=2;resume(L,rnd);launchLeft=4.4f;
             }
             return 0;
         }
@@ -112,16 +112,18 @@ final class RainbowCat {
         launchLeft-=dt;
         if(launchLeft<=0) {
             if(b.boltCount()<3) {int slot=b.tailBolt(rnd,x,y+r*.45f);if(slot>=0)b.bfast[slot]=true;}
-            launchLeft=kids?1.15f:.80f;
+            launchLeft=attackInterval();
         }
         return 0;
     }
+    float attackInterval() {return kids?2.3f:1.6f;}
+    static float trailFade(float progress) {return clamp((1-progress)*4,0,1);}
     float promptTime() {return (count==6?6f:4.8f)*(kids?1.4f:1);}
     private void open(Boss b) {
         phase=OPEN;vx=vy=0;b.clearBolts();timer=promptTime();cue=1;flash=1;
     }
     private void resume(Layout L,java.util.Random rnd) {
-        taps=at=count=0;phase=DASH;chooseRoute(L,rnd,true);launchLeft=.8f;
+        taps=at=count=0;phase=DASH;chooseRoute(L,rnd,true);launchLeft=attackInterval();
     }
     int press(Boss b,int glyph,Layout L,java.util.Random rnd) {
         if(phase!=OPEN || count==0)return Boss.REBUFF;
