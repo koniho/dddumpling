@@ -177,12 +177,13 @@ final class BossPlay {
                     Glyph.COLOR[g]);
             if (c.sound != null) {
                 if (divide) c.sound.divideDamage();
+                else if(c.boss.kind==Boss.RAINBOW_CAT)c.boss.cat.meow(c,CatMeowRecording.HURT,true);
                 else c.sound.bossDamage();
             }
         }
         if (verdict == Boss.SPLIT && !slimePrompt && c.sound != null) c.sound.bossSplit();
         // Pitched by how much of the boss is left, except the charged bolt which owns its bloop.
-        if (!slimePrompt && c.boss.kind != Boss.SPLITTER && c.sound != null)
+        if (!slimePrompt && c.boss.kind != Boss.SPLITTER && !(c.boss.kind==Boss.RAINBOW_CAT && verdict==Boss.HIT) && c.sound != null)
             c.sound.squish(g, 1 + (int) (3f * (1f - c.boss.health())));
         return true;
     }
@@ -195,7 +196,8 @@ final class BossPlay {
         int first=c.particles.size();
         Fx.explode(c,c.rnd,b.hitX,b.hitY,L.enemyR*2,24,0xFFFF92CC);
         RainbowLand.clearColors(c,first);
-        if(c.sound!=null) {c.sound.squish(Kawaii.CAT,b.cat.taps);c.sound.ninjaSwish((b.cat.taps-1)%3);}
+        b.cat.meow(c,CatMeowRecording.SURPRISED,true);
+        if(c.sound!=null)c.sound.ninjaSwish((b.cat.taps-1)%3);
     }
 
     static void slimeVulnerableSound(GameCore c,float dt) {

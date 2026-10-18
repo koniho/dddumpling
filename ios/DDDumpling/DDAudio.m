@@ -395,6 +395,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)boltDeath { [self playEffect:DDSfx_BOLT_DEATH rate:1 gain:.82f]; }
 - (void)shieldBounce { [self playEffect:DDSfx_SHIELD_BOUNCE rate:1 gain:.72f]; }
 - (void)gatorParry { [self playEffect:DDSfx_GATOR_PARRY rate:1 gain:1]; }
+- (void)catMeowWithInt:(jint)variant { [self playEffect:[DDSfx catMeowIdWithInt:variant] rate:1 gain:DDSfx_CAT_MEOW_GAIN]; }
 - (void)gatorTauntWithInt:(jint)variant { [self playEffect:[DDSfx gatorTauntIdWithInt:variant] rate:1 gain:DDSfx_GATOR_TAUNT_GAIN]; }
 - (void)gatorPromptWithInt:(jint)variant { [self playEffect:[DDSfx gatorPromptIdWithInt:variant] rate:1 gain:DDSfx_GATOR_PROMPT_GAIN]; }
 - (void)gatorSplashWithBoolean:(jboolean)entry {

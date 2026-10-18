@@ -93,6 +93,7 @@ src/com/dddumpling/game/SlimeSquishRecording.java
 src/com/dddumpling/game/GatorParryRecording.java
 src/com/dddumpling/game/GatorCueRecording.java
 src/com/dddumpling/game/GatorTauntRecording.java
+src/com/dddumpling/game/CatMeowRecording.java
 src/com/dddumpling/game/DivideDeath.java
 src/com/dddumpling/game/SettingsArt.java
 src/com/dddumpling/game/PlayerSettings.java

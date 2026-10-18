@@ -1,0 +1,263 @@
+{
+  "source": "Oct 18 at 14_19.m4a",
+  "source_sha256": "59b1332edfeb1e6b499c08c6ac38d2c82d01e1210d29f5d4c1f566afa68bbd82",
+  "format": "48 kHz mono PCM16; original levels",
+  "fades_ms": [
+    3,
+    20
+  ],
+  "lowpass_hz": null,
+  "lowpass_poles": null,
+  "clips": [
+    {
+      "name": "meow-01",
+      "start": 0.59,
+      "end": 1.14,
+      "duration": 0.55,
+      "original": {
+        "peak_dbfs": -14.59,
+        "rms_dbfs": -27.2
+      }
+    },
+    {
+      "name": "meow-02",
+      "start": 1.14,
+      "end": 1.57,
+      "duration": 0.43,
+      "original": {
+        "peak_dbfs": -17.48,
+        "rms_dbfs": -26.84
+      }
+    },
+    {
+      "name": "meow-03",
+      "start": 1.57,
+      "end": 2.08,
+      "duration": 0.51,
+      "original": {
+        "peak_dbfs": -12.91,
+        "rms_dbfs": -25.47
+      }
+    },
+    {
+      "name": "meow-04",
+      "start": 2.08,
+      "end": 2.56,
+      "duration": 0.48,
+      "original": {
+        "peak_dbfs": -12.99,
+        "rms_dbfs": -25.38
+      }
+    },
+    {
+      "name": "meow-05",
+      "start": 2.56,
+      "end": 3.03,
+      "duration": 0.47,
+      "original": {
+        "peak_dbfs": -13.86,
+        "rms_dbfs": -24.22
+      }
+    },
+    {
+      "name": "meow-06",
+      "start": 3.03,
+      "end": 3.3,
+      "duration": 0.27,
+      "original": {
+        "peak_dbfs": -13.13,
+        "rms_dbfs": -24.81
+      }
+    },
+    {
+      "name": "meow-07",
+      "start": 3.3,
+      "end": 3.55,
+      "duration": 0.25,
+      "original": {
+        "peak_dbfs": -18.12,
+        "rms_dbfs": -24.98
+      }
+    },
+    {
+      "name": "meow-08",
+      "start": 3.55,
+      "end": 4.04,
+      "duration": 0.49,
+      "original": {
+        "peak_dbfs": -13.18,
+        "rms_dbfs": -26.65
+      }
+    },
+    {
+      "name": "meow-09",
+      "start": 4.04,
+      "end": 4.52,
+      "duration": 0.48,
+      "original": {
+        "peak_dbfs": -13.03,
+        "rms_dbfs": -26.41
+      }
+    },
+    {
+      "name": "meow-10",
+      "start": 5.35,
+      "end": 5.86,
+      "duration": 0.51,
+      "original": {
+        "peak_dbfs": -11.93,
+        "rms_dbfs": -23.49
+      }
+    },
+    {
+      "name": "meow-11",
+      "start": 5.86,
+      "end": 6.35,
+      "duration": 0.49,
+      "original": {
+        "peak_dbfs": -12.2,
+        "rms_dbfs": -23.48
+      }
+    },
+    {
+      "name": "meow-12",
+      "start": 6.35,
+      "end": 6.85,
+      "duration": 0.5,
+      "original": {
+        "peak_dbfs": -12.59,
+        "rms_dbfs": -23.34
+      }
+    },
+    {
+      "name": "meow-13",
+      "start": 6.85,
+      "end": 7.38,
+      "duration": 0.53,
+      "original": {
+        "peak_dbfs": -13.18,
+        "rms_dbfs": -23.19
+      }
+    },
+    {
+      "name": "meow-14",
+      "start": 7.38,
+      "end": 7.88,
+      "duration": 0.5,
+      "original": {
+        "peak_dbfs": -14.61,
+        "rms_dbfs": -25.12
+      }
+    },
+    {
+      "name": "meow-15",
+      "start": 7.88,
+      "end": 8.4,
+      "duration": 0.52,
+      "original": {
+        "peak_dbfs": -15.57,
+        "rms_dbfs": -24.75
+      }
+    },
+    {
+      "name": "meow-16",
+      "start": 8.4,
+      "end": 8.93,
+      "duration": 0.53,
+      "original": {
+        "peak_dbfs": -12.21,
+        "rms_dbfs": -22.86
+      }
+    },
+    {
+      "name": "meow-17",
+      "start": 8.93,
+      "end": 9.53,
+      "duration": 0.6,
+      "original": {
+        "peak_dbfs": -12.07,
+        "rms_dbfs": -22.62
+      }
+    },
+    {
+      "name": "meow-18",
+      "start": 9.53,
+      "end": 10.16,
+      "duration": 0.63,
+      "original": {
+        "peak_dbfs": -13.16,
+        "rms_dbfs": -23.68
+      }
+    },
+    {
+      "name": "meow-19",
+      "start": 10.16,
+      "end": 10.76,
+      "duration": 0.6,
+      "original": {
+        "peak_dbfs": -10.31,
+        "rms_dbfs": -22.16
+      }
+    },
+    {
+      "name": "meow-20",
+      "start": 10.76,
+      "end": 11.35,
+      "duration": 0.59,
+      "original": {
+        "peak_dbfs": -9.13,
+        "rms_dbfs": -20.89
+      }
+    },
+    {
+      "name": "meow-21",
+      "start": 11.35,
+      "end": 11.85,
+      "duration": 0.5,
+      "original": {
+        "peak_dbfs": -9.08,
+        "rms_dbfs": -21.78
+      }
+    },
+    {
+      "name": "meow-struggle-01",
+      "start": 12.34,
+      "end": 15.08,
+      "duration": 2.74,
+      "original": {
+        "peak_dbfs": -1.81,
+        "rms_dbfs": -25.25
+      }
+    },
+    {
+      "name": "meow-struggle-02",
+      "start": 15.4,
+      "end": 17.52,
+      "duration": 2.12,
+      "original": {
+        "peak_dbfs": -8.18,
+        "rms_dbfs": -20.5
+      }
+    },
+    {
+      "name": "meow-hurt",
+      "start": 22.91,
+      "end": 23.78,
+      "duration": 0.87,
+      "original": {
+        "peak_dbfs": -20.94,
+        "rms_dbfs": -31.65
+      }
+    },
+    {
+      "name": "meow-surprised",
+      "start": 27.43,
+      "end": 27.86,
+      "duration": 0.43,
+      "original": {
+        "peak_dbfs": -0.84,
+        "rms_dbfs": -16.78
+      }
+    }
+  ]
+}

@@ -42,7 +42,11 @@ final class Sfx {
             GATOR_SPLASH = GATOR_PROMPT_2 + 1, GATOR_TAUNT_0 = GATOR_SPLASH + 1, SLIME_SQUISH_0 = GATOR_TAUNT_0 + 6, SLIME_VULNERABLE = SLIME_SQUISH_0 + 6, SLIME_DRAG_BOIP = SLIME_VULNERABLE + 1, EXTRA_BOSS_VOICES = SLIME_DRAG_BOIP + 1;
     static final int LEGACY_KEYS=6;
     static final int EXTRA_KEYS=EXTRA_BOSS_VOICES+Math.max(0,Boss.COUNT-LEGACY_BOSS_VOICES);
-    static final int COUNT=EXTRA_KEYS+Math.max(0,Glyph.COUNT-LEGACY_KEYS);
+    static final int CAT_MEOW_0=EXTRA_KEYS+Math.max(0,Glyph.COUNT-LEGACY_KEYS);
+    static final int COUNT=CAT_MEOW_0+CatMeowRecording.COUNT;
+    static final float CAT_MEOW_GAIN=.90f;
+    static int catMeowId(int variant) {return CAT_MEOW_0+Math.max(0,Math.min(CatMeowRecording.COUNT-1,variant));}
+    static boolean isCatMeow(int id) {return id>=CAT_MEOW_0 && id<COUNT || id==bossTauntId(Boss.RAINBOW_CAT);}
     static int squishId(int glyph) {return glyph<LEGACY_KEYS?SQUISH_0+glyph:EXTRA_KEYS+glyph-LEGACY_KEYS;}
     static int count() {return COUNT;}
     static int bossTauntId(int boss) {return boss<LEGACY_BOSS_VOICES?BOSS_TAUNT_0+boss:EXTRA_BOSS_VOICES+boss-LEGACY_BOSS_VOICES;}
@@ -92,12 +96,14 @@ final class Sfx {
     }
 
     private static short[] renderEffect(int id) {
+        if(id>=CAT_MEOW_0 && id<COUNT)return CatMeowRecording.build(id-CAT_MEOW_0);
+        if(id==bossTauntId(Boss.RAINBOW_CAT))return CatMeowRecording.build(0);
         if(id==SLIME_VULNERABLE)return slimeVulnerable();
         if(id==SLIME_DRAG_BOIP)return slimeDragBoip();
         if(id>=SLIME_SQUISH_0 && id<SLIME_SQUISH_0+6)return SlimeSquishRecording.build(id-SLIME_SQUISH_0);
         if(id>=GATOR_TAUNT_0 && id<GATOR_TAUNT_0+6)return GatorTauntRecording.build(id-GATOR_TAUNT_0);
         if (id >= SQUISH_0 && id < SQUISH_0 + Math.min(LEGACY_KEYS,Glyph.COUNT)) return squish(id - SQUISH_0);
-        if(id>=EXTRA_KEYS && id<COUNT)return squish(id-EXTRA_KEYS+LEGACY_KEYS);
+        if(id>=EXTRA_KEYS && id<CAT_MEOW_0)return squish(id-EXTRA_KEYS+LEGACY_KEYS);
         if(id>=EXTRA_BOSS_VOICES && id<EXTRA_KEYS)return bossTaunt(id-EXTRA_BOSS_VOICES+LEGACY_BOSS_VOICES);
         if (id >= BOSS_TAUNT_0 && id < BOSS_TAUNT_0 + Math.min(LEGACY_BOSS_VOICES,Boss.COUNT))
             return bossTaunt(id - BOSS_TAUNT_0);

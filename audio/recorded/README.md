@@ -236,3 +236,33 @@ layered with the single-beat recorded squish. It falls from about 940 Hz toward
 190 Hz with a soft pitch wobble, 300 ms amplitude decay and 90 ms ending fade,
 at 60% effect gain. Holding or continuing an already-completed drag does not
 retrigger it; attack volleys retain their existing shorter squishes.
+
+# Rainbow Cat meows
+
+User-performed recording **Oct 18 at 14_19.m4a**, recorded October 18, 2026,
+provided explicitly for Rainbow Cat integration. Source SHA-256:
+`59b1332edfeb1e6b499c08c6ac38d2c82d01e1210d29f5d4c1f566afa68bbd82`. The original stays in the user's Recordings folder;
+it is not a third-party library asset or a CC0 claim.
+
+[Reviewed cuts and measurements](rainbow-cat-cuts.json) retain 25 excerpts:
+21 short meows, two longer performances used for net struggling, and the
+annotated hurt and surprised takes. Embedded transcript metadata identifies
+spoken instructions around 19.38–22.08 and 25.29–27.21 seconds. Those annotations,
+preparation silence, and the final handling noise are excluded. Boundaries use
+waveform valleys and comparison of -32 dB and -23 dB silence candidates; continuous
+meow phrases are split at articulation valleys rather than counting silence as sounds.
+
+The found-sounds extraction skill exported 48 kHz mono review WAVs with
+3 ms / 20 ms edge fades. `python3 tools/prepare-cat-meows.py /path/to/source.m4a`
+verifies the original hash and regenerates `CatMeowRecording.java` and 22,050 Hz
+mono review WAVs in `build/cat-meows/game`. No pitch change, normalization,
+compression or low-pass filter: relative recording levels are preserved.
+Every excerpt is checked for duration, audible energy, unclipped peaks and
+silent endpoints. These measurements do not substitute for phone/headphone review.
+
+The surprise sound follows accepted taps and net catches; hurt follows completed
+key sequences, including the final hit. Longer takes alternate when the net prompt
+opens. Short takes cycle through launches and flurries without consuming gameplay
+randomness. Routine calls wait until the current recording finishes; important
+surprise/hurt reactions take priority. The entrance uses the first short meow.
+Android and iOS use the same PCM at original speed and the effects-volume setting.

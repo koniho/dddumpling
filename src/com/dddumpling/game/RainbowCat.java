@@ -15,14 +15,15 @@ final class RainbowCat {
     float routeTime,routeDuration,launchLeft,trailTick,timer;
     float circleSweep,netAge,netReturn,catchX,catchY,windUp,releaseWind,netAimX,netAimY,tapFlash,scared,scaredAge;
     float traceLost,lostStart,lostTravel,traceBeat,traceProgress;
-    int traceHaptic;
+    int traceHaptic,nextMeow;
+    float voiceLeft;
     boolean circling;
     boolean placed,kids,escaping;
     void reset() {
         phase=CHASE;pointer=-1;taps=trailCount=at=count=captures=cue=0;placed=escaping=false;turn=1;
         circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=netAimX=netAimY=tapFlash=scared=scaredAge=0;circling=false;gesture.clear();
         x=y=vx=vy=clock=flash=routeTime=routeDuration=trailTick=timer=0;launchLeft=1.3f;
-        traceLost=lostStart=lostTravel=traceBeat=traceProgress=0;traceHaptic=0;
+        traceLost=lostStart=lostTravel=traceBeat=traceProgress=voiceLeft=0;traceHaptic=0;nextMeow=1;
     }
     private void endStroke() {pointer=-1;circling=false;circleSweep=0;gesture.clear();}
     void release() {endStroke();traceLost=traceBeat=traceProgress=0;traceHaptic=0;}
@@ -31,6 +32,15 @@ final class RainbowCat {
         lostStart=start;lostTravel=travel;traceLost=.70f;traceHaptic=2;
         circling=false;circleSweep=0;gesture.clear();
         if(c.sound!=null)c.sound.wrong();
+    }
+    void meow(GameCore c,int variant,boolean priority) {
+        if(!priority && voiceLeft>0)return;
+        voiceLeft=CatMeowRecording.duration(variant)+.08f;
+        if(c.sound!=null)c.sound.catMeow(variant);
+    }
+    void shortMeow(GameCore c) {
+        if(voiceLeft>0)return;
+        meow(c,nextMeow,false);nextMeow=(nextMeow+5)%CatMeowRecording.SHORT_COUNT;
     }
     void place(Layout L) {
         r=L.w*.073f*1.5f;
@@ -43,6 +53,7 @@ final class RainbowCat {
         }
     }
     void animate(float dt,Layout L) {
+        voiceLeft=Math.max(0,voiceLeft-dt);
         traceLost=Math.max(0,traceLost-dt);traceBeat=Math.max(0,traceBeat-dt);
         place(L);clock+=dt;netReturn=Math.max(0,netReturn-dt);flash=Math.max(0,flash-dt*3);
         for(int i=trailCount-1;i>=0;i--) {
@@ -226,6 +237,7 @@ final class RainbowCat {
             for(int i=0;i<count;i++)prompt[i]=Roster.at(c.boss.rosterFull,i);
             for(int i=count-1;i>0;i--) {int j=c.rnd.nextInt(i+1),swap=prompt[i];prompt[i]=prompt[j];prompt[j]=swap;}
             c.companion.react(RunCompanion.BOSS_HIT,1);
+            meow(c,CatMeowRecording.SURPRISED,true);
             if(c.sound!=null)c.sound.ninjaSwish(1);
         }
     }

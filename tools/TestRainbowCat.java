@@ -221,6 +221,33 @@ final class TestRainbowCat extends Check {
         trace.move(star[2],star[3]);float before=trace.progress();trace.move(star[0],star[1]);
         check("retracing star edge does not count twice",trace.progress()<before*.1f);
     }
+    private static void recordedMeows(Layout L) {
+        group("Recorded Rainbow Cat event voices");
+        GameCore c=fight(L);Ear ear=new Ear();c.sound=ear;RainbowCat a=c.boss.cat;
+        a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
+        check("tap uses annotated surprise",ear.catMeows==1 && ear.lastCatMeow==CatMeowRecording.SURPRISED);
+        a.shortMeow(c);check("routine meow waits for reaction to finish",ear.catMeows==1);
+        readyToCircle(c,L);int beforeCatch=ear.catMeows;circle(c,L,1);
+        check("net catch uses surprised take",ear.catMeows==beforeCatch+1 && ear.lastCatMeow==CatMeowRecording.SURPRISED);
+        for(int i=0;i<60 && a.phase!=RainbowCat.OPEN;i++)c.update(1f/60,L);
+        check("caught cat uses a longer struggle performance",ear.lastCatMeow==CatMeowRecording.STRUGGLE);
+        int before=ear.catMeows;
+        while(a.phase==RainbowCat.OPEN) {
+            int key=a.prompt[a.at],verdict=c.boss.press(key,c.rnd,L);
+            BossPlay.press(c,key,verdict,L);
+        }
+        check("damage overrides chatter with annotated hurt",ear.catMeows==before+1 && ear.lastCatMeow==CatMeowRecording.HURT);
+        c.update(.01f,L);
+        check("damage flurry does not mask hurt with extra meow",ear.catMeows==before+1);
+        a.voiceLeft=0;c.rnd.setSeed(151);java.util.Random expected=new java.util.Random(151);
+        java.util.HashSet<Integer> takes=new java.util.HashSet<>();
+        for(int i=0;i<CatMeowRecording.SHORT_COUNT;i++) {
+            a.shortMeow(c);takes.add(ear.lastCatMeow);a.voiceLeft=0;
+        }
+        check("short takes cycle without repetition",takes.size()==CatMeowRecording.SHORT_COUNT);
+        check("voice choices preserve gameplay RNG",c.rnd.nextLong()==expected.nextLong());
+        a.reset();check("reset clears recorded voice cadence",a.voiceLeft==0 && a.nextMeow==1);
+    }
     private static void traceFeedback(Layout L) {
         group("Tracing feedback follows progress and loss");
         GameCore c=fight(L);readyToCircle(c,L);RainbowCat a=c.boss.cat;
@@ -341,7 +368,7 @@ final class TestRainbowCat extends Check {
         check("motion trail expires while cat holds prompt pose",a.trailCount==0);
     }
     static void all(Layout L) {
-        fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));

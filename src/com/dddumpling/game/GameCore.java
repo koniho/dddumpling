@@ -306,6 +306,7 @@ final class GameCore {
         void gatorParry();
         void gatorPrompt(int variant);
         void gatorTaunt(int variant);
+        default void catMeow(int variant) {}
         void gatorSplash(boolean entry);
         default void octoWave() {}
         default void octoDamage() {}
@@ -3194,6 +3195,8 @@ final class GameCore {
                     flashColor=companion.who>=0?Collect.ACCENT[companion.who]:0xFFA7F7DD;
                     if(sound!=null)sound.squish(Kawaii.CAT,3);
                 } else if(sound!=null) {if(boss.cat.cue==1)sound.uiBloop();else sound.ninjaSwish(2);}
+                if(boss.cat.cue==1)boss.cat.meow(this,CatMeowRecording.STRUGGLE+boss.cat.captures%2,false);
+                else if(boss.cat.cue==2)boss.cat.shortMeow(this);
                 boss.cat.cue=0;
             }
             int gatorAttackCues=boss.kind==Boss.ALLIGATOR?boss.alligator.takeAttackCues():0;
@@ -3207,7 +3210,7 @@ final class GameCore {
                 sound.bossCharge(brew);
                 if (boss.launched) {
                     if(boss.kind==Boss.SLIME)BossPlay.slimeSquish(this,3,3);
-                    else if(boss.kind==Boss.RAINBOW_CAT)sound.boltPop();
+                    else if(boss.kind==Boss.RAINBOW_CAT)boss.cat.shortMeow(this);
                     else if(boss.kind!=Boss.MUSHROOM)sound.bossLaugh();
                 }
                 if (boss.mushroomSporeCue) sound.mushroomSpore();
