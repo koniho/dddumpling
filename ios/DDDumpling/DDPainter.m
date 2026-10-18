@@ -40,6 +40,9 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 
 @implementation DDIOSPainter
 
+// The frame wrapper supplies the selected skin; the native canvas starts with Default.
+- (jint)skin { return 0; }
+
 // Android uses optional bitmap stamps; Core Graphics retains the vector fallback.
 - (id)stamps { return nil; }
 

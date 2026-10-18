@@ -9,6 +9,10 @@
 @end
 
 @implementation DDPainterTests
+- (void)testCanvasStartsWithDefaultSkin {
+  XCTAssertEqual([[DDIOSPainter new] skin], 0);
+}
+
 - (void)testPaletteReuseAndEvictionPreserveComponents {
   DDIOSPainter *painter = [DDIOSPainter new];
   CGColorRef first = [painter cachedColor:(jint)0x7f123456];
