@@ -285,8 +285,10 @@ abstract class Check {
         Boss b = c.boss;
         if(b.kind==Boss.RAINBOW_CAT) {
             RainbowCat a=b.cat;
-            if(a.phase==RainbowCat.CAGED) {a.release();c.tapKey(a.prompt[a.at],L);}
-            else {a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.cageX,a.cageY);}
+            int bolt=-1;for(int i=0;i<Boss.MAX_BOLTS;i++)if(b.blive[i]){bolt=i;break;}
+            if(bolt>=0)c.tapKey(b.bglyph[bolt],L);
+            else if(a.phase==RainbowCat.OPEN)c.tapKey(a.prompt[a.at],L);
+            else if(a.phase==RainbowCat.CHASE) {a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);}
             return true;
         }
         if(b.kind==Boss.ALLIGATOR && b.boltCount()==0 && (!b.open()

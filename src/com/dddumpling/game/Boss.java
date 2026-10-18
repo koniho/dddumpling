@@ -734,7 +734,7 @@ final class Boss {
     boolean open() {
         if (!fighting()) return false;
         if (slimeOpening()) return age >= SLIME_OPENING_RELEASE;
-        if (kind == RAINBOW_CAT) return cat.phase == RainbowCat.CAGED;
+        if (kind == RAINBOW_CAT) return cat.phase==RainbowCat.OPEN;
         if (kind == ALLIGATOR) return alligator.daze > 0;
         if (kind == SLIME && (!slimeCoverLearned || slimeRetaliating)) return true;
         if (kind == SPLITTER) return true;
@@ -823,7 +823,7 @@ final class Boss {
 
     private boolean asksFor(int g) {
         switch (kind) {
-            case RAINBOW_CAT: return cat.phase==RainbowCat.CAGED && cat.count>0 && cat.prompt[cat.at]==g;
+            case RAINBOW_CAT: return cat.phase==RainbowCat.OPEN && cat.count>0 && cat.prompt[cat.at]==g;
             case ALLIGATOR: return Roster.active(rosterFull,g);
             case SLIME: return g == chainLetter();
             case OCTOPUS: return octoReach >= 0f && g == octoTarget;
@@ -930,7 +930,7 @@ final class Boss {
             if (swatted != NONE) return swatted;
         }
         if (!fighting()) return NONE;
-        if (kind == RAINBOW_CAT) return cat.press(this,g);
+        if (kind == RAINBOW_CAT) return cat.press(this,g,L,rnd);
         if (kind == ALLIGATOR) return alligator.press(this,L);
         if (kind == SLIME && (!open() || !asksFor(g))) {
             slimeKeyLock = 1f;
@@ -2320,7 +2320,7 @@ final class Boss {
         return landed;
     }
 
-    private void clearBolts() {
+    void clearBolts() {
         for (int i = 0; i < MAX_BOLTS; i++) {
             blive[i] = false;
             bfast[i] = false;

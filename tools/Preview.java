@@ -14,15 +14,18 @@ final class Preview {
         for(int i=0;i<60;i++)c.boss.update(1f/60,L,c.rnd);
         shot(dir,"151-chase",c,L,w,h,ss);
         RainbowCat a=c.boss.cat;
-        a.phase=RainbowCat.WINDUP;a.timer=.35f;
-        shot(dir,"151-paw-windup",c,L,w,h,ss);
-        TestRainbowCat.capture(c,L);
+        a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
+        c.boss.update(.17f,L,c.rnd);
+        shot(dir,"151-dash",c,L,w,h,ss);
+        TestRainbowCat.challenge(c,L);
         for(int i=0;i<16;i++)c.boss.update(1f/60,L,c.rnd);
-        shot(dir,"151-caged",c,L,w,h,ss);
+        shot(dir,"151-prompt",c,L,w,h,ss);
+        a.timer=.01f;c.boss.update(.02f,L,c.rnd);c.boss.update(.45f,L,c.rnd);
+        shot(dir,"151-flurry",c,L,w,h,ss);
         GameCore help=TestRainbowCat.fight(L);
         TestOnboarding.touch(help,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
         TestOnboarding.touch(help,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
-        for(int message=TutorialSpeech.CAT_YARN;message<=TutorialSpeech.CAT_CAGE;message++) {
+        for(int message=TutorialSpeech.CAT_RUSH;message<=TutorialSpeech.CAT_PROMPT;message++) {
             TestOnboarding.awaitBubble(help,L);
             shot(dir,"151-help-"+message,help,L,w,h,ss);
             TestOnboarding.acknowledge(help,L);

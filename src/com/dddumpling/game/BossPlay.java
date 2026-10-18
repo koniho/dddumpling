@@ -181,6 +181,17 @@ final class BossPlay {
         return true;
     }
 
+    static void catTap(GameCore c,Layout L) {
+        Boss b=c.boss;b.hitX=b.cat.x;b.hitY=b.cat.y;
+        c.companion.react(RunCompanion.BOSS_HIT,1);
+        c.hits++;c.combo++;c.maxCombo=Math.max(c.maxCombo,c.combo);c.score+=GameCore.BOSS_HIT;
+        c.shake=Math.max(c.shake,.35f);c.flash=Math.max(c.flash,.22f);c.flashColor=0xFFFFB1DD;
+        int first=c.particles.size();
+        Fx.explode(c,c.rnd,b.hitX,b.hitY,L.enemyR*2,24,0xFFFF92CC);
+        RainbowLand.clearColors(c,first);
+        if(c.sound!=null) {c.sound.squish(Kawaii.CAT,b.cat.taps);c.sound.ninjaSwish((b.cat.taps-1)%3);}
+    }
+
     static void slimeVulnerableSound(GameCore c,float dt) {
         Boss b=c.boss;
         if(b.kind!=Boss.SLIME || !b.fighting() || !b.hasGlob()) {

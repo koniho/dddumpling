@@ -37,17 +37,22 @@ public final class IOSInputTest extends Check {
         c.onboarding.saved=Onboarding.SKIPPED;c.startGame();c.enemies.clear();
         c.stage=30;c.stageBanner=0;c.boss.begin(Boss.RAINBOW_CAT,30,c.rnd,c.playRosterFull());
         c.boss.intro=0;game.update(DT);RainbowCat a=c.boss.cat;
-        a.ballX=a.left;a.ballY=a.bottom;
-        game.touch(one(0,151,a.x-a.r*2,a.y));
-        game.touch(one(2,151,a.x+a.r*2,a.y));
-        check("native swept touch catches Rainbow Cat",a.held==RainbowCat.CAT);
-        game.touch(one(1,151,a.cageX,a.cageY));
-        check("native lift latches cage and releases owner",a.phase==RainbowCat.CAGED && a.pointer==-1);
+        float hp=c.boss.hp;
+        game.touch(one(0,151,a.x,a.y));
+        check("native cat tap starts a rainbow dash",a.taps==1 && a.phase==RainbowCat.DASH);
+        game.touch(one(2,151,a.x,a.y));game.touch(one(1,151,a.x,a.y));
+        check("native move and lift do not double tap",a.taps==1 && a.pointer==-1);
+        for(int hit=1;hit<3;hit++) {
+            for(int i=0;i<25;i++)game.update(DT);
+            tap(game,a.x,a.y);
+        }
+        for(int i=0;i<25;i++)game.update(DT);
+        check("three native taps open prompt without damage",a.phase==RainbowCat.OPEN && c.boss.hp==hp);
         int g=a.prompt[0];tap(game,c.keyX(l,g),c.keyY(l,g));
-        check("native key deck advances caged prompt",a.at==1);
-        a.phase=RainbowCat.CHASE;a.count=0;
-        game.touch(one(0,152,a.ballX,a.ballY));game.touch(one(3,152,a.ballX,a.ballY));
-        check("native cancellation releases yarn",a.pointer==-1 && a.held==0);
+        check("native key deck advances challenge",a.at==1);
+        game.touch(one(0,152,l.playLeft,a.y));game.touch(one(3,152,l.playLeft,a.y));
+        check("native cancellation releases cat touch",a.pointer==-1);
+
     }
 
     private static void alligatorSwipes() {

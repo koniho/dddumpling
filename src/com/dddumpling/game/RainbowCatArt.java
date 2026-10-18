@@ -6,36 +6,67 @@ final class RainbowCatArt extends Draw {
     static final int FUR=0xFFA9A7BE, INK=0xFF49425F;
     static void draw(Painter p,GameCore c,Layout L,Boss b,float alpha) {
         RainbowCat a=b.cat;if(!a.placed)return;
-        float exit=b.beaten?b.leaveProgress():0;
-        float fade=alpha*(1-exit),enter=b.intro>0?b.introProgress():1;
+        float fade=alpha*(b.beaten?1-b.leaveProgress():1),enter=b.intro>0?b.introProgress():1;
         Painter q=new OpacityPainter(p,fade);
-        cage(q,a.cageX,a.cageY,a.cageR,a.phase==RainbowCat.CAGED,a.clock,false);
-        if(!b.beaten) yarn(q,a.ballX,a.ballY,a.ballR,a.clock,a.held==RainbowCat.YARN);
-        float dx=(1-enter)*(1-enter)*-L.w+exit*L.w*1.5f;
-        q.save();q.translate(dx,-exit*L.h*.2f);
-        cat(q,a.x,a.y,a.r,a.clock,a.facing,a.pastry,a.head,a.phase==RainbowCat.CAGED,1);
-        if(!b.beaten && (a.phase==RainbowCat.WINDUP || a.phase==RainbowCat.RECOVER && a.timer>.50f)) {
-            float wind=a.phase==RainbowCat.WINDUP?1-a.timer/RainbowCat.WIND:Math.max(0,(a.timer-.5f)/.35f);
-            float px=a.x+a.facing*a.r*(1.0f+.65f*wind),py=a.y+a.r*(a.phase==RainbowCat.WINDUP?-.55f*wind:.65f);
-            q.line(a.x+a.facing*a.r*.65f,a.y+a.r*.45f,px,py,INK,a.r*.31f);
-            q.line(a.x+a.facing*a.r*.65f,a.y+a.r*.43f,px,py,FUR,a.r*.24f);
-            q.fillEllipse(px,py,a.r*.24f,a.r*.22f,0xFFD6D0E5);
-            for(int toe=-1;toe<=1;toe++)q.fillCircle(px+toe*a.r*.09f,py+a.r*.04f,a.r*.045f,0xFFFFB5D8);
-        }
+        dashTrail(q,a);
+        q.save();q.translate((1-enter)*(1-enter)*-L.w,0);
+        cat(q,a.x,a.y,a.r,a.clock*(a.phase==RainbowCat.OPEN?1:2),a.turn,a.pastry,a.head,a.phase==RainbowCat.OPEN,1);
+        if(a.flash>0)for(int band=0;band<3;band++)
+            q.strokeCircle(a.x,a.y,a.r*(1.1f+(1-a.flash)*(1.5f+band*.3f)),
+                    Glyph.withAlpha(COLORS[(a.taps+band)%COLORS.length],(int)(a.flash*170)),a.r*.12f);
         q.restore();
-        cage(q,a.cageX,a.cageY,a.cageR,a.phase==RainbowCat.CAGED,a.clock,true);
-        if(a.phase==RainbowCat.CAGED && !b.beaten) {
-            float s=L.enemyR*.64f,yy=a.cageY+a.cageR*1.5f;
+        if(a.phase==RainbowCat.OPEN && !b.beaten) {
+            float s=L.enemyR*.72f,yy=a.y+a.r*1.8f;
             for(int i=0;i<a.count;i++) {
-                int g=a.prompt[i];float xx=L.w*.5f+(i-(a.count-1)*.5f)*s*2.3f;
-                Kawaii.draw(q,g,xx,yy,s,Glyph.COLOR[g],1,0);
-                if(i<a.at)q.fillCircle(xx,yy,s*1.07f,0x998ED9BA);
-                if(i==a.at)q.strokeCircle(xx,yy,s*1.2f,0xFFFFF1BD,s*.12f);
+                int g=a.prompt[i];float xx=L.w*.5f+(i-(a.count-1)*.5f)*s*2.25f;
+                float done=i<a.at?.25f:1;
+                FastEnemies.body(q,xx,yy,s,Skins.keyColor(p,g),(int)(255*done),false);
+                Kawaii.draw(q,g,xx,yy,s*.70f,Skins.keyColor(p,g),done,0);
+                if(i==a.at)q.strokeCircle(xx,yy,s*1.35f,0xFFFFF1BD,s*.12f);
             }
-            float fraction=Math.max(0,a.timer/(a.kids?9:RainbowCat.ESCAPE));
-            q.line(a.cageX-a.cageR,a.cageY+a.cageR*1.02f,a.cageX+a.cageR,a.cageY+a.cageR*1.02f,0x5549425F,a.r*.12f);
-            q.line(a.cageX-a.cageR,a.cageY+a.cageR*1.02f,a.cageX-a.cageR+2*a.cageR*fraction,a.cageY+a.cageR*1.02f,0xFFFFD7A0,a.r*.12f);
+            float fraction=Math.max(0,a.timer/a.promptTime()),width=L.w*.60f;
+            for(int band=0;band<COLORS.length;band++) {
+                float xx=L.w*.5f-width*.5f+width*band/COLORS.length;
+                float fill=Math.max(0,Math.min(1,fraction*COLORS.length-band));
+                if(fill>0)q.line(xx,yy+s*1.8f,xx+width/COLORS.length*fill,yy+s*1.8f,COLORS[band],s*.16f);
+            }
         }
+    }
+    private static void dashTrail(Painter p,RainbowCat a) {
+        for(int i=a.trailCount-1;i>0;i--) {
+            float dx=a.trailX[i-1]-a.trailX[i],dy=a.trailY[i-1]-a.trailY[i];
+            float d=(float)Math.hypot(dx,dy);if(d<.01f)continue;
+            float nx=-dy/d,ny=dx/d,fade=1-a.trailAge[i]/RainbowCat.TRAIL_TIME;
+            float width=a.r*(.16f+.07f*fade);
+            for(int band=0;band<COLORS.length;band++) {
+                float low=(band-3)*width,high=low+width*1.1f;
+                p.fillPoly(new float[]{a.trailX[i]+nx*low,a.trailY[i]+ny*low,
+                        a.trailX[i-1]+nx*low,a.trailY[i-1]+ny*low,
+                        a.trailX[i-1]+nx*high,a.trailY[i-1]+ny*high,
+                        a.trailX[i]+nx*high,a.trailY[i]+ny*high},Glyph.withAlpha(COLORS[band],(int)(160*fade*fade)));
+            }
+            if(i%6==0)p.fillPoly(star(a.trailX[i],a.trailY[i],a.r*.17f*fade,a.r*.07f*fade,4,a.clock*3+i),
+                    Glyph.withAlpha(0xFFFFFFFF,(int)(210*fade)));
+        }
+    }
+    static void rushProjectile(Painter p,GameCore c,Layout L,Boss b,int i,float x,float y,float r,int color) {
+        float dx=x-b.bsx[i],dy=y-b.bsy[i],d=Math.max(1,(float)Math.hypot(dx,dy));
+        float ux=dx/d,uy=dy/d,length=Math.min(d,r*5);
+        for(int lane=-1;lane<=1;lane++) {
+            int tint=COLORS[Math.floorMod(i+lane+1,COLORS.length)];
+            p.line(x-ux*length-uy*r*lane*.2f,y-uy*length+ux*r*lane*.2f,x,y,
+                    Glyph.withAlpha(tint,80),r*(lane==0?.22f:.12f));
+        }
+        for(int j=0;j<10;j++) {
+            float u=(c.clock*1.8f+j*.618f)%1f,spread=(float)Math.sin(j*17)*r*u*.6f;
+            float xx=x-ux*length*u-uy*spread,yy=y-uy*length*u+ux*spread;
+            int tint=COLORS[(i+j)%COLORS.length];float rr=r*(.12f+.07f*(j%3));
+            p.fillCircle(xx,yy,rr*2.5f,Glyph.withAlpha(tint,(int)(35*(1-u))));
+            p.fillPoly(star(xx,yy,rr,rr*.4f,4,c.clock+j),Glyph.withAlpha(tint,(int)(220*(1-u))));
+        }
+        FastEnemies.glow(p,x,y,r,color,255,1);
+        FastEnemies.body(p,x,y,r,color,255,false);
+        Kawaii.draw(p,b.bglyph[i],x,y,r*.63f,color,1,.1f);
     }
     static void portrait(Painter p,float x,float y,float r,float t,boolean known,float fade) {
         portrait(p,x,y,r,t,known,fade,1);
@@ -43,7 +74,7 @@ final class RainbowCatArt extends Draw {
     static void portrait(Painter p,float x,float y,float r,float t,boolean known,float fade,int facing) {
         cat(new OpacityPainter(p,fade),x-facing*r*.12f,y,r*.67f,t,facing,null,null,false,known?1:0);
     }
-    static void cat(Painter p,float x,float y,float r,float t,int facing,Softbody body,Softbody skull,boolean caught,float known) {
+    static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known) {
         int crust=known>0?0xFFFFD49A:0xFF49425F,fur=known>0?FUR:0xFF49425F;
         float step=(float)Math.sin(t*(caught?15:7));
         // Layered rainbow ribbon tapers behind the pastry and bends with flight.
@@ -119,21 +150,5 @@ final class RainbowCatArt extends Draw {
         for(int i=0;i<RainbowCatArt.COLORS.length;i++)p.arc(x,y,r*(.95f-i*.07f),r*.85f,t*35+i*31,225,COLORS[i],r*.17f);
         p.fillEllipse(x-r*.30f,y-r*.40f,r*.22f,r*.13f,0x99FFFFFF);
         if(held)p.strokeCircle(x,y,r*1.22f,0xFFFFEEB2,r*.07f);
-    }
-    static void cage(Painter p,float x,float y,float r,boolean shut,float t,boolean front) {
-        if(!front) {
-            p.fillEllipse(x,y+r*.8f,r*1.12f,r*.24f,0x447B6AAB);
-            p.fillRect(x-r,y-r*.8f,x+r,y+r*.8f,0x227BD8E9);
-        } else {
-            int col=shut?0xDDFFF0BF:0x889ADBEA;
-            arch(p,x,y-r*.35f,r,r*.9f,col,r*.07f);
-            for(int i=0;i<5;i++) {
-                float xx=x+(i-2)*r*.48f;
-                if(!shut && i>0 && i<4)continue;
-                p.line(xx,y-r*.8f,xx,y+r*.8f,col,r*.065f);
-            }
-            p.line(x-r,y+r*.8f,x+r,y+r*.8f,col,r*.10f);
-            p.fillCircle(x,y-r*1.4f,r*.14f,0xFFFFD783);
-        }
     }
 }

@@ -1,142 +1,162 @@
 package com.dddumpling.game;
 
-/** One-finger chase, yarn defense and cage prompts. Coordinates share the drawn arena. */
+/** A fast three-tap chase opens a shuffled key challenge; failure releases a star flurry. */
 final class RainbowCat {
-    static final int CHASE=0, WINDUP=1, RECOVER=2, CAGED=3;
-    static final int NONE=0, CAT=1, YARN=2;
-    static final float WIND=.55f, REST=.85f, ESCAPE=6f;
+    static final int CHASE=0, DASH=1, OPEN=2;
+    static final float DASH_TIME=.34f, TRAIL_TIME=.55f;
     final Softbody pastry=new Softbody(18,151), head=new Softbody(14,152);
-    int phase, pointer=-1, held, at, count, facing=1, captures;
-    final int[] prompt=new int[5];
-    float x,y,vx,vy,ballX,ballY,ballVX,ballVY,r,ballR,cageX,cageY,cageR;
-    float approachT;
-    float left,right,top,bottom,timer,clock,batCooldown,safe,flash,catchEase,pointX,pointY,lastX,lastY;
-    boolean placed,kids;
-    int cue;
+    final float[] route=new float[8],trailX=new float[36],trailY=new float[36],trailAge=new float[36];
+    int phase,pointer=-1,taps,trailCount,at,count,captures,cue;
+    final int[] prompt=new int[Glyph.COUNT];
+    float x,y,vx,vy,r,left,right,top,bottom,clock,flash,turn=1;
+    float routeTime,routeDuration,launchLeft,trailTick,timer;
+    boolean placed,kids,escaping;
     void reset() {
-        phase=CHASE;pointer=-1;held=NONE;placed=false;at=count=captures=cue=0;
-        vx=vy=ballVX=ballVY=clock=timer=flash=catchEase=0;batCooldown=1.5f;safe=1.5f;approachT=0;
+        phase=CHASE;pointer=-1;taps=trailCount=at=count=captures=cue=0;placed=escaping=false;turn=1;
+        x=y=vx=vy=clock=flash=routeTime=routeDuration=trailTick=timer=0;launchLeft=.65f;
     }
-    void release() {pointer=-1;held=NONE;vx=vy=0;}
+    void release() {pointer=-1;}
     void place(Layout L) {
-        r=L.w*.073f;ballR=r*.55f;
-        left=L.playLeft+r*1.8f;right=L.playRight-r*1.8f;
-        top=L.playTop+L.unit*6.1f+r;bottom=L.dangerY-r*1.5f;
-        cageR=r*1.8f;cageX=L.w*.5f;cageY=top+cageR*.7f;
+        r=L.w*.073f*1.5f;
+        left=L.playLeft+r*1.7f;right=L.playRight-r*1.7f;
+        top=L.playTop+L.unit*6.1f+r;bottom=L.dangerY-r*1.55f;
         if(!placed) {
-            x=L.w*.33f;y=top+(bottom-top)*.53f;resetBall();
+            x=left+(right-left)*.25f;y=top+(bottom-top)*.45f;
             pastry.reset(x,y,r,1.15f);head.reset(x+r,y+r*.1f,r*.65f);
-            pastry.shapeMemory=12;head.shapeMemory=12;placed=true;
+            pastry.shapeMemory=head.shapeMemory=12;placed=true;
         }
     }
-    void resetBall() {ballX=(left+right)*.5f;ballY=top+(bottom-top)*.64f;ballVX=ballVY=0;safe=1.4f;}
     void animate(float dt,Layout L) {
-        place(L);clock+=dt;flash=Math.max(0,flash-dt*2);catchEase=Math.max(0,catchEase-dt*2);
+        place(L);clock+=dt;flash=Math.max(0,flash-dt*3);
+        for(int i=trailCount-1;i>=0;i--) {
+            trailAge[i]+=dt;
+            if(trailAge[i]>=TRAIL_TIME)trailCount=i;
+        }
+        if(escaping && routeTime<routeDuration)advance(dt);
+        pose(dt);
+    }
+    private void pose(float dt) {
+        float facing=Math.abs(vx)<1?turn:vx<0?-1:1;
+        turn+=(facing-turn)*(1-(float)Math.exp(-dt*14));
         pastry.moveTo(x,y);pastry.update(dt);
-        head.moveTo(x+facing*r*.96f,y+r*.10f);head.update(dt);
+        head.moveTo(x+turn*r*.96f,y+r*.1f);head.update(dt);
+    }
+    private void chooseRoute(Layout L,java.util.Random rnd,boolean dash) {
+        float targetX=x<(left+right)*.5f?right-(right-left)*rnd.nextFloat()*.28f:left+(right-left)*rnd.nextFloat()*.28f;
+        float targetY=y<(top+bottom)*.5f?bottom-(bottom-top)*rnd.nextFloat()*.38f:top+(bottom-top)*rnd.nextFloat()*.38f;
+        float duration=dash?DASH_TIME:Math.max(.42f,distance(x,y,targetX,targetY)/(L.w*(kids?.82f:1.2f)));
+        routeTo(targetX,targetY,duration,rnd);
+    }
+    private void routeTo(float tx,float ty,float duration,java.util.Random rnd) {
+        routeTime=0;routeDuration=duration;
+        route[0]=x;route[1]=y;
+        // Carry the incoming tangent into the new curve; never teleport on a tap or a turn.
+        route[2]=clamp(x+vx*duration/3,left,right);route[3]=clamp(y+vy*duration/3,top,bottom);
+        route[4]=clamp(tx+(rnd.nextFloat()-.5f)*(right-left)*.8f,left,right);
+        route[5]=clamp(ty+(rnd.nextFloat()-.5f)*(bottom-top)*.8f,top,bottom);
+        route[6]=tx;route[7]=ty;
+    }
+    private void advance(float dt) {
+        float ox=x,oy=y;routeTime=Math.min(routeDuration,routeTime+dt);
+        float u=routeTime/routeDuration,v=1-u;
+        x=v*v*v*route[0]+3*v*v*u*route[2]+3*v*u*u*route[4]+u*u*u*route[6];
+        y=v*v*v*route[1]+3*v*v*u*route[3]+3*v*u*u*route[5]+u*u*u*route[7];
+        vx=3*(v*v*(route[2]-route[0])+2*v*u*(route[4]-route[2])+u*u*(route[6]-route[4]))/routeDuration;
+        vy=3*(v*v*(route[3]-route[1])+2*v*u*(route[5]-route[3])+u*u*(route[7]-route[5]))/routeDuration;
+        if(phase==DASH || escaping) {
+            trailTick+=dt;
+            while(trailTick>=1f/60) {
+                trailTick-=1f/60;
+                int n=Math.min(trailCount,trailX.length-1);
+                for(int i=n;i>0;i--){trailX[i]=trailX[i-1];trailY[i]=trailY[i-1];trailAge[i]=trailAge[i-1];}
+                float f=dt>0?clamp(1-trailTick/dt,0,1):1;
+                trailX[0]=ox+(x-ox)*f;trailY[0]=oy+(y-oy)*f;trailAge[0]=trailTick;
+                trailCount=Math.min(trailX.length,trailCount+1);
+            }
+        }
     }
     int update(Boss b,float dt,Layout L,java.util.Random rnd) {
-        place(L);approachT=pointer>=0?approachT+dt:0;safe=Math.max(0,safe-dt);batCooldown=Math.max(0,batCooldown-dt);
-        if(phase==CAGED) {
-            timer-=dt;
-            if(timer<=0) {phase=RECOVER;timer=REST;x=cageX;y=cageY+cageR*1.65f;at=count=0;resetBall();cue=3;}
-            return 0;
-        }
-        if(held!=YARN) {
-            ballX+=ballVX*dt;ballY+=ballVY*dt;
-            float drag=(float)Math.exp(-dt*.55f);ballVX*=drag;ballVY*=drag;
-            if(ballX<left-ballR) {ballX=left-ballR;ballVX=Math.abs(ballVX)*.75f;}
-            if(ballX>right+ballR) {ballX=right+ballR;ballVX=-Math.abs(ballVX)*.75f;}
-            if(ballY<top+ballR) {ballY=top+ballR;ballVY=Math.abs(ballVY)*.65f;}
-            if(ballY+ballR>=L.dangerY && safe<=0) {resetBall();phase=RECOVER;timer=REST;release();cue=4;return 1;}
-        }
-        if(held==CAT)return 0;
-        if(phase==WINDUP) {
+        place(L);
+        if(phase==OPEN) {
             timer-=dt;
             if(timer<=0) {
-                // The paw must reach the yarn; dragging it away can make a committed bat miss.
-                if(held!=YARN && distance(x,y,ballX,ballY)<r*3.2f) {
-                    ballVX=((L.w*.5f)-ballX)*.9f;
-                    ballVY=(L.dangerY-ballY)/(kids?2.5f:1.75f);safe=0;cue=2;
+                b.clearBolts();
+                for(int i=0;i<count;i++) {
+                    int slot=b.tailBolt(rnd,x,y+r*.45f);
+                    if(slot>=0) {b.bglyph[slot]=prompt[i];b.bfast[slot]=true;b.bt[slot]=-i*.16f;}
                 }
-                phase=RECOVER;timer=REST;batCooldown=1.8f;pastry.squash(.5f);
+                cue=2;resume(L,rnd);launchLeft=2.2f;
             }
             return 0;
         }
-        if(phase==RECOVER) {timer-=dt;if(timer<=0)phase=CHASE;return 0;}
-        float tx=ballX,ty=ballY-r*1.8f;
-        // Batting has priority. A reacting cat dodges a nearby approach, then commits and rests.
-        if(pointer>=0 && approachT>(kids?.28f:.16f) && held==NONE && distance(pointX,pointY,x,y)<r*3.2f && batCooldown>.25f) {
-            tx=x+(x-pointX)*1.7f;ty=y+(y-pointY)*1.7f;
+        float remaining=dt;
+        while(remaining>0) {
+            if(routeDuration==0 || routeTime>=routeDuration) {
+                if(phase==DASH && taps==3) {open(b);break;}
+                phase=CHASE;chooseRoute(L,rnd,false);
+            }
+            float step=Math.min(remaining,routeDuration-routeTime);
+            advance(step);remaining-=step;
         }
-        tx=clamp(tx,left,right);ty=clamp(ty,top+cageR*1.7f,bottom);
-        float dx=tx-x,dy=ty-y,dist=Math.max(1,distance(x,y,tx,ty));
-        float speed=L.w*(kids?.18f:.27f)*(1+(1-b.health())*.25f),blend=Math.min(1,dt*5f);
-        vx+=(dx/dist*speed-vx)*blend;vy+=(dy/dist*speed-vy)*blend;
-        if(dist<r*.3f){vx*=.75f;vy*=.75f;}
-        x=clamp(x+vx*dt,left,right);y=clamp(y+vy*dt,top+cageR*1.5f,bottom);
-        if(Math.abs(vx)>r*.15f)facing=vx<0?-1:1;
-        if(held!=YARN && batCooldown<=0 && distance(x,y,ballX,ballY)<r*2.8f) {
-            phase=WINDUP;timer=WIND;vx=vy=0;cue=1;head.squash(-.25f);
+        pose(0);
+        if(phase==OPEN || taps==3)return 0;
+        launchLeft-=dt;
+        if(launchLeft<=0) {
+            if(b.boltCount()<3) {int slot=b.tailBolt(rnd,x,y+r*.45f);if(slot>=0)b.bfast[slot]=true;}
+            launchLeft=kids?1.15f:.80f;
         }
         return 0;
     }
+    float promptTime() {return (count==6?6f:4.8f)*(kids?1.4f:1);}
+    private void open(Boss b) {
+        phase=OPEN;vx=vy=0;b.clearBolts();timer=promptTime();cue=1;flash=1;
+    }
+    private void resume(Layout L,java.util.Random rnd) {
+        taps=at=count=0;phase=DASH;chooseRoute(L,rnd,true);launchLeft=.8f;
+    }
+    int press(Boss b,int glyph,Layout L,java.util.Random rnd) {
+        if(phase!=OPEN || count==0)return Boss.REBUFF;
+        if(prompt[at]!=glyph) {flash=.5f;return Boss.REBUFF;}
+        b.hitX=x;b.hitY=y;head.squash(.3f);
+        if(++at<count)return Boss.PART;
+        captures++;resume(L,rnd);
+        int result=b.damage(1);
+        if(b.beaten) {escaping=true;routeTo(L.w+r*3,top-r*2,.48f,rnd);}
+        return result;
+    }
+    boolean hit(float px,float py) {
+        // The face and pastry are both valid targets, with a small forgiving margin.
+        float dx=(px-x)/(r*1.28f),dy=(py-y)/(r*1.16f);
+        return dx*dx+dy*dy<=1 || distance(px,py,head.centreX(),head.centreY())<r*.84f;
+    }
     boolean touch(GameCore c,Layout L,int action,int id,float px,float py) {
         Boss b=c.boss;
-        if(b.kind!=Boss.RAINBOW_CAT || !b.fighting() || c.paused || c.onboarding.briefing) {release();return false;}
-        place(L);kids=c.kidsRun;
         if(action==3){boolean owned=pointer>=0;release();return owned;}
+        if(action==1 || action==6) {boolean owned=id==pointer;if(owned)release();return owned;}
+        if(b.kind!=Boss.RAINBOW_CAT || !b.fighting() || c.state!=GameCore.PLAY || c.dying()
+                || c.paused || c.settingsOpen || c.onboarding.briefing) {release();return false;}
+        place(L);kids=c.kidsRun;
         if(action==0 || action==5) {
-            if(pointer>=0 || py>=L.deckTop || py<L.playTop || phase==CAGED)return false;
-            pointer=id;approachT=0;pointX=lastX=px;pointY=lastY=py;held=NONE;
-        } else if(id!=pointer)return false;
-        if(pointer<0)return false;
-        pointX=px;pointY=py;
-        if(held==NONE && phase!=CAGED) {
-            // The yarn wins overlapping catches; an established owner never changes objects.
-            if(segment(lastX,lastY,px,py,ballX,ballY)<ballR+r*.40f)held=YARN;
-            else if(segment(lastX,lastY,px,py,x,y)<r*(kids?1.65f:1.35f)) {
-                held=CAT;catchEase=1;pastry.squash(.6f);cue=5;
+            if(pointer>=0 || py>=L.deckTop || py<L.playTop)return false;
+            pointer=id;
+            if(phase==CHASE && hit(px,py)) {
+                taps++;flash=1;phase=DASH;pastry.squash(.5f);head.squash(.3f);
+                if(taps==3) {
+                    count=Roster.count(b.rosterFull);at=0;
+                    for(int i=0;i<count;i++)prompt[i]=Roster.at(b.rosterFull,i);
+                    for(int i=count-1;i>0;i--) {int j=c.rnd.nextInt(i+1),swap=prompt[i];prompt[i]=prompt[j];prompt[j]=swap;}
+                    routeTo(L.w*.5f,top+(bottom-top)*.30f,DASH_TIME,c.rnd);
+                } else chooseRoute(L,c.rnd,true);
+                BossPlay.catTap(c,L);
             }
+            return true;
         }
-        if(held==YARN) {
-            ballX=clamp(px,left-ballR,right+ballR);ballY=clamp(py,top,L.dangerY-ballR*1.3f);
-            ballVX=ballVY=0;safe=Math.max(safe,.25f);
-        } else if(held==CAT) {
-            x=clamp(px,left,right);y=clamp(py,top,bottom);vx=vy=0;
-            if(distance(x,y,cageX,cageY)<cageR*.70f) {
-                phase=CAGED;held=NONE;x=cageX;y=cageY;timer=kids?9f:ESCAPE;
-                count=3+captures;at=0;
-                for(int i=0;i<count;i++)prompt[i]=Roster.random(b.rosterFull,c.rnd);
-                ballVX=ballVY=0;cue=6;pastry.squash(.7f);
-                // Retain this pointer until lift so the capture gesture cannot tap a key.
-            }
-        }
-        lastX=px;lastY=py;
-        if(action==1 || action==6)release();
-        return true;
+        return id==pointer;
     }
     String companionHint() {
-        if(phase==CAGED)return pointer>=0?"LIFT, THEN TAP!":"MATCH THE KEYS!";
-        if(held==CAT)return "DRAG CAT TO CAGE!";
-        if(held==YARN)return "MOVE THE YARN UP!";
-        if(ballVY>0)return "DRAG YARN AWAY!";
-        if(phase==WINDUP || phase==RECOVER)return "CATCH HIM NOW!";
-        return "CATCH THE CAT!";
-    }
-    int press(Boss b,int glyph) {
-        if(phase!=CAGED)return Boss.REBUFF;
-        if(prompt[at]!=glyph) {flash=1;return Boss.REBUFF;}
-        b.hitX=x;b.hitY=y;head.squash(.4f);
-        if(++at<count)return Boss.PART;
-        captures++;phase=RECOVER;timer=1.2f;at=count=0;flash=1;resetBall();
-        x=cageX;y=cageY+cageR*1.65f;return b.damage(1);
+        if(phase==OPEN)return "MATCH IN ORDER!";
+        return phase==DASH?"FOLLOW RAINBOW!":taps==0?"TAP CAT 3 TIMES!":taps==1?"TWO TAPS TO GO!":"ONE MORE TAP!";
     }
     static float clamp(float v,float low,float high){return Math.max(low,Math.min(high,v));}
     static float distance(float ax,float ay,float bx,float by){return (float)Math.hypot(ax-bx,ay-by);}
-    static float segment(float ax,float ay,float bx,float by,float px,float py) {
-        float dx=bx-ax,dy=by-ay,d=dx*dx+dy*dy;
-        float t=d<=0?0:clamp(((px-ax)*dx+(py-ay)*dy)/d,0,1);
-        return distance(px,py,ax+dx*t,ay+dy*t);
-    }
 }

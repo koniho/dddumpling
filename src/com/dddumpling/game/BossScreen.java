@@ -1782,6 +1782,7 @@ final class BossScreen extends Draw {
                     ? slimeBoltR(c, L, 1f)
                     : standardBoltR(L, at);
             int col = Skins.keyColor(p,g);
+            if(b.kind==Boss.RAINBOW_CAT) {RainbowCatArt.rushProjectile(p,c,L,b,i,x,y,rr,col);continue;}
             float sporeMorph = b.kind == Boss.MUSHROOM ? Math.min(1f, at / 0.30f) : 1f;
             if (b.kind == Boss.MUSHROOM) {
                 float sporeR = rr * (0.34f + 0.66f * sporeMorph);

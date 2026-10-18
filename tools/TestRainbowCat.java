@@ -7,52 +7,65 @@ final class TestRainbowCat extends Check {
         c.boss.begin(Boss.RAINBOW_CAT,30,c.rnd,true);c.boss.intro=0;c.boss.update(0,L,c.rnd);
         return c;
     }
-    static void capture(GameCore c,Layout L) {
+    static void challenge(GameCore c,Layout L) {
         RainbowCat a=c.boss.cat;a.release();
-        // Keep the overlapping ball out of this catch; its input priority is tested separately.
-        a.ballX=a.left;a.ballY=a.bottom;
-        a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.cageX,a.cageY);
+        for(int i=0;i<240 && a.phase!=RainbowCat.OPEN;i++) {
+            if(a.phase==RainbowCat.CHASE) {a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);}
+            c.boss.update(1f/60,L,c.rnd);
+        }
     }
     static void all(Layout L) {
         catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
-        group("Rainbow Cat touch ownership, cage and yarn");
+        group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
-        check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(25)==Lands.SWAMP && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));
-        check("cat at stage thirty, gator stays twenty-five",Boss.kindFor(25)==Boss.ALLIGATOR && Boss.kindFor(30)==Boss.RAINBOW_CAT && Boss.kindFor(35)<0);
-        check("gator friend unlocks Rainbow Land",Lands.unlockBoss(Lands.RAINBOW)==Boss.ALLIGATOR);
-        int old=a.pointer;a.touch(c,L,0,3,L.w*.5f,L.deckTop+1);
-        check("deck remains available",a.pointer==old);
-        a.touch(c,L,0,1,a.ballX,a.ballY);
-        float bx=a.ballX;
-        a.touch(c,L,2,2,bx+100,a.ballY);
-        check("another pointer cannot steal yarn",a.held==RainbowCat.YARN && a.ballX==bx);
-        a.touch(c,L,3,1,bx,a.ballY);
-        check("cancel releases yarn",a.pointer==-1 && a.held==0);
-        a.ballX=a.x;a.ballY=a.y;a.touch(c,L,0,4,a.x,a.y);
-        check("overlap consistently chooses yarn",a.held==RainbowCat.YARN);a.release();
-        a.ballX=a.left;a.ballY=a.bottom;
-        a.touch(c,L,0,1,a.x-a.r*2,a.y);a.touch(c,L,2,1,a.x+a.r*2,a.y);
-        check("fast swept touch catches cat",a.held==RainbowCat.CAT);
-        a.release();capture(c,L);
-        check("cage latch owns prompt",a.phase==RainbowCat.CAGED && a.at==0 && a.count==3 && a.pointer==-1 && c.boss.open());
-        float hp=c.boss.hp,deadline=a.timer;
-        int wrong=(a.prompt[0]+1)%Glyph.COUNT;
-        check("wrong key neither resets prompt nor damages cat",c.boss.press(wrong,c.rnd,L)==Boss.REBUFF && a.at==0 && a.timer==deadline && c.boss.hp==hp);
-        a.ballY=L.dangerY+10;
-        check("yarn cannot damage during cage",a.update(c.boss,.1f,L,c.rnd)==0);
-        while(a.phase==RainbowCat.CAGED)c.boss.press(a.prompt[a.at],c.rnd,L);
-        check("completed capture damages one third",c.boss.hp==hp-1 && a.captures==1 && a.count==0 && a.safe>0);
-        capture(c,L);a.timer=.01f;a.update(c.boss,.02f,L,c.rnd);
-        check("timeout returns to chase without life or boss damage",a.phase==RainbowCat.RECOVER && a.count==0 && c.boss.hp==hp-1);
-        a.phase=RainbowCat.CHASE;a.ballY=L.dangerY;a.safe=0;
-        int hits=a.update(c.boss,.01f,L,c.rnd)+a.update(c.boss,.01f,L,c.rnd);
-        check("yarn contact only costs one heart",hits==1 && a.safe>0);
-        a.phase=RainbowCat.WINDUP;a.timer=.01f;a.x=a.ballX;a.y=a.ballY-a.r*1.8f;
-        a.update(c.boss,.02f,L,c.rnd);
-        check("paw physically bats yarn downward",a.ballVY>0 && a.phase==RainbowCat.RECOVER);
-        capture(c,L);a.touch(c,L,0,7,a.x,a.y);Pause.release(c);
-        check("pause clears pointer",a.pointer==-1 && a.held==0);
-        c.boss.leave();check("leaving clears encounter",!a.placed && a.pointer==-1 && a.count==0);
+        check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));
+        check("cat is fifty percent larger",Math.abs(a.r-L.w*.073f*1.5f)<.01f);
+        a.touch(c,L,0,3,L.w*.5f,L.deckTop+1);
+        check("deck remains available",a.pointer==-1);
+        float oldX=a.x,oldY=a.y,hp=c.boss.hp;
+        a.touch(c,L,0,1,a.x,a.y);
+        check("tap starts dash without teleport or premature damage",a.phase==RainbowCat.DASH && a.taps==1 && a.x==oldX && a.y==oldY && c.boss.hp==hp);
+        a.touch(c,L,5,2,a.x,a.y);a.touch(c,L,2,1,a.x,a.y);
+        check("held touch and extra finger cannot earn more taps",a.taps==1 && a.pointer==1);
+        for(int i=0;i<24;i++)c.boss.update(1f/60,L,c.rnd);
+        check("dash crosses field with a rainbow trail",RainbowCat.distance(oldX,oldY,a.x,a.y)>L.w*.35f && a.trailCount>0);
+        a.touch(c,L,2,1,a.x,a.y);check("holding through dash never auto hits",a.taps==1);
+        a.touch(c,L,3,1,a.x,a.y);check("cancel releases pointer",a.pointer==-1);
+        a.touch(c,L,0,2,L.playLeft,a.y);a.touch(c,L,2,2,a.x,a.y);a.touch(c,L,1,2,a.x,a.y);
+        check("swiping across cat does not substitute for tap",a.taps==1);
+        challenge(c,L);
+        check("three taps open challenge with no cage or damage",a.phase==RainbowCat.OPEN && a.taps==3 && a.count==6 && c.boss.open() && c.boss.hp==hp);
+        int mask=0;for(int i=0;i<a.count;i++)mask|=1<<a.prompt[i];
+        check("challenge includes each full roster key exactly once",Integer.bitCount(mask)==6);
+        float deadline=a.timer;int wrong=(a.prompt[0]+1)%Glyph.COUNT;
+        check("wrong key preserves progress and timer",c.boss.press(wrong,c.rnd,L)==Boss.REBUFF && a.at==0 && a.timer==deadline && c.boss.hp==hp);
+        while(a.phase==RainbowCat.OPEN)c.boss.press(a.prompt[a.at],c.rnd,L);
+        check("completed sequence damages one third and resumes chase",c.boss.hp==hp-1 && a.captures==1 && a.count==0 && a.taps==0);
+        challenge(c,L);int expected=a.count;a.timer=.01f;c.boss.update(.02f,L,c.rnd);
+        check("timeout launches one star per key without instant damage",c.boss.boltCount()==expected && c.boss.hp==hp-1 && a.phase==RainbowCat.DASH);
+        boolean fast=true;float previous=1;
+        for(int i=0;i<expected;i++) {fast&=c.boss.bfast[i] && c.boss.bt[i]<previous;previous=c.boss.bt[i];}
+        check("rainbow flurry is fast and staggered",fast);
+        int glyph=c.boss.bglyph[0];c.boss.press(glyph,c.rnd,L);
+        check("matching key defends rush projectile",!c.boss.blive[0] && c.boss.hp==hp-1);
+        c.boss.clearBolts();a.phase=RainbowCat.CHASE;a.launchLeft=0;c.boss.update(.01f,L,c.rnd);
+        check("running cat launches rush stars",c.boss.boltCount()==1 && c.boss.bfast[0]);
+        int hits=0;for(int i=0;i<85;i++) {a.launchLeft=99;hits+=c.boss.update(1f/60,L,c.rnd);}
+        check("unanswered star costs one heart",hits==1);
+        a.touch(c,L,0,7,L.playLeft,a.y);Pause.release(c);check("pause clears pointer",a.pointer==-1);
+        c.boss.leave();check("leaving clears encounter and trails",!a.placed && a.pointer==-1 && a.count==0 && a.trailCount==0);
+        for(boolean full:new boolean[]{false,true}) {
+            c=fight(L);c.boss.rosterFull=full;challenge(c,L);a=c.boss.cat;mask=0;
+            for(int i=0;i<a.count;i++)mask|=1<<a.prompt[i];
+            check("challenge uses each active key once "+full,a.count==Roster.count(full) && Integer.bitCount(mask)==a.count);
+        }
+        c=fight(L);a=c.boss.cat;float travelled=0;
+        for(int i=0;i<180;i++) {
+            oldX=a.x;oldY=a.y;c.boss.update(1f/60,L,c.rnd);
+            travelled+=RainbowCat.distance(oldX,oldY,a.x,a.y);
+            if(a.x<a.left-.01f || a.x>a.right+.01f || a.y<a.top-.01f || a.y>a.bottom+.01f)break;
+        }
+        check("fast curved movement stays within arena",travelled>L.w*1.8f && a.x>=a.left && a.x<=a.right && a.y>=a.top && a.y<=a.bottom);
         group("Rainbow reward save migration");
         long oldOwned=(1L<<60)|1L;
         long oldSave=Collect.PREVIOUS_TAG|oldOwned;
@@ -60,13 +73,13 @@ final class TestRainbowCat extends Check {
         long now=oldOwned|(1L<<61);
         check("new cat survives tagged save",Collect.decode(Collect.encode(now))==now && Collect.currentSave(Collect.encode(now)));
         check("old ducks retain bit identities",Collect.decode(Collect.OLD_TAG|(1L<<59))==(1L<<59));
-        group("Rainbow capture reachability");
+        group("Rainbow challenge reachability");
         for(float fps:new float[]{30,60,120}) {
             c=fight(L);
             for(int frame=0;frame<fps*90 && !c.boss.beaten;frame++) {
                 bossPlay(c,L);c.boss.update(1/fps,L,c.rnd);
             }
-            check("three captures beat cat at "+fps,c.boss.beaten && c.boss.cat.captures==3);
+            check("three completed challenges beat cat at "+fps,c.boss.beaten && c.boss.cat.captures==3);
         }
         group("bounded Rainbow Cat one-finger play");
         for(float fps:new float[]{30,60,120}) {
@@ -163,26 +176,21 @@ final class TestRainbowCat extends Check {
         group("Rainbow Cat companion guidance");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("skipped tutorials still offer cat help",c.onboarding.offersBossHelp(c));
-        check("chase explains catching",a.companionHint().equals("CATCH THE CAT!"));
-        a.ballVY=10;check("incoming yarn takes priority",a.companionHint().equals("DRAG YARN AWAY!"));
-        a.held=RainbowCat.YARN;check("held yarn explains safe direction",a.companionHint().equals("MOVE THE YARN UP!"));
-        a.held=RainbowCat.CAT;check("held cat explains destination",a.companionHint().equals("DRAG CAT TO CAGE!"));
-        a.held=RainbowCat.NONE;a.ballVY=0;a.phase=RainbowCat.RECOVER;
-        check("resting cat advertises catch opportunity",a.companionHint().equals("CATCH HIM NOW!"));
-        a.phase=RainbowCat.CAGED;a.pointer=7;
-        check("capture explains releasing gesture",a.companionHint().equals("LIFT, THEN TAP!"));
-        a.release();check("cage explains keys",a.companionHint().equals("MATCH THE KEYS!"));
+        check("chase explains tapping",a.companionHint().equals("TAP CAT 3 TIMES!"));
+        a.taps=1;check("companion counts remaining taps",a.companionHint().equals("TWO TAPS TO GO!"));
+        a.phase=RainbowCat.DASH;check("dash hint tracks the trail",a.companionHint().equals("FOLLOW RAINBOW!"));
+        a.phase=RainbowCat.OPEN;check("challenge explains order",a.companionHint().equals("MATCH IN ORDER!"));
         a.phase=RainbowCat.CHASE;
         TestOnboarding.touch(c,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
         TestOnboarding.touch(c,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
-        check("help opens yarn lesson despite skipped tutorials",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.CAT_YARN);
-        float time=c.time,escape=a.timer;
+        check("help opens rush lesson despite skipped tutorials",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.CAT_RUSH);
+        float time=c.time,px=a.x;
         c.update(.2f,L);
-        check("help pauses live fight",c.time==time && a.timer==escape);
+        check("help pauses live fight",c.time==time && a.x==px);
         TestOnboarding.acknowledge(c,L);
-        check("help advances to catching",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.CAT_CATCH);
+        check("help advances to tapping",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.CAT_TAPS);
         TestOnboarding.acknowledge(c,L);
-        check("help advances to cage keys",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.CAT_CAGE);
+        check("help advances to challenge keys",c.onboarding.briefing && c.onboarding.speech==TutorialSpeech.CAT_PROMPT);
         TestOnboarding.acknowledge(c,L);
         check("help resumes without resetting tutorial preferences",!c.onboarding.briefing && (c.onboarding.saved&Onboarding.SKIPPED)!=0);
     }

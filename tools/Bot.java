@@ -264,24 +264,20 @@ final class Bot {
         budget = Math.min(BURST, budget + dt * pps);
         if(c.bossFighting() && c.boss.kind==Boss.RAINBOW_CAT) {
             RainbowCat a=c.boss.cat;
-            if(a.phase==RainbowCat.CAGED) {
-                a.release();
-                if(budget>=1f && a.timer<(a.kids?9f:RainbowCat.ESCAPE)-reaction) {
-                    budget-=1;presses++;int glyph=a.prompt[a.at];
-                    if(rnd.nextFloat()<missRate)glyph=Roster.randomExcept(c.playRosterFull(),glyph,rnd);
-                    c.tapKey(glyph,L);
-                }
-            } else if(a.held==RainbowCat.CAT) {
-                float dx=a.cageX-a.x,dy=a.cageY-a.y,d=(float)Math.hypot(dx,dy),step=L.w*DRAG_SPEED*dt;
-                a.touch(c,L,d<=step?1:2,151,a.x+dx*Math.min(1,step/Math.max(1,d)),a.y+dy*Math.min(1,step/Math.max(1,d)));
-            } else if(a.held==RainbowCat.YARN) {
-                float yy=Math.max(a.top+a.cageR*2,a.ballY-L.w*DRAG_SPEED*dt);
-                a.touch(c,L,yy<=a.top+a.cageR*2?1:2,151,a.ballX,yy);
-            } else if(budget>=1f) {
-                budget-=1;presses++;
-                if(a.ballY>L.dangerY-L.w*.25f)a.touch(c,L,0,151,a.ballX,a.ballY);
-                else if(a.phase==RainbowCat.RECOVER || a.phase==RainbowCat.WINDUP && a.timer<RainbowCat.WIND-reaction)
-                    a.touch(c,L,0,151,a.x,a.y);
+            if(think>0) {think-=dt;return;}
+            int bolt=-1;
+            for(int i=0;i<Boss.MAX_BOLTS;i++)if(c.boss.blive[i] && c.boss.bt[i]>reaction/Boss.BOLT_TIME
+                    && (bolt<0 || c.boss.bt[i]>c.boss.bt[bolt]))bolt=i;
+            if(budget>=1f && (bolt>=0 || a.phase==RainbowCat.OPEN)) {
+                budget-=1;presses++;think=reaction;
+                int glyph=bolt>=0?c.boss.bglyph[bolt]:a.prompt[a.at];
+                if(rnd.nextFloat()<missRate)glyph=Roster.randomExcept(c.playRosterFull(),glyph,rnd);
+                c.tapKey(glyph,L);
+            } else if(budget>=1f && a.phase==RainbowCat.CHASE) {
+                budget-=1;presses++;think=reaction;
+                // A bounded tap with aim error; holding a finger never earns another hit.
+                float error=rnd.nextFloat()<missRate?a.r*2:0;
+                a.touch(c,L,0,151,a.x+error,a.y);a.touch(c,L,1,151,a.x+error,a.y);
             }
             return;
         }

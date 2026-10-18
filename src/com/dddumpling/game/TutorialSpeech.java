@@ -6,7 +6,7 @@ final class TutorialSpeech extends Draw {
             DIG=7, CART=8, CLOSED=9, CHAIN=10, GLOB=11, DANGER=12, RETRY=13,
             STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21,
             POWER_FLURRY=22, POWER_NINJA=23, POWER_TEAM=24, POWER_PICKUP=25,
-            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28, COMPANION=29, LANDS=30, ALLIGATOR=31, CAT_YARN=32, CAT_CATCH=33, CAT_CAGE=34;
+            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28, COMPANION=29, LANDS=30, ALLIGATOR=31, CAT_RUSH=32, CAT_TAPS=33, CAT_PROMPT=34;
     private static final int PAPER=0x4DFFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
@@ -40,15 +40,15 @@ final class TutorialSpeech extends Draw {
         {"YOUR FIRST FRIEND!", "LET'S PLAY TOGETHER!"},
         {"NEW LANDS!", "SWIPE TO CHOOSE!"},
         {"PARRY, THEN TAP!", "WATCH HIS EYES!"},
-        {"SAVE YOUR KEYS!", "DRAG THE YARN AWAY!"},
-        {"CATCH THAT CAT!", "DRAG HIM TO THE CAGE!"},
-        {"TAP THE MATCHING KEYS!", "BEFORE HE ESCAPES!"}
+        {"RUSHING STARS!", "TAP THEIR MATCHING KEYS!"},
+        {"TAP CAT 3 TIMES!", "FOLLOW RAINBOW!"},
+        {"MATCH IN ORDER!", "BEAT THE RAINBOW TIMER!"}
     };
     static String spoken(int message) { return spoken(message,Skins.DEFAULT); }
     static String spoken(int message,int skin) {
-        if(message==CAT_YARN)return "Drag the yarn away from your keys. Rainbow Cat will try to bat it back!";
-        if(message==CAT_CATCH)return "Catch Rainbow Cat while he swings his paw. Drag him into the cage!";
-        if(message==CAT_CAGE)return "Lift your finger, then match the keys before he escapes. The yarn rests while he is in the cage.";
+        if(message==CAT_RUSH)return "Tap matching keys to stop her rushing stars.";
+        if(message==CAT_TAPS)return "Tap Rainbow Cat three times. She dashes away after each tap!";
+        if(message==CAT_PROMPT)return "Match each key in order before time runs out! Too slow? Here comes a rainbow flurry!";
         if(message==ALLIGATOR)return "Swipe to parry, then tap while "+Skins.bossTitle(skin,Boss.ALLIGATOR)+" is dizzy. Watch his eyes narrow, then stop before his guard returns! Four parry-and-hit rounds make him dizzy for longer. Taking damage resets your streak.";
         if(message==LANDS)return "New lands! Swipe to choose where your next run starts.";
         if(message==COMPANION)return "I'm your first squishy! I'll stay by your keys. I'll show you how to play as we go. Let's find more friends!";
@@ -105,8 +105,8 @@ final class TutorialSpeech extends Draw {
         return lines.toArray(new String[0]);
     }
     private static String[][][] makePages(int skin) {
-        String[][][] all=new String[CAT_CAGE+1][][];
-        for(int message=MATCH;message<=CAT_CAGE;message++) {
+        String[][][] all=new String[CAT_PROMPT+1][][];
+        for(int message=MATCH;message<=CAT_PROMPT;message++) {
             java.util.ArrayList<String[]> pages=new java.util.ArrayList<>();String pending="";
             // Page boundaries are sentence boundaries; copy must fit without splitting a sentence.
             for(String sentence:spoken(message,skin).split("(?<=[.!?]) +")) {
@@ -343,24 +343,21 @@ final class TutorialSpeech extends Draw {
             arrow(p,x-s,y,-s*3,0,s*.6f);arrow(p,x+s,y,s*3,0,s*.6f);
             Renderer.touchHint(p,x-spread,y,s*1.1f,1f,.95f,age);
             handX=x+spread;
-        } else if(message==CAT_YARN) {
-            RainbowCatArt.portrait(p,x-s*3,y-s,s*1.1f,age,true,1);
-            face(p,0,x+s*2.3f,y+s*2,s*.8f);
-            handX=x+s*2.3f;handY=y+s*(1-3.5f*travel);
-            RainbowCatArt.yarn(p,handX,handY,s*.7f,age,true);
-            arrow(p,x+s*4,y+s,-s,-s*3.2f,s*.5f);
-        } else if(message==CAT_CATCH || message==CAT_CAGE) {
-            boolean caged=message==CAT_CAGE;
-            float cageX=x+s*2.3f,cageY=y-s*.7f;
-            RainbowCatArt.cage(p,cageX,cageY,s*1.6f,caged,age,false);
-            handX=caged?cageX:x+s*(-3+travel*5.3f);handY=cageY;
-            RainbowCatArt.cat(p,handX,handY,s*.9f,age,1,null,null,caged,1);
-            RainbowCatArt.cage(p,cageX,cageY,s*1.6f,caged,age,true);
-            if(caged) {
-                int at=(int)(age*1.4f)%3;
-                for(int i=0;i<3;i++)face(p,i,x+(i-1)*s*2.5f,y+s*2,s*.8f);
-                handX=x+(at-1)*s*2.5f;handY=y+s*2;
-            } else arrow(p,x-s*3,y+s*1.7f,s*5.3f,0,s*.5f);
+        } else if(message==CAT_RUSH) {
+            float yy=y-s*2.1f+travel*s*3.8f;
+            FastEnemies.glow(p,x,yy,s,Skins.keyColor(p,key),255,1);
+            FastEnemies.body(p,x,yy,s,Skins.keyColor(p,key),255,false);
+            face(p,key,x,yy,s*.62f);face(p,key,x,y+s*2,s);
+            handX=x;handY=y+s*2;
+        } else if(message==CAT_TAPS) {
+            handX=x+s*(-3.5f+travel*7);handY=y;
+            RainbowCatArt.cat(p,handX,handY,s*1.05f,age*2,1,null,null,false,1);
+            p.strokeCircle(handX,handY,s*(1.3f+travel*.5f),Glyph.withAlpha(GOLD,(int)(190*(1-travel))),s*.14f);
+        } else if(message==CAT_PROMPT) {
+            int n=Roster.count(c.playRosterFull()),at=(int)(age*1.6f)%n;
+            for(int i=0;i<n;i++)face(p,Roster.at(c.playRosterFull(),i),x+(i-(n-1)*.5f)*s*1.8f,y,s*.73f);
+            arrow(p,x-s*4.5f,y+s*1.7f,s*9,0,s*.45f);
+            handX=x+(at-(n-1)*.5f)*s*1.8f;
         } else if(message==ALLIGATOR) {
             AlligatorArt.portrait(p,x,y,s*2.1f,age,true,1);
             handX=x+s*(travel*8-4);handY=y+s*2;

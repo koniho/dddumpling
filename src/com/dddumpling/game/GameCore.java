@@ -3183,11 +3183,9 @@ final class GameCore {
                 flash = Math.max(flash, 1f);
                 flashColor = 0xFFFF355F;
             }
-            int catCue=boss.kind==Boss.RAINBOW_CAT?boss.cat.cue:0;
-            boss.cat.cue=0;
-            if(sound!=null && catCue>0) {
-                if(catCue==2)sound.boltPop();else if(catCue==3)sound.wrong();
-                else if(catCue==6)sound.uiBloop();else sound.squish(Kawaii.CAT,1);
+            if(boss.kind==Boss.RAINBOW_CAT && boss.cat.cue>0) {
+                if(sound!=null) {if(boss.cat.cue==1)sound.uiBloop();else sound.ninjaSwish(2);}
+                boss.cat.cue=0;
             }
             int gatorAttackCues=boss.kind==Boss.ALLIGATOR?boss.alligator.takeAttackCues():0;
             int gatorGrowls=boss.kind==Boss.ALLIGATOR?boss.alligator.takeGrowls():0;
@@ -3200,6 +3198,7 @@ final class GameCore {
                 sound.bossCharge(brew);
                 if (boss.launched) {
                     if(boss.kind==Boss.SLIME)BossPlay.slimeSquish(this,3,3);
+                    else if(boss.kind==Boss.RAINBOW_CAT)sound.boltPop();
                     else if(boss.kind!=Boss.MUSHROOM)sound.bossLaugh();
                 }
                 if (boss.mushroomSporeCue) sound.mushroomSpore();
