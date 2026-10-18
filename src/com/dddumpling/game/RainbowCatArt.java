@@ -10,13 +10,18 @@ final class RainbowCatArt extends Draw {
         Painter q=new OpacityPainter(p,fade);
         motionTrail(q,a);
         q.save();q.translate((1-enter)*(1-enter)*-L.w,0);
-        cat(q,a.x,a.y,a.r,a.clock*(a.phase==RainbowCat.OPEN?1:2),a.turn,a.pastry,a.head,a.phase==RainbowCat.OPEN,1);
+        boolean caught=a.phase==RainbowCat.OPEN;
+        float struggle=caught?(float)Math.sin(a.clock*18)*a.r*.065f:0;
+        if(a.phase==RainbowCat.CIRCLE)circleGuide(q,a);
+        if(a.carries(c))net(q,c,L,false);
+        cat(q,a.x+struggle,a.y,a.r,a.clock*(caught?1:2),a.turn,a.pastry,a.head,caught,1);
+        if(a.carries(c))net(q,c,L,true);
         if(a.flash>0)for(int band=0;band<3;band++)
             q.strokeCircle(a.x,a.y,a.r*(1.1f+(1-a.flash)*(1.5f+band*.3f)),
                     Glyph.withAlpha(COLORS[(a.taps+band)%COLORS.length],(int)(a.flash*170)),a.r*.12f);
         q.restore();
         if(a.phase==RainbowCat.OPEN && !b.beaten) {
-            float s=L.enemyR*.72f,yy=a.y+a.r*1.8f;
+            float s=L.enemyR*.72f,yy=a.y+a.r*3.5f;
             for(int i=0;i<a.count;i++) {
                 int g=a.prompt[i];float xx=L.w*.5f+(i-(a.count-1)*.5f)*s*2.25f;
                 float done=i<a.at?.25f:1;
@@ -30,6 +35,64 @@ final class RainbowCatArt extends Draw {
                 float fill=Math.max(0,Math.min(1,fraction*COLORS.length-band));
                 if(fill>0)q.line(xx,yy+s*1.8f,xx+width/COLORS.length*fill,yy+s*1.8f,COLORS[band],s*.16f);
             }
+        }
+    }
+    private static void circleGuide(Painter p,RainbowCat a) {
+        float radius=a.circleRadius(),pulse=.7f+.3f*(float)Math.sin(a.clock*3);
+        for(int i=0;i<12;i++)p.arc(a.circleX(),a.circleY(),radius,radius,i*30,17,
+                Glyph.withAlpha(COLORS[i%COLORS.length],(int)(100+65*pulse)),a.r*.085f);
+        if(a.circling && Math.abs(a.circleSweep)>.01f) {
+            float start=(a.circleAngle-a.circleSweep)*180/(float)Math.PI;
+            p.arc(a.circleX(),a.circleY(),radius,radius,start,a.circleSweep*180/(float)Math.PI,
+                    0xFFFFF2B6,a.r*.16f);
+        }
+        float angle=a.clock*1.7f;
+        p.fillPoly(star(a.circleX()+(float)Math.cos(angle)*radius,a.circleY()+(float)Math.sin(angle)*radius,
+                a.r*.20f,a.r*.08f,4,angle),0xFFFFF5CB);
+    }
+    private static void net(Painter p,GameCore c,Layout L,boolean front) {
+        RainbowCat a=c.boss.cat;float u=a.netAmount();
+        float homeX=RunCompanion.x(L),homeY=RunCompanion.y(L),r=a.r;
+        float targetX=a.catchX+r*2.45f,targetY=a.catchY+r*2.15f;
+        float cx=homeX+(targetX-homeX)*u,cy=homeY+(targetY-homeY)*u-(float)Math.sin(u*Math.PI)*r*1.2f;
+        float shake=a.phase==RainbowCat.OPEN?(float)Math.sin(a.clock*18)*r*.045f:0;
+        float nx=homeX+(a.catchX-homeX)*u+shake,ny=homeY-r*2+(a.catchY-homeY+r*2)*u;
+        float rx=r*(.55f+1.45f*u),ry=r*(.4f+1.12f*u),fade=Math.min(1,u*3);
+        Painter q=new OpacityPainter(p,fade);
+        if(!front) {
+            q.fillEllipse(nx,ny,rx,ry,0x304BE6CF);
+            return;
+        }
+        q.line(nx+rx*.60f,ny+ry*.80f,cx,cy,0xFF7660A0,r*.21f);
+        q.line(nx+rx*.60f,ny+ry*.80f,cx,cy,0xFFFFD89F,r*.14f);
+        q.line(nx+rx*.60f-r*.03f,ny+ry*.80f,cx-r*.03f,cy,0xFFFFF1CD,r*.045f);
+        // Diagonal mesh clipped analytically to the oval, leaving the cat visible through it.
+        for(int direction=-1;direction<=1;direction+=2)for(int i=-5;i<=5;i++) {
+            float k=i*.24f,root=(float)Math.sqrt(2-k*k);
+            float x0=(direction*k-root)*.5f,x1=(direction*k+root)*.5f;
+            float[] strand=new float[26];
+            for(int sample=0;sample<=12;sample++) {
+                float px=x0+(x1-x0)*sample/12f,py=k-direction*px;
+                float slack=Math.max(0,1-px*px-py*py);
+                float struggle=a.phase==RainbowCat.OPEN?1:0;
+                // One deformation field keeps crossing threads joined while the belly flexes.
+                float tug=(float)Math.sin(a.clock*18+py*2)*.13f*struggle;
+                strand[sample*2]=nx+rx*(px+slack*tug);
+                strand[sample*2+1]=ny+ry*(py+slack*(.14f+.10f*struggle*(float)Math.sin(a.clock*15+px*3)));
+            }
+            q.polyline(strand,0x99E6FFF7,r*.032f);
+        }
+        q.arc(nx,ny,rx,ry,0,360,0xFF486D9B,r*.15f);
+        q.arc(nx,ny,rx,ry,0,360,0xFFA7F7DD,r*.105f);
+        q.arc(nx,ny,rx,ry,205,115,0xFFEEFFF7,r*.045f);
+        int who=c.companion.who;
+        if(who>=0) {
+            float cr=RunCompanion.radius(c,L)*(1+u*.55f);
+            Trinket.drawReacting(p,who,cx,cy,cr,c.companion.clock,1,Trinket.FIGHT,
+                    .13f*(float)Math.sin(a.clock*9)*u,c.ninja());
+            RunCompanion.drawProps(p,c,L,cx,cy,cr);
+            if(a.phase==RainbowCat.OPEN)TutorialSpeech.companionFeedback(p,L,cx,cy,cr,
+                    a.companionHint(),.5f,Collect.ACCENT[who]);
         }
     }
     private static void motionTrail(Painter p,RainbowCat a) {
@@ -119,25 +182,43 @@ final class RainbowCatArt extends Draw {
         }
         float hx=skull==null?x+facing*r*.96f:skull.centreX();
         float hy=skull==null?y+r*.1f:skull.centreY();
-        float hr=skull==null?r*.66f:skull.radiusY();
-        // One ear/head silhouette, with softly beveled cheeks and forehead.
-        float[] face={-.98f,.16f,-.9f,-.35f,-.86f,-1.02f,-.64f,-1.10f,-.27f,-.59f,
-                .27f,-.59f,.64f,-1.10f,.86f,-1.02f,.9f,-.35f,.98f,.16f,.80f,.64f,.42f,.82f,-.42f,.82f,-.8f,.64f};
+        float hr=(skull==null?r*.66f:skull.radiusY())*1.13f;
+        // Plush cheeks, small pointed ears and a wide round chin share one silhouette.
+        float[] face={-1.02f,.02f,-.99f,-.28f,-.88f,-.48f,-.86f,-.98f,-.72f,-1.06f,
+                -.34f,-.66f,0,-.60f,.34f,-.66f,.72f,-1.06f,.86f,-.98f,.88f,-.48f,
+                .99f,-.28f,1.02f,.02f,.99f,.35f,.87f,.60f,.66f,.79f,.34f,.89f,
+                0,.92f,-.34f,.89f,-.66f,.79f,-.87f,.60f,-.99f,.35f};
         float[] shape=points(face,hx,hy,hr,hr);
         p.fillPoly(shape,INK);p.fillPoly(inset(shape,hx,hy,.93f,.92f),fur);
         p.fillPoly(inset(shape,hx-hr*.08f,hy-hr*.1f,.80f,.72f),known>0?0xFFC4C2D3:fur);
         if(known<=0)return;
+        p.fillEllipse(hx,hy+hr*.33f,hr*.49f,hr*.32f,0x55FFF6EE);
         for(int side=-1;side<=1;side+=2) {
-            p.fillPoly(points(new float[]{side*.5f,-.63f,side*.73f,-.94f,side*.76f,-.46f},hx,hy,hr,hr),0xFFFFB4CB);
-            float ex=hx+side*hr*.38f,ey=hy-hr*.02f;
+            p.fillPoly(points(new float[]{side*.45f,-.62f,side*.73f,-.92f,side*.77f,-.43f},hx,hy,hr,hr),0xFFFFB4CB);
+            float ex=hx+side*hr*.40f,ey=hy+hr*.02f;
             boolean blink=Math.sin(t*1.7f)>.985;
-            p.fillEllipse(ex,ey,hr*.115f,hr*(blink?.035f:.17f),INK);
-            if(!blink)p.fillCircle(ex-hr*.025f,ey-hr*.06f,hr*.04f,0xFFFFFAFF);
-            p.fillEllipse(hx+side*hr*.67f,hy+hr*.25f,hr*.15f,hr*.09f,0xBFFF83BD);
+            if(caught) {
+                float squeeze=.05f*(float)Math.sin(t*18);
+                p.polyline(points(new float[]{side*.62f,-.08f-squeeze,side*.28f,.04f,side*.61f,.17f+squeeze},
+                        hx,hy,hr,hr),INK,hr*.075f);
+                p.polyline(points(new float[]{side*.27f,-.28f,side*.43f,-.34f,side*.62f,-.30f},hx,hy,hr,hr),INK,hr*.055f);
+            } else {
+                p.fillEllipse(ex,ey,hr*.18f,hr*(blink?.045f:.235f),INK);
+                if(!blink) {
+                    p.fillEllipse(ex,ey+hr*.09f,hr*.12f,hr*.10f,0xFF7668A1);
+                    p.fillCircle(ex-hr*.055f,ey-hr*.08f,hr*.075f,0xFFFFFAFF);
+                    p.fillCircle(ex+hr*.065f,ey+hr*.08f,hr*.034f,0xFFFFFAFF);
+                }
+            }
+            p.fillEllipse(hx+side*hr*.71f,hy+hr*.31f,hr*.19f,hr*.105f,0xAFFF83BD);
+            p.line(hx+side*hr*.71f,hy+hr*.38f,hx+side*hr*.93f,hy+hr*.35f,0x88766891,hr*.035f);
         }
-        p.fillPoly(points(new float[]{-.08f,.14f,.08f,.14f,0,.23f},hx,hy,hr,hr),0xFFB8709E);
-        p.polyline(points(new float[]{-.25f,.30f,-.13f,.39f,0,.31f,.13f,.39f,.25f,.30f},hx,hy,hr,hr),INK,hr*.055f);
-        if(caught)p.fillEllipse(hx,hy+hr*.46f,hr*.1f,hr*.12f,0xFFEC88B4);
+        p.fillEllipse(hx,hy+hr*.23f,hr*.095f,hr*.065f,0xFFBE7FA7);
+        if(caught) {
+            p.fillEllipse(hx,hy+hr*.48f,hr*.13f,hr*(.12f+.035f*(float)Math.sin(t*18)),INK);
+            p.fillEllipse(hx,hy+hr*.54f,hr*.085f,hr*.045f,0xFFFFB4CB);
+            p.fillEllipse(hx+hr*.89f,hy-hr*.25f,hr*.07f,hr*.13f,0xBBBEF6FF);
+        } else p.polyline(points(new float[]{-.25f,.34f,-.19f,.43f,-.10f,.45f,0,.34f,.10f,.45f,.19f,.43f,.25f,.34f},hx,hy,hr,hr),INK,hr*.055f);
     }
     static float[] pastry(Softbody b,float x,float y,float r) {
         float[] src=b==null?null:b.outline(),out=new float[src==null?72:src.length];

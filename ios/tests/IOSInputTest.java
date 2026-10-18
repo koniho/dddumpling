@@ -42,12 +42,21 @@ public final class IOSInputTest extends Check {
         check("native cat tap starts a rainbow dash",a.taps==1 && a.phase==RainbowCat.DASH);
         game.touch(one(2,151,a.x,a.y));game.touch(one(1,151,a.x,a.y));
         check("native move and lift do not double tap",a.taps==1 && a.pointer==-1);
-        for(int hit=1;hit<3;hit++) {
+        for(int hit=1;hit<2;hit++) {
             for(int i=0;i<25;i++)game.update(DT);
             tap(game,a.x,a.y);
         }
         for(int i=0;i<25;i++)game.update(DT);
-        check("three native taps open prompt without damage",a.phase==RainbowCat.OPEN && c.boss.hp==hp);
+        check("two native taps wait for circle",a.phase==RainbowCat.CIRCLE && c.boss.hp==hp);
+        game.touch(one(0,151,a.circleX()+a.circleRadius(),a.circleY()));
+        for(int i=1;i<=40;i++) {
+            float angle=Softbody.TAU*i/40f;
+            game.touch(one(2,151,a.circleX()+(float)Math.cos(angle)*a.circleRadius(),a.circleY()+(float)Math.sin(angle)*a.circleRadius()));
+        }
+        game.touch(one(1,151,a.circleX()+a.circleRadius(),a.circleY()));
+        check("native circle triggers net",a.phase==RainbowCat.CATCH);
+        for(int i=0;i<50;i++)game.update(DT);
+        check("native net catch opens prompt without damage",a.phase==RainbowCat.OPEN && c.boss.hp==hp);
         int g=a.prompt[0];tap(game,c.keyX(l,g),c.keyY(l,g));
         check("native key deck advances challenge",a.at==1);
         game.touch(one(0,152,l.playLeft,a.y));game.touch(one(3,152,l.playLeft,a.y));

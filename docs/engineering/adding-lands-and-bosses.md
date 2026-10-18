@@ -135,8 +135,11 @@ its unreachable ID 4. Scenery repeats after stage 30 and the post-boss ramp star
 its initial implementation and follows bounded cubic curves; a tap preserves position
 and starts a faster rainbow dash. Only pointer-down can score a tap. Moves, historical
 samples and held fingers cannot score extra hits; lift/cancel/pause release ownership.
-Three taps open a timed word containing each active roster key once, shuffled into a
-four- or six-key sequence. Completing the word removes one third of her health. A wrong
+After two taps, the cat waits centrally for a clockwise or counterclockwise circle.
+A near-complete loop around the cat triggers the companion’s fishing-net catch; crossing
+the centre, backtracking, additional fingers and cancelled strokes cannot complete it.
+The catch animation finishes before opening a timed word containing each active roster
+key once, shuffled into a four- or six-key sequence. Completing the word removes one third of his health. A wrong
 key preserves progress, while timeout resumes the chase and launches a staggered rainbow
 flurry. Three completed words win. Chase projectiles reuse boss bolts with Rush star
 art and fast flight, so matching keys defend them and the existing boss damage/score
@@ -144,7 +147,7 @@ and Time Attack statistics paths remain authoritative. The prompt phase clears a
 bolts to give the sequence sole ownership of matching keys. Kids Mode slows wandering,
 spaces launches further apart and extends the prompt timer; projectile flight stays fast.
 The original yarn and cage mechanics are removed. Companion hints, narrated demos,
-bounded players and native input checks teach/exercise the tap-and-match loop.
+bounded players and native input checks teach/exercise the tap-circle-and-match loop.
 
 `RainbowCatArt` traces a frosted pastry body, pointed ears, paws and tail with shaded
 vector shapes. Body and head use separate `Softbody` instances advanced on the game clock.

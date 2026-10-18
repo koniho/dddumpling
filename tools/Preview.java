@@ -17,9 +17,16 @@ final class Preview {
         a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
         c.boss.update(.17f,L,c.rnd);
         shot(dir,"151-dash",c,L,w,h,ss);
-        TestRainbowCat.challenge(c,L);
+        TestRainbowCat.readyToCircle(c,L);
+        shot(dir,"151-circle",c,L,w,h,ss);
+        TestRainbowCat.circle(c,L,1);
+        c.boss.update(RainbowCat.NET_TIME*.5f,L,c.rnd);
+        shot(dir,"151-net-catch",c,L,w,h,ss);
+        c.boss.update(RainbowCat.NET_TIME*.5f,L,c.rnd);
         for(int i=0;i<16;i++)c.boss.update(1f/60,L,c.rnd);
         shot(dir,"151-prompt",c,L,w,h,ss);
+        c.boss.update(.12f,L,c.rnd);
+        shot(dir,"151-net-struggle",c,L,w,h,ss);
         a.timer=.01f;c.boss.update(.02f,L,c.rnd);c.boss.update(.45f,L,c.rnd);
         shot(dir,"151-flurry",c,L,w,h,ss);
         GameCore sky=TestRainbowCat.fight(L);sky.devInfiniteLives=true;

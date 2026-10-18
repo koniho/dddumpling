@@ -268,6 +268,16 @@ abstract class Check {
         public void hush() { hushes++; }
     }
 
+    static void rainbowCircle(GameCore c,Layout L,int direction) {
+        RainbowCat a=c.boss.cat;float radius=a.circleRadius();
+        a.touch(c,L,0,151,a.circleX()+radius,a.circleY());
+        for(int i=1;i<=40;i++) {
+            float angle=direction*Softbody.TAU*i/40f;
+            a.touch(c,L,2,151,a.circleX()+(float)Math.cos(angle)*radius,a.circleY()+(float)Math.sin(angle)*radius);
+        }
+        a.touch(c,L,1,151,a.circleX()+radius,a.circleY());
+    }
+
     /**
      * One frame of competent boss play, for the drivers that are not measuring bosses but now have
      * to get past them.
@@ -288,6 +298,7 @@ abstract class Check {
             int bolt=-1;for(int i=0;i<Boss.MAX_BOLTS;i++)if(b.blive[i]){bolt=i;break;}
             if(bolt>=0)c.tapKey(b.bglyph[bolt],L);
             else if(a.phase==RainbowCat.OPEN)c.tapKey(a.prompt[a.at],L);
+            else if(a.phase==RainbowCat.CIRCLE)rainbowCircle(c,L,1);
             else if(a.phase==RainbowCat.CHASE) {a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);}
             return true;
         }

@@ -1,8 +1,9 @@
 package com.dddumpling.game;
 
-/** A fast three-tap chase opens a shuffled key challenge; failure releases a star flurry. */
+/** Two taps and a circle let the companion net the cat for a key challenge; failure releases a star flurry. */
 final class RainbowCat {
-    static final int CHASE=0, DASH=1, OPEN=2;
+    static final int CHASE=0, DASH=1, OPEN=2, CIRCLE=3, CATCH=4;
+    static final float NET_TIME=.75f, NET_RETURN=.45f;
     static final float DASH_TIME=.34f, TRAIL_TIME=2.2f, TRAIL_LENGTH=2.9f*4;
     final Softbody pastry=new Softbody(18,151), head=new Softbody(14,152);
     final float[] route=new float[8],trailX=new float[136],trailY=new float[136],trailAge=new float[136];
@@ -10,12 +11,15 @@ final class RainbowCat {
     final int[] prompt=new int[Glyph.COUNT];
     float x,y,vx,vy,r,left,right,top,bottom,clock,flash,turn=1;
     float routeTime,routeDuration,launchLeft,trailTick,timer;
+    float circleAngle,circleSweep,circleStartX,circleStartY,netAge,netReturn,catchX,catchY;
+    boolean circling;
     boolean placed,kids,escaping;
     void reset() {
         phase=CHASE;pointer=-1;taps=trailCount=at=count=captures=cue=0;placed=escaping=false;turn=1;
+        circleAngle=circleSweep=circleStartX=circleStartY=netAge=netReturn=catchX=catchY=0;circling=false;
         x=y=vx=vy=clock=flash=routeTime=routeDuration=trailTick=timer=0;launchLeft=1.3f;
     }
-    void release() {pointer=-1;}
+    void release() {pointer=-1;circling=false;circleSweep=0;}
     void place(Layout L) {
         r=L.w*.073f*1.5f;
         left=L.playLeft+r*.95f;right=L.playRight-r*.95f;
@@ -27,7 +31,7 @@ final class RainbowCat {
         }
     }
     void animate(float dt,Layout L) {
-        place(L);clock+=dt;flash=Math.max(0,flash-dt*3);
+        place(L);clock+=dt;netReturn=Math.max(0,netReturn-dt);flash=Math.max(0,flash-dt*3);
         for(int i=trailCount-1;i>=0;i--) {
             trailAge[i]+=dt;
             if(trailAge[i]>=TRAIL_TIME)trailCount=i;
@@ -36,10 +40,12 @@ final class RainbowCat {
         pose(dt);
     }
     private void pose(float dt) {
-        float facing=Math.abs(vx)<1?turn:vx<0?-1:1;
+        float facing=phase==CIRCLE || phase==CATCH || phase==OPEN?-1:Math.abs(vx)<1?turn:vx<0?-1:1;
         turn+=(facing-turn)*(1-(float)Math.exp(-dt*14));
-        pastry.moveTo(x,y);pastry.update(dt);
-        head.moveTo(x+turn*r*.96f,y+r*.1f);head.update(dt);
+        float struggle=phase==OPEN?1:phase==CATCH?clamp(netAge/NET_TIME,0,1):0;
+        float wiggle=(float)Math.sin(clock*18)*r*.065f*struggle;
+        pastry.moveTo(x+wiggle,y);pastry.pull((float)Math.sin(clock*15),.5f,.13f*struggle);pastry.update(dt);
+        head.moveTo(x+turn*r*.88f-wiggle,y+r*.02f+(float)Math.sin(clock*21)*r*.055f*struggle);head.update(dt);
     }
     private void chooseRoute(Layout L,java.util.Random rnd,boolean dash) {
         float targetX=x,targetY=y,bestDistance=-1;
@@ -86,6 +92,11 @@ final class RainbowCat {
     }
     int update(Boss b,float dt,Layout L,java.util.Random rnd) {
         place(L);
+        if(phase==CATCH) {
+            netAge+=dt;
+            if(netAge>=NET_TIME)open(b);
+            return 0;
+        }
         if(phase==OPEN) {
             timer-=dt;
             if(timer<=0) {
@@ -98,17 +109,17 @@ final class RainbowCat {
             }
             return 0;
         }
-        float remaining=dt;
+        float remaining=phase==CIRCLE?0:dt;
         while(remaining>0) {
             if(routeDuration==0 || routeTime>=routeDuration) {
-                if(phase==DASH && taps==3) {open(b);break;}
+                if(phase==DASH && taps==2) {phase=CIRCLE;vx=vy=0;break;}
                 phase=CHASE;chooseRoute(L,rnd,false);
             }
             float step=Math.min(remaining,routeDuration-routeTime);
             advance(step);remaining-=step;
         }
         pose(0);
-        if(phase==OPEN || taps==3)return 0;
+        if(phase==DASH && taps==2)return 0;
         launchLeft-=dt;
         if(launchLeft<=0) {
             if(b.boltCount()<3) {int slot=b.tailBolt(rnd,x,y+r*.45f);if(slot>=0)b.bfast[slot]=true;}
@@ -123,7 +134,7 @@ final class RainbowCat {
         phase=OPEN;vx=vy=0;b.clearBolts();timer=promptTime();cue=1;flash=1;
     }
     private void resume(Layout L,java.util.Random rnd) {
-        taps=at=count=0;phase=DASH;chooseRoute(L,rnd,true);launchLeft=attackInterval();
+        netReturn=NET_RETURN;release();taps=at=count=0;phase=DASH;chooseRoute(L,rnd,true);launchLeft=attackInterval();
     }
     int press(Boss b,int glyph,Layout L,java.util.Random rnd) {
         if(phase!=OPEN || count==0)return Boss.REBUFF;
@@ -140,33 +151,70 @@ final class RainbowCat {
         float dx=(px-x)/(r*1.28f),dy=(py-y)/(r*1.16f);
         return dx*dx+dy*dy<=1 || distance(px,py,head.centreX(),head.centreY())<r*.84f;
     }
+    float circleX() {return x;}
+    float circleY() {return y;}
+    float circleRadius() {return r*2.2f;}
+    boolean carries(GameCore c) {
+        return c.state==GameCore.PLAY && !c.dying() && c.boss.kind==Boss.RAINBOW_CAT
+                && (phase==CATCH || phase==OPEN || netReturn>0);
+    }
+    float netAmount() {
+        float u=phase==CATCH?clamp(netAge/NET_TIME,0,1):netReturn>0?netReturn/NET_RETURN:1;
+        return u*u*(3-2*u);
+    }
+    private void circlePoint(GameCore c,Layout L,float px,float py) {
+        if(!circling)return;
+        float radius=distance(circleX(),circleY(),px,py);
+        if(radius<r*1.15f || radius>r*3.4f || py<L.playTop || py>=L.deckTop) {circling=false;circleSweep=0;return;}
+        float angle=(float)Math.atan2(py-circleY(),px-circleX()),delta=angle-circleAngle;
+        while(delta>Math.PI)delta-=Softbody.TAU;
+        while(delta<-Math.PI)delta+=Softbody.TAU;
+        if(Math.abs(delta)>Math.PI*.5f) {circling=false;circleSweep=0;return;}
+        circleSweep+=delta;circleAngle=angle;
+        if(Math.abs(circleSweep)>=Softbody.TAU*.86f && distance(px,py,circleStartX,circleStartY)<r*1.3f) {
+            phase=CATCH;catchX=x;catchY=y;timer=netAge=netReturn=0;circling=false;c.boss.clearBolts();
+            count=Roster.count(c.boss.rosterFull);at=0;
+            for(int i=0;i<count;i++)prompt[i]=Roster.at(c.boss.rosterFull,i);
+            for(int i=count-1;i>0;i--) {int j=c.rnd.nextInt(i+1),swap=prompt[i];prompt[i]=prompt[j];prompt[j]=swap;}
+            c.companion.react(RunCompanion.BOSS_HIT,1);
+            if(c.sound!=null)c.sound.ninjaSwish(1);
+        }
+    }
     boolean touch(GameCore c,Layout L,int action,int id,float px,float py) {
         Boss b=c.boss;
         if(action==3){boolean owned=pointer>=0;release();return owned;}
-        if(action==1 || action==6) {boolean owned=id==pointer;if(owned)release();return owned;}
         if(b.kind!=Boss.RAINBOW_CAT || !b.fighting() || c.state!=GameCore.PLAY || c.dying()
                 || c.paused || c.settingsOpen || c.onboarding.briefing) {release();return false;}
         place(L);kids=c.kidsRun;
+        if(action==1 || action==6) {
+            boolean owned=id==pointer;
+            if(owned) {if(phase==CIRCLE)circlePoint(c,L,px,py);release();}
+            return owned;
+        }
         if(action==0 || action==5) {
             if(pointer>=0 || py>=L.deckTop || py<L.playTop)return false;
             pointer=id;
             if(phase==CHASE && hit(px,py)) {
                 taps++;flash=1;phase=DASH;pastry.squash(.5f);head.squash(.3f);
-                if(taps==3) {
-                    count=Roster.count(b.rosterFull);at=0;
-                    for(int i=0;i<count;i++)prompt[i]=Roster.at(b.rosterFull,i);
-                    for(int i=count-1;i>0;i--) {int j=c.rnd.nextInt(i+1),swap=prompt[i];prompt[i]=prompt[j];prompt[j]=swap;}
-                    routeTo(L.w*.5f,top+(bottom-top)*.30f,DASH_TIME,c.rnd);
-                } else chooseRoute(L,c.rnd,true);
+                if(taps==2)routeTo(L.w*.5f,top+(bottom-top)*.32f,DASH_TIME,c.rnd);
+                else chooseRoute(L,c.rnd,true);
                 BossPlay.catTap(c,L);
+            } else if(phase==CIRCLE) {
+                float distance=distance(circleX(),circleY(),px,py);
+                circling=distance>=r*1.15f && distance<=r*3.4f;
+                circleStartX=px;circleStartY=py;circleSweep=0;
+                circleAngle=(float)Math.atan2(py-circleY(),px-circleX());
             }
             return true;
         }
+        if(action==2 && id==pointer && phase==CIRCLE)circlePoint(c,L,px,py);
         return id==pointer;
     }
     String companionHint() {
         if(phase==OPEN)return "MATCH IN ORDER!";
-        return phase==DASH?"FOLLOW RAINBOW!":taps==0?"TAP CAT 3 TIMES!":taps==1?"TWO TAPS TO GO!":"ONE MORE TAP!";
+        if(phase==CATCH)return "GOT YOU!";
+        if(phase==CIRCLE)return "CIRCLE THE CAT!";
+        return phase==DASH?"FOLLOW RAINBOW!":taps==0?"TAP CAT TWICE!":"ONE MORE TAP!";
     }
     static float clamp(float v,float low,float high){return Math.max(low,Math.min(high,v));}
     static float distance(float ax,float ay,float bx,float by){return (float)Math.hypot(ax-bx,ay-by);}

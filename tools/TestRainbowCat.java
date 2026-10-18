@@ -11,8 +11,53 @@ final class TestRainbowCat extends Check {
         RainbowCat a=c.boss.cat;a.release();
         for(int i=0;i<240 && a.phase!=RainbowCat.OPEN;i++) {
             if(a.phase==RainbowCat.CHASE) {a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);}
+            if(a.phase==RainbowCat.CIRCLE)circle(c,L,1);
             c.boss.update(1f/60,L,c.rnd);
         }
+    }
+    static void readyToCircle(GameCore c,Layout L) {
+        RainbowCat a=c.boss.cat;a.release();
+        for(int i=0;i<120 && a.phase!=RainbowCat.CIRCLE;i++) {
+            if(a.phase==RainbowCat.CHASE) {a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);}
+            c.boss.update(1f/60,L,c.rnd);
+        }
+    }
+    static void circle(GameCore c,Layout L,int direction) {rainbowCircle(c,L,direction);}
+    private static void circleGestures(Layout L) {
+        group("Rainbow Cat circle and fishing net");
+        for(int direction:new int[]{-1,1}) {
+            GameCore c=fight(L);RainbowCat a=c.boss.cat;readyToCircle(c,L);
+            check("two taps wait for a circle "+direction,a.taps==2 && a.phase==RainbowCat.CIRCLE && !c.boss.open());
+            check("circle fits safely inside play area "+direction,a.circleX()-a.circleRadius()>L.playLeft
+                    && a.circleX()+a.circleRadius()<L.playRight && a.circleY()-a.circleRadius()>L.playTop
+                    && a.circleY()+a.circleRadius()<L.deckTop);
+            a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
+            check("extra tap cannot substitute for circle "+direction,a.phase==RainbowCat.CIRCLE && a.taps==2);
+            circle(c,L,direction);
+            check("either circle direction starts net catch "+direction,a.phase==RainbowCat.CATCH && a.carries(c) && c.boss.boltCount()==0);
+            check("net targets the cat capture position "+direction,a.catchX==a.x && a.catchY==a.y);
+            c.boss.update(RainbowCat.NET_TIME*.5f,L,c.rnd);
+            check("net animation cannot consume prompt time "+direction,!c.boss.open() && a.timer==0);
+            c.boss.update(RainbowCat.NET_TIME*.5f,L,c.rnd);
+            check("net catch opens full duration challenge "+direction,c.boss.open() && a.timer==a.promptTime());
+            while(a.phase==RainbowCat.OPEN)c.boss.press(a.prompt[a.at],c.rnd,L);
+            check("companion returns after escape "+direction,a.netReturn>0 && a.carries(c));
+            c.boss.update(RainbowCat.NET_RETURN+.01f,L,c.rnd);
+            check("return completes and clears companion ownership "+direction,!a.carries(c));
+        }
+        GameCore c=fight(L);RainbowCat a=c.boss.cat;readyToCircle(c,L);float r=a.circleRadius();
+        a.touch(c,L,0,151,a.x+r,a.y);
+        for(int i=0;i<30;i++) {float angle=(i%2==0?.8f:-.8f);a.touch(c,L,2,151,a.x+(float)Math.cos(angle)*r,a.y+(float)Math.sin(angle)*r);}
+        check("back and forth swipes do not accumulate a circle",a.phase==RainbowCat.CIRCLE);
+        a.touch(c,L,3,151,a.x+r,a.y);
+        check("cancel clears circle progress",a.pointer==-1 && !a.circling && a.circleSweep==0);
+        a.touch(c,L,0,151,a.x+r,a.y);a.touch(c,L,2,152,a.x,a.y+r);
+        check("another pointer cannot extend the circle",a.circleSweep==0);
+        a.touch(c,L,2,151,a.x,a.y);
+        check("crossing through cat invalidates circle",!a.circling && a.phase==RainbowCat.CIRCLE);
+        Pause.release(c);check("pause clears circle ownership",a.pointer==-1);
+        circle(c,L,1);c.boss.leave();
+        check("leaving clears net and circle",!a.carries(c) && a.netReturn==0 && !a.circling);
     }
     private static void battleBackground(Layout L) {
         group("Rainbow Cat accelerated background");
@@ -21,7 +66,7 @@ final class TestRainbowCat extends Check {
         check("ordinary Rainbow Land retains normal drift",Math.abs(normal.skyClock-10.1f)<.001f);
         for(boolean timeAttack:new boolean[]{false,true}) {
             GameCore c=fight(L);c.timeAttack.active=timeAttack;c.skyClock=10;
-            for(int phase:new int[]{RainbowCat.CHASE,RainbowCat.DASH,RainbowCat.OPEN}) {
+            for(int phase:new int[]{RainbowCat.CHASE,RainbowCat.DASH,RainbowCat.OPEN,RainbowCat.CIRCLE,RainbowCat.CATCH}) {
                 c.boss.cat.phase=phase;c.boss.cat.timer=10;
                 float before=c.skyClock;c.update(.1f,L);
                 check("battle scenery advances threefold in phase "+phase+" time attack "+timeAttack,
@@ -68,7 +113,7 @@ final class TestRainbowCat extends Check {
         check("motion trail expires while cat holds prompt pose",a.trailCount==0);
     }
     static void all(Layout L) {
-        battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));
@@ -87,7 +132,7 @@ final class TestRainbowCat extends Check {
         a.touch(c,L,0,2,L.playLeft,a.y);a.touch(c,L,2,2,a.x,a.y);a.touch(c,L,1,2,a.x,a.y);
         check("swiping across cat does not substitute for tap",a.taps==1);
         challenge(c,L);
-        check("three taps open challenge with no cage or damage",a.phase==RainbowCat.OPEN && a.taps==3 && a.count==6 && c.boss.open() && c.boss.hp==hp);
+        check("two taps and circle open net challenge without damage",a.phase==RainbowCat.OPEN && a.taps==2 && a.count==6 && c.boss.open() && c.boss.hp==hp);
         int mask=0;for(int i=0;i<a.count;i++)mask|=1<<a.prompt[i];
         check("challenge includes each full roster key exactly once",Integer.bitCount(mask)==6);
         float deadline=a.timer;int wrong=(a.prompt[0]+1)%Glyph.COUNT;
@@ -249,8 +294,9 @@ final class TestRainbowCat extends Check {
         group("Rainbow Cat companion guidance");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("skipped tutorials still offer cat help",c.onboarding.offersBossHelp(c));
-        check("chase explains tapping",a.companionHint().equals("TAP CAT 3 TIMES!"));
-        a.taps=1;check("companion counts remaining taps",a.companionHint().equals("TWO TAPS TO GO!"));
+        check("chase explains tapping",a.companionHint().equals("TAP CAT TWICE!"));
+        a.taps=1;check("companion counts remaining taps",a.companionHint().equals("ONE MORE TAP!"));
+        a.phase=RainbowCat.CIRCLE;check("circle hint explains capture",a.companionHint().equals("CIRCLE THE CAT!"));
         a.phase=RainbowCat.DASH;check("dash hint tracks the trail",a.companionHint().equals("FOLLOW RAINBOW!"));
         a.phase=RainbowCat.OPEN;check("challenge explains order",a.companionHint().equals("MATCH IN ORDER!"));
         a.phase=RainbowCat.CHASE;

@@ -55,7 +55,8 @@ final class Bot {
     private float fogThink;
     private float gatorX,gatorY,gatorEnd;
     private boolean gatorSwipe;
-    private float lidSwipeAge;
+    private float lidSwipeAge,catCircleAngle;
+    private boolean catCircling;
 
     /**
      * At most this many presses may be banked. Without a cap the bot saves up through every quiet
@@ -264,6 +265,16 @@ final class Bot {
         budget = Math.min(BURST, budget + dt * pps);
         if(c.bossFighting() && c.boss.kind==Boss.RAINBOW_CAT) {
             RainbowCat a=c.boss.cat;
+            if(catCircling) {
+                catCircleAngle+=dt*DRAG_SPEED*L.w/a.circleRadius();
+                float px=a.circleX()+(float)Math.cos(catCircleAngle)*a.circleRadius();
+                float py=a.circleY()+(float)Math.sin(catCircleAngle)*a.circleRadius();
+                a.touch(c,L,2,151,px,py);
+                if(a.phase!=RainbowCat.CIRCLE || catCircleAngle>=Softbody.TAU) {
+                    a.touch(c,L,1,151,px,py);catCircling=false;think=reaction;
+                }
+                return;
+            }
             if(think>0) {think-=dt;return;}
             int bolt=-1;
             for(int i=0;i<Boss.MAX_BOLTS;i++)if(c.boss.blive[i] && c.boss.bt[i]>reaction/Boss.BOLT_TIME
@@ -273,6 +284,9 @@ final class Bot {
                 int glyph=bolt>=0?c.boss.bglyph[bolt]:a.prompt[a.at];
                 if(rnd.nextFloat()<missRate)glyph=Roster.randomExcept(c.playRosterFull(),glyph,rnd);
                 c.tapKey(glyph,L);
+            } else if(budget>=1f && a.phase==RainbowCat.CIRCLE) {
+                budget-=1;presses++;catCircleAngle=0;catCircling=true;
+                a.touch(c,L,0,151,a.circleX()+a.circleRadius(),a.circleY());
             } else if(budget>=1f && a.phase==RainbowCat.CHASE) {
                 budget-=1;presses++;think=reaction;
                 // A bounded tap with aim error; holding a finger never earns another hit.

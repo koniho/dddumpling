@@ -41,13 +41,13 @@ final class TutorialSpeech extends Draw {
         {"NEW LANDS!", "SWIPE TO CHOOSE!"},
         {"PARRY, THEN TAP!", "WATCH HIS EYES!"},
         {"RUSHING STARS!", "TAP THEIR MATCHING KEYS!"},
-        {"TAP CAT 3 TIMES!", "FOLLOW RAINBOW!"},
+        {"TAP CAT TWICE!", "THEN CIRCLE CAT!"},
         {"MATCH IN ORDER!", "BEAT THE RAINBOW TIMER!"}
     };
     static String spoken(int message) { return spoken(message,Skins.DEFAULT); }
     static String spoken(int message,int skin) {
-        if(message==CAT_RUSH)return "Tap matching keys to stop her rushing stars.";
-        if(message==CAT_TAPS)return "Tap Rainbow Cat three times. She dashes away after each tap!";
+        if(message==CAT_RUSH)return "Tap matching keys to stop his rushing stars.";
+        if(message==CAT_TAPS)return "Tap Rainbow Cat twice, then draw a circle around him. Your companion will catch him in a net!";
         if(message==CAT_PROMPT)return "Match each key in order before time runs out! Too slow? Here comes a rainbow flurry!";
         if(message==ALLIGATOR)return "Swipe to parry, then tap while "+Skins.bossTitle(skin,Boss.ALLIGATOR)+" is dizzy. Watch his eyes narrow, then stop before his guard returns! Four parry-and-hit rounds make him dizzy for longer. Taking damage resets your streak.";
         if(message==LANDS)return "New lands! Swipe to choose where your next run starts.";
@@ -350,9 +350,17 @@ final class TutorialSpeech extends Draw {
             face(p,key,x,yy,s*.62f);face(p,key,x,y+s*2,s);
             handX=x;handY=y+s*2;
         } else if(message==CAT_TAPS) {
-            handX=x+s*(-3.5f+travel*7);handY=y;
-            RainbowCatArt.cat(p,handX,handY,s*1.05f,age*2,1,null,null,false,1);
-            p.strokeCircle(handX,handY,s*(1.3f+travel*.5f),Glyph.withAlpha(GOLD,(int)(190*(1-travel))),s*.14f);
+            float loop=age%4f;
+            float catX=loop<1.6f?x+s*(float)Math.sin(loop*4)*1.4f:x;
+            RainbowCatArt.cat(p,catX,y,s,age*2,-1,null,null,false,1);
+            if(loop<1.6f) {
+                handX=catX;handY=y;
+                p.strokeCircle(catX,y,s*(1.3f+travel*.5f),Glyph.withAlpha(GOLD,(int)(190*(1-travel))),s*.14f);
+            } else {
+                float angle=(loop-1.6f)/2.4f*Softbody.TAU;
+                handX=x+(float)Math.cos(angle)*s*2.4f;handY=y+(float)Math.sin(angle)*s*2.4f;
+                p.arc(x,y,s*2.4f,s*2.4f,0,angle*180/(float)Math.PI,GOLD,s*.13f);
+            }
         } else if(message==CAT_PROMPT) {
             int n=Roster.count(c.playRosterFull()),at=(int)(age*1.6f)%n;
             for(int i=0;i<n;i++)face(p,Roster.at(c.playRosterFull(),i),x+(i-(n-1)*.5f)*s*1.8f,y,s*.73f);
