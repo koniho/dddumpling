@@ -221,6 +221,42 @@ final class TestRainbowCat extends Check {
         trace.move(star[2],star[3]);float before=trace.progress();trace.move(star[0],star[1]);
         check("retracing star edge does not count twice",trace.progress()<before*.1f);
     }
+    private static void traceFeedback(Layout L) {
+        group("Tracing feedback follows progress and loss");
+        GameCore c=fight(L);readyToCircle(c,L);RainbowCat a=c.boss.cat;
+        Ear ear=new Ear();c.sound=ear;float radius=a.circleRadius();
+        a.touch(c,L,0,151,a.x+radius,a.y);
+        c.update(.02f,L);
+        check("starting trace emits a light native haptic",c.bossDeathHaptic==1);
+        c.update(.02f,L);
+        check("holding still does not repeat haptics",c.bossDeathHaptic==0);
+        boolean tick=false;
+        for(int i=1;i<=16;i++) {
+            float angle=i*.06f;
+            a.touch(c,L,2,151,a.x+(float)Math.cos(angle)*radius,a.y+(float)Math.sin(angle)*radius);
+            c.update(.02f,L);tick|=c.bossDeathHaptic==1;
+        }
+        check("advancing along trace emits haptic ticks",tick);
+        float traveled=a.gesture.travel;
+        a.touch(c,L,2,151,a.x,L.playTop-1);
+        check("leaving path preserves failed stroke and plays sound",a.traceLost>0 && a.lostTravel==traveled && ear.wrongs==1 && !a.circling);
+        c.update(.02f,L);
+        check("trace loss emits strong native haptic",c.bossDeathHaptic==2);
+        a.touch(c,L,2,151,a.x,L.playTop-1);a.touch(c,L,1,151,a.x,L.playTop-1);
+        check("loss only sounds once per attempt",ear.wrongs==1 && a.traceLost>0);
+        a.touch(c,L,0,151,a.x+radius,a.y);
+        check("retry immediately clears loss color",a.circling && a.traceLost==0);
+        a.touch(c,L,2,151,a.x+radius*.9f,a.y+radius*.4f);
+        a.touch(c,L,1,151,a.x+radius*.9f,a.y+radius*.4f);
+        check("lifting before completion also reports loss",ear.wrongs==2 && a.traceLost>0 && a.pointer==-1);
+        a.release();
+        check("pause cancellation clears feedback without another failure",a.traceLost==0 && a.takeTraceHaptic()==0 && ear.wrongs==2);
+        a.touch(c,L,0,151,a.x+radius,a.y);a.release();
+        check("system cancellation is silent",ear.wrongs==2 && a.takeTraceHaptic()==0);
+        circle(c,L,1);
+        check("successful trace gives strong feedback without loss",a.phase==RainbowCat.CATCH && a.takeTraceHaptic()==2 && a.traceLost==0 && ear.wrongs==2);
+        a.reset();check("encounter reset clears trace feedback",a.traceLost==0 && a.takeTraceHaptic()==0);
+    }
     private static void windUp(Layout L) {
         group("Companion winds up with drawing progress");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;readyToCircle(c,L);
@@ -305,7 +341,7 @@ final class TestRainbowCat extends Check {
         check("motion trail expires while cat holds prompt pose",a.trailCount==0);
     }
     static void all(Layout L) {
-        fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));

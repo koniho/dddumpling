@@ -14,14 +14,24 @@ final class RainbowCat {
     float x,y,vx,vy,r,left,right,top,bottom,clock,flash,turn=1;
     float routeTime,routeDuration,launchLeft,trailTick,timer;
     float circleSweep,netAge,netReturn,catchX,catchY,windUp,releaseWind,netAimX,netAimY,tapFlash,scared,scaredAge;
+    float traceLost,lostStart,lostTravel,traceBeat,traceProgress;
+    int traceHaptic;
     boolean circling;
     boolean placed,kids,escaping;
     void reset() {
         phase=CHASE;pointer=-1;taps=trailCount=at=count=captures=cue=0;placed=escaping=false;turn=1;
         circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=netAimX=netAimY=tapFlash=scared=scaredAge=0;circling=false;gesture.clear();
         x=y=vx=vy=clock=flash=routeTime=routeDuration=trailTick=timer=0;launchLeft=1.3f;
+        traceLost=lostStart=lostTravel=traceBeat=traceProgress=0;traceHaptic=0;
     }
-    void release() {pointer=-1;circling=false;circleSweep=0;gesture.clear();}
+    private void endStroke() {pointer=-1;circling=false;circleSweep=0;gesture.clear();}
+    void release() {endStroke();traceLost=traceBeat=traceProgress=0;traceHaptic=0;}
+    int takeTraceHaptic() {int h=traceHaptic;traceHaptic=0;return h;}
+    private void loseTrace(GameCore c,float start,float travel) {
+        lostStart=start;lostTravel=travel;traceLost=.70f;traceHaptic=2;
+        circling=false;circleSweep=0;gesture.clear();
+        if(c.sound!=null)c.sound.wrong();
+    }
     void place(Layout L) {
         r=L.w*.073f*1.5f;
         left=L.playLeft+r*.95f;right=L.playRight-r*.95f;
@@ -33,6 +43,7 @@ final class RainbowCat {
         }
     }
     void animate(float dt,Layout L) {
+        traceLost=Math.max(0,traceLost-dt);traceBeat=Math.max(0,traceBeat-dt);
         place(L);clock+=dt;netReturn=Math.max(0,netReturn-dt);flash=Math.max(0,flash-dt*3);
         for(int i=trailCount-1;i>=0;i--) {
             trailAge[i]+=dt;
@@ -200,10 +211,16 @@ final class RainbowCat {
     }
     private void circlePoint(GameCore c,Layout L,float px,float py) {
         if(!circling)return;
-        if(py<L.playTop || py>=L.deckTop) {circling=false;circleSweep=0;gesture.clear();return;}
+        float start=gesture.start,travel=gesture.travel;
+        if(py<L.playTop || py>=L.deckTop) {loseTrace(c,start,travel);return;}
         boolean complete=gesture.move((px-circleX())/circleRadius(),(py-circleY())/circleRadius());
+        if(!gesture.active) {loseTrace(c,start,travel);return;}
         circling=gesture.active;circleSweep=gesture.travel/gesture.length*Softbody.TAU;
+        if(gesture.progress()>=traceProgress+.035f && traceBeat<=0) {
+            traceProgress=gesture.progress();traceBeat=.09f;traceHaptic=Math.max(traceHaptic,1);
+        }
         if(complete) {
+            traceHaptic=2;traceLost=0;
             phase=CATCH;catchX=x;catchY=y;releaseWind=windUp;timer=netAge=netReturn=0;circling=false;c.boss.clearBolts();
             count=Roster.count(c.boss.rosterFull);at=0;
             for(int i=0;i<count;i++)prompt[i]=Roster.at(c.boss.rosterFull,i);
@@ -220,7 +237,13 @@ final class RainbowCat {
         place(L);kids=c.kidsRun;
         if(action==1 || action==6) {
             boolean owned=id==pointer;
-            if(owned) {if(phase==CIRCLE)circlePoint(c,L,px,py);release();}
+            if(owned) {
+                if(phase==CIRCLE) {
+                    circlePoint(c,L,px,py);
+                    if(phase==CIRCLE && circling)loseTrace(c,gesture.start,gesture.travel);
+                }
+                endStroke();
+            }
             return owned;
         }
         if(action==0 || action==5) {
@@ -233,6 +256,8 @@ final class RainbowCat {
                 BossPlay.catTap(c,L);
             } else if(phase==CIRCLE) {
                 circling=gesture.begin((px-circleX())/circleRadius(),(py-circleY())/circleRadius());
+                if(circling) {traceLost=traceProgress=0;traceBeat=.09f;traceHaptic=1;}
+                else loseTrace(c,0,0);
                 if(circling && windUp<.01f) {netAimX=gesture.lastX;netAimY=gesture.lastY;}
                 circleSweep=0;catchX=x;catchY=y;
             }
@@ -245,6 +270,7 @@ final class RainbowCat {
         if(phase==OPEN)return "MATCH IN ORDER!";
         if(phase==CATCH)return "GOT YOU!";
         if(phase==CIRCLE) {
+            if(traceLost>0)return "TRACE LOST! TRY AGAIN!";
             switch(captures) {
                 case 0:return "CIRCLE THE CAT!";
                 case 1:return "TRACE THE HEART!";

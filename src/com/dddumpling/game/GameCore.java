@@ -3186,6 +3186,8 @@ final class GameCore {
                 flash = Math.max(flash, 1f);
                 flashColor = 0xFFFF355F;
             }
+            if(boss.kind==Boss.RAINBOW_CAT)
+                bossDeathHaptic=Math.max(bossDeathHaptic,boss.cat.takeTraceHaptic());
             if(boss.kind==Boss.RAINBOW_CAT && boss.cat.cue>0) {
                 if(boss.cat.cue==3) {
                     shake=Math.max(shake,.65f);flash=Math.max(flash,.22f);

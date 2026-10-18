@@ -62,6 +62,9 @@ final class RainbowCatArt extends Draw {
         int band=Math.min(RainbowLand.CLEAR_COLORS.length-1,(int)((1-a.tapFlash/RainbowCat.TAP_FLASH)*RainbowLand.CLEAR_COLORS.length));
         return RainbowLand.CLEAR_COLORS[Math.max(0,band)];
     }
+    private static int traceColor(RainbowCat a,int band) {
+        return a.traceLost>0?0xFFFF3864:RainbowLand.CLEAR_COLORS[Math.floorMod(band,RainbowLand.CLEAR_COLORS.length)];
+    }
     private static void circleGuide(Painter p,RainbowCat a) {
         float radius=a.circleRadius(),pulse=.7f+.3f*(float)Math.sin(a.clock*3);
         if(a.captures>0) {
@@ -69,10 +72,10 @@ final class RainbowCatArt extends Draw {
             for(int first=0;first<edges;first+=step) {
                 int last=Math.min(edges,first+step);float[] band=new float[(last-first+1)*2];
                 for(int i=first;i<=last;i++) {band[(i-first)*2]=a.x+points[i*2]*radius;band[(i-first)*2+1]=a.y+points[i*2+1]*radius;}
-                p.polyline(band,Glyph.withAlpha(COLORS[first*COLORS.length/edges],(int)(130+65*pulse)),a.r*.11f);
+                p.polyline(band,Glyph.withAlpha(traceColor(a,first*COLORS.length/edges),(int)(215+40*pulse)),a.r*.19f);
             }
         } else for(int i=0;i<12;i++)p.arc(a.circleX(),a.circleY(),radius,radius,i*30,17,
-                Glyph.withAlpha(COLORS[i%COLORS.length],(int)(100+65*pulse)),a.r*.085f);
+                Glyph.withAlpha(traceColor(a,i),(int)(205+50*pulse)),a.r*.16f);
         if(a.starShape()) {
             float edge=a.gesture.length/5;
             int next=!a.circling?0:a.gesture.travel<0?(int)Math.ceil(a.gesture.position/edge)-1:(int)Math.floor(a.gesture.position/edge)+1;
@@ -86,25 +89,35 @@ final class RainbowCatArt extends Draw {
                 a.r*.20f,a.r*.08f,4,angle),0xFFFFF5CB);
     }
     private static void tracedPath(Painter p,RainbowCat a,float x,float y,float radius,float stroke) {
-        if(a.circling && Math.abs(a.circleSweep)>.01f) {
-            float[] traced=new float[130];
-            for(int i=0;i<=64;i++) {
-                float at=a.gesture.start+a.gesture.travel*i/64;
-                traced[i*2]=x+a.gesture.coordinate(at,0)*radius;
-                traced[i*2+1]=y+a.gesture.coordinate(at,1)*radius;
+        boolean lost=a.traceLost>0;
+        float travel=lost?a.lostTravel:a.gesture.travel,start=lost?a.lostStart:a.gesture.start;
+        if((!a.circling && !lost) || Math.abs(travel)<.01f)return;
+        float fade=lost?Math.min(1,a.traceLost/.25f):1;
+        float beat=.5f+.5f*(float)Math.sin(a.clock*(lost?24:7));
+        for(int section=0;section<8;section++) {
+            float[] band=new float[18];
+            for(int i=0;i<=8;i++) {
+                float at=start+travel*(section*8+i)/64;
+                band[i*2]=x+a.gesture.coordinate(at,0)*radius;
+                band[i*2+1]=y+a.gesture.coordinate(at,1)*radius;
             }
-            float beat=.5f+.5f*(float)Math.sin(a.clock*7);
-            p.polyline(traced,Glyph.withAlpha(0xFFFFD98C,(int)(28+25*beat)),stroke*(.48f+.12f*beat));
-            p.polyline(traced,Glyph.withAlpha(0xFFFFE6A3,(int)(80+45*beat)),stroke*(.28f+.06f*beat));
-            p.polyline(traced,Glyph.withAlpha(0xFFFFF2B6,(int)(185+60*beat)),stroke*(.13f+.045f*beat));
-            // Light travels along the completed stroke without revealing the untraced path.
-            for(int section=0;section<8;section++) {
-                float light=.5f+.5f*(float)Math.sin(section*.9f-a.clock*9);
-                if(light<.45f)continue;
-                float[] highlight=new float[18];
-                System.arraycopy(traced,section*16,highlight,0,18);
-                p.polyline(highlight,Glyph.withAlpha(0xFFFFFFFF,(int)(150*(light-.45f)/.55f)),stroke*.075f);
-            }
+            int color=traceColor(a,section);
+            p.polyline(band,Glyph.withAlpha(color,(int)((45+30*beat)*fade)),stroke*(.67f+.12f*beat));
+            p.polyline(band,Glyph.withAlpha(color,(int)(145*fade)),stroke*.40f);
+            p.polyline(band,Glyph.withAlpha(color,(int)(250*fade)),stroke*.22f);
+            float light=.5f+.5f*(float)Math.sin(section*.9f-a.clock*9);
+            p.polyline(band,Glyph.withAlpha(Glyph.mix(color,0xFFFFFFFF,.65f),(int)((115+110*light)*fade)),stroke*.075f);
+        }
+        // Seeded phases make twinkles drift off the completed stroke without consuming gameplay RNG.
+        for(int i=0;i<24;i++) {
+            float age=(a.clock*1.7f+i*.618034f)%1;
+            float at=start+travel*(i+.5f)/24,angle=i*2.39996f;
+            float xx=x+a.gesture.coordinate(at,0)*radius+(float)Math.cos(angle)*stroke*age*.85f;
+            float yy=y+a.gesture.coordinate(at,1)*radius-stroke*age*(.4f+(i%3)*.25f);
+            float size=stroke*(.05f+.07f*(1-age));int alpha=(int)(255*(1-age)*fade);
+            int color=traceColor(a,i);
+            p.fillCircle(xx,yy,size*2.6f,Glyph.withAlpha(color,alpha/4));
+            p.fillPoly(star(xx,yy,size,size*.28f,4,angle+a.clock),Glyph.withAlpha(Glyph.mix(color,0xFFFFFFFF,.4f),alpha));
         }
     }
     private static void net(Painter p,GameCore c,Layout L,boolean front) {

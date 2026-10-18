@@ -69,6 +69,9 @@ final class Preview {
             starGame.boss.update(.025f,L,starGame.rnd);
         }
         shot(dir,"151-star-progress",starGame,L,w,h,ss);
+        starCat.touch(starGame,L,2,151,starCat.x,L.playTop-1);
+        starGame.boss.update(.08f,L,starGame.rnd);
+        shot(dir,"151-trace-lost",starGame,L,w,h,ss);
         GameCore shapes=TestRainbowCat.fight(L);RainbowCat shape=shapes.boss.cat;
         String[] shapeNames={"circle","heart","diamond","eight","star"};
         for(int capture=0;capture<5;capture++) {
