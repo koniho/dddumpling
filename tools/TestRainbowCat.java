@@ -230,7 +230,7 @@ final class TestRainbowCat extends Check {
         readyToCircle(c,L);int beforeCatch=ear.catMeows;circle(c,L,1);
         check("net catch uses surprised take",ear.catMeows==beforeCatch+1 && ear.lastCatMeow==CatMeowRecording.SURPRISED);
         for(int i=0;i<60 && a.phase!=RainbowCat.OPEN;i++)c.update(1f/60,L);
-        check("caught cat uses a longer struggle performance",ear.lastCatMeow==CatMeowRecording.STRUGGLE);
+        check("caught cat uses retained meow instead of spoken aside",ear.lastCatMeow==CatMeowRecording.STRUGGLE);
         int before=ear.catMeows;
         while(a.phase==RainbowCat.OPEN) {
             int key=a.prompt[a.at],verdict=c.boss.press(key,c.rnd,L);

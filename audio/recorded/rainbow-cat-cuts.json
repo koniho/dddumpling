@@ -220,16 +220,6 @@
       }
     },
     {
-      "name": "meow-struggle-01",
-      "start": 12.34,
-      "end": 15.08,
-      "duration": 2.74,
-      "original": {
-        "peak_dbfs": -1.81,
-        "rms_dbfs": -25.25
-      }
-    },
-    {
       "name": "meow-struggle-02",
       "start": 15.4,
       "end": 17.52,
@@ -258,6 +248,14 @@
         "peak_dbfs": -0.84,
         "rms_dbfs": -16.78
       }
+    }
+  ],
+  "excluded_clips": [
+    {
+      "name": "meow-struggle-01",
+      "start": 12.34,
+      "end": 15.08,
+      "reason": "Spoken aside around 12\u201315 seconds, confirmed by local speech review"
     }
   ]
 }

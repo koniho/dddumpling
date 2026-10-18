@@ -244,9 +244,11 @@ provided explicitly for Rainbow Cat integration. Source SHA-256:
 `59b1332edfeb1e6b499c08c6ac38d2c82d01e1210d29f5d4c1f566afa68bbd82`. The original stays in the user's Recordings folder;
 it is not a third-party library asset or a CC0 claim.
 
-[Reviewed cuts and measurements](rainbow-cat-cuts.json) retain 25 excerpts:
-21 short meows, two longer performances used for net struggling, and the
-annotated hurt and surprised takes. Embedded transcript metadata identifies
+[Reviewed cuts and measurements](rainbow-cat-cuts.json) retain 24 excerpts:
+21 short meows, one longer meow for net struggling, and the annotated hurt and
+surprised takes. A local Whisper tiny.en speech review identified a spoken aside
+in the original 12.34–15.08 second cut, missed by the embedded recorder transcript.
+That whole cut is listed as excluded in the manifest and is no longer packaged. Embedded transcript metadata identifies
 spoken instructions around 19.38–22.08 and 25.29–27.21 seconds. Those annotations,
 preparation silence, and the final handling noise are excluded. Boundaries use
 waveform valleys and comparison of -32 dB and -23 dB silence candidates; continuous
@@ -261,7 +263,7 @@ Every excerpt is checked for duration, audible energy, unclipped peaks and
 silent endpoints. These measurements do not substitute for phone/headphone review.
 
 The surprise sound follows accepted taps and net catches; hurt follows completed
-key sequences, including the final hit. Longer takes alternate when the net prompt
+key sequences, including the final hit. The retained longer meow plays when the net prompt
 opens. Short takes cycle through launches and flurries without consuming gameplay
 randomness. Routine calls wait until the current recording finishes; important
 surprise/hurt reactions take priority. The entrance uses the first short meow.

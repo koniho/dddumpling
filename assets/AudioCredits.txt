@@ -21,5 +21,5 @@ Six impact-trimmed excerpts, mono conversion, seven-semitone pitch lift, edge fa
 4 kHz low-pass, resampling, shared gain and a synthesized cartoon bubble layer.
 
 Rainbow Cat meows: user-performed Oct 18 at 14_19.m4a, provided for DDDUMPLING.
-25 excerpts excluding spoken annotations; mono conversion, edge fades and resampling.
+24 excerpts excluding spoken annotations; mono conversion, edge fades and resampling.
 Original pitch and relative levels preserved.
