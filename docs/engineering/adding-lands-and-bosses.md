@@ -138,20 +138,23 @@ settling into a scared expression. She then dashes away; repeat taps remain lock
 that escape finishes.
 Only pointer-down can score a tap. Moves, historical
 samples and held fingers cannot score extra hits; lift/cancel/pause release ownership.
-After two taps, the cat waits centrally for a clockwise or counterclockwise circle.
-The second capture instead uses a larger five-point star drawn as five crossing strokes.
+After two taps, the cat waits centrally for a closed shape traced in either direction.
+Five successful captures use circle, crossed five-point star, heart, diamond and figure eight,
+in that order. Both face and pastry tap targets have a 15% extra margin.
 The companion rises while a small waving net mimics the drawing on a duplicate path
-above its head, then enlarges into a deep mesh fishing net on completion. The caught cat and pouch sway together while the companion
-braces against the moving pole.
+above its head, then enlarges into a deep mesh fishing net on completion. The caught cat
+and pouch sway together while the companion braces against the moving pole.
 `TraceGesture` follows an ordered closed polyline in either direction; crossing the centre
 of the circle, retracing, additional fingers and cancelled strokes cannot complete it.
 Its local path matching supports self-intersecting shapes such as five-stroke stars without
-jumping ahead at crossings. Circle and star share the tracker and progress-driven animation;
+jumping ahead at crossings. All five shapes share the tracker and progress-driven animation;
 timeouts keep the same shape until that capture succeeds.
 The catch animation finishes before opening a timed word containing each active roster
-key once, shuffled into a four- or six-key sequence. Completing the word removes one third of his health. A wrong
-key preserves progress, while timeout resumes the chase and launches a staggered rainbow
-flurry. Three completed words win. Chase projectiles reuse boss bolts with Rush star
+key once, shuffled into a four- or six-key sequence. Completing the word removes one of
+her five health points. A wrong key preserves progress, while timeout resumes the chase
+and launches a staggered rainbow flurry targeting each active key in left-to-right or
+right-to-left order (random per flurry). Five completed words win; the enrage warning begins
+at 45 seconds. Chase projectiles reuse boss bolts with Rush star
 art and fast flight, so matching keys defend them and the existing boss damage/score
 and Time Attack statistics paths remain authoritative. The prompt phase clears airborne
 bolts to give the sequence sole ownership of matching keys. Kids Mode slows wandering,

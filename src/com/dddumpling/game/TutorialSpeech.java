@@ -47,7 +47,7 @@ final class TutorialSpeech extends Draw {
     static String spoken(int message) { return spoken(message,Skins.DEFAULT); }
     static String spoken(int message,int skin) {
         if(message==CAT_RUSH)return "Tap matching keys to stop his rushing stars.";
-        if(message==CAT_TAPS)return "Tap Rainbow Cat twice, then trace the shape to catch him in a net. First a circle, then a star!";
+        if(message==CAT_TAPS)return "Tap Rainbow Cat twice, then trace the shape to catch him in a net. Each catch has a new shape!";
         if(message==CAT_PROMPT)return "Match each key in order before time runs out! Too slow? Here comes a rainbow flurry!";
         if(message==ALLIGATOR)return "Swipe to parry, then tap while "+Skins.bossTitle(skin,Boss.ALLIGATOR)+" is dizzy. Watch his eyes narrow, then stop before his guard returns! Four parry-and-hit rounds make him dizzy for longer. Taking damage resets your streak.";
         if(message==LANDS)return "New lands! Swipe to choose where your next run starts.";

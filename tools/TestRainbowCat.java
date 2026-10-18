@@ -59,6 +59,46 @@ final class TestRainbowCat extends Check {
         circle(c,L,1);c.boss.leave();
         check("leaving clears net and circle",!a.carries(c) && a.netReturn==0 && !a.circling);
     }
+    private static void fiveShapes(Layout L) {
+        group("Five distinct captures and forgiving cat taps");
+        GameCore target=fight(L);RainbowCat t=target.boss.cat;
+        check("pastry accepts taps in the added 15 percent margin",t.hit(t.x-t.r*1.28f*1.14f,t.y)
+                && t.hit(t.x,t.y+t.r*1.16f*1.14f));
+        check("pastry margin stays bounded",!t.hit(t.x-t.r*1.28f*1.16f,t.y));
+        check("face also gains 15 percent margin",t.hit(t.head.centreX()+t.r*.84f*1.14f,t.head.centreY()));
+        check("face margin stays bounded",!t.hit(t.head.centreX()+t.r*.84f*1.16f,t.head.centreY()));
+        for(int direction:new int[]{-1,1}) {
+            GameCore c=fight(L);RainbowCat a=c.boss.cat;
+            check("cat starts with five health "+direction,c.boss.hp==5 && c.boss.hpMax==5);
+            java.util.HashSet<String> shapes=new java.util.HashSet<String>();
+            for(int capture=0;capture<5;capture++) {
+                readyToCircle(c,L);shapes.add(java.util.Arrays.toString(TraceGesture.shape(a.captures)));
+                check("next unique shape fits play area "+direction+"/"+capture,a.captures==capture
+                        && a.x-a.circleRadius()>L.playLeft && a.x+a.circleRadius()<L.playRight
+                        && a.y-a.circleRadius()>L.playTop && a.y+a.circleRadius()<L.deckTop);
+                circle(c,L,direction);
+                check("shape catches in either direction "+direction+"/"+capture,a.phase==RainbowCat.CATCH);
+                c.boss.update(RainbowCat.NET_TIME,L,c.rnd);
+                for(int key=0;key<6 && a.phase==RainbowCat.OPEN;key++)c.boss.press(a.prompt[a.at],c.rnd,L);
+                check("one damage per completed capture "+direction+"/"+capture,c.boss.hp==4-capture
+                        && c.boss.beaten==(capture==4));
+            }
+            check("all five shapes differ "+direction,shapes.size()==5);
+        }
+        group("Rainbow flurry sweeps keyboard in order");
+        for(boolean full:new boolean[]{false,true})for(final boolean fromLeft:new boolean[]{false,true}) {
+            GameCore c=fight(L);c.boss.rosterFull=full;challenge(c,L);
+            RainbowCat a=c.boss.cat;int n=a.count;a.timer=.01f;
+            c.boss.update(.02f,L,new java.util.Random(151) {public boolean nextBoolean(){return fromLeft;}});
+            boolean ordered=c.boss.boltCount()==n;float previous=fromLeft?-1:Float.MAX_VALUE;
+            for(int i=0;i<n;i++) {
+                float x=Roster.keyX(L,c.boss.bglyph[i],full?1:0);
+                ordered&=fromLeft?x>previous:x<previous;previous=x;
+                ordered&=c.boss.bt[i]==-i*.16f && c.boss.bfast[i];
+            }
+            check("flurry preserves left/right order and stagger "+full+"/"+fromLeft,ordered);
+        }
+    }
     private static void secondCaptureStar(Layout L) {
         group("Second Rainbow Cat capture uses a large crossed star");
         for(int direction:new int[]{-1,1}) {
@@ -232,7 +272,7 @@ final class TestRainbowCat extends Check {
         check("motion trail expires while cat holds prompt pose",a.trailCount==0);
     }
     static void all(Layout L) {
-        secondCaptureStar(L);tapFlash(L);traceShapes(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        fiveShapes(L);secondCaptureStar(L);tapFlash(L);traceShapes(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));
@@ -257,7 +297,7 @@ final class TestRainbowCat extends Check {
         float deadline=a.timer;int wrong=(a.prompt[0]+1)%Glyph.COUNT;
         check("wrong key preserves progress and timer",c.boss.press(wrong,c.rnd,L)==Boss.REBUFF && a.at==0 && a.timer==deadline && c.boss.hp==hp);
         while(a.phase==RainbowCat.OPEN)c.boss.press(a.prompt[a.at],c.rnd,L);
-        check("completed sequence damages one third and resumes chase",c.boss.hp==hp-1 && a.captures==1 && a.count==0 && a.taps==0);
+        check("completed sequence damages one point and resumes chase",c.boss.hp==hp-1 && a.captures==1 && a.count==0 && a.taps==0);
         challenge(c,L);int expected=a.count;a.timer=.01f;c.boss.update(.02f,L,c.rnd);
         check("timeout launches one star per key without instant damage",c.boss.boltCount()==expected && c.boss.hp==hp-1 && a.phase==RainbowCat.DASH);
         boolean fast=true;float previous=1;
@@ -316,7 +356,7 @@ final class TestRainbowCat extends Check {
             for(int frame=0;frame<fps*90 && !c.boss.beaten;frame++) {
                 bossPlay(c,L);c.boss.update(1/fps,L,c.rnd);
             }
-            check("three completed challenges beat cat at "+fps,c.boss.beaten && c.boss.cat.captures==3);
+            check("five completed challenges beat cat at "+fps,c.boss.beaten && c.boss.cat.captures==5);
         }
         group("bounded Rainbow Cat one-finger play");
         for(float fps:new float[]{30,60,120}) {

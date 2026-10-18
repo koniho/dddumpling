@@ -64,11 +64,13 @@ final class RainbowCatArt extends Draw {
     }
     private static void circleGuide(Painter p,RainbowCat a) {
         float radius=a.circleRadius(),pulse=.7f+.3f*(float)Math.sin(a.clock*3);
-        if(a.starShape()) {
-            float[] points=TraceGesture.star();
-            for(int i=0;i<5;i++)p.polyline(new float[]{a.x+points[i*2]*radius,a.y+points[i*2+1]*radius,
-                    a.x+points[i*2+2]*radius,a.y+points[i*2+3]*radius},
-                    Glyph.withAlpha(COLORS[i],(int)(130+65*pulse)),a.r*.11f);
+        if(a.captures>0) {
+            float[] points=TraceGesture.shape(a.captures);int edges=points.length/2-1,step=(edges+5)/6;
+            for(int first=0;first<edges;first+=step) {
+                int last=Math.min(edges,first+step);float[] band=new float[(last-first+1)*2];
+                for(int i=first;i<=last;i++) {band[(i-first)*2]=a.x+points[i*2]*radius;band[(i-first)*2+1]=a.y+points[i*2+1]*radius;}
+                p.polyline(band,Glyph.withAlpha(COLORS[first*COLORS.length/edges],(int)(130+65*pulse)),a.r*.11f);
+            }
         } else for(int i=0;i<12;i++)p.arc(a.circleX(),a.circleY(),radius,radius,i*30,17,
                 Glyph.withAlpha(COLORS[i%COLORS.length],(int)(100+65*pulse)),a.r*.085f);
         tracedPath(p,a,a.circleX(),a.circleY(),radius,a.r);

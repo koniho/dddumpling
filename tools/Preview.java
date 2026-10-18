@@ -60,6 +60,14 @@ final class Preview {
             starGame.boss.update(.025f,L,starGame.rnd);
         }
         shot(dir,"151-star-progress",starGame,L,w,h,ss);
+        GameCore shapes=TestRainbowCat.fight(L);RainbowCat shape=shapes.boss.cat;
+        String[] shapeNames={"circle","star","heart","diamond","eight"};
+        for(int capture=0;capture<5;capture++) {
+            TestRainbowCat.readyToCircle(shapes,L);
+            shot(dir,"151-shape-"+shapeNames[capture],shapes,L,w,h,ss);
+            TestRainbowCat.challenge(shapes,L);
+            for(int key=0;key<6 && shape.phase==RainbowCat.OPEN;key++)shapes.boss.press(shape.prompt[shape.at],shapes.rnd,L);
+        }
         GameCore tap=TestRainbowCat.fight(L);RainbowCat tapped=tap.boss.cat;
         tapped.touch(tap,L,0,151,tapped.x,tapped.y);tapped.touch(tap,L,1,151,tapped.x,tapped.y);
         for(int band=0;band<6;band++) {

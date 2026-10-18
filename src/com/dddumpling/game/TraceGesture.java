@@ -2,6 +2,7 @@ package com.dddumpling.game;
 
 /** Ordered closed-path tracing. Crossings never advance to an unrelated part of the path. */
 final class TraceGesture {
+    static final int SHAPE_COUNT=5;
     private static final float TOLERANCE=.38f;
     private float[] points,distances;
     float length,start,position,travel,lastX,lastY;
@@ -17,6 +18,22 @@ final class TraceGesture {
         for(int i=0;i<=5;i++) {
             float angle=-Softbody.TAU*.25f+Softbody.TAU*(i*2%5)/5;
             out[i*2]=(float)Math.cos(angle);out[i*2+1]=(float)Math.sin(angle);
+        }
+        return out;
+    }
+    static float[] shape(int capture) {
+        if(capture<=0)return circle();
+        if(capture==1)return star();
+        if(capture==3)return new float[]{0,-1,1,0,0,1,-1,0,0,-1};
+        float[] out=new float[130];
+        for(int i=0;i<=64;i++) {
+            double t=(capture==2?Math.PI:Math.PI*.5)+Softbody.TAU*i/64;
+            if(capture==2) {
+                out[i*2]=(float)Math.pow(Math.sin(t),3);
+                out[i*2+1]=-(float)((13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)+2.5)/14.5);
+            } else {
+                out[i*2]=(float)Math.sin(t);out[i*2+1]=-(float)Math.sin(2*t)*.8f;
+            }
         }
         return out;
     }

@@ -115,9 +115,10 @@ final class RainbowCat {
             timer-=dt;
             if(timer<=0) {
                 b.clearBolts();
+                boolean fromLeft=rnd.nextBoolean();
                 for(int i=0;i<count;i++) {
                     int slot=b.tailBolt(rnd,x,y+r*.45f);
-                    if(slot>=0) {b.bglyph[slot]=prompt[i];b.bfast[slot]=true;b.bt[slot]=-i*.16f;}
+                    if(slot>=0) {b.bglyph[slot]=Roster.at(b.rosterFull,fromLeft?i:count-1-i);b.bfast[slot]=true;b.bt[slot]=-i*.16f;}
                 }
                 cue=2;resume(L,rnd);launchLeft=4.4f;
             }
@@ -128,7 +129,7 @@ final class RainbowCat {
         float remaining=phase==CIRCLE?0:dt;
         while(remaining>0) {
             if(routeDuration==0 || routeTime>=routeDuration) {
-                if(phase==DASH && taps==2) {if(reactionReady()) {phase=CIRCLE;gesture.setShape(starShape()?TraceGesture.star():TraceGesture.circle());}vx=vy=0;break;}
+                if(phase==DASH && taps==2) {if(reactionReady()) {phase=CIRCLE;gesture.setShape(TraceGesture.shape(captures));}vx=vy=0;break;}
                 phase=CHASE;chooseRoute(L,rnd,false);
             }
             float step=Math.min(remaining,routeDuration-routeTime);
@@ -170,9 +171,10 @@ final class RainbowCat {
         return (float)(Math.sin(u*Math.PI*6)*Math.sin(u*Math.PI))*r*.18f;
     }
     boolean hit(float px,float py) {
-        // The face and pastry are both valid targets, with a small forgiving margin.
-        float dx=(px-x)/(r*1.28f),dy=(py-y)/(r*1.16f);
-        return dx*dx+dy*dy<=1 || distance(px,py,head.centreX(),head.centreY())<r*.84f;
+        // Expand both targets by 15% without enlarging the artwork or changing movement.
+        float touchRadius=r*1.15f;
+        float dx=(px-x)/(touchRadius*1.28f),dy=(py-y)/(touchRadius*1.16f);
+        return dx*dx+dy*dy<=1 || distance(px,py,head.centreX(),head.centreY())<touchRadius*.84f;
     }
     float circleX() {return x;}
     float circleY() {return y;}
@@ -182,7 +184,7 @@ final class RainbowCat {
     float pouchSway() {return (float)Math.sin(clock*6)*.38f*caughtStrength();}
     float hoopShift() {return r*.16f*(float)Math.sin(clock*6+.6f)*caughtStrength();}
     boolean starShape() {return captures==1;}
-    float circleRadius() {return r*(starShape()?2.7f:2.2f);}
+    float circleRadius() {return r*(captures==0?2.2f:2.7f);}
     boolean carries(GameCore c) {
         return c.state==GameCore.PLAY && !c.dying() && c.boss.kind==Boss.RAINBOW_CAT
                 && (phase==CATCH || phase==OPEN || netReturn>0 || (phase==CIRCLE && windUp>.002f));
@@ -237,7 +239,15 @@ final class RainbowCat {
     String companionHint() {
         if(phase==OPEN)return "MATCH IN ORDER!";
         if(phase==CATCH)return "GOT YOU!";
-        if(phase==CIRCLE)return starShape()?"TRACE THE STAR!":"CIRCLE THE CAT!";
+        if(phase==CIRCLE) {
+            switch(captures) {
+                case 0:return "CIRCLE THE CAT!";
+                case 1:return "TRACE THE STAR!";
+                case 2:return "TRACE THE HEART!";
+                case 3:return "TRACE THE DIAMOND!";
+                default:return "TRACE THE EIGHT!";
+            }
+        }
         return phase==DASH || tapFlash>0?"FOLLOW RAINBOW!":taps==0?"TAP CAT TWICE!":"ONE MORE TAP!";
     }
     static float clamp(float v,float low,float high){return Math.max(low,Math.min(high,v));}
