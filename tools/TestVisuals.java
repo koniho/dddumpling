@@ -36,6 +36,7 @@ final class TestVisuals extends Check {
     }
 
     private static void releaseBook(Layout L) {
+        TestUpdatePrompt.run(L);
         releaseHistory();releaseEntryBounds();
         releaseOutside(L);
         releaseFeedback(L);
@@ -260,7 +261,7 @@ final class TestVisuals extends Check {
         check("unread lid pops repeatedly",lid>.4f && again.releaseMascot.attentionLift(2.6f)>.4f);
         again.releaseNotes.handleTouch(again,L,0,again.releaseMascot.x(L),again.releaseMascot.y(L));
         check("steamer opens release list and saves read status",again.releaseNotes.open && again.releaseNotes.listing
-                && !again.releaseMascot.unread && seen.releaseSeen.equals(BuildFlags.BUILD_ID));
+                && !again.releaseMascot.unread && seen.releaseSeen.equals(ReleaseNotes.VERSIONS[0]));
         check("attention enters without a position or lid jump",Math.abs(again.releaseNotes.transition.x(L)-again.releaseMascot.x(L))<.01f
                 && Math.abs(again.releaseNotes.transition.y(L)-again.releaseMascot.y(L))<.01f
                 && Math.abs(again.releaseNotes.transition.lidLift()-lid)<.01f);

@@ -1679,6 +1679,25 @@ final class Preview {
         adventureTitleFrames(dir,L,w,h,ss);
         survivalEndingFrames(dir,L,w,h,ss);
 
+        GameCore updateNews=new GameCore(TestUpdatePrompt.updated(),204);
+        updateNews.update(.16f,L);
+        shot(dir,"204-update-enter",updateNews,L,w,h,ss);
+        updateNews.update(.2f,L);
+        shot(dir,"204-update-prompt",updateNews,L,w,h,ss);
+        TestUpdatePrompt.tap(updateNews,L,2);updateNews.update(.4f,L);
+        shot(dir,"204-update-skip",updateNews,L,w,h,ss);
+        updateNews.updatePrompt.rearm(updateNews);updateNews.update(.4f,L);
+        TestUpdatePrompt.tap(updateNews,L,1);updateNews.update(.4f,L);
+        updateNews.releaseNotes.update(ReleaseTransition.DURATION+ReleaseNotes.PAGE_TIME,L);
+        shot(dir,"204-update-read",updateNews,L,w,h,ss);
+        GameCore waitingNews=new GameCore(TestUpdatePrompt.updated(),204);
+        waitingNews.settingsOpen=true;waitingNews.settingsPage=1;waitingNews.settingsTab=SettingsUi.PROGRESS;
+        waitingNews.preferences.panelEntrance=1f;waitingNews.update(.4f,L);
+        shot(dir,"204-update-settings-waits",waitingNews,L,w,h,ss);
+        waitingNews.settingsOpen=false;waitingNews.onboarding.saved=waitingNews.onboarding.savedPowers=0;
+        waitingNews.starter.begin(waitingNews);waitingNews.update(Starter.READY+.2f,L);
+        shot(dir,"204-update-starter-waits",waitingNews,L,w,h,ss);
+
         Check.Mem newsSave=new Check.Mem();newsSave.releaseSeen="";
         GameCore news=new GameCore(newsSave,7001L);news.releaseMascot.update(news,.1f);
         shot(dir,"103-release-steamer",news,L,w,h,ss);

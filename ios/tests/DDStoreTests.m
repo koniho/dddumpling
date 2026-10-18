@@ -10,6 +10,22 @@
 
 @implementation DDStoreTests
 
+- (void)testUpdateHistoryIsIndependentOfReadAndProgress {
+  NSURL *url = [self temporaryFile];
+  DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertEqualObjects(store.loadUpdateState, @"");
+  XCTAssertTrue([store.appVersion hasPrefix:@"ios:"]);
+  [store saveReleaseSeenWithNSString:@"0.1.30"];
+  [store saveBestWithInt:456];
+  NSString *history = @"1\nios:0.1.31:32\n0.1.30\n1,1";
+  [store saveUpdateStateWithNSString:history];
+  DDIOSStore *reopened = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertEqualObjects(reopened.loadUpdateState, history);
+  XCTAssertEqualObjects(reopened.loadReleaseSeen, @"0.1.30");
+  XCTAssertEqual(reopened.loadBest, 456);
+  [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
+}
+
 - (void)testLegacyRescueCompletionMigratesOnceIntoTutorials {
   NSURL *url = [self temporaryFile];
   DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];

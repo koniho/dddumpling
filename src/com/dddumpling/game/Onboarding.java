@@ -252,7 +252,7 @@ final class Onboarding extends Draw {
         return c.collected!=0 && !learned(TutorialSpeech.STORIES);
     }
     private boolean titleUpdate(GameCore c,float elapsed,Layout L) {
-        if(c.settingsOpen || c.paused || c.townOpen || c.highScoreScreen.open || c.releaseNotes.open)return false;
+        if(c.settingsOpen || c.paused || c.townOpen || c.highScoreScreen.open || c.releaseNotes.open || c.updatePrompt.open)return false;
         if(c.starting() || Starter.hideCase(c) || c.collected==0) {
             if(titleGuide)clear();
             moveCompanion(c,elapsed);

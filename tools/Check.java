@@ -71,6 +71,10 @@ abstract class Check {
         String highScores="";
         public String loadHighScores() { return highScores; }
         public void saveHighScores(String value) { highScores=value; }
+        String appVersion="test:1:1", updateState="";
+        public String appVersion() { return appVersion; }
+        public String loadUpdateState() { return updateState; }
+        public void saveUpdateState(String value) { updateState=value; }
         String releaseSeen=BuildFlags.BUILD_ID;
         public String loadReleaseSeen() { return releaseSeen; }
         public void saveReleaseSeen(String value) { releaseSeen=value; }

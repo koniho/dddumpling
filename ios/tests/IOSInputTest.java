@@ -780,6 +780,41 @@ public final class IOSInputTest extends Check {
         }
     }
 
+    private static void updatePrompt() {
+        for(int choice=1;choice<=2;choice++) {
+            Mem save=new Mem();save.appVersion="ios:0.1.31:32";
+            save.updateState="1\nios:0.1.1:2\n0.1.1\n0,0";save.releaseSeen="old-news";
+            IOSGame game=new IOSGame(save,new Ear(),204);game.layout(393,852,0,59,0,34);
+            GameCore c=game.core();Layout l=game.geometry();game.update(.4f);
+            check("native update opens at suitable title",c.updatePrompt.open);
+            tap(game,l.keyX[0],l.keyY[0]);
+            check("native title input stays behind update prompt",!c.starting());
+            float y=UpdatePrompt.buttonY(l,choice);
+            game.touch(one(0,8,l.w*.5f,y));game.touch(one(3,8,l.w*.5f,y));
+            check("native cancelled choice keeps prompt pending",c.updatePrompt.pending);
+            game.touch(one(0,8,l.w*.5f,y));
+            game.touch(two(5,1,8,l.w*.5f,y,9,l.keyX[0],l.keyY[0]));
+            game.touch(one(1,8,l.w*.5f,y));
+            check("native two-finger choice does not dismiss",c.updatePrompt.pending);
+            tap(game,l.w*.5f,y);game.update(.4f);
+            check("native choice completes without launching play",!c.updatePrompt.open && !c.starting()
+                    && c.releaseNotes.open==(choice==1));
+            check("native skip leaves read marker independent",save.releaseSeen.equals(choice==1?ReleaseNotes.VERSIONS[0]:"old-news"));
+            game=new IOSGame(save,new Ear(),204);game.layout(393,852,0,59,0,34);c=game.core();l=game.geometry();game.update(.4f);
+            check("native acknowledged update does not repeat",!c.updatePrompt.open);
+            c.openSettings();c.settingsPage=1;c.settingsTab=SettingsUi.PROGRESS;game.update(.4f);
+            SettingsUi ui=new SettingsUi();ui.compute(l,SettingsUi.PROGRESS);
+            String seen=save.releaseSeen;
+            tap(game,l.w*.5f,ui.updatePromptY+ui.testH*.5f);game.update(.4f);
+            check("native developer chip re-arms without covering settings",c.updatePrompt.pending && !c.updatePrompt.open
+                    && save.releaseSeen.equals(seen));
+            game.back();game.update(.4f);game.update(.4f);
+            check("native reset prompt appears after settings exit",c.updatePrompt.open);
+            game.back();game.update(.4f);
+            check("native Back skips only the update prompt",!c.updatePrompt.open && !c.updatePrompt.pending && !c.starting());
+        }
+    }
+
     private static void releaseAttention() {
         IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
         c.releaseMascot.reset(c);game.update(DT);
@@ -791,7 +826,7 @@ public final class IOSInputTest extends Check {
         c.releaseMascot.reset(c);game.update(DT);
         tap(game,c.releaseMascot.x(l),c.releaseMascot.y(l));
         check("native steamer tap acknowledges current release",c.releaseNotes.open && !c.releaseMascot.unread
-                && c.store.loadReleaseSeen().equals(BuildFlags.BUILD_ID));
+                && c.store.loadReleaseSeen().equals(ReleaseNotes.VERSIONS[0]));
     }
 
     private static void releaseFeedback() {
@@ -1014,7 +1049,7 @@ public final class IOSInputTest extends Check {
         gameOverDismissal();
         cave();
         highScores();
-        releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
+        updatePrompt(); releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
         steamerAndPanic(); forgivingRescue(); caseAndSettings(); storyDumplingInput(); firstTitleEntry(); modeSelector(); survival();
         debugScenes(); linkedChord();
         System.out.println("iOS input: " + pass + " passed, " + fail + " failed");

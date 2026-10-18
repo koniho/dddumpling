@@ -7,7 +7,9 @@ final class ReleaseMascot extends Draw {
     void update(GameCore c,float dt) {
         if(!checked && ReleaseNotes.available(c)) {
             checked=true;
-            unread=c.store!=null && !BuildFlags.BUILD_ID.equals(c.store.loadReleaseSeen());
+            String seen=c.store==null?ReleaseNotes.VERSIONS[0]:c.store.loadReleaseSeen();
+            unread=(!ReleaseNotes.VERSIONS[0].equals(seen) && !BuildFlags.BUILD_ID.equals(seen))
+                    || c.updatePrompt.highlight || c.updatePrompt.pending;
         }
     }
     void reset(GameCore c) {
@@ -16,7 +18,8 @@ final class ReleaseMascot extends Draw {
     }
     void read(GameCore c) {
         unread=false;checked=true;
-        if(c.store!=null) c.store.saveReleaseSeen(BuildFlags.BUILD_ID);
+        c.updatePrompt.read(c);
+        if(c.store!=null) c.store.saveReleaseSeen(ReleaseNotes.VERSIONS[0]);
     }
     float x(Layout L) { return L.unit*2.5f; }
     static float y(Layout L) { return L.dangerY; }

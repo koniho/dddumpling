@@ -30,7 +30,7 @@ final class ReleaseNotes extends Draw {
                 && !c.storyOpen() && !c.settingsOpen && c.returnFade<=0f && c.rosterSceneT<=0f;
     }
     static boolean entryHit(GameCore c,Layout L,float x,float y) {
-        return available(c) && c.releaseMascot.hit(L,x,y);
+        return available(c) && !c.updatePrompt.open && c.releaseMascot.hit(L,x,y);
     }
     static float size(Layout L) { return Math.min(L.unit,(L.h-L.topSafe-L.padB)/24f); }
     static int columns(Layout L) {
