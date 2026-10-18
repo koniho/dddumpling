@@ -74,7 +74,7 @@ final class RainbowCat {
         if(phase==CIRCLE) {
             // The guide stays anchored while the cat demonstrates a miniature copy inside it.
             traceClock+=dt;
-            float size=r*.52f*clamp(traceClock/.4f,0,1),along=traceClock/3.2f*gesture.length;
+            float size=r*.52f*clamp(traceClock/.4f,0,1),along=traceClock/1.6f*gesture.length;
             traceX=gesture.coordinate(along,0)*size;traceY=gesture.coordinate(along,1)*size;
             float follow=1-(float)Math.exp(-dt*18);
             windUp+=(target-windUp)*(1-(float)Math.exp(-dt*12));
