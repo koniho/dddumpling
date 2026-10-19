@@ -139,6 +139,7 @@ final class GameCore {
      * in — the pop was more noticeable than the drain.
      */
     float drained() {
+        if(RainbowCatTaunt.retained(this))return overFade();
         return state == OVER && !(timeAttack.active && timeAttack.won) ? deathProgress() : 0f;
     }
 
@@ -2879,6 +2880,7 @@ final class GameCore {
         }
         // Accumulate speed changes so the scenery never jumps at battle or frenzy boundaries.
         float skyRate=state==PLAY && boss.active() && boss.kind==Boss.RAINBOW_CAT?RainbowLand.BATTLE_SKY_RATE:1f;
+        if(RainbowCatTaunt.retained(this) && dying())skyRate=RainbowCatTaunt.scrollRate(deathDuration()-deathT);
         skyClock += dt * (powerActive() ? Power.SKY_RATE : skyRate);
         landBlend = Math.min(1f, landBlend + dt / Lands.FADE_TIME);
         LandPicker.updateDiscovery(this, dt);

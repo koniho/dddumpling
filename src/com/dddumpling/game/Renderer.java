@@ -79,6 +79,7 @@ final class Renderer extends Draw {
         // The boss, behind the words: it is the backdrop of its stage and they are what is about to
         // hurt you, so they win every overlap.
         for(GameCore.Particle q:c.particles)if(q.slime!=null)SlimeSpray.draw(p,q);
+        RainbowCatTaunt.background(p,c,L);
         BossScreen.body(p, c, L);
         // Dying, the words are the swirl instead of standing where they were.
         if (c.dying()) {

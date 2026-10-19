@@ -765,6 +765,14 @@ final class TestRainbowCat extends Check {
         for(int stroke=0;stroke<4;stroke++)check("doodle stroke completes "+stroke,
                 RainbowCatTaunt.ink(stroke,0)==0 && RainbowCatTaunt.ink(stroke,3.4f)==1);
         check("mouth is a downward smile",RainbowCatTaunt.point(L,3,.5f,1)<RainbowCatTaunt.point(L,3,0,1));
+        check("cat loss keeps the battle palette",c.drained()==0);
+        float sky=c.skyClock;c.update(.1f,L);
+        check("taunt starts at battle scroll speed",Math.abs(c.skyClock-sky-.3f)<.001f && c.drained()==0);
+        for(int frame=0;frame<90;frame++)c.update(1f/60,L);
+        sky=c.skyClock;c.update(.1f,L);
+        check("taunt accelerates to triple battle speed",Math.abs(c.skyClock-sky-.9f)<.001f && c.drained()==0);
+        check("star motion remains continuous through acceleration",RainbowCatTaunt.starTravel(0)==0
+                && Math.abs(RainbowCatTaunt.starTravel(1.201f)-RainbowCatTaunt.starTravel(1.2f)-.003f)<.0001f);
         float left=c.deathT;c.paused=true;c.update(.5f,L);c.paused=false;
         check("pause freezes taunt progress",c.deathT==left);
         for(int frame=0;frame<300 && c.dying();frame++)c.update(1f/60,L);

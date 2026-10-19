@@ -5,6 +5,20 @@ final class RainbowCatTaunt extends Draw {
     static final float DURATION=4.4f, NOTE_START=.18f, NOTE_STEP=.46f;
     static final int NOTES=7;
     private static final float[] START={.22f,1.42f,1.88f,2.36f}, END={1.25f,1.75f,2.21f,3.30f};
+    static boolean retained(GameCore c) {
+        return c.state==GameCore.OVER && c.bossVictoryKind==Boss.RAINBOW_CAT && c.bossVictory!=null;
+    }
+    static float scrollRate(float age) {return RainbowLand.BATTLE_SKY_RATE*(1+2*ease(age/1.2f));}
+    static float starTravel(float age) {
+        float u=Math.min(1,Math.max(0,age/1.2f));
+        return age+2*(1.2f*(u*u*u-.5f*u*u*u*u)+Math.max(0,age-1.2f));
+    }
+    static void background(Painter p,GameCore c,Layout L) {
+        if(!retained(c))return;
+        RainbowCat a=c.bossVictory.cat;
+        RainbowCatArrival.stars(new OpacityPainter(p,1-c.drained()),a,c.bossVictory,L,
+                a.clock+starTravel(c.deathDuration()-c.deathT));
+    }
     static float pitch(int note) {return (float)Math.pow(2,(4-note)/12.0);}
     static float ink(int stroke,float age) {return Math.max(0,Math.min(1,(age-START[stroke])/(END[stroke]-START[stroke])));}
     static float radius(Layout L) {return Math.min(L.w*.30f,(L.dangerY-L.playTop)*.29f);}
@@ -36,20 +50,26 @@ final class RainbowCatTaunt extends Draw {
         for(int stroke=0;stroke<4;stroke++) {
             float progress=ink(stroke,age);if(progress<=0)continue;
             int samples=stroke==0?64:stroke==3?32:12;
-            float[] strip=new float[(samples+1)*4];
-            for(int band=0;band<6;band++) {
-                float lo=(band-3)*L.w*.0065f,hi=lo+L.w*.0068f;
+            float[] strip=new float[(samples+1)*4],centres=new float[(samples+1)*4];
+            for(int n=0;n<=samples;n++) {
+                float u=progress*n/samples;
+                float dx=point(L,stroke,Math.min(1,u+.002f),0)-point(L,stroke,Math.max(0,u-.002f),0);
+                float dy=point(L,stroke,Math.min(1,u+.002f),1)-point(L,stroke,Math.max(0,u-.002f),1);
+                float length=Math.max(.001f,(float)Math.hypot(dx,dy));
+                centres[n*4]=point(L,stroke,u,0);centres[n*4+1]=point(L,stroke,u,1);
+                centres[n*4+2]=-dy/length;centres[n*4+3]=dx/length;
+            }
+            // Wider core with faint skirts: soft edges without blur filters or overlapping line joins.
+            for(int feather=2;feather>=0;feather--)for(int band=0;band<6;band++) {
+                float spread=feather*L.w*.0035f;
+                float lo=(band-3)*L.w*.0195f-spread,hi=lo+L.w*.0198f+spread*2;
                 for(int n=0;n<=samples;n++) {
-                    float u=progress*n/samples;
-                    float px=point(L,stroke,u,0),py=point(L,stroke,u,1);
-                    float dx=point(L,stroke,Math.min(1,u+.002f),0)-point(L,stroke,Math.max(0,u-.002f),0);
-                    float dy=point(L,stroke,Math.min(1,u+.002f),1)-point(L,stroke,Math.max(0,u-.002f),1);
-                    float length=Math.max(.001f,(float)Math.hypot(dx,dy)),nx=-dy/length,ny=dx/length;
+                    float px=centres[n*4],py=centres[n*4+1],nx=centres[n*4+2],ny=centres[n*4+3];
                     strip[n*2]=px+nx*lo;strip[n*2+1]=py+ny*lo;
                     int back=(samples*2+1-n)*2;strip[back]=px+nx*hi;strip[back+1]=py+ny*hi;
                 }
                 int color=RainbowCatArt.trailColor(q,band,RainbowCatArt.COLORS[band]);
-                q.fillPoly(strip,Glyph.withAlpha(color,210));
+                q.fillPoly(strip,Glyph.withAlpha(color,feather==0?170:feather==1?40:18));
             }
             for(int spark=0;spark<8;spark++) {
                 float u=(spark+.5f)/8;if(u>progress)continue;
