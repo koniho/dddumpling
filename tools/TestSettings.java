@@ -28,7 +28,7 @@ final class TestSettings extends Check {
             float age=c.boss.age;c.update(.1f,L);
             check("kids preserves boss action and projectile clocks "+kind,
                     Math.abs(c.boss.age-age-.1f)<.001f
-                    && Math.abs(c.boss.bt[0]-.1f/Boss.BOLT_TIME)<.001f);
+                    && Math.abs(c.boss.bt[0]-.1f/(kind==Boss.RAINBOW_CAT?RainbowCat.PROJECTILE_TIME:Boss.BOLT_TIME))<.001f);
         }
         c.boss.begin(Boss.MUSHROOM,5,c.rnd);c.boss.intro=0;c.boss.mushroomCharge=.5f;
         c.update(.1f,L);

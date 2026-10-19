@@ -8,6 +8,8 @@ final class RainbowCat {
     static final float NET_TIME=.75f, NET_RETURN=.45f, ESCAPE_TIME=1.1f;
     static final float SWEEP_SETUP=.25f, SWEEP_LEAD=.08f, SWEEP_STEP=.192f, DOUBLE_PAIR_GAP=.08f;
     static final float DASH_TIME=.34f, TRAIL_TIME=2.2f, TRAIL_LENGTH=2.9f*4;
+    static final float PROJECTILE_TIME=Boss.BOLT_TIME*.5f/.75f, SHOT_WIND=.32f, SHOT_RECOVER=.12f;
+    float shotWind,shotReach,shotRecovery;
     final Softbody pastry=new Softbody(18,151), head=new Softbody(14,152);
     final float[] route=new float[8],trailX=new float[136],trailY=new float[136],trailAge=new float[136];
     int phase,pointer=-1,taps,trailCount,captures,cue,promptKey=-1,windowHits;
@@ -37,6 +39,7 @@ final class RainbowCat {
     boolean circling;
     boolean placed,kids,escaping;
     void reset() {
+        shotWind=shotReach=shotRecovery=0;
         rocket.reset();java.util.Arrays.fill(flurrySlots,-1);
         phase=CHASE;pointer=-1;taps=trailCount=captures=cue=windowHits=0;promptKey=leftKey=rightKey=-1;damageFloor=keyFlash=0;hitColor=0;fullRoster=false;placed=escaping=escapeSequence=flurryFromLeft=doubleFlurry=false;flurryCount=0;turn=1;
         java.util.Arrays.fill(hitConeLife,0);nextHitCone=0;
@@ -106,7 +109,35 @@ final class RainbowCat {
         RainbowCatArrival.pose(this,b,L);
         if(escapeSequence)escapeMotion(b,dt,L);
         else if(escaping && routeTime<routeDuration)advance(dt);
+        shotPose(b,dt);
         pose(dt);
+    }
+    private void shotPose(Boss b,float dt) {
+        shotRecovery=Math.max(0,shotRecovery-dt);shotWind=0;shotReach=shotRecovery/SHOT_RECOVER;
+        if(b.intro>0 || b.beaten || phase==CATCH || phase==OPEN || (phase==DASH && taps>0 && !reactionReady())) {
+            shotWind=shotReach=shotRecovery=0;return;
+        }
+        float until=Float.MAX_VALUE,wind=SHOT_WIND;
+        if(escapeSequence) {
+            wind=.13f;
+            for(int slot:flurrySlots)if(slot>=0 && b.blive[slot] && b.bt[slot]<0)
+                until=Math.min(until,-b.bt[slot]*PROJECTILE_TIME-dt);
+        } else if(b.boltCount()<3 && !(phase==DASH && taps==2))until=launchLeft-dt;
+        if(until>=0 && until<wind) {
+            float u=1-until/wind;
+            // Tuck first, then spring forward; the star leaves at full extension.
+            shotWind=(float)Math.sin(Math.PI*clamp(u/.72f,0,1));
+            float reach=clamp((u-.72f)/.28f,0,1);
+            shotReach=Math.max(shotReach,reach*reach*(3-2*reach));
+        }
+    }
+    float shotX() {return x+traceX+turn*r*.70f;}
+    float shotY() {return y+traceY+r*1.50f;}
+    void firePose() {shotWind=0;shotReach=1;shotRecovery=SHOT_RECOVER;pose(0);}
+    void releaseQueuedShot(Boss b,int slot) {
+        for(int owned:flurrySlots)if(owned==slot) {
+            firePose();b.bsx[slot]=shotX();b.bsy[slot]=shotY();return;
+        }
     }
     private void pose(float dt) {
         float facing=phase==CIRCLE || phase==CATCH || phase==OPEN || (escapeSequence && escapeAge<ESCAPE_TIME)?-1:Math.abs(vx)<1?turn:vx<0?-1:1;
@@ -114,7 +145,7 @@ final class RainbowCat {
         float struggle=phase==OPEN?1:phase==CATCH?clamp(netAge/NET_TIME,0,1):0;
         float wiggle=struggleX()+shakeOffset();
         pastry.moveTo(x+traceX+wiggle,y+traceY+struggleY());pastry.pull(x+r*(float)Math.sin(clock*23),y+r*.6f*(float)Math.cos(clock*19),.36f*struggle);pastry.update(dt);
-        head.moveTo(x+traceX+turn*r*.88f-wiggle+(float)Math.sin(clock*31)*r*.025f*scared,y+traceY+r*.02f+struggleY()+(float)Math.sin(clock*27)*r*.10f*struggle);head.update(dt);
+        head.moveTo(x+traceX+turn*r*.88f-wiggle+(float)Math.sin(clock*31)*r*.025f*scared,y+traceY+r*(.02f-.28f*shotWind+.40f*shotReach)+struggleY()+(float)Math.sin(clock*27)*r*.10f*struggle);head.update(dt);
     }
     private void chooseRoute(Layout L,java.util.Random rnd,boolean dash) {
         float targetX=x,targetY=y,bestDistance=-1;
@@ -188,7 +219,7 @@ final class RainbowCat {
         if(phase==DASH && taps==2)return 0;
         launchLeft-=dt;
         if(launchLeft<=0) {
-            if(b.boltCount()<3) {int slot=b.tailBolt(rnd,x,y+r*.45f);if(slot>=0)b.bfast[slot]=true;}
+            if(b.boltCount()<3) {int slot=b.tailBolt(rnd,shotX(),shotY());if(slot>=0) {b.bfast[slot]=true;firePose();}}
             launchLeft=attackInterval();
         }
         return 0;
@@ -201,11 +232,11 @@ final class RainbowCat {
         int repeats=doubleFlurry?2:1;
         flurryFromLeft=fromLeft;flurryCount=keys*repeats;
         // Keep close pairs, with a little breathing room when switching keys.
-        float lead=(ESCAPE_TIME+SWEEP_SETUP+SWEEP_LEAD)/(Boss.BOLT_TIME*.5f);
+        float lead=(ESCAPE_TIME+SWEEP_SETUP+SWEEP_LEAD)/PROJECTILE_TIME;
         for(int i=0;i<flurryCount;i++) {
             int key=i/repeats,slot=b.tailBolt(rnd,x,y+r*.45f);
             flurrySlots[i]=slot;
-            if(slot>=0) {b.bglyph[slot]=Roster.at(b.rosterFull,fromLeft?key:keys-1-key);b.bfast[slot]=true;b.bt[slot]=-lead-flurryDelay(i)/(Boss.BOLT_TIME*.5f);}
+            if(slot>=0) {b.bglyph[slot]=Roster.at(b.rosterFull,fromLeft?key:keys-1-key);b.bfast[slot]=true;b.bt[slot]=-lead-flurryDelay(i)/PROJECTILE_TIME;}
         }
         cue=2;
     }

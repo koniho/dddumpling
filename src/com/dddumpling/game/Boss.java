@@ -2316,7 +2316,9 @@ final class Boss {
         int landed = 0;
         for (int i = 0; i < MAX_BOLTS; i++) {
             if (!blive[i]) continue;
-            bt[i] += dt / (bfast[i] ? BOLT_TIME * .5f : BOLT_TIME);
+            float before=bt[i];
+            bt[i] += dt / (kind==RAINBOW_CAT ? RainbowCat.PROJECTILE_TIME : bfast[i] ? BOLT_TIME * .5f : BOLT_TIME);
+            if(kind==RAINBOW_CAT && before<0 && bt[i]>=0)cat.releaseQueuedShot(this,i);
             if (bt[i] < 1f) continue;
             blive[i] = false;
             landed++;

@@ -140,7 +140,7 @@ final class TestRainbowCat extends Check {
             for(int i=0;i<n;i++) {
                 float x=Roster.keyX(L,c.boss.bglyph[i],full?1:0);
                 ordered&=fromLeft?x>previous:x<previous;previous=x;
-                ordered&=Math.abs(c.boss.bt[i]+(RainbowCat.ESCAPE_TIME+RainbowCat.SWEEP_SETUP+RainbowCat.SWEEP_LEAD)/(Boss.BOLT_TIME*.5f)+a.flurryDelay(i)/(Boss.BOLT_TIME*.5f))<.00001f && c.boss.bfast[i];
+                ordered&=Math.abs(c.boss.bt[i]+(RainbowCat.ESCAPE_TIME+RainbowCat.SWEEP_SETUP+RainbowCat.SWEEP_LEAD)/RainbowCat.PROJECTILE_TIME+a.flurryDelay(i)/RainbowCat.PROJECTILE_TIME)<.00001f && c.boss.bfast[i];
             }
             check("flurry preserves left/right order and stagger "+full+"/"+fromLeft+"/"+success,ordered);
         }
@@ -165,7 +165,7 @@ final class TestRainbowCat extends Check {
             for(int i=0;i<n*repeats;i++) {
                 int key=Roster.at(full,left?i/repeats:n-1-i/repeats);counts[c.boss.bglyph[i]]++;
                 ordered&=c.boss.bglyph[i]==key && c.boss.bfast[i] && c.boss.bhp[i]==1;
-                if(i>0)ordered&=Math.abs(c.boss.bt[i-1]-c.boss.bt[i]-(RainbowCat.SWEEP_STEP+(repeats==2 && i%2==0?RainbowCat.DOUBLE_PAIR_GAP:0))/(Boss.BOLT_TIME*.5f))<.00001f;
+                if(i>0)ordered&=Math.abs(c.boss.bt[i-1]-c.boss.bt[i]-(RainbowCat.SWEEP_STEP+(repeats==2 && i%2==0?RainbowCat.DOUBLE_PAIR_GAP:0))/RainbowCat.PROJECTILE_TIME)<.00001f;
             }
             for(int i=0;i<n;i++)ordered&=counts[Roster.at(full,i)]==repeats;
             check("each key gets ordered individually staggered stars"+tag,ordered);
@@ -561,7 +561,7 @@ final class TestRainbowCat extends Check {
                 float[] before=c.boss.bt.clone();c.boss.update(1f/120,L,c.rnd);
                 if(a.escapeSequence)ordered&=left?a.x>=previous-.01f:a.x<=previous+.01f;
                 for(int i=0;i<a.flurryCount;i++)if(before[i]<0 && c.boss.bt[i]>=0)
-                    origin&=Math.abs(c.boss.bsx[i]-a.x)<.01f && Math.abs(c.boss.bsy[i]-(a.y+a.r*.45f))<.01f;
+                    origin&=a.shotReach==1 && a.shotWind==0 && Math.abs(c.boss.bsx[i]-a.shotX())<.01f && Math.abs(c.boss.bsy[i]-a.shotY())<.01f;
                 previous=a.x;highest=Math.min(highest,a.y);
             }
             check("slash arc rises above both endpoints "+full+left+late,highest<y-a.r && highest>=a.top-.01f);
@@ -621,7 +621,7 @@ final class TestRainbowCat extends Check {
         circle(c,L,1);
         check("capture retains all three existing shots",a.phase==RainbowCat.CATCH && b.boltCount()==3 && b.bt[0]==.05f);
         b.update(RainbowCat.NET_TIME,L,c.rnd);
-        check("opening keeps stars moving toward player",a.phase==RainbowCat.OPEN && b.boltCount()==3 && b.bt[0]>.6f);
+        check("opening keeps stars moving toward player",a.phase==RainbowCat.OPEN && b.boltCount()==3 && b.bt[0]>.05f+RainbowCat.NET_TIME/RainbowCat.PROJECTILE_TIME-.01f);
         float hp=b.hp;
         check("incoming matching star takes priority over vulnerable prompt",b.press(0,c.rnd,L)==Boss.PARRY && b.hp==hp && b.boltCount()==2);
         int pending=b.tailBolt(c.rnd,L.w*.1f,L.playTop);b.bt[pending]=-.2f;
@@ -715,8 +715,26 @@ final class TestRainbowCat extends Check {
         c.paused=true;c.update(.1f,L);check("pause freezes rocket",r.age==0);
         c.paused=false;c.update(.1f,L);check("resume advances rocket",r.age>0);
     }
+    private static void shotAnimation(Layout L) {
+        group("Cat winds up and reaches on release, with slower star travel");
+        for(int fps:new int[]{30,60,120}) {
+            GameCore c=fight(L);Boss b=c.boss;RainbowCat a=b.cat;
+            a.launchLeft=.32f;float wind=0;boolean fired=false;
+            for(int frame=0;frame<fps;frame++) {
+                b.update(1f/fps,L,c.rnd);wind=Math.max(wind,a.shotWind);
+                if(b.boltCount()>0) {fired=true;break;}
+            }
+            check("windup before release "+fps,wind>.9f && fired);
+            check("release at full reach "+fps,a.shotReach==1 && a.shotWind==0
+                    && b.bsx[0]==a.shotX() && b.bsy[0]==a.shotY());
+            a.launchLeft=99;b.update(.12f,L,c.rnd);
+            check("paws settle after release "+fps,a.shotReach==0);
+            check("25 percent slower travel "+fps,Math.abs(b.bt[0]-.12f/(1.2f/.75f))<.0001f);
+            a.reset();check("shot pose reset "+fps,a.shotReach==0 && a.shotWind==0 && a.shotRecovery==0);
+        }
+    }
     static void all(Layout L) {
-        rocketShakeFeedback(L);retainedProjectiles(L);rocketVictory(L);arrival(L);hitShape(L);doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        shotAnimation(L);rocketShakeFeedback(L);retainedProjectiles(L);rocketVictory(L);arrival(L);hitShape(L);doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));
@@ -750,7 +768,7 @@ final class TestRainbowCat extends Check {
         check("matching key defends rush projectile",!c.boss.blive[0] && c.boss.hp==hp-1);
         c.boss.clearBolts();a.escapeSequence=false;a.phase=RainbowCat.CHASE;a.launchLeft=0;c.boss.update(.01f,L,c.rnd);
         check("running cat launches rush stars",c.boss.boltCount()==1 && c.boss.bfast[0]);
-        int hits=0;for(int i=0;i<85;i++) {a.launchLeft=99;hits+=c.boss.update(1f/60,L,c.rnd);}
+        int hits=0;for(int i=0;i<110;i++) {a.launchLeft=99;hits+=c.boss.update(1f/60,L,c.rnd);}
         check("unanswered star costs one heart",hits==1);
         a.touch(c,L,0,7,L.playLeft,a.y);Pause.release(c);check("pause clears pointer",a.pointer==-1);
         c.boss.leave();check("leaving clears encounter and trails",!a.placed && a.pointer==-1 && a.promptKey<0 && a.trailCount==0);

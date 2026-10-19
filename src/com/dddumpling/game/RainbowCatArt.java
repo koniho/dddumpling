@@ -41,7 +41,7 @@ final class RainbowCatArt extends Draw {
         float pouch=a.pouchSway()*.43f;
         sprite.translate(a.hoopShift()+a.r*1.17f*(float)Math.sin(pouch),
                 a.r*1.17f*((float)Math.cos(pouch)-1));
-        cat(sprite,a.x+a.traceX+struggle,a.y+a.traceY+a.struggleY(),a.r,a.clock*(caught?1:2),a.turn,a.pastry,a.head,caught,1,caught?0:a.scared,a.angry());
+        cat(sprite,a.x+a.traceX+struggle,a.y+a.traceY+a.struggleY(),a.r,a.clock*(caught?1:2),a.turn,a.pastry,a.head,caught,1,caught?0:a.scared,a.angry(),0,a.shotWind,a.shotReach);
         sprite.restore();
         if(a.phase==RainbowCat.CIRCLE)circleGuide(q,a);
         if(a.carries(c))net(q,c,L,true);
@@ -470,6 +470,9 @@ final class RainbowCatArt extends Draw {
         cat(p,x,y,r,t,facing,body,skull,caught,known,scared,angry,0);
     }
     private static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known,float scared,float angry,float cry) {
+        cat(p,x,y,r,t,facing,body,skull,caught,known,scared,angry,cry,0,0);
+    }
+    private static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known,float scared,float angry,float cry,float wind,float reach) {
         int crust=known>0?0xFFFFD49A:0xFF49425F,fur=known>0?FUR:0xFF49425F;
         float step=(float)Math.sin(t*(caught?15:7));
         // Static portraits retain their decorative ribbon; battle uses recorded motion.
@@ -481,7 +484,10 @@ final class RainbowCatArt extends Draw {
         float[] tail={x-facing*r*.85f,y+r*.4f,x-facing*r*1.5f,y+r*.25f,x-facing*r*1.65f,y-r*(.10f+step*.16f)};
         p.polyline(tail,INK,r*.30f);p.polyline(tail,fur,r*.24f);
         for(int foot=0;foot<4;foot++) {
-            float fx=x+r*(-.85f+foot*.51f),fy=y+r*(.9f+.09f*(foot%2==0?step:-step));
+            float fx=x+r*(-.85f+foot*.51f),fy=y+r*(.9f+.09f*(foot%2==0?step:-step)-.30f*wind+.58f*reach);
+            fx+=facing*r*.18f*reach;
+            p.line(x+r*(-.85f+foot*.51f),y+r*.60f,fx,fy,INK,r*.35f);
+            p.line(x+r*(-.85f+foot*.51f),y+r*.60f,fx,fy,fur,r*.27f);
             p.fillEllipse(fx,fy,r*.22f,r*.26f,INK);p.fillEllipse(fx,fy-r*.04f,r*.17f,r*.21f,fur);
         }
         float[] outline=pastry(body,x,y,r);

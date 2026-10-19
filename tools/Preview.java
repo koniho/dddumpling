@@ -10,6 +10,13 @@ import java.io.File;
 final class Preview {
     private static void rainbowFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("151-"))return;
+        GameCore shooting=TestRainbowCat.fight(L);RainbowCat shooter=shooting.boss.cat;shooter.launchLeft=.32f;
+        shooter.x=L.w*.5f;shooter.y=L.h*.40f;shooter.routeDuration=99;shooter.routeTime=0;shooter.turn=-1;
+        for(int i=0;i<4;i++) {shooter.route[i*2]=shooter.x;shooter.route[i*2+1]=shooter.y;}
+        for(int frame=0;frame<30;frame++) {
+            shooting.boss.update(1f/60,L,shooting.rnd);
+            if(frame==6 || frame==19 || frame==28)shot(dir,"151-cat-shot-"+frame,shooting,L,w,h,ss);
+        }
         GameCore rocket=TestRainbowCat.fight(L);rocket.boss.hp=1;TestRainbowCat.challenge(rocket,L);
         while(rocket.boss.cat.phase==RainbowCat.OPEN)rocket.boss.press(rocket.boss.cat.promptKey,rocket.rnd,L);
         for(int frame=0;frame<RainbowCatRocket.DURATION*60;frame++) {
