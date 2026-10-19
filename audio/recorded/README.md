@@ -273,10 +273,11 @@ Android and iOS use the same PCM at original speed and the effects-volume settin
 The final defeat hit uses **meow-long-low.m4a**, supplied by the user for this event.
 [Defeat clip provenance and cut](rainbow-cat-defeat.json) records the source hash and
 0.640–4.096 second interval. Preparation silence is trimmed; the complete vocal tail
-is retained with 3 ms / 35 ms edge fades, original pitch and level, and no filtering.
+is retained with 3 ms / 35 ms edge fades and original pitch. At the user’s request,
+it is peak-normalized to 85% full scale (the standard effect level), with no compression or filtering.
 `python3 tools/prepare-cat-defeat.py /path/to/meow-long-low.m4a` regenerates the
 22,050 Hz mono PCM in `CatDefeatRecording.java` and an ignored review WAV.
-The 3.456-second game clip measures -18.99 dBFS peak and -30.10 dBFS RMS;
+The 3.456-second game clip receives +17.58 dB gain, measuring -1.41 dBFS peak and -12.52 dBFS RMS;
 it has silent endpoints. Waveform and energy checks were used, not a listening claim.
 The original recording and review WAVs stay local. This is user-provided material,
 not a third-party sound library or a CC0 attribution.

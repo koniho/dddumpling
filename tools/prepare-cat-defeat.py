@@ -27,6 +27,11 @@ if sys.byteorder!='little':pcm.byteswap()
 pcm[0]=pcm[-1]=0
 peak=max(map(abs,pcm));rms=math.sqrt(sum(v*v for v in pcm)/len(pcm))
 assert 32<peak<32767 and rms>1 and abs(len(pcm)/22050-duration)<.003
+target=round(cut['normalization_peak']*32767)
+gain=target/peak
+pcm=array.array('h',(round(v*gain) for v in pcm))
+peak=max(map(abs,pcm));rms=math.sqrt(sum(v*v for v in pcm)/len(pcm))
+assert peak==target and peak<32767 and pcm[0]==pcm[-1]==0
 encoded=''.join(f'{v & 65535:04x}' for v in pcm)
 java='''package com.dddumpling.game;
 
@@ -50,4 +55,4 @@ out=root/'build/cat-defeat/game';out.mkdir(parents=True,exist_ok=True)
 if sys.byteorder!='little':pcm.byteswap()
 with wave.open(str(out/'meow-long-low.wav'),'wb') as wav:
     wav.setparams((1,2,22050,0,'NONE','none'));wav.writeframes(pcm.tobytes())
-print(f'{len(pcm)/22050:.3f}s peak={20*math.log10(peak/32768):.2f}dBFS RMS={20*math.log10(rms/32768):.2f}dBFS; silent endpoints, original level and pitch')
+print(f'{len(pcm)/22050:.3f}s peak={20*math.log10(peak/32768):.2f}dBFS RMS={20*math.log10(rms/32768):.2f}dBFS; gain={20*math.log10(gain):.2f}dB; silent endpoints, original pitch')

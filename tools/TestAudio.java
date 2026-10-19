@@ -448,6 +448,10 @@ final class TestAudio extends Check {
             check("cat take has audio and correct duration "+variant,energy>1000000
                     && Math.abs(pcm.length/(float)Sfx.RATE-CatMeowRecording.duration(variant))<.001f);
             check("cat take fades to silence "+variant,pcm[0]==0 && pcm[pcm.length-1]==0);
+            if(variant==CatMeowRecording.DEFEAT) {
+                int peak=0;for(short v:pcm)peak=Math.max(peak,Math.abs((int)v));
+                check("long low defeat meow uses common effect peak",Math.abs(peak-Sfx.PEAK*32767)<2);
+            }
             catHashes.add(java.util.Arrays.hashCode(pcm));
         }
         check("all recorded meows are distinct",catHashes.size()==CatMeowRecording.COUNT);
