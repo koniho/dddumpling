@@ -55,16 +55,10 @@ final class BossRetry extends Draw {
         String name=Skins.bossName(p.skin(),c.bossVictoryKind);
         q.text(name,cx,L.h*.322f,Math.min(type(s*.78f),L.w*.72f/(name.length()*.73f)),INK,Painter.CENTER,true);
         TimeAttackDemo.drawRetry(q,c,L,L.h*.423f);
-        for(int i=0;i<2;i++) {
-            float y=buttonY(L,i==0),l=L.w*.15f,r=L.w*.85f,half=L.h*.047f;
-            int edge=i==0?0xFFFFDF77:0xFFF0B9D3,fill=i==0?0xFF665020:0xFF54304F;
-            q.fillRect(l,y-half+s*.23f,r,y+half+s*.23f,0x990D1024);
-            q.fillRect(l,y-half,r,y+half,edge);
-            q.fillRect(l+s*.14f,y-half+s*.14f,r-s*.14f,y+half-s*.14f,fill);
-            q.line(l+s*.3f,y-half+s*.3f,r-s*.3f,y-half+s*.3f,fadeBy(edge,.5f),s*.1f);
-            float text=type(s*1.15f);
-            q.text(i==0?"RETRY BOSS":"END RUN",cx,y+text*.35f,text,0xFFFFF6E5,Painter.CENTER,true);
-        }
+        float y=buttonY(L,true),half=L.h*.047f,text=type(s*1.15f);
+        q.fillRect(L.w*.15f,y-half,L.w*.85f,y+half,0x334DCEAA);
+        q.text("RETRY",cx,y+text*.35f,text,INK,Painter.CENTER,true);
+        q.text("END RUN",cx,buttonY(L,false)+text*.35f,text,INK,Painter.CENTER,true);
         if(c.highScores.bossRetries>0)q.text("BOSS RETRIES: "+c.highScores.bossRetries,cx,L.h*.775f,type(s*.48f),GOLD,Painter.CENTER,true);
     }
 }
