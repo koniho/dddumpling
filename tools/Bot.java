@@ -284,7 +284,7 @@ final class Bot {
                 int glyph=bolt>=0?c.boss.bglyph[bolt]:a.promptKey;
                 if(rnd.nextFloat()<missRate)glyph=Roster.randomExcept(c.playRosterFull(),glyph,rnd);
                 c.tapKey(glyph,L);
-            } else if(budget>=1f && a.phase==RainbowCat.CIRCLE) {
+            } else if(budget>=1f && a.phase==RainbowCat.CIRCLE && c.boss.boltCount()==0) {
                 budget-=1;presses++;catTraceDistance=0;catCircling=true;
                 a.touch(c,L,0,151,a.circleX()+a.gesture.coordinate(0,0)*a.circleRadius(),a.circleY()+a.gesture.coordinate(0,1)*a.circleRadius());
             } else if(budget>=1f && a.canTap()) {

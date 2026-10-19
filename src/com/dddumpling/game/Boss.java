@@ -1952,8 +1952,8 @@ final class Boss {
      * one; there is nothing to engage and no order to type them in.
      */
     static final int BOLTS = 3, NORMAL_BOLT_LIMIT = 8;
-    // Rainbow Cat queues two projectiles for each key; other bosses keep their existing limit.
-    static final int MAX_BOLTS = Math.max(NORMAL_BOLT_LIMIT,Glyph.COUNT*2);
+    // A full cat flurry can overlap the three existing chase shots; other bosses keep their limit.
+    static final int MAX_BOLTS = Math.max(NORMAL_BOLT_LIMIT,Glyph.COUNT*2+3);
     /** Seconds one takes to reach the deck. Long enough to read three letters and find three keys. */
     static final float BOLT_TIME = 2.4f;
     /**

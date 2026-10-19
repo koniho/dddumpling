@@ -263,8 +263,20 @@ Every excerpt is checked for duration, audible energy, unclipped peaks and
 silent endpoints. These measurements do not substitute for phone/headphone review.
 
 The surprise sound follows accepted taps and net catches; hurt follows completed
-key sequences, including the final hit. The retained longer meow plays when the net prompt
+key sequences. The retained longer meow plays when the net prompt
 opens. Short takes cycle through launches and flurries without consuming gameplay
 randomness. Routine calls wait until the current recording finishes; important
 surprise/hurt reactions take priority. The entrance reuses the full longer meow as a battle cry, starting with the foreground rainbow burst.
 Android and iOS use the same PCM at original speed and the effects-volume setting.
+
+
+The final defeat hit uses **meow-long-low.m4a**, supplied by the user for this event.
+[Defeat clip provenance and cut](rainbow-cat-defeat.json) records the source hash and
+0.640–4.096 second interval. Preparation silence is trimmed; the complete vocal tail
+is retained with 3 ms / 35 ms edge fades, original pitch and level, and no filtering.
+`python3 tools/prepare-cat-defeat.py /path/to/meow-long-low.m4a` regenerates the
+22,050 Hz mono PCM in `CatDefeatRecording.java` and an ignored review WAV.
+The 3.456-second game clip measures -18.99 dBFS peak and -30.10 dBFS RMS;
+it has silent endpoints. Waveform and energy checks were used, not a listening claim.
+The original recording and review WAVs stay local. This is user-provided material,
+not a third-party sound library or a CC0 attribution.

@@ -103,57 +103,90 @@ final class RainbowCatRocket extends Draw {
         }
     }
     private void contour(float x,float y,float r,float scale) {
-        // Broad, round base and curved narrow shoulders, inspired by the reference pet carrier.
+        // Soft squared carrier: broad base, round shoulders and an even inset window rim.
         for(int i=0;i<=40;i++) {
-            float t=Softbody.TAU*i/40,vertical=(float)Math.sin(t);
-            float width=.83f+.16f*vertical;
-            shell[i*2]=x+(float)Math.cos(t)*r*width*scale;
-            shell[i*2+1]=y+vertical*r*1.10f*scale;
+            float t=Softbody.TAU*i/40,sy=(float)Math.sin(t),sx=(float)Math.cos(t);
+            shell[i*2]=x+Math.copySign((float)Math.pow(Math.abs(sx),.82f),sx)*r*(.85f+.07f*sy)*scale;
+            shell[i*2+1]=y+Math.copySign((float)Math.pow(Math.abs(sy),.85f),sy)*r*1.05f*scale;
         }
+    }
+    private void shellGlint(Painter p,float x,float y,float r,float scale,int from,int to,int color,float width) {
+        contour(x,y,r,scale);
+        int count=to-from+1;float[] glint=new float[count*4];
+        // One filled ribbon keeps translucent highlights smooth where line segments would overlap.
+        for(int i=0;i<count;i++) {
+            int at=from+i,previous=Math.max(0,at-1),next=Math.min(40,at+1);
+            float dx=shell[next*2]-shell[previous*2],dy=shell[next*2+1]-shell[previous*2+1];
+            float length=Math.max(.001f,(float)Math.sqrt(dx*dx+dy*dy));
+            float half=width*.5f*(.35f+.65f*(float)Math.sin(Math.PI*i/(count-1)));
+            int back=(count*2-1-i)*2;
+            glint[i*2]=shell[at*2]-dy/length*half;glint[i*2+1]=shell[at*2+1]+dx/length*half;
+            glint[back]=shell[at*2]+dy/length*half;glint[back+1]=shell[at*2+1]-dx/length*half;
+        }
+        p.fillPoly(glint,color);
+    }
+    private void fin(Painter p,float x,float y,float r,int side) {
+        float[] edge={.65f,.26f,.78f,.32f,.99f,.54f,1.10f,.78f,1.12f,1.03f,
+                1.07f,1.13f,.95f,1.12f,.69f,.98f,.59f,.77f};
+        for(int i=0;i<edge.length;i+=2) {edge[i]=x+edge[i]*r*side;edge[i+1]=y+edge[i+1]*r;}
+        p.fillPoly(edge,0xFF376A76);p.strokePoly(edge,0xFF294656,r*.035f);
+        p.line(x+side*r*.91f,y+r*.63f,x+side*r*1.02f,y+r*.95f,0xFF8CE4C1,r*.10f);
+        p.line(x+side*r*.89f,y+r*.63f,x+side*r*.99f,y+r*.92f,0xFFC3F8D9,r*.035f);
     }
     private void pod(Painter p,float x,float y,float r,boolean front) {
         float lid=ease((age-DROP)/(CLOSE-DROP));
         if(!front) {
-            // Low rounded fins and twin engine bells keep the carrier unmistakably rocket-shaped.
             for(int side=-1;side<=1;side+=2) {
-                p.fillPoly(new float[]{x+side*r*.66f,y+r*.36f,x+side*r*1.13f,y+r*.72f,
-                        x+side*r*1.07f,y+r*1.16f,x+side*r*.59f,y+r*.94f},0xFF466C8A);
-                p.line(x+side*r*.86f,y+r*.65f,x+side*r*.97f,y+r*.99f,0xFF9BF8DD,r*.07f);
-                p.fillEllipse(x+side*r*.43f,y+r*1.02f,r*.25f,r*.19f,0xFF345A72);
-                p.fillEllipse(x+side*r*.43f,y+r*1.10f,r*.17f,r*.07f,0xFF9EFFF5);
+                fin(p,x,y,r,side);
+                p.fillEllipse(x+side*r*.43f,y+r*1.01f,r*.23f,r*.16f,0xFF2D4E60);
+                p.fillEllipse(x+side*r*.43f-r*.015f,y+r*.99f,r*.20f,r*.13f,0xFF64999E);
+                p.fillEllipse(x+side*r*.43f,y+r*1.08f,r*.16f,r*.055f,0xFFB0FFF1);
             }
-            float hatchLift=r*.35f*(1-lid);
-            p.arc(x,y-r*1.10f-hatchLift,r*.24f,r*.22f,175,190,0xFF365F6D,r*.13f);
-            p.arc(x,y-r*1.12f-hatchLift,r*.24f,r*.22f,185,170,0xFFA8F9BF,r*.065f);
-            p.arc(x,y-hatchLift,r*.76f,r*1.08f,220,100,0xFF6EC8A4,r*.16f);
-            p.arc(x,y-hatchLift-r*.03f,r*.76f,r*1.08f,220,100,0xFFC1FFDC,r*.055f);
-            contour(x,y,r,1);p.fillPoly(shell,0xFF35586A);p.strokePoly(shell,0xFF283E58,r*.055f);
-            contour(x-r*.015f,y-r*.02f,r,.95f);p.fillPoly(shell,0xFF74C7A5);
-            contour(x,y+r*.01f,r,.84f);p.fillPoly(shell,0xFF27536A);
-            contour(x,y-r*.04f,r,.77f);p.fillPoly(shell,0xFF41778D);
-            p.fillEllipse(x-r*.23f,y-r*.45f,r*.32f,r*.22f,0x3872E8DA);
-            // Open mouth of the pod: the net descends through this hatch.
-            if(lid<1)p.fillEllipse(x,y-r*.90f,r*.56f,r*.13f*(1-lid),0xFF23394F);
+            // Nested offset silhouettes shade the solid shell without piling up bright outlines.
+            contour(x,y,r,1);p.fillPoly(shell,0xFF2F515C);
+            for(int layer=0;layer<5;layer++) {
+                float u=layer/4f;
+                contour(x-r*.035f*u,y-r*.035f*u,r,.975f-layer*.018f);
+                p.fillPoly(shell,Glyph.mix(0xFF519B8C,0xFFBAEACC,u));
+            }
+            contour(x,y-r*.015f,r,.81f);p.fillPoly(shell,0xFF264A5C);
+            contour(x,y-r*.015f,r,.775f);p.fillPoly(shell,0xFF457F8D);
+            contour(x-r*.02f,y-r*.045f,r,.72f);p.fillPoly(shell,0xFF538E99);
+            shellGlint(p,x,y,r,.99f,21,32,0xBBD5FFE0,r*.027f);
+            if(lid<1)p.fillEllipse(x,y-r*.88f,r*.54f,r*.12f*(1-lid),0xFF23394F);
         } else {
-            // Glass slides shut after the cat lands, staying translucent enough to see her expression.
             if(lid>0) {
+                // A recessed glass door seals down over the occupant; a narrow reflection gives depth.
                 p.save();p.clipRect(x-r,y-r*1.1f,x+r,y-r*1.1f+r*2.2f*lid);
-                contour(x,y,r,.81f);p.fillPoly(shell,0x353CDBE7);
-                p.arc(x,y,r*.65f,r*.85f,205,55,0x88E2FFF6,r*.075f);
-                p.line(x-r*.40f,y-r*.55f,x+r*.02f,y-r*.77f,0x55FFFFFF,r*.12f);
+                contour(x,y-r*.015f,r,.775f);p.fillPoly(shell,0x283CDBE7);
+                shellGlint(p,x,y-r*.015f,r,.71f,23,30,0x79E4FFF8,r*.045f);
+                shellGlint(p,x,y-r*.015f,r,.68f,24,29,0x35E4FFF8,r*.09f);
                 p.restore();
             }
-            contour(x,y,r,.86f);p.strokePoly(shell,0xFF406E75,r*.14f);
-            p.strokePoly(shell,0xFFA8EFB8,r*.065f);
-            p.arc(x-r*.015f,y-r*.025f,r*.75f,r*.98f,210,95,0xFFD1FFDA,r*.07f);
-            p.fillEllipse(x,y+r*.83f,r*.55f,r*.14f,0xFF74BA9A);
-            for(int i=-2;i<=2;i++)p.fillCircle(x+i*r*.19f,y+r*.85f,r*.04f,0xFF325B69);
-            p.fillCircle(x+r*.67f,y+r*.18f,r*.10f,0xFF34586D);
-            p.fillCircle(x+r*.67f,y+r*.18f,r*.055f,age>=CLOSE?0xFFFFE887:0xFFB7FFE1);
+            contour(x,y-r*.015f,r,.805f);p.strokePoly(shell,0xFF3C736F,r*.065f);
+            shellGlint(p,x,y-r*.015f,r,.825f,21,32,0xFFC6F7D8,r*.035f);
+            shellGlint(p,x,y-r*.015f,r,.825f,0,17,0x80598980,r*.025f);
+            // A single smooth cap lifts with its carry loop, then settles flush onto the shoulders.
+            float hatchY=y-r*.30f*(1-lid);
+            contour(x,hatchY,r,.96f);
+            float[] cap=new float[30];System.arraycopy(shell,24*2,cap,0,26);
+            cap[26]=x+r*.55f;cap[27]=hatchY-r*.87f;
+            cap[28]=x-r*.55f;cap[29]=hatchY-r*.87f;
+            p.fillPoly(cap,0xFF7FC8A5);
+            shellGlint(p,x-r*.01f,hatchY-r*.015f,r,.955f,24,36,0xFFCAF6D7,r*.055f);
+            p.arc(x,hatchY-r*1.03f,r*.21f,r*.20f,180,180,0xFF31545E,r*.115f);
+            p.arc(x,hatchY-r*1.045f,r*.21f,r*.20f,185,170,0xFF9DDEC0,r*.065f);
+            for(int i=-2;i<=2;i++) {
+                float xx=x+i*r*.17f,yy=y+r*.91f;
+                p.line(xx,yy-r*.024f,xx,yy+r*.024f,0xFF43756F,r*.048f);
+                p.line(xx-r*.006f,yy+r*.025f,xx+r*.012f,yy+r*.025f,0xFFCBF6D9,r*.015f);
+            }
+            p.fillCircle(x+r*.72f,y+r*.12f,r*.075f,0xFF39686C);
+            p.fillCircle(x+r*.72f,y+r*.12f,r*.043f,age>=CLOSE?0xFFFFE887:0xFFB7FFE1);
             float charge=unit((age-CLOSE)/(LAUNCH-CLOSE));
             if(age>=CLOSE && age<LAUNCH) {
                 float pulse=.5f+.5f*(float)Math.sin(age*33);
-                contour(x,y,r,1.04f);p.strokePoly(shell,Glyph.withAlpha(0xFFDDFFEF,(int)(charge*(60+120*pulse))),r*.06f);
+                contour(x,y,r,1.02f);p.strokePoly(shell,Glyph.withAlpha(0xFFDDFFEF,(int)(charge*(45+90*pulse))),r*.035f);
             }
         }
     }

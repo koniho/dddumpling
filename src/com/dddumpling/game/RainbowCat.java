@@ -6,7 +6,7 @@ final class RainbowCat {
     static final int HITS_PER_BAND=20;
     static final float TAP_FLASH=.60f, SCARE_HOLD=.70f, SHAKE_OFF=.40f;
     static final float NET_TIME=.75f, NET_RETURN=.45f, ESCAPE_TIME=1.1f;
-    static final float SWEEP_SETUP=.25f, SWEEP_LEAD=.08f, SWEEP_STEP=.288f, DOUBLE_PAIR_GAP=.12f;
+    static final float SWEEP_SETUP=.25f, SWEEP_LEAD=.08f, SWEEP_STEP=.192f, DOUBLE_PAIR_GAP=.08f;
     static final float DASH_TIME=.34f, TRAIL_TIME=2.2f, TRAIL_LENGTH=2.9f*4;
     final Softbody pastry=new Softbody(18,151), head=new Softbody(14,152);
     final float[] route=new float[8],trailX=new float[136],trailY=new float[136],trailAge=new float[136];
@@ -32,11 +32,12 @@ final class RainbowCat {
     int burstKind,burstStep;
     float escapeLeft,escapeX,escapeY,escapeAge;
     int flurryCount;
+    final int[] flurrySlots=new int[Glyph.COUNT*2];
     boolean escapeSequence,flurryFromLeft,doubleFlurry;
     boolean circling;
     boolean placed,kids,escaping;
     void reset() {
-        rocket.reset();
+        rocket.reset();java.util.Arrays.fill(flurrySlots,-1);
         phase=CHASE;pointer=-1;taps=trailCount=captures=cue=windowHits=0;promptKey=leftKey=rightKey=-1;damageFloor=keyFlash=0;hitColor=0;fullRoster=false;placed=escaping=escapeSequence=flurryFromLeft=doubleFlurry=false;flurryCount=0;turn=1;
         java.util.Arrays.fill(hitConeLife,0);nextHitCone=0;
         circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=netAimX=netAimY=tapFlash=scared=scaredAge=0;circling=false;gesture.clear();
@@ -193,7 +194,7 @@ final class RainbowCat {
         return 0;
     }
     private void flurry(Boss b,java.util.Random rnd) {
-        b.clearBolts();
+        java.util.Arrays.fill(flurrySlots,-1);
         boolean fromLeft=rnd.nextBoolean();int keys=Roster.count(b.rosterFull);
         // The window floor identifies the phase even after its final hit changes the health band.
         doubleFlurry=damageFloor<=b.hpMax/TraceGesture.SHAPE_COUNT+.0001f;
@@ -203,6 +204,7 @@ final class RainbowCat {
         float lead=(ESCAPE_TIME+SWEEP_SETUP+SWEEP_LEAD)/(Boss.BOLT_TIME*.5f);
         for(int i=0;i<flurryCount;i++) {
             int key=i/repeats,slot=b.tailBolt(rnd,x,y+r*.45f);
+            flurrySlots[i]=slot;
             if(slot>=0) {b.bglyph[slot]=Roster.at(b.rosterFull,fromLeft?key:keys-1-key);b.bfast[slot]=true;b.bt[slot]=-lead-flurryDelay(i)/(Boss.BOLT_TIME*.5f);}
         }
         cue=2;
@@ -211,7 +213,7 @@ final class RainbowCat {
     static float trailFade(float progress) {return clamp((1-progress)*4,0,1);}
     float promptTime() {return (fullRoster?6f:4.8f)*(kids?1.4f:1);}
     private void open(Boss b) {
-        phase=OPEN;vx=vy=0;b.clearBolts();timer=promptTime();cue=1;flash=1;
+        phase=OPEN;vx=vy=0;timer=promptTime();cue=1;flash=1;
         captures=damagePhase(b);damageFloor=b.hpMax*(TraceGesture.SHAPE_COUNT-captures-1)/TraceGesture.SHAPE_COUNT;
     }
     private void resume(Layout L,java.util.Random rnd) {
@@ -281,7 +283,9 @@ final class RainbowCat {
             advance(escapeAge-Math.max(before,start));
         }
         // Each queued star starts at the moving cat when its turn in the sweep arrives.
-        for(int i=0;i<b.bt.length;i++)if(b.bt[i]<0) {b.bsx[i]=x;b.bsy[i]=y+r*.45f;}
+        for(int slot:flurrySlots)if(slot>=0 && b.blive[slot] && b.bt[slot]<0) {
+            b.bsx[slot]=x;b.bsy[slot]=y+r*.45f;
+        }
         if(escapeAge>=end) {
             escapeSequence=false;phase=DASH;routeDuration=routeTime=0;
             if(b.beaten)straightRoute(flurryFromLeft?L.w+r*3:-r*3,y,.38f);
@@ -333,7 +337,7 @@ final class RainbowCat {
             burstStep=Math.max(1,(burstShape.length/2-1)/32);
             burstWork=new float[((burstShape.length/2-1)/burstStep+1)*2];
             burstX=circleX();burstY=circleY();burstRadius=circleRadius();
-            phase=CATCH;catchX=x;catchY=y;releaseWind=windUp;timer=netAge=netReturn=0;circling=false;c.boss.clearBolts();
+            phase=CATCH;catchX=x;catchY=y;releaseWind=windUp;timer=netAge=netReturn=0;circling=false;
             fullRoster=c.boss.rosterFull;windowHits=0;choosePair(c.rnd);
             c.companion.react(RunCompanion.BOSS_HIT,1);
             meow(c,CatMeowRecording.SURPRISED,true);

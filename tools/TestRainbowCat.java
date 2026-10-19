@@ -14,6 +14,8 @@ final class TestRainbowCat extends Check {
             if(a.phase==RainbowCat.CIRCLE)circle(c,L,1);
             c.boss.update(1f/60,L,c.rnd);
         }
+        // Most prompt fixtures isolate key damage; transition retention has dedicated coverage below.
+        c.boss.clearBolts();
     }
     static void readyToCircle(GameCore c,Layout L) {
         RainbowCat a=c.boss.cat;a.release();
@@ -69,7 +71,7 @@ final class TestRainbowCat extends Check {
             a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
             check("extra tap cannot substitute for circle "+direction,a.phase==RainbowCat.CIRCLE && a.taps==2);
             circle(c,L,direction);
-            check("either circle direction starts net catch "+direction,a.phase==RainbowCat.CATCH && a.carries(c) && c.boss.boltCount()==0);
+            check("either circle direction starts net catch "+direction,a.phase==RainbowCat.CATCH && a.carries(c));
             check("net targets the cat capture position "+direction,a.catchX==a.x && a.catchY==a.y);
             c.boss.update(RainbowCat.NET_TIME*.5f,L,c.rnd);
             check("net animation cannot consume prompt time "+direction,!c.boss.open() && a.timer==0);
@@ -113,7 +115,7 @@ final class TestRainbowCat extends Check {
                         && a.y-a.circleRadius()>L.playTop && a.y+a.circleRadius()<L.deckTop);
                 circle(c,L,direction);
                 check("shape catches in either direction "+direction+"/"+capture,a.phase==RainbowCat.CATCH);
-                c.boss.update(RainbowCat.NET_TIME,L,c.rnd);
+                c.boss.update(RainbowCat.NET_TIME,L,c.rnd);c.boss.clearBolts();
                 for(int key=0;key<RainbowCat.HITS_PER_BAND && a.phase==RainbowCat.OPEN;key++)c.boss.press(a.promptKey,c.rnd,L);
                 check("one damage per completed capture "+direction+"/"+capture,c.boss.hp==4-capture
                         && c.boss.beaten==(capture==4));
@@ -138,7 +140,7 @@ final class TestRainbowCat extends Check {
             for(int i=0;i<n;i++) {
                 float x=Roster.keyX(L,c.boss.bglyph[i],full?1:0);
                 ordered&=fromLeft?x>previous:x<previous;previous=x;
-                ordered&=Math.abs(c.boss.bt[i]+(RainbowCat.ESCAPE_TIME+RainbowCat.SWEEP_SETUP+RainbowCat.SWEEP_LEAD)/(Boss.BOLT_TIME*.5f)+i*.24f)<.00001f && c.boss.bfast[i];
+                ordered&=Math.abs(c.boss.bt[i]+(RainbowCat.ESCAPE_TIME+RainbowCat.SWEEP_SETUP+RainbowCat.SWEEP_LEAD)/(Boss.BOLT_TIME*.5f)+a.flurryDelay(i)/(Boss.BOLT_TIME*.5f))<.00001f && c.boss.bfast[i];
             }
             check("flurry preserves left/right order and stagger "+full+"/"+fromLeft+"/"+success,ordered);
         }
@@ -611,6 +613,37 @@ final class TestRainbowCat extends Check {
             a.reset();check("reset clears miniature motion "+shape,a.traceX==0 && a.traceY==0 && a.traceClock==0);
         }
     }
+    private static void retainedProjectiles(Layout L) {
+        group("Cat transitions preserve incoming stars");
+        GameCore c=fight(L);c.boss.hp=2;readyToCircle(c,L);Boss b=c.boss;RainbowCat a=b.cat;
+        b.clearBolts();
+        for(int i=0;i<3;i++) {int slot=b.tailBolt(c.rnd,L.w*.2f,L.playTop);b.bglyph[slot]=i;b.bfast[slot]=true;b.bt[slot]=.05f;}
+        circle(c,L,1);
+        check("capture retains all three existing shots",a.phase==RainbowCat.CATCH && b.boltCount()==3 && b.bt[0]==.05f);
+        b.update(RainbowCat.NET_TIME,L,c.rnd);
+        check("opening keeps stars moving toward player",a.phase==RainbowCat.OPEN && b.boltCount()==3 && b.bt[0]>.6f);
+        float hp=b.hp;
+        check("incoming matching star takes priority over vulnerable prompt",b.press(0,c.rnd,L)==Boss.PARRY && b.hp==hp && b.boltCount()==2);
+        int pending=b.tailBolt(c.rnd,L.w*.1f,L.playTop);b.bt[pending]=-.2f;
+        float origin=b.bsx[pending];float oldProgress=b.bt[1];
+        while(a.phase==RainbowCat.OPEN)a.press(b,a.promptKey,L,c.rnd);
+        check("double flurry fits alongside three retained shots",a.doubleFlurry && b.boltCount()==3+Glyph.COUNT*2);
+        boolean distinct=true;java.util.HashSet<Integer> slots=new java.util.HashSet<Integer>();
+        for(int slot:a.flurrySlots)distinct&=slot>=0 && slot!=pending && slots.add(slot);
+        check("new volley has separate slots and a faster launch cadence",distinct && slots.size()==Glyph.COUNT*2
+                && Math.abs(a.flurryDelay(1)-.192f)<.0001f && Math.abs(a.flurryDelay(2)-.464f)<.0001f);
+        b.update(.01f,L,c.rnd);
+        check("escape neither resets live motion nor moves older queued origin",b.bt[1]>oldProgress && b.bsx[pending]==origin && b.bt[pending]>-.2f);
+        int landed=0;for(int frame=0;frame<60;frame++)landed+=b.update(1f/60,L,c.rnd);
+        check("retained shots still damage at the deck",landed>=2);
+        b.leave();check("exit still clears all owned projectiles",b.boltCount()==0);
+        c=fight(L);c.boss.hp=1;challenge(c,L);Ear ear=new Ear();c.sound=ear;
+        while(c.boss.cat.phase==RainbowCat.OPEN)c.tapKey(c.boss.cat.promptKey,L);
+        check("final hit prioritizes long low defeat recording",c.boss.beaten && ear.lastCatMeow==CatMeowRecording.DEFEAT
+                && c.boss.cat.voiceLeft>=CatMeowRecording.duration(CatMeowRecording.DEFEAT));
+        int calls=ear.catMeows;for(int i=0;i<30;i++)c.update(1f/60,L);
+        check("defeat recording is not retriggered during cage transition",ear.catMeows==calls);
+    }
     private static void rocketVictory(Layout L) {
         group("Rainbow Cat carrier rocket victory");
         for(int fps:new int[]{30,60,120}) {
@@ -644,7 +677,7 @@ final class TestRainbowCat extends Check {
         c.paused=false;c.update(.1f,L);check("resume advances rocket",r.age>0);
     }
     static void all(Layout L) {
-        rocketVictory(L);arrival(L);hitShape(L);doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        retainedProjectiles(L);rocketVictory(L);arrival(L);hitShape(L);doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));
@@ -725,13 +758,17 @@ final class TestRainbowCat extends Check {
             check("five completed challenges beat cat at "+fps,c.boss.beaten && c.boss.cat.captures==5);
         }
         group("bounded Rainbow Cat one-finger play");
-        for(float fps:new float[]{30,60,120}) {
-            c=fight(L);Bot bot=new Bot(4,.30f,.08f,false,151);
+        // Faster requested flurries demand quicker defenses; keep both bounded skill profiles visible.
+        for(float fps:new float[]{30,60,120})for(boolean brisk:new boolean[]{false,true}) {
+            c=fight(L);Bot bot=new Bot(brisk?6:4,brisk?.18f:.30f,brisk?.04f:.08f,false,151);
+            float bestHp=c.boss.hp;
             for(int frame=0;frame<fps*150 && !c.boss.beaten && c.state==GameCore.PLAY;frame++) {
+                bestHp=Math.min(bestHp,c.boss.hp);
                 bot.step(c,L,1/fps);c.update(1/fps,L);
             }
-            System.out.println("    cat "+fps+"fps: hp="+c.boss.hp+", lives="+c.lives+", phase="+c.boss.cat.phase+", time="+c.boss.age);
-            check("bounded one-finger cat fight completes at "+fps,c.boss.beaten && c.lives>0);
+            System.out.println("    cat "+fps+"fps "+(brisk?"brisk":"steady")+": best hp="+bestHp+", lives="+c.lives+", won="+c.boss.beaten);
+            if(brisk)check("bounded brisk player completes faster flurries at "+fps,c.boss.beaten && c.lives>0);
+            else check("steady player can complete a capture at "+fps,bestHp<=4);
         }
         group("five-boss Time Attack archive migration");
         TimeAttack saved=new TimeAttack();

@@ -464,7 +464,7 @@ final class TestAudio extends Check {
             // Roulette ticks intentionally fit between fast icon changes.
             int minimum = id == Sfx.SHUFFLE_BLIP ? Sfx.RATE / 40 : Sfx.RATE / 20;
             // Survival's one-shot cue spans its full rainbow transition.
-            float maximum = Sfx.isCatMeow(id) ? 3f : id == Sfx.SURVIVAL_OVER ? SurvivalEnd.DURATION : id == Sfx.GATOR_SPLASH ? 2.3f : 2f;
+            float maximum = id==Sfx.catMeowId(CatMeowRecording.DEFEAT) ? 4f : Sfx.isCatMeow(id) ? 3f : id == Sfx.SURVIVAL_OVER ? SurvivalEnd.DURATION : id == Sfx.GATOR_SPLASH ? 2.3f : 2f;
             if (pcm.length < minimum || pcm.length > Sfx.RATE * maximum) allSane = false;
         }
         check("other effects retain their common peak", allNormalised);
