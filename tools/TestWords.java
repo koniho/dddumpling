@@ -6,29 +6,56 @@ final class TestWords extends Check {
     private static void kidsWords(Layout L) {
         GameCore c=new GameCore(new Mem(),581L);c.preferences.kids=true;c.startGame();
         for(int stage:new int[]{1,4,9,16,30,80}) {
+            int cap=Lands.forStage(stage)==Lands.RAINBOW?5:6;
             boolean capped=true,roster=true,stack=false,longer=false,fullBudget=false;
             for(int trial=0;trial<200;trial++) {
                 c.stage=stage;c.stageGap=c.spawnTimer=0;c.spawnedThisStage=1;c.enemies.clear();
                 c.update(.001f,L);
                 for(GameCore.Enemy word:c.enemies) {
-                    capped &= word.totalPresses()<=6;
+                    capped &= word.totalPresses()<=cap;
                     longer |= word.word.length>2;
-                    fullBudget |= word.totalPresses()==6;
+                    fullBudget |= word.totalPresses()==cap;
                     for(int k=0;k<word.word.length;k++) {
                         roster &= Roster.active(false,word.word[k]);
                         stack |= word.need[k]>1;
                     }
                 }
             }
-            check("kids generated words obey six presses and four keys at "+stage,capped && roster);
+            check("kids generated words obey land press cap and four keys at "+stage,capped && roster);
             if(stage==1) check("kids opening words stay simple",!stack && !longer);
-            if(stage>=9) check("later kids words grow, use stacks, and reach six presses at "+stage,
+            if(stage>=9) check("later kids words grow, use stacks, and reach land press cap at "+stage,
                     stack && longer && fullBudget);
         }
     }
 
+    private static void rainbowBudget(Layout L) {
+        group("Rainbow Land caps total enemy hits including pips");
+        int first=Lands.firstStage(Lands.RAINBOW);
+        for(boolean kids:new boolean[]{false,true})for(int mode=-1;mode<Power.COUNT;mode++) {
+            GameCore c=TestFastEnemies.scene(L,first,531);c.kidsRun=kids;
+            int seen=0,max=0;boolean capped=true,stacked=false;
+            for(int stage:new int[]{first,first+3,first+Boss.lastStage()}) {
+                c.stage=stage;
+                for(int n=0;n<120;n++) {
+                    c.enemies.clear();c.spawnedThisStage=n%c.stageQuota();c.stageGap=c.spawnTimer=0;
+                    c.mode=mode;c.modeLeft=mode<0?0:60;c.update(.001f,L);
+                    for(GameCore.Enemy e:c.enemies) {
+                        seen++;int hits=e.totalPresses();max=Math.max(max,hits);capped&=hits<=5;
+                        for(int need:e.need)stacked|=need>1;
+                    }
+                }
+            }
+            check("five hits in regular and power play "+kids+"/"+mode,seen>100 && capped && max==5 && stacked);
+            c.survival.active=true;
+            check("survival retains its press cap "+kids+"/"+mode,c.maxPresses()==(kids?6:7));
+            c.survival.active=false;c.timeAttack.active=true;
+            check("time attack is independent of Rainbow Land cap "+kids+"/"+mode,c.maxPresses()==(kids?6:7));
+            c.timeAttack.active=false;c.stage=first-1;
+            check("other lands retain their press cap "+kids+"/"+mode,c.maxPresses()==(kids?6:7));
+        }
+    }
     static void stackedLetters(Layout L) {
-        kidsWords(L);
+        kidsWords(L);rainbowBudget(L);
         group("stacked letters");
         GameCore c = new GameCore(new Mem(), 51L);
         c.startGame();

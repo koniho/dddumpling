@@ -94,7 +94,7 @@ final class OctoThrow {
     static void release(Boss b) {
         if (b.octoThrowArm < 0 || b.octoThrowReleased || b.octoThrowT < RELEASE) return;
         int count = b.octoThrowArm2 >= 0 ? 2 : 1;
-        if (Boss.MAX_BOLTS - b.boltCount() < count) return;
+        if (Boss.NORMAL_BOLT_LIMIT - b.boltCount() < count) return;
         launch(b, b.octoThrowArm, b.octoThrowGlyph);
         if (count == 2) launch(b, b.octoThrowArm2, b.octoThrowGlyph2);
         b.launched = true;
@@ -104,7 +104,7 @@ final class OctoThrow {
     }
 
     private static void launch(Boss b, int arm, int glyph) {
-        for (int i = 0; i < Boss.MAX_BOLTS; i++) if (!b.blive[i]) {
+        for (int i = 0; i < Boss.NORMAL_BOLT_LIMIT; i++) if (!b.blive[i]) {
             int tip = Boss.OCTO_NODES - 1;
             b.blive[i] = true;
             b.bfast[i] = true;

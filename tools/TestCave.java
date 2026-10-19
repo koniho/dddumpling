@@ -8,7 +8,7 @@ final class TestCave extends Check {
         c.landSuppressed=14;c.allLandsEnabled=false;
         check("swamp discovery is eligible for lands tutorial",Onboarding.discoveredLand(c)==Lands.SWAMP);
         c.landSuppressed=0;c.allLandsEnabled=true;
-        c.landSeen=14|(1<<Lands.SWAMP);LandPicker.updateDiscovery(c,1f);
+        c.landSeen=LandPicker.stateMask();LandPicker.updateDiscovery(c,1f);
         check("discovery skips reserved cave",c.landDiscovery<0);
         LandPicker.select(c,Cave.LAND);
         check("picker refuses reserved cave",c.landChoice==0);

@@ -236,3 +236,48 @@ layered with the single-beat recorded squish. It falls from about 940 Hz toward
 190 Hz with a soft pitch wobble, 300 ms amplitude decay and 90 ms ending fade,
 at 60% effect gain. Holding or continuing an already-completed drag does not
 retrigger it; attack volleys retain their existing shorter squishes.
+
+# Rainbow Cat meows
+
+User-performed recording **Oct 18 at 14_19.m4a**, recorded October 18, 2026,
+provided explicitly for Rainbow Cat integration. Source SHA-256:
+`59b1332edfeb1e6b499c08c6ac38d2c82d01e1210d29f5d4c1f566afa68bbd82`. The original stays in the user's Recordings folder;
+it is not a third-party library asset or a CC0 claim.
+
+[Reviewed cuts and measurements](rainbow-cat-cuts.json) retain 24 excerpts:
+21 short meows, one longer meow for net struggling, and the annotated hurt and
+surprised takes. A local Whisper tiny.en speech review identified a spoken aside
+in the original 12.34–15.08 second cut, missed by the embedded recorder transcript.
+That whole cut is listed as excluded in the manifest and is no longer packaged. Embedded transcript metadata identifies
+spoken instructions around 19.38–22.08 and 25.29–27.21 seconds. Those annotations,
+preparation silence, and the final handling noise are excluded. Boundaries use
+waveform valleys and comparison of -32 dB and -23 dB silence candidates; continuous
+meow phrases are split at articulation valleys rather than counting silence as sounds.
+
+The found-sounds extraction skill exported 48 kHz mono review WAVs with
+3 ms / 20 ms edge fades. `python3 tools/prepare-cat-meows.py /path/to/source.m4a`
+verifies the original hash and regenerates `CatMeowRecording.java` and 22,050 Hz
+mono review WAVs in `build/cat-meows/game`. No pitch change, normalization,
+compression or low-pass filter: relative recording levels are preserved.
+Every excerpt is checked for duration, audible energy, unclipped peaks and
+silent endpoints. These measurements do not substitute for phone/headphone review.
+
+The surprise sound follows accepted taps and net catches; hurt follows completed
+key sequences. The retained longer meow plays when the net prompt
+opens. Short takes cycle through launches and flurries without consuming gameplay
+randomness. Routine calls wait until the current recording finishes; important
+surprise/hurt reactions take priority. The entrance reuses the full longer meow as a battle cry, starting with the foreground rainbow burst.
+Android and iOS use the same PCM at original speed and the effects-volume setting.
+
+
+The final defeat hit uses **meow-long-low.m4a**, supplied by the user for this event.
+[Defeat clip provenance and cut](rainbow-cat-defeat.json) records the source hash and
+0.640–4.096 second interval. Preparation silence is trimmed; the complete vocal tail
+is retained with 3 ms / 35 ms edge fades and original pitch. At the user’s request,
+it is peak-normalized to 85% full scale (the standard effect level), with no compression or filtering.
+`python3 tools/prepare-cat-defeat.py /path/to/meow-long-low.m4a` regenerates the
+22,050 Hz mono PCM in `CatDefeatRecording.java` and an ignored review WAV.
+The 3.456-second game clip receives +17.58 dB gain, measuring -1.41 dBFS peak and -12.52 dBFS RMS;
+it has silent endpoints. Waveform and energy checks were used, not a listening claim.
+The original recording and review WAVs stay local. This is user-provided material,
+not a third-party sound library or a CC0 attribution.

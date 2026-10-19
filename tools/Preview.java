@@ -8,6 +8,232 @@ import java.io.File;
  * without a build/install cycle: same Layout, same Renderer, same state machine as the APK.
  */
 final class Preview {
+    private static void rainbowFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
+        if(!wantedGroup("151-"))return;
+        GameCore meowcula=TestRainbowCat.fight(L);meowcula.preferences.skin=Skins.HALLOWEEN;
+        for(int i=0;i<90;i++)meowcula.update(1f/60,L);
+        shot(dir,"151-meowcula-battle",meowcula,L,w,h,ss);
+        RasterPainter vampireSheet=new RasterPainter(w,h,ss);vampireSheet.clear(Draw.BG);
+        Painter vampire=Skins.painter(vampireSheet,Skins.HALLOWEEN);
+        vampire.text("MEOWCULA",w*.5f,h*.07f,w*.065f,Draw.INK,Painter.CENTER,true);
+        for(int row=0;row<3;row++)RainbowCatArt.cat(vampire,w*.5f,h*(.25f+row*.27f),w*.17f,row*.38f,row%2==0?-1:1,null,null,row==2,1);
+        Png.write(new File(dir,"151-meowcula-sheet.png"),vampireSheet.resolve(),w,h);
+        for(int frame=0;frame<4;frame++) {
+            RasterPainter flutter=new RasterPainter(w,h,ss);flutter.clear(Draw.BG);
+            Painter cloak=Skins.painter(flutter,Skins.HALLOWEEN);
+            RainbowCatArt.cat(cloak,w*.47f,h*.48f,w*.20f,frame*.11f,-1,null,null,false,1);
+            Png.write(new File(dir,"151-meowcula-cape-"+frame+".png"),flutter.resolve(),w,h);
+        }
+        GameCore shooting=TestRainbowCat.fight(L);RainbowCat shooter=shooting.boss.cat;shooter.launchLeft=.32f;
+        shooter.x=L.w*.5f;shooter.y=L.h*.40f;shooter.routeDuration=99;shooter.routeTime=0;shooter.turn=-1;
+        for(int i=0;i<4;i++) {shooter.route[i*2]=shooter.x;shooter.route[i*2+1]=shooter.y;}
+        for(int frame=0;frame<30;frame++) {
+            shooting.boss.update(1f/60,L,shooting.rnd);
+            if(frame==6 || frame==19 || frame==28)shot(dir,"151-cat-shot-"+frame,shooting,L,w,h,ss);
+        }
+        GameCore rocket=TestRainbowCat.fight(L);rocket.boss.hp=1;TestRainbowCat.challenge(rocket,L);
+        while(rocket.boss.cat.phase==RainbowCat.OPEN)rocket.boss.press(rocket.boss.cat.promptKey,rocket.rnd,L);
+        for(int frame=0;frame<RainbowCatRocket.DURATION*60;frame++) {
+            rocket.update(1f/60,L);
+            if(frame==0 || frame==8 || frame==20 || frame==42 || frame==105 || frame==170 || frame==195 || frame==215 || frame==252 || frame==275 || frame==310 || frame==350 || frame==390 || frame==450)
+                shot(dir,"151-cat-rocket-"+frame,rocket,L,w,h,ss);
+        }
+        GameCore arrival=TestRainbowCat.fight(L);arrival.boss.begin(Boss.RAINBOW_CAT,30,arrival.rnd,true);
+        for(int frame=0;frame<330;frame++) {
+            arrival.update(1f/60,L);
+            if(frame==10 || frame==65 || frame==115 || frame==170 || frame==195 || frame==250 || frame==329)
+                shot(dir,"151-cat-arrival-"+frame,arrival,L,w,h,ss);
+        }
+        GameCore vulnerable=TestRainbowCat.fight(L);TestRainbowCat.challenge(vulnerable,L);
+        for(int frame=0;frame<20;frame++)vulnerable.update(1f/60,L);
+        shot(dir,"151-paired-keys-struggle",vulnerable,L,w,h,ss);
+        vulnerable.tapKey(vulnerable.boss.cat.promptKey,L);
+        vulnerable.update(.045f,L);
+        shot(dir,"151-paired-keys-hit",vulnerable,L,w,h,ss);
+        vulnerable.update(.12f,L);
+        shot(dir,"151-paired-keys-recover",vulnerable,L,w,h,ss);
+        vulnerable.tapKey(vulnerable.boss.cat.promptKey,L);
+        vulnerable.update(.055f,L);
+        shot(dir,"151-paired-keys-overlap",vulnerable,L,w,h,ss);
+        GameCore doubled=TestRainbowCat.fight(L);doubled.boss.hp=2;TestRainbowCat.challenge(doubled,L);
+        while(doubled.boss.cat.phase==RainbowCat.OPEN)doubled.boss.press(doubled.boss.cat.promptKey,doubled.rnd,L);
+        for(int frame=0;frame<190;frame++) {
+            doubled.boss.update(1f/60,L,doubled.rnd);
+            if(frame==20 || frame==140 || frame==185)shot(dir,"151-double-rainbow-"+frame,doubled,L,w,h,ss);
+        }
+        for(final boolean left:new boolean[]{false,true}) {
+            GameCore sweep=TestRainbowCat.fight(L);TestRainbowCat.challenge(sweep,L);RainbowCat dancer=sweep.boss.cat;
+            java.util.Random direction=new java.util.Random(151) {public boolean nextBoolean(){return left;}};
+            while(dancer.phase==RainbowCat.OPEN)sweep.boss.press(dancer.promptKey,direction,L);
+            for(int frame=1;frame<=180;frame++) {
+                sweep.update(1f/60,L);
+                if(frame==40 || frame==95 || frame==125 || frame==155)
+                    shot(dir,"151-escape-sweep-"+(left?"right":"left")+"-"+frame,sweep,L,w,h,ss);
+            }
+        }
+        GameCore freed=TestRainbowCat.fight(L);TestRainbowCat.challenge(freed,L);
+        RainbowCat escaping=freed.boss.cat;
+        for(int key=0;key<RainbowCat.HITS_PER_BAND && escaping.phase==RainbowCat.OPEN;key++)freed.tapKey(escaping.promptKey,L);
+        for(int frame=1;frame<=66;frame++) {
+            freed.update(1f/60,L);
+            if(frame==5 || frame==12 || frame==28 || frame==55)
+                shot(dir,"151-net-escape-"+frame,freed,L,w,h,ss);
+        }
+        GameCore rays=TestRainbowCat.fight(L);RainbowCat ray=rays.boss.cat;
+        for(int frame=0;frame<180 && ray.taps<2;frame++) {
+            if(ray.canTap()) {ray.touch(rays,L,0,151,ray.x,ray.y);ray.touch(rays,L,1,151,ray.x,ray.y);}
+            rays.boss.update(1f/60,L,rays.rnd);
+        }
+        rays.boss.update(.18f,L,rays.rnd);
+        shot(dir,"151-second-tap-rays",rays,L,w,h,ss);
+        for(int capture:new int[]{0,1,4}) {
+            GameCore dance=TestRainbowCat.fight(L);RainbowCat dancer=dance.boss.cat;dance.boss.hp=dance.boss.hpMax-capture;
+            TestRainbowCat.readyToCircle(dance,L);
+            for(int frame=0;frame<75;frame++)dance.boss.update(1f/60,L,dance.rnd);
+            shot(dir,"151-shape-dance-"+capture,dance,L,w,h,ss);
+            TestRainbowCat.circle(dance,L,1);
+            for(int frame=0;frame<15;frame++)dance.boss.update(1f/60,L,dance.rnd);
+            shot(dir,"151-shape-burst-"+capture,dance,L,w,h,ss);
+        }
+        GameCore clear=TestRainbowCat.fight(L);
+        clear.boss.cat.launchLeft=0;clear.boss.update(.01f,L,clear.rnd);clear.boss.bt[0]=.4f;
+        clear.tapKey(clear.boss.bglyph[0],L);
+        Fx.updateParticles(clear,.08f);
+        shot(dir,"151-projectile-clear",clear,L,w,h,ss);
+        Fx.updateParticles(clear,.16f);
+        shot(dir,"151-projectile-clear-spread",clear,L,w,h,ss);
+        GameCore c=TestRainbowCat.fight(L);
+        for(int i=0;i<60;i++)c.boss.update(1f/60,L,c.rnd);
+        shot(dir,"151-chase",c,L,w,h,ss);
+        RainbowCat a=c.boss.cat;
+        a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);
+        c.boss.update(.17f,L,c.rnd);
+        shot(dir,"151-tap-hold",c,L,w,h,ss);
+        for(int i=0;i<40;i++)c.boss.update(1f/60,L,c.rnd);
+        shot(dir,"151-dash",c,L,w,h,ss);
+        TestRainbowCat.readyToCircle(c,L);
+        shot(dir,"151-circle",c,L,w,h,ss);
+        a.touch(c,L,0,151,a.x+a.circleRadius(),a.y);
+        for(int i=1;i<=40;i++) {
+            float angle=Softbody.TAU*i/40;
+            a.touch(c,L,2,151,a.x+(float)Math.cos(angle)*a.circleRadius(),a.y+(float)Math.sin(angle)*a.circleRadius());
+            if(a.phase==RainbowCat.CIRCLE)c.boss.update(.025f,L,c.rnd);
+            if(i==10)shot(dir,"151-net-windup-start",c,L,w,h,ss);
+            if(i==30)shot(dir,"151-net-windup-full",c,L,w,h,ss);
+        }
+        a.touch(c,L,1,151,a.x+a.circleRadius(),a.y);
+        c.boss.update(.08f,L,c.rnd);
+        shot(dir,"151-net-swing-start",c,L,w,h,ss);
+        c.boss.update(.08f,L,c.rnd);
+        shot(dir,"151-net-release",c,L,w,h,ss);
+        c.boss.update(.10f,L,c.rnd);
+        shot(dir,"151-net-swing-wrap",c,L,w,h,ss);
+        c.boss.update(.08f,L,c.rnd);
+        shot(dir,"151-net-catch",c,L,w,h,ss);
+        c.boss.update(RainbowCat.NET_TIME-.34f,L,c.rnd);
+        for(int i=0;i<16;i++)c.boss.update(1f/60,L,c.rnd);
+        shot(dir,"151-prompt",c,L,w,h,ss);
+        c.boss.update(.12f,L,c.rnd);
+        shot(dir,"151-net-struggle",c,L,w,h,ss);
+        c.boss.update(.4f,L,c.rnd);
+        shot(dir,"151-net-struggle-other",c,L,w,h,ss);
+        a.timer=.01f;c.boss.update(.02f,L,c.rnd);c.boss.update(.45f,L,c.rnd);
+        shot(dir,"151-flurry",c,L,w,h,ss);
+        GameCore starGame=TestRainbowCat.fight(L);RainbowCat starCat=starGame.boss.cat;
+        for(int capture=0;capture<4;capture++) {
+            TestRainbowCat.challenge(starGame,L);
+            for(int i=0;i<RainbowCat.HITS_PER_BAND && starCat.phase==RainbowCat.OPEN;i++)starGame.boss.press(starCat.promptKey,starGame.rnd,L);
+        }
+        TestRainbowCat.readyToCircle(starGame,L);
+        shot(dir,"151-star",starGame,L,w,h,ss);
+        starCat.touch(starGame,L,0,151,starCat.x,starCat.y-starCat.circleRadius());
+        for(int i=1;i<=48;i++) {
+            float along=starCat.gesture.length*i/80f;
+            starCat.touch(starGame,L,2,151,starCat.x+starCat.gesture.coordinate(along,0)*starCat.circleRadius(),
+                    starCat.y+starCat.gesture.coordinate(along,1)*starCat.circleRadius());
+            starGame.boss.update(.025f,L,starGame.rnd);
+        }
+        shot(dir,"151-star-progress",starGame,L,w,h,ss);
+        starCat.touch(starGame,L,2,151,starCat.x,L.playTop-1);
+        starGame.boss.update(.08f,L,starGame.rnd);
+        shot(dir,"151-trace-lost",starGame,L,w,h,ss);
+        GameCore shapes=TestRainbowCat.fight(L);RainbowCat shape=shapes.boss.cat;
+        String[] shapeNames={"circle","heart","diamond","eight","star"};
+        for(int capture=0;capture<5;capture++) {
+            TestRainbowCat.readyToCircle(shapes,L);
+            shot(dir,"151-shape-"+shapeNames[capture],shapes,L,w,h,ss);
+            TestRainbowCat.challenge(shapes,L);
+            for(int key=0;key<RainbowCat.HITS_PER_BAND && shape.phase==RainbowCat.OPEN;key++)shapes.boss.press(shape.promptKey,shapes.rnd,L);
+            if(capture==0 || capture==4) {
+                for(int frame=0;frame<24;frame++)shapes.boss.update(1f/60,L,shapes.rnd);
+                shot(dir,capture==0?"151-damage-flurry":"151-final-flurry",shapes,L,w,h,ss);
+            }
+        }
+        GameCore tap=TestRainbowCat.fight(L);RainbowCat tapped=tap.boss.cat;
+        tapped.touch(tap,L,0,151,tapped.x,tapped.y);tapped.touch(tap,L,1,151,tapped.x,tapped.y);
+        for(int band=0;band<6;band++) {
+            for(int frame=0;frame<6;frame++)tap.boss.update(1f/60,L,tap.rnd);
+            shot(dir,"151-tap-flash-"+band,tap,L,w,h,ss);
+        }
+        for(int frame=0;frame<10;frame++)tap.boss.update(1f/60,L,tap.rnd);
+        shot(dir,"151-tap-scared",tap,L,w,h,ss);
+        for(int frame=0;frame<38;frame++)tap.boss.update(1f/60,L,tap.rnd);
+        shot(dir,"151-tap-shake-off",tap,L,w,h,ss);
+        for(int frame=0;frame<30;frame++)tap.boss.update(1f/60,L,tap.rnd);
+        shot(dir,"151-tap-recovered",tap,L,w,h,ss);
+        GameCore sky=TestRainbowCat.fight(L);sky.devInfiniteLives=true;
+        shot(dir,"151-battle-sky-0",sky,L,w,h,ss);
+        for(int frame=0;frame<120;frame++)sky.update(1f/60,L);
+        shot(dir,"151-battle-sky-2s",sky,L,w,h,ss);
+        GameCore roam=TestRainbowCat.fight(L);
+        for(int side=0;side<4;side++) {
+            RainbowCat runner=roam.boss.cat;
+            for(int frame=0;frame<2400;frame++) {
+                roam.boss.update(1f/60,L,roam.rnd);
+                boolean edge=side==0?runner.x<runner.left+(runner.right-runner.left)*.1f
+                        :side==1?runner.x>runner.right-(runner.right-runner.left)*.1f
+                        :side==2?runner.y<runner.top+(runner.bottom-runner.top)*.1f
+                        :runner.y>runner.bottom-(runner.bottom-runner.top)*.1f;
+                if(edge)break;
+            }
+            shot(dir,"151-roam-edge-"+side,roam,L,w,h,ss);
+        }
+        GameCore help=TestRainbowCat.fight(L);
+        TestOnboarding.touch(help,L,0,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
+        TestOnboarding.touch(help,L,1,TutorialSpeech.helpX(L),TutorialSpeech.helpY(L));
+        for(int message=TutorialSpeech.CAT_RUSH;message<=TutorialSpeech.CAT_PROMPT;message++) {
+            TestOnboarding.awaitBubble(help,L);
+            shot(dir,"151-help-"+message,help,L,w,h,ss);
+            TestOnboarding.acknowledge(help,L);
+        }
+        c.boss.damage(c.boss.hp);
+        c.boss.update(.5f,L,c.rnd);
+        shot(dir,"151-defeat",c,L,w,h,ss);
+        GameCore field=TestFastEnemies.scene(L,26,151);field.clock=3;
+        GameCore.Enemy normal=Check.add(field,L,new int[]{0,1,4},L.h*.34f);normal.enterT=1;
+        GameCore.Enemy rush=TestFastEnemies.runner(field,L,L.h*.53f);rush.baseX=L.w*.25f;
+        GameCore.Enemy dive=Check.add(field,L,new int[]{2,3},L.h*.68f);dive.baseX=L.w*.65f;
+        dive.enterT=1;dive.swampKind=SwampEnemies.DIVE;dive.diving=true;
+        shot(dir,"151-enemies",field,L,w,h,ss);
+        field.skyClock=8;shot(dir,"151-bands-scrolling",field,L,w,h,ss);field.skyClock=0;
+        for(GameCore.Enemy e:field.enemies) {
+            field.destroyWord(e,field.enemyCentreX(e),e.y,L);e.destroyT=.15f;
+            for(int key=0;key<e.gone.length;key++)if(e.gone[key])e.goneT[key]=.15f*3.2f;
+        }
+        field.clock+=.15f;Fx.updateParticles(field,.15f);
+        shot(dir,"151-clear-bursts",field,L,w,h,ss);
+        GameCore title=new GameCore(TestTimeAttack.store(),151,true);
+        title.collected=Collect.MASK;title.landSuppressed=0;title.landChoice=Lands.RAINBOW;
+        title.landDiscovery=-1;title.clock=3;title.landSeen=LandPicker.stateMask();
+        shot(dir,"151-title",title,L,w,h,ss);
+        RasterPainter sheet=new RasterPainter(w,h,ss);sheet.clear(Draw.BG);
+        sheet.text("RAINBOW CAT",w*.5f,h*.07f,w*.06f,Draw.INK,Painter.CENTER,true);
+        for(int row=0;row<4;row++) {
+            float x=w*.5f,y=h*(.22f+row*.20f),r=w*.16f;
+            RainbowCatArt.cat(sheet,x,y,r,row*.52f,row%2==0?1:-1,null,null,row==2,1);
+        }
+        Png.write(new File(dir,"151-cat-sheet.png"),sheet.resolve(),w,h);
+    }
     private static void skinFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("200-"))return;
         for(int boss=0;boss<Boss.COUNT;boss++) {
@@ -1669,6 +1895,7 @@ final class Preview {
         slimeSprayFrames(dir,L,w,h,ss);
         slimeDeathFrames(dir,L,w,h,ss);
         slimeOpeningFrames(dir,L,w,h,ss);
+        rainbowFrames(dir,L,w,h,ss);
         skinFrames(dir,L,w,h,ss);
         clearSpreadFrames(dir,L,w,h,ss);
         clearIntensityFrames(dir,L,w,h,ss);
@@ -2835,7 +3062,7 @@ final class Preview {
         for (int k = 0; k < Boss.COUNT; k++) {
             if(k==Boss.ALLIGATOR) {
                 GameCore gator=TestAlligator.fight(L);gator.stageBanner=0;
-                TestAlligator.ready(gator,L);shot(dir,tag[k],gator,L,w,h,ss);continue;
+                TestAlligator.ready(gator,L);shot(dir,k<tag.length?tag[k]:"boss-"+WorldCatalog.BOSSES[k].analytics,gator,L,w,h,ss);continue;
             }
             GameCore c = toBoss(L, k, 510L + k, true);
             // Land a couple of hits so the health bar is part-spent and the body is dented, and so
@@ -2857,7 +3084,7 @@ final class Preview {
             step(c, L, 0.10f);
             System.out.printf("boss %s: hp %.0f/%.0f, open=%s, elements=%d%n", c.boss.name(c.preferences.skin),
                     c.boss.hp, c.boss.hpMax, c.boss.open(), liveElems(c.boss));
-            shot(dir, tag[k], c, L, w, h, ss);
+            shot(dir, k<tag.length?tag[k]:"boss-"+WorldCatalog.BOSSES[k].analytics, c, L, w, h, ss);
 
             // The slime gets three more: a split still sitting inside it, the skin stretched out
             // after a drag, and the rebound the moment the glob comes free.
@@ -3130,6 +3357,8 @@ final class Preview {
         System.out.printf("stage jump: on stage %d, boss %s%n", cj.stage,
                 Skins.bossName(Skins.DEFAULT,cj.boss.kind));
         shot(dir, "67-settings-stage-jump", cj, L, w, h, ss);
+        cj.settingsPage=1;cj.settingsTab=SettingsUi.GENERAL;cj.devInfiniteLives=true;
+        shot(dir,"151-settings-infinite-lives",cj,L,w,h,ss);
         GameCore settings=new GameCore(new Mem(),819L);
         PlayerSettings.open(settings);
         settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME*.5f);

@@ -306,6 +306,9 @@ final class GameCore {
         void gatorParry();
         void gatorPrompt(int variant);
         void gatorTaunt(int variant);
+        default void catMeow(int variant) {}
+        /** Short soft laser on every successful alternating Rainbow Cat prompt. */
+        default void catLaser() {}
         void gatorSplash(boolean entry);
         default void octoWave() {}
         default void octoDamage() {}
@@ -380,6 +383,8 @@ final class GameCore {
         void narrate(int entry);
         /** Short tutorial guidance; respects the same mute and lifecycle rules as stories. */
         default void explain(String text) {}
+        /** Quiet companion banter, without lowering music or effects. */
+        default void companionExclaim(String text) {}
         /** One short name call for a run greeting or collectible reveal. */
         default void announceSquishy(int entry) {}
         /** A whole matchup, with a dramatic pause and an emphatic opponent name. */
@@ -528,6 +533,7 @@ final class GameCore {
         float x, y, vx, vy, life, max, size;
         int color;
         SlimeSpray.Drop slime;
+        boolean rainbowStar;
     }
 
     static final class PushImpact {
@@ -599,6 +605,8 @@ final class GameCore {
     final UpdatePrompt updatePrompt=new UpdatePrompt();
     final ReleaseMascot releaseMascot=new ReleaseMascot();
     int settingsTab;
+    /** Session-only developer aid; damage feedback still plays normally. */
+    boolean devInfiniteLives;
     /** Newly collected stars in this update, including the winning pickup. */
     int starPickups;
     int starBlastHaptic; // Per-frame completion storm: 1 light, 2 heavy.
@@ -1842,7 +1850,7 @@ final class GameCore {
 
     int maxEnemies() { return survival.active?survival.crowd(this):Pacing.maxEnemies(pacingStage()); }
 
-    int maxPresses() { return kidsRun ? 6 : Pacing.MAX_PRESSES; }
+    int maxPresses() { return RainbowLand.active(this) ? 5 : kidsRun ? 6 : Pacing.MAX_PRESSES; }
 
     int maxWordLen() { return Math.min(maxPresses(), Pacing.maxWordLen(stage)); }
 
@@ -1949,6 +1957,7 @@ final class GameCore {
     }
 
     private void resetStarRun() {
+        if(sound!=null)sound.rocket(0);
         stars.resetRun();
         starNext = starBonus = false;
     }
@@ -2867,9 +2876,9 @@ final class GameCore {
             returnFade = Math.max(0f, returnFade - dt);
             if (state == OVER && returnFade <= RETURN_FADE * 0.5f) toTitle();
         }
-        // Accumulated, not derived from clock, so the frenzy's faster drift does not make the
-        // sky jump when it starts or stops.
-        skyClock += dt * (powerActive() ? Power.SKY_RATE : 1f);
+        // Accumulate speed changes so the scenery never jumps at battle or frenzy boundaries.
+        float skyRate=state==PLAY && boss.active() && boss.kind==Boss.RAINBOW_CAT?RainbowLand.BATTLE_SKY_RATE:1f;
+        skyClock += dt * (powerActive() ? Power.SKY_RATE : skyRate);
         landBlend = Math.min(1f, landBlend + dt / Lands.FADE_TIME);
         LandPicker.updateDiscovery(this, dt);
         LandPicker.updateTravel(this, dt);
@@ -3160,8 +3169,13 @@ final class GameCore {
             boolean priorSlimeOpening=boss.slimeOpening();
             float beforeDeath = boss.beaten ? boss.leaveProgress() * Boss.LEAVE : -1f;
             boolean beforeSupernova = boss.kind == Boss.SPLITTER && boss.beaten && !DivideDeath.bursting(boss);
+            if(boss.kind==Boss.RAINBOW_CAT)boss.cat.kids=kidsRun;
             if(boss.kind==Boss.ALLIGATOR)boss.alligator.target(this,L);
             int bossHits = boss.update(dt, L, rnd);
+            if(boss.kind==Boss.RAINBOW_CAT) {
+                RainbowCatArrival.feedback(this,beforeIntro);
+                boss.cat.rocket.feedback(this);
+            }
             BossPlay.slimeVulnerableSound(this,dt);
             if(boss.kind==Boss.ALLIGATOR)boss.alligator.guard.feedback(this);
             if(boss.kind==Boss.ALLIGATOR)shake=Math.max(shake,Math.max(boss.alligator.takeShake(),
@@ -3182,6 +3196,25 @@ final class GameCore {
                 flash = Math.max(flash, 1f);
                 flashColor = 0xFFFF355F;
             }
+            if(boss.kind==Boss.RAINBOW_CAT)
+                bossDeathHaptic=Math.max(bossDeathHaptic,boss.cat.takeTraceHaptic());
+            if(boss.kind==Boss.RAINBOW_CAT && boss.cat.cue>0) {
+                if(boss.cat.cue==3) {
+                    shake=Math.max(shake,.65f);flash=Math.max(flash,.22f);
+                    flashColor=companion.who>=0?Collect.ACCENT[companion.who]:0xFFA7F7DD;
+                    if(sound!=null)sound.squish(Kawaii.CAT,3);
+                } else if(sound!=null) {if(boss.cat.cue==1)sound.uiBloop();else sound.ninjaSwish(2);}
+                if(boss.cat.cue==2 && boss.cat.escapeLeft>0) {
+                    shake=Math.max(shake,1.05f);flash=Math.max(flash,.42f);flashColor=0xFFFFD5FA;
+                    bossDeathHaptic=Math.max(bossDeathHaptic,2);
+                }
+                if(boss.cat.cue==1)boss.cat.meow(this,CatMeowRecording.STRUGGLE,false);
+                else if(boss.cat.cue==2) {
+                    if(boss.cat.doubleFlurry) {if(sound!=null)sound.companionExclaim(Narration.DOUBLE_RAINBOW);}
+                    else boss.cat.shortMeow(this);
+                }
+                boss.cat.cue=0;
+            }
             int gatorAttackCues=boss.kind==Boss.ALLIGATOR?boss.alligator.takeAttackCues():0;
             int gatorGrowls=boss.kind==Boss.ALLIGATOR?boss.alligator.takeGrowls():0;
             if (sound != null) {
@@ -3193,6 +3226,7 @@ final class GameCore {
                 sound.bossCharge(brew);
                 if (boss.launched) {
                     if(boss.kind==Boss.SLIME)BossPlay.slimeSquish(this,3,3);
+                    else if(boss.kind==Boss.RAINBOW_CAT)boss.cat.shortMeow(this);
                     else if(boss.kind!=Boss.MUSHROOM)sound.bossLaugh();
                 }
                 if (boss.mushroomSporeCue) sound.mushroomSpore();
@@ -3655,7 +3689,7 @@ final class GameCore {
         if(boss.kind==Boss.ALLIGATOR && boss.fighting())boss.alligator.playerDamaged();
         timeAttack.damaged();
         companion.react(RunCompanion.DAMAGE,1f);
-        lives--;
+        if(!(BuildFlags.DEVELOPER && devInfiniteLives))lives--;
         hurtThisStage++;
         combo = 0;
         shake = boss.kind==Boss.ALLIGATOR && boss.fighting()?1.2f:1f;

@@ -141,6 +141,8 @@ abstract class Check {
         public void volumes(float music,float effects) { musicVolume=music;effectsVolume=effects; }
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeSquishes, slimeHits, slimeSplits, slimeDamages, bossSplits,
                 bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoDamages, octoWaves, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideSupernovas, divideBoings, swishes, lastSwish, ninjaChimes, zaps;
+        int catMeows,lastCatMeow=-1;
+        public void catMeow(int variant) {catMeows++;lastCatMeow=variant;}
         int lastSlimeSquish=-1;
         final int[] slimeSquishCounts=new int[6];
         float bossCharge, maxBossCharge;
@@ -166,8 +168,11 @@ abstract class Check {
         int bossMusicCalls,versusMusicCalls;
         public void versusMusic() {versusMusicCalls++;bossMusic=false;}
         int narrations, hushes;
-        int explanations;
+        int explanations,companionExclaims;
+        public void companionExclaim(String text) {companionExclaims++;explanation=text;}
         String explanation;
+        int catLasers;
+        public void catLaser() {catLasers++;}
         public void explain(String text) { explanations++;explanation=text; }
         int versusCalls,versusWho=-1,versusBoss=-1,versusOffset=-1;
         public int versusSpeechOffset() {return versusOffset;}
@@ -268,6 +273,17 @@ abstract class Check {
         public void hush() { hushes++; }
     }
 
+    static void rainbowCircle(GameCore c,Layout L,int direction) {
+        RainbowCat a=c.boss.cat;float radius=a.circleRadius();
+        float sx=a.circleX()+a.gesture.coordinate(0,0)*radius,sy=a.circleY()+a.gesture.coordinate(0,1)*radius;
+        a.touch(c,L,0,151,sx,sy);
+        for(int i=1;i<=80;i++) {
+            float along=direction*a.gesture.length*i/80f;
+            a.touch(c,L,2,151,a.circleX()+a.gesture.coordinate(along,0)*radius,a.circleY()+a.gesture.coordinate(along,1)*radius);
+        }
+        a.touch(c,L,1,151,sx,sy);
+    }
+
     /**
      * One frame of competent boss play, for the drivers that are not measuring bosses but now have
      * to get past them.
@@ -283,6 +299,15 @@ abstract class Check {
     static boolean bossPlay(GameCore c, Layout L) {
         if (!c.bossFighting()) return false;
         Boss b = c.boss;
+        if(b.kind==Boss.RAINBOW_CAT) {
+            RainbowCat a=b.cat;
+            int bolt=-1;for(int i=0;i<Boss.MAX_BOLTS;i++)if(b.blive[i]){bolt=i;break;}
+            if(bolt>=0)c.tapKey(b.bglyph[bolt],L);
+            else if(a.phase==RainbowCat.OPEN)c.tapKey(a.promptKey,L);
+            else if(a.phase==RainbowCat.CIRCLE)rainbowCircle(c,L,1);
+            else if(a.phase==RainbowCat.CHASE) {a.touch(c,L,0,151,a.x,a.y);a.touch(c,L,1,151,a.x,a.y);}
+            return true;
+        }
         if(b.kind==Boss.ALLIGATOR && b.boltCount()==0 && (!b.open()
                 || (b.alligator.comboActive && !b.alligator.longWindow && (b.alligator.windowHit
                     || b.alligator.attack*b.alligator.tempo>=Alligator.WARN)))) {

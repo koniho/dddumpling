@@ -16,6 +16,7 @@ final class CanvasPainter implements Painter, ArtStamp {
     private final Typeface regular;
     private final Typeface heavy;
 
+    private float[] segmentBuffer=new float[128];
     private Canvas canvas;
     private CanvasArtStamps artStamps;
     boolean cacheArt=true;
@@ -118,6 +119,18 @@ final class CanvasPainter implements Painter, ArtStamp {
     @Override public void fillEllipse(float cx, float cy, float rx, float ry, int color) {
         fill.setColor(color);
         canvas.drawOval(cx - rx, cy - ry, cx + rx, cy + ry, fill);
+    }
+
+    @Override public void fastPolyline(float[] pts,int color,float width) {
+        if(pts==null || pts.length<4)return;
+        int count=(pts.length/2-1)*4;
+        if(segmentBuffer.length<count)segmentBuffer=new float[count];
+        for(int i=0,j=0;i<pts.length-2;i+=2,j+=4) {
+            segmentBuffer[j]=pts[i];segmentBuffer[j+1]=pts[i+1];
+            segmentBuffer[j+2]=pts[i+2];segmentBuffer[j+3]=pts[i+3];
+        }
+        stroke.setColor(color);stroke.setStrokeWidth(width);
+        canvas.drawLines(segmentBuffer,0,count,stroke);
     }
 
     @Override public void polyline(float[] pts, int color, float width) {

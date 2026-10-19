@@ -4,7 +4,8 @@ package com.dddumpling.game;
 final class Onboarding extends Draw {
     static final int CORE=1, STEAMER=2, STARS=4, CART=8, MINE=16, SLIME=32,
             SKIPPED=64, WORD_HINT=128, WRONG_HINT=256, STACK_HINT=512;
-    int saved, savedPowers, lesson, step, pointer=-1, speech, introduced, hintKind, speechPointer=-1;
+    int saved, savedPowers, lesson, step, pointer=-1, speech, hintKind, speechPointer=-1;
+    long introduced;
     boolean bossHelp, bossGuide, powerGuide, starGuide, titleGuide, rescueGuide, helpArmed;
     int helpPointer=-1, bossHelpUsed, speechPage;
     GameCore practice, teacher, narrator;
@@ -16,7 +17,7 @@ final class Onboarding extends Draw {
 
     // Preserve the original ten lesson bits; successful actions have independent durable bits.
     private static boolean extraMessage(int message) {
-        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.ALLIGATOR;
+        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.CAT_PROMPT;
     }
     private static int extraBit(int message) {
         // Bit 8 is the persisted first-companion introduction pending flag.
@@ -75,6 +76,7 @@ final class Onboarding extends Draw {
         return !c.powerActive() || speech!=powerSpeech(c.mode);
     }
     private static int[] bossSteps(int kind) {
+        if(kind==Boss.RAINBOW_CAT)return new int[]{TutorialSpeech.CAT_RUSH,TutorialSpeech.CAT_TAPS,TutorialSpeech.CAT_PROMPT};
         if(kind==Boss.ALLIGATOR)return new int[]{TutorialSpeech.ALLIGATOR};
         if(kind==Boss.SLIME)return new int[]{TutorialSpeech.CLOSED,TutorialSpeech.CHAIN};
         if(kind==Boss.SPLITTER)return new int[]{TutorialSpeech.PINCH};
@@ -85,32 +87,32 @@ final class Onboarding extends Draw {
         if(c.state!=GameCore.PLAY || c.timeAttack.versus.active(c) || !c.boss.active() || c.boss.beaten || c.boss.hp<c.boss.hpMax
                 || (bossHelpUsed&(1<<c.boss.kind))!=0
                 || practice!=null || briefing || hintKind!=0 || bossHelp || bossGuide || powerGuide
-                || companionTravel>0 || !eligible(SKIPPED))return false;
+                || companionTravel>0 || !eligible(SKIPPED) && c.boss.kind!=Boss.RAINBOW_CAT)return false;
         return true;
     }
     private boolean nextBossHelp(GameCore c) {
-        for(int message:bossSteps(c.boss.kind))if((introduced&(1<<message))==0) {
-            speech=message;introduced|=1<<message;briefing=true;age=0;
+        for(int message:bossSteps(c.boss.kind))if((introduced&(1L<<message))==0) {
+            speech=message;introduced|=1L<<message;briefing=true;age=0;
             Pause.release(c);narrate(c);return true;
         }
         return false;
     }
     boolean moreBossHelp(GameCore c) {
         if(!bossHelp)return false;
-        for(int message:bossSteps(c.boss.kind))if((introduced&(1<<message))==0)return true;
+        for(int message:bossSteps(c.boss.kind))if((introduced&(1L<<message))==0)return true;
         return false;
     }
     private void slimeGlobHint(GameCore c,float elapsed) {
         int message=TutorialSpeech.GLOB;
         if(c.state!=GameCore.PLAY || !c.boss.fighting() || c.boss.kind!=Boss.SLIME
-                || !c.boss.hasGlob() || learned(message) || (introduced&(1<<message))!=0) {
+                || !c.boss.hasGlob() || learned(message) || (introduced&(1L<<message))!=0) {
             slimeHintAge=0;return;
         }
         if(briefing || practice!=null || powerGuide || rescueGuide)return;
         slimeHintAge+=elapsed;
         if(slimeHintAge<SLIME_HINT_DELAY)return;
         // Teach the drag on the real vulnerable patch, not in the upfront help pages.
-        introduced|=1<<message;speech=message;bossGuide=briefing=true;hintKind=0;age=0;
+        introduced|=1L<<message;speech=message;bossGuide=briefing=true;hintKind=0;age=0;
         Pause.release(c);narrate(c);
     }
     private void narrate(GameCore c) {
@@ -186,7 +188,7 @@ final class Onboarding extends Draw {
     void clear() {
         if(narrator!=null && narrator.sound!=null)narrator.sound.hush();
         narrator=null;
-        cancelTouch();practice=null;word=null;lesson=step=speech=speechPage=introduced=hintKind=0;
+        cancelTouch();practice=null;word=null;lesson=step=speech=speechPage=hintKind=0;introduced=0;
         success=sceneWait=bubbleAge=slimeHintAge=0;briefing=bossHelp=bossGuide=powerGuide=starGuide=titleGuide=rescueGuide=false;
     }
     void cancelTouch() {
@@ -410,7 +412,7 @@ final class Onboarding extends Draw {
         speech=mechanic();
         // The spinner explains itself; pause only for the two actions the player performs.
         if(lesson==STEAMER && speech==TutorialSpeech.WAIT)return;
-        int bit=1<<speech;
+        long bit=1L<<speech;
         if((introduced&bit)!=0 || learned(speech))return;
         introduced|=bit;briefing=true;age=0;
         Pause.release(c);narrate(c);

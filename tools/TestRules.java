@@ -158,7 +158,7 @@ final class TestRules extends Check {
         c.stage = 6;
         check("later stages use longer words", c.maxWordLen() > w1);
         check("word length is capped at 5", c.maxWordLen() <= 5);
-        c.stage = 40;
+        c.stage = Boss.lastStage()+15;
         check("pacing floors out", c.travelSeconds() >= 4.2f && c.spawnInterval() >= .75f);
         check("enemy count is capped at a readable five", c.maxEnemies() <= 5);
         c.stage = 10;
@@ -197,9 +197,9 @@ final class TestRules extends Check {
         c.stage = 16;
         check("stage 16 adds lesson relief to the late release cap",
                 Math.abs(c.spawnInterval() - 2.75f * 1.15f) < 0.001f);
-        c.stage = 40;
+        c.stage = Boss.lastStage()+15;
         check("post-boss release interval reaches its floor", Math.abs(c.spawnInterval() - .75f) < 0.001f);
-        check("endless ramp starts after the final authored boss",Boss.kindFor(Boss.lastStage())==Boss.ALLIGATOR
+        check("endless ramp starts after the final authored boss",Boss.kindFor(Boss.lastStage())==Boss.RAINBOW_CAT
                 && !Boss.isBossStage(Boss.lastStage()+1) && Pacing.stageQuota(Boss.lastStage())==8);
         for(int extra=1;extra<=30;extra++) {
             int stage=Boss.lastStage()+extra;

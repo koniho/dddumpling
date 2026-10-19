@@ -46,7 +46,15 @@ fi
 # compile while the APK builds fine.
 python3 tools/release-notes.py check >/dev/null
 
-PURE="src/com/dddumpling/game/ArtStamp.java
+PURE="src/com/dddumpling/game/TraceGesture.java
+src/com/dddumpling/game/TimeAttackRecords.java
+src/com/dddumpling/game/WorldCatalog.java
+src/com/dddumpling/game/RainbowCat.java
+src/com/dddumpling/game/RainbowCatArt.java
+src/com/dddumpling/game/RainbowCatArrival.java
+src/com/dddumpling/game/RainbowCatRocket.java
+src/com/dddumpling/game/RainbowLand.java
+src/com/dddumpling/game/ArtStamp.java
 src/com/dddumpling/game/SlimeSpray.java
 src/com/dddumpling/game/SlimeDeath.java
 src/com/dddumpling/game/FastEnemies.java
@@ -87,6 +95,8 @@ src/com/dddumpling/game/SlimeSquishRecording.java
 src/com/dddumpling/game/GatorParryRecording.java
 src/com/dddumpling/game/GatorCueRecording.java
 src/com/dddumpling/game/GatorTauntRecording.java
+src/com/dddumpling/game/CatMeowRecording.java
+src/com/dddumpling/game/CatDefeatRecording.java
 src/com/dddumpling/game/DivideDeath.java
 src/com/dddumpling/game/SettingsArt.java
 src/com/dddumpling/game/PlayerSettings.java

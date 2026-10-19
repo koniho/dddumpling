@@ -281,11 +281,15 @@ final class RunCompanion extends Draw {
         cy-=r*.12f*Math.abs(touchRock);
         if(a.reaction==DAMAGE) cx+=r*.12f*(float)Math.sin(a.age*55f)*beat;
         p.fillEllipse(x,y+r*.85f,r*.7f,r*.13f,0x55302045);
-        if(!c.onboarding.companionAway(c) && !c.boss.alligator.guard.carries(c)) {
+        if(!c.onboarding.companionAway(c) && !c.boss.alligator.guard.carries(c) && !c.boss.cat.carries(c)) {
             Painter sprite=new Squash(p,cx,cy,a.squash());
             Trinket.drawReacting(sprite,a.who,cx,cy,r,a.clock,1f,a.displayMood(c),
                     .10f*(float)Math.sin(a.clock*.9f)+.18f*touchRock,c.ninja());
             drawProps(sprite,c,L,cx,cy,r);
+            if(c.state==GameCore.PLAY && c.boss.kind==Boss.RAINBOW_CAT && (c.boss.fighting() || (c.boss.cat.doubleFlurry && c.boss.cat.escapeSequence))
+                    && !c.timeAttack.versus.active(c))
+                TutorialSpeech.companionFeedback(p,L,cx,cy,r,c.boss.cat.companionHint(),
+                        .5f,Collect.ACCENT[a.who]);
             if(c.state==GameCore.PLAY && c.boss.kind==Boss.OCTOPUS && c.boss.fighting()
                     && c.boss.octoTaunt>0)
                 TutorialSpeech.companionFeedback(p,L,cx,cy,r,c.boss.octoFeedbackText(),

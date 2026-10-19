@@ -19,3 +19,7 @@ entry plays at 70% speed.
 Super Slime squishes: user-supplied Squish .m4a, provided for use in DDDUMPLING.
 Six impact-trimmed excerpts, mono conversion, seven-semitone pitch lift, edge fades,
 4 kHz low-pass, resampling, shared gain and a synthesized cartoon bubble layer.
+
+Rainbow Cat meows: user-performed Oct 18 at 14_19.m4a, provided for DDDUMPLING.
+24 excerpts excluding spoken annotations; mono conversion, edge fades and resampling.
+Original pitch and relative levels preserved.

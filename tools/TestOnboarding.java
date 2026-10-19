@@ -913,7 +913,7 @@ final class TestOnboarding extends Check {
                 check("opening help pauses boss arrival "+kind,c.onboarding.briefing && c.boss.intro==intro);
                 int guard=0;while(c.onboarding.briefing && guard++<5)acknowledge(c,L);
                 check("requested help repeats every learned introductory page "+kind,
-                        ear.explanations==(kind==Boss.SLIME?TutorialSpeech.pageCount(TutorialSpeech.CLOSED)+TutorialSpeech.pageCount(TutorialSpeech.CHAIN):
+                        ear.explanations==(kind==Boss.RAINBOW_CAT?TutorialSpeech.pageCount(TutorialSpeech.CAT_RUSH)+TutorialSpeech.pageCount(TutorialSpeech.CAT_TAPS)+TutorialSpeech.pageCount(TutorialSpeech.CAT_PROMPT):kind==Boss.SLIME?TutorialSpeech.pageCount(TutorialSpeech.CLOSED)+TutorialSpeech.pageCount(TutorialSpeech.CHAIN):
                                 kind==Boss.OCTOPUS?TutorialSpeech.pageCount(TutorialSpeech.DEFEND)+TutorialSpeech.pageCount(TutorialSpeech.TEAR):
                                 TutorialSpeech.pageCount(kind==Boss.SPLITTER?TutorialSpeech.PINCH:
                                         kind==Boss.ALLIGATOR?TutorialSpeech.ALLIGATOR:TutorialSpeech.SHAKE)));
@@ -932,7 +932,7 @@ final class TestOnboarding extends Check {
             loaded.boss.begin(kind,loaded.stage,loaded.rnd);
             check("saved learning does not suppress new launch boss help "+kind+"/"+used,loaded.onboarding.offersBossHelp(loaded));
             loaded.onboarding.skip(loaded);
-            check("Skip All still suppresses optional boss help "+kind+"/"+used,!loaded.onboarding.offersBossHelp(loaded));
+            check("Rainbow Cat help stays discoverable after Skip All "+kind+"/"+used,loaded.onboarding.offersBossHelp(loaded)==(kind==Boss.RAINBOW_CAT));
         }
     }
     private static void bossHelpPulse(Layout L) {

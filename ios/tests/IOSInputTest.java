@@ -32,6 +32,67 @@ public final class IOSInputTest extends Check {
         game.touch(one(IOSTouch.ACTION_UP, 42, x, y));
     }
 
+    private static void rainbowCatGestures() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.onboarding.saved=Onboarding.SKIPPED;c.startGame();c.enemies.clear();
+        // Exercise all capture gestures without requiring the router test to defend damage flurries.
+        c.devInfiniteLives=true;
+        c.stage=30;c.stageBanner=0;c.boss.begin(Boss.RAINBOW_CAT,30,c.rnd,c.playRosterFull());
+        c.boss.intro=0;game.update(DT);RainbowCat a=c.boss.cat;
+        float hp=c.boss.hp;
+        game.touch(one(0,151,a.x,a.y));
+        check("native cat tap starts a rainbow dash",a.taps==1 && a.phase==RainbowCat.DASH);
+        game.touch(one(2,151,a.x,a.y));game.touch(one(1,151,a.x,a.y));
+        check("native move and lift do not double tap",a.taps==1 && a.pointer==-1);
+        for(int hit=1;hit<2;hit++) {
+            for(int i=0;i<90 && !a.canTap();i++)game.update(DT);
+            tap(game,a.x,a.y);
+        }
+        for(int i=0;i<90 && a.phase!=RainbowCat.CIRCLE;i++)game.update(DT);
+        check("two native taps wait for circle",a.phase==RainbowCat.CIRCLE && c.boss.hp==hp);
+        game.touch(one(0,151,a.circleX()+a.circleRadius(),a.circleY()));
+        for(int i=1;i<=40;i++) {
+            float angle=Softbody.TAU*i/40f;
+            game.touch(one(2,151,a.circleX()+(float)Math.cos(angle)*a.circleRadius(),a.circleY()+(float)Math.sin(angle)*a.circleRadius()));
+        }
+        game.touch(one(1,151,a.circleX()+a.circleRadius(),a.circleY()));
+        check("native circle triggers net",a.phase==RainbowCat.CATCH);
+        for(int i=0;i<50;i++)game.update(DT);
+        check("native net catch opens prompt without damage",a.phase==RainbowCat.OPEN && c.boss.hp==hp);
+        // Incoming stars are tested separately; isolate the alternating deck input here.
+        c.boss.clearBolts();
+        int g=a.promptKey;tap(game,c.keyX(l,g),c.keyY(l,g));
+        check("native key deck alternates and damages the captured cat",a.windowHits==1 && a.promptKey!=g && c.boss.hp<hp);
+        game.touch(one(0,152,l.playLeft,a.y));game.touch(one(3,152,l.playLeft,a.y));
+        check("native cancellation releases cat touch",a.pointer==-1);
+        for(int i=0;i<RainbowCat.HITS_PER_BAND && a.phase==RainbowCat.OPEN;i++) {
+            g=a.promptKey;tap(game,c.keyX(l,g),c.keyY(l,g));
+        }
+        for(int i=0;i<600 && a.phase!=RainbowCat.CIRCLE;i++) {
+            game.update(DT);if(a.canTap())tap(game,a.x,a.y);
+        }
+        for(int capture=1;capture<4;capture++) {
+            float radius=a.circleRadius();
+            game.touch(one(0,151,a.x+a.gesture.coordinate(0,0)*radius,a.y+a.gesture.coordinate(0,1)*radius));
+            for(int step=1;step<=80;step++) {
+                float at=a.gesture.length*step/80;
+                game.touch(one(2,151,a.x+a.gesture.coordinate(at,0)*radius,a.y+a.gesture.coordinate(at,1)*radius));
+            }
+            game.touch(one(1,151,a.x,a.y));
+            for(int frame=0;frame<50;frame++)game.update(DT);
+            c.boss.clearBolts();
+            for(int key=0;key<RainbowCat.HITS_PER_BAND && a.phase==RainbowCat.OPEN;key++) {g=a.promptKey;tap(game,c.keyX(l,g),c.keyY(l,g));}
+            for(int frame=0;frame<600 && a.phase!=RainbowCat.CIRCLE;frame++) {game.update(DT);if(a.canTap())tap(game,a.x,a.y);}
+        }
+        check("native final capture shows star",a.starShape() && a.phase==RainbowCat.CIRCLE);
+        float[] star=TraceGesture.star();float radius=a.circleRadius();
+        game.touch(one(0,151,a.x+star[0]*radius,a.y+star[1]*radius));
+        for(int i=1;i<=5;i++)game.touch(one(2,151,a.x+star[i*2]*radius,a.y+star[i*2+1]*radius));
+        game.touch(one(1,151,a.x+star[0]*radius,a.y+star[1]*radius));
+        check("native five crossing strokes catch cat",a.phase==RainbowCat.CATCH);
+
+    }
+
     private static void alligatorSwipes() {
         IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
         c.onboarding.saved=Onboarding.SKIPPED;c.startGame();c.enemies.clear();
@@ -1032,6 +1093,7 @@ public final class IOSInputTest extends Check {
     }
 
     public static void main(String[] args) {
+        rainbowCatGestures();
         alligatorSwipes();
         keyboardInput();
         bossSummaryScroll();

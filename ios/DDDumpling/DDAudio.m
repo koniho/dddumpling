@@ -7,6 +7,7 @@
 
 #import "com/dddumpling/game/Sfx.h"
 #import "com/dddumpling/game/Boss.h"
+#import "com/dddumpling/game/Glyph.h"
 #import "com/dddumpling/game/Music.h"
 #import "com/dddumpling/game/VersusMusic.h"
 #import "com/dddumpling/game/CaveSong.h"
@@ -111,7 +112,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)warmBuffers {
   dispatch_async(_renderQueue, ^{
     @autoreleasepool {
-      for (jint i = 0; i < DDSfx_COUNT; ++i) {
+      for (jint i = 0; i < [DDSfx count]; ++i) {
         [self bufferForEffect:i];
       }
       [DDSfx rocket]; [DDSfx bubble];
@@ -352,7 +353,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 // GameCore.Sound -----------------------------------------------------------
 
 - (void)squishWithInt:(jint)glyph withInt:(jint)depth {
-  [self playEffect:DDSfx_SQUISH_0 + MAX(0, MIN(5, glyph))
+  [self playEffect:[DDSfx squishIdWithInt:MAX(0, MIN([DDGlyph count]-1, glyph))]
                rate:powf(.92f, MAX(0, depth - 1)) gain:1.f];
 }
 - (void)clearWord { [self playEffect:DDSfx_CLEAR rate:1 gain:1]; }
@@ -394,6 +395,8 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)boltDeath { [self playEffect:DDSfx_BOLT_DEATH rate:1 gain:.82f]; }
 - (void)shieldBounce { [self playEffect:DDSfx_SHIELD_BOUNCE rate:1 gain:.72f]; }
 - (void)gatorParry { [self playEffect:DDSfx_GATOR_PARRY rate:1 gain:1]; }
+- (void)catLaser { [self playEffect:DDSfx_CAT_LASER rate:1 gain:DDSfx_CAT_LASER_GAIN]; }
+- (void)catMeowWithInt:(jint)variant { [self playEffect:[DDSfx catMeowIdWithInt:variant] rate:1 gain:DDSfx_CAT_MEOW_GAIN]; }
 - (void)gatorTauntWithInt:(jint)variant { [self playEffect:[DDSfx gatorTauntIdWithInt:variant] rate:1 gain:DDSfx_GATOR_TAUNT_GAIN]; }
 - (void)gatorPromptWithInt:(jint)variant { [self playEffect:[DDSfx gatorPromptIdWithInt:variant] rate:1 gain:DDSfx_GATOR_PROMPT_GAIN]; }
 - (void)gatorSplashWithBoolean:(jboolean)entry {
@@ -419,7 +422,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)rosterJoin { [self playEffect:DDSfx_ROSTER_JOIN rate:1 gain:1]; }
 - (void)gameOver { [self playEffect:DDSfx_OVER rate:1 gain:1]; }
 - (void)survivalGameOver { [self playEffect:DDSfx_SURVIVAL_OVER rate:1 gain:1]; }
-- (void)bossTauntWithInt:(jint)kind { if (kind >= 0 && kind < DDBoss_COUNT) [self playEffect:DDSfx_BOSS_TAUNT_0 + kind rate:1 gain:.78f]; }
+- (void)bossTauntWithInt:(jint)kind { if (kind >= 0 && kind < [DDBoss count]) [self playEffect:[DDSfx bossTauntIdWithInt:kind] rate:1 gain:.78f]; }
 - (void)gameStart { [self playEffect:DDSfx_START rate:1 gain:.72f]; }
 - (void)stageClear { [self playEffect:DDSfx_STAGE_CLEAR rate:1 gain:1]; }
 - (void)powerClear { [self playEffect:DDSfx_POWER_CLEAR rate:1 gain:1]; }
@@ -582,16 +585,24 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
   [self speakText:text pitch:DDNarration_PITCH rate:.9f];
 }
 
+- (void)companionExclaimWithNSString:(NSString *)text {
+  [self speakText:text pitch:DDNarration_PITCH rate:.9f gain:DDNarration_COMPANION_GAIN duckMusic:NO];
+}
+
 - (void)speakText:(NSString *)text pitch:(float)pitch rate:(float)rate {
+  [self speakText:text pitch:pitch rate:rate gain:1 duckMusic:YES];
+}
+
+- (void)speakText:(NSString *)text pitch:(float)pitch rate:(float)rate gain:(float)gain duckMusic:(BOOL)duckMusic {
   if (!_active || _interrupted || !_playbackAllowed || _effectsVolume <= 0 || text.length == 0) return;
   @try {
     [self hush];
     AVSpeechUtterance *utterance = [AVSpeechUtterance speechUtteranceWithString:text];
     utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-US"];
-    utterance.volume = _effectsVolume;
+    utterance.volume = _effectsVolume * gain;
     utterance.pitchMultiplier = pitch;
     utterance.rate = AVSpeechUtteranceDefaultSpeechRate * rate;
-    _narrating = YES; [self applyMusicMix];
+    _narrating = duckMusic; [self applyMusicMix];
     _lastUtterance = utterance;
     [_speech speakUtterance:utterance];
   } @catch (NSException *exception) { [self hush]; }

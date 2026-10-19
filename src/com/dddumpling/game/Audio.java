@@ -265,7 +265,7 @@ final class Audio implements GameCore.Sound {
 
     @Override public void squish(int glyph, int depth) {
         // Deeper remaining stacks sound lower and rounder, so a stack audibly counts down.
-        play(Sfx.SQUISH_0 + glyph, (float) Math.pow(0.92, Math.max(0, depth - 1)));
+        play(Sfx.squishId(glyph), (float) Math.pow(0.92, Math.max(0, depth - 1)));
     }
 
     @Override public void ninjaCombo() { play(Sfx.NINJA_COMBO,1f,Sfx.NINJA_COMBO_GAIN); }
@@ -408,7 +408,7 @@ final class Audio implements GameCore.Sound {
     }
 
     @Override public void bossTaunt(int kind) {
-        if (kind >= 0 && kind < Boss.COUNT) play(Sfx.BOSS_TAUNT_0 + kind, 1f, 0.78f);
+        if (kind >= 0 && kind < Boss.COUNT) play(Sfx.bossTauntId(kind), 1f, 0.78f);
     }
 
     @Override public void bossDamage() {
@@ -432,6 +432,8 @@ final class Audio implements GameCore.Sound {
 
     @Override public void shieldBounce() { play(Sfx.SHIELD_BOUNCE, 1f, 0.72f); }
     @Override public void gatorParry() { play(Sfx.GATOR_PARRY, 1f); }
+    @Override public void catLaser() { play(Sfx.CAT_LASER,1f,Sfx.CAT_LASER_GAIN); }
+    @Override public void catMeow(int variant) { play(Sfx.catMeowId(variant),1f,Sfx.CAT_MEOW_GAIN); }
     @Override public void gatorTaunt(int variant) { play(Sfx.gatorTauntId(variant), 1f, Sfx.GATOR_TAUNT_GAIN); }
     @Override public void gatorPrompt(int variant) { play(Sfx.gatorPromptId(variant), 1f, Sfx.GATOR_PROMPT_GAIN); }
     @Override public void gatorSplash(boolean entry) { play(Sfx.GATOR_SPLASH, entry?Sfx.GATOR_ENTRY_RATE:1f, Sfx.GATOR_SPLASH_GAIN); }
@@ -507,7 +509,7 @@ final class Audio implements GameCore.Sound {
     private boolean ttsReady, ttsBroken;
     /** Queued while the engine is still waking up, or -1 for nothing waiting. */
     private int ttsPending = -1;
-    private boolean ttsPendingName,ttsPendingVersus;
+    private boolean ttsPendingName,ttsPendingVersus,ttsPendingCompanion;
     private String ttsPendingExplanation;
     private long speechSerial;
     private volatile String versusUtterance;
@@ -540,10 +542,18 @@ final class Audio implements GameCore.Sound {
         requestExplanation(text,false);
     }
 
+    @Override public synchronized void companionExclaim(String text) {
+        requestExplanation(text,false,true);
+    }
+
     private void requestExplanation(String text,boolean versus) {
+        requestExplanation(text,versus,false);
+    }
+
+    private void requestExplanation(String text,boolean versus,boolean companion) {
         if(effectsVolume<=0f || ttsBroken || text==null || text.isEmpty())return;
         versusUtterance=null;versusOffset=-1;
-        ttsPending=-1;ttsPendingExplanation=text;ttsPendingVersus=versus;
+        ttsPending=-1;ttsPendingExplanation=text;ttsPendingVersus=versus;ttsPendingCompanion=companion;
         prepareSpeech();
         if(ttsReady)readPending();
     }
@@ -674,11 +684,11 @@ final class Audio implements GameCore.Sound {
             if(effectsVolume<=0f)return;
             try {
                 android.os.Bundle params=new android.os.Bundle();
-                params.putFloat(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_VOLUME,effectsVolume);
+                params.putFloat(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_VOLUME,effectsVolume*(ttsPendingCompanion?Narration.COMPANION_GAIN:1));
                 tts.setPitch(ttsPendingVersus?Narration.VERSUS_PITCH:Narration.PITCH);
                 tts.setSpeechRate(ttsPendingVersus?Narration.VERSUS_RATE:.9f);
                 lastUtterance="tutorial-"+(++speechSerial);
-                versusUtterance=ttsPendingVersus?lastUtterance:null;duck(true);
+                versusUtterance=ttsPendingVersus?lastUtterance:null;duck(!ttsPendingCompanion);
                 if(tts.speak(text,android.speech.tts.TextToSpeech.QUEUE_FLUSH,params,lastUtterance)
                         !=android.speech.tts.TextToSpeech.SUCCESS)duck(false);
             } catch(Throwable t) { ttsBroken=true;duck(false); }

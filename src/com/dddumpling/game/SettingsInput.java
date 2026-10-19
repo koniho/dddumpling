@@ -124,6 +124,10 @@ final class SettingsInput {
         else if(h==SettingsUi.HIT_COMPLETE_BOSSES) DevSettings.completeBosses(c);
         else if(h==SettingsUi.HIT_ROSTER) c.setNextRoster(!c.fullRoster);
         else if(h==SettingsUi.HIT_GAMEOVER) c.endCurrentRun();
+        else if(h==SettingsUi.HIT_INFINITE_LIVES) {
+            c.devInfiniteLives=!c.devInfiniteLives;
+            if(c.devInfiniteLives && c.state==GameCore.PLAY)c.lives=GameCore.START_LIVES;
+        }
         else if(h==SettingsUi.HIT_RESET_NEWS) c.releaseMascot.reset(c);
         else if(h==SettingsUi.HIT_RESET_UPDATE_PROMPT) c.updatePrompt.rearm(c);
         else if(h==SettingsUi.HIT_ALL_LANDS) LandPicker.enableAll(c);

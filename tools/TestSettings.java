@@ -28,7 +28,7 @@ final class TestSettings extends Check {
             float age=c.boss.age;c.update(.1f,L);
             check("kids preserves boss action and projectile clocks "+kind,
                     Math.abs(c.boss.age-age-.1f)<.001f
-                    && Math.abs(c.boss.bt[0]-.1f/Boss.BOLT_TIME)<.001f);
+                    && Math.abs(c.boss.bt[0]-.1f/(kind==Boss.RAINBOW_CAT?RainbowCat.PROJECTILE_TIME:Boss.BOLT_TIME))<.001f);
         }
         c.boss.begin(Boss.MUSHROOM,5,c.rnd);c.boss.intro=0;c.boss.mushroomCharge=.5f;
         c.update(.1f,L);
@@ -289,6 +289,33 @@ final class TestSettings extends Check {
         check("live reset does not restart gameplay",reopened.state==GameCore.PLAY && reopened.score==44 && reopened.stage==stage);
     }
 
+    private static void infiniteLives(Layout L) {
+        group("developer infinite lives");
+        SettingsUi ui=new SettingsUi();ui.compute(L,SettingsUi.GENERAL);
+        int hit=ui.hit(L.w*.5f,ui.infiniteLivesY+ui.testH*.5f);
+        check("infinite lives chip fits below run controls",hit==SettingsUi.HIT_INFINITE_LIVES
+                && ui.infiniteLivesY>ui.runY+ui.runH && ui.infiniteLivesY+ui.testH<ui.panelB);
+        for(int mode=0;mode<ModeSelector.NAMES.length;mode++) {
+            Mem save=TestTimeAttack.store();GameCore c=new GameCore(save,151,true);
+            c.modes.restore(mode);c.startGame();c.lives=1;
+            check("infinite lives defaults off "+mode,!c.devInfiniteLives);
+            SettingsInput.action(c,L,hit);
+            check("enabling restores hearts in current run "+mode,c.devInfiniteLives && c.lives==GameCore.START_LIVES);
+            int damage=c.hurtThisStage;
+            for(int i=0;i<8;i++)c.takeHit(L.w*.5f,L);
+            check("hits keep feedback without ending run "+mode,c.state==GameCore.PLAY
+                    && c.lives==GameCore.START_LIVES && c.hurtThisStage==damage+8 && c.flash>0 && c.shake>0);
+            c.toTitle();c.startGame();
+            check("toggle survives playthroughs in this session "+mode,c.devInfiniteLives);
+            SettingsInput.action(c,L,hit);c.lives=1;c.takeHit(L.w*.5f,L);
+            check("disabling restores ordinary death "+mode,!c.devInfiniteLives && c.state==GameCore.OVER && c.lives==0);
+            c.toTitle();c.startGame();SettingsInput.action(c,L,hit);c.endCurrentRun();
+            check("manual end run still works "+mode,c.state==GameCore.OVER && c.lives==0);
+            check("new app session starts with ordinary lives "+mode,!new GameCore(save,152,true).devInfiniteLives);
+            DevSettings.resetProgress(c);DevSettings.resetProgress(c);
+            check("fresh player reset clears infinite lives "+mode,!c.devInfiniteLives);
+        }
+    }
     private static void developerBossCompletion(Layout L) {
         group("developer boss completion");
         for(boolean tracked:new boolean[]{false,true}) {
@@ -412,6 +439,9 @@ final class TestSettings extends Check {
     }
     private static void bossNames(Layout L) {
         group("skin-aware boss names across screens");
+        check("Halloween cat is Meowcula",Skins.bossName(Skins.HALLOWEEN,Boss.RAINBOW_CAT).equals("MEOWCULA")
+                && Skins.bossTitle(Skins.HALLOWEEN,Boss.RAINBOW_CAT).equals("Meowcula")
+                && Skins.bossName(Skins.DEFAULT,Boss.RAINBOW_CAT).equals("RAINBOW CAT"));
         for(int skin=0;skin<Skins.COUNT;skin++)for(int boss=0;boss<Boss.COUNT;boss++) {
             String expected=Skins.bossName(skin,boss);
             GameCore c=TestTimeAttack.start(boss);c.preferences.skin=skin;
@@ -476,6 +506,7 @@ final class TestSettings extends Check {
     static void all(Layout L) {
         seasonalSkins(L);
         skinGameplayParity(L);
+        infiniteLives(L);
         developerBossCompletion(L);
         developerReset(L);
         scoreReset(L);
@@ -549,9 +580,9 @@ final class TestSettings extends Check {
         check("changing mode waits for next run",c.kidsRun);
         for(int stage:new int[]{1,9,16,30}) {
             c.stage=stage;
-            check("kids word complexity follows the stage with a six-press cap "+stage,
+            check("kids word complexity follows the stage and land press cap "+stage,
                     c.maxWordLen()==Pacing.maxWordLen(stage) && c.stackChance()==Pacing.stackChance(stage)
-                    && c.maxPresses()==6 && c.maxEnemies()==3);
+                    && c.maxPresses()==(Lands.forStage(stage)==Lands.RAINBOW?5:6) && c.maxEnemies()==3);
         }
         c.unlockRoster();check("kids run cannot promote to six keys",!c.runFullRoster);
         c.startGame();check("normal mode restores next run",!c.kidsRun && c.maxWordLen()==Pacing.maxWordLen(c.stage));

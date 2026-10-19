@@ -432,6 +432,29 @@ final class TestAudio extends Check {
     static void audio(Layout L) {
         versusTitleFade(L);
         versusMusic(L);
+        group("Soft cat laser");
+        short[] laser=Sfx.build(Sfx.CAT_LASER);int firstCross=0,lastCross=0;
+        for(int i=1;i<laser.length;i++)if(laser[i]>=0 && laser[i-1]<0) {
+            if(i<laser.length/3)firstCross++;if(i>=laser.length*2/3)lastCross++;
+        }
+        check("laser is a short descending tone",laser.length<Sfx.RATE*.16f && firstCross>lastCross*1.5f);
+        check("laser starts and ends softly",laser[0]==0 && laser[laser.length-1]==0 && peakAt(laser)>Sfx.RATE*.004f);
+        check("laser is independent of recorded meow bank",!Sfx.isCatMeow(Sfx.CAT_LASER) && Sfx.CAT_LASER_GAIN<=.6f);
+        group("Recorded cat bank");
+        java.util.HashSet<Integer> catHashes=new java.util.HashSet<>();
+        for(int variant=0;variant<CatMeowRecording.COUNT;variant++) {
+            int id=Sfx.catMeowId(variant);short[] pcm=Sfx.build(id);
+            long energy=0;for(short v:pcm)energy+=(long)v*v;
+            check("cat take has audio and correct duration "+variant,energy>1000000
+                    && Math.abs(pcm.length/(float)Sfx.RATE-CatMeowRecording.duration(variant))<.001f);
+            check("cat take fades to silence "+variant,pcm[0]==0 && pcm[pcm.length-1]==0);
+            if(variant==CatMeowRecording.DEFEAT) {
+                int peak=0;for(short v:pcm)peak=Math.max(peak,Math.abs((int)v));
+                check("long low defeat meow uses common effect peak",Math.abs(peak-Sfx.PEAK*32767)<2);
+            }
+            catHashes.add(java.util.Arrays.hashCode(pcm));
+        }
+        check("all recorded meows are distinct",catHashes.size()==CatMeowRecording.COUNT);
         group("audio");
         int peak = (int) (Sfx.PEAK * 32767f);
         boolean allNormalised = true, allClean = true, allSane = true;
@@ -440,12 +463,12 @@ final class TestAudio extends Check {
             int max = 0;
             for (int i = 0; i < pcm.length; i++) max = Math.max(max, Math.abs(pcm[i]));
             // Recorded Ninja swishes and Slime squishes retain their relative levels.
-            if (!Sfx.isNinjaSwish(id) && !(id>=Sfx.SLIME_SQUISH_0 && id<Sfx.SLIME_SQUISH_0+6) && Math.abs(max - peak) > 2) allNormalised = false;
+            if (!Sfx.isCatMeow(id) && !Sfx.isNinjaSwish(id) && !(id>=Sfx.SLIME_SQUISH_0 && id<Sfx.SLIME_SQUISH_0+6) && Math.abs(max - peak) > 2) allNormalised = false;
             if (max >= 32767) allClean = false;
             // Roulette ticks intentionally fit between fast icon changes.
             int minimum = id == Sfx.SHUFFLE_BLIP ? Sfx.RATE / 40 : Sfx.RATE / 20;
             // Survival's one-shot cue spans its full rainbow transition.
-            float maximum = id == Sfx.SURVIVAL_OVER ? SurvivalEnd.DURATION : id == Sfx.GATOR_SPLASH ? 2.3f : 2f;
+            float maximum = id==Sfx.catMeowId(CatMeowRecording.DEFEAT) ? 4f : Sfx.isCatMeow(id) ? 3f : id == Sfx.SURVIVAL_OVER ? SurvivalEnd.DURATION : id == Sfx.GATOR_SPLASH ? 2.3f : 2f;
             if (pcm.length < minimum || pcm.length > Sfx.RATE * maximum) allSane = false;
         }
         check("other effects retain their common peak", allNormalised);

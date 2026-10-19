@@ -2,25 +2,19 @@ package com.dddumpling.game;
 
 /** Five-stage scenery chapters. Cosmetic clocks never consume gameplay randomness. */
 final class Lands extends Draw {
-    static final int SWAMP = 5, COUNT = 6;
+    static final int SWAMP = 5, RAINBOW = 6, COUNT = WorldCatalog.LANDS.length;
     static final float FADE_TIME = 2.4f;
-    static final int[] BG = {
-        Glyph.mix(Draw.BG, 0xFF142A29, 0.5f), Glyph.mix(Draw.BG, 0xFF21182F, 0.5f),
-        Glyph.mix(Draw.BG, 0xFF102735, 0.5f), Glyph.mix(Draw.BG, 0xFF241F2A, 0.5f), CaveArt.DARK, 0xFF182F32
-    };
-    static final int[] TINT = {0xFF79C99D, 0xFFB18CDB, 0xFF62BEC5, 0xFFE4A19C, CaveArt.LIGHT, 0xFF74B99C};
+    static final int[] BG=new int[COUNT], TINT=new int[COUNT];
+    static {for(int i=0;i<COUNT;i++){BG[i]=WorldCatalog.LANDS[i].background;TINT[i]=WorldCatalog.LANDS[i].tint;}}
     private Lands() {}
-
-    // Keep the reserved cave save slot while Adventure skips its unfinished introduction.
-    static int playableCount() { return COUNT-1; }
-    static boolean playable(int land) {return land>=0 && land<COUNT && land!=Cave.LAND;}
-    static int firstStage(int land) {return (land==SWAMP?land-1:land)*Boss.EVERY+1;}
-    static int unlockBoss(int land) {return land==SWAMP?Boss.MUSHROOM:land-1;}
-
-    // Beyond the authored bosses, scenery repeats without adding encounters.
+    static int playableCount() {return WorldCatalog.BOSSES.length;}
+    static boolean playable(int land) {return WorldCatalog.bossForLand(land)>=0;}
+    static int firstStage(int land) {int boss=WorldCatalog.bossForLand(land);return boss<0?1:WorldCatalog.bossStage(boss)-Boss.EVERY+1;}
+    static int unlockBoss(int land) {return WorldCatalog.bossForLand(land)-1;}
+    // Repeat authored chapters after the last boss; never route through reserved land IDs.
     static int forStage(int stage) {
         int chapter=(Math.max(1,stage)-1)/Boss.EVERY%playableCount();
-        return chapter==Cave.LAND?SWAMP:chapter;
+        return WorldCatalog.BOSSES[chapter].land;
     }
     static int skitFor(int stage) { return (Math.max(1, stage) - 1) % Boss.EVERY % 3; }
     static float blend(GameCore c) {
@@ -58,6 +52,14 @@ final class Lands extends Draw {
         c.landBlend = 0f;
     }
 
+    /** Land backdrops sit beneath every cloud layer. */
+    static void backdrop(Painter p,GameCore c,Layout L) {
+        if(c.survival.active || c.state==GameCore.TITLE)return;
+        float mix=blend(c),fade=(c.landFrom==RAINBOW?1-mix:0)
+                +(forStage(visualStage(c))==RAINBOW?mix:0);
+        if(fade>0)RainbowLand.backdrop(p,c,L,fade*(1-c.drained()));
+    }
+
     static void scenery(Painter p, GameCore c, Layout L) {
         if(c.survival.active) {c.survival.scenery(p,c,L);return;}
         if (c.state == GameCore.TITLE) return;
@@ -71,6 +73,7 @@ final class Lands extends Draw {
     }
 
     private static void sceneryLayer(Painter p, GameCore c, Layout L, int land, float fade) {
+        if(land==RAINBOW)return; // Its scrolling bands are drawn before the clouds.
         for (int layer = 0; layer < 2; layer++) {
             for (int i = 0; i < 8; i++) {
                 // Stable jitter breaks the rows without changing positions every frame or drawing RNG.
@@ -119,6 +122,7 @@ final class Lands extends Draw {
 
     private static void prop(Painter p, int land, float x, float y, float r, int a, float t,
             boolean silhouette, boolean animated) {
+        if (land == RAINBOW) {RainbowLand.prop(p,x,y,r,a,t,silhouette);return;}
         if (land == SWAMP) {Swamp.prop(p,x,y,r,a,t,silhouette);return;}
         if (land == Cave.LAND) { CaveArt.entrance(p, x, y, r, a, silhouette); return; }
         int col = Glyph.withAlpha(silhouette ? 0xFF9A8FAF : Glyph.mix(Sky.CLOUD_TINT[1], TINT[land], 0.5f), a);
@@ -340,6 +344,7 @@ final class Lands extends Draw {
 
     static void skit(Painter p, int stage, float x, float y, float r, float t, int a) {
         int land = forStage(stage), variant = skitFor(stage);
+        if (land == RAINBOW) {RainbowLand.skit(p,variant,x,y,r,t,a);return;}
         if (land == SWAMP) {Swamp.skit(p,variant,x,y,r,t,a);return;}
         if (land == 0) { SlimeSkits.draw(p,variant,x,y,r,t,a); return; }
         if (land == 1) { CrystalSkits.draw(p,variant,x,y,r,t,a); return; }

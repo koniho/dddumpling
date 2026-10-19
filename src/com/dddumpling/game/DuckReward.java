@@ -63,7 +63,7 @@ final class DuckReward extends Draw {
             int entry=Integer.parseInt(f[2]),count=Integer.parseInt(f[3]),sum=Integer.parseInt(f[4]);
             int isNew=Integer.parseInt(f[5]),savedProfile=Integer.parseInt(f[6]),land=Integer.parseInt(f[7]);
             if(entry<Collect.DUCK_FIRST || entry>=Collect.DUCK_FIRST+Collect.DUCK_COUNT || count<1 || sum<count
-                    || isNew<0 || isNew>1 || savedProfile<0 || savedProfile>2 || land<0 || land>Lands.COUNT)return;
+                    || isNew<0 || isNew>1 || savedProfile<0 || savedProfile>=Survival.PROFILE_COUNT || land<0 || land>Lands.COUNT)return;
             Survival snapshot=new Survival();snapshot.load(parts[1]);
             HighScores.Run run=snapshot.histories[savedProfile].latestRun;
             if(run==null || run.prizes.length!=1 || run.prizes[0]!=entry)return;

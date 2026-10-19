@@ -4,25 +4,20 @@ import java.util.ArrayList;
 
 /** Local run snapshots. The sequence also identifies a latest run outside the top ten. */
 final class HighScores {
-    static final int LIMIT=10;
+    static final int LIMIT=10, BASE_VALUES=16;
+    static int effectEnd() {return BASE_VALUES+Power.NAMES.length;}
     // Persist the context index so a build's scenery cycle cannot rewrite a past death.
-    private static final String[] BOSS_BLURBS={" gave you a goo hug."," cubed your cuteness.",
-            ": eight hugs too many."," made you a spore snack."," gave you a tummy hug."};
-    private static String bossBlurb(int skin,int boss) {return Skins.bossTitle(skin,boss)+BOSS_BLURBS[boss];}
-    static final String[] BLURBS={
-        "Called it a snack break.",
-        bossBlurb(Skins.DEFAULT,Boss.SLIME),
-        bossBlurb(Skins.DEFAULT,Boss.SPLITTER),
-        bossBlurb(Skins.DEFAULT,Boss.OCTOPUS),
-        bossBlurb(Skins.DEFAULT,Boss.MUSHROOM),
-        "Slime hills hugged back.",
-        "Crystal sparkle nap. Very shiny.",
-        "Kelp tucked you in. Bubble blanket!",
-        "Mushroom cap became your pillow.",
-        "Pebble adopted its own dumpling.",
-        "Lily pad booked you a swamp nap.",
-        bossBlurb(Skins.DEFAULT,Boss.ALLIGATOR)
-    };
+    private static String bossBlurb(int skin,int boss) {return Skins.bossTitle(skin,boss)+WorldCatalog.BOSSES[boss].death;}
+    static final String[] BLURBS=deathBlurbs();
+    private static String[] deathBlurbs() {
+        int last=0;
+        for(WorldCatalog.Land land:WorldCatalog.LANDS)last=Math.max(last,land.ending);
+        for(WorldCatalog.BossEntry boss:WorldCatalog.BOSSES)last=Math.max(last,boss.ending);
+        String[] names=new String[last+1];names[0]="Called it a snack break.";
+        for(WorldCatalog.Land land:WorldCatalog.LANDS)names[land.ending]=land.death;
+        for(int boss=0;boss<Boss.COUNT;boss++)names[WorldCatalog.BOSSES[boss].ending]=bossBlurb(Skins.DEFAULT,boss);
+        return names;
+    }
     static final String[] SURVIVAL_BLURBS={
         "Rainbow tide stole your floaties.",
         "Washed away. Still adorable.",
@@ -79,19 +74,20 @@ final class HighScores {
             best=v[11];land=v[12];kids=v[13]!=0;ending=v[14];character=v.length>15?v[15]:-1;
             for(int i=0;i<effects.length && 16+i<v.length;i++) effects[i]=v[16+i];
             this.prizes=prizes;
-            survival=v.length>22;profile=survival?v[22]:0;this.duration=duration;
+            survival=v.length>effectEnd();profile=survival?v[effectEnd()]:0;this.duration=duration;
         }
         String blurb() {return blurb(Skins.DEFAULT);}
         String blurb(int skin) {
-            if(!survival && (ending>=1 && ending<=4 || ending==11))
-                return bossBlurb(skin,ending==11?Boss.ALLIGATOR:ending-1);
+            int boss=WorldCatalog.bossForEnding(ending);
+            if(!survival && boss>=0)return bossBlurb(skin,boss);
             return survival?(ending==SURVIVAL_BLURBS.length?"Took a rainbow snack break.":SURVIVAL_BLURBS[ending]):BLURBS[ending]; }
         int accuracy() { long n=(long)hits+misses;return n==0?0:(int)Math.round(100.0*hits/n); }
         int[] values() {
             int[] v={score,stage,stages,dumplings,powers,swipes,bosses,hits,misses,squishes,
-                    combo,best,land,kids?1:0,ending,character,0,0,0,0,0,0};
-            System.arraycopy(effects,0,v,16,effects.length);
-            if(survival) {v=java.util.Arrays.copyOf(v,23);v[22]=profile;}
+                    combo,best,land,kids?1:0,ending,character};
+            v=java.util.Arrays.copyOf(v,effectEnd()+(survival?1:0));
+            System.arraycopy(effects,0,v,BASE_VALUES,effects.length);
+            if(survival)v[effectEnd()]=profile;
             return v;
         }
     }
@@ -119,15 +115,16 @@ final class HighScores {
         recording=false;
         if(latest==Long.MAX_VALUE) return;
         int boss=Boss.kindFor(c.stage);
-        int ending=survival?c.survival.ending:c.lives>0?0:boss==Boss.ALLIGATOR?11:boss>=0?1+boss:5+Lands.forStage(c.stage);
+        int ending=survival?c.survival.ending:c.lives>0?0:boss>=0?WorldCatalog.BOSSES[boss].ending:WorldCatalog.LANDS[Lands.forStage(c.stage)].ending;
         int[] values={Math.max(0,c.score),c.stage,stages,dumplings,powers,swipes,bosses,c.hits,
                 c.misses,c.squishes,c.maxCombo,Math.max(c.best,c.score),c.runStartLand,
-                c.kidsRun?1:0,ending,character,0,0,0,0,0,0};
-        System.arraycopy(effects,0,values,16,effects.length);
+                c.kidsRun?1:0,ending,character};
+        values=java.util.Arrays.copyOf(values,effectEnd()+(survival?1:0));
+        System.arraycopy(effects,0,values,BASE_VALUES,effects.length);
         int[] won=new int[prizes.size()];
         for(int i=0;i<won.length;i++) won[i]=prizes.get(i);
         if(survival) {
-            values=java.util.Arrays.copyOf(values,23);values[22]=c.survival.profile;
+            values[effectEnd()]=c.survival.profile;
             values[1]=1;values[2]=values[6]=values[12]=0;
         }
         Run run=new Run(++latest,values,won,survival?c.survival.millis():0);
@@ -152,7 +149,7 @@ final class HighScores {
     int displayCount() { return runs.size()+(latestOutsideTopTen()?1:0); }
     Run displayRun(int row) { return row<runs.size()?runs.get(row):latestRun; }
     String encode() {
-        StringBuilder s=new StringBuilder(survival?"9:":"8:").append(latest).append(':').append(highestStage);
+        StringBuilder s=new StringBuilder(survival?"11:":"10:").append(latest).append(':').append(highestStage).append(':').append(Power.NAMES.length);
         for(int i=0;i<displayCount();i++) {
             Run run=displayRun(i);
             s.append(';').append(run.id);
@@ -168,8 +165,9 @@ final class HighScores {
         if(data==null || data.isEmpty() || data.length()>16000) return;
         try {
             String[] rows=data.split(";",-1);
-            boolean newIds=rows[0].startsWith("8:") || rows[0].startsWith("9:");
-            boolean survivalHistory=rows[0].startsWith("7:") || rows[0].startsWith("9:");
+            boolean sized=rows[0].startsWith("10:") || rows[0].startsWith("11:");
+            boolean newIds=sized || rows[0].startsWith("8:") || rows[0].startsWith("9:");
+            boolean survivalHistory=rows[0].startsWith("11:") || rows[0].startsWith("7:") || rows[0].startsWith("9:");
             if(survival!=survivalHistory)return;
             boolean stageRecord=newIds || survivalHistory || rows[0].startsWith("6:");
             boolean prizeHistory=stageRecord || rows[0].startsWith("5:");
@@ -178,15 +176,18 @@ final class HighScores {
             boolean current=portraits || rows[0].startsWith("2:");
             if((!current && !rows[0].startsWith("1:")) || rows.length>LIMIT+(current?2:1)) return;
             String[] header=rows[0].split(":",-1);
-            if(header.length!=(stageRecord?3:2))return;
+            if(header.length!=(sized?4:stageRecord?3:2))return;
             long sequence=Long.parseLong(header[1]);
             int savedStage=stageRecord?Integer.parseInt(header[2]):0;
             if(savedStage<0)return;
+            // Older formats always stored six effect slots.
+            int savedEffects=sized?Integer.parseInt(header[3]):6;
+            if(savedEffects<0 || savedEffects>Power.NAMES.length)return;
             if(sequence<0) return;
             ArrayList<Run> parsed=new ArrayList<>();
             for(int row=1;row<rows.length;row++) {
                 String[] fields=rows[row].split(",",-1);
-                int valueCount=survivalHistory?23:effectHistory?22:portraits?16:15;
+                int valueCount=effectHistory?BASE_VALUES+savedEffects+(survivalHistory?1:0):portraits?16:15;
                 if(!prizeHistory && fields.length!=valueCount+1) return;
                 if(prizeHistory && fields.length<valueCount+2) return;
                 long id=Long.parseLong(fields[0]);
@@ -196,7 +197,7 @@ final class HighScores {
                 for(int i=0;i<v.length;i++) { v[i]=Integer.parseInt(fields[i+1]);if(v[i]<(i==15?-1:0)) return; }
                 int[] prizes=new int[0];
                 long duration=survivalHistory?Long.parseLong(fields[valueCount+1]):0;
-                if(duration<0 || (survivalHistory && v[22]>2))return;
+                if(duration<0 || (survivalHistory && v[BASE_VALUES+savedEffects]>=Survival.PROFILE_COUNT))return;
                 if(prizeHistory) {
                     int prizeStart=valueCount+2+(survivalHistory?1:0);
                     if(fields.length<prizeStart)return;
@@ -214,10 +215,16 @@ final class HighScores {
                 }
                 if(portraits && v[15]>=(newIds?Collect.COUNT:59)) return;
                 if(portraits && v[15]>=(newIds?Collect.COUNT:Collect.DUCK_FIRST)) v[15]=-1;
-                if(v[1]<1 || v[6]>15 || v[11]<v[0] || v[12]>=Lands.COUNT || v[13]>1
+                if(v[1]<1 || v[6]>Boss.COUNT || v[11]<v[0] || v[12]>=Lands.COUNT || v[13]>1
                         || v[14]>=(survivalHistory?SURVIVAL_BLURBS.length+1:BLURBS.length)) return;
-                if(survivalHistory && (v[2]!=0 || v[3]>1 || v[6]!=0 || v[12]!=0 || v[13]!=(v[22]==2?1:0)))return;
-                parsed.add(new Run(id,v,prizes,duration));
+                if(survivalHistory && (v[2]!=0 || v[3]>1 || v[6]!=0 || v[12]!=0 || v[13]!=(v[BASE_VALUES+savedEffects]==Survival.KIDS_PROFILE?1:0)))return;
+                int[] normalized=java.util.Arrays.copyOf(v,effectEnd()+(survivalHistory?1:0));
+                if(!portraits)normalized[15]=-1;
+                if(survivalHistory) {
+                    normalized[BASE_VALUES+savedEffects]=0;
+                    normalized[effectEnd()]=v[BASE_VALUES+savedEffects];
+                }
+                parsed.add(new Run(id,normalized,prizes,duration));
             }
             latest=sequence;
             highestStage=savedStage;

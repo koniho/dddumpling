@@ -2,24 +2,21 @@ package com.dddumpling.game;
 
 /** Visual identity travels with the painter, never through global mutable game state. */
 final class Skins {
-    static final int DEFAULT=0, HALLOWEEN=1, COUNT=2;
+    static final int DEFAULT=0, HALLOWEEN=1;
     static final String[] NAMES={"DEFAULT","HALLOWEEN"};
+    static final int COUNT=NAMES.length;
     // Preserve familiar key positions: cream, red, orange, purple, green, then black.
     static final int[] HALLOWEEN_COLORS={0xFFF2F2FF,0xFFF26B78,0xFFFFA64F,0xFFBA8BE8,0xFF8DD48B,0xFF51495F};
+    static final int HALLOWEEN_CAT_KEY=0xFFC4C4CC;
     static final String[] HALLOWEEN_NAMES={"GHOST","RED BAT","PUMPKIN","WITCH","FRANKENSTEIN","BLACK CAT"};
     static int valid(int skin) { return skin>=0 && skin<COUNT?skin:DEFAULT; }
     static boolean halloween(Painter p) { return p.skin()==HALLOWEEN; }
-    static int keyColor(Painter p,int glyph) { return halloween(p)?HALLOWEEN_COLORS[glyph]:Glyph.COLOR[glyph]; }
+    static int keyColor(Painter p,int glyph) { return halloween(p)?(glyph==Kawaii.BLOB?HALLOWEEN_CAT_KEY:HALLOWEEN_COLORS[glyph]):Glyph.COLOR[glyph]; }
     static Painter painter(Painter p,int skin) { return new Theme(p,valid(skin)); }
-    // Null overrides inherit the default name; boss IDs and records never change with a skin.
-    private static final String[][] BOSS_NAMES={
-        {"SUPER SLIME","DARK DIVIDE","OCTOPULSE","FLY AGARIC","GUMMY GATOR"},
-        {"SUPER GHOST","BUBBLE GUM","GHASTLY SQUID","POISON CAP","COSTUMED CROC"}
-    };
     static String bossName(int skin,int boss) {
         if(boss<0 || boss>=Boss.COUNT)return "";
-        String name=BOSS_NAMES[valid(skin)][boss];
-        return name==null?BOSS_NAMES[DEFAULT][boss]:name;
+        WorldCatalog.BossEntry b=WorldCatalog.BOSSES[boss];
+        return valid(skin)==HALLOWEEN && b.halloween!=null?b.halloween:b.name;
     }
     static String bossTitle(int skin,int boss) {
         StringBuilder title=new StringBuilder();

@@ -8,7 +8,6 @@ package com.dddumpling.game;
  * Pure Java on purpose: the on-device renderer and the offline preview harness share it.
  */
 final class Glyph {
-    static final int COUNT = 6;
 
     static final int[] COLOR = {
         0xFFFFE1A0, // 0 dumpling   - warm cream
@@ -20,6 +19,9 @@ final class Glyph {
     };
 
     static final String[] NAME = {"dumpling", "strawberry", "cat", "grapes", "squishy", "blob"};
+
+    static final int COUNT=NAME.length;
+    static int count() {return COUNT;}
 
     private Glyph() {}
 

@@ -163,8 +163,8 @@
   [saved saveLandBestWithInt:2 withInt:900];
   [saved savePlayerSettingsWithInt:98329];
   [saved saveCollectedWithLong:0x12345];
-  IOSIntArray *counts = [IOSIntArray arrayWithLength:DDCollect_COUNT];
-  counts->buffer_[0] = 2; counts->buffer_[DDCollect_COUNT - 1] = 4;
+  IOSIntArray *counts = [IOSIntArray arrayWithLength:[DDCollect count]];
+  counts->buffer_[0] = 2; counts->buffer_[[DDCollect count] - 1] = 4;
   [saved saveCollectionCountsWithIntArray:counts];
   [saved saveCollectTotalWithInt:27];
   [saved saveSteamerOpensWithInt:8];
@@ -192,7 +192,7 @@
   XCTAssertEqual(loaded.loadPlayerSettings, 98329);
   XCTAssertEqual(loaded.loadCollected, 0x12345);
   XCTAssertEqual([loaded loadCollectionCounts]->buffer_[0], 2);
-  XCTAssertEqual([loaded loadCollectionCounts]->buffer_[DDCollect_COUNT - 1], 4);
+  XCTAssertEqual([loaded loadCollectionCounts]->buffer_[[DDCollect count] - 1], 4);
   XCTAssertEqual(loaded.loadCollectTotal, 27);
   XCTAssertEqual(loaded.loadSteamerOpens, 8);
   XCTAssertEqual(loaded.loadStarWins, 3);

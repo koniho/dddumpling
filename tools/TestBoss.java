@@ -2290,17 +2290,17 @@ final class TestBoss extends Check {
         check("both first-split cubes fire two-bolt volleys", pair.boss.boltCount() == 4);
 
         GameCore crowded = enterBoss(L, Boss.SPLITTER, 186L);
-        for (int i = 0; i < Boss.MAX_BOLTS - 2; i++) {
+        for (int i = 0; i < Boss.NORMAL_BOLT_LIMIT - 2; i++) {
             crowded.boss.blive[i] = true;
             crowded.boss.bt[i] = 0f;
         }
         crowded.boss.halfIdle[0] = crowded.boss.divideBoltInterval();
         crowded.update(DT, L);
-        check("a volley waits for room rather than firing short", crowded.boss.boltCount() == Boss.MAX_BOLTS - 2
+        check("a volley waits for room rather than firing short", crowded.boss.boltCount() == Boss.NORMAL_BOLT_LIMIT - 2
                 && crowded.boss.halfIdle[0] >= crowded.boss.divideBoltInterval());
         crowded.boss.blive[0] = false;
         crowded.update(DT, L);
-        check("a waiting volley launches in full when room opens", crowded.boss.boltCount() == Boss.MAX_BOLTS);
+        check("a waiting volley launches in full when room opens", crowded.boss.boltCount() == Boss.NORMAL_BOLT_LIMIT);
 
         GameCore firing = enterBoss(L, Boss.SPLITTER, 184L);
         GameCore quiet = enterBoss(L, Boss.SPLITTER, 184L);

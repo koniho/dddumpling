@@ -55,7 +55,8 @@ final class Bot {
     private float fogThink;
     private float gatorX,gatorY,gatorEnd;
     private boolean gatorSwipe;
-    private float lidSwipeAge;
+    private float lidSwipeAge,catTraceDistance;
+    private boolean catCircling;
 
     /**
      * At most this many presses may be banked. Without a cap the bot saves up through every quiet
@@ -262,6 +263,38 @@ final class Bot {
         if (c.state != GameCore.PLAY) return;
 
         budget = Math.min(BURST, budget + dt * pps);
+        if(c.bossFighting() && c.boss.kind==Boss.RAINBOW_CAT) {
+            RainbowCat a=c.boss.cat;
+            if(catCircling) {
+                catTraceDistance+=dt*DRAG_SPEED*L.w/a.circleRadius();
+                float px=a.circleX()+a.gesture.coordinate(catTraceDistance,0)*a.circleRadius();
+                float py=a.circleY()+a.gesture.coordinate(catTraceDistance,1)*a.circleRadius();
+                a.touch(c,L,2,151,px,py);
+                if(a.phase!=RainbowCat.CIRCLE || catTraceDistance>=a.gesture.length) {
+                    a.touch(c,L,1,151,px,py);catCircling=false;think=reaction;
+                }
+                return;
+            }
+            if(think>0) {think-=dt;return;}
+            int bolt=-1;
+            for(int i=0;i<Boss.MAX_BOLTS;i++)if(c.boss.blive[i] && c.boss.bt[i]>reaction/Boss.BOLT_TIME
+                    && (bolt<0 || c.boss.bt[i]>c.boss.bt[bolt]))bolt=i;
+            if(budget>=1f && (bolt>=0 || a.phase==RainbowCat.OPEN)) {
+                budget-=1;presses++;think=reaction;
+                int glyph=bolt>=0?c.boss.bglyph[bolt]:a.promptKey;
+                if(rnd.nextFloat()<missRate)glyph=Roster.randomExcept(c.playRosterFull(),glyph,rnd);
+                c.tapKey(glyph,L);
+            } else if(budget>=1f && a.phase==RainbowCat.CIRCLE && c.boss.boltCount()==0) {
+                budget-=1;presses++;catTraceDistance=0;catCircling=true;
+                a.touch(c,L,0,151,a.circleX()+a.gesture.coordinate(0,0)*a.circleRadius(),a.circleY()+a.gesture.coordinate(0,1)*a.circleRadius());
+            } else if(budget>=1f && a.canTap()) {
+                budget-=1;presses++;think=reaction;
+                // A bounded tap with aim error; holding a finger never earns another hit.
+                float error=rnd.nextFloat()<missRate?a.r*2:0;
+                a.touch(c,L,0,151,a.x+error,a.y);a.touch(c,L,1,151,a.x+error,a.y);
+            }
+            return;
+        }
         if(c.bossFighting() && c.boss.kind==Boss.ALLIGATOR && c.boss.alligator.showoff()) {
             gatorSwipe=false;return;
         }

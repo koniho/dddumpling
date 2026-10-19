@@ -18,7 +18,7 @@ final class CaveBandScreen extends Draw {
         for(int i=0;i<8;i++) {
             float x=w*(.17f+i*.095f),y=top+s*2.2f;
             boolean pending=beat<i*4+4;
-            int col=pending?Glyph.COLOR[(i+b.song)%6]:0xFF403650;
+            int col=pending?Glyph.COLOR[(i+b.song)%Glyph.COUNT]:0xFF403650;
             crystal(p,x,y,w*.018f,col);
             if(pending && beat>=i*4)p.strokeCircle(x,y,w*.028f,Glyph.withAlpha(col,100),w*.006f);
         }
@@ -68,7 +68,7 @@ final class CaveBandScreen extends Draw {
         for(int i=0;i<10;i++) {
             float x=w*(.18f+i*.071f);
             int charge=b.won && b.finished?CaveBand.GOAL:b.charge;
-            crystal(p,x,cy,w*.019f,charge>i*4?Glyph.COLOR[(i+b.song)%6]:0xFF44364F);
+            crystal(p,x,cy,w*.019f,charge>i*4?Glyph.COLOR[(i+b.song)%Glyph.COUNT]:0xFF44364F);
         }
         String label=b.finished?(b.won?"ENCORE!":"KEEP THE SPARK!")
                 :Math.min(CaveBand.GOAL,b.charge)+" / "+CaveBand.GOAL;

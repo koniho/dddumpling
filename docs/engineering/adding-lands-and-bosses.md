@@ -124,3 +124,100 @@ Swampland / Gummy Gator. This lists the actual integration points; adding art an
 - For requested install after shared changes use `./build.sh --developer --rules-checks`:
   one full rules/bounded/fuzz gate, then packaging. Reuse `build/debug.keystore` and install
   `com.dddumpling.game.dev` with data preserved. Never commit generated APK/audio/frames.
+
+## Rainbow Land (#151)
+
+Rainbow Land appends land ID 6 after Swampland: stages 26–30, unlocked by Lil Chomp.
+Rainbow Cat appends boss ID 5; Sprinkle Paws appends collectible ID 61. Cave retains
+its unreachable ID 4. Scenery repeats after stage 30 and the post-boss ramp starts there.
+
+`RainbowCat` owns a single-pointer tap chase. The battle sprite is 50% larger than
+its initial implementation and follows bounded cubic curves; a tap preserves position
+and starts a faster rainbow dash. Each tap holds the cat in place while flashing through all rainbow colors and
+settling into a scared expression. She then dashes away; repeat taps remain locked until
+that escape finishes.
+Boss entry lasts 5.3 seconds: three seconds weaving from a small distant pose into the
+foreground, then a 2.3-second rainbow-ray burst with the existing long meow. Background
+stars fade to full opacity during the approach and remain for the fight. Arrival timing uses
+the boss intro clock; pause freezes it, combat stays disabled through the cry, and no gameplay
+randomness is consumed by the stars, rays, or perspective trail.
+Only pointer-down can score a tap. Moves, historical
+samples and held fingers cannot score extra hits; lift/cancel/pause release ownership.
+After two taps, the cat waits centrally for a closed shape traced in either direction.
+Five health bands use circle, heart, diamond, figure eight and a crossed five-point star,
+in that order. Shape selection derives from sustained damage, not capture count. The final star uses five straight crossing strokes, accepts rounded or
+shortened tips, and highlights the next tip; all five strokes are still required.
+Both face and pastry tap targets have a 15% extra margin.
+The companion rises while a small waving net mimics the drawing on a duplicate path
+above its head, then enlarges into a deep mesh fishing net on completion. The caught cat
+and pouch sway together while the companion braces against the moving pole.
+`TraceGesture` follows an ordered closed polyline in either direction; crossing the centre
+of the circle, retracing, additional fingers and cancelled strokes cannot complete it.
+Its local path matching supports self-intersecting shapes such as five-stroke stars without
+jumping ahead at crossings. All five shapes share the tracker and progress-driven animation;
+timeouts retain the current health band's shape.
+The catch animation opens a timed vulnerability window with a fixed pair of random active-roster keys, one from each hand.
+Both remain visible; the highlighted target alternates left/right after each hit. Each correct
+press removes 0.05 health and flashes the cat: twenty rapid alternating hits fill one health band. Wrong keys do not damage the cat or reset the timer. Partial damage persists;
+a window cannot cross the next one-health boundary. At that boundary or timer expiry,
+the net bursts while the cat holds angrily in place, then she sweeps across a curved slash
+arc in the same direction as the left-to-right or right-to-left flurry. Queued stars remain
+invisible and untargetable until launched from the moving cat, 0.288 seconds apart.
+The figure-eight and star windows send two consecutive stars per key, with an extra 0.12-second
+gap between pairs so switching keys stays readable. The companion
+announces “DOUBLE RAINBOW?!”, including on timeout. The shared high-pitched companion
+TTS reads `Narration.DOUBLE_RAINBOW` once per double flurry at half effects volume,
+respecting mute while leaving music and effects unducked. This depends on the window's health
+floor so finishing the diamond phase does not prematurely double its flurry. Rainbow Cat
+has room for twelve queued bolts; other bosses retain their eight-bolt limit.
+Ordinary shots wait 4.4 seconds after the sweep. The final flurry is harmless and the exit
+waits for the net animation and allows the full double flurry to depart. Reaching all five health boundaries wins; the enrage warning begins
+at 75 seconds. Chase projectiles reuse boss bolts with Rush star
+art and fast flight, so matching keys defend them and the existing boss damage/score
+and Time Attack statistics paths remain authoritative. The prompt phase clears airborne
+bolts to give the alternating pair sole ownership of matching keys. Kids Mode slows wandering,
+spaces launches further apart and extends the prompt timer; projectile flight stays fast.
+The original yarn and cage mechanics are removed. Companion hints, narrated demos,
+bounded players and native input checks teach/exercise the tap-circle-and-match loop.
+
+`RainbowCatArt` traces a frosted pastry body, pointed ears, paws and tail with shaded
+vector shapes. Body and head use separate `Softbody` instances advanced on the game clock.
+Capture rings reuse reduced geometry with two layers per band. Circles use native circle
+strokes; other shapes use `Painter.fastPolyline`, batched `Canvas.drawLines` on Android
+and the existing vector fallback elsewhere. No ring path arrays are allocated per frame.
+The user's Nyan Cat sprite sheet (Pictures/file_00000000a3c081f7894ea924c0332460.png)
+was inspected as an appearance/pose reference; no raster sprites are included or rendered.
+`RainbowLand` supplies scenery, title arches, picker artwork and stage vignettes.
+
+The 62-entry collection uses tag `0x8...`, preserving the older 61-entry `0x6...` and
+60-entry `0x5...` decoders. Their tag bits must never become Rainbow Cat ownership.
+Time Attack save v7 carries its boss/profile counts and archives old all-boss records by roster size;
+six-boss records start empty. Existing individual records keep their IDs. Transient
+onboarding introduction bits use a long now that lesson IDs extend past 31; persisted
+extra lesson bits retain their original positions.
+
+
+## Authoritative content counts
+
+`WorldCatalog` owns chapter order, boss metadata and skin names, land colors, friend IDs,
+and saved death IDs. Append rows without renumbering existing IDs. `Boss.COUNT` and
+`Lands.COUNT` derive from those rows; stages, unlocks, rewards, analytics and death blurbs
+use catalog lookups. Visual dispatch and bespoke mechanics still need implementation.
+`Collect.NAME`, `Glyph.NAME`, `Skins.NAMES`, `Power.OFFERED`/`DEBUFFS` and the named
+Survival profiles own their respective counts. Fixed geometry and authored effect tuning
+are not catalog sizes.
+
+Time Attack v7, Survival v3 and run-history v10/v11 store their dimensions. Older decoders
+retain historical widths on purpose. New all-boss runs cannot inherit a shorter roster's
+record. Audio preserves the original five-boss/six-key ID banks and appends extra voices;
+native iOS callers use runtime getters rather than translated constant macros.
+
+Storage is still bounded: collectibles have 63 bits beneath their tag, land state has
+eight-bit visit/suppression fields, and tutorial introductions have 64 transient bits.
+Catalog regression checks fail before the first two capacities overflow; widen/migrate
+these formats before exceeding them. Do not simply increase a count and shift saved bits.
+
+Rainbow Land uses more Rush followers (92% of eligible preceding words, 39% of eligible
+power-up spawns) and Divebomb words (36% of eligible multi-key candidates). Existing
+spawn phases choose variants without extra RNG draws. Enemy clears use vibrant rainbow
+particles and star bursts. The experimental rainbow wakes have been removed.

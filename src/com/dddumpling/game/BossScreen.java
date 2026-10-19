@@ -44,6 +44,7 @@ final class BossScreen extends Draw {
             if(b.kind==Boss.OCTOPUS)return 0xFFC7F4E2;
             if(b.kind==Boss.MUSHROOM)return 0xFFC48BEE;
         }
+        if (b.kind == Boss.RAINBOW_CAT) return 0xFFFFA4D5;
         if (b.kind == Boss.ALLIGATOR) return AlligatorArt.LIGHT;
         if (b.kind == Boss.SLIME) return 0xFF83E51C;
         if (b.kind == Boss.SPLITTER) return DIVIDE_COLOR[0];
@@ -121,6 +122,7 @@ final class BossScreen extends Draw {
     /** Draws either the live boss or a retained victory snapshot through the identical renderer. */
     static void body(Painter p, GameCore c, Layout L, Boss b, float alpha) {
         if (!b.active() || b.body == null) return;
+        if(b.kind==Boss.RAINBOW_CAT) {RainbowCatArt.draw(p,c,L,b,alpha);return;}
         if(b.kind==Boss.ALLIGATOR) {AlligatorArt.draw(p,c,L,b,alpha);return;}
         if(b.beaten && b.kind==Boss.SLIME) {SlimeDeath.draw(p,c,L,b,alpha);return;}
 
@@ -272,6 +274,7 @@ final class BossScreen extends Draw {
                     body.radiusX(),body.radiusY(),body.radius(),0xFF83E51C,clock,false,1);
             return;
         }
+        if(b.kind==Boss.RAINBOW_CAT) {RainbowCatArt.portrait(p,x,y,r,clock,true,1,-1);return;}
         if(b.kind==Boss.ALLIGATOR) {AlligatorArt.portrait(p,x,y,r,clock,true,1,true);return;}
         if(b.body==null)return;
         float br=Boss.bodyR(L),cx=b.body.centreX(),cy=b.body.centreY();
@@ -295,7 +298,7 @@ final class BossScreen extends Draw {
     }
 
     /** Uniform scaling keeps the actual boss outlines, shading and stroke weights together. */
-    private static final class PortraitFit implements Painter {
+    static final class PortraitFit implements Painter {
         public int skin() { return p.skin(); }
         final Painter p;final float ox,oy,s;
         public DuckBodies ducks(){return p.ducks();}
@@ -1779,6 +1782,7 @@ final class BossScreen extends Draw {
                     ? slimeBoltR(c, L, 1f)
                     : standardBoltR(L, at);
             int col = Skins.keyColor(p,g);
+            if(b.kind==Boss.RAINBOW_CAT) {RainbowCatArt.rushProjectile(p,c,L,b,i,x,y,rr,col);continue;}
             float sporeMorph = b.kind == Boss.MUSHROOM ? Math.min(1f, at / 0.30f) : 1f;
             if (b.kind == Boss.MUSHROOM) {
                 float sporeR = rr * (0.34f + 0.66f * sporeMorph);
@@ -1839,7 +1843,7 @@ final class BossScreen extends Draw {
     static void burst(Painter p, GameCore c, Layout L) {
         Boss b = c.boss;
         if (!b.active() || !b.beaten || b.body == null || b.kind == Boss.SPLITTER
-                || b.kind == Boss.MUSHROOM || b.kind == Boss.ALLIGATOR || b.kind == Boss.SLIME) return;
+                || b.kind == Boss.RAINBOW_CAT || b.kind == Boss.MUSHROOM || b.kind == Boss.ALLIGATOR || b.kind == Boss.SLIME) return;
         float t = b.leaveProgress();
         float cx = b.body.centreX(), cy = b.body.centreY();
         float r = b.body.radius();

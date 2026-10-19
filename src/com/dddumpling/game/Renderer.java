@@ -65,6 +65,8 @@ final class Renderer extends Draw {
         p.fillRect(-shakeMargin, L.deckTop, L.w + shakeMargin, L.h + shakeMargin,
                 Glyph.mix(Glyph.mix(BG_HI, BG_HURT, hurt * 0.35f), c.survival.active?BG_HI:BG_DEATH, gone * 0.85f));
 
+        Lands.backdrop(p,c,L);
+
         // Two cloud layers behind the words...
         Sky.cloudBand(p, c, L, 0, Sky.CLOUD_FRONT_LAYER, hurt);
 
@@ -117,6 +119,7 @@ final class Renderer extends Draw {
         c.boss.alligator.guard.draw(p,c,L);
         if(!SurvivalEnd.ownsCompanion(c) && (!Cave.active(c) || c.cave.phase!=Cave.CHOOSE)) RunCompanion.draw(p,c,L);
         c.boss.alligator.guard.drawCompanion(p,c,L);
+        c.boss.cat.rocket.drawCompanion(p,c,L);
         c.survival.drawRescue(p,c,L);
         // The grown TEAM form flies in front of the home while it leaves the key deck.
         if(c.buddy.entryLeft>0f) buddy(p,c,L);
@@ -937,6 +940,10 @@ final class Renderer extends Draw {
             GameCore.Particle q = c.particles.get(i);
             if(q.slime!=null)continue;
             float k = q.life / q.max;
+            if(q.rainbowStar) {
+                FastEnemies.rainbowBurst(p,q.x,q.y,q.size,q.x+q.y,1-k);
+                continue;
+            }
             p.fillCircle(q.x, q.y, q.size * (0.4f + k * 0.6f),
                     Glyph.withAlpha(q.color, (int) (235 * k)));
         }

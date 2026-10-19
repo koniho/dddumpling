@@ -1,0 +1,14 @@
+{
+  "source": "meow-long-low.m4a",
+  "source_sha256": "e6293094c920f11c3a862da0138d4988a8eea02a4c368268fd27cbb80bb7d99a",
+  "start": 0.64,
+  "end": 4.096,
+  "fades_ms": [
+    3,
+    35
+  ],
+  "sample_rate": 22050,
+  "channels": 1,
+  "description": "User-provided long low meow for Rainbow Cat defeat; remove preparation silence and preserve the complete vocal tail. Peak-normalize to the standard game effect level (85% full scale), without compression.",
+  "normalization_peak": 0.85
+}

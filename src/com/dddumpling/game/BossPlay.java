@@ -21,7 +21,10 @@ final class BossPlay {
      */
     static void endBoss(GameCore c, Layout L) {
         boolean won = c.boss.beaten;
-        if (c.sound != null) c.sound.bossMusic(false);
+        if (c.sound != null) {
+            c.sound.bossMusic(false);
+            if(c.boss.kind==Boss.RAINBOW_CAT)c.sound.rocket(0);
+        }
         if(c.timeAttack.active) {c.timeAttack.bossEnded(c,won);return;}
         // Everything still on the field goes with it. A boss dying to a field of three words and
         // then handing you a mopping-up job is an anticlimax, and the interlude is the payoff.
@@ -53,7 +56,7 @@ final class BossPlay {
 
     static void deathFeedback(GameCore c, float before) {
         Boss b = c.boss;
-        if (!b.beaten || before < 0f) return;
+        if (!b.beaten || before < 0f || (b.kind==Boss.RAINBOW_CAT && b.cat.rocket.active)) return;
         float now = b.leaveProgress() * Boss.LEAVE;
         if (now <= before) return;
         boolean impact = before == 0f || (before < b.deathImpactTime() && now >= b.deathImpactTime());
@@ -88,6 +91,7 @@ final class BossPlay {
         // A bolt in the air outranks everything, engaged word included: it is the only thing here
         // that costs a life.
         if (c.boss.boltWants(g)) return true;
+        if(c.boss.kind==Boss.RAINBOW_CAT)return true;
 
         // A shielded Slime rejects every press, including one made during a word. While open it
         // only owns genuinely stray presses, so starting a valid enemy word still works.
@@ -149,7 +153,13 @@ final class BossPlay {
             // Swatted, not landed on the boss: the score is the same as a hit but the boss is
             // untouched, so no shake and no flash — those read as damage.
             c.score += GameCore.BOSS_HIT;
+            int firstParticle=c.particles.size();
             Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR * 1.2f, 10, Glyph.COLOR[g]);
+            if(c.boss.kind==Boss.RAINBOW_CAT && c.boss.boltDestroyed) {
+                for(int i=firstParticle;i<c.particles.size();i++)
+                    c.particles.get(i).color=RainbowLand.CLEAR_COLORS[(i-firstParticle)%RainbowLand.CLEAR_COLORS.length];
+                Fx.rainbowStarBurst(c,c.boss.hitX,c.boss.hitY,L.enemyR);
+            }
             if (c.sound != null) {
                 if (c.boss.kind == Boss.SPLITTER) c.sound.divideDamage();
                 else if (c.boss.boltDestroyed) c.sound.boltDeath();
@@ -161,8 +171,8 @@ final class BossPlay {
             c.onboarding.bossDamaged(c);
             c.companion.react(RunCompanion.BOSS_HIT, 1f);
             c.score += GameCore.BOSS_HIT;
-            c.shake = Math.max(c.shake, c.boss.kind==Boss.ALLIGATOR?.55f:.30f);
-            c.flash = Math.max(c.flash, 0.4f);
+            c.shake = Math.max(c.shake, c.boss.kind==Boss.ALLIGATOR?.55f:c.boss.kind==Boss.RAINBOW_CAT?.20f:.30f);
+            c.flash = Math.max(c.flash, c.boss.kind==Boss.RAINBOW_CAT?.08f:.4f);
             boolean divide = c.boss.kind == Boss.SPLITTER;
             c.flashColor = divide ? 0xFF7D45D6 : GameCore.FLASH_CLEAR;
             Fx.explode(c, c.rnd, divide ? c.boss.hitX : c.boss.bodyX(L),
@@ -170,14 +180,31 @@ final class BossPlay {
                     Glyph.COLOR[g]);
             if (c.sound != null) {
                 if (divide) c.sound.divideDamage();
+                else if(c.boss.kind==Boss.RAINBOW_CAT) {
+                    c.sound.catLaser();
+                    c.boss.cat.meow(c,c.boss.beaten?CatMeowRecording.DEFEAT:CatMeowRecording.HURT,
+                            c.boss.beaten || c.boss.cat.windowHits==1 || c.boss.cat.escapeSequence);
+                }
                 else c.sound.bossDamage();
             }
         }
         if (verdict == Boss.SPLIT && !slimePrompt && c.sound != null) c.sound.bossSplit();
         // Pitched by how much of the boss is left, except the charged bolt which owns its bloop.
-        if (!slimePrompt && c.boss.kind != Boss.SPLITTER && c.sound != null)
+        if (!slimePrompt && c.boss.kind != Boss.SPLITTER && !(c.boss.kind==Boss.RAINBOW_CAT && verdict==Boss.HIT) && c.sound != null)
             c.sound.squish(g, 1 + (int) (3f * (1f - c.boss.health())));
         return true;
+    }
+
+    static void catTap(GameCore c,Layout L) {
+        Boss b=c.boss;b.hitX=b.cat.x;b.hitY=b.cat.y;
+        c.companion.react(RunCompanion.BOSS_HIT,1);
+        c.hits++;c.combo++;c.maxCombo=Math.max(c.maxCombo,c.combo);c.score+=GameCore.BOSS_HIT;
+        c.shake=Math.max(c.shake,.35f);c.flash=Math.max(c.flash,.22f);c.flashColor=0xFFFFB1DD;
+        int first=c.particles.size();
+        Fx.explode(c,c.rnd,b.hitX,b.hitY,L.enemyR*2,24,0xFFFF92CC);
+        RainbowLand.clearColors(c,first);
+        b.cat.meow(c,CatMeowRecording.SURPRISED,true);
+        if(c.sound!=null)c.sound.ninjaSwish((b.cat.taps-1)%3);
     }
 
     static void slimeVulnerableSound(GameCore c,float dt) {
