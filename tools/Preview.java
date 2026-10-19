@@ -10,6 +10,14 @@ import java.io.File;
 final class Preview {
     private static void rainbowFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("151-"))return;
+        GameCore meowcula=TestRainbowCat.fight(L);meowcula.preferences.skin=Skins.HALLOWEEN;
+        for(int i=0;i<90;i++)meowcula.update(1f/60,L);
+        shot(dir,"151-meowcula-battle",meowcula,L,w,h,ss);
+        RasterPainter vampireSheet=new RasterPainter(w,h,ss);vampireSheet.clear(Draw.BG);
+        Painter vampire=Skins.painter(vampireSheet,Skins.HALLOWEEN);
+        vampire.text("MEOWCULA",w*.5f,h*.07f,w*.065f,Draw.INK,Painter.CENTER,true);
+        for(int row=0;row<3;row++)RainbowCatArt.cat(vampire,w*.5f,h*(.25f+row*.27f),w*.17f,row*.38f,row%2==0?-1:1,null,null,row==2,1);
+        Png.write(new File(dir,"151-meowcula-sheet.png"),vampireSheet.resolve(),w,h);
         GameCore shooting=TestRainbowCat.fight(L);RainbowCat shooter=shooting.boss.cat;shooter.launchLeft=.32f;
         shooter.x=L.w*.5f;shooter.y=L.h*.40f;shooter.routeDuration=99;shooter.routeTime=0;shooter.turn=-1;
         for(int i=0;i<4;i++) {shooter.route[i*2]=shooter.x;shooter.route[i*2+1]=shooter.y;}

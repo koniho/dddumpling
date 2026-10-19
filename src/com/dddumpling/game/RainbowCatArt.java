@@ -3,6 +3,8 @@ package com.dddumpling.game;
 /** Frosting, paws and pointed ears traced over moving spring outlines; no sprite textures. */
 final class RainbowCatArt extends Draw {
     static final int[] COLORS={0xFFFF7B9B,0xFFFFB36B,0xFFFFE488,0xFF91E2BA,0xFF8ED9F5,0xFFBBA4EE};
+    private static final int[] HALLOWEEN_TRAIL={0xFFA86BE4,0xFFCD9AFF,0xFFFF974B,0xFFFFCB79,0xFF9DDC62,0xFFD2F69A};
+    static int trailColor(Painter p,int band,int normal) {return Skins.halloween(p)?HALLOWEEN_TRAIL[band%HALLOWEEN_TRAIL.length]:normal;}
     private static final float[] FACE={-1.02f,.02f,-.99f,-.28f,-.88f,-.48f,-.86f,-.98f,-.72f,-1.06f,
                 -.34f,-.66f,0,-.60f,.34f,-.66f,.72f,-1.06f,.86f,-.98f,.88f,-.48f,
                 .99f,-.28f,1.02f,.02f,.99f,.35f,.87f,.60f,.66f,.79f,.34f,.89f,
@@ -28,7 +30,7 @@ final class RainbowCatArt extends Draw {
         if(a.tapFlash>0) {
             int color=tapColor(a);float end=Math.min(1,a.tapFlash/.10f);
             float[] body=pastry(a.pastry,a.x,a.y,a.r);
-            float[] face=points(FACE,a.head.centreX(),a.head.centreY(),a.head.radiusY()*1.13f,a.head.radiusY()*1.13f);
+            float[] face=face(p,a.head.centreX(),a.head.centreY(),a.head.radiusY()*1.13f);
             for(int layer=3;layer>=1;layer--) {
                 int glow=Glyph.withAlpha(color,(int)(end*(layer==1?180:45)));
                 q.strokePoly(body,glow,a.r*layer*.19f);q.strokePoly(face,glow,a.r*layer*.19f);
@@ -424,7 +426,7 @@ final class RainbowCatArt extends Draw {
                     strip[j*2]=x[at]+nx[at]*low;strip[j*2+1]=y[at]+ny[at]*low;
                     strip[back*2]=x[at]+nx[at]*high;strip[back*2+1]=y[at]+ny[at]*high;
                 }
-                p.fillPoly(strip,Glyph.withAlpha(COLORS[band],160*bucket/16));
+                p.fillPoly(strip,Glyph.withAlpha(trailColor(p,band,COLORS[band]),160*bucket/16));
             }
             start=end;
         }
@@ -473,13 +475,15 @@ final class RainbowCatArt extends Draw {
         cat(p,x,y,r,t,facing,body,skull,caught,known,scared,angry,cry,0,0);
     }
     private static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known,float scared,float angry,float cry,float wind,float reach) {
-        int crust=known>0?0xFFFFD49A:0xFF49425F,fur=known>0?FUR:0xFF49425F;
+        boolean vampire=Skins.halloween(p);
+        int crust=known>0?(vampire?0xFF805294:0xFFFFD49A):0xFF49425F;
+        int fur=known>0?(vampire?0xFFB58BC7:FUR):0xFF49425F;
         float step=(float)Math.sin(t*(caught?15:7));
         // Static portraits retain their decorative ribbon; battle uses recorded motion.
         if(body==null)for(int band=0;band<COLORS.length;band++) {
             float[] trail=new float[36];
             for(int i=0;i<9;i++){float u=i/8f;trail[i*2]=x-facing*r*(.8f+u*2.9f);trail[i*2+1]=y+r*((band-2.5f)*.24f+(float)Math.sin(t*4-u*3)*u*.30f)-r*.12f;trail[(17-i)*2]=trail[i*2];trail[(17-i)*2+1]=trail[i*2+1]+r*.24f;}
-            p.fillPoly(trail,fadeBy(COLORS[band],.48f*known));
+            p.fillPoly(trail,fadeBy(trailColor(p,band,COLORS[band]),.48f*known));
         }
         float[] tail={x-facing*r*.85f,y+r*.4f,x-facing*r*1.5f,y+r*.25f,x-facing*r*1.65f,y-r*(.10f+step*.16f)};
         p.polyline(tail,INK,r*.30f);p.polyline(tail,fur,r*.24f);
@@ -492,24 +496,25 @@ final class RainbowCatArt extends Draw {
         }
         float[] outline=pastry(body,x,y,r);
         p.fillPoly(outline,INK);p.fillPoly(inset(outline,x,y,.96f,.95f),crust);
-        p.fillPoly(inset(outline,x-r*.02f,y-r*.04f,.81f,.83f),known>0?0xFFFF92CC:fur);
-        p.fillPoly(inset(outline,x-r*.09f,y-r*.13f,.70f,.66f),known>0?0xFFFFB1DD:fur);
-        if(known>0)for(int i=0;i<10;i++) {
+        p.fillPoly(inset(outline,x-r*.02f,y-r*.04f,.81f,.83f),known>0?(vampire?0xFFA574BC:0xFFFF92CC):fur);
+        p.fillPoly(inset(outline,x-r*.09f,y-r*.13f,.70f,.66f),known>0?(vampire?0xFFC8A0D9:0xFFFFB1DD):fur);
+        if(known>0 && !vampire)for(int i=0;i<10;i++) {
             float px=x+r*(-.75f+(i%4)*.43f),py=y+r*(-.61f+(i/4)*.53f);
             p.line(px,py,px+r*.06f,py+r*.10f,COLORS[(i+1)%COLORS.length],r*.07f);
         }
+        if(vampire)cape(p,x,y,r,t,facing,known);
         float hx=skull==null?x+facing*r*.96f:skull.centreX();
         float hy=skull==null?y+r*.1f:skull.centreY();
         float hr=(skull==null?r*.66f:skull.radiusY())*1.13f;
         // Plush cheeks, small pointed ears and a wide round chin share one silhouette.
 
-        float[] shape=points(FACE,hx,hy,hr,hr);
+        float[] shape=face(p,hx,hy,hr);
         p.fillPoly(shape,INK);p.fillPoly(inset(shape,hx,hy,.93f,.92f),fur);
-        p.fillPoly(inset(shape,hx-hr*.08f,hy-hr*.1f,.80f,.72f),known>0?0xFFC4C2D3:fur);
+        p.fillPoly(inset(shape,hx-hr*.08f,hy-hr*.1f,.80f,.72f),known>0?(vampire?0xFFD4B4E0:0xFFC4C2D3):fur);
         if(known<=0)return;
         p.fillEllipse(hx,hy+hr*.33f,hr*.49f,hr*.32f,0x55FFF6EE);
         for(int side=-1;side<=1;side+=2) {
-            p.fillPoly(points(new float[]{side*.45f,-.62f,side*.73f,-.92f,side*.77f,-.43f},hx,hy,hr,hr),0xFFFFB4CB);
+            p.fillPoly(points(new float[]{side*.45f,-.62f,side*(vampire?.78f:.73f),vampire?-1.13f:-.92f,side*.77f,-.43f},hx,hy,hr,hr),0xFFFFB4CB);
             float ex=hx+side*hr*.40f,ey=hy+hr*.02f;
             boolean blink=scared==0 && angry==0 && Math.sin(t*1.7f)>.985;
             if(caught) {
@@ -551,6 +556,37 @@ final class RainbowCatArt extends Draw {
             }
             p.polyline(points(new float[]{-.25f,.34f,-.19f,.43f,-.10f,.45f,0,.34f,.10f,.45f,.19f,.43f,.25f,.34f},hx,hy,hr,hr),fadeBy(INK,(1-scared)*(1-angry)),hr*.055f);
             if(angry>0)p.polyline(points(new float[]{-.23f,.47f,0,.37f,.23f,.47f},hx,hy,hr,hr),fadeBy(INK,angry),hr*.075f);
+        }
+        if(vampire)for(int side=-1;side<=1;side+=2) {
+            float fx=hx+side*hr*.19f,fy=hy+hr*(cry>0?.48f:.43f);
+            p.fillPoly(new float[]{fx-hr*.075f,fy,fx+hr*.075f,fy,fx+hr*.025f,fy+hr*.18f,fx-hr*.025f,fy+hr*.18f},0xFFFFF9E8);
+            p.fillCircle(fx,fy+hr*.16f,hr*.035f,0xFFFFF9E8);
+        }
+    }
+    private static float[] face(Painter p,float x,float y,float r) {
+        float[] shape=points(FACE,x,y,r,r);
+        if(Skins.halloween(p))for(int i=0;i<FACE.length;i+=2)if(FACE[i+1]<-.5f) {
+            shape[i]=x+FACE[i]*r*1.06f;
+            shape[i+1]=y+r*(-.5f+(FACE[i+1]+.5f)*1.45f);
+        }
+        return shape;
+    }
+    private static void cape(Painter p,float x,float y,float r,float t,float facing,float known) {
+        float flap=(float)Math.sin(t*5)*.16f;
+        float[] hem={.62f,-.68f,-.10f,-.87f,-.86f,-.75f+flap,-1.38f,-.51f+flap,
+                -1.78f,-.65f+flap,-1.68f,-.22f+flap,-1.82f,.16f+flap,
+                -1.58f,.07f+flap,-1.45f,.27f+flap,-1.18f,.14f+flap,-1.05f,.37f,
+                -.65f,.24f,-.22f,.40f,.55f,.30f};
+        float[] cloth=points(hem,x,y,r*facing,r);
+        p.fillPoly(cloth,INK);
+        p.fillPoly(inset(cloth,x,y,.95f,.93f),known>0?0xFF613379:INK);
+        p.fillPoly(inset(cloth,x,y-r*.09f,.88f,.70f),known>0?0xFF9562B1:INK);
+        if(known>0) {
+            p.line(x+facing*r*.5f,y-r*.56f,x-facing*r*.85f,y-r*(.53f-flap*.5f),0xFFC69BDE,r*.055f);
+            // Rounded costume collar sits beneath the cheeks, anchored to the moving body.
+            p.fillPoly(points(new float[]{.40f,.15f,.30f,-.65f,.79f,-.37f,1.15f,-.61f,1.17f,.25f},x,y,r*facing,r),0xFF6B3C82);
+            p.fillEllipse(x+facing*r*.72f,y+r*.50f,r*.13f,r*.12f,0xFFC9EE91);
+            p.fillCircle(x+facing*r*.69f,y+r*.47f,r*.045f,0xFFF7FFDB);
         }
     }
     static float[] pastry(Softbody b,float x,float y,float r) {

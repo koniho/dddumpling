@@ -75,7 +75,7 @@ final class RainbowCatArrival extends Draw {
                 ribbon[front]=ribbon[back]=xx;
                 ribbon[front+1]=yy+(band-3)*width;ribbon[back+1]=yy+(band-2)*width;
             }
-            p.fillPoly(ribbon,Glyph.withAlpha(RainbowLand.CLEAR_COLORS[band],(int)(150*fade)));
+            p.fillPoly(ribbon,Glyph.withAlpha(RainbowCatArt.trailColor(p,band,RainbowLand.CLEAR_COLORS[band]),(int)(150*fade)));
         }
     }
     private static void rays(Painter p,RainbowCat a,Layout L,float age) {

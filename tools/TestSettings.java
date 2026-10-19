@@ -439,6 +439,9 @@ final class TestSettings extends Check {
     }
     private static void bossNames(Layout L) {
         group("skin-aware boss names across screens");
+        check("Halloween cat is Meowcula",Skins.bossName(Skins.HALLOWEEN,Boss.RAINBOW_CAT).equals("MEOWCULA")
+                && Skins.bossTitle(Skins.HALLOWEEN,Boss.RAINBOW_CAT).equals("Meowcula")
+                && Skins.bossName(Skins.DEFAULT,Boss.RAINBOW_CAT).equals("RAINBOW CAT"));
         for(int skin=0;skin<Skins.COUNT;skin++)for(int boss=0;boss<Boss.COUNT;boss++) {
             String expected=Skins.bossName(skin,boss);
             GameCore c=TestTimeAttack.start(boss);c.preferences.skin=skin;
