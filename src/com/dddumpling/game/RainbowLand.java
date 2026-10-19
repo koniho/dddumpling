@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** Translucent rainbow bands, with shared arches for the title and land icon. */
 final class RainbowLand extends Draw {
-    static final float BATTLE_SKY_RATE=3f;
+    static final float BATTLE_SKY_RATE=3f, BAND_SCROLL_RATE=.035f;
     static boolean active(GameCore c) {
         return !c.survival.active && !c.timeAttack.active && Lands.forStage(c.stage)==Lands.RAINBOW;
     }
@@ -23,7 +23,7 @@ final class RainbowLand extends Draw {
         for(int column:BAND_ORDER) {
             float radius=L.w*(.155f+.045f*hash(column*89+7));
             float straight=L.h*1.12f-radius*2,pitch=straight*.90f;
-            float travel=c.skyClock*L.h*.035f*(.85f+.30f*hash(column*41+5))+hash(column*61+3)*pitch;
+            float travel=c.skyClock*L.h*BAND_SCROLL_RATE*(.85f+.30f*hash(column*41+5))+hash(column*61+3)*pitch;
             int cycle=(int)Math.floor(travel/pitch);
             float offset=travel-cycle*pitch;
             for(int row=-1;row<=2;row++) {

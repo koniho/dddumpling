@@ -35,21 +35,24 @@ final class RainbowCatArrival extends Draw {
     }
     static void stars(Painter p,RainbowCat a,Boss b,Layout L) {
         float fade=starFade(b);if(fade<=0)return;
-        for(int i=0;i<STARS;i++) {
-            float depth=.3f+.7f*hash(i*71+19),xx=hash(i*977+31)*L.w;
-            float span=L.dangerY-L.playTop,travel=hash(i*313+13)+a.clock*.012f*depth;
+        // Draw distant stars first. Near stars move twice as fast; both trail the battle bands.
+        for(int layer=0;layer<2;layer++)for(int i=layer;i<STARS;i+=2) {
+            float depth=layer==0?.30f+.18f*hash(i*71+19):.70f+.30f*hash(i*71+19);
+            float xx=hash(i*977+31)*L.w,brightness=layer==0?.58f:1;
+            float span=L.dangerY-L.playTop;
+            float travel=hash(i*313+13)+a.clock*L.h*RainbowLand.BAND_SCROLL_RATE*(layer==0?.5f:1)/span;
             float yy=L.playTop+(travel-(float)Math.floor(travel))*span;
             float pulse=.65f+.35f*(float)Math.sin(a.clock*(1.2f+depth)+i*2.1f);
             float r=L.w*(.0035f+.0065f*depth)*(.8f+.2f*pulse);
             int color=RainbowLand.CLEAR_COLORS[i%RainbowLand.CLEAR_COLORS.length];
-            p.fillCircle(xx,yy,r*2.7f,Glyph.withAlpha(color,(int)(25*fade*pulse)));
+            p.fillCircle(xx,yy,r*2.7f,Glyph.withAlpha(color,(int)(25*fade*pulse*brightness)));
             float[] shape=a.arrivalStar;
             for(int point=0;point<8;point++) {
                 float angle=(float)(point*Math.PI/4),size=r*(point%2==0?1:.24f);
                 shape[point*2]=xx+(float)Math.cos(angle)*size;
                 shape[point*2+1]=yy+(float)Math.sin(angle)*size*1.4f;
             }
-            p.fillPoly(shape,Glyph.withAlpha(Glyph.mix(color,0xFFFFFFFF,.68f),(int)(210*fade*pulse)));
+            p.fillPoly(shape,Glyph.withAlpha(Glyph.mix(color,0xFFFFFFFF,.68f),(int)(210*fade*pulse*brightness)));
         }
     }
     static void draw(Painter p,RainbowCat a,Boss b,Layout L) {
