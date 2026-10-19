@@ -323,7 +323,7 @@ final class Boss {
 
     float hitX, hitY;
 
-    float introDuration() {return kind==ALLIGATOR?INTRO*3f:INTRO;}
+    float introDuration() {return kind==ALLIGATOR?INTRO*3f:kind==RAINBOW_CAT?RainbowCatArrival.DURATION:INTRO;}
 
     /** 0..1 through the arrival card. */
     float introProgress() {

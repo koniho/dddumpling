@@ -3171,6 +3171,7 @@ final class GameCore {
             if(boss.kind==Boss.RAINBOW_CAT)boss.cat.kids=kidsRun;
             if(boss.kind==Boss.ALLIGATOR)boss.alligator.target(this,L);
             int bossHits = boss.update(dt, L, rnd);
+            if(boss.kind==Boss.RAINBOW_CAT)RainbowCatArrival.feedback(this,beforeIntro);
             BossPlay.slimeVulnerableSound(this,dt);
             if(boss.kind==Boss.ALLIGATOR)boss.alligator.guard.feedback(this);
             if(boss.kind==Boss.ALLIGATOR)shake=Math.max(shake,Math.max(boss.alligator.takeShake(),

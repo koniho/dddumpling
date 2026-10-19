@@ -298,7 +298,7 @@ final class BossScreen extends Draw {
     }
 
     /** Uniform scaling keeps the actual boss outlines, shading and stroke weights together. */
-    private static final class PortraitFit implements Painter {
+    static final class PortraitFit implements Painter {
         public int skin() { return p.skin(); }
         final Painter p;final float ox,oy,s;
         public DuckBodies ducks(){return p.ducks();}

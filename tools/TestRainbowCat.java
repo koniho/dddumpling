@@ -23,6 +23,41 @@ final class TestRainbowCat extends Check {
         }
     }
     static void circle(GameCore c,Layout L,int direction) {rainbowCircle(c,L,direction);}
+    private static void arrival(Layout L) {
+        group("Rainbow Cat approaches from distance before the battle cry");
+        float lastScale=0;int turns=0;float priorDelta=0;
+        for(int step=1;step<=100;step++) {
+            float u=step/100f,scale=RainbowCatArrival.scale(u);
+            check("arrival grows steadily "+step,scale>=lastScale && scale<=1);lastScale=scale;
+            float dx=RainbowCatArrival.x(L,u)-RainbowCatArrival.x(L,u-.01f);
+            if(dx*priorDelta<0)turns++;if(Math.abs(dx)>.01f)priorDelta=dx;
+        }
+        check("approach weaves four times",turns==4);
+        check("starts distant and ends full size at center",RainbowCatArrival.scale(0)<.1f
+                && RainbowCatArrival.scale(1)==1 && Math.abs(RainbowCatArrival.x(L,1)-L.w*.5f)<.01f);
+        check("burst fits complete long meow",RainbowCatArrival.BURST>CatMeowRecording.duration(CatMeowRecording.STRUGGLE));
+        for(float fps:new float[]{30,60,120}) {
+            GameCore c=fight(L);c.boss.begin(Boss.RAINBOW_CAT,30,c.rnd,true);Ear ear=new Ear();c.sound=ear;
+            RainbowCat a=c.boss.cat;boolean earlyAttack=false,earlySound=false,fullStars=false;
+            while(c.boss.intro>0) {
+                c.update(1/fps,L);
+                if(c.boss.intro>0) {
+                    earlyAttack|=c.boss.boltCount()>0 || c.boss.fighting();
+                    earlyAttack|=a.touch(c,L,0,1,a.x,a.y);
+                }
+                if(RainbowCatArrival.elapsed(c.boss)<RainbowCatArrival.FLIGHT-.001f)earlySound|=ear.catMeows>0;
+                else fullStars|=RainbowCatArrival.starFade(c.boss)==1;
+            }
+            check("intro protects player until burst finishes "+fps,!earlyAttack && !earlySound && c.lives==GameCore.START_LIVES);
+            check("battle cry fires once at burst "+fps,ear.catMeows==1 && ear.lastCatMeow==CatMeowRecording.STRUGGLE);
+            check("stars fully present at foreground and remain in battle "+fps,fullStars && RainbowCatArrival.starFade(c.boss)==1);
+            check("entry meets live position without teleport "+fps,Math.abs(a.x-L.w*.5f)<.01f && Math.abs(a.y-RainbowCatArrival.groundY(L))<.01f);
+            c.boss.leave();check("exit resets arrival clock "+fps,a.clock==0 && !a.placed);
+        }
+        GameCore paused=fight(L);paused.boss.begin(Boss.RAINBOW_CAT,30,paused.rnd,true);paused.update(.3f,L);
+        paused.paused=true;float intro=paused.boss.intro,clock=paused.boss.cat.clock;paused.update(.5f,L);
+        check("pause freezes approach and stars",paused.boss.intro==intro && paused.boss.cat.clock==clock);
+    }
     private static void circleGestures(Layout L) {
         group("Rainbow Cat circle and fishing net");
         for(int direction:new int[]{-1,1}) {
@@ -582,7 +617,7 @@ final class TestRainbowCat extends Check {
         }
     }
     static void all(Layout L) {
-        hitShape(L);doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        arrival(L);hitShape(L);doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));

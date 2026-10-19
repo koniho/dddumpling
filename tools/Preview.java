@@ -10,6 +10,12 @@ import java.io.File;
 final class Preview {
     private static void rainbowFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("151-"))return;
+        GameCore arrival=TestRainbowCat.fight(L);arrival.boss.begin(Boss.RAINBOW_CAT,30,arrival.rnd,true);
+        for(int frame=0;frame<330;frame++) {
+            arrival.update(1f/60,L);
+            if(frame==10 || frame==65 || frame==115 || frame==170 || frame==195 || frame==250 || frame==329)
+                shot(dir,"151-cat-arrival-"+frame,arrival,L,w,h,ss);
+        }
         GameCore vulnerable=TestRainbowCat.fight(L);TestRainbowCat.challenge(vulnerable,L);
         for(int frame=0;frame<20;frame++)vulnerable.update(1f/60,L);
         shot(dir,"151-paired-keys-struggle",vulnerable,L,w,h,ss);

@@ -266,5 +266,5 @@ The surprise sound follows accepted taps and net catches; hurt follows completed
 key sequences, including the final hit. The retained longer meow plays when the net prompt
 opens. Short takes cycle through launches and flurries without consuming gameplay
 randomness. Routine calls wait until the current recording finishes; important
-surprise/hurt reactions take priority. The entrance uses the first short meow.
+surprise/hurt reactions take priority. The entrance reuses the full longer meow as a battle cry, starting with the foreground rainbow burst.
 Android and iOS use the same PCM at original speed and the effects-volume setting.

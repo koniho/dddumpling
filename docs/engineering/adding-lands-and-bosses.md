@@ -136,6 +136,11 @@ its initial implementation and follows bounded cubic curves; a tap preserves pos
 and starts a faster rainbow dash. Each tap holds the cat in place while flashing through all rainbow colors and
 settling into a scared expression. She then dashes away; repeat taps remain locked until
 that escape finishes.
+Boss entry lasts 5.3 seconds: three seconds weaving from a small distant pose into the
+foreground, then a 2.3-second rainbow-ray burst with the existing long meow. Background
+stars fade to full opacity during the approach and remain for the fight. Arrival timing uses
+the boss intro clock; pause freezes it, combat stays disabled through the cry, and no gameplay
+randomness is consumed by the stars, rays, or perspective trail.
 Only pointer-down can score a tap. Moves, historical
 samples and held fingers cannot score extra hits; lift/cancel/pause release ownership.
 After two taps, the cat waits centrally for a closed shape traced in either direction.

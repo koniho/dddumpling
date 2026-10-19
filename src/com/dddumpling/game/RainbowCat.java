@@ -11,6 +11,7 @@ final class RainbowCat {
     final Softbody pastry=new Softbody(18,151), head=new Softbody(14,152);
     final float[] route=new float[8],trailX=new float[136],trailY=new float[136],trailAge=new float[136];
     int phase,pointer=-1,taps,trailCount,captures,cue,promptKey=-1,windowHits;
+    final float[] arrivalStar=new float[16],arrivalRay=new float[8],arrivalRibbon=new float[(RainbowCatArrival.TRAIL_STEPS+1)*4];
     final TraceGesture gesture=new TraceGesture();
     static final float HIT_CONE_TIME=.34f;
     final float[] hitConeLife=new float[4],hitConeX=new float[4],hitConeY=new float[4],hitConeWork=new float[8];
@@ -99,6 +100,7 @@ final class RainbowCat {
             float settle=(float)Math.exp(-dt*16);
             traceX*=settle;traceY*=settle;
         }
+        RainbowCatArrival.pose(this,b,L);
         if(escapeSequence)escapeMotion(b,dt,L);
         else if(escaping && routeTime<routeDuration)advance(dt);
         pose(dt);

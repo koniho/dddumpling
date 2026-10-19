@@ -10,10 +10,12 @@ final class RainbowCatArt extends Draw {
     static final int FUR=0xFFA9A7BE, INK=0xFF49425F;
     static void draw(Painter p,GameCore c,Layout L,Boss b,float alpha) {
         RainbowCat a=b.cat;if(!a.placed)return;
-        float fade=alpha*(b.beaten?1-b.leaveProgress():1),enter=b.intro>0?b.introProgress():1;
+        float fade=alpha*(b.beaten?1-b.leaveProgress():1);
         Painter q=new OpacityPainter(p,fade);
+        RainbowCatArrival.stars(q,a,b,L);
+        if(b.intro>0) {RainbowCatArrival.draw(q,a,b,L);return;}
         motionTrail(q,a);
-        q.save();q.translate((1-enter)*(1-enter)*-L.w,0);
+        q.save();
         secondTapRays(q,a,L);
         shapeRings(q,a);
         escapeBurst(q,a);
@@ -457,7 +459,13 @@ final class RainbowCatArt extends Draw {
     static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known) {
         cat(p,x,y,r,t,facing,body,skull,caught,known,0,0);
     }
+    static void arrivalCat(Painter p,RainbowCat a,float cry) {
+        cat(p,a.x,a.y,a.r,a.clock*2,a.turn,a.pastry,a.head,false,1,0,0,cry);
+    }
     private static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known,float scared,float angry) {
+        cat(p,x,y,r,t,facing,body,skull,caught,known,scared,angry,0);
+    }
+    private static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known,float scared,float angry,float cry) {
         int crust=known>0?0xFFFFD49A:0xFF49425F,fur=known>0?FUR:0xFF49425F;
         float step=(float)Math.sin(t*(caught?15:7));
         // Static portraits retain their decorative ribbon; battle uses recorded motion.
@@ -518,7 +526,11 @@ final class RainbowCatArt extends Draw {
             p.line(hx+side*hr*.71f,hy+hr*.38f,hx+side*hr*.93f,hy+hr*.35f,0x88766891,hr*.035f);
         }
         p.fillEllipse(hx,hy+hr*.23f,hr*.095f,hr*.065f,0xFFBE7FA7);
-        if(caught) {
+        if(cry>0) {
+            float mouth=cry*(.85f+.15f*(float)Math.sin(t*9));
+            p.fillEllipse(hx,hy+hr*.49f,hr*.23f,hr*(.06f+.22f*mouth),INK);
+            p.fillEllipse(hx,hy+hr*.60f,hr*.13f,hr*.065f*mouth,0xFFFFA8CB);
+        } else if(caught) {
             p.fillEllipse(hx,hy+hr*.48f,hr*.13f,hr*(.12f+.035f*(float)Math.sin(t*18)),INK);
             p.fillEllipse(hx,hy+hr*.54f,hr*.085f,hr*.045f,0xFFFFB4CB);
             p.fillEllipse(hx+hr*.89f,hy-hr*.25f,hr*.07f,hr*.13f,0xBBBEF6FF);
