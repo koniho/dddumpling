@@ -56,7 +56,9 @@ final class BossRetry extends Draw {
         q.text(name,cx,L.h*.322f,Math.min(type(s*.78f),L.w*.72f/(name.length()*.73f)),INK,Painter.CENTER,true);
         TimeAttackDemo.drawRetry(q,c,L,L.h*.423f);
         float y=buttonY(L,true),half=L.h*.047f,text=type(s*1.15f);
-        q.fillRect(L.w*.15f,y-half,L.w*.85f,y+half,0x334DCEAA);
+        float pulse=.5f-.5f*(float)Math.cos(c.clock*Softbody.TAU/2.4f);
+        int retryColor=Glyph.mix(0xFF4DCEAA,0xFFF4C552,pulse);
+        q.fillRect(L.w*.15f,y-half,L.w*.85f,y+half,Glyph.withAlpha(retryColor,(int)(51+38*pulse)));
         q.text("RETRY",cx,y+text*.35f,text,INK,Painter.CENTER,true);
         q.text("END RUN",cx,buttonY(L,false)+text*.35f,text,INK,Painter.CENTER,true);
         if(c.highScores.bossRetries>0)q.text("BOSS RETRIES: "+c.highScores.bossRetries,cx,L.h*.7f,type(s*.48f),GOLD,Painter.CENTER,true);
