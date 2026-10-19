@@ -97,6 +97,8 @@ final class LinkedPairArt {
     /** Rotates the complete code-drawn pair, including faces, clasp and clipping masks. */
     static final class TurnPainter implements Painter {
         public int skin() { return p.skin(); }
+        public DuckBodies ducks() {return p.ducks();}
+        public GatorCompanion gator() {return p.gator();}
         final Painter p;
         final float cx,cy,cos,sin;
         TurnPainter(Painter p,float cx,float cy,float angle) {

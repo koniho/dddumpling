@@ -2,12 +2,14 @@ package com.dddumpling.game;
 
 /** A rounded carrier becomes a rocket; victory waits until its rainbow exhaust has cleared. */
 final class RainbowCatRocket extends Draw {
-    static final float FETCH=1f,PULL=2.5f,DROP=3.6f,CLOSE=4.15f,LAUNCH=4.8f,DEPART=6.2f,DURATION=7.1f;
+    static final float FETCH=1f,PULL=2.5f,TIP=3.25f,RELEASE=4f,DROP=4.5f,CLOSE=5.05f,
+            LAUNCH=5.7f,DEPART=7.1f,DURATION=8f,SHAKE_STEP=.22f;
+    static final int SHAKES=3;
     boolean active;
     float age;
-    int feedback;
+    int feedback,shakeBeats,launchBeats;
     final float[] shell=new float[82],ray=new float[8],trail=new float[100];
-    void reset() {active=false;age=0;feedback=0;}
+    void reset() {active=false;age=0;feedback=shakeBeats=launchBeats=0;}
     void begin(RainbowCat a,Boss b) {
         reset();active=true;b.clearBolts();b.defeatChime=false;
         a.phase=RainbowCat.CATCH;a.netAge=RainbowCat.NET_TIME;
@@ -19,18 +21,45 @@ final class RainbowCatRocket extends Draw {
     void update(float dt) {age=Math.min(DURATION,age+dt);}
     void feedback(GameCore c) {
         if(!active)return;
+        while(shakeBeats<SHAKES && age>=TIP+SHAKE_STEP*(shakeBeats+.5f)) {
+            shakeBeats++;c.bossDeathHaptic=Math.max(c.bossDeathHaptic,1);
+            c.shake=Math.max(c.shake,.12f);
+            if(c.sound!=null)c.sound.ninjaSwish(shakeBeats%3);
+        }
         if(age>=DROP && feedback<1) {
             feedback=1;if(c.sound!=null)c.sound.squish(Kawaii.CAT,2);
+            c.bossDeathHaptic=2;c.shake=Math.max(c.shake,.35f);
         }
         if(age>=CLOSE && feedback<2) {
-            feedback=2;if(c.sound!=null)c.sound.uiBloop();c.bossDeathHaptic=1;
+            feedback=2;if(c.sound!=null)c.sound.uiBloop();c.bossDeathHaptic=Math.max(c.bossDeathHaptic,1);
         }
         if(age>=LAUNCH && feedback<3) {
             feedback=3;if(c.sound!=null)c.sound.courseFinish();
             c.shake=Math.max(c.shake,.9f);c.flash=Math.max(c.flash,.45f);
             c.flashColor=0xFFF0DFFF;c.bossDeathHaptic=2;
         }
+        while(launchBeats<4 && age>=LAUNCH+launchBeats*.13f) {
+            launchBeats++;c.bossDeathHaptic=Math.max(c.bossDeathHaptic,launchBeats==1?2:1);
+        }
+        if(age>=CLOSE && c.sound!=null)c.sound.rocket(thrust());
     }
+    float thrust() {
+        if(age<CLOSE || age>=DEPART+.3f)return 0;
+        float ignition=.15f+.85f*ease((age-CLOSE)/(LAUNCH-CLOSE));
+        return ignition*(1-ease((age-DEPART)/.3f));
+    }
+    float shakeMotion() {
+        float t=(age-TIP)/SHAKE_STEP;
+        if(t<0 || t>=SHAKES)return 0;
+        return (float)Math.sin((t-(float)Math.floor(t))*Math.PI);
+    }
+    float netAngle() {
+        float shake=age>=TIP && age<RELEASE?.10f*(float)Math.sin((age-TIP)/SHAKE_STEP*Softbody.TAU):0;
+        return -(float)Math.PI*ease((age-PULL)/(TIP-PULL))+shake;
+    }
+    float catAngle() {return age<RELEASE?netAngle():-(float)Math.PI*(1+ease((age-DROP)/.35f));}
+    float lift() {return ease((age-PULL)/(TIP-PULL))*(1-ease((age-DROP)/.45f));}
+
     static float unit(float v) {return Math.max(0,Math.min(1,v));}
     static float ease(float v) {v=unit(v);return v*v*(3-2*v);}
     static float mix(float a,float b,float u) {return a+(b-a)*u;}
@@ -45,24 +74,38 @@ final class RainbowCatRocket extends Draw {
         float start=a.catchX+a.r*2.45f;
         if(age<FETCH)return mix(start,-L.w*.03f,ease(age/FETCH));
         float x=rocketX(L)+L.w*.30f;
+        x-=L.w*.055f*lift();
         return mix(x,RunCompanion.x(L),ease((age-CLOSE)/1.1f));
     }
     float companionY(RainbowCat a,Layout L) {
         float walk=ground(L)+radius(L)*.9f;
         if(age<FETCH)return mix(a.catchY+a.r*2.15f,walk,ease(age/FETCH));
         return mix(walk,RunCompanion.y(L),ease((age-CLOSE)/1.1f))
+                -radius(L)*1.2f*lift()+radius(L)*.11f*shakeMotion()
                 -(age<PULL?Math.abs((float)Math.sin(age*17))*L.w*.016f:0);
     }
-    float catX(RainbowCat a,Layout L) {
+    float netX(RainbowCat a,Layout L) {
         float held=companionX(a,L)-L.w*.11f;
         if(age<FETCH)return mix(a.x,held,ease(age/FETCH));
-        return mix(held,rocketX(L)+radius(L)*.12f,ease((age-PULL)/(DROP-PULL)));
+        return mix(held,rocketX(L)+radius(L)*.12f,ease((age-PULL)/(TIP-PULL)))
+                +radius(L)*.6f*ease((age-RELEASE)/.55f);
     }
-    float catY(RainbowCat a,Layout L) {
+    float netY(RainbowCat a,Layout L) {
         float held=ground(L)-radius(L)*1.45f;
         if(age<FETCH)return mix(a.y,held,ease(age/FETCH));
-        float drop=unit((age-PULL)/(DROP-PULL));
-        return mix(held,rocketY(L)+radius(L)*.02f,drop*drop)-radius(L)*.4f*(float)Math.sin(drop*Math.PI);
+        return held-radius(L)*.22f*ease((age-PULL)/(TIP-PULL))
+                +radius(L)*.14f*shakeMotion()-radius(L)*.3f*ease((age-RELEASE)/.55f);
+    }
+    float catX(RainbowCat a,Layout L) {
+        return age<RELEASE?netX(a,L):rocketX(L)+radius(L)*.12f;
+    }
+    float catY(RainbowCat a,Layout L) {
+        if(age<RELEASE)return netY(a,L);
+        float fall=unit((age-RELEASE)/(DROP-RELEASE));
+        return mix(ground(L)-radius(L)*1.67f,rocketY(L)+radius(L)*.02f,fall*fall);
+    }
+    private Painter fitTurn(Painter p,RainbowCat a,float x,float y,float scale,float angle) {
+        return new BossScreen.PortraitFit(new LinkedPairArt.TurnPainter(p,x,y,angle),a.x,a.y,0,0,scale);
     }
     void draw(Painter p,GameCore c,Layout L) {
         RainbowCat a=c.boss.cat;
@@ -71,19 +114,22 @@ final class RainbowCatRocket extends Draw {
         exhaust(p,L,x,y,r);
         pod(p,x,y,r,false);
         float catScale=mix(1,.62f,ease(age/FETCH));
-        float nx=catX(a,L),ny=catY(a,L);
-        Painter fitted=new BossScreen.PortraitFit(p,a.x,a.y,nx,ny,catScale);
-        float netFade=1-ease((age-DROP)/.35f);
+        float nx=netX(a,L),ny=netY(a,L),angle=netAngle();
+        Painter meshFit=fitTurn(p,a,nx,ny,catScale,angle);
+        float netFade=1-ease((age-RELEASE)/.55f);
         if(netFade>0) {
-            Painter mesh=new OpacityPainter(fitted,netFade);
-            RainbowCatArt.net(mesh,c,L,false,false);
-            // The pole stays in the companion's hand while the loaded pouch is tipped into the carrier.
-            float gx=nx+a.r*1.9f*catScale,gy=ny-a.r*1.25f*catScale;
-            p.line(cx,cy,gx,gy,0xFF485777,L.w*.018f);
-            p.line(cx-L.w*.003f,cy,gx-L.w*.003f,gy,0xFFC4F9EC,L.w*.008f);
+            RainbowCatArt.net(new OpacityPainter(meshFit,netFade),c,L,false,false);
+            // Transform the hoop's grip with the overturned mesh; keep the pole in the companion's hands.
+            float gripX=a.r*1.9f*catScale,gripY=-a.r*1.25f*catScale;
+            float gx=nx+gripX*(float)Math.cos(angle)-gripY*(float)Math.sin(angle);
+            float gy=ny+gripX*(float)Math.sin(angle)+gripY*(float)Math.cos(angle);
+            Painter pole=new OpacityPainter(p,netFade);
+            pole.line(cx,cy,gx,gy,0xFF485777,L.w*.018f);
+            pole.line(cx-L.w*.003f,cy,gx-L.w*.003f,gy,0xFFC4F9EC,L.w*.008f);
         }
-        RainbowCatArt.cat(fitted,a.x,a.y,a.r,a.clock,a.turn,a.pastry,a.head,true,1);
-        if(netFade>0)RainbowCatArt.net(new OpacityPainter(fitted,netFade),c,L,true,false);
+        Painter cat=fitTurn(p,a,catX(a,L),catY(a,L),catScale,catAngle());
+        RainbowCatArt.cat(cat,a.x,a.y,a.r,a.clock,a.turn,a.pastry,a.head,true,1);
+        if(netFade>0)RainbowCatArt.net(new OpacityPainter(meshFit,netFade),c,L,true,false);
         pod(p,x,y,r,true);
         if(age>=FETCH && age<PULL+.1f) {
             // A separate tow strap leaves the other hand free for the net.
@@ -97,9 +143,16 @@ final class RainbowCatRocket extends Draw {
         float cx=companionX(a,L),cy=companionY(a,L);
         if(c.companion.who>=0) {
             float lean=age<PULL?-.22f:.13f*(float)Math.sin(age*9);
+            float turn=-.72f*lift()+.22f*shakeMotion();
+            Painter actor=new LinkedPairArt.TurnPainter(p,cx,cy,turn);
             float cr=RunCompanion.radius(c,L)*mix(1.55f,1,ease((age-CLOSE)/1.1f));
-            Trinket.drawReacting(p,c.companion.who,cx,cy,cr,c.companion.clock,1,
-                    age<PULL?Trinket.FIGHT:0,lean,c.ninja());
+            Trinket.drawReacting(actor,c.companion.who,0,0,cr,c.companion.clock,1,
+                    age<RELEASE?Trinket.FIGHT:0,lean,c.ninja());
+            if(age>=PULL && age<RELEASE) {
+                int color=Collect.BODY[c.companion.who];
+                actor.fillEllipse(-cr*.22f,-cr*.08f,cr*.24f,cr*.18f,color);
+                actor.fillEllipse(cr*.22f,-cr*.08f,cr*.24f,cr*.18f,color);
+            }
         }
     }
     private void contour(float x,float y,float r,float scale) {

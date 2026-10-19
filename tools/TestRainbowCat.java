@@ -644,6 +644,45 @@ final class TestRainbowCat extends Check {
         int calls=ear.catMeows;for(int i=0;i<30;i++)c.update(1f/60,L);
         check("defeat recording is not retriggered during cage transition",ear.catMeows==calls);
     }
+    private static void rocketShakeFeedback(Layout L) {
+        group("Overturned net, shake feedback and rocket engine lifecycle");
+        GameCore c=fight(L);c.boss.hp=1;challenge(c,L);
+        while(c.boss.cat.phase==RainbowCat.OPEN)c.boss.press(c.boss.cat.promptKey,c.rnd,L);
+        RainbowCat a=c.boss.cat;RainbowCatRocket r=a.rocket;Ear ear=new Ear();c.sound=ear;
+        int shakes=0,landing=0,launch=0;boolean inverted=true;
+        while(r.age<RainbowCatRocket.CLOSE+.2f) {
+            c.update(1f/120,L);
+            if(r.age>=RainbowCatRocket.TIP && r.age<RainbowCatRocket.RELEASE && c.bossDeathHaptic>0)shakes++;
+            if(r.age>=RainbowCatRocket.DROP && r.age<RainbowCatRocket.CLOSE && c.bossDeathHaptic==2)landing++;
+            if(r.age>=RainbowCatRocket.TIP && r.age<RainbowCatRocket.RELEASE)
+                inverted&=r.netAngle()<-3 && r.catAngle()<-3;
+        }
+        check("net and occupant stay inverted while shaking",inverted);
+        check("three deliberate shakes each get one tactile and sound cue",shakes==RainbowCatRocket.SHAKES && ear.swishes==RainbowCatRocket.SHAKES);
+        check("cat landing gets its own heavy impact",landing==1);
+        check("engine spools up after cage closes",ear.rocketThrust>0 && ear.rocketThrust<1 && ear.courseFinishes==0);
+        float pausedAt=r.age;Pause.open(c);check("pause silences rocket loop",ear.rocketThrust==0);
+        c.update(.2f,L);check("pause holds the scoop sequence",r.age==pausedAt);
+        Pause.resume(c);c.update(1f/120,L);check("resume restarts current engine thrust",ear.rocketThrust>0);
+        while(c.boss.kind==Boss.RAINBOW_CAT && r.active) {
+            float before=r.age;c.update(1f/120,L);
+            if(before>=RainbowCatRocket.LAUNCH-.01f && before<RainbowCatRocket.LAUNCH+.5f && c.bossDeathHaptic>0)launch++;
+        }
+        check("blastoff plays once with a short haptic rumble",ear.courseFinishes==1 && launch==4 && ear.maxRocket>=.99f);
+        check("engine stops before reward and remains silent",ear.rocketThrust==0);
+        c=fight(L);c.boss.hp=1;challenge(c,L);
+        while(c.boss.cat.phase==RainbowCat.OPEN)c.boss.press(c.boss.cat.promptKey,c.rnd,L);
+        r=c.boss.cat.rocket;ear=new Ear();c.sound=ear;
+        r.age=RainbowCatRocket.LAUNCH;r.feedback(c);c.toTitle();
+        check("returning to title cannot leave engine running",ear.rocketThrust==0);
+        if(BuildFlags.DEVELOPER) {
+            c=fight(L);c.boss.hp=1;challenge(c,L);
+            while(c.boss.cat.phase==RainbowCat.OPEN)c.boss.press(c.boss.cat.promptKey,c.rnd,L);
+            r=c.boss.cat.rocket;ear=new Ear();c.sound=ear;
+            r.age=RainbowCatRocket.LAUNCH;r.feedback(c);c.endCurrentRun();
+            check("forced death stops rocket audio",ear.rocketThrust==0);
+        }
+    }
     private static void rocketVictory(Layout L) {
         group("Rainbow Cat carrier rocket victory");
         for(int fps:new int[]{30,60,120}) {
@@ -677,7 +716,7 @@ final class TestRainbowCat extends Check {
         c.paused=false;c.update(.1f,L);check("resume advances rocket",r.age>0);
     }
     static void all(Layout L) {
-        retainedProjectiles(L);rocketVictory(L);arrival(L);hitShape(L);doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        rocketShakeFeedback(L);retainedProjectiles(L);rocketVictory(L);arrival(L);hitShape(L);doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));

@@ -21,7 +21,10 @@ final class BossPlay {
      */
     static void endBoss(GameCore c, Layout L) {
         boolean won = c.boss.beaten;
-        if (c.sound != null) c.sound.bossMusic(false);
+        if (c.sound != null) {
+            c.sound.bossMusic(false);
+            if(c.boss.kind==Boss.RAINBOW_CAT)c.sound.rocket(0);
+        }
         if(c.timeAttack.active) {c.timeAttack.bossEnded(c,won);return;}
         // Everything still on the field goes with it. A boss dying to a field of three words and
         // then handing you a mopping-up job is an anticlimax, and the interlude is the payoff.

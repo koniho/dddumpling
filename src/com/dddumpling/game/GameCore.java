@@ -1957,6 +1957,7 @@ final class GameCore {
     }
 
     private void resetStarRun() {
+        if(sound!=null)sound.rocket(0);
         stars.resetRun();
         starNext = starBonus = false;
     }
