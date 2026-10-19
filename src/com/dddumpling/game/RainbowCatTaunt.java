@@ -50,65 +50,82 @@ final class RainbowCatTaunt extends Draw {
         float beat=(age-NOTE_START)/NOTE_STEP;
         return .45f+.55f*Math.max(0,(float)Math.sin(beat*Softbody.TAU));
     }
-    static void draw(Painter p,GameCore c,Layout L) {
-        RainbowCat a=c.bossVictory.cat;float age=c.deathDuration()-c.deathT;
-        float fade=Math.min(1,c.deathT/.55f);
-        Painter q=new OpacityPainter(p,fade);
+    private static final int[] SAMPLES={48,8,8,24};
+    static final class Mesh {
+        final float[][] centres=new float[4][],strips=new float[4][];
+        final float[] gleam=new float[36];
+        Mesh() {
+            for(int i=0;i<4;i++) {
+                centres[i]=new float[(SAMPLES[i]+1)*4];strips[i]=new float[(SAMPLES[i]+1)*4];
+            }
+        }
+    }
+    static void ribbons(Painter p,Layout L,float age,Mesh mesh) {
         for(int stroke=0;stroke<4;stroke++) {
             float progress=ink(stroke,age);if(progress<=0)continue;
-            int samples=stroke==0?64:stroke==3?32:12;
-            float[] strip=new float[(samples+1)*4],centres=new float[(samples+1)*5];
+            int samples=SAMPLES[stroke];float[] centres=mesh.centres[stroke],strip=mesh.strips[stroke];
             for(int n=0;n<=samples;n++) {
                 float u=progress*n/samples;
-                float dx=flowingPoint(L,stroke,Math.min(1,u+.002f),0,age)-flowingPoint(L,stroke,Math.max(0,u-.002f),0,age);
-                float dy=flowingPoint(L,stroke,Math.min(1,u+.002f),1,age)-flowingPoint(L,stroke,Math.max(0,u-.002f),1,age);
-                float length=Math.max(.001f,(float)Math.hypot(dx,dy));
-                centres[n*5]=flowingPoint(L,stroke,u,0,age);centres[n*5+1]=flowingPoint(L,stroke,u,1,age);
-                centres[n*5+2]=-dy/length;centres[n*5+3]=dx/length;
-                centres[n*5+4]=1+.055f*(float)Math.sin(u*Softbody.TAU*2-age*3+stroke);
+                centres[n*4]=flowingPoint(L,stroke,u,0,age);centres[n*4+1]=flowingPoint(L,stroke,u,1,age);
             }
-            // Wider core with faint skirts: soft edges without blur filters or overlapping line joins.
-            for(int feather=2;feather>=0;feather--)for(int band=0;band<6;band++) {
+            for(int n=0;n<=samples;n++) {
+                int prev=Math.max(0,n-1)*4,next=Math.min(samples,n+1)*4;
+                if(stroke==0 && progress==1 && (n==0 || n==samples)){prev=(samples-1)*4;next=4;}
+                float dx=centres[next]-centres[prev],dy=centres[next+1]-centres[prev+1];
+                float width=(1+.055f*(float)Math.sin(progress*n/samples*Softbody.TAU*2-age*3+stroke))
+                        /Math.max(.001f,(float)Math.hypot(dx,dy));
+                centres[n*4+2]=-dy*width;centres[n*4+3]=dx*width;
+            }
+            // Only the outer edges need feathering; internal bands share their soft colour boundaries.
+            for(int feather=2;feather>=1;feather--)for(int band=0;band<=5;band+=5) {
                 float spread=feather*L.w*.0035f;
-                float lo=(band-3)*L.w*.0195f-spread,hi=lo+L.w*.0198f+spread*2;
-                for(int n=0;n<=samples;n++) {
-                    float px=centres[n*5],py=centres[n*5+1],nx=centres[n*5+2]*centres[n*5+4],ny=centres[n*5+3]*centres[n*5+4];
-                    strip[n*2]=px+nx*lo;strip[n*2+1]=py+ny*lo;
-                    int back=(samples*2+1-n)*2;strip[back]=px+nx*hi;strip[back+1]=py+ny*hi;
-                }
-                int color=RainbowCatArt.trailColor(q,band,RainbowCatArt.COLORS[band]);
-                q.fillPoly(strip,Glyph.withAlpha(color,feather==0?170:feather==1?40:18));
+                ribbon(p,centres,strip,samples,(band-3)*L.w*.0195f-spread,
+                        (band-3)*L.w*.0195f+L.w*.0198f+spread,
+                        Glyph.withAlpha(RainbowCatArt.trailColor(p,band,RainbowCatArt.COLORS[band]),feather==1?40:18));
             }
-            // Overlapping soft patches avoid seams between individual highlighted mesh segments.
-            float[] gleam=new float[36];
-            for(int band=0;band<6;band++)for(int wave=-1;wave<=2;wave++) {
-                float travel=(age*3.5f-band*.32f-stroke*.7f)/(Softbody.TAU*2);
+            for(int band=0;band<6;band++)ribbon(p,centres,strip,samples,
+                    (band-3)*L.w*.0195f,(band-3)*L.w*.0195f+L.w*.0198f,
+                    Glyph.withAlpha(RainbowCatArt.trailColor(p,band,RainbowCatArt.COLORS[band]),195));
+            // One soft sheen crosses all six colours, instead of rebuilding one patch per band.
+            float travel=(age*3.5f-stroke*.7f)/(Softbody.TAU*2);
+            for(int wave=-1;wave<=2;wave++) {
                 float centre=travel-(float)Math.floor(travel*2)*.5f+wave*.5f;
                 for(int feather=2;feather>=0;feather--) {
-                    float half=.032f+feather*.024f,from=Math.max(0,centre-half),to=Math.min(progress,centre+half);
-                    if(to<=from)continue;
-                    float lo=(band-3)*L.w*.0195f,hi=lo+L.w*.0198f;
-                    for(int n=0;n<=8;n++) {
-                        float at=mix(from,to,n/8f)/progress*samples;
-                        int first=Math.min(samples-1,(int)at);float blend=at-first;
-                        int left=first*5,right=left+5;
+                    float half=.032f+feather*.024f;
+                    if(centre+half+.018f<=0 || centre-half-.018f>=progress)continue;
+                    for(int n=0;n<=8;n++)for(int edge=0;edge<2;edge++) {
+                        float u=Math.max(0,Math.min(progress,centre-half+half*2*n/8+(edge==0?-.018f:.018f)));
+                        float at=u/progress*samples;int first=Math.min(samples-1,(int)at);float blend=at-first;
+                        int left=first*4,right=left+4;
                         float x=mix(centres[left],centres[right],blend),y=mix(centres[left+1],centres[right+1],blend);
-                        float width=mix(centres[left+4],centres[right+4],blend);
-                        float nx=mix(centres[left+2],centres[right+2],blend)*width,ny=mix(centres[left+3],centres[right+3],blend)*width;
-                        gleam[n*2]=x+nx*lo;gleam[n*2+1]=y+ny*lo;
-                        gleam[(17-n)*2]=x+nx*hi;gleam[(17-n)*2+1]=y+ny*hi;
+                        float offset=L.w*(edge==0?-.0585f:.0588f),nx=mix(centres[left+2],centres[right+2],blend),ny=mix(centres[left+3],centres[right+3],blend);
+                        int index=(edge==0?n:17-n)*2;
+                        mesh.gleam[index]=x+nx*offset;mesh.gleam[index+1]=y+ny*offset;
                     }
-                    int color=RainbowCatArt.trailColor(q,band,RainbowCatArt.COLORS[band]);
-                    q.fillPoly(gleam,Glyph.withAlpha(Glyph.mix(color,0xFFFFFFFF,.80f),feather==0?32:feather==1?20:12));
+                    p.fillPoly(mesh.gleam,Glyph.withAlpha(0xFFF6F2FF,feather==0?26:feather==1?16:10));
                 }
             }
             for(int spark=0;spark<8;spark++) {
                 float u=((spark+.5f)/8+age*.035f)%1;if(u>progress)continue;
                 float pulse=.5f+.5f*(float)Math.sin(age*8+spark*2.1f+stroke);
                 float x=flowingPoint(L,stroke,u,0,age),y=flowingPoint(L,stroke,u,1,age),r=L.w*(.0025f+.0035f*pulse);
-                q.line(x-r,y,x+r,y,0xBBFFFFFF,L.w*.0025f);q.line(x,y-r,x,y+r,0xBBFFFFFF,L.w*.0025f);
+                p.line(x-r,y,x+r,y,0xBBFFFFFF,L.w*.0025f);p.line(x,y-r,x,y+r,0xBBFFFFFF,L.w*.0025f);
             }
         }
+    }
+    private static void ribbon(Painter p,float[] centres,float[] strip,int samples,float lo,float hi,int color) {
+        for(int n=0;n<=samples;n++) {
+            float x=centres[n*4],y=centres[n*4+1],nx=centres[n*4+2],ny=centres[n*4+3];
+            strip[n*2]=x+nx*lo;strip[n*2+1]=y+ny*lo;
+            int back=(samples*2+1-n)*2;strip[back]=x+nx*hi;strip[back+1]=y+ny*hi;
+        }
+        p.fillPoly(strip,color);
+    }
+    static void draw(Painter p,GameCore c,Layout L) {
+        RainbowCat a=c.bossVictory.cat;float age=c.deathDuration()-c.deathT;
+        Painter q=new OpacityPainter(p,Math.min(1,c.deathT/.55f));
+        if(a.tauntMesh==null)a.tauntMesh=new Mesh();
+        ribbons(q,L,age,a.tauntMesh);
         float x=flight(a,L,age,0),y=flight(a,L,age,1);
         float pulse=laugh(age),scale=.65f+.035f*pulse;
         Painter actor=new BossScreen.PortraitFit(q,a.x,a.y,x,y-L.w*.006f*pulse,scale);

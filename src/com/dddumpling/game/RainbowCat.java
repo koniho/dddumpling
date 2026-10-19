@@ -10,6 +10,7 @@ final class RainbowCat {
     static final float DASH_TIME=.34f, TRAIL_TIME=2.2f, TRAIL_LENGTH=2.9f*4;
     static final float PROJECTILE_TIME=Boss.BOLT_TIME*.5f/.75f, SHOT_WIND=.32f, SHOT_RECOVER=.12f;
     float shotWind,shotReach,shotRecovery;
+    RainbowCatTaunt.Mesh tauntMesh;
     final Softbody pastry=new Softbody(18,151), head=new Softbody(14,152);
     final float[] route=new float[8],trailX=new float[136],trailY=new float[136],trailAge=new float[136];
     int phase,pointer=-1,taps,trailCount,captures,cue,promptKey=-1,windowHits;
@@ -39,7 +40,7 @@ final class RainbowCat {
     boolean circling;
     boolean placed,kids,escaping;
     void reset() {
-        shotWind=shotReach=shotRecovery=0;
+        tauntMesh=null;shotWind=shotReach=shotRecovery=0;
         rocket.reset();flurryNotes=0;java.util.Arrays.fill(flurrySlots,-1);
         phase=CHASE;pointer=-1;taps=trailCount=captures=cue=windowHits=0;promptKey=leftKey=rightKey=-1;damageFloor=keyFlash=0;hitColor=0;fullRoster=false;placed=escaping=escapeSequence=flurryFromLeft=doubleFlurry=false;flurryCount=0;turn=1;
         java.util.Arrays.fill(hitConeLife,0);nextHitCone=0;

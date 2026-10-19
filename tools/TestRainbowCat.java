@@ -742,6 +742,26 @@ final class TestRainbowCat extends Check {
             a.reset();check("shot pose reset "+fps,a.shotReach==0 && a.shotWind==0 && a.shotRecovery==0);
         }
     }
+    private static final class TauntBudget extends OpacityPainter {
+        int paths,vertices;boolean finite=true;
+        TauntBudget(){super(null,1);}
+        public int skin(){return Skins.DEFAULT;}
+        public void fillPoly(float[] points,int color){paths++;vertices+=points.length/2;for(float v:points)finite &= Float.isFinite(v);}
+        public void line(float x,float y,float x2,float y2,int color,float width){}
+    }
+    private static void tauntBudget(Layout L) {
+        group("Taunt mouth uses bounded reusable ribbon geometry");
+        RainbowCatTaunt.Mesh mesh=new RainbowCatTaunt.Mesh();
+        int maxPaths=0,maxVertices=0;boolean finite=true;
+        for(int frame=0;frame<264;frame++) {
+            TauntBudget p=new TauntBudget();RainbowCatTaunt.ribbons(p,L,frame/60f,mesh);
+            maxPaths=Math.max(maxPaths,p.paths);maxVertices=Math.max(maxVertices,p.vertices);finite &= p.finite;
+        }
+        check("whole animated face keeps a bounded path budget",maxPaths<=80 && maxPaths>0 && maxVertices<4000);
+        check("partial mouth and moving sheen retain finite geometry",finite);
+        RainbowCat a=new RainbowCat();a.tauntMesh=mesh;a.reset();
+        check("reset releases taunt mesh",a.tauntMesh==null);
+    }
     private static void lossAndFlurry(Layout L) {
         group("Cat loss doodle and release-timed flurry notes");
         for(int fps:new int[]{30,60,120})for(boolean doubled:new boolean[]{false,true}) {
@@ -780,7 +800,7 @@ final class TestRainbowCat extends Check {
         c.toTitle();check("title releases loss snapshot",c.bossVictory==null && c.bossVictoryKind<0);
     }
     static void all(Layout L) {
-        lossAndFlurry(L);shotAnimation(L);rocketShakeFeedback(L);retainedProjectiles(L);rocketVictory(L);arrival(L);hitShape(L);doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        tauntBudget(L);lossAndFlurry(L);shotAnimation(L);rocketShakeFeedback(L);retainedProjectiles(L);rocketVictory(L);arrival(L);hitShape(L);doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));
