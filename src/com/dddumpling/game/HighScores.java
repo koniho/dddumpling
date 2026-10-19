@@ -47,7 +47,7 @@ final class HighScores {
     long latest;
     int highestStage;
     Run latestRun;
-    int stages, dumplings, powers, swipes, bosses;
+    int stages, dumplings, powers, swipes, bosses, bossRetries;
     final int[] effects=new int[Power.NAMES.length];
     final ArrayList<Integer> prizes=new ArrayList<>();
     private boolean recording;
@@ -62,13 +62,15 @@ final class HighScores {
         final int ending, character;
         final boolean survival;
         final long duration;
-        final int profile;
+        final int profile,bossRetries;
         final int[] effects=new int[Power.NAMES.length];
         final int[] prizes;
         Run(long id,int[] v,int[] prizes) {
             this(id,v,prizes,0);
         }
-        Run(long id,int[] v,int[] prizes,long duration) {
+        Run(long id,int[] v,int[] prizes,long duration) {this(id,v,prizes,duration,0);}
+        Run(long id,int[] v,int[] prizes,long duration,int bossRetries) {
+            this.bossRetries=bossRetries;
             this.id=id;score=v[0];stage=v[1];stages=v[2];dumplings=v[3];powers=v[4];
             swipes=v[5];bosses=v[6];hits=v[7];misses=v[8];squishes=v[9];combo=v[10];
             best=v[11];land=v[12];kids=v[13]!=0;ending=v[14];character=v.length>15?v[15]:-1;
@@ -93,12 +95,12 @@ final class HighScores {
     }
     void clear() {
         runs.clear();latest=0;highestStage=0;latestRun=null;unread=false;recording=false;
-        stages=dumplings=powers=swipes=bosses=0;character=-1;
+        stages=dumplings=powers=swipes=bosses=bossRetries=0;character=-1;
         java.util.Arrays.fill(effects,0);
         prizes.clear();
     }
     void start(int selection) {
-        character=selection;stages=dumplings=powers=swipes=bosses=0;
+        character=selection;stages=dumplings=powers=swipes=bosses=bossRetries=0;
         java.util.Arrays.fill(effects,0);prizes.clear();recording=true;unread=false;
     }
     void effect(int effect) {
@@ -127,7 +129,7 @@ final class HighScores {
             values[effectEnd()]=c.survival.profile;
             values[1]=1;values[2]=values[6]=values[12]=0;
         }
-        Run run=new Run(++latest,values,won,survival?c.survival.millis():0);
+        Run run=new Run(++latest,values,won,survival?c.survival.millis():0,survival?0:bossRetries);
         if(!survival)highestStage=Math.max(highestStage,run.stage);
         unread=true;
         latestRun=run;
@@ -149,12 +151,15 @@ final class HighScores {
     int displayCount() { return runs.size()+(latestOutsideTopTen()?1:0); }
     Run displayRun(int row) { return row<runs.size()?runs.get(row):latestRun; }
     String encode() {
-        StringBuilder s=new StringBuilder(survival?"11:":"10:").append(latest).append(':').append(highestStage).append(':').append(Power.NAMES.length);
+        boolean retries=false;
+        if(!survival)for(int i=0;i<displayCount();i++)retries |= displayRun(i).bossRetries>0;
+        StringBuilder s=new StringBuilder(survival?"11:":retries?"12:":"10:").append(latest).append(':').append(highestStage).append(':').append(Power.NAMES.length);
         for(int i=0;i<displayCount();i++) {
             Run run=displayRun(i);
             s.append(';').append(run.id);
             for(int value:run.values()) s.append(',').append(value);
             if(survival)s.append(',').append(run.duration);
+            if(retries)s.append(',').append(run.bossRetries);
             s.append(',').append(run.prizes.length);
             for(int prize:run.prizes) s.append(',').append(prize);
         }
@@ -165,7 +170,8 @@ final class HighScores {
         if(data==null || data.isEmpty() || data.length()>16000) return;
         try {
             String[] rows=data.split(";",-1);
-            boolean sized=rows[0].startsWith("10:") || rows[0].startsWith("11:");
+            boolean retries=rows[0].startsWith("12:");
+            boolean sized=retries || rows[0].startsWith("10:") || rows[0].startsWith("11:");
             boolean newIds=sized || rows[0].startsWith("8:") || rows[0].startsWith("9:");
             boolean survivalHistory=rows[0].startsWith("11:") || rows[0].startsWith("7:") || rows[0].startsWith("9:");
             if(survival!=survivalHistory)return;
@@ -198,8 +204,10 @@ final class HighScores {
                 int[] prizes=new int[0];
                 long duration=survivalHistory?Long.parseLong(fields[valueCount+1]):0;
                 if(duration<0 || (survivalHistory && v[BASE_VALUES+savedEffects]>=Survival.PROFILE_COUNT))return;
+                int retryCount=retries?Integer.parseInt(fields[valueCount+1]):0;
+                if(retryCount<0)return;
                 if(prizeHistory) {
-                    int prizeStart=valueCount+2+(survivalHistory?1:0);
+                    int prizeStart=valueCount+2+(survivalHistory?1:0)+(retries?1:0);
                     if(fields.length<prizeStart)return;
                     int count=Integer.parseInt(fields[prizeStart-1]);
                     if(count<0 || count>1024 || fields.length!=prizeStart+count || count>v[3]) return;
@@ -215,7 +223,7 @@ final class HighScores {
                 }
                 if(portraits && v[15]>=(newIds?Collect.COUNT:59)) return;
                 if(portraits && v[15]>=(newIds?Collect.COUNT:Collect.DUCK_FIRST)) v[15]=-1;
-                if(v[1]<1 || v[6]>Boss.COUNT || v[11]<v[0] || v[12]>=Lands.COUNT || v[13]>1
+                if(v[1]<1 || v[6]>=(1<<Boss.COUNT) || v[11]<v[0] || v[12]>=Lands.COUNT || v[13]>1
                         || v[14]>=(survivalHistory?SURVIVAL_BLURBS.length+1:BLURBS.length)) return;
                 if(survivalHistory && (v[2]!=0 || v[3]>1 || v[6]!=0 || v[12]!=0 || v[13]!=(v[BASE_VALUES+savedEffects]==Survival.KIDS_PROFILE?1:0)))return;
                 int[] normalized=java.util.Arrays.copyOf(v,effectEnd()+(survivalHistory?1:0));
@@ -224,7 +232,7 @@ final class HighScores {
                     normalized[BASE_VALUES+savedEffects]=0;
                     normalized[effectEnd()]=v[BASE_VALUES+savedEffects];
                 }
-                parsed.add(new Run(id,normalized,prizes,duration));
+                parsed.add(new Run(id,normalized,prizes,duration,retryCount));
             }
             latest=sequence;
             highestStage=savedStage;

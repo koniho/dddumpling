@@ -139,6 +139,7 @@ final class Screens extends Draw {
         if (fade <= 0.004f) return;
         // Keep Adventure's drained palette; Survival's rainbow exit reveals violet.
         scrim(p, L, (int) (220 * fade), c.survival.active || c.timeAttack.active?SCRIM:Glyph.mix(SCRIM, DEATH_SCRIM, c.drained()));
+        if(c.bossRetry.pending){c.bossRetry.draw(p,c,L,fade);return;}
         if(c.timeAttack.active) {c.timeAttack.result(p,c,L,fade);return;}
         if(c.survival.active) {c.survival.result(p,c,L,fade);return;}
         float s = L.unit;
@@ -153,6 +154,8 @@ final class Screens extends Draw {
                 fadeBy(INK, fade), Painter.CENTER, true);
 
         accuracy(p, c, L, L.h * 0.475f, fade);
+        if(c.highScores.bossRetries>0)p.text("BOSS RETRIES: "+c.highScores.bossRetries,L.w*.5f,L.h*.733f,
+                type(s*.58f),fadeBy(GOLD,fade),Painter.CENTER,true);
         if (BuildFlags.DEVELOPER && c.townRunTickets > 0)
             p.text("+"+c.townRunTickets+" TOWN TICKETS",L.w*.5f,L.h*.758f,
                     type(s*.58f),fadeBy(GOLD,fade),Painter.CENTER,true);

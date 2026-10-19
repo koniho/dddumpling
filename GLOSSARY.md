@@ -178,6 +178,7 @@ past `ENRAGE_AT`, but time alone never costs a life; damage comes from the boss'
 | --- | --- | --- |
 | **boss** | the encounter at an authored land finale | `Boss`, `GameCore.boss` |
 | **boss stage** | a stage that has one | `Boss.isBossStage`, `EVERY` |
+| **boss retry** | another attempt at the same Adventure boss with full lives; failed-attempt points roll back and the run records its retry count | `BossRetry`, `HighScores.bossRetries` |
 | **arrival card** | the name over the field before the fight starts | `Boss.INTRO`, `BossScreen.intro` |
 | **window** | the stretch during which a boss can be hurt. Shut, it can only be rebuffed | `Boss.open()` |
 | **breather** | the shut half of the cycle between windows | `Boss.CYCLE`, `SHOW` |

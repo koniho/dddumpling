@@ -919,6 +919,7 @@ final class GameCore {
     Boss boss = new Boss();
     /** The exact live boss retained only as a visual snapshot while it celebrates a won fight. */
     Boss bossVictory;
+    final BossRetry bossRetry=new BossRetry();
 
     /** True from the boss's arrival card to the end of its exit, defeat or retreat. */
     boolean bossActive() { return boss.active(); }
@@ -1989,6 +1990,7 @@ final class GameCore {
 
     void startGame() {
         if(!modes.playable(this))return;
+        bossRetry.finish(this);bossRetry.clear();
         titleKeyHint = 0f;
         diagnostic("start-game");
         starter.clear();launchFromStarter=false;
@@ -2102,7 +2104,11 @@ final class GameCore {
         if (Starter.introPending(this)) onboarding.introduceCompanion(this);
     }
 
+    void tapGameOver(float x,float y,Layout L) {
+        if(bossRetry.pending)bossRetry.tap(this,L,x,y);else dismissGameOver();
+    }
     void dismissGameOver() {
+        if(bossRetry.pending){bossRetry.end(this);return;}
         if (survival.reward.dismiss(this)) return;
         if (overReady()) returnToTitle();
     }
@@ -2114,6 +2120,7 @@ final class GameCore {
     }
 
     void toTitle() {
+        bossRetry.finish(this);bossRetry.clear();
         pairSpawnSlots = 0;
         titleKeyHint = 0f;
         diagnostic("to-title");
@@ -2269,7 +2276,7 @@ final class GameCore {
         if (state == TITLE) {
             beginStart();
         } else {
-            dismissGameOver();
+            if(bossRetry.pending)bossRetry.retry(this);else dismissGameOver();
         }
     }
 
@@ -3595,7 +3602,7 @@ final class GameCore {
      * path rather than a second, slightly different one. A debug jump that sets up a stage a little
      * differently from the way play sets one up is a debug tool that hides the bug you are hunting.
      */
-    private void enterStage(int n) {
+    void enterStage(int n) {
         boolean hadBoss = boss.active();
         Lands.transition(this, Math.max(1, n));
         stage = Math.max(1, n);
@@ -3619,6 +3626,7 @@ final class GameCore {
         int bk = Boss.kindFor(stage);
         if (bk >= 0) boss.begin(bk, stage, rnd, playRosterFull());
         else boss.leave();
+        bossRetry.checkpoint(this);
         if (sound != null && hadBoss != (bk >= 0)) sound.bossMusic(bk >= 0);
         cave.begin(this);
         LinkedPairs.beginStage(this);
@@ -3723,21 +3731,13 @@ final class GameCore {
         diagnostic("game-over");
         fastEnemyNext = false;
         if(onboarding.rescueGuide)onboarding.clear();
-        finishTownRun();
+        boolean retryOffered=bossRetry.offer(this);
         // The run companion belongs to the summary after play stops. It cries in place until the
         // return fade reaches full cover; toTitle clears it under that cover.
         companion.react(RunCompanion.CRY,1f);
         cave.leave();
         resetStarRun();
-        highScores.finish(this);
-        progress.finishRun(score, false);
-        if (!survival.active && !timeAttack.active && runFullRoster && fullRoster) {
-            if (stage >= 6) earlyLosses = 0;
-            else if (++earlyLosses >= 3) {
-                fullRoster = false; earlyLosses = 0; rosterLeavePending = true;
-            }
-            saveRoster();
-        }
+        if(!retryOffered)finishDefeat();
         bossVictoryKind = boss.fighting() ? boss.kind : -1;
         bossVictory = bossVictoryKind >= 0 ? boss : null;
         if (bossVictoryKind >= 0 && sound != null) sound.bossTaunt(bossVictoryKind);
@@ -3770,6 +3770,19 @@ final class GameCore {
         if (bossVictory != null) boss = new Boss();
         else boss.leave();
         power = null;
+    }
+
+    void finishDefeat() {
+        finishTownRun();
+        highScores.finish(this);
+        progress.finishRun(score, false);
+        if (!survival.active && !timeAttack.active && runFullRoster && fullRoster) {
+            if (stage >= 6) earlyLosses = 0;
+            else if (++earlyLosses >= 3) {
+                fullRoster = false; earlyLosses = 0; rosterLeavePending = true;
+            }
+            saveRoster();
+        }
         LandPicker.recordBest(this);
     }
 

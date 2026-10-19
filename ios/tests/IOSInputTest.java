@@ -476,6 +476,25 @@ public final class IOSInputTest extends Check {
         check("closing native settings consumes gesture",!c.settingsOpen && !c.starting());
     }
 
+    private static void bossRetryInput() {
+        IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+        c.startGame();c.enterStage(5);c.boss.intro=0;c.lives=1;c.takeHit(l.w*.5f,l);
+        float x=l.w*.5f,y=BossRetry.buttonY(l,true);
+        game.touch(one(0,42,x,y));
+        for(int i=0;i<600 && !c.overReady();i++)game.update(DT);
+        game.touch(one(1,42,x,y));
+        check("held native touch cannot confirm a boss retry",c.bossRetry.pending && c.highScores.bossRetries==0);
+        tap(game,0,0);check("outside native tap retains retry choice",c.bossRetry.pending);
+        game.touch(one(0,42,x,y));
+        check("native retry starts the same boss",c.state==GameCore.PLAY && c.boss.kind==Boss.SLIME && c.highScores.bossRetries==1);
+        game.touch(one(2,42,l.keyX[0],l.keyY[0]));game.touch(one(1,42,l.keyX[0],l.keyY[0]));
+        check("retry gesture cannot become a gameplay press",c.hits==0 && !c.fingerDown);
+        c.boss.intro=0;c.lives=1;c.takeHit(x,l);
+        for(int i=0;i<600 && !c.overReady();i++)game.update(DT);
+        tap(game,x,BossRetry.buttonY(l,false));
+        check("native end records retry count without dismissing summary",!c.bossRetry.pending && c.highScores.latestRun.bossRetries==1 && c.returnFade==0);
+    }
+
     private static void gameOverDismissal() {
         for (int target = 0; target < 4; target++) {
             IOSGame game = game(); GameCore c = game.core(); Layout l = game.geometry();
@@ -1108,7 +1127,7 @@ public final class IOSInputTest extends Check {
         bossDeathFeedback();
         appActions();
         playerSettings();
-        gameOverDismissal();
+        bossRetryInput();gameOverDismissal();
         cave();
         highScores();
         updatePrompt(); releaseAttention(); releaseNotes(); releaseFeedback(); packets(); titleAndLifecycle(); starsAndLand(); starFeedback(); starCompletionStorm(); bossOwnership(); ninjaHistory();
