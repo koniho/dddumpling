@@ -42,15 +42,15 @@ final class BossRetry extends Draw {
         c.enterStage(stage);
         if(c.sound!=null){c.sound.uiBloop();c.sound.frenzy(false);}
     }
-    static float buttonY(Layout L,boolean retry){return L.h*(retry?.56f:.68f);}
+    static float buttonY(Layout L,boolean retry){return L.h*(retry?.56f:.646f);}
     void tap(GameCore c,Layout L,float x,float y) {
         if(!pending || !c.overReady() || x<L.w*.15f || x>L.w*.85f)return;
         if(Math.abs(y-buttonY(L,true))<L.h*.047f)retry(c);
-        else if(Math.abs(y-buttonY(L,false))<L.h*.047f)end(c);
+        else if(Math.abs(y-buttonY(L,false))<L.h*.026f)end(c);
     }
     void draw(Painter p,GameCore c,Layout L,float fade) {
         Painter q=new OpacityPainter(p,fade);float s=L.unit,cx=L.w*.5f;
-        glassPanel(q,L.w*.09f,L.h*.19f,L.w*.91f,L.h*.79f,s);
+        glassPanel(q,L.w*.09f,L.h*.19f,L.w*.91f,L.h*.72f,s);
         q.text("TRY AGAIN?",cx,L.h*.265f,type(s*1.35f),GOLD,Painter.CENTER,true);
         String name=Skins.bossName(p.skin(),c.bossVictoryKind);
         q.text(name,cx,L.h*.322f,Math.min(type(s*.78f),L.w*.72f/(name.length()*.73f)),INK,Painter.CENTER,true);
@@ -59,6 +59,6 @@ final class BossRetry extends Draw {
         q.fillRect(L.w*.15f,y-half,L.w*.85f,y+half,0x334DCEAA);
         q.text("RETRY",cx,y+text*.35f,text,INK,Painter.CENTER,true);
         q.text("END RUN",cx,buttonY(L,false)+text*.35f,text,INK,Painter.CENTER,true);
-        if(c.highScores.bossRetries>0)q.text("BOSS RETRIES: "+c.highScores.bossRetries,cx,L.h*.775f,type(s*.48f),GOLD,Painter.CENTER,true);
+        if(c.highScores.bossRetries>0)q.text("BOSS RETRIES: "+c.highScores.bossRetries,cx,L.h*.7f,type(s*.48f),GOLD,Painter.CENTER,true);
     }
 }
