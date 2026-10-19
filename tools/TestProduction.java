@@ -133,10 +133,14 @@ final class TestProduction extends Check {
         c.landChoice=Cave.LAND;c.startGame();
         check("stale cave selection starts a normal run",c.stage==1 && !Cave.active(c));
         check("production swamp starts at 21 and boss ends chapter at 25",Lands.firstStage(Lands.SWAMP)==21 && Boss.kindFor(25)==Boss.ALLIGATOR);
-        boolean original=true;
-        for(int stage=1;stage<=120;stage++)
-            original &= Lands.forStage(stage)==(((stage-1)/Boss.EVERY%5)==4?Lands.SWAMP:(stage-1)/Boss.EVERY%5) && !Cave.stage(stage);
-        check("production scenery cycle includes swamp and skips cave",original);
+        check("production rainbow follows swamp at stages 26 through 30",
+                Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW
+                && Lands.forStage(30)==Lands.RAINBOW && Boss.kindFor(30)==Boss.RAINBOW_CAT);
+        boolean catalogCycle=true;int stage=1;
+        for(int cycle=0;cycle<4;cycle++)for(WorldCatalog.BossEntry chapter:WorldCatalog.BOSSES)
+            for(int wave=0;wave<WorldCatalog.STAGES_PER_CHAPTER;wave++,stage++)
+                catalogCycle &= Lands.forStage(stage)==chapter.land && !Cave.stage(stage);
+        check("production scenery repeats every catalog chapter and skips cave",catalogCycle);
         c.stage=20;Interlude.enterBonus(c,L);c.bonusTimer=.001f;
         c.update(DT,L);c.update(DT,L);
         check("leaving stage 20 enters ordinary stage 21",c.stage==21 && c.state==GameCore.PLAY && !c.cave.running);
