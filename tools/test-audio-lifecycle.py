@@ -7,7 +7,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = {
 'android/content/Context.java': 'package android.content; public class Context {}',
-'android/os/Bundle.java': 'package android.os; public class Bundle {public void putFloat(String k,float v){}}',
+'android/os/Bundle.java': 'package android.os; public class Bundle {public float volume; public void putFloat(String k,float v){volume=v;}}',
 'android/util/Log.java': 'package android.util; public class Log {public static int w(String t,String m,Throwable e){return 0;}}',
 'android/media/AudioAttributes.java': '''package android.media; public class AudioAttributes {
  public static final int USAGE_GAME=1,CONTENT_TYPE_MUSIC=2,CONTENT_TYPE_SONIFICATION=4;
@@ -58,11 +58,12 @@ public class AudioTrack {
 'android/speech/tts/TextToSpeech.java': '''package android.speech.tts; public class TextToSpeech {
  public static final int SUCCESS=0,LANG_MISSING_DATA=-1,LANG_NOT_SUPPORTED=-2,QUEUE_FLUSH=0,QUEUE_ADD=1;
  public interface OnInitListener {void onInit(int status);} public static class Engine {public static final String KEY_PARAM_VOLUME="volume";}
+ public float volume; public int calls; public String text; public TextToSpeech(){}
  public TextToSpeech(android.content.Context c,OnInitListener l){throw new UnsupportedOperationException("no speech in harness");}
  public int setLanguage(java.util.Locale l){return 0;} public java.util.Set<Voice> getVoices(){return null;} public int setVoice(Voice v){return 0;}
  public int setOnUtteranceProgressListener(UtteranceProgressListener l){return 0;} public int stop(){return 0;} public void shutdown(){}
  public int setPitch(float f){return 0;} public int setSpeechRate(float f){return 0;}
- public int speak(String s,int q,android.os.Bundle b,String id){return 0;} public int playSilentUtterance(long n,int q,String id){return 0;}
+ public int speak(String s,int q,android.os.Bundle b,String id){calls++;text=s;volume=b.volume;return 0;} public int playSilentUtterance(long n,int q,String id){return 0;}
 }''',
 'com/dddumpling/game/Music.java': '''package com.dddumpling.game;
 import java.util.concurrent.CountDownLatch;
@@ -141,6 +142,21 @@ public class TestAudioLifecycle {
   a.pauseMusic();for(AudioTrack t:AudioTrack.all)check("loops pause",!t.playing);
   a.resumeMusic();a.bossCharge(1);check("loops resume",field("bubbleActive").getBoolean(a));a.release();
   a=fresh();a.pauseMusic();effect(a,0);check("UI effects still play while music is paused",effectTrack(a,0).playing);a.release();
+  a=fresh();a.volumes(.4f,.3f);a.selectMusic(0);ready(a);
+  android.speech.tts.TextToSpeech speech=new android.speech.tts.TextToSpeech();
+  field("tts").set(a,speech);field("ttsBroken").setBoolean(a,false);field("ttsReady").setBoolean(a,true);
+  a.explain("Ordinary tutorial");check("tutorial still ducks",field("ducked").getBoolean(a));
+  a.companionExclaim(Narration.DOUBLE_RAINBOW);
+  check("companion voice half volume",speech.calls==2 && Math.abs(speech.volume-.15f)<.0001f);
+  check("companion voice leaves music unducked",!field("ducked").getBoolean(a) && Math.abs(bgm(a).volume-.4f)<.0001f);
+  a.catLaser();check("companion voice leaves effects unducked",Math.abs(effectTrack(a,Sfx.CAT_LASER).volume-.3f*Sfx.CAT_LASER_GAIN)<.0001f);
+  a.volumes(.4f,0);a.companionExclaim(Narration.DOUBLE_RAINBOW);check("muted companion stays silent",speech.calls==2);
+  a.volumes(.4f,.3f);a.explain("Ordinary tutorial");
+  check("ordinary speech restores normal gain and ducking",Math.abs(speech.volume-.3f)<.0001f && field("ducked").getBoolean(a));a.release();
+  a=fresh();a.volumes(.4f,.3f);for(int i=0;i<12;i++)a.catLaser();
+  check("every prompt laser plays without meow debounce",effectTrack(a,Sfx.CAT_LASER).plays==12);
+  check("soft laser uses effects volume",Math.abs(effectTrack(a,Sfx.CAT_LASER).volume-.3f*Sfx.CAT_LASER_GAIN)<.0001f);
+  a.release();
   a=fresh();a.volumes(0,0);effect(a,0);a.selectMusic(0);ready(a);
   check("mute respected by recreated effects and music",effectTrack(a,0).volume==0 && bgm(a).volume==0);a.release();
   a=fresh();AudioTrack.failPlay=1;a.selectMusic(0);ready(a);check("music play failure retries",bgm(a).playing && AudioTrack.live==1);

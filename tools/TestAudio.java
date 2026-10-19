@@ -432,6 +432,14 @@ final class TestAudio extends Check {
     static void audio(Layout L) {
         versusTitleFade(L);
         versusMusic(L);
+        group("Soft cat laser");
+        short[] laser=Sfx.build(Sfx.CAT_LASER);int firstCross=0,lastCross=0;
+        for(int i=1;i<laser.length;i++)if(laser[i]>=0 && laser[i-1]<0) {
+            if(i<laser.length/3)firstCross++;if(i>=laser.length*2/3)lastCross++;
+        }
+        check("laser is a short descending tone",laser.length<Sfx.RATE*.16f && firstCross>lastCross*1.5f);
+        check("laser starts and ends softly",laser[0]==0 && laser[laser.length-1]==0 && peakAt(laser)>Sfx.RATE*.004f);
+        check("laser is independent of recorded meow bank",!Sfx.isCatMeow(Sfx.CAT_LASER) && Sfx.CAT_LASER_GAIN<=.6f);
         group("Recorded cat bank");
         java.util.HashSet<Integer> catHashes=new java.util.HashSet<>();
         for(int variant=0;variant<CatMeowRecording.COUNT;variant++) {

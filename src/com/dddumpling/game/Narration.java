@@ -23,6 +23,7 @@ final class Narration {
 
     private Narration() {}
 
+    static final float COMPANION_GAIN=.5f;
     static final String DOUBLE_RAINBOW="Double rainbow! O M G! It's a double rainbow all the way!";
 
     /** Fixed chunks before the story itself: the name, then where it lives. */

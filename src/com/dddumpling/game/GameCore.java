@@ -307,6 +307,8 @@ final class GameCore {
         void gatorPrompt(int variant);
         void gatorTaunt(int variant);
         default void catMeow(int variant) {}
+        /** Short soft laser on every successful alternating Rainbow Cat prompt. */
+        default void catLaser() {}
         void gatorSplash(boolean entry);
         default void octoWave() {}
         default void octoDamage() {}
@@ -381,6 +383,8 @@ final class GameCore {
         void narrate(int entry);
         /** Short tutorial guidance; respects the same mute and lifecycle rules as stories. */
         default void explain(String text) {}
+        /** Quiet companion banter, without lowering music or effects. */
+        default void companionExclaim(String text) {}
         /** One short name call for a run greeting or collectible reveal. */
         default void announceSquishy(int entry) {}
         /** A whole matchup, with a dramatic pause and an emphatic opponent name. */
@@ -3201,7 +3205,7 @@ final class GameCore {
                 }
                 if(boss.cat.cue==1)boss.cat.meow(this,CatMeowRecording.STRUGGLE,false);
                 else if(boss.cat.cue==2) {
-                    if(boss.cat.doubleFlurry) {if(sound!=null)sound.explain(Narration.DOUBLE_RAINBOW);}
+                    if(boss.cat.doubleFlurry) {if(sound!=null)sound.companionExclaim(Narration.DOUBLE_RAINBOW);}
                     else boss.cat.shortMeow(this);
                 }
                 boss.cat.cue=0;

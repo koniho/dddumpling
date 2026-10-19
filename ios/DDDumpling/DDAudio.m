@@ -395,6 +395,7 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
 - (void)boltDeath { [self playEffect:DDSfx_BOLT_DEATH rate:1 gain:.82f]; }
 - (void)shieldBounce { [self playEffect:DDSfx_SHIELD_BOUNCE rate:1 gain:.72f]; }
 - (void)gatorParry { [self playEffect:DDSfx_GATOR_PARRY rate:1 gain:1]; }
+- (void)catLaser { [self playEffect:DDSfx_CAT_LASER rate:1 gain:DDSfx_CAT_LASER_GAIN]; }
 - (void)catMeowWithInt:(jint)variant { [self playEffect:[DDSfx catMeowIdWithInt:variant] rate:1 gain:DDSfx_CAT_MEOW_GAIN]; }
 - (void)gatorTauntWithInt:(jint)variant { [self playEffect:[DDSfx gatorTauntIdWithInt:variant] rate:1 gain:DDSfx_GATOR_TAUNT_GAIN]; }
 - (void)gatorPromptWithInt:(jint)variant { [self playEffect:[DDSfx gatorPromptIdWithInt:variant] rate:1 gain:DDSfx_GATOR_PROMPT_GAIN]; }
@@ -584,16 +585,24 @@ static const jint DDStyleSwing = DDMusic_SWING_STYLE;
   [self speakText:text pitch:DDNarration_PITCH rate:.9f];
 }
 
+- (void)companionExclaimWithNSString:(NSString *)text {
+  [self speakText:text pitch:DDNarration_PITCH rate:.9f gain:DDNarration_COMPANION_GAIN duckMusic:NO];
+}
+
 - (void)speakText:(NSString *)text pitch:(float)pitch rate:(float)rate {
+  [self speakText:text pitch:pitch rate:rate gain:1 duckMusic:YES];
+}
+
+- (void)speakText:(NSString *)text pitch:(float)pitch rate:(float)rate gain:(float)gain duckMusic:(BOOL)duckMusic {
   if (!_active || _interrupted || !_playbackAllowed || _effectsVolume <= 0 || text.length == 0) return;
   @try {
     [self hush];
     AVSpeechUtterance *utterance = [AVSpeechUtterance speechUtteranceWithString:text];
     utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-US"];
-    utterance.volume = _effectsVolume;
+    utterance.volume = _effectsVolume * gain;
     utterance.pitchMultiplier = pitch;
     utterance.rate = AVSpeechUtteranceDefaultSpeechRate * rate;
-    _narrating = YES; [self applyMusicMix];
+    _narrating = duckMusic; [self applyMusicMix];
     _lastUtterance = utterance;
     [_speech speakUtterance:utterance];
   } @catch (NSException *exception) { [self hush]; }

@@ -161,7 +161,8 @@ invisible and untargetable until launched from the moving cat, 0.288 seconds apa
 The figure-eight and star windows send two consecutive stars per key, with an extra 0.12-second
 gap between pairs so switching keys stays readable. The companion
 announces “DOUBLE RAINBOW?!”, including on timeout. The shared high-pitched companion
-TTS reads `Narration.DOUBLE_RAINBOW` once per double flurry, with normal mute and music ducking. This depends on the window's health
+TTS reads `Narration.DOUBLE_RAINBOW` once per double flurry at half effects volume,
+respecting mute while leaving music and effects unducked. This depends on the window's health
 floor so finishing the diamond phase does not prematurely double its flurry. Rainbow Cat
 has room for twelve queued bolts; other bosses retain their eight-bolt limit.
 Ordinary shots wait 4.4 seconds after the sweep. The final flurry is harmless and the exit

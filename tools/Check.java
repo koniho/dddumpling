@@ -168,8 +168,11 @@ abstract class Check {
         int bossMusicCalls,versusMusicCalls;
         public void versusMusic() {versusMusicCalls++;bossMusic=false;}
         int narrations, hushes;
-        int explanations;
+        int explanations,companionExclaims;
+        public void companionExclaim(String text) {companionExclaims++;explanation=text;}
         String explanation;
+        int catLasers;
+        public void catLaser() {catLasers++;}
         public void explain(String text) { explanations++;explanation=text; }
         int versusCalls,versusWho=-1,versusBoss=-1,versusOffset=-1;
         public int versusSpeechOffset() {return versusOffset;}

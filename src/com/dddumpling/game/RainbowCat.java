@@ -227,7 +227,7 @@ final class RainbowCat {
     int press(Boss b,int glyph,Layout L,java.util.Random rnd) {
         if(phase!=OPEN || promptKey<0 || timer<=0)return Boss.REBUFF;
         if(promptKey!=glyph)return Boss.REBUFF;
-        b.hitX=x;b.hitY=y;head.squash(.45f);pastry.squash(.35f);
+        b.hitX=x;b.hitY=y;
         int cone=nextHitCone;nextHitCone=(cone+1)%hitConeLife.length;
         hitConeLife[cone]=HIT_CONE_TIME;hitConeKey[cone]=glyph;
         hitConeX[cone]=promptX(L,glyph);hitConeY[cone]=promptY();

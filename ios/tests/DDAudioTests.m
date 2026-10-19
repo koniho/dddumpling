@@ -109,6 +109,27 @@
   XCTAssertEqual(speech.speakCount, 1);
 }
 
+- (void)testCompanionBanterUsesHalfVolumeWithoutDucking {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  DDCountingSpeech *speech = [DDCountingSpeech new];
+  [audio setValue:speech forKey:@"speech"];
+  [audio setValue:@YES forKey:@"active"];
+  [audio setValue:@YES forKey:@"playbackAllowed"];
+  [audio setValue:@.4f forKey:@"effectsVolume"];
+  [audio explainWithNSString:@"Tutorial"];
+  XCTAssertTrue([[audio valueForKey:@"narrating"] boolValue]);
+  [audio companionExclaimWithNSString:@"Double rainbow!"];
+  XCTAssertEqualWithAccuracy(speech.utterance.volume, .2f, .001f);
+  XCTAssertFalse([[audio valueForKey:@"narrating"] boolValue]);
+  [audio setValue:@0 forKey:@"effectsVolume"];
+  [audio companionExclaimWithNSString:@"Muted"];
+  XCTAssertEqual(speech.speakCount, 2);
+  [audio setValue:@.4f forKey:@"effectsVolume"];
+  [audio explainWithNSString:@"Tutorial"];
+  XCTAssertEqualWithAccuracy(speech.utterance.volume, .4f, .001f);
+  XCTAssertTrue([[audio valueForKey:@"narrating"] boolValue]);
+}
+
 - (void)testRunNameUsesAnnouncerDeliveryAndRespectsMute {
   DDClockedAudio *audio = [DDClockedAudio new];
   DDCountingSpeech *speech = [DDCountingSpeech new];
@@ -412,6 +433,19 @@
   XCTAssertEqualWithAccuracy(mixer.rate, 1.5f, .0001f);
   XCTAssertEqualWithAccuracy(mixer.gain, .7f, .0001f);
   XCTAssertFalse(mixer.playedOnMainThread);
+}
+
+- (void)testCatLaserPlaysEveryHitAtSoftGain {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  DDCountingMixer *mixer = [DDCountingMixer new];
+  [audio setValue:@YES forKey:@"active"];
+  [audio setValue:@YES forKey:@"playbackAllowed"];
+  [audio setValue:mixer forKey:@"effectMixer"];
+  for (int hit = 0; hit < 12; ++hit) [audio catLaser];
+  dispatch_sync([audio valueForKey:@"effectsQueue"], ^{});
+  XCTAssertEqual(mixer.playCount, 12u);
+  XCTAssertEqualWithAccuracy(mixer.gain, DDSfx_CAT_LASER_GAIN, .0001f);
+  XCTAssertEqualWithAccuracy(mixer.rate, 1.f, .0001f);
 }
 
 - (void)testQueuedEffectsRespectTheStaleDeadline {

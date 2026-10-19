@@ -177,7 +177,10 @@ final class BossPlay {
                     Glyph.COLOR[g]);
             if (c.sound != null) {
                 if (divide) c.sound.divideDamage();
-                else if(c.boss.kind==Boss.RAINBOW_CAT)c.boss.cat.meow(c,CatMeowRecording.HURT,c.boss.cat.windowHits==1 || c.boss.cat.escapeSequence);
+                else if(c.boss.kind==Boss.RAINBOW_CAT) {
+                    c.sound.catLaser();
+                    c.boss.cat.meow(c,CatMeowRecording.HURT,c.boss.cat.windowHits==1 || c.boss.cat.escapeSequence);
+                }
                 else c.sound.bossDamage();
             }
         }

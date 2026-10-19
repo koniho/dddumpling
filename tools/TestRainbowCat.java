@@ -154,10 +154,10 @@ final class TestRainbowCat extends Check {
             GameCore c=fight(L);c.boss.hp=c.boss.hpMax-phase;challenge(c,L);Ear ear=new Ear();c.sound=ear;
             while(c.boss.cat.phase==RainbowCat.OPEN)c.boss.press(c.boss.cat.promptKey,c.rnd,L);
             c.update(1f/60,L);
-            check("only double flurry speaks phrase "+phase,ear.explanations==(phase>=3?1:0)
+            check("only double flurry speaks phrase "+phase,ear.companionExclaims==(phase>=3?1:0)
                     && (phase<3 || Narration.DOUBLE_RAINBOW.equals(ear.explanation)));
             for(int i=0;i<30;i++)c.update(1f/60,L);
-            check("announcement is consumed once "+phase,ear.explanations==(phase>=3?1:0) && c.boss.cat.cue==0);
+            check("announcement is consumed once "+phase,ear.companionExclaims==(phase>=3?1:0) && c.boss.cat.cue==0);
         }
     }
     private static void finalCaptureStar(Layout L) {
@@ -288,6 +288,7 @@ final class TestRainbowCat extends Check {
             int key=a.promptKey,verdict=c.boss.press(key,c.rnd,L);
             BossPlay.press(c,key,verdict,L);
         }
+        check("every alternating hit plays a laser even while meow is busy",ear.catLasers==RainbowCat.HITS_PER_BAND);
         check("damage overrides chatter with annotated hurt",ear.catMeows==before+2 && ear.lastCatMeow==CatMeowRecording.HURT);
         c.update(.01f,L);
         check("damage flurry does not mask hurt with extra meow",ear.catMeows==before+2);
@@ -440,6 +441,17 @@ final class TestRainbowCat extends Check {
             a.reset();check("reset releases ring geometry "+shape,a.burstWork==null);
         }
     }
+    private static void hitShape(Layout L) {
+        group("Alternating hits flash without horizontally squashing the cat");
+        GameCore hit=fight(L),idle=fight(L);challenge(hit,L);challenge(idle,L);
+        RainbowCat a=hit.boss.cat,b=idle.boss.cat;Ear ear=new Ear();hit.sound=ear;
+        int key=a.promptKey;hit.tapKey(key,L);
+        a.animate(hit.boss,.02f,L);b.animate(idle.boss,.02f,L);
+        check("hit leaves head and pastry spring motion unchanged",
+                java.util.Arrays.equals(a.head.outline(),b.head.outline()) && java.util.Arrays.equals(a.pastry.outline(),b.pastry.outline()));
+        check("flash and laser remain immediate",a.keyFlash>0 && ear.catLasers==1);
+        hit.tapKey(key,L);check("repeated wrong hand cannot fire laser",ear.catLasers==1);
+    }
     private static void hitCones(Layout L) {
         group("Prompt cones preserve hit origin and overlap without affecting damage");
         GameCore c=fight(L);challenge(c,L);RainbowCat a=c.boss.cat;
@@ -570,7 +582,7 @@ final class TestRainbowCat extends Check {
         }
     }
     static void all(Layout L) {
-        doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        hitShape(L);doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));

@@ -43,10 +43,11 @@ final class Sfx {
     static final int LEGACY_KEYS=6;
     static final int EXTRA_KEYS=EXTRA_BOSS_VOICES+Math.max(0,Boss.COUNT-LEGACY_BOSS_VOICES);
     static final int CAT_MEOW_0=EXTRA_KEYS+Math.max(0,Glyph.COUNT-LEGACY_KEYS);
-    static final int COUNT=CAT_MEOW_0+CatMeowRecording.COUNT;
+    static final int CAT_LASER=CAT_MEOW_0+CatMeowRecording.COUNT, COUNT=CAT_LASER+1;
+    static final float CAT_LASER_GAIN=.55f;
     static final float CAT_MEOW_GAIN=.90f;
     static int catMeowId(int variant) {return CAT_MEOW_0+Math.max(0,Math.min(CatMeowRecording.COUNT-1,variant));}
-    static boolean isCatMeow(int id) {return id>=CAT_MEOW_0 && id<COUNT || id==bossTauntId(Boss.RAINBOW_CAT);}
+    static boolean isCatMeow(int id) {return id>=CAT_MEOW_0 && id<CAT_LASER || id==bossTauntId(Boss.RAINBOW_CAT);}
     static int squishId(int glyph) {return glyph<LEGACY_KEYS?SQUISH_0+glyph:EXTRA_KEYS+glyph-LEGACY_KEYS;}
     static int count() {return COUNT;}
     static int bossTauntId(int boss) {return boss<LEGACY_BOSS_VOICES?BOSS_TAUNT_0+boss:EXTRA_BOSS_VOICES+boss-LEGACY_BOSS_VOICES;}
@@ -96,8 +97,9 @@ final class Sfx {
     }
 
     private static short[] renderEffect(int id) {
-        if(id>=CAT_MEOW_0 && id<COUNT)return CatMeowRecording.build(id-CAT_MEOW_0);
+        if(id>=CAT_MEOW_0 && id<CAT_LASER)return CatMeowRecording.build(id-CAT_MEOW_0);
         if(id==bossTauntId(Boss.RAINBOW_CAT))return CatMeowRecording.build(0);
+        if(id==CAT_LASER)return catLaser();
         if(id==SLIME_VULNERABLE)return slimeVulnerable();
         if(id==SLIME_DRAG_BOIP)return slimeDragBoip();
         if(id>=SLIME_SQUISH_0 && id<SLIME_SQUISH_0+6)return SlimeSquishRecording.build(id-SLIME_SQUISH_0);
@@ -518,6 +520,20 @@ final class Sfx {
      * so only the final hop rings out in full. That is the intended shape — a rattle of cracks,
      * then a tail.
      */
+    private static short[] catLaser() {
+        float[] v=new float[(int)(RATE*.14f)];
+        double phase=0;
+        for(int i=0;i<v.length;i++) {
+            float u=i/(float)(v.length-1),time=i/(float)RATE;
+            float hz=260+650*(float)Math.exp(-u*4);
+            phase+=2*Math.PI*hz/RATE;
+            float attack=Math.min(1,time/.007f);
+            float envelope=attack*attack*(1-u)*(1-u)*(float)Math.exp(-u*2);
+            v[i]=(float)(Math.sin(phase)+.12*Math.sin(phase*2))*envelope;
+        }
+        return render(v);
+    }
+
     static short[] zap() {
         int n = (int) (RATE * 0.13f);
         float[] v = new float[n];
