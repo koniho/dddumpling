@@ -190,6 +190,7 @@ src/com/dddumpling/game/CaveScreen.java
 src/com/dddumpling/game/Lands.java
 src/com/dddumpling/game/SeaSkits.java
 src/com/dddumpling/game/SlimeSkits.java
+src/com/dddumpling/game/LandPlaySkits.java
 src/com/dddumpling/game/CrystalSkits.java
 src/com/dddumpling/game/MushroomSkits.java
 src/com/dddumpling/game/LandPicker.java
