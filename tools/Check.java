@@ -141,7 +141,9 @@ abstract class Check {
         public void volumes(float music,float effects) { musicVolume=music;effectsVolume=effects; }
         int squishes, clears, wrongs, damages, achievements, bossLaughs, bossDamages, slimeSquishes, slimeHits, slimeSplits, slimeDamages, bossSplits,
                 bossChargeCalls, boltPops, boltDeaths, shieldBounces, octoDamages, octoWaves, octoCues, octoLocks, mushroomShakeSounds, mushroomSporeSounds, divideDamages, divideSplits, divideDeactivates, divideSupernovas, divideBoings, swishes, lastSwish, ninjaChimes, zaps;
-        int catMeows,lastCatMeow=-1;
+        int catMeows,lastCatMeow=-1,catFlurries,lastFlurryNote=-1;
+        boolean catFlurryOrdered=true;
+        public void catFlurry(int note,int count) {catFlurryOrdered&=note==lastFlurryNote+1;lastFlurryNote=note;catFlurries++;}
         public void catMeow(int variant) {catMeows++;lastCatMeow=variant;}
         int lastSlimeSquish=-1;
         final int[] slimeSquishCounts=new int[6];

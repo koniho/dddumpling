@@ -15,7 +15,7 @@ final class RainbowCatRocket extends Draw {
         reset();active=true;b.clearBolts();b.defeatChime=false;
         a.phase=RainbowCat.CATCH;a.netAge=RainbowCat.NET_TIME;
         a.promptKey=a.leftKey=a.rightKey=-1;a.timer=0;a.cue=0;
-        a.escapeLeft=0;a.escapeSequence=a.escaping=a.doubleFlurry=false;a.flurryCount=0;
+        a.escapeLeft=0;a.escapeSequence=a.escaping=a.doubleFlurry=false;a.flurryCount=a.flurryNotes=0;
         a.vx=a.vy=0;a.tapFlash=a.keyFlash=a.scared=a.shapeBurst=0;
         a.catchX=a.x;a.catchY=a.y;
     }

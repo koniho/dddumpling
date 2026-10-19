@@ -432,6 +432,31 @@ final class TestAudio extends Check {
     static void audio(Layout L) {
         versusTitleFade(L);
         versusMusic(L);
+        group("Cat chromatic descent and whole-tone flurry");
+        for(int note=1;note<RainbowCatTaunt.NOTES;note++)check("taunt falls one semitone "+note,
+                Math.abs(RainbowCatTaunt.pitch(note)/RainbowCatTaunt.pitch(note-1)-(float)Math.pow(2,-1/12.0))<.00001f);
+        int priorLength=0;
+        for(int note=0;note<12;note++) {
+            short[] meow=Sfx.build(Sfx.catFlurryId(note,12));
+            check("flurry meow rises and fades cleanly "+note,meow[0]==0 && meow[meow.length-1]==0
+                    && (note==0 || meow.length<priorLength));
+            if(note>0)check("whole tone between flurry shots "+note,
+                    Math.abs(Sfx.catFlurryPitch(note)/Sfx.catFlurryPitch(note-1)-(float)Math.pow(2,2/12.0))<.00001f);
+            priorLength=meow.length;
+        }
+        for(int count:new int[]{4,6,8,12}) {
+            float[] mix=new float[Sfx.RATE*4];
+            for(int note=0;note<count;note++) {
+                short[] pcm=Sfx.build(Sfx.catFlurryId(note,count));
+                int start=(int)(Sfx.RATE*(note*RainbowCat.SWEEP_STEP+(count>6?(note/2)*RainbowCat.DOUBLE_PAIR_GAP:0)));
+                for(int i=0;i<pcm.length;i++)mix[start+i]+=pcm[i]*Sfx.CAT_FLURRY_GAIN;
+            }
+            float peak=0;for(float sample:mix)peak=Math.max(peak,Math.abs(sample));
+            check("overlapping flurry meows retain headroom "+count,peak<32767*.9f);
+        }
+        short[] taunt=Sfx.build(Sfx.bossTauntId(Boss.RAINBOW_CAT));
+        check("taunt fits the loss animation with silent edges",taunt[0]==0 && taunt[taunt.length-1]==0
+                && taunt.length<Sfx.RATE*RainbowCatTaunt.DURATION && taunt.length>Sfx.RATE*3.5f);
         group("Soft cat laser");
         short[] laser=Sfx.build(Sfx.CAT_LASER);int firstCross=0,lastCross=0;
         for(int i=1;i<laser.length;i++)if(laser[i]>=0 && laser[i-1]<0) {
@@ -468,7 +493,7 @@ final class TestAudio extends Check {
             // Roulette ticks intentionally fit between fast icon changes.
             int minimum = id == Sfx.SHUFFLE_BLIP ? Sfx.RATE / 40 : Sfx.RATE / 20;
             // Survival's one-shot cue spans its full rainbow transition.
-            float maximum = id==Sfx.catMeowId(CatMeowRecording.DEFEAT) ? 4f : Sfx.isCatMeow(id) ? 3f : id == Sfx.SURVIVAL_OVER ? SurvivalEnd.DURATION : id == Sfx.GATOR_SPLASH ? 2.3f : 2f;
+            float maximum = id==Sfx.bossTauntId(Boss.RAINBOW_CAT)?RainbowCatTaunt.DURATION:id==Sfx.catMeowId(CatMeowRecording.DEFEAT) ? 4f : Sfx.isCatMeow(id) ? 3f : id == Sfx.SURVIVAL_OVER ? SurvivalEnd.DURATION : id == Sfx.GATOR_SPLASH ? 2.3f : 2f;
             if (pcm.length < minimum || pcm.length > Sfx.RATE * maximum) allSane = false;
         }
         check("other effects retain their common peak", allNormalised);

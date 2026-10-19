@@ -129,7 +129,7 @@ final class GameCore {
 
     float deathDuration() {
         if(survival.active)return SurvivalEnd.DURATION;
-        return bossVictoryKind >= 0 ? BOSS_DEATH_TIME : DEATH_TIME;
+        return bossVictoryKind==Boss.RAINBOW_CAT?RainbowCatTaunt.DURATION:bossVictoryKind >= 0 ? BOSS_DEATH_TIME : DEATH_TIME;
     }
 
     /**
@@ -307,6 +307,7 @@ final class GameCore {
         void gatorPrompt(int variant);
         void gatorTaunt(int variant);
         default void catMeow(int variant) {}
+        default void catFlurry(int note,int count) {}
         /** Short soft laser on every successful alternating Rainbow Cat prompt. */
         default void catLaser() {}
         void gatorSplash(boolean entry);
@@ -3175,6 +3176,7 @@ final class GameCore {
             if(boss.kind==Boss.RAINBOW_CAT) {
                 RainbowCatArrival.feedback(this,beforeIntro);
                 boss.cat.rocket.feedback(this);
+                boss.cat.flurryFeedback(this);
             }
             BossPlay.slimeVulnerableSound(this,dt);
             if(boss.kind==Boss.ALLIGATOR)boss.alligator.guard.feedback(this);

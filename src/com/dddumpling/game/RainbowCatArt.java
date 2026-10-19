@@ -474,7 +474,13 @@ final class RainbowCatArt extends Draw {
     private static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known,float scared,float angry,float cry) {
         cat(p,x,y,r,t,facing,body,skull,caught,known,scared,angry,cry,0,0);
     }
+    static void laughingCat(Painter p,RainbowCat a,float age,float laugh) {
+        cat(p,a.x,a.y,a.r,a.clock+age*2,a.turn,a.pastry,a.head,false,1,0,0,0,0,0,laugh);
+    }
     private static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known,float scared,float angry,float cry,float wind,float reach) {
+        cat(p,x,y,r,t,facing,body,skull,caught,known,scared,angry,cry,wind,reach,0);
+    }
+    private static void cat(Painter p,float x,float y,float r,float t,float facing,Softbody body,Softbody skull,boolean caught,float known,float scared,float angry,float cry,float wind,float reach,float laugh) {
         boolean vampire=Skins.halloween(p);
         int crust=known>0?(vampire?0xFF805294:0xFFFFD49A):0xFF49425F;
         int fur=known>0?(vampire?0xFFB58BC7:FUR):0xFF49425F;
@@ -517,7 +523,10 @@ final class RainbowCatArt extends Draw {
             p.fillPoly(points(new float[]{side*.45f,-.62f,side*(vampire?.78f:.73f),vampire?-1.13f:-.92f,side*.77f,-.43f},hx,hy,hr,hr),0xFFFFB4CB);
             float ex=hx+side*hr*.40f,ey=hy+hr*.02f;
             boolean blink=scared==0 && angry==0 && Math.sin(t*1.7f)>.985;
-            if(caught) {
+            if(laugh>0) {
+                p.arc(ex,ey+hr*.10f,hr*.19f,hr*.17f,195,150,INK,hr*.075f);
+                p.line(ex-side*hr*.18f,ey,ex-side*hr*.26f,ey-hr*.08f,INK,hr*.045f);
+            } else if(caught) {
                 float squeeze=.05f*(float)Math.sin(t*18);
                 p.polyline(points(new float[]{side*.62f,-.08f-squeeze,side*.28f,.04f,side*.61f,.17f+squeeze},
                         hx,hy,hr,hr),INK,hr*.075f);
@@ -541,7 +550,10 @@ final class RainbowCatArt extends Draw {
             p.line(hx+side*hr*.71f,hy+hr*.38f,hx+side*hr*.93f,hy+hr*.35f,0x88766891,hr*.035f);
         }
         p.fillEllipse(hx,hy+hr*.23f,hr*.095f,hr*.065f,0xFFBE7FA7);
-        if(cry>0) {
+        if(laugh>0) {
+            p.fillEllipse(hx,hy+hr*.49f,hr*.27f,hr*(.12f+.13f*laugh),INK);
+            p.fillEllipse(hx,hy+hr*.57f,hr*.17f,hr*.085f,0xFFFFA8CB);
+        } else if(cry>0) {
             float mouth=cry*(.85f+.15f*(float)Math.sin(t*9));
             p.fillEllipse(hx,hy+hr*.49f,hr*.23f,hr*(.06f+.22f*mouth),INK);
             p.fillEllipse(hx,hy+hr*.60f,hr*.13f,hr*.065f*mouth,0xFFFFA8CB);

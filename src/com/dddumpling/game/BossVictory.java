@@ -10,6 +10,7 @@ final class BossVictory extends Draw {
     static void draw(Painter p, GameCore c, Layout L) {
         int kind = c.bossVictoryKind;
         if (kind < 0 || c.bossVictory == null || !c.dying()) return;
+        if(kind==Boss.RAINBOW_CAT) {RainbowCatTaunt.draw(p,c,L);return;}
         float at = c.deathProgress();
         float fade = Math.min(1f, at * 7f) * Math.min(1f, (1f - at) * 6f);
         Boss b = c.bossVictory;

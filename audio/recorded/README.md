@@ -281,3 +281,9 @@ The 3.456-second game clip receives +17.58 dB gain, measuring -1.41 dBFS peak an
 it has silent endpoints. Waveform and energy checks were used, not a listening claim.
 The original recording and review WAVs stay local. This is user-provided material,
 not a third-party sound library or a CC0 attribution.
+
+Rainbow Cat's loss taunt reuses take 01 as seven meows descending by one semitone
+each (+4 through -2), with short edge fades and a shared normalized peak.
+Flurry releases reuse take 07 in a whole-tone bank (-12 through +10 semitones);
+shorter volleys use the upper notes, and each shot plays its next note on release.
+Both platforms use the same resampled PCM. The original recordings remain unchanged.

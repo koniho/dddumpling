@@ -149,6 +149,11 @@ public class TestAudioLifecycle {
   a.companionExclaim(Narration.DOUBLE_RAINBOW);
   check("companion voice half volume",speech.calls==2 && Math.abs(speech.volume-.15f)<.0001f);
   check("companion voice leaves music unducked",!field("ducked").getBoolean(a) && Math.abs(bgm(a).volume-.4f)<.0001f);
+  for(int note=0;note<12;note++) {
+    a.catFlurry(note,12);AudioTrack meow=effectTrack(a,Sfx.catFlurryId(note,12));
+    check("flurry meow plays each pitched sample "+note,meow.plays==1);
+    check("flurry uses effects gain "+note,Math.abs(meow.volume-.3f*Sfx.CAT_FLURRY_GAIN)<.0001f);
+  }
   a.catLaser();check("companion voice leaves effects unducked",Math.abs(effectTrack(a,Sfx.CAT_LASER).volume-.3f*Sfx.CAT_LASER_GAIN)<.0001f);
   a.volumes(.4f,0);a.companionExclaim(Narration.DOUBLE_RAINBOW);check("muted companion stays silent",speech.calls==2);
   a.volumes(.4f,.3f);a.explain("Ordinary tutorial");
