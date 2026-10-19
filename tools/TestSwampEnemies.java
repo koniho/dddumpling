@@ -20,11 +20,13 @@ final class TestSwampEnemies extends Check {
         group("Swamp fog and divebomb words");
         GameCore c=scene(L,175);
         GameCore.Enemy e=word(c,L,0,L.h*.4f);
-        for(int stage:new int[]{1,6,11,16,21,22,25,26,46}) {
+        for(int stage:new int[]{1,6,11,16,21,22,25,26,27,30,31,46,51,56}) {
             c.jumpToStage(stage,L);
-            e.phase=.1f;SwampEnemies.assign(c,e);
-            boolean swamp=Lands.forStage(stage)==Lands.SWAMP && !Boss.isBossStage(stage);
-            check("fog restricted to normal swamp encounters "+stage,(e.swampKind==SwampEnemies.FOG)==swamp);
+            e.phase=Lands.forStage(stage)==Lands.RAINBOW?6.283f*.4f:.1f;
+            SwampEnemies.assign(c,e);
+            boolean fogLand=WorldCatalog.bossForLand(Lands.forStage(stage))>=WorldCatalog.bossForLand(Lands.SWAMP);
+            check("fog follows late Adventure lands "+stage,
+                    (e.swampKind==SwampEnemies.FOG)==(fogLand && !Boss.isBossStage(stage)));
         }
         c.jumpToStage(21,L);e.phase=1.6f;SwampEnemies.assign(c,e);
         check("dive variant has its own selection band",e.swampKind==SwampEnemies.DIVE);
@@ -58,7 +60,39 @@ final class TestSwampEnemies extends Check {
         }
         c=scene(L,175);e=add(c,L,new int[]{0},L.h*.4f);e.phase=.1f;SwampEnemies.assign(c,e);
         check("single prompts stay ordinary",e.swampKind==0);
-        fog(L);dives(L);bounded(L);
+        survivalFog(L);fog(L);dives(L);bounded(L);
+    }
+    private static void survivalFog(Layout L) {
+        for(int stage:new int[]{1,5,10,15,19})for(int mode:new int[]{-1,Power.FLURRY,Power.NINJA,Power.TEAM}) {
+            GameCore run=TestSurvival.start(TestSurvival.store(),175);
+            run.stage=stage;run.mode=mode;run.modeLeft=mode<0?0:100;
+            int fog=0,dive=0;boolean capped=true;
+            run.rnd.setSeed(175);
+            for(int sample=0;sample<200;sample++) {
+                run.enemies.clear();GameCore.Enemy candidate=add(run,L,new int[]{0,1,4,2},L.h*.3f);
+                candidate.need[0]=2;candidate.phase=6.283f*(sample+.5f)/200;
+                SwampEnemies.assign(run,candidate);
+                if(candidate.swampKind==SwampEnemies.FOG) {
+                    fog++;capped&=candidate.word.length==3 && candidate.need[0]==2;
+                }
+                if(candidate.swampKind==SwampEnemies.DIVE)dive++;
+            }
+            check("Survival fog rate, caps and mode eligibility "+stage+"/"+mode,fog==50 && dive==0 && capped);
+            check("Survival fog does not consume spawn RNG "+stage+"/"+mode,
+                    run.rnd.nextLong()==new java.util.Random(175).nextLong());
+        }
+        GameCore run=TestSurvival.start(TestSurvival.store(),176);
+        run.survival.seconds=90;run.onboarding.clear();run.stageBanner=run.stageGap=0;
+        int fog=0;boolean pairSafe=true;
+        for(int frame=0;frame<200;frame++) {
+            run.spawnTimer=0;run.update(.02f,L);
+            for(GameCore.Enemy enemy:run.enemies) {
+                if(enemy.swampKind==SwampEnemies.FOG)fog++;
+                if(enemy.link!=null)pairSafe&=enemy.swampKind==SwampEnemies.NONE;
+            }
+            run.enemies.clear();run.target=null;run.caretOwner=null;
+        }
+        check("Survival spawn path produces fog and preserves linked pairs",fog>0 && pairSafe);
     }
     private static void fog(Layout L) {
         GameCore c=scene(L,175);GameCore.Enemy e=word(c,L,SwampEnemies.FOG,L.h*.35f);

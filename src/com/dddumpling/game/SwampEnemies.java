@@ -31,13 +31,21 @@ final class SwampEnemies {
 
     static void assign(GameCore c,GameCore.Enemy e) {
         reset(e);
-        if(c.survival.active || c.timeAttack.active || c.boss.active() || Cave.active(c)
-                || Boss.isBossStage(c.stage) || (Lands.forStage(c.stage)!=Lands.SWAMP && Lands.forStage(c.stage)!=Lands.RAINBOW)
-                || e.link!=null || e.word.length<2) return;
+        if(c.timeAttack.active || c.boss.active() || Cave.active(c) || e.link!=null || e.word.length<2)return;
+        int land=Lands.forStage(c.stage);
+        if(!c.survival.active && (Boss.isBossStage(c.stage)
+                || WorldCatalog.bossForLand(land)<WorldCatalog.bossForLand(Lands.SWAMP)))return;
         // Reuse the uniform spawn phase: adding a variant does not shuffle future words.
         float pick=e.phase/6.283f;
-        boolean intro=(c.stage-1)%Boss.EVERY==0;
-        e.swampKind=Lands.forStage(c.stage)==Lands.RAINBOW?(pick<.36f?DIVE:NONE):pick<(intro?.20f:.25f)?FOG:pick<(intro?.35f:.45f)?DIVE:NONE;
+        boolean intro=!c.survival.active && (c.stage-1)%Boss.EVERY==0;
+        float fogChance=intro?.20f:.25f;
+        if(c.survival.active)e.swampKind=pick<fogChance?FOG:NONE;
+        else if(land==Lands.RAINBOW) {
+            // Keep Rainbow's existing dive band; fog takes part of the ordinary word band.
+            e.swampKind=pick<.36f?DIVE:pick<.36f+fogChance?FOG:NONE;
+        } else {
+            e.swampKind=pick<fogChance?FOG:land==Lands.SWAMP && pick<(intro?.35f:.45f)?DIVE:NONE;
+        }
         if(e.swampKind==FOG || e.swampKind==DIVE) {
             // Both variants keep at most three generated keys; only dives strip stacked pips.
             int length=Math.min(3,e.word.length);
