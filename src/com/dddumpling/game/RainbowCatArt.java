@@ -502,7 +502,7 @@ final class RainbowCatArt extends Draw {
             float px=x+r*(-.75f+(i%4)*.43f),py=y+r*(-.61f+(i/4)*.53f);
             p.line(px,py,px+r*.06f,py+r*.10f,COLORS[(i+1)%COLORS.length],r*.07f);
         }
-        if(vampire)cape(p,x,y,r,t,facing,known);
+        if(vampire)cape(p,outline,x,y,r,t,facing,known);
         float hx=skull==null?x+facing*r*.96f:skull.centreX();
         float hy=skull==null?y+r*.1f:skull.centreY();
         float hr=(skull==null?r*.66f:skull.radiusY())*1.13f;
@@ -571,23 +571,73 @@ final class RainbowCatArt extends Draw {
         }
         return shape;
     }
-    private static void cape(Painter p,float x,float y,float r,float t,float facing,float known) {
-        float flap=(float)Math.sin(t*5)*.16f;
-        float[] hem={.62f,-.68f,-.10f,-.87f,-.86f,-.75f+flap,-1.38f,-.51f+flap,
-                -1.78f,-.65f+flap,-1.68f,-.22f+flap,-1.82f,.16f+flap,
-                -1.58f,.07f+flap,-1.45f,.27f+flap,-1.18f,.14f+flap,-1.05f,.37f,
-                -.65f,.24f,-.22f,.40f,.55f,.30f};
-        float[] cloth=points(hem,x,y,r*facing,r);
-        p.fillPoly(cloth,INK);
-        p.fillPoly(inset(cloth,x,y,.95f,.93f),known>0?0xFF613379:INK);
-        p.fillPoly(inset(cloth,x,y-r*.09f,.88f,.70f),known>0?0xFF9562B1:INK);
-        if(known>0) {
-            p.line(x+facing*r*.5f,y-r*.56f,x-facing*r*.85f,y-r*(.53f-flap*.5f),0xFFC69BDE,r*.055f);
-            // Rounded costume collar sits beneath the cheeks, anchored to the moving body.
-            p.fillPoly(points(new float[]{.40f,.15f,.30f,-.65f,.79f,-.37f,1.15f,-.61f,1.17f,.25f},x,y,r*facing,r),0xFF6B3C82);
-            p.fillEllipse(x+facing*r*.72f,y+r*.50f,r*.13f,r*.12f,0xFFC9EE91);
-            p.fillCircle(x+facing*r*.69f,y+r*.47f,r*.045f,0xFFF7FFDB);
+    private static void cape(Painter p,float[] back,float x,float y,float r,float t,float facing,float known) {
+        final int columns=28,rows=8;
+        float direction=facing<0?-1:1;
+        float[] mesh=new float[(columns+1)*(rows+1)*2];
+        for(int col=0;col<=columns;col++) {
+            float u=col/(float)columns,local=.97f-2.90f*u,xx=x+direction*r*local;
+            float top=Float.MAX_VALUE,bottom=-Float.MAX_VALUE;
+            // The shoulder and back follow the actual spring silhouette, not a floating ribbon.
+            float sample=x+direction*r*Math.max(-1.07f,local);
+            for(int i=0;i<back.length;i+=2) {
+                int next=(i+2)%back.length;
+                float ax=back[i],bx=back[next];
+                if(Math.abs(bx-ax)<.0001f || sample<Math.min(ax,bx) || sample>Math.max(ax,bx))continue;
+                float yy=back[i+1]+(back[next+1]-back[i+1])*(sample-ax)/(bx-ax);
+                top=Math.min(top,yy);bottom=Math.max(bottom,yy);
+            }
+            if(top==Float.MAX_VALUE) {top=y-r*.82f;bottom=y+r*.85f;}
+            float free=RainbowCat.clamp((-local-1.02f)/.91f,0,1);
+            top-=r*.045f;
+            bottom-=r*(.18f*(1-u)+.08f);
+            // Two travelling waves: the neck stays pinned while the free hem curls and flaps.
+            float wave=(float)Math.sin(t*7.5f-u*8.5f),ripple=(float)Math.sin(t*11-u*13);
+            float lift=free*free*r*(.10f+.30f*wave+.09f*ripple);
+            top+=lift-free*r*.12f;bottom+=lift-free*r*.22f;
+            for(int row=0;row<=rows;row++) {
+                float v=row/(float)rows;
+                int at=(col*(rows+1)+row)*2;
+                float curl=free*free*r*(.11f*(float)Math.sin(t*7.5f-u*8.5f+v*3.8f)+.09f*(float)Math.sin(v*Math.PI));
+                mesh[at]=xx+direction*curl;
+                mesh[at+1]=top+(bottom-top)*v
+                        +r*.055f*u*(float)Math.sin(v*Math.PI)*(float)Math.sin(t*7.5f-u*8.5f+v*2);
+            }
         }
+        float[] cloth=new float[(columns*2+rows*2)*2];int at=0;
+        for(int col=0;col<=columns;col++)at=capeVertex(cloth,at,mesh,col,0,rows);
+        for(int row=1;row<=rows;row++)at=capeVertex(cloth,at,mesh,columns,row,rows);
+        for(int col=columns-1;col>=0;col--)at=capeVertex(cloth,at,mesh,col,rows,rows);
+        for(int row=rows-1;row>0;row--)at=capeVertex(cloth,at,mesh,0,row,rows);
+        p.fillPoly(cloth,known>0?0xFF37393F:INK);
+        if(known>0) {
+            int[] shades={0xFF656872,0xFF595C65,0xFF4B4E57,0xFF40434B,0xFF393C43,0xFF34373E,0xFF303239,0xFF393C44};
+            float[] strip=new float[(columns+1)*4];
+            for(int row=0;row<rows;row++) {
+                at=0;
+                for(int col=0;col<=columns;col++)at=capeVertex(strip,at,mesh,col,row,rows);
+                for(int col=columns;col>=0;col--)at=capeVertex(strip,at,mesh,col,row+1,rows);
+                p.fillPoly(strip,shades[row]);
+            }
+            // Low-contrast folds travel through the fabric with the flutter.
+            float[] fold=new float[(columns+1)*2];
+            for(int row:new int[]{2,5}) {
+                for(int col=0;col<=columns;col++)capeVertex(fold,col*2,mesh,col,row,rows);
+                p.polyline(fold,row==2?0x307C818B:0x40303239,r*.025f);
+            }
+        }
+        p.strokePoly(cloth,known>0?0xFF292B32:INK,r*.055f);
+        if(known>0) {
+            // A soft raised collar and tiny clasp sit underneath the head.
+            p.fillEllipse(x+direction*r*.78f,y-r*.26f,r*.24f,r*.43f,0xFF454850);
+            p.fillEllipse(x+direction*r*.77f,y-r*.29f,r*.17f,r*.34f,0xFF626670);
+            p.fillEllipse(x+direction*r*.78f,y+r*.48f,r*.12f,r*.10f,0xFFC9EE91);
+            p.fillCircle(x+direction*r*.75f,y+r*.45f,r*.035f,0xFFF7FFDB);
+        }
+    }
+    private static int capeVertex(float[] out,int at,float[] mesh,int col,int row,int rows) {
+        int point=(col*(rows+1)+row)*2;
+        out[at]=mesh[point];out[at+1]=mesh[point+1];return at+2;
     }
     static float[] pastry(Softbody b,float x,float y,float r) {
         float[] src=b==null?null:b.outline(),out=new float[src==null?72:src.length];
