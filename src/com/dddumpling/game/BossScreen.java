@@ -1555,7 +1555,7 @@ final class BossScreen extends Draw {
      * interlude puts over its wanted letter. Three places, one mark: a player who has learnt it once
      * should not have to learn it again because this is a boss.
      */
-    private static void letterBadge(Painter p, GameCore c, Layout L, int g, float x, float y,
+    static void letterBadge(Painter p, GameCore c, Layout L, int g, float x, float y,
             float rr, float fade, boolean live) {
         if (g < 0) return;
         int col = Skins.keyColor(p,g);

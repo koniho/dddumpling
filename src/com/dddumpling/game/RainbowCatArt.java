@@ -57,10 +57,7 @@ final class RainbowCatArt extends Draw {
                 int g=side==0?a.leftKey:a.rightKey;boolean active=g==a.promptKey;
                 float xx=a.promptX(L,g);
                 float pulse=active?1+.10f*a.keyFlash/.22f:1;
-                if(active)FastEnemies.glow(q,xx,yy,s*1.1f,Skins.keyColor(p,g),220,1);
-                FastEnemies.body(q,xx,yy,s*pulse,Skins.keyColor(p,g),active?255:190,false);
-                Kawaii.draw(q,g,xx,yy,s*.70f*pulse,Skins.keyColor(p,g),active?1:.78f,0);
-                if(active)q.strokeCircle(xx,yy,s*1.35f,0xFFFFF1BD,s*.12f);
+                BossScreen.letterBadge(q,c,L,g,xx,yy,s*pulse,1,active);
             }
             float fraction=Math.max(0,a.timer/a.promptTime()),width=L.w*.60f;
             for(int band=0;band<COLORS.length;band++) {
