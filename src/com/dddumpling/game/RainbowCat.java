@@ -10,6 +10,7 @@ final class RainbowCat {
     static final float DASH_TIME=.34f, TRAIL_TIME=2.2f, TRAIL_LENGTH=2.9f*4;
     static final float PROJECTILE_TIME=Boss.BOLT_TIME*.5f/.75f, SHOT_WIND=.32f, SHOT_RECOVER=.12f;
     float shotWind,shotReach,shotRecovery;
+    RainbowCatTaunt.Mesh tauntMesh;
     final Softbody pastry=new Softbody(18,151), head=new Softbody(14,152);
     final float[] route=new float[8],trailX=new float[136],trailY=new float[136],trailAge=new float[136];
     int phase,pointer=-1,taps,trailCount,captures,cue,promptKey=-1,windowHits;
@@ -33,14 +34,14 @@ final class RainbowCat {
     float[] burstShape,burstWork;
     int burstKind,burstStep;
     float escapeLeft,escapeX,escapeY,escapeAge;
-    int flurryCount;
+    int flurryCount,flurryNotes;
     final int[] flurrySlots=new int[Glyph.COUNT*2];
     boolean escapeSequence,flurryFromLeft,doubleFlurry;
     boolean circling;
     boolean placed,kids,escaping;
     void reset() {
-        shotWind=shotReach=shotRecovery=0;
-        rocket.reset();java.util.Arrays.fill(flurrySlots,-1);
+        tauntMesh=null;shotWind=shotReach=shotRecovery=0;
+        rocket.reset();flurryNotes=0;java.util.Arrays.fill(flurrySlots,-1);
         phase=CHASE;pointer=-1;taps=trailCount=captures=cue=windowHits=0;promptKey=leftKey=rightKey=-1;damageFloor=keyFlash=0;hitColor=0;fullRoster=false;placed=escaping=escapeSequence=flurryFromLeft=doubleFlurry=false;flurryCount=0;turn=1;
         java.util.Arrays.fill(hitConeLife,0);nextHitCone=0;
         circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=netAimX=netAimY=tapFlash=scared=scaredAge=0;circling=false;gesture.clear();
@@ -135,9 +136,13 @@ final class RainbowCat {
     float shotY() {return y+traceY+r*1.50f;}
     void firePose() {shotWind=0;shotReach=1;shotRecovery=SHOT_RECOVER;pose(0);}
     void releaseQueuedShot(Boss b,int slot) {
-        for(int owned:flurrySlots)if(owned==slot) {
-            firePose();b.bsx[slot]=shotX();b.bsy[slot]=shotY();return;
+        for(int i=0;i<flurryCount;i++)if(flurrySlots[i]==slot) {
+            flurryNotes|=1<<i;firePose();b.bsx[slot]=shotX();b.bsy[slot]=shotY();return;
         }
+    }
+    void flurryFeedback(GameCore c) {
+        int notes=flurryNotes;flurryNotes=0;
+        if(c.sound!=null)for(int i=0;i<flurryCount;i++)if((notes&(1<<i))!=0)c.sound.catFlurry(i,flurryCount);
     }
     private void pose(float dt) {
         float facing=phase==CIRCLE || phase==CATCH || phase==OPEN || (escapeSequence && escapeAge<ESCAPE_TIME)?-1:Math.abs(vx)<1?turn:vx<0?-1:1;
@@ -225,7 +230,7 @@ final class RainbowCat {
         return 0;
     }
     private void flurry(Boss b,java.util.Random rnd) {
-        java.util.Arrays.fill(flurrySlots,-1);
+        flurryNotes=0;java.util.Arrays.fill(flurrySlots,-1);
         boolean fromLeft=rnd.nextBoolean();int keys=Roster.count(b.rosterFull);
         // The window floor identifies the phase even after its final hit changes the health band.
         doubleFlurry=damageFloor<=b.hpMax/TraceGesture.SHAPE_COUNT+.0001f;

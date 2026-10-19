@@ -10,6 +10,23 @@ import java.io.File;
 final class Preview {
     private static void rainbowFrames(File dir,Layout L,int w,int h,int ss) throws Exception {
         if(!wantedGroup("151-"))return;
+        for(int skin=0;skin<Skins.COUNT;skin++) {
+            GameCore loss=TestRainbowCat.fight(L);loss.preferences.skin=skin;loss.lives=1;
+            loss.takeHit(loss.boss.cat.x,L);
+            for(int frame=0;frame<250;frame++) {
+                loss.update(1f/60,L);
+                if(frame==50 || frame==125 || frame==205)shot(dir,"151-cat-loss-"+skin+"-"+frame,loss,L,w,h,ss);
+            }
+        }
+        if(wanted("151-cat-loss-audio")) {
+            Wav.write(new File(dir,"151-cat-loss-chromatic.wav"),Sfx.build(Sfx.bossTauntId(Boss.RAINBOW_CAT)),Sfx.RATE);
+            short[] flurry=new short[(int)(Sfx.RATE*3.1f)];
+            for(int note=0;note<12;note++) {
+                short[] meow=Sfx.build(Sfx.catFlurryId(note,12));int start=(int)(Sfx.RATE*(note*RainbowCat.SWEEP_STEP+(note/2)*RainbowCat.DOUBLE_PAIR_GAP));
+                for(int i=0;i<meow.length && start+i<flurry.length;i++)flurry[start+i]=(short)Math.max(-32767,Math.min(32767,flurry[start+i]+meow[i]*Sfx.CAT_FLURRY_GAIN));
+            }
+            Wav.write(new File(dir,"151-cat-flurry-whole-tone.wav"),flurry,Sfx.RATE);
+        }
         GameCore meowcula=TestRainbowCat.fight(L);meowcula.preferences.skin=Skins.HALLOWEEN;
         for(int i=0;i<90;i++)meowcula.update(1f/60,L);
         shot(dir,"151-meowcula-battle",meowcula,L,w,h,ss);
@@ -3672,7 +3689,10 @@ final class Preview {
                 pcm=pcm.clone();
                 for(int i=0;i<pcm.length;i++)pcm[i]=(short)(pcm[i]*Sfx.NINJA_COMBO_GAIN);
             }
-            Wav.write(new File(sfxDir, names[id] + ".wav"), pcm, Sfx.RATE);
+            String name=id<names.length?names[id]:id==Sfx.bossTauntId(Boss.RAINBOW_CAT)?"taunt-cat"
+                    :id==Sfx.CAT_LASER?"cat-laser":id>=Sfx.CAT_FLURRY_0?"cat-flurry-"+(id-Sfx.CAT_FLURRY_0)
+                    :id>=Sfx.CAT_MEOW_0?"cat-meow-"+(id-Sfx.CAT_MEOW_0):"effect-"+id;
+            Wav.write(new File(sfxDir, name + ".wav"), pcm, Sfx.RATE);
         }
         for (int style = 0; style < Music.NAMES.length; style++) {
             if (!Music.isSynth(style)) continue;

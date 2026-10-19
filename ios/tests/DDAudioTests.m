@@ -448,6 +448,19 @@
   XCTAssertEqualWithAccuracy(mixer.rate, 1.f, .0001f);
 }
 
+- (void)testCatFlurryPlaysEveryReleasedNote {
+  DDClockedAudio *audio = [DDClockedAudio new];
+  DDCountingMixer *mixer = [DDCountingMixer new];
+  [audio setValue:@YES forKey:@"active"];
+  [audio setValue:@YES forKey:@"playbackAllowed"];
+  [audio setValue:mixer forKey:@"effectMixer"];
+  for (int note = 0; note < 12; ++note) [audio catFlurryWithInt:note withInt:12];
+  dispatch_sync([audio valueForKey:@"effectsQueue"], ^{});
+  XCTAssertEqual(mixer.playCount, 12u);
+  XCTAssertEqualWithAccuracy(mixer.gain, DDSfx_CAT_FLURRY_GAIN, .0001f);
+  XCTAssertEqualWithAccuracy(mixer.rate, 1.f, .0001f);
+}
+
 - (void)testQueuedEffectsRespectTheStaleDeadline {
   for (NSNumber *delay in @[@.099, @.101]) {
     DDClockedAudio *audio = [DDClockedAudio new];

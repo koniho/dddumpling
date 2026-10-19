@@ -43,11 +43,14 @@ final class Sfx {
     static final int LEGACY_KEYS=6;
     static final int EXTRA_KEYS=EXTRA_BOSS_VOICES+Math.max(0,Boss.COUNT-LEGACY_BOSS_VOICES);
     static final int CAT_MEOW_0=EXTRA_KEYS+Math.max(0,Glyph.COUNT-LEGACY_KEYS);
-    static final int CAT_LASER=CAT_MEOW_0+CatMeowRecording.COUNT, COUNT=CAT_LASER+1;
+    static final int CAT_LASER=CAT_MEOW_0+CatMeowRecording.COUNT, CAT_FLURRY_0=CAT_LASER+1, COUNT=CAT_FLURRY_0+12;
+    static final float CAT_FLURRY_GAIN=.48f;
+    static int catFlurryId(int note,int count) {return CAT_FLURRY_0+Math.max(0,Math.min(11,12-count+note));}
+    static float catFlurryPitch(int index) {return (float)Math.pow(2,(-12+index*2)/12.0);}
     static final float CAT_LASER_GAIN=.55f;
     static final float CAT_MEOW_GAIN=.90f;
     static int catMeowId(int variant) {return CAT_MEOW_0+Math.max(0,Math.min(CatMeowRecording.COUNT-1,variant));}
-    static boolean isCatMeow(int id) {return id>=CAT_MEOW_0 && id<CAT_LASER || id==bossTauntId(Boss.RAINBOW_CAT);}
+    static boolean isCatMeow(int id) {return id>=CAT_MEOW_0 && id<CAT_LASER || id>=CAT_FLURRY_0 && id<COUNT || id==bossTauntId(Boss.RAINBOW_CAT);}
     static int squishId(int glyph) {return glyph<LEGACY_KEYS?SQUISH_0+glyph:EXTRA_KEYS+glyph-LEGACY_KEYS;}
     static int count() {return COUNT;}
     static int bossTauntId(int boss) {return boss<LEGACY_BOSS_VOICES?BOSS_TAUNT_0+boss:EXTRA_BOSS_VOICES+boss-LEGACY_BOSS_VOICES;}
@@ -98,7 +101,8 @@ final class Sfx {
 
     private static short[] renderEffect(int id) {
         if(id>=CAT_MEOW_0 && id<CAT_LASER)return CatMeowRecording.build(id-CAT_MEOW_0);
-        if(id==bossTauntId(Boss.RAINBOW_CAT))return CatMeowRecording.build(0);
+        if(id==bossTauntId(Boss.RAINBOW_CAT))return catTaunt();
+        if(id>=CAT_FLURRY_0 && id<COUNT)return render(pitchedMeow(6,catFlurryPitch(id-CAT_FLURRY_0)));
         if(id==CAT_LASER)return catLaser();
         if(id==SLIME_VULNERABLE)return slimeVulnerable();
         if(id==SLIME_DRAG_BOIP)return slimeDragBoip();
@@ -430,6 +434,26 @@ final class Sfx {
      */
     static short[] over() {
         return arp(1.55f, OVER_NOTES, 0.16f, 2.4f, 0.07f, 0.14f);
+    }
+
+    private static float[] pitchedMeow(int variant,float rate) {
+        short[] source=CatMeowRecording.build(variant);
+        float[] voice=new float[(int)(source.length/rate)];
+        for(int i=0;i<voice.length;i++) {
+            float at=i*rate;int left=Math.min(source.length-2,(int)at);float u=at-left;
+            float edge=Math.min(1,Math.min(i/(RATE*.004f),(voice.length-1-i)/(RATE*.015f)));
+            voice[i]=(source[left]+(source[left+1]-source[left])*u)/32768f*Math.max(0,edge);
+        }
+        return voice;
+    }
+    static short[] catTaunt() {
+        float[] out=new float[(int)(RATE*3.70f)];
+        for(int note=0;note<RainbowCatTaunt.NOTES;note++) {
+            float[] voice=pitchedMeow(0,RainbowCatTaunt.pitch(note));
+            int start=(int)(RATE*(RainbowCatTaunt.NOTE_START+note*RainbowCatTaunt.NOTE_STEP));
+            for(int i=0;i<voice.length && start+i<out.length;i++)out[start+i]+=voice[i];
+        }
+        return render(out);
     }
 
     /** Short victory voices from the boss catalog. */

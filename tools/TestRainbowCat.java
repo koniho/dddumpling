@@ -742,8 +742,65 @@ final class TestRainbowCat extends Check {
             a.reset();check("shot pose reset "+fps,a.shotReach==0 && a.shotWind==0 && a.shotRecovery==0);
         }
     }
+    private static final class TauntBudget extends OpacityPainter {
+        int paths,vertices;boolean finite=true;
+        TauntBudget(){super(null,1);}
+        public int skin(){return Skins.DEFAULT;}
+        public void fillPoly(float[] points,int color){paths++;vertices+=points.length/2;for(float v:points)finite &= Float.isFinite(v);}
+        public void line(float x,float y,float x2,float y2,int color,float width){}
+    }
+    private static void tauntBudget(Layout L) {
+        group("Taunt mouth uses bounded reusable ribbon geometry");
+        RainbowCatTaunt.Mesh mesh=new RainbowCatTaunt.Mesh();
+        int maxPaths=0,maxVertices=0;boolean finite=true;
+        for(int frame=0;frame<264;frame++) {
+            TauntBudget p=new TauntBudget();RainbowCatTaunt.ribbons(p,L,frame/60f,mesh);
+            maxPaths=Math.max(maxPaths,p.paths);maxVertices=Math.max(maxVertices,p.vertices);finite &= p.finite;
+        }
+        check("whole animated face keeps a bounded path budget",maxPaths<=80 && maxPaths>0 && maxVertices<4000);
+        check("partial mouth and moving sheen retain finite geometry",finite);
+        RainbowCat a=new RainbowCat();a.tauntMesh=mesh;a.reset();
+        check("reset releases taunt mesh",a.tauntMesh==null);
+    }
+    private static void lossAndFlurry(Layout L) {
+        group("Cat loss doodle and release-timed flurry notes");
+        for(int fps:new int[]{30,60,120})for(boolean doubled:new boolean[]{false,true}) {
+            GameCore c=fight(L);c.devInfiniteLives=true;c.boss.hp=doubled?2:5;challenge(c,L);
+            RainbowCat a=c.boss.cat;Ear ear=new Ear();c.sound=ear;
+            while(a.phase==RainbowCat.OPEN)c.boss.press(a.promptKey,c.rnd,L);
+            int count=a.flurryCount;c.update(.1f,L);
+            check("queued flurry is silent "+fps+doubled,ear.catFlurries==0);
+            c.paused=true;c.update(.5f,L);c.paused=false;
+            check("pause cannot release notes "+fps+doubled,ear.catFlurries==0);
+            for(int frame=0;frame<fps*5 && a.escapeSequence;frame++)c.update(1f/fps,L);
+            check("every released star gets its ascending note once "+fps+doubled,
+                    ear.catFlurries==count && ear.catFlurryOrdered && ear.lastFlurryNote==count-1 && a.flurryNotes==0);
+            a.flurryFeedback(c);check("feedback drain never repeats notes "+fps+doubled,ear.catFlurries==count);
+            c.toTitle();check("title clears queued notes "+fps+doubled,c.boss.cat.flurryNotes==0);
+        }
+        GameCore c=fight(L);Ear ear=new Ear();c.sound=ear;c.lives=1;
+        c.takeHit(c.boss.cat.x,L);RainbowCat retained=c.bossVictory.cat;
+        check("cat gets a complete loss painting and one taunt",c.deathDuration()==RainbowCatTaunt.DURATION
+                && ear.bossTaunts==1 && !c.boss.active() && !retained.rocket.active);
+        for(int stroke=0;stroke<4;stroke++)check("doodle stroke completes "+stroke,
+                RainbowCatTaunt.ink(stroke,0)==0 && RainbowCatTaunt.ink(stroke,3.4f)==1);
+        check("mouth is a downward smile",RainbowCatTaunt.point(L,3,.5f,1)<RainbowCatTaunt.point(L,3,0,1));
+        check("cat loss keeps the battle palette",c.drained()==0);
+        float sky=c.skyClock;c.update(.1f,L);
+        check("taunt starts at battle scroll speed",Math.abs(c.skyClock-sky-.3f)<.001f && c.drained()==0);
+        for(int frame=0;frame<90;frame++)c.update(1f/60,L);
+        sky=c.skyClock;c.update(.1f,L);
+        check("taunt accelerates to triple battle speed",Math.abs(c.skyClock-sky-.9f)<.001f && c.drained()==0);
+        check("star motion remains continuous through acceleration",RainbowCatTaunt.starTravel(0)==0
+                && Math.abs(RainbowCatTaunt.starTravel(1.201f)-RainbowCatTaunt.starTravel(1.2f)-.003f)<.0001f);
+        float left=c.deathT;c.paused=true;c.update(.5f,L);c.paused=false;
+        check("pause freezes taunt progress",c.deathT==left);
+        for(int frame=0;frame<300 && c.dying();frame++)c.update(1f/60,L);
+        check("loss painting ends cleanly without repeated meows",!c.dying() && ear.bossTaunts==1);
+        c.toTitle();check("title releases loss snapshot",c.bossVictory==null && c.bossVictoryKind<0);
+    }
     static void all(Layout L) {
-        shotAnimation(L);rocketShakeFeedback(L);retainedProjectiles(L);rocketVictory(L);arrival(L);hitShape(L);doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        tauntBudget(L);lossAndFlurry(L);shotAnimation(L);rocketShakeFeedback(L);retainedProjectiles(L);rocketVictory(L);arrival(L);hitShape(L);doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));

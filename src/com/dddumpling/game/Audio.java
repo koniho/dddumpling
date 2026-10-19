@@ -433,6 +433,7 @@ final class Audio implements GameCore.Sound {
     @Override public void shieldBounce() { play(Sfx.SHIELD_BOUNCE, 1f, 0.72f); }
     @Override public void gatorParry() { play(Sfx.GATOR_PARRY, 1f); }
     @Override public void catLaser() { play(Sfx.CAT_LASER,1f,Sfx.CAT_LASER_GAIN); }
+    @Override public void catFlurry(int note,int count) { play(Sfx.catFlurryId(note,count),1f,Sfx.CAT_FLURRY_GAIN); }
     @Override public void catMeow(int variant) { play(Sfx.catMeowId(variant),1f,Sfx.CAT_MEOW_GAIN); }
     @Override public void gatorTaunt(int variant) { play(Sfx.gatorTauntId(variant), 1f, Sfx.GATOR_TAUNT_GAIN); }
     @Override public void gatorPrompt(int variant) { play(Sfx.gatorPromptId(variant), 1f, Sfx.GATOR_PROMPT_GAIN); }

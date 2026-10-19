@@ -2423,9 +2423,9 @@ final class TestBoss extends Check {
                                 && !victory.boss.octoLashLanded);
             }
             check(Skins.bossName(Skins.DEFAULT,k) + ": its victory performance is the extended death hold",
-                    victory.deathT == GameCore.BOSS_DEATH_TIME
+                    victory.deathT == (k==Boss.RAINBOW_CAT?RainbowCatTaunt.DURATION:GameCore.BOSS_DEATH_TIME)
                             && GameCore.BOSS_DEATH_TIME == GameCore.DEATH_TIME * 3f - 2f);
-            advance(victory, L, GameCore.BOSS_DEATH_TIME + DT);
+            advance(victory, L, victory.deathDuration() + DT);
             check(Skins.bossName(Skins.DEFAULT,k) + ": restores normal music when game over appears",
                     !victoryEar.bossMusic && victoryEar.bossMusicCalls == 1);
 
