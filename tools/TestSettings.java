@@ -577,9 +577,9 @@ final class TestSettings extends Check {
         check("changing mode waits for next run",c.kidsRun);
         for(int stage:new int[]{1,9,16,30}) {
             c.stage=stage;
-            check("kids word complexity follows the stage with a six-press cap "+stage,
+            check("kids word complexity follows the stage and land press cap "+stage,
                     c.maxWordLen()==Pacing.maxWordLen(stage) && c.stackChance()==Pacing.stackChance(stage)
-                    && c.maxPresses()==6 && c.maxEnemies()==3);
+                    && c.maxPresses()==(Lands.forStage(stage)==Lands.RAINBOW?5:6) && c.maxEnemies()==3);
         }
         c.unlockRoster();check("kids run cannot promote to six keys",!c.runFullRoster);
         c.startGame();check("normal mode restores next run",!c.kidsRun && c.maxWordLen()==Pacing.maxWordLen(c.stage));

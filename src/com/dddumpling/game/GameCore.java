@@ -1850,7 +1850,7 @@ final class GameCore {
 
     int maxEnemies() { return survival.active?survival.crowd(this):Pacing.maxEnemies(pacingStage()); }
 
-    int maxPresses() { return kidsRun ? 6 : Pacing.MAX_PRESSES; }
+    int maxPresses() { return RainbowLand.active(this) ? 5 : kidsRun ? 6 : Pacing.MAX_PRESSES; }
 
     int maxWordLen() { return Math.min(maxPresses(), Pacing.maxWordLen(stage)); }
 
