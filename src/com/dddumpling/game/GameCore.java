@@ -3200,7 +3200,10 @@ final class GameCore {
                     bossDeathHaptic=Math.max(bossDeathHaptic,2);
                 }
                 if(boss.cat.cue==1)boss.cat.meow(this,CatMeowRecording.STRUGGLE,false);
-                else if(boss.cat.cue==2)boss.cat.shortMeow(this);
+                else if(boss.cat.cue==2) {
+                    if(boss.cat.doubleFlurry) {if(sound!=null)sound.explain(Narration.DOUBLE_RAINBOW);}
+                    else boss.cat.shortMeow(this);
+                }
                 boss.cat.cue=0;
             }
             int gatorAttackCues=boss.kind==Boss.ALLIGATOR?boss.alligator.takeAttackCues():0;

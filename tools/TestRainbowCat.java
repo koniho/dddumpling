@@ -82,13 +82,13 @@ final class TestRainbowCat extends Check {
                 for(int key=0;key<RainbowCat.HITS_PER_BAND && a.phase==RainbowCat.OPEN;key++)c.boss.press(a.promptKey,c.rnd,L);
                 check("one damage per completed capture "+direction+"/"+capture,c.boss.hp==4-capture
                         && c.boss.beaten==(capture==4));
-                check("each damage launches rainbow flurry "+direction+"/"+capture,c.boss.boltCount()==6 && a.cue==2 && a.launchLeft==4.4f);
+                check("each damage launches rainbow flurry "+direction+"/"+capture,c.boss.boltCount()==(capture>=3?12:6) && a.cue==2 && a.launchLeft==4.4f);
                 boolean origin=true;
-                for(int bolt=0;bolt<6;bolt++)origin&=c.boss.bsx[bolt]==a.x && c.boss.bsy[bolt]==a.y+a.r*.45f;
+                for(int bolt=0;bolt<a.flurryCount;bolt++)origin&=c.boss.bsx[bolt]==a.x && c.boss.bsy[bolt]==a.y+a.r*.45f;
                 check("damage flurry comes from cat "+direction+"/"+capture,origin);
             }
             check("all five shapes differ "+direction,shapes.size()==5);
-            int exitHits=0;for(int frame=0;frame<300;frame++)exitHits+=c.boss.update(1f/60,L,c.rnd);
+            int exitHits=0;for(int frame=0;frame<500;frame++)exitHits+=c.boss.update(1f/60,L,c.rnd);
             check("final flurry animates away without hurting player "+direction,exitHits==0 && c.boss.boltCount()==0);
             c.boss.leave();check("exit clears flurry cue "+direction,a.cue==0);
         }
@@ -106,6 +106,58 @@ final class TestRainbowCat extends Check {
                 ordered&=Math.abs(c.boss.bt[i]+(RainbowCat.ESCAPE_TIME+RainbowCat.SWEEP_SETUP+RainbowCat.SWEEP_LEAD)/(Boss.BOLT_TIME*.5f)+i*.24f)<.00001f && c.boss.bfast[i];
             }
             check("flurry preserves left/right order and stagger "+full+"/"+fromLeft+"/"+success,ordered);
+        }
+    }
+    private static void doubleFlurries(Layout L) {
+        group("Last two trace phases fire two stars per key");
+        for(boolean full:new boolean[]{false,true})for(final boolean left:new boolean[]{false,true})
+        for(int phase=0;phase<TraceGesture.SHAPE_COUNT;phase++)for(boolean success:new boolean[]{false,true}) {
+            GameCore c=fight(L);c.boss.rosterFull=full;c.boss.hp=c.boss.hpMax-phase;challenge(c,L);
+            RainbowCat a=c.boss.cat;
+            java.util.Random direction=new java.util.Random(151) {public boolean nextBoolean(){return left;}};
+            if(success)while(a.phase==RainbowCat.OPEN)c.boss.press(a.promptKey,direction,L);
+            else {a.timer=.01f;c.boss.update(.02f,L,direction);}
+            int n=Roster.count(full),repeats=phase>=3?2:1;
+            String tag=" "+full+left+phase+success;
+            check("phase controls doubled count"+tag,c.boss.boltCount()==n*repeats && a.doubleFlurry==(repeats==2));
+            boolean ordered=true;int[] counts=new int[Glyph.COUNT];
+            for(int i=0;i<n*repeats;i++) {
+                int key=Roster.at(full,left?i/repeats:n-1-i/repeats);counts[c.boss.bglyph[i]]++;
+                ordered&=c.boss.bglyph[i]==key && c.boss.bfast[i] && c.boss.bhp[i]==1;
+                if(i>0)ordered&=Math.abs(c.boss.bt[i-1]-c.boss.bt[i]-(RainbowCat.SWEEP_STEP+(repeats==2 && i%2==0?RainbowCat.DOUBLE_PAIR_GAP:0))/(Boss.BOLT_TIME*.5f))<.00001f;
+            }
+            for(int i=0;i<n;i++)ordered&=counts[Roster.at(full,i)]==repeats;
+            check("each key gets ordered individually staggered stars"+tag,ordered);
+            check("companion announces double only in late phases"+tag,a.companionHint().equals(repeats==2?"DOUBLE RAINBOW?!":"RAINBOW INCOMING!"));
+            if(repeats==2 && !c.boss.beaten) {
+                while(c.boss.bt[1]<0)c.boss.update(1f/120,L,c.rnd);
+                c.boss.press(c.boss.bglyph[0],c.rnd,L);
+                check("first tap clears just the first star"+tag,!c.boss.blive[0] && c.boss.blive[1]);
+                c.boss.press(c.boss.bglyph[1],c.rnd,L);
+                check("second tap clears second star"+tag,!c.boss.blive[1]);
+            }
+            c.boss.leave();check("leaving clears double cue and all stars"+tag,!a.doubleFlurry && c.boss.boltCount()==0);
+        }
+        GameCore finalRun=fight(L);finalRun.boss.hp=1;challenge(finalRun,L);RainbowCat a=finalRun.boss.cat;
+        while(a.phase==RainbowCat.OPEN)finalRun.boss.press(a.promptKey,finalRun.rnd,L);
+        boolean allLaunched=false,clipped=false;int hits=0;
+        for(int frame=0;frame<1000 && !finalRun.boss.gone();frame++) {
+            hits+=finalRun.boss.update(1f/120,L,finalRun.rnd);
+            allLaunched|=finalRun.boss.bt[a.flurryCount-1]>=0;
+            clipped|=finalRun.boss.gone() && finalRun.boss.boltCount()>0;
+        }
+        check("final double sweep fully departs without damage or clipping",allLaunched && !clipped && hits==0 && finalRun.boss.gone());
+    }
+    private static void doubleSpeech(Layout L) {
+        group("Double rainbow uses one cutesy companion TTS announcement");
+        for(int phase:new int[]{0,3,4}) {
+            GameCore c=fight(L);c.boss.hp=c.boss.hpMax-phase;challenge(c,L);Ear ear=new Ear();c.sound=ear;
+            while(c.boss.cat.phase==RainbowCat.OPEN)c.boss.press(c.boss.cat.promptKey,c.rnd,L);
+            c.update(1f/60,L);
+            check("only double flurry speaks phrase "+phase,ear.explanations==(phase>=3?1:0)
+                    && (phase<3 || Narration.DOUBLE_RAINBOW.equals(ear.explanation)));
+            for(int i=0;i<30;i++)c.update(1f/60,L);
+            check("announcement is consumed once "+phase,ear.explanations==(phase>=3?1:0) && c.boss.cat.cue==0);
         }
     }
     private static void finalCaptureStar(Layout L) {
@@ -518,7 +570,7 @@ final class TestRainbowCat extends Check {
         }
     }
     static void all(Layout L) {
-        hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
+        doubleSpeech(L);doubleFlurries(L);hitCones(L);ringBudget(L);damageWindows(L);escapeSweep(L);netEscape(L);traceCelebration(L);fiveShapes(L);finalCaptureStar(L);tapFlash(L);traceShapes(L);recordedMeows(L);traceFeedback(L);windUp(L);circleGestures(L);battleBackground(L);trailAndCadence(L);catalog();enemies(L);clearParticles(L);titleRainbow(L);background(L);guidance(L);
         group("Rainbow Cat chase, taps and challenge");
         GameCore c=fight(L);RainbowCat a=c.boss.cat;
         check("Rainbow Land follows swamp with stable cave slot",Lands.firstStage(Lands.RAINBOW)==26 && Lands.forStage(26)==Lands.RAINBOW && !Lands.playable(Cave.LAND));
@@ -604,6 +656,7 @@ final class TestRainbowCat extends Check {
             for(int frame=0;frame<fps*150 && !c.boss.beaten && c.state==GameCore.PLAY;frame++) {
                 bot.step(c,L,1/fps);c.update(1/fps,L);
             }
+            System.out.println("    cat "+fps+"fps: hp="+c.boss.hp+", lives="+c.lives+", phase="+c.boss.cat.phase+", time="+c.boss.age);
             check("bounded one-finger cat fight completes at "+fps,c.boss.beaten && c.lives>0);
         }
         group("five-boss Time Attack archive migration");

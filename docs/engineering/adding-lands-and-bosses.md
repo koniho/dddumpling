@@ -158,8 +158,14 @@ a window cannot cross the next one-health boundary. At that boundary or timer ex
 the net bursts while the cat holds angrily in place, then she sweeps across a curved slash
 arc in the same direction as the left-to-right or right-to-left flurry. Queued stars remain
 invisible and untargetable until launched from the moving cat, 0.288 seconds apart.
+The figure-eight and star windows send two consecutive stars per key, with an extra 0.12-second
+gap between pairs so switching keys stays readable. The companion
+announces “DOUBLE RAINBOW?!”, including on timeout. The shared high-pitched companion
+TTS reads `Narration.DOUBLE_RAINBOW` once per double flurry, with normal mute and music ducking. This depends on the window's health
+floor so finishing the diamond phase does not prematurely double its flurry. Rainbow Cat
+has room for twelve queued bolts; other bosses retain their eight-bolt limit.
 Ordinary shots wait 4.4 seconds after the sweep. The final flurry is harmless and the exit
-waits for the net animation. Reaching all five health boundaries wins; the enrage warning begins
+waits for the net animation and allows the full double flurry to depart. Reaching all five health boundaries wins; the enrage warning begins
 at 75 seconds. Chase projectiles reuse boss bolts with Rush star
 art and fast flight, so matching keys defend them and the existing boss damage/score
 and Time Attack statistics paths remain authoritative. The prompt phase clears airborne

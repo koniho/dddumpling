@@ -362,7 +362,7 @@ final class RainbowCatArt extends Draw {
             int color=Collect.BODY[who];
             p.fillEllipse(cx-r*.05f,cy-r*.08f,cr*.20f,cr*.17f,color);
             p.fillEllipse(cx+r*.22f,cy+r*.15f,cr*.20f,cr*.17f,color);
-            if(a.phase==RainbowCat.OPEN)TutorialSpeech.companionFeedback(p,L,cx,cy,cr,
+            if(a.phase==RainbowCat.OPEN || (a.escapeSequence && a.doubleFlurry))TutorialSpeech.companionFeedback(p,L,cx,cy,cr,
                     a.companionHint(),.5f,Collect.ACCENT[who]);
         }
     }

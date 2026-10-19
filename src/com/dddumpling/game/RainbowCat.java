@@ -6,7 +6,7 @@ final class RainbowCat {
     static final int HITS_PER_BAND=20;
     static final float TAP_FLASH=.60f, SCARE_HOLD=.70f, SHAKE_OFF=.40f;
     static final float NET_TIME=.75f, NET_RETURN=.45f, ESCAPE_TIME=1.1f;
-    static final float SWEEP_SETUP=.25f, SWEEP_LEAD=.08f, SWEEP_STEP=.288f;
+    static final float SWEEP_SETUP=.25f, SWEEP_LEAD=.08f, SWEEP_STEP=.288f, DOUBLE_PAIR_GAP=.12f;
     static final float DASH_TIME=.34f, TRAIL_TIME=2.2f, TRAIL_LENGTH=2.9f*4;
     final Softbody pastry=new Softbody(18,151), head=new Softbody(14,152);
     final float[] route=new float[8],trailX=new float[136],trailY=new float[136],trailAge=new float[136];
@@ -30,11 +30,11 @@ final class RainbowCat {
     int burstKind,burstStep;
     float escapeLeft,escapeX,escapeY,escapeAge;
     int flurryCount;
-    boolean escapeSequence,flurryFromLeft;
+    boolean escapeSequence,flurryFromLeft,doubleFlurry;
     boolean circling;
     boolean placed,kids,escaping;
     void reset() {
-        phase=CHASE;pointer=-1;taps=trailCount=captures=cue=windowHits=0;promptKey=leftKey=rightKey=-1;damageFloor=keyFlash=0;hitColor=0;fullRoster=false;placed=escaping=escapeSequence=flurryFromLeft=false;flurryCount=0;turn=1;
+        phase=CHASE;pointer=-1;taps=trailCount=captures=cue=windowHits=0;promptKey=leftKey=rightKey=-1;damageFloor=keyFlash=0;hitColor=0;fullRoster=false;placed=escaping=escapeSequence=flurryFromLeft=doubleFlurry=false;flurryCount=0;turn=1;
         java.util.Arrays.fill(hitConeLife,0);nextHitCone=0;
         circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=netAimX=netAimY=tapFlash=scared=scaredAge=0;circling=false;gesture.clear();
         x=y=vx=vy=clock=flash=routeTime=routeDuration=trailTick=timer=0;launchLeft=1.3f;
@@ -191,12 +191,15 @@ final class RainbowCat {
     private void flurry(Boss b,java.util.Random rnd) {
         b.clearBolts();
         boolean fromLeft=rnd.nextBoolean();int keys=Roster.count(b.rosterFull);
-        flurryFromLeft=fromLeft;flurryCount=keys;
-        // Six keys need a readable cadence after a successful prompt, including at 30 FPS.
-        float lead=(ESCAPE_TIME+SWEEP_SETUP+SWEEP_LEAD)/(Boss.BOLT_TIME*.5f),stagger=SWEEP_STEP/(Boss.BOLT_TIME*.5f);
-        for(int i=0;i<keys;i++) {
-            int slot=b.tailBolt(rnd,x,y+r*.45f);
-            if(slot>=0) {b.bglyph[slot]=Roster.at(b.rosterFull,fromLeft?i:keys-1-i);b.bfast[slot]=true;b.bt[slot]=-lead-i*stagger;}
+        // The window floor identifies the phase even after its final hit changes the health band.
+        doubleFlurry=damageFloor<=b.hpMax/TraceGesture.SHAPE_COUNT+.0001f;
+        int repeats=doubleFlurry?2:1;
+        flurryFromLeft=fromLeft;flurryCount=keys*repeats;
+        // Keep close pairs, with a little breathing room when switching keys.
+        float lead=(ESCAPE_TIME+SWEEP_SETUP+SWEEP_LEAD)/(Boss.BOLT_TIME*.5f);
+        for(int i=0;i<flurryCount;i++) {
+            int key=i/repeats,slot=b.tailBolt(rnd,x,y+r*.45f);
+            if(slot>=0) {b.bglyph[slot]=Roster.at(b.rosterFull,fromLeft?key:keys-1-key);b.bfast[slot]=true;b.bt[slot]=-lead-flurryDelay(i)/(Boss.BOLT_TIME*.5f);}
         }
         cue=2;
     }
@@ -244,7 +247,11 @@ final class RainbowCat {
     }
     float struggleX() {return ((float)Math.sin(clock*25)*.17f+(float)Math.sin(clock*39)*.05f)*r*caughtStrength();}
     float struggleY() {return (float)Math.sin(clock*31)*r*.075f*caughtStrength();}
-    float sweepDuration() {return SWEEP_LEAD*2+Math.max(0,flurryCount-1)*SWEEP_STEP;}
+    float flurryDelay(int shot) {return shot*SWEEP_STEP+(doubleFlurry?(shot/2)*DOUBLE_PAIR_GAP:0);}
+    float finalFadeDelay() {
+        return ESCAPE_TIME+(doubleFlurry?flurryDelay(flurryCount-1)-(flurryCount/2-1)*SWEEP_STEP:0);
+    }
+    float sweepDuration() {return SWEEP_LEAD*2+flurryDelay(Math.max(0,flurryCount-1));}
     float angry() {
         if(!escapeSequence)return 0;
         return Math.min(clamp(escapeAge/.15f,0,1),clamp((ESCAPE_TIME+SWEEP_SETUP+sweepDuration()-escapeAge)/.2f,0,1));
@@ -369,7 +376,7 @@ final class RainbowCat {
         return id==pointer;
     }
     String companionHint() {
-        if(phase==ESCAPE)return "RAINBOW INCOMING!";
+        if(phase==ESCAPE)return doubleFlurry?"DOUBLE RAINBOW?!":"RAINBOW INCOMING!";
         if(phase==OPEN)return "LEFT, RIGHT!";
         if(phase==CATCH)return "GOT YOU!";
         if(phase==CIRCLE) {

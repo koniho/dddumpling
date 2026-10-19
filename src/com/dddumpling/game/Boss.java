@@ -1951,7 +1951,9 @@ final class Boss {
      * letter, fly at the key that clears them, and cost a life at the deck. Press the letter to swat
      * one; there is nothing to engage and no order to type them in.
      */
-    static final int BOLTS = 3, MAX_BOLTS = 8;
+    static final int BOLTS = 3, NORMAL_BOLT_LIMIT = 8;
+    // Rainbow Cat queues two projectiles for each key; other bosses keep their existing limit.
+    static final int MAX_BOLTS = Math.max(NORMAL_BOLT_LIMIT,Glyph.COUNT*2);
     /** Seconds one takes to reach the deck. Long enough to read three letters and find three keys. */
     static final float BOLT_TIME = 2.4f;
     /**
@@ -2095,7 +2097,7 @@ final class Boss {
     private void sporeVolley(int count, Random rnd) {
         int first = randomGlyph(rnd);
         int made = 0;
-        for (int slot = 0; slot < MAX_BOLTS && made < count; slot++) {
+        for (int slot = 0; slot < NORMAL_BOLT_LIMIT && made < count; slot++) {
             if (blive[slot]) continue;
             blive[slot] = true;
             bfast[slot] = false;
@@ -2239,7 +2241,7 @@ final class Boss {
 
     private boolean divideVolley(int node, Layout L, Random rnd) {
         int made = 0, count = divideVolleySize(), free = 0;
-        for (boolean live : blive) if (!live) free++;
+        for (int i=0;i<NORMAL_BOLT_LIMIT;i++) if (!blive[i]) free++;
         if (free < count) return false;
         for (int i = 0; i < count; i++) {
             int bolt = singleBolt(rnd, divideX[node], divideY[node] + pieceRadiusNode(node, L));
@@ -2265,7 +2267,7 @@ final class Boss {
 
     private int singleBolt(Random rnd, float x, float y) {
         int slot = -1;
-        for (int i = 0; i < MAX_BOLTS; i++) if (!blive[i]) { slot = i; break; }
+        for (int i = 0,limit=kind==RAINBOW_CAT?MAX_BOLTS:NORMAL_BOLT_LIMIT; i < limit; i++) if (!blive[i]) { slot = i; break; }
         if (slot < 0) return -1;
         int glyph;
         if (kind == OCTOPUS) {
@@ -2542,9 +2544,9 @@ final class Boss {
         if(beaten && kind==RAINBOW_CAT)hits=0;
 
         if (beaten) {
-            // Keep the final net break intact before the celebratory sweep and exit fade.
+            // Preserve the net break and let the longer double flurry finish before the exit.
             float leaveDt=kind==RAINBOW_CAT && cat.escapeSequence
-                    ? Math.min(dt,Math.max(0,cat.escapeAge-RainbowCat.ESCAPE_TIME)):dt;
+                    ? Math.min(dt,Math.max(0,cat.escapeAge-cat.finalFadeDelay())):dt;
             leaveT = Math.max(0f, leaveT - leaveDt);
             if (kind == MUSHROOM) {
                 mushroomCapDX *= Math.max(0f, 1f - dt * 8f);

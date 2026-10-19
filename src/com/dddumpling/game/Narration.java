@@ -23,6 +23,8 @@ final class Narration {
 
     private Narration() {}
 
+    static final String DOUBLE_RAINBOW="Double rainbow! O M G! It's a double rainbow all the way!";
+
     /** Fixed chunks before the story itself: the name, then where it lives. */
     static final int PREAMBLE = 2;
     /** And the story, whole. Three utterances in total, always. */
