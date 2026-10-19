@@ -59,7 +59,7 @@ final class RainbowLand extends Draw {
     }
     private static final int[] CLOUD_COLORS={0xFFBAA2E8,0xFFCCE2F5,0xFFE9E0FF,0xFFFFF7FF};
     /** Each depth layer is one traced puff, so overlapping lobes do not become opaque. */
-    private static void cloud(Painter p,float x,float y,float rx,float ry,int alpha,boolean silhouette,int from,int to) {
+    static void cloud(Painter p,float x,float y,float rx,float ry,int alpha,boolean silhouette,int from,int to) {
         for(int layer=from;layer<to;layer++) {
             float scale=1.12f-layer*.08f,xx=x+rx*(layer-1.5f)*.045f,yy=y-ry*layer*.055f;
             float[] outline=new float[132];
@@ -78,11 +78,8 @@ final class RainbowLand extends Draw {
         }
     }
 
-    static void skit(Painter p,int variant,float x,float y,float r,float t,float a) {
-        prop(p,x,y+r*.3f,r,(int)(a*220),t,false);
-        float loop=t*2,hop=Math.abs((float)Math.sin(loop));
-        RainbowCatArt.portrait(p,x+(float)Math.sin(loop*.6f)*r*.6f,y-r*(.4f+hop*.5f),r*.54f,t,true,a);
-        RainbowCatArt.yarn(new OpacityPainter(p,a),x+r*(float)Math.cos(loop),y+r*.12f,r*.22f,t,false);
+    static void skit(Painter p,int variant,float x,float y,float r,float t,int a) {
+        LandPlaySkits.rainbow(p,variant,x,y,r,t,a);
     }
     static void title(Painter p,float x,float y,float s,float span,float rise,float clock,float fade,boolean front) {
         if(!front)return;

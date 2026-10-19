@@ -893,8 +893,8 @@ final class TestVisuals extends Check {
         group("Reactive land skits");
         RasterPainter p=new RasterPainter(320,280,1);
         int background=0xFF171426;p.clear(background);int[] empty=p.resolve();
-        for(int land:new int[]{0,1,3})for(int variant=0;variant<3;variant++) {
-            int stage=land*Boss.EVERY+variant+1;
+        for(int land:new int[]{0,1,3,Lands.SWAMP,Lands.RAINBOW})for(int variant=0;variant<3;variant++) {
+            int stage=Lands.firstStage(land)+variant;
             String label="land "+land+" skit "+variant;
             boolean deterministic=true,visible=true,bounded=true;
             java.util.HashSet<Integer> frames=new java.util.HashSet<>();

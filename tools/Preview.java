@@ -1864,6 +1864,18 @@ final class Preview {
                 shot(dir, "81-land-" + land + "-skit-" + variant, themed, L, w, h, ss);
             }
         }
+        if(wantedGroup("207-")) {
+            for(int land:new int[]{Lands.SWAMP,Lands.RAINBOW})for(int variant=0;variant<3;variant++) {
+                GameCore skit=new GameCore(new Mem(),207L);skit.startGame();skit.landBlend=1;
+                skit.stage=Lands.firstStage(land)+variant;skit.stageGap=1;
+                for(int frame=0;frame<8;frame++) {
+                    skit.stageBanner=GameCore.BANNER_TIME*(1-(.04f+frame*.12f));
+                    shot(dir,"207-land-"+land+"-skit-"+variant+"-"+frame,skit,L,w,h,ss);
+                }
+                skit.preferences.skin=Skins.HALLOWEEN;skit.stageBanner=GameCore.BANNER_TIME*.5f;
+                shot(dir,"207-land-"+land+"-skit-"+variant+"-halloween",skit,L,w,h,ss);
+            }
+        }
         if(wanted("81-slime-")) {
             GameCore slime=new GameCore(new Mem(),145L);slime.startGame();slime.landBlend=1f;
             for(int variant=0;variant<3;variant++)for(int frame=0;frame<9;frame++) {

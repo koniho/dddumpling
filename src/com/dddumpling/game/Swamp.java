@@ -29,13 +29,6 @@ final class Swamp extends Draw {
         }
     }
     static void skit(Painter p,int variant,float x,float y,float r,float t,int a) {
-        prop(p,x,y+r*.4f,r,a,t*5,false);
-        float hop=(float)Math.sin(t*Math.PI*4),xx=x+(float)Math.sin(t*Math.PI*2)*r*.65f;
-        if(variant==1) {
-            AlligatorArt.portrait(p,x+r*.3f,y+r*.3f,r*.48f,t*4,true,a/255f);
-            xx=x-r*.48f;
-        }
-        Skits.face(p,Kawaii.DUMPLING,xx,y-r*(.05f+Math.abs(hop)*.65f),r*.37f,a,1+.12f*hop,.95f);
-        if(hop<0)for(int i=0;i<5;i++)p.fillCircle(xx+(i-2)*r*.16f,y+r*.22f-Math.abs(hop)*r*(.2f+i%2*.2f),r*.035f,Glyph.withAlpha(AlligatorArt.LIGHT,a));
+        LandPlaySkits.swamp(p,variant,x,y,r,t,a);
     }
 }
