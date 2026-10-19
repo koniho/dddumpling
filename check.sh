@@ -90,6 +90,7 @@ src/com/dddumpling/game/Onboarding.java
 src/com/dddumpling/game/TutorialSpeech.java
 src/com/dddumpling/game/ScoreReset.java
 src/com/dddumpling/game/HighScores.java
+src/com/dddumpling/game/BossRetry.java
 src/com/dddumpling/game/HighScoreScreen.java
 src/com/dddumpling/game/OctoWaveRecording.java
 src/com/dddumpling/game/SlimeSquishRecording.java

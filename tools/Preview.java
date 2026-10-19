@@ -1912,6 +1912,29 @@ final class Preview {
         slimeSprayFrames(dir,L,w,h,ss);
         slimeDeathFrames(dir,L,w,h,ss);
         slimeOpeningFrames(dir,L,w,h,ss);
+        if(wantedGroup("206-")) {
+            GameCore retry=TestBossRetry.fight(L,Boss.SLIME);
+            TestBossRetry.lose(retry,L);TestBossRetry.ready(retry,L);
+            shot(dir,"206-retry-choice",retry,L,w,h,ss);
+            for(int kind=0;kind<Boss.COUNT;kind++) {
+                GameCore skit=TestBossRetry.fight(L,kind);
+                TestBossRetry.lose(skit,L);TestBossRetry.ready(skit,L);
+                skit.clock=1.7f+kind*.17f;
+                shot(dir,"206-retry-skit-"+kind,skit,L,w,h,ss);
+                if(kind==Boss.RAINBOW_CAT) {
+                    skit.preferences.skin=Skins.HALLOWEEN;
+                    shot(dir,"206-retry-skit-halloween",skit,L,w,h,ss);
+                }
+            }
+            retry.bossRetry.retry(retry);retry.boss.intro=0;
+            TestBossRetry.lose(retry,L);TestBossRetry.ready(retry,L);retry.bossRetry.end(retry);
+            for(int i=0;i<60;i++)retry.update(1f/60,L);
+            shot(dir,"206-retried-summary",retry,L,w,h,ss);
+            retry.toTitle();retry.highScoreScreen.show(retry);retry.highScoreScreen.update(HighScoreScreen.ENTRY_TIME);
+            shot(dir,"206-retried-high-scores",retry,L,w,h,ss);
+            retry.highScoreScreen.selected=0;
+            shot(dir,"206-retried-record",retry,L,w,h,ss);
+        }
         rainbowFrames(dir,L,w,h,ss);
         skinFrames(dir,L,w,h,ss);
         clearSpreadFrames(dir,L,w,h,ss);

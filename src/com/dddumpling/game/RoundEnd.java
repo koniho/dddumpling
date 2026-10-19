@@ -122,7 +122,7 @@ final class RoundEnd extends Draw {
      */
     static void dance(Painter p, GameCore c, Layout L) {
         int count = hauled(c);
-        if (count == 0 || c.state != GameCore.OVER || c.overFade() < 1f) return;
+        if (count == 0 || c.bossRetry.pending || c.state != GameCore.OVER || c.overFade() < 1f) return;
         float since = c.time - (c.deathDuration() + GameCore.OVER_FADE);
         float in = Math.min(1f, since / 0.3f);
         if (in <= 0f) return;

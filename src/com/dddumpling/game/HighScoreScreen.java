@@ -166,6 +166,10 @@ final class HighScoreScreen extends Draw {
         }
         Trinket.draw(p,Math.max(0,run.character),L.w*.135f,cy,Math.min(s*.9f,L.w*.037f),c.clock,run.character>=0,1f);
         p.text(value,L.w*.21f,baseline,font,INK,Painter.LEFT,true);
+        if(run.bossRetries>0) {
+            String badge="RETRIES "+run.bossRetries;
+            p.text(badge,L.w*.21f,baseline+font*1.45f,Math.min(font*.65f,L.w*.13f/(badge.length()*.73f)),GOLD,Painter.LEFT,true);
+        }
         java.util.ArrayList<String> lines=new java.util.ArrayList<>();
         int limit=Math.max(1,(int)(L.w*.27f/(font*.73f)));
         String line="";
@@ -256,7 +260,7 @@ final class HighScoreScreen extends Draw {
         }
     }
     private void summary(Painter p,GameCore c,Layout L,HighScores.Run run) {
-        float s=Math.min(size(L)*1.15f,(listBottom(L)-listTop(L))/30f),t=listTop(L);
+        float s=Math.min(size(L)*1.15f,(listBottom(L)-listTop(L))/(run.bossRetries>0?32f:30f)),t=listTop(L);
         float iconX=L.w*.14f,titleX=L.w*.26f,valueX=L.w*.72f;
         float font=type(s*.55f)*(run.survival?SUMMARY_TEXT_SCALE:1),y=t+s*1.45f;
         p.fillRect(L.w*.065f,t-s*.25f,L.w*.935f,listBottom(L),0xE02A2542);
@@ -277,6 +281,7 @@ final class HighScoreScreen extends Draw {
         boundedStat(p,L,titleX,valueX,y,font,"ACCURACY",run.accuracy()+"%"); y+=s*1.42f;
         boundedStat(p,L,titleX,valueX,y,font,"SQUISHES",value(run.squishes)); y+=s*1.42f;
         boundedStat(p,L,titleX,valueX,y,font,"BEST COMBO",value(run.combo)); y+=s*1.42f;
+        if(run.bossRetries>0){boundedStat(p,L,titleX,valueX,y,font,"BOSS RETRIES",value(run.bossRetries));y+=s*1.42f;}
         if(!run.survival) {
             boundedStat(p,L,titleX,valueX,y,font,"STAGES COMPLETED",value(run.stages)); y+=s*1.80f;
 

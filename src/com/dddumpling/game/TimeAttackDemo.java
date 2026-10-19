@@ -27,10 +27,18 @@ final class TimeAttackDemo extends Draw {
         scene(p,c,L,c.timeAttack.selected,c.timeAttack.slideDirection*span*(1-travel));
     }
     static void drawCompanion(Painter p,GameCore c,Layout L) {
+        drawCompanion(p,c,L,SurvivalDemo.companion(c));
+    }
+    private static void drawCompanion(Painter p,GameCore c,Layout L,int companion) {
         float t=c.clock%LOOP,r=radius(L);
         p.fillEllipse(companionAnchor(L),sceneY(L)+r*1.45f,r*1.1f,r*.13f,0x44302045);
-        Trinket.drawReacting(p,SurvivalDemo.companion(c),companionX(c,L),companionY(c,L),r,c.clock*3,1,
+        Trinket.drawReacting(p,companion,companionX(c,L),companionY(c,L),r,c.clock*3,1,
                 hop(t,.18f,1f)>.1f?5:hop(t,1f,1.8f)>.1f?4:8,.7f);
+    }
+    static void drawRetry(Painter p,GameCore c,Layout L,float y) {
+        Painter fitted=new BossScreen.PortraitFit(p,L.w*.5f,sceneY(L),L.w*.5f,y,1.3f);
+        drawCompanion(fitted,c,L,Math.max(0,c.runWho));
+        drawOne(fitted,c,L,c.bossVictoryKind,true);
     }
     private static void scene(Painter p,GameCore c,Layout L,int selected,float offset) {
         p.save();p.translate(offset,0);
@@ -39,7 +47,9 @@ final class TimeAttackDemo extends Draw {
         p.restore();
     }
     private static void drawOne(Painter p,GameCore c,Layout L,int boss) {
-        boolean known=TimeAttack.unlocked(c,boss);
+        drawOne(p,c,L,boss,TimeAttack.unlocked(c,boss));
+    }
+    private static void drawOne(Painter p,GameCore c,Layout L,int boss,boolean known) {
         float t=c.clock%LOOP,r=radius(L),br=r*2;
         float y=sceneY(L),right=bossAnchor(L);
         float charge=hop(t,.08f,.85f),recoil=hop(t,1.5f,2.12f),cheer=hop(t,2.25f,3.05f);

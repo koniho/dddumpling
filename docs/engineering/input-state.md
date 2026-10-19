@@ -117,3 +117,24 @@ policy lives in [AGENTS.md](../../AGENTS.md).
   to hunt. The jump adds only the clearing-up — field, frenzy, boss, in-flight gestures — because it
   can be taken mid-stage, and it leaves the score and lives alone on purpose, since looking at a
   late stage on two lives is the thing it is for.
+
+
+## Adventure boss retries (#206)
+
+`BossRetry` checkpoints the score when `GameCore.enterStage` starts an Adventure boss.
+A fatal hit retains the existing boss taunt and opens a retry/end choice after its input grace
+period. While that choice is pending, the high-score record, run completion, adaptive early-loss
+counter, and Town reward remain uncommitted. End Run commits them once; direct title/new-run
+routes also finalize a pending loss before clearing it.
+
+Retry restores full lives and the encounter-entry score, starts the same boss with its normal
+arrival, and clears encounter effects, input, projectiles and active power-ups. The companion,
+earlier rewards and cumulative hit/miss statistics stay with the run. Each confirmed retry
+increments `HighScores.bossRetries`; starting a new run resets it. Touch gestures remain owned
+by the game-over route through lift, so the confirming touch cannot attack the restarted boss.
+A gameplay keyboard key retries; Back ends the run and reveals its summary.
+
+Adventure histories with retries use `HighScores` format 12, which adds a nonnegative retry
+count after the effect values and before the prize count in each row. Histories without retries
+retain format 10; older rows load with zero retries. Survival format 11 and Time Attack records
+are unchanged. Active encounters are not persisted/restored across application restarts.
