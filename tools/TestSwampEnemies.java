@@ -77,7 +77,7 @@ final class TestSwampEnemies extends Check {
                 }
                 if(candidate.swampKind==SwampEnemies.DIVE)dive++;
             }
-            check("Survival fog rate, caps and mode eligibility "+stage+"/"+mode,fog==50 && dive==0 && capped);
+            check("Survival fog rate, caps and mode eligibility "+stage+"/"+mode,fog==25 && dive==0 && capped);
             check("Survival fog does not consume spawn RNG "+stage+"/"+mode,
                     run.rnd.nextLong()==new java.util.Random(175).nextLong());
         }

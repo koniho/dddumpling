@@ -936,8 +936,8 @@ final class TestRainbowCat extends Check {
     }
     private static void enemies(Layout L) {
         group("Rainbow Land enemy mix");
-        for(int mode:new int[]{-1,Power.FLURRY,Power.NINJA,Power.TEAM}) {
-            GameCore c=TestFastEnemies.scene(L,26,151);c.pairSpawnSlots=0;c.spawnedThisStage=1;
+        for(int stage:new int[]{26,27})for(int mode:new int[]{-1,Power.FLURRY,Power.NINJA,Power.TEAM}) {
+            GameCore c=TestFastEnemies.scene(L,stage,151);c.pairSpawnSlots=0;c.spawnedThisStage=1;
             c.mode=mode;c.modeLeft=mode<0?0:100;
             int rush=0,dive=0,fog=0;
             c.rnd.setSeed(151);
@@ -950,7 +950,7 @@ final class TestRainbowCat extends Check {
             }
             check("increased rush chance "+mode,rush==(mode<0?920:390));
             check("increased dive chance "+mode,dive==360);
-            check("Rainbow intro includes fog beside rush and dive "+mode,fog==200);
+            check("Rainbow fog is half Swampland rate "+stage+"/"+mode,fog==(stage==26?100:125));
         }
     }
 

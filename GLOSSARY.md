@@ -371,8 +371,8 @@ the enemy actually hits the player.
 
 Normal Adventure waves in Swampland (stages 21–24, and later Swampland visits) mix ordinary
 words with **fog words** and **divebomb words**. Fog also appears in later catalog chapters,
-including Rainbow Land, and in Survival. The first stage of each eligible Adventure chapter
-uses a 20% fog selection band; later stages and Survival use 25%. Only multi-key solo words
+including Rainbow Land, and in Survival. Swampland uses a 20% fog selection band on its first stage and 25% on later stages.
+Later Adventure lands use half those rates: 10% initially, then 12.5%. Survival uses 12.5%. Only multi-key solo words
 are eligible; linked pairs and single-key rush enemies stay unchanged.
 Swampland retains its 15% introductory / 20% later divebomb band, while Rainbow Land retains
 its 36% divebomb band. Survival adds fog only. Power-up spawns retain these variants.
