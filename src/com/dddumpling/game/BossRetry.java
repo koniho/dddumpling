@@ -42,11 +42,11 @@ final class BossRetry extends Draw {
         c.enterStage(stage);
         if(c.sound!=null){c.sound.uiBloop();c.sound.frenzy(false);}
     }
-    static float buttonY(Layout L,boolean retry){return L.h*(retry?.54f:.65f);}
+    static float buttonY(Layout L,boolean retry){return L.h*(retry?.56f:.68f);}
     void tap(GameCore c,Layout L,float x,float y) {
-        if(!pending || !c.overReady() || x<L.w*.18f || x>L.w*.82f)return;
-        if(Math.abs(y-buttonY(L,true))<L.h*.043f)retry(c);
-        else if(Math.abs(y-buttonY(L,false))<L.h*.043f)end(c);
+        if(!pending || !c.overReady() || x<L.w*.15f || x>L.w*.85f)return;
+        if(Math.abs(y-buttonY(L,true))<L.h*.047f)retry(c);
+        else if(Math.abs(y-buttonY(L,false))<L.h*.047f)end(c);
     }
     void draw(Painter p,GameCore c,Layout L,float fade) {
         Painter q=new OpacityPainter(p,fade);float s=L.unit,cx=L.w*.5f;
@@ -54,15 +54,17 @@ final class BossRetry extends Draw {
         q.text("TRY AGAIN?",cx,L.h*.265f,type(s*1.35f),GOLD,Painter.CENTER,true);
         String name=Skins.bossName(p.skin(),c.bossVictoryKind);
         q.text(name,cx,L.h*.322f,Math.min(type(s*.78f),L.w*.72f/(name.length()*.73f)),INK,Painter.CENTER,true);
-        float bob=(float)Math.sin(c.clock*3)*s*.12f;
-        Trinket.draw(q,Math.max(0,c.runWho),cx,L.h*.42f+bob,s*1.9f,c.clock,true,1);
+        TimeAttackDemo.drawRetry(q,c,L,L.h*.423f);
         for(int i=0;i<2;i++) {
-            float y=buttonY(L,i==0);
-            glassPanel(q,L.w*.18f,y-L.h*.038f,L.w*.82f,y+L.h*.038f,s*.55f);
-            q.text(i==0?"RETRY BOSS":"END RUN",cx,y+type(s*.8f)*.35f,type(s*.8f),i==0?GOLD:INK,Painter.CENTER,true);
+            float y=buttonY(L,i==0),l=L.w*.15f,r=L.w*.85f,half=L.h*.047f;
+            int edge=i==0?0xFFFFDF77:0xFFF0B9D3,fill=i==0?0xFF665020:0xFF54304F;
+            q.fillRect(l,y-half+s*.23f,r,y+half+s*.23f,0x990D1024);
+            q.fillRect(l,y-half,r,y+half,edge);
+            q.fillRect(l+s*.14f,y-half+s*.14f,r-s*.14f,y+half-s*.14f,fill);
+            q.line(l+s*.3f,y-half+s*.3f,r-s*.3f,y-half+s*.3f,fadeBy(edge,.5f),s*.1f);
+            float text=type(s*1.15f);
+            q.text(i==0?"RETRY BOSS":"END RUN",cx,y+text*.35f,text,0xFFFFF6E5,Painter.CENTER,true);
         }
-        q.text("FULL LIVES / SAME BOSS",cx,L.h*.715f,type(s*.48f),INK_DIM,Painter.CENTER,false);
-        q.text("BOSS POINTS RESET",cx,L.h*.744f,type(s*.48f),INK_DIM,Painter.CENTER,false);
         if(c.highScores.bossRetries>0)q.text("BOSS RETRIES: "+c.highScores.bossRetries,cx,L.h*.775f,type(s*.48f),GOLD,Painter.CENTER,true);
     }
 }
