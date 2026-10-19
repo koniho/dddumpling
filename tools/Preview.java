@@ -21,7 +21,7 @@ final class Preview {
         while(rocket.boss.cat.phase==RainbowCat.OPEN)rocket.boss.press(rocket.boss.cat.promptKey,rocket.rnd,L);
         for(int frame=0;frame<RainbowCatRocket.DURATION*60;frame++) {
             rocket.update(1f/60,L);
-            if(frame==0 || frame==105 || frame==170 || frame==195 || frame==215 || frame==252 || frame==275 || frame==310 || frame==350 || frame==390 || frame==450)
+            if(frame==0 || frame==8 || frame==20 || frame==42 || frame==105 || frame==170 || frame==195 || frame==215 || frame==252 || frame==275 || frame==310 || frame==350 || frame==390 || frame==450)
                 shot(dir,"151-cat-rocket-"+frame,rocket,L,w,h,ss);
         }
         GameCore arrival=TestRainbowCat.fight(L);arrival.boss.begin(Boss.RAINBOW_CAT,30,arrival.rnd,true);

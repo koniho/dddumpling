@@ -685,6 +685,15 @@ final class TestRainbowCat extends Check {
     }
     private static void rocketVictory(Layout L) {
         group("Rainbow Cat carrier rocket victory");
+        GameCore impact=fight(L);impact.boss.hp=1;challenge(impact,L);
+        while(impact.boss.cat.phase==RainbowCat.OPEN)impact.boss.press(impact.boss.cat.promptKey,impact.rnd,L);
+        RainbowCatRocket burst=impact.boss.cat.rocket;
+        burst.feedback(impact);
+        check("final impact flashes, shakes and pulses once",burst.finalImpact && impact.shake>=1
+                && impact.flash>=.38f && impact.bossDeathHaptic==2);
+        impact.shake=impact.flash=0;impact.bossDeathHaptic=0;burst.feedback(impact);
+        check("final impact is not retriggered every frame",impact.shake==0 && impact.flash==0 && impact.bossDeathHaptic==0);
+        burst.reset();check("final impact resets with victory",!burst.finalImpact && !burst.active);
         for(int fps:new int[]{30,60,120}) {
             GameCore c=fight(L);c.boss.hp=1;challenge(c,L);RainbowCat a=c.boss.cat;
             while(a.phase==RainbowCat.OPEN)c.boss.press(a.promptKey,c.rnd,L);
