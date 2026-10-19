@@ -53,7 +53,7 @@ final class BossPlay {
 
     static void deathFeedback(GameCore c, float before) {
         Boss b = c.boss;
-        if (!b.beaten || before < 0f) return;
+        if (!b.beaten || before < 0f || (b.kind==Boss.RAINBOW_CAT && b.cat.rocket.active)) return;
         float now = b.leaveProgress() * Boss.LEAVE;
         if (now <= before) return;
         boolean impact = before == 0f || (before < b.deathImpactTime() && now >= b.deathImpactTime());

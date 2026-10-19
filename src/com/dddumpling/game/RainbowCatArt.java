@@ -10,6 +10,7 @@ final class RainbowCatArt extends Draw {
     static final int FUR=0xFFA9A7BE, INK=0xFF49425F;
     static void draw(Painter p,GameCore c,Layout L,Boss b,float alpha) {
         RainbowCat a=b.cat;if(!a.placed)return;
+        if(a.rocket.active) {a.rocket.draw(new OpacityPainter(p,alpha),c,L);return;}
         float fade=alpha*(b.beaten?1-b.leaveProgress():1);
         Painter q=new OpacityPainter(p,fade);
         RainbowCatArrival.stars(q,a,b,L);
@@ -237,7 +238,8 @@ final class RainbowCatArt extends Draw {
             p.fillPoly(star(xx,yy,size,size*.28f,4,angle+a.clock),Glyph.withAlpha(Glyph.mix(color,0xFFFFFFFF,.4f),alpha));
         }
     }
-    private static void net(Painter p,GameCore c,Layout L,boolean front) {
+    private static void net(Painter p,GameCore c,Layout L,boolean front) {net(p,c,L,front,true);}
+    static void net(Painter p,GameCore c,Layout L,boolean front,boolean holder) {
         RainbowCat a=c.boss.cat;float r=a.r,u=a.escapeLeft>0?1:a.netAmount();
         float escape=a.escapeLeft>0?1-a.escapeLeft/RainbowCat.ESCAPE_TIME:0;
         boolean winding=a.phase==RainbowCat.CIRCLE;
@@ -307,9 +309,11 @@ final class RainbowCatArt extends Draw {
             for(int i=0;i<=32;i++)netPoint(outline,i*2,-1,i/32f,nx,ny,rx,ry,depth,tilt,a.clock,struggle,sway,true);
             for(int i=0;i<32;i++)netPoint(outline,(33+i)*2,1,1-i/31f,nx,ny,rx,ry,depth,tilt,a.clock,struggle,sway,true);
             if(a.escapeLeft==0) {q.fillPoly(outline,0x208CCAE8);q.strokePoly(outline,0x996995BF,r*.045f);}
-            q.line(grip[0],grip[1],cx+r*.27f,cy+r*.30f,0xFF3F4578,r*.20f);
-            q.line(grip[0],grip[1],cx+r*.27f,cy+r*.30f,0xFFD8EEFF,r*.12f);
-            q.line(grip[0]-r*.025f,grip[1]-r*.025f,cx+r*.24f,cy+r*.28f,0xFFFFFFFF,r*.035f);
+            if(holder) {
+                q.line(grip[0],grip[1],cx+r*.27f,cy+r*.30f,0xFF3F4578,r*.20f);
+                q.line(grip[0],grip[1],cx+r*.27f,cy+r*.30f,0xFFD8EEFF,r*.12f);
+                q.line(grip[0]-r*.025f,grip[1]-r*.025f,cx+r*.24f,cy+r*.28f,0xFFFFFFFF,r*.035f);
+            }
         }
         // Actual diagonal strands share a deformation field, so every mesh junction stays tied.
         for(int direction=-1;direction<=1;direction+=2)for(int i=-7;i<=7;i++) {
@@ -343,7 +347,7 @@ final class RainbowCatArt extends Draw {
         }
         q.polyline(rim,0xFF343E77,r*.20f);q.polyline(rim,0xFF54CDED,r*.125f);
         q.polyline(rim,0xBBD4F9FF,r*.045f);
-        if(!front)return;
+        if(!front || !holder)return;
         if(a.phase==RainbowCat.CATCH && a.netAge<.34f) {
             float burst=(float)Math.sin(u*Math.PI);
             for(int band=0;band<3;band++)q.arc(cx,cy,r*(1.5f+band*.30f),r*(1.5f+band*.30f),

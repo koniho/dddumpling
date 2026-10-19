@@ -2539,15 +2539,17 @@ final class Boss {
             }
         }
 
-        // Age volleys through the exit too; the cat's final rainbow flurry is celebratory.
+        // Age any remaining volleys through the exit.
         int hits = ageBolts(projectileDt);
         if(beaten && kind==RAINBOW_CAT)hits=0;
 
         if (beaten) {
-            // Preserve the net break and let the longer double flurry finish before the exit.
-            float leaveDt=kind==RAINBOW_CAT && cat.escapeSequence
-                    ? Math.min(dt,Math.max(0,cat.escapeAge-cat.finalFadeDelay())):dt;
-            leaveT = Math.max(0f, leaveT - leaveDt);
+            if(kind==RAINBOW_CAT && cat.rocket.active) {
+                cat.rocket.update(dt);
+                leaveT=LEAVE*Math.max(0,1-cat.rocket.age/RainbowCatRocket.DURATION);
+                return 0;
+            }
+            leaveT = Math.max(0f, leaveT - dt);
             if (kind == MUSHROOM) {
                 mushroomCapDX *= Math.max(0f, 1f - dt * 8f);
                 mushroomCapDY *= Math.max(0f, 1f - dt * 8f);

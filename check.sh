@@ -52,6 +52,7 @@ src/com/dddumpling/game/WorldCatalog.java
 src/com/dddumpling/game/RainbowCat.java
 src/com/dddumpling/game/RainbowCatArt.java
 src/com/dddumpling/game/RainbowCatArrival.java
+src/com/dddumpling/game/RainbowCatRocket.java
 src/com/dddumpling/game/RainbowLand.java
 src/com/dddumpling/game/ArtStamp.java
 src/com/dddumpling/game/SlimeSpray.java

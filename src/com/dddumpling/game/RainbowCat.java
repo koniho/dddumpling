@@ -13,6 +13,7 @@ final class RainbowCat {
     int phase,pointer=-1,taps,trailCount,captures,cue,promptKey=-1,windowHits;
     final float[] arrivalStar=new float[16],arrivalRay=new float[8],arrivalRibbon=new float[(RainbowCatArrival.TRAIL_STEPS+1)*4];
     final TraceGesture gesture=new TraceGesture();
+    final RainbowCatRocket rocket=new RainbowCatRocket();
     static final float HIT_CONE_TIME=.34f;
     final float[] hitConeLife=new float[4],hitConeX=new float[4],hitConeY=new float[4],hitConeWork=new float[8];
     final int[] hitConeKey=new int[4];
@@ -35,6 +36,7 @@ final class RainbowCat {
     boolean circling;
     boolean placed,kids,escaping;
     void reset() {
+        rocket.reset();
         phase=CHASE;pointer=-1;taps=trailCount=captures=cue=windowHits=0;promptKey=leftKey=rightKey=-1;damageFloor=keyFlash=0;hitColor=0;fullRoster=false;placed=escaping=escapeSequence=flurryFromLeft=doubleFlurry=false;flurryCount=0;turn=1;
         java.util.Arrays.fill(hitConeLife,0);nextHitCone=0;
         circleSweep=netAge=netReturn=catchX=catchY=windUp=releaseWind=netAimX=netAimY=tapFlash=scared=scaredAge=0;circling=false;gesture.clear();
@@ -237,7 +239,8 @@ final class RainbowCat {
         float remaining=Math.max(0,b.hp-damageFloor),step=b.hpMax/TraceGesture.SHAPE_COUNT/HITS_PER_BAND;
         float amount=remaining<=step+.0001f?remaining:step;
         int result=b.damage(amount);captures=damagePhase(b);
-        if(b.beaten || b.hp<=damageFloor+.0001f)escape(b,L,rnd);
+        if(b.beaten)rocket.begin(this,b);
+        else if(b.hp<=damageFloor+.0001f)escape(b,L,rnd);
         else promptKey=promptKey==leftKey?rightKey:leftKey;
         return result;
     }
@@ -250,9 +253,6 @@ final class RainbowCat {
     float struggleX() {return ((float)Math.sin(clock*25)*.17f+(float)Math.sin(clock*39)*.05f)*r*caughtStrength();}
     float struggleY() {return (float)Math.sin(clock*31)*r*.075f*caughtStrength();}
     float flurryDelay(int shot) {return shot*SWEEP_STEP+(doubleFlurry?(shot/2)*DOUBLE_PAIR_GAP:0);}
-    float finalFadeDelay() {
-        return ESCAPE_TIME+(doubleFlurry?flurryDelay(flurryCount-1)-(flurryCount/2-1)*SWEEP_STEP:0);
-    }
     float sweepDuration() {return SWEEP_LEAD*2+flurryDelay(Math.max(0,flurryCount-1));}
     float angry() {
         if(!escapeSequence)return 0;
@@ -311,7 +311,7 @@ final class RainbowCat {
     float circleRadius() {return r*(captures==0?2.2f:2.7f);}
     boolean carries(GameCore c) {
         return c.state==GameCore.PLAY && !c.dying() && c.boss.kind==Boss.RAINBOW_CAT
-                && (phase==CATCH || phase==OPEN || netReturn>0 || escapeLeft>0 || (phase==CIRCLE && windUp>.002f));
+                && (rocket.active || phase==CATCH || phase==OPEN || netReturn>0 || escapeLeft>0 || (phase==CIRCLE && windUp>.002f));
     }
     float netAmount() {
         float u=phase==CATCH?clamp(netAge/.34f,0,1):netReturn>0?netReturn/NET_RETURN:1;

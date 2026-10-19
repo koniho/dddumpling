@@ -119,6 +119,7 @@ final class Renderer extends Draw {
         c.boss.alligator.guard.draw(p,c,L);
         if(!SurvivalEnd.ownsCompanion(c) && (!Cave.active(c) || c.cave.phase!=Cave.CHOOSE)) RunCompanion.draw(p,c,L);
         c.boss.alligator.guard.drawCompanion(p,c,L);
+        c.boss.cat.rocket.drawCompanion(p,c,L);
         c.survival.drawRescue(p,c,L);
         // The grown TEAM form flies in front of the home while it leaves the key deck.
         if(c.buddy.entryLeft>0f) buddy(p,c,L);
