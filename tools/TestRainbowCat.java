@@ -936,19 +936,21 @@ final class TestRainbowCat extends Check {
     }
     private static void enemies(Layout L) {
         group("Rainbow Land enemy mix");
-        for(int mode:new int[]{-1,Power.FLURRY,Power.NINJA,Power.TEAM}) {
-            GameCore c=TestFastEnemies.scene(L,26,151);c.pairSpawnSlots=0;c.spawnedThisStage=1;
+        for(int stage:new int[]{26,27})for(int mode:new int[]{-1,Power.FLURRY,Power.NINJA,Power.TEAM}) {
+            GameCore c=TestFastEnemies.scene(L,stage,151);c.pairSpawnSlots=0;c.spawnedThisStage=1;
             c.mode=mode;c.modeLeft=mode<0?0:100;
-            int rush=0,dive=0;
+            int rush=0,dive=0,fog=0;
             c.rnd.setSeed(151);
             for(int i=0;i<1000;i++) {
                 c.enemies.clear();GameCore.Enemy e=add(c,L,new int[]{0,1,4},L.h*.4f);e.phase=6.283f*(i+.5f)/1000;
                 if(mode<0){FastEnemies.nextDelay(c,L);if(c.fastEnemyNext)rush++;}
                 else {FastEnemies.assign(c,e);if(e.fastSingle)rush++;}
                 SwampEnemies.assign(c,e);if(e.swampKind==SwampEnemies.DIVE)dive++;
+                if(e.swampKind==SwampEnemies.FOG)fog++;
             }
             check("increased rush chance "+mode,rush==(mode<0?920:390));
             check("increased dive chance "+mode,dive==360);
+            check("Rainbow fog is half Swampland rate "+stage+"/"+mode,fog==(stage==26?100:125));
         }
     }
 

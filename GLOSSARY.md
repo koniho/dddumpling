@@ -370,10 +370,13 @@ the enemy actually hits the player.
 ## Swampland word variants
 
 Normal Adventure waves in Swampland (stages 21–24, and later Swampland visits) mix ordinary
-words with **fog words** and **divebomb words**. The first stage of a swamp visit gives each
-solo word a 20% fog chance and 15% divebomb chance; later stages use 25% and 20%.
-Linked pairs stay ordinary. Power-up spawns retain the stage’s fog and divebomb variants. These variants do not spawn in
-Survival, Boss Time Attack, or boss encounters. One word cannot have both variants.
+words with **fog words** and **divebomb words**. Fog also appears in later catalog chapters,
+including Rainbow Land, and in Survival. Swampland uses a 20% fog selection band on its first stage and 25% on later stages.
+Later Adventure lands use half those rates: 10% initially, then 12.5%. Survival uses 12.5%. Only multi-key solo words
+are eligible; linked pairs and single-key rush enemies stay unchanged.
+Swampland retains its 15% introductory / 20% later divebomb band, while Rainbow Land retains
+its 36% divebomb band. Survival adds fog only. Power-up spawns retain these variants.
+Neither variant spawns in Boss Time Attack or boss encounters. One word cannot have both variants.
 
 - Fog words contain at most three keys, retaining their stacked pips. Fog keeps the current head readable and shows future characters as muted silhouettes under mist, masking their colors
   and stack details. Fully clearing a prompt immediately reveals the next, with

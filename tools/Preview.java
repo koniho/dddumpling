@@ -72,6 +72,8 @@ final class Preview {
         vulnerable.tapKey(vulnerable.boss.cat.promptKey,L);
         vulnerable.update(.055f,L);
         shot(dir,"151-paired-keys-overlap",vulnerable,L,w,h,ss);
+        vulnerable.preferences.skin=Skins.HALLOWEEN;
+        shot(dir,"151-paired-keys-halloween",vulnerable,L,w,h,ss);
         GameCore doubled=TestRainbowCat.fight(L);doubled.boss.hp=2;TestRainbowCat.challenge(doubled,L);
         while(doubled.boss.cat.phase==RainbowCat.OPEN)doubled.boss.press(doubled.boss.cat.promptKey,doubled.rnd,L);
         for(int frame=0;frame<190;frame++) {

@@ -157,7 +157,7 @@ final class TestFastEnemies extends Check {
         }
     }
     private static void powerMix(Layout L) {
-        for(int mode:new int[]{Power.FLURRY,Power.NINJA,Power.TEAM})for(int stage:new int[]{1,16,21}) {
+        for(int mode:new int[]{Power.FLURRY,Power.NINJA,Power.TEAM})for(int stage:new int[]{1,16,21,26}) {
             GameCore c=scene(L,stage,180+mode);c.collected=1L;c.runWho=0;
             c.playtestMode(mode,L);c.modeLeft=1000;
             // Power spawning must keep working after the ordinary quota is exhausted.
@@ -182,7 +182,7 @@ final class TestFastEnemies extends Check {
             }
             check("power keeps stage enemy pool "+mode+"/"+stage,ordinary>0
                     && (stage>=16?rush>0 && pairs>0:rush==0 && pairs==0)
-                    && (stage==21?fog>0 && dive>0:fog==0 && dive==0));
+                    && (stage>=21?fog>0 && dive>0:fog==0 && dive==0));
             check("power variant speed and identity "+mode+"/"+stage,speed && exclusive);
             check("power replacement stream remains live "+mode+"/"+stage,c.powerActive() && c.powerSpawnedEnemies>150);
         }
