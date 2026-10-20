@@ -100,6 +100,8 @@ Keep a separate entry only when it communicates a distinct change the player nee
 
 | `icon` value | Use for | Illustration |
 | --- | --- | --- |
+| `rainbow` | Rainbow Land and Rainbow Cat | Actual animated Rainbow Cat portrait |
+| `boss_retry` | Adventure boss retries | Companion and Slime beneath a colorful retry arrow |
 | `survival` | Survival runs and duck rewards | Duck riding rainbow stripes |
 | `time_attack` | Boss Time Attack runs | Slime boss and ticking stopwatch |
 | `swamp` | Swampland and Gummy Gator | Gator among lily pads, cattails and fireflies |
