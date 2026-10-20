@@ -17,7 +17,7 @@ final class Onboarding extends Draw {
 
     // Preserve the original ten lesson bits; successful actions have independent durable bits.
     private static boolean extraMessage(int message) {
-        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.CAT_PROMPT;
+        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.MODES;
     }
     private static int extraBit(int message) {
         // Bit 8 is the persisted first-companion introduction pending flag.
@@ -115,7 +115,7 @@ final class Onboarding extends Draw {
         introduced|=1L<<message;speech=message;bossGuide=briefing=true;hintKind=0;age=0;
         Pause.release(c);narrate(c);
     }
-    private void narrate(GameCore c) {
+    void narrate(GameCore c) {
         speechPage=0;speakPage(c);
     }
     private void speakPage(GameCore c) {
@@ -156,7 +156,7 @@ final class Onboarding extends Draw {
     }
     boolean wantsTouch(GameCore c,Layout L,int action,float x,float y) {
         return sceneWait>0 || practice!=null || briefing || ownsTouch || action==0 && (promptHit(c,L,x,y)
-                || (hintKind!=0 || bossGuide || powerGuide || starGuide || titleGuide || rescueGuide) && skipHit(L,x,y));
+                || (hintKind!=0 || bossGuide || powerGuide || starGuide || titleGuide || rescueGuide) && skipHit(c,L,x,y));
     }
     boolean speaking(GameCore c) {
         if(sceneWait>0 || practice!=null && lesson==STEAMER && practice.bonusRolling())return false;
@@ -168,8 +168,10 @@ final class Onboarding extends Draw {
     boolean companionAway(GameCore c) {
         return teacher==null?movingCompanion(c):teacher.onboarding.movingCompanion(teacher);
     }
+    int companionSpeech;
     private void moveCompanion(GameCore c,float dt) {
         float target=speaking(c)?1:0;
+        if(target>0)companionSpeech=speech;
         float remaining=(1-companionTravel)*.45f;
         companionTravel+=Math.max(-dt/.45f,Math.min(dt/.45f,target-companionTravel));
         if(target==0 || companionTravel<1)bubbleAge=0;
@@ -254,7 +256,13 @@ final class Onboarding extends Draw {
         return c.collected!=0 && !learned(TutorialSpeech.STORIES);
     }
     private boolean titleUpdate(GameCore c,float elapsed,Layout L) {
-        if(c.settingsOpen || c.paused || c.townOpen || c.highScoreScreen.open || c.releaseNotes.open || c.updatePrompt.open)return false;
+        if(c.settingsOpen || c.paused || c.townOpen || c.releaseNotes.open || c.updatePrompt.open)return false;
+        if(c.highScoreScreen.open) {
+            if(TitleTour.active(c))age+=elapsed;
+            moveCompanion(c,elapsed);
+            return false;
+        }
+        if(TitleTour.active(c) && speech==TutorialSpeech.SCORE_DETAILS)clear();
         if(c.starting() || Starter.hideCase(c) || c.collected==0) {
             if(titleGuide)clear();
             moveCompanion(c,elapsed);
@@ -273,6 +281,10 @@ final class Onboarding extends Draw {
             if(collectionPending(c))message=c.caseOpen?TutorialSpeech.STORIES:TutorialSpeech.DISPLAY_CASE;
             else if(LandPicker.visible(c) && c.landDiscovery<0 && LandDiscovery.next(c)<0
                     && discoveredLand(c)>=0 && !learned(TutorialSpeech.LANDS))message=TutorialSpeech.LANDS;
+            else if(TitleTour.ready(c)) {
+                TitleTour.begin(c,learned(TutorialSpeech.SCORE_DETAILS)?TutorialSpeech.MODES:TutorialSpeech.SCORES);
+                moveCompanion(c,elapsed);return false;
+            }
             else { moveCompanion(c,elapsed);return false; }
             if(message==TutorialSpeech.STORIES && !Collect.has(c.collected,c.caseIndex)) {
                 for(int who=0;who<Collect.COUNT;who++)if(Collect.has(c.collected,who)) { CaseUi.to(c,who);break; }
@@ -451,6 +463,10 @@ final class Onboarding extends Draw {
     static boolean skipHit(Layout L,float x,float y) {
         return x>=L.w*.70f && x<=L.w*.98f && Math.abs(y-skipY(L))<L.unit*1.2f;
     }
+    private boolean skipHit(GameCore c,Layout L,float x,float y) {
+        return TitleTour.active(c)?x>=L.w*.70f && x<=L.w*.98f
+                && Math.abs(y-TitleTour.skipY(L))<L.unit*1.2f:skipHit(L,x,y);
+    }
     // Both native hosts pass stable pointer IDs, including historical move samples.
     boolean touch(GameCore c,Layout L,int action,int id,float x,float y) {
         if(c.paused || c.settingsOpen)return false;
@@ -469,7 +485,7 @@ final class Onboarding extends Draw {
             return true;
         }
         boolean visible=practice!=null || briefing || hintKind!=0 || bossGuide || powerGuide || starGuide || titleGuide || rescueGuide;
-        if(action==0 && visible && skipHit(L,x,y)) { skip(c);ownsTouch=true;return true; }
+        if(action==0 && visible && skipHit(c,L,x,y)) { skip(c);ownsTouch=true;return true; }
         if(sceneWait>0) {
             if(action==0)ownsTouch=true;
             if(action==1 || action==3)ownsTouch=false;
@@ -559,7 +575,7 @@ final class Onboarding extends Draw {
     }
     static void draw(Painter p,GameCore c,Layout L) {
         Onboarding o=c.onboarding;
-        if(o.teacher!=null)return;
+        if(o.teacher!=null || TitleTour.active(c))return;
         if(c.settingsOpen && o.practice==null)return;
         if(o.practice!=null) {
             Renderer.draw(p,o.practice,L);

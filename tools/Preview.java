@@ -1178,6 +1178,14 @@ final class Preview {
         collection.openCase();step(collection,L,1f);shot(dir,"114-story-explain",collection,L,w,h,ss);
         TestOnboarding.acknowledge(collection,L);shot(dir,"114-story-try",collection,L,w,h,ss);
         collection.openStory();step(collection,L,.6f);shot(dir,"114-story-open",collection,L,w,h,ss);
+        GameCore tour=TestOnboarding.titleTourFixture(L,new Check.Mem());step(tour,L,.9f);
+        shot(dir,"114-title-tour-scores",tour,L,w,h,ss);
+        tour.highScoreScreen.show(tour);step(tour,L,.9f);
+        shot(dir,"114-title-tour-entries",tour,L,w,h,ss);
+        tour.highScoreScreen.action(tour,HighScoreScreen.ROW);step(tour,L,.6f);
+        shot(dir,"114-title-tour-details",tour,L,w,h,ss);
+        tour.highScoreScreen.back(tour);tour.highScoreScreen.back(tour);step(tour,L,1.2f);
+        shot(dir,"114-title-tour-modes",tour,L,w,h,ss);
         GameCore settings=new GameCore(new Mem(),114);PlayerSettings.open(settings);
         settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME);
         shot(dir,"114-settings-reset",settings,L,w,h,ss);

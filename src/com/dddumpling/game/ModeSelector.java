@@ -47,7 +47,7 @@ final class ModeSelector extends Draw {
                 && !c.townOpen && !c.caseOpen && c.caseFade<.01f && !c.storyOpen()
                 && !c.settingsOpen && !c.releaseNotes.open && !c.highScoreScreen.open
                 && c.returnFade<=0 && c.rosterSceneT<=0 && c.landDiscovery<0
-                && !c.onboarding.titleGuide && !c.onboarding.briefing;
+                && (!c.onboarding.titleGuide || TitleTour.active(c)) && !c.onboarding.briefing;
     }
     static float y(Layout L) { return L.h*.60f; }
     float titleTop(Layout L) {
@@ -62,6 +62,7 @@ final class ModeSelector extends Draw {
     int hit(GameCore c,Layout L,float x,float y) {
         if(TitleStart.hit(c,L,x,y))return FIRST_START;
         int bossHit=c.timeAttack.hit(c,L,x,y);if(bossHit!=0)return bossHit;
+        if(TitleTour.active(c) && c.onboarding.speech!=TutorialSpeech.MODES)return 0;
         if(!visible(c) || x<L.padL || x>L.w-L.padR)return 0;
         if(Math.abs(y-y(L))<=L.unit*(selected==TIME_ATTACK?2.7f:2f))
             return x<L.w*.11f?1:x>L.w*.89f?3:2;
@@ -70,6 +71,7 @@ final class ModeSelector extends Draw {
         return 0;
     }
     void select(GameCore c,int next,int direction) {
+        if(TitleTour.active(c) && c.onboarding.speech!=TutorialSpeech.MODES)return;
         if(!visible(c) || c.landTravelFrom>=0 || next<0 || next>=NAMES.length || next==selected)return;
         change(c,next,direction);
     }
@@ -77,6 +79,7 @@ final class ModeSelector extends Draw {
         previous=selected;selected=next;this.direction=direction;
         if(next==TIME_ATTACK)c.timeAttack.focusUnlocked(c);
         c.preferences.save(c);
+        TitleTour.modeChanged(c);
         transition=transitionFrom=swipeOffset=returnTime=0;confirmation=unavailable=0;c.titleKeyHint=0;
         c.landPickerDragging=false;
         if(c.sound!=null)c.sound.uiBloop();
@@ -97,6 +100,7 @@ final class ModeSelector extends Draw {
         if(c.sound!=null)c.sound.uiBloop();
     }
     boolean allowStart(GameCore c) {
+        if(TitleTour.active(c))return false;
         if(playable(c))return true;
         reject(c);return false;
     }

@@ -190,6 +190,7 @@ final class Renderer extends Draw {
         if(c.townReturnFade>0f) p.fillRect(0,0,L.w,L.h,
                 Glyph.withAlpha(0xFFCEF0D1,(int)(255*c.townReturnFade/GameCore.TOWN_FADE)));
         c.highScoreScreen.draw(p,c,L);
+        TitleTour.draw(p,c,L);
         Starter.draw(p,c,L);
         if (c.returnFade > 0f) {
             float cover = 1f - Math.abs(c.returnFade / GameCore.RETURN_FADE * 2f - 1f);
