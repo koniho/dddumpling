@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 /** Endless combat and its local records; Adventure's stage and reward flow stays separate. */
 final class Survival extends Draw {
-    static final float RAMP_SECONDS=300f, RESCUE_SECONDS=30f;
+    static final float RAMP_SECONDS=300f, RESCUE_SECONDS=30f, RUSH_SECONDS=90f, FULL_ENEMY_MIX_SECONDS=120f;
     static final float ENTRANCE_SECONDS=2f;
     static final int STARTER_PROFILE=0,FULL_PROFILE=1,KIDS_PROFILE=2,PROFILE_COUNT=KIDS_PROFILE+1;
     final long[] bestTime=new long[PROFILE_COUNT];
@@ -58,6 +58,8 @@ final class Survival extends Draw {
             }
         } else rescueLeft=0;
     }
+    boolean rushUnlocked() {return active && seconds>=RUSH_SECONDS;}
+    boolean fullEnemyMix() {return active && seconds>=FULL_ENEMY_MIX_SECONDS;}
     float ramp() { return Math.min(1f,(float)(seconds/RAMP_SECONDS)); }
     float travel(GameCore c) { return c.kidsRun?12f:12f-4f*ramp(); }
     float spawn(GameCore c) { return c.kidsRun?1.65f:1.65f-.6f*ramp(); }

@@ -375,7 +375,10 @@ including Rainbow Land, and in Survival. Swampland uses a 20% fog selection band
 Later Adventure lands use half those rates: 10% initially, then 12.5%. Survival uses 12.5%. Only multi-key solo words
 are eligible; linked pairs and single-key rush enemies stay unchanged.
 Swampland retains its 15% introductory / 20% later divebomb band, while Rainbow Land retains
-its 36% divebomb band. Survival adds fog only. Power-up spawns retain these variants.
+its 36% divebomb band. Survival adds rush enemies at 90 active seconds and a 20% divebomb band at
+120 seconds, including during power-ups. Together with fog from the opening and linked pairs
+from 60 seconds, this gives Survival the full enemy mix after two minutes. Rush enemies
+retain their short follow-up spawn gap and double approach speed. Power-up spawns retain these variants.
 Neither variant spawns in Boss Time Attack or boss encounters. One word cannot have both variants.
 
 - Fog words contain at most three keys, retaining their stacked pips. Fog keeps the current head readable and shows future characters as muted silhouettes under mist, masking their colors
