@@ -273,6 +273,7 @@ final class TestSurvival extends Check {
     }
 
     private static void linkedAfterMinute(Layout L) {
+        fullEnemyMix(L);
         for(int effect:new int[]{-1,Power.FLURRY,Power.NINJA,Power.TEAM}) {
             GameCore c=start(store(),168);
             if(effect>=0)c.startFrenzy(effect,L);
@@ -289,6 +290,58 @@ final class TestSurvival extends Check {
         GameCore paused=start(store(),170);paused.survival.seconds=59.5;Pause.open(paused);
         paused.update(2,2,L);
         check("paused time cannot unlock Survival linked pairs",!LinkedPairs.due(paused));
+    }
+    private static void fullEnemyMix(Layout L) {
+        for(int effect:new int[]{-1,Power.FLURRY,Power.NINJA,Power.TEAM}) {
+            GameCore c=start(store(),210+effect);
+            c.mode=effect;c.modeLeft=effect<0?0:1000;
+            for(double seconds:new double[]{89.999,90,119.999,120,180,280,300}) {
+                c.survival.seconds=seconds;c.stage=1+(int)(seconds/20);
+                boolean unlocked=seconds>=120;
+                c.fastEnemyNext=true;
+                GameCore.Enemy rush=add(c,L,new int[]{0,1,4},L.h*.3f);rush.phase=6.283f*.9f;
+                FastEnemies.assign(c,rush);SwampEnemies.assign(c,rush);
+                check("Survival rush unlock stays independent of virtual stages "+effect+"/"+seconds,
+                        rush.fastSingle==(seconds>=90) && (seconds<90 || rush.totalPresses()==1) && rush.swampKind==0);
+                GameCore.Enemy dive=add(c,L,new int[]{0,1,4,2},L.h*.3f);dive.phase=6.283f*.2f;
+                dive.need[0]=3;SwampEnemies.assign(c,dive);
+                check("Survival dive unlock and cap "+effect+"/"+seconds,
+                        (dive.swampKind==SwampEnemies.DIVE)==unlocked && (!unlocked || dive.totalPresses()==3));
+                c.enemies.clear();
+            }
+            // Exercise the actual stream beyond Adventure's quota, including replacements.
+            c.survival.seconds=180;c.stage=10;c.spawnedThisStage=1001;
+            c.onboarding.clear();c.stageBanner=c.stageGap=0;
+            int ordinary=0,fog=0,dive=0,rush=0,pairs=0;boolean exclusive=true;
+            for(int frame=0;frame<240;frame++) {
+                c.spawnTimer=0;c.update(.02f,L);
+                for(GameCore.Enemy e:c.enemies) {
+                    if(e.destroyed || e.dying)continue;
+                    if(e.link!=null)pairs++;
+                    else if(e.fastSingle)rush++;
+                    else if(e.swampKind==SwampEnemies.FOG)fog++;
+                    else if(e.swampKind==SwampEnemies.DIVE)dive++;
+                    else ordinary++;
+                    exclusive&=!(e.fastSingle && e.swampKind!=0) && (e.link==null || e.swampKind==0);
+                }
+                for(GameCore.Enemy e:new java.util.ArrayList<GameCore.Enemy>(c.enemies))
+                    if(!e.destroyed)c.destroyWord(e,c.enemyCentreX(e),e.y,L);
+                c.enemies.clear();c.target=c.caretOwner=null;
+            }
+            check("Survival full spawn mix after two minutes "+effect,
+                    ordinary>0 && fog>0 && dive>0 && rush>0 && pairs>0 && exclusive);
+        }
+        GameCore cadence=start(store(),210);cadence.survival.seconds=90;cadence.stage=5;
+        cadence.spawnedThisStage=1001;
+        GameCore.Enemy word=add(cadence,L,new int[]{0,1,4},L.h*.3f);word.phase=6.283f*.8f;
+        check("Survival pairs rush with previous word past Adventure quota",
+                FastEnemies.nextDelay(cadence,L)==cadence.spawnInterval()*.25f && cadence.fastEnemyNext);
+        cadence.survival.seconds=89.5;Pause.open(cadence);cadence.update(2,2,L);
+        check("pause cannot unlock Survival rush enemies",!cadence.survival.rushUnlocked());
+        cadence.survival.seconds=119.5;cadence.update(2,2,L);
+        check("pause cannot unlock full Survival enemy mix",!cadence.survival.fullEnemyMix());
+        cadence.startGame();check("new Survival run resets enemy unlocks",
+                !cadence.survival.rushUnlocked() && !cadence.survival.fullEnemyMix());
     }
     private static void history(Layout L) {
         Mem m=store();GameCore c=start(m,164);

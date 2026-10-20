@@ -40,7 +40,9 @@ final class SwampEnemies {
         boolean intro=!c.survival.active && (c.stage-1)%Boss.EVERY==0;
         float fogChance=intro?.20f:.25f;
         if(c.survival.active || land!=Lands.SWAMP)fogChance*=.5f;
-        if(c.survival.active)e.swampKind=pick<fogChance?FOG:NONE;
+        if(c.survival.active) {
+            e.swampKind=pick<fogChance?FOG:c.survival.fullEnemyMix() && pick<fogChance+.20f?DIVE:NONE;
+        }
         else if(land==Lands.RAINBOW) {
             // Keep Rainbow's existing dive band; fog takes part of the ordinary word band.
             e.swampKind=pick<.36f?DIVE:pick<.36f+fogChance?FOG:NONE;

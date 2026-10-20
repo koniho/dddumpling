@@ -7,8 +7,8 @@ final class FastEnemies {
     private FastEnemies() {}
 
     private static boolean eligible(GameCore c) {
-        return c.stage>=FIRST_STAGE && !Boss.isBossStage(c.stage) && !c.boss.active() && !Cave.active(c)
-                && !c.survival.active && !c.timeAttack.active;
+        if(c.timeAttack.active || c.boss.active() || Cave.active(c))return false;
+        return c.survival.active?c.survival.rushUnlocked():c.stage>=FIRST_STAGE && !Boss.isBossStage(c.stage);
     }
 
     static void assign(GameCore c,GameCore.Enemy e) {
@@ -16,9 +16,9 @@ final class FastEnemies {
         if(!eligible(c) || e.link!=null)return;
         // The first pair gets its introduction before the third spawn becomes a runner.
         // Power-up runners use 26% of solo candidates: 35% fewer than the former 40%.
-        boolean rainbow=Lands.forStage(c.stage)==Lands.RAINBOW;
+        boolean rainbow=!c.survival.active && Lands.forStage(c.stage)==Lands.RAINBOW;
         boolean chosen=c.powerActive()?e.phase>=6.283f*(rainbow?.61f:.74f)
-                :c.stage==FIRST_STAGE?c.spawnedThisStage==2:c.fastEnemyNext;
+                :!c.survival.active && c.stage==FIRST_STAGE?c.spawnedThisStage==2:c.fastEnemyNext;
         if(!chosen)return;
         e.fastSingle=true;
         e.word=new int[]{e.word[0]};e.need=new int[]{1};
@@ -29,12 +29,13 @@ final class FastEnemies {
     static float nextDelay(GameCore c,Layout L) {
         float normal=Power.spawnDelay(c,L);
         c.fastEnemyNext=false;
-        if(!eligible(c) || c.powerActive() || c.spawnedThisStage>=c.stageQuota() || LinkedPairs.due(c)
+        if(!eligible(c) || c.powerActive() || (!c.survival.active && c.spawnedThisStage>=c.stageQuota()) || LinkedPairs.due(c)
                 || c.enemies.isEmpty())return normal;
         GameCore.Enemy previous=c.enemies.get(c.enemies.size()-1);
         if(previous.link!=null || previous.fastSingle || previous.word.length<2)return normal;
         // Two-thirds of longer solo words yields roughly two runners in five solo arrivals.
-        c.fastEnemyNext=c.stage==FIRST_STAGE?c.spawnedThisStage==2:previous.phase>=6.283f*(Lands.forStage(c.stage)==Lands.RAINBOW?.08f:1f/3f);
+        c.fastEnemyNext=!c.survival.active && c.stage==FIRST_STAGE?c.spawnedThisStage==2
+                :previous.phase>=6.283f*(!c.survival.active && Lands.forStage(c.stage)==Lands.RAINBOW?.08f:1f/3f);
         return c.fastEnemyNext?normal*.25f:normal;
     }
 
