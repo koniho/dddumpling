@@ -4,7 +4,7 @@ package com.dddumpling.game;
 final class ReleaseChange extends Draw {
     static final int TRAVEL=0, STARS=1, BUGS=2, SHUFFLE=3, DISGUISE=4, SLIME=5,
             PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11, SETTINGS=12, SWIPE=13, SCORES=14, OCTOPULSE=15,
-            COMPANION=16, TUTORIAL=17, TOWN=18, SURVIVAL=19, TIME_ATTACK=20, SWAMP=21, RUSH=22, FOG=23, HALLOWEEN=24;
+            COMPANION=16, TUTORIAL=17, TOWN=18, SURVIVAL=19, TIME_ATTACK=20, SWAMP=21, RUSH=22, FOG=23, HALLOWEEN=24, RAINBOW=25, BOSS_RETRY=26;
     private static final class FogIcon {
         static final GameCore.Enemy WORD=new GameCore.Enemy();
         static {WORD.word=new int[]{0,1,2};WORD.enterT=1f;WORD.swampKind=SwampEnemies.FOG;}
@@ -32,7 +32,25 @@ final class ReleaseChange extends Draw {
                 Skins.HALLOWEEN_COLORS[2],1+.07f*bob,.5f,0,time);
     }
     static void icon(Painter p,int id,float x,float y,float r,float time) {
-        if(id==HALLOWEEN) {
+        if(id==RAINBOW) {
+            p.save();p.clipRect(x-r,y-r,x+r,y+r);
+            RainbowCatArt.portrait(p,x-r*.12f,y,r*.8f,time,true,1f,-1);
+            p.restore();
+        } else if(id==BOSS_RETRY) {
+            float bob=(float)Math.sin(time*3f);
+            Trinket.draw(p,14,x-r*.46f,y+r*(.22f+.06f*bob),r*.48f,time,true,1f);
+            BossCollect.draw(p,Boss.SLIME,x+r*.37f,y+r*(.10f-.06f*bob),r*.57f,time,true,1f);
+            float[] arc=new float[34];
+            for(int i=0;i<17;i++) {
+                float a=(float)Math.PI*(1.12f+i*.76f/16f);
+                arc[i*2]=x+(float)Math.cos(a)*r*.86f;
+                arc[i*2+1]=y+(float)Math.sin(a)*r*.86f;
+            }
+            int color=Glyph.cycle(time*.5f);
+            p.polyline(arc,color,r*.10f);
+            p.fillPoly(new float[]{x+r*.55f,y-r*.44f,x+r*.94f,y-r*.13f,
+                    x+r*.94f,y-r*.65f},color);
+        } else if(id==HALLOWEEN) {
             halloween(p,x,y,r,time);
         } else if(id==FOG) {
             p.save();p.translate(x,y);

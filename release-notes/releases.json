@@ -1,6 +1,51 @@
 {
   "releases": [
     {
+      "version": "0.1.32",
+      "changes": [
+        {
+          "icon": "rainbow",
+          "title": "Over the rainbow",
+          "autoReset": false,
+          "where": "Adventure, stages 26-30",
+          "why": "Meet Rainbow Cat! Tap twice, trace a shape, then alternate keys to fight back. Dodge rainbow flurries and help your companion catch this speedy new friend."
+        },
+        {
+          "icon": "boss_retry",
+          "title": "One more squish!",
+          "autoReset": false,
+          "where": "After an Adventure boss loss",
+          "why": "Try the boss again or end your run. Retries restore lives and restart the fight from its opening score. Your high-score record keeps your retry count."
+        },
+        {
+          "icon": "survival",
+          "title": "Survival gets spicy",
+          "autoReset": false,
+          "where": "During Survival runs",
+          "why": "Foggy words join the mix. Shooting stars arrive at 90 seconds and divebomb words at two minutes. Power-ups keep the full enemy variety!"
+        },
+        {
+          "icon": "misc",
+          "title": "Little improvements",
+          "autoReset": false,
+          "improvements": [
+            {
+              "where": "On the Star Path",
+              "why": "Star pickup bursts travel with the path."
+            },
+            {
+              "where": "Across Adventure lands",
+              "why": "Playful Swamp and Rainbow skits. Fog appears less often beyond Swampland."
+            },
+            {
+              "where": "After an update",
+              "why": "A friendly prompt offers a peek at new changes."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.30",
       "changes": [
         {
