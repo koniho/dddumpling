@@ -42,7 +42,7 @@ abstract class Check {
                 |(1<<(TutorialSpeech.GLOB+9))|(1<<(TutorialSpeech.RESCUE+9)); // Ordinary boss simulations already know the contextual drag.
         public int loadTutorials() { return tutorials; }
         public void saveTutorials(int value) { tutorials=value; }
-        int powerTutorials=127; // Ordinary simulations know powers, pickups and collection guidance.
+        int powerTutorials=127|(15<<17); // Ordinary simulations know powers, collection and advanced enemies.
         public int loadPowerTutorials() { return powerTutorials; }
         public void savePowerTutorials(int value) { powerTutorials=value; }
         byte[] progress;

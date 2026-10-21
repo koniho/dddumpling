@@ -9,7 +9,7 @@ final class Onboarding extends Draw {
     boolean bossHelp, bossGuide, powerGuide, starGuide, titleGuide, rescueGuide, helpArmed;
     int helpPointer=-1, bossHelpUsed, speechPage;
     GameCore practice, teacher, narrator;
-    GameCore.Enemy word;
+    GameCore.Enemy word, enemyLesson;
     boolean ownsTouch, lid, briefing, continueArmed;
     static final float SCENE_REVEAL=.8f, BUBBLE_OPEN=.14f, SLIME_HINT_DELAY=1.5f;
     float age, success, startY, globAge, companionTravel, sceneWait, bubbleAge, speechX, speechY;
@@ -17,7 +17,7 @@ final class Onboarding extends Draw {
 
     // Preserve the original ten lesson bits; successful actions have independent durable bits.
     private static boolean extraMessage(int message) {
-        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.MODES;
+        return message>=TutorialSpeech.POWER_FLURRY && message<=TutorialSpeech.LINKED;
     }
     private static int extraBit(int message) {
         // Bit 8 is the persisted first-companion introduction pending flag.
@@ -190,7 +190,7 @@ final class Onboarding extends Draw {
     void clear() {
         if(narrator!=null && narrator.sound!=null)narrator.sound.hush();
         narrator=null;
-        cancelTouch();practice=null;word=null;lesson=step=speech=speechPage=hintKind=0;introduced=0;
+        cancelTouch();practice=null;word=enemyLesson=null;lesson=step=speech=speechPage=hintKind=0;introduced=0;
         success=sceneWait=bubbleAge=slimeHintAge=0;briefing=bossHelp=bossGuide=powerGuide=starGuide=titleGuide=rescueGuide=false;
     }
     void cancelTouch() {
@@ -314,6 +314,8 @@ final class Onboarding extends Draw {
                 || c.stars.won || c.stars.exiting() || c.stars.reporting())) {
             boolean touch=ownsTouch;clear();ownsTouch=touch;
         }
+        if(enemyLesson!=null && (c.state!=GameCore.PLAY || c.dying() || c.boss.active() || c.powerActive()
+                || !enemyLesson.typeable() || !c.enemies.contains(enemyLesson)))clear();
         if(hintKind==STACK_HINT && (c.ninja() || c.team())) {
             // These powers bypass repeated taps; defer, rather than learn, an existing hint.
             boolean touch=ownsTouch;clear();ownsTouch=touch;
@@ -348,7 +350,7 @@ final class Onboarding extends Draw {
             if(sceneWait==0) { briefing=true;narrate(c); }
             return true;
         }
-        if(practice==null) { age+=elapsed;hints(c,L);return briefing; }
+        if(practice==null) { age+=elapsed;EnemyTutorial.introduce(c,L);if(!briefing)hints(c,L);return briefing; }
         GameCore q=practice;age+=elapsed;
         if(sceneWait>0) {
             // Only the presentation fades in. Selection, countdowns and rewards stay frozen.
@@ -438,6 +440,7 @@ final class Onboarding extends Draw {
             savedPowers&=~Starter.INTRO_PENDING;
             learn(c,TutorialSpeech.COMPANION);
         }
+        if(enemyLesson!=null) { learn(c,speech);clear();return; }
         if(bossHelp && nextBossHelp(c))return;
         if(bossHelp)bossGuide=true;
         briefing=false;
@@ -586,7 +589,8 @@ final class Onboarding extends Draw {
                 || o.titleGuide && o.speech==TutorialSpeech.LANDS && !LandPicker.visible(c))return;
         if(o.offersBossHelp(c))TutorialSpeech.help(p,c,L);
         if(o.rescueGuide)TutorialSpeech.rescueGesture(p,c,L);
-        if(o.briefing)TutorialSpeech.large(p,c,L,o.speech,true);
+        if(o.enemyLesson!=null)EnemyTutorial.draw(p,c,L);
+        else if(o.briefing)TutorialSpeech.large(p,c,L,o.speech,true);
         else if(o.practice!=null) {
             if(o.speaking(c))TutorialSpeech.reminder(p,c,L,o.speech);
             int key=-1;GameCore q=o.practice;

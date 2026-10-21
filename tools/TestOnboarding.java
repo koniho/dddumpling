@@ -352,6 +352,7 @@ final class TestOnboarding extends Check {
         collectionGuidance(L);
         titleGuidanceOrder(L);
         titleTour(L);
+        enemyLessons(L);
         landGuidance(L);
         diagnostics(L);
         TestPowerTutorials.all(L);
@@ -526,6 +527,61 @@ final class TestOnboarding extends Check {
         check("starter collectible alone cannot trigger post-run tour",!TitleTour.ready(c));
         for(int message=TutorialSpeech.SCORES;message<=TutorialSpeech.MODES;message++)
             check("compact tour narration fits one page "+message,TutorialSpeech.pageCount(message)==1);
+    }
+    static GameCore enemyFixture(Layout L,Mem store,int message) {
+        store.powerTutorials=127;
+        GameCore c=new GameCore(store,218);c.startGame();c.stage=21;c.stageBanner=0;c.spawnTimer=60;
+        c.enemies.clear();c.onboarding.clear();
+        GameCore.Enemy e=add(c,L,message==TutorialSpeech.RUSH || message==TutorialSpeech.LINKED
+                ?new int[]{0}:new int[]{0,3,1},L.playTop+L.enemyR*3);
+        e.swampKind=message==TutorialSpeech.FOG?SwampEnemies.FOG:message==TutorialSpeech.DIVEBOMB?SwampEnemies.DIVE:0;
+        e.fastSingle=message==TutorialSpeech.RUSH;e.speed=80;
+        if(message==TutorialSpeech.LINKED) {
+            GameCore.Enemy b=add(c,L,new int[]{3},e.y);e.baseX=L.w*.36f;b.baseX=L.w*.64f;
+            e.link=b;b.link=e;e.stageMate=b;b.stageMate=e;
+        }
+        return c;
+    }
+    private static void enemyLessons(Layout L) {
+        group("first encounters with special enemies");
+        for(int message=TutorialSpeech.FOG;message<=TutorialSpeech.LINKED;message++) {
+            Mem store=new Mem();GameCore c=enemyFixture(L,store,message);Ear ear=new Ear();c.sound=ear;
+            GameCore.Enemy e=c.enemies.get(0);float y=e.y;
+            c.update(DT,L);
+            check("first visible enemy pauses and narrates "+message,c.onboarding.enemyLesson==e
+                    && c.onboarding.briefing && c.onboarding.speech==message && e.y==y && ear.explanations==1);
+            c.survival.active=true;double seconds=c.survival.seconds;
+            c.update(.5f,L);
+            check("lesson freezes threats and Survival clock "+message,e.y==y && c.survival.seconds==seconds);
+            awaitBubble(c,L);
+            float x=L.w*.5f,button=EnemyTutorial.buttonY(L);
+            touch(c,L,0,x,button);touch(c,L,2,x+L.unit*2,button);touch(c,L,1,x+L.unit*2,button);
+            check("drag cannot dismiss enemy lesson "+message,c.onboarding.briefing && !c.onboarding.learned(message));
+            touch(c,L,0,x,button);touch(c,L,1,x,button);
+            check("acknowledgement saves and clears enemy lesson "+message,!c.onboarding.briefing
+                    && c.onboarding.enemyLesson==null && new GameCore(store,218).onboarding.learned(message));
+            c.survival.active=false;c.update(DT,L);
+            check("same enemy resumes without repeat "+message,e.y>y && !c.onboarding.briefing && ear.explanations==1);
+            check("enemy explanation is one short page "+message,TutorialSpeech.pageCount(message)==1);
+            c.onboarding.reset(c);c.onboarding.learn(c,TutorialSpeech.RESCUE);c.onboarding.clear();EnemyTutorial.introduce(c,L);
+            check("reset restores enemy lesson "+message,c.onboarding.enemyLesson==e);
+            c.onboarding.skip(c);EnemyTutorial.introduce(c,L);
+            check("Skip All suppresses enemy lesson "+message,c.onboarding.enemyLesson==null);
+        }
+        GameCore c=enemyFixture(L,new Mem(),TutorialSpeech.FOG);GameCore.Enemy e=c.enemies.get(0);
+        e.y=-L.enemyR;EnemyTutorial.introduce(c,L);
+        check("offscreen spawn waits to be visible",c.onboarding.enemyLesson==null);
+        e.y=L.playTop+L.enemyR*3;c.mode=Power.NINJA;c.modeLeft=2;
+        EnemyTutorial.introduce(c,L);check("power controls defer enemy explanation",c.onboarding.enemyLesson==null);
+        c.modeLeft=0;c.onboarding.briefing=true;c.onboarding.speech=TutorialSpeech.POWER_NINJA;
+        EnemyTutorial.introduce(c,L);check("another lesson cannot be replaced",c.onboarding.enemyLesson==null
+                && c.onboarding.speech==TutorialSpeech.POWER_NINJA);
+        c.onboarding.clear();c.survival.active=true;EnemyTutorial.introduce(c,L);
+        check("Survival first encounter also introduces enemy",c.onboarding.enemyLesson==e);
+        c.enemies.clear();c.update(DT,L);
+        check("missing enemy cancels without learning",c.onboarding.enemyLesson==null && !c.onboarding.learned(TutorialSpeech.FOG));
+        c=enemyFixture(L,new Mem(),TutorialSpeech.RUSH);EnemyTutorial.introduce(c,L);c.toTitle();
+        check("returning to title clears enemy reference",c.onboarding.enemyLesson==null);
     }
     private static void landGuidance(Layout L) {
         Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;

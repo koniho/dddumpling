@@ -367,6 +367,15 @@ Team Squish collision cancels the lunge before damage; a linked pair still requi
 chord. Partial typing retains its target. The damage shake and screen flash occur only when
 the enemy actually hits the player.
 
+## First-encounter enemy lessons
+
+Fog words, divebomb words, shooting-star rush enemies and linked pairs each have a one-page,
+narrated companion lesson on their first visible encounter in Adventure or Survival. The real
+enemy is highlighted while gameplay and Survival time pause. Lessons wait for the stage banner,
+other guidance and power-ups to finish, and for the whole enemy to fit below the header.
+Acknowledgement saves completion across runs and app opens; Reset Tutorials restores the lessons
+and Skip All suppresses them. Boss projectiles retain their separate boss guidance.
+
 ## Swampland word variants
 
 Normal Adventure waves in Swampland (stages 21–24, and later Swampland visits) mix ordinary
