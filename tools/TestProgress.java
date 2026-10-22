@@ -25,6 +25,7 @@ final class TestProgress extends Check {
         long count(String name) { return values.getOrDefault(name, 0L); }
     }
     static void all(Layout L) {
+        achievements();
         scoreResetMerge(); merge(); counters(); firstHit(); failures();
         if (!BuildFlags.DEVELOPER) production(L);
         else {
@@ -32,6 +33,47 @@ final class TestProgress extends Check {
             c.startGame(); Interlude.awardBossPrize(c, Boss.SLIME); c.toTitle();
             check("developer build does not record production progress", m.progress == null && c.progress.count("runs_started") == 0);
         }
+    }
+    private static void achievements() {
+        try {
+            Storage store = new Storage("achievements");
+            Progress p = new Progress(store,true);
+            ProgressData data = new ProgressData();
+            data.increment("a",Collect.progressKey(0),100);
+            data.increment("a",Collect.progressKey(1),1);
+            data.maximum("highest_stage",12);
+            data.increment("a","steamer_won",1);
+            for (String boss : Progress.BOSSES) data.increment("a","boss_"+boss+"_won",1);
+            store.bytes=data.encode(); p=new Progress(store,true);
+            check("achievement collection counts distinct friends, not duplicates",Achievements.steps(p,1)==2);
+            check("achievement progress clamps to permanent target",Achievements.steps(p,0)==1);
+            check("stage achievements use highest reached stage",Achievements.steps(p,4)==10 && Achievements.steps(p,5)==12);
+            check("minigame achievements require wins",Achievements.steps(p,7)==1 && Achievements.steps(p,8)==0);
+            for (int b=0;b<Boss.COUNT;b++) {
+                check("catalog boss has a stable first-win achievement "+b,
+                    Achievements.id(9+b).equals("boss_"+Progress.BOSSES[b]+"_first_win") && Achievements.steps(p,9+b)==1);
+            }
+            data.merge(ProgressData.decode(data.encode())); store.bytes=data.encode();
+            check("achievement progress survives reload and duplicate merge",Achievements.steps(new Progress(store,true),1)==2);
+            check("disabled progress cannot award achievements",Achievements.steps(new Progress(store,false),0)==0);
+            Progress run=new Progress(new Storage("runs"),true);
+            for(int i=0;i<5;i++) {
+                run.startRun(); run.completeStage(0,true); run.completeStage(0,true); run.finishRun(0,true);
+            }
+            check("five perfect stages accumulate once per stage",Achievements.steps(run,Achievements.extraStart())==5);
+            run.survivalTime(59);run.survivalTime(60);
+            check("survival minute milestone clamps at target",Achievements.steps(run,Achievements.extraStart()+2)==60);
+            run.survivalTime(30);
+            check("shorter survival runs do not add together",Achievements.steps(run,Achievements.extraStart()+3)==60);
+            run.gauntletComplete();run.gauntletComplete();
+            check("gauntlet achievement is permanent",Achievements.steps(run,Achievements.extraStart()+1)==1);
+            run.startRun(3);run.enterStage(WorldCatalog.bossStage(3));run.beatBoss(3);
+            check("starting later does not grant earlier lands",run.maximum("achievement_run_lands")==1);
+            run.enterStage(WorldCatalog.bossStage(4));run.beatBoss(4);run.beatBoss(4);
+            check("run lands count defeated bosses once",run.maximum("achievement_run_lands")==2);
+            run.finishRun(0,true);run.startRun();run.enterStage(WorldCatalog.bossStage(0));run.beatBoss(0);
+            check("land streak does not combine runs",run.maximum("achievement_run_lands")==2);
+        } catch(Exception e) { check("achievement progress decodes",false); }
     }
     private static void scoreResetMerge() {
         try {

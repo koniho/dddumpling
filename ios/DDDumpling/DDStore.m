@@ -153,6 +153,7 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
 
 - (BOOL)bindCloudPlayer:(NSString *)player identity:(NSData *)identity {
   if (!player.length || !identity.length) return NO;
+  if (![self bindAchievementPlayer:player]) return NO;
   [_lock lock];
   BOOL matches = _healthy;
   if (_values[@"cloudPlayer"] || _values[@"cloudIdentity"]) {
@@ -161,6 +162,19 @@ static NSString *const DDStoreWriterKey = @"progressWriter";
   } else if (matches) {
     _values[@"cloudPlayer"] = player;
     _values[@"cloudIdentity"] = identity;
+    matches = [self persist];
+  }
+  [_lock unlock];
+  return matches;
+}
+
+- (BOOL)bindAchievementPlayer:(NSString *)player {
+  if (!player.length) return NO;
+  [_lock lock];
+  BOOL matches = _healthy && (!_values[@"cloudPlayer"] || [_values[@"cloudPlayer"] isEqual:player])
+      && (!_values[@"achievementPlayer"] || [_values[@"achievementPlayer"] isEqual:player]);
+  if (matches && !_values[@"achievementPlayer"]) {
+    _values[@"achievementPlayer"] = player;
     matches = [self persist];
   }
   [_lock unlock];

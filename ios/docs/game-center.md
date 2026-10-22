@@ -36,8 +36,9 @@ Shared Android/harness construction retains its existing progress flag behavior.
    rewards, then reconnect and verify that counts merge once and best scores never decrease.
 
 The development container must never be assigned to a public build. This does not transfer
-Android saves to iOS. Leaderboards, achievements and multiplayer
-remain separate work. GameKit has no direct Play Events analytics counterpart; the existing
+Android saves to iOS. Leaderboards and multiplayer remain separate work.
+[Achievements](../../store/achievements.md) use the shared saved milestones and report through
+GameKit independently of iCloud Drive. GameKit has no direct Play Events analytics counterpart; the existing
 progress counters are preserved inside the cloud save without adding an analytics SDK.
 
 ## Enable a production build

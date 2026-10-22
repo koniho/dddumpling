@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 import zipfile
+import runpy
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -60,8 +61,17 @@ def config(path):
     return value
 
 
+def java_config(cfg, achievements):
+    def method(name, mapping):
+        return 'static String '+name+'(String name) { switch (name) {\n' + ''.join(
+            'case '+json.dumps(k)+': return '+json.dumps(v)+';\n' for k,v in mapping.items()) + 'default: return null; } }\n'
+    return 'package com.dddumpling.game;\nfinal class PlayConfig {\n' + method('event',cfg['events']) + method(
+        'achievement',{k:v['google_id'] for k,v in achievements.items()}) + '}\n'
+
+
 def prepare(args):
     cfg = config(args.config)
+    achievements = runpy.run_path(str(ROOT / 'tools/achievements.py'))['validate'](ROOT / 'store/achievements.json')
     out = Path('build/play')
     if out.exists():
         shutil.rmtree(out)
@@ -119,10 +129,7 @@ def prepare(args):
     resources.append(str(out / 'config.zip'))
     java = Path('build/gen/com/dddumpling/game/PlayConfig.java')
     java.parent.mkdir(parents=True, exist_ok=True)
-    java.write_text('package com.dddumpling.game;\nfinal class PlayConfig {\n'
-                   'static String event(String name) { switch (name) {\n' + ''.join(
-                       'case ' + json.dumps(k) + ': return ' + json.dumps(v) + ';\n' for k, v in cfg['events'].items()) +
-                   'default: return null; } }\n}\n')
+    java.write_text(java_config(cfg, achievements))
     (out / 'jars.txt').write_text('\n'.join(jars) + '\n')
     (out / 'classpath.txt').write_text(os.pathsep.join(jars))
     (out / 'resources.txt').write_text('\n'.join(resources) + '\n')

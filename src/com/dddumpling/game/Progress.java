@@ -23,6 +23,7 @@ final class Progress {
     private Sink sink;
     private boolean healthy = true, running, stageDone;
     private int stage, boss = -1, startLand;
+    private final java.util.Set<Integer> runLands = new java.util.HashSet<>();
     private String minigame;
     private double bossSeconds;
     private boolean firstHit, scoresSuppressed;
@@ -67,6 +68,14 @@ final class Progress {
         if (sink != null) try { sink.event(name, amount); } catch (RuntimeException ignored) { }
     }
     void seed(GameCore c) {
+        if (available()) {
+            for (long best : c.survival.bestTime) data.maximum("achievement_survival_seconds", best / 1000);
+            for (long[] best : c.timeAttack.best)
+                for(int i=0;i<best.length;i++) if(best[i]>0) {
+                    if(i==TimeAttack.ALL) data.maximum("achievement_gauntlet_complete", 1);
+                    else data.maximum("achievement_boss_"+BOSSES[i],1);
+                }
+        }
         if (!available() || data.maximum("migrated") != 0) return;
         for (int i = 0; i < Collect.COUNT; i++) data.legacy(Collect.progressKey(i), c.collectionCounts[i]);
         data.legacy("rewards_total", c.collectTotal);
@@ -84,7 +93,7 @@ final class Progress {
         if (running) finishRun(0, true);
         scoresSuppressed = false;
         startLand = land;
-        running = true; stage = 0; boss = -1; minigame = null;
+        running = true; stage = 0; boss = -1; minigame = null; runLands.clear();
         event("runs_started"); enterStage(Lands.firstStage(land));
     }
     void enterStage(int next) {
@@ -98,8 +107,12 @@ final class Progress {
         changed();
     }
     void completeStage(int score) {
+        completeStage(score, false);
+    }
+    void completeStage(int score, boolean perfect) {
         if (!available() || !running || stageDone) return;
         stageDone = true; recordScore(score);
+        if (perfect) data.increment(replica, "achievement_perfect_stages", 1);
         event("stages_completed"); changed();
     }
     void bossTime(double seconds) {
@@ -118,7 +131,20 @@ final class Progress {
     }
     void beatBoss(int kind) {
         if (!available() || !running || boss != kind) return;
-        event("boss_" + BOSSES[kind] + "_won"); boss = -1; changed();
+        event("boss_" + BOSSES[kind] + "_won"); boss = -1;
+        runLands.add(kind); data.maximum("achievement_run_lands", runLands.size()); changed();
+    }
+    void timeAttackBossWon(int kind) {
+        if(!available() || kind<0 || kind>=BOSSES.length) return;
+        data.maximum("achievement_boss_"+BOSSES[kind],1); changed();
+    }
+    void survivalTime(long seconds) {
+        if (!available() || seconds <= data.maximum("achievement_survival_seconds")) return;
+        data.maximum("achievement_survival_seconds", seconds); changed();
+    }
+    void gauntletComplete() {
+        if (!available() || data.maximum("achievement_gauntlet_complete") != 0) return;
+        data.maximum("achievement_gauntlet_complete", 1); changed();
     }
     void startMinigame(boolean stars) {
         if (!available() || !running || minigame != null) return;

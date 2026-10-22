@@ -1925,7 +1925,7 @@ final class Preview {
         companionFrames(dir,L,w,h,ss);
         scoreResetFrames(dir,L,w,h,ss);
         onboardingFrames(dir,L,w,h,ss);
-        if(wanted("cloud-")) {
+        if(wantedGroup("cloud-")) {
             GameCore cloud=new GameCore(new Mem(),75);cloud.cloudUi.status(CloudSaveUi.DRIVE);
             cloud.cloudUi.character=Collect.STAR_FIRST;cloud.cloudUi.show(true);cloud.cloudUi.age=1f;
             shot(dir,"cloud-intro",cloud,L,w,h,ss);
@@ -1937,6 +1937,8 @@ final class Preview {
             shot(dir,"cloud-failed",cloud,L,w,h,ss);
             cloud.cloudUi.close(cloud);PlayerSettings.open(cloud);cloud.preferences.panelEntrance=1f;
             shot(dir,"cloud-settings",cloud,L,w,h,ss);
+            cloud.preferences.achievementsEnabled=true;
+            shot(dir,"cloud-settings-achievements",cloud,L,w,h,ss);
         }
         starterFrames(dir,L,w,h,ss);
         modeFrames(dir,L,w,h,ss);

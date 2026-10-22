@@ -108,6 +108,11 @@ public class MainActivity extends Activity implements GameCore.Store {
         else RuntimeDiagnostics.record(event+" no-game");
     }
     void openAppAction(int action) {
+        if (action == PlayerSettings.ACHIEVEMENTS) {
+            if (play != null) play.showAchievements();
+            else game.core().preferences.externalFinished(game.core());
+            return;
+        }
         String url=PlayerSettings.PUBLIC_ANDROID_URL;
         android.content.Intent intent;
         if(action==PlayerSettings.SHARE) {

@@ -6,6 +6,9 @@ final class PlayerSettings extends Draw {
     static final int MUSIC = 1, EFFECTS = 2, MUSIC_MUTE = 3, EFFECTS_MUTE = 4,
             KIDS = 5, PRIVACY = 6, CLOSE = 7, PLAYER = 8, DEVELOPER = 9, SHARE = 10, RATE = 11, TUTORIALS = 15, CLOUD = 20;
     float tutorialResetUntil;
+    static final int ACHIEVEMENTS = 21;
+    boolean achievementsEnabled;
+    boolean achievementRequested;
     // Future settings features own setting and clearing this attention flag.
     boolean notificationPending;
     static final String PUBLIC_ANDROID_URL="https://play.google.com/store/apps/details?id=com.dddumpling.game";
@@ -129,7 +132,10 @@ final class PlayerSettings extends Draw {
         if (Math.abs(y-socialY(L))<s*2.1f) return x<L.w*.5f?SHARE:RATE;
         if (Math.abs(y-resetY(L))<s*1.2f) return ScoreReset.OPEN;
         if (Math.abs(y-tutorialY(L))<s*1.2f) return TUTORIALS;
-        if (Math.abs(y-row(L,3))<s*1.1f) return c.cloudUi.enabled && x<L.w*.5f?CLOUD:PRIVACY;
+        if (Math.abs(y-row(L,3))<s*1.1f) {
+            if (c.preferences.achievementsEnabled) return x<L.w*.36f?CLOUD:x<L.w*.66f?ACHIEVEMENTS:PRIVACY;
+            return c.cloudUi.enabled && x<L.w*.5f?CLOUD:PRIVACY;
+        }
         return 0;
     }
     static float resetY(Layout L) { return top(L)+unit(L)*(BuildFlags.DEVELOPER?34f:31f); }
@@ -181,7 +187,11 @@ final class PlayerSettings extends Draw {
         p.text("RESET HIGH SCORES",L.w*.5f,resetY(L)+s*.25f,type(s*.58f),INK,Painter.CENTER,true);
         p.fillRect(cl,tutorialY(L)-s*1.2f,cr,tutorialY(L)+s*1.2f,0x334DCEAA);
         p.text(c.clock<a.tutorialResetUntil?"TUTORIALS RESET":"RESET TUTORIALS",L.w*.5f,tutorialY(L)+s*.25f,type(s*.58f),INK,Painter.CENTER,true);
-        if(c.cloudUi.enabled) {
+        if(a.achievementsEnabled) {
+            p.text("CLOUD SAVES",L.w*.22f,row(L,3)+s*.25f,type(s*.40f),GOLD,Painter.CENTER,true);
+            p.text("ACHIEVEMENTS",L.w*.51f,row(L,3)+s*.25f,type(s*.40f),GOLD,Painter.CENTER,true);
+            p.text("PRIVACY",L.w*.80f,row(L,3)+s*.25f,type(s*.40f),GOLD,Painter.CENTER,true);
+        } else if(c.cloudUi.enabled) {
             p.text("CLOUD SAVES",L.w*.28f,row(L,3)+s*.25f,type(s*.48f),GOLD,Painter.CENTER,true);
             p.text("PRIVACY POLICY",L.w*.72f,row(L,3)+s*.25f,type(s*.48f),GOLD,Painter.CENTER,true);
         } else p.text("PRIVACY POLICY",L.w*.5f,row(L,3)+s*.25f,type(s*.58f),GOLD,Painter.CENTER,true);

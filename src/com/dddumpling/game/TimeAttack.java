@@ -93,6 +93,8 @@ final class TimeAttack extends Draw {
     void bossEnded(GameCore c,boolean beaten) {
         c.boss.leave();
         if(!beaten) {finish(c,false);return;}
+        if(!active || finished)return;
+        c.progress.timeAttackBossWon(current);
         snapshot(c,true,challenge!=ALL || current+1==Boss.COUNT);
         cleared++;
         if(challenge==ALL && current+1<Boss.COUNT) {
@@ -116,6 +118,7 @@ final class TimeAttack extends Draw {
         if(!active || finished)return;
         snapshot(c,success,true);
         versus.clear();finished=true;won=success;
+        if(success && challenge==ALL && cleared==Boss.COUNT) c.progress.gauntletComplete();
         long duration=millis();
         TimeAttackHistory history=histories[profile][challenge];
         result=new TimeAttackHistory.Run(history.sequence+1,duration,c.runWho,cleared,success,

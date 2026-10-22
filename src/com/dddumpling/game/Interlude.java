@@ -211,7 +211,7 @@ final class Interlude {
      */
     static void beginStageEnd(GameCore c) {
         c.highScores.stages++;
-        c.progress.completeStage(c.score);
+        c.progress.completeStage(c.score,c.perfectRound());
         c.companion.react(RunCompanion.STAGE_CLEAR, 1f);
         if (c.perfectRound()) {
             c.perfectBanner = GameCore.PERFECT_TIME;

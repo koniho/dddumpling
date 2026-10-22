@@ -1,0 +1,184 @@
+{
+  "collect_1": {
+    "apple_id": "com.dddumpling.game.collect_1",
+    "google_id": "CgkIm8qy89IBEAIQag",
+    "apple_resource_id": "6be14290-d441-48b0-8857-24ff00823339",
+    "apple_dev_resource_id": "a73f3946-98bd-40b7-9c2b-f23eb1a5a379",
+    "icon_sha256": "e7f9157cc84833726643956f80d47ce73d9a50b2c30cbac0486717566fc9aa52"
+  },
+  "collect_10": {
+    "apple_id": "com.dddumpling.game.collect_10",
+    "google_id": "CgkIm8qy89IBEAIQaQ",
+    "apple_resource_id": "0a5328e6-39fe-46ee-a988-155c6a333fb4",
+    "apple_dev_resource_id": "31c1563b-5327-49e7-aa67-563b15087bad",
+    "icon_sha256": "107fcbec237474e985cf7e995e89e6e63ee97475e655885141d17cada4f59561"
+  },
+  "collect_25": {
+    "apple_id": "com.dddumpling.game.collect_25",
+    "google_id": "CgkIm8qy89IBEAIQdQ",
+    "apple_resource_id": "6a8f452f-012c-41d5-890f-3857e5fe745d",
+    "apple_dev_resource_id": "9ff3c0a6-47bd-4561-9ca5-c95ab953b126",
+    "icon_sha256": "1b4a95e54c6a78cceba1b952e891c54432fb7e0e8ceeff430541b730c81086a3"
+  },
+  "stage_5": {
+    "apple_id": "com.dddumpling.game.stage_5",
+    "google_id": "CgkIm8qy89IBEAIQZw",
+    "apple_resource_id": "d8f18fc5-4d0c-4b12-b5a5-724c42a8ce6d",
+    "apple_dev_resource_id": "105851dd-592e-4851-a577-52cafa7b03df",
+    "icon_sha256": "7ab6f77fd36ce1f16bf3436d3939a9fad86db2366eae239a5476a979bef5f48d"
+  },
+  "stage_10": {
+    "apple_id": "com.dddumpling.game.stage_10",
+    "google_id": "CgkIm8qy89IBEAIQbg",
+    "apple_resource_id": "09187b93-d18c-4dd7-b107-8c00c2afd0ac",
+    "apple_dev_resource_id": "1e0622b8-539e-49e0-9637-14ade93c11e4",
+    "icon_sha256": "97e04781469a18a73a4f12a058a75bdb88cfdddb77640225da21344a49cdd451"
+  },
+  "stage_20": {
+    "apple_id": "com.dddumpling.game.stage_20",
+    "google_id": "CgkIm8qy89IBEAIQbA",
+    "apple_resource_id": "4c0964fa-975b-4eba-af8b-dc48a8290c12",
+    "apple_dev_resource_id": "686c9d88-82c4-4a84-903a-6d34b8f8717b",
+    "icon_sha256": "b8c20384f2d16e9e82635a159dc61acb276d15263c4071d5cc72b8a04186e6ac"
+  },
+  "stage_30": {
+    "apple_id": "com.dddumpling.game.stage_30",
+    "google_id": "CgkIm8qy89IBEAIQcQ",
+    "apple_resource_id": "88ee04d1-47ba-49a7-9b30-0df6ba127e00",
+    "apple_dev_resource_id": "6b61faac-fda1-4403-b0b7-a46a6fa37cfb",
+    "icon_sha256": "e3bfbe040e065128ed135752beeb29c1fd7eecce8096c2a9afc75551d017297d"
+  },
+  "steamer_first_win": {
+    "apple_id": "com.dddumpling.game.steamer_first_win",
+    "google_id": "CgkIm8qy89IBEAIQbw",
+    "apple_resource_id": "f662e812-4454-4bc7-b58f-afd07a5338c1",
+    "apple_dev_resource_id": "0081729d-36bd-470c-92fd-d393498e8072",
+    "icon_sha256": "6a17b4c05570089bc3223cdfed8779ad002c094925407b15edbf5ef1c4e2dc66"
+  },
+  "starpath_first_win": {
+    "apple_id": "com.dddumpling.game.starpath_first_win",
+    "google_id": "CgkIm8qy89IBEAIQbQ",
+    "apple_resource_id": "e1357070-151c-4eda-9bae-3daff49773af",
+    "apple_dev_resource_id": "32932994-1aa1-4b4f-9fde-f5c60878deaf",
+    "icon_sha256": "e5e53a87091f80d050906eba4138367d7642ad3ca715c265d9f5d8c0cf6ca9af"
+  },
+  "boss_slime_first_win": {
+    "apple_id": "com.dddumpling.game.boss_slime_first_win",
+    "google_id": "CgkIm8qy89IBEAIQcA",
+    "apple_resource_id": "a19923de-6119-4dd7-99c3-85e326824c8c",
+    "apple_dev_resource_id": "ecf33c52-9f46-4426-ae2e-486169860a3d",
+    "icon_sha256": "6a659e5a174db71ad891a4fb4f93c851a10b39497811bd6ce7d761742ca1fe8e"
+  },
+  "boss_dark_divide_first_win": {
+    "apple_id": "com.dddumpling.game.boss_dark_divide_first_win",
+    "google_id": "CgkIm8qy89IBEAIQaA",
+    "apple_resource_id": "acfd510c-cd0d-42be-a7d6-dae0e4b543c1",
+    "apple_dev_resource_id": "4487be67-2a79-403b-baa2-23ed408c64dd",
+    "icon_sha256": "fdda2321fe5c5146e7852e9518c5ccef803810619b92d60930ff7f9ee1f40ca9"
+  },
+  "boss_octopulse_first_win": {
+    "apple_id": "com.dddumpling.game.boss_octopulse_first_win",
+    "google_id": "CgkIm8qy89IBEAIQaw",
+    "apple_resource_id": "530dc050-b737-4c5a-b78b-f20225e391f7",
+    "apple_dev_resource_id": "e7a25bb1-5192-45f9-b754-41b128c4a6cf",
+    "icon_sha256": "189ce916db50f435cbc183a9900ca069728b8acf1e05a1a0dffe5e517fb850b3"
+  },
+  "boss_fly_agaric_first_win": {
+    "apple_id": "com.dddumpling.game.boss_fly_agaric_first_win",
+    "google_id": "CgkIm8qy89IBEAIQcw",
+    "apple_resource_id": "5585be30-b6d2-497f-815b-8337fe2e2462",
+    "apple_dev_resource_id": "6cfcec27-ae53-4aa1-beea-a6e1594cdd31",
+    "icon_sha256": "56f94a853e911ab5517820ac3e86306566b8f4d56758bff4b2ceb6cdbe80b1da"
+  },
+  "boss_mossy_maw_first_win": {
+    "apple_id": "com.dddumpling.game.boss_mossy_maw_first_win",
+    "google_id": "CgkIm8qy89IBEAIQcg",
+    "apple_resource_id": "62323fe6-be2b-4fc5-87e1-a327dbe4d078",
+    "apple_dev_resource_id": "e8d683e7-ccd1-4f74-b6d0-0b7214021198",
+    "icon_sha256": "fec9dae6602de2480218af0fae00606ccffb05cf2f6c3e738e621a63c7f94b23"
+  },
+  "boss_rainbow_cat_first_win": {
+    "apple_id": "com.dddumpling.game.boss_rainbow_cat_first_win",
+    "google_id": "CgkIm8qy89IBEAIQdA",
+    "apple_resource_id": "e5428ecd-3e17-4298-89a4-2890d08d3ff7",
+    "apple_dev_resource_id": "ba13a4b6-4490-4466-bbd0-30dc91deda01",
+    "icon_sha256": "3ede5f51c5dd4b74f234acccea20c25cc88d0b2ec5cc29572f6a34b33a116cbb"
+  },
+  "perfect_stages_5": {
+    "apple_id": "com.dddumpling.game.perfect_stages_5",
+    "google_id": "CgkIm8qy89IBEAIQfA",
+    "apple_resource_id": "11d0d10d-51e7-4628-9996-2928271db734",
+    "apple_dev_resource_id": "7a7b4ff9-bbb6-4e05-81db-d57ffa2132f7",
+    "icon_sha256": "4ec34cb0ee6a2f5553545e5753a2a9b7da903382a5fcec81137cfa349a841bd1"
+  },
+  "gauntlet_complete": {
+    "apple_id": "com.dddumpling.game.gauntlet_complete",
+    "google_id": "CgkIm8qy89IBEAIQdw",
+    "apple_resource_id": "fc76fdc0-c0cc-4208-85aa-df4e725804cb",
+    "apple_dev_resource_id": "f5233416-6eb1-43ee-b991-3839c32ced61",
+    "icon_sha256": "5af3d6a50de414f9c528e5f1a34ff7a190a93e15ffacf986b41ae1c8a1e3774f"
+  },
+  "survival_minutes_1": {
+    "apple_id": "com.dddumpling.game.survival_minutes_1",
+    "google_id": "CgkIm8qy89IBEAIQeA",
+    "apple_resource_id": "d852ce1b-0ec7-4074-b898-3937b5dc30bb",
+    "apple_dev_resource_id": "5fe54dd6-6ca3-4332-959f-77859708fac3",
+    "icon_sha256": "c7cce47fa474f55fcf4c4cce3101cfcb549df950f00598e9f4f9aef65226f064"
+  },
+  "survival_minutes_2": {
+    "apple_id": "com.dddumpling.game.survival_minutes_2",
+    "google_id": "CgkIm8qy89IBEAIQfg",
+    "apple_resource_id": "1b72be00-e7d9-4683-8fc9-43e3379049c7",
+    "apple_dev_resource_id": "66bf1705-f3b3-4994-9974-2bb95669173d",
+    "icon_sha256": "22e18b91acac0de716ac05a9e83f9221b7483bf2aac316fec7e8ee0ce37c0782"
+  },
+  "survival_minutes_3": {
+    "apple_id": "com.dddumpling.game.survival_minutes_3",
+    "google_id": "CgkIm8qy89IBEAIQeQ",
+    "apple_resource_id": "905d0216-2a79-41bf-811f-866ce473003f",
+    "apple_dev_resource_id": "c6eb127b-c3e3-4686-b711-955399b1d9ce",
+    "icon_sha256": "0d75aaae2242dba9e6c912c41f227b2de61c227d547209b14fa7ae5138ab1c7a"
+  },
+  "survival_minutes_4": {
+    "apple_id": "com.dddumpling.game.survival_minutes_4",
+    "google_id": "CgkIm8qy89IBEAIQgAE",
+    "apple_resource_id": "ba0fdc27-241d-4950-952e-7c39befd5304",
+    "apple_dev_resource_id": "67a0e113-c92b-4f6e-86ab-95d3426fd043",
+    "icon_sha256": "fd25ad9d678956aa9603357b5d4878386dfd8b4e5ce5af3fc41cd77b066c635f"
+  },
+  "survival_minutes_5": {
+    "apple_id": "com.dddumpling.game.survival_minutes_5",
+    "google_id": "CgkIm8qy89IBEAIQfQ",
+    "apple_resource_id": "8456ccdb-5426-4977-b9b6-aec58f714a6e",
+    "apple_dev_resource_id": "373064c3-63c2-4a08-ab37-e402bb6e355a",
+    "icon_sha256": "4ec34cb0ee6a2f5553545e5753a2a9b7da903382a5fcec81137cfa349a841bd1"
+  },
+  "run_lands_2": {
+    "apple_id": "com.dddumpling.game.run_lands_2",
+    "google_id": "CgkIm8qy89IBEAIQfw",
+    "apple_resource_id": "ebeab933-acf4-4649-9d76-295fa4e9920c",
+    "apple_dev_resource_id": "3f942e45-94c6-4898-9d41-0c74584be09a",
+    "icon_sha256": "1309726b645cdb1a6d1d93331e3fd194ae66fb5973b24a1ea09ded4259c8b64f"
+  },
+  "run_lands_3": {
+    "apple_id": "com.dddumpling.game.run_lands_3",
+    "google_id": "CgkIm8qy89IBEAIQeg",
+    "apple_resource_id": "278d4c1f-88b6-4bbc-bd91-4d2d020a458c",
+    "apple_dev_resource_id": "bcd01771-8ae9-4cc2-9870-455f5294541e",
+    "icon_sha256": "6ec37b4e5f5c8bde2a64767132d9bd282cb300703222f3734e10f6bb9fc9a18b"
+  },
+  "run_lands_4": {
+    "apple_id": "com.dddumpling.game.run_lands_4",
+    "google_id": "CgkIm8qy89IBEAIQdg",
+    "apple_resource_id": "3ed005c1-f2b0-440c-8484-b2a95c64ff25",
+    "apple_dev_resource_id": "fdc34220-565d-4d89-8262-949932cb9b21",
+    "icon_sha256": "e9fff594e95cf3aba734442a49413ae0dfbde235fa21253a21abf8317358bdd6"
+  },
+  "run_lands_5": {
+    "apple_id": "com.dddumpling.game.run_lands_5",
+    "google_id": "CgkIm8qy89IBEAIQew",
+    "apple_resource_id": "4c513685-4a9b-4a30-b773-36f9ba0a98fa",
+    "apple_dev_resource_id": "cb6ccd33-a7a0-419f-85b5-74563f054a2d",
+    "icon_sha256": "d2b1584e724a29f958607fdce9503a366d488e90d17be8822450db1c34f011e6"
+  }
+}

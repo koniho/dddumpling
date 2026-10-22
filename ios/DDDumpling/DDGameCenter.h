@@ -1,4 +1,5 @@
 #import <UIKit/UIKit.h>
+@class DDIOSGame, DDIOSStore;
 
 typedef void (^DDGameCenterAuthentication)(UIViewController *, NSString *, NSError *);
 
@@ -16,4 +17,6 @@ typedef void (^DDGameCenterAuthentication)(UIViewController *, NSString *, NSErr
                            player:(id<DDGameCenterPlayer>)player enabled:(BOOL)enabled;
 - (void)refreshActive:(BOOL)active;
 - (void)requestSignIn;
+- (void)updateAchievements:(DDIOSGame *)game store:(DDIOSStore *)store elapsed:(double)elapsed;
+- (void)showAchievements;
 @end

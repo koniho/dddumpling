@@ -57,11 +57,10 @@ No Android device was attached at the 2026-10-17 check. Before a public release,
 that validation, prepare the listing/privacy disclosures below, and publish both the OAuth
 consent audience and PGS configuration. A draft-ready console is not a runtime test pass.
 
-All 90 hidden draft events were created and read back on 2026-10-17; Console shows 90
-events. Their non-secret IDs are in `play-games.draft.json`, with a local copy in ignored
-`.private/play-games.json`. Rainbow Cat subsequently added 12 required counters; their
-IDs are blank in the checked-in draft until created in Console. An enabled build rejects
-these blanks. The original 90 Console IDs are preserved.
+The original 90 hidden draft events were created on 2026-10-17. Rainbow Cat's 12 hidden
+draft counters were created and read back on 2026-10-22; Console now shows 102 events.
+Their non-secret IDs are in `play-games.draft.json`, with a local copy in ignored
+`.private/play-games.json`. The original 90 Console IDs are preserved.
 These IDs do not enable a release build or publish the PGS project. The catalog includes
 Gummy Gator's 12 counters under the persisted `mossy_maw` prefix; that prefix must not be
 renamed when changing player-facing text. `python3 tools/test-prepare-play.py` checks that
@@ -72,8 +71,12 @@ Boss event definitions are generated from the stable analytics IDs in `WorldCata
 After adding a boss, regenerate the example with `python3 tools/prepare-play.py --example`
 and update each configuration with `python3 tools/prepare-play.py --sync-config PATH`.
 This preserves IDs and adds missing keys with blank IDs; it does not create Console events.
-Fill those IDs before an enabled build. Normal rules checks detect stale examples and drafts;
-enabled builds additionally reject missing, blank, duplicate or obsolete mappings.
+Create each missing event in Play Console as Hidden, Number with zero decimals, and save
+as draft. Read back its actual generated ID into the draft and local configurations; never
+invent IDs or replace an existing mapping. Event creation is a separate Console step, not
+an automatic side effect of adding a boss. Publishing remains a separate release action.
+Normal rules checks now reject missing, blank, duplicate or obsolete draft mappings as well
+as stale examples, so adding blank placeholders cannot satisfy the future-boss check.
 Stage counters already cover arbitrary future stages through the `20_plus` range.
 Per-enemy counters are not implemented; adding enemies does not currently provide enemy-level
 telemetry. Stable enemy identities, common lifecycle hooks and emission tests are still needed.
