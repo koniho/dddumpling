@@ -13,9 +13,9 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Optional production adapter; all game/save decisions remain in the headless progress model. */
+/** Opt-in Play adapter; all game/save decisions remain in the headless progress model. */
 final class PlayBridge implements Progress.Sink {
-    private static final String SAVE = "dddumpling-progress-v1";
+    private static final String SAVE = PlayConfig.SAVE;
     private final MainActivity activity;
     private final GameCore core;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -34,11 +34,11 @@ final class PlayBridge implements Progress.Sink {
 
     PlayBridge(MainActivity activity, GameCore core) {
         this.activity = activity; this.core = core;
-        core.preferences.achievementsEnabled = !BuildFlags.DEVELOPER;
+        core.preferences.achievementsEnabled = BuildFlags.PLAY_GAMES;
     }
 
     void resume() {
-        if (closed || BuildFlags.DEVELOPER || !core.progress.available()) return;
+        if (closed || !BuildFlags.PLAY_GAMES || !core.progress.available()) return;
         foreground = true; authenticated = false; blocked = false; dirty = true;
         handler.removeCallbacks(achievementPoll);
         java.util.Arrays.fill(achievementSent, 0);
@@ -82,7 +82,7 @@ final class PlayBridge implements Progress.Sink {
     }
     private boolean valid(int token) { return !closed && token == generation && authenticated; }
     private void reportAchievements() {
-        if (!core.progress.available() || BuildFlags.DEVELOPER) return;
+        if (!core.progress.available() || !BuildFlags.PLAY_GAMES) return;
         final int token = generation;
         for (int i = 0; i < Achievements.size(); i++) {
             final int index = i, steps = Achievements.steps(core.progress, i);
@@ -122,7 +122,7 @@ final class PlayBridge implements Progress.Sink {
         if (foreground && !closed && !blocked) handler.postDelayed(scheduled, delay);
     }
     @Override public void event(String name, int amount) {
-        if (!authenticated || !foreground || closed || amount <= 0 || BuildFlags.DEVELOPER) return;
+        if (!authenticated || !foreground || closed || amount <= 0 || !BuildFlags.PLAY_GAMES) return;
         String id = PlayConfig.event(name);
         if (id == null) return;
         try { PlayGames.getEventsClient(activity).increment(id, amount); }

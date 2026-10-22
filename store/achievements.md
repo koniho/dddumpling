@@ -20,7 +20,8 @@ Both retry pending progress on a ten-second foreground interval and evaluate res
 Local progress is durable offline; callbacks never add gameplay progress. Reporting requires
 the authenticated player to match the local save owner. Game Center achievements do not
 require iCloud Drive. Developer Apple IDs use `com.dddumpling.game.dev.`; production IDs use
-`com.dddumpling.game.`. Android developer builds keep reporting disabled.
+`com.dddumpling.game.`. Android developer builds include the SDK but keep reporting disabled
+until a matching Dev configuration is supplied; see [developer testing](play-games.md#side-by-side-developer-testing).
 
 ## Adding content
 

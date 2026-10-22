@@ -1,9 +1,9 @@
 # Play Games events and cross-device progress
 
 This integration is opt-in at build time. The release workflow enables it for new
-Play upload bundles using `store/play-games.draft.json`. Ordinary local builds and
-the itch download have **no Play SDK, sign-in, or network reporting**.
-Developer builds exclude the SDK even if a configuration file is supplied. Production builds
+Play upload bundles using `store/play-games.draft.json`. The itch download has
+**no Play SDK, sign-in, or network reporting**. Developer builds always include the SDK,
+but without a Dev configuration they disable its initialization and all reporting. Production builds
 record progress locally, independently of whether Play integration is configured.
 
 ## Build a Play-enabled test
@@ -30,6 +30,48 @@ record progress locally, independently of whether Play integration is configured
 The pinned Games SDK 21.0.0 retains Android 5 / API 21 support. SDK 22 raises its minimum API to 24.
 The build merges all library manifests/resources, generates their R classes, and packages all dex
 files. It fails on unsupported native dependencies instead of silently dropping them.
+
+## Side-by-side developer testing
+
+Use `com.dddumpling.game.dev` and the existing local debug keystore. Register an Android OAuth
+credential for that exact package and certificate SHA-1, then link it in Play Games Console.
+Do not replace the Play app-signing credential. Enable Saved Games and add the testing account
+to both the OAuth audience and Play Games tester list as applicable. An SDK-enabled APK alone
+does not register the package or establish sign-in access.
+
+A separate Play Games project is recommended: achievements and events belong to the project,
+so developer cheats can affect real achievements if the projects are shared. A shared project
+requires a dedicated test account. Dev cloud saves always use `dddumpling-dev-progress-v1`,
+while production retains `dddumpling-progress-v1`.
+
+Generate a configuration template for a separate test project:
+
+```sh
+mkdir -p .private
+python3 tools/prepare-play.py --example --package-name com.dddumpling.game.dev > .private/play-games-dev.json
+```
+
+Fill `project_id`, every `events` ID and every `achievements` ID with that project's Console
+values. The achievement mapping is keyed by the same stable IDs as `store/achievements.json`,
+but its values are only Google achievement IDs. No Apple metadata is needed for this test project.
+Keep `package_name` set to `com.dddumpling.game.dev`.
+
+To intentionally share the existing project with a test account, copy `store/play-games.draft.json`
+and add `"package_name": "com.dddumpling.game.dev"`. Its existing achievement mappings are reused.
+
+```sh
+DDDUMPLING_PLAY_CONFIG=.private/play-games-dev.json ./build.sh --developer
+```
+
+This keeps developer controls, enables local progress tracking and Play reporting, and builds
+DDDUMPLING Dev with the normal developer checks and signing key. Configuration is validated
+before checks or dependency downloads. With no configuration, Dev still packages the SDK but
+omits project IDs, disables the SDK auto-init provider, and keeps sign-in/reporting off.
+A progress reset does not reset remote Google achievements or erase a cloud save.
+
+The local phone debug certificate SHA-1 (2026-10-22) is
+`8A:14:84:D5:AA:65:8C:62:0D:CB:B0:24:C8:61:95:C7:1A:2A:80:90`.
+Read the certificate from the key used for each installation before registering other machines.
 
 Production setup (2026-10-14): linked Play Games Services to the existing Cloud project
 `dddumpling-5695b`, project number/application ID `56613446939`. This reuses the Firebase

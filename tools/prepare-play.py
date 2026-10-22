@@ -61,17 +61,65 @@ def config(path):
     return value
 
 
-def java_config(cfg, achievements):
+def achievement_config(cfg, package_name):
+    expected_package = cfg.get('package_name', 'com.dddumpling.game')
+    if expected_package != package_name:
+        raise ValueError('Play configuration package_name must match ' + package_name)
+    production = json.loads((ROOT / 'store/play-games.draft.json').read_text())
+    if 'achievements' not in cfg:
+        if cfg['project_id'] != production['project_id']:
+            raise ValueError('A separate Play project requires its own achievements mapping')
+        return runpy.run_path(str(ROOT / 'tools/achievements.py'))['validate'](ROOT / 'store/achievements.json')
+    ids = cfg['achievements']
+    expected = {a['key'] for a in runpy.run_path(str(ROOT / 'tools/achievements.py'))['catalog']()}
+    if not isinstance(ids, dict) or set(ids) != expected:
+        raise ValueError('Achievement catalog mismatch in Play configuration')
+    if any(not isinstance(v, str) or not re.fullmatch(r'[A-Za-z0-9_-]{8,200}', v) for v in ids.values()) or len(set(ids.values())) != len(ids):
+        raise ValueError('Each achievement needs a distinct real Google Console ID')
+    return {key: {'google_id': value} for key, value in ids.items()}
+
+
+def java_config(cfg, achievements, package_name='com.dddumpling.game'):
     def method(name, mapping):
         return 'static String '+name+'(String name) { switch (name) {\n' + ''.join(
             'case '+json.dumps(k)+': return '+json.dumps(v)+';\n' for k,v in mapping.items()) + 'default: return null; } }\n'
-    return 'package com.dddumpling.game;\nfinal class PlayConfig {\n' + method('event',cfg['events']) + method(
+    save = 'dddumpling-progress-v1' if package_name == 'com.dddumpling.game' else 'dddumpling-dev-progress-v1'
+    return 'package com.dddumpling.game;\nfinal class PlayConfig {\nstatic final String SAVE = ' + json.dumps(save) + ';\n' + method('event',cfg['events']) + method(
         'achievement',{k:v['google_id'] for k,v in achievements.items()}) + '}\n'
 
 
+def application_manifest(path, sdk_only):
+    android = '{http://schemas.android.com/apk/res/android}'
+    tools = '{http://schemas.android.com/tools}'
+    ET.register_namespace('android', android[1:-1])
+    ET.register_namespace('tools', tools[1:-1])
+    tree = ET.parse(path)
+    root = tree.getroot()
+    ET.SubElement(root, 'uses-permission', {android + 'name': 'android.permission.INTERNET'})
+    app = root.find('application')
+    app.set(android + 'name', 'com.dddumpling.game.PlayApplication')
+    if sdk_only:
+        # The dependency otherwise initializes before Application.onCreate, even with reporting off.
+        ET.SubElement(app, 'provider', {android + 'name': 'com.google.android.gms.games.provider.PlayGamesInitProvider',
+                                        tools + 'node': 'remove'})
+    else:
+        ET.SubElement(app, 'meta-data', {android + 'name': 'com.google.android.gms.games.APP_ID',
+                                        android + 'value': '@string/game_services_project_id'})
+    return tree
+
+
 def prepare(args):
-    cfg = config(args.config)
-    achievements = runpy.run_path(str(ROOT / 'tools/achievements.py'))['validate'](ROOT / 'store/achievements.json')
+    if args.sdk_only:
+        if args.package_name != 'com.dddumpling.game.dev' or args.config:
+            raise ValueError('SDK-only preparation is for an unconfigured Dev build')
+        cfg = {'project_id': '', 'events': {}}
+        achievements = {}
+    else:
+        cfg = config(args.config)
+        achievements = achievement_config(cfg, args.package_name)
+    if args.validate_only:
+        print('Validated Play Games configuration for', args.package_name)
+        return
     out = Path('build/play')
     if out.exists():
         shutil.rmtree(out)
@@ -106,20 +154,12 @@ def prepare(args):
             resources.append(str(dest))
         if (directory / 'assets').exists():
             shutil.copytree(directory / 'assets', out / 'assets', dirs_exist_ok=True)
-    android = '{http://schemas.android.com/apk/res/android}'
-    ET.register_namespace('android', android[1:-1])
-    tree = ET.parse('AndroidManifest.xml')
-    root = tree.getroot()
-    ET.SubElement(root, 'uses-permission', {android + 'name': 'android.permission.INTERNET'})
-    app = root.find('application')
-    app.set(android + 'name', 'com.dddumpling.game.PlayApplication')
-    ET.SubElement(app, 'meta-data', {android + 'name': 'com.google.android.gms.games.APP_ID',
-                                    android + 'value': '@string/game_services_project_id'})
+    tree = application_manifest(args.manifest, args.sdk_only)
     tree.write(out / 'main.xml', encoding='utf-8', xml_declaration=True)
     merger = str((resolved / 'merger' / '*').resolve())
     subprocess.run(['java', '-cp', merger, 'com.android.manifmerger.Merger',
                     '--main', str(out / 'main.xml'), '--libs', ':'.join(manifests),
-                    '--placeholder', 'applicationId=com.dddumpling.game',
+                    '--placeholder', 'applicationId=' + args.package_name,
                     '--property', 'MIN_SDK_VERSION=24', '--property', 'TARGET_SDK_VERSION=36',
                     '--remove-tools-declarations', '--out', str(out / 'AndroidManifest.xml')], check=True)
     res = out / 'config-res' / 'values'
@@ -129,7 +169,7 @@ def prepare(args):
     resources.append(str(out / 'config.zip'))
     java = Path('build/gen/com/dddumpling/game/PlayConfig.java')
     java.parent.mkdir(parents=True, exist_ok=True)
-    java.write_text(java_config(cfg, achievements))
+    java.write_text(java_config(cfg, achievements, args.package_name))
     (out / 'jars.txt').write_text('\n'.join(jars) + '\n')
     (out / 'classpath.txt').write_text(os.pathsep.join(jars))
     (out / 'resources.txt').write_text('\n'.join(resources) + '\n')
@@ -140,6 +180,10 @@ def prepare(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config')
+    parser.add_argument('--package-name', choices=['com.dddumpling.game', 'com.dddumpling.game.dev'], default='com.dddumpling.game')
+    parser.add_argument('--manifest', default='AndroidManifest.xml')
+    parser.add_argument('--validate-only', action='store_true')
+    parser.add_argument('--sdk-only', action='store_true', help='Package the SDK without project IDs; Dev only')
     parser.add_argument('--example', action='store_true')
     parser.add_argument('--sync-config', help='Add missing event keys with blank IDs, preserving existing IDs')
     args = parser.parse_args()
@@ -151,6 +195,10 @@ if __name__ == '__main__':
         path.write_text(json.dumps(value, indent=2) + '\n')
         print('Missing Console IDs:', ', '.join(k for k in catalog() if not value['events'][k]))
     elif args.example:
-        print(json.dumps({'project_id': '', 'events': dict.fromkeys(catalog(), '')}, indent=2))
+        example = {'project_id': '', 'events': dict.fromkeys(catalog(), '')}
+        if args.package_name != 'com.dddumpling.game':
+            example['package_name'] = args.package_name
+            example['achievements'] = dict.fromkeys([a['key'] for a in runpy.run_path(str(ROOT / 'tools/achievements.py'))['catalog']()], '')
+        print(json.dumps(example, indent=2))
     else:
         prepare(args)

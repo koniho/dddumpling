@@ -124,7 +124,6 @@ jobs:
           PY
 
       - name: Set up Gradle for Play Games dependencies
-        if: inputs.source_tag == ''
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.7.1'

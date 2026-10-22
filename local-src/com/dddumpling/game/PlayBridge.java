@@ -1,6 +1,6 @@
 package com.dddumpling.game;
 
-/** First-release and developer builds contain no Play Games SDK or network reporting. */
+/** Offline production builds contain no Play Games SDK or network reporting. */
 final class PlayBridge {
     void showAchievements() {}
     PlayBridge(MainActivity activity, GameCore core) {}

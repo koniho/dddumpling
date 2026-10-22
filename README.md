@@ -143,7 +143,7 @@ is too old for parts of the build. Bundle creation also needs `curl` and `sha256
 Termux on an `aarch64` Android device:
 
 ```sh
-pkg install openjdk-17 python bash aapt2 d8 apksigner zip unzip curl android-tools
+pkg install openjdk-17 python bash aapt2 d8 apksigner zip unzip curl android-tools gradle
 ```
 
 The build reads `sdk/android.jar` when present, otherwise
@@ -320,7 +320,8 @@ versioned release notes, and retry instructions. Public releases remain manual.
 
 Production builds record progress locally. To include Google Play Games events and cross-device
 saves, configure the project/event IDs and build with `DDDUMPLING_PLAY_CONFIG`. Developer builds
-exclude the SDK. See [Play Games setup and save semantics](store/play-games.md).
+always include the SDK and require Gradle to resolve its pinned dependencies. Sign-in and reporting
+stay off until a matching Dev configuration is supplied. See [Play Games setup and save semantics](store/play-games.md).
 
 For iPhone CI and TestFlight delivery, see [iOS CI](ios/docs/ci.md) and the
 [TestFlight version policy](ios/README.md#testflight-version-policy).

@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import re
 import runpy
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -14,6 +15,58 @@ achievements = runpy.run_path(str(ROOT / 'tools/achievements.py'))
 
 
 class PlayCatalogTest(unittest.TestCase):
+    def test_dev_requires_matching_package_configuration(self):
+        cfg = prepare['config'](ROOT / 'store/play-games.draft.json')
+        with self.assertRaisesRegex(ValueError, 'package_name'):
+            prepare['achievement_config'](cfg, 'com.dddumpling.game.dev')
+        cfg['package_name'] = 'com.dddumpling.game.dev'
+        mapped = prepare['achievement_config'](cfg, cfg['package_name'])
+        self.assertEqual(set(mapped), {a['key'] for a in achievements['catalog']()})
+
+    def test_separate_project_needs_its_own_achievement_ids(self):
+        cfg = prepare['config'](ROOT / 'store/play-games.draft.json')
+        cfg.update(project_id='123456789', package_name='com.dddumpling.game.dev')
+        with self.assertRaisesRegex(ValueError, 'own achievements mapping'):
+            prepare['achievement_config'](cfg, cfg['package_name'])
+        cfg['achievements'] = {a['key']: 'test_achievement_' + str(i)
+                               for i, a in enumerate(achievements['catalog']())}
+        mapped = prepare['achievement_config'](cfg, cfg['package_name'])
+        self.assertEqual(mapped['collect_1']['google_id'], cfg['achievements']['collect_1'])
+        cfg['achievements']['collect_10'] = cfg['achievements']['collect_1']
+        with self.assertRaisesRegex(ValueError, 'distinct'):
+            prepare['achievement_config'](cfg, cfg['package_name'])
+
+    def test_dev_cloud_slot_does_not_alias_production(self):
+        cfg = prepare['config'](ROOT / 'store/play-games.draft.json')
+        mapped = prepare['achievement_config'](cfg, 'com.dddumpling.game')
+        prod = prepare['java_config'](cfg, mapped)
+        dev = prepare['java_config'](cfg, mapped, 'com.dddumpling.game.dev')
+        self.assertIn('SAVE = "dddumpling-progress-v1"', prod)
+        self.assertIn('SAVE = "dddumpling-dev-progress-v1"', dev)
+        self.assertNotIn('SAVE = "dddumpling-progress-v1"', dev)
+
+    def test_services_are_explicit_and_independent_of_developer_controls(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'com/dddumpling/game/BuildFlags.java'
+            for developer, services in [('true', None), ('false', None), ('true', 'true'), ('false', 'true')]:
+                command = ['sh', str(ROOT/'tools/build-flags.sh'), directory, developer]
+                if services is not None:
+                    command.append(services)
+                subprocess.run(command, check=True)
+                self.assertIn('DEVELOPER = ' + developer, path.read_text())
+                self.assertIn('PLAY_GAMES = ' + (services or 'false'), path.read_text())
+
+    def test_unconfigured_dev_disables_sdk_auto_initialization(self):
+        android = '{http://schemas.android.com/apk/res/android}'
+        for sdk_only in (True, False):
+            app = prepare['application_manifest'](ROOT/'AndroidManifest.xml', sdk_only).getroot().find('application')
+            metadata = {m.get(android+'name') for m in app.findall('meta-data')}
+            self.assertEqual('com.google.android.gms.games.APP_ID' in metadata, not sdk_only)
+            providers = app.findall('provider')
+            self.assertEqual(len(providers), int(sdk_only))
+            if sdk_only:
+                self.assertEqual(providers[0].get('{http://schemas.android.com/tools}node'), 'remove')
+
     def test_achievement_platform_mappings_are_complete(self):
         achievements['validate'](ROOT / 'store/achievements.json')
 

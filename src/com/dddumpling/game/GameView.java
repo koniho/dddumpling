@@ -80,7 +80,8 @@ public class GameView extends View implements InputManager.InputDeviceListener {
     GameView(Context ctx, GameCore.Store store, GameCore.Sound sound) {
         super(ctx);
         painter = new CanvasPainter(loadFace(ctx));
-        core = new GameCore(store, SystemClock.elapsedRealtimeNanos());
+        core = new GameCore(store, SystemClock.elapsedRealtimeNanos(),
+                !BuildFlags.DEVELOPER || BuildFlags.PLAY_GAMES);
         if(BuildFlags.DEVELOPER)core.diagnostics=RuntimeDiagnostics::record;
         core.sound = sound;
         // Has to be after the sound is attached, and before the Activity resumes: the loaded

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds a signed, installable APK entirely on-device in Termux. No Gradle, no PC.
+# Builds a signed, installable APK entirely on-device in Termux; Gradle resolves Play SDK dependencies only.
 #   aapt2 compile/link -> ecj -> d8 -> zip -> apksigner
 # See check.sh for why the shebang is /bin/sh with a re-exec rather than a path to bash.
 # shellcheck shell=bash
@@ -11,6 +11,7 @@ DEVELOPER=true
 FULL_CHECKS=false
 TOWN_CHECKS=false
 RULES_CHECKS=false
+PLAY_GAMES=false
 for option in "$@"; do
     case "$option" in
         --developer) DEVELOPER=true ;;
@@ -52,6 +53,14 @@ KS_KEY_PASS=${HEXATYPE_KEY_PASSWORD:-$KS_STORE_PASS}
 
 [ -f "$SDK" ] || { echo "missing $SDK - see README.md"; exit 1; }
 
+PLAY_CONFIG=${DDDUMPLING_PLAY_CONFIG:-}
+APP_ID=com.dddumpling.game
+if [ "$DEVELOPER" = true ]; then APP_ID=com.dddumpling.game.dev; fi
+if [ -n "$PLAY_CONFIG" ]; then PLAY_GAMES=true; fi
+if [ "$PLAY_GAMES" = true ]; then
+    python tools/prepare-play.py --config "$PLAY_CONFIG" --package-name "$APP_ID" --validate-only
+fi
+
 mkdir -p "$OUT"
 if [ "$TOWN_CHECKS" = true ]; then
     echo ">> town rules + selected frames"
@@ -75,9 +84,8 @@ fi
 
 rm -rf "$OUT/classes" "$OUT/gen" "$OUT/res.zip" "$OUT/base.apk" "$OUT"/classes*.dex
 mkdir -p "$OUT/classes" "$OUT/gen"
-sh tools/build-flags.sh "$OUT/gen" "$DEVELOPER"
+sh tools/build-flags.sh "$OUT/gen" "$DEVELOPER" "$PLAY_GAMES"
 
-PLAY_CONFIG=${DDDUMPLING_PLAY_CONFIG:-}
 PLAY_JARS=()
 PLAY_RES=()
 PLAY_LINK=()
@@ -103,8 +111,10 @@ if [ "$DEVELOPER" = true ]; then
         fi
     fi
 fi
-if [ "$DEVELOPER" = false ] && [ -n "$PLAY_CONFIG" ]; then
-    python tools/prepare-play.py --config "$PLAY_CONFIG"
+if [ "$DEVELOPER" = true ] || [ "$PLAY_GAMES" = true ]; then
+    PLAY_PREPARE=()
+    if [ "$PLAY_GAMES" = false ]; then PLAY_PREPARE=(--sdk-only); fi
+    python tools/prepare-play.py --config "$PLAY_CONFIG" --package-name "$APP_ID" --manifest "$MANIFEST" "${PLAY_PREPARE[@]}"
     PLATFORM_SRC=play-src
     MANIFEST="$OUT/play/AndroidManifest.xml"
     mapfile -t PLAY_JARS < "$OUT/play/jars.txt"
