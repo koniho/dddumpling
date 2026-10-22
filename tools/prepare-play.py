@@ -120,7 +120,7 @@ def prepare(args):
     subprocess.run(['java', '-cp', merger, 'com.android.manifmerger.Merger',
                     '--main', str(out / 'main.xml'), '--libs', ':'.join(manifests),
                     '--placeholder', 'applicationId=com.dddumpling.game',
-                    '--property', 'MIN_SDK_VERSION=21', '--property', 'TARGET_SDK_VERSION=36',
+                    '--property', 'MIN_SDK_VERSION=24', '--property', 'TARGET_SDK_VERSION=36',
                     '--remove-tools-declarations', '--out', str(out / 'AndroidManifest.xml')], check=True)
     res = out / 'config-res' / 'values'
     res.mkdir(parents=True)
