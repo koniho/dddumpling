@@ -262,3 +262,21 @@ describes cross-device saves without an explicit two-simulator guarantee. A
 [developer report](https://developer.apple.com/forums/thread/822568) describes simulator-only
 Game Center data failures in Xcode 26.4, but concerns leaderboards and achievements,
 not confirmation of this saved-games failure.
+
+### Direct GameKit probe
+
+Debug builds with Game Center enabled accept `DDD_GAMEKIT_PROBE=write` or `read`.
+These modes bypass `IOSCloud`, progress serialization/merging and local account binding.
+After 15 seconds authenticated in the foreground, the writer saves one UUID text marker
+under `ddd-direct-gamekit-probe-20261021`; both modes fetch and load that slot every
+15 seconds. The reader never writes. Launch through `SIMCTL_CHILD_DDD_GAMEKIT_PROBE`.
+Every writer launch replaces the diagnostic marker; existing progress slots are untouched.
+Launch without the variable to restore normal behavior. Release omits this probe entirely.
+
+On 2026-10-21, an immediate post-authentication write first returned GKErrorDomain code 1.
+A separate launch with the 15-second delay succeeded at 22:02:09 local time and repeatedly
+read back its exact marker. The other iOS 26.5 simulator still found no matching slot
+through 22:03:57, including after explicit `simctl icloud_sync` on both and a reader restart.
+This reproduces the transfer failure without the game coordinator. It does not isolate
+app configuration/signing from the simulator or establish an Apple defect. The successful
+second attempt does not prove that a fixed delay is a general solution for code 1.

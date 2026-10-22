@@ -27,6 +27,11 @@
 @property(nonatomic, strong) NSArray<GKSavedGame *> *records;
 @property(nonatomic) BOOL active, registered;
 @property(nonatomic) jint request;
+#if DEBUG
+@property(nonatomic, copy) NSString *probeMode;
+@property(nonatomic) BOOL probeStarted, probeBusy;
+@property(nonatomic) double probeElapsed;
+#endif
 - (void)fetchWithInt:(jint)token;
 - (void)saveWithByteArray:(IOSByteArray *)data withInt:(jint)token;
 - (void)invalidateIdentity;
@@ -71,6 +76,14 @@
     if ((self = [super init])) {
 #if DDDUMPLING_GAME_CENTER
         {
+#if DEBUG
+            NSString *mode = NSProcessInfo.processInfo.environment[@"DDD_GAMEKIT_PROBE"];
+            if ([mode isEqualToString:@"write"] || [mode isEqualToString:@"read"]) {
+                _probeMode = mode;
+                NSLog(@"GameKit probe: %@ mode; normal cloud coordinator bypassed", mode);
+                return self;
+            }
+#endif
             _store = store; _center = center;
             DDCloudHost *host = [DDCloudHost new]; host.owner = self;
             _host = host;
@@ -88,6 +101,9 @@
 }
 - (void)updateActive:(BOOL)active elapsed:(double)elapsed {
 #if DDDUMPLING_GAME_CENTER
+#if DEBUG
+    if (self.probeMode) { [self updateProbe:active elapsed:elapsed]; return; }
+#endif
     if (!self.cloud) return;
     self.active = active;
     id identity = NSFileManager.defaultManager.ubiquityIdentityToken;
@@ -127,6 +143,49 @@
 #endif
 }
 #if DDDUMPLING_GAME_CENTER
+#if DEBUG
+- (void)updateProbe:(BOOL)active elapsed:(double)elapsed {
+    if (!active || !GKLocalPlayer.localPlayer.isAuthenticated) return;
+    // Separate fixed slot; no progress serialization, account binding or merge logic.
+    NSString *name = @"ddd-direct-gamekit-probe-20261021";
+    if (!self.probeStarted) {
+        self.probeElapsed += MAX(0, MIN(elapsed, 1));
+        if (self.probeElapsed < 15) return;
+        self.probeStarted = YES;
+        NSLog(@"GameKit probe: authenticated; starting %@", self.probeMode);
+        if ([self.probeMode isEqualToString:@"write"]) {
+            NSString *marker = [@"direct-gamekit-" stringByAppendingString:NSUUID.UUID.UUIDString];
+            NSLog(@"GameKit probe: writing marker %@", marker);
+            self.probeBusy = YES;
+            [GKLocalPlayer.localPlayer saveGameData:[marker dataUsingEncoding:NSUTF8StringEncoding]
+                withName:name completionHandler:^(GKSavedGame *game, NSError *error) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    self.probeBusy = NO;
+                    NSLog(@"GameKit probe: save callback name=%@ error=%@", game.name, error);
+                });
+            }];
+        }
+        self.probeElapsed = 15;
+    }
+    self.probeElapsed += MAX(0, MIN(elapsed, 1));
+    if (self.probeBusy || self.probeElapsed < 15) return;
+    self.probeElapsed = 0; self.probeBusy = YES;
+    [GKLocalPlayer.localPlayer fetchSavedGamesWithCompletionHandler:^(NSArray<GKSavedGame *> *games, NSError *error) {
+        NSUInteger matches = 0;
+        for (GKSavedGame *game in games) {
+            if (![game.name isEqualToString:name]) continue;
+            matches++;
+            [game loadDataWithCompletionHandler:^(NSData *data, NSError *loadError) {
+                NSLog(@"GameKit probe: loaded marker=%@ error=%@",
+                    data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : nil, loadError);
+            }];
+        }
+        NSLog(@"GameKit probe: fetched total=%lu matching=%lu error=%@",
+            (unsigned long)games.count, (unsigned long)matches, error);
+        dispatch_async(dispatch_get_main_queue(), ^{ self.probeBusy = NO; });
+    }];
+}
+#endif
 - (void)dealloc {
     if (self.registered) [GKLocalPlayer.localPlayer unregisterListener:self.host];
     if (self.identityObserver) [NSNotificationCenter.defaultCenter removeObserver:self.identityObserver];
