@@ -41,7 +41,9 @@
     XCTAssertEqual(player.calls, 0u);
     XCTAssertEqualObjects(service.status, @"Disabled");
     DDGameCloud *cloud = [DDGameCloud new];
+#if DDDUMPLING_GAME_CENTER
     [cloud setValue:service forKey:@"center"];
+#endif
     XCTAssertEqual([cloud uiStatus], 0);
 }
 - (void)testBuildGate {

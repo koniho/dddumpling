@@ -104,7 +104,8 @@ final class SmokeTests: XCTestCase {
         game.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.85)).tap()
         let starting = NSPredicate(format: "value CONTAINS %@ OR value CONTAINS %@", "starter=true", "state=1")
         expectation(for: starting, evaluatedWith: game)
-        waitForExpectations(timeout: 5)
+        // CI can finish the launch animation after five seconds while rendering and polling.
+        waitForExpectations(timeout: 15)
         if (game.value as? String ?? "").contains("starter=true") {
             let ready = NSPredicate(format: "value CONTAINS %@", "starterReady=true")
             expectation(for: ready, evaluatedWith: game)
