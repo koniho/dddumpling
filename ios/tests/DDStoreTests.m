@@ -9,6 +9,17 @@
 @end
 
 @implementation DDStoreTests
+- (void)testAchievementsBindWithoutICloudAndRejectOtherPlayers {
+  NSURL *url = [self temporaryFile];
+  DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertTrue([store bindAchievementPlayer:@"player-a"]);
+  DDIOSStore *reopened = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertTrue([reopened bindAchievementPlayer:@"player-a"]);
+  XCTAssertFalse([reopened bindAchievementPlayer:@"player-b"]);
+  XCTAssertFalse([reopened bindCloudPlayer:@"player-b" identity:[@"cloud" dataUsingEncoding:NSUTF8StringEncoding]]);
+  XCTAssertTrue([reopened bindCloudPlayer:@"player-a" identity:[@"cloud" dataUsingEncoding:NSUTF8StringEncoding]]);
+  [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
+}
 - (void)testCloudIntroductionDismissalPersists {
   NSURL *url = [self temporaryFile];
   DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];

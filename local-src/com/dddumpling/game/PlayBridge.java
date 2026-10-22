@@ -2,6 +2,7 @@ package com.dddumpling.game;
 
 /** First-release and developer builds contain no Play Games SDK or network reporting. */
 final class PlayBridge {
+    void showAchievements() {}
     PlayBridge(MainActivity activity, GameCore core) {}
     void resume() {}
     void pause() {}

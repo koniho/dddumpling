@@ -23,12 +23,26 @@ final class PlayBridge implements Progress.Sink {
     private final Runnable scheduled = () -> sync();
     private boolean foreground, closed, authenticated, merging, dirty = true, notified, blocked;
     private int generation, busy = -1;
+    private final int[] achievementSent = new int[Achievements.size()];
+    private final boolean[] achievementBusy = new boolean[Achievements.size()];
+    private final Runnable achievementPoll = new Runnable() {
+        public void run() {
+            if (!foreground || closed || !authenticated) return;
+            reportAchievements(); handler.postDelayed(this, 10000);
+        }
+    };
 
-    PlayBridge(MainActivity activity, GameCore core) { this.activity = activity; this.core = core; }
+    PlayBridge(MainActivity activity, GameCore core) {
+        this.activity = activity; this.core = core;
+        core.preferences.achievementsEnabled = !BuildFlags.DEVELOPER;
+    }
 
     void resume() {
         if (closed || BuildFlags.DEVELOPER || !core.progress.available()) return;
         foreground = true; authenticated = false; blocked = false; dirty = true;
+        handler.removeCallbacks(achievementPoll);
+        java.util.Arrays.fill(achievementSent, 0);
+        java.util.Arrays.fill(achievementBusy, false);
         core.progress.attach(null);
         final int token = ++generation;
         try {
@@ -46,6 +60,7 @@ final class PlayBridge implements Progress.Sink {
                     }
                     authenticated = true;
                     core.progress.attach(this);
+                    achievementPoll.run();
                     sync();
                 });
             });
@@ -53,6 +68,7 @@ final class PlayBridge implements Progress.Sink {
     }
 
     void pause() {
+        handler.removeCallbacks(achievementPoll);
         handler.removeCallbacks(scheduled);
         // Last checkpoint is already local. Let an authenticated in-flight save finish in background.
         if (authenticated && dirty) sync();
@@ -60,10 +76,47 @@ final class PlayBridge implements Progress.Sink {
         core.progress.attach(null);
     }
     void close() {
+        handler.removeCallbacks(achievementPoll);
         closed = true; generation++;
         core.progress.attach(null); handler.removeCallbacks(scheduled); io.shutdown();
     }
     private boolean valid(int token) { return !closed && token == generation && authenticated; }
+    private void reportAchievements() {
+        if (!core.progress.available() || BuildFlags.DEVELOPER) return;
+        final int token = generation;
+        for (int i = 0; i < Achievements.size(); i++) {
+            final int index = i, steps = Achievements.steps(core.progress, i);
+            String id = PlayConfig.achievement(Achievements.id(i));
+            if (id == null || steps <= achievementSent[i] || achievementBusy[i]) continue;
+            achievementBusy[i] = true;
+            try {
+                com.google.android.gms.tasks.Task<?> task = Achievements.target(i) == 1
+                    ? PlayGames.getAchievementsClient(activity).unlockImmediate(id)
+                    : PlayGames.getAchievementsClient(activity).setStepsImmediate(id, steps);
+                task.addOnCompleteListener(done -> {
+                    if (!valid(token)) return;
+                    achievementBusy[index] = false;
+                    if (done.isSuccessful()) achievementSent[index] = Math.max(achievementSent[index], steps);
+                });
+            } catch (RuntimeException e) { achievementBusy[i] = false; }
+        }
+    }
+    void showAchievements() {
+        if (!authenticated) {
+            Toast.makeText(activity, "Sign in to Play Games to view achievements.", Toast.LENGTH_LONG).show();
+            core.preferences.externalFinished(core); return;
+        }
+        final int token = generation;
+        try {
+            PlayGames.getAchievementsClient(activity).getAchievementsIntent().addOnCompleteListener(task -> {
+                if (valid(token) && foreground && task.isSuccessful()) {
+                    try { activity.startActivityForResult(task.getResult(), 110); return; }
+                    catch (RuntimeException ignored) { }
+                }
+                core.preferences.externalFinished(core);
+            });
+        } catch (RuntimeException e) { core.preferences.externalFinished(core); }
+    }
     private void schedule(long delay) {
         handler.removeCallbacks(scheduled);
         if (foreground && !closed && !blocked) handler.postDelayed(scheduled, delay);

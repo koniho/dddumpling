@@ -44,7 +44,9 @@ final class Survival extends Draw {
     void update(GameCore c,float elapsed) {
         if(!active || finished || c.state!=GameCore.PLAY)return;
         if(elapsed<=0 || Float.isNaN(elapsed) || Float.isInfinite(elapsed))return;
+        long previousMinute=(long)(seconds/60);
         seconds+=elapsed;
+        if ((long)(seconds/60)>previousMinute) c.progress.survivalTime((long)(seconds/60)*60);
         skyPhase+=elapsed*(1f+3f*ramp());
         rescueReadyFlash=Math.max(0,rescueReadyFlash-elapsed/1.2f);
         // Advance difficulty without stage endings, bosses, banners or clearing live enemies.

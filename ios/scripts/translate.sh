@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 source "$(dirname "$0")/env.sh"
+if [ "${DDDUMPLING_GAME_CENTER:-0}" = 1 ]; then
+    python3 "$REPO_ROOT/tools/achievements.py" --validate
+fi
 configuration="${1:-Debug}"
 case "$configuration" in Debug) developer=true ;; Release) developer=false ;; *) echo 'Use Debug or Release' >&2; exit 2 ;; esac
 [ -x "$J2OBJC_HOME/j2objc" ] || { echo 'Run ios/scripts/bootstrap.sh first' >&2; exit 1; }

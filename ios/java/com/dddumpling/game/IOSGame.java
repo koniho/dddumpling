@@ -23,6 +23,16 @@ public final class IOSGame {
     private boolean cloudPreview;
     public void setHost(Host host) { this.host = host; }
     public void externalFinished() { core.preferences.externalFinished(core); }
+    public int achievementCount() { return Achievements.size(); }
+    public void achievementsEnabled(boolean enabled) { core.preferences.achievementsEnabled=enabled; }
+    public boolean takeAchievementAction() {
+        boolean requested=core.preferences.achievementRequested;
+        core.preferences.achievementRequested=false; return requested;
+    }
+    public String achievementID(int index) { return "com.dddumpling.game." + Achievements.id(index); }
+    public double achievementPercent(int index) {
+        return 100.0 * Achievements.steps(core.progress,index) / Achievements.target(index);
+    }
     public void cloudStatus(int status) { if(!cloudPreview)core.cloudUi.status(status); }
     public void cloudReduceMotion(boolean value) { core.cloudUi.reduceMotion=value; }
     public int takeCloudAction() { int action=core.cloudUi.takeAction();return cloudPreview?0:action; }
@@ -776,7 +786,8 @@ public final class IOSGame {
         if (!KeyboardInput.available(core)) keyboard.clear();
         int external=core.preferences.takeExternal(core);
         if(external!=0) {
-            if(host!=null) host.openAppAction(external==PlayerSettings.SHARE);
+            if(external==PlayerSettings.ACHIEVEMENTS) core.preferences.achievementRequested=true;
+            else if(host!=null) host.openAppAction(external==PlayerSettings.SHARE);
             else externalFinished();
         }
         int caveFeedback=Math.max(core.cart.scene.takeFeedback(),Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback()));

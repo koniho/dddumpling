@@ -10,4 +10,5 @@
 /** Test seam for an isolated store file. The production host uses -init. */
 - (instancetype _Nonnull)initWithURL:(NSURL * _Nonnull)fileURL;
 - (BOOL)bindCloudPlayer:(NSString * _Nonnull)player identity:(NSData * _Nonnull)identity;
+- (BOOL)bindAchievementPlayer:(NSString * _Nonnull)player;
 @end

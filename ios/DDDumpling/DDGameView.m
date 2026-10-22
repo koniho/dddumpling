@@ -357,6 +357,10 @@
 #if DDDUMPLING_GAME_CENTER
     [self.gameCenter refreshActive:!self.storeAlertVisible];
     [self.gameCloud updateActive:YES elapsed:elapsed];
+    [self.gameCenter updateAchievements:self.game store:self.store elapsed:elapsed];
+    if ([self.game takeAchievementAction]) {
+        [self.gameCenter showAchievements]; [self.game externalFinished];
+    }
     [self.game cloudStatusWithInt:(jint)[self.gameCloud uiStatus]];
     [self.game cloudReduceMotionWithBoolean:UIAccessibilityIsReduceMotionEnabled()];
     if ([self.game takeCloudAction] == 1) [self.gameCenter requestSignIn];

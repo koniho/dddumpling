@@ -203,6 +203,22 @@ extra lesson bits retain their original positions.
 and saved death IDs. Append rows without renumbering existing IDs. `Boss.COUNT` and
 `Lands.COUNT` derive from those rows; stages, unlocks, rewards, analytics and death blurbs
 use catalog lookups. Visual dispatch and bespoke mechanics still need implementation.
+
+Every new boss also needs Play Games counter configuration in the same change. Keep its
+stable analytics ID in `WorldCatalog`; the runtime and `tools/prepare-play.py` derive the
+twelve boss counters automatically. Regenerate `store/play-games.example.json` with
+`python3 tools/prepare-play.py --example > store/play-games.example.json`, then run
+`python3 tools/prepare-play.py --sync-config store/play-games.draft.json` (and the local
+`.private/play-games.json` when present). Create the missing hidden draft events in Play
+Console and record their actual IDs, following [Play setup](../../store/play-games.md).
+Run `python3 tools/test-prepare-play.py`; it requires complete, distinct IDs for every
+catalog event. Do not leave blank IDs, fabricate IDs, rename historical prefixes, or publish
+the project as part of adding a boss. If Console access is unavailable, record provisioning
+as blocked in the ticket rather than weakening the check.
+
+New bosses also generate a first-win achievement on both platforms. Follow the
+[achievement provisioning workflow](../../store/achievements.md); the same configuration
+test fails until the new achievement has real Apple and Google mappings.
 `Collect.NAME`, `Glyph.NAME`, `Skins.NAMES`, `Power.OFFERED`/`DEBUFFS` and the named
 Survival profiles own their respective counts. Fixed geometry and authored effect tuning
 are not catalog sizes.

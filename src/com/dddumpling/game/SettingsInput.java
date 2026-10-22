@@ -105,6 +105,7 @@ final class SettingsInput {
                 case PlayerSettings.TUTORIALS:
                     c.onboarding.reset(c);c.preferences.tutorialResetUntil=c.clock+2f;break;
                 case PlayerSettings.SHARE:
+                case PlayerSettings.ACHIEVEMENTS:
                 case PlayerSettings.RATE: c.preferences.requestExternal(c,h-1000);break;
                 case PlayerSettings.PRIVACY: return true;
                 default: break;
