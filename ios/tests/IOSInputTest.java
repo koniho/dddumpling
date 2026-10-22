@@ -1158,6 +1158,7 @@ public final class IOSInputTest extends Check {
         cloudSaveUi();
         alligatorSwipes();
         keyboardInput();
+        keyboardPractice();
         bossSummaryScroll();
         onboarding();
         powerGuidanceInput();
@@ -1237,6 +1238,56 @@ public final class IOSInputTest extends Check {
         game.debugScene("steamer"); c.onboarding.clear();
         game.keyDown('k', false);
         check("steamer accepts physical deck key", host.ticks == 5);
+    }
+
+    private static void keyboardPractice() {
+        for(boolean full:new boolean[]{false,true}) {
+          for(int lesson:new int[]{Onboarding.CORE,Onboarding.STEAMER,Onboarding.CART,Onboarding.MINE,Onboarding.SLIME}) {
+            IOSGame game=game();GameCore c=game.core();Layout l=game.geometry();
+            c.startGame();c.onboarding.clear();c.runFullRoster=full;
+            c.onboarding.begin(c,lesson,l);
+            GameCore q=c.onboarding.practice;
+            c.onboarding.sceneWait=0;c.onboarding.briefing=false;
+            if(lesson==Onboarding.STEAMER)q.bonusTimer=q.bonusRollEnd;
+            if(lesson==Onboarding.MINE)q.mining.ready=0;
+            for(int g=0;g<6;g++) {
+                if(!Roster.active(full,g))continue;
+                q.keyPress[g]=0;
+                char key="sdfjkl".charAt(g);
+                boolean active=q.keyActive(g);
+                game.keyDown(key,false);
+                check("keyboard respects practice key availability "+lesson+":"+full+":"+g,
+                        (q.keyPress[g]>0)==active);
+                check("practice keyboard leaves live deck untouched",c.keyPress[g]==0);
+                q.keyPress[g]=0;game.keyDown(key,false);game.keyDown(key,true);
+                check("practice suppresses held and repeat keys",q.keyPress[g]==0);
+                game.keyUp(key);
+            }
+            if(lesson==Onboarding.STEAMER) {
+                int hits=q.steamer.hits;
+                for(int i=0;i<2;i++) {
+                    char key="sdfjkl".charAt(q.steamer.wanted());
+                    game.keyDown(key,false);game.keyUp(key);
+                }
+                check("keyboard alternating pair scores in Steamer tutorial",q.steamer.hits>hits);
+            }
+            c.onboarding.briefing=true;q.keyPress[0]=0;
+            game.keyDown('s',false);game.keyUp('s');
+            check("practice explanation gates keyboard",q.keyPress[0]==0);
+            c.onboarding.briefing=false;c.onboarding.success=1;
+            game.keyDown('s',false);game.keyUp('s');
+            check("practice completion gates keyboard",q.keyPress[0]==0);
+          }
+        }
+        IOSGame game=game();GameCore c=game.core();c.onboarding.clear();
+        game.keyDown('s',false);game.keyUp('s');
+        check("title keyboard starts game",c.starter.open || c.starting());
+        game=game();c=game.core();c.onboarding.clear();c.state=GameCore.OVER;c.time=100;
+        game.keyDown('k',false);game.keyUp('k');
+        check("settled game over keyboard returns to title",c.returnFade>0 || c.state==GameCore.TITLE);
+        game=game();c=game.core();game.debugScene("stars");c.onboarding.clear();
+        game.keyDown('s',false);game.keyUp('s');
+        check("star flight has no tappable deck keys",c.keyPress[0]==0);
     }
 
     private static void onboarding() {
