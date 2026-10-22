@@ -87,6 +87,8 @@ src/com/dddumpling/game/ModeSelector.java
 src/com/dddumpling/game/Starter.java
 src/com/dddumpling/game/RunCompanion.java
 src/com/dddumpling/game/Onboarding.java
+src/com/dddumpling/game/TitleTour.java
+src/com/dddumpling/game/EnemyTutorial.java
 src/com/dddumpling/game/TutorialSpeech.java
 src/com/dddumpling/game/ScoreReset.java
 src/com/dddumpling/game/HighScores.java

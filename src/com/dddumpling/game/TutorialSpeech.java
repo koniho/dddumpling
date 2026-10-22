@@ -6,7 +6,7 @@ final class TutorialSpeech extends Draw {
             DIG=7, CART=8, CLOSED=9, CHAIN=10, GLOB=11, DANGER=12, RETRY=13,
             STACK=14, RESCUE=15, SUCCESS=16, PINCH=17, DEFEND=18, TEAR=19, SHAKE=20, WAIT=21,
             POWER_FLURRY=22, POWER_NINJA=23, POWER_TEAM=24, POWER_PICKUP=25,
-            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28, COMPANION=29, LANDS=30, ALLIGATOR=31, CAT_RUSH=32, CAT_TAPS=33, CAT_PROMPT=34;
+            MINIGAMES=26, DISPLAY_CASE=27, STORIES=28, COMPANION=29, LANDS=30, ALLIGATOR=31, CAT_RUSH=32, CAT_TAPS=33, CAT_PROMPT=34, SCORES=35, SCORE_DETAILS=36, MODES=37, FOG=38, DIVEBOMB=39, RUSH=40, LINKED=41;
     private static final int PAPER=0x4DFFF5DD, TEXT_INK=0xFF302440, ACCENT=0xFF754070;
     private static final String[][] LINES={
         {"", ""}, {"MATCH THE FACE!", "TAP ITS KEY BELOW."},
@@ -42,10 +42,24 @@ final class TutorialSpeech extends Draw {
         {"PARRY, THEN TAP!", "WATCH HIS EYES!"},
         {"RUSHING STARS!", "TAP THEIR MATCHING KEYS!"},
         {"TAP CAT TWICE!", "THEN TRACE SHAPE!"},
-        {"LEFT, RIGHT, REPEAT!", "TAP THE PAIR FAST!"}
+        {"LEFT, RIGHT, REPEAT!", "TAP THE PAIR FAST!"},
+        {"YOUR BEST RUNS!", "TAP YOUR HIGH SCORE."},
+        {"LOOK INSIDE A RUN!", "TAP AN ENTRY."},
+        {"MORE WAYS TO PLAY!", "SWIPE BETWEEN MODES."},
+        {"FOGGY FRIENDS!", "CLEAR TO REVEAL!"},
+        {"WATCH THE LAST STAR!", "IT DIVES FAST!"},
+        {"SHOOTING STAR!", "ONE KEY, DOUBLE SPEED!"},
+        {"LINKED FRIENDS!", "TAP BOTH TOGETHER!"}
     };
     static String spoken(int message) { return spoken(message,Skins.DEFAULT); }
     static String spoken(int message,int skin) {
+        if(message==FOG)return "Clear the visible key to reveal the next!";
+        if(message==DIVEBOMB)return "Watch the final star! It dives fast. Clear it quickly!";
+        if(message==RUSH)return "Shooting star! One key, twice the speed. Catch it quickly!";
+        if(message==LINKED)return "Tap both matching keys together to split the pair!";
+        if(message==SCORES)return "Tap your high score to see your runs.";
+        if(message==SCORE_DETAILS)return "Tap a run to see its score and details.";
+        if(message==MODES)return "Swipe for more modes. Beat your first boss to unlock them!";
         if(message==CAT_RUSH)return "Tap matching keys to stop his rushing stars.";
         if(message==CAT_TAPS)return "Tap Rainbow Cat twice, then trace the shape to catch him in a net. As the cat takes damage, the shape changes!";
         if(message==CAT_PROMPT)return "One key for each hand! Alternate left and right as fast as you can before the cat escapes!";
@@ -105,8 +119,8 @@ final class TutorialSpeech extends Draw {
         return lines.toArray(new String[0]);
     }
     private static String[][][] makePages(int skin) {
-        String[][][] all=new String[CAT_PROMPT+1][][];
-        for(int message=MATCH;message<=CAT_PROMPT;message++) {
+        String[][][] all=new String[LINKED+1][][];
+        for(int message=MATCH;message<=LINKED;message++) {
             java.util.ArrayList<String[]> pages=new java.util.ArrayList<>();String pending="";
             // Page boundaries are sentence boundaries; copy must fit without splitting a sentence.
             for(String sentence:spoken(message,skin).split("(?<=[.!?]) +")) {
@@ -150,7 +164,7 @@ final class TutorialSpeech extends Draw {
         p.text(text,x,y+edge,size,TEXT_INK,Painter.CENTER,true);
         p.text(text,x,y,size,color,Painter.CENTER,true);
     }
-    private static void bubble(Painter p,float l,float t,float r,float b,float radius,int tailEdge,float[] tail,
+    static void bubble(Painter p,float l,float t,float r,float b,float radius,int tailEdge,float[] tail,
             float growth,float originX,float originY,int border) {
         // One fill keeps the translucent tail from double-blending with the body.
         float[] outline=new float[62];int at=0;
@@ -242,7 +256,7 @@ final class TutorialSpeech extends Draw {
         } else if(!q.buddy.out()) {
             x=q.buddy.x;y=q.buddy.y;r=q.buddy.radius(L)*.74f;
         }
-        float targetY=L.topSafe+s*4.9f,lift=hopLift(o.companionTravel,y,targetY,s);
+        float targetY=EnemyTutorial.message(o.companionSpeech)?EnemyTutorial.companionY(L):o.companionSpeech>=SCORES && o.companionSpeech<=MODES?TitleTour.companionY(L):L.topSafe+s*4.9f,lift=hopLift(o.companionTravel,y,targetY,s);
         x+=(L.w*.13f-x)*u;y+=(targetY-y)*u-lift;r+=(s*1.6f-r)*u;
         Trinket.drawReacting(p,speaker(c),x,y,r,o.age,1f,1,0);
     }

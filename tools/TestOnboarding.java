@@ -351,6 +351,8 @@ final class TestOnboarding extends Check {
         steamerArrival(L);
         collectionGuidance(L);
         titleGuidanceOrder(L);
+        titleTour(L);
+        enemyLessons(L);
         landGuidance(L);
         diagnostics(L);
         TestPowerTutorials.all(L);
@@ -461,6 +463,125 @@ final class TestOnboarding extends Check {
         check("returning to lands restores its unfinished action",c.onboarding.titleGuide
                 && c.onboarding.speech==TutorialSpeech.LANDS && !c.onboarding.briefing
                 && ear.explanations==explanations);
+    }
+    static GameCore titleTourFixture(Layout L,Mem store) {
+        GameCore c=fresh(L,store);c.onboarding.clear();c.collected=store.collected=1;
+        c.onboarding.learn(c,TutorialSpeech.STORIES);c.onboarding.learn(c,TutorialSpeech.LANDS);
+        c.highScores.finish(c);c.toTitle();c.time=2;c.returnFade=c.homeT=0;
+        c.update(DT,L);return c;
+    }
+    private static void titleTour(Layout L) {
+        group("first-run title tour");
+        Mem store=new Mem();GameCore c=titleTourFixture(L,store);
+        check("zero-score first run introduces high scores",c.highScores.latest==1 && c.score==0
+                && c.onboarding.speech==TutorialSpeech.SCORES && TitleTour.active(c)
+                && !c.onboarding.briefing && c.modes.visible(c));
+        check("tour leaves score entry touch available",HighScoreScreen.entryHit(c,L,L.w*.5f,HighScoreScreen.titleY(L))
+                && !c.onboarding.wantsTouch(c,L,0,L.w*.5f,HighScoreScreen.titleY(L)));
+        c.modes.select(c,ModeSelector.SURVIVAL,1);c.beginStart();
+        check("score lesson keeps records in Adventure",c.modes.adventure() && !c.starting());
+        c.highScoreScreen.show(c);c.update(HighScoreScreen.ENTRY_TIME,L);
+        check("opening scores introduces tapping a saved run",c.onboarding.speech==TutorialSpeech.SCORE_DETAILS
+                && !c.onboarding.learned(TutorialSpeech.SCORE_DETAILS));
+        check("details lesson leaves close button usable",!c.onboarding.wantsTouch(c,L,0,L.w*.89f,
+                HighScoreScreen.top(L)+HighScoreScreen.size(L)*1.25f));
+        c.highScoreScreen.back(c);c.update(HighScoreScreen.ENTRY_TIME,L);c.update(DT,L);
+        check("closing without a row does not complete details lesson",c.onboarding.speech==TutorialSpeech.SCORES
+                && !c.onboarding.learned(TutorialSpeech.SCORE_DETAILS));
+        c.highScoreScreen.show(c);c.update(HighScoreScreen.ENTRY_TIME,L);
+        SettingsInput input=new SettingsInput();float x=L.w*.5f,y=HighScoreScreen.listTop(L)+HighScoreScreen.rowHeight(c,L)*.5f;
+        input.touch(c,L,0,7,x,y);input.touch(c,L,3,7,x,y);input.touch(c,L,1,7,x,y);
+        check("cancelled row tap leaves details pending",!c.onboarding.learned(TutorialSpeech.SCORE_DETAILS));
+        input.touch(c,L,0,7,x,y);input.touch(c,L,1,7,x,y);
+        check("real row tap opens details and remembers lesson",c.highScoreScreen.selected==0
+                && c.onboarding.learned(TutorialSpeech.SCORE_DETAILS)
+                && new GameCore(store,114).onboarding.learned(TutorialSpeech.SCORE_DETAILS));
+        c.update(1,L);
+        check("mode tour waits while reading details",!TitleTour.active(c) && c.onboarding.companionTravel==0);
+        c.highScoreScreen.back(c);c.highScoreScreen.back(c);c.update(HighScoreScreen.ENTRY_TIME,L);c.update(DT,L);
+        check("closing records introduces visible modes",c.onboarding.speech==TutorialSpeech.MODES && c.modes.visible(c));
+        y=ModeSelector.y(L);
+        c.modes.touch(c,L,0,7,x,y);c.modes.touch(c,L,1,7,x-L.w*.12f,y);
+        check("short swipe keeps modes lesson",!c.onboarding.learned(TutorialSpeech.MODES));
+        c.modes.update(c,ModeSelector.SWIPE_RETURN);
+        c.modes.touch(c,L,0,7,x,y);c.modes.touch(c,L,1,7,x-L.w*.25f,y);
+        check("mode swipe completes tour without unlocking modes",c.modes.selected==ModeSelector.SURVIVAL
+                && c.onboarding.learned(TutorialSpeech.MODES) && !c.modes.playable(c));
+        c=new GameCore(store,114);c.modes.restore(ModeSelector.ADVENTURE);c.time=2;c.update(DT,L);
+        check("completed tour stays complete across app opens",!TitleTour.ready(c) && !TitleTour.active(c));
+        c.onboarding.reset(c);c.update(DT,L);
+        check("reset restores collection priority before new tour",c.onboarding.speech==TutorialSpeech.DISPLAY_CASE);
+        c.onboarding.skip(c);c.update(DT,L);
+        check("Skip All suppresses first-run tour",!TitleTour.ready(c) && !TitleTour.active(c));
+        c=titleTourFixture(L,new Mem());c.onboarding.clear();c.settingsOpen=true;c.update(DT,L);
+        check("settings delays title tour",!TitleTour.active(c));
+        c.settingsOpen=false;c.update(DT,L);
+        touch(c,L,0,L.w*.84f,TitleTour.skipY(L));touch(c,L,1,L.w*.84f,TitleTour.skipY(L));
+        c.update(DT,L);check("compact skip control skips tour",!TitleTour.active(c) && !TitleTour.ready(c));
+        c=titleTourFixture(L,new Mem());c.onboarding.reset(c);c.onboarding.learn(c,TutorialSpeech.STORIES);
+        c.collected=Collect.add(c.collected,Collect.BOSS_FIRST);c.update(DT,L);
+        check("new land discovery precedes first-run tour",c.landDiscovery>=0 && !TitleTour.active(c));
+        for(int i=0;i<240 && !c.onboarding.titleGuide;i++)c.update(DT,L);
+        check("land swipe lesson precedes first-run tour",c.onboarding.speech==TutorialSpeech.LANDS);
+        c=new GameCore(new Mem(),114);c.collected=1;
+        check("starter collectible alone cannot trigger post-run tour",!TitleTour.ready(c));
+        for(int message=TutorialSpeech.SCORES;message<=TutorialSpeech.MODES;message++)
+            check("compact tour narration fits one page "+message,TutorialSpeech.pageCount(message)==1);
+    }
+    static GameCore enemyFixture(Layout L,Mem store,int message) {
+        store.powerTutorials=127;
+        GameCore c=new GameCore(store,218);c.startGame();c.stage=21;c.stageBanner=0;c.spawnTimer=60;
+        c.enemies.clear();c.onboarding.clear();
+        GameCore.Enemy e=add(c,L,message==TutorialSpeech.RUSH || message==TutorialSpeech.LINKED
+                ?new int[]{0}:new int[]{0,3,1},L.playTop+L.enemyR*3);
+        e.swampKind=message==TutorialSpeech.FOG?SwampEnemies.FOG:message==TutorialSpeech.DIVEBOMB?SwampEnemies.DIVE:0;
+        e.fastSingle=message==TutorialSpeech.RUSH;e.speed=80;
+        if(message==TutorialSpeech.LINKED) {
+            GameCore.Enemy b=add(c,L,new int[]{3},e.y);e.baseX=L.w*.36f;b.baseX=L.w*.64f;
+            e.link=b;b.link=e;e.stageMate=b;b.stageMate=e;
+        }
+        return c;
+    }
+    private static void enemyLessons(Layout L) {
+        group("first encounters with special enemies");
+        for(int message=TutorialSpeech.FOG;message<=TutorialSpeech.LINKED;message++) {
+            Mem store=new Mem();GameCore c=enemyFixture(L,store,message);Ear ear=new Ear();c.sound=ear;
+            GameCore.Enemy e=c.enemies.get(0);float y=e.y;
+            c.update(DT,L);
+            check("first visible enemy pauses and narrates "+message,c.onboarding.enemyLesson==e
+                    && c.onboarding.briefing && c.onboarding.speech==message && e.y==y && ear.explanations==1);
+            c.survival.active=true;double seconds=c.survival.seconds;
+            c.update(.5f,L);
+            check("lesson freezes threats and Survival clock "+message,e.y==y && c.survival.seconds==seconds);
+            awaitBubble(c,L);
+            float x=L.w*.5f,button=EnemyTutorial.buttonY(L);
+            touch(c,L,0,x,button);touch(c,L,2,x+L.unit*2,button);touch(c,L,1,x+L.unit*2,button);
+            check("drag cannot dismiss enemy lesson "+message,c.onboarding.briefing && !c.onboarding.learned(message));
+            touch(c,L,0,x,button);touch(c,L,1,x,button);
+            check("acknowledgement saves and clears enemy lesson "+message,!c.onboarding.briefing
+                    && c.onboarding.enemyLesson==null && new GameCore(store,218).onboarding.learned(message));
+            c.survival.active=false;c.update(DT,L);
+            check("same enemy resumes without repeat "+message,e.y>y && !c.onboarding.briefing && ear.explanations==1);
+            check("enemy explanation is one short page "+message,TutorialSpeech.pageCount(message)==1);
+            c.onboarding.reset(c);c.onboarding.learn(c,TutorialSpeech.RESCUE);c.onboarding.clear();EnemyTutorial.introduce(c,L);
+            check("reset restores enemy lesson "+message,c.onboarding.enemyLesson==e);
+            c.onboarding.skip(c);EnemyTutorial.introduce(c,L);
+            check("Skip All suppresses enemy lesson "+message,c.onboarding.enemyLesson==null);
+        }
+        GameCore c=enemyFixture(L,new Mem(),TutorialSpeech.FOG);GameCore.Enemy e=c.enemies.get(0);
+        e.y=-L.enemyR;EnemyTutorial.introduce(c,L);
+        check("offscreen spawn waits to be visible",c.onboarding.enemyLesson==null);
+        e.y=L.playTop+L.enemyR*3;c.mode=Power.NINJA;c.modeLeft=2;
+        EnemyTutorial.introduce(c,L);check("power controls defer enemy explanation",c.onboarding.enemyLesson==null);
+        c.modeLeft=0;c.onboarding.briefing=true;c.onboarding.speech=TutorialSpeech.POWER_NINJA;
+        EnemyTutorial.introduce(c,L);check("another lesson cannot be replaced",c.onboarding.enemyLesson==null
+                && c.onboarding.speech==TutorialSpeech.POWER_NINJA);
+        c.onboarding.clear();c.survival.active=true;EnemyTutorial.introduce(c,L);
+        check("Survival first encounter also introduces enemy",c.onboarding.enemyLesson==e);
+        c.enemies.clear();c.update(DT,L);
+        check("missing enemy cancels without learning",c.onboarding.enemyLesson==null && !c.onboarding.learned(TutorialSpeech.FOG));
+        c=enemyFixture(L,new Mem(),TutorialSpeech.RUSH);EnemyTutorial.introduce(c,L);c.toTitle();
+        check("returning to title clears enemy reference",c.onboarding.enemyLesson==null);
     }
     private static void landGuidance(Layout L) {
         Mem store=new Mem();GameCore c=fresh(L,store);Ear ear=new Ear();c.sound=ear;

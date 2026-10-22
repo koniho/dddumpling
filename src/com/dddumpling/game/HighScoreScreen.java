@@ -44,6 +44,7 @@ final class HighScoreScreen extends Draw {
         Pause.release(c);
         if(timeAttack(c))c.timeAttack.titleHistory(c).unread=false;else records(c).unread=false;
         open=true;selected=-1;scroll=0;entrance=0f;closing=false;feedback(c);
+        TitleTour.openedScores(c);
     }
     void update(float dt) {
         if(!open) return;
@@ -102,7 +103,7 @@ final class HighScoreScreen extends Draw {
         if(moving()) return;
         if(hit==CLOSE) close(c);
         else if(hit==BACK) back(c);
-        else if(hit>=ROW && hit<ROW+displayCount(c)) { selected=hit-ROW;scroll=0;feedback(c); }
+        else if(hit>=ROW && hit<ROW+displayCount(c)) { selected=hit-ROW;scroll=0;feedback(c);TitleTour.openedDetails(c); }
     }
     float maxScroll(GameCore c,Layout L) {
         if(!open || !timeAttack(c) || selected<0 || selected>=displayCount(c))return 0;
