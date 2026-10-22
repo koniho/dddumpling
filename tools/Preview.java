@@ -1942,6 +1942,10 @@ final class Preview {
             shot(dir,"cloud-settings-achievements",cloud,L,w,h,ss);
             cloud.cloudUi.playGames=true;cloud.cloudUi.status(CloudSaveUi.PENDING);
             shot(dir,"cloud-sync-play",cloud,L,w,h,ss);
+            for(int state:new int[]{CloudSaveUi.SIGN_IN,CloudSaveUi.SAVED,CloudSaveUi.FAILED,CloudSaveUi.ACCOUNT}) {
+                cloud.cloudUi.status(state);
+                shot(dir,"cloud-sync-state-"+state,cloud,L,w,h,ss);
+            }
             cloud.cloudUi.status(CloudSaveUi.OFF);cloud.preferences.achievementsEnabled=false;
             shot(dir,"cloud-sync-offline",cloud,L,w,h,ss);
             cloud.cloudUi.status(CloudSaveUi.SIGN_IN);cloud.cloudUi.show(false);cloud.cloudUi.age=1f;

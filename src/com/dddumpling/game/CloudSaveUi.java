@@ -78,6 +78,49 @@ final class CloudSaveUi extends Draw {
         if(choice==2 || !introduction && status!=SIGN_IN)close(c);
         else {remember(c);introduction=false;action=1;}
     }
+    String shortLabel() {
+        switch(status) {
+            case SIGN_IN:return "SIGN IN";
+            case PENDING:return "SYNC PENDING";
+            case SAVED:return "SAVE QUEUED";
+            case DRIVE:return "UNAVAILABLE";
+            case FAILED:return "NEEDS ATTENTION";
+            case ACCOUNT:return "SYNC PAUSED";
+            default:return "ON THIS DEVICE";
+        }
+    }
+    void icon(Painter p,float x,float y,float r,float clock) {
+        int cloud=enabled?0xFFD6F4F1:0xFF92949F;
+        p.fillRect(x-r*.75f,y-r*.05f,x+r*.75f,y+r*.48f,cloud);
+        p.fillCircle(x-r*.7f,y+r*.05f,r*.43f,cloud);
+        p.fillCircle(x-r*.18f,y-r*.25f,r*.65f,cloud);
+        p.fillCircle(x+r*.52f,y-r*.02f,r*.5f,cloud);
+        float bx=x+r*.76f,by=y+r*.44f,b=r*.5f;
+        int color=status==FAILED || status==DRIVE?0xFFFFC56B:enabled?0xFF86E5CE:0xFFB7B7C6;
+        p.fillCircle(bx,by,b*1.2f,0xFF211D36);
+        p.strokeCircle(bx,by,b,color,r*.08f);
+        if(status==PENDING) {
+            float angle=reduceMotion?0:clock*150f;
+            p.arc(bx,by,b*.65f,b*.65f,angle,260,color,r*.13f);
+            double rad=Math.toRadians(angle+260);
+            p.fillCircle(bx+(float)Math.cos(rad)*b*.65f,by+(float)Math.sin(rad)*b*.65f,r*.11f,color);
+        } else if(status==SAVED) {
+            // The native callback confirms queuing, not arrival on Google's servers.
+            p.line(bx,by-b*.6f,bx,by,color,r*.09f);
+            p.line(bx,by,bx+b*.4f,by+b*.22f,color,r*.09f);
+        } else if(status==SIGN_IN) {
+            p.fillCircle(bx,by-b*.3f,b*.24f,color);
+            p.fillEllipse(bx,by+b*.3f,b*.43f,b*.26f,color);
+        } else if(status==ACCOUNT) {
+            for(int side=-1;side<=1;side+=2)
+                p.line(bx+side*b*.25f,by-b*.45f,bx+side*b*.25f,by+b*.45f,color,r*.13f);
+        } else if(status==FAILED || status==DRIVE) {
+            p.line(bx,by-b*.5f,bx,by+b*.08f,color,r*.12f);
+            p.fillCircle(bx,by+b*.47f,r*.07f,color);
+        } else {
+            p.line(bx-b*.5f,by+b*.5f,bx+b*.5f,by-b*.5f,color,r*.12f);
+        }
+    }
     String primary() {return introduction?"Set up cloud saves":status==SIGN_IN?"Sign in":"Done";}
     String summary() {
         return introduction?"Keep your collection safe. Sync your squishies and progress across "+(playGames?"Android":"Apple")+" devices. Your local save stays here."

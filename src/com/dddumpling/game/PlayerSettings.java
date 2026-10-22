@@ -129,8 +129,8 @@ final class PlayerSettings extends Draw {
         }
         if (c.settingsPage==1 && BuildFlags.DEVELOPER) return 0;
         if(c.settingsPage==SERVICES_PAGE) {
-            if(Math.abs(y-serviceY(L,0))<s*5.5f && c.cloudUi.enabled)return CLOUD;
-            if(Math.abs(y-serviceY(L,1))<s*5.5f && c.preferences.achievementsEnabled)return ACHIEVEMENTS;
+            if(Math.abs(y-serviceY(L,1))<s*5.5f && c.cloudUi.enabled)return CLOUD;
+            if(Math.abs(y-serviceY(L,0))<s*5.5f && c.preferences.achievementsEnabled)return ACHIEVEMENTS;
             return 0;
         }
         for (int i=0;i<2;i++) {
@@ -202,14 +202,15 @@ final class PlayerSettings extends Draw {
         float s=unit(L),x=L.w*.5f;
         for(int i=0;i<2;i++) {
             float y=serviceY(L,i);
-            boolean enabled=i==0?c.cloudUi.enabled:c.preferences.achievementsEnabled;
-            p.fillRect(contentL(L),y-s*5.5f,contentR(L),y+s*5.5f,enabled?(i==0?0x334DCEAA:0x33F4C552):0x18FFFFFF);
-            Trinket.draw(p,i==0?Collect.STAR_FIRST:Collect.STAR_FIRST+1,x,y-s*2.6f,s*1.7f,c.clock,true,1f);
-            p.text(i==0?"CLOUD SAVES":"ACHIEVEMENTS",x,y+s*.25f,type(s*.68f),INK,Painter.CENTER,true);
-            String status=i==0?c.cloudUi.label():enabled?"YOUR SQUISHY MILESTONES":"NOT AVAILABLE";
+            boolean cloud=i==1,enabled=cloud?c.cloudUi.enabled:c.preferences.achievementsEnabled;
+            p.fillRect(contentL(L),y-s*5.5f,contentR(L),y+s*5.5f,enabled?(cloud?0x334DCEAA:0x33F4C552):0x18FFFFFF);
+            if(cloud)c.cloudUi.icon(p,x,y-s*2.6f,s*1.7f,c.clock);
+            else Trinket.draw(p,Collect.STAR_FIRST+1,x,y-s*2.6f,s*1.7f,c.clock,true,1f);
+            p.text(cloud?"CLOUD SYNC":"ACHIEVEMENTS",x,y+s*.25f,type(s*.68f),INK,Painter.CENTER,true);
+            String status=cloud?c.cloudUi.shortLabel():enabled?"YOUR SQUISHY MILESTONES":"NOT AVAILABLE";
             p.text(status,x,y+s*2f,type(s*.43f),enabled?GOLD:INK_DIM,Painter.CENTER,true);
-            String hint=enabled?(i==0?"Tap for sync details":"Tap to view achievements"):
-                    i==0?"Your progress stays on this device.":"Keep playing and collecting squishies.";
+            String hint=enabled?(cloud?"Tap for sync details":"Tap to view achievements"):
+                    cloud?"Your progress stays on this device.":"Keep playing and collecting squishies.";
             p.text(hint,x,y+s*3.7f,type(s*.43f),INK_DIM,Painter.CENTER,false);
         }
     }
