@@ -1938,7 +1938,14 @@ final class Preview {
             cloud.cloudUi.close(cloud);PlayerSettings.open(cloud);cloud.preferences.panelEntrance=1f;
             shot(dir,"cloud-settings",cloud,L,w,h,ss);
             cloud.preferences.achievementsEnabled=true;
+            cloud.settingsPage=PlayerSettings.SERVICES_PAGE;
             shot(dir,"cloud-settings-achievements",cloud,L,w,h,ss);
+            cloud.cloudUi.playGames=true;cloud.cloudUi.status(CloudSaveUi.PENDING);
+            shot(dir,"cloud-sync-play",cloud,L,w,h,ss);
+            cloud.cloudUi.status(CloudSaveUi.OFF);cloud.preferences.achievementsEnabled=false;
+            shot(dir,"cloud-sync-offline",cloud,L,w,h,ss);
+            cloud.cloudUi.status(CloudSaveUi.SIGN_IN);cloud.cloudUi.show(false);cloud.cloudUi.age=1f;
+            shot(dir,"cloud-play-sign-in",cloud,L,w,h,ss);
         }
         starterFrames(dir,L,w,h,ss);
         modeFrames(dir,L,w,h,ss);

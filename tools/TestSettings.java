@@ -503,7 +503,37 @@ final class TestSettings extends Check {
                     same && runs[0].rnd.nextLong()==runs[1].rnd.nextLong());
         }
     }
+    private static void servicesTab(Layout L) {
+        group("sync and achievements settings tab");
+        GameCore c=new GameCore(new Mem(),9123L);PlayerSettings.open(c);c.preferences.panelEntrance=1f;
+        c.preferences.achievementsEnabled=true;c.cloudUi.status(CloudSaveUi.PENDING);
+        float x=(PlayerSettings.tabEdge(L,1)+PlayerSettings.tabEdge(L,2))*.5f;
+        float y=PlayerSettings.top(L)+PlayerSettings.unit(L)*4f;
+        SettingsInput input=new SettingsInput();
+        input.touch(c,L,0,1,x,y);input.touch(c,L,1,1,x,y);
+        check("public services tab responds to taps",c.settingsPage==PlayerSettings.SERVICES_PAGE);
+        x=L.w*.5f;y=PlayerSettings.serviceY(L,0);
+        input.touch(c,L,0,1,x,y);input.touch(c,L,1,1,x,y);
+        check("cloud card opens status without leaving its tab",c.cloudUi.open && c.settingsPage==PlayerSettings.SERVICES_PAGE);
+        c.cloudUi.close(c);y=PlayerSettings.serviceY(L,1);
+        input.touch(c,L,0,1,x,y);input.touch(c,L,1,1,x,y);c.update(.2f,L);
+        check("achievement card dispatches platform action",c.preferences.takeExternal(c)==PlayerSettings.ACHIEVEMENTS);
+        c.preferences.externalFinished(c);
+        c.preferences.achievementsEnabled=false;c.cloudUi.status(CloudSaveUi.OFF);
+        check("unavailable services have no active buttons",
+                PlayerSettings.hit(c,L,x,PlayerSettings.serviceY(L,0))==0 && PlayerSettings.hit(c,L,x,y)==0);
+        float music=c.preferences.music;
+        input.touch(c,L,0,1,x,PlayerSettings.row(L,0)+PlayerSettings.unit(L)*3f);
+        input.touch(c,L,2,1,PlayerSettings.trackR(L),PlayerSettings.row(L,0)+PlayerSettings.unit(L)*3f);
+        input.touch(c,L,1,1,PlayerSettings.trackR(L),PlayerSettings.row(L,0)+PlayerSettings.unit(L)*3f);
+        check("hidden player controls cannot react on services tab",c.preferences.music==music);
+        SettingsInput.action(c,L,1000+PlayerSettings.PLAYER);
+        c.preferences.achievementsEnabled=true;c.cloudUi.status(CloudSaveUi.SAVED);
+        check("player footer now only opens privacy",PlayerSettings.hit(c,L,x,PlayerSettings.row(L,3))==PlayerSettings.PRIVACY);
+        check("services stay inside panel",PlayerSettings.serviceY(L,1)+PlayerSettings.unit(L)*5.5f<PlayerSettings.bottom(L));
+    }
     static void all(Layout L) {
+        servicesTab(L);
         seasonalSkins(L);
         skinGameplayParity(L);
         infiniteLives(L);

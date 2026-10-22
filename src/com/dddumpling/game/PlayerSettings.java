@@ -6,7 +6,7 @@ final class PlayerSettings extends Draw {
     static final int MUSIC = 1, EFFECTS = 2, MUSIC_MUTE = 3, EFFECTS_MUTE = 4,
             KIDS = 5, PRIVACY = 6, CLOSE = 7, PLAYER = 8, DEVELOPER = 9, SHARE = 10, RATE = 11, TUTORIALS = 15, CLOUD = 20;
     float tutorialResetUntil;
-    static final int ACHIEVEMENTS = 21;
+    static final int ACHIEVEMENTS = 21, SERVICES = 22, SERVICES_PAGE = 2;
     boolean achievementsEnabled;
     boolean achievementRequested;
     // Future settings features own setting and clearing this attention flag.
@@ -100,10 +100,17 @@ final class PlayerSettings extends Draw {
     static float right(Layout L) { return L.w * .94f; }
     static float contentL(Layout L) {return left(L)+unit(L);}
     static float contentR(Layout L) {return right(L)-unit(L);}
-    static float height(Layout L) { return unit(L)*(BuildFlags.DEVELOPER?44f:41f); }
+    static float height(Layout L) { return unit(L)*44f; }
     static float top(Layout L) { return Math.max(L.topSafe, (L.h - height(L))*.5f); }
     static float bottom(Layout L) { return Math.min(L.h-L.padB, top(L)+height(L)); }
-    static float row(Layout L, int row) { return top(L) + unit(L)*(new float[]{7f,13.5f,20.5f,40.5f}[row]-(BuildFlags.DEVELOPER?0f:3f)); }
+    static float row(Layout L, int row) { return top(L) + unit(L)*new float[]{7f,13.5f,20.5f,40.5f}[row]; }
+    static int tabCount() {return BuildFlags.DEVELOPER?3:2;}
+    static int tabPage(int index) {return index==0?0:index==1?SERVICES_PAGE:1;}
+    static float tabEdge(Layout L,int index) {
+        float fraction=BuildFlags.DEVELOPER?new float[]{0f,.25f,.72f,1f}[index]:new float[]{0f,.4f,1f}[index];
+        return contentL(L)+(contentR(L)-contentL(L))*fraction;
+    }
+    static float serviceY(Layout L,int index) {return top(L)+unit(L)*(12f+index*14f);}
     static float knobR(GameCore c,Layout L) {return Math.min(L.keyR*c.keyScale(),unit(L)*1.65f);}
     static float trackL(Layout L) { return contentL(L)+unit(L)*1.65f; }
     static float trackR(Layout L) { return contentR(L)-unit(L)*1.65f; }
@@ -117,11 +124,15 @@ final class PlayerSettings extends Draw {
         if (x>right(L)-s*2.5f && y<t+s*2.7f) return CLOSE;
         if(c.preferences.skinsOpen) return SkinSettings.hit(L,x,y);
         if(x<contentL(L) || x>contentR(L))return 0;
-        if (BuildFlags.DEVELOPER && y>=t+s*3f && y<=t+s*5f) {
-            if (x<L.w*.5f) return PLAYER;
-            return DEVELOPER;
+        if (y>=t+s*3f && y<=t+s*5f) {
+            for(int i=0;i<tabCount();i++)if(x<=tabEdge(L,i+1))return i==0?PLAYER:i==1?SERVICES:DEVELOPER;
         }
         if (c.settingsPage==1 && BuildFlags.DEVELOPER) return 0;
+        if(c.settingsPage==SERVICES_PAGE) {
+            if(Math.abs(y-serviceY(L,0))<s*5.5f && c.cloudUi.enabled)return CLOUD;
+            if(Math.abs(y-serviceY(L,1))<s*5.5f && c.preferences.achievementsEnabled)return ACHIEVEMENTS;
+            return 0;
+        }
         for (int i=0;i<2;i++) {
             if (Math.abs(y-row(L,i))<s && x>contentR(L)-s*4f) return i==0?MUSIC_MUTE:EFFECTS_MUTE;
             if (Math.abs(y-(row(L,i)+s*3f))<knobR(c,L) && x>=contentL(L) && x<=contentR(L))
@@ -132,15 +143,12 @@ final class PlayerSettings extends Draw {
         if (Math.abs(y-socialY(L))<s*2.1f) return x<L.w*.5f?SHARE:RATE;
         if (Math.abs(y-resetY(L))<s*1.2f) return ScoreReset.OPEN;
         if (Math.abs(y-tutorialY(L))<s*1.2f) return TUTORIALS;
-        if (Math.abs(y-row(L,3))<s*1.1f) {
-            if (c.preferences.achievementsEnabled) return x<L.w*.36f?CLOUD:x<L.w*.66f?ACHIEVEMENTS:PRIVACY;
-            return c.cloudUi.enabled && x<L.w*.5f?CLOUD:PRIVACY;
-        }
+        if (Math.abs(y-row(L,3))<s*1.1f) return PRIVACY;
         return 0;
     }
-    static float resetY(Layout L) { return top(L)+unit(L)*(BuildFlags.DEVELOPER?34f:31f); }
+    static float resetY(Layout L) { return top(L)+unit(L)*34f; }
     static float tutorialY(Layout L) { return resetY(L)+unit(L)*3f; }
-    static float socialY(Layout L) { return top(L)+unit(L)*(BuildFlags.DEVELOPER?29.5f:26.5f); }
+    static float socialY(Layout L) { return top(L)+unit(L)*29.5f; }
     static void open(GameCore c) {
         c.openSettings();c.settingsPage=0;
     }
@@ -160,13 +168,17 @@ final class PlayerSettings extends Draw {
         p.line(cx+s*.4f,cy-s*.4f,cx-s*.4f,cy+s*.4f,INK,s*.1f);
         if(c.preferences.scoreReset.active()) { c.preferences.scoreReset.draw(p,c,L);return; }
         if(c.preferences.skinsOpen) {SkinSettings.draw(p,c,L);return;}
-        int tabs=BuildFlags.DEVELOPER?2:0;
+        int tabs=tabCount();
         for(int i=0;i<tabs;i++) {
-            float a=cl+(cr-cl)*i/tabs,b=cl+(cr-cl)*(i+1)/tabs;
-            p.fillRect(a,t+s*3f,b,t+s*5f,i==(BuildFlags.DEVELOPER?c.settingsPage:0)?0x554DCEAA:0x18FFFFFF);
-            p.text(i==0?"PLAYER":"DEVELOPER",(a+b)*.5f,t+s*4.3f,type(s*.56f),INK,Painter.CENTER,true);
+            float a=tabEdge(L,i),b=tabEdge(L,i+1);
+            p.fillRect(a,t+s*3f,b-s*.12f,t+s*5f,tabPage(i)==c.settingsPage?0x554DCEAA:0x18FFFFFF);
+            if(i==1) {
+                p.text("SYNC &",(a+b)*.5f,t+s*3.8f,type(s*.44f),INK,Painter.CENTER,true);
+                p.text("ACHIEVEMENTS",(a+b)*.5f,t+s*4.65f,type(s*.44f),INK,Painter.CENTER,true);
+            } else p.text(i==0?"PLAYER":"DEVELOPER",(a+b)*.5f,t+s*4.3f,type(s*.48f),INK,Painter.CENTER,true);
         }
         if(c.settingsPage==1 && BuildFlags.DEVELOPER) { DevSettings.draw(p,c,L); return; }
+        if(c.settingsPage==SERVICES_PAGE) {services(p,c,L);return;}
         PlayerSettings a=c.preferences;
         for(int i=0;i<2;i++) {
             float y=row(L,i),v=i==0?a.music:a.effects;
@@ -187,14 +199,22 @@ final class PlayerSettings extends Draw {
         p.text("RESET HIGH SCORES",L.w*.5f,resetY(L)+s*.25f,type(s*.58f),INK,Painter.CENTER,true);
         p.fillRect(cl,tutorialY(L)-s*1.2f,cr,tutorialY(L)+s*1.2f,0x334DCEAA);
         p.text(c.clock<a.tutorialResetUntil?"TUTORIALS RESET":"RESET TUTORIALS",L.w*.5f,tutorialY(L)+s*.25f,type(s*.58f),INK,Painter.CENTER,true);
-        if(a.achievementsEnabled) {
-            p.text("CLOUD SAVES",L.w*.22f,row(L,3)+s*.25f,type(s*.40f),GOLD,Painter.CENTER,true);
-            p.text("ACHIEVEMENTS",L.w*.51f,row(L,3)+s*.25f,type(s*.40f),GOLD,Painter.CENTER,true);
-            p.text("PRIVACY",L.w*.80f,row(L,3)+s*.25f,type(s*.40f),GOLD,Painter.CENTER,true);
-        } else if(c.cloudUi.enabled) {
-            p.text("CLOUD SAVES",L.w*.28f,row(L,3)+s*.25f,type(s*.48f),GOLD,Painter.CENTER,true);
-            p.text("PRIVACY POLICY",L.w*.72f,row(L,3)+s*.25f,type(s*.48f),GOLD,Painter.CENTER,true);
-        } else p.text("PRIVACY POLICY",L.w*.5f,row(L,3)+s*.25f,type(s*.58f),GOLD,Painter.CENTER,true);
+        p.text("PRIVACY POLICY",L.w*.5f,row(L,3)+s*.25f,type(s*.58f),GOLD,Painter.CENTER,true);
+    }
+    private static void services(Painter p,GameCore c,Layout L) {
+        float s=unit(L),x=L.w*.5f;
+        for(int i=0;i<2;i++) {
+            float y=serviceY(L,i);
+            boolean enabled=i==0?c.cloudUi.enabled:c.preferences.achievementsEnabled;
+            p.fillRect(contentL(L),y-s*5.5f,contentR(L),y+s*5.5f,enabled?(i==0?0x334DCEAA:0x33F4C552):0x18FFFFFF);
+            Trinket.draw(p,i==0?Collect.STAR_FIRST:Collect.STAR_FIRST+1,x,y-s*2.6f,s*1.7f,c.clock,true,1f);
+            p.text(i==0?"CLOUD SAVES":"ACHIEVEMENTS",x,y+s*.25f,type(s*.68f),INK,Painter.CENTER,true);
+            String status=i==0?c.cloudUi.label():enabled?"YOUR SQUISHY MILESTONES":"NOT AVAILABLE";
+            p.text(status,x,y+s*2f,type(s*.43f),enabled?GOLD:INK_DIM,Painter.CENTER,true);
+            String hint=enabled?(i==0?"Tap for sync details":"Tap to view achievements"):
+                    i==0?"Your progress stays on this device.":"Keep playing and collecting squishies.";
+            p.text(hint,x,y+s*3.7f,type(s*.43f),INK_DIM,Painter.CENTER,false);
+        }
     }
     private static void social(Painter p,GameCore c,Layout L,boolean share) {
         float s=unit(L),y=socialY(L),r=s*1.05f;

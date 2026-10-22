@@ -906,6 +906,7 @@ public class GameView extends View implements InputManager.InputDeviceListener {
                 if (!KeyboardInput.available(core)) keyboard.clear();
                 int external=core.preferences.takeExternal(core);
                 if(external!=0) ((MainActivity)getContext()).openAppAction(external);
+                if(core.cloudUi.takeAction()!=0) ((MainActivity)getContext()).signInPlayGames();
                 int caveFeedback=Math.max(core.cart.scene.takeFeedback(),Math.max(core.cave.effects.takeFeedback(),core.mining.scene.takeFeedback()));
                 if(caveFeedback>0 && !core.paused && !core.settingsOpen)
                     performHapticFeedback(caveFeedback>1?HapticFeedbackConstants.LONG_PRESS:HapticFeedbackConstants.KEYBOARD_TAP);

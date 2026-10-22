@@ -191,6 +191,11 @@ returning home still restores it. Sync runs after authentication, batches change
 checks periodically while foregrounded, and attempts a checkpoint on pause. Google can cache
 snapshot commits offline; successful SDK completion is not proof another device has received it.
 
+Settings > Sync & Achievements contains the cloud status and achievement controls. Android
+reports Play Games sign-in, pending/queued saves, account mismatch and sync failures there.
+The status panel can request Play Games sign-in; a queued save is not presented as confirmed
+server delivery. Unconfigured builds show local-only status with inactive service controls.
+
 The first authenticated Play player is bound to this installation's local progress. A different
 player cannot inherit or upload that progress: sync pauses with an explanation. Account switching
 with separate local profiles is not implemented. Return to the original Play Games profile to

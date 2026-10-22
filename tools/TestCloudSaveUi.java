@@ -39,5 +39,15 @@ final class TestCloudSaveUi extends Check {
         check("failure notice opens the status panel",ui.open && !ui.introduction && !ui.notice);
         ui.close(c);
         check("callback never promises transfer",!ui.label().equals("SYNCED"));
+        ui.playGames=true;ui.status(CloudSaveUi.SIGN_IN);ui.show(false);
+        check("Android panel explains Play Games sign-in",ui.summary().contains("Play Games") && !ui.summary().contains("iCloud"));
+        ui.choose(c,1);
+        check("Android sign-in requests native action once",ui.takeAction()==1 && ui.takeAction()==0);
+        for(int state:new int[]{CloudSaveUi.PENDING,CloudSaveUi.SAVED,CloudSaveUi.FAILED,CloudSaveUi.ACCOUNT}) {
+            ui.status(state);
+            check("Android cloud state has no Apple instructions "+state,!ui.summary().contains("iCloud") && !ui.summary().contains("Game Center"));
+        }
+        ui.status(CloudSaveUi.SAVED);
+        check("Android SDK callback is queued not verified server delivery",ui.label().equals("CLOUD SAVE QUEUED"));
     }
 }

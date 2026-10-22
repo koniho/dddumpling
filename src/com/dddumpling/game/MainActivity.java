@@ -107,6 +107,7 @@ public class MainActivity extends Activity implements GameCore.Store {
         if(game!=null)game.core().diagnostic(event);
         else RuntimeDiagnostics.record(event+" no-game");
     }
+    void signInPlayGames() {if(play!=null)play.signIn();}
     void openAppAction(int action) {
         if (action == PlayerSettings.ACHIEVEMENTS) {
             if (play != null) play.showAchievements();

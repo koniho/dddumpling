@@ -35,6 +35,8 @@ final class PlayBridge implements Progress.Sink {
     PlayBridge(MainActivity activity, GameCore core) {
         this.activity = activity; this.core = core;
         core.preferences.achievementsEnabled = BuildFlags.PLAY_GAMES;
+        core.cloudUi.playGames = true;
+        core.cloudUi.status(BuildFlags.PLAY_GAMES ? CloudSaveUi.SIGN_IN : CloudSaveUi.OFF);
     }
 
     void resume() {
@@ -44,6 +46,7 @@ final class PlayBridge implements Progress.Sink {
         java.util.Arrays.fill(achievementSent, 0);
         java.util.Arrays.fill(achievementBusy, false);
         core.progress.attach(null);
+        core.cloudUi.status(CloudSaveUi.SIGN_IN);
         final int token = ++generation;
         try {
             PlayGames.getGamesSignInClient(activity).isAuthenticated().addOnCompleteListener(task -> {
@@ -53,8 +56,11 @@ final class PlayBridge implements Progress.Sink {
                 }
                 PlayGames.getPlayersClient(activity).getCurrentPlayer().addOnCompleteListener(player -> {
                     if (closed || token != generation) return;
-                    if (!player.isSuccessful() || player.getResult() == null) return;
+                    if (!player.isSuccessful() || player.getResult() == null) {
+                        core.cloudUi.status(CloudSaveUi.FAILED); return;
+                    }
                     if (!activity.bindProgressOwner(player.getResult().getPlayerId())) {
+                        core.cloudUi.status(CloudSaveUi.ACCOUNT);
                         notice("Local progress belongs to a different Play Games profile. Cloud sync is paused.");
                         return;
                     }
@@ -64,7 +70,22 @@ final class PlayBridge implements Progress.Sink {
                     sync();
                 });
             });
-        } catch (RuntimeException e) { notice("Playing locally. Play Games is unavailable."); }
+        } catch (RuntimeException e) {
+            core.cloudUi.status(CloudSaveUi.FAILED);
+            notice("Playing locally. Play Games is unavailable.");
+        }
+    }
+
+    void signIn() {
+        if(closed || !BuildFlags.PLAY_GAMES)return;
+        try {
+            PlayGames.getGamesSignInClient(activity).signIn().addOnCompleteListener(task -> {
+                if(closed)return;
+                if(task.isSuccessful() && task.getResult().isAuthenticated()) {
+                    if(foreground)resume();
+                } else core.cloudUi.status(CloudSaveUi.SIGN_IN);
+            });
+        } catch(RuntimeException e) {core.cloudUi.status(CloudSaveUi.FAILED);}
     }
 
     void pause() {
@@ -131,6 +152,7 @@ final class PlayBridge implements Progress.Sink {
     @Override public void changed() {
         if (merging) return;
         dirty = true;
+        if(authenticated && !blocked)core.cloudUi.status(CloudSaveUi.PENDING);
         schedule(5000);
     }
 
@@ -138,6 +160,7 @@ final class PlayBridge implements Progress.Sink {
         if (closed || !authenticated || blocked || !core.progress.available() || busy == generation) return;
         final int token = generation;
         busy = token; dirty = false;
+        core.cloudUi.status(CloudSaveUi.PENDING);
         try {
             PlayGames.getSnapshotsClient(activity).open(SAVE, true,
                     SnapshotsClient.RESOLUTION_POLICY_MANUAL).addOnCompleteListener(task -> {
@@ -202,6 +225,7 @@ final class PlayBridge implements Progress.Sink {
                             if (!valid(token)) return;
                             if (!committed.isSuccessful()) { failed(token, false); return; }
                             busy = -1;
+                            core.cloudUi.status(dirty ? CloudSaveUi.PENDING : CloudSaveUi.SAVED);
                             schedule(dirty ? 5000 : 60000);
                         });
                     }
@@ -217,6 +241,7 @@ final class PlayBridge implements Progress.Sink {
     private void failed(int token, boolean invalidSave) {
         if (!valid(token)) return;
         busy = -1; dirty = true; blocked = invalidSave;
+        core.cloudUi.status(CloudSaveUi.FAILED);
         if (invalidSave) notice("Cloud save could not be read. Your local progress is safe; sync is paused.");
         else schedule(60000);
     }

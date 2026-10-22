@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Device-local introduction and status; native hosts supply service availability. */
 final class CloudSaveUi extends Draw {
     static final int OFF=0, SIGN_IN=1, DRIVE=2, PENDING=3, SAVED=4, FAILED=5, ACCOUNT=6;
-    boolean enabled, seen, open, introduction, notice, failureShown, reduceMotion;
+    boolean enabled, seen, open, introduction, notice, failureShown, reduceMotion, playGames;
     int status, pending=-1, character=Collect.STAR_FIRST, action, pointer=-1, pressed;
     float age;
     boolean noticeHeld;
@@ -80,16 +80,17 @@ final class CloudSaveUi extends Draw {
     }
     String primary() {return introduction?"Set up cloud saves":status==SIGN_IN?"Sign in":"Done";}
     String summary() {
-        return introduction?"Keep your collection safe. Sync your squishies and progress across Apple devices. Your local save stays here."
+        return introduction?"Keep your collection safe. Sync your squishies and progress across "+(playGames?"Android":"Apple")+" devices. Your local save stays here."
                 :label()+". "+String.join(" ",details());
     }
     String label() {
         switch(status) {
-            case SIGN_IN:return "SIGN IN TO GAME CENTER";
+            case SIGN_IN:return playGames?"SIGN IN TO PLAY GAMES":"SIGN IN TO GAME CENTER";
             case DRIVE:return "ICLOUD DRIVE UNAVAILABLE";
-            case PENDING:case SAVED:return "CLOUD SAVE PENDING";
+            case PENDING:return "CLOUD SAVE PENDING";
+            case SAVED:return playGames?"CLOUD SAVE QUEUED":"CLOUD SAVE PENDING";
             case ACCOUNT:return "SYNC PAUSED";
-            case FAILED:return "COULDN'T SAVE TO ICLOUD";
+            case FAILED:return playGames?"CLOUD SYNC NEEDS ATTENTION":"COULDN'T SAVE TO ICLOUD";
             default:return "SAVED ON THIS DEVICE";
         }
     }
@@ -114,7 +115,7 @@ final class CloudSaveUi extends Draw {
         }
         p.text(introduction?"KEEP YOUR COLLECTION":"CLOUD SAVES",x,t+s*12.2f,type(s*.73f),INK,Painter.CENTER,true);
         p.text(introduction?"SAFE":label(),x,t+s*14f,type(s*(introduction?.85f:.5f)),introduction?GOLD:INK_DIM,Painter.CENTER,true);
-        String[] lines=introduction?new String[]{"Your squishies can travel with you.","Keep your progress across Apple devices.","Your local save stays right here."}:details();
+        String[] lines=introduction?new String[]{"Your squishies can travel with you.","Keep your progress across "+(playGames?"Android":"Apple")+" devices.","Your local save stays right here."}:details();
         for(int i=0;i<lines.length;i++)p.text(lines[i],x,t+s*(16.2f+i*1.35f),type(s*.43f),INK,Painter.CENTER,false);
         p.fillPoly(pill(x,t+s*23.5f,s*8.4f,s*1.4f,12),0xFF387B65);
         p.text(introduction?"SET UP CLOUD SAVES":status==SIGN_IN?"SIGN IN":"DONE",x,t+s*23.8f,type(s*.58f),INK,Painter.CENTER,true);
@@ -122,6 +123,13 @@ final class CloudSaveUi extends Draw {
         p.restore();
     }
     private String[] details() {
+        if(playGames) switch(status) {
+            case SIGN_IN:return new String[]{"Sign in to Play Games to get started.","Use the same profile on your devices.","Your progress is saved on this device."};
+            case ACCOUNT:return new String[]{"This save belongs to another profile.","Return to your original Play Games profile.","Your progress is saved on this device."};
+            case FAILED:return new String[]{"Check your connection and Play Games.","Reopen the game to try connecting again.","Your local progress stays safe."};
+            case PENDING:case SAVED:return new String[]{"Your progress is saved on this device.","Play Games transfers it in the background.","Other devices may take a moment."};
+            default:return new String[]{"Your progress is saved on this device.","Cloud sync is not available right now."};
+        }
         switch(status) {
             case SIGN_IN:return new String[]{"Sign in to Game Center to get started.","Cloud saves also need iCloud Drive.","Your progress is saved on this device."};
             case DRIVE:return new String[]{"Open Settings on your iPhone.","Apple Account > iCloud > Drive", "Turn on Sync this iPhone."};
