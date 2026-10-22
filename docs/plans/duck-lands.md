@@ -6,7 +6,8 @@ Branch: `feat/duck-lands`, starting from main `46a8327`.
 
 The user chose a yellow squishy duck boss, a bathtub-themed land, and Bubble Riders.
 **Suds Springs** is the working land name; **Sir Waddles** is the working boss name.
-The name and boss fight below remain design proposals. Bubble Riders are the selected
+The user refined the composition: thick tub walls run along both screen edges as a border,
+with the water filling the playfield. The name and boss fight below remain design proposals. Bubble Riders are the selected
 new enemy direction. The user also requested an unmistakable, visually appealing bathtub
 and asked how the environment scrolls.
 
@@ -28,9 +29,11 @@ Distinctive scenery and skits:
 
 ## Scrolling and depth
 
-The tub is a stable frame around the playfield. Its curved porcelain rim, thick sidewalls,
-chrome faucet and pastel tiled surround stay anchored so the environment keeps reading as
-one bathtub. The water carries the sense of travel: broad ripples drift downward slowly,
+The tub is a stable frame around the playfield. Its thick porcelain sidewalls run continuously along the left and right screen edges,
+extending past the top and bottom of the viewport. Broad cream highlights, a shaded inner
+face and a soft waterline shadow give the border depth. The chrome faucet attaches to the
+edge. These stay anchored so the water fills the playfield rather than sitting inside a
+small, fully outlined bathtub. The water carries the sense of travel: broad ripples drift downward slowly,
 foam islands and soap drift at different speeds, and occasional bubbles rise against that
 current. Offset repeat phases and horizontal placements so details do not march in columns.
 No repeating faucets or entire bathtub sprites scrolling through the playfield.

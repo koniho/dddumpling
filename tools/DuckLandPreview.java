@@ -32,52 +32,58 @@ final class DuckLandPreview extends Draw {
         p.fillEllipse(x-rx*.38f,y-ry*.58f,rx*.08f,ry*.055f,0xDFFFFFFF);
         p.arc(x,y,rx*.72f,ry*.72f,48,28,0x60FFFFFF,rx*.025f);
     }
+    private static void sidewall(Painter p,Layout L,int side) {
+        // A continuous porcelain cross-section enters from each screen edge.
+        // Its ends extend past the viewport, so the water reads as the playfield itself.
+        float[] widths={.176f,.163f,.150f,.138f,.123f,.108f,.091f,.070f,.045f};
+        int[] colors={0x23405D70,0x6657838A,0xFF9BBEBA,0xFFCADACD,0xFFE5E6D5,
+                0xFFFFF1D9,0xFFFFFCEF,0xFFFFF7E6,0xFFF0E4D3};
+        for(int layer=0;layer<widths.length;layer++) {
+            float[] wall=new float[70];
+            wall[0]=side<0?-L.w*.02f:L.w*1.02f;wall[1]=-L.h*.05f;
+            for(int i=0;i<=32;i++) {
+                float u=i/32f,y=L.h*(u*1.1f-.05f);
+                float breadth=L.w*(widths[layer]+.008f*(float)Math.cos(u*Math.PI*2));
+                wall[2+i*2]=side<0?breadth:L.w-breadth;wall[3+i*2]=y;
+            }
+            wall[68]=wall[0];wall[69]=L.h*1.05f;
+            p.fillPoly(wall,colors[layer]);
+        }
+    }
     private static void scenery(Painter p,Layout L,float t) {
         float w=L.w,h=L.h;
-        p.fillRect(0,0,w,h,0xFF625B7D);
-        for(int row=0;row<6;row++)for(int col=0;col<5;col++) {
-            float x=(col+.5f)*w/5,y=(row+.5f)*h*.045f;
-            int tile=(row+col)%3==0?0xFFB1BDCE:0xFFCADACF;
-            p.fillPoly(rounded(x,y,w*.097f,h*.021f),tile);
-            p.line(x-w*.077f,y-h*.012f,x+w*.06f,y-h*.012f,0x57FFFFFF,w*.003f);
-        }
-        p.fillPoly(rounded(w*.5f,h*.508f,w*.493f,h*.343f),0x445A405B);
-        p.fillPoly(rounded(w*.5f,h*.493f,w*.49f,h*.342f),0xFF9392B3);
-        p.fillPoly(rounded(w*.5f,h*.477f,w*.48f,h*.332f),0xFFFFF1DF);
-        p.fillPoly(rounded(w*.5f,h*.469f,w*.466f,h*.318f),0xBFFFFFF4);
-        p.fillPoly(rounded(w*.5f,h*.476f,w*.443f,h*.305f),0xFFBED8D0);
-        p.fillPoly(rounded(w*.5f,h*.476f,w*.433f,h*.299f),0xFF397381);
-        p.fillPoly(rounded(w*.5f,h*.465f,w*.423f,h*.285f),WATER);
-        p.fillPoly(rounded(w*.5f,h*.446f,w*.402f,h*.26f),0x2859CFBD);
+        p.fillRect(0,0,w,h,WATER);
+        p.fillRect(w*.17f,0,w*.83f,h,0x1659CFBD);
+        sidewall(p,L,-1);sidewall(p,L,1);
         // Slow shifting light under the water, independent of the anchored tub frame.
         for(int i=0;i<5;i++) {
             float[] ribbon=new float[42];
             for(int n=0;n<=20;n++) {
                 float u=n/20f;
                 ribbon[n*2]=w*(.19f+u*.62f);
-                ribbon[n*2+1]=h*(.25f+i*.09f+.012f*(float)Math.sin(u*8+t*.7f+i));
+                ribbon[n*2+1]=h*(.15f+i*.16f+.012f*(float)Math.sin(u*8+t*.7f+i));
             }
             p.polyline(ribbon,0x1068EEC1,w*.016f);
         }
         for(int i=0;i<15;i++) {
-            float y=h*(.22f+(i*.035f+t*.012f)%.50f),x=w*(.3f+.36f*hash(i*21));
+            float y=h*(.08f+(i*.055f+t*.012f)%.84f),x=w*(.3f+.36f*hash(i*21));
             p.arc(x,y,w*(.12f+.08f*hash(i*31)),h*.013f,12,153,
                     i%2==0?0x377AF0D0:0x2262D6DE,w*.004f);
         }
         // Foam stays at the porcelain banks, keeping the prompt lane clear.
-        for(int side=-1;side<=1;side+=2)for(int i=0;i<13;i++) {
-            float y=h*(.21f+i*.041f),x=w*(side<0?.10f:.90f)+w*.017f*(float)Math.sin(i*2.1f+t*.5f);
-            float r=w*(.022f+.025f*hash(i*91+side));
+        for(int side=-1;side<=1;side+=2)for(int i=0;i<10;i++) {
+            float y=h*(.08f+i*.093f),x=w*(side<0?.17f:.83f)+w*.012f*(float)Math.sin(i*2.1f+t*.5f);
+            float r=w*(.014f+.015f*hash(i*91+side));
             p.fillCircle(x,y+r*.15f,r*1.15f,0x557ACBCB);
             p.fillCircle(x,y,r,0xB8DBEEE8);
             p.fillCircle(x-r*.16f,y-r*.2f,r*.7f,0xB3FFFFED);
             p.fillCircle(x+side*r*.7f,y+r*.65f,r*.54f,0xCBF1F8E8);
             p.fillCircle(x-side*r*.12f,y-r*.38f,r*.23f,0xC9FFFFFF);
         }
-        soap(p,w*.17f,h*(.23f+(.37f+t*.010f)%.46f),w*.075f,0xFFE6A4C7,t);
-        soap(p,w*.83f,h*(.23f+(.20f+t*.014f)%.46f),w*.07f,0xFFC5B0DD,t+2);
+        soap(p,w*.24f,h*(.23f+(.37f+t*.010f)%.46f),w*.075f,0xFFE6A4C7,t);
+        soap(p,w*.76f,h*(.23f+(.20f+t*.014f)%.46f),w*.07f,0xFFC5B0DD,t+2);
         // Rounded faucet silhouette with a broad shaded metal face.
-        float x=w*.81f,y=h*.17f;
+        float x=w*.93f,y=h*.19f;
         p.polyline(new float[]{x,y-h*.08f,x,y-h*.025f,x-w*.11f,y-h*.025f,x-w*.11f,y},0xFF6C7892,w*.042f);
         p.polyline(new float[]{x-w*.008f,y-h*.08f,x-w*.008f,y-h*.03f,x-w*.118f,y-h*.03f},0xFFE1E7DF,w*.023f);
         p.line(x-w*.005f,y-h*.071f,x-w*.005f,y-h*.036f,0x99FFFFFF,w*.007f);
