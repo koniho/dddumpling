@@ -123,6 +123,22 @@ jobs:
           print('Verified signed offline production APK:', package.groups())
           PY
 
+      - name: Set up Gradle for Play Games dependencies
+        if: inputs.source_tag == ''
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.7.1'
+
+      - name: Build Play Games testing bundle
+        if: inputs.source_tag == ''
+        env:
+          DDDUMPLING_PLAY_CONFIG: store/play-games.draft.json
+          HEXATYPE_KEYSTORE: build/release.keystore
+          HEXATYPE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          HEXATYPE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          HEXATYPE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./build-bundle.sh
+
       - name: Build developer APK
         env:
           HEXATYPE_KEYSTORE: build/release.keystore

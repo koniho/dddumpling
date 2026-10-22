@@ -198,10 +198,12 @@ Developer APKs use `com.dddumpling.game.dev` and the launcher name **DDDUMPLING 
 Production AABs retain `com.dddumpling.game`. Both can be installed together with separate saves.
 The build checks the packaged application ID, label and launch activity after signing.
 
-Release builds currently force Play Games configuration off. Before publication,
-`tools/verify-offline-bundle.py` checks the production AAB for Google Play services
-code, Play Games application metadata, and network permissions. Enabling Play Games
-in a future release requires deliberately updating this workflow guard.
+New release builds preserve an offline signed APK for itch and GitHub, then build
+the Play upload AAB with `store/play-games.draft.json`. The offline verification
+applies before that second build. Existing-tag download-only rebuilds stay offline.
+Play Games draft configuration is available only to authorized service testers;
+including the SDK does not publish the service configuration. The iOS release
+workflow also explicitly enables GameKit for its checks and signed archive.
 The access check also lists uploaded APK/AAB version codes, including artifacts
 not assigned to a testing track.
 

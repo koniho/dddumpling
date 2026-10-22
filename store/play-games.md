@@ -1,7 +1,8 @@
 # Play Games events and cross-device progress
 
-Branch: `feat/75-games-integration`. This integration is opt-in at build time. Ordinary builds,
-including the first Play test release, have **no Play SDK, sign-in, or network reporting**.
+This integration is opt-in at build time. The release workflow enables it for new
+Play upload bundles using `store/play-games.draft.json`. Ordinary local builds and
+the itch download have **no Play SDK, sign-in, or network reporting**.
 Developer builds exclude the SDK even if a configuration file is supplied. Production builds
 record progress locally, independently of whether Play integration is configured.
 
