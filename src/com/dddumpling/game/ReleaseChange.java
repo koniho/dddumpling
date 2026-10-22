@@ -4,14 +4,15 @@ package com.dddumpling.game;
 final class ReleaseChange extends Draw {
     static final int TRAVEL=0, STARS=1, BUGS=2, SHUFFLE=3, DISGUISE=4, SLIME=5,
             PAIR=6, FLEX=7, TEAM=8, NEWS=9, FLURRY=10, MISC=11, SETTINGS=12, SWIPE=13, SCORES=14, OCTOPULSE=15,
-            COMPANION=16, TUTORIAL=17, TOWN=18, SURVIVAL=19, TIME_ATTACK=20, SWAMP=21, RUSH=22, FOG=23, HALLOWEEN=24, RAINBOW=25, BOSS_RETRY=26;
+            COMPANION=16, TUTORIAL=17, TOWN=18, SURVIVAL=19, TIME_ATTACK=20, SWAMP=21, RUSH=22, FOG=23, HALLOWEEN=24, RAINBOW=25, BOSS_RETRY=26,
+            ACHIEVEMENTS=27, PROFESSOR=28;
     private static final class FogIcon {
         static final GameCore.Enemy WORD=new GameCore.Enemy();
         static {WORD.word=new int[]{0,1,2};WORD.enterT=1f;WORD.swampKind=SwampEnemies.FOG;}
     }
     static final int[][] ITEMS=ReleaseContent.ITEMS;
     static boolean playable(int id) { return id==TRAVEL || id==SHUFFLE || id==PAIR; }
-    static float artUnits(int id) { return id==TRAVEL ? 8f : id==PAIR ? 9f : id==SHUFFLE ? 9f : 5f; }
+    static float artUnits(int id) { return id==TRAVEL ? 8f : id==PAIR ? 9f : id==SHUFFLE ? 9f : id==ACHIEVEMENTS ? 7f : 5f; }
     private static void halloween(Painter p,float x,float y,float r,float time) {
         p=Skins.painter(p,Skins.HALLOWEEN);
         // Real costume art stays recognizable in both the small list and the roomy popup.
@@ -32,7 +33,66 @@ final class ReleaseChange extends Draw {
                 Skins.HALLOWEEN_COLORS[2],1+.07f*bob,.5f,0,time);
     }
     static void icon(Painter p,int id,float x,float y,float r,float time) {
-        if(id==RAINBOW) {
+        icon(p,id,x,y,r,time,-1f);
+    }
+    static void icon(Painter p,int id,float x,float y,float r,float time,float celebration) {
+        if(id==ACHIEVEMENTS) {
+            float jump=0f;
+            if(celebration>=0f && celebration<2.8f) {
+                float t=celebration;
+                jump=(float)Math.sin(Math.min(1f,t/.9f)*Math.PI)*r*.85f;
+                float fade=Math.min(1f,(2.8f-t)/.8f);
+                for(int i=0;i<18;i++) {
+                    float a=i*2.39996f,flight=Math.max(0f,t-.10f);
+                    float speed=r*(1.4f+(i%3)*.35f);
+                    float xx=x+(float)Math.cos(a)*speed*flight;
+                    float yy=y-r*.3f+(float)Math.sin(a)*speed*flight+r*.75f*flight*flight;
+                    float sr=r*(.08f+.025f*(i%3));
+                    int color=i%3==0?0xFFFFF2B3:i%3==1?GOLD:0xFFE8A4CF;
+                    p.fillPoly(star(xx,yy,sr,sr*.4f,5,a+t*3),Glyph.withAlpha(color,(int)(255*fade)));
+                }
+                if(t<.7f)p.strokeCircle(x,y-r*.2f,r*(.6f+t*2.3f),
+                        Glyph.withAlpha(GOLD,(int)(150*(1f-t/.7f))),r*.045f);
+                y-=r*.12f*(float)Math.sin(t*17)*Math.max(0f,1-t/1.4f);
+            }
+            float bob=r*.05f*(float)Math.sin(time*3);
+            int gold=0xFFFFCC63,shade=0xFFD88E3F,shine=0xFFFFEDAC;
+            for(int side=-1;side<=1;side+=2) {
+                p.strokeCircle(x+side*r*.54f,y+r*.12f,r*.27f,shade,r*.13f);
+                p.strokeCircle(x+side*r*.54f,y+r*.09f,r*.27f,gold,r*.08f);
+                float sparkle=r*(.12f+.035f*(float)Math.sin(time*4+side));
+                p.fillPoly(star(x+side*r*.78f,y-r*.59f,sparkle,sparkle*.28f,4,0),shine);
+            }
+            p.line(x,y+r*.34f,x,y+r*.77f,shade,r*.20f);
+            p.fillPoly(pill(x,y+r*.80f,r*.44f,r*.13f,10),shade);
+            p.fillPoly(pill(x,y+r*.75f,r*.36f,r*.09f,10),gold);
+            Kawaii.moodDumpling(p,x,y-r*.29f+bob-jump,r*.57f,gold,1f,
+                    1f+.035f*(float)Math.sin(time*3)-jump/r*.13f);
+            p.fillPoly(new float[]{x-r*.60f,y,x+r*.60f,y,x+r*.43f,y+r*.37f,
+                    x+r*.22f,y+r*.49f,x-r*.22f,y+r*.49f,x-r*.43f,y+r*.37f},gold);
+            p.line(x-r*.56f,y+r*.025f,x+r*.56f,y+r*.025f,shine,r*.08f);
+            p.fillPoly(star(x,y+r*.24f,r*.17f,r*.08f,5,0),shine);
+            p.line(x-r*.39f,y+r*.12f,x-r*.31f,y+r*.28f,shine,r*.055f);
+        } else if(id==PROFESSOR) {
+            float cy=y+r*.15f+r*.045f*(float)Math.sin(time*2.5f),rr=r*.69f;
+            int ink=0xFF594367;
+            Kawaii.draw(p,Kawaii.CAT,x-r*.10f,cy,rr,0xFFC4B3E9,1f,.25f);
+            for(int side=-1;side<=1;side+=2)
+                p.strokeCircle(x-r*.10f+side*r*.22f,cy-r*.06f,r*.19f,ink,r*.045f);
+            p.line(x-r*.13f,cy-r*.06f,x-r*.07f,cy-r*.06f,ink,r*.045f);
+            p.fillPoly(new float[]{x-r*.10f,cy+r*.39f,x-r*.32f,cy+r*.28f,x-r*.32f,cy+r*.51f},0xFFDB8299);
+            p.fillPoly(new float[]{x-r*.10f,cy+r*.39f,x+r*.12f,cy+r*.28f,x+r*.12f,cy+r*.51f},0xFFDB8299);
+            p.fillCircle(x-r*.10f,cy+r*.39f,r*.065f,ink);
+            p.fillPoly(pill(x-r*.10f,cy-r*.51f,r*.33f,r*.13f,8),ink);
+            p.fillPoly(new float[]{x-r*.69f,cy-r*.69f,x-r*.10f,cy-r*.90f,
+                    x+r*.49f,cy-r*.69f,x-r*.10f,cy-r*.48f},0xFF82669B);
+            p.polyline(new float[]{x-r*.10f,cy-r*.70f,x+r*.39f,cy-r*.66f,
+                    x+r*.42f,cy-r*.30f},GOLD,r*.045f);
+            p.fillEllipse(x+r*.42f,cy-r*.27f,r*.055f,r*.10f,GOLD);
+            p.fillEllipse(x+r*.65f,y+r*.38f,r*.30f,r*.22f,0xFFF7F2E8);
+            p.fillPoly(new float[]{x+r*.42f,y+r*.45f,x+r*.30f,y+r*.61f,x+r*.58f,y+r*.54f},0xFFF7F2E8);
+            for(int dot=0;dot<3;dot++)p.fillCircle(x+r*(.50f+dot*.15f),y+r*.38f,r*.032f,ink);
+        } else if(id==RAINBOW) {
             p.save();p.clipRect(x-r,y-r,x+r,y+r);
             RainbowCatArt.portrait(p,x-r*.12f,y,r*.8f,time,true,1f,-1);
             p.restore();

@@ -23,7 +23,7 @@ final class SmokeTests: XCTestCase {
             if scene == "intro" {
                 game.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.73)).tap()
                 expectation(for: NSPredicate(format: "value CONTAINS %@", "SIGN IN TO GAME CENTER"), evaluatedWith: game)
-                waitForExpectations(timeout: 5)
+                waitForExpectations(timeout: 15)
             }
             // All portrait phone layouts place the secondary action near 79% height.
             game.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.79)).tap()

@@ -330,6 +330,16 @@ final class TestVisuals extends Check {
                     copyFits&=RasterPainter.textWidth(ReleaseContent.TEXT[n.item()][line],font)<=L.w*.76f;
                 }
                 check("copy fits narrower card "+release+"/"+feature,copyFits);
+                if(n.change()==ReleaseChange.ACHIEVEMENTS) {
+                    check("trophy waits for a tap",n.celebration<0f);
+                    n.touch(c,L,L.w*.5f,(n.demoTop(L)+n.demoBottom(L))*.5f);
+                    n.update(.4f,L);
+                    check("trophy tap starts celebration",n.celebration>.39f && n.celebration<.41f);
+                    n.touch(c,L,L.w*.5f,(n.demoTop(L)+n.demoBottom(L))*.5f);
+                    check("another trophy tap replays celebration",n.celebration==0f);
+                    n.update(3f,L);
+                    check("trophy celebration settles without closing notes",n.celebration<0f && !n.listing);
+                }
                 if(!ReleaseChange.playable(n.change()) && !ReleaseContent.AUTO_RESET[n.item()]) {
                     n.touch(c,L,L.w*.5f,(n.demoTop(L)+n.demoBottom(L))*.5f);
                     n.update(ReleaseNotes.RESTART_DELAY+.1f,L);

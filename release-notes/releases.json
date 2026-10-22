@@ -1,6 +1,36 @@
 {
   "releases": [
     {
+      "version": "0.1.33",
+      "changes": [
+        {
+          "icon": "professor",
+          "title": "A little guidance",
+          "autoReset": false,
+          "where": "First visits and new enemies",
+          "why": "Your companion shows you scores and game modes, then helps with fog, rush, diving and linked enemies when you first meet them."
+        },
+        {
+          "icon": "achievements",
+          "title": "Save and celebrate",
+          "autoReset": false,
+          "where": "Settings on Play and iOS",
+          "why": "Connect game services for cloud progress and 26 achievements. Celebrate perfect stages, boss wins, Survival minutes and lands cleared in one run."
+        },
+        {
+          "icon": "bugs",
+          "title": "Happy little fixes",
+          "autoReset": false,
+          "fixes": [
+            {
+              "where": "Tutorials and menus",
+              "why": "Keyboard shortcuts now follow the screen you are using, so lessons and menus respond to the right keys."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "0.1.32",
       "changes": [
         {

@@ -1,1 +1,3 @@
-Explore Rainbow Land and face Rainbow Cat: tap, trace and squish! Retry Adventure bosses, with retries recorded in your high score. Survival adds foggy words, shooting stars at 90 seconds and divebomb words at two minutes. Enjoy brighter Star Path pickups, playful land skits and a friendly invitation to see what is new.
+Your companion introduces scores, game modes and new enemy types. Connect Game Center for cloud progress and 26 achievements. Keyboard shortcuts now follow the active tutorial or menu.
+
+Please test Game Center sign-in, saving and restoring progress with the same Apple Account and iCloud Drive enabled, and achievement delivery. Milestones include five perfect Adventure stages, surviving 1, 2, 3, 4 and 5 minutes in a single Survival run, clearing 2, 3, 4 and 5 lands in one Adventure run, and completing the All Bosses Time Attack gauntlet. Cross-device cloud restore still needs confirmation on physical devices.

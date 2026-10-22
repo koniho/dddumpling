@@ -111,6 +111,8 @@ Keep a separate entry only when it communicates a distinct change the player nee
 | `octopulse` | Octopulse battle changes | Waving Octopulse portrait |
 | `companion` | Starter choice and run companions | Bouncing Melon Wedge collectible |
 | `tutorial` | Companion guidance | Melon Wedge with a speech bubble |
+| `professor` | Guided introductions and lessons | Lavender cat in a mortarboard, round glasses and bow tie |
+| `achievements` | Achievements and game services | Golden dumpling in a sparkling trophy |
 | `town` | Town visits and attractions | The title screen's meadow and slide |
 | `swipe` | Rescue-swipe lesson | Shared instruction hand swiping up from a pulsing bar |
 | `settings` | Player settings | Hexagon with three menu lines |

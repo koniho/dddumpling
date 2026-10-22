@@ -2056,7 +2056,9 @@ final class Preview {
             book.releaseNotes.select(0,1,L);book.releaseNotes.update(ReleaseNotes.PAGE_TIME,L);
             shot(dir,"103-release-current-second",book,L,w,h,ss);
             book.releaseNotes.touch(book,L,L.w*.5f,(book.releaseNotes.demoTop(L)+book.releaseNotes.demoBottom(L))*.5f);
-            book.releaseNotes.update(2.5f,L);
+            book.releaseNotes.update(.4f,L);
+            shot(dir,"103-release-current-second-celebration",book,L,w,h,ss);
+            book.releaseNotes.update(2.1f,L);
             shot(dir,"103-release-current-second-held",book,L,w,h,ss);
         }
         if(ReleaseChange.ITEMS[0].length>2) {

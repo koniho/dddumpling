@@ -16,6 +16,7 @@ final class ReleaseNotes extends Draw {
     private GameCore.Sound feedbackSound;
     private float restartIn=-1f;
     float listScroll;
+    float celebration=-1f;
     private float listDownY,listStartScroll,age;
     private int pressedRow=-1;
     private boolean listDragging,listMoved;
@@ -178,7 +179,7 @@ final class ReleaseNotes extends Draw {
     }
     private void activated() { restartIn=ReleaseContent.AUTO_RESET[item()] ? RESTART_DELAY : -1f; }
     void reset(Layout L) {
-        age=0f;restartIn=-1f;
+        age=0f;restartIn=-1f;celebration=-1f;
         if(!ReleaseChange.playable(change())) { demo=null;return; }
         geometry(L);
         demo=new GameCore(null,7000L+page+37L*replay++);demo.collected=Collect.MASK;
@@ -206,6 +207,7 @@ final class ReleaseNotes extends Draw {
                 ReleaseNotes incoming=entryDirection<0?previous:next;
                 feature=pendingFeature;pendingFeature=-1;entryDirection=0;
                 demo=incoming.demo;age=incoming.age;replay=incoming.replay;restartIn=incoming.restartIn;
+                celebration=incoming.celebration;
                 prepareNeighbors(L);
             }
         }
@@ -221,6 +223,7 @@ final class ReleaseNotes extends Draw {
     }
     private void advanceContent(float dt,Layout L) {
         age+=dt;
+        if(celebration>=0f) { celebration+=dt;if(celebration>=2.8f)celebration=-1f; }
         if(demo==null) return;
         geometry(L);demo.clock+=dt;
         if(change()==ReleaseChange.TRAVEL) LandPicker.updateTravel(demo,dt);
@@ -316,7 +319,11 @@ final class ReleaseNotes extends Draw {
         int edge=edgeAt(L,x,y);
         if(edge!=0) { step(edge,L);return true; }
         if(y<demoTop(L) || y>demoBottom(L) || x<L.w*.14f || x>L.w*.86f) return true;
-        if(demo==null) { age=0f;activated();return true; }
+        if(demo==null) {
+            age=0f;
+            if(change()==ReleaseChange.ACHIEVEMENTS) { celebration=0f;feedback(); }
+            activated();return true;
+        }
         float dx=x-L.w*.14f,dy=y-demoTop(L);
         if(change()==ReleaseChange.TRAVEL) {
             int before=demo.landChoice;
@@ -393,7 +400,7 @@ final class ReleaseNotes extends Draw {
         float artH=demoBottom(L)-demoTop(L);
         if(demo==null) {
             float bounce=(float)Math.sin(Math.min(1f,age/.5f)*Math.PI)*s*.35f;
-            ReleaseChange.icon(p,change(),L.w*.36f,artH*.5f-bounce,s*1.7f,c.clock+age);
+            ReleaseChange.icon(p,change(),L.w*.36f,artH*.5f-bounce,s*1.7f,c.clock+age,celebration);
         } else if(change()==ReleaseChange.TRAVEL) {
             p.translate(0,artH*.5f-LandPicker.cardY(mini));LandPicker.draw(p,demo,mini);
         } else if(change()==ReleaseChange.SHUFFLE) {
