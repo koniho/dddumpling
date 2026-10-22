@@ -252,7 +252,24 @@
         self.accessibilityElements = [self.accessibilityElements arrayByAddingObject:self.servicesButton];
     self.gameElement.accessibilityValue = [self.game debugStatus];
 #endif
+    if ([self.game cloudOpen]) {
+        self.gameElement.accessibilityLabel = @"Cloud saves";
+        self.gameElement.accessibilityValue = [self.game cloudSummary];
+        if (![self.gameElement.accessibilityCustomActions.firstObject.name isEqualToString:[self.game cloudPrimary]]) {
+            self.gameElement.accessibilityCustomActions = @[
+                [[UIAccessibilityCustomAction alloc] initWithName:[self.game cloudPrimary] target:self selector:@selector(cloudPrimaryAction)],
+                [[UIAccessibilityCustomAction alloc] initWithName:@"Dismiss" target:self selector:@selector(cloudDismissAction)]];
+        }
+    } else {
+        self.gameElement.accessibilityLabel = @"DDDUMPLING game";
+        self.gameElement.accessibilityCustomActions = nil;
+#if !DEBUG
+        self.gameElement.accessibilityValue = nil;
+#endif
+    }
 }
+- (BOOL)cloudPrimaryAction { [self.game cloudChooseWithBoolean:YES]; return YES; }
+- (BOOL)cloudDismissAction { [self.game cloudChooseWithBoolean:NO]; return YES; }
 #if DEBUG
 - (void)showGameServices {
     UIViewController *controller = self.window.rootViewController;
@@ -340,6 +357,9 @@
 #if DDDUMPLING_GAME_CENTER
     [self.gameCenter refreshActive:!self.storeAlertVisible];
     [self.gameCloud updateActive:YES elapsed:elapsed];
+    [self.game cloudStatusWithInt:(jint)[self.gameCloud uiStatus]];
+    [self.game cloudReduceMotionWithBoolean:UIAccessibilityIsReduceMotionEnabled()];
+    if ([self.game takeCloudAction] == 1) [self.gameCenter requestSignIn];
 #endif
     CFTimeInterval start = CACurrentMediaTime();
     [self.game updateWithFloat:elapsed];

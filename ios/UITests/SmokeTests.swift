@@ -1,6 +1,49 @@
 import XCTest
 
 final class SmokeTests: XCTestCase {
+    func testCloudOnboardingAndStatusPanels() {
+        let cases = [
+            ("intro", "Keep your collection safe"),
+            ("sign-in", "SIGN IN TO GAME CENTER"),
+            ("drive", "ICLOUD DRIVE UNAVAILABLE"),
+            ("pending", "CLOUD SAVE PENDING"),
+            ("failed", "COULDN'T SAVE TO ICLOUD"),
+            ("account", "SYNC PAUSED")
+        ]
+        for (scene, expected) in cases {
+            let app = launch("cloud:" + scene)
+            let game = app.otherElements["game"]
+            let panel = NSPredicate(format: "value CONTAINS %@", expected)
+            expectation(for: panel, evaluatedWith: game)
+            waitForExpectations(timeout: 5)
+            XCTAssertEqual(game.label, "Cloud saves")
+            let verification = XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts["Apple Account Verification"]
+            if verification.exists { verification.buttons["Not Now"].tap() }
+            capture(app, "cloud-" + scene)
+            if scene == "intro" {
+                game.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.73)).tap()
+                expectation(for: NSPredicate(format: "value CONTAINS %@", "SIGN IN TO GAME CENTER"), evaluatedWith: game)
+                waitForExpectations(timeout: 5)
+            }
+            // All portrait phone layouts place the secondary action near 79% height.
+            game.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.79)).tap()
+            let closed = NSPredicate(format: "label == %@", "DDDUMPLING game")
+            expectation(for: closed, evaluatedWith: game)
+            waitForExpectations(timeout: 5)
+            app.terminate()
+        }
+    }
+
+    func testCloudFailureNoticeOpensStatus() {
+        let app = launch("cloud:notice")
+        let game = app.otherElements["game"]
+        XCTAssertEqual(game.label, "DDDUMPLING game")
+        game.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.16)).tap()
+        expectation(for: NSPredicate(format: "value CONTAINS %@", "COULDN'T SAVE TO ICLOUD"), evaluatedWith: game)
+        waitForExpectations(timeout: 5)
+        capture(app, "cloud-notice-opened")
+    }
+
     func testPhysicalKeyboardFourKeys() { checkKeyboard(full: false) }
     func testPhysicalKeyboardSixKeys() { checkKeyboard(full: true) }
 

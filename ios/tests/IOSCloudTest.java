@@ -33,6 +33,17 @@ public final class IOSCloudTest extends Check {
     }
     public static void main(String[] args) throws Exception {
         resetInFlight();
+        GameCore unchangedCore = new GameCore(new Mem(), 9, true);
+        Host unchangedHost = new Host();
+        IOSCloud unchanged = new IOSCloud(unchangedCore, unchangedHost, true);
+        unchanged.session("player", true); unchanged.update(0);
+        byte[] identical = unchangedCore.progress.snapshot();
+        unchanged.fetched(new byte[][] {identical}, unchangedHost.token);
+        check("unchanged remote snapshot avoids redundant upload", unchangedHost.writes == 0);
+        tick(unchanged, 60);
+        check("unchanged snapshot still schedules remote polling", unchangedHost.fetches == 2);
+        unchanged.fetched(new byte[][] {identical, identical}, unchangedHost.token);
+        check("identical conflicts still require native resolution", unchangedHost.writes == 1);
         Mem store = new Mem(); GameCore core = new GameCore(store, 9, true);
         Host host = new Host(); IOSCloud cloud = new IOSCloud(core, host, true);
         cloud.session(null, true); cloud.update(1);

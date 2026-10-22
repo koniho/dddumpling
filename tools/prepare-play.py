@@ -11,18 +11,36 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def boss_names(source=None):
+    if source is None:
+        source = (ROOT / 'src/com/dddumpling/game/WorldCatalog.java').read_text()
+    entries = re.findall(r'new BossEntry\(([^\n]+)', source)
+    names = []
+    for entry in entries:
+        strings = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', entry)
+        if len(strings) < 3 or not re.fullmatch(r'[a-z][a-z0-9_]*', strings[2]):
+            raise ValueError('Cannot read stable boss analytics ID from WorldCatalog')
+        names.append(strings[2])
+    if not names or len(names) != len(set(names)):
+        raise ValueError('Boss analytics IDs must be nonempty and unique')
+    return names
+
+
 def catalog():
     keys = ['runs_started', 'runs_finished', 'runs_abandoned', 'stages_completed']
     for group in ['stage_reached', 'run_end']:
         keys += [group + '_' + bucket for bucket in ['1_4', '5_9', '10_14', '15_19', '20_plus']]
-    for boss in ['slime', 'dark_divide', 'octopulse', 'fly_agaric']:
+    for boss in boss_names():
         keys += ['boss_' + boss + '_' + suffix for suffix in [
             'started', 'won', 'failed', 'abandoned', 'no_damage', 'first_hit_count',
             'first_hit_ms_total', 'first_hit_under_5s', 'first_hit_5_15s',
             'first_hit_15_30s', 'first_hit_30_60s', 'first_hit_60s_plus']]
     for game in ['steamer', 'starpath']:
         keys += [game + '_' + suffix for suffix in ['started', 'won', 'failed', 'abandoned']]
-    keys += ['rewards_' + suffix for suffix in ['total', 'new', 'duplicate', 'steamer', 'starpath', 'boss']]
+    keys += ['rewards_' + suffix for suffix in ['total', 'new', 'duplicate', 'steamer', 'starpath', 'boss', 'survival', 'starter']]
     return keys
 
 
@@ -33,7 +51,8 @@ def config(path):
     if not isinstance(project, str) or not re.fullmatch(r'[0-9]{6,30}', project):
         raise ValueError('Set the numeric Play Games project_id in the configuration')
     if set(events) != set(catalog()):
-        raise ValueError('Event keys must match store/play-games.example.json exactly')
+        raise ValueError('Event catalog mismatch; missing: ' + ', '.join(sorted(set(catalog()) - set(events)))
+                         + '; obsolete: ' + ', '.join(sorted(set(events) - set(catalog()))))
     if any(not isinstance(v, str) or not re.fullmatch(r'[A-Za-z0-9_-]{8,200}', v) for v in events.values()):
         raise ValueError('Every event needs its real Play Console ID; blank placeholders are not allowed')
     if len(set(events.values())) != len(events):
@@ -115,8 +134,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config')
     parser.add_argument('--example', action='store_true')
+    parser.add_argument('--sync-config', help='Add missing event keys with blank IDs, preserving existing IDs')
     args = parser.parse_args()
-    if args.example:
+    if args.sync_config:
+        path = Path(args.sync_config)
+        value = json.loads(path.read_text())
+        for key in catalog():
+            value.setdefault('events', {}).setdefault(key, '')
+        path.write_text(json.dumps(value, indent=2) + '\n')
+        print('Missing Console IDs:', ', '.join(k for k in catalog() if not value['events'][k]))
+    elif args.example:
         print(json.dumps({'project_id': '', 'events': dict.fromkeys(catalog(), '')}, indent=2))
     else:
         prepare(args)

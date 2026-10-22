@@ -53,6 +53,20 @@
     return @"Disabled";
 #endif
 }
+- (NSInteger)uiStatus {
+#if DDDUMPLING_GAME_CENTER
+    // CloudSaveUi states; a GameKit save callback does not prove server upload.
+    if ([self.center.status isEqualToString:@"Disabled"]) return 0;
+    if (!self.center.playerID.length) return 1;
+    if (!self.identity) return 2;
+    if (self.lastError || self.store.error) return 5;
+    if ([[self.cloud status] hasPrefix:@"Cloud save unreadable"]) return 5;
+    if (self.availability) return 6;
+    return [[self.cloud status] isEqualToString:@"Synced"] ? 4 : 3;
+#else
+    return 0;
+#endif
+}
 - (instancetype)initWithGame:(DDIOSGame *)game store:(DDIOSStore *)store center:(DDGameCenter *)center {
     if ((self = [super init])) {
 #if DDDUMPLING_GAME_CENTER
@@ -146,6 +160,9 @@
             for (GKSavedGame *game in games) if ([game.name isEqual:sync.saveName]) [records addObject:game];
             if (records.count > 32) { [sync.cloud failedWithInt:token withBoolean:YES]; return; }
             sync.records = records;
+#if DEBUG
+            NSLog(@"Cloud test: fetched %lu matching records", (unsigned long)records.count);
+#endif
             [sync loadRecords:records index:0 payloads:[NSMutableArray new] token:token];
         });
     }];
@@ -185,7 +202,23 @@
             if (!sync || ![sync valid:token]) return;
             sync.records = nil;
             if (error) [sync failed:token error:error];
-            else [sync.cloud savedWithInt:token];
+            else {
+                [sync.cloud savedWithInt:token];
+#if DEBUG
+                NSLog(@"Cloud test: GameKit accepted save (upload unverified)");
+                NSString *saveName = [sync.saveName copy];
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC),
+                    dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+                    NSURL *root = [NSFileManager.defaultManager URLForUbiquityContainerIdentifier:nil];
+                    NSURL *url = [root URLByAppendingPathComponent:[saveName stringByAppendingString:@".bundle"]];
+                    NSError *error = nil;
+                    NSDictionary *values = [url resourceValuesForKeys:@[NSURLUbiquitousItemIsUploadedKey,
+                        NSURLUbiquitousItemIsUploadingKey, NSURLUbiquitousItemUploadingErrorKey,
+                        NSURLUbiquitousItemDownloadingErrorKey] error:&error];
+                    NSLog(@"Cloud test: package upload state %@ error %@", values, error);
+                });
+#endif
+            }
         });
     };
     if (self.records.count > 1) {

@@ -217,6 +217,8 @@ final class GameCore {
         default void saveLandBest(int land, int value) { if (land == 0) saveBest(value); }
         default int loadPlayerSettings() { return PlayerSettings.DEFAULT; }
         default void savePlayerSettings(int value) {}
+        default boolean loadCloudIntro() { return false; }
+        default void saveCloudIntro(boolean seen) {}
         default int loadTutorials() { return 0; }
         default void saveTutorials(int value) {}
         default int loadPowerTutorials() { return 0; }
@@ -600,6 +602,7 @@ final class GameCore {
     boolean settingsOpen;
     int settingsPage;
     final PlayerSettings preferences = new PlayerSettings();
+    final CloudSaveUi cloudUi = new CloudSaveUi();
     boolean kidsRun;
     final HighScores highScores=new HighScores();
     final HighScoreScreen highScoreScreen=new HighScoreScreen();
@@ -1658,6 +1661,7 @@ final class GameCore {
             for (int land = 0; land < Lands.COUNT; land++) landBests[land] = Math.max(0, store.loadLandBest(land));
             landBests[0] = Math.max(landBests[0], best);
             preferences.load(store.loadPlayerSettings());
+            cloudUi.seen=store.loadCloudIntro();
             modes.restore(preferences.mode);
             // Masked: a store that hands back junk in the high bits must not make
             // Collect.owned() report more than there are entries.

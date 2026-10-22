@@ -25,6 +25,7 @@ final class DuckReward extends Draw {
         revealAt=-1f;
         c.ducks.react(who,.7f);
         c.survival.history().prize(who);
+        c.cloudUi.collected(who);
     }
     private String journal(GameCore c) {
         String header="1;"+sequence;

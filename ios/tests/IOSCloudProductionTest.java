@@ -4,11 +4,16 @@ public final class IOSCloudProductionTest extends Check {
     public static void main(String[] args) {
         check("iOS production flag is off", !BuildFlags.DEVELOPER);
         IOSGame game = new IOSGame(new Mem(), new Ear(), 9);
+        game.layout(393,852,0,59,0,34);
+        game.debugScene("cloud:intro");
+        check("Release ignores simulated cloud scenes",!game.cloudOpen() && !game.core().cloudUi.enabled);
         IOSCloud cloud = new IOSCloud(game, new IOSCloud.Host() {
             public void fetch(int token) { throw new AssertionError("Release fetched cloud data"); }
             public void save(byte[] data, int token) { throw new AssertionError("Release uploaded cloud data"); }
         }, false);
         byte[] before = game.core().progress.snapshot();
+        game.debugScene("progress:12345:0:2");
+        check("Release ignores progress grants",java.util.Arrays.equals(before,game.core().progress.snapshot()));
         cloud.session("player", true); cloud.changed(); cloud.update(120);
         cloud.fetched(new byte[][] {new byte[] {1}}, 0); cloud.saved(0);
         cloud.session("player", false);

@@ -81,6 +81,9 @@ abstract class Check {
         int playerSettings = PlayerSettings.DEFAULT;
         public int loadPlayerSettings() { return playerSettings; }
         public void savePlayerSettings(int value) { playerSettings=value; }
+        boolean cloudIntro;
+        public boolean loadCloudIntro() { return cloudIntro; }
+        public void saveCloudIntro(boolean value) { cloudIntro=value; }
         int best;
         int caveChoice = -1;
         public int loadCaveChoice() { return caveChoice; }

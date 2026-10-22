@@ -10,7 +10,13 @@ xcodegen generate --spec "$IOS_ROOT/project.yml"
 args=(-project "$IOS_ROOT/DDDumpling.xcodeproj" -scheme DDDumpling -configuration "$configuration"
       -sdk "$sdk" -derivedDataPath "$IOS_ROOT/build/DerivedData")
 if [ "$sdk" = iphonesimulator ]; then
-    args+=(-destination 'generic/platform=iOS Simulator' "ARCHS=$(uname -m)" CODE_SIGNING_ALLOWED=NO)
+    args+=(-destination 'generic/platform=iOS Simulator' "ARCHS=$(uname -m)")
+    if [ "${DDDUMPLING_GAME_CENTER:-0}" = 1 ]; then
+        # GameKit requires embedded entitlements even on Simulator.
+        args+=(CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-)
+    else
+        args+=(CODE_SIGNING_ALLOWED=NO)
+    fi
 else
     args+=(-destination 'generic/platform=iOS')
     [ -z "${DEVELOPMENT_TEAM:-}" ] || args+=("DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM")

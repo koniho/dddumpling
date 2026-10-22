@@ -151,6 +151,7 @@ final class Interlude {
             if (c.store != null) c.store.saveCollected(Collect.encode(c.collected));
         } else c.score += GameCore.DUPE_BONUS;
         c.progress.reward(c.prize, c.prizeNew, source, c.score);
+        c.cloudUi.collected(c.prize);
         if (c.store != null) {
             c.store.saveCollectionCounts(c.collectionCounts);
             c.store.saveCollectTotal(c.collectTotal);

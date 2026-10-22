@@ -9,6 +9,15 @@
 @end
 
 @implementation DDStoreTests
+- (void)testCloudIntroductionDismissalPersists {
+  NSURL *url = [self temporaryFile];
+  DDIOSStore *store = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertFalse([store loadCloudIntro]);
+  [store saveCloudIntroWithBoolean:YES];
+  DDIOSStore *reopened = [[DDIOSStore alloc] initWithURL:url];
+  XCTAssertTrue([reopened loadCloudIntro]);
+  [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
+}
 
 - (void)testUpdateHistoryIsIndependentOfReadAndProgress {
   NSURL *url = [self temporaryFile];

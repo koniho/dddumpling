@@ -104,6 +104,7 @@ src/com/dddumpling/game/CatDefeatRecording.java
 src/com/dddumpling/game/DivideDeath.java
 src/com/dddumpling/game/SettingsArt.java
 src/com/dddumpling/game/PlayerSettings.java
+src/com/dddumpling/game/CloudSaveUi.java
 src/com/dddumpling/game/DevSettings.java
 src/com/dddumpling/game/SettingsInput.java
 src/com/dddumpling/game/ProgressData.java
@@ -244,6 +245,7 @@ fi
 java -cp build/harness com.dddumpling.game.CoreTest "$SUITE" | filter
 if [ -z "$SUITE" ] || [[ "CaveBand Audio" == *"$SUITE"* ]]; then python3 tools/test-band-audio.py; fi
 
+if [ -z "$SUITE" ] || [ "$SUITE" = Progress ]; then python3 tools/test-prepare-play.py; fi
 if [ -z "$SUITE" ] || [ "$SUITE" = Audio ]; then python3 tools/test-audio-lifecycle.py; fi
 
 if [ "$RULES_ONLY" = 1 ]; then exit 0; fi

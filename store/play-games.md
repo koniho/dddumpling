@@ -1,6 +1,6 @@
 # Play Games events and cross-device progress
 
-Branch: `feature/play-games-progress`. This integration is opt-in at build time. Ordinary builds,
+Branch: `feat/75-games-integration`. This integration is opt-in at build time. Ordinary builds,
 including the first Play test release, have **no Play SDK, sign-in, or network reporting**.
 Developer builds exclude the SDK even if a configuration file is supplied. Production builds
 record progress locally, independently of whether Play integration is configured.
@@ -12,7 +12,7 @@ record progress locally, independently of whether Play integration is configured
    SHA-1 for installs from a Play track, and the local certificate for sideloaded test builds.
    The upload certificate is not necessarily the app-signing certificate.
 3. Add tester accounts or the intended release track to Play Games testing access.
-4. Create the 76 events listed in `play-games.example.json`. Copy that file to
+4. Create the events listed in `play-games.example.json`. Copy that file to
    `.private/play-games.json`, fill the numeric `project_id` and every event's Console-generated ID.
    IDs are configuration, not credentials; the validation rejects blank or duplicate event IDs.
 5. Install Java 17+ and Gradle (validated here with Gradle 9.7.1). Gradle resolves dependencies only;
@@ -30,7 +30,55 @@ The pinned Games SDK 21.0.0 retains Android 5 / API 21 support. SDK 22 raises it
 The build merges all library manifests/resources, generates their R classes, and packages all dex
 files. It fails on unsupported native dependencies instead of silently dropping them.
 
-No real project/event IDs are available in this workspace yet. `build/play-compile-only.json` and
+Production setup (2026-10-14): linked Play Games Services to the existing Cloud project
+`dddumpling-5695b`, project number/application ID `56613446939`. This reuses the Firebase
+project's underlying Cloud project; it does not add a Firebase SDK or link Firebase to PGS.
+The PGS configuration is still draft. On 2026-10-17, Saved Games was enabled and saved;
+Console confirmed the Google Drive API is enabled. After explicit approval of the Google
+API Services User Data Policy acknowledgement, OAuth consent was created with an External,
+Testing audience. The saved scopes are `games`, `games_lite`, and `drive.appdata`.
+Both OAuth and PGS tester lists contain `koniho@gmail.com` and `dddumpling.play@gmail.com`.
+
+The Android OAuth client `DDDumpling Play signing` is linked to a saved draft PGS credential:
+
+- Package: `com.dddumpling.game`
+- Client ID: `56613446939-9fm7ajevtkeg2c7kinlb0k4vef5p9vv5.apps.googleusercontent.com`
+- Play deployment certificate SHA-1: `48:EA:AB:E1:8D:76:BF:00:2D:B2:86:36:F7:CA:24:2B:39:90:16:AA`
+
+The SHA-1 was read from Play Console's downloaded `deployment_cert.der`; its SHA-256
+matches the certificate in Console's Digital Asset Links JSON. This is not the upload key.
+The draft properties reuse the store title, short description, icon and feature graphic,
+with Arcade as the category. Console reports credentials and events ready to publish with
+no remaining property warnings. Saved changes are available to authorized testers; the PGS
+project and OAuth consent are not publicly published. No Firebase SDK was added.
+
+Real Android sign-in, event delivery and cross-device save validation remain unverified.
+No Android device was attached at the 2026-10-17 check. Before a public release, complete
+that validation, prepare the listing/privacy disclosures below, and publish both the OAuth
+consent audience and PGS configuration. A draft-ready console is not a runtime test pass.
+
+All 90 hidden draft events were created and read back on 2026-10-17; Console shows 90
+events. Their non-secret IDs are in `play-games.draft.json`, with a local copy in ignored
+`.private/play-games.json`. Rainbow Cat subsequently added 12 required counters; their
+IDs are blank in the checked-in draft until created in Console. An enabled build rejects
+these blanks. The original 90 Console IDs are preserved.
+These IDs do not enable a release build or publish the PGS project. The catalog includes
+Gummy Gator's 12 counters under the persisted `mossy_maw` prefix; that prefix must not be
+renamed when changing player-facing text. `python3 tools/test-prepare-play.py` checks that
+all runtime bosses and directly emitted events have definitions and the example matches
+the build validator. Starter and Survival rewards have their own source counters too.
+
+Boss event definitions are generated from the stable analytics IDs in `WorldCatalog`.
+After adding a boss, regenerate the example with `python3 tools/prepare-play.py --example`
+and update each configuration with `python3 tools/prepare-play.py --sync-config PATH`.
+This preserves IDs and adds missing keys with blank IDs; it does not create Console events.
+Fill those IDs before an enabled build. Normal rules checks detect stale examples and drafts;
+enabled builds additionally reject missing, blank, duplicate or obsolete mappings.
+Stage counters already cover arbitrary future stages through the `20_plus` range.
+Per-enemy counters are not implemented; adding enemies does not currently provide enemy-level
+telemetry. Stable enemy identities, common lifecycle hooks and emission tests are still needed.
+
+`build/play-compile-only.json` and
 `build/play-sdk-compile-only.apk` are **packaging fixtures only**: do not distribute or install them.
 A successful compilation does not establish authentication or prove server-side reporting.
 

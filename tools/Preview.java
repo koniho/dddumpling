@@ -1925,6 +1925,19 @@ final class Preview {
         companionFrames(dir,L,w,h,ss);
         scoreResetFrames(dir,L,w,h,ss);
         onboardingFrames(dir,L,w,h,ss);
+        if(wanted("cloud-")) {
+            GameCore cloud=new GameCore(new Mem(),75);cloud.cloudUi.status(CloudSaveUi.DRIVE);
+            cloud.cloudUi.character=Collect.STAR_FIRST;cloud.cloudUi.show(true);cloud.cloudUi.age=1f;
+            shot(dir,"cloud-intro",cloud,L,w,h,ss);
+            cloud.cloudUi.character=Collect.BOSS_FIRST;cloud.cloudUi.age=2f;
+            shot(dir,"cloud-intro-boss",cloud,L,w,h,ss);
+            cloud.cloudUi.show(false);cloud.cloudUi.age=1f;
+            shot(dir,"cloud-drive",cloud,L,w,h,ss);
+            cloud.cloudUi.status(CloudSaveUi.FAILED);
+            shot(dir,"cloud-failed",cloud,L,w,h,ss);
+            cloud.cloudUi.close(cloud);PlayerSettings.open(cloud);cloud.preferences.panelEntrance=1f;
+            shot(dir,"cloud-settings",cloud,L,w,h,ss);
+        }
         starterFrames(dir,L,w,h,ss);
         modeFrames(dir,L,w,h,ss);
         duckFrames(dir,L,w,h,ss);
@@ -3659,6 +3672,7 @@ final class Preview {
         p.clear(0xFF000000);
         RasterPainter.clearFit();
         Renderer.draw(p, c, L);
+        c.cloudUi.draw(p,c,L);
         File f = new File(dir, name + ".png");
         int[] px = p.resolve();
         if (crop != null) {

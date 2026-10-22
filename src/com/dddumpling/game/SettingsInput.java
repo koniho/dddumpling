@@ -94,6 +94,7 @@ final class SettingsInput {
                 case SkinSettings.DEFAULT:
                 case SkinSettings.HALLOWEEN: SkinSettings.choose(c,h-1000-SkinSettings.DEFAULT);break;
                 case PlayerSettings.CLOSE: PlayerSettings.close(c);break;
+                case PlayerSettings.CLOUD: c.cloudUi.show(false);break;
                 case PlayerSettings.PLAYER: c.settingsPage=0;c.clearArmed=false;break;
                 case PlayerSettings.DEVELOPER: if(BuildFlags.DEVELOPER) { c.settingsPage=1;c.clearArmed=false; } break;
                 case PlayerSettings.MUSIC_MUTE:

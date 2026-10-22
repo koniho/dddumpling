@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "DDGameCenter.h"
+#import "DDGameCloud.h"
 #import "DDGameServices.h"
 
 @interface DDTestPlayer : NSObject <DDGameCenterPlayer>
@@ -39,6 +40,9 @@
     [service refreshActive:YES]; [service refreshActive:NO]; [service refreshActive:YES];
     XCTAssertEqual(player.calls, 0u);
     XCTAssertEqualObjects(service.status, @"Disabled");
+    DDGameCloud *cloud = [DDGameCloud new];
+    [cloud setValue:service forKey:@"center"];
+    XCTAssertEqual([cloud uiStatus], 0);
 }
 - (void)testBuildGate {
     DDTestPlayer *player = [DDTestPlayer new];
@@ -51,6 +55,16 @@
 #endif
 }
 #if DDDUMPLING_GAME_CENTER
+- (void)testExplicitSignInRetriesAfterCancellation {
+    DDTestPlayer *player = [DDTestPlayer new];
+    DDGameCenter *service = [[DDGameCenter alloc] initWithPresenter:[UIViewController new] player:player enabled:YES];
+    [service refreshActive:YES];
+    player.callback(nil, nil, nil);
+    [service refreshActive:YES]; XCTAssertEqual(player.calls, 1u);
+    [service requestSignIn]; XCTAssertEqual(player.calls, 2u);
+    player.callback(nil, @"player", nil);
+    [service requestSignIn]; XCTAssertEqual(player.calls, 2u);
+}
 - (void)testOfflineFailureAndAccountChangesDoNotRepeatAuthentication {
     DDTestPlayer *player = [DDTestPlayer new];
     DDGameCenter *service = [[DDGameCenter alloc] initWithPresenter:[UIViewController new] player:player enabled:YES];
@@ -80,6 +94,8 @@
     host.modal = [UIViewController new]; [service refreshActive:YES];
     XCTAssertEqual(host.presentations, 0u);
     host.modal = nil; [service refreshActive:YES];
+    XCTAssertEqual(host.presentations, 0u);
+    [service requestSignIn];
     XCTAssertEqual(host.presentations, 1u); XCTAssertEqualObjects(visibility, (@[@YES]));
     player.callback(auth, nil, nil); [service refreshActive:YES];
     XCTAssertEqual(host.presentations, 1u);

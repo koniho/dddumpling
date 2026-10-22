@@ -127,6 +127,7 @@ final class Starter extends Draw {
             c.store.saveCollectTotal(c.collectTotal);
         }
         c.progress.starter(who);
+        c.cloudUi.collected(who);
         c.onboarding.savedPowers|=INTRO_PENDING;c.onboarding.save(c);
         exiting=true;exitAge=0f;cancelTouch();stopNarration();
         // Match the entrance cue; the launch handoff does not announce Start again.

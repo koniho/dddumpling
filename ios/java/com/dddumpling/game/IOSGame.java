@@ -20,10 +20,18 @@ public final class IOSGame {
     private int pausePress;
     private boolean overGesture;
     private int settingsPointer=-1;
+    private boolean cloudPreview;
     public void setHost(Host host) { this.host = host; }
     public void externalFinished() { core.preferences.externalFinished(core); }
+    public void cloudStatus(int status) { if(!cloudPreview)core.cloudUi.status(status); }
+    public void cloudReduceMotion(boolean value) { core.cloudUi.reduceMotion=value; }
+    public int takeCloudAction() { int action=core.cloudUi.takeAction();return cloudPreview?0:action; }
+    public boolean cloudOpen() { return core.cloudUi.open; }
+    public String cloudSummary() { return core.cloudUi.summary(); }
+    public String cloudPrimary() { return core.cloudUi.primary(); }
+    public void cloudChoose(boolean primary) { core.cloudUi.choose(core,primary?1:2); }
     public boolean handlesBack() { return Pause.handlesBack(core); }
-    public boolean showsBackButton() { return core.state != GameCore.OVER && core.returnFade <= 0f && handlesBack(); }
+    public boolean showsBackButton() { return !core.cloudUi.open && core.state != GameCore.OVER && core.returnFade <= 0f && handlesBack(); }
     public boolean paused() { return core.paused; }
     public boolean developerServicesVisible() {
         return BuildFlags.DEVELOPER && (core.state == GameCore.TITLE || core.settingsOpen || core.paused);
@@ -44,6 +52,7 @@ public final class IOSGame {
         Pause.release(core);
     }
     public boolean back() {
+        if(core.cloudUi.open) {core.cloudUi.close(core);return true;}
         if (!handlesBack()) return false;
         cancelPointers();
         boolean handled = Pause.back(core);
@@ -73,6 +82,7 @@ public final class IOSGame {
     }
     public boolean touch(IOSTouch ev) { return touch(ev,0f); }
     public boolean keyDown(int letter, boolean repeat) {
+        if(core.cloudUi.open)return true;
         if (background) return false;
         int result = keyboard.down(core, layout, letter, repeat);
         if (result > 0) tick();
@@ -82,6 +92,12 @@ public final class IOSGame {
     public void cancelKeyboard() { keyboard.clear(); }
     public boolean touch(IOSTouch ev,float inputAge) {
         if (background) return true;
+        if(core.cloudUi.open) {
+            int i=ev.getActionIndex();
+            return core.cloudUi.touch(core,layout,ev.getActionMasked(),ev.getPointerId(i),ev.getX(i),ev.getY(i));
+        }
+        int cloudIndex=ev.getActionIndex();
+        if(core.cloudUi.noticeTouch(core,layout,ev.getActionMasked(),ev.getPointerId(cloudIndex),ev.getX(cloudIndex),ev.getY(cloudIndex)))return true;
         if (ev.getActionMasked() == IOSTouch.ACTION_CANCEL) { cancelPointers(); return true; }
         if (core.paused) {
             int action = ev.getActionMasked();
@@ -755,7 +771,8 @@ public final class IOSGame {
             if (delayedHaptic <= 0f) tick();
         }
         boolean playing = core.state == GameCore.PLAY && !core.paused;
-        core.update(Math.min(elapsed, .05f), elapsed, layout);
+        if(core.cloudUi.update(core,elapsed)) {cancelPointers();core.clock+=Math.min(elapsed,.1f);}
+        else core.update(Math.min(elapsed, .05f), elapsed, layout);
         if (!KeyboardInput.available(core)) keyboard.clear();
         int external=core.preferences.takeExternal(core);
         if(external!=0) {
@@ -776,7 +793,7 @@ public final class IOSGame {
     }
 
     public void draw(Painter painter) {
-        if (layout.w > 0) Renderer.draw(painter, core, layout);
+        if (layout.w > 0) {Renderer.draw(painter, core, layout);core.cloudUi.draw(painter,core,layout);}
     }
 
     /** Simulator scenes use the same setup methods as the developer panel. */
@@ -792,6 +809,51 @@ public final class IOSGame {
 
     public void debugScene(String scene) {
         if (!BuildFlags.DEVELOPER || scene == null || layout.w <= 0) return;
+        // Explicit launch-only grants exercise the normal durable progress and sync path.
+        if (scene.startsWith("progress:")) {
+            String[] values = scene.split(":");
+            if (values.length != 4) return;
+            int score, who, count;
+            try {
+                score = Integer.parseInt(values[1]);
+                who = Integer.parseInt(values[2]);
+                count = Integer.parseInt(values[3]);
+            } catch (NumberFormatException invalid) { return; }
+            if (score < 0 || score > 1000000 || who < 0 || who >= Collect.COUNT
+                    || count < 0 || count > 10) return;
+            if (!core.progress.available()) return;
+            cancelPointers(); Pause.resume(core); core.toTitle();
+            core.progress.startRun(0);
+            for (int i = 0; i < count; i++)
+                core.progress.reward(who, core.collectionCounts[who] == 0 && i == 0, "steamer", score);
+            core.progress.finishRun(score, false);
+            core.progress.apply(core);
+            return;
+        }
+        if(scene.startsWith("cloud:")) {
+            String state=scene.substring(6);
+            int status;
+            switch(state) {
+                case "intro":case "sign-in":status=CloudSaveUi.SIGN_IN;break;
+                case "drive":status=CloudSaveUi.DRIVE;break;
+                case "pending":status=CloudSaveUi.PENDING;break;
+                case "failed":case "notice":status=CloudSaveUi.FAILED;break;
+                case "account":status=CloudSaveUi.ACCOUNT;break;
+                default:return;
+            }
+            cancelPointers();Pause.resume(core);core.toTitle();
+            core.releaseNotes.open=false;core.onboarding.clear();
+            core.onboarding.saved|=Onboarding.SKIPPED;
+            cloudPreview=true;
+            core.cloudUi.status(status);core.cloudUi.failureShown=false;
+            core.cloudUi.notice=state.equals("notice");
+            core.cloudUi.character=Collect.STAR_FIRST;
+            core.cloudUi.pending=-1;
+            core.cloudUi.show(state.equals("intro"));
+            if(state.equals("notice"))core.cloudUi.open=false;
+            return;
+        }
+        cloudPreview=false;
         int stage = 0;
         if (scene.startsWith("stage:")) {
             try { stage = Integer.parseInt(scene.substring(6)); }

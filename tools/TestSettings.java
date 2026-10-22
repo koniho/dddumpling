@@ -508,6 +508,7 @@ final class TestSettings extends Check {
         skinGameplayParity(L);
         infiniteLives(L);
         developerBossCompletion(L);
+        TestCloudSaveUi.all(L);
         developerReset(L);
         scoreReset(L);
         panelTiming(L);

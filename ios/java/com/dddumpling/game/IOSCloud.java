@@ -61,7 +61,10 @@ public final class IOSCloud implements Progress.Sink {
             merging = true;
             core.progress.restore(merged.encode(), core);
             if (!core.progress.available()) throw new java.io.IOException("Local save unavailable");
-            host.save(core.progress.snapshot(), token);
+            byte[] snapshot = core.progress.snapshot();
+            // Polling an unchanged save must not rewrite its iCloud package every minute.
+            if (saves.length == 1 && java.util.Arrays.equals(saves[0], snapshot)) saved(token);
+            else host.save(snapshot, token);
         } catch (Exception e) {
             failed(token, true);
         } finally { merging = false; }
