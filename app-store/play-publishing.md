@@ -68,6 +68,10 @@ The itch workflow creates a fresh hidden staging channel by default. Select **ac
 only to update the live Android channel. Hidden uploads use a unique channel because
 butler cannot hide a new build on an existing channel.
 
+For a packaging retry built manually from main, pass its successful Android workflow
+run ID as `artifact_run`. The itch workflow verifies the run identity and manifest
+version before using its offline APK; the original tag is not moved.
+
 Upload `DDDUMPLING-v<version>.apk` directly to itch.io and select Android. The
 `-developer.apk` is a separate debugging app and is not the public game build.
 The production APK uses the existing CI Android signing key. Updates to sideloaded copies

@@ -11,6 +11,10 @@ on:
         description: Only inspect channel versions; do not upload
         type: boolean
         default: false
+      artifact_run:
+        description: Optional successful manual Android build run ID for a packaging retry
+        type: string
+        default: ''
       activate:
         description: Update the live Android channel (otherwise create a hidden upload)
         type: boolean
@@ -46,9 +50,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ inputs.tag }}
+          ARTIFACT_RUN: ${{ inputs.artifact_run }}
         run: |
           mkdir -p build/itch
-          if ! gh release download "$RELEASE_TAG" \
+          if [ -n "$ARTIFACT_RUN" ]; then
+            [[ "$ARTIFACT_RUN" =~ ^[0-9]+$ ]] || exit 1
+            gh api "repos/$GH_REPO/actions/runs/$ARTIFACT_RUN" > build/retry-run.json
+            python3 - <<'PY'
+          import json
+          r = json.load(open('build/retry-run.json'))
+          assert r['conclusion'] == 'success' and r['head_branch'] == 'main'
+          assert r['path'] == '.github/workflows/release.yml' and r['event'] == 'workflow_dispatch'
+          PY
+            sha=$(python3 -c 'import json; print(json.load(open("build/retry-run.json"))["head_sha"])')
+            gh api "repos/$GH_REPO/contents/AndroidManifest.xml?ref=$sha" --jq .content | base64 --decode > build/retry-manifest.xml
+            python3 - <<'PY'
+          import os, xml.etree.ElementTree as E
+          version = E.parse('build/retry-manifest.xml').getroot().get('{http://schemas.android.com/apk/res/android}versionName')
+          assert os.environ['RELEASE_TAG'] == 'v' + version
+          PY
+            gh run download "$ARTIFACT_RUN" --name "DDDUMPLING-build-$ARTIFACT_RUN" --dir build/release-artifact
+            cp "build/release-artifact/DDDUMPLING-build-$ARTIFACT_RUN.apk" "build/itch/DDDUMPLING-$RELEASE_TAG.apk"
+          elif ! gh release download "$RELEASE_TAG" \
             --pattern "DDDUMPLING-${RELEASE_TAG}.apk" --dir build/itch; then
             # Draft releases need push access; use the same verified CI artifact with read access.
             sha=$(gh api "repos/$GH_REPO/commits/$RELEASE_TAG" --jq .sha)
