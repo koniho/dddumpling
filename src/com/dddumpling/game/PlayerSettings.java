@@ -172,10 +172,7 @@ final class PlayerSettings extends Draw {
         for(int i=0;i<tabs;i++) {
             float a=tabEdge(L,i),b=tabEdge(L,i+1);
             p.fillRect(a,t+s*3f,b-s*.12f,t+s*5f,tabPage(i)==c.settingsPage?0x554DCEAA:0x18FFFFFF);
-            if(i==1) {
-                p.text("SYNC &",(a+b)*.5f,t+s*3.8f,type(s*.44f),INK,Painter.CENTER,true);
-                p.text("ACHIEVEMENTS",(a+b)*.5f,t+s*4.65f,type(s*.44f),INK,Painter.CENTER,true);
-            } else p.text(i==0?"PLAYER":"DEVELOPER",(a+b)*.5f,t+s*4.3f,type(s*.48f),INK,Painter.CENTER,true);
+            p.text(i==0?"PLAYER":i==1?"PROGRESS":"DEVELOPER",(a+b)*.5f,t+s*4.3f,type(s*.48f),INK,Painter.CENTER,true);
         }
         if(c.settingsPage==1 && BuildFlags.DEVELOPER) { DevSettings.draw(p,c,L); return; }
         if(c.settingsPage==SERVICES_PAGE) {services(p,c,L);return;}
