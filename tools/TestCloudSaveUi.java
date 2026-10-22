@@ -48,6 +48,21 @@ final class TestCloudSaveUi extends Check {
             check("Android cloud state has no Apple instructions "+state,!ui.summary().contains("iCloud") && !ui.summary().contains("Game Center"));
         }
         ui.status(CloudSaveUi.SAVED);
-        check("Android SDK callback is queued not verified server delivery",ui.label().equals("CLOUD SAVE QUEUED"));
+        check("Android accepted save shows connection without claiming server delivery",
+                ui.shortLabel().equals("CONNECTED") && ui.label().equals("PLAY GAMES CONNECTED")
+                && ui.summary().contains("background when online"));
+        c.settingsOpen=true;c.settingsPage=PlayerSettings.SERVICES_PAGE;
+        ui.show(false);
+        for(int frame=0;frame<4;frame++)ui.update(c,.1f);
+        check("manual cloud panel keeps ownership while its entrance advances",ui.open && ui.age>.35f);
+        y=CloudSaveUi.top(L)+CloudSaveUi.unit(L)*23.5f;
+        ui.touch(c,L,0,9,x,y);ui.touch(c,L,1,9,x,y);
+        check("done returns to progress settings",!ui.open && c.settingsOpen && c.settingsPage==PlayerSettings.SERVICES_PAGE);
+        ui.show(false);
+        check("system back closes cloud before underlying settings",Pause.handlesBack(c) && Pause.back(c) && !ui.open && c.settingsOpen);
+        c.settingsOpen=false;ui.show(false);
+        check("cloud panel alone owns system back at title",Pause.handlesBack(c) && Pause.back(c) && !ui.open);
+        ui.playGames=false;
+        check("Apple accepted save keeps pending wording",ui.shortLabel().equals("SYNC PENDING") && ui.label().equals("CLOUD SAVE PENDING"));
     }
 }

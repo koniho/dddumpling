@@ -82,7 +82,7 @@ final class CloudSaveUi extends Draw {
         switch(status) {
             case SIGN_IN:return "SIGN IN";
             case PENDING:return "SYNC PENDING";
-            case SAVED:return "SAVE QUEUED";
+            case SAVED:return playGames?"CONNECTED":"SYNC PENDING";
             case DRIVE:return "UNAVAILABLE";
             case FAILED:return "NEEDS ATTENTION";
             case ACCOUNT:return "SYNC PAUSED";
@@ -105,9 +105,9 @@ final class CloudSaveUi extends Draw {
             double rad=Math.toRadians(angle+260);
             p.fillCircle(bx+(float)Math.cos(rad)*b*.65f,by+(float)Math.sin(rad)*b*.65f,r*.11f,color);
         } else if(status==SAVED) {
-            // The native callback confirms queuing, not arrival on Google's servers.
-            p.line(bx,by-b*.6f,bx,by,color,r*.09f);
-            p.line(bx,by,bx+b*.4f,by+b*.22f,color,r*.09f);
+            // A linked service, not a checkmark promising server delivery.
+            p.strokeCircle(bx-b*.23f,by-b*.18f,b*.38f,color,r*.08f);
+            p.strokeCircle(bx+b*.23f,by+b*.18f,b*.38f,color,r*.08f);
         } else if(status==SIGN_IN) {
             p.fillCircle(bx,by-b*.3f,b*.24f,color);
             p.fillEllipse(bx,by+b*.3f,b*.43f,b*.26f,color);
@@ -131,7 +131,7 @@ final class CloudSaveUi extends Draw {
             case SIGN_IN:return playGames?"SIGN IN TO PLAY GAMES":"SIGN IN TO GAME CENTER";
             case DRIVE:return "ICLOUD DRIVE UNAVAILABLE";
             case PENDING:return "CLOUD SAVE PENDING";
-            case SAVED:return playGames?"CLOUD SAVE QUEUED":"CLOUD SAVE PENDING";
+            case SAVED:return playGames?"PLAY GAMES CONNECTED":"CLOUD SAVE PENDING";
             case ACCOUNT:return "SYNC PAUSED";
             case FAILED:return playGames?"CLOUD SYNC NEEDS ATTENTION":"COULDN'T SAVE TO ICLOUD";
             default:return "SAVED ON THIS DEVICE";
@@ -170,7 +170,8 @@ final class CloudSaveUi extends Draw {
             case SIGN_IN:return new String[]{"Sign in to Play Games to get started.","Use the same profile on your devices.","Your progress is saved on this device."};
             case ACCOUNT:return new String[]{"This save belongs to another profile.","Return to your original Play Games profile.","Your progress is saved on this device."};
             case FAILED:return new String[]{"Check your connection and Play Games.","Reopen the game to try connecting again.","Your local progress stays safe."};
-            case PENDING:case SAVED:return new String[]{"Your progress is saved on this device.","Play Games transfers it in the background.","Other devices may take a moment."};
+            case PENDING:return new String[]{"Preparing your save with Play Games.","Your progress is saved on this device.","Other devices may take a moment."};
+            case SAVED:return new String[]{"Play Games has accepted your save.","It uploads in the background when online.","Other devices may take a moment."};
             default:return new String[]{"Your progress is saved on this device.","Cloud sync is not available right now."};
         }
         switch(status) {

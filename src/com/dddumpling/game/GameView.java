@@ -192,6 +192,12 @@ public class GameView extends View implements InputManager.InputDeviceListener {
     }
     private boolean touch(MotionEvent ev) {
         if (background) return true;
+        int cloudIndex=ev.getActionIndex();
+        if(core.cloudUi.open)
+            return core.cloudUi.touch(core,layout,ev.getActionMasked(),ev.getPointerId(cloudIndex),
+                    ev.getX(cloudIndex),ev.getY(cloudIndex));
+        if(core.cloudUi.noticeTouch(core,layout,ev.getActionMasked(),ev.getPointerId(cloudIndex),
+                ev.getX(cloudIndex),ev.getY(cloudIndex)))return true;
         if (core.paused) {
             int action = ev.getActionMasked();
             int hit = Pause.hit(layout, ev.getX(), ev.getY());
@@ -900,9 +906,11 @@ public class GameView extends View implements InputManager.InputDeviceListener {
                 }
                 postInvalidateOnAnimation();return;
             }
-            boolean playingBeforeUpdate = core.state == GameCore.PLAY && !core.paused && !background;
+            boolean playingBeforeUpdate = core.state == GameCore.PLAY && !core.paused && !background && !core.cloudUi.open;
             if (!background) {
-                core.update(dt, elapsed, layout);
+                if(core.cloudUi.update(core,elapsed)) {
+                    cancelPointers();core.clock+=Math.min(elapsed,.1f);
+                } else core.update(dt, elapsed, layout);
                 if (!KeyboardInput.available(core)) keyboard.clear();
                 int external=core.preferences.takeExternal(core);
                 if(external!=0) ((MainActivity)getContext()).openAppAction(external);
@@ -924,6 +932,7 @@ public class GameView extends View implements InputManager.InputDeviceListener {
             }
             painter.bind(c);
             Renderer.draw(painter, core, layout);
+            core.cloudUi.draw(painter,core,layout);
         } catch (Throwable t) {
             // A throw from inside onDraw would otherwise kill the process with no trace.
             if (getContext() instanceof android.app.Activity) {

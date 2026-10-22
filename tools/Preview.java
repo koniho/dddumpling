@@ -1950,6 +1950,8 @@ final class Preview {
             shot(dir,"cloud-sync-offline",cloud,L,w,h,ss);
             cloud.cloudUi.status(CloudSaveUi.SIGN_IN);cloud.cloudUi.show(false);cloud.cloudUi.age=1f;
             shot(dir,"cloud-play-sign-in",cloud,L,w,h,ss);
+            cloud.cloudUi.status(CloudSaveUi.SAVED);
+            shot(dir,"cloud-play-connected",cloud,L,w,h,ss);
         }
         starterFrames(dir,L,w,h,ss);
         modeFrames(dir,L,w,h,ss);

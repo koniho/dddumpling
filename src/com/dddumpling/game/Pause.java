@@ -15,11 +15,12 @@ final class Pause extends Draw {
                 && Math.abs(y-entryY(L)) <= L.unit*1.35f;
     }
     static boolean handlesBack(GameCore c) {
-        return c.townOpen || c.updatePrompt.open || c.highScoreScreen.open || c.releaseNotes.open || c.returnFade > 0f
+        return c.cloudUi.open || c.townOpen || c.updatePrompt.open || c.highScoreScreen.open || c.releaseNotes.open || c.returnFade > 0f
                 || c.paused || c.settingsOpen || c.storyOpen() || c.caseOpen
                 || c.starting() || c.starter.open || c.state != GameCore.TITLE || !c.modes.adventure();
     }
     static boolean back(GameCore c) {
+        if(c.cloudUi.open) { c.cloudUi.close(c);return true; }
         if(c.updatePrompt.open) { c.updatePrompt.choose(c,false);return true; }
         if(c.starter.open) { c.cancelStart();return true; }
         if(c.townOpen) { TownScreen.back(c); c.saveTown(); return true; }
