@@ -1192,6 +1192,7 @@ final class Preview {
         shot(dir,"114-title-tour-modes",tour,L,w,h,ss);
         GameCore settings=new GameCore(new Mem(),114);PlayerSettings.open(settings);
         settings.preferences.updatePanel(settings,PlayerSettings.PANEL_TIME);
+        settings.settingsPage=PlayerSettings.SERVICES_PAGE;
         shot(dir,"114-settings-reset",settings,L,w,h,ss);
     }
 
@@ -1381,6 +1382,7 @@ final class Preview {
         GameCore c=new GameCore(new Mem(),111L);c.collected=3;c.startGame();c.score=9000;
         LandPicker.recordBest(c);c.highScores.finish(c);c.toTitle();c.returnFade=0;
         PlayerSettings.open(c);c.preferences.updatePanel(c,PlayerSettings.PANEL_TIME);
+        c.settingsPage=PlayerSettings.SERVICES_PAGE;
         shot(dir,"111-reset-settings",c,L,w,h,ss);
         c.preferences.scoreReset.action(c,ScoreReset.OPEN);
         shot(dir,"111-reset-confirm",c,L,w,h,ss);

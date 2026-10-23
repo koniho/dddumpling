@@ -231,6 +231,7 @@ final class TestSettings extends Check {
         byte[] oldCloud=c.progress.snapshot();
         long collected=c.collected;int landState=save.landState;int prefs=save.loadPlayerSettings();
         PlayerSettings.open(c);c.preferences.updatePanel(c,PlayerSettings.PANEL_TIME);
+        SettingsInput.action(c,L,1000+PlayerSettings.SERVICES);
         ScoreReset ui=c.preferences.scoreReset;
         settingsTap(c,L,L.w*.5f,PlayerSettings.resetY(L));
         check("reset action asks before clearing",ui.confirming && c.best==9000 && save.scoreResets==0);
@@ -259,7 +260,8 @@ final class TestSettings extends Check {
         check("old run cannot immediately repopulate cleared scores",c.best==0
                 && c.highScores.runs.isEmpty() && c.progress.maximum("best_score")==0);
         c.update(ScoreReset.TIME+.01f,L);
-        check("celebration returns control to settings",!ui.active() && c.settingsOpen && !c.preferences.panelMoving());
+        check("celebration returns control to settings",!ui.active() && c.settingsOpen && !c.preferences.panelMoving()
+                && c.settingsPage==PlayerSettings.SERVICES_PAGE);
         GameCore reopened=new GameCore(save,112L,true);
         check("reset survives restart",reopened.best==0 && reopened.landBests[1]==0
                 && reopened.highScores.runs.isEmpty() && reopened.highScores.latestRun==null);
@@ -274,6 +276,7 @@ final class TestSettings extends Check {
         check("next run establishes new records",reopened.best==321 && reopened.highScores.latestRun.score==321);
         check("new records survive another restart",new GameCore(save,113L,true).best==321);
         PlayerSettings.open(reopened);reopened.preferences.updatePanel(reopened,PlayerSettings.PANEL_TIME);
+        SettingsInput.action(reopened,L,1000+PlayerSettings.SERVICES);
         save.resetFails=true;
         settingsTap(reopened,L,L.w*.5f,PlayerSettings.resetY(L));
         settingsTap(reopened,L,L.w*.72f,ScoreReset.buttonsY(L));
@@ -530,7 +533,19 @@ final class TestSettings extends Check {
         input.touch(c,L,2,1,PlayerSettings.trackR(L),PlayerSettings.row(L,0)+PlayerSettings.unit(L)*3f);
         input.touch(c,L,1,1,PlayerSettings.trackR(L),PlayerSettings.row(L,0)+PlayerSettings.unit(L)*3f);
         check("hidden player controls cannot react on services tab",c.preferences.music==music);
+        check("reset controls remain available without platform services",
+                PlayerSettings.hit(c,L,x,PlayerSettings.resetY(L))==ScoreReset.OPEN
+                && PlayerSettings.hit(c,L,x,PlayerSettings.tutorialY(L))==PlayerSettings.TUTORIALS);
+        settingsTap(c,L,x,PlayerSettings.tutorialY(L));
+        check("progress tutorial reset responds to taps",c.preferences.tutorialResetUntil>c.clock);
+        float progressBottom=PlayerSettings.panelBottom(c,L);
+        check("progress reset controls fit panel",PlayerSettings.tutorialY(L)+PlayerSettings.unit(L)*1.2f<progressBottom);
+        check("progress outside hit follows panel",PlayerSettings.hit(c,L,x,progressBottom+1)==PlayerSettings.CLOSE);
         SettingsInput.action(c,L,1000+PlayerSettings.PLAYER);
+        check("player panel shrinks to its remaining controls",PlayerSettings.panelBottom(c,L)<progressBottom);
+        check("resets are absent from player tab",PlayerSettings.hit(c,L,x,PlayerSettings.resetY(L))!=ScoreReset.OPEN
+                && PlayerSettings.hit(c,L,x,PlayerSettings.tutorialY(L))!=PlayerSettings.TUTORIALS);
+        check("player outside hit follows panel",PlayerSettings.hit(c,L,x,PlayerSettings.panelBottom(c,L)+1)==PlayerSettings.CLOSE);
         c.preferences.achievementsEnabled=true;c.cloudUi.status(CloudSaveUi.SAVED);
         check("player footer now only opens privacy",PlayerSettings.hit(c,L,x,PlayerSettings.row(L,3))==PlayerSettings.PRIVACY);
         check("services stay inside panel",PlayerSettings.serviceY(L,1)+PlayerSettings.unit(L)*5.5f<PlayerSettings.bottom(L));
