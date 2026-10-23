@@ -90,4 +90,32 @@ Dir.mktmpdir do |root|
   File.write(path, "x" * 4001)
   rejects("Apple release notes") { ios_production_notes!(root) }
 end
+state = nil
+calls = []
+request = lambda do |method, path, body|
+  calls << [method, path, body]
+  case method
+  when 'get' then {'data' => state}
+  when 'post'
+    assert(body.dig(:data, :relationships, :appStoreVersion, :data, :id) == 'version-1', 'link only the selected version')
+    state = {'id' => 'gc-1', 'attributes' => {'enabled' => false}}
+    {'data' => state}
+  when 'patch'
+    assert(path == '/gameCenterAppVersions/gc-1' && body.dig(:data, :attributes, :enabled), 'enable selected Game Center version')
+    state['attributes']['enabled'] = true
+    {'data' => state}
+  end
+end
+ios_game_center_version!('version-1', request: request)
+assert(calls.map(&:first) == ['get'], 'Game Center preflight is read-only')
+calls.clear
+ios_game_center_version!('version-1', request: request, apply: true)
+assert(calls.map(&:first) == ['get', 'post', 'patch', 'get'], 'create, enable and verify missing link')
+calls.clear
+ios_game_center_version!('version-1', request: request, apply: true)
+assert(calls.map(&:first) == ['get'], 'enabled links are unchanged on retry')
+state['attributes']['enabled'] = false
+calls.clear
+ios_game_center_version!('version-1', request: request, apply: true)
+assert(calls.map(&:first) == ['get', 'patch', 'get'], 'reuse an existing disabled link')
 puts "Fastlane configuration checks passed"

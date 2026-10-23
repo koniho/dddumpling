@@ -235,7 +235,9 @@ release after approval. No binaries are rebuilt or uploaded. The workflow checks
 manifest and approved notes, preserves existing store assets, and verifies saved state.
 Store review and processing may still delay public availability. Apple uses the first paragraph
 of `ios/store/en-US/what_to_test.txt` as its public release notes; later beta-testing instructions
-stay in TestFlight. Google uses the version-specific Play changelog.
+stay in TestFlight. Google uses the version-specific Play changelog. Apple promotion also
+enables and verifies the selected App Store version's Game Center link before submission,
+reusing the app's existing Game Center configuration.
 
 ## Update listing text
 
