@@ -2,6 +2,75 @@ package com.dddumpling.game;
 
 /** Character controls for the player settings: musical handles and the pear age toggle. */
 final class SettingsArt extends Draw {
+    static void trophies(Painter p,float x,float y,float s,float clock,float tapped,boolean enabled) {
+        if(!enabled)p=new OpacityPainter(p,.55f);
+        float age=Math.max(0f,tapped),burst=tapped>=0 && tapped<.7f?(float)Math.sin(age/.7f*Math.PI):0;
+        float w=s*6.2f,top=y-s*2.45f,bottom=y+s*2.05f;
+        // Deep cabinet, warm bevels, and a glass pane; keep the characters in the foreground.
+        p.fillEllipse(x,y+s*2.38f,w*.94f,s*.42f,0x40110C21);
+        p.fillPoly(new float[]{x-w,top+s*.3f,x-w+s*.3f,top,x+w-s*.3f,top,
+                x+w,top+s*.3f,x+w,bottom,x-w,bottom},0xFF86542C);
+        p.fillRect(x-w+s*.22f,top+s*.23f,x+w-s*.22f,bottom-s*.24f,0xFF2B2044);
+        p.fillRect(x-w+s*.45f,top+s*.45f,x+w-s*.45f,bottom-s*.4f,0xFF3D2D55);
+        for(int i=0;i<3;i++) {
+            float tx=x+(i-1)*s*3.6f;
+            p.fillPoly(new float[]{tx-s*.65f,top+s*.48f,tx+s*.65f,top+s*.48f,
+                    tx+s*1.45f,bottom-s*.45f,tx-s*1.45f,bottom-s*.45f},0x14FFE6A3);
+            p.fillPoly(pill(tx,top+s*.34f,s*.7f,s*.09f,6),0xFFFFE5A1);
+        }
+        Painter gold=new OpacityPainter(p,1) {
+            public int skin() {return Skins.DEFAULT;}
+            int color(int c) {
+                float light=(((c>>>16)&255)*.21f+((c>>>8)&255)*.72f+(c&255)*.07f)/255f;
+                int mapped=light<.65f?Glyph.mix(0xFF48250F,0xFFEAB13F,light/.65f):
+                        Glyph.mix(0xFFEAB13F,0xFFFFF7D7,(light-.65f)/.35f);
+                return Glyph.withAlpha(mapped,c>>>24);
+            }
+        };
+        for(int i=0;i<3;i++) {
+            float tx=x+(i-1)*s*3.6f,plinth=y+s*(i==1?1.04f:1.45f);
+            float wave=(float)Math.sin(clock*2.4f+i*2.1f);
+            float hop=Math.max(0f,wave);hop=hop*hop*hop*.34f;
+            float squash=1+.065f*(float)Math.sin(clock*4.8f+i*4.2f);
+            float local=(tapped-i*.035f)/.57f;
+            if(tapped>=0 && local>=0 && local<1) {
+                float jump=(float)Math.sin(local*Math.PI);
+                hop+=jump*.85f;
+                squash+=.27f*(float)Math.cos(local*Math.PI*2)*(1-local);
+            }
+            float r=s*(i==1?1.3f:1.14f),ty=plinth-r*.83f-hop*s;
+            p.fillPoly(new float[]{tx-s*1.22f,plinth,tx+s*1.22f,plinth,
+                    tx+s*1.36f,plinth+s*.38f,tx-s*1.36f,plinth+s*.38f},0xFFB37B36);
+            p.fillRect(tx-s*1.13f,plinth+s*.06f,tx+s*1.13f,plinth+s*.28f,0xFFFFD36A);
+            p.fillEllipse(tx,plinth,s*(1.04f-hop*.22f),s*.17f,0x795F361B);
+            Kawaii.draw(gold,i==0?Kawaii.CAT:i==1?Kawaii.DUMPLING:Kawaii.STRAWBERRY,
+                    tx,ty,r,0xFFFFCF55,squash,.65f+burst*.35f);
+            p.fillPoly(star(tx,plinth+s*.19f,s*.12f,s*.055f,5,-1.57f),0xFF815024);
+        }
+        // Thin glass reflections cross the case without hiding the faces.
+        p.save();p.clipRect(x-w+s*.45f,top+s*.45f,x+w-s*.45f,bottom-s*.3f);
+        float shine=x-w+((clock*.17f)%1)*w*2.6f;
+        p.fillPoly(new float[]{shine-s*.6f,top,shine+s*.15f,top,
+                shine-s*1.4f,bottom,shine-s*2.15f,bottom},0x14FFFFFF);
+        p.restore();
+        p.line(x-w+s*.11f,top+s*.34f,x-w+s*.11f,bottom-s*.15f,0xFFFFD67D,s*.16f);
+        p.line(x+w-s*.11f,top+s*.34f,x+w-s*.11f,bottom-s*.15f,0xFFC68B39,s*.16f);
+        p.line(x-w+s*.3f,top+s*.11f,x+w-s*.3f,top+s*.11f,0xFFFFE3A0,s*.16f);
+        p.fillPoly(pill(x,bottom,w+s*.18f,s*.18f,6),0xFFE9AD4D);
+        p.fillRect(x-w+s*.7f,bottom+s*.13f,x-w+s*1.4f,bottom+s*.4f,0xFF926433);
+        p.fillRect(x+w-s*1.4f,bottom+s*.13f,x+w-s*.7f,bottom+s*.4f,0xFF926433);
+        for(int i=0;i<5;i++) {
+            float pulse=.5f+.5f*(float)Math.sin(clock*3+i*2.4f);
+            float sx=x+s*(i-2)*2.65f,sy=y-s*(i%2==0?1.8f:.7f);
+            float r=s*(.08f+pulse*pulse*.14f+burst*.18f);
+            p.fillPoly(star(sx,sy,r*1.7f,r*.26f,4,0),Glyph.withAlpha(0xFFFFE9A6,(int)(70+150*pulse)));
+        }
+        if(burst>0)for(int i=0;i<8;i++) {
+            double a=i*Math.PI/4;
+            float sx=x+(float)Math.cos(a)*s*(5.8f+age*.8f),sy=y+(float)Math.sin(a)*s*(2.4f+age*.6f);
+            p.fillPoly(star(sx,sy,s*.22f*burst,s*.065f*burst,4,age),fadeBy(0xFFFFE3A0,burst));
+        }
+    }
     static void draw(Painter p,boolean music,float x,float y,float keyR,float volume,boolean muted,float clock) {
         int glyph=music?Kawaii.CAT:Kawaii.BLOB, col=Skins.keyColor(p,glyph);
         float r=keyR*.60f;

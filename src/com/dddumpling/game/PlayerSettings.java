@@ -24,7 +24,7 @@ final class PlayerSettings extends Draw {
         if(c.sound!=null) c.sound.uiBloop();
     }
     int takeExternal(GameCore c) {
-        if(externalAction==0 || c.clock-externalAt<.18f) return 0;
+        if(externalAction==0 || c.clock-externalAt<(externalAction==ACHIEVEMENTS?.64f:.18f)) return 0;
         int action=externalAction;externalAction=0;return action;
     }
     void externalFinished(GameCore c) { externalBusy=false;externalDone=c.clock; }
@@ -205,13 +205,14 @@ final class PlayerSettings extends Draw {
             boolean cloud=i==1,enabled=cloud?c.cloudUi.enabled:c.preferences.achievementsEnabled;
             p.fillRect(contentL(L),y-s*5.5f,contentR(L),y+s*5.5f,enabled?(cloud?0x334DCEAA:0x33F4C552):0x18FFFFFF);
             if(cloud)c.cloudUi.icon(p,x,y-s*2.6f,s*1.7f,c.clock);
-            else Trinket.draw(p,Collect.STAR_FIRST+1,x,y-s*2.6f,s*1.7f,c.clock,true,1f);
-            p.text(cloud?"CLOUD SYNC":"ACHIEVEMENTS",x,y+s*.25f,type(s*.68f),INK,Painter.CENTER,true);
+            else SettingsArt.trophies(p,x,y-s*2f,s,c.cloudUi.reduceMotion?0:c.clock,
+                    !c.cloudUi.reduceMotion && c.preferences.animatedAction==ACHIEVEMENTS?c.clock-c.preferences.externalAt:-1,enabled);
+            p.text(cloud?"CLOUD SYNC":"ACHIEVEMENTS",x,y+s*(cloud?.25f:1.5f),type(s*.68f),INK,Painter.CENTER,true);
             String status=cloud?c.cloudUi.shortLabel():enabled?"YOUR SQUISHY MILESTONES":"NOT AVAILABLE";
-            p.text(status,x,y+s*2f,type(s*.43f),enabled?GOLD:INK_DIM,Painter.CENTER,true);
+            p.text(status,x,y+s*(cloud?2f:3f),type(s*.43f),enabled?GOLD:INK_DIM,Painter.CENTER,true);
             String hint=enabled?(cloud?"Tap for sync details":"Tap to view achievements"):
                     cloud?"Your progress stays on this device.":"Keep playing and collecting squishies.";
-            p.text(hint,x,y+s*3.7f,type(s*.43f),INK_DIM,Painter.CENTER,false);
+            p.text(hint,x,y+s*(cloud?3.7f:4.5f),type(s*.43f),INK_DIM,Painter.CENTER,false);
         }
     }
     private static void social(Painter p,GameCore c,Layout L,boolean share) {

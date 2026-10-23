@@ -517,7 +517,10 @@ final class TestSettings extends Check {
         check("cloud card opens status without leaving its tab",c.cloudUi.open && c.settingsPage==PlayerSettings.SERVICES_PAGE);
         c.cloudUi.close(c);y=PlayerSettings.serviceY(L,0);
         input.touch(c,L,0,1,x,y);input.touch(c,L,1,1,x,y);c.update(.2f,L);
-        check("achievement card dispatches platform action",c.preferences.takeExternal(c)==PlayerSettings.ACHIEVEMENTS);
+        check("achievement tap leaves time for trophy celebration",c.preferences.takeExternal(c)==0 && c.preferences.externalBusy);
+        input.touch(c,L,0,2,x,y);input.touch(c,L,1,2,x,y);
+        c.update(.5f,L);
+        check("achievement celebration dispatches once despite another tap",c.preferences.takeExternal(c)==PlayerSettings.ACHIEVEMENTS && c.preferences.takeExternal(c)==0);
         c.preferences.externalFinished(c);
         c.preferences.achievementsEnabled=false;c.cloudUi.status(CloudSaveUi.OFF);
         check("unavailable services have no active buttons",

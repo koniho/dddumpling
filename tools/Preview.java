@@ -1940,6 +1940,16 @@ final class Preview {
             cloud.preferences.achievementsEnabled=true;
             cloud.settingsPage=PlayerSettings.SERVICES_PAGE;
             shot(dir,"cloud-settings-achievements",cloud,L,w,h,ss);
+            float trophyClock=cloud.clock;
+            for(float age:new float[]{.08f,.28f,.52f}) {
+                cloud.preferences.animatedAction=PlayerSettings.ACHIEVEMENTS;
+                cloud.preferences.externalAt=trophyClock;cloud.clock=trophyClock+age;
+                shot(dir,"cloud-trophies-tap-"+Math.round(age*100),cloud,L,w,h,ss);
+            }
+            cloud.preferences.animatedAction=0;cloud.clock=trophyClock;
+            cloud.preferences.skin=Skins.HALLOWEEN;
+            shot(dir,"cloud-trophies-halloween",cloud,L,w,h,ss);
+            cloud.preferences.skin=Skins.DEFAULT;
             cloud.cloudUi.playGames=true;cloud.cloudUi.status(CloudSaveUi.PENDING);
             shot(dir,"cloud-sync-play",cloud,L,w,h,ss);
             for(int state:new int[]{CloudSaveUi.SIGN_IN,CloudSaveUi.SAVED,CloudSaveUi.FAILED,CloudSaveUi.ACCOUNT}) {
