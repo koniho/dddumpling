@@ -29,7 +29,8 @@ final class SmokeTests: XCTestCase {
             game.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.79)).tap()
             let closed = NSPredicate(format: "label == %@", "DDDUMPLING game")
             expectation(for: closed, evaluatedWith: game)
-            waitForExpectations(timeout: 5)
+            // Simulator accessibility can briefly return an empty tree after dismissal.
+            waitForExpectations(timeout: 15)
             app.terminate()
         }
     }

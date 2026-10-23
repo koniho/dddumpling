@@ -424,9 +424,10 @@
 - (void)testEffectWorkerPreservesPitchAndGain {
   DDClockedAudio *audio = [DDClockedAudio new];
   DDCountingMixer *mixer = [DDCountingMixer new];
+  // Activation queues mixer preparation; install the test mixer before it can run.
+  [audio setValue:mixer forKey:@"effectMixer"];
   [audio setValue:@YES forKey:@"active"];
   [audio setValue:@YES forKey:@"playbackAllowed"];
-  [audio setValue:mixer forKey:@"effectMixer"];
   [audio playEffect:DDSfx_ZAP rate:1.5 gain:.7];
   dispatch_sync([audio valueForKey:@"effectsQueue"], ^{});
   XCTAssertEqual(mixer.playCount, 1u);
@@ -438,9 +439,10 @@
 - (void)testCatLaserPlaysEveryHitAtSoftGain {
   DDClockedAudio *audio = [DDClockedAudio new];
   DDCountingMixer *mixer = [DDCountingMixer new];
+  // Activation queues mixer preparation; install the test mixer before it can run.
+  [audio setValue:mixer forKey:@"effectMixer"];
   [audio setValue:@YES forKey:@"active"];
   [audio setValue:@YES forKey:@"playbackAllowed"];
-  [audio setValue:mixer forKey:@"effectMixer"];
   for (int hit = 0; hit < 12; ++hit) [audio catLaser];
   dispatch_sync([audio valueForKey:@"effectsQueue"], ^{});
   XCTAssertEqual(mixer.playCount, 12u);
@@ -451,9 +453,10 @@
 - (void)testCatFlurryPlaysEveryReleasedNote {
   DDClockedAudio *audio = [DDClockedAudio new];
   DDCountingMixer *mixer = [DDCountingMixer new];
+  // Activation queues mixer preparation; install the test mixer before it can run.
+  [audio setValue:mixer forKey:@"effectMixer"];
   [audio setValue:@YES forKey:@"active"];
   [audio setValue:@YES forKey:@"playbackAllowed"];
-  [audio setValue:mixer forKey:@"effectMixer"];
   for (int note = 0; note < 12; ++note) [audio catFlurryWithInt:note withInt:12];
   dispatch_sync([audio valueForKey:@"effectsQueue"], ^{});
   XCTAssertEqual(mixer.playCount, 12u);
@@ -465,8 +468,8 @@
   for (NSNumber *delay in @[@.099, @.101]) {
     DDClockedAudio *audio = [DDClockedAudio new];
     DDCountingMixer *mixer = [DDCountingMixer new];
-    [audio setValue:@YES forKey:@"active"];
     [audio setValue:mixer forKey:@"effectMixer"];
+    [audio setValue:@YES forKey:@"active"];
     dispatch_queue_t queue = [audio valueForKey:@"effectsQueue"];
     dispatch_semaphore_t gate = dispatch_semaphore_create(0);
     dispatch_async(queue, ^{ dispatch_semaphore_wait(gate, DISPATCH_TIME_FOREVER); });
@@ -481,8 +484,8 @@
 - (void)testPendingEffectsDoNotBlockInputAndAreCancelledByPause {
   DDClockedAudio *audio = [DDClockedAudio new];
   DDCountingMixer *player = [DDCountingMixer new];
-  [audio setValue:@YES forKey:@"active"];
   [audio setValue:player forKey:@"effectMixer"];
+  [audio setValue:@YES forKey:@"active"];
   dispatch_queue_t queue = [audio valueForKey:@"effectsQueue"];
   dispatch_semaphore_t gate = dispatch_semaphore_create(0);
   dispatch_async(queue, ^{ dispatch_semaphore_wait(gate, DISPATCH_TIME_FOREVER); });
