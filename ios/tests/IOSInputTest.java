@@ -1360,6 +1360,9 @@ public final class IOSInputTest extends Check {
         check("native Skip consumes whole gesture",c.onboarding.practice==null && !c.onboarding.ownsTouch
                 && (store.tutorials&Onboarding.SKIPPED)!=0 && c.score==0);
         PlayerSettings.open(c);game.update(PlayerSettings.PANEL_TIME);
+        tap(game,(PlayerSettings.tabEdge(l,1)+PlayerSettings.tabEdge(l,2))*.5f,
+                PlayerSettings.top(l)+PlayerSettings.unit(l)*4f);
+        check("native Settings opens Progress",c.settingsPage==PlayerSettings.SERVICES_PAGE);
         tap(game,l.w*.5f,PlayerSettings.tutorialY(l));
         check("native Settings resets tutorials without clearing progress",store.tutorials==0 && !c.onboarding.learned(TutorialSpeech.RESCUE) && c.settingsOpen);
     }

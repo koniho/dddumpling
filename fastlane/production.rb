@@ -5,19 +5,22 @@ def ios_production_version!(root, version)
   UI.user_error!("Release version must match iOS marketing version") unless marketing && version == marketing
   version
 end
+# The first paragraph is the player-facing summary; later paragraphs guide beta testing.
+def ios_production_notes!(root)
+  notes = File.read(File.join(root, 'ios/store/en-US/what_to_test.txt')).strip.split(/\n\s*\n/, 2).first.to_s
+  UI.user_error!('Add Apple release notes (1–4000 characters)') unless (1..4000).cover?(notes.length)
+  notes
+end
 platform :ios do
   desc 'Inspect or submit the selected uploaded build for automatic App Store release'
   lane :production do
     environment = ios_upload_configuration!
     api_key = ios_app_store_api_key!(environment)
     root = File.expand_path('..', __dir__)
-    manifest = REXML::Document.new(File.read(File.join(root, 'AndroidManifest.xml'))).root
     version = ENV.fetch('IOS_RELEASE_VERSION')
     ios_production_version!(root, version)
     build_number = ios_build_number!
-    notes = File.read(File.join(root, 'ios/store/en-US/what_to_test.txt')).strip
-    play_notes = File.read(File.join(root, "app-store/google-play/en-US/changelogs/#{manifest.attributes['android:versionCode']}.txt")).strip
-    UI.user_error!('Store notes differ') unless notes == play_notes
+    notes = ios_production_notes!(root)
     app = Spaceship::ConnectAPI::App.find(IOS_BUNDLE_ID)
     UI.user_error!('App not found') unless app
     builds = Spaceship::ConnectAPI::Build.all(app_id: app.id, version: version, build_number: build_number, platform: 'IOS')

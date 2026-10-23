@@ -80,4 +80,14 @@ Dir.mktmpdir do |root|
   File.write("#{root}/ios/project.yml", "missing version\n")
   rejects("iOS marketing version") { ios_production_version!(root, "0.1.27") }
 end
+Dir.mktmpdir do |root|
+  FileUtils.mkdir_p("#{root}/ios/store/en-US")
+  path = "#{root}/ios/store/en-US/what_to_test.txt"
+  File.write(path, "Connect Game Center for cloud progress.\n\nPlease test sign-in.")
+  assert(ios_production_notes!(root) == "Connect Game Center for cloud progress.", "Apple publishes its own summary without beta instructions")
+  File.write(path, "  ")
+  rejects("Apple release notes") { ios_production_notes!(root) }
+  File.write(path, "x" * 4001)
+  rejects("Apple release notes") { ios_production_notes!(root) }
+end
 puts "Fastlane configuration checks passed"
