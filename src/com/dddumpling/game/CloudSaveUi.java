@@ -90,12 +90,64 @@ final class CloudSaveUi extends Draw {
         }
     }
     void icon(Painter p,float x,float y,float r,float clock) {
-        int cloud=enabled?0xFFD6F4F1:0xFF92949F;
-        p.fillRect(x-r*.75f,y-r*.05f,x+r*.75f,y+r*.48f,cloud);
-        p.fillCircle(x-r*.7f,y+r*.05f,r*.43f,cloud);
-        p.fillCircle(x-r*.18f,y-r*.25f,r*.65f,cloud);
-        p.fillCircle(x+r*.52f,y-r*.02f,r*.5f,cloud);
-        float bx=x+r*.76f,by=y+r*.44f,b=r*.5f;
+        float time=reduceMotion?0:clock;
+        boolean traveling=status==PENDING || status==SAVED;
+        float arrival=0;
+        if(traveling && !reduceMotion)for(int i=0;i<3;i++) {
+            float phase=(time/3.6f+i/3f)%1f;
+            arrival+=Math.max(0f,1f-Math.abs(phase-.82f)/.14f);
+        }
+        float cx=x+r*.65f,cy=y-r*.2f-r*.045f*(float)Math.sin(time*2.2f);
+        float stretch=1+arrival*.075f;
+        p.fillEllipse(cx,cy+r*.83f,r*1.06f,r*.15f,0x2231B1C7);
+        if(traveling) {
+            // Curving wisps converge on the cloud's underside, following the passengers.
+            for(int lane=0;lane<3;lane++) {
+                float[] trail=new float[26];
+                for(int j=0;j<13;j++) {
+                    float t=j/12f;
+                    trail[j*2]=x+r*(-2.25f+2.85f*t);
+                    trail[j*2+1]=y+r*(.88f-.14f*lane-.8f*t*t+.07f*(float)Math.sin(time*3+t*5+lane));
+                }
+                p.polyline(trail,Glyph.withAlpha(0xFFA3EDE6,28+lane*10),r*(.065f-lane*.012f));
+            }
+        }
+        Painter faces=Skins.painter(p,Skins.DEFAULT);
+        for(int i=0;i<3;i++) {
+            float phase=reduceMotion?.13f+i*.25f:(time/3.6f+i/3f)%1f;
+            float t=traveling?Math.min(1f,phase/.88f):i*.18f;
+            float ease=t*t;
+            float dx=traveling?x+r*(-2.05f+2.72f*ease):x-r*(1.85f-i*.7f);
+            float dy=traveling?y+r*(.77f-.95f*ease-.26f*(float)Math.sin(t*Math.PI)):
+                    y+r*(.68f+.07f*(float)Math.sin(time*2.5f+i*2));
+            float fade=traveling?Math.min(1f,phase/.08f)*(1-Math.max(0f,(t-.78f)/.22f)):1;
+            float size=r*.43f*(traveling?1-.57f*ease:1);
+            float squash=traveling?1+.1f*(float)Math.sin(t*7)-.2f*ease:
+                    1+.05f*(float)Math.sin(time*2.5f+i*2);
+            int tint=i==0?0xFFFFE4A9:i==1?0xFFDBCDFF:0xFFA9EBCE;
+            Painter passenger=new OpacityPainter(faces,Math.max(0f,fade));
+            // Little raised hands make the ride look like a cheerful leap.
+            for(int side=-1;side<=1;side+=2)
+                passenger.fillEllipse(dx+side*size*.84f,dy-size*.18f,size*.18f,size*.23f,tint);
+            Kawaii.draw(passenger,Kawaii.DUMPLING,dx,dy,size,tint,squash,1f);
+            if(traveling && phase>.65f && phase<.94f) {
+                float glint=(float)Math.sin((phase-.65f)/.29f*Math.PI);
+                p.fillPoly(star(cx-r*.55f,cy+r*.5f,r*.17f*glint,r*.045f*glint,4,time),0xFFFFE7A5);
+            }
+        }
+        int body=enabled?0xFFD9FAF3:0xFFB1BCC9;
+        cloudBody(p,cx,cy+r*.12f,r*stretch,r/stretch,enabled?0xFF7ECAC9:0xFF7D899F);
+        cloudBody(p,cx,cy,r*stretch,r/stretch,body);
+        p.fillEllipse(cx-r*.18f,cy-r*.42f,r*.36f,r*.14f,0xB3FFFFFF);
+        p.fillEllipse(cx+r*.55f,cy-r*.11f,r*.2f,r*.07f,0x70FFFFFF);
+        for(int side=-1;side<=1;side+=2) {
+            float eyeX=cx+side*r*.28f;
+            p.arc(eyeX,cy+r*.12f,r*.12f,r*.10f,195,150,0xFF40616E,r*.055f);
+            p.fillEllipse(cx+side*r*.43f,cy+r*.3f,r*.14f,r*.065f,0x70F391B6);
+        }
+        p.arc(cx,cy+r*.23f,r*.16f,r*(.10f+arrival*.04f),5,170,0xFF40616E,r*.05f);
+        float bx=cx+r*.91f,by=cy+r*.61f,b=r*.29f;
+        r*=.58f;
         int color=status==FAILED || status==DRIVE?0xFFFFC56B:enabled?0xFF86E5CE:0xFFB7B7C6;
         p.fillCircle(bx,by,b*1.2f,0xFF211D36);
         p.strokeCircle(bx,by,b,color,r*.08f);
@@ -120,6 +172,12 @@ final class CloudSaveUi extends Draw {
         } else {
             p.line(bx-b*.5f,by+b*.5f,bx+b*.5f,by-b*.5f,color,r*.12f);
         }
+    }
+    private static void cloudBody(Painter p,float x,float y,float rx,float ry,int color) {
+        p.fillRect(x-rx*.7f,y,x+rx*.7f,y+ry*.49f,color);
+        p.fillEllipse(x-rx*.66f,y+ry*.09f,rx*.43f,ry*.40f,color);
+        p.fillEllipse(x-rx*.17f,y-ry*.19f,rx*.62f,ry*.68f,color);
+        p.fillEllipse(x+rx*.52f,y+ry*.02f,rx*.5f,ry*.47f,color);
     }
     String primary() {return introduction?"Set up cloud saves":status==SIGN_IN?"Sign in":"Done";}
     String summary() {

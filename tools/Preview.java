@@ -1952,6 +1952,13 @@ final class Preview {
             cloud.preferences.skin=Skins.DEFAULT;
             cloud.cloudUi.playGames=true;cloud.cloudUi.status(CloudSaveUi.PENDING);
             shot(dir,"cloud-sync-play",cloud,L,w,h,ss);
+            for(float time:new float[]{.4f,1.2f,2.4f}) {
+                cloud.clock=time;
+                shot(dir,"cloud-passengers-"+Math.round(time*10),cloud,L,w,h,ss);
+            }
+            cloud.cloudUi.reduceMotion=true;
+            shot(dir,"cloud-passengers-still",cloud,L,w,h,ss);
+            cloud.cloudUi.reduceMotion=false;cloud.clock=trophyClock;
             for(int state:new int[]{CloudSaveUi.SIGN_IN,CloudSaveUi.SAVED,CloudSaveUi.FAILED,CloudSaveUi.ACCOUNT}) {
                 cloud.cloudUi.status(state);
                 shot(dir,"cloud-sync-state-"+state,cloud,L,w,h,ss);
