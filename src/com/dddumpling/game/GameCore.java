@@ -537,7 +537,7 @@ final class GameCore {
         float x, y, vx, vy, life, max, size;
         int color;
         SlimeSpray.Drop slime;
-        boolean rainbowStar;
+        boolean rainbowStar, slimeRipple;
     }
 
     static final class PushImpact {
@@ -3433,6 +3433,7 @@ final class GameCore {
         e.flurryClear = flurry();
         e.clearX = enemyCentreX(e);
         e.clearY = e.y;
+        SlimeHills.cleared(this,e.clearX,e.clearY,Glyph.COLOR[e.word[e.word.length-1]],L);
         e.dying = false;
         // A destroyed word is no longer a threat, so it must stop looking like one. The
         // update loop skips destroyed words, so whatever warning state it held would

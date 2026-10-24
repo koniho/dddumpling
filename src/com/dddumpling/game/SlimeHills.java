@@ -3,7 +3,18 @@ package com.dddumpling.game;
 /** A flowing jelly valley. Bounded shared vector layers work on both native painters. */
 final class SlimeHills extends Draw {
     static final int DEEP=0xFF245953, GREEN=0xFF64BB80, MINT=0xFFB7F0B4;
+    static final float RIPPLE_TIME=1.8f;
+    static final int MAX_RIPPLES=8;
     private SlimeHills() {}
+
+    static void cleared(GameCore c,float x,float y,int color,Layout L) {
+        if(c.state!=GameCore.PLAY || c.survival.active || Lands.forStage(c.stage)!=0)return;
+        int count=0;
+        for(GameCore.Particle q:c.particles)if(q.slimeRipple && ++count>=MAX_RIPPLES)return;
+        GameCore.Particle q=new GameCore.Particle();
+        q.slimeRipple=true;q.x=x;q.y=y;q.color=color;q.size=L.enemyR;
+        q.life=q.max=RIPPLE_TIME;c.particles.add(q);
+    }
 
     static float presence(GameCore c) {
         if(c.survival.active || c.state==GameCore.TITLE)return 0;
@@ -41,6 +52,7 @@ final class SlimeHills extends Draw {
             p.polyline(edge,Glyph.withAlpha(GREEN,(int)(fade*21)),L.w*(.030f+(channel%3)*.012f));
             p.polyline(edge,Glyph.withAlpha(MINT,(int)(fade*14)),L.w*.006f);
         }
+        surfaceMotion(p,c,L,fade);
         for(int i=0;i<8;i++) {
             int seed=733+i*71,side=i%2;
             float r=L.w*(.14f+hash(seed)*.09f),travel=span+r*4;
@@ -69,6 +81,53 @@ final class SlimeHills extends Draw {
                         r*.23f,r*.32f,Glyph.withAlpha(MINT,(int)(a*(1-t)*100)));
             }
         }
+    }
+
+    /** Broad submerged bulges, not target-like circles; no fresh randomness during drawing. */
+    private static void surfaceMotion(Painter p,GameCore c,Layout L,float fade) {
+        float[] shape=new float[66];
+        float[][] ring={new float[66],new float[66]};
+        float span=L.deckTop-L.playTop;
+        for(int i=0;i<3;i++) {
+            float cycle=(c.clock/(7.5f+i)+i*.31f)%1f;
+            float swell=(float)Math.sin(cycle*Math.PI),strength=swell*swell*fade;
+            float x=L.w*(.34f+i*.16f+.025f*(float)Math.sin(c.clock*.19f+i*2));
+            float y=L.playTop+span*(.19f+i*.29f)+L.w*.035f*(float)Math.sin(c.clock*.22f+i);
+            float r=L.w*(.12f+.12f*swell),phase=i*2+c.clock*.13f;
+            for(int layer=0;layer<3;layer++) {
+                float scale=1-layer*.14f;
+                jelly(p,shape,x,y,r*scale,r*.54f*scale,phase,
+                        Glyph.withAlpha(layer==0?GREEN:MINT,(int)(strength*(layer==0?7:5))));
+            }
+            ripple(p,ring,x,y,r,r*.54f,phase,Glyph.withAlpha(MINT,(int)(strength*12)),.045f);
+        }
+        for(GameCore.Particle q:c.particles) {
+            if(!q.slimeRipple)continue;
+            float age=1-q.life/q.max;
+            for(int wave=0;wave<2;wave++) {
+                float t=(age-wave*.15f)/(1-wave*.15f);
+                if(t<=0 || t>=1)continue;
+                float strength=(float)Math.sin(Math.PI*t)*(1-t)*fade;
+                float r=q.size*(.6f+6.2f*t);
+                int color=Glyph.mix(GREEN,q.color,.65f);
+                ripple(p,ring,q.x,q.y+L.h*.012f*age,r,r*.64f,q.x*.01f+t*.35f,
+                        Glyph.withAlpha(color,(int)(strength*54)),.055f);
+                ripple(p,ring,q.x,q.y+L.h*.012f*age,r*1.055f,r*.675f,q.x*.01f+t*.35f,
+                        Glyph.withAlpha(color,(int)(strength*16)),.085f);
+            }
+        }
+    }
+
+    private static void ripple(Painter p,float[][] ring,float x,float y,float rx,float ry,
+            float phase,int color,float thickness) {
+        for(int j=0;j<33;j++) {
+            float angle=j*Softbody.TAU/33,w=1+.06f*(float)Math.sin(angle*3+phase)
+                    +.025f*(float)Math.sin(angle*5-phase);
+            float dx=(float)Math.cos(angle)*rx*w,dy=(float)Math.sin(angle)*ry*w;
+            ring[0][j*2]=x+dx;ring[0][j*2+1]=y+dy;
+            ring[1][j*2]=x+dx*(1-thickness);ring[1][j*2+1]=y+dy*(1-thickness);
+        }
+        p.fillContours(ring,color);
     }
 
     /** One softly asymmetric contour, reused for layered mounds and airborne goo. */

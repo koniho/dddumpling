@@ -943,7 +943,7 @@ final class Renderer extends Draw {
     static void particles(Painter p, GameCore c) {
         for (int i = 0; i < c.particles.size(); i++) {
             GameCore.Particle q = c.particles.get(i);
-            if(q.slime!=null)continue;
+            if(q.slime!=null || q.slimeRipple)continue;
             float k = q.life / q.max;
             if(q.rainbowStar) {
                 FastEnemies.rainbowBurst(p,q.x,q.y,q.size,q.x+q.y,1-k);

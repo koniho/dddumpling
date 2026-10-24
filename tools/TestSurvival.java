@@ -575,7 +575,9 @@ final class TestSurvival extends Check {
         GameCore adventure=new GameCore(new Mem(),155);adventure.startGame();adventure.particles.clear();
         GameCore.Enemy ordinary=add(adventure,L,new int[]{0,1,2},L.h*.4f);
         adventure.destroyWord(ordinary,ordinary.baseX,ordinary.y,L);
-        check("Adventure and fresh Survival share the amplified baseline",adventure.particles.size()==calm.particles.size());
+        int adventureBurst=0;
+        for(GameCore.Particle q:adventure.particles)if(!q.slimeRipple)adventureBurst++;
+        check("Adventure and fresh Survival share the amplified baseline",adventureBurst==calm.particles.size());
         GameCore baseline=new GameCore(new Mem(),155);baseline.rnd.setSeed(900);adventure.rnd.setSeed(900);
         Fx.explode(baseline,baseline.rnd,0,0,L.enemyR,7,Draw.GOLD);
         adventure.particles.clear();

@@ -106,7 +106,7 @@ final class Fx {
                 c.particles.remove(i);
                 continue;
             }
-            if(p.rainbowStar)continue;
+            if(p.rainbowStar || p.slimeRipple)continue;
             if(p.slime!=null) {SlimeSpray.update(p);continue;}
             p.x += p.vx * dt;
             p.y += p.vy * dt;

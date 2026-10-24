@@ -58,6 +58,34 @@ final class TestBoss extends Check {
         c.state=GameCore.TITLE;check("slime valley does not replace title scene",SlimeHills.presence(c)==0);
     }
 
+    static void slimeSurface(Layout L) {
+        GameCore c=new GameCore(new Mem(),322L);c.startGame();c.enemies.clear();
+        GameCore.Enemy e=add(c,L,new int[]{0,2},L.playTop+L.h*.3f);
+        c.destroyWord(e,c.enemyCentreX(e),e.y,L);
+        GameCore.Particle ripple=null;int count=0;
+        for(GameCore.Particle q:c.particles)if(q.slimeRipple){ripple=q;count++;}
+        check("slime word clear leaves one colored surface ripple",count==1 && ripple!=null
+                && ripple.color==Glyph.COLOR[2] && ripple.x==e.clearX && ripple.y==e.clearY);
+        c.destroyWord(e,e.clearX,e.clearY,L);
+        count=0;for(GameCore.Particle q:c.particles)if(q.slimeRipple)count++;
+        check("duplicate clears do not duplicate slime ripples",count==1);
+        Fx.updateParticles(c,GameCore.DESTROY_TIME+.1f);
+        check("surface ripple outlasts flying word fragments",ripple.life>0 && ripple.x==e.clearX && ripple.y==e.clearY);
+        Fx.updateParticles(c,SlimeHills.RIPPLE_TIME);
+        check("surface ripples expire through particle lifecycle",!c.particles.contains(ripple));
+        c.particles.clear();c.stage=6;SlimeHills.cleared(c,100,100,SlimeHills.MINT,L);
+        check("other lands do not create slime ripples",c.particles.isEmpty());
+        c.stage=1;c.survival.active=true;SlimeHills.cleared(c,100,100,SlimeHills.GREEN,L);
+        check("survival does not create slime ripples",c.particles.isEmpty());
+        c.survival.active=false;
+        GameCore untouched=new GameCore(new Mem(),323L);untouched.startGame();
+        GameCore bounded=new GameCore(new Mem(),323L);bounded.startGame();
+        for(int i=0;i<30;i++)SlimeHills.cleared(bounded,100,100,Glyph.COLOR[0],L);
+        check("slime ripple overlap is bounded",bounded.particles.size()==SlimeHills.MAX_RIPPLES);
+        check("slime ripples preserve gameplay randomness",bounded.rnd.nextLong()==untouched.rnd.nextLong());
+        bounded.startGame();check("new run clears surface ripples",bounded.particles.isEmpty());
+    }
+
     static void promptImpactTiming(Layout L) {
         group("delayed Slime vulnerability boip");
         GameCore ready=enterBoss(L,Boss.SLIME,196);toOpen(ready,L);

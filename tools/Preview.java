@@ -3140,6 +3140,17 @@ final class Preview {
                 step(valley,L,2f);shot(dir,"slime-valley-"+frame,valley,L,w,h,ss);
             }
         }
+        if(wanted("slime-surface-")) {
+            GameCore surface=new GameCore(new Check.Mem(),763L);surface.startGame();
+            surface.landBlend=1;surface.stageBanner=surface.rosterSceneT=0;
+            step(surface,L,5.8f);
+            shot(dir,"slime-surface-ambient",surface,L,w,h,ss);
+            SlimeHills.cleared(surface,L.w*.47f,L.h*.40f,Glyph.COLOR[2],L);
+            SlimeHills.cleared(surface,L.w*.60f,L.h*.65f,Glyph.COLOR[4],L);
+            for(int frame=0;frame<3;frame++) {
+                step(surface,L,.4f);shot(dir,"slime-surface-clear-"+frame,surface,L,w,h,ss);
+            }
+        }
         if(wanted("slime-arrival-")) {
             GameCore arrival=toBoss(L,Boss.SLIME,762L,false);
             arrival.stage=5;arrival.landBlend=1;arrival.stageBanner=arrival.rosterSceneT=0;
