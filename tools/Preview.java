@@ -3154,7 +3154,11 @@ final class Preview {
             }
             bubbles.slimeBubbles.spawn(bubble,1-late,L);bubble.x=L.w*.5f;bubble.surfaceY=L.h*.55f;
             bubble.age=bubble.popAt-.03f;shot(dir,"slime-bubbles-early-rise",bubbles,L,w,h,ss);
-            bubble.age=bubble.popAt+.12f;shot(dir,"slime-bubbles-early-pop",bubbles,L,w,h,ss);
+            bubbles.slimeBubbles.untilNext=100;
+            for(int frame=0;frame<3;frame++) {
+                step(bubbles,L,frame==0?.15f:.35f);
+                shot(dir,"slime-bubbles-early-pop-"+frame,bubbles,L,w,h,ss);
+            }
         }
         if(wanted("slime-surface-")) {
             GameCore surface=new GameCore(new Check.Mem(),763L);surface.startGame();

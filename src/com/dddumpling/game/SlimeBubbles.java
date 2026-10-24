@@ -48,7 +48,9 @@ final class SlimeBubbles extends Draw {
             float attached=Math.max(0,Math.min(dt,Math.min(b.riseTime,b.popAt)-b.age));
             // Stop carrying the bubble with the water exactly when it lifts free (or pops).
             if(dt>0)b.surfaceY+=skyDelta*L.h*SlimeHills.SCROLL_RATE*(attached/dt);
+            boolean popping=b.early && b.age<b.popAt && b.age+dt>=b.popAt;
             b.age+=dt;
+            if(popping)SlimeHills.cleared(c,b.x,b.surfaceY,SlimeHills.MINT,L);
             if(b.age>=b.popAt+POP_TIME)b.live=false;
         }
         untilNext-=dt;

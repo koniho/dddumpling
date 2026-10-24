@@ -117,10 +117,18 @@ final class TestBoss extends Check {
         surface=b.surfaceY;float y=b.centreY();
         pool.update(c,L,.5f,4);
         check("lifted bubble floats independently of fast background",b.surfaceY==surface && b.centreY()<y);
-        pool.spawn(b,1-lateId,L);pool.untilNext=100;b.age=b.popAt;
+        c.particles.clear();b.age=b.popAt-.01f;pool.update(c,L,.02f,0);
+        check("airborne bubble pop does not ripple the surface",c.particles.isEmpty());
+        pool.spawn(b,1-lateId,L);pool.untilNext=100;b.age=b.popAt-.01f;
         check("early bubble bursts while still partly submerged",b.popAt<b.riseTime && b.centreY()+b.r>b.surfaceY);
+        pool.update(c,L,.02f,0);
+        check("early bubble pop emits a ripple at its waterline",c.particles.size()==1
+                && c.particles.get(0).slimeRipple && c.particles.get(0).x==b.x
+                && c.particles.get(0).y==b.surfaceY && c.particles.get(0).color==SlimeHills.MINT);
+        pool.update(c,L,.1f,0);
+        check("early pop emits its ripple only once",c.particles.size()==1);
         pool.update(c,L,SlimeBubbles.POP_TIME+.01f,0);
-        check("bubble pop expires",!b.live);
+        check("bubble pop expires while its surface ripple remains",!b.live && c.particles.get(0).slimeRipple);
         pool.reset();
         for(int i=0;i<200;i++)pool.update(c,L,.1f,.1f);
         int live=0;for(SlimeBubbles.Bubble q:pool.bubbles)if(q.live)live++;
