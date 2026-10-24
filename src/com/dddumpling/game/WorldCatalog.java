@@ -15,7 +15,7 @@ final class WorldCatalog {
         new Land(Glyph.mix(Draw.BG,0xFF142A29,.5f),0xFF79C99D,5,"Slime hills hugged back."),
         new Land(Glyph.mix(Draw.BG,0xFF21182F,.5f),0xFFB18CDB,6,"Crystal sparkle nap. Very shiny."),
         new Land(Glyph.mix(Draw.BG,0xFF102735,.5f),0xFF62BEC5,7,"Kelp tucked you in. Bubble blanket!"),
-        new Land(Glyph.mix(Draw.BG,0xFF241F2A,.5f),0xFFE4A19C,8,"Mushroom cap became your pillow."),
+        new Land(0xFF202D2C,0xFF8FA58A,8,"Mushroom cap became your pillow."),
         new Land(CaveArt.DARK,CaveArt.LIGHT,9,"Pebble adopted its own dumpling."),
         new Land(0xFF182F32,0xFF74B99C,10,"Lily pad booked you a swamp nap."),
         new Land(0xFF282341,0xFFDEA9EC,13,"A rainbow cloud borrowed you.")

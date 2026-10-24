@@ -108,6 +108,7 @@ final class Renderer extends Draw {
         // ...and the nearest one in front of them, so words pass behind it. Kept the most
         // translucent of the three: it drifts over the play area and must never hide a letter.
         Sky.cloudBand(p, c, L, Sky.CLOUD_FRONT_LAYER, GameCore.CLOUD_LAYERS, hurt);
+        MushroomForest.canopy(p,c,L);
 
         if(c.state==GameCore.PLAY && c.ninja())c.ninjaSlashes.draw(p,L);
         p.save();p.translate(0,c.starter.keyOffset(L));
