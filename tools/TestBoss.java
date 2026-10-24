@@ -1967,6 +1967,32 @@ final class TestBoss extends Check {
         check("the spore volley has its own sprinkle sound",
                 mushroomEar.mushroomSporeSounds == 1);
 
+        for (int firstDirection : new int[]{-1, 1}) {
+            GameCore choice = enterBoss(L, Boss.MUSHROOM, 169L);
+            Boss opening = choice.boss;
+            choice.grabBoss(opening.body.centreX(), opening.body.centreY());
+            choice.dragBoss(opening.mushroomLastX + firstDirection * L.w * .02f, opening.body.centreY(), L);
+            check("either-way guide appears on movement " + firstDirection, opening.mushroomMeterAlpha > 0f
+                    && opening.mushroomDirection == 0);
+            advance(choice, L, .4f);
+            choice.dragBoss(opening.mushroomLastX + firstDirection * L.w * .36f,
+                    opening.body.centreY(), L);
+            check("first sway accepts either direction " + firstDirection, opening.held == -2
+                    && opening.mushroomDirection == firstDirection && opening.mushroomReject == 0f);
+            check("guide continues from chosen endpoint " + firstDirection,
+                    opening.mushroomGuideX == firstDirection && opening.mushroomGuideTarget == -firstDirection);
+            advance(choice, L, .68f);
+            choice.dragBoss(opening.mushroomLastX - firstDirection * L.w * .36f,
+                    opening.body.centreY(), L);
+            check("next sway must reverse and earns a pip " + firstDirection,
+                    opening.held == -2 && opening.mushroomShakes == 1);
+            advance(choice, L, .68f);
+            choice.dragBoss(opening.mushroomLastX - firstDirection * L.w * .36f,
+                    opening.body.centreY(), L);
+            check("later sways cannot repeat a direction " + firstDirection,
+                    opening.held == -1 && opening.mushroomReject > 0f);
+        }
+
         GameCore rushed = enterBoss(L, Boss.MUSHROOM, 168L);
         rushed.grabBoss(rushed.boss.body.centreX(), rushed.boss.body.centreY());
         rushed.dragBoss(rushed.boss.mushroomLastX + L.w * 0.36f,

@@ -3328,6 +3328,20 @@ final class Preview {
             step(grove,L,1.1f);
             shot(dir,"forest-grove-player-loss",grove,L,w,h,ss);
         }
+        if(wanted("forest-first-sway-")) {
+            for(int direction : new int[]{-1,1}) {
+                GameCore choice=toBoss(L,Boss.MUSHROOM,537L,true);
+                choice.stage=WorldCatalog.bossStage(Boss.MUSHROOM);choice.landBlend=1f;
+                choice.stageBanner=choice.rosterSceneT=0;
+                choice.grabBoss(choice.boss.body.centreX(),choice.boss.body.centreY());
+                choice.dragBoss(choice.boss.mushroomLastX+direction*L.w*.02f,choice.boss.body.centreY(),L);
+                step(choice,L,.4f);
+                shot(dir,"forest-first-sway-choice-"+direction,choice,L,w,h,ss);
+                choice.dragBoss(choice.boss.mushroomLastX+direction*L.w*.36f,choice.boss.body.centreY(),L);
+                step(choice,L,.15f);
+                shot(dir,"forest-first-sway-chosen-"+direction,choice,L,w,h,ss);
+            }
+        }
         if(wanted("forest-escape-")) {
             GameCore escape=toBoss(L,Boss.MUSHROOM,537L,true);
             escape.stage=WorldCatalog.bossStage(Boss.MUSHROOM);escape.landBlend=1f;

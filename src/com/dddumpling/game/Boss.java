@@ -1188,7 +1188,7 @@ final class Boss {
             }
             int direction = dx < 0f ? -1 : 1;
             boolean guideReady = Math.abs(mushroomGuideX - mushroomGuideTarget) < MUSHROOM_GUIDE_WINDOW;
-            if (!guideReady || direction != mushroomGuideTarget) {
+            if (!guideReady || (mushroomDirection != 0 && direction != mushroomGuideTarget)) {
                 held = -1;
                 mushroomShakes = mushroomDirection = 0;
                 mushroomMeterAlpha = 0f;
@@ -1201,6 +1201,8 @@ final class Boss {
             mushroomSweepFlash = 0.28f;
             mushroomShakeCue = true;
             if (mushroomDirection != 0 && direction != mushroomDirection) mushroomShakes++;
+            // The opening guide is mirrored; continue from the endpoint the player chose.
+            if (mushroomDirection == 0) mushroomGuideX *= direction;
             mushroomDirection = direction;
             mushroomPlayerX = direction;
             mushroomGuideTarget = -direction;

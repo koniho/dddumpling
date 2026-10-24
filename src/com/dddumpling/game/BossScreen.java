@@ -921,7 +921,11 @@ final class BossScreen extends Draw {
             float targetX = meterX + b.mushroomGuideX * travel;
             float pulse = 1f + 0.10f * (float) Math.sin(c.clock * 13f);
             float playerX = meterX + b.mushroomPlayerX * travel;
-            boolean aligned = Math.abs(b.mushroomPlayerX - b.mushroomGuideX) < 0.09f
+            boolean eitherWay = b.held == -2 && b.mushroomDirection == 0;
+            float guideDistance = eitherWay
+                    ? Math.abs(Math.abs(b.mushroomPlayerX) - b.mushroomGuideX)
+                    : Math.abs(b.mushroomPlayerX - b.mushroomGuideX);
+            boolean aligned = guideDistance < 0.09f
                     && Math.abs(b.mushroomGuideX - b.mushroomGuideTarget) < Boss.MUSHROOM_GUIDE_WINDOW;
             int player = Glyph.withAlpha(aligned ? 0xFF8CFF79 : 0xFF65F5E3,
                     (int) (255 * meterFade));
@@ -932,9 +936,20 @@ final class BossScreen extends Draw {
                     player, Math.max(3f, L.unit * 0.060f));
             float targetHalfW = meterH * 2.34f * pulse;
             float targetHalfH = meterH * 0.70f * pulse;
-            p.fillRect(targetX - targetHalfW, meterY - targetHalfH,
-                    targetX + targetHalfW, meterY + targetHalfH,
-                    Glyph.withAlpha(0xFFFF477E, (int) (245 * meterFade)));
+            for (int side = eitherWay ? -1 : 1; side <= 1; side += 2) {
+                float guideX = eitherWay ? meterX + side * b.mushroomGuideX * travel : targetX;
+                p.fillRect(guideX - targetHalfW, meterY - targetHalfH,
+                        guideX + targetHalfW, meterY + targetHalfH,
+                        Glyph.withAlpha(0xFFFF477E, (int) (245 * meterFade)));
+                if (eitherWay) {
+                    float tipX = guideX + side * meterH * .85f;
+                    float backX = tipX - side * meterH * .62f;
+                    p.line(backX, meterY - meterH * .38f, tipX, meterY,
+                            white, Math.max(2f, meterH * .16f));
+                    p.line(tipX, meterY, backX, meterY + meterH * .38f,
+                            white, Math.max(2f, meterH * .16f));
+                }
+            }
             float pipY = meterY + meterH + L.unit * 0.38f;
             float gap = L.unit * 0.46f;
             float first = L.w * 0.5f - gap * (Boss.MUSHROOM_SHAKES - 1) * 0.5f;
