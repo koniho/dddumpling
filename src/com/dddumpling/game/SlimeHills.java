@@ -70,23 +70,7 @@ final class SlimeHills extends Draw {
             jelly(p,blob,x-r*.15f,y-r*.35f,r*.64f,r*.61f,i,Glyph.withAlpha(MINT,(int)(fade*29)));
             p.arc(x-r*.12f,y-r*.2f,r*.61f,r*.70f,209,76,Glyph.withAlpha(MINT,(int)(fade*86)),L.w*.007f);
         }
-        // Bubbles rise inside the jelly, swell, and pop into three small falling beads.
-        for(int i=0;i<16;i++) {
-            int seed=1391+i*61;float age=(c.clock*.16f+hash(seed))%1;
-            float x=L.w*(.04f+hash(seed+3)*.18f);if(i%2==1)x=L.w-x;
-            float y=L.playTop+hash(seed+7)*span-age*L.w*.18f;
-            float r=L.w*(.010f+hash(seed+9)*.015f)*( .7f+age*.3f);
-            float a=fade*Math.min(1,age*8);
-            if(age<.84f) {
-                p.fillEllipse(x,y,r,r*1.12f,Glyph.withAlpha(MINT,(int)(a*23)));
-                p.arc(x,y,r,r*1.12f,190,245,Glyph.withAlpha(MINT,(int)(a*93)),L.w*.003f);
-                p.fillCircle(x-r*.35f,y-r*.45f,r*.20f,Glyph.withAlpha(INK,(int)(a*100)));
-            } else for(int bead=0;bead<3;bead++) {
-                float t=(age-.84f)/.16f,angle=bead*2.1f;
-                p.fillEllipse(x+(float)Math.cos(angle)*r*t*2,y+(float)Math.sin(angle)*r*t*2+t*t*r,
-                        r*.23f,r*.32f,Glyph.withAlpha(MINT,(int)(a*(1-t)*100)));
-            }
-        }
+        c.slimeBubbles.draw(p,c,L,fade);
     }
 
     /** Clear reactions stay beneath enemies; the idle surface has no pressure swells. */

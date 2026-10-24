@@ -907,6 +907,7 @@ final class GameCore {
      * accumulating it keeps the drift continuous rather than jumping when the frenzy ends.
      */
     float skyClock;
+    final SlimeBubbles slimeBubbles=new SlimeBubbles();
     int landFrom, landFromBg = Lands.BG[0], landFromTint = Lands.TINT[0];
     float landBlend = 1f;
     final int[] landCloudFrom = Sky.CLOUD_TINT.clone();
@@ -1994,6 +1995,7 @@ final class GameCore {
     }
 
     void startGame() {
+        slimeBubbles.reset();
         if(!modes.playable(this))return;
         bossRetry.finish(this);bossRetry.clear();
         titleKeyHint = 0f;
@@ -2125,6 +2127,7 @@ final class GameCore {
     }
 
     void toTitle() {
+        slimeBubbles.reset();
         bossRetry.finish(this);bossRetry.clear();
         pairSpawnSlots = 0;
         titleKeyHint = 0f;
@@ -2814,6 +2817,7 @@ final class GameCore {
         starBlastHaptic = 0;
         bossDeathHaptic = 0;
         titleKeyHint = titleKeysAvailable() ? decay(titleKeyHint, elapsed / 1.2f) : 0f;
+        if(!SlimeBubbles.enabled(this))slimeBubbles.reset();
         if (paused) return;
         if(!starter.open)titleStart.update(this,elapsed,L);
         townSaveRetry=Math.max(0f,townSaveRetry-elapsed);
@@ -2893,7 +2897,9 @@ final class GameCore {
         // Accumulate speed changes so the scenery never jumps at battle or frenzy boundaries.
         float skyRate=state==PLAY && boss.active() && boss.kind==Boss.RAINBOW_CAT?RainbowLand.BATTLE_SKY_RATE:1f;
         if(RainbowCatTaunt.retained(this) && dying())skyRate=RainbowCatTaunt.scrollRate(deathDuration()-deathT);
+        float previousSky=skyClock;
         skyClock += dt * (powerActive() ? Power.SKY_RATE : skyRate) * (1f-MushroomForest.groveProgress(this));
+        slimeBubbles.update(this,L,dt,skyClock-previousSky);
         landBlend = Math.min(1f, landBlend + dt / Lands.FADE_TIME);
         LandPicker.updateDiscovery(this, dt);
         LandPicker.updateTravel(this, dt);

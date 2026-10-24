@@ -17,7 +17,7 @@ final class ProfileSlimeHills {
         long thread=Thread.currentThread().getId();
         
         System.out.println("Slime drawing preparation; excludes rasterization/GPU. Portrait 393x852.");
-        for(String state:new String[]{"stage","clear-burst","arrival"}) {
+        for(String state:new String[]{"stage","bubbles","clear-burst","arrival"}) {
             GameCore c=new GameCore(new Check.Mem(),817L);c.startGame();
             c.stage=1;c.landBlend=1;c.skyClock=5;c.clock=5.8f;
             if(state.equals("arrival")) {
@@ -27,6 +27,10 @@ final class ProfileSlimeHills {
                 for(int i=0;i<SlimeHills.MAX_RIPPLES;i++)
                     SlimeHills.cleared(c,l.w*(.25f+i*.06f),l.h*(.2f+i*.06f),Glyph.COLOR[i%6],l);
                 Fx.updateParticles(c,.6f);
+            }
+            if(state.equals("bubbles"))for(int i=0;i<SlimeBubbles.LIMIT;i++) {
+                SlimeBubbles.Bubble b=c.slimeBubbles.bubbles[i];
+                c.slimeBubbles.spawn(b,i,l);b.age=b.popAt*.7f;
             }
             Counter p=new Counter();
             long warmUntil=System.nanoTime()+1_000_000_000L;

@@ -94,6 +94,51 @@ final class TestBoss extends Check {
         bounded.startGame();check("new run clears surface ripples",bounded.particles.isEmpty());
     }
 
+    static void slimeBubbles(Layout L) {
+        GameCore c=new GameCore(new Mem(),326L);c.startGame();c.spawnTimer=100;
+        SlimeBubbles pool=c.slimeBubbles;
+        SlimeBubbles.Bubble b=pool.bubbles[0];
+        int early=0;for(int i=0;i<20;i++)if(SlimeBubbles.earlyPop(i))early++;
+        check("half the surface bubbles pop before lift-off",early==10);
+        int lateId=SlimeBubbles.earlyPop(0)?1:0;
+        pool.spawn(b,lateId,L);pool.untilNext=100;
+        check("surface bubble is one and a half prompt widths",b.r>L.enemyR*1.4f && b.r<L.enemyR*1.6f);
+        check("emergence starts with only the tangent above water",Math.abs(b.centreY()-b.r-b.surfaceY)<.001f);
+        float surface=b.surfaceY;
+        pool.update(c,L,.4f,.8f);
+        check("emerging bubble follows accumulated background movement",Math.abs(b.surfaceY-surface-L.h*.016f)<.001f);
+        check("rising bubble remains a clipped circle segment",b.centreY()-b.r<b.surfaceY && b.centreY()+b.r>b.surfaceY);
+        float age=b.age;c.paused=true;c.update(.1f,L);
+        check("pause freezes bubble emergence",b.age==age);c.paused=false;
+        b.age=b.riseTime-.01f;surface=b.surfaceY;
+        pool.update(c,L,.02f,.02f);
+        check("bubble detaches continuously at the waterline",Math.abs(b.surfaceY-surface-L.h*.0002f)<.001f
+                && b.centreY()+b.r<=b.surfaceY);
+        surface=b.surfaceY;float y=b.centreY();
+        pool.update(c,L,.5f,4);
+        check("lifted bubble floats independently of fast background",b.surfaceY==surface && b.centreY()<y);
+        pool.spawn(b,1-lateId,L);pool.untilNext=100;b.age=b.popAt;
+        check("early bubble bursts while still partly submerged",b.popAt<b.riseTime && b.centreY()+b.r>b.surfaceY);
+        pool.update(c,L,SlimeBubbles.POP_TIME+.01f,0);
+        check("bubble pop expires",!b.live);
+        pool.reset();
+        for(int i=0;i<200;i++)pool.update(c,L,.1f,.1f);
+        int live=0;for(SlimeBubbles.Bubble q:pool.bubbles)if(q.live)live++;
+        check("ambient bubble pool stays bounded while emitting",pool.serial>3 && live>0 && live<=SlimeBubbles.LIMIT);
+        pool.spawn(b,lateId,L);c.state=GameCore.OVER;c.paused=true;c.update(.01f,L);
+        check("death clears bubbles before pause early return",!b.live);
+        c.paused=false;c.startGame();pool.spawn(b,lateId,L);c.toTitle();
+        check("title return clears surface bubbles",!b.live);
+        c.startGame();pool.spawn(b,lateId,L);c.stage=6;pool.update(c,L,.1f,.1f);
+        check("leaving slime land clears its bubbles",!b.live);
+        c.stage=1;c.survival.active=true;pool.update(c,L,1,1);
+        check("survival does not emit slime bubbles",!b.live);
+        GameCore reference=new GameCore(new Mem(),327L);reference.startGame();
+        GameCore cosmetic=new GameCore(new Mem(),327L);cosmetic.startGame();
+        for(int i=0;i<200;i++)cosmetic.slimeBubbles.update(cosmetic,L,.1f,.1f);
+        check("surface bubble generation preserves gameplay randomness",cosmetic.rnd.nextLong()==reference.rnd.nextLong());
+    }
+
     static void promptImpactTiming(Layout L) {
         group("delayed Slime vulnerability boip");
         GameCore ready=enterBoss(L,Boss.SLIME,196);toOpen(ready,L);

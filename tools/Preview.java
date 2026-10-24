@@ -3140,6 +3140,22 @@ final class Preview {
                 step(valley,L,2f);shot(dir,"slime-valley-"+frame,valley,L,w,h,ss);
             }
         }
+        if(wanted("slime-bubbles-")) {
+            GameCore bubbles=new GameCore(new Check.Mem(),764L);bubbles.startGame();
+            bubbles.landBlend=1;bubbles.stageBanner=bubbles.rosterSceneT=0;
+            step(bubbles,L,4f);bubbles.slimeBubbles.reset();
+            SlimeBubbles.Bubble bubble=bubbles.slimeBubbles.bubbles[0];
+            int late=SlimeBubbles.earlyPop(0)?1:0;
+            bubbles.slimeBubbles.spawn(bubble,late,L);
+            bubble.x=L.w*.5f;bubble.surfaceY=L.h*.55f;
+            float[] ages={.25f,bubble.riseTime*.45f,bubble.riseTime*.85f,bubble.riseTime,bubble.riseTime+1.1f,bubble.popAt+.2f};
+            for(int frame=0;frame<ages.length;frame++) {
+                bubble.age=ages[frame];shot(dir,"slime-bubbles-"+frame,bubbles,L,w,h,ss);
+            }
+            bubbles.slimeBubbles.spawn(bubble,1-late,L);bubble.x=L.w*.5f;bubble.surfaceY=L.h*.55f;
+            bubble.age=bubble.popAt-.03f;shot(dir,"slime-bubbles-early-rise",bubbles,L,w,h,ss);
+            bubble.age=bubble.popAt+.12f;shot(dir,"slime-bubbles-early-pop",bubbles,L,w,h,ss);
+        }
         if(wanted("slime-surface-")) {
             GameCore surface=new GameCore(new Check.Mem(),763L);surface.startGame();
             surface.landBlend=1;surface.stageBanner=surface.rosterSceneT=0;
