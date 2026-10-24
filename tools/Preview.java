@@ -3152,6 +3152,10 @@ final class Preview {
             for(int frame=0;frame<ages.length;frame++) {
                 bubble.age=ages[frame];shot(dir,"slime-bubbles-"+frame,bubbles,L,w,h,ss);
             }
+            for(int frame=0;frame<4;frame++) {
+                bubble.age=bubble.riseTime+.25f+frame*.30f;
+                shot(dir,"slime-bubbles-wobble-"+frame,bubbles,L,w,h,ss);
+            }
             bubbles.slimeBubbles.spawn(bubble,1-late,L);bubble.x=L.w*.5f;bubble.surfaceY=L.h*.55f;
             bubble.age=bubble.popAt-.03f;shot(dir,"slime-bubbles-early-rise",bubbles,L,w,h,ss);
             bubbles.slimeBubbles.untilNext=100;

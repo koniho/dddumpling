@@ -30,7 +30,7 @@ final class ProfileSlimeHills {
             }
             if(state.equals("bubbles"))for(int i=0;i<SlimeBubbles.LIMIT;i++) {
                 SlimeBubbles.Bubble b=c.slimeBubbles.bubbles[i];
-                c.slimeBubbles.spawn(b,i,l);b.age=b.popAt*.7f;
+                c.slimeBubbles.spawn(b,SlimeBubbles.earlyPop(i)?(i^1):i,l);b.age=b.riseTime+.8f;
             }
             Counter p=new Counter();
             long warmUntil=System.nanoTime()+1_000_000_000L;

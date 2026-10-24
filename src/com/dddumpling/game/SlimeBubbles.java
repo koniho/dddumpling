@@ -20,6 +20,8 @@ final class SlimeBubbles extends Draw {
         }
     }
     final Bubble[] bubbles=new Bubble[LIMIT];
+    private final float[] shell=new float[96],gleam=new float[52];
+    private final float[][] rim={new float[96],new float[96]};
     float untilNext=.6f;
     int serial;
     SlimeBubbles() {for(int i=0;i<LIMIT;i++)bubbles[i]=new Bubble();}
@@ -85,13 +87,16 @@ final class SlimeBubbles extends Draw {
             p.save();
             // The waterline cuts a true circular segment, not a circle scaling up from nothing.
             if(b.age<b.riseTime)p.clipRect(0,L.playTop,L.w,b.surfaceY);
-            p.fillCircle(x,y,r,Glyph.withAlpha(SlimeHills.MINT,(int)(show*17)));
-            p.fillCircle(x+r*.10f,y+r*.12f,r*.82f,Glyph.withAlpha(SlimeHills.GREEN,(int)(show*10)));
-            p.strokeCircle(x,y,r,Glyph.withAlpha(SlimeHills.MINT,(int)(show*68)),r*.028f);
-            p.arc(x-r*.01f,y-r*.015f,r*.85f,r*.85f,207,65,
-                    Glyph.withAlpha(INK,(int)(show*91)),r*.048f);
-            p.arc(x,y,r*.90f,r*.90f,24,43,
-                    Glyph.withAlpha(SlimeHills.GREEN,(int)(show*62)),r*.036f);
+            if(b.age>=b.riseTime)floatingShell(p,b,x,y,show);
+            else {
+                p.fillCircle(x,y,r,Glyph.withAlpha(SlimeHills.MINT,(int)(show*17)));
+                p.fillCircle(x+r*.10f,y+r*.12f,r*.82f,Glyph.withAlpha(SlimeHills.GREEN,(int)(show*10)));
+                p.strokeCircle(x,y,r,Glyph.withAlpha(SlimeHills.MINT,(int)(show*68)),r*.028f);
+                p.arc(x-r*.01f,y-r*.015f,r*.85f,r*.85f,207,65,
+                        Glyph.withAlpha(INK,(int)(show*91)),r*.048f);
+                p.arc(x,y,r*.90f,r*.90f,24,43,
+                        Glyph.withAlpha(SlimeHills.GREEN,(int)(show*62)),r*.036f);
+            }
             p.restore();
             if(b.age<b.riseTime) {
                 float t=b.emergence(),chord=r*(float)Math.sqrt(Math.max(0,1-(1-2*t*t*(3-2*t))*(1-2*t*t*(3-2*t))));
@@ -100,4 +105,44 @@ final class SlimeBubbles extends Draw {
             }
         }
     }
+    /** Soft vector layers avoid native blur passes on either mobile renderer. */
+    private void floatingShell(Painter p,Bubble b,float x,float y,float show) {
+        float lift=Math.min(1,b.freeTime()*2.5f);
+        float pulse=.5f+.5f*(float)Math.sin(b.age*3.8f+b.seed);
+        int sheen=Glyph.mix(SlimeHills.MINT,INK,.25f+pulse*.35f);
+        for(int layer=0;layer<3;layer++) {
+            float scale=1.10f-layer*.05f;
+            for(int j=0;j<48;j++)point(shell,j,b,x,y,j*Softbody.TAU/48,scale,lift);
+            p.fillPoly(shell,Glyph.withAlpha(SlimeHills.MINT,(int)(show*(layer==0?4:layer==1?6:13))));
+        }
+        // Wide faint rim with a softer inner edge; no sharp circle outline.
+        for(int layer=0;layer<2;layer++) {
+            for(int j=0;j<48;j++) {
+                float angle=j*Softbody.TAU/48;
+                point(rim[0],j,b,x,y,angle,layer==0?1.035f:1f,lift);
+                point(rim[1],j,b,x,y,angle,layer==0?.935f:.965f,lift);
+            }
+            p.fillContours(rim,Glyph.withAlpha(sheen,(int)(show*(layer==0?13:30))));
+        }
+        for(int band=0;band<2;band++) {
+            float start=(band==0?3.55f:.25f)+.65f*(float)Math.sin(b.age*1.7f+b.seed+band*2);
+            for(int j=0;j<=12;j++) {
+                float u=j/12f,angle=start+u*(band==0?1.05f:.72f);
+                float thickness=(.025f+.012f*pulse)*(float)Math.sin(u*Math.PI);
+                point(gleam,j,b,x,y,angle,.88f+thickness,lift);
+                point(gleam,25-j,b,x,y,angle,.88f-thickness,lift);
+            }
+            int color=band==0?sheen:Glyph.mix(SlimeHills.GREEN,0xFFE6E4B2,pulse*.45f);
+            p.fillPoly(gleam,Glyph.withAlpha(color,(int)(show*(band==0?64+30*pulse:32+26*pulse))));
+        }
+    }
+
+    private static void point(float[] shape,int index,Bubble b,float x,float y,float angle,float scale,float lift) {
+        float wobble=1+lift*(.065f*(float)Math.sin(angle*2+b.age*4.3f+b.seed)
+                +.025f*(float)Math.sin(angle*3-b.age*3.1f+b.seed));
+        float squash=.045f*lift*(float)Math.sin(b.age*5.4f+b.seed);
+        shape[index*2]=x+(float)Math.cos(angle)*b.r*scale*wobble*(1+squash);
+        shape[index*2+1]=y+(float)Math.sin(angle)*b.r*scale*wobble*(1-squash);
+    }
+
 }
