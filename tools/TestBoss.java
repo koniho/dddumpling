@@ -1772,6 +1772,19 @@ final class TestBoss extends Check {
         check("grove snapshot does not leak onto title",!MushroomForest.retained(groveLoss)
                 && MushroomForest.groveProgress(groveLoss)==0);
 
+        GameCore leaves=enterBoss(L,Boss.MUSHROOM,176L);
+        check("grove leaves wait for damage",leaves.boss.mushroomLeafTime<0);
+        leaves.boss.damage(.1f);
+        check("boss damage releases grove leaves",leaves.boss.mushroomLeafTime==0);
+        leaves.update(DT,L);float leafTime=leaves.boss.mushroomLeafTime;
+        leaves.paused=true;leaves.update(.2f,L);
+        check("pause holds falling leaves",leaves.boss.mushroomLeafTime==leafTime);
+        leaves.paused=false;leaves.boss.mushroomLeafTime=MushroomForest.LEAF_TIME-DT*.5f;
+        leaves.update(DT,L);
+        check("grove leaf shower expires",leaves.boss.mushroomLeafTime<0);
+        leaves.boss.damage(.1f);leaves.boss.leave();
+        check("leaving boss clears leaf shower",leaves.boss.mushroomLeafTime<0);
+
         float[] bentStem = {100f, 0f, 100f, 50f, 20f, 100f, 0f, 150f,
                 -20f, 100f, 60f, 50f};
         float[] highlight = BossScreen.mushroomStemHighlight(bentStem);

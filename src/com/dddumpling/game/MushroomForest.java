@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** Muted undergrowth and an overhead canopy; all motion follows the scenery clock. */
 final class MushroomForest extends Draw {
     static final int LAND=3;
-    static final float REVEAL_TIME=.9f;
+    static final float REVEAL_TIME=.9f, LEAF_TIME=4.5f;
     private static final int[] GREENS={0xFF71917A,0xFF91A486,0xFF587D70,0xFFACB394};
     private MushroomForest() {}
 
@@ -55,23 +55,32 @@ final class MushroomForest extends Draw {
     }
 
     private static void floorTexture(Painter p,GameCore c,Layout L,float fade) {
-        float[] shape=new float[34];
-        for(int i=0;i<54;i++) {
+        float[] shape=new float[66];
+        for(int i=0;i<36;i++) {
             int seed=2671+i*59;
-            float r=L.w*(.012f+hash(seed)*.027f),span=L.deckTop+r*8;
+            float r=L.w*(.018f+hash(seed)*.035f),span=L.deckTop+r*8;
             float x=L.w*(.16f+hash(seed+3)*.68f);
             float y=(hash(seed+9)*span+c.skyClock*L.h*.016f+scroll(c,L))%span-r*4;
-            int a=(int)(fade*(22+hash(seed+13)*23));
-            if(i%3==0) {
-                leaf(p,shape,x,y,r*.85f,-r*.8f,r*.30f,0xFF9D9670,a);
-            } else {
-                p.fillEllipse(x,y,r*1.6f,r*.46f,Glyph.withAlpha(0xFF607D64,a/2));
-                for(int blade=0;blade<3;blade++) {
-                    float bx=x+(blade-1)*r*.38f;
-                    p.line(bx,y,bx+r*(blade-1)*.23f,y-r*(.26f+hash(seed+blade)*.4f),
-                            Glyph.withAlpha(0xFF9EAD87,a),L.unit*.018f);
-                }
-                if(i%4==0)p.fillEllipse(x+r*.9f,y+r*.2f,r*.21f,r*.13f,Glyph.withAlpha(0xFF99978A,a));
+            litter(p,shape,x,y,r,seed,(int)(fade*(32+hash(seed+13)*26)));
+        }
+    }
+
+    /** Traced curled leaves and broken fern fronds, with no oval ground stamps. */
+    private static void litter(Painter p,float[] shape,float x,float y,float r,int seed,int a) {
+        float turn=hash(seed+21)*Softbody.TAU;
+        float dx=(float)Math.cos(turn)*r,dy=(float)Math.sin(turn)*r*.6f;
+        if(seed%3==0) {
+            for(int j=0;j<3;j++)leaf(p,shape,x+dx*j*.24f,y+dy*j*.24f,
+                    dx*(.7f+j*.13f),dy-r*(.25f+j*.15f),r*(.18f+j*.02f),
+                    j==1?0xFFA69A71:0xFF7F956E,a);
+        } else {
+            p.polyline(new float[]{x,y,x+dx*.6f,y+dy*.6f-r*.12f,x+dx*1.6f,y+dy*1.6f},
+                    Glyph.withAlpha(0xFF829478,a/2),r*.025f);
+            for(int j=0;j<5;j++) {
+                float t=j/5f,bx=x+dx*t*1.6f,by=y+dy*t*1.6f;
+                for(int side=-1;side<=1;side+=2)leaf(p,shape,bx,by,
+                        dx*.23f-dy*side*.45f,dy*.23f+dx*side*.45f,
+                        r*.095f*(1-t*.4f),0xFF819B78,a);
             }
         }
     }
@@ -97,7 +106,7 @@ final class MushroomForest extends Draw {
         if(fade<=.001f || c.state==GameCore.TITLE)return;
         float floor=b.baseY(L)+Boss.bodyR(L)*3.55f;
         float lift=-(1-progress)*L.h*.72f;
-        float[] shape=new float[34];
+        float[] shape=new float[66];
         p.save();p.clipRect(0,L.playTop,L.w,L.deckTop);p.translate(0,lift);
         // A softly lit clearing joins the boss's own living roots, without a hard horizon.
         for(int i=3;i>=0;i--)p.fillEllipse(L.w*.5f,floor,L.w*(.38f+i*.055f),L.h*(.035f+i*.018f),
@@ -125,12 +134,14 @@ final class MushroomForest extends Draw {
                         x+reach,base+L.h*(.015f+root*.012f)},Glyph.withAlpha(0xFF88754F,a/2),w*(.20f-root*.045f));
             }
             for(int branch=0;branch<3;branch++) {
-                float by=L.playTop+L.h*(.04f+branch*.12f),reach=-side*L.w*(.26f-branch*.055f);
+                float wind=(float)Math.sin(c.clock*.95f+branch*1.7f+side+layer)*.24f
+                        +(float)Math.sin(c.clock*1.8f+branch)*.055f;
+                float by=L.playTop+L.h*(.04f+branch*.12f),reach=-side*L.w*(.26f-branch*.055f)*(1+wind*.3f);
                 p.polyline(new float[]{x,by+L.h*.12f,x+reach*.38f,by+L.h*.035f,x+reach,by-L.h*.035f},
                         Glyph.withAlpha(lit(0xFF8A7050,c.boss),a*2/3),w*.23f);
-                sprig(p,shape,x+reach*.55f,by+L.h*.02f,L.w*(.17f-branch*.025f),-side*.8f,1,a/2,lit(GREENS[(branch+layer)%4],c.boss));
+                sprig(p,shape,x+reach*.55f,by+L.h*.02f,L.w*(.17f-branch*.025f),-side*(.8f+wind),1,a/2,lit(GREENS[(branch+layer)%4],c.boss));
             }
-            sprig(p,shape,x,base,L.w*.18f,-side*.65f,0,a/2,lit(GREENS[1],c.boss));
+            sprig(p,shape,x,base,L.w*.18f,-side*(.65f+.23f*(float)Math.sin(c.clock*1.1f+side+layer)),0,a/2,lit(GREENS[1],c.boss));
         }
         groundProps(p,c,L,floor,fade);
         float light=light(c.boss);
@@ -174,10 +185,10 @@ final class MushroomForest extends Draw {
             int color=layer==0?0xFF617657:layer==1?0xFF3E5747:0xFF2A4039;
             p.fillPoly(bank,Glyph.withAlpha(lit(color,c.boss),(int)(fade*(layer==0?175:210))));
         }
+        float[] shape=new float[66];
         for(int i=0;i<24;i++) {
             float x=L.w*hash(813+i*31),y=floor+L.h*(.09f+.19f*hash(211+i*71));
-            p.fillEllipse(x,y,L.w*(.012f+.018f*hash(i+42)),L.h*.0025f,
-                    Glyph.withAlpha(0xFF91A777,(int)(fade*(12+hash(i+19)*12))));
+            litter(p,shape,x,y,L.w*(.016f+.014f*hash(i+42)),i*73+14,(int)(fade*35));
         }
     }
 
@@ -201,7 +212,7 @@ final class MushroomForest extends Draw {
             float x=L.w*(side>0?.025f+hash(i*47+61)*.25f:.975f-hash(i*47+61)*.25f);
             float y=floor+L.h*(.055f+hash(i*83+7)*.105f);
             float r=L.w*(.018f+hash(i*29+14)*.023f);
-            float lean=(float)Math.sin(c.clock*(.75f+hash(i+75)*.35f)+i*2.1f)*r*.25f;
+            float lean=(float)Math.sin(c.clock*(.75f+hash(i+75)*.35f)+i*2.1f)*r*.58f;
             float h=r*(1.1f+hash(i+91)*.8f),tipX=x+lean,tipY=y-h;
             p.fillEllipse(x,y+r*.06f,r*.85f,r*.2f,Glyph.withAlpha(0xFF162F27,(int)(fade*65)));
             p.polyline(new float[]{x,y,x+lean*.3f,y-h*.52f,tipX,tipY},
@@ -218,7 +229,7 @@ final class MushroomForest extends Draw {
         if(fade<=0)return;
         floorTexture(p,c,L,fade*(1-groveProgress(c)*.6f));
         fade*=1-groveProgress(c)*.65f;
-        float[] leaf=new float[34];
+        float[] leaf=new float[66];
         for(int layer=0;layer<2;layer++)for(int i=0;i<10;i++) {
             int seed=901+i*53+layer*317;
             float r=L.w*(.13f+hash(seed)*.10f),side=i%2==0?1:-1;
@@ -233,26 +244,53 @@ final class MushroomForest extends Draw {
     }
 
     static void canopy(Painter p,GameCore c,Layout L) {
-        if(c.survival.active || c.state==GameCore.TITLE || groveProgress(c)>=1)return;
-        float mix=Lands.blend(c);
-        float fade=((c.landFrom==LAND?1-mix:0)+(Lands.forStage(Lands.visualStage(c))==LAND?mix:0))*(1-c.drained());
-        fade=Math.max(fade,groveProgress(c)*(1-c.drained()))*(1-groveProgress(c));
-        if(fade<=.001f)return;
+        float forest=presence(c),grove=groveProgress(c);
+        if(forest<=.001f)return;
+        float fade=forest*(retained(c)?1:1-c.drained());
         p.save();
-        float margin=Renderer.shakeMargin(c,L);
-        p.clipRect(-margin,L.playTop-margin,L.w+margin,L.deckTop);
-        float[] leaf=new float[34];
-        for(int i=0;i<9;i++) {
+        p.clipRect(0,L.playTop,L.w,L.deckTop);
+        float[] shape=new float[66];
+        // The travelling canopy leaves the scene; anchored branches take over at the grove.
+        if(grove<1)for(int i=0;i<6;i++) {
             int seed=1703+i*137;
-            float side=i%2==0?1:-1;
-            float r=L.w*(.23f+hash(seed)*.12f);
+            float side=i%2==0?1:-1,r=L.w*(.42f+hash(seed)*.17f);
             float span=L.deckTop+r*4;
-            float y=((i+hash(seed+3))/9f*span+c.skyClock*L.h*.034f+scroll(c,L)*1.35f)%span-r*2;
+            float y=((i+hash(seed+3))/6f*span+c.skyClock*L.h*.034f+scroll(c,L)*1.35f)%span-r*2;
             float x=side>0?-r*.12f:L.w+r*.12f;
-            float sway=(float)Math.sin(c.clock*.36f+i*2.3f)*.16f;
-            sprig(p,leaf,x,y,r,side*(.95f+sway),i%3==0?2:1,(int)(fade*(31-14*groveProgress(c))),GREENS[i%4]);
+            float sway=(float)Math.sin(c.clock*.65f+i*2.3f)*.23f;
+            sprig(p,shape,x,y,r,side*(1.05f+sway),1,(int)(fade*(1-grove)*20),GREENS[i%4]);
         }
+        if(grove>0)for(int i=0;i<4;i++) {
+            float side=i%2==0?1:-1,r=L.w*(i<2?.43f:.32f);
+            float x=side>0?-L.w*.08f:L.w*1.08f,y=L.playTop+L.h*(i<2?.29f:.64f);
+            float sway=(float)Math.sin(c.clock*.8f+i*1.8f)*.23f;
+            sprig(p,shape,x,y,r,side*(.86f+sway),1,(int)(fade*grove*17),GREENS[i]);
+        }
+        fallingLeaves(p,c,L,shape);
         p.restore();
+    }
+
+    private static void fallingLeaves(Painter p,GameCore c,Layout L,float[] shape) {
+        Boss b=sceneBoss(c);
+        if(b.kind!=Boss.MUSHROOM || b.mushroomLeafTime<0)return;
+        float time=b.mushroomLeafTime+(retained(c)?c.time:0);
+        if(time>=LEAF_TIME)return;
+        int count=20+(int)((1-b.health())*24);
+        for(int i=0;i<count;i++) {
+            int seed=4589+i*97;
+            float age=time-hash(seed)*.6f;
+            if(age<0)continue;
+            float side=i%2==0?1:-1;
+            float x=L.w*(side>0?.08f+hash(seed+1)*.28f:.92f-hash(seed+1)*.28f);
+            x+=L.w*((float)Math.sin(age*2.5f+i)*.055f+side*age*.026f);
+            float y=L.playTop+L.h*(.03f+hash(seed+7)*.26f+age*.075f+age*age*.022f);
+            float angle=i*2.4f+age*(1.5f+hash(seed+9)*2);
+            float r=L.w*(.014f+hash(seed+11)*.012f);
+            float dx=(float)Math.cos(angle)*r,dy=(float)Math.sin(angle)*r;
+            float width=r*(.18f+.25f*Math.abs((float)Math.sin(age*4+i)));
+            float alpha=Math.min(1,age*7)*Math.min(1,(LEAF_TIME-time)/.9f);
+            leaf(p,shape,x,y,dx,dy,width,i%4==0?0xFFB3A171:GREENS[i%4],(int)(alpha*165));
+        }
     }
 
     private static void sprig(Painter p,float[] shape,float x,float y,float r,float lean,int kind,int a,int color) {
@@ -278,9 +316,10 @@ final class MushroomForest extends Draw {
     /** One tapered contour, with a translucent half-leaf highlight instead of stacked ovals. */
     private static void leaf(Painter p,float[] shape,float x,float y,float dx,float dy,float width,int color,int a) {
         float length=(float)Math.sqrt(dx*dx+dy*dy),nx=-dy/length,ny=dx/length;
-        for(int i=0;i<17;i++) {
-            float t=i<=8?i/8f:(16-i)/8f;
-            float bulge=(float)Math.sin(t*Math.PI)*width*(i<=8?1:-.82f);
+        for(int i=0;i<33;i++) {
+            float t=i<=16?i/16f:(32-i)/16f;
+            float bulge=(float)Math.sin(t*Math.PI)*width*(i<=16?1:-.82f)
+                    *(1+.06f*(float)Math.sin(t*Math.PI*5));
             shape[i*2]=x+dx*t+nx*bulge;
             shape[i*2+1]=y+dy*t+ny*bulge;
         }

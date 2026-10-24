@@ -191,6 +191,7 @@ final class Boss {
     int mushroomShakes, mushroomDirection;
     float mushroomLastX, mushroomShakeWindow, mushroomAttackT, mushroomCharge, mushroomAngry;
     float mushroomSweepFlash;
+    float mushroomLeafTime=-1f;
     float mushroomMeterAlpha, mushroomGuideX, mushroomPlayerX, mushroomReject;
     int mushroomGuideTarget;
     /** Visual offset of the separately dragged cap; it springs home after release. */
@@ -371,6 +372,7 @@ final class Boss {
         slimePromptHits = slimeSoundSequence = 0;
         slimeVulnerableSoundT=slimeBoipTime=-1f;
         mushroomShakes = mushroomDirection = 0;
+        mushroomLeafTime=-1f;
         mushroomLastX = mushroomShakeWindow = mushroomCharge = mushroomAngry = mushroomSweepFlash = 0f;
         mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
         mushroomGuideTarget = 1;
@@ -457,6 +459,7 @@ final class Boss {
         slimePromptHits = slimeSoundSequence = 0;
         slimeVulnerableSoundT=slimeBoipTime=-1f;
         mushroomShakes = mushroomDirection = 0;
+        mushroomLeafTime=-1f;
         mushroomLastX = mushroomShakeWindow = mushroomAttackT = mushroomCharge = mushroomAngry = mushroomSweepFlash = 0f;
         mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
         mushroomGuideTarget = 1;
@@ -1293,6 +1296,7 @@ final class Boss {
     int damage(float n) {
         hp -= n;
         hurt = 1f;
+        if(kind==MUSHROOM && n>0)mushroomLeafTime=0f;
         if(kind==ALLIGATOR) {
             alligator.jolt(hp<=0?1f:.55f);
             if(alligator.damageThreshold(this,hp+n))clearBolts();
@@ -2442,6 +2446,10 @@ final class Boss {
         if (kind < 0) return 0;
         if(kind==RAINBOW_CAT)cat.animate(this,dt,L);
         if(kind==ALLIGATOR)alligator.animate(this,dt,L);
+        if(mushroomLeafTime>=0) {
+            mushroomLeafTime+=dt;
+            if(mushroomLeafTime>=MushroomForest.LEAF_TIME)mushroomLeafTime=-1f;
+        }
         hurt = Math.max(0f, hurt - dt * 2.6f);
         for (int g = 0; g < slimeBlobPulse.length; g++)
             slimeBlobPulse[g] = Math.max(0f, slimeBlobPulse[g] - dt);

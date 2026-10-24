@@ -3322,7 +3322,9 @@ final class Preview {
             shot(dir,"forest-grove-spore-light",grove,L,w,h,ss);
             grove.boss.launchT=0;grove.boss.hurt=1;
             shot(dir,"forest-grove-damage-light",grove,L,w,h,ss);
-            grove.boss.hurt=0;grove.lives=1;grove.takeHit(grove.boss.bodyX(L),L);
+            grove.boss.hurt=0;grove.boss.mushroomLeafTime=1.1f;
+            shot(dir,"forest-grove-falling-leaves",grove,L,w,h,ss);
+            grove.lives=1;grove.takeHit(grove.boss.bodyX(L),L);
             step(grove,L,1.1f);
             shot(dir,"forest-grove-player-loss",grove,L,w,h,ss);
         }
