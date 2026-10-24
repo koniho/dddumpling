@@ -12,7 +12,7 @@ final class WorldCatalog {
     }
     // Land array indices are saved IDs. Cave's reserved row remains in place.
     static final Land[] LANDS={
-        new Land(Glyph.mix(Draw.BG,0xFF142A29,.5f),0xFF79C99D,5,"Slime hills hugged back."),
+        new Land(Glyph.mix(Draw.BG,0xFF244A32,.85f),0xFF79C99D,5,"Slime hills hugged back."),
         new Land(Glyph.mix(Draw.BG,0xFF21182F,.5f),0xFFB18CDB,6,"Crystal sparkle nap. Very shiny."),
         new Land(Glyph.mix(Draw.BG,0xFF102735,.5f),0xFF62BEC5,7,"Kelp tucked you in. Bubble blanket!"),
         new Land(0xFF202D2C,0xFF8FA58A,8,"Mushroom cap became your pillow."),

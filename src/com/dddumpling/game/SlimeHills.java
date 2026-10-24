@@ -32,14 +32,14 @@ final class SlimeHills extends Draw {
             p.polyline(edge,Glyph.withAlpha(MINT,(int)(fade*(layer==1?42:20))),L.w*(layer==1?.018f:.009f));
         }
         // Shallow currents leave the prompt lane quiet, with a few moving glints.
-        for(int channel=0;channel<2;channel++) {
+        for(int channel=0;channel<5;channel++) {
             for(int j=0;j<=32;j++) {
                 float y=L.playTop+span*j/32;
-                edge[j*2]=L.w*(.43f+channel*.14f+.032f*(float)Math.sin(y/L.w*5-clock*.24f+channel*2));
+                edge[j*2]=L.w*(.29f+channel*.105f+(.026f+channel*.003f)*(float)Math.sin(y/L.w*(4.3f+channel*.27f)-clock*(.20f+channel*.018f)+channel*2));
                 edge[j*2+1]=y;
             }
-            p.polyline(edge,Glyph.withAlpha(GREEN,(int)(fade*13)),L.w*.034f);
-            p.polyline(edge,Glyph.withAlpha(MINT,(int)(fade*12)),L.w*.006f);
+            p.polyline(edge,Glyph.withAlpha(GREEN,(int)(fade*21)),L.w*(.030f+(channel%3)*.012f));
+            p.polyline(edge,Glyph.withAlpha(MINT,(int)(fade*14)),L.w*.006f);
         }
         for(int i=0;i<8;i++) {
             int seed=733+i*71,side=i%2;
