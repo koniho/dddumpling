@@ -1188,13 +1188,8 @@ final class Boss {
             }
             int direction = dx < 0f ? -1 : 1;
             boolean guideReady = Math.abs(mushroomGuideX - mushroomGuideTarget) < MUSHROOM_GUIDE_WINDOW;
-            if (!guideReady || (mushroomDirection != 0 && direction != mushroomGuideTarget)) {
-                held = -1;
-                mushroomShakes = mushroomDirection = 0;
-                mushroomMeterAlpha = 0f;
-                mushroomReject = 1f;
-                if (body != null) { body.squash(-0.78f); body.letGo(); }
-                if (mushroomStem != null) mushroomStem.squash(-0.65f);
+            if (mushroomDirection != 0 && (!guideReady || direction != mushroomGuideTarget)) {
+                escapeMushroomGrab(L);
                 return PART;
             }
             mushroomLastX = x;
@@ -1307,6 +1302,8 @@ final class Boss {
         mushroomGuideTarget = 1;
         mushroomReject = 1f;
         mushroomEscape = MUSHROOM_ESCAPE_TIME;
+        mushroomCharge = 0f;
+        mushroomAttackT = MUSHROOM_ATTACK_GAP;
         if (body != null) { body.letGo(); body.squash(-.78f); }
         if (mushroomStem != null) mushroomStem.squash(.55f);
         shedMushroomDust(L.w * .18f, L);
@@ -2640,6 +2637,10 @@ final class Boss {
                         * (float)Math.sin(t * Math.PI * 3f) * (1f - t);
                 mushroomCapDY = mushroomEscapeY * remaining - bodyR(L) * .48f
                         * (float)Math.sin(t * Math.PI);
+                if (mushroomEscape == 0f) {
+                    sporeVolley(6, rnd);
+                    mushroomAttackT = MUSHROOM_ATTACK_GAP;
+                }
             } else if (held != -2) {
                 float settle = Math.max(0f, 1f - dt * 8f);
                 mushroomCapDX *= settle;

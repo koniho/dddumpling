@@ -922,10 +922,8 @@ final class BossScreen extends Draw {
             float pulse = 1f + 0.10f * (float) Math.sin(c.clock * 13f);
             float playerX = meterX + b.mushroomPlayerX * travel;
             boolean eitherWay = b.held == -2 && b.mushroomDirection == 0;
-            float guideDistance = eitherWay
-                    ? Math.abs(Math.abs(b.mushroomPlayerX) - b.mushroomGuideX)
-                    : Math.abs(b.mushroomPlayerX - b.mushroomGuideX);
-            boolean aligned = guideDistance < 0.09f
+            boolean aligned = eitherWay ? Math.abs(b.mushroomPlayerX) > .91f
+                    : Math.abs(b.mushroomPlayerX - b.mushroomGuideX) < .09f
                     && Math.abs(b.mushroomGuideX - b.mushroomGuideTarget) < Boss.MUSHROOM_GUIDE_WINDOW;
             int player = Glyph.withAlpha(aligned ? 0xFF8CFF79 : 0xFF65F5E3,
                     (int) (255 * meterFade));
@@ -937,10 +935,10 @@ final class BossScreen extends Draw {
             float targetHalfW = meterH * 2.34f * pulse;
             float targetHalfH = meterH * 0.70f * pulse;
             for (int side = eitherWay ? -1 : 1; side <= 1; side += 2) {
-                float guideX = eitherWay ? meterX + side * b.mushroomGuideX * travel : targetX;
+                float guideX = eitherWay ? meterX + side * travel : targetX;
                 p.fillRect(guideX - targetHalfW, meterY - targetHalfH,
                         guideX + targetHalfW, meterY + targetHalfH,
-                        Glyph.withAlpha(0xFFFF477E, (int) (245 * meterFade)));
+                        Glyph.withAlpha(eitherWay ? 0xFF8CFF79 : 0xFFFF477E, (int) (245 * meterFade)));
                 if (eitherWay) {
                     float tipX = guideX + side * meterH * .85f;
                     float backX = tipX - side * meterH * .62f;

@@ -3349,7 +3349,7 @@ final class Preview {
             escape.grabBoss(escape.boss.body.centreX(),escape.boss.body.centreY());
             escape.dragBoss(escape.boss.mushroomLastX+L.w*.15f,escape.boss.body.centreY(),L);
             step(escape,L,escape.boss.mushroomShakeWindow+DT);
-            for(int frame=0;frame<5;frame++) {
+            for(int frame=0;frame<7;frame++) {
                 shot(dir,"forest-escape-"+frame,escape,L,w,h,ss);
                 step(escape,L,.15f);
             }

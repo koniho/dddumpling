@@ -1974,13 +1974,12 @@ final class TestBoss extends Check {
             choice.dragBoss(opening.mushroomLastX + firstDirection * L.w * .02f, opening.body.centreY(), L);
             check("either-way guide appears on movement " + firstDirection, opening.mushroomMeterAlpha > 0f
                     && opening.mushroomDirection == 0);
-            advance(choice, L, .4f);
             choice.dragBoss(opening.mushroomLastX + firstDirection * L.w * .36f,
                     opening.body.centreY(), L);
-            check("first sway accepts either direction " + firstDirection, opening.held == -2
+            check("first sway accepts either direction immediately " + firstDirection, opening.held == -2
                     && opening.mushroomDirection == firstDirection && opening.mushroomReject == 0f);
-            check("guide continues from chosen endpoint " + firstDirection,
-                    opening.mushroomGuideX == firstDirection && opening.mushroomGuideTarget == -firstDirection);
+            check("free first sway chooses the next return direction " + firstDirection,
+                    opening.mushroomGuideX == 0f && opening.mushroomGuideTarget == -firstDirection);
             advance(choice, L, .68f);
             choice.dragBoss(opening.mushroomLastX - firstDirection * L.w * .36f,
                     opening.body.centreY(), L);
@@ -1994,15 +1993,25 @@ final class TestBoss extends Check {
         }
 
         GameCore rushed = enterBoss(L, Boss.MUSHROOM, 168L);
+        Ear escapeEar = new Ear();rushed.sound = escapeEar;
         rushed.grabBoss(rushed.boss.body.centreX(), rushed.boss.body.centreY());
         rushed.dragBoss(rushed.boss.mushroomLastX + L.w * 0.36f,
                 rushed.boss.body.centreY(), L);
-        check("outrunning the guide cancels the drag and starts the flex taunt",
+        check("first full drag needs no marker timing", rushed.boss.held == -2);
+        rushed.dragBoss(rushed.boss.mushroomLastX - L.w * .36f, rushed.boss.body.centreY(), L);
+        check("outrunning the return guide cancels the drag and starts the escape",
                 rushed.boss.held == -1 && rushed.boss.mushroomReject > 0f
-                        && rushed.boss.mushroomShakes == 0);
+                        && rushed.boss.mushroomShakes == 0 && rushed.boss.mushroomEscape > 0f);
+        check("escape holds projectiles until the boss breaks free", rushed.boss.boltCount() == 0);
+        advance(rushed, L, Boss.MUSHROOM_ESCAPE_TIME + DT);
+        check("mistimed grab escape fires six spores with audio",
+                rushed.boss.boltCount() == 6 && escapeEar.mushroomSporeSounds == 1);
+        advance(rushed, L, .2f);
+        check("escape volley only fires once", escapeEar.mushroomSporeSounds == 1);
 
         GameCore timeout = enterBoss(L, Boss.MUSHROOM, 170L);
         Boss escaping = timeout.boss;
+        Ear timeoutEar = new Ear();timeout.sound = timeoutEar;
         timeout.grabBoss(escaping.body.centreX(), escaping.body.centreY());
         timeout.dragBoss(escaping.mushroomLastX + L.w * .02f, escaping.body.centreY(), L);
         for (int i = 0; i < 2; i++) {
@@ -2025,13 +2034,18 @@ final class TestBoss extends Check {
                 !timeout.grabBoss(escaping.body.centreX() + escapeX,
                         escaping.body.centreY() + escaping.mushroomCapDY));
         advance(timeout, L, Boss.MUSHROOM_ESCAPE_TIME + DT);
+        check("expired grab escape fires six spores with audio",
+                escaping.boltCount() == 6 && timeoutEar.mushroomSporeSounds == 1);
+        check("escape burst starts a fresh regular attack cooldown",
+                escaping.mushroomAttackT > Boss.MUSHROOM_ATTACK_GAP - .1f);
         check("escape settles the cap back home", escaping.mushroomEscape == 0f
                 && Math.abs(escaping.mushroomCapDX) < .01f && Math.abs(escaping.mushroomCapDY) < .01f);
         check("a fresh grab starts a new attempt", timeout.grabBoss(escaping.body.centreX(),
                 escaping.body.centreY()) && escaping.mushroomShakes == 0 && escaping.mushroomShakeWindow > 0f);
         timeout.releaseBoss();
         advance(timeout, L, 1.5f);
-        check("lifting voluntarily does not trigger a later escape", escaping.mushroomEscape == 0f);
+        check("lifting voluntarily does not trigger a later escape", escaping.mushroomEscape == 0f
+                && timeoutEar.mushroomSporeSounds == 1);
         timeout.grabBoss(escaping.body.centreX(), escaping.body.centreY());
         advance(timeout, L, escaping.mushroomShakeWindow + DT);
         check("an idle grab times out too", escaping.held == -1 && escaping.mushroomEscape > 0f);

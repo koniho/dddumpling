@@ -436,6 +436,12 @@ final class Bot {
             return true;
         }
         if (b.kind == Boss.MUSHROOM) {
+            // Defend the escape burst before committing a finger to another shake.
+            if (b.mushroomEscape > 0f || (b.held != -2 && b.boltCount() > 0)) return false;
+            // Waiting for the guide is not an input; use that time to defend incoming spores.
+            if (b.held == -2 && b.mushroomDirection != 0
+                    && Math.abs(b.mushroomGuideX - b.mushroomGuideTarget) > Boss.MUSHROOM_GUIDE_WINDOW)
+                return false;
             budget -= 1f;
             presses++;
             think = reaction;
@@ -444,7 +450,8 @@ final class Bot {
                 c.dragBoss(b.mushroomLastX + L.w * 0.02f, b.body.centreY(), L);
                 return true;
             }
-            if (Math.abs(b.mushroomGuideX - b.mushroomGuideTarget) <= Boss.MUSHROOM_GUIDE_WINDOW)
+            if (b.mushroomDirection == 0
+                    || Math.abs(b.mushroomGuideX - b.mushroomGuideTarget) <= Boss.MUSHROOM_GUIDE_WINDOW)
                 c.dragBoss(b.mushroomLastX + b.mushroomGuideTarget * L.w * 0.36f,
                         b.body.centreY(), L);
             return true;
