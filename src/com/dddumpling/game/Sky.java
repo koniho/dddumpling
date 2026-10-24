@@ -66,6 +66,8 @@ final class Sky extends Draw {
             tint = Glyph.mix(tint, Glyph.cycle(c.clock * 0.9f + layer * 0.22f), 0.60f * bite);
             alpha += (int) (alpha * 0.30f * bite);
         }
+        alpha=Math.round(alpha*(1f-MushroomForest.presence(c)));
+        if(alpha<=0)return;
         float scale = cloudScale(layer);
         float h = cloudHeight(L, layer);
         if(c.survival.active)alpha=Math.round(alpha*(1f-c.survival.entrance()));
@@ -89,6 +91,7 @@ final class Sky extends Draw {
         float margin = Renderer.shakeMargin(c, L);
         p.clipRect(-margin, -margin, L.w + margin, L.deckTop);
         for (int l = from; l < to; l++) clouds(p, c, L, l, hurt);
+        MushroomForest.mist(p,c,L,from,to);
         p.restore();
     }
 

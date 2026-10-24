@@ -3311,8 +3311,8 @@ final class Preview {
             GameCore grove=toBoss(L,Boss.MUSHROOM,537L,false);
             grove.stage=WorldCatalog.bossStage(Boss.MUSHROOM);grove.landBlend=1f;
             grove.stageBanner=grove.rosterSceneT=0;
-            for(int frame=0;frame<5;frame++) {
-                if(frame>0)step(grove,L,Boss.INTRO/4f);
+            for(int frame=0;frame<8;frame++) {
+                if(frame>0)step(grove,L,frame<=4?Boss.INTRO/4f:MushroomForest.REVEAL_TIME/3f);
                 shot(dir,"forest-grove-"+frame,grove,L,w,h,ss);
             }
             grove.boss.intro=0;grove.boss.hurt=0;grove.boss.launchT=0;
@@ -3322,6 +3322,9 @@ final class Preview {
             shot(dir,"forest-grove-spore-light",grove,L,w,h,ss);
             grove.boss.launchT=0;grove.boss.hurt=1;
             shot(dir,"forest-grove-damage-light",grove,L,w,h,ss);
+            grove.boss.hurt=0;grove.lives=1;grove.takeHit(grove.boss.bodyX(L),L);
+            step(grove,L,1.1f);
+            shot(dir,"forest-grove-player-loss",grove,L,w,h,ss);
         }
         GameCore agaric = toBoss(L, Boss.MUSHROOM, 537L, true);
         agaric.stageBanner = agaric.rosterSceneT = 0f;

@@ -131,6 +131,12 @@ final class BossScreen extends Draw {
             return;
         }
 
+        // The mushroom first arrives at its clearing, then emerges from the forest palette.
+        if(b.kind==Boss.MUSHROOM && b.intro>0) {
+            float reveal=MushroomForest.bossReveal(b);
+            if(reveal<=.001f)return;
+            p=new ColorFadePainter(p,Lands.BG[MushroomForest.LAND],1-reveal,reveal);
+        }
         // In on the arrival card, out on the burst.
         float fade = b.intro > 0f ? Math.min(1f, b.introProgress() * 1.6f)
                 : b.beaten && b.kind != Boss.SPLITTER ? Math.max(0f, 1f - b.defeatMelt() * b.defeatMelt()) : 1f;
@@ -1685,7 +1691,7 @@ final class BossScreen extends Draw {
     static void bar(Painter p, GameCore c, Layout L) {
         Boss b = c.boss;
         if (!b.active()) return;
-        float fade = b.intro > 0f ? Math.min(1f, b.introProgress() * 2f)
+        float fade = b.intro > 0f ? (b.kind==Boss.MUSHROOM?MushroomForest.bossReveal(b):Math.min(1f, b.introProgress() * 2f))
                 : b.beaten ? b.defeatPromptFade() : 1f;
         if (fade <= 0.01f) return;
 
@@ -1733,13 +1739,13 @@ final class BossScreen extends Draw {
      * boss starts as the stage begins — and they have to sit apart or they overlap.
      */
     private static float introExitFade(Boss b) {
-        return Math.min(1f,(1f-b.introProgress())*3f);
+        return Math.min(1f,(b.kind==Boss.MUSHROOM?b.intro/MushroomForest.REVEAL_TIME:1f-b.introProgress())*3f);
     }
 
     static void intro(Painter p, GameCore c, Layout L) {
         Boss b = c.boss;
         if (!b.active() || b.intro <= 0f) return;
-        float t = b.introProgress();
+        float t = b.kind==Boss.MUSHROOM?Math.max(0,1-b.intro/MushroomForest.REVEAL_TIME):b.introProgress();
         // Up quickly, and out over the last third, so the card is gone before the fight starts.
         float a = Math.min(1f, t * 4f) * introExitFade(b);
         if (a <= 0.01f) return;

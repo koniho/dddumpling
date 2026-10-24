@@ -45,7 +45,7 @@ final class Renderer extends Draw {
         float hurt = harm * (0.55f + 0.45f * hurtPulse);
 
         // Adventure drains to green; Survival's departing stripes reveal the purple title palette.
-        float gone = c.drained();
+        float gone = MushroomForest.retained(c)?0:c.drained();
 
         // Kept moderate: the red reads as a pulse at the edges, not a wash over the
         // characters, which have to stay legible at exactly the moment you are panicking.

@@ -1750,6 +1750,28 @@ final class TestBoss extends Check {
         litBoss.hurt=0;check("grove lighting settles after event pulses",MushroomForest.light(litBoss)==0);
         litBoss.leave();check("grove lighting clears with boss",MushroomForest.light(litBoss)==0);
 
+        GameCore arrival=enterBoss(L,Boss.MUSHROOM,174L);
+        arrival.boss.intro=arrival.boss.introDuration();
+        check("mushroom hidden during grove travel",MushroomForest.bossReveal(arrival.boss)==0);
+        arrival.boss.intro=MushroomForest.REVEAL_TIME;
+        check("grove arrives before mushroom appears",MushroomForest.groveProgress(arrival)==1
+                && MushroomForest.bossReveal(arrival.boss)==0);
+        arrival.boss.intro=MushroomForest.REVEAL_TIME*.5f;
+        check("mushroom crossfades only after grove stops",MushroomForest.groveProgress(arrival)==1
+                && Math.abs(MushroomForest.bossReveal(arrival.boss)-.5f)<.001f && !arrival.boss.fighting());
+        arrival.boss.intro=0;
+        check("mushroom fully visible before combat",MushroomForest.bossReveal(arrival.boss)==1 && arrival.boss.fighting());
+
+        GameCore groveLoss=enterBoss(L,Boss.MUSHROOM,175L);
+        groveLoss.lives=1;groveLoss.takeHit(groveLoss.boss.bodyX(L),L);
+        float lossSky=groveLoss.skyClock;
+        advance(groveLoss,L,.5f);
+        check("mushroom death retains settled grove",MushroomForest.retained(groveLoss)
+                && MushroomForest.groveProgress(groveLoss)==1 && groveLoss.skyClock==lossSky);
+        groveLoss.toTitle();
+        check("grove snapshot does not leak onto title",!MushroomForest.retained(groveLoss)
+                && MushroomForest.groveProgress(groveLoss)==0);
+
         float[] bentStem = {100f, 0f, 100f, 50f, 20f, 100f, 0f, 150f,
                 -20f, 100f, 60f, 50f};
         float[] highlight = BossScreen.mushroomStemHighlight(bentStem);

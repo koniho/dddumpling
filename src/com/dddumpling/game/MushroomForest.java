@@ -3,13 +3,77 @@ package com.dddumpling.game;
 /** Muted undergrowth and an overhead canopy; all motion follows the scenery clock. */
 final class MushroomForest extends Draw {
     static final int LAND=3;
+    static final float REVEAL_TIME=.9f;
     private static final int[] GREENS={0xFF71917A,0xFF91A486,0xFF587D70,0xFFACB394};
     private MushroomForest() {}
 
+    static boolean retained(GameCore c) {
+        return c.state==GameCore.OVER && c.bossVictoryKind==Boss.MUSHROOM && c.bossVictory!=null;
+    }
+    private static Boss sceneBoss(GameCore c) {return retained(c)?c.bossVictory:c.boss;}
     static float groveProgress(GameCore c) {
-        if(!c.boss.active() || c.boss.kind!=Boss.MUSHROOM || c.survival.active)return 0;
-        float t=c.boss.introProgress();
+        Boss b=sceneBoss(c);
+        if(!b.active() || b.kind!=Boss.MUSHROOM || c.survival.active || c.state==GameCore.TITLE)return 0;
+        float t=Math.min(1f,(b.introDuration()-b.intro)/Boss.INTRO);
         return t*t*(3-2*t);
+    }
+
+    static float bossReveal(Boss b) {
+        if(b.kind!=Boss.MUSHROOM || b.intro<=0)return 1;
+        float t=Math.max(0,Math.min(1,(REVEAL_TIME-b.intro)/REVEAL_TIME));
+        return t*t*(3-2*t);
+    }
+    static float presence(GameCore c) {
+        if(c.survival.active || c.state==GameCore.TITLE)return 0;
+        float mix=Lands.blend(c);
+        return Math.max(groveProgress(c),(c.landFrom==LAND?1-mix:0)
+                +(Lands.forStage(Lands.visualStage(c))==LAND?mix:0));
+    }
+
+    static void mist(Painter p,GameCore c,Layout L,int from,int to) {
+        if(groveProgress(c)>=1)return;
+        float fade=presence(c)*(1-c.drained())*(1-groveProgress(c));
+        if(fade<=0)return;
+        for(int layer=from;layer<to;layer++)for(int i=0;i<4;i++) {
+            int seed=1093+layer*77+i*41;
+            float span=L.deckTop+L.h*.2f;
+            float y=((hash(seed)*span+c.skyClock*L.h*(.009f+layer*.004f)+scroll(c,L)*.35f)%span)-L.h*.1f;
+            float x=L.w*(.08f+hash(seed+3)*.84f),w=L.w*(.35f+hash(seed+7)*.28f);
+            for(int veil=0;veil<3;veil++) {
+                float[] ribbon=new float[66];
+                for(int j=0;j<=16;j++) {
+                    float u=j/16f,xx=x+(u-.5f)*w*2;
+                    float yy=y+L.h*.016f*(float)Math.sin(u*5+c.clock*.12f+i);
+                    float h=L.h*(.007f+veil*.006f)*(float)Math.sin(u*Math.PI);
+                    ribbon[j*2]=ribbon[(32-j)*2]=xx;
+                    ribbon[j*2+1]=yy-h;ribbon[(32-j)*2+1]=yy+h;
+                }
+                p.fillPoly(ribbon,Glyph.withAlpha(layer==2?0xFFB3C7AE:0xFF889F92,
+                        (int)(fade*(layer==2?4:7))));
+            }
+        }
+    }
+
+    private static void floorTexture(Painter p,GameCore c,Layout L,float fade) {
+        float[] shape=new float[34];
+        for(int i=0;i<54;i++) {
+            int seed=2671+i*59;
+            float r=L.w*(.012f+hash(seed)*.027f),span=L.deckTop+r*8;
+            float x=L.w*(.16f+hash(seed+3)*.68f);
+            float y=(hash(seed+9)*span+c.skyClock*L.h*.016f+scroll(c,L))%span-r*4;
+            int a=(int)(fade*(22+hash(seed+13)*23));
+            if(i%3==0) {
+                leaf(p,shape,x,y,r*.85f,-r*.8f,r*.30f,0xFF9D9670,a);
+            } else {
+                p.fillEllipse(x,y,r*1.6f,r*.46f,Glyph.withAlpha(0xFF607D64,a/2));
+                for(int blade=0;blade<3;blade++) {
+                    float bx=x+(blade-1)*r*.38f;
+                    p.line(bx,y,bx+r*(blade-1)*.23f,y-r*(.26f+hash(seed+blade)*.4f),
+                            Glyph.withAlpha(0xFF9EAD87,a),L.unit*.018f);
+                }
+                if(i%4==0)p.fillEllipse(x+r*.9f,y+r*.2f,r*.21f,r*.13f,Glyph.withAlpha(0xFF99978A,a));
+            }
+        }
     }
 
     static float light(Boss b) {
@@ -28,9 +92,10 @@ final class MushroomForest extends Draw {
     private static float scroll(GameCore c,Layout L) {return groveProgress(c)*L.h*.72f;}
 
     static void grove(Painter p,GameCore c,Layout L) {
-        float progress=groveProgress(c),fade=progress*(1-c.drained());
+        Boss b=sceneBoss(c);
+        float progress=groveProgress(c),fade=progress*(retained(c)?1:1-c.drained());
         if(fade<=.001f || c.state==GameCore.TITLE)return;
-        float floor=c.boss.baseY(L)+Boss.bodyR(L)*3.55f;
+        float floor=b.baseY(L)+Boss.bodyR(L)*3.55f;
         float lift=-(1-progress)*L.h*.72f;
         float[] shape=new float[34];
         p.save();p.clipRect(0,L.playTop,L.w,L.deckTop);p.translate(0,lift);
@@ -149,6 +214,9 @@ final class MushroomForest extends Draw {
     }
 
     static void undergrowth(Painter p,GameCore c,Layout L,float fade) {
+        fade*=1-groveProgress(c);
+        if(fade<=0)return;
+        floorTexture(p,c,L,fade*(1-groveProgress(c)*.6f));
         fade*=1-groveProgress(c)*.65f;
         float[] leaf=new float[34];
         for(int layer=0;layer<2;layer++)for(int i=0;i<10;i++) {
@@ -165,10 +233,10 @@ final class MushroomForest extends Draw {
     }
 
     static void canopy(Painter p,GameCore c,Layout L) {
-        if(c.survival.active || c.state==GameCore.TITLE)return;
+        if(c.survival.active || c.state==GameCore.TITLE || groveProgress(c)>=1)return;
         float mix=Lands.blend(c);
         float fade=((c.landFrom==LAND?1-mix:0)+(Lands.forStage(Lands.visualStage(c))==LAND?mix:0))*(1-c.drained());
-        fade=Math.max(fade,groveProgress(c)*(1-c.drained()));
+        fade=Math.max(fade,groveProgress(c)*(1-c.drained()))*(1-groveProgress(c));
         if(fade<=.001f)return;
         p.save();
         float margin=Renderer.shakeMargin(c,L);
