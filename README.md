@@ -11,56 +11,74 @@ A native iPhone port shares the Java gameplay and renderer through J2ObjC. See
 > **DDDUMPLING Dev** (`com.dddumpling.game.dev`), with separate scores and collections.
 > Both variants write `hexatype.apk`, the legacy output filename.
 
-Cute words fall from the sky. Each "letter" is one of six characters — dumpling, strawberry,
-cat, grapes, squishy, blob — with its own colour and face. You type by tapping the matching
-hexagon in the honeycomb deck at the bottom. The adaptive deck starts with four keys and can
-expand to six. Clear a word before it reaches the danger line, or it lunges and costs you a life.
-Once a stage, when something is bearing down on the line, swipe up from the lower half of the
-playfield above the keys to shove threatening words back, including a committed lunge.
+## Play
 
-Between-stage minigames include a dim sum steamer and a steerable star course.
-The steamer picks two active keys; alternate them, then swipe the lid away to claim the prize.
-The dumpling inside is a blind box — freeing it hands over one of thirty
-collectible squishies, from commons up to a single gold grail. The collection is kept for good
-and shown in the display case: a shimmering glass cabinet that opens from the small case on the title screen.
-Pan freely in any direction through the animated collectibles, without snapping to cells.
-Fruits share one row, candies share another, and defeated bosses join their own row.
-Each boss victory awards its matching miniature character and replaces the next minigame with
-a confetti-filled welcome scene; repeated victories pay a duplicate bonus. The glass catches the light as you move.
-Navigation ticks as the highlighted tile changes; its character grows, bounces, and sparkles.
-The highlighted character shows how many times it has been collected, including duplicates.
-Counts persist across runs for every reward source. Clearing the collection also clears these counts.
-Tap a visible tile to pan it into the center, then tap it again for its story;
-every key starts a run instead, and puts the case away first if it is open. Anything you have not
-won yet is a silhouette behind a question mark; tap one you have and it tells you where it
-lives and what its family gets up to. Win one
-and the collection parades: they march in from the left, the newcomer drops into the end of the
-line, and the next stage waits until they have all marched off to the right.
+Match falling character prompts by tapping the honeycomb keys. The adaptive deck starts with
+four keys and can expand to six. Clear enemies before they cross the danger line, and use a
+rescue swipe to push threats back. Choose your first squishy companion on a new game;
+short, interactive tutorials introduce the controls and new mechanics as you encounter them.
 
-Boss fights appear at stages 5, 10, 15, and 20: Slime, Dark Divide, Octopulse, and Fly Agaric.
-Each combines key defense with a physical gesture, using soft bodies that wobble and deform.
-A victory unlocks that boss's miniature friend in the display case and celebrates the new
-character before moving straight to the next stage.
+Three modes share the same squishy characters, with separate records and run summaries:
 
-The full collection has 49 characters: 30 blind-box squishies, five starlings, ten gelatinous
-cubes, and four boss friends. Unlocked lands can be selected from the title; the fifth land,
-the cave expedition, is developer-only. DDDUMPLING Town and its ticket readout are also
-available only in developer builds.
+- **Adventure:** travel through themed lands, collect companions, play Steamer and Star Path
+  minigames, and fight a boss every five stages. Losing a boss fight offers a retry; the run
+  record keeps the retry count.
+- **Survival:** face an escalating enemy mix against scrolling rainbow bands. Each power-up
+  is available once per run, and rescue swipes recharge. Rush enemies arrive after 90 seconds;
+  all enemy types are available after two minutes. Each run awards one collectible duck,
+  chosen from a time-based pool, with a special duck for reaching five minutes.
+- **Boss Time Attack:** challenge unlocked bosses individually or as an all-boss run, with
+  animated versus introductions, timed records, and per-boss performance details.
 
-FLURRY, NINJA, and TEAM SQUISH frenzies change how you clear words. From stage 11, mystery
-pickups can also bring INCOGNITO or MONOCHROME debuffs. From stage 16, linked friends ask for
-both partner keys within 200 ms. MULTI is retired from the offered powers.
+Beat your first Adventure boss to unlock the other modes. Boss Time Attack opponents unlock
+as you defeat them; the all-boss option requires every boss. Your selected mode and Adventure
+land are remembered between app launches.
 
-Player settings, available from the title and in-run stage readout, provide independent music
-and effects volume/mute controls, the privacy policy, and Kids Mode. Kids Mode applies to the
-next run: slower enemy and projectile traversal, four keys, and stage-growing words capped at six presses including multipress keys;
-linked friends use the standard 200 ms window;
-boss actions, animations, and minigames keep normal timing;
-lives and game over remain. The title's What's new steamer opens the release history and demos.
+### Lands, enemies, and bosses
 
-Kids Mode always grants five seconds of Steamer mash time and caps Star Path at 30%
-of its normal difficulty ladder (level 3 of 10). Saved Star Path progression is preserved
-for normal mode; easier saved levels stay easier. Animation and flight clocks remain normal.
+Adventure progresses through slime hills, crystals, underwater scenery, mushrooms, swamp,
+and rainbow lands. Boss encounters introduce **Super Slime**, **Dark Divide**, **Octopulse**,
+**Fly Agaric**, **Gummy Gator**, and **Rainbow Cat**. Each has its own mix of key prompts,
+taps, swipes, or tracing, with spring bodies that bounce and react to hits.
+
+Later stages mix longer and multipress words with linked pairs, fog-hidden prompts,
+shooting-star rush enemies, and divebomb enemies that accelerate on their final key.
+FLURRY, NINJA, and TEAM SQUISH power-ups change how you clear the crowd; mystery pickups
+can also bring INCOGNITO or MONOCHROME debuffs.
+
+The shared [world catalog](src/com/dddumpling/game/WorldCatalog.java) defines the land/boss
+mapping. Cave content is reserved and is not a reachable Adventure land. DDDUMPLING Town
+and its ticket readout remain developer-only.
+
+### Collect and customize
+
+Free squishies from the Steamer, collect Star Path rewards, earn Survival ducks, and add
+miniature boss friends to your display case. Collected characters can become your companion.
+Pan around the case and tap a collectible once to center it and open its story. It floats
+above the story with colorful rings; another tap makes it react. Duplicate counts persist.
+The [collectible catalog](src/com/dddumpling/game/Collect.java) defines the characters and
+reward families.
+
+Choose the original look or **Halloween Dress Up** in settings. Halloween changes character
+art, colors, and boss names while keeping gameplay the same.
+
+### Settings and progress
+
+Open the title's squishy gear, or pause during a run, to reach settings. Music and effects
+have separate volume controls. The **Progress** tab groups achievements, cloud sync,
+Reset High Scores, and Reset Tutorials. Its animated trophy case and cloud open the relevant
+progress controls. Platform services depend on the build configuration: Google Play Games
+on Android and Game Center/iCloud on iPhone. See the platform setup links below.
+
+**Kids Mode** applies to the next run: four keys, slower enemy approach, and words capped at
+six presses including multipress keys. Projectiles keep their normal speed, linked pairs
+keep their standard timing, and lives and game over still apply. The Steamer is untimed with
+a ten-pip goal; Star Path caps at 30% of its difficulty ladder without erasing normal-mode
+progression.
+
+The title's **What's New** steamer opens release history and interactive demonstrations.
+Swipe between change pages or tap their neighboring page edges. After an update, returning
+players get an invitation to see what's new.
 
 ## Where to look
 
@@ -214,9 +232,8 @@ prerequisites:
 It defaults to developer mode; use `./deploy.sh --production` for production. With adb connected
 it installs and launches automatically; otherwise it falls back to the installer dialog.
 
-Termux cannot install packages itself — that needs a privileged permission — so adb is the only
-way to skip the dialog. It can talk to the very device it is running on over Wireless
-debugging:
+Unattended installs need a privileged transport. ADB can talk to the very device Termux is
+running on over Wireless debugging:
 
 1. Settings → Developer options → enable **Wireless debugging**.
 2. Tap **Pair device with pairing code**. Note the `IP:PORT` and the six-digit code.
@@ -228,6 +245,12 @@ debugging:
 Pairing persists, but the port changes when Wireless debugging is toggled or the device
 reboots, so step 4 may need repeating. After that `./deploy.sh` is fully unattended, and
 `adb install -r` preserves the best score, the settings and the collection.
+
+If ADB is unavailable, an already configured and authorized Shizuku/rish shell can also
+install and launch the APK. Investigate existing local transports before falling back to a
+manual install. `deploy.sh` does not automatically select rish. Keep the existing developer
+signing key and package; do not uninstall the app to work around an update failure. See
+[build troubleshooting](docs/engineering/build.md).
 
 Notifications are optional: `deploy.sh` calls `termux-notification` if the Termux:API app is
 installed and silently skips it otherwise. Termux add-ons must come from the same source as
@@ -242,12 +265,13 @@ With adb connected, use `adb logcat` to inspect device crashes.
 | Area | Main files |
 | --- | --- |
 | Shared rules and state | `GameCore`, `Pacing`, `Words`, `Roster`, `LinkedPairs`, `Power` |
-| Bosses and minigames | `Boss`, `BossPlay`, `Interlude`, `Steamer`, `StarPath` |
-| Collection and progress | `Collect`, `BossCollect`, `CaseUi`, `Progress`, `ProgressData` |
+| Modes and world catalog | `ModeSelector`, `WorldCatalog`, `Lands`, `Survival`, `TimeAttack` |
+| Bosses and minigames | `Boss`, `BossPlay`, `BossRetry`, `Interlude`, `Steamer`, `StarPath` |
+| Collection and progress | `Collect`, `BossCollect`, `CaseUi`, `Progress`, `ProgressData`, `Achievements`, `CloudSaveUi` |
 | Shared drawing | `Painter`, `Draw`, `Renderer`, `Hud`, `Screens`, and scene renderers |
-| Settings and release book | `PlayerSettings`, `SettingsInput`, `DevSettings`, `ReleaseNotes` |
+| Settings and release book | `PlayerSettings`, `SettingsInput`, `DevSettings`, `SkinSettings`, `ReleaseNotes` |
 | Android host | `MainActivity`, `GameView`, `CanvasPainter`, `Audio`, `Crash` |
-| Android services | `local-src/` (offline), `play-src/` (optional Play integration) |
+| Android services | `local-src/` (offline), `play-src/` (Play Games SDK and integration) |
 | iPhone host and translation | `ios/` |
 | Headless harness | `tools/CoreTest.java`, `tools/Test*.java`, `tools/Bot.java`, `tools/Preview.java` |
 | Harness output | `tools/RasterPainter.java`, `tools/Font.java`, `tools/Png.java`, `tools/Wav.java` |
@@ -259,7 +283,7 @@ manifest, which iOS translation also uses. The Android build discovers Java file
 ## Tuning
 
 Start with `Pacing`, then the relevant mechanic (`Power`, `StarPath`, `Boss`, or `Steamer`).
-Run `./check.sh -q -s Soak -r` for difficulty changes: the bounded bots measure what finite
+Run `./check.sh -q -r` for difficulty changes; its bounded bots measure what finite
 press rates and reaction times can survive. Read the tuned constants' comments and
 [AGENTS.md](AGENTS.md) before changing them.
 
@@ -268,16 +292,18 @@ text. See [GLOSSARY.md](GLOSSARY.md) for mechanic names and their code locations
 
 ## Licensing
 
-Characters, effects, music, collectibles and stories are all original and procedurally
-generated. The game font is
+Characters and scenery use shared procedural drawing. Audio combines synthesized music and
+effects, user recordings, and licensed third-party recordings. Preserve the source and
+modification details in [recording provenance](audio/recorded/README.md) and the bundled
+[audio credits](assets/AudioCredits.txt), including required attribution. The game font is
 [Bungee](https://fonts.google.com/specimen/Bungee) under the SIL Open Font License, whose
 text ships alongside it in `assets/fonts/Bungee-OFL.txt`. Quicksand remains bundled for
 the trailer tools, with its license in `assets/fonts/OFL.txt`.
 
 Legacy `res/raw/bgm.*` files remain gitignored and are excluded from builds. Custom music is
-no longer supported. Music follows the game scene: MOOG SWING normally and LOFI DRIFT in caves,
-with dedicated boss, frenzy, and Cave Band arrangements. Player settings retain music volume
-and mute. The iPhone release bundles its J2ObjC runtime notices separately.
+no longer supported. Music follows the game scene, including dedicated boss, frenzy, and
+versus arrangements. Player settings retain music volume and mute. The iPhone release bundles
+its J2ObjC runtime notices separately.
 
 ## GitHub releases
 
@@ -291,11 +317,13 @@ Tag pushes (`v*`) and manual runs of **Build Android release** produce three sig
 - `DDDUMPLING-<ref>.apk`: production APK for direct installation.
 - `DDDUMPLING-<ref>-developer.apk`: developer APK for direct installation.
 
-Tag builds attach all three to the GitHub Release; manual builds provide workflow artifacts.
+Tag builds attach all three to a draft GitHub Release; manual builds provide workflow artifacts.
 A manual `source_tag` rebuild produces artifacts without publishing a release or uploading to Play.
 The workflow runs developer and production harness checks, uses API 36 build tools, and signs
-with repository secrets. It explicitly disables Play integration and verifies offline production
-artifacts. Keep the signing key backed up: updates must match the installed app's certificate.
+with repository secrets. It builds and verifies an offline production APK for direct/itch
+distribution, then a Play-enabled AAB using the checked-in Play Games configuration. The
+developer APK includes the Play SDK. Keep the signing key backed up: updates must match the
+installed app's certificate.
 
 Production and developer apps can be installed together, with separate scores, collections, and
 preferences. Developer builds expose playtest controls; production disables those at compile time.
@@ -309,19 +337,25 @@ upload signing key. CI uses the existing `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY
 `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_PASSWORD` secrets. Keep this key backed up privately.
 `./build-bundle.sh --unsigned` is for local bundle validation only, not Play upload.
 
-Version tags also publish the signed AAB to **Google Play closed testing** through fastlane.
+Version tags also upload the signed AAB to **Google Play closed testing** through fastlane,
+leaving the release in draft unless activation is explicitly requested.
 Manual workflow runs have an optional `upload_to_play` checkbox (off by default) and a
 `play_track` choice of closed or internal. The closed track defaults to API ID `alpha`; set
 repository variable `PLAY_CLOSED_TRACK` for a custom track.
 See [Play publishing setup](app-store/play-publishing.md) for service-account credentials,
-versioned release notes, and retry instructions. Public releases remain manual.
+versioned release notes, and retry instructions. Production promotion is a separate, explicit
+step through the production-release workflow; uploading a build alone does not publish it.
+Itch publishing and Apple delivery use their own workflows.
 
-### Optional Play Games integration
+### Play Games integration
 
-Production builds record progress locally. To include Google Play Games events and cross-device
-saves, configure the project/event IDs and build with `DDDUMPLING_PLAY_CONFIG`. Developer builds
+Standalone production builds record progress locally by default. To enable Google Play Games
+achievements, events, and cross-device saves, supply the matching configuration through
+`DDDUMPLING_PLAY_CONFIG`. The release AAB uses `store/play-games.draft.json`. Developer builds
 always include the SDK and require Gradle to resolve its pinned dependencies. Sign-in and reporting
 stay off until a matching Dev configuration is supplied. See [Play Games setup and save semantics](store/play-games.md).
 
-For iPhone CI and TestFlight delivery, see [iOS CI](ios/docs/ci.md) and the
+TestFlight upload, tester distribution, and App Store submission are separate steps. Production
+submission still goes through Apple review. For iPhone CI and TestFlight delivery, see
+[iOS CI](ios/docs/ci.md) and the
 [TestFlight version policy](ios/README.md#testflight-version-policy).
