@@ -41,7 +41,8 @@
   NSUInteger painted=0;uint8_t maxAlpha=0;
   for (NSUInteger i=0;i<256*256;i++){painted+=pixels[i*4+3]>0;maxAlpha=MAX(maxAlpha,pixels[i*4+3]);}
   XCTAssertGreaterThan(painted,100u);XCTAssertLessThanOrEqual(maxAlpha,80);
-  [painter fillRectWithFloat:0 withFloat:0 withFloat:5 withFloat:5 withInt:(jint)0xFFFFFFFF];
+  // Cover the bitmap so this alpha check is independent of its row orientation.
+  [painter fillRectWithFloat:0 withFloat:0 withFloat:256 withFloat:256 withInt:(jint)0xFFFFFFFF];
   XCTAssertEqual(pixels[3],255);
   painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
 }
