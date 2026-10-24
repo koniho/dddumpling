@@ -3133,6 +3133,22 @@ final class Preview {
      * them — and a mechanic nobody has looked at is a mechanic nobody has checked.
      */
     private static void bossFrames(File dir, Layout L, int w, int h, int ss) throws Exception {
+        if(wanted("slime-valley-")) {
+            GameCore valley=new GameCore(new Check.Mem(),761L);valley.startGame();
+            valley.landBlend=1;valley.stageBanner=valley.rosterSceneT=0;
+            for(int frame=0;frame<3;frame++) {
+                step(valley,L,2f);shot(dir,"slime-valley-"+frame,valley,L,w,h,ss);
+            }
+        }
+        if(wanted("slime-arrival-")) {
+            GameCore arrival=toBoss(L,Boss.SLIME,762L,false);
+            arrival.stage=5;arrival.landBlend=1;arrival.stageBanner=arrival.rosterSceneT=0;
+            float[] times={0,.45f,.85f,1.12f,1.65f,2.05f,2.4f,2.79f};
+            for(int frame=0;frame<times.length;frame++) {
+                if(frame>0)step(arrival,L,times[frame]-times[frame-1]);
+                shot(dir,"slime-arrival-"+frame,arrival,L,w,h,ss);
+            }
+        }
         if(wanted("182-"))for(int kind=0;kind<Boss.COUNT;kind++)for(float at:new float[]{.45f,.83f,1f}) {
             GameCore c=TestTimeAttack.start(kind);
             c.stageBanner=0;

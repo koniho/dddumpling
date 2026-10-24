@@ -74,6 +74,7 @@ final class Lands extends Draw {
     }
 
     private static void sceneryLayer(Painter p, GameCore c, Layout L, int land, float fade) {
+        if(land==0) {SlimeHills.scenery(p,c,L,fade);return;}
         if(land==RAINBOW)return; // Its scrolling bands are drawn before the clouds.
         if(land==MushroomForest.LAND) {MushroomForest.undergrowth(p,c,L,fade);return;}
         for (int layer = 0; layer < 2; layer++) {

@@ -28,6 +28,36 @@ final class TestBoss extends Check {
         return c;
     }
 
+    static void slimeArrival(Layout L) {
+        GameCore c=new GameCore(new Mem(),321L);c.startGame();
+        c.boss.begin(Boss.SLIME,5,c.rnd);c.stage=5;c.landBlend=1;
+        Boss b=c.boss;
+        check("slime arrival begins below field with hidden boss",SlimeArrival.surface(b,L)>L.deckTop
+                && SlimeArrival.reveal(b)==0 && SlimeArrival.active(c));
+        b.intro=SlimeArrival.DURATION-SlimeArrival.COVER;
+        check("slime covers field before boss reveal",SlimeArrival.surface(b,L)<L.playTop-L.w*.1f
+                && SlimeArrival.reveal(b)==0);
+        b.intro=SlimeArrival.DURATION-SlimeArrival.RELEASE;
+        check("slime is ready behind opaque curtain before drain",SlimeArrival.reveal(b)==1
+                && SlimeArrival.surface(b,L)<L.playTop && !b.fighting());
+        float previous=SlimeArrival.surface(b,L);
+        for(int i=1;i<=12;i++) {
+            b.intro=SlimeArrival.DURATION-SlimeArrival.RELEASE-i*(SlimeArrival.DRAIN-SlimeArrival.RELEASE)/12;
+            float y=SlimeArrival.surface(b,L);
+            check("slime curtain drains downwards "+i,y>=previous && !b.fighting());previous=y;
+        }
+        check("slime curtain clears before fight starts",previous>L.deckTop);
+        b.intro=.1f;float age=b.age;b.update(.05f,L,c.rnd);
+        check("slime combat clock waits for flourish",b.age==age && !b.fighting());
+        b.intro=0;check("slime arrival ends cleanly",!SlimeArrival.active(c) && b.fighting());
+        b.leave();check("leaving boss clears slime curtain",!SlimeArrival.active(c));
+        c.stage=1;c.landFrom=-1;c.landBlend=1;
+        check("slime valley occupies its chapter",SlimeHills.presence(c)==1);
+        c.stage=6;c.landFrom=0;c.landBlend=.5f;
+        check("slime valley blends out across chapters",Math.abs(SlimeHills.presence(c)-.5f)<.001f);
+        c.state=GameCore.TITLE;check("slime valley does not replace title scene",SlimeHills.presence(c)==0);
+    }
+
     static void promptImpactTiming(Layout L) {
         group("delayed Slime vulnerability boip");
         GameCore ready=enterBoss(L,Boss.SLIME,196);toOpen(ready,L);

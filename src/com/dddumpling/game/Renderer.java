@@ -153,6 +153,7 @@ final class Renderer extends Draw {
 
         // Foreground leaves veil the world and its effects; menus remain above the canopy.
         MushroomForest.canopy(p,c,L);
+        SlimeArrival.draw(p,c,L);
         if (c.state == GameCore.TITLE) Screens.title(p, c, L);
         else if (c.state == GameCore.OVER) {
             if(c.survival.active && c.deathProgress()>=SurvivalEnd.REVEAL)p.fillRect(0,0,L.w,L.h,BG);

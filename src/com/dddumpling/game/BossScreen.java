@@ -140,6 +140,7 @@ final class BossScreen extends Draw {
         // In on the arrival card, out on the burst.
         float fade = b.intro > 0f ? Math.min(1f, b.introProgress() * 1.6f)
                 : b.beaten && b.kind != Boss.SPLITTER ? Math.max(0f, 1f - b.defeatMelt() * b.defeatMelt()) : 1f;
+        if(b.kind==Boss.SLIME)fade*=SlimeArrival.reveal(b);
         fade *= alpha;
         if (fade <= 0.01f) return;
 
@@ -1707,7 +1708,7 @@ final class BossScreen extends Draw {
     static void bar(Painter p, GameCore c, Layout L) {
         Boss b = c.boss;
         if (!b.active()) return;
-        float fade = b.intro > 0f ? (b.kind==Boss.MUSHROOM?MushroomForest.bossReveal(b):Math.min(1f, b.introProgress() * 2f))
+        float fade = b.intro > 0f ? (b.kind==Boss.SLIME?SlimeArrival.reveal(b):b.kind==Boss.MUSHROOM?MushroomForest.bossReveal(b):Math.min(1f, b.introProgress() * 2f))
                 : b.beaten ? b.defeatPromptFade() : 1f;
         if (fade <= 0.01f) return;
 
@@ -1761,7 +1762,7 @@ final class BossScreen extends Draw {
     static void intro(Painter p, GameCore c, Layout L) {
         Boss b = c.boss;
         if (!b.active() || b.intro <= 0f) return;
-        float t = b.kind==Boss.MUSHROOM?Math.max(0,1-b.intro/MushroomForest.REVEAL_TIME):b.introProgress();
+        float t = b.kind==Boss.SLIME?SlimeArrival.titleProgress(b):b.kind==Boss.MUSHROOM?Math.max(0,1-b.intro/MushroomForest.REVEAL_TIME):b.introProgress();
         // Up quickly, and out over the last third, so the card is gone before the fight starts.
         float a = Math.min(1f, t * 4f) * introExitFade(b);
         if (a <= 0.01f) return;

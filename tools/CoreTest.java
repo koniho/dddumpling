@@ -76,6 +76,7 @@ final class CoreTest {
             TestBoss.cadence(L);
             TestBoss.frame(L);
             TestBoss.renderEffects(L);
+            TestBoss.slimeArrival(L);
             TestBoss.promptImpactTiming(L);
             TestBoss.slimeSpray(L);
             TestBoss.slimeDeath(L);
