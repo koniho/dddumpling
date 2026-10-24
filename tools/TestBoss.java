@@ -1728,6 +1728,28 @@ final class TestBoss extends Check {
     }
 
     static void mushroom(Layout L) {
+        GameCore grove=enterBoss(L,Boss.MUSHROOM,172L);
+        float sky=grove.skyClock,clock=grove.clock;
+        advance(grove,L,.4f);
+        check("settled mushroom grove stops scenery travel",grove.skyClock==sky);
+        check("settled grove keeps ambient animation running",grove.clock>clock);
+        grove.boss.intro=grove.boss.introDuration()*.5f;
+        grove.update(DT,L);
+        check("grove entrance still scrolls",grove.skyClock>sky);
+        grove.boss.leave();sky=grove.skyClock;grove.update(DT,L);
+        check("leaving grove restores scenery travel",grove.skyClock>sky);
+
+        GameCore litGrove=enterBoss(L,Boss.MUSHROOM,173L);
+        Boss litBoss=litGrove.boss;litBoss.hurt=litBoss.launchT=0;
+        litBoss.mushroomSweepFlash=.28f;float pipLight=MushroomForest.light(litBoss);
+        litBoss.mushroomSweepFlash=0;litBoss.launchT=Boss.LAUNCH_TIME;
+        float sporeLight=MushroomForest.light(litBoss);
+        litBoss.launchT=0;litBoss.hurt=1;
+        check("grove damage flash is larger than spore and pip lighting",
+                MushroomForest.light(litBoss)>sporeLight && sporeLight>pipLight && pipLight>0);
+        litBoss.hurt=0;check("grove lighting settles after event pulses",MushroomForest.light(litBoss)==0);
+        litBoss.leave();check("grove lighting clears with boss",MushroomForest.light(litBoss)==0);
+
         float[] bentStem = {100f, 0f, 100f, 50f, 20f, 100f, 0f, 150f,
                 -20f, 100f, 60f, 50f};
         float[] highlight = BossScreen.mushroomStemHighlight(bentStem);

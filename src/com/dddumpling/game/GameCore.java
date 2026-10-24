@@ -2892,7 +2892,7 @@ final class GameCore {
         // Accumulate speed changes so the scenery never jumps at battle or frenzy boundaries.
         float skyRate=state==PLAY && boss.active() && boss.kind==Boss.RAINBOW_CAT?RainbowLand.BATTLE_SKY_RATE:1f;
         if(RainbowCatTaunt.retained(this) && dying())skyRate=RainbowCatTaunt.scrollRate(deathDuration()-deathT);
-        skyClock += dt * (powerActive() ? Power.SKY_RATE : skyRate);
+        skyClock += dt * (powerActive() ? Power.SKY_RATE : skyRate) * (1f-MushroomForest.groveProgress(this));
         landBlend = Math.min(1f, landBlend + dt / Lands.FADE_TIME);
         LandPicker.updateDiscovery(this, dt);
         LandPicker.updateTravel(this, dt);
