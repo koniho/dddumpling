@@ -1911,16 +1911,18 @@ final class TestBoss extends Check {
         check("death releases the shake guide", dead.held == -1 && dead.mushroomMeterAlpha == 0f);
         for (int i = 0; i < 40; i++) dead.update(DT, L, dying.rnd);
         MushroomDeath spread = new MushroomDeath(null, dead, L, 1f);
-        check("blob spreads while retaining rounded height",
-                spread.blobWidth() > flat.blobWidth() && spread.blobHeight() > fresh.radius * .5f
+        check("rounded blob sinks without spreading into a puddle",
+                spread.blobY() > flat.blobY() + fresh.radius * .5f
+                && spread.blobWidth() == flat.blobWidth() && spread.blobHeight() > fresh.radius * .5f
                 && spread.blobWidth() <= L.w * .4f && spread.opacity == 1f);
         int moss = spread.color(0xFFFF3344);
         check("collapsed mushroom blends toward grove green",
                 spread.grove > .85f && ((moss>>>8)&255) > ((moss>>>16)&255));
         for (int i = 0; i < 50; i++) dead.update(DT, L, dying.rnd);
         MushroomDeath gone = new MushroomDeath(null, dead, L, 1f);
-        check("blob fades completely while remaining on the grove ground",
-                gone.opacity == 0f && gone.grove == 1f && Math.abs(gone.ground-fresh.ground) < .001f);
+        check("blob finishes beneath the fixed grove soil edge",
+                gone.opacity == 0f && gone.grove == 1f && Math.abs(gone.ground-fresh.ground) < .001f
+                && gone.blobY() - gone.blobHeight() * 1.15f > gone.ground + fresh.radius * .12f);
 
         GameCore c = enterBoss(L, Boss.MUSHROOM, 166L);
         Ear mushroomEar = new Ear();

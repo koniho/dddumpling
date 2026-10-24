@@ -76,15 +76,20 @@ final class MushroomDeath implements Painter {
     }
     void endGroundCover() { p.restore(); drawBlob(); }
 
-    float blobWidth() { return Math.min(layout.w * .40f, radius * (1.65f + spread * .65f)); }
+    float blobWidth() { return Math.min(layout.w * .40f, radius * 1.75f); }
     float blobHeight() { return radius * (.66f - spread * .08f); }
+    float sink() { return ease(time, 1.8f, Boss.LEAVE); }
+    float blobY() { return ground - blobHeight() * .72f + radius * 1.35f * sink(); }
 
     void drawBlob() {
         if (blob <= 0f || opacity <= 0f) return;
         float alpha = blob * opacity, rx = blobWidth(), ry = blobHeight();
-        float centre = centreX(), top = ground - ry * .72f;
+        float centre = cx, top = blobY();
         p.fillEllipse(centre, ground + ry * .08f, rx * .93f, ry * .26f,
-                Glyph.withAlpha(0xFF20382F, (int)(60 * alpha)));
+                Glyph.withAlpha(0xFF20382F, (int)(60 * alpha * (1f - sink()))));
+        // The full rounded body travels below a fixed soil edge, rather than flattening on it.
+        p.save();
+        p.clipRect(-radius, -radius, layout.w + radius, ground + radius * .12f);
         float[] contour = new float[80];
         for (int layer = 0; layer < 3; layer++) {
             float sx = 1f - layer * .11f, sy = 1f - layer * .20f;
@@ -101,6 +106,7 @@ final class MushroomDeath implements Painter {
             p.fillPoly(contour, Glyph.withAlpha(Glyph.mix(cap,moss,grove),
                     (int)(alpha * (layer == 0 ? 240 : layer == 1 ? 220 : 100))));
         }
+        p.restore();
     }
 
     public void fillPoly(float[] xy, int c) { p.fillPoly(points(xy), color(c)); }
