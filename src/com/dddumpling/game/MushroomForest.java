@@ -67,6 +67,8 @@ final class MushroomForest extends Draw {
 
     /** Traced curled leaves and broken fern fronds, with no oval ground stamps. */
     private static void litter(Painter p,float[] shape,float x,float y,float r,int seed,int a) {
+        if(a<=0)return;
+        if(p.stamps()!=null && p.stamps().forest(3+seed%3,x,y,r,hash(seed+21)*Softbody.TAU,0,a))return;
         float turn=hash(seed+21)*Softbody.TAU;
         float dx=(float)Math.cos(turn)*r,dy=(float)Math.sin(turn)*r*.6f;
         if(seed%3==0) {
@@ -236,6 +238,7 @@ final class MushroomForest extends Draw {
             float x=side>0?L.w*(-.03f+hash(seed+1)*.11f):L.w*(1.03f-hash(seed+1)*.11f);
             float span=L.deckTop+r*5;
             float y=((i+hash(seed+2))*.1f*span+c.skyClock*L.h*(.012f+layer*.008f)+scroll(c,L))%span-r*2.5f;
+            if(y<L.playTop-r*.6f || y-r*2.1f>L.deckTop)continue;
             float sway=(float)Math.sin(c.clock*.43f+i)*r*.10f;
             int alpha=(int)(fade*(layer==0?38:66));
             // Ferns alternate with rounded broad leaves and slim willow sprays.
@@ -256,15 +259,16 @@ final class MushroomForest extends Draw {
             float side=i%2==0?1:-1,r=L.w*(.42f+hash(seed)*.17f);
             float span=L.deckTop+r*4;
             float y=((i+hash(seed+3))/6f*span+c.skyClock*L.h*.034f+scroll(c,L)*1.35f)%span-r*2;
+            if(y<L.playTop-r*.6f || y-r*2.1f>L.deckTop)continue;
             float x=side>0?-r*.12f:L.w+r*.12f;
             float sway=(float)Math.sin(c.clock*.65f+i*2.3f)*.23f;
             sprig(p,shape,x,y,r,side*(1.05f+sway),1,(int)(fade*(1-grove)*20),GREENS[i%4]);
         }
-        if(grove>0)for(int i=0;i<4;i++) {
+        if(grove>0)for(int i=0;i<2;i++) {
             float side=i%2==0?1:-1,r=L.w*(i<2?.43f:.32f);
             float x=side>0?-L.w*.08f:L.w*1.08f,y=L.playTop+L.h*(i<2?.29f:.64f);
             float sway=(float)Math.sin(c.clock*.8f+i*1.8f)*.23f;
-            sprig(p,shape,x,y,r,side*(.86f+sway),1,(int)(fade*grove*17),GREENS[i]);
+            sprig(p,shape,x,y,r,side*(.86f+sway),1,(int)(fade*grove*12),GREENS[i]);
         }
         fallingLeaves(p,c,L,shape);
         p.restore();
@@ -275,7 +279,7 @@ final class MushroomForest extends Draw {
         if(b.kind!=Boss.MUSHROOM || b.mushroomLeafTime<0)return;
         float time=b.mushroomLeafTime+(retained(c)?c.time:0);
         if(time>=LEAF_TIME)return;
-        int count=20+(int)((1-b.health())*24);
+        int count=9+(int)((1-b.health())*9);
         for(int i=0;i<count;i++) {
             int seed=4589+i*97;
             float age=time-hash(seed)*.6f;
@@ -294,6 +298,8 @@ final class MushroomForest extends Draw {
     }
 
     private static void sprig(Painter p,float[] shape,float x,float y,float r,float lean,int kind,int a,int color) {
+        if(a<=0)return;
+        if(p.stamps()!=null && p.stamps().forest(kind,x,y,r,lean,color,a))return;
         int count=kind==0?6:3;
         float tipX=x+r*lean,tipY=y-r*1.45f;
         float bend=r*.16f;
@@ -312,6 +318,18 @@ final class MushroomForest extends Draw {
         }
         leaf(p,shape,tipX-r*lean*.16f,tipY+r*.20f,r*lean*.27f,-r*.42f,r*.14f,color,a);
     }
+
+    /** Immutable local art for optional host caching. The software painter prevents recursion. */
+    static void stampArt(Painter p,int art,float r) {
+        float[] shape=new float[66];
+        if(art<3)sprig(p,shape,0,0,r,1,art,255,GREENS[0]);
+        else {
+            int seed=art-3;
+            // Cancel the authored seed rotation; the cached draw supplies the instance rotation.
+            litter(p,shape,0,0,r,seed,255);
+        }
+    }
+    static float litterAngle(int art) {return hash(art-3+21)*Softbody.TAU;}
 
     /** One tapered contour, with a translucent half-leaf highlight instead of stacked ovals. */
     private static void leaf(Painter p,float[] shape,float x,float y,float dx,float dy,float width,int color,int a) {

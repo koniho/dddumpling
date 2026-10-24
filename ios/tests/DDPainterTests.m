@@ -3,6 +3,7 @@
 
 @interface DDIOSPainter (ColorTests)
 - (CGColorRef)cachedColor:(jint)color;
+- (CGImageRef)forestImage:(jint)art color:(jint)color;
 @end
 
 @interface DDPainterTests : XCTestCase
@@ -11,6 +12,38 @@
 @implementation DDPainterTests
 - (void)testCanvasStartsWithDefaultSkin {
   XCTAssertEqual([[DDIOSPainter new] skin], 0);
+}
+
+- (void)testForestCacheReusesArtworkAndTintVariants {
+  DDIOSPainter *painter=[DDIOSPainter new];
+  XCTAssertEqual([painter stamps],painter);
+  for (jint art=0;art<6;art++) {
+    CGImageRef base=[painter forestImage:art color:0];
+    XCTAssertNotEqual(base,NULL);
+    XCTAssertEqual(CGImageGetWidth(base),256u);
+    XCTAssertEqual(base,[painter forestImage:art color:0]);
+    CGImageRef tinted=[painter forestImage:art color:(jint)0xFF91A486];
+    XCTAssertNotEqual(tinted,NULL);
+    XCTAssertEqual(tinted,[painter forestImage:art color:(jint)0xFF91A486]);
+  }
+}
+
+- (void)testForestDrawRestoresTransformAndAlpha {
+  uint8_t pixels[256*256*4]={0};
+  CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
+  CGContextRef context=CGBitmapContextCreate(pixels,256,256,8,256*4,space,
+      kCGBitmapByteOrder32Big|kCGImageAlphaPremultipliedLast);
+  DDIOSPainter *painter=[DDIOSPainter new];painter.context=context;
+  CGAffineTransform transform=CGContextGetCTM(context);
+  XCTAssertTrue([painter forestWithInt:1 withFloat:128 withFloat:180 withFloat:55
+                               withFloat:1 withInt:0 withInt:80]);
+  XCTAssertTrue(CGAffineTransformEqualToTransform(transform,CGContextGetCTM(context)));
+  NSUInteger painted=0;uint8_t maxAlpha=0;
+  for (NSUInteger i=0;i<256*256;i++){painted+=pixels[i*4+3]>0;maxAlpha=MAX(maxAlpha,pixels[i*4+3]);}
+  XCTAssertGreaterThan(painted,100u);XCTAssertLessThanOrEqual(maxAlpha,80);
+  [painter fillRectWithFloat:0 withFloat:0 withFloat:5 withFloat:5 withInt:(jint)0xFFFFFFFF];
+  XCTAssertEqual(pixels[3],255);
+  painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
 }
 
 - (void)testPaletteReuseAndEvictionPreserveComponents {

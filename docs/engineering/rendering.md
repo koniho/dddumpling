@@ -144,6 +144,26 @@ Android caches only two immutable Gator assets (palms and skin texture), totalin
 effects stay live. Tints reuse those assets. Unsupported painters, grayscale, and
 per-primitive fades keep the vector fallback so layered transparency stays correct.
 
+### Mushroom forest drawing cost
+
+Android and iOS keep six reusable foliage textures (1.5 MiB). Android warms them with the
+other art caches; iOS creates them on first use and keeps at most 16 tinted variants (4 MiB).
+Branch positions, sway, alpha, lighting, and falling leaves remain live. Unsupported painters
+keep the vector fallback; foreground leaves still draw above combat effects. Grove travel
+stops at arrival, and its outer mycelium tips use fixed arena coordinates.
+
+After a harness check, compare geometry preparation with:
+
+```sh
+javac -cp build/harness -d build/harness tools/ProfileMushroomForest.java
+java -cp build/harness com.dddumpling.game.ProfileMushroomForest
+java -cp build/harness com.dddumpling.game.ProfileMushroomForest cached
+```
+
+This measures forest draw calls, path vertices, CPU preparation, and allocation only. It does
+not rasterize or measure device FPS. Both native caches approximate branch bending with a
+small rotation and preserves a separate vector path for software previews.
+
 ### Frame comparisons
 
 For a rendering-sensitive refactor expected to preserve visuals, compare only affected

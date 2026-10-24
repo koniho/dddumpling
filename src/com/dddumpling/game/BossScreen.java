@@ -703,20 +703,22 @@ final class BossScreen extends Draw {
                 * (float) Math.sin(c.clock * (3.2f + damage * 10f)));
         int mycelium = Glyph.mix(Glyph.mix(0xFFDDFBEF, 0xFFFF416C, damage * 0.82f),
                 0xFFFFFFFF, Math.max(shakeFlash * 0.62f, damagePulse));
-        float rootSpan = Math.min(L.w * 0.47f, rx * 3.45f);
+        float rootSpan = Math.min(L.w * 0.47f, Boss.bodyR(L) * b.wide() * 3.45f);
+        float plantedX=L.w*.5f;
         // The body's centroid and measured radius breathe and recoil. Do not derive the buried tips
-        // from either: homeY/rest are the planted pose, so only the inner roots flex with the stalk.
-        float plantedY = b.body.homeY + b.body.rest * 3.55f;
+        // from either or moveTo's homeX: use the arena centre and resting height for planted tips.
+        float plantedY = b.baseY(L) + Boss.bodyR(L) * 3.55f;
         for (int branch = 0; branch < 19; branch++) {
             float n = branch / 18f * 2f - 1f;
-            float bend = (Draw.hash(branch * 47 + 901) - 0.5f) * ry * 0.42f;
-            float endX = rootX + n * rootSpan;
+            float bend = (Draw.hash(branch * 47 + 901) - 0.5f) * b.body.rest * 0.42f;
+            float endX = plantedX + n * rootSpan;
             // Keep the established width, but plant the tips on one broad downward arc. The
             // centre hangs deepest and the small hash variation keeps it alive rather than ruled.
             float arc = 1f - n * n;
             float endY = plantedY + b.body.rest
                     * (0.62f + 0.42f * arc + 0.10f * Draw.hash(branch * 61 + 17));
-            float midX = rootX + n * rootSpan * 0.48f + bend;
+            float plantedMidX = plantedX + n * rootSpan * 0.48f + bend;
+            float midX = plantedMidX + (rootX-plantedX)*.18f;
             float plantedMidY = plantedY + b.body.rest
                     * (0.10f + 0.10f * Draw.hash(branch * 31 + 7));
             // A small share of the stalk motion reaches the junction; none reaches the tips.
@@ -733,7 +735,7 @@ final class BossScreen extends Draw {
                     ry * 0.013f);
             // Fine forked hyphae turn the radial fan into a tangled underground network.
             float fork = branch % 2 == 0 ? 1f : -1f;
-            float forkX = midX + fork * rootSpan * (0.09f + 0.04f * damage);
+            float forkX = plantedMidX + fork * rootSpan * (0.09f + 0.04f * Draw.hash(branch*29+11));
             float forkY = endY + b.body.rest
                     * (0.08f + 0.05f * Draw.hash(branch * 73 + 5));
             p.line(midX, midY, forkX, forkY, Glyph.withAlpha(mycelium, glowA),

@@ -1727,6 +1727,20 @@ final class TestBoss extends Check {
         check("a successful final-two hit triggers the same taunt", lastTwo.boss.octoTaunt > 0f);
     }
 
+    private static java.util.List<Float> mushroomTips(GameCore c,Layout L) {
+        java.util.List<Float> tips=new java.util.ArrayList<>();
+        float threshold=c.boss.baseY(L)+Boss.bodyR(L)*4.1f;
+        Painter p=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class<?>[]{Painter.class},(proxy,method,args)->{
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
+                    if(method.getName().equals("line") && (Float)args[3]>threshold) {
+                        tips.add((Float)args[2]);tips.add((Float)args[3]);
+                    }
+                    return null;
+                });
+        BossScreen.body(p,c,L);return tips;
+    }
+
     static void mushroom(Layout L) {
         GameCore grove=enterBoss(L,Boss.MUSHROOM,172L);
         float sky=grove.skyClock,clock=grove.clock;
@@ -1784,6 +1798,27 @@ final class TestBoss extends Check {
         check("grove leaf shower expires",leaves.boss.mushroomLeafTime<0);
         leaves.boss.damage(.1f);leaves.boss.leave();
         check("leaving boss clears leaf shower",leaves.boss.mushroomLeafTime<0);
+
+        GameCore roots=enterBoss(L,Boss.MUSHROOM,177L);
+        java.util.List<Float> plantedTips=mushroomTips(roots,L);
+        roots.boss.body.moveTo(roots.boss.body.homeX+L.unit,roots.boss.body.homeY+L.unit*.2f);
+        roots.boss.body.squash(.5f);roots.boss.body.update(DT);
+        check("outer mycelium tips stay planted through sway and spring distortion",
+                plantedTips.size()>=76 && plantedTips.equals(mushroomTips(roots,L)));
+
+        final int[] cachedLeaves={0};
+        Painter cache=(Painter)java.lang.reflect.Proxy.newProxyInstance(Painter.class.getClassLoader(),
+                new Class<?>[]{Painter.class,ArtStamp.class},(proxy,method,args)->{
+                    if(method.getName().equals("skin"))return Skins.DEFAULT;
+                    if(method.getName().equals("stamps"))return proxy;
+                    if(method.getName().equals("forest")){cachedLeaves[0]++;return true;}
+                    if(method.getReturnType()==boolean.class)return false;
+                    return null;
+                });
+        GameCore forest=new GameCore(new Mem(),178L);forest.startGame();forest.stage=16;forest.landBlend=1;
+        Painter wrapped=new OpacityPainter(Skins.painter(cache,Skins.HALLOWEEN),1);
+        Lands.scenery(wrapped,forest,L);MushroomForest.canopy(wrapped,forest,L);
+        check("renderer and skin wrappers preserve native foliage cache",cachedLeaves[0]>36);
 
         float[] bentStem = {100f, 0f, 100f, 50f, 20f, 100f, 0f, 150f,
                 -20f, 100f, 60f, 50f};

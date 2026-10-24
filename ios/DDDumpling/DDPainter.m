@@ -4,6 +4,7 @@
 #import <UIKit/UIKit.h>
 #import <math.h>
 
+#import "com/dddumpling/game/MushroomForest.h"
 #import "IOSObjectArray.h"
 #import "IOSPrimitiveArray.h"
 
@@ -32,6 +33,11 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 }
 
 @interface DDIOSPainter () {
+  CGImageRef _forest[6];
+  CGImageRef _forestTinted[16];
+  uint64_t _forestKeys[16];
+  NSUInteger _forestNext;
+  BOOL _drawingForest;
   CGColorSpaceRef _colorSpace;
   CGColorRef _colors[1024];
   uint32_t _colorKeys[1024];
@@ -43,8 +49,63 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 // The frame wrapper supplies the selected skin; the native canvas starts with Default.
 - (jint)skin { return 0; }
 
-// Android uses optional bitmap stamps; Core Graphics retains the vector fallback.
-- (id)stamps { return nil; }
+// Immutable forest artwork is cached; unsupported stamp families retain vectors.
+- (id)stamps { return _drawingForest ? nil : self; }
+- (jboolean)stampWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
+              withFloat:(jfloat)w withFloat:(jfloat)h withFloat:(jfloat)angle
+                withInt:(jint)tint withFloat:(jfloat)amount { return NO; }
+- (jboolean)greenStampWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
+                   withFloat:(jfloat)w withFloat:(jfloat)h withFloat:(jfloat)angle
+                     withInt:(jint)tint withFloat:(jfloat)amount withFloat:(jfloat)phase { return NO; }
+
+- (CGImageRef)forestImage:(jint)art color:(jint)color {
+  const size_t side=256, rowBytes=side*4;
+  if (!_forest[art]) {
+    CGContextRef bitmap=CGBitmapContextCreate(NULL,side,side,8,rowBytes,_colorSpace,
+        kCGBitmapByteOrder32Big|kCGImageAlphaPremultipliedLast);
+    if (!bitmap) return NULL;
+    CGContextTranslateCTM(bitmap,side*.5,side*.5);
+    CGContextRef prior=self.context; self.context=bitmap; _drawingForest=YES;
+    [DDMushroomForest stampArtWithDDPainter:self withInt:art withFloat:side/5.0f];
+    _drawingForest=NO; self.context=prior;
+    _forest[art]=CGBitmapContextCreateImage(bitmap); CGContextRelease(bitmap);
+  }
+  if (!color || color==(jint)0xFF71917A || !_forest[art]) return _forest[art];
+  uint64_t key=((uint64_t)(uint32_t)color<<8)|(uint64_t)art;
+  for (NSUInteger i=0;i<16;i++)if (_forestTinted[i] && _forestKeys[i]==key)return _forestTinted[i];
+  CGContextRef bitmap=CGBitmapContextCreate(NULL,side,side,8,rowBytes,_colorSpace,
+      kCGBitmapByteOrder32Big|kCGImageAlphaPremultipliedLast);
+  if (!bitmap) return _forest[art];
+  CGContextDrawImage(bitmap,CGRectMake(0,0,side,side),_forest[art]);
+  uint8_t *pixels=CGBitmapContextGetData(bitmap);
+  float red=((color>>16)&255)/113.0f,green=((color>>8)&255)/145.0f,blue=(color&255)/122.0f;
+  for (size_t i=0;i<side*side;i++) {
+    uint8_t *pixel=pixels+i*4,alpha=pixel[3];
+    pixel[0]=(uint8_t)MIN(alpha,lroundf(pixel[0]*red));
+    pixel[1]=(uint8_t)MIN(alpha,lroundf(pixel[1]*green));
+    pixel[2]=(uint8_t)MIN(alpha,lroundf(pixel[2]*blue));
+  }
+  NSUInteger slot=_forestNext++%16;
+  CGImageRelease(_forestTinted[slot]);_forestKeys[slot]=key;
+  _forestTinted[slot]=CGBitmapContextCreateImage(bitmap);CGContextRelease(bitmap);
+  return _forestTinted[slot]?:_forest[art];
+}
+
+- (jboolean)forestWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
+               withFloat:(jfloat)radius withFloat:(jfloat)lean withInt:(jint)color withInt:(jint)alpha {
+  CGContextRef context=self.context;
+  if (!context || _drawingForest || art<0 || art>=6 || radius<=0)return NO;
+  CGImageRef image=[self forestImage:art color:color];if (!image)return NO;
+  CGContextSaveGState(context);CGContextTranslateCTM(context,x,y);
+  if (art<3) {
+    CGContextScaleCTM(context,lean<0?-1:1,1);
+    CGContextRotateCTM(context,(fabsf(lean)-1)*29*DDDegreesToRadians);
+  } else CGContextRotateCTM(context,lean-[DDMushroomForest litterAngleWithInt:art]);
+  CGContextSetAlpha(context,MAX(0,MIN(255,alpha))/255.0);
+  CGContextSetInterpolationQuality(context,kCGInterpolationMedium);
+  CGContextDrawImage(context,CGRectMake(-radius*2.5,-radius*2.5,radius*5,radius*5),image);
+  CGContextRestoreGState(context);return YES;
+}
 
 - (instancetype)init {
   if ((self = [super init])) _colorSpace = CGColorSpaceCreateDeviceRGB();
@@ -52,6 +113,8 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 }
 
 - (void)dealloc {
+  for (NSUInteger i=0;i<6;i++) CGImageRelease(_forest[i]);
+  for (NSUInteger i=0;i<16;i++) CGImageRelease(_forestTinted[i]);
   for (NSUInteger i = 0; i < 1024; ++i) CGColorRelease(_colors[i]);
   CGColorSpaceRelease(_colorSpace);
 }

@@ -19,11 +19,14 @@ final class CanvasPainter implements Painter, ArtStamp {
     private float[] segmentBuffer=new float[128];
     private Canvas canvas;
     private CanvasArtStamps artStamps;
+    private CanvasForestStamps forestStamps;
     boolean cacheArt=true;
     public ArtStamp stamps() {return cacheArt && canvas!=null && canvas.isHardwareAccelerated()?this:null;}
     void warmArt() {
         if(artStamps==null)artStamps=new CanvasArtStamps();
         artStamps.warm();
+        if(forestStamps==null)forestStamps=new CanvasForestStamps();
+        forestStamps.warm();
     }
     public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount) {
         return greenStamp(art,x,y,w,h,angle,tint,amount,0);
@@ -32,6 +35,12 @@ final class CanvasPainter implements Painter, ArtStamp {
         if(stamps()==null || art<0 || art>=ArtStamp.COUNT)return false;
         if(artStamps==null)artStamps=new CanvasArtStamps();
         artStamps.draw(canvas,art,x,y,w,h,angle,tint,amount,phase);return true;
+    }
+
+    public boolean forest(int art,float x,float y,float r,float lean,int color,int alpha) {
+        if(stamps()==null || art<0 || art>=CanvasForestStamps.COUNT)return false;
+        if(forestStamps==null)forestStamps=new CanvasForestStamps();
+        forestStamps.draw(canvas,art,x,y,r,lean,color,alpha);return true;
     }
 
     /**

@@ -11,6 +11,10 @@ class OpacityPainter implements Painter, ArtStamp {
         ArtStamp cache=stamps()==null?null:p.stamps();
         return cache!=null && cache.stamp(art,x,y,w,h,angle,tint,mix);
     }
+    public boolean forest(int art,float x,float y,float r,float lean,int tint,int alpha) {
+        ArtStamp cache=stamps()==null?null:p.stamps();
+        return cache!=null && cache.forest(art,x,y,r,lean,tint,alpha);
+    }
     final Painter p;
     final float amount;
     OpacityPainter(Painter p,float amount) { this.p=p; this.amount=amount; }
