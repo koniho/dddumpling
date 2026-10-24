@@ -8,11 +8,15 @@ final class SlimeHills extends Draw {
     private SlimeHills() {}
 
     static void cleared(GameCore c,float x,float y,int color,Layout L) {
+        surfaceRipple(c,x,y,color,L.enemyR);
+    }
+
+    static void surfaceRipple(GameCore c,float x,float y,int color,float radius) {
         if(c.state!=GameCore.PLAY || c.survival.active || Lands.forStage(c.stage)!=0)return;
         int count=0;
         for(GameCore.Particle q:c.particles)if(q.slimeRipple && ++count>=MAX_RIPPLES)return;
         GameCore.Particle q=new GameCore.Particle();
-        q.slimeRipple=true;q.x=x;q.y=y;q.color=color;q.size=L.enemyR;
+        q.slimeRipple=true;q.x=x;q.y=y;q.color=color;q.size=radius;
         q.slimeRippleSky=c.skyClock;
         q.life=q.max=RIPPLE_TIME;c.particles.add(q);
     }

@@ -118,7 +118,19 @@ final class TestBoss extends Check {
         pool.update(c,L,.5f,4);
         check("lifted bubble floats independently of fast background",b.surfaceY==surface && b.centreY()<y);
         c.particles.clear();b.age=b.popAt-.01f;pool.update(c,L,.02f,0);
-        check("airborne bubble pop does not ripple the surface",c.particles.isEmpty());
+        check("airborne pop waits for slime to land before rippling",c.particles.isEmpty());
+        float ground=b.groundY;
+        pool.update(c,L,b.dropTime(0),.4f);
+        check("falling slime tracks the scrolling ground",b.groundY>ground);
+        check("first slime drop makes a smaller ripple on landing",c.particles.size()==1
+                && c.particles.get(0).slimeRipple && c.particles.get(0).size<L.enemyR
+                && c.particles.get(0).x==b.landingX(0) && c.particles.get(0).y==b.landingY(0));
+        pool.update(c,L,.25f,.25f);
+        check("second slime drop lands later with its own ripple",c.particles.size()==2
+                && c.particles.get(1).x==b.landingX(1) && c.particles.get(1).y==b.landingY(1));
+        pool.update(c,L,1,1);
+        check("falling slime expires without repeating landing ripples",!b.live && c.particles.size()==2);
+        c.particles.clear();
         pool.spawn(b,1-lateId,L);pool.untilNext=100;b.age=b.popAt-.01f;
         check("early bubble bursts while still partly submerged",b.popAt<b.riseTime && b.centreY()+b.r>b.surfaceY);
         pool.update(c,L,.02f,0);

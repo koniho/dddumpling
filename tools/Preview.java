@@ -3147,7 +3147,7 @@ final class Preview {
             SlimeBubbles.Bubble bubble=bubbles.slimeBubbles.bubbles[0];
             int late=SlimeBubbles.earlyPop(0)?1:0;
             bubbles.slimeBubbles.spawn(bubble,late,L);
-            bubble.x=L.w*.5f;bubble.surfaceY=L.h*.55f;
+            bubble.x=L.w*.5f;bubble.surfaceY=bubble.groundY=L.h*.55f;
             float[] ages={.25f,bubble.riseTime*.45f,bubble.riseTime*.85f,bubble.riseTime,bubble.riseTime+1.1f,bubble.popAt+.2f};
             for(int frame=0;frame<ages.length;frame++) {
                 bubble.age=ages[frame];shot(dir,"slime-bubbles-"+frame,bubbles,L,w,h,ss);
@@ -3156,7 +3156,13 @@ final class Preview {
                 bubble.age=bubble.riseTime+.25f+frame*.30f;
                 shot(dir,"slime-bubbles-wobble-"+frame,bubbles,L,w,h,ss);
             }
-            bubbles.slimeBubbles.spawn(bubble,1-late,L);bubble.x=L.w*.5f;bubble.surfaceY=L.h*.55f;
+            bubbles.slimeBubbles.untilNext=100;
+            bubble.age=bubble.popAt-.03f;
+            for(int frame=0;frame<5;frame++) {
+                step(bubbles,L,frame==0?.05f:.27f);
+                shot(dir,"slime-bubbles-fall-"+frame,bubbles,L,w,h,ss);
+            }
+            bubbles.slimeBubbles.spawn(bubble,1-late,L);bubble.x=L.w*.5f;bubble.surfaceY=bubble.groundY=L.h*.55f;
             bubble.age=bubble.popAt-.03f;shot(dir,"slime-bubbles-early-rise",bubbles,L,w,h,ss);
             bubbles.slimeBubbles.untilNext=100;
             for(int frame=0;frame<3;frame++) {

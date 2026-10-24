@@ -7,7 +7,10 @@ final class SlimeBubbles extends Draw {
     static final class Bubble {
         boolean live,early;
         int seed;
-        float age,x,surfaceY,r,riseTime,popAt;
+        float age,x,surfaceY,groundY,r,riseTime,popAt;
+        float dropTime(int drop) {return .70f+drop*.18f+hash(seed+41)*.10f;}
+        float landingX(int drop) {return centreX()+r*(drop==0?-.42f:.46f);}
+        float landingY(int drop) {return groundY+r*(drop==0?-.05f:.10f);}
         float emergence() {return Math.min(1,Math.min(age,popAt)/riseTime);}
         float freeTime() {return Math.max(0,Math.min(age,popAt)-riseTime);}
         float centreY() {
@@ -20,7 +23,7 @@ final class SlimeBubbles extends Draw {
         }
     }
     final Bubble[] bubbles=new Bubble[LIMIT];
-    private final float[] shell=new float[96],gleam=new float[52];
+    private final float[] shell=new float[96],gleam=new float[52],dropShape=new float[66];
     private final float[][] rim={new float[96],new float[96]};
     float untilNext=.6f;
     int serial;
@@ -40,6 +43,7 @@ final class SlimeBubbles extends Draw {
         b.r=L.enemyR*(1.43f+hash(seed+1)*.14f);
         b.x=L.w*(.30f+hash(seed+3)*.40f);
         b.surfaceY=L.playTop+(L.deckTop-L.playTop)*(.20f+hash(seed+7)*.56f);
+        b.groundY=b.surfaceY;
         b.riseTime=2.3f+hash(seed+11)*.8f;
         b.popAt=b.early?b.riseTime*(.43f+hash(seed+13)*.30f):b.riseTime+1.6f+hash(seed+17)*1.1f;
     }
@@ -47,13 +51,21 @@ final class SlimeBubbles extends Draw {
         if(!enabled(c)){reset();return;}
         for(Bubble b:bubbles) {
             if(!b.live)continue;
+            float previousAge=b.age;
+            b.groundY+=skyDelta*L.h*SlimeHills.SCROLL_RATE;
             float attached=Math.max(0,Math.min(dt,Math.min(b.riseTime,b.popAt)-b.age));
             // Stop carrying the bubble with the water exactly when it lifts free (or pops).
             if(dt>0)b.surfaceY+=skyDelta*L.h*SlimeHills.SCROLL_RATE*(attached/dt);
             boolean popping=b.early && b.age<b.popAt && b.age+dt>=b.popAt;
             b.age+=dt;
             if(popping)SlimeHills.cleared(c,b.x,b.surfaceY,SlimeHills.MINT,L);
-            if(b.age>=b.popAt+POP_TIME)b.live=false;
+            if(!b.early)for(int drop=0;drop<2;drop++) {
+                float impact=b.popAt+b.dropTime(drop);
+                if(previousAge<impact && b.age>=impact)
+                    SlimeHills.surfaceRipple(c,b.landingX(drop),b.landingY(drop),SlimeHills.MINT,b.r*.30f);
+            }
+            float aftermath=b.early?POP_TIME:b.dropTime(1)+.15f;
+            if(b.age>=b.popAt+aftermath)b.live=false;
         }
         untilNext-=dt;
         if(untilNext<=0)for(Bubble b:bubbles)if(!b.live) {
@@ -68,6 +80,11 @@ final class SlimeBubbles extends Draw {
         for(Bubble b:bubbles) {
             if(!b.live)continue;
             float x=b.centreX(),y=b.centreY(),r=b.r;
+            if(b.age>=b.riseTime)shadow(p,b,x,fade);
+            if(b.age>=b.popAt && !b.early) {
+                fallingSlime(p,b,x,y,fade);
+                continue;
+            }
             if(b.age>=b.popAt) {
                 float t=(b.age-b.popAt)/POP_TIME,a=fade*(1-t)*(1-t);
                 // Short curved fragments and a handful of beads; no flash or target-like halo.
@@ -96,6 +113,48 @@ final class SlimeBubbles extends Draw {
             }
         }
     }
+    private void shadow(Painter p,Bubble b,float x,float fade) {
+        float lift=Math.min(1,b.freeTime()*3);
+        float height=Math.max(0,(b.groundY-b.centreY())/b.r-1);
+        float a=fade*lift/(1+height*.24f);
+        if(b.age>=b.popAt)a*=Math.max(0,1-(b.age-b.popAt)/.25f);
+        if(a<=.001f)return;
+        float r=b.r*.50f/(1+height*.10f);
+        for(int layer=0;layer<3;layer++) {
+            float scale=1-layer*.20f;
+            p.fillEllipse(x,b.groundY,r*scale,r*.27f*scale,
+                    Glyph.withAlpha(0xFF102F23,(int)(a*(layer==0?10:16))));
+        }
+    }
+
+    private void fallingSlime(Painter p,Bubble b,float x,float y,float fade) {
+        float age=b.age-b.popAt;
+        if(age<.30f)for(int i=0;i<3;i++) {
+            float t=age/.30f;
+            p.arc(x,y,b.r*(1+t*.22f),b.r*(1+t*.22f),195+i*48,24*(1-t),
+                    Glyph.withAlpha(SlimeHills.MINT,(int)(fade*(1-t)*55)),b.r*.035f);
+        }
+        for(int drop=0;drop<2;drop++) {
+            float t=age/b.dropTime(drop),tx=b.landingX(drop),ty=b.landingY(drop);
+            if(t>=1) {
+                float settle=Math.max(0,1-(age-b.dropTime(drop))/.15f);
+                if(settle>0)p.fillEllipse(tx,ty,b.r*.13f,b.r*.035f,
+                        Glyph.withAlpha(SlimeHills.MINT,(int)(fade*settle*65)));
+                continue;
+            }
+            float startX=x+b.r*(drop==0?-.12f:.12f);
+            float dx=startX+(tx-startX)*t;
+            float dy=y+(ty-y)*t*t-b.r*.15f*(float)Math.sin(t*Math.PI);
+            float r=b.r*(.18f-.08f*t),stretch=1+.85f*(float)Math.sin(t*Math.PI);
+            SlimeHills.jelly(p,dropShape,dx,dy,r,r*stretch,b.seed+drop+age*5,
+                    Glyph.withAlpha(SlimeHills.GREEN,(int)(fade*130)));
+            SlimeHills.jelly(p,dropShape,dx-r*.12f,dy-r*.15f,r*.72f,r*stretch*.78f,b.seed+drop+age*5,
+                    Glyph.withAlpha(SlimeHills.MINT,(int)(fade*60)));
+            p.fillEllipse(dx-r*.24f,dy-r*.40f,r*.19f,r*.30f,
+                    Glyph.withAlpha(INK,(int)(fade*85)));
+        }
+    }
+
     /** Soft vector layers avoid native blur passes on either mobile renderer. */
     private void bubbleShell(Painter p,Bubble b,float x,float y,float show) {
         float lift=Math.min(1,b.age*2.5f);
