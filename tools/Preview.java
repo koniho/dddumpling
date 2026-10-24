@@ -3307,6 +3307,15 @@ final class Preview {
                 wilt.update(DT, L);
             shot(dir, "77i-agaric-death-" + phase + "-" + wiltNames[phase], wilt, L, w, h, ss);
         }
+        if(wanted("forest-grove-")) {
+            GameCore grove=toBoss(L,Boss.MUSHROOM,537L,false);
+            grove.stage=WorldCatalog.bossStage(Boss.MUSHROOM);grove.landBlend=1f;
+            grove.stageBanner=grove.rosterSceneT=0;
+            for(int frame=0;frame<5;frame++) {
+                if(frame>0)step(grove,L,Boss.INTRO/4f);
+                shot(dir,"forest-grove-"+frame,grove,L,w,h,ss);
+            }
+        }
         GameCore agaric = toBoss(L, Boss.MUSHROOM, 537L, true);
         agaric.stageBanner = agaric.rosterSceneT = 0f;
         agaric.boss.mushroomCharge = Boss.MUSHROOM_CHARGE_TIME * 0.5f;

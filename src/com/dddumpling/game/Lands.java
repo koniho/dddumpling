@@ -69,6 +69,7 @@ final class Lands extends Draw {
         float mix = blend(c);
         if (mix < 1f && c.landFrom >= 0) sceneryLayer(p, c, L, c.landFrom, 1f - mix);
         if (mix > 0f) sceneryLayer(p, c, L, forStage(visualStage(c)), mix);
+        MushroomForest.grove(p,c,L);
         p.restore();
     }
 
