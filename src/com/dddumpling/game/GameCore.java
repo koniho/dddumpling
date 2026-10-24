@@ -538,6 +538,7 @@ final class GameCore {
         int color;
         SlimeSpray.Drop slime;
         boolean rainbowStar, slimeRipple;
+        float slimeRippleSky; // Scenery clock at birth; clear rings travel with the jelly surface.
     }
 
     static final class PushImpact {

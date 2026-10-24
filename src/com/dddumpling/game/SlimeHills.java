@@ -3,7 +3,7 @@ package com.dddumpling.game;
 /** A flowing jelly valley. Bounded shared vector layers work on both native painters. */
 final class SlimeHills extends Draw {
     static final int DEEP=0xFF245953, GREEN=0xFF64BB80, MINT=0xFFB7F0B4;
-    static final float RIPPLE_TIME=1.8f;
+    static final float RIPPLE_TIME=1.8f, SCROLL_RATE=.020f;
     static final int MAX_RIPPLES=8;
     private SlimeHills() {}
 
@@ -13,7 +13,12 @@ final class SlimeHills extends Draw {
         for(GameCore.Particle q:c.particles)if(q.slimeRipple && ++count>=MAX_RIPPLES)return;
         GameCore.Particle q=new GameCore.Particle();
         q.slimeRipple=true;q.x=x;q.y=y;q.color=color;q.size=L.enemyR;
+        q.slimeRippleSky=c.skyClock;
         q.life=q.max=RIPPLE_TIME;c.particles.add(q);
+    }
+
+    static float rippleY(GameCore c,GameCore.Particle q,Layout L) {
+        return q.y+(c.skyClock-q.slimeRippleSky)*L.h*SCROLL_RATE;
     }
 
     static float presence(GameCore c) {
@@ -57,7 +62,7 @@ final class SlimeHills extends Draw {
         for(int i=0;i<8;i++) {
             int seed=733+i*71,side=i%2;
             float r=L.w*(.14f+hash(seed)*.09f),travel=span+r*4;
-            float y=L.playTop-r*2+(hash(seed+1)*travel+clock*L.h*(.016f+(i%3)*.004f))%travel;
+            float y=L.playTop-r*2+(hash(seed+1)*travel+clock*L.h*(SCROLL_RATE+(i%3-1)*.004f))%travel;
             float x=L.w*(.04f+hash(seed+2)*.075f);if(side==1)x=L.w-x;
             float wobble=(float)Math.sin(c.clock*1.4f+i*2)*.035f;
             jelly(p,blob,x,y,r*(1+wobble),r*(1.10f-wobble),i,Glyph.withAlpha(DEEP,(int)(fade*135)));
@@ -90,16 +95,16 @@ final class SlimeHills extends Draw {
         for(GameCore.Particle q:c.particles) {
             if(!q.slimeRipple)continue;
             if(ring==null)ring=new float[][]{new float[66],new float[66]};
-            float age=1-q.life/q.max;
+            float age=1-q.life/q.max,y=rippleY(c,q,L);
             for(int wave=0;wave<2;wave++) {
                 float t=(age-wave*.15f)/(1-wave*.15f);
                 if(t<=0 || t>=1)continue;
                 float strength=(float)Math.sin(Math.PI*t)*(1-t)*fade;
                 float r=q.size*(.6f+6.2f*t);
                 int color=Glyph.mix(GREEN,q.color,.65f);
-                ripple(p,ring,q.x,q.y+L.h*.012f*age,r,r*.64f,q.x*.01f+t*.35f,
+                ripple(p,ring,q.x,y,r,r*.64f,q.x*.01f+t*.35f,
                         Glyph.withAlpha(color,(int)(strength*54)),.055f);
-                ripple(p,ring,q.x,q.y+L.h*.012f*age,r*1.055f,r*.675f,q.x*.01f+t*.35f,
+                ripple(p,ring,q.x,y,r*1.055f,r*.675f,q.x*.01f+t*.35f,
                         Glyph.withAlpha(color,(int)(strength*16)),.085f);
             }
         }

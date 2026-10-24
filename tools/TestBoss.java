@@ -59,18 +59,26 @@ final class TestBoss extends Check {
     }
 
     static void slimeSurface(Layout L) {
-        GameCore c=new GameCore(new Mem(),322L);c.startGame();c.enemies.clear();
+        GameCore c=new GameCore(new Mem(),322L);c.startGame();c.enemies.clear();c.skyClock=12f;
         GameCore.Enemy e=add(c,L,new int[]{0,2},L.playTop+L.h*.3f);
         c.destroyWord(e,c.enemyCentreX(e),e.y,L);
         GameCore.Particle ripple=null;int count=0;
         for(GameCore.Particle q:c.particles)if(q.slimeRipple){ripple=q;count++;}
         check("slime word clear leaves one colored surface ripple",count==1 && ripple!=null
                 && ripple.color==Glyph.COLOR[2] && ripple.x==e.clearX && ripple.y==e.clearY);
+        check("clear ripple begins at impact even after scenery has scrolled",SlimeHills.rippleY(c,ripple,L)==e.clearY);
+        c.skyClock+=.5f;
+        check("clear ripple follows middle jelly layer travel",Math.abs(SlimeHills.rippleY(c,ripple,L)-e.clearY-L.h*.01f)<.001f);
+        float anchoredY=SlimeHills.rippleY(c,ripple,L);
+        c.paused=true;c.update(.25f,L);
+        check("pausing scenery also pauses ripple travel",SlimeHills.rippleY(c,ripple,L)==anchoredY);
+        c.paused=false;
         c.destroyWord(e,e.clearX,e.clearY,L);
         count=0;for(GameCore.Particle q:c.particles)if(q.slimeRipple)count++;
         check("duplicate clears do not duplicate slime ripples",count==1);
         Fx.updateParticles(c,GameCore.DESTROY_TIME+.1f);
         check("surface ripple outlasts flying word fragments",ripple.life>0 && ripple.x==e.clearX && ripple.y==e.clearY);
+        check("ripple aging alone cannot slide it across the surface",SlimeHills.rippleY(c,ripple,L)==anchoredY);
         Fx.updateParticles(c,SlimeHills.RIPPLE_TIME);
         check("surface ripples expire through particle lifecycle",!c.particles.contains(ripple));
         c.particles.clear();c.stage=6;SlimeHills.cleared(c,100,100,SlimeHills.MINT,L);
