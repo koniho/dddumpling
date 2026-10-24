@@ -196,6 +196,8 @@ final class Boss {
     int mushroomGuideTarget;
     /** Visual offset of the separately dragged cap; it springs home after release. */
     float mushroomCapDX, mushroomCapDY;
+    static final float MUSHROOM_ESCAPE_TIME = .65f;
+    float mushroomEscape, mushroomEscapeX, mushroomEscapeY;
     boolean mushroomReaction;
     /** One-frame event consumed by GameCore audio after an accepted shake endpoint. */
     boolean mushroomShakeCue, mushroomSporeCue;
@@ -377,6 +379,7 @@ final class Boss {
         mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
         mushroomGuideTarget = 1;
         mushroomCapDX = mushroomCapDY = 0f;
+        mushroomEscape = mushroomEscapeX = mushroomEscapeY = 0f;
         mushroomDustNext = 0;
         mushroomDustTravel = 0f;
         java.util.Arrays.fill(mushroomDustLife, 0f);
@@ -464,6 +467,7 @@ final class Boss {
         mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = mushroomReject = 0f;
         mushroomGuideTarget = 1;
         mushroomCapDX = mushroomCapDY = 0f;
+        mushroomEscape = mushroomEscapeX = mushroomEscapeY = 0f;
         mushroomDustNext = 0;
         mushroomDustTravel = 0f;
         java.util.Arrays.fill(mushroomDustLife, 0f);
@@ -1087,7 +1091,7 @@ final class Boss {
             octoDragStarted = octoDragCanDamage = false;
             return true;
         }
-        if (kind != MUSHROOM) return false;
+        if (kind != MUSHROOM || mushroomEscape > 0f) return false;
         float charge = mushroomCharge <= 0f ? 0f : 1f - mushroomCharge / MUSHROOM_CHARGE_TIME;
         float squeeze = (float) Math.sin(charge * Math.PI * 0.5f);
         float sx = 1f + squeeze * 0.16f, sy = 1f - squeeze * 0.30f;
@@ -1286,9 +1290,25 @@ final class Boss {
         if (held >= 0 && etype[held] == E_GLOB) returning[held] = true;
         held = -1;
         mushroomShakes = mushroomDirection = 0;
+        mushroomShakeWindow = 0f;
         if (mushroomStem != null) mushroomStem.letGo();
         globDragStarted = globDragCanDamage = false;
         octoDragStarted = octoDragCanDamage = false;
+    }
+
+    private void escapeMushroomGrab(Layout L) {
+        mushroomEscapeX = mushroomCapDX;
+        mushroomEscapeY = mushroomCapDY;
+        release();
+        mushroomShakeCue = false;
+        mushroomMeterAlpha = mushroomGuideX = mushroomPlayerX = 0f;
+        mushroomGuideTarget = 1;
+        mushroomReject = 1f;
+        mushroomEscape = MUSHROOM_ESCAPE_TIME;
+        if (body != null) { body.letGo(); body.squash(-.78f); }
+        if (mushroomStem != null) mushroomStem.squash(.55f);
+        shedMushroomDust(L.w * .18f, L);
+        shedMushroomDust(-L.w * .18f, L);
     }
 
     // ---- internals ----------------------------------------------------------
@@ -2565,6 +2585,8 @@ final class Boss {
                 mushroomCapDY *= Math.max(0f, 1f - dt * 8f);
                 mushroomSweepFlash = Math.max(0f, mushroomSweepFlash - dt);
                 mushroomAngry = mushroomCharge = mushroomReject = mushroomMeterAlpha = 0f;
+                mushroomEscape = mushroomEscapeX = mushroomEscapeY = 0f;
+                mushroomShakeWindow = 0f;
                 for (int i = 0; i < MUSHROOM_DUST; i++)
                     mushroomDustLife[i] = Math.max(0f, mushroomDustLife[i] - dt);
             }
@@ -2606,17 +2628,24 @@ final class Boss {
                     mushroomGuideX = Math.min(mushroomGuideTarget, mushroomGuideX + step);
                 else mushroomGuideX = Math.max(mushroomGuideTarget, mushroomGuideX - step);
             } else if (held != -2) mushroomMeterAlpha = Math.max(0f, mushroomMeterAlpha - dt * 7f);
-            if (held != -2) {
+            if (mushroomEscape > 0f) {
+                mushroomEscape = Math.max(0f, mushroomEscape - dt);
+                float t = 1f - mushroomEscape / MUSHROOM_ESCAPE_TIME;
+                float remaining = 1f - t * t * (3f - 2f * t);
+                float side = mushroomEscapeX < 0f ? -1f : 1f;
+                // Twist free, hop, then settle; the cap and its hit target move together.
+                mushroomCapDX = mushroomEscapeX * remaining + side * bodyR(L) * .55f
+                        * (float)Math.sin(t * Math.PI * 3f) * (1f - t);
+                mushroomCapDY = mushroomEscapeY * remaining - bodyR(L) * .48f
+                        * (float)Math.sin(t * Math.PI);
+            } else if (held != -2) {
                 float settle = Math.max(0f, 1f - dt * 8f);
                 mushroomCapDX *= settle;
                 mushroomCapDY *= settle;
             }
             if (mushroomShakeWindow > 0f) {
                 mushroomShakeWindow = Math.max(0f, mushroomShakeWindow - dt);
-                if (mushroomShakeWindow == 0f) {
-                    mushroomShakes = mushroomDirection = 0;
-                    if (held == -2) mushroomLastX = body == null ? 0f : body.centreX();
-                }
+                if (mushroomShakeWindow == 0f && held == -2) escapeMushroomGrab(L);
             }
             if (mushroomAngry > 0f) {
                 mushroomAngry = Math.max(0f, mushroomAngry - dt);

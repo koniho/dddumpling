@@ -1975,6 +1975,44 @@ final class TestBoss extends Check {
                 rushed.boss.held == -1 && rushed.boss.mushroomReject > 0f
                         && rushed.boss.mushroomShakes == 0);
 
+        GameCore timeout = enterBoss(L, Boss.MUSHROOM, 170L);
+        Boss escaping = timeout.boss;
+        timeout.grabBoss(escaping.body.centreX(), escaping.body.centreY());
+        timeout.dragBoss(escaping.mushroomLastX + L.w * .02f, escaping.body.centreY(), L);
+        for (int i = 0; i < 2; i++) {
+            advance(timeout, L, .68f);
+            timeout.dragBoss(escaping.mushroomLastX + escaping.mushroomGuideTarget * L.w * .36f,
+                    escaping.body.centreY(), L);
+        }
+        check("timeout starts with earned shake progress", escaping.mushroomShakes == 1);
+        float timeoutHp = escaping.hp;
+        advance(timeout, L, escaping.mushroomShakeWindow + DT);
+        check("expired grab releases and clears all shake progress",
+                escaping.held == -1 && escaping.mushroomShakes == 0
+                && escaping.mushroomShakeWindow == 0f && escaping.mushroomMeterAlpha == 0f);
+        check("expired grab starts a visible escape without damage",
+                escaping.mushroomEscape > 0f && escaping.mushroomReject > 0f && escaping.hp == timeoutHp);
+        float escapeX = escaping.mushroomCapDX;
+        timeout.dragBoss(L.w, escaping.body.centreY(), L);
+        check("the old finger cannot keep dragging after timeout", escaping.mushroomCapDX == escapeX);
+        check("the cap cannot be recaptured mid escape",
+                !timeout.grabBoss(escaping.body.centreX() + escapeX,
+                        escaping.body.centreY() + escaping.mushroomCapDY));
+        advance(timeout, L, Boss.MUSHROOM_ESCAPE_TIME + DT);
+        check("escape settles the cap back home", escaping.mushroomEscape == 0f
+                && Math.abs(escaping.mushroomCapDX) < .01f && Math.abs(escaping.mushroomCapDY) < .01f);
+        check("a fresh grab starts a new attempt", timeout.grabBoss(escaping.body.centreX(),
+                escaping.body.centreY()) && escaping.mushroomShakes == 0 && escaping.mushroomShakeWindow > 0f);
+        timeout.releaseBoss();
+        advance(timeout, L, 1.5f);
+        check("lifting voluntarily does not trigger a later escape", escaping.mushroomEscape == 0f);
+        timeout.grabBoss(escaping.body.centreX(), escaping.body.centreY());
+        advance(timeout, L, escaping.mushroomShakeWindow + DT);
+        check("an idle grab times out too", escaping.held == -1 && escaping.mushroomEscape > 0f);
+        escaping.damage(escaping.hp);
+        escaping.update(DT, L, timeout.rnd);
+        check("defeat clears escape state", escaping.mushroomEscape == 0f);
+
         GameCore idle = enterBoss(L, Boss.MUSHROOM, 167L);
         idle.boss.mushroomAttackT = 0.01f;
         idle.update(0.02f, L);

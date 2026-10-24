@@ -3328,6 +3328,18 @@ final class Preview {
             step(grove,L,1.1f);
             shot(dir,"forest-grove-player-loss",grove,L,w,h,ss);
         }
+        if(wanted("forest-escape-")) {
+            GameCore escape=toBoss(L,Boss.MUSHROOM,537L,true);
+            escape.stage=WorldCatalog.bossStage(Boss.MUSHROOM);escape.landBlend=1f;
+            escape.stageBanner=escape.rosterSceneT=0;
+            escape.grabBoss(escape.boss.body.centreX(),escape.boss.body.centreY());
+            escape.dragBoss(escape.boss.mushroomLastX+L.w*.15f,escape.boss.body.centreY(),L);
+            step(escape,L,escape.boss.mushroomShakeWindow+DT);
+            for(int frame=0;frame<5;frame++) {
+                shot(dir,"forest-escape-"+frame,escape,L,w,h,ss);
+                step(escape,L,.15f);
+            }
+        }
         GameCore agaric = toBoss(L, Boss.MUSHROOM, 537L, true);
         agaric.stageBanner = agaric.rosterSceneT = 0f;
         agaric.boss.mushroomCharge = Boss.MUSHROOM_CHARGE_TIME * 0.5f;
