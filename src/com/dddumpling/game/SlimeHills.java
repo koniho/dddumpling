@@ -42,17 +42,18 @@ final class SlimeHills extends Draw {
             p.fillPoly(bank,Glyph.withAlpha(layer==0?0xFF458577:layer==1?GREEN:DEEP,(int)(fade*(layer==0?95:150))));
             p.polyline(edge,Glyph.withAlpha(MINT,(int)(fade*(layer==1?42:20))),L.w*(layer==1?.018f:.009f));
         }
-        // Shallow currents leave the prompt lane quiet, with a few moving glints.
+        // Background-tinted currents stay subordinate to the prompts.
+        int stream=Glyph.mix(Lands.BG[0],GREEN,.35f),glint=Glyph.mix(Lands.BG[0],MINT,.23f);
         for(int channel=0;channel<5;channel++) {
             for(int j=0;j<=32;j++) {
                 float y=L.playTop+span*j/32;
                 edge[j*2]=L.w*(.29f+channel*.105f+(.026f+channel*.003f)*(float)Math.sin(y/L.w*(4.3f+channel*.27f)-clock*(.20f+channel*.018f)+channel*2));
                 edge[j*2+1]=y;
             }
-            p.polyline(edge,Glyph.withAlpha(GREEN,(int)(fade*21)),L.w*(.030f+(channel%3)*.012f));
-            p.polyline(edge,Glyph.withAlpha(MINT,(int)(fade*14)),L.w*.006f);
+            p.polyline(edge,Glyph.withAlpha(stream,(int)(fade*18)),L.w*(.030f+(channel%3)*.012f));
+            p.polyline(edge,Glyph.withAlpha(glint,(int)(fade*10)),L.w*.006f);
         }
-        surfaceMotion(p,c,L,fade);
+        clearRipples(p,c,L,fade);
         for(int i=0;i<8;i++) {
             int seed=733+i*71,side=i%2;
             float r=L.w*(.14f+hash(seed)*.09f),travel=span+r*4;
@@ -83,26 +84,12 @@ final class SlimeHills extends Draw {
         }
     }
 
-    /** Broad submerged bulges, not target-like circles; no fresh randomness during drawing. */
-    private static void surfaceMotion(Painter p,GameCore c,Layout L,float fade) {
-        float[] shape=new float[66];
-        float[][] ring={new float[66],new float[66]};
-        float span=L.deckTop-L.playTop;
-        for(int i=0;i<3;i++) {
-            float cycle=(c.clock/(7.5f+i)+i*.31f)%1f;
-            float swell=(float)Math.sin(cycle*Math.PI),strength=swell*swell*fade;
-            float x=L.w*(.34f+i*.16f+.025f*(float)Math.sin(c.clock*.19f+i*2));
-            float y=L.playTop+span*(.19f+i*.29f)+L.w*.035f*(float)Math.sin(c.clock*.22f+i);
-            float r=L.w*(.12f+.12f*swell),phase=i*2+c.clock*.13f;
-            for(int layer=0;layer<3;layer++) {
-                float scale=1-layer*.14f;
-                jelly(p,shape,x,y,r*scale,r*.54f*scale,phase,
-                        Glyph.withAlpha(layer==0?GREEN:MINT,(int)(strength*(layer==0?7:5))));
-            }
-            ripple(p,ring,x,y,r,r*.54f,phase,Glyph.withAlpha(MINT,(int)(strength*12)),.045f);
-        }
+    /** Clear reactions stay beneath enemies; the idle surface has no pressure swells. */
+    private static void clearRipples(Painter p,GameCore c,Layout L,float fade) {
+        float[][] ring=null;
         for(GameCore.Particle q:c.particles) {
             if(!q.slimeRipple)continue;
+            if(ring==null)ring=new float[][]{new float[66],new float[66]};
             float age=1-q.life/q.max;
             for(int wave=0;wave<2;wave++) {
                 float t=(age-wave*.15f)/(1-wave*.15f);
