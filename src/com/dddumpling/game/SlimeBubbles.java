@@ -85,18 +85,9 @@ final class SlimeBubbles extends Draw {
             }
             float show=Math.min(1,b.age/.35f)*fade;
             p.save();
-            // The waterline cuts a true circular segment, not a circle scaling up from nothing.
+            // The waterline clips the soft shell as it emerges, keeping the same material after lift-off.
             if(b.age<b.riseTime)p.clipRect(0,L.playTop,L.w,b.surfaceY);
-            if(b.age>=b.riseTime)floatingShell(p,b,x,y,show);
-            else {
-                p.fillCircle(x,y,r,Glyph.withAlpha(SlimeHills.MINT,(int)(show*17)));
-                p.fillCircle(x+r*.10f,y+r*.12f,r*.82f,Glyph.withAlpha(SlimeHills.GREEN,(int)(show*10)));
-                p.strokeCircle(x,y,r,Glyph.withAlpha(SlimeHills.MINT,(int)(show*68)),r*.028f);
-                p.arc(x-r*.01f,y-r*.015f,r*.85f,r*.85f,207,65,
-                        Glyph.withAlpha(INK,(int)(show*91)),r*.048f);
-                p.arc(x,y,r*.90f,r*.90f,24,43,
-                        Glyph.withAlpha(SlimeHills.GREEN,(int)(show*62)),r*.036f);
-            }
+            bubbleShell(p,b,x,y,show);
             p.restore();
             if(b.age<b.riseTime) {
                 float t=b.emergence(),chord=r*(float)Math.sqrt(Math.max(0,1-(1-2*t*t*(3-2*t))*(1-2*t*t*(3-2*t))));
@@ -106,8 +97,8 @@ final class SlimeBubbles extends Draw {
         }
     }
     /** Soft vector layers avoid native blur passes on either mobile renderer. */
-    private void floatingShell(Painter p,Bubble b,float x,float y,float show) {
-        float lift=Math.min(1,b.freeTime()*2.5f);
+    private void bubbleShell(Painter p,Bubble b,float x,float y,float show) {
+        float lift=Math.min(1,b.age*2.5f);
         float pulse=.5f+.5f*(float)Math.sin(b.age*3.8f+b.seed);
         int sheen=Glyph.mix(SlimeHills.MINT,INK,.25f+pulse*.35f);
         for(int layer=0;layer<3;layer++) {
