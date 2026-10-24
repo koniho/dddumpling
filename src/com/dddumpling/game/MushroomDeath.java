@@ -5,16 +5,18 @@ final class MushroomDeath implements Painter {
     public int skin() { return p.skin(); }
     static final float WITHER_END = .85f, FLATTEN_END = 2.2f, SPREAD_END = 2.9f, FADE_START = 2.95f;
     final Painter p;
-    final float cx, ground, radius, shrink, flat, spread, melt, brown, opacity;
+    final float cx, ground, sourceGround, radius, shrink, flat, spread, melt, grove, blob, opacity, time;
     final Layout layout;
 
     MushroomDeath(Painter p, Boss b, Layout L, float alpha) {
         this.p = p; layout = L;
         radius = Boss.bodyR(L); cx = b.body.homeX;
-        ground = b.body.homeY + radius * 3.55f;
-        float time = b.leaveProgress() * Boss.LEAVE;
+        sourceGround = b.body.centreY() + radius * 3.55f;
+        ground = MushroomForest.groundBankY(MushroomForest.groveFloor(b,L),L,cx,0) + radius * .12f;
+        time = b.leaveProgress() * Boss.LEAVE;
         shrink = ease(time, 0f, WITHER_END);
-        brown = ease(time, .12f, WITHER_END);
+        grove = ease(time, WITHER_END, SPREAD_END);
+        blob = ease(time, 1.4f, FLATTEN_END);
         flat = ease(time, WITHER_END, FLATTEN_END);
         spread = ease(time, FLATTEN_END, SPREAD_END);
         melt = ease(time, SPREAD_END, Boss.LEAVE);
@@ -28,8 +30,8 @@ final class MushroomDeath implements Painter {
 
     float x(float x, float y) {
         float dx = x - cx;
-        float scale = y > ground ? 1f - shrink * .76f : 1f - shrink * .32f + flat * .08f;
-        float wrinkle = (float) Math.sin((y - ground) / radius * 9f + dx / radius * 4f);
+        float scale = y > sourceGround ? 1f - shrink * .76f : 1f - shrink * .32f + flat * .08f;
+        float wrinkle = (float) Math.sin((y - sourceGround) / radius * 9f + dx / radius * 4f);
         return centreX() + dx * scale * (1f + spread * .8f)
                 * (1f + .055f * shrink * (1f - flat) * wrinkle);
     }
@@ -37,15 +39,16 @@ final class MushroomDeath implements Painter {
     float centreX() { return cx + (layout.w * .5f - cx) * spread; }
 
     float y(float y) {
-        float dy = y - ground;
+        float dy = y - sourceGround;
         if (dy > 0f) return ground + dy * (1f - shrink * .78f) * (1f - flat * .85f) * (1f - spread * .65f);
-        return ground + dy * (1f - shrink * .18f) * (1f - flat * .96f) * (1f - spread * .65f) + radius * .28f * melt;
+        return ground + dy * (1f - shrink * .18f) * (1f - flat * .72f) * (1f - spread * .15f);
     }
 
     int color(int color) {
         int light = (((color >>> 16) & 255) * 54 + ((color >>> 8) & 255) * 183 + (color & 255) * 19) / 256;
-        int dry = Glyph.mix(0xFF3E2518, 0xFFAD8855, light / 255f);
-        return Glyph.withAlpha(Glyph.mix(color, dry, brown), Math.round((color >>> 24) * opacity));
+        int moss = Glyph.mix(0xFF263D32, 0xFF8D9E75, light / 255f);
+        return Glyph.withAlpha(Glyph.mix(color, moss, grove),
+                Math.round((color >>> 24) * opacity * (1f - blob)));
     }
 
     float width(float width) { return width * (1f - shrink * .25f) * (1f - flat * .8f); }
@@ -67,16 +70,38 @@ final class MushroomDeath implements Painter {
     }
 
     void groundCover() {
-        float amount = ease(flat, .35f, 1f);
-        p.fillEllipse(centreX(), ground, radius * (1.2f + amount * .4f) * (1f + spread * 1.8f),
-                radius * .075f * (1f - spread * .65f),
-                Glyph.withAlpha(0xFF654125, (int) (115 * amount * opacity)));
-        // The roots remain visible below ground; the collapsing cap and stalk sink behind it.
         p.save();
         float margin = layout.w * .05f;
-        p.clipRect(-margin, -margin, layout.w + margin, ground + radius * .035f);
+        p.clipRect(-margin, -margin, layout.w + margin, ground + radius * .12f);
     }
-    void endGroundCover() { p.restore(); }
+    void endGroundCover() { p.restore(); drawBlob(); }
+
+    float blobWidth() { return Math.min(layout.w * .40f, radius * (1.65f + spread * .65f)); }
+    float blobHeight() { return radius * (.66f - spread * .08f); }
+
+    void drawBlob() {
+        if (blob <= 0f || opacity <= 0f) return;
+        float alpha = blob * opacity, rx = blobWidth(), ry = blobHeight();
+        float centre = centreX(), top = ground - ry * .72f;
+        p.fillEllipse(centre, ground + ry * .08f, rx * .93f, ry * .26f,
+                Glyph.withAlpha(0xFF20382F, (int)(60 * alpha)));
+        float[] contour = new float[80];
+        for (int layer = 0; layer < 3; layer++) {
+            float sx = 1f - layer * .11f, sy = 1f - layer * .20f;
+            for (int i = 0; i < 40; i++) {
+                float angle = i * Softbody.TAU / 40;
+                float ripple = 1f + .065f * (float)Math.sin(angle * 3f + .4f)
+                        + .04f * (float)Math.cos(angle * 5f)
+                        + .025f * (1f - melt) * (float)Math.sin(angle * 7f + time * 6f);
+                contour[i*2] = centre + rx * sx * (float)Math.cos(angle) * ripple;
+                contour[i*2+1] = top - layer * ry * .10f + ry * sy * (float)Math.sin(angle) * ripple;
+            }
+            int cap = layer == 0 ? 0xFF8E3244 : layer == 1 ? 0xFFE25564 : 0xFFFFA7A0;
+            int moss = layer == 0 ? 0xFF3E5747 : layer == 1 ? 0xFF617657 : 0xFF8D9E75;
+            p.fillPoly(contour, Glyph.withAlpha(Glyph.mix(cap,moss,grove),
+                    (int)(alpha * (layer == 0 ? 240 : layer == 1 ? 220 : 100))));
+        }
+    }
 
     public void fillPoly(float[] xy, int c) { p.fillPoly(points(xy), color(c)); }
     public void fillContours(float[][] xy, int c) {

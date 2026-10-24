@@ -3295,13 +3295,14 @@ final class Preview {
         shot(dir,"76h-octopulse-defeated-droop",defeatedOcto,L,w,h,ss);
         GameCore wilt = toBoss(L, Boss.MUSHROOM, 539L, true);
         wilt.stageBanner = wilt.rosterSceneT = 0f;
+        wilt.stage = WorldCatalog.bossStage(Boss.MUSHROOM);wilt.landBlend=1f;
         wilt.boss.hp = 1f;
         for (int i = 0; i < 1200 && !wilt.boss.beaten; i++) {
             Check.bossPlay(wilt, L);
             wilt.update(DT, L);
         }
         float[] wiltTimes = {0f, .85f, 1.55f, 2.2f, 2.9f, 3.25f, 3.5f};
-        String[] wiltNames = {"last-shake", "brown-shriveled", "flattening", "flat", "spread", "melting", "faded"};
+        String[] wiltNames = {"last-shake", "settling", "squishing", "blob", "moss-blob", "fading", "faded"};
         for (int phase = 0; phase < wiltTimes.length; phase++) {
             while (wilt.boss.leaveProgress() * Boss.LEAVE + DT * .5f < wiltTimes[phase])
                 wilt.update(DT, L);

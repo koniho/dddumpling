@@ -664,6 +664,7 @@ final class BossScreen extends Draw {
     private static void drawMushroom(Painter p, GameCore c, Layout L, Boss b, int col, float fade) {
         p=Skins.mushroom(p);
         MushroomDeath death = b.beaten ? new MushroomDeath(p, b, L, fade) : null;
+        if (death != null && death.blob >= 1f) { death.drawBlob(); return; }
         if (death != null) { p = death; fade = 1f; }
         float rootX = b.body.centreX(), cy = b.body.centreY();
         float rx = b.body.radiusX(), ry = b.body.radiusY();

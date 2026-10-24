@@ -106,7 +106,7 @@ final class MushroomForest extends Draw {
         Boss b=sceneBoss(c);
         float progress=groveProgress(c),fade=progress*(retained(c)?1:1-c.drained());
         if(fade<=.001f || c.state==GameCore.TITLE)return;
-        float floor=b.baseY(L)+Boss.bodyR(L)*3.55f;
+        float floor=groveFloor(b,L);
         float lift=-(1-progress)*L.h*.72f;
         float[] shape=new float[66];
         p.save();p.clipRect(0,L.playTop,L.w,L.deckTop);p.translate(0,lift);
@@ -172,6 +172,13 @@ final class MushroomForest extends Draw {
         p.restore();
     }
 
+    static float groveFloor(Boss b,Layout L) {return b.baseY(L)+Boss.bodyR(L)*3.55f;}
+    static float groundBankY(float floor,Layout L,float x,int layer) {
+        float t=(x/L.w+.06f)/1.12f;
+        return floor+L.h*(.065f-.052f*(float)Math.sin(t*Math.PI)
+                +.007f*(float)Math.sin(t*17f+layer*.5f)+layer*.016f);
+    }
+
     private static void ground(Painter p,GameCore c,Layout L,float floor,float fade) {
         // Uneven moss bank runs under the boss roots and down to the edge of the arena.
         for(int layer=0;layer<3;layer++) {
@@ -179,8 +186,7 @@ final class MushroomForest extends Draw {
             for(int j=0;j<=20;j++) {
                 float t=j/20f;
                 bank[j*2]=L.w*(-.06f+t*1.12f);
-                bank[j*2+1]=floor+L.h*(.065f-.052f*(float)Math.sin(t*Math.PI)
-                        +.007f*(float)Math.sin(t*17f+layer*.5f)+layer*.016f);
+                bank[j*2+1]=groundBankY(floor,L,bank[j*2],layer);
             }
             bank[42]=L.w*1.06f;bank[43]=L.deckTop+L.h;
             bank[44]=-L.w*.06f;bank[45]=L.deckTop+L.h;

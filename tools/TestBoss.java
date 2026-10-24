@@ -1891,35 +1891,36 @@ final class TestBoss extends Check {
         MushroomDeath fresh = new MushroomDeath(null, dead, L, 1f);
         for (int i = 0; i < 54; i++) dead.update(DT, L, dying.rnd);
         MushroomDeath dry = new MushroomDeath(null, dead, L, 1f);
-        int brown = dry.color(0xFFFF3344);
-        check("cap turns brown before flattening", dry.brown == 1f && dry.flat < .02f
-                && ((brown >>> 16) & 255) > ((brown >>> 8) & 255)
-                && ((brown >>> 8) & 255) > (brown & 255));
-        check("mycelium contracts toward its planted roots",
-                dry.x(dry.cx + dry.radius * 3f, dry.ground + dry.radius) - dry.cx
-                        < dry.radius
-                && dry.y(dry.ground + dry.radius) - dry.ground < dry.radius * .25f);
+        check("death base is embedded in the actual grove bank",
+                fresh.ground > MushroomForest.groundBankY(MushroomForest.groveFloor(dead,L),L,fresh.cx,0)
+                && Math.abs(fresh.y(fresh.sourceGround)-fresh.ground) < .001f);
+        float groundBefore = dry.ground;
+        dead.body.moveTo(dead.body.homeX, dead.body.homeY - fresh.radius);
+        MushroomDeath swayed = new MushroomDeath(null,dead,L,1f);
+        check("death ground does not follow vertical boss sway", swayed.ground == groundBefore);
+        dead.body.moveTo(dead.body.homeX,planted);
+        check("mycelium contracts into the soil",
+                dry.x(dry.cx + dry.radius * 3f, dry.sourceGround + dry.radius) - dry.cx < dry.radius
+                && dry.y(dry.sourceGround + dry.radius) - dry.ground < dry.radius * .25f);
         for (int i = 0; i < 80; i++) dead.update(DT, L, dying.rnd);
         MushroomDeath flat = new MushroomDeath(null, dead, L, 1f);
-        check("cap flattens against the ground before fading",
-                flat.ground - flat.y(planted) < fresh.radius * .2f && flat.opacity == 1f);
-        check("mushroom stays planted instead of widening and falling",
-                Math.abs(dead.body.homeY - planted) < .01f
-                && dead.body.spanX() < originalWidth * 1.5f);
+        check("collapse becomes a substantial blob before fading",
+                flat.blob == 1f && flat.blobHeight() > fresh.radius * .5f && flat.opacity == 1f);
+        check("mushroom stays planted instead of falling off screen",
+                Math.abs(dead.body.homeY - planted) < .01f && dead.body.spanX() < originalWidth * 1.5f);
         check("death releases the shake guide", dead.held == -1 && dead.mushroomMeterAlpha == 0f);
         for (int i = 0; i < 40; i++) dead.update(DT, L, dying.rnd);
         MushroomDeath spread = new MushroomDeath(null, dead, L, 1f);
-        float left = flat.cx - flat.radius, right = flat.cx + flat.radius;
-        check("flattened cap stretches sideways before fading",
-                spread.x(right, planted) - spread.x(left, planted)
-                        > (flat.x(right, planted) - flat.x(left, planted)) * 1.7f
-                && spread.opacity == 1f);
-        check("spread cap gets thinner as it returns to earth",
-                spread.ground - spread.y(planted) < (flat.ground - flat.y(planted)) * .4f);
+        check("blob spreads while retaining rounded height",
+                spread.blobWidth() > flat.blobWidth() && spread.blobHeight() > fresh.radius * .5f
+                && spread.blobWidth() <= L.w * .4f && spread.opacity == 1f);
+        int moss = spread.color(0xFFFF3344);
+        check("collapsed mushroom blends toward grove green",
+                spread.grove > .85f && ((moss>>>8)&255) > ((moss>>>16)&255));
         for (int i = 0; i < 50; i++) dead.update(DT, L, dying.rnd);
         MushroomDeath gone = new MushroomDeath(null, dead, L, 1f);
-        check("cap melts below ground and fades completely",
-                gone.y(planted) > gone.ground && gone.opacity == 0f);
+        check("blob fades completely while remaining on the grove ground",
+                gone.opacity == 0f && gone.grove == 1f && Math.abs(gone.ground-fresh.ground) < .001f);
 
         GameCore c = enterBoss(L, Boss.MUSHROOM, 166L);
         Ear mushroomEar = new Ear();
