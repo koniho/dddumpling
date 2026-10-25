@@ -5,13 +5,14 @@ import java.util.ArrayList;
 /** Periodic Voronoi gemstone floor. Geometry is rebuilt only when the viewport changes. */
 final class CrystalField extends Draw {
     static final int LAND=1, COUNT=18;
-    static final float PERIOD=2f, SPEED=.025f;
+    static final float PERIOD=2f;
+    static final float[] SPEED={.012f,.023f,.041f};
+    static final int LAYERS=3;
     private float width;
-    Cell[] cells;
+    Cell[][] layers;
     static final class Cell {
         float[] rim,face;
-        float[][] bevel;
-        int[] bevelColor;
+        float[][] sheen;
         float top,bottom,phase;
         int color;
     }
@@ -20,15 +21,20 @@ final class CrystalField extends Draw {
         float blend=Lands.blend(c);
         return (c.landFrom==LAND?1-blend:0)+(Lands.forStage(Lands.visualStage(c))==LAND?blend:0);
     }
-    static float scroll(float clock,float width) {return (clock*SPEED%PERIOD)*width;}
+    static float scroll(float clock,float width,int layer) {return ((clock*SPEED[layer]+layer*.37f)%PERIOD)*width;}
 
     void prepare(float w) {
-        if(cells!=null && width==w)return;
-        width=w;cells=new Cell[COUNT];
+        if(layers!=null && width==w)return;
+        width=w;layers=new Cell[LAYERS][];
+        for(int layer=0;layer<LAYERS;layer++)layers[layer]=make(w,layer);
+    }
+    private static Cell[] make(float w,int layer) {
+        Cell[] cells=new Cell[COUNT];
+        int seed=layer*7103;
         float[] sx=new float[COUNT],sy=new float[COUNT];
         for(int i=0;i<COUNT;i++) {
-            sx[i]=(i%3+.12f+.76f*hash(4103+i*47))/3;
-            sy[i]=(i/3+.12f+.76f*hash(5231+i*61))/3;
+            sx[i]=(i%3+.12f+.76f*hash(seed+4103+i*47))/3;
+            sy[i]=(i/3+.12f+.76f*hash(seed+5231+i*61))/3;
         }
         for(int i=0;i<COUNT;i++) {
             float[] poly={-.08f,sy[i]-1,1.08f,sy[i]-1,1.08f,sy[i]+1,-.08f,sy[i]+1};
@@ -39,11 +45,11 @@ final class CrystalField extends Draw {
             }
             Cell cell=cells[i]=new Cell();
             cell.rim=poly;cell.face=new float[poly.length];
-            cell.bevel=new float[poly.length/2][];cell.bevelColor=new int[poly.length/2];
+            cell.sheen=new float[8][];
             cell.top=Float.MAX_VALUE;cell.bottom=-Float.MAX_VALUE;
-            cell.phase=hash(891+i*37)*Softbody.TAU;
+            cell.phase=hash(seed+891+i*37)*Softbody.TAU;
             cell.color=Glyph.mix(0xFF43315F,0xFF71588C,hash(1831+i*53));
-            float inset=.70f+hash(i*31+71)*.13f;
+            float inset=.94f;
             for(int k=0;k<poly.length;k+=2) {
                 float x=poly[k],y=poly[k+1];
                 cell.face[k]=(sx[i]+(x-sx[i])*inset)*w;
@@ -51,16 +57,18 @@ final class CrystalField extends Draw {
                 poly[k]*=w;poly[k+1]*=w;
                 cell.top=Math.min(cell.top,poly[k+1]);cell.bottom=Math.max(cell.bottom,poly[k+1]);
             }
-            for(int k=0;k<poly.length;k+=2) {
-                int next=(k+2)%poly.length;
-                cell.bevel[k/2]=new float[]{poly[k],poly[k+1],poly[next],poly[next+1],
-                        cell.face[next],cell.face[next+1],cell.face[k],cell.face[k+1]};
-                float dx=poly[next]-poly[k],dy=poly[next+1]-poly[k+1];
-                float facing=(dx-dy)/Math.max(1,(float)Math.sqrt(dx*dx+dy*dy));
-                cell.bevelColor[k/2]=facing>0?Glyph.mix(cell.color,0xFFB8A1DE,facing*.37f)
-                        :Glyph.mix(cell.color,0xFF20152F,-facing*.42f);
+            float lo=Float.MAX_VALUE,hi=-Float.MAX_VALUE;
+            for(int k=0;k<cell.face.length;k+=2) {
+                float diagonal=cell.face[k]+cell.face[k+1]*.65f;
+                lo=Math.min(lo,diagonal);hi=Math.max(hi,diagonal);
+            }
+            // Preclip eight broad diagonal strips: animated sheen never rebuilds paths.
+            for(int band=0;band<cell.sheen.length;band++) {
+                float start=lo+(hi-lo)*band/cell.sheen.length,end=lo+(hi-lo)*(band+1)/cell.sheen.length;
+                cell.sheen[band]=clip(clip(cell.face,1,.65f,end),-1,-.65f,-start);
             }
         }
+        return cells;
     }
     /** Clip to the half-plane closest to this seed; no gameplay RNG is consumed. */
     private static float[] clip(float[] p,float nx,float ny,float d) {
@@ -81,26 +89,34 @@ final class CrystalField extends Draw {
     void draw(Painter p,GameCore c,Layout L,float fade) {
         if(fade<=.001f)return;
         prepare(L.w);
-        float offset=scroll(c.skyClock,L.w),period=PERIOD*L.w;
+        float period=PERIOD*L.w;
         p.save();p.clipRect(0,0,L.w,L.deckTop);
-        for(int tile=-1;tile<=(int)(L.deckTop/period)+1;tile++) {
-            float y=offset+tile*period;
-            p.save();p.translate(0,y);
-            for(Cell cell:cells) {
-                if(cell.bottom+y<0 || cell.top+y>L.deckTop)continue;
-                float shimmer=.5f+.5f*(float)Math.sin(c.clock*.72f+cell.phase);
-                int face=Glyph.mix(cell.color,0xFFAC9ACF,.055f+shimmer*.10f);
-                p.fillPoly(cell.rim,Glyph.withAlpha(0xFF261B39,(int)(fade*255)));
-                for(int k=0;k<cell.bevel.length;k++) {
-                    float glint=Math.max(0,(float)Math.sin(c.clock*.62f+cell.phase+k*.9f));
-                    int bevel=Glyph.mix(cell.bevelColor[k],0xFFCEB9ED,glint*glint*glint*.12f);
-                    p.fillPoly(cell.bevel[k],Glyph.withAlpha(bevel,(int)(fade*255)));
+        for(int layer=0;layer<LAYERS;layer++) {
+            float offset=scroll(c.skyClock,L.w,layer);
+            int edgeColor=layer==0?0xFF9983BE:layer==1?0xFFB79BD8:0xFFDCC4FF;
+            for(int tile=-1;tile<=(int)(L.deckTop/period)+1;tile++) {
+                float y=offset+tile*period;
+                p.save();p.translate(0,y);
+                for(Cell cell:layers[layer]) {
+                    if(cell.bottom+y<0 || cell.top+y>L.deckTop)continue;
+                    float shimmer=.5f+.5f*(float)Math.sin(c.clock*.72f+cell.phase);
+                    p.fillPoly(cell.rim,Glyph.withAlpha(cell.color,(int)(fade*(4+layer*3))));
+                    // Broad low-alpha strokes soften distant layers without blur surfaces.
+                    float softness=layer==0?.030f:layer==1?.017f:.009f;
+                    p.strokePoly(cell.rim,Glyph.withAlpha(edgeColor,(int)(fade*(3+layer*2))),L.w*softness);
+                    p.strokePoly(cell.rim,Glyph.withAlpha(edgeColor,(int)(fade*(5+layer*3))),L.w*softness*.48f);
+                    p.strokePoly(cell.rim,Glyph.withAlpha(edgeColor,(int)(fade*(layer==0?12:layer==1?28:53)*( .8f+shimmer*.2f))),
+                            L.w*(layer==0?.006f:layer==1?.0035f:.0022f));
+                    float sweep=((c.clock*.16f+cell.phase/Softbody.TAU)%1)*13-2.5f;
+                    for(int band=0;band<cell.sheen.length;band++) {
+                        float distance=Math.abs(band-sweep)/1.8f;
+                        if(distance>=1 || cell.sheen[band].length<6)continue;
+                        float glow=(1-distance*distance);glow*=glow;
+                        p.fillPoly(cell.sheen[band],Glyph.withAlpha(edgeColor,(int)(fade*glow*(5+layer*5))));
+                    }
                 }
-                p.fillPoly(cell.face,Glyph.withAlpha(face,(int)(fade*255)));
-                p.strokePoly(cell.face,Glyph.withAlpha(0xFFC5ABE7,(int)(fade*(10+shimmer*14))),L.w*.0018f);
-                p.strokePoly(cell.rim,Glyph.withAlpha(0xFF251A37,(int)(fade*95)),L.w*.0022f);
+                p.restore();
             }
-            p.restore();
         }
         p.restore();
     }
