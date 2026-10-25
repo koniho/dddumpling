@@ -8,12 +8,13 @@ final class SlimeBanks {
     void reset(){hitAt[0]=hitAt[1]=-100;}
     void hit(float time,float x,float y,Layout L) {
         int side=x<L.w*.5f?0:1;hitAt[side]=time;
-        hitY[side]=Math.max(.08f,Math.min(.92f,(y-L.playTop)/(L.deckTop-L.playTop)));
+        hitY[side]=Math.max(.08f,Math.min(.92f,(y-SlimeBasin.bankTop(time,side,L))/SlimeBasin.bankHeight(time,side,L)));
     }
     float kick(float time,int side,float u,Layout L) {
         float age=time-hitAt[side];if(age<0 || age>2)return 0;
-        float d=(u-hitY[side])/.20f,falloff=Math.max(0,1-d*d);
-        return -L.w*.075f*(float)(Math.sin(age*15)*Math.exp(-age*2.6f))*falloff*falloff;
+        // Keep the dent narrow, but wider than a mesh row so between-row hits remain visible.
+        float d=(u-hitY[side])/.14f,falloff=Math.max(0,1-d*d);
+        return -L.w*.23f*(float)(Math.sin(age*15)*Math.exp(-age*2.6f))*falloff*falloff;
     }
     float[] offsets(float time,int side,Layout L) {
         for(int row=0;row<=ROWS;row++) {
