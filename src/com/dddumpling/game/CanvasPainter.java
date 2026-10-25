@@ -44,7 +44,7 @@ final class CanvasPainter implements Painter, ArtStamp {
     }
 
     public boolean crystal(int layer,float x,float y,float w,float h,int alpha) {
-        if(stamps()==null || layer<0 || layer>=CrystalField.LAYERS)return false;
+        if(stamps()==null || !CrystalArena.validArt(layer))return false;
         if(crystalStamps==null)crystalStamps=new CanvasCrystalStamps();
         crystalStamps.draw(canvas,layer,x,y,w,h,alpha);return true;
     }

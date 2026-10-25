@@ -236,7 +236,7 @@ final class BossPlay {
         if(c.sound!=null)c.sound.slimeSquish(variant);
     }
 
-    static boolean promptImpact(GameCore c,GameCore.Shot s) {
+    static boolean promptImpact(GameCore c,GameCore.Shot s,Layout L) {
         Boss b=c.boss;
         if(c.state!=GameCore.PLAY || c.dying() || !b.fighting() || b.kind!=s.promptKind
                 || b.body!=s.promptRoot)return false;
@@ -246,7 +246,11 @@ final class BossPlay {
         c.skyGlow=Math.max(c.skyGlow,GameCore.GLOW_HIT);c.skyGlowColor=Glyph.COLOR[s.glyph];
         boolean divide=s.promptKind==Boss.SPLITTER;
         c.shake=Math.max(c.shake,divide?.18f:.12f);
-        if(divide) {c.flash=Math.max(c.flash,.28f);c.flashColor=0xFF7D45D6;}
+        if(divide) {
+            c.flash=Math.max(c.flash,.28f);c.flashColor=0xFF7D45D6;
+            c.crystalField.flash(c,L,s.tx,s.ty,3,Glyph.COLOR[s.glyph]);
+            c.crystalField.flash(c,L,L.w-s.tx,s.ty,3,Glyph.COLOR[s.glyph]);
+        }
         for(GameCore.Particle p:s.promptParticles) {p.x+=s.tx;p.y+=s.ty;c.particles.add(p);}
         s.promptParticles.clear();
         if(!divide) {
@@ -381,7 +385,7 @@ final class BossPlay {
         c.onboarding.bossDamaged(c);
         c.companion.react(RunCompanion.BOSS_HIT, 1f);
         boolean deactivate = c.boss.divideDeactivated;
-        c.shake = Math.max(c.shake, deactivate ? 1.2f : 0.85f);
+        c.shake = Math.max(c.shake, deactivate ? 1.2f : 1.05f);
         c.flashColor = deactivate ? 0xFFFFFFFF : 0xFF7D45D6;
         c.flashColor = 0xFF7D45D6;
         Fx.explode(c, c.rnd, c.boss.hitX, c.boss.hitY, L.enemyR * (deactivate ? 3.5f : 2.8f), deactivate ? 38 : 28,

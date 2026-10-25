@@ -3191,6 +3191,22 @@ final class Preview {
                 shot(dir,"slime-arrival-"+frame,arrival,L,w,h,ss);
             }
         }
+        if(wanted("crystal-arena-")) {
+            for(int phase:new int[]{0,4,7,14}) {
+                GameCore arena=TestCrystalField.arenaScene(L,phase);arena.clock=arena.skyClock=5;
+                arena.shake=arena.flash=0;
+                shot(dir,"crystal-arena-phase-"+phase,arena,L,w,h,ss);
+            }
+            GameCore hit=TestCrystalField.arenaScene(L,4);hit.clock=hit.skyClock=5;hit.shake=hit.flash=0;
+            hit.crystalField.flash(hit,L,L.w*.3f,L.h*.4f,3,Glyph.COLOR[4]);
+            hit.crystalField.flash(hit,L,L.w*.7f,L.h*.4f,3,Glyph.COLOR[4]);
+            shot(dir,"crystal-arena-impact",hit,L,w,h,ss);
+            for(float time:new float[]{DivideDeath.BURST_AT-.05f,DivideDeath.BURST_AT+.3f,DivideDeath.BURST_AT+.85f}) {
+                GameCore dead=TestCrystalField.arenaScene(L,15);dead.clock=dead.skyClock=5;
+                dead.boss.leaveT=Boss.LEAVE-time;dead.shake=dead.flash=0;
+                shot(dir,"crystal-arena-burst-"+Math.round(time*1000),dead,L,w,h,ss);
+            }
+        }
         if(wanted("crystal-field-")) {
             GameCore crystal=new GameCore(new Check.Mem(),248L);crystal.startGame();
             crystal.jumpToStage(6,L);crystal.enemies.clear();crystal.stageBanner=0;crystal.landBlend=1;

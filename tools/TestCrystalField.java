@@ -2,13 +2,21 @@ package com.dddumpling.game;
 
 final class TestCrystalField extends Check {
     static void all(Layout L) {
+        arena(L);
+
         GatorReplay replay=new GatorReplay(Boss.SPLITTER),chunked=new GatorReplay(Boss.SPLITTER);
-        for(int i=0;i<1800;i++){replay.step(L);if(i%2==1)chunked.update(GatorReplay.STEP*2,L);}
+        for(int i=0;i<1440;i++){replay.step(L);if(i%2==1)chunked.update(GatorReplay.STEP*2,L);}
         check("Divide profiling reproduces the busy split state without a playthrough",replay.core.boss.pieceCount()==Boss.DIVIDE_PIECES);
         check("Divide profiling is frame chunk independent",replay.tick==chunked.tick
                 && replay.core.boss.divideSplits==chunked.core.boss.divideSplits);
 
-        GameCore cacheScene=replay.core;
+        GameCore cacheScene=chunked.core;
+        boolean burstSeen=false;
+        for(int i=1440;i<GatorReplay.LENGTH;i++) {
+            replay.step(L);burstSeen|=replay.core.boss.beaten && DivideDeath.bursting(replay.core.boss);
+        }
+        check("Divide profiling reaches the final arena shatter",burstSeen);
+
         ProfileCrystalField.Counter vector=new ProfileCrystalField.Counter(false),cachedDraw=new ProfileCrystalField.Counter(true);
         cacheScene.crystalField.draw(vector,cacheScene,L,1);
         cacheScene.crystalField.draw(new OpacityPainter(cachedDraw,1),cacheScene,L,1);
@@ -60,6 +68,45 @@ final class TestCrystalField extends Check {
         check("crystal floor does not replace the title",CrystalField.presence(c)==0);
         c.state=GameCore.PLAY;c.survival.active=true;
         check("crystal floor does not replace Survival",CrystalField.presence(c)==0);
+    }
+    static GameCore arenaScene(Layout L,int events) {
+        GameCore c=TestBoss.enterBoss(L,Boss.SPLITTER,248);c.stage=10;c.landBlend=1;c.stageBanner=0;
+        for(int event=0;event<events;event++) {
+            for(int node=0;node<Boss.DIVIDE_NODES;node++)if(c.boss.nodeActive(node)) {
+                c.boss.pieceHits[node]=Boss.DIVIDE_HITS;break;
+            }
+            c.boss.beginPinch(100);BossPlay.pinch(c,100*(Boss.DIVIDE_SCALE+.02f),L);
+            if(!c.boss.beaten)c.boss.update(.02f,L,c.rnd);
+        }
+        if(!c.boss.beaten)for(int frame=0;frame<45;frame++)c.boss.update(DT,L,c.rnd);
+        return c;
+    }
+    private static void arena(Layout L) {
+        boolean symmetric=true,growing=true;
+        for(int phase=0;phase<=CrystalArena.MAX_PHASE;phase++)for(int layer=0;layer<3;layer++) {
+            CrystalField.Cell[] cells=CrystalArena.make(L.w,layer,phase);
+            growing&=cells.length==(CrystalArena.START+phase)*2;
+            for(int i=0;i<cells.length;i+=2)for(int j=0;j<cells[i].rim.length;j+=2)
+                symmetric&=Math.abs(cells[i].rim[j]+cells[i+1].rim[j]-L.w)<.001f
+                        && cells[i].rim[j+1]==cells[i+1].rim[j+1];
+        }
+        check("all arena layers stay exactly mirrored through every fracture",symmetric);
+        check("each pinch adds a matched pair of arena fragments",growing);
+        GameCore c=arenaScene(L,7);
+        check("seven actual splits advance the crystal arena",CrystalArena.phase(c.boss)==7 && c.shake>=1);
+        c=arenaScene(L,15);
+        check("eight fragment clears finish all fifteen fracture phases",c.boss.beaten && CrystalArena.phase(c.boss)==15);
+        c=arenaScene(L,0);
+        int key=c.boss.pieceWant(0);c.tapKey(key,L);
+        check("arena does not light before projectile contact",!c.crystalField.hasLights(c));
+        for(int step=0;step<120 && !c.crystalField.hasLights(c);step++)c.update(DT,L);
+        check("projectile contact lights the crystal arena",c.crystalField.hasLights(c));
+        boolean mirrored=true;
+        for(int layer=0;layer<3;layer++)for(int x=0;x<8;x++) {
+            float xx=L.w*(x+.25f)/8,yy=L.h*.35f;
+            mirrored&=Math.abs(c.crystalField.lightAt(c,L,layer,xx,yy)-c.crystalField.lightAt(c,L,layer,L.w-xx,yy))<.001f;
+        }
+        check("arena impact lighting stays mirrored",mirrored);
     }
     private static void clearLights(GameCore c,Layout L) {
         float x=L.w*.5f,y=L.h*.45f;

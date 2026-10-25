@@ -21,6 +21,9 @@ final class CrystalField extends Draw {
     void reset(){for(Pulse light:lights)light.born=-100;nextLight=0;}
     void cleared(GameCore c,Layout L,float x,float y,int length,int color) {
         if(c.state!=GameCore.PLAY || c.survival.active || Lands.forStage(c.stage)!=LAND)return;
+        flash(c,L,x,y,length,color);
+    }
+    void flash(GameCore c,Layout L,float x,float y,int length,int color) {
         Pulse light=lights[nextLight];nextLight=(nextLight+1)%MAX_LIGHTS;
         light.born=c.clock;light.sky=c.skyClock;light.x=x/L.w;light.y=y/L.w;
         light.rx=Math.min(.46f,Math.max(.23f,length*L.enemyStep/L.w*.55f));
@@ -29,6 +32,10 @@ final class CrystalField extends Draw {
     private static float strength(Pulse light,float clock) {
         float age=clock-light.born;if(age<0 || age>=CLEAR_TIME)return 0;
         float fade=1-age/CLEAR_TIME;return fade*fade;
+    }
+    boolean hasLights(GameCore c) {
+        for(Pulse light:lights)if(strength(light,c.clock)>.015f)return true;
+        return false;
     }
     private static float lightY(Pulse light,GameCore c,int layer) {
         // Follow the lit crystal rather than leaving the light fixed on the screen.
@@ -105,7 +112,7 @@ final class CrystalField extends Draw {
         return cells;
     }
     /** Clip to the half-plane closest to this seed; no gameplay RNG is consumed. */
-    private static float[] clip(float[] p,float nx,float ny,float d) {
+    static float[] clip(float[] p,float nx,float ny,float d) {
         ArrayList<Float> out=new ArrayList<>();
         for(int k=0;k<p.length;k+=2) {
             int prev=(k+p.length-2)%p.length;
@@ -120,7 +127,7 @@ final class CrystalField extends Draw {
         for(int k=0;k<result.length;k++)result[k]=out.get(k);
         return result;
     }
-    private void edgeLights(Painter p,GameCore c,Layout L,Cell cell,int layer,float y,float fade) {
+    void edgeLights(Painter p,GameCore c,Layout L,Cell cell,int layer,float y,float fade) {
         for(int k=0;k<cell.rim.length;k+=2) {
             int n=(k+2)%cell.rim.length;
             float ax=cell.rim[k],ay=cell.rim[k+1],bx=cell.rim[n],by=cell.rim[n+1];
@@ -151,7 +158,7 @@ final class CrystalField extends Draw {
     private static int edgeColor(int layer) {
         return layer==0?0xFF9983BE:layer==1?0xFFB79BD8:0xFFDCC4FF;
     }
-    private static void base(Painter p,Cell cell,int layer,float w,float fade) {
+    static void base(Painter p,Cell cell,int layer,float w,float fade) {
         int color=edgeColor(layer);
         p.fillPoly(cell.rim,Glyph.withAlpha(cell.color,(int)(fade*(4+layer*3))));
         float softness=layer==0?.030f:layer==1?.017f:.009f;
@@ -162,7 +169,8 @@ final class CrystalField extends Draw {
     }
     /** One immutable repeating tile per depth, including wrapped edge halos. */
     static void paintLayer(Painter p,int layer) {
-        if(layer<0 || layer>=LAYERS)return;
+        if(!CrystalArena.validArt(layer))return;
+        if(layer>=LAYERS){CrystalArena.paintLayer(p,layer%LAYERS,layer/LAYERS-1);return;}
         Cell[] cells=make(STAMP_WIDTH,layer);
         p.save();p.clipRect(0,0,STAMP_WIDTH,STAMP_HEIGHT);
         for(int tile=-1;tile<=1;tile++) {
@@ -176,6 +184,7 @@ final class CrystalField extends Draw {
     }
     void draw(Painter p,GameCore c,Layout L,float fade) {
         if(fade<=.001f)return;
+        if(CrystalArena.active(c)){c.crystalArena.draw(p,c,L,fade);return;}
         prepare(L.w);
         float period=PERIOD*L.w;
         boolean lighting=false;

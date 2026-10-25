@@ -23,7 +23,8 @@
   CGContextRef context=CGBitmapContextCreate(pixels,128,256,8,128*4,space,kCGImageAlphaPremultipliedLast);
   DDIOSPainter *painter=[DDIOSPainter new];painter.context=context;
   CGAffineTransform before=CGContextGetCTM(context);
-  for (int layer=0;layer<3;layer++) {
+  for (NSNumber *art in @[@0,@1,@2,@3,@24,@50,@3]) {
+    int layer=art.intValue;
     memset(pixels,0,sizeof(pixels));
     XCTAssertTrue([painter crystalWithInt:layer withFloat:0 withFloat:0 withFloat:128 withFloat:256 withInt:80]);
     unsigned char peak=0;
@@ -31,7 +32,7 @@
     XCTAssertGreaterThan(peak,0);XCTAssertLessThanOrEqual(peak,80);
     XCTAssertTrue(CGAffineTransformEqualToTransform(before,CGContextGetCTM(context)));
   }
-  XCTAssertFalse([painter crystalWithInt:3 withFloat:0 withFloat:0 withFloat:128 withFloat:256 withInt:255]);
+  XCTAssertFalse([painter crystalWithInt:999 withFloat:0 withFloat:0 withFloat:128 withFloat:256 withInt:255]);
   [painter fillRectWithFloat:0 withFloat:0 withFloat:128 withFloat:256 withInt:(jint)0xFFFFFFFF];
   XCTAssertEqual(pixels[3],255);
   painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);

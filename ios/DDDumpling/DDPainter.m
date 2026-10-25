@@ -7,6 +7,7 @@
 #import "com/dddumpling/game/MushroomForest.h"
 #import "com/dddumpling/game/SlimeBasinArt.h"
 #import "com/dddumpling/game/CrystalField.h"
+#import "com/dddumpling/game/CrystalArena.h"
 #import "IOSObjectArray.h"
 #import "IOSPrimitiveArray.h"
 
@@ -36,7 +37,8 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 
 @interface DDIOSPainter () {
   CGImageRef _forest[6];
-  CGImageRef _crystal[DDCrystalField_LAYERS];
+  CGImageRef _crystal[DDCrystalField_LAYERS],_crystalArena[DDCrystalField_LAYERS];
+  jint _crystalArenaArt[DDCrystalField_LAYERS];
   CGImageRef _basin[DDSlimeBasinArt_COUNT];
   CGImageRef _forestTinted[16];
   uint64_t _forestKeys[16];
@@ -113,8 +115,13 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 
 - (jboolean)crystalWithInt:(jint)layer withFloat:(jfloat)x withFloat:(jfloat)y
                 withFloat:(jfloat)w withFloat:(jfloat)h withInt:(jint)alpha {
-  if (!self.context || _drawingForest || layer<0 || layer>=DDCrystalField_LAYERS || w<=0 || h<=0)return NO;
-  if (!_crystal[layer]) {
+  if (!self.context || _drawingForest || ![DDCrystalArena validArtWithInt:layer] || w<=0 || h<=0)return NO;
+  jint slot=layer%DDCrystalField_LAYERS;
+  CGImageRef *image=layer<DDCrystalField_LAYERS?&_crystal[slot]:&_crystalArena[slot];
+  if (layer>=DDCrystalField_LAYERS && _crystalArenaArt[slot]!=layer) {
+    CGImageRelease(*image);*image=NULL;_crystalArenaArt[slot]=layer;
+  }
+  if (!*image) {
     size_t width=DDCrystalField_STAMP_WIDTH,height=DDCrystalField_STAMP_HEIGHT;
     CGContextRef bitmap=CGBitmapContextCreate(NULL,width,height,8,width*4,_colorSpace,
         kCGBitmapByteOrder32Big|kCGImageAlphaPremultipliedLast);
@@ -122,13 +129,13 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
     CGContextRef prior=self.context;self.context=bitmap;_drawingForest=YES;
     [DDCrystalField paintLayerWithDDPainter:self withInt:layer];
     _drawingForest=NO;self.context=prior;
-    _crystal[layer]=CGBitmapContextCreateImage(bitmap);CGContextRelease(bitmap);
-    if (!_crystal[layer])return NO;
+    *image=CGBitmapContextCreateImage(bitmap);CGContextRelease(bitmap);
+    if (!*image)return NO;
   }
   CGContextSaveGState(self.context);
   CGContextSetAlpha(self.context,MAX(0,MIN(255,alpha))/255.0);
   CGContextSetInterpolationQuality(self.context,kCGInterpolationMedium);
-  CGContextDrawImage(self.context,CGRectMake(x,y,w,h),_crystal[layer]);
+  CGContextDrawImage(self.context,CGRectMake(x,y,w,h),*image);
   CGContextRestoreGState(self.context);return YES;
 }
 
@@ -198,7 +205,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 }
 
 - (void)dealloc {
-  for (NSUInteger i=0;i<DDCrystalField_LAYERS;i++)CGImageRelease(_crystal[i]);
+  for (NSUInteger i=0;i<DDCrystalField_LAYERS;i++){CGImageRelease(_crystal[i]);CGImageRelease(_crystalArena[i]);}
   for (NSUInteger i=0;i<DDSlimeBasinArt_COUNT;i++) CGImageRelease(_basin[i]);
   for (NSUInteger i=0;i<6;i++) CGImageRelease(_forest[i]);
   for (NSUInteger i=0;i<16;i++) CGImageRelease(_forestTinted[i]);

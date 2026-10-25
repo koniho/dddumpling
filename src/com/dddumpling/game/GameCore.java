@@ -910,6 +910,7 @@ final class GameCore {
     final SlimeBubbles slimeBubbles=new SlimeBubbles();
     final SlimeBanks slimeBanks=new SlimeBanks();
     final CrystalField crystalField=new CrystalField();
+    final CrystalArena crystalArena=new CrystalArena();
     int landFrom, landFromBg = Lands.BG[0], landFromTint = Lands.TINT[0];
     float landBlend = 1f;
     final int[] landCloudFrom = Sky.CLOUD_TINT.clone();
@@ -3400,7 +3401,7 @@ final class GameCore {
     }
 
     void impact(Shot s, Layout L) {
-        if(s.promptKind>=0 && !BossPlay.promptImpact(this,s)) {
+        if(s.promptKind>=0 && !BossPlay.promptImpact(this,s,L)) {
             // The old arrival still consumed its seven motes even after the target vanished.
             s.promptParticles.clear();
             Fx.explode(s.promptParticles,rnd,s.tx,s.ty,L.enemyR*.7f,7,Glyph.COLOR[s.glyph],1f);

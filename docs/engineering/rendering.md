@@ -215,3 +215,9 @@ The 2026-10-24 local Android comparison completed both 36-second replays after a
 loop each: vector/cached reported 39.78%/0% janky frames, 46/13 ms median frame time,
 and 14/5 ms median GPU time. These are device measurements, not a guarantee for other
 hardware; the command census drops from 369 to 127 background draws at 393×852.
+
+Dark Divide uses mirrored Voronoi tiles. Its seven splits and eight fragment clears drive
+15 fracture phases from boss state; projectile contacts illuminate mirrored edges. The
+native hosts retain only the current arena phase (three additional textures, 5.3 MiB),
+replacing it on each pinch. Tiles detach at `DivideDeath.BURST_AT` and use mirrored,
+bounded vector trajectories during the finale. The Divide replay now includes this exit.
