@@ -82,16 +82,32 @@ final class TestCrystalField extends Check {
         return c;
     }
     private static void arena(Layout L) {
-        boolean symmetric=true,growing=true;
+        boolean symmetric=true,growing=true,seamless=true,covers=true;
+        int[] previous=new int[3];
         for(int phase=0;phase<=CrystalArena.MAX_PHASE;phase++)for(int layer=0;layer<3;layer++) {
             CrystalField.Cell[] cells=CrystalArena.make(L.w,layer,phase);
-            growing&=cells.length==(CrystalArena.START+phase)*2;
-            for(int i=0;i<cells.length;i+=2)for(int j=0;j<cells[i].rim.length;j+=2)
-                symmetric&=Math.abs(cells[i].rim[j]+cells[i+1].rim[j]-L.w)<.001f
-                        && cells[i].rim[j+1]==cells[i+1].rim[j+1];
+            growing&=cells.length>previous[layer];previous[layer]=cells.length;
+            for(CrystalField.Cell cell:cells)for(int j=0;j<cell.rim.length;j+=2) {
+                int next=(j+2)%cell.rim.length;
+                seamless&=!(Math.abs(cell.rim[j]-L.w*.5f)<.001f && Math.abs(cell.rim[next]-L.w*.5f)<.001f);
+                boolean match=false;
+                for(CrystalField.Cell other:cells)if(other.phase==cell.phase)
+                    for(int k=0;k<other.rim.length;k+=2)
+                        match|=Math.abs(cell.rim[j]+other.rim[k]-L.w)<.001f
+                                && Math.abs(cell.rim[j+1]-other.rim[k+1])<.001f;
+                symmetric&=match;
+            }
+            for(int row=0;row<31;row++)for(int col=0;col<23;col++) {
+                float x=L.w*(col+.317f)/23,y=L.w*2*(row+.219f)/31;
+                int owners=0;
+                for(CrystalField.Cell cell:cells)if(inside(cell.rim,x,y))owners++;
+                covers&=owners==1;
+            }
         }
         check("all arena layers stay exactly mirrored through every fracture",symmetric);
-        check("each pinch adds a matched pair of arena fragments",growing);
+        check("each pinch adds arena fragments",growing);
+        check("center-spanning arena tiles have no vertical mirror seam",seamless);
+        check("joined arena tiles cover every phase without gaps or overlaps",covers);
         GameCore c=arenaScene(L,7);
         check("seven actual splits advance the crystal arena",CrystalArena.phase(c.boss)==7 && c.shake>=1);
         c=arenaScene(L,15);

@@ -2,7 +2,7 @@ package com.dddumpling.game;
 
 import java.util.ArrayList;
 
-/** Mirrored crystal chamber: each completed pinch cleaves one matched pair of tiles. */
+/** Mirrored crystal chamber: each completed pinch fractures the tiles symmetrically. */
 final class CrystalArena extends Draw {
     static final int MAX_PHASE=Boss.DIVIDE_NODES, START=6;
     private int phase=-1;
@@ -44,18 +44,41 @@ final class CrystalArena extends Draw {
             pieces.add(CrystalField.clip(p,nx,ny,nx*x+ny*y));
             pieces.add(CrystalField.clip(p,-nx,-ny,-nx*x-ny*y));
         }
-        CrystalField.Cell[] result=new CrystalField.Cell[pieces.size()*2];
-        for(int i=0;i<pieces.size();i++)for(int side=0;side<2;side++) {
-            CrystalField.Cell cell=result[i*2+side]=new CrystalField.Cell();
-            float[] source=pieces.get(i);cell.rim=new float[source.length];cell.face=new float[source.length];
-            cell.top=Float.MAX_VALUE;cell.bottom=-Float.MAX_VALUE;
-            cell.phase=hash(i*71+layer*137)*Softbody.TAU;cell.color=0xFF8062B3;
-            for(int j=0;j<source.length;j+=2) {
-                cell.rim[j]=(side==0?source[j]:1-source[j])*w;cell.rim[j+1]=source[j+1]*w;
-                cell.top=Math.min(cell.top,cell.rim[j+1]);cell.bottom=Math.max(cell.bottom,cell.rim[j+1]);
+        ArrayList<CrystalField.Cell> result=new ArrayList<>();
+        for(int i=0;i<pieces.size();i++) {
+            float[] source=pieces.get(i),joined=joinCenter(source);
+            for(int side=0;side<(joined==null?2:1);side++) {
+                float[] contour=joined==null?source:joined;
+                CrystalField.Cell cell=new CrystalField.Cell();result.add(cell);
+                cell.rim=new float[contour.length];cell.face=new float[contour.length];
+                cell.top=Float.MAX_VALUE;cell.bottom=-Float.MAX_VALUE;
+                cell.phase=hash(i*71+layer*137)*Softbody.TAU;cell.color=0xFF8062B3;
+                for(int j=0;j<contour.length;j+=2) {
+                    cell.rim[j]=(side==0?contour[j]:1-contour[j])*w;cell.rim[j+1]=contour[j+1]*w;
+                    cell.top=Math.min(cell.top,cell.rim[j+1]);cell.bottom=Math.max(cell.bottom,cell.rim[j+1]);
+                }
             }
         }
-        return result;
+        return result.toArray(new CrystalField.Cell[0]);
+    }
+    // Join across the mirror axis, following the outside contour instead of stroking a seam.
+    private static float[] joinCenter(float[] source) {
+        int n=source.length/2;
+        for(int edge=0;edge<n;edge++) {
+            int next=(edge+1)%n;
+            if(Math.abs(source[edge*2]-.5f)>.000001f || Math.abs(source[next*2]-.5f)>.000001f)continue;
+            float[] joined=new float[(n*2-2)*2];
+            for(int i=0;i<n;i++) {
+                int j=(next+i)%n;
+                joined[i*2]=source[j*2];joined[i*2+1]=source[j*2+1];
+            }
+            int out=n;
+            for(int i=n-2;i>0;i--,out++) {
+                joined[out*2]=1-joined[i*2];joined[out*2+1]=joined[i*2+1];
+            }
+            return joined;
+        }
+        return null;
     }
     static void paintLayer(Painter p,int layer,int phase) {
         p.save();p.clipRect(0,0,CrystalField.STAMP_WIDTH,CrystalField.STAMP_HEIGHT);
@@ -81,7 +104,7 @@ final class CrystalArena extends Draw {
                 for(int i=0;i<cells[layer].length;i++) {
                     CrystalField.Cell cell=cells[layer][i];
                     if(cell.bottom+y<0 || cell.top+y>L.deckTop)continue;
-                    if(burst>0){shatter(p,cell,i,layer,y,burst,L,fade);continue;}
+                    if(burst>0){shatter(p,cell,layer,y,burst,L,fade);continue;}
                     if(!cached)CrystalField.base(p,cell,layer,L.w,fade);
                     if(lighting)c.crystalField.edgeLights(p,c,L,cell,layer,y,fade);
                     float glint=Math.max(0,(float)Math.sin(c.clock*.8f+cell.phase));
@@ -92,10 +115,11 @@ final class CrystalArena extends Draw {
         }
         p.restore();
     }
-    private void shatter(Painter p,CrystalField.Cell cell,int index,int layer,float offset,float t,Layout L,float fade) {
+    private void shatter(Painter p,CrystalField.Cell cell,int layer,float offset,float t,Layout L,float fade) {
         float cx=0,cy=0;int n=cell.rim.length/2;
         for(int i=0;i<n;i++){cx+=cell.rim[i*2];cy+=cell.rim[i*2+1];}cx/=n;cy/=n;
-        float side=index%2==0?-1:1,seed=hash(index/2*53+layer*193);
+        // Center-spanning tiles fall straight down, preserving symmetry during the burst.
+        float side=Math.abs(cx-L.w*.5f)<.001f?0:Math.signum(cx-L.w*.5f),seed=cell.phase/Softbody.TAU;
         float dx=side*L.w*(.32f+seed*.5f)*t,dy=(cy+offset-L.deckTop*.5f)*t*.9f+L.h*.16f*t*t;
         float angle=side*t*(.6f+seed*1.8f),cs=(float)Math.cos(angle),sn=(float)Math.sin(angle);
         float alpha=fade*Math.max(0,1-t/1.25f);
