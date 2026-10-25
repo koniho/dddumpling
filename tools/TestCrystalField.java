@@ -3,6 +3,7 @@ package com.dddumpling.game;
 final class TestCrystalField extends Check {
     static void all(Layout L) {
         arena(L);
+        arenaLights(L);
         arrival(L);
 
         GatorReplay replay=new GatorReplay(Boss.SPLITTER),chunked=new GatorReplay(Boss.SPLITTER);
@@ -133,6 +134,32 @@ final class TestCrystalField extends Check {
             mirrored&=Math.abs(c.crystalField.lightAt(c,L,layer,xx,yy)-c.crystalField.lightAt(c,L,layer,L.w-xx,yy))<.001f;
         }
         check("arena impact lighting stays mirrored",mirrored);
+    }
+    private static void arenaLights(Layout L) {
+        GameCore c=arenaScene(L,0);Boss b=c.boss;int key=b.pieceWant(0);
+        b.blive[0]=true;b.bglyph[0]=key;b.bhp[0]=b.bhpMax[0]=2;
+        b.bsx[0]=L.w*.3f;b.bsy[0]=L.h*.4f;b.bt[0]=.3f;
+        c.tapKey(key,L);
+        check("partial projectile damage does not trigger a clear flash",!c.crystalField.hasLights(c));
+        c.tapKey(key,L);
+        check("destroying a boss projectile lights nearby crystals",!b.blive[0]
+                && c.crystalField.lightAt(c,L,0,b.hitX,b.hitY)>.99f);
+        check("projectile clear flash has a mirrored partner",c.crystalField.lightAt(c,L,2,L.w-b.hitX,b.hitY)>.99f);
+        c.crystalField.reset();b.pieceHits[b.pieceNodeIndex(0)]=Boss.DIVIDE_HITS;
+        Softbody body=b.pieceBody(0);
+        c.clock=(float)Math.PI/(2*6.4f);c.crystalField.prepareArenaLights(c,L);
+        float peak=c.crystalField.lightAt(c,L,1,body.centreX(),body.centreY());
+        check("vulnerable glob lighting follows its bright body pulse",Math.abs(peak-.70f*BossScreen.vulnerabilityPulse(c.clock))<.001f && peak>.69f);
+        c.clock+=(float)Math.PI/6.4f;c.crystalField.prepareArenaLights(c,L);
+        check("vulnerable glob lighting dims with its body",c.crystalField.lightAt(c,L,1,body.centreX(),body.centreY())<.001f);
+        c.clock=(float)Math.PI/(2*6.4f);b.pieceHits[b.pieceNodeIndex(0)]=0;c.crystalField.prepareArenaLights(c,L);
+        check("background stops pulsing when vulnerability ends",!c.crystalField.hasLights(c));
+        c=arenaScene(L,7);b=c.boss;
+        for(int i=0;i<b.pieceCount();i++)b.pieceHits[b.pieceNodeIndex(i)]=Boss.DIVIDE_HITS;
+        c.clock=(float)Math.PI/(2*6.4f);c.crystalField.prepareArenaLights(c,L);
+        check("all eight vulnerable globs fit the fixed light pool",c.crystalField.hasLights(c));
+        c.lives=1;c.takeHit(L.w*.5f,L);c.crystalField.reset();c.crystalField.prepareArenaLights(c,L);
+        check("loss clears vulnerability lighting from the retained arena",!c.crystalField.hasLights(c));
     }
     private static void arrival(Layout L) {
         GameCore c=arenaScene(L,0);c.boss.intro=Boss.INTRO;c.clock=c.skyClock=5;

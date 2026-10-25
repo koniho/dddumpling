@@ -3210,6 +3210,17 @@ final class Preview {
                 arena.shake=arena.flash=0;
                 shot(dir,"crystal-arena-phase-"+phase,arena,L,w,h,ss);
             }
+            for(int beat=0;beat<2;beat++) {
+                GameCore pulse=TestCrystalField.arenaScene(L,4);pulse.skyClock=5;
+                pulse.clock=(float)Math.PI/(2*6.4f)+beat*(float)Math.PI/6.4f;pulse.shake=pulse.flash=0;
+                pulse.boss.pieceHits[pulse.boss.pieceNodeIndex(1)]=Boss.DIVIDE_HITS;
+                shot(dir,"crystal-arena-vulnerable-"+beat,pulse,L,w,h,ss);
+            }
+            GameCore clear=TestCrystalField.arenaScene(L,4);clear.clock=clear.skyClock=5;clear.shake=clear.flash=0;
+            Boss boltBoss=clear.boss;int boltKey=boltBoss.pieceWant(0);
+            boltBoss.blive[0]=true;boltBoss.bglyph[0]=boltKey;boltBoss.bhp[0]=boltBoss.bhpMax[0]=1;
+            boltBoss.bsx[0]=L.w*.28f;boltBoss.bsy[0]=L.h*.43f;boltBoss.bt[0]=.2f;clear.tapKey(boltKey,L);
+            shot(dir,"crystal-arena-projectile-clear",clear,L,w,h,ss);
             GameCore hit=TestCrystalField.arenaScene(L,4);hit.clock=hit.skyClock=5;hit.shake=hit.flash=0;
             hit.crystalField.flash(hit,L,L.w*.3f,L.h*.4f,3,Glyph.COLOR[4]);
             hit.crystalField.flash(hit,L,L.w*.7f,L.h*.4f,3,Glyph.COLOR[4]);

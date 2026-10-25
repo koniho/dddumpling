@@ -153,6 +153,8 @@ final class BossPlay {
         // prompt progress is immediate; Slime and Divide hit feedback travels with this shot.
         shot(c, g, L, verdict);
         if (verdict == Boss.PARRY) {
+            if(c.boss.kind==Boss.SPLITTER && c.boss.boltDestroyed)
+                c.crystalField.arenaFlash(c,L,c.boss.hitX,c.boss.hitY,3,Glyph.COLOR[g]);
             if(c.boss.kind==Boss.SLIME)SlimeHills.surfaceRipple(c,c.boss.hitX,c.boss.hitY,Glyph.COLOR[g],L.enemyR);
             if(c.boss.boltDestroyed)c.timeAttack.defended();
             // Swatted, not landed on the boss: the score is the same as a hit but the boss is
@@ -248,8 +250,7 @@ final class BossPlay {
         c.shake=Math.max(c.shake,divide?.18f:.12f);
         if(divide) {
             c.flash=Math.max(c.flash,.28f);c.flashColor=0xFF7D45D6;
-            c.crystalField.flash(c,L,s.tx,s.ty,3,Glyph.COLOR[s.glyph]);
-            c.crystalField.flash(c,L,L.w-s.tx,s.ty,3,Glyph.COLOR[s.glyph]);
+            c.crystalField.arenaFlash(c,L,s.tx,s.ty,3,Glyph.COLOR[s.glyph]);
         }
         for(GameCore.Particle p:s.promptParticles) {p.x+=s.tx;p.y+=s.ty;c.particles.add(p);}
         s.promptParticles.clear();

@@ -10,16 +10,16 @@ final class CrystalField extends Draw {
     static final int LAYERS=3, STAMP_WIDTH=480, STAMP_HEIGHT=960;
     static final float CLEAR_TIME=1.05f;
     static final int MAX_LIGHTS=6;
-    private final Pulse[] lights=new Pulse[MAX_LIGHTS];
-    private int nextLight;
+    private final Pulse[] lights=new Pulse[MAX_LIGHTS+Boss.DIVIDE_PIECES*2];
+    private int nextLight,arenaLightCount;
     final CrystalArrival arrival=new CrystalArrival();
     private float width;
     static final class Pulse {
-        float born=-100,sky,x,y,rx;
+        float born=-100,sky,x,y,rx,held=-1;
         int color;
     }
-    CrystalField(){for(int i=0;i<MAX_LIGHTS;i++)lights[i]=new Pulse();}
-    void reset(){for(Pulse light:lights)light.born=-100;nextLight=0;arrival.reset();}
+    CrystalField(){for(int i=0;i<lights.length;i++)lights[i]=new Pulse();}
+    void reset(){for(Pulse light:lights){light.born=-100;light.held=-1;}nextLight=arenaLightCount=0;arrival.reset();}
     void cleared(GameCore c,Layout L,float x,float y,int length,int color) {
         if(c.state!=GameCore.PLAY || c.survival.active || Lands.forStage(c.stage)!=LAND)return;
         flash(c,L,x,y,length,color);
@@ -30,12 +30,31 @@ final class CrystalField extends Draw {
         light.rx=Math.min(.46f,Math.max(.23f,length*L.enemyStep/L.w*.55f));
         light.color=Glyph.mix(0xFFE2CEFF,color,.28f);
     }
+    void arenaFlash(GameCore c,Layout L,float x,float y,int length,int color) {
+        flash(c,L,x,y,length,color);flash(c,L,L.w-x,y,length,color);
+    }
+    void prepareArenaLights(GameCore c,Layout L) {
+        arenaLightCount=0;
+        Boss b=c.boss;
+        if(c.state!=GameCore.PLAY || !b.fighting() || b.kind!=Boss.SPLITTER)return;
+        float power=BossScreen.vulnerabilityPulse(c.clock)*.70f;
+        for(int i=0;i<b.pieceCount();i++)if(BossScreen.divideVulnerable(b,i)) {
+            Softbody body=b.pieceBody(i);if(body==null)continue;
+            for(int side=0;side<2;side++) {
+                Pulse light=lights[MAX_LIGHTS+arenaLightCount++];
+                light.x=(side==0?body.centreX():L.w-body.centreX())/L.w;light.y=body.centreY()/L.w;
+                light.rx=Math.max(.18f,Math.min(.42f,b.pieceR(i,L)*1.8f/L.w));
+                light.sky=c.skyClock;light.held=power;light.color=Draw.YELLOW;
+            }
+        }
+    }
     private static float strength(Pulse light,float clock) {
+        if(light.held>=0)return light.held;
         float age=clock-light.born;if(age<0 || age>=CLEAR_TIME)return 0;
         float fade=1-age/CLEAR_TIME;return fade*fade;
     }
     boolean hasLights(GameCore c) {
-        for(Pulse light:lights)if(strength(light,c.clock)>.015f)return true;
+        for(int i=0;i<MAX_LIGHTS+arenaLightCount;i++)if(strength(lights[i],c.clock)>.015f)return true;
         return false;
     }
     private static float lightY(Pulse light,GameCore c,int layer) {
@@ -44,7 +63,8 @@ final class CrystalField extends Draw {
     }
     float lightAt(GameCore c,Layout L,int layer,float x,float y) {
         float best=0;
-        for(Pulse light:lights) {
+        for(int lightIndex=0;lightIndex<MAX_LIGHTS+arenaLightCount;lightIndex++) {
+            Pulse light=lights[lightIndex];
             if(strength(light,c.clock)<=0)continue;
             float dx=(x/L.w-light.x)/light.rx,dy=(y/L.w-lightY(light,c,layer))/.27f;
             best=Math.max(best,strength(light,c.clock)*Math.max(0,1-dx*dx-dy*dy));
@@ -133,11 +153,15 @@ final class CrystalField extends Draw {
             int n=(k+2)%cell.rim.length;
             float ax=cell.rim[k],ay=cell.rim[k+1],bx=cell.rim[n],by=cell.rim[n+1];
             float best=0,from=0,to=0;int color=0;
-            for(Pulse light:lights) {
+            for(int lightIndex=0;lightIndex<MAX_LIGHTS+arenaLightCount;lightIndex++) {
+                Pulse light=lights[lightIndex];
                 float power=strength(light,c.clock);if(power<=.015f)continue;
                 float rx=light.rx*L.w,ry=L.w*.27f;
+                float lx=light.x*L.w,ly=lightY(light,c,layer)*L.w-y;
+                if(Math.max(ax,bx)<lx-rx || Math.min(ax,bx)>lx+rx
+                        || Math.max(ay,by)<ly-ry || Math.min(ay,by)>ly+ry)continue;
                 float dx=(bx-ax)/rx,dy=(by-ay)/ry;
-                float px=(ax-light.x*L.w)/rx,py=(ay+y-lightY(light,c,layer)*L.w)/ry;
+                float px=(ax-lx)/rx,py=(ay-ly)/ry;
                 float len=dx*dx+dy*dy;if(len<.00001f)continue;
                 float projection=-(px*dx+py*dy)/len,t=Math.max(0,Math.min(1,projection));
                 float nx=px+dx*t,ny=py+dy*t,near=nx*nx+ny*ny;
@@ -188,6 +212,7 @@ final class CrystalField extends Draw {
         p.restore();
     }
     void draw(Painter p,GameCore c,Layout L,float fade) {
+        prepareArenaLights(c,L);
         if(fade<=.001f)return;
         if(CrystalArena.active(c)) {
             Boss b=BossVictory.sceneBoss(c);
@@ -205,8 +230,7 @@ final class CrystalField extends Draw {
     private void drawStage(Painter p,GameCore c,Layout L,float fade,boolean animate) {
         prepare(L.w);
         float period=PERIOD*L.w;
-        boolean lighting=false;
-        for(Pulse light:lights)if(strength(light,c.clock)>.015f){lighting=true;break;}
+        boolean lighting=hasLights(c);
         p.save();p.clipRect(0,0,L.w,L.deckTop);
         for(int layer=0;layer<LAYERS;layer++) {
             float offset=scroll(c.skyClock,L.w,layer);
