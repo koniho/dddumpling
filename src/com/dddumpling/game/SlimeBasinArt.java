@@ -36,6 +36,36 @@ final class SlimeBasinArt extends Draw {
             float r=i/47f;
             p.fillEllipse(w*.5f,h*.34f,w*(.20f+r*.66f),h*(.10f+r*.57f),0x046FBC73);
         }
+        rearBank(p,w,h);
+    }
+
+    /** A shaded far wall and low shoreline close the back of the pool behind the boss. */
+    private static void rearBank(Painter p,float w,float h) {
+        float[] bank=new float[134],edge=new float[260],blob=new float[98];
+        for(int layer=0;layer<5;layer++) {
+            for(int j=0;j<=64;j++) {
+                float u=j/64f;
+                float y=h*(.30f-.055f*(float)Math.sin(u*Math.PI)
+                        +.009f*(float)Math.sin(u*15+.6f)+.004f*(float)Math.sin(u*29)-layer*.013f);
+                bank[j*2]=edge[j*2]=w*u;bank[j*2+1]=edge[j*2+1]=y;
+                edge[(129-j)*2]=w*u;edge[(129-j)*2+1]=y-h*(layer==1?.004f:.002f);
+            }
+            bank[130]=w;bank[131]=0;bank[132]=0;bank[133]=0;
+            int color=layer==0?0xFF559870:layer==1?0xFF76BD87:layer==2?0xFF397452
+                    :layer==3?0xFF285841:0xFF1A4036;
+            p.fillPoly(bank,color);
+            p.fillPoly(edge,Glyph.withAlpha(SlimeHills.MINT,layer==1?95:22));
+        }
+        // Small uneven shelves nest against the far wall; its centre stays quiet behind Slime.
+        for(int side=0;side<2;side++)for(int i=0;i<3;i++) {
+            float x=w*(.08f+i*.09f);if(side==1)x=w-x;
+            float y=h*(.26f-i*.012f),r=w*(.083f-i*.012f);
+            mound(p,blob,x,y,r,r*(.52f+hash(i+side*13)*.24f),i+side*7);
+        }
+        for(int i=0;i<7;i++) {
+            float x=w*(.05f+i*.15f),y=h*(.315f-.045f*(float)Math.sin(i/6f*Math.PI));
+            SlimeHills.jelly(p,blob,x,y,w*(.028f+hash(i+811)*.035f),h*.0025f,i,0x356EBE88);
+        }
     }
     private static void banks(Painter p,int side,float w,float h) {
         float[] shape=new float[98],bank=new float[134],shine=new float[260];
@@ -77,40 +107,40 @@ final class SlimeBasinArt extends Draw {
             SlimeHills.jelly(p,shape,x,h*u,w*(.008f+hash(i+76)*.016f),w*.008f,i,0x608AE7AF);
         }
     }
-    /** Thick hanging folds, shaded once into the bank image rather than drawn live. */
+    /** One hanging slime curtain with rounded lobes, rather than separate striped rods. */
     private static void upperWall(Painter p,int side,float w,float h) {
-        float[] fold=new float[130],gleam=new float[34];
-        for(int i=0;i<6;i++) {
-            float x=w*(-.025f+i*.052f),width=w*(.048f-i*.004f);
-            float length=h*(.19f+.13f*hash(i*71+side*37+914)-i*.012f);
-            for(int layer=0;layer<5;layer++) {
-                float r=width*(1-layer*.14f),shift=width*layer*.075f;
-                for(int j=0;j<=32;j++) {
-                    float u=j/32f;
-                    float taper=(.65f+.35f*(1-u))*(float)Math.sqrt(Math.max(0,1-Math.pow(u,10)));
-                    float bend=w*.014f*(float)Math.sin(u*6+i+side)*u;
-                    float centre=x+bend+shift;
-                    float left=centre-r*taper,right=centre+r*taper;
-                    fold[j*2]=side==0?left:w-left;fold[j*2+1]=h*-.08f+length*u;
-                    fold[(64-j)*2]=side==0?right:w-right;fold[(64-j)*2+1]=h*-.08f+length*u;
-                }
-                int color=layer==0?0xFF245746:layer==1?0xFF327653:layer==2?0xFF469662
-                        :layer==3?0xFF68B97C:0xFF91D594;
-                p.fillPoly(fold,Glyph.withAlpha(color,layer==0?190:145));
+        float[] wall=new float[198],gleam=new float[34];
+        for(int layer=0;layer<5;layer++) {
+            for(int j=0;j<=96;j++) {
+                float u=j/96f,xx=w*(u*.34f-.035f);
+                float y=curtainEdge(u,side)*h-layer*h*.006f;
+                wall[j*2]=side==0?xx:w-xx;wall[j*2+1]=y;
             }
-            float tipX=x+w*.014f*(float)Math.sin(6+i+side)+width*.30f;
-            if(side==1)tipX=w-tipX;
-            SlimeHills.jelly(p,gleam,tipX,h*-.08f+length-width*.43f,width*.20f,width*.32f,i,0xA2C8F4B0);
-            // Irregular long glints give the folds a wet surface, without thin uniform outlines.
-            float[] glint=new float[52];
-            for(int j=0;j<13;j++) {
-                float u=.15f+j*.05f,xx=x+width*.45f+w*.014f*(float)Math.sin(u*6+i+side)*u;
-                float thin=w*.003f*(float)Math.sin(j/12f*Math.PI);
-                glint[j*2]=side==0?xx-thin:w-xx+thin;glint[j*2+1]=h*-.08f+length*u;
-                glint[(25-j)*2]=side==0?xx+thin:w-xx-thin;glint[(25-j)*2+1]=glint[j*2+1];
-            }
-            p.fillPoly(glint,0x458DE4A0);
+            wall[194]=side==0?w*.305f:w*.695f;wall[195]=-h*.1f;
+            wall[196]=side==0?-w*.035f:w*1.035f;wall[197]=-h*.1f;
+            int color=layer==0?0xFF70B884:layer==1?0xFF4D996A:layer==2?0xFF397C55
+                    :layer==3?0xFF2C6147:0xFF234D3D;
+            p.fillPoly(wall,color);
         }
+        for(int i=0;i<3;i++) {
+            float u=i==0?.20f:i==1?.52f:.82f;
+            float x=w*(u*.34f-.035f),y=curtainEdge(u,side)*h;
+            if(side==1)x=w-x;
+            SlimeHills.jelly(p,gleam,x-w*.008f,y-h*.018f,w*(i==0?.018f:.009f),h*.008f,i,0x77B9ECA7);
+            SlimeHills.jelly(p,gleam,x,y-h*.045f,w*(i==0?.014f:.006f),h*.018f,i,0x286AC481);
+        }
+    }
+    private static float curtainEdge(float u,int side) {
+        float base=.085f*(1-u)+.012f;
+        float outer=.115f*roundedLobe(u,.20f+side*.025f,.20f);
+        float middle=.075f*roundedLobe(u,.52f-side*.025f,.10f);
+        float inner=.105f*roundedLobe(u,.82f+side*.014f,.065f);
+        return base+Math.max(outer,Math.max(middle,inner));
+    }
+    private static float roundedLobe(float u,float centre,float radius) {
+        float t=(u-centre)/radius;
+        float shoulder=Math.max(0,1-t*t);
+        return shoulder*shoulder;
     }
 
     static float inset(float u,int side,float w) {

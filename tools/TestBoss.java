@@ -97,11 +97,11 @@ final class TestBoss extends Check {
                 float y=SlimeBasin.bankTop(time,side,L),h=SlimeBasin.bankHeight(time,side,L);
                 covered &= y<=L.playTop && y+h>=L.deckTop;
                 float w=SlimeBasin.bankWidth(time,side,L);
-                bounded &= w>=L.w*SlimeBasinArt.BANK_FRACTION*.859f && w<=L.w*SlimeBasinArt.BANK_FRACTION*1.141f;
+                bounded &= w>=L.w*SlimeBasinArt.BANK_FRACTION*.974f && w<=L.w*SlimeBasinArt.BANK_FRACTION*1.026f;
             }
-            independent |= Math.abs(SlimeBasin.bankWidth(time,0,L)-SlimeBasin.bankWidth(time,1,L))>L.w*.04f;
+            independent |= Math.abs(SlimeBasin.bankWidth(time,0,L)-SlimeBasin.bankWidth(time,1,L))>L.w*.01f;
         }
-        check("breathing banks cover vertical edges and stay outside central play area",covered && bounded);
+        check("breathing banks stay subtle and cover vertical edges",covered && bounded);
         check("left and right banks breathe independently",independent);
         boolean joined=true;
         for(int frame=0;frame<600;frame++) {

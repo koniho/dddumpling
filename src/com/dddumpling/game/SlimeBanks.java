@@ -19,7 +19,7 @@ final class SlimeBanks {
     float[] offsets(float time,int side,Layout L) {
         for(int row=0;row<=ROWS;row++) {
             float u=row/(float)ROWS;
-            offsets[side][row]=L.w*.014f*(float)Math.sin(u*7.5f-time*1.25f+side*2.4f)
+            offsets[side][row]=L.w*.003f*(float)Math.sin(u*7.5f-time*.7f+side*2.4f)
                     +kick(time,side,u,L);
         }
         return offsets[side];

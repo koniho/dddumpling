@@ -19,14 +19,14 @@ final class SlimeBasin extends Draw {
         return Math.min(1,Math.max(b.hurt,Math.max(b.slimeKeyPulse*2,b.slimeDragPulse*3)));
     }
     static float bankWidth(float time,int side,Layout L) {
-        return L.w*SlimeBasinArt.BANK_FRACTION*(1+.14f*(float)Math.sin(time*1.35f+side*2.4f));
+        return L.w*SlimeBasinArt.BANK_FRACTION*(1+.025f*(float)Math.sin(time*.65f+side*2.4f));
     }
     static float bankHeight(float time,int side,Layout L) {
-        return (L.deckTop-L.playTop)*(1.09f+.06f*(float)Math.sin(time*1.12f+side*2.4f));
+        return (L.deckTop-L.playTop)*(1.09f+.008f*(float)Math.sin(time*.55f+side*2.4f));
     }
     static float bankTop(float time,int side,Layout L) {
         float span=L.deckTop-L.playTop;
-        return L.playTop+(span-bankHeight(time,side,L))*.5f+span*.006f*(float)Math.sin(time*.95f+side);
+        return L.playTop+(span-bankHeight(time,side,L))*.5f+span*.0015f*(float)Math.sin(time*.5f+side);
     }
     static void draw(Painter p,GameCore c,Layout L) {
         float fade=progress(c)*(retained(c)?1:1-c.drained());
