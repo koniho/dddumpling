@@ -40,6 +40,7 @@ final class TestBoss extends Check {
         b.intro=SlimeArrival.DURATION-SlimeArrival.RELEASE;
         check("slime is ready behind opaque curtain before drain",SlimeArrival.reveal(b)==1
                 && SlimeArrival.surface(b,L)<L.playTop && !b.fighting());
+        check("slime basin ready under covered curtain",SlimeBasin.progress(c)==1);
         float previous=SlimeArrival.surface(b,L);
         for(int i=1;i<=12;i++) {
             b.intro=SlimeArrival.DURATION-SlimeArrival.RELEASE-i*(SlimeArrival.DRAIN-SlimeArrival.RELEASE)/12;
@@ -50,6 +51,16 @@ final class TestBoss extends Check {
         b.intro=.1f;float age=b.age;b.update(.05f,L,c.rnd);
         check("slime combat clock waits for flourish",b.age==age && !b.fighting());
         b.intro=0;check("slime arrival ends cleanly",!SlimeArrival.active(c) && b.fighting());
+        check("slime basin settled before combat",SlimeBasin.progress(c)==1);
+        float sky=c.skyClock;c.update(DT,L);
+        check("slime basin stops scenery travel",c.skyClock==sky);
+        b.hurt=1;check("slime basin lights react to impact",SlimeBasin.light(b)==1);
+        b.hurt=b.slimeKeyPulse=b.slimeDragPulse=0;
+        check("slime basin impact lighting settles",SlimeBasin.light(b)==0);
+        c.bossVictory=b;c.bossVictoryKind=Boss.SLIME;c.boss=new Boss();c.state=GameCore.OVER;
+        check("slime basin retained when player loses",SlimeBasin.retained(c) && SlimeBasin.progress(c)==1);
+        c.toTitle();check("slime basin clears on return to title",SlimeBasin.progress(c)==0);
+        c.startGame();c.boss=b;
         b.leave();check("leaving boss clears slime curtain",!SlimeArrival.active(c));
         c.stage=1;c.landFrom=-1;c.landBlend=1;
         check("slime valley occupies its chapter",SlimeHills.presence(c)==1);

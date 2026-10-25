@@ -28,7 +28,7 @@ final class SlimeHills extends Draw {
     static float presence(GameCore c) {
         if(c.survival.active || c.state==GameCore.TITLE)return 0;
         float mix=Lands.blend(c);
-        return (c.landFrom==0?1-mix:0)+(Lands.forStage(Lands.visualStage(c))==0?mix:0);
+        return Math.max(SlimeBasin.progress(c),(c.landFrom==0?1-mix:0)+(Lands.forStage(Lands.visualStage(c))==0?mix:0));
     }
 
     static void scenery(Painter p,GameCore c,Layout L,float fade) {
@@ -98,7 +98,7 @@ final class SlimeHills extends Draw {
         }
     }
 
-    private static void ripple(Painter p,float[][] ring,float x,float y,float rx,float ry,
+    static void ripple(Painter p,float[][] ring,float x,float y,float rx,float ry,
             float phase,int color,float thickness) {
         for(int j=0;j<33;j++) {
             float angle=j*Softbody.TAU/33,w=1+.06f*(float)Math.sin(angle*3+phase)

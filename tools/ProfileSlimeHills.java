@@ -17,11 +17,13 @@ final class ProfileSlimeHills {
         long thread=Thread.currentThread().getId();
         
         System.out.println("Slime drawing preparation; excludes rasterization/GPU. Portrait 393x852.");
-        for(String state:new String[]{"stage","bubbles","clear-burst","arrival"}) {
+        for(String state:new String[]{"stage","bubbles","clear-burst","arrival","basin","basin-impact"}) {
             GameCore c=new GameCore(new Check.Mem(),817L);c.startGame();
             c.stage=1;c.landBlend=1;c.skyClock=5;c.clock=5.8f;
-            if(state.equals("arrival")) {
+            if(state.equals("arrival") || state.startsWith("basin")) {
                 c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=SlimeArrival.DURATION-1.7f;c.stage=5;
+                if(state.startsWith("basin"))c.boss.intro=0;
+                if(state.equals("basin-impact"))c.boss.hurt=1;
             }
             if(state.equals("clear-burst")) {
                 for(int i=0;i<SlimeHills.MAX_RIPPLES;i++)

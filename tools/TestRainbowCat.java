@@ -420,7 +420,7 @@ final class TestRainbowCat extends Check {
             check("leaving battle restores normal drift without resetting position "+timeAttack,
                     Math.abs(c.skyClock-before-.1f)<.001f);
         }
-        GameCore other=fight(L);other.boss.kind=Boss.SLIME;other.skyClock=10;other.update(.1f,L);
+        GameCore other=fight(L);other.boss.kind=Boss.SPLITTER;other.skyClock=10;other.update(.1f,L);
         check("other bosses retain normal drift",Math.abs(other.skyClock-10.1f)<.001f);
     }
     static void trailAndCadence(Layout L) {

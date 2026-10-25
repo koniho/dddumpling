@@ -66,10 +66,11 @@ final class Lands extends Draw {
         p.save();
         float margin = Renderer.shakeMargin(c, L);
         p.clipRect(-margin, L.playTop - margin, L.w + margin, L.deckTop);
-        float mix = blend(c);
-        if (mix < 1f && c.landFrom >= 0) sceneryLayer(p, c, L, c.landFrom, 1f - mix);
-        if (mix > 0f) sceneryLayer(p, c, L, forStage(visualStage(c)), mix);
+        float mix = blend(c), valley=1-SlimeBasin.progress(c);
+        if (mix < 1f && c.landFrom >= 0) sceneryLayer(p, c, L, c.landFrom, (1f - mix)*valley);
+        if (mix > 0f) sceneryLayer(p, c, L, forStage(visualStage(c)), mix*valley);
         MushroomForest.grove(p,c,L);
+        SlimeBasin.draw(p,c,L);
         p.restore();
     }
 

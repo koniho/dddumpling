@@ -3190,6 +3190,19 @@ final class Preview {
                 shot(dir,"slime-arrival-"+frame,arrival,L,w,h,ss);
             }
         }
+        if(wanted("slime-basin-")) {
+            GameCore basin=toBoss(L,Boss.SLIME,764L,false);
+            basin.stage=5;basin.landBlend=1;basin.stageBanner=basin.rosterSceneT=0;
+            step(basin,L,SlimeArrival.DURATION+1);
+            shot(dir,"slime-basin-idle",basin,L,w,h,ss);
+            basin.boss.hurt=1;
+            shot(dir,"slime-basin-impact",basin,L,w,h,ss);
+            basin.boss.hurt=0;step(basin,L,1);
+            shot(dir,"slime-basin-breathe",basin,L,w,h,ss);
+            basin.bossVictory=basin.boss;basin.bossVictoryKind=Boss.SLIME;
+            basin.boss=new Boss();basin.state=GameCore.OVER;basin.deathT=basin.deathDuration();basin.time=0;
+            shot(dir,"slime-basin-player-defeat",basin,L,w,h,ss);
+        }
         if(wanted("182-"))for(int kind=0;kind<Boss.COUNT;kind++)for(float at:new float[]{.45f,.83f,1f}) {
             GameCore c=TestTimeAttack.start(kind);
             c.stageBanner=0;
