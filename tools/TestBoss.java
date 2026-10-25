@@ -108,7 +108,9 @@ final class TestBoss extends Check {
         check("drag bounce stays at the struck side and height",near<0 && far==0
                 && c.slimeBanks.kick(10.1f,1,.5f,L)==0);
         check("drag bounce springs back then settles",c.slimeBanks.kick(10.3f,0,.5f,L)>0
-                && c.slimeBanks.kick(12.1f,0,.5f,L)==0);
+                && c.slimeBanks.kick(14.1f,0,.5f,L)==0);
+        check("drag bounce keeps a visible wobble after a second",Math.abs(c.slimeBanks.kick(11,0,.5f,L))>L.w*.03f);
+        check("drag bounce reaches neighboring shelves",Math.abs(c.slimeBanks.kick(10.1f,0,.68f,L))>L.w*.02f);
         // Sample the displayed mesh, including impacts halfway between rows and on breathing banks.
         boolean strong=true,local=true;
         for(int side=0;side<2;side++)for(int i=0;i<=24;i++) {
@@ -124,11 +126,11 @@ final class TestBoss extends Check {
             strong &= displacement-baseline < -L.w*.085f;
             local &= Math.abs(oppositeIdle-SlimeBanks.sample(c.slimeBanks.offsets(time+.1f,1-side,L),u))<.001f;
             c.slimeBanks.hit(time,side==0?0:L.w,y,L);
-            local &= c.slimeBanks.kick(time+.1f,side,u+.145f,L)==0
-                    && c.slimeBanks.kick(time+.1f,side,u-.145f,L)==0;
+            local &= c.slimeBanks.kick(time+.1f,side,u+.245f,L)==0
+                    && c.slimeBanks.kick(time+.1f,side,u-.245f,L)==0;
         }
         check("bank drag dents stay strong between mesh rows",strong);
-        check("bank drag dents leave nearby heights and opposite bank undisturbed",local);
+        check("bank drag dents leave distant heights and opposite bank undisturbed",local);
         c.slimeBanks.reset();check("bank impulses clear for a new scene",c.slimeBanks.kick(10.1f,0,.5f,L)==0);
         GatorReplay replay=new GatorReplay(true),chunked=new GatorReplay(true);
         for(int i=0;i<600;i++){replay.step(L);if(i%2==1)chunked.update(GatorReplay.STEP*2,L);}
