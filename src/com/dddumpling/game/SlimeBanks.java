@@ -3,6 +3,7 @@ package com.dddumpling.game;
 /** Bounded bank springs and impact lights; no simulation or gameplay randomness. */
 final class SlimeBanks {
     static final int ROWS=8;
+    final float[] shimmer=new float[36];
     private final float[] hitAt={-100,-100},hitY={.5f,.5f};
     private final float[][] offsets={new float[ROWS+1],new float[ROWS+1]};
     private final float[] lightAt={-100,-100};
