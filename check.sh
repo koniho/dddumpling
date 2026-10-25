@@ -198,6 +198,7 @@ src/com/dddumpling/game/LandPlaySkits.java
 src/com/dddumpling/game/CrystalSkits.java
 src/com/dddumpling/game/MushroomSkits.java
 src/com/dddumpling/game/MushroomForest.java
+src/com/dddumpling/game/CrystalField.java
 src/com/dddumpling/game/SlimeHills.java
 src/com/dddumpling/game/SlimeBubbles.java
 src/com/dddumpling/game/SlimeArrival.java

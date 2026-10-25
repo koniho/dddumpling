@@ -909,6 +909,7 @@ final class GameCore {
     float skyClock;
     final SlimeBubbles slimeBubbles=new SlimeBubbles();
     final SlimeBanks slimeBanks=new SlimeBanks();
+    final CrystalField crystalField=new CrystalField();
     int landFrom, landFromBg = Lands.BG[0], landFromTint = Lands.TINT[0];
     float landBlend = 1f;
     final int[] landCloudFrom = Sky.CLOUD_TINT.clone();

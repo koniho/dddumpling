@@ -3191,6 +3191,17 @@ final class Preview {
                 shot(dir,"slime-arrival-"+frame,arrival,L,w,h,ss);
             }
         }
+        if(wanted("crystal-field-")) {
+            GameCore crystal=new GameCore(new Check.Mem(),248L);crystal.startGame();
+            crystal.jumpToStage(6,L);crystal.enemies.clear();crystal.stageBanner=0;crystal.landBlend=1;
+            for(int frame=0;frame<3;frame++) {
+                crystal.clock=crystal.skyClock=frame*5f;
+                shot(dir,"crystal-field-"+frame,crystal,L,w,h,ss);
+            }
+            Check.add(crystal,L,new int[]{0,2,4},L.h*.29f).enterT=1;
+            Check.add(crystal,L,new int[]{1,3,5,2},L.h*.52f).enterT=1;
+            shot(dir,"crystal-field-prompts",crystal,L,w,h,ss);
+        }
         if(wanted("slime-basin-death-")) {
             GameCore death=toBoss(L,Boss.SLIME,764L,false);
             death.stage=5;death.landBlend=1;death.stageBanner=death.rosterSceneT=0;

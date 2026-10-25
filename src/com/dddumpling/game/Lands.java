@@ -57,6 +57,7 @@ final class Lands extends Draw {
         if(c.survival.active || c.state==GameCore.TITLE)return;
         float mix=blend(c),fade=(c.landFrom==RAINBOW?1-mix:0)
                 +(forStage(visualStage(c))==RAINBOW?mix:0);
+        c.crystalField.draw(p,c,L,CrystalField.presence(c)*(1-c.drained()));
         if(fade>0)RainbowLand.backdrop(p,c,L,fade*(1-c.drained()));
     }
 
@@ -76,6 +77,7 @@ final class Lands extends Draw {
 
     private static void sceneryLayer(Painter p, GameCore c, Layout L, int land, float fade) {
         if(land==0) {SlimeHills.scenery(p,c,L,fade);return;}
+        if(land==CrystalField.LAND)return; // The faceted floor is the crystal scenery.
         if(land==RAINBOW)return; // Its scrolling bands are drawn before the clouds.
         if(land==MushroomForest.LAND) {MushroomForest.undergrowth(p,c,L,fade);return;}
         for (int layer = 0; layer < 2; layer++) {
