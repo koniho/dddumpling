@@ -148,6 +148,16 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
   CGContextRef ctx=self.context;int rows=offsets->size_-1;BOOL left=[DDSlimeBasinArt sideWithInt:art]==0;
   CGContextSaveGState(ctx);
   CGContextSetAlpha(ctx,MAX(0,MIN(255,alpha))/255.0);
+  BOOL fading=alpha<255;
+  if (fading) {
+    CGFloat minX=x,maxX=x+w;
+    for (int row=0;row<=rows;row++) {
+      minX=MIN(minX,x-(left?0:offsets->buffer_[row]));
+      maxX=MAX(maxX,x+w+(left?offsets->buffer_[row]:0));
+    }
+    // Fade the assembled mesh once; shared clip-edge pixels can belong to both triangles.
+    CGContextBeginTransparencyLayerWithRect(ctx,CGRectMake(minX,y,maxX-minX,h),NULL);
+  }
   CGContextSetInterpolationQuality(ctx,kCGInterpolationMedium);
   // Adjacent clipped triangles share edges. Texture filtering supplies the visible silhouette AA.
   CGContextSetShouldAntialias(ctx,NO);
@@ -166,6 +176,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
       CGContextDrawImage(ctx,CGRectMake(0,0,1,1),image);CGContextRestoreGState(ctx);
     }
   }
+  if (fading)CGContextEndTransparencyLayer(ctx);
   CGContextRestoreGState(ctx);return YES;
 }
 
