@@ -166,8 +166,10 @@ small rotation and preserves a separate vector path for software previews.
 
 ### Slime Springs arena
 
-Android and iOS cache three immutable images from `SlimeBasinArt`: the 480×960 basin
-and two 256×256 soft masks (light and shadow), about 2.3 MiB total. Light placement and
+Android and iOS cache five immutable images from `SlimeBasinArt`: the 480×960 pool,
+two 192×960 transparent banks, and two 256×256 soft masks (light and shadow), about
+3.7 MiB total. Each bank gently scales and drifts independently around its outer edge;
+the pool stays fixed and attached glints follow the bank transforms. Light placement and
 brightness, surface reflections and grounding ripples remain live. Brightness changes never
 allocate a new image. Unsupported painters and per-primitive color/fade effects use vectors.
 The fixed basin artwork keeps the middle clear and adds rounded shelves to the banks.

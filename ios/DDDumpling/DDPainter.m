@@ -35,7 +35,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 
 @interface DDIOSPainter () {
   CGImageRef _forest[6];
-  CGImageRef _basin[3];
+  CGImageRef _basin[5];
   CGImageRef _forestTinted[16];
   uint64_t _forestKeys[16];
   NSUInteger _forestNext;
@@ -110,7 +110,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 }
 
 - (CGImageRef)basinImage:(jint)art {
-  if (art<0 || art>=3)return NULL;
+  if (art<0 || art>=5)return NULL;
   if (!_basin[art]) {
     size_t w=[DDSlimeBasinArt widthWithInt:art],h=[DDSlimeBasinArt heightWithInt:art];
     CGContextRef bitmap=CGBitmapContextCreate(NULL,w,h,8,w*4,_colorSpace,
@@ -141,7 +141,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 }
 
 - (void)dealloc {
-  for (NSUInteger i=0;i<3;i++) CGImageRelease(_basin[i]);
+  for (NSUInteger i=0;i<5;i++) CGImageRelease(_basin[i]);
   for (NSUInteger i=0;i<6;i++) CGImageRelease(_forest[i]);
   for (NSUInteger i=0;i<16;i++) CGImageRelease(_forestTinted[i]);
   for (NSUInteger i = 0; i < 1024; ++i) CGColorRelease(_colors[i]);

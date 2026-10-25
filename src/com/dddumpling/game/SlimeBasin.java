@@ -17,6 +17,16 @@ final class SlimeBasin extends Draw {
     static float light(Boss b) {
         return Math.min(1,Math.max(b.hurt,Math.max(b.slimeKeyPulse*2,b.slimeDragPulse*3)));
     }
+    static float bankWidth(float time,int side,Layout L) {
+        return L.w*SlimeBasinArt.BANK_FRACTION*(1+.025f*(float)Math.sin(time*.72f+side*2.4f));
+    }
+    static float bankHeight(float time,int side,Layout L) {
+        return (L.deckTop-L.playTop)*(1.018f+.008f*(float)Math.sin(time*.59f+side*2.4f));
+    }
+    static float bankTop(float time,int side,Layout L) {
+        float span=L.deckTop-L.playTop;
+        return L.playTop+(span-bankHeight(time,side,L))*.5f+span*.002f*(float)Math.sin(time*.47f+side);
+    }
     static void draw(Painter p,GameCore c,Layout L) {
         float fade=progress(c)*(retained(c)?1:1-c.drained());
         if(fade<=.001f)return;
@@ -27,6 +37,12 @@ final class SlimeBasin extends Draw {
         float[] shape=new float[34];
         float[][] rings={new float[66],new float[66]};
         art(p,SlimeBasinArt.SCENE,0,L.playTop,L.w,span,(int)(fade*255));
+        // Each bank breathes around its outer edge; the central pool never stretches.
+        for(int side=0;side<2;side++) {
+            float width=bankWidth(t,side,L);
+            art(p,side==0?SlimeBasinArt.LEFT_BANK:SlimeBasinArt.RIGHT_BANK,
+                    side==0?0:L.w-width,bankTop(t,side,L),width,bankHeight(t,side,L),(int)(fade*255));
+        }
         // Move and modulate a single smooth light texture; bank geometry stays cached.
         float glowX=L.w*.5f+(cx-L.w*.5f)*.20f;
         art(p,SlimeBasinArt.LIGHT,glowX-L.w*.65f,floor-span*.46f,
@@ -34,8 +50,9 @@ final class SlimeBasin extends Draw {
         // Small live glints and surface reflections retain motion without full-scene redraws.
         for(int side=0;side<2;side++)for(int i=0;i<3;i++) {
             float u=.20f+i*.29f+.006f*(float)Math.sin(t*.65f+i);
-            float x=SlimeBasinArt.inset(u,side,L.w)-L.w*.020f;if(side==1)x=L.w-x;
-            SlimeHills.jelly(p,shape,x,L.playTop+span*u,L.w*.014f,L.w*.008f,
+            float scale=bankWidth(t,side,L)/(L.w*SlimeBasinArt.BANK_FRACTION);
+            float x=(SlimeBasinArt.inset(u,side,L.w)-L.w*.020f)*scale;if(side==1)x=L.w-x;
+            SlimeHills.jelly(p,shape,x,bankTop(t,side,L)+bankHeight(t,side,L)*u,L.w*.014f*scale,L.w*.008f,
                     i,Glyph.withAlpha(SlimeHills.MINT,(int)(fade*(28+breath*18+hit*36))));
         }
         for(int i=0;i<6;i++) {

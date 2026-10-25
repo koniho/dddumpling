@@ -2,11 +2,18 @@ package com.dddumpling.game;
 
 /** Immutable scenery and soft light masks, rasterized once by each native host. */
 final class SlimeBasinArt extends Draw {
-    static final int SCENE=0,LIGHT=1,SHADOW=2,COUNT=3;
-    static int width(int art) {return art==SCENE?480:256;}
-    static int height(int art) {return art==SCENE?960:256;}
+    static final int SCENE=0,LIGHT=1,SHADOW=2,LEFT_BANK=3,RIGHT_BANK=4,COUNT=5;
+    static final float BANK_FRACTION=.40f;
+    static int width(int art) {return art==SCENE?480:art>=LEFT_BANK?192:256;}
+    static int height(int art) {return art==SCENE || art>=LEFT_BANK?960:256;}
     private SlimeBasinArt() {}
     static void paint(Painter p,int art,float w,float h) {
+        if(art>=LEFT_BANK) {
+            int side=art-LEFT_BANK;float fullWidth=w/BANK_FRACTION;
+            p.save();p.clipRect(0,0,w,h);
+            if(side==1)p.translate(-(fullWidth-w),0);
+            banks(p,side,fullWidth,h);p.restore();return;
+        }
         if(art!=SCENE) {
             // Dense enough for a smooth cached texture; never rebuilt for lighting changes.
             int color=art==LIGHT?0xFF99E58D:0xFF0D3029;
@@ -29,8 +36,10 @@ final class SlimeBasinArt extends Draw {
             float r=i/47f;
             p.fillEllipse(w*.5f,h*.34f,w*(.20f+r*.66f),h*(.10f+r*.57f),0x046FBC73);
         }
+    }
+    private static void banks(Painter p,int side,float w,float h) {
         float[] shape=new float[98],bank=new float[134],shine=new float[260];
-        for(int side=0;side<2;side++)for(int layer=0;layer<6;layer++) {
+        for(int layer=0;layer<6;layer++) {
             for(int j=0;j<=64;j++) {
                 float u=j/64f,x=inset(u,side,w)-w*layer*.024f;
                 x+=w*.007f*(float)Math.sin(u*24+layer*.7f+side);
@@ -47,25 +56,26 @@ final class SlimeBasinArt extends Draw {
             p.fillPoly(shine,Glyph.withAlpha(SlimeHills.MINT,layer==1?105:32));
         }
         // Low, rounded shelves establish the pool's horizon rather than a vertical tunnel.
-        for(int side=0;side<2;side++)for(int i=0;i<3;i++) {
+        for(int i=0;i<3;i++) {
             float x=w*(.025f+i*.054f);if(side==1)x=w-x;
             float y=h*(.29f-i*.016f),r=w*(.15f-i*.028f);
             mound(p,shape,x,y,r,r*(.58f+i*.06f),i+side);
         }
         // The foreground banks curl into broad jelly cushions with internal depth.
-        for(int side=0;side<2;side++)for(int i=0;i<2;i++) {
+        for(int i=0;i<2;i++) {
             float u=(side==0?.49f:.43f)+i*.43f,x=inset(u,side,w)-w*.13f;
             if(side==1)x=w-x;
             mound(p,shape,x,h*u,w*.17f,w*(i==0?.11f:.19f),side*3+i);
         }
-        for(int side=0;side<2;side++)for(int i=0;i<3;i++) {
+        for(int i=0;i<3;i++) {
             float x=w*(.025f+i*.050f);if(side==1)x=w-x;
             float len=h*(.16f-i*.035f);
             SlimeHills.jelly(p,shape,x,len*.15f,w*(.045f-i*.007f),len,i+side,0x9957AC7D);
             SlimeHills.jelly(p,shape,x-w*.007f,len*.88f,w*.011f,w*.025f,i,0x85BFF2B5);
         }
         for(int i=0;i<16;i++) {
-            int side=i%2;float u=.10f+hash(i+927)*.87f;
+            if(i%2!=side)continue;
+            float u=.10f+hash(i+927)*.87f;
             float x=inset(u,side,w)-w*(.025f+hash(i+64)*.08f);if(side==1)x=w-x;
             SlimeHills.jelly(p,shape,x,h*u,w*(.008f+hash(i+76)*.016f),w*.008f,i,0x608AE7AF);
         }

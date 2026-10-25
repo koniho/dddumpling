@@ -82,11 +82,24 @@ final class TestBoss extends Check {
         c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;c.stage=5;c.landBlend=1;
         BasinCache cache=new BasinCache();Painter p=Skins.painter(new OpacityPainter(cache,1),Skins.HALLOWEEN);
         SlimeBasin.draw(p,c,L);
-        check("basin caches three bounded images through skin wrappers",cache.mask==7 && cache.calls==3);
+        check("basin caches five bounded images through skin wrappers",cache.mask==31 && cache.calls==5);
         int idle=cache.lightAlpha;c.boss.hurt=1;SlimeBasin.draw(p,c,L);
-        check("basin hit changes cached light alpha without changing artwork",cache.calls==6 && cache.lightAlpha>idle);
+        check("basin hit changes cached light alpha without changing artwork",cache.calls==10 && cache.lightAlpha>idle);
         cache.calls=0;SlimeBasin.draw(new OpacityPainter(cache,.5f),c,L);
         check("per primitive fades retain vector fallback",cache.calls==0);
+        boolean covered=true,bounded=true,independent=false;
+        for(int frame=0;frame<600;frame++) {
+            float time=frame*.1f;
+            for(int side=0;side<2;side++) {
+                float y=SlimeBasin.bankTop(time,side,L),h=SlimeBasin.bankHeight(time,side,L);
+                covered &= y<=L.playTop && y+h>=L.deckTop;
+                float w=SlimeBasin.bankWidth(time,side,L);
+                bounded &= w>=L.w*.39f && w<=L.w*.411f;
+            }
+            independent |= Math.abs(SlimeBasin.bankWidth(time,0,L)-SlimeBasin.bankWidth(time,1,L))>L.w*.01f;
+        }
+        check("breathing banks cover vertical edges and stay outside central play area",covered && bounded);
+        check("left and right banks breathe independently",independent);
         GatorReplay replay=new GatorReplay(true),chunked=new GatorReplay(true);
         for(int i=0;i<600;i++){replay.step(L);if(i%2==1)chunked.update(GatorReplay.STEP*2,L);}
         check("Slime device replay is isolated and fixed step",replay.core.store==null
