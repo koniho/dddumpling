@@ -28,6 +28,14 @@ final class SlimeBasin extends Draw {
         float span=L.deckTop-L.playTop;
         return L.playTop+(span-bankHeight(time,side,L))*.5f+span*.0015f*(float)Math.sin(time*.5f+side);
     }
+    static float surfaceLight(GameCore c,Layout L,float x,float y,float hit) {
+        float strength=hit*.18f;
+        for(int i=0;i<2;i++) {
+            float dx=(x-c.slimeBanks.lightX[i])/L.w,dy=(y-c.slimeBanks.lightY[i])/(L.deckTop-L.playTop);
+            strength=Math.max(strength,c.slimeBanks.light(c.clock,i)/(1+dx*dx*3+dy*dy*2));
+        }
+        return Math.min(1,strength);
+    }
     static void draw(Painter p,GameCore c,Layout L) {
         float fade=progress(c)*(retained(c)?1:1-c.drained());
         if(fade<=.001f)return;
@@ -39,6 +47,8 @@ final class SlimeBasin extends Draw {
         float[] shape=new float[34];
         float[][] rings={new float[66],new float[66]};
         art(p,SlimeBasinArt.SCENE,0,L.playTop,L.w,span,(int)(fade*255));
+        if(hit>.01f)art(p,SlimeBasinArt.REAR_LIT,0,L.playTop,L.w,span,
+                (int)(fade*surfaceLight(c,L,L.w*.5f,L.playTop+span*.27f,hit)*170));
         // Each bank breathes around its outer edge; the central pool never stretches.
         for(int side=0;side<2;side++) {
             float width=bankWidth(t,side,L);
@@ -47,6 +57,12 @@ final class SlimeBasin extends Draw {
             float[] offsets=c.slimeBanks.offsets(t,side,L);ArtStamp cache=p.stamps();
             if(cache==null || !cache.basinMesh(bank,x,y,width,h,offsets,(int)(fade*255)))
                 SlimeBasinArt.paint(new SlimeBanks.Warp(p,(int)(fade*255),side,x,y,width,h,offsets),bank,width,h);
+            if(hit>.01f) {
+                int lit=side==0?SlimeBasinArt.LEFT_LIT:SlimeBasinArt.RIGHT_LIT;
+                int alpha=(int)(fade*surfaceLight(c,L,side==0?L.w*.15f:L.w*.85f,L.playTop+span*.48f,hit)*230);
+                if(alpha>0 && (cache==null || !cache.basinMesh(lit,x,y,width,h,offsets,alpha)))
+                    SlimeBasinArt.paint(new SlimeBanks.Warp(p,alpha,side,x,y,width,h,offsets),lit,width,h);
+            }
         }
         // Move and modulate a single smooth light texture; bank geometry stays cached.
         float glowX=L.w*.5f+(cx-L.w*.5f)*.20f;

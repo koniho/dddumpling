@@ -5,7 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 
-/** Five immutable images, 4.7 MiB total; movement and lighting only change placement/alpha. */
+/** Eight immutable images, 8.9 MiB total; movement and lighting only change placement/alpha. */
 final class CanvasSlimeStamps {
     private final Bitmap[] images=new Bitmap[SlimeBasinArt.COUNT];
     private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);
@@ -20,7 +20,7 @@ final class CanvasSlimeStamps {
         SlimeBasinArt.paint(p,art,w,h);bitmap.prepareToDraw();images[art]=bitmap;return bitmap;
     }
     void mesh(Canvas canvas,int art,float x,float y,float w,float h,float[] offsets,int alpha) {
-        boolean left=art==SlimeBasinArt.LEFT_BANK;
+        boolean left=SlimeBasinArt.side(art)==0;
         for(int row=0;row<=SlimeBanks.ROWS;row++) {
             float yy=y+h*row/SlimeBanks.ROWS;
             mesh[row*4]=x-(left?0:offsets[row]);mesh[row*4+1]=yy;

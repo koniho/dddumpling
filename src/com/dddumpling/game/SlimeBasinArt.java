@@ -2,13 +2,23 @@ package com.dddumpling.game;
 
 /** Immutable scenery and soft light masks, rasterized once by each native host. */
 final class SlimeBasinArt extends Draw {
-    static final int SCENE=0,LIGHT=1,SHADOW=2,LEFT_BANK=3,RIGHT_BANK=4,COUNT=5;
+    static final int SCENE=0,LIGHT=1,SHADOW=2,LEFT_BANK=3,RIGHT_BANK=4,REAR_LIT=5,LEFT_LIT=6,RIGHT_LIT=7,COUNT=8;
     static final float BANK_FRACTION=.70f;
-    static int width(int art) {return art==SCENE?480:art>=LEFT_BANK?336:256;}
-    static int height(int art) {return art==SCENE || art>=LEFT_BANK?960:256;}
+    static int base(int art) {return art==REAR_LIT?SCENE:art==LEFT_LIT?LEFT_BANK:art==RIGHT_LIT?RIGHT_BANK:art;}
+    static int side(int art) {int base=base(art);return base==LEFT_BANK?0:base==RIGHT_BANK?1:-1;}
+    static int width(int art) {return base(art)==SCENE?480:side(art)>=0?336:256;}
+    static int height(int art) {return base(art)==SCENE || side(art)>=0?960:256;}
     private SlimeBasinArt() {}
     static void paint(Painter p,int art,float w,float h) {
-        if(art>=LEFT_BANK) {
+        if(art>=REAR_LIT) {
+            Painter lit=new OpacityPainter(p,1) {
+                int color(int color) {return Glyph.withAlpha(Glyph.mix(color,0xFFDFFFF0,.72f),color>>>24);}
+            };
+            if(art==REAR_LIT)rearBank(lit,w,h,true);
+            else paint(lit,base(art),w,h);
+            return;
+        }
+        if(side(art)>=0) {
             int side=art-LEFT_BANK;float fullWidth=w/BANK_FRACTION;
             p.save();p.clipRect(0,0,w,h);
             if(side==1)p.translate(-(fullWidth-w),0);
@@ -36,11 +46,11 @@ final class SlimeBasinArt extends Draw {
             float r=i/47f;
             p.fillEllipse(w*.5f,h*.34f,w*(.20f+r*.66f),h*(.10f+r*.57f),0x046FBC73);
         }
-        rearBank(p,w,h);
+        rearBank(p,w,h,false);
     }
 
     /** Rounded shoulders rise at the sides and melt into a low, scalloped waterline. */
-    private static void rearBank(Painter p,float w,float h) {
+    private static void rearBank(Painter p,float w,float h,boolean highlights) {
         float[] bank=new float[134],edge=new float[260],blob=new float[98];
         for(int layer=0;layer<3;layer++) {
             for(int j=0;j<=64;j++) {
@@ -48,10 +58,10 @@ final class SlimeBasinArt extends Draw {
                 float y=h*(.312f-.025f*(float)Math.sin(u*Math.PI)
                         +.005f*(float)Math.sin(u*18+.6f)-layer*.006f);
                 bank[j*2]=edge[j*2]=w*u;bank[j*2+1]=edge[j*2+1]=y;
-                edge[(129-j)*2]=w*u;edge[(129-j)*2+1]=y-h*.002f;
+                edge[(129-j)*2]=w*u;edge[(129-j)*2+1]=y-h*(highlights?.012f:.002f);
             }
             bank[130]=w;bank[131]=0;bank[132]=0;bank[133]=0;
-            p.fillPoly(bank,layer==0?0xFF599B70:layer==1?0xFF32694E:0xFF1A4036);
+            if(!highlights)p.fillPoly(bank,layer==0?0xFF599B70:layer==1?0xFF32694E:0xFF1A4036);
             p.fillPoly(edge,Glyph.withAlpha(SlimeHills.MINT,layer==0?80:22));
         }
         for(int i=0;i<7;i++) {

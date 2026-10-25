@@ -1,3 +1,4 @@
+#import "com/dddumpling/game/SlimeBasinArt.h"
 #import <XCTest/XCTest.h>
 #import "DDPainter.h"
 #import "IOSPrimitiveArray.h"
@@ -18,13 +19,13 @@
 
 - (void)testBasinCacheIsBoundedAndReusesImages {
   DDIOSPainter *painter=[DDIOSPainter new];
-  for (jint art=0;art<5;art++) {
+  for (jint art=0;art<DDSlimeBasinArt_COUNT;art++) {
     CGImageRef image=[painter basinImage:art];
     XCTAssertNotEqual(image,NULL);XCTAssertEqual(image,[painter basinImage:art]);
-    XCTAssertEqual(CGImageGetWidth(image),art==0?480u:art>=3?336u:256u);
-    XCTAssertEqual(CGImageGetHeight(image),art==0 || art>=3?960u:256u);
+    XCTAssertEqual(CGImageGetWidth(image),(size_t)[DDSlimeBasinArt widthWithInt:art]);
+    XCTAssertEqual(CGImageGetHeight(image),(size_t)[DDSlimeBasinArt heightWithInt:art]);
   }
-  XCTAssertEqual([painter basinImage:-1],NULL);XCTAssertEqual([painter basinImage:5],NULL);
+  XCTAssertEqual([painter basinImage:-1],NULL);XCTAssertEqual([painter basinImage:DDSlimeBasinArt_COUNT],NULL);
 }
 
 - (void)testBasinDrawRestoresTransformAndAlpha {
@@ -51,12 +52,16 @@
   IOSFloatArray *offsets=[IOSFloatArray arrayWithLength:9];
   offsets->buffer_[3]=8;offsets->buffer_[4]=-12;offsets->buffer_[5]=5;
   CGAffineTransform transform=CGContextGetCTM(context);
-  XCTAssertTrue([painter basinMeshWithInt:3 withFloat:0 withFloat:0 withFloat:100
+  for (NSNumber *art in @[@(DDSlimeBasinArt_LEFT_BANK),@(DDSlimeBasinArt_RIGHT_BANK),
+                         @(DDSlimeBasinArt_LEFT_LIT),@(DDSlimeBasinArt_RIGHT_LIT)]) {
+  CGContextClearRect(context,CGRectMake(0,0,256,256));
+  XCTAssertTrue([painter basinMeshWithInt:art.intValue withFloat:0 withFloat:0 withFloat:100
                    withFloat:256 withFloatArray:offsets withInt:80]);
   XCTAssertTrue(CGAffineTransformEqualToTransform(transform,CGContextGetCTM(context)));
   NSUInteger painted=0;uint8_t maxAlpha=0;
   for (NSUInteger i=0;i<256*256;i++){painted+=pixels[i*4+3]>0;maxAlpha=MAX(maxAlpha,pixels[i*4+3]);}
   XCTAssertGreaterThan(painted,100u);XCTAssertLessThanOrEqual(maxAlpha,80);
+  }
   [painter fillRectWithFloat:0 withFloat:0 withFloat:256 withFloat:256 withInt:(jint)0xFFFFFFFF];
   XCTAssertEqual(pixels[3],255);
   painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);

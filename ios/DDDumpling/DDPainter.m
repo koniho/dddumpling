@@ -35,7 +35,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 
 @interface DDIOSPainter () {
   CGImageRef _forest[6];
-  CGImageRef _basin[5];
+  CGImageRef _basin[DDSlimeBasinArt_COUNT];
   CGImageRef _forestTinted[16];
   uint64_t _forestKeys[16];
   NSUInteger _forestNext;
@@ -110,7 +110,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 }
 
 - (CGImageRef)basinImage:(jint)art {
-  if (art<0 || art>=5)return NULL;
+  if (art<0 || art>=DDSlimeBasinArt_COUNT)return NULL;
   if (!_basin[art]) {
     size_t w=[DDSlimeBasinArt widthWithInt:art],h=[DDSlimeBasinArt heightWithInt:art];
     CGContextRef bitmap=CGBitmapContextCreate(NULL,w,h,8,w*4,_colorSpace,
@@ -120,6 +120,10 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
     [DDSlimeBasinArt paintWithDDPainter:self withInt:art withFloat:w withFloat:h];
     _drawingForest=NO;self.context=prior;
     _basin[art]=CGBitmapContextCreateImage(bitmap);CGContextRelease(bitmap);
+    // Warm the matching surface highlights with the scene, before the first combat impact.
+    if (art==DDSlimeBasinArt_SCENE)[self basinImage:DDSlimeBasinArt_REAR_LIT];
+    else if (art==DDSlimeBasinArt_LEFT_BANK)[self basinImage:DDSlimeBasinArt_LEFT_LIT];
+    else if (art==DDSlimeBasinArt_RIGHT_BANK)[self basinImage:DDSlimeBasinArt_RIGHT_LIT];
   }
   return _basin[art];
 }
@@ -138,10 +142,10 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 - (jboolean)basinMeshWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
                   withFloat:(jfloat)w withFloat:(jfloat)h withFloatArray:(IOSFloatArray *)offsets
                     withInt:(jint)alpha {
-  if (!self.context || _drawingForest || (art!=3 && art!=4) || !offsets
+  if (!self.context || _drawingForest || [DDSlimeBasinArt sideWithInt:art]<0 || !offsets
       || offsets->size_<2 || offsets->size_>17 || w<=0 || h<=0)return NO;
   CGImageRef image=[self basinImage:art];if (!image)return NO;
-  CGContextRef ctx=self.context;int rows=offsets->size_-1;BOOL left=art==3;
+  CGContextRef ctx=self.context;int rows=offsets->size_-1;BOOL left=[DDSlimeBasinArt sideWithInt:art]==0;
   CGContextSaveGState(ctx);
   CGContextSetAlpha(ctx,MAX(0,MIN(255,alpha))/255.0);
   CGContextSetInterpolationQuality(ctx,kCGInterpolationMedium);
@@ -171,7 +175,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 }
 
 - (void)dealloc {
-  for (NSUInteger i=0;i<5;i++) CGImageRelease(_basin[i]);
+  for (NSUInteger i=0;i<DDSlimeBasinArt_COUNT;i++) CGImageRelease(_basin[i]);
   for (NSUInteger i=0;i<6;i++) CGImageRelease(_forest[i]);
   for (NSUInteger i=0;i<16;i++) CGImageRelease(_forestTinted[i]);
   for (NSUInteger i = 0; i < 1024; ++i) CGColorRelease(_colors[i]);

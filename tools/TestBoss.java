@@ -87,14 +87,17 @@ final class TestBoss extends Check {
         SlimeBasin.draw(p,c,L);
         check("basin caches five bounded images through skin wrappers",cache.mask==31 && cache.calls==5);
         int idle=cache.lightAlpha;c.boss.hurt=1;SlimeBasin.draw(p,c,L);
-        check("basin hit changes cached light alpha without changing artwork",cache.calls==10 && cache.lightAlpha>idle);
+        check("basin hit changes cached light alpha without changing artwork",cache.calls==13 && cache.lightAlpha>idle);
         cache.calls=0;SlimeBasin.draw(new OpacityPainter(cache,.5f),c,L);
         check("per primitive fades retain vector fallback",cache.calls==0);
         c.boss.hurt=0;c.slimeBanks.flash(c.clock,L.w*.4f,L.h*.3f,false);
         cache.calls=0;SlimeBasin.draw(cache,c,L);
-        check("prompt glow reuses a cached mask",cache.calls==6 && cache.mask==31);
+        check("prompt glow reuses a cached mask",cache.calls==9 && cache.mask==255);
         c.slimeBanks.hit(c.clock,L.w,L.h*.5f,L);cache.calls=0;SlimeBasin.draw(cache,c,L);
-        check("prompt and drag lights overlap with bounded cached draws",cache.calls==7 && cache.mask==31);
+        check("prompt and drag lights overlap with bounded cached draws",cache.calls==10 && cache.mask==255);
+        c.slimeBanks.reset();c.slimeBanks.hit(c.clock,L.w,L.playTop+(L.deckTop-L.playTop)*.48f,L);
+        check("struck bank receives more surface lighting",SlimeBasin.surfaceLight(c,L,L.w*.85f,L.h*.5f,1)
+                >SlimeBasin.surfaceLight(c,L,L.w*.15f,L.h*.5f,1));
         check("drag lighting lasts longer than prompt lighting",c.slimeBanks.light(c.clock+.6f,0)==0
                 && c.slimeBanks.light(c.clock+.6f,1)>0 && c.slimeBanks.light(c.clock+1,1)==0);
         c.slimeBanks.reset();

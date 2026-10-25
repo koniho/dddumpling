@@ -46,7 +46,7 @@ final class CanvasPainter implements Painter, ArtStamp {
         slimeStamps.draw(canvas,art,x,y,w,h,alpha);return true;
     }
     public boolean basinMesh(int art,float x,float y,float w,float h,float[] offsets,int alpha) {
-        if(stamps()==null || (art!=SlimeBasinArt.LEFT_BANK && art!=SlimeBasinArt.RIGHT_BANK)
+        if(stamps()==null || SlimeBasinArt.side(art)<0
                 || offsets==null || offsets.length!=SlimeBanks.ROWS+1)return false;
         if(slimeStamps==null)slimeStamps=new CanvasSlimeStamps();
         slimeStamps.mesh(canvas,art,x,y,w,h,offsets,alpha);return true;
