@@ -20,6 +20,7 @@ final class CanvasPainter implements Painter, ArtStamp {
     private Canvas canvas;
     private CanvasArtStamps artStamps;
     private CanvasForestStamps forestStamps;
+    private CanvasSlimeStamps slimeStamps;
     boolean cacheArt=true;
     public ArtStamp stamps() {return cacheArt && canvas!=null && canvas.isHardwareAccelerated()?this:null;}
     void warmArt() {
@@ -27,6 +28,8 @@ final class CanvasPainter implements Painter, ArtStamp {
         artStamps.warm();
         if(forestStamps==null)forestStamps=new CanvasForestStamps();
         forestStamps.warm();
+        if(slimeStamps==null)slimeStamps=new CanvasSlimeStamps();
+        slimeStamps.warm();
     }
     public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount) {
         return greenStamp(art,x,y,w,h,angle,tint,amount,0);
@@ -37,6 +40,11 @@ final class CanvasPainter implements Painter, ArtStamp {
         artStamps.draw(canvas,art,x,y,w,h,angle,tint,amount,phase);return true;
     }
 
+    public boolean basin(int art,float x,float y,float w,float h,int alpha) {
+        if(stamps()==null || art<0 || art>=SlimeBasinArt.COUNT)return false;
+        if(slimeStamps==null)slimeStamps=new CanvasSlimeStamps();
+        slimeStamps.draw(canvas,art,x,y,w,h,alpha);return true;
+    }
     public boolean forest(int art,float x,float y,float r,float lean,int color,int alpha) {
         if(stamps()==null || art<0 || art>=CanvasForestStamps.COUNT)return false;
         if(forestStamps==null)forestStamps=new CanvasForestStamps();

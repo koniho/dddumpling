@@ -69,6 +69,31 @@ final class TestBoss extends Check {
         c.state=GameCore.TITLE;check("slime valley does not replace title scene",SlimeHills.presence(c)==0);
     }
 
+    private static final class BasinCache extends OpacityPainter {
+        int mask,calls,lightAlpha;
+        BasinCache(){super(new RasterPainter(1,1,1),1);}
+        public ArtStamp stamps(){return this;}
+        public boolean basin(int art,float x,float y,float w,float h,int alpha) {
+            mask|=1<<art;calls++;if(art==SlimeBasinArt.LIGHT)lightAlpha=alpha;return true;
+        }
+    }
+    static void slimeBasinCache(Layout L) {
+        GameCore c=new GameCore(new Mem(),327L);c.startGame();
+        c.boss.begin(Boss.SLIME,5,c.rnd);c.boss.intro=0;c.stage=5;c.landBlend=1;
+        BasinCache cache=new BasinCache();Painter p=Skins.painter(new OpacityPainter(cache,1),Skins.HALLOWEEN);
+        SlimeBasin.draw(p,c,L);
+        check("basin caches three bounded images through skin wrappers",cache.mask==7 && cache.calls==3);
+        int idle=cache.lightAlpha;c.boss.hurt=1;SlimeBasin.draw(p,c,L);
+        check("basin hit changes cached light alpha without changing artwork",cache.calls==6 && cache.lightAlpha>idle);
+        cache.calls=0;SlimeBasin.draw(new OpacityPainter(cache,.5f),c,L);
+        check("per primitive fades retain vector fallback",cache.calls==0);
+        GatorReplay replay=new GatorReplay(true),chunked=new GatorReplay(true);
+        for(int i=0;i<600;i++){replay.step(L);if(i%2==1)chunked.update(GatorReplay.STEP*2,L);}
+        check("Slime device replay is isolated and fixed step",replay.core.store==null
+                && replay.core.boss.kind==Boss.SLIME && replay.tick==chunked.tick
+                && replay.core.score==chunked.core.score && replay.core.boss.age==chunked.core.boss.age);
+    }
+
     static void slimeSurface(Layout L) {
         GameCore c=new GameCore(new Mem(),322L);c.startGame();c.enemies.clear();c.skyClock=12f;
         GameCore.Enemy e=add(c,L,new int[]{0,2},L.playTop+L.h*.3f);

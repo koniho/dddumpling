@@ -8,14 +8,16 @@ remote() {
     if [ "$transport" = rish ]; then RISH_APPLICATION_ID=com.termux rish -c "$1";
     else adb shell "$1"; fi
 }
+scene=${PROFILE_SCENE:-gator}
+case "$scene" in gator) scene_prefix='';; slime) scene_prefix=slime-;; *) echo 'PROFILE_SCENE must be gator or slime' >&2; exit 1;; esac
 mode=${1:-both}
 case "$mode" in both) modes='vector cached';; vector|cached) modes=$mode;;
     *) echo 'usage: sh tools/profile-gator.sh [both|vector|cached]' >&2; exit 1;; esac
-out="build/gator-profile-$(date +%Y%m%d-%H%M%S)-$$"
+out="build/$scene-profile-$(date +%Y%m%d-%H%M%S)-$$"
 mkdir -p "$out"
 app=com.dddumpling.game.dev
 activity=$app/com.dddumpling.game.MainActivity
-token="gator-$(date +%s)-$$"
+token="$scene-$(date +%s)-$$"
 started=false
 cleanup() {
     if [ "$started" = true ]; then
@@ -39,13 +41,13 @@ start() {
 }
 for variant in $modes; do
     echo "$variant: warming the complete 36-second replay…"
-    start "$variant" "$token-$variant-warm"
+    start "$scene_prefix$variant" "$token-$variant-warm"
     sleep 36
     # Start again at entry so both captures contain the same full loop and prewarmed artwork.
     remote "dumpsys gfxinfo $app reset" >"$out/$variant-reset.txt" 2>&1
-    echo "$variant: capturing entry, combat, combo demos, damage and daze…"
-    start "$variant" "$token-$variant-measure"
-    sleep 36
+    echo "$variant: capturing entry and scripted combat…"
+    start "$scene_prefix$variant" "$token-$variant-measure"
+    sleep 38
     remote "dumpsys gfxinfo $app framestats" >"$out/$variant-gfxinfo.txt" 2>&1
     remote 'logcat -d -s GatorProfile:I' >"$out/$variant-replay.txt" 2>&1
     if ! grep -Fq "loop=1 token=$token-$variant-measure" "$out/$variant-replay.txt"; then

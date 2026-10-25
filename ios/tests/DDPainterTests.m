@@ -3,6 +3,7 @@
 
 @interface DDIOSPainter (ColorTests)
 - (CGColorRef)cachedColor:(jint)color;
+- (CGImageRef)basinImage:(jint)art;
 - (CGImageRef)forestImage:(jint)art color:(jint)color;
 @end
 
@@ -12,6 +13,32 @@
 @implementation DDPainterTests
 - (void)testCanvasStartsWithDefaultSkin {
   XCTAssertEqual([[DDIOSPainter new] skin], 0);
+}
+
+- (void)testBasinCacheIsBoundedAndReusesImages {
+  DDIOSPainter *painter=[DDIOSPainter new];
+  for (jint art=0;art<3;art++) {
+    CGImageRef image=[painter basinImage:art];
+    XCTAssertNotEqual(image,NULL);XCTAssertEqual(image,[painter basinImage:art]);
+    XCTAssertEqual(CGImageGetWidth(image),art==0?480u:256u);
+    XCTAssertEqual(CGImageGetHeight(image),art==0?960u:256u);
+  }
+  XCTAssertEqual([painter basinImage:-1],NULL);XCTAssertEqual([painter basinImage:3],NULL);
+}
+
+- (void)testBasinDrawRestoresTransformAndAlpha {
+  uint8_t pixels[256*256*4]={0};
+  CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
+  CGContextRef context=CGBitmapContextCreate(pixels,256,256,8,256*4,space,
+      kCGBitmapByteOrder32Big|kCGImageAlphaPremultipliedLast);
+  DDIOSPainter *painter=[DDIOSPainter new];painter.context=context;
+  CGAffineTransform transform=CGContextGetCTM(context);
+  XCTAssertTrue([painter basinWithInt:0 withFloat:0 withFloat:0 withFloat:256 withFloat:256 withInt:80]);
+  XCTAssertTrue(CGAffineTransformEqualToTransform(transform,CGContextGetCTM(context)));
+  XCTAssertEqual(pixels[3],80);
+  [painter fillRectWithFloat:0 withFloat:0 withFloat:256 withFloat:256 withInt:(jint)0xFFFFFFFF];
+  XCTAssertEqual(pixels[3],255);
+  painter.context=NULL;CGContextRelease(context);CGColorSpaceRelease(space);
 }
 
 - (void)testForestCacheReusesArtworkAndTintVariants {

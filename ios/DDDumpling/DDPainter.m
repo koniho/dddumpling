@@ -5,6 +5,7 @@
 #import <math.h>
 
 #import "com/dddumpling/game/MushroomForest.h"
+#import "com/dddumpling/game/SlimeBasinArt.h"
 #import "IOSObjectArray.h"
 #import "IOSPrimitiveArray.h"
 
@@ -34,6 +35,7 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
 
 @interface DDIOSPainter () {
   CGImageRef _forest[6];
+  CGImageRef _basin[3];
   CGImageRef _forestTinted[16];
   uint64_t _forestKeys[16];
   NSUInteger _forestNext;
@@ -107,12 +109,39 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
   CGContextRestoreGState(context);return YES;
 }
 
+- (CGImageRef)basinImage:(jint)art {
+  if (art<0 || art>=3)return NULL;
+  if (!_basin[art]) {
+    size_t w=[DDSlimeBasinArt widthWithInt:art],h=[DDSlimeBasinArt heightWithInt:art];
+    CGContextRef bitmap=CGBitmapContextCreate(NULL,w,h,8,w*4,_colorSpace,
+        kCGBitmapByteOrder32Big|kCGImageAlphaPremultipliedLast);
+    if (!bitmap)return NULL;
+    CGContextRef prior=self.context;self.context=bitmap;_drawingForest=YES;
+    [DDSlimeBasinArt paintWithDDPainter:self withInt:art withFloat:w withFloat:h];
+    _drawingForest=NO;self.context=prior;
+    _basin[art]=CGBitmapContextCreateImage(bitmap);CGContextRelease(bitmap);
+  }
+  return _basin[art];
+}
+
+- (jboolean)basinWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
+              withFloat:(jfloat)w withFloat:(jfloat)h withInt:(jint)alpha {
+  if (!self.context || _drawingForest || w<=0 || h<=0)return NO;
+  CGImageRef image=[self basinImage:art];if (!image)return NO;
+  CGContextSaveGState(self.context);
+  CGContextSetAlpha(self.context,MAX(0,MIN(255,alpha))/255.0);
+  CGContextSetInterpolationQuality(self.context,kCGInterpolationMedium);
+  CGContextDrawImage(self.context,CGRectMake(x,y,w,h),image);
+  CGContextRestoreGState(self.context);return YES;
+}
+
 - (instancetype)init {
   if ((self = [super init])) _colorSpace = CGColorSpaceCreateDeviceRGB();
   return self;
 }
 
 - (void)dealloc {
+  for (NSUInteger i=0;i<3;i++) CGImageRelease(_basin[i]);
   for (NSUInteger i=0;i<6;i++) CGImageRelease(_forest[i]);
   for (NSUInteger i=0;i<16;i++) CGImageRelease(_forestTinted[i]);
   for (NSUInteger i = 0; i < 1024; ++i) CGColorRelease(_colors[i]);

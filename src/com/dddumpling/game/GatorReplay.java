@@ -7,12 +7,14 @@ final class GatorReplay {
     GameCore core;
     int tick,loops;
     private float remainder;
-    GatorReplay() {reset();}
+    private final boolean slime;
+    GatorReplay() {this(false);}
+    GatorReplay(boolean slime) {this.slime=slime;reset();}
     private void reset() {
         core=new GameCore(null,168,false);
         core.collected=Collect.MASK;core.landSeen=LandPicker.stateMask();
         core.onboarding.saved=Onboarding.SKIPPED;core.onboarding.savedPowers=-1;
-        core.modes.restore(ModeSelector.TIME_ATTACK);core.timeAttack.selected=Boss.ALLIGATOR;
+        core.modes.restore(ModeSelector.TIME_ATTACK);core.timeAttack.selected=slime?Boss.SLIME:Boss.ALLIGATOR;
         core.startGame();core.stageBanner=0;core.landBlend=1;tick=0;
     }
     void update(float elapsed,Layout l) {
@@ -21,7 +23,14 @@ final class GatorReplay {
     }
     void step(Layout l) {
         if(tick>=LENGTH) {loops++;reset();}
-        Boss b=core.boss;Alligator a=b.alligator;
+        Boss b=core.boss;
+        if(slime) {
+            if(b.fighting() && tick%18==0)for(int key=0;key<Glyph.COUNT;key++)
+                if(b.wants(key)){core.tapKey(key,l);break;}
+            if(b.fighting() && tick%240==0)b.hurt=1;
+            core.lives=3;core.update(STEP,l);tick++;return;
+        }
+        Alligator a=b.alligator;
         if(tick==10*60 || tick==20*60) {
             b.hp=b.hpMax*(tick==10*60?.5f:.25f)+.5f;
             b.damage(1);

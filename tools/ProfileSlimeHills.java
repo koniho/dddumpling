@@ -34,7 +34,7 @@ final class ProfileSlimeHills {
                 SlimeBubbles.Bubble b=c.slimeBubbles.bubbles[i];
                 c.slimeBubbles.spawn(b,SlimeBubbles.earlyPop(i)?(i^1):i,l);b.age=b.riseTime+.8f;
             }
-            Counter p=new Counter();
+            Counter p=new Counter(args.length>0 && args[0].equals("cached"));
             long warmUntil=System.nanoTime()+1_000_000_000L;
             while(System.nanoTime()<warmUntil)draw(p,c,l);
             long[] batches=new long[100];int frames=0;
@@ -56,7 +56,12 @@ final class ProfileSlimeHills {
         Painter wrapped=new OpacityPainter(Skins.painter(p,c.preferences.skin),1);
         Lands.scenery(wrapped,c,l);SlimeArrival.draw(wrapped,c,l);
     }
-    private static final class Counter implements Painter {
+    private static final class Counter implements Painter,ArtStamp {
+        final boolean cached;
+        Counter(boolean cached){this.cached=cached;}
+        public ArtStamp stamps(){return cached?this:null;}
+        public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}
+        public boolean basin(int art,float x,float y,float w,float h,int alpha){point(x,y,alpha);vertices+=4;return true;}
         long calls,vertices;double checksum;
         void path(float[] pts,int color) {
             calls++;vertices+=pts.length/2;checksum+=color;

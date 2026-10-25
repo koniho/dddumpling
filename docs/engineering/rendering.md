@@ -164,6 +164,27 @@ This measures forest draw calls, path vertices, CPU preparation, and allocation 
 not rasterize or measure device FPS. Both native caches approximate branch bending with a
 small rotation and preserves a separate vector path for software previews.
 
+### Slime Springs arena
+
+Android and iOS cache three immutable images from `SlimeBasinArt`: the 480×960 basin
+and two 256×256 soft masks (light and shadow), about 2.3 MiB total. Light placement and
+brightness, surface reflections and grounding ripples remain live. Brightness changes never
+allocate a new image. Unsupported painters and per-primitive color/fade effects use vectors.
+The fixed basin artwork keeps the middle clear and adds rounded shelves to the banks.
+
+The existing developer replay transport also supports Super Slime without touching saves:
+
+```sh
+PROFILE_SCENE=slime sh tools/profile-gator.sh cached
+```
+
+Use `vector` or `both` to compare the same artwork without caching. The Activity extra is
+`gator_profile=slime-cached` or `slime-vector`; `stop` returns to the player's actual game.
+The 36-second fixed-step replay includes arrival, prompted projectile hits and repeated light
+pulses. It uses a separate core with no store, audio or rewards. Keep the phone foregrounded.
+For CPU/geometry counts only, run `ProfileSlimeHills cached` after compiling the harness;
+these counts do not measure GPU or device frame times.
+
 ### Frame comparisons
 
 For a rendering-sensitive refactor expected to preserve visuals, compare only affected
