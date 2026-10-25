@@ -80,10 +80,14 @@ final class CrystalArena extends Draw {
         }
         return null;
     }
+    private static void base(Painter p,CrystalField.Cell cell,int layer,float w,float fade) {
+        // The broad rear outlines must remain visible beneath the two nearer crystal layers.
+        CrystalField.base(p,cell,layer,w,fade,layer==0?2.8f:layer==1?1.25f:1f);
+    }
     static void paintLayer(Painter p,int layer,int phase) {
         p.save();p.clipRect(0,0,CrystalField.STAMP_WIDTH,CrystalField.STAMP_HEIGHT);
         for(CrystalField.Cell cell:make(CrystalField.STAMP_WIDTH,layer,phase))
-            CrystalField.base(p,cell,layer,CrystalField.STAMP_WIDTH,1);
+            base(p,cell,layer,CrystalField.STAMP_WIDTH,1);
         p.restore();
     }
     void draw(Painter p,GameCore c,Layout L,float fade) {
@@ -105,7 +109,7 @@ final class CrystalArena extends Draw {
                     CrystalField.Cell cell=cells[layer][i];
                     if(cell.bottom+y<0 || cell.top+y>L.deckTop)continue;
                     if(burst>0){shatter(p,cell,layer,y,burst,L,fade);continue;}
-                    if(!cached)CrystalField.base(p,cell,layer,L.w,fade);
+                    if(!cached)base(p,cell,layer,L.w,fade);
                     if(lighting)c.crystalField.edgeLights(p,c,L,cell,layer,y,fade);
                     float glint=Math.max(0,(float)Math.sin(c.clock*.8f+cell.phase));
                     if(glint>.65f)p.fillPoly(cell.rim,Glyph.withAlpha(0xFFBB99EE,(int)(fade*(glint-.65f)*(12+layer*8))));

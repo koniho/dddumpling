@@ -160,8 +160,12 @@ final class CrystalField extends Draw {
         return layer==0?0xFF9983BE:layer==1?0xFFB79BD8:0xFFDCC4FF;
     }
     static void base(Painter p,Cell cell,int layer,float w,float fade) {
+        base(p,cell,layer,w,fade,1);
+    }
+    static void base(Painter p,Cell cell,int layer,float w,float fade,float edgeGain) {
         int color=edgeColor(layer);
         p.fillPoly(cell.rim,Glyph.withAlpha(cell.color,(int)(fade*(4+layer*3))));
+        fade*=edgeGain;
         float softness=layer==0?.030f:layer==1?.017f:.009f;
         p.strokePoly(cell.rim,Glyph.withAlpha(color,(int)(fade*(3+layer*2))),w*softness);
         p.strokePoly(cell.rim,Glyph.withAlpha(color,(int)(fade*(5+layer*3))),w*softness*.48f);
