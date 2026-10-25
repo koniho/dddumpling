@@ -242,15 +242,16 @@ final class BossPlay {
         Boss b=c.boss;
         if(c.state!=GameCore.PLAY || c.dying() || !b.fighting() || b.kind!=s.promptKind
                 || b.body!=s.promptRoot)return false;
-        if(s.promptKind==Boss.SPLITTER && (!b.nodeActive(s.promptNode)
+        boolean divide=s.promptKind==Boss.SPLITTER;
+        // A credited hit still lights the arena if its glob was pinched before arrival.
+        if(divide)c.crystalField.arenaFlash(c,L,s.tx,s.ty,3,Glyph.COLOR[s.glyph]);
+        if(divide && (!b.nodeActive(s.promptNode)
                 || b.divideBody[s.promptNode]!=s.promptBody))return false;
         b.promptImpact(s.promptNode,s.promptSplit,s.tx,s.ty);
         c.skyGlow=Math.max(c.skyGlow,GameCore.GLOW_HIT);c.skyGlowColor=Glyph.COLOR[s.glyph];
-        boolean divide=s.promptKind==Boss.SPLITTER;
         c.shake=Math.max(c.shake,divide?.18f:.12f);
         if(divide) {
             c.flash=Math.max(c.flash,.28f);c.flashColor=0xFF7D45D6;
-            c.crystalField.arenaFlash(c,L,s.tx,s.ty,3,Glyph.COLOR[s.glyph]);
         }
         for(GameCore.Particle p:s.promptParticles) {p.x+=s.tx;p.y+=s.ty;c.particles.add(p);}
         s.promptParticles.clear();

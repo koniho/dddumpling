@@ -84,7 +84,7 @@ final class TestCrystalField extends Check {
         return c;
     }
     private static void arena(Layout L) {
-        boolean symmetric=true,growing=true,seamless=true,covers=true,depth=true;
+        boolean symmetric=true,growing=true,seamless=true,covers=true,depth=true,horizontal=true;
         int[] previous=new int[3];
         for(int phase=0;phase<=CrystalArena.MAX_PHASE;phase++)for(int layer=0;layer<3;layer++) {
             CrystalField.Cell[] cells=CrystalArena.make(L.w,layer,phase);
@@ -92,6 +92,8 @@ final class TestCrystalField extends Check {
             if(layer>0)depth&=previous[layer-1]>cells.length;
             for(CrystalField.Cell cell:cells)for(int j=0;j<cell.rim.length;j+=2) {
                 int next=(j+2)%cell.rim.length;
+                horizontal&=!(Math.abs(cell.rim[j+1]-cell.rim[next+1])<.001f
+                        && Math.abs(cell.rim[j]-cell.rim[next])>L.w*.2f);
                 seamless&=!(Math.abs(cell.rim[j]-L.w*.5f)<.001f && Math.abs(cell.rim[next]-L.w*.5f)<.001f);
                 boolean match=false;
                 for(CrystalField.Cell other:cells)if(other.phase==cell.phase)
@@ -103,7 +105,8 @@ final class TestCrystalField extends Check {
             for(int row=0;row<31;row++)for(int col=0;col<23;col++) {
                 float x=L.w*(col+.317f)/23,y=L.w*2*(row+.219f)/31;
                 int owners=0;
-                for(CrystalField.Cell cell:cells)if(inside(cell.rim,x,y))owners++;
+                for(CrystalField.Cell cell:cells)for(int tile=-1;tile<=1;tile++)
+                    if(inside(cell.rim,x,y-tile*CrystalField.PERIOD*L.w))owners++;
                 covers&=owners==1;
             }
         }
@@ -111,6 +114,7 @@ final class TestCrystalField extends Check {
         check("each pinch adds arena fragments",growing);
         check("deeper arena layers retain finer segmentation through every phase",depth);
         check("center-spanning arena tiles have no vertical mirror seam",seamless);
+        check("arena has no long horizontal tile-border edges",horizontal);
         check("joined arena tiles cover every phase without gaps or overlaps",covers);
         GameCore c=arenaScene(L,7);
         check("seven actual splits advance the crystal arena",CrystalArena.phase(c.boss)==7 && c.shake>=1);
@@ -136,6 +140,27 @@ final class TestCrystalField extends Check {
         check("arena impact lighting stays mirrored",mirrored);
     }
     private static void arenaLights(Layout L) {
+        int hitNodes=0;
+        for(int phase=0;phase<=7;phase++) {
+            GameCore hit=arenaScene(L,phase);Boss boss=hit.boss;boss.clearBolts();
+            for(int piece=0;piece<boss.pieceCount();piece++) {
+                int node=boss.pieceNodeIndex(piece);if((hitNodes & (1<<node))!=0)continue;
+                hitNodes|=1<<node;
+                for(int other=0;other<Boss.DIVIDE_NODES;other++){boss.pieceHits[other]=0;boss.halfWant[other]=1;}
+                boss.halfWant[node]=0;hit.crystalField.reset();hit.shots.clear();hit.tapKey(0,L);
+                GameCore.Shot shot=hit.shots.get(0);Fx.updateShots(hit,GameCore.SHOT_TIME,L);
+                check("prompt contact lights every glob node "+node,shot.promptNode==node
+                        && hit.crystalField.lightAt(hit,L,2,shot.tx,shot.ty)>.99f);
+            }
+        }
+        check("prompt lighting covers all fifteen glob nodes",hitNodes==(1<<Boss.DIVIDE_NODES)-1);
+        GameCore split=arenaScene(L,0);split.boss.pieceHits[0]=Boss.DIVIDE_HITS-1;
+        split.tapKey(split.boss.pieceWant(0),L);GameCore.Shot pending=split.shots.get(0);
+        split.boss.beginPinch(100);BossPlay.pinch(split,100*(Boss.DIVIDE_SCALE+.02f),L);
+        split.crystalField.reset();Fx.updateShots(split,GameCore.SHOT_TIME,L);
+        check("last prompt still lights after its glob has split",!split.boss.nodeActive(0)
+                && split.crystalField.lightAt(split,L,0,pending.tx,pending.ty)>.99f);
+
         GameCore c=arenaScene(L,0);Boss b=c.boss;int key=b.pieceWant(0);
         b.blive[0]=true;b.bglyph[0]=key;b.bhp[0]=b.bhpMax[0]=2;
         b.bsx[0]=L.w*.3f;b.bsy[0]=L.h*.4f;b.bt[0]=.3f;

@@ -32,9 +32,13 @@ final class CrystalArena extends Draw {
             sy[i]=2f*(i/columns+.15f+.7f*hash(872+layer*173+i*47))/rows;
         }
         for(int i=0;i<count;i++) {
-            float[] p={0,0,.5f,0,.5f,2,0,2};
-            for(int j=0;j<count;j++)if(j!=i)
-                p=CrystalField.clip(p,sx[j]-sx[i],sy[j]-sy[i],(sx[j]*sx[j]+sy[j]*sy[j]-sx[i]*sx[i]-sy[i]*sy[i])*.5f);
+            // Neighbours across the repeating boundary prevent horizontal tile-border seams.
+            float[] p={0,sy[i]-1,.5f,sy[i]-1,.5f,sy[i]+1,0,sy[i]+1};
+            for(int repeat=-1;repeat<=1;repeat++)for(int j=0;j<count;j++) {
+                if(j==i && repeat==0)continue;
+                float y=sy[j]+repeat*CrystalField.PERIOD;
+                p=CrystalField.clip(p,sx[j]-sx[i],y-sy[i],(sx[j]*sx[j]+y*y-sx[i]*sx[i]-sy[i]*sy[i])*.5f);
+            }
             pieces.add(p);
         }
         for(int split=0;split<phase;split++) {
@@ -88,8 +92,15 @@ final class CrystalArena extends Draw {
     }
     static void paintLayer(Painter p,int layer,int phase) {
         p.save();p.clipRect(0,0,CrystalField.STAMP_WIDTH,CrystalField.STAMP_HEIGHT);
-        for(CrystalField.Cell cell:make(CrystalField.STAMP_WIDTH,layer,phase))
-            base(p,cell,layer,CrystalField.STAMP_WIDTH,1);
+        CrystalField.Cell[] cells=make(CrystalField.STAMP_WIDTH,layer,phase);
+        for(int tile=-1;tile<=1;tile++) {
+            float y=tile*CrystalField.STAMP_HEIGHT;
+            p.save();p.translate(0,y);
+            for(CrystalField.Cell cell:cells)if(cell.bottom+y>=-CrystalField.STAMP_WIDTH*.04f
+                    && cell.top+y<=CrystalField.STAMP_HEIGHT+CrystalField.STAMP_WIDTH*.04f)
+                base(p,cell,layer,CrystalField.STAMP_WIDTH,1);
+            p.restore();
+        }
         p.restore();
     }
     void draw(Painter p,GameCore c,Layout L,float fade) {
@@ -102,7 +113,7 @@ final class CrystalArena extends Draw {
         p.save();p.clipRect(0,0,L.w,L.deckTop);
         for(int layer=0;layer<cells.length;layer++) {
             float offset=CrystalField.scroll(clock,L.w,layer);
-            for(int tile=-1;tile<=(int)(L.deckTop/period);tile++) {
+            for(int tile=-1;tile<=(int)(L.deckTop/period)+1;tile++) {
                 float y=offset+tile*period;if(y+period<0 || y>L.deckTop)continue;
                 ArtStamp cache=p.stamps();
                 boolean cached=burst==0 && cache!=null && cache.crystal(art(layer,phase),0,y,L.w,period,(int)(fade*255));
