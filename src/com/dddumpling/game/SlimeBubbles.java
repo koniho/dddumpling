@@ -15,11 +15,15 @@ final class SlimeBubbles extends Draw {
         float freeTime() {return Math.max(0,Math.min(age,popAt)-riseTime);}
         float centreY() {
             float t=emergence(),f=freeTime();
-            return surfaceY+r-r*2*t*t*(3-2*t)-r*(f*f*.45f+f*f*f*.06f);
+            if(t<1)return surfaceY+r-r*2*t*t*(3-2*t);
+            float settle=Math.min(1,f/.5f);settle=settle*settle*(3-2*settle);
+            float hover=r*settle*(.30f+.07f*(float)Math.sin(f*3+seed));
+            return groundY-r-hover;
         }
         float centreX() {
             float f=freeTime();
-            return x+r*.23f*((float)Math.sin(seed+f*f/(1+f)*1.8f)-(float)Math.sin(seed));
+            float ease=Math.min(1,f/.45f);ease=ease*ease*(3-2*ease);
+            return x+r*.65f*ease*(float)Math.sin(seed+f*3.2f);
         }
     }
     final Bubble[] bubbles=new Bubble[LIMIT];

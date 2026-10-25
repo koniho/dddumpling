@@ -113,10 +113,26 @@ final class TestBoss extends Check {
         b.age=b.riseTime-.01f;surface=b.surfaceY;
         pool.update(c,L,.02f,.02f);
         check("bubble detaches continuously at the waterline",Math.abs(b.surfaceY-surface-L.h*.0002f)<.001f
-                && b.centreY()+b.r<=b.surfaceY);
-        surface=b.surfaceY;float y=b.centreY();
+                && b.centreY()+b.r<=b.groundY);
+        surface=b.surfaceY;
         pool.update(c,L,.5f,4);
-        check("lifted bubble floats independently of fast background",b.surfaceY==surface && b.centreY()<y);
+        float altitude=b.groundY-b.centreY()-b.r;
+        check("lifted bubble hovers low above the scrolling river",b.surfaceY==surface
+                && altitude>=b.r*.20f && altitude<=b.r*.40f);
+        boolean low=true,bounded=true,reversed=false;
+        float lastX=b.x,lastDelta=0;
+        for(int i=0;i<=60;i++) {
+            b.age=b.riseTime+(b.popAt-b.riseTime)*i/60f;
+            float x=b.centreX(),delta=x-lastX;
+            if(delta*lastDelta<0)reversed=true;
+            if(Math.abs(delta)>.0001f)lastDelta=delta;
+            lastX=x;
+            float gap=b.groundY-b.centreY()-b.r;
+            low&=gap>=-.001f && gap<=b.r*.40f;
+            bounded&=Math.abs(x-b.x)<=b.r*.66f;
+        }
+        check("bubble altitude stays low throughout hovering",low);
+        check("hovering bubble changes lateral direction without drifting away",reversed && bounded);
         c.particles.clear();b.age=b.popAt-.01f;pool.update(c,L,.02f,0);
         check("airborne pop waits for slime to land before rippling",c.particles.isEmpty());
         float ground=b.groundY;
