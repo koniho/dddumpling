@@ -123,11 +123,11 @@ final class SlimeBubbles extends Draw {
         float a=fade*lift/(1+height*.24f);
         if(b.age>=b.popAt)a*=Math.max(0,1-(b.age-b.popAt)/.25f);
         if(a<=.001f)return;
-        float r=b.r*.50f/(1+height*.10f);
-        for(int layer=0;layer<3;layer++) {
-            float scale=1-layer*.20f;
-            p.fillEllipse(x,b.groundY,r*scale,r*.27f*scale,
-                    Glyph.withAlpha(0xFF102F23,(int)(a*(layer==0?10:16))));
+        float r=b.r*.82f/(1+height*.10f);
+        for(int layer=0;layer<4;layer++) {
+            float scale=1-layer*.17f;
+            p.fillEllipse(x,b.groundY,r*scale,r*.30f*scale,
+                    Glyph.withAlpha(0xFF06140F,(int)(a*(18+layer*13))));
         }
     }
 
