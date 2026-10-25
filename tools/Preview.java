@@ -3229,6 +3229,16 @@ final class Preview {
             crystal.clock+=.65f;crystal.skyClock+=.65f;
             shot(dir,"crystal-field-clear-fading",crystal,L,w,h,ss);
         }
+        if(wanted("slime-basin-shimmer-")) {
+            GameCore sheen=toBoss(L,Boss.SLIME,764L,false);
+            sheen.stage=5;sheen.landBlend=1;sheen.stageBanner=sheen.rosterSceneT=0;
+            step(sheen,L,SlimeArrival.DURATION);
+            float previous=0;
+            for(float age:new float[]{.1f,.8f,1.8f,3.1f,4.7f}) {
+                step(sheen,L,age-previous);previous=age;
+                shot(dir,"slime-basin-shimmer-"+Math.round(age*1000),sheen,L,w,h,ss);
+            }
+        }
         if(wanted("slime-basin-death-")) {
             GameCore death=toBoss(L,Boss.SLIME,764L,false);
             death.stage=5;death.landBlend=1;death.stageBanner=death.rosterSceneT=0;

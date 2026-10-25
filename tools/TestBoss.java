@@ -100,6 +100,19 @@ final class TestBoss extends Check {
                 >SlimeBasin.surfaceLight(c,L,L.w*.15f,L.h*.5f,1));
         check("drag lighting lasts longer than prompt lighting",c.slimeBanks.light(c.clock+.6f,0)==0
                 && c.slimeBanks.light(c.clock+.6f,1)>0 && c.slimeBanks.light(c.clock+1,1)==0);
+        c.boss.age=0;c.boss.intro=1;
+        check("basin shimmer waits for the curtain",SlimeBasin.shimmer(cache,c,L,c.boss,1)==0);
+        c.boss.intro=0;c.boss.age=.2f;
+        check("basin shimmer waits briefly after arrival",SlimeBasin.shimmer(cache,c,L,c.boss,1)==0);
+        c.boss.age=1;
+        check("basin shimmer has only nine bounded strokes",SlimeBasin.shimmer(cache,c,L,c.boss,1)==9);
+        float first=SlimeBasin.shimmerPhase(c.boss,0);c.boss.age+=5.6f;
+        check("basin shimmer repeats without accumulating state",Math.abs(SlimeBasin.shimmerPhase(c.boss,0)-first)<.0001f);
+        c.boss.age=5;
+        check("basin shimmer rests between sweeps",SlimeBasin.shimmer(cache,c,L,c.boss,1)==0);
+        c.boss.beaten=true;c.boss.age=1;
+        check("basin shimmer yields to the defeat effects",SlimeBasin.shimmer(cache,c,L,c.boss,1)==0);
+        c.boss.beaten=false;
         c.slimeBanks.reset();
         check("leaving the arena clears both impact lights",c.slimeBanks.light(c.clock,0)==0 && c.slimeBanks.light(c.clock,1)==0);
         boolean covered=true,bounded=true,independent=false;
