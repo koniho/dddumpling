@@ -149,6 +149,7 @@ final class BossPlay {
         // prompt progress is immediate; Slime and Divide hit feedback travels with this shot.
         shot(c, g, L, verdict);
         if (verdict == Boss.PARRY) {
+            if(c.boss.kind==Boss.SLIME)SlimeHills.surfaceRipple(c,c.boss.hitX,c.boss.hitY,Glyph.COLOR[g],L.enemyR);
             if(c.boss.boltDestroyed)c.timeAttack.defended();
             // Swatted, not landed on the boss: the score is the same as a hit but the boss is
             // untouched, so no shake and no flash — those read as damage.
@@ -244,7 +245,10 @@ final class BossPlay {
         if(divide) {c.flash=Math.max(c.flash,.28f);c.flashColor=0xFF7D45D6;}
         for(GameCore.Particle p:s.promptParticles) {p.x+=s.tx;p.y+=s.ty;c.particles.add(p);}
         s.promptParticles.clear();
-        if(!divide)SlimeSpray.emit(c,s.tx,s.ty,s.tx-s.sx,s.ty-s.sy,b.body.rest*.5f,false);
+        if(!divide) {
+            SlimeSpray.emit(c,s.tx,s.ty,s.tx-s.sx,s.ty-s.sy,b.body.rest*.5f,false);
+            SlimeHills.surfaceRipple(c,s.tx,s.ty,Glyph.COLOR[s.glyph],b.body.rest*.28f);
+        }
         if(c.sound!=null) {
             if(divide)c.sound.divideDamage();
             else slimeSquish(c,s.promptSplit?2:0,2);
@@ -338,8 +342,11 @@ final class BossPlay {
         if (c.combo > c.maxCombo) c.maxCombo = c.combo;
         c.shake = Math.max(c.shake, 0.28f);
         Fx.explode(c, c.rnd, x, y, L.enemyR * 1.5f, 14, GameCore.INK_SPARK);
-        if(c.boss.kind==Boss.SLIME)
+        if(c.boss.kind==Boss.SLIME) {
             SlimeSpray.emit(c,x,y,sprayDX,sprayDY,L.enemyR*1.2f,true);
+            c.slimeBanks.hit(c.clock,x,y,L);
+            SlimeHills.surfaceRipple(c,x,y,SlimeHills.MINT,L.enemyR*1.2f);
+        }
         if (c.sound != null) {
             if (c.boss.kind == Boss.SLIME) {
                 slimeSquish(c,4,2);

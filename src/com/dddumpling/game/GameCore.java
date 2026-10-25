@@ -908,6 +908,7 @@ final class GameCore {
      */
     float skyClock;
     final SlimeBubbles slimeBubbles=new SlimeBubbles();
+    final SlimeBanks slimeBanks=new SlimeBanks();
     int landFrom, landFromBg = Lands.BG[0], landFromTint = Lands.TINT[0];
     float landBlend = 1f;
     final int[] landCloudFrom = Sky.CLOUD_TINT.clone();
@@ -1995,7 +1996,7 @@ final class GameCore {
     }
 
     void startGame() {
-        slimeBubbles.reset();
+        slimeBubbles.reset();slimeBanks.reset();
         if(!modes.playable(this))return;
         bossRetry.finish(this);bossRetry.clear();
         titleKeyHint = 0f;
@@ -2127,7 +2128,7 @@ final class GameCore {
     }
 
     void toTitle() {
-        slimeBubbles.reset();
+        slimeBubbles.reset();slimeBanks.reset();
         bossRetry.finish(this);bossRetry.clear();
         pairSpawnSlots = 0;
         titleKeyHint = 0f;
@@ -2818,6 +2819,7 @@ final class GameCore {
         bossDeathHaptic = 0;
         titleKeyHint = titleKeysAvailable() ? decay(titleKeyHint, elapsed / 1.2f) : 0f;
         if(!SlimeBubbles.enabled(this))slimeBubbles.reset();
+        if(!boss.active() || boss.kind!=Boss.SLIME || state!=PLAY)slimeBanks.reset();
         if (paused) return;
         if(!starter.open)titleStart.update(this,elapsed,L);
         townSaveRetry=Math.max(0f,townSaveRetry-elapsed);

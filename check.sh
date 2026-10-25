@@ -203,6 +203,7 @@ src/com/dddumpling/game/SlimeBubbles.java
 src/com/dddumpling/game/SlimeArrival.java
 src/com/dddumpling/game/SlimeBasin.java
 src/com/dddumpling/game/SlimeBasinArt.java
+src/com/dddumpling/game/SlimeBanks.java
 src/com/dddumpling/game/LandPicker.java
 src/com/dddumpling/game/LandDiscovery.java
 src/com/dddumpling/game/Slime.java

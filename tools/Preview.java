@@ -3198,6 +3198,12 @@ final class Preview {
             basin.boss.hurt=1;
             shot(dir,"slime-basin-impact",basin,L,w,h,ss);
             basin.boss.hurt=0;step(basin,L,1);
+            basin.slimeBanks.hit(basin.clock,0,L.playTop+(L.deckTop-L.playTop)*.48f,L);
+            SlimeHills.surfaceRipple(basin,L.w*.06f,L.playTop+(L.deckTop-L.playTop)*.48f,SlimeHills.MINT,L.enemyR);
+            step(basin,L,.12f);shot(dir,"slime-basin-drag-left",basin,L,w,h,ss);
+            basin.slimeBanks.hit(basin.clock,L.w,L.playTop+(L.deckTop-L.playTop)*.73f,L);
+            step(basin,L,.20f);shot(dir,"slime-basin-drag-right",basin,L,w,h,ss);
+
             shot(dir,"slime-basin-breathe",basin,L,w,h,ss);
             basin.bossVictory=basin.boss;basin.bossVictoryKind=Boss.SLIME;
             basin.boss=new Boss();basin.state=GameCore.OVER;basin.deathT=basin.deathDuration();basin.time=0;

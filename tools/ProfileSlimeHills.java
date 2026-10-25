@@ -62,6 +62,9 @@ final class ProfileSlimeHills {
         public ArtStamp stamps(){return cached?this:null;}
         public boolean stamp(int art,float x,float y,float w,float h,float angle,int tint,float amount){return false;}
         public boolean basin(int art,float x,float y,float w,float h,int alpha){point(x,y,alpha);vertices+=4;return true;}
+        public boolean basinMesh(int art,float x,float y,float w,float h,float[] offsets,int alpha) {
+            point(x,y,alpha);vertices+=(SlimeBanks.ROWS+1)*2;return true;
+        }
         long calls,vertices;double checksum;
         void path(float[] pts,int color) {
             calls++;vertices+=pts.length/2;checksum+=color;

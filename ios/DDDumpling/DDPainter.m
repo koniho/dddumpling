@@ -135,6 +135,36 @@ static void DDAppendPolygon(CGContextRef context, IOSFloatArray *points) {
   CGContextRestoreGState(self.context);return YES;
 }
 
+- (jboolean)basinMeshWithInt:(jint)art withFloat:(jfloat)x withFloat:(jfloat)y
+                  withFloat:(jfloat)w withFloat:(jfloat)h withFloatArray:(IOSFloatArray *)offsets
+                    withInt:(jint)alpha {
+  if (!self.context || _drawingForest || (art!=3 && art!=4) || !offsets
+      || offsets->size_<2 || offsets->size_>17 || w<=0 || h<=0)return NO;
+  CGImageRef image=[self basinImage:art];if (!image)return NO;
+  CGContextRef ctx=self.context;int rows=offsets->size_-1;BOOL left=art==3;
+  CGContextSaveGState(ctx);
+  CGContextSetAlpha(ctx,MAX(0,MIN(255,alpha))/255.0);
+  CGContextSetInterpolationQuality(ctx,kCGInterpolationMedium);
+  // Adjacent clipped triangles share edges. Texture filtering supplies the visible silhouette AA.
+  CGContextSetShouldAntialias(ctx,NO);
+  for (int row=0;row<rows;row++) {
+    CGFloat v=row/(CGFloat)rows,y0=y+h*v,y1=y+h*(row+1)/(CGFloat)rows;
+    CGFloat l0=x-(left?0:offsets->buffer_[row]),r0=x+w+(left?offsets->buffer_[row]:0);
+    CGFloat l1=x-(left?0:offsets->buffer_[row+1]),r1=x+w+(left?offsets->buffer_[row+1]:0);
+    for (int triangle=0;triangle<2;triangle++) {
+      CGContextSaveGState(ctx);CGContextBeginPath(ctx);
+      CGContextMoveToPoint(ctx,r0,y0);CGContextAddLineToPoint(ctx,l1,y1);
+      CGContextAddLineToPoint(ctx,triangle?r1:l0,triangle?y1:y0);CGContextClosePath(ctx);
+      CGContextClip(ctx);
+      CGFloat a=triangle?r1-l1:r0-l0,c=(triangle?r1-r0:l1-l0)*rows;
+      CGFloat tx=(triangle?r0-a:l0)-c*v;
+      CGContextConcatCTM(ctx,CGAffineTransformMake(a,0,c,h,tx,y));
+      CGContextDrawImage(ctx,CGRectMake(0,0,1,1),image);CGContextRestoreGState(ctx);
+    }
+  }
+  CGContextRestoreGState(ctx);return YES;
+}
+
 - (instancetype)init {
   if ((self = [super init])) _colorSpace = CGColorSpaceCreateDeviceRGB();
   return self;

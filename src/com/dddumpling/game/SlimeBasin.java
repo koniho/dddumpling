@@ -18,14 +18,14 @@ final class SlimeBasin extends Draw {
         return Math.min(1,Math.max(b.hurt,Math.max(b.slimeKeyPulse*2,b.slimeDragPulse*3)));
     }
     static float bankWidth(float time,int side,Layout L) {
-        return L.w*SlimeBasinArt.BANK_FRACTION*(1+.025f*(float)Math.sin(time*.72f+side*2.4f));
+        return L.w*SlimeBasinArt.BANK_FRACTION*(1+.14f*(float)Math.sin(time*1.35f+side*2.4f));
     }
     static float bankHeight(float time,int side,Layout L) {
-        return (L.deckTop-L.playTop)*(1.018f+.008f*(float)Math.sin(time*.59f+side*2.4f));
+        return (L.deckTop-L.playTop)*(1.09f+.06f*(float)Math.sin(time*1.12f+side*2.4f));
     }
     static float bankTop(float time,int side,Layout L) {
         float span=L.deckTop-L.playTop;
-        return L.playTop+(span-bankHeight(time,side,L))*.5f+span*.002f*(float)Math.sin(time*.47f+side);
+        return L.playTop+(span-bankHeight(time,side,L))*.5f+span*.006f*(float)Math.sin(time*.95f+side);
     }
     static void draw(Painter p,GameCore c,Layout L) {
         float fade=progress(c)*(retained(c)?1:1-c.drained());
@@ -40,8 +40,11 @@ final class SlimeBasin extends Draw {
         // Each bank breathes around its outer edge; the central pool never stretches.
         for(int side=0;side<2;side++) {
             float width=bankWidth(t,side,L);
-            art(p,side==0?SlimeBasinArt.LEFT_BANK:SlimeBasinArt.RIGHT_BANK,
-                    side==0?0:L.w-width,bankTop(t,side,L),width,bankHeight(t,side,L),(int)(fade*255));
+            int bank=side==0?SlimeBasinArt.LEFT_BANK:SlimeBasinArt.RIGHT_BANK;
+            float x=side==0?0:L.w-width,y=bankTop(t,side,L),h=bankHeight(t,side,L);
+            float[] offsets=c.slimeBanks.offsets(t,side,L);ArtStamp cache=p.stamps();
+            if(cache==null || !cache.basinMesh(bank,x,y,width,h,offsets,(int)(fade*255)))
+                SlimeBasinArt.paint(new SlimeBanks.Warp(p,(int)(fade*255),side,x,y,width,h,offsets),bank,width,h);
         }
         // Move and modulate a single smooth light texture; bank geometry stays cached.
         float glowX=L.w*.5f+(cx-L.w*.5f)*.20f;
@@ -51,7 +54,9 @@ final class SlimeBasin extends Draw {
         for(int side=0;side<2;side++)for(int i=0;i<3;i++) {
             float u=.20f+i*.29f+.006f*(float)Math.sin(t*.65f+i);
             float scale=bankWidth(t,side,L)/(L.w*SlimeBasinArt.BANK_FRACTION);
-            float x=(SlimeBasinArt.inset(u,side,L.w)-L.w*.020f)*scale;if(side==1)x=L.w-x;
+            float x=(SlimeBasinArt.inset(u,side,L.w)-L.w*.020f)*scale;
+            x+=x/bankWidth(t,side,L)*SlimeBanks.sample(c.slimeBanks.offsets(t,side,L),u);
+            if(side==1)x=L.w-x;
             SlimeHills.jelly(p,shape,x,bankTop(t,side,L)+bankHeight(t,side,L)*u,L.w*.014f*scale,L.w*.008f,
                     i,Glyph.withAlpha(SlimeHills.MINT,(int)(fade*(28+breath*18+hit*36))));
         }
@@ -71,6 +76,7 @@ final class SlimeBasin extends Draw {
             SlimeHills.ripple(p,rings,cx,floor,radius,radius*.23f,wave+t*.13f,
                     Glyph.withAlpha(SlimeHills.MINT,(int)(grounding*(1-phase)*(28+hit*40))),.035f);
         }
+        SlimeHills.clearRipples(p,c,L,fade);
     }
     private static void art(Painter p,int art,float x,float y,float w,float h,int alpha) {
         if(alpha<=0)return;

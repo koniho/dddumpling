@@ -12,7 +12,7 @@ final class SlimeHills extends Draw {
     }
 
     static void surfaceRipple(GameCore c,float x,float y,int color,float radius) {
-        if(c.state!=GameCore.PLAY || c.survival.active || Lands.forStage(c.stage)!=0)return;
+        if(c.state!=GameCore.PLAY || c.survival.active || (Lands.forStage(c.stage)!=0 && !(c.boss.active() && c.boss.kind==Boss.SLIME)))return;
         int count=0;
         for(GameCore.Particle q:c.particles)if(q.slimeRipple && ++count>=MAX_RIPPLES)return;
         GameCore.Particle q=new GameCore.Particle();
@@ -78,7 +78,7 @@ final class SlimeHills extends Draw {
     }
 
     /** Clear reactions stay beneath enemies; the idle surface has no pressure swells. */
-    private static void clearRipples(Painter p,GameCore c,Layout L,float fade) {
+    static void clearRipples(Painter p,GameCore c,Layout L,float fade) {
         float[][] ring=null;
         for(GameCore.Particle q:c.particles) {
             if(!q.slimeRipple)continue;

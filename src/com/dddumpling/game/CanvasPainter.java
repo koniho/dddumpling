@@ -45,6 +45,12 @@ final class CanvasPainter implements Painter, ArtStamp {
         if(slimeStamps==null)slimeStamps=new CanvasSlimeStamps();
         slimeStamps.draw(canvas,art,x,y,w,h,alpha);return true;
     }
+    public boolean basinMesh(int art,float x,float y,float w,float h,float[] offsets,int alpha) {
+        if(stamps()==null || (art!=SlimeBasinArt.LEFT_BANK && art!=SlimeBasinArt.RIGHT_BANK)
+                || offsets==null || offsets.length!=SlimeBanks.ROWS+1)return false;
+        if(slimeStamps==null)slimeStamps=new CanvasSlimeStamps();
+        slimeStamps.mesh(canvas,art,x,y,w,h,offsets,alpha);return true;
+    }
     public boolean forest(int art,float x,float y,float r,float lean,int color,int alpha) {
         if(stamps()==null || art<0 || art>=CanvasForestStamps.COUNT)return false;
         if(forestStamps==null)forestStamps=new CanvasForestStamps();

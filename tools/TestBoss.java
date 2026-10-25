@@ -73,6 +73,9 @@ final class TestBoss extends Check {
         int mask,calls,lightAlpha;
         BasinCache(){super(new RasterPainter(1,1,1),1);}
         public ArtStamp stamps(){return this;}
+        public boolean basinMesh(int art,float x,float y,float w,float h,float[] offsets,int alpha) {
+            return basin(art,x,y,w,h,alpha);
+        }
         public boolean basin(int art,float x,float y,float w,float h,int alpha) {
             mask|=1<<art;calls++;if(art==SlimeBasinArt.LIGHT)lightAlpha=alpha;return true;
         }
@@ -94,12 +97,19 @@ final class TestBoss extends Check {
                 float y=SlimeBasin.bankTop(time,side,L),h=SlimeBasin.bankHeight(time,side,L);
                 covered &= y<=L.playTop && y+h>=L.deckTop;
                 float w=SlimeBasin.bankWidth(time,side,L);
-                bounded &= w>=L.w*.39f && w<=L.w*.411f;
+                bounded &= w>=L.w*.343f && w<=L.w*.457f;
             }
-            independent |= Math.abs(SlimeBasin.bankWidth(time,0,L)-SlimeBasin.bankWidth(time,1,L))>L.w*.01f;
+            independent |= Math.abs(SlimeBasin.bankWidth(time,0,L)-SlimeBasin.bankWidth(time,1,L))>L.w*.04f;
         }
         check("breathing banks cover vertical edges and stay outside central play area",covered && bounded);
         check("left and right banks breathe independently",independent);
+        c.slimeBanks.hit(10,0,L.playTop+(L.deckTop-L.playTop)*.5f,L);
+        float near=c.slimeBanks.kick(10.1f,0,.5f,L),far=c.slimeBanks.kick(10.1f,0,.9f,L);
+        check("drag bounce stays at the struck side and height",near<0 && far==0
+                && c.slimeBanks.kick(10.1f,1,.5f,L)==0);
+        check("drag bounce springs back then settles",c.slimeBanks.kick(10.3f,0,.5f,L)>0
+                && c.slimeBanks.kick(12.1f,0,.5f,L)==0);
+        c.slimeBanks.reset();check("bank impulses clear for a new scene",c.slimeBanks.kick(10.1f,0,.5f,L)==0);
         GatorReplay replay=new GatorReplay(true),chunked=new GatorReplay(true);
         for(int i=0;i<600;i++){replay.step(L);if(i%2==1)chunked.update(GatorReplay.STEP*2,L);}
         check("Slime device replay is isolated and fixed step",replay.core.store==null
@@ -299,10 +309,15 @@ final class TestBoss extends Check {
             Fx.updateShots(c,GameCore.SHOT_TIME*.51f,L);
             check("impact follows the struck body "+kind,Math.abs(shot.tx-shot.promptBody.centreX()-shot.bossDx)<.001f);
             check("contact starts body feedback and the complete particle burst "+kind,
-                    b.hurt>0 && c.shake>0 && c.particles.size()==(kind==Boss.SLIME?13+SlimeSpray.HIT_DROPS:16));
+                    b.hurt>0 && c.shake>0 && c.particles.size()==(kind==Boss.SLIME?14+SlimeSpray.HIT_DROPS:16));
             check("contact plays the matching hit sound once "+kind,
                     (kind==Boss.SLIME?ear.slimeHits:ear.divideDamages)==1);
             if(kind==Boss.SLIME)check("projectile contact starts the eye wince",b.slimeEyeHit==Boss.SLIME_EYE_HIT);
+            int ripples=0;GameCore.Particle ripple=null;
+            for(GameCore.Particle q:c.particles)if(q.slimeRipple){ripples++;ripple=q;}
+            check("only Slime prompt contact adds an impact ripple "+kind,ripples==(kind==Boss.SLIME?1:0));
+            if(ripple!=null)check("prompt ripple is located at contact",ripple.x==shot.tx && ripple.y==shot.ty);
+
             Fx.updateShots(c,.5f,L);
             check("completed flight cannot replay the sound "+kind,(kind==Boss.SLIME?ear.slimeHits:ear.divideDamages)==1);
             c.particles.clear();java.util.Arrays.fill(b.blive,false);if(kind==Boss.SLIME)toOpen(c,L);
