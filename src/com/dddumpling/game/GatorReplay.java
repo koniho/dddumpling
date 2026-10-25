@@ -8,13 +8,15 @@ final class GatorReplay {
     int tick,loops;
     private float remainder;
     private final boolean slime;
+    private final int kind;
     GatorReplay() {this(false);}
-    GatorReplay(boolean slime) {this.slime=slime;reset();}
+    GatorReplay(boolean slime) {this(slime?Boss.SLIME:Boss.ALLIGATOR);}
+    GatorReplay(int kind) {this.kind=kind;this.slime=kind==Boss.SLIME;reset();}
     private void reset() {
         core=new GameCore(null,168,false);
         core.collected=Collect.MASK;core.landSeen=LandPicker.stateMask();
         core.onboarding.saved=Onboarding.SKIPPED;core.onboarding.savedPowers=-1;
-        core.modes.restore(ModeSelector.TIME_ATTACK);core.timeAttack.selected=slime?Boss.SLIME:Boss.ALLIGATOR;
+        core.modes.restore(ModeSelector.TIME_ATTACK);core.timeAttack.selected=kind;
         core.startGame();core.stageBanner=0;core.landBlend=1;tick=0;
     }
     void update(float elapsed,Layout l) {
@@ -28,6 +30,15 @@ final class GatorReplay {
             if(b.fighting() && tick%18==0)for(int key=0;key<Glyph.COUNT;key++)
                 if(b.wants(key)){core.tapKey(key,l);break;}
             if(b.fighting() && tick%240==0)b.hurt=1;
+            core.lives=3;core.update(STEP,l);tick++;return;
+        }
+        if(kind==Boss.SPLITTER) {
+            if(b.fighting() && tick%150==0)for(int n=0;n<Boss.DIVIDE_NODES;n++) {
+                if(!b.nodeActive(n) || b.nodeDepth(n)>=Boss.DIVIDE_LEVELS)continue;
+                b.pieceHits[n]=Boss.DIVIDE_HITS;
+                if(b.beginPinch(100))b.pinch(100*(Boss.DIVIDE_SCALE+.02f));
+                break;
+            }
             core.lives=3;core.update(STEP,l);tick++;return;
         }
         Alligator a=b.alligator;

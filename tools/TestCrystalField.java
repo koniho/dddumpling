@@ -2,6 +2,18 @@ package com.dddumpling.game;
 
 final class TestCrystalField extends Check {
     static void all(Layout L) {
+        GatorReplay replay=new GatorReplay(Boss.SPLITTER),chunked=new GatorReplay(Boss.SPLITTER);
+        for(int i=0;i<1800;i++){replay.step(L);if(i%2==1)chunked.update(GatorReplay.STEP*2,L);}
+        check("Divide profiling reproduces the busy split state without a playthrough",replay.core.boss.pieceCount()==Boss.DIVIDE_PIECES);
+        check("Divide profiling is frame chunk independent",replay.tick==chunked.tick
+                && replay.core.boss.divideSplits==chunked.core.boss.divideSplits);
+
+        GameCore cacheScene=replay.core;
+        ProfileCrystalField.Counter vector=new ProfileCrystalField.Counter(false),cachedDraw=new ProfileCrystalField.Counter(true);
+        cacheScene.crystalField.draw(vector,cacheScene,L,1);
+        cacheScene.crystalField.draw(new OpacityPainter(cachedDraw,1),cacheScene,L,1);
+        check("native crystal cache removes most backdrop commands through painter wrappers",cachedDraw.calls<vector.calls*.5f);
+        check("cached crystal drawing retains live shimmer",cachedDraw.calls>20);
         CrystalField field=new CrystalField();field.prepare(L.w);
         CrystalField.Cell[][] cached=field.layers;
         field.prepare(L.w);

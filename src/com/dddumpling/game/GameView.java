@@ -30,10 +30,11 @@ public class GameView extends View implements InputManager.InputDeviceListener {
     void gatorProfile(String mode,String token) {
         if(!BuildFlags.DEVELOPER)return;
         boolean slime="slime-cached".equals(mode) || "slime-vector".equals(mode);
-        if(!slime && !"cached".equals(mode) && !"vector".equals(mode) && !"stop".equals(mode))return;
+        boolean divide="divide-cached".equals(mode) || "divide-vector".equals(mode);
+        if(!slime && !divide && !"cached".equals(mode) && !"vector".equals(mode) && !"stop".equals(mode))return;
         cancelPointers();
-        painter.cacheArt=!"vector".equals(mode) && !"slime-vector".equals(mode);
-        gatorReplay="stop".equals(mode)?null:new GatorReplay(slime);
+        painter.cacheArt=!mode.endsWith("vector");
+        gatorReplay="stop".equals(mode)?null:new GatorReplay(divide?Boss.SPLITTER:slime?Boss.SLIME:Boss.ALLIGATOR);
         replayMode=mode;replayToken=token;replayReady=false;replayLoops=0;
         if(gatorReplay!=null)painter.warmArt();
         last=0;refreshNavigation();invalidate();

@@ -200,3 +200,18 @@ frames before and after. Do not run full exports for an ordinary nonvisual edit.
 Save checksums outside `out/` (for example under `$TMPDIR`), rerun the same frame selection,
 and compare. Add affected WAVs only for audio work. Fixed seeds make the comparison useful;
 changed RNG draw order can intentionally change later frames.
+
+## Crystal depth layers
+
+Crystal land caches three repeating 480×960 transparent edge textures on Android and iOS
+(about 5.3 MiB total). Scrolling translates these images; diagonal shimmer and local
+clear lighting remain live vectors. The shared vector fallback uses the same geometry.
+`tools/ProfileCrystalField.java` counts commands without claiming device GPU timing.
+With a current Dev APK installed, `PROFILE_SCENE=divide sh tools/profile-gator.sh both`
+compares the vector and cached backgrounds through the same isolated Dark Divide replay,
+including the eight-piece state, without changing saved progress.
+
+The 2026-10-24 local Android comparison completed both 36-second replays after a warmup
+loop each: vector/cached reported 39.78%/0% janky frames, 46/13 ms median frame time,
+and 14/5 ms median GPU time. These are device measurements, not a guarantee for other
+hardware; the command census drops from 369 to 127 background draws at 393×852.

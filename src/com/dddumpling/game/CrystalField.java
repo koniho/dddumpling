@@ -7,7 +7,7 @@ final class CrystalField extends Draw {
     static final int LAND=1, COUNT=18;
     static final float PERIOD=2f;
     static final float[] SPEED={.012f,.023f,.041f};
-    static final int LAYERS=3;
+    static final int LAYERS=3, STAMP_WIDTH=480, STAMP_HEIGHT=960;
     static final float CLEAR_TIME=1.05f;
     static final int MAX_LIGHTS=6;
     private final Pulse[] lights=new Pulse[MAX_LIGHTS];
@@ -148,6 +148,32 @@ final class CrystalField extends Draw {
                     L.w*(layer==0?.008f:layer==1?.005f:.003f));
         }
     }
+    private static int edgeColor(int layer) {
+        return layer==0?0xFF9983BE:layer==1?0xFFB79BD8:0xFFDCC4FF;
+    }
+    private static void base(Painter p,Cell cell,int layer,float w,float fade) {
+        int color=edgeColor(layer);
+        p.fillPoly(cell.rim,Glyph.withAlpha(cell.color,(int)(fade*(4+layer*3))));
+        float softness=layer==0?.030f:layer==1?.017f:.009f;
+        p.strokePoly(cell.rim,Glyph.withAlpha(color,(int)(fade*(3+layer*2))),w*softness);
+        p.strokePoly(cell.rim,Glyph.withAlpha(color,(int)(fade*(5+layer*3))),w*softness*.48f);
+        p.strokePoly(cell.rim,Glyph.withAlpha(color,(int)(fade*(layer==0?12:layer==1?28:53)*.9f)),
+                w*(layer==0?.006f:layer==1?.0035f:.0022f));
+    }
+    /** One immutable repeating tile per depth, including wrapped edge halos. */
+    static void paintLayer(Painter p,int layer) {
+        if(layer<0 || layer>=LAYERS)return;
+        Cell[] cells=make(STAMP_WIDTH,layer);
+        p.save();p.clipRect(0,0,STAMP_WIDTH,STAMP_HEIGHT);
+        for(int tile=-1;tile<=1;tile++) {
+            p.save();p.translate(0,tile*STAMP_HEIGHT);
+            for(Cell cell:cells)if(cell.bottom+tile*STAMP_HEIGHT>=-STAMP_WIDTH*.04f
+                    && cell.top+tile*STAMP_HEIGHT<=STAMP_HEIGHT+STAMP_WIDTH*.04f)
+                base(p,cell,layer,STAMP_WIDTH,1);
+            p.restore();
+        }
+        p.restore();
+    }
     void draw(Painter p,GameCore c,Layout L,float fade) {
         if(fade<=.001f)return;
         prepare(L.w);
@@ -157,20 +183,15 @@ final class CrystalField extends Draw {
         p.save();p.clipRect(0,0,L.w,L.deckTop);
         for(int layer=0;layer<LAYERS;layer++) {
             float offset=scroll(c.skyClock,L.w,layer);
-            int edgeColor=layer==0?0xFF9983BE:layer==1?0xFFB79BD8:0xFFDCC4FF;
+            int edgeColor=edgeColor(layer);
             for(int tile=-1;tile<=(int)(L.deckTop/period)+1;tile++) {
                 float y=offset+tile*period;
+                ArtStamp cache=p.stamps();
+                boolean cached=cache!=null && (y+period<0 || y>L.deckTop || cache.crystal(layer,0,y,L.w,period,(int)(fade*255)));
                 p.save();p.translate(0,y);
                 for(Cell cell:layers[layer]) {
                     if(cell.bottom+y<0 || cell.top+y>L.deckTop)continue;
-                    float shimmer=.5f+.5f*(float)Math.sin(c.clock*.72f+cell.phase);
-                    p.fillPoly(cell.rim,Glyph.withAlpha(cell.color,(int)(fade*(4+layer*3))));
-                    // Broad low-alpha strokes soften distant layers without blur surfaces.
-                    float softness=layer==0?.030f:layer==1?.017f:.009f;
-                    p.strokePoly(cell.rim,Glyph.withAlpha(edgeColor,(int)(fade*(3+layer*2))),L.w*softness);
-                    p.strokePoly(cell.rim,Glyph.withAlpha(edgeColor,(int)(fade*(5+layer*3))),L.w*softness*.48f);
-                    p.strokePoly(cell.rim,Glyph.withAlpha(edgeColor,(int)(fade*(layer==0?12:layer==1?28:53)*( .8f+shimmer*.2f))),
-                            L.w*(layer==0?.006f:layer==1?.0035f:.0022f));
+                    if(!cached)base(p,cell,layer,L.w,fade);
                     if(lighting)edgeLights(p,c,L,cell,layer,y,fade);
                     float sweep=((c.clock*.16f+cell.phase/Softbody.TAU)%1)*13-2.5f;
                     for(int band=0;band<cell.sheen.length;band++) {
