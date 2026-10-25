@@ -114,6 +114,10 @@ final class TestBoss extends Check {
             joined &= total>L.w*1.04f;
         }
         check("foreground banks meet throughout their breathing cycle",joined);
+        check("side banks exit before the rear wall",SlimeBasinArt.inset(.34f,0,L.w)<-L.w*.05f
+                && SlimeBasinArt.inset(.34f,1,L.w)<-L.w*.05f
+                && SlimeBasinArt.inset(.49f,0,L.w)>L.w*.15f
+                && SlimeBasinArt.inset(.43f,1,L.w)>L.w*.15f);
         c.slimeBanks.hit(10,0,L.playTop+(L.deckTop-L.playTop)*.5f,L);
         float near=c.slimeBanks.kick(10.1f,0,.5f,L),far=c.slimeBanks.kick(10.1f,0,.9f,L);
         check("drag bounce stays at the struck side and height",near<0 && far==0

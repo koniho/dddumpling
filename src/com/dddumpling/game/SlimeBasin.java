@@ -53,7 +53,7 @@ final class SlimeBasin extends Draw {
                 L.w*1.3f,span*1.12f,(int)(fade*(46+breath*18+hit*100)));
         // Small live glints and surface reflections retain motion without full-scene redraws.
         for(int side=0;side<2;side++)for(int i=0;i<3;i++) {
-            float u=.20f+i*.29f+.006f*(float)Math.sin(t*.65f+i);
+            float u=.46f+i*.19f+.006f*(float)Math.sin(t*.65f+i);
             float scale=bankWidth(t,side,L)/(L.w*SlimeBasinArt.BANK_FRACTION);
             float x=(SlimeBasinArt.inset(u,side,L.w)-L.w*.020f)*scale;
             x+=x/bankWidth(t,side,L)*SlimeBanks.sample(c.slimeBanks.offsets(t,side,L),u);
