@@ -3191,6 +3191,14 @@ final class Preview {
                 shot(dir,"slime-arrival-"+frame,arrival,L,w,h,ss);
             }
         }
+        if(wanted("boss-arena-loss-"))for(int kind:new int[]{Boss.SLIME,Boss.SPLITTER,Boss.MUSHROOM,Boss.RAINBOW_CAT}) {
+            GameCore loss=kind==Boss.SPLITTER?TestCrystalField.arenaScene(L,7):TestBossRetry.fight(L,kind);
+            loss.stageBanner=loss.shake=loss.flash=0;loss.landBlend=1;
+            loss.bossRetry.checkpoint(loss);TestBossRetry.lose(loss,L);step(loss,L,.65f);
+            shot(dir,"boss-arena-loss-"+kind+"-taunt",loss,L,w,h,ss);
+            TestBossRetry.ready(loss,L);step(loss,L,.6f);
+            shot(dir,"boss-arena-loss-"+kind+"-retry",loss,L,w,h,ss);
+        }
         if(wanted("crystal-arena-")) {
             for(float time:new float[]{0,.35f,.8f,1.2f,1.59f}) {
                 GameCore entry=TestCrystalField.arenaScene(L,0);

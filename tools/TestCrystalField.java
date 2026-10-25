@@ -111,6 +111,13 @@ final class TestCrystalField extends Check {
         check("joined arena tiles cover every phase without gaps or overlaps",covers);
         GameCore c=arenaScene(L,7);
         check("seven actual splits advance the crystal arena",CrystalArena.phase(c.boss)==7 && c.shake>=1);
+        ProfileCrystalField.Counter retainedDraw=new ProfileCrystalField.Counter(true);
+        c.crystalField.draw(retainedDraw,c,L,1);
+        CrystalField.Cell[][] beforeLoss=c.crystalArena.cells;
+        c.lives=1;c.takeHit(L.w*.5f,L);
+        c.crystalField.draw(retainedDraw,c,L,1);
+        check("crystal defeat keeps the exact fractured arena geometry",CrystalArena.active(c)
+                && c.crystalArena.cells==beforeLoss && CrystalArena.phase(BossVictory.sceneBoss(c))==7);
         c=arenaScene(L,15);
         check("eight fragment clears finish all fifteen fracture phases",c.boss.beaten && CrystalArena.phase(c.boss)==15);
         c=arenaScene(L,0);

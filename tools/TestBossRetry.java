@@ -20,10 +20,16 @@ final class TestBossRetry extends Check {
             c.highScores.prize(0);c.roundPrizes=1;c.score=170;c.hits=7;c.misses=2;
             int stage=c.stage,who=c.runWho;Boss previous=c.boss;
             lose(c,L);
+            check("boss loss retains its visual arena without live combat "+kind,
+                    BossVictory.sceneBoss(c)==previous && !c.boss.active() && BossVictory.backdropDrain(c)==0);
+            check("specialized arena survives the boss winning "+kind,
+                    kind==Boss.SLIME?SlimeBasin.progress(c)==1:kind==Boss.MUSHROOM?MushroomForest.groveProgress(c)==1
+                    :kind!=Boss.SPLITTER || CrystalArena.active(c));
             check("eligible defeat waits for a decision "+kind,c.bossRetry.pending && c.highScores.latest==0 && c.state==GameCore.OVER);
             c.bossRetry.retry(c);c.bossRetry.end(c);
             check("death animation cannot be skipped "+kind,c.highScores.bossRetries==0 && c.bossRetry.pending);
             ready(c,L);c.tapGameOver(0,0,L);
+            check("retry panel keeps the same arena palette "+kind,BossVictory.backdropDrain(c)==0 && BossVictory.sceneBoss(c)==previous);
             check("outside taps do not discard a retry choice "+kind,c.bossRetry.pending && c.returnFade==0);
             c.tapGameOver(L.w*.5f,BossRetry.buttonY(L,true),L);
             check("retry resets the same encounter at full health "+kind,c.state==GameCore.PLAY && c.boss.kind==kind
@@ -32,11 +38,13 @@ final class TestBossRetry extends Check {
                     && c.runWho==who && c.roundPrizes==1 && c.highScores.prizes.size()==1 && c.hits==7 && c.misses==2);
             check("retry counts exactly once and releases loss state "+kind,c.highScores.bossRetries==1 && !c.bossRetry.pending
                     && c.bossVictory==null && c.deathT==0 && c.highScores.latest==0 && c.enemies.isEmpty() && c.shots.isEmpty());
+            check("retry releases the previous arena snapshot "+kind,!BossVictory.retained(c) && BossVictory.sceneBoss(c)==c.boss);
             c.bossRetry.retry(c);check("repeat activation is ignored "+kind,c.highScores.bossRetries==1);
             c.boss.intro=0;c.score=150;lose(c,L);ready(c,L);c.bossRetry.end(c);
             check("ending commits a single run with retries "+kind,!c.bossRetry.pending && c.highScores.latest==1
                     && c.highScores.latestRun.bossRetries==1 && c.highScores.latestRun.score==150 && c.returnFade==0 && c.overFade()>.999f && !c.overReady());
             c.bossRetry.end(c);c.toTitle();check("summary and title cannot record twice "+kind,c.highScores.latest==1);
+            check("title releases arena retention "+kind,!BossVictory.retained(c));
             HighScores saved=new HighScores();saved.load(((Mem)c.store).highScores);
             check("retry flag survives a saved score reload "+kind,saved.latestRun!=null && saved.latestRun.bossRetries==1);
             c.startGame();check("new Adventure run clears retries "+kind,c.highScores.bossRetries==0 && !c.bossRetry.pending);

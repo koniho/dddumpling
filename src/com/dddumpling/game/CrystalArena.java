@@ -8,7 +8,7 @@ final class CrystalArena extends Draw {
     private int phase=-1;
     private float width;
     CrystalField.Cell[][] cells;
-    static boolean active(GameCore c){return c.boss.active() && c.boss.kind==Boss.SPLITTER;}
+    static boolean active(GameCore c){Boss b=BossVictory.sceneBoss(c);return b.active() && b.kind==Boss.SPLITTER;}
     static int phase(Boss b){return Math.min(MAX_PHASE,b.divideSplits+Integer.bitCount(b.divideDead));}
     static int art(int layer,int phase){return CrystalField.LAYERS*(phase+1)+layer;}
     static boolean validArt(int art){return art>=0 && art<CrystalField.LAYERS*(MAX_PHASE+2);}
@@ -87,7 +87,7 @@ final class CrystalArena extends Draw {
         p.restore();
     }
     void draw(Painter p,GameCore c,Layout L,float fade) {
-        Boss b=c.boss;prepare(L.w,phase(b));
+        Boss b=BossVictory.sceneBoss(c);prepare(L.w,phase(b));
         float burst=b.beaten?Math.max(0,DivideDeath.elapsed(b)-DivideDeath.BURST_AT):0;
         float period=CrystalField.PERIOD*L.w;
         boolean lighting=c.crystalField.hasLights(c);

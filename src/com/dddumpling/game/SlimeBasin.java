@@ -4,7 +4,7 @@ package com.dddumpling.game;
 final class SlimeBasin extends Draw {
     private SlimeBasin() {}
     static boolean retained(GameCore c) {
-        return c.state==GameCore.OVER && c.bossVictoryKind==Boss.SLIME && c.bossVictory!=null;
+        return BossVictory.retained(c) && c.bossVictoryKind==Boss.SLIME;
     }
     private static Boss boss(GameCore c) {return retained(c)?c.bossVictory:c.boss;}
     static float progress(GameCore c) {

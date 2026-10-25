@@ -57,8 +57,8 @@ final class Lands extends Draw {
         if(c.survival.active || c.state==GameCore.TITLE)return;
         float mix=blend(c),fade=(c.landFrom==RAINBOW?1-mix:0)
                 +(forStage(visualStage(c))==RAINBOW?mix:0);
-        c.crystalField.draw(p,c,L,CrystalField.presence(c)*(1-c.drained()));
-        if(fade>0)RainbowLand.backdrop(p,c,L,fade*(1-c.drained()));
+        c.crystalField.draw(p,c,L,CrystalField.presence(c)*(1-BossVictory.backdropDrain(c)));
+        if(fade>0)RainbowLand.backdrop(p,c,L,fade*(1-BossVictory.backdropDrain(c)));
     }
 
     static void scenery(Painter p, GameCore c, Layout L) {

@@ -186,9 +186,10 @@ final class CrystalField extends Draw {
     void draw(Painter p,GameCore c,Layout L,float fade) {
         if(fade<=.001f)return;
         if(CrystalArena.active(c)) {
-            if(c.boss.intro>0) {
-                float t=c.boss.introProgress(),mix=CrystalArrival.blend(t);
-                arrival.prepare(this,c.crystalArena,L,c.skyClock-(c.boss.introDuration()-c.boss.intro),t);
+            Boss b=BossVictory.sceneBoss(c);
+            if(b.intro>0) {
+                float t=b.introProgress(),mix=CrystalArrival.blend(t);
+                arrival.prepare(this,c.crystalArena,L,c.skyClock-(b.introDuration()-b.intro),t);
                 if(mix<.999f)drawStage(p,c,L,fade*(1-mix),false);
                 if(mix>.001f)c.crystalArena.draw(p,c,L,fade*mix);
                 arrival.draw(p,L,t,c.skyClock,fade);

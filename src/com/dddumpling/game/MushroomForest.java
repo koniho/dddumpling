@@ -8,7 +8,7 @@ final class MushroomForest extends Draw {
     private MushroomForest() {}
 
     static boolean retained(GameCore c) {
-        return c.state==GameCore.OVER && c.bossVictoryKind==Boss.MUSHROOM && c.bossVictory!=null;
+        return BossVictory.retained(c) && c.bossVictoryKind==Boss.MUSHROOM;
     }
     private static Boss sceneBoss(GameCore c) {return retained(c)?c.bossVictory:c.boss;}
     static float groveProgress(GameCore c) {
