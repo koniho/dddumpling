@@ -3,8 +3,8 @@ package com.dddumpling.game;
 /** Immutable scenery and soft light masks, rasterized once by each native host. */
 final class SlimeBasinArt extends Draw {
     static final int SCENE=0,LIGHT=1,SHADOW=2,LEFT_BANK=3,RIGHT_BANK=4,COUNT=5;
-    static final float BANK_FRACTION=.40f;
-    static int width(int art) {return art==SCENE?480:art>=LEFT_BANK?192:256;}
+    static final float BANK_FRACTION=.70f;
+    static int width(int art) {return art==SCENE?480:art>=LEFT_BANK?336:256;}
     static int height(int art) {return art==SCENE || art>=LEFT_BANK?960:256;}
     private SlimeBasinArt() {}
     static void paint(Painter p,int art,float w,float h) {
@@ -46,7 +46,8 @@ final class SlimeBasinArt extends Draw {
                 if(side==1)x=w-x;
                 bank[j*2]=x;bank[j*2+1]=h*u;
                 shine[j*2]=x;shine[j*2+1]=h*u;
-                shine[(129-j)*2]=x+(side==0?-1:1)*w*(layer==1?.009f:.005f);
+                float join=Math.max(0,Math.min(1,(u-.88f)/.08f));join=join*join*(3-2*join);
+                shine[(129-j)*2]=x+(side==0?-1:1)*w*(layer==1?.009f:.005f)*(1-join);
                 shine[(129-j)*2+1]=h*u;
             }
             bank[130]=bank[132]=side==0?-w*.05f:w*1.05f;bank[131]=h;bank[133]=0;
@@ -63,16 +64,12 @@ final class SlimeBasinArt extends Draw {
         }
         // The foreground banks curl into broad jelly cushions with internal depth.
         for(int i=0;i<2;i++) {
-            float u=(side==0?.49f:.43f)+i*.43f,x=inset(u,side,w)-w*.13f;
+            float u=(side==0?.49f:.43f)+i*.43f;
+            float x=i==0?inset(u,side,w)-w*.13f:w*(side==0?.035f:.06f);
             if(side==1)x=w-x;
-            mound(p,shape,x,h*u,w*.17f,w*(i==0?.11f:.19f),side*3+i);
+            mound(p,shape,x,h*u,w*(i==0?.17f:.23f),w*(i==0?.11f:.17f),side*3+i);
         }
-        for(int i=0;i<3;i++) {
-            float x=w*(.025f+i*.050f);if(side==1)x=w-x;
-            float len=h*(.16f-i*.035f);
-            SlimeHills.jelly(p,shape,x,len*.15f,w*(.045f-i*.007f),len,i+side,0x9957AC7D);
-            SlimeHills.jelly(p,shape,x-w*.007f,len*.88f,w*.011f,w*.025f,i,0x85BFF2B5);
-        }
+        upperWall(p,side,w,h);
         for(int i=0;i<16;i++) {
             if(i%2!=side)continue;
             float u=.10f+hash(i+927)*.87f;
@@ -80,9 +77,48 @@ final class SlimeBasinArt extends Draw {
             SlimeHills.jelly(p,shape,x,h*u,w*(.008f+hash(i+76)*.016f),w*.008f,i,0x608AE7AF);
         }
     }
+    /** Thick hanging folds, shaded once into the bank image rather than drawn live. */
+    private static void upperWall(Painter p,int side,float w,float h) {
+        float[] fold=new float[130],gleam=new float[34];
+        for(int i=0;i<6;i++) {
+            float x=w*(-.025f+i*.052f),width=w*(.048f-i*.004f);
+            float length=h*(.19f+.13f*hash(i*71+side*37+914)-i*.012f);
+            for(int layer=0;layer<5;layer++) {
+                float r=width*(1-layer*.14f),shift=width*layer*.075f;
+                for(int j=0;j<=32;j++) {
+                    float u=j/32f;
+                    float taper=(.65f+.35f*(1-u))*(float)Math.sqrt(Math.max(0,1-Math.pow(u,10)));
+                    float bend=w*.014f*(float)Math.sin(u*6+i+side)*u;
+                    float centre=x+bend+shift;
+                    float left=centre-r*taper,right=centre+r*taper;
+                    fold[j*2]=side==0?left:w-left;fold[j*2+1]=h*-.08f+length*u;
+                    fold[(64-j)*2]=side==0?right:w-right;fold[(64-j)*2+1]=h*-.08f+length*u;
+                }
+                int color=layer==0?0xFF245746:layer==1?0xFF327653:layer==2?0xFF469662
+                        :layer==3?0xFF68B97C:0xFF91D594;
+                p.fillPoly(fold,Glyph.withAlpha(color,layer==0?190:145));
+            }
+            float tipX=x+w*.014f*(float)Math.sin(6+i+side)+width*.30f;
+            if(side==1)tipX=w-tipX;
+            SlimeHills.jelly(p,gleam,tipX,h*-.08f+length-width*.43f,width*.20f,width*.32f,i,0xA2C8F4B0);
+            // Irregular long glints give the folds a wet surface, without thin uniform outlines.
+            float[] glint=new float[52];
+            for(int j=0;j<13;j++) {
+                float u=.15f+j*.05f,xx=x+width*.45f+w*.014f*(float)Math.sin(u*6+i+side)*u;
+                float thin=w*.003f*(float)Math.sin(j/12f*Math.PI);
+                glint[j*2]=side==0?xx-thin:w-xx+thin;glint[j*2+1]=h*-.08f+length*u;
+                glint[(25-j)*2]=side==0?xx+thin:w-xx-thin;glint[(25-j)*2+1]=glint[j*2+1];
+            }
+            p.fillPoly(glint,0x458DE4A0);
+        }
+    }
+
     static float inset(float u,int side,float w) {
-        return w*(.045f+.18f*bump(u,.02f,.23f)+.19f*bump(u,side==0?.49f:.43f,.15f)
-                +.20f*bump(u,side==0?.94f:.85f,.24f)+.025f*(float)Math.sin(u*19+side));
+        float edge=.045f+.25f*bump(u,.01f,.30f)+.19f*bump(u,side==0?.49f:.43f,.15f)
+                +.20f*bump(u,side==0?.94f:.85f,.24f)+.025f*(float)Math.sin(u*19+side);
+        // The foreground curls across the pool, with enough overlap to breathe without a gap.
+        float curl=Math.max(0,Math.min(1,(u-.75f)/.20f));curl=curl*curl*curl;
+        return w*(edge+(.68f-edge)*curl);
     }
     private static float bump(float u,float centre,float width) {
         float t=(u-centre)/width;float a=Math.max(0,1-t*t);return a*a;

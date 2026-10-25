@@ -2396,7 +2396,8 @@ final class Preview {
         for (int boss = 0; boss < Boss.COUNT; boss++) {
             GameCore welcome = new GameCore(store, 199L + boss);
             welcome.startGame();
-            welcome.stage = Boss.EVERY;
+            welcome.stage = WorldCatalog.bossStage(boss);
+            welcome.landBlend=1;
             Interlude.awardBossPrize(welcome, boss);
             Interlude.enterBonus(welcome, L);
             welcome.bonusTimer = BossCollect.REVEAL_TIME - .55f;

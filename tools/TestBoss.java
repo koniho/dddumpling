@@ -97,12 +97,23 @@ final class TestBoss extends Check {
                 float y=SlimeBasin.bankTop(time,side,L),h=SlimeBasin.bankHeight(time,side,L);
                 covered &= y<=L.playTop && y+h>=L.deckTop;
                 float w=SlimeBasin.bankWidth(time,side,L);
-                bounded &= w>=L.w*.343f && w<=L.w*.457f;
+                bounded &= w>=L.w*SlimeBasinArt.BANK_FRACTION*.859f && w<=L.w*SlimeBasinArt.BANK_FRACTION*1.141f;
             }
             independent |= Math.abs(SlimeBasin.bankWidth(time,0,L)-SlimeBasin.bankWidth(time,1,L))>L.w*.04f;
         }
         check("breathing banks cover vertical edges and stay outside central play area",covered && bounded);
         check("left and right banks breathe independently",independent);
+        boolean joined=true;
+        for(int frame=0;frame<600;frame++) {
+            float time=frame*.1f,total=0;
+            for(int side=0;side<2;side++) {
+                float u=(L.deckTop-SlimeBasin.bankTop(time,side,L))/SlimeBasin.bankHeight(time,side,L);
+                float scale=SlimeBasin.bankWidth(time,side,L)/(L.w*SlimeBasinArt.BANK_FRACTION);
+                total+=SlimeBasinArt.inset(u,side,L.w)*scale;
+            }
+            joined &= total>L.w*1.04f;
+        }
+        check("foreground banks meet throughout their breathing cycle",joined);
         c.slimeBanks.hit(10,0,L.playTop+(L.deckTop-L.playTop)*.5f,L);
         float near=c.slimeBanks.kick(10.1f,0,.5f,L),far=c.slimeBanks.kick(10.1f,0,.9f,L);
         check("drag bounce stays at the struck side and height",near<0 && far==0
@@ -836,6 +847,7 @@ final class TestBoss extends Check {
                     && Collect.has(reward.roundPrizes, entry));
             GameCore reload = new GameCore(reward.store, 3000L + kind);
             check("boss portrait is saved immediately " + kind, Collect.has(reload.collected, entry));
+            check("cleared stage keeps arena before friendship " + kind,BossCollect.keepsArena(reward,kind));
             Interlude.enterBonus(reward, L);
             check("boss celebration replaces either minigame " + kind,
                     reward.bossReward && !reward.starBonus && !reward.bonusRolling()
@@ -856,8 +868,13 @@ final class TestBoss extends Check {
                     && BossCollect.friendTargetX(L)==L.w*.5f
                     && BossCollect.friendTargetY(L)>L.h*.64f
                     && BossCollect.friendTargetY(L)<L.deckTop);
+            check("friendship retains only the defeated boss arena " + kind,
+                    BossCollect.keepsArena(reward,kind) && !BossCollect.keepsArena(reward,(kind+1)%Boss.COUNT));
+            if(kind==Boss.SLIME)check("friendship keeps the slime basin",SlimeBasin.progress(reward)==1);
+            if(kind==Boss.MUSHROOM)check("friendship keeps the mushroom grove",MushroomForest.groveProgress(reward)==1);
             int stage = reward.stage;
             advance(reward, L, BossCollect.REVEAL_TIME + 0.2f);
+            check("friendship releases its arena for the next stage " + kind,!BossCollect.keepsArena(reward,kind));
             check("celebration advances exactly one stage and preserves the pending star course " + kind,
                     reward.stage == stage + 1 && reward.state == GameCore.PLAY && reward.starNext);
             int score = reward.score;

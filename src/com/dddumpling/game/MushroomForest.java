@@ -12,6 +12,7 @@ final class MushroomForest extends Draw {
     }
     private static Boss sceneBoss(GameCore c) {return retained(c)?c.bossVictory:c.boss;}
     static float groveProgress(GameCore c) {
+        if(BossCollect.keepsArena(c,Boss.MUSHROOM))return 1;
         Boss b=sceneBoss(c);
         if(!b.active() || b.kind!=Boss.MUSHROOM || c.survival.active || c.state==GameCore.TITLE)return 0;
         float t=Math.min(1f,(b.introDuration()-b.intro)/Boss.INTRO);

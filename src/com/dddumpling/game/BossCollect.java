@@ -7,6 +7,12 @@ final class BossCollect extends Draw {
 
     private BossCollect() {}
 
+    /** Keep scenery across the cleared-stage pause and friendship reveal, without a live boss. */
+    static boolean keepsArena(GameCore c,int kind) {
+        return ((c.state==GameCore.PLAY && c.bossPrizePending)
+                || (c.state==GameCore.BONUS && c.bossReward)) && Collect.bossKind(c.prize)==kind;
+    }
+
     static void draw(Painter p, int boss, float x, float y, float r, float clock,
             boolean known, float fade) {
         draw(p,boss,x,y,r,clock,known,fade,-1,0f);

@@ -377,7 +377,7 @@ final class Screens extends Draw {
     static void bonus(Painter p, GameCore c, Layout L) {
         float s = L.unit;
         if (c.bossReward) {
-            scrim(p, L, 190);
+            scrim(p, L, 110);
             BossCollect.celebration(p, c, L);
             return;
         }

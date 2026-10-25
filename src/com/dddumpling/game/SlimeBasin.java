@@ -8,6 +8,7 @@ final class SlimeBasin extends Draw {
     }
     private static Boss boss(GameCore c) {return retained(c)?c.bossVictory:c.boss;}
     static float progress(GameCore c) {
+        if(BossCollect.keepsArena(c,Boss.SLIME))return 1;
         Boss b=boss(c);
         if(c.state==GameCore.TITLE || c.survival.active || !b.active() || b.kind!=Boss.SLIME)return 0;
         // Complete the scenery change behind the opaque curtain, before it starts draining.
@@ -67,7 +68,7 @@ final class SlimeBasin extends Draw {
                     Glyph.withAlpha(0xFF9BD79B,(int)(fade*(13+breath*5+hit*18))));
         }
         float reveal=SlimeArrival.reveal(b);
-        float grounding=fade*reveal*(b.beaten?1-b.leaveProgress():1);
+        float grounding=BossCollect.keepsArena(c,Boss.SLIME)?0:fade*reveal*(b.beaten?1-b.leaveProgress():1);
         art(p,SlimeBasinArt.SHADOW,cx-b.bodyR(L)*1.6f,floor-b.bodyR(L)*.30f,
                 b.bodyR(L)*3.2f,b.bodyR(L)*.60f,(int)(grounding*115));
         for(int wave=0;wave<3;wave++) {

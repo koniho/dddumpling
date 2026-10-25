@@ -167,8 +167,8 @@ small rotation and preserves a separate vector path for software previews.
 ### Slime Springs arena
 
 Android and iOS cache five immutable images from `SlimeBasinArt`: the 480×960 pool,
-two 192×960 transparent banks, and two 256×256 soft masks (light and shadow), about
-3.7 MiB total. Each bank gently scales and drifts independently around its outer edge;
+two 336×960 transparent banks, and two 256×256 soft masks (light and shadow), about
+4.7 MiB total. Each bank gently scales and drifts independently around its outer edge;
 the pool stays fixed and attached glints follow the bank transforms. An eight-row mesh
 adds a traveling wobble and a localized, damped spring response to drag damage. Android
 uses `drawBitmapMesh`; iOS draws the same mesh with bounded clipped affine triangles.

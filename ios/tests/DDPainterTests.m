@@ -21,7 +21,7 @@
   for (jint art=0;art<5;art++) {
     CGImageRef image=[painter basinImage:art];
     XCTAssertNotEqual(image,NULL);XCTAssertEqual(image,[painter basinImage:art]);
-    XCTAssertEqual(CGImageGetWidth(image),art==0?480u:art>=3?192u:256u);
+    XCTAssertEqual(CGImageGetWidth(image),art==0?480u:art>=3?336u:256u);
     XCTAssertEqual(CGImageGetHeight(image),art==0 || art>=3?960u:256u);
   }
   XCTAssertEqual([painter basinImage:-1],NULL);XCTAssertEqual([painter basinImage:5],NULL);
